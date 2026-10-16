@@ -414,8 +414,13 @@ server/
 8. Client: apply the client-side gaps listed below, otherwise bank, autoloot, daily and stash
    cannot talk to the server at all.
 
-`data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are a separate admin-panel module written by another
-task; they are not covered here. They use extended opcode 120, which does not collide with any opcode below.
+`data/scripts/chaos/admin/` and `sql/chaos_admin.sql` are the in-game admin panel (client `game_admin`, extended opcode
+120, which does not collide with any opcode below); its own README (`admin/README.md`) has the files, the permission
+model and every action. Besides the base server tools it has seven Chaos categories (Currencies, Progression, Classes,
+Buffs & Gear, Bosses & Events, Instances & PvP, Guilds & Market: 93 actions over the Chaos systems' own APIs) and the
+staff chat commands as Tools actions (the talkaction files unchanged). Group 4 inspects and fixes, value needs group 5,
+resets of progress are dangerous (group 6); every run is in `chaos_admin_log`. Tests: `tests/admin_panel_test.lua`,
+`tests/admin_probe_test.lua`, `tests/staff_permissions_test.lua`.
 
 Every script starts with `if not Chaos then dofile("data/scripts/chaos/chaos_constants.lua") end`,
 so load order inside `data/scripts` does not matter (the `dofile` path is relative to the server's
@@ -657,7 +662,7 @@ One extended opcode message carries at most 8192 bytes (`NetworkMessage::addStri
 error). The base `Player.sendExtendedOpcode` wrote `0x32` and the opcode first, so a longer payload went out as the two
 bytes `32 <opcode>`: the client read the next two bytes as the length, logged `ProtocolGame parse message exception (...
 3 unread, last opcode is 0x32 ...)` and dropped the rest of that network message. At every admin login this lost the
-whole admin catalog (opcode 120, about 20 KB, so the admin panel never appeared) and whatever was bundled after it (the
+whole admin catalog (opcode 120, then about 20 KB, now about 60 KB in 8 parts; so the admin panel never appeared) and whatever was bundled after it (the
 ancestral points push 89, sometimes the loot filter settings 238 and name plates 248). `extended_opcode.lua` replaces
 `Player.sendExtendedOpcode`: a payload over 8192 bytes is not sent and a `[Warning - Chaos] extended opcode ...` line names
 it. Big JSON goes through `Chaos.sendChunked(player, opcode, json)` (parts `S...`, `P...`, `E...` of 8000 bytes, joined by
@@ -3352,6 +3357,15 @@ put it back by hand). A full rollback is the backup. Removing the depot boxes la
 **Client** (`game_stash`): the window of before plus whole items in the list (a whole item withdraws as one), the tab bar
 with affinity icons, greyed items outside a protection zone, the Stow Everything button and its report. Logic
 `stashview.lua` (tested by `stashview_test.lua`). Not run in a client yet.
+
+**Staff** (admin panel Economy > Stash: add item, tabs and search, remove item; `stash.lua` `ChaosStash.staffGive`,
+`staffSummary`, `staffFind`, `staffRemove`). Reads work by character id, offline too, and lay nothing out. Writes need the
+character online and go through the journal like a player's: an item made for the stash (`Game.createItem`, never on
+the character, so the journal's remove / restore have nothing to do) is a depositing row first, the serial is saved with
+the character, then the row becomes the entry; a removal is a taking row, the save, then the row deleted (nothing is
+given). A tab named by staff must be a general or affinity tab with room (never Old depot); Auto routes it as a deposit.
+At most 100 whole items at once; a plain stack is one merged entry. `chaos_stash_log` rows `staff` / `staffdel`.
+`tests/stash_test.lua` runs them on its in-memory database (a failed save leaves nothing behind, the backpack untouched).
 
 **Tables.** `chaos_stash` and `chaos_stash_block` (`sql/chaos.sql`), `chaos_stash.tab` (`sql/chaos_pact.sql`),
 `chaos_stash_items` and `chaos_stash_log` (`sql/chaos_stash.sql`; `stash.lua` creates them at startup too).

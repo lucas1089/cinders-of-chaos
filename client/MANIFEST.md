@@ -121,6 +121,17 @@ Server-side scripts, engine changes, any runtime test, translation of Portuguese
 ## Added after the first draft
 The theme (`client_chaos_theme`, `client_chaos_topbar`, `data/images/chaos/`, generator in `tools/gen_theme_art.py`) and the admin panel (`game_admin`, opcode 120) are in the overlay too. The server counterparts are in `../server/`.
 
+### game_admin (admin panel, opcode 120)
+Opened from Admin > Admin Panel (`client_chaos_topbar`), the top-menu ADM button or Ctrl+Shift+F12; only a group the
+server accepts ever gets a catalog. Everything in the window is built from the server's catalog (JSON joined from its
+S/P/E parts by `ProtocolGame.registerExtendedJSONOpcode`; about 60 KB in 8 parts for group 6 since the Chaos categories,
+2026-10-16). The category sidebar (186 px) scrolls with its own bar lane and shows the full label as a tooltip: 16
+categories with the seven Chaos ones (Currencies, Progression, Classes, Buffs & Gear, Bosses & Events, Instances & PvP,
+Guilds & Market). Category and action labels and descriptions are the server's English text, shown as sent (no `tr()`
+keys, as before); the window's own strings are `tr()` keys with pt-BR in `client_chaos_locale`. No new client string.
+Server side and the action list: `server/data/scripts/chaos/admin/README.md`. Not run in a client since the Chaos
+categories were added.
+
 ## Healing helper: no replay after a stall (base patch 0026)
 `base-patches/0026-helper-no-cycle-replay.patch` (`mods/game_helper/helper.lua`): the helper's cycles schedule their next run from now (after a client stall they run once instead of replaying every missed 50 ms cycle) and its spell casts go through a rate guard; tested in game (one cast after a 2.5 s stall, 17 before).
 

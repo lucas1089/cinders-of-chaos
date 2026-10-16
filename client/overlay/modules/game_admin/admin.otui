@@ -63,12 +63,14 @@ ChaosWindow
     anchors.left: parent.left
     anchors.bottom: closeButton.top
     margin-bottom: 8
-    width: 170
+    width: 186
     padding: 6
 
+    // 16 server categories (7 of them Chaos systems) and "All actions": the list scrolls; the bar has its own lane
     ScrollablePanel
       id: categoryList
       anchors.fill: parent
+      margin-right: 14
       vertical-scrollbar: categoryScroll
       layout:
         type: verticalBox
@@ -78,7 +80,8 @@ ChaosWindow
       anchors.top: parent.top
       anchors.bottom: parent.bottom
       anchors.right: parent.right
-      step: 14
+      width: 12
+      step: 29
       pixels-scroll: true
 
   ChaosTextEdit

@@ -1358,6 +1358,49 @@ eq(K.view(cfg, {pact = true}).remote, "pact", "core: the Pact")
 eq(K.view(cfg, {pact = false}).remote, nil, "core: the Pact ended")
 ChaosPact = nil
 
+-- ====================================================================== staff (admin panel economy.stash_*)
+do
+resetDB()
+local st = newPlayer(20)
+local function openCount() return openRows() end
+local okG, textG = S.staffGive(st, 2148, 500, 0)
+check(okG, "staff give: a plain stack (" .. tostring(textG) .. ")")
+eq(DB.plain["20:2148"] and DB.plain["20:2148"].count, 500, "staff give: one merged entry of 500")
+eq(openCount(), 0, "staff give: no journal row left open")
+check((st.saves or 0) >= 1 and (st.storage[cfg.storage.seq] or 0) >= 1, "staff give: the serial saved with the character")
+okG = S.staffGive(st, 2400, 2, 0)
+eq(okG and activeRows(20), 2, "staff give: an item that does not stack is one row each")
+okG = S.staffGive(st, 2472, 1, 2)
+local armorRow
+for _, r in pairs(DB.rows) do
+	if r.player == 20 and r.item == 2472 then armorRow = r end
+end
+eq(okG and armorRow and armorRow.tab, 2, "staff give into a named tab")
+eq(armorRow and armorRow.source, "staff", "the row says who made it")
+eq(select(1, S.staffGive(st, 2400, 1, cfg.oldDepot.tab)), false, "never into the Old depot tab")
+eq(select(1, S.staffGive(st, 2400, 101, 0)), false, "at most 100 whole items at once")
+eq(select(1, S.staffGive(st, 2148, 0, 0)), false, "a count of 0 is refused")
+st.saveOk = false
+local rowsBefore = activeRows(20)
+eq(select(1, S.staffGive(st, 2400, 1, 0)), false, "a failed save: not stored")
+eq(activeRows(20) .. "/" .. openCount(), rowsBefore .. "/0", "and nothing left behind")
+st.saveOk = true
+local tabsS, entriesS, itemsS = S.staffSummary(20)
+eq(entriesS .. "/" .. itemsS, "4/503", "summary: entries and items")
+check(#tabsS >= 2 and tabsS[1].tab <= tabsS[#tabsS].tab, "summary: per tab, sorted")
+local plainF, rowsF = S.staffFind(20, 2400)
+eq(plainF.count .. "/" .. #rowsF, "0/2", "find: the two swords as rows")
+eq(select(1, S.staffRemove(st, {item = 2148, count = 200})), true, "staff remove from the stack")
+eq(DB.plain["20:2148"].count, 300, "300 left")
+eq(select(1, S.staffRemove(st, {row = rowsF[1].id})), true, "staff remove one row")
+eq(DB.rows[rowsF[1].id], nil, "the row is gone")
+eq(select(1, S.staffRemove(st, {item = 2148, count = 999999})), true, "a count over the stack is clamped")
+eq(DB.plain["20:2148"], nil, "the stack is gone")
+eq(select(1, S.staffRemove(st, {row = 999})), false, "an unknown row is refused")
+eq(openCount(), 0, "staff remove: no journal row left open")
+eq(#st.bp().children, 0, "staff give and remove never touch the backpack")
+end
+
 -- ====================================================================== the SQL
 -- the real store, against a recording database: integers formatted as integers, texts escaped
 dofile("data/scripts/chaos/stash.lua")

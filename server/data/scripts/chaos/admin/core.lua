@@ -17,6 +17,10 @@ ChaosAdminConfig = {
 	categoryMinGroup = {
 		players = 4, server = 5, world = 4, economy = 5,
 		events = 5, content = 5, security = 5, tools = 4, store = 5,
+		-- the Chaos systems (actions_chaos_*.lua): a gamemaster inspects and fixes; whatever gives value asks
+		-- minGroup 5 on the action, whatever wipes progress is dangerous
+		chaos_currency = 4, chaos_progress = 4, chaos_class = 4, chaos_bosses = 4, chaos_instances = 4,
+		chaos_player = 4, chaos_social = 4,
 	},
 	-- Group required for actions flagged "dangerous" (shutdown, reload, set group, ...).
 	dangerousMinGroup = 6,
@@ -44,6 +48,13 @@ ChaosAdmin.categories = {
 	{id = "security", label = "Accounts & Security"},
 	{id = "tools",    label = "Tools"},
 	{id = "store",    label = "Store"},
+	{id = "chaos_currency",  label = "Chaos: Currencies"},
+	{id = "chaos_progress",  label = "Chaos: Progression"},
+	{id = "chaos_class",     label = "Chaos: Classes"},
+	{id = "chaos_player",    label = "Chaos: Buffs & Gear"},
+	{id = "chaos_bosses",    label = "Chaos: Bosses & Events"},
+	{id = "chaos_instances", label = "Chaos: Instances & PvP"},
+	{id = "chaos_social",    label = "Chaos: Guilds & Market"},
 }
 
 local function categoryExists(id)
@@ -143,6 +154,34 @@ function ChaosAdmin.resolveItem(v)
 	end
 	if not it or it:getId() == 0 then return nil, "Unknown item '" .. tostring(v) .. "'." end
 	return it
+end
+
+-- Any character by name, online or offline, with the group hierarchy check (self always allowed).
+-- Returns {guid, name, account, group, player = the online Player or nil} or nil, errMsg.
+function ChaosAdmin.targetAny(actor, name)
+	local p = ChaosAdmin.findOnline(name)
+	if p then
+		if not ChaosAdmin.canTouch(actor, p) then
+			return nil, "Target has an equal or higher group than you."
+		end
+		return {guid = p:getGuid(), name = p:getName(), account = p:getAccountId(), group = p:getGroup():getId(), player = p}
+	end
+	local d = ChaosAdmin.dbPlayer(name)
+	if not d then return nil, "Player '" .. tostring(name) .. "' not found." end
+	if d.id ~= actor:getGuid() and (tonumber(d.group_id) or 1) >= actor:getGroup():getId() then
+		return nil, "Target has an equal or higher group than you."
+	end
+	return {guid = d.id, name = d.name, account = d.account_id, group = d.group_id}
+end
+
+-- A Chaos system's global table (optionally with function `fn`), or nil, why: the panel never assumes a system file
+-- is loaded on this server.
+function ChaosAdmin.system(name, fn)
+	local t = rawget(_G, name)
+	if type(t) ~= "table" or (fn and type(t[fn]) ~= "function") then
+		return nil, name .. (fn and ("." .. fn) or "") .. " is not loaded on this server."
+	end
+	return t
 end
 
 -- Optional "player" param: empty means the acting admin.
@@ -292,7 +331,8 @@ end
 ------------------------------------------------------------------------------------------------
 -- Catalog + dispatch
 ------------------------------------------------------------------------------------------------
--- The catalog is about 20 KB, over the 8192 bytes one extended opcode message can carry, so everything goes through
+-- The catalog is about 60 KB for group 6 (176 actions; tests/admin_panel_test.lua measures it), over the 8192 bytes one
+-- extended opcode message can carry, so everything goes through
 -- Chaos.sendChunked (S/P/E parts; the client listens with ProtocolGame.registerExtendedJSONOpcode).
 local function send(player, action, data)
 	if not Chaos then dofile("data/scripts/chaos/chaos_constants.lua") end
