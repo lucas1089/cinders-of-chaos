@@ -249,6 +249,63 @@ local n = #sent
 registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 218, {action = "open"})
 eq(#sent, n, "other opcodes ignored")
 
+-- a client that holds the current list (have = sig) gets only open + done, even inside the throttle
+local sig = sent[#sent].data.sig
+eq(sent[#sent].action, "done", "done carries the signature"); assert(type(sig) == "string" and #sig > 0, "signature")
+n = #sent
+registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open", data = {have = sig}})
+eq(#sent, n + 2, "unchanged: open and done only")
+eq(sent[n + 1].data.unchanged, true, "unchanged flag"); eq(sent[n + 1].data.chunks, 0, "no chunks")
+eq(sent[n + 1].data.sig, sig, "same signature"); eq(sent[n + 2].action, "done", "done after the header")
+n = #sent
+registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open", data = {have = "0-stale"}})
+eq(#sent, n, "a stale signature inside the throttle: nothing")
+eq(B.checksum("abc"), B.checksum("abc"), "checksum stable"); assert(B.checksum("abc") ~= B.checksum("abd"), "checksum differs")
+-- spell ids and needlearn reach the client; the header lists the learned ones
+local byName = {}
+for _, s in ipairs(B.spells) do byName[s.name] = s end
+eq(byName["Ember Fan"].id, 1, "spell id"); eq(byName["Ember Fan"].needLearn, nil, "needlearn=0: not sent")
+byName["Ember Lash"].needLearn = true
+function p:hasLearnedSpell(name) return name == "Ember Lash" end
+registry["ChaosSpellbookExtended"].onExtendedOpcode(p, 219, {action = "open", data = {have = sig}})
+eq(sent[#sent - 1].data.learned[1], "Ember Lash", "learned names")
+byName["Ember Lash"].needLearn = nil
+
+-- using a spellbook item: the window for a client that spoke opcode 219, the stock text otherwise
+local fresh = {id = 9, msgs = {}}
+for k, v in pairs(p) do if type(v) == "function" then fresh[k] = v end end
+eq(B.openWindow(fresh), false, "a client without the window keeps the text")
+n = #sent
+registry["ChaosSpellbookExtended"].onExtendedOpcode(fresh, 219, {action = "open", data = {have = sig, prefetch = true}})
+eq(B.openWindow(fresh), true, "the client spoke 219: the window")
+eq(sent[#sent].action, "show", "show sent"); eq(sent[#sent].opcode, 219, "on the spellbook opcode")
+registry["ChaosSpellbookLogout"].onLogout(fresh)
+eq(B.openWindow(fresh), false, "forgotten at logout")
+-- the background fetch does not count as the player opening the window (the new-player tutorial hooks sendTo)
+local hooked = 0
+local realSendTo = B.sendTo
+B.sendTo = function(...) hooked = hooked + 1 return realSendTo(...) end
+registry["ChaosSpellbookExtended"].onExtendedOpcode(fresh, 219, {action = "open", data = {have = sig, prefetch = true}})
+eq(hooked, 0, "prefetch: sendList only")
+registry["ChaosSpellbookExtended"].onExtendedOpcode(fresh, 219, {action = "open", data = {have = sig}})
+eq(hooked, 1, "a user open goes through sendTo")
+B.sendTo = realSendTo
+-- the Chaos spellbook items (gear and themed sets), never a stock id
+local ids, set = B.chaosItemIds(), {}
+for _, id in ipairs(ids) do set[id] = true end
+assert(set[37023] and set[36675], "gear and themed spellbooks")
+assert(not set[2175], "stock spellbook left to the stock script")
+eq(#ids, 37, "27 gear + 10 themed spellbooks")
+-- the fallback text
+function fresh:getInstantSpells()
+	return {{level = 8, words = "exura", name = "Minor Mending", mana = 20, manapercent = 0, params = 0},
+		{level = 0, words = "x", name = "No Level", mana = 0, manapercent = 0, params = 0},
+		{level = 1, words = "ash domh", name = "Town Portal", mana = 0, manapercent = 0, params = 1},
+		{level = 8, words = "utevo", name = "Glow", mana = 0, manapercent = 10, params = 0}}
+end
+eq(B.spellText(fresh), "Spells for Level 1\nash domh para - Town Portal : 0\n\nSpells for Level 8\nutevo - Glow : 10%\n" ..
+	"exura - Minor Mending : 20\n", "stock text format")
+
 -- reload is staff only
 local gm = {id = 8, msgs = {}}
 for k, v in pairs(p) do if type(v) == "function" then gm[k] = v end end

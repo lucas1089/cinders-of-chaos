@@ -88,10 +88,13 @@ function C.applyVocation(player, newVoc)
 end
 
 -- the class's outfits (Chaos.classes.outfits) for both sexes; with wear, the first one is put on when the character had
--- none of them yet (on a class change; at login only the unlock, the look stays the player's)
+-- none of them yet (on a class change; at login only the unlock, the look stays the player's). Retired outfits
+-- (Chaos.classes.retiredOutfits, e.g. 1559 Archmage) are not given any more; owners keep them. With the replacement
+-- switch on (Chaos.classes.outfitReplacement), a character wearing the replaced outfit is moved to the new one.
 function C.giveClassOutfits(player, wear)
-	local list = Chaos.classes.outfits and Chaos.classes.outfits[player:getVocation():getId()]
-	if not list then
+	local vocId = player:getVocation():getId()
+	local list = C.classOutfitsFor(vocId)
+	if #list == 0 then
 		return 0
 	end
 	local added, hadOne, names = 0, false, {}
@@ -113,6 +116,12 @@ function C.giveClassOutfits(player, wear)
 			player:setOutfit(look)
 		end
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, "New outfits: " .. table.concat(names, ", ") .. ".")
+	end
+	local look = player:getOutfit()
+	local swap = C.outfitSwap(vocId, look.lookType)
+	if swap and player:hasOutfit(swap) then
+		look.lookType = swap
+		player:setOutfit(look)
 	end
 	return added
 end

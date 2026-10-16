@@ -77,6 +77,13 @@ local function roots(player)
 			out[#out + 1] = item
 		end
 	end
+	-- the purse (store inbox): where the store delivers it (store_delivery.lua)
+	if player.getStoreInbox then
+		local okP, purse = pcall(function() return player:getStoreInbox() end)
+		if okP and purse then
+			out[#out + 1] = purse
+		end
+	end
 	local inbox = player:getInbox()
 	if inbox then
 		out[#out + 1] = inbox
@@ -159,12 +166,20 @@ function F.storeCheck(player)
 	return K.storeCheck(cfg(), {installed = F.installed(), owned = F.owned(player), owed = owed(player)})
 end
 
+-- bought: into the purse (store_delivery.lua: purse, else depot inbox, else backpack; never the ground)
 function F.storeGive(player)
-	local where = F.give(player)
-	if not where then
+	local item = F.create(player)
+	if not item then
 		return "Your backpack and inbox are full. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Everfull Ration is in your %s. Use it like food: it never runs out.", Chaos.t(player, where)))
+	local D = ChaosStoreDelivery or dofile("data/scripts/chaos/store_delivery.lua")
+	local where = D.place(player, item)
+	if not where then
+		pcall(function() item:remove() end)
+		return "Your backpack and inbox are full. Your coins were refunded."
+	end
+	local place = where == "inbox" and "depot inbox" or where
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "The Everfull Ration is in your %s. Use it like food: it never runs out.", Chaos.t(player, place)))
 	return true
 end
 

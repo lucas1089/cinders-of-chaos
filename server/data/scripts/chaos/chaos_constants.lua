@@ -14,6 +14,9 @@ if Chaos then
 	if Chaos.opcodeDispatch and Chaos.opcodeDispatch.install then
 		Chaos.opcodeDispatch.install()
 	end
+	if ChaosPzGuard then
+		ChaosPzGuard.install()
+	end
 	return
 end
 
@@ -355,12 +358,13 @@ ChaosOpcodes.tileBars = 156
 Chaos.bank = {
 	-- Gold uses the native player bank balance (players.balance), the same as the NPC banks.
 	-- "star" is a second currency: carried as an item, banked in chaos_bank.stars.
-	-- ASSUMPTION: 35572 is the SERVER item id of the star item and equals the client id the
-	-- client hard-codes (setItemId(35572)). Set to 0 to disable the star tab server-side.
-	starItemId = 35572,
+	-- 0: off. The star tab came with the imported client (its item 35572 exists in no item list of this game), so the
+	-- client hides it; set a real server item id here (and show the tab) to bring stars back.
+	starItemId = 0,
 	starWithdrawMax = 1000, -- the client UI caps a withdraw at 1000 per action; enforced here too
 	maxAmount = 2000000000, -- sanity cap on a single operation
-	transferMinLevel = 1
+	transferMinLevel = 1,
+	rateLimitMs = 300 -- one money request (deposit, withdraw, all, transfer) per this many ms; opening has its own key
 }
 
 Chaos.autoloot = {
@@ -887,6 +891,9 @@ Chaos.storage.emberCache = 7102700
 Chaos.storage.daybook = 7102720
 -- Gentle deaths (gentledeath.lua, gentledeath_config.lua): storages 7102740 - 7102744
 Chaos.storage.gentleDeath = 7102740
+-- Tutorial reset (newplayer_core.lua NP.takeSnapshot / NP.tutorialReset): the character as it was when the tutorial
+-- island began, put back when it leaves. Storages 7102750 - 7102779 (NP.SNAP)
+Chaos.storage.tutorialSnapshot = 7102750
 
 -- Classes (docs/CLASSES.md). Logic in classes.lua (ChaosClasses), the ascension in ascension.lua, the migration of the
 -- old vocations in class_migration.lua, the combat mechanics in thief_combat.lua (Thief line), berserker_combat.lua (Rage,
@@ -945,6 +952,23 @@ Chaos.classes = {
 	-- server/tools/install_outfits.py). The class's list is given at a class change (ascension.lua puts on the first one
 	-- when the character had none of them) and at login; outfits stay after a later class change. Names must be unique
 	-- and match outfits.xml.
+	-- Retired donor art class outfits: no longer given (at a login or a class change). install_outfits.py keeps their
+	-- outfits.xml line under this name, so the characters that own one can still wear it; the store never sells them
+	-- (gen_shop_cosmetics.py, shop.lua). 1559 "Archmage" (donor B 3099, the Mystic line's), retired 2026-10-16: a
+	-- front-view 3x3 figure without colours, addons or riding frames that does not match the player looks.
+	retiredOutfits = {
+		{lookType = 1559, name = "Archmage (old)"}
+	},
+	-- The Mystic line's replacement Archmage (a later client pair; the art waits for the owner's approval). Off, nothing
+	-- names it. On, with `outfit` set, it joins the class outfits of `vocations` (ChaosClasses.classOutfitsFor), and a
+	-- character of those vocations wearing `replaces` is moved to it at its next login (ChaosClasses.outfitSwap).
+	-- Keep `enabled` one plain line: install_outfits.py and gen_shop_cosmetics.py read it.
+	outfitReplacement = {
+		enabled = false,
+		vocations = {1, 5, 10},
+		replaces = 1559,
+		outfit = nil -- {lookType = N, name = "Archmage"} once the pair with the new look ships
+	},
 	outfits = (function()
 		local O = {
 			warrior = {lookType = 1551, name = "Warborn"},
@@ -954,7 +978,6 @@ Chaos.classes = {
 			samurai = {{lookType = 1508, name = "Oni Samurai"}, {lookType = 1509, name = "Ronin"},
 				{lookType = 1510, name = "Dark Samurai"}, {lookType = 1554, name = "Wandering Blade"}},
 			ranger = {lookType = 1558, name = "Wildwood Ranger"},
-			mystic = {lookType = 1559, name = "Archmage"},
 			monk = {lookType = 1557, name = "Brawler"},
 			necromancer = {lookType = 1560, name = "Plague Doctor"},
 			templar = {lookType = 1552, name = "Golden Templar"},
@@ -977,7 +1000,7 @@ Chaos.classes = {
 			[4] = list(O.warrior), [8] = list(O.warrior), [14] = list(O.warrior),
 			[11] = list(O.thief), [12] = list(O.ninja, O.thief), [13] = list(O.samurai, O.thief),
 			[3] = list(O.ranger), [7] = list(O.ranger), [15] = list(O.ranger),
-			[1] = list(O.mystic), [5] = list(O.mystic), [10] = list(O.mystic),
+			-- the Mystic line (1, 5, 10) has no donor art outfit since 1559 was retired (retiredOutfits, outfitReplacement)
 			[17] = list(O.monk), [18] = list(O.monk), [19] = list(O.monk),
 			[20] = list(O.necromancer), [21] = list(O.necromancer), [22] = list(O.necromancer),
 			[23] = list(O.templar), [24] = list(O.seraph, O.templar), [25] = list(O.seraph, O.templar)
@@ -1625,13 +1648,44 @@ if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and ge
 		return true
 	end
 
-	-- the engine events and the registerEvent hook, once. CreatureEvent() gives nil outside the Scripts interface (a
-	-- spell's dofile of classes.lua loads this file first, in the spells' interface): then nothing is installed here and
-	-- the Scripts interface's own load of this file installs it (the guard at the top). Without that every Chaos
-	-- handler stayed in D and no client request reached one (found in a live client, 2026-10-13).
+	-- a load from another interface: a spell (thief/shadow_veil.lua: _common.lua loadClasses -> classes.lua -> this
+	-- file), an NPC script, a lib, an XML event script. They share the engine's Lua state, but CreatureEvent() there
+	-- reports "CreatureEvents can only be registered in the Scripts interface." with a traceback (start log
+	-- 2026-10-16) and gives nil. A chunk of such a folder on the call stack means: not the Scripts interface.
+	D.OTHER_INTERFACES = {"spells", "npc", "lib", "monster", "actions", "creaturescripts", "globalevents", "movements",
+		"talkactions", "weapons"}
+	function D.outsideScripts()
+		if type(debug) ~= "table" or type(debug.getinfo) ~= "function" then
+			return false
+		end
+		for level = 2, 60 do
+			local info = debug.getinfo(level, "S")
+			if not info then
+				break
+			end
+			local src = info.source or ""
+			if src:sub(1, 1) == "@" then
+				src = src:gsub("\\", "/")
+				for _, dir in ipairs(D.OTHER_INTERFACES) do
+					if src:find("data/" .. dir .. "/", 1, true) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
+	-- the engine events and the registerEvent hook, once. Outside the Scripts interface nothing is installed here (no
+	-- CreatureEvent() call at all) and the Scripts interface's own load of this file installs it (the guard at the
+	-- top). Without that every Chaos handler stayed in D and no client request reached one (found in a live client,
+	-- 2026-10-13).
 	function D.install()
 		if D.installed then
 			return true
+		end
+		if D.outsideScripts() then
+			return false
 		end
 		local dispatcher = CreatureEvent("ChaosOpcodeDispatch")
 		if not dispatcher then
@@ -1683,4 +1737,13 @@ if type(rawgetmetatable) == "function" and type(CreatureEvent) == "table" and ge
 		end
 	end
 	D.install()
+end
+
+-- PZ guard (pz_guard_core.lua): doTargetCombat / doTargetCombatHealth drop damage to a player in a protection zone, as
+-- the engine's own combat does. Installed here, before any system keeps a local copy of those globals.
+if not ChaosPzGuard then
+	pcall(dofile, "data/scripts/chaos/pz_guard_core.lua")
+end
+if ChaosPzGuard then
+	ChaosPzGuard.install()
 end

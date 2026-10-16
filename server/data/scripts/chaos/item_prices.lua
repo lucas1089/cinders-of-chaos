@@ -38,7 +38,8 @@ function ChaosItemPrices.placeNpcs()
 		local temple = town and town:getTemplePosition()
 		local done = false
 		if temple then
-			-- npc_place.lua: the offsets first, then any reachable free tile, away from the other NPCs
+			-- npc_place.lua: the offsets first, then any reachable free tile, away from the other NPCs, then near the
+			-- town's depot (cfg.npc.place.depotFallback)
 			local okp, npc = pcall(ChaosNpcPlace.place, cfg.npc.name, temple, cfg.npc.offsets, cfg.npc.place)
 			done = okp and npc ~= nil
 			if not okp then
@@ -52,7 +53,7 @@ function ChaosItemPrices.placeNpcs()
 		end
 	end
 	if #missed > 0 then
-		log("no " .. cfg.npc.name .. " at " .. table.concat(missed, ", ") .. " (no free tile near the temple, or data/npc/" ..
+		log("no " .. cfg.npc.name .. " at " .. table.concat(missed, ", ") .. " (no free tile near the temple or its depot, or data/npc/" ..
 			cfg.npc.name .. ".xml is missing: tools/install_item_prices.py)")
 	end
 	return placed

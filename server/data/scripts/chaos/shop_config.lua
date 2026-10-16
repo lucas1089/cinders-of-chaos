@@ -2,8 +2,8 @@
 --     ChaosShopConfig = dofile("data/scripts/chaos/shop_config.lua")
 -- Prices are in Chaos Coins (table chaos_shop_coins, per account).
 -- Offer kinds:
---   {kind = "item", id = <server id>, count = n}            item(s) into the backpack (overflowInbox = true: stacks of
---       100 into the backpack, what does not fit into the store inbox; the rune packs)
+--   {kind = "item", id = <server id>, count = n}            item(s) into the purse (store_delivery.lua: stacks of 100,
+--       else the depot inbox, else the backpack; overflowInbox on the rune packs is no longer read)
 --   {kind = "wings" | "aura", id = <id in data/XML/wings.xml / auras.xml>}   cosmetic, bought once
 --   {kind = "shader", id = <id in data/XML/shaders.xml>}     outfit shader, bought once
 --   {kind = "outfit", looktype = male, lookfemale = female, addons = 0..3}   bought once

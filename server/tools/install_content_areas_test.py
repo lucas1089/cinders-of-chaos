@@ -127,6 +127,124 @@ def run(srv, plans, comp, **kw):
     return res, log
 
 
+BLOCK = {WALL, COUNTER}
+
+
+def map_state(srv):
+    """(stacks, teleport destinations, flags) of the synthetic world as written"""
+    m = otbm.load_otbm(os.path.join(srv, 'data', 'world', 'w.otbm'))
+    stacks, flags = {}, {}
+    for i in range(len(m.tiles['x'])):
+        p = (int(m.tiles['x'][i]), int(m.tiles['y'][i]), int(m.tiles['z'][i]))
+        stacks[p] = [int(a) for a in m.stack(i)]
+        flags[p] = int(m.tiles['flags'][i])
+    tele = {(int(m.tiles['x'][i]), int(m.tiles['y'][i]), int(m.tiles['z'][i])): tuple(d) for i, _iid, d in otbm.teleports(m, [PORTAL])}
+    return stacks, tele, flags
+
+
+def reachable(stacks, start, z):
+    """tiles of floor z a player reaches from start (a tile with a wall or a counter blocks)"""
+    seen, todo = {start}, [start]
+    while todo:
+        x, y, _z = todo.pop()
+        for d in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            q = (x + d[0], y + d[1], z)
+            if q in seen or q not in stacks or BLOCK & set(stacks[q]):
+                continue
+            seen.add(q)
+            todo.append(q)
+    return seen
+
+
+def hall_order_checks(root):
+    import hall_order as H
+    # the band of the monsters around a destination: weighted 15th-85th percentile, to 5s
+    # the band of the monsters around a destination: weighted 20th-80th percentile to 5s, and the median (its level)
+    check(H.band([(42, 10), (73, 10), (124, 1)]) == (40, 75, 73), 'band %s' % (H.band([(42, 10), (73, 10), (124, 1)]),))
+    check(H.band([(10, 8), (400, 1)])[2] == 10, 'one strong monster does not move the level')
+    check(H.band([]) is None and H.band([(3, 1)]) == (1, 6, 3), 'band edge cases')
+    pts = [(105, 100, 7, 'Rat')] * 6 + [(110, 100, 7, 'Dragon')] * 4 + [(300, 300, 7, 'Demon')] * 9
+    got = H.hunt_band(pts, {'rat': 5, 'dragon': 42, 'demon': 124}, (100, 100, 7))
+    check(got and got[3] == ['Rat', 'Dragon'] and got[0] == 5, 'monsters near the destination only: %s' % (got,))
+    down = [(130, 100, 10, 'Demon')] * 9
+    got = H.hunt_band(down, {'demon': 124}, (100, 100, 7))
+    check(got and got[3] == ['Demon'] and got[2] == 124, 'a cave whose hunt is three floors down: %s' % (got,))
+    check(H.hunt_band([], {}, (100, 100, 7)) is None, 'nothing spawns: no band')
+    # a teleport tile read from the map and written back unchanged but for the teleport
+    t = dict(flags=1, ground=G, items=[(PORTAL, {'tele': (700, 700, 7)}), (STONE, {})])
+    raw = T.tile_nodes({(12, 11, Z): t})
+    s = raw.index(b'\xFE', 1)  # the tile node inside its area node
+    tile_raw = raw[s:-1]
+    back = H.parse_tile(tile_raw, (12, 11, Z))
+    check(back == t, 'tile parsed back: %s' % back)
+    check(H.with_portal(back, PORTAL, None)['items'] == [(STONE, {})], 'teleport taken off')
+    check(H.with_portal(back, PORTAL, (1, 2, 3))['items'][0] == (PORTAL, {'tele': (1, 2, 3)}), 'teleport put on')
+    cfg = json.loads(json.dumps(CFG))
+    cfg['hall'] = {'enabled': True, 'floors': [Z], 'x': [0, 40], 'endRow': 13, 'temple': [500, 500, 7], 'labels': []}
+    # two base hunts on the module's teleports (12,11) and (12,15): one low, one high; the content hunts in between
+    extra = {(12, 11, Z): tile(G, PORTAL, STONE, tele=(700, 700, 7)), (12, 15, Z): tile(G, PORTAL, STONE, tele=(710, 700, 7)),
+             (30, 11, Z): tile(G, PORTAL, tele=(800, 800, 7))}
+    srv, plans, comp = setup(os.path.join(root, 'hallorder'), extra)
+    csvp = os.path.join(root, 'hallorder', 'hall_hunts.csv')
+    rows = [dict(id='base_6_12_11', z=Z, x=12, y=11, dest_x=700, dest_y=700, dest_z=7, name='Rat', lo=10, hi=40,
+                 display='Hydra', spawntime=120, monsters='Rat'),
+            dict(id='base_6_12_15', z=Z, x=12, y=15, dest_x=710, dest_y=700, dest_z=7, name='Dragon', lo=600, hi=700,
+                 display='', spawntime=120, monsters='Dragon'),
+            dict(id='base_6_30_11', z=Z, x=30, y=11, dest_x=800, dest_y=800, dest_z=7, kind='not a hunt', name='Hunt',
+                 lo=1, hi=5, display='', spawntime=120, monsters='', note='a city')]
+    H.write_csv(rows, csvp)
+    check(H.read_csv(csvp)[0]['lo'] == 10, 'the CSV reads back')
+
+    def go(**kw):
+        return T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg, compiled=comp, log=lambda s: None,
+                     fixed_dirs=(), hall_csv=csvp, **kw)
+    res = go()
+    hall = res['hall']['assign']
+    check(set(hall) == {'base_6_12_11', 'base_6_12_15', 'tiny_hunt', 'other_hunt'}, 'every hunt once, the city out: %s' % hall)
+    seq = sorted(hall, key=lambda k: (hall[k][0], hall[k][1]))
+    check(seq == ['base_6_12_11', 'tiny_hunt', 'other_hunt', 'base_6_12_15'], 'ascending along the corridor: %s' % seq)
+    stacks, tele, flags = map_state(srv)
+    check(tele.get((12, 11, Z)) == (700, 700, 7), 'the low base hunt keeps its teleport')
+    check(tele.get((30, 11, Z)) == (800, 800, 7), 'a teleport that is not a hunt stays where it is')
+    check(PORTAL not in stacks[(12, 15, Z)] and stacks[(12, 15, Z)] == [G, STONE], 'its old place is free for a content hunt: %s' % stacks[(12, 15, Z)])
+    check(tele.get(hall['base_6_12_15']) == (710, 700, 7), 'the high base hunt moved with its destination: %s' % tele)
+    check(all(flags[p] == 1 for p in stacks if p[2] == Z and 12 <= p[1] <= 14), 'the corridor stays PZ')
+    check(flags[(11, 10, Z)] == 0 and flags[(15, 10, Z)] == 0, 'the cells stay non-PZ')
+    seen = reachable(stacks, (11, 13, Z), Z)
+    check(all(tuple(p) in seen for p in hall.values()), 'every teleport reachable from the corridor')
+    sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    check('chaoshunt="base_6_12_11">\n\t\t<monster name="Hydra"' in sp and sp.count('name="Hydra"') == 2,
+          'the base display monster follows its hunt (the old unmarked block taken over)')
+    pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
+    check('hall = true' in pl and '{id = "base_6_12_15", name = "Dragon", level = {600, 700}' in pl and 'floors = {' in pl,
+          'places file: the base hunts and the floors')
+    once = digest(srv)
+    go()
+    check(digest(srv) == once, 'hall order: a second run changes nothing')
+    # --remove-hall: the base hunts back where they were, the content hunts in the wing
+    res = go(hall_on=False)
+    stacks, tele, flags = map_state(srv)
+    check(tele.get((12, 11, Z)) == (700, 700, 7) and tele.get((12, 15, Z)) == (710, 700, 7), 'remove: base teleports back')
+    check(PORTAL not in stacks[(16, 15, Z)], 'remove: the wing slot free again')
+    check(res['slots'] == {'tiny_hunt': (16, 11, Z), 'other_hunt': (16, 15, Z)}, 'remove: content hunts in the wing %s' % res['slots'])
+    pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
+    check('hall = false' in pl, 'remove: places file says so')
+    again = digest(srv)
+    go(hall_on=False)
+    check(digest(srv) == again, 'remove: a second run changes nothing')
+    go()
+    stacks, tele, _f = map_state(srv)
+    check(tele.get(hall['base_6_12_15']) == (710, 700, 7) and PORTAL not in stacks[(12, 15, Z)], 'order again after a remove')
+    # too few slots: refused
+    rows.append(dict(rows[0], id='base_6_99_11', x=99))
+    H.write_csv(rows, csvp)
+    try:
+        go(dry=True)
+        check(False, 'a base hunt off the hall refused')
+    except (T.InstallError, H.HallError) as e:
+        check('not a tile of the map' in str(e), 'refused: %s' % e)
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -177,8 +295,12 @@ def main():
         except T.InstallError as e:
             check('changed' in str(e), 'changed plan: %s' % e)
         check(digest(srv) == once, 'refusal writes nothing')
-        # a reorder moves the display monsters
+        # a reorder (tiny_hunt's band now above other_hunt's) moves the display monsters; the config order is not used
         cfg2 = dict(CFG, plans=[CFG['plans'][1], CFG['plans'][0]])
+        tj = os.path.join(plans, 'tiny_hunt.json')
+        tplan = json.load(open(tj))
+        tplan['level'] = [700, 800]
+        json.dump(tplan, open(tj, 'w'))
         make_area(comp['tiny_hunt'], 'tiny_hunt', (1000, 1000, 7))
         T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg2, compiled=comp, log=lambda s: None, fixed_dirs=())
         sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
@@ -201,7 +323,7 @@ def main():
             check(False, 'area on map tiles refused')
         except T.InstallError as e:
             check('land on tiles' in str(e), 'area clash: %s' % e)
-        # a plan missing from the config: a teleport after the listed ones, its most frequent monster on display
+        # a plan missing from the config: a teleport in its band's place (the highest here), its most frequent monster on display
         srv, plans, comp = setup(os.path.join(root, 'e'))
         json.dump({'id': 'late_hunt', 'name': 'late_hunt', 'level': [900, 1000], 'origin': {'x': 1200, 'y': 1000, 'z': 9},
                    'spawns': [{'monster': 'Bat', 'count': 2}, {'monster': 'Wyrm', 'count': 5}, {'monster': 'Bat', 'count': 2}]},
@@ -268,6 +390,23 @@ def main():
         except T.InstallError as e:
             check('overlap' in str(e), 'overlap: %s' % e)
         check(digest(srv) == before, 'overlap: nothing written')
+
+        # the hall order: the base hunts (a hall_hunts.csv) and the content hunts in one band order over every slot
+        hall_order_checks(root)
+
+        # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots
+        real = T.plan_files(T.PLANS_DIR)
+        order = T.plan_order(T.load_config(), real)
+        ids = [p['id'] for p in order]
+        check(sorted(ids) == sorted(real) and len(ids) == len(set(ids)), 'every hunt exactly once: %s' % ids)
+        bands = [T.band_of(real, pid) for pid in ids]
+        check(bands == sorted(bands), 'hunts ascending by band: %s' % list(zip(ids, bands)))
+        # slots in corridor order (a west wing and an east wing, as the room has): west to east, north before south
+        fake = [dict(teleport=(x, row, 6)) for x in (31686, 31614, 31670, 31610) for row in (32258, 32254)]
+        fake.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
+        got = T.assign_slots(order[:len(fake)], fake, set(ids))
+        seq = [got[pid]['teleport'] for pid in ids[:len(fake)]]
+        check(seq == sorted(seq), 'lower bands west, higher east, north before south: %s' % seq)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))

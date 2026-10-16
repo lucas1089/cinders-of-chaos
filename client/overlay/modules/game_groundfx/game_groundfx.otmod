@@ -1,0 +1,10 @@
+Module
+  name: game_groundfx
+  description: Spell effects drawn under the creatures (floor shapes; base patch 0055, groundfx_data.lua)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ groundfx_data, groundfx ]
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

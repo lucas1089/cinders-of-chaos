@@ -126,6 +126,104 @@ eq(#A.heals(4, 1000, function() return false end), 0, 'none castable')
 eq(A.healingEmpty({ { id = 0 }, { id = 0 } }), true, 'empty healing tab')
 eq(A.healingEmpty({ { id = 0 }, { id = 1 } }), false, 'filled healing tab')
 
+-- a full rotation for every class: the preset's spells, then up to 5 with the other spells the character can cast
+-- (a spell is castable from the first preset that lists it). The Mystic at level 8 used to get one rule.
+local function firstLevel(c)
+  local at = {}
+  for _, p in ipairs(c.presets) do
+    for _, id in ipairs(p.spells) do
+      if not at[id] or p.level < at[id] then at[id] = p.level end
+    end
+  end
+  return at
+end
+for vocId, c in pairs(D.classes) do
+  local at = firstLevel(c)
+  for _, level in ipairs({ 20, 60, 150, 400 }) do
+    local castable = function(id) return at[id] ~= nil and at[id] <= level end
+    local known = 0
+    for _, l in pairs(at) do if l <= level then known = known + 1 end end
+    local sel = A.select(vocId, level, castable)
+    if sel then
+      eq(#sel.ids, math.min(A.MAX_SPELLS, known), c.name .. ' level ' .. level .. ': full rotation')
+      local seen = {}
+      for i, id in ipairs(sel.ids) do
+        ok(not seen[id], c.name .. ': no spell twice')
+        seen[id] = true
+        ok(castable(id), c.name .. ': only castable spells')
+        ok(sel.creatures[i] == 1 or sel.creatures[i] == 2, c.name .. ': 1+ or 2+')
+      end
+      local preset = A.presetFor(vocId, level)
+      for i, id in ipairs(preset.spells) do eq(sel.ids[i], id, c.name .. ': the preset leads') end
+    end
+  end
+end
+do
+  local m = D.classes[1]
+  local at = firstLevel(m)
+  local sel = A.select(1, 8, function(id) return at[id] ~= nil and at[id] <= 8 end)
+  eq(sel.ids[1], 169, 'Mystic 8: Kindling Spark first')
+  eq(#sel.ids, 3, 'Mystic 8: the level 1 spells below it')
+end
+
+-- "Add to my rules" keeps the player's rules on top, in their order, and adds no spell twice
+do
+  local user = { { type = 'spell', spellId = 200, name = 'mine', creatures = 3 }, { type = 'rune', itemId = 3155 },
+    { type = 'spell', spellId = 19, name = 'mine too' } }
+  local auto = A.rules({ ids = { 207, 200, 22 }, creatures = { 2, 2, 1 } })
+  local merged, added = A.merge(user, auto)
+  eq(#merged, 5, 'merged size')
+  eq(added, 2, 'two new rules')
+  eq(merged[1].name, 'mine', 'own rule first')
+  eq(merged[1].creatures, 3, 'own rule unchanged')
+  eq(merged[2].type, 'rune', 'own rune kept')
+  eq(merged[3].spellId, 19, 'own order kept')
+  eq(merged[4].spellId, 207, 'new rule appended')
+  eq(merged[5].spellId, 22, 'spell already there skipped')
+  merged[1].name = 'changed'
+  eq(user[1].name, 'mine', 'the original list is a copy (undo)')
+  local empty = A.merge(nil, auto)
+  eq(#empty, 3, 'empty list: all generated rules')
+  local copy = A.copyRules(user)
+  eq(#copy, 3, 'copy size')
+  ok(copy[1] ~= user[1], 'copied rule tables')
+end
+
+-- never a silent change on level-up (owner, 2026-10-16)
+do
+  local m = D.classes[1]
+  local at = firstLevel(m)
+  local castAt = function(level) return function(id) return at[id] ~= nil and at[id] <= level end end
+  -- the level-up check keeps the preset: no top-up
+  local bare = A.select(1, 8, castAt(8), { topUp = false })
+  eq(#bare.ids, 1, 'level-up check: preset only, no top-up')
+  local clicked = A.select(1, 8, castAt(8))
+  ok(#clicked.ids > #bare.ids, 'a click tops up')
+  -- a rotation the button wrote at 18, the player reaches 20 (a new spell, 200)
+  local sel18 = A.select(1, 18, castAt(18), { topUp = false })
+  local written = A.rules(sel18)
+  local marker = A.ruleIds(written)
+  local sel20 = A.select(1, 20, castAt(20), { topUp = false })
+  local action, newIds = A.levelUpAction(sel20, written, marker, {})
+  eq(action, 'notice', 'option off: a notice, not a change')
+  eq(newIds[1], 200, 'the new spell is named')
+  action = A.levelUpAction(sel20, written, marker, { autoUpdate = true })
+  eq(action, 'apply', 'option on: the button set may be updated')
+  -- the player's own rules: never applied, even with the option on
+  local own = { { type = 'spell', spellId = 19 }, { type = 'rune', itemId = 3155 } }
+  action, newIds = A.levelUpAction(sel20, own, nil, { autoUpdate = true })
+  eq(action, 'notice', 'own rules with the option on: still only a notice')
+  -- ignored spells are not offered again
+  action = A.levelUpAction(sel20, written, marker, { ignored = { [200] = true } })
+  eq(action, 'none', 'an ignored spell is not offered again')
+  -- nothing new: nothing at all
+  action = A.levelUpAction(sel18, written, marker, { autoUpdate = true })
+  eq(action, 'none', 'same level set: no change')
+  eq((A.levelUpAction(nil, written, marker, {})), 'none', 'no rotation for the class')
+  -- an empty list (a new character) is only offered spells, never filled
+  eq((A.levelUpAction(sel20, {}, nil, {})), 'notice', 'empty list: a notice')
+end
+
 -- the message
 eq(A.message({ ids = { 1, 2 }, gap = 2 }, function(id) return id == 1 and 'A' or 'B' end),
   'Rotation set: A > B (max gap 2.0 s)', 'message')

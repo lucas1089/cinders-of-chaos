@@ -15,9 +15,15 @@
 -- island is put back at its station when it logs in (a death sends it to the temple, the login brings it back).
 -- Multi-client characters may do the tutorial like anyone.
 --
+-- Lent, not given: the island's level, experience, mana top-up, free passive point, Orb of Upheaval, leather armor and
+-- backpack are taken back when the character leaves it, by the exit as by a skip (NP.tutorialReset; server/README.md
+-- "Tutorial reset"). Skill and magic level gains are stopped on the island (EventCallback onGainSkillTries).
+--
 -- Assumed engine API (TFS 1.4): Game.createTile/createItem/createMonster, Tile:getGround/getItemById/getCreatures,
--- Item:setActionId, MoveEvent stepin with aid, Action with aid, CreatureEvent kill/modalwindow, EventCallback
--- onTargetCombat, Player:getCondition(CONDITION_SPELLGROUPCOOLDOWN, CONDITIONID_DEFAULT, group), setMaxMana.
+-- Item:setActionId/setCustomAttribute/getCustomAttribute, MoveEvent stepin with aid, Action with aid, CreatureEvent
+-- kill/modalwindow, EventCallback onTargetCombat/onGainSkillTries (also called for SKILL_MAGLEVEL),
+-- Player:getCondition(CONDITION_SPELLGROUPCOOLDOWN, CONDITIONID_DEFAULT, group), setMaxMana/setMaxHealth/setCapacity,
+-- addExperience/removeExperience, addSkillTries/addManaSpent/getManaSpent (src-patch 0015).
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -308,6 +314,14 @@ local function startPoll(player)
 	end
 end
 
+-- mark an item the island creates as lent (NP.removeLent finds it by this attribute)
+local function lend(item)
+	if item and item.setCustomAttribute then
+		item:setCustomAttribute(NP.lentTag(), 1)
+	end
+	return item
+end
+
 local function hasBackpack(player)
 	local bp = player:getSlotItem(CONST_SLOT_BACKPACK)
 	return bp and bp:isContainer() and bp or nil
@@ -355,6 +369,7 @@ local function startTask(player, i)
 			local container = hasBackpack(player)
 			if not container then
 				container = player:addItem(C().common.backpackId, 1, false, 1, CONST_SLOT_BACKPACK)
+				lend(container) -- the island's backpack goes back too (the kit brings its own)
 			end
 			local o = t.orbItem
 			-- the tutorial's fixed item level (chaos_item_mods.lua itemLevel.tutorial); rolled by ChaosCrafting.forge
@@ -362,6 +377,7 @@ local function startTask(player, i)
 				and ChaosCrafting.createItem(o.id, o.rarity or 0, ChaosItemMods.config.itemLevel.tutorial)
 				or Game.createItem(o.id, 1)
 			if item then
+				lend(item) -- lent: NP.tutorialReset takes it back when the character leaves the island
 				if not (container and container:addItemEx(item) == RETURNVALUE_NOERROR) then
 					player:addItemEx(item, true)
 				end
@@ -452,6 +468,12 @@ function NP.tutorialStart(player)
 	if not NP.islandReady() then
 		return false
 	end
+	-- the character as it is now: NP.tutorialReset puts it back when it leaves the island (newplayer_core.lua)
+	-- (a failure never stops the island: the reset then works without a snapshot)
+	local okSnap, errSnap = pcall(NP.takeSnapshot, player)
+	if not okSnap then
+		print("[newplayer] tutorial snapshot of " .. player:getName() .. " failed: " .. tostring(errSnap))
+	end
 	-- the main city becomes its home now, so a logout or death on the island already leads there
 	if NP.settleHome then
 		NP.settleHome(player, false)
@@ -476,13 +498,29 @@ function NP.tutorialStart(player)
 	return true
 end
 
--- leave the island: kit if not given yet, temple, welcome. how = "done" | "skipped" | "time" (the time limit; counts
--- as skipped)
+-- leave the island: everything the island lent is taken back (NP.tutorialReset: level, experience, skills, max health
+-- and mana, lent items, the free passive point, the island's storages), then the temple, the kit if not given yet and
+-- the welcome. how = "done" | "skipped" | "time" (the time limit; counts as skipped). Only for a character on the
+-- island: a second skip (the statue's window and !skiptutorial both answered) does nothing. Returns true when it ran.
 function NP.tutorialFinish(player, how)
+	if not NP.inTutorial(stageOf(player)) then
+		return false
+	end
 	setS(player, "stage", how == "done" and C().stageDone or C().stageSkipped)
 	NP.islandSince[player:getGuid()] = nil
+	NP.islandWarn[player:getGuid()] = nil
+	polls[player:getId()] = nil
 	if NP.settleHome then -- a character that was on the island before the home town was set (no kit yet)
 		NP.settleHome(player, false)
+	end
+	local ok, report = pcall(NP.tutorialReset, player)
+	if ok then
+		print(string.format("[newplayer] %s left the tutorial (%s): level %s -> %s, %d skill level(s) raised back, %d lent item(s) taken back%s%s",
+			player:getName(), how, tostring(report.levelFrom or player:getLevel()), tostring(report.levelTo or player:getLevel()),
+			report.skillsRaised or 0, report.items or 0, report.passive and ", the free passive point taken back" or "",
+			report.snapshot and "" or " (no snapshot: started before the tutorial reset existed)"))
+	else
+		print("[newplayer] tutorial reset of " .. player:getName() .. " failed: " .. tostring(report))
 	end
 	local temple = player:getTown():getTemplePosition()
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
@@ -501,6 +539,7 @@ function NP.tutorialFinish(player, how)
 	if ChaosLoginWindows and ChaosLoginWindows.start then
 		ChaosLoginWindows.start(player)
 	end
+	return true
 end
 
 -- true while the character is on the tutorial island (stations 1..rooms)
@@ -636,6 +675,34 @@ if not NP.passiveListener then
 		return NP.passiveListener(player, bonuses)
 	end)
 end
+
+-- the reset took the free point back: a preset that now holds more nodes than the character's points is emptied for
+-- free (a brand-new character's only allocation is the island's point)
+NP.passiveRefund = function(player)
+	local PT = ChaosPassiveTree
+	local I = PT and PT.internal
+	if not (I and I.loadPresets and I.totalPoints and PT.resetAll) then
+		return
+	end
+	local total = I.totalPoints(player)
+	for _, row in ipairs(I.loadPresets(player:getGuid())) do
+		if #row.nodes > total then
+			PT.resetAll(player)
+			return
+		end
+	end
+	if I.sendPoints then
+		I.sendPoints(player)
+	end
+end
+
+-- no skill or magic level gains on the island (they cannot be taken back from Lua); the reset's own raises pass
+-- exactly (NP.skillTriesFilter). Last in the chain, after every multiplier (shop_services.lua index 5).
+local skillGuard = EventCallback
+skillGuard.onGainSkillTries = function(self, skill, tries)
+	return NP.skillTriesFilter(self:getId(), stageOf(self), tries)
+end
+skillGuard:register(1000)
 
 -- station 2: the spellbook was opened (!spells or the client button both end in ChaosSpellbook.sendTo)
 local function hookSpellbook()

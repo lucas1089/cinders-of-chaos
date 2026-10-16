@@ -1,4 +1,12 @@
-﻿-- chunkname: @/mods/game_autoloot/loot.lua
+﻿-- Auto Loot window (server data/scripts/chaos/autoloot.lua, extended opcode 216, JSON {action, data}).
+--   client -> server  open | add {name} | add {clientId, quiet} | remove {name} | remove {clientId, quiet} | clear | sync
+--   server -> client  open {itemsTable, currentSlot, maxSlot} (the window shows it) | list {...} (kept only)
+--
+-- The item right-click menu of game_interface has three entries of the base client's Quick Loot (game_quickloot):
+-- "Manage Loot containers", "Add to Loot List" / "Remove from Loot List". That module talks the Quick Loot packets of
+-- newer protocols, which a 10.98 server does not have: its window set containers nobody used, and its list stayed in
+-- the client (live test winpkg-35). hookQuickLoot() points those entries at the real systems: the Loot Bag rules
+-- (game_pouches, the store pouch that collects the loot) and this server-side autoloot list.
 
 local autoLootOpcode = 216
 
@@ -10,6 +18,84 @@ local function sendAction(opcode, action, data)
 	end
 end
 local windowAutoLoot, autoLootButton
+local known = {} -- client ids on the server's autoloot list (the last "open" or "list")
+
+local function remember(data)
+	known = {}
+	for _, row in ipairs(type(data) == "table" and type(data.itemsTable) == "table" and data.itemsTable or {}) do
+		local cid = tonumber(row[1])
+		if cid then
+			known[cid] = true
+		end
+	end
+end
+
+function isOnList(clientId)
+	return known[tonumber(clientId) or 0] == true
+end
+
+-- the item menu: add or remove one item by client id; the window stays closed (the server answers "list")
+function addItem(clientId)
+	clientId = tonumber(clientId)
+	if not clientId or not g_game.isOnline() then
+		return false
+	end
+	sendAction(autoLootOpcode, "add", {clientId = clientId, quiet = true})
+	return true
+end
+
+function removeItem(clientId)
+	clientId = tonumber(clientId)
+	if not clientId or not g_game.isOnline() then
+		return false
+	end
+	sendAction(autoLootOpcode, "remove", {clientId = clientId, quiet = true})
+	return true
+end
+
+-- "Manage Loot containers": the Loot Bag rules (what goes into the bag); without game_pouches, this window
+function manageLootContainers()
+	local pouches = modules.game_pouches
+	if pouches and pouches.showSettings then
+		pouches.showSettings()
+	else
+		onOpenAutoLoot()
+	end
+end
+
+local quickLootOriginal = {}
+
+-- the base Quick Loot module's menu entry points, pointed at this module (the module env is shared, so its own calls
+-- follow too). Safe to call again; terminate() puts the originals back.
+function hookQuickLoot()
+	local q = modules.game_quickloot
+	if type(q) ~= "table" or q.chaosHooked then
+		return
+	end
+	local replace = {
+		showQuickLoot = function() manageLootContainers() end,
+		inWhiteList = function(clientId) return isOnList(clientId) end,
+		addToQuickLoot = function(clientId) addItem(clientId) end,
+		removeItemInList = function(clientId) removeItem(clientId) end
+	}
+	for name, fn in pairs(replace) do
+		quickLootOriginal[name] = rawget(q, name)
+		q[name] = fn
+	end
+	q.chaosHooked = true
+end
+
+local function unhookQuickLoot()
+	local q = modules.game_quickloot
+	if type(q) ~= "table" or not q.chaosHooked then
+		return
+	end
+	for name, fn in pairs(quickLootOriginal) do
+		q[name] = fn
+	end
+	q.chaosHooked = nil
+	quickLootOriginal = {}
+end
 
 function init()
 	connect(g_game, {
@@ -42,13 +128,19 @@ function init()
 
 	g_keyboard.bindKeyDown("Escape", autolootWindowHide)
 	ProtocolGame.registerExtendedOpcode(autoLootOpcode, autolootOpcodeParse)
+	pcall(hookQuickLoot)
+	if g_game.isOnline() then
+		onGameStart()
+	end
 end
 
 function terminate()
 	disconnect(g_game, {
+		onGameStart = onGameStart,
 		onGameEnd = destroy
 	})
 	ProtocolGame.unregisterExtendedOpcode(autoLootOpcode)
+	pcall(unhookQuickLoot)
 end
 
 function autolootOpcodeParse(protocol, code, buffer)
@@ -65,15 +157,16 @@ function autolootOpcodeParse(protocol, code, buffer)
 	local action = json_data.action
 	local data = json_data.data
 
+	if action == "open" or action == "list" then
+		remember(data)
+	end
 	if action == "open" then
-		if not windowAutoLoot:isVisible() then
-			toggle()
-		end
-
 		windowAutoLoot:show()
 		windowAutoLoot:raise()
 		windowAutoLoot:focus()
 		autoLootButton:setOn(true)
+		refreshAutolootWindow(data)
+	elseif action == "list" and windowAutoLoot:isVisible() then
 		refreshAutolootWindow(data)
 	end
 end
@@ -106,15 +199,18 @@ function autolootWindowHide()
 
 	if windowAutoLoot:isVisible() then
 		windowAutoLoot:setVisible(false)
+		autoLootButton:setOn(false)
 	end
 end
 
 function destroy()
-	return
+	known = {}
 end
 
 function onGameStart()
-	return
+	known = {}
+	pcall(hookQuickLoot)
+	sendAction(autoLootOpcode, "sync")
 end
 
 function toggle()

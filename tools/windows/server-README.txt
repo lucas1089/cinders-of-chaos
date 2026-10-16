@@ -12,7 +12,9 @@ Needs about 6 GB of free memory (the world map is large).
    the same release):
      account chaos / password chaos   staff character "Chaos Admin" (god)
      account test  / password test    Test Warrior, Test Ranger, Test Mystic, Test Thief (level 1, tutorial)
-4. To stop: close the game server window, then run stop-server.bat.
+4. To stop: close the game server window, then run stop-server.bat. It waits up to 200 seconds for the game
+   server to save and exit before it stops the database; if the game server is still running then, it leaves
+   the database running (run it again later).
    If the game server crashes, start-server.bat starts it again after 5 seconds (each crash is written to
    crashes\crashes.log); after 5 crashes in a row it stops trying and leaves the window open.
 
@@ -32,8 +34,8 @@ Folders
               to start over with a fresh database and the test accounts above.
 
 Notes
-  - Problems of the first start are logged in database-setup.log. "Duplicate column name" and "znote_*"
-    errors in the server window are expected (docs/LAUNCH.md, "Database").
+  - Problems of the first start are logged in database-setup.log. The server window shows no SQL error at
+    the first start; one there is worth a report (docs/LAUNCH.md, "Database").
   - The Visual C++ runtime is needed (most PCs have it). If ChaosServer.exe reports VCRUNTIME140.dll or
     MSVCP140.dll missing, install "Microsoft Visual C++ Redistributable x64" from microsoft.com.
   - BUILD_INFO.txt says which commits this package was built from.

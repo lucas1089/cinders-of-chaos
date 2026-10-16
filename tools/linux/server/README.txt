@@ -49,5 +49,5 @@ Folders
 
 Problems
   "error while loading shared libraries": the system is older than Ubuntu 22.04 / Debian 12, or lacks a base library
-  (sudo apt install libssl3 zlib1g libbz2-1.0 liblzma5 libzstd1). "Duplicate column name" and "znote_*" errors at the
-  first start are expected (docs/LAUNCH.md, "Database").
+  (sudo apt install libssl3 zlib1g libbz2-1.0 liblzma5 libzstd1). The first start shows no SQL error; one there is
+  worth a report (docs/LAUNCH.md, "Database").

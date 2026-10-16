@@ -131,8 +131,8 @@ pack); Earthbreaker earth_spikes; Red Frenzy / Bloodrage aura_burst_red; Iron Be
 Zealotry aura_burst_gold; Vaulting Cleave / Skyfall Cleave heavy_cleave and Iaijutsu sword_slash and Feral Command
 claw_rake (towards the target); Colossus Fall earth_spikes + blunt_smash; Hall of Mirrors arcane_sigil; Umbral Stride /
 Shadow Step / Shadow Veil shade_vanish / shade_appear; Flickerdash blink_vanish / blink_appear; Shattered Psyche
-arcane_bolt + cursed; Wraithshroud shadow_shroud; Nightburst void_maw; Tear in the Weave void_rift; Lucid Reverie
-starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
+arcane_bolt (the Necromancer's cursed went: see "Mystic line effects"); Wraithshroud shadow_shroud; Nightburst void_maw;
+Tear in the Weave void_rift; Lucid Reverie starfall_crown; Mirror Mend regenerating; Soulward / Counter Stance / Chi Ward shield_bubble; Hunter's Instinct gale_ring;
 Poison Blades poisoned; Smoke Bomb stunned; Raise Dead necro_seal; Withering Curse shadow_orb + cursed; Corpse
 Explosion px448_green + px633_indigo; Soul Rot toxic_burst (each tick px633_green); the rest of the Necromancer line:
 see "Necromancer line effects" below;
@@ -276,7 +276,7 @@ their alpha stays soft, unlike the pixel-art sets above. In things_custom24 (eff
 `server/data/lib/chaos_big_fx_ids.lua`. Which spell, boss and use sends which, and the switch `ChaosBigFx.BIG_FX`
 (on since 2026-10-13 (pair 24 at 407ad9b6)): server/README.md "Large spell effects". Sizes and build: client/MANIFEST.md "Large spell effects".
 
-## Pack farming spell effects (pair 27 trial, effects 674-758, missiles 154-160; switch off)
+## Pack farming spell effects (pair 27, effects 674-758, missiles 154-160; switch on)
 
 The nine pack farming spells get effects and missiles of their own. 34 more spells of the Mystic, Templar, Warrior,
 Thief, Necromancer and Monk lines get new impacts, circles and status looks (frost nova, meteor, chain lightning, holy
@@ -285,5 +285,50 @@ the Iron Palm stun, the buff bar, level up (no words in the art), loot beams, re
 boss danger circle. Cut from the owner's oblique effect sets of 2026-10-15 by `client/tools/sprites/gen_pack27_fx.py`
 (spec `art_import/pack27_fx.csv`, packs per pick in `art_import/pack27_sources.csv`), appended by `import_fx_art.py`
 (ids in `server/data/lib/chaos_pack27_fx_ids.lua`, catalogue `pack27_fx_catalog.csv`). Effects only: no damage, area
-or timing changes. Built only as a local trial pair; the switch `ChaosPack27Fx.PAIR27_FX` stays off: server/README.md
-"Pack farming spell effects", client/MANIFEST.md "Pack farming spell effects (pair 27 trial)".
+or timing changes. In the published pairs since pair 27 (windows-assets 51a26d26, 2026-10-15; pair 28 keeps them); the
+switch `ChaosPack27Fx.PAIR27_FX` is on since then: server/README.md "Pack farming spell effects", client/MANIFEST.md
+"Pack farming spell effects (pair 27 trial)".
+
+## Mystic line effects (2026-10-16, Tier A: pair 28 only, no new sprites)
+
+Owner: "I found the effects of the Mystic spells very poor." Audit: 1x1 tile carpets on 37-137 tiles, impacts sent
+at the cast (before the missile lands), tiny class effects in place of bigger pack ones, the swap order hiding the
+better art, names ChaosFx has only through aliases (`poison_cloud`, `aura_ring`), the Necromancer's `cursed` reused. Helpers:
+`server/data/lib/chaos_mystic_fx.lua` (`ChaosMysticFx`); rules: server/README.md "Mystic line effects".
+
+| spell | sends now |
+|---|---|
+| Rime Bloom | pair 27 nova_frost + big_shock_frost_7 (250 ms), ice_shatter on each slowed foe; no tile effects |
+| Witchfire Bolt | pack fireball; fire_explosion when it lands |
+| Forked Storm | lightning orb; on arrival storm_chain (first target), lightning_strike (each jump); no chain_lightning tile |
+| Crimson Covenant | px197_crimson, then blood_pact (300 ms) |
+| Falling Pyre | as before + big_shock_fire_7 at the landing; no tile effects |
+| Frozen Crypt | ice lance; nova_frost on landing and on pulses 2-6 (no tiles then), frost_glyph / frost_bastion in turn |
+| Doomtide | the three big waves + four ring bursts each (fire_explosion, lightning_strike, meteor_fall); no tiles |
+| Blightswarm | toxic_burst + big_nova_poison_7; no tiles (procedural poison_burst without it) |
+| Briar Prison | poison_burst tiles (asked as poison_cloud, an alias) + earth_spikes |
+| Primordial Squall | the big waves + four ring bursts each (earth_spikes, nova_frost); poison_burst cast and tiles |
+| Purifying Wellspring | caster healing_bloom; each healed ally mystic_mend (class swap of heal_sparkle) |
+| Hall of Mirrors | caster arcane_orbit; each clone illusion_mirror (class swap of arcane_sigil) |
+| Umbral Stride | shadow_orb missile, shadow_eruption where it leaves, illusion_shatter, shadow_hit on arrival |
+| Shattered Psyche | arcane_bolt; on arrival px03_arcane, arcane_hit (+150 ms), tick_curse (+400 ms) |
+| Wraithshroud | shadow_shroud alone |
+| Nightburst | void_maw (the gather), big_nova_void_7 + four shadow_eruption at the burst; no tiles |
+| Tear in the Weave | big_rift_void_7 under the pair 27 rift_void; each implosion big_nova_arcane_7 + px195_arcane; no tiles |
+| Mirror Mend | ki_blast_blue to the ally, regenerating on arrival; arcane_bolt on to the mirror, mystic_mend + arcane_hit |
+| Lucid Reverie | starfall_crown; tick_regen on every member each pulse |
+| Bewitching Hex (base) | arcane_bolt, arcane_hit on arrival, tick_curse on each of the four ticks (`patch_mystic_stock_fx.py`) |
+| Arcane Ripple (base) | its wave + arcane_hit at the mouth and px674_arcane on each monster in the cone |
+
+Without an effect in the pair (switch off, older pair) each site sends what it sent before. Tier B (new art for a
+pair 29) waits for the owner.
+
+## Ground effects (under the creatures; base patch 0055)
+
+The client draws the floor shapes and the effects that would hide a creature under the creatures:
+`client/overlay/modules/game_groundfx` registers the ids of `groundfx_data.lua` with `g_map.setGroundEffect`. The list
+is data: `client/tools/sprites/ground_fx.csv` (name, layer, reason), resolved to ids through the catalogues here by
+`client/tools/sprites/gen_ground_fx.py`, which also enforces the rules: procedural circles / novas / rings (not the
+engine's hits), every large effect, floor shapes by name, and every effect that covers the creature on its tile at 35 %
+or more for 500 ms (measured on the pair into `ground_fx_cover.csv`) are ground. Short hits, projectiles and the
+status words stay above. Rebuild after a new pair: `gen_ground_fx.py measure --dat D --spr S`, then `build`.

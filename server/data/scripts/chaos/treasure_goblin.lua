@@ -663,6 +663,11 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	if artificial or TG.isGoblinName(self:getName()) then
 		return true
 	end
+	-- a display monster of the hunt teleport room (hunt_teleports.lua) is never replaced
+	local HT = ChaosHuntTeleports
+	if HT and HT.isDisplaySpot and HT.isDisplaySpot(position) then
+		return true
+	end
 	local mt = self:getType()
 	local info = {
 		name = self:getName(), pos = position, natural = not artificial, startup = startup,

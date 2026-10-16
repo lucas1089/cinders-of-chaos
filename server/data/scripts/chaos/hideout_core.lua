@@ -9,6 +9,7 @@
 --              K.reachProblem(cfg, placed) (every fixture keeps a path from the arrival tile)
 --   unlocks    K.sourceMet(cfg, src, facts), K.owned(cfg, entry, facts), K.lockText(cfg, entry, facts, names)
 --   access     K.mayVisit(perm, rel) -> true | false, reason; K.enterProblem(f)
+--   leaving    K.exitDestination(cfg, f) -> pos, why: the stored spot, a usable neighbour, the home temple, Cinderhold's
 --   social     K.likeProblem(t), K.countsVisit(lastVisit, now), K.showcase(rows, by, limit)
 --   pool       K.poolNew(cfg), K.poolAcquire(pool, owner, usable), K.poolRelease(pool, slot), K.poolSlotOf(pool, owner)
 --   view       K.catalogueView(cfg, facts, placed, names), K.themesView(cfg, facts, names, current)
@@ -516,6 +517,44 @@ function K.enterProblem(f)
 		return "Every hideout room is in use. Try again in a minute."
 	end
 	return nil
+end
+
+-- where the exit (and a login inside, and "leave") sends a character. f = {
+--   stored    {x, y, z} the spot the character entered from, or nil (none, or already used)
+--   usable    function(pos) -> true when a character may stand there now: ground, walkable, no portal or stairs, not
+--             in an instance area (the engine checks; never asked for a tile of the hideout grid)
+--   home      the temple of the character's home town, or nil (no such town)
+--   fallback  the temple of the main city (Cinderhold), or nil}
+-- The stored spot when it is usable; else a usable neighbour of it (the spot was the entry portal itself, or someone's
+-- portal stands there now); else the home temple, else the main city's. Never a tile of the hideout grid: a portal
+-- back into a hideout is how a character got stuck in a loop. Returns pos, why (stored | near | home | fallback | nil)
+function K.exitDestination(cfg, f)
+	local function inGrid(p)
+		return p ~= nil and K.fromWorld(cfg, p) ~= nil
+	end
+	local function valid(p)
+		return type(p) == "table" and tonumber(p.x) and tonumber(p.y) and tonumber(p.z) and p.x > 0 and p.y > 0
+			and p.z >= 0 and p.z <= 15
+	end
+	local s = f.stored
+	if valid(s) and not inGrid(s) then
+		if f.usable(s) then
+			return {x = s.x, y = s.y, z = s.z}, "stored"
+		end
+		for _, d in ipairs({{0, 1}, {1, 0}, {-1, 0}, {0, -1}, {1, 1}, {-1, 1}, {1, -1}, {-1, -1}}) do
+			local n = {x = s.x + d[1], y = s.y + d[2], z = s.z}
+			if not inGrid(n) and f.usable(n) then
+				return n, "near"
+			end
+		end
+	end
+	if valid(f.home) and not inGrid(f.home) then
+		return {x = f.home.x, y = f.home.y, z = f.home.z}, "home"
+	end
+	if valid(f.fallback) and not inGrid(f.fallback) then
+		return {x = f.fallback.x, y = f.fallback.y, z = f.fallback.z}, "fallback"
+	end
+	return nil, nil
 end
 
 -- ---------------------------------------------------------------- likes and visits

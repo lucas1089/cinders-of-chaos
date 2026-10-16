@@ -4,9 +4,11 @@
 -- * Toggle: hotkey "Minimap: Map Overlay" (default Tab; rebind it in Options > Hotkeys). The first time a hotkey set
 --   is seen, Tab is given to the overlay; if the set had Tab on "Next Channel" that moves to Ctrl+Tab
 --   (MapOverlayMath.assignDefaultKey). Also the "Map Overlay" entries of the top menu (Hunt).
--- * While open: mouse wheel over the game view or +/- zoom (1..16 px per tile; with the map panned the wheel zooms
---   toward the cursor, otherwise around the character), Ctrl + wheel changes the opacity (10% steps, 20-100%), holding
---   the middle mouse button and dragging pans the map (Shift + arrow keys too; Ctrl+Shift+arrows when chat is on), the
+-- * Click-through: every plain click, drag, hover and wheel turn reaches the game map under the overlay (walk, attack,
+--   use, look); all overlay widgets but the control strip are phantom (mapoverlay_layout_test.lua checks the .otui).
+-- * While open: Shift + wheel over the game view, the wheel over the strip, or +/- zoom (1..16 px per tile; with the
+--   map panned it zooms toward the cursor, otherwise around the character), Ctrl + wheel changes the opacity (10%
+--   steps, 20-100%), Shift + middle-drag pans the map (Shift + arrow keys too; Ctrl+Shift+arrows when chat is on), the
 --   hotkey "Minimap: Map Overlay Centre" (Home, Ctrl+Home with chat on) or the strip's Centre button snaps back to the
 --   character. A small control strip in the bottom right corner
 --   of the game view has opacity -/+, zoom -/+, Centre and Close; it is the only part of the overlay that takes the
@@ -23,7 +25,8 @@
 
 local OPCODE = 245
 local ICONS = '/images/chaos/mapoverlay/'
-local TICK_MS = 100
+local TICK_MS = 100        -- refresh while the character stands still
+local FRAME_MS = 16        -- refresh while it walks or the view changes: the map follows every frame
 
 local STRIP_MARGIN = 8
 local MSG_MS = 1600
@@ -33,7 +36,15 @@ local overlay, mapWidget, marksLayer, settingsWindow, strip
 local youLabel
 local settings
 local panX, panY = 0, 0     -- pan from the character in tiles (0, 0 = centred); never saved
-local anchor                -- screen point that shows the character's tile plus the pan
+local anchor                -- screen point that shows the character plus the pan (its sprite while centred)
+local walkX, walkY = 0, 0   -- the character's sprite from its tile while a step lasts, in tiles
+local lastRefresh, lastPos = 0, nil
+local geoCache              -- the measured game view: {key, x, y, width, height, ts, sx, sy}; see locate()
+local overlayBox            -- the overlay's rect as last set
+local shownMarks = {}       -- the marks of the last full refresh (positions follow every frame)
+local MAX_STEP_MARKS = 48   -- marks moved per frame during a step; the rest catch up on the next full refresh
+local camPoint, camPos      -- the screen point of the minimap camera's tile, and that tile (see pointOf)
+local fixCache, fixCount = {}, 0   -- the minimap's whole-tile rounding per widget size and zoom
 local viewRect              -- the drawn game view {x, y, width, height}
 local freeRect              -- the part of it the player sees (no panels over it)
 local drag                  -- {mx, my, px, py} while the middle button pans
@@ -119,18 +130,54 @@ local function visibleArea(view)
   return S().freeArea(view, win, insets)
 end
 
--- puts the overlay on the drawn map (or a corner box of it) and centres the minimap on the character's tile plus the
--- pan: the camera moves in whole tiles, the rest of the pan shifts the minimap widget by a few pixels
-local function applyGeometry(pos)
+-- puts the overlay on the drawn map (or a corner box of it) and centres the minimap on the character plus the pan.
+-- The character is where its sprite is drawn, not its tile: during a step the game view scrolls smoothly and the
+-- tile is already the next one (MapOverlayMath.follow), so the walk offset is added to the pan. The camera moves in
+-- whole tiles; the rest shifts the minimap widget by a few pixels.
+--
+-- Cost: measuring the drawn map takes about 70 screen -> tile lookups, so it is done only when the map panel's rect
+-- or visible dimension (game_chaosview zoom) changed; every other frame finds the character's tile near the cached
+-- centre with about 15 lookups (MapOverlayMath.tileCentreNear).
+local function locate(pos)
   local panel = overlay:getParent()
-  local geo = S().viewGeometry(panel:getRect(), function(x, y)
+  local r = panel:getRect()
+  local vd = panel.getVisibleDimension and panel:getVisibleDimension()
+  local key = string.format('%d,%d,%d,%d,%d,%d', r.x, r.y, r.width, r.height, vd and vd.width or 0, vd and vd.height or 0)
+  local probe = function(x, y)
     local p = panel:getPosition({ x = x, y = y })
     if p and p.x and p.x > 0 and p.x < 65535 then return p end
     return nil
-  end, pos)
+  end
+  local c = geoCache
+  if c and c.key == key then
+    local cx, cy = S().tileCentreNear(probe, c.sx, c.sy, c.ts, pos)
+    if cx then
+      c.cx, c.cy = cx, cy
+      return c, false
+    end
+  end
+  local geo = S().viewGeometry(r, probe, pos)
+  if not geo then geoCache = nil return nil end
+  geo.key = key
+  geo.sx, geo.sy = math.floor(geo.x + geo.width / 2), math.floor(geo.y + geo.height / 2)
+  geoCache = geo
+  return geo, true
+end
+
+local function sameRect(a, b)
+  return a and b and a.x == b.x and a.y == b.y and a.width == b.width and a.height == b.height
+end
+
+-- full = also re-measure the free area (panels) and place the box; a step frame only moves the minimap
+local function applyGeometry(pos, full)
+  local geo, measured = locate(pos)
   if not geo then return false end
-  viewRect = { x = geo.x, y = geo.y, width = geo.width, height = geo.height }
-  freeRect = visibleArea(viewRect)
+  local sx, sy
+  sx, sy, walkX, walkY = S().follow(geo)
+  if measured or full or not freeRect then
+    viewRect = { x = geo.x, y = geo.y, width = geo.width, height = geo.height }
+    freeRect = visibleArea(viewRect)
+  end
   local box, ax, ay
   if settings.mode == 'corner' then
     local w, h = S().cornerRect(freeRect.width, freeRect.height)
@@ -138,25 +185,46 @@ local function applyGeometry(pos)
     ax, ay = box.x + math.floor(w / 2), box.y + math.floor(h / 2)
   else
     box = viewRect
-    ax, ay = geo.cx, geo.cy
+    ax, ay = sx, sy
   end
-  overlay:setRect(box)
+  if not sameRect(box, overlayBox) then
+    overlay:setRect(box)
+    overlayBox = box
+  end
   anchor = { x = ax, y = ay }
-  local cox, coy, rx, ry = S().splitPan(panX, panY, settings.zoom)
+  local cox, coy, rx, ry = S().splitPan(panX + walkX, panY + walkY, settings.zoom)
   local cam = { x = pos.x + cox, y = pos.y + coy, z = pos.z }
   mapWidget:setCameraPosition(cam)
   local dx, dy = ax + rx, ay + ry   -- where the camera tile sits
   local hw = math.max(dx - box.x, box.x + box.width - dx) + 2
   local hh = math.max(dy - box.y, box.y + box.height - dy) + 2
   local rect = { x = dx - hw, y = dy - hh, width = hw * 2, height = hh * 2 }
+  -- the minimap rounds its centre to whole tiles: shift it so the camera tile lands on its wanted point. The shift
+  -- depends only on the widget's size and the zoom, so it is asked once per size
+  local fixKey = hw * 4096 + hh * 8 + settings.zoom
+  local fix = fixCache[fixKey]
+  if fix then rect.x, rect.y = rect.x + fix.x, rect.y + fix.y end
   mapWidget:setRect(rect)
-  -- the minimap rounds its centre to whole tiles: shift it so the camera tile lands on its wanted point
-  local tp = mapWidget:getTilePoint(cam)
-  if tp and (tp.x ~= dx or tp.y ~= dy) then
-    rect.x, rect.y = rect.x + dx - tp.x, rect.y + dy - tp.y
-    mapWidget:setRect(rect)
+  if not fix then
+    local tp = mapWidget:getTilePoint(cam)
+    fix = { x = tp and tp.x >= 0 and dx - tp.x or 0, y = tp and tp.y >= 0 and dy - tp.y or 0 }
+    if fixCount > 256 then fixCache, fixCount = {}, 0 end
+    fixCache[fixKey], fixCount = fix, fixCount + 1
+    if fix.x ~= 0 or fix.y ~= 0 then
+      rect.x, rect.y = rect.x + fix.x, rect.y + fix.y
+      mapWidget:setRect(rect)
+    end
   end
+  camPoint, camPos = { x = dx, y = dy }, cam
   return true
+end
+
+-- the screen point of a tile on the minimap (its centre), worked out here: the minimap is linear around the camera
+-- tile, which sits on camPoint (the same as mapWidget:getTilePoint, without a call per mark and frame)
+local function pointOf(pos)
+  if not camPos or pos.z ~= camPos.z then return nil end
+  local ppt = S().pixelsPerTile(settings.zoom)
+  return { x = camPoint.x + (pos.x - camPos.x) * ppt, y = camPoint.y + (pos.y - camPos.y) * ppt }
 end
 
 local function markWidget(i)
@@ -168,17 +236,35 @@ local function markWidget(i)
   return w
 end
 
-local function placeMark(w, pos, icon, size)
-  local pt = mapWidget:getTilePoint(pos)
-  local rect = overlay:getRect()
+-- the minimap point of the character: its tile plus the walk offset
+local function selfPoint(pos)
+  local pt = pointOf(pos)
+  if not pt then return nil end
+  local ox, oy = S().walkPixels(walkX, walkY, settings.zoom)
+  return { x = pt.x + ox, y = pt.y + oy }
+end
+
+local function placeMark(w, pos, icon, size, point)
+  local pt = point or pointOf(pos)
+  local rect = overlayBox or overlay:getRect()
   if not pt or pt.x < rect.x or pt.y < rect.y or pt.x > rect.x + rect.width or pt.y > rect.y + rect.height then
-    w:hide()
+    if w.chaosShown ~= false then w:hide() w.chaosShown = false end
     return
   end
-  w:setImageSource(ICONS .. icon)
-  w:setSize({ width = size, height = size })
-  w:setPosition({ x = pt.x - math.floor(size / 2), y = pt.y - math.floor(size / 2) })
-  w:show()
+  if w.chaosIcon ~= icon then   -- the image and size only when they change: setImageSource is not free
+    w.chaosIcon = icon
+    w:setImageSource(ICONS .. icon)
+  end
+  if w.chaosSize ~= size then
+    w.chaosSize = size
+    w:setSize({ width = size, height = size })
+  end
+  local x, y = pt.x - math.floor(size / 2), pt.y - math.floor(size / 2)
+  if w.chaosX ~= x or w.chaosY ~= y then
+    w.chaosX, w.chaosY = x, y
+    w:setPosition({ x = x, y = y })
+  end
+  if w.chaosShown ~= true then w:show() w.chaosShown = true end
 end
 
 -- ---------------------------------------------------------------- control strip
@@ -206,7 +292,7 @@ local function updateStrip()
     status:setColor('#e8b84a')
   else
     msgText = nil
-    setStripText(status, tr('Wheel: zoom  Ctrl+wheel: opacity  Mid-drag: pan'))
+    setStripText(status, tr('Shift+wheel: zoom  Ctrl+wheel: opacity  Shift+mid-drag: pan'))
     status:setColor('#8c8070')
   end
 end
@@ -233,7 +319,8 @@ end
 -- character is outside the overlay
 local function placeYou(pos, panned)
   if not youLabel then youLabel = g_ui.createWidget('MapOverlayYou', marksLayer) end
-  local pt = panned and mapWidget:getTilePoint(pos)
+  local pt = panned and selfPoint(pos)
+  if not pt and not youLabel:isVisible() then return end
   if not pt then youLabel:hide() return end
   local rect = (settings.mode ~= 'corner' and freeRect) or overlay:getRect()
   local ex, ey, arrow = S().edgeMarker(pt.x - rect.x, pt.y - rect.y, rect.width, rect.height, 24)
@@ -260,36 +347,69 @@ local function placeYou(pos, panned)
   youLabel:raise()
 end
 
-local function refresh()
+-- full (default): marks rebuilt from the server list, the free area and the strip; step = false: a frame of a
+-- step, only the minimap offset and the positions of the marks already shown
+local function refresh(step)
   if not shown or not overlay then return end
+  local full = not step
+  if full then lastRefresh = g_clock.millis() end
   local player = g_game.getLocalPlayer()
   if not player then return end
   local pos = player:getPosition()
   if not pos then return end
-  if not applyGeometry(pos) then overlay:hide() if strip then strip:hide() end return end
-  overlay:show()
-  local size = settings.zoom >= 3 and 16 or 14
-  local list = S().visibleMarks(marks, pos.z, settings)
-  for i, m in ipairs(list) do
-    local w = markWidget(i)
-    placeMark(w, { x = m.x, y = m.y, z = m.z }, m.k, m.k == 'npc' and size - 2 or size)
+  if not applyGeometry(pos, full) then
+    overlayBox = nil
+    overlay:hide()
+    if strip then strip:hide() end
+    return
   end
-  for i = #list + 1, #markWidgets do markWidgets[i]:hide() end
+  if not overlay:isVisible() then overlay:show() end
+  local size = settings.zoom >= 3 and 16 or 14
+  if full then shownMarks = S().visibleMarks(marks, pos.z, settings) end
+  local n = full and #shownMarks or math.min(#shownMarks, MAX_STEP_MARKS)
+  for i = 1, n do
+    local m = shownMarks[i]
+    placeMark(markWidget(i), { x = m.x, y = m.y, z = m.z }, m.k, m.k == 'npc' and size - 2 or size)
+  end
+  if full then
+    for i = #shownMarks + 1, #markWidgets do
+      local w = markWidgets[i]
+      if w.chaosShown ~= false then w:hide() w.chaosShown = false end
+    end
+  end
   if not selfMark then selfMark = g_ui.createWidget('MapOverlayMark', marksLayer) end
   local panned = S().isPanned(panX, panY)
-  placeMark(selfMark, pos, 'self', panned and size + 4 or size)
-  selfMark:raise()
-  placeYou(pos, panned)
-  placeStrip()
+  placeMark(selfMark, pos, 'self', panned and size + 4 or size, selfPoint(pos) or { x = -1, y = -1 })
+  if full then selfMark:raise() end
+  if panned or full then placeYou(pos, panned) end
+  if full then placeStrip() end
 end
 
 local function stopTick()
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
 end
 
+-- every frame: while the character walks (and the frame after, to land on the tile) only the offset moves
+-- (refresh(true)); a new tile (a step's start, a teleport, a floor change) and every TICK_MS do the full refresh.
+-- A resize or a game_chaosview zoom is caught by locate() re-measuring the view.
+local function frameTick()
+  if not shown or not overlay then return end
+  local player = g_game.getLocalPlayer()
+  if not player then return end
+  local pos = player:getPosition()
+  local newTile = pos and not (lastPos and pos.x == lastPos.x and pos.y == lastPos.y and pos.z == lastPos.z)
+  lastPos = pos
+  if newTile or g_clock.millis() - lastRefresh >= TICK_MS then
+    refresh()
+  elseif player:isWalking() or walkX ~= 0 or walkY ~= 0 then
+    refresh(true)
+  end
+end
+
 local function startTick()
   stopTick()
-  tickEvent = cycleEvent(refresh, TICK_MS)
+  lastPos, geoCache, overlayBox = nil, nil, nil
+  tickEvent = cycleEvent(frameTick, FRAME_MS)
 end
 
 -- ---------------------------------------------------------------- input while open
@@ -310,7 +430,7 @@ local function dragTick()
   local x, y = S().dragPan(drag.px, drag.py, m.x - drag.mx, m.y - drag.my, settings.zoom)
   if x ~= panX or y ~= panY then
     panX, panY = x, y
-    refresh()
+    refresh(true)
   end
 end
 
@@ -321,8 +441,10 @@ local function startDrag(pos)
 end
 
 local function onMousePress(widget, mousePos, button)
-  if not shown or button ~= MouseMidButton then return false end
-  if inStrip(mousePos) or not (overlay and overlay:isVisible() and overlay:containsPoint(mousePos)) then return false end
+  if not shown or not S().startsPan(button == MouseMidButton, g_keyboard.isShiftPressed(), inStrip(mousePos)) then
+    return false
+  end
+  if not (overlay and overlay:isVisible() and overlay:containsPoint(mousePos)) then return false end
   startDrag(mousePos)
   return true
 end
@@ -335,12 +457,15 @@ end
 local function onWheel(widget, mousePos, direction)
   if not shown then return false end
   local up = direction == MouseWheelUp
-  if g_keyboard.isCtrlPressed() then
+  local over = inStrip(mousePos)
+  local action = S().wheelAction(g_keyboard.isCtrlPressed(), g_keyboard.isShiftPressed(), over)
+  if not action then return false end   -- a plain wheel turn belongs to the game map
+  if action == 'opacity' then
     stepOpacity(up and 0.1 or -0.1)
     return true
   end
   local cursor
-  if not inStrip(mousePos) and overlay:containsPoint(mousePos) then cursor = mousePos end
+  if not over and overlay:containsPoint(mousePos) then cursor = mousePos end
   zoom(up and 1 or -1, cursor)
   return true
 end
@@ -387,7 +512,7 @@ local function keyText()
   if key == nil or key == '' then
     return tr('No key set. Options > Hotkeys > "Minimap: Map Overlay".')
   end
-  return tr('Key: %s (change it in Options > Hotkeys > Minimap). While open: wheel or +/- zoom, Ctrl+wheel opacity, middle-drag or Shift+arrows pan, Home centres (with chat on: Ctrl+Home and Ctrl+Shift+arrows).', key)
+  return tr('Key: %s (change it in Options > Hotkeys > Minimap). While open: Shift+wheel or +/- zoom, Ctrl+wheel opacity, Shift+middle-drag or Shift+arrows pan, Home centres (with chat on: Ctrl+Home and Ctrl+Shift+arrows). Plain clicks and the wheel reach the game map.', key)
 end
 
 local function updateSettingsWindow()
@@ -630,6 +755,11 @@ function init()
   if mapWidget.setMinZoom then mapWidget:setMinZoom(S().MIN_ZOOM) end
   if mapWidget.setMaxZoom then mapWidget:setMaxZoom(S().MAX_ZOOM) end
   overlay:hide()
+  -- made at load, not on the first open (the hotkey's callback)
+  selfMark = g_ui.createWidget('MapOverlayMark', marksLayer)
+  selfMark:hide()
+  youLabel = g_ui.createWidget('MapOverlayYou', marksLayer)
+  youLabel:hide()
   strip = g_ui.createWidget('MapOverlayStrip', mapPanel)
   strip.onMousePress = function() return true end      -- the strip takes the mouse, nothing reaches the game under it
   strip.onMouseRelease = function() return true end
@@ -662,4 +792,5 @@ function terminate()
   if strip then strip:destroy() strip = nil end
   if overlay then overlay:destroy() overlay = nil end
   markWidgets, selfMark, mapWidget, marksLayer, youLabel, stripTexts = {}, nil, nil, nil, nil, {}
+  geoCache, overlayBox, shownMarks, lastPos = nil, nil, {}, nil
 end

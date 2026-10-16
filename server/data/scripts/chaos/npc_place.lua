@@ -3,7 +3,8 @@
 --                                                                      but one called `name`)
 --   ChaosNpcPlace.place(name, temple, offsets, opts) -> Npc | nil       an NPC of that name already near the temple (a
 --                                                                      reload) or a new one on spot()
--- opts: radius, spacing, minFromTemple, minOpen (npc_place_core.lua K.DEFAULTS). Used by item_prices.lua (Loot Buyer),
+-- opts: radius, spacing, minFromTemple, minOpen (npc_place_core.lua K.DEFAULTS); depotFallback = true: no spot near
+-- the temple -> the same search around the town's nearest depot (ChaosNpcPlaceCore.depotAnchors). Used by item_prices.lua (Loot Buyer),
 -- gamble.lua (the Gambler), ascension_quest.lua (Ascendant Oracle), tales.lua (Archivist Maelis), professions.lua
 -- (Material Broker) and factions.lua. An NPC with a booth in its town's Hall of Services (npc_booths_config.lua) is
 -- placed in the booth instead (ChaosNpcBooths.spotForTemple). Lua 5.1 / LuaJIT compatible.
@@ -128,8 +129,32 @@ function NP.place(name, temple, offsets, opts)
 		end
 	end
 	local pos = NP.spot(temple, offsets, name, opts)
-	if not pos then
+	if pos then
+		return Game.createNpc(name, pos)
+	end
+	if not (opts and opts.depotFallback) then
 		return nil
 	end
-	return Game.createNpc(name, pos)
+	for _, a in ipairs(NP.depotAnchors(temple)) do
+		local anchor = Position(a.x, a.y, a.z)
+		for _, e in ipairs(near(anchor, radius)) do
+			if e.npc:getName():lower() == name:lower() then
+				return e.npc
+			end
+		end
+		pos = NP.spot(anchor, {}, name, opts)
+		if pos then
+			return Game.createNpc(name, pos)
+		end
+	end
+	return nil
+end
+
+-- the depots of the map markers (data/chaos_poi.lua, written at install by tools/gen_poi.py) near a temple
+function NP.depotAnchors(temple)
+	if NP.poiMarks == nil then
+		local ok, t = pcall(dofile, NP.POI_FILE or "data/chaos_poi.lua")
+		NP.poiMarks = ok and type(t) == "table" and type(t.marks) == "table" and t.marks or false
+	end
+	return K.depotAnchors(temple, NP.poiMarks or {})
 end

@@ -1,0 +1,123 @@
+# Monster display level (server/README.md "Monster levels in the name"). Owner, 2026-10-16: only the level-scaled
+# monsters (a <level min max> in their XML) showed their level after the name ("Black Stag [777]"); stock monsters
+# (Hellflayer, Ashfang Wyrm) showed none and their look text read "it is level 0". New Lua methods
+# monster:setDisplayLevel(level) / monster:getDisplayLevel(): a level shown after the name and in the look text of a
+# monster that has no level of its own. Display only: the engine's level bonuses (health, speed, damage), the skull
+# colour, getMonsterLevel() and everything that reads it stay as they were. The creature packet and the look text use
+# getDisplayLevel() (the monster's own level when it has one). Set at spawn by data/scripts/chaos/monster_levels.lua
+# (before the placement, so the first creature packet carries it). A look at a monster with no level at all now reads
+# "You see a rat." instead of "..., it is level 0.". Built against the chain 0001-0039.
+# Applies after 0001-0039.
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index cbb7935..490c561 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2705,6 +2705,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Monster", "isIdle", LuaScriptInterface::luaMonsterIsIdle);
+ 	registerMethod("Monster", "setIdle", LuaScriptInterface::luaMonsterSetIdle);
+ 	registerMethod("Monster", "getMonsterLevel", LuaScriptInterface::luaMonsterGetLevel);
++	registerMethod("Monster", "setDisplayLevel", LuaScriptInterface::luaMonsterSetDisplayLevel);
++	registerMethod("Monster", "getDisplayLevel", LuaScriptInterface::luaMonsterGetDisplayLevel);
+ 	registerMethod("Monster", "isTarget", LuaScriptInterface::luaMonsterIsTarget);
+ 	registerMethod("Monster", "isOpponent", LuaScriptInterface::luaMonsterIsOpponent);
+ 	registerMethod("Monster", "isFriend", LuaScriptInterface::luaMonsterIsFriend);
+@@ -14383,6 +14385,31 @@ int LuaScriptInterface::luaMonsterGetLevel(lua_State* L)
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaMonsterSetDisplayLevel(lua_State* L)
++{
++	// monster:setDisplayLevel(level) (Chaos: the level after the name of a monster without one; display only)
++	Monster* monster = getUserdata<Monster>(L, 1);
++	if (monster) {
++		monster->setDisplayLevel(getNumber<int32_t>(L, 2));
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaMonsterGetDisplayLevel(lua_State* L)
++{
++	// monster:getDisplayLevel() (its own level when it has one, else the display level, else 0)
++	const Monster* monster = getUserdata<const Monster>(L, 1);
++	if (monster) {
++		lua_pushnumber(L, monster->getDisplayLevel());
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
+ int LuaScriptInterface::luaMonsterTypeMinLevel(lua_State* L) {
+ 	// get: monsterType:minLevel()
+ 	MonsterType* monsterType = getUserdata<MonsterType>(L, 1);
+diff --git a/src/luascript.h b/src/luascript.h
+index d4a151e..7780540 100644
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1086,6 +1086,8 @@ class LuaScriptInterface
+ 
+ 		static int luaMonsterGetType(lua_State* L);
+ 		static int luaMonsterGetLevel(lua_State* L);
++		static int luaMonsterSetDisplayLevel(lua_State* L);
++		static int luaMonsterGetDisplayLevel(lua_State* L);
+ 		static int luaMonsterRename(lua_State* L);
+ 		static int luaMonsterTypeMinLevel(lua_State* L);
+ 		static int luaMonsterTypeMaxLevel(lua_State* L);
+diff --git a/src/monster.h b/src/monster.h
+index 5237e4b..d4bfd28 100644
+--- a/src/monster.h
++++ b/src/monster.h
+@@ -60,7 +60,11 @@ class Monster final : public Creature
+ 		};
+ 
+ 		std::string getDescription(int32_t) const override {
+-			return nameDescription + ", it is level " + std::to_string(level) + '.';
++			const int32_t shown = getDisplayLevel();
++			if (shown <= 0) {
++				return nameDescription + '.';
++			}
++			return nameDescription + ", it is level " + std::to_string(shown) + '.';
+ 		}
+ 
+ 		CreatureType_t getType() const override {
+@@ -114,6 +118,14 @@ class Monster final : public Creature
+ 		int32_t getLevel() const {
+ 			return level;
+ 		}
++		// Chaos: the level shown after the name ("Hellflayer [250]") for a monster without a level of its own
++		// (no <level> in its XML): display only, no health, speed, damage, experience or skull change
++		void setDisplayLevel(int32_t value) {
++			displayLevel = value > 0 ? value : 0;
++		}
++		int32_t getDisplayLevel() const {
++			return level > 0 ? level : displayLevel;
++		}
+ 		void onAttackedCreatureDisappear(bool isLogout) override;
+ 
+ 		void onCreatureAppear(Creature* creature, bool isLogin) override;
+@@ -209,6 +221,7 @@ class Monster final : public Creature
+ 		Position masterPos;
+ 
+ 		bool ignoreFieldDamage = false;
++		int32_t displayLevel = 0; // Chaos: setDisplayLevel
+ 		bool isIdle = true;
+ 		bool isMasterInRange = false;
+ 		bool randomStepping = false;
+diff --git a/src/protocolgame.cpp b/src/protocolgame.cpp
+index 9dfe1be..02df7e0 100644
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -3304,8 +3304,8 @@ void ProtocolGame::AddCreature(NetworkMessage& msg, const Creature* creature, bo
+ 		msg.add<uint32_t>(creature->getID());
+ 		msg.addByte(creatureType);
+ 		const Monster* monster = creature->getMonster();
+-		if (monster && monster->getLevel() > 0) {
+-			msg.addString(creature->getName() + " [" + std::to_string(monster->getLevel()) + "]");
++		if (monster && monster->getDisplayLevel() > 0) {
++			msg.addString(creature->getName() + " [" + std::to_string(monster->getDisplayLevel()) + "]");
+ 		} else {
+ 			msg.addString(creature->getName());
+ 		}

@@ -176,8 +176,14 @@ function ChaosTierOf(creature)
 	return isBoss(creature) and "boss" or "normal"
 end
 
-local function eligible(monster)
-	if monster:getMaster() then
+-- a display monster of the hunt teleport room (hunt_teleports.lua): no tier, no modifiers
+local function isDisplaySpot(pos)
+	local HT = ChaosHuntTeleports
+	return pos ~= nil and HT ~= nil and HT.isDisplaySpot ~= nil and HT.isDisplaySpot(pos) == true
+end
+
+local function eligible(monster, position)
+	if monster:getMaster() or isDisplaySpot(position or monster:getPosition()) then
 		return false
 	end
 	if cfg.skip[typeNameOf(monster):lower()] or isBoss(monster) then
@@ -398,7 +404,10 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 		pendingTier = nil
 		return true
 	end
-	if eligible(self) then
+	if isDisplaySpot(position) then
+		return true
+	end
+	if eligible(self, position) then
 		local roll = math.random(10000)
 		local eventMult = ChaosTierSpawnMult(position or self:getPosition())
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
@@ -419,7 +428,7 @@ spawnCb:register()
 -- the monster has no id yet.
 local normalDeath = EventCallback
 normalDeath.onSpawn = function(self, position, startup, artificial)
-	if eligible(self) then
+	if eligible(self, position) then
 		self:registerEvent("ChaosTierDeath")
 	end
 	return true

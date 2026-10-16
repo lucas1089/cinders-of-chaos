@@ -1,0 +1,166 @@
+# Respawn near players (server/README.md "Respawn near players"). Owner, 2026-10-16: monsters must respawn even with
+# players nearby. Stock Spawn::spawnMonster skips every monster of a spawn block (a boss with isIgnoringSpawnBlock
+# excepted) while a player sees the spot (findPlayer) and checkSpawn starts the block's timer again, so a busy hunt
+# never refills. New config spawnNearPlayers (default true): with a player in view the block still spawns when its spot
+# is free (a ground, no creature, no blocking item, no protection zone) and no player the monsters see stands closer
+# than spawnMinPlayerDistance sqm (default 2: never on a tile next to a player; Chebyshev, same floor, at most 7).
+# The check is needed because the spawn places the monster forced (on its spot even over a creature or a blocking
+# item). A respawn a player sees shows CONST_ME_TELEPORT. Spot not free or a player too close: the stock rule (bosses
+# with isIgnoringSpawnBlock still spawn, silently, as before; the timer starts again). spawnNearPlayers = false: stock.
+# Startup spawns and the boss path are unchanged. Lua: configKeys.SPAWN_NEAR_PLAYERS / SPAWN_MIN_PLAYER_DISTANCE.
+# Built against the chain 0001-0040.
+# Applies after 0001-0040.
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+index a146276..99a2bd5 100644
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -340,6 +340,11 @@ bool ConfigManager::load()
+ 	// Chaos (patch 0027): log every dispatcher task that takes this many ms or more, with its Lua calls and database
+ 	// queries (server/README.md "Slow task log"). 0: off
+ 	integer[SLOW_TASK_LOG_MS] = getGlobalNumber(L, "slowTaskLogMs", 0);
++	// Chaos (patch 0041): a monster respawns while a player sees its spot (stock: never; the timer starts again), on a
++	// free tile (no creature, no blocking item, not a protection zone) at least spawnMinPlayerDistance sqm from every
++	// player, with a teleport effect (server/README.md "Respawn near players"). false: the stock rule
++	boolean[SPAWN_NEAR_PLAYERS] = getGlobalBoolean(L, "spawnNearPlayers", true);
++	integer[SPAWN_MIN_PLAYER_DISTANCE] = getGlobalNumber(L, "spawnMinPlayerDistance", 2);
+ 
+ 	expStages = loadXMLStages();
+ 	if (expStages.empty()) {
+diff --git a/src/configmanager.h b/src/configmanager.h
+index 7afa596..b933a91 100644
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -58,6 +58,7 @@ class ConfigManager
+ 			CLIENT_GUARD_ALLOW_DEV_KEY, // Chaos (patch 0021): client guard
+ 			PROXY_PROTOCOL_REQUIRED, // Chaos (patch 0025): PROXY protocol from the gateways
+ 			LOGIN_PREFETCH, // Chaos (patch 0031): login reads on the login worker
++			SPAWN_NEAR_PLAYERS, // Chaos (patch 0041): monsters respawn while a player sees the spot
+ 
+ 			LAST_BOOLEAN_CONFIG /* this must be the last one */
+ 		};
+@@ -149,6 +150,7 @@ class ConfigManager
+ 			PLAYER_SPEED_PER_TEN_LEVELS_ABOVE,
+ 			CLIENT_GUARD_TIMEOUT, // Chaos (patch 0021): client guard
+ 			SLOW_TASK_LOG_MS, // Chaos (patch 0027): slow task log
++			SPAWN_MIN_PLAYER_DISTANCE, // Chaos (patch 0041): no respawn this close to a player
+ 
+ 			LAST_INTEGER_CONFIG /* this must be the last one */
+ 		};
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 490c561..9409720 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2136,6 +2136,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::MAX_PACKETS_PER_SECOND)
+ 	registerEnumIn("configKeys", ConfigManager::PLAYER_CONSOLE_LOGS)
+ 	registerEnumIn("configKeys", ConfigManager::ARMOR_PERCENT) // Chaos (patch 0016)
++	registerEnumIn("configKeys", ConfigManager::SPAWN_NEAR_PLAYERS) // Chaos (patch 0041)
++	registerEnumIn("configKeys", ConfigManager::SPAWN_MIN_PLAYER_DISTANCE) // Chaos (patch 0041)
+ 
+ 	// os
+ 	registerMethod("os", "mtime", LuaScriptInterface::luaSystemTime);
+diff --git a/src/spawn.cpp b/src/spawn.cpp
+index af4a903..fa59716 100644
+--- a/src/spawn.cpp
++++ b/src/spawn.cpp
+@@ -297,6 +297,35 @@ bool Spawn::findPlayer(const Position& pos)
+ 	return false;
+ }
+ 
++bool Spawn::canSpawnNearPlayers(const Position& pos)
++{
++	// Chaos (patch 0041). The spawn places the monster forced (Map::placeCreature with forceLogin): on its spot even
++	// over a creature or a blocking item. The stock rule hid that behind findPlayer; with a player in view the spot
++	// is checked here instead: a ground, no creature (a ghost too), no blocking item, no protection zone.
++	const Tile* tile = g_game.map.getTile(pos);
++	if (!tile || !tile->getGround() || tile->getCreatureCount() != 0) {
++		return false;
++	}
++	if (tile->hasFlag(TILESTATE_PROTECTIONZONE) || tile->hasFlag(TILESTATE_BLOCKSOLID)) {
++		return false;
++	}
++
++	// and not next to a player: every player the monsters see stays at least spawnMinPlayerDistance sqm away
++	// (Chebyshev, same floor; 2 = never on an adjacent tile, 0 or 1 = only the tile itself is checked, above)
++	int32_t distance = std::min<int32_t>(g_config.getNumber(ConfigManager::SPAWN_MIN_PLAYER_DISTANCE), 7);
++	if (distance <= 1) {
++		return true;
++	}
++	SpectatorVec spectators;
++	g_game.map.getSpectators(spectators, pos, false, true, distance - 1, distance - 1, distance - 1, distance - 1);
++	for (Creature* spectator : spectators) {
++		if (!spectator->getPlayer()->hasFlag(PlayerFlag_IgnoredByMonsters)) {
++			return false;
++		}
++	}
++	return true;
++}
++
+ bool Spawn::isInSpawnZone(const Position& pos)
+ {
+ 	return Spawns::isInZone(centerPos, radius, pos);
+@@ -304,7 +333,12 @@ bool Spawn::isInSpawnZone(const Position& pos)
+ 
+ bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup/* = false*/)
+ {
+-	bool isBlocked = !startup && findPlayer(sb.pos);
++	// stock: while a player sees the spot only a monster with isIgnoringSpawnBlock (a boss) spawns. Chaos (patch 0041):
++	// with spawnNearPlayers every monster does when the spot is free and no player is too close (canSpawnNearPlayers);
++	// otherwise the stock rule holds
++	bool inView = !startup && findPlayer(sb.pos);
++	bool isBlocked = inView && !(g_config.getBoolean(ConfigManager::SPAWN_NEAR_PLAYERS) && canSpawnNearPlayers(sb.pos));
++	bool effect = inView && !isBlocked;
+ 	size_t monstersCount = sb.mTypes.size(), blockedMonsters = 0;
+ 
+ 	const auto spawnFunc = [&](bool roll) {
+@@ -315,10 +349,10 @@ bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup/* = fal
+ 			}
+ 
+ 			if (!roll) {
+-				return spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup);
++				return spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup, effect);
+ 			}
+ 
+-			if (pair.second >= uniform_random(1, 100) && spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup)) {
++			if (pair.second >= uniform_random(1, 100) && spawnMonster(spawnId, pair.first, sb.pos, sb.direction, startup, effect)) {
+ 				return true;
+ 			}
+ 		}
+@@ -340,7 +374,8 @@ bool Spawn::spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup/* = fal
+ 	return spawnFunc(false);
+ }
+ 
+-bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup/*= false*/)
++bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup/*= false*/,
++                         bool inView/*= false*/)
+ {
+ 	std::unique_ptr<Monster> monster_ptr(new Monster(mType));
+ 	if (!g_events->eventMonsterOnSpawn(monster_ptr.get(), pos, startup, false)) {
+@@ -357,6 +392,10 @@ bool Spawn::spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& p
+ 		if (!g_game.placeCreature(monster_ptr.get(), pos, false, true)) {
+ 			return false;
+ 		}
++		if (inView) {
++			// Chaos (patch 0041): a respawn a player sees does not pop up silently
++			g_game.addMagicEffect(pos, CONST_ME_TELEPORT);
++		}
+ 	}
+ 
+ 	Monster* monster = monster_ptr.release();
+diff --git a/src/spawn.h b/src/spawn.h
+index 4973be9..acbb4fa 100644
+--- a/src/spawn.h
++++ b/src/spawn.h
+@@ -76,8 +76,11 @@ class Spawn
+ 		uint32_t scaledInterval(uint32_t base) const;
+ 
+ 		static bool findPlayer(const Position& pos);
++		// Chaos (patch 0041): spawnNearPlayers: the spot is free and no player is closer than spawnMinPlayerDistance
++		static bool canSpawnNearPlayers(const Position& pos);
+ 		bool spawnMonster(uint32_t spawnId, spawnBlock_t sb, bool startup = false);
+-		bool spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup = false);
++		bool spawnMonster(uint32_t spawnId, MonsterType* mType, const Position& pos, Direction dir, bool startup = false,
++		                  bool inView = false);
+ 		void checkSpawn();
+ };
+ 

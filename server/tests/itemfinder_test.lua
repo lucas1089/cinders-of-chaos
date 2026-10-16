@@ -385,8 +385,18 @@ do
 		pocketBoss = dofile(base .. "pocketboss_config.lua"),
 		-- the Conquest vendor (conquest.lua): two offers of its catalog
 		conquest = {cfg = dofile(base .. "conquest_config.lua"), offers = {{id = 2412, level = 60, price = 690},
-			{id = 36659, level = 650, price = 1580, always = true}}}
+			{id = 36659, level = 650, price = 1580, always = true}}},
+		candlemarks = dofile(base .. "candlemarks_config.lua"), gems = dofile("data/lib/chaos_gems_config.lua"),
+		mentor = dofile(base .. "mentor_config.lua"), tales = dofile(base .. "tales_config.lua"),
+		embercache = dofile(base .. "embercache_config.lua"), siege = dofile(base .. "siege_config.lua"),
+		leaderboard = dofile(base .. "leaderboard_config.lua"), community = dofile(base .. "community_config.lua"),
+		referral = dofile(base .. "referral_config.lua"), trials = dofile(base .. "trials_config.lua"),
+		charms = dofile(base .. "charms_config.lua"), nemesis = dofile(base .. "nemesis_config.lua"),
+		newplayer = dofile(base .. "newplayer_config.lua"), seasonpass = dofile(base .. "seasonpass_config.lua"),
+		potions = dofile(base .. "potions_config.lua"),
+		journey = dofile(base .. "season_journey_config.lua")
 	}
+	local storeCtx = {pouches = dofile(base .. "pouches_config.lua"), storeFood = dofile(base .. "store_food_config.lua")}
 	local errors = S.rewards(D, emit)
 	for _, e in ipairs(errors) do
 		print("  rewards " .. e.key .. ": " .. e.message)
@@ -412,7 +422,8 @@ do
 		{id = 8209, name = "Soulreaper", minTier = "legendary", chance = 150, monsters = {"demon", "hellhound"}},
 		{id = 8210, name = "Bossblade", minTier = "boss", chance = 50, bossOnly = true}
 	}, emit, function(key) return key:gsub("^%l", string.upper) end)
-	S.store(dofile(base .. "shop_config.lua"), emit)
+	local shopCfg = dofile(base .. "shop_config.lua")
+	S.store(shopCfg, emit, storeCtx)
 	S.gamble(dofile(base .. "gamble_config.lua"), emit)
 	S.professions(dofile(base .. "professions_config.lua"), emit)
 	dofile("data/lib/chaos_crafting.lua")
@@ -435,6 +446,29 @@ do
 	local boss = K.brief(idx, 8210)
 	check(boss and boss.e and boss.e.w == "boss", "brief: a boss-only unique counts boss kills")
 	eq(K.brief(idx, 1), nil, "brief: an item without rows")
+	-- the global table comes before a monster that lists the item (live test winpkg-35)
+	do
+		local g = K.new(cfg, realInfo)
+		K.add(g, 29851, "monster", {n = "Embermaw Archon", v = "50%", o = -50000, p = 0.5})
+		S.lootLayer({currency = {entries = {{id = 29851, weight = 20, count = {1, 2}, chance = {normal = 30, boss = 3500}}},
+			guaranteed = {boss = 1}}}, nil, {}, function(kind, id, row) return K.add(g, id, kind, row) end)
+		K.finish(g)
+		local b = K.brief(g, 29851)
+		eq(b.s[1].n .. " (" .. b.s[1].v .. ")", "Any monster (global drop, about 1 in 330 kills)", "brief: the global drop first")
+		eq(b.s[2].n, "Embermaw Archon", "brief: then the monster")
+		eq(K.lookup(g, 29851).secs[1].k, "drop", "the item page: the global drop section first")
+	end
+	-- live test winpkg-35: "Drops from: Abyssal Crab (100%), Abyssal Crab (100%)": a monster listing the item twice
+	do
+		local dup = K.new(cfg, realInfo)
+		K.add(dup, 2148, "monster", {n = "Abyssal Crab", v = "100%", c = "1-100", o = -100000, p = 1})
+		K.add(dup, 2148, "monster", {n = "Abyssal Crab", v = "100%", c = "1-50", o = -100000, p = 1})
+		K.add(dup, 2148, "monster", {n = "Rat", v = "40%", o = -40000, p = 0.4})
+		K.finish(dup)
+		local b = K.brief(dup, 2148)
+		eq(#b.s, 2, "brief: two sources")
+		eq(b.s[1].n .. "|" .. b.s[2].n, "Abyssal Crab|Rat", "brief: a monster once, the next one after it")
+	end
 	eq(K.brief(nil, 8209), nil, "brief: no index")
 
 	local function has(id, kind, name, label)
@@ -492,6 +526,130 @@ do
 	has(32051, "craft", "Salvage", "rune shards from salvage")
 	has(29851, "craft", "Salvage bench", "an orb from shards")
 	has(32051, "usedin", "item 29851", "shards used for an orb")
+	-- live test winpkg-35: the Everfull Ration (a store service, not an item offer) had no source
+	has(storeCtx.storeFood.item.id, "store", "Everfull Ration", "the Everfull Ration in the store")
+	has(storeCtx.pouches.kinds.loot.id, "store", "Loot Bag", "a store pouch")
+	has(storeCtx.pouches.kinds.loot.id, "store", "Adventurer Pack", "a pouch as a bundle part")
+	do
+		local r = idx.items[storeCtx.storeFood.item.id].rows.store[1]
+		eq(r.d, "Store > Convenience", "the store row names its category")
+		eq(r.v, "100 Chaos Coins", "and its price")
+	end
+	has(29851, "store", "3 Orbs of Awakening", "the Candlemark shop")
+	has(D.gems.firstId, "store", "Chipped Gem", "a Candlemark gem")
+	has(7618, "store", "50 Health Potions", "the Mentor Marks shop")
+	has(7618, "reward", "Mentor program", "the mentor graduation")
+	has(29856, "reward", "Quest: The Bone Choir", "a tale's reward")
+	has(24692, "reward", "Ember Cache", "the Ember Cache")
+	has(29857, "reward", "Guild siege", "the siege")
+	has(29857, "reward", "Weekly leaderboards", "the leaderboards")
+	has(29857, "reward", "Community goal", "the community goal")
+	has(7620, "reward", "Referral", "the referral gift")
+	has(29857, "reward", "Class trials", "the class trials")
+	has(32301, "reward", "Charm drop", "a charm")
+	has(32309, "craft", "Charm salvage", "the charm shard")
+	has(D.nemesis.rewards.trophy.id, "reward", "Nemesis", "the nemesis trophy")
+	has(27990, "reward", "Level gift", "a level gift")
+	has(2120, "reward", "Starter kit", "the starter kit")
+	has(32085, "reward", "Starter kit", "the Everfull health potion")
+	has(32086, "reward", "Starter kit", "the Everfull mana potion")
+	has(32257, "store", "Raid vendor", "the raid vendor (found by the audit)")
+
+	-- the global drop tables (live test winpkg-35: an Orb of Awakening from a Rat; the tooltip said "Drops from: Embermaw
+	-- Archon (50%), Inferno Juggernaut (50%)"): every entry of every global table has an "Any monster" row with its odds
+	do
+		local function globalRow(id)
+			for _, r in ipairs((idx.items[id] or {rows = {}}).rows.drop or {}) do
+				if r.n == "Any monster" and tostring(r.v):find("global drop", 1, true) then
+					return r
+				end
+			end
+		end
+		local lootCfg = dofile(base .. "loot_config.lua")
+		for _, e in ipairs(lootCfg.currency.entries) do
+			check(globalRow(e.id) ~= nil, "global drop row of " .. e.name)
+		end
+		for i = 0, #gems.types * #gems.tiers - 1 do
+			check(globalRow(gems.firstId + i) ~= nil, "global drop row of gem " .. (gems.firstId + i))
+		end
+		check(globalRow(D.rift.key.itemId) ~= nil, "global drop row of the Rift Key")
+		local awakening = globalRow(29851)
+		eq(awakening and awakening.v, "global drop, about 1 in 330 kills", "Orb of Awakening: 30 per 10000 normal kills")
+		local total = 0
+		for _, e in ipairs(lootCfg.currency.entries) do
+			total = total + e.weight
+		end
+		check(awakening and awakening.d:find("legendary and boss monsters always draw one entry by weight (this one 20 of " ..
+			total .. ")", 1, true) ~= nil, "and its weight in the guaranteed draw: " .. tostring(awakening and awakening.d))
+		eq(globalRow(32255).v, "global drop, about 1 in 2,500 magic monster kills", "Orb of Ruin: none from normal monsters")
+		check(globalRow(D.rift.key.itemId).v:find("level 60+", 1, true) ~= nil, "the key's level gate")
+		check(globalRow(gems.firstId + 4).v:find("level 300+", 1, true) ~= nil, "a perfect gem's level gate: " .. globalRow(gems.firstId + 4).v)
+	end
+	has(2160, "reward", "Ashen Pass", "the season pass")
+	has(29855, "reward", "The Ashen Pilgrimage", "the season journey")
+
+	-- audit: every item a config hands out (any {kind = "item" | "items", id} entry, any {id, count} or {id, n} entry of
+	-- an `items`, `equip`, `backpack` or `everfull` list, the store's item, bundle and service offers) has at least one row. A new
+	-- reward in a config that the item finder does not read fails here: add its source to itemfinder_sources.lua.
+	do
+		local given = {}
+		local function give(id, where)
+			id = tonumber(id)
+			if id and id > 0 and not given[id] then
+				given[id] = where
+			end
+		end
+		local LISTS = {items = true, equip = true, backpack = true, everfull = true}
+		-- t: a config table; isEntry: t is an entry of an `items` / `equip` / ... list; isList: t is such a list
+		local function scan(t, where, seen, isEntry, isList)
+			if type(t) ~= "table" or seen[t] then
+				return
+			end
+			seen[t] = true
+			if (t.kind == "item" or t.kind == "items") and tonumber(t.id) then
+				give(t.id, where)
+			end
+			if isEntry and (tonumber(t.id) or (type(t[1]) == "number" and type(t[2]) == "number")) then
+				give(t.id or t[1], where)
+			end
+			for k, v in pairs(t) do
+				-- secrets: hidden achievements are never listed
+				if type(v) == "table" and not v.hidden then
+					scan(v, where, seen, isList == true and type(k) == "number", LISTS[k] == true)
+				end
+			end
+		end
+		local skip = {conquest = true} -- a mocked catalog
+		for key, t in pairs(D) do
+			if not skip[key] then
+				scan(t, key, {}, false, false)
+			end
+		end
+		for _, cat in ipairs(shopCfg.categories) do
+			for _, o in ipairs(cat.offers or {}) do
+				scan(o, "store " .. tostring(cat.name), {}, false, false)
+				local sid = o.kind == "service" and S.serviceItem(o.service, o.pouch, storeCtx)
+				if sid then
+					give(sid, "store service " .. o.service)
+				end
+				for _, part in ipairs(o.kind == "bundle" and o.parts or {}) do
+					local id = type(part) == "string" and part:match("^item:(%d+)")
+					give(id, "store bundle " .. tostring(o.name))
+				end
+			end
+		end
+		local missing, total = {}, 0
+		for id, where in pairs(given) do
+			total = total + 1
+			local r = idx.items[id]
+			if not r or r.n == 0 then
+				missing[#missing + 1] = id .. " (" .. where .. ")"
+			end
+		end
+		table.sort(missing)
+		check(total >= 90, "the audit finds the configs' items (" .. total .. ")")
+		check(#missing == 0, "every item a config gives has a source; missing: " .. table.concat(missing, ", "))
+	end
 	-- achievements: the visible ones with items are listed, hidden ones never
 	local ach = D.achievements
 	local visible, hidden = 0, 0

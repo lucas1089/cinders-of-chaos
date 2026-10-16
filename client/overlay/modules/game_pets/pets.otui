@@ -66,7 +66,7 @@ PetAbility < UIWidget
 
 ChaosMainWindow
   id: petsWindow
-  size: 660 470
+  size: 870 470
   !text: tr('Pets')
   @onEscape: modules.game_pets.hide()
 
@@ -102,13 +102,23 @@ ChaosMainWindow
     step: 49
     pixels-scroll: true
 
+  // the shared look preview (game_lookpreview): the selected pet large
+  UIWidget
+    id: lookPreview
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: statusLabel.top
+    margin-bottom: 8
+    width: 200
+
   ChaosPanelDark
     id: detail
     anchors.top: parent.top
     anchors.left: listFrame.right
-    anchors.right: parent.right
+    anchors.right: lookPreview.left
     anchors.bottom: statusLabel.top
     margin-left: 8
+    margin-right: 8
     margin-bottom: 8
     padding: 8
 

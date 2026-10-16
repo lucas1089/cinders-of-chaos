@@ -29,6 +29,54 @@ end
 
 M.now = os.mtime or function() return os.time() * 1000 end
 
+-- ------------------------------------------------------------------ class outfits (the donor art ones)
+local function replacementFor(vocId)
+	local r = cfg().outfitReplacement
+	if not (r and r.enabled and r.outfit and r.outfit.lookType) then
+		return nil
+	end
+	for _, v in ipairs(r.vocations or {}) do
+		if v == vocId then
+			return r
+		end
+	end
+	return nil
+end
+
+-- the class outfits a vocation is given (Chaos.classes.outfits, plus the replacement outfit while its switch is on);
+-- a fresh list, never nil. Retired outfits (Chaos.classes.retiredOutfits) are never in it.
+function M.classOutfitsFor(vocId)
+	local out, seen = {}, {}
+	for _, o in ipairs((cfg().outfits or {})[vocId] or {}) do
+		out[#out + 1] = o; seen[o.lookType] = true
+	end
+	local r = replacementFor(vocId)
+	if r and not seen[r.outfit.lookType] then
+		out[#out + 1] = r.outfit
+	end
+	return out
+end
+
+-- the look type a character of this vocation wearing `worn` is moved to at login, or nil (switch off, another
+-- vocation, or not wearing the replaced outfit)
+function M.outfitSwap(vocId, worn)
+	local r = replacementFor(vocId)
+	if r and worn == r.replaces then
+		return r.outfit.lookType
+	end
+	return nil
+end
+
+-- true for a retired class outfit (kept wearable, never given, never sold)
+function M.isRetiredOutfit(lookType)
+	for _, o in ipairs(cfg().retiredOutfits or {}) do
+		if o.lookType == lookType then
+			return true
+		end
+	end
+	return false
+end
+
 -- ------------------------------------------------------------------------------------------------ vocations
 function M.isThiefLine(vocId)
 	return cfg().baseOf[vocId] == cfg().ids.thief

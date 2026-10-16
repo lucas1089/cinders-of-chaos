@@ -1,9 +1,9 @@
 Module
   name: game_spellbook
-  description: Spellbook window (every server spell with its data and area of effect; extended opcode 219)
+  description: Spellbook window (every server spell with its data and area of effect; extended opcode 219) and ChaosSpellCore (spell order, learned filter; used by the spell pickers through base patch 0057)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ spellbook ]
+  scripts: [ spellbook_core, spellbook ]
   dependencies:
     - client_chaos_theme
     - game_interface

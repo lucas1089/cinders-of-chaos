@@ -499,10 +499,11 @@ do
 		return it
 	end
 	local seers = {}
-	function Game.getSpectators(p)
+	function Game.getSpectators(p, multifloor, onlyPlayers, rx, rx2, ry)
 		local out = {}
+		rx, ry = rx or 9, ry or 7
 		for _, s in ipairs(seers) do
-			if s.pos.z == p.z and math.abs(s.pos.x - p.x) <= 9 and math.abs(s.pos.y - p.y) <= 7 then
+			if s.pos.z == p.z and math.abs(s.pos.x - p.x) <= rx and math.abs(s.pos.y - p.y) <= ry then
 				out[#out + 1] = s
 			end
 		end
@@ -570,6 +571,16 @@ do
 	local e = Tile(Position(em.def.entrance.x, em.def.entrance.y, em.def.entrance.z))
 	ok(e:getItemById(cfg.items.portal) and e:getItemById(cfg.items.portal):getActionId() == cfg.aid.entrance,
 		"the entrance portal is placed on the map with its action id")
+	-- its look text comes from this config: the area's name and level band (cityportals.lua, cityportals_fx.lua)
+	eq(ChaosCityPortals.kindOf(cfg.aid.entrance), "hunt", "the entrance is a labelled city portal")
+	for _, def in ipairs(cfg.areas) do
+		if def.entrance and AG.built[def.id] then
+			local lv = def.spawns and def.spawns.level
+			local want = lv and lv[2] ~= lv[1] and string.format("%s, levels %d-%d", def.name, lv[1], lv[2]) or def.name
+			eq(ChaosCityPortals.titleOf(cfg.aid.entrance, def.entrance), lv and lv[2] == lv[1]
+				and string.format("%s, level %d", def.name, lv[1]) or want, def.id .. ": the look text names the area and its levels")
+		end
+	end
 	local count = 0
 	for _ in pairs(monsters) do
 		count = count + 1
@@ -621,6 +632,91 @@ do
 	nowT = p1.spawntime * 2000 + 1
 	tick()
 	eq(#p1.alive, p1.count, "respawned after the second wait")
+	-- respawn near players (engine patch 0041, config spawnNearPlayers): the map spawns' rule, read from configKeys
+	do
+		local settings = {[1] = true, [2] = 2}
+		local function setKeys()
+			configKeys = {SPAWN_NEAR_PLAYERS = 1, SPAWN_MIN_PLAYER_DISTANCE = 2}
+			configManager = {getBoolean = function(k) return settings[k] end, getNumber = function(k) return settings[k] end}
+		end
+		local effects, forced = 0, 0
+		local realPosition, realCreate = Position, Game.createMonster
+		Position = function(x, y, z)
+			local q = realPosition(x, y, z)
+			function q:sendMagicEffect(e)
+				if e == CONST_ME_TELEPORT then effects = effects + 1 end
+			end
+			return q
+		end
+		Game.createMonster = function(name, q, extended, force)
+			if force then forced = forced + 1 end
+			return realCreate(name, q, extended, force)
+		end
+		TILESTATE_PROTECTIONZONE = 8
+		local tl = Tile(Position(p1.x, p1.y, p1.z))
+		local tileState = {creatures = 0, pz = false, block = false}
+		function tl:getCreatureCount() return tileState.creatures end
+		function tl:hasFlag(f) return f == TILESTATE_PROTECTIONZONE and tileState.pz end
+		function tl:hasProperty(pr) return pr == CONST_PROP_BLOCKSOLID and tileState.block end
+		local player = {isPlayer = function() return true end, getPlayer = function() return nil end}
+		local base = p1.spawntime * 2000 + 1
+		local round = 0
+		-- kill one monster of p1 with a player at (dx, 0) and step past the spawntime: true when it came back
+		local function trial(dx)
+			round = round + 1
+			local victim = monsters[p1.alive[#p1.alive]]
+			find("ChaosAreaGenDeath").onDeath(victim)
+			monsters[victim.id] = nil
+			player.pos = {x = p1.x + dx, y = p1.y, z = p1.z}
+			seers[1] = player
+			nowT = base + round * p1.spawntime * 3000
+			tick()
+			local back = #p1.alive == p1.count
+			seers[1] = nil
+			if not back then
+				nowT = nowT + p1.spawntime * 1000 + 1
+				tick() -- nobody in view: the point fills, ready for the next trial
+			end
+			return back
+		end
+		eq(AG.nearPlayersDistance(), nil, "no config keys (an engine without 0041): the old rule")
+		ok(not trial(4), "no config keys: no respawn in view")
+		setKeys()
+		eq(AG.nearPlayersDistance(), 2, "spawnNearPlayers on: distance 2")
+		effects, forced = 0, 0
+		ok(trial(4), "a player 4 sqm away sees the point: it respawns")
+		ok(effects >= 1, "the respawn in view shows the teleport effect")
+		eq(forced, 0, "a fill in view never uses the forced placement")
+		ok(not trial(1), "a player next to the point: no respawn")
+		ok(trial(2), "a player 2 sqm away: it respawns")
+		tileState.creatures = 1
+		ok(not trial(4), "a creature on the point: no respawn")
+		tileState.creatures = 0
+		tileState.pz = true
+		ok(not trial(4), "a protection zone point: no respawn")
+		tileState.pz = false
+		tileState.block = true
+		ok(not trial(4), "a blocking item on the point: no respawn")
+		tileState.block = false
+		settings[2] = 5
+		ok(not trial(4), "spawnMinPlayerDistance 5: a player 4 sqm away blocks it")
+		settings[2] = 99
+		eq(AG.nearPlayersDistance(), 7, "the distance is at most 7")
+		settings[2] = 2
+		settings[1] = false
+		eq(AG.nearPlayersDistance(), nil, "spawnNearPlayers off: the old rule")
+		ok(not trial(4), "spawnNearPlayers off: no respawn in view")
+		-- a point of several monsters: the others land up to 2 sqm away, so the player box grows by 2
+		player.pos = {x = p1.x + 3, y = p1.y, z = p1.z}
+		seers[1] = player
+		ok(AG.canSpawnNear({x = p1.x, y = p1.y, z = p1.z, count = 1, alive = {}}, 2), "one monster: a player 3 sqm away is fine")
+		ok(not AG.canSpawnNear({x = p1.x, y = p1.y, z = p1.z, count = 3, alive = {}}, 2),
+			"three monsters: a player 3 sqm away is too close")
+		seers[1] = nil
+		configKeys, configManager = nil, nil
+		Position, Game.createMonster = realPosition, realCreate
+		eq(#p1.alive, p1.count, "p1 full again after the trials")
+	end
 	-- leash: a monster far away without a target walks back
 	local m2 = monsters[em.points[2].alive[1]]
 	m2.pos = {x = m2.pos.x + 30, y = m2.pos.y, z = m2.pos.z}

@@ -70,5 +70,9 @@ return {
 
 	-- the portals of the systems that open a window (Ember Descent, the raid), in the hall's portal room: offsets from
 	-- the ORIGIN. descent_config.lua and raid_config.lua `portal.positions` hold the world tiles (the test checks them).
-	portals = {descent = {29, 23}, raid = {34, 23}}
+	-- The Hideout and Guild Hall Portals stand between them and the Memorial Portal west of the Descent (cityportals.lua
+	-- reads these three; cityportals_config.lua `hall`), so the hall's portal room holds every portal of the town in one row.
+	-- The two Chronicle Gates (chronicle.lua, one spot per chapter area) stand in the row behind them.
+	portals = {descent = {29, 23}, raid = {34, 23}, hideout = {31, 23}, guildhall = {32, 23}, memorial = {28, 23},
+		chronicle_cinderscar_breach = {30, 20}, chronicle_ossuary_stair = {33, 20}}
 }

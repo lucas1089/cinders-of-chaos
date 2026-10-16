@@ -10,14 +10,18 @@
 -- server -> client (one JSON message per packet; the list is split so a packet stays under ~7 KB):
 --   {"action":"open",   "data":{vocation, level, magicLevel, total, chunks, vocationNames:[{id, name}, ...]}}
 --   {"action":"spells", "data":{index, spells:[spell, ...]}}       x chunks
---   {"action":"done",   "data":{total}}
+--   {"action":"done",   "data":{total, sig}}
+--   open also carries sig (signature of the list), learned [names of the learned needlearn spells] and unchanged
+--   (true when the client's `have` is the current sig: then no spells chunks follow, chunks = 0)
 --   spell = {name, words, level, maglevel, mana, manaPercent, soul, cooldown (ms), groupCooldown (ms), group,
 --            type ("damage"|"heal"|"buff"|"summon"|"conjure"|"utility"), element, target
 --            ("single"|"area"|"self"|"front"), center ("caster"|"target"), area (matrix: 1 hit, 2 centre,
 --            3 centre + hit; "front" spells face north), range, description, scaling, vocations [ids], premium,
---            rune (server item id), runeClientId}
+--            rune (server item id), runeClientId, id (spellid), needLearn}
 -- client -> server:
---   {"action":"open"}   (window opened from the menu: same answer as !spells)
+--   {"action":"open", "data":{have, prefetch}}   (window opened from the menu; have = sig of the cached list, optional;
+--                                               prefetch = true: the client's background fetch after login)
+-- server -> client {"action":"show"}: a spellbook item was used; the client opens the window (and asks with open)
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -675,7 +679,9 @@ function Book.buildSpell(entry, scriptCache)
 		group = a.group or (entry.tag == "rune" and "attack" or nil),
 		range = num(a.range),
 		premium = truthy(a.premium),
-		scaling = info.scaling
+		scaling = info.scaling,
+		id = num(a.spellid), -- the spell id of the engine's cooldown packets (the client shows the cooldown left)
+		needLearn = truthy(a.needlearn) or nil -- castable only once learned (the open header lists the learned ones)
 	}
 	local kind, target, center = Book.classify(entry, info)
 	spell.type, spell.target, spell.center = kind, target, center
@@ -789,30 +795,102 @@ local function clean(value)
 end
 Book.clean = clean
 
-local lastOpen = {}
-
-function Book.sendTo(player)
-	local now = os.time()
-	local pid = player:getId()
-	if lastOpen[pid] and now - lastOpen[pid] < Book.openCooldown then
-		return false
+-- 32-bit Adler checksum of a string (Lua 5.3 and LuaJIT, no bit library): the list signature the client caches
+function Book.checksum(text)
+	local a, b = 1, 0
+	local n = #text
+	for i = 1, n, 4096 do
+		local bytes = {text:byte(i, math.min(n, i + 4095))}
+		for j = 1, #bytes do
+			a = (a + bytes[j]) % 65521
+			b = (b + a) % 65521
+		end
 	end
-	lastOpen[pid] = now
+	return string.format("%d-%04x%04x", n, b, a)
+end
 
-	local list = clean(Book.get())
+-- the packed list for one viewer: the display scale changes flat mana costs, so the cache is per scale factor and
+-- starts over when Book.spells is parsed again (`/spells reload`)
+local packCache = {}
+
+local function packedFor(player)
+	local base = Book.get()
+	local factor = 1
+	if ChaosDisplayScale and ChaosDisplayScale.forPlayer then
+		local ok, f = pcall(ChaosDisplayScale.forPlayer, player)
+		factor = ok and f or 1
+	end
+	local key = tostring(factor)
+	local hit = packCache[key]
+	if hit and hit.source == base then
+		return hit
+	end
+	local list = clean(base)
 	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: flat mana costs
 		list = ChaosDisplayScale.apply("spellList", player, list)
 	end
 	local chunks = Book.chunk(list, Book.chunkBytes, json.encode)
+	local parts = {}
+	for i, chunk in ipairs(chunks) do
+		parts[i] = json.encode(chunk)
+	end
+	hit = {source = base, total = #list, chunks = chunks, sig = Book.checksum(table.concat(parts, "\n"))}
+	packCache[key] = hit
+	return hit
+end
+
+-- names of the spells that need learning which this player has learned
+local function learnedNames(player, list)
+	local out = {}
+	for _, spell in ipairs(list) do
+		if spell.needLearn and spell.name then
+			local ok, has = pcall(function()
+				return player:hasLearnedSpell(spell.name)
+			end)
+			if ok and has then
+				out[#out + 1] = spell.name
+			end
+		end
+	end
+	return out
+end
+
+local lastOpen = {}
+Book.clients = Book.clients or {} -- player id -> true: that client has the Spellbook window (it sent opcode 219)
+
+-- `have`: the signature of the list the client already holds. When it is still the current one only the open header
+-- (vocation, level, learned) and done go out, without the throttle; otherwise the whole list, at most once every
+-- Book.openCooldown seconds. Book.sendList is the client's background fetch after login; Book.sendTo is the player
+-- opening the window (the new-player tutorial hooks only that one).
+function Book.sendList(player, have)
+	local pid = player:getId()
+	local packed = packedFor(player)
+	local unchanged = type(have) == "string" and have == packed.sig
+	if not unchanged then
+		local now = os.time()
+		if lastOpen[pid] and now - lastOpen[pid] < Book.openCooldown then
+			return false
+		end
+		lastOpen[pid] = now
+	end
+
+	local chunks = packed.chunks
 	local vocation = player:getVocation()
 	Chaos.send(player, OPCODE, "open", {
 		vocation = vocation and vocation:getId() or 0,
 		level = player:getLevel(),
 		magicLevel = player:getMagicLevel(),
-		total = #list,
-		chunks = #chunks,
+		total = packed.total,
+		chunks = unchanged and 0 or #chunks,
+		sig = packed.sig,
+		unchanged = unchanged or nil,
+		learned = learnedNames(player, Book.spells or {}),
 		vocationNames = Book.vocationList or {}
 	})
+	if unchanged then
+		Chaos.send(player, OPCODE, "done", {total = packed.total, sig = packed.sig})
+		return true
+	end
 	-- one chunk per server tick: sent together they end up in a single ~80 KB packet, which the client misreads
 	for i, chunk in ipairs(chunks) do
 		addEvent(function()
@@ -825,10 +903,78 @@ function Book.sendTo(player)
 	addEvent(function()
 		local p = Player(pid)
 		if p then
-			Chaos.send(p, OPCODE, "done", {total = #list})
+			Chaos.send(p, OPCODE, "done", {total = packed.total, sig = packed.sig})
 		end
 	end, (#chunks + 1) * Book.chunkDelay)
 	return true
+end
+
+function Book.sendTo(player, have)
+	return Book.sendList(player, have)
+end
+
+-- The stock spellbook text, for a client without the Spellbook window: "Spells for Level n" and "words - name : mana".
+function Book.spellText(player)
+	local spells = {}
+	local ok, list = pcall(function()
+		return player:getInstantSpells()
+	end)
+	for _, spell in ipairs(ok and type(list) == "table" and list or {}) do
+		if (spell.level or 0) ~= 0 then
+			local mana = (spell.manapercent or 0) > 0 and (spell.manapercent .. "%") or tostring(spell.mana or 0)
+			local words = (spell.params or 0) > 0 and (spell.words .. " para") or spell.words
+			spells[#spells + 1] = {level = spell.level, words = words, name = spell.name, mana = mana}
+		end
+	end
+	table.sort(spells, function(a, b)
+		if a.level ~= b.level then
+			return a.level < b.level
+		end
+		return (a.name or "") < (b.name or "")
+	end)
+	local text, prev = {}, nil
+	for _, spell in ipairs(spells) do
+		if spell.level ~= prev then
+			text[#text + 1] = (prev and "\n" or "") .. "Spells for Level " .. spell.level .. "\n"
+			prev = spell.level
+		end
+		text[#text + 1] = spell.words .. " - " .. spell.name .. " : " .. spell.mana .. "\n"
+	end
+	return table.concat(text)
+end
+
+-- Using a spellbook item (the stock spellbook script, hooked by tools/patch_base_spellbook.py, and the Chaos spellbooks
+-- below): a client with the Spellbook window gets `show` and opens it (it then asks with `open`); returns false for a
+-- client that never spoke opcode 219, which keeps the stock text window.
+function Book.openWindow(player)
+	if not player or not Book.clients[player:getId()] then
+		return false
+	end
+	Chaos.send(player, OPCODE, "show", {})
+	return true
+end
+
+-- the spellbooks of the Chaos item sets (gear sets of pair 28, themed sets of pair 24); the stock ids are the stock
+-- script's (a second registration of an id is refused by the engine)
+Book.STOCK_ITEM_IDS = {2175, 6120, 8900, 8901, 8902, 8903, 8904, 8918, 16112, 18401, 22422, 22423, 22424, 23771}
+
+function Book.chaosItemIds()
+	local stock, ids, seen = {}, {}, {}
+	for _, id in ipairs(Book.STOCK_ITEM_IDS) do
+		stock[id] = true
+	end
+	for _, path in ipairs({"data/lib/chaos_gear_sets_items.lua", "data/lib/chaos_theme_items.lua"}) do
+		local ok, data = pcall(dofile, path)
+		for _, piece in ipairs(ok and type(data) == "table" and type(data.pieces) == "table" and data.pieces or {}) do
+			local id = tonumber(piece.id)
+			if piece.kind == "spellbook" and id and not stock[id] and not seen[id] then
+				seen[id] = true
+				ids[#ids + 1] = id
+			end
+		end
+	end
+	table.sort(ids)
+	return ids
 end
 
 -- parse at startup when the spell library (AREA_* tables) is already loaded; otherwise on first use
@@ -847,6 +993,7 @@ local LogoutEvent = CreatureEvent("ChaosSpellbookLogout")
 
 function LogoutEvent.onLogout(player)
 	lastOpen[player:getId()] = nil
+	Book.clients[player:getId()] = nil
 	return true
 end
 
@@ -856,10 +1003,30 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
 		return
 	end
+	Book.clients[player:getId()] = true
 	local msg = Chaos.decode(buffer)
 	if msg and msg.action == "open" then
-		Book.sendTo(player)
+		local data = type(msg.data) == "table" and msg.data or {}
+		local have = type(data.have) == "string" and data.have:sub(1, 64) or nil
+		if data.prefetch == true then
+			Book.sendList(player, have) -- the background fetch after login: not the player opening the window
+		else
+			Book.sendTo(player, have)
+		end
 	end
+end
+
+local chaosBooks = Book.chaosItemIds()
+if #chaosBooks > 0 and Action then
+	local bookAction = Action()
+	function bookAction.onUse(player, item, fromPosition, target, toPosition, isHotkey)
+		if not Book.openWindow(player) then
+			player:showTextDialog(item:getId(), Book.spellText(player))
+		end
+		return true
+	end
+	bookAction:id((table.unpack or unpack)(chaosBooks))
+	bookAction:register()
 end
 
 LoginEvent:type("login")

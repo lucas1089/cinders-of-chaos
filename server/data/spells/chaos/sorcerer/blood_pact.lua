@@ -1,5 +1,8 @@
 -- Crimson Covenant: sacrifice 15% of max health for mana and a short magic level boost.
 dofile('data/spells/scripts/chaos/_common.lua')
+if not ChaosMysticFx then
+	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
+end
 
 function onCastSpell(creature, variant, isHotkey)
 	local player = creature:getPlayer()
@@ -22,6 +25,12 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(buff)
 
 	local pos = player:getPosition()
+	-- a crimson burst, then the pact circle alone (it was three effects stacked on the caster)
+	local M = ChaosMysticFx
+	if M and M.send(pos, "px197_crimson") then
+		M.later(300, pos, "blood_pact")
+		return true
+	end
 	ChaosSpell.fx(pos, "blood_rune", CONST_ME_DRAWBLOOD)
 	ChaosSpell.vfx(pos, "blood_pact")
 	pos:sendMagicEffect(CONST_ME_MAGIC_RED)

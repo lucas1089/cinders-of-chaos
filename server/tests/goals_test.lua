@@ -322,6 +322,46 @@ eq(#t, 3, "three tracked goals")
 eq(t[1].key, "wb1", "tracker first")
 check(t[1].title ~= nil and t[1].target ~= nil, "tracker row")
 
+-- the live refresh: the level goal follows the level, a done goal is replaced by the next one
+local ctx8 = {level = 8, stats = {}, done = {lvl8 = 1}}
+local t8 = K.tracker(cfg, ctx8, "en", 3)
+local function row(rows, key)
+	for _, x in ipairs(rows) do
+		if x.key == key then
+			return x
+		end
+	end
+end
+eq(row(t8, "lvl20") and row(t8, "lvl20").progress, 8, "level 8: Reach level 20 at 8")
+local t12 = K.tracker(cfg, {level = 12, stats = {passive_spent = 1}, done = {lvl8 = 1, passive1 = 1}}, "en", 3)
+eq(row(t12, "lvl20") and row(t12, "lvl20").progress, 12, "level 12: Reach level 20 at 12")
+check(K.sig(t8) ~= K.sig(t12), "a level up changes the tracker signature")
+eq(K.sig(t12), K.sig(K.tracker(cfg, {level = 12, stats = {passive_spent = 1}, done = {lvl8 = 1, passive1 = 1}}, "en", 3)),
+	"same view, same signature")
+local tm = K.tracker(cfg, {level = 12, stats = {kills_magic = 1}, done = {lvl8 = 1, passive1 = 1, magic1 = 1}}, "en", 3)
+check(not row(tm, "magic1") and row(tm, "bounty1") and row(tm, "lvl20"), "magic1 done: off the tracker")
+local tb = K.tracker(cfg, {level = 20, stats = {}, done = {lvl8 = 1, passive1 = 1, magic1 = 1, bounty1 = 1, lvl20 = 1}},
+	"en", 3)
+eq(#tb, 3, "level 20: the next band's goals fill the tracker")
+check(not row(tb, "bounty1") and row(tb, "task1"), "bounty1 replaced by task1")
+-- a paced kill can count a fraction: whole numbers on the wire
+eq(row(K.tracker(cfg, {level = 20, stats = {kills_tiered = 12.5}, done = {}}, "en", 9), "tiered50").progress, 12,
+	"fractional counter floored")
+eq(K.trackerOf(K.view(cfg, ctx8, "en"), 3)[1].key, t8[1].key, "trackerOf a view")
+local v8 = K.view(cfg, {level = 8, stats = {}, done = {lvl8 = 1}}, "en")
+local v9 = K.view(cfg, {level = 9, stats = {}, done = {lvl8 = 1}}, "en")
+check(K.panelSig(v8, "en") ~= K.panelSig(v9, "en"), "panel signature follows the level")
+check(K.panelSig(v8, "en") ~= K.panelSig(v8, "pt"), "panel signature follows the language")
+-- the push queue: one push per minMs, coalesced
+local push = {}
+eq(K.queuePush(push, 1000, 1000, 250), 250, "first change: the coalesce delay")
+eq(K.queuePush(push, 1100, 1000, 250), nil, "a change while queued merges")
+K.pushed(push, 1250)
+eq(K.queuePush(push, 1300, 1000, 250), 950, "the next push waits for minMs after the last")
+eq(K.queuePush(push, 1400, 1000, 250), nil, "merged again")
+K.pushed(push, 2250)
+eq(K.queuePush(push, 9000, 1000, 250), 250, "idle: only the coalesce delay")
+
 -- ---------------------------------------------------------------- effort
 eq(K.oneIn(0), nil, "no chance")
 eq(K.oneIn(1), 1, "certain")
@@ -449,7 +489,8 @@ ChaosConquest.grant = function(player, key, amount, detail)
 	return realGrant(player, key, amount)
 end
 ChaosPocketBoss = {}
-ChaosPassiveTree = {hasAllocation = function() return true end}
+local hasPassive = true
+ChaosPassiveTree = {listeners = {}, hasAllocation = function() return hasPassive end}
 
 -- goals.lua needs userdata players: the mock's tables count as players through this wrapper of `type`
 local realType = type
@@ -549,6 +590,100 @@ local q = #queries
 events.ChaosGoalsLogout.onLogout(p)
 check(#queries > q, "own stats written at logout")
 eq(Gs.st[101], nil, "forgotten")
+
+-- the live refresh (the bug: "Reach level 20  8/20" at level 12; the tracker went out only at login and on a goal done)
+local function lastTracker()
+	for i = #sent, 1, -1 do
+		if sent[i].action == "tracker" then
+			return sent[i].data.rows, i
+		end
+	end
+end
+local function trackerRow(key)
+	for _, x in ipairs((lastTracker())) do
+		if x.key == key then
+			return x
+		end
+	end
+end
+local function trackerCount()
+	local c = 0
+	for _, m in ipairs(sent) do
+		if m.action == "tracker" then
+			c = c + 1
+		end
+	end
+	return c
+end
+hasPassive = false
+local p2 = newPlayer(2, 202, 8)
+ChaosAchievements.stats[202] = {}
+events.ChaosGoalsLogin.onLogin(p2)
+runTimers()
+local st2 = Gs.st[202]
+check(st2 and st2.done.lvl8, "level 8 done at login")
+eq(trackerRow("lvl20") and trackerRow("lvl20").progress, 8, "login: Reach level 20 at 8")
+check(trackerRow("magic1") and trackerRow("bounty1"), "login: magic1 and bounty1 tracked")
+-- levels 9 to 12, one advance each: one queued run, one push
+local pushes = trackerCount()
+for lv = 9, 12 do
+	p2.level = lv
+	events.ChaosGoalsAdvance.onAdvance(p2, SKILL_LEVEL, lv - 1, lv)
+end
+eq(#timers, 1, "four level ups: one queued run")
+runTimers()
+eq(trackerCount(), pushes + 1, "one push for the four level ups")
+-- three rows: magic1, bounty1 and passive1 (unlocked at 12, before lvl20 in the config) push out the level goal
+check(trackerRow("passive1") ~= nil, "passive1 unlocked at 12 and tracked")
+check(trackerRow("lvl20") == nil, "no stale Reach level 20 8/20")
+-- a counter that changes nothing shown: no push
+pushes = trackerCount()
+ChaosAchievements.progress(p2, "party_kills", 1)
+runTimers()
+eq(trackerCount(), pushes, "no push when nothing shown changed")
+-- a spent passive point (the tree's listener), live
+check(#ChaosPassiveTree.listeners == 1, "passive listener added once")
+Gs.installHooks()
+eq(#ChaosPassiveTree.listeners, 1, "and only once")
+hasPassive = true
+ChaosPassiveTree.listeners[1](p2, {})
+runTimers()
+check(st2.done.passive1 ~= nil, "passive1 done after the save")
+check(trackerRow("passive1") == nil, "passive1 off the tracker")
+eq(trackerRow("lvl20") and trackerRow("lvl20").progress, 12, "level 12: Reach level 20 at 12")
+-- a magic monster (achievements.lua kill event -> ChaosAchievements.progress)
+ChaosAchievements.progress(p2, "kills_magic", 1)
+ChaosAchievements.progress(p2, "kills_tiered", 1)
+eq(#timers, 1, "one kill: one queued run")
+runTimers()
+check(st2.done.magic1 ~= nil, "magic1 done")
+check(trackerRow("magic1") == nil and trackerRow("bounty1") ~= nil, "magic1 replaced on the tracker")
+-- a bounty contract (bounty.lua -> ChaosLeaderboard.record "bounty" -> achievements.lua -> progress bounty_done)
+local bountySrc = readFile("data/scripts/chaos/bounty.lua") or ""
+check(bountySrc:find('ChaosLeaderboard.record("bounty", player, 1)', 1, true) ~= nil,
+	"bounty.lua records a paid contract on the leaderboard")
+local achSrc = readFile("data/scripts/chaos/achievements.lua") or ""
+check(achSrc:find('A.progress(who, "bounty_done", 1)', 1, true) ~= nil, "achievements.lua counts it as bounty_done")
+ChaosAchievements.progress(p2, "bounty_done", 1)
+runTimers()
+check(st2.done.bounty1 ~= nil, "bounty1 done")
+check(trackerRow("bounty1") == nil, "bounty1 off the tracker")
+-- the open panel follows too, only when it changed
+events.ChaosGoalsExtended.onExtendedOpcode(p2, 178, {action = "open"})
+local panels = #chunked
+p2.level = 13
+events.ChaosGoalsAdvance.onAdvance(p2, SKILL_LEVEL, 12, 13)
+runTimers()
+eq(#chunked, panels + 1, "open panel pushed on a level up")
+ChaosAchievements.progress(p2, "party_kills", 1)
+runTimers()
+eq(#chunked, panels + 1, "not pushed again without a change")
+-- a relog: the old queued run does nothing
+ChaosAchievements.progress(p2, "kills_magic", 1)
+events.ChaosGoalsLogout.onLogout(p2)
+pushes = trackerCount()
+runTimers()
+eq(trackerCount(), pushes, "a run queued before the logout does nothing")
 type = realType
 
 print(string.format("goals_test: %d checks, %d failures", checks, failures))

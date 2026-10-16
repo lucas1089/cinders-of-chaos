@@ -38,7 +38,9 @@ Monster names are never written in the JSON: an entry is named by its position, 
 Every change carries a marker, so a run first undoes the previous run and then applies the JSON again: a second run
 changes nothing, an edited JSON is synced, --remove restores the stock entries. Markers: chaosst="<old spawntime>" and
 chaosxy="<old x>,<old y>" on a changed <monster>, <!-- chaosremoved: ... --> for a removed one, chaosadd="<area>" on an
-added <spawn>. tools/late_game.py marks its own entries with lategame=""; both tools can run in any order.
+added <spawn>. A stock <spawn> whose every entry was removed becomes <!-- chaosemptied: <spawn ...>...</spawn> --> (the
+stock block as it was): the engine warns "Empty spawn" for a <spawn> with no entry left (2026-10-16 start log, 339 lines).
+tools/late_game.py marks its own entries with lategame=""; both tools can run in any order.
 
 --report prints the level band table of the README (spawn entries, respawn, kills per hour the respawn can feed and how
 many hunters that holds) from the file as it would be written. Exit status 1 when a listed position is not found.
@@ -54,6 +56,8 @@ SPAWN_RE = re.compile(r'(<spawn\s[^>]*>)(.*?)(</spawn>)', re.S)
 MON_RE = re.compile(r'<monster\s[^>]*?/>')
 ADDED_RE = re.compile(r'[ \t]*<spawn\s[^>]*\bchaosadd="[^"]*"[^>]*>.*?</spawn>[ \t]*\r?\n?', re.S)
 REMOVED_RE = re.compile(r'<!-- chaosremoved: (<monster\s[^>]*?/>) -->')
+EMPTIED_RE = re.compile(r'<!-- chaosemptied: (<spawn\s[^>]*>.*?</spawn>) -->', re.S)
+LIVE_RE = re.compile(r'<(?:monster|npc)\s')
 MARKS = ('chaosst', 'chaosxy')
 DEADREG_RE = re.compile(r'<!-- chaosdeadreg: (<monster\s[^>]*?/>) -->')
 COMMENT_RE = re.compile(r'<!--.*?-->', re.S)
@@ -98,6 +102,7 @@ def num(v, default=0):
 def restore(text):
     """the spawn file without anything this tool did"""
     text = ADDED_RE.sub('', text)
+    text = EMPTIED_RE.sub(lambda m: m.group(1), text)
     text = REMOVED_RE.sub(lambda m: m.group(1), text)
 
     def mon(m):
@@ -224,7 +229,7 @@ def apply(text, tuning, monsters):
     """returns (new text, counts, problems); text must be a restored file"""
     blocks = parse(text)
     times, counts = plan_spawntimes(blocks, tuning, monsters)
-    counts.update({'moved': 0, 'removed': 0, 'added': 0, 'filled': 0})
+    counts.update({'moved': 0, 'removed': 0, 'emptied': 0, 'added': 0, 'filled': 0})
     problems = []
     by_pos = {}
     for b, center, tags in blocks:
@@ -282,7 +287,12 @@ def apply(text, tuning, monsters):
                 new = set_attr(set_attr(new, 'x', to[0] - center[0]), 'y', to[1] - center[1])
                 counts['moved'] += 1
             return new
-        return m.group(1) + MON_RE.sub(mon, m.group(2)) + m.group(3)
+        body = MON_RE.sub(mon, m.group(2))
+        if body != m.group(2) and not LIVE_RE.search(COMMENT_RE.sub('', body)) and '--' not in m.group(0):
+            # every entry removed: the whole stock block goes into one comment (the engine warns on an empty <spawn>)
+            counts['emptied'] += 1
+            return '<!-- chaosemptied: %s -->' % m.group(0)
+        return m.group(1) + body + m.group(3)
     out = SPAWN_RE.sub(block_sub, text)
 
     areas = {a['id']: a for a in tuning.get('areas') or []}

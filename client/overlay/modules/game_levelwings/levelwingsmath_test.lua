@@ -78,5 +78,20 @@ eq(M.evict(active, 0), nil, 'one place left')
 active[999] = { start = 500 }
 eq(M.evict(active, 0), 999, 'full: the oldest gives way')
 
+-- place: the wing roots on the shoulders (anchors of client_chaos_charselect/outfit_anchors.lua, pair 28)
+local wx, wy = M.widgetCentre(8, 8); eq(wx, 8, 'widget centre x, displacement 8'); eq(wy, 8, 'widget centre y')
+wx, wy = M.widgetCentre(-32, 0); eq(wx, 16, 'negative displacement: tile centre x'); eq(wy, 16, 'tile centre y')
+wx, wy = M.widgetCentre(nil, nil); eq(wx, 16, 'no displacement x'); eq(wy, 16, 'no displacement y')
+local ox, oy = M.offsetFor({15, 17, -23, -12, 22}, 8, 8, 1)   -- look 130 (2x2, displacement 8)
+eq(ox, -3, '2x2: the box middle, 3 px left'); eq(oy, -13, '2x2: 13 px up')
+ox, oy = M.offsetFor({16, 18, -25, -3, 33}, -32, 0, 1)        -- look 1559, the Archmage (3x3, displacement -32, 0)
+eq(ox, -1, 'Archmage: centred'); eq(oy, -22, 'Archmage: 22 px up')
+ox, oy = M.offsetFor({16, 18, -25, -3, 33}, -32, 0, 2)
+eq(ox, -2, 'HD x'); eq(oy, -44, 'HD: twice the pixels')
+ox, oy = M.offsetFor(nil, 8, 8, 1)
+eq(ox, -2, 'unknown look: the default body x'); eq(oy, -13, 'unknown look: the default body y')
+ox, oy = M.offsetFor({16, 21, -8}, 0, 0, 0)           -- a 1x1 look without box: its centre x
+eq(ox, 0, '1x1 x'); eq(oy, -9, '1x1: roots on its shoulders')
+
 if fails > 0 then os.exit(1) end
 print('level-up wings tests OK')

@@ -31,24 +31,15 @@ SpellbookRow < UIWidget
     phantom: true
     visible: false
 
-  UILabel
-    id: level
-    anchors.right: parent.right
-    anchors.top: parent.top
-    margin-right: 4
-    margin-top: 2
-    width: 44
-    text-align: right
-    font: verdana-11px-rounded
-    color: #8c8070
-    phantom: true
-
+  // the name has the whole width (cut with "..." when longer, full name in the row's tooltip); the state (level,
+  // "Learn" or the cooldown left) sits on the second line, beside the words
   UILabel
     id: name
     anchors.left: icon.right
-    anchors.right: level.left
+    anchors.right: parent.right
     anchors.top: parent.top
     margin-left: 6
+    margin-right: 4
     margin-top: 2
     text-align: left
     font: verdana-11px-rounded
@@ -56,12 +47,24 @@ SpellbookRow < UIWidget
     phantom: true
 
   UILabel
-    id: words
-    anchors.left: name.left
+    id: level
     anchors.right: parent.right
     anchors.top: name.bottom
-    margin-top: 2
     margin-right: 4
+    margin-top: 2
+    width: 40
+    text-align: right
+    font: verdana-11px-antialised
+    color: #8c8070
+    phantom: true
+
+  UILabel
+    id: words
+    anchors.left: name.left
+    anchors.right: level.left
+    anchors.top: name.bottom
+    margin-top: 2
+    margin-right: 2
     text-align: left
     font: verdana-11px-antialised
     color: #8c8070

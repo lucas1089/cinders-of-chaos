@@ -42,6 +42,23 @@ CHROME_MODULES = ['game_interface', 'game_console', 'game_inventory', 'game_mini
 # them as tr() labels, so pt-BR shows them translated. (x0, y0, x1, y1), x1/y1 exclusive.
 TEXT_FREE = {
     'ui/schedule.png': [(1, 1, 111, 15), (113, 1, 225, 15)],  # the login Event Schedule heads "Active", "Upcoming"
+    # the Options menu entries (normal and selected halves): base patch 0056 draws the names as tr() labels in a
+    # readable font; the baked words were about 7 px tall and blurred
+    'optionstab/controls.png': [(36, 7, 78, 16), (37, 30, 79, 39)],
+    'optionstab/interface.png': [(35, 6, 80, 15), (36, 29, 81, 38)],
+    'optionstab/graphics.png': [(36, 7, 78, 17), (37, 30, 79, 40)],
+    'optionstab/misc.png': [(44, 7, 70, 16), (45, 30, 71, 38)],
+    'optionstab/generalHotkeys.png': [(18, 6, 96, 16), (19, 27, 97, 37)],
+    'optionstab/actionsHotkeys.png': [(11, 6, 101, 16), (12, 27, 101, 37)],
+    'optionstab/customHotkeys.png': [(18, 6, 96, 16), (19, 26, 97, 36)],
+    'optionstab/hud.png': [(45, 6, 69, 15), (46, 27, 70, 36)],
+    'optionstab/console.png': [(37, 6, 78, 15), (38, 27, 79, 36)],
+    'optionstab/gameWindow.png': [(23, 6, 91, 15), (24, 27, 92, 36)],
+    'optionstab/actionsBars.png': [(29, 6, 85, 15), (30, 27, 86, 36)],
+    'optionstab/controlButtons.png': [(18, 6, 96, 15), (19, 27, 97, 36)],
+    'optionstab/effects.png': [(41, 4, 73, 13), (42, 26, 74, 35)],
+    'optionstab/gameplay.png': [(34, 6, 81, 16), (35, 27, 82, 37)],
+    'optionstab/screenshot.png': [(27, 6, 87, 15), (28, 27, 88, 36)],
 }
 REF = re.compile(r'/images/([A-Za-z0-9_/.\- ]+?)(?:\.png)?(?=[\s\'")\],;]|$)')
 

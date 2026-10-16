@@ -3,6 +3,9 @@
 -- member it heals the Illusionist. Numbers: ChaosHealing.cfg.mirrorMend (data/scripts/chaos/healing_rules_core.lua).
 -- Weaver's Grace and the PvP healing reduction apply through data/scripts/chaos/healing_rules.lua.
 dofile('data/spells/scripts/chaos/_common.lua')
+if not ChaosMysticFx then
+	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
+end
 if not (ChaosHealing and ChaosHealing.mirrorTargets) then
 	dofile('data/scripts/chaos/healing_rules_core.lua')
 end
@@ -54,16 +57,40 @@ function onCastSpell(creature, variant, isHotkey)
 	end
 	local min, max = H.values(player:getLevel(), player:getMagicLevel(), cfg)
 	local amount = math.random(math.floor(min), math.floor(max))
+	-- the heal: a blue ki orb to the ally, the pack regenerating on it when it arrives; the mirror heal: an arcane bolt
+	-- on to the next ally, the arcane hit and the class mend (chaos_class_fx.lua: heal_sparkle -> mystic_mend) there.
+	-- Stock effects only without the pair's art (server/data/spells/README_FX.md "Mystic line effects")
+	local M = ChaosMysticFx
+	local ppos = primary:getPosition()
+	local fly = 0
 	if primary ~= player then
-		ChaosSpell.shoot(pos, primary:getPosition(), "arcane_orb", CONST_ANI_SMALLHOLY)
+		if M and M.shoot(pos, ppos, "ki_blast_blue") then
+			fly = M.flightMs(pos, ppos)
+		else
+			ChaosSpell.shoot(pos, ppos, "arcane_orb", CONST_ANI_SMALLHOLY)
+		end
 	end
 	ChaosSpell.healTarget(player, primary, amount, amount, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))
-	ChaosSpell.vfx(primary:getPosition(), "regenerating")
+	if M and fly > 0 then
+		M.later(fly, ppos, "regenerating")
+	else
+		ChaosSpell.vfx(ppos, "regenerating")
+	end
 	local mirror = mirrorId and Creature(mirrorId)
 	if mirror then
 		local m = math.floor(amount * cfg.mirror)
-		primary:getPosition():sendDistanceEffect(mirror:getPosition(), CONST_ANI_ENERGY)
-		ChaosSpell.healTarget(player, mirror, m, m, CONST_ME_PURPLEENERGY)
+		local mpos = mirror:getPosition()
+		local mirrorFx = CONST_ME_PURPLEENERGY
+		if M and M.shoot(ppos, mpos, "arcane_bolt") then
+			local at = M.flightMs(ppos, mpos)
+			M.later(at, mpos, "arcane_hit")
+			if ChaosSpell.vfx(mpos, "heal_sparkle") then
+				mirrorFx = CONST_ME_NONE
+			end
+		else
+			ppos:sendDistanceEffect(mpos, CONST_ANI_ENERGY)
+		end
+		ChaosSpell.healTarget(player, mirror, m, m, mirrorFx)
 	end
 	return true
 end

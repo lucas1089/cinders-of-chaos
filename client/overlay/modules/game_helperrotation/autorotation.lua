@@ -93,7 +93,7 @@ end
 
 -- the rotation for a character: vocId (the server's), level, canCast(id) -> true when the character can cast the spell
 -- (knows it, its class and level). Returns { level, ids, creatures, gap, changed } or nil, reason.
-function A.select(vocId, level, canCast)
+function A.select(vocId, level, canCast, opts)
   local c = A.classOf(vocId)
   if not c then
     return nil, 'class'
@@ -113,29 +113,42 @@ function A.select(vocId, level, canCast)
       changed = true
     end
   end
-  -- a spell the character cannot cast: fill from the earlier presets (newest first), one monster each
-  for j = index - 1, 1, -1 do
-    if #ids >= A.MAX_SPELLS or not changed then
-      break
-    end
-    for _, id in ipairs(c.presets[j].spells) do
-      if #ids < A.MAX_SPELLS and not seen[id] and canCast(id) then
-        ids[#ids + 1] = id
-        creatures[#creatures + 1] = 1
-        seen[id] = true
-      end
-    end
-  end
-  if #ids == 0 then
-    return nil, 'spells'
-  end
-  local gap = changed and A.gap(ids) or preset.gap
   if changed then
     -- an area spell may not wait for 2 monsters any more: the rest has to keep the gap on a lone target
     for i = 1, #creatures do
       creatures[i] = 1
     end
   end
+  -- The simulator keeps the smallest set that holds the 2 s rhythm (one spell from level 8 to 11 for a Mystic),
+  -- so the button wrote a single rule. Top it up to MAX_SPELLS with the other spells the character can cast, below
+  -- the preset's: earlier presets newest first, then the later ones. Those only fire while the ones above wait;
+  -- an area spell among them waits for 2 monsters (when the preset itself is complete).
+  -- opts.topUp == false: the preset alone (the level-up check only looks for new spells, it never tops up)
+  local spells = (data() and data().spells) or {}
+  local order = {}
+  if not (opts and opts.topUp == false) then
+    for j = index - 1, 1, -1 do order[#order + 1] = j end
+    for j = index + 1, #c.presets do order[#order + 1] = j end
+  end
+  local added = false
+  for _, j in ipairs(order) do
+    if #ids >= A.MAX_SPELLS then
+      break
+    end
+    for _, id in ipairs(c.presets[j].spells) do
+      if #ids < A.MAX_SPELLS and not seen[id] and canCast(id) then
+        ids[#ids + 1] = id
+        -- a set that lost a spell needs every filler on a lone target to keep the gap
+        creatures[#creatures + 1] = (not changed and spells[id] and spells[id].area) and 2 or 1
+        seen[id] = true
+        added = true
+      end
+    end
+  end
+  if #ids == 0 then
+    return nil, 'spells'
+  end
+  local gap = (changed or added) and A.gap(ids) or preset.gap
   return { level = preset.level, ids = ids, creatures = creatures, gap = gap, changed = changed }
 end
 
@@ -152,6 +165,37 @@ function A.rules(sel, nameOf, wordsOf)
     }
   end
   return out
+end
+
+-- copy of a rule list (the undo keeps the list as it was)
+function A.copyRules(rules)
+  local out = {}
+  for i, r in ipairs(rules or {}) do
+    local c = {}
+    for k, v in pairs(r) do c[k] = v end
+    out[i] = c
+  end
+  return out
+end
+
+-- "Add to my rules": the player's rules first, unchanged and in their order, then the generated ones whose spell is
+-- not in the list yet. Returns the new list and how many rules were added
+function A.merge(userRules, autoRules)
+  local out, have = A.copyRules(userRules), {}
+  for _, r in ipairs(out) do
+    if r.type == 'spell' and r.spellId then have[r.spellId] = true end
+  end
+  local added = 0
+  for _, r in ipairs(autoRules or {}) do
+    if not (r.type == 'spell' and have[r.spellId]) then
+      local c = {}
+      for k, v in pairs(r) do c[k] = v end
+      out[#out + 1] = c
+      added = added + 1
+      if r.spellId then have[r.spellId] = true end
+    end
+  end
+  return out, added
 end
 
 -- the spell ids of a rule list (spells only, in order)
@@ -189,6 +233,35 @@ function A.isCustom(rules, marker)
     end
   end
   return not (type(marker) == 'table' and same(A.ruleIds(rules), marker))
+end
+
+-- What a level-up does (owner, 2026-10-16: "the helper updated my spells without me asking"). The helper never
+-- changes the player's spells unasked. sel: the rotation for the new level (A.select with topUp false); rules,
+-- marker: the preset's rules and the ids the button wrote last; opts.autoUpdate: the player's "Auto-update my spells"
+-- (off by default); opts.ignored: {[id] = true} spells the player said Ignore to. Returns action, newIds:
+--   'none'    nothing new, or nothing the player has not ignored
+--   'notice'  new spells: ask "New spell available ... Add to rotation?" (Add / Ignore)
+--   'apply'   only with autoUpdate, and only for a rotation the button wrote (never the player's own rules)
+function A.levelUpAction(sel, rules, marker, opts)
+  opts = opts or {}
+  if not sel then
+    return 'none', {}
+  end
+  local current = {}
+  for _, id in ipairs(A.ruleIds(rules)) do current[id] = true end
+  local ignored = opts.ignored or {}
+  local newIds = {}
+  for _, id in ipairs(sel.ids) do
+    if not current[id] and not ignored[id] then newIds[#newIds + 1] = id end
+  end
+  local custom = A.isCustom(rules, marker)
+  if opts.autoUpdate == true and not custom and not same(A.ruleIds(rules), sel.ids) and #newIds > 0 then
+    return 'apply', newIds
+  end
+  if #newIds > 0 then
+    return 'notice', newIds
+  end
+  return 'none', {}
 end
 
 -- the healing tab's slots for the class: up to 3 heals it can cast, the strongest (highest level) at the lowest health

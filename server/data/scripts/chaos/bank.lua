@@ -2,15 +2,24 @@
 --
 -- Client contract (client/overlay/modules/game_bank/bank.lua):
 --   client -> server  {"action":"openBank"}
---                     {"action":"deposit",  "data":[currency, amount]}
---                     {"action":"withdraw", "data":[currency, amount]}
---                     {"action":"transfer", "data":[currency, playerName, amount]}
---                     currency is the string "gold" or "star"
+--                     {"action":"deposit",     "data":[currency, amount]}
+--                     {"action":"withdraw",    "data":[currency, amount]}
+--                     {"action":"depositAll",  "data":[currency]}   every carried coin (gold, platinum, crystal)
+--                     {"action":"withdrawAll", "data":[currency]}   the whole balance, as much as fits
+--                     {"action":"transfer",    "data":[currency, playerName, amount]}
+--                     currency is the string "gold" or "star" (the client shows the gold tab only: no star item
+--                     exists in this game, Chaos.bank.starItemId = 0)
 --   server -> client  {"action":"open","data":[goldCarried, goldBank, starBank, starCarried]}
 --                     (the client reads data[1..4] by position; for the gold tab it shows
 --                      data[1] as deposit limit and data[2] as bank balance, for the star tab
 --                      data[4] as deposit limit and data[3] as bank balance)
 -- The client shows nothing else, so results are reported through text messages.
+--
+-- The server does all the maths: amounts are integers in 1..balance (bank_core.lua K.checkAmount), withdrawals are paid
+-- out as coin stacks that really fit (capacity, free slots; K.payOut) and only what arrived is charged, the rest stays
+-- in the bank. Gold moves between the character's coins and its in-memory bank balance inside one dispatcher call, so
+-- two requests can never both spend the same balance. Every money request shares one rate limit key, checked before
+-- anything else (no database query on spam: tests/opcode_fuzz_test.lua).
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -18,7 +27,9 @@ end
 if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
+dofile("data/scripts/chaos/bank_core.lua")
 
+local K = ChaosBankCore
 local OPCODE = ChaosOpcodes.bank
 local cfg = Chaos.bank
 local T = Chaos.tables.bank
@@ -56,21 +67,61 @@ local function sendBankState(player)
 	})
 end
 
-local function fail(player, text)
-	player:sendCancelMessage(text)
+local function fail(player, text, ...)
+	player:sendCancelMessage(Chaos.t(player, text, ...))
 	sendBankState(player) -- re-sync the client's limits
+end
+
+-- give(id, count) for K.payOut: one stack into the backpack or nothing (never onto the floor); how many coins arrived
+local function coinGiver(player)
+	return function(id, count)
+		local before = player:getItemCount(id)
+		local item = Game.createItem(id, count)
+		if not item then
+			return 0
+		end
+		player:addItemEx(item, false)
+		return player:getItemCount(id) - before
+	end
+end
+
+-- pays `amount` of the bank balance out in coins; charges what arrived and says what stayed
+local function payGold(player, amount)
+	local balance = player:getBankBalance()
+	if not K.checkAmount(amount, balance) then
+		return fail(player, "Your bank balance is too low.")
+	end
+	local paid = K.payOut(amount, coinGiver(player))
+	if paid <= 0 then
+		return fail(player, "You do not have room or capacity for any coins.")
+	end
+	player:setBankBalance(balance - paid)
+	if paid < amount then
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+			"You withdrew %d gold; %d gold did not fit (capacity or free slots) and stays in the bank. Bank balance: %d gold.",
+			paid, amount - paid, balance - paid))
+	else
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You withdrew %d gold. Bank balance: %d gold.",
+			paid, balance - paid))
+	end
+	sendBankState(player)
+end
+
+local function depositGold(player, amount)
+	if not K.checkAmount(amount, player:getMoney()) then
+		return fail(player, "You do not carry that much gold.")
+	end
+	if not player:removeMoney(amount) then
+		return fail(player, "Could not take the gold from you.")
+	end
+	player:setBankBalance(player:getBankBalance() + amount)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You deposited %d gold. Bank balance: %d gold.", amount, player:getBankBalance()))
+	sendBankState(player)
 end
 
 local function doDeposit(player, currency, amount)
 	if currency == "gold" then
-		if player:getMoney() < amount then
-			return fail(player, "You do not carry that much gold.")
-		end
-		if not player:removeMoney(amount) then
-			return fail(player, "Could not take the gold from you.")
-		end
-		player:setBankBalance(player:getBankBalance() + amount)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You deposited %d gold. Bank balance: %d gold.", amount, player:getBankBalance()))
+		return depositGold(player, amount)
 	elseif currency == "star" then
 		if not starsEnabled() then
 			return fail(player, "Stars are not available.")
@@ -96,21 +147,13 @@ end
 
 local function doWithdraw(player, currency, amount)
 	if currency == "gold" then
-		local balance = player:getBankBalance()
-		if balance < amount then
-			return fail(player, "Your bank balance is too low.")
-		end
-		if not player:addMoney(amount) then
-			return fail(player, "You do not have room for that much gold.")
-		end
-		player:setBankBalance(balance - amount)
-		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "You withdrew %d gold. Bank balance: %d gold.", amount, balance - amount))
+		return payGold(player, amount)
 	elseif currency == "star" then
 		if not starsEnabled() then
 			return fail(player, "Stars are not available.")
 		end
 		if amount > cfg.starWithdrawMax then
-			return fail(player, string.format("You can withdraw at most %d stars at once.", cfg.starWithdrawMax))
+			return fail(player, "You can withdraw at most %d stars at once.", cfg.starWithdrawMax)
 		end
 		local guid = player:getGuid()
 		local banked = getStarBank(guid)
@@ -129,12 +172,45 @@ local function doWithdraw(player, currency, amount)
 	sendBankState(player)
 end
 
+-- "Deposit all": every coin the character carries (getMoney counts gold, platinum and crystal coins)
+local function doDepositAll(player, currency)
+	if currency ~= "gold" then
+		return fail(player, "Only gold can be deposited all at once.")
+	end
+	local carried = player:getMoney()
+	if carried < 1 then
+		return fail(player, "You do not carry any gold.")
+	end
+	depositGold(player, math.min(carried, cfg.maxAmount))
+end
+
+-- "Withdraw all": the whole balance, as much as fits; the rest stays in the bank
+local function doWithdrawAll(player, currency)
+	if currency ~= "gold" then
+		return fail(player, "Only gold can be withdrawn all at once.")
+	end
+	local balance = player:getBankBalance()
+	if balance < 1 then
+		return fail(player, "Your bank balance is empty.")
+	end
+	payGold(player, math.min(balance, cfg.maxAmount))
+end
+
 local function doTransfer(player, currency, targetName, amount)
 	if currency ~= "gold" and currency ~= "star" then
 		return
 	end
 	if player:getLevel() < cfg.transferMinLevel then
-		return fail(player, string.format("You need level %d to transfer.", cfg.transferMinLevel))
+		return fail(player, "You need level %d to transfer.", cfg.transferMinLevel)
+	end
+	if type(targetName) == "string" then
+		targetName = targetName:match("^%s*(.-)%s*$")
+	end
+	if not K.validName(targetName) then
+		return fail(player, "That is not a valid character name.")
+	end
+	if currency == "gold" and not K.checkAmount(amount, player:getBankBalance()) then
+		return fail(player, "Your bank balance is too low.") -- before the name lookup: no query for a transfer that cannot happen
 	end
 	local targetGuid, canonical, online = Chaos.findPlayer(targetName)
 	if not targetGuid then
@@ -149,7 +225,7 @@ local function doTransfer(player, currency, targetName, amount)
 
 	if currency == "gold" then
 		local balance = player:getBankBalance()
-		if balance < amount then
+		if not K.checkAmount(amount, balance) then
 			return fail(player, "Your bank balance is too low.")
 		end
 		player:setBankBalance(balance - amount)
@@ -204,9 +280,11 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if not msg then
 		return
 	end
-	-- every request reads or writes the database (ratelimit.lua); per action, so opening the window and the
-	-- request that follows it are never dropped together
-	if ChaosRateLimit and not ChaosRateLimit.allow(player, "bank." .. tostring(msg.action), 150) then
+	-- before anything else (ratelimit.lua). Opening the window has its own key, so the open and the request that
+	-- follows it are never dropped together; every request that moves money shares one key (also unknown actions:
+	-- no new key per made-up action), so alternating deposit / withdraw / transfer spam is limited as one.
+	local key = msg.action == "openBank" and "bank.open" or "bank.move"
+	if ChaosRateLimit and not ChaosRateLimit.allow(player, key, cfg.rateLimitMs or 300) then
 		return
 	end
 
@@ -223,7 +301,7 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	if msg.action == "deposit" or msg.action == "withdraw" then
 		local currency = data[1]
 		local amount = Chaos.toInt(data[2], 1, cfg.maxAmount)
-		if not amount then
+		if not amount or tonumber(data[2]) ~= amount then -- an integer, not 12.5 rounded down
 			return
 		end
 		if msg.action == "deposit" then
@@ -231,9 +309,13 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		else
 			doWithdraw(player, currency, amount)
 		end
+	elseif msg.action == "depositAll" then
+		doDepositAll(player, data[1])
+	elseif msg.action == "withdrawAll" then
+		doWithdrawAll(player, data[1])
 	elseif msg.action == "transfer" then
 		local amount = Chaos.toInt(data[3], 1, cfg.maxAmount)
-		if not amount then
+		if not amount or tonumber(data[3]) ~= amount then
 			return
 		end
 		doTransfer(player, data[1], data[2], amount)
@@ -244,4 +326,3 @@ LoginEvent:type("login")
 LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
-

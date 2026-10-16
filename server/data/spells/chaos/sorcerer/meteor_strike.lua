@@ -1,5 +1,8 @@
 -- Falling Pyre: marks the target's position, the meteor lands 1.2s later (fire, 5x5) and sets enemies ablaze.
 dofile('data/spells/scripts/chaos/_common.lua')
+if not ChaosMysticFx then
+	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
+end
 
 local area = createCombatArea(AREA_CIRCLE2X2)
 local DELAY = 1200
@@ -10,7 +13,11 @@ local function impact(casterId, pos, min, max)
 		return
 	end
 	pos = Position(pos)
-	doAreaCombat(caster, COMBAT_FIREDAMAGE, pos, area, -math.floor(min), -math.floor(max), Fx("fire_nova", CONST_ME_FIREAREA))
+	-- a fire shockwave ring over the landing covers the 5x5 area: no tile effects then
+	local M = ChaosMysticFx
+	local ring = M ~= nil and M.send(pos, "big_shock_fire_7")
+	local tile = Fx("fire_nova", CONST_ME_FIREAREA)
+	doAreaCombat(caster, COMBAT_FIREDAMAGE, pos, area, -math.floor(min), -math.floor(max), M and M.tileFx(ring, tile) or tile)
 	local dmg = math.max(3, math.floor(caster:getMagicLevel() * 0.2) + 5)
 	for _, c in ipairs(ChaosSpell.enemiesAround(caster, pos, 2)) do
 		caster:addDamageCondition(c, CONDITION_FIRE, DAMAGELIST_VARYING_PERIOD, dmg, {10, 12}, 5)

@@ -369,7 +369,17 @@ end
 
 -- start the channel; source "spell" | "menu". Returns true when it started.
 function T.cast(player, source)
-	local reason = T.blockReason(player)
+	-- inside a hideout: out at once through the hideout's exit logic (never into a hideout or an instance)
+	local bf = blockFacts(player)
+	if K.hideoutExit(bf) and ChaosHideout and ChaosHideout.leave then
+		local ok = ChaosHideout.leave(player, Chaos.t(player, "Your Town Portal takes you out of the hideout."))
+		Chaos.send(player, OPCODE, "castEnd", {result = ok and "done" or "refused"})
+		if ok then
+			sendState(player, false)
+		end
+		return ok == true
+	end
+	local reason = K.blockReason(bf)
 	if reason then
 		player:sendCancelMessage(reason)
 		Chaos.send(player, OPCODE, "castEnd", {result = "refused"})

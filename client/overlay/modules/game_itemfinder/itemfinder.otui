@@ -184,11 +184,19 @@ ChaosMainWindow
     phantom: true
     !text: tr('Search an item...')
 
+  ChaosButton
+    id: closeButton
+    anchors.verticalCenter: searchEdit.verticalCenter
+    anchors.right: parent.right
+    size: 60 22
+    !text: tr('Close')
+    !tooltip: tr('Close the Item Finder (Escape).')
+
   ChaosLabelDim
     id: status
     anchors.verticalCenter: searchEdit.verticalCenter
     anchors.left: searchEdit.right
-    anchors.right: parent.right
+    anchors.right: closeButton.left
     margin-left: 10
     height: 16
     text-align: left

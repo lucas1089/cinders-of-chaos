@@ -90,20 +90,186 @@ function K.label(script)
 	return (base:gsub("_", " "):gsub("(%a)([%w']*)", function(a, b) return a:upper() .. b end))
 end
 
--- The ancestral store entries of the XML map: sorted list of {param = "2, 1", label = "Fiery Wings", group = 2}.
+-- The ancestral store entries of the XML map: list sorted by entry number of
+-- {id = 1, param = "2, 1", label = "Fiery Wings", group = 2, script = "fiery_wings.lua"}. An entry number used twice
+-- keeps its first line (the window buys by id).
 function K.ancestralStore(map)
 	local list = {}
 	for words, script in pairs(map or {}) do
 		local a, b = words:match("^!ancestralstore%s+(%d+)%s*,%s*(%d+)$")
 		if a then
-			list[#list + 1] = {param = a .. ", " .. b, label = K.label(script), group = tonumber(a), n = tonumber(b)}
+			list[#list + 1] = {param = a .. ", " .. b, label = K.label(script), group = tonumber(a), id = tonumber(b),
+				script = script}
 		end
 	end
-	table.sort(list, function(x, y) return x.n < y.n end)
+	table.sort(list, function(x, y)
+		if x.id ~= y.id then
+			return x.id < y.id
+		end
+		return x.param < y.param
+	end)
+	local out, seen = {}, {}
 	for _, e in ipairs(list) do
-		e.n = nil
+		if not seen[e.id] then
+			seen[e.id] = true
+			out[#out + 1] = e
+		end
 	end
-	return list
+	return out
+end
+
+-- ---------------------------------------------------------------- ancestral store (bought here, not by the base scripts)
+-- The base server's store scripts (data/talkactions/scripts/<entry>.lua) only hold the price and the item: their own
+-- buy path read the points of the wrong row (fiery_wings.lua: the account id as a player id) and took the points with
+-- an unconditional UPDATE after a separate read. This window reads price and item from each script and buys itself.
+K.STORE = {
+	buyMs = 1000,       -- one purchase a second per player
+	maxCount = 10,      -- pieces per purchase
+	maxPrice = 1000000, -- a parsed price above this is a broken script: the entry is left out
+	maxEntries = 64,    -- keeps the store answer far below the 8192-byte extended opcode limit
+}
+-- entry group of the XML (the comments of talkactions.xml) -> what it gives
+K.STORE_KIND = {[1] = "Aura", [2] = "Wings", [3] = "Exercise Chest"}
+
+-- price and item id of one base store script, or nil
+function K.parseStoreScript(text)
+	if type(text) ~= "string" then
+		return nil
+	end
+	local price = tonumber(text:match("ITEM_PRICE%s*=%s*(%d+)"))
+	local item = tonumber(text:match("ItemType%(%s*(%d+)%s*%)"))
+	if not price or not item or price < 1 or price > K.STORE.maxPrice or item < 100 or item > 65535 then
+		return nil
+	end
+	return price, item
+end
+
+-- The store entries with price and item: entries of K.ancestralStore, readScript(script) -> text of the script,
+-- itemInfo(itemId) -> {name, clientId} or nil (an item this server does not have). Entries that do not parse are left out.
+function K.storeEntries(list, readScript, itemInfo)
+	local out = {}
+	for _, e in ipairs(list or {}) do
+		if #out >= K.STORE.maxEntries then
+			break
+		end
+		local price, itemId = K.parseStoreScript(readScript(e.script))
+		local info = itemId and itemInfo(itemId)
+		if price and info then
+			out[#out + 1] = {id = e.id, param = e.param, group = e.group, kind = K.STORE_KIND[e.group] or "Other",
+				label = e.label, name = info.name or e.label, itemId = itemId, clientId = info.clientId or 0, price = price}
+		end
+	end
+	return out
+end
+
+-- A strict whole number from client input in [lo, hi], or nil (no floats, no strings with extra text, no NaN/inf).
+function K.wholeNumber(value, lo, hi)
+	if type(value) == "string" then
+		if not value:match("^%s*%d+%s*$") then
+			return nil
+		end
+		value = tonumber(value)
+	end
+	if type(value) ~= "number" or value ~= value or value % 1 ~= 0 then
+		return nil
+	end
+	if value < lo or value > hi then
+		return nil
+	end
+	return value
+end
+
+-- A purchase request {id, count} against the entries: entry, count, cost or nil, reason ("id", "count").
+-- A missing count is 1.
+function K.validateBuy(entries, id, count)
+	local n = K.wholeNumber(id, 1, 1000000)
+	local entry
+	for _, e in ipairs(entries or {}) do
+		if n and e.id == n then
+			entry = e
+			break
+		end
+	end
+	if not entry then
+		return nil, "id"
+	end
+	if count == nil then
+		count = 1
+	end
+	local c = K.wholeNumber(count, 1, K.STORE.maxCount)
+	if not c then
+		return nil, "count"
+	end
+	return entry, c, entry.price * c
+end
+
+-- the entry a legacy param ("2, 1") names
+function K.entryByParam(entries, param)
+	for _, e in ipairs(entries or {}) do
+		if e.param == param then
+			return e
+		end
+	end
+	return nil
+end
+
+-- The store as sent to the client: points and entries without the server-only fields.
+function K.storePayload(entries, points, message)
+	local list = {}
+	for _, e in ipairs(entries or {}) do
+		list[#list + 1] = {id = e.id, kind = e.kind, name = e.name, item = e.clientId, price = e.price}
+	end
+	return {points = math.max(0, math.floor(tonumber(points) or 0)), entries = list, maxCount = K.STORE.maxCount,
+		message = message}
+end
+
+-- per-player throttle when ratelimit.lua is missing: true when allowed (records the time)
+function K.throttle(slots, id, now, ms)
+	local last = slots[id]
+	if last and now >= last and now - last < ms then
+		return false
+	end
+	slots[id] = now
+	return true
+end
+
+-- ---------------------------------------------------------------- texts of base commands
+-- Lines of base server commands shown with another text (the original text is the key).
+K.REWRITE = {
+	["You didn't have any current Double EXP enhancement."] = "No Double EXP active.",
+}
+function K.rewrite(lines)
+	for i, line in ipairs(lines or {}) do
+		lines[i] = K.REWRITE[line] or line
+	end
+	return lines
+end
+
+-- ---------------------------------------------------------------- Services status
+-- The state the Services page uses to enable its buttons. facts: nameTokens, vocationTokens (storage values, -1 =
+-- none), freeSwitch (vocation name or nil), inTutorial, level, familiarLevel, webshopOrders (nil = unknown),
+-- frames (owned frame names), activeFrame (name or nil).
+function K.servicesState(facts)
+	local f = facts or {}
+	local frames = {}
+	for _, name in ipairs(f.frames or {}) do
+		if type(name) == "string" then
+			frames[#frames + 1] = name
+		end
+	end
+	local level = tonumber(f.level) or 0
+	local need = tonumber(f.familiarLevel) or 0
+	return {
+		nameTokens = math.max(0, tonumber(f.nameTokens) or 0),
+		vocationTokens = math.max(0, tonumber(f.vocationTokens) or 0),
+		freeSwitch = type(f.freeSwitch) == "string" and f.freeSwitch or "",
+		inTutorial = f.inTutorial == true,
+		familiarReady = level >= need,
+		familiarLevel = need,
+		webshopOrders = f.webshopOrders == nil and -1 or math.max(0, tonumber(f.webshopOrders) or 0),
+		frames = frames,
+		activeFrame = type(f.activeFrame) == "string" and f.activeFrame or "",
+	}
 end
 
 -- Cleans the window's text field: trimmed, single line, at most `max` characters; "" when nothing is left.

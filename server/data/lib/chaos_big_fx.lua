@@ -38,8 +38,10 @@ C.spells = {
 	[213] = {earth_spikes = "big_nova_poison_7", frost_nova = "big_nova_frost_7"}, -- Primordial Squall, its waves
 	[204] = {meteor_strike = "big_meteor_fire_7"},                         -- Falling Pyre: lands on the impact
 	[202] = {lightning_hit = "big_lightning_burst_7"},                     -- Forked Storm, each jump
-	[231] = {void_rift = "big_rift_void_7"},                               -- Tear in the Weave (Illusionist)
-	[230] = {void_maw = "big_nova_void_7"},                                -- Nightburst (Illusionist)
+	[231] = {void_rift = "big_rift_void_7", arcane_circle = "big_nova_arcane_7"}, -- Tear in the Weave: the rift under
+	                                                                       -- its pair 27 core, each implosion
+	[230] = {shadow_smoke = "big_nova_void_7"},                            -- Nightburst: the eruption (void_maw, the
+	                                                                       -- gather, stays the pack effect)
 	-- Warrior line
 	[225] = {earth_spikes = "big_shock_fire_7"},                           -- Colossus Fall
 	-- Ranger line
@@ -71,7 +73,7 @@ C.hits = {
 }
 
 -- in the pair, sent by nothing yet
-C.unwired = {"big_nova_arcane_7"}
+C.unwired = {}
 
 -- the big effect of a spell's effect name, or nil (pure: no switch, no ids)
 function C.pick(spellId, name)

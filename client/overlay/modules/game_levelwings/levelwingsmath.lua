@@ -1,5 +1,5 @@
--- Pure helpers of the level-up wings (game_levelwings): the frame timing, the draw layer, the size on the map, the
--- settings rule and the message check. No client API here; tested by levelwingsmath_test.lua (luajit and lua5.3).
+-- Pure helpers of the level-up wings (game_levelwings): the frame timing, the draw layer, the size and place on the
+-- map, the settings rule and the message check. No client API here; tested by levelwingsmath_test.lua (luajit and lua5.3).
 
 LevelWingsMath = {}
 local M = LevelWingsMath
@@ -11,6 +11,45 @@ M.HOLD_UNTIL_MS = 1150 -- the open wings stay at full strength until here
 M.TOTAL_MS = 1800      -- then fade out; gone at this time
 M.BASE_W, M.BASE_H = 96, 80 -- image size at a 32 px tile (the files are 2x)
 M.MAX_ACTIVE = 12      -- at most this many wings on screen at once (the oldest gives way)
+
+-- where the wings sit (owner, 2026-10-16: they opened off-centre, left of and below a level 10 Mystic). The engine
+-- centres a creature widget on the tile centre moved up and left by the outfit's displacement, or on the tile centre
+-- when the displacement is negative (the big imported looks): that is the middle of a 32 px sprite, not of the body
+-- of a 64 or 96 px look (2x2: 7 px left of it and 13 px too low; the 3x3 Archmage: 22 px too low). The art's wing
+-- roots are ROOT_Y above the image centre (client/tools/gen_levelwings_art.py ROOT); they go on the shoulders, SHOULDER
+-- of the way down the body from its top to its feet.
+M.SHOULDER = 0.3
+M.ROOT_Y = -6
+-- a look the anchor table does not know (a newer pair): a usual 2x2 body, {centre x, ground row, top, left, right}
+M.DEFAULT_ANCHOR = {16, 20, -24, -10, 22}
+
+local function round(v)
+  return math.floor(v + 0.5)
+end
+
+-- the engine's centre of a creature widget, in pixels at 1x relative to the top left of the creature's tile
+function M.widgetCentre(dx, dy)
+  dx, dy = tonumber(dx) or 0, tonumber(dy) or 0
+  if dx < 0 or dy < 0 then
+    return 16, 16
+  end
+  return 16 - dx, 16 - dy
+end
+
+-- how far to move the wing image from the widget centre (pixels at the current scale): anchor = the look's row of the
+-- character select's outfit anchors ({cx, ground, top, ...}: 1x pixels relative to the tile, displacement applied),
+-- dx, dy = the look's displacement (signed), scale = sprite size / 32 times the creature's draw scale
+function M.offsetFor(anchor, dx, dy, scale)
+  local a = type(anchor) == 'table' and anchor[1] and anchor[2] and anchor[3] and anchor or M.DEFAULT_ANCHOR
+  local k = tonumber(scale) or 1
+  if k <= 0 then k = 1 end
+  local wx, wy = M.widgetCentre(dx, dy)
+  local shoulder = a[3] + M.SHOULDER * (a[2] - a[3])
+  -- across: the middle of the visible box (left, right) at the shoulders; the feet centre (cx) of an oblique look is
+  -- right of its shoulders, its body leans up and left
+  local x = (a[4] and a[5]) and (a[4] + a[5]) / 2 or a[1]
+  return round((x - wx) * k), round((shoulder - M.ROOT_Y - wy) * k)
+end
 
 local function clamp(v, lo, hi)
   if v < lo then return lo end

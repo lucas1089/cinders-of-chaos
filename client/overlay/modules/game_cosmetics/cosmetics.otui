@@ -19,6 +19,17 @@ CosmeticRow < ChaosPanelDark
     virtual: true
     phantom: true
 
+  // the main effect's picture (spell skins, kill effects) or a footprint's print, cropped to 32 x 32
+  UIWidget
+    id: fx
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 32 32
+    image-smooth: false
+    phantom: true
+    visible: false
+
   UIWidget
     id: swatch
     anchors.left: parent.left
@@ -61,7 +72,7 @@ CosmeticSampleLabel < UILabel
 
 ChaosMainWindow
   id: cosmeticsWindow
-  size: 720 480
+  size: 930 480
   !text: tr('Cosmetics')
   @onEscape: modules.game_cosmetics.hide()
 
@@ -69,11 +80,23 @@ ChaosMainWindow
     id: tabs
     anchors.top: parent.top
     anchors.left: parent.left
-    anchors.right: parent.right
+    anchors.right: onlyMineBox.left
+    margin-right: 8
     height: 24
     layout:
       type: horizontalBox
       spacing: 4
+
+  // game_unlocks: hide what this character has not unlocked (kept per character and tab)
+  ChaosCheckBox
+    id: onlyMineBox
+    anchors.top: parent.top
+    anchors.right: parent.right
+    margin-top: 4
+    width: 100
+    !text: tr('Only mine')
+    !tooltip: tr('Show only what you have unlocked')
+    visible: false
 
   ChaosPanelDark
     id: listFrame
@@ -108,13 +131,22 @@ ChaosMainWindow
     step: 43
     pixels-scroll: true
 
+  // the shared look preview (game_lookpreview): the character large with the row's outline or look on it
+  UIWidget
+    id: lookPreview
+    anchors.top: listFrame.top
+    anchors.right: parent.right
+    anchors.bottom: listFrame.bottom
+    width: 216
+
   ChaosPanelDark
     id: detail
     anchors.top: listFrame.top
     anchors.left: listFrame.right
-    anchors.right: parent.right
+    anchors.right: lookPreview.left
     anchors.bottom: listFrame.bottom
     margin-left: 8
+    margin-right: 8
     padding: 8
 
     UIItem
@@ -125,12 +157,13 @@ ChaosMainWindow
       size: 64 64
       virtual: true
 
-    UICreature
-      id: creature
+    UIWidget
+      id: fxIcon
       anchors.horizontalCenter: parent.horizontalCenter
       anchors.top: parent.top
-      margin-top: 0
-      size: 72 72
+      margin-top: 4
+      size: 64 64
+      image-smooth: false
       phantom: true
       visible: false
 

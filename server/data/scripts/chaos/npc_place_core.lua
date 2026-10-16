@@ -11,6 +11,9 @@
 --   * not the temple tile itself and not next to it (`minFromTemple`), not in a corridor (a tile with fewer than
 --     `minOpen` walkable straight neighbours: an NPC there would block the way) unless nothing else is left;
 --   * the order is fixed (offsets, then distance, then row, then column), so a restart gives the same spot.
+-- Start log 2026-10-16: still no Loot Buyer at Nightwrack. Its temple (floor 6) is a room of about 25 tiles whose
+-- only ways out are stairs; a base NPC and the Material Broker take it, and no tile keeps `spacing` from both. An NPC
+-- placed with opts.depotFallback then stands near the town's nearest depot (K.depotAnchors, data/chaos_poi.lua).
 --
 --   ChaosNpcPlaceCore.pick(spec) -> dx, dy (relative to the temple) | nil
 --   spec = {walkable(dx, dy) -> bool       a player can stand there (ground, nothing blocking, no teleport / stairs)
@@ -18,6 +21,9 @@
 --           free(dx, dy) -> bool           nobody stands there now (default: true)
 --           offsets = {{dx, dy}, ...}, others = {{dx, dy}, ...} (the other NPCs), radius, spacing, minFromTemple,
 --           minOpen}
+--   ChaosNpcPlaceCore.depotAnchors(temple, marks, maxDist) -> {{x, y, z}, ...}   the depot marks of the map markers
+--           (data/chaos_poi.lua marks, k = "depot") within maxDist tiles (Chebyshev, default 64) and 2 floors of the
+--           temple: same floor first, then the nearer, then row, then column
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosNpcPlaceCore = ChaosNpcPlaceCore or {}
 local K = ChaosNpcPlaceCore
@@ -128,4 +134,33 @@ function K.pick(spec)
 		end
 	end
 	return nil
+end
+
+K.DEPOT_DISTANCE = 64
+
+function K.depotAnchors(temple, marks, maxDist)
+	maxDist = maxDist or K.DEPOT_DISTANCE
+	local out = {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == "depot" and tonumber(m.x) and tonumber(m.y) and tonumber(m.z) then
+			local dz = abs(m.z - temple.z)
+			local d = cheb(m.x, m.y, temple.x, temple.y)
+			if dz <= 2 and d <= maxDist then
+				out[#out + 1] = {x = m.x, y = m.y, z = m.z, dz = dz, d = d}
+			end
+		end
+	end
+	table.sort(out, function(a, b)
+		if a.dz ~= b.dz then
+			return a.dz < b.dz
+		end
+		if a.d ~= b.d then
+			return a.d < b.d
+		end
+		if a.y ~= b.y then
+			return a.y < b.y
+		end
+		return a.x < b.x
+	end)
+	return out
 end

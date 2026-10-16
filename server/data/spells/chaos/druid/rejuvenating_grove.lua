@@ -13,7 +13,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.pulse(player:getId(), 8, 1000, function(caster, step)
 		local pos = Position(center)
 		if step % 2 == 1 then
-			ChaosSpell.vfxOr(pos, "grove_glyph", "aura_ring", CONST_ME_GREEN_RINGS)
+			ChaosSpell.vfxOr(pos, "grove_glyph", "arcane_aura", CONST_ME_GREEN_RINGS)
 		end
 		for _, ally in ipairs(ChaosSpell.alliesAround(caster, pos, 3, true)) do
 			if step % 3 == 0 then

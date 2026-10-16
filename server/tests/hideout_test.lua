@@ -1002,9 +1002,9 @@ eq(actions[cfg.aid.depot].onUse(bo, locker), true, "visitors cannot open the own
 eq(actions[cfg.aid.depot].onUse(ana, locker), false, "the engine opens the owner's depot")
 eq(actions[cfg.aid.decor].onUse(ana, throneItem), true, "decorations do nothing on use")
 
--- the Town Portal is refused inside (townportal_core.lua)
+-- the Town Portal inside leads out through the hideout's exit logic (townportal_core.lua K.hideoutExit)
 dofile("data/scripts/chaos/townportal_core.lua")
-ok(ChaosTownPortalCore.blockReason({hideout = true}):find("hideout", 1, true), "no town portal inside")
+ok(ChaosTownPortalCore.hideoutExit({hideout = true}), "the Town Portal inside is a way out (through M.leave)")
 
 -- leave and teardown after emptySeconds; the slot goes back to the pool
 moves[cfg.aid.exit].onStepIn(ana, nil, ana:getPosition(), ana:getPosition())
@@ -1070,6 +1070,169 @@ dee.st[cfg.storage.returnX], dee.st[cfg.storage.returnY], dee.st[cfg.storage.ret
 newTile({x = 2050, y = 100, z = 7}).ground = newItem(100, nil)
 req(dee, "leave")
 eq(dee.pos.x, 50, "leave refuses a return spot inside an instance: temple")
+
+-- =====================================================================================================================
+-- the way out (owner test 2026-10-16: the exit sent the character straight back into the hideout). The entry portal
+-- stored its own tile as the return spot, and a teleport onto a portal runs its step-in, so leaving re-entered.
+-- =====================================================================================================================
+-- K.exitDestination, pure
+local usableSet = {}
+local function usable(p) return usableSet[p.x .. "," .. p.y .. "," .. p.z] == true end
+local function setUsable(x, y, z) usableSet[x .. "," .. y .. "," .. z] = true end
+local HOME, MAIN = {x = 50, y = 50, z = 7}, {x = 60, y = 60, z = 7}
+setUsable(100, 100, 7)
+local d, why = K.exitDestination(cfg, {stored = {x = 100, y = 100, z = 7}, usable = usable, home = HOME, fallback = MAIN})
+ok(d.x == 100 and d.y == 100 and why == "stored", "exit: the stored spot")
+-- the stored spot is the entry portal (not usable): the free tile next to it, south first
+setUsable(200, 201, 7)
+setUsable(201, 200, 7)
+d, why = K.exitDestination(cfg, {stored = {x = 200, y = 200, z = 7}, usable = usable, home = HOME, fallback = MAIN})
+ok(d.x == 200 and d.y == 201 and why == "near", "exit: next to a stored portal tile")
+-- nothing usable around it: the home temple
+d, why = K.exitDestination(cfg, {stored = {x = 400, y = 400, z = 7}, usable = usable, home = HOME, fallback = MAIN})
+ok(d.x == 50 and why == "home", "exit: the home temple")
+-- a stored spot inside the hideout grid is never used, not even its neighbours
+local inGrid = K.toWorld(cfg, 3, 5, 5)
+setUsable(inGrid.x, inGrid.y, inGrid.z)
+setUsable(inGrid.x, inGrid.y + 1, inGrid.z)
+d, why = K.exitDestination(cfg, {stored = inGrid, usable = usable, home = HOME, fallback = MAIN})
+eq(why, "home", "exit: never a tile of the grid")
+-- no stored spot, no home town: Cinderhold's temple
+d, why = K.exitDestination(cfg, {stored = nil, usable = usable, home = nil, fallback = MAIN})
+ok(d.x == 60 and why == "fallback", "exit: the main city")
+d, why = K.exitDestination(cfg, {stored = {x = -1, y = -1, z = -1}, usable = usable, home = nil, fallback = MAIN})
+eq(why, "fallback", "exit: an unset storage (-1) is no spot")
+eq(K.exitDestination(cfg, {usable = usable}), nil, "exit: nothing at all")
+eq(cfg.mainTown, 2, "the main city is Cinderhold (town 2)")
+
+-- on the mocked engine: a teleport onto a tile runs the step-in of the items there, as the engine does
+local function engineTeleport(p)
+	p.hops = 0
+	function p:teleportTo(q)
+		local from = self:getPosition()
+		self.pos = {x = q.x, y = q.y, z = q.z}
+		local t = Tile(q)
+		for _, it in ipairs(t and t.items or {}) do
+			local mv = moves[it.aid]
+			if mv and self.hops < 10 then
+				self.hops = self.hops + 1
+				mv.onStepIn(self, it, Position(q.x, q.y, q.z), from)
+			end
+		end
+	end
+end
+local function floor(cx, cy, r)
+	for dx = -r, r do
+		for dy = -r, r do
+			newTile({x = cx + dx, y = cy + dy, z = 7}).ground = newItem(100, nil)
+		end
+	end
+end
+floor(300, 300, 6)
+floor(400, 400, 6)
+local towns = {
+	{getId = function() return 7 end, getTemplePosition = function() return Position(300, 300, 7) end},
+	{getId = function() return 8 end, getTemplePosition = function() return Position(400, 400, 7) end},
+}
+Game.getTowns = function() return {towns[1]} end
+Town = function(id)
+	if id == cfg.mainTown then
+		return {getId = function() return id end, getTemplePosition = function() return Position(60, 60, 7) end}
+	end
+	for _, t in ipairs(towns) do
+		if t:getId() == id then return t end
+	end
+end
+eq(M.placePortals(), 1, "a Hideout Portal next to the temple")
+eq(M.placePortals(), 0, "placed once (checked again every minute)")
+local function portalOf(town)
+	for _, p in pairs(ChaosCityPortals.placed) do
+		if p.kind == "hideout" and p.town == town then return Position(p.x, p.y, p.z) end
+	end
+end
+local portal7 = portalOf(7)
+ok(portal7 and Tile(portal7):getItemById(cfg.ids.portal).aid == cfg.aid.enter, "the portal carries the entry action id")
+eq(ChaosCityPortals.kindOf(cfg.aid.enter), "hideout", "registered for the look text and the effect")
+
+local eve = newPlayer(5, "Eve", 50, {x = portal7.x, y = portal7.y + 1, z = 7})
+engineTeleport(eve)
+local before = eve:getPosition()
+eve:teleportTo(portal7) -- a step onto the portal
+local slotE = K.poolSlotOf(M.pool, 5)
+ok(slotE and K.fromWorld(cfg, eve:getPosition()) == slotE, "the Hideout Portal leads in")
+eq(eve.st[cfg.storage.returnX], before.x, "the return spot is the tile stepped from (x)")
+eq(eve.st[cfg.storage.returnY], before.y, "the return spot is the tile stepped from (y)")
+local exitE = K.toWorld(cfg, slotE, cfg.fixtures.exit[1], cfg.fixtures.exit[2])
+eve.hops = 0
+eve:teleportTo(exitE) -- a step onto the exit
+eq(K.fromWorld(cfg, eve:getPosition()), nil, "the exit leads out, not back in")
+ok(eve.pos.x == before.x and eve.pos.y == before.y, "back on the tile stepped from")
+eq(eve.hops, 1, "one step-in only (no loop)")
+
+-- a return spot stored before the fix (the portal tile itself): out next to the portal, not through it
+eve.hops = 0
+eve:teleportTo(portal7)
+eve.st[cfg.storage.returnX], eve.st[cfg.storage.returnY], eve.st[cfg.storage.returnZ] = portal7.x, portal7.y, portal7.z
+eve.hops = 0
+eve:teleportTo(exitE)
+eq(K.fromWorld(cfg, eve:getPosition()), nil, "old return spot: out")
+ok(not (eve.pos.x == portal7.x and eve.pos.y == portal7.y), "old return spot: not on the portal")
+ok(math.max(math.abs(eve.pos.x - portal7.x), math.abs(eve.pos.y - portal7.y)) == 1, "old return spot: next to it")
+
+-- teleported onto the entry portal from inside a hideout (any way): no re-entry
+eve.hops = 0
+eve:teleportTo(portal7)
+local inside = eve:getPosition()
+eve.pos = {x = portal7.x, y = portal7.y, z = 7}
+moves[cfg.aid.enter].onStepIn(eve, nil, portal7, inside)
+eq(K.fromWorld(cfg, eve:getPosition()), nil, "a teleport from a hideout onto the portal does not enter")
+
+-- entered from another town's portal: back to that town
+Game.getTowns = function() return towns end
+eq(M.placePortals(), 1, "the second town gets its portal")
+local portal8 = portalOf(8)
+eve.pos = {x = portal8.x - 1, y = portal8.y, z = 7}
+eve.hops = 0
+eve:teleportTo(portal8)
+ok(K.fromWorld(cfg, eve:getPosition()), "in from the second town")
+eve.hops = 0
+eve:teleportTo(exitE)
+ok(eve.pos.x == portal8.x - 1 and eve.pos.y == portal8.y, "the exit leads back to the second town, not home")
+
+-- logout inside, the room torn down meanwhile (its tiles stay): the login puts her back where she came from
+eve.hops = 0
+eve:teleportTo(portal8)
+M.teardown(K.poolSlotOf(M.pool, 5))
+eve.hops = 0
+events.ChaosHideoutLogin.onLogin(eve)
+ok(eve.pos.x == portal8.x - 1 and eve.pos.y == portal8.y, "login inside: back to the spot she entered from")
+
+-- death inside, or a server restart (the engine puts her at the temple, the room's tiles are gone): the stale spot
+-- is dropped at login and the window's Leave says she is not inside
+eve.hops = 0
+eve:teleportTo(portal8)
+eve.pos = {x = 50, y = 50, z = 7}
+events.ChaosHideoutLogin.onLogin(eve)
+eq(eve.st[cfg.storage.returnSet], 0, "a stale return spot is dropped at login")
+r = req(eve, "leave")
+ok(r and not r.ok, "Leave outside a hideout is refused")
+eq(eve.pos.x, 50, "and moves nobody")
+
+-- the window's Leave (the menu way out) works the same as the exit
+eve.pos = {x = portal7.x, y = portal7.y + 1, z = 7}
+eve.hops = 0
+eve:teleportTo(portal7)
+ok(K.fromWorld(cfg, eve:getPosition()), "in again")
+req(eve, "leave")
+ok(eve.pos.x == portal7.x and eve.pos.y == portal7.y + 1, "Leave in the window: back to the tile stepped from")
+
+-- no home town temple and no stored spot: Cinderhold's temple
+eve.hops = 0
+eve:teleportTo(portal7)
+eve.st[cfg.storage.returnSet] = 0
+function eve:getTown() return nil end
+req(eve, "leave")
+ok(eve.pos.x == 60 and eve.pos.y == 60, "no home town: the main city's temple")
 
 os.time = realTime
 print(string.format("hideout_test: %d checks OK", checks))

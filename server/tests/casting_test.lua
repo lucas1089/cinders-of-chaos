@@ -276,7 +276,7 @@ do
 end
 startAndThen(50000, function() registry.ChaosCastingLogout.onLogout(a) end, "logout")
 startAndThen(60000, function() registry.ChaosCastingExtended.onExtendedOpcode(a, 231, {action = "cancel"}) end, "cancel")
-startAndThen(70000, function() E.onSpellCast(a, "Lightward", 217, 3, false, 300, 0) end, "spell")
+startAndThen(70000, function() E.onSpellCast(a, "Witchfire Bolt", 201, 1, true, 70, 0) end, "spell")
 startAndThen(80000, function() a.conds[CONDITION_PARALYZE .. ":0"] = {type = CONDITION_PARALYZE} end, "paralysed")
 -- paralysed before the cast: not an interrupt
 a.conds = {[CONDITION_PARALYZE .. ":0"] = {type = CONDITION_PARALYZE}}
@@ -285,6 +285,26 @@ engineCast(a, spell, 206, 1500, 45000)
 advance(92000)
 eq(fired, 2, "already paralysed: the cast completes")
 a.conds = {}
+-- cooldown channels (server/README.md): a heal and a support spell during an attack cast go through and the cast still
+-- fires; an unknown group interrupts as before
+do
+	local f0 = fired
+	clock = 94000
+	engineCast(a, spell, 206, 1500, 45000)
+	advance(94300)
+	E.onSpellCast(a, "Shadow Mend", 233, 2, false, 50, 0)
+	E.onSpellCast(a, "Lightward", 217, 3, false, 300, 0)
+	ok(C.active[1] ~= nil, "a heal and a support spell leave the attack cast running")
+	advance(96500)
+	eq(fired, f0 + 1, "the attack cast fires after them")
+	eq(lastTo("Ash", "end").data.r, "done", "channels: result")
+	fired = f0
+	eq(C.interrupts({}, 1), true, "an attack spell interrupts an attack cast")
+	eq(C.interrupts({}, 2), false, "a heal never does")
+	eq(C.interrupts({}, 3), false, "a support spell never does")
+	eq(C.interrupts({}, nil), true, "unknown group: as before")
+	eq(C.interrupts({group = 3}, 3), true, "a cast of another group: its own group interrupts")
+end
 
 -- ---------------------------------------------------------------- 4. the failure check refunds
 clock = 100000

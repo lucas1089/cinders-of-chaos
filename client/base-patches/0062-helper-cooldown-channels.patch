@@ -1,0 +1,301 @@
+# Chaos: the helper's cooldown channels (Lua only; applies after 0001-0061; server/README.md "Cooldown channels").
+# Owner, 2026-10-16: heal and attack must never wait for each other. The server keeps a channel per kind of action
+# (engine src-patch 0042: attack spells and runes, healing spells and runes, potions, moves) and the auto attack never
+# waits for any; the helper still serialised them in the client:
+# - one rate guard for every spell cast (0026: at most 4 a second, all kinds together): the attack rotation used up the
+#   second and the heal waited. Now each cast channel (heal, attack, support; overlay game_helpertimers,
+#   ChaosHelperTimers) has its own guard of the same size: healing spells and the friend heals use "heal", the magic
+#   shooter the channel of the spell's group, the rest "support".
+# - one object-use timer (multiUseExDelay, 1 s) for potions, the healing rune, the shooter's runes and special foods,
+#   plus a potion "turn" that kept the next potion back 1.1 s after every rune: an attack rune held the health potion.
+#   Now potion, healRune, attackRune, supportRune and food each have their own timer (a rune by its group).
+# - a heal waited while a cast-time attack spell charged (0052: the server interrupted the cast on any other spell).
+#   The server interrupts it only on another attack spell or rune now (data/lib/chaos_casting.lua), so the heal goes
+#   out at once; the shooter still waits with attack spells and attack runes, no longer with support spells.
+# Without the overlay module the old shared guard and timer stay. Tests: overlay game_helpertimers/helpertimers_test.lua.
+diff --git a/mods/game_helper/classes/magic_shooter.lua b/mods/game_helper/classes/magic_shooter.lua
+index 38c5018..1dfe75c 100644
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -824,12 +824,15 @@ _Helper.MagicShooter.check = function()
+         if rotation and ChaosHelperRotation.blocked(rotation, spell.id, spell.group, castAt) then
+           goto continue
+         end
+-        -- a cast-time spell is charging: any other spell would interrupt it (and the server refunds its cooldown)
+-        if (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
+-            (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting()) then
++        -- a cast-time spell is charging: another attack spell would interrupt it (and the server refunds its
++        -- cooldown); Chaos (base-patch 0062): a support spell does not (README "Cooldown channels"), so only the
++        -- attack channel waits, and each channel has its own cast guard
++        local castChannel = ChaosHelperTimers and ChaosHelperTimers.castChannel(spell.group) or "attack"
++        if castChannel == "attack" and ((rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
++            (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting())) then
+           goto continue
+         end
+-        if helperCastAllowed and not helperCastAllowed(spell.words) then
++        if helperCastAllowed and not helperCastAllowed(spell.words, castChannel) then
+           goto continue
+         end
+ 
+@@ -961,8 +964,10 @@ _Helper.MagicShooter.check = function()
+             end
+           end
+ 
+-          -- Runes share object use exhaustion with potions
+-          if _Helper.isObjectUseOnCooldown and _Helper.isObjectUseOnCooldown() then
++          -- Chaos (base-patch 0062): a rune waits only for its own channel (attack, healing or support rune), never
++          -- for a potion (server src-patch 0042)
++          local runeChannel = ChaosHelperTimers and ChaosHelperTimers.runeChannel(runeSpell.group) or "attackRune"
++          if _Helper.isObjectUseOnCooldown and _Helper.isObjectUseOnCooldown(runeChannel) then
+             -- Rune is ready (target, cooldown, inventory all OK) but blocked by object use cooldown (pot/rune)
+             -- Block lower-priority spells from stealing this turn
+             runeWaitingForObjectUse = true
+@@ -973,8 +978,8 @@ _Helper.MagicShooter.check = function()
+           if rotation and ChaosHelperRotation.blocked(rotation, runeSpell.id, runeSpell.group, castAt) then
+             goto continue
+           end
+-          if (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
+-              (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting()) then
++          if runeChannel == "attackRune" and ((rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
++              (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting())) then
+             goto continue
+           end
+           if _Helper.safeDoThing then _Helper.safeDoThing(false) end
+@@ -984,8 +989,7 @@ _Helper.MagicShooter.check = function()
+             ChaosHelperRotation.cast(rotation, runeSpell.id, runeSpell.group, castAt)
+           end
+ 
+-          -- Set shared object use cooldown so potions know a rune was just used
+-          if _Helper.setObjectUseCooldown then _Helper.setObjectUseCooldown() end
++          if _Helper.setObjectUseCooldown then _Helper.setObjectUseCooldown(nil, runeChannel) end
+ 
+           if auxiliadorPreCooldown > 0 then
+             if _Helper.onSpellGroupCooldown then _Helper.onSpellGroupCooldown(runeSpell.group, auxiliadorPreCooldown) end
+diff --git a/mods/game_helper/helper.lua b/mods/game_helper/helper.lua
+index 5c3234a..68cec3b 100644
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -47,9 +47,18 @@ end
+ 
+ -- Chaos (base-patch 0026): rate guard on the helper's spell casts. The same words are not sent again within
+ -- sameWordsGap ms and at most maxPerSecond casts go out in any second, whatever the cycles do.
++-- Chaos (base-patch 0062): the guard is per cooldown channel (heal, attack, support: overlay game_helpertimers,
++-- ChaosHelperTimers): an attack rotation that used up its second never holds a heal back. This shared guard stays only
++-- for a client without that module.
+ local castGuard = { sameWordsGap = 500, maxPerSecond = 4, last = {}, recent = {} }
+-function helperCastAllowed(words)
++local helperTimers = nil
++function helperCastAllowed(words, channel)
+   local now = (g_clock.realMillis and g_clock.realMillis()) or g_clock.millis()
++  if ChaosHelperTimers and ChaosHelperTimers.new then
++    helperTimers = helperTimers or ChaosHelperTimers.new()
++    local t = helperTimers
++    return ChaosHelperTimers.castAllowed(t, channel or "support", words, now)
++  end
+   local recent = castGuard.recent
+   while recent[1] and now - recent[1] >= 1000 do
+     table.remove(recent, 1)
+@@ -537,6 +546,27 @@ local function getGroupSpellCooldown(groupId)
+   return groupsCooldown[groupId] or 0
+ end
+ 
++-- Chaos (base-patch 0062): object uses on the server's cooldown channels (server src-patch 0042): potions, healing
++-- runes, attack runes, support runes and special foods each have a timer of their own (ChaosHelperTimers). Before, one
++-- shared 1 s timer and a potion "turn" after every rune made a rune hold the potion and a potion hold the runes.
++local function objectUseReady(channel, now)
++  if ChaosHelperTimers and ChaosHelperTimers.new then
++    helperTimers = helperTimers or ChaosHelperTimers.new()
++    return ChaosHelperTimers.useReady(helperTimers, channel, now)
++  end
++  return multiUseExDelay <= now and (spellsCooldown[potionConfig.id] or 0) <= now
++end
++
++local function markObjectUse(channel, now, ms)
++  if ChaosHelperTimers and ChaosHelperTimers.new then
++    helperTimers = helperTimers or ChaosHelperTimers.new()
++    ChaosHelperTimers.used(helperTimers, channel, now, ms)
++    return
++  end
++  multiUseExDelay = now + ms
++  spellsCooldown[potionConfig.id] = now + ms
++end
++
+ -- Optimization Caches
+ local cachedPrioritizedSpells = {}
+ local cachedPrioritizedHealthPotions = {}
+@@ -2164,6 +2194,7 @@ function offline()
+   -- Limpar cooldowns ao deslogar para evitar problemas ao relogar
+   for k in pairs(spellsCooldown) do spellsCooldown[k] = nil end
+   for k in pairs(groupsCooldown) do groupsCooldown[k] = nil end
++  if helperTimers and ChaosHelperTimers and ChaosHelperTimers.reset then ChaosHelperTimers.reset(helperTimers) end
+ 
+   -- Limpar spectators cache
+   for k in pairs(lastEngineSpectators) do lastEngineSpectators[k] = nil end
+@@ -3599,17 +3630,8 @@ function usePotion(potionId)
+ 
+   local now = g_clock.millis()
+ 
+-  local cooldown = spellsCooldown[potionConfig.id] or 0
+-  if cooldown > now then
+-    return false
+-  end
+-
+-  if multiUseExDelay > now then
+-    return false
+-  end
+-
+-  -- Turn system: after rune, give rune priority before next potion
+-  if potionTurnCooldown > now then
++  -- Chaos (base-patch 0062): a potion waits only for the potion channel (no rune, no rune turn holds it)
++  if not objectUseReady("potion", now) then
+     return false
+   end
+ 
+@@ -3619,17 +3641,8 @@ function usePotion(potionId)
+     safeDoThing(false)
+     g_game.useInventoryItemWith(potionId, player, 0, true)
+     safeDoThing(true)
+-    local expires = now + potionConfig.exhaustion
+-    spellsCooldown[potionConfig.id] = expires
+-    multiUseExDelay = expires
++    markObjectUse("potion", now, potionConfig.exhaustion)
+     lastObjectUseWasRune = false
+-    -- If magic shooter is enabled, block next potion for 1100ms
+-    -- so rune has a 100ms priority window after the 1000ms shared exhaust expires
+-    -- If magic shooter is enabled, block next potion for 1100ms
+-    -- so rune has a 100ms priority window after the 1000ms shared exhaust expires
+-    if helperConfig.magicShooterEnabled then
+-      potionTurnCooldown = now + 1100
+-    end
+     return true
+   end
+ 
+@@ -4045,14 +4058,8 @@ function castHealingSpell(spellData)
+   if rotation and ChaosHelperRotation.blocked(rotation, spell.id, spell.group, castAt, false) then
+     return false
+   end
+-  -- a cast-time spell is charging: a heal would interrupt it; it waits unless health is low
+-  local charging = (rotation and ChaosHelperRotation.channeling(rotation, castAt)) or
+-      (modules.game_castbar and modules.game_castbar.isCasting and modules.game_castbar.isCasting())
+-  if charging and currentPlayer:getMaxHealth() > 0 and
+-      currentPlayer:getHealth() * 100 / currentPlayer:getMaxHealth() >=
+-      (ChaosHelperRotation and ChaosHelperRotation.defaults.channelHealBelow or 50) then
+-    return false
+-  end
++  -- Chaos (base-patch 0062): a heal no longer waits for a charging cast-time spell: the server's cast is interrupted
++  -- only by another spell of its own (attack) group (data/lib/chaos_casting.lua, README "Cooldown channels")
+ 
+   -- Check if player has enough mana for the spell
+   if spell.mana and spell.mana > 0 then
+@@ -4075,7 +4082,7 @@ function castHealingSpell(spellData)
+   end
+ 
+   -- Execute the spell
+-  if not helperCastAllowed(spell.words) then
++  if not helperCastAllowed(spell.words, "heal") then
+     return false
+   end
+   safeDoThing(false)
+@@ -4384,7 +4391,7 @@ function useAutoSio(target)
+   end
+ 
+   local castWords = string.format("%s \"%s\"", spell.words, target:getName())
+-  if not helperCastAllowed(castWords) then
++  if not helperCastAllowed(castWords, "heal") then
+     return false
+   end
+   safeDoThing(false)
+@@ -4472,7 +4479,7 @@ function useAutoGranSio(target)
+   end
+ 
+   local castWords = string.format("%s \"%s\"", spell.words, target:getName())
+-  if not helperCastAllowed(castWords) then
++  if not helperCastAllowed(castWords, "heal") then
+     return false
+   end
+   safeDoThing(false)
+@@ -4502,7 +4509,7 @@ function useAutoTioSio(target)
+   end
+ 
+   local castWords = string.format("%s \"%s\"", spell.words, target:getName())
+-  if not helperCastAllowed(castWords) then
++  if not helperCastAllowed(castWords, "heal") then
+     return false
+   end
+   safeDoThing(false)
+@@ -4531,7 +4538,7 @@ function useAutoMasRes()
+     return false
+   end
+ 
+-  if not helperCastAllowed(spell.words) then
++  if not helperCastAllowed(spell.words, "heal") then
+     return false
+   end
+   safeDoThing(false)
+@@ -4554,8 +4561,8 @@ function useAutoUH(target)
+     return false
+   end
+ 
+-  -- UH rune shares object use exhaustion with potions and magic shooter runes
+-  if multiUseExDelay > g_clock.millis() or (spellsCooldown[potionConfig.id] or 0) > g_clock.millis() then
++  -- Chaos (base-patch 0062): the healing rune waits only for the healing rune channel (no potion, no attack rune)
++  if not objectUseReady("healRune", g_clock.millis()) then
+     return false
+   end
+ 
+@@ -4566,10 +4573,7 @@ function useAutoUH(target)
+     safeDoThing(false)
+     g_game.useInventoryItemWith(runeId, target, 0, true)
+     safeDoThing(true)
+-    -- Set shared cooldown so potions/magic shooter know UH was just used
+-    local expires = g_clock.millis() + potionConfig.exhaustion
+-    multiUseExDelay = expires
+-    spellsCooldown[potionConfig.id] = expires
++    markObjectUse("healRune", g_clock.millis(), potionConfig.exhaustion)
+     lastObjectUseWasRune = true
+     casted = true
+   end
+@@ -5124,20 +5128,14 @@ _Helper.onSpellGroupCooldown = function(groupId, delay)
+ end
+ 
+ -- HELPER MAGIC SHOOTER: Object use exhaustion (shared between potions and runes)
+-_Helper.isObjectUseOnCooldown = function()
+-  return multiUseExDelay > g_clock.millis() or (spellsCooldown[potionConfig.id] or 0) > g_clock.millis()
++-- Chaos (base-patch 0062): per channel (default: the attack rune channel); a rune no longer holds the potions
++_Helper.isObjectUseOnCooldown = function(channel)
++  return not objectUseReady(channel or "attackRune", g_clock.millis())
+ end
+ 
+-_Helper.setObjectUseCooldown = function(duration)
+-  duration = duration or potionConfig.exhaustion
+-  local now = g_clock.millis()
+-  local expires = now + duration
+-  multiUseExDelay = expires
+-  spellsCooldown[potionConfig.id] = expires
++_Helper.setObjectUseCooldown = function(duration, channel)
++  markObjectUse(channel or "attackRune", g_clock.millis(), duration or potionConfig.exhaustion)
+   lastObjectUseWasRune = true
+-  -- Rune was used, block potion for 1.1s (1s object exhaust + 100ms buffer)
+-  -- so rune always has priority over potion
+-  potionTurnCooldown = now + 1100
+ end
+ 
+ -- HELPER MAGIC SHOOTER: Try to use potion immediately after a spell cast (spells don't share object exhaustion)
+@@ -6638,7 +6636,7 @@ function useSpecialFood(foodId)
+     return false
+   end
+ 
+-  if multiUseExDelay > g_clock.millis() then
++  if not objectUseReady("food", g_clock.millis()) then -- Chaos (base-patch 0062): its own timer
+     return false
+   end
+ 
+@@ -6649,7 +6647,7 @@ function useSpecialFood(foodId)
+     safeDoThing(true)
+     local now = g_clock.millis()
+     spellsCooldown[specialFoodConfig.id] = now + specialFoodConfig.exhaustion
+-    multiUseExDelay = now + specialFoodConfig.exhaustion
++    markObjectUse("food", now, specialFoodConfig.exhaustion)
+     specialFoodLocalCooldowns[foodId] = now + (15 * 60 * 1000) -- 15 min local cooldown
+     return true
+   end

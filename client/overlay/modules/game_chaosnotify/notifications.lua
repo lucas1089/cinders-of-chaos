@@ -283,7 +283,7 @@ function repositionNotifications()
     for name, list in pairs(sources) do
         for slot, data in pairs(list) do
             if data and data.widget and isWidgetValid(data.widget) then
-                groups[name][slot] = {type = data.data and data.data.notificationType}
+                groups[name][slot] = {type = data.data and data.data.notificationType, height = data.widget.toastHeight}
             end
         end
     end
@@ -623,9 +623,18 @@ local function createCompactNotification(data, isPinned)
             messageLabel:setColor('#FFD700')
             messageLabel:setTextAlign(AlignLeft)
             messageLabel:setTextWrap(true)
-            -- four wrapped lines fit above the timer bar; two where Accept/Start buttons sit below the text
-            local hasButtons = ChaosNotifyView.hasButtons(data.notificationType)
-            messageLabel:setHeight(hasButtons and 35 or 64)
+            -- the toast grows to the wrapped text (ChaosNotifyView.heightFor): measure it at the label's width
+            local message = data.message or tr('Notification message')
+            messageLabel:setSize({width = TOAST_W - TEXT_LEFT - TEXT_RIGHT, height = 1})
+            messageLabel:setText(message)
+            local height, labelHeight, cut = ChaosNotifyView.heightFor(data.notificationType,
+                messageLabel:getTextSize().height)
+            notification:setHeight(height)
+            notification.toastHeight = height
+            messageLabel:setHeight(labelHeight)
+            if cut then
+                messageLabel:setTooltip(message)
+            end
             messageLabel:setMarginLeft(80)
             messageLabel:setMarginTop(28)
             messageLabel:setMarginRight(30)

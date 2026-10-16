@@ -17,6 +17,7 @@ end
 ITEM_ATTRIBUTE_DESCRIPTION, ITEM_ATTRIBUTE_NAME, ITEM_ATTRIBUTE_ARTICLE = 1, 2, 3
 ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_EXTRADEFENSE = 4, 5, 6
 ITEM_ATTRIBUTE_ARMOR, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_SHOOTRANGE, ITEM_ATTRIBUTE_ATTACK_SPEED = 7, 8, 9, 10
+ITEM_ATTRIBUTE_CHARGES = 11
 INDEX_WHEREEVER, FLAG_NOLIMIT, RETURNVALUE_NOERROR = -1, 1, 0
 SLOTP_TWO_HAND, WEAPON_SHIELD, WEAPON_AMMO = 2048, 4, 7
 
@@ -29,7 +30,8 @@ local TYPES = {
 	[2496] = {name = "horned helmet", armor = 11, slot = 1}, -- Hornsworn Helm (a unique of the Embers set)
 	[3975] = {name = "dragon shield", weaponType = WEAPON_SHIELD, defense = 31, slot = 48}, -- Emberwarden
 	[2206] = {name = "strange ring", slot = 256},
-	[2160] = {name = "crystal coin", stackable = true, description = ""}
+	[2160] = {name = "crystal coin", stackable = true, description = ""},
+	[27749] = {name = "lasting exercise wand", charges = 14400}
 }
 
 function ItemType(id)
@@ -55,7 +57,8 @@ function ItemType(id)
 		getAbilities = function() return t.abilities or {} end,
 		getMinReqLevel = function() return t.level or 0 end,
 		getMinReqMagicLevel = function() return 0 end,
-		getVocationString = function() return t.voc or "" end
+		getVocationString = function() return t.voc or "" end,
+		getCharges = function() return t.charges or 0 end
 	}
 end
 
@@ -133,6 +136,32 @@ eq(p.kind, "map") eq(p.stackpos, 2)
 eq(T.decodePos({x = 65535, y = 11, z = 0}), nil, "slot past the 10.98 inventory")
 eq(T.decodePos({x = 65535, y = 3, z = 1}), nil, "inventory slot with z")
 eq(T.decodePos({x = 65535, y = 0x50, z = 0}), nil, "container id past 15")
+
+-- ---------------------------------------------------------------- the item the client means (T.matchIndex)
+-- live test winpkg-35: a Rope showed "Cheese 62", a Training Wand "Gold coin 100". Two open containers with other items
+-- at the same index; the backpack got a stack of cheese at the front after the client looked (its items moved one up).
+do
+	local ROPE, CHEESE, WAND, GOLD = 3003, 3607, 3075, 3031
+	local backpack = {{CHEESE, 62}, {ROPE, 1}, {WAND, 1}} -- the server's view (index 0 first)
+	local lootbag = {{GOLD, 100}, {ROPE, 1}}
+	local function at(list)
+		return function(i)
+			local e = list[i + 1]
+			if e then
+				return e[1], e[2]
+			end
+		end
+	end
+	eq(T.matchIndex(0, 3, at(backpack), ROPE), 1, "the rope asked at its old index: found one slot further")
+	eq(T.matchIndex(1, 3, at(backpack), WAND), 2, "the wand too")
+	eq(T.matchIndex(1, 3, at(backpack), ROPE), 1, "the rope where it is")
+	eq(T.matchIndex(0, 2, at(lootbag), WAND), nil, "no wand in the loot bag: nothing (not the gold at that index)")
+	eq(T.matchIndex(0, 2, at(lootbag), ROPE), 1, "same index, other container: its own rope")
+	eq(T.matchIndex(0, 3, at(backpack), CHEESE, 62), 0, "a stack by id and count")
+	eq(T.matchIndex(0, 3, at(backpack), CHEESE, 10), nil, "another count is another stack")
+	eq(T.matchIndex(0, 3, at(backpack), nil), 0, "an older client (no client id): the slot as before")
+	eq(T.matchIndex(5, 3, at(backpack), ROPE), 1, "an index past the end still finds it")
+end
 eq(T.decodePos({x = 65535, y = 0x40, z = 300}), nil, "container slot past 255")
 eq(T.decodePos({x = 10.5, y = 1, z = 7}), nil, "fraction")
 eq(T.decodePos({x = "a", y = 1, z = 7}), nil, "string")
@@ -373,5 +402,25 @@ eq(rowOf(shown.stats, "chaos_mod_lifeonhit").sc, 1, "marked for the compare view
 eq(rowOf(shown.base, "attack").v, rowOf(high.base, "attack").v, "attack stays")
 eq(rowOf(high.mods, "chaos_mod_lifeonhit").v, 20, "the built tooltip itself stays raw")
 TYPES[2400].level = 80
+
+-- ---------------------------------------------------------------- charges (live test winpkg-35: a Lasting Exercise Wand
+-- showed only its name and weight)
+do
+	eq(T.chargeInfo(14400, 14400).n, 14400, "full charges")
+	eq(T.chargeInfo(14400, 14400).max, nil, "no max when full")
+	eq(T.chargeInfo(1200, 14400).max, 14400, "used: n of max")
+	eq(T.chargeInfo(nil, 14400).unlimited, true, "a type with charges, the item without: unlimited")
+	eq(T.chargeInfo(nil, 0), nil, "no charges at all")
+	eq(T.chargeInfo(0, 0), nil, "a zero attribute on a type without charges")
+	eq(T.chargeInfo(3, 0).n, 3, "charges of a type without a default")
+	local wand = newItem(27749)
+	wand.attrs[ITEM_ATTRIBUTE_CHARGES] = 13000
+	local tip = T.build(wand, {})
+	eq(tip.charges and tip.charges.n, 13000, "the built tooltip carries the charges")
+	eq(tip.charges and tip.charges.max, 14400, "and the full charges")
+	eq(T.build(newItem(27749), {}).charges.unlimited, true, "no charges attribute: unlimited")
+	eq(T.build(newItem(2160, 5), {}).charges, nil, "a stackable has no charges line")
+	eq(T.build(newItem(2496), {}).charges, nil, "a plain helmet has none")
+end
 
 print(string.format("item_tooltip_test: %d checks OK", checks))

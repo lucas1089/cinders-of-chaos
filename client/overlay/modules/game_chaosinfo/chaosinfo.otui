@@ -22,6 +22,57 @@ ChaosInfoRowLabel < ChaosLabel
 ChaosInfoRowButton < ChaosButton
   height: 24
 
+// one Ancestral Store entry: icon, name, what it gives, price, Buy
+ChaosStoreRow < UIWidget
+  height: 40
+  margin-bottom: 2
+  image-source: /images/chaos/panel_dark
+  image-border: 6
+
+  ChaosItemSlot
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    virtual: true
+    phantom: true
+
+  ChaosButton
+    id: buy
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 6
+    width: 70
+    height: 24
+
+  ChaosLabel
+    id: price
+    anchors.right: buy.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 10
+    width: 90
+    text-align: right
+    color: #e8b84a
+
+  ChaosLabel
+    id: name
+    anchors.left: item.right
+    anchors.right: price.left
+    anchors.top: parent.top
+    margin-left: 8
+    margin-top: 5
+    text-align: left
+    height: 14
+
+  ChaosLabelDim
+    id: kind
+    anchors.left: name.left
+    anchors.right: name.right
+    anchors.top: name.bottom
+    margin-top: 2
+    text-align: left
+    height: 14
+
 ChaosMainWindow
   id: chaosInfoWindow
   size: 690 450
@@ -102,6 +153,66 @@ ChaosMainWindow
     margin-right: 3
     step: 14
     pixels-scroll: true
+
+  // the Ancestral Store page: shown instead of the text box
+  UIWidget
+    id: storePanel
+    anchors.top: rows.bottom
+    anchors.left: pageTitle.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+    visible: false
+
+    ChaosLabel
+      id: storePoints
+      anchors.top: parent.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      text-align: left
+      font: verdana-11px-rounded
+      color: #e8b84a
+      height: 16
+
+    ChaosLabelDim
+      id: storeMessage
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      text-align: left
+      height: 16
+
+    ChaosPanelDark
+      id: storeFrame
+      anchors.top: storePoints.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: storeMessage.top
+      margin-top: 4
+      margin-bottom: 4
+
+    ScrollablePanel
+      id: storeList
+      anchors.top: storeFrame.top
+      anchors.left: storeFrame.left
+      anchors.right: storeScroll.left
+      anchors.bottom: storeFrame.bottom
+      margin: 4
+      vertical-scrollbar: storeScroll
+      layout:
+        type: verticalBox
+
+    ChaosScrollBar
+      id: storeScroll
+      anchors.top: storeFrame.top
+      anchors.right: storeFrame.right
+      anchors.bottom: storeFrame.bottom
+      margin-top: 3
+      margin-bottom: 3
+      margin-right: 3
+      step: 42
+      pixels-scroll: true
 
   ChaosButton
     id: refreshButton

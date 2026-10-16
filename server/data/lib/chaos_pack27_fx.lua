@@ -3,11 +3,11 @@
 -- game feel moments (level up, loot beams, Ember Cache and Candlemarks rewards, the Town Portal, the boss danger
 -- circle). Effects only: no damage, area, timing, target or reward changes.
 -- The art: client/tools/sprites/gen_pack27_fx.py (art_import/pack27_fx.csv), appended to things_custom26 (effects
--- 674-758, missiles 154-160 of a local trial pair) by import_fx_art.py, which wrote the ids to
--- data/lib/chaos_pack27_fx_ids.lua.
+-- 674-758, missiles 154-160) by import_fx_art.py, which wrote the ids to data/lib/chaos_pack27_fx_ids.lua. In the
+-- published pairs since pair 27 (windows-assets 51a26d26, 2026-10-15; pair 28 keeps them).
 --
--- Switch (C.PAIR27_FX): OFF. No published pair has these ids; a client on pair 26 would log "invalid effect id".
--- Off, nothing changes: the ids file is not loaded and every spell sends exactly what it sent before. On, during a
+-- Switch (C.PAIR27_FX): ON since 2026-10-15 (ROADMAP 179). A client on a pair older than 27 would log "invalid effect
+-- id". Off, nothing changes: the ids file is not loaded and every spell sends exactly what it sent before. On, during a
 -- cast (the supports wrapper knows the spell, also in the cast's addEvent callbacks) an effect, missile or
 -- directional effect name in C.spells for that spell is sent as the pair 27 one instead (ChaosSpell.fx / vfx / vfxDir /
 -- shoot / vshoot in data/spells/chaos/_common.lua). A cosmetic skin always wins; a large effect and a class signature
@@ -39,7 +39,8 @@ C.spells = {
 	[200] = {fx = {frost_nova = "nova_frost"}},                                 -- Rime Bloom
 	[204] = {fx = {meteor_strike = "meteor_fall"}, first = {meteor_strike = true}}, -- Falling Pyre
 	[202] = {fx = {lightning_hit = "storm_chain"}, first = {lightning_hit = true}}, -- Forked Storm, each jump
-	[231] = {fx = {void_rift = "rift_void"}, first = {void_rift = true}},       -- Tear in the Weave
+	[231] = {fx = {void_rift = "rift_void"}},                                   -- Tear in the Weave (the large
+	                                                                            -- rift wins; the script adds this core)
 	-- Templar line
 	[189] = {fx = {holy_smite = "smite_radiant"}, missile = {holy_arrow = "holy_orb"}}, -- Radiant Smite
 	[198] = {fx = {holy_smite = "judgment_holy"}, first = {holy_smite = true}}, -- Judgement

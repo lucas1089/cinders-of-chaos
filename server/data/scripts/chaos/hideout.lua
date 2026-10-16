@@ -42,6 +42,9 @@ if not Chaos.t then
 end
 dofile("data/scripts/chaos/hideout_core.lua")
 ChaosHideoutConfig = dofile("data/scripts/chaos/hideout_config.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 if not ChaosDarkTiles then
 	pcall(dofile, "data/lib/chaos_dark_tiles.lua")
 end
@@ -584,9 +587,33 @@ local function playersIn(slot)
 	return out
 end
 
-local function templeOf(player)
-	local town = player:getTown()
-	return town and town:getTemplePosition() or player:getPosition()
+-- may a character be put on this tile now (the exit's destination): ground, walkable, no portal or stairs, not in an
+-- instance area (a raid, a battleground, ...: its run may belong to another group now)
+local function usableSpot(p)
+	local tile = Tile(P(p))
+	if not tile or not tile:getGround() then
+		return false
+	end
+	if tile.hasProperty and CONST_PROP_BLOCKSOLID and tile:hasProperty(CONST_PROP_BLOCKSOLID) then
+		return false
+	end
+	if tile.hasFlag and ((TILESTATE_TELEPORT and tile:hasFlag(TILESTATE_TELEPORT)) or
+			(TILESTATE_FLOORCHANGE and tile:hasFlag(TILESTATE_FLOORCHANGE))) then
+		return false
+	end
+	if (ITEM_TYPE_TELEPORT and tile.getItemByType and tile:getItemByType(ITEM_TYPE_TELEPORT)) or tile:getItemById(cfg.ids.portal) then
+		return false
+	end
+	if Chaos.instanceAt and Chaos.instanceAt(p, "hideout") then
+		return false
+	end
+	return true
+end
+
+local function templeOfTown(id)
+	local town = id and Town and Town(id)
+	local t = town and town:getTemplePosition()
+	return t and t.x > 0 and t or nil
 end
 
 -- ---------------------------------------------------------------- access
@@ -684,10 +711,12 @@ local function countVisit(owner, visitor)
 	end
 end
 
--- send `player` to the hideout of `owner` (a guid); false + text when refused
-function M.enter(player, owner)
+-- send `player` to the hideout of `owner` (a guid); false + text when refused. `back`: the spot the exit leads to
+-- (the Hideout Portal passes the tile the character stepped from, never the portal itself); default: where they stand
+function M.enter(player, owner, back)
 	owner = tonumber(owner) or player:getGuid()
 	local here = player:getPosition()
+	back = back or here
 	local fromSlot = K.fromWorld(cfg, here)
 	local inside = fromSlot ~= nil
 	if not inside then
@@ -716,9 +745,9 @@ function M.enter(player, owner)
 		end
 	end
 	if not inside then
-		player:setStorageValue(ST.returnX, here.x)
-		player:setStorageValue(ST.returnY, here.y)
-		player:setStorageValue(ST.returnZ, here.z)
+		player:setStorageValue(ST.returnX, back.x)
+		player:setStorageValue(ST.returnY, back.y)
+		player:setStorageValue(ST.returnZ, back.z)
 		player:setStorageValue(ST.returnSet, 1)
 	end
 	M.rooms[slot].emptySince = nil
@@ -727,7 +756,7 @@ function M.enter(player, owner)
 	player:teleportTo(P(arrival))
 	P(arrival):sendMagicEffect(CONST_ME_TELEPORT)
 	if owner == player:getGuid() then
-		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome home. Character > Hideout to decorate."))
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Welcome home. Character > Hideout to decorate. The portal south of you, or Leave in that window, takes you back."))
 	else
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You visit the hideout of %s.", name))
 		countVisit(owner, player)
@@ -735,19 +764,32 @@ function M.enter(player, owner)
 	return true
 end
 
+-- where leaving sends `player` (hideout_core.lua K.exitDestination): the spot they entered from, a free tile next
+-- to it, the home temple, Cinderhold's temple
+function M.exitDestination(player)
+	local stored
+	if player:getStorageValue(ST.returnSet) == 1 then
+		stored = {x = player:getStorageValue(ST.returnX), y = player:getStorageValue(ST.returnY),
+			z = player:getStorageValue(ST.returnZ)}
+	end
+	local town = player:getTown()
+	local home = town and town:getTemplePosition()
+	if home and home.x <= 0 then
+		home = nil
+	end
+	local dest, why = K.exitDestination(cfg, {stored = stored, usable = usableSpot, home = home,
+		fallback = templeOfTown(cfg.mainTown)})
+	return dest and P(dest) or nil, why
+end
+
 -- back to the spot the player entered from (or the temple)
 function M.leave(player, text)
-	local dest
-	if player:getStorageValue(ST.returnSet) == 1 then
-		local p = Position(player:getStorageValue(ST.returnX), player:getStorageValue(ST.returnY), player:getStorageValue(ST.returnZ))
-		local tile = Tile(p)
-		-- never back into an instance area (a raid, a battleground, ...): its run may belong to another group now
-		local instance = Chaos.instanceAt and Chaos.instanceAt(p, "hideout")
-		if tile and tile:getGround() and not K.fromWorld(cfg, p) and not instance then
-			dest = p
-		end
+	local dest = M.exitDestination(player)
+	if not dest then
+		-- no temple on this map at all: stay put rather than loop (cannot happen on a map with towns)
+		log("no way out of the hideout for " .. player:getName())
+		return false
 	end
-	dest = dest or templeOf(player)
 	player:setStorageValue(ST.returnSet, 0)
 	player:teleportTo(dest)
 	dest:sendMagicEffect(CONST_ME_TELEPORT)
@@ -1135,8 +1177,11 @@ local login = CreatureEvent("ChaosHideoutLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosHideoutOpcode")
 	-- a character that logged out inside a hideout starts outside it (the room may be gone)
+	-- (after a server restart the engine already put them at the temple: the room's tiles are gone)
 	if K.fromWorld(cfg, player:getPosition()) then
 		M.leave(player)
+	elseif player:getStorageValue(ST.returnSet) == 1 then
+		player:setStorageValue(ST.returnSet, 0) -- left by a death or a restart: the next entry stores a fresh spot
 	end
 	return true
 end
@@ -1162,7 +1207,16 @@ function enterStep.onStepIn(creature, item, position, fromPosition)
 	if not player then
 		return true
 	end
-	local ok, text = M.enter(player, player:getGuid())
+	-- put here by a teleport out of a hideout (an exit, a login inside): never straight back in
+	if fromPosition and K.fromWorld(cfg, fromPosition) then
+		return true
+	end
+	-- the exit leads back to the tile stepped from, not onto this portal (that sent the character straight back in)
+	local back = fromPosition
+	if not back or back.x == 0 or (back.x == position.x and back.y == position.y and back.z == position.z) then
+		back = nil
+	end
+	local ok, text = M.enter(player, player:getGuid(), back)
 	if not ok then
 		player:sendCancelMessage(text)
 		player:teleportTo(fromPosition, true)
@@ -1265,55 +1319,18 @@ end
 think:interval(cfg.thinkMs)
 think:register()
 
--- entry forcefields next to the temples
-local function spotFree(pos)
-	local tile = Tile(pos)
-	if not tile or not tile:getGround() or (tile.getHouse and tile:getHouse()) then
-		return false
-	end
-	if tile:hasProperty(CONST_PROP_BLOCKSOLID) or tile:hasProperty(CONST_PROP_BLOCKPATH) then
-		return false
-	end
-	return not (ITEM_TYPE_TELEPORT and tile:getItemByType(ITEM_TYPE_TELEPORT)) and not tile:getItemById(cfg.ids.portal)
-end
-
-function M.placePortals()
-	local n, seen = 0, {}
-	for _, town in ipairs(Game.getTowns()) do
-		local t = town:getTemplePosition()
-		local k = t.x .. "," .. t.y .. "," .. t.z
-		if t.x > 0 and not seen[k] and Tile(t) then
-			seen[k] = true
-			local done = false
-			for _, off in ipairs(cfg.portalOffsets) do
-				local p = Position(t.x + off[1], t.y + off[2], t.z)
-				local tile = Tile(p)
-				local it = tile and tile:getItemById(cfg.ids.portal)
-				if it and it:getActionId() == A.enter then
-					done = true
-					break
-				end
-			end
-			if not done then
-				for _, off in ipairs(cfg.portalOffsets) do
-					local p = Position(t.x + off[1], t.y + off[2], t.z)
-					if spotFree(p) then
-						fixtureItem(p, cfg.ids.portal, A.enter, "The way to your hideout.")
-						n = n + 1
-						break
-					end
-				end
-			end
-		end
-	end
-	return n
+-- the Hideout Portal of every town (cityportals.lua: the Hall of Services' portal room in Cinderhold and Mirewake, a
+-- fixed spot next to every other temple, labelled and marked by cityportals_fx.lua)
+function M.placePortals(say)
+	return (ChaosCityPortals.place({kind = "hideout", aid = A.enter, item = cfg.ids.portal, offsets = cfg.portalOffsets,
+		log = say and log or nil}))
 end
 
 local startup = GlobalEvent("ChaosHideoutStartup")
 function startup.onStartup()
 	M.ensureTables()
-	local n = M.placePortals()
-	log(string.format("%d temple entry portal(s); grid %d,%d (%d slots)", n, cfg.grid.origin.x, cfg.grid.origin.y, cfg.grid.maxSlots))
+	local n = M.placePortals(true)
+	log(string.format("%d Hideout Portal(s) placed; grid %d,%d (%d slots)", n, cfg.grid.origin.x, cfg.grid.origin.y, cfg.grid.maxSlots))
 	return true
 end
 startup:register()

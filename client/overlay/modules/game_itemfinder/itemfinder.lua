@@ -257,7 +257,8 @@ local function onMessage(protocol, opcode, msg)
     setStatus('')
     drawItem()
     window.detailScroll:setValue(0)
-    show()
+    -- open() / lookupClientId() show the window; an answer never opens it again (a resent request answered after
+    -- the player closed it reopened the window: live test winpkg-35)
   elseif msg.action == 'page' then
     if L.applyPage(item, data) then drawItem() end
   elseif msg.action == 'busy' then
@@ -335,12 +336,12 @@ local function hookMenu()
   if not gi or not gi.addMenuHook then return end
   gi.addMenuHook('chaosItemFinder', tr('Where to find'),
     safe('menu', function(_, lookThing, useThing)
-      local thing = useThing or lookThing
-      if thing and thing.isItem and thing:isItem() then lookupClientId(thing:getId()) end
+      local thing = L.menuThing(lookThing, useThing)
+      if thing then lookupClientId(thing:getId()) end
     end),
+    -- real items only, never ground, borders or fixed map pieces (L.menuThing)
     safe('menuCondition', function(_, lookThing, useThing)
-      local thing = useThing or lookThing
-      return thing ~= nil and thing.isItem ~= nil and thing:isItem() and L.validClientId(thing:getId())
+      return L.menuThing(lookThing, useThing) ~= nil
     end))
   hooked = true
 end
@@ -378,7 +379,15 @@ function init()
   window.listPager.prevButton.onClick = function() if results then doSearch(results.p - 1) end end
   window.listPager.nextButton.onClick = function() if results then doSearch(results.p + 1) end end
   window.backButton.onClick = function() back() end
-  window.onKeyDown = function(widget, keyCode)
+  window.closeButton.onClick = function() hide() end
+  window.onEscape = function() hide() end
+  -- this handler replaces UIWindow:onKeyDown, which is what calls onEscape: Escape is handled here (live test
+  -- winpkg-35: the window did not close)
+  window.onKeyDown = function(widget, keyCode, keyboardModifiers)
+    if keyCode == KeyEscape then
+      hide()
+      return true
+    end
     if keyCode ~= KeyBackspace then return false end
     if window.searchEdit:isFocused() and window.searchEdit:getText() ~= '' then return false end
     return back()

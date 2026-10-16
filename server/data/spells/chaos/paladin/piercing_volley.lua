@@ -3,7 +3,7 @@ dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
 combat:setParameter(COMBAT_PARAM_TYPE, COMBAT_PHYSICALDAMAGE)
-combat:setParameter(COMBAT_PARAM_EFFECT, Fx("blood_spear", CONST_ME_HITAREA))
+combat:setParameter(COMBAT_PARAM_EFFECT, Fx("blood_splash", CONST_ME_HITAREA))
 combat:setParameter(COMBAT_PARAM_BLOCKARMOR, true)
 combat:setArea(createCombatArea(AREA_BEAM7))
 

@@ -24,13 +24,14 @@ R.defaults = {
   backoffMs = 2000,     -- first back-off of a refused spell, doubled per refusal in a row
   backoffMaxMs = 16000,
   selfAreaRadius = 3,   -- a self-centred attack spell without an area table needs a monster this close
-  channelHealBelow = 50 -- while a cast-time spell charges, a heal waits unless health is below this percent
+  channelHealBelow = 50 -- unused since base patch 0062: a heal never waits for a charging cast (it does not interrupt it)
 }
 
 -- Cast-time spells (server data/lib/chaos_casting.lua: ChaosCasting.spell in the spell script, its spellId and ms; the
--- test reads the scripts and checks this list). Any other spell the caster casts meanwhile interrupts the cast and the
--- server gives the cooldown back: the shooter's next spell (or a top-up heal) cut Colossus Fall off every time, and
--- with its cooldown refunded it took every turn of the attack group again.
+-- test reads the scripts and checks this list). Another attack spell or rune cast meanwhile interrupts the cast and the
+-- server gives the cooldown back: the shooter's next spell cut Colossus Fall off every time, and with its cooldown
+-- refunded it took every turn of the attack group again. A heal or a support spell does not interrupt it (server
+-- README "Cooldown channels", base patch 0062).
 R.CAST_MS = { [206] = 1500, [213] = 1500, [219] = 1000, [225] = 1000 }
 
 local function groupList(groups)

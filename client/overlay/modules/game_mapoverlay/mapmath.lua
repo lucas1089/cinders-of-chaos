@@ -225,6 +225,59 @@ function M.viewGeometry(rect, probe, player)
   }
 end
 
+-- ---------------------------------------------------------------- mouse
+-- The overlay is click-through: the game map under it gets every plain click, drag, hover and wheel turn (walk,
+-- attack, use, look). Only modified input belongs to the overlay, and anything over its control strip.
+-- Wheel over the game view -> 'opacity' (Ctrl), 'zoom' (Shift, or any wheel over the strip) or nil (pass through).
+function M.wheelAction(ctrl, shift, overStrip)
+  if ctrl then return 'opacity' end
+  if shift or overStrip then return 'zoom' end
+  return nil
+end
+
+-- a mouse press over the overlay starts a pan only with Shift + the middle button; nothing else is taken
+function M.startsPan(isMiddle, shift, overStrip)
+  return isMiddle and shift and not overStrip or false
+end
+
+-- Where the character is drawn. The game view follows the character: its sprite stays on the centre of the drawn
+-- map, and during a step its new tile (geo.cx, geo.cy, already the destination) slides in under it from up to a
+-- tile away. Returns the sprite's screen point (sx, sy) and the sprite's offset from its tile in tiles (wx, wy),
+-- so the overlay can show the character's exact, in-between position (0 within a pixel). An offset of more than 1.5 tiles means the
+-- view does not follow the character (a free camera): then the tile itself is used.
+function M.follow(geo)
+  local sx, sy = math.floor(geo.x + geo.width / 2), math.floor(geo.y + geo.height / 2)
+  local ts = (tonumber(geo.ts) or 0) > 0 and geo.ts or 32
+  local wx, wy = (sx - geo.cx) / ts, (sy - geo.cy) / ts
+  if math.abs(wx) > 1.5 or math.abs(wy) > 1.5 then return geo.cx, geo.cy, 0, 0 end
+  -- a pixel of rounding between the sprite and its tile while standing is not a step
+  if math.abs(sx - geo.cx) <= 1 then wx = 0 end
+  if math.abs(sy - geo.cy) <= 1 then wy = 0 end
+  return sx, sy, wx, wy
+end
+
+-- The cheap per-frame half of viewGeometry, for a view already measured (sx, sy = the centre of the drawn map, ts =
+-- the tile size): the tile under the centre, its top left border by bisecting at most one tile (about 2 * log2(ts)
+-- probes instead of about 70), and from it the centre of the character's tile. Returns cx, cy or nil (the probe
+-- failed: measure the view again).
+function M.tileCentreNear(probe, sx, sy, ts, player)
+  local c = probe(sx, sy)
+  if not c or not player or not ts or ts < 1 then return nil end
+  local span = math.ceil(ts) + 1
+  local function borderX(x) local p = probe(x, sy) return p ~= nil and p.x >= c.x end
+  local function borderY(y) local p = probe(sx, y) return p ~= nil and p.y >= c.y end
+  if borderX(sx - span) or borderY(sy - span) then return nil end   -- tiles bigger than measured
+  local left = bisect(sx - span, sx, borderX)
+  local top = bisect(sy - span, sy, borderY)
+  return math.floor(left + (player.x - c.x) * ts + ts / 2), math.floor(top + (player.y - c.y) * ts + ts / 2)
+end
+
+-- a walk offset in tiles -> whole minimap pixels at a zoom
+function M.walkPixels(wx, wy, zoom)
+  local ppt = M.pixelsPerTile(zoom)
+  return math.floor((tonumber(wx) or 0) * ppt + 0.5), math.floor((tonumber(wy) or 0) * ppt + 0.5)
+end
+
 -- The part of the game view the player really sees: the view rect cut to the window and by the panels drawn over it
 -- (insets = pixels taken from each side of the window area: left, top, right, bottom; nil = none).
 -- Returns {x, y, width, height}.

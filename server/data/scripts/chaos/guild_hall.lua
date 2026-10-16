@@ -26,6 +26,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/guild_core.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 if not Chaos.guildConfig then
 	Chaos.guildConfig = dofile("data/scripts/chaos/guild_config.lua")
 end
@@ -483,69 +486,34 @@ hub:type("stepin")
 hub:aid(H.aid.hub)
 hub:register()
 
--- entry forcefields next to the temples (runtime items; created at startup and checked once a minute)
-local function spotFree(pos)
-	local tile = Tile(pos)
-	if not tile or not tile:getGround() or (tile.getHouse and tile:getHouse()) then
-		return false
-	end
-	if tile:hasProperty(CONST_PROP_BLOCKSOLID) or tile:hasProperty(CONST_PROP_BLOCKPATH) then
-		return false
-	end
-	return not (ITEM_TYPE_TELEPORT and tile:getItemByType(ITEM_TYPE_TELEPORT))
-end
-
-function G.placePortals()
+-- the Guild Hall Portal of every town (runtime items; created at startup and checked once a minute): cityportals.lua
+-- puts it in the Hall of Services' portal room in Cinderhold and Mirewake and on a fixed spot next to every other
+-- temple (cityportals_config.lua), labelled and marked by cityportals_fx.lua. `portalPositions` (fixed tiles) still
+-- replaces all of that when set.
+function G.placePortals(say)
 	G.portals = G.portals or {}
-	local function has(pos)
-		local tile = Tile(pos)
-		local it = tile and tile:getItemById(H.ids.portal)
-		return it and it:getActionId() == H.aid.enter
-	end
-	local spots = {}
+	local CP = ChaosCityPortals
 	if H.portalPositions and #H.portalPositions > 0 then
+		local made = 0
 		for _, p in ipairs(H.portalPositions) do
-			spots[#spots + 1] = P(p)
-		end
-	else
-		local seen = {}
-		for _, town in ipairs(Game.getTowns()) do
-			local t = town:getTemplePosition()
-			local key = t.x .. "," .. t.y .. "," .. t.z
-			if t.x > 0 and not seen[key] and Tile(t) then
-				seen[key] = true
-				local done = false
-				for _, off in ipairs(H.portalOffsets) do
-					local p = Position(t.x + off[1], t.y + off[2], t.z)
-					if has(p) then
-						done = true
-						break
-					end
-				end
-				if not done then
-					for _, off in ipairs(H.portalOffsets) do
-						local p = Position(t.x + off[1], t.y + off[2], t.z)
-						if spotFree(p) then
-							spots[#spots + 1] = p
-							break
-						end
-					end
+			local pos = P(p)
+			local tile = Tile(pos)
+			local it = tile and tile:getItemById(H.ids.portal)
+			if tile and not (it and it:getActionId() == H.aid.enter) then
+				it = Game.createItem(H.ids.portal, 1, pos)
+				if it then
+					it:setActionId(H.aid.enter)
+					made = made + 1
 				end
 			end
-		end
-	end
-	local made = 0
-	for _, pos in ipairs(spots) do
-		if Tile(pos) and not has(pos) then
-			local item = Game.createItem(H.ids.portal, 1, pos)
-			if item then
-				item:setActionId(H.aid.enter)
-				item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The way to your guild's hall (members of a guild that owns one).")
-				made = made + 1
+			if it then
+				CP.register("guildhall", H.aid.enter, pos, p.town)
 			end
 		end
+		return made
 	end
-	return made
+	return (CP.place({kind = "guildhall", aid = H.aid.enter, item = H.ids.portal, offsets = H.portalOffsets,
+		log = say and log or nil}))
 end
 
 -- ---------------------------------------------------------------- buying
@@ -1080,7 +1048,7 @@ end
 local startup = GlobalEvent("ChaosGuildHallStartup")
 function startup.onStartup()
 	G.loadHalls()
-	local n = G.placePortals()
+	local n = G.placePortals(true)
 	log(string.format("%d guild hall(s), %d entry portal(s) placed", (function()
 		local c = 0
 		for _ in pairs(G.halls) do

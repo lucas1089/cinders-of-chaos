@@ -893,7 +893,12 @@ function status.onSay(player, words, param)
 	local voc = player:getVocation():getId()
 	local lang = Chaos.lang(player)
 	local ok, code, text = Q.eligibility(voc, player:getLevel(), lang)
-	if not ok then
+	if not ok and code == "level" then
+		-- the NPC keeps its own line; the menu says the level plainly
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Ascension unlocks at level %d (you are level %d).",
+			Chaos.classes.ascension.minLevel, player:getLevel()))
+		return false
+	elseif not ok then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Ascension: %s", text))
 		return false
 	end

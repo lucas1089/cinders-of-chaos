@@ -35,6 +35,10 @@ CONFIG = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_gems_config.l
 ESC, START, END = 0xFD, 0xFE, 0xFF
 A_SERVERID, A_CLIENTID = 0x10, 0x11
 FLAG_USEABLE, FLAG_PICKUPABLE, FLAG_MOVEABLE, FLAG_STACKABLE = 1 << 4, 1 << 5, 1 << 6, 1 << 7
+# the client sends no random-phase byte unless the server node says the look is animated: a node whose client thing
+# has more than one phase needs this flag, or every item packet of it is one byte short for the client (2026-10-16:
+# "ProtocolGame parse message exception ... last opcode is 0x6e ... eof reached" opening a Loot Bag holding gems)
+FLAG_ANIMATION = 1 << 24
 XML_BEGIN = '\t<!-- Chaos gems and the Orb of Sockets (server/tools/install_gems.py, do not edit by hand) -->\n'
 XML_END = '\t<!-- end of the Chaos gems -->\n'
 GEM_WEIGHT = 10
@@ -199,9 +203,13 @@ def scan(data):
 
 
 def gem_node(stock, sid, cid=None):
-    """a copy of the stock node (group, flags + useable, every attribute) with the new server id (and client id)"""
+    """a copy of the stock node (group, flags + useable, every attribute) with the new server id (and client id).
+    With our own look (cid) the node is animated (FLAG_ANIMATION): every own gem look has 9 phases
+    (client/tools/sprites/art_import/gems.csv), so the server must send the phase byte the client reads for it."""
     _s, _e, _sid, _cid, group, flags, attrs = stock
     flags |= FLAG_USEABLE | FLAG_PICKUPABLE | FLAG_MOVEABLE | FLAG_STACKABLE
+    if cid is not None:
+        flags |= FLAG_ANIMATION
     body = struct.pack('<I', flags)
     for k, v in attrs:
         if k == A_SERVERID:

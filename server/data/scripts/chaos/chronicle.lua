@@ -38,6 +38,9 @@ if not Chaos.t then
 end
 dofile("data/scripts/chaos/chronicle_core.lua")
 dofile("data/scripts/chaos/chronicle_text.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 ChaosChronicleCore.ensureWrapChain()
 
 Chaos.chronicleConfig = dofile("data/scripts/chaos/chronicle_config.lua")
@@ -431,8 +434,9 @@ function X.removeSet(key)
 	return n
 end
 
+-- placed: the plan's arrival is set, and a gate tile (`gate`, a staff override) or gate towns (cityportals.lua)
 local function areaReady(area)
-	return K.gateOf(area) ~= nil and K.arrivalOf(area) ~= nil
+	return K.arrivalOf(area) ~= nil and (K.gateOf(area) ~= nil or #(cfg.gateTowns or {}) > 0)
 end
 
 function X.openArea(key)
@@ -446,15 +450,24 @@ function X.openArea(key)
 	end
 	local gate = K.gateOf(area)
 	local aid = cfg.gateAid + index - 1
+	if not gate then
+		-- the Chronicle Gate of each town of gateTowns: the Hall of Services' portal room, else beside the temple
+		-- (cityportals.lua, spot "chronicle_<key>"; look text with the area's name and an effect)
+		local _, positions = ChaosCityPortals.place({kind = "chronicle", spot = "chronicle_" .. area.key, aid = aid,
+			item = cfg.gateItem, towns = cfg.gateTowns, title = area.name})
+		return #positions > 0
+	end
 	local tile = Tile(P(gate))
 	for _, it in ipairs(tile and tile:getItems() or {}) do
 		if it:getActionId() == aid then
+			ChaosCityPortals.register("chronicle", aid, gate) -- look text and effect (cityportals_fx.lua)
 			return true -- already there (a /reload)
 		end
 	end
 	local it = Game.createItem(cfg.gateItem, 1, P(gate))
 	if it then
 		it:setActionId(aid)
+		ChaosCityPortals.register("chronicle", aid, gate)
 		return true
 	end
 	return false
@@ -465,6 +478,9 @@ function X.closeArea(key)
 	local gate = area and K.gateOf(area)
 	if gate then
 		return removeAidItems(gate, cfg.gateAid + index - 1)
+	end
+	if area then
+		return ChaosCityPortals.remove(cfg.gateAid + index - 1) > 0
 	end
 	return false
 end
@@ -968,7 +984,7 @@ function talk.onSay(player, words, param)
 			tostring(K.chapterPct(cfg, st, st.chapter))))
 		for _, area in ipairs(cfg.areas) do
 			reply(string.format("%s: %s, %s", area.name, X.world.open[area.key] and "open" or "closed",
-				areaReady(area) and "placed" or "NOT PLACED (chronicle_config.lua areas at / gate)"))
+				areaReady(area) and "placed" or "NOT PLACED (chronicle_config.lua areas at, gateTowns / gate)"))
 		end
 	elseif cmd == "world" then
 		X.applyWorld()

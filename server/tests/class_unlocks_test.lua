@@ -83,6 +83,20 @@ eq(K.autoUnlock("e", {won = "the Midwinter Joust"}, ev), "event", "custom method
 eq(K.decide(50, {}, 1, 1, ev), false, "gate unchanged: still locked until granted")
 eq(K.decide(50, {e = true}, 1, 1, ev), true)
 
+-- ------------------------------------------------------------------ grouped status (Character Info)
+local gs = K.lockGroups(function() return false end)
+eq(#gs.unlocked, 0, "nothing unlocked"); eq(#gs.groups, 1, "the three level-200 classes form one group")
+eq(table.concat(gs.groups[1].names, ", "), "Monk, Necromancer, Templar", "sorted names")
+eq(gs.groups[1].level, 200, "level group")
+gs = K.lockGroups(function(key) return key == "monk" end)
+eq(gs.unlocked[1], "Monk", "unlocked listed"); eq(#gs.groups[1].names, 2, "two still locked")
+local mixed = {table = "t", bypass = cfg.bypass, login = cfg.login, classes = {
+	a = {name = "A", vocations = {60}, locked = true, unlock = {level = {min = 200}}},
+	b = {name = "B", vocations = {61}, locked = true, unlock = {event = {name = "the Joust"}}}}}
+gs = K.lockGroups(function() return false end, mixed)
+eq(#gs.groups, 2, "different ways, different groups"); eq(gs.groups[2].level, nil, "no level for a custom way")
+eq(gs.groups[2].how, "win the Joust", "the way described")
+
 -- ------------------------------------------------------------------ SQL
 assert(K.sqlCreate():find("CREATE TABLE IF NOT EXISTS `chaos_class_unlocks`"), "create")
 eq(K.sqlSelect(42), "SELECT `class_key` FROM `chaos_class_unlocks` WHERE `account_id` = 42")
@@ -301,6 +315,6 @@ talks["/classunlock"].onSay(alt, "/classunlock", "Bob, necromancer")
 eq(U.isUnlocked(8, "necromancer"), false, "players cannot use it")
 eq(talks["!classes"], nil, "no spoken player command")
 ChaosCommands.handlers.classes(bob, "")
-assert(bob.messages[#bob.messages]:find("Necromancer: locked"), "the menu's Character Info lists the state")
+assert(bob.messages[#bob.messages]:find("Locked classes: .*Necromancer"), "the menu's Character Info lists the state")
 
 print("class_unlocks_test: OK")

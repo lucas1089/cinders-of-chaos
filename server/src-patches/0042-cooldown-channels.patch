@@ -1,0 +1,632 @@
+# Cooldown channels (server/README.md "Cooldown channels"). Owner, 2026-10-16: attack spells, healing spells, the auto
+# attack and moving things must have cooldowns that never conflict: using one never delays or blocks another. Stock
+# 1.4 kept one next-action time and one queued task per player for every item use, item move and step, and the auto
+# attack's queued check (classicAttackSpeed = false) shared that task: an attack rune held a healing rune and every
+# potion for 1 s (timeBetweenExActions), a potion held the next rune, a step or a use held the distance attack, an item
+# move or a use cancelled the queued attack check (the next swing waited for the 1 s creature think) and the attack
+# check cancelled a queued use or move (dropped). Now a player has a cooldown channel per kind of action (enums.h
+# CooldownChannel_t), each with its own next-action time and queued task:
+#   ACTION   plain uses (doors, levers, tools, food, containers) and walking: the stock nextAction and delays
+#   MOVE     item and creature moves, the equip hotkey, the right-click equip (0024): moveItemDelay (50 ms) after each,
+#            and a step holds it as before
+#   ATTACK / HEAL / SUPPORT   rune uses by the rune spell's group (attack + special / healing / support):
+#            runeChannelDelay (1000 ms) after a rune of the same group only
+#   POTION   items named with Game.setItemCooldownChannel(id, COOLDOWN_CHANNEL_POTION) (data/scripts/chaos/
+#            cooldown_channels.lua: the base potion script's items and the Everfull potions): potionChannelDelay (1000 ms)
+# The auto attack has its own queued check (Player::setNextAttackTask) and only a step that is not a kite walk step
+# (0028) holds a distance swing; the swing interval (getAttackSpeed, 0011 floor and cap) is unchanged. Spells never used
+# the next-action time; their spell and group cooldowns stay as spells.xml sets them. Every channel keeps a floor of
+# 50 ms and one queued task, so packet floods and fast clients stay limited per channel. New config: cooldownChannels
+# (default true; false is the stock shared delay), moveItemDelay, runeChannelDelay, potionChannelDelay (configKeys too).
+# Guard: tools/cooldown_channels_patch_test.py (CI). Applies after 0001-0041.
+diff --git a/src/actions.cpp b/src/actions.cpp
+index c2525d0..945828e 100644
+--- a/src/actions.cpp
++++ b/src/actions.cpp
+@@ -9,6 +9,7 @@
+ #include "container.h"
+ #include "game.h"
+ #include "pugicast.h"
++#include "scheduler.h"
+ #include "spells.h"
+ #include <fmt/format.h>
+ 
+@@ -274,6 +275,61 @@ ReturnValue Actions::canUseFar(const Creature* creature, const Position& toPos,
+ 	return RETURNVALUE_NOERROR;
+ }
+ 
++// Chaos (src-patch 0042): item types with a cooldown channel of their own (Game.setItemCooldownChannel: the potions)
++static std::unordered_map<uint16_t, CooldownChannel_t> chaosItemChannels;
++
++void Actions::setItemCooldownChannel(uint16_t itemId, CooldownChannel_t channel)
++{
++	if (channel >= COOLDOWN_CHANNEL_COUNT) {
++		chaosItemChannels.erase(itemId);
++	} else {
++		chaosItemChannels[itemId] = channel;
++	}
++}
++
++// the channel a use of the item waits for: its own (Game.setItemCooldownChannel), else a rune by its spell group
++// (attack and special: ATTACK, healing: HEAL, support: SUPPORT), else ACTION (doors, levers, tools, food, ...)
++CooldownChannel_t Actions::getUseChannel(const Item* item)
++{
++	if (!item || !g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS)) {
++		return COOLDOWN_CHANNEL_ACTION;
++	}
++
++	auto it = chaosItemChannels.find(item->getID());
++	if (it != chaosItemChannels.end()) {
++		return it->second;
++	}
++
++	if (const RuneSpell* rune = dynamic_cast<const RuneSpell*>(getAction(item))) {
++		switch (rune->getGroup()) {
++			case SPELLGROUP_HEALING:
++				return COOLDOWN_CHANNEL_HEAL;
++			case SPELLGROUP_SUPPORT:
++				return COOLDOWN_CHANNEL_SUPPORT;
++			default:
++				return COOLDOWN_CHANNEL_ATTACK;
++		}
++	}
++	return COOLDOWN_CHANNEL_ACTION;
++}
++
++// how long a use holds its channel: the stock action delays for ACTION, the channel delays (at least 50 ms) else
++int64_t Actions::getUseDelay(CooldownChannel_t channel, bool useEx)
++{
++	switch (Player::effectiveChannel(channel)) {
++		case COOLDOWN_CHANNEL_MOVE:
++			return std::max<int64_t>(SCHEDULER_MINTICKS, g_config.getNumber(ConfigManager::MOVE_ITEM_DELAY));
++		case COOLDOWN_CHANNEL_ATTACK:
++		case COOLDOWN_CHANNEL_HEAL:
++		case COOLDOWN_CHANNEL_SUPPORT:
++			return std::max<int64_t>(SCHEDULER_MINTICKS, g_config.getNumber(ConfigManager::RUNE_CHANNEL_DELAY));
++		case COOLDOWN_CHANNEL_POTION:
++			return std::max<int64_t>(SCHEDULER_MINTICKS, g_config.getNumber(ConfigManager::POTION_CHANNEL_DELAY));
++		default:
++			return g_config.getNumber(useEx ? ConfigManager::EX_ACTIONS_DELAY_INTERVAL : ConfigManager::ACTIONS_DELAY_INTERVAL);
++	}
++}
++
+ Action* Actions::getAction(const Item* item)
+ {
+ 	if (item->hasAttribute(ITEM_ATTRIBUTE_UNIQUEID)) {
+@@ -409,7 +465,8 @@ static void showUseHotkeyMessage(Player* player, const Item* item, uint32_t coun
+ 
+ bool Actions::useItem(Player* player, const Position& pos, uint8_t index, Item* item, bool isHotkey)
+ {
+-	player->setNextAction(OTSYS_TIME() + g_config.getNumber(ConfigManager::ACTIONS_DELAY_INTERVAL));
++	const CooldownChannel_t channel = getUseChannel(item); // Chaos (src-patch 0042)
++	player->setNextAction(OTSYS_TIME() + getUseDelay(channel, false), channel);
+ 
+ 	if (isHotkey) {
+ 		uint16_t subType = item->getSubType();
+@@ -442,7 +499,8 @@ bool Actions::useItem(Player* player, const Position& pos, uint8_t index, Item*
+ bool Actions::useItemEx(Player* player, const Position& fromPos, const Position& toPos,
+                         uint8_t toStackPos, Item* item, bool isHotkey, Creature* creature/* = nullptr*/)
+ {
+-	player->setNextAction(OTSYS_TIME() + g_config.getNumber(ConfigManager::EX_ACTIONS_DELAY_INTERVAL));
++	const CooldownChannel_t channel = getUseChannel(item); // Chaos (src-patch 0042)
++	player->setNextAction(OTSYS_TIME() + getUseDelay(channel, true), channel);
+ 
+ 	Action* action = getAction(item);
+ 	if (!action) {
+diff --git a/src/actions.h b/src/actions.h
+index 400f29a..9b56593 100644
+--- a/src/actions.h
++++ b/src/actions.h
+@@ -111,6 +111,11 @@ class Actions final : public BaseEvents
+ 		ReturnValue canUse(const Player* player, const Position& pos, const Item* item);
+ 		ReturnValue canUseFar(const Creature* creature, const Position& toPos, bool checkLineOfSight, bool checkFloor);
+ 
++		// Chaos (src-patch 0042): the cooldown channel of a use of this item (enums.h) and its delay
++		CooldownChannel_t getUseChannel(const Item* item);
++		static int64_t getUseDelay(CooldownChannel_t channel, bool useEx);
++		static void setItemCooldownChannel(uint16_t itemId, CooldownChannel_t channel);
++
+ 		bool registerLuaEvent(Action* event);
+ 		void clear(bool fromLua) override final;
+ 
+diff --git a/src/configmanager.cpp b/src/configmanager.cpp
+index 99a2bd5..8f39e66 100644
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -271,6 +271,14 @@ bool ConfigManager::load()
+ 	integer[KILLS_TO_BLACK] = getGlobalNumber(L, "killsToBlackSkull", 6);
+ 	integer[ACTIONS_DELAY_INTERVAL] = getGlobalNumber(L, "timeBetweenActions", 200);
+ 	integer[EX_ACTIONS_DELAY_INTERVAL] = getGlobalNumber(L, "timeBetweenExActions", 1000);
++	// Chaos (patch 0042): cooldown channels (server/README.md "Cooldown channels"). Attack runes, healing runes, support
++	// runes, potions, item moves and plain uses each wait only for their own channel; the auto attack is never held by
++	// them. A rune waits runeChannelDelay ms after the last rune of its group, a potion potionChannelDelay ms after the
++	// last potion, an item move moveItemDelay ms after the last move (each at least 50 ms). false: the stock shared delay
++	boolean[COOLDOWN_CHANNELS] = getGlobalBoolean(L, "cooldownChannels", true);
++	integer[MOVE_ITEM_DELAY] = getGlobalNumber(L, "moveItemDelay", 50);
++	integer[RUNE_CHANNEL_DELAY] = getGlobalNumber(L, "runeChannelDelay", 1000);
++	integer[POTION_CHANNEL_DELAY] = getGlobalNumber(L, "potionChannelDelay", 1000);
+ 	integer[MAX_MESSAGEBUFFER] = getGlobalNumber(L, "maxMessageBuffer", 4);
+ 	integer[KICK_AFTER_MINUTES] = getGlobalNumber(L, "kickIdlePlayerAfterMinutes", 15);
+ 	integer[PROTECTION_LEVEL] = getGlobalNumber(L, "protectionLevel", 1);
+diff --git a/src/configmanager.h b/src/configmanager.h
+index b933a91..7c5a415 100644
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -38,6 +38,7 @@ class ConfigManager
+ 			CONVERT_UNSAFE_SCRIPTS,
+ 			CLASSIC_EQUIPMENT_SLOTS,
+ 			CLASSIC_ATTACK_SPEED,
++			COOLDOWN_CHANNELS, // Chaos (patch 0042): cooldown channels
+ 			SCRIPTS_CONSOLE_LOGS,
+ 			SERVER_SAVE_NOTIFY_MESSAGE,
+ 			SERVER_SAVE_CLEAN_MAP,
+@@ -113,6 +114,9 @@ class ConfigManager
+ 			MAX_MESSAGEBUFFER,
+ 			ACTIONS_DELAY_INTERVAL,
+ 			EX_ACTIONS_DELAY_INTERVAL,
++			MOVE_ITEM_DELAY, // Chaos (patch 0042): cooldown channels
++			RUNE_CHANNEL_DELAY,
++			POTION_CHANNEL_DELAY,
+ 			KICK_AFTER_MINUTES,
+ 			PROTECTION_LEVEL,
+ 			DEATH_LOSE_PERCENT,
+diff --git a/src/enums.h b/src/enums.h
+index 49fcba6..a8c1f20 100644
+--- a/src/enums.h
++++ b/src/enums.h
+@@ -149,6 +149,25 @@ enum SpellGroup_t : uint8_t {
+ 	SPELLGROUP_SPECIAL = 4,
+ };
+ 
++// Chaos (src-patch 0042): the cooldown channels of a player's actions (server/README.md "Cooldown channels"). Each
++// channel has its own next-action time and its own queued task, so one never delays or drops another:
++//   ACTION   plain uses (doors, levers, tools, food, containers) and walking: the stock nextAction
++//   MOVE     item and creature moves, the equip hotkey and the right-click equip: a short anti-spam delay
++//   ATTACK, HEAL, SUPPORT   rune uses, by the rune spell's group (attack + special, healing, support)
++//   POTION   potions (Game.setItemCooldownChannel, data/scripts/chaos/cooldown_channels.lua)
++// The auto attack has a timer of its own (Player::doAttacking). With cooldownChannels = false every channel is ACTION.
++enum CooldownChannel_t : uint8_t {
++	COOLDOWN_CHANNEL_ACTION = 0,
++	COOLDOWN_CHANNEL_MOVE = 1,
++	COOLDOWN_CHANNEL_ATTACK = 2,
++	COOLDOWN_CHANNEL_HEAL = 3,
++	COOLDOWN_CHANNEL_SUPPORT = 4,
++	COOLDOWN_CHANNEL_POTION = 5,
++
++	COOLDOWN_CHANNEL_COUNT,
++	COOLDOWN_CHANNEL_AUTO = 0xFF, // Game.setItemCooldownChannel(id, COOLDOWN_CHANNEL_AUTO): back to the rune / action rule
++};
++
+ enum SpellType_t : uint8_t {
+ 	SPELL_UNDEFINED = 0,
+ 	SPELL_INSTANT = 1,
+diff --git a/src/game.cpp b/src/game.cpp
+index 88ea60f..4963305 100644
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -736,6 +736,16 @@ void Game::executeDeath(uint32_t creatureId)
+ 	}
+ }
+ 
++// Chaos (src-patch 0042): the anti-spam delay of the MOVE cooldown channel (moveItemDelay, at least 50 ms); 0 with
++// cooldownChannels = false (stock moves set no delay of their own)
++static int64_t chaosMoveDelay()
++{
++	if (!g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS)) {
++		return 0;
++	}
++	return std::max<int64_t>(SCHEDULER_MINTICKS, g_config.getNumber(ConfigManager::MOVE_ITEM_DELAY));
++}
++
+ void Game::playerMoveThing(uint32_t playerId, const Position& fromPos,
+                            uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count)
+ {
+@@ -772,7 +782,7 @@ void Game::playerMoveThing(uint32_t playerId, const Position& fromPos,
+ 			SchedulerTask* task = createSchedulerTask(1000,
+ 			                      std::bind(&Game::playerMoveCreatureByID, this, player->getID(),
+ 			                                  movingCreature->getID(), movingCreature->getPosition(), tile->getPosition()));
+-			player->setNextActionTask(task);
++			player->setNextActionTask(task, true, COOLDOWN_CHANNEL_MOVE);
+ 		} else {
+ 			playerMoveCreature(player, movingCreature, movingCreature->getPosition(), tile);
+ 		}
+@@ -810,11 +820,11 @@ void Game::playerMoveCreatureByID(uint32_t playerId, uint32_t movingCreatureId,
+ 
+ void Game::playerMoveCreature(Player* player, Creature* movingCreature, const Position& movingCreatureOrigPos, Tile* toTile)
+ {
+-	if (!player->canDoAction()) {
+-		uint32_t delay = player->getNextActionTime();
++	if (!player->canDoAction(COOLDOWN_CHANNEL_MOVE)) {
++		uint32_t delay = player->getNextActionTime(COOLDOWN_CHANNEL_MOVE);
+ 		SchedulerTask* task = createSchedulerTask(delay, std::bind(&Game::playerMoveCreatureByID,
+ 			this, player->getID(), movingCreature->getID(), movingCreatureOrigPos, toTile->getPosition()));
+-		player->setNextActionTask(task);
++		player->setNextActionTask(task, true, COOLDOWN_CHANNEL_MOVE);
+ 		return;
+ 	}
+ 
+@@ -823,7 +833,10 @@ void Game::playerMoveCreature(Player* player, Creature* movingCreature, const Po
+ 		return;
+ 	}
+ 
+-	player->setNextActionTask(nullptr);
++	player->setNextActionTask(nullptr, true, COOLDOWN_CHANNEL_MOVE);
++	if (const int64_t moveDelay = chaosMoveDelay()) {
++		player->setNextAction(OTSYS_TIME() + moveDelay, COOLDOWN_CHANNEL_MOVE);
++	}
+ 
+ 	if (!Position::areInRange<1, 1, 0>(movingCreatureOrigPos, player->getPosition())) {
+ 		//need to walk to the creature first before moving it
+@@ -1000,15 +1013,20 @@ void Game::playerMoveItemByPlayerID(uint32_t playerId, const Position& fromPos,
+ void Game::playerMoveItem(Player* player, const Position& fromPos,
+                           uint16_t spriteId, uint8_t fromStackPos, const Position& toPos, uint8_t count, Item* item, Cylinder* toCylinder)
+ {
+-	if (!player->canDoAction()) {
+-		uint32_t delay = player->getNextActionTime();
++	// Chaos (src-patch 0042): item moves wait only for the MOVE cooldown channel (a step, the last move); a use, a
++	// rune, a potion or the auto attack never holds them, and they never hold one of those
++	if (!player->canDoAction(COOLDOWN_CHANNEL_MOVE)) {
++		uint32_t delay = player->getNextActionTime(COOLDOWN_CHANNEL_MOVE);
+ 		SchedulerTask* task = createSchedulerTask(delay, std::bind(&Game::playerMoveItemByPlayerID, this,
+ 		                      player->getID(), fromPos, spriteId, fromStackPos, toPos, count));
+-		player->setNextActionTask(task);
++		player->setNextActionTask(task, true, COOLDOWN_CHANNEL_MOVE);
+ 		return;
+ 	}
+ 
+-	player->setNextActionTask(nullptr);
++	player->setNextActionTask(nullptr, true, COOLDOWN_CHANNEL_MOVE);
++	if (const int64_t moveDelay = chaosMoveDelay()) {
++		player->setNextAction(OTSYS_TIME() + moveDelay, COOLDOWN_CHANNEL_MOVE);
++	}
+ 
+ 	if (item == nullptr) {
+ 		uint8_t fromIndex = 0;
+@@ -2127,6 +2145,18 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
+ 		return;
+ 	}
+ 
++	// Chaos (src-patch 0042): the equip hotkey is a move: the MOVE cooldown channel's anti-spam delay (stock: none)
++	if (const int64_t moveDelay = chaosMoveDelay()) {
++		if (!player->canDoAction(COOLDOWN_CHANNEL_MOVE)) {
++			SchedulerTask* task = createSchedulerTask(player->getNextActionTime(COOLDOWN_CHANNEL_MOVE),
++				std::bind(&Game::playerEquipItem, this, playerId, spriteId));
++			player->setNextActionTask(task, true, COOLDOWN_CHANNEL_MOVE);
++			return;
++		}
++		player->setNextActionTask(nullptr, true, COOLDOWN_CHANNEL_MOVE);
++		player->setNextAction(OTSYS_TIME() + moveDelay, COOLDOWN_CHANNEL_MOVE);
++	}
++
+ 	Item* item = player->getInventoryItem(CONST_SLOT_BACKPACK);
+ 	if (!item) {
+ 		return;
+@@ -2466,16 +2496,19 @@ void Game::playerUseItemEx(uint32_t playerId, const Position& fromPos, uint8_t f
+ 		return;
+ 	}
+ 
+-	if (!player->canDoAction()) {
+-		uint32_t delay = player->getNextActionTime();
++	// Chaos (src-patch 0042): the use waits only for its own cooldown channel (an attack, healing or support rune, a
++	// potion, any other use)
++	const CooldownChannel_t channel = g_actions->getUseChannel(item);
++	if (!player->canDoAction(channel)) {
++		uint32_t delay = player->getNextActionTime(channel);
+ 		SchedulerTask* task = createSchedulerTask(delay, std::bind(&Game::playerUseItemEx, this,
+ 		                      playerId, fromPos, fromStackPos, fromSpriteId, toPos, toStackPos, toSpriteId));
+-		player->setNextActionTask(task);
++		player->setNextActionTask(task, true, channel);
+ 		return;
+ 	}
+ 
+ 	player->resetIdleTime();
+-	player->setNextActionTask(nullptr);
++	player->setNextActionTask(nullptr, true, channel);
+ 
+ 	g_actions->useItemEx(player, fromPos, toPos, toStackPos, item, isHotkey);
+ }
+@@ -2530,19 +2563,23 @@ void Game::playerUseItem(uint32_t playerId, const Position& pos, uint8_t stackPo
+ 		return;
+ 	}
+ 
+-	if (!player->canDoAction()) {
+-		uint32_t delay = player->getNextActionTime();
++	// Chaos (src-patch 0042): a right-click equip is a move (MOVE cooldown channel), any other use its own channel
++	const CooldownChannel_t channel = chaosMultiUseEquip && chaosMoveDelay() > 0 ? COOLDOWN_CHANNEL_MOVE :
++		g_actions->getUseChannel(item);
++	if (!player->canDoAction(channel)) {
++		uint32_t delay = player->getNextActionTime(channel);
+ 		SchedulerTask* task = createSchedulerTask(delay, std::bind(&Game::playerUseItem, this,
+ 		                      playerId, pos, stackPos, index, spriteId));
+-		player->setNextActionTask(task);
++		player->setNextActionTask(task, true, channel);
+ 		return;
+ 	}
+ 
+ 	player->resetIdleTime();
+-	player->setNextActionTask(nullptr);
++	player->setNextActionTask(nullptr, true, channel);
+ 
+ 	if (chaosMultiUseEquip) {
+-		player->setNextAction(OTSYS_TIME() + g_config.getNumber(ConfigManager::ACTIONS_DELAY_INTERVAL));
++		const int64_t moveDelay = chaosMoveDelay();
++		player->setNextAction(OTSYS_TIME() + (moveDelay > 0 ? moveDelay : g_config.getNumber(ConfigManager::ACTIONS_DELAY_INTERVAL)), channel);
+ 		ret = chaosUseEquip(player, item, pos, isHotkey);
+ 		if (ret != RETURNVALUE_NOERROR) {
+ 			player->sendCancelMessage(ret);
+@@ -2634,16 +2671,18 @@ void Game::playerUseWithCreature(uint32_t playerId, const Position& fromPos, uin
+ 		return;
+ 	}
+ 
+-	if (!player->canDoAction()) {
+-		uint32_t delay = player->getNextActionTime();
++	// Chaos (src-patch 0042): the use waits only for its own cooldown channel (a rune by its group, a potion, ...)
++	const CooldownChannel_t channel = g_actions->getUseChannel(item);
++	if (!player->canDoAction(channel)) {
++		uint32_t delay = player->getNextActionTime(channel);
+ 		SchedulerTask* task = createSchedulerTask(delay, std::bind(&Game::playerUseWithCreature, this,
+ 		                      playerId, fromPos, fromStackPos, creatureId, spriteId));
+-		player->setNextActionTask(task);
++		player->setNextActionTask(task, true, channel);
+ 		return;
+ 	}
+ 
+ 	player->resetIdleTime();
+-	player->setNextActionTask(nullptr);
++	player->setNextActionTask(nullptr, true, channel);
+ 
+ 	g_actions->useItemEx(player, fromPos, creature->getPosition(), creature->getParent()->getThingIndex(creature), item, isHotkey, creature);
+ }
+diff --git a/src/luascript.cpp b/src/luascript.cpp
+index 490c561..3602f67 100644
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -1221,6 +1221,16 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnum(CONDITION_SPELLGROUPCOOLDOWN)
+ 
+ 	registerEnum(SPELLGROUP_NONE)
++
++	// Chaos (src-patch 0042): cooldown channels (Game.setItemCooldownChannel)
++	registerEnum(COOLDOWN_CHANNEL_ACTION)
++	registerEnum(COOLDOWN_CHANNEL_MOVE)
++	registerEnum(COOLDOWN_CHANNEL_ATTACK)
++	registerEnum(COOLDOWN_CHANNEL_HEAL)
++	registerEnum(COOLDOWN_CHANNEL_SUPPORT)
++	registerEnum(COOLDOWN_CHANNEL_POTION)
++	registerEnum(COOLDOWN_CHANNEL_AUTO)
++
+ 	registerEnum(SPELLGROUP_ATTACK)
+ 	registerEnum(SPELLGROUP_HEALING)
+ 	registerEnum(SPELLGROUP_SUPPORT)
+@@ -2119,6 +2129,10 @@ void LuaScriptInterface::registerFunctions()
+ 	registerEnumIn("configKeys", ConfigManager::MAX_MESSAGEBUFFER)
+ 	registerEnumIn("configKeys", ConfigManager::ACTIONS_DELAY_INTERVAL)
+ 	registerEnumIn("configKeys", ConfigManager::EX_ACTIONS_DELAY_INTERVAL)
++	registerEnumIn("configKeys", ConfigManager::COOLDOWN_CHANNELS) // Chaos (src-patch 0042)
++	registerEnumIn("configKeys", ConfigManager::MOVE_ITEM_DELAY)
++	registerEnumIn("configKeys", ConfigManager::RUNE_CHANNEL_DELAY)
++	registerEnumIn("configKeys", ConfigManager::POTION_CHANNEL_DELAY)
+ 	registerEnumIn("configKeys", ConfigManager::KICK_AFTER_MINUTES)
+ 	registerEnumIn("configKeys", ConfigManager::PROTECTION_LEVEL)
+ 	registerEnumIn("configKeys", ConfigManager::DEATH_LOSE_PERCENT)
+@@ -2170,6 +2184,7 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Game", "getItemAttributeByName", LuaScriptInterface::luaGameGetItemAttributeByName);
+ 	registerMethod("Game", "getReturnMessage", LuaScriptInterface::luaGameGetReturnMessage);
+ 	registerMethod("Game", "setWeightlessContainer", LuaScriptInterface::luaGameSetWeightlessContainer);
++	registerMethod("Game", "setItemCooldownChannel", LuaScriptInterface::luaGameSetItemCooldownChannel);
+ 
+ 	registerMethod("Game", "createItem", LuaScriptInterface::luaGameCreateItem);
+ 	registerMethod("Game", "createContainer", LuaScriptInterface::luaGameCreateContainer);
+@@ -4590,6 +4605,22 @@ int LuaScriptInterface::luaGameSetWeightlessContainer(lua_State* L)
+ 	return 1;
+ }
+ 
++int LuaScriptInterface::luaGameSetItemCooldownChannel(lua_State* L)
++{
++	// Game.setItemCooldownChannel(itemId, channel)   Chaos (src-patch 0042): a use of this item type waits for (and
++	// holds) that cooldown channel only (COOLDOWN_CHANNEL_POTION: data/scripts/chaos/cooldown_channels.lua);
++	// COOLDOWN_CHANNEL_AUTO: back to the default rule (a rune by its spell group, else ACTION)
++	uint16_t itemId = getNumber<uint16_t>(L, 1);
++	uint8_t channel = getNumber<uint8_t>(L, 2);
++	if (Item::items[itemId].id == 0 || (channel >= COOLDOWN_CHANNEL_COUNT && channel != COOLDOWN_CHANNEL_AUTO)) {
++		lua_pushboolean(L, false);
++		return 1;
++	}
++	Actions::setItemCooldownChannel(itemId, static_cast<CooldownChannel_t>(channel));
++	lua_pushboolean(L, true);
++	return 1;
++}
++
+ int LuaScriptInterface::luaGameGetItemAttributeByName(lua_State* L)
+ {
+ 	// Game.getItemAttributeByName(name)
+diff --git a/src/luascript.h b/src/luascript.h
+index 7780540..33fceb6 100644
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -569,6 +569,7 @@ class LuaScriptInterface
+ 		static int luaGameGetItemAttributeByName(lua_State* L);
+ 		static int luaGameGetReturnMessage(lua_State* L);
+ 		static int luaGameSetWeightlessContainer(lua_State* L);
++		static int luaGameSetItemCooldownChannel(lua_State* L);
+ 
+ 		static int luaGameCreateItem(lua_State* L);
+ 		static int luaGameCreateItemWithRarity(lua_State* L);
+diff --git a/src/player.cpp b/src/player.cpp
+index d4d487a..1fd70b5 100644
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1430,6 +1430,13 @@ void Player::onWalk(Direction& dir)
+ 	}
+ 	setNextActionTask(nullptr);
+ 	setNextAction(OTSYS_TIME() + getStepDuration(dir));
++	if (g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS)) {
++		// Chaos (src-patch 0042): the step holds item moves (as before) and the distance attack (stepEndTime), never a
++		// rune, a potion or the queued auto attack (their own channels)
++		setNextActionTask(nullptr, true, COOLDOWN_CHANNEL_MOVE);
++		setNextAction(OTSYS_TIME() + getStepDuration(dir), COOLDOWN_CHANNEL_MOVE);
++		stepEndTime = OTSYS_TIME() + getStepDuration(dir);
++	}
+ }
+ 
+ bool Player::isKiteWalking() const
+@@ -1648,6 +1655,78 @@ uint32_t Player::getNextActionTime() const
+ 	return std::max<int64_t>(SCHEDULER_MINTICKS, nextAction - OTSYS_TIME());
+ }
+ 
++// Chaos (src-patch 0042): cooldown channels (enums.h, server/README.md "Cooldown channels"). Every channel but ACTION
++// has its own next-action time and its own queued task; with cooldownChannels = false they all are ACTION (stock).
++CooldownChannel_t Player::effectiveChannel(CooldownChannel_t channel)
++{
++	if (channel >= COOLDOWN_CHANNEL_COUNT || !g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS)) {
++		return COOLDOWN_CHANNEL_ACTION;
++	}
++	return channel;
++}
++
++void Player::setNextAction(int64_t time, CooldownChannel_t channel)
++{
++	channel = effectiveChannel(channel);
++	if (channel == COOLDOWN_CHANNEL_ACTION) {
++		setNextAction(time);
++	} else if (time > channelNextAction[channel]) {
++		channelNextAction[channel] = time;
++	}
++}
++
++bool Player::canDoAction(CooldownChannel_t channel) const
++{
++	channel = effectiveChannel(channel);
++	if (channel == COOLDOWN_CHANNEL_ACTION) {
++		return canDoAction();
++	}
++	return channelNextAction[channel] <= OTSYS_TIME();
++}
++
++uint32_t Player::getNextActionTime(CooldownChannel_t channel) const
++{
++	channel = effectiveChannel(channel);
++	if (channel == COOLDOWN_CHANNEL_ACTION) {
++		return getNextActionTime();
++	}
++	return std::max<int64_t>(SCHEDULER_MINTICKS, channelNextAction[channel] - OTSYS_TIME());
++}
++
++void Player::setNextActionTask(SchedulerTask* task, bool resetIdleTime, CooldownChannel_t channel)
++{
++	channel = effectiveChannel(channel);
++	if (channel == COOLDOWN_CHANNEL_ACTION) {
++		setNextActionTask(task, resetIdleTime);
++		return;
++	}
++
++	uint32_t& event = channelTaskEvent[channel];
++	if (event != 0) {
++		g_scheduler.stopEvent(event);
++		event = 0;
++	}
++
++	if (task) {
++		event = g_scheduler.addEvent(task);
++		if (resetIdleTime) {
++			this->resetIdleTime();
++		}
++	}
++}
++
++void Player::setNextAttackTask(SchedulerTask* task)
++{
++	if (attackTaskEvent != 0) {
++		g_scheduler.stopEvent(attackTaskEvent);
++		attackTaskEvent = 0;
++	}
++
++	if (task) {
++		attackTaskEvent = g_scheduler.addEvent(task);
++	}
++}
++
+ void Player::onThink(uint32_t interval)
+ {
+ 	Creature::onThink(interval);
+@@ -3571,12 +3650,18 @@ void Player::doAttacking(uint32_t)
+ 		const Weapon* weapon = g_weapons->getWeapon(tool);
+ 		uint32_t delay = getAttackSpeed();
+ 		bool classicSpeed = g_config.getBoolean(ConfigManager::CLASSIC_ATTACK_SPEED);
++		// Chaos (src-patch 0042): with the cooldown channels the auto attack has its own timer: an item use (rune,
++		// potion, door), an item move or a spell neither holds the distance attack nor cancels the queued attack check
++		// (it shared the action task with them: a move cancelled it, the next swing waited for the 1 s think). Only a
++		// step that is not a kite walk step (src-patch 0028) holds the distance attack, as before.
++		const bool channels = g_config.getBoolean(ConfigManager::COOLDOWN_CHANNELS);
++		const int64_t now = OTSYS_TIME();
+ 
+ 		if (weapon) {
+ 			if (!weapon->interruptSwing()) {
+ 				result = weapon->useWeapon(this, tool, attackedCreature);
+-			} else if (!classicSpeed && !canDoAction()) {
+-				delay = getNextActionTime();
++			} else if (!classicSpeed && (channels ? now < stepEndTime : !canDoAction())) {
++				delay = channels ? static_cast<uint32_t>(stepEndTime - now) : getNextActionTime();
+ 			} else {
+ 				result = weapon->useWeapon(this, tool, attackedCreature);
+ 			}
+@@ -3585,10 +3670,12 @@ void Player::doAttacking(uint32_t)
+ 		}
+ 
+ 		SchedulerTask* task = createSchedulerTask(std::max<uint32_t>(SCHEDULER_MINTICKS, delay), std::bind(&Game::checkCreatureAttack, &g_game, getID()));
+-		if (!classicSpeed) {
+-			setNextActionTask(task, false);
+-		} else {
++		if (classicSpeed) {
+ 			g_scheduler.addEvent(task);
++		} else if (channels) {
++			setNextAttackTask(task);
++		} else {
++			setNextActionTask(task, false);
+ 		}
+ 
+ 		if (result) {
+diff --git a/src/player.h b/src/player.h
+index 67d8e96..a4f7d8e 100644
+--- a/src/player.h
++++ b/src/player.h
+@@ -1225,6 +1225,12 @@ class Player final : public Creature, public Cylinder
+ 			return nextAction <= OTSYS_TIME();
+ 		}
+ 		uint32_t getNextActionTime() const;
++		// Chaos (src-patch 0042): one next-action time and one queued task per cooldown channel (enums.h,
++		// server/README.md "Cooldown channels"); the calls without a channel are the ACTION channel (the stock ones)
++		void setNextAction(int64_t time, CooldownChannel_t channel);
++		bool canDoAction(CooldownChannel_t channel) const;
++		uint32_t getNextActionTime(CooldownChannel_t channel) const;
++		static CooldownChannel_t effectiveChannel(CooldownChannel_t channel);
+ 
+ 		Item* getWriteItem(uint32_t& windowTextId, uint16_t& maxWriteLen);
+ 		void setWriteItem(Item* item, uint16_t maxWriteLen = 0);
+@@ -1253,6 +1259,8 @@ class Player final : public Creature, public Cylinder
+ 		void setNextWalkActionTask(SchedulerTask* task);
+ 		void setNextWalkTask(SchedulerTask* task);
+ 		void setNextActionTask(SchedulerTask* task, bool resetIdleTime = true);
++		void setNextActionTask(SchedulerTask* task, bool resetIdleTime, CooldownChannel_t channel); // Chaos (0042)
++		void setNextAttackTask(SchedulerTask* task); // Chaos (0042): the auto attack's own queued check
+ 
+ 		void death(Creature* lastHitCreature) override;
+ 		bool dropCorpse(Creature* lastHitCreature, Creature* mostDamageCreature, bool lastHitUnjustified, bool mostDamageUnjustified) override;
+@@ -1328,6 +1336,8 @@ class Player final : public Creature, public Cylinder
+ 		int64_t lastPing;
+ 		int64_t lastPong;
+ 		int64_t nextAction = 0;
++		int64_t channelNextAction[COOLDOWN_CHANNEL_COUNT] = {}; // Chaos (0042); [ACTION] unused: nextAction
++		int64_t stepEndTime = 0; // Chaos (0042): a step that holds the distance attack (not a kite walk step) ends then
+ 
+ 		BedItem* bedItem = nullptr;
+ 		Guild* guild = nullptr;
+@@ -1355,6 +1365,8 @@ class Player final : public Creature, public Cylinder
+ 		uint32_t level = 1;
+ 		uint32_t magLevel = 0;
+ 		uint32_t actionTaskEvent = 0;
++		uint32_t channelTaskEvent[COOLDOWN_CHANNEL_COUNT] = {}; // Chaos (0042); [ACTION] unused: actionTaskEvent
++		uint32_t attackTaskEvent = 0; // Chaos (0042)
+ 		uint32_t nextStepEvent = 0;
+ 		uint32_t walkTaskEvent = 0;
+ 		uint32_t MessageBufferTicks = 0;

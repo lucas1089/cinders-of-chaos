@@ -27,6 +27,7 @@
 --   veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}   the veiled slot (chaos_veiled.lua V.tooltip): name,
 --                                                  text, veiled tier 1..4 and its name, its range, h = an effect of its own
 --   req = {level, magic, voc}, weight (oz), desc (flavour text), locked
+--   charges = {n, max} | {unlimited = true}           items with charges (T.chargeInfo)
 --   note                                           a line of its own (quivers: they work only with a bow or crossbow)
 --   store, collects                                a store pouch (pouches.lua): its two lines, no desc and no lock line
 --   stats = [{k, l, v, fmt, low}]                  every number the compare view adds up (low = lower is better)
@@ -123,6 +124,40 @@ function T.mapAllowed(playerPos, pos, canSee)
 		return false
 	end
 	return canSee == true
+end
+
+-- the item the client means. A plain item (no per-item id) is named by its slot only, and a container's slots shift
+-- whenever an item goes in at the front (loot, a stack split): a request sent before the client saw the shift found
+-- the neighbour, and the client kept that tooltip under the hovered item (live test winpkg-35: a Rope showed "Cheese
+-- 62", a Training Wand "Gold coin 100"). The client now sends what it hovers: cid = its client id, n = its count
+-- (stackables only). infoAt(i) -> client id, count of the item at index i (0-based) or nil. Returns the index whose
+-- item matches: `index` itself, else the nearest one (the shifted copy), else nil. No cid (an older client): index.
+function T.matchIndex(index, size, infoAt, cid, n)
+	cid, n = tonumber(cid), tonumber(n)
+	if not cid or cid <= 0 then
+		return index
+	end
+	local function same(i)
+		if i < 0 or i >= size then
+			return false
+		end
+		local c, count = infoAt(i)
+		return c == cid and (not n or n <= 0 or count == n)
+	end
+	if same(index) then
+		return index
+	end
+	for d = 1, math.max(index + 1, size) do
+		if same(index - d) then
+			return index - d
+		elseif same(index + d) then
+			return index + d
+		end
+		if index - d < 0 and index + d >= size then
+			break
+		end
+	end
+	return nil
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -329,6 +364,22 @@ function T.cacheKey(attrs)
 	return string.format("%.0f:%.0f", iid, ver)
 end
 
+-- charges of an item that has them (exercise and training weapons, rings, runes with charges): {n, max} (max = the
+-- item type's full charges, when more than n), {unlimited = true} for a type with charges whose item carries none (it is
+-- never used up), or nil (no charges). charges = the item's ITEM_ATTRIBUTE_CHARGES (nil: the attribute is missing);
+-- typeCharges = ItemType:getCharges(). Live test winpkg-35: a Lasting Exercise Wand showed only its name and weight.
+function T.chargeInfo(charges, typeCharges)
+	typeCharges = tonumber(typeCharges) or 0
+	charges = tonumber(charges)
+	if not charges then
+		return typeCharges > 0 and {unlimited = true} or nil
+	end
+	if charges <= 0 and typeCharges <= 0 then
+		return nil
+	end
+	return {n = math.max(0, floor(charges)), max = typeCharges > charges and floor(typeCharges) or nil}
+end
+
 -- everything the tooltip shows. opts = {equippedIds = {[server id] = true}, attrs = item:getClientAttributes()}
 function T.build(item, opts)
 	opts = opts or {}
@@ -498,6 +549,13 @@ function T.build(item, opts)
 	end
 	if next(req) then
 		tip.req = req
+	end
+
+	-- charges (T.chargeInfo): the item's charges attribute against its type's
+	if ITEM_ATTRIBUTE_CHARGES and not call(it, "isStackable") then
+		local has = call(item, "hasAttribute", ITEM_ATTRIBUTE_CHARGES) == true
+		tip.charges = T.chargeInfo(has and int(call(item, "getAttribute", ITEM_ATTRIBUTE_CHARGES)) or nil,
+			int(call(it, "getCharges")))
 	end
 
 	local weight = num(call(item, "getWeight"))

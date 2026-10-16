@@ -5,7 +5,7 @@ usage: python3 -I gen_shop_cosmetics.py SERVER_DATA_DIR [--check] [--list]
 
 Reads the base server's data/XML/outfits.xml and mounts.xml (installed, with the Chaos blocks of install_outfits.py)
 and leaves out everything that is an exclusive somewhere else:
-  - class looks (class_looks_core.lua L.looks, and L.retired: the looks classes wore before) and the donor art class outfits (chaos_constants.lua Chaos.classes.outfits)
+  - class looks (class_looks_core.lua L.looks, and L.retired: the looks classes wore before) and the donor art class outfits (chaos_constants.lua Chaos.classes.outfits, retiredOutfits and outfitReplacement)
   - achievement rewards (achievements_data.lua: outfit female/male, mount id)
   - season track rewards (season_config.lua: outfit / addon male/female, mount id)
   - season pass and season pack rewards (seasonpass_config.lua, same shapes)
@@ -85,6 +85,13 @@ def exclusions():
     block = re.search(r'\n\toutfits = (.*?)\n\t(?:\}|end\)\(\)),?\n', text, re.S).group(1)
     for t in re.findall(r'lookType\s*=\s*(\d+)', block):
         looks.setdefault(int(t), 'class outfit (donor art)')
+    # retired class outfits (1559 Archmage: owners keep it) and the replacement outfit, its switch on or off
+    for key, why in (('retiredOutfits', 'former class outfit'), ('outfitReplacement', 'class outfit (replacement)')):
+        m = re.search(r'\n\t%s = \{(.*?)\n\t\},?\n' % key, text, re.S)
+        if not m:
+            sys.exit('chaos_constants.lua: no Chaos.classes.%s block' % key)
+        for t in re.findall(r'lookType\s*=\s*(\d+)', m.group(1)):
+            looks.setdefault(int(t), why)
     for f, why in (('achievements_data.lua', 'achievement reward'), ('season_config.lua', 'season reward'),
                    ('seasonpass_config.lua', 'season pass reward'), ('exclusives_config.lua', 'exclusive (never sold)')):
         text = read(os.path.join(CHAOS, f))

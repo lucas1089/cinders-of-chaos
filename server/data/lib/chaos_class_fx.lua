@@ -64,7 +64,8 @@ C.swaps = {
 		[248] = {teleport_in = "beast_spirit"},          -- Wild Bond (each companion)
 	},
 	mystic = {
-		[208] = {healing_bloom = "mystic_mend"},         -- Purifying Wellspring
+		[208] = {heal_sparkle = "mystic_mend"},          -- Purifying Wellspring (each healed ally; the caster keeps
+		                                                 -- the pack healing_bloom)
 		[226] = {arcane_sigil = "illusion_mirror"},      -- Hall of Mirrors
 		[227] = {shade_vanish = "illusion_shatter", shade_appear = "illusion_shatter"}, -- Umbral Stride
 	},
@@ -72,7 +73,8 @@ C.swaps = {
 		[204] = {infernal_seal = "elementalist_glyph"},  -- Falling Pyre (the mark)
 	},
 	illusionist = {
-		[96] = {regenerating = "mystic_mend"},           -- Mirror Mend
+		[96] = {heal_sparkle = "mystic_mend"},           -- Mirror Mend (the mirror heal; the healed ally gets the
+		                                                 -- pack regenerating)
 	},
 	thief = {
 		[98] = {shade_vanish = "thief_vanish"},          -- Shadow Mend

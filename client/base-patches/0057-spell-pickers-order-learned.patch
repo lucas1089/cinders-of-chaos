@@ -1,0 +1,149 @@
+# Chaos: every spell picker sorted by level then name, with a working "Only show learned spells" box (Lua only;
+# applies after 0001-0056).
+# Pickers: the helper's Assign Healing / Attack Spell (assignSpell), Select Attack Spell (assignSpellForMagicShooter),
+# Assign Training / Haste / Cure Paralyze Spell (assignTrainingSpell), the action bar's Assign Spell and the custom
+# hotkeys' Assign Spell. Each one called ChaosSpellCore.setupPicker (overlay game_spellbook, spellbook_core.lua) where
+# it sorted its rows by name: rows by level then name, rows above the character's level (or not learned) dimmed, the
+# box and the search filter together, the remembered box state (g_settings chaosPickerLearnedOnly), and the empty
+# preview at the top of the window says what to do.
+# Root cause of the dead box: the helper forced it on and disabled it, and no picker read it (no onCheckChange).
+# "Learned" is the Spellbook's rule (vocation, level, magic level, the server's learned list); the client's own spell
+# list packet cannot tell, since the base server sends every spell id in it.
+# Without the overlay module the pickers keep their old alphabetical order.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -2962,10 +2962,16 @@ function assignTrainingSpell(button, isH
+   end
+ 
+   -- Order the spell list
+-  local widgets = window.contentPanel.spellList:getChildren()
+-  table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+-  for i, widget in ipairs(widgets) do
+-    window.contentPanel.spellList:moveChildToIndex(widget, i)
++  -- Chaos: level then name, rows above the level dimmed, a working "Only show learned spells" box (ChaosSpellCore,
++  -- overlay game_spellbook; the same learned rule as the Spellbook)
++  if ChaosSpellCore and ChaosSpellCore.setupPicker then
++    ChaosSpellCore.setupPicker(window, g_game.getLocalPlayer(), modules.gamelib.SpellInfo['Default'])
++  else
++    local widgets = window.contentPanel.spellList:getChildren()
++    table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
++    for i, widget in ipairs(widgets) do
++      window.contentPanel.spellList:moveChildToIndex(widget, i)
++    end
+   end
+ 
+   -- Manual OK handler
+@@ -3155,10 +3161,16 @@ function assignSpell(button, groupName,
+   end
+ 
+   -- sort alphabetically
+-  local widgets = window.contentPanel.spellList:getChildren()
+-  table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+-  for i, widget in ipairs(widgets) do
+-    window.contentPanel.spellList:moveChildToIndex(widget, i)
++  -- Chaos: level then name, rows above the level dimmed, a working "Only show learned spells" box (ChaosSpellCore,
++  -- overlay game_spellbook; the same learned rule as the Spellbook)
++  if ChaosSpellCore and ChaosSpellCore.setupPicker then
++    ChaosSpellCore.setupPicker(window, g_game.getLocalPlayer(), modules.gamelib.SpellInfo['Default'])
++  else
++    local widgets = window.contentPanel.spellList:getChildren()
++    table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
++    for i, widget in ipairs(widgets) do
++      window.contentPanel.spellList:moveChildToIndex(widget, i)
++    end
+   end
+ 
+   -- Manual selection system instead of radio group to avoid getY() errors
+@@ -3184,8 +3196,10 @@ function assignSpell(button, groupName,
+ 
+   -- Don't use radio group at all to avoid errors
+ 
+-  window:recursiveGetChildById('tick'):setChecked(true)
+-  window:recursiveGetChildById('tick'):setEnabled(false)
++  if not ChaosSpellCore then -- the box is ChaosSpellCore's (above)
++    window:recursiveGetChildById('tick'):setChecked(true)
++    window:recursiveGetChildById('tick'):setEnabled(false)
++  end
+ 
+   local okFunc = function(destroy, profile)
+     if not selectedWidget then
+@@ -3452,10 +3466,16 @@ function assignSpellForMagicShooter(butt
+     ::continue_spell::
+   end
+ 
+-  local widgets = window.contentPanel.spellList:getChildren()
+-  table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+-  for i, widget in ipairs(widgets) do
+-    window.contentPanel.spellList:moveChildToIndex(widget, i)
++  -- Chaos: level then name, rows above the level dimmed, a working "Only show learned spells" box (ChaosSpellCore,
++  -- overlay game_spellbook; the same learned rule as the Spellbook)
++  if ChaosSpellCore and ChaosSpellCore.setupPicker then
++    ChaosSpellCore.setupPicker(window, g_game.getLocalPlayer(), modules.gamelib.SpellInfo['Default'])
++  else
++    local widgets = window.contentPanel.spellList:getChildren()
++    table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
++    for i, widget in ipairs(widgets) do
++      window.contentPanel.spellList:moveChildToIndex(widget, i)
++    end
+   end
+ 
+   local selectedWidget = nil
+@@ -3474,8 +3494,10 @@ function assignSpellForMagicShooter(butt
+     end
+   end
+ 
+-  window:recursiveGetChildById('tick'):setChecked(true)
+-  window:recursiveGetChildById('tick'):setEnabled(false)
++  if not ChaosSpellCore then -- the box is ChaosSpellCore's (above)
++    window:recursiveGetChildById('tick'):setChecked(true)
++    window:recursiveGetChildById('tick'):setEnabled(false)
++  end
+ 
+   local okFunc = function(destroy)
+     if not selectedWidget then
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -1980,10 +1980,16 @@ function assignSpell(button, multiSlotIn
+ 	end
+ 
+ 	-- sort alphabetically
+-	local widgets = window.contentPanel.spellList:getChildren()
+-	table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+-	for i, widget in ipairs(widgets) do
+-		window.contentPanel.spellList:moveChildToIndex(widget, i)
++	-- Chaos: level then name, rows above the level dimmed, a working "Only show learned spells" box (ChaosSpellCore,
++	-- overlay game_spellbook; the same learned rule as the Spellbook)
++	if ChaosSpellCore and ChaosSpellCore.setupPicker then
++		ChaosSpellCore.setupPicker(window, g_game.getLocalPlayer(), modules.gamelib.SpellInfo['Default'])
++	else
++		local widgets = window.contentPanel.spellList:getChildren()
++		table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
++		for i, widget in ipairs(widgets) do
++			window.contentPanel.spellList:moveChildToIndex(widget, i)
++		end
+ 	end
+ 
+   -- edit spell
+--- a/mods/client_settings/classes/custom-hotkeys.lua
++++ b/mods/client_settings/classes/custom-hotkeys.lua
+@@ -249,10 +249,16 @@ function CustomHotkeys.assignSpell(butto
+ 	end
+ 
+ 	-- sort alphabetically
+-	local widgets = window.contentPanel.spellList:getChildren()
+-	table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
+-	for i, widget in ipairs(widgets) do
+-		window.contentPanel.spellList:moveChildToIndex(widget, i)
++	-- Chaos: level then name, rows above the level dimmed, a working "Only show learned spells" box (ChaosSpellCore,
++	-- overlay game_spellbook; the same learned rule as the Spellbook)
++	if ChaosSpellCore and ChaosSpellCore.setupPicker then
++		ChaosSpellCore.setupPicker(window, g_game.getLocalPlayer(), modules.gamelib.SpellInfo['Default'])
++	else
++		local widgets = window.contentPanel.spellList:getChildren()
++		table.sort(widgets, function(a, b) return a:getText() < b:getText() end)
++		for i, widget in ipairs(widgets) do
++			window.contentPanel.spellList:moveChildToIndex(widget, i)
++		end
+ 	end
+ 
+ 	-- callback

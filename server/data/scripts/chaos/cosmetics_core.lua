@@ -144,6 +144,64 @@ function C.previewOf(c)
 	return {}
 end
 
+-- What the window's preview stage plays for a cosmetic (client game_lookpreview, the effect stage): one step per
+-- swap, {type, from, to} (from = the stock effect the skin replaces, to = the skin's own), in previewOf's order; a
+-- kill effect is one step with no `from`. Names only: cosmetics.lua resolves them to client ids (playSpec).
+function C.playOf(c)
+	if not c then
+		return {}
+	end
+	if c.kind == "killfx" then
+		return type(c.vfx) == "string" and {{type = "vfx", to = c.vfx}} or {}
+	elseif c.kind ~= "spellskin" then
+		return {}
+	end
+	local out = {}
+	for _, t in ipairs(C.SWAP_TYPES) do
+		local keys = {}
+		for from in pairs(c[t] or {}) do
+			keys[#keys + 1] = from
+		end
+		table.sort(keys)
+		for _, from in ipairs(keys) do
+			out[#out + 1] = {type = t, from = from, to = c[t][from]}
+		end
+	end
+	return out
+end
+
+-- one effect of a play step for the client: {id, dx, dy, ms, m = 1 for a missile, n = "<type>_<name>" (the name of
+-- its list icon, client game_cosmetics/images/fx/<n>.png)} or nil.
+-- lookup(type, name) -> id or {id, dx, dy, ms} (chaos_fx.lua ChaosFx / ChaosFxMissile, chaos_vfx.lua ChaosVfx /
+-- ChaosVfxMissile); a name the server does not know is left out (the window plays what it has)
+function C.playSpec(stepType, name, lookup)
+	if type(name) ~= "string" then
+		return nil
+	end
+	local e = lookup(stepType, name)
+	if type(e) == "number" then
+		e = {id = e}
+	end
+	if type(e) ~= "table" or type(e.id) ~= "number" then
+		return nil
+	end
+	local missile = stepType == "missile" or stepType == "vmissile"
+	return {id = e.id, dx = e.dx or 0, dy = e.dy or 0, ms = e.ms, m = missile and 1 or nil,
+		n = stepType .. "_" .. name}
+end
+
+-- the client rows' `play`: [{a = stock spec | nil, b = skin spec}] (steps whose skin effect is unknown are dropped)
+function C.playRows(c, lookup)
+	local out = {}
+	for _, s in ipairs(C.playOf(c)) do
+		local b = C.playSpec(s.type, s.to, lookup)
+		if b then
+			out[#out + 1] = {a = C.playSpec(s.type, s.from, lookup), b = b}
+		end
+	end
+	return out
+end
+
 -- ---------------------------------------------------------------- colours
 local function hex(s)
 	if type(s) ~= "string" then

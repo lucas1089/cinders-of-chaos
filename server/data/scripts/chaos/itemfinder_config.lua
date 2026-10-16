@@ -19,8 +19,9 @@ C.maxPage = 500 -- page numbers above this are clamped
 -- ------------------------------------------------------------------ the sections of an item, in this order
 -- k = the row kind the index keeps; the client has the titles (itemfinderlogic.lua) and shows only sections with rows
 C.sections = {
+	"drop",    -- the Chaos loot layer: the global drop tables (currency, gems, keys), uniques; first: any monster drops
+	           -- them (live test winpkg-35: an orb from a Rat named only two monsters)
 	"monster", -- monsters and bosses whose loot list has it (the engine's MonsterType:getLoot(), chance x the loot rate)
-	"drop",    -- the Chaos loot layer: currency, gems, uniques (any monster of a tier, or a list of monsters)
 	"reward",  -- chests and rewards: rifts, the tower, world bosses, invasions, arena, daily reward, achievements, ...
 	"craft",   -- recipes that make it: the crafting tables, salvage, gem combining, faction recipes, sigils and keys
 	"shop",    -- NPCs that sell it (buy price, NPC, town)

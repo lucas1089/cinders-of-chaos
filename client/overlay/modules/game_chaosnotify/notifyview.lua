@@ -37,7 +37,24 @@ function V.heightOf(notificationType)
   return V.hasButtons(notificationType) and V.BUTTON_HEIGHT or V.HEIGHT
 end
 
--- pinned, active: {[slot] = {type = notificationType, ...}} (slots may have holes). Returns the list of
+-- The message starts TEXT_TOP below the top; under it there is room for the timer bar (or for the Accept / Start
+-- buttons). A long message used to run under the bar in a fixed 110 px toast. The toast grows to fit the wrapped
+-- text, up to MAX_HEIGHT; past that the text is cut and its full form goes in a tooltip.
+V.TEXT_TOP = 28
+V.TEXT_BOTTOM = 18        -- the timer bar and its count
+V.BUTTON_TEXT_BOTTOM = 77 -- the answer buttons and the timer bar
+V.MAX_HEIGHT = 260
+
+-- textHeight: the wrapped message's height in pixels. Returns the toast height, the message label height and
+-- whether the text had to be cut
+function V.heightFor(notificationType, textHeight)
+  local bottom = V.hasButtons(notificationType) and V.BUTTON_TEXT_BOTTOM or V.TEXT_BOTTOM
+  local needed = V.TEXT_TOP + math.max(0, math.ceil(tonumber(textHeight) or 0)) + bottom
+  local height = math.min(V.MAX_HEIGHT, math.max(V.heightOf(notificationType), needed))
+  return height, height - V.TEXT_TOP - bottom, needed > V.MAX_HEIGHT
+end
+
+-- pinned, active: {[slot] = {type = notificationType, height = its own height or nil, ...}} (slots may have holes). Returns the list of
 -- {group = 'pinned' | 'active', slot, y} from the top: pinned toasts first, each group by slot, every toast below
 -- the previous one by its own height plus the gap
 function V.stack(pinned, active, baseY, gap)
@@ -51,7 +68,7 @@ function V.stack(pinned, active, baseY, gap)
     for _, slot in ipairs(slots) do
       local e = group[2][slot]
       out[#out + 1] = { group = group[1], slot = slot, y = y }
-      y = y + V.heightOf(e and e.type) + gap
+      y = y + ((e and tonumber(e.height)) or V.heightOf(e and e.type)) + gap
     end
   end
   return out

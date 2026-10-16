@@ -231,7 +231,21 @@ local function onGameEnd()
   state, selectedId, rowWidgets = nil, nil, {}
 end
 
+-- effects drawn under the creatures (base patch 0055, g_map.setGroundEffect): the Town Portal's channel circle
+-- (server data/lib/chaos_pack27_fx_ids.lua portal_pad, sent once a second on the caster) lies on the floor; drawn
+-- above the creatures it covered the character (live test winpkg-35). A client without the patch skips this.
+GROUND_EFFECTS = { 744 }
+
+local function setGroundEffects(on)
+  if not g_map or type(g_map.setGroundEffect) ~= 'function' then return false end
+  for _, id in ipairs(GROUND_EFFECTS) do
+    pcall(g_map.setGroundEffect, id, on)
+  end
+  return true
+end
+
 function init()
+  setGroundEffects(true)
   window = g_ui.displayUI('townportal')
   window:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
@@ -239,6 +253,7 @@ function init()
 end
 
 function terminate()
+  setGroundEffects(false)
   disconnect(g_game, { onGameEnd = onGameEnd })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if refreshEvent then removeEvent(refreshEvent) end

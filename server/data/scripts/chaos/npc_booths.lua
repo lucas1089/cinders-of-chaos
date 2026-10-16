@@ -7,7 +7,7 @@
 --     aid.fixture, placed again only where missing, so a restart or /reload adds nothing twice);
 --   * the hall's exit portal (the plan's, action id 47951 of areagen.lua) gets aid.exit: it leads to the temple of the
 --     hall's town;
---   * the way in: a magic forcefield (aid.entry) next to the temple of the hall's town (first free offset).
+--   * the way in: the Hall of Services Portal (aid.entry) next to the temple of the hall's town (cityportals.lua).
 -- ChaosNpcBooths.spot(name, townId) / .spotForTemple(name, templePosition) give an NPC's booth; ChaosNpcPlace.place
 -- (npc_place.lua) and the Keeper of Trials (trials.lua) use them, so the NPCs' own scripts place them there. Without a
 -- hall on the map they return nil and the NPCs stand next to the temple as before.
@@ -19,6 +19,9 @@ if not Chaos then
 end
 if not ChaosNpcBoothsCore or not ChaosNpcBoothsCore.rowTiles then
 	dofile("data/scripts/chaos/npc_booths_core.lua")
+end
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
 end
 
 ChaosNpcBooths = ChaosNpcBooths or {}
@@ -114,20 +117,9 @@ function X.retagExit(hall)
 	return false
 end
 
--- the way in, next to the temple: the first free offset (ground, nothing on it, no teleport or stairs, nobody there)
-local function freeSpot(pos)
-	local tile = Tile(pos)
-	return tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID) and not tile:getTopCreature()
-		and not tile:hasFlag(TILESTATE_TELEPORT) and not tile:hasFlag(TILESTATE_FLOORCHANGE)
-		and #(tile:getItems() or {}) == 0
-end
-
+-- the way in, next to the temple: the Hall of Services Portal (cityportals.lua: the hall's `entryOffsets`, checked on
+-- the base map, then `entry.offsets`; the first free tile; labelled and marked by cityportals_fx.lua)
 function X.placeEntry(hall)
-	local town = Town(hall.town)
-	local t = town and town:getTemplePosition()
-	if not t then
-		return nil
-	end
 	local e = C().entry
 	local offsets = {}
 	for _, list in ipairs({hall.entryOffsets or {}, e.offsets}) do
@@ -135,29 +127,10 @@ function X.placeEntry(hall)
 			offsets[#offsets + 1] = o
 		end
 	end
-	for _, o in ipairs(offsets) do
-		local tile = Tile(Position(t.x + o[1], t.y + o[2], t.z))
-		local have = tile and tile:getItemById(e.item)
-		if have and have:getActionId() == C().aid.entry then
-			return have:getPosition()
-		end
-	end
-	for _, o in ipairs(offsets) do
-		local pos = Position(t.x + o[1], t.y + o[2], t.z)
-		if freeSpot(pos) then
-			local it = Game.createItem(e.item, 1, pos)
-			if it then
-				it:setActionId(C().aid.entry)
-				if ITEM_ATTRIBUTE_DESCRIPTION then
-					it:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The way to the Hall of Services of " .. hall.name ..
-						": every service of the town behind its counters.")
-				end
-				return pos
-			end
-		end
-	end
-	log("no free tile for the hall portal next to the temple of town " .. tostring(hall.town))
-	return nil
+	local _, positions = ChaosCityPortals.place({kind = "services", aid = C().aid.entry, item = e.item, towns = {hall.town},
+		offsets = offsets, log = log})
+	local p = positions[1]
+	return p and P(p) or nil
 end
 
 function X.setup()

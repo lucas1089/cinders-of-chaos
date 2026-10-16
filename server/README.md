@@ -160,6 +160,19 @@ server/
                                       tools/weightless_patch_test.py)
   src-patches/0039-login-refusal-message.patch   engine: player:refuseLogin(message) sends the client's login error
                                       box at once, before onLogin returns false (see "Character Bazaar")
+  src-patches/0040-monster-display-level.patch   engine: monster:setDisplayLevel(level) shows a level after the name
+                                      and in the look text of a monster without a level of its own, display only (see
+                                      "Monster levels in the name")
+  src-patches/0041-spawn-near-players.patch   engine: monsters respawn while a player sees the spot, on a free tile
+                                      (no creature, no blocking item, no PZ) at least spawnMinPlayerDistance sqm from
+                                      every player, with a teleport effect; config spawnNearPlayers, on by default (see
+                                      "Respawn near players"; tools/prod_config.py, tools/prod_config_test.py)
+  src-patches/0042-cooldown-channels.patch   engine: a cooldown channel per kind of action (attack / healing /
+                                      support runes, potions, item moves, other uses), the auto attack on a timer of its
+                                      own: none holds another; config cooldownChannels, moveItemDelay, runeChannelDelay,
+                                      potionChannelDelay (see "Cooldown channels"; tools/cooldown_channels_patch_test.py)
+    cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
+                                      see "Cooldown channels")
     display_scale.lua  display_scale_core.lua  display_scale_config.lua (every combat number shown x the factor of the
                                       viewer's level, opcode 157, see "Display scale")
     rightclick_equip.lua  rightclick_equip_core.lua  rightclick_equip_config.lua (the client option and the multi-use
@@ -177,6 +190,8 @@ server/
                                       slot pool, run HUD; see "Rifts")
     crafting.lua (crafting bench and orbs; rules in data/lib/chaos_crafting.lua, installer tools/install_crafting.py)
     salvage.lua  salvage_core.lua  salvage_config.lua (salvage into rune shards, the item lock; installer tools/install_salvage.py)
+    potions.lua  potions_core.lua  potions_config.lua (no empty flasks, the Everfull health / mana potions; helpers in
+                                      data/lib/chaos_potions.lua, installer tools/install_potions.py, see "Potions")
     craft_bonus.lua  craft_bonus_core.lua  craft_bonus_config.lua (the base crafting tables' bonus: rarity of crafted
                                       equipment, extra potions and runes; tools/patch_base_crafting_bonus.py, see "Crafting bonus")
     item_mods.lua (Chaos item modifiers on the character; catalogue and rolls in data/lib/chaos_item_mods.lua, see "Item modifiers")
@@ -190,6 +205,7 @@ server/
     patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
     nameplate.lua  nameplate_core.lua  titles.lua (name plates over players, title registry, the Achievements window; sql/chaos_nameplate.sql)
     guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
+    cityportals.lua  cityportals_core.lua  cityportals_config.lua  cityportals_fx.lua (labelled portals near the temples, see "City portals")
     achievements.lua  achievements_core.lua  achievements_data.lua (achievements, points, titles, rewards; sql/chaos_achievements.sql)
     pets.lua  pets_core.lua  pets_config.lua (pets: companions that level from kills, small abilities; sql/chaos_pets.sql)
     buffbar.lua (buff / debuff bar, client game_buffbar; registry and rules in data/lib/chaos_buffs.lua)
@@ -430,7 +446,7 @@ working directory, as with the rest of the base server libs).
 
 | Module | File | Opcode(s) | Status |
 |---|---|---|---|
-| game_bank | `bank.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, star currency in `chaos_bank`. Economy > Bank opens the window. Written to the client contract; mock-tested only. |
+| game_bank | `bank.lua`, `bank_core.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, Deposit all / Withdraw all (what fits; the rest stays). Stars off (`starItemId = 0`). Economy > Bank opens the window. `tests/bank_test.lua`. |
 | game_autoloot | `autoloot.lua` | 216 | Window protocol (add / remove / clear over the opcode); list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
@@ -650,9 +666,11 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102300 - 7102309 | Nemesis (`Chaos.storage.nemesis`, `nemesis_config.lua` `storage`): +0 nemeses avenged, +1 nemeses of others slain, +2 last hunter bounty, +3 last avenge loot bonus, +4 the character's last nemesis ended (birth cooldown), +5 trophies; +6..9 free |
 | 7102700 - 7102719 | Ember Cache (`embercache_config.lua` `storage`): +0 week, +1 week points, +2 milestones given, +3 Sparks this week, +4 day, +5 day points, +6 day points before the bonus, +7 Spark lit, +8 kills toward the next point, +9..+11 points today of the capped sources (kill, elite, craft); +12..19 free |
 | 7102720 - 7102739 | day book (`embercache_config.lua` `daybook`): +0 day, +1/+2 experience (hi x 1e9 + lo), +3 kills, +4/+5 loot gold, +6/+7 supplies gold, +8 orbs, +9 uniques, +10 rarity items, +11 deaths, +12 level at the day's start, +13 seconds played, +14 Ember points; +15..19 free |
+| 7102750 - 7102779 | tutorial reset (`Chaos.storage.tutorialSnapshot`, `newplayer_core.lua` `NP.SNAP`): +0 saved, +1 level, +2/+3 experience (hi x 1e9 + lo), +4 magic level, +5 mana spent, +6 max health, +7 max mana, +8 capacity, +9 leather armors, +10 orbs, +11..+17 skill levels, +18..+24 skill tries; +25..29 free |
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
+| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -689,9 +707,14 @@ tests' mocks) nothing changes, so the fuzz test still calls every handler direct
   which runs `classes.lua`. That is the spells' interface, where `CreatureEvent()` gives nil. The load stopped there and
   the Scripts interface's own load returned at `if Chaos then return end`. So `ChaosOpcodeDispatch` was never made and
   `Player:registerEvent` was never hooked: no client request reached a Chaos handler. Now `D.install()` makes the events
-  and the hook once, on the first load that can. The guard at the top calls it. The console still shows one
-  "CreatureEvents can only be registered in the Scripts interface" error at start; it is harmless.
+  and the hook once, on the first load that can. The guard at the top calls it.
   Test: `tests/opcode_dispatch_load_test.lua`, which fails on the old file.
+- No error at start, 2026-10-16. The console still printed "CreatureEvents can only be registered in the Scripts
+  interface" with a traceback (shadow_veil.lua, _common.lua `loadClasses`, classes.lua, chaos_constants.lua). Now
+  `D.install()` returns before any `CreatureEvent()` call when a chunk of another interface's folder is on the call
+  stack (`D.outsideScripts`: `data/spells/`, `data/npc/`, `data/lib/`, `data/monster/` and the XML event folders).
+  Chaos and the class rules still load there; every spell works as before. Test: `tests/spells_interface_load_test.lua`
+  (a mocked spells' interface whose `CreatureEvent()` throws; it fails without the check).
 - Checked in a live client, 2026-10-13: before the fix the bestiary, achievements, leaderboard, siege and pets windows
   never opened and the market stayed empty. After it all six open with their data; `Chaos.opcodeDispatch.players`
   holds the player.
@@ -761,14 +784,38 @@ Tests: `tests/instances_test.lua`, `save_before_credit_test.lua`, `staff_permiss
 
 Players type no commands. Every player command of the server is in the client's top menu (`client_chaos_topbar`):
 a Chaos window where one exists, else a page of the **Info & Services** window (client `game_chaosinfo`, extended
-opcode 237, `ChaosOpcodes.info`). The window asks `catalog` (which command ids this server has, the ancestral store
-entries, the vocation words) and sends `run {page, ids, params}`; `commands_ui.lua` runs each command's function and
+opcode 237, `ChaosOpcodes.info`). The window asks `catalog` (which command ids this server has, the vocation words)
+and sends `run {page, ids, params}`; `commands_ui.lua` runs each command's function and
 catches what it would have shown (text messages, cancel messages, `popupFYI`, `showTextDialog`) to send it back as
 the page text. Chaos scripts register their command with `ChaosCommands.register(id, fn)` (`commands_ui_core.lua`)
 instead of a `TalkAction`. Base server commands are loaded on demand: an XML talkaction's script from
 `data/talkactions/scripts/` (its line, commented out, still names the script), a revscript in a sandbox that keeps
 its other events away from the engine. `tools/install_commands.py <server>/data` takes the spoken forms out of the
 base server (idempotent; `--dry-run` lists the changes).
+
+**Ancestral Store** (Economy > More > Ancestral Store; `commands_ui.lua`, pure part `commands_ui_core.lua`,
+tests `tests/commands_ui_test.lua` and `tests/ancestral_store_test.lua`). The window asks `store` and gets
+`{points, entries = [{id, kind, name, item (client id), price}], maxCount, message}`; its Buy button sends
+`buy {id, count}`. Entries, prices and items are read once from the base store scripts named in `talkactions.xml`
+(`ITEM_PRICE` and `ItemType(id)` of `data/talkactions/scripts/<entry>.lua`; a script outside that folder, a price
+outside 1..1,000,000 or an unknown item leaves the entry out). The purchase is made by `commands_ui.lua`, never by the
+base script: those read the points of the wrong row (`fiery_wings.lua` used the account id as a player id) and took
+the points with an unconditional `UPDATE` after a separate read. Now: unknown ids and counts that are not a whole
+number in 1..10 are refused (`K.validateBuy`); one purchase a second per player (`ChaosRateLimit`, or a local throttle
+when that file is missing), checked before the request is read; a refused request reads no database (its answer
+carries the points last sent; `tests/opcode_fuzz_test.lua`); the points are read, checked, and taken with `UPDATE ... WHERE ancestral_points >= cost`,
+then read again and nothing is given unless exactly the cost was taken; capacity is checked first; items go to the
+backpack only (`addItem(id, 1, false)`), and the points of what did not fit are returned; a character that is gone buys
+nothing. The old `run ancestralstore "<group>, <n>"` goes through the same path. Every purchase is one console line.
+
+**Services state** (`services` action): Name / Vocation Change tokens, the free switch, the tutorial, whether the
+familiar commands answer (level 200, the base script's rule), web shop orders waiting (`znote_shop_orders`, only when
+the base `!shop` script is there) and the owned / shown name plate frames (`ChaosShopCore.FRAMES`). The client
+disables the buttons that cannot be used. Rate limited to one read per 500 ms, as `store`.
+
+Texts: the base `!exp` line "You didn't have any current Double EXP enhancement." shows as "No Double EXP active."
+(`K.REWRITE`); `classes` groups the locked classes that unlock the same way in one line (`ChaosClassUnlocksCore.lockGroups`);
+`ascension` below the level says "Ascension unlocks at level 100 (you are level X)." (the NPC keeps its own line).
 
 | Command (old) | Now |
 | --- | --- |
@@ -845,8 +892,15 @@ General
   (about 70 scripts use it; "Shared security rules"), and the engine's `maxPacketsPerSecond` limits every connection.
 
 bank
-- Star item id 35572 is **assumed** to be both the client id the client hard-codes and a valid server
-  item id. If `ItemType(35572)` is invalid on your server the star tab is disabled (all zeros).
+- Stars are off: the star tab came with the imported client and item 35572 exists in no item list of this game.
+  `Chaos.bank.starItemId = 0`; the client hides the tab. The star code stays for a real item id later.
+- The server does the maths. Amounts are integers in 1..balance (`bank_core.lua` `checkAmount`); anything else is dropped.
+- Withdrawals, also Withdraw all, are paid as coin stacks through `addItemEx(item, false)`, never onto the floor.
+  A stack that does not fit is tried smaller (`payOut`). Only what arrived is charged; the rest stays in the bank.
+- Deposit all takes `player:getMoney()`: every gold, platinum and crystal coin carried. Chaos Coins are account points, no coin item.
+- Gold moves inside one dispatcher call on the in-memory balance: no double spend between two requests.
+- One rate limit key for every money request (`bank.move`, `rateLimitMs`), `bank.open` for opening. Checked first.
+- Transfer checks the name (`validName`) and the balance before the lookup, then that the character exists.
 - Offline transfers update `players.balance` directly; transfers have no fee, limit or log.
 
 autoloot
@@ -854,6 +908,10 @@ autoloot
   through a one-time scan of item ids 100..100000.
 - Looting itself is not done here; it needs the base server `scripts/creaturescripts/autoloot.lua` callback.
 - The window's add / remove / clear go over the opcode (no spoken command is involved).
+- `sync` answers `list` (the same data, the window stays shut); add / remove with `quiet = true` answer `list` too.
+  The client uses them for the item menu's "Add to Loot List" / "Remove from Loot List", which the base client wired
+  to its Quick Loot (packets a 10.98 server does not have; live test winpkg-35). "Manage Loot containers" opens the
+  Loot Bag rules (`pouches.lua`).
 
 daily
 - Reward table is a placeholder. The shipped client adds 2 to `Day` and maps claims through
@@ -2350,6 +2408,9 @@ base server's own store script uses 201 and is left alone). Prices are in Chaos 
 Chaos Coins); a gamemaster is refused, and every use is in the admin audit log.
 Rules without engine calls are in `shop_core.lua` (tested by `tests/shop_test.lua`); offers in `shop_config.lua`; the
 services, unlocks and boosts in `shop_services.lua` (next section).
+A look offer (outfit, addons, mount, wings, aura, shader) carries its `kind` in the offer the client gets, so the
+Store's look preview (client/MANIFEST.md "Look preview") seats the player's own character on a mount and puts the
+others on it; a pet's offer has none and is drawn alone.
 
 **Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), This week
 (the weekly rotation, below), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
@@ -2363,7 +2424,7 @@ categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`:
 
 | Kind | Exists | In the store | Not sold (why) |
 |---|---|---|---|
-| Outfits (pairs of a male and a female look) | 118 | 56 full outfits with both addons + 9 addon sets of the outfits everyone has | 21 class looks (`class_looks_core.lua`, Knight and Mage among them), 16 donor-art class outfits (`Chaos.classes.outfits`; a helper is drawing new ones, they stay out too), 4 achievement rewards (Death Herald, Rift Warrior, Arena Champion, Demon Hunter), 1 season reward (Revenant), 4 season pass rewards (Everblight, Brotherhood, Doom Knight, Chaos Acolyte), 7 base battle pass rewards (Retro outfits) |
+| Outfits (pairs of a male and a female look) | 118 | 56 full outfits with both addons + 9 addon sets of the outfits everyone has | 21 class looks (`class_looks_core.lua`, Knight and Mage among them), 16 donor-art class outfits (`Chaos.classes.outfits`, and `retiredOutfits`: 1559 Archmage, retired; a helper is drawing new ones, they stay out too), 4 achievement rewards (Death Herald, Rift Warrior, Arena Champion, Demon Hunter), 1 season reward (Revenant), 4 season pass rewards (Everblight, Brotherhood, Doom Knight, Chaos Acolyte), 7 base battle pass rewards (Retro outfits) |
 | Mounts | 141 | 125 | 5 achievement rewards (Doombringer, Siegebreaker, Nightstinger, Rift Runner, Corpsefire Skull), 2 season rewards (Doom Skull, Nightglass Devourer), 4 season pass rewards (Magma Skull, Cinderhoof, Flamesteed, Wrathfire Pegasus), 2 base battle pass rewards (Fire Panther, Erect Raptor Drake), 3 rented horses |
 | Wings (`wings.xml`) | 15 | 15 | |
 | Auras (`auras.xml`, 19 from `chaos_auras.csv`) | 24 | 24 | (Fireflies is also the guild aura; it was sold before) |
@@ -2401,6 +2462,43 @@ account to wear: the store refuses them to a free account (gifts are allowed). W
 bought once (storages 7100600+, 7100650+, 7100700+, 7100761-7100765; the engine keeps the cosmetic itself). A purchase
 that fails refunds the coins; a page reads "Owned." with the Buy button off for what the character has, and is sent again
 after a purchase. All of it survives a reload and a restart (the engine and the storages hold the state).
+
+**Delivery to the purse** (owner 2026-10-16: "Make the things bought in the store go to the purse."; `store_delivery.lua`,
+rules `store_delivery_core.lua`, tests `tests/store_delivery_test.lua`). **The purse** is the engine's store inbox (item
+26052 "your store inbox", inventory slot 11 of the 10.98 protocol): the client's "Open purse" button under the
+equipment (base `game_inventory`, `GamePurseSlot` in client base patch 0006) opens it. Every character has one, it sits
+in the equipment, it is never dropped at death, and the engine only lets the server put items in (a player cannot move
+a normal item into it), so it is a one-way delivery box: the player takes things out into the backpack. The store
+pouches are not the purse: they are optional store items a character may not own. (In the older texts of this file
+"store inbox" means the depot inbox, `player:getInbox()`.)
+- **What goes there.** Every store offer that becomes an item: `kind = "item"` offers (supplies, potions, runes in
+  stacks of 100, Whetstones, crafting orbs, Backpack of Holding, exercise weapons, Double Experience Potions), the item
+  parts of bundles and starter packs, the store pouches (`ChaosPouches.storeGive`, also the free Loot Bag of former
+  Bottomless Loot Pouch owners), the Everfull Ration (`ChaosStoreFood.storeGive`), the temple scroll service, and gifts
+  (online at once, offline at the next login). Items keep every attribute (`chaos_storebound`, `chaos_locked`, the
+  owner of a pouch or ration): the "cannot be traded" rules apply in the purse and after it. **Unlocks stay unlocks:**
+  outfits, addons, mounts, wings, auras, shaders, frames, pets, transmog sets, cosmetics, hideout decorations, tokens,
+  services, world buffs, Pact days, premium time.
+- **Fallbacks** (`ChaosStoreDeliveryCore.route`; never the ground, never lost): the purse; when there is no purse
+  (an engine without `getStoreInbox`), the character cannot carry the item (the base engine counts the store inbox in
+  the inventory weight, so the purse respects capacity as the backpack delivery did) or the engine refuses it: the depot
+  inbox (weight free, at any depot); then the backpack (capacity checked); nowhere: nothing given, every item of the
+  purchase (or bundle) placed so far taken back, coins refunded. Items are placed with `FLAG_NOLIMIT` and
+  `FLAG_IGNOREAUTOSTACK`, so they never merge into a stack already there and a failed bundle takes back exactly its own
+  items (`ChaosStoreDelivery.takeBack`; before, `player:removeItem` could not reach the purse).
+- **Message** (one line per purchase, pt-BR in `i18n_strings.lua`): "Delivered to your purse (the button under your
+  equipment).", or where it went and why ("Delivered to your depot inbox (you have no purse).", "Delivered: 1 to your
+  purse, 1 to your depot inbox, 0 to your backpack (not enough capacity for the purse)."). A pouch in the purse collects at
+  once, there or in the backpack (coordinator 2026-10-16, for new players; "Store pouches", Store-bound); one that went
+  to the depot inbox says to move it to the backpack. The one-per-character checks of the pouches and the ration also
+  look in the purse.
+- **Other shops** (checked 2026-10-16): Osric's Candlemark shop and the Conquest vendor are NPC trades for in-game
+  currencies: they stay as they were (backpack, then the depot inbox). The beta coins are Chaos Coins: what they buy is a
+  store purchase and goes to the purse. The website shop (ZnoteX orders, `!shop`) is switched off (website/README.md:
+  shop and points disabled), so no order can exist; the base talkaction was left alone.
+- Not tested in game yet: the purse button with the delivered items, taking them out, eating the ration and using a
+  scroll from the purse. Known limit: a container bought in the store (Backpack of Holding) can be filled while it lies
+  in the purse; its weight still counts.
 
 **Name plate frames.** The frame bought last is shown (titles.lua frame source "store"); Info & Services > Services >
 Plate frame switches between the owned frames or back to the title's own (command id `plateframe`: a frame name typed in
@@ -2555,10 +2653,10 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   Greater Hexdart, Mending and Grand Mending, 25 / 50 / 100 Shackle, 100 / 250 Dispel. Coins = vendor gold x count /
   `RUNE_GOLD_PER_COIN` (1000, about the rate the potion packs imply: 800-1,550 gold a coin), 5% off the 250 (and 50) pack,
   10% off the 500 pack, rounded up (100 Searing Orb 9, 500 Reaper's 99, 100 Shackle 89). Kept 2026-10-14 (docs/PRICES.md). The Reaper's,
-  Searing Orb and Grand Mending 100s of Supplies moved here with their keys. Delivery (`overflowInbox`): stacks of 100
-  into the backpack while they fit, the rest into the store inbox, a message says how many; no room and no inbox =
-  nothing given, coins refunded. Not for season characters (items). Tests: `tests/shop_test.lua` (prices against the
-  supply list, sizes, the Supplies move, delivery with and without room, refund).
+  Searing Orb and Grand Mending 100s of Supplies moved here with their keys. Delivery: stacks of 100 into the purse like
+  every store item ("Delivery to the purse" below; `overflowInbox` is no longer read). Not for season characters
+  (items). Tests: `tests/shop_test.lua` (prices against the supply list, sizes, the Supplies move, delivery to the
+  purse, the depot inbox, the backpack, refund).
 - **Convenience.** The Everfull Ration (infinite food, "Store pouches and the Everfull Ration"). Depot tabs, stash tabs,
   build and character slots were already sold ("Chaos Pact and account storage", "Depot tabs"). Loadout slots are per
   character and earned by level ("Loadouts"): not sold; the VIP gets one more while it lasts ("Chaos Pact", VIP perks).
@@ -2907,6 +3005,33 @@ mounted character, gradient and pulsing ones, 39 outlined monsters at once, at s
 hiding the other player's outline; a relogin and a reconnect getting everyone's outline back; an engine without 0038
 showing the glow. Screenshots outside the repository.
 
+**The window's effect preview** (2026-10-16). Each state row of a spell skin or kill effect carries `play`
+(`cosmetics_core.lua` `C.playOf` / `C.playSpec` / `C.playRows`): one step per swap, `{a = the stock effect, b = the
+skin's}`, each `{id, dx, dy, ms, m, n}` resolved through the same tables the cast and the Preview button use
+(`ChaosFx`, `ChaosFxMissile`, `ChaosVfx`, `ChaosVfxMissile`); a kill effect is one step with no `a`; a name the server
+does not know is left out. The client plays them in a loop beside the list (client `MANIFEST.md` "Cosmetics effect
+previews"). `cosmetics_test.lua` checks the steps and the resolution.
+
+## Wardrobe catalogue (`wardrobe.lua`, `wardrobe_core.lua`, client `game_unlocks`, base patch 0060)
+
+The 10.98 outfit window packet lists only what the character owns; the Customise Character window shows everything
+(client `MANIFEST.md` "Owned and locked lists"). On the cosmetics opcode (225, no new opcode) the client sends
+`wardrobe` (at game start and when the outfit window opens; rate limit 300 ms, `cosmetics.lua` routes it) and gets
+`wardrobe {sex, hash, outfit, mount, wings, aura, shader}`, sent with `Chaos.sendChunked` (about 20 KB):
+outfits `{l, n, o, a, s}` (look, name, owned, owned addons, source), mounts / wings / auras `{l, n, o, s}` by client
+look, shaders `{n, o, s}` by shader name.
+- **Catalogue**: `data/XML/outfits.xml` (the character's sex, enabled, each look once), `mounts.xml`, `wings.xml`,
+  `auras.xml`, `shaders.xml`, read once per sex and kept (`ChaosWardrobe.clearCache()` drops it).
+- **Owned**: the engine's rules. `Player:hasOutfit(look, 0)` and the addons (3, else 1 and 2), `Player:hasMount(id)`;
+  wings, auras and shaders by the bits of the reserved storages `Player::hasWing / hasAura / hasShader` read
+  (10002012 / 10002023 / 10002034 + (id - 1) // 31, bit (id - 1) % 31); an access player owns everything, a premium
+  entry needs premium.
+- **Source**: exclusives (`exclusives_core.lua` `K.how`: "Achievement: ...", "Boss: ..., rare drop"), class looks
+  ("Class: <name>", `class_looks_core.lua`), store offers at any depth of `shop_config.lua` ("Store"); an outfit with
+  `unlocked="yes"` is "Free" ("Free; addons: Store" when its addons are sold). Unknown otherwise.
+- Nothing is granted or worn here: `Game::playerChangeOutfit` refuses an outfit change with a part not owned.
+`tests/wardrobe_test.lua`.
+
 ## Exclusives (`exclusives.lua`, `exclusives_core.lua`, `exclusives_config.lua`, `sql/chaos_exclusives.sql`, client `game_cosmetics` Collection tab)
 
 Every visual kind of the store also has options that are never sold, only earned from an achievement or a rare boss drop.
@@ -3036,8 +3161,8 @@ the wheel or Rotate turns it, right click or Done ends. Rules (`K.placeProblem`)
 wall decorations on the north or west wall (the side picks the item), the fixture tiles (arrival, exit, depot, stash,
 dummies, lights) stay free, a path of walkable tiles from the arrival to the exit, the depot, the stash and the dummies
 (8 directions), a limit per decoration and per theme. Decorations carry an action id: using them does nothing, moving
-them puts them back; items dropped on a hideout floor go back to the player; no PvP inside; the Town Portal is refused
-inside (`townportal_core.lua`, use the exit). Entering is refused from inside any registered instance (`Chaos.inAnyInstance`:
+them puts them back; items dropped on a hideout floor go back to the player; no PvP inside; the Town Portal inside is a way
+out (below). Entering is refused from inside any registered instance (`Chaos.inAnyInstance`:
 rift, dungeon, tower, arena, world boss arena, siege, raid, Ember Descent, Ascended Omen, guild boss, battleground, trials, ascension
 trial, the Scorched Marches), so no return spot inside one is stored. Leaving never goes back to a spot that lies in an instance area
 now (`Chaos.instanceAt`): such a player goes to the temple instead.
@@ -3061,10 +3186,24 @@ a power field.
 
 **Visiting.** Permission private / friends (the owner's VIP list and party) / guild / public (default friends); season and
 standard characters never mix while a season runs; staff (group 4+, `/hideout <character>`) may enter any. Entering is
-refused in a fight (pz-lock or the fight icon), with a skull, and where the Town Portal is refused. The exit forcefield
-leads back to the spot the character entered from (storages 7100180-7100183; also after a logout inside), else the
-temple. A forcefield next to every temple leads to the own hideout (placed at startup, checked once a minute). The
-Visit tab: hideouts of the VIP list, party and guild the character may enter, the showcase of public hideouts (most liked
+refused in a fight (pz-lock or the fight icon), with a skull, and where the Town Portal is refused. The **Hideout
+Portal** of every town leads to the own hideout ("City portals": in the portal room of the Hall of Services in
+Cinderhold and Mirewake, next to the Ember Descent and raid portals; side by side with the Guild Hall Portal next to
+every other temple; a look text and a blue effect every 4 s; placed at startup, checked once a minute).
+
+**The way out** (fixed 2026-10-16: the owner's test found no way out; the portal stored its own tile as the return spot,
+and a teleport onto a portal runs its step-in, so the exit sent the character straight back in). The exit forcefield
+(south of the arrival), the window's **Leave** button (Character > Hideout) and a login inside all go to
+`K.exitDestination`: the spot the character entered from (storages 7100180-7100183: the tile stepped from when entering
+by the portal, else where they stood), else a free tile next to it (a spot stored before the fix is the portal itself),
+else the temple of the home town, else Cinderhold's (`mainTown`). Never a tile of the hideout grid, a portal, stairs or
+an instance area. The Hideout Portal also ignores a character put on it by a teleport out of a hideout. A character who
+entered from another town's portal goes back to that town. Logout inside: the next login leads out the same way (the
+room may be torn down by then). A server restart or a death: the engine puts the character at the temple (the room's
+tiles are gone), and the login drops the stale return spot. The Town Portal (spell or menu) inside is a way out too (coordinator
+2026-10-16): `townportal_core.lua` `K.hideoutExit` lets it act at once, with no channel, no cooldown and no portal pair
+(a return portal would lead back into a hideout), through the same `ChaosHideout.leave`, so never into a hideout or an
+instance. The Visit tab: hideouts of the VIP list, party and guild the character may enter, the showcase of public hideouts (most liked
 / most visited), the recent visits. A visit counts once per visitor and day; a like once per account and hideout, only
 from inside it, 10 a day per account, one request per 2 s. The owner may send visitors out; a visitor who loses access
 (the owner changed the permission) is sent out at once.
@@ -3083,7 +3222,12 @@ store; the opcode against every ChaosOpcodes entry and the reference lists; the 
 (layers, walls, reserved tiles, limits, the path, multi-tile and rotation), unlock sources, permissions, likes, visits,
 the showcase, the slot pool; then `hideout.lua` on a mocked engine and database (enter, build, wall pieces, the locker's
 depot id, place / move / remove, trophy text, store unlock and gift, themes, VIP / guild visits, likes, permission
-change sending a visitor out, no PvP, dropped items, teardown and slot reuse, login inside, staff entry). `shop_test.lua`
+change sending a visitor out, no PvP, dropped items, teardown and slot reuse, login inside, staff entry); the way out:
+`K.exitDestination` (stored spot, next to a stored portal tile, never the grid, home temple, Cinderhold) and, with a
+mocked teleport that runs the step-in of the tile's items like the engine, the portal -> exit round trip (back on the
+tile stepped from, one step-in, no loop), an old return spot on the portal, a teleport from a hideout onto the portal,
+another town's portal, logout inside with the room torn down, death / restart (stale spot dropped), the window's Leave,
+no home town. `tests/cityportals_test.lua`: the portal placement. `shop_test.lua`
 (a hideout decoration may be gifted, other unlocks not), `season_test.lua` (the category is allowed). Client
 `game_hideout/hideoutlogic_test.lua` (filters, texts, rotation, positions, the placement check). **Tested in game** (a
 server copy with MariaDB and the reference client): window, enter, an empty Ashen Crypt, decorating 34 pieces (the theme
@@ -3143,16 +3287,24 @@ autoloot list is needed.
   `ChaosPouches.stow`) follows the same plan, then the backpack. Picking up an item through its ground label (`game_groundlabels`)
   is the normal move into the backpack and does not route into pouches. Gear is rolled on the way out
   (`ChaosLoot.finalizeRarity`). Containers and pouches are never collected. Only the corpse owner's pouches collect, as the base
-  autoloot (party members do not loot each other's corpses here). One chat line per kill: "Pouches: Orbs Pouch +3, Rift Key Pouch
-  +1, Loot Bag +52 (Orbs Pouch is full; 3 to your Loot Bag; 1 to your backpack)." ("is full" at most once a minute per
-  pouch; "to your Loot Bag" counts the overflow).
+  autoloot (party members do not loot each other's corpses here). One loot line per kill (`MESSAGE_LOOT`, as the stock "Loot of" line) that
+  lists what was taken, not the pouch (owner 2026-10-16): "Looted: {[Legendary] wyrmscale helmet}, 10 gold coins, 2 dragon
+  scales (Orbs Pouch is full; 3 to your Loot Bag; 1 to your backpack)." (`ChaosPouchesCore.lootList` / `summary`). Grouped
+  by item (id, rarity, unique), plural names for counts, uniques and rarity gear first with the rarity tag; from Rare
+  (`lootLine.flagRarity` 3) and uniques wrapped in `{}` (the client's loot highlight, as the Chaos bonus loot line); at most
+  `lootLine.maxEntries` (5) entries, then "and N more". Pouch names appear only in the short notes ("is full" at most once
+  a minute per pouch; "to your Loot Bag" counts the overflow). No loot message option exists to respect.
 - **Loot Bag rules** (storage 7100107, one packed value; unset = the defaults above; window: right-click the Loot Bag > "Pouch settings", or the Loot
   Filter's "Loot Bag" button; extended opcode 226 `ChaosOpcodes.pouches`): items on the autoloot list, gold / platinum /
   crystal coins, uniques, gear with a rarity of at least N (1 = all gear, plain pieces too), supplies (potions, runes, ammunition, food), gems (when the character
   carries no Orbs Pouch), everything else, and overflow (what a full Orbs or Rift Key Pouch passes on; default on; stored as an
   inverted bit, 128 set = off, so rules saved before the rule existed read it as on). Item categories are the loot filter's (`ChaosLootFilter.itemInfo`). The Loot Filter's
   Rarity Autoloot minimum still holds list gear back (its snapshot runs first).
-- **Store-bound.** One of each kind per character: the store refuses a second while one is in the inventory, the inbox or a depot
+- **Store-bound.** Bought pouches arrive in the purse ("Store", Delivery to the purse) and collect there: `PO.carried`
+  looks through the inventory (its bags, breadth first) and then the purse one level deep (a pouch lying directly in
+  the purse; not one inside a bag in the purse; the inventory's pouch first when there are two). Weight rules are
+  unchanged: the purse counts in the inventory weight, so what a pouch there takes counts as in the backpack (the
+  Loot Bag stays weightless). A pouch in the depot inbox does not collect. One of each kind per character: the store refuses a second while one is in the inventory, the purse, the inbox or a depot
   chest (and while a lost one is owed back); a copy made by a GM collects only when it carries the character's guid
   (`chaos_pouch_owner`) and only the first one found is used. Every pouch has the custom attributes `chaos_storebound = 1` and
   `chaos_locked = 1` (the item lock, engine patch 0009: no NPC buys it, trash holders refuse it, the stock market does not list it;
@@ -3180,9 +3332,9 @@ autoloot list is needed.
 - `server/tests/pouches_test.lua` (LuaJIT and Lua 5.3, mocked engine): rule packing (overflow default on, old values), routing per
   pouch, the priority plan (specialist first whatever the Loot Bag rules, overflow on / off, a pouch not carried), the drop step
   (right pouch, stacking, key attributes kept, full Orbs Pouch -> Loot Bag overflow or backpack -> corpse, a gem with the gems
-  rule still to the Orbs Pouch, capacity, owner only, carried only), the defaults (all the loot: plain gear, supplies,
+  rule still to the Orbs Pouch, capacity, owner only, carried only, a pouch in the purse collects, one level deep only, the backpack's first), the defaults (all the loot: plain gear, supplies,
   creature products), the weightless registration (installed kinds only, once), the window protocol, click-to-loot (same priority), never
-  auto-sold, the store (one per character, inbox fallback, attributes), move / trade refusals, death and the login grants. Client: `game_pouches/pouchesview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
+  auto-sold, the store (one per character, delivered to the purse, depot inbox without purse or capacity, attributes), move / trade refusals, death and the login grants. Client: `game_pouches/pouchesview_test.lua`, `game_itemtooltip/tooltiplogic_test.lua`.
 - Live test 2026-10-14 (engine 0001-0038): five kills filled the Loot Bag with all their loot and the free capacity did
   not change (weightless); Sell all sold to the bank, kept a unique, a named item and an Epic copy (Epic unticked), the
   30 s cooldown on the button and on the server. Found there: plain gear drops were kept as "named" (any custom
@@ -3229,6 +3381,7 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
   and roasted meat of the base `food.lua`), "You are full." at the cap every food has (1200 s of regeneration), so it is
   eaten exactly as often as normal food; one bite a second at most (`exhaustMs`). Never used up. Only its owner can eat
   from it ("This ration belongs to someone else.").
+- **Delivered to the purse** ("Store", Delivery to the purse; depot inbox without a purse or the capacity).
 - **Store-bound** like the pouches (the store's convention for a permanent item): one per character (the store refuses a
   second while one is in the inventory, the inbox or a depot), the custom attributes `chaos_food_owner`, `chaos_storebound`
   and `chaos_locked`. The pouches' move hook, trade callbacks and the player market refuse any `chaos_storebound` item, so
@@ -3239,6 +3392,51 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
   to the database); the store refuses a second one meanwhile.
 - **Tests:** `tests/store_food_test.lua` (the bite, the cap, the exhaust, owner only, never used up, the store check, the
   offer, delivery to the backpack or the inbox, death and the login), `tools/install_store_food_test.py`.
+
+## Potions (`potions.lua`, `potions_core.lua`, `potions_config.lua`, `data/lib/chaos_potions.lua`, `tools/install_potions.py`)
+
+Owner request 2026-10-16: "Remove the potion flasks and make the first pots infinite."
+
+- **No empty flasks.** No potion leaves an empty flask any more (strong 7634, great 7635, small 7636). The stock potion
+  script (`data/actions/scripts/other/potions.lua`, `player:addItem(potion.flask, 1)`) and any other base Lua that adds a
+  flask (an `addItem` / `createItem` / `doPlayerAddItem` call with an argument named like `flask` or a flask id) get that
+  statement commented out (marker "Chaos: no potion flasks"; inside a longer expression the call becomes `nil`). This
+  covers every stock tier, the spirit and the fork's herbalist potions (exalted, advanced, divine, mythic).
+- **No deposit.** No NPC sells a flask (shop_buyable entries removed, `addBuyableItem` lines commented out, the `buy` of a
+  `{id = ..., buy = ...}` row removed). A text about a flask deposit (it says "deposit" and names a flask, vial or potion:
+  NPC dialogue, keyword replies, script messages, the flask descriptions in items.xml) loses its deposit and flask
+  sentences, or becomes `flaskText` ("Potions no longer leave an empty flask. A potion store still buys old flasks.").
+- **Old flasks keep their value.** Nothing removes the flasks players hold. The NPCs' `shop_sellable` entries stay and
+  the Loot Buyer and the Auto Seller still pay the old 5 gold each (`sell_prices.lua`), so nobody loses gold. No source
+  creates new ones.
+- **Everfull potions.** The lowest tier of health and mana potion (the stock Health Potion 7618 and Mana Potion 7620, level
+  1, every class) has an Everfull copy: **everfull health potion 32085** (125-175 health) and **everfull mana potion
+  32086** (75-125 mana), the rolls of the stock potions. New items.otb nodes copied from 7618 / 7620 (flags, attributes,
+  the stock look), stackable like them for the same reason as the Everfull Ration (count 1, never used up), items.xml
+  entries "Never runs out. ..." (the item tooltip shows them). No spirit potion: the first one is the great spirit
+  potion (level 80); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
+- **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
+  It shares the stock potions' exhaust (`CONDITION_EXHAUST_HEAL`, the action interval - 100 ms = 900 ms), so it is no
+  faster than a stack of stock potions and blocks them for the same time. "You are exhausted." while it runs. Higher
+  tiers stay consumables: they are the gold sink.
+- **Store-bound** like the Everfull Ration: `chaos_storebound` and `chaos_locked`, so no trade, ground, mail, market, NPC
+  sale or trash (pouches.lua, engine patch 0009), and `death_keep.lua` keeps it on death.
+- **Sources.** The starter kit (`newplayer.lua` calls `ChaosPotions.giveAll` into the kit backpack); a one-time grant at
+  login for characters made before (storage 7102480 = 1 once given; a brand-new character waits for its kit); and every
+  potion seller (an NPC that sells 7618 or 7620, such as Morora): its trade window lists both at `price` (100 gold).
+  `ShopModule:callbackOnBuy` (hook in `data/npc/lib/npcsystem/modules.lua`) hands such a purchase to
+  `ChaosPotions.npcBuy` in the NPC's Lua state: one store-bound copy whatever amount was asked, paid from hand and bank,
+  refused while the character has one (backpack, inbox, depot).
+- **Existing stock potions stay consumables.** Stacks of Health / Mana Potions are not converted: monsters, NPCs, the
+  mentor shop and the milestone gifts still hand them out, so a login conversion would fight every source. They are
+  still drunk and used up as before, and still sell to NPCs. The Everfull copies sit next to them.
+- **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
+  `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
+  cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
+- **Tests:** `tests/potions_test.lua` (the rules, drinking on a mocked engine: healed, not consumed, no flask, the exhaust;
+  the kit and login grant; the NPC replacement; the stock potions.lua patched by the tool: no flask, a higher tier still
+  used up, the exhaust unchanged), `tools/install_potions_test.py` (a synthetic base server: items, NPCs, the hook,
+  idempotent).
 
 ## Stash (`stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql`, `tools/migrate_depot_stash.py`, client `game_stash`)
 
@@ -3796,6 +3994,8 @@ An ability, not an item: every character has it from creation (the spell "Town P
 vocation; `needlearn="0"`, so existing characters have it at the next login after `register_spells.py`). The menu entries Character > Town Portal
 (cast) and Character > Portal Style (window) call the same code. Numbers: `townportal_config.lua`.
 
+- **Inside a hideout** (2026-10-16): the cast is a way out at once (`K.hideoutExit`: no channel, cooldown or pair), through
+  `ChaosHideout.leave` (the spot entered from, else the home temple, else Cinderhold; never a hideout or an instance).
 - **Cast:** `ChaosTownPortal.cast(player)` refuses at once (reason below) or starts a 3 s channel (`castMs`, polled every 250 ms). A step or any
   damage (health change, or a mana hit from an attacker) ends it with nothing spent. At the end the rules are checked again, then the pair opens:
   a portal on the first free tile around the caster (`fieldOffsets`, action id 47810) leading to the temple of the character's town, and a return
@@ -3944,8 +4144,9 @@ item modifiers apply as usual. The cost the engine took is stored per cast: the 
 0008, `Player:onSpellCast` gives the exact mana and health paid); without the events, the mana that went down by the second
 dispatcher tick (after the supports' Thrift refund). The cast is polled every 100 ms (`addEvent`, so the spell supports' cast
 context follows it to the effect). It is interrupted when the caster moves (any position change, floor included), gets a paralysis
-that was not there at the start (`interruptOnParalyze`), is stunned by an Iron Palm (`monk_combat.lua` interrupts it, result `paralysed`), casts another spell (any other spell's `cast`
-event; without the spell events of patch 0008 this one interrupt is missing), opens a town portal (`townportal.lua` calls `ChaosCasting.interrupt`), dies (`death` event), logs out (`logout`) or cancels
+that was not there at the start (`interruptOnParalyze`), is stunned by an Iron Palm (`monk_combat.lua` interrupts it, result `paralysed`), casts another spell of the cast's group (an attack spell or rune: a
+`cast` event with that group; a heal, a healing rune or a support spell does not interrupt it, see "Cooldown channels";
+without the spell events of patch 0008 this one interrupt is missing), opens a town portal (`townportal.lua` calls `ChaosCasting.interrupt`), dies (`death` event), logs out (`logout`) or cancels
 (client). An interrupt or a failed check gives back the stored mana and health and the spell's own cooldown condition (replaced by a
 100 ms one so the client's icon is told; the group cooldown stays), exactly once (`cast.refunded`; a refund asked before the
 cost is known is paid when it is known). Damage taken does not interrupt. A new cast-time spell while one is cast replaces it
@@ -3968,6 +4169,8 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - Parsed once at startup when the `AREA_*` tables already exist, otherwise on the first Character > Spellbook; `/spells reload` (staff) parses again after a spell change. A player can open it once every 2 seconds.
 - Protocol (JSON `{action, data}`): `open` {vocation, level, magicLevel, total, chunks, vocationNames [{id, name}]}, then `spells` {index, spells [...]} until all are sent (about 6.5 KB of JSON per packet), then `done` {total}. A spell: name, words, level, maglevel, mana, manaPercent, soul, cooldown and groupCooldown (ms), group, type, element, target (`single`/`area`/`self`/`front`), center (`caster`/`target`), area (matrix, 1 = hit, 2 = centre, 3 = centre and hit; `front` spells drawn facing north), range, description, scaling, vocations (ids), premium, rune and runeClientId. The client sends `open` to ask for the same answer.
 - With the reference spell set (234 player spells) that is 14 packets, about 76 KB.
+- Cache check (2026-10-16): `open`, `done` also carry `sig` (a checksum of the packed list, cached per display-scale factor), `open` carries `learned` (names of the `needlearn` spells the player learned) and spells carry `id` (spellid) and `needLearn`. The client sends `open {have = sig}`; when it is the current list only `open {unchanged = true, chunks = 0}` and `done` go out, without the 2 s throttle. An old client (no `have`) gets the full list as before.
+- Spellbook items: using a stock spellbook (the base action `data/scripts/actions/others/spellbook.lua`, hooked by `tools/patch_base_spellbook.py`, install_all step `events`) or a Chaos set spellbook (27 gear-set and 10 themed ids, registered by `spellbook.lua`) sends `show` to a client that has spoken opcode 219 this login (its background fetch after login, `open {prefetch = true}`, which the new-player tutorial does not count); the client opens the window. A client without the window keeps the stock "Spells for Level n" text (`ChaosSpellbook.spellText`). Test: `tools/patch_base_spellbook_test.py`.
 - `server/tests/spellbook_test.lua` (fixtures in `tests/fixtures/spellbook/`) covers the XML parsing, named, inline and local areas, refusal of unsafe or malformed inline tables, the classification and descriptions, the chunking and the talkaction/opcode flow. Not run on a server.
 
 ## Multi-client (`multiclient.lua`)
@@ -4367,6 +4570,84 @@ starts again by itself when the walk ends.
   - Esc mid walk cleared the target and stopped the walk. Following a creature outside combat still follows. Walking
     into a protection zone dropped the target on the first protected tile. Chase Opponent off: the click walk keeps
     attacking. The option through the Options window and Ok wrote the storage (1 off, 0 on).
+
+## Cooldown channels (`src-patches/0042-cooldown-channels.patch`, `cooldown_channels.lua`, `data/lib/chaos_casting.lua`, client `game_helpertimers`, base patch 0062)
+
+Owner request (2026-10-16): attack spells, healing spells, the auto attack and moving things (items, containers,
+equipment) must have cooldowns that never conflict: using one never delays or blocks another.
+
+**Shared timers found (audit 2026-10-16).**
+- Engine, `Player::nextAction` / `actionTaskEvent`: one next-action time and one queued task per player. Every item use
+  set it (`Actions::useItem` 200 ms, `useItemEx` 1000 ms: runes and potions are "use with"), every step set it
+  (`Player::onWalk`), and every use, item move and creature move waited for it (`Game::playerUseItem`, `playerUseItemEx`,
+  `playerUseWithCreature`, `playerMoveItem`, `playerMoveCreature`; a blocked one was queued in the one task slot and the
+  next queued one replaced it). So an attack rune held the healing rune and every potion for 1 s, a potion held the next
+  rune, a step held both.
+- Engine, auto attack (`Player::doAttacking`, `classicAttackSpeed = false`): a distance weapon waited for `nextAction`
+  (a rune, a potion or a door delayed the shot), and the queued attack check sat in the same task slot: an item move or
+  a use cancelled it (the next swing then waited for the 1 s creature think, up to a second lost) and the attack check
+  cancelled a queued use or move (dropped). Melee never waited for `nextAction`; spells never touched the auto attack.
+- Engine, spells: the spell cooldown (per spell id) and the group cooldowns (`CONDITION_SPELLGROUPCOOLDOWN` per group)
+  are separate per group. Every Chaos spell has its group (55 attack, 8 healing, 34 support in
+  `spells/chaos/spells_chaos.xml`, none without a group, no secondary group), every stock rune its right group (28
+  attack, 3 healing, 5 support), the stock spells too. Kept on purpose: three stock support buffs whose trade-off is a
+  group lock (Protector and Swift Foot put a 10 s cooldown on the attack group from their scripts, Hawkeye has the
+  healing group as its secondary group, 10 s), and a spell without a group shares the "none" group cooldown with the
+  other group-less spells (only the house spells; monsters do not use them).
+- Lua, cast-time spells (`data/lib/chaos_casting.lua`): any other spell's cast event interrupted the cast and refunded
+  it, so a heal cut the attack cast off, and the client helper held every heal while a cast charged.
+- Lua, potions: the Everfull potions add `CONDITION_EXHAUST_HEAL` (900 ms) of their own (`potions.lua`); nothing else
+  uses that condition (no spell), so it holds only the Everfull potions. The stock potions had no exhaust of their own
+  (only the shared 1 s next action).
+- Lua, other exhausts: Town Portal sets its own spell cooldown only (`townportal.lua`, group none with group cooldown 0);
+  rift and store service items keep their own per-feature timers; crafting has none; the antibot, combat log and
+  supports hooks only read or shorten a spell's own cooldown. None of them is shared with attack, heal or moves.
+- Client helper (base `mods/game_helper`): one rate guard of 4 casts a second for every spell (base patch 0026), one
+  object-use timer of 1 s for potions, the healing rune, the shooter's runes and the special foods, a 1.1 s potion
+  "turn" after every rune, and a heal waited while a cast-time spell charged (base patch 0052).
+
+**The four channels now.**
+- **Attack**: attack spells and attack runes share the attack group cooldown (spells.xml); attack runes also wait
+  `runeChannelDelay` (1000 ms) after the last attack rune. Nothing else holds them.
+- **Heal**: healing spells and healing runes share the healing group cooldown; healing runes wait `runeChannelDelay`
+  after the last healing rune. **Potions are a channel of their own** (`potionChannelDelay`, 1000 ms, the stock pace):
+  a potion never waits for a heal spell or rune and never holds one, as in the stock game where potions and healing
+  spells never shared a cooldown; one potion a second stays the limit (health and mana potions together). Support runes
+  have their own channel the same way.
+- **Auto attack**: its own queued check and its own interval (`getAttackSpeed`, the 0011 floor and cap). No spell, rune,
+  potion, use or move holds or cancels it. Only a step holds a distance shot, as before, and not a kite walk step
+  (0028).
+- **Movement**: item moves, creature moves, the equip hotkey and the right-click equip (0024) wait only for each other:
+  `moveItemDelay` (50 ms) after each, and a step holds them as before. They never hold a spell, rune, potion or the
+  auto attack. Plain uses (doors, levers, tools, food, opening containers) keep the stock delays on the action channel,
+  which walking also sets; runes and potions never wait for it.
+- **Anti-spam**: each channel has its own floor (at least 50 ms, `SCHEDULER_MINTICKS`) and one queued task (a blocked use
+  is replayed when its channel is free, a newer one replaces it), so packet floods and fast clients stay limited per
+  channel; nothing has a zero delay. The protocol's packet limit is unchanged.
+- **Cast-time spells**: only another spell of the cast's group (attack) interrupts it (`ChaosCasting.interrupts`); a heal,
+  a healing rune or a support spell goes through and the cast still fires.
+- **Client helper** (base patch 0062, overlay `game_helpertimers`, `ChaosHelperTimers`): a cast guard per channel (heal,
+  attack, support: 4, 4 and 3 casts a second, the same words not again within 500 ms) and an object-use timer per
+  channel (potion, healRune, attackRune, supportRune, food). A heal no longer waits for a charging attack cast.
+
+Which channel a use takes (`Actions::getUseChannel`): the item's own channel from `Game.setItemCooldownChannel(itemId,
+channel)` (`cooldown_channels.lua`: every `<action>` of `other/potions.lua` in `data/actions/actions.xml`, else the list
+of `cooldown_channels_config.lua`, plus the Everfull potions of `potions_config.lua`), else a rune by its spell group
+(attack and special: attack, healing: heal, support: support), else the action channel. Lua constants
+`COOLDOWN_CHANNEL_ACTION`, `_MOVE`, `_ATTACK`, `_HEAL`, `_SUPPORT`, `_POTION`, `_AUTO` (back to the default rule).
+
+Config (`config.lua`, written by `tools/prod_config.py`; the engine defaults are the same): `cooldownChannels = true`
+(false: the stock shared delay and attack task), `moveItemDelay = 50`, `runeChannelDelay = 1000`,
+`potionChannelDelay = 1000` (ms; also in `configKeys`). Balance note: a player may now drink a potion, use an attack rune
+and a healing rune in the same second (one of each per second at most).
+
+Tests: `tools/cooldown_channels_patch_test.py` (the patch: every stock gate goes, each use and move asks its channel,
+the attack's own task, the 50 ms floors, the config, the Lua binding, prod_config.py), `tests/cooldown_channels_test.lua`
+(the potion list, the engine file against a mocked engine), `tests/casting_test.lua` (a heal and a support spell leave the
+attack cast running), client `game_helpertimers/helpertimers_test.lua` (channel guards and timers, base patch 0062).
+The patch chain 0001-0042 applies and every engine source compiles (`g++ -std=c++17 -fsyntax-only`, Linux flags).
+**Not run live yet**: rune + potion + heal spell + attack spell in one second, a distance attack while drinking and
+moving items, the helper's rotation with heals during a cast-time spell, a flood of moves (the 50 ms queue).
 
 ## Progress bars over tiles (`tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua`, client `game_tileoverlays`, base patch 0041)
 
@@ -5043,7 +5324,7 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
   (`chronicle_config.lua` `townId` 2: the town scars go around Cinderhold's temple). The Chronicle's two gates and the
   Memorial's portal go to the temple's upper hall (floor 6, a gallery over the temple, reached by the stairs of the
   two side rooms of the temple): Breach 32362, 32240, 6 and Ossuary Stair 32358, 32240, 6 at the west end of its north
-  row, the Memorial 32379, 32240, 6 at the east end. Checked on the base map: white marble floor and nothing else, not
+  row, the Memorial at its east end. All three moved on 2026-10-16 to the Halls of Services ("City portals"). Checked on the base map: white marble floor and nothing else, not
   on the stairs, and every other tile of the hall is still reached from both stairs.
 - The rune supply's hub and start town (`chaos_rune_supply.lua` `hubTown`, `startTowns`): 2 (Isora sells every rune).
 - Texts: the welcome window and the first hint name Cinderhold and its teleports (EN / pt-BR); the wiki's Getting
@@ -5085,9 +5366,12 @@ the test for every NPC with a booth). `ChaosNpcPlace.place` and the Keeper of Tr
 `ChaosNpcBooths.spot` first, so each system's own startup code puts its NPC in the booth; Loot Buyer, Material Broker
 and Osric of the other towns stay next to their temples.
 
-**The way in and out.** A magic forcefield (action id 47880) next to the temple of each hall's town, on a tile checked
-on the base map: Cinderhold 32369, 32243, 7 (the south end of the temple, a dead end), Mirewake 32954, 32080, 7 (the
-south-west corner, off the way to the south doors); then the generic offsets. The plan's exit portal (areagen's 47951)
+**The way in and out.** The **Hall of Services Portal** (magic forcefield, action id 47880, placed by "City portals":
+a look text and a red effect every 4 s) next to the temple of each hall's town, on a tile checked on the base map:
+Cinderhold 32369, 32243, 7 (the south end of the temple, a dead end), Mirewake 32954, 32080, 7 (the south-west corner,
+off the way to the south doors); then the generic offsets. The portal room also holds the town's Hideout Portal and
+Guild Hall Portal (`portals.hideout` 31, 23 and `portals.guildhall` 32, 23, between the Descent at 29 and the raid at 34;
+`tools/services_halls_test.py` checks them as portal tiles: free floor, reached, nothing cut off). The plan's exit portal (areagen's 47951)
 is re-tagged 47881 at startup: it leads to the temple of the hall's town. The Descent and raid portals use
 `portal.positions` of `descent_config.lua` / `raid_config.lua` (one per town, the halls' portal room); a town whose hall
 is not on the map gets its portal next to the temple as before. Without a hall on the map the NPCs stand next to the
@@ -5106,6 +5390,88 @@ were rendered for the owner (not in git). Not run on a live server.
 the SQL that moves `players.town_id` (one transaction, the counts first); run it with the server stopped, after
 `tools/backup.sh`. Positions, houses and depots stay (depots are per town; the stash window shows them all). The beta
 has no characters to move. Test: `tools/migrate_home_town_test.py`.
+
+## City portals (`cityportals.lua`, `cityportals_core.lua`, `cityportals_config.lua`, `cityportals_fx.lua`)
+
+Owner test 2026-10-16: the hideout and guild hall entries stood "in the middle of nowhere", with nothing saying what
+they were. One shared helper now places every labelled portal near a temple, so a later portal gets the same for a
+config line: `ChaosCityPortals.place({kind, aid, item?, towns?, offsets?, log?})` (one per town, kept when it already
+stands, checked again by the caller once a minute) and `ChaosCityPortals.register(kind, aid, pos, town)` for a portal
+placed by other means. Users: `hideout.lua` (kind `hideout`, action id 47610), `guild_hall.lua` (`guildhall`, 47602),
+`npc_booths.lua` (`services`, 47880), `memorial.lua` (`memorial`, 47944: Cinderhold and Mirewake), `siege.lua` (`siege`, 47211: the Guild Siege Portals while a siege is open, from
+its `portalOffsets`; closing removes them and the pulse drops them; `portalPositions` and the staff `/siege portal` only
+register theirs), `worldboss.lua` (`worldboss`, the World Boss Portals while a boss is awake, the same way). Labelled
+only (they keep their own placement, `ChaosCityPortals.register`): the Ember Descent and raid portals (`descent`,
+`raid`, the halls' portal room), the hunting-area entrances of `areagen_config.lua` (`hunt`, 47950: one action id
+for every area, so each portal carries its own title, "Emberdeep Hollows, levels 1000-1100", made by `C.bandTitle`
+from the area's `name` and `spawns.level`; a new area gets one with no other change), the Idle Hall's exit
+(`idlehall`, 47911, below). `chronicle.lua` places the **Chronicle Gates** (`chronicle`, 47920 + the area's index;
+one spot per area, `spec.spot` "chronicle_<key>", and the area's name as `spec.title`) when a chapter opens an area,
+for `gateTowns` (Cinderhold and Mirewake): the halls' portal room (30, 20 and 33, 20: 14590 / 14593, 14840, 7 and
+14890, 7), else beside the temple (Cinderhold 32373, 32237, 7 and 32374, 32235, 7; Mirewake 32959, 32073, 7 and
+32961, 32074, 7); `ChaosCityPortals.remove(aid)` takes them away when the area closes. The installer's hunt teleports
+(`hunt_teleports.lua`) already carry "Name, levels A-B" (both languages) and a sign, so they stay as they are.
+
+**The Idle Hall's exit** gets its own action id 47911 (`idlehall_config.lua` `aid.exit`, `hall.exit` 22, 11, the plan's
+exit tile, checked by `tools/idle_hall_test.py`): the installer leaves areagen's shared 47951 there; `idlehall.lua`
+re-tags it at startup and every minute (a portal already re-tagged is found again, so the migration is idempotent) and
+handles the step itself: the character's temple, else Cinderhold's. Look text "Idle Hall Exit: Step in to go back to
+your temple. ..." and a blue effect.
+
+**Where** (`C.candidates`, first match): the town's Hall of Services portal room when the kind has a tile there
+(`npc_booths_config.lua` `portals`: `hideout`, `guildhall`, `memorial` and the two Chronicle Gates; the key is the
+spot, `spec.spot`, default the kind) and the hall is on the map; then the town's fixed
+spot (`towns`, offsets from the temple, used only while the temple is where the config says, so another map falls
+through); then the caller's offsets, then the config's. A tile is free (`C.spotOk`) with ground, nothing blocking, no
+house, teleport or stairs, and nothing movable or a door on it (borders, grass and other floor dressing are fine). The
+fixed spots were chosen on the reference map (2026-10-16, `tools/map/otbm.py` and `itemdb.py`, renders checked by eye):
+bare floor of the temple area, the two side by side along a wall or the edge of the square, off every shortest way from
+the temple to its doors, stairs and edges, not next to stairs or a door, never the tile an NPC placement around the
+temple takes first, and the area stays connected with both placed.
+
+| Town | Hideout Portal | Guild Hall Portal |
+|---|---|---|
+| 2 Cinderhold | hall 14591, 14843, 7 (without the hall: 32374, 32237, 7) | hall 14592, 14843, 7 (32374, 32238, 7) |
+| 1 Mirewake | hall 14591, 14893, 7 (without the hall: 32961, 32072, 7) | hall 14592, 14893, 7 (32960, 32072, 7) |
+| 3 Anvildeep | 32647, 31929, 11 | 32648, 31929, 11 |
+| 4 Thornmere | 32357, 31780, 7 | 32357, 31779, 7 |
+| 5 Gloamroot | 32733, 31632, 7 | 32733, 31631, 7 |
+| 6 Kindle Isle | 32093, 32221, 7 | 32093, 32220, 7 |
+| 7 Saltgrave | 32313, 32825, 7 | 32313, 32826, 7 |
+| 8 Fevergate | 32595, 32741, 7 | 32594, 32741, 7 |
+| 9 Dunescar | 33197, 32853, 8 | 33197, 32852, 8 |
+| 10 Scorchveil | 33217, 32456, 1 | 33217, 32455, 1 |
+| 11 Bellwatch | 33215, 31809, 8 | 33216, 31809, 8 |
+| 12 Rimeholt | 32212, 31128, 7 | 32211, 31128, 7 |
+| 13 Hollowspire | 32786, 31279, 7 | 32785, 31279, 7 |
+| 14 Slagdelve | 33028, 31514, 11 | 33029, 31514, 11 |
+| 28 Ashstrand | 33448, 31326, 9 | 33447, 31326, 9 |
+| 29 Nightwrack | 33512, 32361, 6 | 33513, 32361, 6 |
+| 31 Isle of Hush | 32314, 31943, 7 | 32314, 31942, 7 |
+| 32 Isle of Oaths | 32092, 32030, 7 | 32093, 32030, 7 |
+| 33 Brassgate | 33594, 31896, 6 | 33593, 31896, 6 |
+| 34 Wyrmscar | 33657, 31669, 8 | 33658, 31669, 8 |
+
+The Hall of Services Portal keeps its map-checked tiles (Cinderhold 32369, 32243, 7; Mirewake 32954, 32080, 7). The
+Memorial Portal: the hall's portal room (28, 23: 14588, 14843, 7 and 14588, 14893, 7), else Cinderhold 32374, 32239, 7
+and Mirewake 32960, 32073, 7 (next to the other two, checked the same way).
+
+**Recognisable** (`cityportals_fx.lua`): every placed portal shows its kind's effect every `pulseMs` (4 s: hideout
+blue, guild hall green, Hall of Services red, Memorial purple, siege yellow rings, world boss and raid dark, Descent fire, Chronicle blue; a portal removed by hand leaves the list until its system puts it back),
+and looking at it adds "Name: what it does" in the player's language (an `onLook` callback, `Chaos.t`; the pt-BR texts
+are in `i18n_strings.lua`), e.g. "Hideout Portal: Step in to enter your own hideout. Its exit portal brings you back to
+this spot." The portals carry no description attribute, so the text is never doubled. Server text only: no client file.
+
+**The way back.** Hideout: the exit, the window's Leave and a login inside lead to the spot entered from ("Hideouts").
+Guild hall: its exit leads to the character's temple (`exitPosition` overrides it). Hall of Services: its exit leads to
+the temple of the hall's town.
+
+**Tests:** `tests/cityportals_test.lua` (LuaJIT and Lua 5.3): every kind named, described, translated and with an
+effect; the fixed spots (20 towns, 2-7 squares from the temple, side by side, off the hall entry); the hall row; the
+candidates (hall, town, offsets, a moved temple, no duplicates), free tiles, the pick (an existing portal is kept), the
+look text; then on a mocked map: one portal per town, the fixed spot, the offsets on another map, placed once, a dropped
+item on the spot, a border allowed, the hall's portal room when the hall is on the map, the pulse and the look text in
+both languages; the three users load the helper. `tools/services_halls_test.py` checks the two hall tiles.
 
 ## Base item names (`tools/patch_base_item_names.py`, `data/items/base_item_names.csv`, `tests/base_item_names_patch_test.lua`)
 
@@ -5331,6 +5697,38 @@ in its title and text (lore of a desert people), not the server's name; it stays
 Tested: the server built with 0001-0030 answered the status request with the new `server` and `version`, the software
 info request the same, printed the new console line; the old name is not in the binary. On the installed test tree the
 two strings changed, a second whole install changed nothing.
+
+## Base server start warnings (`tools/patch_base_migrations.py`, `tools/patch_base_monsters.py`, `sql/chaos_website_tables.sql`, `tools/fresh_db_check.py`)
+
+The first start of the Windows package (release winpkg-35, 2026-10-16) printed these; each is fixed at its source.
+
+- **Database migrations** (install step `migrations`). The engine runs `data/migrations/<db_version>.lua` upwards at
+  every start. The base `schema.sql` creates the columns of its migrations 33-40 (custom skills, wings, aura, shader,
+  the smith skills) but writes `db_version` 33, so on a fresh database each of them failed with "Duplicate column name",
+  and 41 (`znote_shop_orders.mountid`) failed on the missing table. `patch_base_migrations.py` rewrites every migration
+  line that only adds named columns into `if db.tableExists("t") then db.query("ALTER TABLE t ADD COLUMN IF NOT EXISTS
+  ...") end` (MariaDB syntax; other statements stay). Same result on an old database, no error on a new one.
+- **Website tables** (`sql/chaos_website_tables.sql`, install step `sql`). Base scripts use six tables of the website:
+  `znote_global_storage` (login service banner at startup), `znote_players` (skill history at login and logout),
+  `znote_shop_orders` (shop orders, migration 41), `znote_accounts`, `znote_guild_wars`, `znote_player_reports`. A game
+  database without the website printed SQL errors at every start and login. The file creates them empty, with the
+  definitions of the website's pinned schema (`website/install_site.sh`; its installer accepts tables that already
+  exist and fills `znote_accounts` / `znote_players` for the existing accounts), and adds `mountid`. The packages get
+  it through `sql-setup`.
+- **Fresh-database check**: `python3 -I server/tools/fresh_db_check.py SERVER_DIR [--sql-dir DIR | --sql FILE ...]`
+  starts a throwaway MariaDB, loads the first-start SQL (default `SERVER_DIR/sql-setup`) and runs the migrations as
+  `DatabaseManager::updateDatabase` does, printing the engine's error lines; exit 1 on any SQL error. On the base
+  download: stock migrations 9 errors (33-41, as in the start log); after `patch_base_migrations.py` and with
+  `chaos_website_tables.sql`, db_version 33 -> 42 and no error. `tools/fresh_db_check_test.py` (skips the database
+  part without MariaDB).
+- **Monster load warnings** (install step `basemonsters`, after `itemnames`). `patch_base_monsters.py` changes the base
+  monster files (not `monsters/chaos`, `lua/chaos`): a speed spell below -1000 becomes -1000 (11 bosses; the engine
+  clamped it anyway, with a warning each), a loot name written with its article becomes the item id of that name (the
+  jester doll parts of one undead monster: "Unknown loot item", "Cant load loot"), an unknown race gets a known one
+  (two Lua bosses: `magical` -> energy, `dragon` -> blood). `tools/patch_base_monsters_test.py`.
+- **Empty spawns**: ours, `patch_base_spawns.py` (see "What the spawns step changes").
+- **CreatureEvents in the spells' interface**: see "Extended opcode dispatch".
+- **Loot Buyer at Nightwrack**: see "Item prices".
 
 ## Monster lint (`tools/ci/check_content.py`, `tools/fix_monster_xml.py`, `tools/hash_base_monsters.py`)
 
@@ -7648,11 +8046,11 @@ towns `Game.getTowns()`. The sections and what fills them:
 | Section | From |
 |---|---|
 | Monsters and bosses | `MonsterType:getLoot()` of every bestiary entry (its exclusions: scenery, summons, dummies), child loot included; the chance is the list chance x the loot rate (`rateLoot`, capped at 100%); the bestiary's level (left out when it is the capped estimate) and spawn places, the hunting-area level band of the map markers (`data/chaos_poi.lua`) |
-| Chaos drops | `loot_config.lua` currency (chance by monster tier), `chaos_gems_config.lua` gem drops, uniques (`ChaosLoot.uniqueList()`: their monsters, minimum tier, boss only, season), Rift Keys and omen fragments from monsters |
-| Chests and rewards | daily reward and login streak, bounty contracts and the weekly chest, rift chest and completion, Infinity Tower milestones and season chests, world bosses, invasions, arena, battleground, guild boss, the Descent, the raid uniques, dungeon loot lists, treasure goblins, achievements (hidden ones never: they are secrets), faction tokens, the Ascended Omens |
+| Chaos drops (first: any monster drops these) | the global drop tables as "Any monster" with "global drop, about 1 in N kills[, level X+]" from the real chances: `loot_config.lua` currency (chance by monster tier; legendary and boss monsters also draw one entry by weight, with its weight share), `chaos_gems_config.lua` gem drops (the quality's best share and the first monster level that rolls it), the Rift Key from monsters (`rift_config.lua` monsterKey, its level gate); uniques (`ChaosLoot.uniqueList()`: their monsters, minimum tier, boss only, season), omen fragments from rift monsters. Before the monster section and first in the tooltip's "Drops from" (live test winpkg-35: an Orb of Awakening from a Rat named only two monsters) |
+| Chests and rewards | daily reward and login streak, bounty contracts and the weekly chest, rift chest and completion, Infinity Tower milestones and season chests, world bosses, invasions, arena, battleground, guild boss, the Descent, the raid uniques, dungeon loot lists, treasure goblins, achievements (hidden ones never: they are secrets), faction tokens, the Ascended Omens; quests (the tales of `tales_config.lua`), the Ember Cache, the guild siege, the weekly leaderboards, the community goal token, the referral gift, the class trials, charm drops (`charms_config.lua`), the nemesis trophy, starter kits and level gifts (`newplayer_config.lua`; the Everfull potions of `potions_config.lua` `everfull`), the raid's boss orbs and the raid vendor (Sepulchre Marks), the season pass free track and the season journey chapters |
 | Crafted from | the base crafting tables (the global `Crafting` of the base crafting script: station, level, gold, materials), salvage and the shard recipes, gem combining, faction recipes, omen keys, Ascended sigils |
 | NPCs that sell it / buy it | the NPCs of the map's spawn file: `data/npc/<name>.xml` (`shop_buyable`, `shop_sellable`, `shop_buyable_containers`) and their scripts (`addBuyableItem`, `addBuyableItemContainer`, `addSellableItem`; scripts with their own trade window: `{id, buy, sell}` tables); the town is the nearest temple to each place of the NPC. Plus the Material Broker (tools, materials), the Wandering Merchant and the faction quartermasters |
-| Store and vendors | Chaos store item offers and bundle parts (`shop_config.lua`), the battleground vendor (honor) |
+| Store and vendors | Chaos store item offers, bundle parts and the service offers that put an item in the backpack (the store pouches of `pouches_config.lua`, the Everfull Ration of `store_food_config.lua`), each with "Store > <category>" (`shop_config.lua`); the battleground vendor (honor); the Candlemark shop (`candlemarks_config.lua`: items and the random gems of a quality); the Mentor Marks shop (`mentor_config.lua`); the Conquest vendor (tokens) |
 | The Gambler | `gamble_config.lua` pool: slot and level |
 | Gathering | `professions_config.lua` materials: profession, tier, levels, the areas with nodes |
 | Used to make, other uses | the recipes above the other way round; guild boss ember donations, faction token turn-ins |
@@ -7660,6 +8058,11 @@ towns `Game.getTowns()`. The sections and what fills them:
 Hidden (`itemfinder_config.lua` `hidden`): server item ids, monster names, NPC names and source names; monsters by name
 patterns (dummies, training, summons) also without the bestiary. A source that throws while building is printed
 (`[Chaos itemfinder] rewards <key>: ...`) and only its rows are missing.
+
+**Audit** (`tests/itemfinder_test.lua`, live test winpkg-35: the store's Everfull Ration said "no known source"): every
+item a config the index reads hands out (any `{kind = "item" | "items", id}`, any `{id, count}` / `{id, n}` of an
+`items`, `equip` or `backpack` list, the store's item, bundle and service offers) must have at least one row. A new
+reward in one of those configs without a source fails the test.
 
 **Protocol** (JSON `{action, data}`; answers through `Chaos.sendChunked`): `search {q, p}` -> `results {q, p, pages,
 total, rows = [{id, cid, name, n, kinds}]}`; `item {id}` or `item {cid}` -> `item {id, cid, name, total, secs = [{k, p,
@@ -7731,6 +8134,24 @@ stackable use-with rune stone 24692 (named by the installer, like the crafting o
 `ownLook = true` in `chaos_gems_config.lua`, `python3 -I server/tools/install_gems.py <server>/data` (rewrites the 35
 nodes with the new client ids, the rest of each node stays the stock gem's), restart. `ChaosGems.clientIdOf` follows
 the switch. Rollback: false and the installer again (byte-identical to before). Test: `tools/install_gems_test.py`.
+**Fixed 2026-10-16: own-look nodes are animated.** The own looks have 9 phases, so the client (GameItemAnimationPhase)
+reads a phase byte after every gem; 27 of the 35 nodes were copies of still stock gems without `FLAG_ANIMATION`, so the
+server sent no such byte and every packet holding one of those gems came out one byte short for the client:
+"ProtocolGame parse message exception (126 bytes, 1 unread, last opcode is 0x6e ...): InputMessage eof reached"
+(the owner opened a Loot Bag holding gems; the client drops the rest of that packet, the container never opens, and a
+map or tile packet with such a gem on the ground is lost the same way). Second symptom (owner 2026-10-16, "the loot
+bag and the backpack are conflicting": two windows titled "Backpack" with mixed loot): opening the Loot Bag in the
+same window as a backpack, the server already holds the Loot Bag under that window's container id but the client drops
+the open packet and keeps showing the backpack there; every later add / update / remove of the Loot Bag's slots then
+lands in the "Backpack" window, and a move from it acts on the Loot Bag's slots. Same fix; the server never picks a
+container id itself (the client asks for a free one, or the window's own one for "same window"). `install_gems.py` now sets `FLAG_ANIMATION` on
+every own-look node (stock looks keep the stock flags); `install_gems_test.py` checks it and that every row of
+`client/tools/sprites/art_import/gems.csv` has more than one phase. **Servers: run `install_gems.py` (or
+`install_all.py --only gems`) again and restart** ("items.otb: 27 gem nodes updated" on the 2026-10-15 base).
+Guard for any item: `python3 -I server/tools/check_item_wire.py <server>/data/items/items.otb <pair>/Tibia.dat` compares
+the bytes the server writes per item (count or fluid byte, phase byte) with what the client reads (stackable / quiver /
+fluid / splash, more than one phase); on things_custom28 with the fixed items.otb: 31147 nodes, 0 disagree (27 before).
+Rules tested by `tools/check_item_wire_test.py` (CI).
 The Codex gem pages and the wiki icons show the new art already (images, not sprites).
 
 **Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
@@ -8021,9 +8442,15 @@ shows its map modifiers with their tiers (boons in the Chaos colour), the level 
 it is used, and offers no compare (it is not worn). Checked in game: a key and a legendary item with a power (Ctrl compare
 with the worn helmet, the power line in orange).
 
-- client -> server `get {items = [{pos = {x, y, z, s}, iid}]}`, at most 3 items; `iid` is the decimal string of key 6
-  (JSON numbers lose digits past 14).
-- server -> client `tips {items = [{pos, iid, tip} | {pos, iid, gone = true}]}`.
+- client -> server `get {items = [{pos = {x, y, z, s}, iid, cid, n}]}`, at most 3 items; `iid` is the decimal string of
+  key 6 (JSON numbers lose digits past 14); `cid` the client id of the hovered item, `n` its count (stackables only).
+- server -> client `tips {items = [{pos, iid, cid, tip} | {pos, iid, cid, gone = true}]}`.
+- The item asked about (live test winpkg-35: a Rope showed "Cheese 62", a Training Wand "Gold coin 100"). A plain item
+  is named only by its slot, and a container's items move one slot up when an item goes in at the front (loot): a
+  request sent before the client saw that found the neighbour, and the client kept its tooltip under the hovered item.
+  Now the server takes the item at the slot only when its client id (and count) match, else the nearest slot of the
+  same container that matches (`ChaosItemTooltip.matchIndex`), else `gone`; the client keeps an answer only when its
+  `id` / `count` are what it asked for (`tooltiplogic.lua` `L.tipMatches`) and asks again (twice, 300 ms apart).
 - Positions: `{0xFFFF, slot, 0}` inventory (slots 1-10), `{0xFFFF, 0x40 + container id, slot}` a container the engine
   has open for this player (`player:getContainerById`, slot on the current page), or a map position with the stack
   position `s` on the player's floor, at most 8 x 6 tiles away and visible (`player:canSee`); the client asks only
@@ -8631,8 +9058,8 @@ two basins) outside the middle of each side, sharing the arena wall. A base has 
 the arena by walking, so no enemy can enter it. After the siege the arena is cleaned (monsters, corpses, loose
 items); walls, obelisk and decoration stay for the next week (the footprint check accepts our own grounds).
 
-**Event flow.** Start -> entry forcefields (action id 47211) next to every temple (`portalOffsets`, or
-`portalPositions`), broadcast + toast -> members (level 100+) step in and arrive in their guild's base; gates are shut
+**Event flow.** Start -> the Guild Siege Portals (action id 47211) next to every temple ("City portals":
+`portalOffsets`, a look text and an effect; or `portalPositions`), broadcast + toast -> members (level 100+) step in and arrive in their guild's base; gates are shut
 for `gatherSeconds` (180) -> gates open, broadcast + toast, `matchMinutes` (25) of war; with `lateJoin` the portals stay
 open -> end: standings, rewards, results in `chaos_siege_results`, broadcast + toast with every arena's ranking, the
 HUD shows the final score -> after `exitDelaySeconds` (30) everyone inside goes to their temple (`exitPosition`
@@ -8820,7 +9247,11 @@ Archivist Maelis, the Material Brokers and the faction NPCs now place through `C
 offsets first, then every tile a player can walk to from the temple (closed doors count as walkable, never as a spot),
 nearest walking distance first, up to 14 tiles; never on or next to the temple tile, not in a one-tile corridor unless
 nothing else is left, and at least 4 tiles (Chebyshev) from every other NPC: beyond the talk radius (3). The order is
-fixed, so a restart gives the same spots. On top of that our NPC scripts answer a player only when he talks to them
+fixed, so a restart gives the same spots. Start log 2026-10-16: still no Loot Buyer at Nightwrack. Its temple (floor 6)
+is a room of about 25 tiles left only by stairs; a base NPC and the Material Broker stand in it and no tile keeps 4 tiles
+from both. `item_prices_config.lua` `npc.place.depotFallback = true`: with no spot at the temple the same search runs
+around the town's nearest depot of the map markers (`data/chaos_poi.lua`, same floor first, at most 64 tiles away;
+`ChaosNpcPlaceCore.depotAnchors`, `tests/npc_place_test.lua`). On top of that our NPC scripts answer a player only when he talks to them
 already or no other NPC within the talk radius stands nearer (a tie: the lower creature id), so one greeting never opens
 two windows. "trade": the window lists only what the player
 carries (backpack and its containers, not the equipped items) at the plain price; a sale pays every copy at its own
@@ -9305,8 +9736,10 @@ where the real map has no tiles (OTBM scan: no tile area between x/y 3000 and 16
 areas: tower 2000+, tutorial 4600+, world boss 5000+, siege 5100+, PvP arena 6000+, rifts 8192-8447). A slot is a
 21 x 15 floor with walls, built with `Game.createTile` the first time it is needed (a slot with a map tile in its
 footprint is skipped). The engine cannot remove tiles, so slots stay built and are reused: the fixtures are placed
-again whenever the owner or the active upgrades change. Entry: a forcefield next to every temple (`portalOffsets`, or
-`portalPositions`; placed at startup and checked once a minute): members of a guild that owns a hall go to their hall,
+again whenever the owner or the active upgrades change. Entry: the **Guild Hall Portal** of every town ("City
+portals": the Hall of Services' portal room in Cinderhold and Mirewake, a fixed spot next to every other temple, then
+`portalOffsets`; `portalPositions` replaces all of that when set; a look text and a green effect every 4 s; placed at
+startup and checked once a minute): members of a guild that owns a hall go to their hall,
 everyone else is refused ("Only guild members may enter a guild hall."). The exit forcefield leads to the temple
 (`exitPosition` overrides it). Players cannot attack players inside a hall (an `onTargetCombat` callback), a player who
 is not a member of the hall's guild (left the guild, logged in inside) is sent to the temple within a minute.
@@ -10942,7 +11375,8 @@ rule was switched off after checking the refusal), balance of tiers 8-15 against
 Roadmap items 21 and 22. Every number, item and text is in `newplayer_config.lua`; the pure logic (kit lookup, flags,
 milestones, island layout, station state machine) in `newplayer_core.lua`, tested by `tests/newplayer_test.lua`. Storages
 `Chaos.storage.newPlayer` = 7100250 - 7100269 (kit, welcome, tutorial stage / done mask / kills / orb count / flags,
-+7 the tutorial island time of earlier sessions, milestones at +10..+19). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
++7 the tutorial island time of earlier sessions, milestones at +10..+19); `Chaos.storage.tutorialSnapshot` = 7102750 -
+7102779 (the character at the island's start, "Tutorial reset"; `tests/newplayer_reset_test.lua`). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
 
 - **Kit** (one time): a character logging in for the very first time (`lastLoginSaved` 0, kit storage unset) gets the kit of
   its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
@@ -10959,6 +11393,13 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
 - **Home town** (one time, `homeTown`): a brand-new character (no kit yet) moves to the main city, Cinderhold (town 2),
   at its first login, before the tutorial island; its temple, respawn and Town Portal are there from then on. Towns in
   `homeTown.keep` are kept as chosen; `id = 0` turns it off; characters with their kit keep their town. See "Main city".
+- **Test characters** (the Windows package's `tools/windows/test_accounts.sql`, and the Linux package's with
+  `CHAOS_TEST_ACCOUNTS=1`; test-only, the website's and the client's characters are not touched): Chaos Admin and
+  Test Warrior / Ranger / Mystic / Thief start in town 2 at the temple of Cinderhold (32369, 32241, 7, `data/chaos_poi.lua`)
+  with `lastlogin` 0 and the tutorial stage storage (7100252) at 101, skipped: their first login gives the kit of their
+  class and level and the welcome at once, no island. Before (winpkg-35) they had town 1 and the island took them at the
+  first login, so they started bare. To try the island with one: `/newplayerkit <name>, reset`, then `, tutorial`.
+  `tests/newplayer_reset_test.lua` checks the SQL's key, stage, town and temple against the Lua side.
 - **The base server's starting items:** `creaturescripts/firstitems.lua` only equips vocation 0, which the kit skips
   (`skipVocations`), so nothing is given twice. The base starter chest (`scripts/customs/actions/first_chest.lua`, action id
   and storage 33735, old vocation ids only) is marked as opened when the kit is given (`baseChestStorage`), so nobody collects
@@ -10973,7 +11414,7 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
 - **API:** `ChaosNewPlayer.kitFor(vocationId)` returns a copy of a class's kit; `ChaosNewPlayer.setKit(name, def, {ids})`
   adds or changes a kit (a `def` with `base = "warrior"` inherits that kit); docs/CLASSES.md.
 - **Staff:** `/newplayerkit <name>` gives the kit again (ignores the flag); `, welcome` shows the welcome; `, milestone <n>`
-  gives gift n; `, reset` clears every new-player storage; `, tutorial` sends the character to the island's first station.
+  gives gift n; `, reset` clears every new-player storage (and the tutorial snapshot); `, tutorial` sends the character to the island's first station.
   Online characters only; every use in the admin audit log (`Chaos.staffCommand`); the kit, a milestone and `reset` need
   an administrator (group 5).
 
@@ -10996,7 +11437,7 @@ station opens a lesson (modal window + toast) when entered; its gate opens east 
    and cast the class spell (Warrior Salve of Scars `saen tin brak`, Ranger / Mystic Arcane Stitch `saen tin`), detected by
    the spell group cooldown condition (polled every 300 ms). A level 1 character with too little mana gets its maximum raised
    to the spell's cost once. The Thief line has no spell below level 20: opening the spellbook is enough.
-3. Passive tree: one free passive point (`passiveExtraPoints` +1, kept); allocating it and pressing Apply Plan completes the
+3. Passive tree: one free passive point (`passiveExtraPoints` +1, taken back when the character leaves); allocating it and pressing Apply Plan completes the
    station (a listener in `ChaosPassiveTree.listeners`).
 4. Orbs: an Orb of Upheaval and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
    count drops: the stock action and the crafting bench both consume it). The lesson mentions Economy > Crafting Bench when `ChaosCrafting`
@@ -11009,6 +11450,41 @@ before never enter the island. Safety: no PvP on the island (`EventCallback onTa
 protection-zone flag); nobody dies there (a hit that would kill leaves 1 health and the character is healed; a death anyway,
 e.g. elsewhere, is answered at the next login); logging out and in, or a death, puts the character back in the pen of its
 station; monsters cannot leave (water and walls, gates push monsters back); multi-client characters are welcome.
+
+### Tutorial reset (`newplayer_core.lua` `NP.takeSnapshot` / `NP.tutorialReset`, owner report on winpkg-35)
+
+**The bug.** Skipping the tutorial (or finishing it) kept what the island had given: the levels of the rats (x10 stage:
+150 experience, level 2), the station 2 max mana raise, the free passive point, the Orb of Upheaval, the leather armor
+and the backpack. The character reached the temple stronger than a new one, with the island's gear next to its kit.
+
+**The fix.** What the island gives is lent, by the exit as by a skip, the time limit or `/instances close`:
+- `NP.tutorialStart` stores the character as it is (`NP.takeSnapshot`): level, experience (hi x 1e9 + lo), every skill
+  level and its tries, magic level and mana spent, max health, max mana, capacity, the leather armors and orbs it owns.
+  Storages `Chaos.storage.tutorialSnapshot` = 7102750 - 7102779 (`NP.SNAP`). An existing snapshot is kept: a staff
+  restart of the island never records what the first run gave. It lives in storages, so a logout keeps it.
+- On the island no skill or magic level advances: an `EventCallback onGainSkillTries` at index 1000 (after every
+  multiplier) returns 0 for a character in stages 1-5 (`NP.skillTriesFilter`). Lua cannot lower a skill, so the gain is
+  stopped instead. Experience still comes (the rats show it) and is taken back.
+- `NP.tutorialFinish` sets the final stage, then runs `NP.tutorialReset` before the temple and the kit:
+  the free passive point back (`passiveExtraPoints` -1; a preset that now holds more nodes than the points is emptied
+  for free, `NP.passiveRefund`); every item tagged with the custom attribute `tutorial.lentTag` (`chaos_tutorial`: the
+  leather armor, and the backpack when the island made it, with what is in it), equipped, in a container or in the
+  inbox, and the orb if station 4 was not done; experience set back exactly (an `addExperience` overshoot from bonus
+  callbacks is removed again), skills and magic level raised back to the snapshot (what a death took; exact tries past
+  every multiplier, `NP.exactTries`), max health, max mana and capacity from the snapshot, then full health and mana;
+  the island's storages (done, kills, orbBase, flags, islandUsed) and the snapshot cleared. The stage stays 100 / 101.
+- It runs once: `NP.tutorialFinish` returns at once for a character that is not on the island (a second skip, the
+  statue's window and `!skiptutorial` both answered), and a second `NP.tutorialReset` finds nothing to undo.
+- A death on the way (the island's guard keeps it rare): the login puts the character back at its station; the reset
+  then raises level and skills back to the snapshot. A logout between the end and the kit (it comes 1 s later): the
+  next login gives it (`NP.kitDueAfterTutorial`).
+- A character that began the island before this change has no snapshot: its items, the point and the island storages
+  go, its level stays (the console line says "no snapshot").
+- The console logs each end: level before and after, skill levels raised back, items taken back, the passive point.
+`tests/newplayer_reset_test.lua`: a mocked engine player (experience with a 50% bonus callback, skills with a x2 buff and
+the island filter) through skip, exit, the orb used, an untagged armor, the character's own backpack, orbs and armor,
+logout, a staff restart, a death with level, skill and magic level lost, a level 8 start, experience past 32 bits, no
+snapshot, the second skip, and the Windows test characters' SQL. Not verified in game yet.
 
 **Verified in game (test server, cropped map with a test-only temple floor):** first login lands on the island with lesson 1;
 the death guard and the heal; logout / relog and death mid-tutorial resume at the station; each station's task (kills through
@@ -11405,6 +11881,19 @@ client/MANIFEST.md "Class looks pair", "things_custom19" and "Class looks pair 2
   so roll back only while the clients still have things_custom20.
 - Tests (pair 20): the same file, the switch both ways: on as shipped, off on a second copy of the core loaded with
   the pair 20 line set to false, both pairs off, and toggles.
+- Donor art class outfits (`Chaos.classes.outfits`, `ascension.lua` `giveClassOutfits`, at every login and class
+  change) are separate from the class looks. 1559 "Archmage" (the Mystic line's, donor B 3099) was retired on
+  2026-10-16: a front-view 3x3 figure, 1.4x the height of a player look, with no colours, addons or riding frames.
+  - Not given any more: the Mystic line (1, 5, 10) has no donor art outfit (`ChaosClasses.classOutfitsFor`).
+  - Owners keep it: `Chaos.classes.retiredOutfits` keeps its outfits.xml line as "Archmage (old)"
+    (`install_outfits.py`); re-run `install_all.py SERVER_DIR --only outfits` to rename the line.
+  - Never sold: `gen_shop_cosmetics.py` and `shop.lua` exclude `retiredOutfits` and the replacement outfit.
+  - Replacement switch `Chaos.classes.outfitReplacement` (`enabled = false` as shipped, one plain line;
+    `outfit = nil` until a client pair has the new look). On with an outfit set: the Mystic line is given it, and
+    a character of the line wearing 1559 is moved to it at its next login (`ChaosClasses.outfitSwap`), colours kept.
+    `install_outfits.py` writes its outfits.xml line only while it is on. Flip it only once the clients have the
+    pair. Tests: `tests/classes_test.lua` (off as shipped, on without and with an outfit, off again),
+    `tests/shop_test.lua` (1559 excluded).
 
 ## Class signature effects (`data/lib/chaos_class_fx.lua`, `data/lib/chaos_class_fx_ids.lua`, hooks in `data/spells/chaos/_common.lua`)
 Each class line's signature spells send an effect of their own (ROADMAP C4 "effects"), so the classes read differently
@@ -11421,8 +11910,9 @@ art); looks per effect: `data/spells/README_FX.md` "Class signature effects".
   warrior_bellow (Juggernaut juggernaut_bulwark); Berserker: Red Frenzy and Bloodrage berserker_rage, Skyfall Cleave
   berserker_cleave. Ranger line: Dawnpiercer ranger_pierce, Hail of Dawn ranger_arrowfall (each tile), Blessed Earth
   ranger_thornseal, Lightward ranger_canopy; Deadeye: Final Verdict deadeye_mark; Beastmaster: Wild Bond
-  beast_spirit. Mystic line: Purifying Wellspring mystic_mend, Hall of Mirrors illusion_mirror, Umbral Stride
-  illusion_shatter; Elementalist: Falling Pyre elementalist_glyph; Illusionist: Mirror Mend mystic_mend. Thief line:
+  beast_spirit. Mystic line: Purifying Wellspring mystic_mend (each healed ally), Hall of Mirrors illusion_mirror
+  (each clone), Umbral Stride illusion_shatter; Elementalist: Falling Pyre elementalist_glyph; Illusionist: Mirror
+  Mend mystic_mend (the mirror heal). Thief line:
   Shadow Veil and Shadow Mend thief_vanish; Ninja: Shadow Step ninja_vanish, Smoke Bomb ninja_smoke (each tile);
   Samurai: Counter Stance samurai_parry, Bushido Focus samurai_focus. Necromancer line: Withering Curse necro_curse;
   Lich: Soul Rot lich_rot (the Bone Lord keeps its own bone effects 586-592). Monk line: Whirling Heel monk_heel;
@@ -11481,7 +11971,8 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   `data/spells/chaos/_common.lua` during a cast; a chosen cosmetic skin wins, the big effect wins over the class
   effect): Doomtide's waves (fire nova 9x9, storm ring, fire ring), Primordial Squall's waves (venom nova, frost
   nova), Falling Pyre's meteor (lands on the impact), Forked Storm's jumps (lightning burst), Tear in the Weave (void
-  rift), Nightburst (void nova), Colossus Fall (fire ring, in place of warrior_quake), Blessed Earth and Consecration
+  rift, under its pair 27 core; each implosion an arcane nova), Nightburst (void nova at the eruption; the gather
+  keeps the pack void_maw), Colossus Fall (fire ring, in place of warrior_quake), Blessed Earth and Consecration
   (holy sanctum 5x5), Final Verdict and Judgement (pillar of light), Corpse Explosion and Bone Offering (blood geyser
   per corpse), Whirling Heel (golden ring 5x5, in place of monk_heel), Purging Nova (holy nova). The Thief line has
   no area spell with an effect at its centre and is left out.
@@ -11493,7 +11984,7 @@ timing or target changes. Each is sent at its centre tile (offset (N-1)/2), so t
   circle of its size on its first mark; the Ascended and guild boss hits over such a telegraph get the big effect of
   the boss's element (`ChaosBigFx.hits`). Cones, rings with a safe middle and marks round players get nothing more.
   The stock warning marks and hits stay; the big ones are drawn on top.
-- Not wired yet: big_nova_arcane_7 (in the pair for later).
+- Every big effect is wired (big_nova_arcane_7: Tear in the Weave's implosions, 2026-10-16).
 - Ids: `data/lib/chaos_big_fx_ids.lua` (effects 635-655 of things_custom24, on windows-assets 407ad9b6), written by
   `import_fx_art.py`; with the switch off (rollback) nothing big is sent and every site sends exactly what it sent before.
 - Flip step (done 2026-10-13, pair 24 at 407ad9b6): `C.BIG_FX = true` (the check in `tests/big_fx_test.lua`
@@ -11526,6 +12017,32 @@ Animated word effects ("FROZEN!", "SMITE!", "REVIVED!" ...) over a creature, fro
 - Tests: `tests/status_fx_test.lua` (switch line; spec, ids file and catalog agree in order from 656; every spell id
   exists under its name; every use has its call site; off: the stock effect; on: the word at +1,+1, the throttles,
   no word for damage over time, monsters or a cast without a word). Not run on a server or in a client yet.
+
+## Mystic line effects (`data/lib/chaos_mystic_fx.lua`; Tier A of the 2026-10-16 effect pass)
+
+Owner: "I found the effects of the Mystic spells very poor." Effects only, all from the client pair already live
+(pair 28): no damage, area, timing or target changes. What each spell sends: server/data/spells/README_FX.md
+"Mystic line effects". The rules:
+- A large or shaped effect that covers an area replaces its 1x1 tile effects (`ChaosMysticFx.tileFx`): Rime Bloom,
+  Blightswarm, Falling Pyre, Frozen Crypt (pulses with the nova), Doomtide, Primordial Squall, Nightburst, Tear in the
+  Weave. Without the effect in the pair (a switch off, an older pair) the tile effects stay.
+- Impacts land when the missile arrives (`ChaosMysticFx.flightMs`: 150 ms x sqrt(tiles), the client's missile time):
+  Witchfire Bolt, Shattered Psyche, Forked Storm, Umbral Stride, Mirror Mend.
+- Swaps changed: `ChaosBigFx.spells` 230 `shadow_smoke` (the eruption) and 231 `arcane_circle` (the implosions);
+  the pair 27 Tear in the Weave rift is no longer `first` (the large rift wins, the script adds the pair 27 core);
+  `ChaosClassFx` 208 and 96 swap `heal_sparkle` (the allies, the mirror heal) so the caster and the healed ally keep
+  the larger pack healing_bloom / regenerating.
+- Effect names: every spell and script asks ChaosFx only for names it has (`tests/spell_fx_names_test.lua` scans
+  all of data/; a missing name is silent at runtime, Fx() sends the stock fallback). The `aura_ring` and
+  `poison_cloud` aliases of `_common.lua` are gone: Mystic `poison_cloud` -> `poison_burst`, `aura_ring` ->
+  `arcane_aura`; Warcry `blood_ring`; Whirlwind and Blade Flurry `blood_slash`; Consecration and Divine Ward
+  `holy_cross`; Rallying Cry `holy_spiral`; Sense Prey `frost_ripple`. Piercing Volley asked for `blood_spear`, a
+  missile only, as its tile effect and sent the stock hit area: now `blood_splash`.
+- Base spells Bewitching Hex and Arcane Ripple: `tools/patch_mystic_stock_fx.py` (step `spells` of install_all.py)
+  loads the lib in their scripts and wraps onCastSpell (`ChaosMysticFx.wrapStock`); Hex's own 1x1 effect and
+  missile become none when the pack arcane bolt and hit are in the pair.
+- Tests: `tests/mystic_fx_test.lua` (helpers, wrappers, every ChaosFx name of the Mystic scripts exists, every name
+  sent is in an ids file), `tools/patch_mystic_stock_fx_test.py`, `tests/big_fx_test.lua`.
 
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
@@ -12164,7 +12681,8 @@ Measured on 2026-10-11 on the loaded map and its spawn file after `late_game.py`
   Most are quest rooms reached by a scripted teleport or a lever, so they were left alone (see "Not done").
 - The engine never respawns a monster while a player sees its spot (the timer then starts again), and `rateSpawn`
   (1 in the base server) is how many monsters one spawn block brings back per check. A pack of five took five
-  spawntimes to refill.
+  spawntimes to refill. Engine patch 0041 lifts the view rule (see "Respawn near players"); the tables below were
+  measured before it.
 
 ### Level bands and capacity
 
@@ -12180,7 +12698,7 @@ per hour its respawn can feed.
   (the monster's health x 1.11 for the tier spawns), at most 900 kills per hour. Level-scaled late-game monsters are
   pulled 3 at a time (x0.75).
 - The respawn of a spawn block: the sum of 1 / spawntime of its monsters, at most rateSpawn / its shortest spawntime,
-  divided by 1.25 for the player-in-view rule.
+  divided by 1.25 for the player-in-view rule (gone with patch 0041 and spawnNearPlayers: no division).
 - A party of four kills about as fast as three solo hunters, so N hunters is about N / 3 parties.
 - Rule of thumb: under 60% of the capacity a hunter finds a free spot; above 80% players fight over spots.
 
@@ -12239,6 +12757,7 @@ the monster of an existing entry.
 | Thin 300-600 areas | 93 added in 12 areas (`H4-01`..`H4-12`) | raised to 3.0 monsters per 100 walkable tiles, at most +50% |
 | Thin level 900+ areas | 91 added in 9 areas (`H5-01`..`H5-09`) | outdoors at 0.8-1.1 per 100; raised to 1.5, at most +60% |
 | Fill (2026-10-14) | 10,922 added in 570 hunts (`F0001`..`F0570`, `tools/spawn_density.json`) | every hunt under 3.25 per 100 raised to 3.4, at most x2 its entries and +400 (see "Fill") |
+| Emptied spawns (2026-10-16) | 339 | a stock `<spawn>` whose every entry was taken out (`remove`, `dungeons`) becomes one comment `<!-- chaosemptied: <spawn ...>...</spawn> -->`; before, the engine printed "Empty spawn at position ... radius 1" for each at every start |
 
 New spawns hold one monster each and sit on free walkable tiles of their area, at least 3 sqm from any spawn and
 connected to it. Each copies the nearest ordinary entry: no boss, no rare spawn, a monster with 10+ entries on the map.
@@ -12639,7 +13158,11 @@ teleports mantendo o mesmo design dela. O teleport na frente de um monstro dela"
 hall on three floors (z 5, 6, 7) at x 31627-31669, y 32251-32261, the stairs in the middle (31648, 32257). Each floor
 has 16 teleports in alcoves of 4 columns along a carpet corridor (north row y 32254, south row y 32258), a counter with
 a sign behind each teleport, two closed one-tile cells beside the counter with a monster of the hunt in each (spawn file,
-radius 1; the cells are not PZ, the corridor is) and a teleport to the temple at each end. Every slot was taken. The
+radius 1; the cells are not PZ, the corridor is) and a teleport to the temple at each end. **Display monsters are
+harmless** (owner, 2026-10-16): a monster without a master on a cell row (`room.cellRows`) of floors 5-7 inside
+`display.x` is a display (`ChaosHuntTeleports.isDisplay` / `isDisplaySpot`; Lua cannot read the spawn file's
+`chaoshunt` mark, so the spot is the tag). `onTargetCombat` refuses every hit of it, the engine asks that for melee,
+target and area combat alike. Boss mechanics, the monster tier roll and the treasure goblin skip it. Every slot was taken. The
 hunts take floor 6 ("More Teleports"), which has no tile around it.
 
 **Install** (`install_all.py` step `contentareas`, after houses and before poi; on its own
@@ -12656,8 +13179,10 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   beside its counter (`chaoshunt="ID"`, spawntime `displaySpawntime`), the same way the room shows its own hunts. A
   display monster is a frequent monster of the plan whose look renders in the client pair (checked:
   Deathrattle 1150, Hellflayer 856, Nightfang Widow 1404, Ashfang Wrym 1418, Hellmaw Brute 1409, Black Stag 686,
-  Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Celestial Wyrm 1500, Black Vixen 1475). Display blocks of a
-  slot no longer used are removed.
+  Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Black Vixen 1475) and at most 2x2 tiles (owner, 2026-10-16:
+  bigger sprites spilled over the cell walls; swapped: Celestial Wyrm 3x3 -> Spirit of Purity, Scaleborn 5x4 ->
+  Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: `display =
+  false`, none). Display blocks of a slot no longer used are removed.
 - Chest scripts (`area_planner.py install`) and `data/lib/chaos_hunt_places.lua`: per plan its teleport, sign,
   arrival, exit and band.
 - Idempotent: a placed plan (same tiles) and a grown room are left alone; a plan changed after it was placed is
@@ -12673,14 +13198,139 @@ the players near it, each in their own language (the base room labels its telepo
 the floor of the band (`minLevel` overrides it): back where the player came from, a poff and "Widowmere is for level
 480 and above." (pt-BR: "Widowmere é para nível 480 ou mais."); else the teleport effect, the arrival tile and the band.
 The camp portal of a placed plan (action id 47951, `areagen.lua`) sends players back to the corridor (31648, 32256, 6)
-through `ChaosHuntTeleports.backFor`; other areas keep their exits. Slot order: the config's `plans`, east side from the
-stairs outward, then west, north before south in each column; `slot` pins one. A plan missing from `plans` still
-gets a teleport after the listed ones (by band) with its most frequent monster on display (the install log names it:
-check its look, then list the plan to choose).
+through `ChaosHuntTeleports.backFor`; other areas keep their exits. Slot order (owner, 2026-10-16: "ordered by level"):
+the plans by level band ascending (the plan file's `level`: floor, ceiling, id), along the corridor from west to east,
+north before south in each column; the config's order does not count, so a new hunt lands in its band's place on the
+next install (the display spawns follow). `slot` pins one (1 = the westmost north teleport). A plan missing from
+`plans` gets its most frequent monster on display (the install log names it: check its look, then list the plan to
+choose). With `tools/hall_hunts.csv` the whole hall is ordered, the base server's teleports too: see "Hall order".
 Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock), `tools/install_content_areas_test.py`
 (synthetic map: dry run, grow, place, spawns, places file, second run, refusals, reorder, --only).
 - **Assumption:** the base room lives on floors 5-7 above the open ground of z 7, so the new wings of floor 6 hang over
   grass seen from z 7 outside the hall like the rest of the hall's upper floors.
+
+## Hall order (`tools/hall_order.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
+Owner, 2026-10-16: the teleport hall of Cinderhold ordered by level, floors going up as the monsters get stronger.
+Every hunt teleport of the hall, the base server's 50 (floors 7, 6, 5) and the planned hunts' (17), takes a slot by
+its level (below), then band floor, ceiling and id: the entry floor z 7 first, along the corridor from west to east
+(north before south in a column), then z 6, then z 5. 70 slots (15 + 37 + 18): no new floor or tiles needed. A new
+hunt (a plan file, or a row of the CSV) lands in its place on the next install.
+- **Level and band (the rule).** A hunt's level is the weighted median of its monsters' hunting levels (a plan: the
+  middle of its `level`); its band, on its sign and label, is the weighted 20th-80th percentile, to 5s. A floor's
+  label is the lowest to the highest hunt level on it, so floors never overlap: z 7 levels 2-24, z 6 25-317, z 5
+  350-1875 (2026-10-16). One strong monster in a mixed area moves neither.
+- **Bands of the base hunts** (`hall_order.py derive <server>/data`, run once on the hall as the base server has it;
+  refused when the places file says the order is installed): a teleport on a teleport row, or on the corridor's end
+  row when it does not lead to the temple, is a teleport of the hall. Its monsters: those spawned within 40 tiles of
+  its destination on its floor; with fewer than 8, 70 tiles and the floors next to it; then 40, 70, 100 and 120 tiles
+  down to three floors below (a cave whose hunt is down its stairs: the nearest group wins). Each at its hunting
+  level (`gen_bounty_pool.py` estimate). Nothing anywhere: `not a hunt`. Written to `tools/hall_hunts.csv` with the
+  original place, destination, kind, level, band, display monster, top monsters and a note; `hall_order.py show`
+  lists it in order. A new derive (`--force`) keeps the kind and note of each row (the hand decisions).
+- **Not a hunt** (`kind`): the teleport stays where it is, untouched, and takes no slot; no label. Decided by hand
+  2026-10-16 for the three teleports with no monster on their own floor: z 6 (31642, 32258) leads to the gnome city of
+  a base quest (its city teleport 9 tiles away, no spawn within 59 tiles): not a hunt. z 7 (31658, 32258) arrives
+  in a lava cave whose stairs go down to an ogre camp three floors below (level 113, 100-120); z 7 (31666, 32254)
+  arrives above a cave two floors down (level 317, 305-350): both hunts, banded by those monsters.
+- **Install** (`install_content_areas.py`, step `contentareas`, with the CSV and `hall.enabled`): the base teleport
+  tiles are rewritten through the map's tile nodes (only the teleport changes; a tile with anything we cannot write
+  back unchanged is refused), a base hunt's teleport goes to its new slot with its destination, a planned hunt's slot
+  has none (`hunt_teleports.lua` puts the scripted one there at startup), the display spawns follow their hunts (the
+  base server's unmarked blocks in the hall's cells are taken over, `chaoshunt="base_Z_X_Y"`), and the places file
+  gets `hall = true`, the base hunts (`base`) and the floors' bands (`floors`). The tile flags (PZ) are never touched.
+  `--remove-hall` puts every base hunt back where the CSV says it stood and the planned hunts in the wings again;
+  the map backup `<map>.otbm.bak` is written before the first change as for every content install. Idempotent both ways.
+- **In game**: every hunt's sign and floating label name it and its band (the base ones by their top monster:
+  "Hydra, levels 45-75"); each floor floats "Floor 7: levels 2-24" in its corridor and, over the stairs up, the next
+  floor's range ("Up: floor 6, levels 25-317"); `hall.labels` in the config.
+- Checked on the test server's map (in memory, no file written: the disk was full): 67 hunts on 70 slots, each
+  once, ascending; every slot and the stairs up reachable from each floor's corridor; no tile flag changed; the 51
+  base teleport tiles read and written back byte for byte. Before/after picture for the owner: the session's
+  scratchpad `hall/hall_before_after.jpg`.
+Tests: `tools/install_content_areas_test.py` (bands, tile round trip, a synthetic hall: every hunt once, ascending,
+the base teleport moved with its destination, its old place free, PZ kept, every teleport reachable, base display
+taken over, a `not a hunt` teleport left in place, second run unchanged, --remove-hall and back, the median and the
+nearest group below for a cave), `tests/hunt_teleports_test.lua` (base signs and labels,
+the floor labels in both languages).
+
+## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
+Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a
+level only for a monster type with both `min` and `max` of `<level>` in its XML (our level-scaled monsters, written by
+`tools/tune_monsters.py`) and puts " [level]" after the name only when that level is above 0; stock monsters have no
+`<level>`. Giving them one would change them: the engine's level adds health (`monsterBonusHealth` x level), speed,
+damage and a skull colour. So patch 0040 adds a display level instead (`monster:setDisplayLevel` /
+`getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
+placement) `monster_levels.lua` gives a monster without a level of its own `ChaosLoot.monsterLevel`: the bounty pool's
+hunting level of its type, else the experience / health estimate; the same level item level, monster damage and pace
+use. Not for a player's summon. Display monsters of the teleport room get it like any monster. Without patch 0040
+nothing changes. Rift, invasion and dungeon monsters scaled by their system show their type's level, not the scaled
+one. Tests: `tests/monster_levels_test.lua`.
+
+## Respawn near players (engine patch 0041, config `spawnNearPlayers`, `spawnMinPlayerDistance`)
+Owner, 2026-10-16: monsters must respawn even with players nearby. The stock engine skipped a spawn block while a
+player could see its spot (`Spawn::findPlayer`, same floor, the client's view) and started its timer again, so a busy
+hunt never refilled; only a boss with `isIgnoringSpawnBlock` came back in view.
+
+**The rule** (`spawnNearPlayers = true`, the engine default): with a player in view a block still respawns when
+- its tile has a ground, no creature (a ghost staff character counts), no blocking item and no protection zone. The
+  spawn places a monster forced (on its exact spot, over anything), so the engine checks this itself now;
+- no player the monsters see (`PlayerFlag_IgnoredByMonsters` excepted) is closer than `spawnMinPlayerDistance` sqm
+  (default 2: never on a tile next to a player; the larger of dx and dy, same floor; 0 or 1: only the tile itself; at
+  most 7).
+
+A respawn a player sees shows the teleport effect (`CONST_ME_TELEPORT`), so it never pops up silently. When the tile
+is taken or a player is too close the stock rule holds for that check: only an `isIgnoringSpawnBlock` boss spawns
+(silently, as before) and the timer starts again. Startup spawns are unchanged. `spawnNearPlayers = false` is the
+stock engine. `tools/prod_config.py` writes both keys (`--spawn-near-players yes|no`, `--spawn-min-distance N`;
+without them the values in config.lua are kept, true and 2 on a first run); `tools/prod_config_test.py` (CI).
+
+**Cost.** The extra work is one small spectator search (the distance box) per block whose spot a player sees, at its
+check; blocks without a player in view cost what they did. The real cost is more monsters: spawn checks now succeed in
+busy areas, so those stay full while hunted (more monsters alive, thinking, pathing and sending packets near players).
+The capacity model of "Spawn density and respawn" loses its 1.25 view divisor: about +25% respawn where players
+hunt, more with the dynamic respawn (4 hunters: 50% of the spawntime, now also in view). Watch the game loop
+(`slowTaskLogMs`) on a full server; `spawnMinPlayerDistance` up or `spawnNearPlayers = false` brings it back.
+
+**Our spawn systems** (checked 2026-10-16):
+- `onSpawn` callbacks (`monster_levels.lua`, tiers, archetypes, bounty, bestiary, boss mechanics, ...) run as before:
+  the tile and distance check comes before the monster is made, so a refused spot runs no Lua. Level-scaled monsters
+  (`late_game.py`, `tools/tune_monsters.py`) roll their level at creation as before.
+- `patch_base_spawns.py` output: entries on blocking tiles were moved and none is in a PZ or a house, so every entry
+  qualifies. Its fill blocks of 3 refill while hunted now.
+- Dynamic respawn (`respawn.lua`, patch 0022/0027): unchanged; its percent now also applies in view.
+- Display monsters of the teleport hall: their one-tile cells are not PZ and closed, so a killed display comes back
+  after `displaySpawntime` with the effect once nobody stands next to the cell (before: only when the hall was
+  empty). `HT.isDisplaySpot` in `onSpawn` sees the same spot as before.
+- Rifts, invasions, the tower, trials and pocket bosses use `Game.createMonster`: not affected.
+- Generated areas (`areagen.lua`) respawn their points in Lua with the same rule: in view, a point fills when
+  `configKeys.SPAWN_NEAR_PLAYERS` is on, its tile is free (ground, no creature, no blocking item, no PZ) and no player
+  is within `SPAWN_MIN_PLAYER_DISTANCE` - 1 sqm (+2 for a point of several monsters, which land up to 2 sqm away),
+  never with the forced placement, with the teleport effect. Without the keys (an engine without 0041) or with the
+  option off: the old rule (the timer starts again). Tests: `tests/areagen_test.lua`.
+- Base dungeons (map spawns in the dungeon box): a spot the party left out of view respawned before too; now
+  a spot in view also comes back after its spawntime (60-120 s). The kill counter never goes back, so a slow party
+  may need a few more kills for 85%.
+- Lair bosses (map spawns, `bossspawns_config.lua` rule `timer`) now come back after their spawntime with a party in
+  the lair, not only once it is empty.
+
+Needs a live check: a hunt refilling in view with the effect, no spawn next to a player or on a player / summon /
+box, the teleport hall's displays, a lair boss camp, and the game loop on a busy server.
+
+## PZ guard (`pz_guard_core.lua`, installed by `chaos_constants.lua`)
+Scripted damage never lands on a player in a protection zone. The engine's own combat skips PZ (a monster never
+targets a player there, area attacks skip PZ tiles), but `doTargetCombat` / `doTargetCombatHealth` from a script hit
+whoever they are given. `chaos_constants.lua` wraps both globals once, before any system keeps a local copy: damage (a
+negative amount, any type but healing) to a player on a PZ tile is dropped. Passed: healing and mana gain, a creature
+hurting itself (a self cost), a caster with `PlayerFlag_IgnoreProtectionZone`. `combatlog.lua` wraps the guarded
+function, so its log keeps working.
+Boss mechanics leave PZ out on their own too: an auto-attached arena has no PZ tile, a player in PZ gets no cast bar,
+no mark and no hit. Owner's bug (2026-10-16): the display Mirecoil Wyrm (level 1880-1920) in its closed cell of the
+Cinderhold teleport room auto-attached its light profile (`boss_mechanics.lua`: every monster with a profile gets one,
+arena = a radius 8 box round its spawn). The box took in the PZ carpet, and Mire Spit (20% of max health through
+`doTargetCombat`) killed a level 8 player there (58 earth).
+Tests: `tests/pz_guard_test.lua` (the guard, its install, and static checks over every Chaos script: a load-time copy
+of the combat functions comes after `chaos_constants.lua`; direct `addHealth(-x)` only in reviewed places),
+`tests/boss_mechanics_test.lua` (the display wyrm beside a PZ carpet).
 
 ## Name plates and titles (`nameplate.lua`, `nameplate_core.lua`, `titles.lua`, client `game_nameplate`, base patch 0022)
 
@@ -12945,6 +13595,11 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
 again (`C.offers` with a salt, the rerolls used today in storages +1 / +2), the tasks held stay. Tests:
 `tests/bestiary_test.lua` (another board, salt 0 is the day's board, a salted board is stable, the charges),
 `tests/candlemarks_apis_test.lua`.
+
+**No Prey, no base Task Hunt** (2026-10-16). The base client's Prey and Task Hunt windows (bounty tasks, preferred list,
+talisman, weekly tasks, task shop) read packets of newer protocols; this 10.98 server sends none and has no prey, so
+they stayed empty. The client leaves Task Hunt out and has no Prey entry (client/BASE.md, patch `0058`). The task
+systems are these kill tasks and the bounty board (opcodes 253 and 223); no server change and no new opcode.
 
 ## Pack items and monsters (`tools/install_pack_items.py`, `data/lib/chaos_pack_items.lua`, `scripts/chaos/pack_items.lua`)
 
@@ -14354,13 +15009,12 @@ stays until the next season starts, which starts from nothing.
 **The areas.** `server/tools/areaplan/chronicle/chronicle_cinderscar_breach.json` (waste, 128x104, levels 440-560, origin
 14910, 15140, 7) and `chronicle_ossuary_stair.json` (crypt, 120x104, levels 400-520, origin 15100, 15140, 9), planned
 with the area planner. Install step `contentareas` (`tools/install_content_areas.py`) places both at their origins with
-their spawns, as fixed areas: no hunt teleport (decided 2026-10-14). `areas[i].at` is that origin and `gate` the world
-tile of the portal: the upper hall of the capital's temple (Cinderhold, the main city since 2026-10-15, temple 32369, 32241,
-7; the stairs of its two side rooms lead up to floor 6), the Breach at 32362, 32240, 6 and the Ossuary Stair at 32358,
-32240, 6, at the west end of the hall's north row ("Main city"; they were in Mirewake's hall before), clear
-of every runtime portal around the temple (those are on floor 7). Checked on the base map: plain floor with no item,
-and the hall stays one connected walkable area with the three portals (with the Memorial's). Without `at` and `gate` a
-chapter opens an area in the story only: the window says so and the console names the missing setting. Their exit
+their spawns, as fixed areas: no hunt teleport (decided 2026-10-14). `areas[i].at` is that origin and `gate` an optional
+fixed world tile of the portal (a staff override; unset since 2026-10-16). The gates: the **Chronicle Gates** of
+`gateTowns` (Cinderhold and Mirewake), placed by "City portals" in the Halls of Services' portal room, else beside the
+temple, with the area's name in the look text (they stood in the upper hall of Cinderhold's temple, 32362 / 32358,
+32240, 6, before; the owner found that odd). Without `at` (and `gate` or `gateTowns`) a chapter opens an area in the
+story only: the window says so and the console names the missing setting. Their exit
 portal (47951) leads to the temple. `tools/chronicle_areas_test.py` checks the plans (validate, compile, QA) and the
 arrival offsets of the config.
 
@@ -14403,10 +15057,13 @@ naming them; a record whose holder hides stays, without the name; a hidden fall 
 **The plaza.** `server/tools/areaplan/chronicle/capital_memorial.json` (hall, 48x40, z 7 with a flat roof, every zone
 protected, no monsters): the hall of firsts (west), the hall of records (east), the garden of the fallen (north), the
 plaza with the Memorial stone, the approach with the exit portal. Install step `contentareas` places it at its origin
-(14800, 14800, 7) as a fixed area; `plaza.at` is that origin (decided 2026-10-14). The way in: `memorial.lua` puts a
-magic forcefield (1387, action id 47944) on `plaza.portal`, 32379, 32240, 6 in the upper hall of the capital's temple
-(Cinderhold; the east end of the hall, across from the Chronicle's gates), at startup and at every tick when missing; stepping in leads to the plaza's arrival
-(`plaza.at` + `plaza.arrival`, 23, 33); the plaza's exit portal leads to the temple. `memorial.lua` places 8 guardian statues (8836, 8837), 8 statues (1443, 1448, 1450), 12 grave stones
+(14800, 14800, 7) as a fixed area; `plaza.at` is that origin (decided 2026-10-14). The way in (moved 2026-10-16: the owner found the old tile
+in the temple's upper hall odd): the **Memorial Portal** (1387, action id 47944) of Cinderhold and Mirewake
+(`portalTowns`), placed by "City portals" in the Hall of Services' portal room (`portals.memorial` 28, 23: 14588, 14843, 7
+and 14588, 14893, 7), else beside the temple (Cinderhold 32374, 32239, 7; Mirewake 32960, 32073, 7), with a look text and
+a purple effect, at startup and at every tick when missing (`plaza.portal` set: one fixed tile instead); stepping in
+leads to the plaza's arrival (`plaza.at` + `plaza.arrival`, 23, 33); the plaza's exit portal leads to the character's
+temple. `memorial.lua` places 8 guardian statues (8836, 8837), 8 statues (1443, 1448, 1450), 12 grave stones
 (1407, 1408) and the stone circle (1421) on the plan's `slots`, each with its entry as the look text (item
 description, at most 255 characters); an empty slot holds nothing. More entries than statues: the pages turn every
 `rotateSeconds` (600); the stone says the page. `tools/chronicle_areas_test.py` checks that every slot is free floor
@@ -14459,7 +15116,8 @@ the Idle Hall itself (no temple near it: nobody is moved out). Trade and the mar
 minute. Take a step to stay." (pt-BR in `i18n_strings.lua`). The move never comes without that warning, and never
 sooner than a minute after it. Then the character is teleported to the hall's arrival with a teleport effect where it
 leaves and where it lands, and a message. Logging out and in inside the hall is fine; its exit portal leads to the
-temple of the character's town. Candlemarks, offline training (beds), the stamina trainer tile and the market are not
+temple of the character's town (its own action id 47911 since 2026-10-16, re-tagged from areagen's 47951 at startup,
+idempotent; a look text and an effect: "City portals"). Candlemarks, offline training (beds), the stamina trainer tile and the market are not
 touched: the character stays online and keeps earning; exercise training works on the hall's dummies.
 
 **The hall.** `tools/areaplan/rooms/idle_hall.json`: biome hall, 44 x 28, z 7, flat roof, three protected rooms
@@ -15603,13 +16261,18 @@ objetivos), and a compact tracker on screen (Adventure > Goal Tracker or the win
 - **Progress** is what the other systems already count, read live: every achievement counter
   (`ChaosAchievements.stats`: kills by tier, rift tier, world boss and Omen kills, bounties, kill tasks, dungeon clears
   per generated dungeon `dungeon_<id>`, trials, raid, uniques, orbs, Paragon ...); `ChaosAchievements.progress` / `set`
-  are wrapped (`ChaosWrapChain`, marker `goals_*`) so a change checks the goals (at most every 2 s per character). Own
+  are wrapped (`ChaosWrapChain`, marker `goals_*`) so a change checks the goals; a level up (onAdvance) does too. Own
   stats (`goals_config.lua` `own`, rows `s:<stat>`): `faction_rank` (ChaosFactions.gain wrapped), `pocket_kills` and
   `conquest_earned` (ChaosConquest.grant wrapped: a `pocketboss:<boss>` grant is a pocket boss kill), `tower_floor`
   (ChaosTower.recordRun), `descent_*`, `dungeon_clears`, `atlas_points` (ChaosSeasonJourney.emit wrapped: the lines
   descent.lua, dungeons.lua and atlas.lua already call for every character), `passive_spent` (ChaosPassiveTree
-  .hasAllocation at login and panel open). Other scripts may call `ChaosGoals.emit(player, stat, value)` (guarded).
-  No other file was edited for the tracking.
+  .hasAllocation at login, panel open and from a `ChaosPassiveTree.listeners` entry after every save). Other scripts
+  may call `ChaosGoals.emit(player, stat, value)` (guarded). No other file was edited for the tracking.
+- **Live refresh** (`G.schedule`, `G.refresh`): a change waits `checkMs` (250 ms) so one kill's counters merge, then
+  the goals are checked and the tracker, and the panel while open, are pushed only when what they show changed
+  (`K.sig`, `K.panelSig`). At most one run per `pushMs` (1 s) per character (`K.queuePush`); a done goal leaves the
+  tracker and the next open one takes its place. Bounty contracts arrive through `bounty.lua`
+  `ChaosLeaderboard.record("bounty")`, which `achievements.lua` turns into `bounty_done` (paid contracts only).
 - **Rewards** once per goal and character: experience (`reward.xpPct` = 4% of the experience to the next level), gold
   to the bank (`goldPerLevel` 25 x level, at least 200) and Conquest Tokens by band (0-10) through
   `ChaosConquest.grant(player, "goals", n)`, given only while `conquest_config.lua` has a `goals` source (open item for

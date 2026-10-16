@@ -5,6 +5,7 @@
 --   flags       one-time flags in storages (kit, welcome, milestones), bit helpers
 --   milestones  which gifts a level-up from old to new level earns
 --   tutorial    island layout and footprint, the station state machine (gates, exit, resume spot)
+--   reset       the snapshot at the island's start and the reset at its end (NP.takeSnapshot, NP.tutorialReset)
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosNewPlayer = ChaosNewPlayer or {}
@@ -417,6 +418,295 @@ end
 -- station 2: done when the spellbook was opened and, if the class has a spell for it, a spell was cast
 function NP.spellTaskDone(flags, hasSpell)
 	return NP.hasBit(flags, 1) and (not hasSpell or NP.hasBit(flags, 2))
+end
+
+-- ------------------------------------------------------------------------------------------------ tutorial reset
+-- What the island gives is lent: when the character leaves it (exit, skip, time limit, staff close) it ends as the
+-- character it was when the island began, plus the real starter kit. NP.takeSnapshot (tutorial start) stores that
+-- character in the storages of Chaos.storage.tutorialSnapshot; NP.tutorialReset (tutorial end) puts it back: level and
+-- experience, skills and magic level, max health / mana / capacity, full health and mana, the island's lent items
+-- (tagged with tutorial.lentTag, the Orb of Upheaval), the free passive point and the island's own storages. Both are
+-- written against the engine's Player API only, so tests/newplayer_reset_test.lua runs them on a mocked player.
+-- Skills and magic level cannot be lowered from Lua: newplayer_tutorial.lua stops their gains on the island
+-- (EventCallback onGainSkillTries, NP.skillTriesFilter); the reset only raises what a death took.
+
+NP.SNAP = {saved = 0, level = 1, expHi = 2, expLo = 3, magic = 4, manaSpent = 5, maxHealth = 6, maxMana = 7, cap = 8,
+	armorCount = 9, orbCount = 10, skillLevel = 11, skillTries = 18} -- skills 0..6: +11..+17 levels, +18..+24 tries
+NP.SNAP_SIZE = 30 -- 7102750 - 7102779 reserved
+NP.SKILLS = {0, 1, 2, 3, 4, 5, 6} -- SKILL_FIST .. SKILL_FISHING
+local EXP_SPLIT = 1000000000 -- storages are 32-bit: experience is kept as hi x 1e9 + lo
+
+function NP.snapKey(field, i)
+	local base = (rawget(_G, "Chaos") and Chaos.storage and Chaos.storage.tutorialSnapshot) or 7102750
+	return base + NP.SNAP[field] + (i or 0)
+end
+
+local function clampInt(v)
+	v = floor(tonumber(v) or 0)
+	return math.max(0, math.min(v, 2147483647))
+end
+
+-- the island's lent items: one tag for every item it creates (custom attribute)
+function NP.lentTag(c)
+	c = c or NP.cfg()
+	return c.tutorial.lentTag or "chaos_tutorial"
+end
+
+-- store the character as it is now (the tutorial's start). An earlier snapshot is kept (a staff restart of the island
+-- must not record what the first run gave). Returns true when a new one was written.
+function NP.takeSnapshot(player, c)
+	c = c or NP.cfg()
+	if NP.isSet(player:getStorageValue(NP.snapKey("saved"))) then
+		return false
+	end
+	local exp = math.max(0, floor(tonumber(player:getExperience()) or 0))
+	local set = function(field, value, i)
+		player:setStorageValue(NP.snapKey(field, i), clampInt(value))
+	end
+	set("level", player:getLevel())
+	set("expHi", floor(exp / EXP_SPLIT))
+	set("expLo", exp % EXP_SPLIT)
+	set("magic", player:getBaseMagicLevel())
+	set("manaSpent", player:getManaSpent())
+	set("maxHealth", player:getMaxHealth())
+	set("maxMana", player:getMaxMana())
+	set("cap", player.getCapacity and player:getCapacity() or 0)
+	set("armorCount", player:getItemCount(c.tutorial.orbItem.id))
+	set("orbCount", player:getItemCount(c.orbId))
+	for i, skill in ipairs(NP.SKILLS) do
+		set("skillLevel", player:getSkillLevel(skill), i - 1)
+		set("skillTries", player:getSkillTries(skill), i - 1)
+	end
+	set("saved", 1)
+	return true
+end
+
+-- the stored snapshot, or nil
+function NP.readSnapshot(player)
+	if not NP.isSet(player:getStorageValue(NP.snapKey("saved"))) then
+		return nil
+	end
+	local get = function(field, i)
+		return math.max(0, tonumber(player:getStorageValue(NP.snapKey(field, i))) or 0)
+	end
+	local s = {level = get("level"), exp = get("expHi") * EXP_SPLIT + get("expLo"), magic = get("magic"),
+		manaSpent = get("manaSpent"), maxHealth = get("maxHealth"), maxMana = get("maxMana"), cap = get("cap"),
+		armorCount = get("armorCount"), orbCount = get("orbCount"), skills = {}}
+	for i, skill in ipairs(NP.SKILLS) do
+		s.skills[skill] = {level = get("skillLevel", i - 1), tries = get("skillTries", i - 1)}
+	end
+	return s
+end
+
+function NP.clearSnapshot(player)
+	for offset = 0, NP.SNAP_SIZE - 1 do
+		player:setStorageValue(NP.snapKey("saved") + offset, -1)
+	end
+end
+
+-- skill tries / mana spent that must arrive exactly (the reset raising back what a death took): the island's
+-- EventCallback onGainSkillTries returns this amount, past every multiplier (NP.skillTriesFilter)
+NP.exactTries = NP.exactTries or {}
+
+local function addTriesExact(player, skill, amount)
+	if amount <= 0 then
+		return
+	end
+	local id = player:getId()
+	NP.exactTries[id] = amount
+	local ok, err = pcall(function()
+		if skill == "magic" then
+			player:addManaSpent(amount)
+		else
+			player:addSkillTries(skill, amount)
+		end
+	end)
+	NP.exactTries[id] = nil
+	if not ok then
+		error(err, 0)
+	end
+end
+
+-- the EventCallback onGainSkillTries filter: the exact amount while the reset raises a skill, nothing while the
+-- character is on the island (stage = its tutorial stage), else the tries unchanged
+function NP.skillTriesFilter(playerId, stage, tries, c)
+	local exact = NP.exactTries[playerId]
+	if exact then
+		return exact
+	end
+	if NP.inTutorial(stage, c) then
+		return 0
+	end
+	return tries
+end
+
+-- raise one skill (or "magic") back to level / tries; never lowers. Returns the levels raised.
+local function raiseTo(player, skill, level, tries)
+	local voc = player:getVocation()
+	local raised = 0
+	for _ = 1, 1000 do
+		local cur, have
+		if skill == "magic" then
+			cur, have = player:getBaseMagicLevel(), player:getManaSpent()
+		else
+			cur, have = player:getSkillLevel(skill), player:getSkillTries(skill)
+		end
+		local need
+		if cur < level then
+			local req = skill == "magic" and voc:getRequiredManaSpent(cur + 1) or voc:getRequiredSkillTries(skill, cur + 1)
+			need = math.max(1, (tonumber(req) or 0) - have)
+			raised = raised + 1
+		elseif cur == level and have < tries then
+			need = tries - have
+		else
+			break
+		end
+		addTriesExact(player, skill, need)
+	end
+	return raised
+end
+
+-- put the snapshot's character back: experience exactly (addExperience may pass bonus callbacks, so an overshoot is
+-- removed again), skills and magic level raised back, max health / mana / capacity, then full health and mana
+function NP.restoreStats(player, snap)
+	local report = {levelFrom = player:getLevel()}
+	local cur = player:getExperience()
+	if cur > snap.exp then
+		player:removeExperience(cur - snap.exp, false)
+	elseif cur < snap.exp then
+		player:addExperience(snap.exp - cur, false)
+		cur = player:getExperience()
+		if cur > snap.exp then
+			player:removeExperience(cur - snap.exp, false)
+		end
+	end
+	report.levelTo = player:getLevel()
+	report.skillsRaised = 0
+	for _, skill in ipairs(NP.SKILLS) do
+		local s = snap.skills[skill]
+		if s then
+			report.skillsRaised = report.skillsRaised + raiseTo(player, skill, s.level, s.tries)
+		end
+	end
+	report.skillsRaised = report.skillsRaised + raiseTo(player, "magic", snap.magic, snap.manaSpent)
+	if snap.maxHealth > 0 then
+		player:setMaxHealth(snap.maxHealth)
+	end
+	if player.setMaxMana then
+		player:setMaxMana(snap.maxMana)
+	end
+	if snap.cap > 0 and player.setCapacity then
+		player:setCapacity(snap.cap)
+	end
+	return report
+end
+
+-- full health and mana (a fresh character's)
+function NP.fillUp(player)
+	local h = player:getMaxHealth() - player:getHealth()
+	if h > 0 then
+		player:addHealth(h)
+	end
+	local m = player:getMaxMana() - player:getMana()
+	if m ~= 0 then
+		player:addMana(m)
+	end
+end
+
+-- every item the island lent: tagged ones (equipped, in a container, in the inbox), and the Orb of Upheaval when it was
+-- handed out and not used. Removed; returns how many items went.
+function NP.removeLent(player, snap, flags, done, c)
+	c = c or NP.cfg()
+	local tag = NP.lentTag(c)
+	local found, seen = {}, {}
+	local function consider(item)
+		if item and not seen[item] then
+			seen[item] = true
+			local okA, v = pcall(function() return item:getCustomAttribute(tag) end)
+			if okA and v ~= nil and v ~= false and v ~= 0 and v ~= "" then
+				found[#found + 1] = item
+				return true
+			end
+			if item:isContainer() then
+				for _, inner in ipairs(item:getItems(true) or {}) do
+					consider(inner)
+				end
+			end
+		end
+		return false
+	end
+	local first = rawget(_G, "CONST_SLOT_FIRST") or 1
+	local last = rawget(_G, "CONST_SLOT_LAST") or 10
+	for slot = first, last do
+		consider(player:getSlotItem(slot))
+	end
+	local inbox = player.getInbox and player:getInbox()
+	if inbox then
+		for _, item in ipairs(inbox:getItems(true) or {}) do
+			consider(item)
+		end
+	end
+	local removed = 0
+	local armorId = c.tutorial.orbItem.id
+	local armorGone = false
+	for _, item in ipairs(found) do
+		armorGone = armorGone or item:getId() == armorId
+		item:remove()
+		removed = removed + 1
+	end
+	-- the leather armor without its tag (an engine that dropped the attribute): one more than the character had
+	if not armorGone and NP.hasBit(flags, 8) and snap and player:getItemCount(armorId) > snap.armorCount then
+		if player:removeItem(armorId, 1) then
+			removed = removed + 1
+		end
+	end
+	-- the orb: lent at station 4, used (gone) once the station is done
+	if NP.hasBit(flags, 8) and not NP.hasBit(done, NP.stationBit(4)) then
+		local before = snap and snap.orbCount or 0
+		if player:getItemCount(c.orbId) > before and player:removeItem(c.orbId, 1) then
+			removed = removed + 1
+		end
+	end
+	return removed
+end
+
+-- the whole reset at the tutorial's end (idempotent: a second call finds nothing left to undo). Returns a report:
+-- {snapshot = bool, levelFrom, levelTo, skillsRaised, items, passive}
+function NP.tutorialReset(player, c)
+	c = c or NP.cfg()
+	local flags = math.max(0, tonumber(player:getStorageValue(NP.key("flags", c))) or 0)
+	local done = math.max(0, tonumber(player:getStorageValue(NP.key("done", c))) or 0)
+	local snap = NP.readSnapshot(player)
+	local report = {snapshot = snap ~= nil, items = 0, passive = false, skillsRaised = 0}
+	-- the free passive point of station 3 (and an allocation it paid for: NP.passiveRefund, the engine's hook)
+	if NP.hasBit(flags, 4) then
+		local key = (rawget(_G, "Chaos") and Chaos.storage and Chaos.storage.passiveExtraPoints) or 7100020
+		player:setStorageValue(key, math.max(0, math.max(0, tonumber(player:getStorageValue(key)) or 0) - 1))
+		report.passive = true
+		if NP.passiveRefund then
+			NP.passiveRefund(player)
+		end
+	end
+	report.items = NP.removeLent(player, snap, flags, done, c)
+	if snap then
+		local r = NP.restoreStats(player, snap)
+		report.levelFrom, report.levelTo, report.skillsRaised = r.levelFrom, r.levelTo, r.skillsRaised
+	end
+	NP.fillUp(player)
+	-- the island's own storages (the stage keeps its final value: done / skipped)
+	for _, key in ipairs({"done", "kills", "orbBase", "flags", "islandUsed"}) do
+		player:setStorageValue(NP.key(key, c), -1)
+	end
+	NP.clearSnapshot(player)
+	return report
+end
+
+-- the kit at a login after the island: a character that left the island (done or skipped) but logged out before the
+-- delayed kit arrived still gets it (kitDueAtLogin only covers the very first login)
+function NP.kitDueAfterTutorial(kitStorage, stage, c)
+	c = c or NP.cfg()
+	stage = tonumber(stage) or -1
+	return not NP.isSet(kitStorage) and (stage == c.stageDone or stage == c.stageSkipped)
 end
 
 -- the station 2 spell of a vocation (by its kit name, like the kits), or nil

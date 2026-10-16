@@ -3,7 +3,7 @@ Module
   description: Cinders of Chaos menu bar at the top of the game map (category drop-downs with sub-menus and hotkeys; replaces the side button icons)
   author: Cinders of Chaos
   sandboxed: true
-  scripts: [ chaos_topbar ]
+  scripts: [ topbarlogic, chaos_topbar ]
   dependencies:
     - client_chaos_theme
     - game_interface

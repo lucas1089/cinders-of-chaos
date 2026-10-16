@@ -25,6 +25,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
+               tools/patch_base_spellbook.py     the stock spellbook item opens the Spellbook window (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
   basecrafting tools/patch_base_crafting.py       the base crafting script (opcode 91, tables 38820-38826): table check,
                                                  one pending craft per player, gold and materials taken before the item
@@ -100,6 +101,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_spell_timings.py      cooldowns and group cooldowns of base attack spells from
                                                  data/spells/spell_timings.csv (no attack group lock over 2 s; spells
                                                  README "Rotations")
+               tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
+                                                 scripts (spells/README_FX.md "Mystic line effects")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -114,6 +117,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   itemnames    tools/patch_base_item_names.py    Chaos names of the base items with names of another world, by id
                (data/items/base_item_names.csv): items.xml, the monsters' loot by old name becomes loot by
                id, other mentions in the base data renamed (README "Base item names"; after archery)
+  basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
+               names with their article by item id, unknown races mapped (README "Base server start warnings"; after
+               itemnames)
+  migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
+               when it is not there yet (a fresh database from schema.sql already has them; README "Base server
+               start warnings")
   towns        tools/patch_base_towns.py         Chaos names of the map's towns by town id (tools/base_towns.csv), in the
                towns node of the .otbm; <map>.otbm.bak keeps the original (README "Town names")
   npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
@@ -123,6 +132,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                rune, food, enchanted spear and staff), every NPC sells each rune at the price of
                data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
                general crafting file (README "Rune supply"; after npcnames)
+  potions      tools/install_potions.py          no empty potion flasks (the base potion scripts, NPC sales, deposit texts),
+               the Everfull health and mana potions in items.otb / items.xml, sold by every potion seller through the
+               ShopModule hook (README "Potions"; after runes, before itemprices)
   itemprices   tools/install_item_prices.py      the item price table (data/lib/chaos_item_prices_data.lua): the Loot Buyer NPC
                in data/npc, every NPC's sell price of a priced item set to the table, NPC buy prices below twice the
                sell price raised (no arbitrage; README "Item prices"; after packitems, fistweapons and runes, which
@@ -373,6 +385,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_market.py')):
         ok4, more = run_tool([tool('patch_market.py'), data], 'patch_market.py')
         ok, lines = ok4, lines + more
+    if ok and os.path.isfile(tool('patch_base_spellbook.py')):
+        ok7, more = run_tool([tool('patch_base_spellbook.py'), data], 'patch_base_spellbook.py')
+        ok, lines = ok7, lines + more
     if ok and os.path.isfile(tool('patch_help_itemlinks.py')):
         ok3, more = run_tool([tool('patch_help_itemlinks.py'), data], 'patch_help_itemlinks.py')
         ok, lines = ok3, lines + more
@@ -580,6 +595,9 @@ def step_spells(server, data, ctx):
     if ok:
         ok, more = run_tool([tool('patch_spell_timings.py'), data], 'patch_spell_timings.py')
         lines += more
+    if ok:
+        ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
+        lines += more
     warn = unregistered_spell_fragments(data)
     return ok, lines, warn
 
@@ -594,6 +612,20 @@ def step_uniqueequip(server, data, ctx):
 
 def step_itemnames(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_item_names.py'), data], 'patch_base_item_names.py'))
+
+
+def step_basemonsters(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_monsters.py'), data], 'patch_base_monsters.py'))
+
+
+STEPS.insert(STEPS.index('itemnames') + 1, 'basemonsters')  # after itemnames, which turns old loot names into ids
+
+
+def step_migrations(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_migrations.py'), data], 'patch_base_migrations.py'))
+
+
+STEPS.insert(STEPS.index('basemonsters') + 1, 'migrations')  # data/migrations/*.lua (no order needs)
 
 
 def step_towns(server, data, ctx):
@@ -620,6 +652,14 @@ def step_itemprices(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('runes') + 1, 'itemprices')  # after runes: every NPC shop entry is written by then
+
+
+def step_potions(server, data, ctx):
+    return tool_result(run_tool([tool('install_potions.py'), data], 'install_potions.py'))
+
+
+# after runes (shop entries by then), before itemprices (which reads every shop entry)
+STEPS.insert(STEPS.index('itemprices'), 'potions')
 
 
 def step_worldtexts(server, data, ctx):

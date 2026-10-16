@@ -5,8 +5,11 @@
 --   client -> server  {"action":"add","data":{"name":"<item name>"}} or {"action":"add","data":{"clientId":N}}
 --                     {"action":"remove","data":{"name":"<item name>"}}
 --                     {"action":"clear"}
+--                     add / remove with "quiet":true: the answer is "list" (the item menu; the window stays shut)
+--                     {"action":"sync"}                     (the list without opening the window: "list" back)
 --   server -> client  {"action":"open","data":{"itemsTable":[[clientId,"name"],...],
 --                                              "currentSlot":N,"maxSlot":M}}
+--   server -> client  {"action":"list","data":{...}}         (the same data, answer to "sync")
 --
 -- The list lives in the same player storages (base 80000) as the reference server's
 -- scripts/creaturescripts/autoloot.lua, so that script's onDropLoot callback keeps doing the
@@ -61,7 +64,9 @@ local function writeList(player, items)
 	end
 end
 
-local function sendList(player)
+-- action: "open" (the window shows it) or "list" (the client only keeps it: the item menu's "Add to Loot List" /
+-- "Remove from Loot List", client loot.lua)
+local function sendList(player, action)
 	local items = readList(player)
 	local limit = getLimit(player)
 	-- Anything past the current limit (premium expired) is ignored by the reference callback;
@@ -71,7 +76,7 @@ local function sendList(player)
 		local itemType = ItemType(items[i])
 		rows[#rows + 1] = {itemType:getClientId(), itemType:getName()}
 	end
-	Chaos.send(player, OPCODE, "open", {itemsTable = rows, currentSlot = #rows, maxSlot = limit})
+	Chaos.send(player, OPCODE, action or "open", {itemsTable = rows, currentSlot = #rows, maxSlot = limit})
 end
 
 local function resolveClientId(clientId)
@@ -111,7 +116,8 @@ local function lookupItem(text, byClient)
 	return nil
 end
 
-local function handleCommand(player, param, byClient)
+-- reply: the answer's action (sendList), nil = "open"
+local function handleCommand(player, param, byClient, reply)
 	local action, argument = param:match("^%s*([^,]*)%s*,?%s*(.-)%s*$")
 	action = (action or ""):lower():gsub("%s+", "")
 
@@ -122,7 +128,7 @@ local function handleCommand(player, param, byClient)
 		local itemType = lookupItem(argument, byClient)
 		if not itemType then
 			player:sendCancelMessage(Chaos.t(player, "The item %s does not exist!", argument))
-			sendList(player)
+			sendList(player, reply)
 			return
 		end
 		local items = readList(player)
@@ -155,7 +161,7 @@ local function handleCommand(player, param, byClient)
 	elseif action ~= "show" and action ~= "" then
 		player:sendCancelMessage(Chaos.t(player, "Unknown auto loot action."))
 	end
-	sendList(player)
+	sendList(player, reply)
 end
 
 local LoginEvent = CreatureEvent("ChaosAutolootLogin")
@@ -177,6 +183,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	end
 	if msg.action == "open" then
 		sendList(player)
+	elseif msg.action == "sync" then
+		sendList(player, "list")
 	elseif msg.action == "add" or msg.action == "remove" or msg.action == "clear" then
 		-- the window: {action, data = {name}} (an item name) or {action, data = {clientId}} (a client item id)
 		if ChaosRateLimit and not ChaosRateLimit.allow(player, "autoloot.edit", 200) then
@@ -185,7 +193,8 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 		local d = type(msg.data) == "table" and msg.data or {}
 		local byClient = d.clientId ~= nil
 		local argument = tostring(byClient and d.clientId or d.name or ""):gsub("[%c,]", " "):sub(1, 60)
-		handleCommand(player, msg.action .. ", " .. argument, byClient)
+		-- quiet: the item menu's "Add to Loot List" / "Remove from Loot List" (the window stays closed)
+		handleCommand(player, msg.action .. ", " .. argument, byClient, d.quiet and "list" or nil)
 	end
 end
 

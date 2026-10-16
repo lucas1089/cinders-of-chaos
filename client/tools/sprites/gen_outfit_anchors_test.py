@@ -71,16 +71,29 @@ check(goa.measure(staff, centre='body')[1:] == goa.measure(staff, centre='bbox')
 # a cape that is a real part of the body (wide) does count: the centre moves towards it
 heavy = figure()
 heavy[24:50, 38:46] = 255
-check(goa.measure(heavy)[0] > cx, 'a wide cape is body mass')
+check(goa.measure(heavy, centre='body')[0] > cx, 'a wide cape is body mass')
 
-# an oblique figure leaning up and left: the centre is its mass, left of its feet
+# an oblique figure leaning up and left (every look of the pair leans so): the body anchor is its mass, left of its
+# feet; the feet anchor (the default) is the feet's own centre, so the feet stand on the dais centre
 lean = np.zeros((64, 64), np.uint8)
 for k in range(30):
     lean[20 + k, 14 + k // 2:26 + k // 2] = 255
 lean[50:60, 29:33] = 255
 lean[50:60, 37:41] = 255
-l = goa.measure(lean)
-check(l[0] < 35, 'a leaning body is centred on its mass, not its feet: %s' % (l,))
+l = goa.measure(lean, centre='body')
+check(l[0] < 33, 'a leaning body: the body anchor is its mass, left of its feet: %s' % (l,))
+lf = goa.measure(lean)
+check(goa.CENTRE == 'feet', 'the feet are the default anchor')
+check(34 <= lf[0] <= 36, 'a leaning body: the feet anchor is between the two feet (29-41): %s' % (lf,))
+check(lf[0] - l[0] >= 4, 'the feet anchor is right of the mass on a leaning look: %s %s' % (lf, l))
+check(54 <= lf[1] <= 58, 'the feet anchor row is in the feet, not where their band starts: %s' % (lf,))
+check(lf[2:] == l[2:], 'bounds, flag and reach do not depend on the anchor')
+# the feet anchor ignores what hangs under or beside the feet: a cape tip, a staff
+check(goa.measure(cape)[:2] == plain[:2], 'feet: a cape tip moves nothing')
+check(goa.measure(thick)[:2] == plain[:2], 'feet: a thick staff moves nothing')
+grounded = figure()
+grounded[30:60, 8:11] = 255         # a staff standing on the ground beside the body, three pixels thick
+check(goa.measure(grounded)[:2] == plain[:2], 'feet: the foot of a staff beside the body is not a foot: %s' % (goa.measure(grounded),))
 
 # a floating look (a robe, no feet): its ground is its lowest solid row and it says it floats
 robe = np.zeros((64, 64), np.uint8)
@@ -106,8 +119,8 @@ class Thing:
 real_south = goa.south_alpha
 goa.south_alpha = lambda t, spr: figure()[:32, 16:48]
 neg = goa.anchor_of(Thing((65530, 65524)), None, 1)
-check(neg == goa.measure(figure()[:32, 16:48], 6, 12, False, 'body'), 'a negative displacement is signed: %s' % (neg,))
-check(goa.anchor_of(Thing((8, 8)), None, 1) == goa.measure(figure()[:32, 16:48], -8, -8, False, 'body'),
+check(neg == goa.measure(figure()[:32, 16:48], 6, 12, False), 'a negative displacement is signed: %s' % (neg,))
+check(goa.anchor_of(Thing((8, 8)), None, 1) == goa.measure(figure()[:32, 16:48], -8, -8, False),
       'a positive displacement is unchanged')
 goa.south_alpha = real_south
 

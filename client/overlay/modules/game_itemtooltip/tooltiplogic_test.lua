@@ -251,6 +251,58 @@ eq(L.oneIn(0), nil, 'no chance')
 local withSrc = L.lines({ name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } } } })
 eq(withSrc[#withSrc - 1].text, 'Drops from: Rat (5%)', 'the sources sit above the weight')
 
+-- ---------------------------------------------------------------- the answer is for the item asked about
+-- live test winpkg-35: a Rope in the backpack showed "Cheese 62", a Training Wand "Gold coin 100", "Drops from: Abyssal
+-- Crab (100%), Abyssal Crab (100%)". Model: the backpack (container 0) and the loot bag (container 1) are open with
+-- different items at the same index; loot goes in at the front of the backpack and shifts its items one slot.
+do
+  local ROPE, CHEESE, WAND, GOLD = 3003, 3607, 3075, 3031
+  local server = { [0] = { { CHEESE, 62 }, { ROPE, 1 }, { WAND, 1 } }, [1] = { { GOLD, 100 }, { ROPE, 1 } } }
+  local function tipAt(cid, index) -- the server's tooltip of what it finds there (no identity check)
+    local e = server[cid][index + 1]
+    return e and { id = e[1], count = e[2] } or nil
+  end
+  -- the client still sees the backpack before the cheese went in: Rope at index 0, Wand at index 1
+  local rope = L.identity(ROPE, 1, false)
+  local wand = L.identity(WAND, 1, false)
+  eq(L.tipMatches(rope, tipAt(0, 0)), false, 'shifted slot: the cheese is not kept as the rope tooltip')
+  eq(L.tipMatches(wand, tipAt(0, 1)), false, 'shifted slot: the rope is not kept as the wand tooltip')
+  eq(L.tipMatches(rope, tipAt(0, 1)), true, 'the rope where it is now')
+  -- the same index in another open container is another item
+  eq(L.tipMatches(rope, tipAt(1, 0)), false, 'same index, other container: the gold is not the rope')
+  eq(L.tipMatches(rope, tipAt(1, 1)), true, 'a rope is a rope in either container')
+  -- a stackable also by its count
+  local cheese = L.identity(CHEESE, 62, true)
+  eq(cheese.n, 62, 'a stackable names its count')
+  eq(L.identity(WAND, 5, false).n, nil, 'a non-stackable does not (charges are no count)')
+  eq(L.tipMatches(cheese, { id = CHEESE, count = 62 }), true, 'the same stack')
+  eq(L.tipMatches(cheese, { id = CHEESE, count = 10 }), false, 'another stack of cheese')
+  eq(L.tipMatches(nil, { id = CHEESE }), false, 'nothing asked')
+  eq(L.tipMatches({ cid = 0 }, { id = CHEESE }), true, 'no client id: an older request is not refused')
+  -- the plain cache keys of the two containers' index 0 never meet
+  local k0 = L.cacheKey({}, ROPE, 1, { x = 65535, y = 64, z = 0 })
+  local k1 = L.cacheKey({}, ROPE, 1, { x = 65535, y = 65, z = 0 })
+  eq(k0 ~= k1, true, 'cache keys of the same index in two containers differ')
+  eq(L.posKey({ x = 65535, y = 64, z = 0 }, 0) ~= L.posKey({ x = 65535, y = 65, z = 0 }, 0), true, 'and the request keys')
+  -- the sources line names a monster once
+  eq(L.sourceLines({ s = { { k = 'monster', n = 'Abyssal Crab', v = '100%' }, { k = 'monster', n = 'Abyssal Crab', v = '100%' } } })[1].text,
+    'Drops from: Abyssal Crab (100%)', 'a monster once in the sources line')
+end
+
+-- ---------------------------------------------------------------- charges (live test winpkg-35: a Lasting Exercise Wand
+-- showed only its name and weight)
+eq(L.chargesText({ n = 14400 }), 'Charges: 14,400', 'full charges')
+eq(L.chargesText({ n = 1200, max = 14400 }), 'Charges: 1,200 of 14,400', 'used charges')
+eq(L.chargesText({ unlimited = true }), 'Charges: unlimited', 'unlimited')
+eq(L.chargesText(nil), nil, 'no charges')
+do
+  local rows = L.lines({ name = 'lasting exercise wand', weight = 10, charges = { n = 14400 } })
+  local found = false
+  for _, r in ipairs(rows) do if r.text == 'Charges: 14,400' then found = true end end
+  eq(found, true, 'the charges line is in the tooltip')
+  eq(rows[#rows].text, 'Weight 10 oz', 'the weight stays last')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

@@ -1,0 +1,11 @@
+// The handle on the right edge of the bottom area (action bars + console): drag it to set the width.
+// The height keeps the base splitter above the action bars (bottomSplitter).
+ChaosChatWidthGrip < UIWidget
+  width: 6
+  focusable: false
+  background-color: #5a3a2960
+  !tooltip: tr('Drag to change the width of the chat')
+  $hover:
+    background-color: #c8782eaa
+  $pressed:
+    background-color: #e0a050cc

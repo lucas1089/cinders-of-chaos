@@ -7,8 +7,9 @@
 --             portal next to the arrival (aid.exit, back to the entrance or the temple); the spawn points get their
 --             monsters; an area with `dungeon` is registered as a base dungeon of the dungeon system (dungeons.lua).
 --   monsters  scaled to the area's level (A.levelScale: health at the spawn, damage to players in the health / mana
---             events, experience in an onGainExperience callback); a dead point respawns after its spawntime, never
---             while a player sees the spot (the timer starts again, as the engine does), faster where several
+--             events, experience in an onGainExperience callback); a dead point respawns after its spawntime; while
+--             a player sees the spot only under the map spawns' rule (config spawnNearPlayers, engine patch 0041:
+--             free non-PZ tile, no player within spawnMinPlayerDistance), else the timer starts again; faster where several
 --             hunters fight close together (the dynamic respawn's percent, respawn_core.lua); a monster far from its
 --             point and without a target walks back (leash).
 -- Staff: /areagen [status | goto <id> | fill <id>].
@@ -20,6 +21,9 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/areagen_core.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 if not ChaosDarkTiles then
 	dofile("data/lib/chaos_dark_tiles.lua")
 end
@@ -113,7 +117,10 @@ local function placeEntrance(entry)
 	local pos = P(def.entrance)
 	local tile = Tile(pos)
 	local have = tile and tile:getItemById(C().items.portal)
+	-- the look text ("Hunting Area Portal (Emberdeep Hollows, levels 1000-1100): ...") and an effect, from this config
+	local title = ChaosCityPortalsCore.bandTitle(def.name, def.spawns and def.spawns.level)
 	if have and have:getActionId() == C().aid.entrance then
+		ChaosCityPortals.register("hunt", C().aid.entrance, pos, nil, title)
 		return true
 	end
 	if not spotFree(pos) or not spotFree(P(def.back or def.entrance)) then
@@ -124,6 +131,7 @@ local function placeEntrance(entry)
 		return false, "the entrance portal could not be created"
 	end
 	item:setActionId(C().aid.entrance)
+	ChaosCityPortals.register("hunt", C().aid.entrance, pos, nil, title)
 	return true
 end
 
@@ -164,11 +172,61 @@ local function playerSees(pos)
 	return false
 end
 
+-- Respawn near players: the rule of the map spawns (engine patch 0041, server/README.md "Respawn near players").
+-- The minimum player distance in sqm while config spawnNearPlayers is on, else nil: the old rule (no respawn while a
+-- player sees the point). An engine without patch 0041 has no such config keys: nil too.
+function AG.nearPlayersDistance()
+	if not (configManager and configKeys and configKeys.SPAWN_NEAR_PLAYERS) then
+		return nil
+	end
+	local okOn, on = pcall(configManager.getBoolean, configKeys.SPAWN_NEAR_PLAYERS)
+	if not okOn or on ~= true then
+		return nil
+	end
+	local dist = 2
+	if configKeys.SPAWN_MIN_PLAYER_DISTANCE then
+		local okN, n = pcall(configManager.getNumber, configKeys.SPAWN_MIN_PLAYER_DISTANCE)
+		if okN and tonumber(n) then
+			dist = math.max(0, math.min(7, math.floor(tonumber(n))))
+		end
+	end
+	return dist
+end
+
+-- a point may fill while players see it: its tile has a ground, no creature, no blocking item and no protection zone,
+-- and no player within dist - 1 sqm (2 = never next to a player). A point of more than one monster places the others
+-- up to 2 sqm away (Game.createMonster's extended search), so the player box grows by 2 for it.
+function AG.canSpawnNear(point, dist)
+	local pos = P(point)
+	local tile = Tile(pos)
+	if not tile or not tile:getGround() then
+		return false
+	end
+	if (tile.getCreatureCount and tile:getCreatureCount() or 0) > 0 then
+		return false
+	end
+	if tile:hasFlag(TILESTATE_PROTECTIONZONE) or tile:hasProperty(CONST_PROP_BLOCKSOLID) then
+		return false
+	end
+	local r = math.max(0, dist - 1) + ((point.count - #point.alive) > 1 and 2 or 0)
+	if r == 0 then
+		return true
+	end
+	for _, c in ipairs(Game.getSpectators(pos, false, true, r, r, r, r) or {}) do
+		if c:isPlayer() then
+			return false
+		end
+	end
+	return true
+end
+
 -- one monster of a point, scaled to the point's level; returns the monster or nil
-local function spawnPoint(point)
+-- noForce (a fill in a player's view): never the forced placement, which puts a monster over creatures and items
+local function spawnPoint(point, noForce)
 	local create = Chaos.createMonsterNamed or function(t, p, e, f) return Game.createMonster(t, p, e, f) end
 	local pos = P(point)
-	local m = create(point.monster, pos, true, false, point.name) or create(point.monster, pos, true, true, point.name)
+	local m = create(point.monster, pos, true, false, point.name)
+		or (not noForce and create(point.monster, pos, true, true, point.name)) or nil
 	if not m then
 		return nil
 	end
@@ -195,10 +253,10 @@ local function spawnPoint(point)
 	return m
 end
 
-local function fillPoint(point)
+local function fillPoint(point, noForce)
 	local want = point.count - #point.alive
 	for _ = 1, want do
-		spawnPoint(point)
+		spawnPoint(point, noForce)
 	end
 	point.dueAt = nil
 end
@@ -537,10 +595,16 @@ function think.onThink(interval)
 				if #point.alive < point.count then
 					point.dueAt = point.dueAt or (now + respawnDelayMs(point))
 					if now >= point.dueAt then
-						if playerSees(P(point)) then
-							point.dueAt = now + respawnDelayMs(point)
-						else
+						if not playerSees(P(point)) then
 							fillPoint(point)
+						else
+							-- in view: the near-players rule (spawnNearPlayers), else the timer starts again
+							local dist = AG.nearPlayersDistance()
+							if dist and AG.canSpawnNear(point, dist) then
+								fillPoint(point, true)
+							else
+								point.dueAt = now + respawnDelayMs(point)
+							end
 						end
 					end
 				end

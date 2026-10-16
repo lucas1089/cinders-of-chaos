@@ -68,9 +68,11 @@ base server into the server folder that all three servers share. `tools/linux/pa
    The fsync latencies it prints should be a few ms or less; tens of ms means a shared or network disk. After launch
    `chaos_health.py` warns when COMMITs get slow (section 9; needs the slow task log).
 
-At the first start on a fresh database the engine prints a few `Duplicate column name` errors (its own migrations add
-columns the schema already has) and errors about the website's `znote_*` tables. They are harmless for the game; the
-`znote_*` tables appear when the website (its own schema) is installed into the same database.
+The first start on a fresh database prints no SQL error: `install_all.py` step `migrations` makes the engine's own
+migrations skip the columns the schema already has, and step `sql` (`server/sql/chaos_website_tables.sql`) creates the
+six website tables the base scripts use (`znote_*`, empty; the website's installer keeps them and fills them). Check a
+set of SQL files before a launch: `python3 -I server/tools/fresh_db_check.py <server> --sql SQL_Server/schema.sql
+--sql ...` (server/README.md "Base server start warnings").
 
 ## 3. Production config
 

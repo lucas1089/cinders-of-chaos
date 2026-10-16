@@ -481,7 +481,7 @@ ChaosMainWindow
       anchors.left: leaveButton.right
       anchors.top: enterButton.top
       margin-left: 6
-      width: 120
+      text-horizontal-auto-resize: true
       !text: tr('Send visitors out')
       @onClick: modules.game_hideout.kick()
 

@@ -44,11 +44,14 @@ def memorial_slots():
                'print(k, i, o[1], o[2]) end end print("stone", 1, c.slots.stone[1], c.slots.stone[2]) '
                'print("plan", c.plaza.plan, 0, 0) '
                'local function p3(k, t) if t then print(k, t.x or t[1], t.y or t[2], t.z or t[3]) end end '
-               'p3("at", c.plaza.at) p3("arrival", c.plaza.arrival) p3("portal", c.plaza.portal)')
+               'p3("at", c.plaza.at) p3("arrival", c.plaza.arrival) p3("portal", c.plaza.portal) '
+               'print("towns", #(c.portalTowns or {}), 0, 0)')
     slots, plan, place = [], None, {}
     for row in rows:
         if row[0] == 'plan':
             plan = row[1]
+        elif row[0] == 'towns':
+            place['towns'] = int(row[1])
         elif row[0] in ('at', 'arrival', 'portal'):
             place[row[0]] = tuple(int(v) for v in row[1:4])
         else:
@@ -162,7 +165,9 @@ def main(args):
         check(r['exit'] and r['exit'].get('aid') == 47951, '%s: an exit portal back to the temple' % a['key'])
         # install step contentareas places the plan at its own origin: `at` must be that origin; the gate is a world tile
         check(a['at'] == (ox, oy, oz), '%s: at %s is the plan\'s origin %s' % (a['key'], a['at'], (ox, oy, oz)))
-        check(a['gate'] is not None and not (14336 <= a['gate'][0] <= 15359 and 14336 <= a['gate'][1] <= 15359),
+        # the gate: one fixed world tile (`gate`, a staff override) or, unset, the Chronicle Gates of gateTowns that
+        # cityportals.lua places in the Halls of Services (tools/services_halls_test.py checks those tiles)
+        check(a['gate'] is None or not (14336 <= a['gate'][0] <= 15359 and 14336 <= a['gate'][1] <= 15359),
               '%s: a gate tile in the world (not inside the content block): %s' % (a['key'], a['gate']))
     for pid in compiled:
         if pid.startswith('chronicle_'):
@@ -178,7 +183,8 @@ def main(args):
         ax, ay, az = r['arrival']
         check(plaza_place.get('arrival') == (ax - ox, ay - oy, az - oz), 'plaza.arrival %s (the plan gives %s)'
               % (plaza_place.get('arrival'), (ax - ox, ay - oy, az - oz)))
-        check(plaza_place.get('portal') is not None, 'plaza.portal: the way in from the capital')
+        check(plaza_place.get('portal') is not None or plaza_place.get('towns', 0) > 0,
+              'plaza.portal or portalTowns: the way in (cityportals.lua places the Memorial Portal)')
         check(all(z['pz'] for z in r['manifest']['zones'].values()), 'every zone of the plaza is protected')
         start = tuple(r['arrival'])
         every = reachable(walk, start, set())

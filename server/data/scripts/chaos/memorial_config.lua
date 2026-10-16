@@ -26,13 +26,13 @@ return {
 	-- slot below is an offset from the ORIGIN (the same test checks them on the compiled plan: free floor in the right
 	-- hall, no route cut off). Until `at` is set nothing is placed.
 	--   arrival  the plan's arrival tile, offset from the ORIGIN (from the compiled manifest; the same test checks it)
-	--   portal   the world tile of the way in: a magic forcefield (portalItem, action id aid.portal) placed at startup in
-	--            the upper hall of the capital's temple (Cinderhold, town 2: the stairs of the temple's side rooms lead up
-	--            to it), at the east end of its north row, across the hall from the Chronicle's two gates (moved from
-	--            Mirewake 2026-10-15, server/README.md "Main city"). Stepping in leads to the arrival; the plaza's exit
-	--            portal leads to the temple. Checked on the base map: free floor, no item, the hall stays connected.
-	plaza = {plan = "capital_memorial", at = {x = 14800, y = 14800, z = 7}, arrival = {23, 33, 0},
-		portal = {x = 32379, y = 32240, z = 6}},
+	--   portal   optional: one fixed world tile for the way in (a staff override). Unset (2026-10-16, the owner found the
+	--            old tile in the temple's upper hall odd): the Memorial Portal of each town of `portalTowns` is placed by
+	--            cityportals.lua: the portal room of the Hall of Services (npc_booths_config.lua `portals.memorial`),
+	--            else beside the temple (cityportals_config.lua `towns`), with a look text and an effect. Stepping in
+	--            leads to the arrival; the plaza's exit portal (areagen's) leads to the character's temple.
+	plaza = {plan = "capital_memorial", at = {x = 14800, y = 14800, z = 7}, arrival = {23, 33, 0}},
+	portalTowns = {2, 1}, -- Cinderhold and Mirewake (the towns with a Hall of Services)
 	portalItem = 1387, -- magic forcefield (type teleport, no destination: memorial.lua moves the player)
 
 	-- action ids 47940-47949 (47930-47939 is the hunt teleports' block, hunt_teleports_config.lua)

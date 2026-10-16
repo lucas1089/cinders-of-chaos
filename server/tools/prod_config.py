@@ -6,7 +6,8 @@ usage: python3 -I server/tools/prod_config.py SERVER_DIR --public-host HOST [--n
                                               [--email ADDRESS] [--url URL] [--location TEXT]
                                               [--client-url URL] [--client-builds LIST] [--client-manifest PATH]
                                               [--client-staff-ips LIST] [--proxy-trusted LIST]
-                                              [--proxy-required yes|no] [--dry-run]
+                                              [--proxy-required yes|no] [--spawn-near-players yes|no]
+                                              [--spawn-min-distance N] [--dry-run]
 
 SERVER_DIR is the folder with config.lua (and data/globalevents/globalevents.xml for --save-time). Every setting below is
 written as `key = value  -- Chaos production (server/tools/prod_config.py)`; a second run with the same options changes
@@ -65,6 +66,16 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           spawntime of it). The stock 1 refilled a pack of five in five spawntimes; 3 brings most packs
                           back in one or two. Not a time multiplier: the timers are in the spawn file
                           (tools/patch_base_spawns.py, server/README.md "Spawn density and respawn")
+  cooldownChannels = true, moveItemDelay = 50, runeChannelDelay = 1000, potionChannelDelay = 1000
+                          the cooldown channels (engine patch 0042, README "Cooldown channels"): attack, healing and
+                          support runes, potions, item moves and other uses each wait only for their own channel, the
+                          auto attack for none of them; the numbers are each channel's anti-spam delay in ms (floor 50)
+  spawnNearPlayers = true, spawnMinPlayerDistance = 2
+                          monsters respawn while a player sees the spot (engine patch 0041, README "Respawn near
+                          players"): on a free tile (no creature, no blocking item, no protection zone), at least N sqm
+                          from every player (2 = never next to one), with a teleport effect. --spawn-near-players no is
+                          the stock rule (no respawn in a player's view). --spawn-min-distance N (0-7). Not given: the
+                          value already in config.lua is kept (true and 2 on a first run)
   clientGuardMode = "enforce", clientGuardKey = os.getenv("CHAOS_CLIENT_KEY") or "", clientGuardAllowDevKey = false,
   clientGuardTimeout = 10, clientGuardDownloadUrl, clientGuardBuilds, clientGuardManifest, clientGuardStaffIps
                           only the official client plays (engine patch 0021, README "Client guard"): the key is read from
@@ -130,6 +141,10 @@ def settings(opts, text=''):
                else current(text, 'proxyProtocolTrusted') or '""')
     required = (('true' if opts['--proxy-required'].lower() in YES else 'false') if '--proxy-required' in opts
                 else current(text, 'proxyProtocolRequired') or 'false')
+    near = (('true' if opts['--spawn-near-players'].lower() in YES else 'false') if '--spawn-near-players' in opts
+            else current(text, 'spawnNearPlayers') or 'true')
+    near_dist = (str(int(opts['--spawn-min-distance'])) if '--spawn-min-distance' in opts
+                 else current(text, 'spawnMinPlayerDistance') or '2')
     s = [
         ('ip', lua_string(host)),
         ('loginProtocolPort', '7171'),
@@ -165,6 +180,12 @@ def settings(opts, text=''):
         ('playerSpeedSoftLevel', '300'),
         ('playerSpeedPerTenLevelsAbove', '10'),
         ('rateSpawn', '3'),
+        ('cooldownChannels', 'true'),
+        ('moveItemDelay', '50'),
+        ('runeChannelDelay', '1000'),
+        ('potionChannelDelay', '1000'),
+        ('spawnNearPlayers', near),
+        ('spawnMinPlayerDistance', near_dist),
         ('clientGuardMode', '"enforce"'),
         ('clientGuardKey', 'os.getenv("CHAOS_CLIENT_KEY") or ""'),
         ('clientGuardAllowDevKey', 'false'),
@@ -229,6 +250,10 @@ def main(argv):
         sys.exit('--proxy-trusted must be IPv4 addresses or a.b.c.d/nn ranges separated by commas (or "" for off)')
     if '--proxy-required' in opts and opts['--proxy-required'].lower() not in YES + NO:
         sys.exit('--proxy-required must be yes or no')
+    if '--spawn-near-players' in opts and opts['--spawn-near-players'].lower() not in YES + NO:
+        sys.exit('--spawn-near-players must be yes or no')
+    if '--spawn-min-distance' in opts and not re.match(r'^[0-7]$', opts['--spawn-min-distance'].strip()):
+        sys.exit('--spawn-min-distance must be a number of sqm from 0 to 7')
     if '--save-time' in opts and not re.match(r'^([01]\d|2[0-3]):[0-5]\d$', opts['--save-time']):
         sys.exit('--save-time must be HH:MM')
     server = pos[0]

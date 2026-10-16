@@ -294,8 +294,58 @@ local function unwrapTooltip()
   tooltipWrapped = {}
 end
 
+-- ---------------------------------------------------------------- popup menus
+-- Hidden entries leave no empty separator lines. game_interface's item menu adds a separator for every menu hook
+-- category (Report Player, Talk, Inspect Player, Transmog, Pouch settings, Where to find) before it checks the
+-- category's conditions, so an item showed three empty lines in a row (live test winpkg-35). A separator is not added
+-- at the top of a menu or right after another one, and trailing ones are removed when the menu is shown.
+local popupWrapped = {}
+
+local function lastChild(menu)
+  local n = menu:getChildCount()
+  return n > 0 and menu:getChildByIndex(n) or nil
+end
+
+local function isSeparator(w)
+  return w ~= nil and w.chaosMenuSeparator == true
+end
+
+local function wrapPopupMenu()
+  if not UIPopupMenu or popupWrapped.addSeparator then return end
+  local addSeparator, display = UIPopupMenu.addSeparator, UIPopupMenu.display
+  popupWrapped.addSeparator, popupWrapped.display = addSeparator, display
+  UIPopupMenu.addSeparator = function(self, ...)
+    local last = lastChild(self)
+    if not last or isSeparator(last) then return end
+    local r = addSeparator(self, ...)
+    local sep = lastChild(self)
+    if sep and sep ~= last then sep.chaosMenuSeparator = true end
+    return r
+  end
+  UIPopupMenu.display = function(self, ...)
+    local last = lastChild(self)
+    while isSeparator(last) do
+      -- the inverse of addSeparator's height step
+      self:setHeight(self:getHeight() - (last:getHeight() + 4))
+      last:destroy()
+      last = lastChild(self)
+    end
+    return display(self, ...)
+  end
+end
+
+local function unwrapPopupMenu()
+  if not UIPopupMenu then return end
+  for name, orig in pairs(popupWrapped) do
+    UIPopupMenu[name] = orig
+  end
+  popupWrapped = {}
+end
+ChaosTheme.wrapPopupMenu, ChaosTheme.unwrapPopupMenu = wrapPopupMenu, unwrapPopupMenu -- chaos_theme_test.lua
+
 function init()
   wrapTooltip()
+  wrapPopupMenu()
   g_ui.importStyle('styles')
   g_ui.importStyle('compat')
   installWidgetHelpers()
@@ -306,6 +356,7 @@ end
 function terminate()
   disconnect(UIWidget, { onStyleApply = onStyleApply })
   unwrapTooltip()
+  unwrapPopupMenu()
   ChaosTheme = nil
 end
 

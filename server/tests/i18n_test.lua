@@ -203,7 +203,7 @@ local SITES = {
 	["ascension_quest_core.lua"] = CORE_T, ["trials.lua"] = {"say%(tr,%s*", "box%(player,%s*"}, ["trials_core.lua"] = CORE_T,
 	["achievements_core.lua"] = CORE_T, ["daily_core.lua"] = CORE_T, ["newplayer.lua"] = {}, ["newplayer_core.lua"] = CORE_T,
 	["newplayer_tutorial.lua"] = {}, ["instance_limits.lua"] = {}, ["instance_limits_core.lua"] = CORE_T, ["stash.lua"] = {},
-	["bank.lua"] = {}, ["townportal.lua"] = {}, ["pouches.lua"] = {}, ["store_food.lua"] = {},
+	["bank.lua"] = {}, ["townportal.lua"] = {}, ["pouches.lua"] = {}, ["store_food.lua"] = {}, ["potions.lua"] = {},
 	["pact.lua"] = {"message%(player,%s*"},
 	["pact_perks.lua"] = {}, ["hideout.lua"] = {}, ["autoloot.lua"] = {}, ["lootfilter.lua"] = {}, ["notifications.lua"] = {},
 	["class_unlocks.lua"] = {}, ["professions.lua"] = {"msg%(player,%s*"}, ["charms.lua"] = {}, ["pets.lua"] = {}, ["necro_minions.lua"] = {},

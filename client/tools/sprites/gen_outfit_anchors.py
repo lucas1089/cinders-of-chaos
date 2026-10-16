@@ -13,12 +13,14 @@ relative to the top left of the creature's own tile, displacement applied (the c
 32x32 cell on its tile, the other cells up and left, all moved up and left by the displacement).
 
   [id] = {cx, ground, top, left, right, w, h, float, reach}
-    cx       the horizontal anchor (--centre; default body): the body's visual centre: the alpha-weighted centroid of its solid pixels, what it holds (a blade, a
-             staff, a torch, a chain up to four pixels wide) left out by an opening of the mask, and of what is left
-             only the biggest connected part (the leaves at a staff's end fall away)
-    ground   the row the body stands on: where the lowest GROUND_MASS of its solid mass begins (the feet and shins),
-             so a cape tip or a weapon under the feet does not count; a floating look's is found the same way (the
-             character select then lifts it: CharSelectCore.HOVER)
+    cx, ground  the point that goes on the dais centre (--centre; default feet): the centre of the feet, the
+             alpha-weighted centroid of the lowest GROUND_MASS of the body's solid mass (the legs' columns only, so a
+             cape tip or a weapon under the feet does not count); a floating look's is found the same way (the
+             character select then lifts it: CharSelectCore.HOVER). The older anchors keep the row where that band
+             begins and take cx from the body: its visual centre (body: the alpha-weighted centroid of its solid
+             pixels, what it holds, a blade, a staff, a torch, a chain up to four pixels wide, left out by an opening
+             of the mask, and of what is left only the biggest connected part), the box of the whole figure (bbox) or
+             halfway between the two (blend)
     top, left, right  the visible bounds, everything counted (to keep the whole picture inside the screen)
     w, h     the thing's size in tiles (the client centres a big aura by (w-1)*16, (h-1)*16)
     float    1 for a look drawn floating (a robe or a wraith tail, no feet: FLOATING, chosen by eye), else 0
@@ -53,8 +55,12 @@ TRIM = 0.03         # reach: columns trimmed on each side
 # The horizontal anchor. Compared live on the ten test characters and the class looks (owner, 2026-10-13: "move the
 # characters left"): the full figure's box and the blend move most looks right (weapons and staffs held out to the
 # left and right), the body centroid with CharSelectCore.NUDGE_X = -2 read best. --centre writes the others.
-CENTRES = ('body', 'bbox', 'blend')
-CENTRE = 'body'
+# Feet (2026-10-16, owner: "still misaligned", a Test Thief in stock look 130): every sprite of the pair leans up
+# and left with its height, stock looks too, so the body's centroid is up and left of its feet; centring the centroid
+# (with the nudge) left the feet 12 sprite pixels right of and 3 below the dais centre. The feet's own centre is the
+# point that stands on the dais, on any look (client/MANIFEST.md "Where a character stands").
+CENTRES = ('feet', 'body', 'bbox', 'blend')
+CENTRE = 'feet'
 FLOATING = {2059, 2077, 2167, 2168, 2183, 2184}
 
 
@@ -98,11 +104,10 @@ def solid(mask, r=1):
     return core if core.any() else mask
 
 
-def largest_part(mask):
-    """the biggest 8-connected part of a mask (what the body holds, cut off by the opening, falls away)"""
+def parts(mask):
+    """the 8-connected parts of a mask, each a list of (y, x)"""
     H, W = mask.shape
     seen = np.zeros_like(mask)
-    best = None
     for y0, x0 in zip(*np.nonzero(mask)):
         if seen[y0, x0]:
             continue
@@ -117,15 +122,19 @@ def largest_part(mask):
                     if 0 <= yy < H and 0 <= xx < W and mask[yy, xx] and not seen[yy, xx]:
                         seen[yy, xx] = True
                         stack.append((yy, xx))
-        if best is None or len(part) > len(best):
-            best = part
+        yield part
+
+
+def largest_part(mask):
+    """the biggest 8-connected part of a mask (what the body holds, cut off by the opening, falls away)"""
+    best = max(parts(mask), key=len)
     out = np.zeros_like(mask)
     ys, xs = zip(*best)
     out[list(ys), list(xs)] = True
     return out
 
 
-def measure(alpha, ox=0, oy=0, floating=False, centre='body'):
+def measure(alpha, ox=0, oy=0, floating=False, centre=CENTRE):
     """(cx, ground, top, left, right, float, reach) of one frame's alpha (canvas pixel + (ox, oy) = tile pixel), or
     None when nothing is visible"""
     mask = alpha >= ALPHA
@@ -141,7 +150,7 @@ def measure(alpha, ox=0, oy=0, floating=False, centre='body'):
     # the horizontal anchor (CENTRES): the body's centroid; the box of the whole figure (body, weapons, shields,
     # addons; a body thing has no wings or aura); or halfway between the two
     box = (xs.min() + xs.max() + 1) / 2
-    body_cx, cx = cx, {'body': cx, 'bbox': box, 'blend': (cx + box) / 2}[centre]
+    body_cx, cx = cx, {'body': cx, 'bbox': box, 'blend': (cx + box) / 2}.get(centre, cx)  # feet: below
     # the ground: legs are thin, so only lines one or two pixels wide are left out (r = 1), and only the columns the
     # body spans count (a staff held out beside it does not)
     core = solid(mask, 1)
@@ -151,13 +160,33 @@ def measure(alpha, ox=0, oy=0, floating=False, centre='body'):
     rows = core.sum(axis=1).astype(np.float64)
     from_bottom = np.cumsum(rows[::-1]) / rows.sum()
     ground = len(rows) - int(np.searchsorted(from_bottom, GROUND_MASS))
+    if centre == 'feet':
+        # the feet: the centroid of that lowest band, weighted by alpha. A foot of a leaning look reaches right of the
+        # body's columns, so the band takes every part (thin lines left out) of those rows that touches them; a
+        # staff's foot standing beside the body touches none and stays out.
+        full = solid(mask, 1)
+        full[:ground] = False
+        band = np.zeros_like(full)
+        lo_c, hi_c = cxs.min(), cxs.max()
+        for part in parts(full):
+            if any(lo_c <= x <= hi_c for _, x in part):
+                py, px = zip(*part)
+                band[list(py), list(px)] = True
+        if not band.any():
+            band = core.copy()
+            band[:ground] = False
+        fy, fx = np.nonzero(band)
+        fw = alpha[fy, fx].astype(np.float64)
+        if fw.sum() > 0:   # else (a speck of a few pixels): the body's centre and the band's first row
+            cx = float((fx + 0.5) @ fw / fw.sum())
+            ground = int(np.floor(float((fy + 0.5) @ fw / fw.sum())))
     lo, hi = np.quantile(cxs, TRIM), np.quantile(cxs + 1, 1 - TRIM)
     reach = max(body_cx - lo, hi - body_cx)   # the body's own spread, whatever the anchor
     return (int(np.floor(cx + ox + 0.5)), ground + oy, int(ys.min()) + oy, int(xs.min()) + ox,
             int(xs.max()) + 1 + ox, 1 if floating else 0, int(np.ceil(reach)))
 
 
-def anchor_of(t, spr, lid=0, centre='body'):
+def anchor_of(t, spr, lid=0, centre=CENTRE):
     """measure() of a creature thing's first south frame, in its tile pixels"""
     W, H = t.w * 32, t.h * 32
     dx, dy = t.flags.get('displacement', (0, 0)) if isinstance(t.flags.get('displacement'), tuple) else (0, 0)

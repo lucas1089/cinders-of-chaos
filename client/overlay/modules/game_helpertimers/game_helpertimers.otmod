@@ -1,0 +1,8 @@
+Module
+  name: game_helpertimers
+  description: The helper's cooldown channels (ChaosHelperTimers; used by mods/game_helper through base patch 0062): heal, attack and support casts and potions, healing and attack runes each on their own timer
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 100
+  scripts: [ helpertimers ]

@@ -48,9 +48,11 @@ return {
 	-- the hall: server/tools/areaplan/rooms/idle_hall.json, placed by install step contentareas at the plan's `origin`
 	-- (14600, 14760, 7: the free band west of the Memorial's plaza, docs/MAP_GUIDE.md "Content plans"). `at` is that
 	-- origin; arrival and every slot are offsets from it (tools/idle_hall_test.py checks them on the compiled plan:
-	-- free floor in the right room, the arrival, no tile cut off). The plan's exit portal (action id 47951, areagen.lua)
-	-- leads to the temple of the character's town.
-	hall = {plan = "idle_hall", at = {x = 14600, y = 14760, z = 7}, arrival = {22, 13, 0}},
+	-- free floor in the right room, the arrival, no tile cut off). exit: the plan's exit portal (offset from the
+	-- compiled plan, the same test checks it). It comes with areagen's action id 47951 (shared by every planned area);
+	-- idlehall.lua re-tags it aid.exit at startup and every minute (idempotent), so it has its own look text and
+	-- effect (cityportals.lua kind `idlehall`). It leads to the temple of the character's town.
+	hall = {plan = "idle_hall", at = {x = 14600, y = 14760, z = 7}, arrival = {22, 13, 0}, exit = {22, 11, 0}},
 	slots = {
 		dummies = {{4, 10}, {7, 10}, {11, 10}, {7, 13}}, -- the training room (west)
 		benches = {{32, 10}, {35, 10}, {32, 13}, {37, 15}}, -- the rest room (east)
@@ -58,8 +60,8 @@ return {
 	},
 	-- base items: the exercise dummies (the store's exercise weapons work on them), a bench, a sign (read from afar)
 	items = {dummies = {27751, 27752}, bench = 1662, sign = 1429},
-	-- action ids 47910-47919: the hall's fixtures (placed at startup, found again after a reload)
-	aid = {fixture = 47910},
+	-- action ids 47910-47919: the hall's fixtures (placed at startup, found again after a reload), the exit portal
+	aid = {fixture = 47910, exit = 47911},
 
 	effect = 11 -- CONST_ME_TELEPORT, where the character leaves and where it arrives
 }

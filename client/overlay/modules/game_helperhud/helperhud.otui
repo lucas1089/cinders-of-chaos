@@ -1,0 +1,114 @@
+// The helper's bot HUD (game_helperhud, client/MANIFEST.md "Helper bot HUD"): an accent bar, a status line and
+// one or two cards of rows (icon | module | value) at the top centre of the map. The rows are built once and
+// reused; helperhud.lua sizes the cards from the rows shown.
+ChaosBotHudRow < Panel
+  height: 15
+  phantom: true
+  focusable: false
+  visible: false
+
+  UIWidget
+    id: rowIcon
+    size: 13 13
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: parent.left
+    image-source: /images/ui/helper
+    image-clip: 0 204 34 34
+    phantom: true
+
+  Label
+    id: rowName
+    width: 58
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: rowIcon.right
+    margin-left: 6
+    font: verdana-8px-rounded
+    color: #e8e8e8
+    phantom: true
+
+  Label
+    id: rowValue
+    anchors.verticalCenter: parent.verticalCenter
+    anchors.left: rowName.right
+    anchors.right: parent.right
+    margin-left: 4
+    font: verdana-8px-rounded
+    color: #9fb2bd
+    phantom: true
+
+ChaosBotHudCard < Panel
+  height: 78
+  background-color: #100c0cc4
+  border-width: 1
+  border-color: #5a3a29
+  phantom: true
+
+  Panel
+    id: rows
+    anchors.fill: parent
+    margin: 4 6 4 6
+    phantom: true
+    layout:
+      type: verticalBox
+      spacing: 1
+
+ChaosBotHud < Panel
+  size: 520 120
+  phantom: true
+  focusable: false
+
+  Panel
+    id: hudAccent
+    height: 2
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    background-color: #c8782e
+    phantom: true
+
+  Panel
+    id: hudStatusDot
+    size: 7 7
+    anchors.top: hudAccent.bottom
+    anchors.left: parent.left
+    margin-top: 7
+    margin-left: 2
+    background-color: #44ad25
+    border-width: 1
+    phantom: true
+
+  Label
+    id: hudTitle
+    anchors.verticalCenter: hudStatusDot.verticalCenter
+    anchors.left: hudStatusDot.right
+    margin-left: 6
+    !text: tr('Bot HUD')
+    color: #f4f4f4
+    font: verdana-8px-rounded
+    phantom: true
+
+  Label
+    id: hudStatus
+    anchors.verticalCenter: hudTitle.verticalCenter
+    anchors.right: parent.right
+    margin-right: 2
+    text-auto-resize: true
+    color: #44ad25
+    font: verdana-8px-rounded
+    phantom: true
+
+  ChaosBotHudCard
+    id: hudLeftCard
+    anchors.top: hudTitle.bottom
+    anchors.left: parent.left
+    anchors.right: parent.horizontalCenter
+    margin-top: 6
+    margin-right: 3
+
+  ChaosBotHudCard
+    id: hudRightCard
+    anchors.top: hudTitle.bottom
+    anchors.left: parent.horizontalCenter
+    anchors.right: parent.right
+    margin-top: 6
+    margin-left: 3

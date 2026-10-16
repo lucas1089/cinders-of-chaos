@@ -6,10 +6,12 @@
 --   Chaos loot  currency, gems, uniques (loot_config.lua, chaos_gems_config.lua, ChaosLoot.uniqueList)
 --   recipes     the base crafting tables (global Crafting), salvage, gem combining, faction recipes, sigils, omen keys
 --   NPC shops   the NPCs of the map's spawn file: data/npc/<name>.xml (shop_buyable / shop_sellable) and their scripts
---   store       shop_config.lua; the Gambler (gamble_config.lua); the professions and the Material Broker
+--   store       shop_config.lua (items, bundles, the pouches and the Everfull Ration); the Gambler (gamble_config.lua);
+--               the professions and the Material Broker; the Candlemark shop; the Mentor Marks shop; the Conquest vendor
 --   rewards     daily reward, login streak, bounty, rifts, tower, world bosses, invasions, arena, battleground, guild
 --               boss, the Descent, the raid, dungeons, treasure goblins, achievements (hidden ones never), factions,
---               the Ascended Omens
+--               the Ascended Omens, quests (tales), Ember Cache, siege, leaderboards, community goal, referral, class
+--               trials, charms, nemesis trophy, level gifts, season pass and journey
 -- Names (items, monsters, NPCs, towns) are read from the engine and the installed files: the renamed ones.
 -- Nothing is stored per player; no storages, no tables.
 --
@@ -263,8 +265,30 @@ local function rewardTables()
 		achievements = loadTable(nil, base .. "achievements_data.lua"),
 		factions = loadTable(nil, base .. "factions_config.lua"),
 		uber = loadTable(ChaosUberConfig, base .. "uber_config.lua"),
-		conquest = ChaosConquest and ChaosConquest.catalog and {cfg = ChaosConquest.cfg, offers = ChaosConquest.catalog()} or nil
+		conquest = ChaosConquest and ChaosConquest.catalog and {cfg = ChaosConquest.cfg, offers = ChaosConquest.catalog()} or nil,
+		candlemarks = loadTable(nil, base .. "candlemarks_config.lua"),
+		gems = loadTable(ChaosGemsConfig, "data/lib/chaos_gems_config.lua"),
+		mentor = loadTable(nil, base .. "mentor_config.lua"),
+		tales = loadTable(nil, base .. "tales_config.lua"),
+		embercache = loadTable(nil, base .. "embercache_config.lua"),
+		siege = loadTable(nil, base .. "siege_config.lua"),
+		leaderboard = loadTable(nil, base .. "leaderboard_config.lua"),
+		community = loadTable(nil, base .. "community_config.lua"),
+		referral = loadTable(nil, base .. "referral_config.lua"),
+		trials = loadTable(nil, base .. "trials_config.lua"),
+		charms = loadTable(nil, base .. "charms_config.lua"),
+		nemesis = loadTable(nil, base .. "nemesis_config.lua"),
+		newplayer = loadTable(nil, base .. "newplayer_config.lua"),
+		potions = loadTable(nil, base .. "potions_config.lua"),
+		seasonpass = loadTable(nil, base .. "seasonpass_config.lua"),
+		journey = loadTable(nil, base .. "season_journey_config.lua")
 	}
+end
+
+-- the configs of the store's service offers that put an item in the backpack (S.serviceItem)
+local function storeContext()
+	local base = "data/scripts/chaos/"
+	return {pouches = loadTable(nil, base .. "pouches_config.lua"), storeFood = loadTable(nil, base .. "store_food_config.lua")}
 end
 
 local function orbId(key)
@@ -304,7 +328,7 @@ function F.build()
 	end)
 	step("crafting", function() S.crafting(Crafting, cfg, emit) end)
 	step("npcs", function() S.npcs(npcList(townList), emit) end)
-	step("store", function() S.store(loadTable(ChaosShopConfig, base .. "shop_config.lua"), emit) end)
+	step("store", function() S.store(loadTable(ChaosShopConfig, base .. "shop_config.lua"), emit, storeContext()) end)
 	step("gamble", function() S.gamble(loadTable(nil, base .. "gamble_config.lua"), emit) end)
 	step("professions", function() S.professions(loadTable(nil, base .. "professions_config.lua"), emit) end)
 	step("salvage", function() S.salvage(loadTable(nil, base .. "salvage_config.lua"), orbId, emit) end)

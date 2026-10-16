@@ -532,7 +532,8 @@ ChaosMainWindow
         anchors.top: modRows.bottom
         anchors.left: parent.left
         margin-top: 6
-        size: 120 22
+        height: 22
+        text-horizontal-auto-resize: true
         !text: tr('Add modifier')
         @onClick: modules.game_market.addModRow()
 
@@ -1191,7 +1192,8 @@ ChaosMainWindow
         anchors.top: rarityLabel.bottom
         anchors.left: parent.left
         margin-top: 12
-        size: 150 22
+        height: 22
+        text-horizontal-auto-resize: true
         !text: tr('Use Browse modifiers')
         !tooltip: tr('Take the modifier rows, sockets, quality and the other checks of the Browse tab as this order\'s filter')
         @onClick: modules.game_market.orderModsFromBrowse()
@@ -1320,7 +1322,8 @@ ChaosMainWindow
         id: fillButton
         anchors.bottom: parent.bottom
         anchors.left: parent.left
-        size: 120 26
+        height: 26
+        text-horizontal-auto-resize: true
         !text: tr('Sell to the order')
         @onClick: modules.game_market.fillOrder()
 

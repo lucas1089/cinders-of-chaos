@@ -16,8 +16,8 @@
 --         solo, size, hit = function(player, share) (the system's own hit, e.g. the Ascended lethal-hit catch),
 --         pillars = {pos...} (fixed cover for the line-of-sight blasts), compensate = false (keep the health)}
 -- Assumed engine API (TFS 1.4.2): addEvent, Game.createMonster / createItem / getSpectators, Tile:getGround /
--- hasProperty / getTopCreature / getItemById, Creature events think / healthchange / death, EventCallback onSpawn,
--- doTargetCombat, Position:sendMagicEffect, Monster:setMaxHealth / addHealth / say / getTarget.
+-- hasFlag / hasProperty / getTopCreature / getItemById, Creature events think / healthchange / death,
+-- EventCallback onSpawn, doTargetCombat, Position:sendMagicEffect, Monster:setMaxHealth / addHealth / say / getTarget.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -120,6 +120,15 @@ function M.fairOf(name)
 end
 
 -- ======================================================================== players, the cast bar, warnings
+-- a protection zone is never part of a fight: no marks, no cast bar, no hit there (a display monster in its cell
+-- beside the carpet of a hub must not reach the players on it; the engine's own combat skips PZ the same way)
+local function inPz(pos)
+	local tile = pos and Tile(pos)
+	return tile ~= nil and TILESTATE_PROTECTIONZONE ~= nil and tile.hasFlag ~= nil
+		and tile:hasFlag(TILESTATE_PROTECTIONZONE) == true
+end
+M.inPz = inPz
+
 local function fightPlayers(f)
 	local list = {}
 	if f.opts.players then
@@ -127,7 +136,7 @@ local function fightPlayers(f)
 		if ok and type(got) == "table" then
 			for _, p in ipairs(got) do
 				local pos = p:getPosition()
-				if f.grid.set[G.key(pos.x, pos.y)] and pos.z == f.grid.z then
+				if f.grid.set[G.key(pos.x, pos.y)] and pos.z == f.grid.z and not inPz(pos) then
 					list[#list + 1] = p
 				end
 			end
@@ -139,7 +148,7 @@ local function fightPlayers(f)
 	local rx, ry = math.floor((r.x2 - r.x1) / 2) + 1, math.floor((r.y2 - r.y1) / 2) + 1
 	for _, c in ipairs(Game.getSpectators(Position(cx, cy, f.grid.z), false, true, rx, rx, ry, ry) or {}) do
 		local pos = c:getPosition()
-		if c:isPlayer() and f.grid.set[G.key(pos.x, pos.y)] then
+		if c:isPlayer() and f.grid.set[G.key(pos.x, pos.y)] and not inPz(pos) then
 			list[#list + 1] = c
 		end
 	end
@@ -209,6 +218,9 @@ end
 
 -- a share of max health to one player: the system's own hit when it gave one, else a combat hit from the boss
 local function hit(f, player, share)
+	if inPz(player:getPosition()) then
+		return
+	end
 	if f.opts.hit then
 		pcall(f.opts.hit, player, share)
 		return
@@ -581,17 +593,25 @@ local function tick(id, token)
 	addEvent(tick, C().tickMs, id, token)
 end
 
--- walkable for the box arena of an auto-attached boss
+-- walkable for the box arena of an auto-attached boss; PZ tiles are not part of it
 local function walkable(z)
 	return function(x, y)
 		local tile = Tile(Position(x, y, z))
 		return tile ~= nil and tile:getGround() ~= nil and not tile:hasProperty(CONST_PROP_BLOCKSOLID)
+			and not inPz(Position(x, y, z))
 	end
 end
 
+-- a display monster of the hunt teleport room (hunt_teleports.lua): never a fight
+local function isDisplaySpot(pos)
+	local HT = ChaosHuntTeleports
+	return pos ~= nil and HT ~= nil and HT.isDisplaySpot ~= nil and HT.isDisplaySpot(pos) == true
+end
+M.isDisplaySpot = isDisplaySpot
+
 function M.attach(monster, key, opts)
 	local cfg = C()
-	if not cfg.enabled or not monster then
+	if not cfg.enabled or not monster or isDisplaySpot(monster:getPosition()) then
 		return nil
 	end
 	local id = monster:getId()
@@ -720,7 +740,7 @@ attachEv:register()
 
 local spawnCb = EventCallback
 spawnCb.onSpawn = function(self, position, startup, artificial)
-	if C().enabled and not self:getMaster() and M.profileOf(self:getName()) then
+	if C().enabled and not self:getMaster() and M.profileOf(self:getName()) and not isDisplaySpot(position) then
 		self:registerEvent("ChaosBossMechAttach")
 	end
 	return true

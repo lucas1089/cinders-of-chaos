@@ -86,6 +86,25 @@ for _, s in ipairs(L.UI_SHADERS) do
   end
 end
 
+-- orb sizes and their place beside the chat panel
+do
+  local size, liquid, font = L.orbSize(nil)
+  eq(size, 150, 'default orb size is medium')
+  eq(liquid, 126, 'liquid keeps 64/76')
+  eq(font ~= nil, true, 'a font for the number')
+  eq(L.orbSize(1), 76, 'small')
+  eq(L.orbSize(3), 190, 'large')
+  eq(L.orbSize(9), 150, 'unknown size is the default')
+  -- window 2000 x 1340, chat panel from x 178, 760 wide, top at y 1150
+  local area = { x = 178, y = 1150, width = 760 }
+  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1340, 150, area), L.ORB_EDGE, 'left orb beside the chat stays in the corner')
+  eq(L.orbMarginBottom({ x = 6, width = 190 }, 1340, 190, area), 1340 - 1150 + L.ORB_CLEAR, 'a large orb over the chat sits on it')
+  eq(L.orbMarginBottom({ x = 2000 - 6 - 190, width = 190 }, 1340, 190, area), L.ORB_EDGE, 'right orb clear of a narrow chat')
+  eq(L.orbMarginBottom({ x = 1500, width = 150 }, 1340, 150, { x = 0, y = 1150, width = 2000 }), 194, 'full width chat: on top')
+  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1000, 150, { x = 0, y = 1150, width = 2000 }), L.ORB_EDGE, 'map ends above the chat (classic view)')
+  eq(L.orbMarginBottom({ x = 6, width = 150 }, 1340, 150, nil), L.ORB_EDGE, 'no chat panel')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

@@ -154,6 +154,43 @@ function M.lockMessage(classKey, c)
 	return string.format("The %s is locked on this account.%s", class.name, how)
 end
 
+-- The account's class status grouped for a short text (Character Info): unlocked = sorted class names; groups = list
+-- of {names = {...}, level = n or nil, how = text} for the locked classes that unlock the same way (level = n when the
+-- only way is "reach level n"). isUnlocked(classKey) -> true when the account has that class.
+function M.lockGroups(isUnlocked, c)
+	local unlocked, groups, byHow = {}, {}, {}
+	for _, key in ipairs(M.lockedClasses(c)) do
+		local class = conf(c).classes[key]
+		if isUnlocked(key) then
+			unlocked[#unlocked + 1] = class.name
+		else
+			local kinds = M.methodKinds(key, c)
+			local level = (#kinds == 1 and kinds[1] == "level") and tonumber(class.unlock.level.min) or nil
+			local ways = {}
+			for _, kind in ipairs(kinds) do
+				local m = M.methods[kind]
+				if m and m.describe then
+					ways[#ways + 1] = m.describe(class.unlock[kind], class)
+				end
+			end
+			local how = table.concat(ways, ", or ")
+			local sig = (level and ("level:" .. level)) or how
+			local g = byHow[sig]
+			if not g then
+				g = {names = {}, level = level, how = how}
+				byHow[sig] = g
+				groups[#groups + 1] = g
+			end
+			g.names[#g.names + 1] = class.name
+		end
+	end
+	table.sort(unlocked)
+	for _, g in ipairs(groups) do
+		table.sort(g.names)
+	end
+	return {unlocked = unlocked, groups = groups}
+end
+
 -- May an account become vocation `vocId`? unlocked = set {[classKey] = true} of the account's unlocks.
 -- Returns ok, message (nil when ok), classKey (nil for a vocation of no locked class).
 function M.decide(vocId, unlocked, groupId, accountType, c)

@@ -190,22 +190,46 @@ local function inventoryRoots(player)
 	return roots
 end
 
--- the pouches the character carries and owns: {[kind] = item}, the first one of each kind
+-- the purse (the engine's store inbox), or nil
+local function purseOf(player)
+	if not player.getStoreInbox then
+		return nil
+	end
+	local ok, purse = pcall(function() return player:getStoreInbox() end)
+	return ok and purse or nil
+end
+
+-- the pouches the character carries and owns: {[kind] = item}, the first one of each kind. The inventory first (its
+-- bags, breadth first), then the purse one level deep (coordinator 2026-10-16: a pouch the store just delivered
+-- collects at once, without moving it to the backpack; a pouch inside a bag in the purse does not). Weight rules
+-- are the engine's as for any carried container (the purse counts in the inventory weight).
 function PO.carried(player)
 	local guid, found = player:getGuid(), {}
-	walk(inventoryRoots(player), function(item)
+	local function take(item)
 		local kind = PO.kindOfId(item:getId())
 		if kind and not found[kind] and PO.ownerOf(item) == guid then
 			found[kind] = item
 		end
 		return false
-	end)
+	end
+	walk(inventoryRoots(player), take)
+	local purse = purseOf(player)
+	if purse then
+		local ok, items = pcall(function() return purse:getItems() end)
+		for _, item in ipairs(ok and items or {}) do
+			take(item)
+		end
+	end
 	return found
 end
 
--- every place a character keeps things: inventory, inbox, the depot chest of every town
+-- every place a character keeps things: inventory, the purse (store inbox), inbox, the depot chest of every town
 local function storageRoots(player)
 	local roots = inventoryRoots(player)
+	local purse = purseOf(player)
+	if purse then
+		roots[#roots + 1] = purse
+	end
 	local inbox = player:getInbox()
 	if inbox then
 		roots[#roots + 1] = inbox
@@ -377,6 +401,30 @@ end
 -- ---------------------------------------------------------------- onDropLoot (index cfg().dropIndex)
 local lastFull = {} -- [guid .. kind] = os.time of the last "is full" note
 
+local function rarityName(r)
+	local list = ChaosLootFilter and ChaosLootFilter.RARITY
+	if list and list[r] and list[r].name then
+		return list[r].name
+	end
+	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
+	return names and names[r] or nil
+end
+
+-- one row of the loot line (pouches_core.lua lootList), read before the move (a stack merged into a pouch is gone)
+local function lootEntry(item, info)
+	local okN, name = pcall(function() return item:getName() end)
+	local okT, it = pcall(function() return item:getType() end)
+	local plural
+	if okT and it and it.getPluralName then
+		local okP, pn = pcall(function() return it:getPluralName() end)
+		plural = okP and pn or nil
+	end
+	local stackable = okT and it and it.isStackable and it:isStackable()
+	local rarity = tonumber(info.rarity) or 0
+	return {id = info.id, name = okN and name or nil, plural = plural, count = stackable and info.count or 1,
+		rarity = rarity, rarityName = rarity > 0 and rarityName(rarity) or nil, unique = info.unique and true or false}
+end
+
 local function collect(monster, corpse)
 	if not corpse:getType():isContainer() then
 		return
@@ -391,7 +439,7 @@ local function collect(monster, corpse)
 	end
 	local c = cfg()
 	local rules, list, s = PO.rulesOf(owner), autolootSet(owner), sets()
-	local taken, backpack, left, overflow = {}, 0, 0, 0
+	local looted, backpack, left, overflow = {}, 0, 0, 0
 	local notes = {full = {}}
 	for _, item in ipairs(corpse:getItems() or {}) do
 		local info = infoOf(item, list)
@@ -401,13 +449,15 @@ local function collect(monster, corpse)
 			if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
 				item = ChaosLoot.finalizeRarity(item)
 			end
+			local entry = lootEntry(item, info)
 			local where, kind = stowInto(pouches, kinds, item, corpse, notes)
 			if where == "pouch" then
-				taken[kind] = (taken[kind] or 0) + info.count
+				looted[#looted + 1] = entry
 				if spilled and kind == "loot" then
 					overflow = overflow + info.count
 				end
 			elseif intoBags(owner, item) and not stillIn(item, corpse) then
+				looted[#looted + 1] = entry
 				backpack = backpack + 1
 			else
 				left = left + 1
@@ -423,7 +473,7 @@ local function collect(monster, corpse)
 			lastFull[key] = now
 		end
 	end
-	local text = P.summary(c, taken, backpack, left, notes.full, overflow)
+	local text = P.summary(c, looted, backpack, left, notes.full, overflow)
 	if text then
 		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, text)
 	end
@@ -586,7 +636,7 @@ function PO.storeCheck(player, kind)
 		return "The " .. k.title .. " is not installed on this server yet."
 	end
 	if PO.owned(player)[kind] then
-		return "You already have a " .. k.title .. " (backpack, inbox or depot). One per character."
+		return "You already have a " .. k.title .. " (backpack, purse, inbox or depot). One per character."
 	end
 	local bits = math.max(0, player:getStorageValue(cfg().storage.regrant))
 	if math.floor(bits / KIND_BIT[kind]) % 2 == 1 then
@@ -595,14 +645,29 @@ function PO.storeCheck(player, kind)
 	return nil
 end
 
+-- a bought pouch goes into the purse (store_delivery.lua: purse, else depot inbox, else backpack); it collects in the
+-- purse and in the backpack (PO.carried), not in the depot inbox
 function PO.storeGive(player, kind, why)
 	local k = cfg().kinds[kind]
-	local where = PO.give(player, kind)
-	if not where then
+	local item = PO.create(player, kind)
+	if not item then
 		return "Something went wrong. Your coins were refunded."
 	end
-	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%s: your %s is in your %s. It collects %s while you carry it.",
-		Chaos.t(player, why or "Store"), k.title, Chaos.t(player, where), Chaos.t(player, k.collects)))
+	local D = ChaosStoreDelivery or dofile("data/scripts/chaos/store_delivery.lua")
+	local where = D.place(player, item)
+	if not where then
+		pcall(function() item:remove() end)
+		return "Something went wrong. Your coins were refunded."
+	end
+	if where == "inbox" then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"%s: your %s is in your %s. Move it to your backpack: it collects %s while you carry it.",
+			Chaos.t(player, why or "Store"), k.title, Chaos.t(player, "depot inbox"), Chaos.t(player, k.collects)))
+	else
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+			"%s: your %s is in your %s. It collects %s from now on, there or in your backpack.",
+			Chaos.t(player, why or "Store"), k.title, Chaos.t(player, where), Chaos.t(player, k.collects)))
+	end
 	return true
 end
 

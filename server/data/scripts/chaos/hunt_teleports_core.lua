@@ -119,7 +119,62 @@ function H.index(cfg, places)
 			idx.list[#idx.list + 1] = entry
 		end
 	end
+	-- the hall order (tools/hall_order.py): the base server's hunts (their teleports lead there by the map) and the
+	-- floors' bands; only labels and signs here
+	idx.base, idx.floors = {}, {}
+	for _, e in ipairs(type(places.base) == "table" and places.base or {}) do
+		if isPos(e.teleport) and type(e.level) == "table" then
+			idx.base[#idx.base + 1] = {id = e.id, name = e.name or e.id, level = {e.level[1], e.level[2]},
+				teleport = e.teleport, sign = e.sign}
+		end
+	end
+	for _, f in ipairs(type(places.floors) == "table" and places.floors or {}) do
+		if type(f.z) == "number" and type(f.level) == "table" then
+			idx.floors[f.z] = {f.level[1], f.level[2]}
+		end
+	end
 	return idx
+end
+
+-- the floating labels of the hall's floors (cfg.hall.labels, the bands of idx.floors): {{pos, text}} in `lang`
+-- "Floor 7: levels 1-80" over `at`; over `up` (the stairs up) the next floor's band, "Up: floor 6, levels 80-300"
+function H.floorLabels(cfg, idx, lang)
+	local out = {}
+	local hall = cfg.hall
+	if not hall or not idx or not idx.floors then
+		return out
+	end
+	for i, l in ipairs(hall.labels or {}) do
+		local band = idx.floors[l.z]
+		if band and l.at then
+			out[#out + 1] = {pos = {x = l.at.x, y = l.at.y, z = l.z},
+				text = H.text(cfg, lang, "Floor %d: levels %d-%d", l.z, band[1], band[2])}
+		end
+		local nz = hall.floors and hall.floors[i + 1]
+		local up = nz and idx.floors[nz]
+		if up and l.up then
+			out[#out + 1] = {pos = {x = l.up.x, y = l.up.y, z = l.z},
+				text = H.text(cfg, lang, "Up: floor %d, levels %d-%d", nz, up[1], up[2])}
+		end
+	end
+	return out
+end
+
+-- a display monster's spot: a cell row of the room (cfg.room.cellRows) on a floor of the hall (cfg.display)
+function H.isDisplaySpot(cfg, pos)
+	local d, r = cfg and cfg.display, cfg and cfg.room
+	if not isPos(pos) or type(d) ~= "table" or type(r) ~= "table" or type(r.cellRows) ~= "table" then
+		return false
+	end
+	if pos.z < d.floors[1] or pos.z > d.floors[2] or pos.x < d.x[1] or pos.x > d.x[2] then
+		return false
+	end
+	for _, y in ipairs(r.cellRows) do
+		if pos.y == y then
+			return true
+		end
+	end
+	return false
 end
 
 -- the label of a teleport in one language: "Widowmere, levels 480-640"

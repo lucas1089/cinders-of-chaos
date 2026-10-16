@@ -1,0 +1,87 @@
+# Container open packet that cannot be read (client/BASE.md "Container open recovery"). When the 0x6E packet fails to parse (an item whose bytes differ between the server's items.otb and Tibia.dat; 2026-10-16: the gems' animated looks on nodes without FLAG_ANIMATION, server/README.md "Gems and sockets"), the server already holds the new container under that id but the client kept the old window there, so every later add / update / remove of the new container landed in the wrong window ("the loot bag and the backpack are conflicting"). Now ProtocolGame::parseOpenContainer catches the error, closes that container id locally (Game::processCloseContainer: the stale window goes, later packets for the id are ignored as for any unknown id), sends a close for it to the server so both sides agree, logs one line "Container N could not be opened (item C): ..." with the client id of the item being read, and rethrows so the caller drops the rest of the packet as before. C++ only (src/client/protocolgameparse.cpp). Applies after 0001-0060.
+diff --git a/src/client/protocolgameparse.cpp b/src/client/protocolgameparse.cpp
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -1451,35 +1451,54 @@
+ void ProtocolGame::parseOpenContainer(const InputMessagePtr& msg)
+ {
+     int containerId = msg->getU8();
+-    ItemPtr containerItem = getItem(msg);
+-    std::string name = msg->getString();
+-    int capacity = msg->getU8();
+-    bool hasParent = (msg->getU8() != 0);
+-
+-    bool hasDepotSearch = false;
+-    if (g_game.getFeature(Otc::GameTibia12Protocol) && g_game.getProtocolVersion() >= 1220) {
+-        hasDepotSearch = (msg->getU8() != 0); // can use depot search
++    // Chaos (base patch 0061): a container packet the client cannot read (an item whose bytes differ between the
++    // server's items.otb and our Tibia.dat) used to leave the old window on this id while the server already held the
++    // new container there, so every later add / update / remove of that container landed in the wrong window. Now the
++    // id is closed on both sides and one line names it.
++    int failedItem = 0; // client id of the item being read when the read failed (0: not an item; a short item is
++                        // often noticed one item or more later, the message says where it stopped)
++    try {
++        if (msg->getUnreadSize() >= 2)
++            failedItem = msg->peekU16();
++        ItemPtr containerItem = getItem(msg);
++        failedItem = 0;
++        std::string name = msg->getString();
++        int capacity = msg->getU8();
++        bool hasParent = (msg->getU8() != 0);
++
++        bool hasDepotSearch = false;
++        if (g_game.getFeature(Otc::GameTibia12Protocol) && g_game.getProtocolVersion() >= 1220) {
++            hasDepotSearch = (msg->getU8() != 0); // can use depot search
++        }
++
++        bool isUnlocked = true;
++        bool hasPages = false;
++        int containerSize = 0;
++        int firstIndex = 0;
++
++        if (g_game.getFeature(Otc::GameContainerPagination)) {
++            isUnlocked = (msg->getU8() != 0); // drag and drop
++            hasPages = (msg->getU8() != 0); // pagination
++            containerSize = msg->getU16(); // container size
++            firstIndex = msg->getU16(); // first index
++        }
++
++        int itemCount = msg->getU8();
++
++        std::vector<ItemPtr> items(itemCount);
++        for (int i = 0; i < itemCount; i++) {
++            failedItem = msg->getUnreadSize() >= 2 ? msg->peekU16() : 0;
++            items[i] = getItem(msg);
++        }
++
++        failedItem = 0;
++        g_game.processOpenContainer(containerId, containerItem, name, capacity, hasParent, items, isUnlocked, hasPages, containerSize, firstIndex, hasDepotSearch);
++    } catch (const std::exception& e) {
++        g_logger.error(stdext::format("Container %d could not be opened (item %d): %s. Closed on both sides.", containerId, failedItem, e.what()));
++        g_game.processCloseContainer(containerId); // the stale window on this id, if any
++        sendCloseContainer(containerId);             // the server drops it too (its close answer finds nothing here)
++        throw;                                       // the rest of the packet is unreadable: the caller logs and drops it
+     }
+-
+-    bool isUnlocked = true;
+-    bool hasPages = false;
+-    int containerSize = 0;
+-    int firstIndex = 0;
+-
+-    if (g_game.getFeature(Otc::GameContainerPagination)) {
+-        isUnlocked = (msg->getU8() != 0); // drag and drop
+-        hasPages = (msg->getU8() != 0); // pagination
+-        containerSize = msg->getU16(); // container size
+-        firstIndex = msg->getU16(); // first index
+-    }
+-
+-    int itemCount = msg->getU8();
+-
+-    std::vector<ItemPtr> items(itemCount);
+-    for (int i = 0; i < itemCount; i++)
+-        items[i] = getItem(msg);
+-
+-    g_game.processOpenContainer(containerId, containerItem, name, capacity, hasParent, items, isUnlocked, hasPages, containerSize, firstIndex, hasDepotSearch);
+ }
+ 
+ void ProtocolGame::parseCloseContainer(const InputMessagePtr& msg)

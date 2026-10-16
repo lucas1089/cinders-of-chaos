@@ -1,0 +1,11 @@
+Module
+  name: game_helperhud
+  description: The helper's bot HUD (Tools > Bot HUD), drawn at the top of the map (ChaosBotHud; called by mods/game_helper through base patch 0056)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 950
+  dependencies: [ game_interface ]
+  scripts: [ helperhud_logic, helperhud ]
+  @onLoad: ChaosBotHud.init()
+  @onUnload: ChaosBotHud.terminate()

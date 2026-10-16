@@ -1,154 +1,133 @@
-BankingAcceptWindow < MainWindow
-  id: amountWindow
-  !text: tr('Accept Window')
-  size: 270 150
+// The amount dialog of Deposit, Withdraw and Transfer: a numeric input next to the slider, quick buttons and OK /
+// Cancel. bank.lua sets the title and the height (bank_core.lua B.HEIGHT; the recipient row only shows for Transfer).
+// HorizontalScrollBar, not OptionScrollbar: the theme maps that one to a vertical bar (client_chaos_theme/compat.otui),
+// which stretched across the old dialog and pushed its buttons out of it.
+BankAmountWindow < MainWindow
+  id: bankAmountWindow
+  !text: tr('Bank')
+  size: 290 186
 
   Label
     id: balance
     text-align: center
-    text-offset: 0 0
     anchors.top: parent.top
-    anchors.right: parent.right
     anchors.left: parent.left
-    margin-top: 3
+    anchors.right: parent.right
     height: 16
-    !text: tr('Your Balance Is:')
-    color: yellow
 
-  Label
-    id: shit
-    text-offset: 0 0
+  Panel
+    id: recipientRow
     anchors.top: balance.bottom
-    anchors.right: parent.right
     anchors.left: parent.left
-    margin-top: 5
-    height: 16
-    !text: tr('The Amount:')
+    anchors.right: parent.right
+    margin-top: 6
+    height: 22
 
-  OptionScrollbar
-    id: value
-    margin-top: 16
-    anchors.right: parent.right
+    Label
+      id: recipientLabel
+      !text: tr('Recipient:')
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 70
+      text-align: left
+
+    TextEdit
+      id: recipientEdit
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: recipientLabel.right
+      anchors.right: parent.right
+      max-length: 29
+
+  Panel
+    id: amountRow
+    anchors.top: recipientRow.bottom
     anchors.left: parent.left
-    anchors.top: shit.bottom
+    anchors.right: parent.right
+    margin-top: 6
+    height: 22
+
+    Label
+      id: amountLabel
+      !text: tr('Amount:')
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      width: 70
+      text-align: left
+
+    TextEdit
+      id: amountEdit
+      anchors.top: parent.top
+      anchors.bottom: parent.bottom
+      anchors.left: amountLabel.right
+      anchors.right: parent.right
+      max-length: 10
+
+  HorizontalScrollBar
+    id: value
+    anchors.top: amountRow.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
     minimum: 0
     maximum: 0
+    step: 1
+
+  Button
+    id: quick25
+    text: 25%
+    anchors.top: value.bottom
+    anchors.left: parent.left
+    margin-top: 8
+    size: 80 20
+
+  Button
+    id: quick50
+    text: 50%
+    anchors.top: value.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 8
+    size: 80 20
+
+  Button
+    id: quickAll
+    !text: tr('All')
+    anchors.top: value.bottom
+    anchors.right: parent.right
+    margin-top: 8
+    size: 80 20
 
   HorizontalSeparator
-    anchors.right: parent.right
+    id: buttonsSeparator
+    anchors.top: quick25.bottom
     anchors.left: parent.left
-    anchors.top: value.bottom
-    margin-top: 10 
-    height: 3
+    anchors.right: parent.right
+    margin-top: 8
 
   Button
     id: buttonCancel
     !text: tr('Cancel')
-    height: 20
-    anchors.left: value.horizontalCenter
-    anchors.right: value.right
-    anchors.top: value.bottom
-    margin-top: 25
-    focusable: false
+    anchors.top: buttonsSeparator.bottom
+    anchors.right: parent.right
+    margin-top: 8
+    size: 80 20
 
   Button
     id: buttonOk
-    !text: tr('Accept')
-    height: 20
-    anchors.right: value.horizontalCenter
-    anchors.left: value.left
-    anchors.top: value.bottom
-    margin-top: 25
+    !text: tr('Ok')
+    anchors.top: buttonsSeparator.bottom
+    anchors.right: buttonCancel.left
+    margin-top: 8
     margin-right: 6
-    focusable: false
-
-AcceptWindowTransfer < MainWindow
-  id: amountWindow
-  !text: tr('Transfer Window')
-  size: 270 185
-
-  Label
-    id: balanceTransfer
-    text-align: center
-    text-offset: 0 0
-    anchors.top: parent.top
-    anchors.right: parent.right
-    anchors.left: parent.left
-    margin-top: 3
-    height: 16
-    !text: tr('Your Balance Is:')
-    color: yellow
-
-  Label
-    id: sender
-    text-offset: 0 0
-    anchors.top: balanceTransfer.bottom
-    anchors.right: parent.right
-    anchors.left: parent.left
-    margin-top: 5
-    height: 16
-    !text: tr('Recipient:')
-
-  TextEdit
-    id: senderName
-    anchors.right: parent.right
-    anchors.left: parent.left
-    anchors.top: sender.bottom
-    width: 80
-    font: verdana-11px-rounded
-
-  Label
-    id: sendAmount
-    text-offset: 0 0
-    anchors.top: senderName.bottom
-    anchors.right: parent.right
-    anchors.left: parent.left
-    margin-top: 5
-    height: 16
-    !text: tr('The Amount:')
-
-  OptionScrollbar
-    id: value
-    margin-top: 10
-    anchors.right: parent.right
-    anchors.left: parent.left
-    anchors.top: sendAmount.bottom
-    minimum: 0
-    maximum: 0
-
-  HorizontalSeparator
-    anchors.right: parent.right
-    anchors.left: parent.left
-    anchors.top: value.bottom
-    margin-top: 10 
-    height: 3
-
-  Button
-    id: buttonCancel
-    !text: tr('Cancel')
-    height: 20
-    anchors.left: value.horizontalCenter
-    anchors.right: value.right
-    anchors.top: value.bottom
-    margin-top: 25
-    focusable: false
-
-  Button
-    id: buttonOk
-    !text: tr('Send')
-    height: 20
-    anchors.right: value.horizontalCenter
-    anchors.left: value.left
-    anchors.top: value.bottom
-    margin-top: 25
-    margin-right: 6
-    focusable: false
+    size: 80 20
 
 MainWindow
   id: amountWindow
   !text: tr('Bank')
-  size: 330 175
-  @onEscape: bankWindowtoggle()
+  size: 330 215
+  @onEscape: modules.game_bank.bankWindowtoggle()
 
   CustomTabButton
     id: gold
@@ -158,6 +137,7 @@ MainWindow
     !text: tr('Gold Coins')
     text-offset: 0 -1
 
+  // stars came with the imported client and are no currency of this game (server Chaos.bank.starItemId = 0)
   CustomTabButton
     id: star
     size: 145 25
@@ -166,17 +146,18 @@ MainWindow
     margin-left: 10
     !text: tr('Star Coins')
     text-offset: 0 -1
+    visible: false
 
   HorizontalSeparator
     id: sharta1
-    anchors.top: prev.bottom
+    anchors.top: gold.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 5
 
   VerticalSeparator
     id: sharta2
-    anchors.top: prev.bottom
+    anchors.top: sharta1.bottom
     anchors.bottom: parent.bottom
     anchors.left: parent.horizontalCenter
     margin-top: 5
@@ -186,7 +167,7 @@ MainWindow
     id: balance
     anchors.top: sharta1.bottom
     anchors.left: parent.left
-    margin-top: 5
+    margin-top: 10
     !text: tr('Inventory Balance:')
 
   Item
@@ -217,11 +198,20 @@ MainWindow
   Button
     id: depositButton
     !text: tr('Deposit')
-    size: 135 20
+    size: 136 20
     anchors.left: parent.left
     anchors.top: item.bottom
     margin-top: 7
-    margin-right: 6
+    focusable: false
+
+  Button
+    id: depositAllButton
+    !text: tr('Deposit all')
+    !tooltip: tr('Deposit every gold, platinum and crystal coin you carry.')
+    size: 136 20
+    anchors.left: parent.left
+    anchors.top: depositButton.bottom
+    margin-top: 4
     focusable: false
 
   UIWidget
@@ -279,11 +269,21 @@ MainWindow
     margin-left: 6
     focusable: false
 
+  Button
+    id: withdrawAllButton
+    !text: tr('Withdraw all')
+    !tooltip: tr('Withdraw your whole balance. What does not fit (capacity or free slots) stays in the bank.')
+    size: 136 20
+    anchors.left: WithdrawButton.left
+    anchors.top: WithdrawButton.bottom
+    margin-top: 4
+    focusable: false
+
   HorizontalSeparator
     anchors.bottom: parent.bottom
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-bottom: 20
+    margin-bottom: 26
 
   Button
     id: close
@@ -291,5 +291,4 @@ MainWindow
     size: 100 20
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
-    margin-bottom: -6
     focusable: false

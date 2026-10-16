@@ -466,7 +466,7 @@ end
 -- the short "where from" of an item tooltip (item_tooltip.lua): the first two sources and, when the item comes only by
 -- luck, the best chance per kill. nil for an item without rows.
 --   {s = {{k = kind, n = name, v = value text}}, e = {p = chance 0..1, w = "kill" | "legendary" | "boss", m = monster}}
-K.BRIEF = {"monster", "drop", "reward", "craft", "shop", "store", "gamble", "gather"}
+K.BRIEF = {"drop", "monster", "reward", "craft", "shop", "store", "gamble", "gather"} -- the global drop tables first
 K.SURE = {craft = true, shop = true, gamble = true, gather = true} -- a sure way: no effort line (the store and the
 -- Conquest vendor still show it: "~1 in 400 legendary kills, or 690 tokens")
 K.EFFORT_BELOW = 0.2 -- the effort line shows below this chance per kill (1 in 5)
@@ -476,10 +476,14 @@ function K.brief(idx, id, cid)
 		return nil
 	end
 	local src, best, sure = {}, nil, false
+	local named = {} -- one source per name: a monster whose loot lists the item twice (two entries, or child loot) gave
+	-- "Drops from: Abyssal Crab (100%), Abyssal Crab (100%)" (live test winpkg-35); the first row is the best one
 	for _, kind in ipairs(K.BRIEF) do
 		for _, row in ipairs(r.rows[kind] or {}) do
-			if #src < 2 then
-				src[#src + 1] = {k = kind, n = tostring(row.n):sub(1, 32), v = row.v}
+			local name = tostring(row.n):sub(1, 32)
+			if #src < 2 and not named[name] then
+				named[name] = true
+				src[#src + 1] = {k = kind, n = name, v = row.v}
 			end
 			sure = sure or K.SURE[kind] == true
 			local p = tonumber(row.p)

@@ -418,13 +418,23 @@ S.services = {
 
 	templeScroll = {
 		apply = function(player, offer)
+			-- into the purse like every store item (store_delivery.lua), made first so it arrives complete
 			local cfg = C().templeScroll
-			local item = player:addItem(cfg.itemId, 1, false)
+			local item = Game.createItem(cfg.itemId, 1)
 			if not item then
-				return Chaos.t(player, "You do not have enough room or capacity.")
+				return Chaos.t(player, "This offer cannot be bought.")
 			end
 			item:setActionId(cfg.actionId)
 			setScrollUses(item, offer.uses or 1)
+			local D = ChaosStoreDelivery or dofile("data/scripts/chaos/store_delivery.lua")
+			local where, reason = D.place(player, item)
+			if not where then
+				item:remove()
+				return Chaos.t(player, "You do not have enough room or capacity.")
+			end
+			local receipt = D.newReceipt()
+			D.record(receipt, item, where, reason)
+			D.tell(player, receipt)
 			return true
 		end
 	},

@@ -8,7 +8,8 @@
 --                 ChaosUniqueItems through ChaosLoot.uniqueList)
 -- S.crafting      the base crafting tables (the global Crafting of the base crafting script)
 -- S.npcs          NPC shops (the engine parses the NPC files)
--- S.store         the Chaos store (shop_config.lua)
+-- S.store         the Chaos store (shop_config.lua): items, bundle parts and the service offers that give an item (the
+--                 pouches, the Everfull Ration: S.serviceItem with pouches_config.lua and store_food_config.lua)
 -- S.gamble        the Gambler's pool (gamble_config.lua)
 -- S.professions   gathering, the Material Broker (professions_config.lua)
 -- S.salvage       salvage shards and the shard recipes (salvage_config.lua)
@@ -16,7 +17,10 @@
 -- S.REWARDS       one function per reward system (daily reward, bounty, rifts, tower, world bosses, pocket bosses,
 --                 invasions, arena,
 --                 battleground, guild boss, the Descent, the raid, dungeons, treasure goblins, achievements, factions,
---                 the Ascended Omens); S.rewards runs them all, each in a pcall, and returns the errors
+--                 the Ascended Omens, the Conquest vendor, the Candlemark shop, the Mentor Marks shop, quests (tales),
+--                 Ember Cache, siege, leaderboards, community goal, referral, class trials, charms, the nemesis trophy,
+--                 starter kits and level gifts, season pass and journey); S.rewards runs them all, each in a pcall,
+--                 and returns the errors. Audit: server/tests/itemfinder_test.lua (every item a config gives has a row)
 
 ChaosItemFinderSources = ChaosItemFinderSources or {}
 local S = ChaosItemFinderSources
@@ -49,6 +53,45 @@ function S.tierText(chance)
 		end
 	end
 	return table.concat(parts, ", ")
+end
+
+-- the chance per kill (0..1) of the weakest monster tier that rolls a per-10000 table, and that tier
+function S.firstChance(chance)
+	for _, t in ipairs(S.TIERS) do
+		local v = tonumber((chance or {})[t]) or 0
+		if v > 0 then
+			return v / 10000, t
+		end
+	end
+	return nil, nil
+end
+
+-- 1 / p rounded as a player reads it (1-20 exact, then 5s, 10s, 50s, 100s; client tooltiplogic.lua L.oneIn)
+function S.oneIn(p)
+	p = tonumber(p) or 0
+	if p <= 0 then
+		return nil
+	end
+	local n = 1 / p
+	if n < 1.5 then
+		return 1
+	end
+	local step = n < 20 and 1 or n < 200 and 5 or n < 1000 and 10 or n < 10000 and 50 or 100
+	return math.max(1, math.floor(n / step + 0.5) * step)
+end
+
+-- "global drop, about 1 in 330 kills[, level 60+]" (a weaker tier: "1 in N magic monster kills"): the value of a global
+-- drop table row (live test winpkg-35: an Orb of Awakening from a Rat, the tooltip named only two monsters that list it)
+function S.globalText(p, tier, level)
+	local n = S.oneIn(p)
+	local text = "global drop"
+	if n then
+		text = text .. ", about 1 in " .. K.int(n) .. " " .. ((tier and tier ~= "normal") and (tier .. " monster kills") or "kills")
+	end
+	if level then
+		text = text .. ", level " .. level .. "+"
+	end
+	return text
 end
 
 -- ---------------------------------------------------------------- monsters
@@ -88,19 +131,59 @@ end
 -- lootCfg = loot_config.lua; gems = chaos_gems_config.lua; uniques = ChaosLoot.uniqueList(); monsterName(key) -> shown
 -- name (the unique lists name monster types in lower case)
 function S.lootLayer(lootCfg, gems, uniques, emit, monsterName)
+	-- the global currency table: every entry rolls its own chance per kill by monster tier; legendary monsters and
+	-- bosses also draw `guaranteed` entries by weight
 	local cur = lootCfg and lootCfg.currency
+	local total = 0
+	for _, e in ipairs(cur and cur.entries or {}) do
+		total = total + (tonumber(e.weight) or 0)
+	end
+	local guaranteed = {}
+	for _, tier in ipairs(S.TIERS) do
+		if (tonumber((cur and cur.guaranteed or {})[tier]) or 0) > 0 then
+			guaranteed[#guaranteed + 1] = tier
+		end
+	end
 	for _, e in ipairs(cur and cur.entries or {}) do
 		local c = e.count or {1, 1}
-		emit("drop", e.id, {n = "Any monster", d = S.tierText(e.chance) .. " a kill (x item find)",
-			v = K.per10k((e.chance or {}).normal or 0), c = K.countText(c[1], c[2]),
-			o = -(tonumber((e.chance or {}).legendary) or 0)})
+		local ch = e.chance or {}
+		local p, from = S.firstChance(ch)
+		local d = "global drop table: " .. S.tierText(ch) .. " a kill (x item find)"
+		if #guaranteed > 0 and total > 0 and (tonumber(e.weight) or 0) > 0 then
+			d = d .. "; " .. table.concat(guaranteed, " and ") .. " monsters always draw one entry by weight (this one " ..
+				e.weight .. " of " .. total .. ")"
+		end
+		emit("drop", e.id, {n = "Any monster", d = d, v = S.globalText(p, from), c = K.countText(c[1], c[2]),
+			o = -(tonumber(ch.legendary) or 0), p = p, pk = from == "normal" and "kill" or from})
 	end
+	-- gems: the gem drop chance x the quality's share at the monster's level, shared by the gem types
 	if gems and gems.drop and gems.types and gems.tiers then
-		local text = S.tierText(gems.drop.chance) .. " a kill for a gem of a random type; the quality by the monster's level"
-		for t = 1, #gems.types do
-			for q = 1, #gems.tiers do
+		local bands = gems.drop.levelWeights or {}
+		local p0, from = S.firstChance(gems.drop.chance)
+		for q = 1, #gems.tiers do
+			local best, minLevel, prev = 0, nil, 0
+			for _, band in ipairs(bands) do
+				local w, sum = tonumber(band[2][q]) or 0, 0
+				for _, x in ipairs(band[2]) do
+					sum = sum + (tonumber(x) or 0)
+				end
+				if w > 0 and sum > 0 then
+					minLevel = minLevel or (prev + 1)
+					best = math.max(best, w / sum)
+				end
+				prev = tonumber(band[1]) or prev
+			end
+			if #bands == 0 then
+				best = 1 / #gems.tiers
+			end
+			local p = p0 and p0 * best / #gems.types or nil
+			local level = minLevel and minLevel > 1 and minLevel or nil
+			local text = "global drop table: " .. S.tierText(gems.drop.chance) .. " a kill for a gem of a random type; " ..
+				"this quality from monster level " .. (minLevel or 1) ..
+				(gems.drop.tierUp and "; legendary and boss monsters may drop one quality better" or "")
+			for t = 1, #gems.types do
 				emit("drop", gems.firstId + (t - 1) * #gems.tiers + (q - 1), {n = "Any monster", d = text,
-					v = K.per10k(gems.drop.chance.normal or 0), o = 0})
+					v = S.globalText(p, from, level), o = q, p = p, pk = from == "normal" and "kill" or from})
 			end
 		end
 	end
@@ -196,20 +279,43 @@ function S.npcs(npcs, emit)
 end
 
 -- ---------------------------------------------------------------- the Chaos store
-local function storeItem(part)
+-- the item a service offer puts in the backpack (shop_services.lua): a store pouch (pouches_config.lua kinds) or the
+-- Everfull Ration (store_food_config.lua item). ctx = {pouches = pouches_config.lua, storeFood = store_food_config.lua}
+function S.serviceItem(service, arg, ctx)
+	ctx = ctx or {}
+	if service == "pouch" then
+		local k = ctx.pouches and ctx.pouches.kinds and ctx.pouches.kinds[arg]
+		return k and tonumber(k.id) or nil
+	elseif service == "storeFood" then
+		local it = ctx.storeFood and ctx.storeFood.item
+		return it and tonumber(it.id) or nil
+	end
+	return nil
+end
+
+local function storeItem(part, ctx)
 	if type(part) == "string" then
 		local id, n = part:match("^item:(%d+)x(%d+)$")
 		if not id then
 			id = part:match("^item:(%d+)$")
 		end
+		if not id then
+			local service, arg = part:match("^service:([%w_]+):?([%w_]*)$")
+			if service then
+				return S.serviceItem(service, arg, ctx), 1
+			end
+		end
 		return tonumber(id), tonumber(n) or 1
 	elseif type(part) == "table" and part.kind == "item" then
 		return tonumber(part.id), tonumber(part.count) or 1
+	elseif type(part) == "table" and part.kind == "service" then
+		return S.serviceItem(part.service, part.pouch, ctx), 1
 	end
 	return nil
 end
 
-function S.store(shopCfg, emit)
+-- ctx: see S.serviceItem (nil: the service offers that give an item are left out)
+function S.store(shopCfg, emit, ctx)
 	for _, cat in ipairs(shopCfg and shopCfg.categories or {}) do
 		for _, o in ipairs(cat.offers or {}) do
 			local price = tonumber(o.cost) or 0
@@ -223,16 +329,16 @@ function S.store(shopCfg, emit)
 			if o.maxLevel then
 				limits[#limits + 1] = "up to level " .. o.maxLevel
 			end
-			local d = (cat.name or "Store") .. (#limits > 0 and (", " .. table.concat(limits, ", ")) or "")
+			local d = "Store > " .. (cat.name or "Store") .. (#limits > 0 and (", " .. table.concat(limits, ", ")) or "")
 			local v = price > 0 and (K.int(price) .. " Chaos Coins") or nil
-			if o.kind == "item" then
-				local id, n = storeItem(o)
+			if o.kind == "item" or o.kind == "service" then
+				local id, n = storeItem(o, ctx)
 				if id then
 					emit("store", id, {n = o.name or "Chaos store", d = d, v = v, c = K.countText(n), o = price})
 				end
 			elseif o.kind == "bundle" then
 				for _, part in ipairs(o.parts or {}) do
-					local id, n = storeItem(part)
+					local id, n = storeItem(part, ctx)
 					if id then
 						emit("store", id, {n = o.name or "Bundle", d = d .. ", bundle", v = v, c = K.countText(n), o = price})
 					end
@@ -386,8 +492,11 @@ S.REWARDS[#S.REWARDS + 1] = {key = "rift", fn = function(D, emit)
 		end
 		if r.monsterKey then
 			local mk = r.monsterKey
-			emit("drop", r.key.itemId, {n = "Any monster", d = string.format("tier 1 key, monster level %d+, x%d legendary, x%d boss",
-				mk.minMonsterLevel or 0, (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1), v = K.pct(mk.chance), o = 0})
+			local p = (tonumber(mk.chance) or 0) / 100000
+			emit("drop", r.key.itemId, {n = "Any monster", d = string.format("tier 1 key outside rifts, monster level %d+ " ..
+				"(and at least %d%% of yours), x%d legendary, x%d boss", mk.minMonsterLevel or 0,
+				math.floor((mk.levelShare or 0) * 100 + 0.5), (mk.tierMult or {}).legendary or 1, (mk.tierMult or {}).boss or 1),
+				v = S.globalText(p, "normal", mk.minMonsterLevel), o = 0, p = p, pk = "kill"})
 		end
 		if r.bountyKey then
 			reward(emit, r.key.itemId, nil, "Bounty contract", string.format("a tier 1 key: hunt %d%%, elite %d%%, boss %d%%",
@@ -552,6 +661,25 @@ S.REWARDS[#S.REWARDS + 1] = {key = "raid", fn = function(D, emit)
 		end
 		reward(emit, u.id, nil, raid.name or "The raid", "a unique roll: " .. table.concat(list, ", ") .. " (only there)", 0)
 	end
+	-- personal loot of every boss and of the final boss
+	local loot = raid.loot or {}
+	items(loot.boss and loot.boss.orbs, function(id, n) reward(emit, id, n, raid.name or "The raid", "each boss, once a week", 1) end)
+	items(loot.final and loot.final.orbs, function(id, n) reward(emit, id, n, raid.name or "The raid", "the final boss, once a week", 2) end)
+	-- the raid vendor (Sepulchre Marks): a weekly stock picked from the pool; `always` offers are always there
+	local always = {}
+	for _, key in ipairs(raid.vendor and raid.vendor.always or {}) do
+		always[key] = true
+	end
+	for _, o in ipairs(raid.vendor and raid.vendor.pool or {}) do
+		local d = (always[o.key] and "always in stock" or "in some weeks' stock") .. ((o.weekly and (", " .. o.weekly .. " a week")) or "")
+		local v = K.int(o.price or 0) .. " Sepulchre Marks"
+		if o.kind == "gear" and tonumber(o.id) then
+			emit("store", tonumber(o.id), {n = "Raid vendor", d = (o.name or "") .. ", " .. d, v = v, o = o.price or 0})
+		end
+		items(o.items, function(id, n)
+			emit("store", id, {n = "Raid vendor", d = (o.name or "") .. ", " .. d, v = v, c = K.countText(n), o = o.price or 0})
+		end)
+	end
 end}
 
 -- D.dungeons = Chaos.dungeons (extra: the loot each dungeon's window shows for its boss)
@@ -704,6 +832,265 @@ S.REWARDS[#S.REWARDS + 1] = {key = "conquest", fn = function(D, emit)
 		if ci.shard then
 			emit("shop", s.id, {n = "Conquest vendor", d = "a shard of the kind you choose; " .. ((ci.convert or {}).shards or 2) ..
 				" shards of one kind convert into one of another", v = K.int(ci.shard) .. " tokens", o = ci.shard})
+		end
+	end
+end}
+
+local function on(c)
+	return type(c) == "table" and c.enabled ~= false
+end
+
+-- {{id, n} | {id = , count = }} lists and {kind = "item" | "items", id, count} entries anywhere below t (season pass
+-- tiers and packs, journey chapters): fn(id, count, entry)
+local function kindItems(t, fn, seen)
+	seen = seen or {}
+	if type(t) ~= "table" or seen[t] then
+		return
+	end
+	seen[t] = true
+	if (t.kind == "item" or t.kind == "items") and tonumber(t.id) then
+		fn(tonumber(t.id), tonumber(t.count) or 1, t)
+		return
+	end
+	for _, v in pairs(t) do
+		kindItems(v, fn, seen)
+	end
+end
+
+local function langText(v)
+	if type(v) == "table" then
+		return v.en or v[1]
+	end
+	return v
+end
+
+-- D.candlemarks = candlemarks_config.lua: the Candlemark shop (Osric the Chandler; Economy > Candlemarks). D.gems =
+-- chaos_gems_config.lua (a "gem" offer: a random gem of one quality)
+S.REWARDS[#S.REWARDS + 1] = {key = "candlemarks", fn = function(D, emit)
+	local c = D.candlemarks
+	if not on(c) then
+		return
+	end
+	local npc = c.npc and c.npc.name
+	for _, o in ipairs(c.offers or {}) do
+		if o.enabled ~= false then
+			local d = "Candlemark shop" .. (npc and (", " .. npc) or "") .. ", level " .. (o.minLevel or 1) .. "+, " ..
+				(o.weekly or 1) .. " a week"
+			local v = K.int(o.price or 0) .. " Candlemarks"
+			if o.kind == "item" then
+				items(o.items, function(id, n)
+					emit("store", id, {n = o.name or "Candlemark shop", d = d, v = v, c = K.countText(n), o = o.price or 0})
+				end)
+			elseif o.kind == "gem" and D.gems and D.gems.types and D.gems.tiers then
+				local q = tonumber(o.tier) or 1
+				for t = 1, #D.gems.types do
+					emit("store", D.gems.firstId + (t - 1) * #D.gems.tiers + (q - 1), {n = o.name or "Candlemark shop",
+						d = d .. ", a gem of a random type", v = v, o = o.price or 0})
+				end
+			end
+		end
+	end
+end}
+
+-- D.mentor = mentor_config.lua: the apprentice's graduation gift and the Mentor Marks shop
+S.REWARDS[#S.REWARDS + 1] = {key = "mentor", fn = function(D, emit)
+	local m = D.mentor
+	if not on(m) then
+		return
+	end
+	items(m.graduation and m.graduation.items, function(id, n)
+		reward(emit, id, n, "Mentor program", "the apprentice's graduation (level " .. (m.graduationLevel or 200) .. ")", 0)
+	end)
+	for _, o in ipairs(m.shop or {}) do
+		if o.kind == "item" and tonumber(o.item) then
+			emit("store", tonumber(o.item), {n = o.name or "Mentor Marks shop", d = "Mentor Marks shop" ..
+				(o.weekly and (", " .. o.weekly .. " a week") or ""), v = K.int(o.cost or 0) .. " Mentor Marks",
+				c = K.countText(o.count or 1), o = o.cost or 0})
+		end
+	end
+end}
+
+-- D.tales = tales_config.lua: the quests of the Archivist
+S.REWARDS[#S.REWARDS + 1] = {key = "tales", fn = function(D, emit)
+	local t = D.tales
+	if not on(t) then
+		return
+	end
+	local npc = t.npc and langText(t.npc.name)
+	for _, q in ipairs(t.tales or {}) do
+		items(q.rewards and q.rewards.items, function(id, n)
+			reward(emit, id, n, "Quest: " .. tostring(langText(q.name) or q.key), (npc and (npc .. ", ") or "") ..
+				"from level " .. (q.minLevel or 1), q.minLevel or 0)
+		end)
+	end
+end}
+
+-- D.embercache = embercache_config.lua: the daily Spark and the week's milestones
+S.REWARDS[#S.REWARDS + 1] = {key = "embercache", fn = function(D, emit)
+	local e = D.embercache
+	if not on(e) then
+		return
+	end
+	items(e.daily and e.daily.reward and e.daily.reward.items, function(id, n)
+		reward(emit, id, n, "Ember Cache", "the day's Spark (" .. (e.daily.goal or 0) .. " points)", 0)
+	end)
+	for _, t in ipairs(e.tiers or {}) do
+		items(t.items, function(id, n)
+			reward(emit, id, n, "Ember Cache", "weekly milestone: " .. K.int(t.points or 0) .. " points", t.points or 0)
+		end)
+	end
+end}
+
+-- D.siege = siege_config.lua: the weekly guild siege
+S.REWARDS[#S.REWARDS + 1] = {key = "siege", fn = function(D, emit)
+	local s = D.siege
+	if not on(s) then
+		return
+	end
+	local r = s.reward or {}
+	items(r.winner and r.winner.items, function(id, n) reward(emit, id, n, "Guild siege", "every member of the winning guild", 0) end)
+	items(r.others and r.others.items, function(id, n) reward(emit, id, n, "Guild siege", "every other guild member there", 1) end)
+end}
+
+-- D.leaderboard = leaderboard_config.lua: the weekly boards' top places
+S.REWARDS[#S.REWARDS + 1] = {key = "leaderboard", fn = function(D, emit)
+	local l = D.leaderboard
+	if not on(l) then
+		return
+	end
+	for place, list in ipairs(l.rewards or {}) do
+		items(list, function(id, n)
+			reward(emit, id, n, "Weekly leaderboards", ((l.rankNames or {})[place] or ("place " .. place)) .. " place of a board", place)
+		end)
+	end
+end}
+
+-- D.community = community_config.lua: the community goal's token
+S.REWARDS[#S.REWARDS + 1] = {key = "community", fn = function(D, emit)
+	local c = D.community
+	if not on(c) then
+		return
+	end
+	local tk = c.goal and c.goal.rewards and c.goal.rewards.token
+	items(tk and tk.items, function(id, n)
+		reward(emit, id, n, "Community goal", K.int(tk.minPoints or 0) .. " points in a period", 0)
+	end)
+end}
+
+-- D.referral = referral_config.lua: the referred friend's gift
+S.REWARDS[#S.REWARDS + 1] = {key = "referral", fn = function(D, emit)
+	local r = D.referral
+	if not on(r) then
+		return
+	end
+	items(r.starterGift and r.starterGift.items, function(id, n)
+		reward(emit, id, n, "Referral", "the gift of a referred friend", 0)
+	end)
+end}
+
+-- D.trials = trials_config.lua: the class trials (first clear and repeat clears of a tier)
+S.REWARDS[#S.REWARDS + 1] = {key = "trials", fn = function(D, emit)
+	local t = D.trials
+	if not on(t) or not t.reward then
+		return
+	end
+	local r = t.reward
+	for key, id in pairs(r.items or {}) do
+		local first = r.first and r.first[key]
+		local again = r.repeatReward and r.repeatReward[key]
+		local function text(list)
+			return type(list) == "table" and table.concat(list, " / ") or tostring(list or 0)
+		end
+		reward(emit, id, nil, "Class trials", "first clear of a tier: " .. text(first) .. "; a repeat clear: " .. text(again) ..
+			" (" .. (r.repeatsPerWeek or 0) .. " a week)", 0)
+	end
+end}
+
+-- D.charms = charms_config.lua: charms from rifts, bounties, invasions, dungeons and the Descent; shards from salvage
+S.REWARDS[#S.REWARDS + 1] = {key = "charms", fn = function(D, emit)
+	local c = D.charms
+	if not c or not c.items then
+		return
+	end
+	local dr = c.drops or {}
+	local where = {}
+	if dr.rift then where[#where + 1] = "rifts of tier " .. (dr.rift.minTier or 1) .. "+" end
+	if dr.bounty then where[#where + 1] = "bounty contracts " .. (dr.bounty.chance or 0) .. "%" end
+	if dr.invasion then where[#where + 1] = "invasions " .. (dr.invasion.chance or 0) .. "%" end
+	if dr.dungeon then where[#where + 1] = "dungeons" end
+	if dr.descent then where[#where + 1] = "the Descent" end
+	local text = table.concat(where, ", ")
+	for _, it in ipairs(c.items) do
+		if it.key == "shard" then
+			emit("craft", it.id, {n = "Charm salvage", d = "salvage a charm (Character > Charms)", o = 0})
+		elseif it.unique then
+			reward(emit, it.id, nil, "Charm drop", text .. "; " .. (dr.uniqueChance or 0) .. "% of the charms are a unique", 1)
+		else
+			reward(emit, it.id, nil, "Charm drop", text, 0)
+		end
+	end
+end}
+
+-- D.nemesis = nemesis_config.lua: the trophy of a slain nemesis
+S.REWARDS[#S.REWARDS + 1] = {key = "nemesis", fn = function(D, emit)
+	local n = D.nemesis
+	local tr = on(n) and n.rewards and n.rewards.trophy
+	if tr and tonumber(tr.id) then
+		reward(emit, tonumber(tr.id), 1, "Nemesis", "slay the monster that killed you", 0)
+	end
+end}
+
+-- D.newplayer = newplayer_config.lua: the starter kits and level gifts (one time per character); D.potions =
+-- potions_config.lua (the Everfull potions of every character)
+S.REWARDS[#S.REWARDS + 1] = {key = "newplayer", fn = function(D, emit)
+	local np = D.newplayer
+	if not np then
+		return
+	end
+	local names = {}
+	for name in pairs(np.kits or {}) do
+		names[#names + 1] = name
+	end
+	table.sort(names)
+	for _, name in ipairs(names) do
+		local kit = np.kits[name]
+		local d = "a new character's kit (" .. name .. ")"
+		items(kit.equip, function(id, n) reward(emit, id, n, "Starter kit", d, 0) end)
+		items(kit.backpack, function(id, n) reward(emit, id, n, "Starter kit", d, 0) end)
+	end
+	items(np.common and np.common.items, function(id, n) reward(emit, id, n, "Starter kit", "every new character", 0) end)
+	-- the Everfull potions (potions_config.lua everfull): the kit, and a one-time grant at login for older characters
+	items(D.potions and D.potions.everfull, function(id)
+		reward(emit, id, 1, "Starter kit", "every character, once (new characters in their kit)", 0)
+	end)
+	for _, m in ipairs(np.milestones or {}) do
+		local d = "level " .. (m.level or 0) .. " gift (once per character)"
+		if (tonumber(m.orbs) or 0) > 0 and np.orbId then
+			reward(emit, np.orbId, m.orbs, "Level gift", d, m.level or 0)
+		end
+		items(m.items, function(id, n) reward(emit, id, n, "Level gift", d, m.level or 0) end)
+		for _, list in pairs(m.potions or {}) do
+			items(list, function(id, n) reward(emit, id, n, "Level gift", d .. ", by your class", m.level or 0) end)
+		end
+	end
+end}
+
+-- D.seasonpass = seasonpass_config.lua: the free track's items; D.journey = season_journey_config.lua: chapters
+S.REWARDS[#S.REWARDS + 1] = {key = "season", fn = function(D, emit)
+	for sid, p in pairs(D.seasonpass and D.seasonpass.passes or {}) do
+		for tier, pair in ipairs(p.tiers or {}) do
+			kindItems(pair, function(id, n)
+				reward(emit, id, n, p.name or "Season pass", "season " .. sid .. ", tier " .. tier, tier)
+			end)
+		end
+		kindItems(p.packs, function(id, n) reward(emit, id, n, p.name or "Season pass", "season " .. sid .. ", a season pack", 100) end)
+	end
+	for sid, j in pairs(D.journey and D.journey.journeys or {}) do
+		for _, ch in ipairs(j.chapters or {}) do
+			kindItems(ch.rewards, function(id, n)
+				reward(emit, id, n, j.name or "Season journey", "season " .. sid .. ", chapter: " .. (ch.name or ch.key or ""),
+					ch.level or 0)
+			end)
 		end
 	end
 end}

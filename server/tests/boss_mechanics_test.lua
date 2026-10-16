@@ -731,6 +731,66 @@ creatures[b.id] = nil
 runTo(T + 500)
 check(M.fights[b.id] == nil, "the fight ends with the boss")
 
+-- a protection zone is never part of a fight (owner's bug, 2026-10-16: a display Mirecoil Wyrm in its closed cell
+-- of the Cinderhold teleport room killed a level 8 player on the PZ carpet with Mire Spit, 20% of max health = 58)
+local pzTiles = {}
+function Tl:hasFlag(flag)
+	return flag == TILESTATE_PROTECTIONZONE and pzTiles[self.p.x .. "," .. self.p.y] == true
+end
+for x = 191, 209 do
+	for y = 197, 199 do
+		pzTiles[x .. "," .. y] = true -- the carpet corridor
+	end
+end
+stay.pos, walker.pos = {x = 300, y = 300, z = 7}, {x = 300, y = 300, z = 7}
+hits = {}
+local wyrm = make({name = "Mirecoil Wyrm", pos = {x = 200, y = 195, z = 7}, hp = 33200}) -- the cell, not PZ
+local low = make({name = "Lowbie", player = true, pos = {x = 200, y = 198, z = 7}, hp = 290})
+local wf = M.attach(wyrm, nil, {center = {x = 200, y = 195, z = 7}})
+check(wf ~= nil, "the wyrm has its light profile")
+local pzInGrid = false
+for k in pairs(wf.grid.set) do
+	pzInGrid = pzInGrid or pzTiles[k] == true or pzTiles[tostring(k)] == true
+end
+for _, t in ipairs(wf.grid.list) do
+	pzInGrid = pzInGrid or pzTiles[t.x .. "," .. t.y] == true
+end
+check(not pzInGrid, "no PZ tile in an auto-attached arena")
+runTo(T + 60000)
+local lowHit = false
+for _, h in ipairs(hits) do
+	lowHit = lowHit or h.target == low.id
+end
+check(not lowHit, "a player on the PZ carpet is never hit by a telegraph")
+eq(low.hp, 290, "the player on the PZ carpet keeps full health")
+eq(#(low.ops or {}), 0, "no cast bar for a player in PZ")
+-- off the carpet (a tile of the arena) the same wyrm does hit
+low.pos = {x = 201, y = 194, z = 7}
+runTo(T + 60000)
+lowHit = false
+for _, h in ipairs(hits) do
+	lowHit = lowHit or h.target == low.id
+end
+check(lowHit, "off the PZ the telegraphs still land")
+creatures[wyrm.id] = nil
+runTo(T + 500)
+-- a display monster of the hunt teleport room (hunt_teleports.lua) never gets a fight
+ChaosHuntTeleports = {isDisplaySpot = function(p) return p.x == 200 and p.y == 195 and p.z == 7 end}
+local shown = make({name = "Mirecoil Wyrm", pos = {x = 200, y = 195, z = 7}, hp = 33200})
+check(M.attach(shown, nil, {center = {x = 200, y = 195, z = 7}}) == nil, "no fight for a display monster")
+check(M.fights[shown.id] == nil, "no fight state for a display monster")
+if EventCallback.onSpawn then
+	shown.ev = nil
+	EventCallback.onSpawn(shown, Position(200, 195, 7), false, false)
+	check(not (shown.ev and shown.ev.ChaosBossMechAttach), "no auto-attach event on a display spawn")
+	local loose = make({name = "Mirecoil Wyrm", pos = {x = 205, y = 190, z = 7}, hp = 33200})
+	EventCallback.onSpawn(loose, Position(205, 190, 7), false, false)
+	check(loose.ev and loose.ev.ChaosBossMechAttach, "a hunting wyrm elsewhere still gets its profile")
+	creatures[loose.id] = nil
+end
+creatures[shown.id] = nil
+ChaosHuntTeleports = nil
+
 print(string.format("boss_mechanics_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)

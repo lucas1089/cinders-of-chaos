@@ -89,6 +89,7 @@ function Item:getParent() return self.parent end
 function Item:getCustomAttribute(k) return self.custom[k] end
 function Item:setCustomAttribute(k, v) self.custom[k] = v end
 function Item:getPosition() return {x = 100, y = 100, z = 7} end
+function Item:getWeight() local w = self.weight * (self.count or 1) for _, x in ipairs(self.items or {}) do w = w + x:getWeight() end return w end
 local function detach(it)
 	local p = it.parent
 	if p and p.items then
@@ -161,6 +162,12 @@ local function newPlayer(guid, o)
 	function p:getPosition() return {x = 100, y = 100, z = 7} end
 	p.inbox.parent = nil
 	function p.inbox:addItemEx(it) self.items[#self.items + 1] = it; it.parent = self; return RETURNVALUE_NOERROR end
+	-- the purse (the engine's store inbox, store_delivery.lua delivers there)
+	p.purse = item(1988)
+	p.purse.cap = 1000
+	function p.purse:addItemEx(it) self.items[#self.items + 1] = it; it.parent = self; return RETURNVALUE_NOERROR end
+	function p:getStoreInbox() if self.noPurse then return nil end return self.purse end
+	function p:getFreeCapacity() return self.freeCap end
 	players[guid] = p
 	return p
 end
@@ -307,12 +314,28 @@ ok(P.moveRefusal({holdsPouch = true, chain = {"item", "player"}}), "another play
 ok(P.moveRefusal({holdsPouch = true, chain = {"pouch", "self"}}):find("another pouch"), "pouch into pouch refused")
 ok(P.moveRefusal({holdsPouch = true, chain = {"item", "pouch", "self"}}), "a bag holding a pouch into a pouch refused")
 
--- summary line
+-- loot line (owner 2026-10-16: list what was looted, not the pouch)
+local function e(id, name, count, o)
+	o = o or {}
+	return {id = id, name = name, plural = o.plural, count = count or 1, rarity = o.rarity or 0, rarityName = o.rn,
+		unique = o.unique or false}
+end
 eq(P.summary(cfg, {}, 0, 0), nil, "nothing happened: no line")
-eq(P.summary(cfg, {orbs = 3, keys = 1}, 0, 0), "Pouches: Orbs Pouch +3, Rift Key Pouch +1.", "short line per kill")
-ok(P.summary(cfg, {}, 2, 1, {loot = true}):find("Loot Bag is full; 2 to your backpack; 1 left"), "full / backpack / corpse")
-eq(P.summary(cfg, {loot = 2}, 0, 0, {orbs = true}, 2), "Pouches: Loot Bag +2 (Orbs Pouch is full; 2 to your Loot Bag).",
-	"overflow told")
+eq(P.summary(cfg, {e(2148, "gold coin", 10, {plural = "gold coins"}), e(5877, "dragon scale", 1, {plural = "dragon scales"}),
+	e(5877, "dragon scale", 1, {plural = "dragon scales"}), e(2475, "wyrmscale helmet")}, 0, 0),
+	"Looted: 10 gold coins, 2 dragon scales, wyrmscale helmet.", "grouped by item, counts, no pouch name")
+eq(P.lootList({e(2475, "helmet", 1, {rarity = 1, rn = "Common"}), e(2475, "helmet", 1, {rarity = 3, rn = "Rare"}),
+	e(2400, "sword", 1, {unique = true}), e(2148, "gold coin", 5)}),
+	"{sword}, {[Rare] helmet}, [Common] helmet, 5 gold coin", "uniques then rarity first, flagged from Rare; same id other rarity apart; no plural -> name")
+local many = {}
+for i = 1, 8 do many[i] = e(3000 + i, "thing" .. i) end
+eq(P.lootList(many), "thing1, thing2, thing3, thing4, thing5 and 3 more", "cap of 5 entries plus and N more")
+eq(P.lootList(many, {maxEntries = 8}), "thing1, thing2, thing3, thing4, thing5, thing6, thing7, thing8", "cap from the config")
+eq(P.lootList({}), nil, "empty list")
+eq(cfg.lootLine.maxEntries, 5, "config cap")
+ok(P.summary(cfg, {}, 2, 1, {loot = true}):find("^Looted: nothing %(Loot Bag is full; 2 to your backpack; 1 left"), "full / backpack / corpse")
+eq(P.summary(cfg, {e(29856, "orb", 2, {plural = "orbs"})}, 0, 0, {orbs = true}, 2),
+	"Looted: 2 orbs (Orbs Pouch is full; 2 to your Loot Bag).", "overflow told in the short notes")
 
 -- ------------------------------------------------------------------ engine glue: items
 local hero = newPlayer(7)
@@ -321,27 +344,40 @@ bp.parent = hero
 hero.slots[CONST_SLOT_BACKPACK] = bp
 eq(PO.storeCheck(hero, "orbs"), nil, "orbs pouch can be bought")
 eq(PO.storeGive(hero, "orbs"), true, "orbs pouch delivered")
-local orbsPouch = bp.items[1]
-eq(orbsPouch.id, 32082, "orbs pouch in the backpack")
-eq(orbsPouch.custom.chaos_pouch_owner, 7, "owner") eq(orbsPouch.custom.chaos_storebound, 1, "store-bound")
+-- owner 2026-10-16: store items go to the purse (store_delivery.lua)
+local orbsPouch = hero.purse.items[1]
+eq(orbsPouch.id, 32082, "orbs pouch in the purse")
+eq(#bp.items, 0, "not in the backpack")
+eq(orbsPouch.custom.chaos_pouch_owner, 7, "owner") eq(orbsPouch.custom.chaos_storebound, 1, "store-bound kept in the purse")
 eq(orbsPouch.custom.chaos_locked, 1, "item lock (never sold to NPCs, no stock market, no trash)")
-ok(hero.msgs[#hero.msgs]:find("backpack"), "player told where it is")
-ok(PO.storeCheck(hero, "orbs"):find("already have"), "a second Orbs Pouch is refused")
+ok(hero.msgs[#hero.msgs]:find("purse") and hero.msgs[#hero.msgs]:find("from now on, there or in your backpack"),
+	"player told it is in the purse and collects there")
+eq(PO.carried(hero).orbs, orbsPouch, "a pouch in the purse counts as carried (collects without moving it)")
+ok(PO.storeCheck(hero, "orbs"):find("already have"), "a second Orbs Pouch is refused (one in the purse counts)")
 eq(PO.isPouch(orbsPouch), true, "isPouch (the player market's check)")
 eq(PO.isPouch(item(1987, {custom = {chaos_storebound = 1}})), true, "anything store-bound counts")
 eq(PO.isPouch(item(1987)), false, "a bag is not a pouch")
 ok(PO.storeCheck(hero, "nope"), "unknown kind refused")
+-- too heavy to carry: the purse counts in the inventory weight, so the depot inbox
+hero.freeCap = 0
 eq(PO.storeGive(hero, "keys"), true, "keys pouch delivered")
-local keysPouch = bp.items[2]
--- backpack full: the Loot Bag goes to the inbox
-for i = 1, 18 do bp.items[#bp.items + 1] = item(2400) end
+local keysPouch = hero.inbox.items[1]
+eq(keysPouch.id, 32083, "no capacity: the depot inbox")
+ok(hero.msgs[#hero.msgs]:find("depot inbox") and hero.msgs[#hero.msgs]:find("Move it to your backpack"),
+	"told: depot inbox, move it to collect")
+eq(PO.carried(hero).keys, nil, "a pouch in the depot inbox does not collect")
+hero.freeCap = 100000
+-- no purse: the depot inbox, as before
+hero.noPurse = true
 eq(PO.storeGive(hero, "loot"), true, "loot pouch delivered")
-eq(hero.inbox.items[1].id, 32081, "backpack full: into the inbox")
+eq(hero.inbox.items[2].id, 32081, "no purse: into the depot inbox")
 ok(PO.storeCheck(hero, "loot"):find("already have"), "a pouch in the inbox counts as owned")
-local lootPouch = table.remove(hero.inbox.items, 1)
-for i = 1, 18 do table.remove(bp.items) end
-lootPouch.parent = nil
-lootPouch:moveTo(bp, 0)
+hero.noPurse = nil
+-- the player takes them out into the backpack
+local lootPouch = table.remove(hero.inbox.items, 2)
+table.remove(hero.inbox.items, 1)
+table.remove(hero.purse.items, 1)
+for _, pz in ipairs({orbsPouch, keysPouch, lootPouch}) do pz.parent = nil; pz:moveTo(bp, 0) end
 eq(#bp.items, 3, "three pouches in the backpack")
 local store, collects = PO.tooltipLines(orbsPouch)
 eq(store, "Store item: cannot be traded", "tooltip store line") ok(collects:find("orbs"), "tooltip collects line")
@@ -381,7 +417,8 @@ eq(lootPouch.items[1].id, 2148, "gold -> Loot Bag")
 eq(lootPouch.items[2].id, 2400, "autoloot-list gear -> Loot Bag")
 eq(finalized, 1, "gear rolled on the way out (ChaosLoot.finalizeRarity)")
 eq(junk.parent, c1, "other loot stays in the corpse") eq(rare.parent, c1, "gear without a rule stays")
-eq(hero.msgs[#hero.msgs], "Pouches: Orbs Pouch +3, Rift Key Pouch +4, Loot Bag +51.", "one chat line per kill")
+eq(hero.msgs[#hero.msgs], "Looted: [Uncommon] item2400, 2 item29856, item10155, 3 item32071, item32010 and 1 more.",
+	"one loot line per kill: the items, rarity gear first, capped")
 -- the Loot Bag's defaults: all the loot (other loot, plain and rare gear) goes into it
 hero.storage[ST.lootRules] = -1
 local junk2, rare2, plain2 = item(2401), item(2402, {cat = "equipment", rarity = 9}), item(2403, {cat = "equipment"})
@@ -582,16 +619,69 @@ eq(hero.msgs[#hero.msgs], "Back after your death, empty: your Orbs Pouch, Rift K
 registry.ChaosPouchesLogin.onLogin(hero)
 eq(#bpNew.items, 3, "given once")
 
+-- ------------------------------------------------------------------ a pouch in the purse collects (one level deep)
+local pp = newPlayer(30)
+local ppBag = item(1988); ppBag.parent = pp; pp.slots[CONST_SLOT_BACKPACK] = ppBag
+pp.storage[ST.lootRules] = -1
+eq(PO.storeGive(pp, "loot"), true, "a Loot Bag bought")
+local purseBag = pp.purse.items[1]
+eq(purseBag.id, 32081, "in the purse")
+local loot1 = item(2401)
+drop(nil, corpse(pp.id, {loot1}))
+eq(loot1.parent, purseBag, "the Loot Bag in the purse collects")
+ok(pp.msgs[#pp.msgs]:find("^Looted:"), "the loot line")
+ok(PO.storeCheck(pp, "loot"):find("already have"), "one per character: the purse's pouch counts")
+-- one level deep only: a pouch inside a bag in the purse does not collect
+local inner = item(1987)
+table.remove(pp.purse.items, 1)
+purseBag.parent = nil
+pp.purse.items[1] = inner; inner.parent = pp.purse
+inner.items[1] = purseBag; purseBag.parent = inner
+eq(PO.carried(pp).loot, nil, "a pouch in a bag in the purse is not carried")
+ok(PO.storeCheck(pp, "loot"):find("already have"), "but still owned")
+local loot2 = item(2401)
+local c2 = corpse(pp.id, {loot2})
+drop(nil, c2)
+eq(loot2.parent, c2, "nothing collected from two levels down")
+-- the inventory first: a pouch in the backpack wins over one in the purse
+local hold = newPlayer(31)
+local hb = item(1988); hb.parent = hold; hold.slots[CONST_SLOT_BACKPACK] = hb
+local inBag, inPurse = PO.create(hold, "orbs"), PO.create(hold, "orbs")
+inBag:moveTo(hb, 0)
+hold.purse:addItemEx(inPurse)
+eq(PO.carried(hold).orbs, inBag, "the backpack's pouch first")
+hold.noPurse = true
+eq(PO.carried(hold).orbs, inBag, "no purse: the backpack only")
+
+-- ------------------------------------------------------------------ the loot goes to the Loot Bag, the backpack only when it is full
+-- (owner 2026-10-16: "the loot bag and the backpack are conflicting")
+local lb = newPlayer(32)
+local lbBp = item(1988); lbBp.parent = lb; lb.slots[CONST_SLOT_BACKPACK] = lbBp
+local innerBp = item(1988); innerBp.parent = nil; innerBp:moveTo(lbBp, 0)
+lb.storage[ST.lootRules] = -1
+local bag = PO.create(lb, "loot"); bag:moveTo(lbBp, 0)
+local before = #lbBp.items
+local g1, g2, g3 = item(2148, {count = 27, cat = "currency"}), item(2401), item(2402, {cat = "equipment", rarity = 2})
+drop(nil, corpse(lb.id, {g1, g2, g3}))
+eq(#lbBp.items, before, "nothing into the backpack while the Loot Bag has room") eq(#innerBp.items, 0, "nor a bag in it")
+eq(g2.parent, bag, "loot into the Loot Bag") eq(g3.parent, bag, "gear into the Loot Bag")
+ok(not lb.msgs[#lb.msgs]:find("backpack"), "no spill note")
+bag.cap = #bag.items -- full
+local s1 = item(2403)
+drop(nil, corpse(lb.id, {s1}))
+ok(s1.parent == lbBp or s1.parent == innerBp, "the Loot Bag full: the backpack")
+ok(lb.msgs[#lb.msgs]:find("Loot Bag is full") and lb.msgs[#lb.msgs]:find("1 to your backpack"), "told: " .. lb.msgs[#lb.msgs])
+
 -- ------------------------------------------------------------------ former Bottomless Loot Pouch owners
 local old = newPlayer(20)
 local bpo = item(1988); bpo.parent = old; old.slots[CONST_SLOT_BACKPACK] = bpo
 old.storage[Chaos.storage.shopLootPouch] = 1
 registry.ChaosPouchesLogin.onLogin(old)
-eq(bpo.items[1] and bpo.items[1].id, 32081, "a free Loot Bag")
+eq(old.purse.items[1] and old.purse.items[1].id, 32081, "a free Loot Bag, in the purse like a store item")
 ok(old.msgs[#old.msgs]:find("retired"), "with a short message")
 eq(old.storage[ST.legacyGrant], 1, "marked")
 registry.ChaosPouchesLogin.onLogin(old)
-eq(#bpo.items, 1, "only once")
+eq(#old.purse.items, 1, "only once")
 local fresh = newPlayer(21)
 registry.ChaosPouchesLogin.onLogin(fresh)
 eq(fresh.storage[ST.legacyGrant], nil, "nothing for characters without the old unlock")

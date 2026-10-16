@@ -46,6 +46,9 @@ if not ChaosCommands then
 	dofile("data/scripts/chaos/commands_ui_core.lua")
 end
 dofile("data/lib/chaos_dark_paint.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 
 ChaosWorldBoss = ChaosWorldBoss or {}
 -- pack effects (data/lib/chaos_pack_fx.lua, switch ChaosPackFx.PACK_FX, on since 2026-10-13; off: exactly the stock effect as before)
@@ -734,13 +737,27 @@ function W.portalSpots()
 	return spots
 end
 
+-- the World Boss Portals: next to every temple (of `towns`) through cityportals.lua (the first free tile of
+-- `portalOffsets`, then the shared offsets; a look text and an effect while they stand), or at `portalPositions`
 local function openPortals()
 	state.portals = {}
-	local a = C().arena
-	for _, pos in ipairs(W.portalSpots()) do
-		local item = Game.createItem(a.portalId, 1, pos)
-		if item then
-			item:setActionId(C().aid.enter)
+	local c = C()
+	local a = c.arena
+	if c.portalPositions and #c.portalPositions > 0 then
+		for _, pos in ipairs(W.portalSpots()) do
+			local item = Game.createItem(a.portalId, 1, pos)
+			if item then
+				item:setActionId(c.aid.enter)
+				state.portals[#state.portals + 1] = pos
+				pos:sendMagicEffect(CONST_ME_TELEPORT)
+				ChaosCityPortals.register("worldboss", c.aid.enter, pos)
+			end
+		end
+	else
+		local _, positions = ChaosCityPortals.place({kind = "worldboss", aid = c.aid.enter, item = a.portalId,
+			towns = c.towns, offsets = c.portalOffsets})
+		for _, p in ipairs(positions) do
+			local pos = Position(p.x, p.y, p.z)
 			state.portals[#state.portals + 1] = pos
 			pos:sendMagicEffect(CONST_ME_TELEPORT)
 		end

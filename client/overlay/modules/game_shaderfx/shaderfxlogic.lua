@@ -22,6 +22,37 @@ L.ORB_COLORS = { health = '#d8262c', mana = '#2f6ef0' }
 L.SLOSH_DECAY_PER_SECOND = 0.12 -- what is left of the slosh after one second
 L.SLOSH_MIN = 0.01
 
+-- orb sizes (Options > Graphics > Orb size, option liquidOrbSize): 1 small (the first size, 76 px), 2 medium (the
+-- default, about 2x), 3 large (about 2.5x). The liquid keeps the ring's proportion (64 of 76) and the number a
+-- font that reads at that size.
+L.ORB_SIZES = {
+  { size = 76, font = 'verdana-11px-rounded' },
+  { size = 150, font = 'chaos-outline-12px' },
+  { size = 190, font = 'chaos-display-16px' },
+}
+L.ORB_DEFAULT_SIZE = 2
+L.ORB_EDGE = 6    -- from the corner of the map
+L.ORB_CLEAR = 4   -- above the chat panel when an orb has to move up
+
+function L.orbSize(option)
+  local i = math.floor(tonumber(option) or 0)
+  local entry = L.ORB_SIZES[i] or L.ORB_SIZES[L.ORB_DEFAULT_SIZE]
+  return entry.size, math.floor(entry.size * 64 / 76 + 0.5), entry.font
+end
+
+-- the bottom margin of an orb so that it does not cover the chat panel. orb: {x, width} of the orb at its corner;
+-- bottom: the map's bottom (y); size: the orb's size; area: {x, y, width} of the bottom area (action bars + chat,
+-- down to the window's bottom) or nil. An orb that overlaps the area sideways sits on top of it.
+function L.orbMarginBottom(orb, bottom, size, area)
+  local margin = L.ORB_EDGE
+  if not area or not orb then return margin end
+  local overlapsX = orb.x < area.x + area.width and orb.x + orb.width > area.x
+  if overlapsX and bottom - margin > area.y then
+    margin = math.max(margin, bottom - area.y + L.ORB_CLEAR)
+  end
+  return margin
+end
+
 -- 0..1 fill of an orb (0 without a maximum)
 function L.fill(value, max)
   value, max = tonumber(value) or 0, tonumber(max) or 0

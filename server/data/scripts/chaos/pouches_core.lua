@@ -9,7 +9,8 @@
 --   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
 --   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
---   ChaosPouchesCore.summary(cfg, taken, backpack, left)   the per-kill chat line, or nil
+--   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow)   the per-kill loot line, or nil
+--   ChaosPouchesCore.lootList(looted, opts)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
 --         gem = bool, container = bool, pouch = bool (a pouch itself), onList = bool (on the base autoloot list)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -212,17 +213,66 @@ function P.moveRefusal(m)
 	return "Store items stay with you: keep them in your backpack or your depot."
 end
 
--- taken = {[kind] = n}, backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere),
--- full = {[kind] = true} (say the pouch is full), overflow = n (of the Loot Bag's count: items a full specialist
--- pouch passed to it)
-function P.summary(cfg, taken, backpack, left, full, overflow)
-	local parts = {}
-	for _, kind in ipairs(cfg.order) do
-		local n = taken[kind] or 0
-		if n > 0 then
-			parts[#parts + 1] = string.format("%s +%d", cfg.kinds[kind].title, n)
+-- the loot line's item list. looted = the items taken this kill, in corpse order: {id, name, plural, count, rarity,
+-- rarityName, unique}. Same item (id, rarity, unique) grouped and counted; uniques and rarity gear first (highest first),
+-- then the rest in corpse order; at most opts.maxEntries (5), then "and N more". Returns the text or nil.
+function P.lootList(looted, opts)
+	opts = opts or {}
+	local maxEntries, flag = opts.maxEntries or 5, opts.flagRarity or 3
+	local groups, byKey = {}, {}
+	for i, e in ipairs(looted or {}) do
+		local rarity = tonumber(e.rarity) or 0
+		local key = tostring(e.id) .. ":" .. rarity .. ":" .. (e.unique and 1 or 0)
+		local g = byKey[key]
+		if not g then
+			g = {e = e, rarity = rarity, count = 0, order = i}
+			byKey[key] = g
+			groups[#groups + 1] = g
 		end
+		g.count = g.count + math.max(1, tonumber(e.count) or 1)
 	end
+	if #groups == 0 then
+		return nil
+	end
+	local function rank(g)
+		return g.e.unique and 1000 or g.rarity
+	end
+	table.sort(groups, function(a, b)
+		if rank(a) ~= rank(b) then
+			return rank(a) > rank(b)
+		end
+		return a.order < b.order
+	end)
+	local parts = {}
+	for i = 1, math.min(#groups, maxEntries) do
+		local g = groups[i]
+		local e = g.e
+		local name = tostring(e.name or ("item " .. tostring(e.id)))
+		if g.count > 1 then
+			local plural = e.plural ~= nil and e.plural ~= "" and e.plural or name
+			name = g.count .. " " .. plural
+		end
+		if g.rarity > 0 and e.rarityName then
+			name = "[" .. e.rarityName .. "] " .. name
+		end
+		if e.unique or g.rarity >= flag then
+			name = "{" .. name .. "}"
+		end
+		parts[#parts + 1] = name
+	end
+	local text = table.concat(parts, ", ")
+	if #groups > maxEntries then
+		text = text .. " and " .. (#groups - maxEntries) .. " more"
+	end
+	return text
+end
+
+-- the per-kill line: "Looted: <P.lootList> (<notes>)." looted = the items the pouch step took (into a pouch or the
+-- backpack), backpack = n (wanted by a pouch, went to the backpack), left = n (no room anywhere), full = {[kind] =
+-- true} (say the pouch is full), overflow = n (items a full specialist pouch passed to the Loot Bag). The pouch names
+-- stay out of the list; they appear only in the short notes. nil when nothing happened.
+function P.summary(cfg, looted, backpack, left, full, overflow)
+	local list = P.lootList(looted, cfg.lootLine)
 	local notes = {}
 	for _, kind in ipairs(cfg.order) do
 		if full and full[kind] then
@@ -238,10 +288,10 @@ function P.summary(cfg, taken, backpack, left, full, overflow)
 	if left > 0 then
 		notes[#notes + 1] = left .. " left in the corpse, no room"
 	end
-	if #parts == 0 and #notes == 0 then
+	if not list and #notes == 0 then
 		return nil
 	end
-	local text = "Pouches: " .. (#parts > 0 and table.concat(parts, ", ") or "nothing")
+	local text = "Looted: " .. (list or "nothing")
 	if #notes > 0 then
 		text = text .. " (" .. table.concat(notes, "; ") .. ")"
 	end

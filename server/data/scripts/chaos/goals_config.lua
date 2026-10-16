@@ -64,7 +64,8 @@ C.enabled = true
 C.opcode = 178 -- ChaosOpcodes.goals (chaos_constants.lua); client game_goals
 C.requestMs = 400 -- one panel request per player per 400 ms (Chaos.limited)
 C.staffGroup = 4 -- staff walk no goals (the panel shows them, nothing is rewarded)
-C.checkMs = 2000 -- after a counter changes, the goals of a character are checked at most this often
+C.checkMs = 250 -- a changed counter or level waits this long, so the changes of one kill are checked together
+C.pushMs = 1000 -- the goals of a character are checked and pushed (tracker, open panel) at most this often
 C.tracked = 3 -- goals in the on-screen tracker
 C.catchUp = 6 -- open goals of bands below the character's own shown in the panel (the rest: "and N more")
 C.upcoming = 3 -- locked goals shown under "Next unlocks"
@@ -74,7 +75,8 @@ C.upcoming = 3 -- locked goals shown under "Next unlocks"
 C.table = "chaos_goals"
 
 -- own stats (not achievement counters): how a reported value adds up. Sources (goals.lua, no edits of the systems):
---   passive_spent    probe at login and panel open: ChaosPassiveTree.hasAllocation (1 once a point is spent)
+--   passive_spent    probe at login and panel open, and a ChaosPassiveTree listener (after every save):
+--                    ChaosPassiveTree.hasAllocation (1 once a point is spent)
 --   faction_rank     ChaosFactions.gain wrapped (the rank index after a gain; 4 Trusted, 5 Honored, 6 Revered)
 --   pocket_kills     ChaosConquest.grant wrapped: a grant of a "pocketboss:<boss>" source (one per pocket boss kill)
 --   conquest_earned  ChaosConquest.grant wrapped: the tokens granted
