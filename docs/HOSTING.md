@@ -235,7 +235,7 @@ Before paying for any month:
 | Vultr | Trustpilot 1.5 from 586. Main theme: suspensions and terminations without warning. https://www.trustpilot.com/review/vultr.com | 2026-10-16 |
 | Gcore | Trustpilot 2.3 from 48. Slow support, billing complaints. https://www.trustpilot.com/review/gcore.com | 2026-10-16 |
 | StreetHosting | Trustpilot 4.7 but only 49 reviews. Profile claimed Mar 2025. Too little history. https://br.trustpilot.com/review/streethosting.com.br | 2026-10-16 |
-| Hostinger VPS | Trustpilot 4.6 from 73,197, but no Brazil location shown, vCPU sharing not stated, and the low price needs a long prepaid term | 2026-10-16 |
+| Hostinger VPS | Trustpilot 4.6 from 73,197 (replies to 99% of negative reviews). Brazil is a VPS location (support page updated 2026-09-15; city not named). Not a backend: shared AMD EPYC vCPU, clock not stated, our game loop needs a fast dedicated core. Not a gateway: Wanguard filtering only, no game-aware TCP filter. KVM 8 (8 vCPU, 32 GB, 400 GB NVMe) is US$ 25.99/month prepaid, renews at US$ 49.99. Fine for a staging or test server | 2026-10-16 |
 | OVHcloud as backend | No Brazilian region. 102-128 ms from SP to Ashburn | 2026-10-16 |
 
 Datalix and BuyVM from the first version were not reliability-checked. They are left out.
