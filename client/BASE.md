@@ -576,6 +576,18 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     "+" stayed over borders, splitters and items, and a click on the target still ran the use; without a selection the
     borders show their arrows as before. The click that "did not work" was not reproduced on its own (a click on a
     target item worked with the arrow shown); it may have been a click on the 3 px border itself.
+62. `0084` (Lua `mods/game_compendium/compendium.lua`): the Compendium's pages for the Chaos client. The window is
+    still reachable: `game_sidebuttons` stays loaded (the top menu only hides its window) and loads `game_compendium`
+    with its load-later list, and the keybind "Open Compendium" (Dialogs, no default key) opens it. The base pages
+    described a task shop with talismans and hunting points, Soul Seal, familiars and podiums, a right-side menu and
+    the 8.60 protocol; `0063` only fixed three of those lines. They now describe Hunt > Kill Tasks and Adventure >
+    Bounty Board (`game_bestiary`, `game_bounty`), Hunt > Task Tracker, System > Helper (the `0052` server-confirmed
+    rotation), Economy > Codex and Item Finder, the top menu (`client_chaos_topbar`), Hunt > Bestiary, Social > Patch
+    Notes and System > Report a Bug / Join Discord. The section titles are the window's button images and are
+    unchanged. `renderPage` shows each page through `tr()`; the pt-BR texts, with the window's own labels (Compendium,
+    Previous Page, Next Page), are in `client_chaos_locale/pt_br.lua`. Lua only; replaces the `0063` help text, so it
+    applies after `0001`-`0083` (the whole chain applied to the base archive; the patched file parses in LuaJIT and
+    Lua 5.3). Not run in a client yet.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
