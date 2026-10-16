@@ -38,7 +38,7 @@ function chaos_credits_lang(array $get): string {
 }
 
 function chaos_credits_url(string $lang = 'pt-BR'): string {
-	return 'page.php?plugin=chaos&p=credits' . ($lang === 'en' ? '&l=en' : '');
+	return 'page?plugin=chaos&p=credits' . ($lang === 'en' ? '&l=en' : '');
 }
 
 /** The page's own words. */

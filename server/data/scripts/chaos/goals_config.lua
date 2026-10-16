@@ -258,8 +258,8 @@ C.bands = {
 
 -- ------------------------------------------------------------------ goals (in the order the panel lists them)
 C.goals = {
-	-- 1-19
-	lvl(8, 1),
+	-- 1-19. Characters start at level 8 (start_stats.lua, owner design 2026-10-16): no "Reach level 8" goal; the key
+	-- lvl8 is retired (a stored g:lvl8 of an older character is ignored)
 	{key = "magic1", level = 1, stat = "kills_magic", target = 1,
 		title = T("Slay a magic monster", "Mate um monstro mágico"),
 		why = T("Magic, rare and legendary monsters drop better gear and orbs.",

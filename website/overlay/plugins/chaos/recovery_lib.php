@@ -49,7 +49,7 @@ function chaos_recovery_hash(string $token): string {
 /** The link in the mail: the configured site address, never the request's Host header. */
 function chaos_recovery_link(string $token): string {
 	$base = rtrim((string)($GLOBALS['config']['site_url'] ?? ''), '/');
-	return $base . '/recovery.php?reset=' . rawurlencode($token);
+	return $base . '/recovery?reset=' . rawurlencode($token);
 }
 
 /** The accounts an entry names: an e-mail address (at most 3 accounts) or an account name. */
@@ -214,7 +214,7 @@ function chaos_recovery_request_form(string $message = ''): string {
 		. ($message !== '' ? '<p class="chaos-note">' . chaos_h($message) . '</p>' : '')
 		. '<p>Enter your account name or the e-mail address of your account. We will send a link to that address to '
 		. 'choose a new password. The e-mail also tells you your account name.</p>'
-		. '<form action="recovery.php" method="post" class="lostaccount-form">'
+		. '<form action="recovery" method="post" class="lostaccount-form">'
 		. '<label for="chaos-who">Account name or e-mail address</label><br>'
 		. '<input type="text" id="chaos-who" name="who" maxlength="255" autocomplete="username" required><br>'
 		. chaos_recovery_captcha_html()
@@ -226,7 +226,7 @@ function chaos_recovery_reset_form(string $token, array $account, string $error 
 	return '<h1>Choose a new password</h1>'
 		. ($error !== '' ? '<p class="chaos-error">' . chaos_h($error) . '</p>' : '')
 		. '<p>Account: <b>' . chaos_h((string)$account['name']) . '</b></p>'
-		. '<form action="recovery.php" method="post">'
+		. '<form action="recovery" method="post">'
 		. '<input type="hidden" name="reset" value="' . chaos_h($token) . '">'
 		. '<label for="chaos-pw1">New password</label><br>'
 		. '<input type="password" id="chaos-pw1" name="password" maxlength="29" autocomplete="new-password" required><br>'
@@ -271,7 +271,7 @@ function chaos_recovery_handle(string $method, array $get, array $post, string $
 			return array('html' => chaos_recovery_request_form($t['bad']), 'mails' => array());
 		}
 		$setPassword((int)$account['id'], $password);
-		return array('html' => '<h1>Password changed</h1><p>' . chaos_h($t['done']) . '</p><p><a href="login.php">Log in</a></p>',
+		return array('html' => '<h1>Password changed</h1><p>' . chaos_h($t['done']) . '</p><p><a href="login">Log in</a></p>',
 			'mails' => array(chaos_recovery_mail_changed($account)));
 	}
 

@@ -3,7 +3,7 @@
  * Guild wars: the wars running now (score, terms, time left) and the history (winner, payout, end reason, the kills the
  * anti-farming rules did not count), read from the game server's chaos_guildwar tables (guildwar_lib.php). Wars are
  * declared and answered in game (Social > Guild Wars).
- * page.php?plugin=chaos&p=guildwars
+ * page?plugin=chaos&p=guildwars
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once dirname(__DIR__) . '/guildwar_lib.php';

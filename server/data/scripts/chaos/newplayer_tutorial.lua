@@ -1,5 +1,8 @@
 -- Tutorial island (roadmap item 22): brand-new characters start on a small island built at runtime and walk through
 -- five stations, west to east, before they reach the temple with their starter kit (newplayer.lua).
+-- SWITCHED OFF by default since 2026-10-16 (owner design: new characters start at level 8 in Cinderhold with the full
+-- kit; newplayer_config.lua tutorial.enabled = false). The code stays: true brings the island back. With it off the
+-- island is not built, and a character still on it is sent to the temple at its next login (tutorialFinish "closed").
 --   1 moving and fighting: kill 3 rats in the first pen (CreatureEvent kill)
 --   2 spells: open !spells (ChaosSpellbook.sendTo, wrapped) and cast the class spell (spell group cooldown)
 --   3 the passive tree: one free point, allocate it (ChaosPassiveTree.listeners)
@@ -81,15 +84,9 @@ local function placeItem(pos, id, aid)
 	return item
 end
 
-local GROUND_OF = {}
-local function groundOf(kind)
-	local t = T()
-	GROUND_OF.water, GROUND_OF.ground, GROUND_OF.wall = t.water, t.ground, t.ground
-	GROUND_OF.gate, GROUND_OF.marker = t.gateGround, t.markerGround
-	return GROUND_OF[kind]
-end
-
--- returns true, or false + reason (nothing is built then)
+-- returns true, or false + reason (nothing is built then). The tiles, grounds and items come from NP.islandModel
+-- (newplayer_core.lua: pens, fences, paths, land, trees, lamps, dock and boat, water out to the view); a second build
+-- (a reload) finds every item in place and adds nothing.
 function NP.buildIsland()
 	local t = T()
 	if not t.enabled then
@@ -99,31 +96,37 @@ function NP.buildIsland()
 		return false, "Game.createTile is missing"
 	end
 	local L = NP.layout()
-	local foot = NP.footprint(L)
-	local ours = {[t.water] = true, [t.ground] = true, [t.gateGround] = true, [t.markerGround] = true}
-	for _, f in ipairs(foot) do
-		local tile = Tile(P(f))
-		if tile then
-			local gid = groundId(tile)
-			if not ours[gid] or (tile.getHouse and tile:getHouse()) then
-				return false, string.format("tile %d,%d,%d already exists in the map", f.x, f.y, f.z)
+	local model = NP.islandModel(L, t)
+	local ours = {}
+	for _, tile in ipairs(model.tiles) do
+		ours[tile.ground] = true
+	end
+	for _, tile in ipairs(model.tiles) do
+		local existing = Tile(P(tile))
+		if existing then
+			local gid = groundId(existing)
+			if not ours[gid] or (existing.getHouse and existing:getHouse()) then
+				return false, string.format("tile %d,%d,%d already exists in the map", tile.x, tile.y, tile.z)
 			end
 		end
 	end
-	for _, f in ipairs(foot) do
-		local pos = P(f)
-		local tile = Tile(pos) or Game.createTile(pos, true)
-		if tile then
-			local g = tile:getGround()
+	for _, tile in ipairs(model.tiles) do
+		local pos = P(tile)
+		local made = Tile(pos) or Game.createTile(pos, true)
+		if made then
+			local g = made:getGround()
 			if not g then
-				g = Game.createItem(groundOf(f.kind), 1, pos)
+				g = Game.createItem(tile.ground, 1, pos)
 			end
-			if f.kind == "wall" then
-				placeItem(pos, t.wall)
-			elseif f.kind == "gate" and g and type(g) ~= "number" then
-				g:setActionId(t.aid.gate)
-			elseif f.kind == "marker" and g and type(g) ~= "number" then
-				g:setActionId(t.aid.marker)
+			if g and type(g) ~= "number" then
+				if tile.kind == "gate" then
+					g:setActionId(t.aid.gate)
+				elseif tile.kind == "marker" then
+					g:setActionId(t.aid.marker)
+				end
+			end
+			for _, id in ipairs(tile.items) do
+				placeItem(pos, id)
 			end
 		end
 	end
@@ -132,11 +135,17 @@ function NP.buildIsland()
 		for _, b in ipairs(r.basins) do
 			placeItem(P(b), t.basin)
 		end
-		for k, d in ipairs(r.decor) do
-			placeItem(P(d), t.decor[(i + k) % #t.decor + 1])
+		if t.sign then
+			local sign = placeItem(P(r.sign), t.sign, t.aid.statue)
+			if sign then
+				sign:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, string.format("%s Use it to read the lesson again.", t.lessons[i].title))
+			end
 		end
 	end
-	placeItem(P(L.skipStatue), t.skipStatue, t.aid.skip)
+	local skipItem = placeItem(P(L.skipStatue), t.skipStatue, t.aid.skip)
+	if skipItem then
+		skipItem:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Use it to skip the tutorial: you go to Cinderhold with your full kit.")
+	end
 	placeItem(P(L.exit), t.portal, t.aid.exit)
 	return true
 end
@@ -468,6 +477,14 @@ function NP.tutorialStart(player)
 	if not NP.islandReady() then
 		return false
 	end
+	-- the class's weapon, armour, backpack and Everfull potions on arrival (newplayer.lua NP.giveWearable): taken
+	-- before the snapshot, so the reset keeps them; the rest of the kit comes when the island ends
+	if NP.giveWearable then
+		local okW, errW = pcall(NP.giveWearable, player)
+		if not okW then
+			print("[newplayer] wearable kit of " .. player:getName() .. " failed: " .. tostring(errW))
+		end
+	end
 	-- the character as it is now: NP.tutorialReset puts it back when it leaves the island (newplayer_core.lua)
 	-- (a failure never stops the island: the reset then works without a snapshot)
 	local okSnap, errSnap = pcall(NP.takeSnapshot, player)
@@ -492,15 +509,29 @@ function NP.tutorialStart(player)
 	addEvent(function()
 		local p = Player(name)
 		if p and stageOf(p) == 1 then
-			enterStation(p, 1)
+			NP.showArrival(p)
+			startTask(p, 1)
 		end
 	end, C().welcome.delayMs)
 	return true
 end
 
+-- the first window on the island: do the tutorial (lesson 1) or skip it at once (Cinderhold, the full kit). The goblin
+-- statue beside the arrival, the station 1 lesson's "Skip tutorial" button and Character > Services > Leave Tutorial
+-- (!skiptutorial) do the same later.
+function NP.showArrival(player)
+	local t = T()
+	local a = t.arrival
+	NP.modal(player, t.modalBase + 8, a.title, Chaos.t(player, a.text, t.timeLimitMinutes),
+		{{1, "Start tutorial"}, {2, "Skip to Cinderhold"}})
+	NP.toast(player, Chaos.t(player, a.toast))
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, a.toast))
+end
+
 -- leave the island: everything the island lent is taken back (NP.tutorialReset: level, experience, skills, max health
 -- and mana, lent items, the free passive point, the island's storages), then the temple, the kit if not given yet and
--- the welcome. how = "done" | "skipped" | "time" (the time limit; counts as skipped). Only for a character on the
+-- the welcome. how = "done" | "skipped" | "time" (the time limit; counts as skipped) | "closed" (the island is
+-- switched off; counts as skipped; newplayer.lua then raises the character to the start level before the kit comes). Only for a character on the
 -- island: a second skip (the statue's window and !skiptutorial both answered) does nothing. Returns true when it ran.
 function NP.tutorialFinish(player, how)
 	if not NP.inTutorial(stageOf(player)) then
@@ -531,6 +562,9 @@ function NP.tutorialFinish(player, how)
 			Chaos.t(player, "Your time on the tutorial island is up: here is your kit. Everything the island shows is also in the menu at the top."))
 	elseif how == "skipped" then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You skipped the tutorial."))
+	elseif how == "closed" then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
+			Chaos.t(player, "The tutorial island is closed: you start in Cinderhold at level 8 with your full kit."))
 	else
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You finished the tutorial. Good hunting!"))
 	end
@@ -552,7 +586,8 @@ function NP.tutorialLogin(player, first)
 	local stage = stageOf(player)
 	if NP.inTutorial(stage) then
 		if not NP.islandReady() then
-			NP.tutorialFinish(player, "skipped")
+			-- the island is off (the default since 2026-10-16) or could not be built: the temple and the full kit
+			NP.tutorialFinish(player, T().enabled and "skipped" or "closed")
 			return true
 		end
 		local limit = (T().timeLimitMinutes or 0) * 60
@@ -562,6 +597,13 @@ function NP.tutorialLogin(player, first)
 		end
 		registerEvents(player)
 		islandClock(player)
+		-- a character that came to the island before the wearable kit existed (2026-10-16) gets it now
+		if NP.giveWearable then
+			local okW, errW = pcall(NP.giveWearable, player)
+			if not okW then
+				print("[newplayer] wearable kit of " .. player:getName() .. " failed: " .. tostring(errW))
+			end
+		end
 		local L = NP.layout()
 		if not NP.onIsland(player:getPosition(), L) then
 			player:teleportTo(P(NP.resumeSpot(stage, L)))
@@ -625,8 +667,11 @@ function modal.onModalWindow(player, modalWindowId, buttonId, choiceId)
 	if not NP.inTutorial(stageOf(player)) then
 		return true
 	end
-	if (modalWindowId == t.modalBase + 1 and buttonId == 2) or (modalWindowId == t.modalBase + 9 and buttonId == 1) then
+	if (modalWindowId == t.modalBase + 1 and buttonId == 2) or (modalWindowId == t.modalBase + 9 and buttonId == 1)
+			or (modalWindowId == t.modalBase + 8 and buttonId == 2) then
 		NP.tutorialFinish(player, "skipped")
+	elseif modalWindowId == t.modalBase + 8 and buttonId == 1 and stageOf(player) == 1 then
+		NP.showLesson(player, 1)
 	elseif modalWindowId == t.modalBase + 1 and buttonId == 1 and stageOf(player) == 1 then
 		spawnMonsters()
 	end
@@ -738,9 +783,9 @@ local function islandLayout()
 	local o = t.origin
 	local sig = islandSig
 	if not islandL or islandT ~= t or sig[1] ~= o.x or sig[2] ~= o.y or sig[3] ~= o.z or sig[4] ~= t.rooms
-			or sig[5] ~= t.roomW or sig[6] ~= t.roomH or sig[7] ~= t.waterRing then
+			or sig[5] ~= t.roomW or sig[6] ~= t.roomH or sig[7] ~= t.waterRing or sig[8] ~= t.landPad then
 		islandL, islandT = NP.layout(t), t
-		islandSig = {o.x, o.y, o.z, t.rooms, t.roomW, t.roomH, t.waterRing}
+		islandSig = {o.x, o.y, o.z, t.rooms, t.roomW, t.roomH, t.waterRing, t.landPad}
 	end
 	return islandL
 end
@@ -859,7 +904,7 @@ local skip = Action()
 function skip.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	if NP.inTutorial(stageOf(player)) then
 		NP.modal(player, T().modalBase + 9, "Skip the tutorial?",
-			Chaos.t(player, "You leave the island at once and get your starter kit at the temple. You cannot come back."),
+			Chaos.t(player, "You leave the island at once and get the rest of your starter kit at the temple of Cinderhold. You cannot come back."),
 			{{1, "Skip"}, {2, "Stay"}})
 	end
 	return true

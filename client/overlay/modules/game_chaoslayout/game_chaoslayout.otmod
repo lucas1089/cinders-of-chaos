@@ -1,0 +1,11 @@
+Module
+  name: game_chaoslayout
+  description: The window layout per character: side panel miniwindows (panel, order, height, collapsed, open, locked) and the position of the big Chaos windows, restored at login and saved on change
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_interface ]
+  scripts: [ layout_logic, layout ]
+  @onLoad: ChaosLayout.init()
+  @onUnload: ChaosLayout.terminate()

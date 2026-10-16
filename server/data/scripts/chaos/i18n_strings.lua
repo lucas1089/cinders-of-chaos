@@ -515,8 +515,22 @@ return {
 		["Skip"] = "Pular",
 		["Stay"] = "Ficar",
 		["Skip the tutorial?"] = "Pular o tutorial?",
-		["You leave the island at once and get your starter kit at the temple. You cannot come back."] =
-			"Você sai da ilha na hora e recebe seu kit inicial no templo. Não dá para voltar.",
+		["You leave the island at once and get the rest of your starter kit at the temple of Cinderhold. You cannot come back."] =
+			"Você sai da ilha na hora e recebe o resto do seu kit inicial no templo de Cinderhold. Não dá para voltar.",
+		["Start tutorial"] = "Começar tutorial",
+		["The tutorial island is closed: you start in Cinderhold at level 8 with your full kit."] =
+			"A ilha do tutorial está fechada: você começa em Cinderhold no nível 8 com seu kit completo.",
+		["Welcome to Cinders of Chaos! You start in Cinderhold at level 8, wearing your kit. Set up your helper in one click."] =
+			"Bem-vindo a Cinders of Chaos! Você começa em Cinderhold no nível 8, usando seu kit. Configure seu helper com um clique.",
+		["Set up your helper in one click: press Auto setup."] = "Configure seu helper com um clique: aperte Configuração automática.",
+		["Skip to Cinderhold"] = "Pular para Cinderhold",
+		["Welcome to the Isle of First Blood"] = "Bem-vindo à Isle of First Blood",
+		["You are wearing your class's starter gear, with your Everfull health and mana potions in your backpack.\n\nFive short stations (5 to 10 minutes, at most %d) teach fighting, spells, the passive tree and orbs. At the end you arrive at the temple of Cinderhold, the main city, with the rest of your kit and gold.\n\nPlayed before? Skip to Cinderhold now: you get the same kit. You can also skip later with the goblin statue beside you or Character > Services > Leave Tutorial."] =
+			"Você está usando o equipamento inicial da sua classe, com suas poções Everfull de vida e de mana na mochila.\n\nCinco estações curtas (5 a 10 minutos, no máximo %d) ensinam a lutar, as magias, a árvore passiva e os orbs. No fim você chega ao templo de Cinderhold, a cidade principal, com o resto do seu kit e ouro.\n\nJá jogou antes? Pule para Cinderhold agora: você recebe o mesmo kit. Também dá para pular depois com a estátua do goblin ao seu lado ou em Character > Services > Leave Tutorial.",
+		["Tutorial or not? Press Skip to Cinderhold in the window, or use the goblin statue beside you."] =
+			"Tutorial ou não? Aperte Pular para Cinderhold na janela, ou use a estátua do goblin ao seu lado.",
+		["You are wearing the %s starter gear. Your Everfull potions are in your backpack."] =
+			"Você está usando o equipamento inicial de %s. Suas poções Everfull estão na mochila.",
 		["Station 1: Moving and fighting"] = "Estação 1: Andar e lutar",
 		["Welcome to the Isle of First Blood.\n\nWalk with the arrow keys or by clicking the ground. Attack a creature by clicking it in the battle list or with ctrl + click / right click on it. Keep an eye on your health bar.\n\nTask: kill %d of the rats in this pen. The gate to the east opens when you are done.\n\nExperienced? Use the goblin statue (or Character > Services) to take your kit and leave at once."] =
 			"Bem-vindo à Isle of First Blood.\n\nAnde com as setas ou clicando no chão. Ataque uma criatura clicando nela na battle list ou com ctrl + clique / clique direito nela. Fique de olho na sua barra de vida.\n\nTarefa: mate %d dos ratos deste cercado. O portão a leste abre quando você terminar.\n\nJá tem experiência? Use a estátua do goblin (ou Character > Services) para pegar seu kit e sair na hora.",

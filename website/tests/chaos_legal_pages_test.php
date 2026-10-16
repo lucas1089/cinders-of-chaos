@@ -119,14 +119,14 @@ $pay = chaos_pay_config();
 check(strpos($donPt, $pay['expire_minutes'] . ' minutos') !== false && strpos($donPt, 'até ' . $pay['max_per_hour'] . ' por hora') !== false, 'expiry and hourly limit from the config');
 
 // ---------------------------------------------------------------- the renderer
-$html = chaos_legal_render("# Title <b>\n\nA **bold** line\ngoes on & on. <script>alert(1)</script>\n\n- one [NOME DO RESPONSÁVEL]\n  continued\n- [Privacy](privacy.en.md)\n\n1. first\n2. [bad](javascript:alert(1)) [site](/page.php?p=rules) [ext](https://example.invalid/x) [http](http://example.invalid)\n\n| A | B |\n|---|---|\n| x | [PREÇO EM R$] |\n");
+$html = chaos_legal_render("# Title <b>\n\nA **bold** line\ngoes on & on. <script>alert(1)</script>\n\n- one [NOME DO RESPONSÁVEL]\n  continued\n- [Privacy](privacy.en.md)\n\n1. first\n2. [bad](javascript:alert(1)) [site](/page?p=rules) [ext](https://example.invalid/x) [http](http://example.invalid)\n\n| A | B |\n|---|---|\n| x | [PREÇO EM R$] |\n");
 check(strpos($html, '<h1 class="chaos-heading">Title &lt;b&gt;</h1>') !== false, 'heading escaped');
 check(strpos($html, '<p>A <strong>bold</strong> line goes on &amp; on. &lt;script&gt;alert(1)&lt;/script&gt;</p>') !== false, 'paragraph joined, bold, escaped');
 check(strpos($html, '<script>') === false, 'no script');
 check(strpos($html, '<li>one <mark class="chaos-legal-placeholder">[NOME DO RESPONSÁVEL]</mark> continued</li>') !== false, 'placeholder marked, item continued');
-check(strpos($html, '<a href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en">Privacy</a>') !== false, 'a link to another text goes to its page');
+check(strpos($html, '<a href="page?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en">Privacy</a>') !== false, 'a link to another text goes to its page');
 check(strpos($html, 'javascript') === false && strpos($html, '<li>first</li>') !== false, 'javascript: link dropped');
-check(strpos($html, '<a href="/page.php?p=rules">site</a>') !== false && strpos($html, '<a href="https://example.invalid/x">ext</a>') !== false, 'site path and https kept');
+check(strpos($html, '<a href="/page?p=rules">site</a>') !== false && strpos($html, '<a href="https://example.invalid/x">ext</a>') !== false, 'site path and https kept');
 check(strpos($html, 'http://example.invalid') === false && strpos($html, ' http</li>') !== false, 'plain http: only the text stays');
 check(strpos($html, '<ol>') !== false && strpos($html, '<ul>') !== false, 'both list kinds');
 check(strpos($html, '<thead><tr><th>A</th><th>B</th></tr></thead><tbody><tr><td>x</td><td><mark class="chaos-legal-placeholder">[PREÇO EM R$]</mark></td></tr></tbody></table>') !== false, 'table');
@@ -143,8 +143,8 @@ function render_legal(array $get): string {
 $page = render_legal(array('doc' => 'privacy'));
 check(strpos($page, 'lang="pt-BR"') !== false && strpos($page, '<h1 class="chaos-heading">Política de Privacidade</h1>') !== false, 'privacy page in Portuguese by default');
 check($GLOBALS['page_title'] === 'Política de Privacidade', 'page title');
-check(strpos($page, 'class="chaos-tab is-active" href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy"') !== false, 'active tab');
-check(strpos($page, 'href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en" lang="en">English</a>') !== false, 'English link');
+check(strpos($page, 'class="chaos-tab is-active" href="page?plugin=chaos&amp;p=legal&amp;doc=privacy"') !== false, 'active tab');
+check(strpos($page, 'href="page?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en" lang="en">English</a>') !== false, 'English link');
 check(strpos($page, '<mark class="chaos-legal-placeholder">[E-MAIL DO ENCARREGADO]</mark>') !== false, 'placeholders marked on the page');
 check(strpos($page, '<table') !== false, 'retention table');
 $page = render_legal(array('doc' => 'donations', 'l' => 'en'));
@@ -159,11 +159,11 @@ $locale = include __DIR__ . '/../overlay/layouts/chaos/locale/en.php';
 $footer = (string)($locale['void.footer.copyright'] ?? '');
 check(strpos($footer, '&copy; {year} {site}') === 0, 'footer keeps the copyright');
 foreach (array('terms', 'privacy', 'donations') as $doc) {
-	check(strpos($footer, 'href="page.php?plugin=chaos&amp;p=legal&amp;doc=' . $doc . '"') !== false, "footer links $doc");
+	check(strpos($footer, 'href="page?plugin=chaos&amp;p=legal&amp;doc=' . $doc . '"') !== false, "footer links $doc");
 }
 $rules = (string)file_get_contents(__DIR__ . '/../setup/rules.bbcode');
 foreach (array('terms', 'privacy', 'donations') as $doc) {
-	check(strpos($rules, '[url=/page.php?plugin=chaos&p=legal&doc=' . $doc . ']') !== false, "Rules page links $doc (root-relative: ZnoteX's BBCode allows only / and http(s))");
+	check(strpos($rules, '[url=/page?plugin=chaos&p=legal&doc=' . $doc . ']') !== false, "Rules page links $doc (root-relative: ZnoteX's BBCode allows only / and http(s))");
 }
 check(strpos($rules, '[b]7. Penalties[/b]') !== false && strpos($rules, 'mute 60 minutes, then mute 24 hours, then ban 7 days') !== false, 'the ladder on the Rules page');
 check(strpos($rules, 'appeals channel') !== false, 'appeals on the Rules page');
@@ -183,9 +183,9 @@ ob_start();
 include __DIR__ . '/../overlay/layouts/chaos/views/register_form.php';
 $form = (string)ob_get_clean();
 check(strpos($form, '<input type="checkbox" name="chaos_accept_terms" value="1">') !== false, 'the checkbox, unchecked');
-check(strpos($form, 'I accept the <a href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms&amp;l=en"') !== false
-	&& strpos($form, 'href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en"') !== false, 'links to the Terms and the Privacy Policy');
-check(strpos($form, 'Li e aceito os <a href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms"') !== false && strpos($form, 'Under 18') !== false, 'Portuguese text and the under-18 note');
+check(strpos($form, 'I accept the <a href="page?plugin=chaos&amp;p=legal&amp;doc=terms&amp;l=en"') !== false
+	&& strpos($form, 'href="page?plugin=chaos&amp;p=legal&amp;doc=privacy&amp;l=en"') !== false, 'links to the Terms and the Privacy Policy');
+check(strpos($form, 'Li e aceito os <a href="page?plugin=chaos&amp;p=legal&amp;doc=terms"') !== false && strpos($form, 'Under 18') !== false, 'Portuguese text and the under-18 note');
 check(strpos($form, 'name="selected"') !== false && strpos($form, 'name="token"') !== false, 'the stock rules choice and the token stay');
 check(strpos($form, '</li>', strpos($form, 'chaos-accept-terms')) < strpos($form, 'type="submit"'), 'checkbox before the submit button');
 $header = function (): array {

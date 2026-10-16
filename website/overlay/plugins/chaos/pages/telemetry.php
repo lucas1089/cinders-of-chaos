@@ -1,6 +1,6 @@
 <?php
 /**
- * Staff: balance telemetry (page.php?plugin=chaos&p=telemetry). Admin panel accounts with a character of group 5 or
+ * Staff: balance telemetry (page?plugin=chaos&p=telemetry). Admin panel accounts with a character of group 5 or
  * higher; everyone else gets "not found". Read only. Charts are server-drawn SVG (telemetry_lib.php): no script, no CDN.
  *
  *  - GET band / class / from / to (YYYY-MM-DD, UTC days; the last 14 days by default, at most 400): the filters.
@@ -55,7 +55,7 @@ $scope = ($f['band'] !== '' ? 'level ' . $f['band'] : 'all levels') . ', ' . ($c
 		<h1 class="chaos-heading">Balance Telemetry</h1>
 		<p class="chaos-lead">Hourly aggregates from the game server: no names, no character ids. Days are UTC. Rates are shown only where at least <?= (int)CHAOS_TELEMETRY_MIN_PLAYERS ?> characters are behind them. Hover a point or bar for its value; each chart has a table below.</p>
 
-		<form method="get" action="page.php" class="chaos-filter" style="margin:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:end;">
+		<form method="get" action="page" class="chaos-filter" style="margin:10px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:end;">
 			<input type="hidden" name="plugin" value="chaos">
 			<input type="hidden" name="p" value="telemetry">
 			<label>Band

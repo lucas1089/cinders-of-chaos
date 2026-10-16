@@ -26,7 +26,8 @@ DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|m
 DENY_HASHES = {
     '356d28a3e5895f80',  # the base client's bot (side-bar tooltip, base patch 0059)
 }
-ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras', re.I)
+ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|'
+                       r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)
 CREDITS_FILES = ('docs/CREDITS.md', 'client/overlay/modules/client_chaos_credits/credits_data.lua',
                  'website/overlay/plugins/chaos/credits/credits_data.json')
 SKIP = ('client/base-patches/', 'tools/ci/check_names.py')

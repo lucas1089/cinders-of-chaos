@@ -244,7 +244,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     website/README.md "Client API"), empty by default. The overlay module `client_chaos_charselect` (`MANIFEST.md`
     "Character select") reads it: the character select asks the site for each character's wings, aura and shader, and
     "Create character" creates characters there; empty turns both off. `client/tools/set_account_api.py <client> URL`
-    writes it (https only; `--allow-http` takes 127.0.0.1 for a local test site). Lua only. The chain 0001-0045, 0048,
+    writes it (https only; `--allow-http` takes 127.0.0.1 for a local test site); a release's client downloads get it
+    from the workflow input `site_url` (`client/tools/set_server_host.py --site-url`, which also points the
+    login-screen services at `<site>/clientservices`). Lua only. The chain 0001-0045, 0048,
     0049, 0050 applies to the `windows-assets` base client with no fuzz (`patch --dry-run`, then applied).
 
 29. `0051` (C++ `src/client/creaturehit.h` (new), `thingtype.h/.cpp`, `outfit.h/.cpp`, `creature.cpp`, `mapview.h/.cpp`,
@@ -429,6 +431,80 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     display connection lost, exiting" to stderr and ends with `std::_Exit(1)`, without the destructors. The chain
     `0001`-`0064` applied to the base archive; `x11window.cpp` compiles (`g++ -std=c++20 -fsyntax-only -Wall`). Not
     reproduced in a client run.
+43. `0065` (Lua `modules/corelib/ui/uisplitter.lua`, `modules/game_interface/gameinterface.lua`): **the bottom
+    splitter drags reliably; the chat panel owns its left margin.** Build 5: the chat's height splitter did not work.
+    `UISplitter` set `self.vertical` only in `onHoverChange`, which returned early while another cursor was pushed; the
+    drag then took the horizontal branch and changed the right margin. Now the orientation comes from the shape on every
+    move, and the cursor is pushed once (hover or press) and popped once. `updateBottomSplitterLeftMargin` keeps its value
+    as `bottomSplitter.chaosBaseMarginLeft` and lets `ChaosChatPanel.relayout` place the splitter (`game_chatpanel`
+    centres the group life orb + chat + mana orb); without it the margin is set as before. The chain `0001`-`0065`
+    applied to the base archive; every Lua file parses in LuaJIT. Not tried in a client run.
+44. `0066` (Lua `mods/game_helper`: `helper.lua`, `magic_shooter_panel.lua`, `tools_panel.lua`, `timer_panel.lua`,
+    `classes/auto_stamina.lua`, `classes/alarms/low_supply_alarm.lua`, `classes/equipment.lua`): **the helper's item
+    slots show the target cursor like "Use with".** The nine item pickers (potion, rune, special food, shooter rune,
+    quiver ammo, timer item, stamina item, supply alarm, equipment) only called `g_mouse.pushCursor('target')`, which
+    shows nothing with the system cursor (the default); `startUseWith` also calls `g_mouse.setGrabber`. Each now calls
+    `ChaosItemPicker.begin` / `finish` (`game_helperrotation/itempicker.lua`); a right-click or Escape cancels without a
+    pick. Without the overlay module the old calls run. The chain `0001`-`0066` applied; the helper's Lua parses in
+    LuaJIT and Lua 5.3. Not tried in a client run.
+45. `0067` (Lua `mods/game_helper/helper.lua`): **the helper's settings survive death, relog, crashes and restarts.**
+    The helper unblocked saves after every UI reload, loaded or not, and an unreadable `helper.json` gave defaults
+    that the next save wrote over it. Saves now go through `ChaosHelperSave` (`game_helperrotation/helpersave.lua`):
+    only after this character's file was read, written through a checked `.tmp` with a `.bak`, a broken file read
+    from `.bak` / `.tmp` or kept as `.broken`; `saveSettings` is debounced (500 ms) and death, logout and unload
+    write at once. Without the overlay module the old code runs. The chain `0001`-`0067` applied; the helper parses in
+    LuaJIT and Lua 5.3. Not tried in a client run.
+46. `0068` (Lua `mods/game_helper/helper.lua`): **no cavebot rows on the helper's Files & Settings page.** The page
+    listed "Cavebot scripts & categories" (`/cavebots`) and a row per category with Open / Copy path, but this client
+    has no cavebot (`tools/assemble_client.sh` deletes it). "Custom scripts & HUDs" and "All character saves" stay. The
+    other cavebot entries were already out of sight: the tab and footer (`0015`), the Bot HUD's Cavebot box (hidden),
+    the shortcut and the "Toggle Recording" hotkey (only reachable from the deleted files). The chain `0001`-`0068`
+    applied; the helper parses in LuaJIT and Lua 5.3.
+47. `0069` (C++ `src/client/lootbeam.h` (new), `map.h/.cpp`, `mapview.cpp`, `luafunctions_client.cpp`): **loot beams.**
+    Owner: the old loot ray (a server map effect resent every second) read as a red splash over the corpse that
+    covered the next tiles and the creatures on them. Now the engine draws a thin light pillar over a tile and a soft
+    glow pool at its base, procedurally: two textures made at start from the profiles in `lootbeam.h` (a gaussian
+    column bright at the base, a radial spot; white with alpha = value) and additive blending (`CompositionMode_Add`,
+    the colour's alpha 0 so the framebuffer alpha stays). Per beam: a wide tinted halo, a narrow near-white core, a
+    glint rising inside, and on the floor a wide ellipse and a small bright one; all pulse gently (1.9 s, a phase per
+    tile). The pool is queued on the camera floor right after the tile's bottom layer (over the corpse, under the
+    creatures, in all three floor paths) with a small light of the beam's colour; the pillar is queued in
+    `drawMapForeground` after the light view (so a dark cave does not swallow it) and before names, bars and texts,
+    clipped to the map rect, and skipped when a drawn roof covers the tile. Positions go through
+    `transformPositionTo2D` and the stretch factors like the static texts, so beams follow walking and zoom. One beam
+    per tile, at most 64 (`lootbeam::MaxBeams`); nothing is drawn without beams. Lua: `g_map.setLootBeam(pos, color,
+    heightTiles, intensity)` (false at the cap), `removeLootBeam(pos)`, `clearLootBeams()`, `getLootBeamCount()`,
+    `hasLootBeam(pos)`; `Map::clean` clears them. The overlay module `game_lootbeams` (MANIFEST.md "Loot beams") sets
+    them; without the patch it logs once and draws nothing. The chain `0001`-`0069` applied to the base archive;
+    `map.cpp`, `mapview.cpp` and `luafunctions_client.cpp` compile (`g++ -std=c++20 -fsyntax-only -Wall`, no new
+    warnings), `lootbeam.h` with `-Wextra`. A mock frame rendered with `lootbeam.h` itself was shown to the owner. Not
+    yet run in a client.
+48. `0070` (Lua `mods/game_helper/helper.lua`): **the healing uses potions in closed backpacks, the Everfull potions
+    among them.** On this server `LocalPlayer:getInventoryCount` counts only equipped items and open containers, and
+    `usePotion` and the health / mana loops needed a count above 0, so a potion in a closed backpack was never used
+    (the server's use by id finds it anywhere carried). `ChaosPotionGate` (`game_helperrotation/potiongate.lua`) allows
+    a probe every 3 s for an uncounted potion and waits 30 s after the server's "Sorry, not possible."; a counted potion
+    is used as before. The Everfull potions also need server patch `0043` (use by look, Everfull first). The chain
+    `0001`-`0070` applied; the helper parses in LuaJIT and Lua 5.3. Not tried in a client run.
+49. `0071` (Lua `modules/client_background/background.lua`, `casts.lua`): **the login screen's bottom bar shows only
+    what it has.** Owner: the event schedule / boosted / casts bar stayed on the character select (over the play hint)
+    and showed empty panels when nothing served `clientServicesLink`. `background.lua` adds `hasBoostedInfo()`; the
+    overlay `client_chaos_login` (`ChaosLoginBar`, tested) shows the bar only with the sign-in panel and each panel only
+    with data. `casts.lua` asks for the cast list only with `Services.casts = true` (our server has none; the request
+    opened a failing login connection every 30 s). The chain `0001`-`0071` applied; both files parse in LuaJIT and
+    Lua 5.3. Not tried in a client run.
+50. `0072` (C++ `src/framework/net/protocol.cpp`, Lua `init.lua`, `modules/gamelib/const.lua`): **login encryption
+    keys** (server/README.md "Login encryption (RSA, XTEA)", docs/SECURITY_CHECKLIST.md). `generateXteaKey` took the
+    session's XTEA key from `mt19937` seeded with the current second, so a recorded login gave its key away after a few
+    hundred guesses (the whole session readable and forgeable, whatever the RSA key); now OpenSSL `RAND_bytes`
+    (`std::random_device` if that fails). `init.lua` gets `Services.rsa = ""`: the decimal modulus of the game server's
+    own 1024-bit key, written at build time by `client/tools/set_rsa_key.py` (`windows-package.yml`: the secret or
+    variable `CHAOS_RSA_PUBLIC`); a valid value replaces `OTSERV_RSA`, the public default key, in `gamelib/const.lua`,
+    so both logins encrypt with it. Empty keeps the default (local test servers). init.lua is never touched by the
+    signed updater, so an update cannot put the old key back. Needs server patch `0046` with the matching private key.
+    The chain `0001`-`0072` applied to the base archive; `protocol.cpp` compiles (`g++ -std=c++20 -fsyntax-only`),
+    `const.lua` and `init.lua` parse in LuaJIT and Lua 5.3; `client/tools/set_rsa_key_test.py` runs the const.lua hunk.
+    Not tried in a client run.
 
 ### Names check of the assembled client
 
@@ -461,7 +537,8 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   `/etc/chaos/chaos.env` (server/README.md "Client guard").
 - **Workflows:** `windows-package.yml` (its Windows and Linux client jobs) and `windows-client.yml` pass the secret to the build step only (GitHub masks it
   in the logs) and take the input `client_build` (`windows-package.yml` also writes it into `Services.update.package`).
-  Raise it for every new exe. Without the secret the run warns and the client gets the development key.
+  Raise it for every new exe. Without the secret `windows-package.yml` fails, unless its input `allow_dev_key` is
+  ticked (a test build: then a warning and the development key); `windows-client.yml` still only warns.
 - **Linux / local:** `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key) cmake <game-dir> ... -DCHAOS_CLIENT_BUILD=N`
   (`LINUX.md`); a build without it is a development client.
 

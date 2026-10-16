@@ -456,3 +456,11 @@ html.sn-anim .sh-logo-img { animation: chaosLogo 7s ease-in-out infinite; }
 .chaos-look { display: block; width: 64px; height: 64px; }
 .chaos-wiki-icon.chaos-sprite { object-position: center; }
 .cp-current-outfit img, .outfitColumn img { image-rendering: pixelated; }
+/* dropdown filters (plugins/chaos/lib.php chaos_pick_form, assets/js/chaos-pick.js; website/README.md "Dropdown filters") */
+.chaos-pick { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 10px 14px; margin: 10px 0 6px; }
+.chaos-pick__field { display: flex; flex-direction: column; gap: 3px; min-width: 0; max-width: 100%; }
+.chaos-pick__label { font-family: var(--c-display); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--c-gold3); }
+.chaos-pick select { min-width: 12em; max-width: 100%; padding: 6px 10px; font-size: 14px; }
+.chaos-pick__go { padding: 6px 14px; }
+.chaos-pick__go[hidden] { display: none !important; }
+@media (max-width: 560px) { .chaos-pick__field, .chaos-pick select { width: 100%; } }

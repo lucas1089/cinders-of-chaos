@@ -106,6 +106,11 @@ end
 if not ChaosPack29Fx then
 	pcall(dofile, 'data/lib/chaos_pack29_fx.lua')
 end
+-- The element blasts of the pair 29 VFX packs (data/lib/chaos_pack29_vfx.lua, same switch) stand in for the small hits
+-- and procedural bursts of any spell when the Mystic table has no swap.
+if not ChaosPack29Vfx then
+	pcall(dofile, 'data/lib/chaos_pack29_vfx.lua')
+end
 local function pack29(kind, name)
 	local Q, W = ChaosPack29Fx, ChaosSupportsSpell
 	if type(name) ~= "string" or not Q or not Q.swapFor or not Q.PAIR29 or not W or not W.cast then
@@ -113,7 +118,15 @@ local function pack29(kind, name)
 	end
 	local pid, spellId = W.cast()
 	local ok, alt = pcall(Q.swapFor, spellId, kind, name)
-	return pid and ok and alt or nil
+	if pid and ok and alt then
+		return alt
+	end
+	local V = ChaosPack29Vfx
+	if pid and V and V.swapFor then
+		local ok2, blast = pcall(V.swapFor, kind, name)
+		return ok2 and blast or nil
+	end
+	return nil
 end
 ChaosSpell.pack29 = pack29
 -- the name a script sends itself (VfxShoot): the pair 29 one during the cast, else the same name
@@ -554,6 +567,9 @@ function ChaosSpell.slow(target, ticks, percent)
 	c:setParameter(CONDITION_PARAM_TICKS, ticks)
 	c:setFormula(-percent, 0, -percent, 0)
 	target:addCondition(c)
+	if ChaosPack29Vfx then -- the slowed aura while it lasts (pair 29 switch; off: nothing)
+		pcall(ChaosPack29Vfx.hold, target, "slowed", ticks)
+	end
 end
 
 function ChaosSpell.damageTarget(caster, target, ctype, min, max, effect)

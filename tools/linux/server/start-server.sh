@@ -114,6 +114,8 @@ if [ ! -f "$DATA/chaos-setup-done.txt" ]; then
     echo "# client guard: the 64 hex digits the official client was built with (GitHub secret CHAOS_CLIENT_KEY)."
     echo "# Empty: the guard is off and any 10.98 client can log in. Set: only that client can (README.txt)."
     echo "CHAOS_CLIENT_KEY="
+    echo "# RSA login key: the path of our own key (server/tools/rsa_key.py gen; README.txt). Empty: the public default key."
+    echo "CHAOS_RSA_KEY_FILE="
   } > "$ENVF"
   umask 022
   for f in "$ROOT"/server/sql-setup/*.sql; do
@@ -141,6 +143,26 @@ set -a
 # shellcheck disable=SC1090
 . "$ENVF"
 set +a
+
+# ---- login-screen services (server/tools/clientservices.py): the boosted creature / boss and the event schedule the
+# game server writes to server/data/chaos_clientservices.json, on 127.0.0.1 only. The website's web server forwards
+# https://<site>/clientservices to it (README.txt "Login screen services"). CHAOS_CLIENTSERVICES=0 in chaos.env: off.
+svc=0
+if [ "${CHAOS_CLIENTSERVICES:-1}" != 0 ] && [ -f "$ROOT/server/tools/clientservices.py" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -I "$ROOT/server/tools/clientservices.py" "$ROOT/server/data/chaos_clientservices.json" \
+      --host 127.0.0.1 --port "${CHAOS_CLIENTSERVICES_PORT:-8090}" >> "$LOGS/clientservices.log" 2>&1 &
+    svc=$!
+    echo $svc > "$RUN/clientservices.pid"
+    echo "Login-screen services on 127.0.0.1:${CHAOS_CLIENTSERVICES_PORT:-8090} (log: logs/clientservices.log)."
+  else
+    echo "python3 not found: the login-screen services are off (the client hides that bar)."
+  fi
+fi
+stop_svc() {
+  if [ $svc -ne 0 ] && kill -0 $svc 2>/dev/null; then kill $svc 2>/dev/null || true; fi
+  rm -f "$RUN/clientservices.pid"
+}
 
 # ---- game server, started again after a clean stop (the daily server save shuts it down) and after a crash
 child=0
@@ -182,6 +204,7 @@ while [ ! -f "$RUN/stop" ]; do
   sleep 5
 done
 
+stop_svc
 stop_db
 rm -f "$RUN/start.pid" "$RUN/stop"
 echo "Stopped."

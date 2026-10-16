@@ -18,7 +18,7 @@
       "label": "Favicon",
       "type": "image",
       "default": "layouts/chaos/assets/img/favicon.png",
-      "help": "The browser tab icon."
+      "help": "The browser tab icon (32 px). The rest of the icon set, favicon.ico, the web manifest and the link preview image are generated (website/README.md, SEO and social previews)."
     },
     {
       "key": "logo_image",

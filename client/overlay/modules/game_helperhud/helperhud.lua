@@ -9,6 +9,7 @@ local L = ChaosBotHudLogic
 
 local hud = nil
 local lastLayoutKey = nil
+local lastMarginTop = nil
 
 -- the helper tab icons in /images/ui/helper, the same clips as the helper window's tabs
 local ICONS = {
@@ -40,6 +41,7 @@ local function destroy()
   if hud and not hud:isDestroyed() then hud:destroy() end
   hud = nil
   lastLayoutKey = nil
+  lastMarginTop = nil
 end
 
 local function ensure()
@@ -51,8 +53,23 @@ local function ensure()
   if not hud then return nil end
   hud:addAnchor(AnchorTop, 'parent', AnchorTop)
   hud:addAnchor(AnchorHorizontalCenter, 'parent', AnchorHorizontalCenter)
-  hud:setMarginTop(12)
+  hud:setMarginTop(L.HUD_GAP)
   return hud
+end
+
+-- keeps the HUD below the menu bar (client_chaos_topbar), which is drawn over the top of the map
+local function placeBelowMenuBar(widget)
+  local map = widget:getParent()
+  local gi = modules.game_interface
+  local root = gi and gi.getRootPanel and gi.getRootPanel()
+  if not map or not root then return end
+  local bar = root:getChildById('chaosMenuBar')
+  local rect = bar and bar:isVisible() and bar:getRect() or nil
+  local margin = L.topMargin(map:getY(), root:getY(), rect)
+  if margin ~= lastMarginTop then
+    lastMarginTop = margin
+    widget:setMarginTop(margin)
+  end
 end
 
 -- trims text to a pixel width with the real font metrics (binary search, only when it does not fit)
@@ -139,6 +156,7 @@ function M.refreshBotHud()
   end
   local widget = ensure()
   if not widget then return end
+  placeBelowMenuBar(widget)
   local entries = L.entries(cfg, gatherState(cfg), tr)
   local shape = L.layout(cfg.botHud.size, #entries)
 

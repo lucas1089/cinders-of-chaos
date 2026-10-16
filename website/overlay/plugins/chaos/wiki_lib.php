@@ -1,6 +1,6 @@
 <?php
 /**
- * The player wiki (website/README.md "Wiki"): page.php?plugin=chaos&p=wiki[&t=<topic>][&q=<search>][&l=en].
+ * The player wiki (website/README.md "Wiki"): page?plugin=chaos&p=wiki[&t=<topic>][&q=<search>][&l=en].
  * Loaded by pages/wiki.php.
  *
  *  - Reference data: wiki/wiki_data.json, generated from the game server's data files by
@@ -112,7 +112,7 @@ function chaos_wiki_dir(): string {
 
 /** A wiki page. Portuguese is the default; English adds &l=en. */
 function chaos_wiki_url(string $topic = '', string $lang = 'pt-BR', string $query = ''): string {
-	$url = 'page.php?plugin=chaos&p=wiki';
+	$url = 'page?plugin=chaos&p=wiki';
 	if ($topic !== '') {
 		$url .= '&t=' . rawurlencode($topic);
 	}
@@ -296,10 +296,10 @@ function chaos_wiki_link(string $target, string $lang): string {
 		return $topic === '' || chaos_wiki_resolve($topic) !== null ? chaos_wiki_url($topic, $lang) : '';
 	}
 	if (preg_match('/^legal:(terms|privacy|donations)$/', $target, $m)) {
-		return 'page.php?plugin=chaos&p=legal&doc=' . $m[1] . ($lang === 'en' ? '&l=en' : '');
+		return 'page?plugin=chaos&p=legal&doc=' . $m[1] . ($lang === 'en' ? '&l=en' : '');
 	}
 	if (preg_match('/^page:([a-z]+)$/', $target, $m)) {
-		return 'page.php?plugin=chaos&p=' . $m[1];
+		return 'page?plugin=chaos&p=' . $m[1];
 	}
 	if (preg_match('#^(/(?!/)|https://)[^\s"\'<>]*$#', $target)) {
 		return $target;

@@ -91,8 +91,30 @@ function PT.create(id)
 		return nil
 	end
 	item:setCustomAttribute(c.attr.storebound, 1)
-	item:setCustomAttribute(c.attr.lock, 1)
+	item:setCustomAttribute(c.attr.lock, K.bindLock(c)) -- bound, but drawn in its colours (potions_config.lua bindLock)
 	return item
+end
+
+-- every Everfull potion of the character with the old lock value gets cfg.bindLock (sent again to the client, which
+-- stops drawing it grey). Returns how many changed.
+function PT.rebind(player)
+	local c = PT.cfg()
+	local n = 0
+	walk(roots(player), function(item)
+		local id = itemId(item)
+		if id and K.everfull(c, id) then
+			local ok, v = pcall(function() return item:getCustomAttribute(c.attr.lock) end)
+			if ok and K.needsRebind(c, v) then
+				item:setCustomAttribute(c.attr.lock, K.bindLock(c))
+				if item.sendUpdate then
+					pcall(item.sendUpdate, item)
+				end
+				n = n + 1
+			end
+		end
+		return false
+	end)
+	return n
 end
 
 -- into `container` (the kit backpack) or the inventory, else the inbox: "backpack" | "inbox" | nil

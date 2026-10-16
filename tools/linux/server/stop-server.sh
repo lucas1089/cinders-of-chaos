@@ -77,6 +77,12 @@ else
   echo "The game server was not running."
 fi
 
+# the login-screen services (start-server.sh stops them itself; this is for a start-server.sh that was killed)
+if alive "$RUN/clientservices.pid"; then
+  kill "$(cat "$RUN/clientservices.pid")" 2>/dev/null && echo "Login-screen services stopped."
+fi
+rm -f "$RUN/clientservices.pid"
+
 if db_up; then
   "$MDB/bin/mariadb-admin" --no-defaults --socket="$SOCK" -u "$ME" shutdown && echo "Database stopped."
 elif [ $db_was_up -eq 1 ]; then

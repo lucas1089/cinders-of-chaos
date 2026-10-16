@@ -25,7 +25,7 @@ P.BEFORE_EN = "A donation gives no right to a refund, except where the law requi
 P.BEFORE_PT = "A doação não dá direito a reembolso, exceto quando a lei exigir. Ela não é a compra de um produto: as Chaos Coins são um agradecimento e não têm valor no mundo real."
 P.AFTER_EN = "This was a voluntary donation, not a purchase. It gives no right to a refund, except where the law requires one."
 P.AFTER_PT = "Esta foi uma doação voluntária, não uma compra. Ela não dá direito a reembolso, exceto quando a lei exigir."
-P.TERMS_URL = "page.php?plugin=chaos&p=legal&doc=donations"
+P.TERMS_URL = "page?plugin=chaos&p=legal&doc=donations"
 P.TERMS_EN = "Donation Terms on the website: " .. P.TERMS_URL
 P.TERMS_PT = "Termos de Doação no site: " .. P.TERMS_URL
 

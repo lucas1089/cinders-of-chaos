@@ -228,6 +228,15 @@ end
 eq(A.message({ ids = { 1, 2 }, gap = 2 }, function(id) return id == 1 and 'A' or 'B' end),
   'Rotation set: A > B (max gap 2.0 s)', 'message')
 
+-- the "Auto-update my spells" box picks the label that fits beside Rename (pt-BR is longer)
+local W = { full = 214, short = 118, box = 16 }
+eq(A.autoBoxLabel(490, W), 'full', 'wide row: the full label')
+eq(A.autoBoxLabel(214, W), 'full', 'exactly fits')
+eq(A.autoBoxLabel(150, W), 'short', 'narrower: the short label')
+eq(A.autoBoxLabel(40, W), 'none', 'the box alone')
+eq(A.autoBoxLabel(10, W), 'hidden', 'no room at all: hidden, never over another widget')
+eq(A.autoBoxLabel(nil, W), 'hidden', 'no measure yet')
+
 if fails > 0 then
   error(fails .. ' failure(s)')
 end

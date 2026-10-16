@@ -70,7 +70,9 @@ check(chaos_legal_gate_target(7, '/myaccount.php', array(), $srv) === CHAOS_LEGA
 check(chaos_legal_gate_target(41, '/myaccount.php', array(), $srv) === null, 'accepted account: passes');
 check(chaos_legal_gate_target(0, '/myaccount.php', array(), $srv) === null, 'logged out: passes');
 $to = chaos_legal_gate_target(7, '/page.php', array('plugin' => 'chaos', 'p' => 'leaderboards'), array('REQUEST_URI' => '/page.php?plugin=chaos&p=leaderboards&board=xp'));
-check($to === CHAOS_LEGAL_ACCEPT_URL . '&next=' . rawurlencode('page.php?plugin=chaos&p=leaderboards&board=xp'), 'the page wanted comes back after: ' . $to);
+check($to === CHAOS_LEGAL_ACCEPT_URL . '&next=' . rawurlencode('page?plugin=chaos&p=leaderboards&board=xp'), 'the page wanted comes back after, by its clean address: ' . $to);
+$to = chaos_legal_gate_target(7, '/page.php', array('plugin' => 'chaos', 'p' => 'leaderboards'), array('REQUEST_URI' => '/page?plugin=chaos&p=leaderboards&board=xp'));
+check($to === CHAOS_LEGAL_ACCEPT_URL . '&next=' . rawurlencode('page?plugin=chaos&p=leaderboards&board=xp'), 'a clean address comes back after: ' . $to);
 check(chaos_legal_gate_target(7, '/createcharacter.php', array(), array('REQUEST_URI' => '/createcharacter.php')) !== null, 'character creation is gated');
 foreach (array('/login.php', '/logout.php', '/register.php', '/recovery.php', '/chaos_pay_webhook.php') as $s) {
 	check(chaos_legal_gate_target(7, $s, array(), array('REQUEST_URI' => $s)) === null, "$s passes");
@@ -83,11 +85,13 @@ check(chaos_legal_gate_target(7, '/admin/index.php', array('p' => 'update'), $sr
 check(chaos_legal_gate_target(7, '/admin/index.php', array('p' => 'update'), $srv + array('REQUEST_METHOD' => 'GET')) !== null, 'the admin updater page itself is gated');
 
 // ---------------------------------------------------------------- the way back: this site only
-check(chaos_legal_safe_next('page.php?plugin=chaos&p=coins') === 'page.php?plugin=chaos&p=coins', 'a page of the site');
-check(chaos_legal_safe_next('/characterprofile.php?name=Arwen') === 'characterprofile.php?name=Arwen', 'leading slash dropped');
+check(chaos_legal_safe_next('page.php?plugin=chaos&p=coins') === 'page?plugin=chaos&p=coins', 'a page of the site, as its clean address');
+check(chaos_legal_safe_next('page?plugin=chaos&p=coins') === 'page?plugin=chaos&p=coins', 'a clean address kept');
+check(chaos_legal_safe_next('/characterprofile.php?name=Arwen') === 'characterprofile?name=Arwen', 'leading slash dropped');
+check(chaos_legal_safe_next('/highscores') === 'highscores', 'a clean address without a query');
 foreach (array('', 'https://evil.example/x.php', '//evil.example/x.php', 'javascript:alert(1)', '../x.php', 'x.php?a="><script>',
-	'page.php?plugin=chaos&p=accept', "x.php\r\nSet-Cookie: a=b", 'x.php?a=\\evil') as $bad) {
-	check(chaos_legal_safe_next($bad) === 'myaccount.php', 'refused next: ' . json_encode($bad));
+	'page.php?plugin=chaos&p=accept', 'page?plugin=chaos&p=accept', "x.php\r\nSet-Cookie: a=b", "x\r\nSet-Cookie: a=b", 'x.php?a=\\evil', '/', 'a/b') as $bad) {
+	check(chaos_legal_safe_next($bad) === 'myaccount', 'refused next: ' . json_encode($bad));
 }
 check(chaos_legal_accept_url('/page.php?plugin=chaos&p=accept&next=x') === CHAOS_LEGAL_ACCEPT_URL, 'no loop back to the accept page');
 
@@ -111,7 +115,7 @@ function render_accept(array $get = array(), array $post = array()): string {
 }
 session_start();
 $html = render_accept();
-check(strpos($html, 'href="login.php"') !== false && strpos($html, 'chaos_accept_terms') === false, 'logged out: log in first');
+check(strpos($html, 'href="login"') !== false && strpos($html, 'chaos_accept_terms') === false, 'logged out: log in first');
 
 $SESSION_USER = 7;
 $html = render_accept(array('next' => 'page.php?plugin=chaos&p=coins'));
@@ -119,13 +123,13 @@ $csrf = (string)($_SESSION['chaos_legal_csrf'] ?? '');
 check(strlen($csrf) === 32, 'a session token');
 check(strpos($html, '<input type="checkbox" name="chaos_accept_terms" value="1">') !== false, 'the checkbox, unchecked');
 check(strpos($html, 'name="csrf" value="' . $csrf . '"') !== false, 'the token in the form');
-check(strpos($html, 'name="next" value="page.php?plugin=chaos&amp;p=coins"') !== false, 'the way back, escaped');
-check(strpos($html, 'href="page.php?plugin=chaos&amp;p=legal&amp;doc=terms&amp;l=en"') !== false
-	&& strpos($html, 'href="page.php?plugin=chaos&amp;p=legal&amp;doc=privacy"') !== false, 'links to both texts in both languages');
+check(strpos($html, 'name="next" value="page?plugin=chaos&amp;p=coins"') !== false, 'the way back, escaped');
+check(strpos($html, 'href="page?plugin=chaos&amp;p=legal&amp;doc=terms&amp;l=en"') !== false
+	&& strpos($html, 'href="page?plugin=chaos&amp;p=legal&amp;doc=privacy"') !== false, 'links to both texts in both languages');
 check(strpos($html, 'Li e aceito os') !== false && strpos($html, 'Under 18') !== false, 'the same wording as at sign-up');
-check(strpos($html, 'href="logout.php"') !== false, 'a way out without accepting');
+check(strpos($html, 'href="logout"') !== false, 'a way out without accepting');
 $html = render_accept(array('next' => 'https://evil.example/'));
-check(strpos($html, 'evil') === false && strpos($html, 'name="next" value="myaccount.php"') !== false, 'outside next dropped');
+check(strpos($html, 'evil') === false && strpos($html, 'name="next" value="myaccount"') !== false, 'outside next dropped');
 
 $html = render_accept(array(), array('csrf' => $csrf, 'next' => 'page.php?plugin=chaos&p=coins'));
 check(strpos($html, 'id="chaos-legal-accept-error"') !== false && strpos($html, chaos_h(CHAOS_LEGAL_ACCEPT_ERROR)) !== false, 'box not ticked: the error');
@@ -133,7 +137,7 @@ check(!chaos_legal_has_accepted(7), 'still not accepted');
 
 $before = count($DB->log);
 $html = render_accept(array(), array('csrf' => $csrf, 'chaos_accept_terms' => '1', 'next' => 'page.php?plugin=chaos&p=coins'));
-check(strpos($html, 'id="chaos-legal-accepted"') !== false && strpos($html, 'url=page.php?plugin=chaos&amp;p=coins') !== false, 'accepted: back to the page wanted');
+check(strpos($html, 'id="chaos-legal-accepted"') !== false && strpos($html, 'url=page?plugin=chaos&amp;p=coins') !== false, 'accepted: back to the page wanted');
 check(chaos_legal_has_accepted(7), 'accepted now');
 $row = $pdo->query('SELECT * FROM chaos_legal_acceptance WHERE account_id = 7')->fetchAll(PDO::FETCH_ASSOC);
 check(count($row) === 1 && $row[0]['version'] === $version && (int)$row[0]['accepted_at'] > 0, 'one row: account, version, time');

@@ -6,7 +6,7 @@
  *                       (shown here), graduates
  *   chaos_mentor_links  the links; the active ones count the places taken
  * Only mentors that opted in (public = 1), still mentor (active = 1), are no staff character and not banned are listed.
- * Used by page.php?plugin=chaos&p=mentors. Every query is a prepared statement; every value printed goes through chaos_h().
+ * Used by page?plugin=chaos&p=mentors. Every query is a prepared statement; every value printed goes through chaos_h().
  */
 
 if (!function_exists('chaos_mentor_state')) {
@@ -72,7 +72,7 @@ function chaos_mentor_table_html(array $state): string {
 		. '<th>Hours</th><th class="num">Graduates</th><th class="num">Places</th></tr></thead><tbody>';
 	foreach ($state['mentors'] as $m) {
 		$places = $m['accepting'] ? ($m['free'] > 0 ? $m['free'] . ' free' : 'full') : 'not taking';
-		$h .= '<tr><td><a href="characterprofile.php?name=' . rawurlencode($m['name']) . '">' . chaos_h($m['name']) . '</a>'
+		$h .= '<tr><td><a href="characterprofile?name=' . rawurlencode($m['name']) . '">' . chaos_h($m['name']) . '</a>'
 			. ' <span class="chaos-muted">Lv ' . (int)$m['level'] . '</span>'
 			. ($m['note'] !== '' ? '<br><span class="chaos-muted">' . chaos_h($m['note']) . '</span>' : '') . '</td>'
 			. '<td>' . chaos_h($m['class']) . '</td><td>' . chaos_h($m['lang']) . '</td><td>' . chaos_h($m['hours']) . '</td>'

@@ -11,7 +11,7 @@ prerelease. Extract it and run `./run-client.sh` (Ubuntu 22.04+, Debian 12+; `to
   `tools/linux/bundle_libs.sh` copies every library that is not a base system one into `lib/` (PhysicsFS, OpenAL,
   libzip, sndio) and sets RUNPATH `$ORIGIN/lib`. It fails the job when ldd still finds a non-system library outside
   `lib/`. OpenGL, X11, ALSA, OpenSSL 3, zlib and glibc come from the system.
-- The dat/spr pair, the updater settings (the same inputs as the Windows client) and the input `server_host`
+- The dat/spr pair, the updater settings (the same inputs as the Windows client) and the inputs `server_host` and `site_url`
   (`client/tools/set_server_host.py`) are added before packing. The job then starts the packed client for 30 seconds
   under Xvfb with software OpenGL and no sound device.
 - `run-client.sh` sets `ALSOFT_DRIVERS=null` when the machine has no sound device (see below).

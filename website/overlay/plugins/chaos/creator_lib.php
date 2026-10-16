@@ -235,7 +235,7 @@ function chaos_referral_link(int $accountId, string $siteUrl): string {
 	if (!is_array($row) || (string)$row['code'] === '') {
 		return '';
 	}
-	return rtrim($siteUrl, '/') . '/register.php?ref=' . rawurlencode((string)$row['code']);
+	return rtrim($siteUrl, '/') . '/register?ref=' . rawurlencode((string)$row['code']);
 }
 
 } // function_exists guard

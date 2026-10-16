@@ -102,7 +102,7 @@ $_GET['mode'] = 'fallen';
 ob_start();
 include __DIR__ . '/../overlay/plugins/chaos/pages/seasons.php';
 $page = ob_get_clean();
-check(strpos($page, 'is-active" href="page.php?plugin=chaos&amp;p=seasons&amp;mode=fallen"') !== false, 'Fallen tab active');
+check(strpos($page, 'is-active" href="page?plugin=chaos&amp;p=seasons&amp;mode=fallen"') !== false, 'Fallen tab active');
 check(strpos($page, 'Fallen in Hardcore at level 88 (killed by a dragon)') !== false, 'the fall on the page');
 check(strpos($page, '<span class="chaos-ladder__lvl">88</span>') !== false, 'the level it fell at');
 $_GET['mode'] = 'hc';

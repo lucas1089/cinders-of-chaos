@@ -292,7 +292,11 @@ local function unlock(player, def, quiet)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, table.concat(parts, " "))
 	if not quiet then
 		notify(player, K.toast(def, rewardText, Chaos.lang(player)))
-		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
+			ChaosPack29Vfx.celebrate(player:getPosition(), "achievement", CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		else
+			player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		end
 	end
 	Chaos.send(player, OPCODE, "unlock", {id = def.id, name = def.name, points = def.points, title = def.title})
 	if def.title and ChaosNameplate and ChaosNameplate.refresh then

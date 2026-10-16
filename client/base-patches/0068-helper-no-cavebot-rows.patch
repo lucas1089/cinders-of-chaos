@@ -1,0 +1,29 @@
+# Chaos: the helper's Files & Settings page lists no cavebot folders (mods/game_helper/helper.lua; after 0001-0067).
+# Owner: the page still showed "Cavebot scripts & categories /cavebots" (and a row per category) with Open / Copy path,
+# but this client has no cavebot (tools/assemble_client.sh deletes cavebot_panel.lua and scripting.lua). The rows are
+# gone; "Custom scripts & HUDs" and "All character saves" stay. The other cavebot entries were already out of sight:
+# the tab and its footer (0015), the Bot HUD's Cavebot box (hidden), the shortcut and the "Toggle Recording" hotkey
+# (only reachable from the deleted cavebot files).
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1713,19 +1713,7 @@
+       end
+     end
+   end
+-  addLocation(tr('Cavebot scripts & categories'), '/cavebots',
+-    tr('Cavebot routes are JSON files. Each subfolder is a category.'))
+-  local categories = {}
+-  local folders = g_resources.directoryExists('/cavebots') and g_resources.listDirectoryFiles('/cavebots') or {}
+-  for _, name in ipairs(folders or {}) do
+-    if name ~= '.' and name ~= '..' and g_resources.directoryExists('/cavebots/' .. name) then
+-      table.insert(categories, name)
+-    end
+-  end
+-  table.sort(categories)
+-  for _, name in ipairs(categories) do
+-    addLocation(tr('Category: ') .. name, '/cavebots/' .. name, tr('Saved cavebot routes in this category.'))
+-  end
++  -- Chaos (base patch 0068): no cavebot in this client (assemble_client.sh deletes it): no cavebot rows here
+   local characterDir = getCharacterStorageDir(g_game.getLocalPlayer())
+   if characterDir then
+     addLocation(tr('Custom scripts & HUDs'), characterDir .. '/helper.json',

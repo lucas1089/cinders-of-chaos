@@ -1,6 +1,6 @@
 <?php
 /**
- * Accept the current Terms of Use and Privacy Policy (legal_lib.php): page.php?plugin=chaos&p=accept[&next=...].
+ * Accept the current Terms of Use and Privacy Policy (legal_lib.php): page?plugin=chaos&p=accept[&next=...].
  * plugin.php sends a logged-in account here first while it has no chaos_legal_acceptance row for the current version
  * of the texts (the beta accounts made before the sign-up checkbox, and everyone after the texts change). The same
  * checkbox as account creation; the row is the same as at sign-up (account, version, time; no IP). Then back to the
@@ -33,7 +33,7 @@ $accepted = $accountId > 0 && chaos_legal_has_accepted($accountId);
 	<div class="chaos-box chaos-legal" id="chaos-legal-accept">
 		<h1 class="chaos-heading">Terms of Use / Termos de Uso</h1>
 		<?php if ($accountId <= 0): ?>
-			<p>Please <a href="login.php">log in</a> first. / <a href="login.php">Entre na sua conta</a> primeiro.</p>
+			<p>Please <a href="login">log in</a> first. / <a href="login">Entre na sua conta</a> primeiro.</p>
 		<?php elseif ($done): ?>
 			<meta http-equiv="refresh" content="0;url=<?= chaos_h($next) ?>">
 			<p id="chaos-legal-accepted">Thank you. / Obrigado.</p>
@@ -62,7 +62,7 @@ $accepted = $accountId > 0 && chaos_legal_has_accepted($accountId);
 				</p>
 				<p><input type="submit" class="chaos-btn" value="Continue / Continuar"></p>
 			</form>
-			<p class="chaos-muted">If you do not accept, you can <a href="logout.php">log out</a>. / Se não aceitar, você pode <a href="logout.php">sair</a>.</p>
+			<p class="chaos-muted">If you do not accept, you can <a href="logout">log out</a>. / Se não aceitar, você pode <a href="logout">sair</a>.</p>
 		<?php endif; ?>
 	</div>
 </div>

@@ -35,14 +35,14 @@ $sections = array(
 	)),
 	'seasons' => array('Seasons', array(
 		'Start fresh with a <strong>season character</strong> (Adventure > Season, Join, on a new character) and race on the season ladder. Season characters trade, mail, party and loot only with their own season.',
-		'Season uniques, and a reward track of outfits, addons, mounts and titles, unlocked for your whole account and kept forever. When the season ends, season characters join the normal world with everything they earned. See <a href="page.php?plugin=chaos&amp;p=seasons">Seasons</a>.',
+		'Season uniques, and a reward track of outfits, addons, mounts and titles, unlocked for your whole account and kept forever. When the season ends, season characters join the normal world with everything they earned. See <a href="page?plugin=chaos&amp;p=seasons">Seasons</a>.',
 	)),
 	'pvp' => array('PvP', array(
 		'<strong>Ranked arena</strong> (Adventure > Arena): 1v1 and 2v2 with an Elo rating per mode, matched by rating and level. Nobody really dies; each win pays an Orb of Upheaval.',
 		'<strong>Guild Siege</strong> (Adventure > Guild Siege): every Saturday at 20:00, up to four guilds per arena fight over the Chaos Obelisk. The winners are Siege Champions for a week: a title and +5% experience.',
 	)),
 	'boards' => array('Leaderboards and titles', array(
-		'Weekly boards (Social > Leaderboards) reset every Monday: World Boss damage, Bounty Hunter, Rifts, Goblin Slayer, Guild Siege, Arena 1v1 and 2v2. The top 3 of each board earn a title for the next week and orbs. The all-time Class Ladder ranks the highest characters of every class. See <a href="page.php?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.',
+		'Weekly boards (Social > Leaderboards) reset every Monday: World Boss damage, Bounty Hunter, Rifts, Goblin Slayer, Guild Siege, Arena 1v1 and 2v2. The top 3 of each board earn a title for the next week and orbs. The all-time Class Ladder ranks the highest characters of every class. See <a href="page?plugin=chaos&amp;p=leaderboards">Leaderboards</a>.',
 	)),
 	'qol' => array('Quality of life', array(
 		'<strong>Combat visuals:</strong> crits, dodges and reflects get their own sprites; elemental weapon damage shows as its own coloured number.',
@@ -63,7 +63,7 @@ $sections = array(
 			<tr><th>Level cap</th><td>1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting</td></tr>
 			<tr><th>Items</th><td>15 rarities, item levels, random modifiers, about 50 uniques</td></tr>
 			<tr><th>Endgame</th><td>World bosses, bounties, rifts, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards</td></tr>
-			<tr><th>Fair play</th><td>Multi-client rules; staff characters are left out of every leaderboard. Read the <a href="page.php?p=rules">rules</a>.</td></tr>
+			<tr><th>Fair play</th><td>Multi-client rules; staff characters are left out of every leaderboard. Read the <a href="page?p=rules">rules</a>.</td></tr>
 		</tbody>
 	</table>
 	<nav class="chaos-tabs" aria-label="Sections">

@@ -290,6 +290,9 @@ local function stunPlayer(victim, monk, chi)
 	end
 	local secs = string.format("%.1f", ms / 1000)
 	victim:getPosition():sendMagicEffect(CONST_ME_STUN)
+	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the stunned aura while it lasts
+		pcall(ChaosPack29Vfx.hold, victim, "stunned", ms)
+	end
 	victim:say("Stunned!", TALKTYPE_MONSTER_SAY)
 	victim:sendTextMessage(MESSAGE_STATUS_SMALL, "You are stunned for " .. secs .. " s by " .. monk:getName() .. ".")
 	monk:sendTextMessage(MESSAGE_STATUS_SMALL, victim:getName() .. " is stunned for " .. secs .. " s.")

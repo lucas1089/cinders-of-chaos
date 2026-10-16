@@ -24,6 +24,6 @@ try {
 		<div class="znx-acct-head">Cinders of Chaos layout</div>
 		<div class="znx-acct-info">Based on the Void layout by Alex (opengamescommunity.com), re-coloured and framed for Cinders of Chaos.</div>
 		<div class="znx-acct-head">Cinders of Chaos</div>
-		<div class="znx-acct-info"><a href="page.php?plugin=chaos&amp;p=credits">Créditos do jogo / Game credits</a>: engine, fonts, art packs and tools.</div>
+		<div class="znx-acct-info"><a href="page?plugin=chaos&amp;p=credits">Créditos do jogo / Game credits</a>: engine, fonts, art packs and tools.</div>
 	</div>
 </div>

@@ -806,7 +806,20 @@ Chaos.shopServices = {
 		-- a first word (or any word) that is one of these is refused: staff look-alikes
 		staffWords = {"gm", "cm", "god", "admin", "adm", "tutor", "gamemaster", "staff", "support", "owner", "sr", "senior", "server"},
 		-- refused anywhere in the name (lower case, substring match); extend as needed
-		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"}
+		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"},
+		-- refused as the whole name: the website's top-level addresses (website/README.md "Web server": /highscores is
+		-- a page, so a character named Highscores could not be reached there). The same list as the website's
+		-- chaos_reserved_character_names() (website/overlay/engine/function/chaos_character.php; a test compares them)
+		reserved = {
+			"achievements", "auctionchar", "bans", "blank", "buypoints", "changelog", "changepassword", "characterprofile",
+			"config", "contact", "createcharacter", "creatures", "credits", "deaths", "downloads", "failed", "faq", "forum",
+			"gallery", "guilds", "guildwar", "helpdesk", "highscores", "house", "houses", "index", "ipn", "items", "killers",
+			"login", "logout", "mailtest", "market", "myaccount", "onlinelist", "page", "payment", "powergamers", "protected",
+			"queststatus", "recovery", "register", "serverinfo", "settings", "shop", "spells", "sub", "success", "support",
+			"team", "topguilds", "toponline", "twofa", "twtrnews", "voting",
+			"admin", "api", "assets", "cache", "docker", "engine", "install", "landing", "layouts", "locale", "lua", "plugins",
+			"special", "sql", "tests", "tools", "updates", "vendor", "clientservices"
+		}
 	},
 
 	-- Vocation change: command word -> {base id, ascended id} (data/XML/vocations.xml, docs/CLASSES.md). An ascended

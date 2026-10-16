@@ -266,7 +266,7 @@ $u = $b['purchase_units'][0];
 check($b['intent'] === 'CAPTURE' && $u['amount']['value'] === '19.98' && $u['amount']['currency_code'] === 'USD', 'USD amount from the table');
 check($u['custom_id'] === $po['token'] && $u['items'][0]['category'] === 'DONATION' && $u['items'][0]['quantity'] === '1', 'donation item');
 check(strpos($u['items'][0]['name'], 'voluntary donation') !== false && strpos($u['description'], 'Voluntary donation') !== false, 'donation wording at PayPal');
-check($b['payment_source']['paypal']['experience_context']['return_url'] === 'https://site.example.invalid/page.php?plugin=chaos&p=coins&order=' . $pid . '&done=1', 'return url');
+check($b['payment_source']['paypal']['experience_context']['return_url'] === 'https://site.example.invalid/page?plugin=chaos&p=coins&order=' . $pid . '&done=1', 'return url');
 check($b['payment_source']['paypal']['experience_context']['shipping_preference'] === 'NO_SHIPPING', 'no shipping');
 $po = order_row($db3, $pid);
 check($po['status'] === 'open' && strpos($po['pay_url'], 'checkoutnow') !== false && $po['qr_code'] === '', 'approval link stored');

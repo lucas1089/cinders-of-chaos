@@ -222,6 +222,22 @@ setting_set('layout', $layout);
 $out .= "layout: $layout\n";
 
 // 6. menu entries (location main; the shell shows parents with drop-downs), added once
+// Clean addresses (README "Web server"): an entry of a top-level page with .php ("highscores.php", "page.php?p=rules",
+// ZnoteX's own and the ones older runs of this setup added) gets the same address without it, once; the web server
+// rules serve both, the .php form through a 301. Only the form changes, so an entry the owner edited keeps its page.
+// patches/znotex-chaos-clean-urls.patch makes ZnoteX's menu checks read both forms.
+require_once $Z . '/plugins/chaos/lib.php';
+$cleaned = 0;
+foreach ((array)db()->fetchAll('SELECT `id`, `url` FROM `znote_menu` WHERE `url` LIKE ?;', ['%.php%']) as $row) {
+	$clean = chaos_clean_url((string)$row['url']);
+	if ($clean !== (string)$row['url']) {
+		db()->execute('UPDATE `znote_menu` SET `url` = ? WHERE `id` = ?;', [$clean, (int)$row['id']]);
+		$cleaned++;
+	}
+}
+if ($cleaned > 0) {
+	$out .= "menu: $cleaned address(es) without .php\n";
+}
 $menu = static function (string $label, string $url, string $icon, int $sort, int $parent = 0, string $visibility = 'all'): int {
 	$find = static function () use ($label, $url) {
 		return db()->fetchOne('SELECT `id` FROM `znote_menu` WHERE `location` = ? AND `label` = ? AND `url` = ? LIMIT 1;', ['main', $label, $url]);
@@ -236,44 +252,44 @@ $menu = static function (string $label, string $url, string $icon, int $sort, in
 	return is_array($row) ? (int)$row['id'] : 0;
 };
 // the player wiki (plugins/chaos/pages/wiki.php): guides and the reference generated from the game data
-$menu('Wiki', 'page.php?plugin=chaos&p=wiki', 'fa-book', 14);
+$menu('Wiki', 'page?plugin=chaos&p=wiki', 'fa-book', 14);
 $out .= "menu: Wiki\n";
-$world = $menu('The World', 'serverinfo.php?world', 'fa-fire', 15);
-$menu('Server Info', 'serverinfo.php', 'fa-book', 1, $world);
-$menu('Patch Notes', 'page.php?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);
-$menu('Leaderboards', 'page.php?plugin=chaos&p=leaderboards', 'fa-trophy', 3, $world);
-$menu('Seasons', 'page.php?plugin=chaos&p=seasons', 'fa-hourglass-half', 4, $world);
-$menu('Rules', 'page.php?p=rules', 'fa-gavel', 5, $world);
+$world = $menu('The World', 'serverinfo?world', 'fa-fire', 15);
+$menu('Server Info', 'serverinfo', 'fa-book', 1, $world);
+$menu('Patch Notes', 'page?plugin=chaos&p=patchnotes', 'fa-file-text-o', 2, $world);
+$menu('Leaderboards', 'page?plugin=chaos&p=leaderboards', 'fa-trophy', 3, $world);
+$menu('Seasons', 'page?plugin=chaos&p=seasons', 'fa-hourglass-half', 4, $world);
+$menu('Rules', 'page?p=rules', 'fa-gavel', 5, $world);
 $out .= "menu: The World (Server Info, Patch Notes, Leaderboards, Seasons, Rules)\n";
 // the community goal and the week's world modifiers (plugins/chaos/pages/community.php, read from the game's tables)
-$menu('Community', 'page.php?plugin=chaos&p=community', 'fa-fire', 6, $world);
+$menu('Community', 'page?plugin=chaos&p=community', 'fa-fire', 6, $world);
 $out .= "menu: The World > Community\n";
 // the Ashen Chronicle and the Capital Memorial (plugins/chaos/pages/chronicle.php, memorial.php; read from the game's tables)
-$menu('Chronicle', 'page.php?plugin=chaos&p=chronicle', 'fa-book', 6, $world);
-$menu('Memorial', 'page.php?plugin=chaos&p=memorial', 'fa-university', 6, $world);
+$menu('Chronicle', 'page?plugin=chaos&p=chronicle', 'fa-book', 6, $world);
+$menu('Memorial', 'page?plugin=chaos&p=memorial', 'fa-university', 6, $world);
 $out .= "menu: The World > Chronicle, Memorial\n";
 // the guild wars declared in game: current wars and the history (plugins/chaos/pages/guildwars.php)
-$menu('Guild Wars', 'page.php?plugin=chaos&p=guildwars', 'fa-shield', 7, $world);
+$menu('Guild Wars', 'page?plugin=chaos&p=guildwars', 'fa-shield', 7, $world);
 $out .= "menu: The World > Guild Wars\n";
 // the mentors who opted in to be shown (plugins/chaos/pages/mentors.php, read from the game's chaos_mentor* tables)
-$menu('Mentors', 'page.php?plugin=chaos&p=mentors', 'fa-users', 8, $world);
+$menu('Mentors', 'page?plugin=chaos&p=mentors', 'fa-users', 8, $world);
 $out .= "menu: The World > Mentors\n";
 // player-to-player character auctions for Chaos Coins (plugins/chaos/pages/bazaar.php, bazaar_lib.php)
-$menu('Character Bazaar', 'page.php?plugin=chaos&p=bazaar', 'fa-gavel', 9, $world);
+$menu('Character Bazaar', 'page?plugin=chaos&p=bazaar', 'fa-gavel', 9, $world);
 $out .= "menu: The World > Character Bazaar\n";
 // creator codes and the account's referral link (plugins/chaos/pages/creator.php, creator_lib.php)
-$menu('Creator Codes', 'page.php?plugin=chaos&p=creator', 'fa-star', 10, $world);
+$menu('Creator Codes', 'page?plugin=chaos&p=creator', 'fa-star', 10, $world);
 $out .= "menu: The World > Creator Codes\n";
 // the donation page (plugins/chaos/pages/coins.php): Chaos Coins are a thank-you for a voluntary donation
-$menu('Donate', 'page.php?plugin=chaos&p=coins', 'fa-heart', 16);
+$menu('Donate', 'page?plugin=chaos&p=coins', 'fa-heart', 16);
 $out .= "menu: Donate\n";
 // the staff's player reports and anti-bot log (plugins/chaos/pages/reports.php): admin accounts only, under ZnoteX's
 // "Admin Panel" entry when it is there
 $adminEntry = db()->fetchOne('SELECT `id` FROM `znote_menu` WHERE `location` = ? AND `url` = ? AND `parent_id` = 0 LIMIT 1;', ['main', 'admin/index.php']);
-$menu('Player Reports', 'page.php?plugin=chaos&p=reports', 'fa-flag', 17, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
+$menu('Player Reports', 'page?plugin=chaos&p=reports', 'fa-flag', 17, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
 $out .= "menu: Player Reports (staff only)\n";
 // balance telemetry for the staff (plugins/chaos/pages/telemetry.php): admin accounts with a group 5+ character only
-$menu('Balance Telemetry', 'page.php?plugin=chaos&p=telemetry', 'fa-line-chart', 18, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
+$menu('Balance Telemetry', 'page?plugin=chaos&p=telemetry', 'fa-line-chart', 18, is_array($adminEntry) ? (int)$adminEntry['id'] : 0, 'admin');
 $out .= "menu: Balance Telemetry (staff only)\n";
 
 // ZnoteX's own entries that lead to pages this server does not use (README "Not used on this server"): the shop and
@@ -283,7 +299,7 @@ $out .= "menu: Balance Telemetry (staff only)\n";
 if (setting('chaos:stock_menu_hidden', '') !== '1') {
 	$hidden = 0;
 	$parents = array();
-	foreach (array('shop.php', 'buypoints.php', 'creatures.php', 'spells.php', 'forum.php') as $url) {
+	foreach (array('shop', 'buypoints', 'creatures', 'spells', 'forum', 'shop.php', 'buypoints.php', 'creatures.php', 'spells.php', 'forum.php') as $url) {
 		foreach ((array)db()->fetchAll('SELECT `id`, `parent_id`, `active` FROM `znote_menu` WHERE `location` = ? AND `url` = ?;', ['main', $url]) as $row) {
 			if ((int)$row['active'] === 1) {
 				db()->execute('UPDATE `znote_menu` SET `active` = 0 WHERE `id` = ?;', [(int)$row['id']]);

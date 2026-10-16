@@ -47,9 +47,9 @@ end
 
 -- the refund sentence: before while picking or paying, after once paid or credited; both say where the terms are
 local ben, bpt = V.terms()
-eq(ben, V.BEFORE_EN .. ' Donation Terms on the website: page.php?plugin=chaos&p=legal&doc=donations', 'terms before')
+eq(ben, V.BEFORE_EN .. ' Donation Terms on the website: page?plugin=chaos&p=legal&doc=donations', 'terms before')
 ok(ben:find('no right to a refund', 1, true) and bpt:find('reembolso', 1, true), 'refund sentence before')
-eq(bpt, V.BEFORE_PT .. ' Termos de Doa\231\227o no site: page.php?plugin=chaos&p=legal&doc=donations', 'terms before pt')
+eq(bpt, V.BEFORE_PT .. ' Termos de Doa\231\227o no site: page?plugin=chaos&p=legal&doc=donations', 'terms before pt')
 eq(V.terms('open'), ben, 'open order: before')
 local aen, apt = V.terms('credited')
 ok(aen:find('^This was a voluntary donation, not a purchase%.') and aen:find('doc=donations$'), 'terms after')

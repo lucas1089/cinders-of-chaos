@@ -10,7 +10,9 @@ eq(ChaosSpellCore, C, 'shared as a global')
 -- the spells of a level 8 Mystic (server vocation 1) and others
 local S = {
   { name = 'Minor Mending', words = 'a', level = 8, vocations = { 1, 10 } },
-  { name = 'Faint Hexdart Rune', words = 'b', level = 1, vocations = { 1, 5 } },
+  { name = 'Faint Hexdart Rune', words = 'b', level = 1, vocations = { 1, 5 }, rune = 3174, runeClientId = 4174 },
+  { name = 'Pebblestorm Rune', words = '', level = 25, vocations = { 4 }, rune = 3175 },
+  { name = 'Conjure Hexdart', words = 'adori hex', level = 4, vocations = { 1 }, type = 'conjure' },
   { name = 'Deep Mending', words = 'c', level = 20, vocations = { 1 } },
   { name = 'Grand Mending', words = 'd', level = 30, vocations = { 10 } },
   { name = 'Bog Splatter', words = 'e', level = 14, vocations = { 1 } },
@@ -45,11 +47,22 @@ local function names(filter, text, c)
   for _, i in ipairs(C.visibleIndexes(list, c or ctx, filter, text)) do out[#out + 1] = list[i].name end
   return table.concat(out, ',')
 end
-eq(names('learned'), 'Faint Hexdart Rune,Light,Minor Mending', 'learned: castable now, by level then name')
+eq(names('learned'), 'Conjure Hexdart,Light,Minor Mending', 'learned: castable now, by level then name; no runes')
 eq(names('soon'), 'Ember Lash,Old Secret,Bog Splatter', 'soon: own vocation, not castable, within 10 levels')
-eq(names('vocation'), 'Ember Lash,Faint Hexdart Rune,Old Secret,Light,Minor Mending,Bog Splatter,Deep Mending',
+eq(names('vocation'), 'Ember Lash,Conjure Hexdart,Old Secret,Light,Minor Mending,Bog Splatter,Deep Mending',
   'vocation: every spell of the class')
-eq(#C.visibleIndexes(S, ctx, 'all', ''), #S, 'all')
+eq(#C.visibleIndexes(S, ctx, 'all', ''), #S - 2, 'all: every spell, no runes')
+-- runes have their own filter; a conjure spell (it makes runes) stays a spell
+eq(names('runes'), 'Faint Hexdart Rune,Pebblestorm Rune', 'runes: every rune entry, by level')
+eq(names('runes', 'pebble'), 'Pebblestorm Rune', 'runes: search')
+ok(C.isRune(by['Faint Hexdart Rune']) and not C.isRune(by['Conjure Hexdart']), 'conjure is a spell')
+ok(C.isRune({ name = 'X', type = 'Rune' }), 'a client entry of type Rune')
+eq(C.normalizeFilter('runes'), 'runes', 'runes is a filter')
+for _, f in ipairs({ 'learned', 'soon', 'vocation', 'all' }) do
+  for _, s in ipairs(S) do
+    if C.isRune(s) then ok(not C.filterMatches(s, ctx, f), f .. ': no rune (' .. s.name .. ')') end
+  end
+end
 eq(names('all', 'mend'), 'Minor Mending,Deep Mending,Grand Mending', 'search by name')
 eq(names('all', ' KAH '), 'Reaping Gyre', 'search by words, trimmed, any case')
 eq(names('learned', 'zzz'), '', 'no match')
@@ -182,6 +195,16 @@ for _, picker in ipairs(PICKERS) do
   eq(shown(list), '', picker .. ': search does not bring back an unlearned spell')
   eq(win.ids.preview.text, 'Select a spell from the list.', picker .. ': the empty preview says what to do')
 end
+-- a rune entry in a spell picker stays out (rune slots use the item picker); env.runes keeps it
+INFO['Faint Dart Rune'] = { level = 1, type = 'Rune' }
+local rwin, rlist = pickerWindow({ 'Deep Mending', 'Faint Dart Rune', 'Minor Mending' })
+C.setupPicker(rwin, player, INFO, env)
+eq(shown(rlist), 'Minor Mending,Deep Mending', 'picker: no rune row')
+rwin, rlist = pickerWindow({ 'Deep Mending', 'Faint Dart Rune', 'Minor Mending' })
+C.setupPicker(rwin, player, INFO, { tr = env.tr, getSetting = env.getSetting, setSetting = env.setSetting, runes = true })
+eq(shown(rlist), 'Faint Dart Rune,Minor Mending,Deep Mending', 'picker for runes keeps them')
+INFO['Faint Dart Rune'] = nil
+
 -- the saved choice comes back on the next picker; a learned needlearn spell counts as learned
 store = { [C.PICKER_SETTING] = true }
 C.setLearned({ 'Old Secret' })

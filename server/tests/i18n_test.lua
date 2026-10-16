@@ -309,8 +309,12 @@ for _, fam in pairs(dofile("data/scripts/chaos/trials_config.lua").families or {
 	check(pt[fam.story] ~= nil, "trial story without pt-BR: " .. tostring(fam.story))
 end
 local npcfg = dofile("data/scripts/chaos/newplayer_config.lua")
-for _, k in ipairs({npcfg.welcome.title, npcfg.welcome.text, npcfg.welcome.toast}) do
+for _, k in ipairs({npcfg.welcome.title, npcfg.welcome.text, npcfg.welcome.toast, npcfg.welcome.firstToast,
+		npcfg.welcome.helper.hint}) do
 	check(pt[k] ~= nil, "welcome text without pt-BR: " .. k)
+end
+for _, k in ipairs({npcfg.tutorial.arrival.title, npcfg.tutorial.arrival.text, npcfg.tutorial.arrival.toast}) do
+	check(pt[k] ~= nil, "tutorial arrival text without pt-BR: " .. k)
 end
 for _, l in ipairs(npcfg.tutorial.lessons) do
 	for _, k in ipairs({l.title, l.text, l.toast, l.craftHint}) do

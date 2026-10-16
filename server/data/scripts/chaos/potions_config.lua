@@ -39,6 +39,12 @@ ChaosPotionsConfig = {
 	-- custom attributes (the store pouches' keys: pouches.lua refuses ground, mail, trade, the player market and other
 	-- players' containers for chaos_storebound; engine patch 0009: NPCs never buy a chaos_locked item, the trash
 	-- refuses it; death_keep.lua keeps chaos_storebound items on death)
-	attr = {storebound = "chaos_storebound", lock = "chaos_locked"}
+	attr = {storebound = "chaos_storebound", lock = "chaos_locked"},
+	-- the value of chaos_locked on an Everfull potion. Every lock check of the server and the engine treats any value
+	-- but 0 as locked (patch 0009, salvage_core.lua K.isLocked), but the client draws only a player's own lock (1, the
+	-- crafting bench's Lock button) grey (game_shaderfx). With 1 the potions showed as dark, empty-looking flasks in
+	-- the backpack (live screenshot 2026-10-16); 2 keeps them bound and drawn in their red and purple. Potions given
+	-- before are changed at their owner's next login (ChaosPotions.rebind).
+	bindLock = 2
 }
 return ChaosPotionsConfig

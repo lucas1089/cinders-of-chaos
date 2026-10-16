@@ -60,8 +60,8 @@ list($pt, $ptTitle) = render_credits(array());
 list($en, $enTitle) = render_credits(array('l' => 'en'));
 check($ptTitle === 'Créditos' && $enTitle === 'Credits', 'page titles');
 check(strpos($pt, 'lang="pt-BR"') !== false && strpos($en, 'lang="en"') !== false, 'page languages');
-check(strpos($pt, 'href="page.php?plugin=chaos&amp;p=credits&amp;l=en"') !== false, 'pt-BR page links English');
-check(strpos($en, 'href="page.php?plugin=chaos&amp;p=credits"') !== false, 'English page links Portuguese');
+check(strpos($pt, 'href="page?plugin=chaos&amp;p=credits&amp;l=en"') !== false, 'pt-BR page links English');
+check(strpos($en, 'href="page?plugin=chaos&amp;p=credits"') !== false, 'English page links Portuguese');
 foreach ($data as $s) {
 	check(strpos($pt, '<h2 class="chaos-heading">' . chaos_h($s['pt']) . '</h2>') !== false, 'pt-BR heading ' . $s['title']);
 	check(strpos($en, '<h2 class="chaos-heading">' . chaos_h($s['title']) . '</h2>') !== false, 'English heading ' . $s['title']);
@@ -88,8 +88,8 @@ check(strpos($src, "if (!isset(\$config)) { http_response_code(403);") !== false
 
 // ---------------------------------------------------------------- links
 $locale = include __DIR__ . '/../overlay/layouts/chaos/locale/en.php';
-check(strpos((string)$locale['void.footer.copyright'], '<a href="page.php?plugin=chaos&amp;p=credits">') !== false, 'footer links the credits');
-check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/credits.php'), 'page.php?plugin=chaos&amp;p=credits') !== false, 'site credits page links the game credits');
+check(strpos((string)$locale['void.footer.copyright'], '<a href="page?plugin=chaos&amp;p=credits">') !== false, 'footer links the credits');
+check(strpos((string)file_get_contents(__DIR__ . '/../overlay/layouts/chaos/views/credits.php'), 'page?plugin=chaos&amp;p=credits') !== false, 'site credits page links the game credits');
 
 foreach ($notices as $n) {
 	$failures[] = "NOTICE: $n";

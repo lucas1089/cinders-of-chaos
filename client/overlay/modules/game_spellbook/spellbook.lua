@@ -443,8 +443,10 @@ local function applyFilter()
   end
   if #spells == 0 then
     window.countLabel:setText(tr('Loading spells...'))
+  elseif filter == 'runes' then
+    window.countLabel:setText(tr('%d runes', shown))
   else
-    window.countLabel:setText(tr('%d spells', shown))
+    window.countLabel:setText(tr('%d spells', shown)) -- spells only: runes are under their own filter
   end
   if not selectedVisible then
     if firstShown then
@@ -503,6 +505,29 @@ local function buildList()
   selected = nil
   refreshState()
   addEvent(fitNames) -- after the layout pass: the labels have their width then
+end
+
+-- Up / Down (also while typing in the search box): the previous / next shown row becomes the selection
+local function moveSelection(step)
+  local shown, at = {}, nil
+  local current = window.spellList:getFocusedChild()
+  for _, row in ipairs(rows) do
+    if row:isVisible() then
+      shown[#shown + 1] = row
+      if row == current then at = #shown end
+    end
+  end
+  if #shown == 0 then return false end
+  local index = at and math.max(1, math.min(#shown, at + step)) or 1
+  window.spellList:focusChild(shown[index], KeyboardFocusReason)
+  window.spellList:ensureChildVisible(shown[index])
+  return true
+end
+
+local function onKeyPress(_, keyCode)
+  if keyCode == KeyUp then return moveSelection(-1) end
+  if keyCode == KeyDown then return moveSelection(1) end
+  return false
 end
 
 local function onListFocus(_, focused)
@@ -686,7 +711,7 @@ function init()
   window = g_ui.displayUI('spellbook')
   window:hide()
   local filterText = { learned = tr('Learned'), soon = tr('Available soon'), vocation = tr('My vocation'),
-    all = tr('All spells') }
+    all = tr('All spells'), runes = tr('Runes') }
   for _, f in ipairs(Core.FILTERS) do
     window.filterCombo:addOption(filterText[f.key] or f.text, f.key)
   end
@@ -695,6 +720,8 @@ function init()
     applyFilter()
   end
   window.searchEdit.onTextChange = function() applyFilter() end
+  window.searchEdit.onKeyPress = onKeyPress
+  window.onKeyPress = onKeyPress
   window.spellList.onChildFocusChange = onListFocus
   showDetails(nil)
   window.countLabel:setText('')

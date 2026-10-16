@@ -43,7 +43,7 @@ $about = array(
 <div class="chaos-box">
 	<h2 class="chaos-heading">How to start</h2>
 	<ol class="chaos-steps">
-		<li><a href="register.php">Create an account</a>, then <a href="createcharacter.php">create a character</a>: Warrior, Ranger, Mystic or Thief.</li>
+		<li><a href="register">Create an account</a>, then <a href="createcharacter">create a character</a>: Warrior, Ranger, Mystic or Thief.</li>
 		<li>Download the client for your system and unpack it into a folder of your choice.</li>
 		<li>Start the client and log in with your account<?php if ($host !== ''): ?> (server <code><?= $h($host) ?></code>, port <code><?= (int)$port ?></code>; already set in the client)<?php endif; ?>.</li>
 		<li>Your character wakes up on the tutorial island. Five stations teach you to fight, cast, spend a passive point and craft. Character > Services > Leave Tutorial leaves at any time.</li>

@@ -87,7 +87,14 @@ do
 	eq(bpCount(k, 2120), 1, "rope from the common items")
 	eq(bpCount(k, 2554), 1, "shovel from the common items")
 	ok(bpCount(k, 2789) > 0, "food")
-	ok(bpCount(k, 7618) > 0, "health potions")
+	-- the only starting potions are the two Everfull ones (potions_config.lua, the wearable part): no kit carries stock
+	-- health or mana potions (owner 2026-10-16)
+	for name in pairs(cfg.kits) do
+		local kit = NP.resolveKit(name)
+		for _, id in ipairs({7618, 7620, 7588, 7589, 7590, 7591, 8472, 8473, 26029, 26030}) do
+			eq(bpCount(kit, id), 0, "kit " .. name .. ": no stock potion " .. id)
+		end
+	end
 	eq(k.backpackId, 1988, "backpack")
 	ok(k.templeScrollUses > 0, "temple scroll")
 	ok(k.gold > 0, "gold")
@@ -246,6 +253,26 @@ do
 	eq(#due, 3, "299 -> 999 reaches 300, 500 and 800")
 end
 
+-- ------------------------------------------------------------------ the start (owner design 2026-10-16)
+do
+	eq(cfg.tutorial.enabled, false, "no tutorial island by default (the code stays, the switch brings it back)")
+	ok(cfg.welcome.helper and cfg.welcome.helper.open and cfg.welcome.helper.hint ~= "", "the first login opens the Helper")
+	eq(cfg.welcome.window, false, "no welcome modal over the Helper (the text goes to the chat)")
+	ok(cfg.welcome.firstToast:find("level 8", 1, true) ~= nil, "the first toast says the start level")
+	-- a new character is raised to the start level once, without its kit; one with the kit keeps its level
+	ok(NP.startLevelDue(1, false) and not NP.startLevelDue(1, true) and not NP.startLevelDue(8, false), "startLevelDue")
+	-- the full kit at level 8: the Mystic wears its real wand (level 7), no spare in the rest
+	local parts = NP.kitParts(NP.kitFor(1), 8)
+	local wand = false
+	for _, w in ipairs(parts.wear) do
+		wand = wand or w.id == 2190
+	end
+	ok(wand, "level 8 Mystic wears the wand of vortex")
+	for _, r in ipairs(parts.rest) do
+		ok(r.id ~= 2190, "no spare wand at level 8")
+	end
+end
+
 -- ------------------------------------------------------------------ tutorial island
 do
 	local t = cfg.tutorial
@@ -253,9 +280,7 @@ do
 	eq(#L.rooms, t.rooms, "rooms")
 	eq(#L.gates, t.rooms - 1, "gates")
 	local foot = NP.footprint(L)
-	local W = t.rooms * (t.roomW + 1) + 1 + 2 * t.waterRing
-	local H = t.roomH + 2 + 2 * t.waterRing
-	eq(#foot, W * H, "footprint size")
+	eq(#foot, (L.outer.x2 - L.outer.x1 + 1) * (L.outer.y2 - L.outer.y1 + 1), "footprint: every tile of the outer rectangle")
 	local kinds, seen = {}, {}
 	for _, f in ipairs(foot) do
 		kinds[f.kind] = (kinds[f.kind] or 0) + 1
@@ -266,8 +291,58 @@ do
 	end
 	eq(kinds.gate, t.rooms - 1, "gate tiles")
 	eq(kinds.marker, t.rooms, "marker tiles")
-	eq(kinds.wall, (t.rooms - 1) * (t.roomH - 1), "divider walls (minus the gates)")
-	eq(kinds.ground, t.rooms * t.roomW * t.roomH - t.rooms, "ground tiles")
+	local W, H = t.rooms * (t.roomW + 1) + 1, t.roomH + 2
+	eq(kinds.fence, 2 * W + 2 * (H - 2) + (t.rooms - 1) * (t.roomH - 1), "the fence ring and the dividers (minus the gates)")
+	-- the path: the middle row of every pen and a branch to each lesson tile
+	local branch = L.cy - L.rooms[1].marker.y - 1
+	local landPath = L.coast.x1 - L.land.x1
+	eq(kinds.path, t.rooms * t.roomW + t.rooms * branch, "path tiles")
+	eq(kinds.trail, landPath, "the way to the dock (land, not walked)")
+	eq(kinds.ground, t.rooms * t.roomW * t.roomH - t.rooms - t.rooms * t.roomW - t.rooms * branch, "grass tiles in the pens")
+	eq(kinds.dock, 2 * t.dockLength, "dock tiles")
+	-- no black void: from every walkable tile the client's largest view (29 x 21, + 1) ends on built tiles
+	local built = {}
+	for _, f in ipairs(foot) do
+		built[f.x .. ":" .. f.y] = true
+	end
+	local hx, hy = math.floor(t.view.w / 2) + 1, math.floor(t.view.h / 2) + 1
+	local missing = 0
+	for _, f in ipairs(foot) do
+		if f.kind == "ground" or f.kind == "path" or f.kind == "gate" or f.kind == "marker" then
+			ok(NP.onIsland(f, L), "walkable only inside the fence " .. f.x .. ":" .. f.y)
+			for _, c in ipairs({{-hx, -hy}, {hx, -hy}, {-hx, hy}, {hx, hy}}) do
+				if not built[(f.x + c[1]) .. ":" .. (f.y + c[2])] then
+					missing = missing + 1
+				end
+			end
+		end
+	end
+	eq(missing, 0, "every corner of every view is a built tile")
+	-- the fence is closed: from the arrival only the pens, the gates and the path are reachable (no way onto the land)
+	local kindAt0 = {}
+	for _, f in ipairs(foot) do
+		kindAt0[f.x .. ":" .. f.y] = f.kind
+	end
+	local walk = {ground = true, path = true, gate = true, marker = true}
+	local seen0, queue, reached, landHit = {}, {L.rooms[1].arrival}, 0, false
+	seen0[queue[1].x .. ":" .. queue[1].y] = true
+	while #queue > 0 do
+		local p = table.remove(queue)
+		reached = reached + 1
+		if not NP.onIsland(p, L) then
+			landHit = true
+		end
+		for _, d in ipairs({{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) do
+			local q = {x = p.x + d[1], y = p.y + d[2], z = p.z}
+			local k = q.x .. ":" .. q.y
+			if not seen0[k] and walk[kindAt0[k]] then
+				seen0[k] = true
+				queue[#queue + 1] = q
+			end
+		end
+	end
+	ok(not landHit, "the land outside the fence cannot be reached")
+	eq(reached, t.rooms * t.roomW * t.roomH + (t.rooms - 1), "every pen tile and gate is reachable from the arrival")
 	ok(L.outer.x1 >= 4500 and L.outer.x2 <= 5600 and L.outer.y1 >= 4500 and L.outer.y2 <= 5600, "inside the tile-less area")
 	ok(L.outer.x2 < 5000 or L.outer.y2 < 5000, "away from the world boss arena")
 	-- the points of interest are on walkable ground
@@ -290,6 +365,88 @@ do
 	end
 	eq(NP.roomOf(L.exit, L), t.rooms, "exit in the last room")
 	eq(NP.roomOf(L.skipStatue, L), 1, "skip statue in the first room")
+	ok(math.abs(L.skipStatue.x - L.rooms[1].arrival.x) <= 1 and math.abs(L.skipStatue.y - L.rooms[1].arrival.y) <= 1,
+		"the skip statue stands beside the arrival tile")
+	for i, r in ipairs(L.rooms) do
+		eq(NP.roomOf(r.sign, L), i, "signpost in room " .. i)
+		eq(kindAt[r.sign.x .. ":" .. r.sign.y], "ground", "signpost on grass, beside the path " .. i)
+	end
+
+	-- the island's look (NP.islandModel): grounds and items from cfg.tutorial.look, borders on the shore and the path
+	local model = NP.islandModel(L)
+	eq(#model.tiles, #foot, "one model tile per footprint tile")
+	local look, known = t.look, {}
+	local function knownList(list) for _, id in ipairs(list) do known[id] = true end end
+	knownList(look.grass) knownList(look.water) knownList(look.trees) knownList(look.bushes) knownList(look.flowers)
+	knownList(look.boat)
+	for _, set in ipairs({look.shore, look.pathEdge, look.fence}) do
+		for _, id in pairs(set) do known[id] = true end
+	end
+	for _, id in ipairs({look.path, look.dock, look.lamp, look.bollard, look.barrel, t.markerGround}) do
+		known[id] = true
+	end
+	local counts = {shore = 0, edge = 0, tree = 0, lamp = 0, fence = 0, boat = 0}
+	local isShore, isEdge, isTree, isBoat = {}, {}, {}, {}
+	for _, id in pairs(look.shore) do isShore[id] = true end
+	for _, id in pairs(look.pathEdge) do isEdge[id] = true end
+	for _, id in ipairs(look.trees) do isTree[id] = true end
+	for _, id in ipairs(look.boat) do isBoat[id] = true end
+	local blocking = {}
+	for _, id in ipairs(look.trees) do blocking[id] = true end
+	for _, id in ipairs(look.bushes) do blocking[id] = true end
+	blocking[look.lamp] = true
+	for _, tile in ipairs(model.tiles) do
+		ok(known[tile.ground], "ground from the config " .. tile.ground)
+		for _, id in ipairs(tile.items) do
+			ok(known[id], "item from the config " .. id)
+			counts.shore = counts.shore + (isShore[id] and 1 or 0)
+			counts.edge = counts.edge + (isEdge[id] and 1 or 0)
+			counts.tree = counts.tree + (isTree[id] and 1 or 0)
+			counts.lamp = counts.lamp + (id == look.lamp and 1 or 0)
+			counts.boat = counts.boat + (isBoat[id] and 1 or 0)
+			if blocking[id] then
+				ok(tile.kind == "land", "trees, bushes and lamps only on the land " .. tile.x .. ":" .. tile.y)
+			end
+			if isShore[id] then
+				ok(tile.kind == "land", "shore pieces on land tiles")
+			end
+			if isEdge[id] then
+				ok(tile.kind == "path" or tile.kind == "gate" or tile.kind == "trail", "path edges on the path")
+			end
+		end
+		if tile.kind == "fence" then
+			counts.fence = counts.fence + 1
+			eq(#tile.items, 1, "one fence piece per fence tile")
+		end
+		if tile.kind == "water" or tile.kind == "dock" then
+			ok(tile.kind == "dock" or #tile.items == 0 or isBoat[tile.items[1]], "open water carries only the boat")
+		end
+	end
+	ok(counts.shore > 50, "the shore has its border all round")
+	ok(counts.edge > 20, "the path has grass edges")
+	ok(counts.tree > 15, "trees on the land")
+	eq(counts.lamp, 2 * (2 + t.rooms - 1) + 1, "lamps: north and south of every gate and both ends, one at the dock")
+	eq(counts.boat, #look.boat, "the boat")
+	-- the fence pieces by neighbours (measured on the live map)
+	local f = look.fence
+	eq(NP.fencePiece(false, true, true, false, f), f.post, "north-west post")
+	eq(NP.fencePiece(true, false, false, true, f), f.joint, "south-east joint")
+	eq(NP.fencePiece(true, true, false, false, f), f.vertical, "south-west corner")
+	eq(NP.fencePiece(false, false, true, true, f), f.horizontal, "north-east corner")
+	eq(NP.fencePiece(true, false, true, false, f), f.vertical, "north-south run")
+	eq(NP.fencePiece(false, true, false, true, f), f.horizontal, "east-west run")
+	eq(NP.fencePiece(true, false, false, false, f), f.southEnd, "the end above a gate")
+	eq(NP.fencePiece(false, false, true, false, f), f.vertical, "the end below a gate")
+	-- the same island in every run
+	local again = NP.islandModel(L)
+	local same = true
+	for i, tile in ipairs(model.tiles) do
+		local b = again.tiles[i]
+		if b.ground ~= tile.ground or #b.items ~= #tile.items then
+			same = false
+		end
+	end
+	ok(same, "deterministic")
 	ok(NP.onIsland(L.rooms[3].arrival, L), "on the island")
 	ok(not NP.onIsland({x = 1000, y = 1000, z = 7}, L), "the mainland is not the island")
 	ok(not NP.onIsland({x = L.rooms[1].arrival.x, y = L.rooms[1].arrival.y, z = 6}, L), "other floor")

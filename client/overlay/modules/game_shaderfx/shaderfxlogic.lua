@@ -31,26 +31,12 @@ L.ORB_SIZES = {
   { size = 190, font = 'chaos-display-16px' },
 }
 L.ORB_DEFAULT_SIZE = 2
-L.ORB_EDGE = 6    -- from the corner of the map
-L.ORB_CLEAR = 4   -- above the chat panel when an orb has to move up
+L.ORB_EDGE = 6    -- from the window's corner when there is no chat panel to sit beside (mobile)
 
 function L.orbSize(option)
   local i = math.floor(tonumber(option) or 0)
   local entry = L.ORB_SIZES[i] or L.ORB_SIZES[L.ORB_DEFAULT_SIZE]
   return entry.size, math.floor(entry.size * 64 / 76 + 0.5), entry.font
-end
-
--- the bottom margin of an orb so that it does not cover the chat panel. orb: {x, width} of the orb at its corner;
--- bottom: the map's bottom (y); size: the orb's size; area: {x, y, width} of the bottom area (action bars + chat,
--- down to the window's bottom) or nil. An orb that overlaps the area sideways sits on top of it.
-function L.orbMarginBottom(orb, bottom, size, area)
-  local margin = L.ORB_EDGE
-  if not area or not orb then return margin end
-  local overlapsX = orb.x < area.x + area.width and orb.x + orb.width > area.x
-  if overlapsX and bottom - margin > area.y then
-    margin = math.max(margin, bottom - area.y + L.ORB_CLEAR)
-  end
-  return margin
 end
 
 -- 0..1 fill of an orb (0 without a maximum)
@@ -102,11 +88,15 @@ function L.shineParams(rarityId, unique, enabled, key)
     L.SHINE_WIDTH
 end
 
--- is an item locked (custom attribute 3)? item = anything with getCustomAttribute
+-- is an item locked by its player (custom attribute 3 = 1, the crafting bench's Lock button)? Only that lock is drawn
+-- grey. A bound item carries another value (2: the Everfull potions, server potions_config.lua bindLock): it stays
+-- locked on the server but is drawn in its own colours (a grey red potion looked like a black, empty flask).
+-- item = anything with getCustomAttribute
+L.PLAYER_LOCK = 1
 function L.isLocked(item)
   if not item or not item.getCustomAttribute then return false end
   local ok, v = pcall(item.getCustomAttribute, item, L.LOCKED_ATTR)
-  return ok and (tonumber(v) or 0) > 0
+  return ok and tonumber(v) == L.PLAYER_LOCK
 end
 
 -- what a slot's item shader should become: 'grey' to set it, 'clear' to take back our grey, nil to leave it

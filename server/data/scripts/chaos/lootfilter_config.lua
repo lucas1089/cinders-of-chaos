@@ -18,7 +18,17 @@ ChaosLootFilterConfig = {
 	decayCheckEvery = 5,       -- check each tracked corpse for decay every N sweeps (a 1/N share of them per sweep)
 	corpseAttribute = "lf_kill", -- custom attribute set on the corpse (kill id), so the corpse can be found again
 
-	-- loot rays: a light beam over the corpse while a qualifying item is still in it
+	-- loot beams: the client draws a light pillar over a corpse while an item it may glow for is still inside
+	-- (client game_lootbeams; the colour, the player's loot filter, height and intensity are the client's).
+	-- Sent as "beam" on this opcode to the players allowed to loot the corpse (the owner and the party at the kill).
+	beams = true,
+	beamMinRarity = 1,       -- items from this base rarity may beam (the client's loot filter then decides)
+	beamUniques = true,
+	beamOrbs = true,         -- orbs may beam too (the client shows them only when its "Beams for orbs" is on)
+
+	-- loot rays (the old beam: a map effect resent every second, drawn over the creatures and the next tiles).
+	-- Off since the loot beams: rayEffects = true sends them again (for a client without game_lootbeams).
+	rayEffects = false,
 	rayUniques = true,       -- uniques (ChaosUniqueItems, custom attribute chaos_unique) get the gold/orange ray
 	rayMinRarity = 5,        -- base rarity id from which items get a ray (5 = Legendary ... 15 = Transcendent)
 	rayIntervalMs = 1000,    -- the beam effect is 900 ms long; resent this often while the item is in the corpse

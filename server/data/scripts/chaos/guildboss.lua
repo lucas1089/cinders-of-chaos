@@ -885,7 +885,11 @@ local function success(run)
 				end
 				p:sendTextMessage(MESSAGE_EVENT_ADVANCE, "Spoils of the guild boss: " .. table.concat(parts, ", ") .. "." ..
 					(inbox and " Your backpack was full: the rest is in your inbox." or ""))
-				p:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+				if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
+					ChaosPack29Vfx.celebrate(p:getPosition(), "boss", CONST_ME_FIREWORK_YELLOW)
+				else
+					p:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+				end
 				-- exclusives.lua: the rare personal drop of a visual exclusive (rewarded members online at the kill)
 				if ChaosExclusives and ChaosExclusives.bossKill then pcall(ChaosExclusives.bossKill, p, "guild_" .. cfg.boss.key) end
 			end

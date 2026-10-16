@@ -179,6 +179,11 @@ server/
   src-patches/0044-display-level-override.patch   engine: a display level set with monster:setDisplayLevel wins
                                       over the monster's own level (rift, invasion and generated area monsters show the
                                       level their system scaled them to; see "Monster levels in the name")
+  src-patches/0045-effect-overrides-from-lua.patch   engine: Game.setHitEffect / setMissileEffect /
+                                      clearEffectOverrides: the hit effect of a condition tick, of a physical hit by
+                                      race and of an element hit, and any stock missile, swapped from Lua (nothing by
+                                      default; see "Condition auras, blasts and fireworks (pair 29)";
+                                      tools/effect_overrides_patch_test.py)
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
@@ -470,7 +475,7 @@ working directory, as with the rest of the base server libs).
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql` | **110** (new), Economy > Supply Stash | The one item storage (the depot boxes retire into it): whole items with every attribute, deposit and withdraw in town, remote deposit as a paid unlock (store or the Chaos Pact), general and affinity tabs, Stow Everything, the never-stash list, the journal (no loss, no duplicate on a crash), the depot migration (see "Stash"). The tabs of before were tested in game; the whole-item stash is tested on a mocked engine only. |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
-| game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot rays, Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
+| game_lootfilter | `lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua` | 238, Hunt > Loot Filter | Loot filter (glow/dim by rarity in corpses), loot channel with click-to-loot icons, rare-drop lines, loot beams (client `game_lootbeams`; the old loot rays are off), Rarity Autoloot store unlock, a counter (session / total) and an alert sound per filter rule. Tested in game (see "Loot filter"). |
 | game_groundlabels | `groundloot.lua`, `groundloot_core.lua` (client also `game_lootfilter`, `game_itemtooltip`) | 230 | Ground loot labels: names, rarity, category and decay of the items on the tiles in view and a short list of what lootable corpses hold; tooltips of ground items; `raise` puts an item lower in a pile on top so the normal move can pick it up. Tested in game (see "Ground loot labels") |
 | game_bounty | `bounty.lua`, `bounty_core.lua`, `bounty_config.lua`, `bounty_pool.lua` | 223, Adventure > Bounty Board | Daily rotating kill contracts per level band, tested in game (see "Bounty board"). |
 | game_rift | `rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua` | 228 (server -> client), Adventure > Rifts / `/rift` | Rift Keys open timed instances with modifiers; run HUD; tested in game (see "Rifts"). |
@@ -2754,8 +2759,9 @@ extra-roll rule in `loot.lua`.
 **Name change.** Character > Services (needs the token, out of combat, in a protection zone). Rules
 (`ChaosShopServices.validateName`, settings `Chaos.shopServices.name`): 3-20 characters, letters and single spaces, at most
 3 words of at least 2 letters, each word is capitalised for you ("kael vorn" -> "Kael Vorn"), no letter three times in a
-row, no staff word as a word (GM, CM, God, Admin, Tutor, Gamemaster, ...), no forbidden substring, not a monster name, not
-taken (`players.name`). Then: the token is used, the character is saved and kicked, and 0.5 s later (retried each second
+row, no staff word as a word (GM, CM, God, Admin, Tutor, Gamemaster, ...), no forbidden substring, not a website address
+as the whole name (`reserved`: Highscores, Page, Myaccount ...; the site serves `/highscores` as a page, website/README.md
+"Web server"; the website's character creation refuses the same list), not a monster name, not taken (`players.name`). Then: the token is used, the character is saved and kicked, and 0.5 s later (retried each second
 while it is still online) `players.name` is updated together with the tables that keep names as text: the member list of
 `chaos_dungeon_runs` (runs the character took part in), `player_deaths.killed_by` / `mostdamage_by` (player killers) and
 `guildwar_kills.killer` / `target`. If the name was taken in between, the token is given back. `chaos_admin_log.player_name`
@@ -3459,8 +3465,17 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   ("Using the last everfull health potion...", always one): "Using an everfull health potion (never runs out)." Using
   the Everfull potion from its container slot always drinks it. `tools/hotkey_lookup_patch_test.py`.
 - **Store-bound** like the Everfull Ration: `chaos_storebound` and `chaos_locked`, so no trade, ground, mail, market, NPC
-  sale or trash (pouches.lua, engine patch 0009), and `death_keep.lua` keeps it on death.
-- **Sources.** The starter kit (`newplayer.lua` calls `ChaosPotions.giveAll` into the kit backpack); a one-time grant at
+  sale or trash (pouches.lua, engine patch 0009), and `death_keep.lua` keeps it on death. The lock value is
+  `bindLock` = 2, not 1 (live screenshot 2026-10-16: the Everfull potions showed as black, empty-looking flasks in the
+  backpack while the stock ones looked right). Cause: not the look (items.otb gives 32085 / 32086 the stock client ids
+  266 / 268, stackable like them, one look per count; `check_item_wire.py` agrees on both), but the client's
+  `game_shaderfx`, which draws every item with lock attribute 3 > 0 grey, and a grey red flask reads as a black one. The
+  client now greys only a player's own lock (1, the crafting bench's Lock button); every server and engine check treats
+  any value but 0 as locked, so 2 stays bound. Potions given before get 2 at their owner's next login
+  (`ChaosPotions.rebind`, sent again to the client). Patch 0043's hotkey lookup goes by client id and `chaos_storebound`
+  and is unchanged. `tests/potions_test.lua`, client `game_shaderfx/shaderfx_test.lua`.
+- **Sources.** The starter kit, its wearable part on arrival at the tutorial island (`newplayer.lua` calls
+  `ChaosPotions.giveAll` into the kit backpack; the only starting potions, no kit carries stock potions); a one-time grant at
   login for characters made before (storage 7102480 = 1 once given; a brand-new character waits for its kit); and every
   potion seller (an NPC that sells 7618 or 7620, such as Morora): its trade window lists both at `price` (100 gold).
   `ShopModule:callbackOnBuy` (hook in `data/npc/lib/npcsystem/modules.lua`) hands such a purchase to
@@ -10521,7 +10536,7 @@ attacker in ghost mode: "Unseen attacker", no name in the row. The history list 
 entry, "Open after a death" off (no window), 5 rows kept. Not in game: the real arena, battleground and other modes,
 Hardcore, a mana shield.
 
-## Loot filter, loot channel and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
+## Loot filter, loot channel, loot beams and loot rays (`lootfilter.lua`, `lootfilter_core.lua`, `lootfilter_config.lua`, client `game_lootfilter`)
 
 Extended opcode 238 (`ChaosOpcodes.lootfilter`), Hunt > Loot Filter (or Hunt > Loot Filter) opens the window; Hunt > Loot Filter applies a preset.
 
@@ -10621,8 +10636,23 @@ Autoloot selectors are greyed in the window with a store hint and the server ign
 glow, dim, rare-drop lines, rays and the loot channel are free. Checked in game: before buying, an Exotic sword off the list
 stayed in the corpse; after buying (Strict) it was picked up and a Common list sword stayed.
 
-### Loot rays
-- A beam rises from the corpse tile while a qualifying item is still in it: uniques (`rayUniques = true`, orange beam
+### Loot beams
+- Owner request: the old rays (below) read as a red splash over the corpse that covered the next tiles and the
+  creatures on them. Now the client draws a thin light pillar with a glow pool (client `game_lootbeams`, base patch
+  0069; client/MANIFEST.md). The server only says which items in a tracked corpse may beam: `beam {k, p = [x, y, z],
+  i = [{r, u, o, pw, g, t}]}` on opcode 238, the entries still inside with `F.beamCandidate` (base rarity >=
+  `beamMinRarity` (1), uniques (`beamUniques`), legendary powers, orbs (`beamOrbs`; the client shows them only with its
+  orb option)). The client picks the best one its loot filter makes glow and colours the pillar by tier.
+- Sent when the kill is recorded (`finish`) and again whenever that list changes (`refresh`: an item taken by hand,
+  by click-to-loot, by autoloot or by a party member); `i = []` when the corpse is looted empty, decays, leaves the
+  history (`historySize`) or its owner logs out (`stopTracking` / `beamOff`). Recipients: the owner and the party
+  members at the kill (the players allowed to loot it), wherever they are; the client draws only what is on screen.
+  Decay is seen by the sweep's decay check (every `decayCheckEvery` seconds); looting at once (`onItemMoved`).
+- `beams = false` stops the messages. Tests: `server/tests/lootfilter_test.lua` (candidates, the list after looting).
+
+### Loot rays (off: `rayEffects = false`)
+- With `rayEffects = true` (for a client without `game_lootbeams`), a beam effect rises from the corpse tile while a
+  qualifying item is still in it: uniques (`rayUniques = true`, orange beam
   `loot_ray_unique`) and items of base rarity >= `rayMinRarity` (5 = Legendary): Legendary/Exotic gold, Mythic/Chaos/Eternal
   red, Divine/Phantasmal/Celestial white-blue, Cosmic/Abyssal/Transcendent violet (`rayBands`). One beam per corpse: a unique
   wins, else the highest rarity left. Epic and below never get one.
@@ -11448,12 +11478,28 @@ rule was switched off after checking the refusal), balance of tiers 8-15 against
 Roadmap items 21 and 22. Every number, item and text is in `newplayer_config.lua`; the pure logic (kit lookup, flags,
 milestones, island layout, station state machine) in `newplayer_core.lua`, tested by `tests/newplayer_test.lua`. Storages
 `Chaos.storage.newPlayer` = 7100250 - 7100269 (kit, welcome, tutorial stage / done mask / kills / orb count / flags,
-+7 the tutorial island time of earlier sessions, milestones at +10..+19); `Chaos.storage.tutorialSnapshot` = 7102750 -
++7 the tutorial island time of earlier sessions, +8 the wearable kit given, +9 the level 1 stats checked, milestones at
++10..+19); `Chaos.storage.tutorialSnapshot` = 7102750 -
 7102779 (the character at the island's start, "Tutorial reset"; `tests/newplayer_reset_test.lua`). Tested in game on the test server (fresh level 1 characters, see "Verified" below).
 
+- **The start** (owner design 2026-10-16: no tutorial island). A new character is created at level 8 with exactly that
+  level's experience (4200), its class's level 8 health, mana, capacity and soul, its class look in its class's start
+  colours, town Cinderhold and position 0,0,0 (the temple), on every creation path (see "Starting stats" below). Its
+  first login, in the login event itself: the temple of the main city and the **full kit** (worn gear, weapon, the two
+  Everfull potions, food, rope, shovel, temple scroll, gold), so its first frame shows it in Cinderhold wearing the kit.
+  A moment later the welcome text goes to the chat and the welcome toast carries `openHelper` (`welcome.helper`): the
+  client opens the Helper window with its Auto setup button blinking and the hint "Set up your helper in one click"
+  (`game_helperrotation/onboarding.lua`; an older client shows only the toast). The welcome modal is off
+  (`welcome.window`). The tutorial island is switched off (`tutorial.enabled = false`, its code kept): a character
+  still on it leaves it at its next login (`tutorialFinish` "closed": the island's reset, the temple, the full kit,
+  then the start level and stats). Next Goals has no "Reach level 8" any more (`goals_config.lua`).
 - **Kit** (one time): a character logging in for the very first time (`lastLoginSaved` 0, kit storage unset) gets the kit of
-  its class: weapon and armour equipped (into the backpack when the slot is taken), a backpack with potions, 20 brown
-  mushrooms, rope, shovel, the store's Temple Teleport Scroll (3 uses, same item and attributes as `shop_services.lua`) and
+  its class, in two parts (2026-10-16, owner report: "the character still starts in this ugly place without any
+  equipment"; without the island both parts come at once at the first login). The **wearable part** (`NP.giveWearable`, storage +8) comes the moment it arrives on the tutorial island,
+  before the island's snapshot: weapon and armour equipped (into the backpack when the slot is taken) and a backpack with
+  the two Everfull potions (`ChaosPotions.giveAll`). The **rest** (`NP.giveKit`) comes when the island ends (exit, skip,
+  time limit): the real weapon of a level-gated class (the Mystic's wand of vortex), the kit's own backpack rows (the
+  Thief's throwing stars), 20 brown mushrooms, rope, shovel (the island needs neither), the store's Temple Teleport Scroll (3 uses, same item and attributes as `shop_services.lua`) and
   500 gold. Kits by class id (`Chaos.classes.ids`): Warrior / Juggernaut 4/8 jagged sword + dwarven shield + brass set;
   Berserker 14 battle axe (two-handed: the class takes no shield) + brass set; Ranger / Deadeye / Beastmaster 3/7/15 bow (no
   arrows: bows fire without ammunition) + chain helmet, ranger's cloak, studded legs; Mystic / Elementalist / Illusionist 1/5/10 wand of vortex (the scorcher
@@ -11461,8 +11507,32 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
   + leather set; Ninja 12 the same plus a second dagger; Samurai 13 the same with a katana instead of the dagger; Monk /
   Shadowfist / Iron Sage 17-19 leather set, no weapon (they fight unarmed); Necromancer / Lich / Bone Lord 20-22 the Mystic's
   kit; Templar / Inquisitor / Sentinel 23-25 the Warrior's (one-handed sword and shield). A vocation without a row falls back to its base class (`Chaos.classes.baseOf`, then the engine's demotion), then to
-  `default` (short sword, wooden shield). Every kit weighs under ~360 oz (a level 1 character carries 400); what does not fit
-  goes to the inbox. Existing characters never get a kit by logging in. Messages read the class name from `Vocation(id)`.
+  `default` (short sword, wooden shield). Every kit weighs under ~360 oz (a level 1 character carries 400-470); what does
+  not fit goes to the inbox. No kit carries stock health or mana potions (owner 2026-10-16): the only starting potions
+  are the two Everfull ones (`tests/newplayer_test.lua` checks every kit). Without the island both parts come at the
+  first login; a character already on the island when this came gets the wearable part at its next login there (the
+  snapshot's armor count follows it, `NP.snapshotAddItems`). `/newplayerkit <name>` gives both parts again. Existing characters never get a kit by logging in. Messages read the class name from `Vocation(id)`.
+- **Starting stats** (`start_stats.lua`, one row per class with its level 1 values and its vocation gains;
+  `tests/start_stats_test.lua`): the level 1 row follows the gains (Warrior 185 / 35 / 470, Ranger 165 / 60 / 440,
+  Mystic 150 / 90 / 400, Thief and Monk 175 / 45 / 455, Necromancer 155 / 80 / 410, Templar 180 / 40 / 465; ascended
+  classes like their base); a character starts at `startLevel` 8 with the row plus 7 levels of gains (Warrior 290 / 70
+  / 645, Ranger 235 / 165 / 580, Mystic 185 / 300 / 470, Thief 259 / 115 / 609). Before, every creation path wrote ZnoteX's or the database's flat 150 health / 0 mana / 400 cap, so a
+  level 1 Mystic could not cast or drink a mana potion. Every path reads this file: the website and the client's API
+  (`plugins/chaos/lib.php` `chaos_apply_start_stats` on the `character.created` hook), the Linux package's
+  `add-account.sh` (which also writes the class look and colours, the main city and position 0,0,0, as the website does;
+  the test runs it), the Windows test accounts (`test_accounts.sql`, checked by the test). The login correction
+  (`NP.fixStats`, once per character, storage +9): a new character or one the island had, without its kit and below
+  the start level, gets exactly level 8's experience (`NP.raiseToStart`; an old character without a kit row keeps its
+  level); then a character up to `fixUpToLevel` (8) below its class's values for its level is raised to them (never
+  lowered) and filled up (an island snapshot gets the new values, `NP.snapshotSetStats`).
+- **Start look** (owner report 2026-10-16, a website Ranger "Jokr" that looked like a mage in a blue robe and a
+  headband): every path gave the right look type (the Ranger's hooded archer, 2163 / 2164; the website, the client API,
+  `add-account.sh` and the first login all read `class_looks_core.lua`, and the classes' donor outfits are not worn at
+  login). The class looks are colour templates, and the website's starter colours (head 78 yellow, body 68 blue) turned
+  the archer's cloak into a blue robe. Each base class now has start colours (`L.startColors`, e.g. the Ranger forest
+  green and browns), put on at creation (website `chaos_apply_class_look`, `add-account.sh`) and at the first login
+  (`L.startOutfit`). `tests/start_stats_test.lua` checks every base class's start look (male and female) is its own,
+  and add-account.sh's; the website test checks its looks and colours against the Lua.
 - **Home town** (one time, `homeTown`): a brand-new character (no kit yet) moves to the main city, Cinderhold (town 2),
   at its first login, before the tutorial island; its temple, respawn and Town Portal are there from then on. Towns in
   `homeTown.keep` are kept as chosen; `id = 0` turns it off; characters with their kit keep their town. See "Main city".
@@ -11493,23 +11563,39 @@ milestones, island layout, station state machine) in `newplayer_core.lua`, teste
 
 ### Tutorial island (`newplayer_tutorial.lua`)
 
+**Switched off since 2026-10-16** (owner design: the start above). Everything below holds when `tutorial.enabled` is
+set back to true.
+
 **Limits** (`newplayer_config.lua` `tutorial.timeLimitMinutes`, "Instance limits"): a character spends at most 30 minutes online on the island (offline time does not count; storage 7100257 keeps the time of earlier sessions), warnings at 5 and 1 minute; then it leaves as with Skip tutorial (the kit, the welcome, its temple). A login past the limit leaves at once. `/instances tutorial` lists the characters on the island; `/instances close tutorial <name>` sends one out.
 
-Built at startup with `Game.createTile` like the world boss arena (nothing is saved to the map): footprint x 4598-4642,
-y 4598-4612, z 7 (the map has no tiles within x/y 4500-5600; every tile is checked first and the island is not built over
-foreign tiles, then new characters get their kit at the first login instead). Five 7 x 9 grass pens side by side, water
-around, stone divider walls with a stone-floor gate each (action id 47504), an angel statue (47502, use: read the lesson
-again) and a white marble lesson tile (47501) in every pen, coal basins and flowers, a goblin statue (47503, skip) in the first
-pen and a magic forcefield exit (47505) in the last.
+Built at startup with `Game.createTile` like the world boss arena (nothing is saved to the map, base data is never
+touched, a rebuild adds nothing twice): footprint x 4586-4654, y 4590-4620, z 7 (the map has no tiles within x/y
+4500-5600; every tile is checked first and the island is not built over foreign tiles, then new characters get their
+kit at the first login instead). The tiles come from `NP.islandModel` (`newplayer_core.lua`, pure, tested): five 7 x 9
+grass pens side by side, closed by a wooden fence (pieces by neighbours, measured on the live map with
+`tools/map/derive_borders.py`) with a gap in each divider as the gate (action id 47504); a dirt path along the pens with
+a branch to each white marble lesson tile (47501), grass edges on the path; an angel statue (47502, use: read the
+lesson again) and a signpost (same action) in every pen, coal basins, flowers and grass tufts along the fences; a
+goblin statue (47503, skip) beside the arrival tile and a magic forcefield exit (47505) in the last pen. Around the
+fence three tiles of land the player cannot reach (trees, bushes, flowers, lit street lamps by every gate), a shore
+border all round, a wooden dock with a bollard, a barrel and a moored boat on the west shore, then water out to where
+the client's largest view (29 x 21, `game_chaosview`) plus one tile ends from any pen tile: the view never shows an
+unmapped (black) tile (2026-10-16; before, two rows of water left a black band on the west and north edges).
+`tests/newplayer_test.lua` checks the footprint, the closed fence (from the arrival only the pens and gates are
+reachable), the view corners and every id against the config. Preview with the map tools:
+`python3 -I server/tools/areagen_export.py preview OUT ITEMS.otb ITEMS.xml Tibia.dat Tibia.spr --area tutorial`
+(`tools/areagen_dump.lua tutorial` prints the model).
 
-A brand-new character (first login, no kit yet, a class with a kit) arrives in the first pen instead of the temple. Each
-station opens a lesson (modal window + toast) when entered; its gate opens east only when the task is done:
+A brand-new character (first login, no kit yet, a class with a kit) arrives in the first pen instead of the temple,
+wearing its class's starter gear. The first window is a choice (`NP.showArrival`, `tutorial.arrival`): **Start
+tutorial** (lesson 1) or **Skip to Cinderhold** (the temple, the rest of the kit, gold), with a toast and a chat line
+pointing at the goblin statue beside the arrival. Each station opens a lesson (modal window + toast) when entered; its gate opens east only when the task is done:
 1. Moving and fighting: kill 3 rats (spawned in the first pen when the lesson is closed, the lesson tile is stepped on, or
    after 20 s; at most 3 alive). Detected with a `kill` CreatureEvent.
 2. Spells: open Character > Spellbook (`ChaosSpellbook.sendTo` is wrapped at startup: the command and the client button both pass there)
    and cast the class spell (Warrior Salve of Scars `saen tin brak`, Ranger / Mystic Arcane Stitch `saen tin`), detected by
    the spell group cooldown condition (polled every 300 ms). A level 1 character with too little mana gets its maximum raised
-   to the spell's cost once. The Thief line has no spell below level 20: opening the spellbook is enough.
+   to the spell's cost once (no class needs it since the level 1 stats, `start_stats.lua`). The Thief line has no spell below level 20: opening the spellbook is enough.
 3. Passive tree: one free passive point (`passiveExtraPoints` +1, taken back when the character leaves); allocating it and pressing Apply Plan completes the
    station (a listener in `ChaosPassiveTree.listeners`).
 4. Orbs: an Orb of Upheaval and a Common (rarity 1) leather armor; the station completes when the orb is used (the character's orb
@@ -11518,7 +11604,8 @@ station opens a lesson (modal window + toast) when entered; its gate opens east 
 5. Keystones, Adventure > Bounty Board, the store and the top menu: information; the forcefield then sends the character to its temple with
    the kit and the welcome.
 
-Character > Services > Leave Tutorial, the goblin statue or the lesson's "Skip tutorial" button leave at once with the kit. Characters that existed
+The arrival window's Skip to Cinderhold, Character > Services > Leave Tutorial, the goblin statue beside the arrival or
+the station 1 lesson's "Skip tutorial" button leave at once with the kit. Characters that existed
 before never enter the island. Safety: no PvP on the island (`EventCallback onTargetCombat`; runtime tiles cannot get the
 protection-zone flag); nobody dies there (a hit that would kill leaves 1 health and the character is healed; a death anyway,
 e.g. elsewhere, is answered at the next login); logging out and in, or a death, puts the character back in the pen of its
@@ -12150,6 +12237,50 @@ changes. What each spell sends: server/data/spells/README_FX.md "Mystic line eff
   the two VfxShoot sites wired), `tests/mystic_fx_test.lua` (every name the Mystic scripts send is in an ids file). A
   local run with the switch on passed the whole server test set (client/MANIFEST.md). Not run on a server or in a
   client.
+
+## Condition auras, blasts and fireworks (pair 29) (`data/lib/chaos_pack29_vfx.lua`, `data/lib/chaos_pack29_vfx_ids.lua`, `scripts/chaos/pack29_vfx.lua`, switch `ChaosPack29Fx.PAIR29`, off)
+
+The five effect packs the owner bought on 2026-10-16 (client/MANIFEST.md "Condition auras, blasts and fireworks
+(pair 29)", effects 780-829, missiles 170-185; credits in docs/CREDITS.md). Effects only: no damage, chance, timing,
+target or reward changes. Same switch as the Mystic effects of the pair (`ChaosPack29Fx.PAIR29`, off until pair 29 is
+on windows-assets).
+- **Condition auras** (`C.auras`, 16 states; small, over the head, sent again while the state lasts):
+  - damage conditions, by the engine (src-patch 0045, `C.conditionTicks`, set once at startup by
+    `ChaosPack29Vfx.applyEngine`): each tick of fire burning, earth poison, energy shocked, physical bleeding, ice
+    frozen, death cursed shows that aura instead of the stock hit sparks;
+  - `C.hold(creature, state, ms)` (one addEvent chain per creature and state, at most `C.maxHeld`, re-sent when the
+    aura ends): `ChaosSpell.slow` slowed; Iron Palm stunned (a big monster: slowed); the Monk's PvP stun stunned; the
+    item chill frozen and the item shock shocked (`item_mods.lua`); a status word on a creature (`C.words`, 3 s:
+    frozen, stunned, fear, cursed, blessed, shocked, slowed);
+  - `C.show` (throttled to the aura's length) from the boss fight tick: invulnerable while an immune adds phase lives,
+    enraged after the soft enrage (`boss_mechanics.lua`);
+  - the online players' scan every `C.scanMs` (`scripts/chaos/pack29_vfx.lua`): paralyze slowed, drunk confused, a
+    spell's regeneration (CONDITIONID_COMBAT, not the food one) regeneration.
+  - Silenced and petrified have no game mechanic: imported, unused (`C.unused`). Monsters slowed by a stock rune or a
+    monster spell show nothing (no Lua call site and no scan of monsters, which would cost too much).
+- **Hit splashes** (engine, `C.raceHits`): a physical hit on a blood creature (players too) `hit_blood`, on a fire
+  creature `hit_blood_spray`. The pack is red only: venom, undead and energy creatures keep the stock hit. The splash
+  item under the creature and the corpse pools are unchanged.
+- **Element blasts**: the engine's direct element hits (`C.elementHits`: fire, ice, energy, earth, death, arcane;
+  holy keeps the stock sparks), the small hits and procedural bursts a spell sends during its cast (`C.names`, asked in
+  `_common.lua` after the Mystic swaps; per-tile area effects sent by id stay), boss deaths (`bosspoints.lua`, every
+  listed boss: `blast_boss`, `blast_massive` from 1,000,000 max health). Unused: `blast_fire5`.
+- **Missiles** (engine, `C.missiles`): the stock fire, energy, energy ball, death, sudden death, ice, small ice, earth,
+  small earth, poison, holy, small holy and explosion missiles and the procedural Chaos bolts (`fx:fire_bolt` ...) are
+  sent as the pack's bolts, from spells, runes, wands, monsters and Lua alike. Weapon ammunition keeps its look. Unused:
+  `bolt_ultimate`, `bolt_water`, `bolt_wind`.
+- **Celebrations** (`C.celebrate(pos, kind, fallback)`): the level-up `fw_grand` (`scripts/chaos/pack29_vfx.lua`; the
+  base advance_save.lua sends no firework: its `config.effect` is false), an achievement `fw_star`, a boss point, a
+  world boss, guild boss or raid reward `fw_rainbow`. Off, the old stock firework.
+- Off (as shipped): the ids file is not loaded, `applyEngine` only clears the overrides, every call site sends what it
+  sent before. An engine without 0045: nothing is set (the Lua checks `Game.setHitEffect`). Flip step: the pair 29
+  switch (above) and the engine built with 0045. Rollback: the switch off and a restart (startup clears the
+  overrides).
+- Tests: `tests/pack29_vfx_test.lua` (switch off; every table name in the client spec and the ids file, every spec name
+  sent or unused, the engine-sent auras and splashes at offset 0, 0, missiles fit u8; the engine rows; off: nothing sent
+  or set; on: auras, holds, words, celebrations, boss blasts; the call sites wired), `tools/effect_overrides_patch_test.py`
+  (the patch and a model of its rules). A local run with the switch on passed the server test set (client/MANIFEST.md
+  "Pair 29 build"). Not run on a server or in a client.
 
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
@@ -16057,7 +16188,8 @@ separated by commas are all accepted (a key rotation: old and new until every pl
 1. Make the key on your own machine: `openssl rand -hex 32`. Keep it out of the repository, chats and screenshots.
 2. GitHub: Settings -> Secrets and variables -> Actions -> New repository secret, name **`CHAOS_CLIENT_KEY`**, value the
    64 hex digits. `windows-package.yml` (the Windows and the Linux client) and `windows-client.yml` build the client
-   with it (without it the run warns and the client gets the development key, which a production server kicks). The
+   with it (without it `windows-package.yml` fails unless its input `allow_dev_key` is ticked; then, and in
+   `windows-client.yml`, the client gets the development key, which a production server kicks). The
    Linux server download of `windows-package.yml` writes `clientGuardMode` as "enforce" when its `chaos.env` sets
    `CHAOS_CLIENT_KEY` and "off" otherwise (`tools/linux/package_server.sh`); a rerun of `prod_config.py` makes it
    "enforce" again.
@@ -16103,6 +16235,81 @@ manifest's `min_package` refused, two keys (rotation) both accepted, key from co
 from a staff IP let in and a normal account from that IP refused, enforce without a key fails closed with the startup
 error. Log mode: the stock-id client and the wrong-key client play, every check logged. `loadtest.py`: 6 bots for 40 s in
 log mode (stock id) and in enforce with `--dev-key`, all logged in, no disconnects. Not run: the Windows workflows.
+
+## Login encryption (RSA, XTEA) (engine `src-patches/0046-own-rsa-login-key.patch`, client base patch 0072, `tools/rsa_key.py`, `client/tools/set_rsa_key.py`)
+
+The 10.98 login sends the account name, the password and the session's XTEA key in one 128-byte RSA block (the game
+login sends the password again, in its session key). After that both sides use XTEA with the client's key. Audit
+2026-10-16 (docs/SECURITY_CHECKLIST.md):
+- **The RSA key was the public default open-server key** (`key.pem` of the base download, `OTSERV_RSA` of the client,
+  fingerprint `69bbc82b7c9073de`). Its private key is public: anyone on the path (a shared Wi-Fi, a hostile network,
+  a provider) reads every account and password and can pose as the server. **Fixed:** our own key (below).
+- **The client's XTEA key was guessable.** `Protocol::generateXteaKey` seeded `mt19937` with the current second, so a
+  recorded login gave its session key away after a few hundred tries: the session could be read and forged whatever
+  the RSA key. **Fixed:** client base patch 0072 takes it from OpenSSL `RAND_bytes`.
+- XTEA is on both ways for the login and the game protocol from the first answer on; a login block no key opens is
+  refused (disconnect), and the server never reads a plain packet after it. Only the status protocol (7171, the
+  online count) and the game port's first challenge are plain, as in every 10.98 server. No change needed.
+- **Limits of the protocol** (not fixable without breaking 10.98): RSA without padding, 1024 bits (within reach of a
+  well-funded attacker, far beyond a casual one), XTEA without a MAC (a bit flipped on the path is not detected, only
+  the game's own parsing catches nonsense). TLS in front of the game would need a client and server change of the
+  transport (not planned). The client guard (above) is separate: it proves the client, not the channel.
+
+**Our own key.** `config.lua` `rsaKeyFile` (default `"key.pem"`, as before): one or more PKCS#1 PEM files, comma
+separated; the first is the current key, the others are still accepted (a rotation). `prod_config.py` writes
+`rsaKeyFile = os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"`, so the path is in `/etc/chaos/chaos.env` (or the Linux
+package's `chaos.env`); an empty value means `key.pem`. The engine tries each key and takes the first whose result
+starts with the 0 byte the protocol requires (a wrong key gives that by chance once in 256 tries; that login then
+fails and a retry works). Read at startup only: restart after a change. At start: `>> RSA key 1: <file> (fingerprint
+<16 hex>)` per key, and a WARNING for the public default key. A key that is not 1024 bits stops the start.
+- Make it on the game server, as the user the engine runs as (or as root with `--owner chaos`):
+  `python3 -I server/tools/rsa_key.py gen --out /etc/chaos/rsa/login-YYYYMMDD.pem --owner chaos`. It writes a 1024-bit
+  key (exponent 65537) with `openssl genrsa`, mode 600, in a folder of mode 700, refuses a path inside a git work tree
+  and an existing file, and prints only the public modulus (decimal) and the fingerprint. `rsa_key.py public --key F`
+  prints them again, `check --key F [--owner chaos]` checks format, size, exponent, mode, owner and that it is not
+  the default key, `fingerprint MODULUS` the fingerprint of a modulus.
+- The client: the modulus (public, not secret) goes into the GitHub secret or variable **`CHAOS_RSA_PUBLIC`**;
+  `windows-package.yml` writes it into the separate client downloads' `init.lua` (`Services.rsa`) with
+  `client/tools/set_rsa_key.py`, which prints the same fingerprint in the build log. Without it the run fails unless
+  `allow_dev_key` is ticked (then the default key and a warning). The full Windows zip keeps the default key: its own
+  server folder has the stock `key.pem`.
+- Order: build and publish the client with the new modulus **before** the server uses only the new key. During the
+  switch list both: `CHAOS_RSA_KEY_FILE=/etc/chaos/rsa/login-new.pem,key.pem` (the old clients keep working), then drop
+  the old file once every player has the new client (with `clientGuardBuilds` / `--min-package` the old exe is refused
+  anyway).
+- **Rotation** (a key leaked, or once a year): `gen` a new file, publish clients with its modulus, list
+  `new,old` in `CHAOS_RSA_KEY_FILE`, restart; after the update window list only `new`, restart, delete the old file
+  (`shred -u`). A leaked key: do the same at once and shorten the window; anyone who had it could read the logins made
+  with it, so ask players to change their passwords on the website.
+- The private key never leaves the game server: not in the repository, not in a GitHub secret, not in a chat.
+  `backup.sh` does not copy `/etc/chaos`; keep the key on the machine only, and if it is lost make a new one and build
+  a new client (the same steps as a rotation, without the window).
+- `tools/loadtest.py --key FILE` reads the modulus of any of the key files for the bots.
+- Tests: `tools/rsa_key_test.py` (gen, modes, refusals, PKCS#8, the default key), `client/tools/set_rsa_key_test.py`
+  (the modulus checks, init.lua, and the const.lua hunk of patch 0072 run under LuaJIT and Lua 5.3). The engine part
+  was built from the chain 0001-0046 (the touched files compile) and checked with a small program against
+  `src/rsa.cpp`: two keys loaded, a block for each key opened by the right one, a random block refused, a 2048-bit
+  key refused, the fingerprints the same as the tools print. Not run in a full server build.
+
+## Failed-login limits (engine `src-patches/0047-login-failure-limit.patch`, `src/loginlimit.h`)
+
+Audit 2026-10-16: the game's account login (7171) and game login (7172) let anyone try passwords as fast as it could
+reconnect. The stock throttle only stops 6 connections within 500 ms; nothing counted wrong passwords (the website
+has its own limit, website/README.md "Passwords"). Each guess also costs a PBKDF2 run on the login worker.
+- After `loginFailMaxPerIp` (20) failed logins from one IP, or `loginFailMaxPerAccount` (50) on one account name from
+  any IP, within `loginFailWindow` (600) seconds, that IP or account name is refused for `loginFailBlock` (900)
+  seconds with "Too many failed logins. Please wait N minutes ...", before the password check (no PBKDF2 for it). 0
+  turns a limit off. Read on every login, so `/reload config` changes them.
+- Account names are compared without case. A good login clears its account's count, never the IP's: an attacker
+  cannot reset his IP's count with an account of his own. Each map holds at most 100,000 entries (expired ones are
+  swept). Behind the gateways the IP is the player's own (patch 0025).
+- **Accepted trade-off:** someone who knows an account name can block its game login for 15 minutes with 50 wrong
+  passwords from 3 or more IPs (one IP is stopped by its own limit after 20). The account's owner then waits or uses
+  the website. 50 keeps that hard and still stops guessing spread over many addresses.
+- One console line when a block starts: `[Login limit] ip|account blocked after failed logins: ip a.b.c.d, account x`.
+- Test: `tools/loginlimit_test.cpp` (CI takes `loginlimit.h` out of the patch: the IP and account limits, the window,
+  a good login, limits off, bounded memory). The chain 0001-0047 applied; `protocollogin.cpp`, `protocolgame.cpp` and
+  `configmanager.cpp` compile. Not run in a full server build.
 
 ## Gateways and the PROXY protocol (engine `src-patches/0025-proxy-protocol.patch`, `deploy/gateway/`, `deploy/firewall/`)
 

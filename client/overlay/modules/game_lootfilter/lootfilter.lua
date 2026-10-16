@@ -5,6 +5,7 @@
 --                     kill {k, m, look, p, items = [{n, id, c, r, u, o, g, nm, left}], drops = [{text, color, rank}]}
 --                       one loot feed row: the monster's icon (look, a UICreature) and the item icons, no text
 --                     update {k, left = [...]}   decay {k}   msg {text}
+--                     beam {k, p, i}   handed to game_lootbeams (the light pillar over a corpse)
 --                     settings also carry snd (sound per rule, vol, mute, hunt) and counts {session, total};
 --                     kill carries hits {rule = items} and counts when a rule matched; counts {session, total}
 --   client -> server  open | sync | set {s} | preset {name} | peek {cid} | take {k, n, id, one}
@@ -702,6 +703,9 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'decay' then onDecay(data)
   elseif msg.action == 'msg' then showFlash({ { text = data.text or '', color = '#ff7a5a' } })
   elseif msg.action == 'counts' then onCounts(data)
+  elseif msg.action == 'beam' then -- loot beams over corpses (game_lootbeams draws them)
+    local lb = modules.game_lootbeams
+    if lb and lb.onBeam then lb.onBeam(data) end
   end
 end
 

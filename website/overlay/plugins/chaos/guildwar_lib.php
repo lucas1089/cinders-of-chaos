@@ -5,7 +5,7 @@
  *   chaos_guildwar        one row per declaration: the two guilds, the terms (frag limit, hours, stake), the status
  *                         (pending, active, ended, declined, cancelled, expired), the score, the winner and the payout
  *   chaos_guildwar_kills  every war kill with its verdict (counted, or the anti-farming reason it did not count)
- * Used by page.php?plugin=chaos&p=guildwars (pages/guildwars.php). Every query is a prepared statement; every value
+ * Used by page?plugin=chaos&p=guildwars (pages/guildwars.php). Every query is a prepared statement; every value
  * printed goes through chaos_h().
  */
 
@@ -103,7 +103,7 @@ function chaos_guildwar_state(int $now, int $limit = 20): array {
 
 /** A guild name linked to ZnoteX's guild page. */
 function chaos_guildwar_guild_link(string $name): string {
-	return '<a href="guilds.php?name=' . rawurlencode($name) . '">' . chaos_h($name) . '</a>';
+	return '<a href="guilds?name=' . rawurlencode($name) . '">' . chaos_h($name) . '</a>';
 }
 
 /** The two tables of the page: current wars and the history. */

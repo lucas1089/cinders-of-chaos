@@ -1,0 +1,211 @@
+# Our own RSA login key, several during a rotation (server/README.md "Login encryption (RSA, XTEA)", docs/SECURITY_CHECKLIST.md).
+# The 10.98 login sends the account, the password (the game login's session key holds it too) and the XTEA key of the
+# session in one RSA block. The stock engine decrypts it with key.pem from the base download: the public default
+# open-server key, whose private key everybody has. With it anyone on the path reads every login and can pose as the
+# server. This patch lets the engine load our own key from outside the server folder:
+#   * config.lua: rsaKeyFile = "key.pem" (the default, as before) or a path such as /etc/chaos/rsa/login.pem; several
+#     files separated by commas are all accepted, the first is the current key (a rotation: new key first, the old one
+#     after it until every player has the new client). Read at startup only; prod_config.py writes
+#     rsaKeyFile = os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem", so the path lives in /etc/chaos/chaos.env.
+#   * Protocol::RSA_decrypt tries each key and takes the first whose result starts with the 0 byte the protocol
+#     requires; a block no key opens is refused (disconnect), as before. A key that is not 1024 bits is refused at start.
+#   * startup: one line per key with its fingerprint (the first 16 hex digits of SHA-256 of the decimal modulus, the
+#     same server/tools/rsa_key.py and client/tools/set_rsa_key.py print) and a WARNING when a key is the public default.
+# Make the key with server/tools/rsa_key.py gen (on the game server, never in the repository). The client takes the
+# public modulus at build time (client/tools/set_rsa_key.py, windows-package.yml secret CHAOS_RSA_PUBLIC).
+# Apply in the server source root after 0001-0045: patch -p1 < 0046-own-rsa-login-key.patch, then rebuild.
+--- a/src/configmanager.cpp
++++ b/src/configmanager.cpp
+@@ -343,6 +343,9 @@ bool ConfigManager::load()
+ 	// must start with a PROXY header (v2 or v1) and gets the client address from it. Empty: off, as before.
+ 	// proxyProtocolRequired = true: every other address is refused (127.0.0.0/8 excepted: the watchdog, health checks)
+ 	string[PROXY_PROTOCOL_TRUSTED] = getGlobalString(L, "proxyProtocolTrusted", "");
++	// Chaos (patch 0046): the RSA login key(s), PKCS#1 PEM files, comma separated (the first is the current key, the
++	// others are still accepted during a rotation); read at startup only. Default: key.pem in the server folder.
++	string[RSA_KEY_FILE] = getGlobalString(L, "rsaKeyFile", "key.pem");
+ 	boolean[PROXY_PROTOCOL_REQUIRED] = getGlobalBoolean(L, "proxyProtocolRequired", false);
+ 	boolean[LOGIN_PREFETCH] = getGlobalBoolean(L, "loginPrefetch", true); // Chaos (patch 0031), read at startup
+ 	// Chaos (patch 0027): log every dispatcher task that takes this many ms or more, with its Lua calls and database
+--- a/src/configmanager.h
++++ b/src/configmanager.h
+@@ -92,6 +92,7 @@ class ConfigManager
+ 			CLIENT_GUARD_STAFF_IPS,
+ 			CLIENT_GUARD_LOG_FILE,
+ 			PROXY_PROTOCOL_TRUSTED, // Chaos (patch 0025): PROXY protocol from the gateways
++			RSA_KEY_FILE, // Chaos (patch 0046): the login key file(s)
+ 
+ 			LAST_STRING_CONFIG /* this must be the last one */
+ 		};
+--- a/src/otserv.cpp
++++ b/src/otserv.cpp
+@@ -179,9 +179,33 @@ void mainLoader(int, char*[], ServiceManager* services)
+ #endif
+ 
+ 	//set RSA key
++	// Chaos (patch 0046): rsaKeyFile (config.lua, default key.pem): one or more PEM files, comma separated; the first is
++	// the current key, the others are accepted during a rotation (server/README.md "Login encryption (RSA, XTEA)")
+ 	std::cout << ">> Loading RSA key " << std::endl;
+ 	try {
+-		g_RSA.loadPEM("key.pem");
++		std::string keyFiles = g_config.getString(ConfigManager::RSA_KEY_FILE);
++		trimString(keyFiles);
++		if (keyFiles.empty()) {
++			keyFiles = "key.pem"; // an empty CHAOS_RSA_KEY_FILE= in chaos.env: the stock file
++		}
++		for (std::string file : explodeString(keyFiles, ",")) {
++			trimString(file);
++			if (!file.empty()) {
++				g_RSA.addPEM(file);
++				const size_t i = g_RSA.size() - 1;
++				std::cout << ">> RSA key " << (i + 1) << ": " << file << " (fingerprint " << g_RSA.fingerprint(i) << ")"
++				          << std::endl;
++				if (g_RSA.isPublicDefault(i)) {
++					std::cout << "> WARNING: " << file << " is the public default open-server key. Its private key is "
++					          << "public: anyone on the path can read every login (account, password) and pose as this "
++					          << "server. Make our own key: server/tools/rsa_key.py gen (server/README.md \"Login "
++					          << "encryption (RSA, XTEA)\")." << std::endl;
++				}
++			}
++		}
++		if (g_RSA.size() == 0) {
++			throw std::runtime_error("rsaKeyFile names no key file.");
++		}
+ 	} catch(const std::exception& e) {
+ 		startupErrorMessage(e.what());
+ 		return;
+--- a/src/protocol.cpp
++++ b/src/protocol.cpp
+@@ -112,7 +112,10 @@ bool Protocol::RSA_decrypt(NetworkMessage& msg)
+ 		return false;
+ 	}
+ 
+-	g_RSA.decrypt(reinterpret_cast<char*>(msg.getBuffer()) + msg.getBufferPosition()); //does not break strict aliasing
++	// Chaos (patch 0046): every key of rsaKeyFile is tried (a rotation); a block no key opens is refused
++	if (!g_RSA.tryDecrypt(reinterpret_cast<char*>(msg.getBuffer()) + msg.getBufferPosition())) { //does not break strict aliasing
++		return false;
++	}
+ 	return msg.getByte() == 0;
+ }
+ 
+--- a/src/rsa.cpp
++++ b/src/rsa.cpp
+@@ -6,7 +6,9 @@
+ #include "rsa.h"
+ 
+ #include <cryptopp/base64.h>
++#include <cryptopp/hex.h>
+ #include <cryptopp/osrng.h>
++#include <cryptopp/sha.h>
+ #include <fmt/color.h>
+ 
+ #include <fstream>
+@@ -66,4 +68,78 @@ void RSA::loadPEM(const std::string& filename)
+ 	if (!pk.Validate(prng, 3)) {
+ 		throw std::runtime_error("RSA private key is not valid.");
+ 	}
++
++	// Chaos (patch 0046): loadPEM replaces every key (the stock behaviour, one key)
++	keys.assign(1, pk);
++}
++
++// Chaos (patch 0046): our own login key, several during a rotation (server/README.md "Login encryption (RSA, XTEA)")
++void RSA::addPEM(const std::string& filename)
++{
++	const auto previous = keys;
++	const auto restore = [&]() {
++		keys = previous;
++		if (!keys.empty()) {
++			pk = keys.front();
++		}
++	};
++	try {
++		loadPEM(filename);
++	} catch (...) {
++		restore();
++		throw;
++	}
++	const CryptoPP::RSA::PrivateKey added = pk;
++	restore();
++	if (added.GetModulus().ByteCount() != 128) {
++		throw std::runtime_error("RSA key " + filename + " is not 1024 bits (the 10.98 login block is 128 bytes).");
++	}
++	keys.push_back(added);
++	pk = keys.front();
++}
++
++bool RSA::tryDecrypt(char* msg) const
++{
++	for (const auto& key : keys) {
++		try {
++			CryptoPP::Integer m{reinterpret_cast<uint8_t*>(msg), 128};
++			if (m >= key.GetModulus()) {
++				continue;
++			}
++			auto c = key.CalculateInverse(prng, m);
++			uint8_t out[128];
++			c.Encode(out, 128);
++			if (out[0] == 0) {
++				std::copy(out, out + 128, reinterpret_cast<uint8_t*>(msg));
++				return true;
++			}
++		} catch (const CryptoPP::Exception& e) {
++			fmt::print(fg(fmt::color::crimson) | fmt::emphasis::bold, e.what(), "\n");
++		}
++	}
++	return false;
++}
++
++std::string RSA::fingerprint(size_t i) const
++{
++	if (i >= keys.size()) {
++		return "";
++	}
++	std::string decimal = CryptoPP::IntToString(keys[i].GetModulus(), 10);
++	std::string digest;
++	CryptoPP::SHA256 sha;
++	CryptoPP::StringSource ss(decimal, true,
++		new CryptoPP::HashFilter(sha, new CryptoPP::HexEncoder(new CryptoPP::StringSink(digest), false)));
++	return digest.substr(0, 16);
++}
++
++bool RSA::isPublicDefault(size_t i) const
++{
++	// the open-server key every stock server and client ship: its private key is public, so anyone can read logins
++	static const CryptoPP::Integer publicDefault(
++		"1091201329673994292788609605089955415282375029027981291234687579372662914925764463307396960011106039"
++		"0723088861007265581882535850342905759282762943641310856602909362821263595383668656267584972062078627"
++		"9431090218017681061521755056710823876476444260558147179707119674283982419152118103759076030616683978"
++		"566631413.");
++	return i < keys.size() && keys[i].GetModulus() == publicDefault;
+ }
+--- a/src/rsa.h
++++ b/src/rsa.h
+@@ -7,6 +7,7 @@
+ #include <cryptopp/rsa.h>
+ 
+ #include <string>
++#include <vector>
+ 
+ class RSA
+ {
+@@ -20,8 +21,20 @@ class RSA
+ 		void loadPEM(const std::string& filename);
+ 		void decrypt(char* msg) const;
+ 
++		// Chaos (patch 0046): several keys at once (rsaKeyFile = "new.pem,old.pem", a rotation). addPEM loads one more
++		// key; tryDecrypt decrypts the 128-byte block with the first key whose result starts with the 0 byte the protocol
++		// requires and returns false (msg unchanged) when none does.
++		void addPEM(const std::string& filename);
++		bool tryDecrypt(char* msg) const;
++		size_t size() const { return keys.size(); }
++		// the modulus of key i: its fingerprint (the first 16 hex digits of SHA-256 of the decimal modulus, as
++		// server/tools/rsa_key.py and client/tools/set_rsa_key.py print it) and whether it is the public default key
++		std::string fingerprint(size_t i) const;
++		bool isPublicDefault(size_t i) const;
++
+ 	private:
+ 		CryptoPP::RSA::PrivateKey pk;
++		std::vector<CryptoPP::RSA::PrivateKey> keys;
+ };
+ 
+ #endif

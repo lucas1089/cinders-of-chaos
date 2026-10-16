@@ -1,6 +1,6 @@
 <?php
 /**
- * Credits (credits_lib.php): page.php?plugin=chaos&p=credits[&l=en]. Every third-party source of the game from
+ * Credits (credits_lib.php): page?plugin=chaos&p=credits[&l=en]. Every third-party source of the game from
  * docs/CREDITS.md (credits/credits_data.json). Portuguese headings by default, English with &l=en. Linked from the
  * footer and from the site's credits page.
  */

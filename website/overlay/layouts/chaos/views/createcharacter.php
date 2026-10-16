@@ -28,7 +28,7 @@ foreach ($lines as $base => $line) {
 
 	<?php if ($formState === 'success'): ?>
 		<div class="chaos-msg chaos-msg--ok"><?= $h(t('createchar.success')) ?> Log in with the client: your character wakes up on the tutorial island.</div>
-		<p><a class="chaos-btn" href="myaccount.php">My account</a></p>
+		<p><a class="chaos-btn" href="myaccount">My account</a></p>
 	<?php else: ?>
 		<?php if ($formState === 'errors'): ?>
 			<div class="chaos-msg chaos-msg--error"><?= output_errors($errors) ?></div>

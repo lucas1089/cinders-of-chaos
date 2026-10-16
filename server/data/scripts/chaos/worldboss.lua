@@ -908,7 +908,11 @@ function W.deliver(player, r)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You earned the title %s (%s %s) for %d days.",
 			t.text, W.placeName(t.place), (t.name or t.key):lower(), C().roles.titleDays or 7))
 	end
-	player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
+		ChaosPack29Vfx.celebrate(player:getPosition(), "boss", CONST_ME_FIREWORK_YELLOW)
+	else
+		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW)
+	end
 end
 
 local function distribute()

@@ -15,8 +15,15 @@
 -- Checked in the base server's weapons.xml / movements.xml: every item below can be worn or wielded by its classes at
 -- level 1 (the wands and rods at level 7, with a level 1 fallback); the Thief line gets what add_vocations.py lets it
 -- use (one-handed swords, throwing weapons, the Ranger's armour).
--- Weight: a level 1 character carries 400 oz. Every kit stays under about 360 oz with everything in it (the warrior's
--- brass set is the heaviest); what does not fit goes to the inbox.
+-- Weight: a level 1 character carries 400-470 oz (start_stats.lua). Every kit stays under about 360 oz with everything
+-- in it (the warrior's brass set is the heaviest); what does not fit goes to the inbox.
+-- Potions: the only starting potions are the two Everfull potions (potions_config.lua, ChaosPotions.giveAll; owner
+-- request 2026-10-16). No kit carries stock health or mana potions; the milestone gifts below still do.
+-- Two parts (2026-10-16): the WEARABLE part (`equip`, the kit backpack and the Everfull potions; NP.giveWearable) and
+-- the REST (`backpack` rows, `common.items`, the temple scroll, the gold, a spare weapon of `minLevel`; NP.giveKit).
+-- Without the tutorial island (the default since the owner's design of 2026-10-16) both come at the first login, in the
+-- login event itself, so the character's first frame in Cinderhold shows it wearing its kit. With the island on, the
+-- wearable part comes on arrival and the rest when it ends.
 
 return {
 	-- ------------------------------------------------------------------ kits
@@ -30,10 +37,7 @@ return {
 				{slot = "legs", id = 2478}, -- brass legs
 				{slot = "feet", id = 2643} -- leather boots
 			},
-			backpack = {
-				{id = 7618, count = 10}, -- health potion
-				{id = 7620, count = 5} -- mana potion
-			},
+			backpack = {},
 			role = "melee"
 		},
 		ranger = {
@@ -45,10 +49,7 @@ return {
 				{slot = "legs", id = 2468}, -- studded legs
 				{slot = "feet", id = 2643}
 			},
-			backpack = {
-				{id = 7618, count = 10},
-				{id = 7620, count = 10}
-			},
+			backpack = {},
 			role = "ranged"
 		},
 		mystic = { -- Mystic, Elementalist, Illusionist: wands and rods
@@ -60,10 +61,7 @@ return {
 				{slot = "legs", id = 2649}, -- leather legs
 				{slot = "feet", id = 2643}
 			},
-			backpack = {
-				{id = 7620, count = 15},
-				{id = 7618, count = 5}
-			},
+			backpack = {},
 			role = "caster"
 		},
 		thief = {
@@ -75,9 +73,7 @@ return {
 				{slot = "feet", id = 2643}
 			},
 			backpack = {
-				{id = 2399, count = 30}, -- throwing stars: the shurikens of the Thief line
-				{id = 7618, count = 10},
-				{id = 7620, count = 5}
+				{id = 2399, count = 30} -- throwing stars: the shurikens of the Thief line
 			},
 			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
@@ -88,10 +84,7 @@ return {
 				{slot = "legs", id = 2468}, -- studded legs
 				{slot = "feet", id = 2643}
 			},
-			backpack = {
-				{id = 7618, count = 10},
-				{id = 7620, count = 5}
-			},
+			backpack = {},
 			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
 		necromancer = { -- the Necromancer line wields and wears what the Mystic does (add_vocations.py): the caster kit
@@ -109,10 +102,7 @@ return {
 				{slot = "legs", id = 2478}, -- brass legs
 				{slot = "feet", id = 2643} -- leather boots
 			},
-			backpack = {
-				{id = 7618, count = 10},
-				{id = 7620, count = 5}
-			},
+			backpack = {},
 			role = "melee"
 		},
 		samurai = { -- one katana-style sword: the base server's katana (a one-handed sword, no level) instead of the dagger
@@ -136,10 +126,7 @@ return {
 				{slot = "legs", id = 2649},
 				{slot = "feet", id = 2643}
 			},
-			backpack = {
-				{id = 7618, count = 10},
-				{id = 7620, count = 10}
-			},
+			backpack = {},
 			role = "melee"
 		}
 	},
@@ -245,7 +232,13 @@ return {
 			"- The top menu holds every game window: dungeons, the tower, dailies, bank and stash.\n\n" ..
 			"%s",
 		toast = "Welcome to Cinders of Chaos! Your kit is in your backpack. Everything else is in the menu at the top.",
-		delayMs = 2500
+		delayMs = 2500,
+		-- owner design 2026-10-16: the first login opens the Helper on its Auto setup button (client game_helperrotation
+		-- onboarding.lua, through the toast's message, action "newplayer" with openHelper) instead of a modal window;
+		-- the welcome text goes to the chat (Server Log). window = true brings the modal back.
+		window = false,
+		helper = {open = true, hint = "Set up your helper in one click: press Auto setup."},
+		firstToast = "Welcome to Cinders of Chaos! You start in Cinderhold at level 8, wearing your kit. Set up your helper in one click."
 	},
 
 	-- ------------------------------------------------------------------ storages (Chaos.storage.newPlayer + offset)
@@ -258,6 +251,9 @@ return {
 		orbBase = 5, -- tutorial station 4: Orbs of Upheaval owned after the orb was handed out
 		flags = 6, -- tutorial bits: 1 spellbook opened, 2 spell cast, 4 passive point given, 8 orb given, 16 mana topped up
 		islandUsed = 7, -- tutorial: seconds spent on the island in earlier sessions (instance limits)
+		wear = 8, -- os.time when the wearable part of the kit was given (NP.giveWearable: with the kit, or on arrival at
+		-- the island while it is on)
+		statsFixed = 9, -- 1 once the login checked the start level and stats (NP.fixStats, start_stats.lua)
 		milestone = 10 -- + index into milestones (10 .. 19)
 	},
 	stageDone = 100,
@@ -265,30 +261,58 @@ return {
 
 	-- ------------------------------------------------------------------ tutorial island (newplayer_tutorial.lua)
 	tutorial = {
-		enabled = true,
+		-- owner design 2026-10-16: no tutorial island. New characters start at level 8 in the temple of Cinderhold with
+		-- the full kit (start_stats.lua, newplayer.lua). The island's code stays; true brings it back. With false a
+		-- character still on the island leaves it at its next login (the temple, the full kit, level 8 stats).
+		enabled = false,
 		-- instance limits (instance_limits.lua, server/README.md "Instance limits"): a character spends at most
 		-- timeLimitMinutes online on the island (the stations take 5-10 minutes); then it leaves as with "Skip
 		-- tutorial": the kit, the welcome, its temple. Warnings at warnAt seconds left. The island is one shared place
 		-- (no copies, no cap); the training rats are at most maxMonsters at once.
 		timeLimitMinutes = 30,
 		limits = {warnAt = {300, 60}},
-		-- built at startup with Game.createTile, like the world boss arena. Footprint x 4598-4642, y 4598-4612, z 7:
+		-- built at startup with Game.createTile, like the world boss arena (newplayer_core.lua NP.layout, NP.islandModel).
+		-- Footprint x 4585-4655, y 4589-4621, z 7 (the pens x 4600-4640, y 4600-4610; land, then water out to the view):
 		-- the map has no tiles within x/y 4500-5600 (server/README.md "World bosses"); the build checks again and
 		-- refuses to build over tiles that are not its own. Then new characters get the kit at once (no island).
-		origin = {x = 4600, y = 4600, z = 7}, -- the north-west water corner of the island proper
-		rooms = 5, roomW = 7, roomH = 9, -- five stations side by side, separated by stone walls with one gate each
-		waterRing = 2, -- extra rows of water around the island (decoration)
-		ground = 4526, -- grass
+		-- Preview: python3 -I server/tools/areagen_export.py preview OUT ... --area tutorial
+		origin = {x = 4600, y = 4600, z = 7}, -- the north-west corner of the fence
+		rooms = 5, roomW = 7, roomH = 9, -- five pens side by side, separated by fences with one gate (a gap) each
+		landPad = 3, -- tiles of land (trees, bushes, lamps, the way to the dock) between the fence and the water
+		dockLength = 4, -- the dock on the west shore, on the arrival row (0 = none)
+		-- the water reaches past every tile the client can show from inside a pen: its largest view (game_chaosview,
+		-- the server's limit 29 x 21) plus one tile, so the view never shows an unmapped (black) tile
+		view = {w = 29, h = 21},
+		waterRing = 2, -- at least this much water outside the land
+		ground = 4526, -- grass (the first of look.grass; kept for the build check)
 		markerGround = 406, -- white marble: the lesson tile of every station
-		gateGround = 431, -- stone floor: the gate in a divider wall
+		gateGround = 103, -- dirt: the path, and the gate in a divider fence
 		water = 4608, -- water (not walkable)
-		wall = 5648, -- stone wall (dividers)
 		statue = 1448, -- angel statue: "use" it to read the station's lesson again
-		skipStatue = 1447, -- goblin statue in the first room: "use" it to skip the tutorial
+		skipStatue = 1447, -- goblin statue beside the arrival tile: "use" it to skip the tutorial
+		sign = 1429, -- signpost per station (beside the path where the pen begins): "use" it to read the lesson
 		basin = 1481, -- coal basin (light)
-		decor = {2742, 2741, 2767}, -- white flower, moon flower, bush
 		portal = 1387, -- magic forcefield (no destination; the MoveEvent moves the player)
-		aid = {marker = 47501, statue = 47502, skip = 47503, gate = 47504, exit = 47505},
+		-- the island's look. Server ids of the stock items; border and fence pieces measured on the live map with
+		-- tools/map/derive_borders.py (shore: water over grass; pathEdge: grass over dirt; the fence by neighbours)
+		look = {
+			grass = {4526, 4527, 4528, 4529, 4530, 4531, 4532, 4533}, -- grass variants
+			water = {4608, 4609, 4610, 4611, 4612, 4613}, -- shallow water variants
+			path = 103, -- dirt
+			dock = 405, -- wooden floor
+			shore = {n = 4644, e = 4645, s = 4646, w = 4647, cnw = 4652, cne = 4653, csw = 4654, cse = 4655,
+				dnw = 4648, dne = 4649, dsw = 4650, dse = 4651},
+			pathEdge = {n = 4542, e = 4543, s = 4544, w = 4545, cnw = 4546, cne = 4547, csw = 4548, cse = 4549,
+				dnw = 4550, dne = 4551, dsw = 4552, dse = 4553},
+			fence = {post = 1533, vertical = 1534, joint = 1535, horizontal = 1536, southEnd = 1538},
+			trees = {2700, 2768, 2703, 2708, 2702}, -- fir, small fir, plum tree, poplar, willow
+			bushes = {2767, 2785, 4015}, -- bush, blueberry bush, big fern
+			flowers = {2742, 2740, 2743, 6227, 6219, 6218, 24304, 3611}, -- flowers, grass tufts, stones (not blocking)
+			lamp = 1480, -- lit street lamp (light 7)
+			bollard = 4973, barrel = 1770,
+			boat = {3587, 3590, 3589, 3591} -- a small boat, bow to stern, north to south
+		},
+		aid = {marker = 47501, statue = 47502, skip = 47503, gate = 47504, exit = 47505}, -- the signposts carry `statue`
 		modalBase = 47500, -- modal window ids 47500 .. 47510
 
 		-- station 1: kill training monsters (the first that exists)
@@ -308,6 +332,18 @@ return {
 		-- what the island gives is lent (NP.tutorialReset, server/README.md "Tutorial reset"): every item it creates
 		-- carries this custom attribute and is taken back when the character leaves the island
 		lentTag = "chaos_tutorial",
+
+		-- the first window on the island (NP.showArrival): Start tutorial / Skip to Cinderhold. %d = timeLimitMinutes
+		arrival = {
+			title = "Welcome to the Isle of First Blood",
+			text = "You are wearing your class's starter gear, with your Everfull health and mana potions in your " ..
+				"backpack.\n\n" ..
+				"Five short stations (5 to 10 minutes, at most %d) teach fighting, spells, the passive tree and orbs. " ..
+				"At the end you arrive at the temple of Cinderhold, the main city, with the rest of your kit and gold.\n\n" ..
+				"Played before? Skip to Cinderhold now: you get the same kit. You can also skip later with the goblin " ..
+				"statue beside you or Character > Services > Leave Tutorial.",
+			toast = "Tutorial or not? Press Skip to Cinderhold in the window, or use the goblin statue beside you."
+		},
 
 		lessons = {
 			{title = "Station 1: Moving and fighting",

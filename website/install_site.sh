@@ -213,6 +213,10 @@ mkdir -p "$SITE/engine/cache" "$SITE/engine/img/theme" "$SITE/install"
   printf 'Installed by website/install_site.sh on %s\nThe web installer stays locked: the installer script does its work.\n' "$(date '+%F %T')" \
     > "$SITE/install/installed.lock"
 rm -f "$SITE"/engine/cache/*.cache "$SITE"/engine/cache/*.cache.php 2>/dev/null || true   # class names, rankings
+# robots.txt and sitemap.xml from the site address (README "SEO and social previews"); the icons, site.webmanifest and
+# favicon.ico came with the overlay
+"$PHP" "$HERE/setup/write_seo_files.php" robots > "$SITE/robots.txt"
+"$PHP" "$HERE/setup/write_seo_files.php" sitemap > "$SITE/sitemap.xml"
 if [ -n "${CHAOS_WEB_USER:-}" ]; then
   chown -R "$CHAOS_WEB_USER" "$SITE/engine/cache" "$SITE/engine/img/theme" "$SITE/config.local.php"
 fi

@@ -46,6 +46,19 @@ local function send(action, data)
   end
 end
 
+-- grow the window to its content once the wrapped labels have their height (pouchesview.lua V.fitHeight)
+local MIN_HEIGHT = 452
+local function fitWindow()
+  addEvent(function()
+    if not window or window:isDestroyed() then return end
+    local last = window.storeButton:isVisible() and window.storeButton or window.status
+    local h = V.fitHeight({ top = window:getY(), contentBottom = last:getY() + last:getHeight(),
+      savedHeight = window.savedLabel:getHeight(), buttonHeight = window.closeButton:getHeight(),
+      paddingBottom = window:getPaddingBottom(), minHeight = MIN_HEIGHT })
+    if h ~= window:getHeight() then window:setHeight(h) end
+  end)
+end
+
 local function refreshWindow()
   if not window then return end
   updating = true
@@ -59,6 +72,7 @@ local function refreshWindow()
   combo:setEnabled(rules.gear == true)
   window.status:setText(V.statusText(owned, titles.loot))
   window.storeButton:setVisible(type(owned) == 'table' and not owned.loot)
+  fitWindow()
   window:setText(titles.loot or tr('Loot Bag'))
   updating = false
 end

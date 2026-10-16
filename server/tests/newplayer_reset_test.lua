@@ -429,6 +429,69 @@ do
 	end
 end
 
+-- ------------------------------------------------------------------ the wearable kit on arrival (2026-10-16)
+-- A Thief wears the kit's leather armor (the same id as the island's crafted one) and carries the Everfull potions
+-- before the snapshot: the reset takes back only what the island lent, the kit stays.
+local EVERFULL_H, EVERFULL_M = 32085, 32086
+local function wearThiefKit(p)
+	local kit = NP.kitFor(11)
+	local parts = NP.kitParts(kit, p:getLevel())
+	local slots = {head = 1, armor = 4, left = 6, legs = 7, feet = 8}
+	for _, w in ipairs(parts.wear) do
+		p:equip(slots[w.slot], newItem(w.id, w.count))
+	end
+	local bp = p:equip(3, container(kit.backpackId))
+	bp:add(newItem(EVERFULL_H, 1, {chaos_storebound = 1, chaos_locked = 2}))
+	bp:add(newItem(EVERFULL_M, 1, {chaos_storebound = 1, chaos_locked = 2}))
+	return bp
+end
+do
+	local p = newPlayer(1)
+	local bp = wearThiefKit(p)
+	eq(p:getItemCount(ARMOR), 1, "the Thief wears the kit's leather armor")
+	NP.takeSnapshot(p)
+	playIsland(p)
+	ok(p:getSlotItem(3) == bp, "the island used the kit's backpack (no island backpack)")
+	eq(p:getItemCount(ARMOR), 2, "the kit's armor and the island's crafted one")
+	stage(p, cfg.stageSkipped)
+	NP.tutorialReset(p)
+	eq(p:getItemCount(ARMOR), 1, "wearable kit: the island's armor went, the worn one stays")
+	ok(p:getSlotItem(4) and p:getSlotItem(4).id == ARMOR, "still wearing it")
+	ok(p:getSlotItem(3) == bp, "the kit's backpack stays")
+	eq(p:getItemCount(EVERFULL_H) + p:getItemCount(EVERFULL_M), 2, "the Everfull potions stay")
+	eq(p:getItemCount(2399), 0, "the rest of the kit (throwing stars) is not given before the island ends")
+end
+-- a character already on the island when the wearable kit came (the owner's): the snapshot's counts follow it, so an
+-- armor without its tag never takes the kit's
+do
+	local p = newPlayer(1)
+	NP.takeSnapshot(p)
+	stage(p, 1)
+	wearThiefKit(p)
+	ok(NP.snapshotAddItems(p), "the snapshot is told about the kit")
+	eq(NP.readSnapshot(p).armorCount, 1, "the kit's armor counted")
+	playIsland(p, {untaggedArmor = true})
+	stage(p, cfg.stageDone)
+	NP.tutorialReset(p)
+	eq(p:getItemCount(ARMOR), 1, "untagged island armor taken, the kit's stays")
+end
+-- the level 1 stats corrected while on the island: the reset puts the corrected values back, not the old ones
+do
+	local p = newPlayer(1)
+	p.maxHealth, p.health, p.maxMana, p.mana, p.cap = 150, 150, 0, 0, 40000
+	NP.takeSnapshot(p)
+	stage(p, 2)
+	local fix = NP.statsFix(1, 1, {maxHealth = p.maxHealth, maxMana = p.maxMana, cap = p.cap}, {hp = 5, mana = 30, cap = 10})
+	p:setMaxMana(fix.maxMana)
+	ok(NP.snapshotSetStats(p, fix), "the snapshot gets the corrected stats")
+	playIsland(p)
+	stage(p, cfg.stageSkipped)
+	NP.tutorialReset(p)
+	eq(p:getMaxMana(), 90, "after the reset: the Mystic's level 1 mana")
+	eq(p:getMana(), 90, "and full")
+end
+ok(not NP.snapshotAddItems(newPlayer(1)), "no snapshot: nothing to change")
+
 print(string.format("newplayer_reset_test: %d checks, %d failures", checks, fails))
 if fails > 0 then
 	os.exit(1)

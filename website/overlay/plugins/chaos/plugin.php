@@ -12,7 +12,8 @@
  *    slots of pact_config.lua plus Character Slots bought in the store), so
  *    createcharacter.php refuses one more character server-side.
  *  - New characters wear their class's look (class_looks_core.lua, both addons) from the start, not ZnoteX's starter
- *    outfit, on the character.created hook (website form and client, chaos_client_api.php).
+ *    outfit, and get their class's level 1 health, mana, capacity and soul (server start_stats.lua), on the
+ *    character.created hook (website form and client, chaos_client_api.php).
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
  *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
@@ -23,6 +24,8 @@
  *    current texts is sent to pages/accept.php first.
  *  - The stock pages this server does not use (shop, points, creatures, spells,
  *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
+ *  - SEO and link previews (seo_lib.php): the <head> of every HTML page is rewritten at the end of the request
+ *    (an output buffer opened here): title, description, canonical, robots, Open Graph / Twitter tags, the icons.
  */
 
 if (!isset($config)) {
@@ -48,6 +51,12 @@ require_once __DIR__ . '/session_guard.php';
 require_once __DIR__ . '/community_lib.php';
 // item and outfit images drawn from our client pair (chaos-sprites/, chaos_outfit.php; README "Sprite images")
 require_once __DIR__ . '/sprite_lib.php';
+// SEO and link previews (README "SEO and social previews"): the page renders into this buffer and chaos_seo_output()
+// rewrites its <head> at the end; JSON, images and redirects pass through unchanged
+require_once __DIR__ . '/seo_lib.php';
+if (PHP_SAPI !== 'cli' && chaos_seo_wanted($_SERVER)) {
+	ob_start('chaos_seo_output');
+}
 
 // ---------------------------------------------------------------- pages not used on this server
 // The stock shop, points, creature / spell library and forum pages (chaos_unused_pages) lead to the short note of
@@ -56,14 +65,14 @@ require_once __DIR__ . '/sprite_lib.php';
 $chaosScript = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
 $chaosWhat = chaos_unused_pages()[strtolower(basename($chaosScript))] ?? null;
 if ($chaosWhat !== null && PHP_SAPI !== 'cli' && realpath(dirname($chaosScript)) === realpath(__DIR__ . '/../..')) {
-	header('Location: page.php?plugin=chaos&p=notused&what=' . $chaosWhat, true, 302);
+	header('Location: page?plugin=chaos&p=notused&what=' . $chaosWhat, true, 302);
 	exit;
 }
 unset($chaosScript, $chaosWhat);
 
 // ---------------------------------------------------------------- Terms for existing accounts
 // A logged-in account without the acceptance of the current texts (the beta accounts made before the sign-up
-// checkbox; everyone after the texts change) goes to page.php?plugin=chaos&p=accept first, then back. The accept page,
+// checkbox; everyone after the texts change) goes to page?plugin=chaos&p=accept first, then back. The accept page,
 // the legal texts, login, logout, register, recovery and the donation webhook pass (legal_lib.php).
 $chaosAccountId = function_exists('getSession') ? (int)getSession('user_id') : 0;
 if ($chaosAccountId > 0 && PHP_SAPI !== 'cli') {
@@ -92,6 +101,7 @@ unset($chaosAccountId);
 // the client and the site show the class from the start; the game server puts the same look on at the first login.
 znote_hook_register('character.created', static function (array $data): void {
 	chaos_apply_class_look((string)($data['name'] ?? ''));
+	chaos_apply_start_stats((string)($data['name'] ?? ''));
 });
 znote_hook_register('character.created', static function (array $data): void {
 	if (!chaos_cfg('depot_boxes', false) || !chaos_table_exists('player_depotitems') || !chaos_table_exists('towns')) {

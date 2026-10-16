@@ -9,7 +9,7 @@
  *   chaos_chronicle_record    the top contributors per chapter, written at the season's end
  * Privacy: a name is shown unless the character turned off "Show my records and realm firsts" (the Memorial's choice,
  * chaos_memorial_optin.records = 0); such a row reads "A hero who keeps their name".
- * Used by page.php?plugin=chaos&p=chronicle. Every query is a prepared statement; every value printed goes through chaos_h().
+ * Used by page?plugin=chaos&p=chronicle. Every query is a prepared statement; every value printed goes through chaos_h().
  */
 
 if (!function_exists('chaos_chronicle_state')) {
@@ -137,7 +137,7 @@ function chaos_chronicle_top_html(array $top, string $empty): string {
 	$h = '<table class="chaos-table"><thead><tr><th>#</th><th>Contributor</th><th class="num">Points</th></tr></thead><tbody>';
 	foreach ($top as $i => $r) {
 		$who = $r['hidden'] ? '<span class="chaos-muted">' . chaos_h($r['name']) . '</span>'
-			: '<a href="characterprofile.php?name=' . rawurlencode($r['name']) . '">' . chaos_h($r['name']) . '</a>';
+			: '<a href="characterprofile?name=' . rawurlencode($r['name']) . '">' . chaos_h($r['name']) . '</a>';
 		$h .= '<tr><td>' . ($i + 1) . '</td><td>' . $who . '</td><td class="num chaos-gold">' . chaos_h(number_format($r['points'])) . '</td></tr>';
 	}
 	return $h . '</tbody></table>';

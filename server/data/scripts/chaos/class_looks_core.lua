@@ -107,6 +107,24 @@ L.retired = {
 	{male = 1188, female = 1189}
 }
 
+-- The colours a new character of a base class starts with (head, body, legs, feet; the 133-colour outfit palette),
+-- put on with its class look at the first login (L.startOutfit) and at creation by the website (lib.php
+-- chaos_apply_class_look) and add-account.sh. Every class look is a colour template, so the colours make the art: with
+-- the website's old starter colours (head 78, body 68, legs 58, feet 76: yellow and blue) the Ranger's hooded archer
+-- (2163 / 2164) read as a blue-robed mage with a headband (owner report 2026-10-16, character "Jokr"). An ascended
+-- class starts like its base class. KEEP ONE ROW PER LINE: the website and add-account.sh read them with a pattern.
+L.startColors = {
+	[4] = {head = 57, body = 113, legs = 114, feet = 116}, -- Warrior: grey, crimson, black, brown
+	[3] = {head = 116, body = 120, legs = 116, feet = 115}, -- Ranger: brown, forest green, brown, dark brown
+	[1] = {head = 57, body = 107, legs = 126, feet = 114}, -- Mystic: grey, deep blue, navy, black
+	[11] = {head = 95, body = 114, legs = 95, feet = 114}, -- Thief: dark grey and black
+	[17] = {head = 97, body = 97, legs = 116, feet = 116}, -- Monk: ochre and brown
+	[20] = {head = 114, body = 128, legs = 114, feet = 114}, -- Necromancer: black and dark purple
+	[23] = {head = 79, body = 0, legs = 79, feet = 57} -- Templar: gold and white
+}
+-- the starter colours the website wrote before (ZnoteX's) and the players table's own defaults
+L.OLD_COLORS = {head = 78, body = 68, legs = 58, feet = 76}
+
 -- the engine's sex ids (PLAYERSEX_FEMALE 0, PLAYERSEX_MALE 1)
 L.FEMALE, L.MALE = 0, 1
 
@@ -122,6 +140,11 @@ function L.lookFor(vocId, sex)
 		return nil
 	end
 	return sex == L.FEMALE and e.female or e.male, e.name
+end
+
+-- the start colours of a vocation (its base class's row), or nil
+function L.startColorsFor(vocId)
+	return L.startColors[vocId] or L.startColors[baseOf(vocId)]
 end
 
 -- look types a character of this vocation and sex is given: its class's, then its base class's (an ascended class
@@ -162,6 +185,21 @@ function L.wearOutfit(current, vocId, sex)
 		return nil
 	end
 	return withLook(current, look)
+end
+
+-- the outfit of a new character's first login: the class look with both addons and the class's start colours
+-- (mount and the rest kept); nil when the vocation has no look
+function L.startOutfit(current, vocId, sex)
+	local look = L.lookFor(vocId, sex)
+	if not look or not current then
+		return nil
+	end
+	local out = withLook(current, look)
+	local c = L.startColorsFor(vocId)
+	if c then
+		out.lookHead, out.lookBody, out.lookLegs, out.lookFeet = c.head, c.body, c.legs, c.feet
+	end
+	return out
 end
 
 -- the outfit to put on after L.apply gave the looks: with `wear` (first login, class change) the class's look; else

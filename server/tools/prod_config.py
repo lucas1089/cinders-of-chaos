@@ -95,6 +95,10 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           --proxy-required yes: every other address is refused (127.0.0.0/8 excepted: the watchdog and
                           the health check), so the real server cannot be played directly even if its firewall is
                           wrong. Not given: the value already in config.lua is kept (off on a first run)
+  rsaKeyFile = os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"
+                          the login's RSA key (engine patch 0046, README "Login encryption (RSA, XTEA)"): our own key,
+                          made on this machine with tools/rsa_key.py gen, its path in /etc/chaos/chaos.env; without it
+                          the base key.pem (the public default key: the console warns) as before
 
 Exit status 1 (nothing written) when --public-host is missing or the map is a cropped test map.
 """
@@ -196,6 +200,7 @@ def settings(opts, text=''):
         ('clientGuardStaffIps', lua_string(opts.get('--client-staff-ips', ''))),
         ('proxyProtocolTrusted', trusted),
         ('proxyProtocolRequired', required),
+        ('rsaKeyFile', 'os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"'),
     ]
     for key, env, default in ENV_DB:
         expr = 'os.getenv("%s")' % env
@@ -281,6 +286,8 @@ def main(argv):
           'CHAOS_DB_NAME (server/deploy/chaos.env.example).')
     print('The client guard key is read from CHAOS_CLIENT_KEY (the same value as the GitHub secret CHAOS_CLIENT_KEY; '
           'server/README.md "Client guard").')
+    print('The RSA login key file is read from CHAOS_RSA_KEY_FILE (default key.pem; server/tools/rsa_key.py, '
+          'server/README.md "Login encryption (RSA, XTEA)").')
     trusted = current(new, 'proxyProtocolTrusted') or '""'
     if current(new, 'proxyProtocolRequired') == 'true' and trusted in ('""', "''"):
         print('WARNING: proxyProtocolRequired = true with no proxyProtocolTrusted gateway: only 127.0.0.1 can connect.')

@@ -1127,6 +1127,10 @@ function onExtendedOpcode(protocol, opcode, buffer)
             if data.message then
                 addNotification("NEW_PLAYER", data.message)
             end
+            -- a new character's first login: the Helper opens on its Auto setup button (game_helperrotation onboarding.lua)
+            if data.openHelper and ChaosHelperOnboarding and ChaosHelperOnboarding.open then
+                pcall(ChaosHelperOnboarding.open, data)
+            end
         end,
 
         -- bestiary and kill tasks (server data/scripts/chaos/bestiary.lua)

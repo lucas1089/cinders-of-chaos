@@ -356,6 +356,25 @@ Not changed: Rime Bloom, Blightswarm, Purifying Wellspring, Moonfang Pack, Verda
 three stock fans (Tier A stays). Not fetched, for a later pass: the ultimate frost pillars, wrath of nature, the
 mirror shatter step, dream bubbles, the void rift loop and end stages, the sonic blast of Arcane Ripple.
 
+## Condition auras, blasts, missiles and fireworks (pair 29, effects 780-829, missiles 170-185; switch `ChaosPack29Fx.PAIR29`, off)
+
+Cut from the five effect packs of 2026-10-16 by `client/tools/sprites/gen_pack29_vfx.py` (spec
+`art_import/pack29_vfx.csv`, pack per pick in `art_import/pack29_vfx_sources.csv`), appended to pair 29 after the
+Archmage by `import_fx_art.py` (ids `server/data/lib/chaos_pack29_vfx_ids.lua`, catalogue `pack29_vfx_catalog.csv`).
+What sends each one: server/data/lib/chaos_pack29_vfx.lua; rules: server/README.md "Condition auras, blasts and
+fireworks (pair 29)". With the switch off nothing changes.
+
+| what | pair 29 sends (instead of) |
+|---|---|
+| damage condition ticks (engine) | cond_burning, cond_poison, cond_shocked, cond_bleeding, cond_frozen, cond_cursed (the stock hit sparks) |
+| physical hit on a blood / fire creature (engine) | hit_blood / hit_blood_spray (the red splash effect) |
+| direct fire, ice, energy, earth, death, arcane hit (engine) | blast_fire1, blast_ice, blast_energy, blast_poison, blast_dark, blast_arcane |
+| stock and procedural element missiles (engine) | bolt_fire, bolt_lightning, bolt_plasma, bolt_dark, bolt_soul, bolt_ice, bolt_crystal, bolt_thorn, bolt_poison, bolt_holy, bolt_meteor, bolt_arcane, bolt_shadow |
+| spell hits during a cast (ChaosSpell.fx / vfx) | fireball_hit, ice_shatter, lightning_hit, shadow_hit, arcane_hit, venom_splash, holy_hit, frost_burst, poison_burst, ground_slam, arcane_burst, lightning_zap, fire_burst, inferno_burst, fire_nova, fire_ring as blasts |
+| slows, stuns, chill, shock, words, boss phases, player scan | the condition auras, held while the state lasts |
+| level-up / achievement / boss reward | fw_grand / fw_star / fw_rainbow (nothing / the yellow firework) |
+| boss death | blast_boss, blast_massive (nothing) |
+
 ## Ground effects (under the creatures; base patch 0055)
 
 The client draws the floor shapes and the effects that would hide a creature under the creatures:

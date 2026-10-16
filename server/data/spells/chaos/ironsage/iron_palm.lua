@@ -39,6 +39,9 @@ local function stun(target, spent)
 		c:setFormula(-M.cfg.stun.bossSlow, 0, -M.cfg.stun.bossSlow, 0)
 	end
 	target:addCondition(c)
+	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the stunned aura, or the slowed one on a big monster
+		pcall(ChaosPack29Vfx.hold, target, locks and "stunned" or "slowed", ms)
+	end
 	MonkSpell.timer(target, M.ids.subId.stunImmune, ms + M.cfg.stun.immuneMs)
 end
 

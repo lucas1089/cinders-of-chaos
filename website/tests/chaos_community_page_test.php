@@ -103,7 +103,7 @@ check(strpos($html, 'Restless Dead') !== false && strpos($html, 'Gilded Week') =
 check(strpos($html, 'Vexa') === false, 'the front page block has no table');
 $full = chaos_community_block_html($s, true);
 check(strpos($full, '&lt;b&gt;Bold&lt;/b&gt;') !== false && strpos($full, '<b>Bold</b>') === false, 'names escaped');
-check(strpos($full, 'characterprofile.php?name=Vexa%20Nightbloom') !== false, 'profile links');
+check(strpos($full, 'characterprofile?name=Vexa%20Nightbloom') !== false, 'profile links');
 check(strpos($full, 'Latest') !== false && strpos($full, 'staff note') === false, 'news without staff lines');
 
 // a staff override and separate realms

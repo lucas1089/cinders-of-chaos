@@ -19,10 +19,12 @@ Only art we may use as a reference:
 
 Third-party packs (licence audit of 2026-10-15, owner's confirmation the same day):
 - **Allowed as a reference:** the packs under "Free assets" in docs/CREDITS.md, and the purchased packs under "Art
-  packs" except Mega VFX 500. Their folders hold no licence text; the owner confirmed their terms allow it.
-- **Not a reference:** Mega VFX 500 (no machine-learning use), and the two packs under "Art with required credit"
-  (their licence forbids use as AI training material). Their art never goes into a prompt, a palette or a style
-  measurement.
+  packs" except Mega VFX 500 and the `set29` packs. Their folders hold no licence text; the owner confirmed their
+  terms allow it.
+- **Not a reference:** Mega VFX 500 (no machine-learning use), the two packs under "Art with required credit"
+  (their licence forbids use as AI training material), and the five effect packs of one studio bought on 2026-10-16
+  (status effects, projectiles, fireworks, blood, explosions; docs/CREDITS.md, labels `set29 ...`; their licence
+  forbids use as training data for generative AI). Their art never goes into a prompt, a palette or a style measurement.
 - Imported pack art in the pairs stays as it is. Do not trace, recolour or sample any other game's or server's
   sprites.
 - **Owner-approved exception (2026-10-16, Mystic effects of pair 29):** a purchased pack's effect may be recoloured
@@ -32,6 +34,9 @@ Third-party packs (licence audit of 2026-10-15, owner's confirmation the same da
   `*sources.csv` row.
 - Mega VFX 500 effects may be imported into a pair (`gen_pack29_fx.py`), but they are never a reference: not viewed
   for style, measured, sampled for a palette or given to an AI tool. `style_check.py` is not run on them.
+- **Import-only packs:** Mega VFX 500 and the five `set29` packs. Their effects may be imported into a pair
+  (`gen_pack29_fx.py`, `gen_pack29_vfx.py`: cut, scaled, turned, placed), but they are never a reference: not
+  viewed for style, measured, sampled for a palette or given to an AI tool. `style_check.py` is not run on them.
 
 ## Grid, size and anchors
 

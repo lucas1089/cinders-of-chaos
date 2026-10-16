@@ -21,10 +21,13 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `patches/znotex-chaos-ratelimit-ipv6.patch` | the login guard counts an IPv6 address by its /64 network (see "Passwords") |
 | `overlay/plugins/chaos/session_guard.php` | a logged-in session ends when the account's password changes (see "Passwords") |
 | `patches/znotex-chaos-unused-callbacks.patch` | `pagseguro_retorno.php` and `payment_webhook.php` answer 404 (see "Not used on this server") |
-| `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
+| `overlay/.htaccess`, `overlay/special/.htaccess` | Apache 2.4 rules: clean addresses (`/highscores` for `highscores.php`, a 301 from the old address), ZnoteX's character rule plus deny rules for every internal folder and file (see "Web server") |
+| `patches/znotex-chaos-clean-urls.patch` | ZnoteX's menu checks read a clean menu address (`page?plugin=x`, `highscores`) as the `.php` page (see "Web server") |
 | `overlay/plugins/chaos/register_guard.php` | the per-IP limit of account creation (see "Account creation") |
 | `overlay/plugins/chaos/mail_lib.php`, `recovery_lib.php`, `recovery_page.php` | the site's one mail sender (SMTP, off without settings) and account recovery by a one-time link (see "Mail") |
 | `patches/znotex-chaos-clock.patch` | ZnoteX's `getClock()` drops its fixed +1 hour, so the dates it prints (character created, last login, news, admin panel) are in PHP's time zone, as the rest of the site (found by the smoke test, 2026-10-14) |
+| `patches/znotex-chaos-level-progress.patch` | the experience bar of `characterprofile.php` rounds its percentage down, so a character one experience short of the next level shows 99.99%, not 100% (level 101 and up). ZnoteX's `level_to_experience()` is the game server's curve (TFS `getExpForLevel`: level 20 = 98,800, level 21 = 116,000) |
+| `tests/chaos_level_progress_test.php` | `php website/tests/chaos_level_progress_test.php`: the profile's level progress at levels 1, 8, 20, 100 (own experience, halfway, one below the next) against the server's curve; with `CHAOS_ZNOTEX_DIR` set, ZnoteX's lines are compared with a checkout (php-cli only) |
 | `tests/e2e/run.sh`, `tests/e2e/smoke.test.js` | the browser smoke test of the key flows (see "Smoke test") |
 | `patches/znotex-chaos-recovery-mail.patch` | `recovery.php` hands over to our recovery page; ZnoteX's `Mail` class sends through our sender (see "Mail") |
 | `tests/chaos_mail_test.php`, `tests/chaos_recovery_test.php` | `php website/tests/chaos_mail_test.php` / `chaos_recovery_test.php`: the SMTP settings from the environment, mail off, the sender with a fake transport; the recovery answers, limits, link, token and notice (php-cli with pdo_sqlite, no network) |
@@ -49,19 +52,20 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/telemetry_lib.php`, `pages/telemetry.php` | staff only (admin accounts with a group 5+ character): balance telemetry charts, server-drawn SVG (see "Balance telemetry") |
 | `tests/chaos_telemetry_page_test.php` | `php website/tests/chaos_telemetry_page_test.php`: access, filters, rates and the small-group rule, every section, the SVG charts (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/pages/reports.php`, `reports_lib.php` | staff only (the admin accounts of `CHAOS_ADMIN_ACCOUNTS`): player reports from the game (filters, close / note / reopen with a CSRF token) and the anti-bot log (server/README.md "Anti-bot and player reports"); the leaderboards leave out accounts held for an anti-bot review (`chaos_antibot_hold_sql`, only when the server's `holdLeaderboards` wrote holds) |
-| `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the class tabs of the byClass boards (php-cli with pdo_sqlite) |
+| `tests/chaos_leaderboards_page_test.php` | `php website/tests/chaos_leaderboards_page_test.php`: the Leaderboards page, fastest-time boards ranked lowest first and shown as m:ss, the board and class dropdowns of the weekly boards and the records (sorted, selected, kept parameters, escaped, no inline script) (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/assets/js/chaos-pick.js` | the dropdown filters submit on change (see "Dropdown filters") |
 | `overlay/plugins/chaos/pages/notused.php` | the short note shown instead of the stock pages this server does not use (see "Not used on this server") |
 | `tests/chaos_notused_page_test.php` | `php website/tests/chaos_notused_page_test.php`: which stock pages are sent away and the note for each (php-cli only) |
 | `tests/chaos_reports_page_test.php` | `php website/tests/chaos_reports_page_test.php`: the reports page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/botreview_lib.php`, `pages/botreview.php` | staff only (admin accounts with a group 4+ character): flagged bot-review days with signals, explanations and timeline; mark reviewed / false positive / escalate, note, request a presence check. Escalated days need group 5 (server/README.md "Bot detection") |
 | `tests/chaos_botreview_page_test.php` | `php website/tests/chaos_botreview_page_test.php`: access, list, day view, actions and CSRF |
-| `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page.php?plugin=chaos&p=community` (menu The World > Community) |
-| `overlay/plugins/chaos/chronicle_lib.php`, `pages/chronicle.php` | the Ashen Chronicle (read only, from the game's `chaos_chronicle_*` tables): the running season's chapters with goal bars and top contributors, and the record of past seasons, at `page.php?plugin=chaos&p=chronicle` (menu The World > Chronicle); names follow the Memorial choice (`chaos_memorial_optin.records`) |
-| `overlay/plugins/chaos/memorial_lib.php`, `pages/memorial.php` | the Capital Memorial (read only, from `chaos_memorial_entries`, rows with `shown` = 1 only): realm firsts, records and the fallen of a season, and the archive of past seasons (`&s=<season key>`), at `page.php?plugin=chaos&p=memorial` (menu The World > Memorial) |
+| `overlay/plugins/chaos/community_lib.php`, `pages/community.php` | the community goal and the week's world modifiers (read only, from the game's `chaos_community_*` tables): a block on the front page and `page?plugin=chaos&p=community` (menu The World > Community) |
+| `overlay/plugins/chaos/chronicle_lib.php`, `pages/chronicle.php` | the Ashen Chronicle (read only, from the game's `chaos_chronicle_*` tables): the running season's chapters with goal bars and top contributors, and the record of past seasons, at `page?plugin=chaos&p=chronicle` (menu The World > Chronicle); names follow the Memorial choice (`chaos_memorial_optin.records`) |
+| `overlay/plugins/chaos/memorial_lib.php`, `pages/memorial.php` | the Capital Memorial (read only, from `chaos_memorial_entries`, rows with `shown` = 1 only): realm firsts, records and the fallen of a season, and the archive of past seasons (`&s=<season key>`), at `page?plugin=chaos&p=memorial` (menu The World > Memorial) |
 | `tests/chaos_community_page_test.php` | `php website/tests/chaos_community_page_test.php`: the block and the page (php-cli with pdo_sqlite) |
-| `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page.php?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
+| `overlay/plugins/chaos/guildwar_lib.php`, `pages/guildwars.php` | the guild wars declared in game (read only, from the game's `chaos_guildwar` / `chaos_guildwar_kills`): `page?plugin=chaos&p=guildwars` (menu The World > Guild Wars): the running wars (score, terms, time left) and the latest ended ones (winner, gold won, end reason, kills the anti-farming rules did not count); see server/README.md "Guild wars in game" |
 | `tests/chaos_guildwars_page_test.php` | `php website/tests/chaos_guildwars_page_test.php`: the wars page (php-cli with pdo_sqlite) |
-| `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page.php?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
+| `overlay/plugins/chaos/mentor_lib.php`, `pages/mentors.php` | the mentors who opted in (card, class, graduates, free places) and the totals, read only from the game's `chaos_mentor*` tables: `page?plugin=chaos&p=mentors` (menu The World > Mentors; see "Mentors") |
 | `overlay/plugins/chaos/legal_lib.php`, `pages/legal.php` | the legal pages: Terms of Use, Privacy Policy, Donation Terms in Portuguese and English, from `docs/legal/` (see "Legal pages") |
 | `tests/chaos_legal_pages_test.php` | `php website/tests/chaos_legal_pages_test.php`: the pages, the renderer's escaping, the footer links, the Terms checkbox and its refusal, the acceptance row, the donation notes before and after payment (php-cli only, a fake database) |
 | `tests/chaos_legal_accept_test.php` | `php website/tests/chaos_legal_accept_test.php`: existing accounts accept the current texts: the gate (which requests pass), the way back (this site only), the form (token, checkbox), the row (no IP), a new version asking again, the setup writing the version for the game (php-cli only, SQLite in memory) |
@@ -71,10 +75,13 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_mentors_page_test.php` | `php website/tests/chaos_mentors_page_test.php`: the Mentors page (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/wiki_lib.php`, `pages/wiki.php`, `wiki/` | the player wiki: guides in Portuguese and English, the reference generated from the server data by `server/tools/gen_wiki_data.lua`, the search (see "Wiki") |
 | `tests/chaos_wiki_page_test.php` | `php website/tests/chaos_wiki_page_test.php`: every wiki page in both languages, the guides, search, escaping and 404s (php-cli only) |
-| `overlay/plugins/chaos/credits_lib.php`, `pages/credits.php`, `credits/credits_data.json` | the Credits page: every third-party source of the game from `docs/CREDITS.md` (the JSON is generated by `client/tools/gen_credits.py`, the same source as the game's Credits window), at `page.php?plugin=chaos&p=credits` (Portuguese headings, English with `&l=en`); linked from the footer and from the site's credits page |
+| `overlay/plugins/chaos/credits_lib.php`, `pages/credits.php`, `credits/credits_data.json` | the Credits page: every third-party source of the game from `docs/CREDITS.md` (the JSON is generated by `client/tools/gen_credits.py`, the same source as the game's Credits window), at `page?plugin=chaos&p=credits` (Portuguese headings, English with `&l=en`); linked from the footer and from the site's credits page |
 | `tests/chaos_credits_page_test.php` | `php website/tests/chaos_credits_page_test.php`: the Credits page in both languages, every entry and required credit line, escaping, source links, the footer link (php-cli only) |
 | `tools/recolor_layout.py` | turns Void's stylesheets into ours at install time |
-| `tools/gen_site_art.py` | draws the site art and the promotion material |
+| `tools/gen_site_art.py` | draws the site art and the promotion material, the icon set and the link preview image (see "Art", "SEO and social previews") |
+| `overlay/plugins/chaos/seo_lib.php` | SEO and link previews: the `<head>` of every page (title, description, canonical, robots, Open Graph / Twitter tags, icons, JSON-LD on the front page), rewritten at the end of the request (see "SEO and social previews") |
+| `overlay/favicon.ico`, `overlay/site.webmanifest`, `setup/write_seo_files.php` | the web root icon and web manifest; the generator of `robots.txt` and `sitemap.xml` (run by `install_site.sh`) |
+| `tests/chaos_seo_test.php` | `php website/tests/chaos_seo_test.php`: the head of the representative pages, escaping, noindex, the rewrite, the icons and the Open Graph image, the manifest, robots.txt and sitemap.xml, the web server rules (php-cli only) |
 | `tools/gen_sprite_images.py`, `tools/sprite_owners.csv` | item and outfit images drawn from our client pair at install time, only our art (see "Sprite images") |
 | `overlay/chaos_outfit.php`, `overlay/plugins/chaos/sprite_lib.php` | outfit images with the player's colours, addons and mount; item image URLs; the wiki's real sprites (see "Sprite images") |
 | `tests/chaos_sprites_test.php`, `tools/gen_sprite_images_test.py` | `php website/tests/chaos_sprites_test.php` (php-cli, zlib only): URLs, placeholder fallback, request values, colours, drawing, cache, wiki; `python3 -I website/tools/gen_sprite_images_test.py`: the colour maths on hand-made masks and a synthetic pair |
@@ -119,7 +126,7 @@ What it does, in order:
    enabled (its `install.sql` creates `chaos_class_unlocks` if the server has not yet), the layout switched on, the
    menu entries "The World" (Server Info, Patch Notes, Leaderboards, Seasons, Rules, Community, Guild Wars, Mentors, Character
    Bazaar, Creator Codes) and "Donate" (the donation page
-   `page.php?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
+   `page?plugin=chaos&p=coins`), "Player Reports" (staff only, under ZnoteX's Admin Panel entry) and the Rules page
    added once. ZnoteX's own entries of the pages we do not use (Shop, Buy points, Library > Creatures / Spells,
    Community > Forum, and Library, then empty) are switched off once, on a fresh install and at the next run on an
    existing one (marker `chaos:stock_menu_hidden` in `znote_config`).
@@ -142,7 +149,7 @@ downloads page (`CHAOS_GAME_HOST`), the client download links (empty = "Coming s
 no Discord button), the admin account names. The Rules page is a first draft to edit in Admin Panel > Pages.
 
 Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_DIR" website/setup/router.php`.
-The router stands in for the `.htaccess` deny rules; it is for local tests only.
+The router stands in for the `.htaccess` deny rules and clean addresses; it is for local tests only.
 
 ## Web server
 
@@ -152,6 +159,21 @@ hardened on both servers:
 - **Not in the web root at all**: ZnoteX's git data (`CHAOS_SITE_GIT_DIR`), `tests/`, `tools/`, `docker/`, the docker
   and composer files and the `special/` scripts (`database2znoteaac.php` and the others ran database conversions for
   anyone who reached them). See "Install", steps 1 and 6.
+- **Clean addresses**: every top-level page answers without `.php`: `/highscores`, `/characterprofile?name=X`,
+  `/page?plugin=chaos&p=wiki`, the query kept. A GET or HEAD of the old `.php` address of an existing page gets a 301
+  to the clean one (bookmarks, ZnoteX's own links, old menu entries), checked against the request line the browser
+  sent, so there is no loop. POST and every other method are never redirected (a form posting to `register.php` still
+  works, and a POST to `/register` reaches `register.php` through the internal rewrite), nor the machine endpoints the
+  game client and the payment providers call by their `.php` address: `chaos_client_api.php`,
+  `chaos_pay_webhook.php`, `chaos_outfit.php`, everything under `updates/` and the client services path
+  (`/clientservices`, docs/LAUNCH.md). Only top-level names of letters, digits, `_` and `-` are matched, so no folder,
+  dot file or denied file is reached through these rules. Our pages, menus, mails and the game's notices link the
+  clean form (`plugins/chaos/lib.php` `chaos_clean_url`); setup turns the `.php` menu entries into the clean form once,
+  and `patches/znotex-chaos-clean-urls.patch` makes ZnoteX's menu checks read both forms. A character named like a
+  page (Highscores, Page, Myaccount ...) would be hidden by the page, so those names are refused at creation
+  (`chaos_character_name_reserved`, the form and the client API) and by the game's name change
+  (`shopServices.name.reserved`); a character that already has such a name is still reached at
+  `/characterprofile?name=...`.
 - **Denied**: `SQL/`, `Lua/`, `install/`, `engine/backups/` (the admin panel's database backups are written there),
   `engine/cache/`, `vendor/`, dot files, `composer.*`, `docker-compose*`, `config.local.php` and files ending in
   `.sql .md .lock .dist .example .bak .yml .env .log .phar`. Apache: `overlay/.htaccess` (Apache 2.4 syntax, copied
@@ -175,12 +197,20 @@ hardened on both servers:
 - **PHP**: `expose_php = Off` in the php.ini of PHP-FPM / Apache (`/etc/php/8.x/fpm/php.ini`), so no
   `X-Powered-By: PHP/...`; the `.htaccess` and the nginx block also drop the header. Keep `display_errors = Off`.
 
-nginx with PHP-FPM (replace the names, paths and the PHP version; the `limit_req_zone` lines go in the `http {}`
-block, e.g. `/etc/nginx/conf.d/chaos-limits.conf`):
+nginx with PHP-FPM (replace the names, paths and the PHP version; the `limit_req_zone` lines and the `map` go in the
+`http {}` block, e.g. `/etc/nginx/conf.d/chaos-limits.conf`):
 
 ```
 limit_req_zone $binary_remote_addr zone=chaos_webhook:10m rate=10r/s;
 limit_req_zone $binary_remote_addr zone=chaos_forms:10m rate=30r/m;
+
+# clean addresses (overlay/.htaccess): the address a GET or HEAD of /page.php is sent to, else empty; never the machine
+# endpoints the game client and the payment providers call by their .php address (top-level names only)
+map "$request_method:$request_uri" $chaos_clean_url {
+    default "";
+    "~^(GET|HEAD):/index\.php(?<chaos_iq>\?.*)?$" "/$chaos_iq";
+    "~^(GET|HEAD):/(?!(chaos_client_api|chaos_pay_webhook|chaos_outfit)\.php)(?<chaos_page>[A-Za-z0-9_-]+)\.php(?<chaos_q>\?.*)?$" "/$chaos_page$chaos_q";
+}
 
 server {
     listen 80;
@@ -205,6 +235,12 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     add_header X-Frame-Options "SAMEORIGIN" always;
     add_header Strict-Transport-Security "max-age=31536000" always;
+
+    # clean addresses: a GET or HEAD of an existing /page.php gets a 301 to /page, the query kept ($request_uri is
+    # what the browser sent: the internal rewrite of @page below never comes back here)
+    set $chaos_301 $chaos_clean_url;
+    if (!-f $request_filename) { set $chaos_301 ""; }
+    if ($chaos_301) { return 301 $chaos_301; }
 
     # never served (the same list as overlay/.htaccess); the regex blocks come before the PHP block on purpose
     location ^~ /.well-known/acme-challenge/ { default_type text/plain; }
@@ -246,11 +282,13 @@ server {
         include snippets/chaos-php.conf;
     }
 
-    # any other path is a character name (ZnoteX's rewrite rule)
+    # /page runs page.php (the query kept: rewrite appends it), any other path is a character name (ZnoteX's rewrite
+    # rule). Not "try_files $uri $uri.php ...": try_files would send the .php file itself, as text, from this location.
     location / {
-        try_files $uri $uri/ @character;
+        try_files $uri $uri/ @page;
     }
-    location @character {
+    location @page {
+        if (-f $request_filename.php) { rewrite "^/([A-Za-z0-9_-]+)$" /$1.php last; }
         rewrite ^/(.*)$ /characterprofile.php?name=$1 last;
     }
 }
@@ -301,7 +339,7 @@ owner fills in the placeholders (docs/legal/README.md lists both).
 - **Source**: `docs/legal/<doc>.<lang>.md`, doc `terms`, `privacy` or `donations`, lang `pt-BR` (prevails) or `en`.
   `install_site.sh` copies them to `plugins/chaos/legal/` after the overlay (the `.md` deny rule keeps them from being
   served raw) and warns while placeholders such as `[NOME DO RESPONSÁVEL]` are left.
-- **Page**: `page.php?plugin=chaos&p=legal&doc=terms|privacy|donations`, Portuguese by default, `&l=en` for English
+- **Page**: `page?plugin=chaos&p=legal&doc=terms|privacy|donations`, Portuguese by default, `&l=en` for English
   (not `lang`, which is ZnoteX's own switch). Tabs for the three texts and the other language. `legal_lib.php` renders
   the Markdown subset the texts use (headings, paragraphs, lists, tables, bold, links); every value is escaped, a link
   goes only to another legal text, a site path (`/...`) or an `https://` address, and a placeholder left in is marked.
@@ -319,7 +357,7 @@ owner fills in the placeholders (docs/legal/README.md lists both).
   site sends no mail after a donation.
 - **Existing accounts**: an account logged in without a `chaos_legal_acceptance` row for the current version (the beta
   accounts made before the checkbox; everyone after the texts change, Terms section 10) is sent by `plugin.php` to
-  `page.php?plugin=chaos&p=accept&next=<page>` before any other page (303). The page has the same checkbox and links as
+  `page?plugin=chaos&p=accept&next=<page>` before any other page (303). The page has the same checkbox and links as
   account creation, a CSRF token, and writes the same row (account, version, time; no IP); then back to the page the
   player wanted (a page of this site only, else `myaccount.php`), or "log out" without accepting. Not gated: the accept
   page, the legal texts, `login.php`, `logout.php`, `register.php`, `recovery.php`, `chaos_pay_webhook.php` and the
@@ -333,7 +371,7 @@ owner fills in the placeholders (docs/legal/README.md lists both).
 
 A player wiki: short guides and a reference of everything the game has, generated from the server data.
 
-- **Page**: `page.php?plugin=chaos&p=wiki`, Portuguese by default, `&l=en` for English (as the legal pages). `&t=` picks a
+- **Page**: `page?plugin=chaos&p=wiki`, Portuguese by default, `&l=en` for English (as the legal pages). `&t=` picks a
   topic: `guide:<slug>`, `tab:<tab id>` or an entry id (`class:warrior`, `spell:254`, `tree:96`, `rift:atlas`, ...). The
   index lists the guides and the reference tabs; every page has breadcrumbs and a link to the other language. An
   unknown topic answers 404. `pages/wiki.php` draws it, `wiki_lib.php` does the rest.
@@ -449,8 +487,9 @@ and ZnoteX's item slots, drawn from our own client pair. ZnoteX's own outfit and
   game's art and the base client's additions, also our recolours or templated copies of it). A later row of the table
   wins, so exceptions follow their range. `CHAOS_SPRITE_PUBLISH` picks the tiers drawn: `own,donor` (default), `own` or
   `all`. Anything not drawn is a neutral placeholder of our own (a dim slot, a grey hooded figure): stock art never
-  leaves the pair. **Decision** (owner, 2026-10-13: own,donor): donor art is shown on the website as it is in the public
-  client; stock art never (`all` is not used).
+  leaves the pair. **Decision** (owner, 2026-10-13: own,donor; changed 2026-10-16: `all` on the live site, so every equipped item
+  shows whatever its source): the default stays `own,donor`, and a site sets `CHAOS_SPRITE_PUBLISH=all` to draw the
+  stock tier too.
 - **Where**: `setup/write_config.php` points ZnoteX's `show_outfits` (character page, online list, highscores) at
   `/chaos_outfit.php` and the item images (character equipment, shop) at `/chaos-sprites/items/<id>.png` when the set is
   installed; our highscores view has an outfit column. The wiki: `gen_wiki_data.lua` adds `sprite` ({item: server id})
@@ -518,7 +557,7 @@ Check: request a recovery link for your own account on the live site; the mail's
      over their mail limit all get it. Under PHP-FPM the answer goes out before the mail is sent, so the time does not
      tell either.
   2. Each matching account with an e-mail address (an address shared by several accounts: up to 3) gets a link
-     `<CHAOS_SITE_URL>/recovery.php?reset=<token>`: 32 random bytes, only their SHA-256 stored in
+     `<CHAOS_SITE_URL>/recovery?reset=<token>`: 32 random bytes, only their SHA-256 stored in
      `chaos_password_resets`, valid **30 minutes**, **once**. A new request replaces the account's older link. The
      link uses `CHAOS_SITE_URL`, never the Host header. The mail names the account (so it also recovers a lost account
      name) and says "Cinders of Chaos".
@@ -610,7 +649,7 @@ ZnoteX ships pages this server has no use for. They stay in the checkout (nothin
   `forum.guildboard`, `paygol.enabled`, `pagseguro.enabled` and `paypal.enabled` to false, and `houseConfig.shopPoints`
   (buying a house with points) off.
 - A direct link to one of them (`chaos_unused_pages()` in `lib.php`, the callbacks included) is sent by the plugin to
-  `page.php?plugin=chaos&p=notused&what=store|creatures|spells|forum`, a short note in our layout with the right links.
+  `page?plugin=chaos&p=notused&what=store|creatures|spells|forum`, a short note in our layout with the right links.
   The admin panel is not touched.
 - Premium and points: there are none. `layouts/chaos/assets/css/chaos.css` hides the account header's premium badge
   and its points / premium figures, the footer's Shop link, the character page's "Account Status: Premium inactive"
@@ -682,9 +721,29 @@ folder. The changes:
 ZnoteX's own credits stay in the footer ("Powered by ZnoteX") and on `credits.php`; ZnoteX's license is in the
 installed checkout.
 
+### Dropdown filters
+
+A filter with many options is a dropdown, not a row of buttons: `chaos_pick_select()` / `chaos_pick_form()` in
+`plugins/chaos/lib.php`. Each is a GET form to `page` with the same query parameters as the old button links (old
+links keep working) and a "Show" button, so it works without JavaScript. `plugins/chaos/assets/js/chaos-pick.js` (a
+file, deferred: no inline script) submits the form when a dropdown changes and hides the button; a dropdown can drop
+other fields first (`data-chaos-reset`: a new record board drops the old board's boss and party size). Lists of boards
+are sorted by the name shown with accents folded, as the client's board dropdown (`game_leaderboard/boardpick.lua`);
+class lists keep "All classes" first, then the client's order.
+
+- Leaderboards: the weekly boards (`board`) and, on a byClass board, the class (`class`).
+- Records (same page, `#records`): the board (`rb`), the boss or variant (`rv`, in the server's order) and the class
+  (`rc`). The period (`rp`) and the party size (`rs`, at most three) stay small tabs.
+- Memorial: the seasons (`s`) once there are more than six; fewer stay a line of links.
+
+The other pages' rows have six options or fewer (Seasons modes, bot review status, reports views, bazaar views, legal
+pages) or are not button rows (wiki reference cards, patch notes list, server info section links), and stay as they
+are. Highscores and Balance telemetry already used dropdown forms.
+
 ## Art
 
-`python3 -I website/tools/gen_site_art.py [theme classes social discord otlist showcase features]` (Pillow + numpy).
+`python3 -I website/tools/gen_site_art.py [theme classes social discord otlist showcase features icons]` (Pillow + numpy;
+the `icons` task needs Pillow only and reads the committed social image, the others also scipy through the client generator).
 It reuses the client generator (palette, glyph badges, CHAOS wordmark, corner ornaments, login background), so site
 and client stay one look. Text uses the first serif font it finds (`CHAOS_ART_FONTS` adds folders); the committed
 PNGs were drawn with Crimson Pro. All art is procedural: no screenshots, logos or third-party art.
@@ -693,7 +752,9 @@ PNGs were drawn with Crimson Pro. All art is procedural: no screenshots, logos o
 |---|---|---|
 | `overlay/layouts/chaos/assets/img/logo.png` | 640x300 | site logo / wordmark with the tagline |
 | `overlay/layouts/chaos/assets/img/header.png` | 1280x448 | header background |
-| `overlay/layouts/chaos/assets/img/favicon.png`, `apple-touch-icon.png` | 64, 180 | browser icon |
+| `overlay/layouts/chaos/assets/img/favicon.png` | 64 | the admin panel's Favicon option (default) |
+| `overlay/favicon.ico`, `overlay/layouts/chaos/assets/img/favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png` | 16+32+48, 16, 32, 180, 192, 512 | the icon set of every page and of `site.webmanifest` (task `icons`) |
+| `overlay/layouts/chaos/assets/img/og-image-1200x630.jpg` | 1200x630 | the Open Graph image (the social share image as a JPEG under 300 KB, task `icons`) |
 | `overlay/layouts/chaos/assets/img/frame-*.png`, `iron.png` | | window ornaments, background texture |
 | `overlay/plugins/chaos/assets/img/class-*.png` | 64x64 | the 7 class badges |
 | `art/social-share-1200x630.png` | 1200x630 | link preview image |
@@ -705,7 +766,7 @@ PNGs were drawn with Crimson Pro. All art is procedural: no screenshots, logos o
 ## Referral codes
 
 The account creation form has an optional **Referral code** field (the game server's referral program, server/README.md
-"Referral program"). A shared link `register.php?ref=CODE` fills it in.
+"Referral program"). A shared link `register?ref=CODE` fills it in.
 
 - `plugins/chaos/referral.php` (loaded by `plugin.php`): reads `enabled`, `code` and `entryDays` from the server's
   `referral_config.lua` (`CHAOS_SERVER_DATA`; defaults without it), checks the posted code's format and that an account
@@ -745,7 +806,7 @@ voluntária! Você recebeu X Chaos Coins como agradecimento.").
 Two methods: **Pix** through Mercado Pago (BRL) and **PayPal** (USD). The packs, bonuses and prices are the game
 server's (`server/data/scripts/chaos/shop_coins_config.lua`): one USD table in integer cents (`usdCents`), Pix =
 USD x `brlPerUsd` (5), so the two prices never drift. The game server credits every paid order (server/README.md
-"Store"). Players donate in the client (Store > Donate) or on the page `page.php?plugin=chaos&p=coins` (menu entry "Donate", added by
+"Store"). Players donate in the client (Store > Donate) or on the page `page?plugin=chaos&p=coins` (menu entry "Donate", added by
 `setup/chaos_setup.php`).
 
 ### How an order flows
@@ -854,10 +915,10 @@ gives the creator a share of the Chaos Coins of the donor's donations, in game (
 matching, the hold, the caps and every anti-abuse rule live there). The donor's donation and coins never change; the
 page says so, and that donations are voluntary.
 
-- `page.php?plugin=chaos&p=creator` (menu The World > Creator Codes, added by `setup/chaos_setup.php`):
+- `page?plugin=chaos&p=creator` (menu The World > Creator Codes, added by `setup/chaos_setup.php`):
   - logged in: pick a code (or stop), the current pick and until when (`supportDays`); the own code is refused
     (self-use, logged); a switched-off or unknown code is refused;
-  - the account's **referral link** (`register.php?ref=CODE`, from `chaos_referral_codes`; the account gets its code in
+  - the account's **referral link** (`register?ref=CODE`, from `chaos_referral_codes`; the account gets its code in
     game at level 20);
   - a creator (an account that owns a code): its %, supporters, earned and waiting coins, the last 50 donations with the
     code (date, coins, share, state; never a name);
@@ -884,7 +945,7 @@ page says so, and that donations are voluntary.
 
 ## Character Bazaar
 
-Players sell characters to players for Chaos Coins on `page.php?plugin=chaos&p=bazaar` (menu The World > Character
+Players sell characters to players for Chaos Coins on `page?plugin=chaos&p=bazaar` (menu The World > Character
 Bazaar). The rules (`bazaar_lib.php`, class `ChaosBazaar`; numbers from the game server's `bazaar_config.lua`):
 
 - **Listing:** a character of the logged-in account with a minimum bid (`minPrice` 100 or more), an optional buyout
@@ -1039,7 +1100,7 @@ server's database and the PHP built-in server (`setup/router.php`), with the Lin
 
 ## Mentors
 
-`page.php?plugin=chaos&p=mentors` (menu The World > Mentors, added by `setup/chaos_setup.php`) lists the mentor
+`page?plugin=chaos&p=mentors` (menu The World > Mentors, added by `setup/chaos_setup.php`) lists the mentor
 characters of the game's mentor system (server/README.md "Mentors"): only those that are mentors now and chose
 "Show on website" on their mentor card, never a staff character or a banned account. Per mentor: name and level,
 class, the language / region and hours text, the note, graduates and free places. Above the list: how many mentors
@@ -1076,7 +1137,7 @@ the environment only.
 
 ## Balance telemetry
 
-`page.php?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry, added by `setup/chaos_setup.php`): admin accounts
+`page?plugin=chaos&p=telemetry` (Admin Panel > Balance Telemetry, added by `setup/chaos_setup.php`): admin accounts
 (`CHAOS_ADMIN_ACCOUNTS`) with a character of group 5 or higher; anyone else gets "not found". Read only. Filters: level
 band, class (a line or one class), a UTC date range (14 days by default, at most 400). Sections: online (average and
 peak per day), hunting (experience and gold per hour per day, per class, per band), bosses (kills, average, best and
@@ -1132,6 +1193,47 @@ Mercado Pago or PayPal.
 - Achievements (`chaos_achievements`) and name plate titles have no page yet.
 - Other languages: the layout's wording is English only (the language selector is off and `languages_enabled` is `en`
   only, so `?lang=` does not translate ZnoteX's strings around our English pages).
+
+## SEO and social previews
+
+Every page says what it is to search engines and to the apps that preview a pasted link (WhatsApp, Discord, Telegram,
+Facebook, X): `plugins/chaos/seo_lib.php`, test `tests/chaos_seo_test.php`.
+
+- **How**: `plugin.php` opens an output buffer with `chaos_seo_output()` before the page runs; ZnoteX renders the
+  page into it and the callback rewrites the `<head>` at the end: the shell's `<title>` and icon links are replaced,
+  our tags go before `</head>`. Output that is not an HTML page (JSON, images, redirects, the client API, the
+  webhook, `chaos_outfit.php`) passes through unchanged; the admin panel only gets `noindex`. No query: the tags use
+  what the page loaded (`$page_filename`, `$page_title`, `$profile_data`, `$_GET`).
+- **Tags**: `<title>` "Page | Cinders of Chaos" (the front page "Cinders of Chaos | RPG online de fantasia sombria"),
+  `description` per page (a character profile: name, level and class; a guild: its name; a wiki topic or legal text:
+  its title; the rest a sensible default), `canonical` in the clean form (`/highscores`, `/page?plugin=chaos&p=wiki&t=...`,
+  a profile `/<Name>` URL-encoded; filters and searches dropped), `robots` (`noindex, nofollow` on the account,
+  login, register, recovery, staff, payment, "not used" and error pages, every 4xx/5xx answer and the admin panel; the
+  others `index, follow, max-image-preview:large`), `theme-color`, Open Graph (`og:title`, `og:description`,
+  `og:type` website / profile, `og:url`, `og:site_name`, `og:locale` pt_BR or en_US with the alternate, `og:image`
+  1200x630 with width, height, type, alt and `secure_url`) and the Twitter card (`summary_large_image`). The front
+  page adds JSON-LD (`Organization` with the Discord invite as `sameAs`, `WebSite`, `VideoGame`; no ratings or
+  reviews). The `<html lang>` follows the tags on the bilingual plugin pages (wiki, legal, credits, coins, bazaar,
+  creator, leaderboards); the stock pages keep the shell's `en`.
+- **Language**: the tags are in the visitor's language (`&l=`, the `chaos_lang` cookie, else Accept-Language), else
+  Portuguese: a crawler sends no language, so a pasted link previews in Portuguese. Texts are `chaos_t()` keys in
+  `i18n/pt-BR.php`.
+- **Image**: `layouts/chaos/assets/img/og-image-1200x630.jpg`, the social share image as a JPEG of about 110 KB
+  (WhatsApp skips images over about 300 KB), always an absolute `https://` address. `gen_site_art.py icons` makes it
+  from `art/social-share-1200x630.png`.
+- **Icons**: `/favicon.ico` (16, 32 and 48 px), `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png` (180),
+  `android-chrome-192x192.png` and `-512x512.png` (named by `/site.webmanifest`: name, short name, colours), all from
+  `gen_site_art.py icons`. A favicon uploaded in Admin Panel > Layout stays the 32 px icon.
+- **robots.txt and sitemap.xml**: written by `install_site.sh` (`setup/write_seo_files.php`) into the web root from
+  `CHAOS_SITE_URL`: the public pages allowed, the account, login, staff and machine endpoints and the internal folders
+  disallowed, `Sitemap:` with the absolute address. The sitemap lists the public pages in their clean form, the plugin
+  pages, every wiki guide and reference tab in both languages and the legal texts (no character profiles, no searches,
+  no lastmod). Rerun the installer after a change of address.
+- **Settings**: the site name is `site_title` and the address `CHAOS_SITE_URL` (`config.local.php`), the Discord invite
+  `CHAOS_DISCORD_URL`; nothing is hard-coded. The web server rules (`.htaccess`, the nginx block, the local router)
+  serve `robots.txt`, `sitemap.xml`, `site.webmanifest`, `favicon.ico` and the images; the test checks it.
+- **Check a preview**: paste the address in a WhatsApp chat (it shows the image, the title and the description), or
+  use Facebook's Sharing Debugger / X's Card Validator to refresh a cached preview after a change.
 
 ## Languages
 The donation (`coins`), Character Bazaar, creator and leaderboards / records pages speak Portuguese (Brazil) or

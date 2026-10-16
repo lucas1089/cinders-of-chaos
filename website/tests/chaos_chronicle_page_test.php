@@ -96,7 +96,7 @@ check(strpos($html, 'style="width:40.0%"') !== false, 'goal bar width');
 check(strpos($html, 'Open: 45% written') !== false, 'open chapter line');
 check(strpos($html, 'Ash drifts mark the streets.') !== false && strpos($html, 'Montes de cinza.') !== false, 'what changed, en and pt');
 check(strpos($html, '&lt;b&gt;Bold&lt;/b&gt;') !== false && strpos($html, '<b>Bold</b>') === false, 'names escaped');
-check(strpos($html, 'characterprofile.php?name=Hidden') === false && strpos($html, 'Hidden Hal') === false, 'a hidden name is never printed');
+check(strpos($html, 'characterprofile?name=Hidden') === false && strpos($html, 'Hidden Hal') === false, 'a hidden name is never printed');
 check(strpos($html, 'Not yet told') !== false, 'a locked chapter');
 check(strpos($html, 'As Cinzas se Adensam') !== false, 'the Portuguese title');
 $phtml = chaos_chronicle_season_html($past, false);

@@ -1,0 +1,447 @@
+# Chaos: loot beams (client/BASE.md 0069; after 0001-0068). A thin light pillar over a tile and a soft glow pool at its base, drawn by MapView with additive blending (ONE, ONE) and two textures made at start from the profiles in the new header src/client/lootbeam.h (no sprites, no new pair). The pool goes on the camera floor after the tile's bottom layer (over the corpse, under the creatures) with a small light of its colour; the pillar goes in drawMapForeground after the light view (a dark cave does not swallow it) and before the names, bars and texts, clipped to the map, skipped under a drawn roof. Both pulse gently by the clock and follow walking and zoom like the map. Lua: g_map.setLootBeam(pos, color, heightTiles, intensity) (false at the cap of 64), g_map.removeLootBeam(pos), g_map.clearLootBeams(), g_map.getLootBeamCount(), g_map.hasLootBeam(pos); Map::clean clears them. The overlay module game_lootbeams sets them. C++ only.
+diff --git a/src/client/lootbeam.h b/src/client/lootbeam.h
+new file mode 100644
+index 0000000..20b7b56
+--- /dev/null
++++ b/src/client/lootbeam.h
+@@ -0,0 +1,147 @@
++/*
++ * Chaos (base patch 0069): loot beams. A thin light pillar over a corpse or an item tile, with a soft glow pool on
++ * the ground at its base, drawn by MapView with additive blending (no sprites: the two textures are made here from
++ * the profiles below). The overlay module game_lootbeams says where and in which colour (g_map.setLootBeam).
++ *
++ * This header is the maths only (no engine types), so the mock renderer of client/BASE.md draws the same picture:
++ *   column(u, v)  the pillar texture: a gaussian across, bright at the base and fading to the top
++ *   pool(u, v)    the ground glow texture: a soft radial spot (drawn squashed into an ellipse)
++ *   pillar(...)   the quads of a pillar: a wide tinted halo, a narrow near-white core and a glint rising inside it
++ *   groundPool(...) the quads of the glow pool: a wide tinted ellipse and a small bright one
++ * Every colour is premultiplied (the textures are white with alpha = value; blending is ONE, ONE), so a quad's
++ * r, g, b are what it adds at full texture value.
++ */
++#ifndef CHAOS_LOOTBEAM_H
++#define CHAOS_LOOTBEAM_H
++
++#include <algorithm>
++#include <cmath>
++#include <cstdint>
++
++namespace lootbeam {
++
++constexpr int MaxBeams = 64;          // the engine draws at most this many (the overlay module caps lower)
++constexpr int ColumnWidth = 32;       // pillar texture size
++constexpr int ColumnHeight = 128;
++constexpr int PoolSize = 64;          // pool texture size
++constexpr float PulsePeriodMs = 1900.f;
++constexpr float GlintPeriodMs = 1700.f;
++constexpr float Pi = 3.14159265f;
++
++enum Texture { TexColumn = 0, TexPool = 1 };
++
++struct Rgb {
++    float r, g, b;
++};
++
++// x, y = top-left, w, h in pixels; r, g, b premultiplied (0..1, may exceed 1 before the framebuffer clamps)
++struct Quad {
++    float x, y, w, h;
++    float r, g, b;
++    int tex;
++};
++
++inline float clamp01(float x) { return std::min(1.f, std::max(0.f, x)); }
++
++inline float smoothstep(float a, float b, float x)
++{
++    const float t = clamp01((x - a) / (b - a));
++    return t * t * (3.f - 2.f * t);
++}
++
++inline Rgb mix(const Rgb& a, const Rgb& b, float t)
++{
++    return { a.r + (b.r - a.r) * t, a.g + (b.g - a.g) * t, a.b + (b.b - a.b) * t };
++}
++
++inline Rgb scale(const Rgb& c, float k) { return { c.r * k, c.g * k, c.b * k }; }
++
++// u: 0..1 across, v: 0 at the top .. 1 at the base
++inline float column(float u, float v)
++{
++    const float d = (u - 0.5f) * 2.f;                    // -1 .. 1
++    const float across = std::exp(-d * d * 5.f) * (1.f - smoothstep(0.8f, 1.f, std::fabs(d)));
++    const float up = std::pow(clamp01(v), 1.4f);         // brightest at the ground
++    const float tip = smoothstep(0.f, 0.2f, v);          // soft top end
++    const float foot = 1.f - 0.3f * smoothstep(0.94f, 1.f, v); // meets the pool without a hard edge
++    return clamp01(across * up * tip * foot);
++}
++
++inline float pool(float u, float v)
++{
++    const float dx = (u - 0.5f) * 2.f, dy = (v - 0.5f) * 2.f;
++    const float r = std::sqrt(dx * dx + dy * dy);
++    return clamp01(std::exp(-r * r * 3.f) * (1.f - smoothstep(0.75f, 1.f, r)));
++}
++
++// a per-beam phase 0..1 from its seed (the tile position), so neighbouring beams do not pulse in step
++inline float phaseOf(uint32_t seed, uint32_t salt)
++{
++    uint32_t h = seed * 2654435761u + salt * 40503u;
++    h ^= h >> 15;
++    h *= 2246822519u;
++    h ^= h >> 13;
++    return (h & 0xffffu) / 65536.f;
++}
++
++// gentle breathing, 0.8 .. 1
++inline float pulse(int64_t ms, uint32_t seed)
++{
++    const float t = (float)(ms % 1000000) / PulsePeriodMs + phaseOf(seed, 1);
++    return 0.9f + 0.1f * std::sin(2.f * Pi * t);
++}
++
++// cx = the tile's centre, baseY = where the pillar stands, s = one tile in pixels, heightTiles = pillar height in
++// tiles, intensity 0..1. Writes up to 3 quads (halo, core, glint) and returns how many.
++inline int pillar(float cx, float baseY, float s, float heightTiles, float intensity, const Rgb& c, uint32_t seed,
++                  int64_t ms, Quad* out)
++{
++    const float h = std::max(0.5f, heightTiles) * s;
++    const float p = pulse(ms, seed);
++    const float k = clamp01(intensity) * p;
++    const Rgb white = { 1.f, 1.f, 1.f };
++    int n = 0;
++    const Rgb halo = scale(c, 0.6f * k);
++    const float hw = 1.0f * s;
++    out[n++] = { cx - hw / 2.f, baseY - h, hw, h, halo.r, halo.g, halo.b, TexColumn };
++    const Rgb core = scale(mix(c, white, 0.6f), 0.95f * k);
++    const float cw = 0.16f * s;
++    out[n++] = { cx - cw / 2.f, baseY - h * 0.97f, cw, h * 0.97f, core.r, core.g, core.b, TexColumn };
++    // a glint rising inside the pillar, fading in and out
++    const float g = std::fmod((float)(ms % 1000000) / GlintPeriodMs + phaseOf(seed, 2), 1.f);
++    const float ga = std::sin(Pi * g) * 0.6f * clamp01(intensity);
++    if (ga > 0.01f) {
++        const Rgb gc = scale(mix(c, white, 0.5f), ga);
++        const float gw = 0.24f * s, gh = 0.5f * s;
++        const float gy = baseY - 0.2f * s - g * h * 0.8f;
++        out[n++] = { cx - gw / 2.f, gy - gh / 2.f, gw, gh, gc.r, gc.g, gc.b, TexPool };
++    }
++    return n;
++}
++
++// the glow pool on the ground, centred on (cx, baseY). Writes 2 quads.
++inline int groundPool(float cx, float baseY, float s, float intensity, const Rgb& c, uint32_t seed, int64_t ms,
++                      Quad* out)
++{
++    const float p = pulse(ms, seed);
++    const float k = clamp01(intensity);
++    const Rgb white = { 1.f, 1.f, 1.f };
++    const Rgb outer = scale(c, 0.6f * k * (0.85f + 0.15f * p));
++    const float ow = 1.3f * s, oh = 0.62f * s;
++    out[0] = { cx - ow / 2.f, baseY - oh / 2.f, ow, oh, outer.r, outer.g, outer.b, TexPool };
++    const Rgb inner = scale(mix(c, white, 0.45f), 0.6f * k * p);
++    const float iw = 0.5f * s, ih = 0.22f * s;
++    out[1] = { cx - iw / 2.f, baseY - ih / 2.f, iw, ih, inner.r, inner.g, inner.b, TexPool };
++    return 2;
++}
++
++// where a beam stands in a tile whose top-left is (x, y): the centre, a little below the middle (a corpse lies there)
++inline void anchor(float x, float y, float s, float& cx, float& baseY)
++{
++    cx = x + s * 0.5f;
++    baseY = y + s * 0.6f;
++}
++
++} // namespace lootbeam
++
++#endif
+diff --git a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+index e5c84fd..ad4c7e7 100644
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -172,6 +172,12 @@ void Client::registerLuaFunctions()
+     g_lua.bindSingletonFunction("g_map", "setGroundEffect", &Map::setGroundEffect, &g_map);
+     g_lua.bindSingletonFunction("g_map", "isGroundEffect", &Map::isGroundEffect, &g_map);
+     g_lua.bindSingletonFunction("g_map", "clearGroundEffects", &Map::clearGroundEffects, &g_map);
++    // Chaos (base patch 0069): loot beams (map.h, lootbeam.h; overlay module game_lootbeams)
++    g_lua.bindSingletonFunction("g_map", "setLootBeam", &Map::setLootBeam, &g_map);
++    g_lua.bindSingletonFunction("g_map", "removeLootBeam", &Map::removeLootBeam, &g_map);
++    g_lua.bindSingletonFunction("g_map", "clearLootBeams", &Map::clearLootBeams, &g_map);
++    g_lua.bindSingletonFunction("g_map", "getLootBeamCount", &Map::getLootBeamCount, &g_map);
++    g_lua.bindSingletonFunction("g_map", "hasLootBeam", &Map::hasLootBeam, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getOrCreateTile", &Map::getOrCreateTile, &g_map);
+     g_lua.bindSingletonFunction("g_map", "getTiles", &Map::getTiles, &g_map);
+     g_lua.bindSingletonFunction("g_map", "setCentralPosition", &Map::setCentralPosition, &g_map);
+diff --git a/src/client/map.cpp b/src/client/map.cpp
+index be2cd1f..c75c01a 100644
+--- a/src/client/map.cpp
++++ b/src/client/map.cpp
+@@ -30,6 +30,7 @@
+ #include "statictext.h"
+ #include "mapview.h"
+ #include "minimap.h"
++#include "lootbeam.h"
+ 
+ #include <framework/core/asyncdispatcher.h>
+ #include <framework/core/eventdispatcher.h>
+@@ -98,6 +99,7 @@ void Map::clean()
+         tileBlocks.clear();
+ 
+     m_waypoints.clear();
++    m_lootBeams.clear();
+ 
+     g_towns.clear();
+     g_houses.clear();
+@@ -105,6 +107,19 @@ void Map::clean()
+     m_tilesRect = Rect(65534, 65534, 0, 0);
+ }
+ 
++// Chaos (base patch 0069): loot beams. false when the position is invalid or the cap is reached (a new tile)
++bool Map::setLootBeam(const Position& pos, const Color& color, float height, float intensity)
++{
++    if (!pos.isValid())
++        return false;
++    auto it = m_lootBeams.find(pos);
++    if (it == m_lootBeams.end() && (int)m_lootBeams.size() >= lootbeam::MaxBeams)
++        return false;
++    LootBeam beam = { color, std::min(8.f, std::max(0.5f, height)), std::min(1.f, std::max(0.f, intensity)) };
++    m_lootBeams[pos] = beam;
++    return true;
++}
++
+ void Map::cleanDynamicThings()
+ {
+     for(const auto& pair : m_knownCreatures) {
+diff --git a/src/client/map.h b/src/client/map.h
+index e96ae6b..c2405e3 100644
+--- a/src/client/map.h
++++ b/src/client/map.h
+@@ -32,6 +32,7 @@
+ #include "tile.h"
+ 
+ #include <framework/core/clock.h>
++#include <unordered_map>
+ #include <unordered_set>
+ 
+ enum OTBM_ItemAttr
+@@ -276,6 +277,29 @@ public:
+     bool hasGroundEffects() { return !m_groundEffects.empty(); }
+     void clearGroundEffects() { m_groundEffects.clear(); }
+ 
++    // Chaos (base patch 0069): loot beams, a light pillar over a tile and a glow pool at its base (lootbeam.h,
++    // MapView::drawFloor and drawMapForeground). One per tile; at most lootbeam::MaxBeams. Lua g_map.setLootBeam(pos,
++    // color, heightTiles, intensity), removeLootBeam(pos), clearLootBeams(), getLootBeamCount(), hasLootBeam(pos).
++    struct LootBeam {
++        Color color;
++        float height;
++        float intensity;
++    };
++    bool setLootBeam(const Position& pos, const Color& color, float height, float intensity);
++    void removeLootBeam(const Position& pos) { m_lootBeams.erase(pos); }
++    void clearLootBeams() { m_lootBeams.clear(); }
++    int getLootBeamCount() { return (int)m_lootBeams.size(); }
++    bool hasLootBeam(const Position& pos) { return !m_lootBeams.empty() && m_lootBeams.count(pos) > 0; }
++    bool hasLootBeams() { return !m_lootBeams.empty(); }
++    const LootBeam* findLootBeam(const Position& pos)
++    {
++        if (m_lootBeams.empty())
++            return nullptr;
++        auto it = m_lootBeams.find(pos);
++        return it == m_lootBeams.end() ? nullptr : &it->second;
++    }
++    const std::unordered_map<Position, LootBeam, PositionHasher>& getLootBeams() { return m_lootBeams; }
++
+     const std::vector<AnimatedTextPtr>& getAnimatedTexts() const { return m_animatedTexts; }
+     const std::vector<StaticTextPtr>& getStaticTexts() const { return m_staticTexts; }
+ 
+@@ -300,6 +324,7 @@ private:
+     std::map<uint32, CreaturePtr> m_knownCreatures;
+     std::vector<std::vector<MissilePtr>> m_floorMissiles;
+     std::unordered_set<int> m_groundEffects;
++    std::unordered_map<Position, LootBeam, PositionHasher> m_lootBeams;
+     std::vector<AnimatedTextPtr> m_animatedTexts;
+     std::vector<StaticTextPtr> m_staticTexts;
+     std::vector<MapViewPtr> m_mapViews;
+diff --git a/src/client/mapview.cpp b/src/client/mapview.cpp
+index cb73d91..f6006f7 100644
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -34,6 +34,7 @@
+ #include "gameconfig.h"
+ #include "negativeoffset.h"
+ #include "spritemanager.h"
++#include "lootbeam.h"
+ 
+ #include <framework/graphics/graphics.h>
+ #include <framework/graphics/image.h>
+@@ -44,6 +45,8 @@
+ #include <framework/graphics/texturemanager.h>
+ #include <framework/graphics/atlas.h>
+ #include <framework/graphics/shadermanager.h>
++#include <framework/graphics/painter.h>
++#include <framework/core/clock.h>
+ 
+ #include <algorithm>
+ #include <unordered_map>
+@@ -54,6 +57,73 @@
+ 
+ MapView* MapView::s_recordingHits = nullptr;
+ 
++// Chaos (base patch 0069): loot beams (lootbeam.h has the maths). The two textures are made once from the profiles
++// (white, alpha = value: premultiplied for the additive blend) and uploaded on first use.
++namespace
++{
++TexturePtr makeLootBeamTexture(int w, int h, float (*profile)(float, float))
++{
++    ImagePtr image = std::make_shared<Image>(Size(w, h));
++    for (int y = 0; y < h; ++y) {
++        for (int x = 0; x < w; ++x) {
++            const float v = profile((x + 0.5f) / w, (y + 0.5f) / h);
++            const uint8 c = (uint8)std::lround(lootbeam::clamp01(v) * 255.f);
++            image->setPixel(x, y, Color(c, c, c, c));
++        }
++    }
++    return std::make_shared<Texture>(image, false, false, true);
++}
++
++const TexturePtr& lootBeamTexture(int which)
++{
++    static TexturePtr column, pool;
++    if (which == lootbeam::TexColumn) {
++        if (!column)
++            column = makeLootBeamTexture(lootbeam::ColumnWidth, lootbeam::ColumnHeight, &lootbeam::column);
++        return column;
++    }
++    if (!pool)
++        pool = makeLootBeamTexture(lootbeam::PoolSize, lootbeam::PoolSize, &lootbeam::pool);
++    return pool;
++}
++
++// the quads of one or more beams, drawn added onto what is under them (ONE, ONE); the colour's alpha is 0, so the
++// framebuffer's alpha is left alone
++struct DrawQueueItemLootBeams : public DrawQueueItem {
++    DrawQueueItemLootBeams() : DrawQueueItem(nullptr) {}
++    bool cache() override { return false; }
++    void draw() override
++    {
++        if (m_quads.empty())
++            return;
++        g_painter->setCompositionMode(Painter::CompositionMode_Add);
++        for (const lootbeam::Quad& q : m_quads) {
++            const TexturePtr& texture = lootBeamTexture(q.tex);
++            if (!texture)
++                continue;
++            CoordsBuffer coords;
++            coords.addRect(RectF(q.x, q.y, q.w, q.h), RectF(0.f, 0.f, (float)texture->getWidth(), (float)texture->getHeight()));
++            const float k = m_color.aF(); // the floor fading (DrawQueue::setOpacity) dims the light it adds
++            g_painter->setColor(Color(lootbeam::clamp01(q.r * k), lootbeam::clamp01(q.g * k), lootbeam::clamp01(q.b * k), 0.f));
++            g_painter->drawTextureCoords(coords, texture);
++        }
++        g_painter->resetCompositionMode();
++        g_painter->resetColor();
++    }
++    std::vector<lootbeam::Quad> m_quads;
++};
++
++lootbeam::Rgb lootBeamRgb(const Color& color)
++{
++    return { color.rF(), color.gF(), color.bF() };
++}
++
++uint32_t lootBeamSeed(const Position& pos)
++{
++    return (uint32_t)pos.x * 73856093u ^ (uint32_t)pos.y * 19349663u ^ (uint32_t)pos.z * 83492791u;
++}
++}
++
+ MapView::MapView()
+ {
+     m_fadingFloorTimers.resize(g_gameConfig.getMapMaxZ() + 1);
+@@ -247,6 +317,28 @@ void MapView::drawFloor(short floor, const Position& cameraPosition, const TileP
+             owner->drawGroundEffects(transformPositionTo2D(owner->getPosition(), cameraPosition), m_lightView.get());
+     };
+ 
++    // Chaos (base patch 0069): the glow pool of a loot beam, on the floor of the camera, under the creatures, with a
++    // small light of its colour so it still reads at night
++    const bool lootBeams = g_map.hasLootBeams() && floor == cameraPosition.z;
++    const ticks_t lootBeamMs = lootBeams ? g_clock.millis() : 0;
++    auto drawLootBeamPoolOf = [&](const TilePtr& tile, const Point& dest) {
++        if (!lootBeams)
++            return;
++        const Map::LootBeam* beam = g_map.findLootBeam(tile->getPosition());
++        if (!beam)
++            return;
++        const float s = (float)g_sprites.spriteSize();
++        float cx, baseY;
++        lootbeam::anchor((float)dest.x, (float)dest.y, s, cx, baseY);
++        auto item = std::make_unique<DrawQueueItemLootBeams>();
++        item->m_quads.resize(2);
++        lootbeam::groundPool(cx, baseY, s, beam->intensity, lootBeamRgb(beam->color), lootBeamSeed(tile->getPosition()),
++                             lootBeamMs, item->m_quads.data());
++        g_drawQueue->add(std::move(item));
++        if (m_lightView)
++            m_lightView->addLight(Point((int)cx, (int)baseY), Color::to8bit(beam->color), 2);
++    };
++
+     // light
+     if (m_lightView) {
+         for (auto& tile : tiles) {
+@@ -271,6 +363,7 @@ void MapView::drawFloor(short floor, const Position& cameraPosition, const TileP
+             Point tileDrawPos = transformPositionTo2D(tile->getPosition(), cameraPosition);
+             tile->drawBottom(tileDrawPos, m_lightView.get(), true);
+             tile->drawLootHighlights(tileDrawPos, m_lightView.get());
++            drawLootBeamPoolOf(tile, tileDrawPos);
+ 
+             if (m_crosshair && tile == crosshairTile) {
+                 g_drawQueue->addTexturedRect(Rect(tileDrawPos, tileDrawPos + g_sprites.spriteSize() - 1),
+@@ -302,6 +395,7 @@ void MapView::drawFloor(short floor, const Position& cameraPosition, const TileP
+ 
+             tile->drawBottom(tileDrawPos, m_lightView.get());
+             tile->drawLootHighlights(tileDrawPos, m_lightView.get());
++            drawLootBeamPoolOf(tile, tileDrawPos);
+             drawGroundEffectsOf(tile);
+ 
+             if (m_crosshair && tile == crosshairTile) {
+@@ -328,6 +422,7 @@ void MapView::drawFloor(short floor, const Position& cameraPosition, const TileP
+ 
+             tile->drawBottom(tileDrawPos, m_lightView.get());
+             tile->drawLootHighlights(tileDrawPos, m_lightView.get());
++            drawLootBeamPoolOf(tile, tileDrawPos);
+             drawGroundEffectsOf(tile);
+ 
+             if (m_crosshair && tile == crosshairTile) {
+@@ -364,6 +459,37 @@ void MapView::drawMapForeground(const Rect& rect)
+         g_drawQueue->add(std::move(m_lightView));
+     }
+ 
++    // Chaos (base patch 0069): loot beam pillars of the camera floor. After the light (a dark cave does not swallow
++    // them) and before the names, bars and texts; clipped to the map. A beam under a roof that is drawn is skipped.
++    if (g_map.hasLootBeams()) {
++        const float s = g_sprites.spriteSize() * horizontalStretchFactor;
++        const ticks_t ms = g_clock.millis();
++        auto item = std::make_unique<DrawQueueItemLootBeams>();
++        lootbeam::Quad quads[3];
++        for (const auto& entry : g_map.getLootBeams()) {
++            const Position& pos = entry.first;
++            const Map::LootBeam& beam = entry.second;
++            if (pos.z != cameraPosition.z || g_map.isCovered(pos, m_cachedFirstVisibleFloor))
++                continue;
++            Point p = transformPositionTo2D(pos, cameraPosition) - drawOffset;
++            const float x = p.x * horizontalStretchFactor + rect.left();
++            const float y = p.y * verticalStretchFactor + rect.top();
++            float cx, baseY;
++            lootbeam::anchor(x, y, s, cx, baseY);
++            const float top = baseY - beam.height * s;
++            if (cx + s < rect.left() || cx - s > rect.right() || baseY < rect.top() || top > rect.bottom())
++                continue;
++            const int n = lootbeam::pillar(cx, baseY, s, beam.height, beam.intensity, lootBeamRgb(beam.color),
++                                           lootBeamSeed(pos), ms, quads);
++            item->m_quads.insert(item->m_quads.end(), quads, quads + n);
++        }
++        if (!item->m_quads.empty()) {
++            size_t start = g_drawQueue->size();
++            g_drawQueue->add(std::move(item));
++            g_drawQueue->setClip(start, rect);
++        }
++    }
++
+     // creatures
+     std::vector<std::pair<CreaturePtr, Point>> creatures;
+     for (const CreaturePtr& creature : g_map.getSpectatorsInRangeEx(cameraPosition, false, m_visibleDimension.width() / 2, m_visibleDimension.width() / 2 + 1, m_visibleDimension.height() / 2, m_visibleDimension.height() / 2 + 1)) {

@@ -205,7 +205,7 @@ $bodies = array_map(static function ($r) { return json_decode($r['body'], true)[
 $texts = implode("\n", array_column($bodies, 'description'));
 check(strpos($texts, 'Arwen, level 512 Juggernaut is up for auction.') !== false, 'listing text with the class name');
 check(strpos($texts, 'Old Seller, level 200 Warrior was sold.') !== false, 'sale text');
-check(strpos($texts, 'https://www.example.org/page.php?plugin=chaos&p=bazaar') !== false, 'a link to the bazaar');
+check(strpos($texts, 'https://www.example.org/page?plugin=chaos&p=bazaar') !== false, 'a link to the bazaar');
 check(count(array_filter($posted, static function ($r) { return $r['path'] === '/api/webhooks/555555/okBazaar'; })) === 2, 'to the bazaar webhook');
 $s = $w->run($now + 900100);
 check($s['queued'] === 0, 'the cursor moved: nothing twice');

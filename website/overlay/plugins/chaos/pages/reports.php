@@ -1,6 +1,6 @@
 <?php
 /**
- * Staff: player reports and the anti-bot log (page.php?plugin=chaos&p=reports). Only the admin accounts of ZnoteX's
+ * Staff: player reports and the anti-bot log (page?plugin=chaos&p=reports). Only the admin accounts of ZnoteX's
  * admin panel ($config['page_admin_access']); everyone else gets "not found". Nothing here bans: staff read, decide
  * in the game, then close the report with a note.
  *
@@ -20,7 +20,7 @@ if (!chaos_reports_is_admin($config, $accountId)) {
 	return;
 }
 $GLOBALS['page_title'] = 'Player Reports';
-$self = 'page.php?plugin=chaos&p=reports';
+$self = 'page?plugin=chaos&p=reports';
 
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['chaos_reports_csrf'])) {
 	$_SESSION['chaos_reports_csrf'] = bin2hex(random_bytes(16));
@@ -68,7 +68,7 @@ $time = static function (int $t): string { return $t > 0 ? gmdate('Y-m-d H:i', $
 			<p class="<?= $messageOk ? 'chaos-gold' : 'chaos-error' ?>" id="chaos-reports-message"<?= $messageOk ? '' : ' style="color:#e07060;"' ?>><?= chaos_h($message) ?></p>
 		<?php endif; ?>
 
-		<form method="get" action="page.php" class="chaos-filter" style="margin:10px 0;">
+		<form method="get" action="page" class="chaos-filter" style="margin:10px 0;">
 			<input type="hidden" name="plugin" value="chaos">
 			<input type="hidden" name="p" value="reports">
 			<?php if ($showLog): ?><input type="hidden" name="log" value="1"><?php else: ?>

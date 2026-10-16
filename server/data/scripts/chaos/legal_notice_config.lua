@@ -8,6 +8,6 @@ return {
 	cacheSeconds = 300, -- the current version (server_config chaos_legal_version, written by the website setup) is read again after this
 	-- the website page that asks for the acceptance (website plugins/chaos/pages/accept.php); shown as text, like the
 	-- Donation Terms in shop_payments_core.lua
-	url = "page.php?plugin=chaos&p=accept",
+	url = "page?plugin=chaos&p=accept",
 	popup = true -- also a window the player closes (Player:popupFYI), not only the text in the server log
 }

@@ -32,6 +32,16 @@ function V.statusText(owned, title)
   return tr('You have no %s yet: Store > Convenience. These rules are kept for when you do.', title)
 end
 
+-- the window's height so nothing overlaps (live test winpkg-35: the Loot Bag note was cut off and "Saved on your
+-- character at once." ran under the buttons). m = {top, contentBottom (the last of the rules, the note or Open Store),
+-- savedHeight, buttonHeight, paddingBottom, minHeight}; the gaps: 10 above the saved line, 8 under it.
+V.SAVED_GAP, V.BUTTON_GAP = 10, 8
+function V.fitHeight(m)
+  local need = (m.contentBottom - m.top) + V.SAVED_GAP + (m.savedHeight or 0) + V.BUTTON_GAP + (m.buttonHeight or 0) +
+    (m.paddingBottom or 0)
+  return math.max(m.minHeight or 0, math.ceil(need))
+end
+
 -- the right-click hook: the item looks like the Loot Bag (client id from the server) and carries the item lock
 -- flag the server sets on every store pouch (custom attribute key 3), so a stock bag of the same look does not match
 function V.isLootPouch(clientId, lockFlag, ids)

@@ -1,6 +1,6 @@
 <?php
 /**
- * The player wiki (wiki_lib.php, website/README.md "Wiki"): page.php?plugin=chaos&p=wiki[&t=<topic>][&q=<search>][&l=en].
+ * The player wiki (wiki_lib.php, website/README.md "Wiki"): page?plugin=chaos&p=wiki[&t=<topic>][&q=<search>][&l=en].
  * The index (guides, reference tabs, search box), one page per guide, reference tab and entry, breadcrumbs, and the
  * search results. Portuguese by default, English with &l=en. An unknown topic is a 404. Art (wiki_lib.php): guide
  * heroes, tab banners, entry and tab icons, all lazy with alt text.
@@ -53,7 +53,7 @@ $here = chaos_wiki_url($searching ? '' : $topic, $other, $searching ? $query : '
 			</nav>
 			<a class="chaos-tab chaos-wiki-lang" href="<?= chaos_h($here) ?>" lang="<?= chaos_h($other) ?>"><?= chaos_h(chaos_wiki_t('other', $lang)) ?></a>
 		</div>
-		<form class="chaos-wiki-search" method="get" action="page.php" role="search">
+		<form class="chaos-wiki-search" method="get" action="page" role="search">
 			<input type="hidden" name="plugin" value="chaos">
 			<input type="hidden" name="p" value="wiki">
 			<?php if ($lang === 'en'): ?><input type="hidden" name="l" value="en"><?php endif; ?>

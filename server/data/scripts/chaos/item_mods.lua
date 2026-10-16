@@ -332,6 +332,9 @@ local function shock(creature)
 		end
 	end
 	packFx(creature:getPosition(), "item_shock", CONST_ME_ENERGYHIT or CONST_ME_ENERGYAREA or 12)
+	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the shocked aura while the shock lasts
+		pcall(ChaosPack29Vfx.hold, creature, "shocked", M.config.ailment.shockMs)
+	end
 end
 M.shocked = shocked
 
@@ -375,6 +378,9 @@ local function chill(target)
 	c:setFormula(-a.chillSlow / 100, 0, -a.chillSlow / 100, 0)
 	target:addCondition(c)
 	packFx(target:getPosition(), "item_chill", CONST_ME_ICEATTACK or CONST_ME_ICEAREA or 43)
+	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the frozen aura while the chill lasts
+		pcall(ChaosPack29Vfx.hold, target, "frozen", a.chillMs)
+	end
 end
 
 local function roll(pct)

@@ -95,7 +95,11 @@ function B.grant(player, boss, quiet)
 		local text = Chaos.t(player, "First kill of %s: +1 passive point! %s.", boss.name, K.label(got, B.index.total))
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, text)
 		toast(player, text)
-		player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		if ChaosPack29Vfx then -- pair 29 (switch off: the stock firework)
+			ChaosPack29Vfx.celebrate(player:getPosition(), "boss", CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		else
+			player:getPosition():sendMagicEffect(CONST_ME_FIREWORK_YELLOW or CONST_ME_MAGIC_GREEN)
+		end
 		refresh(player)
 	end
 	return true
@@ -129,6 +133,9 @@ function B.onKill(creature, killer, mostDamageKiller)
 	local boss = K.isBoss(B.index, typeName(creature))
 	if not boss then
 		return
+	end
+	if ChaosPack29Vfx then -- pair 29 (switch off: nothing): the boss blast on the corpse
+		pcall(ChaosPack29Vfx.bossDeath, creature:getPosition(), creature:getMaxHealth())
 	end
 	local ids = {}
 	for id in pairs(creature:getDamageMap() or {}) do

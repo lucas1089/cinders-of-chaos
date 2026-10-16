@@ -1,6 +1,6 @@
 <?php
 /**
- * Donations for Chaos Coins (page.php?plugin=chaos&p=coins). Chaos Coins are a thank-you for a voluntary donation;
+ * Donations for Chaos Coins (page?plugin=chaos&p=coins). Chaos Coins are a thank-you for a voluntary donation;
  * nobody is required to donate and the game is fully playable for free. The packs, prices (one USD table, Pix =
  * USD x 5) and bonuses come from the game server's shop_coins_config.lua; the game server credits every paid order.
  *
@@ -38,7 +38,7 @@ if (!$service) {
 	}
 }
 $methods = $service ? $service->methods() : array();
-$self = 'page.php?plugin=chaos&p=coins';
+$self = 'page?plugin=chaos&p=coins';
 
 if (session_status() === PHP_SESSION_ACTIVE && empty($_SESSION['chaos_pay_csrf'])) {
 	$_SESSION['chaos_pay_csrf'] = bin2hex(random_bytes(16));

@@ -49,7 +49,7 @@ function chaos_legal_dir(): string {
 
 /** The page of a text. Portuguese is the default; English adds &l=en. */
 function chaos_legal_url(string $doc, string $lang = 'pt-BR'): string {
-	return 'page.php?plugin=chaos&p=legal&doc=' . rawurlencode($doc) . ($lang === 'en' ? '&l=en' : '');
+	return 'page?plugin=chaos&p=legal&doc=' . rawurlencode($doc) . ($lang === 'en' ? '&l=en' : '');
 }
 
 /** The Markdown of a text, or null when the key, the language or the file is unknown. */
@@ -90,6 +90,8 @@ function chaos_legal_inline(string $line, string $lang): string {
 			$url = chaos_legal_url($d[1], $d[2]);
 		} elseif (!preg_match('#^(/(?!/)|https://)[^\s"\'<>]*$#', $url)) {
 			return $m[1];
+		} elseif (function_exists('chaos_clean_url')) {
+			$url = chaos_clean_url($url); // a site page by its clean address (README "Web server")
 		}
 		return '<a href="' . htmlspecialchars($url, ENT_QUOTES, 'UTF-8') . '">' . $m[1] . '</a>';
 	}, $s);
@@ -212,11 +214,11 @@ function chaos_legal_insert(int $accountId, int $now): void {
 // ---------------------------------------------------------------- existing accounts: accept at the next login
 // Accounts made before the checkbox (the beta accounts) and every account after the texts change (Terms section 10:
 // a new version applies once announced) have no row for the current version. While logged in on the website they are
-// sent to page.php?plugin=chaos&p=accept first (plugin.php calls chaos_legal_gate_target on every request). The game
+// sent to page?plugin=chaos&p=accept first (plugin.php calls chaos_legal_gate_target on every request). The game
 // client cannot be held at login cleanly: the game server shows a notice with the link instead (server
 // data/scripts/chaos/legal_notice.lua, which reads the version setup/chaos_setup.php writes to server_config).
 
-define('CHAOS_LEGAL_ACCEPT_URL', 'page.php?plugin=chaos&p=accept');
+define('CHAOS_LEGAL_ACCEPT_URL', 'page?plugin=chaos&p=accept');
 define('CHAOS_LEGAL_ACCEPT_ERROR', 'Please tick the box to accept the Terms of Use and the Privacy Policy. / Marque a caixa para aceitar os Termos de Uso e a Política de Privacidade.');
 
 /** True when the account accepted the current version of the texts (or when the table is not installed). */
@@ -260,19 +262,22 @@ function chaos_legal_gate_exempt(string $script, array $get, array $server = arr
 	return false;
 }
 
-/** Where to go after accepting: a page of this site only ("x.php" or "x.php?..."), else the account page. */
+/**
+ * Where to go after accepting: a page of this site only ("x", "x?...", or the same with .php), as its clean address
+ * (README "Web server"), else the account page.
+ */
 function chaos_legal_safe_next(string $next): string {
 	$next = ltrim($next, '/');
-	if (!preg_match('#^[a-z0-9_]+\.php(\?[^\s"\'<>\\\\]*)?$#i', $next) || stripos($next, 'p=accept') !== false) {
-		return 'myaccount.php';
+	if (!preg_match('#^([a-z0-9_]+)(\.php)?(\?[^\s"\'<>\\\\]*)?$#i', $next, $m) || stripos($next, 'p=accept') !== false) {
+		return 'myaccount';
 	}
-	return $next;
+	return $m[1] . ($m[3] ?? '');
 }
 
 /** The accept page with the page to come back to. */
 function chaos_legal_accept_url(string $requestUri): string {
 	$next = chaos_legal_safe_next((string)(parse_url($requestUri, PHP_URL_PATH) ?? '') . (($q = parse_url($requestUri, PHP_URL_QUERY)) ? '?' . $q : ''));
-	return CHAOS_LEGAL_ACCEPT_URL . ($next !== 'myaccount.php' ? '&next=' . rawurlencode($next) : '');
+	return CHAOS_LEGAL_ACCEPT_URL . ($next !== 'myaccount' ? '&next=' . rawurlencode($next) : '');
 }
 
 /** The redirect for this request, or null: a logged-in account without the current acceptance on a gated page. */

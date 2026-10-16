@@ -576,6 +576,15 @@ local function tick(id, token)
 		end
 	end
 	channelStep(f, now)
+	local V = ChaosPack29Vfx -- pair 29 (switch off: nothing): the immune and enraged auras on the boss, shown again as
+	if V then                -- they end (show is throttled to the aura's length)
+		if G.damageTakenMult(f.st, live) == 0 then
+			pcall(V.show, boss, "invulnerable")
+		end
+		if f.st.enraged then
+			pcall(V.show, boss, "enraged")
+		end
+	end
 	if now >= (f.nextHeal or 0) then
 		f.nextHeal = now + 5000
 		local heal = G.addsHeal(f.st, live, boss:getMaxHealth())

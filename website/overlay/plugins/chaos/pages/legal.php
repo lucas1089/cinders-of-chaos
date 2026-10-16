@@ -1,6 +1,6 @@
 <?php
 /**
- * The legal texts (legal_lib.php): page.php?plugin=chaos&p=legal&doc=terms|privacy|donations[&l=en]. Portuguese by
+ * The legal texts (legal_lib.php): page?plugin=chaos&p=legal&doc=terms|privacy|donations[&l=en]. Portuguese by
  * default (the version that prevails), English with &l=en. Linked from the footer, the account creation form, the
  * donation page and the Rules page.
  */

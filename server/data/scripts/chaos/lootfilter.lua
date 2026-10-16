@@ -1,4 +1,4 @@
--- Loot filter, loot channel and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter).
+-- Loot filter, loot channel, loot beams and loot rays (client game_lootfilter, extended opcode ChaosOpcodes.lootfilter).
 -- Rules and packing: lootfilter_core.lua (tested by server/tests/lootfilter_test.lua). Tunables: lootfilter_config.lua.
 --
 -- client -> server  {"action":"open"}                         settings + open the window
@@ -18,6 +18,8 @@
 --                         hits = {rule = items} and counts = {session, total} when a rule matched (the client plays the sound)}
 --                   (x = the item's Chaos modifiers as one line, item_mods.lua; absent when it has none)
 --                   update {k, left = [remaining count per entry]}      decay {k}      msg {text} (a refused click)
+--                   beam {k, p, i = [{r, u, o, pw, g, t}]}   the items still in the corpse that may beam; i = [] ends it
+--                         (to the owner and the party at the kill; the client game_lootbeams draws the pillar)
 --
 -- onDropLoot (lower index first): 0 stock loot, 1 Chaos loot layer, 2 auto seller, 2.5 SNAPSHOT + hold back list items
 -- below the Rarity Autoloot minimum, 2.7 store pouches (pouches.lua), 3 base autoloot, 3.5 RARITY PICKUP, 4.5 FINISH (held items back into
@@ -372,7 +374,77 @@ local function sameList(a, b)
 	return true
 end
 
+-- ---------------------------------------------------------------- loot beams (client game_lootbeams)
+-- beam {k, p = [x, y, z], i = [{r, u, o, pw, g, t}]}: the items still in the corpse that may beam (F.beamItems); the
+-- client draws the pillar of the best one its loot filter makes glow. i = [] ends the beam (looted, decayed, dropped
+-- from the history). Sent to the owner and the party members at the kill (the players allowed to loot it).
+local function beamViewerIds(owner)
+	local ids, seen = {owner:getId()}, {[owner:getId()] = true}
+	local party = owner:getParty()
+	if party then
+		local members = {party:getLeader()}
+		for _, p in ipairs(party:getMembers() or {}) do
+			members[#members + 1] = p
+		end
+		for _, p in ipairs(members) do
+			if p and not seen[p:getId()] then
+				seen[p:getId()] = true
+				ids[#ids + 1] = p:getId()
+			end
+		end
+	end
+	return ids
+end
+
+local function sendBeamData(kill, items)
+	local data = {k = kill.id, p = {kill.pos.x, kill.pos.y, kill.pos.z}, i = items}
+	for _, id in ipairs(kill.beamTo or {}) do
+		local p = Player(id)
+		if p then
+			Chaos.send(p, OPCODE, "beam", data)
+		end
+	end
+end
+
+local function sendBeam(kill)
+	local c = cfg()
+	if not c.beams then
+		return
+	end
+	local list = F.beamItems(kill.entries, kill.left, c)
+	local sig = table.concat(list, ",")
+	if sig == (kill.beamSig or "") then
+		return -- nothing that may beam left or arrived: the client already draws the right one
+	end
+	kill.beamSig = sig
+	if not kill.beamTo then
+		local owner = Player(kill.ownerId)
+		if not owner or #list == 0 then
+			return
+		end
+		kill.beamTo = beamViewerIds(owner)
+	end
+	local items = {}
+	for _, i in ipairs(list) do
+		local info = kill.entries[i].info
+		items[#items + 1] = {r = info.rarity, u = info.unique and 1 or 0, o = info.orb and 1 or 0,
+			pw = info.power and 1 or nil, g = info.category, t = (info.bestTier or 0) > 0 and info.bestTier or nil}
+	end
+	sendBeamData(kill, items)
+	if #items == 0 then
+		kill.beamTo = nil
+	end
+end
+
+local function beamOff(kill)
+	if kill.beamTo then
+		sendBeamData(kill, {})
+		kill.beamTo, kill.beamSig = nil, ""
+	end
+end
+
 local function stopTracking(kill)
+	beamOff(kill)
 	state.kills[kill.id] = nil
 	local list = state.byGuid[kill.guid]
 	if list then
@@ -412,6 +484,7 @@ local function refresh(kill)
 		if player then
 			Chaos.send(player, OPCODE, "update", {k = kill.id, left = left})
 		end
+		sendBeam(kill)
 	end
 	local any = false
 	for _, n in ipairs(left) do
@@ -675,13 +748,15 @@ local function finish(monster, corpse)
 	while #list > c.historySize do
 		local old = state.kills[table.remove(list, 1)]
 		if old then
+			beamOff(old)
 			state.kills[old.id] = nil
 		end
 	end
-	if hasRay then
+	if hasRay and c.rayEffects then
 		kill.rayUntil = os.time() + c.rayDurationS
 		emitRay(kill, owner)
 	end
+	sendBeam(kill)
 	-- the rule counters (everything the kill dropped, also what the autoloot already took)
 	local hits = F.countHits(drop.entries, drop.s)
 	local counts = next(hits) and addHits(owner, hits) or nil
@@ -828,6 +903,10 @@ local LogoutEvent = CreatureEvent("ChaosLootFilterLogout")
 function LogoutEvent.onLogout(player)
 	local guid = player:getGuid()
 	for _, id in ipairs(state.byGuid[guid] or {}) do
+		local kill = state.kills[id]
+		if kill then
+			pcall(beamOff, kill) -- the party members' beams of these corpses end too
+		end
 		state.kills[id] = nil
 	end
 	state.byGuid[guid] = nil

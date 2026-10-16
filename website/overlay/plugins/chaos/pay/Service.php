@@ -279,7 +279,7 @@ final class ChaosPayService {
 		$coins = (int)$r['coins'] + (int)$r['bonus'] + (int)$r['first_bonus'];
 		$expires = $now + 60 * max(30, (int)($this->pay['expire_minutes'] ?? 30));
 		$site = rtrim((string)$this->opt['site_url'], '/');
-		$back = $site . '/page.php?plugin=chaos&p=coins&order=' . $orderId;
+		$back = $site . '/page?plugin=chaos&p=coins&order=' . $orderId;
 		try {
 			$c = $provider->create(array(
 				'order_id' => $orderId, 'token' => $r['token'], 'amount_cents' => (int)$r['amount_cents'], 'currency' => $r['currency'],

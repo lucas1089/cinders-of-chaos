@@ -2,7 +2,7 @@
 /**
  * Community: the server-wide goal (its bar, the stage buffs open now, the top contributors), this week's world
  * modifiers and the latest news, read from the game server's chaos_community_* tables (community_lib.php).
- * page.php?plugin=chaos&p=community
+ * page?plugin=chaos&p=community
  */
 if (!isset($config)) { http_response_code(403); die('Direct access denied.'); }
 require_once dirname(__DIR__) . '/community_lib.php';

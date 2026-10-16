@@ -17,6 +17,23 @@ function chaos_h($value): string {
 	return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+/**
+ * The clean address of a link to a top-level page (README "Web server"): "highscores.php?x=1" -> "highscores?x=1",
+ * "/page?p=rules" -> "/page?p=rules", "index.php" -> "./". Anything else is returned as it is: other sites,
+ * folders, and the machine endpoints the game client and the payment providers call by their .php address.
+ */
+function chaos_clean_url(string $url): string {
+	if (!preg_match('~^(/?)([A-Za-z0-9_-]+)\.php([?#].*)?$~s', $url, $m)
+			|| in_array($m[2], array('chaos_client_api', 'chaos_pay_webhook', 'chaos_outfit'), true)) {
+		return $url;
+	}
+	$rest = $m[3] ?? '';
+	if ($m[2] === 'index') {
+		return ($m[1] === '/' ? '/' : './') . $rest;
+	}
+	return $m[1] . $m[2] . $rest;
+}
+
 /** $config['chaos'] with defaults. */
 function chaos_cfg(?string $key = null, $default = null) {
 	$cfg = (array)($GLOBALS['config']['chaos'] ?? array());
@@ -174,7 +191,21 @@ function chaos_class_look(int $vocation, int $sex): ?int {
 	return $look > 0 ? $look : null;
 }
 
-/** Puts the class look on a new character (by name): look type of its class and sex, both addons (ChaosClassLooks.ADDONS). */
+/**
+ * The start colours of a class (class_looks_core.lua L.startColors: head, body, legs, feet), or null. A new character
+ * wears them with its class look: the website's old starter colours (head 78, body 68: yellow and blue) made the
+ * Ranger's hooded archer look like a blue-robed mage (owner report 2026-10-16).
+ */
+function chaos_class_colors(int $vocation): ?array {
+	$text = chaos_read_server_file('scripts/chaos/class_looks_core.lua');
+	if ($text === '' || !preg_match('/^\s*\[' . $vocation . '\]\s*=\s*\{head = (\d+), body = (\d+), legs = (\d+), feet = (\d+)\}/m',
+			chaos_lua_block($text, 'startColors'), $m)) {
+		return null;
+	}
+	return array('head' => (int)$m[1], 'body' => (int)$m[2], 'legs' => (int)$m[3], 'feet' => (int)$m[4]);
+}
+
+/** Puts the class look on a new character (by name): look type of its class and sex, both addons (ChaosClassLooks.ADDONS), the class's start colours. */
 function chaos_apply_class_look(string $name): bool {
 	$row = $name === '' ? false : db()->fetchOne('SELECT `id`, `vocation`, `sex` FROM `players` WHERE `name` = ? LIMIT 1;', [$name]);
 	if (!is_array($row)) {
@@ -185,6 +216,52 @@ function chaos_apply_class_look(string $name): bool {
 		return false;
 	}
 	db()->execute('UPDATE `players` SET `looktype` = ?, `lookaddons` = 3 WHERE `id` = ?;', [$look, (int)$row['id']]);
+	$colors = chaos_class_colors((int)$row['vocation']);
+	if ($colors !== null) {
+		db()->execute('UPDATE `players` SET `lookhead` = ?, `lookbody` = ?, `looklegs` = ?, `lookfeet` = ? WHERE `id` = ?;',
+			[$colors['head'], $colors['body'], $colors['legs'], $colors['feet'], (int)$row['id']]);
+	}
+	return true;
+}
+
+/**
+ * What a new character of a class starts with (server data/scripts/chaos/start_stats.lua, the one source of truth of
+ * every creation path: this site, the client's API, the Linux add-account.sh and the game server's one-time login
+ * correction): level and experience (startLevel / startExperience, level 8 since the owner's design of 2026-10-16) and
+ * the class's health, mana, capacity (oz) and soul at that level (its level 1 row plus a level's gains per level above
+ * 1). Null without the server data or for an unknown class. The file keeps one row per line.
+ */
+function chaos_start_stats(int $vocation): ?array {
+	$text = chaos_read_server_file('scripts/chaos/start_stats.lua');
+	if ($text === '' || !preg_match('/^\s*\[' . $vocation . '\]\s*=\s*\{health = (\d+), mana = (\d+), cap = (\d+), soul = (\d+), gainhp = (\d+), gainmana = (\d+), gaincap = (\d+)\}/m', $text, $m)) {
+		return null;
+	}
+	$level = preg_match('/^\s*startLevel\s*=\s*(\d+)/m', $text, $l) ? max(1, (int)$l[1]) : 1;
+	$up = $level - 1;
+	$experience = preg_match('/^\s*startExperience\s*=\s*(\d+)/m', $text, $e) ? (int)$e[1]
+		: intdiv(50 * $up * $up * $up - 150 * $up * $up + 400 * $up, 3);
+	return array('level' => $level, 'experience' => $experience,
+		'health' => (int)$m[1] + $up * (int)$m[5], 'mana' => (int)$m[2] + $up * (int)$m[6],
+		'cap' => (int)$m[3] + $up * (int)$m[7], 'soul' => (int)$m[4]);
+}
+
+/**
+ * Puts its class's start on a new character (by name): the start level and its experience, health, mana, capacity and
+ * soul of start_stats.lua instead of ZnoteX's flat $config['player']['base'] (level 1, 150 health, 0 mana, 400 cap for
+ * every class). Only a character below the start level (one just created). The game server gives the full starter kit
+ * at its first login, in the login event (items with the server's own attributes, which this site does not write).
+ */
+function chaos_apply_start_stats(string $name): bool {
+	$row = $name === '' ? false : db()->fetchOne('SELECT `id`, `vocation`, `level` FROM `players` WHERE `name` = ? LIMIT 1;', [$name]);
+	if (!is_array($row)) {
+		return false;
+	}
+	$stats = chaos_start_stats((int)$row['vocation']);
+	if ($stats === null || (int)$row['level'] >= $stats['level'] && $stats['level'] > 1) {
+		return false;
+	}
+	db()->execute('UPDATE `players` SET `level` = ?, `experience` = ?, `health` = ?, `healthmax` = ?, `mana` = ?, `manamax` = ?, `cap` = ?, `soul` = ? WHERE `id` = ?;',
+		[$stats['level'], $stats['experience'], $stats['health'], $stats['health'], $stats['mana'], $stats['mana'], $stats['cap'], $stats['soul'], (int)$row['id']]);
 	return true;
 }
 
@@ -1143,6 +1220,78 @@ function chaos_coin_order_paid(int $accountId, string $packKey, string $provider
 	db()->execute('INSERT IGNORE INTO `chaos_coin_orders` (`account_id`, `pack_key`, `provider`, `provider_ref`, `status`, `created`) VALUES (?, ?, ?, ?, \'paid\', ?);',
 		[$accountId, $packKey, substr($provider, 0, 32), substr($providerRef, 0, 128), time()]);
 	return true;
+}
+
+// ---------------------------------------------------------------------------
+// Dropdown filters (README "Dropdown filters"): a long row of filter buttons becomes a GET form with one <select> per
+// filter and a "Show" button, so it works without JavaScript; assets/js/chaos-pick.js submits it on change and hides
+// the button. Same query parameters as the old button links.
+// ---------------------------------------------------------------------------
+
+/** The sort form of a name: accents folded to their base letter, lower case (the client's BoardPick.fold). */
+function chaos_sort_fold(string $s): string {
+	static $map = null;
+	if ($map === null) {
+		$from = 'ÀÁÂÃÄÅÇÈÉÊËÌÍÎÏÑÒÓÔÕÖØÙÚÛÜÝàáâãäåçèéêëìíîïñòóôõöøùúûüýÿ';
+		$to   = 'aaaaaaceeeeiiiinoooooouuuuyaaaaaaceeeeiiiinoooooouuuuyy';
+		$map = array('Æ' => 'ae', 'æ' => 'ae', 'ß' => 'ss');
+		$chars = preg_split('//u', $from, -1, PREG_SPLIT_NO_EMPTY);
+		foreach ($chars as $i => $c) {
+			$map[$c] = $to[$i];
+		}
+	}
+	return strtolower(strtr($s, $map));
+}
+
+/** key => label sorted by the label as shown (accents folded, as the client's board dropdown), ties by the key. */
+function chaos_sort_options(array $options): array {
+	$keys = array_keys($options);
+	usort($keys, static function ($a, $b) use ($options): int {
+		$c = strcmp(chaos_sort_fold((string)$options[$a]), chaos_sort_fold((string)$options[$b]));
+		if ($c === 0) {
+			$c = strcmp((string)$options[$a], (string)$options[$b]);
+		}
+		return $c !== 0 ? $c : strcmp((string)$a, (string)$b);
+	});
+	$out = array();
+	foreach ($keys as $k) {
+		$out[$k] = $options[$k];
+	}
+	return $out;
+}
+
+/** One labelled <select> of a filter form. $options: value => label, in the order given. $reset: the other fields
+ * dropped when this one changes (chaos-pick.js; without JavaScript the page falls back to their first value). */
+function chaos_pick_select(string $name, string $label, array $options, string $selected, array $reset = array()): string {
+	static $n = 0;
+	$id = 'chaos-pick-' . preg_replace('/[^a-z0-9_-]/i', '', $name) . '-' . (++$n);
+	$html = '<label class="chaos-pick__field" for="' . chaos_h($id) . '"><span class="chaos-pick__label">' . chaos_h($label) . '</span>'
+		. '<select id="' . chaos_h($id) . '" name="' . chaos_h($name) . '" data-chaos-autosubmit'
+		. ($reset ? ' data-chaos-reset="' . chaos_h(implode(' ', $reset)) . '"' : '') . '>';
+	foreach ($options as $value => $text) {
+		$html .= '<option value="' . chaos_h((string)$value) . '"' . ((string)$value === $selected ? ' selected' : '') . '>'
+			. chaos_h($text) . '</option>';
+	}
+	return $html . '</select></label>';
+}
+
+/** A GET filter form to page.php: $hidden (name => value) first, then the fields (chaos_pick_select HTML), then the
+ * submit button. $anchor: the part of the page to land on (kept by the browser on submit). Loads chaos-pick.js. */
+function chaos_pick_form(array $hidden, string $fields, string $label, string $anchor = ''): string {
+	$html = '<form class="chaos-pick" method="get" action="page' . ($anchor !== '' ? '#' . chaos_h($anchor) : '') . '"'
+		. ' aria-label="' . chaos_h($label) . '">';
+	foreach ($hidden as $name => $value) {
+		if ($value === null || (string)$value === '') {
+			continue;
+		}
+		$html .= '<input type="hidden" name="' . chaos_h((string)$name) . '" value="' . chaos_h((string)$value) . '">';
+	}
+	$html .= $fields . '<button type="submit" class="chaos-btn chaos-pick__go">' . chaos_h(function_exists('chaos_t') ? chaos_t('Show') : 'Show') . '</button></form>';
+	if (function_exists('znote_plugin_asset')) {
+		// every form names the script; the browser fetches it once and the script sets each form up once
+		$html .= '<script src="' . chaos_h(znote_plugin_asset('chaos', 'js/chaos-pick.js')) . '" defer></script>';
+	}
+	return $html;
 }
 
 } // function_exists guard

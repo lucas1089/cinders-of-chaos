@@ -161,6 +161,83 @@ function NP.equipFor(entry, level)
 	return entry.id, nil
 end
 
+-- the two parts of a kit (newplayer_config.lua header): wear = {{slot, id, count}} (the equipment, the weapon of the
+-- level: the fallback below minLevel), rest = {{id, count}} (the real weapon kept for later, the kit's backpack rows
+-- and the common items). The Everfull potions come with the wearable part, the scroll and the gold with the rest.
+function NP.kitParts(kit, level)
+	local wear, rest = {}, {}
+	for _, e in ipairs(kit.equip or {}) do
+		local id, spare = NP.equipFor(e, level)
+		wear[#wear + 1] = {slot = e.slot, id = id, count = e.count or 1}
+		if spare then
+			rest[#rest + 1] = {id = spare, count = 1}
+		end
+	end
+	for _, b in ipairs(kit.backpack or {}) do
+		rest[#rest + 1] = {id = b.id, count = b.count or 1}
+	end
+	return {wear = wear, rest = rest}
+end
+
+-- ------------------------------------------------------------------------------------------------ level 1 stats
+-- start_stats.lua: the level 1 health, mana, capacity (oz) and soul of every class, the one source of truth of every
+-- creation path. Tests may set NP.startStatsData themselves.
+function NP.startStatsCfg()
+	if not NP.startStatsData then
+		NP.startStatsData = dofile("data/scripts/chaos/start_stats.lua")
+	end
+	return NP.startStatsData
+end
+
+-- {health, mana, cap (oz), soul} of a class at a level: its start row (an unknown class: its base class's, then
+-- vocation 0's) plus its gains per level above 1 (gains = {hp, mana, cap}, the vocation's; none: the row's own gains)
+function NP.statsFor(vocId, level, gains, S)
+	S = S or NP.startStatsCfg()
+	vocId = tonumber(vocId) or 0
+	local row = S.stats[vocId] or S.stats[baseClassOf(vocId) or -1] or S.stats[0]
+	local up = math.max(0, (tonumber(level) or 1) - 1)
+	gains = gains or {hp = row.gainhp, mana = row.gainmana, cap = row.gaincap}
+	return {health = row.health + up * (gains.hp or 0), mana = row.mana + up * (gains.mana or 0),
+		cap = row.cap + up * (gains.cap or 0), soul = row.soul or 100}
+end
+
+-- the experience of a level (the engine's formula: level 8 = 4200)
+function NP.expForLevel(level)
+	local l = (tonumber(level) or 1) - 1
+	return floor((50 * l * l * l - 150 * l * l + 400 * l) / 3)
+end
+
+-- the level a new character starts at (start_stats.lua startLevel) and its experience
+function NP.startLevel(S)
+	S = S or NP.startStatsCfg()
+	local level = tonumber(S.startLevel) or 1
+	return level, tonumber(S.startExperience) or NP.expForLevel(level)
+end
+
+-- should the login raise this character to the start level? Only one that never got its kit (brand new, or leaving
+-- the closed tutorial island) and is below it
+function NP.startLevelDue(level, hasKit, S)
+	local start = NP.startLevel(S)
+	return not hasKit and (tonumber(level) or 1) < start
+end
+
+-- the login correction: cur = {maxHealth, maxMana, cap (hundredths, as the engine counts)}. nil when nothing is
+-- below the class's values or the level is past S.fixUpToLevel; else {maxHealth, maxMana, cap (hundredths)} with each
+-- value raised to the class's (never lowered)
+function NP.statsFix(vocId, level, cur, gains, S)
+	S = S or NP.startStatsCfg()
+	level = tonumber(level) or 1
+	if level < 1 or level > (S.fixUpToLevel or 1) then
+		return nil
+	end
+	local want = NP.statsFor(vocId, level, gains, S)
+	local h, m, c = tonumber(cur.maxHealth) or 0, tonumber(cur.maxMana) or 0, tonumber(cur.cap) or 0
+	if h >= want.health and m >= want.mana and c >= want.cap * 100 then
+		return nil
+	end
+	return {maxHealth = math.max(h, want.health), maxMana = math.max(m, want.mana), cap = math.max(c, want.cap * 100)}
+end
+
 -- ------------------------------------------------------------------------------------------------ flags
 function NP.key(name, c)
 	c = c or NP.cfg()
@@ -277,38 +354,65 @@ function NP.milestoneItems(index, role, c)
 end
 
 -- ------------------------------------------------------------------------------------------------ tutorial island
--- Geometry, all derived from cfg.tutorial: rooms side by side west to east, each roomW x roomH, divider walls between
--- them with a gate in the middle row, water around (the island's coast) and waterRing more rows of water outside.
+-- Geometry, all derived from cfg.tutorial: rooms (pens) side by side west to east, each roomW x roomH, closed by a
+-- wooden fence (the coast ring and the dividers, a gap in the middle row of each divider: the gate). Around the fence a
+-- strip of land landPad tiles wide (trees, bushes, lamps, a path to the dock; never reachable: the fence is closed),
+-- then water out to where no view from inside a pen ends (view: the client's largest view, 29 x 21, plus one tile),
+-- so a player on the island never sees an unmapped (black) tile. A dock and a boat on the west shore.
+-- L.coast is the fenced rectangle (onIsland), L.land the land, L.outer every tile the island builds.
 function NP.layout(t)
 	t = t or NP.cfg().tutorial
 	local o = t.origin
 	local L = {z = o.z, rooms = {}, gates = {}}
-	local W = t.rooms * (t.roomW + 1) -- x offset of the east coast
-	local H = t.roomH + 1 -- y offset of the south coast
+	local W = t.rooms * (t.roomW + 1) -- x offset of the east fence
+	local H = t.roomH + 1 -- y offset of the south fence
 	L.coast = {x1 = o.x, y1 = o.y, x2 = o.x + W, y2 = o.y + H}
-	L.outer = {x1 = o.x - t.waterRing, y1 = o.y - t.waterRing, x2 = o.x + W + t.waterRing, y2 = o.y + H + t.waterRing}
+	local pad = t.landPad or 0
+	L.land = {x1 = o.x - pad, y1 = o.y - pad, x2 = o.x + W + pad, y2 = o.y + H + pad}
 	local cy = o.y + floor((t.roomH + 1) / 2)
+	L.cy = cy
 	for i = 1, t.rooms do
 		local x1 = o.x + (i - 1) * (t.roomW + 1) + 1
 		local x2 = x1 + t.roomW - 1
 		local cx = x1 + floor(t.roomW / 2)
 		L.rooms[i] = {
-			x1 = x1, y1 = o.y + 1, x2 = x2, y2 = o.y + t.roomH,
+			x1 = x1, y1 = o.y + 1, x2 = x2, y2 = o.y + t.roomH, cx = cx,
 			statue = {x = cx, y = o.y + 2, z = o.z},
 			marker = {x = cx, y = o.y + 3, z = o.z},
 			arrival = {x = x1 + 1, y = cy, z = o.z},
+			sign = {x = x1, y = cy - 1, z = o.z}, -- the station's signpost, west of the path where the room begins
 			basins = {{x = x1, y = o.y + 1, z = o.z}, {x = x2, y = o.y + t.roomH, z = o.z}},
-			decor = {{x = x2, y = o.y + 1, z = o.z}, {x = x1, y = o.y + t.roomH, z = o.z}}
+			decor = {{x = x2, y = o.y + 1, z = o.z}, {x = x1, y = o.y + t.roomH, z = o.z},
+				{x = x1 + 2, y = o.y + t.roomH, z = o.z}, {x = x2 - 1, y = o.y + 1, z = o.z},
+				{x = x1, y = o.y + 3, z = o.z}, {x = x2, y = o.y + t.roomH - 4, z = o.z}}
 		}
 		if i < t.rooms then
 			L.gates[i] = {x = x2 + 1, y = cy, z = o.z}
 		end
 	end
 	local r1 = L.rooms[1]
-	L.skipStatue = {x = r1.x1 + 1, y = r1.y1, z = o.z}
+	-- the goblin statue (skip) right beside the arrival tile: the first thing a new character sees
+	L.skipStatue = {x = r1.x1, y = cy + 1, z = o.z}
 	L.spawns = {{x = r1.x2 - 1, y = r1.y2 - 1, z = o.z}, {x = r1.x2 - 2, y = r1.y2 - 2, z = o.z}, {x = r1.x2, y = r1.y2 - 3, z = o.z}}
 	local r5 = L.rooms[t.rooms]
 	L.exit = {x = r5.x2 - 1, y = cy, z = o.z}
+	-- every tile a player can stand on lies inside the fence: the water reaches past the view from any of them
+	local view = t.view or {w = 0, h = 0}
+	local mx, my = floor((view.w or 0) / 2) + 1, floor((view.h or 0) / 2) + 1
+	local ring = t.waterRing or 0
+	L.outer = {
+		x1 = math.min(L.land.x1 - ring, r1.x1 - mx), y1 = math.min(L.land.y1 - ring, r1.y1 - my),
+		x2 = math.max(L.land.x2 + ring, r5.x2 + mx), y2 = math.max(L.land.y2 + ring, r1.y2 + my)
+	}
+	-- the dock: wooden planks from the west shore into the water on the arrival row, a boat moored south of it
+	L.dock = {}
+	if pad > 0 and (t.dockLength or 0) > 0 then
+		for k = 1, t.dockLength do
+			L.dock[#L.dock + 1] = {x = L.land.x1 - k, y = cy, z = o.z}
+			L.dock[#L.dock + 1] = {x = L.land.x1 - k, y = cy + 1, z = o.z}
+		end
+		L.boat = {x = L.land.x1 - t.dockLength + 1, y = cy + 2, z = o.z}
+	end
 	return L
 end
 
@@ -316,13 +420,13 @@ local function inRect(r, z, pos)
 	return pos and pos.z == z and pos.x >= r.x1 and pos.x <= r.x2 and pos.y >= r.y1 and pos.y <= r.y2
 end
 
--- inside the island (coast included)
+-- inside the island (fence included)
 function NP.onIsland(pos, L)
 	L = L or NP.layout()
 	return inRect(L.coast, L.z, pos)
 end
 
--- the room (1..rooms) a position is in, or nil (walls, gates, coast)
+-- the room (1..rooms) a position is in, or nil (fences, gates, land)
 function NP.roomOf(pos, L)
 	L = L or NP.layout()
 	for i, r in ipairs(L.rooms) do
@@ -333,7 +437,28 @@ function NP.roomOf(pos, L)
 	return nil
 end
 
--- every tile: {x, y, z, kind} with kind water | ground | wall | gate | marker
+-- the path tiles: the middle row from the first pen's west end to the last pen's east end (through the gates), a
+-- branch up to every lesson tile, and on the land west of the fence the way to the dock
+local function pathSet(L)
+	local set = {}
+	local r1, rn = L.rooms[1], L.rooms[#L.rooms]
+	for x = r1.x1, rn.x2 do
+		set[x .. ":" .. L.cy] = true
+	end
+	for _, r in ipairs(L.rooms) do
+		for y = r.marker.y + 1, L.cy - 1 do
+			set[r.cx .. ":" .. y] = true
+		end
+	end
+	if #L.dock > 0 then
+		for x = L.land.x1, L.coast.x1 - 1 do
+			set[x .. ":" .. L.cy] = true
+		end
+	end
+	return set
+end
+
+-- every tile: {x, y, z, kind} with kind water | land | trail | fence | ground | path | gate | marker | dock
 function NP.footprint(L, t)
 	t = t or NP.cfg().tutorial
 	L = L or NP.layout(t)
@@ -341,33 +466,221 @@ function NP.footprint(L, t)
 	local function mark(p, kind)
 		special[p.x .. ":" .. p.y] = kind
 	end
+	for k in pairs(pathSet(L)) do
+		special[k] = "path"
+	end
+	for _, d in ipairs(L.dock) do
+		mark(d, "dock")
+	end
 	for _, g in ipairs(L.gates) do
 		mark(g, "gate")
 	end
 	for _, r in ipairs(L.rooms) do
 		mark(r.marker, "marker")
 	end
+	local dividers = {}
+	for i = 1, #L.rooms - 1 do
+		dividers[L.rooms[i].x2 + 1] = true
+	end
 	local list = {}
 	for y = L.outer.y1, L.outer.y2 do
 		for x = L.outer.x1, L.outer.x2 do
+			local k = x .. ":" .. y
 			local kind
-			if x <= L.coast.x1 or x >= L.coast.x2 or y <= L.coast.y1 or y >= L.coast.y2 then
-				kind = "water"
+			if not inRect(L.land, L.z, {x = x, y = y, z = L.z}) then
+				kind = special[k] == "dock" and "dock" or "water"
+			elseif not inRect(L.coast, L.z, {x = x, y = y, z = L.z}) then
+				kind = special[k] == "path" and "trail" or "land" -- the way to the dock: looks like the path, never walked
+			elseif x == L.coast.x1 or x == L.coast.x2 or y == L.coast.y1 or y == L.coast.y2 then
+				kind = "fence"
+			elseif special[k] == "gate" or special[k] == "marker" then
+				kind = special[k]
+			elseif dividers[x] then
+				kind = "fence"
 			else
-				kind = special[x .. ":" .. y]
-				if not kind then
-					kind = "ground"
-					for i = 1, #L.rooms - 1 do
-						if x == L.rooms[i].x2 + 1 then
-							kind = "wall"
-						end
-					end
-				end
+				kind = special[k] or "ground"
 			end
 			list[#list + 1] = {x = x, y = y, z = L.z, kind = kind}
 		end
 	end
 	return list
+end
+
+-- a small deterministic hash of a tile (the same island in LuaJIT and Lua 5.3, every start)
+local function tileHash(x, y, salt)
+	local h = (x * 73856093 + y * 19349663 + (salt or 0) * 83492791) % 2147483647
+	h = (h * 48271) % 2147483647
+	return h
+end
+NP.tileHash = tileHash
+
+local function pick(list, x, y, salt)
+	return list[tileHash(x, y, salt) % #list + 1]
+end
+
+-- the fence piece of a fence tile from which of its 4 neighbours are fences (measured on the live map with
+-- tools/map/derive_borders.py: 1534 runs north-south, 1536 east-west, 1533 is the north-west post (fences east and
+-- south), 1535 the south-east joint (north and west), 1538 the south end of a north-south run)
+function NP.fencePiece(n, e, s, w, f)
+	if e and s and not n and not w then
+		return f.post
+	end
+	if n and w and not e and not s then
+		return f.joint
+	end
+	if n and e and not s and not w then
+		return f.vertical -- the south-west corner
+	end
+	if n and s and (e or w) then
+		return f.joint
+	end
+	if e or w then
+		return f.horizontal
+	end
+	if n and not s then
+		return f.southEnd
+	end
+	if n or s then
+		return f.vertical
+	end
+	return f.post
+end
+
+-- the whole island as tiles to build: {x, y, z, kind, ground, items = {id, ...}, aid, ...} in build order (items in
+-- stack order: border pieces first, then the rest). Pure: newplayer_tutorial.lua builds it with Game.createTile and
+-- server/tools/areagen_export.py (area "tutorial") renders it. Every id comes from cfg.tutorial.look.
+function NP.islandModel(L, t)
+	t = t or NP.cfg().tutorial
+	L = L or NP.layout(t)
+	local look = t.look or {}
+	local A = rawget(_G, "ChaosAreaGenCore")
+	if not (A and A.borderPieces) then
+		dofile("data/scripts/chaos/areagen_core.lua")
+		A = ChaosAreaGenCore
+	end
+	local foot = NP.footprint(L, t)
+	local at = {}
+	for _, f in ipairs(foot) do
+		at[f.x .. ":" .. f.y] = f
+	end
+	local function kindAt(x, y)
+		local f = at[x .. ":" .. y]
+		return f and f.kind or "water"
+	end
+	local grassy = {land = true, ground = true, fence = true}
+	local tiles = {}
+	-- blocking things that must not stand on a lesson spot, the path, an arrival or a spawn
+	local busy = {}
+	for _, r in ipairs(L.rooms) do
+		for _, p in ipairs({r.statue, r.marker, r.arrival, r.sign}) do
+			busy[p.x .. ":" .. p.y] = true
+		end
+		for _, b in ipairs(r.basins) do
+			busy[b.x .. ":" .. b.y] = true
+		end
+	end
+	for _, p in ipairs(L.spawns) do
+		busy[p.x .. ":" .. p.y] = true
+	end
+	busy[L.skipStatue.x .. ":" .. L.skipStatue.y] = true
+	busy[L.exit.x .. ":" .. L.exit.y] = true
+	-- lamps on the land north and south of the fence, beside every gate and at both ends
+	local lamps = {}
+	if look.lamp then
+		local xs = {L.coast.x1 + 1, L.coast.x2 - 1}
+		for _, g in ipairs(L.gates) do
+			xs[#xs + 1] = g.x
+		end
+		for _, x in ipairs(xs) do
+			lamps[x .. ":" .. (L.coast.y1 - 1)] = true
+			lamps[x .. ":" .. (L.coast.y2 + 1)] = true
+		end
+		if #L.dock > 0 then
+			lamps[L.land.x1 .. ":" .. (L.cy - 1)] = true
+		end
+	end
+	for _, f in ipairs(foot) do
+		local x, y = f.x, f.y
+		local tile = {x = x, y = y, z = f.z, kind = f.kind, items = {}}
+		local k = f.kind
+		if k == "water" then
+			tile.ground = pick(look.water or {t.water}, x, y, 1)
+		elseif k == "dock" then
+			tile.ground = look.dock or t.ground
+		elseif k == "path" or k == "gate" or k == "trail" then
+			tile.ground = look.path or t.gateGround
+		elseif k == "marker" then
+			tile.ground = t.markerGround
+		else
+			tile.ground = pick(look.grass or {t.ground}, x, y, 2)
+		end
+		-- borders: the water's shore on the land, the grass's edge on the path
+		local over, pieces
+		if grassy[k] and look.shore then
+			over, pieces = "water", look.shore
+		elseif (k == "path" or k == "gate" or k == "trail") and look.pathEdge then
+			over, pieces = "grass", look.pathEdge
+		end
+		if over then
+			local function is(dx, dy)
+				local nk = kindAt(x + dx, y + dy)
+				if over == "water" then
+					return nk == "water"
+				end
+				return grassy[nk] == true
+			end
+			for _, name in ipairs(A.borderPieces(is(0, -1), is(1, 0), is(0, 1), is(-1, 0), is(1, -1), is(-1, -1), is(1, 1), is(-1, 1))) do
+				if pieces[name] then
+					tile.items[#tile.items + 1] = pieces[name]
+				end
+			end
+		end
+		local key = x .. ":" .. y
+		if k == "fence" and look.fence then
+			local function fence(dx, dy)
+				return kindAt(x + dx, y + dy) == "fence"
+			end
+			tile.items[#tile.items + 1] = NP.fencePiece(fence(0, -1), fence(1, 0), fence(0, 1), fence(-1, 0), look.fence)
+		elseif k == "land" then
+			-- the land strip: lamps, then trees and bushes on the middle rows, grass tufts and flowers elsewhere
+			local shore = kindAt(x, y - 1) == "water" or kindAt(x, y + 1) == "water" or kindAt(x - 1, y) == "water"
+				or kindAt(x + 1, y) == "water"
+			local h = tileHash(x, y, 3) % 100
+			if lamps[key] then
+				tile.items[#tile.items + 1] = look.lamp
+			elseif not shore and look.trees and h < 34 then
+				tile.items[#tile.items + 1] = pick(look.trees, x, y, 4)
+			elseif not shore and look.bushes and h < 52 then
+				tile.items[#tile.items + 1] = pick(look.bushes, x, y, 5)
+			elseif look.flowers and h < 75 then
+				tile.items[#tile.items + 1] = pick(look.flowers, x, y, 6)
+			end
+		elseif k == "ground" and not busy[key] and look.flowers then
+			-- inside the pens only things that do not block: tufts and flowers along the fences
+			local r = L.rooms[NP.roomOf({x = x, y = y, z = L.z}, L) or 1]
+			local edge = y == r.y1 or y == r.y2 or x == r.x1 or x == r.x2
+			if edge and tileHash(x, y, 7) % 100 < 45 then
+				tile.items[#tile.items + 1] = pick(look.flowers, x, y, 8)
+			end
+		elseif k == "dock" and look.bollard and (x == L.land.x1 - (t.dockLength or 0)) then
+			tile.items[#tile.items + 1] = y == L.cy and look.bollard or (look.barrel or look.bollard)
+		end
+		tiles[#tiles + 1] = tile
+	end
+	-- the boat: north to south on the water beside the dock
+	local boat = {}
+	if L.boat and look.boat then
+		for i, id in ipairs(look.boat) do
+			boat[L.boat.x .. ":" .. (L.boat.y + i - 1)] = id
+		end
+		for _, tile in ipairs(tiles) do
+			local id = boat[tile.x .. ":" .. tile.y]
+			if id and tile.kind == "water" then
+				tile.items[#tile.items + 1] = id
+			end
+		end
+	end
+	return {tiles = tiles, layout = L}
 end
 
 -- state machine. stage: 1..rooms in progress, cfg.stageDone / cfg.stageSkipped final; done: bit mask of finished
@@ -502,6 +815,28 @@ function NP.clearSnapshot(player)
 	for offset = 0, NP.SNAP_SIZE - 1 do
 		player:setStorageValue(NP.snapKey("saved") + offset, -1)
 	end
+end
+
+-- a snapshot taken before the wearable kit came (a character already on the island): its item counts follow, so the
+-- reset never takes the kit's leather armor for the island's
+function NP.snapshotAddItems(player, c)
+	c = c or NP.cfg()
+	if not NP.isSet(player:getStorageValue(NP.snapKey("saved"))) then
+		return false
+	end
+	player:setStorageValue(NP.snapKey("armorCount"), clampInt(player:getItemCount(c.tutorial.orbItem.id)))
+	return true
+end
+
+-- a snapshot taken before the stats correction (NP.fixStats): the reset puts the corrected values back, not the old
+function NP.snapshotSetStats(player, fix)
+	if not NP.isSet(player:getStorageValue(NP.snapKey("saved"))) then
+		return false
+	end
+	player:setStorageValue(NP.snapKey("maxHealth"), clampInt(fix.maxHealth))
+	player:setStorageValue(NP.snapKey("maxMana"), clampInt(fix.maxMana))
+	player:setStorageValue(NP.snapKey("cap"), clampInt(fix.cap))
+	return true
 end
 
 -- skill tries / mana spent that must arrive exactly (the reset raising back what a death took): the island's

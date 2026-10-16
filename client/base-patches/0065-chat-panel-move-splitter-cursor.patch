@@ -1,0 +1,113 @@
+# Chaos: the bottom splitter drags reliably and the chat panel owns its left margin (applies after 0001-0064).
+# Owner, build 5: the chat's height splitter did not work. Cause: UISplitter set its orientation (self.vertical) only
+# in onHoverChange, which returned early while any other cursor was pushed (game_chatpanel's width grip could leave
+# one pushed). The drag then ran the horizontal branch and changed the right margin. Now the orientation comes from
+# the shape on every move, the cursor is pushed once on hover or press and popped once.
+# game_interface's updateBottomSplitterLeftMargin keeps its value as bottomSplitter.chaosBaseMarginLeft and lets
+# ChaosChatPanel.relayout (game_chatpanel: the centred, movable group life orb + chat + mana orb) place the splitter.
+--- a/modules/corelib/ui/uisplitter.lua
++++ b/modules/corelib/ui/uisplitter.lua
+@@ -8,40 +8,48 @@
+   return splitter
+ end
+ 
+-function UISplitter:onHoverChange(hovered)
+-  --[[
+-  -- Check if margin can be changed
+-  local margin = (self.vertical and self:getMarginBottom() or self:getMarginRight())
+-  (self:canUpdateMargin(margin + 1) ~= margin or self:canUpdateMargin(margin - 1) ~= margin)
+-  --]]
++-- The orientation comes from the splitter's shape whenever it is needed. It used to be set only in onHoverChange,
++-- which returned early while any other cursor was pushed: the drag then ran as a horizontal splitter and changed the
++-- right margin (the bottom splitter "did not work"). The cursor is pushed once and popped once (pushedCursor).
++function UISplitter:isVerticalSplitter()
++  return self:getWidth() > self:getHeight()
++end
++
++function UISplitter:pushSplitterCursor()
++  if self.pushedCursor then return end
++  self.vertical = self:isVerticalSplitter()
++  self.cursortype = self.vertical and 'vertical' or 'horizontal'
++  self.pushedCursor = g_mouse.applyNativeCursor(self.cursortype) and 'native' or 'pushed'
++  if self.pushedCursor == 'pushed' then g_mouse.pushCursor(self.cursortype) end
++  self.hovering = true
++end
+ 
++function UISplitter:popSplitterCursor()
++  if not self.pushedCursor then return end
++  if self.pushedCursor == 'native' then g_mouse.restoreNativeCursor() else g_mouse.popCursor(self.cursortype) end
++  self.pushedCursor = nil
++  self.hovering = false
++end
++
++function UISplitter:onHoverChange(hovered)
+   if hovered then
+-    if not g_mouse.isUsingNativeCursor() and (g_mouse.isCursorChanged() or g_mouse.isPressed()) then return end
+-    if self:getWidth() > self:getHeight() then
+-      self.vertical = true
+-      self.cursortype = 'vertical'
+-    else
+-      self.vertical = false
+-      self.cursortype = 'horizontal'
+-    end
+-    self.hovering = true
+-    if not g_mouse.applyNativeCursor(self.cursortype) then
+-      g_mouse.pushCursor(self.cursortype)
+-    end
+-  else
+-    if not self:isPressed() and self.hovering then
+-      if not g_mouse.restoreNativeCursor() then
+-        g_mouse.popCursor(self.cursortype)
+-      end
+-      self.hovering = false
+-    end
++    if g_mouse.isPressed() and not self:isPressed() then return end -- another widget is being dragged over it
++    self:pushSplitterCursor()
++  elseif not self:isPressed() then
++    self:popSplitterCursor()
+   end
+ end
+ 
++function UISplitter:onMousePress(mousePos, button)
++  -- the cursor (and the orientation) even when the hover did not set it; the press still propagates as before
++  if button == MouseLeftButton then self:pushSplitterCursor() end
++  return false
++end
++
+ function UISplitter:onMouseMove(mousePos, mouseMoved)
+   if self:isPressed() then
+     --local currentmargin, newmargin, delta
+-    if self.vertical then
++    if self:isVerticalSplitter() then
+       local delta = mousePos.y - self:getY() - self:getHeight()/2
+       local newMargin = self:canUpdateMargin(self:getMarginBottom() - delta)
+       local currentMargin = self:getMarginBottom()
+@@ -72,10 +80,7 @@
+ 
+ function UISplitter:onMouseRelease(mousePos, mouseButton)
+   if not self:isHovered() then
+-    if not g_mouse.restoreNativeCursor() then
+-      g_mouse.popCursor(self.cursortype)
+-    end
+-    self.hovering = false
++    self:popSplitterCursor()
+   end
+ end
+ 
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -124,7 +124,13 @@
+     margin = getDefaultSidePanelWidth()
+   end
+   if bottomSplitter then
+-    bottomSplitter:setMarginLeft(margin)
++    -- game_chatpanel centres the bottom area and keeps this margin as the reserved left column of its region
++    bottomSplitter.chaosBaseMarginLeft = margin
++    local chat = rawget(_G, 'ChaosChatPanel')
++    local placed = chat and chat.relayout and chat.relayout()
++    if not placed then
++      bottomSplitter:setMarginLeft(margin)
++    end
+   end
+   if g_app.isMobile() and gameBottomPanel then
+     gameBottomPanel:setMarginLeft(margin)

@@ -42,14 +42,14 @@ $chaosRank = static fn (int $i): string => 'sh-rank-' . ($i <= 3 ? $i : 'n');
 			<li>
 				<span class="sh-rank-num <?= $chaosRank($rank) ?>"><?= $rank ?></span>
 				<div class="sh-rank-avatar"><img src="<?= $chaosH($chaosBadge((int)$p['vocation'])) ?>" alt="" loading="lazy" title="<?= $chaosH($chaosName((int)$p['vocation'])) ?>"></div>
-				<span class="sh-rank-name" title="<?= $chaosH($chaosName((int)$p['vocation'])) ?>"><a href="characterprofile.php?name=<?= rawurlencode((string)$p['name']) ?>"><?= $chaosH($p['name']) ?></a></span>
+				<span class="sh-rank-name" title="<?= $chaosH($chaosName((int)$p['vocation'])) ?>"><a href="characterprofile?name=<?= rawurlencode((string)$p['name']) ?>"><?= $chaosH($p['name']) ?></a></span>
 				<span class="sh-rank-level"><?= (int)$p['level'] ?></span>
 			</li>
 		<?php endforeach; else: ?>
 			<li><span class="sh-rank-name"><?= t('common.nothing') ?></span></li>
 		<?php endif; ?>
 	</ul>
-	<a href="page.php?plugin=chaos&amp;p=leaderboards" class="sh-see-more"><i class="fa fa-list"></i> Leaderboards</a>
+	<a href="page?plugin=chaos&amp;p=leaderboards" class="sh-see-more"><i class="fa fa-list"></i> Leaderboards</a>
 </div>
 
 <div class="sh-panel">
@@ -59,7 +59,7 @@ $chaosRank = static fn (int $i): string => 'sh-rank-' . ($i <= 3 ? $i : 'n');
 			<div class="sh-guild-item">
 				<span class="sh-rank-num <?= $chaosRank($rank) ?>"><?= $rank ?></span>
 				<div class="sh-guild-info">
-					<div class="sh-guild-name"><a href="guilds.php?name=<?= rawurlencode((string)$g['name']) ?>"><?= $chaosH($g['name']) ?></a></div>
+					<div class="sh-guild-name"><a href="guilds?name=<?= rawurlencode((string)$g['name']) ?>"><?= $chaosH($g['name']) ?></a></div>
 					<div class="sh-guild-sub"><?= t('void.rank.members') ?></div>
 				</div>
 				<div class="sh-guild-pts"><?= (int)$g['members'] ?></div>
@@ -68,5 +68,5 @@ $chaosRank = static fn (int $i): string => 'sh-rank-' . ($i <= 3 ? $i : 'n');
 			<div class="sh-guild-item"><span class="sh-guild-name"><?= t('common.nothing') ?></span></div>
 		<?php endif; ?>
 	</div>
-	<a href="topguilds.php" class="sh-see-more"><i class="fa fa-list"></i> <?= t('void.rank.view_full') ?></a>
+	<a href="topguilds" class="sh-see-more"><i class="fa fa-list"></i> <?= t('void.rank.view_full') ?></a>
 </div>

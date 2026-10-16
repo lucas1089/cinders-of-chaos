@@ -4,7 +4,11 @@
 -- Overview: server/README.md "New players".
 --
 -- Kit: a brand-new character (lastLoginSaved 0, kit storage never set) gets the kit of its class. With the tutorial
--- island on, it gets it when it leaves the island instead (exit or !skiptutorial). Existing characters never get one
+-- island on, the wearable part (weapon, armour, backpack, Everfull potions: NP.giveWearable) is put on when it
+-- arrives on the island and the rest (gold, scroll, rope, shovel, food, a spare weapon) comes when it leaves the
+-- island (exit or !skiptutorial), so nothing is given twice.
+-- Stats: at every login until it ran once, a level 1-2 character below its class's start values (start_stats.lua) is
+-- raised to them (NP.fixStats; the creation paths write the same values). Existing characters never get one
 -- by logging in. The base server's own first-login items (creaturescripts/firstitems.lua) only equip vocation 0, which
 -- the kit skips; the base starter chest (scripts/customs/actions/first_chest.lua, storage 33735) is marked as opened
 -- when the kit is given, so nobody collects both. No base file is changed.
@@ -58,9 +62,15 @@ function NP.vocationName(vocId)
 end
 
 -- toast through game_chaosnotify (action "newplayer"; an older client ignores it)
-function NP.toast(player, message)
+-- extra: more fields of the message (openHelper = true, hint = text: the client opens the Helper on Auto setup,
+-- game_helperrotation onboarding.lua; an older client shows only the toast)
+function NP.toast(player, message, extra)
 	if ChaosOpcodes and ChaosOpcodes.notifications then
-		player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode({action = "newplayer", message = message}))
+		local msg = {action = "newplayer", message = message}
+		for k, v in pairs(extra or {}) do
+			msg[k] = v
+		end
+		player:sendExtendedOpcode(ChaosOpcodes.notifications, json.encode(msg))
 	end
 end
 
@@ -131,9 +141,13 @@ local function makeScroll(player, container, uses)
 	return item
 end
 
--- the kit backpack: in the backpack slot when it is free, else inside the character's own backpack
-local function kitContainer(player, kit)
+-- the kit backpack: the character's own backpack when the wearable part put it there (it is the kit's), else a new
+-- one in the backpack slot when it is free, else inside the character's own backpack
+local function kitContainer(player, kit, reuse)
 	local main = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if reuse and main and main:isContainer() then
+		return main
+	end
 	if not main then
 		local bp = player:addItem(kit.backpackId, 1, false, 1, CONST_SLOT_BACKPACK)
 		if bp and bp:isContainer() then
@@ -149,35 +163,62 @@ local function kitContainer(player, kit)
 	return (bp and bp:isContainer()) and bp or nil
 end
 
--- give the kit of the player's vocation; returns true, kit or false, reason. Sets the kit flag.
-function NP.giveKit(player)
+-- the wearable part of the kit (NP.kitParts "wear"): the class's weapon and armour on, the kit backpack and the
+-- Everfull potions in it. Given once (storage `wear`), on arrival at the tutorial island or with the rest of the kit.
+-- Returns true when it was given now, plus whether something went to the inbox.
+function NP.giveWearable(player, force)
+	if not force and (NP.isSet(getS(player, "wear")) or NP.isSet(getS(player, "kit"))) then
+		return false
+	end
+	local kit = NP.kitFor(player:getVocation():getId())
+	if not kit then
+		return false
+	end
+	local parts = NP.kitParts(kit, player:getLevel())
+	local container = kitContainer(player, kit, false)
+	local inbox = false
+	for _, e in ipairs(parts.wear) do
+		local slot = SLOTS[e.slot]
+		local placed = false
+		if slot and not player:getSlotItem(slot) then
+			placed = player:addItem(e.id, e.count or 1, false, 1, slot) ~= nil
+		end
+		if not placed then
+			inbox = giveStack(player, container, e.id, e.count or 1) or inbox
+		end
+	end
+	if ChaosPotions and ChaosPotions.giveAll then -- the Everfull health and mana potions (potions.lua)
+		ChaosPotions.giveAll(player, container)
+	end
+	setS(player, "wear", os.time())
+	-- a snapshot taken before this (a character already on the island): the kit's items are not the island's
+	if NP.snapshotAddItems then
+		NP.snapshotAddItems(player)
+	end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You are wearing the %s starter gear. Your Everfull potions are in your backpack.",
+		NP.vocationName(player:getVocation():getId())))
+	return true, inbox
+end
+
+-- give the kit of the player's vocation; returns true, kit or false, reason. Sets the kit flag. The wearable part
+-- comes only when it was not given yet (on arrival at the island); `full` (staff) gives both parts again.
+function NP.giveKit(player, full)
 	local vocId = player:getVocation():getId()
 	local kit = NP.kitFor(vocId)
 	if not kit then
 		return false, "no kit for vocation " .. vocId
 	end
-	local container = kitContainer(player, kit)
-	local inbox = false
 	local level = player:getLevel()
-	for _, e in ipairs(kit.equip) do
-		local id, spare = NP.equipFor(e, level)
-		local slot = SLOTS[e.slot]
-		local placed = false
-		if slot and not player:getSlotItem(slot) then
-			placed = player:addItem(id, e.count or 1, false, 1, slot) ~= nil
-		end
-		if not placed then
-			inbox = giveStack(player, container, id, e.count or 1) or inbox
-		end
-		if spare then
-			inbox = giveStack(player, container, spare, 1) or inbox
-		end
+	local parts = NP.kitParts(kit, level)
+	local inbox = false
+	local hadWear = NP.isSet(getS(player, "wear"))
+	if full or not hadWear then
+		local _, wearInbox = NP.giveWearable(player, true)
+		inbox = inbox or wearInbox == true
 	end
-	for _, b in ipairs(kit.backpack) do
+	local container = kitContainer(player, kit, true)
+	for _, b in ipairs(parts.rest) do
 		inbox = giveStack(player, container, b.id, b.count or 1) or inbox
-	end
-	if ChaosPotions and ChaosPotions.giveAll then -- the Everfull health and mana potions (potions.lua)
-		ChaosPotions.giveAll(player, container)
 	end
 	makeScroll(player, container, kit.templeScrollUses)
 	if kit.gold > 0 then
@@ -191,6 +232,64 @@ function NP.giveKit(player)
 		NP.vocationName(vocId), inbox and Chaos.t(player, " Some of it did not fit: it is in your inbox.") or ""))
 	player:getPosition():sendMagicEffect(CONST_ME_GIFT_WRAPS or CONST_ME_MAGIC_BLUE)
 	return true, kit
+end
+
+-- ------------------------------------------------------------------------------------------------ start level and stats
+-- Once per character (storage statsFixed): a character that never got its kit (brand new, or leaving the closed
+-- tutorial island) and is below the start level (start_stats.lua startLevel, 8) gets exactly that level's experience;
+-- then a character up to fixUpToLevel whose maximum health, mana or capacity is below its class's for its level
+-- (made by an old add-account.sh, or by the website's flat 150 health / 0 mana / 400 cap) is raised to them. Never
+-- lowers anything.
+function NP.raiseToStart(player)
+	local level, exp = NP.startLevel()
+	-- only a new character (its first login) or one the tutorial island had: an old character without a kit row (made
+	-- before the kits existed) keeps its level
+	local fresh = player:getLastLoginSaved() <= 0 or (tonumber(getS(player, "stage")) or -1) >= 1
+	if not fresh or not NP.startLevelDue(player:getLevel(), NP.isSet(getS(player, "kit"))) then
+		return false
+	end
+	local cur = player:getExperience()
+	if cur < exp then
+		player:addExperience(exp - cur, false)
+	end
+	-- an experience bonus (events, the store) may overshoot: exactly the start level's experience
+	cur = player:getExperience()
+	if cur > exp then
+		player:removeExperience(cur - exp, false)
+	end
+	print(string.format("[newplayer] %s: raised to the start level %d (%d experience)", player:getName(), level, exp))
+	return true
+end
+
+function NP.fixStats(player)
+	if NP.isSet(getS(player, "statsFixed")) then
+		return false
+	end
+	NP.raiseToStart(player)
+	local voc = player:getVocation()
+	local gains = {hp = voc:getHealthGain(), mana = voc:getManaGain(), cap = voc:getCapacityGain()}
+	local fix = NP.statsFix(voc:getId(), player:getLevel(),
+		{maxHealth = player:getMaxHealth(), maxMana = player:getMaxMana(), cap = player:getCapacity()}, gains)
+	if fix then
+		player:setMaxHealth(fix.maxHealth)
+		player:setMaxMana(fix.maxMana)
+		player:setCapacity(fix.cap)
+		-- setHealth stops at the base maximum; this engine's addHealth takes (damage type, amount) (ascension.lua)
+		player:setHealth(player:getMaxHealth())
+		local missing = player:getMaxHealth() - player:getHealth()
+		if missing > 0 then
+			pcall(player.addHealth, player, "healing", missing)
+		end
+		player:addMana(player:getMaxMana())
+		print(string.format("[newplayer] %s: level %d stats raised to %d health, %d mana, %d cap (start_stats.lua)",
+			player:getName(), player:getLevel(), fix.maxHealth, fix.maxMana, math.floor(fix.cap / 100)))
+		-- a snapshot of the island (the reset puts it back) gets the new values too
+		if NP.snapshotSetStats then
+			NP.snapshotSetStats(player, fix)
+		end
+	end
+	setS(player, "statsFixed", 1)
+	return fix ~= nil
 end
 
 -- ------------------------------------------------------------------------------------------------ home town
@@ -221,10 +320,20 @@ function NP.showWelcome(player, force)
 	end
 	local w = C().welcome
 	setS(player, "welcome", 1)
-	NP.modal(player, C().tutorial.modalBase, w.title,
-		Chaos.t(player, w.text, player:getName(), NP.vocationName(player:getVocation():getId()),
-			NP.giftLine(player:getLevel(), nil, Chaos.lang(player))))
-	NP.toast(player, Chaos.t(player, w.toast))
+	local text = Chaos.t(player, w.text, player:getName(), NP.vocationName(player:getVocation():getId()),
+		NP.giftLine(player:getLevel(), nil, Chaos.lang(player)))
+	if w.window then
+		NP.modal(player, C().tutorial.modalBase, w.title, text)
+	else
+		player:sendTextMessage(MESSAGE_STATUS_CONSOLE_BLUE or MESSAGE_INFO_DESCR, Chaos.t(player, w.title) .. "\n" .. text)
+	end
+	-- the first steps: the Helper opens on its Auto setup button (owner design 2026-10-16)
+	if w.helper and w.helper.open then
+		NP.toast(player, Chaos.t(player, w.firstToast or w.toast),
+			{openHelper = true, hint = Chaos.t(player, w.helper.hint)})
+	else
+		NP.toast(player, Chaos.t(player, w.toast))
+	end
 	return true
 end
 
@@ -285,12 +394,35 @@ local login = CreatureEvent("ChaosNewPlayerLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosNewPlayerAdvance")
 	local first = player:getLastLoginSaved() <= 0
-	-- the tutorial island (newplayer_tutorial.lua) takes new characters and resumes the ones on it
-	if NP.tutorialLogin and NP.tutorialLogin(player, first) then
+	local function fix()
+		local okF, errF = pcall(NP.fixStats, player)
+		if not okF then
+			print("[newplayer] start level check of " .. player:getName() .. " failed: " .. tostring(errF))
+		end
+	end
+	-- the start level and the class's stats: with the island on before it (its snapshot keeps what it finds); with it
+	-- off after it, so a character it lets go of (its reset puts back the level it came with) is raised then
+	local islandOn = C().tutorial.enabled
+	if islandOn then
+		fix()
+	end
+	-- the tutorial island (newplayer_tutorial.lua): with it on it takes new characters and resumes the ones on it; with
+	-- it off it sends a character still on it to the temple with its kit
+	local handled = NP.tutorialLogin and NP.tutorialLogin(player, first)
+	if not islandOn then
+		fix()
+	end
+	if handled then
 		return true
 	end
 	if NP.kitDueAtLogin(getS(player, "kit"), player:getLastLoginSaved()) and NP.kitFor(player:getVocation():getId()) then
+		-- a new character: the temple of the main city and the full kit now, in this login event, so its first frame
+		-- shows it in Cinderhold wearing the kit; the welcome and the Helper a moment later (the client must be in game)
 		NP.settleHome(player, true)
+		local okK, errK = pcall(NP.giveKit, player)
+		if not okK then
+			print("[newplayer] kit of " .. player:getName() .. " failed: " .. tostring(errK))
+		end
 		NP.kitAndWelcome(player)
 	elseif NP.kitDueAfterTutorial(getS(player, "kit"), getS(player, "stage")) and NP.kitFor(player:getVocation():getId()) then
 		-- it left the island and logged out before the kit came (NP.tutorialFinish gives it a second later)
@@ -331,7 +463,7 @@ function admin.onSay(player, words, param)
 	end
 	local reply
 	if what == "" or what == "kit" then
-		local ok, res = NP.giveKit(target)
+		local ok, res = NP.giveKit(target, true)
 		reply = ok and ("Kit '" .. res.name .. "' given to " .. target:getName() .. ".") or ("No kit: " .. tostring(res))
 	elseif what == "welcome" then
 		NP.showWelcome(target, true)

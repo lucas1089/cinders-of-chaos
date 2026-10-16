@@ -8,13 +8,46 @@
  * form: the name rules ($config minL, maxL, maxW, invalidNameTags, creatureNameTags), a taken name, the class
  * ($config['available_vocations'], narrowed to the account's class lock by plugins/chaos/plugin.php or by the API),
  * the town, the sex, the character limit ($config['max_characters'], set per account by the plugin or the API) and
- * the IP check. Only the form token is the page's own (the API has its own authentication).
+ * the IP check. Only the form token is the page's own (the API has its own authentication). One check is ours: a
+ * name that is a page address of the site (chaos_character_name_reserved).
  *
  * Needs ZnoteX's engine/function/general.php and users.php (validate_name, user_character_exist, t, ...), loaded by
  * engine/init.php before any caller.
  */
 
 if (!function_exists('chaos_character_form_errors')) {
+
+/**
+ * The top-level addresses of the site (README "Web server", clean addresses): /highscores is highscores.php, so a
+ * character named Highscores could never be reached at /Highscores. ZnoteX's pages (letters only: a character name
+ * has no digits or _), its folders, ours and the client services path. The game's name change refuses the same list
+ * (server chaos_constants.lua shopServices.name.reserved; website/tests/chaos_client_api_test.php compares them).
+ */
+function chaos_reserved_character_names(): array {
+	return array(
+		'achievements', 'auctionchar', 'bans', 'blank', 'buypoints', 'changelog', 'changepassword', 'characterprofile',
+		'config', 'contact', 'createcharacter', 'creatures', 'credits', 'deaths', 'downloads', 'failed', 'faq', 'forum',
+		'gallery', 'guilds', 'guildwar', 'helpdesk', 'highscores', 'house', 'houses', 'index', 'ipn', 'items', 'killers',
+		'login', 'logout', 'mailtest', 'market', 'myaccount', 'onlinelist', 'page', 'payment', 'powergamers', 'protected',
+		'queststatus', 'recovery', 'register', 'serverinfo', 'settings', 'shop', 'spells', 'sub', 'success', 'support',
+		'team', 'topguilds', 'toponline', 'twofa', 'twtrnews', 'voting',
+		'admin', 'api', 'assets', 'cache', 'docker', 'engine', 'install', 'landing', 'layouts', 'locale', 'lua', 'plugins',
+		'special', 'sql', 'tests', 'tools', 'updates', 'vendor', 'clientservices',
+	);
+}
+
+/** True when a character name is a top-level address of the site: the list above, or a page or folder there now. */
+function chaos_character_name_reserved(string $name): bool {
+	$lower = strtolower(trim($name));
+	if (!preg_match('/^[a-z]+$/', $lower)) {
+		return false; // more than one word: never an address
+	}
+	if (in_array($lower, chaos_reserved_character_names(), true)) {
+		return true;
+	}
+	$root = dirname(__DIR__, 2);
+	return is_file($root . '/' . $lower . '.php') || is_dir($root . '/' . $lower);
+}
 
 /**
  * The errors of a character creation request (an empty list: it may be created). $post is the form (name,
@@ -64,6 +97,10 @@ function chaos_character_form_errors(array &$post, int $accountId, array $userDa
 			}
 			if(in_array(strtolower($username), $config['creatureNameTags'])) {
 				$errors[] = t('createchar.creature_name');
+			}
+			// Cinders of Chaos (not from createcharacter.php): a name that is a page address would be hidden by the page
+			if (chaos_character_name_reserved($username)) {
+				$errors[] = t('reg.restricted_word');
 			}
 			// Validate vocation id
 			if (!in_array((int)($post['selected_vocation'] ?? 0), $config['available_vocations'])) {
