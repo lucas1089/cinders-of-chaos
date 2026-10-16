@@ -18,6 +18,7 @@ Payment method is listed for reference only. The owner said Pix and BRL billing 
 - OVHcloud has no Brazilian region. Its nearest region is about 100-130 ms from São Paulo. So OVH is for EU gateways only.
 - The login server hands the client one game host name (`ip` in config.lua, see LAUNCH.md). Use GeoDNS on that one name (section 5).
 - Every cloud candidate uses network disks, not local NVMe. Our slow COMMITs came from a shared disk. Run the disk check from LAUNCH.md on any cloud backend before launch.
+- One-day trial of a rented backend (steal, single core, fsync, RAM, a 300/400 bot load test, the filter check, keep / upgrade / refund before day 7): docs/HOST_TRIAL.md (Portuguese). First target: Hypehost "Magic Sword" (6 vCPU Ryzen 9, 16 GB, 200 GB NVMe, R$ 359), upgrade path "Golden Boots" (10 vCPU, 32 GB, 340 GB).
 
 ## 1. Reliability check of 2026-10-16
 
@@ -219,7 +220,7 @@ All totals use the rates at the top. OVH is excl. VAT. Cloud egress beyond the f
 Before paying for any month:
 - Ask each gateway host in writing: mitigation capacity, whether arbitrary TCP on 7171/7172/8090 is filtered or passed, whether they null-route, and who the upstream is.
 - Test a full login through each gateway with our client. Check the PROXY header reaches the backend.
-- Run the load test's disk check on the backend (the slow COMMIT warning in LAUNCH.md).
+- Run the load test's disk check on the backend (the slow COMMIT warning in LAUNCH.md). `server/tools/host_trial.sh` does it, with the rest of the trial (docs/HOST_TRIAL.md).
 - Prefer monthly billing until each host is proven.
 
 ## 7. Rejected hosts
