@@ -333,9 +333,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
 34. `0056` (Lua and OTUI): fixes from the winpkg-35 test (owner's screenshots 14-31, MANIFEST.md "Client fixes of
     winpkg-35"). `client_settings`: the four rarity options of Graphics one per row (the right column began at a
     fixed 250 px and ran over the left one and the info icon) with an Orb size box (`liquidOrbSize`, small / medium /
-    large, read by `game_shaderfx`); the Graphics Engine box greyed out with a tooltip when `g_graphics.getVersion()`
-    is not OpenGL ES (only an ANGLE build can switch to Vulkan or DirectX; the Windows package is desktop OpenGL, so
-    "DirectX11" there was a label); the Options menu buttons sized by their real height (22 px entries, 21 px
+    large, read by `game_shaderfx`); the Graphics Engine box lists OpenGL alone, greyed out with a tooltip, when
+    `g_graphics.getVersion()` is not OpenGL ES (only an ANGLE build can draw through Vulkan or DirectX; the Windows and
+    Linux packages are desktop OpenGL, so the Vulkan and DirectX entries were labels that did nothing); the Options menu buttons sized by their real height (22 px entries, 21 px
     sub-items, 3 px gap; 20 px squeezed "Graphics" / "Effects") and named by `tr()` labels drawn over the tab images
     (their 7 px baked words are erased, `tools/gen_ui_reskin.py` TEXT_FREE); `backgroundFrameRate` and `limitEffects`
     no longer log "Failed to apply tmp option" while their no-limit box is checked. `game_things`: HD Sprite

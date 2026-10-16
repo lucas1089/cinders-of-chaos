@@ -27,9 +27,9 @@
  		value = 2,
          apply = function(value)
 +            -- Only an OpenGL ES build (ANGLE) can switch to Vulkan or DirectX at start; a desktop OpenGL build
-+            -- always draws with OpenGL, so the choice shows OpenGL there (the combo box is greyed out)
-+            if not isOpenGlEsRenderer() and value ~= 5 then
-+                addEvent(function() GameOptions:setOption('engine', 5) end)
++            -- always draws with OpenGL and its combo box lists OpenGL alone (index 1)
++            if not isOpenGlEsRenderer() and value ~= 1 then
++                addEvent(function() GameOptions:setOption('engine', 1) end)
 +            end
              return true
          end,
@@ -64,18 +64,32 @@
      apply = function(value)
 --- a/mods/client_settings/options/graphics.otui
 +++ b/mods/client_settings/options/graphics.otui
-@@ -28,6 +28,10 @@ GraphicsWindow < Panel
-       self:addOption("DirectX11 (WARP)", nil, true)
-       self:addOption("DirectX9", nil, true)
-       self:addOption("OpenGL", nil, true)
-+      if not modules.client_settings.isOpenGlEsRenderer() then
+@@ -23,11 +23,19 @@ GraphicsWindow < Panel
+     margin-top: -5
+     color: $var-text-cip-color
+     @onSetup: |
+-      self:addOption("Vulkan", nil, true)
+-      self:addOption("DirectX11", nil, true)
+-      self:addOption("DirectX11 (WARP)", nil, true)
+-      self:addOption("DirectX9", nil, true)
+-      self:addOption("OpenGL", nil, true)
++      -- only an OpenGL ES (ANGLE) build can draw through Vulkan or DirectX; our builds are desktop OpenGL, so they list
++      -- OpenGL alone (greyed out: there is nothing to pick)
++      if modules.client_settings.isOpenGlEsRenderer() then
++        self:addOption("Vulkan", nil, true)
++        self:addOption("DirectX11", nil, true)
++        self:addOption("DirectX11 (WARP)", nil, true)
++        self:addOption("DirectX9", nil, true)
++        self:addOption("OpenGL", nil, true)
++      else
++        self:addOption("OpenGL", nil, true)
 +        self:setEnabled(false)
-+        self:setTooltip(tr('This client draws with OpenGL. Vulkan and DirectX are only available in a client built with OpenGL ES (ANGLE).'))
++        self:setTooltip(tr('This client draws with OpenGL.'))
 +      end
  
      @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
  
-@@ -325,7 +329,9 @@ GraphicsWindow < Panel
+@@ -325,7 +333,9 @@ GraphicsWindow < Panel
        !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
  
    FlatPanel
@@ -86,7 +100,7 @@
      anchors.top: prev.bottom
      anchors.right: parent.right
      anchors.left: parent.left
-@@ -360,9 +366,9 @@ GraphicsWindow < Panel
+@@ -360,9 +370,9 @@ GraphicsWindow < Panel
        color: $var-text-cip-color
        text-offset: 14 -2
        anchors.left: parent.left
@@ -98,7 +112,7 @@
        image-source: /images/ui/checkbox
        image-clip: 0 0 12 12
        @onSetup: |
-@@ -378,8 +384,8 @@ GraphicsWindow < Panel
+@@ -378,8 +388,8 @@ GraphicsWindow < Panel
        color: $var-text-cip-color
        text-offset: 14 -2
        anchors.left: parent.left
@@ -109,7 +123,7 @@
        margin-left: 16
        image-source: /images/ui/checkbox
        image-clip: 0 0 12 12
-@@ -396,15 +402,41 @@ GraphicsWindow < Panel
+@@ -396,15 +406,41 @@ GraphicsWindow < Panel
        color: $var-text-cip-color
        text-offset: 14 -2
        anchors.left: parent.left
