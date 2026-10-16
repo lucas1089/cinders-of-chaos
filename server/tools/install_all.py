@@ -150,7 +150,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   autoloot     data/talkactions/talkactions.xml: the stock XML "!autoloot" line is commented out, so autoloot.lua's own
                talkaction runs and the window refreshes (README "Install" 7)
   commands     tools/install_commands.py         the players' spoken "!" commands of the base server commented out (every one is in the
-               client's menu now; README "Player commands: the menu")
+               client's menu now; README "Player commands: the menu"); the base /pos made staff only
   autosave     tools/patch_base_save.py          the hourly autosave runs Game.saveIncremental (engine src-patch 0026: players
                in small batches over several ticks, only the changed houses) and keeps the game state (a closed server
                stays closed); the warnings stay; the logout writes the outfit columns and the skill history row only

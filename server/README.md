@@ -387,7 +387,8 @@ server/
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
-   every one of them is in the client menu (see "Player commands: the menu"). It also covers the stock `!autoloot`.
+   every one of them is in the client menu (see "Player commands: the menu"). It also covers the stock `!autoloot`
+   and makes the base `/pos` staff only.
 7a. Autosave: `python3 -I server/tools/patch_base_save.py <server>/data [--dry-run]` (idempotent; `install_all.py` step
    `autosave`, after `commands`) switches the base hourly autosave to `Game.saveIncremental` and keeps the game state;
    the logout writes the outfit columns and the skill history row only on a change. Needs engine patch 0026 for the
@@ -787,6 +788,7 @@ base server (idempotent; `--dry-run` lists the changes).
 | `!buyhouse`, `!leavehouse`, `!sellhouse <player>` | Economy > More > House |
 | `!ancestralstore <group>, <n>` | Economy > More > Ancestral Store |
 | `!online`, `!uptime`, `!serverinfo` | System > Server Info |
+| `/pos` (base revscript, answered players too) | Character > Character Info; staff only now (`install_commands.py` puts a staff guard in its onSay) |
 | `!commands` | removed (the menu is the list) |
 | `!report <text>` | removed: System > Report a Bug; a player: System > Report a Player, right-click > Report Player (`game_antibot`) |
 
@@ -794,7 +796,11 @@ Kept as a typed player command: `!bless` (owner exception 2026-10-15; buys the m
 "Gentle deaths and blessings"). Kept as typed commands: every staff command (`/` words with an access check: `/rift`, `/season`, `/arena`, `/daily`,
 `/leaderboard`, `/patchnotes`, `/spells reload`, `/supports reload`, `/achievements`, `/invasion`, `/worldboss`,
 `/siege`, `/guild`, `/pet`, `/reports`, `/classunlock`, `/ascendset`, `/towerrun`, `/goblin`, `/coins`, `/gmnotify`,
-`/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat. The base server's Help
+`/newplayerkit`, `/treestats` and the base server's `/` commands); for a player those words are plain chat.
+`tests/no_player_talkactions_test.lua` holds the full staff allowlist (64 words, file by file) and fails on any
+talkaction under `data/` that is not on it, or whose onSay (or the local function it hands the call to) has no staff
+check in its first lines; `!bless` is its one player exception. A new player feature goes into a window, not a
+talkaction. `tools/install_commands_test.py` (CI) runs the install step on a small copy of the base files. The base server's Help
 channel words `!mute` / `!unmute` stay: they are tutor tools inside that channel, not player commands.
 
 ## Client-side gaps found while reading the client (not changed, `client/` is out of scope)

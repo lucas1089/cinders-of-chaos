@@ -1,6 +1,6 @@
 Module
   name: game_lootfilter
-  description: Loot filter (rarity glow / dim in corpses), loot channel with item icons (click to loot), rare-drop lines; extended opcode 238, !lootfilter
+  description: Loot filter (rarity glow / dim in corpses), loot channel with item icons (click to loot), rare-drop lines; extended opcode 238 (Hunt > Loot Filter)
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ lootfilterlogic, lootfilter ]
