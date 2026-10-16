@@ -1,0 +1,11 @@
+Module
+  name: game_chatpanel
+  description: The chat panel's size (width handle, per character size, limits) and the Enter rule of the chat (ChaosChatLogic, read by modules/game_console through base patch 0056)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 960
+  dependencies: [ game_interface ]
+  scripts: [ chatpanel_logic, chatpanel ]
+  @onLoad: ChaosChatPanel.init()
+  @onUnload: ChaosChatPanel.terminate()

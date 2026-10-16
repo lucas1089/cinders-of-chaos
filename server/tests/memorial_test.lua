@@ -43,7 +43,8 @@ check(cfg.defaults.records == true and cfg.defaults.fallen == false, "records on
 check(cfg.aid.portal and cfg.aid.portal >= 47940 and cfg.aid.portal <= 47949, "aid of the portal in 47940-47949")
 check(cfg.plaza.at and cfg.plaza.at.x == 14800 and cfg.plaza.at.y == 14800 and cfg.plaza.at.z == 7,
 	"the plaza at its plan's origin (install step contentareas)")
-check(type(cfg.plaza.portal) == "table" and type(cfg.plaza.arrival) == "table" and cfg.portalItem == 1387, "the way in")
+check(cfg.plaza.portal == nil and #cfg.portalTowns == 2 and type(cfg.plaza.arrival) == "table" and cfg.portalItem == 1387,
+	"the way in: the Memorial Portal of Cinderhold and Mirewake (cityportals.lua)")
 local seen = {}
 for kind, list in pairs(cfg.slots) do
 	if kind ~= "stone" then
@@ -433,8 +434,8 @@ check(livePlaza and moves[1] and moves[1].t == "stepin" and moves[1].aids[1] == 
 XC.plaza.portal = {x = 1040, y = 2039, z = 7}
 globals.ChaosMemorialTick.onThink(60000)
 local portal = tiles["1040,2039,7"].items[1]
-check(portal and portal.id == 1387 and portal.aid == 47944 and portal.attrs[ITEM_ATTRIBUTE_DESCRIPTION]:find("Ember Memorial"),
-	"the portal is placed")
+check(portal and portal.id == 1387 and portal.aid == 47944, "the portal is placed")
+eq(ChaosCityPortals.kindOf(47944), "memorial", "a city portal: look text and effect (cityportals_fx.lua)")
 globals.ChaosMemorialTick.onThink(60000)
 eq(#tiles["1040,2039,7"].items, 1, "and found again, not doubled")
 Chaos.lang = function() return "en" end

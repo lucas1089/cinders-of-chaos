@@ -1,0 +1,18 @@
+# Chaos: no "Open Prey Dialog" hotkey (Lua only; applies after 0001-0057).
+# Prey needs the GamePrey feature and the prey packets of newer protocols. The 10.98 server has neither, and turning
+# the feature on would read a prey byte the 10.98 login packet does not send. game_prey.show returns at once without
+# the feature, so the hotkey (Ctrl+Y by default) did nothing. The top menu has no Prey entry either (client_chaos_topbar).
+diff -ru a/modules/corelib/keybinds.lua b/modules/corelib/keybinds.lua
+--- a/modules/corelib/keybinds.lua	2026-10-16 05:01:35.310770531 +0000
++++ b/modules/corelib/keybinds.lua	2026-10-16 05:01:35.341052746 +0000
+@@ -286,10 +286,6 @@
+           end)
+         end,
+       },
+-      ["Open Prey Dialog"] = {
+-        jsonName = "ShowPrey",
+-        bindKeyDown = function()if not canPerformAction() then return end modules.game_prey:show() end,
+-      },
+       ["Open Questlog"] = {
+         jsonName = "ShowQuestlog",
+         bindKeyDown = function()if not canPerformAction() then return end modules.game_questlog:toggle() end,

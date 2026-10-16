@@ -18,7 +18,7 @@ function onCastSpell(creature, variant, isHotkey)
 	ChaosSpell.pulse(player:getId(), 6, 1000, function(caster, step)
 		local pos = Position(center)
 		if step % 2 == 1 then
-			ChaosSpell.vfxOr(pos, "holy_seal", "aura_ring", CONST_ME_HOLYAREA)
+			ChaosSpell.vfxOr(pos, "holy_seal", "holy_cross", CONST_ME_HOLYAREA)
 		end
 		doAreaCombat(caster, COMBAT_HOLYDAMAGE, pos, area, -math.floor(min), -math.floor(max), Fx("holy_smite", CONST_ME_HOLYDAMAGE))
 		for _, ally in ipairs(ChaosSpell.alliesAround(caster, pos, 2, true)) do

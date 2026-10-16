@@ -79,8 +79,11 @@ return {
 	},
 	aid = {enter = 47610, exit = 47611, depot = 47612, stash = 47613, decor = 47614, fixture = 47615},
 
-	-- entry next to every temple (first free offset; the guild hall uses (+-3, +-2), (+-4, 0), (0, +-4))
+	-- the Hideout Portal of every town: placed by cityportals.lua (cityportals_config.lua: the portal room of the Hall
+	-- of Services in Cinderhold and Mirewake, a fixed spot next to every other temple); these offsets only when neither
+	-- is free (another map)
 	portalOffsets = {{2, -3}, {-2, -3}, {2, 3}, {-2, 3}, {5, 0}, {-5, 0}, {5, 1}, {-5, 1}},
+	mainTown = 2, -- Cinderhold: the exit's last resort when the character's home town has no temple
 
 	emptySeconds = 30, -- an empty room is torn down after this (its slot goes back to the pool)
 	thinkMs = 3000,

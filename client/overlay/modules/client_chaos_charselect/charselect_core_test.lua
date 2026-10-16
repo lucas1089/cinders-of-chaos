@@ -159,7 +159,7 @@ end
 
 -- the placement maths below without the fine-tuning nudge; the nudge itself is checked after them
 local NUDGE = C.NUDGE_X
-check(type(NUDGE) == 'number' and NUDGE <= 0 and NUDGE >= -4, 'a small leftward nudge by default: ' .. tostring(NUDGE))
+check(NUDGE == 0, 'no nudge: the feet anchor stands on the centre: ' .. tostring(NUDGE))
 C.NUDGE_X = 0
 
 -- wings and an aura make the picture taller and wider, never move the body's centre; a big aura is moved by
@@ -289,9 +289,33 @@ check(C.slotsLine(nil) == '', 'create window: no website')
 
 -- a look of a newer pair (not in the table): its size and displacement
 local fb = C.anchorOf(A, 99999, { w = 1, h = 1, dx = 8, dy = 8 })
-check(fb.fx == 8 and fb.fy == 24 and fb.top == -8 and fb.left == -8 and fb.right == 24, 'fallback from displacement')
+check(fb.fx == 13 and fb.fy == 19 and fb.top == -8 and fb.left == -8 and fb.right == 24, 'fallback from displacement')
 local fb2 = C.anchorOf(nil, 5, nil)
-check(fb2.fy == 24 and fb2.w == 1, 'fallback without a table')
+check(fb2.fy == 19 and fb2.w == 1, 'fallback without a table')
+-- the fallback stands a look of a newer pair on its feet: for the player looks of the table (stock 128-160 and ours
+-- from 2039, 2x2, displacement 8), the fallback's feet are within 6 sprite pixels of the measured ones for most, and
+-- far more often than with the old rule (the middle of the own tile's bottom: 8, 24)
+local near, oldNear, n2 = 0, 0, 0
+for id = 128, 2240 do
+  local a = A[id]
+  if (id <= 160 or id >= 2039) and type(a) == 'table' and a[6] == 2 and a[7] == 2 and a[8] == 0 then
+    n2 = n2 + 1
+    local f = C.anchorOf(nil, id, { w = 2, h = 2, dx = 8, dy = 8 })
+    if math.abs(f.fx - a[1]) <= 6 and math.abs(f.fy - a[2]) <= 6 then near = near + 1 end
+    if math.abs(8 - a[1]) <= 6 and math.abs(24 - a[2]) <= 6 then oldNear = oldNear + 1 end
+  end
+end
+check(n2 > 100 and near >= n2 * 0.7, 'fallback: most player looks within 6 px of their feet: ' .. near .. ' / ' .. n2)
+check(near > oldNear * 2, 'fallback: better than the old rule: ' .. near .. ' against ' .. oldNear)
+local big = C.anchorOf(nil, 1, { w = 4, h = 4, dx = 8, dy = 8 })
+check(big.fx == -14 and big.fy == 9, 'fallback of a 4x4 thing: ' .. big.fx .. ', ' .. big.fy)
+check(C.anchorOf(nil, 1, { w = 9, h = 9, dx = 0, dy = 0 }).fx == -16, 'a bigger thing: the largest entry')
+-- the stock look of the misaligned Test Thief (130, white robed mage): its feet stand on the dais centre
+local thief = C.figure(A, { type = 130 })
+check(thief.fx == A[130][1] and thief.fy == A[130][2], 'look 130: the feet anchor, no nudge')
+local tx, ty, tsize = C.placeRect(thief, 128, 500, 400)
+local feetX, feetY = C.feetOf(thief, tx, ty, tsize)
+check(feetX == 500 and feetY == 400, 'look 130: the feet on the dais centre at 4x')
 check(C.figure(A, nil) == nil, 'no outfit, no figure')
 
 -- ---------------------------------------------------------------- the create window

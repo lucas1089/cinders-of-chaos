@@ -120,7 +120,7 @@ MapOverlayStrip < UIWidget
   MapOverlayStripButton
     id: centre
     !text: tr('Centre')
-    width: 54
+    text-horizontal-auto-resize: true
     anchors.left: prev.right
     margin-left: 10
     @onClick: modules.game_mapoverlay.centre()

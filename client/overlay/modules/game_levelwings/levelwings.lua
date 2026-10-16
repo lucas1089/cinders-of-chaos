@@ -4,7 +4,8 @@
 -- character; the stock level-up text and effect are untouched.
 --
 -- Drawing: the engine's creature widgets (Creature:addBottomWidget / addTopWidget). The engine draws them centred on
--- the creature, bottom widgets before its outfit (behind) and top widgets after it (in front), on the map and in its
+-- a 32 px sprite's middle (the tile centre moved by the look's displacement), so the image is moved onto the body's
+-- shoulders by LevelWingsMath.offsetFor; bottom widgets before its outfit (behind), top widgets after it (in front), on the map and in its
 -- walk, so the wings follow the character and nothing in the .dat / .spr pair changes. The frames are
 -- images/wings_01..12.png (client/tools/gen_levelwings_art.py); the timing is in levelwingsmath.lua.
 -- The wings sit behind the character, or in front while it faces north (its back to the viewer).
@@ -42,6 +43,34 @@ local function option(key)
   local ok, data = pcall(opts.getDataSet, opts, key)
   if not ok or type(data) ~= 'table' then return nil end
   return data.value
+end
+
+-- the look's place (LevelWingsMath.offsetFor): the character select's outfit anchors of the pair (the same table,
+-- client_chaos_charselect/outfit_anchors.lua, loaded once here) and the look's displacement from the dat
+local anchorsLoaded = false
+local function anchorsTable()
+  if not anchorsLoaded then
+    anchorsLoaded = true
+    if CharSelectAnchors == nil then
+      pcall(dofile, '/modules/client_chaos_charselect/outfit_anchors.lua')
+    end
+  end
+  return CharSelectAnchors
+end
+
+local function lookOffset(c, k)
+  local ok, outfit = pcall(c.getOutfit, c)
+  local look = ok and type(outfit) == 'table' and outfit.type or nil
+  local anchors = anchorsTable()
+  local anchor = look and type(anchors) == 'table' and anchors[look] or nil
+  local dx, dy = 0, 0
+  if look and g_things and g_things.getThingType then
+    local ok2, tt = pcall(g_things.getThingType, look, ThingCategoryCreature)
+    if ok2 and tt then
+      dx, dy = tt:getDisplacementX() or 0, tt:getDisplacementY() or 0
+    end
+  end
+  return LevelWingsMath.offsetFor(anchor, dx, dy, k)
 end
 
 local function newWidget()
@@ -94,7 +123,9 @@ local function draw(entry, now)
   if c:isRemoved() then return false end
   local frame, opacity, done = LevelWingsMath.at(now - entry.start)
   if done then return false end
-  local w, h = LevelWingsMath.sizeFor(g_sprites.spriteSize(), c.getDrawScale and c:getDrawScale() or 1)
+  local scale = c.getDrawScale and c:getDrawScale() or 1
+  local w, h = LevelWingsMath.sizeFor(g_sprites.spriteSize(), scale)
+  local ox, oy = lookOffset(c, (g_sprites.spriteSize() / 32) * (tonumber(scale) or 1))
   local layer = LevelWingsMath.layerFor(c:getDirection())
   local show, blank = entry.bottom, entry.top
   if layer == 'top' then
@@ -109,6 +140,8 @@ local function draw(entry, now)
     blank:setOpacity(0)
   end
   show:setSize({ width = w, height = h })
+  -- the engine centres the widget on a 32 px sprite's middle; the image moves to the body's shoulders
+  show:setImageRect({ x = ox, y = oy, width = w, height = h })
   show:setImageSource(LevelWingsMath.framePath(frame))
   show:setOpacity(opacity)
   return true

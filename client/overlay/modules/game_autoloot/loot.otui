@@ -93,7 +93,6 @@ MainWindow
     color: green
     font: verdana-11px-rounded
     !text: tr(' Add to list')
-    @onClick: addLoot(true)
 
   Button
     id: clear
@@ -104,7 +103,6 @@ MainWindow
     margin: 10 0 0 0
     color: red
     !text: tr('Clear List')
-    @onClick: removeListLoot()
 
   Label
     id: slots

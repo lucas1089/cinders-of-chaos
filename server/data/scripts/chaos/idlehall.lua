@@ -31,6 +31,9 @@ if not ChaosWrapChain then
 	dofile("data/scripts/chaos/wrapchain_core.lua")
 end
 dofile("data/scripts/chaos/idlehall_core.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 ChaosIdleHallConfig = dofile("data/scripts/chaos/idlehall_config.lua")
 
 ChaosIdleHall = ChaosIdleHall or {}
@@ -176,11 +179,36 @@ local function fixture(off, id, text)
 	return true
 end
 
--- the dummies, benches and the sign on their slots (placed once; found again after a reload)
+-- the plan's exit portal: areagen's shared action id 47951 becomes the hall's own (idempotent: a portal already
+-- re-tagged is found again), so it gets its look text and effect (cityportals.lua kind `idlehall`)
+local AREAGEN_EXIT = 47951
+function IH.retagExit()
+	local pos = cfg.hall.exit and K.slotPos(cfg.hall.at, cfg.hall.exit)
+	local tile = pos and Tile(P(pos))
+	if not tile then
+		return false
+	end
+	for _, it in ipairs(tile:getItems() or {}) do
+		local aid = it:getActionId()
+		if aid == AREAGEN_EXIT or aid == cfg.aid.exit then
+			if aid ~= cfg.aid.exit then
+				it:setActionId(cfg.aid.exit)
+			end
+			if ChaosCityPortals then
+				ChaosCityPortals.register("idlehall", cfg.aid.exit, pos)
+			end
+			return true
+		end
+	end
+	return false
+end
+
+-- the dummies, benches and the sign on their slots (placed once; found again after a reload); the exit's own action id
 function IH.placeFixtures()
 	if not hallReady() then
 		return 0
 	end
+	IH.retagExit()
 	local n, items, slots = 0, cfg.items, cfg.slots
 	for i, off in ipairs(slots.dummies or {}) do
 		if fixture(off, items.dummies[(i - 1) % #items.dummies + 1]) then
@@ -371,6 +399,31 @@ function think.onThink(interval)
 end
 think:interval(math.max(100, cfg.thinkMs or 1000))
 think:register()
+
+-- the exit: to the temple of the character's town (else the main city's), as areagen's exit did
+local exitStep = MoveEvent()
+function exitStep.onStepIn(creature, item, position, fromPosition)
+	local player = creature and creature:getPlayer()
+	if not player then
+		return true
+	end
+	local town = player:getTown()
+	local t = town and town:getTemplePosition()
+	if not t or t.x == 0 then
+		local main = Town and Town(2)
+		t = main and main:getTemplePosition()
+	end
+	if not t then
+		player:teleportTo(fromPosition, true)
+		return true
+	end
+	player:teleportTo(t)
+	t:sendMagicEffect(cfg.effect or CONST_ME_TELEPORT)
+	return true
+end
+exitStep:type("stepin")
+exitStep:aid(cfg.aid.exit)
+exitStep:register()
 
 local startup = GlobalEvent("ChaosIdleHallStartup")
 function startup.onStartup()

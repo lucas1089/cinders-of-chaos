@@ -12,6 +12,8 @@
 --                     rfirsts {season, seasonName, rows = [{target, board, name, members, at, value, format}]}
 --   client -> server  rmeta | rget {board, variant, size, period, group} | rfirsts
 -- The top menu (Social > Leaderboards) calls toggle().
+-- The weekly boards are a dropdown sorted by the name shown (boardpick.lua); the board chosen is kept per character in
+-- g_settings (node BoardPick.SETTINGS) and asked for when the window opens (World Boss when none is kept).
 
 local OPCODE = 229
 local RANK_COLOR = { '#e8b84a', '#a8b4c8', '#c87a3a' }
@@ -23,7 +25,10 @@ local boardAt = 0      -- g_clock.seconds() when it arrived
 local selected         -- board key shown
 local selectedGroup    -- class group shown on the ladder
 local classGroup       -- class tab of the boards with class tabs (byClass); nil = every class
-local tabs, groupTabs = {}, {}
+local tabs, groupTabs = {}, {} -- tabs: the Records view's category tabs
+local boardOptions = {}        -- the dropdown's options (BoardPick.options)
+local comboFilling = false     -- true while the dropdown is set from code (no request, nothing saved)
+local COMBO_GAP = 8
 local tickEvent
 local refreshAsked = false
 local seasonView = false -- the Season toggle (server season.lua): only the running season's characters
@@ -123,6 +128,27 @@ end
 local function ordinal(n)
   local s = ({ 'st', 'nd', 'rd' })[n] or 'th'
   return tostring(n) .. s
+end
+
+-- ---------------------------------------------------------------- the board kept per character
+local function characterName()
+  local ok, name = pcall(function() return g_game.getCharacterName() end)
+  return ok and name or nil
+end
+
+local function settingsNode()
+  local ok, node = pcall(g_settings.getNode, BoardPick.SETTINGS)
+  return (ok and type(node) == 'table') and node or {}
+end
+
+local function savedBoard()
+  return BoardPick.saved(settingsNode(), characterName())
+end
+
+local function rememberBoard(key)
+  local name = characterName()
+  if not name or key == nil then return end
+  pcall(g_settings.setNode, BoardPick.SETTINGS, BoardPick.remember(settingsNode(), name, key))
 end
 
 -- ---------------------------------------------------------------- rows
@@ -364,26 +390,54 @@ local function buildModeTabs()
   end
 end
 
+-- the dropdown shows key (no onOptionChange), its tooltip the board's description
+local function syncCombo(key)
+  if not window or key == nil then return end
+  local combo = window.boardCombo
+  local b = boardMeta(key)
+  comboFilling = true
+  pcall(function() combo:setCurrentOptionByData(key, true) end)
+  comboFilling = false
+  combo:setTooltip(b and (b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '')) or '')
+end
+
+-- the weekly boards (dropdown) or the Records view (category tabs) on the top rows
+local function setView(records)
+  window.boardCombo:setVisible(not records)
+  window.infoLabel:setMarginLeft(records and 0 or (window.boardCombo:getWidth() + COMBO_GAP))
+  window.tabs:setVisible(records)
+  if not records then
+    window.tabs:destroyChildren()
+    window.tabs:setHeight(0)
+    tabs = {}
+  end
+end
+
 local function selectBoard(key)
   selected = key
-  for k, tab in pairs(tabs) do tab:setChecked(k == key) end
+  syncCombo(key)
   local b = boardMeta(key)
   if b and not b.weekly and not selectedGroup then selectedGroup = meta.ownGroup end
   buildGroupTabs()
   send('get', { board = key, group = (b and b.weekly and b.byClass) and classGroup or selectedGroup })
 end
 
-local function buildTabs()
-  tabs = {}
-  local boards, items = rowsOf(meta.boards), {}
-  for i, b in ipairs(boards) do
-    local key = b.key
-    items[i] = { text = b.name or b.key, checked = key == selected, onClick = function() selectBoard(key) end,
-                 tooltip = b.weekly and tr('Weekly: %s', b.info or '') or (b.info or '') }
-  end
-  for i, tab in pairs(buildTabRows(window.tabs, 'LeaderboardTab', items)) do
-    if boards[i] and boards[i].key ~= nil then tabs[boards[i].key] = tab end
-  end
+-- the weekly boards in the dropdown, sorted by the name shown (tr: the pt-BR names sort in pt-BR)
+local function buildBoardCombo()
+  local combo = window.boardCombo
+  boardOptions = BoardPick.options(rowsOf(meta and meta.boards), function(name) return tr(name) end)
+  comboFilling = true
+  combo:clearOptions()
+  for _, o in ipairs(boardOptions) do combo:addOption(o.text, o.key) end
+  comboFilling = false
+  syncCombo(BoardPick.resolve(boardOptions, selected or savedBoard()))
+end
+
+-- a board chosen in the dropdown: kept for this character, then asked for
+local function onBoardChosen(_, _, key)
+  if comboFilling or recordsMode or not meta or key == nil then return end
+  rememberBoard(key)
+  if key ~= selected then selectBoard(key) end
 end
 
 -- ---------------------------------------------------------------- Records view
@@ -513,6 +567,7 @@ local function selectRecordCategory(key)
 end
 
 local function buildRecordTabs()
+  setView(true)
   tabs = {}
   local items = {}
   for i, c in ipairs(rmeta.categories) do
@@ -577,6 +632,7 @@ function toggleRecords()
   recordsMode = not recordsMode
   window.recordsToggle:setChecked(recordsMode)
   if recordsMode then
+    setView(true)
     if rmeta and rmeta.complete then
       buildRecordTabs()
     else
@@ -587,6 +643,7 @@ function toggleRecords()
     window.recordFilters:setVisible(false)
     window.recordFilters:setHeight(0)
     window.recordFilters:setMarginTop(0)
+    setView(false)
     if meta then
       onMetaRebuild()
       if selected then selectBoard(selected) end
@@ -612,7 +669,10 @@ local function onMeta(data)
   window.seasonToggle:setTooltip(season and tr('Show only the characters of %s.', season.name or '') or '')
   window.seasonToggle:setChecked(seasonView)
   if not selectedGroup then selectedGroup = data.ownGroup end
-  buildTabs()
+  if not recordsMode then
+    setView(false)
+    buildBoardCombo()
+  end
   buildModeTabs()
   if data.open then show() end
 end
@@ -621,7 +681,8 @@ end
 function onMetaRebuild()
   local season = meta and type(meta.season) == 'table' and meta.season or nil
   window.seasonToggle:setVisible(season ~= nil)
-  buildTabs()
+  setView(false)
+  buildBoardCombo()
   buildModeTabs()
 end
 
@@ -649,7 +710,7 @@ local function onBoardData(data)
     selectedGroup = data.group
     for k, t in pairs(groupTabs) do t:setChecked(k == data.group) end
   end
-  for k, tab in pairs(tabs) do tab:setChecked(k == data.key) end
+  syncCombo(data.key)
   showBoard()
 end
 
@@ -710,7 +771,9 @@ function toggle()
     hide()
     return
   end
-  send('open', { board = selected }) -- the server answers with meta (open) and the board, which shows the window
+  -- the server answers with meta (open) and the board, which shows the window; the first open of a character asks for
+  -- the board it chose last (an unknown key gets the World Boss board)
+  send('open', { board = selected or savedBoard() })
 end
 
 local function onGameEnd()
@@ -723,11 +786,17 @@ local function onGameEnd()
   end
   meta, current, selected, selectedGroup = nil, nil, nil, nil
   tabs, groupTabs, modeTabs, seasonMode = {}, {}, {}, 'all'
+  boardOptions = {}
+  if window then
+    window.boardCombo:clearOptions()
+    setView(false)
+  end
 end
 
 function init()
   window = g_ui.displayUI('leaderboard')
   window:hide()
+  window.boardCombo.onOptionChange = onBoardChosen
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
 end
@@ -740,5 +809,5 @@ function terminate()
     window:destroy()
     window = nil
   end
-  meta, current, tabs, groupTabs = nil, nil, {}, {}
+  meta, current, tabs, groupTabs, boardOptions = nil, nil, {}, {}, {}
 end

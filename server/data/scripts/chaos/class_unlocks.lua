@@ -335,14 +335,20 @@ end
 startup:register()
 
 -- ------------------------------------------------------------------------------------------------ commands
+-- one line for the unlocked classes, one per group of locked classes that unlock the same way (K.lockGroups)
 local function statusLines(player)
+	local status = K.lockGroups(function(key) return U.isUnlocked(player, key) end)
 	local lines = {}
-	for _, key in ipairs(K.lockedClasses()) do
-		local class = cfg().classes[key]
-		if U.isUnlocked(player, key) then
-			lines[#lines + 1] = class.name .. ": unlocked"
+	if #status.unlocked > 0 then
+		lines[#lines + 1] = Chaos.t(player, "Unlocked classes: %s.", table.concat(status.unlocked, ", "))
+	end
+	for _, g in ipairs(status.groups) do
+		local names = table.concat(g.names, ", ")
+		if g.level then
+			lines[#lines + 1] = Chaos.t(player, "Locked classes: %s. Reach level %d with any character to unlock.", names,
+				g.level)
 		else
-			lines[#lines + 1] = class.name .. ": locked - " .. K.lockMessage(key):gsub("^.-locked on this account%. ", "")
+			lines[#lines + 1] = Chaos.t(player, "Locked classes: %s. To unlock: %s.", names, g.how)
 		end
 	end
 	return lines
@@ -354,7 +360,7 @@ function classesTalk.onSay(player, words, param)
 	if #lines == 0 then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "Every class is open to every account."))
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, "Classes of your account:\n" .. table.concat(lines, "\n"))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, table.concat(lines, "\n"))
 	end
 	return false
 end

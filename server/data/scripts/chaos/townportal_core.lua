@@ -184,8 +184,17 @@ function K.owns(style, facts)
 	return false
 end
 
+-- inside a hideout the Town Portal is a way out (coordinator 2026-10-16, noob-friendly): no channel, no portal pair
+-- (a return portal would lead back into a hideout), no cooldown; townportal.lua sends the character out through the
+-- hideout's own exit logic (ChaosHideout.leave: the spot entered from, else the home temple, else Cinderhold; never a
+-- hideout or an instance). f: the facts of K.blockReason.
+function K.hideoutExit(f)
+	return f ~= nil and f.hideout == true and not f.casting and not f.tutorial
+end
+
 -- f: {tutorial, pz, pzLocked, skull, arena, worldBoss, siege, rift, dungeon, tower, cooldownLeft, casting, noTown}
--- (true / a number for the ones that apply). Order: the most useful message first.
+-- (true / a number for the ones that apply). Order: the most useful message first. A hideout is handled before this
+-- (K.hideoutExit); its line below only answers when the hideout system is not loaded.
 function K.blockReason(f)
 	if f.casting then
 		return "You are already opening a portal."
@@ -218,7 +227,7 @@ function K.blockReason(f)
 		return "The Infinity Tower holds you: leave it through its own exit."
 	end
 	if f.hideout then -- Hideouts (hideout.lua)
-		return "Leave your hideout through its exit portal."
+		return "Leave your hideout through its exit portal or Leave in the Hideout window."
 	end
 	if f.marches then -- the Scorched Marches (pvpzone.lua)
 		return "The Marches hold you: leave through a safe exit (your embers are banked there)."

@@ -135,6 +135,14 @@ do
 			return box
 		end
 		function p:addItemEx(item) if self.room then self.bag[#self.bag + 1] = item return 0 end return 1 end
+		-- the purse (store inbox): where the store delivers (store_delivery.lua)
+		p.purse = {}
+		function p:getStoreInbox()
+			if self.noPurse then return nil end
+			local box = mkItem(26052, {}, self.purse)
+			function box.addItemEx(_, item) table.insert(p.purse, item) return 0 end
+			return box
+		end
 		function p:getStorageValue(k) return self.storage[k] or -1 end
 		function p:setStorageValue(k, v) self.storage[k] = v end
 		function p:registerEvent() end
@@ -145,8 +153,10 @@ do
 	local ann = mkPlayer(7)
 	eq(svc.check(ann), nil, "Ann can buy")
 	eq(svc.apply(ann), true, "delivered")
-	local ration = ann.bag[1]
-	eq(ration:getId(), cfg.item.id, "the ration in the backpack")
+	local ration = ann.purse[1]
+	eq(ration:getId(), cfg.item.id, "the ration in the purse (owner 2026-10-16: store items go to the purse)")
+	eq(#ann.bag, 0, "not in the backpack")
+	check(ann.msgs[#ann.msgs]:find("purse", 1, true), "told: purse")
 	eq(ration.attrs.chaos_food_owner, 7, "owner guid")
 	eq(ration.attrs.chaos_storebound, 1, "store-bound")
 	eq(ration.attrs.chaos_locked, 1, "locked")
@@ -166,11 +176,17 @@ do
 	use(bob, ration)
 	eq(bob.fed, 0, "someone else cannot eat it")
 	eq(bob.msgs[1], "This ration belongs to someone else.", "owner text")
-	-- a full backpack: the inbox
+	-- no purse: the depot inbox
 	local cid = mkPlayer(9)
-	cid.room = false
+	cid.noPurse = true
 	eq(svc.apply(cid), true, "delivered to the inbox")
 	eq(#cid.inbox, 1, "in the inbox")
+	check(cid.msgs[#cid.msgs]:find("depot inbox", 1, true), "told: depot inbox")
+	check(svc.check(cid):find("One per character", 1, true), "one in the inbox counts")
+	local dan = mkPlayer(10)
+	check(svc.check(dan) == nil, "Dan can buy")
+	table.insert(dan.purse, F.create(dan))
+	check(svc.check(dan):find("One per character", 1, true), "one in the purse counts")
 	-- death: the ration leaves the corpse, back at the next login
 	ground = {mkItem(3058, {}, {mkItem(1988, {}, {ration})})}
 	eq(F.afterDeath(7, {x = 1, y = 2, z = 7}), 1, "found in the corpse")

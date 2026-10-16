@@ -31,7 +31,7 @@ function K.storeCheck(cfg, s)
 		return "The Everfull Ration is not installed on this server yet."
 	end
 	if s.owned then
-		return "You already have an Everfull Ration (backpack, inbox or depot). One per character."
+		return "You already have an Everfull Ration (backpack, purse, inbox or depot). One per character."
 	end
 	if s.owed then
 		return "Your Everfull Ration comes back at your next login."

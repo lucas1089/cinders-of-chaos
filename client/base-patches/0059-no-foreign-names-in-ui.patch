@@ -1,0 +1,734 @@
+# Chaos: no other server's or client's name in what the player reads (Lua, OTUI, OTMOD, JSON; applies after 0001-0058).
+# The base client kept names of its own project and of a server it came from in UI text. Now:
+# - game_helper: the side-bar shortcut under the orb reads "Open Helper" (was another server's bot name), and the
+#   helper's settings / save-data boxes say "Helper"; the click handler is onOpenHelperClick.
+# - game_report: the name and statement report reasons say "the game" / "staff".
+# - Cyclopedia magical archive spell texts and map marker labels (gamelib, game_realminimap, markers.json): our world.
+# - client_entergame: the "Connection refused" box no longer points to another project's site.
+# - the hidden stock top menu's Discord button no longer opens another server's invite (the link still comes from
+#   Services.status, as before).
+# - module descriptions (.otmod) and the game_memleak warning without the base client's name; .otmod author and
+#   website lines (attribution) are kept.
+# The removed lines still carry the old text: a diff has to name what it replaces (as in 0014).
+# tools/ci/check_names.py --client <assembled tree> checks the result (client/BASE.md).
+diff -ru a/data/json/markers.json b/data/json/markers.json
+--- a/data/json/markers.json	2026-10-16 05:17:24.332010356 +0000
++++ b/data/json/markers.json	2026-10-16 05:17:24.332427396 +0000
+@@ -5621,7 +5621,7 @@
+ 		"z": 7
+ 	},
+ 	{
+-		"description": "Boat to Astra",
++		"description": "Boat",
+ 		"icon": "flag",
+ 		"x": 32020,
+ 		"y": 31692,
+@@ -5719,7 +5719,7 @@
+ 		"z": 7
+ 	},
+ 	{
+-		"description": "Boat to Astra",
++		"description": "Boat",
+ 		"icon": "flag",
+ 		"x": 32045,
+ 		"y": 31579,
+@@ -6041,7 +6041,7 @@
+ 		"z": 7
+ 	},
+ 	{
+-		"description": "Boat to Astra",
++		"description": "Boat",
+ 		"icon": "flag",
+ 		"x": 32126,
+ 		"y": 31665,
+@@ -7147,7 +7147,7 @@
+ 		"z": 7
+ 	},
+ 	{
+-		"description": "Towards Museum of Astran Arts",
++		"description": "Towards Museum of Arts",
+ 		"icon": "down",
+ 		"x": 32387,
+ 		"y": 32208,
+@@ -14791,7 +14791,7 @@
+ 		"z": 8
+ 	},
+ 	{
+-		"description": "Museum of Astran arts",
++		"description": "Museum of arts",
+ 		"icon": "flag",
+ 		"x": 32394,
+ 		"y": 32192,
+@@ -23275,7 +23275,7 @@
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33457,
+ 		"y": 31031,
+@@ -23303,14 +23303,14 @@
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33469,
+ 		"y": 31046,
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33470,
+ 		"y": 30995,
+@@ -23324,14 +23324,14 @@
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33474,
+ 		"y": 31011,
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33480,
+ 		"y": 30999,
+@@ -23359,7 +23359,7 @@
+ 		"z": 9
+ 	},
+ 	{
+-		"description": "Astra Coin",
++		"description": "Chaos Coin",
+ 		"icon": "star",
+ 		"x": 33496,
+ 		"y": 31001,
+diff -ru a/data/json/report-name.json b/data/json/report-name.json
+--- a/data/json/report-name.json	2026-10-16 05:17:24.285146099 +0000
++++ b/data/json/report-name.json	2026-10-16 05:17:24.285173306 +0000
+@@ -24,12 +24,12 @@
+         "advertising content which is not related to the game": "Names can be reported if they contain advertising for content which is not related to the game.\n\nExamples:\n\nIllegal - You can report names like:\nMobile Sale, Buy headset, Sell My Car\n\nLegal - Names like the following are legal and must not be reported:\nMerchant, Potionbuyer"
+     },
+     "9": {
+-        "advertising a trade for real money": "Names can be reported if they contain advertising that imply the selling or buying of Astra items for real life money.\n\nExamples:\n\nIllegal - You can report names like:\nPremium Seller, Goldseller\n\nLegal - Names like the following are legal and must not be reported:\nTrader Frank, Goldcoin Collector"
++        "advertising a trade for real money": "Names can be reported if they contain advertising that imply the selling or buying of in-game items for real life money.\n\nExamples:\n\nIllegal - You can report names like:\nPremium Seller, Goldseller\n\nLegal - Names like the following are legal and must not be reported:\nTrader Frank, Goldcoin Collector"
+     },
+     "10": {
+         "religious or political view": "Names can be reported if they refer to a specific religion or to a person or position that is connected to a certain religion. The same is true for names that express political views or refer to contemporary and well-known politicians.\n\nExamples:\n\nIllegal - You can report names like:\nHindu Master, Jesus Christ, Pope Frank, Anarchist, Lula da Silva\n\nLegal - Names like the following are legal and must not be reported:\nJesus Gonzales, Elfish Priest, God of War, Satan, Abraham Lincoln"
+     },
+     "11": {
+-        "supporting rule violation": "Names can be reported if they support a rule break, encourage others to break a Astra Rule or announce or imply a violation of the Astra Rules. The same is true for names that have been created to fake an official position.\n\nExamples:\n\nIllegal - You can report names like:\nSellacc, Spam Sponsor, Bothater, God Durin, System Admin, Senator Kate\n\nLegal - Names like the following are legal and must not be reported:\nEvil Thief, Bad Guy, Steve Johnson, God of War, Count Stephan"
++        "supporting rule violation": "Names can be reported if they support a rule break, encourage others to break a game rule or announce or imply a violation of the game rules. The same is true for names that have been created to fake an official position.\n\nExamples:\n\nIllegal - You can report names like:\nSellacc, Spam Sponsor, Bothater, God Durin, System Admin, Senator Kate\n\nLegal - Names like the following are legal and must not be reported:\nEvil Thief, Bad Guy, Steve Johnson, God of War, Count Stephan"
+     }
+ }
+\ No newline at end of file
+diff -ru a/data/json/report-statement.json b/data/json/report-statement.json
+--- a/data/json/report-statement.json	2026-10-16 05:17:24.285040222 +0000
++++ b/data/json/report-statement.json	2026-10-16 05:17:24.285080859 +0000
+@@ -27,10 +27,10 @@
+         "advertising brand, product or service of a third party": "Statements can be reported if they are made to advertise certain goods, services or brands of a third party."
+     },
+     "9": {
+-        "advertising content which is not related to the game": "Statements can be reported if they contain advertising for all kind of goods and services that are not related to Astra, e.g. sell my car."
++        "advertising content which is not related to the game": "Statements can be reported if they contain advertising for all kind of goods and services that are not related to the game, e.g. sell my car."
+     },
+     "10": {
+-        "advertising a trade for real money": "Statements can be reported if they advertise trades of real money for Astra goods. This includes also offers to buy or sell Premium time."
++        "advertising a trade for real money": "Statements can be reported if they advertise trades of real money for in-game goods. This includes also offers to buy or sell Premium time."
+     },
+     "11": {
+         "religious or political view": "Statements can be reported if they deal with controversial topics like religion and politics."
+@@ -45,37 +45,37 @@
+         "disclosing personal data of other people": "Statements can be reported if they contain personal data of other people, e.g. email address or phone number."
+     },
+     "15": {
+-        "supporting rule violation": "Statements can be reported if they support a rule break, encourage others to break a Astra Rule or announce or imply a violation of the Astra Rules by the posting player."
++        "supporting rule violation": "Statements can be reported if they support a rule break, encourage others to break a game rule or announce or imply a violation of the game rules by the posting player."
+     },
+     "16": {
+-        "bug abuse": "Statements can be reported if they prove that a player has abused an obvious game error or any other part of Astra's service."
++        "bug abuse": "Statements can be reported if they prove that a player has abused an obvious game error or any other part of the game's service."
+     },
+     "17": {
+         "using unofficial software to play": "Statements can be reported if they prove that a player has manipulated the client program or has used unofficial software, e.g. a macro program or a so-called tasker or bot."
+     },
+     "18": {
+-        "pretending to be Astra": "Statements can be reported if they are made to make other players believe that a player is a Astra member or has their powers or legitimation."
++        "pretending to be staff": "Statements can be reported if they are made to make other players believe that a player is a staff member or has their powers or legitimation."
+     },
+     "19": {
+-        "publising clearly wrong information about Astra": "Statements can be reported if they are made to publish clearly wrong information about Astra or its services."
++        "publising clearly wrong information about the game": "Statements can be reported if they are made to publish clearly wrong information about the game or its services."
+     },
+     "20": {
+-        "calling a boycott against Astra or its services": "Statements can be reported if they are made to ask other players to boycott Astra or its services."
++        "calling a boycott against the game or its services": "Statements can be reported if they are made to ask other players to boycott the game or its services."
+     },
+     "21": {
+-        "false information to Astra": "Statements can be reported if they prove that a player has intentionally given wrong or misleading information concerning rule violation reports, complaints, bug reports or support requests to Astra."
++        "false information to the staff": "Statements can be reported if they prove that a player has intentionally given wrong or misleading information concerning rule violation reports, complaints, bug reports or support requests to the staff."
+     },
+     "22": {
+         "stealing other players' account or personal data": "Statements can be reported if they prove that a player has tried to steal another player's account data or to hack an account or if they contain links to trick other players into downloading malicious software."
+     },
+     "23": {
+-        "attacking a Astra service": "Statement can be reported if they prove that a player has or wants to attack, disrupt or damage the operation of Astra servers, the game or any other part of Astra's service."
++        "attacking a game service": "Statement can be reported if they prove that a player has or wants to attack, disrupt or damage the operation of the game servers, the game or any other part of the game's service."
+     },
+     "24": {
+         "violating applicable law": "Statements can be reported if they violate any applicable law or prove that an applicable law has been or is planned to be violated."
+     },
+     "25": {
+-        "violating the Astra Service Agreement": "Statements can be reported if they violate the Astra Service Agreement or prove that the Astra Service Agreement has been be violated or is planned to be violated."
++        "violating the Service Agreement": "Statements can be reported if they violate the Service Agreement or prove that the Service Agreement has been be violated or is planned to be violated."
+     },
+     "26": {
+         "violating a right of a third party": "Statements can be reported if they violate the right of a third party or prove that the right of a third party has been violated or is planned to be violated."
+diff -ru a/data/styles/20-topmenu.otui b/data/styles/20-topmenu.otui
+--- a/data/styles/20-topmenu.otui	2026-10-16 05:17:24.284432559 +0000
++++ b/data/styles/20-topmenu.otui	2026-10-16 05:17:24.284487531 +0000
+@@ -81,7 +81,6 @@
+     margin-top: 5
+     margin-left: 8
+     image-source: /images/ui/discord
+-    @onClick: g_platform.openUrl("https://discord.gg/astra")
+   UIWidget
+     id: discordLabel
+     anchors.top: parent.top
+@@ -92,7 +91,6 @@
+     font: $var-cip-font
+     color: $var-text-cip-color
+     text-offset: 0 -1
+-    @onClick: g_platform.openUrl("https://discord.gg/astra")
+     $hover !pressed:
+       color: $var-text-cip-color-highlight
+     $pressed:
+diff -ru a/mods/game_analyser/analyser.otmod b/mods/game_analyser/analyser.otmod
+--- a/mods/game_analyser/analyser.otmod	2026-10-16 05:17:24.333146140 +0000
++++ b/mods/game_analyser/analyser.otmod	2026-10-16 05:17:24.333181106 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: game_analyser
+-  description: Astra Analysers
++  description: Analysers
+   author: R!ck && ZLukSrT#8740 && Christianlb
+   sandboxed: true
+   scripts: [ analyser, classes/Controller, classes/HuntingAnalyser, classes/LootAnalyser, classes/SupplyAnalyser, classes/ImpactAnalyser, classes/InputAnalyser, classes/XPAanalyser, classes/DropTrackerAnalyser, classes/PartyHuntAnalyser, classes/BossCooldown, classes/MiscAnalyzer ]
+diff -ru a/mods/game_cyclopedia/classes/magical_archive/spells.json b/mods/game_cyclopedia/classes/magical_archive/spells.json
+--- a/mods/game_cyclopedia/classes/magical_archive/spells.json	2026-10-16 05:17:24.293117530 +0000
++++ b/mods/game_cyclopedia/classes/magical_archive/spells.json	2026-10-16 05:17:24.296291619 +0000
+@@ -171,7 +171,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "This rune was the first result of the druids' efforts to bind their healing magic into spell runes. The primary aim was to give a greater measure of independence to knights whose poor magic skills rarely sufficed to heal the wounds they received in battle. However, there was a need for readily available healing magic among all vocations, as there was always the danger of running out of mana in dangerous situations. For this reason the Intense Healing Rune was hailed as a big achievement by all Astra adventurers, and it was soon found in every adventurer's backpack. Today, however, the rune is no longer as popular, since it was replaced by the much more efficient <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=ultimatehealingrune>Ultimate Healing Rune</A>. However, it is still commonly used by young adventurers who are not skilled enough yet to use the famous blue runes. Also, since the rune's effectiveness is determined by the user's magic skill it is still popular among experienced spell casters who use it to get effective healing magic at a cheap price.<BR>Please note that on optional PvP game worlds, the rune has no effect on wild creatures.",
++        "description": "This rune was the first result of the druids' efforts to bind their healing magic into spell runes. The primary aim was to give a greater measure of independence to knights whose poor magic skills rarely sufficed to heal the wounds they received in battle. However, there was a need for readily available healing magic among all vocations, as there was always the danger of running out of mana in dangerous situations. For this reason the Intense Healing Rune was hailed as a big achievement by all Cinders adventurers, and it was soon found in every adventurer's backpack. Today, however, the rune is no longer as popular, since it was replaced by the much more efficient <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=ultimatehealingrune>Ultimate Healing Rune</A>. However, it is still commonly used by young adventurers who are not skilled enough yet to use the famous blue runes. Also, since the rune's effectiveness is determined by the user's magic skill it is still popular among experienced spell casters who use it to get effective healing magic at a cheap price.<BR>Please note that on optional PvP game worlds, the rune has no effect on wild creatures.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -303,7 +303,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Life in Astra is dangerous, and all adventurers must live with the disquieting certainty that the next fight may be their last. For this reason the crafty sorcerers and druids are constantly looking for new ways to assist the Astra heroes and to guarantee their survival. This spell was one of the more uncommon solutions they have found. Starting from the thought that to survive a battle means to live to fight another day, the researchers developed it to help adventurers to escape from fights they cannot win. Using their excellent medical and anatomical knowledge, the druids found a way to magically generate powerful adrenaline rushes which allow the caster to perform superhuman feats for short periods of time, allowing them to outrun most common creatures. It has to be said that some reckless sorcerers proposed a different approach which was actually based on the manipulation of time itself. This approach, however, was quickly dismissed by the wise council at Edron's magic academy, since it posed imponderable risks. Unfortunately, however, these studies were carried on in secrecy. Later on, they led to the creation of the more powerful, but dangerously unstable <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=stronghaste>Strong Haste</A> spell.",
++        "description": "Life in Cinders is dangerous, and all adventurers must live with the disquieting certainty that the next fight may be their last. For this reason the crafty sorcerers and druids are constantly looking for new ways to assist the Cinders heroes and to guarantee their survival. This spell was one of the more uncommon solutions they have found. Starting from the thought that to survive a battle means to live to fight another day, the researchers developed it to help adventurers to escape from fights they cannot win. Using their excellent medical and anatomical knowledge, the druids found a way to magically generate powerful adrenaline rushes which allow the caster to perform superhuman feats for short periods of time, allowing them to outrun most common creatures. It has to be said that some reckless sorcerers proposed a different approach which was actually based on the manipulation of time itself. This approach, however, was quickly dismissed by the wise council at Edron's magic academy, since it posed imponderable risks. Unfortunately, however, these studies were carried on in secrecy. Later on, they led to the creation of the more powerful, but dangerously unstable <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=stronghaste>Strong Haste</A> spell.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -417,7 +417,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Heavy Magic Missile is perhaps the standard attack spell rune in Astra. As with its lesser relative, the <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=lightmagicmissilerune>Light Magic Missile</A>, this spell is bound onto blank runes which may be used up to 10 times each in order to hurl massive balls of concentrated magical energy at one or several opponents. A true classic that should not miss in any spell caster's book, Heavy Magic Missile is popular both with beginners and with masters of sorcery alike as the damage that is inflicted is largely determined by the caster's skill and experience, making this an economical, reliable attack spell. Keep in mind, however, that there are a number of creatures that are immune to the damaging effect of magical energy.",
++        "description": "Heavy Magic Missile is perhaps the standard attack spell rune in Cinders. As with its lesser relative, the <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=lightmagicmissilerune>Light Magic Missile</A>, this spell is bound onto blank runes which may be used up to 10 times each in order to hurl massive balls of concentrated magical energy at one or several opponents. A true classic that should not miss in any spell caster's book, Heavy Magic Missile is popular both with beginners and with masters of sorcery alike as the damage that is inflicted is largely determined by the caster's skill and experience, making this an economical, reliable attack spell. Keep in mind, however, that there are a number of creatures that are immune to the damaging effect of magical energy.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -581,7 +581,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "While the common light spell is usually quite sufficient under normal conditions, it was still widely agreed that a brighter and longer lasting light was desirable, as many of the more challenging dungeons are dreary places that require careful examination in order to prevent ambushes or other unpleasant surprises. The Great Light spell was developed to meet these demands. Because of its practical use it was made available to all vocations in Astra.",
++        "description": "While the common light spell is usually quite sufficient under normal conditions, it was still widely agreed that a brighter and longer lasting light was desirable, as many of the more challenging dungeons are dreary places that require careful examination in order to prevent ambushes or other unpleasant surprises. The Great Light spell was developed to meet these demands. Because of its practical use it was made available to all vocations in Cinders.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -794,7 +794,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Without any doubt Fireball is one of the most common attack runes there are in Astra. Ever since its spell was developed, this reliable rune has proven its worth in countless battles. When it is used a massive fiery ball is released which hits the aimed foe with immense power. It is especially effective against opponents of the element earth. On the other hand, opponents that resist fire well can easily shake off the spell's effects.<BR>Today, the Fireball spell has somewhat lost in attractiveness since an improved version, the <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=greatfireballrune>Great Fireball</A>, was released. However, the traditional Fireball spell is still common due to its lower mana and magic level requirements.",
++        "description": "Without any doubt Fireball is one of the most common attack runes there are in Cinders. Ever since its spell was developed, this reliable rune has proven its worth in countless battles. When it is used a massive fiery ball is released which hits the aimed foe with immense power. It is especially effective against opponents of the element earth. On the other hand, opponents that resist fire well can easily shake off the spell's effects.<BR>Today, the Fireball spell has somewhat lost in attractiveness since an improved version, the <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=greatfireballrune>Great Fireball</A>, was released. However, the traditional Fireball spell is still common due to its lower mana and magic level requirements.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+@@ -856,7 +856,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "As may be taken from the title, the Great Fireball is basically an enlarged version of the trusty <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=fireballrune>Fireball</A> rune. In contrast to the single shot of a Fireball rune, the Great Fireball affects a huge area, up to 37 square metres! This way any average sized room is easily filled with the searing blaze, scorching all creatures that are in it except for the rune user himself. It stands to reason that the Great Fireball is a favourite of most Astraians, as it is well suited both to hit whole crowds of monsters and individual targets that are difficult to hit because they are fast or hard to spot. There are few adventurers who do not cherish those moments of silent glory when they have just brought down a whole crowd of enemies with a single Great Fireball. Still, due to the large blast radius the users are well advised not to be too trigger happy with this rune to make sure no friend is near when it is used.",
++        "description": "As may be taken from the title, the Great Fireball is basically an enlarged version of the trusty <A HREF=\".DIR_LIBRARY.\"?subtopic=spells&spell=fireballrune>Fireball</A> rune. In contrast to the single shot of a Fireball rune, the Great Fireball affects a huge area, up to 37 square metres! This way any average sized room is easily filled with the searing blaze, scorching all creatures that are in it except for the rune user himself. It stands to reason that the Great Fireball is a favourite of most Cinderfolk, as it is well suited both to hit whole crowds of monsters and individual targets that are difficult to hit because they are fast or hard to spot. There are few adventurers who do not cherish those moments of silent glory when they have just brought down a whole crowd of enemies with a single Great Fireball. Still, due to the large blast radius the users are well advised not to be too trigger happy with this rune to make sure no friend is near when it is used.",
+         "cities": [
+             "Ankrahmun",
+             "Carlin",
+@@ -1480,7 +1480,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "One of the standard field runes, this spell creates a limited barrier made up of crackling energy that will cause electrical damage to all those passing through. Since there are few creatures that are immune to the harmful effects of energy this spell is not to be underestimated. In fact, rather than using the rune to block narrow passageways, many of the more inexperienced Astraians use it as a cheap offensive spell, since affected creatures suffer energy damage at least twice.<BR>Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are <A HREF=\".DIR_GUIDE.\"?subtopic=manual&section=guilds#guildwars>war</A> opponents.",
++        "description": "One of the standard field runes, this spell creates a limited barrier made up of crackling energy that will cause electrical damage to all those passing through. Since there are few creatures that are immune to the harmful effects of energy this spell is not to be underestimated. In fact, rather than using the rune to block narrow passageways, many of the more inexperienced Cinderfolk use it as a cheap offensive spell, since affected creatures suffer energy damage at least twice.<BR>Please note that on optional PvP game worlds this spell has no damaging effect on other characters, unless characters are <A HREF=\".DIR_GUIDE.\"?subtopic=manual&section=guilds#guildwars>war</A> opponents.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -1657,7 +1657,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "In the world of Astra, magical fields are a common threat. Not only do many adventurers have the possibility to use field runes, but there are also a number of other conceivable causes, including traps, breath attacks by certain creatures and even perfectly natural occurrences. To be trapped by such harmful fields is an unpleasant experience most seasoned adventurers have had at some point or other. Many of them simply owe their survival to having had a couple of Destroy Field runes with them! A truly indispensable spell, this rune should not miss in any adventurer's backpack.",
++        "description": "In the world of Cinders, magical fields are a common threat. Not only do many adventurers have the possibility to use field runes, but there are also a number of other conceivable causes, including traps, breath attacks by certain creatures and even perfectly natural occurrences. To be trapped by such harmful fields is an unpleasant experience most seasoned adventurers have had at some point or other. Many of them simply owe their survival to having had a couple of Destroy Field runes with them! A truly indispensable spell, this rune should not miss in any adventurer's backpack.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -2030,7 +2030,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Food plays a crucial role in Astra, as both the healing of wounds and the regeneration of mana require a well-filled stomach. In fact, many a daring adventurer who ventured deep into some dreary dungeon lost his life because he forgot to bring along food. However, with this handy spell in your book you never need to worry, even if you are shipwrecked on a deserted island or stuck in a lightless cave. Simply cast Food and you will receive one or two random delicacies that will help you carry on.",
++        "description": "Food plays a crucial role in Cinders, as both the healing of wounds and the regeneration of mana require a well-filled stomach. In fact, many a daring adventurer who ventured deep into some dreary dungeon lost his life because he forgot to bring along food. However, with this handy spell in your book you never need to worry, even if you are shipwrecked on a deserted island or stuck in a lightless cave. Simply cast Food and you will receive one or two random delicacies that will help you carry on.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -2163,7 +2163,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Despite its obvious potential, the Invisible spell's attractiveness is somewhat diminished by the fact that many creatures as well as most experienced adventurers are capable of perceiving the subtle traces left by its magic, thus being able to effectively see through the spell. However, most minor creatures in Astra are still fooled by the spell's effect, giving the skilled caster who knows how to cast Invisible an invaluable advantage over such opponents. The life of many a sorcerer who was surprised by a hostile crowd has been saved by this spell, but it is also highly recommended for daring explorers who like to delve into unknown dungeons.<BR>Although Invisible is not a rune spell, knights and paladins can profit of the same effect by wearing a stealth ring.",
++        "description": "Despite its obvious potential, the Invisible spell's attractiveness is somewhat diminished by the fact that many creatures as well as most experienced adventurers are capable of perceiving the subtle traces left by its magic, thus being able to effectively see through the spell. However, most minor creatures in Cinders are still fooled by the spell's effect, giving the skilled caster who knows how to cast Invisible an invaluable advantage over such opponents. The life of many a sorcerer who was surprised by a hostile crowd has been saved by this spell, but it is also highly recommended for daring explorers who like to delve into unknown dungeons.<BR>Although Invisible is not a rune spell, knights and paladins can profit of the same effect by wearing a stealth ring.",
+         "cities": [
+             "Ankrahmun",
+             "Carlin",
+@@ -2204,7 +2204,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "The result of tedious studies by Astra's foremost paladins, this spell is used to create fiery ammunition which explodes when hitting a target. To reach its full destructive potential, a paladin should be very well skilled in handling its bow. Casting this spell will create 8 of this highly explosive arrows which can be conjured by every slightly experienced paladin.",
++        "description": "The result of tedious studies by Cinders' foremost paladins, this spell is used to create fiery ammunition which explodes when hitting a target. To reach its full destructive potential, a paladin should be very well skilled in handling its bow. Casting this spell will create 8 of this highly explosive arrows which can be conjured by every slightly experienced paladin.",
+         "cities": [
+             "Ab'Dendriel",
+             "Ankrahmun",
+@@ -2350,7 +2350,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "The Paralyse spell was devised by the legendary druid Arthiniel the Absent-minded. Having extensively researched the arcane art of alchemy, a field of traditional expertise of all druids, Arthiniel found a way to instantly solidify fluids by using magic. Looking for a practical application for his discovery, Arthiniel managed to bind the spell into a rune that could be used against an unsuspecting opponent in combat. The effect of the spell causes the target's blood to thicken, leaving him paralysed and unable to fight or escape unless the effect has worn off.<BR>Today, the spell is rarely being used because it has a number of drawbacks. For instance, its effect can easily be broken by any form of healing magic, and quite a number of Astra's monstrosities are simply immune to it. Worse, Paralyse requires the massive use of mana both during the creation of the rune and during its application, making this an uncommonly expensive spell. However, despite these disadvantages the spell has obvious potential since it is almost sure to buy its user precious time in combat.<BR>On optional PvP game worlds, you can only paralyse characters with whom you are at <A HREF=\".DIR_GUIDE.\"?subtopic=manual&section=guilds#guildwars>war</A>.",
++        "description": "The Paralyse spell was devised by the legendary druid Arthiniel the Absent-minded. Having extensively researched the arcane art of alchemy, a field of traditional expertise of all druids, Arthiniel found a way to instantly solidify fluids by using magic. Looking for a practical application for his discovery, Arthiniel managed to bind the spell into a rune that could be used against an unsuspecting opponent in combat. The effect of the spell causes the target's blood to thicken, leaving him paralysed and unable to fight or escape unless the effect has worn off.<BR>Today, the spell is rarely being used because it has a number of drawbacks. For instance, its effect can easily be broken by any form of healing magic, and quite a number of Cinders' monstrosities are simply immune to it. Worse, Paralyse requires the massive use of mana both during the creation of the rune and during its application, making this an uncommonly expensive spell. However, despite these disadvantages the spell has obvious potential since it is almost sure to buy its user precious time in combat.<BR>On optional PvP game worlds, you can only paralyse characters with whom you are at <A HREF=\".DIR_GUIDE.\"?subtopic=manual&section=guilds#guildwars>war</A>.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+@@ -3451,7 +3451,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "In the heat of battle it is crucial to distract the monsters' attention from weaker party members. For this reason the knights, who are traditionally the best melee fighters in Astra, have developed this remarkable spell. Whenever it is cast in combat, all surrounding monsters will be filled with blind rage and rush to attack the knight, forgetting their current targets. Many lives have been saved by this spell, but quite a number of knights have also paid their courage with their lives, so make sure you are strong enough to meet those you challenge by casting this spell. The sage Eremo teaches this spell to elite knights, who are exceptionally strong in close combat and thus predestined for using it.",
++        "description": "In the heat of battle it is crucial to distract the monsters' attention from weaker party members. For this reason the knights, who are traditionally the best melee fighters in Cinders, have developed this remarkable spell. Whenever it is cast in combat, all surrounding monsters will be filled with blind rage and rush to attack the knight, forgetting their current targets. Many lives have been saved by this spell, but quite a number of knights have also paid their courage with their lives, so make sure you are strong enough to meet those you challenge by casting this spell. The sage Eremo teaches this spell to elite knights, who are exceptionally strong in close combat and thus predestined for using it.",
+         "cities": [
+             "Edron"
+         ],
+@@ -3656,7 +3656,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Spears are especially popular among young paladins. To make spears more attractive also for more experienced distance fighters, Astra's most talented paladins set together and developed the Enchant Spear spell with which regular spears can be greatly improved. To cast this useful spell, the paladin needs to have a spear in his inventory and speak the right formula. The spear will fill up with magic now. Such an Enchanted Spear does not only have more power, but it is also much more durable than a regular spear.",
++        "description": "Spears are especially popular among young paladins. To make spears more attractive also for more experienced distance fighters, Cinders' most talented paladins set together and developed the Enchant Spear spell with which regular spears can be greatly improved. To cast this useful spell, the paladin needs to have a spear in his inventory and speak the right formula. The spear will fill up with magic now. Such an Enchanted Spear does not only have more power, but it is also much more durable than a regular spear.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+@@ -3840,7 +3840,7 @@
+         "cooldownSelf": 2,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "As only druids are skilled enough to control the element ice completely, it was them that developed a rune with a freezing effect. Especially creatures determined by the element fire are vulnerable against this ice-cold rune. Being hit by the magic stored in this rune, an ice arrow seems to pierce the heart of the struck victim. Cold is pervading the body which is so immense that it is taking the breath away. The damage done by this rune is quite impressive which makes this a quite popular rune among Astran mages.",
++        "description": "As only druids are skilled enough to control the element ice completely, it was them that developed a rune with a freezing effect. Especially creatures determined by the element fire are vulnerable against this ice-cold rune. Being hit by the magic stored in this rune, an ice arrow seems to pierce the heart of the struck victim. Cold is pervading the body which is so immense that it is taking the breath away. The damage done by this rune is quite impressive which makes this a quite popular rune among Cinderan mages.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+@@ -6346,7 +6346,7 @@
+         "cooldownSelf": 1800,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "When the gods looked for a way to prepare their human champions for a time of strife they ordered the reluctant Suon and Fafnar to combine their burning essence into a vessel the gods had formed from a part of the fallen Astra's heart. Yet the powerful construct needed a soul. So the gods reached out and found a breed of firebirds that were trapped in the Pits of Inferno since aeons for the amusement of the demons. Their pligth and agony might have never ended if the divine forces had not torn down their prison and imbued their souls into their construct, merging it into a creature of overwhelming power, creating the Emberwing in the process. Due to its very long captivity it vowed vengeance to all forces of destruction. These circumstances also explain the passion and dedication with which Emberwing is protecting its master. Its goal is to raze all evil from the lands of Astra alongside its noble master. The Emberwing is quite an elevated appearance. On first sight one might not think, that this creature is really protective, but indeed it is. The divine fire burning within the creature causes terrible damage to all its offenders. Guarding its master carefully, the summon is a faithful companion in dangerous situations. It is said, that the most devout and skilled heroes are able to gain an intrinsic understanding of such summoning spells, that they are able mould and warp it's energies to call forth a wider array of minions, that, though identical in power and abilities better suit their own taste and style. Initially it was debated if this might be a blasphemous tinkering with a gift of the gods, a rare consensus was reached, that the ability to summon more uncommon allies is rather a deeper understanding of the will and workings of the gods and in concordance with their divine will.",
++        "description": "When the gods looked for a way to prepare their human champions for a time of strife they ordered the reluctant Suon and Fafnar to combine their burning essence into a vessel the gods had formed from a part of the fallen world-mother's heart. Yet the powerful construct needed a soul. So the gods reached out and found a breed of firebirds that were trapped in the Pits of Inferno since aeons for the amusement of the demons. Their pligth and agony might have never ended if the divine forces had not torn down their prison and imbued their souls into their construct, merging it into a creature of overwhelming power, creating the Emberwing in the process. Due to its very long captivity it vowed vengeance to all forces of destruction. These circumstances also explain the passion and dedication with which Emberwing is protecting its master. Its goal is to raze all evil from the lands of Cinders alongside its noble master. The Emberwing is quite an elevated appearance. On first sight one might not think, that this creature is really protective, but indeed it is. The divine fire burning within the creature causes terrible damage to all its offenders. Guarding its master carefully, the summon is a faithful companion in dangerous situations. It is said, that the most devout and skilled heroes are able to gain an intrinsic understanding of such summoning spells, that they are able mould and warp it's energies to call forth a wider array of minions, that, though identical in power and abilities better suit their own taste and style. Initially it was debated if this might be a blasphemous tinkering with a gift of the gods, a rare consensus was reached, that the ability to summon more uncommon allies is rather a deeper understanding of the will and workings of the gods and in concordance with their divine will.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+@@ -6420,7 +6420,7 @@
+         "cooldownSelf": 1800,
+         "cooldownPrimaryGroup": 2,
+         "cooldownSecondaryGroup": 0,
+-        "description": "Looking for a suitable companion to help his followers in the dire days to come, Crunor looked at the most ancient spirits of nature that still roamed the world. They had shed their physical form in centuries long ago. By calling to the echoes of mother Astra's own might the god formed new bodies for the spirits and Nornur spun his ghostly webs to bind the old spirits into the new bodies. This summon reflects the strong bond of the Druid towards nature. Besides being a faithful companion, it has a strong natural protection, unifying all powerful and wondrous forces of flora and fauna. Due to its robust wood-fortified arms and bark mask Grovebeast is able to lure hordes of monsters towards itself whilst its master is able to attack from a distance without taking the bulk of the damage. There are tales that all existing animals in the forest originate from an ancestor of this summon. Mother Astra has endowed this creature with mighty earth spells. Furthermore, physical attacks, carried out by its horns, belong to its repertoire as well. So injured monsters suffer deep wounds, bleeding for quite a while. It is said, that the most devout and skilled heroes are able to gain an intrinsic understanding of such summoning spells, that they are able mould and warp it's energies to call forth a wider array of minions, that, though identical in power and abilities better suit their own taste and style. Initially it was debated if this might be a blasphemous tinkering with a gift of the gods, a rare consensus was reached, that the ability to summon more uncommon allies is rather a deeper understanding of the will and workings of the gods and in concordance with their divine will.",
++        "description": "Looking for a suitable companion to help his followers in the dire days to come, Crunor looked at the most ancient spirits of nature that still roamed the world. They had shed their physical form in centuries long ago. By calling to the echoes of the world-mother's own might the god formed new bodies for the spirits and Nornur spun his ghostly webs to bind the old spirits into the new bodies. This summon reflects the strong bond of the Druid towards nature. Besides being a faithful companion, it has a strong natural protection, unifying all powerful and wondrous forces of flora and fauna. Due to its robust wood-fortified arms and bark mask Grovebeast is able to lure hordes of monsters towards itself whilst its master is able to attack from a distance without taking the bulk of the damage. There are tales that all existing animals in the forest originate from an ancestor of this summon. The world-mother has endowed this creature with mighty earth spells. Furthermore, physical attacks, carried out by its horns, belong to its repertoire as well. So injured monsters suffer deep wounds, bleeding for quite a while. It is said, that the most devout and skilled heroes are able to gain an intrinsic understanding of such summoning spells, that they are able mould and warp it's energies to call forth a wider array of minions, that, though identical in power and abilities better suit their own taste and style. Initially it was debated if this might be a blasphemous tinkering with a gift of the gods, a rare consensus was reached, that the ability to summon more uncommon allies is rather a deeper understanding of the will and workings of the gods and in concordance with their divine will.",
+         "cities": [
+             "Ankrahmun",
+             "Darashia",
+diff -ru a/mods/game_helper/classes/auto_target.lua b/mods/game_helper/classes/auto_target.lua
+--- a/mods/game_helper/classes/auto_target.lua	2026-10-16 05:17:24.284071936 +0000
++++ b/mods/game_helper/classes/auto_target.lua	2026-10-16 05:17:24.284249916 +0000
+@@ -155,7 +155,7 @@
+ -- O servidor manda o nome com o nivel colado: AddCreature envia
+ -- "Nameless Woe [25]" para qualquer monstro com level > 0, e o nome puro para os
+ -- de level 0. Comparar o nome cru contra a lista digitada pelo jogador so batia
+--- nos monstros sem level, entao qualquer conteudo com level (custom da Eloria,
++-- nos monstros sem level, entao qualquer conteudo com level (conteudo custom,
+ -- bosses) nunca entrava nem na whitelist nem na lista de ignorados.
+ _Helper.AutoTarget.stripCreatureLevel = function(name)
+   if not name then return nil end
+diff -ru a/mods/game_helper/helper.lua b/mods/game_helper/helper.lua
+--- a/mods/game_helper/helper.lua	2026-10-16 05:17:24.283584734 +0000
++++ b/mods/game_helper/helper.lua	2026-10-16 05:17:24.283783028 +0000
+@@ -719,7 +719,7 @@
+   local currentPlayer = g_game and g_game.getLocalPlayer and g_game.getLocalPlayer() or nil
+   local dir = getCharacterStorageDir(currentPlayer)
+   if not dir then
+-    displayErrorBox(tr("Bot Eloria settings"), tr("Log in with a character first."))
++    displayErrorBox(tr("Helper settings"), tr("Log in with a character first."))
+     return
+   end
+ 
+@@ -731,7 +731,7 @@
+   local writeDir = getWriteDir()
+   local settingsFile = getHelperSettingsFilePath(dir)
+   if writeDir == "" or not settingsFile then
+-    displayErrorBox(tr("Bot Eloria settings"), tr("Could not find the client write directory."))
++    displayErrorBox(tr("Helper settings"), tr("Could not find the client write directory."))
+     return
+   end
+ 
+@@ -1565,7 +1565,7 @@
+     end
+ 
+     if modules.game_textmessage and modules.game_textmessage.displayGameMessage then
+-      modules.game_textmessage.displayGameMessage(deleted and "Bot Eloria save data deleted." or "Could not delete Bot Eloria save data.")
++      modules.game_textmessage.displayGameMessage(deleted and tr("Helper save data deleted.") or tr("Could not delete the helper save data."))
+     end
+     refreshHelperSettingsPanel()
+   end
+@@ -1578,7 +1578,7 @@
+   end
+ 
+   confirmWindow = displayGeneralBox(
+-    tr("Delete Bot Eloria Save"),
++    tr("Delete Helper Save"),
+     tr('Delete saved settings for "%s"?', entry.name),
+     {
+       { text = tr("Yes"), callback = confirm },
+@@ -1815,7 +1815,7 @@
+   return nil
+ end
+ 
+-function onEloriaBotClick()
++function onOpenHelperClick()
+   toggle()
+ end
+ 
+@@ -5938,7 +5938,7 @@
+     end
+   end
+ 
+-  -- Scripting settings are character-specific, like the rest of EloriaBot.
++  -- Scripting settings are character-specific, like the rest of the helper.
+   if modules.game_helper and modules.game_helper.scripting then
+     modules.game_helper.scripting.loadConfig(helperConfig.scriptingScripts)
+     helperConfig.scriptingScripts = modules.game_helper.scripting.getConfig()
+diff -ru a/mods/game_helper/styles/shortcut_panel.otui b/mods/game_helper/styles/shortcut_panel.otui
+--- a/mods/game_helper/styles/shortcut_panel.otui	2026-10-16 05:17:24.277099500 +0000
++++ b/mods/game_helper/styles/shortcut_panel.otui	2026-10-16 05:17:24.277193786 +0000
+@@ -38,8 +38,8 @@
+     icon-clip: 0 0 20 20
+     icon-size: 17 17
+     icon-offset: 1 1
+-    !tooltip: tr('Open Eloria Bot')
+-    @onClick: modules.game_helper.onEloriaBotClick()
++    !tooltip: tr('Open Helper')
++    @onClick: modules.game_helper.onOpenHelperClick()
+     $pressed:
+       icon-clip: 0 20 20 20
+ 
+diff -ru a/mods/game_hints/hint.otmod b/mods/game_hints/hint.otmod
+--- a/mods/game_hints/hint.otmod	2026-10-16 05:17:24.333226478 +0000
++++ b/mods/game_hints/hint.otmod	2026-10-16 05:17:24.333261079 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: game_hints
+-  description: Astra Hints
++  description: Hints
+   author: R!ck && ZLukSrT#8740 && Christianlb
+   sandboxed: true
+   scripts: [ hint ]
+diff -ru a/mods/game_realminimap/markers.lua b/mods/game_realminimap/markers.lua
+--- a/mods/game_realminimap/markers.lua	2026-10-16 05:17:24.324000974 +0000
++++ b/mods/game_realminimap/markers.lua	2026-10-16 05:17:24.324511545 +0000
+@@ -4015,7 +4015,7 @@
+     ["pos"] = { ["x"] = 32019, ["y"] = 32678, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32020, ["y"] = 31692, ["z"] = 7}
+   },
+@@ -4085,7 +4085,7 @@
+     ["pos"] = { ["x"] = 32041, ["y"] = 32228, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32045, ["y"] = 31579, ["z"] = 7}
+   },
+@@ -4315,7 +4315,7 @@
+     ["pos"] = { ["x"] = 32124, ["y"] = 31139, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32126, ["y"] = 31665, ["z"] = 7}
+   },
+@@ -5105,7 +5105,7 @@
+     ["pos"] = { ["x"] = 32384, ["y"] = 32702, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Towards Museum of Astran Arts",
++    ["description"] = "Towards Museum of Arts",
+     ["icon"] = "down",
+     ["pos"] = { ["x"] = 32387, ["y"] = 32208, ["z"] = 7}
+   },
+@@ -10565,7 +10565,7 @@
+     ["pos"] = { ["x"] = 32389, ["y"] = 32604, ["z"] = 8}
+   },
+   {
+-    ["description"] = "Museum of Astran arts",
++    ["description"] = "Museum of arts",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32394, ["y"] = 32192, ["z"] = 8}
+   },
+@@ -16625,7 +16625,7 @@
+     ["pos"] = { ["x"] = 33455, ["y"] = 31723, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33457, ["y"] = 31031, ["z"] = 9}
+   },
+@@ -16645,12 +16645,12 @@
+     ["pos"] = { ["x"] = 33467, ["y"] = 32797, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33469, ["y"] = 31046, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33470, ["y"] = 30995, ["z"] = 9}
+   },
+@@ -16660,12 +16660,12 @@
+     ["pos"] = { ["x"] = 33471, ["y"] = 32807, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33474, ["y"] = 31011, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33480, ["y"] = 30999, ["z"] = 9}
+   },
+@@ -16685,7 +16685,7 @@
+     ["pos"] = { ["x"] = 33491, ["y"] = 31953, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33496, ["y"] = 31001, ["z"] = 9}
+   },
+diff -ru a/mods/game_store/store.otmod b/mods/game_store/store.otmod
+--- a/mods/game_store/store.otmod	2026-10-16 05:17:24.337502703 +0000
++++ b/mods/game_store/store.otmod	2026-10-16 05:17:24.337544580 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: game_store
+-  description: Astra Game Store
++  description: Game Store
+   author: ZLukSrT#8740 && Christianlb and R!ck
+   sandboxed: true
+   scripts: [ store_description, store, classes/Store, classes/Categories, classes/Home, classes/Offers, classes/Gift, classes/Bazaar, storeprotocol ]
+diff -ru a/mods/game_tibia_market/t_market.otmod b/mods/game_tibia_market/t_market.otmod
+--- a/mods/game_tibia_market/t_market.otmod	2026-10-16 05:17:24.333037854 +0000
++++ b/mods/game_tibia_market/t_market.otmod	2026-10-16 05:17:24.333085629 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: game_tibia_market
+-  description: Market like real Astra.
++  description: Market
+   author: R!ck && Christianlb
+   sandboxed: true
+   scripts: [ classes/t_history, classes/t_ownOffers, t_market_protocol, t_market ]
+diff -ru a/mods/game_tibia_spelllist/t_spelllist.otmod b/mods/game_tibia_spelllist/t_spelllist.otmod
+--- a/mods/game_tibia_spelllist/t_spelllist.otmod	2026-10-16 05:17:24.333306127 +0000
++++ b/mods/game_tibia_spelllist/t_spelllist.otmod	2026-10-16 05:17:24.333339544 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: game_spells
+-  description: Astra Spell List
++  description: Spell List
+   author: Christianlb && ..
+   sandboxed: true
+   scripts: [ t_spelllist ]
+diff -ru a/modules/client_entergame/characterlist.lua b/modules/client_entergame/characterlist.lua
+--- a/modules/client_entergame/characterlist.lua	2026-10-16 05:17:24.284588597 +0000
++++ b/modules/client_entergame/characterlist.lua	2026-10-16 05:17:24.284751857 +0000
+@@ -485,7 +485,7 @@
+     text = "The connection to the game server was lost.\n\nError: The remote host closed the connection.\n\nPlease try again later."
+   elseif code == 16654 then
+     title = tr('Connection Failed')
+-    text = "Cannot connect to the game server.\n\nError: Connection refused.\n\nThe game server is offline. Check astraclient.local\nfor more information.\n\nFor more information take a look at the FAQs in the\nSupport section at astraclient.local."
++    text = "Cannot connect to the game server.\n\nError: Connection refused.\n\nThe game server is offline.\n\nPlease try again later."
+   elseif code == 16655 then
+     autoReconnectBlocked = true
+     removeAutoReconnectEvent()
+diff -ru a/modules/dev_otui/dev_otui.otmod b/modules/dev_otui/dev_otui.otmod
+--- a/modules/dev_otui/dev_otui.otmod	2026-10-16 05:17:24.332867754 +0000
++++ b/modules/dev_otui/dev_otui.otmod	2026-10-16 05:17:24.332918680 +0000
+@@ -1,6 +1,6 @@
+ Module
+   name: dev_otui
+-  description: Visual .otui editor with native AstraClient preview
++  description: Visual .otui editor with a native client preview
+   author: Renan Miyashiro; AstraClient port by Mateuzkl
+   website: https://github.com/opentibiabr/otclient/pull/1782
+   sandboxed: true
+diff -ru a/modules/game_memleak/memleak.lua b/modules/game_memleak/memleak.lua
+--- a/modules/game_memleak/memleak.lua	2026-10-16 05:17:24.337602574 +0000
++++ b/modules/game_memleak/memleak.lua	2026-10-16 05:17:24.337721666 +0000
+@@ -36,7 +36,7 @@
+ function init()
+   if initialized then return end
+   if not g_memLeak then
+-    g_logger.warning('Memory monitor requires an updated AstraClient executable. Rebuild the client first.')
++    g_logger.warning('Memory monitor requires an updated client executable. Rebuild the client first.')
+     return
+   end
+   initialized = true
+diff -ru a/modules/gamelib/core/markers.lua b/modules/gamelib/core/markers.lua
+--- a/modules/gamelib/core/markers.lua	2026-10-16 05:17:24.309135396 +0000
++++ b/modules/gamelib/core/markers.lua	2026-10-16 05:17:24.313555360 +0000
+@@ -4015,7 +4015,7 @@
+     ["pos"] = { ["x"] = 32019, ["y"] = 32678, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32020, ["y"] = 31692, ["z"] = 7}
+   },
+@@ -4085,7 +4085,7 @@
+     ["pos"] = { ["x"] = 32041, ["y"] = 32228, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32045, ["y"] = 31579, ["z"] = 7}
+   },
+@@ -4315,7 +4315,7 @@
+     ["pos"] = { ["x"] = 32124, ["y"] = 31139, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Boat to Astra",
++    ["description"] = "Boat",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32126, ["y"] = 31665, ["z"] = 7}
+   },
+@@ -5105,7 +5105,7 @@
+     ["pos"] = { ["x"] = 32384, ["y"] = 32702, ["z"] = 7}
+   },
+   {
+-    ["description"] = "Towards Museum of Astran Arts",
++    ["description"] = "Towards Museum of Arts",
+     ["icon"] = "down",
+     ["pos"] = { ["x"] = 32387, ["y"] = 32208, ["z"] = 7}
+   },
+@@ -10565,7 +10565,7 @@
+     ["pos"] = { ["x"] = 32389, ["y"] = 32604, ["z"] = 8}
+   },
+   {
+-    ["description"] = "Museum of Astran arts",
++    ["description"] = "Museum of arts",
+     ["icon"] = "flag",
+     ["pos"] = { ["x"] = 32394, ["y"] = 32192, ["z"] = 8}
+   },
+@@ -16625,7 +16625,7 @@
+     ["pos"] = { ["x"] = 33455, ["y"] = 31723, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33457, ["y"] = 31031, ["z"] = 9}
+   },
+@@ -16645,12 +16645,12 @@
+     ["pos"] = { ["x"] = 33467, ["y"] = 32797, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33469, ["y"] = 31046, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33470, ["y"] = 30995, ["z"] = 9}
+   },
+@@ -16660,12 +16660,12 @@
+     ["pos"] = { ["x"] = 33471, ["y"] = 32807, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33474, ["y"] = 31011, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33480, ["y"] = 30999, ["z"] = 9}
+   },
+@@ -16685,7 +16685,7 @@
+     ["pos"] = { ["x"] = 33491, ["y"] = 31953, ["z"] = 9}
+   },
+   {
+-    ["description"] = "Astra Coin",
++    ["description"] = "Chaos Coin",
+     ["icon"] = "star",
+     ["pos"] = { ["x"] = 33496, ["y"] = 31001, ["z"] = 9}
+   },

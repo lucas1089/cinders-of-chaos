@@ -121,6 +121,15 @@ local function exclusions()
 		src.looks[#src.looks + 1] = e.male
 		src.looks[#src.looks + 1] = e.female
 	end
+	-- the retired donor art class outfits (1559 Archmage) and the replacement outfit, switch on or off
+	local classes = Chaos.classes or {}
+	for _, o in ipairs(classes.retiredOutfits or {}) do
+		src.looks[#src.looks + 1] = o.lookType
+	end
+	local repl = classes.outfitReplacement
+	if repl and repl.outfit and repl.outfit.lookType then
+		src.looks[#src.looks + 1] = repl.outfit.lookType
+	end
 	local ok, data = pcall(dofile, "data/scripts/chaos/achievements_data.lua")
 	src.achievements = ok and data or nil
 	ok, data = pcall(dofile, "data/scripts/chaos/season_config.lua")
@@ -459,6 +468,11 @@ local function clientOffer(e, player)
 		local it = ItemType(offer.icon or 1949)
 		view.type, view.item, view.count = "item", it:getClientId(), K.iconCount(offer, stackable(it))
 	end
+	-- what a look offer is (outfit, addons, mount, wings, aura, shader): the client's look preview puts a mount under
+	-- the player's own character and the others on it (client/MANIFEST.md "Look preview"); a pet has none
+	if view.type == "outfit" and offer.kind ~= "unlock" then
+		view.kind = offer.kind
+	end
 	if offer.kind == "bundle" and pactGrant() then
 		for _, p in ipairs(offer.resolved or {}) do
 			if p.kind == "pact" then
@@ -629,43 +643,23 @@ local function offerProblem(player, offer, gift)
 end
 
 -- ------------------------------------------------------------------ delivery
--- gives one offer (not a bundle); returns true or an error text
-local function deliverOne(player, offer)
-	if offer.kind == "item" and offer.overflowInbox then
-		-- the rune packs: stacks of at most 100 into the backpack while they fit, the rest into the store inbox
-		local left, toInbox, carried = offer.count or 1, 0, 0
-		local inbox = player:getInbox()
-		while left > 0 do
-			local n = math.min(100, left)
-			local got = Chaos.giveItem(player, offer.id, n)
-			carried = carried + got
-			if got < n then
-				if got > 0 then
-					player:removeItem(offer.id, got) -- a split stack: the whole stack goes to the inbox instead
-					carried = carried - got
-				end
-				if not inbox or not inbox:addItem(offer.id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1) then
-					if carried > 0 then
-						player:removeItem(offer.id, carried) -- nothing given: the coins are refunded
-					end
-					return ChaosI18n.msg("%s does not have enough room in the backpack or the store inbox.", player:getName())
-				end
-				toInbox = toInbox + n
-			end
-			left = left - n
-		end
-		if toInbox > 0 then
-			player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "%d of them went to your store inbox (no room or capacity).", toInbox))
-		end
-		return true
-	elseif offer.kind == "item" then
-		local count = offer.count or 1
-		local given = Chaos.giveItem(player, offer.id, count)
-		if given < count then
-			if given > 0 then
-				player:removeItem(offer.id, given)
-			end
-			return ChaosI18n.msg("%s does not have enough room or capacity.", player:getName())
+-- the purse delivery (store_delivery.lua): every item goes into the character's purse (the store inbox), else the
+-- depot inbox, else the backpack (README "Store", Delivery to the purse)
+local function delivery()
+	if not ChaosStoreDelivery then
+		dofile("data/scripts/chaos/store_delivery.lua")
+	end
+	return ChaosStoreDelivery
+end
+
+-- gives one offer (not a bundle); returns true or an error text. Items placed are added to `receipt` (a bundle
+-- shares one, so a later failing part takes them back and the buyer gets one line)
+local function deliverOne(player, offer, receipt)
+	if offer.kind == "item" then
+		-- the rune packs (overflowInbox) too: stacks of at most 100, each into the purse
+		local got, err = delivery().giveItems(player, offer.id, offer.count or 1, receipt)
+		if not got then
+			return err
 		end
 		return true
 	elseif offer.kind == "wings" then
@@ -717,8 +711,13 @@ end
 -- items of the bundle given so far
 local ORDER = {item = 1, service = 2, unlock = 2}
 function Shop.deliver(player, offer)
+	local receipt = delivery().newReceipt()
 	if offer.kind ~= "bundle" then
-		return deliverOne(player, offer)
+		local result = deliverOne(player, offer, receipt)
+		if result == true then
+			delivery().tell(player, receipt)
+		end
+		return result
 	end
 	local parts = {}
 	for i, p in ipairs(offer.resolved) do
@@ -727,19 +726,14 @@ function Shop.deliver(player, offer)
 	table.sort(parts, function(a, b)
 		return (ORDER[a.kind] or 3) < (ORDER[b.kind] or 3)
 	end)
-	local given = {}
 	for _, p in ipairs(parts) do
-		local result = deliverOne(player, p)
+		local result = deliverOne(player, p, receipt)
 		if result ~= true then
-			for _, g in ipairs(given) do
-				player:removeItem(g.id, g.count or 1)
-			end
+			delivery().takeBack(receipt) -- the items of the bundle given so far, wherever they went
 			return result
 		end
-		if p.kind == "item" then
-			given[#given + 1] = p
-		end
 	end
+	delivery().tell(player, receipt)
 	return true
 end
 

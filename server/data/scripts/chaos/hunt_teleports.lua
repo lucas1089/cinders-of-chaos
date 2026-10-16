@@ -10,8 +10,10 @@
 --            language; else to the plan's arrival tile with the teleport effect at both ends
 --   exits    areagen.lua's exit portal (action id 47951) asks ChaosHuntTeleports.backFor: a placed plan's exit sends
 --            players back to the room instead of the temple
+--   display  the display monsters in the closed cells are harmless: HT.isDisplay / isDisplaySpot for the other
+--            systems (boss mechanics, monster tiers, treasure goblin skip them), onTargetCombat refuses their hits
 -- Assumed engine API (TFS 1.4): Tile, Game.createItem, Item:setActionId/setAttribute, MoveEvent stepin by aid,
--- GlobalEvent startup, Player:teleportTo/sendCancelMessage/sendTextMessage.
+-- GlobalEvent startup, EventCallback onTargetCombat, Player:teleportTo/sendCancelMessage/sendTextMessage.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -74,6 +76,31 @@ function HT.backFor(pos)
 	return b and P(b) or nil
 end
 
+-- display monsters (the two in the closed cells beside each teleport): found by their spot, since the spawn file's
+-- chaoshunt attribute is not visible to Lua. Other systems ask HT.isDisplaySpot(position) in their onSpawn (the
+-- monster is not placed yet there) or HT.isDisplay(monster) later.
+function HT.isDisplaySpot(pos)
+	return H.isDisplaySpot(cfg, pos)
+end
+
+function HT.isDisplay(creature)
+	if not creature or not creature:isMonster() or creature:getMaster() then
+		return false
+	end
+	return H.isDisplaySpot(cfg, creature:getPosition())
+end
+
+-- a display monster never hurts anyone: every target or area hit of it is refused (the engine asks onTargetCombat
+-- for each creature a combat of it would reach, melee included). It may still turn to a player; it cannot act on it.
+local passive = EventCallback
+passive.onTargetCombat = function(creature, target)
+	if creature and target and HT.isDisplay(creature) then
+		return RETURNVALUE_NOTPOSSIBLE
+	end
+	return RETURNVALUE_NOERROR
+end
+passive:register(-50)
+
 local function placePortal(entry)
 	local pos = P(entry.teleport)
 	local tile = Tile(pos)
@@ -117,6 +144,14 @@ function startup.onStartup()
 			print("[hunt teleports] " .. err)
 		end
 	end
+	-- the hall order: the base server's hunts keep their map teleports; their signs name the hunt and its band
+	for _, entry in ipairs(idx.base or {}) do
+		local stile = entry.sign and Tile(P(entry.sign))
+		local sign = stile and stile:getItemById(cfg.items.sign)
+		if sign then
+			sign:setAttribute(ITEM_ATTRIBUTE_TEXT, H.signText(cfg, entry))
+		end
+	end
 	if #idx.list == 0 then
 		print("[hunt teleports] no placed hunts (" .. PLACES .. " missing: run server/tools/install_content_areas.py)")
 	else
@@ -132,10 +167,30 @@ function float.onThink()
 		return true
 	end
 	local r = cfg.floatText.range
-	for _, entry in ipairs(HT.idx.list) do
-		local pos = P(entry.teleport)
-		for _, spec in ipairs(Game.getSpectators(pos, false, true, r, r, r, r) or {}) do
-			spec:say(H.label(cfg, entry, langOf(spec)), TALKTYPE_MONSTER_SAY, false, spec, pos)
+	for _, list in ipairs({HT.idx.list, HT.idx.base or {}}) do
+		for _, entry in ipairs(list) do
+			local pos = P(entry.teleport)
+			for _, spec in ipairs(Game.getSpectators(pos, false, true, r, r, r, r) or {}) do
+				spec:say(H.label(cfg, entry, langOf(spec)), TALKTYPE_MONSTER_SAY, false, spec, pos)
+			end
+		end
+	end
+	-- the floors: "Floor 7: levels 1-80" in the corridor, the next floor's band over the stairs up
+	if cfg.hall and HT.idx.floors and next(HT.idx.floors) then
+		local seen = {}
+		for _, l in ipairs(H.floorLabels(cfg, HT.idx, "en")) do
+			local key = H.key(l.pos)
+			if not seen[key] then
+				seen[key] = true
+				local pos = P(l.pos)
+				for _, spec in ipairs(Game.getSpectators(pos, false, true, r, r, r, r) or {}) do
+					for _, ll in ipairs(H.floorLabels(cfg, HT.idx, langOf(spec))) do
+						if H.key(ll.pos) == key then
+							spec:say(ll.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
+						end
+					end
+				end
+			end
 		end
 	end
 	return true

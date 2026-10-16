@@ -1,0 +1,256 @@
+-- Spellbook and spell picker logic, no UI calls of its own (spellbook_core_test.lua runs it under LuaJIT and Lua 5.3).
+-- Shared as the global ChaosSpellCore: the Spellbook window (spellbook.lua) and, through base patch 0057, every spell
+-- picker of the helper, the action bar and the custom hotkeys use the same order, the same "learned" rule and the same
+-- learned-spell list.
+--
+-- "Learned" (castable now) is what the server checks on a cast: the spell is of the character's vocation, the level and
+-- magic level are reached, and a needlearn spell is among the learned ones. The learned names come from the server's
+-- spellbook reply (opcode 219, open.learned); the client's own spell list packet is no help, since the base server
+-- fills it with every spell id.
+
+local Core = {}
+
+Core.SOON_LEVELS = 10 -- "Available soon": the spells of the next 10 levels
+Core.FILTERS = {
+  { key = 'learned', text = 'Learned' },
+  { key = 'soon', text = 'Available soon' },
+  { key = 'vocation', text = 'My vocation' },
+  { key = 'all', text = 'All spells' }
+}
+Core.DEFAULT_FILTER = 'learned'
+Core.SETTINGS_NODE = 'chaosSpellbook'       -- g_settings node: {[character name] = filter key}
+Core.PICKER_SETTING = 'chaosPickerLearnedOnly' -- the pickers' "Only show learned spells" box
+
+Core.learnedNames = {} -- lower-case names of the learned needlearn spells (server reply)
+
+local function lower(s)
+  return tostring(s or ''):lower()
+end
+
+function Core.setLearned(names)
+  local set = {}
+  if type(names) == 'table' then
+    for _, name in pairs(names) do set[lower(name)] = true end
+  end
+  Core.learnedNames = set
+  return set
+end
+
+function Core.normalizeFilter(key)
+  for _, f in ipairs(Core.FILTERS) do
+    if f.key == key then return key end
+  end
+  return Core.DEFAULT_FILTER
+end
+
+-- the filter saved for one character in a settings node (a plain table)
+function Core.loadFilter(node, character)
+  if type(node) ~= 'table' or not character or character == '' then return Core.DEFAULT_FILTER end
+  return Core.normalizeFilter(node[character])
+end
+
+function Core.saveFilter(node, character, key)
+  node = type(node) == 'table' and node or {}
+  if character and character ~= '' then node[character] = Core.normalizeFilter(key) end
+  return node
+end
+
+local function vocationList(spell)
+  local out = {}
+  if type(spell.vocations) == 'table' then
+    for _, v in pairs(spell.vocations) do out[#out + 1] = tonumber(v) end
+  end
+  return out
+end
+
+-- ctx.vocation nil: the caller already kept only the character's spells (the pickers)
+function Core.vocationOk(spell, vocation)
+  if vocation == nil then return true end
+  local ids = vocationList(spell)
+  if #ids == 0 then return true end
+  for _, id in ipairs(ids) do
+    if id == tonumber(vocation) then return true end
+  end
+  return false
+end
+
+local function spellLevel(spell)
+  return tonumber(spell.level) or 0
+end
+
+local function spellMagicLevel(spell)
+  return tonumber(spell.maglevel) or tonumber(spell.mlevel) or 0
+end
+
+-- ctx = {vocation, level, magicLevel, learned = set of lower-case names}
+-- 'ready' castable now; 'vocation' not of this vocation; 'learn' needs learning; 'level' level or magic level too low
+function Core.status(spell, ctx)
+  ctx = ctx or {}
+  if not Core.vocationOk(spell, ctx.vocation) then return 'vocation' end
+  if spell.needLearn then
+    local learned = ctx.learned or Core.learnedNames
+    if not learned[lower(spell.name)] then return 'learn' end
+  end
+  local level, ml = tonumber(ctx.level), tonumber(ctx.magicLevel)
+  if level and spellLevel(spell) > level then return 'level' end
+  if ml and spellMagicLevel(spell) > ml then return 'level' end
+  return 'ready'
+end
+
+function Core.textMatches(spell, text)
+  text = lower(text):gsub('^%s+', ''):gsub('%s+$', '')
+  if text == '' then return true end
+  return lower(spell.name):find(text, 1, true) ~= nil or lower(spell.words):find(text, 1, true) ~= nil
+end
+
+function Core.filterMatches(spell, ctx, filter)
+  filter = Core.normalizeFilter(filter)
+  if filter == 'all' then return true end
+  local status = Core.status(spell, ctx)
+  if filter == 'learned' then return status == 'ready' end
+  if filter == 'vocation' then return status ~= 'vocation' end
+  -- soon: of this vocation, not castable yet, at most SOON_LEVELS above the character's level
+  if status == 'ready' or status == 'vocation' then return false end
+  local level = tonumber(ctx and ctx.level) or 0
+  return spellLevel(spell) <= level + Core.SOON_LEVELS
+end
+
+function Core.matches(spell, ctx, filter, text)
+  return Core.filterMatches(spell, ctx, filter) and Core.textMatches(spell, text)
+end
+
+-- level, then name, then words (every spell list and picker)
+function Core.compare(a, b)
+  local la, lb = spellLevel(a), spellLevel(b)
+  if la ~= lb then return la < lb end
+  local na, nb = lower(a.name), lower(b.name)
+  if na ~= nb then return na < nb end
+  return lower(a.words) < lower(b.words)
+end
+
+function Core.sort(list)
+  table.sort(list, Core.compare)
+  return list
+end
+
+-- indexes of `spells` that pass, in order
+function Core.visibleIndexes(spells, ctx, filter, text)
+  local out = {}
+  for i, spell in ipairs(spells) do
+    if Core.matches(spell, ctx, filter, text) then out[#out + 1] = i end
+  end
+  return out
+end
+
+-- seconds left of a cooldown that ends at `endsAt` (ms clock), nil when it is over
+function Core.cooldownLeft(endsAt, now)
+  endsAt, now = tonumber(endsAt), tonumber(now)
+  if not endsAt or not now or endsAt <= now then return nil end
+  return math.ceil((endsAt - now) / 1000)
+end
+
+-- --------------------------------------------------------------------------------------------- spell pickers
+-- The pickers (SpellPreview rows: id = spell id, text = "name\nwords") of mods/game_helper, modules/game_actionbar and
+-- mods/client_settings call Core.setupPicker(window, player, spells) after building their rows (base patch 0057):
+-- rows sorted by level then name, rows above the character's level dimmed, the "Only show learned spells" box and the
+-- search box filter together, and the empty preview at the top says what to do.
+-- env (optional, for tests): {tr, getSetting(key) -> bool|nil, setSetting(key, bool)}
+local function defaultEnv()
+  return {
+    tr = rawget(_G, 'tr') or function(s) return s end,
+    getSetting = function(key)
+      local s = rawget(_G, 'g_settings')
+      if not s then return nil end
+      local ok, has = pcall(s.exists, key)
+      if not (ok and has) then return nil end
+      local okv, v = pcall(s.getBoolean, key)
+      return okv and v or false
+    end,
+    setSetting = function(key, value)
+      local s = rawget(_G, 'g_settings')
+      if s then pcall(s.set, key, value) end
+    end
+  }
+end
+
+local function child(window, id)
+  local ok, w = pcall(function() return window:recursiveGetChildById(id) end)
+  return ok and w or nil
+end
+
+-- player context of a picker: level and magic level of the local player; the picker filtered the vocation already
+function Core.pickerContext(player)
+  local ctx = { learned = Core.learnedNames }
+  if player then
+    local ok, level = pcall(function() return player:getLevel() end)
+    if ok then ctx.level = tonumber(level) end
+    local okm, ml = pcall(function() return player:getMagicLevel() end)
+    if okm then ctx.magicLevel = tonumber(ml) end
+  end
+  return ctx
+end
+
+-- spells: name -> spell data (SpellInfo.Default). Returns the refilter function (tests call it).
+function Core.setupPicker(window, player, spells, env)
+  env = env or defaultEnv()
+  local tr = env.tr or function(s) return s end
+  local list = window and child(window, 'spellList')
+  if not list then return nil end
+  spells = spells or {}
+  local ctx = Core.pickerContext(player)
+
+  local rows = {}
+  for _, w in ipairs(list:getChildren()) do
+    local text = w:getText() or ''
+    local name = text:match('^(.-)\n') or text
+    local words = text:match('\n(.*)$') or ''
+    local data = spells[name] or {}
+    rows[#rows + 1] = {
+      widget = w,
+      spell = { name = name, words = words, level = data.level, maglevel = data.mlevel or data.maglevel,
+        needLearn = data.needLearn }
+    }
+  end
+  table.sort(rows, function(a, b) return Core.compare(a.spell, b.spell) end)
+  for i, row in ipairs(rows) do
+    list:moveChildToIndex(row.widget, i)
+    row.status = Core.status(row.spell, ctx)
+    if row.status ~= 'ready' then
+      -- above the character's level (or not learned): dimmed, the icon dithered
+      if row.widget.image and row.widget.image.gray then row.widget.image.gray:setVisible(true) end
+      row.widget:setOpacity(0.5)
+    end
+  end
+
+  local tick, search = child(window, 'tick'), child(window, 'searchText')
+  local function refilter()
+    local learnedOnly = tick and tick:isChecked() or false
+    local text = search and search:getText() or ''
+    for _, row in ipairs(rows) do
+      local visible = (not learnedOnly or row.status == 'ready') and Core.textMatches(row.spell, text)
+      row.widget:setVisible(visible)
+    end
+  end
+  if tick then
+    tick:setText(tr('Only show learned spells'))
+    tick:setEnabled(true)
+    local saved = env.getSetting and env.getSetting(Core.PICKER_SETTING)
+    tick:setChecked(saved == true)
+    tick.onCheckChange = function(_, checked)
+      if env.setSetting then env.setSetting(Core.PICKER_SETTING, checked == true) end
+      refilter()
+    end
+  end
+  if search then
+    search.onTextChange = function() refilter() end
+  end
+  local preview = child(window, 'preview')
+  if preview and (preview:getText() or '') == '' then
+    preview:setText(tr('Select a spell from the list.'))
+  end
+  refilter()
+  return refilter, rows
+end
+
+_G.ChaosSpellCore = Core
+return Core

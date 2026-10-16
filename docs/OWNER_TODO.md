@@ -165,8 +165,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     and a second run changed nothing.
   - **Gates in the capital's temple** (Cinderhold, town 2, the main city since your request of 2026-10-15; they were
     in Mirewake's hall before), in its upper hall on floor 6 (the stairs of the temple's two side rooms lead there):
-    Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6; the Memorial's portal 32379, 32240, 6 (`memorial.lua`
-    puts it there, `plaza.portal`). The Chronicle's scars are around that temple, every new character's home town is
+    Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6. On 2026-10-16 both gates and the Memorial's portal moved to
+    the Halls of Services' portal rooms (server/README.md "City portals"). The Chronicle's scars are around that temple, every new character's home town is
     the capital, and the hall is off every walking line (checked on the base map: plain floor, every other tile of
     the hall still reached from both stairs). The hunt teleport room is one step away: its two great teleports stand 5
     tiles north of the temple (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933

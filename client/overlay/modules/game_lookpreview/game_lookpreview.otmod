@@ -1,0 +1,12 @@
+Module
+  name: game_lookpreview
+  description: The shared look preview panel (the character large, with the picked look or effect applied by the engine) of the Outfit, Cosmetics, Store and Pets windows
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ lookpreview_core, lookpreview ]
+  dependencies:
+    - client_chaos_theme
+  autoload: true
+  autoload-priority: 990
+  @onLoad: init()
+  @onUnload: terminate()

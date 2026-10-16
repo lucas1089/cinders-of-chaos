@@ -41,8 +41,8 @@ or copy `spells/chaos` to `data/spells/scripts/chaos` and paste `spells_chaos.xm
 
 Spells call `Fx("fire_nova", CONST_ME_FIREAREA)` / `FxMissile("fire_bolt", CONST_ANI_FIRE)`. When `data/lib/chaos_fx.lua` (other task) defines
 them, custom ids are used; otherwise `_fx_fallback.lua` returns the standard fallback shown in the call. Effect names used: fire_nova,
-frost_burst, chain_lightning, blood_rune, shadow_smoke, poison_cloud, holy_smite, arcane_circle, summon_portal, aura_ring, heal_sparkle,
-ground_slam; missiles fire_bolt, ice_shard, arcane_orb, shadow_bolt, holy_arrow, blood_spear, lightning_orb, poison_dart.
+frost_burst, chain_lightning, blood_rune, shadow_smoke, poison_burst, holy_smite, arcane_circle, summon_portal, arcane_aura, heal_sparkle,
+ground_slam (every name must be in ChaosFx: tests/spell_fx_names_test.lua); missiles fire_bolt, ice_shard, arcane_orb, shadow_bolt, holy_arrow, blood_spear, lightning_orb, poison_dart.
 `chaos_fx.lua` must be loaded before spells (data/lib is, via lib.lua; add a `dofile` line there).
 
 ## Spells

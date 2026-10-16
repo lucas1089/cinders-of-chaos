@@ -16,11 +16,18 @@ for p in "$HERE"/base-patches/*.patch; do patch -p1 -d "$OUT" < "$p"; done
 rm -rf "$OUT/mods/game_stash" "$OUT/modules/game_stash"
 # the base client's battle pass is for its own server; ours is the Chaos season pass (extended opcode 227)
 rm -rf "$OUT/modules/game_battlepass" "$OUT/mods/game_battlepass"
+# the base Task Hunt window (bounty tasks, preferred list, talisman, weekly tasks, task shop) reads packets of newer
+# protocols the 10.98 server never sends, so it stayed empty; ours: Hunt > Kill Tasks (game_bestiary) and the Bounty
+# Board (game_bounty). Every caller of the module checks that it exists.
+rm -rf "$OUT/modules/game_task_hunt"
 # no scripting bot: the vBot module (scripts, cavebot) and the helper's cavebot and script workspace go
 # (patch 0015 removes them from the helper window, its module list and game_interface's load-later list)
 rm -rf "$OUT/modules/game_bot"
 rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting.lua" \
   "$OUT/mods/game_helper/scripting_actions.lua" "$OUT/mods/game_helper/scripting_compat.lua"
+# the base native splash picture (used only with init.lua ENABLE_NATIVE_SPLASH on; without it no splash is drawn) and
+# the browser build's emblem show the base client's name in the picture (client/BASE.md "Names check")
+rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
 # (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells

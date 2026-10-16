@@ -318,6 +318,120 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     pt-BR texts, with the panel's other `tr()` labels (Boosted, Creature, Casts, Watch), are in
     `client_chaos_locale/pt_br.lua`. Applies after 0014 (casts.lua; checked with `patch --dry-run` on the assembled
     tree's files). Run in the Linux client (pt-BR and English login screens, 2026-10-14).
+33. `0055` (C++ `src/client/map.h`, `tile.h/.cpp`, `mapview.cpp`, `luafunctions_client.cpp`): ground effects. An effect
+    id registered with `g_map.setGroundEffect(id, true)` is drawn under every creature, like a decal on the floor:
+    `Tile::drawTop` skips it and `MapView::drawFloor` draws it after the bottom layer. A big effect reaches up and left
+    of its tile into tiles drawn earlier, so with `GameMapDrawGroundFirst` (the 1098 profile, `0006`) the first tile
+    it covers (the earliest diagonal of the painter order) draws it after its own bottom layer; the walls and items of
+    the later tiles still go over it. In the negative-offset layer pass it is queued after every bottom layer. Lua:
+    `g_map.setGroundEffect(id, on)`, `g_map.isGroundEffect(id)`, `g_map.clearGroundEffects()`. `game_groundfx` registers
+    every floor-shaped spell effect (its generated `groundfx_data.lua`, MANIFEST). The overlay's
+    `game_townportal` registers the Town Portal channel circle (effect 744, `portal_pad`; live test winpkg-35: the
+    circle covered the character); a client without the patch skips the call and draws it as before. Applies after
+    `0001`-`0054`; `tile.cpp`, `mapview.cpp` and `luafunctions_client.cpp` compile (`g++ -fsyntax-only` with the
+    Linux build's flags). Not yet run in a client.
+34. `0056` (Lua and OTUI): fixes from the winpkg-35 test (owner's screenshots 14-31, MANIFEST.md "Client fixes of
+    winpkg-35"). `client_settings`: the four rarity options of Graphics one per row (the right column began at a
+    fixed 250 px and ran over the left one and the info icon) with an Orb size box (`liquidOrbSize`, small / medium /
+    large, read by `game_shaderfx`); the Graphics Engine box greyed out with a tooltip when `g_graphics.getVersion()`
+    is not OpenGL ES (only an ANGLE build can switch to Vulkan or DirectX; the Windows package is desktop OpenGL, so
+    "DirectX11" there was a label); the Options menu buttons sized by their real height (22 px entries, 21 px
+    sub-items, 3 px gap; 20 px squeezed "Graphics" / "Effects") and named by `tr()` labels drawn over the tab images
+    (their 7 px baked words are erased, `tools/gen_ui_reskin.py` TEXT_FREE); `backgroundFrameRate` and `limitEffects`
+    no longer log "Failed to apply tmp option" while their no-limit box is checked. `game_things`: HD Sprite
+    Upscaling (`hdmodeBox`) is set right before the dat / spr load (the option's own apply ran from an event that could
+    come after the load at start; xBRZ runs on the CPU, so the renderer does not matter). `game_modaldialog`: a button
+    is as wide as its label ("Skip tutorial" was cut to 43 px). `game_console`: Enter or Shift+Enter on an empty chat
+    closes it in "Chat On" and "Chat On*" and gives the keys back to walking; with text it sends, and "Chat On*" closes
+    after (the rule is `ChaosChatLogic.enterAction`, overlay `game_chatpanel`); the temporary chat compared the button
+    text with the English "Chat On*", so in pt-BR it never closed. `game_interface`: the bottom splitter's minimum
+    118 -> 96 (`game_chatpanel` sizes the area). `game_skills`: `getContentPanelHeight` counts rows by
+    `isExplicitlyVisible` (`isVisible` is false for every row while the window is closed, so a height measured then was
+    0 and the window could not grow past the 125 px floor, Hit Points cut off) and `online` sets the maximum from the
+    content instead of a fixed 390 / 680 (the seven profession rows of `game_craftskills` did not fit). `client_background`, `client_topmenu`: a failing clientservices
+    request is logged once per address and retried after 1, 2, 4 ... 30 minutes (the status request scheduled two
+    retries per failure, doubling the requests). `mods/game_helper`: the bot HUD calls go to `ChaosBotHud` (overlay
+    `game_helperhud`) when the cavebot file is left out (`assemble_client.sh` deletes it, and with it the HUD, so "Show
+    Bot HUD" did nothing); the Set Key bar, New Preset and Add buttons lose the `buttons-blue` image (the overlay
+    Button style clips 64 x 24 with border 5 and cut that sheet into empty blue boxes); Set Key, Rename, Duplicate, New
+    Preset and "My character save" are as wide as their labels. Applies after `0001`-`0055` (checked with the full
+    chain on the base archive of `windows-assets`). Not yet run in a client.
+35. `0057` (Lua `mods/game_helper/helper.lua`, `modules/game_actionbar/actionbar.lua`,
+    `mods/client_settings/classes/custom-hotkeys.lua`): every spell picker (the helper's Assign Healing / Attack Spell,
+    Select Attack Spell, Assign Training / Haste / Cure Paralyze Spell, the action bar's and the custom hotkeys' Assign
+    Spell) calls `ChaosSpellCore.setupPicker` (overlay `game_spellbook`, `spellbook_core.lua`) instead of sorting by name:
+    level then name, rows above the level dimmed, the "Only show learned spells" box works (the helper had forced it on
+    and disabled it, and no picker read it), the search and the box filter together, the empty preview at the top
+    says what to do. Applies after `0001`-`0056` (checked with the full chain on the base archive). Not yet run in a client.
+36. `0058` (Lua `modules/corelib/keybinds.lua`): no "Open Prey Dialog" hotkey (Ctrl+Y by default). `game_prey` needs
+    the `GamePrey` feature, which the 10.98 profile of `game_features` leaves off: the 10.98 server sends no prey data
+    and no prey byte in the login packet, so turning it on would misread that packet. `game_prey.show` returned at once
+    and the hotkey did nothing. The module stays loaded (`game_interface` loads it and calls it), inert. Applies after
+    `0001`-`0057` (checked with the full chain on the base archive). Not yet run in a client.
+37. `0059` (Lua, OTUI, OTMOD, JSON): no other server's or client's name in what the player reads. The side-bar
+    shortcut beside the orb (second icon of the left column) said "Open <another server> Bot"; it reads "Open Helper"
+    now, the helper's settings and save-data boxes say "Helper" (pt-BR in `client_chaos_locale/pt_br.lua`) and the
+    handler is `onOpenHelperClick`. Also renamed: the report reasons (`data/json/report-name.json`,
+    `report-statement.json`), the Cyclopedia magical archive spell texts, the map marker labels (`gamelib/core/markers.lua`,
+    `game_realminimap/markers.lua`, `markers.json`), the "Connection refused" box of `client_entergame/characterlist.lua`,
+    the `game_memleak` warning and six `.otmod` descriptions; the hidden stock top menu's Discord button lost its
+    hard-coded invite of another server (`Services.status` still sets the link). `.otmod` author and website lines
+    (attribution), comments, identifiers and the C++ sources are unchanged. The removed lines of the patch carry the old
+    names (a diff has to), as in `0014`. Applies after `0001`-`0058` with no offset or fuzz (full chain on the base
+    archive). Not yet run in a client.
+
+38. `0060` (Lua `modules/game_outfit/outfit.lua`, OTUI `data/styles/40-outfitwindow.otui`): the Customise Character
+    window lists every outfit, mount, aura and shader of the game (the server's wardrobe catalogue, kept by the overlay
+    module `game_unlocks`), the ones not owned greyed with their source in the tooltip; they can be looked at, not
+    worn: Ok is disabled while a part in use is locked and `accept()` sends nothing then. Presets with a locked part
+    are greyed. "Only mine" (now `tr()`) works on every list, is kept per character and list and no longer resets on a
+    row change. Cards show the look facing south, filling the card (`game_lookpreview.fitCard`). The rule is
+    `UnlocksCore` (`unlocks_core_test.lua`); without `game_unlocks` the window is as before (`MANIFEST.md` "Owned and
+    locked lists"). Applies after `0001`-`0059` (checked with `patch --dry-run` on the chain applied to the base
+    archive). Not yet run in a client.
+39. `0061` (C++ `src/client/protocolgameparse.cpp`): **Container open recovery.** A container open packet (0x6E) the
+    client cannot read used to leave the old window on that container id while the server already held the new
+    container there, so every later add / update / remove of the new container landed in the wrong window (owner
+    2026-10-16: "the loot bag and the backpack are conflicting"; cause: gems whose items.otb nodes lacked
+    `FLAG_ANIMATION`, server/README.md "Gems and sockets"). `parseOpenContainer` now catches the error, closes the id
+    locally (`Game::processCloseContainer`: the stale window goes; later add / update / remove packets for the id are
+    ignored, as the stock `processContainer*` do for an unknown id), sends a close for the id to the server (its close
+    answer then finds nothing), logs one line "Container N could not be opened (item C): ..." with the client id of
+    the item being read (a short item is often noticed one item later), and rethrows, so the packet's rest is dropped
+    and logged as before. The full chain `0001`-`0061` applied to a fresh copy of the base archive; the patched file
+    compiled with the build's own flags (no new warnings). Not yet run in a client: open a container holding an item
+    with mismatched bytes (`server/tools/check_item_wire.py` lists them) and check the window closes and reopens cleanly.
+40. `0062` (Lua `mods/game_helper/helper.lua`, `classes/magic_shooter.lua`): **the helper's cooldown channels**
+    (server/README.md "Cooldown channels"; owner 2026-10-16: heal and attack never wait for each other). The helper
+    serialised them in the client although the server (engine src-patch 0042) keeps them apart: one cast guard of 4 a
+    second for every spell (`0026`), one 1 s object-use timer for potions, the healing rune, the shooter's runes and the
+    special foods plus a 1.1 s potion "turn" after every rune, and a heal waited while a cast-time spell charged
+    (`0052`). Now `helperCastAllowed(words, channel)` keeps a guard per channel (heal, attack, support; healing spells
+    and the friend heals "heal", the shooter the channel of the spell's group, the rest "support"), and potions, the
+    healing rune, attack runes, support runes and special foods each have their own timer (`objectUseReady` /
+    `markObjectUse`, `_Helper.isObjectUseOnCooldown(channel)` / `setObjectUseCooldown(ms, channel)`). A heal goes out
+    during a cast-time spell (the server no longer interrupts the cast for it); the shooter still waits with attack
+    spells and attack runes. Both from the overlay `game_helpertimers` (`ChaosHelperTimers`); without it the old shared
+    guard and timer stay. The chain `0001`-`0062` applied to the base archive; both files parse in LuaJIT and Lua 5.3;
+    tests `game_helpertimers/helpertimers_test.lua`. Not yet run in a client: a heal under 50% during an attack rotation
+    and a cast-time spell, potion and rune in the same second.
+
+### Names check of the assembled client
+
+`check_names.py` skips `base-patches/` and the base tree is not in git, so names from the base client reach the game
+unless the assembled tree is read. Before each release, and after a base patch that adds UI text:
+
+    client/tools/assemble_client.sh <base-client-dir> <out>
+    python3 -I tools/ci/check_names.py --client <out>
+
+It reads what the player sees in `init.lua`, `modules/`, `mods/`, `data/` and `layouts/` (Lua string literals with a
+space, a URL or given to `tr()`; OTUI/OTML text, tooltip, placeholder, title and description values and URLs; `.otmod`
+name and description; JSON keys and values) against the same name list as the repo check. Names added from
+2026-10-16 on are stored only as hashes (`DENY_HASHES`, see the script's docstring). Skipped on purpose:
+`data/json/hunting_places.json` (no module reads it) and one creature name of the helper's `spelldata.json`
+(`CLIENT_ALLOW`). `windows-package.yml` runs it on the Linux client job's assembled tree, so a package with such a
+name fails. `assemble_client.sh` also deletes the base native splash picture and the browser emblem: both show the
+base client's name. Images are not read for baked-in text; check new base pictures by eye.
 
 ### Client guard: the build secret
 
@@ -340,6 +454,11 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
 ## What the overlay replaces
 - `game_stash` (the client's own targets a different protocol): ours, extended opcode 110.
 - `game_battlepass`: ours, the Chaos season pass (extended opcode 227, server `seasonpass.lua`).
+- `game_task_hunt` (deleted by `assemble_client.sh`): bounty tasks, preferred list, talisman, weekly tasks and task shop
+  read packets of newer protocols the 10.98 server never sends, so the window showed placeholders and buttons that did
+  nothing. Ours: Hunt > Kill Tasks (`game_bestiary`, extended opcode 253) and Adventure > Bounty Board (`game_bounty`,
+  223). Its callers (`game_sidebuttons`, `game_trackers`) check that the module exists.
+- Prey: no Chaos equivalent and no top menu entry; base patch `0058` drops its hotkey (`game_prey` stays loaded, inert).
 - Login background: the client's own `client_background` module stays (other modules call its functions); the overlay replaces only its images `data/images/title.png` (the login background) and `data/images/ui/logo.png` (the Cinders of Chaos logo). The overlay module `client_chaos_login` lays the login screen out on top of both stock modules (see `MANIFEST.md`, "Login screen"); `title.png` and the logo are made by `tools/gen_login_art.py` from the login artwork in `tools/art_src/`.
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 

@@ -12,7 +12,8 @@
 -- Rules (rule.type):
 --   rotation  the world boss event: a fixed time slot, the boss of each slot by the rotation (worldboss.lua)
 --   weekly    times = {{day = 1..7 (1 = Sunday), hour, min}}: the base server's weekly island bosses
---   timer     seconds: a map spawn, back this long after its death (the engine waits while a player can see the spot)
+--   timer     seconds: a map spawn, back this long after its death (with spawnNearPlayers, engine patch 0041, also
+--             while players see the spot, unless one stands next to it; off: the engine waits until nobody sees it)
 --   raid      interval, margin (minutes): a base server raid (data/raids/raids.xml). The engine rolls every raid once a
 --             minute with chance 1 / interval once `margin` minutes passed since the last raid of any kind ended, so
 --             it comes back on average every `interval` minutes. The values are read again from raids.xml at startup.

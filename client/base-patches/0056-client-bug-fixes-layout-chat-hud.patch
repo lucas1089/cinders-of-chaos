@@ -1,0 +1,816 @@
+# Client bug fixes from the winpkg-35 test (client/BASE.md 0056, MANIFEST.md "Chat panel", "Map zoom", "Helper bot HUD"): Options > Graphics rarity options in one column and an Orb size box (option liquidOrbSize, overlay game_shaderfx); the Graphics Engine box greyed out (OpenGL) when the client is not an OpenGL ES build; the Options menu entries sized right (22 px buttons, 21 px sub-items) and named by tr() labels (the baked words of /images/optionstab are erased by tools/gen_ui_reskin.py TEXT_FREE); no "Failed to apply tmp option" for backgroundFrameRate / limitEffects while their "no limit" box is checked; modal dialog buttons as wide as their text; HD Sprite Upscaling set before the sprites load (game_things); Enter / Shift+Enter on an empty chat closes it (ChaosChatLogic of the overlay module game_chatpanel), the temporary chat no longer compares the English button text; the bottom splitter minimum 118 -> 96; a chat tab switch no longer adds a tab panel that is still a child (corelib UIMoveableTabBar) and writes the newest 40 lines at once, the older ones on the next event (game_console TabMessages); the Skills window measures its rows by their own visibility (closed, it measured 0 and could not grow past 125 px) and its maximum follows the content instead of a fixed 390 / 680; the login-screen services (clientservices) logged once and retried with a growing delay (client_background, client_topmenu); the helper: bot HUD drawn by the overlay module game_helperhud (ChaosBotHud) when the cavebot file is left out, buttons sized to their labels and no buttons-blue image under the overlay Button style. Lua and OTUI only. Applies after 0001-0055.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1,3 +1,9 @@
++-- true when the client draws through OpenGL ES (ANGLE on Windows: Vulkan, DirectX 11/9 or OpenGL behind it)
++function isOpenGlEsRenderer()
++    local ok, version = pcall(function() return g_graphics.getVersion() end)
++    return ok and type(version) == 'string' and version:find('OpenGL ES', 1, true) ~= nil
++end
++
+ local function setHealthManaCircleVisible(value)
+     if modules.client_settings and modules.client_settings.setHealthCircleModules then
+         modules.client_settings.setHealthCircleModules(value)
+@@ -916,7 +922,9 @@ return {
+             local graphics = GameOptions:getLoadedWindow('graphics')
+             local wid = graphics:recursiveGetChildById('noFrameCheckBox')
+             if wid and wid:isChecked() then
+-              return false
++              -- the slider is off while "No Frame Rate Limit" is checked: keep the value, nothing to show
++              -- (returning false logged "Failed to apply tmp option: backgroundFrameRate" at every start)
++              return true
+             end
+ 
+             local wid = graphics:recursiveGetChildById('frameRateLabel')
+@@ -1003,6 +1011,11 @@ return {
+   engine = {
+ 		value = 2,
+         apply = function(value)
++            -- Only an OpenGL ES build (ANGLE) can switch to Vulkan or DirectX at start; a desktop OpenGL build
++            -- always draws with OpenGL, so the choice shows OpenGL there (the combo box is greyed out)
++            if not isOpenGlEsRenderer() and value ~= 5 then
++                addEvent(function() GameOptions:setOption('engine', 5) end)
++            end
+             return true
+         end,
+         tempApply = function(value)
+@@ -1510,7 +1523,9 @@ return {
+             local effects = GameOptions:getLoadedWindow('effects')
+             local wid = effects:recursiveGetChildById('maxEffects')
+             if wid and wid:isChecked() then
+-              return false
++              -- no limit while "max effects" is checked: keep the value quietly (it logged "Failed to apply tmp
++              -- option: limitEffects")
++              return true
+             end
+ 
+             local wid = effects:recursiveGetChildById('effectLimitLabel')
+@@ -1984,6 +1999,16 @@ return {
+     end,
+   },
+ 
++  -- 1 small, 2 medium (the default), 3 large; the overlay module game_shaderfx sizes the orbs
++  liquidOrbSize = {
++    value = 2,
++    apply = function(value)
++      local m = modules.game_shaderfx
++      if m and m.onOption then m.onOption('orbSize', value) end
++      return true
++    end,
++  },
++
+   enableShaders = {
+     value = true,
+     apply = function(value)
+--- a/mods/client_settings/options/graphics.otui
++++ b/mods/client_settings/options/graphics.otui
+@@ -28,6 +28,10 @@ GraphicsWindow < Panel
+       self:addOption("DirectX11 (WARP)", nil, true)
+       self:addOption("DirectX9", nil, true)
+       self:addOption("OpenGL", nil, true)
++      if not modules.client_settings.isOpenGlEsRenderer() then
++        self:setEnabled(false)
++        self:setTooltip(tr('This client draws with OpenGL. Vulkan and DirectX are only available in a client built with OpenGL ES (ANGLE).'))
++      end
+ 
+     @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
+ 
+@@ -325,7 +329,9 @@ GraphicsWindow < Panel
+       !tooltip: tr('If you are logged into the game, you can see your current frame \nrate here. Press Alt+F8 to show or hide your current frame rate in \nthe game window.')
+ 
+   FlatPanel
+-    size: 505 44
++    // one option per row (two columns overlapped: the right one began at a fixed 250 px and the
++    // pt-BR texts are longer); each row stops short of the info icon on the right
++    size: 505 92
+     anchors.top: prev.bottom
+     anchors.right: parent.right
+     anchors.left: parent.left
+@@ -360,9 +366,9 @@ GraphicsWindow < Panel
+       color: $var-text-cip-color
+       text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
++      anchors.top: rarityOutlineMap.bottom
+       margin-top: 7
+-      margin-left: 250
++      margin-left: 16
+       image-source: /images/ui/checkbox
+       image-clip: 0 0 12 12
+       @onSetup: |
+@@ -378,8 +384,8 @@ GraphicsWindow < Panel
+       color: $var-text-cip-color
+       text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 25
++      anchors.top: rarityOutlineSlots.bottom
++      margin-top: 7
+       margin-left: 16
+       image-source: /images/ui/checkbox
+       image-clip: 0 0 12 12
+@@ -396,15 +402,41 @@ GraphicsWindow < Panel
+       color: $var-text-cip-color
+       text-offset: 14 -2
+       anchors.left: parent.left
+-      anchors.top: parent.top
+-      margin-top: 25
+-      margin-left: 250
++      anchors.top: rarityFrameShine.bottom
++      margin-top: 7
++      margin-left: 16
+       image-source: /images/ui/checkbox
+       image-clip: 0 0 12 12
+       @onSetup: |
+         local value = modules.client_settings.getOption('liquidOrbs')
+         self:setChecked(value == true)
+ 
++    ComboBox
++      id: liquidOrbSize
++      size: 110 18
++      anchors.verticalCenter: liquidOrbs.verticalCenter
++      anchors.right: parent.right
++      margin-right: 24
++      color: $var-text-cip-color
++      !tooltip: tr('Size of the health and mana orbs')
++      @onSetup: |
++        self:addOption(tr('Small'), 1, true)
++        self:addOption(tr('Medium'), 2, true)
++        self:addOption(tr('Large'), 3, true)
++        local value = modules.client_settings.getOption('liquidOrbSize')
++        self:setCurrentIndex(math.max(1, math.min(3, tonumber(value) or 2)), true)
++      @onOptionChange: modules.client_settings.setTempOption(self:getId(), self.currentIndex)
++
++    Label
++      id: liquidOrbSizeLabel
++      !text: tr('Orb size')
++      font: $var-cip-font
++      color: $var-text-cip-color
++      text-auto-resize: true
++      anchors.verticalCenter: liquidOrbs.verticalCenter
++      anchors.right: liquidOrbSize.left
++      margin-right: 6
++
+     UIWidget
+       size: 12 12
+       anchors.top: parent.top
+--- a/mods/client_settings/settings.lua
++++ b/mods/client_settings/settings.lua
+@@ -135,6 +135,20 @@ local options = {
+   {id = "screenshot", style = "ScreenshotWindow", parent = "misc"}
+ }
+ 
++-- the menu entries' names, drawn as text over the tab images (their baked words are erased by
++-- client/tools/gen_ui_reskin.py TEXT_FREE), so they are readable and translated
++local OPTION_LABELS = {
++  controls = 'Controls', generalHotkeys = 'General Hotkeys', actionsHotkeys = 'Action Bar Hotkeys',
++  customHotkeys = 'Custom Hotkeys', interface = 'Interface', hud = 'HUD', console = 'Console',
++  gameWindow = 'Game Window', actionsBars = 'Action Bars', controlButtons = 'Control Buttons',
++  graphics = 'Graphics', effects = 'Effects', misc = 'Misc.', gameplay = 'Gameplay', screenshot = 'Screenshot'
++}
++
++local function setOptionLabel(button, id)
++  local label = OPTION_LABELS[id]
++  if button and label then button:setText(tr(label)) end
++end
++
+ loadedWindows = {}
+ local loadedButton = {}
+ local extraOptions = {}
+@@ -262,6 +276,7 @@ function init()
+       local widget = g_ui.createWidget('OptionButton', optionsWindow.options)
+       widget:setId(option.id)
+       widget.button:setImageSource("/images/optionstab/" .. option.id)
++      setOptionLabel(widget.button, option.id)
+       loadedButton[widget:getId()] = widget
+     end
+   end
+@@ -619,6 +634,13 @@ function setup()
+   end
+ end
+ 
++-- The menu buttons are 22 px (OptionButton) and the sub-items 21 px (NOptionButton). The heights were set as 20
++-- and 20 per sub-item, so an open entry ran into the next one and a closed one shrank the gap below it.
++local SUBMENU_GAP = 3
++function optionButtonHeight(widget)
++  return widget.button and widget.button:getHeight() > 0 and widget.button:getHeight() or 22
++end
++
+ function recursiveButton(widget)
+   if widget.button then
+     widget.button:setOn(false)
+@@ -628,7 +650,7 @@ function recursiveButton(widget)
+     widget.extraButton:setHeight(0)
+     widget.extraButton:setVisible(false)
+   end
+-  widget:setHeight(20)
++  widget:setHeight(optionButtonHeight(widget))
+ end
+ 
+ function onClickOptionButton(widget, redirectId)
+@@ -656,15 +678,18 @@ function onClickOptionButton(widget, redirectId)
+   end
+ 
+   if selectedWindow.children then
+-    selectedButton:setHeight(20 * (#selectedWindow.children + 1))
++    local childHeight = 21
+     selectedButton.extraButton:destroyChildren()
+     selectedButton.extraButton:setVisible(true)
+-    selectedButton.extraButton:setHeight(20 * (#selectedWindow.children))
++    selectedButton.extraButton:setMarginTop(SUBMENU_GAP)
++    selectedButton.extraButton:setHeight(childHeight * #selectedWindow.children)
++    selectedButton:setHeight(optionButtonHeight(selectedButton) + SUBMENU_GAP + childHeight * #selectedWindow.children)
+     for i, option in pairs(options) do
+       if option.parent and option.parent == selectedWindow:getId() then
+         local widget = g_ui.createWidget('NOptionButton', selectedButton.extraButton)
+         widget:setId(option.id)
+         widget.button:setImageSource("/images/optionstab/" .. option.id)
++        setOptionLabel(widget.button, option.id)
+         widget.button.onClick = function()
+           onClickChildOptionButton(widget)
+         end
+--- a/mods/client_settings/settings.otui
++++ b/mods/client_settings/settings.otui
+@@ -20,8 +20,12 @@ OptionButton < UIWidget
+     anchors.right: parent.right
+     anchors.left: parent.left
+     image-clip: 0 0 115 22
++    font: $var-cip-font
++    color: $var-text-cip-color
++    text-offset: 6 1
+     $on:
+       image-clip: 0 22 115 22
++      color: $var-text-cip-color-highlight
+     $pressed:
+       image-clip: 0 22 115 22
+     @onClick: onClickOptionButton(self:getParent())
+@@ -46,8 +50,12 @@ NOptionButton < UIWidget
+     anchors.right: parent.right
+     anchors.left: parent.left
+     image-clip: 0 0 115 20
++    font: $var-cip-font
++    color: $var-text-cip-color
++    text-offset: 0 1
+     $on:
+       image-clip: 0 20 115 20
++      color: $var-text-cip-color-highlight
+     $pressed:
+       image-clip: 0 20 115 20
+ 
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -5180,7 +5180,8 @@ eventTable.checkFriendHealing.action = checkFriendHealing
+ -- immediately (and tears the HUD down) when the HUD is disabled, so this costs
+ -- nothing for players who never turn it on.
+ function refreshBotHud()
+-  local cavebot = modules.game_helper and modules.game_helper.cavebot
++  -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
++  local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')
+   if cavebot and cavebot.refreshBotHud then
+     cavebot.refreshBotHud()
+   end
+--- a/mods/game_helper/helper_window.otui
++++ b/mods/game_helper/helper_window.otui
+@@ -599,7 +599,8 @@ NewHeadlessWindow
+         margin-top: 6
+         margin-right: 8
+         height: 22
+-        width: 150
++        // sized to its label (150 px cut "My character save" at the right edge)
++        text-horizontal-auto-resize: true
+         !text: tr('My character save')
+         font: $var-main-font
+         @onClick: openHelperSettingsFolder()
+--- a/mods/game_helper/styles/magic_shooter_panel.otui
++++ b/mods/game_helper/styles/magic_shooter_panel.otui
+@@ -714,7 +714,8 @@ MagicShooterPanel < Panel
+ 
+       Button
+         id: setKeyAutoTargetButton
+-        size: 50 17
++        height: 17
++        text-horizontal-auto-resize: true
+         anchors.verticalCenter: enableAutoTarget.verticalCenter
+         anchors.right: parent.right
+         !text: tr('Set Key')
+@@ -782,7 +783,8 @@ MagicShooterPanel < Panel
+ 
+       Button
+         id: setKeyMSButton
+-        size: 50 17
++        height: 17
++        text-horizontal-auto-resize: true
+         anchors.verticalCenter: enableMagicShooter.verticalCenter
+         anchors.right: parent.right
+         !text: tr('Set Key')
+@@ -795,9 +797,8 @@ MagicShooterPanel < Panel
+         anchors.left: parent.left
+         anchors.right: parent.right
+         margin-top: 5
+-        image-source: /images/ui/buttons-blue
++        // was image-source buttons-blue: the theme's Button clip (64x24, border 5) cut that sheet into empty blue boxes
+         !text: tr('Set Key (Target/Shooter)')
+-        color: $var-text-cip-color-white
+         @onClick: manageHotkeys("Enable/Disable Target and Magic Shooter")
+ 
+       CheckBox
+--- a/mods/game_helper/styles/presets.otui
++++ b/mods/game_helper/styles/presets.otui
+@@ -44,7 +44,8 @@ PresetsSection < Panel
+ 
+   Button
+     id: setKeyPresetButton
+-    size: 41 15
++    height: 15
++    text-horizontal-auto-resize: true
+     anchors.top: presetsLabel.top
+     anchors.left: presetsLabel.right
+     !text: tr('Set Key')
+@@ -70,8 +71,8 @@ PresetsSection < Panel
+     id: renameButton
+     anchors.top: parent.top
+     anchors.right: duplicateButton.left
+-    width: 64
+     height: 20
++    text-horizontal-auto-resize: true
+     !text: tr('Rename')
+     font: $var-main-font
+     color: $var-text-color
+@@ -83,8 +84,8 @@ PresetsSection < Panel
+     id: duplicateButton
+     anchors.top: parent.top
+     anchors.right: newPresetButton.right
+-    width: 64
+     height: 20
++    text-horizontal-auto-resize: true
+     !text: tr('Duplicate')
+     font: $var-main-font
+     color: $var-text-color
+@@ -93,13 +94,13 @@ PresetsSection < Panel
+ 
+   Button
+     id: newPresetButton
+-    size: 120 20
++    height: 20
++    text-horizontal-auto-resize: true
+     anchors.top: presetsLabel.bottom
+     anchors.right: parent.right
+     margin-top: 7
+     !text: tr('New Preset')
+     font: $var-main-font
+     color: $var-text-color
+-    image-source: /images/ui/buttons-blue
+     margin-right: 5
+     !tooltip: tr('Create a new preset.')
+--- a/mods/game_helper/styles/rule_list.otui
++++ b/mods/game_helper/styles/rule_list.otui
+@@ -105,13 +105,13 @@ RulesSection < Panel
+ 
+   Button
+     id: addButton
+-    size: 50 20
++    height: 20
+     anchors.top: parent.top
+     anchors.right: parent.right
+-    text: Add
++    !text: tr('Add')
++    text-horizontal-auto-resize: true
+     font: $var-main-font
+     color: $var-text-color
+-    image-source: /images/ui/buttons-blue
+ 
+   TextList
+     id: rulesList
+--- a/mods/game_helper/tools_panel.lua
++++ b/mods/game_helper/tools_panel.lua
+@@ -330,7 +330,8 @@ local function runAutomationCycle()
+     local state = inventory and inventory.getSummonQuillState and inventory.getSummonQuillState() or nil
+     tryAutomaticQuillSale(config, state, now)
+   end
+-  local cavebot = modules.game_helper and modules.game_helper.cavebot
++  -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
++  local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')
+   if cavebot and cavebot.refreshBotHud then cavebot.refreshBotHud() end
+ end
+ 
+@@ -1445,7 +1446,8 @@ function tools.updateBotHudSettings(widget)
+   end
+   pendingBotHudEvent = scheduleEvent(function()
+     pendingBotHudEvent = nil
+-    local cavebot = modules.game_helper and modules.game_helper.cavebot
++    -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
++    local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')
+     if cavebot and cavebot.applyBotHudConfig then cavebot.applyBotHudConfig(hud) end
+     if _Helper.saveSettings then _Helper.saveSettings() end
+   end, 0)
+@@ -1475,7 +1477,8 @@ function tools.loadBotHudToUI()
+   local size = panel:recursiveGetChildById('botHudSize')
+   if size then size:setCurrentOption(hud.size or 'Normal') end
+   applyingAutomationConfig = false
+-  local cavebot = modules.game_helper and modules.game_helper.cavebot
++  -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
++  local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')
+   if cavebot and cavebot.applyBotHudConfig then cavebot.applyBotHudConfig(hud) end
+ end
+ 
+--- a/modules/client_background/background.lua
++++ b/modules/client_background/background.lua
+@@ -181,6 +181,31 @@ function hideIcon()
+   background:getChildById('logo'):hide()
+ end
+ 
++-- The login-screen services (clientServicesLink, server/tools/clientservices.py) may not run, as with the Windows
++-- server package. A failure is logged once per address, and each request then retries after 1, 2, 4 ... up to 30
++-- minutes instead of every minute (and the status request no longer schedules two retries per failure).
++local serviceFailures = {} -- request kind -> failures in a row
++local serviceLogged = {}   -- url -> true once its failure was logged
++local SERVICE_RETRY_MS, SERVICE_RETRY_MAX_MS = 60000, 30 * 60000
++
++local function serviceFailed(kind, url, err)
++  local n = (serviceFailures[kind] or 0) + 1
++  serviceFailures[kind] = n
++  if not serviceLogged[url] then
++    serviceLogged[url] = true
++    g_logger.warning("HTTP error for " .. url .. ": " .. tostring(err) .. " (the login screen works without it; retrying less often)")
++  end
++  return math.min(SERVICE_RETRY_MS * 2 ^ (n - 1), SERVICE_RETRY_MAX_MS)
++end
++
++local function serviceAnswered(kind, url)
++  serviceFailures[kind] = 0
++  if serviceLogged[url] then
++    serviceLogged[url] = nil
++    g_logger.info(url .. " answers again")
++  end
++end
++
+ function updateStatus(serverInfo)
+   removeEvent(statusUpdateEvent)
+ 
+@@ -209,10 +234,11 @@ function updateStatus(serverInfo)
+   end, 60000)
+   HTTP.postJSON(url, {type="boostedcreature"}, function(data, err)
+     if err then
+-      g_logger.warning("HTTP error for " .. url .. ": " .. err)
+-      statusUpdateEvent = scheduleEvent(updateStatus, 60000, serverInfo)
++      removeEvent(statusUpdateEvent)
++      statusUpdateEvent = scheduleEvent(function() updateStatus(serverInfo) end, serviceFailed('status', url, err))
+       return
+     end
++    serviceAnswered('status', url)
+ 
+     if not data then
+       return
+@@ -255,10 +281,11 @@ function requestHintsJson()
+ 
+   HTTP.postJSON(url, {}, function(data, err)
+     if err then
+-      g_logger.warning("HTTP error for " .. url .. ": " .. err)
+-      hintsUpdateEvent = scheduleEvent(requestHintsJson, 60000)
++      removeEvent(hintsUpdateEvent)
++      hintsUpdateEvent = scheduleEvent(requestHintsJson, serviceFailed('hints', url, err))
+       return
+     end
++    serviceAnswered('hints', url)
+ 
+     math.randomseed(os.time())
+     local hintsJson = data[math.random(1, #data)]
+@@ -306,10 +333,11 @@ function requestScheduleJson(serverInfo)
+   if g_game.isOnline() then return end
+   HTTP.postJSON(url, {type = "eventschedule"}, function(data, err)
+     if err then
+-      g_logger.warning("HTTP error for " .. url .. ": " .. err)
+-      scheduleUpdateEvent = scheduleEvent(requestScheduleJson, 60000)
++      removeEvent(scheduleUpdateEvent)
++      scheduleUpdateEvent = scheduleEvent(requestScheduleJson, serviceFailed('schedule', url, err))
+       return
+     end
++    serviceAnswered('schedule', url)
+     if not data then return end
+     EventSchedule.events = data.eventlist
+     EventSchedule:configureEvent(widget)
+--- a/modules/client_topmenu/topmenu.lua
++++ b/modules/client_topmenu/topmenu.lua
+@@ -252,6 +252,10 @@ function show()
+   end
+ end
+ 
++-- players online from Services.status (clientservices): a failure is logged once per address and retried after
++-- 1, 2, 4 ... up to 30 minutes (the service may not run, as with the Windows server package)
++local statusFailures, statusLogged = 0, {}
++
+ function updateStatus()
+   removeEvent(statusUpdateEvent)
+   if not Services or not Services.status or #Services.status < 1 then return end
+@@ -266,10 +270,17 @@ function updateStatus()
+     local url = Services.status[index]
+     HTTP.postJSON(url, {type="cacheinfo"}, function(data, err)
+       if err then
+-        g_logger.warning("HTTP error for " .. url .. ": " .. err)
+-        statusUpdateEvent = scheduleEvent(updateStatus, 60000)
++        statusFailures = statusFailures + 1
++        if not statusLogged[url] then
++          statusLogged[url] = true
++          g_logger.warning("HTTP error for " .. url .. ": " .. tostring(err) .. " (retrying less often)")
++        end
++        removeEvent(statusUpdateEvent)
++        statusUpdateEvent = scheduleEvent(updateStatus, math.min(60000 * 2 ^ (statusFailures - 1), 30 * 60000))
+         return
+       end
++      statusFailures = 0
++      statusLogged[url] = nil
+ 
+       local topOnlineLabel = topMenu:recursiveGetChildById('onlineLabel')
+       if topOnlineLabel then
+--- a/modules/corelib/ui/uimovabletabbar.lua
++++ b/modules/corelib/ui/uimovabletabbar.lua
+@@ -484,7 +484,11 @@ function UIMoveableTabBar:selectTab(tab)
+       self.contentWidget:removeChild(selectedWidget)
+     end
+     if tab.tabPanel then
+-      self.contentWidget:addChild(tab.tabPanel)
++      -- a panel that is still a child (not the last one, so not removed above) was added again:
++      -- "attempt to add a child again into a UIWidget" on every switch
++      if tab.tabPanel:getParent() ~= self.contentWidget then
++        self.contentWidget:addChild(tab.tabPanel)
++      end
+       tab.tabPanel:fill('parent')
+       tab.tabPanel:show()
+     end
+--- a/modules/game_console/classes/TabMessages.lua
++++ b/modules/game_console/classes/TabMessages.lua
+@@ -4,6 +4,18 @@ LOOT_CHANNEL_ID = 0xFFF0
+ OWNER_CHANNEL_ID = 0xFFFF
+ GUILD_CHANNEL_ID = 0x2710
+ 
++-- A tab switch rewrote all MAX_LINES (200) shared labels at once ([SlowLua] 10-42 ms per select). The newest
++-- IMMEDIATE_LINES (the bottom, the part in view) are written now, the older ones on the next event. A later switch
++-- replaces that pass; a new line (which rotates the labels) runs it first, so no older line stays empty.
++local IMMEDIATE_LINES = 40
++local pendingLabelPass = {} -- labels table (the chat's or the read-only buffer's) -> its pending pass
++
++local function flushLabelPass(labels)
++    local pass = pendingLabelPass[labels]
++    pendingLabelPass[labels] = nil
++    if pass then pass() end
++end
++
+ local CHANNEL_TAB_COLOR = "#f0cb64"
+ local CHANNEL_TABS_COLORED = {
+     ["World Chat"] = true,
+@@ -296,6 +308,7 @@ function TabMessages:updateLastLabel()
+ end
+ 
+ function TabMessages:internalUpdateLastLabel(labels, buffer)
++    flushLabelPass(labels) -- the labels move: finish a pending older-lines pass first
+     local firstLabel = labels[1]
+     table.remove(labels, 1)
+     table.insert(labels, firstLabel)
+@@ -326,21 +339,31 @@ function TabMessages:updateLabels()
+     end
+ end
+ 
++
++local function fillLabel(tab, message, label, i)
++    if message.groupId ~= nil then
++        label:setImageShader(message.groupId >= 4 and "text_light_red" or "")
++    end
++    if i <= tab.activeLabels then
++        label.message = message
++        label:show()
++        message:updateLabel(label, tab)
++    else
++        label.message = nil
++        label:hide()
++    end
++end
++
+ function TabMessages:internalUpdateLabels(labels)
+-    for i = 1, #self.messages do
++    pendingLabelPass[labels] = nil -- this pass rewrites every label
++    local count = #self.messages
++    for i = 1, count do
+         local messageIndex = MAX_LINES - i + 1
+         local message = self.messages[messageIndex]
+         local label = labels[messageIndex]
+         label.index = messageIndex
+-
+-        if message.groupId ~= nil then
+-            label:setImageShader(message.groupId >= 4 and "text_light_red" or "")
+-        end
+-
+-        if i <= self.activeLabels then
+-            label.message = message
+-            label:show()
+-            message:updateLabel(label, self)
++        if i <= IMMEDIATE_LINES then
++            fillLabel(self, message, label, i)
+         else
+             label.message = nil
+             label:hide()
+@@ -349,6 +372,25 @@ function TabMessages:internalUpdateLabels(labels)
+ 
+     table.sort(labels, function(a, b) return a.index < b.index end)
+     g_chat:reorderChildren()
++
++    if count > IMMEDIATE_LINES then
++        local tab = self
++        local pass
++        pass = function()
++            if pendingLabelPass[labels] == pass then pendingLabelPass[labels] = nil end
++            for i = IMMEDIATE_LINES + 1, count do
++                local messageIndex = MAX_LINES - i + 1
++                local message, label = tab.messages[messageIndex], labels[messageIndex]
++                if message and label then
++                    fillLabel(tab, message, label, i)
++                end
++            end
++        end
++        pendingLabelPass[labels] = pass
++        addEvent(function()
++            if pendingLabelPass[labels] == pass then flushLabelPass(labels) end
++        end)
++    end
+ end
+ 
+ function TabMessages:startSlowMode()
+--- a/modules/game_console/console.lua
++++ b/modules/game_console/console.lua
+@@ -70,6 +70,12 @@ function init()
+   g_keyboard.bindKeyPress('Shift+Up', function() navigateMessageHistory(1) end, consolePanel)
+   g_keyboard.bindKeyPress('Shift+Down', function() navigateMessageHistory(-1) end, consolePanel)
+   g_keyboard.bindKeyDown('Escape', function() toggle() end, consolePanel)
++  -- Shift+Enter acts as Enter in the chat (send, or close an empty chat); no hotkey set binds it
++  g_keyboard.bindKeyDown('Shift+Enter', function()
++    if chatEnabled and not modules.game_interface.isInternalLocked() then
++      addEvent(function() sendCurrentMessage(true) end)
++    end
++  end, consolePanel)
+ 
+   -- apply buttom functions after loaded
+   consoleTabBar:setNavigation(consolePanel:getChildById('prevChannelButton'), consolePanel:getChildById('nextChannelButton'))
+@@ -132,13 +138,39 @@ function getConsole()
+   return consolePanel:recursiveGetChildById('consoleTextEdit')
+ end
+ 
++-- Enter (or Shift+Enter) in the chat: the rule is ChaosChatLogic.enterAction (overlay module game_chatpanel,
++-- tested there). Empty input: close the chat and walk again, in "Chat On" as in "Chat On*". With text: send, and
++-- close afterwards only in "Chat On*" (the temporary mode closes after one line; "Chat On" stays open).
++local function enterAction(message)
++  local logic = rawget(_G, 'ChaosChatLogic')
++  local state = { text = message, persistent = chatToggleActive == true, temporary = chatEnabled == true and not chatToggleActive }
++  if logic and logic.enterAction then
++    return logic.enterAction(state)
++  end
++  if not message:find('%S') then
++    return (state.persistent or state.temporary) and 'close' or 'none'
++  end
++  return state.persistent and 'send' or 'send_close'
++end
++
++-- leaves the chat (either mode) and gives the keys back to walking
++function closeChat()
++  if chatToggleActive then
++    toggleChat()
++  elseif chatEnabled then
++    closeTemporaryChat()
++  end
++end
++
+ function sendCurrentMessage(defaultKeybind)
+   local consoleTextEdit = consolePanel:recursiveGetChildById('consoleTextEdit')
+   local message = consoleTextEdit:getText()
+-  if #message == 0 then
+-    if defaultKeybind and chatEnabled then
+-      sendTemporaryMessage()
+-    end
++  if defaultKeybind and enterAction(message) == 'close' then
++    consoleTextEdit:clearText()
++    closeChat()
++    return
++  end
++  if #message == 0 or not message:find('%S') then
+     return
+   end
+ 
+@@ -287,20 +319,31 @@ function toggleChat()
+   end
+ end
+ 
+-function sendTemporaryMessage()
++-- closes "Chat On*" (the temporary chat that Enter opens). The button text was compared with the English
++-- 'Chat On*', so in pt-BR the temporary chat never closed; the mode is read from the state now.
++function closeTemporaryChat()
++  if chatToggleActive or not chatEnabled then
++    return
++  end
+   local toggleChatButton = consolePanel:recursiveGetChildById('toggleChat')
+-  if toggleChatButton:getText() == 'Chat On*' then
+-    local consoleTextEdit = consolePanel:recursiveGetChildById('consoleTextEdit')
+-    local message = consoleTextEdit:getText()
+-    if #message > 0 then
+-      modules.game_console.sendCurrentMessage()
+-    end
+-    chatEnabled = false
+-    modules.game_actionbar.switchChatMode(false)
+-    modules.game_walking.enableWSAD()
+-    toggleChatButton:setText(tr('Chat Off'))
+-    consoleTextEdit:setEnabled(false)
++  local consoleTextEdit = consolePanel:recursiveGetChildById('consoleTextEdit')
++  chatEnabled = false
++  modules.game_actionbar.switchChatMode(false)
++  modules.game_walking.enableWSAD()
++  toggleChatButton:setText(tr('Chat Off'))
++  consoleTextEdit:setEnabled(false)
++end
++
++function sendTemporaryMessage()
++  if chatToggleActive or not chatEnabled then
++    return
++  end
++  local consoleTextEdit = consolePanel:recursiveGetChildById('consoleTextEdit')
++  local message = consoleTextEdit:getText()
++  if message:find('%S') then
++    modules.game_console.sendCurrentMessage()
+   end
++  closeTemporaryChat()
+ end
+ 
+ function onEnterPressed()
+--- a/modules/game_interface/gameinterface.otui
++++ b/modules/game_interface/gameinterface.otui
+@@ -431,7 +431,8 @@ UIWidget
+     margin-bottom: 200
+     @canUpdateMargin: |
+       function(self, newMargin)
+-        local maxHeight = 118
++        -- the smallest bottom area: tab bar, a few chat lines and the input (was 118; game_chatpanel sizes it)
++        local maxHeight = 96
+         if modules.client_settings.getOption('dontStretchShrink') then
+           maxHeight = 400
+         end
+@@ -456,7 +457,7 @@ UIWidget
+       end
+     @onGeometryChange: |
+       function(self)
+-        local maxHeight = 118
++        local maxHeight = 96
+         local actionBars = modules.game_actionbar.getActiveBottomBars()
+         maxHeight = maxHeight + (35 * actionBars)
+         self:setMarginBottom(math.min(math.max(self:getParent():getHeight() - 150, maxHeight), self:getMarginBottom()))
+--- a/modules/game_modaldialog/modaldialog.lua
++++ b/modules/game_modaldialog/modaldialog.lua
+@@ -79,6 +79,8 @@ function onModalDialog(id, title, message, buttons, enterButton, escapeButton, c
+ 
+     local button = g_ui.createWidget('ModalButton', buttonsPanel)
+     button:setText(buttonText)
++    -- ModalButton is 43 px wide: a longer label ("Skip tutorial", "Pular tutorial") was cut at both ends
++    button:setWidth(math.max(43, button:getTextSize().width + button:getPaddingLeft() + button:getPaddingRight()))
+     button.onClick = function(self)
+                        local focusedChoice = choiceList:getFocusedChild()
+                        local choice = 0xFF
+--- a/modules/game_skills/skills.lua
++++ b/modules/game_skills/skills.lua
+@@ -447,8 +447,11 @@ function getContentPanelHeight()
+     return 0
+   end
+ 
++  -- isExplicitlyVisible, not isVisible: isVisible is false for every row while the window itself is closed or not
++  -- shown yet, so a height measured then was 0 and the window could not grow past the 125 px floor (Level to
++  -- Temporary; Hit Points cut off)
+   for _, widget in pairs(contentPanel:getChildren()) do
+-    if widget:isVisible() then
++    if widget:isExplicitlyVisible() then
+       calculatedHeight = calculatedHeight + widget:getHeight()
+ 
+       if widget:getMarginTop() > 0 then
+@@ -764,11 +767,8 @@ function refresh()
+   update()
+ 
+   skillsWindow:setContentMinimumHeight(44)
+-  if hasAdditionalSkills then
+-    skillsWindow:setContentMaximumHeight(680)
+-  else
+-    skillsWindow:setContentMaximumHeight(390)
+-  end
++  -- the full content, not a fixed 390 / 680: rows added later (the profession skills of game_craftskills) fit too
++  skillsWindow:setContentMaximumHeight(math.max(125, getContentPanelHeight() + 6))
+ end
+ 
+ function offline()
+--- a/modules/game_things/things.lua
++++ b/modules/game_things/things.lua
+@@ -148,6 +148,13 @@ function load()
+     enableModernAssetFeatures()
+   end
+ 
++  -- HD Sprite Upscaling (Options > Graphics, saved as hdmodeBox) must be set before the sprites load. The option's
++  -- own apply runs from a client_settings event that can come after this load at start, which left the sprites
++  -- at scale 1 (plainly stretched) with the box checked. xBRZ runs on the CPU, so this works with any renderer.
++  if g_sprites.setScaleFactor then
++    g_sprites.setScaleFactor(g_settings.getBoolean('hdmodeBox') and 2 or 1)
++  end
++
+   local errorMessage = ''
+   local spritesU32 = g_game.getFeature(GameSpritesU32)
+   if not g_things.loadDat(datPath) then

@@ -13,7 +13,9 @@
 --   K.reward(cfg, goal, level)      -> {xp, gold, tokens}
 --   K.needXp(level)                 the experience from `level` to the next (the engine's formula)
 --   K.view(cfg, ctx, lang, resolve) -> the panel's payload
---   K.tracker(cfg, ctx, lang, n)    -> the on-screen tracker's rows
+--   K.tracker(cfg, ctx, lang, n)    -> the on-screen tracker's rows (K.trackerOf(view, n): from a payload)
+--   K.sig(rows), K.panelSig(v, lang) what the player sees, as a string (unchanged: no push)
+--   K.queuePush(push, nowMs, minMs, coalesceMs), K.pushed(push, nowMs)   at most one push per minMs, coalesced
 --   K.huntsFor(cfg, level, slack)   the content hunts of a level
 --   K.oneIn(p), K.effortText(p, what, lang)   "~1 in 400 legendary kills"
 -- ctx = {level, stats = {stat = n}, done = {goalKey = at}, systems = {GlobalName = true}, season = name?, now}
@@ -321,7 +323,8 @@ local function wireWhere(w, lang, resolve)
 end
 
 local function goalRow(cfg, g, ctx, lang, resolve, state)
-	local value = math.min(g.target, K.value(ctx, g.stat))
+	-- whole numbers: a paced kill can count a fraction (achievements.lua killCredit)
+	local value = math.min(g.target, floor(K.value(ctx, g.stat)))
 	local target = g.target
 	if g.flag then
 		target = 1
@@ -430,14 +433,57 @@ end
 
 -- the tracker: the first n open goals (the current band first, then the lower bands), {key, title, progress, target}
 function K.tracker(cfg, ctx, lang, n)
-	local v = K.view(cfg, ctx, lang, nil)
+	return K.trackerOf(K.view(cfg, ctx, lang, nil), n)
+end
+
+-- the tracker rows of a K.view payload
+function K.trackerOf(v, n)
 	local out = {}
-	for _, r in ipairs(v.goals) do
+	for _, r in ipairs(v.goals or {}) do
 		if r.state == "open" and #out < (n or 3) then
 			out[#out + 1] = {key = r.key, title = r.title, progress = r.progress, target = r.target}
 		end
 	end
 	return out
+end
+
+-- ---------------------------------------------------------------- live refresh
+-- what a player sees of rows (key, state, progress, target) as one string: the same string, nothing to send again
+function K.sig(rows)
+	local parts = {}
+	for i, r in ipairs(rows or {}) do
+		parts[i] = string.format("%s:%s:%d/%d", tostring(r.key), tostring(r.state or ""),
+			floor(tonumber(r.progress) or 0), floor(tonumber(r.target) or 0))
+	end
+	return table.concat(parts, ";")
+end
+
+-- the signature of a whole panel payload (the level, the done count, the goals and the next unlocks)
+function K.panelSig(v, lang)
+	local h = v.header or {}
+	return table.concat({tostring(lang), tostring(h.level), tostring(h.done), tostring(h.total), K.sig(v.goals),
+		K.sig(v.upcoming)}, "|")
+end
+
+-- push = {pending, last}: a counter changed at nowMs. Returns the delay of a new push, or nil when one is queued
+-- already (this change merges into it). At most one push every minMs; a first change waits coalesceMs so the
+-- counters of one kill go out together.
+function K.queuePush(push, nowMs, minMs, coalesceMs)
+	if push.pending then
+		return nil
+	end
+	push.pending = true
+	local wait = tonumber(coalesceMs) or 0
+	if push.last then
+		wait = math.max(wait, push.last + (tonumber(minMs) or 0) - nowMs)
+	end
+	return math.max(0, floor(wait))
+end
+
+-- the queued push ran at nowMs
+function K.pushed(push, nowMs)
+	push.pending = false
+	push.last = nowMs
 end
 
 -- ---------------------------------------------------------------- storage rows

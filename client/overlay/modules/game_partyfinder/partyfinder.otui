@@ -258,7 +258,7 @@ ChaosMainWindow
       anchors.left: roleFilter.right
       anchors.verticalCenter: roleFilter.verticalCenter
       margin-left: 12
-      width: 120
+      text-horizontal-auto-resize: true
       !text: tr('Fits my level')
 
     ChaosLabel
@@ -554,7 +554,7 @@ ChaosMainWindow
         anchors.top: note.bottom
         anchors.left: lNote.right
         margin-top: 12
-        width: 200
+        text-horizontal-auto-resize: true
         !text: tr('Auto-accept quick joins')
         !tooltip: tr('Players from the "Join as" queue get the party invite at once.')
 

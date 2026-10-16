@@ -146,7 +146,7 @@ GuildWarGoldRow < UIWidget
     anchors.left: amount.right
     anchors.verticalCenter: parent.verticalCenter
     margin-left: 6
-    width: 110
+    text-horizontal-auto-resize: true
     !text: tr('Feed gold')
 
   UILabel

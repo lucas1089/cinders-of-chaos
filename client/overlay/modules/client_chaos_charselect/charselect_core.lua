@@ -188,10 +188,18 @@ end
 -- stock outfit, a 2x2 class look drawn in the middle of its frame, the look's displacement): outfit_anchors.lua
 -- (client/tools/sprites/gen_outfit_anchors.py, from the pair) has them, per creature thing:
 --   [id] = {centre x, ground row, top, left, right, width, height, floating, reach}   (pixels at 1x; tiles)
--- The centre and ground are what the eye reads (the body's solid mass, not its lowest pixel: owner, 2026-10-13).
+-- The centre and ground are the centre of the feet (the centroid of the lowest 12% of the body's solid mass): every
+-- sprite of the pair leans up and left with its height, so the feet, not the body's mass, go on the dais centre
+-- (owner, 2026-10-16: a Test Thief in stock look 130 "still misaligned", its feet 12 px right of the centre).
 
--- the anchor of a creature thing; for a thing the table lacks (a look of a newer pair), its size and displacement
--- (thing = {w, h, dx, dy}, the client's ThingType values) give the middle of its own tile's bottom
+-- For a thing the table lacks (a look of a newer pair): where the feet usually are, plus the displacement, by the
+-- thing's size in tiles (the larger of width and height), measured on pair 28 (the table's feet with the displacement
+-- added back: the medians of the 1x1 things and of the 3x3 to 5x5 monsters; for 2x2, the point nearest to the 121
+-- player looks, stock 128-160 and ours from 2039: 76% within 6 sprite pixels, the old rule's 8, 24 had 31%).
+C.FEET_FALLBACK = { { 21, 27 }, { 20, 27 }, { 1, 19 }, { -6, 17 }, { -16, 10 } }
+
+-- the anchor of a creature thing; for a thing the table lacks, its size and displacement (thing = {w, h, dx, dy},
+-- the client's ThingType values) with C.FEET_FALLBACK; the bounds are its whole frame
 function C.anchorOf(anchors, id, thing)
   local a = anchors and anchors[tonumber(id) or 0]
   if type(a) == 'table' then
@@ -201,15 +209,16 @@ function C.anchorOf(anchors, id, thing)
   thing = thing or {}
   local w, h = tonumber(thing.w) or 1, tonumber(thing.h) or 1
   local dx, dy = tonumber(thing.dx) or 8, tonumber(thing.dy) or 8
-  return { fx = 16 - dx, fy = 32 - dy, top = 32 - dy - 32 * h, left = 32 - dx - 32 * w, right = 32 - dx, w = w, h = h,
-    float = false }
+  local feet = C.FEET_FALLBACK[math.max(1, math.min(#C.FEET_FALLBACK, math.max(w, h)))]
+  return { fx = feet[1] - dx, fy = feet[2] - dy, top = 32 - dy - 32 * h, left = 32 - dx - 32 * w, right = 32 - dx,
+    w = w, h = h, float = false }
 end
 
 C.HOVER = 5   -- sprite pixels a flying character hovers over the top face
--- sprite pixels every character is moved right of the dais centre (negative: left), a fine-tuning knob. -2: the body
--- centroid alone read a little right of the dais (owner, 2026-10-13: "move the characters left"; compared with the
--- full figure's box and a blend, which moved most looks right: client/MANIFEST.md "Where a character stands")
-C.NUDGE_X = -2
+-- sprite pixels every character is moved right of the dais centre (negative: left), a fine-tuning knob. It was -2
+-- while the anchor was the body's centroid (owner, 2026-10-13: "move the characters left"); the anchor is the feet
+-- since 2026-10-16, which stand on the centre with no nudge (client/MANIFEST.md "Where a character stands")
+C.NUDGE_X = 0
 
 -- The whole picture around the anchor point (the point that goes on the dais centre): the body, its wings (drawn at
 -- the same place) and its aura (the client moves a big aura by (w - 1) * 16, (h - 1) * 16: GameBigAurasCenter).

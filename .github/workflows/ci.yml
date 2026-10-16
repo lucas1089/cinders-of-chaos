@@ -145,8 +145,34 @@ jobs:
       - name: Halls of Services plans (validate, compile, booths closed and reached, portals, NPCs never walk)
         run: python3 -I server/tools/services_halls_test.py
 
+      - name: Chronicle areas (plans, gates in the Halls of Services portal room)
+        run: python3 -I server/tools/chronicle_areas_test.py
+
+      - name: Potions install (no empty flasks, Everfull potions, NPC replacement)
+        run: python3 -I server/tools/install_potions_test.py
+
       - name: Idle kick patch (config.lua kickIdlePlayerAfterMinutes on a copy of the stock text)
         run: python3 -I server/tools/patch_base_idle_kick_test.py
+
+      - name: Production config (prod_config.py idempotent; spawnNearPlayers of engine patch 0041)
+        run: python3 -I server/tools/prod_config_test.py
+
+      - name: Spellbook item patch (patch_base_spellbook.py on a copy of the stock spellbook action)
+        run: python3 -I server/tools/patch_base_spellbook_test.py
+
+      - name: Mystic stock spell effects patch (patch_mystic_stock_fx.py on copies of the base Hex and Ripple lines)
+        run: python3 -I server/tools/patch_mystic_stock_fx_test.py
+
+      - name: Ground effects under the creatures (rules, ground_fx.csv, groundfx_data.lua up to date)
+        run: |
+          python3 -I client/tools/sprites/gen_ground_fx_test.py
+          python3 -I client/tools/sprites/gen_ground_fx.py build --check
+
+      - name: Base monster load warnings (patch_base_monsters.py on made-up monsters)
+        run: python3 -I server/tools/patch_base_monsters_test.py
+
+      - name: Database migrations on a fresh database (patch_base_migrations.py; fresh_db_check.py needs MariaDB, else skipped)
+        run: python3 -I server/tools/fresh_db_check_test.py
 
       - name: Player commands out of the base server (install_commands.py on a small copy, /pos staff only)
         run: python3 -I server/tools/install_commands_test.py
@@ -181,8 +207,14 @@ jobs:
       - name: Gem install with our own looks (items.otb ownLook, synthetic)
         run: python3 -I server/tools/install_gems_test.py
 
+      - name: Item bytes agree between server and client (check_item_wire rules, synthetic)
+        run: python3 -I server/tools/check_item_wire_test.py
+
       - name: Loot Bag carries its loot without weight (server src-patch 0038, guard)
         run: python3 -I server/tools/weightless_patch_test.py
+
+      - name: Cooldown channels never hold each other (server src-patch 0042, guard)
+        run: python3 -I server/tools/cooldown_channels_patch_test.py
 
       - name: Chaos Pact stamina x1.5 (patch_base_events.py steps 13 and 14, stock copies)
         run: python3 -I server/tools/pact_stamina_patch_test.py

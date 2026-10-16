@@ -1,0 +1,135 @@
+// The shared look preview panel (game_lookpreview): the character drawn large on a dark stage, zoomed on its body,
+// with the controls under it. Windows give it a fixed column on one side (a placeholder widget) and call
+// modules.game_lookpreview.create(placeholder, opts).
+
+LookPreviewTurnButton < ChaosButton
+  size: 28 22
+  padding: 2
+  text-offset: 0 0
+
+LookPreviewCheck < ChaosCheckBox
+  anchors.left: parent.left
+  anchors.right: parent.right
+  height: 16
+  margin-top: 4
+
+LookPreviewPanel < ChaosPanelDark
+  padding: 6
+  phantom: false
+
+  UIWidget
+    id: stage
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: controls.top
+    margin-bottom: 6
+    background-color: #141110
+    border-width: 1
+    border-color: #3a3230
+    clipping: true
+    phantom: true
+
+    UIWidget
+      id: floor
+      image-source: /images/chaos/charselect/hover_shadow
+      image-smooth: false
+      phantom: true
+      visible: false
+
+    // effects drawn under the creatures in the game (ground effects, base patch 0055) and footprints
+    UIWidget
+      id: fxUnder
+      anchors.fill: parent
+      phantom: true
+
+    UICreature
+      id: creature
+      anchors.left: parent.left
+      anchors.top: parent.top
+      phantom: true
+
+    // the other effects and the missiles, over the creature
+    UIWidget
+      id: fxOver
+      anchors.fill: parent
+      phantom: true
+
+    UILabel
+      id: fxLabel
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.top: parent.top
+      margin: 4 6 0 6
+      font: verdana-11px-antialised
+      color: #c8b890
+      text-align: center
+      phantom: true
+      visible: false
+
+    UILabel
+      id: note
+      anchors.left: parent.left
+      anchors.right: parent.right
+      anchors.bottom: parent.bottom
+      margin: 0 6 6 6
+      font: verdana-11px-antialised
+      color: #c8b890
+      text-align: center
+      text-wrap: true
+      text-auto-resize: true
+      phantom: true
+      visible: false
+
+  Panel
+    id: controls
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    height: 106
+
+    LookPreviewTurnButton
+      id: turnLeft
+      anchors.left: parent.left
+      anchors.top: parent.top
+      text: "<"
+      !tooltip: tr('Turn left')
+
+    LookPreviewTurnButton
+      id: turnRight
+      anchors.right: parent.right
+      anchors.top: parent.top
+      text: ">"
+      !tooltip: tr('Turn right')
+
+    ChaosLabelDim
+      id: zoomLabel
+      anchors.left: turnLeft.right
+      anchors.right: turnRight.left
+      anchors.verticalCenter: turnLeft.verticalCenter
+      text-align: center
+      phantom: true
+
+    LookPreviewCheck
+      id: autoTurn
+      anchors.top: turnLeft.bottom
+      margin-top: 6
+      !text: tr('Turn slowly')
+
+    LookPreviewCheck
+      id: walk
+      anchors.top: autoTurn.bottom
+      !text: tr('Walk')
+
+    LookPreviewCheck
+      id: simple
+      anchors.top: walk.bottom
+      !text: tr('Simple figure')
+      !tooltip: tr('Show the effect on a plain figure instead of your character')
+
+    LookPreviewCheck
+      id: compare
+      anchors.top: simple.bottom
+      !text: tr('Compare with default')
+      !tooltip: tr('Play the default effects first, then the ones of this skin')
+      visible: false

@@ -235,4 +235,46 @@ for _, w in ipairs({"monk", "shadowfist", "ironsage", "necromancer", "lich", "bo
 	eq(("|" .. Chaos.shopServices.vocationWords .. "|"):find("|" .. w .. "|", 1, true) ~= nil, true, "word list names " .. w)
 end
 
+-- ------------------------------------------------------------------ class outfits: 1559 retired, the replacement switch
+do
+	local MYSTIC, ELEMENTALIST, ILLUSIONIST = 1, 5, 10
+	local r = cfg.outfitReplacement
+	eq(r.enabled, false, "the replacement switch ships off")
+	eq(r.replaces, 1559, "it replaces the Archmage")
+	eq(C.isRetiredOutfit(1559), true, "1559 is retired"); eq(C.isRetiredOutfit(1558), false, "the Ranger's is not")
+	eq(cfg.retiredOutfits[1].name, "Archmage (old)", "kept wearable under its old name")
+	-- nobody is given 1559 any more, at a login or a class change
+	for vocId = 0, 30 do
+		for _, o in ipairs(C.classOutfitsFor(vocId)) do
+			eq(o.lookType ~= 1559, true, "vocation " .. vocId .. " is given 1559")
+		end
+		eq(C.outfitSwap(vocId, 1559), nil, "switch off: no swap for vocation " .. vocId)
+	end
+	for _, v in ipairs({MYSTIC, ELEMENTALIST, ILLUSIONIST}) do
+		eq(#C.classOutfitsFor(v), 0, "the Mystic line has no donor art outfit while the switch is off")
+	end
+	eq(C.classOutfitsFor(12)[1].lookType, 1505, "the other classes keep theirs (Ninja)")
+	-- the switch line is one plain line (install_outfits.py and gen_shop_cosmetics.py read it)
+	local src = io.open("data/scripts/chaos/chaos_constants.lua"):read("*a")
+	eq(src:match("\n\toutfitReplacement = {\n\t\tenabled = (%a+),\n"), "false", "the switch is one plain line")
+	-- on, with no outfit set yet: still nothing
+	r.enabled = true
+	eq(#C.classOutfitsFor(MYSTIC), 0, "on without an outfit: nothing given")
+	eq(C.outfitSwap(MYSTIC, 1559), nil, "on without an outfit: no swap")
+	-- on, with an outfit: the Mystic line gets it, wearers of 1559 are moved, other classes untouched
+	r.outfit = {lookType = 2999, name = "Archmage"}
+	for _, v in ipairs({MYSTIC, ELEMENTALIST, ILLUSIONIST}) do
+		local list = C.classOutfitsFor(v)
+		eq(#list, 1, "one outfit for vocation " .. v); eq(list[1].lookType, 2999, "the replacement")
+		eq(C.outfitSwap(v, 1559), 2999, "1559 wearer moved, vocation " .. v)
+		eq(C.outfitSwap(v, 2060), nil, "another look stays, vocation " .. v)
+	end
+	eq(C.outfitSwap(4, 1559), nil, "a Warrior wearing 1559 keeps it")
+	eq(#C.classOutfitsFor(4), 1, "the Warrior keeps only its own"); eq(C.classOutfitsFor(4)[1].lookType, 1551, "Warborn")
+	-- off again: back to nothing
+	r.enabled = false
+	eq(#C.classOutfitsFor(MYSTIC), 0, "off again"); eq(C.outfitSwap(MYSTIC, 1559), nil, "off again: no swap")
+	r.outfit = nil
+end
+
 print("classes_test: OK")

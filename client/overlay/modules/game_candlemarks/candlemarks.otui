@@ -101,7 +101,8 @@ CandlemarkWindow < ChaosMainWindow
 
   ChaosLabelDim
     id: week
-    anchors.top: next.bottom
+    // "next" in an anchor is the next sibling (shop), not the label with id "next": that made a cycle
+    anchors.top: prev.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 2

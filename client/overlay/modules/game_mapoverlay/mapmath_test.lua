@@ -96,6 +96,84 @@ eq(g.cx, 250 + 4 * 98 + 49, 'player centre x')
 eq(g.cy, -30 + 3 * 98 + 49, 'player centre y')
 eq(M.viewGeometry({ x = 0, y = 0, width = 100, height = 100 }, function() return nil end, { x = 1, y = 1 }), nil, 'no map')
 
+local function close(a, b, what, tol)
+  if math.abs(a - b) > (tol or 1e-9) then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
+end
+
+-- following the character's walk: a 15 x 11 view of 64 px tiles at 100, 50; the camera (sprite) tile is the
+-- middle one; the destination tile slides in from a step away
+local VW, VH, TS, OX, OY = 15, 11, 64, 100, 50
+local function walkProbe(dx, dy)   -- dx, dy = sprite offset from its tile in pixels (stock walk offset)
+  return function(x, y)
+    if x < OX or y < OY or x >= OX + VW * TS or y >= OY + VH * TS then return nil end
+    -- the map scrolls with the sprite: the tile under a point shifts by the walk offset
+    return { x = 500 - 7 + math.floor((x - OX + dx) / TS), y = 600 - 5 + math.floor((y - OY + dy) / TS) }
+  end
+end
+local panel = { x = 0, y = 0, width = 1200, height = 900 }
+local sprite = { x = OX + math.floor(VW * TS / 2), y = OY + math.floor(VH * TS / 2) }
+-- 8 directions, at the start (a whole tile), a quarter and the middle of a step, plus standing still
+for _, d in ipairs({ { 0, -1 }, { 0, 1 }, { -1, 0 }, { 1, 0 }, { -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 }, { 0, 0 } }) do
+  for _, frac in ipairs({ 1, 0.75, 0.5, 0.25, 0 }) do
+    -- walking in direction d: the character's tile is already the new one, the sprite still frac of a tile back
+    local ox, oy = -d[1] * frac * TS, -d[2] * frac * TS
+    local player = { x = 500 + d[1], y = 600 + d[2] }
+    -- the stock view puts the new tile at sprite - offset: the probe sees it shifted the other way
+    local gg = M.viewGeometry(panel, walkProbe(d[1] * TS + ox, d[2] * TS + oy), player)
+    local what = string.format(' (%d,%d) %.2f', d[1], d[2], frac)
+    eq(gg ~= nil, true, 'walk geometry' .. what)
+    local sx, sy, wx, wy = M.follow(gg)
+    -- the cheap per-frame lookup finds the same tile centre with a handful of probes
+    local calls = 0
+    local wp = walkProbe(d[1] * TS + ox, d[2] * TS + oy)
+    local qx, qy = M.tileCentreNear(function(x, y) calls = calls + 1 return wp(x, y) end, sx, sy, gg.ts, player)
+    eq(qx, gg.cx, 'cheap centre x' .. what); eq(qy, gg.cy, 'cheap centre y' .. what)
+    eq(calls <= 20, true, 'cheap lookup probes' .. what .. ' ' .. calls)
+    eq(sx, sprite.x, 'sprite stays centred x' .. what)
+    eq(sy, sprite.y, 'sprite stays centred y' .. what)
+    close(wx, -d[1] * frac, 'walk offset x' .. what)
+    close(wy, -d[2] * frac, 'walk offset y' .. what)
+    -- the shown fractional position = tile + offset = where the sprite really is
+    close(player.x + wx, 500 + d[1] * (1 - frac), 'shown position x' .. what)
+    close(player.y + wy, 600 + d[2] * (1 - frac), 'shown position y' .. what)
+  end
+end
+-- not following (free camera): the tile is used
+local fx, fy, fwx, fwy = M.follow({ x = 0, y = 0, width = 640, height = 640, ts = 64, cx = 100, cy = 100 })
+eq(fx, 100, 'free camera x'); eq(fy, 100, 'free camera y'); eq(fwx, 0, 'free camera wx'); eq(fwy, 0, 'free camera wy')
+fx, fy, fwx, fwy = M.follow({ x = 0, y = 0, width = 641, height = 641, ts = 64, cx = 321, cy = 319 })
+eq(fx, 320, 'standing: sprite x'); eq(fwx, 0, 'standing: rounding is no step x'); eq(fwy, 0, 'standing: rounding is no step y')
+-- a scaled view (45.5 px tiles): the cheap lookup stays within a pixel of the full measure
+do
+  local T = 45.5
+  local function sp(x, y)
+    if x < 10 or y < 10 or x >= 10 + 15 * T or y >= 10 + 11 * T then return nil end
+    return { x = 300 + math.floor((x - 10 + 20) / T), y = 400 + math.floor((y - 10 + 7) / T) }
+  end
+  local pl = { x = 307, y = 405 }
+  local gg = M.viewGeometry({ x = 0, y = 0, width = 800, height = 600 }, sp, pl)
+  local sx, sy = M.follow(gg)
+  local qx, qy = M.tileCentreNear(sp, sx, sy, gg.ts, pl)
+  close(qx, gg.cx, 'scaled cheap centre x', 1); close(qy, gg.cy, 'scaled cheap centre y', 1)
+  eq(M.tileCentreNear(function() return nil end, sx, sy, gg.ts, pl), nil, 'cheap lookup off the map')
+  -- tiles grew (game view zoomed in) since the measure: no answer, measure again
+  eq(M.tileCentreNear(sp, sx, sy, 10, pl), nil, 'cheap lookup with a stale tile size')
+end
+-- walk offset to minimap pixels
+local px, py = M.walkPixels(-0.5, 0.25, 3)
+eq(px, -4, 'walk pixels x'); eq(py, 2, 'walk pixels y')
+px, py = M.walkPixels(-1, 1, 4)
+eq(px, -16, 'walk pixels full tile x'); eq(py, 16, 'walk pixels full tile y')
+-- the camera tile plus the minimap shift: the drawn point of the sprite's position is the anchor, at every zoom
+for z = 0, 4 do
+  for _, w in ipairs({ -1, -0.75, -0.5, -0.3, 0, 0.3, 0.5, 1 }) do
+    local cox, _, rx = M.splitPan(w, 0, z)
+    local ppt = M.pixelsPerTile(z)
+    -- the camera tile (pos + cox) sits at anchor + rx; the sprite (pos + w) at anchor + rx + (w - cox) * ppt
+    close(rx + (w - cox) * ppt, 0, string.format('sprite on the anchor z%d w%.2f', z, w), 0.5)
+  end
+end
+
 -- pan, zoom toward the cursor
 local function near(a, b, what)
   if math.abs(a - b) > 1e-9 then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
@@ -168,6 +246,17 @@ eq(#list, 1, 'list kept')
 eq(M.assignKey(nil, M.CENTRE_ACTION, M.CENTRE_KEY), false, 'no list for the centre key')
 eq(M.sanitize({}).strip, true, 'strip on by default')
 eq(M.sanitize({ strip = false }).strip, false, 'strip off')
+
+-- click-through: only modified input (or input over the strip) belongs to the overlay
+eq(M.wheelAction(false, false, false), nil, 'plain wheel reaches the game map')
+eq(M.wheelAction(true, false, false), 'opacity', 'Ctrl+wheel opacity')
+eq(M.wheelAction(true, true, false), 'opacity', 'Ctrl+Shift+wheel opacity')
+eq(M.wheelAction(false, true, false), 'zoom', 'Shift+wheel zoom')
+eq(M.wheelAction(false, false, true), 'zoom', 'wheel over the strip zooms')
+eq(M.startsPan(true, false, false), false, 'plain middle press reaches the game map')
+eq(M.startsPan(true, true, false), true, 'Shift+middle pans')
+eq(M.startsPan(true, true, true), false, 'not over the strip')
+eq(M.startsPan(false, true, false), false, 'Shift+left click reaches the game map (look)')
 
 if fails > 0 then error(fails .. ' failure(s)') end
 print('mapmath_test: ok')

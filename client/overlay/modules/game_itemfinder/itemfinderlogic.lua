@@ -14,8 +14,8 @@ L.HISTORY = 20
 
 -- the sections in the server's order, with their titles
 L.SECTIONS = {
+  { k = 'drop', title = 'Chaos drops' }, -- the global drop tables first: any monster drops them
   { k = 'monster', title = 'Monsters and bosses' },
-  { k = 'drop', title = 'Chaos drops' },
   { k = 'reward', title = 'Chests and rewards' },
   { k = 'craft', title = 'Crafted from' },
   { k = 'shop', title = 'NPCs that sell it' },
@@ -196,4 +196,25 @@ end
 function L.validClientId(cid)
   cid = tonumber(cid)
   return cid ~= nil and cid >= 1 and cid <= 65535 and cid == math.floor(cid)
+end
+
+-- "Where to find" in the item menu: only a real item a player can own: an item (not a creature), not a ground tile or
+-- ground border, and one that can be picked up or moved (live test winpkg-35: a right-click on grass offered it). The
+-- thing's methods are called safely (a missing one counts as false).
+local function ask(thing, method)
+  local fn = thing and thing[method]
+  if type(fn) ~= 'function' then return false end
+  local ok, v = pcall(fn, thing)
+  return ok and v == true
+end
+
+function L.menuThing(lookThing, useThing)
+  for _, thing in ipairs({ useThing, lookThing }) do
+    if thing and ask(thing, 'isItem') and not ask(thing, 'isGround') and not ask(thing, 'isGroundBorder')
+        and (ask(thing, 'isPickupable') or not ask(thing, 'isNotMoveable')) then
+      local ok, id = pcall(thing.getId, thing)
+      if ok and L.validClientId(id) then return thing end
+    end
+  end
+  return nil
 end

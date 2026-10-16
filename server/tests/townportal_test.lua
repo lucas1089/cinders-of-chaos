@@ -110,6 +110,25 @@ for _, f in ipairs({"tutorial", "arena", "worldBoss", "siege", "rift", "dungeon"
 	"casting", "noTown"}) do
 	assert(K.blockReason({[f] = true}), f .. " refused")
 end
+-- inside a hideout the Town Portal is a way out (townportal.lua sends the character through ChaosHideout.leave)
+eq(K.hideoutExit({hideout = true}), true, "hideout: a way out")
+eq(K.hideoutExit({hideout = true, cooldownLeft = 30, pz = true, instance = "a hideout"}), true,
+	"hideout: no cooldown, protection zone or instance refusal")
+eq(K.hideoutExit({hideout = true, casting = true}), false, "hideout: not while a cast runs")
+eq(K.hideoutExit({hideout = true, tutorial = true}), false, "hideout: not on the tutorial island")
+eq(K.hideoutExit({}), false, "elsewhere: the normal portal")
+eq(K.hideoutExit({instance = "a raid"}), false, "another instance: refused as before")
+assert(K.blockReason({hideout = true}):find("Leave", 1, true), "without the hideout system: points to the exit")
+do -- townportal.lua: the hideout case comes before every refusal and goes through ChaosHideout.leave
+	local h = io.open("data/scripts/chaos/townportal.lua", "r")
+	local src = h:read("*a")
+	h:close()
+	local cast = src:find("function T.cast", 1, true)
+	local exit = src:find("K.hideoutExit(bf) and ChaosHideout and ChaosHideout.leave", cast, true)
+	local block = src:find("K.blockReason(bf)", cast, true)
+	assert(exit and block and exit < block, "T.cast: the hideout way out before the refusals")
+	assert(src:find("ChaosHideout.leave(player,", cast, true), "T.cast: through the hideout's exit logic")
+end
 assert(K.blockReason({cooldownLeft = 12}):find("12 seconds"), "cooldown text")
 assert(K.blockReason({cooldownLeft = 1}):find("1 second%."), "one second")
 eq(K.blockReason({cooldownLeft = 0}), nil, "cooldown over")

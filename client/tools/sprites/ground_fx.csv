@@ -1,0 +1,211 @@
+name,layer,reason
+fx:CONST_ME_YELLOW_RINGS,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_185,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_205,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_221,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_244,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_264,ground,rule 1: procedural floor ring / circle / nova
+fx:EFFECT_291,ground,rule 1: procedural floor ring / circle / nova
+fx:fire_nova,ground,rule 1: procedural floor ring / circle / nova
+fx:fire_ring,ground,rule 1: procedural floor ring / circle / nova
+fx:frost_nova,ground,rule 1: procedural floor ring / circle / nova
+fx:frost_ripple,ground,rule 1: procedural floor ring / circle / nova
+fx:blood_rune,ground,rule 1: procedural floor ring / circle / nova
+fx:blood_ring,ground,rule 1: procedural floor ring / circle / nova
+fx:blood_nova,ground,rule 1: procedural floor ring / circle / nova
+fx:shadow_ring,ground,rule 1: procedural floor ring / circle / nova
+fx:poison_pentagram,ground,rule 1: procedural floor ring / circle / nova
+fx:poison_ring,ground,rule 1: procedural floor ring / circle / nova
+fx:arcane_circle,ground,rule 1: procedural floor ring / circle / nova
+fx:arcane_aura,ground,rule 1: procedural floor ring / circle / nova
+fx:shockwave,ground,rule 1: procedural floor ring / circle / nova
+blood_pact,ground,rule 4: covers the creature for 0.5 s or more
+dawn_aegis,ground,rule 4: covers the creature for 0.5 s or more
+ember_crown,ground,rule 4: covers the creature for 0.5 s or more
+frost_bastion,ground,rule 4: covers the creature for 0.5 s or more
+gale_ring,ground,rule 3: floor shape by name
+plague_mist,ground,rule 4: covers the creature for 0.5 s or more
+shadow_shroud,ground,rule 4: covers the creature for 0.5 s or more
+starfall_crown,ground,rule 4: covers the creature for 0.5 s or more
+stone_ward,ground,rule 4: covers the creature for 0.5 s or more
+storm_mantle,ground,rule 4: covers the creature for 0.5 s or more
+verdant_bloom,ground,rule 4: covers the creature for 0.5 s or more
+void_rift,ground,rule 3: floor shape by name
+arcane_sigil,ground,rule 3: floor shape by name
+frost_glyph,ground,rule 3: floor shape by name
+grove_glyph,ground,rule 3: floor shape by name
+holy_seal,ground,rule 3: floor shape by name
+infernal_seal,ground,rule 3: floor shape by name
+necro_seal,ground,rule 3: floor shape by name
+storm_ring,ground,rule 3: floor shape by name
+void_maw,ground,rule 4: covers the creature for 0.5 s or more
+warning_fill,ground,rule 3: floor shape by name
+warning_zone,ground,rule 3: floor shape by name
+earth_spikes,ground,rule 4: covers the creature for 0.5 s or more
+fire_explosion,ground,rule 4: covers the creature for 0.5 s or more
+frost_nova,ground,rule 3: floor shape by name
+healing_bloom,ground,rule 4: covers the creature for 0.5 s or more
+holy_smite,ground,rule 4: covers the creature for 0.5 s or more
+lightning_strike,ground,rule 4: covers the creature for 0.5 s or more
+meteor_strike,ground,rule 4: covers the creature for 0.5 s or more
+shadow_eruption,ground,rule 4: covers the creature for 0.5 s or more
+teleport_out,ground,rule 4: covers the creature for 0.5 s or more
+toxic_burst,ground,rule 4: covers the creature for 0.5 s or more
+fireball_hit,ground,rule 4: covers the creature for 0.5 s or more
+holy_hit,ground,rule 4: covers the creature for 0.5 s or more
+shadow_hit,ground,rule 4: covers the creature for 0.5 s or more
+asleep,ground,rule 4: covers the creature for 0.5 s or more
+burning,ground,rule 4: covers the creature for 0.5 s or more
+cursed,ground,rule 4: covers the creature for 0.5 s or more
+frozen,ground,rule 4: covers the creature for 0.5 s or more
+hasted,ground,rule 4: covers the creature for 0.5 s or more
+poisoned,ground,rule 4: covers the creature for 0.5 s or more
+regenerating,ground,rule 4: covers the creature for 0.5 s or more
+shield_bubble,ground,rule 4: covers the creature for 0.5 s or more
+blunt_smash,ground,rule 4: covers the creature for 0.5 s or more
+fang_bite_*,ground,rule 4: the bite covers the creature for 0.6 s
+aura_burst_gold,ground,rule 4: covers the creature for 0.5 s or more
+aura_burst_red,ground,rule 4: covers the creature for 0.5 s or more
+aura_burst_violet,ground,rule 4: covers the creature for 0.5 s or more
+aura_burst_god,ground,rule 4: covers the creature for 0.5 s or more
+dome_blast_fire,ground,rule 3: floor shape by name
+dome_blast_violet,ground,rule 3: floor shape by name
+dome_blast_holy,ground,rule 3: floor shape by name
+solar_flash,ground,rule 4: covers the creature for 0.5 s or more
+energy_sphere,ground,rule 4: covers the creature for 0.5 s or more
+px197_crimson,ground,rule 4: covers the creature for 0.5 s or more
+lich_soul_drain,ground,rule 4: covers the creature for 0.5 s or more
+warrior_quake,ground,rule 3: floor shape by name
+elementalist_glyph,ground,rule 3: floor shape by name
+tick_burn,ground,rule 4: covers the creature for 0.5 s or more
+tick_chill,ground,rule 4: covers the creature for 0.5 s or more
+tick_curse,ground,rule 4: covers the creature for 0.5 s or more
+big_telegraph_5,ground,rule 2: large floor-sized effect
+big_telegraph_7,ground,rule 2: large floor-sized effect
+big_telegraph_9,ground,rule 2: large floor-sized effect
+big_shock_fire_7,ground,rule 2: large floor-sized effect
+big_shock_frost_7,ground,rule 2: large floor-sized effect
+big_shock_lightning_7,ground,rule 2: large floor-sized effect
+big_shock_holy_5,ground,rule 2: large floor-sized effect
+big_shock_blood_9,ground,rule 2: large floor-sized effect
+big_nova_fire_9,ground,rule 2: large floor-sized effect
+big_nova_frost_7,ground,rule 2: large floor-sized effect
+big_nova_poison_7,ground,rule 2: large floor-sized effect
+big_nova_holy_7,ground,rule 2: large floor-sized effect
+big_nova_void_7,ground,rule 2: large floor-sized effect
+big_nova_arcane_7,ground,rule 2: large floor-sized effect
+big_pillar_holy_5,ground,rule 2: large floor-sized effect
+big_pillar_arcane_5,ground,rule 2: large floor-sized effect
+big_meteor_fire_7,ground,rule 2: large floor-sized effect
+big_lightning_burst_7,ground,rule 2: large floor-sized effect
+big_sanctum_holy_5,ground,rule 2: large floor-sized effect
+big_rift_void_7,ground,rule 2: large floor-sized effect
+big_geyser_blood_5,ground,rule 2: large floor-sized effect
+palm_quake,ground,rule 3: floor shape by name
+sanctified_seal,ground,rule 3: floor shape by name
+nova_frost,ground,rule 3: floor shape by name
+meteor_fall,ground,rule 4: covers the creature for 0.5 s or more
+nova_radiant,ground,rule 3: floor shape by name
+terra_strike,ground,rule 4: covers the creature for 0.5 s or more
+rift_void,ground,rule 3: floor shape by name
+summon_necro,ground,rule 4: covers the creature for 0.5 s or more
+portal_pad,ground,rule 3: floor shape by name
+boss_telegraph,ground,rule 3: floor shape by name
+vigil_clarity,ground,rule 4: covers the creature for 0.5 s or more
+veil_stealth,ground,rule 4: covers the creature for 0.5 s or more
+zeal_oath,ground,rule 4: covers the creature for 0.5 s or more
+curse_mark,ground,rule 4: covers the creature for 0.5 s or more
+whirlwind,ground,a slash ring round the caster at the feet
+stone_rise,ground,rocks rise from the floor round the caster
+teleport_in,ground,arrival flash on the floor; the creature appears over it
+px03_arcane,ground,vortex ring
+px03_ice,ground,vortex ring
+px396_indigo,ground,dark floor ring
+px586_fire,ground,sun ring
+px586_white,ground,sun ring
+px674_arcane,ground,hexagon sigil
+bone_aura,ground,skulls and shards circle the caster
+bonelord_golem_rise,ground,the floor cracks into a crown of bone spikes
+bonelord_banner,ground,"a ring on the floor, shards circle up"
+bonelord_ward,ground,rib plates close round the caster
+warrior_gyre,ground,blade crescents sweep a full circle round the caster
+warrior_bellow,ground,broken rings rush outward
+juggernaut_bulwark,ground,a tower shield slams into the floor
+berserker_rage,ground,blood flames rise round the caster
+ranger_thornseal,ground,a ring of thorned vines grows from the floor
+ranger_canopy,ground,leaves whirl round the caster
+beast_spirit,ground,"claw rakes tear the floor, paw prints"
+mystic_mend,ground,petals spiral up round the healed
+illusion_mirror,ground,mirror panes rise round the target
+thief_vanish,ground,smoke billows from the feet
+samurai_focus,ground,petals circle the caster
+monk_heel,ground,a chi ring at kick height
+ironsage_ward,ground,hexagon plates close into a dome
+templar_mend,ground,a cross of light lands on the floor
+inquisitor_zeal,ground,holy flames rise in a ring
+sentinel_aegis,ground,wall panes rise round the caster
+snare_jaws,ground,iron jaws on the floor tile
+snare_blast,ground,a mine bursts on the floor
+vigil_wrath,ground,a banner rises from the floor
+vigil_iron,ground,a banner rises from the floor
+vigil_haste,ground,a banner rises from the floor
+flurry_petals,ground,ribbon slashes whirl round the caster
+gyre_steel,ground,blade smears sweep round the caster
+berserk_blood,ground,a red spin round the caster
+slam_earth,ground,a radial shockwave on the floor
+mend_holy,ground,a ring of light on the floor
+healing_burst,ground,a heal bloom round the healed
+ward_shield,ground,a barrier dome round the creature
+aegis_radiant,ground,a dome of light round the caster
+buff_rested,ground,a pulse ring on the floor
+levelup_rise,ground,a golden ring on the floor and a rising beam
+necro_curse,ground,a rune brand closes on the target
+iaido_dash_*,ground,speed lines along the floor
+shieldwave_bash_*,ground,a shield-shaped shock on the floor in front
+arcane_hit,above,"short hit (0.33 s), under 35 % of the body most frames"
+ice_shatter,above,short hit
+lightning_hit,above,short hit
+gale_hit,above,short hit
+venom_splash,above,short hit
+heavy_cleave_*,above,"directional melee hit, 0.3-0.4 s"
+claw_rake_*,above,"directional melee hit, 0.33 s"
+punch_hit_gold,above,"fist hit, 0.1 s over the body"
+punch_hit_red,above,fist hit
+punch_hit_violet,above,fist hit
+blink_vanish,above,the caster turns into the pillar (0.25 s)
+blink_appear,above,the caster steps out of the pillar (0.25 s)
+shade_vanish,above,the caster turns into the pillar (0.25 s)
+shade_appear,above,the caster steps out of the pillar (0.25 s)
+illusion_shatter,above,the figure itself breaks into shards
+px448_crimson,above,short splash
+px448_green,above,short splash
+px633_indigo,above,"short skull, 0.3 s"
+px633_green,above,"short skull, 0.3 s"
+px652_white,above,short rays
+chi_charge,above,"chi at the chest, 0.15 s"
+candlemark_glow,above,"reward glow, 0.4 s"
+stun_stars,above,over the head
+hunter_focus,above,over the head
+bellow_cry,above,rings from the head
+venom_flurry,above,"dagger slashes, 0.3 s"
+punch_fire,above,"fist hit, 0.12 s"
+smite_radiant,above,"pillar lands, 0.43 s"
+judgment_holy,above,"sword lands, 0.43 s"
+word_blessed,above,status word: the words must stay readable (rule 4 spares the status words)
+word_oblivion,above,status word: the words must stay readable (rule 4 spares the status words)
+word_charmed,above,status word: the words must stay readable (rule 4 spares the status words)
+word_cursed,above,status word: the words must stay readable (rule 4 spares the status words)
+word_drenched,above,status word: the words must stay readable (rule 4 spares the status words)
+word_feared,above,status word: the words must stay readable (rule 4 spares the status words)
+word_frozen,above,status word: the words must stay readable (rule 4 spares the status words)
+word_impaled,above,status word: the words must stay readable (rule 4 spares the status words)
+word_reaped,above,status word: the words must stay readable (rule 4 spares the status words)
+word_revived,above,status word: the words must stay readable (rule 4 spares the status words)
+word_revived_rise,above,status word: the words must stay readable (rule 4 spares the status words)
+word_revived_small,above,status word: the words must stay readable (rule 4 spares the status words)
+word_rooted,above,status word: the words must stay readable (rule 4 spares the status words)
+word_rooted_vines,above,status word: the words must stay readable (rule 4 spares the status words)
+word_shackled,above,status word: the words must stay readable (rule 4 spares the status words)
+word_shocked,above,status word: the words must stay readable (rule 4 spares the status words)
+word_smite,above,status word: the words must stay readable (rule 4 spares the status words)
+word_stunned,above,status word: the words must stay readable (rule 4 spares the status words)

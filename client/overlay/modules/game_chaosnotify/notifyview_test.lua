@@ -79,5 +79,22 @@ eq(dropped and dropped.message, 'm1', 'the oldest dropped')
 eq(#q, V.QUEUE_MAX, 'still capped')
 eq(q[#q].message, 'new', 'the newest kept')
 
+-- ------------------------------------------------------------------ height from the wrapped text
+local h, lh, cut = V.heightFor('INVASION', 13 * 4)
+eq(h .. '/' .. lh .. '/' .. tostring(cut), '110/64/false', 'four lines keep the base toast')
+h, lh, cut = V.heightFor('INVASION', 13 * 6)
+eq(h .. '/' .. lh .. '/' .. tostring(cut), (28 + 78 + 18) .. '/78/false', 'six lines grow the toast')
+eq(h - lh - V.TEXT_TOP >= V.TEXT_BOTTOM, true, 'the timer bar stays below the text')
+h, lh, cut = V.heightFor('NEW_PLAYER', 13 * 30)
+eq(h .. '/' .. tostring(cut), V.MAX_HEIGHT .. '/true', 'a very long text is capped (tooltip)')
+eq(lh, V.MAX_HEIGHT - V.TEXT_TOP - V.TEXT_BOTTOM, 'capped label height')
+h, lh = V.heightFor('PARTY_INVITE', 13 * 2)
+eq(h .. '/' .. lh, '140/35', 'button toast keeps its base')
+h, lh = V.heightFor('PARTY_INVITE', 13 * 5)
+eq(h, 28 + 65 + 77, 'button toast grows over its buttons')
+-- a grown toast pushes the next one down by its own height
+local grown = V.stack({}, { [1] = { type = 'INVASION', height = 160 }, [2] = { type = 'SALE' } }, 0)
+eq(grown[2].y, 160 + 8, 'stacked below the grown toast')
+
 print(string.format('notifyview_test: %d checks, %d failed', n, fails))
 if fails > 0 then os.exit(1) end

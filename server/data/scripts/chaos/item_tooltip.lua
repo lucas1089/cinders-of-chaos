@@ -4,8 +4,9 @@
 -- item_tooltip_core.lua (ChaosItemTooltip.build); see server/README.md "Item attributes and rich tooltips".
 --
 -- Protocol (JSON {action, data}):
---   client -> server  get {items = [{pos = {x, y, z, s}, iid}]}        up to ChaosItemTooltip.config.maxItems items
---   server -> client  tips {items = [{pos, iid, tip} | {pos, iid, gone = true}]}
+--   client -> server  get {items = [{pos = {x, y, z, s}, iid, cid, n}]}  up to ChaosItemTooltip.config.maxItems items;
+--                     cid = the client id of the hovered item, n = its count (stackables): T.matchIndex
+--   server -> client  tips {items = [{pos, iid, cid, tip} | {pos, iid, cid, gone = true}]}
 -- pos is the client's position of the item: {0xFFFF, slot, 0} for the inventory, {0xFFFF, 0x40 + container id, slot}
 -- for an open container (slot on the current page), a map position with the stack position `s` for the ground. iid
 -- is the item's per-item id from its client attributes as a decimal string (0 when it has none; a JSON number would lose
@@ -34,31 +35,47 @@ local function nowMs()
 	return os.mtime and os.mtime() or os.time() * 1000
 end
 
-local function itemAt(player, pos)
+-- client id and count of an item (T.matchIndex)
+local function infoOf(item)
+	if not item then
+		return nil
+	end
+	local it = ItemType(item:getId())
+	return it and it:getClientId() or 0, item:getCount()
+end
+
+-- the item at pos that is what the client hovers: cid / n = its client id and (stackables) count, nil from an older
+-- client (no check). A container whose items shifted since the client looked: the nearest matching slot.
+local function itemAt(player, pos, cid, n)
 	local p = T.decodePos(pos)
 	if not p then
 		return nil
 	end
+	local item
 	if p.kind == "slot" then
-		return player:getSlotItem(p.slot)
+		item = player:getSlotItem(p.slot)
 	elseif p.kind == "container" then
 		local container = player:getContainerById(p.cid) -- only containers the engine has open for this player
 		if not container then
 			return nil
 		end
 		local first = tonumber(player:getContainerIndex(p.cid)) or 0
-		return container:getItem(first + p.index)
+		local size = container:getSize()
+		local index = T.matchIndex(first + p.index, size, function(i) return infoOf(container:getItem(i)) end, cid, n)
+		return index and container:getItem(index) or nil
+	else
+		local target = Position(p.x, p.y, p.z)
+		if not T.mapAllowed(player:getPosition(), target, player:canSee(target)) then
+			return nil
+		end
+		local tile = Tile(target)
+		local thing = tile and tile:getThing(p.stackpos)
+		item = thing and thing.isItem and thing:isItem() and thing or nil
 	end
-	local target = Position(p.x, p.y, p.z)
-	if not T.mapAllowed(player:getPosition(), target, player:canSee(target)) then
-		return nil
+	if item and T.matchIndex(0, 1, function() return infoOf(item) end, cid, n) == nil then
+		return nil -- another item than the one hovered: the client asks again after its next update
 	end
-	local tile = Tile(target)
-	local thing = tile and tile:getThing(p.stackpos)
-	if thing and thing.isItem and thing:isItem() then
-		return thing
-	end
-	return nil
+	return item
 end
 
 local function equippedIds(player)
@@ -95,7 +112,8 @@ local function answer(player, data)
 		local req = type(list[i]) == "table" and list[i] or {}
 		local iid = tonumber(req.iid) or 0
 		local row = {pos = req.pos, iid = type(req.iid) == "string" and req.iid:sub(1, 20) or iid} -- echoed as sent
-		local item = itemAt(player, req.pos)
+		row.cid = tonumber(req.cid) -- echoed: the client checks the answer against what it asked for
+		local item = itemAt(player, req.pos, req.cid, req.n)
 		if item and iid > 0 then
 			local own = tonumber(ChaosCrafting.customNumber(item, "chaos_iid")) or 0
 			if own ~= iid then

@@ -52,7 +52,7 @@ GetItems < MiniPanel
 MainWindow
   !text: tr('Daily Reward')
   size: 549 466
-  @onEscape: toggle()
+  @onEscape: modules.game_daily.toggle()
 
   Panel
     id: itemsPanel
@@ -186,4 +186,4 @@ MainWindow
     width: 100
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.bottom: parent.bottom
-    @onClick: toggle()
+    @onClick: modules.game_daily.toggle()

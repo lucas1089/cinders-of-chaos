@@ -37,13 +37,14 @@ def config():
     code = ('local c = dofile("data/scripts/chaos/idlehall_config.lua") '
             'print("at", c.hall.at.x, c.hall.at.y, c.hall.at.z) '
             'print("arrival", c.hall.arrival[1], c.hall.arrival[2], c.hall.arrival[3] or 0) '
+            'print("exit", c.hall.exit[1], c.hall.exit[2], c.hall.exit[3] or 0) '
             'print("plan", c.hall.plan) '
             'for _, k in ipairs({"dummies", "benches"}) do for i, o in ipairs(c.slots[k]) do print(k, o[1], o[2]) end end '
             'print("sign", c.slots.sign[1], c.slots.sign[2])')
     out = subprocess.run([LUAJIT, '-e', code], cwd=SERVER, capture_output=True, text=True, check=True).stdout
     cfg = {'slots': []}
     for row in (l.split() for l in out.splitlines() if l.strip()):
-        if row[0] in ('at', 'arrival'):
+        if row[0] in ('at', 'arrival', 'exit'):
             cfg[row[0]] = tuple(int(v) for v in row[1:4])
         elif row[0] == 'plan':
             cfg['plan'] = row[1]
@@ -104,6 +105,9 @@ def main():
     ax, ay, az = r['arrival']
     check(cfg['arrival'] == (ax - ox, ay - oy, az - oz), 'hall.arrival %s (the plan gives %s)'
           % (cfg['arrival'], (ax - ox, ay - oy, az - oz)))
+    ex, ey, ez = r['exit']['at']
+    check(cfg.get('exit') == (ex - ox, ey - oy, ez - oz), 'hall.exit %s (the plan gives %s): idlehall.lua re-tags that portal'
+          % (cfg.get('exit'), (ex - ox, ey - oy, ez - oz)))
 
     walk, tiles = r['walk'], r['tiles']
     start, exit_at = tuple(r['arrival']), tuple(r['exit']['at'])

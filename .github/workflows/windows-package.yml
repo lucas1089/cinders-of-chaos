@@ -677,6 +677,9 @@ jobs:
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
           rm -rf base base-client
 
+      - name: No other server or client names in the assembled client (check_names.py --client, client/BASE.md)
+        run: python3 -I chaos/tools/ci/check_names.py --client "$GITHUB_WORKSPACE/game"
+
       - name: Client guard inputs (build number, key secret)
         env:
           CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}

@@ -12,12 +12,18 @@ function onCastSpell(creature, variant, isHotkey)
 		return false
 	end
 	local min, max = ChaosSpell.mlValues(player, 12, 20, 90, 190)
-	ChaosSpell.vfxOr(player:getPosition(), "healing_bloom", "aura_ring", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(player:getPosition(), "healing_bloom", "arcane_aura", CONST_ME_MAGIC_BLUE)
 	for _, ally in ipairs(ChaosSpell.alliesAround(player, player:getPosition(), 3, true)) do
 		for _, ctype in ipairs(CLEANSE) do
 			ally:removeCondition(ctype)
 		end
-		ChaosSpell.healTarget(player, ally, min, max, Fx("heal_sparkle", CONST_ME_MAGIC_BLUE))
+		-- each healed ally: the class swap (chaos_class_fx.lua: heal_sparkle -> mystic_mend) at its tile; the caster has
+		-- the bloom (server/data/spells/README_FX.md "Mystic line effects")
+		local healFx = Fx("heal_sparkle", CONST_ME_MAGIC_BLUE)
+		if ally:getId() ~= player:getId() and ChaosSpell.vfx(ally:getPosition(), "heal_sparkle") then
+			healFx = CONST_ME_NONE
+		end
+		ChaosSpell.healTarget(player, ally, min, max, healFx)
 	end
 	return true
 end

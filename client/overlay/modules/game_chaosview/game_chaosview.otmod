@@ -1,0 +1,11 @@
+Module
+  name: game_chaosview
+  description: The map's zoom: asks the server for its largest map area and starts each character at its saved zoom or a default that is not zoomed in (ChaosView)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 960
+  dependencies: [ game_interface ]
+  scripts: [ chaosview_logic, chaosview ]
+  @onLoad: ChaosView.init()
+  @onUnload: ChaosView.terminate()

@@ -1949,6 +1949,15 @@ function X.placePortals()
 			end
 		end
 	end
+	-- the look text and the effect of a city portal (cityportals.lua, cityportals_fx.lua)
+	if not ChaosCityPortals then
+		pcall(dofile, "data/scripts/chaos/cityportals.lua")
+	end
+	if ChaosCityPortals then
+		for _, p in ipairs(X.portals) do
+			ChaosCityPortals.register("descent", cfg.aid.portal, p)
+		end
+	end
 	return placed
 end
 

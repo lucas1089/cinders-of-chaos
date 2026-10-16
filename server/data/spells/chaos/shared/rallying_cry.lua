@@ -23,10 +23,10 @@ function onCastSpell(creature, variant, isHotkey)
 	if not player then
 		return false
 	end
-	ChaosSpell.vfxOr(player:getPosition(), "aura_burst_gold", "aura_ring", CONST_ME_MAGIC_GREEN)
+	ChaosSpell.vfxOr(player:getPosition(), "aura_burst_gold", "holy_spiral", CONST_ME_MAGIC_GREEN)
 	for _, ally in ipairs(ChaosSpell.alliesAround(player, player:getPosition(), 5, false)) do
 		buff(ally)
-		ChaosSpell.fx(ally:getPosition(), "aura_ring", CONST_ME_MAGIC_GREEN)
+		ChaosSpell.fx(ally:getPosition(), "holy_spiral", CONST_ME_MAGIC_GREEN)
 	end
 	return true
 end

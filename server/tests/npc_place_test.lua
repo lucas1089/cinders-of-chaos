@@ -214,6 +214,51 @@ do
 	end
 	local again = ChaosNpcPlace.place("Loot Buyer", temple, {})
 	check(again == npcs[2], "a second call keeps the Loot Buyer already there")
+
+	-- start log 2026-10-16, Nightwrack: a temple room with no tile left (here: the room around 110,110 is one tile,
+	-- walls all round) -> with depotFallback the NPC stands near the nearest depot of the map markers
+	for x = 108, 112 do
+		for y = 108, 112 do
+			if x ~= 110 or y ~= 110 then
+				blocked[k(x, y)] = true
+			end
+		end
+	end
+	ChaosNpcPlace.poiMarks = {
+		{k = "temple", x = 110, y = 110, z = 7},
+		{k = "depot", x = 120, y = 90, z = 7}, -- the nearest depot (open land)
+		{k = "depot", x = 112, y = 112, z = 8}, -- nearer, another floor: after the same floor
+		{k = "depot", x = 200, y = 200, z = 7}, -- too far
+	}
+	local small = Position(110, 110, 7)
+	check(ChaosNpcPlace.place("Loot Buyer Two", small, {{1, 0}}) == nil, "no depotFallback: no spot, no NPC")
+	local lb = ChaosNpcPlace.place("Loot Buyer Two", small, {{1, 0}}, {depotFallback = true})
+	check(lb ~= nil, "depotFallback: placed")
+	if lb then
+		local p = lb:getPosition()
+		check(math.max(math.abs(p.x - 120), math.abs(p.y - 90)) <= K.DEFAULTS.radius and p.z == 7,
+			"near the same-floor depot (" .. p.x .. "," .. p.y .. "," .. p.z .. ")")
+		check(not blocked[k(p.x, p.y)], "on a free tile")
+		check(ChaosNpcPlace.place("Loot Buyer Two", small, {{1, 0}}, {depotFallback = true}) == lb,
+			"a second call keeps the NPC at the depot")
+	end
+	ChaosNpcPlace.poiMarks = nil
+end
+
+-- the depot anchors (pure)
+do
+	local marks = {
+		{k = "depot", x = 150, y = 100, z = 7}, {k = "depot", x = 130, y = 100, z = 7}, {k = "depot", x = 101, y = 100, z = 9},
+		{k = "depot", x = 100, y = 100, z = 10}, {k = "bank", x = 101, y = 100, z = 7}, {k = "depot", x = 100, y = 300, z = 7},
+		{k = "depot", x = 130, y = 99, z = 7},
+	}
+	local a = K.depotAnchors({x = 100, y = 100, z = 7}, marks)
+	eq(#a, 4, "depots within 64 tiles and 2 floors")
+	eq(a[1] and (a[1].x .. "," .. a[1].y), "130,99", "same floor, nearest, then row")
+	eq(a[2] and (a[2].x .. "," .. a[2].y), "130,100", "then column")
+	eq(a[3] and a[3].x, 150, "the farther one")
+	eq(a[4] and a[4].z, 9, "another floor last")
+	eq(#K.depotAnchors({x = 100, y = 100, z = 7}, nil), 0, "no marks: none")
 end
 
 -- ---------------------------------------------------------------- only the nearest NPC answers

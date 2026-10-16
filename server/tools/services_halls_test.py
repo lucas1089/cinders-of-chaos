@@ -5,7 +5,8 @@ compile with the area planner without a QA error; no monster, every zone a prote
 compiled plans; every booth NPC tile, counter, partition, coal basin and system portal is free floor (no decoration,
 not the arrival or the exit) in its room; with all of them placed no other floor tile is cut off from the arrival;
 each booth's front tile (the row in front of its counter) is reached, and from it its own NPC is the nearest; the
-Descent and raid portal positions (descent_config.lua, raid_config.lua) are the halls' portal tiles; every NPC named in
+Descent and raid portal positions (descent_config.lua, raid_config.lua) are the halls' portal tiles (the Hideout and
+Guild Hall Portals, cityportals.lua, are checked as portal tiles too); every NPC named in
 a booth has an XML that never walks (walkinterval 0); the halls keep 10+ tiles from every other plan and generated area
 and lie in the content block; install_content_areas.py places the rooms folder.
 
@@ -24,6 +25,7 @@ import install_content_areas as I
 
 ROOMS = os.path.join(HERE, 'areaplan', 'rooms')
 LUAJIT = os.environ.get('LUAJIT', 'luajit')
+POSITIONED = ('descent', 'raid')  # systems whose config repeats the portal tile (portal.positions)
 
 failures = []
 
@@ -198,6 +200,8 @@ def main():
                   '%s: in front of %s its own booth is the nearest NPC (%d, others %s)' % (pid, name, d_own, sorted(others)[:2]))
         for _, key, k, town in portals:
             check(any(n in left for n in neighbours(k)), '%s: the %s portal is reached' % (pid, key))
+            if key not in POSITIONED:
+                continue  # placed from npc_booths_config.lua itself (cityportals.lua: hideout, guildhall)
             want = [p for p in cfg['pos'] if p[0] == key and p[1] == town]
             check(len(want) == 1 and want[0][2] == k, '%s: %s_config.lua portal.positions for town %d is %s' % (pid, key, town, k))
 

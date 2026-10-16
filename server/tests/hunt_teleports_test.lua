@@ -52,7 +52,14 @@ local places = {
 			sign = {x = 110, y = 96, z = 6}, arrival = {x = 500, y = 500, z = 8}, exit = {x = 500, y = 498, z = 8}},
 		{id = "not_in_config", name = "X", level = {1, 2}, teleport = {x = 111, y = 98, z = 6},
 			arrival = {x = 1, y = 1, z = 7}, monster = "Rat"}
-	}
+	},
+	-- the hall order (tools/hall_order.py): a base hunt and the floors' bands
+	hall = true,
+	base = {
+		{id = "base_7_120_98", name = "Rat", level = {1, 20}, teleport = {x = 120, y = 98, z = 6},
+			sign = {x = 120, y = 96, z = 6}, dest = {x = 900, y = 900, z = 7}}
+	},
+	floors = {{z = 7, level = {1, 80}}, {z = 6, level = {80, 300}}, {z = 5, level = {300, 2000}}}
 }
 eq(#H.validate(cfg, places), 0, "places valid")
 local dup = {back = places.back, places = {places.places[1], places.places[1]}}
@@ -81,6 +88,16 @@ eq(H.lang(nil), "en", "lang default")
 local b = H.backFor(idx, {x = 500, y = 498, z = 8})
 ok(b and b.x == 100, "exit goes back to the room")
 eq(H.backFor(idx, {x = 500, y = 497, z = 8}), nil, "another tile: no room")
+eq(#idx.base, 1, "the base hunt is indexed")
+eq(H.label(cfg, idx.base[1], "pt-BR"), "Rat, níveis 1-20", "a base hunt's label")
+local fl = H.floorLabels(cfg, idx, "en")
+eq(#fl, 5, "a label per floor and one over each stairs up")
+eq(fl[1].text, "Floor 7: levels 1-80", "the entry floor's label")
+eq(fl[1].pos.z, 7, "on its floor")
+eq(fl[2].text, "Up: floor 6, levels 80-300", "the stairs up name the next floor")
+eq(fl[2].pos.y, cfg.hall.labels[1].up.y, "over the stairs up")
+eq(H.floorLabels(cfg, idx, "pt-BR")[1].text, "Andar 7: níveis 1-80", "pt-BR floor label")
+eq(#H.floorLabels(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), 0, "no hall order: no floor label")
 local cfg2 = {aid = 47930, plans = {{id = "widowmere", monster = "M", minLevel = 600}}, texts = {}}
 eq(H.index(cfg2, places).list[1].minLevel, 600, "minLevel override")
 
@@ -162,6 +179,12 @@ end
 Chaos = {lang = function(pl)
 	return pl.lang
 end}
+RETURNVALUE_NOERROR, RETURNVALUE_NOTPOSSIBLE = 0, 1
+EventCallback = setmetatable({}, {__newindex = function(t, k, v)
+	rawset(t, k, v)
+	registered[k] = v
+end})
+function EventCallback.register() end
 -- places file in a temp path: the engine file reads data/lib/chaos_hunt_places.lua; point io.open at a fake
 local realOpen, realDofile = io.open, dofile
 local PL = "data/lib/chaos_hunt_places.lua"
@@ -184,6 +207,7 @@ print = function(s)
 end
 addTile({x = 110, y = 98, z = 6})
 addTile({x = 110, y = 96, z = 6}, {newItem(5360)})
+addTile({x = 120, y = 96, z = 6}, {newItem(5360)})
 dofile("data/scripts/chaos/hunt_teleports.lua")
 registered.startup.onStartup()
 print = realPrint
@@ -192,6 +216,7 @@ eq(created[1].aid, 47930, "with the aid")
 ok(created[1].attrs.desc:find("Widowmere, levels 480-640", 1, true) ~= nil, "description")
 eq(tiles["110,96,6"].items[1].attrs.text, "Widowmere, levels 480-640\nWidowmere, níveis 480-640", "sign written")
 eq(registered.step.aidv, 47930, "step-in registered on the aid")
+eq(tiles["120,96,6"].items[1].attrs.text, "Rat, levels 1-20\nRat, níveis 1-20", "the base hunt's sign written")
 -- a second startup keeps the one teleport
 print = function() end
 registered.startup.onStartup()
@@ -248,6 +273,33 @@ eq(said[1][1], "Widowmere, níveis 480-640", "label in the reader's language")
 ok(said[1][3] == reader and said[1][4] == "110,98,6", "sent to the reader only, over the teleport")
 local back = ChaosHuntTeleports.backFor({x = 500, y = 498, z = 8})
 ok(back and back.x == 100 and back.z == 6, "areagen exit lookup returns the room")
+
+-- display monsters: the cells of the room are harmless (owner's bug 2026-10-16: a display Mirecoil Wyrm killed a
+-- level 8 player on the carpet with its telegraphs)
+local cellN, cellS = cfg.room.cellRows[1], cfg.room.cellRows[2]
+ok(H.isDisplaySpot(cfg, {x = 31648, y = cellN, z = 6}), "a north cell of floor 6 is a display spot")
+ok(H.isDisplaySpot(cfg, {x = 31612, y = cellS, z = 6}), "a south cell of the grown west wing")
+ok(H.isDisplaySpot(cfg, {x = 31640, y = cellN, z = 5}) and H.isDisplaySpot(cfg, {x = 31640, y = cellN, z = 7}),
+	"the base room's own cells on floors 5 and 7")
+ok(not H.isDisplaySpot(cfg, {x = 31648, y = 32256, z = 6}), "the carpet is not")
+ok(not H.isDisplaySpot(cfg, {x = 31648, y = cellN, z = 8}), "another floor is not")
+ok(not H.isDisplaySpot(cfg, {x = 31500, y = cellN, z = 6}), "outside the hall is not")
+ok(not H.isDisplaySpot(cfg, nil) and not H.isDisplaySpot({}, {x = 31648, y = cellN, z = 6}), "no data: not a display")
+local function mon(pos, master)
+	return {pos = pos, isMonster = function() return true end, getMaster = function() return master end,
+		getPosition = function(self) return self.pos end}
+end
+local display = mon({x = 31648, y = cellN, z = 6})
+local hunter = mon({x = 31648, y = 32256, z = 6})
+ok(ChaosHuntTeleports.isDisplay(display), "isDisplay: the monster in a cell")
+ok(not ChaosHuntTeleports.isDisplay(hunter), "isDisplay: not a monster elsewhere")
+ok(not ChaosHuntTeleports.isDisplay(mon({x = 31648, y = cellN, z = 6}, {})), "isDisplay: not a summon")
+local gate = registered.onTargetCombat
+ok(gate ~= nil, "onTargetCombat registered")
+local victim = player(8, "en")
+eq(gate(display, victim), RETURNVALUE_NOTPOSSIBLE, "a display monster never hits a player")
+eq(gate(hunter, victim), RETURNVALUE_NOERROR, "other monsters are left alone")
+ok(ChaosHuntTeleports.isDisplaySpot({x = 31648, y = cellS, z = 6}), "HT.isDisplaySpot for the other systems")
 
 print(string.format("hunt_teleports_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

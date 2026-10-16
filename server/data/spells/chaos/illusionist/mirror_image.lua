@@ -1,6 +1,9 @@
 -- Hall of Mirrors: up to 3 decoys wearing the caster's outfit, they vanish after 10s.
 -- Needs the "Clone" monster (data/monster/lua/clones/clone.lua in the reference server).
 dofile('data/spells/scripts/chaos/_common.lua')
+if not ChaosMysticFx then
+	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
+end
 
 local DURATION = 10000
 local COPIES = 3
@@ -22,7 +25,10 @@ function onCastSpell(creature, variant, isHotkey)
 			clone:setOutfit(player:getOutfit())
 			clone:rename(player:getName())
 			clone:setMaster(player)
-			ChaosSpell.fx(spots[i].pos, "summon_portal", CONST_ME_MAGIC_BLUE)
+			-- each clone: the sigil (class swap chaos_class_fx.lua: arcane_sigil -> illusion_mirror, the mirror panes)
+			if not ChaosSpell.vfx(spots[i].pos, "arcane_sigil") then
+				ChaosSpell.fx(spots[i].pos, "summon_portal", CONST_ME_MAGIC_BLUE)
+			end
 			addEvent(ChaosSpell.removeLater, DURATION, clone:getId())
 			made = made + 1
 		end
@@ -30,6 +36,9 @@ function onCastSpell(creature, variant, isHotkey)
 	if made == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
-	ChaosSpell.vfxOr(pos, "arcane_sigil", "arcane_circle", CONST_ME_MAGIC_BLUE)
+	-- the caster: runes orbiting it (pack arcane_orbit; server/data/spells/README_FX.md "Mystic line effects")
+	if not (ChaosMysticFx and ChaosMysticFx.send(pos, "arcane_orbit")) then
+		ChaosSpell.vfxOr(pos, "arcane_sigil", "arcane_circle", CONST_ME_MAGIC_BLUE)
+	end
 	return true
 end

@@ -1,0 +1,129 @@
+-- Pure part of the helper's bot HUD (client/MANIFEST.md "Helper bot HUD"; tested by helperhud_test.lua).
+-- The base client drew this HUD from the helper's cavebot file, which this client leaves out
+-- (tools/assemble_client.sh), so Tools > Bot HUD > "Show Bot HUD" did nothing. game_helperhud draws it again.
+-- No engine calls here: the runtime file (helperhud.lua) gathers the state and hands it in.
+ChaosBotHudLogic = {}
+local L = ChaosBotHudLogic
+
+L.MAX_ROWS = 8
+L.ROW_HEIGHT = 15
+L.ROW_SPACING = 1
+-- left of the value text: icon 13 + its margin 6 + name column 58 + the value's margin 4
+L.ROW_LABEL_INSET = 13 + 6 + 58 + 4
+-- the row container's margins inside a card, plus 2 px so trimmed text stops short of the border
+L.CARD_INSET = 6 + 6 + 2
+L.SIZES = {
+  Compact = { width = 300, columns = 1 },
+  Normal = { width = 520, columns = 2 },
+  Wide = { width = 680, columns = 2 }
+}
+
+-- the HUD is on only when the player ticked "Show Bot HUD" (helper config botHud.enabled, saved per character)
+function L.isEnabled(helperConfig)
+  local hud = type(helperConfig) == 'table' and helperConfig.botHud or nil
+  return type(hud) == 'table' and hud.enabled == true
+end
+
+local function shorten(text, limit)
+  text = tostring(text or '')
+  if #text <= limit then return text end
+  return text:sub(1, limit) .. '..'
+end
+L.shorten = shorten
+
+local function percent(value, max)
+  value, max = tonumber(value) or 0, tonumber(max) or 0
+  if max <= 0 then return 0 end
+  return math.floor(value * 100 / max)
+end
+
+-- rows {icon, name, value, active} for the ticked sections. state:
+--   targetName, equipEnabled, equipRules, timerEnabled, timerRules, spellName(id) -> name or nil,
+--   player = {health, maxHealth, mana, maxMana, level} or nil
+-- tr: the translation function (the identity in tests)
+function L.entries(helperConfig, state, tr)
+  tr = tr or function(s, ...) return select('#', ...) > 0 and string.format(s, ...) or s end
+  local cfg = type(helperConfig) == 'table' and helperConfig or {}
+  local hud = type(cfg.botHud) == 'table' and cfg.botHud or {}
+  state = state or {}
+  local rows = {}
+  local function add(show, active, icon, name, value)
+    if show ~= true then return end
+    rows[#rows + 1] = { icon = icon, name = name, value = value, active = active == true }
+  end
+  local off = tr('Off')
+
+  local combatActive = (cfg.autoTargetEnabled or cfg.magicShooterEnabled) == true
+  local parts = {}
+  if cfg.autoTargetEnabled then parts[#parts + 1] = tr('Auto') end
+  if cfg.magicShooterEnabled then parts[#parts + 1] = tr('Shooter') end
+  if state.targetName then parts[#parts + 1] = shorten(state.targetName, 14) end
+  add(hud.showTargeting, combatActive, 'shooter', tr('Combat'), combatActive and table.concat(parts, '  ') or off)
+
+  local equipRules = tonumber(state.equipRules) or 0
+  local profile = shorten(cfg.selectedEquipProfile or tr('Default'), 12)
+  add(hud.showEquipment, state.equipEnabled and equipRules > 0, 'equip', tr('Equip'),
+    state.equipEnabled and (profile .. '  ' .. tr('%d rules', equipRules)) or off)
+
+  local timerRules = tonumber(state.timerRules) or 0
+  add(hud.showTimers, state.timerEnabled and timerRules > 0, 'timer', tr('Timers'),
+    state.timerEnabled and tr('%d rules', timerRules) or off)
+
+  local haste = type(cfg.haste) == 'table' and cfg.haste[1] or {}
+  local training = type(cfg.training) == 'table' and cfg.training[1] or {}
+  local support = {}
+  if haste.enabled then
+    local name = state.spellName and state.spellName(haste.id) or nil
+    support[#support + 1] = tr('Haste %s', name and shorten(name, 12) or tr('none'))
+  end
+  if training.enabled then support[#support + 1] = tr('Train %d%%', tonumber(training.percent) or 0) end
+  add(hud.showHaste, (haste.enabled or training.enabled) == true, 'healing', tr('Support'),
+    #support > 0 and table.concat(support, '  ') or off)
+
+  local p = state.player
+  if p then
+    add(hud.showPlayer, true, 'healing', tr('Player'), tr('HP %d%%  MP %d%%  Lv %d',
+      percent(p.health, p.maxHealth), percent(p.mana, p.maxMana), tonumber(p.level) or 0))
+  end
+
+  local party = type(cfg.autoParty) == 'table' and cfg.autoParty or {}
+  local auto = {}
+  if cfg.antiIdle then auto[#auto + 1] = tr('Anti idle') end
+  if party.enabled then auto[#auto + 1] = tr('Invite') end
+  if party.acceptEnabled then auto[#auto + 1] = tr('Accept') end
+  if cfg.autoQuillSell then auto[#auto + 1] = tr('Sell loot') end
+  add(hud.showAutomation, #auto > 0, 'tools', tr('Auto'), #auto > 0 and table.concat(auto, '  ') or off)
+
+  if #rows == 0 then
+    rows[1] = { icon = 'tools', name = tr('Bot HUD'), value = tr('Pick sections in Tools > Bot HUD'), active = false }
+  end
+  return rows
+end
+
+-- how many rows are on (the status line counts the active ones)
+function L.activeCount(rows)
+  local n = 0
+  for _, row in ipairs(rows or {}) do
+    if row.active then n = n + 1 end
+  end
+  return n
+end
+
+-- the shape for `count` rows at size `sizeName`: one column up to four rows (and always for Compact), else two
+function L.layout(sizeName, count)
+  local size = L.SIZES[sizeName or 'Normal'] or L.SIZES.Normal
+  count = math.max(1, tonumber(count) or 1)
+  local twoColumns = size.columns > 1 and count > 4
+  local perColumn = math.min(L.MAX_ROWS, twoColumns and math.ceil(count / 2) or count)
+  local cardWidth = twoColumns and math.floor((size.width - 6) / 2) or size.width
+  return {
+    width = size.width,
+    twoColumns = twoColumns,
+    rowsPerColumn = perColumn,
+    cardWidth = cardWidth,
+    valueWidth = cardWidth - L.CARD_INSET - L.ROW_LABEL_INSET,
+    cardHeight = 8 + perColumn * L.ROW_HEIGHT + math.max(0, perColumn - 1) * L.ROW_SPACING
+  }
+end
+
+return ChaosBotHudLogic

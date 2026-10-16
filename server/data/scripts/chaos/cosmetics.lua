@@ -23,7 +23,9 @@
 --
 -- Protocol (JSON {action, data}) on ChaosOpcodes.cosmetics (225):
 --   client -> server  open | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | hello (in the game: the full lists again) | close
---   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon)]}      style {accent}  (the character's own label accent)
+--                     wardrobe (answered by wardrobe.lua: the full appearance catalogue with owned flags, action "wardrobe")
+--   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon) + play (spell skins and
+--                     kill effects: [{a = stock effect, b = the skin's}], each {id, dx, dy, ms, m, n}, K.playRows)]}      style {accent}  (the character's own label accent)
 --                     colors {names = {[name] = "#rrggbb"}, full}  (chat name colours of online characters)
 --                     looks {names = {[name] = {f = print art, o = glow art, p = 1 pulse} | false}, full}  (footprints
 --                     and outlines of online characters; game_cosmetics hands them to game_cosmeticfx)
@@ -326,6 +328,20 @@ local function clientId(serverId)
 	return clientIds[serverId] > 0 and clientIds[serverId] or nil
 end
 
+-- a play step's effect by type and name (cosmetics_core.lua C.playSpec): the same tables showTo sends from
+local function playLookup(kind, name)
+	if kind == "fx" then
+		return ChaosFx and ChaosFx[name]
+	elseif kind == "vfx" then
+		return ChaosVfx and ChaosVfx[name]
+	elseif kind == "missile" then
+		return ChaosFxMissile and ChaosFxMissile[name]
+	elseif kind == "vmissile" then
+		return ChaosVfxMissile and ChaosVfxMissile[name]
+	end
+	return nil
+end
+
 function M.sendState(player, open)
 	local line = lineOf(player)
 	local rows = K.rows(cfg, ownedOf(player:getAccountId()), chosenOf(player), {line = line, achievementName = achievementName,
@@ -335,7 +351,11 @@ function M.sendState(player, open)
 			return cat and cat.name or nil
 		end})
 	for _, r in ipairs(rows) do
-		r.item = clientId(K.byId(cfg, r.id).icon)
+		local c = K.byId(cfg, r.id)
+		r.item = clientId(c.icon)
+		-- the effects the window's preview stage plays (client game_lookpreview): stock and skin ids per swap
+		local play = K.playRows(c, playLookup)
+		r.play = #play > 0 and play or nil
 	end
 	local l = K.index(cfg).lines[line or ""]
 	-- the Collection tab: the exclusives of every visual kind and how each is earned (exclusives.lua)
@@ -505,6 +525,11 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 			refresh(player, false)
 			send(player, "colors", {names = M.colors, full = true})
 			send(player, "looks", {names = M.looks, full = true})
+		elseif msg.action == "wardrobe" then
+			-- the full appearance catalogue of the Customise Character window (wardrobe.lua)
+			if ChaosWardrobe and ChaosWardrobe.send then
+				ChaosWardrobe.send(player)
+			end
 		elseif msg.action == "select" then
 			choose(player, tostring(data.kind or ""), data.id, type(data.line) == "string" and data.line or nil)
 		elseif msg.action == "preview" then

@@ -132,7 +132,7 @@ function B.flurry(player, spin)
 	local pos = player:getPosition()
 	local targets = ChaosSpell.enemiesAround(player, pos, B.cfg.flurry.radius)
 	local min, max = B.flurryRange(player:getLevel(), ChaosSpell.bladePower(player), player:getVocation():getId())
-	ChaosSpell.vfxOr(pos, spin, "aura_ring", CONST_ME_HITAREA)
+	ChaosSpell.vfxOr(pos, spin, "blood_slash", CONST_ME_HITAREA)
 	local hit = 0
 	for _, t in ipairs(targets) do
 		if ChaosSpell.weaponStrike(player, t, min, max, CONST_ME_DRAWBLOOD, ORIGIN_MELEE) ~= false then

@@ -34,7 +34,7 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 
-	ChaosSpell.vfxOr(pos, "gale_ring", "aura_ring", CONST_ME_MAGIC_BLUE)
+	ChaosSpell.vfxOr(pos, "gale_ring", "frost_ripple", CONST_ME_MAGIC_BLUE)
 	if found == 0 then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Hunter's Instinct: nothing stirs nearby.")
 	else

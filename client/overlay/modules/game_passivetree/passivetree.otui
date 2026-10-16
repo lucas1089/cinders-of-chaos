@@ -364,7 +364,7 @@ CalcSeparator < UIWidget
   margin: 5 0
 
 UIWindow
-  @onEscape: hide()
+  @onEscape: modules.game_passivetree.hide()
   anchors.fill: parent
   image-source: /images/passivetree/background_tree
   

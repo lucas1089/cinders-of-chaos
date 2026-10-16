@@ -1,0 +1,395 @@
+# Outfit window: every look of the game (client/MANIFEST.md "Owned and locked lists", BASE.md 38). The 10.98 outfit window packet lists only what the character owns; modules/game_outfit/outfit.lua now also lists every outfit, mount, aura and shader of the server's wardrobe catalogue (server wardrobe.lua, sent on the cosmetics opcode 225 and kept by the overlay module game_unlocks), the ones not owned greyed out with their unlock source in the tooltip. They can be looked at but not worn: Ok is disabled while a part in use is locked and accept() sends nothing then (the server refuses them anyway, Game::playerChangeOutfit). Presets with a locked part are greyed. "Only mine" (data/styles/40-outfitwindow.otui, now through tr()) works on every list and is kept per character and list (game_unlocks); it no longer resets when the row changes. Cards show the look facing south, zoomed to fill the card (game_lookpreview.fitCard, the sprite anchors of the character select). The rule is UnlocksCore of game_unlocks (unlocks_core_test.lua); without that module the window lists what the packet sent, as before. Lua and OTUI only. Applies after 0001-0059.
+diff --git a/data/styles/40-outfitwindow.otui b/data/styles/40-outfitwindow.otui
+--- a/data/styles/40-outfitwindow.otui
++++ b/data/styles/40-outfitwindow.otui
+@@ -470,7 +470,8 @@ OutfitWindow < MainWindow
+       id: onlyCheck
+       size: 12 12
+       font: Verdana Bold-11px
+-      text: Only mine
++      !text: tr('Only mine')
++      !tooltip: tr('Show only what you have unlocked')
+       text-offset: 15 -2
+       text-auto-resize: true
+       color: #c0c0c0
+diff --git a/modules/game_outfit/outfit.lua b/modules/game_outfit/outfit.lua
+--- a/modules/game_outfit/outfit.lua
++++ b/modules/game_outfit/outfit.lua
+@@ -69,6 +69,107 @@ local function useShaderRow()
+   return shaderLogic() ~= nil and g_game.getFeature(GameOutfitShaders) and not g_game.getFeature(GamePlayerFamiliars)
+ end
+ 
++-- Chaos (base patch 0060, client/MANIFEST.md "Owned and locked lists"): every outfit, mount, aura and shader of the
++-- game is listed, the ones the character does not own greyed out with their source in the tooltip; they can be
++-- looked at but not worn (Ok stays disabled and accept() sends nothing; the server refuses them too). The catalogue
++-- is the server's wardrobe answer kept by the overlay module game_unlocks; the rule is its UnlocksCore. "Only mine" is
++-- one setting per character and list. Cards show the look facing south, filling the card (game_lookpreview.fitCard).
++-- Without game_unlocks the window lists what the packet sent, as before.
++local onlyMineSync = false
++local lockedSets = {}
++local CARD_W, CARD_H = 108, 80 -- the picture part of a SelectionButton (above its name)
++
++local function unlocks()
++  local m = modules.game_unlocks
++  return m and m.UnlocksCore and m or nil
++end
++
++local function catalogueOf(kind)
++  local u = unlocks()
++  local w = u and u.wardrobe()
++  return w and w[kind] or nil
++end
++
++-- the stock list plus the locked catalogue entries (a store try-on look is locked too)
++local function fullList(kind, stock)
++  local u = unlocks()
++  if not u then return stock end
++  if kind == "outfit" then
++    for _, data in ipairs(stock) do
++      if getOutfitStoreInfo(data) ~= 0 then
++        data.locked = true
++        data.how = data.how or "Store"
++      end
++    end
++  end
++  local OSL = shaderLogic()
++  return u.UnlocksCore.display(kind, stock, catalogueOf(kind), kind == "shader" and OSL and OSL.label or nil)
++end
++
++local function refreshLocks()
++  local u = unlocks()
++  if not u then
++    lockedSets = {}
++    return
++  end
++  lockedSets = u.UnlocksCore.lockedSets({
++    outfit = fullList("outfit", ServerData.outfits),
++    mount = fullList("mount", ServerData.mounts),
++    aura = fullList("aura", ServerData.auras),
++    shader = fullList("shader", ServerData.shaders)
++  })
++end
++
++-- what the list shows: everything, or only the owned entries when "Only mine" is checked
++local function shownList(kind, list)
++  local u = unlocks()
++  if not u then return list end
++  return u.UnlocksCore.filter(list, window.filter_outfits.onlyCheck:isChecked())
++end
++
++-- the "Only mine" box shows this list's setting (game_unlocks keeps it per character)
++local function syncOnlyMine(listName)
++  local u = unlocks()
++  local box = window.filter_outfits.onlyCheck
++  onlyMineSync = true
++  box:setEnabled(u ~= nil)
++  if u then box:setChecked(u.onlyMine(listName)) end
++  onlyMineSync = false
++end
++
++local function styleCard(button, entry, outfit)
++  local u = unlocks()
++  if u then u.styleEntry(button, entry) end
++  local lp = modules.game_lookpreview
++  if lp and type(lp.fitCard) == "function" and outfit then
++    lp.fitCard(button.outfit, outfit, CARD_W, CARD_H)
++  end
++end
++
++-- Ok only while every part in use is owned
++local function updateOkButton()
++  if not window then return end
++  local u = unlocks()
++  if not u then return end
++  local parts = u.UnlocksCore.lockedParts(tempOutfit, lockedSets, {
++    mounted = window.appearance.mountCheck and showMountCheck and showMountCheck:isChecked(),
++    aura = window.configure.aura.auraCheck:isChecked()
++  })
++  if #parts > 0 then
++    window.okButton:setEnabled(false)
++    window.okButton:setTooltip(tr("You have not unlocked everything you picked."))
++  else
++    window.okButton:removeTooltip()
++  end
++  return #parts == 0
++end
++
++local function lockedFocus(child)
++  if not child then return false end
++  local u = unlocks()
++  return u ~= nil and child.locked == true
++end
++
+ local function normalizeStoreTryOn(data)
+   if type(data) ~= "table" then
+     return nil
+@@ -141,7 +242,7 @@ local function applyStoreTryOn(data)
+   return window.appearance.mountCheck
+ end
+ 
+-local function getOutfitStoreInfo(data)
++function getOutfitStoreInfo(data)
+   local mode = tonumber(data[4]) or 0
+   local offerId = tonumber(data[5]) or 0
+ 
+@@ -224,14 +325,42 @@ function onShowAuraChange(checkBox, checked)
+   updatePreview()
+ end
+ 
+-function onOnlyMineThings()
+-  if window.appearance.outfitCheck:isChecked() then
+-    showOutfits()
+-  elseif window.appearance.mountCheck:isChecked() then
+-    showMounts()
++local function currentList()
++  if window.appearance.outfitCheck:isChecked() then return "outfit"
++  elseif window.appearance.mountCheck:isChecked() then return "mount"
++  elseif window.appearance.auraCheck:isChecked() then return "aura"
++  elseif window.appearance.shaderCheck:isChecked() then return "shader"
++  elseif window.appearance.presetCheck:isChecked() then return "preset"
++  end
++  return nil
++end
++
++local function reshow()
++  local list = currentList()
++  if list == "outfit" then showOutfits()
++  elseif list == "mount" then showMounts()
++  elseif list == "aura" then showAuras()
++  elseif list == "shader" then showShaders()
++  elseif list == "preset" then showPresets()
+   end
+ end
+ 
++function onOnlyMineThings()
++  if not window or onlyMineSync then return end
++  local u = unlocks()
++  local list = currentList()
++  if u and list then u.setOnlyMine(list, window.filter_outfits.onlyCheck:isChecked()) end
++  reshow()
++end
++
++-- game_unlocks got a new catalogue from the server: the open window shows it
++function onUnlocksChanged()
++  if not window then return end
++  refreshLocks()
++  reshow()
++  updateOkButton()
++end
++
+ function onMountCheckChange(checkBox, checked)
+   showOutfitCheck:setEnabled(checked)
+   if checked then
+@@ -239,6 +368,7 @@ function onMountCheckChange(checkBox, checked)
+   end
+ 
+   updatePreview()
++  if window and updateOkButton() then window.okButton:setEnabled(true) end
+ end
+ 
+ function onShowOutfitCheckChange(checkBox, checked)
+@@ -310,6 +440,7 @@ function create(currentOutfit, outfitList, mountList, familiarList, wingList, au
+ 
+   window = g_ui.displayUI("outfitwindow")
+   g_client.setInputLockWidget(window)
++  refreshLocks()
+ 
+   for _, appKey in ipairs(AppearanceData) do
+     updateAppearanceText(appKey, "None")
+@@ -609,7 +740,6 @@ end
+ 
+ function onAppearanceChange(widget, selectedWidget)
+   local id = selectedWidget:getId()
+-  window.filter_outfits.onlyCheck:setChecked(false)
+ 
+   if id == "presetCheck" then
+     showPresets()
+@@ -670,6 +800,12 @@ function showPresets()
+       widget.info:setVisible(true)
+     end
+ 
++    local u = unlocks()
++    if u then
++      local locked = u.UnlocksCore.presetLocked(widget.outfit:getOutfit(), lockedSets)
++      u.styleEntry(widget, {data["name"], locked = locked,
++        how = locked and tr("A part of this preset is not unlocked.") or nil})
++    end
+     widget.onClick = onPresetSelect
+   end
+ 
+@@ -749,12 +885,13 @@ function showOutfits(searchText)
+   window.ScrollBar.selectionList.onChildFocusChange = nil
+   window.ScrollBar.selectionList:destroyChildren()
+   window.filter_outfits.onlyCheck:setEnabled(true)
++  syncOnlyMine("outfit")
+ 
+   local onlyMine = window.filter_outfits.onlyCheck:isChecked()
+ 
+   local availableOutfits = {}
+   local lockedOutfits = {}
+-  for _, data in pairs(ServerData.outfits) do
++  for _, data in ipairs(shownList("outfit", fullList("outfit", ServerData.outfits))) do
+     local storeMode = getOutfitStoreInfo(data)
+     if storeMode == 0 then
+         table.insert(availableOutfits, data)
+@@ -797,6 +934,7 @@ function showOutfits(searchText)
+       button.storeOfferId = storeOffer
+       if storeOffer > 0 then button:setActionId(storeOffer) end
+     end
++    styleCard(button, outfitData, outfit)
+     if focusId == outfitData[1] then
+       configureAddons(outfitData[3])
+     end
+@@ -816,12 +954,13 @@ function showMounts(searchText)
+   window.ScrollBar.selectionList.onChildFocusChange = nil
+   window.ScrollBar.selectionList:destroyChildren()
+   window.filter_outfits.onlyCheck:setEnabled(true)
++  syncOnlyMine("mount")
+ 
+   local onlyMine = window.filter_outfits.onlyCheck:isChecked()
+ 
+   local availableMounts = {}
+   local lockedMounts = {}
+-  for _, data in pairs(ServerData.mounts) do
++  for _, data in ipairs(shownList("mount", fullList("mount", ServerData.mounts))) do
+     if (tonumber(data[3]) or 0) == 0 then
+       table.insert(availableMounts, data)
+     else
+@@ -864,6 +1003,7 @@ function showMounts(searchText)
+       button:setImageSource("/images/ui/large_blue_button")
+       button:setActionId(storeOffer)
+     end
++    styleCard(button, mountData, {type = mountData[1]})
+     if focusId == mountData[1] then
+       if not button.outfit:isColoredMount() then
+         window.appearance.grayHover:setVisible(true)
+@@ -916,7 +1056,8 @@ function showAuras()
+   cancelPopulate()
+   window.ScrollBar.selectionList.onChildFocusChange = nil
+   window.ScrollBar.selectionList:destroyChildren()
+-  window.filter_outfits.onlyCheck:setEnabled(false)
++  window.filter_outfits.onlyCheck:setEnabled(true)
++  syncOnlyMine("aura")
+ 
+   window.appearance.grayHover:setVisible(true)
+   window.ScrollBar.selectionList.onChildFocusChange = onAuraSelect
+@@ -924,7 +1065,7 @@ function showAuras()
+ 
+   local focusId = tempOutfit.aura
+   local focusedWidget = nil
+-  batchPopulate(ServerData.auras, function(auraData)
++  batchPopulate(shownList("aura", fullList("aura", ServerData.auras)), function(auraData)
+     local button = g_ui.createWidget("SelectionButton", window.ScrollBar.selectionList)
+     button:setId(auraData[1])
+     button.aura = auraData[3]
+@@ -936,6 +1077,7 @@ function showAuras()
+     button.outfit:setCenter(true)
+     button.outfit:setAnimate(true)
+     button.name:setText(auraData[4])
++    styleCard(button, auraData, outfit)
+     if focusId == auraData[3] then
+       focusedWidget = button
+     end
+@@ -967,7 +1109,8 @@ function showShaders(searchText)
+   cancelPopulate()
+   window.ScrollBar.selectionList.onChildFocusChange = nil
+   window.ScrollBar.selectionList:destroyChildren()
+-  window.filter_outfits.onlyCheck:setEnabled(false)
++  window.filter_outfits.onlyCheck:setEnabled(true)
++  syncOnlyMine("shader")
+ 
+   window.appearance.grayHover:setVisible(true)
+   window.ScrollBar.selectionList.onChildFocusChange = onShaderSelect
+@@ -975,7 +1118,19 @@ function showShaders(searchText)
+ 
+   local focusName = OSL.outgoing(ServerData.shaders, tempOutfit.shader)
+   local focusedWidget = nil
+-  batchPopulate(OSL.rows(ServerData.shaders, searchText), function(row)
++  local shaderRows = OSL.rows(ServerData.shaders, searchText)
++  -- the locked shaders after the owned ones (game_unlocks), by the same search
++  local u = unlocks()
++  if u then
++    local q = type(searchText) == "string" and searchText:lower() or ""
++    for _, e in ipairs(fullList("shader", ServerData.shaders)) do
++      if e.locked and (q == "" or e.label:lower():find(q, 1, true) or e.name:lower():find(q, 1, true)) then
++        shaderRows[#shaderRows + 1] = e
++      end
++    end
++    shaderRows = shownList("shader", shaderRows)
++  end
++  batchPopulate(shaderRows, function(row)
+     local button = g_ui.createWidget("SelectionButton", window.ScrollBar.selectionList)
+     button:setId("shader" .. row.id)
+     button.shaderName = row.name
+@@ -985,6 +1140,7 @@ function showShaders(searchText)
+     button.outfit:setOutfit(outfit)
+     button.outfit:setAnimate(true)
+     button.name:setText(row.label)
++    styleCard(button, row, outfit)
+     if row.name == focusName then
+       focusedWidget = button
+     end
+@@ -999,9 +1155,19 @@ end
+ function onShaderSelect(list, focusedChild, unfocusedChild, reason)
+   local OSL = shaderLogic()
+   if focusedChild and OSL then
++    if lockedFocus(focusedChild) then
++      -- looked at, not worn: the preview shows it, Ok stays disabled
++      tempOutfit.shader = focusedChild.shaderName
++      updatePreview()
++      updateAppearanceText("shader", focusedChild.name:getText())
++      updateOkButton()
++      return
++    end
+     tempOutfit.shader = OSL.outgoing(ServerData.shaders, focusedChild.shaderName)
+     updatePreview()
+     updateAppearanceText("shader", OSL.text(ServerData.shaders, tempOutfit.shader))
++    window.okButton:setEnabled(true)
++    updateOkButton()
+   end
+ end
+ 
+@@ -1082,6 +1248,7 @@ function onPresetSelect(widget)
+   updatePreview()
+   updateAppearanceTexts(tempOutfit)
+   updateAppearanceText("preset", widget.name:getText())
++  updateOkButton()
+ end
+ 
+ function onOutfitSelect(list, focusedChild, unfocusedChild, reason)
+@@ -1111,6 +1278,7 @@ function onOutfitSelect(list, focusedChild, unfocusedChild, reason)
+       window.appearance.outfit.onClick = nil
+       window.okButton:setEnabled(true)
+ 		end
++    updateOkButton()
+   end
+ 
+   window.appearance.grayHover:setVisible(false)
+@@ -1141,6 +1309,7 @@ function onMountSelect(list, focusedChild, unfocusedChild, reason)
+       window.appearance.mount.onClick = nil
+       window.okButton:setEnabled(true)
+ 		end
++    updateOkButton()
+ 
+     window.appearance.grayHover:setVisible(false)
+     if not focusedChild.outfit:isColoredMount() then
+@@ -1174,6 +1343,8 @@ function onAuraSelect(list, focusedChild, unfocusedChild, reason)
+     end
+ 
+     updateAppearanceText("aura", focusedChild.name:getText())
++    window.okButton:setEnabled(true)
++    updateOkButton()
+   end
+ end
+ 
+@@ -1515,6 +1686,10 @@ function getStoreOutfit(outfitId)
+ end
+ 
+ function accept()
++  -- a part the character has not unlocked is never sent (Ok is disabled; Enter calls this too)
++  if updateOkButton() == false then
++    return
++  end
+   if g_game.getFeature(GamePlayerMounts) then
+     local isMountedChecked = window.appearance.mountCheck:isChecked()
+     if not isMountedChecked then

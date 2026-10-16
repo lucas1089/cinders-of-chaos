@@ -85,18 +85,20 @@ return {
 	--         (tools/install_content_areas.py) places every chronicle plan at its own `origin`, so `at` must be that
 	--         origin (tools/chronicle_areas_test.py checks it). Cells of the free block x/y 14336-15359, 10+ tiles from
 	--         every other plan and generated area (docs/MAP_GUIDE.md "Content plans").
-	--   gate  {x, y, z}: the tile on the world map where the gate portal appears once the area is open: the upper hall
-	--         of the capital's temple (Cinderhold, town 2: the two stairs in the temple's side rooms lead up to it, a
-	--         gallery over the temple), west end of its north row, off every walking line (checked on the base map: free
-	--         floor, no item, the hall stays connected). Moved from Mirewake's hall 2026-10-15 ("Main city").
+	--   gate  optional {x, y, z}: one fixed world tile for the area's gate (a staff override). Unset (2026-10-16, the owner
+	--         found the temple's upper hall odd): the Chronicle Gate of each town of `gateTowns` is placed by
+	--         cityportals.lua when the area opens: the Hall of Services' portal room (npc_booths_config.lua
+	--         `portals.chronicle_<key>`), else beside the temple (cityportals_config.lua `towns`), with the area's name in
+	--         its look text and an effect.
 	-- arrival: the arrival tile's offset from the ORIGIN (from the compiled manifest; tools/chronicle_areas_test.py checks
-	-- it). Until `at` and `gate` are set the area opens in the story only (the window says so) and the console says why.
+	-- it). Until `at` (and `gate` or `gateTowns`) are set the area opens in the story only (the window says so).
 	areas = {
 		{key = "cinderscar_breach", name = "The Cinderscar Breach", plan = "chronicle_cinderscar_breach",
-			arrival = {63, 82, 0}, minLevel = 400, at = {x = 14910, y = 15140, z = 7}, gate = {x = 32362, y = 32240, z = 6}},
+			arrival = {63, 82, 0}, minLevel = 400, at = {x = 14910, y = 15140, z = 7}},
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
-			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}, gate = {x = 32358, y = 32240, z = 6}}
+			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}}
 	},
+	gateTowns = {2, 1}, -- Cinderhold and Mirewake (the towns with a Hall of Services): one gate each per open area
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken
 	-- away again. Each piece goes on the first free tile of its offsets (ground, nothing blocking, no creature, no

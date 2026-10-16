@@ -4,6 +4,9 @@
 -- healing reduction apply to every pulse through data/scripts/chaos/healing_rules.lua. Stops if the Illusionist dies
 -- or logs out.
 dofile('data/spells/scripts/chaos/_common.lua')
+if not ChaosMysticFx then
+	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
+end
 if not (ChaosHealing and ChaosHealing.values) then
 	dofile('data/scripts/chaos/healing_rules_core.lua')
 end
@@ -27,13 +30,19 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 	end
 	local min, max = H.values(player:getLevel(), player:getMagicLevel(), cfg)
-	ChaosSpell.vfxOr(player:getPosition(), "starfall_crown", "aura_ring", CONST_ME_PURPLEENERGY)
+	ChaosSpell.vfxOr(player:getPosition(), "starfall_crown", "arcane_aura", CONST_ME_PURPLEENERGY)
 	ChaosSpell.pulse(player:getId(), cfg.pulses, cfg.intervalMs, function(caster, step)
 		local cpos = caster:getPosition()
 		for _, id in ipairs(ids) do
 			local ally = Player(id)
 			if ally and ally:getHealth() > 0 and near(cpos, ally:getPosition(), cfg.followRange) then
-				ChaosSpell.healTarget(caster, ally, min, max, step == 1 and CONST_ME_PURPLEENERGY or CONST_ME_MAGIC_BLUE)
+				-- each pulse: the regeneration tick (pack cut tick_regen) on every member instead of the stock sparkle
+				-- (server/data/spells/README_FX.md "Mystic line effects")
+				local pulseFx = step == 1 and CONST_ME_PURPLEENERGY or CONST_ME_MAGIC_BLUE
+				if ChaosMysticFx and ChaosMysticFx.send(ally:getPosition(), "tick_regen") then
+					pulseFx = CONST_ME_NONE
+				end
+				ChaosSpell.healTarget(caster, ally, min, max, pulseFx)
 			end
 		end
 		return true

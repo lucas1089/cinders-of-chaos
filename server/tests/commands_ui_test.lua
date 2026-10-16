@@ -40,6 +40,55 @@ eq(#store, 3, "store entries")
 eq(store[1].param, "2, 1", "sorted by entry number")
 eq(store[2].label, "Bats", "second entry")
 eq(store[3].group, 3, "group")
+eq(store[1].id, 1, "entry id")
+eq(store[1].script, "fiery_wings.lua", "entry script")
+local dup = K.ancestralStore(K.parseXml([[<talkaction words="!ancestralstore 1, 4" script="a.lua" />
+<talkaction words="!ancestralstore 2, 4" script="b.lua" />]]))
+eq(#dup, 1, "an entry number used twice is kept once")
+
+-- ---------------------------------------------------------------- ancestral store: prices and requests
+local p, it = K.parseStoreScript("local ITEM_PRICE = 35\nfunction onSay()\n local item = ItemType(26652) \nend")
+eq(p, 35, "price parsed"); eq(it, 26652, "item parsed")
+eq(K.parseStoreScript("local ITEM_PRICE = 0\n ItemType(26652)"), nil, "zero price refused")
+eq(K.parseStoreScript("local ITEM_PRICE = 99999999\n ItemType(26652)"), nil, "absurd price refused")
+eq(K.parseStoreScript("ItemType(26652)"), nil, "no price")
+eq(K.parseStoreScript(nil), nil, "no script")
+local scripts = {["fiery_wings.lua"] = "ITEM_PRICE = 25 ItemType(26644)", ["bats.lua"] = "ITEM_PRICE = 60 ItemType(26649)",
+	["sword_chest.lua"] = "ITEM_PRICE = 25 ItemType(1)"}
+local entries = K.storeEntries(store, function(s) return scripts[s] end, function(id)
+	return id == 26644 and {name = "Fiery Wings", clientId = 501} or id == 26649 and {name = "Bats Aura", clientId = 502} or nil
+end)
+eq(#entries, 2, "entries with a price and a known item")
+eq(entries[1].kind, "Wings", "group 2 gives wings"); eq(entries[2].kind, "Aura", "group 1 gives an aura")
+eq(entries[1].clientId, 501, "client id kept")
+local e, c, cost = K.validateBuy(entries, 1)
+eq(e and e.id, 1, "valid id"); eq(c, 1, "count defaults to 1"); eq(cost, 25, "cost")
+e, c, cost = K.validateBuy(entries, "10", 3)
+eq(e and e.id, 10, "id as a digit string"); eq(cost, 180, "3 x 60")
+for _, badCount in ipairs({0, -1, 11, 1e12, 2.5, "3x", "", 0 / 0, math.huge, -math.huge, true, {}}) do
+	local r, why = K.validateBuy(entries, 1, badCount)
+	eq(r, nil, "bad count " .. tostring(badCount) .. " refused"); eq(why, "count", "reason count")
+end
+for _, badId in ipairs({999, 0, -1, 1.5, "1 OR 1=1", {}, nil}) do
+	local r, why = K.validateBuy(entries, badId, 1)
+	eq(r, nil, "bad id " .. tostring(badId) .. " refused"); eq(why, "id", "reason id")
+end
+eq(K.entryByParam(entries, "2, 1").id, 1, "legacy param"); eq(K.entryByParam(entries, "9, 9"), nil, "unknown param")
+local payload = K.storePayload(entries, -5, "hi")
+eq(payload.points, 0, "points never negative in the answer"); eq(payload.entries[1].item, 501, "payload item")
+eq(payload.entries[1].script, nil, "server-only fields left out"); eq(payload.message, "hi", "message")
+local slots = {}
+eq(K.throttle(slots, 1, 1000, 1000), true, "first buy"); eq(K.throttle(slots, 1, 1500, 1000), false, "too soon")
+eq(K.throttle(slots, 1, 2000, 1000), true, "after the interval")
+eq(K.rewrite({"You didn't have any current Double EXP enhancement.", "x"})[1], "No Double EXP active.", "rewrite")
+
+-- ---------------------------------------------------------------- Services state
+local st = K.servicesState({nameTokens = -1, vocationTokens = 2, level = 250, familiarLevel = 200,
+	frames = {"frost", 5}, activeFrame = "frost"})
+eq(st.nameTokens, 0, "no token is 0"); eq(st.vocationTokens, 2, "vocation tokens")
+eq(st.familiarReady, true, "familiar from level 200"); eq(#st.frames, 1, "only names kept")
+eq(st.freeSwitch, "", "no free switch"); eq(st.inTutorial, false, "not in the tutorial")
+eq(st.webshopOrders, -1, "web shop orders unknown")
 
 -- ---------------------------------------------------------------- params
 eq(K.cleanParam("  New\tName\n ", 64), "New Name", "trimmed, control characters out")

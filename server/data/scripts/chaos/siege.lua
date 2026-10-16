@@ -38,6 +38,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/siege_core.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 
 Chaos.siegeConfig = dofile("data/scripts/chaos/siege_config.lua")
 local cfg = Chaos.siegeConfig
@@ -404,15 +407,28 @@ local function addPortal(pos)
 		item:setActionId(cfg.aid.enter)
 		state.portals[#state.portals + 1] = pos
 		pos:sendMagicEffect(CONST_ME_TELEPORT)
+		ChaosCityPortals.register("siege", cfg.aid.enter, pos) -- look text and effect (cityportals_fx.lua)
 		return true
 	end
 	return false
 end
 
+-- the Guild Siege Portal next to every temple (cityportals.lua: the first free tile of `portalOffsets`, then the
+-- shared offsets; labelled and marked by cityportals_fx.lua while it stands), or at `portalPositions` when set
 local function openPortals()
 	state.portals = {}
-	for _, pos in ipairs(portalSpots()) do
-		addPortal(pos)
+	if cfg.portalPositions and #cfg.portalPositions > 0 then
+		for _, pos in ipairs(portalSpots()) do
+			addPortal(pos)
+		end
+	else
+		local _, positions = ChaosCityPortals.place({kind = "siege", aid = cfg.aid.enter, item = cfg.arena.portalId,
+			offsets = cfg.portalOffsets})
+		for _, p in ipairs(positions) do
+			local pos = Position(p.x, p.y, p.z)
+			state.portals[#state.portals + 1] = pos
+			pos:sendMagicEffect(CONST_ME_TELEPORT)
+		end
 	end
 	state.portalsOpen = true
 	return #state.portals

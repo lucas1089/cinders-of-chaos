@@ -9,7 +9,9 @@ return {
 		towns = "all", -- "all" = every town of the map; or a list of town ids
 		delayMs = 2600, -- after the Material Brokers (1600); a tile another NPC took is skipped
 		-- tiles next to the temple, tried in this order (the first free walkable one wins)
-		offsets = {{-4, 3}, {4, 3}, {-5, 0}, {5, 0}, {0, -5}, {0, 5}, {-4, -3}, {4, -3}, {-2, 5}, {2, 5}, {-6, 2}, {6, 2}}
+		offsets = {{-4, 3}, {4, 3}, {-5, 0}, {5, 0}, {0, -5}, {0, 5}, {-4, -3}, {4, -3}, {-2, 5}, {2, 5}, {-6, 2}, {6, 2}},
+		-- no free tile near the temple (Nightwrack: a small temple room with stairs only): near the town's depot
+		place = {depotFallback = true}
 	},
 	-- the NPC script reads these too (data/npc/scripts/loot_buyer.lua)
 	appraiseLines = 12 -- items listed by "appraise", most valuable first

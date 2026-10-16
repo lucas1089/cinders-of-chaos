@@ -8,7 +8,12 @@
 --
 -- Progress comes from what the other systems already count, read live, with no edits of them:
 --   ChaosAchievements.stats[guid]      every achievement counter (kills, rifts, bosses, dungeons, trials, ...)
---   ChaosAchievements.progress / set   wrapped: a changed counter checks the character's goals (at most every checkMs)
+--   ChaosAchievements.progress / set   wrapped: a changed counter checks the character's goals (kills, magic monsters,
+--                                      bounty contracts through ChaosLeaderboard.record "bounty", ...)
+--   onAdvance (level)                  the same check: "Reach level N" and the goals the level unlocks
+--   ChaosPassiveTree.listeners         a spent passive point
+-- Live refresh (G.schedule): a change waits checkMs, then the goals are checked and the tracker (and the panel while it
+-- is open) is pushed when what it shows changed; at most one run every pushMs per character, changes in between merge.
 --   own stats (goals_config.lua own)   ChaosFactions.gain, ChaosConquest.grant, ChaosTower.recordRun and
 --                                      ChaosSeasonJourney.emit wrapped; ChaosPassiveTree.hasAllocation probed
 --   ChaosGoals.emit(who, stat, value)  for other scripts: if ChaosGoals and ChaosGoals.emit then ... end
@@ -44,7 +49,6 @@ ChaosGoals = ChaosGoals or {}
 local G = ChaosGoals
 G.st = G.st or {} -- guid -> {done, stats, dirty, ready}
 G.viewing = G.viewing or {} -- guid -> true while the panel is open
-G.pending = G.pending or {} -- guid -> a check is scheduled
 
 local function log(text)
 	print("[Chaos goals] " .. text)
@@ -56,6 +60,10 @@ end
 
 local function now()
 	return os.time()
+end
+
+local function nowMs()
+	return os.mtime and os.mtime() or os.time() * 1000
 end
 
 -- ---------------------------------------------------------------- storage
@@ -287,10 +295,15 @@ function G.send(player)
 	end
 	local lang = G.langOf(player)
 	local payload = K.view(cfg, ctxOf(player, st), lang, G.resolver(player, lang))
+	st.panelSig = K.panelSig(payload, lang)
 	local ok, text = pcall(json.encode, {action = "goals", data = payload})
 	if ok then
 		Chaos.sendChunked(player, OPCODE, text)
 	end
+end
+
+local function trackerSig(rows, lang)
+	return lang .. "|" .. K.sig(rows)
 end
 
 function G.sendTracker(player)
@@ -298,10 +311,35 @@ function G.sendTracker(player)
 	if not st then
 		return
 	end
-	Chaos.send(player, OPCODE, "tracker", {rows = K.tracker(cfg, ctxOf(player, st), G.langOf(player), cfg.tracked)})
+	local lang = G.langOf(player)
+	local rows = K.tracker(cfg, ctxOf(player, st), lang, cfg.tracked)
+	st.trackerSig = trackerSig(rows, lang)
+	Chaos.send(player, OPCODE, "tracker", {rows = rows})
+end
+
+-- the live refresh: the tracker, and the panel while it is open, go out again only when what they show changed
+-- (the level, a counter, a goal done and replaced by the next one). G.schedule calls it at most every pushMs.
+function G.refresh(player)
+	local guid = player:getGuid()
+	local st = G.st[guid]
+	if not st then
+		return
+	end
+	local lang = G.langOf(player)
+	local view = K.view(cfg, ctxOf(player, st), lang, nil)
+	local rows = K.trackerOf(view, cfg.tracked)
+	local sig = trackerSig(rows, lang)
+	if sig ~= st.trackerSig then
+		st.trackerSig = sig
+		Chaos.send(player, OPCODE, "tracker", {rows = rows})
+	end
+	if G.viewing[guid] and K.panelSig(view, lang) ~= st.panelSig then
+		G.send(player)
+	end
 end
 
 -- ---------------------------------------------------------------- progress
+-- rewards the goals done now (messages, toast, "done"); the tracker and the panel follow through G.refresh
 function G.check(player)
 	local guid = player:getGuid()
 	local st = G.st[guid]
@@ -330,32 +368,39 @@ function G.check(player)
 		toast(player, string.format(K.text(cfg.texts.doneShort, lang), title))
 		Chaos.send(player, OPCODE, "done", {text = title})
 	end
-	G.sendTracker(player)
-	if G.viewing[guid] then
-		G.send(player)
-	end
 end
 
--- a counter changed: check at most every checkMs
+-- a counter or the level changed: check and refresh after checkMs, at most every pushMs; the changes in between
+-- merge into the queued run (the queue lives in the loaded state: a relog starts a new one)
 function G.schedule(player)
 	if not player or type(player) ~= "userdata" then
 		return
 	end
-	local guid = player:getGuid()
-	if not G.st[guid] or G.pending[guid] then
+	local st = G.st[player:getGuid()]
+	if not st then
 		return
 	end
-	G.pending[guid] = true
+	st.push = st.push or {}
+	local push = st.push
+	local delay = K.queuePush(push, nowMs(), cfg.pushMs or 1000, cfg.checkMs or 250)
+	if not delay then
+		return
+	end
 	addEvent(function(cid)
-		G.pending[guid] = nil
+		K.pushed(push, nowMs())
 		local p = Player(cid)
-		if p then
-			local ok, err = pcall(G.check, p)
-			if not ok then
-				log("check: " .. tostring(err))
-			end
+		if not p or G.st[p:getGuid()] ~= st then
+			return
 		end
-	end, cfg.checkMs, player:getId())
+		local ok, err = pcall(G.check, p)
+		if not ok then
+			log("check: " .. tostring(err))
+		end
+		ok, err = pcall(G.refresh, p)
+		if not ok then
+			log("refresh: " .. tostring(err))
+		end
+	end, delay, player:getId())
 end
 
 local function playerOf(who)
@@ -436,6 +481,27 @@ function G.installHooks()
 			G.record(who, stat, value, mode)
 		end
 	end)
+	-- the passive tree calls its listeners after every apply (login, save, reset): a spent point, live
+	local PT = ChaosPassiveTree
+	if PT and type(PT.listeners) == "table" and PT.hasAllocation then
+		local there = false
+		for _, fn in ipairs(PT.listeners) do
+			there = there or fn == G.onPassiveApply
+		end
+		if not there then
+			PT.listeners[#PT.listeners + 1] = G.onPassiveApply
+		end
+	end
+end
+
+function G.onPassiveApply(player)
+	if not player or not G.st[player:getGuid()] then
+		return
+	end
+	local ok, has = pcall(ChaosPassiveTree.hasAllocation, player)
+	if ok and has then
+		G.record(player, "passive_spent", 1, "max")
+	end
 end
 
 -- ---------------------------------------------------------------- events
@@ -495,7 +561,7 @@ if CreatureEvent then
 	function logout.onLogout(player)
 		local guid = player:getGuid()
 		G.flush(guid)
-		G.st[guid], G.viewing[guid], G.pending[guid] = nil, nil, nil
+		G.st[guid], G.viewing[guid] = nil, nil
 		return true
 	end
 	logout:type("logout")
@@ -539,6 +605,7 @@ if CreatureEvent then
 				pcall(G.check, player)
 				G.viewing[guid] = true
 				G.send(player)
+				pcall(G.refresh, player) -- the tracker, when the probes or the check changed it
 			end
 		elseif msg.action == "close" then
 			G.viewing[guid] = nil

@@ -6,7 +6,9 @@ usage: python3 -I install_outfits.py DATA_DIR [--dry-run]
 Reads the class outfits (every `lookType = N, name = "..."` pair in the Chaos.classes.outfits block of
 data/scripts/chaos/chaos_constants.lua, each once) and writes one
 <outfit> line per look type for each sex (type 0 and 1, same name, so the store's Sex Change pairs them), locked
-(unlocked="no": ascension.lua gives them). The lines sit in a block between two marker comments before </outfits>;
+(unlocked="no": ascension.lua gives them). Chaos.classes.retiredOutfits (1559 "Archmage (old)") keep their line so
+their owners can still wear them; the replacement outfit (Chaos.classes.outfitReplacement.outfit) gets a line only while
+its `enabled` line is true. The lines sit in a block between two marker comments before </outfits>;
 the block is rewritten when the list changed. A look type that already has an entry outside the block stops the
 script (nothing is written). Idempotent: a second run changes nothing.
 
@@ -201,7 +203,40 @@ def class_outfits(path=CONSTANTS):
         found.append((t, n))
     if not found:
         sys.exit('%s: Chaos.classes.outfits has no entries' % path)
+    # the retired class outfits keep their line (owners still wear them) under their "(old)" name; the replacement
+    # outfit gets its line only while its switch is on
+    extra = retired_outfits(text, path)
+    rep = replacement_outfit(text, path)
+    if rep and rep[2]:
+        extra.append(rep[:2])
+    for t, n in extra:
+        if t in seen:
+            if seen[t] != n:
+                sys.exit('%s: look type %d has two names (%s, %s)' % (path, t, seen[t], n))
+            continue
+        seen[t] = n
+        found.append((t, n))
     return found
+
+
+def retired_outfits(text, path=CONSTANTS):
+    """[(lookType, name)] of Chaos.classes.retiredOutfits"""
+    m = re.search(r'\n\tretiredOutfits = \{(.*?)\n\t\},?\n', text, re.S)
+    if not m:
+        sys.exit('%s: no Chaos.classes.retiredOutfits block' % path)
+    return [(int(t), n) for t, n in re.findall(r'lookType\s*=\s*(\d+)\s*,\s*name\s*=\s*"([^"]+)"', m.group(1))]
+
+
+def replacement_outfit(text, path=CONSTANTS):
+    """(lookType, name, enabled) of Chaos.classes.outfitReplacement.outfit, or None while no outfit is set"""
+    m = re.search(r'\n\toutfitReplacement = \{(.*?)\n\t\},?\n', text, re.S)
+    if not m:
+        sys.exit('%s: no Chaos.classes.outfitReplacement block' % path)
+    on = re.search(r'\n\t\tenabled = (true|false),?\n', m.group(1))
+    if not on:
+        sys.exit('%s: outfitReplacement.enabled must be one plain line' % path)
+    o = re.search(r'\n\t\toutfit = \{\s*lookType\s*=\s*(\d+)\s*,\s*name\s*=\s*"([^"]+)"\s*\}', m.group(1))
+    return (int(o.group(1)), o.group(2), on.group(1) == 'true') if o else None
 
 
 def class_looks(path=LOOKS):

@@ -14,6 +14,12 @@ local entries = {}
 local selected
 local rowWidgets = {}
 local refreshEvent
+local preview -- the shared look preview (game_lookpreview), nil without that module
+
+-- a pet is drawn alone (it has no wearer: the panel's Simple figure box is off for it)
+local function petOption(e)
+  return e and (tonumber(e.look) or 0) > 0 and { kind = 'subject', look = tonumber(e.look) } or nil
+end
 
 local function send(action, data)
   local protocol = g_game.getProtocolGame()
@@ -36,6 +42,7 @@ local function showDetail()
   d:setVisible(e ~= nil)
   if not e then return end
   setOutfit(d.creature, e.look)
+  if preview then preview:setOption(petOption(e)) end
   d.nameLabel:setText(V.titleText(e))
   d.speciesLabel:setText(e.owned and (e.speciesName .. ((e.pet and e.pet.element) and ('  -  ' .. e.pet.element) or ''))
     or tr('Not owned yet'))
@@ -112,6 +119,10 @@ local function showList()
     end
     local key = e.key
     row.onClick = function() selectEntry(key) end
+    row.onHoverChange = function(_, hovered)
+      if not preview then return end
+      if hovered then preview:setHover(petOption(e)) else preview:clearHover() end
+    end
     rowWidgets[key] = row
   end
   window.statusLabel:setText(V.statusText(state))
@@ -204,6 +215,8 @@ end
 function init()
   window = g_ui.displayUI('pets')
   window:hide()
+  local lp = modules.game_lookpreview
+  preview = lp and type(lp.create) == 'function' and lp.create(window.lookPreview) or nil
   window.detail.nameEdit.onKeyPress = function(widget, keyCode)
     if keyCode == KeyEnter then
       renameSelected()
@@ -220,6 +233,8 @@ function terminate()
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if refreshEvent then removeEvent(refreshEvent) end
   refreshEvent = nil
+  if preview then preview:destroy() end
+  preview = nil
   if window then
     window:destroy()
     window = nil

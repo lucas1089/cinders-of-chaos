@@ -84,6 +84,11 @@ ChaosPouchesConfig = {
 		25461, 25462, 25463, 25464, 25465, 25466, 25467, 25468, 25469},
 
 	scanLimit = 60, -- containers looked through to find the carried pouches (inventory, breadth first)
-	fullNoticeSeconds = 60 -- "your X Pouch is full" at most this often per pouch
+	fullNoticeSeconds = 60, -- "your X Pouch is full" at most this often per pouch
+
+	-- the per-kill loot line ("Looted: 10 gold coins, 2 dragon scales, [Rare] wyrmscale helmet."): at most `maxEntries`
+	-- items, then "and N more"; rarity gear from `flagRarity` (3 = Rare) and uniques are wrapped in {} (the client's
+	-- loot highlight, as the Chaos bonus loot line does)
+	lootLine = {maxEntries = 5, flagRarity = 3}
 }
 return ChaosPouchesConfig

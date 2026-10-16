@@ -1,6 +1,7 @@
 -- game_shaderfx: the UI widget shaders of base patch 0044 (client/MANIFEST.md "game_shaderfx").
 --   liquid orbs   two orbs at the bottom corners of the game window, health and mana as a moving liquid
---                 (chaos_ui_orb); a change of the value makes it slosh. Option liquidOrbs (off by default).
+--                 (chaos_ui_orb); a change of the value makes it slosh. Option liquidOrbs (off by default), size
+--                 liquidOrbSize (small / medium / large, medium by default); an orb over the chat panel moves up.
 --   frame shine   a light sweep across the rarity frame of legendary-and-up and unique items in inventory and
 --                 container slots (chaos_ui_shine; game_itemrarity calls onRarityFrame). Option rarityFrameShine.
 --   greyscale     a locked item (custom attribute 3) is drawn grey in its slot (chaos_ui_grey as the item shader;
@@ -10,7 +11,9 @@
 local L = ShaderFxLogic
 
 local orbs
-local options = { shine = true, orbs = false }
+local options = { shine = true, orbs = false, orbSize = L.ORB_DEFAULT_SIZE }
+local placeEvent
+local PLACE_TICK = 500 -- the chat panel can be resized at any time: the orbs check their place twice a second
 local orbState = {} -- 'health' / 'mana' -> {fill, slosh}
 local sloshEvent
 local SLOSH_TICK = 50
@@ -151,7 +154,54 @@ local function refreshOrbs()
   setOrb('mana', player:getMana(), player:getMaxMana())
 end
 
+-- size of the orbs (option liquidOrbSize) and of their number
+local function applyOrbSize()
+  local size, liquidSize, font = L.orbSize(options.orbSize)
+  for _, kind in ipairs({ 'health', 'mana' }) do
+    local w = orbWidget(kind)
+    if w then
+      w:setSize({ width = size, height = size })
+      local liquid = w:getChildById('liquid')
+      if liquid then liquid:setSize({ width = liquidSize, height = liquidSize }) end
+      local label = w:getChildById('value')
+      if label then pcall(label.setFont, label, font) end
+    end
+  end
+end
+
+-- keep the orbs off the bottom area (action bars + chat): an orb over it sits on top of it instead
+local function placeOrbs()
+  if not orbs then return end
+  local gi = modules.game_interface
+  local root = gi and gi.getRootPanel and gi.getRootPanel()
+  local map = gi and gi.getMapPanel and gi.getMapPanel()
+  local splitter = root and root:getChildById('bottomSplitter')
+  if not map then return end
+  local area = nil
+  if splitter and splitter:isVisible() then
+    area = { x = splitter:getX(), y = splitter:getY(), width = splitter:getWidth() }
+  end
+  local size = L.orbSize(options.orbSize)
+  local bottom = map:getY() + map:getHeight()
+  for _, kind in ipairs({ 'health', 'mana' }) do
+    local w = orbWidget(kind)
+    if w then
+      local x = kind == 'health' and (map:getX() + L.ORB_EDGE) or (map:getX() + map:getWidth() - L.ORB_EDGE - size)
+      local margin = L.orbMarginBottom({ x = x, width = size }, bottom, size, area)
+      if w:getMarginBottom() ~= margin then w:setMarginBottom(margin) end
+    end
+  end
+end
+
+local function placeTick()
+  placeEvent = nil
+  if not orbs then return end
+  placeOrbs()
+  placeEvent = scheduleEvent(placeTick, PLACE_TICK)
+end
+
 local function destroyOrbs()
+  if placeEvent then removeEvent(placeEvent) placeEvent = nil end
   if sloshEvent then removeEvent(sloshEvent) sloshEvent = nil end
   if orbs then orbs:destroy() orbs = nil end
   orbState = {}
@@ -174,7 +224,9 @@ local function createOrbs()
       end
     end
   end
+  applyOrbSize()
   if g_game.isOnline() then refreshOrbs() end
+  if not placeEvent then placeEvent = scheduleEvent(placeTick, 0) end
 end
 
 local function applyOrbs()
@@ -189,6 +241,10 @@ function onOption(which, value)
   elseif which == 'orbs' then
     options.orbs = value == true
     applyOrbs()
+  elseif which == 'orbSize' then
+    options.orbSize = tonumber(value) or L.ORB_DEFAULT_SIZE
+    applyOrbSize()
+    placeOrbs()
   end
 end
 
@@ -199,6 +255,8 @@ local function readOptions()
   if ok and v ~= nil then options.shine = v ~= false end
   ok, v = pcall(s.getOption, 'liquidOrbs')
   if ok and v ~= nil then options.orbs = v == true end
+  ok, v = pcall(s.getOption, 'liquidOrbSize')
+  if ok and tonumber(v) then options.orbSize = tonumber(v) end
 end
 
 function init()

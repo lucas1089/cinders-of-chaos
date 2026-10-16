@@ -125,7 +125,7 @@ ChaosMainWindow
     anchors.bottom: closeButton.bottom
     anchors.left: parent.left
     margin-bottom: 4
-    width: 200
+    text-horizontal-auto-resize: true
     !text: tr('Allow others to inspect me')
     @onCheckChange: modules.game_playerinspect.onPrivacyToggle()
 

@@ -31,6 +31,9 @@ if not Chaos.t then
 	dofile("data/scripts/chaos/i18n_core.lua")
 end
 dofile("data/scripts/chaos/memorial_core.lua")
+if not ChaosCityPortals then
+	dofile("data/scripts/chaos/cityportals.lua")
+end
 if not (ChaosChronicleCore and ChaosChronicleCore.ensureWrapChain) then
 	dofile("data/scripts/chaos/chronicle_core.lua")
 end
@@ -394,11 +397,19 @@ end
 
 function X.placePortal()
 	local pl = cfg.plaza or {}
-	if type(pl.portal) ~= "table" or not X.arrival() then
+	if not X.arrival() then
 		return false
+	end
+	if type(pl.portal) ~= "table" then
+		-- the Memorial Portal of each town of portalTowns (cityportals.lua: the Hall of Services' portal room, else beside
+		-- the temple; look text and effect by cityportals_fx.lua)
+		local _, positions = ChaosCityPortals.place({kind = "memorial", aid = cfg.aid.portal, item = cfg.portalItem or 1387,
+			towns = cfg.portalTowns or {2}})
+		return #positions > 0
 	end
 	local it, tile = itemAt(pl.portal, cfg.aid.portal)
 	if it then
+		ChaosCityPortals.register("memorial", cfg.aid.portal, pl.portal)
 		return true
 	end
 	if not tile or not tile:getGround() then
@@ -411,9 +422,7 @@ function X.placePortal()
 		return false
 	end
 	it:setActionId(cfg.aid.portal)
-	if ITEM_ATTRIBUTE_DESCRIPTION then
-		it:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "The way to the Ember Memorial: the season's realm firsts, its records and its fallen.")
-	end
+	ChaosCityPortals.register("memorial", cfg.aid.portal, pl.portal) -- look text and effect (cityportals_fx.lua)
 	return true
 end
 

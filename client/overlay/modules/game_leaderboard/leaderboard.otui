@@ -72,7 +72,8 @@ LeaderboardRow < UIWidget
     phantom: false
 
 // Tab widths and rows are set by leaderboard.lua (tabrows.lua): every tab is as wide as its label in the font it
-// is drawn with, in as many rows as needed.
+// is drawn with, in as many rows as needed. The weekly boards are a dropdown (boardCombo); these tabs are the Records
+// view's categories.
 LeaderboardTab < ChaosTabButton
   width: 124
 
@@ -108,11 +109,25 @@ ChaosMainWindow
   !text: tr('Leaderboards')
   @onEscape: modules.game_leaderboard.hide()
 
+  // the board shown (leaderboard.lua, boardpick.lua): sorted by the name shown, remembered per character. Hidden in
+  // the Records view, whose categories use the tab row below.
+  ChaosComboBox
+    id: boardCombo
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 170
+    menu-scroll: true
+    menu-height: 342
+    menu-scroll-step: 18
+
+  // margin-left: the combo's width + 8 while it shows (leaderboard.lua setView); not anchored to the combo, which hides
   ChaosLabel
     id: infoLabel
     anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: recordsToggle.left
+    margin-top: 4
+    margin-left: 178
     margin-right: 8
     text-align: left
 
@@ -142,16 +157,19 @@ ChaosMainWindow
     id: timerLabel
     anchors.top: parent.top
     anchors.right: parent.right
+    margin-top: 4
     text-auto-resize: true
     color: #f6cf72
 
+  // the category tabs of the Records view (buildRecordTabs); empty and 0 high on the weekly boards
   UIWidget
     id: tabs
-    anchors.top: infoLabel.bottom
+    anchors.top: parent.top
     anchors.left: parent.left
     anchors.right: parent.right
-    margin-top: 8
-    height: 24
+    margin-top: 26
+    height: 0
+    visible: false
     phantom: true
     layout:
       type: verticalBox

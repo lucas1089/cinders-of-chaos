@@ -16,6 +16,6 @@ function onCastSpell(creature, variant, isHotkey)
 	c:setParameter(CONDITION_PARAM_SUBID, cfg.subId.poisonBlades)
 	c:setParameter(CONDITION_PARAM_TICKS, cfg.poisonBlades.durationMs)
 	player:addCondition(c)
-	ChaosSpell.vfxOr(player:getPosition(), "poisoned", "poison_cloud", CONST_ME_GREEN_RINGS)
+	ChaosSpell.vfxOr(player:getPosition(), "poisoned", "poison_burst", CONST_ME_GREEN_RINGS)
 	return true
 end

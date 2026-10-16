@@ -176,6 +176,9 @@ function NP.giveKit(player)
 	for _, b in ipairs(kit.backpack) do
 		inbox = giveStack(player, container, b.id, b.count or 1) or inbox
 	end
+	if ChaosPotions and ChaosPotions.giveAll then -- the Everfull health and mana potions (potions.lua)
+		ChaosPotions.giveAll(player, container)
+	end
 	makeScroll(player, container, kit.templeScrollUses)
 	if kit.gold > 0 then
 		player:addMoney(kit.gold)
@@ -289,6 +292,9 @@ function login.onLogin(player)
 	if NP.kitDueAtLogin(getS(player, "kit"), player:getLastLoginSaved()) and NP.kitFor(player:getVocation():getId()) then
 		NP.settleHome(player, true)
 		NP.kitAndWelcome(player)
+	elseif NP.kitDueAfterTutorial(getS(player, "kit"), getS(player, "stage")) and NP.kitFor(player:getVocation():getId()) then
+		-- it left the island and logged out before the kit came (NP.tutorialFinish gives it a second later)
+		NP.kitAndWelcome(player)
 	end
 	return true
 end
@@ -343,6 +349,7 @@ function admin.onSay(player, words, param)
 		for i = 1, #c.milestones do
 			target:setStorageValue(NP.milestoneKey(i), -1)
 		end
+		NP.clearSnapshot(target)
 		reply = "New-player flags of " .. target:getName() .. " cleared."
 	elseif what == "tutorial" then
 		if NP.tutorialStart and NP.tutorialStart(target) then

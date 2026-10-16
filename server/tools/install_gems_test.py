@@ -61,7 +61,15 @@ check(T.verify_otb(mine, rows_own, wanted3) == len(stock_cids) + n, 'ownLook: ve
 by3 = {k[2]: k for k in scan(mine)[0]}
 check(by3[32001][3] == 33905 and by3[32035][3] == 33939, 'ownLook: our looks')
 check([a for a in by3[32004][6] if a[0] == 0x14] == [(0x14, struct.pack('<H', 7))], 'ownLook: stock attributes kept')
-check(by3[32004][5] == by[32004][5], 'ownLook: same flags as the stock copy')
+check(by3[32004][5] == by[32004][5] | T.FLAG_ANIMATION, 'ownLook: the stock copy flags plus animation')
+check(all(by3[32001 + i][5] & T.FLAG_ANIMATION for i in range(n)), 'ownLook: every own look node is animated '
+      '(the client reads a phase byte for them; a node without the flag broke container packets, 2026-10-16)')
+check(not any(by[32001 + i][5] & T.FLAG_ANIMATION for i in range(n)), 'stock looks: the stock flags (not animated here)')
+# every own gem look really is animated in the client art (the flag above assumes it)
+import csv  # noqa: E402
+with open(os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites', 'art_import', 'gems.csv')) as f:
+    art = [r for r in csv.DictReader(f)]
+check(len(art) == n and all(int(r['phases']) > 1 for r in art), 'gems.csv: every own gem look has more than one phase')
 check(T.patch_otb(mine, rows_own, own)[0] == mine, 'ownLook: idempotent')
 back, _, _ = T.patch_otb(mine, rows, cfg)
 check(back == new, 'ownLook off again: the stock looks come back byte for byte')

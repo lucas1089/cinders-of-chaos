@@ -187,7 +187,7 @@ ShopOfferImage < ShopOffer
 MainWindow
   id: shopWindow
   !text: tr('Shop')
-  size: 750 530
+  size: 960 530
   @onEscape: modules.game_shop.hide()
   $mobile:
     size: 500 380
@@ -229,12 +229,22 @@ MainWindow
       visible: false
       !text: tr("Website")
 
+  // the shared look preview (game_lookpreview): the offer under the mouse or picked, on the own character
+  UIWidget
+    id: lookPreview
+    anchors.top: parent.top
+    anchors.right: parent.right
+    anchors.bottom: transactionHistory.top
+    margin-bottom: 10
+    width: 200
+
   Panel
     id: adPanel
     anchors.top: parent.top
     anchors.left: infoPanel.right
-    anchors.right: parent.right
+    anchors.right: lookPreview.left
     margin-left: 10
+    margin-right: 10
     height: 0
     
     Label
@@ -312,7 +322,7 @@ MainWindow
   Button
     id: transactionHistory
     !text: tr('Transaction history')
-    width: 128
+    text-horizontal-auto-resize: true
     anchors.left: parent.left
     anchors.bottom: parent.bottom
     @onClick: modules.game_shop.showHistory()

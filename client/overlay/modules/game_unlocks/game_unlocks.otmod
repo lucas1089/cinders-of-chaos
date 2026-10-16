@@ -1,0 +1,10 @@
+Module
+  name: game_unlocks
+  description: Owned and locked lists - every appearance and cosmetic list shows everything, the locked entries greyed with their source, an Only mine box per character (unlocks_core.lua); the wardrobe catalogue of the server (cosmetics opcode 225) for the Customise Character window (base patch 0058)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ unlocks_core, unlocks ]
+  autoload: true
+  autoload-priority: 989
+  @onLoad: init()
+  @onUnload: terminate()

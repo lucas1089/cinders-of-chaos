@@ -252,6 +252,9 @@ for free, at the migration.
   class's three (since phase 2b the class's stock look is put on instead, see "Class looks"); characters already in the class get them at their next login (look unchanged). They stay
   after a class change. List in `Chaos.classes.outfits` (`chaos_constants.lua`), code in `ascension.lua`
   (`giveClassOutfits`), outfits.xml entries for both sexes by `server/tools/install_outfits.py` (install step `outfits`).
+  The Mystic line's donor art outfit 1559 "Archmage" was retired on 2026-10-16. It is not given any more; owners keep it
+  as "Archmage (old)", and it is never sold. A replacement waits behind `Chaos.classes.outfitReplacement` (off).
+  See server/README.md "Class looks".
 
 Limits of phase 1:
 - Stealth is scripted: monsters drop the player and cannot attack it while it lasts, but area attacks aimed at someone else still hit

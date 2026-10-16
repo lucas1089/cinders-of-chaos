@@ -1,7 +1,8 @@
 -- Chaos menu bar
 -- A row of category buttons at the top of the game map. Each category opens a drop-down with
 -- the windows of that group (Character, Hunt, Adventure, Economy, Social, System, Admin); rarely used windows sit in a
--- "More" sub-menu at the end of a drop-down. The most used windows have hotkeys (Alt+<letter>, shown in the menu).
+-- "More" sub-menu at the end of a drop-down; entries in alphabetical order of their shown text (topbarlogic.lua). The
+-- most used windows have hotkeys (Alt+<letter>, shown in the menu).
 -- It replaces the icon grid of game_sidebuttons on the right panel, which is closed on login,
 -- and the stock top strip of client_topmenu (community link, console, options, exit icons), which
 -- is kept hidden: on the login screen the bar shows only the entries marked `offline`.
@@ -217,8 +218,8 @@ local CATEGORIES = {
       entry('Map Overlay Settings', 'minimap', { modules = { 'game_mapoverlay' }, fns = { 'toggleSettings' } }),
       entry('Map Markers',          'minimap', { modules = { 'game_mapmarkers' }, fns = { 'toggleSettings' } }),
       entry('Loot Splitter',      'bank',      { modules = { 'game_lootsplitter' }, fns = { 'toggle' } }),
-      entry('Prey',               'battlelist', { modules = { 'game_prey' },     fns = { 'toggle' } }),
-      entry('Task Hunt',          'quests',    { modules = { 'game_task_hunt' }, fns = { 'toggle' } }),
+      -- no Prey entry: the 10.98 server has no prey (base game_prey needs the GamePrey feature, so it never opened);
+      -- no Task Hunt entry: Kill Tasks and Adventure > Bounty Board are the task systems (assemble_client.sh drops it)
       entry('Unjustified Points', 'pvp',       { modules = { 'game_unjustifiedpoints' }, fns = { 'toggle' } }),
     } }),
   } },
@@ -345,29 +346,141 @@ local function runItem(item)
   if not ok then g_logger.error('[chaos_menu] ' .. item.entry.text .. ': ' .. tostring(err)) end
 end
 
--- a drop-down at pos; sub-menu entries open their own drop-down beside it
+-- the text an entry shows: translated (client_chaos_locale) when the language has it
+local function shownText(item)
+  local t = item.entry and item.entry.text or ''
+  local ok, v = pcall(tr, t)
+  return ok and type(v) == 'string' and v or t
+end
+
+-- ---------------------------------------------------------------- sub-menus ("More")
+-- A sub-menu opens beside its entry and the drop-down stays open (live test winpkg-35: "More" closed the drop-down
+-- and the extra options came up as a separate popup near the player). The engine keeps one popup menu at a time
+-- (UIPopupMenu:display destroys the one shown), so the sub-menu is a plain widget in the popup menu's style. The
+-- drop-down holds the mouse grab: its press and release handlers pass the sub-menu's clicks on, and a press outside
+-- both closes both. Opens on a click or on hovering the entry; hovering another entry closes it.
+local function subItems(list, out)
+  out = out or {}
+  for _, item in ipairs(list) do
+    if item.sub then
+      subItems(item.sub, out) -- a sub-menu in a sub-menu: its entries in line
+    elseif not (item.separator and (#out == 0 or out[#out].separator)) then
+      out[#out + 1] = item
+    end
+  end
+  if #out > 0 and out[#out].separator then out[#out] = nil end
+  return out
+end
+
+local function closeSub(menu)
+  if menu and isAlive(menu.chaosSub) then menu.chaosSub:destroy() end
+  if menu then menu.chaosSub, menu.chaosSubOf = nil, nil end
+end
+
+local function openSub(menu, option, item)
+  if not isAlive(menu) then return end
+  if menu.chaosSubOf == option and isAlive(menu.chaosSub) then return end
+  closeSub(menu)
+  local sub = g_ui.createWidget('UIWidget', rootWidget)
+  sub:setStyle('PopupMenu')
+  local layout = UIVerticalLayout.create(sub)
+  layout:setFitChildren(true)
+  sub:setLayout(layout)
+  sub:setFocusable(false)
+  local width = menu:getWidth()
+  for _, it in ipairs(subItems(item.sub)) do
+    if it.separator then
+      local sep = g_ui.createWidget('HorizontalSeparator', sub)
+      sep:setMarginLeft(1)
+      sep:setMarginRight(1)
+    else
+      local b = g_ui.createWidget('PopupMenuButton', sub)
+      b:setText('      ' .. shownText(it))
+      setOptionIcon(b, it.entry.icon)
+      local w = b:getTextSize().width + b:getMarginLeft() + b:getMarginRight() + 50
+      if it.entry.key then
+        local label = g_ui.createWidget('PopupMenuShortcutLabel', b)
+        label:setText(it.entry.key)
+        w = w + label:getTextSize().width + label:getMarginLeft() + label:getMarginRight()
+      end
+      width = math.max(width, w)
+      b.chaosRun = function()
+        closeMenu()
+        runItem(it)
+      end
+    end
+  end
+  sub:setWidth(width)
+  -- beside the drop-down, level with the entry; on the left when the screen ends, kept on the screen
+  local root = rootWidget:getSize()
+  local x = menu:getX() + menu:getWidth() - 4
+  if x + width > root.width then x = math.max(0, menu:getX() - width + 4) end
+  sub:setPosition({ x = x, y = option:getY() - 3 })
+  sub:raise()
+  menu.chaosSub, menu.chaosSubOf = sub, option
+  -- the height comes from the layout: keep it on the screen once it is known
+  addEvent(function()
+    if isAlive(sub) and sub:getY() + sub:getHeight() > root.height then
+      sub:setY(math.max(0, root.height - sub:getHeight()))
+    end
+  end)
+end
+
+-- the drop-down's mouse handlers: the sub-menu's area belongs to the sub-menu
+local function routeSubClicks(menu)
+  menu.onMousePress = function(self, mousePos, mouseButton)
+    if isAlive(self.chaosSub) and self.chaosSub:containsPoint(mousePos) then return true end
+    return UIPopupMenu.onMousePress(self, mousePos, mouseButton)
+  end
+  menu.onMouseRelease = function(self, mousePos, mouseButton)
+    local sub = self.chaosSub
+    if isAlive(sub) and sub:containsPoint(mousePos) then
+      if mouseButton == MouseLeftButton then
+        local w = sub:recursiveGetChildByPos(mousePos, false)
+        while w and w ~= sub and not w.chaosRun do w = w:getParent() end
+        if w and w.chaosRun then w.chaosRun() end
+      end
+      return true
+    end
+    return false
+  end
+  connect(menu, { onDestroy = function(self) closeSub(self) end })
+end
+
+-- a drop-down at pos; sub-menu entries open their sub-menu beside it. Entries in alphabetical order of the shown text,
+-- "More >" last (topbarlogic.lua ChaosTopBarLogic.sortList; owner request 2026-10-16)
 local function showList(list, pos)
   closeMenu()
   if #list == 0 then return end
+  list = ChaosTopBarLogic.sortList(list, shownText)
   local menu = g_ui.createWidget('PopupMenu')
   menu:setGameMenu(true)
+  routeSubClicks(menu)
   for _, item in ipairs(list) do
     if item.separator then
       menu:addSeparator()
     elseif item.sub then
       -- leading spaces leave room for the icon drawn at the left of the option
-      menu:addOption('      ' .. item.entry.text .. '  >', function() end)
+      menu:addOption('      ' .. shownText(item) .. '  >', function() end)
       local option = menu:getLastChild()
       setOptionIcon(option, item.entry.icon)
       option.onClick = function(widget)
-        local x = menu:getX() + menu:getWidth() - 6
-        local y = widget:getY() - 4
-        menu:destroy()
-        showList(item.sub, { x = x, y = y })
+        if menu.chaosSubOf == widget and isAlive(menu.chaosSub) then
+          closeSub(menu)
+        else
+          openSub(menu, widget, item)
+        end
+      end
+      option.onHoverChange = function(widget, hovered)
+        if hovered then openSub(menu, widget, item) end
       end
     else
-      menu:addOption('      ' .. item.entry.text, function() runItem(item) end, item.entry.key)
-      setOptionIcon(menu:getLastChild(), item.entry.icon)
+      menu:addOption('      ' .. shownText(item), function() runItem(item) end, item.entry.key)
+      local option = menu:getLastChild()
+      setOptionIcon(option, item.entry.icon)
+      option.onHoverChange = function(widget, hovered)
+        if hovered then closeSub(menu) end
+      end
     end
   end
   menu:display(pos)

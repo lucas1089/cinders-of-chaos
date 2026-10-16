@@ -305,6 +305,9 @@ return {
 		},
 		-- station 4: the Orb of Upheaval and the item it is used on (a Common = rarity 1 leather armor)
 		orbItem = {id = 2467, rarity = 1},
+		-- what the island gives is lent (NP.tutorialReset, server/README.md "Tutorial reset"): every item it creates
+		-- carries this custom attribute and is taken back when the character leaves the island
+		lentTag = "chaos_tutorial",
 
 		lessons = {
 			{title = "Station 1: Moving and fighting",

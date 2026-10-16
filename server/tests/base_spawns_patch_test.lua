@@ -113,6 +113,9 @@ local stock = [[
 	<spawn centerx="3010" centery="3000" centerz="9" radius="1">
 		<monster name="Test Low" x="0" y="0" z="9" spawntime="60"/>
 	</spawn>
+	<spawn centerx="4000" centery="4000" centerz="7" radius="1">
+		<monster name="Test Low" x="0" y="0" z="7" spawntime="60" />
+	</spawn>
 </spawns>
 ]]
 local spawnPath = data .. "/world/testmap-spawn.xml"
@@ -126,7 +129,7 @@ local tuning = [[
   "bandRespawn": [{"from": 300, "to": 600, "spawntime": 90, "onlyUpTo": 300}],
   "areas": [{"id": "T-01", "box": [1990, 1990, 8, 2010, 2010, 8], "band": "300-600", "note": "test"}],
   "move": [{"at": [2002, 2001, 8], "to": [2003, 2003]}, {"at": [3010, 3000, 9], "to": [3011, 3001]}],
-  "remove": [{"at": [1002, 1000, 7]}],
+  "remove": [{"at": [1002, 1000, 7]}, {"at": [4000, 4000, 7]}],
   "fill": "fill.json",
   "add": [
     {"area": "T-01", "at": [2005, 2005, 8], "like": [2000, 2000, 8]},
@@ -159,7 +162,7 @@ eq(rc, 0, "first run ok: " .. out)
 ok(out:find("written", 1, true) ~= nil, "first run writes")
 ok(out:find("1 glitch", 1, true) ~= nil, "one glitched spawntime fixed (the rare one has too few others)")
 ok(out:find("2 band", 1, true) ~= nil, "two band respawns")
-ok(out:find("2 moved", 1, true) ~= nil and out:find("1 removed", 1, true) ~= nil and out:find("2 added", 1, true) ~= nil,
+ok(out:find("2 moved", 1, true) ~= nil and out:find("2 removed", 1, true) ~= nil and out:find("1 emptied", 1, true) ~= nil and out:find("2 added", 1, true) ~= nil,
 	"moves, removal, adds counted")
 ok(out:find("6 filled", 1, true) ~= nil, "fill monsters counted (a block of 3 counts 3)")
 local reg1 = readFile(regPath)
@@ -190,6 +193,12 @@ ok(text:find('<monster chaosxy="0,0" name="Test Low" x="1" y="1" z="9" spawntime
 	"moved, the tag's own format kept")
 ok(text:find('<!-- chaosremoved: <monster name="Test Low" x="2" y="0" z="7" spawntime="60" /> -->', 1, true) ~= nil,
 	"removed as a comment")
+-- a stock spawn left without an entry: the whole block becomes one comment (the engine warns "Empty spawn")
+ok(text:find('\t<!-- chaosemptied: <spawn centerx="4000" centery="4000" centerz="7" radius="1">\n' ..
+	'\t\t<monster name="Test Low" x="0" y="0" z="7" spawntime="60" />\n\t</spawn> -->\n', 1, true) ~= nil,
+	"an emptied spawn: the stock block as one comment")
+ok(text:find('<!-- chaosremoved: <monster name="Test Low" x="0" y="0" z="7" spawntime="60" /> -->\n\t</spawn>', 1, true)
+	== nil, "no <spawn> left with only a removed entry")
 ok(text:find('<spawn centerx="2005" centery="2005" centerz="8" radius="2" chaosadd="T-01">\n' ..
 	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />\n\t</spawn>', 1, true) ~= nil,
 	"added: the monster and the final spawntime of the entry at like")
@@ -205,7 +214,8 @@ ok(text:find('<spawn centerx="996" centery="1006" centerz="7" radius="2" chaosad
 ok(text:find('<spawn centerx="1995" centery="1996" centerz="8" radius="2" chaosadd="F0002">\n' ..
 	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />', 1, true) ~= nil,
 	"fill: the band respawn of the like entry")
-eq(count(text, "<spawn "), 10, "four stock spawns, two added, four filled")
+eq(count(text, "<spawn "), 11, "five stock spawns (one of them commented out), two added, four filled")
+eq(count(text, "\n\t<spawn "), 10, "four live stock spawns, two added, four filled")
 ok(text:find('<spawn centerx="1990" centery="1990" centerz="8" radius="2" chaosadd="F0003">\n' ..
 	'\t\t<monster name="Test Mid" x="0" y="0" z="8" spawntime="90" />\n' ..
 	'\t\t<monster name="Test Mid" x="1" y="0" z="8" spawntime="90" />\n' ..

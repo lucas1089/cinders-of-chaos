@@ -43,40 +43,71 @@ return {
 		back = {x = 31648, y = 32256, z = 6}
 	},
 
+	-- The whole hall in level order (owner, 2026-10-16; server/README.md "Hall order"): every hunt teleport of the hall,
+	-- the base server's (tools/hall_hunts.csv, from tools/hall_order.py derive) and the planned hunts', by level band:
+	-- the entry floor (z 7) first along the corridor from west to east, then each floor up. install_content_areas.py
+	-- writes it; --remove-hall puts the base hunts back. `floors`: the hall's floors, lowest bands first; `x`: the
+	-- hall's span; `endRow`: the corridor's end teleports (a hunt unless it leads to `temple`); `labels`: the floor's
+	-- floating label ("Floor 7: levels 1-80") over `at`, and over `up` (the stairs up) the next floor's.
+	hall = {
+		enabled = true,
+		floors = {7, 6, 5},
+		x = {31600, 31696},
+		endRow = 32256,
+		temple = {32369, 32241, 7},
+		labels = {
+			{z = 7, at = {x = 31648, y = 32255}, up = {x = 31648, y = 32253}},
+			{z = 6, at = {x = 31648, y = 32255}, up = {x = 31648, y = 32257}},
+			{z = 5, at = {x = 31648, y = 32255}}
+		}
+	},
+
 	-- the display monsters stand in the two cells beside each teleport, like the room's own (spawn file, radius 1)
 	displaySpawntime = 120,
+	-- where display monsters stand: the cell rows (room.cellRows) of the hall's floors, across the grown floor 6.
+	-- A monster there (no master) is a display: no boss mechanics, no tier roll, no treasure goblin, and it never hits
+	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
+	display = {x = {31606, 31690}, floors = {5, 7}},
 
 	-- 5 modules a side: 20 new teleports (17 plans, 3 spare).
-	-- The plans, in slot order. A plan of tools/areaplan/plans/ missing here still gets a teleport: after these, in
-	-- the order of its band, with its most frequent monster on display (check its look; list it here to choose). Slots: the new teleport columns of the east side from the stairs outward, then those
-	-- of the west side from the stairs outward; in each column the north teleport, then the south one (slot 1 is the
-	-- north teleport next to the old east end). `slot` pins a plan to a slot.
-	-- `monster` is the display monster: a frequent monster of the plan whose look renders (checked against the pair).
+	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
+	-- `level`), along the corridor from west to east, the north teleport of a column before the south one; a new
+	-- hunt lands in its place by itself. A plan of tools/areaplan/plans/ missing here still gets a teleport, with its
+	-- most frequent monster on display (check its look; list it here to choose). `slot` (1 = the westmost north
+	-- teleport) pins a plan to a slot.
+	-- `monster` is the display monster: a frequent monster of the plan whose look renders (checked against the pair)
+	-- and is at most 2x2 tiles (pair 28, 2026-10-16: a bigger sprite spills over the one-tile cell's walls; the base
+	-- room's own display monsters are 2x2). `display = false`: no display monster (every monster of the plan is
+	-- bigger).
 	-- `minLevel` overrides the floor of the plan's level band.
 	plans = {
 		{id = "bonechoir_catacomb", monster = "Deathrattle"},
 		{id = "sulphur_gallery", monster = "Hellflayer"},
 		{id = "widowmere", monster = "Nightfang Widow"},
-		{id = "wyrmspine_hollows", monster = "Ashfang Wrym"},
+		-- every monster of the plan is a 4x4 or 5x5 sprite: no display (it spilled over the cell walls into the corridor)
+		{id = "wyrmspine_hollows", monster = "Ashfang Wrym", display = false},
 		{id = "pyrarch_crucible", monster = "Hellmaw Brute"},
 		{id = "hexwood_thicket", monster = "Black Stag"},
 		{id = "corsairs_reach", monster = "Ironhook Corsair"},
 		{id = "mirefang_basin", monster = "Elite Tidecrest Serpent"},
-		{id = "rimecrown_depths", monster = "Celestial Wyrm"},
+		{id = "rimecrown_depths", monster = "Spirit of Purity"}, -- 2x2; the 3x3 Celestial Wyrm spilled
 		{id = "cinderglass_sanctum", monster = "Black Vixen"},
-		{id = "slagmourn_foundry", monster = "Scaleborn"},
+		{id = "slagmourn_foundry", monster = "Twisted Shaper"}, -- 2x2; the 5x4 Scaleborn spilled
 		{id = "hollowmass_reliquary", monster = "Silicron"},
 		{id = "gallowfen_mire", monster = "Thal"},
 		{id = "voidscar_chasm", monster = "Facetis"},
 		{id = "gravehorn_deeps", monster = "Cinderskull Reaver"},
 		{id = "duskmarrow_crater", monster = "Mirecoil Wyrm"}, -- not the 5x5 Pyrewing Tyrant in a one-tile cell
-		{id = "hollow_crypt", monster = "Bonecrusher"} -- pair 27 trial area (levels 300-400); its boss is the Hollow Rider
+		-- pair 27 trial area (levels 300-400); its boss is the Hollow Rider. 2x2; the 3x3 Bonecrusher spilled
+		{id = "hollow_crypt", monster = "Sopping Carcass"}
 	},
 
 	-- texts: the English one is the key; pt-BR beside it
 	texts = {
 		["pt-BR"] = {
 			["%s, levels %d-%d"] = "%s, níveis %d-%d",
+			["Floor %d: levels %d-%d"] = "Andar %d: níveis %d-%d",
+			["Up: floor %d, levels %d-%d"] = "Acima: andar %d, níveis %d-%d",
 			["%s is for level %d and above."] = "%s é para nível %d ou mais.",
 			["%s: monsters of level %d-%d. The portal at the camp leads back to the teleport room."] =
 				"%s: monstros de nível %d-%d. O portal do acampamento leva de volta à sala de teleportes."

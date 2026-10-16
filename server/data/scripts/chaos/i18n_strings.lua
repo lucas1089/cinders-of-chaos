@@ -362,10 +362,19 @@ return {
 		["Your account already bought %s."] = "Sua conta já comprou %s.",
 		["You bought %s %s times this week; the limit resets on Monday."] =
 			"Você comprou %s %s vezes nesta semana; o limite reinicia na segunda-feira.",
-		["%s does not have enough room in the backpack or the store inbox."] =
-			"%s não tem espaço suficiente na mochila nem na caixa de entrada da loja.",
-		["%d of them went to your store inbox (no room or capacity)."] =
-			"%d deles foram para a sua caixa de entrada da loja (sem espaço ou capacidade).",
+		-- store delivery to the purse (store_delivery.lua, store_delivery_core.lua)
+		["Delivered to your purse (the button under your equipment)."] =
+			"Entregue na sua bolsa (o botão abaixo do seu equipamento).",
+		["Delivered to your %s (%s)."] = "Entregue na sua %s (%s).",
+		["Delivered: %d to your purse, %d to your depot inbox, %d to your backpack (%s)."] =
+			"Entregue: %d na sua bolsa, %d na sua caixa de entrada do depot, %d na sua mochila (%s).",
+		["purse"] = "bolsa",
+		["depot inbox"] = "caixa de entrada do depot",
+		["you have no purse"] = "você não tem bolsa",
+		["not enough capacity for the purse"] = "sem capacidade para a bolsa",
+		["your purse could not take it"] = "sua bolsa não pôde receber",
+		["%s has no room in the purse, the depot inbox or the backpack."] =
+			"%s não tem espaço na bolsa, na caixa de entrada do depot nem na mochila.",
 		["%s does not have enough room or capacity."] = "%s não tem espaço ou capacidade suficiente.",
 		["%s gave you %s from the Chaos store."] = "%s te deu %s da loja Chaos.",
 		["%s sent you %s, but %s; the coins went back to them."] =
@@ -1262,6 +1271,27 @@ return {
 		["You transferred %d gold to %s."] = "Você transferiu %d de ouro para %s.",
 		["%s transferred %d stars to your bank account."] = "%s transferiu %d estrelas para a sua conta do banco.",
 		["You transferred %d stars to %s."] = "Você transferiu %d estrelas para %s.",
+		["You withdrew %d gold; %d gold did not fit (capacity or free slots) and stays in the bank. Bank balance: %d gold."] =
+			"Você sacou %d de ouro; %d de ouro não coube (capacidade ou espaço livre) e fica no banco. Saldo no banco: %d de ouro.",
+		["Your bank balance is too low."] = "Seu saldo no banco é baixo demais.",
+		["Your bank balance is empty."] = "Seu saldo no banco está vazio.",
+		["You do not have room or capacity for any coins."] = "Você não tem espaço nem capacidade para nenhuma moeda.",
+		["You do not carry that much gold."] = "Você não carrega tanto ouro.",
+		["You do not carry any gold."] = "Você não carrega ouro.",
+		["Could not take the gold from you."] = "Não foi possível tirar o ouro de você.",
+		["Only gold can be deposited all at once."] = "Só ouro pode ser depositado de uma vez.",
+		["Only gold can be withdrawn all at once."] = "Só ouro pode ser sacado de uma vez.",
+		["You need level %d to transfer."] = "Você precisa de nível %d para transferir.",
+		["That is not a valid character name."] = "Esse não é um nome de personagem válido.",
+		["A player with that name does not exist."] = "Não existe jogador com esse nome.",
+		["You cannot transfer to yourself."] = "Você não pode transferir para si mesmo.",
+		["The bank is busy. Try again in a moment."] = "O banco está ocupado. Tente de novo em um instante.",
+		["Stars are not available."] = "Estrelas não estão disponíveis.",
+		["You do not carry that many stars."] = "Você não carrega tantas estrelas.",
+		["Could not take the stars from you."] = "Não foi possível tirar as estrelas de você.",
+		["You can withdraw at most %d stars at once."] = "Você pode sacar no máximo %d estrelas de uma vez.",
+		["You do not have that many stars in the bank."] = "Você não tem tantas estrelas no banco.",
+		["You do not have room or capacity for the stars."] = "Você não tem espaço nem capacidade para as estrelas.",
 		["A portal to your temple opened beside you. Its return portal waits beside the temple for %d minutes."] =
 			"Um portal para o seu templo abriu ao seu lado. O portal de volta espera ao lado do templo por %d minutos.",
 		["Opening a town portal... stand still."] = "Abrindo um town portal... fique parado.",
@@ -1271,6 +1301,10 @@ return {
 		["Store items cannot be traded."] = "Itens da loja não podem ser negociados.",
 		["%s: your %s is in your %s. It collects %s while you carry it."] =
 			"%s: seu %s está na sua %s. Ele coleta %s enquanto você o carrega.",
+		["%s: your %s is in your %s. It collects %s from now on, there or in your backpack."] =
+			"%s: seu %s está na sua %s. Ele coleta %s a partir de agora, ali ou na sua mochila.",
+		["%s: your %s is in your %s. Move it to your backpack: it collects %s while you carry it."] =
+			"%s: seu %s está na sua %s. Coloque-o na mochila: ele coleta %s enquanto você o carrega.",
 		["Store"] = "Loja",
 		["The Bottomless Loot Pouch is retired, a free Loot Bag replaces it"] =
 			"O Bottomless Loot Pouch foi aposentado, uma Loot Bag grátis o substitui",
@@ -1282,14 +1316,58 @@ return {
 		["The Everfull Ration is in your %s. Use it like food: it never runs out."] =
 			"A Everfull Ration está na sua %s. Use como comida: ela nunca acaba.",
 		["Back after your death: your Everfull Ration."] = "De volta depois da sua morte: sua Everfull Ration.",
+		-- Everfull potions (potions.lua, data/lib/chaos_potions.lua)
+		["You received an Everfull Health Potion and an Everfull Mana Potion. They never run out."] =
+			"Você recebeu uma Everfull Health Potion e uma Everfull Mana Potion. Elas nunca acabam.",
+		["You already have one. It never runs out."] = "Você já tem uma. Ela nunca acaba.",
+		["You do not have enough money."] = "Você não tem dinheiro suficiente.",
+		["You have no room for it."] = "Você não tem espaço para ela.",
+		["It never runs out: drink it as often as the potion exhaust allows."] =
+			"Ela nunca acaba: beba sempre que o intervalo das poções permitir.",
 		["%d days of the Chaos Pact added: it runs until %s."] = "%d dias de Chaos Pact adicionados: ele vale até %s.",
 		["Your Chaos Pact runs until %s. Claim your %d Chaos Coins every day in Character > Chaos Pact."] =
 			"Seu Chaos Pact vale até %s. Pegue suas %d Chaos Coins todo dia em Character > Chaos Pact.",
 		["%s added to your account (%d of %d)."] = "%s adicionado à sua conta (%d de %d).",
 		["Chaos Pact: a cosmetic for you, see Character > Cosmetics."] =
 			"Chaos Pact: um cosmético para você, veja Character > Cosmetics.",
-		["Welcome home. Character > Hideout to decorate."] = "Bem-vindo de volta. Character > Hideout para decorar.",
+		["Welcome home. Character > Hideout to decorate. The portal south of you, or Leave in that window, takes you back."] =
+			"Bem-vindo de volta. Character > Hideout para decorar. O portal ao sul de você, ou Leave nessa janela, leva você de volta.",
 		["You visit the hideout of %s."] = "Você visita o hideout de %s.",
+		["Your Town Portal takes you out of the hideout."] = "Seu Town Portal leva você para fora do hideout.",
+		-- City portals: the look text (cityportals_config.lua, cityportals_fx.lua)
+		["Hideout Portal"] = "Portal do Hideout",
+		["Step in to enter your own hideout. Its exit portal brings you back to this spot."] =
+			"Entre para ir ao seu hideout. O portal de saída dele traz você de volta a este lugar.",
+		["Guild Hall Portal"] = "Portal do Guild Hall",
+		["Members of a guild that owns a guild hall step in to enter it. Its exit portal leads to your temple."] =
+			"Membros de uma guild que tem um guild hall entram por aqui. O portal de saída dele leva ao seu templo.",
+		["Hall of Services Portal"] = "Portal do Salão de Serviços",
+		["Guild Siege Portal"] = "Portal do Guild Siege",
+		["Memorial Portal"] = "Portal do Memorial",
+		["World Boss Portal"] = "Portal do World Boss",
+		["Chronicle Gate"] = "Portão da Chronicle",
+		["Hunting Area Portal"] = "Portal da Área de Caça",
+		["Idle Hall Exit"] = "Saída do Idle Hall",
+		["Step in to go back to your temple. Characters who stand idle in town are moved to this hall."] =
+			"Entre para voltar ao seu templo. Personagens parados na cidade são levados a este salão.",
+		["Step in to enter this hunting area; the portal refuses characters below its level. Its exit portal leads back here."] =
+			"Entre para ir a esta área de caça; o portal recusa personagens abaixo do level dela. O portal de saída dela traz você de volta aqui.",
+		["Ember Descent Portal"] = "Portal da Ember Descent",
+		["Step in to open the Ember Descent: a roguelike trial for level 100+, alone or with up to three party members."] =
+			"Entre para abrir a Ember Descent: um desafio roguelike para level 100+, sozinho ou com até três membros da party.",
+		["Raid Portal"] = "Portal da Raid",
+		["Step in to open the raid window: the Ashen Sepulchre for a party of 5 to 15, level 800+."] =
+			"Entre para abrir a janela da raid: o Ashen Sepulchre para uma party de 5 a 15, level 800+.",
+		["Step in to reach a chapter area of the Ashen Chronicle that the story has opened. Its exit portal leads to your temple."] =
+			"Entre para chegar a uma área de capítulo da Ashen Chronicle que a história abriu. O portal de saída dela leva ao seu templo.",
+		["Open while a world boss is awake: step in to join the fight in its arena. The arena's exit portal leads to your temple."] =
+			"Aberto enquanto um world boss está desperto: entre para lutar na arena dele. O portal de saída da arena leva ao seu templo.",
+		["Step in to visit the Ember Memorial: the season's realm firsts, its records and its fallen. Its exit portal leads to your temple."] =
+			"Entre para visitar o Ember Memorial: as primeiras conquistas do reino na temporada, os recordes e os caídos. O portal de saída dele leva ao seu templo.",
+		["Open while a guild siege runs: members of a signed-up guild step in to reach their base. The base's exit portal leads to your temple."] =
+			"Aberto enquanto um guild siege acontece: membros de uma guild inscrita entram para chegar à base dela. O portal de saída da base leva ao seu templo.",
+		["Step in to enter the Hall of Services: the town's Chaos NPCs behind their counters, the Ember Descent and the raid portals. Its exit portal leads back to this temple."] =
+			"Entre para ir ao Salão de Serviços: os NPCs Chaos da cidade atrás dos balcões, os portais da Ember Descent e da raid. O portal de saída dele traz você de volta a este templo.",
 		["Only the owner of this hideout may open its depot."] = "Só o dono deste hideout pode abrir o depot dele.",
 		["This depot cannot open here. Use a town depot."] = "Este depot não abre aqui. Use um depot da cidade.",
 		["Nothing can be left on a hideout's floor."] = "Nada pode ser deixado no chão de um hideout.",
@@ -2279,5 +2357,22 @@ return {
 		-- Beta starter coins (beta.lua)
 		["Beta: your account received %d Chaos Coins to try the store. They are beta test coins: they and everything bought with them are wiped at launch."] =
 			"Beta: sua conta recebeu %d Chaos Coins para testar a loja. São moedas de teste do beta: elas e tudo o que for comprado com elas serão apagados no lançamento.",
+		-- Info & Services: Ancestral Store, Character Info (commands_ui.lua, class_unlocks.lua, ascension_quest.lua)
+		["Wait a moment between purchases."] = "Espere um momento entre as compras.",
+		["The purchase failed. Try again."] = "A compra falhou. Tente de novo.",
+		["You need %d Ancestral Points; you have %d."] = "Você precisa de %d Ancestral Points; você tem %d.",
+		["No room in your backpack: your %d Ancestral Points were returned."] =
+			"Sem espaço na mochila: seus %d Ancestral Points foram devolvidos.",
+		["Bought %dx %s; no room for the rest: %d Ancestral Points returned."] =
+			"Comprou %dx %s; sem espaço para o resto: %d Ancestral Points devolvidos.",
+		["Bought %dx %s for %d Ancestral Points."] = "Comprou %dx %s por %d Ancestral Points.",
+		["Choose between 1 and %d."] = "Escolha entre 1 e %d.",
+		["That item is not in the store."] = "Esse item não está na loja.",
+		["No Double EXP active."] = "Nenhum Double EXP ativo.",
+		["Unlocked classes: %s."] = "Classes desbloqueadas: %s.",
+		["Locked classes: %s. Reach level %d with any character to unlock."] =
+			"Classes bloqueadas: %s. Chegue ao nível %d com qualquer personagem para desbloquear.",
+		["Locked classes: %s. To unlock: %s."] = "Classes bloqueadas: %s. Para desbloquear: %s.",
+		["Ascension unlocks at level %d (you are level %d)."] = "A ascensão abre no nível %d (você está no nível %d).",
 	},
 }

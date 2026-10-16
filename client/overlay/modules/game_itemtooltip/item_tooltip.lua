@@ -8,7 +8,8 @@
 -- the version changes whenever the server changes the item (orbs, gems), so a changed item is asked for again.
 -- Items without those attributes (plain items, or a server without engine patch 0003) are cached for a short time
 -- under their position, id and count. The view logic is in tooltiplogic.lua (tested by tooltiplogic_test.lua).
---   client -> server  get {items = [{pos = {x, y, z}, iid}]}   (iid as a decimal string)
+--   client -> server  get {items = [{pos = {x, y, z}, iid, cid, n}]}   (iid as a decimal string; cid = the client id,
+--                     n = the count of a stackable: the server answers for that item, tooltiplogic.lua L.tipMatches)
 --   server -> client  tips {items = [{pos, iid, tip} | {pos, iid, gone}]}
 
 local OPCODE = 242
@@ -20,6 +21,7 @@ local MIN_WIDTH = 190
 local ASK_DELAY = 60 -- ms of hover before asking the server
 local PENDING_TIMEOUT = 2 -- s before an unanswered request may be sent again
 local CTRL_POLL = 100 -- ms
+local RETRY_DELAY, RETRIES = 300, 2 -- an answer for another item (L.tipMatches): ask again this often, at most
 
 local cache = L.newCache()
 local pending = {} -- posKey -> {key, plain, at}
@@ -59,7 +61,9 @@ local function describe(item)
   pos = { x = pos.x, y = pos.y, z = pos.z }
   local iid = attr(item, A.ID)
   local key, plain = L.cacheKey({ id = iid, ver = attr(item, A.VERSION) }, item:getId(), item:getCount(), pos)
-  return { item = item, pos = pos, iid = iid, key = key, plain = plain }
+  local stackable = item.isStackable and item:isStackable() or false
+  return { item = item, pos = pos, iid = iid, key = key, plain = plain,
+    ident = L.identity(item:getId(), item:getCount(), stackable) }
 end
 
 local function equippedItem(slot)
@@ -74,8 +78,9 @@ local function send(list)
   local items = {}
   for _, d in ipairs(list) do
     -- the id as a string: the JSON encoder writes big numbers with 14 digits (1.8785738780836e+15)
-    items[#items + 1] = { pos = d.pos, iid = L.iidText(d.iid) }
-    pending[L.posKey(d.pos, d.iid)] = { key = d.key, plain = d.plain, at = now() }
+    local ident = d.ident or {}
+    items[#items + 1] = { pos = d.pos, iid = L.iidText(d.iid), cid = ident.cid, n = ident.n }
+    pending[L.posKey(d.pos, d.iid)] = { key = d.key, plain = d.plain, at = now(), ident = ident }
   end
   protocol:sendExtendedOpcode(OPCODE, json.encode({ action = 'get', data = { items = items } }))
 end
@@ -273,6 +278,15 @@ end
 local function ask()
   askEvent = nil
   if not hovered or not g_game.isOnline() then return end
+  -- the slot's item now (a container shifts its items when one goes in at the front)
+  if not hovered.external and hovered.widget and not hovered.widget:isDestroyed() then
+    local item = hovered.widget:getItem()
+    if item then
+      local d = describe(item)
+      d.widget, d.retries = hovered.widget, hovered.retries
+      hovered = d
+    end
+  end
   if L.cacheGet(cache, hovered.key, now()) then
     render()
     return
@@ -379,8 +393,17 @@ local function onTips(data)
     local pk = L.posKey(row.pos, row.iid)
     local p = pending[pk]
     pending[pk] = nil
+    -- only the item asked for: an answer for another item (the slots shifted) is dropped, the hover asks again
     if p and type(row.tip) == 'table' then
-      L.cachePut(cache, p.key, row.tip, p.plain, t)
+      if L.tipMatches(p.ident, row.tip) then
+        L.cachePut(cache, p.key, row.tip, p.plain, t)
+      elseif hovered and not hovered.external and hovered.key == p.key then
+        hovered.retries = (hovered.retries or 0) + 1
+        if hovered.retries <= RETRIES then
+          if askEvent then removeEvent(askEvent) end
+          askEvent = scheduleEvent(ask, RETRY_DELAY)
+        end
+      end
     end
   end
   if hovered and L.cacheGet(cache, hovered.key, t) then

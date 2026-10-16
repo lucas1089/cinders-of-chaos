@@ -19,6 +19,7 @@ local STATUS = {}
 local AD = {}
 local selectedOffer = {}
 local giftWindow = nil
+local lookPreview = nil -- the shared look preview (game_lookpreview), nil without it or on mobile
 
 local function sendAction(action, data)
   if not g_game.getFeature(GameExtendedOpcode) then
@@ -66,6 +67,8 @@ function terminate()
     shopButton:destroy()
     shopButton = nil
   end
+  if lookPreview then lookPreview:destroy() end
+  lookPreview = nil
   if shop then
     disconnect(shop.categories, { onChildFocusChange = changeCategory })
     shop:destroy()
@@ -98,6 +101,7 @@ function show()
   if not shop or not shopButton then
     return
   end
+  if lookPreview then lookPreview:refresh() end -- the character may have changed its outfit
   shop:show()
   shop:raise()
   shop:focus()
@@ -137,10 +141,31 @@ function toggle()
   check()
 end
 
+-- the shared look preview (game_lookpreview): none on the small mobile layout, where the column folds away
+local function lookCore()
+  local lp = modules.game_lookpreview
+  return lp and lp.LookPreviewCore or nil
+end
+
+local function createPreview()
+  local lp = modules.game_lookpreview
+  local mobile = g_app and type(g_app.isMobile) == 'function' and g_app.isMobile()
+  if mobile or not lp or type(lp.create) ~= 'function' then
+    shop.lookPreview:setWidth(0)
+    shop.adPanel:setMarginRight(0)
+    return
+  end
+  lookPreview = lp.create(shop.lookPreview)
+  connect(shop.offers, { onChildFocusChange = function(_, focused)
+    if lookPreview then lookPreview:setOption(focused and focused.lookOption or nil) end
+  end })
+end
+
 function createShop()
   if shop then return end
   shop = g_ui.displayUI('shop')
   shop:hide()
+  createPreview()
 
   shop.prevPage     = shop:recursiveGetChildById('prevPage')
   shop.nextPage     = shop:recursiveGetChildById('nextPage')
@@ -249,6 +274,7 @@ function onExtendedJSONOpcode(protocol, code, json_data)
 end
 
 function clearOffers()
+  if lookPreview then lookPreview:setOption(nil) end
   while shop.offers:getChildCount() > 0 do
     local child = shop.offers:getLastChild()
     shop.offers:destroyChildren(child)
@@ -468,6 +494,15 @@ function addOffer(category, data)
   end
   local newIndex = shop.offers:getChildCount() + 1
   offer:setId("offer_" .. category .. "_" .. newIndex)
+  -- a look offer (outfit, addons, mount, wings, aura, shader, pet) in the look preview: on hover, and kept once picked
+  local LP = lookCore()
+  offer.lookOption = LP and LP.fromShopOffer(data) or nil
+  if offer.lookOption then
+    offer.onHoverChange = function(_, hovered)
+      if not lookPreview then return end
+      if hovered then lookPreview:setHover(offer.lookOption) else lookPreview:clearHover() end
+    end
+  end
   -- the price in the list is short (15.3k), exact in the tooltip and in the buy confirmation
   local cost = tonumber(data["cost"])
   offer.title:setText(tr('%s (%s coins)', data["title"], (cost and formatShortNumber(cost) or tostring(data["cost"]))))

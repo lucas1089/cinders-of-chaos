@@ -18,7 +18,10 @@ function onCastSpell(creature, variant, isHotkey)
 	player:addCondition(haste)
 
 	local pos = player:getPosition()
-	ChaosSpell.vfxOr(pos, "shadow_shroud", "shadow_smoke", CONST_ME_MORTAREA)
-	pos:sendMagicEffect(CONST_ME_MAGIC_BLUE)
+	-- the shroud alone (the stock blue sparkle on top of it went; server/data/spells/README_FX.md "Mystic line effects")
+	if not ChaosSpell.vfx(pos, "shadow_shroud") then
+		ChaosSpell.fx(pos, "shadow_smoke", CONST_ME_MORTAREA)
+		pos:sendMagicEffect(CONST_ME_MAGIC_BLUE)
+	end
 	return true
 end

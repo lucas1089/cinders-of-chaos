@@ -67,6 +67,24 @@ function L.posKey(pos, iid)
     tonumber(pos.s) or 0, L.iidText(iid))
 end
 
+-- an answer is kept only for the item that was asked for. A plain item is named by its slot alone and a container's
+-- slots shift when an item goes in at the front, so the server could answer for the neighbour, which was then kept
+-- under the hovered item (live test winpkg-35: a Rope showed "Cheese 62", a Training Wand "Gold coin 100").
+-- asked = {cid, n} (n: the count of a stackable, else nil); tip = the server's tooltip ({id = client id, count}).
+function L.tipMatches(asked, tip)
+  if type(asked) ~= 'table' or type(tip) ~= 'table' then return false end
+  local cid = tonumber(asked.cid)
+  if cid and cid > 0 and tonumber(tip.id) ~= cid then return false end
+  local n = tonumber(asked.n)
+  if n and n > 0 and (tonumber(tip.count) or 1) ~= n then return false end
+  return true
+end
+
+-- what a request names besides the position: the client id and, for a stackable, the count (the server matches them)
+function L.identity(clientId, count, stackable)
+  return { cid = tonumber(clientId) or 0, n = stackable and (tonumber(count) or 1) or nil }
+end
+
 -- a small cache with an age limit for plain entries and a size limit
 function L.newCache()
   return { entries = {}, order = {} }
@@ -304,6 +322,9 @@ function L.lines(tip, ctx)
   if tip.collects then
     for _, line in ipairs(L.wrap(tip.collects, L.WRAP)) do add(line, C.dim) end
   end
+  -- charges (server item_tooltip_core.lua T.chargeInfo): exercise and training weapons, charged rings and runes
+  local chargeText = L.chargesText(tip.charges)
+  if chargeText then add(chargeText, C.text, true) end
   -- where it comes from (server itemfinder.lua F.brief): the first sources, the expected effort, a token price
   local srcLines = L.sourceLines(tip.src)
   for i, line in ipairs(srcLines) do
@@ -332,14 +353,28 @@ function L.int(n)
   return (s:reverse():gsub('(%d%d%d)', '%1,'):reverse():gsub('^,', ''))
 end
 
+-- the charges line: {n, max} -> 'Charges: 1,200 of 14,400' / 'Charges: 14,400'; {unlimited} -> 'Charges: unlimited'
+-- (live test winpkg-35: a Lasting Exercise Wand showed only its name and weight)
+function L.chargesText(ch)
+  if type(ch) ~= 'table' then return nil end
+  if ch.unlimited then return tr('Charges: unlimited') end
+  local n = tonumber(ch.n)
+  if not n then return nil end
+  local max = tonumber(ch.max)
+  if max and max > n then return tr('Charges: %s of %s', L.int(n), L.int(max)) end
+  return tr('Charges: %s', L.int(n))
+end
+
 -- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price}; rows {text, color}
 function L.sourceLines(src)
   local out = {}
   if type(src) ~= 'table' then return out end
   local C = L.COLORS
-  local parts = {}
+  local parts, seen = {}, {}
   for _, s in ipairs(type(src.s) == 'table' and src.s or {}) do
-    if type(s) == 'table' and s.n then
+    -- one entry per name ("Drops from: Abyssal Crab (100%), Abyssal Crab (100%)", live test winpkg-35)
+    if type(s) == 'table' and s.n and not seen[tostring(s.n)] then
+      seen[tostring(s.n)] = true
       parts[#parts + 1] = tostring(s.n) .. (s.v and (' (' .. tostring(s.v) .. ')') or '')
     end
   end

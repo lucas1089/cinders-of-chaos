@@ -3,6 +3,7 @@
 
 usage: python3 -I server/tools/install_content_areas.py DATA_DIR [--dry-run] [--only ID,...] [--no-room]
                                                         [--plans DIR] [--config FILE] [--map FILE] [--no-fixed]
+                                                        [--remove-hall]
 
 DATA_DIR is the server's data folder. Read at run time, never hard-coded: every plan of server/tools/areaplan/plans/
 (size, origin, arrival) and server/data/scripts/chaos/hunt_teleports_config.lua (the room, the order of the plans and
@@ -26,8 +27,16 @@ Steps (server/README.md "Hunt teleports"; docs/MAP_GUIDE.md "Content plans"):
   chests   the plan's chest script into data/scripts/chaos_areaplan (`area_planner.py install`)
   places   data/lib/chaos_hunt_places.lua: per placed plan its teleport, sign, arrival, exit, level band and display
            monster (read by data/scripts/chaos/hunt_teleports.lua)
-Slots go to the config's `plans` in order, then to the plans the config does not list (by band floor, display monster
-their most frequent one; the log names them). More plans than slots: refused (raise `modules`).
+Slots go to the plans by level band ascending (floor, ceiling, id), along the corridor from west to east (north
+teleport before south in each column); the config's `plans` gives each its display monster (a plan it does not list
+gets its most frequent one; the log names it). More plans than slots: refused (raise `modules`).
+Hall order (tools/hall_order.py, server/README.md "Hall order"): with tools/hall_hunts.csv present and the config's
+`hall.enabled`, every hunt slot of the hall (the base teleports' places on floors 7, 6 and 5 and the wings' slots)
+gets a hunt by band, the base server's and the planned ones together: the entry floor first, along the corridor from
+west to east, then each floor up. The base teleport tiles are rewritten (a base hunt's teleport with its destination,
+or none where a planned hunt's teleport goes at startup), the display spawns follow their hunts (the base server's
+unmarked display blocks of the hall's cells are taken over) and the places file lists the base hunts and the floors'
+bands. --remove-hall puts every base hunt back where the CSV says it stood (the planned hunts in the wings again).
 Idempotent: a placed plan (every tile there, the same items) and a grown room are recognised and left alone; a plan
 that changed since it was placed (other tiles) is refused with the reason (restore the map from <map>.otbm.bak, which
 is written before the first change when missing, and run the whole install again). The map is written through
@@ -135,9 +144,10 @@ def stack_of(tile):
 
 
 # ------------------------------------------------------------------------------------------------ the room
-def room_layout(world, room, portal):
+def room_layout(world, room, portal, portal_at=None):
     """the grown room: {'tiles': {pos: tile}, 'module': set(pos), 'caps': set(pos) (new place of the ends),
-    'old': set(pos) (tiles of the old ends, replaced), 'slots': [...]}"""
+    'old': set(pos) (tiles of the old ends, replaced), 'slots': [...]}. portal_at: the places that hold a teleport
+    in the base room (the hall order moves them; hall_hunts.csv keeps where they were), else the map says it"""
     z = room['z']
     r0, r1 = room['rows']
     tiles, module, caps, old, cols = {}, set(), set(), set(), []
@@ -190,7 +200,8 @@ def room_layout(world, room, portal):
     slots = []
     for side, x, sx in cols:
         st = world.stack((sx, tn, z))
-        if not st or portal not in st:
+        has = (sx, tn, z) in portal_at if portal_at is not None else bool(st and portal in st)
+        if not has:
             continue
         for row, cell, sign in ((tn, room['cellRows'][0], room['signRows'][0]), (ts, room['cellRows'][1], room['signRows'][1])):
             cells = []
@@ -199,14 +210,20 @@ def room_layout(world, room, portal):
                 if t and not t['flags'] & 1 and len(t['items']) == 1:
                     cells.append((cx, cell, z))
             slots.append(dict(teleport=(x, row, z), sign=(x, sign, z), cells=cells, side=side))
+    # along the corridor: west to east, the north teleport of a column before the south one (the bands ascend that way)
+    slots.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
     return dict(tiles=tiles, module=module, caps=caps, old=old, slots=slots)
 
 
-def room_state(world, lay):
-    """'done' (grown already), 'todo' (can grow), or raises with the reason"""
+def room_state(world, lay, portal=None):
+    """'done' (grown already), 'todo' (can grow), or raises with the reason. A teleport on a copied tile (the hall
+    order puts base hunts in the wings) does not count."""
     if not lay['tiles']:
         return 'done'
-    same = [p for p in lay['module'] if world.stack(p) == stack_of(lay['tiles'][p])]
+
+    def bare(st):
+        return None if st is None else [i for i in st if i != portal]
+    same = [p for p in lay['module'] if bare(world.stack(p)) == bare(stack_of(lay['tiles'][p]))]
     if len(same) == len(lay['module']):
         return 'done'  # the copies stand where the old ends were: grown (the ends were moved then)
     taken = [p for p in lay['tiles'] if world.has(p) and p not in lay['old']]
@@ -229,12 +246,21 @@ def top_monster(plan):
     return sorted(count.items(), key=lambda kv: (-kv[1], kv[0]))[0][0] if count else None
 
 
+def band_of(plans, pid):
+    """the plan's level band (lo, hi); a plan without one sorts last"""
+    lv = plans[pid][1].get('level') or [10 ** 9, 10 ** 9]
+    return (int(lv[0]), int(lv[1]))
+
+
 def plan_order(cfg, plans):
-    """the config's plans that have a plan file, then the other plans by band floor, each {id, monster, ...}"""
-    listed = [dict(p) for p in cfg.get('plans', []) if p['id'] in plans]
-    have = {p['id'] for p in listed}
-    rest = sorted((pid for pid in plans if pid not in have), key=lambda pid: (plans[pid][1]['level'][0], pid))
-    return listed + [dict(id=pid, monster=top_monster(plans[pid][1]), auto=True) for pid in rest]
+    """every plan that has a plan file, by level band ascending (floor, then ceiling, then id), each {id, monster, ...}:
+    the config's entry gives the display monster, minLevel and a pinned `slot`; a plan the config does not list gets
+    its most frequent monster (auto). The config's order does not count: a new hunt lands in its place by its band."""
+    listed = {p['id']: dict(p) for p in cfg.get('plans', []) if p['id'] in plans}
+    out = []
+    for pid in sorted(plans, key=lambda pid: band_of(plans, pid) + (pid,)):
+        out.append(listed.get(pid) or dict(id=pid, monster=top_monster(plans[pid][1]), auto=True))
+    return out
 
 
 def assign_slots(order, slots, placed):
@@ -414,14 +440,23 @@ def spawn_center(block):
     return tuple(int(v) for v in m.groups()) if m else None
 
 
-def update_spawns(text, plan_blocks, displays, spawntime):
-    """the spawn file with the plans' blocks (once each) and exactly the wanted display blocks; returns (text, notes)"""
+def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
+    """the spawn file with the plans' blocks (once each) and exactly the wanted display blocks; returns (text, notes).
+    displays: {id: (monster, cells[, spawntime])}; takeover: display cells of the hall order whose unmarked blocks (the
+    base server's own display monsters) are replaced too"""
     notes = []
     blocks = SPAWN_RE.findall(text)
-    want = {}
-    for pid, (monster, cells) in displays.items():
+    want, times = {}, {}
+    for pid, d in displays.items():
+        monster, cells = d[0], d[1]
         for c in cells:
             want[c] = (pid, monster)
+            times[c] = d[2] if len(d) > 2 and d[2] else spawntime
+    takeover = set(takeover)
+    for b in blocks:
+        if 'chaoshunt=' not in b and 'chaoscontent=' not in b and spawn_center(b) in takeover:
+            text = text.replace(b, '', 1)
+            notes.append('base display spawn at %s taken over by the hall order' % (spawn_center(b),))
     # display blocks no longer wanted (slot moved, plan dropped) go
     for b in blocks:
         m = re.search(r'chaoshunt="([^"]+)"', b)
@@ -438,7 +473,7 @@ def update_spawns(text, plan_blocks, displays, spawntime):
         pid, monster = want[c]
         have = [b for b in centers.get(c, []) if 'chaoshunt="%s"' % pid in b]
         if have:
-            if 'name="%s"' % monster in have[0]:
+            if 'name="%s"' % monster in have[0] and 'spawntime="%d"' % times[c] in have[0]:
                 continue
             text = text.replace(have[0], '', 1)
         elif centers.get(c):
@@ -446,7 +481,7 @@ def update_spawns(text, plan_blocks, displays, spawntime):
             continue
         add.append('\t<spawn centerx="%d" centery="%d" centerz="%d" radius="1" chaoshunt="%s">\n'
                    '\t\t<monster name="%s" x="0" y="0" z="%d" spawntime="%d" />\n\t</spawn>\n'
-                   % (c[0], c[1], c[2], pid, monster, c[2], spawntime))
+                   % (c[0], c[1], c[2], pid, monster, c[2], times[c]))
     if add:
         notes.append('%d display spawn(s) added' % len(add))
     for pid, xml in plan_blocks:
@@ -467,7 +502,7 @@ def update_spawns(text, plan_blocks, displays, spawntime):
 
 
 # ------------------------------------------------------------------------------------------------ places file
-def places_lua(back, entries):
+def places_lua(back, entries, base=None, floors=None, hall=False):
     def q(s):
         return 'nil' if s is None else '"%s"' % s.replace('\\', '\\\\').replace('"', '\\"')
 
@@ -482,7 +517,22 @@ def places_lua(back, entries):
         lines.append('\t\t{id = "%s", name = %s, level = {%d, %d}, teleport = %s, sign = %s, arrival = %s, exit = %s, '
                      'monster = %s},' % (e['id'], q(e['name']), e['level'][0], e['level'][1], pos(e['teleport']),
                                          pos(e['sign']), pos(e['arrival']), pos(e['exit']), q(e.get('monster'))))
-    lines += ['\t}', '}', '']
+    lines.append('\t},')
+    if base is not None:
+        # the base server's hunt teleports of the hall (hall_hunts.csv): the map's teleport leads there; the script
+        # writes the sign and floats the label
+        lines.append('\thall = %s,' % ('true' if hall else 'false'))
+        lines.append('\tbase = {')
+        for e in base:
+            lines.append('\t\t{id = "%s", name = %s, level = {%d, %d}, teleport = %s, sign = %s, dest = %s},'
+                         % (e['id'], q(e['name']), e['level'][0], e['level'][1], pos(e['teleport']), pos(e['sign']),
+                            pos(e['dest'])))
+        lines.append('\t},')
+        lines.append('\tfloors = {')
+        for f in floors or []:
+            lines.append('\t\t{z = %d, level = {%d, %d}},' % (f['z'], f['level'][0], f['level'][1]))
+        lines.append('\t},')
+    lines += ['}', '']
     return '\n'.join(lines)
 
 
@@ -508,11 +558,91 @@ def fixed_plans(dirs, hunts, log=print):
     return out
 
 
+def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log):
+    """the hall order (hall_order.py): every hunt slot of the hall (the base teleports' places and the wings'), the
+    base hunts of `rows` (hall_hunts.csv) and the placed content hunts, assigned by band (hall_on) or as the base
+    server had them (the content hunts in the wings as before). Returns {'assign': {id: slot}, 'portal': {pos: dest
+    or None}, 'displays': {id: (monster, cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...]}"""
+    import hall_order as H
+    room, hall = cfg['room'], cfg['hall']
+    rows = H.hunts_of(rows)  # a `not a hunt` row keeps its teleport where it stands, untouched
+    slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots), hall)
+    mons = {p['id']: p for p in order}
+    ours = [dict(id=pid, lo=int(plans[pid][1]['level'][0]), hi=int(plans[pid][1]['level'][1]), level=None) for pid in placed]
+    hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows] + ours
+    if hall_on:
+        assign = H.assign(hunts, slots, hall)
+    else:
+        assign = H.original(rows, slots)
+        wing = [s for s in slots if s['base'] is None]
+        wing.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
+        assign.update(assign_slots(order, wing, set(placed)))
+    by_row = {r['id']: r for r in rows}
+    portal = {}
+    for s in slots:
+        portal[s['teleport']] = None
+    for hid, s in assign.items():
+        r = by_row.get(hid)
+        if r:
+            portal[s['teleport']] = (r['dest_x'], r['dest_y'], r['dest_z'])
+    displays = {}
+    for hid, s in assign.items():
+        if hid in by_row:
+            if by_row[hid]['display']:
+                displays[hid] = (by_row[hid]['display'], s['cells'], by_row[hid]['spawntime'])
+        else:
+            p = mons.get(hid) or {}
+            if p.get('monster') and p.get('display', True):
+                displays[hid] = (p['monster'], s['cells'], cfg.get('displaySpawntime', 120))
+    takeover = {c for s in slots for c in s['cells']}
+    base = []
+    for hid, s in sorted(assign.items(), key=lambda kv: H.slot_key(hall, kv[1]['teleport'])):
+        r = by_row.get(hid)
+        if r:
+            base.append(dict(id=hid, name=r['name'], level=(r['lo'], r['hi']), teleport=s['teleport'], sign=s['sign'],
+                             dest=(r['dest_x'], r['dest_y'], r['dest_z'])))
+    floors = H.floor_bands(assign, hunts, hall)
+    if hall_on:
+        bad = H.check_ascending(assign, hunts, hall)
+        if bad:
+            raise InstallError('hall order: not ascending: %s' % bad[0])
+        for f in floors:
+            log('hall: floor %d holds levels %d-%d' % (f['z'], f['level'][0], f['level'][1]))
+    log('hall: %d hunts on %d slots (%s)' % (len(assign), len(slots), 'in level order' if hall_on else 'as the base server had them'))
+    return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, base=base, floors=floors, slots=slots)
+
+
+def hall_tiles(world, map_path, portal_want, portal, new_tiles):
+    """{pos: tile} for the hall's teleport tiles whose teleport differs from portal_want ({pos: dest or None}); a tile
+    the room adds in this run is changed in new_tiles itself. Returns (tiles, positions to cut from the map)"""
+    import hall_order as H
+    change = [p for p, d in sorted(portal_want.items()) if p not in new_tiles and H.portal_state(world, p, portal) != (tuple(d) if d else None)]
+    out = {}
+    for p, d in portal_want.items():
+        if p in new_tiles:
+            t = new_tiles[p]
+            new_tiles[p] = H.with_portal(dict(flags=t.get('flags', 0), ground=t.get('ground'), items=t['items']), portal, d)
+    if not change:
+        return out, []
+    data = open(map_path, 'rb').read()
+    ranges = tile_ranges(data, change)
+    for p in change:
+        s, e = ranges[p]
+        try:
+            out[p] = H.with_portal(H.parse_tile(data[s:e + 1], p), portal, portal_want[p])
+        except H.HallError as ex:
+            raise InstallError(str(ex))
+    return out, change
+
+
 def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, config=CONFIG, map_path=None,
-        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS):
+        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS, hall_csv=None, hall_on=None):
     """compiled: {id: out_dir} already compiled (tests); world: a World (tests); fixed_dirs: the folders of the fixed
-    areas (placed at their origin, no teleport). Returns a summary dict."""
+    areas (placed at their origin, no teleport); hall_csv: the base hunts of the hall (default tools/hall_hunts.csv;
+    without it the hall is left as it is); hall_on: False puts the base hunts back where they were (--remove-hall),
+    default the config's hall.enabled. Returns a summary dict."""
     import area_plan_place as PL
+    import hall_order
     cfg = load_config(config) if isinstance(config, str) else config
     portal = cfg['items']['portal']
     if map_path is None:
@@ -528,7 +658,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
     order = plan_order(cfg, plans)
     for p in order:
         if p.get('auto'):
-            log('%s: not in the hunt teleports config: teleport after the listed plans, display monster %s (check its '
+            log('%s: not in the hunt teleports config: teleport in the place of its band, display monster %s (check its '
                 'look in the client; list the plan in the config to choose)' % (p['id'], p['monster']))
     if only:
         bad = [o for o in only if o not in plans and o not in fixed]
@@ -547,9 +677,16 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         if world is None:
             log('reading %s ...' % map_path)
             world = load_world(map_path, portal)
+        # the hall order's data (tools/hall_hunts.csv): the base hunts and where they stood
+        rows = None
+        if room_on and cfg.get('hall'):
+            rows = hall_order.read_csv(hall_csv or hall_order.CSV_PATH)
+        if hall_on is None:
+            hall_on = bool(cfg.get('hall', {}).get('enabled'))
+        base_at = {(r['x'], r['y'], r['z']) for r in rows} if rows else None
         # the room
-        lay = room_layout(world, cfg['room'], portal) if room_on else dict(tiles={}, module=set(), caps=set(), old=set(), slots=[])
-        rstate = room_state(world, lay)
+        lay = room_layout(world, cfg['room'], portal, base_at) if room_on else dict(tiles={}, module=set(), caps=set(), old=set(), slots=[])
+        rstate = room_state(world, lay, portal)
         log('room: %s (%d new tiles, %d replaced, %d teleport slots)' % (
             'grown already' if rstate == 'done' else 'grows', len(set(lay['tiles']) - lay['old']) if rstate == 'todo' else 0,
             len(lay['old'] & set(lay['tiles'])) if rstate == 'todo' else 0, len(lay['slots'])))
@@ -575,7 +712,15 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 owner[p] = pid
         placed_all = {pid for pid, st in state.items() if st in ('done', 'todo')}
         placed = placed_all - set(fixed)
-        slots = assign_slots(order, lay['slots'], placed) if lay['slots'] else {}
+        hl = None
+        if rows:
+            try:
+                hl = hall_layout(world, cfg, rows, lay['slots'], order, plans, placed, hall_on, log)
+            except hall_order.HallError as e:
+                raise InstallError('hall order: %s' % e)
+            slots = {pid: s for pid, s in hl['assign'].items() if pid in placed}
+        else:
+            slots = assign_slots(order, lay['slots'], placed) if lay['slots'] else {}
         if lay['slots']:
             log('room: %d of %d teleport slots used' % (len(slots), len(lay['slots'])))
         # the aid block must be free on the map
@@ -592,6 +737,12 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             if st == 'todo':
                 new_tiles.update(areas[pid]['tiles'])
         remove = sorted(lay['old']) if rstate == 'todo' else []
+        if hl:
+            ht, cut = hall_tiles(world, map_path, hl['portal'], portal, new_tiles)
+            if ht:
+                log('hall: %d teleport tile(s) to rewrite' % len(ht))
+            new_tiles.update(ht)
+            remove = sorted(set(remove) | set(cut))
         summary = dict(room=rstate, areas=state, slots={k: v['teleport'] for k, v in slots.items()}, new_tiles=len(new_tiles),
                        removed=len(remove))
         if new_tiles and not dry:
@@ -617,9 +768,12 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             text = open(sp, encoding='latin-1').read()
             plan_blocks = [(pid, open(os.path.join(areas[pid]['out'], pid + '-spawn.xml'), encoding='latin-1').read())
                            for pid in sorted(placed_all)]
-            mons = {p['id']: p['monster'] for p in order}
-            displays = {pid: (mons[pid], s['cells']) for pid, s in slots.items() if mons.get(pid)}
-            new, notes = update_spawns(text, plan_blocks, displays, cfg.get('displaySpawntime', 120))
+            if hl:
+                displays, takeover = hl['displays'], hl['takeover']
+            else:
+                mons = {p['id']: p['monster'] for p in order if p.get('display', True)}
+                displays, takeover = {pid: (mons[pid], s['cells']) for pid, s in slots.items() if mons.get(pid)}, ()
+            new, notes = update_spawns(text, plan_blocks, displays, cfg.get('displaySpawntime', 120), takeover)
             for n in notes:
                 log('spawns: ' + n)
             if new != text:
@@ -643,7 +797,12 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             entries.append(dict(id=pid, name=a['man'].get('name') or a['plan'].get('name') or pid, level=a['plan']['level'],
                                 teleport=slots[pid]['teleport'], sign=slots[pid]['sign'], arrival=a['man']['arrival'],
                                 exit=ex.get('at'), monster=p.get('monster')))
-        text = places_lua(cfg['room']['back'], entries)
+        if hl:
+            text = places_lua(cfg['room']['back'], entries, hl['base'], hl['floors'] if hall_on else [], hall_on)
+            summary['hall'] = dict(on=hall_on, assign={k: v['teleport'] for k, v in hl['assign'].items()},
+                                   floors=hl['floors'], displays={k: v[0] for k, v in hl['displays'].items()})
+        else:
+            text = places_lua(cfg['room']['back'], entries)
         dst = os.path.join(data_dir, PLACES_REL)
         old = open(dst, encoding='utf-8').read() if os.path.isfile(dst) else None
         if old != text:
@@ -663,7 +822,7 @@ def main(argv):
     args, pos, i = {}, [], 0
     while i < len(argv):
         a = argv[i]
-        if a in ('--dry-run', '--no-room', '--no-fixed'):
+        if a in ('--dry-run', '--no-room', '--no-fixed', '--remove-hall'):
             args[a] = True
         elif a in ('--only', '--plans', '--config', '--map'):
             if i + 1 >= len(argv):
@@ -685,7 +844,7 @@ def main(argv):
     try:
         run(pos[0], dry=bool(args.get('--dry-run')), only=only, room_on=not args.get('--no-room'),
             plans_dir=args.get('--plans', PLANS_DIR), config=args.get('--config', CONFIG), map_path=args.get('--map'),
-            fixed_dirs=() if args.get('--no-fixed') else FIXED_DIRS)
+            fixed_dirs=() if args.get('--no-fixed') else FIXED_DIRS, hall_on=False if args.get('--remove-hall') else None)
     except InstallError as e:
         print('refused: %s' % e)
         return 1

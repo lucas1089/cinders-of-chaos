@@ -38,8 +38,14 @@ for _, e in ipairs(ChaosClassLooks.retired) do
 	retiredLooks[#retiredLooks + 1] = e.male
 	retiredLooks[#retiredLooks + 1] = e.female
 end
+-- as shop.lua: the retired donor art class outfits (1559 Archmage) too
+for _, o in ipairs(Chaos.classes.retiredOutfits) do
+	retiredLooks[#retiredLooks + 1] = o.lookType
+end
 local EX = K.exclusions({classLooks = ChaosClassLooks.looks, classOutfits = Chaos.classes.outfits,
 	achievements = achievements, season = season, seasonpass = seasonpass, looks = retiredLooks})
+ok(EX.looks[1559], "the retired Archmage 1559 is never sold")
+ok(EX.looks[1551] and EX.looks[1558], "the donor art class outfits stay excluded")
 for _, e in pairs(ChaosClassLooks.looks) do
 	ok(EX.looks[e.male] and EX.looks[e.female], "class look " .. e.name .. " excluded")
 end
@@ -220,12 +226,31 @@ function CreatureEvent(name) return obj(registry, name) end
 function GlobalEvent(name) return obj(registry, name) end
 function TalkAction(words) return obj(talks, words) end
 function addEvent() end
-function ItemType(id) return {getClientId = function() return id end, getName = function() return "item " .. id end} end
+-- not stackable here (one item per count): Backpack of Holding, an exercise chest; everything else stackable
+local NOSTACK = {[2365] = true, [27761] = true}
+function ItemType(id) return {getClientId = function() return id end, getName = function() return "item " .. id end,
+	getId = function() return id end, isStackable = function() return not NOSTACK[id] end} end
 json = {encode = function(t) sent[#sent + 1] = t; return "" end, decode = function(b) return b end}
 
 local DB = {coins = {}, purchases = {}, gifts = {}, orders = {}, queries = {}}
 local players = {}
-Game = {getPlayers = function() local l = {} for _, p in pairs(players) do l[#l + 1] = p end return l end}
+-- items made by the store delivery (store_delivery.lua): placed into a player's purse, inbox or backpack mock below
+local function mockItem(id, n)
+	local it = {id = id, count = n or 1}
+	function it:getWeight() return self.count end
+	function it:remove()
+		local p = self.holder
+		if p then
+			p.items[self.id] = (p.items[self.id] or 0) - self.count
+			p.placed[self.where] = (p.placed[self.where] or 0) - 1
+			self.holder = nil
+		end
+		return true
+	end
+	return it
+end
+Game = {getPlayers = function() local l = {} for _, p in pairs(players) do l[#l + 1] = p end return l end,
+	createItem = function(id, n) return mockItem(id, n) end}
 db = {
 	escapeString = function(s) return "'" .. tostring(s) .. "'" end,
 	asyncQuery = function() end,
@@ -393,6 +418,26 @@ local function newPlayer(name, opt)
 	function p:addShader(id) self.shaders[id] = true end
 	function p:addPremiumDays(d) self.premDays = (self.premDays or 0) + d end
 	function p:removeItem(id, c) self.items[id] = (self.items[id] or 0) - c end
+	-- the purse (store inbox), the depot inbox and the backpack (store_delivery.lua places items there)
+	p.placed = {}
+	local function place(where, it)
+		it.holder, it.where = p, where
+		p.items[it.id] = (p.items[it.id] or 0) + it.count
+		p.placed[where] = (p.placed[where] or 0) + 1
+		p.stacks = p.stacks or {}
+		p.stacks[#p.stacks + 1] = {where = where, id = it.id, count = it.count}
+		return RETURNVALUE_NOERROR or 0
+	end
+	function p:getStoreInbox()
+		if self.noPurse then return nil end
+		return {addItemEx = function(_, it) if self.full or self.purseFull then return 1 end return place("purse", it) end}
+	end
+	function p:getInbox()
+		if not self.hasInbox then return nil end
+		return {addItemEx = function(_, it) if self.full then return 1 end return place("inbox", it) end}
+	end
+	function p:addItemEx(it) if self.full or self.bagFull then return 1 end return place("backpack", it) end
+	function p:getFreeCapacity() return self.cap or 1000000 end
 	function p:getPosition() return {sendMagicEffect = function() end} end
 	function p:sendExtendedOpcode() end
 	function p:sendTextMessage(_, text) self.messages[#self.messages + 1] = text end
@@ -478,6 +523,11 @@ Shop.plateFrame(A, "violet"); eq(Shop.frameOf(A), nil, "a frame not owned cannot
 Shop.plateFrame(A, "frost"); eq(Shop.frameOf(A), "frost", "back to frost")
 -- addons of an outfit everyone has
 eq(buy(A, "addons:128"), "Purchase complete", "addons"); eq(A.outfits[136], 3, "female citizen addons")
+-- unlocks stay unlocks (owner 2026-10-16, store items to the purse): outfits, addons, mounts, wings, auras, frames,
+-- services put nothing in the purse and send no delivery line
+eq(next(A.placed), nil, "unlocks: nothing placed in the purse, inbox or backpack")
+eq(buy(A, "wings:1"), "Purchase complete", "wings") eq(next(A.placed), nil, "wings: an unlock, not an item")
+for _, m in ipairs(A.messages) do ok(not m:find("Delivered", 1, true), "no delivery line for an unlock: " .. m) end
 
 -- the sale price is what is charged; a stale price is refused
 local c, page, o, e = find(A, "wings:1")
@@ -533,6 +583,7 @@ ok(eg ~= nil, "regalia in view")
 -- starter packs: once per account, level gate, hidden afterwards, pact days when the Pact exists
 eq(buy(A, "starter:novice"), "Purchase complete", "novice pack")
 ok(A.auras[17] and A.items[8472] == 100 and A.items[26031] == 100 and not A.items[27990], "novice parts (Supreme Health Potions, no stamina since 2026-10-15)"); eq(pactDays, 3, "pact days")
+eq(A.placed.purse, 2, "the starter pack's potions in the purse")
 ok(not find(A, "starter:novice"), "hidden once bought")
 local A2 = newPlayer("Alicealt", {account = A.account, level = 10})
 ok(not find(A2, "starter:novice"), "hidden for the whole account")
@@ -570,35 +621,44 @@ for _, id in ipairs({2304, 2288, 2315, 2274, 2268, 2311, 2265, 2273}) do eq(size
 ok(sizes[2278] and sizes[2261], "Shackle and Dispel packs")
 eq(Shop.byKey["item:2304x100"].cost, math.ceil(84 * 100 / 1000), "100 Searing Orb Runes: 9 coins (the old Supplies offer, same key)")
 ok(Shop.byKey["item:2304x500"].cost < 5 * Shop.byKey["item:2304x100"].cost, "the big pack is cheaper per rune")
--- delivery: stacks of 100 into the backpack, the rest into the store inbox
+-- delivery (owner 2026-10-16: store items go to the purse): stacks of 100 into the purse
 local Rune = newPlayer("Runa", {level = 60})
-Rune.inbox = {}
-function Rune:getInbox() local me = self return {addItem = function(_, id, n) me.inbox[#me.inbox + 1] = {id, n} return true end} end
 DB.coins[Rune.account] = 1000
 eq(buy(Rune, "item:2304x500"), "Purchase complete", "500 Searing Orb Runes")
-eq(Rune.items[2304], 500, "all in the backpack when there is room")
-local roomLeft = 200
-local realGive = Chaos.giveItem
-Chaos.giveItem = function(p, id, count)
-	if p == Rune then
-		local n = math.min(count, roomLeft)
-		roomLeft = roomLeft - n
-		p.items[id] = (p.items[id] or 0) + n
-		return n
-	end
-	return realGive(p, id, count)
-end
-eq(buy(Rune, "item:2268x500"), "Purchase complete", "500 Reaper's Runes with room for 200")
-eq(Rune.items[2268], 200, "two stacks carried")
-eq(#Rune.inbox, 3, "three stacks to the store inbox")
-eq(Rune.inbox[1][2], 100, "stacks of 100")
-Rune.getInbox = function() return nil end
+eq(Rune.items[2304], 500, "all delivered")
+eq(Rune.placed.purse, 5, "five stacks in the purse")
+eq(Rune.stacks[1].count, 100, "stacks of 100")
+ok(Rune.messages[#Rune.messages]:find("purse"), "told: delivered to the purse")
+-- the purse cannot take them: the depot inbox (weight free), then the backpack
+Rune.purseFull, Rune.hasInbox = true, true
+eq(buy(Rune, "item:2268x250"), "Purchase complete", "250 Reaper's Runes with the purse refusing")
+eq(Rune.items[2268], 250, "all delivered") eq(Rune.placed.inbox, 3, "three stacks to the depot inbox")
+ok(Rune.messages[#Rune.messages]:find("depot inbox"), "told where: " .. Rune.messages[#Rune.messages])
+-- no purse, no inbox: the backpack
+Rune.purseFull, Rune.hasInbox, Rune.noPurse = nil, nil, true
+eq(buy(Rune, "item:2265x100"), "Purchase complete", "100 Mending Runes without a purse")
+eq(Rune.placed.backpack, 1, "the backpack") ok(Rune.messages[#Rune.messages]:find("no purse"), "told why")
+-- nowhere: nothing kept, refunded
+Rune.bagFull = true
 local coinsR = DB.coins[Rune.account]
-roomLeft = 150
-eq(buy(Rune, "item:2265x250"), "Error", "no inbox and no room: refused")
+eq(buy(Rune, "item:2265x250"), "Error", "no purse, no inbox, no room: refused")
 eq(DB.coins[Rune.account], coinsR, "refunded")
-eq(Rune.items[2265] or 0, 0, "nothing kept")
-Chaos.giveItem = realGive
+eq(Rune.items[2265], 100, "nothing more kept (stacks placed before the failure taken back)")
+-- capacity: the purse counts in the inventory weight, so an item too heavy goes to the depot inbox
+local Heavy = newPlayer("Heavy", {level = 60})
+Heavy.cap, Heavy.hasInbox = 10, true
+DB.coins[Heavy.account] = 1000
+eq(buy(Heavy, "item:2304x100"), "Purchase complete", "100 runes, capacity 10")
+eq(Heavy.placed.inbox, 1, "too heavy for the purse: depot inbox") eq(Heavy.placed.purse, nil, "not the purse")
+ok(Heavy.messages[#Heavy.messages]:find("capacity"), "told: capacity")
+-- a bundle whose later part fails takes back the items placed in the purse
+local Bun = newPlayer("Bundler", {level = 30})
+DB.coins[Bun.account] = 5000
+function Bun:addMount() end -- the mount part fails after the potions are in the purse
+eq(buy(Bun, "starter:adventurer"), "Error", "a failing part")
+eq(DB.coins[Bun.account], 5000, "refunded")
+eq(Bun.placed.purse, 0, "the potions placed before were taken back out of the purse")
+for id, n in pairs(Bun.items) do eq(n, 0, "nothing kept of item " .. id) end
 
 -- gifts: online, offline (delivered at login), refused targets
 local Cara = newPlayer("Cara", {})

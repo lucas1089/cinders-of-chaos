@@ -80,7 +80,9 @@ return {
 		columns = 8, stride = 40, maxSlots = 64,
 		inner = {w = 21, h = 15}, -- inner floor size (walls around it)
 
-		-- entry: a forcefield next to every temple (first free offset) or at fixed positions
+		-- entry: the Guild Hall Portal of every town, placed by cityportals.lua (cityportals_config.lua: the Hall of
+		-- Services' portal room in Cinderhold and Mirewake, a fixed spot next to every other temple; these offsets only
+		-- when neither is free), or at fixed positions ({x, y, z, town?}; set: replaces all of that)
 		portalPositions = {},
 		portalOffsets = {{3, -2}, {-3, -2}, {3, 2}, {-3, 2}, {4, 0}, {-4, 0}, {0, 4}, {0, -4}},
 		exitPosition = nil, -- where the hall's exit forcefield leads ({x, y, z}); nil = the player's temple

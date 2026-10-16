@@ -154,6 +154,14 @@ function GlobalEvent(name)
 	return o
 end
 EventCallback = {register = function() return true end}
+local moves = {}
+function MoveEvent()
+	local o = {}
+	function o:type(t) self.t = t end
+	function o:aid(a) self.a = a end
+	function o:register() moves[self.a] = o end
+	return o
+end
 MESSAGE_EVENT_ADVANCE, MESSAGE_STATUS_WARNING = 19, 18
 TILESTATE_PROTECTIONZONE, ITEM_ATTRIBUTE_TEXT, CONST_ME_TELEPORT = 1, 9, 11
 local clock = 0
@@ -209,6 +217,12 @@ local function hallTile(off) return addTile(H.x + off[1], H.y + off[2], H.z, {pz
 local hallTiles = {hallTile(cfg.hall.arrival), hallTile(cfg.slots.sign)}
 for _, o in ipairs(cfg.slots.dummies) do hallTiles[#hallTiles + 1] = hallTile(o) end
 for _, o in ipairs(cfg.slots.benches) do hallTiles[#hallTiles + 1] = hallTile(o) end
+-- the plan's exit portal, as the installer leaves it: areagen's shared action id
+local exitTile = hallTile(cfg.hall.exit)
+local exitItem = {id = 1387, aid = 47951, attrs = {}}
+function exitItem:getActionId() return self.aid end
+function exitItem:setActionId(v) self.aid = v end
+exitTile.items[1] = exitItem
 
 local nextId = 0
 local function newPlayer(x, y, z)
@@ -255,6 +269,24 @@ eq(Tile(K.slotPos(H, cfg.slots.dummies[1])).items[1].id, 27751, "an exercise dum
 eq(Tile(K.slotPos(H, cfg.slots.dummies[2])).items[1].id, 27752, "the other dummy")
 IH.placeFixtures()
 eq(#created, #cfg.slots.dummies + #cfg.slots.benches + 1, "placed once (found again by the action id)")
+-- the exit gets its own action id (migrated from areagen's 47951, idempotent), a look text and an effect
+eq(cfg.aid.exit, 47911, "the exit's own action id in the hall's block")
+eq(exitItem.aid, cfg.aid.exit, "the exit portal re-tagged at startup")
+IH.placeFixtures()
+eq(exitItem.aid, cfg.aid.exit, "and found again (idempotent)")
+eq(#exitTile.items, 1, "no second portal")
+eq(ChaosCityPortals.kindOf(cfg.aid.exit), "idlehall", "a labelled city portal")
+ok(moves[cfg.aid.exit], "the exit's step-in")
+do
+	local w = {pos = nil}
+	function w:getPlayer() return self end
+	function w:getTown() return town(1, 1000, 1000, 7) end
+	function w:teleportTo(p) self.pos = p end
+	local at = K.slotPos(H, cfg.hall.exit)
+	moves[cfg.aid.exit].onStepIn(w, exitItem, pos(at.x, at.y, at.z), pos(at.x, at.y + 1, at.z))
+	ok(w.pos and w.pos.x == 1000 and w.pos.y == 1000, "the exit leads to the temple")
+	eq(table.remove(effects).e, cfg.effect, "with the teleport effect") -- (out of the way of the effect counts below)
+end
 
 -- run the think for `ms` of game time (each tick one slice)
 local function run(ms)

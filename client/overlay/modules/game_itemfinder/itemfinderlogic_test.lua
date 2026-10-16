@@ -109,4 +109,31 @@ if ok and CodexData then
   eq(real[32351] ~= nil, true, 'a gathering material in the Codex')
 end
 
+-- "Where to find" in the item menu (live test winpkg-35: a right-click on grass offered it)
+do
+  local function thing(id, flags)
+    local t = { id = id }
+    function t:getId() return self.id end
+    for _, f in ipairs({ 'isItem', 'isGround', 'isGroundBorder', 'isPickupable', 'isNotMoveable' }) do
+      t[f] = function() return flags[f] == true end
+    end
+    return t
+  end
+  local grass = thing(4526, { isItem = true, isGround = true, isNotMoveable = true })
+  local border = thing(4542, { isItem = true, isGroundBorder = true, isNotMoveable = true })
+  local wall = thing(1025, { isItem = true, isNotMoveable = true })
+  local rope = thing(3003, { isItem = true, isPickupable = true })
+  local chest = thing(1738, { isItem = true }) -- moveable, not pickupable
+  local rat = thing(21, {}) -- a creature
+  eq(L.menuThing(grass, grass), nil, 'bare ground: no Where to find')
+  eq(L.menuThing(border, border), nil, 'a ground border')
+  eq(L.menuThing(wall, wall), nil, 'a wall')
+  eq(L.menuThing(rat, nil), nil, 'a creature')
+  eq(L.menuThing(rope, rope), rope, 'an item to pick up')
+  eq(L.menuThing(chest, chest), chest, 'a moveable item')
+  eq(L.menuThing(grass, rope), rope, 'a rope lying on grass')
+  eq(L.menuThing(nil, nil), nil, 'nothing')
+  eq(L.menuThing(thing(0, { isItem = true, isPickupable = true }), nil), nil, 'no client id')
+end
+
 print('itemfinderlogic_test: ' .. n .. ' checks ok')

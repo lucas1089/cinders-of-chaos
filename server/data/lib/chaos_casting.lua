@@ -13,8 +13,9 @@
 -- event of engine patch 0008 (ChaosSpellEvents "cast": exact mana and health), else the mana that went down by the
 -- second dispatcher tick. The cast is polled every cfg.pollMs; it is interrupted, and the stored cost given back
 -- (mana, health and the spell's own cooldown; the group cooldown stays), when the caster moves, gets a new paralysis,
--- dies, logs out, casts another spell, opens a town portal or cancels (client), or when spec.check / spec.fire fail
--- at the end. Everything runs on the server: the client only draws the bar (extended opcode ChaosOpcodes.castbar,
+-- dies, logs out, casts another spell of the cast's group (attack: a heal, a healing rune or a support spell goes
+-- through without touching it, server/README.md "Cooldown channels"), opens a town portal or cancels (client), or when
+-- spec.check / spec.fire fail at the end. Everything runs on the server: the client only draws the bar (extended opcode ChaosOpcodes.castbar,
 -- client game_castbar) and can ask to cancel. A cast is refunded at most once (cast.refunded).
 -- Pure parts (C.step, C.refundOnce) are tested in tests/casting_test.lua with a mocked engine. Lua 5.1 / 5.3.
 
@@ -27,6 +28,7 @@ C.cfg = C.cfg or {
 	interruptOnParalyze = true, -- a paralysis that starts during the cast interrupts it (one already there does not)
 	cooldownAfterRefundMs = 100, -- a refunded cooldown is replaced by this one, so the client's icon is told it ended
 	minMs = 200, maxMs = 5000, -- sane cast times
+	castGroup = 1, -- the group of a cast-time spell without spec.group (SPELLGROUP_ATTACK: all of them)
 }
 C.active = C.active or {} -- player id -> cast
 C.serial = C.serial or 0
@@ -216,6 +218,17 @@ local function finish(player, cast, result, text)
 	end
 end
 
+-- Cooldown channels (server/README.md): another spell interrupts a cast only when it is of the cast's own group (an
+-- attack spell or rune during an attack cast). A heal, a healing rune or a support spell is another channel and never
+-- cuts it off. An unknown group (an event without one) interrupts, as before.
+function C.interrupts(cast, group)
+	group = tonumber(group)
+	if not group or group == 0 then
+		return true
+	end
+	return group == (cast.group or C.cfg.castGroup)
+end
+
 -- interrupt the player's cast, if any (reason: see C.TEXTS). Returns true when there was one.
 function C.interrupt(player, reason, text)
 	if not player then
@@ -320,7 +333,7 @@ function C.begin(player, spec, ctx)
 	local pos = player:getPosition()
 	local ms = C.clampMs(spec.ms)
 	local cast = {
-		pid = pid, serial = C.serial, spec = spec, ctx = ctx, spellId = spec.spellId,
+		pid = pid, serial = C.serial, spec = spec, ctx = ctx, spellId = spec.spellId, group = spec.group,
 		startMs = now, endMs = now + ms, pos = {x = pos.x, y = pos.y, z = pos.z},
 		paralysedAtStart = isParalysed(player), manaBefore = player:getMana(), fxAt = now,
 	}
@@ -396,7 +409,7 @@ if ChaosSpellEvents and ChaosSpellEvents.set then
 			if C.waiting then
 				C.waiting[cast.serial] = nil
 			end
-		elseif cast.spellId ~= id then
+		elseif cast.spellId ~= id and C.interrupts(cast, group) then
 			C.interrupt(player, "spell")
 		end
 	end)
