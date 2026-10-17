@@ -49,6 +49,12 @@ local U = ChaosClassUnlocks
 local K = ChaosClassUnlocksCore
 U.core = K
 
+-- the open beta (beta_config.lua enabled) opens every class: see class_unlocks_core.lua isLocked
+do
+	local beta = Chaos.beta or dofile("data/scripts/chaos/beta_config.lua")
+	K.config.betaOpen = beta.enabled == true
+end
+
 local function cfg()
 	return K.config
 end

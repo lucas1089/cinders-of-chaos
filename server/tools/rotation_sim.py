@@ -29,9 +29,6 @@ The gap is the longest time between two casts over HORIZON seconds from a fresh 
 attack group cooldown. The damage is relative (no passive tree, no class factor, no auto attack, no minions); the
 change of a class's spell damage bounds the change of its total.
 
-The 2.0 s rule holds from level 15 (GAP_FROM) up, at every band and every preset level of a class that has an attack
-spell there; below level 15 a class may have one spell on a longer cooldown (a new character's first levels).
-
 --report prints, per class and level band (15 / 30 / 60 / 100 / 300 / 600 / 1000), the best set of at most 5 with
 its gap and damage against the measured kit (the C4 harness: every Chaos attack spell of the class on cooldown);
 --class / --level also list the class's spells with their numbers.
@@ -55,9 +52,7 @@ CLIENT_DATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_helperrot
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
 HORIZON = 120.0               # seconds simulated from a fresh start
 MAX_SPELLS = 5
-GAP_LIMIT = 2.0
 BANDS = (15, 30, 60, 100, 300, 600, 1000)
-GAP_FROM = 15                 # the 2.0 s rule holds from this level up (below: exempt, see the docstring)
 NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation the simulator builds
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
@@ -310,7 +305,7 @@ def class_spells(spells, cls, level, group='attack'):
 
 # ---------------------------------------------------------------------------------------------------------- sim
 class Spell(object):
-    __slots__ = ('chaos', 'words', 'name', 'id', 'cd', 'gcd', 'sec', 'seccd', 'cast', 'dmg', 'dmg5', 'chi', 'gain', 'keep')
+    __slots__ = ('chaos', 'words', 'name', 'id', 'cd', 'gcd', 'sec', 'seccd', 'cast', 'dmg', 'dmg5', 'chi', 'gain', 'keep', 'area')
 
 
 def prepare(spells, model, cls, level):
@@ -332,6 +327,7 @@ def prepare(spells, model, cls, level):
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)
         p.keep = 'keep' in m['flags']
+        p.area = m['t5'] >= 3  # the same rule as creatures(): an area spell hits 3+ of a pack
         out.append(p)
     return out
 
@@ -342,8 +338,9 @@ def score(one, five):
 
 
 def order(spells):
-    """priority: the debuffs kept up first, then the most damage per cast (the harness: the strongest ready spell)"""
-    return sorted(spells, key=lambda s: (not s.keep, -score(s.dmg, s.dmg5), s.words))
+    """priority: the debuffs kept up first, then the area spells (3+ targets of the pack), then the single-target spells;
+    inside each group the longest cooldown first, then the most damage per cast (the harness: the strongest ready spell)"""
+    return sorted(spells, key=lambda s: (not s.keep, not s.area, -s.cd, -score(s.dmg, s.dmg5), s.words))
 
 
 def simulate(rotation, horizon=HORIZON):
@@ -434,8 +431,7 @@ def search(pool, ref, limit, by_rate, by_cast):
             _, gap, d1, d5 = simulate(rot)
             share = min(d1 / ref['dps1'], d5 / ref['dps5']) if ref and ref['dps1'] and ref['dps5'] else 1.0
             short = share < KEEP_SHARE
-            key = (gap > GAP_LIMIT + 1e-9, round(gap, 2) if gap > GAP_LIMIT + 1e-9 else 0, short,
-                   -round(share, 3) if short else 0, -score(d1, d5), k)
+            key = (short, -round(share, 3) if short else 0, -score(d1, d5), k)
             if best is None or key < best[0]:
                 best = (key, rot, gap, d1, d5)
     return best
@@ -466,11 +462,10 @@ def breakpoints(spells, model, cls):
 
 
 def creatures(rotation, model):
-    """the helper's monster count per spell: an area spell (3+ of the pack) waits for 2 monsters when the rest of the
-    rotation still casts every 2 s on a lone target; otherwise 1, so a lone target never waits"""
+    """the helper's monster count per spell: an area spell (3+ of the pack) waits for 2 monsters when the rotation has a
+    single-target spell to cast on a lone target; otherwise 1, so a lone target never leaves the helper idle"""
     area = [model[s.words]['t5'] >= 3 for s in rotation]
-    single = [s for s, a in zip(rotation, area) if not a]
-    ok = bool(single) and simulate(single)[1] <= GAP_LIMIT + 1e-9
+    ok = any(not a for a in area)
     return [2 if a and ok else 1 for a in area]
 
 

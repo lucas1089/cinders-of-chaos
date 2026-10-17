@@ -223,6 +223,8 @@ type = function(x) if getmetatable(x) == Player_mt then return "userdata" end re
 dofile("data/scripts/chaos/class_unlocks.lua")
 local U = ChaosClassUnlocks
 
+-- the open beta (beta_config.lua enabled) opens every class; the lock rules below run with the beta off
+ChaosClassUnlocksCore.config.betaOpen = false
 -- ------------------------------------------------------------------ API
 local alice = newPlayer({name = "Alice", account = 7, voc = 23})
 local alt = newPlayer({name = "Alt", account = 7, voc = 4})
@@ -318,3 +320,10 @@ ChaosCommands.handlers.classes(bob, "")
 assert(bob.messages[#bob.messages]:find("Locked classes: .*Necromancer"), "the menu's Character Info lists the state")
 
 print("class_unlocks_test: OK")
+
+-- ------------------------------------------------------------------ open beta
+ChaosClassUnlocksCore.config.betaOpen = true
+eq(U.isUnlocked(bob, "necromancer"), true, "beta: every class open to everyone")
+eq(U.isUnlocked(7, "templar"), true, "beta: account id form too")
+ChaosClassUnlocksCore.config.betaOpen = false
+eq(U.isUnlocked(bob, "necromancer"), false, "beta off: the lock is back")

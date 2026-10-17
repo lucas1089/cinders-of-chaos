@@ -63,7 +63,12 @@ reset()
 ev.onHealthChange(creature(2, 101, 100, false), player, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, nil)
 eq(#effects, 0, "no crit without the engine patch")
 ev.onHealthChange(creature(2, 101, 100, false), player, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, true)
-eq(#effects, 1); eq(effects[1].id, ChaosFx.crit_burst); eq(#packets, 1); eq(packets[1].text, "CRIT!")
+-- the label is off by default (owner 2026-10-17: the animation, not the word)
+eq(#effects, 1); eq(effects[1].id, ChaosFx.crit_burst); eq(#packets, 0, "no CRIT! label by default")
+reset()
+fx.config.critLabel = true
+ev.onHealthChange(creature(2, 101, 100, false), player, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE, true)
+eq(#packets, 1); eq(packets[1].text, "CRIT!")
 eq(packets[1].bytes[1], 0x84, "animated text opcode")
 
 -- throttle: an area crit on 20 monsters shows perSource bursts and one label
@@ -75,6 +80,7 @@ eq(#effects, fx.config.perSource, "throttled bursts"); eq(#packets, 1, "one labe
 clock = clock + fx.config.windowMs
 ev.onHealthChange(creature(40, 140, 100, false), player, -50, COMBAT_FIREDAMAGE, 0, COMBAT_NONE, ORIGIN_SPELL, true)
 eq(#effects, fx.config.perSource + 1, "window reopens")
+fx.config.critLabel = false
 -- same tile twice in a row: once
 reset()
 fx.element(pos(5, 5), COMBAT_FIREDAMAGE, -10, 1); fx.element(pos(5, 5), COMBAT_FIREDAMAGE, -10, 2)

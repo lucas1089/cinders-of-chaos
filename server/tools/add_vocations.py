@@ -539,6 +539,42 @@ def patch_potions(text, names=None):
     return ''.join(parts), count[0]
 
 
+# items.xml: the Look text of a potion ("This potion can only be consumed by knights of level 80 or higher.") names the stock
+# classes. It gets the classes of the potion's refusal text in potions.lua (patch_potions), so both say the same.
+ITEM_POTION_TEXT = re.compile(r'(value=")This potion can only be consumed by [^"]*?( of level \d+ or higher)?\.(")')
+POTION_REFUSAL = re.compile(r'description\s*=\s*"(?:Only (.*?)|Anyone)( of level (\d+) or above)? may drink this (?:fluid|potion)\.')
+
+
+def patch_item_potion_texts(items_text, potions_text):
+    """the Look text of every potion of potions.lua that items.xml describes as "can only be consumed by": the classes of
+    its refusal text. Returns (new items.xml text, number of items changed); a re-run changes nothing"""
+    new_text = {}
+    parts = POTION_ENTRY.split(potions_text)
+    for i in range(1, len(parts) - 1, 2):
+        item_id = re.search(r'\[(\d+)\]', parts[i]).group(1)
+        m = POTION_REFUSAL.search(parts[i + 1])
+        if not m or not m.group(1):
+            continue
+        level = int(m.group(3)) if m.group(3) else 0
+        new_text[item_id] = 'This potion can only be consumed by %s%s.' % (
+            m.group(1), (' of level %d or higher' % level) if level else '')
+    count = [0]
+
+    def item_block(m):
+        item_id = re.search(r'id="(\d+)"', m.group(0))
+        if not item_id or item_id.group(1) not in new_text:
+            return m.group(0)
+        sentence = new_text[item_id.group(1)]
+        block = re.sub(r'(value=")This potion can only be consumed by [^"]*(")',
+                       lambda t: t.group(1) + sentence + t.group(2), m.group(0), count=1)
+        if block != m.group(0):
+            count[0] += 1
+        return block
+    # an item with a body: not a self-closing <item ... /> (that one would swallow the next item)
+    out = re.sub(r'<item\s[^>]*\bid="\d+"[^>]*[^/>]>(?:(?!<item\s).)*?</item>', item_block, items_text, flags=re.S)
+    return out, count[0]
+
+
 # strengthening_potions.lua: the mastermind potion (7440) asks Player.isMage, which knows the Sorcerer and the Druid
 # ids only (1, 2, 5, 6): the Illusionist (10) and the Necromancer line were refused. The stock mastermind list of
 # potions.lua with the Necromancer line instead, and our class names in the text.
@@ -632,6 +668,14 @@ def main():
                 changes[p] = new
         else:
             print('%s: not found, skipped' % '/'.join(rel))
+    # the Look text of the potions in items.xml names the same classes as the refusal text of potions.lua
+    pot = os.path.join(data, 'actions', 'scripts', 'other', 'potions.lua')
+    if os.path.exists(pot):
+        items_now = changes.get(paths['items'], read(paths['items']))
+        items_new, nit = patch_item_potion_texts(items_now, changes.get(pot, read(pot)))
+        print('items.xml: %d potion descriptions name the new classes' % nit)
+        if nit:
+            changes[paths['items']] = items_new
     if dry:
         print('dry run: nothing written')
         return

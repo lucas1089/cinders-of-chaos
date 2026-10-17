@@ -21,6 +21,8 @@ local M = ChaosClassUnlocksCore
 
 M.config = {
 	table = "chaos_class_unlocks",
+	-- true while the open beta is on (class_unlocks.lua sets it from beta_config.lua enabled); false at launch
+	betaOpen = false,
 	-- staff never meets the lock: a player of this group id or higher, or an account of this type or higher
 	-- (ACCOUNT_TYPE_COMMUNITYMANAGER = 5, ACCOUNT_TYPE_GOD = 6). Group 4 = gamemaster, as the admin panel's minGroup.
 	bypass = {minGroup = 4, minAccountType = 5},
@@ -117,7 +119,11 @@ function M.classOfVocation(vocId, c)
 end
 
 function M.isLocked(classKey, c)
-	local class = conf(c).classes[classKey]
+	local cf = conf(c)
+	local class = cf.classes[classKey]
+	-- the open beta (beta_config.lua enabled, set in class_unlocks.lua as config.betaOpen): every class is open to all
+	-- accounts; the switch goes off at launch and the locks come back
+	if cf.betaOpen then return false end
 	return class ~= nil and class.locked == true
 end
 

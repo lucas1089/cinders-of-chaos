@@ -11,7 +11,7 @@ end
 local function ok(c, what) eq(not not c, true, what) end
 
 -- every class of docs/CLASSES.md has presets; at the level bands every preset has at most 5 spells and from level 15
--- up never 2 s without one (the generator's own check, tools/rotation_sim_test.py, runs the full simulation)
+-- (the 2 s rule was removed on 2026-10-17; the generator's own checks are in tools/rotation_sim_test.py)
 local classes = 0
 for vocId, c in pairs(D.classes) do
   classes = classes + 1
@@ -31,17 +31,12 @@ for vocId, c in pairs(D.classes) do
       -- the Lua gap check agrees with the generator's simulation
       eq(A.gap(p.spells), p.gap, c.name .. ' ' .. p.level .. ': Lua gap = generated gap')
     end
-    -- from level 15 up never 2 s without a cast (below 15 exempt)
-    if p.level >= 15 then
-      ok(p.gap <= A.GAP_LIMIT, c.name .. ' ' .. p.level .. ': gap ' .. p.gap .. ' <= 2.0 s')
-    end
   end
   for _, band in ipairs({ 30, 60, 100, 300, 600, 1000 }) do
     local p = A.presetFor(vocId, band)
     ok(p, c.name .. ' has a preset at ' .. band)
     if p then
       ok(#p.spells <= 5, c.name .. ' ' .. band .. ': at most 5')
-      ok(p.gap <= A.GAP_LIMIT, c.name .. ' ' .. band .. ': gap ' .. p.gap .. ' <= 2.0 s')
     end
   end
 end
@@ -85,8 +80,10 @@ for _, id in ipairs(sel2.ids) do
 end
 ok(#sel2.ids <= 5 and #sel2.ids >= #p300.spells - 1, 'filled up to 5')
 eq(sel2.gap, A.gap(sel2.ids), 'gap simulated again')
+-- the monster count of a changed set is the preset's own (an area spell waits for 2, the rest for 1)
+eq(#sel2.creatures, #sel2.ids, 'one monster count per spell')
 for _, n in ipairs(sel2.creatures) do
-  eq(n, 1, 'a changed set waits for no crowd')
+  ok(n == 1 or n == 2, 'a monster count of 1 or 2')
 end
 -- below the first preset, an unknown class
 eq(A.select(4, 1), nil, 'level 1 Warrior: nothing yet')

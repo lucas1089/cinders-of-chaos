@@ -3453,8 +3453,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   entries "Never runs out. ..." (the item tooltip shows them). No spirit potion: the first one is the great spirit
   potion (level 80); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
 - **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
-  It shares the stock potions' exhaust (`CONDITION_EXHAUST_HEAL`, the action interval - 100 ms = 900 ms), so it is no
-  faster than a stack of stock potions and blocks them for the same time. "You are exhausted." while it runs. Higher
+  The health and the mana potion each have their own wait (the action interval - 100 ms = 900 ms, a per-player timer in
+  `potions.lua`; owner 2026-10-17: a mana potion after a health potion said "You are exhausted."), so each is no faster
+  than a stack of stock potions and no `CONDITION_EXHAUST_HEAL` is added. "You are exhausted." for the same kind. Higher
   tiers stay consumables: they are the gold sink.
 - **Hotkeys and the action bar** (engine patch 0043, playtest 2026-10-16): the client uses a potion from its action bar,
   hotkeys and helper by client id, and the engine maps 266 / 268 to the stock 7618 / 7620. So a hotkey drinks the stock
@@ -4654,9 +4655,9 @@ equipment) must have cooldowns that never conflict: using one never delays or bl
   other group-less spells (only the house spells; monsters do not use them).
 - Lua, cast-time spells (`data/lib/chaos_casting.lua`): any other spell's cast event interrupted the cast and refunded
   it, so a heal cut the attack cast off, and the client helper held every heal while a cast charged.
-- Lua, potions: the Everfull potions add `CONDITION_EXHAUST_HEAL` (900 ms) of their own (`potions.lua`); nothing else
-  uses that condition (no spell), so it holds only the Everfull potions. The stock potions had no exhaust of their own
-  (only the shared 1 s next action).
+- Lua, potions: the Everfull potions wait 900 ms per kind (a health and a mana timer per player in `potions.lua`, no
+  `CONDITION_EXHAUST_HEAL` since 2026-10-17). The stock potions had no exhaust of their own (only the shared 1 s next
+  action).
 - Lua, other exhausts: Town Portal sets its own spell cooldown only (`townportal.lua`, group none with group cooldown 0);
   rift and store service items keep their own per-feature timers; crafting has none; the antibot, combat log and
   supports hooks only read or shorten a spell's own cooldown. None of them is shared with attack, heal or moves.

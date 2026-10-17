@@ -4,8 +4,8 @@
 usage: python3 -I server/tools/rotation_sim_test.py
 
 - every class and ascension at the level bands 15 / 30 / 60 / 100 / 300 / 600 / 1000 and at every level where its
-  preset changes: a best set of at most 5 attack spells whose longest time between two casts is at most 2.0 s (owner,
-  2026-10-14), from level 15 up (below it exempt; a class with no attack spell yet has no preset);
+  preset changes: a best set of at most 5 attack spells (the 2.0 s rule was removed, owner 2026-10-17: the order is area
+  spells first, then single target, longest cooldown first);
 - the snares (utility) are in no set and no preset;
 - the simulator: a lone 2 s filler casts every 2 s, a 4 s spell alone leaves 4 s, a 4 s group cooldown or a shared
   secondary group leaves a window, a cast time inside the group cooldown does not;
@@ -90,8 +90,7 @@ check(P.patch_text(new, rows)[1] == [], 'idempotent')
 check(P.patch_text(xml.replace('expose_weakness', 'other'), rows)[2] == ['attack/expose_weakness.lua'],
       'a missing script is reported')
 
-# every class and ascension at every band and every preset level: at most 5 spells, never 2 s without one from
-# level 15 up, never a snare
+# every class and ascension at every band and every preset level: at most 5 spells, never a snare
 for cls, _, _ in R.CLASSES:
     for lv in sorted(set(R.BANDS) | set(R.breakpoints(spells, model, cls))):
         best = R.analyse(spells, model, cls, lv)['best']
@@ -99,9 +98,6 @@ for cls, _, _ in R.CLASSES:
         if best:
             check(len(best['spells']) <= R.MAX_SPELLS, '%s %d: at most 5 spells' % (cls, lv))
             check(not {s.words for s in best['spells']} & utility, '%s %d: no snare in the set' % (cls, lv))
-            if lv >= R.GAP_FROM:
-                check(best['gap'] <= R.GAP_LIMIT + 1e-9, '%s %d: gap %.2f s <= 2.0 s (%s)' % (
-                    cls, lv, best['gap'], R.fmt_set(best)))
 
 # the client data is up to date
 text = R.client_data(spells, model)
