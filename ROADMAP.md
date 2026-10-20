@@ -267,6 +267,12 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
+- TODO (owner 2026-10-20, later: "Coloque as suas recomendações ... de rust"): engine hardening instead of a Rust
+  rewrite (a rewrite would mean the whole base engine, the 51 src-patches and the Lua API at the same behaviour, for
+  little a player sees). (1) A debug build of the server with AddressSanitizer / UndefinedBehaviorSanitizer and a
+  bot load test, to find the memory bugs that become crashes. (2) Fuzzing of the packet parser (login and game
+  protocol), so a malformed packet is an error, never a crash. (3) New services outside the engine may be written in
+  Rust (the login gateway, the payment worker, the Help assistant; Python today), one at a time.
 - TODO (owner 2026-10-20, later; "Eu prefiro a 3. Coloque no TODO por enquanto"): a live spectator view of a player
   in the admin app (android/): the real game view with sprites (the .dat/.spr on the device) fed by a server cast /
   spectator system (engine patch). The simpler options (a JSON map of the surroundings, a client screenshot with a
