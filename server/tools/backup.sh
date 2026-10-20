@@ -8,6 +8,7 @@
 # Settings come from the environment (/etc/chaos/chaos.env, see server/deploy/chaos.env.example), options override them:
 #   CHAOS_DB_HOST CHAOS_DB_PORT CHAOS_DB_USER CHAOS_DB_PASS CHAOS_DB_NAME   the database (password never on a command line:
 #                                                                           a temporary option file, mode 0600)
+#   CHAOS_DB_SOCKET: a Unix socket instead of host and port. mariadb-dump is used when there is no mysqldump.
 #   CHAOS_BACKUP_DIR (default /var/backups/chaos), CHAOS_BACKUP_KEEP_DAYS (default 14), CHAOS_SERVER_DIR
 # --save-service UNIT / --save-pid PID: send SIGUSR1 first, so the engine saves every online player and every changed
 # house before the dump; the script then waits --save-wait seconds (15). With engine src-patch 0026 the engine answers
@@ -53,7 +54,9 @@ done
 [ -n "$DB" ] || die "no database: set CHAOS_DB_NAME or pass --db"
 [[ "$KEEP" =~ ^[0-9]+$ ]] || die "--keep-days must be a number"
 [[ "$SAVE_WAIT" =~ ^[0-9]+$ ]] || die "--save-wait must be a number"
-command -v mysqldump >/dev/null || die "mysqldump not found"
+DUMP=mysqldump
+command -v mysqldump >/dev/null || DUMP=mariadb-dump
+command -v "$DUMP" >/dev/null || die "mysqldump (or mariadb-dump) not found"
 if [ "$DATA" = 1 ] && [ -n "$SERVER" ]; then
 	[ -f "$SERVER/config.lua" ] && [ -d "$SERVER/data" ] || die "$SERVER is not a server folder (config.lua, data/)"
 fi
@@ -74,8 +77,12 @@ trap 'rm -f "$OPT" "$DBFILE.partial" "${TARTMP:-}"' EXIT
 quote() { printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g'; }
 {
 	echo "[client]"
-	if [ -n "${CHAOS_DB_HOST:-}" ]; then echo "host=\"$(quote "$CHAOS_DB_HOST")\""; fi
-	if [ -n "${CHAOS_DB_PORT:-}" ]; then echo "port=$CHAOS_DB_PORT"; fi
+	if [ -n "${CHAOS_DB_SOCKET:-}" ]; then
+		echo "socket=\"$(quote "$CHAOS_DB_SOCKET")\""
+	else
+		if [ -n "${CHAOS_DB_HOST:-}" ]; then echo "host=\"$(quote "$CHAOS_DB_HOST")\""; fi
+		if [ -n "${CHAOS_DB_PORT:-}" ]; then echo "port=$CHAOS_DB_PORT"; fi
+	fi
 	if [ -n "${CHAOS_DB_USER:-}" ]; then echo "user=\"$(quote "$CHAOS_DB_USER")\""; fi
 	if [ -n "${CHAOS_DB_PASS:-}" ]; then echo "password=\"$(quote "$CHAOS_DB_PASS")\""; fi
 } > "$OPT"
@@ -94,7 +101,7 @@ elif [ -n "$SAVE_PID" ]; then
 fi
 
 # 2. the database: one consistent InnoDB snapshot, without locking the game
-mysqldump --defaults-extra-file="$OPT" --single-transaction --quick --routines --triggers --events --hex-blob \
+"$DUMP" --defaults-extra-file="$OPT" --single-transaction --quick --routines --triggers --events --hex-blob \
 	--default-character-set=utf8mb4 "$DB" | gzip -6 > "$DBFILE.partial"
 gzip -t "$DBFILE.partial" || die "the dump is not a valid gzip file"
 zcat "$DBFILE.partial" | tail -n 1 | grep -q 'Dump completed' || die "the dump is incomplete (no 'Dump completed' line)"

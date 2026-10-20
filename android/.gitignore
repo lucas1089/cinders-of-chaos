@@ -1,0 +1,5 @@
+# Gradle and Android build output (the APK comes from .github/workflows/admin-app.yml)
+.gradle/
+build/
+app/build/
+local.properties

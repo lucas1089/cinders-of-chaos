@@ -14768,6 +14768,44 @@ server folder (the engine's working folder), the same idea as the stop request f
   `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
   `player:remove()`, `Game.setGameState`) have not run on a real server.
 
+**chaos-ctl.sh settings file (`/etc/chaos/ctl.conf`).** Owner, 2026-10-20: the app showed "service not found, codigo 5"
+on the beta VPS. The kit there runs from `/opt/chaos-trial` (`tools/linux/server/start-server.sh`) with no systemd
+unit, and `systemctl` exits 5 for a unit that does not exist. Setting `CHAOS_UNIT` in the environment never helped: the
+script re-runs itself with `sudo -n`, which drops the environment.
+- The script now reads `/etc/chaos/ctl.conf` first. Keys: `CHAOS_UNIT`, `CHAOS_ROOT`, `CHAOS_SERVER_DIR`, `CHAOS_REPO`,
+  `CHAOS_ENV`, `CHAOS_LOG`, `CHAOS_UPDATE_LOG`, `CHAOS_ADMIN_USER`, `CHAOS_PID_FILE`, `CHAOS_DB_SOCKET`, `CHAOS_MYSQL`,
+  `CHAOS_BACKUP_DIR`. Order: the environment, then the file, then the default.
+- Safety: the file is parsed, never sourced. Plain `KEY=VALUE` lines, optional quotes, `#` comments. A value may only
+  hold `A-Z a-z 0-9 . _ / @ : + -`. Other keys and values are skipped with a warning. The whole file is ignored unless
+  it is a plain file owned by root (or by the user running the script) and not writable by group or others.
+  `CHAOS_CTL_CONF` names another file, honoured only outside sudo (tests).
+- Missing unit: `start`, `stop` and `restart` check `LoadState` first. `not-found` exits 5 with
+  `chaos-ctl: unit-not-found: ...` naming `CHAOS_UNIT` and the file. `status` adds `unit=`, `unit_state=` and `pid=`.
+- Database client: `CHAOS_MYSQL`, else `mysql`, else `mariadb`, else `CHAOS_ROOT/mariadb/bin/mariadb` (the kit's).
+  None found: exit 127 with `chaos-ctl: mysql-not-found: ...`; `status` then says `players=?`. `CHAOS_DB_SOCKET` (in
+  ctl.conf or the env file) connects over that socket instead of host and port; `backup.sh` honours it too and uses
+  `mariadb-dump` when there is no `mysqldump`. The kit's game user is `'chaos'@'127.0.0.1'`, so on the kit keep TCP
+  (`CHAOS_DB_PORT=3307` in its `chaos.env`) and leave the socket empty.
+- `errors [N] [all]`: the console log has no time stamps, so errors are grouped by server start (the kit's
+  `Starting the game server (DATE)` line, else the engine's `Loading config`; the newest start without a date takes the
+  unit's start time). Default: only the current start, so old errors (a database shutdown days ago) no longer look
+  current. Identical entries are counted once (`56x ...`, a leading time stamp kept apart as `[stamp]`), a Lua error
+  joins its next two lines. Output: `@run DATE [current]`, the entries, `@older K` (earlier starts with errors).
+  `status errors=` counts the error lines of the current start. Tested with mawk and gawk.
+- `players` prints the class name (`VOCATIONS` in the script: every id of `docs/CLASSES.md`, 0 None; the retired 2, 6 and
+  9 print `vocation N`); `vocations` lists the map. The test checks it against `docs/CLASSES.md` and
+  `server/data/XML/chaos_vocations*.xml`.
+- Save and backup: with a live engine pid in `CHAOS_PID_FILE` (default `CHAOS_ROOT/run/server.pid`, written by the
+  kit's `start-server.sh`; the process must be named `tfs`), `save` sends SIGUSR1 to that pid and `backup` passes
+  `--save-pid`. Otherwise `systemctl kill --kill-who=main`. Under the kit's unit the main process is `start-server.sh`,
+  and SIGUSR1 would end it.
+- Kit layout: `server/deploy/chaos-trial-server.service` (install as `/etc/systemd/system/chaos-server.service`, set
+  `User=` to the owner of `/opt/chaos-trial`) and `server/deploy/ctl.conf.trial.example` (copy to `/etc/chaos/ctl.conf`,
+  mode 644, owner root). Stop a run started by hand (`./stop-server.sh`) before enabling the unit.
+- Tests: `chaos_ctl_test.py` (file keys, environment first, unsafe lines never run, group-writable file ignored, not
+  under sudo, missing unit, missing client, socket, engine pid, the errors report, the class names). Not verified: the
+  unit and the kit's database client on the real VPS.
+
 ## Respawn near players (engine patch 0041, config `spawnNearPlayers`, `spawnMinPlayerDistance`)
 Owner, 2026-10-16: monsters must respawn even with players nearby. The stock engine skipped a spawn block while a
 player could see its spot (`Spawn::findPlayer`, same floor, the client's view) and started its timer again, so a busy

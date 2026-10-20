@@ -5,13 +5,17 @@ só no celular. Código em `android/`, parte do servidor em `server/deploy/chaos
 
 ## O que o app faz
 
+Visual escuro com dourado e brasa, nas cores do jogo e do site. Quatro abas embaixo:
+
 | Aba | Para quê |
 |---|---|
-| Painel | No ar ou fora, desde quando, jogadores, carga, memória, disco, último backup, erros Lua. Ligar, desligar, reiniciar, salvar, backup, logs, erros, jogadores online |
-| Admin | Aviso para todos, expulsar personagem, fechar e abrir o login, reinício com contagem, atualizar para uma versão (agora ou no save diário), ver o andamento, voltar a versão |
-| Comandos | Todos os comandos do painel de admin do jogo (os 179, por categoria), com busca e formulário. Veja abaixo |
-| Terminal | Qualquer comando na VPS, a pasta atual é guardada entre comandos. Botão `sudo -n` |
-| Config | Endereço, porta, usuário, gerar chave, copiar o comando de instalação, testar a conexão |
+| Painel | Estado do servidor com selo colorido (no ar, parado, falhou, ligando, sem serviço), há quanto tempo está no ar, jogadores (toque: quem está online, com a classe), erros desde o último início (toque: abre os erros), memória e disco com barra, carga, último backup. Puxe para baixo para atualizar; atualiza sozinho a cada 30 s (muda em Config). Botões grandes: Ligar, Desligar, Salvar, Reiniciar, Reiniciar em… (1 a 15 min, com aviso aos jogadores), Backup. Os perigosos pedem confirmação; a resposta aparece num cartão, em português, com os detalhes escondidos |
+| Comandos | Ações rápidas: aviso para todos, expulsar, abrir e fechar o login, atualizar a versão (agora ou no save diário), ver o andamento, voltar a versão. Painel do jogo: todos os comandos do painel de admin, por categoria, com busca e formulário |
+| Logs | Console, Erros, Atualização e Terminal. Fonte monoespaçada, 50 a 500 linhas, Acompanhar (recarrega a cada 5 s), copiar. Erros: só desde o último início do servidor, linhas iguais juntas com a contagem (×56); "Incluir inícios anteriores" mostra os antigos, cada um com a data do início. Terminal: qualquer comando na VPS, a pasta é guardada, botão `sudo -n` |
+| Config | Endereço, porta, usuário, caminho do chaos-ctl.sh, personagem admin, intervalo do painel. Chave: gerar, mostrar, copiar, compartilhar, copiar o comando de instalação. Impressão digital da VPS com o botão Esquecer. Testar conexão |
+
+Erros comuns viram frases claras: chave recusada, VPS sem resposta, porta fechada, impressão digital mudou, sem sudo,
+script fora do caminho, unidade do systemd que não existe (código 5), cliente do banco ausente (código 127).
 
 ## Aba Comandos (o painel de admin inteiro)
 
@@ -23,7 +27,8 @@ comandos do seu grupo e monta o formulário de cada um (texto, número, caixa, e
    os comandos, ações perigosas pedem grupo 5 ou 6. Os limites do painel continuam valendo. Offline, só as ações que
    dependem do corpo do personagem no mapa (posição, teleporte, modo fantasma, velocidade) respondem "precisa do
    personagem no jogo"; as outras (banir, itens para outro jogador, premium, eventos, servidor) funcionam normal.
-3. Aba **Comandos**, **Atualizar lista** (até 15 s). Depois **Buscar comando**, preencha e **Executar**.
+3. Aba **Comandos**, **Painel do jogo**, **Atualizar lista** (até 15 s). Toque numa categoria, depois no comando,
+   preencha e **Executar**. A busca procura em todas as categorias.
    Ações marcadas como perigosas pedem confirmação. A resposta do jogo aparece abaixo.
 
 O pedido vai por `chaos-ctl.sh catalog NOME` e `chaos-ctl.sh panel NOME ACAO JSON`: o script grava uma linha em
@@ -77,7 +82,23 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Limites conhecidos
 
 - Nada disso rodou num servidor e num celular de verdade ainda. Testados: o script (`chaos_ctl_test.py`) e os comandos
-  do jogo (`remote_cmd_test.lua`) com motor simulado. O app foi compilado pelo workflow, não aberto num aparelho.
+  do jogo (`remote_cmd_test.lua`) com motor simulado. O app 2.0 (visual novo) foi compilado e as quatro abas abertas
+  num Android simulado (Robolectric, fora do repositório), não num aparelho de verdade.
 - O terminal executa um comando por vez (sem programas interativos como `nano` ou `top`). Use `top -bn1` no lugar de `top`.
-- O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: variáveis `CHAOS_*` no
-  topo do `chaos-ctl.sh`.
+- O layout assumido é o de `docs/LAUNCH.md` (`/opt/chaos`, unidade `chaos-server`). Outro layout: veja abaixo.
+
+## Outro layout na VPS (o kit em /opt/chaos-trial)
+
+O `chaos-ctl.sh` roda pelo `sudo -n`, que apaga as variáveis de ambiente: `CHAOS_UNIT=... ` no shell não chega nele.
+Os caminhos ficam em `/etc/chaos/ctl.conf` (dono root, sem escrita para grupo e outros; só linhas `CHAVE=valor`, nunca
+executado). Para o kit Linux em `/opt/chaos-trial`, como root:
+
+    cp server/deploy/chaos-trial-server.service /etc/systemd/system/chaos-server.service
+    # troque User= e Group= pelo dono de /opt/chaos-trial (stat -c '%U %G' /opt/chaos-trial)
+    /opt/chaos-trial/stop-server.sh        # se ele estiver rodando à mão
+    systemctl daemon-reload && systemctl enable --now chaos-server
+    mkdir -p /etc/chaos && cp server/deploy/ctl.conf.trial.example /etc/chaos/ctl.conf && chmod 644 /etc/chaos/ctl.conf
+
+O exemplo aponta o log, o `chaos.env` do kit (banco na porta 3307), o pid do motor (salvar e backup mandam o sinal só
+para ele) e o cliente do banco do kit (`/opt/chaos-trial/mariadb/bin/mariadb`; a VPS não tem `mysql`). Detalhes:
+`server/README.md`, "Remote admin commands".

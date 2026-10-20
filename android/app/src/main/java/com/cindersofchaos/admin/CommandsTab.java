@@ -1,0 +1,547 @@
+package com.cindersofchaos.admin;
+
+import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.text.Editable;
+import android.text.InputType;
+import android.text.TextWatcher;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.TextView;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.button.MaterialButtonToggleGroup;
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.google.android.material.textfield.TextInputLayout;
+
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Comandos: the quick admin actions (message to everyone, kick, login, server version) and every action of the in-game
+ * admin panel, as a searchable list grouped by category with a form per action. The panel actions go through
+ * chaos-ctl.sh catalog / panel and run as the admin character set in Config, with that character's group.
+ */
+final class CommandsTab {
+    final View root;
+    private final MainActivity a;
+    private final Ui ui;
+    private final LinearLayout quick;
+    private final LinearLayout catalogPage;
+    private final MainActivity.ResultCard result;
+    private final TextView catInfo;
+    private final TextInputLayout search;
+    private final LinearLayout list;
+    private JSONArray catalog = new JSONArray(); // flat list of {cat, id, name, description, params, confirm, dangerous}
+    private final Set<String> open = new HashSet<>();
+
+    CommandsTab(MainActivity a) {
+        this.a = a;
+        this.ui = a.ui;
+        LinearLayout page = ui.page();
+
+        MaterialButtonToggleGroup seg = new MaterialButtonToggleGroup(a);
+        seg.setSingleSelection(true);
+        seg.setSelectionRequired(true);
+        MaterialButton bQuick = ui.secondary("Ações rápidas", 0);
+        bQuick.setId(View.generateViewId());
+        bQuick.setCheckable(true);
+        MaterialButton bPanel = ui.secondary("Painel do jogo", 0);
+        bPanel.setId(View.generateViewId());
+        bPanel.setCheckable(true);
+        seg.addView(bQuick, Ui.weight(1f));
+        seg.addView(bPanel, Ui.weight(1f));
+        page.addView(seg, Ui.matchWrap());
+
+        result = a.new ResultCard();
+        page.addView(result.card, ui.gap(10));
+
+        quick = ui.column();
+        buildQuick();
+        page.addView(quick, Ui.matchWrap());
+
+        catalogPage = ui.column();
+        MaterialCardView head = ui.titledCard("Painel de admin do jogo");
+        LinearLayout hb = Ui.body(head);
+        hb.addView(ui.hint("Tudo o que o painel de admin faz dentro do jogo: banir, itens, premium, spawn, eventos. Roda "
+                + "como o personagem admin da aba Config (pode estar offline), com o grupo dele."));
+        catInfo = ui.text("");
+        catInfo.setPadding(0, ui.dp(8), 0, 0);
+        hb.addView(catInfo);
+        search = ui.field("Buscar (ex.: ban, item, spawn)", null, "", 0);
+        search.setStartIconDrawable(R.drawable.ic_search);
+        search.setStartIconTintList(android.content.res.ColorStateList.valueOf(ui.muted));
+        hb.addView(search, ui.gap(10));
+        MaterialButton reload = ui.secondary("Atualizar lista", R.drawable.ic_refresh);
+        reload.setOnClickListener(v -> fetchCatalog());
+        hb.addView(reload, ui.gap(6));
+        catalogPage.addView(head, Ui.matchWrap());
+        list = ui.column();
+        catalogPage.addView(list, ui.gap(10));
+        page.addView(catalogPage, Ui.matchWrap());
+
+        if (search.getEditText() != null) {
+            search.getEditText().addTextChangedListener(new TextWatcher() {
+                @Override
+                public void beforeTextChanged(CharSequence s, int st, int c, int af) {
+                }
+
+                @Override
+                public void onTextChanged(CharSequence s, int st, int b, int c) {
+                    fillList();
+                }
+
+                @Override
+                public void afterTextChanged(Editable e) {
+                }
+            });
+        }
+
+        seg.addOnButtonCheckedListener((g, id, checked) -> {
+            if (checked) {
+                quick.setVisibility(id == bQuick.getId() ? View.VISIBLE : View.GONE);
+                catalogPage.setVisibility(id == bPanel.getId() ? View.VISIBLE : View.GONE);
+            }
+        });
+        seg.check(bQuick.getId());
+        quick.setVisibility(View.VISIBLE);
+        catalogPage.setVisibility(View.GONE);
+
+        loadCachedCatalog();
+        ScrollView sv = new ScrollView(a);
+        sv.addView(page, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT));
+        root = sv;
+    }
+
+    // ------------------------------------------------------------------------------------------------ quick actions
+
+    private void buildQuick() {
+        // message to everyone
+        MaterialCardView msgCard = ui.titledCard("Aviso para todos");
+        LinearLayout mb = Ui.body(msgCard);
+        TextInputLayout msg = ui.field("Mensagem", "Aparece para todos os jogadores online (até 200 letras).", "",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        mb.addView(msg);
+        MaterialButton send = ui.primary("Enviar aviso", R.drawable.ic_send);
+        send.setOnClickListener(v -> {
+            String t = Ui.value(msg);
+            if (t.isEmpty()) {
+                msg.setError("Escreva a mensagem.");
+                return;
+            }
+            msg.setError(null);
+            ctl("Aviso", "broadcast " + Ssh.sq(t), 20, () -> Ui.setValue(msg, ""));
+        });
+        mb.addView(send, ui.gap(8));
+        quick.addView(msgCard, ui.gap(10));
+
+        // kick
+        MaterialCardView kickCard = ui.titledCard("Expulsar um personagem");
+        LinearLayout kb = Ui.body(kickCard);
+        TextInputLayout kickName = ui.field("Nome do personagem", "Ele é desconectado; pode entrar de novo.", "",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
+        kb.addView(kickName);
+        MaterialButton kick = ui.danger("Expulsar", 0);
+        kick.setOnClickListener(v -> {
+            String n = Ui.value(kickName);
+            if (n.isEmpty()) {
+                kickName.setError("Escreva o nome.");
+                return;
+            }
+            kickName.setError(null);
+            a.confirm("Expulsar " + n + "?", "O personagem é desconectado do jogo.", "Expulsar", true,
+                    () -> ctl("Expulsar " + n, "kick " + Ssh.sq(n), 20, null));
+        });
+        kb.addView(kick, ui.gap(8));
+        quick.addView(kickCard, ui.gap(10));
+
+        // login
+        MaterialCardView loginCard = ui.titledCard("Login");
+        LinearLayout lb = Ui.body(loginCard);
+        lb.addView(ui.hint("Fechar impede novos logins; quem está online continua jogando."));
+        MaterialButton close = ui.danger("Fechar login", 0);
+        close.setOnClickListener(v -> a.confirm("Fechar o login?", "Ninguém mais entra até você abrir de novo.",
+                "Fechar", true, () -> ctl("Fechar login", "close", 20, null)));
+        MaterialButton openB = ui.secondary("Abrir login", 0);
+        openB.setOnClickListener(v -> ctl("Abrir login", "open", 20, null));
+        lb.addView(ui.evenRow(openB, close), ui.gap(8));
+        quick.addView(loginCard, ui.gap(10));
+
+        // version
+        MaterialCardView upCard = ui.titledCard("Versão do servidor");
+        LinearLayout ub = Ui.body(upCard);
+        TextInputLayout tag = ui.field("Versão (tag)", "Uma versão pronta do GitHub, ex.: winpkg-41.", "", 0);
+        ub.addView(tag);
+        MaterialButton now = ui.danger("Atualizar agora", 0);
+        now.setOnClickListener(v -> update(tag, "now"));
+        MaterialButton atSave = ui.secondary("No save diário", 0);
+        atSave.setOnClickListener(v -> update(tag, "at-save"));
+        ub.addView(ui.evenRow(atSave, now), ui.gap(8));
+        MaterialButton progress = ui.secondary("Ver andamento", R.drawable.ic_nav_logs);
+        progress.setOnClickListener(v -> {
+            a.showTab(MainActivity.TAB_LOGS, true);
+            a.logs.openUpdate();
+        });
+        MaterialButton rollback = ui.danger("Voltar versão", 0);
+        rollback.setOnClickListener(v -> a.confirm("Voltar para a versão anterior?",
+                "O servidor para, volta para a versão anterior e liga de novo.", "Voltar agora", true,
+                () -> ctl("Voltar versão", "rollback now", 30, null)));
+        ub.addView(ui.evenRow(progress, rollback), ui.gap(4));
+        quick.addView(upCard, ui.gap(10));
+    }
+
+    private void update(TextInputLayout tag, String mode) {
+        String t = Ui.value(tag);
+        if (t.isEmpty()) {
+            tag.setError("Digite a versão (tag).");
+            return;
+        }
+        tag.setError(null);
+        boolean now = mode.equals("now");
+        a.confirm("Atualizar para " + t + "?", now ? "O servidor para agora, atualiza e liga de novo."
+                        : "A atualização acontece no próximo save diário.", now ? "Atualizar agora" : "Agendar", now,
+                () -> ctl("Atualizar para " + t, "update " + Ssh.sq(t) + " " + mode, 30, null));
+    }
+
+    private void ctl(String what, String args, int timeout, Runnable onOk) {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(what);
+        a.ctlAction(args, timeout, f -> {
+            result.show(what, f);
+            a.snack(what + ": " + (f.ok ? "feito" : f.title), f.ok);
+            if (f.ok && onOk != null) {
+                onOk.run();
+            }
+        });
+    }
+
+    // ------------------------------------------------------------------------------------------------ catalog
+
+    private void loadCachedCatalog() {
+        try {
+            flatten(new JSONObject(a.store.get("catalog", "{}")));
+        } catch (Exception e) {
+            catalog = new JSONArray();
+        }
+        catInfo.setText(catalog.length() == 0
+                ? "Lista vazia: toque em Atualizar lista. O personagem admin precisa existir e ter grupo de admin."
+                : catalog.length() + " comandos (lista guardada).");
+        fillList();
+    }
+
+    private void flatten(JSONObject o) throws Exception {
+        JSONArray flat = new JSONArray();
+        JSONArray cats = o.getJSONArray("categories");
+        for (int i = 0; i < cats.length(); i++) {
+            JSONObject c = cats.getJSONObject(i);
+            JSONArray acts = c.getJSONArray("actions");
+            for (int j = 0; j < acts.length(); j++) {
+                JSONObject act = acts.getJSONObject(j);
+                act.put("cat", c.optString("label", c.optString("id")));
+                flat.put(act);
+            }
+        }
+        catalog = flat;
+    }
+
+    private boolean needActor() {
+        if (a.store.actor().isEmpty()) {
+            a.snack("Defina o personagem admin na aba Config.", false);
+            return true;
+        }
+        return false;
+    }
+
+    private void fetchCatalog() {
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        if (needActor()) {
+            return;
+        }
+        catInfo.setText("Pedindo a lista ao jogo (até 15 s)...");
+        a.remote(a.ctl("catalog " + Ssh.sq(a.store.actor())), 40, (r, e) -> {
+            Friendly f = e != null ? Friendly.ofException(e) : Friendly.ofResult(r.out, r.code);
+            if (f.ok) {
+                try {
+                    String t = r.out.trim();
+                    JSONObject o = new JSONObject(t.substring(t.indexOf('{')));
+                    flatten(o);
+                    a.store.put("catalog", o.toString());
+                    catInfo.setText(catalog.length() + " comandos (grupo " + o.optInt("group") + ").");
+                    fillList();
+                    return;
+                } catch (Exception ex) {
+                    f = Friendly.fail("Resposta inesperada", "O jogo respondeu algo que não é a lista.", r.out);
+                }
+            }
+            catInfo.setText("Sem lista: " + f.title + ".");
+            result.show("Atualizar lista", f);
+        });
+    }
+
+    private void fillList() {
+        list.removeAllViews();
+        String q = Ui.value(search).toLowerCase(Locale.ROOT);
+        Map<String, List<JSONObject>> groups = new LinkedHashMap<>();
+        for (int i = 0; i < catalog.length(); i++) {
+            JSONObject act = catalog.optJSONObject(i);
+            if (act == null) {
+                continue;
+            }
+            String hay = (act.optString("cat") + " " + act.optString("name") + " " + act.optString("id") + " "
+                    + act.optString("description")).toLowerCase(Locale.ROOT);
+            if (!q.isEmpty() && !hay.contains(q)) {
+                continue;
+            }
+            groups.computeIfAbsent(act.optString("cat"), k -> new ArrayList<>()).add(act);
+        }
+        if (groups.isEmpty()) {
+            list.addView(a.emptyLine(catalog.length() == 0 ? "Nenhum comando ainda." : "Nada encontrado para \"" + q + "\"."));
+            return;
+        }
+        for (Map.Entry<String, List<JSONObject>> g : groups.entrySet()) {
+            final String cat = g.getKey();
+            final boolean expanded = !q.isEmpty() || open.contains(cat);
+            MaterialCardView card = ui.card();
+            LinearLayout b = Ui.body(card);
+            b.setPadding(0, 0, 0, 0);
+            LinearLayout header = ui.row();
+            header.setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14));
+            TextView name = ui.title(cat);
+            name.setTextSize(15);
+            name.setTextColor(ui.goldLight);
+            header.addView(name, Ui.weight(1f));
+            TextView count = ui.hint(g.getValue().size() + (expanded ? "  ▾" : "  ▸"));
+            header.addView(count);
+            header.setOnClickListener(v -> {
+                if (!open.remove(cat)) {
+                    open.add(cat);
+                }
+                fillList();
+            });
+            b.addView(header);
+            if (expanded) {
+                for (JSONObject act : g.getValue()) {
+                    b.addView(ui.divider());
+                    b.addView(actionRow(act));
+                }
+            }
+            list.addView(card, ui.gap(8));
+        }
+    }
+
+    private View actionRow(JSONObject act) {
+        LinearLayout row = ui.column();
+        row.setPadding(ui.dp(16), ui.dp(10), ui.dp(16), ui.dp(10));
+        android.util.TypedValue tv = new android.util.TypedValue();
+        a.getTheme().resolveAttribute(android.R.attr.selectableItemBackground, tv, true);
+        row.setBackgroundResource(tv.resourceId);
+        LinearLayout top = ui.row();
+        TextView n = ui.text(act.optString("name"));
+        n.setTextColor(ui.bright);
+        n.setTypeface(Typeface.DEFAULT_BOLD);
+        top.addView(n, Ui.weight(1f));
+        if (act.optBoolean("dangerous")) {
+            TextView tag = new TextView(a);
+            tag.setText("perigoso");
+            tag.setTextSize(11);
+            tag.setTextColor(ui.ember);
+            tag.setPadding(ui.dp(8), ui.dp(2), ui.dp(8), ui.dp(2));
+            GradientDrawable bg = new GradientDrawable();
+            bg.setCornerRadius(ui.dp(10));
+            bg.setStroke(ui.dp(1), ui.blood);
+            tag.setBackground(bg);
+            top.addView(tag);
+        }
+        row.addView(top);
+        String d = act.optString("description");
+        if (!d.isEmpty()) {
+            TextView dt = ui.hint(d);
+            dt.setMaxLines(2);
+            row.addView(dt);
+        }
+        row.setOnClickListener(v -> actionForm(act));
+        return row;
+    }
+
+    private void actionForm(final JSONObject act) {
+        final JSONArray params = act.optJSONArray("params") == null ? new JSONArray() : act.optJSONArray("params");
+        final View[] inputs = new View[params.length()];
+        final String[] picked = new String[params.length()];
+        LinearLayout box = ui.column();
+        box.setPadding(ui.dp(22), ui.dp(4), ui.dp(22), 0);
+        if (!act.optString("description").isEmpty()) {
+            box.addView(ui.hint(act.optString("description")));
+        }
+        if (params.length() == 0) {
+            box.addView(ui.text("Sem parâmetros."), ui.gap(8));
+        }
+        for (int i = 0; i < params.length(); i++) {
+            final int idx = i;
+            JSONObject p = params.optJSONObject(i);
+            if (p == null) {
+                p = new JSONObject();
+            }
+            String type = p.optString("type", "string");
+            String lab = p.optString("label", p.optString("name")) + (p.optBoolean("required") ? " *" : "");
+            String hint = p.optString("hint", "");
+            String def = p.isNull("default") || !p.has("default") ? "" : String.valueOf(p.opt("default"));
+            if (type.equals("bool")) {
+                MaterialCheckBox cb = new MaterialCheckBox(a);
+                cb.setText(lab + (hint.isEmpty() ? "" : " (" + hint + ")"));
+                cb.setTextColor(ui.text);
+                cb.setChecked(def.equals("true") || def.equals("1"));
+                inputs[i] = cb;
+                box.addView(cb, ui.gap(6));
+            } else if (type.equals("select")) {
+                final JSONArray opts = p.optJSONArray("options") == null ? new JSONArray() : p.optJSONArray("options");
+                final String[] labels = new String[opts.length()];
+                final String[] values = new String[opts.length()];
+                for (int k = 0; k < opts.length(); k++) {
+                    Object o = opts.opt(k);
+                    if (o instanceof JSONObject) {
+                        values[k] = String.valueOf(((JSONObject) o).opt("value"));
+                        labels[k] = ((JSONObject) o).optString("label", values[k]);
+                    } else {
+                        values[k] = String.valueOf(o);
+                        labels[k] = values[k];
+                    }
+                    if (picked[i] == null && (def.isEmpty() || def.equals(values[k]))) {
+                        picked[i] = values[k];
+                    }
+                }
+                TextView l = ui.hint(lab + (hint.isEmpty() ? "" : " (" + hint + ")"));
+                box.addView(l, ui.gap(10));
+                final MaterialButton pick = ui.secondary("Escolher ▾", 0);
+                for (int k = 0; k < values.length; k++) {
+                    if (values[k].equals(picked[i])) {
+                        pick.setText(labels[k] + "  ▾");
+                    }
+                }
+                pick.setOnClickListener(v -> new MaterialAlertDialogBuilder(a).setTitle(lab)
+                        .setItems(labels, (d, which) -> {
+                            picked[idx] = values[which];
+                            pick.setText(labels[which] + "  ▾");
+                        }).show());
+                inputs[i] = pick;
+                box.addView(pick, Ui.matchWrap());
+            } else {
+                int it = InputType.TYPE_CLASS_TEXT;
+                if (type.equals("int")) {
+                    it = InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED;
+                } else if (type.equals("text")) {
+                    it = InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE;
+                }
+                String help = hint.isEmpty() ? (type.equals("pos") ? "x,y,z" : "") : hint;
+                TextInputLayout f = ui.field(lab, help, def, it);
+                inputs[i] = f;
+                box.addView(f, ui.gap(10));
+            }
+        }
+        final boolean risky = act.optBoolean("dangerous") || act.optBoolean("confirm");
+        ScrollView sv = new ScrollView(a);
+        sv.addView(box);
+        final String title = act.optString("cat") + " › " + act.optString("name");
+        androidx.appcompat.app.AlertDialog dlg = new MaterialAlertDialogBuilder(a).setTitle(act.optString("name"))
+                .setView(sv).setNegativeButton("Cancelar", null).setPositiveButton("Executar", null).show();
+        dlg.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            JSONObject data = new JSONObject();
+            try {
+                for (int i = 0; i < params.length(); i++) {
+                    JSONObject p = params.optJSONObject(i);
+                    if (p == null) {
+                        continue;
+                    }
+                    String type = p.optString("type", "string");
+                    String name = p.optString("name");
+                    if (type.equals("bool")) {
+                        data.put(name, ((CheckBox) inputs[i]).isChecked());
+                    } else if (type.equals("select")) {
+                        if (picked[i] != null) {
+                            data.put(name, picked[i]);
+                        }
+                    } else {
+                        TextInputLayout f = (TextInputLayout) inputs[i];
+                        String val = Ui.value(f);
+                        f.setError(null);
+                        if (val.isEmpty()) {
+                            if (p.optBoolean("required")) {
+                                f.setError("Obrigatório.");
+                                return;
+                            }
+                            continue;
+                        }
+                        if (type.equals("int")) {
+                            try {
+                                data.put(name, Long.parseLong(val));
+                            } catch (NumberFormatException e) {
+                                f.setError("Precisa ser um número inteiro.");
+                                return;
+                            }
+                        } else {
+                            data.put(name, val);
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                a.snack("Valor inválido: " + e.getMessage(), false);
+                return;
+            }
+            dlg.dismiss();
+            final String json = data.toString();
+            Runnable go = () -> runAction(act.optString("id"), json, title);
+            if (risky) {
+                a.confirm(act.optBoolean("dangerous") ? "Ação perigosa" : "Confirmar",
+                        "Executar " + title + "?\n\n" + json, "Executar", act.optBoolean("dangerous"), go);
+            } else {
+                go.run();
+            }
+        });
+    }
+
+    private void runAction(String id, String json, String title) {
+        if (needActor()) {
+            return;
+        }
+        result.running(title);
+        a.remote(a.ctl("panel " + Ssh.sq(a.store.actor()) + " " + Ssh.sq(id) + " " + Ssh.sq(json)), 40, (r, e) -> {
+            Friendly f = e != null ? Friendly.ofException(e) : Friendly.ofResult(r.out, r.code);
+            if (f.ok) {
+                try {
+                    String t = r.out.trim();
+                    JSONObject res = new JSONObject(t.substring(t.indexOf('{')));
+                    StringBuilder sb = new StringBuilder(res.optString("message"));
+                    JSONArray lines = res.optJSONArray("lines");
+                    for (int i = 0; lines != null && i < lines.length(); i++) {
+                        sb.append('\n').append(lines.optString(i));
+                    }
+                    f = res.optBoolean("ok") ? Friendly.ok("Feito", sb.toString().trim(), r.out)
+                            : Friendly.fail("O jogo recusou", sb.toString().trim(), r.out);
+                } catch (Exception ex) {
+                    f = Friendly.ok("Feito", r.out.trim(), r.out);
+                }
+            }
+            result.show(title, f);
+            a.snack(title + ": " + (f.ok ? "feito" : f.title), f.ok);
+        });
+    }
+}

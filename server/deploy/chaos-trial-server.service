@@ -1,0 +1,44 @@
+# Cinders of Chaos game server, Linux kit layout (the release's CindersOfChaos-Server-Linux.tar.gz extracted to
+# /opt/chaos-trial). systemd runs the kit's own start-server.sh: it starts the kit's MariaDB (127.0.0.1:3307), the
+# login-screen services and the engine, starts the engine again after the daily server save and after a crash, and on
+# SIGTERM stops the engine cleanly (it saves) and then the database.
+#
+# Install (as root), under the name chaos-server so chaos-ctl.sh and the admin app find it without settings:
+#   /opt/chaos-trial/stop-server.sh                 # stop a run started by hand first (start.pid would block this one)
+#   cp server/deploy/chaos-trial-server.service /etc/systemd/system/chaos-server.service
+#   edit User= and Group= below: the owner of /opt/chaos-trial (stat -c '%U %G' /opt/chaos-trial)
+#   systemctl daemon-reload && systemctl enable --now chaos-server
+#   cp server/deploy/ctl.conf.trial.example /etc/chaos/ctl.conf   # paths for chaos-ctl.sh (server/README.md)
+#
+# Stop: systemctl stop chaos-server. KillMode=mixed sends SIGTERM to start-server.sh only; it stops the engine and the
+# database itself. Whatever is still alive after that (or after TimeoutStopSec) is killed.
+# Save without stopping: chaos-ctl.sh save. It sends SIGUSR1 to the engine's pid (run/server.pid), never to this unit:
+# SIGUSR1 to start-server.sh would end it.
+
+[Unit]
+Description=Cinders of Chaos game server (Linux kit, /opt/chaos-trial)
+Wants=network-online.target
+After=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=chaos
+Group=chaos
+WorkingDirectory=/opt/chaos-trial
+ExecStart=/opt/chaos-trial/start-server.sh
+KillMode=mixed
+KillSignal=SIGTERM
+# a full save of a busy server, then the database shutdown; do not SIGKILL it halfway
+TimeoutStopSec=180
+# start-server.sh restarts the engine itself; systemd only steps in when the script fails (the database did not start,
+# a missing file, ...). After 5 engine crashes in a row the script gives up and exits 0: the unit stays stopped then.
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/opt/chaos-trial/logs/server.log
+StandardError=append:/opt/chaos-trial/logs/server.log
+LimitNOFILE=65536
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

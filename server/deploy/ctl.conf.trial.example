@@ -1,0 +1,23 @@
+# /etc/chaos/ctl.conf for chaos-ctl.sh (and so for the admin app): the Linux kit in /opt/chaos-trial.
+# Install as root: cp server/deploy/ctl.conf.trial.example /etc/chaos/ctl.conf && chmod 644 /etc/chaos/ctl.conf
+# The file must be owned by root and not writable by group or others, or chaos-ctl.sh ignores it.
+# Only these keys are read, one KEY=VALUE per line, no spaces, never run as shell code. server/README.md "Remote admin
+# commands", settings file.
+
+# the systemd unit (server/deploy/chaos-trial-server.service installed as chaos-server.service)
+CHAOS_UNIT=chaos-server
+CHAOS_ROOT=/opt/chaos-trial
+CHAOS_SERVER_DIR=/opt/chaos-trial/server
+# the git checkout with server/deploy and server/tools (backup, update)
+CHAOS_REPO=/opt/chaos/repo
+# the kit's env file: CHAOS_DB_HOST=127.0.0.1, CHAOS_DB_PORT=3307, user, password
+CHAOS_ENV=/opt/chaos-trial/chaos.env
+CHAOS_LOG=/opt/chaos-trial/logs/server.log
+# the engine's pid, written by start-server.sh: save and backup signal the engine through it
+CHAOS_PID_FILE=/opt/chaos-trial/run/server.pid
+# the database client (the VPS has no system mysql). Empty: mysql, then mariadb, then CHAOS_ROOT/mariadb/bin/mariadb
+CHAOS_MYSQL=/opt/chaos-trial/mariadb/bin/mariadb
+# the kit's database user is 'chaos'@'127.0.0.1' (TCP, port 3307 from chaos.env), so leave the socket empty.
+# Set it only for a database user that may log in over the socket.
+#CHAOS_DB_SOCKET=/opt/chaos-trial/run/mariadb.sock
+#CHAOS_BACKUP_DIR=/var/backups/chaos

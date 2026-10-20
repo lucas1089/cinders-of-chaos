@@ -9,7 +9,7 @@
         android:fullBackupContent="false"
         android:label="Cinders Admin"
         android:icon="@mipmap/ic_launcher"
-        android:theme="@android:style/Theme.Material.NoActionBar"
+        android:theme="@style/Theme.CindersAdmin"
         android:usesCleartextTraffic="false">
         <activity
             android:name=".MainActivity"
