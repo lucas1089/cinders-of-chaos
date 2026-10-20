@@ -1,0 +1,458 @@
+# Chaos: typed impact numbers (client/BASE.md 0100; server src-patch 0051; after 0001-0083, numbered 0100 to leave room
+# for the patches in flight). Login: bit 7 of the capability byte asks the server for typed numbers; the server answers
+# with feature GameChaosImpactText (155), which is cleared before every login, so an older server keeps the old layout.
+# With it, every damage, heal, mana and experience text message carries u16 percent (x100), u8 type (0 normal,
+# 1 critical, 2 condition tick, 3 mana drain, 4 mana gain, 5 energy shield, 6+ scripts) and u32 creature id after its
+# value / colour pairs, before the text. Each number goes through the Lua hook
+# g_map.onImpactText(animatedText, text, mode, typeId, value, percent, creatureId, pos) before it reaches the map
+# (true drops it; called with type 0 against an older server too). AnimatedText: a drift that replaces the stock rise
+# (setAnimationSpeed {x, y}: pixels over the whole life), setFadeStart, setStackWithOtherTexts (false: no merge, no
+# side-by-side layout), the impact type / value / percent, setText / setColor / setFont for Lua, and a weak pointer to
+# the creature it belongs to; removal at the text's own life. merge() also needs the same type, creature and stacking.
+# GameChaosAttachedImpactText (156, client only): MapView draws an attached number at its creature's tile moved by the
+# creature's walk and jump, so it follows the creature while it floats; a removed, hidden or other-floor creature
+# leaves it where the creature was last seen (its own tile if never seen). Options > Interface "Damage numbers follow
+# the creature" (`attachedImpactText`, on); the overlay module game_damagescatter applies it at every game start.
+--- a/mods/client_settings/classes/dataset.lua
++++ b/mods/client_settings/classes/dataset.lua
+@@ -1921,6 +1921,19 @@
+ 		end,
+ 	},
+ 
++	-- damage numbers follow the creature they belong to (base patch 0100, feature GameChaosAttachedImpactText; the
++	-- overlay module game_damagescatter turns the feature on or off now and again at every game start)
++	attachedImpactText = {
++		value = true,
++		apply = function(value)
++			local m = modules.game_damagescatter
++			if m and m.setAttached then
++				m.setAttached(value)
++			end
++			return true
++		end,
++	},
++
+ 	enableLights = {
+ 		value = true,
+         apply = function(value)
+--- a/mods/client_settings/options/interface.otui
++++ b/mods/client_settings/options/interface.otui
+@@ -405,6 +405,42 @@
+     margin-left: 4
+     margin-right: 4
+ 
++    SettingsCheckBox
++      id: attachedImpactText
++      size: 12 12
++      !text: tr('Damage numbers follow the creature')
++      font: $var-cip-font
++      text-auto-resize: true
++      color: $var-text-cip-color
++      text-offset: 14 -2
++      anchors.left: parent.left
++      anchors.top: parent.top
++      margin-top: 5
++      margin-left: 4
++      image-source: /images/ui/checkbox
++      image-clip: 0 0 12 12
++      @onSetup: |
++        local value = modules.client_settings.getOption('attachedImpactText')
++        self:setChecked(value ~= false)
++
++    UIWidget
++      size: 12 12
++      anchors.top: parent.top
++      anchors.right: parent.right
++      margin-right: 5
++      margin-top: 5
++      image-source: /images/skin/show-gui-help-grey
++      !tooltip: tr('When checked, a damage, healing or experience number moves with\nthe creature it belongs to while it floats up. Unchecked, it stays\nover the square where the hit landed.')
++
++  FlatPanel
++    size: 505 22
++    anchors.top: prev.bottom
++    anchors.right: parent.right
++    anchors.left: parent.left
++    margin-top: 5
++    margin-left: 4
++    margin-right: 4
++
+     Label
+       id: chaosLanguageLabel
+       !text: tr('Language')
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -360,8 +360,10 @@
+ GameAstraExtendedSpellIds = 152
+ GameChaosCraftingSkills = 153 -- Chaos 10.98 server: crafting skills in the skills packet
+ GameChaosVocationIds = 154 -- Chaos 10.98 server: class byte (base slot + 10 / + 20 for the two ascended classes)
++GameChaosImpactText = 155 -- Chaos (base patch 0100): typed impact numbers (percent, type, creature id); the server announces it
++GameChaosAttachedImpactText = 156 -- Chaos (base patch 0100): numbers follow their creature (client option)
+ 
+-LastGameFeature = 155
++LastGameFeature = 157
+ 
+ TextColors = {
+   red        = '#F55E5E',
+--- a/src/client/animatedtext.cpp
++++ b/src/client/animatedtext.cpp
+@@ -23,6 +23,7 @@
+ #include "animatedtext.h"
+ #include "map.h"
+ #include "game.h"
++#include "creature.h"
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
+ #include <framework/graphics/graphics.h>
+@@ -47,11 +48,17 @@
+         return;
+     p.x -= textSize.width() / 2;
+ 
+-    if(g_game.getFeature(Otc::GameDiagonalAnimatedText)) {
+-        p.x -= (4 * t / tf) + (8 * t * t / tftf);
+-    }
++    if(m_hasCustomSpeed) {
++        // Chaos (base patch 0100): the drift set from Lua, the whole way in pixels over the life of the text
++        p.x += static_cast<int>(std::round(m_animationSpeed.x * t / tf));
++        p.y += static_cast<int>(std::round(m_animationSpeed.y * t / tf));
++    } else {
++        if(g_game.getFeature(Otc::GameDiagonalAnimatedText)) {
++            p.x -= (4 * t / tf) + (8 * t * t / tftf);
++        }
+ 
+-    p.y += (-48 * t) / tf;
++        p.y += (-48 * t) / tf;
++    }
+ 
+     updateOffset(m_offsetTimer.timeElapsed());
+     m_offsetTimer.restart();
+@@ -61,9 +68,9 @@
+     Rect rect(p, textSize);
+ 
+     if(visibleRect.contains(rect)) {
+-        float t0 = tf / 1.2;
++        const float t0 = tf * m_fadeStart; // Chaos (base patch 0100): stock 1 / 1.2
+         Color color = m_color;
+-        if(t > t0) {
++        if(t > t0 && t0 < tf) {
+             color.setAlpha((float)(1 - (t - t0) / (tf - t0)));
+         }
+         m_cachedText.draw(rect, color);
+@@ -75,8 +82,35 @@
+     m_animationTimer.restart();
+     m_offsetTimer.restart();
+ 
+-    // schedule removal
+-    scheduleRemoval(Otc::ANIMATED_TEXT_DURATION);
++    // schedule removal (Chaos, base patch 0100: at the text's own life, set by the speed scale before it appears)
++    scheduleRemoval(static_cast<int>(std::ceil(m_duration)));
++}
++
++// Chaos (base patch 0100): where an attached number is drawn. While GameChaosAttachedImpactText is on and the creature
++// is on the map, visible and on the camera's floor, the number moves with it: its walk and elevation (getDrawOffset)
++// and its jump, from the creature's own tile (the predicted one for the local player). Otherwise it stays where the
++// creature was last seen; a number whose creature was never followed keeps its tile. The tile anchor of `anchor` is
++// added by MapView, so a number that is not attached is drawn exactly as before.
++Point AnimatedText::attachedShift(const Position& cameraPosition, Position& anchor)
++{
++    anchor = getPosition();
++    if(!g_game.getFeature(Otc::GameChaosAttachedImpactText))
++        return Point(0, 0);
++
++    const CreaturePtr creature = m_attachedCreature.lock();
++    if(creature && !creature->isRemoved() && creature->canBeSeen()) {
++        const Position creaturePos = creature->getPrewalkingPosition();
++        if(creaturePos.isValid() && creaturePos.z == cameraPosition.z) {
++            const PointF jump = creature->getJumpOffset();
++            m_attachedLastPos = creaturePos;
++            m_attachedLastOffset = creature->getDrawOffset() - Point(static_cast<int>(jump.x), static_cast<int>(jump.y));
++            m_attachedSeen = true;
++        }
++    }
++    if(!m_attachedSeen)
++        return Point(0, 0);
++    anchor = m_attachedLastPos;
++    return m_attachedLastOffset;
+ }
+ 
+ // Chaos (base patch 0081): a speed scale below 1 set after onAppear lengthens the life of the text: the first removal
+@@ -134,6 +168,15 @@
+     if(other->getColor() != m_color)
+         return false;
+ 
++    // Chaos (base patch 0100): a crit is never added into a plain hit, nor a damage-over-time tick, nor a number that
++    // follows another creature or that asked not to stack
++    if(!m_stackWithOtherTexts || !other->stacksWithOtherTexts())
++        return false;
++    if(other->getImpactType() != m_impactType)
++        return false;
++    if(other->getAttachedCreature() != m_attachedCreature.lock())
++        return false;
++
+     if(other->getCachedText().getFont() != m_cachedText.getFont())
+         return false;
+ 
+@@ -144,6 +187,7 @@
+         int number = stdext::safe_cast<int>(m_cachedText.getText());
+         int otherNumber = stdext::safe_cast<int>(other->getCachedText().getText());
+         m_cachedText.setText(std::to_string(number + otherNumber));
++        m_impactValue += other->getImpactValue(); // Chaos (base patch 0100)
+         return true;
+     } catch(...) {}
+     return false;
+--- a/src/client/animatedtext.h
++++ b/src/client/animatedtext.h
+@@ -27,7 +27,9 @@
+ #include <framework/graphics/fontmanager.h>
+ #include <framework/core/timer.h>
+ #include <framework/graphics/cachedtext.h>
++#include <algorithm>
+ #include <cmath>
++#include <memory>
+ 
+ // @bindclass
+ class AnimatedText : public Thing
+@@ -45,6 +47,17 @@
+     // rise and fade of Otc::ANIMATED_TEXT_DURATION; 1.2 is 20% quicker, 0.8 is 20% slower). Set from Lua on appear.
+     void setScatter(const Point& scatter) { m_scatter = scatter; }
+     void setSpeedScale(float scale);
++    // Chaos (base patch 0100): typed impact numbers. A drift replaces the stock rise: the whole way in pixels the text
++    // travels over its life ({x = 0, y = -48} is the stock rise without the diagonal); the fade starts at this share of
++    // the life (stock 1 / 1.2); the creature the number follows while GameChaosAttachedImpactText is on (weak: never
++    // keeps a removed creature alive); a text that does not stack is neither merged with nor laid out beside the other
++    // texts of its tile; the impact type (-1: not an impact number, 0 normal, 1 critical, 2 condition, 3 mana drain,
++    // 4 mana gain, 5 energy shield, more for scripts) and the raw value and percent (x100) the server sent.
++    void setAnimationSpeed(const Point& speed) { m_animationSpeed = speed; m_hasCustomSpeed = true; }
++    void setFadeStart(float fadeStart) { m_fadeStart = std::max(0.0f, std::min(1.0f, fadeStart)); }
++    void setAttachedCreature(const CreaturePtr& creature) { m_attachedCreature = creature; }
++    void setStackWithOtherTexts(bool stack) { m_stackWithOtherTexts = stack; }
++    void setImpact(int typeId, uint32 value, int percent) { m_impactType = typeId; m_impactValue = value; m_impactPercent = percent; }
+ 
+     Color getColor() { return m_color; }
+     const CachedText& getCachedText() const { return m_cachedText; }
+@@ -53,6 +66,18 @@
+     Timer getTimer() { return m_animationTimer; }
+     Point getScatter() { return m_scatter; }
+     float getSpeedScale() { return m_speedScale; }
++    Point getAnimationSpeed() { return m_animationSpeed; }
++    bool hasCustomSpeed() { return m_hasCustomSpeed; }
++    float getFadeStart() { return m_fadeStart; }
++    int getDuration() { return static_cast<int>(m_duration); }
++    CreaturePtr getAttachedCreature() { return m_attachedCreature.lock(); }
++    bool stacksWithOtherTexts() { return m_stackWithOtherTexts; }
++    int getImpactType() { return m_impactType; }
++    uint32 getImpactValue() { return m_impactValue; }
++    int getImpactPercent() { return m_impactPercent; }
++    // the map point of an attached text: the creature's place while it can be followed, else where it was last seen
++    // (the tile of the text before that); MapView adds the result to the tile anchor of getPosition()
++    Point attachedShift(const Position& cameraPosition, Position& anchor);
+ 
+     bool merge(const AnimatedTextPtr& other);
+ 
+@@ -76,6 +101,18 @@
+     Point m_scatter;
+     float m_speedScale = 1.0f;
+     float m_duration = Otc::ANIMATED_TEXT_DURATION;
++    // Chaos (base patch 0100)
++    Point m_animationSpeed;
++    bool m_hasCustomSpeed = false;
++    float m_fadeStart = 1.0f / 1.2f;
++    bool m_stackWithOtherTexts = true;
++    std::weak_ptr<Creature> m_attachedCreature;
++    bool m_attachedSeen = false;
++    Position m_attachedLastPos;
++    Point m_attachedLastOffset;
++    int m_impactType = -1;
++    uint32 m_impactValue = 0;
++    int m_impactPercent = 0;
+ };
+ 
+ #endif
+--- a/src/client/const.h
++++ b/src/client/const.h
+@@ -517,8 +517,14 @@
+         // Chaos 10.98 server: the vocation byte is the class: the base slot (1 warrior, 2 ranger, 3 mystic, 6 thief,
+         // 7 necromancer, 8 monk, 9 templar), + 10 for the first ascended class, + 20 for the second
+         GameChaosVocationIds = 154,
++        // Chaos (base patch 0100): typed impact numbers. 155: the server announces it (only when the login capability
++        // byte has CHAOS_CAPABILITY_IMPACT_TEXT): every damage, heal, mana and experience text message carries u16
++        // percent (x100), u8 type and u32 creature id after its value / colour pairs. 156: client only (Options >
++        // Interface "Damage numbers follow the creature"): numbers are drawn on the creature they belong to.
++        GameChaosImpactText = 155,
++        GameChaosAttachedImpactText = 156,
+ 
+-        LastGameFeature = 155
++        LastGameFeature = 157
+     };
+ 
+     enum PathFindResult {
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -917,6 +917,23 @@
+     g_lua.bindClassMemberFunction<AnimatedText>("getScatter", &AnimatedText::getScatter);
+     g_lua.bindClassMemberFunction<AnimatedText>("setSpeedScale", &AnimatedText::setSpeedScale);
+     g_lua.bindClassMemberFunction<AnimatedText>("getSpeedScale", &AnimatedText::getSpeedScale);
++    // Chaos (base patch 0100): typed impact numbers (g_map.onImpactText, overlay module game_damagescatter)
++    g_lua.bindClassMemberFunction<AnimatedText>("setText", &AnimatedText::setText);
++    g_lua.bindClassMemberFunction<AnimatedText>("setColor", &AnimatedText::setColor);
++    g_lua.bindClassMemberFunction<AnimatedText>("setFont", &AnimatedText::setFont);
++    g_lua.bindClassMemberFunction<AnimatedText>("setAnimationSpeed", &AnimatedText::setAnimationSpeed);
++    g_lua.bindClassMemberFunction<AnimatedText>("getAnimationSpeed", &AnimatedText::getAnimationSpeed);
++    g_lua.bindClassMemberFunction<AnimatedText>("hasCustomSpeed", &AnimatedText::hasCustomSpeed);
++    g_lua.bindClassMemberFunction<AnimatedText>("setFadeStart", &AnimatedText::setFadeStart);
++    g_lua.bindClassMemberFunction<AnimatedText>("getFadeStart", &AnimatedText::getFadeStart);
++    g_lua.bindClassMemberFunction<AnimatedText>("getDuration", &AnimatedText::getDuration);
++    g_lua.bindClassMemberFunction<AnimatedText>("setAttachedCreature", &AnimatedText::setAttachedCreature);
++    g_lua.bindClassMemberFunction<AnimatedText>("getAttachedCreature", &AnimatedText::getAttachedCreature);
++    g_lua.bindClassMemberFunction<AnimatedText>("setStackWithOtherTexts", &AnimatedText::setStackWithOtherTexts);
++    g_lua.bindClassMemberFunction<AnimatedText>("stacksWithOtherTexts", &AnimatedText::stacksWithOtherTexts);
++    g_lua.bindClassMemberFunction<AnimatedText>("getImpactType", &AnimatedText::getImpactType);
++    g_lua.bindClassMemberFunction<AnimatedText>("getImpactValue", &AnimatedText::getImpactValue);
++    g_lua.bindClassMemberFunction<AnimatedText>("getImpactPercent", &AnimatedText::getImpactPercent);
+ 
+     g_lua.registerClass<Player, Creature>();
+     g_lua.registerClass<Npc, Creature>();
+--- a/src/client/map.cpp
++++ b/src/client/map.cpp
+@@ -162,6 +162,10 @@
+                 if(other->getPosition() != pos)
+                     continue;
+ 
++                // Chaos (base patch 0100): a text that does not stack is neither merged nor laid out beside the others
++                if(!animatedText->stacksWithOtherTexts() || !other->stacksWithOtherTexts())
++                    continue;
++
+                 if(other->getTimer().ticksElapsed() >= Otc::ANIMATED_TEXT_DURATION * 0.7f)
+                     continue;
+ 
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -555,12 +555,15 @@
+ 
+     limit = g_adaptiveRenderer.textsLimit();
+     for (const AnimatedTextPtr& animatedText : g_map.getAnimatedTexts()) {
+-        Position pos = animatedText->getPosition();
++        Position pos;
++        // Chaos (base patch 0100): a number attached to its creature is anchored on the creature's tile and moved by
++        // its walk; else (option off, creature gone) the text's own tile and no shift, as before
++        const Point attachedShift = animatedText->attachedShift(cameraPosition, pos);
+ 
+         if (pos.z != cameraPosition.z)
+             continue;
+ 
+-        Point p = transformPositionTo2D(pos, cameraPosition) - drawOffset + Point(16, 8) * g_sprites.getOffsetFactor();
++        Point p = transformPositionTo2D(pos, cameraPosition) - drawOffset + Point(16, 8) * g_sprites.getOffsetFactor() + attachedShift;
+         p.x *= horizontalStretchFactor;
+         p.y *= verticalStretchFactor;
+         p += rect.topLeft();
+--- a/src/client/protocolgameparse.cpp
++++ b/src/client/protocolgameparse.cpp
+@@ -1774,6 +1774,31 @@
+     return text + units[unit];
+ }
+ 
++// Chaos (base patch 0100): one impact number (damage, heal, mana, experience). The text knows its type, the value and
++// percent the server sent and, when the server named one, the creature it belongs to. Lua:
++// g_map.onImpactText(animatedText, text, mode, typeId, value, percent, creatureId, pos) may change it (scatter, drift,
++// font, colour, text) or answer true to drop it before it reaches the map. Without GameChaosImpactText (an older
++// server) it is still called, with type 0, percent 0 and creature 0.
++static void chaosAddImpactText(Otc::MessageMode mode, const Position& pos, uint32_t value, int color,
++                               const std::string& font, int typeId, int percent, uint32_t creatureId)
++{
++    AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
++    animatedText->setColor(color);
++    const std::string text = chaosShortNumber(value);
++    animatedText->setText(text);
++    if (font.size())
++        animatedText->setFont(font);
++    animatedText->setImpact(typeId, value, percent);
++    if (creatureId != 0) {
++        if (CreaturePtr creature = g_map.getCreatureById(creatureId))
++            animatedText->setAttachedCreature(creature);
++    }
++    if (g_lua.callGlobalField<bool>("g_map", "onImpactText", animatedText, text, static_cast<int>(mode), typeId,
++                                    value, percent, creatureId, pos))
++        return;
++    g_map.addThing(animatedText, pos);
++}
++
+ void ProtocolGame::parseAnimatedText(const InputMessagePtr& msg)
+ {
+     Position position = getPosition(msg);
+@@ -2734,6 +2759,14 @@
+         // magic damage
+         value[1] = msg->getU32();
+         color[1] = msg->getU8();
++        // Chaos (base patch 0100): u16 percent (x100), u8 type, u32 creature id, one set for both numbers of the hit
++        int percent = 0, typeId = 0;
++        uint32_t creatureId = 0;
++        if (g_game.getFeature(Otc::GameChaosImpactText)) {
++            percent = msg->getU16();
++            typeId = msg->getU8();
++            creatureId = msg->getU32();
++        }
+         if(g_game.getFeature(Otc::GameAnimatedTextCustomFont))
+             font = msg->getString();
+         text = msg->getString();
+@@ -2741,13 +2774,7 @@
+         for (int i = 0; i < 2; ++i) {
+             if (value[i] == 0)
+                 continue;
+-            AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+-            animatedText->setColor(color[i]);
+-            animatedText->setText(chaosShortNumber(value[i]));
+-            if (font.size())
+-                animatedText->setFont(font);
+-
+-            g_map.addThing(animatedText, pos);
++            chaosAddImpactText(mode, pos, value[i], color[i], font, typeId, percent, creatureId);
+         }
+         break;
+     }
+@@ -2760,16 +2787,19 @@
+         Position pos = getPosition(msg);
+         uint value = msg->getU32();
+         int color = msg->getU8();
++        // Chaos (base patch 0100): the same three fields as the damage modes, at the same place
++        int percent = 0, typeId = 0;
++        uint32_t creatureId = 0;
++        if (g_game.getFeature(Otc::GameChaosImpactText)) {
++            percent = msg->getU16();
++            typeId = msg->getU8();
++            creatureId = msg->getU32();
++        }
+         if(g_game.getFeature(Otc::GameAnimatedTextCustomFont))
+             font = msg->getString();
+         text = msg->getString();
+ 
+-        AnimatedTextPtr animatedText = std::make_shared<AnimatedText>();
+-        animatedText->setColor(color);
+-        animatedText->setText(chaosShortNumber(value));
+-        if(font.size())
+-            animatedText->setFont(font);
+-        g_map.addThing(animatedText, pos);
++        chaosAddImpactText(mode, pos, value, color, font, typeId, percent, creatureId);
+         break;
+     }
+     case Otc::MessageInvalid:
+--- a/src/client/protocolgamesend.cpp
++++ b/src/client/protocolgamesend.cpp
+@@ -43,7 +43,10 @@
+ constexpr uint8 ASTRA_CAPABILITY_STORE_CATALOG_CHUNKS = 1U << 4;
+ constexpr uint8 ASTRA_CAPABILITY_BESTIARY_BANNER_CREATURE_DATA = 1U << 5;
+ constexpr uint8 ASTRA_CAPABILITY_EXTENDED_SPELL_IDS = 1U << 6;
++// Chaos (base patch 0100): bit 7 asks the server for typed impact numbers (feature GameChaosImpactText)
++constexpr uint8 CHAOS_CAPABILITY_IMPACT_TEXT = 1U << 7;
+ constexpr uint8 ASTRA_CAPABILITIES = ASTRA_CAPABILITY_STORE_HIGHLIGHTS |
++                                     CHAOS_CAPABILITY_IMPACT_TEXT |
+                                      ASTRA_CAPABILITY_SINGLE_CREATURE_MARKS |
+                                      ASTRA_CAPABILITY_ECHO_RAID_VISUALS |
+                                      ASTRA_CAPABILITY_STORE_BASE_PRICE |
+@@ -229,6 +232,7 @@
+     g_game.disableFeature(Otc::GameAstraStoreBasePrice);
+     g_game.disableFeature(Otc::GameAstraBestiaryBannerCreatureData);
+     g_game.disableFeature(Otc::GameAstraExtendedSpellIds);
++    g_game.disableFeature(Otc::GameChaosImpactText); // Chaos (base patch 0100): only when this server announces it
+ 
+     std::string extended = callLuaField<std::string>("getLoginExtendedData");
+     if (!extended.empty()) {

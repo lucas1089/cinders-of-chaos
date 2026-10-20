@@ -1,0 +1,373 @@
+# Typed impact numbers (server/README.md "Typed impact numbers", client base patch 0100). Every damage, heal, mana and
+# experience text message (0xB4, modes 23..29) carries three more fields after its value / colour pairs and before the
+# text: u16 percent (the value as a share of the target's maximum health, mana for mana, the level's experience for an
+# experience gain; x100, rounded up), u8 type (ChaosImpactType: 0 normal, 1 critical, 2 condition tick, 3 mana drain,
+# 4 mana gain, 5 energy shield, 6+ free for scripts) and u32 creature id (the creature the number belongs to; the
+# client draws it on that creature). One set per message: both pairs of a hit share it. Only a client that asks for it
+# gets the new layout: our client sets bit 7 (CHAOS_CAPABILITY_IMPACT_TEXT) of the capability byte it sends after its
+# markers in the login packet, and sendFeatures then announces GameChaosImpactText (155); every other client keeps the
+# old layout, so an older client works with this engine and this client works with an older engine.
+# CombatDamage::critical (combat.cpp) gives type 1; CombatDamage::firstOrigin keeps ORIGIN_CONDITION across the
+# onHealthChange / onManaChange re-entry (which sets origin to ORIGIN_NONE), so a tick keeps type 2 after a script ran.
+# Lua: player:sendTextMessage(type, text, pos, value, color, secondaryValue, secondaryColor, percent, typeId, creature)
+# (a creature given but gone: false). Apply in the server source root after 0001-0050: patch -p1 < 0051-typed-impact-numbers.patch, then
+# rebuild everything (TextMessage, CombatDamage and ProtocolGame change layout).
+--- a/src/const.h
++++ b/src/const.h
+@@ -695,8 +695,27 @@
+ 
+ 	// Chaos: per-item custom attributes in every item the server sends (client feature 126, see ChaosItemAttrKey)
+ 	GameItemCustomAttributes = 126,
++
++	// Chaos (patch 0051): typed impact numbers: every damage, heal, mana and experience text message carries u16 percent
++	// (x100), u8 type (ChaosImpactType) and u32 creature id after its value / colour pairs. Announced only to our client
++	// when it set CHAOS_CAPABILITY_IMPACT_TEXT in its login capability byte; same number in the client's const.h.
++	GameChaosImpactText = 155,
++};
++
++// Chaos (patch 0051): the type of an impact number (TextMessage::typeId). Same numbers in the client module
++// game_damagescatter (scatterlogic.lua TYPE) and in data/scripts/chaos/chaos_constants.lua (Chaos.impactType).
++enum ChaosImpactType : uint8_t {
++	CHAOS_IMPACT_NORMAL = 0,
++	CHAOS_IMPACT_CRITICAL = 1, // CombatDamage::critical (combat.cpp rolls it)
++	CHAOS_IMPACT_CONDITION = 2, // damage over time: a condition tick (origin ORIGIN_CONDITION)
++	CHAOS_IMPACT_MANA_DRAIN = 3, // mana lost: the mana shield or a mana drain
++	CHAOS_IMPACT_MANA_GAIN = 4, // mana restored
++	CHAOS_IMPACT_ENERGY_SHIELD = 5, // taken by the energy shield (patch 0015)
+ };
+ 
++// Chaos (patch 0051): the bit of our client's login capability byte that asks for GameChaosImpactText
++static constexpr uint8_t CHAOS_CAPABILITY_IMPACT_TEXT = 1 << 7;
++
+ // Chaos: keys of the custom attributes written after each item (u16 count, then u16 key + u64 value per entry).
+ // Same numbers in data/scripts/chaos/chaos_constants.lua (Chaos.itemAttr) and in the client
+ // (modules/game_itemrarity, ChaosItemAttr); server/tests/item_tooltip_test.lua checks that the three agree.
+--- a/src/enums.h
++++ b/src/enums.h
+@@ -658,6 +658,9 @@
+ 	bool critical = false;
+ 	bool leeched = false;
+ 	int32_t absorbed = 0; // Chaos (patch 0015): taken by the target's energy shield instead of its health
++	// Chaos (patch 0051): the origin before the onHealthChange / onManaChange re-entry set `origin` to ORIGIN_NONE, so
++	// the impact number of a condition tick keeps its type after a script ran
++	CombatOrigin firstOrigin = ORIGIN_NONE;
+ };
+ 
+ using MarketOfferList = std::list<MarketOffer>;
+--- a/src/protocolgame.h
++++ b/src/protocolgame.h
+@@ -33,10 +33,28 @@
+ 		TextColor_t color;
+ 	} primary, secondary;
+ 
++	// Chaos (patch 0051): typed impact numbers, sent after the value / colour pairs of the damage, heal and experience
++	// modes to a client that has GameChaosImpactText (one set for both pairs of a hit)
++	uint16_t percent = 0; // the value as a share of the target's maximum health (mana for mana), x100: 10000 = 100%
++	uint8_t typeId = CHAOS_IMPACT_NORMAL; // ChaosImpactType
++	uint32_t creatureId = 0; // the creature the number belongs to (0: none, the number stays on its tile)
++
+ 	TextMessage() = default;
+ 	TextMessage(MessageClasses type, std::string text) : type(type), text(std::move(text)) {}
+ };
+ 
++// Chaos (patch 0051): TextMessage::percent: value as a share of maximum, x100, rounded up (a hit of 1 on 100000 health
++// is 1, not 0), capped at the u16 range
++inline uint16_t chaosImpactPercent(int64_t value, int64_t maximum)
++{
++	if (value <= 0) {
++		return 0;
++	}
++	maximum = std::max<int64_t>(maximum, 1);
++	const int64_t percent = (value * 10000 + maximum - 1) / maximum;
++	return static_cast<uint16_t>(std::min<int64_t>(percent, std::numeric_limits<uint16_t>::max()));
++}
++
+ class ProtocolGame final : public Protocol
+ {
+ 	public:
+@@ -342,6 +360,8 @@
+ 		uint16_t otclientV8 = 0;
+ 		bool chaosClient = false; // the client sent the markers of our client after its version (see onRecvFirstMessage)
+ 		bool chaosItemAttributes = false; // GameItemCustomAttributes announced: every item carries its custom attributes
++		bool chaosImpactTextAsked = false; // patch 0051: the login capability byte of our client asked for typed numbers
++		bool chaosImpactText = false; // patch 0051: GameChaosImpactText announced: text messages carry the new fields
+ 
+ 		// Chaos (patch 0021): the client guard: client version field, names as the client sent them, the nonce, the
+ 		// timeout event and the extended opcodes held back until the answer
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -587,6 +587,14 @@
+ 		// read custom attributes after each item (sendFeatures), other OTC-family clients keep the plain item format
+ 		const std::string tierMarker = msg.getString();
+ 		chaosClient = tierMarker == "OTCv8TierByte" && msg.getString() == "A";
++		// Chaos (patch 0051): then u32 signature, the string "C" and the capability byte; bit 7 asks for typed impact
++		// numbers (sendFeatures announces GameChaosImpactText back). A client without the bit keeps the old layout.
++		if (chaosClient) {
++			msg.get<uint32_t>();
++			if (msg.getString() == "C") {
++				chaosImpactTextAsked = (msg.getByte() & CHAOS_CAPABILITY_IMPACT_TEXT) != 0;
++			}
++		}
+ 	}
+ 
+ 	if (version < CLIENT_VERSION_MIN || version > CLIENT_VERSION_MAX) {
+@@ -1718,6 +1726,17 @@
+ 	NetworkMessage msg;
+ 	msg.addByte(0xB4);
+ 	msg.addByte(message.type);
++	// Chaos (patch 0051): typed impact numbers. After the value / colour pairs of every damage, heal and experience mode,
++	// before the text, the same three fields in the same order: u16 percent (x100), u8 type (ChaosImpactType), u32
++	// creature id. Only to a client that has GameChaosImpactText (sendFeatures); the others get the old layout.
++	const auto addImpactFields = [&]() {
++		if (!chaosImpactText) {
++			return;
++		}
++		msg.add<uint16_t>(message.percent);
++		msg.addByte(message.typeId);
++		msg.add<uint32_t>(message.creatureId);
++	};
+ 	switch (message.type) {
+ 		case MESSAGE_DAMAGE_DEALT:
+ 		case MESSAGE_DAMAGE_RECEIVED:
+@@ -1727,6 +1746,7 @@
+ 			msg.addByte(message.primary.color);
+ 			msg.add<uint32_t>(displayFactor > 1 ? ChaosDisplay::scaleU32(message.secondary.value, displayFactor) : message.secondary.value);
+ 			msg.addByte(message.secondary.color);
++			addImpactFields(); // Chaos (patch 0051)
+ 			break;
+ 		}
+ 		case MESSAGE_HEALED:
+@@ -1734,6 +1754,7 @@
+ 			msg.addPosition(message.position);
+ 			msg.add<uint32_t>(displayFactor > 1 ? ChaosDisplay::scaleU32(message.primary.value, displayFactor) : message.primary.value);
+ 			msg.addByte(message.primary.color);
++			addImpactFields(); // Chaos (patch 0051)
+ 			break;
+ 		}
+ 		case MESSAGE_EXPERIENCE:
+@@ -1741,6 +1762,7 @@
+ 			msg.addPosition(message.position);
+ 			msg.add<uint32_t>(message.primary.value);
+ 			msg.addByte(message.primary.color);
++			addImpactFields(); // Chaos (patch 0051)
+ 			break;
+ 		}
+ 		case MESSAGE_GUILD:
+@@ -3660,6 +3682,11 @@
+ 	if (chaosClient) {
+ 		features[GameItemCustomAttributes] = true;
+ 		chaosItemAttributes = true;
++		// Chaos (patch 0051): only a client that asked for it: an older client has no room for feature 155
++		if (chaosImpactTextAsked) {
++			features[GameChaosImpactText] = true;
++			chaosImpactText = true;
++		}
+ 	}
+ 	if(features.empty())
+ 		return;
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -4557,6 +4557,17 @@
+ 	}
+ }
+ 
++// Chaos (patch 0051): the impact type of a health change: critical (combat.cpp sets `critical`), else a condition tick
++// (the origin before the onHealthChange re-entry cleared it), else normal
++static uint8_t chaosImpactType(const CombatDamage& damage)
++{
++	if (damage.critical) {
++		return CHAOS_IMPACT_CRITICAL;
++	}
++	const CombatOrigin origin = damage.origin != ORIGIN_NONE ? damage.origin : damage.firstOrigin;
++	return origin == ORIGIN_CONDITION ? CHAOS_IMPACT_CONDITION : CHAOS_IMPACT_NORMAL;
++}
++
+ // Chaos (patch 0015): the text messages and the animated number of a hit taken by an energy shield (light blue-violet)
+ void Game::sendEnergyShieldDamage(const SpectatorVec& spectators, Creature* attacker, Player* targetPlayer, int32_t amount)
+ {
+@@ -4568,6 +4579,10 @@
+ 	message.position = targetPos;
+ 	message.primary.value = amount;
+ 	message.primary.color = TEXTCOLOR_ENERGYSHIELD;
++	// Chaos (patch 0051): typed impact number, on the player; percent of the player's maximum health
++	message.percent = chaosImpactPercent(amount, targetPlayer->getMaxHealth());
++	message.typeId = CHAOS_IMPACT_ENERGY_SHIELD;
++	message.creatureId = targetPlayer->getID();
+ 
+ 	std::string spectatorMessage;
+ 	for (Creature* spectator : spectators) {
+@@ -4630,6 +4645,7 @@
+ 				for (CreatureEvent* creatureEvent : events) {
+ 					creatureEvent->executeHealthChange(target, attacker, damage);
+ 				}
++				damage.firstOrigin = damage.origin; // Chaos (patch 0051)
+ 				damage.origin = ORIGIN_NONE;
+ 				return combatChangeHealth(attacker, target, damage);
+ 			}
+@@ -4648,6 +4664,10 @@
+ 			message.position = targetPos;
+ 			message.primary.value = realHealthChange;
+ 			message.primary.color = TEXTCOLOR_PASTELRED;
++			// Chaos (patch 0051): typed impact number, on the healed creature (the *_OTHERS copies too)
++			message.percent = chaosImpactPercent(realHealthChange, target->getMaxHealth());
++			message.typeId = chaosImpactType(damage);
++			message.creatureId = target->getID();
+ 
+ 			SpectatorVec spectators;
+ 			map.getSpectators(spectators, targetPos, false, true);
+@@ -4740,6 +4760,10 @@
+ 
+ 				message.primary.value = manaDamage;
+ 				message.primary.color = TEXTCOLOR_BLUE;
++				// Chaos (patch 0051): the mana shield's part is a mana drain number, percent of the maximum mana
++				message.percent = chaosImpactPercent(manaDamage, targetPlayer->getMaxMana());
++				message.typeId = CHAOS_IMPACT_MANA_DRAIN;
++				message.creatureId = target->getID();
+ 
+ 				for (Creature* spectator : spectators) {
+ 					Player* tmpPlayer = spectator->getPlayer();
+@@ -4796,6 +4820,7 @@
+ 				for (CreatureEvent* creatureEvent : events) {
+ 					creatureEvent->executeHealthChange(target, attacker, damage);
+ 				}
++				damage.firstOrigin = damage.origin; // Chaos (patch 0051)
+ 				damage.origin = ORIGIN_NONE;
+ 				return combatChangeHealth(attacker, target, damage);
+ 			}
+@@ -4845,6 +4870,10 @@
+ 
+ 		message.primary.value = damage.primary.value;
+ 		message.secondary.value = damage.secondary.value;
++		// Chaos (patch 0051): typed impact number for both parts of the hit, on the target (every spectator's copy)
++		message.percent = chaosImpactPercent(realDamage, target->getMaxHealth());
++		message.typeId = chaosImpactType(damage);
++		message.creatureId = target->getID();
+ 
+ 		uint8_t hitEffect;
+ 		if (message.primary.value) {
+@@ -4951,6 +4980,7 @@
+ 				for (CreatureEvent* creatureEvent : events) {
+ 					creatureEvent->executeManaChange(target, attacker, damage);
+ 				}
++				damage.firstOrigin = damage.origin; // Chaos (patch 0051)
+ 				damage.origin = ORIGIN_NONE;
+ 				return combatChangeMana(attacker, target, damage);
+ 			}
+@@ -4965,6 +4995,9 @@
+ 			message.position = target->getPosition();
+ 			message.primary.value = realManaChange;
+ 			message.primary.color = TEXTCOLOR_MAYABLUE;
++			message.percent = chaosImpactPercent(realManaChange, targetPlayer->getMaxMana()); // Chaos (patch 0051)
++			message.typeId = CHAOS_IMPACT_MANA_GAIN;
++			message.creatureId = target->getID();
+ 			targetPlayer->sendTextMessage(message);
+ 		}
+ 	} else {
+@@ -4997,6 +5030,7 @@
+ 				for (CreatureEvent* creatureEvent : events) {
+ 					creatureEvent->executeManaChange(target, attacker, damage);
+ 				}
++				damage.firstOrigin = damage.origin; // Chaos (patch 0051)
+ 				damage.origin = ORIGIN_NONE;
+ 				return combatChangeMana(attacker, target, damage);
+ 			}
+@@ -5010,6 +5044,9 @@
+ 		message.position = targetPos;
+ 		message.primary.value = manaLoss;
+ 		message.primary.color = TEXTCOLOR_BLUE;
++		message.percent = chaosImpactPercent(manaLoss, targetPlayer->getMaxMana()); // Chaos (patch 0051)
++		message.typeId = CHAOS_IMPACT_MANA_DRAIN;
++		message.creatureId = target->getID();
+ 
+ 		SpectatorVec spectators;
+ 		map.getSpectators(spectators, targetPos, false, true);
+--- a/src/condition.cpp
++++ b/src/condition.cpp
+@@ -1008,6 +1008,9 @@
+ 				message.position = player->getPosition();
+ 				message.primary.value = realHealthGain;
+ 				message.primary.color = TEXTCOLOR_MAYABLUE;
++				// Chaos (patch 0051): typed impact number, on the player (the *_OTHERS copies too)
++				message.percent = chaosImpactPercent(realHealthGain, player->getMaxHealth());
++				message.creatureId = player->getID();
+ 				player->sendTextMessage(message);
+ 
+ 				SpectatorVec spectators;
+@@ -1039,6 +1042,9 @@
+ 				message.position = player->getPosition();
+ 				message.primary.value = realManaGain;
+ 				message.primary.color = TEXTCOLOR_MAYABLUE;
++				message.percent = chaosImpactPercent(realManaGain, player->getMaxMana()); // Chaos (patch 0051)
++				message.typeId = CHAOS_IMPACT_MANA_GAIN;
++				message.creatureId = player->getID();
+ 				player->sendTextMessage(message);
+ 
+ 				SpectatorVec spectators;
+--- a/src/creature.cpp
++++ b/src/creature.cpp
+@@ -1160,6 +1160,7 @@
+ 	message.position = position;
+ 	message.primary.color = TEXTCOLOR_WHITE_EXP;
+ 	message.primary.value = gainExp;
++	message.creatureId = getID(); // Chaos (patch 0051): the summon's number follows the summon
+ 
+ 	for (Creature* spectator : spectators) {
+ 		spectator->getPlayer()->sendTextMessage(message);
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1947,6 +1947,10 @@
+ 		message.position = position;
+ 		message.primary.value = exp;
+ 		message.primary.color = TEXTCOLOR_WHITE_EXP;
++		// Chaos (patch 0051): typed impact number on the player; percent of the experience the current level needs
++		message.percent = chaosImpactPercent(static_cast<int64_t>(std::min<uint64_t>(exp, INT64_MAX / 10000)),
++		                                     static_cast<int64_t>(nextLevelExp - currLevelExp));
++		message.creatureId = getID();
+ 		sendTextMessage(message);
+ 
+ 		SpectatorVec spectators;
+@@ -2033,6 +2037,7 @@
+ 		message.position = position;
+ 		message.primary.value = lostExp;
+ 		message.primary.color = TEXTCOLOR_RED;
++		message.creatureId = getID(); // Chaos (patch 0051)
+ 		sendTextMessage(message);
+ 
+ 		SpectatorVec spectators;
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -10363,8 +10363,10 @@
+ 
+ int LuaScriptInterface::luaPlayerSendTextMessage(lua_State* L)
+ {
+-	// player:sendTextMessage(type, text[, position, primaryValue = 0, primaryColor = TEXTCOLOR_NONE[, secondaryValue = 0, secondaryColor = TEXTCOLOR_NONE]])
++	// player:sendTextMessage(type, text[, position, primaryValue = 0, primaryColor = TEXTCOLOR_NONE[, secondaryValue = 0, secondaryColor = TEXTCOLOR_NONE[, percent = 0, typeId = 0[, attachedCreature = nil]]]])
+ 	// player:sendTextMessage(type, text, channelId)
++	// Chaos (patch 0051): percent (x100), typeId (ChaosImpactType, Chaos.impactType) and the creature the number follows
++	// (a creature or its id) for the damage, heal and experience modes; an attachedCreature given but gone: false
+ 
+ 	Player* player = getUserdata<Player>(L, 1);
+ 	if (!player) {
+@@ -10394,6 +10396,22 @@
+ 			message.secondary.value = getNumber<int32_t>(L, 7);
+ 			message.secondary.color = getNumber<TextColor_t>(L, 8);
+ 		}
++
++		// Chaos (patch 0051): typed impact numbers
++		if (parameters >= 9) {
++			message.percent = getNumber<uint16_t>(L, 9);
++		}
++		if (parameters >= 10) {
++			message.typeId = getNumber<uint8_t>(L, 10);
++		}
++		if (parameters >= 11 && !lua_isnil(L, 11)) {
++			Creature* attached = getCreature(L, 11);
++			if (!attached || attached->isRemoved()) {
++				pushBoolean(L, false);
++				return 1;
++			}
++			message.creatureId = attached->getID();
++		}
+ 	}
+ 
+ 	player->sendTextMessage(message);

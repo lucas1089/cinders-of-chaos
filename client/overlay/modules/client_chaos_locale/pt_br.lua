@@ -499,6 +499,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Subtle"] = "Sutil",
   ["The numbers above the map spread out a little, each hit with its own shift and speed, so an area hit or a group hunt stays readable. Saved for this character."] = "Os números acima do mapa se espalham um pouco, cada golpe com seu próprio deslocamento e velocidade, para que dano em área ou caçada em grupo continue legível. Salvo para este personagem.",
   ["Wide"] = "Ampla",
+  -- base patch 0100: Options > Interface (game_damagescatter applies it)
+  ["Damage numbers follow the creature"] = "Números de dano seguem a criatura",
+  ["When checked, a damage, healing or experience number moves with\nthe creature it belongs to while it floats up. Unchecked, it stays\nover the square where the hit landed."] = "Marcado, um número de dano, cura ou experiência acompanha a\ncriatura a que pertence enquanto sobe. Desmarcado, ele fica\nsobre o quadrado onde o golpe acertou.",
   ["Buff Bar"] = "Barra de buffs",
   ["The bar sits under the character plate and moves with it."] = "A barra fica embaixo da placa do personagem e se move com ela.",
   ["Show the buff bar"] = "Mostrar a barra de buffs",

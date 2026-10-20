@@ -1,6 +1,6 @@
 Module
   name: game_damagescatter
-  description: Damage numbers spread out - a random shift and a slightly random speed for the animated numbers above the map (base patch 0081), on/off and strength per character
+  description: Damage numbers spread out and typed - a random shift, speed and drift for the numbers above the map (base patches 0081, 0100), a font per number type, numbers that follow their creature; on/off and strength per character
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ scatterlogic, damagescatter ]

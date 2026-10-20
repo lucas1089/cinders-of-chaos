@@ -625,6 +625,43 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     blue button sheet (`/images/ui/buttons-blue`, not part of the Chaos skin), 83 px wide, so "Advanced Options" ran out
     of a blue block. It is a plain themed button, 120 px wide. Applies after `0001`-`0086`.
 
+62. `0100` (C++ `src/client/animatedtext.h/.cpp`, `map.cpp`, `mapview.cpp`, `protocolgameparse.cpp`, `protocolgamesend.cpp`,
+    `const.h`, `luafunctions_client.cpp`; Lua `modules/gamelib/const.lua`, `mods/client_settings/classes/dataset.lua`,
+    `options/interface.otui`): **Typed impact numbers** (slice B of the damage number work; server src-patch `0051`,
+    server/README.md "Typed impact numbers"). Numbered 0100 to leave 0085-0099 to the patches in flight; renumber at
+    merge if needed. **Protocol:** the login capability byte gets bit 7 (`CHAOS_CAPABILITY_IMPACT_TEXT`); a server that
+    knows it answers with feature `GameChaosImpactText` (155, cleared before every login like the other announced
+    features). With 155 on, every damage, heal, mana and experience text message carries u16 percent (x100), u8 type,
+    u32 creature id after its value / colour pairs and before the text (and before the custom font string, a feature
+    this server never announces); without it the old layout is read. **Compatibility:** old client + new engine, and
+    new client + old engine, both keep the old layout and work; the new look needs both new parts in the same release
+    (the beta runs the engine of the release package). **Hook:** every number (damage, heal, mana, experience; also
+    against an old server, then with type 0, percent 0, creature 0) goes through
+    `g_map.onImpactText(animatedText, text, mode, typeId, value, percent, creatureId, pos)` before `g_map.addThing`; a
+    handler answering true drops it. `mode` is the client's `Otc::MessageMode` (21 damage dealt, 22 received, 23 heal,
+    24 experience, 25 damage others, 26 heal others, 27 experience others, 41 mana), not the 10.98 wire ids (23..29).
+    The other animated texts (packet 0x84, the server's labels) still only reach `g_map.onAnimatedText`.
+    **AnimatedText (Lua):** `setText`, `setColor` (palette byte), `setFont`, `setAnimationSpeed({x, y})` (a drift that
+    replaces the stock rise: pixels over the whole life), `getAnimationSpeed`, `hasCustomSpeed`, `setFadeStart(f)` /
+    `getFadeStart` (stock 1 / 1.2), `getDuration`, `setAttachedCreature` / `getAttachedCreature` (a weak pointer: a
+    removed creature is never kept alive), `setStackWithOtherTexts(false)` / `stacksWithOtherTexts` (no merge, no
+    side-by-side layout), `getImpactType` (-1 for a text that is not an impact number), `getImpactValue`,
+    `getImpactPercent`. Patch 0081's `setScatter` stays the random shift: it is added after the stacking offset, so the
+    stacking of `Map::addThing` never erased it here and the numbers keep stacking side by side. `merge()` (already
+    comparing fonts) also needs the same type, creature and stacking, so a crit or a tick is never summed into a plain
+    hit; the removal is scheduled at the text's own life. **Follow the creature:** feature
+    `GameChaosAttachedImpactText` (156, client only, `LastGameFeature` 157 in `const.h` and `const.lua`): `MapView`
+    draws an attached number at its creature's tile plus the creature's walk, elevation and jump (`getDrawOffset`,
+    `getJumpOffset`; the predicted tile for the local player), the same anchor as a tile number otherwise, so it glides
+    with the creature. When the creature is removed, hidden or on another floor the number stays where the creature
+    was last drawn (its own tile if never followed), no jump back. Option Options > Interface "Damage numbers follow the
+    creature" (`attachedImpactText`, on), in a new row after "Field timers"; its `apply` calls
+    `game_damagescatter.setAttached`, and the module sets the feature again at every game start (the features are reset
+    on every login). The overlay module `game_damagescatter` does the feel (MANIFEST "Typed impact numbers"). Applies
+    after `0001`-`0083` (`patch` clean, no fuzz, on the base files with all of them). **Built:** the whole client with
+    `0001`-`0083` and `0100` compiled and linked on Linux (CMake Release, `-DLUAJIT=ON`, g++ 13). Not run in a client
+    against a server.
+
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
 spells") is overlay only, so it needs no patch and none of the helper's lines change. It reads these parts of the patched

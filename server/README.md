@@ -184,6 +184,10 @@ server/
                                       race and of an element hit, and any stock missile, swapped from Lua (nothing by
                                       default; see "Condition auras, blasts and fireworks (pair 29)";
                                       tools/effect_overrides_patch_test.py)
+  src-patches/0051-typed-impact-numbers.patch   engine: every damage, heal, mana and experience number carries its
+                                      percent, type (normal, critical, condition tick, mana ...) and creature id, for
+                                      a client that asks at login (client base patch 0100); NEEDS THE NEW CLIENT FOR THE
+                                      NEW LOOK, old clients keep working (see "Typed impact numbers"; tests/impact_text_test.lua)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
@@ -15542,6 +15546,52 @@ element could pass 100 percent.
 - **Tests:** `tests/absorb_ceiling_test.lua` (the arithmetic, and that the patch constant equals the config).
 - **Apply:** after 0001-0048, `patch -p1 < 0049-absorb-ceiling.patch`, then rebuild. A dry run over 0001-0049 on the base
   source applies cleanly; **not compiled**, not run in game.
+
+## Typed impact numbers (engine `src-patches/0051-typed-impact-numbers.patch`, client base patch `0100`, client `game_damagescatter`)
+
+Slice B of the damage number work (slice A: client base patch `0081`, the random shift and speed, no protocol change).
+The server now tags every number it shows over the map, so the client can pick a font per kind, let the number float
+with its creature and show it as a percent later.
+
+- **Wire layout (0xB4, text message).** For modes 23, 24, 27 (damage dealt / received / others): position, u32 + u8
+  (physical value, colour), u32 + u8 (element value, colour), **u16 percent, u8 type, u32 creature id**, string text.
+  For 25, 28 (healed, healed others) and 26, 29 (experience, experience of others): position, u32 + u8,
+  **u16 percent, u8 type, u32 creature id**, string text. The same three fields, in the same order, after the pairs and
+  before the text, for every mode; one set per message (both numbers of a hit share it). The mode ids are this
+  engine's `MessageClasses` and the client's 10.98 table (`protocolcodes.cpp`: 23..29); mana gain and loss travel as
+  healed / damage modes (the client's mana mode 43 is never sent; the client reads the fields for it too).
+- **Fields.** `percent`: the value as a share of the target's maximum, x100, rounded up (10000 = 100%): health for
+  damage and heals, mana for the mana shield, mana drain and mana gain, health for the energy shield, the level's
+  experience for an experience gain (0 for a loss and for a summon's experience). `type` (`ChaosImpactType` in
+  `const.h`, `Chaos.impactType`, client `DamageScatterLogic.TYPE`): 0 normal, 1 critical (`CombatDamage::critical`, which
+  `combat.cpp` sets where it rolls the crit), 2 condition tick (origin `ORIGIN_CONDITION`), 3 mana drain (mana shield,
+  mana loss), 4 mana gain, 5 energy shield (patch 0015), 6 and up free for scripts. `creature id`: the target (the healed
+  player, the player who gained experience, the summon); every spectator's copy carries it.
+- **Condition ticks after a script.** `combatChangeHealth` / `combatChangeMana` run the onHealthChange / onManaChange
+  scripts, set `origin` to `ORIGIN_NONE` and call themselves again (so the scripts do not run twice). The patch keeps the
+  origin in `CombatDamage::firstOrigin` first, so a tick stays type 2 after any script.
+- **A critical hit on a mana shield:** the mana part is type 3, the rest of the hit type 1.
+- **Who gets it (compatibility).** Our client sends, in the login packet after its markers, a capability byte; base
+  patch `0100` sets bit 7 (`CHAOS_CAPABILITY_IMPACT_TEXT`). Only then `sendFeatures` announces `GameChaosImpactText`
+  (155) and `sendTextMessage` writes the three fields. Any other client (the current release client included) gets the
+  old layout from the new engine, and the new client gets the old layout from the old engine (it clears 155 before each
+  login). So there is **no hard requirement**: the live beta keeps working while the engine and the client are updated
+  one after the other, but the new look (crit font, numbers following the creature) needs **both** the new engine
+  (`windows-package.yml`, the release package) and the new client. Ship them in the same release.
+- **Lua.** `player:sendTextMessage(type, text, pos, value, color, secondaryValue, secondaryColor, percent, typeId,
+  creature)`: arguments 9-11 are new (a script number with its own type, e.g. 6 for a script label, attached to a
+  monster). Arguments 7 and 8 stay the element pair of this engine, so the new ones come after them (pass `0,
+  TEXTCOLOR_NONE` to skip the pair). A creature (or id) that is gone answers false and sends nothing. No Chaos or base
+  script sends damage, heal or experience text messages today (checked with grep: the Chaos labels such as "DODGE" go
+  through the animated text packet 0x84 in `combat_fx.lua`, `item_powers.lua` and `tile_labels.lua`, untouched), so no
+  caller needed a change; any later caller goes through `ProtocolGame::sendTextMessage` and gets the right layout.
+- **Display scale** (patch 0037) still scales the values and the text; the percent is a ratio and is not scaled.
+- **Tests:** `tests/impact_text_test.lua` reads the engine patch, the client patch, `chaos_constants.lua` and the client
+  module and checks the types, the feature ids (155, 156, `LastGameFeature` 157), the capability bit, the field order
+  of the writer and of both readers, that the text is read last and that every impact message names its creature.
+- **Build:** the engine with patches 0001-0049 and this one was built and linked on Linux (CMake Release, g++ 13, no
+  warnings). Not run against a live client yet. Apply after 0001-0050 (0050 is the item lock patch, in flight); rebuild
+  everything (TextMessage, CombatDamage and ProtocolGame change layout).
 
 ## Terms acceptance notice (`legal_notice.lua`, `legal_notice_core.lua`, `legal_notice_config.lua`)
 

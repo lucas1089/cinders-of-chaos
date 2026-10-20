@@ -132,6 +132,23 @@ Chaos.itemAttr = {
 }
 
 -- ---------------------------------------------------------------------------
+-- Typed impact numbers (engine patch server/src-patches/0051-typed-impact-numbers.patch, client base patch 0100,
+-- feature GameChaosImpactText = 155): every damage, heal, mana and experience text message carries u16 percent (x100),
+-- u8 type and u32 creature id. The types are the same numbers as ChaosImpactType in the engine's const.h and
+-- DamageScatterLogic.TYPE in the client (game_damagescatter); tests/impact_text_test.lua checks the three. Scripts:
+-- player:sendTextMessage(type, text, pos, value, color, secondaryValue, secondaryColor, percent, typeId, creature).
+-- 6 and up are free for scripts (the client keeps the stock font for them).
+-- ---------------------------------------------------------------------------
+Chaos.impactType = {
+	normal = 0,
+	critical = 1, -- CombatDamage.critical (combat.cpp rolls it)
+	condition = 2, -- damage over time: a condition tick
+	manaDrain = 3, -- mana lost: the mana shield or a mana drain
+	manaGain = 4, -- mana restored
+	energyShield = 5 -- taken by the energy shield (engine patch 0015)
+}
+
+-- ---------------------------------------------------------------------------
 -- Player storage keys (7100000 - 7100999 is reserved for Chaos; unused by the reference server). The other Chaos
 -- blocks up to 7127999 are listed in server/README.md "Storage keys".
 -- ---------------------------------------------------------------------------
