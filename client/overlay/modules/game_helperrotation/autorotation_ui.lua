@@ -323,7 +323,8 @@ local function addButton()
   u.onClick = function() U.undoRotation() end
   u:setVisible(U.undo ~= nil)
   -- "Auto turn" (default on): the shooter faces the target before a wave or beam spell (base patch 0080,
-  -- ChaosHelperRotation.turnDirection); under the Auto rotation button
+  -- ChaosHelperRotation.turnDirection); at the left end of the title row, across from the buttons (under the Auto
+  -- rotation button it covered Rename and Duplicate, beta 2026-10-20)
   local t = g_ui.createWidget('CheckBox', panel)
   t:setId(U.TURN_ID)
   t:setText(tr('Auto turn'))
@@ -332,10 +333,9 @@ local function addButton()
     'Without a target the character faces the side with most monsters.'))
   t:setTextHorizontalAutoResize(true)
   t:setHeight(16)
-  t:addAnchor(AnchorTop, U.BUTTON_ID, AnchorBottom)
-  t:addAnchor(AnchorRight, 'parent', AnchorRight)
-  t:setMarginTop(2)
-  t:setMarginRight(10)
+  t:addAnchor(AnchorVerticalCenter, U.BUTTON_ID, AnchorVerticalCenter)
+  t:addAnchor(AnchorLeft, 'parent', AnchorLeft)
+  t:setMarginLeft(10)
   t:setChecked(ChaosHelperRotation.autoTurnEnabled())
   t.onCheckChange = function(self, checked) ChaosHelperRotation.setAutoTurn(checked) end
   -- the box sits on the presets row, left of Rename (in the title row it covered "RULES" of the centred title)
