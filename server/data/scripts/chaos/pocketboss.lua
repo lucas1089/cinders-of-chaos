@@ -342,6 +342,29 @@ local function buildSlot(slot)
 	if gate then
 		gate:setActionId(cfg.portalActionId)
 	end
+	-- a second way out inside the arena, next to where the players arrive (beta 2026-10-20: a player was stuck at the
+	-- boss with the exit in the antechamber; closed boss rooms always get a portal)
+	local taken = {[L.bossSpawn.x .. "," .. L.bossSpawn.y] = true, [L.portal.x .. "," .. L.portal.y] = true}
+	for _, b in ipairs(L.basins) do
+		taken[b.x .. "," .. b.y] = true
+	end
+	for _, st in ipairs(L.starts or {}) do
+		taken[st.x .. "," .. st.y] = true
+	end
+	local from = (L.starts and L.starts[1]) or L.entry
+	local best, bestD
+	for _, t in ipairs(L.floorList) do
+		local d = math.max(math.abs(t.x - from.x), math.abs(t.y - from.y))
+		if d >= 2 and not taken[t.x .. "," .. t.y] and (not bestD or d < bestD) then
+			best, bestD = t, d
+		end
+	end
+	if best then
+		local arenaGate = placeItem(P(best), cfg.portalId)
+		if arenaGate then
+			arenaGate:setActionId(cfg.portalActionId)
+		end
+	end
 	PB.built[slot] = true
 	return L
 end
