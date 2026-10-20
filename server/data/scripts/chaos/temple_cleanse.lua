@@ -26,6 +26,20 @@ local function skulled(player)
 	return s == SKULL_WHITE or s == SKULL_RED or s == SKULL_BLACK
 end
 
+ChaosTempleCleanse = ChaosTempleCleanse or {}
+
+-- remove the harmful conditions (and the battle lock) of a player; true when it had one
+function ChaosTempleCleanse.clear(player)
+	local had = false
+	for _, c in ipairs(conditionIds()) do
+		if player:hasCondition(c) then
+			had = true
+			player:removeCondition(c)
+		end
+	end
+	return had
+end
+
 local cleanse = GlobalEvent("ChaosTempleCleanse")
 function cleanse.onThink(interval)
 	local list = conditionIds()

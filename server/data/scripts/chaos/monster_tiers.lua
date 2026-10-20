@@ -49,6 +49,9 @@ local cfg = {
 	bosses = {}, -- lowercase names treated as boss even without the isboss flag
 	bossMods = true, -- bosses get modifiers (and their shader)
 	modCount = {magic = {1, 2}, rare = {2, 3}, legendary = {3, 4}, boss = {4, 5}},
+	-- modifiers that never come together: two sources of healing made a monster that could not be brought below 90% (beta
+	-- report 2026-10-20: Vampiric + Juggernaut + Regenerating)
+	exclusive = {{"vampiric", "regenerating"}},
 	tickMs = 2500, -- ambient effect / regeneration step
 	announceLegendary = true,
 	-- the spawn chance multipliers (event day x Chaos Storm ...) multiply, at most this much together
@@ -117,7 +120,7 @@ ChaosMods = {
 	shocking = {name = "Shocking", shader = 12, power = 3, effect = CONST_ME_ENERGYAREA,
 		onHit = function(m, p, dmg) if math.random(100) <= 25 then dot(p, CONDITION_ENERGY, dmg * 0.8, 3) end end},
 	vampiric = {name = "Vampiric", shader = 9, power = 4, effect = CONST_ME_MAGIC_RED,
-		onHit = function(m, p, dmg) heal(m, math.floor(dmg * 0.3)) end},
+		onHit = function(m, p, dmg) heal(m, math.floor(dmg * 0.15)) end},
 	berserker = {name = "Berserker", shader = 11, power = 4, effect = CONST_ME_HITAREA,
 		damage = function(m) return m:getHealth() < m:getMaxHealth() * 0.5 and 1.5 or 1.0 end},
 	brutal = {name = "Brutal", shader = 3, power = 2, effect = CONST_ME_DRAWBLOOD, damage = 1.4},
@@ -132,7 +135,7 @@ ChaosMods = {
 			end
 		end},
 	regenerating = {name = "Regenerating", shader = 2, power = 1, effect = CONST_ME_MAGIC_GREEN,
-		onTick = function(m) heal(m, math.floor(m:getMaxHealth() * 0.02)) end},
+		onTick = function(m) heal(m, math.floor(m:getMaxHealth() * 0.01)) end},
 	swift = {name = "Swift", shader = 17, power = 1, effect = CONST_ME_POFF, speed = 40},
 	explosive = {name = "Explosive", shader = 15, power = 3, effect = CONST_ME_FIREATTACK,
 		onDeath = function(m)
@@ -213,7 +216,24 @@ local function rollMods(tier)
 	end
 	local picked = {}
 	for _ = 1, math.min(count, #pool) do
-		picked[#picked + 1] = table.remove(pool, math.random(#pool))
+		local key = table.remove(pool, math.random(#pool))
+		picked[#picked + 1] = key
+		for _, group in ipairs(cfg.exclusive or {}) do
+			local inGroup = false
+			for _, k in ipairs(group) do
+				inGroup = inGroup or k == key
+			end
+			if inGroup then
+				for i = #pool, 1, -1 do -- the rest of its group leaves the pool
+					for _, k in ipairs(group) do
+						if pool[i] == k then
+							table.remove(pool, i)
+							break
+						end
+					end
+				end
+			end
+		end
 	end
 	return picked
 end
