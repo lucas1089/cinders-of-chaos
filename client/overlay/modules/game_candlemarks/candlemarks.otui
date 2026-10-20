@@ -80,7 +80,7 @@ CandlemarkRow < UIWidget
 
 CandlemarkWindow < ChaosMainWindow
   id: candlemarkWindow
-  size: 480 330
+  size: 480 344
   !text: tr('Candlemarks')
   @onEscape: modules.game_candlemarks.hide()
 
@@ -111,14 +111,16 @@ CandlemarkWindow < ChaosMainWindow
     height: 16
     text-align: left
 
+  // two lines: "Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple)." ran past the window
   ChaosLabel
     id: shop
     anchors.top: week.bottom
     anchors.left: parent.left
     anchors.right: parent.right
     margin-top: 2
-    height: 16
-    text-align: left
+    height: 30
+    text-wrap: true
+    text-align: topLeft
 
   ChaosPanelDark
     id: listFrame

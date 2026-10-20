@@ -145,6 +145,7 @@ LootItem < UIItem
   font: verdana-11px-rounded
   color: white
   virtual: true
+  phantom: false
 
 MainWindow
   !text: tr('Dungeons')

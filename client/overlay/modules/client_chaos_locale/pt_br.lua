@@ -3233,6 +3233,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_conquest tabs (run-time keys: tr(t.text))
   ["Set Pieces"] = "Peças de conjunto",
   ["Raid and Ascended"] = "Raid e Ascended",
+  ["Raid & Ascended"] = "Raid e Ascended",
   ["Cinderheart"] = "Cinderheart",
   ["Refine"] = "Refinar",
   ["Progress"] = "Progresso",
