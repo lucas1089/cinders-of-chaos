@@ -121,6 +121,44 @@ def main():
         check(run('bogus').returncode != 0, 'unknown command')
         check('usage: chaos-ctl.sh' in run('help').stdout, 'help prints the usage')
 
+
+        # catalog and panel: a thread plays the engine and answers what the script queued
+        import re, threading, time
+
+        def engine(kind):
+            def go():
+                for _ in range(40):
+                    time.sleep(0.1)
+                    m = re.findall(r'^(catalog .*|panel (\d+) .*)$', spool(), re.M)
+                    if kind == 'catalog' and any(x[0].startswith('catalog ') for x in m):
+                        open(os.path.join(server, 'remote.catalog'), 'w').write('{"categories":[]}')
+                        return
+                    if kind == 'panel' and any(x[0].startswith('panel ') for x in m):
+                        rid = [x[1] for x in m if x[0].startswith('panel ')][-1]
+                        with open(os.path.join(server, 'remote.result'), 'w') as f:
+                            f.write('{"rid":%s,"ok":true,"message":"done"}\n' % rid)
+                        return
+            t = threading.Thread(target=go)
+            t.start()
+            return t
+
+        before = spool()
+        t = engine('catalog')
+        r = run('catalog', 'Gma')
+        t.join()
+        check(r.returncode == 0 and r.stdout.strip() == '{"categories":[]}', 'catalog prints the answer: ' + r.stdout)
+        check(spool() == before + 'catalog Gma\n', 'catalog queues one line')
+        t = engine('panel')
+        r = run('panel', 'Gma', 'players.kick', '{"player":"Bob"}')
+        t.join()
+        check(r.returncode == 0 and '"message":"done"' in r.stdout, 'panel prints its answer: ' + r.stdout)
+        check(re.search(r'panel \d{9} players\.kick\|Gma\|\{"player":"Bob"\}\n$', spool()) is not None, 'panel queues its line')
+        before = spool()
+        for bad in (('catalog', 'x'), ('catalog', 'Gma;x'), ('panel', 'Gma', 'a b', '{}'), ('panel', 'Gma', '../x', '{}'),
+                    ('panel', 'Gma', 'a.b', '[]'), ('panel', 'Gma', 'a.b', '{' + 'x' * 950 + '}'), ('panel', 'G', 'a.b', '{}')):
+            check(run(*bad).returncode != 0, 'refused: %r' % (bad[:3],))
+        check(spool() == before, 'refused panel commands queue nothing')
+
         for bad in ('not a key', 'ssh-rsa AAAA\nssh-rsa BBBB', 'ssh-rsa AAAA; rm -rf /', ''):
             r = run('install-admin', '-', stdin=bad)
             check(r.returncode != 0, 'install-admin refuses %r' % bad[:20])

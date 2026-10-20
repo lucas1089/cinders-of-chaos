@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
@@ -25,14 +26,19 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Cinders Admin: control of the live server over ssh. Four tabs: Painel (status and the main buttons), Admin (messages,
- * kick, updates), Terminal (any command, the working folder is kept) and Config (server, key). Every action is a
+ * Cinders Admin: control of the live server over ssh. Five tabs: Painel (status and the main buttons), Admin (messages,
+ * kick, updates), Comandos (every action of the in-game admin panel), Terminal (any command, the working folder is kept) and Config (server, key). Every action is a
  * chaos-ctl.sh command (server/deploy/chaos-ctl.sh) or, in the terminal, whatever the ssh user may run.
  */
 public class MainActivity extends Activity {
@@ -50,8 +56,8 @@ public class MainActivity extends Activity {
     private Store store;
 
     private FrameLayout content;
-    private final View[] tabs = new View[4];
-    private final Button[] tabButtons = new Button[4];
+    private final View[] tabs = new View[5];
+    private final Button[] tabButtons = new Button[5];
     private int current = 0;
 
     private TextView statusView;
@@ -65,6 +71,7 @@ public class MainActivity extends Activity {
     private EditText fPort;
     private EditText fUser;
     private EditText fCtl;
+    private EditText fActor;
 
     private long unlockedAt = 0;
     private boolean unlocking = false;
@@ -93,8 +100,8 @@ public class MainActivity extends Activity {
 
         LinearLayout bar = new LinearLayout(this);
         bar.setBackgroundColor(CARD);
-        String[] names = {"Painel", "Admin", "Terminal", "Config"};
-        for (int i = 0; i < 4; i++) {
+        String[] names = {"Painel", "Admin", "Comandos", "Terminal", "Config"};
+        for (int i = 0; i < 5; i++) {
             final int idx = i;
             Button t = button(names[i], false);
             t.setOnClickListener(v -> show(idx));
@@ -107,12 +114,13 @@ public class MainActivity extends Activity {
 
         tabs[0] = buildPanel();
         tabs[1] = buildAdmin();
-        tabs[2] = buildTerminal();
-        tabs[3] = buildConfig();
+        tabs[2] = buildCommands();
+        tabs[3] = buildTerminal();
+        tabs[4] = buildConfig();
         for (View v : tabs) {
             content.addView(v, new FrameLayout.LayoutParams(-1, -1));
         }
-        show(store.configured() ? 0 : 3);
+        show(store.configured() ? 0 : 4);
     }
 
     @Override
@@ -255,7 +263,7 @@ public class MainActivity extends Activity {
 
     private void show(int idx) {
         current = idx;
-        for (int i = 0; i < 4; i++) {
+        for (int i = 0; i < 5; i++) {
             tabs[i].setVisibility(i == idx ? View.VISIBLE : View.GONE);
             tabButtons[i].setBackgroundColor(i == idx ? ACCENT : CARD);
         }
@@ -428,6 +436,267 @@ public class MainActivity extends Activity {
                 () -> remote(ctl("update " + Ssh.sq(t) + " " + mode), 30, out -> adminOut.setText(out.trim())));
     }
 
+    // ------------------------------------------------------------------------------------------------ Comandos
+
+    private TextView cmdOut;
+    private TextView cmdInfo;
+    private JSONArray catalog = new JSONArray(); // flat list of {cat, id, name, description, params, confirm, dangerous}
+
+    /**
+     * Every action of the in-game admin panel. The server (chaos-ctl.sh catalog/panel) hands the request to the game, which
+     * runs it as the admin character set in Config, with that character's group; so the group limits still apply.
+     */
+    private View buildCommands() {
+        cmdOut = mono();
+        cmdOut.setText("");
+        cmdInfo = label("", true);
+        Button load = button("Atualizar lista", false);
+        load.setOnClickListener(v -> fetchCatalog());
+        Button find = button("Buscar comando", true);
+        find.setOnClickListener(v -> pickAction());
+        loadCachedCatalog();
+        return scroll(column(label("Todos os comandos do painel de admin do jogo", true), cmdInfo, row(find, load),
+                label("Resposta", true), cmdOut));
+    }
+
+    private void loadCachedCatalog() {
+        try {
+            JSONObject o = new JSONObject(store.get("catalog", "{}"));
+            flatten(o);
+        } catch (Exception e) {
+            catalog = new JSONArray();
+        }
+        cmdInfo.setText(catalog.length() == 0 ? "Lista vazia: toque em Atualizar lista (o personagem admin precisa estar online)."
+                : catalog.length() + " comandos.");
+    }
+
+    private void flatten(JSONObject o) throws Exception {
+        JSONArray flat = new JSONArray();
+        JSONArray cats = o.getJSONArray("categories");
+        for (int i = 0; i < cats.length(); i++) {
+            JSONObject c = cats.getJSONObject(i);
+            JSONArray acts = c.getJSONArray("actions");
+            for (int j = 0; j < acts.length(); j++) {
+                JSONObject a = acts.getJSONObject(j);
+                a.put("cat", c.optString("label", c.optString("id")));
+                flat.put(a);
+            }
+        }
+        catalog = flat;
+    }
+
+    private boolean needActor() {
+        if (store.actor().isEmpty()) {
+            toast("Defina o personagem admin na aba Config.");
+            return true;
+        }
+        return false;
+    }
+
+    private void fetchCatalog() {
+        if (needActor()) {
+            return;
+        }
+        cmdInfo.setText("Pedindo a lista ao jogo (ate 15 s)...");
+        remote(ctl("catalog " + Ssh.sq(store.actor())), 40, out -> {
+            try {
+                String t = out.trim();
+                JSONObject o = new JSONObject(t.substring(t.indexOf('{')));
+                flatten(o);
+                store.put("catalog", o.toString());
+                cmdInfo.setText(catalog.length() + " comandos (grupo " + o.optInt("group") + ").");
+            } catch (Exception e) {
+                cmdInfo.setText("Sem lista.");
+                cmdOut.setText(out.trim());
+            }
+        });
+    }
+
+    private void pickAction() {
+        if (catalog.length() == 0) {
+            toast("Atualize a lista primeiro.");
+            return;
+        }
+        final List<JSONObject> shown = new ArrayList<>();
+        final List<String> names = new ArrayList<>();
+        final EditText q = field("Buscar (ex.: ban, item, spawn)", "", false);
+        final android.widget.ListView lv = new android.widget.ListView(this);
+        final android.widget.ArrayAdapter<String> ad = new android.widget.ArrayAdapter<>(this,
+                android.R.layout.simple_list_item_1, names);
+        lv.setAdapter(ad);
+        final Runnable fill = () -> {
+            String f = q.getText().toString().trim().toLowerCase();
+            shown.clear();
+            names.clear();
+            for (int i = 0; i < catalog.length(); i++) {
+                JSONObject a = catalog.optJSONObject(i);
+                if (a == null) {
+                    continue;
+                }
+                String label = a.optString("cat") + " > " + a.optString("name");
+                if (f.isEmpty() || (label + " " + a.optString("id") + " " + a.optString("description")).toLowerCase().contains(f)) {
+                    shown.add(a);
+                    names.add(label);
+                }
+            }
+            ad.notifyDataSetChanged();
+        };
+        fill.run();
+        q.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int a, int b, int c) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int a, int b, int c) {
+                fill.run();
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable e) {
+            }
+        });
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(12), dp(8), dp(12), 0);
+        box.addView(q, new LinearLayout.LayoutParams(-1, -2));
+        box.addView(lv, new LinearLayout.LayoutParams(-1, dp(360)));
+        final AlertDialog dlg = new AlertDialog.Builder(this).setView(box).setNegativeButton("Fechar", null).show();
+        lv.setOnItemClickListener((p, v, pos, id) -> {
+            dlg.dismiss();
+            actionForm(shown.get(pos));
+        });
+    }
+
+    private void actionForm(final JSONObject a) {
+        final JSONArray params = a.optJSONArray("params") == null ? new JSONArray() : a.optJSONArray("params");
+        final View[] inputs = new View[params.length()];
+        final String[] picked = new String[params.length()];
+        LinearLayout box = new LinearLayout(this);
+        box.setOrientation(LinearLayout.VERTICAL);
+        box.setPadding(dp(16), dp(8), dp(16), 0);
+        TextView desc = label(a.optString("description"), true);
+        box.addView(desc);
+        for (int i = 0; i < params.length(); i++) {
+            final int idx = i;
+            JSONObject p = params.optJSONObject(i);
+            String type = p.optString("type", "string");
+            String lab = p.optString("label", p.optString("name")) + (p.optBoolean("required") ? " *" : "");
+            String hint = p.optString("hint", "");
+            box.addView(label(lab + (hint.isEmpty() ? "" : " (" + hint + ")"), false));
+            String def = p.isNull("default") || !p.has("default") ? "" : String.valueOf(p.opt("default"));
+            if (type.equals("bool")) {
+                CheckBox cb = new CheckBox(this);
+                cb.setTextColor(TEXT);
+                cb.setChecked(def.equals("true") || def.equals("1"));
+                inputs[i] = cb;
+                box.addView(cb);
+            } else if (type.equals("select")) {
+                final JSONArray opts = p.optJSONArray("options") == null ? new JSONArray() : p.optJSONArray("options");
+                final String[] labels = new String[opts.length()];
+                final String[] values = new String[opts.length()];
+                for (int k = 0; k < opts.length(); k++) {
+                    Object o = opts.opt(k);
+                    if (o instanceof JSONObject) {
+                        values[k] = String.valueOf(((JSONObject) o).opt("value"));
+                        labels[k] = ((JSONObject) o).optString("label", values[k]);
+                    } else {
+                        values[k] = String.valueOf(o);
+                        labels[k] = values[k];
+                    }
+                    if (picked[i] == null && (def.isEmpty() || def.equals(values[k]))) {
+                        picked[i] = values[k];
+                    }
+                }
+                final Button pick = button("", false);
+                for (int k = 0; k < values.length; k++) {
+                    if (values[k].equals(picked[i])) {
+                        pick.setText(labels[k]);
+                    }
+                }
+                pick.setOnClickListener(v -> new AlertDialog.Builder(this).setItems(labels, (d, which) -> {
+                    picked[idx] = values[which];
+                    pick.setText(labels[which]);
+                }).show());
+                inputs[i] = pick;
+                box.addView(pick);
+            } else {
+                EditText e = field(type.equals("pos") ? "x,y,z" : type, def, false);
+                if (type.equals("int")) {
+                    e.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_SIGNED);
+                } else if (type.equals("text")) {
+                    e.setSingleLine(false);
+                    e.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE);
+                }
+                inputs[i] = e;
+                box.addView(e);
+            }
+        }
+        final boolean risky = a.optBoolean("dangerous") || a.optBoolean("confirm");
+        ScrollView sv = new ScrollView(this);
+        sv.addView(box);
+        new AlertDialog.Builder(this).setTitle(a.optString("name")).setView(sv).setNegativeButton("Cancelar", null)
+                .setPositiveButton("Executar", (d, w) -> {
+                    try {
+                        JSONObject data = new JSONObject();
+                        for (int i = 0; i < params.length(); i++) {
+                            JSONObject p = params.optJSONObject(i);
+                            String type = p.optString("type", "string");
+                            String name = p.optString("name");
+                            if (type.equals("bool")) {
+                                data.put(name, ((CheckBox) inputs[i]).isChecked());
+                            } else if (type.equals("select")) {
+                                if (picked[i] != null) {
+                                    data.put(name, picked[i]);
+                                }
+                            } else {
+                                String v = ((EditText) inputs[i]).getText().toString().trim();
+                                if (v.isEmpty()) {
+                                    continue;
+                                }
+                                if (type.equals("int")) {
+                                    data.put(name, Long.parseLong(v));
+                                } else {
+                                    data.put(name, v);
+                                }
+                            }
+                        }
+                        final String json = data.toString();
+                        final String title = a.optString("cat") + " > " + a.optString("name");
+                        Runnable go = () -> runAction(a.optString("id"), json, title);
+                        if (risky) {
+                            confirm((a.optBoolean("dangerous") ? "ACAO PERIGOSA. " : "") + "Executar " + title + "?\n" + json, go);
+                        } else {
+                            go.run();
+                        }
+                    } catch (Exception e) {
+                        toast("Valor invalido: " + e.getMessage());
+                    }
+                }).show();
+    }
+
+    private void runAction(String id, String json, String title) {
+        if (needActor()) {
+            return;
+        }
+        cmdOut.setText("Executando " + title + "...");
+        remote(ctl("panel " + Ssh.sq(store.actor()) + " " + Ssh.sq(id) + " " + Ssh.sq(json)), 40, out -> {
+            try {
+                String t = out.trim();
+                JSONObject r = new JSONObject(t.substring(t.indexOf('{')));
+                StringBuilder sb = new StringBuilder();
+                sb.append(r.optBoolean("ok") ? "OK: " : "FALHOU: ").append(r.optString("message")).append('\n');
+                JSONArray lines = r.optJSONArray("lines");
+                for (int i = 0; lines != null && i < lines.length(); i++) {
+                    sb.append(lines.optString(i)).append('\n');
+                }
+                cmdOut.setText(title + "\n" + sb.toString().trim());
+            } catch (Exception e) {
+                cmdOut.setText(out.trim());
+            }
+        });
+    }
+
     // ------------------------------------------------------------------------------------------------ Terminal
 
     private View buildTerminal() {
@@ -487,6 +756,7 @@ public class MainActivity extends Activity {
         fPort = field("Porta ssh", String.valueOf(store.port()), true);
         fUser = field("Usuario ssh", store.user(), false);
         fCtl = field("Caminho do chaos-ctl.sh", store.ctl(), false);
+        fActor = field("Personagem admin (precisa estar online no jogo)", store.actor(), false);
         cfgInfo = mono();
         Button saveCfg = button("Salvar", true);
         saveCfg.setOnClickListener(v -> {
@@ -494,6 +764,7 @@ public class MainActivity extends Activity {
             store.put("port", fPort.getText().toString().trim());
             store.put("user", fUser.getText().toString().trim());
             store.put("ctl", fCtl.getText().toString().trim());
+            store.put("actor", fActor.getText().toString().trim());
             Ssh.close();
             cfgRefresh();
             toast("Salvo.");
@@ -530,7 +801,7 @@ public class MainActivity extends Activity {
             cfgRefresh();
         }));
         cfgRefresh();
-        return scroll(column(label("Servidor", true), fHost, row(fPort, fUser), fCtl, saveCfg,
+        return scroll(column(label("Servidor", true), fHost, row(fPort, fUser), fCtl, fActor, saveCfg,
                 label("Chave ssh (fica so neste celular)", true), row(gen, copyKey), copyCmd,
                 label("Conexao", true), test, forget, cfgInfo,
                 label("Passo a passo: 1) salve o endereco. 2) gere a chave. 3) 'Copiar comando do servidor' e cole na VPS. "

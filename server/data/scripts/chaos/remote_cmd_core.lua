@@ -9,7 +9,9 @@ local K = ChaosRemoteCmdCore
 
 K.DEFAULT_FILE = "remote.cmd"
 K.MAX_LINES = 20
-K.MAX_LINE = 300
+K.MAX_LINE = 300 -- most commands
+K.MAX_PANEL_LINE = 1400 -- panel lines carry a JSON of parameters
+K.MAX_FILE = 32768
 
 -- the file name to watch: a bare name in the server folder, else the default (same rule as stop_request_core.lua)
 function K.fileName(cfg)
@@ -21,13 +23,20 @@ function K.fileName(cfg)
 	return name
 end
 
--- one line -> {cmd = "...", arg = "..." or nil}, or nil and a reason
+local function isName(arg)
+	return #arg >= 3 and #arg <= 29 and arg:match("^%a[%a '%-]*$") ~= nil
+end
+
+-- one line -> {cmd = "...", arg = "..." or nil, ...}, or nil and a reason
+--   panel RID ACTION|ACTOR|JSON   an admin panel action (chaos/admin) run as the online admin character ACTOR;
+--                                 RID digits (the caller finds the answer by it), ACTION like players.kick, JSON an object
+--   catalog ACTOR                 writes the panel's catalog for ACTOR's group to the catalog file
 function K.parse(line)
 	if type(line) ~= "string" then
 		return nil, "not text"
 	end
 	line = line:gsub("\r", "")
-	if #line > K.MAX_LINE then
+	if #line > K.MAX_PANEL_LINE then
 		return nil, "line too long"
 	end
 	if line:find("[\1-\8\11\12\14-\31\127]") or line:find("\0", 1, true) then
@@ -38,6 +47,9 @@ function K.parse(line)
 		return nil, "empty"
 	end
 	cmd = cmd:lower()
+	if cmd ~= "panel" and #line > K.MAX_LINE then
+		return nil, "line too long"
+	end
 	if cmd == "save" or cmd == "open" or cmd == "close" then
 		if arg ~= "" then
 			return nil, cmd .. " takes no argument"
@@ -49,10 +61,31 @@ function K.parse(line)
 		end
 		return {cmd = cmd, arg = arg}
 	elseif cmd == "kick" then
-		if #arg < 3 or #arg > 29 or not arg:match("^%a[%a '%-]*$") then
+		if not isName(arg) then
 			return nil, "not a character name"
 		end
 		return {cmd = cmd, arg = arg}
+	elseif cmd == "catalog" then
+		if not isName(arg) then
+			return nil, "not a character name"
+		end
+		return {cmd = cmd, arg = arg, actor = arg}
+	elseif cmd == "panel" then
+		local rid, rest = arg:match("^(%d+)%s+(.+)$")
+		if not rid or #rid > 12 then
+			return nil, "panel RID ACTION|ACTOR|JSON"
+		end
+		local action, actor, json = rest:match("^([^|]+)|([^|]+)|(.+)$")
+		if not action or not action:match("^[%w_%.]+$") or #action > 64 then
+			return nil, "bad action id"
+		end
+		if not isName(actor) then
+			return nil, "not a character name"
+		end
+		if json:sub(1, 1) ~= "{" or json:sub(-1) ~= "}" then
+			return nil, "parameters must be a JSON object"
+		end
+		return {cmd = cmd, rid = tonumber(rid), action = action, actor = actor, json = json}
 	end
 	return nil, "unknown command"
 end
@@ -113,14 +146,42 @@ function K.realFs(ioLib, osLib)
 			if not f then
 				return nil
 			end
-			local text = f:read(8192)
+			local text = f:read(K.MAX_FILE)
 			f:close()
 			return text
 		end,
 		remove = function(name)
 			return osLib.remove(name) and true or false
+		end,
+		-- mode "a" appends, "w" replaces; returns true when written
+		write = function(name, text, mode)
+			local f = ioLib.open(name, mode == "a" and "ab" or "wb")
+			if not f then
+				return false
+			end
+			f:write(text)
+			f:close()
+			return true
+		end,
+		size = function(name)
+			local f = ioLib.open(name, "rb")
+			if not f then
+				return 0
+			end
+			local n = f:seek("end") or 0
+			f:close()
+			return n
 		end
 	}
+end
+
+-- a name from the config like fileName
+function K.bareName(value, default)
+	if type(value) ~= "string" or #value == 0 or #value > 64 or not value:match("^[%w_%-%.]+$") or value:find("..", 1, true)
+			or value:sub(1, 1) == "." then
+		return default
+	end
+	return value
 end
 
 return K

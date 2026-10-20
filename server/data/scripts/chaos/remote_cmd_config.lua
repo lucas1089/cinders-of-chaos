@@ -4,5 +4,10 @@
 return {
 	enabled = true,
 	file = "remote.cmd", -- a bare file name in the server folder
-	intervalMs = 2500 -- how often the folder is checked
+	intervalMs = 2500, -- how often the folder is checked
+	-- the panel commands (admin panel actions run for the phone app): the answers are appended to resultFile, the
+	-- catalog goes to catalogFile (both bare names in the server folder)
+	resultFile = "remote.result",
+	catalogFile = "remote.catalog",
+	maxResultBytes = 200000 -- the result file starts again above this size
 }

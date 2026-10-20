@@ -14230,12 +14230,18 @@ server folder (the engine's working folder), the same idea as the stop request f
   `kick NAME` (a character name: letters, spaces, `'` and `-`, 3-29 characters; an offline name does nothing), `save`
   (`saveServer()`), `open` and `close` (`Game.setGameState` NORMAL / CLOSED: login open or closed; players online stay).
   Control characters, long lines and every other word are refused and logged.
+- The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
+  catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
+  `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
+  appends `{"rid","ok","message","lines"}` to `remote.result` (restarted above `maxResultBytes`). ACTOR is an admin
+  character that must be online; the action runs as that player with that player's group, so `minGroup` limits hold.
+  `chaos-ctl.sh catalog|panel` queues the line and waits up to 15 s for the answer (the app's Comandos tab).
 - Every command and every refusal is logged as `[ChaosRemoteCmd] ...` in the console log (`chaos-ctl.sh logs`).
 - Safety: the file name is a bare name from the config (same rule as the stop request file). A leftover file at startup is
   removed, not obeyed. A file that cannot be renamed runs nothing (logged once). Anyone who can write into the server
   folder can run these five commands, the same people who can already end the process. The folder is not reachable from
-  the network. Ban, premium, items and the rest stay in the in-game admin panel (`data/scripts/chaos/admin/`) and in
-  the terminal of the app.
+  the network. The `panel` line is the strongest: it can do anything the admin panel does, so the folder must stay
+  closed to everyone but the server's own user and root.
 - Tests: `tests/remote_cmd_test.lua` (core and engine file against a mocked engine, a real file), and
   `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
   `player:remove()`, `Game.setGameState`) have not run on a real server.

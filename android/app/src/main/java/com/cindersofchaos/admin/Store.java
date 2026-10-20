@@ -54,6 +54,11 @@ final class Store {
         return get("ctl", "/opt/chaos/repo/server/deploy/chaos-ctl.sh");
     }
 
+    /** The admin character (online in the game) the panel commands run as. */
+    String actor() {
+        return get("actor", "");
+    }
+
     String hostFingerprint() {
         return get("hostfp", "");
     }

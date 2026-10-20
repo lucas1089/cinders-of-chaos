@@ -1,9 +1,10 @@
 -- Remote admin commands by file (server/README.md "Remote admin commands"). chaos-ctl.sh and the admin app append lines
 -- to `remote.cmd` in the server folder; every 2.5 s this takes the file and runs each whitelisted line: broadcast TEXT,
--- kick NAME, save, open, close. Each command is logged with "[ChaosRemoteCmd]"; refused lines are logged and skipped.
+-- kick NAME, save, open, close, plus panel (any admin panel action, run as the online admin character) and catalog
+-- (the panel's action list). Each command is logged with "[ChaosRemoteCmd]"; refused lines are logged and skipped.
 -- A leftover file at startup is removed, not obeyed. Pure part: remote_cmd_core.lua; numbers: remote_cmd_config.lua.
 -- Assumed engine API (TFS 1.4.2): GlobalEvent onStartup / onThink with interval, Game.broadcastMessage,
--- Game.setGameState, Player(name), player:remove(), saveServer.
+-- Game.setGameState, Player(name), player:remove(), saveServer, json, and ChaosAdmin (chaos/admin/core.lua) for panel.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -50,6 +51,65 @@ local handlers = {
 	end
 }
 
+local function resultName()
+	return K.bareName(cfg.resultFile, "remote.result")
+end
+
+local function catalogName()
+	return K.bareName(cfg.catalogFile, "remote.catalog")
+end
+
+-- the online admin character a panel command runs as; nil and a reason when it cannot
+local function actorFor(name)
+	local p = Player(name)
+	if not p then
+		return nil, "the admin character " .. name .. " is not online"
+	end
+	if not (ChaosAdmin and ChaosAdmin.isAdmin and ChaosAdmin.isAdmin(p)) then
+		return nil, name .. " is not an admin character"
+	end
+	return p
+end
+
+local function writeResult(rid, ok, message, lines)
+	local name = resultName()
+	local mode = "a"
+	if (RC.fs.size and RC.fs.size(name) or 0) > (cfg.maxResultBytes or 200000) then
+		mode = "w"
+	end
+	local line = json.encode({rid = rid, ok = ok and true or false, message = message, lines = lines})
+	RC.fs.write(name, line .. "\n", mode)
+end
+
+handlers.panel = function(c)
+	local actor, why = actorFor(c.actor)
+	if not actor then
+		writeResult(c.rid, false, why)
+		return why
+	end
+	local okJ, params = pcall(json.decode, c.json)
+	if not okJ or type(params) ~= "table" then
+		writeResult(c.rid, false, "parameters are not a JSON object")
+		return "bad parameters"
+	end
+	local res = ChaosAdmin.execute(actor, c.action, params)
+	writeResult(c.rid, res.ok, res.message, res.lines)
+	return c.action .. (res.ok and " ok" or " failed")
+end
+
+handlers.catalog = function(c)
+	local actor, why = actorFor(c.actor)
+	if not actor then
+		return why
+	end
+	local name = catalogName()
+	local tmp = name .. ".tmp"
+	if not RC.fs.write(tmp, json.encode(ChaosAdmin.buildCatalog(actor)), "w") or not RC.fs.rename(tmp, name) then
+		return "cannot write " .. name
+	end
+	return "catalog written"
+end
+
 -- one check; returns the number of commands run
 function RC.check()
 	local name = K.fileName(cfg)
@@ -68,7 +128,7 @@ function RC.check()
 	local ran = 0
 	for _, c in ipairs(cmds) do
 		local ok, res = pcall(handlers[c.cmd], c)
-		log(c.cmd .. (c.arg and (" " .. c.arg) or "") .. ": " .. (ok and tostring(res) or ("error " .. tostring(res))))
+		log(c.cmd .. (c.arg and (" " .. c.arg) or "") .. (c.action and (" " .. c.action .. " as " .. c.actor) or "") .. ": " .. (ok and tostring(res) or ("error " .. tostring(res))))
 		ran = ran + 1
 	end
 	return ran

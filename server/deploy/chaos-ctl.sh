@@ -13,6 +13,8 @@
 #   players                     online characters: name, level, vocation id
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
+#   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the online character ACTOR
+#   panel ACTOR ACTION JSON     run one admin panel action as ACTOR (online, admin group); prints the answer line (JSON)
 #   update TAG now|at-save      chaos_update.sh --ref TAG (--now | --at-save) --yes, in the background (update-log)
 #   rollback now|at-save        chaos_update.sh --rollback, in the background
 #   update-log [N]              the last N lines of the update log
@@ -54,10 +56,10 @@ lines_arg() {
 
 # one remote.cmd line; the text is one line of printable characters (the engine checks it again)
 spool() {
-  local file="$SERVER/remote.cmd" line=$1
+  local file="$SERVER/remote.cmd" line=$1 max=${2:-300}
   [ -d "$SERVER" ] || die "no server folder $SERVER"
   case $line in *$'\n'*|*$'\r'*) die "one line only" ;; esac
-  [ "${#line}" -le 300 ] || die "too long"
+  [ "${#line}" -le "$max" ] || die "too long"
   printf '%s\n' "$line" >> "$file" || die "cannot write $file"
   chown "$(stat -c %U "$SERVER" 2>/dev/null || echo root)" "$file" 2>/dev/null || true
   chmod 0664 "$file" 2>/dev/null || true
@@ -138,6 +140,38 @@ case $cmd in
     ;;
   open|close)
     spool "$cmd"
+    ;;
+  catalog|panel)
+    actor=${1:-}
+    [[ $actor =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || die "$cmd ACTOR: the name of an online admin character"
+    out="$SERVER/remote.catalog"
+    if [ "$cmd" = catalog ]; then
+      [ $# -eq 1 ] || die "catalog ACTOR"
+      rm -f "$out"
+      spool "catalog $actor" >/dev/null
+      for _ in $(seq 1 30); do
+        [ -s "$out" ] && { cat "$out"; exit 0; }
+        sleep 0.5
+      done
+      die "no answer in 15 s: is $actor online, and is the server running the remote command script?"
+    fi
+    action=${2:-}
+    json=${3:-}
+    [[ $action =~ ^[A-Za-z0-9_.]{1,64}$ ]] || die "panel ACTOR ACTION JSON (ACTION like players.kick)"
+    [ -n "$json" ] || json='{}'
+    [[ $json == "{"*"}" ]] || die "JSON must be one object"
+    [ "${#json}" -le 900 ] || die "JSON too long (900 characters at most)"
+    rid=$(( (RANDOM * 32768 + RANDOM) % 900000000 + 100000000 ))
+    res="$SERVER/remote.result"
+    spool "panel $rid $action|$actor|$json" 1400 >/dev/null
+    for _ in $(seq 1 30); do
+      if [ -r "$res" ]; then
+        hit=$(grep -E "\"rid\": ?$rid([^0-9]|$)" "$res" | tail -n 1)
+        [ -z "$hit" ] || { echo "$hit"; exit 0; }
+      fi
+      sleep 0.5
+    done
+    die "no answer in 15 s: is $actor online, and is the server running the remote command script?"
     ;;
   update|rollback)
     if [ "$cmd" = update ]; then

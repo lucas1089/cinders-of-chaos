@@ -9,10 +9,23 @@ só no celular. Código em `android/`, parte do servidor em `server/deploy/chaos
 |---|---|
 | Painel | No ar ou fora, desde quando, jogadores, carga, memória, disco, último backup, erros Lua. Ligar, desligar, reiniciar, salvar, backup, logs, erros, jogadores online |
 | Admin | Aviso para todos, expulsar personagem, fechar e abrir o login, reinício com contagem, atualizar para uma versão (agora ou no save diário), ver o andamento, voltar a versão |
+| Comandos | Todos os comandos do painel de admin do jogo (os 179, por categoria), com busca e formulário. Veja abaixo |
 | Terminal | Qualquer comando na VPS, a pasta atual é guardada entre comandos. Botão `sudo -n` |
 | Config | Endereço, porta, usuário, gerar chave, copiar o comando de instalação, testar a conexão |
 
-Banir, dar itens, premium e o resto continuam no painel de admin dentro do jogo e no terminal do app.
+## Aba Comandos (o painel de admin inteiro)
+
+Banir, dar itens, premium, spawn, eventos e tudo que o painel de admin do jogo faz. O app pede ao jogo a lista de
+comandos do seu grupo e monta o formulário de cada um (texto, número, caixa, escolha, jogador, posição, IP).
+
+1. Aba **Config**, campo **Personagem admin**: o nome de um personagem seu com grupo de admin. Salvar.
+2. **Esse personagem precisa estar online no jogo.** Os comandos rodam como ele, com o grupo dele: grupo 4 ou mais vê
+   os comandos, ações perigosas pedem grupo 5 ou 6. Os limites do painel continuam valendo.
+3. Aba **Comandos**, **Atualizar lista** (espera até 15 s). Depois **Buscar comando**, preencha e **Executar**.
+   Ações marcadas como perigosas pedem confirmação. A resposta do jogo aparece abaixo.
+
+O pedido vai por `chaos-ctl.sh catalog NOME` e `chaos-ctl.sh panel NOME ACAO JSON`: o script grava uma linha em
+`remote.cmd`, o jogo executa pelo mesmo caminho do painel (com registro no log de admin) e responde em `remote.result`.
 
 ## Instalar o app
 
@@ -55,7 +68,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Comandos do servidor (`chaos-ctl.sh`)
 
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `logs [n]`, `errors [n]`, `players`,
-`broadcast TEXTO`, `kick NOME`, `open`, `close`, `update TAG now|at-save`, `rollback now|at-save`, `update-log`,
+`broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`, `panel NOME ACAO JSON`, `update TAG now|at-save`, `rollback now|at-save`, `update-log`,
 `install-admin`. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 

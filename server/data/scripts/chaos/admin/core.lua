@@ -381,32 +381,23 @@ function ChaosAdmin.isCatalogProbe(buffer)
 	return ok and type(req) == "table" and req.action == "catalog"
 end
 
-local function handleRequest(player, req)
-	if req.action == "catalog" then
-		send(player, "catalog", ChaosAdmin.buildCatalog(player))
-		return
-	end
-	if req.action ~= "run" then return end
-
-	local data = type(req.data) == "table" and req.data or {}
-	local rid = tonumber(data.rid) or 0
-	local actionId = data.id
+-- Runs one action for an admin: group checks, parameter validation, the handler in pcall and the audit log. Used by the
+-- panel (extended opcode) and by the remote commands (remote_cmd.lua, the phone app). Returns
+-- {ok = bool, message = string, lines = table or nil}.
+function ChaosAdmin.execute(player, actionId, rawParams)
 	local def = ChaosAdmin.getAction(actionId)
-	local function reply(ok, msg, lines)
-		send(player, "result", {rid = rid, id = actionId, ok = ok, message = msg, lines = lines})
-	end
 	if not def then
 		ChaosAdmin.log(player, tostring(actionId):sub(1, 64), "", {}, "invalid", "unknown action")
-		return reply(false, "Unknown action.")
+		return {ok = false, message = "Unknown action."}
 	end
 	if not ChaosAdmin.canUse(player, def) then
 		ChaosAdmin.log(player, def.id, "", {}, "denied", "insufficient group")
-		return reply(false, "You are not allowed to use this action.")
+		return {ok = false, message = "You are not allowed to use this action."}
 	end
-	local params, err = cleanParams(def, data.params)
+	local params, err = cleanParams(def, rawParams)
 	if not params then
 		ChaosAdmin.log(player, def.id, "", {}, "invalid", err)
-		return reply(false, err)
+		return {ok = false, message = err}
 	end
 	local target = ""
 	for _, spec in ipairs(def.params or {}) do
@@ -422,7 +413,21 @@ local function handleRequest(player, req)
 		success, msg = false, "Internal error: " .. tostring(a)
 	end
 	ChaosAdmin.log(player, def.id, target, params, success and "ok" or "fail", msg)
-	reply(success, msg, lines)
+	return {ok = success, message = msg, lines = lines}
+end
+
+local function handleRequest(player, req)
+	if req.action == "catalog" then
+		send(player, "catalog", ChaosAdmin.buildCatalog(player))
+		return
+	end
+	if req.action ~= "run" then return end
+
+	local data = type(req.data) == "table" and req.data or {}
+	local rid = tonumber(data.rid) or 0
+	local actionId = data.id
+	local res = ChaosAdmin.execute(player, actionId, data.params)
+	send(player, "result", {rid = rid, id = actionId, ok = res.ok, message = res.message, lines = res.lines})
 end
 
 ------------------------------------------------------------------------------------------------

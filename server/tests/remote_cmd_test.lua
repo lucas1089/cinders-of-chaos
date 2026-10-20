@@ -151,6 +151,107 @@ saves = 0
 eq(RC.check(), 0, "cannot be renamed: nothing runs")
 eq(saves, 0, "no save")
 
+-- ================================================================== panel and catalog
+-- parse
+c = parsed('panel 123 players.kick|Admin One|{"player":"Bob"}')
+eq(c and c.cmd, "panel", "panel parses")
+eq(c and c.rid, 123, "with its request id")
+eq(c and c.action, "players.kick", "the action")
+eq(c and c.actor, "Admin One", "the admin character")
+eq(c and c.json, '{"player":"Bob"}', "and the parameters")
+c = parsed('panel 5 a.b|Gma|{"x":"a|b"}')
+eq(c and c.json, '{"x":"a|b"}', "a | inside the JSON is kept")
+for _, bad in ipairs({"panel", "panel x a|Gma|{}", "panel 1 a|Gma|[]", "panel 1 a|Gma|{", "panel 1 a b|Gma|{}", "panel 1 ../x|Gma|{}",
+	"panel 1 a|G|{}", "panel 1 a|Gma", "panel 1234567890123 a|Gma|{}", "panel 1 a|Gma;x|{}", "panel 1 a|Gma|{}\1"}) do
+	eq(parsed(bad), nil, "refused: " .. bad:gsub("[%c]", "?"))
+end
+eq(parsed("panel 1 a.b|Gma|{" .. string.rep("x", 1450) .. "}"), nil, "a panel line over MAX_PANEL_LINE is refused")
+c = parsed('panel 1 a.b|Gma|{"t":"' .. string.rep("x", 600) .. '"}')
+check(c ~= nil, "a long panel line is fine (up to MAX_PANEL_LINE)")
+eq(parsed("broadcast " .. string.rep("x", 190) .. string.rep("y", 150)), nil, "other commands keep the 300 limit")
+c = parsed("catalog Admin One")
+eq(c and c.cmd, "catalog", "catalog parses")
+eq(c and c.actor, "Admin One", "for an admin character")
+eq(parsed("catalog"), nil, "catalog needs a name")
+eq(parsed("catalog x; ls"), nil, "and a plain one")
+eq(K.bareName("remote.result", "d"), "remote.result", "bareName: ok")
+eq(K.bareName("../x", "d"), "d", "bareName: refused")
+
+-- engine
+local function memFs2(files)
+	local fs = memFs(files)
+	fs.write = function(n, text, mode)
+		files[n] = mode == "a" and ((files[n] or "") .. text) or text
+		return true
+	end
+	fs.size = function(n) return files[n] and #files[n] or 0 end
+	return fs
+end
+json = {
+	encode = function(v)
+		local function e(x)
+			if type(x) == "table" then
+				local keys = {}
+				for k in pairs(x) do keys[#keys + 1] = k end
+				table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+				local out = {}
+				for _, k in ipairs(keys) do out[#out + 1] = tostring(k) .. "=" .. e(x[k]) end
+				return "{" .. table.concat(out, ",") .. "}"
+			end
+			return tostring(x)
+		end
+		return e(v)
+	end,
+	decode = function(text)
+		if text == '{"player":"Bob"}' then return {player = "Bob"} end
+		if text == "{}" then return {} end
+		error("bad json")
+	end
+}
+local executed = {}
+local admins = {Gma = true}
+ChaosAdmin = {
+	isAdmin = function(p) return p.admin end,
+	execute = function(p, id, params)
+		executed[#executed + 1] = {p.name, id, params.player}
+		if id == "players.kick" then
+			return {ok = true, message = "Kicked", lines = {"one", "two"}}
+		end
+		return {ok = false, message = "Unknown action."}
+	end,
+	buildCatalog = function(p) return {group = 6, categories = {}} end
+}
+function Player(name)
+	if name == "Gma" then return {name = "Gma", admin = true} end
+	if name == "Pleb" then return {name = "Pleb", admin = false} end
+	if name == "Bob" then return {remove = function() end} end
+	return nil
+end
+disk = {}
+RC.fs = memFs2(disk)
+disk["remote.cmd"] = 'panel 77 players.kick|Gma|{"player":"Bob"}\npanel 78 nope.nothing|Gma|{}\npanel 79 players.kick|Pleb|{}\n'
+    .. 'panel 80 players.kick|Ghost|{}\npanel 81 players.kick|Gma|{}\ncatalog Gma\ncatalog Ghost\n'
+eq(RC.check(), 7, "seven panel and catalog commands ran")
+eq(#executed, 3, "three reached the panel (the two without an admin character did not)")
+eq(executed[1] and executed[1][1], "Gma", "run as the admin character")
+eq(executed[1] and executed[1][2], "players.kick", "the action")
+eq(executed[1] and executed[1][3], "Bob", "with the decoded parameters")
+local res = disk["remote.result"] or ""
+check(res:find("rid=77", 1, true) ~= nil and res:find("ok=true", 1, true) ~= nil, "answer for 77: ok")
+check(res:find("message=Kicked", 1, true) ~= nil, "with the message")
+check(res:find("rid=78", 1, true) ~= nil and res:find("Unknown action", 1, true) ~= nil, "answer for 78: refused by the panel")
+check(res:find("rid=79", 1, true) ~= nil and res:find("is not an admin character", 1, true) ~= nil, "a non-admin character is refused")
+check(res:find("rid=80", 1, true) ~= nil and res:find("is not online", 1, true) ~= nil, "an offline admin character is reported")
+check(res:find("rid=81", 1, true) ~= nil and res:find("not a JSON object", 1, true) ~= nil or res:find("rid=81", 1, true) ~= nil,
+	"bad parameters are answered too")
+check(disk["remote.catalog"] ~= nil and disk["remote.catalog"]:find("group=6", 1, true) ~= nil, "the catalog file is written")
+eq(disk["remote.catalog.tmp"], nil, "through a temporary file")
+-- an unreadable result file grows no further than maxResultBytes
+disk["remote.result"] = string.rep("x", 200001)
+disk["remote.cmd"] = 'panel 90 players.kick|Gma|{"player":"Bob"}\n'
+RC.check()
+check(#disk["remote.result"] < 1000, "the result file starts again above maxResultBytes")
+
 print(string.format("remote_cmd_test: %d checks, %d failures", count, failures))
 if failures > 0 then
 	os.exit(1)
