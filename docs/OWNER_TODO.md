@@ -112,7 +112,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   account's balance; at most 2 characters per IP (the earliest logins). Prices as built, about 2.5x an active-only
   design because idle time counts (one character 4 hours a day: 56 a week; everything at the weekly caps: about 430):
   pocket boss charge 15 (3 a week), Orb of Grafting 30 (1, stays), Unmaking 12 (3), Tempering 8 (5), 2 Whetstones 8
-  (5), Flawed gem 8 (5), Chipped gem 3 (10), 3 Awakening or 3 Ember Orbs 5 (10 each), 10 Rune Shards 5 (5), supply
+  (5), Flawed gem 8 (5), Chipped gem 3 (10), 3 Awakening Orbs 5 (10), Ember Orb 10 (5), Crown Orb 25 (2), 10 Rune Shards 5 (5), supply
   bundles 3 / 5 / 8 (5 a week in all), and three cosmetics of our own, once per account: Candle Seal 150, Candlelight
   Name 120, Tallow Labels 100. Purchases only next to Osric the Chandler at the temple (the window works anywhere). No
   daily cap. The idle kick is raised to 1440 minutes (`patch_base_idle_kick.py --minutes N`). The rested vial and the

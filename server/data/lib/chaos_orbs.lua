@@ -8,6 +8,9 @@
 --   Orb of Excision    removes the modifier you choose on the bench (a random one that is not bound by use-with; Rift Keys too)
 --   Orb of Reforging   rolls the tier (by the item level) and the value of one modifier you choose again
 --   Orb of Ruin        the gamble: improve / nothing (ruined only while ChaosOrbsConfig.ruin.ruin > 0; 0 since 2026-10-15)
+--   Ember Orb          raises the modifier you choose by exactly one tier (a new value inside the new tier)
+--   Crown Orb          lifts the item one rarity (up to Legendary): every modifier stays, the base bonus is the new rarity's
+--                      and the item gets one more modifier
 --   Whetstone          +1% quality up to 20% (30% from Divine rarity): every modifier value is multiplied
 -- The orbs that take a modifier (`pick`) are aimed with opts.mod = the modifier's attribute key (the bench's picker);
 -- without one they pick at random among the modifiers they may act on. Tested by server/tests/crafting_test.lua.
@@ -314,6 +317,93 @@ local function register()
 			return string.format("quality %d%% -> %d%% (up to %d%%)", q, math.min(q + M.config.quality.perStone,
 				M.qualityCap(C.rarityOf(item))), M.qualityCap(C.rarityOf(item)))
 		end})
+
+	-- Ember Orb: one modifier up exactly one tier
+	it = itemOf("ember")
+	C.addOrb({key = "ember", id = it.id, name = it.name,
+		text = "Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise).",
+		pick = function(item)
+			return keysOf(O.raisable(item))
+		end,
+		check = function(item, opts)
+			local ok, why = needRarity(item)
+			if not ok then
+				return false, why
+			end
+			if #C.readMods(item) == 0 then
+				return false, "noMods"
+			end
+			if #O.raisable(item) == 0 then
+				return false, "nothingToRaise"
+			end
+			local _, bad = target(item, opts, O.raisable(item))
+			return bad == nil, bad
+		end,
+		apply = function(item, opts)
+			local m = target(item, opts, O.raisable(item))
+			local before = m.tier
+			C.writeAffix(item, m.affix, before + 1, nil, C.random)
+			C.rewriteDescription(item)
+			local now = C.modByKey(item, m.key)
+			return true, {item = item, text = string.format("%s: %s rose from T%d to %s.", C.itemName(item), now.label, before,
+				C.modTierText(now)), raised = now}
+		end,
+		preview = function(item)
+			return string.format("one modifier up one tier (%d can still rise)", #O.raisable(item))
+		end})
+
+	-- Crown Orb: one rarity up, in place
+	it = itemOf("crown")
+	C.addOrb({key = "crown", id = it.id, name = it.name,
+		text = string.format("Lifts the item one rarity, up to %s. Every modifier stays, the base bonus becomes the new rarity's and the item gets %d more.",
+			C.rarityName(ChaosRarity.idOfRank(O.config.crown.maxRank)), O.config.crown.add),
+		check = function(item)
+			local ok, why = needRarity(item)
+			if not ok then
+				return false, why
+			end
+			if ChaosRarity.rank(C.rarityOf(item)) >= O.config.crown.maxRank then
+				return false, "crownTop"
+			end
+			return true
+		end,
+		apply = function(item)
+			return O.crown(item)
+		end,
+		preview = function(item)
+			local rank = ChaosRarity.rank(C.rarityOf(item))
+			return string.format("%s -> %s, +%d modifier", C.rarityName(C.rarityOf(item)),
+				C.rarityName(ChaosRarity.idOfRank(rank + 1)), O.config.crown.add)
+		end})
+end
+
+-- the modifiers an Ember Orb may raise: not bound, below the top tier
+function O.raisable(item)
+	local out = {}
+	for _, m in ipairs(freeMods(item)) do
+		if m.affix and m.tier < M.config.maxTier then
+			out[#out + 1] = m
+		end
+	end
+	return out
+end
+
+-- the Crown Orb on an item: the rarity goes one rank up (the base bonus is written again for it; quality, sockets and
+-- the old modifiers stay) and the item gets `add` modifiers (as far as its new side limits and candidates allow).
+-- Returns ok, {item, text, rarity}
+function O.crown(item)
+	local from = C.rarityOf(item)
+	local to = ChaosRarity.idOfRank(ChaosRarity.rank(from) + 1)
+	local level = C.orbLevel(item)
+	item:setCustomAttribute("rarity", to)
+	C.applyBaseBonus(item, to, level)
+	local added = C.rollAffixes(item, to, level, O.config.crown.add, C.random)
+	C.rewriteDescription(item)
+	local text = string.format("%s is now %s", C.itemName(item), C.rarityName(to))
+	if #added > 0 then
+		text = text .. ", and gained " .. C.modsText(added)
+	end
+	return true, {item = item, text = text .. ".", rarity = to, added = added}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

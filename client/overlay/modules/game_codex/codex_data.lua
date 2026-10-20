@@ -20,11 +20,12 @@ CodexData = {
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
+				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:prefix:power"] = {
 			h = "Orbs",
@@ -41,11 +42,12 @@ CodexData = {
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
+				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:suffix"] = {
 			h = "Orbs",
@@ -62,11 +64,12 @@ CodexData = {
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
+				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:suffix:power"] = {
 			h = "Orbs",
@@ -83,11 +86,12 @@ CodexData = {
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
+				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
 		}
 	},
 	tabs = {
@@ -4929,9 +4933,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.5% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.1% of the time."},
 								{"Salvage", "Combine 12 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 25.7% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.5% of those are this one."},
 								{"Bounty chest", "3 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
@@ -4959,9 +4963,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
 								{"Salvage", "Combine 40 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7.4% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7% of those are this one."}
 							}
 						}
 					},
@@ -4988,9 +4992,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.4% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.3% of the time."},
 								{"Salvage", "Combine 100 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.5% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.4% of those are this one."}
 							}
 						}
 					},
@@ -5014,9 +5018,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 5.9% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 5.6% of those are this one."},
 								{"Bounty chest", "1 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
@@ -5044,9 +5048,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
 								{"Salvage", "Combine 30 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.8% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."}
 							}
 						}
 					},
@@ -5073,9 +5077,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 33.3% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 32% of the time."},
 								{"Salvage", "Combine 25 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 18.4% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.5% of those are this one."},
 								{"Bounty board", "Per contract by level band: 1/2/3/4/5/6 (x1.5 for elite and boss contracts); weekly chest: 5/6/8/10/12/15."},
 								{"Rift chest", "0.5 + 0.085 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
 								{"Sealed Coffer", "0.25 + 0.05 per rift tier."},
@@ -5110,9 +5114,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 14.3% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.7% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 3.7% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 3.5% of those are this one."},
 								{"Bounty board", "Per contract by level band: 0/0/0/0/1/2 (x1.5 for elite and boss contracts); weekly chest: 1/1/2/2/3/4."},
 								{"Rift chest", "0 + 0.06 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
 								{"Sealed Coffer", "0 + 0.03 per rift tier."},
@@ -5144,9 +5148,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.8% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.7% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.2% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."}
 							}
 						}
 					},
@@ -5176,9 +5180,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.7% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.4% of the time."},
 								{"Salvage", "Combine 20 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.8% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."},
 								{"Bounty chest", "2 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
@@ -5207,7 +5211,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.02%, Magic 0.06%, Rare 0.12%, Legendary 2.5%, Boss 5%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 1.4% of the time."},
 								{"Salvage", "Combine 75 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.5% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.4% of those are this one."},
 								{"Store", "1 for 30 Chaos Coins, 3 a week per account."}
 							}
 						}
@@ -5235,9 +5239,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.03%, Magic 0.09%, Rare 0.18%, Legendary 4.5%, Boss 8%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.4% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.03%, Magic 0.09%, Rare 0.18%, Legendary 4.5%, Boss 8%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.3% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.2% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."},
 								{"Store", "1 for 25 Chaos Coins, 3 a week per account."}
 							}
 						}
@@ -5264,9 +5268,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.9% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.7% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.9% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.8% of those are this one."}
 							}
 						}
 					},
@@ -5320,15 +5324,71 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.6% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.2% of the time."},
 								{"Salvage", "Combine 5 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 10.3% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.8% of those are this one."},
 								{"Store", "10 for 20 Chaos Coins, 5 a week per account."},
 								{"Bounty chest", "5 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
 					},
 					items = {32256}
+				},
+				{
+					id = "orb:ember",
+					name = "Ember Orb",
+					color = "#e8b84a",
+					sub = "Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise).",
+					f = {group = "orb"},
+					sections = {
+						{
+							h = "What it does",
+							p = {"Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise)."}
+						},
+						{
+							h = "Rules",
+							p = {"Only an item with a rarity and a modifier that is not bound and below the top tier (T8).", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.7% of the time."},
+								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.8% of those are this one."}
+							}
+						}
+					},
+					items = {32258}
+				},
+				{
+					id = "orb:crown",
+					name = "Crown Orb",
+					color = "#e8b84a",
+					sub = "Lifts the item one rarity, up to Legendary. Every modifier stays, the base bonus becomes the new rarity's and the item gets 1 more.",
+					f = {group = "orb"},
+					sections = {
+						{
+							h = "What it does",
+							p = {"Lifts the item one rarity, up to Legendary. Every modifier stays, the base bonus becomes the new rarity's and the item gets 1 more."}
+						},
+						{
+							h = "Rules",
+							p = {"Only an item with a rarity below Legendary. It never makes Divine; unique items are refused.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Per kill by monster tier: Normal 0.02%, Magic 0.06%, Rare 0.12%, Legendary 3%, Boss 6%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 1.4% of the time."},
+								{"Salvage", "Combine 100 rune shards into one at the crafting bench."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."}
+							}
+						}
+					},
+					items = {32259}
 				},
 				{
 					id = "orb:unveiling",
@@ -5394,7 +5454,22 @@ CodexData = {
 				},
 				{
 					id = "cur:29853",
-					name = "Crown Orb",
+					name = "Crown Shard",
+					color = "#c0a0ff",
+					sub = "Currency of the character upgrades; no crafting use.",
+					f = {group = "currency"},
+					sections = {
+						{
+							h = "What it does",
+							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
+						},
+						{h = "Sources", p = {"Monster loot lists of the base world."}}
+					},
+					items = {29853}
+				},
+				{
+					id = "cur:29853",
+					name = "Crown Shard",
 					color = "#c0a0ff",
 					sub = "Currency of the character upgrades; no crafting use.",
 					f = {group = "currency"},
@@ -5424,7 +5499,22 @@ CodexData = {
 				},
 				{
 					id = "cur:29852",
-					name = "Ember Orb",
+					name = "Ember Shard",
+					color = "#c0a0ff",
+					sub = "Currency of the character upgrades; no crafting use.",
+					f = {group = "currency"},
+					sections = {
+						{
+							h = "What it does",
+							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
+						},
+						{h = "Sources", p = {"Monster loot lists of the base world."}}
+					},
+					items = {29852}
+				},
+				{
+					id = "cur:29852",
+					name = "Ember Shard",
 					color = "#c0a0ff",
 					sub = "Currency of the character upgrades; no crafting use.",
 					f = {group = "currency"},
@@ -5548,11 +5638,13 @@ CodexData = {
 								{"Whetstone", "5"},
 								{"Orb of Tempering", "20"},
 								{"Orb of Reforging", "50"},
+								{"Ember Orb", "50"},
 								{"Orb of Excision", "60"},
+								{"Crown Orb", "100"},
 								{"Orb of Binding", "75"},
 								{"Orb of Ruin", "150"}
 							},
-							links = {"orb:transmutation", "orb:chaos", "orb:scouring", "orb:alchemy", "orb:annulment", "orb:divine", "orb:sockets", "orb:exalted", "orb:whetstone", "orb:tempering", "orb:reforging", "orb:excision", "orb:binding", "orb:ruin"}
+							links = {"orb:transmutation", "orb:chaos", "orb:scouring", "orb:alchemy", "orb:annulment", "orb:divine", "orb:sockets", "orb:exalted", "orb:whetstone", "orb:tempering", "orb:reforging", "orb:ember", "orb:excision", "orb:crown", "orb:binding", "orb:ruin"}
 						}
 					},
 					items = {32051}

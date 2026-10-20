@@ -7814,8 +7814,8 @@ ids, keys (`transmutation`, `exalted`, ...), storages and the character-upgrade 
 | old name | new name | id |
 |---|---|---|
 | Orb of Transmutation | Orb of Awakening | 29851 |
-| Orb of Augmentation | Ember Orb (character upgrades only) | 29852 |
-| Regal Orb | Crown Orb (character upgrades only) | 29853 |
+| Orb of Augmentation | Ember Shard (character upgrades only; the Ember Orb of crafting is the new item 32258) | 29852 |
+| Regal Orb | Crown Shard (character upgrades only; the Crown Orb of crafting is the new item 32259) | 29853 |
 | Vaal Orb | Void Orb (character upgrades only) | 29854 |
 | Exalted Orb | Orb of Grafting | 29855 |
 | Chaos Orb | Orb of Upheaval | 29856 |
@@ -7841,12 +7841,20 @@ list of these names; the old ones are gone from the player-facing text.
 | Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25 (3 a week), drops, salvage 60 |
 | Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | drops, salvage 50 (not in the store) |
 | Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
+| Ember Orb | 32258 (red crowned gem) | raises the one modifier you choose by exactly one tier (new value in the new tier; never past T8, not on bound modifiers; a random one by use-with) | drops, salvage 50, Candlemarks 10 (5 a week) |
+| Crown Orb | 32259 (purple crowned gem) | lifts the item one rarity, Common up to Legendary (never Divine): every modifier stays, the base bonus becomes the new rarity's, the item gets one more modifier | drops (rare), salvage 100, Candlemarks 25 (2 a week) |
 | Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 10 for 20 (5 packs a week), bounty chest (5), drops, salvage 5 |
 
 The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
-24477, 22083): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
+24477, 22083; the Ember and Crown Orb use the crowned gems 25045 and 25044): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
 is needed; the live dat pair is untouched. The server nodes are copies of the stock nodes with the `useable` flag (the same
 way as the gems and the salvage shard, `install_gems.py`' helpers). Ids 32251..32260 are reserved for this set.
+
+**Ember and Crown rework (2026-10-20).** The base server's Ember Orb (29852) and Crown Orb (29853) were currency of the
+waystone upgrade window, which has no client window, and their sprites have no multi-use flag: they could not be spent and
+the wiki explained nothing. They are now the **Ember Shard** and **Crown Shard** (still dropped, still shop currency), and
+Ember Orb and Crown Orb are real crafting orbs, items 32258 and 32259 (`ChaosOrbsConfig.crown` = max rank 5 and modifiers
+added). A server installed before keeps working: `install_orbs.py` renames by id and rewrites the old names in base data.
 
 **The Orb of Ruin.** Odds in `ChaosOrbsConfig.ruin`, shown on the bench and in the orb's text: 40% the item **improves**,
 60% nothing happens (since 2026-10-15, "Conquest Tokens": it never ruins an item any more; before, 45% nothing and 15% the

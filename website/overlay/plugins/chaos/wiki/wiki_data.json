@@ -312,7 +312,7 @@
 		"newplayer.giftLevels": "20, 50, 100, 200, 300, 500, 800, 1000, 1500 and 2000",
 		"newplayer.giftLevelsPt": "20, 50, 100, 200, 300, 500, 800, 1000, 1500 e 2000",
 		"newplayer.tutorial": true,
-		"orb.count": 15,
+		"orb.count": 17,
 		"orbx.durations": "1/3/7/14",
 		"orbx.goldFee": "2",
 		"orbx.minLevel": 8,
@@ -7289,6 +7289,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7312,6 +7316,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7395,6 +7400,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7418,6 +7427,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7500,6 +7510,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7523,6 +7537,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7601,6 +7616,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7624,6 +7643,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7701,6 +7721,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7724,6 +7748,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7803,6 +7828,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7826,6 +7855,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7903,6 +7933,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7926,6 +7960,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8011,6 +8046,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8034,6 +8073,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8112,6 +8152,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8135,6 +8179,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8213,6 +8258,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8236,6 +8285,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8321,6 +8371,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8344,6 +8398,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8422,6 +8477,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8445,6 +8504,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8524,6 +8584,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8547,6 +8611,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8631,6 +8696,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8654,6 +8723,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8736,6 +8806,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8759,6 +8833,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8845,6 +8920,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8868,6 +8947,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8945,6 +9025,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8968,6 +9052,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9050,6 +9135,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9073,6 +9162,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9157,6 +9247,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9180,6 +9274,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9264,6 +9359,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9287,6 +9386,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9372,6 +9472,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9395,6 +9499,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9478,6 +9583,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9501,6 +9610,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9578,6 +9688,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9601,6 +9715,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9683,6 +9798,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9706,6 +9825,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9792,6 +9912,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9815,6 +9939,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9900,6 +10025,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9923,6 +10052,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10008,6 +10138,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10031,6 +10165,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10108,6 +10243,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10131,6 +10270,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10214,6 +10354,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10237,6 +10381,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10321,6 +10466,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10344,6 +10493,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10429,6 +10579,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10452,6 +10606,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10529,6 +10684,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10552,6 +10711,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10635,6 +10795,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10658,6 +10822,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10735,6 +10900,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10758,6 +10927,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10835,6 +11005,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10858,6 +11032,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10935,6 +11110,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10958,6 +11137,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11040,6 +11220,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11063,6 +11247,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11148,6 +11333,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11171,6 +11360,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11248,6 +11438,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11271,6 +11465,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11354,6 +11549,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11377,6 +11576,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11459,6 +11659,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11482,6 +11686,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11561,6 +11766,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11584,6 +11793,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11669,6 +11879,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11692,6 +11906,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11773,6 +11988,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11796,6 +12015,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11883,6 +12103,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11906,6 +12130,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11993,6 +12218,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12016,6 +12245,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12098,6 +12328,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12121,6 +12355,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12206,6 +12441,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12229,6 +12468,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12312,6 +12552,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12335,6 +12579,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12420,6 +12665,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12443,6 +12692,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12520,6 +12770,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12543,6 +12797,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12626,6 +12881,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12649,6 +12908,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12726,6 +12986,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12749,6 +13013,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12831,6 +13096,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12854,6 +13123,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12940,6 +13210,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12963,6 +13237,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13048,6 +13323,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13071,6 +13350,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13153,6 +13433,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13176,6 +13460,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13257,6 +13542,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13280,6 +13569,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13366,6 +13656,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13389,6 +13683,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13476,6 +13771,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13499,6 +13798,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13584,6 +13884,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13607,6 +13911,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13689,6 +13994,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13712,6 +14021,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13794,6 +14104,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13817,6 +14131,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13899,6 +14214,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13922,6 +14241,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14000,6 +14320,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14023,6 +14347,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14108,6 +14433,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14131,6 +14460,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14215,6 +14545,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14238,6 +14572,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14315,6 +14650,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14338,6 +14677,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14415,6 +14755,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14438,6 +14782,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14520,6 +14865,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14543,6 +14892,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14625,6 +14975,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14648,6 +15002,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14729,6 +15084,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14752,6 +15111,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14829,6 +15189,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14852,6 +15216,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14937,6 +15302,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14960,6 +15329,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15043,6 +15413,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15066,6 +15440,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15148,6 +15523,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15171,6 +15550,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15253,6 +15633,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15276,6 +15660,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15365,6 +15750,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15388,6 +15777,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15475,6 +15865,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15498,6 +15892,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15582,6 +15977,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15605,6 +16004,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15685,6 +16085,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15708,6 +16112,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15788,6 +16193,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15811,6 +16220,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15891,6 +16301,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15914,6 +16328,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15999,6 +16414,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16022,6 +16441,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16111,6 +16531,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16134,6 +16558,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16222,6 +16647,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16245,6 +16674,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16334,6 +16764,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16357,6 +16791,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16437,6 +16872,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16460,6 +16899,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16551,6 +16991,10 @@
 								["Orb of Tempering", "New value inside its tier (unless bound)."],
 								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
 								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16574,6 +17018,7 @@
 								"orb:scouring",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -25786,12 +26231,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.5% of the time."
+									"Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.1% of the time."
 								],
 								["Salvage", "Combine 12 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 25.7% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.5% of those are this one."
 								],
 								["Bounty chest", "3 in every weekly bounty chest (4 contracts in a week)."]
 							]
@@ -25827,12 +26272,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."
+									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
 								],
 								["Salvage", "Combine 40 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7.4% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7% of those are this one."
 								]
 							]
 						}
@@ -25865,12 +26310,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.4% of the time."
+									"Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.3% of the time."
 								],
 								["Salvage", "Combine 100 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.5% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.4% of those are this one."
 								]
 							]
 						}
@@ -25900,12 +26345,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."
+									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
 								],
 								["Salvage", "Combine 50 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 5.9% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 5.6% of those are this one."
 								],
 								["Bounty chest", "1 in every weekly bounty chest (4 contracts in a week)."]
 							]
@@ -25941,12 +26386,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.8% of the time."
+									"Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
 								],
 								["Salvage", "Combine 30 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.8% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."
 								]
 							]
 						}
@@ -25982,12 +26427,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 33.3% of the time."
+									"Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 32% of the time."
 								],
 								["Salvage", "Combine 25 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 18.4% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.5% of those are this one."
 								],
 								[
 									"Bounty board",
@@ -26039,12 +26484,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 14.3% of the time."
+									"Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.7% of the time."
 								],
 								["Salvage", "Combine 60 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 3.7% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 3.5% of those are this one."
 								],
 								[
 									"Bounty board",
@@ -26091,12 +26536,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.8% of the time."
+									"Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.7% of the time."
 								],
 								["Salvage", "Combine 60 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.2% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."
 								]
 							]
 						}
@@ -26134,12 +26579,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.7% of the time."
+									"Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.4% of the time."
 								],
 								["Salvage", "Combine 20 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.8% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."
 								],
 								["Bounty chest", "2 in every weekly bounty chest (4 contracts in a week)."]
 							]
@@ -26179,7 +26624,7 @@
 								["Salvage", "Combine 75 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.5% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 1.4% of those are this one."
 								],
 								["Store", "1 for 30 Chaos Coins, 3 a week per account."]
 							]
@@ -26215,12 +26660,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.03%, Magic 0.09%, Rare 0.18%, Legendary 4.5%, Boss 8%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.4% of the time."
+									"Per kill by monster tier: Normal 0.03%, Magic 0.09%, Rare 0.18%, Legendary 4.5%, Boss 8%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.3% of the time."
 								],
 								["Salvage", "Combine 60 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.2% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."
 								],
 								["Store", "1 for 25 Chaos Coins, 3 a week per account."]
 							]
@@ -26255,12 +26700,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.9% of the time."
+									"Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.7% of the time."
 								],
 								["Salvage", "Combine 50 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.9% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.8% of those are this one."
 								]
 							]
 						}
@@ -26333,12 +26778,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.6% of the time."
+									"Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.2% of the time."
 								],
 								["Salvage", "Combine 5 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 10.3% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.8% of those are this one."
 								],
 								["Store", "10 for 20 Chaos Coins, 5 a week per account."],
 								["Bounty chest", "5 in every weekly bounty chest (4 contracts in a week)."]
@@ -26346,6 +26791,84 @@
 						}
 					],
 					"icon": "wiki/i/orb-steel-sword.png"
+				},
+				{
+					"id": "orb:ember",
+					"name": "Ember Orb",
+					"sub": "Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise).",
+					"color": "#e8b84a",
+					"sections": [
+						{
+							"h": "What it does",
+							"p": [
+								"Raises the modifier you pick on the bench by one tier, with a new value in that tier (used directly: a random unbound one that can still rise)."
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"Only an item with a rarity and a modifier that is not bound and below the top tier (T8).",
+								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Used directly: Use with on the orb, then click the item."
+							]
+						},
+						{
+							"h": "Sources",
+							"cols": ["Source", "How"],
+							"w": [28, 72],
+							"rows": [
+								[
+									"Monster drops",
+									"Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.7% of the time."
+								],
+								["Salvage", "Combine 50 rune shards into one at the crafting bench."],
+								[
+									"Salvage bonus",
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.8% of those are this one."
+								]
+							]
+						}
+					],
+					"icon": "wiki/i/orb-fire-flame.png"
+				},
+				{
+					"id": "orb:crown",
+					"name": "Crown Orb",
+					"sub": "Lifts the item one rarity, up to Legendary. Every modifier stays, the base bonus becomes the new rarity's and the item gets 1 more.",
+					"color": "#e8b84a",
+					"sections": [
+						{
+							"h": "What it does",
+							"p": [
+								"Lifts the item one rarity, up to Legendary. Every modifier stays, the base bonus becomes the new rarity's and the item gets 1 more."
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"Only an item with a rarity below Legendary. It never makes Divine; unique items are refused.",
+								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Used directly: Use with on the orb, then click the item."
+							]
+						},
+						{
+							"h": "Sources",
+							"cols": ["Source", "How"],
+							"w": [28, 72],
+							"rows": [
+								[
+									"Monster drops",
+									"Per kill by monster tier: Normal 0.02%, Magic 0.06%, Rare 0.12%, Legendary 3%, Boss 6%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 1.4% of the time."
+								],
+								["Salvage", "Combine 100 rune shards into one at the crafting bench."],
+								[
+									"Salvage bonus",
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."
+								]
+							]
+						}
+					],
+					"icon": "wiki/i/orb-holy-banner.png"
 				},
 				{
 					"id": "orb:unveiling",
@@ -26488,7 +27011,23 @@
 				},
 				{
 					"id": "cur:29853",
-					"name": "Crown Orb",
+					"name": "Crown Shard",
+					"sub": "Currency of the character upgrades; no crafting use.",
+					"color": "#c0a0ff",
+					"sections": [
+						{
+							"h": "What it does",
+							"p": [
+								"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."
+							]
+						},
+						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
+					],
+					"icon": "wiki/i/orb-holy-banner.png"
+				},
+				{
+					"id": "cur:29853",
+					"name": "Crown Shard",
 					"sub": "Currency of the character upgrades; no crafting use.",
 					"color": "#c0a0ff",
 					"sections": [
@@ -26520,7 +27059,23 @@
 				},
 				{
 					"id": "cur:29852",
-					"name": "Ember Orb",
+					"name": "Ember Shard",
+					"sub": "Currency of the character upgrades; no crafting use.",
+					"color": "#c0a0ff",
+					"sections": [
+						{
+							"h": "What it does",
+							"p": [
+								"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."
+							]
+						},
+						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
+					],
+					"icon": "wiki/i/orb-fire-flame.png"
+				},
+				{
+					"id": "cur:29852",
+					"name": "Ember Shard",
 					"sub": "Currency of the character upgrades; no crafting use.",
 					"color": "#c0a0ff",
 					"sections": [
@@ -26653,7 +27208,9 @@
 								["Whetstone", "5"],
 								["Orb of Tempering", "20"],
 								["Orb of Reforging", "50"],
+								["Ember Orb", "50"],
 								["Orb of Excision", "60"],
+								["Crown Orb", "100"],
 								["Orb of Binding", "75"],
 								["Orb of Ruin", "150"]
 							],
@@ -26669,7 +27226,9 @@
 								"orb:whetstone",
 								"orb:tempering",
 								"orb:reforging",
+								"orb:ember",
 								"orb:excision",
+								"orb:crown",
 								"orb:binding",
 								"orb:ruin"
 							]
