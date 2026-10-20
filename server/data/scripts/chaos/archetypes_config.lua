@@ -31,6 +31,16 @@ ChaosArchetypesConfig = {
 		{id = 99, flag = "arVigils"},
 		{id = 102, flag = "arIronTithe"},
 		{id = 96, flag = "arHollowVessel"},
+		-- the third round (2026-10-20, reworked version 4): four keystones for the Warrior line, four for the Ranger line
+		-- (beta feedback: both lines had fewer than the Monk, Thief and Templar lines)
+		{id = 428, flag = "arExecutioner"},
+		{id = 409, flag = "arEarthbreaker"},
+		{id = 466, flag = "arRampage"},
+		{id = 523, flag = "arLastStand"},
+		{id = 561, flag = "arLongshot"},
+		{id = 542, flag = "arBarbed"},
+		{id = 599, flag = "arOpeningShot"},
+		{id = 447, flag = "arHobble"},
 	},
 
 	-- the classes that may take each keystone (the client nodes carry the same list; the test checks it)
@@ -55,6 +65,16 @@ ChaosArchetypesConfig = {
 			"sentinel"},
 		arHollowVessel = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord", "monk", "shadowfist",
 			"ironsage", "templar", "inquisitor", "sentinel"},
+		-- the third round: the Warrior line
+		arExecutioner = {"warrior", "juggernaut", "berserker"},
+		arEarthbreaker = {"warrior", "juggernaut", "berserker"},
+		arRampage = {"warrior", "juggernaut", "berserker"},
+		arLastStand = {"warrior", "juggernaut", "berserker"},
+		-- the Ranger line
+		arLongshot = {"ranger", "deadeye", "beastmaster"},
+		arBarbed = {"ranger", "deadeye", "beastmaster"},
+		arOpeningShot = {"ranger", "deadeye", "beastmaster"},
+		arHobble = {"ranger", "deadeye", "beastmaster"},
 	},
 
 	-- the work one server tick may do for the chain reactions (poison and burn spread, shatter): at most perTick
@@ -177,6 +197,48 @@ ChaosArchetypesConfig = {
 	-- early start without the keystone too.
 	arHollowVessel = {health = 100, fromHealth = 0.5, more = 0.5, recharge = 150, earlyMs = 1000, subId = 71091,
 		uniqueMore = 0.4, diademRecharge = 100},
+
+	-- The third round (2026-10-20): four keystones each for the Warrior and the Ranger line, which had two fewer than the
+	-- Monk, Thief and Templar lines (beta feedback). Every one is a leaf of the main tree that was a mythic leaf (reworked
+	-- version 4, build codes format 6) and has a price. Computed, not measured in game: server/data/spells/README.md
+	-- "Warrior and Ranger line keystones".
+
+	-- Executioner's Verdict (Warrior line): a weapon hit in melee that would leave a monster (not a boss, not a summon) at
+	-- or below `threshold` of its maximum health kills it. Price: your melee hits on a monster above `priceAbove` of its
+	-- maximum health x price.
+	arExecutioner = {threshold = 0.15, priceAbove = 0.60, price = 0.90},
+
+	-- Earthbreaker (Warrior line): every `every`th melee weapon hit (the count starts over after windowMs without one)
+	-- deals x (1 + mainBonus) and slams the ground: up to maxTargets other enemies within `radius` of the target take
+	-- slamShare x that hit as physical damage. Price: the other melee hits x price.
+	arEarthbreaker = {every = 4, windowMs = 3000, mainBonus = 0.50, slamShare = 0.60, radius = 2, maxTargets = 6, price = 0.90},
+
+	-- Rampage (Warrior line): killing a monster gives a stack (at most maxStacks, all gone durationMs after the last
+	-- kill); every stack: your damage x (1 + damagePerStack), the damage you take x (1 + takenPerStack).
+	arRampage = {maxStacks = 5, durationMs = 6000, damagePerStack = 0.06, takenPerStack = 0.04},
+
+	-- Last Stand (Warrior line): a hit that would take you (health and energy shield) below `floor` of your maximum
+	-- health, when you were above it, is cut so you keep `floor`; for durationMs after that you take x (1 - reduction);
+	-- once every cooldownMs; not against players (PvP). Price: healing you receive x healingTaken.
+	arLastStand = {floor = 0.20, cooldownMs = 90000, reduction = 0.40, durationMs = 5000, healingTaken = 0.80},
+
+	-- Longshot (Ranger line): your bow, crossbow and thrown weapon hits (not wands) deal +perSqm for every square of
+	-- distance beyond minRange, at most +cap; at closeRange or nearer x close.
+	arLongshot = {minRange = 2, perSqm = 0.06, cap = 0.30, closeRange = 2, close = 0.85},
+
+	-- Barbed Quiver (Ranger line): your distance weapon hits bleed: share of the hit as physical damage over ticks ticks
+	-- of tickMs (a stronger bleed replaces a weaker one; the engine's rule for damage conditions). Price: the hit itself
+	-- x mainDamage.
+	arBarbed = {share = 0.60, ticks = 4, tickMs = 1000, mainDamage = 0.90},
+
+	-- Opening Shot (Ranger line): your first distance weapon hit on a monster that is at full health deals x (1 + bonus).
+	-- Price: your other distance weapon hits x price.
+	arOpeningShot = {bonus = 0.80, price = 0.93},
+
+	-- Hobbling Shot (Ranger line): a distance weapon hit has chance percent to hobble its target for durationMs (its speed
+	-- x (1 - slow); a hobbled target is not hobbled again). Your distance weapon hits on a hobbled target deal x (1 + bonus).
+	-- Price: your other distance weapon hits x price.
+	arHobble = {chance = 25, durationMs = 3000, slow = 0.40, bonus = 0.20, price = 0.92},
 
 	-- the archetype uniques (data/items/chaos_items.xml `archetype`, chaos_unique_specs.lua): base server id -> the
 	-- archetype key the glue reads on the equipped copy (it must carry chaos_unique)

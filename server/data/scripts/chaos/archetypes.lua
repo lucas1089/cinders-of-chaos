@@ -17,6 +17,10 @@
 --     by data/lib/chaos_energy_shield.lua, the immunities, the early recharge, ChaosArchetypes.percentBase for the
 --     rifts' percent-of-health hits).
 --
+--   * the third round (2026-10-20, Warrior and Ranger lines): Executioner's Verdict, Earthbreaker, Rampage (a kill
+--     stack, the monster's death event), Last Stand (a hit taken is cut, the healing price), Longshot, Barbed Quiver (a
+--     bleed condition), Opening Shot and Hobbling Shot (a slow condition and a mark per target).
+--
 -- Damage of the archetypes, and the guards:
 --   * shares of a hit (Cascade, arcs, effigy and sigil pulses, the reflect) are dealt with ChaosKeystones.depth up, like
 --     the keystone procs: no passive bonus a second time, no keystone, no archetype reacts to them;
@@ -257,6 +261,7 @@ local function newChain()
 end
 
 local marks = {poison = {}, burn = {}, ice = {}} -- monster id -> record
+local hobbleMarks = {} -- creature id -> time the slow of Hobbling Shot ends
 
 local function addPoisonLike(kind, owner, target, spread)
 	local ctype = kind == "poison" and CONDITION_POISON or CONDITION_FIRE
@@ -388,7 +393,7 @@ local state = {} -- player id -> {leech, cascadeAt, effigies, sigil, relic, reli
 local function stateOf(pid)
 	local s = state[pid]
 	if not s then
-		s = {leech = {}, effigies = {}, bosses = {}}
+		s = {leech = {}, effigies = {}, bosses = {}, slam = {}, rampage = {}, lastStand = {}}
 		state[pid] = s
 	end
 	return s
@@ -669,11 +674,38 @@ end
 
 local reflecting = false
 
+-- Rampage's extra damage taken and Last Stand: the hit (pd, sd <= 0) on a player holding either keystone. Last Stand is
+-- not used against players (PvP).
+function M.warriorDefence(player, flags, attacker, pd, sd)
+	local pid = player:getId()
+	local t = now()
+	local s = stateOf(pid)
+	if flags.arRampage then
+		local stacks = A.rampageStacks(s.rampage, t)
+		if stacks > 0 then
+			local m = A.rampageTaken(stacks)
+			pd, sd = A.scale(pd, m), A.scale(sd, m)
+		end
+	end
+	if flags.arLastStand and not (attacker and attacker:isPlayer()) then
+		local triggered
+		pd, sd, triggered = A.lastStandHit(s.lastStand, t, player:getHealth(),
+			player.getEnergyShield and player:getEnergyShield() or 0, player:getMaxHealth(), pd, sd)
+		if triggered then
+			player:getPosition():sendMagicEffect(fx("arcane_circle", CONST_ME_MAGIC_RED or CONST_ME_POFF))
+		end
+	end
+	return pd, sd
+end
+
 -- a player is hit: Thornbound Oath, Sanguine Covenant's healing price, Hollow Vessel's immunities
 local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 	if pt == COMBAT_HEALING then
 		if flags.arSanguine then
 			pd, sd = A.healingTaken(pd), A.healingTaken(sd)
+		end
+		if flags.arLastStand then
+			pd, sd = A.lastStandHealing(pd), A.lastStandHealing(sd)
 		end
 		return pd, sd
 	end
@@ -685,6 +717,9 @@ local function defend(player, flags, attacker, pd, pt, sd, st, origin)
 		if A.hollowImmune(typeName(st), oname) then
 			sd = 0
 		end
+	end
+	if flags.arRampage or flags.arLastStand then
+		pd, sd = M.warriorDefence(player, flags, attacker, pd, sd)
 	end
 	if not flags.arThornbound or reflecting or not attacker or attacker:getId() == player:getId() then
 		return pd, sd
@@ -730,6 +765,33 @@ local function castContext(player)
 	return v ~= nil and v > 0
 end
 
+-- Barbed Quiver: a bleed of the player's on the target (a stronger one replaces a weaker: the engine's rule)
+local function addBleed(owner, target, tick, ticks, tickMs)
+	if not (Condition and CONDITION_BLEEDING) then
+		return
+	end
+	local c = Condition(CONDITION_BLEEDING)
+	c:setParameter(CONDITION_PARAM_OWNER, owner:getId())
+	c:setParameter(CONDITION_PARAM_DELAYED, true)
+	c:addDamage(ticks, tickMs, -tick)
+	target:addCondition(c)
+	target:getPosition():sendMagicEffect(CONST_ME_DRAWBLOOD or CONST_ME_POFF)
+end
+
+-- Hobbling Shot: the slow (the engine's paralyze condition, a fraction of the speed); the mark only when it took
+local function hobble(target, t)
+	if not (Condition and CONDITION_PARALYZE) then
+		return
+	end
+	local c = Condition(CONDITION_PARALYZE)
+	c:setParameter(CONDITION_PARAM_TICKS, cfg().arHobble.durationMs)
+	c:setFormula(-cfg().arHobble.slow, 0, -cfg().arHobble.slow, 0)
+	if target:addCondition(c) then
+		A.hobbleMark(hobbleMarks, target:getId(), t)
+		target:getPosition():sendMagicEffect(CONST_ME_ICEAREA or CONST_ME_POFF)
+	end
+end
+
 -- a player hits: everything else
 local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	local pid = player:getId()
@@ -754,7 +816,30 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	local bow = weapon ~= nil and oname == "ranged" and isBow(weapon)
 	local snare = flags.arSnarewright and player:getStorageValue(A.snaresConfig().storage.hit) == 1 or false
 	local ctx = {origin = oname, bow = bow, critical = critical == true, source = source, snare = snare}
+	local t0 = now()
+	local cid0 = creature:getId()
+	-- the third round: what the Warrior and Ranger keystones read of the hit
+	local isMonsterTarget = creature:isMonster()
+	local doSlam = false
+	if not source then
+		ctx.rampage = flags.arRampage and A.rampageStacks(stateOf(pid).rampage, t0) or nil
+		if isMonsterTarget then
+			local maxHealth = creature:getMaxHealth()
+			ctx.targetFraction = maxHealth > 0 and creature:getHealth() / maxHealth or nil
+			ctx.full = maxHealth > 0 and creature:getHealth() >= maxHealth
+		end
+		if weapon ~= nil and oname == "ranged" and weapon:getWeaponType() == WEAPON_DISTANCE then
+			ctx.distWeapon = true
+			ctx.distance = A.distance(player:getPosition(), creature:getPosition())
+			ctx.hobbled = flags.arHobble and A.hobbled(hobbleMarks, cid0, t0) or false
+		end
+	end
 	local m = A.hitFactor(flags, ctx)
+	if flags.arEarthbreaker and oname == "melee" and not source then
+		local slamMult
+		slamMult, doSlam = A.slamStep(stateOf(pid).slam, t0)
+		m = m * slamMult
+	end
 	local m1, m2 = m * A.typeFactor(flags, typeName(pt), ctx), m * A.typeFactor(flags, typeName(st), ctx)
 	-- the Reliquary Warden's party buff and the vigils (Wrath)
 	local rb = A.relicBuff(relicBuffs, pid, now())
@@ -767,6 +852,14 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	end
 	if m2 ~= 1 then
 		sd = A.scale(sd, m2)
+	end
+	-- Executioner's Verdict: a melee hit that would leave a monster at 15% of its health or less kills it
+	if flags.arExecutioner and oname == "melee" and not source and isMonsterTarget and validTarget(player, creature) then
+		local executed
+		pd, sd, executed = A.executeHit(creature:getHealth(), creature:getMaxHealth(), pd, sd, isBoss(creature))
+		if executed then
+			creature:getPosition():sendMagicEffect(fx("blood_slash", CONST_ME_DRAWBLOOD or CONST_ME_POFF))
+		end
 	end
 	local amount = math.abs(pd) + math.abs(sd)
 	if amount <= 0 then
@@ -828,6 +921,46 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 				end
 			end, 0)
 		end
+	end
+
+	-- Earthbreaker: the fourth melee hit slams the ground
+	if doSlam then
+		local slam = A.slamAmount(amount)
+		local radius = cfg().arEarthbreaker.radius
+		addEvent(function()
+			local p = Player(pid)
+			if not p then
+				return
+			end
+			Position(tpos.x, tpos.y, tpos.z):sendMagicEffect(CONST_ME_GROUNDSHAKER or CONST_ME_POFF)
+			for _, v in ipairs(A.pickNear(around(p, tpos, radius, true), tpos, radius, {[cid] = true},
+					cfg().arEarthbreaker.maxTargets)) do
+				dealProc(p, Creature(v.id), COMBAT_PHYSICALDAMAGE, slam, CONST_ME_GROUNDSHAKER or CONST_ME_NONE)
+			end
+		end, 0)
+	end
+
+	-- Barbed Quiver: a distance weapon hit bleeds
+	if flags.arBarbed and ctx.distWeapon then
+		local tick, ticks, tickMs = A.bleedOf(amount)
+		if tick then
+			addEvent(function()
+				local p, c = Player(pid), Creature(cid)
+				if p and c and validTarget(p, c) then
+					addBleed(p, c, tick, ticks, tickMs)
+				end
+			end, 0)
+		end
+	end
+
+	-- Hobbling Shot: a distance weapon hit may slow its target
+	if flags.arHobble and ctx.distWeapon and A.hobbleRoll(hobbleMarks, cid, t) then
+		addEvent(function()
+			local p, c = Player(pid), Creature(cid)
+			if p and c and validTarget(p, c) then
+				hobble(c, now())
+			end
+		end, 0)
 	end
 
 	-- Cascade Edge: a critical hit bursts
@@ -931,10 +1064,20 @@ hit:register()
 
 -- ------------------------------------------------------------------------------------------------ deaths
 local death = CreatureEvent("ChaosArchetypesDeath")
-function death.onDeath(creature)
+function death.onDeath(creature, corpse, killer, mostDamageKiller)
 	local cid = creature:getId()
 	local pos = copyPos(creature:getPosition())
 	local t = now()
+	-- Rampage: the player who killed a monster (not a summon) gets a stack
+	local k = killer and killer.isPlayer and killer:isPlayer() and killer
+		or (mostDamageKiller and mostDamageKiller.isPlayer and mostDamageKiller:isPlayer() and mostDamageKiller) or nil
+	if k and creature:isMonster() and not creature:getMaster() then
+		local kf = flagsOf(k:getId())
+		if kf and kf.arRampage then
+			A.rampageKill(stateOf(k:getId()).rampage, t)
+		end
+	end
+	hobbleMarks[cid] = nil
 	local p = marks.poison[cid]
 	if p then
 		local owner = Player(p.owner)
@@ -1065,6 +1208,7 @@ local function cleanup(pid)
 		M.dismissRelic(pid)
 	end
 	state[pid], M.flags[pid], M.uniques[pid], castBuffer[pid], relicBuffs[pid] = nil, nil, nil, nil, nil
+	hobbleMarks[pid] = nil
 	M.hollow[pid], M.lastHit[pid] = nil, nil
 	-- the snares live on the spells' side; when it shares this Lua state they go at once (else at its next visit)
 	if ChaosSnares and ChaosSnares.clearOwner then

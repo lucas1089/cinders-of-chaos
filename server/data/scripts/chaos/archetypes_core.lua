@@ -130,6 +130,28 @@ function A.hitFactor(flags, ctx)
 		if flags.arEffigy and ctx.origin == "spell" then
 			m = m * c.arEffigy.ownSpell
 		end
+		-- the third round: Warrior line
+		if flags.arExecutioner and ctx.origin == "melee" and (ctx.targetFraction or 0) > c.arExecutioner.priceAbove then
+			m = m * c.arExecutioner.price
+		end
+		if flags.arRampage then
+			m = m * A.rampageDealt(ctx.rampage)
+		end
+		-- the Ranger line: ctx.distWeapon = a bow, crossbow or thrown weapon hit (not a wand)
+		if ctx.distWeapon and ctx.origin == "ranged" then
+			if flags.arLongshot then
+				m = m * A.longshotFactor(ctx.distance)
+			end
+			if flags.arBarbed then
+				m = m * c.arBarbed.mainDamage
+			end
+			if flags.arOpeningShot then
+				m = m * (ctx.full and (1 + c.arOpeningShot.bonus) or c.arOpeningShot.price)
+			end
+			if flags.arHobble then
+				m = m * (ctx.hobbled and (1 + c.arHobble.bonus) or c.arHobble.price)
+			end
+		end
 	end
 	return m
 end
@@ -638,6 +660,140 @@ function A.percentBase(maxHealth, maxShield, keystone)
 		return (maxHealth or 0) + (maxShield or 0)
 	end
 	return maxHealth or 0
+end
+
+-- ------------------------------------------------------------------------------------------------ Executioner's Verdict
+-- A melee weapon hit on a monster: the hit (pd, sd, both <= 0) that kills it when it would leave the monster at or below
+-- the threshold of its maximum health. Bosses are never executed. Returns pd, sd, executed.
+function A.executeHit(health, maxHealth, pd, sd, boss)
+	local e = cfg().arExecutioner
+	if boss or (health or 0) <= 0 or (maxHealth or 0) <= 0 then
+		return pd, sd, false
+	end
+	local total = math.abs(pd or 0) + math.abs(sd or 0)
+	if total <= 0 then
+		return pd, sd, false
+	end
+	if total >= health or health - total > maxHealth * e.threshold then
+		return pd, sd, false
+	end
+	return (pd or 0) - (health - total), sd, true
+end
+
+-- ------------------------------------------------------------------------------------------------ Earthbreaker
+-- state = {count, at}. One melee weapon hit at `now`: returns the damage multiplier of the hit and whether it slams.
+function A.slamStep(state, now)
+	local e = cfg().arEarthbreaker
+	if state.at and now - state.at > e.windowMs then
+		state.count = 0
+	end
+	state.at = now
+	state.count = (state.count or 0) + 1
+	if state.count >= e.every then
+		state.count = 0
+		return 1 + e.mainBonus, true
+	end
+	return e.price, false
+end
+
+function A.slamAmount(hit)
+	return math.floor(math.abs(hit or 0) * cfg().arEarthbreaker.slamShare)
+end
+
+-- ------------------------------------------------------------------------------------------------ Rampage
+-- state = {stacks, untilTime}. A kill at `now` adds a stack and renews the time.
+function A.rampageKill(state, now)
+	local r = cfg().arRampage
+	if (state.untilTime or 0) < now then
+		state.stacks = 0
+	end
+	state.stacks = math.min(r.maxStacks, (state.stacks or 0) + 1)
+	state.untilTime = now + r.durationMs
+	return state.stacks
+end
+
+function A.rampageStacks(state, now)
+	if state and (state.untilTime or 0) >= now then
+		return state.stacks or 0
+	end
+	return 0
+end
+
+function A.rampageDealt(stacks)
+	return 1 + (stacks or 0) * cfg().arRampage.damagePerStack
+end
+
+function A.rampageTaken(stacks)
+	return 1 + (stacks or 0) * cfg().arRampage.takenPerStack
+end
+
+-- ------------------------------------------------------------------------------------------------ Last Stand
+-- state = {readyAt, activeUntil}. A hit (pd, sd <= 0) on a player with health, energy shield and maximum health at
+-- `now`. Returns pd, sd (cut when the hit would take the player under the floor), and whether Last Stand triggered
+-- (the cooldown and the window start). While the window runs every hit is x (1 - reduction).
+function A.lastStandHit(state, now, health, shield, maxHealth, pd, sd)
+	local l = cfg().arLastStand
+	if (state.activeUntil or 0) >= now then
+		return A.scale(pd, 1 - l.reduction), A.scale(sd, 1 - l.reduction), false
+	end
+	if (state.readyAt or 0) > now then
+		return pd, sd, false
+	end
+	local total = math.abs(pd or 0) + math.abs(sd or 0)
+	local floorHp = math.floor((maxHealth or 0) * l.floor)
+	shield = math.max(0, shield or 0)
+	if total <= 0 or (health or 0) <= floorHp or total - shield < (health or 0) - floorHp + 1 then
+		return pd, sd, false
+	end
+	local allowed = shield + health - floorHp
+	local k = allowed / total
+	state.readyAt = now + l.cooldownMs
+	state.activeUntil = now + l.durationMs
+	return A.scale(pd, k), A.scale(sd, k), true
+end
+
+function A.lastStandHealing(value)
+	return A.scale(value, cfg().arLastStand.healingTaken)
+end
+
+-- ------------------------------------------------------------------------------------------------ Longshot
+-- the multiplier of a distance weapon hit from `distance` squares
+function A.longshotFactor(distance)
+	local l = cfg().arLongshot
+	distance = distance or 0
+	if distance <= l.closeRange then
+		return l.close
+	end
+	return 1 + math.min(l.cap, math.max(0, distance - l.minRange) * l.perSqm)
+end
+
+-- ------------------------------------------------------------------------------------------------ Barbed Quiver
+-- the bleed of a hit: tick, ticks, tickMs (nil when the hit is too small)
+function A.bleedOf(amount)
+	local b = cfg().arBarbed
+	local tick = math.floor(math.abs(amount or 0) * b.share / b.ticks)
+	if tick <= 0 then
+		return nil
+	end
+	return tick, b.ticks, b.tickMs
+end
+
+-- ------------------------------------------------------------------------------------------------ Hobbling Shot
+-- marks = {[creature id] = time the slow ends}
+function A.hobbled(marks, id, now)
+	return (marks[id] or 0) > now
+end
+
+-- does a hit on a target hobble it? (never while it is hobbled; `random` gives 1..100)
+function A.hobbleRoll(marks, id, now, random)
+	if A.hobbled(marks, id, now) then
+		return false
+	end
+	return (random or math.random)(1, 100) <= cfg().arHobble.chance
+end
+
+function A.hobbleMark(marks, id, now)
+	marks[id] = now + cfg().arHobble.durationMs
 end
 
 return A

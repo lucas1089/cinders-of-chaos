@@ -2283,3 +2283,11 @@ Use the spellid column above as the id, and the words as the spell's words.
 
 ## Client side
 The client side is done in `client/overlay/modules/game_chaosspells` (spell list, action bar, icons); regenerate its data with `python3 -I client/tools/gen_spell_data.py` after changing `spells_chaos.xml`. The icons (cells 201..277, drawn by `client/tools/gen_spell_icons.py`) live in the complete generated spell icon sheets in `client/overlay/data/images/game/spells/`; rebuild those with `client/tools/gen_all_spell_icons.py`. See `client/MANIFEST.md`.
+
+### Warrior and Ranger line keystones (2026-10-20, computed, not measured in game)
+
+Numbers are in `archetypes_config.lua`. Executioner's Verdict: x0.60 above 15% health, x0.90 on the rest, kill below.
+Earthbreaker: 3 hits x0.90 and the 4th x1.50, plus a 60% slam on up to 6 monsters, so single target 1.05 per hit.
+Rampage: 5 stacks give +30% damage and +20% damage taken. Last Stand: one lethal hit per 90 s, then 5 s of -40%.
+Longshot: +30% at 7 sqm, x0.85 at 2 sqm or less. Barbed Quiver: hit x0.90 plus 60% bleed, 1.50 of a hit over 4 s.
+Opening Shot: +80% on the first hit, x0.93 after. Hobbling Shot: 25% chance, hobbled targets take +20%, x0.92 else.

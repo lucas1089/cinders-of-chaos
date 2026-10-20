@@ -205,3 +205,10 @@ and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
 - Hollow Vessel's early recharge is added by the archetypes' one second think; the engine's own delay stays 2 s for
   everyone else.
 - Effigies are summons that cannot move or be attacked. Monsters ignore them.
+
+## Third round: Warrior and Ranger lines (2026-10-20)
+
+Warrior, Juggernaut, Berserker: Executioner's Verdict (melee finishes monsters under 15%), Earthbreaker (every 4th hit
+slams), Rampage (kill stacks, 5 at most), Last Stand (survive one lethal hit per 90 s). Ranger, Deadeye, Beastmaster:
+Longshot (distance bonus), Barbed Quiver (bleed), Opening Shot (first hit on a full monster), Hobbling Shot (slow). Each
+has a price on the other hits. Numbers: `server/data/spells/README.md` "Warrior and Ranger line keystones".

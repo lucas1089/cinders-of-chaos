@@ -1198,7 +1198,16 @@ function getTreeIcons()
 		arSnarewright = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2560, y = 0},
 		arVigils = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2624, y = 0},
 		arIronTithe = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2688, y = 0},
-		arHollowVessel = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2752, y = 0}
+		arHollowVessel = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2752, y = 0},
+		-- the third round (main tree nodes 428, 409, 466, 523, 561, 542, 599, 447)
+		arExecutioner = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2816, y = 0},
+		arEarthbreaker = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2880, y = 0},
+		arRampage = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 2944, y = 0},
+		arLastStand = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3008, y = 0},
+		arLongshot = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3072, y = 0},
+		arBarbed = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3136, y = 0},
+		arOpeningShot = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3200, y = 0},
+		arHobble = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3264, y = 0}
 	}
 end
 

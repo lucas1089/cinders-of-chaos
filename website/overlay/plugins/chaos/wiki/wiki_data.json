@@ -376,10 +376,10 @@
 		"support.sockets": 3,
 		"tower.pointsPerFloor": "1,000",
 		"tower.seasonDays": 30,
-		"tree.keystones": 46,
+		"tree.keystones": 54,
 		"tree.levelsPerPoint": 4,
 		"tree.nodes": 639,
-		"tree.notables": 120,
+		"tree.notables": 112,
 		"tree.points1000": 248,
 		"tree.points300": 73,
 		"tree.presets": 6,
@@ -519,15 +519,19 @@
 								["Bulwark", "Warrior"],
 								["Cascade Edge", "every class"],
 								["Cleaving Arc", "Warrior"],
+								["Earthbreaker", "Warrior, Juggernaut, Berserker"],
+								["Executioner's Verdict", "Warrior, Juggernaut, Berserker"],
 								[
 									"Iron Tithe",
 									"Warrior, Juggernaut, Berserker, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"
 								],
+								["Last Stand", "Warrior, Juggernaut, Berserker"],
 								[
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
 								["Pyre Oath", "Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel"],
+								["Rampage", "Warrior, Juggernaut, Berserker"],
 								["Sanguine Covenant", "every class"],
 								["Thornbound Oath", "every class"]
 							],
@@ -535,9 +539,13 @@
 								"tree:624:knight",
 								"tree:78",
 								"tree:621:knight",
+								"tree:409",
+								"tree:428",
 								"tree:102",
+								"tree:523",
 								"tree:109",
 								"tree:108",
+								"tree:466",
 								"tree:81",
 								"tree:77"
 							]
@@ -649,12 +657,16 @@
 							"cols": ["Keystone", "Classes"],
 							"w": [40, 60],
 							"rows": [
+								["Barbed Quiver", "Ranger, Deadeye, Beastmaster"],
 								["Cascade Edge", "every class"],
 								["Deadeye", "Ranger"],
+								["Hobbling Shot", "Ranger, Deadeye, Beastmaster"],
+								["Longshot", "Ranger, Deadeye, Beastmaster"],
 								[
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
+								["Opening Shot", "Ranger, Deadeye, Beastmaster"],
 								["Ricochet", "Ranger"],
 								["Sanguine Covenant", "every class"],
 								["Snarewright's Creed", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"],
@@ -662,9 +674,13 @@
 								["Thornbound Oath", "every class"]
 							],
 							"links": [
+								"tree:542",
 								"tree:78",
 								"tree:624:paladin",
+								"tree:447",
+								"tree:561",
 								"tree:109",
+								"tree:599",
 								"tree:621:paladin",
 								"tree:81",
 								"tree:105",
@@ -4451,6 +4467,23 @@
 					"icon": "wiki/i/tr-ksArcaneEcho.png"
 				},
 				{
+					"id": "tree:542",
+					"name": "Barbed Quiver",
+					"sub": "Keystone. Ranger, Deadeye, Beastmaster.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Ranger line: bow, crossbow and thrown weapon hits bleed for 60% of the hit as physical damage over 4 s. The hit itself deals 10% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:664",
 					"name": "Bastion",
 					"sub": "Keystone. Sentinel.",
@@ -4681,6 +4714,23 @@
 					"icon": "wiki/i/tr-ksDivineVerdict.png"
 				},
 				{
+					"id": "tree:409",
+					"name": "Earthbreaker",
+					"sub": "Keystone. Warrior, Juggernaut, Berserker.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Warrior line: every 4th melee hit deals 50% more and slams the ground: up to 6 other enemies within 2 sqm take 60% of that hit as physical damage. Your other melee hits deal 10% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:262",
 					"name": "Effigy Covenant",
 					"sub": "Keystone. Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord.",
@@ -4718,6 +4768,23 @@
 					"icon": "wiki/i/tr-ksOverload.png"
 				},
 				{
+					"id": "tree:428",
+					"name": "Executioner's Verdict",
+					"sub": "Keystone. Warrior, Juggernaut, Berserker.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Warrior line: a melee hit that would leave a monster (not a boss) at 15% of its health or less kills it. Your melee hits on monsters above 60% health deal 10% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:654",
 					"name": "Flowing Mercy",
 					"sub": "Keystone. Iron Sage.",
@@ -4750,6 +4817,23 @@
 						{"h": "Who", "p": ["Classes: Lich."]}
 					],
 					"icon": "wiki/i/tr-ksHoardedSouls.png"
+				},
+				{
+					"id": "tree:447",
+					"name": "Hobbling Shot",
+					"sub": "Keystone. Ranger, Deadeye, Beastmaster.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Ranger line: bow, crossbow and thrown weapon hits have a 25% chance to hobble the target for 3 s (40% slower). Your hits on a hobbled target deal 20% more, on any other 8% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:96",
@@ -4852,6 +4936,23 @@
 					"icon": "wiki/i/tr-arIronTithe.png"
 				},
 				{
+					"id": "tree:523",
+					"name": "Last Stand",
+					"sub": "Keystone. Warrior, Juggernaut, Berserker.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Warrior line: a hit that would take you below 20% of your maximum health is cut so you keep 20%; then you take 40% less damage for 5 s. Once every 90 s, not against players. Healing you receive is 20% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:631",
 					"name": "Living Shadow",
 					"sub": "Keystone. Ninja.",
@@ -4867,6 +4968,23 @@
 						{"h": "Who", "p": ["Classes: Ninja."]}
 					],
 					"icon": "wiki/i/tr-ksLivingShadow.png"
+				},
+				{
+					"id": "tree:561",
+					"name": "Longshot",
+					"sub": "Keystone. Ranger, Deadeye, Beastmaster.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Ranger line: bow, crossbow and thrown weapon hits deal 6% more for every square of distance beyond 2, at most 30% more. Hits from 2 sqm or closer deal 15% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:109",
@@ -4889,6 +5007,23 @@
 						}
 					],
 					"icon": "wiki/i/tr-arOpenHand.png"
+				},
+				{
+					"id": "tree:599",
+					"name": "Opening Shot",
+					"sub": "Keystone. Ranger, Deadeye, Beastmaster.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Ranger line: your first bow, crossbow or thrown weapon hit on a monster at full health deals 80% more. Your other such hits deal 7% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Ranger, Deadeye, Beastmaster."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:621:ironsage",
@@ -4960,6 +5095,23 @@
 						}
 					],
 					"icon": "wiki/i/tr-arPyreOath.png"
+				},
+				{
+					"id": "tree:466",
+					"name": "Rampage",
+					"sub": "Keystone. Warrior, Juggernaut, Berserker.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Warrior line: killing a monster gives a stack (at most 5; they end 6 s after the last kill). Each stack: you deal 6% more damage and take 4% more damage."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:253",
@@ -5251,23 +5403,6 @@
 					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
-					"id": "tree:599",
-					"name": "Arcane Surge",
-					"sub": "Notable. +3.0 intelligence. +15.0 Arcane Damage. +6.0 Arcane Absorption. +50.0 Increased Speed. +2.0 Magic Level.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+3.0 intelligence. +15.0 Arcane Damage. +6.0 Arcane Absorption. +50.0 Increased Speed. +2.0 Magic Level."
-							]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
 					"id": "tree:281",
 					"name": "Arcing Blows",
 					"sub": "Notable. +10.0 wisdom. +2.0% Loot Increased. +20.0 Increased Speed. +3.0 Increase all damage elements. +2.0 Absorb all Elements.",
@@ -5411,35 +5546,6 @@
 					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
-					"id": "tree:409",
-					"name": "Breath Of Flames",
-					"sub": "Notable. +15.0 Fire Damage. +6.0 Fire Absorption. +3.0 Shielding Skill.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{"h": "Effect", "p": ["+15.0 Fire Damage. +6.0 Fire Absorption. +3.0 Shielding Skill."]},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
-					"id": "tree:542",
-					"name": "Brutal Skewering",
-					"sub": "Notable. +8.0 spirit. +8.0 vitality. +20.0 Life Drain Damage. +20.0 Mana Drain Damage. +6.0 Life Drain Absorption. +6.0 Mana Drain Absorption.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+8.0 spirit. +8.0 vitality. +20.0 Life Drain Damage. +20.0 Mana Drain Damage. +6.0 Life Drain Absorption. +6.0 Mana Drain Absorption."
-							]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
 					"id": "tree:660",
 					"name": "Burning Zeal",
 					"sub": "Notable. Radiant Strikes: the holy strike deals 30% of the hit (instead of 25%).",
@@ -5474,23 +5580,6 @@
 					"group": "notable",
 					"sections": [
 						{"h": "Effect", "p": ["+3.0 Fire Damage. +1.0 Fire Absorption."]},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
-					"id": "tree:561",
-					"name": "Concusive Dexterity",
-					"sub": "Notable. +3.0 dexterity. +15.0 Holy Damage. +6.0 Holy Absorption. +50.0 Increased Speed. +2.0 Distance Skill.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+3.0 dexterity. +15.0 Holy Damage. +6.0 Holy Absorption. +50.0 Increased Speed. +2.0 Distance Skill."
-							]
-						},
 						{"h": "Who", "p": ["Classes: every class."]}
 					],
 					"icon": "wiki/i/k-light-nodes.png"
@@ -5580,23 +5669,6 @@
 							"h": "Effect",
 							"p": [
 								"+20.0 Health Spells. +2.0 Critical Hit Chance. +3.0 Critical Hit Amount. +2.0 Life Leech Chance. +3.0 Life Leech Amount. +2.0 Mana Leech Chance. +3.0 Mana Leech Amount."
-							]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
-					"id": "tree:466",
-					"name": "Divine Fervour",
-					"sub": "Notable. +3.0 strength. +3.0 dexterity. +3.0 intelligence. +15.0 Earth Damage. +6.0 Earth Absorption.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+3.0 strength. +3.0 dexterity. +3.0 intelligence. +15.0 Earth Damage. +6.0 Earth Absorption."
 							]
 						},
 						{"h": "Who", "p": ["Classes: every class."]}
@@ -6306,21 +6378,6 @@
 					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
-					"id": "tree:523",
-					"name": "Revelry",
-					"sub": "Notable. +15.0 Ice Damage. +6.0 Ice Absorption. +60.0 Increased Speed. +2.0 Magic Level.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": ["+15.0 Ice Damage. +6.0 Ice Absorption. +60.0 Increased Speed. +2.0 Magic Level."]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
 					"id": "tree:658",
 					"name": "Righteous Arm",
 					"sub": "Notable. +3.0 strength. +2.0 Sword Skill. +2.0 Club Skill.",
@@ -6581,23 +6638,6 @@
 					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{
-					"id": "tree:447",
-					"name": "Tempest Blast",
-					"sub": "Notable. +15.0 Energy Damage. +6.0 Energy Absorption. +60.0 Increased Speed. +2.0 Magic Level.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+15.0 Energy Damage. +6.0 Energy Absorption. +60.0 Increased Speed. +2.0 Magic Level."
-							]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
 					"id": "tree:246",
 					"name": "Thunderbrand",
 					"sub": "Notable. +1.0 intelligence. +3.0 Energy Damage. +1.0 Energy Absorption.",
@@ -6688,23 +6728,6 @@
 					"color": "#c8b890",
 					"group": "notable",
 					"sections": [{"h": "Effect", "p": ["+2.0 Water Damage."]}, {"h": "Who", "p": ["Classes: every class."]}],
-					"icon": "wiki/i/k-light-nodes.png"
-				},
-				{
-					"id": "tree:428",
-					"name": "Whisper Of Doom",
-					"sub": "Notable. +15.0 Physical Damage. +6.0 Physical Absorption. +2.0 Sword Skill. +2.0 Axe Skill. +2.0 Club Skill.",
-					"color": "#c8b890",
-					"group": "notable",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"+15.0 Physical Damage. +6.0 Physical Absorption. +2.0 Sword Skill. +2.0 Axe Skill. +2.0 Club Skill."
-							]
-						},
-						{"h": "Who", "p": ["Classes: every class."]}
-					],
 					"icon": "wiki/i/k-light-nodes.png"
 				},
 				{

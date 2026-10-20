@@ -43,7 +43,7 @@ end
 -- round trip
 local nodes = connected(40)
 local code = B.encode({classId = 4, nodes = nodes})
-check(code:match("^CB5%-[%w_%-]+$"), "code format " .. code)
+check(code:match("^CB6%-[%w_%-]+$"), "code format " .. code)
 local build = assert(B.decode(code))
 check(build.classId == 4, "class id round trip")
 check(sorted(build.nodes) == sorted(nodes), "nodes round trip")
@@ -74,7 +74,7 @@ for i = 1, #body do
 		local ch = body:sub(i, i)
 		local pos = alphabet:find(ch, 1, true)
 		local other = alphabet:sub((pos + k - 1) % 64 + 1, (pos + k - 1) % 64 + 1)
-		local bad = "CB5-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
+		local bad = "CB6-" .. body:sub(1, i - 1) .. other .. body:sub(i + 1)
 		tried = tried + 1
 		local ok, err = B.decode(bad)
 		if not ok and err then
@@ -83,19 +83,19 @@ for i = 1, #body do
 	end
 end
 check(rejected == tried, string.format("typos rejected %d/%d", rejected, tried))
-local swapped = "CB5-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
+local swapped = "CB6-" .. body:sub(2, 2) .. body:sub(1, 1) .. body:sub(3)
 check(body:sub(1, 1) == body:sub(2, 2) or B.decode(swapped) == nil, "swapped characters rejected")
 local _, err = B.decode(code:sub(1, -3))
 check(err and err:find("damaged"), "truncated code rejected: " .. tostring(err))
 _, err = B.decode("hello")
 check(err and err:find("not a build code"), "garbage rejected")
-_, err = B.decode("CB5-" .. body .. "!")
+_, err = B.decode("CB6-" .. body .. "!")
 check(err ~= nil, "bad character rejected")
 
 -- versions
 _, err = B.decode("CB0-" .. body)
 check(err and err:find("old format"), "old version: " .. tostring(err))
-_, err = B.decode("CB6-" .. body)
+_, err = B.decode("CB7-" .. body)
 check(err and err:find("newer format"), "newer version: " .. tostring(err))
 check(B.decode("CB2-" .. body) == nil, "a version 3 body under the version 2 prefix fails its checksum")
 -- version 1 (before the masteries) still reads, the same nodes; its checksum covers "CB1"
@@ -350,7 +350,7 @@ check(not plan and err:find("another class"), "the Ranger line may not take Pyre
 
 -- the second round's keystones (B.REWORKED version 5, 2026-10-12): a version 4 code (or older) leaves 96, 99, 102 and
 -- 105 out, a version 5 code keeps them
-check(B.VERSION == 5 and B.READS[4] and B.READS[5], "version 5 written, 4 still read")
+check(B.VERSION >= 5 and B.READS[4] and B.READS[5], "version 5 or later written, 4 still read")
 for _, id in ipairs({96, 99, 102, 105}) do
 	check(B.REWORKED[id] == 5, "reworked in version 5: " .. id)
 end
@@ -371,6 +371,30 @@ local toTithe = pathTo(102, "juggernaut")
 plan = assert(B.plan(tree, assert(B.decode(B.encode({classId = 1, nodes = toTithe}))), {classId = 1,
 	classKey = "juggernaut", current = {}, points = 300}))
 check(toTithe[#toTithe] == 102 and plan.applied == #toTithe, "version 5: the Juggernaut takes Iron Tithe")
+
+-- the third round's keystones (B.REWORKED version 6, 2026-10-20): a version 5 code (or older) leaves the eight converted
+-- mythic leaves out, a version 6 code keeps them
+check(B.VERSION == 6 and B.READS[5] and B.READS[6], "version 6 written, 5 still read")
+for _, id in ipairs({428, 409, 466, 523, 561, 542, 599, 447}) do
+	check(B.REWORKED[id] == 6, "reworked in version 6: " .. id)
+end
+for _, case in ipairs({{428, "juggernaut", 1}, {466, "berserker", 1}, {561, "deadeye", 2}, {447, "beastmaster", 2}}) do
+	local id, classKey, classId = case[1], case[2], case[3]
+	local path = pathTo(id, classKey)
+	check(path[#path] == id, "a path to node " .. id .. " (" .. #path .. " nodes)")
+	local old = assert(B.decode(B.encode({classId = classId, nodes = path}, 5)))
+	plan = assert(B.plan(tree, old, {classId = classId, classKey = classKey, current = {}, points = 300}))
+	local held = false
+	for _, n in ipairs(plan.nodes) do held = held or n == id end
+	check(not held and plan.reworked == 1 and plan.applied == #path - 1, "version 5: node " .. id .. " left out")
+	plan = assert(B.plan(tree, assert(B.decode(B.encode({classId = classId, nodes = path}))), {classId = classId,
+		classKey = classKey, current = {}, points = 300}))
+	check(plan.applied == #path and (plan.reworked or 0) == 0, "version 6 keeps node " .. id)
+end
+local toLong = pathTo(561, "deadeye")
+plan, err = B.plan(tree, assert(B.decode(B.encode({classId = 3, nodes = toLong}))), {classId = 3, classKey = "elementalist",
+	current = {}, points = 300})
+check(not plan and err:find("another class"), "the Mystic line may not take Longshot: " .. tostring(err))
 
 print(string.format("buildshare_test: %d checks, %d failures", count, failures))
 if failures > 0 then

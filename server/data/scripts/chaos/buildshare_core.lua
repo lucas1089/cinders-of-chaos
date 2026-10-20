@@ -1,18 +1,20 @@
 -- Build sharing: the passive tree build code, without engine calls (buildshare.lua, server/tests/buildshare_test.lua).
 --
 --   ChaosBuildShare.encode(build[, version])  code string of {classId, nodes = {ids}, paragon = {statKey = points} | nil,
---                                            masteries = {[id] = choice} | nil}; version 5 unless asked (1: no masteries)
+--                                            masteries = {[id] = choice} | nil}; version 6 unless asked (1: no masteries)
 --   ChaosBuildShare.decode(code)             build, or nil + error text (bad format, old/unknown version, checksum)
 --   ChaosBuildShare.extract(text)            the first code inside any text (a chat line, a "build link"), or nil
 --   ChaosBuildShare.plan(tree, build, ctx)   what an import would do for a character (see below), or nil + error text
 --
--- Code format, version 5:  "CB5-" .. base64url(payload)   (CB = Chaos Build, 5 = format version)
+-- Code format, version 6:  "CB6-" .. base64url(payload)   (CB = Chaos Build, 6 = format version)
 --   payload = classId (1 byte: index of the class line in CLASS_LINES, 0 = no class; never a vocation id)
 --             flags   (1 byte: 1 = a Paragon part follows, 2 = a mastery part follows)
 --             [Paragon: count (1 byte), then count x (stat index 1 byte, points 1 byte); stat index into PARAGON_KEYS]
 --             [masteries: count (1 byte), then count x (node id 2 bytes, high first, chosen effect 1 byte)]
 --             bitset of the allocated node ids: bit (id % 8) of byte floor(id / 8), trailing zero bytes dropped
---             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB5" and every byte before it
+--             checksum (3 bytes): h = (h * 257 + x) % 16777213 over the characters of "CB6" and every byte before it
+-- Version 5 ("CB5-") has the same layout; it was handed out before eight mythic leaves (428, 409, 466, 523, 561, 542, 599,
+-- 447) became the Warrior and Ranger line keystones, so an import of it leaves those out (B.REWORKED).
 -- Version 4 ("CB4-") has the same layout; it was handed out before the four other elemental cluster ends (96, 99, 102,
 -- 105) became the second round's keystones, so an import of it leaves those out (B.REWORKED).
 -- Version 3 ("CB3-") has the same layout; it was handed out before twelve small leaves became the build archetype
@@ -29,24 +31,26 @@
 -- the codes that use it invalid ("unknown node"), every other code stays valid. Paragon stats are indexed by
 -- PARAGON_KEYS: append new stat keys at the end, never reorder. A mastery's effects are indexed by their position in the
 -- node's list: append new effects, never reorder. A new format gets a new version number; decode keeps reading every
--- version that was ever handed out (B.READS: 1 to 5). A node whose meaning changes gets a new version and a
+-- version that was ever handed out (B.READS: 1 to 6). A node whose meaning changes gets a new version and a
 -- B.REWORKED entry, so the older codes leave it out instead of granting the new meaning.
 
 ChaosBuildShare = ChaosBuildShare or {}
 local B = ChaosBuildShare
 
 B.PREFIX = "CB"
-B.VERSION = 5
-B.READS = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true} -- every version ever handed out
+B.VERSION = 6
+B.READS = {[1] = true, [2] = true, [3] = true, [4] = true, [5] = true, [6] = true} -- every version ever handed out
 -- Nodes whose meaning changed (passivetree_config.lua `reworked`): id -> the first code version made with the new
 -- meaning. An older code that holds such a node leaves it out on import (with a note), and the nodes only connected
 -- through it. Append only. Version 3 (2026-10): 369, 376, 383, 390 became the line keystones (they were mythic leaves).
 -- Version 4 (2026-10): twelve small leaves became the build archetype keystones (archetypes_config.lua nodes).
 -- Version 5 (2026-10-12): 96, 99, 102, 105 became the second round's keystones (snares, vigils, Hollow Vessel).
+-- Version 6 (2026-10-20): 428, 409, 466, 523 (Warrior line) and 561, 542, 599, 447 (Ranger line) became keystones.
 B.REWORKED = {[369] = 3, [376] = 3, [383] = 3, [390] = 3,
 	[77] = 4, [78] = 4, [81] = 4, [82] = 4, [106] = 4, [107] = 4, [108] = 4, [109] = 4, [253] = 4, [262] = 4, [355] = 4,
 	[362] = 4,
-	[96] = 5, [99] = 5, [102] = 5, [105] = 5}
+	[96] = 5, [99] = 5, [102] = 5, [105] = 5,
+	[428] = 6, [409] = 6, [466] = 6, [523] = 6, [561] = 6, [542] = 6, [599] = 6, [447] = 6}
 -- Nodes taken out of the tree (2026-10, owner: no drown nodes; they are hidden in the client's nodes.lua and not in
 -- passivetree_data.lua). A code that holds one leaves it out on import, in any version, with a note.
 B.REMOVED = {}

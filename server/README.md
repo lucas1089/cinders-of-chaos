@@ -2236,6 +2236,20 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`). The second round (96, 99, 102, 105, the
   ends of the four other elemental clusters): reworked version 3, build code format 5, `keystones.png` cells 40-43,
   flag bits 13-16 of storage 7100024.
+- **Third round: the Warrior and Ranger lines (2026-10-20).** Beta feedback: the Warrior line had no keystone of its own
+  and the Ranger line few. Eight keystones on converted leaves, flag bits 17-24 of storage 7100024 (numbers in
+  `archetypes_config.lua`, rules in `archetypes_core.lua`, glue in `archetypes.lua`). Warrior, Juggernaut, Berserker:
+  Executioner's Verdict (428: a melee hit that would leave a non-boss monster at 15% or less kills it; x0.60 above 15%;
+  x0.90 otherwise), Earthbreaker (409: every 4th melee hit within 3 s deals +50% and a 60% slam to up to 6 monsters
+  within 2 sqm; the other hits x0.90), Rampage (466: a monster kill gives a stack, 5 at most, 6 s, +6% damage and +4%
+  damage taken per stack), Last Stand (523: a hit that would take you under 20% health is cut to leave you there, then
+  5 s of -40% damage taken, healing taken x0.80, 90 s cooldown; not against players). Ranger, Deadeye, Beastmaster:
+  Longshot (561: distance weapons +6% per sqm beyond 2, at most +30%; at 2 sqm or nearer x0.85), Barbed Quiver (542:
+  distance weapon hits bleed for 60% of the hit over 4 s, the hit x0.90), Opening Shot (599: the first hit on a full
+  health monster +80%, other hits x0.93), Hobbling Shot (447: 25% to hobble 3 s, 40% slower, +20% damage on hobbled
+  targets, other hits x0.92). Reworked version 6 refunds the eight nodes once, build code format 6 (`CB6-`),
+  `keystones.png` cells 44-51. `classlanes.lua` lost the lanes of the eight nodes and some lane skill values were
+  trimmed by hand to keep the supply cap (`gen_class_lanes.lua --check` would differ).
 - **Hollow Vessel and the other rules.** Every percent-of-maximum-health hit on a player takes `Chaos.percentBase(player)`
   (`chaos_constants.lua`, over `ChaosArchetypes.percentBase`): health + maximum energy shield for a holder, so the fixed
   100 health is no way around them. That is the rifts' `percentHit` (Scorched Earth, Rimefloor, Veilstorm, the Wrathful
