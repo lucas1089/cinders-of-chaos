@@ -4707,6 +4707,16 @@ Owner item 80 (2026-10-18): "cargas em amuletos não estão aparecendo" and "os 
   now ends with "It has N charges left (of M)." for any non-stackable item with charges (`charges_look.lua`, an `onLook` callback at
   index 125, skipped when the engine text already has it). The rich tooltip already had "Charges: n of max" (`T.chargeInfo`).
   Test: `tests/charges_look_test.lua`. Not checked live.
+- **Charges live while training** (owner 2026-10-20: "atualize as charges dos itens de training em tempo real"; an Exercise wand in
+  training kept "Charges: 500" in its tooltip). The stock `exercise_weapons.lua` takes a charge with `setAttribute`, and the engine
+  sends nothing for that. Protocol 10.98 has no charges in an item packet either (`NetworkMessage::addItem` writes a count only for
+  stackables, fluids and splashes), so only the tooltip shows them. `patch_base_events.py` step 20 (v2) now calls
+  `item:sendUpdate()` (engine patch 0003) after every charge: the client gets the item again, with no equip / de-equip event for a
+  weapon held in a hand and no reset. Without that method it falls back to the step's first version, a transform to the same id
+  with the new count. A file patched by the first version is upgraded in place. The client (`game_itemtooltip`) drops a cached
+  tooltip with counted charges whenever its slot gets the item again and asks again when it is the hovered one; the plate stays
+  until the answer, one small request per training hit while hovered (budget 12, 6 per second). Tests:
+  `tools/exercise_charges_patch_test.py` (runs the patched lines under luajit and lua5.3), `tooltiplogic_test.lua`. Not checked live.
 
 ## One melee skill (`melee_skill_core.lua`, `melee_skill.lua`, `weapon_styles.lua`, `add_vocations.py`, client `game_simpleskills`)
 

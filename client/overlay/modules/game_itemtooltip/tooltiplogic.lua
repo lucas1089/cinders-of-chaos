@@ -110,6 +110,27 @@ function L.cachePut(cache, key, tip, plain, now)
   end
 end
 
+-- forget one entry (the next hover or ask fetches it again); true when there was one
+function L.cacheDrop(cache, key)
+  if not cache.entries[key] then return false end
+  cache.entries[key] = nil
+  for i, k in ipairs(cache.order) do
+    if k == key then
+      table.remove(cache.order, i)
+      break
+    end
+  end
+  return true
+end
+
+-- a tooltip whose numbers change while the item looks the same: counted charges (an exercise weapon in training loses
+-- one per hit; the server sends the item again, server/tools/patch_base_events.py step 20, but its key stays the same,
+-- and protocol 10.98 carries no charges in the item). Such a tip is asked for again when its slot gets the item again.
+function L.liveTip(tip)
+  return type(tip) == 'table' and type(tip.charges) == 'table' and not tip.charges.unlimited
+    and tonumber(tip.charges.n) ~= nil
+end
+
 -- ---------------------------------------------------------------- formatting
 local function trim(n)
   if n == math.floor(n) then

@@ -43,8 +43,11 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    "Life Chance" and "Mana Chance" give about two thirds of their level as chance (same rule as 6).
 
 20. actions/scripts/other/exercise_weapons.lua: an exercise weapon's charges are changed with setAttribute, which the
-   client never hears about, so the charges of a weapon in a backpack stayed old (owner 2026-10-17). transform() to
-   the same id with the new count sends the item again; the last charge keeps setAttribute (tools/exercise_charges_patch_test.py).
+   client never hears about, so the charges of a weapon in a backpack stayed old (owner 2026-10-17, 2026-10-20). After
+   setAttribute, item:sendUpdate() (engine patch 0003) sends the item again to whoever sees it: no equip / de-equip
+   events, no decay reset. An engine without it falls back to transform() to the same id with the new count; the last
+   charge keeps setAttribute. The client tooltip asks again when the item comes (game_itemtooltip). A file patched by the
+   earlier transform-only block is upgraded in place (tools/exercise_charges_patch_test.py).
 
 8. Spell events (engine patch 0008-spell-events.patch): data/events/events.xml gets the Player entries onSpellCost,
    onSpellPreCast, onSpellCast and onSpellCooldown, shipped DISABLED (enabled="0": an engine without the patch warns
@@ -684,28 +687,51 @@ def patch_keep_all(text):
 
 
 EXERCISE_MARKER = '-- Chaos: the exercise weapon sends its new charges to the client (patch_base_events.py)'
+EXERCISE_MARKER_V2 = '-- Chaos: the exercise weapon sends its new charges to the client (patch_base_events.py, v2)'
 EXERCISE_RE = re.compile(r'^([ \t]*)exercise:setAttribute\(ITEM_ATTRIBUTE_CHARGES, \(charges_n - 1\)\)[ \t]*(\r?\n)', re.M)
+# the block of the first version (transform only): upgraded in place
+EXERCISE_V1_RE = re.compile(
+    r'^([ \t]*)' + re.escape(EXERCISE_MARKER) + r'[ \t]*(\r?\n)'
+    r'[ \t]*if charges_n - 1 >= 1 then[ \t]*\r?\n'
+    r'[ \t]*exercise:transform\(exercise:getId\(\), charges_n - 1\)[ \t]*\r?\n'
+    r'[ \t]*else[ \t]*\r?\n'
+    r'[ \t]*exercise:setAttribute\(ITEM_ATTRIBUTE_CHARGES, 0\)[ \t]*\r?\n'
+    r'[ \t]*end[ \t]*\r?\n', re.M)
+
+
+def exercise_block(ind, nl):
+    """The lines that take one charge and send the item to the client"""
+    return (ind + EXERCISE_MARKER_V2 + nl
+            + ind + 'if exercise.sendUpdate then' + nl
+            + ind + '\texercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, (charges_n - 1))' + nl
+            + ind + '\texercise:sendUpdate()' + nl
+            + ind + 'elseif charges_n - 1 >= 1 then' + nl
+            + ind + '\texercise:transform(exercise:getId(), charges_n - 1)' + nl
+            + ind + 'else' + nl
+            + ind + '\texercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, 0)' + nl
+            + ind + 'end' + nl)
 
 
 def patch_exercise_charges(text):
     """actions/scripts/other/exercise_weapons.lua: setAttribute changes the charges on the server only, so an exercise
-    weapon in a backpack kept showing its old charges (and a tooltip read them stale). transform() to the same id with
-    the new charge count sends the item again; the last charge keeps setAttribute (a transform to 0 removes the item
-    and the script reads it after). Returns (new text, status)"""
-    if EXERCISE_MARKER in text:
+    weapon in a backpack kept showing its old charges (and a tooltip read them stale). After setAttribute,
+    item:sendUpdate() (engine patch 0003) sends the item again: unlike a transform it fires no equip / de-equip event
+    on a weapon held in a hand and resets nothing. Without that method, transform() to the same id with the new charge
+    count sends it; the last charge keeps setAttribute (a transform to 0 removes the item and the script reads it after).
+    The block of the first version (transform only) is replaced. Returns (new text, status)"""
+    if EXERCISE_MARKER_V2 in text:
         return text, 'already'
+    old = EXERCISE_V1_RE.findall(text)
+    if len(old) == 1:
+        m = EXERCISE_V1_RE.search(text)
+        return text[:m.start()] + exercise_block(m.group(1), m.group(2)) + text[m.end():], 'patched'
+    if EXERCISE_MARKER in text:
+        return text, 'unexpected exercise_weapons.lua (an earlier Chaos block that is not the known one)'
     found = EXERCISE_RE.findall(text)
     if len(found) != 1:
         return text, 'unexpected exercise_weapons.lua ("exercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, (charges_n - 1))" not found once)'
     m = EXERCISE_RE.search(text)
-    ind, nl = m.group(1), m.group(2)
-    block = (ind + EXERCISE_MARKER + nl
-             + ind + 'if charges_n - 1 >= 1 then' + nl
-             + ind + '\texercise:transform(exercise:getId(), charges_n - 1)' + nl
-             + ind + 'else' + nl
-             + ind + '\texercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, 0)' + nl
-             + ind + 'end' + nl)
-    return text[:m.start()] + block + text[m.end():], 'patched'
+    return text[:m.start()] + exercise_block(m.group(1), m.group(2)) + text[m.end():], 'patched'
 
 
 def apply(path, fn, dry):
