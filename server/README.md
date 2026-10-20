@@ -2612,6 +2612,11 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `tests/passivetree_paths_test.lua` checks, for every class, that the shortest route to every keystone and notable it can
   reach has no irrelevant node and at least `paths.minShare` (70%) primary / secondary nodes. `reworked` version 5
   (`lanes = true`) refunds once the lane nodes (and what hangs on them) of each character at login.
+- **Lane names** (client only, 2026-10-20): a lane re-skinned a named node's stats but the tooltip, search and refund box
+  kept its old name ("Pyre Litany", holy, gave a Beastmaster physical damage; "Speed" gave a Berserker strength). The
+  client's `treelanes.lua` now names every re-skinned named node after the stats the class gets ("Physical Damage and
+  Vitality", "Strength"); the generic "Attribute" stays. The server tree has no names; the data files did not change.
+  `treelanes_test.lua` checks every node of every class.
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
