@@ -473,17 +473,17 @@
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
-								["Ironhold", "tor brak", "55", "200", "30 s", "whole line"],
+								["Ironhold", "tor brak", "55", "200", "30 s", "Warrior, Juggernaut"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Earthbreaker", "kah grund krak", "60", "50", "10 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Red Frenzy", "vyr ira cruor", "100", "300", "40 s", "whole line"],
+								["Red Frenzy", "vyr ira cruor", "100", "300", "40 s", "Warrior, Berserker"],
 								["Skyfall Cleave", "drai skai hrun", "100", "100", "10 s", "Berserker"],
 								["Iron Bellow", "vok vas rhov", "120", "200", "20 s", "Warrior, Juggernaut"],
 								["Bloodrage", "vyr sang khar", "120", "200", "30 s", "Berserker"],
-								["Vaulting Cleave", "kah brak skai", "170", "250", "12 s", "whole line"],
+								["Vaulting Cleave", "kah brak skai", "170", "250", "12 s", "Warrior"],
 								["Colossus Fall", "kah gal vas tyr", "260", "400", "30 s", "whole line"],
 								["Bastion Cry", "vok gal rhov kor", "340", "500", "40 s", "Juggernaut"],
 								["Rampage Leap", "drai skai hrun vas", "380", "400", "18 s", "Berserker"],
@@ -614,11 +614,9 @@
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Wildstride", "ruan vert", "55", "150", "30 s", "whole line"],
-								["Seeker Mine", "kah snar", "60", "110", "2 s", "whole line"],
-								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
 								["Tautstring", "vyr sag", "60", "300", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
-								["Skewering Line", "kah sag lanc", "60", "150", "8 s", "whole line"],
+								["Skewering Line", "kah sag lanc", "60", "150", "8 s", "Ranger, Deadeye"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
@@ -640,8 +638,6 @@
 								"spell:161",
 								"spell:162",
 								"spell:134",
-								"spell:100",
-								"spell:104",
 								"spell:135",
 								"spell:179",
 								"spell:215",
@@ -750,7 +746,7 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Rime Bloom", "drai hyr rhim", "20", "120", "8 s", "Mystic, Elementalist"],
-								["Blightswarm", "drai vex kriv", "25", "110", "8 s", "Mystic, Illusionist"],
+								["Blightswarm", "drai vex kriv", "25", "110", "8 s", "Mystic"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
 								["Witchfire Bolt", "kah pyr vesh", "30", "70", "4 s", "Mystic, Elementalist"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
@@ -764,22 +760,22 @@
 									"6 s",
 									"Mystic, Illusionist"
 								],
-								["Hall of Mirrors", "drai spek", "40", "250", "30 s", "Mystic, Illusionist"],
-								["Forked Storm", "kah zhul zarn", "50", "200", "7 s", "Mystic, Elementalist"],
+								["Hall of Mirrors", "drai spek", "40", "250", "30 s", "Illusionist"],
+								["Forked Storm", "kah zhul zarn", "50", "200", "7 s", "Elementalist"],
 								["Mirror Mend", "saen spek", "60", "180", "2 s", "Illusionist"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
-								["Ironbark Hide", "tor ael skar", "60", "140", "25 s", "Mystic, Illusionist"],
+								["Ironbark Hide", "tor ael skar", "60", "140", "25 s", "Mystic"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
-								["Briar Prison", "drai thral brin", "70", "240", "14 s", "Illusionist"],
-								["Umbral Stride", "ruan nyx umh", "70", "120", "8 s", "Mystic, Illusionist"],
+								["Briar Prison", "drai thral brin", "70", "240", "14 s", "Mystic"],
+								["Umbral Stride", "ruan nyx umh", "70", "120", "8 s", "Mystic"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Crimson Covenant", "tor nyx cruor", "90", "50", "30 s", "Mystic, Elementalist"],
+								["Crimson Covenant", "tor nyx cruor", "90", "50", "30 s", "Elementalist"],
 								["Shattered Psyche", "kah mynd frak", "110", "200", "6 s", "Mystic, Illusionist"],
 								["Lucid Reverie", "reth vas spek", "120", "300", "20 s", "Illusionist"],
 								["Moonfang Pack", "vael luth wyrd", "120", "450", "30 s", "Illusionist"],
 								["Falling Pyre", "drai gal vas infr", "150", "700", "20 s", "Mystic, Elementalist"],
-								["Wraithshroud", "fen wrai", "150", "350", "35 s", "Mystic, Illusionist"],
+								["Wraithshroud", "fen wrai", "150", "350", "35 s", "Illusionist"],
 								["Verdant Sanctuary", "saen gal vas vert", "180", "600", "30 s", "Illusionist"],
 								["Nightburst", "drai gal vas umh", "210", "900", "25 s", "Illusionist"],
 								["Frozen Crypt", "drai gal vas hyr krypt", "220", "900", "30 s", "Elementalist"],
@@ -1777,7 +1773,7 @@
 								["Mana", "110"],
 								["Cooldown", "8 s"],
 								["Kind", "Attack"],
-								["Classes", "Mystic, Illusionist"]
+								["Classes", "Mystic"]
 							]
 						}
 					],
@@ -2232,7 +2228,7 @@
 								["Mana", "250"],
 								["Cooldown", "30 s"],
 								["Kind", "Support"],
-								["Classes", "Mystic, Illusionist"]
+								["Classes", "Illusionist"]
 							]
 						}
 					],
@@ -2372,7 +2368,7 @@
 								["Mana", "200"],
 								["Cooldown", "7 s"],
 								["Kind", "Attack"],
-								["Classes", "Mystic, Elementalist"]
+								["Classes", "Elementalist"]
 							]
 						}
 					],
@@ -2400,7 +2396,7 @@
 								["Mana", "200"],
 								["Cooldown", "30 s"],
 								["Kind", "Support"],
-								["Classes", "Warrior, Juggernaut, Berserker"]
+								["Classes", "Warrior, Juggernaut"]
 							]
 						}
 					],
@@ -2484,7 +2480,7 @@
 								["Mana", "110"],
 								["Cooldown", "2 s"],
 								["Kind", "Attack"],
-								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
+								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
 					],
@@ -2512,7 +2508,7 @@
 								["Mana", "20"],
 								["Cooldown", "1 s"],
 								["Kind", "Support"],
-								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
+								["Classes", "Thief, Ninja, Samurai"]
 							]
 						}
 					],
@@ -2650,7 +2646,7 @@
 								["Mana", "140"],
 								["Cooldown", "25 s"],
 								["Kind", "Support"],
-								["Classes", "Mystic, Illusionist"]
+								["Classes", "Mystic"]
 							]
 						}
 					],
@@ -2678,7 +2674,7 @@
 								["Mana", "150"],
 								["Cooldown", "8 s"],
 								["Kind", "Attack"],
-								["Classes", "Ranger, Deadeye, Beastmaster"]
+								["Classes", "Ranger, Deadeye"]
 							]
 						}
 					],
@@ -2820,7 +2816,7 @@
 								["Mana", "240"],
 								["Cooldown", "14 s"],
 								["Kind", "Attack"],
-								["Classes", "Illusionist"]
+								["Classes", "Mystic"]
 							]
 						}
 					],
@@ -2846,7 +2842,7 @@
 								["Mana", "120"],
 								["Cooldown", "8 s"],
 								["Kind", "Attack"],
-								["Classes", "Mystic, Illusionist"]
+								["Classes", "Mystic"]
 							]
 						}
 					],
@@ -2931,7 +2927,7 @@
 								["Mana", "50"],
 								["Cooldown", "30 s"],
 								["Kind", "Support"],
-								["Classes", "Mystic, Elementalist"]
+								["Classes", "Elementalist"]
 							]
 						}
 					],
@@ -3125,7 +3121,7 @@
 								["Mana", "300"],
 								["Cooldown", "40 s"],
 								["Kind", "Support"],
-								["Classes", "Warrior, Juggernaut, Berserker"]
+								["Classes", "Warrior, Berserker"]
 							]
 						}
 					],
@@ -3869,7 +3865,7 @@
 								["Mana", "350"],
 								["Cooldown", "35 s"],
 								["Kind", "Support"],
-								["Classes", "Mystic, Illusionist"]
+								["Classes", "Illusionist"]
 							]
 						}
 					],
@@ -4007,7 +4003,7 @@
 								["Mana", "250"],
 								["Cooldown", "12 s"],
 								["Kind", "Attack"],
-								["Classes", "Warrior, Juggernaut, Berserker"]
+								["Classes", "Warrior"]
 							]
 						}
 					],

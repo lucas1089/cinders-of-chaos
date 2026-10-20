@@ -170,7 +170,7 @@ do
   local sel = A.select(1, 8, function(id) return at[id] ~= nil and at[id] <= 8 end)
   local first = sel.ids[1]
   ok(first == 169 or (D.spells[first] and D.spells[first].area), 'Mystic 8: an area spell, else Kindling Spark, first')
-  eq(#sel.ids, 3, 'Mystic 8: the level 1 spells below it')
+  eq(#sel.ids, 1, 'Mystic 8: Kindling Spark alone (the level 1 spells left with the 15-spell cap)')
 end
 
 -- area first: the area spells keep their order, then the single-target ones keep theirs; monster counts follow
@@ -213,9 +213,9 @@ do
   local at = firstLevel(m)
   local castAt = function(level) return function(id) return at[id] ~= nil and at[id] <= level end end
   -- the level-up check keeps the preset: no top-up
-  local bare = A.select(1, 8, castAt(8), { topUp = false })
-  eq(#bare.ids, 1, 'level-up check: preset only, no top-up')
-  local clicked = A.select(1, 8, castAt(8))
+  local bare = A.select(1, 150, castAt(150), { topUp = false })
+  eq(#bare.ids, #A.presetFor(1, 150).spells, 'level-up check: preset only, no top-up')
+  local clicked = A.select(1, 150, castAt(150))
   ok(#clicked.ids > #bare.ids, 'a click tops up')
   -- a rotation the button wrote at 18, the player reaches 20 (a new spell, 200)
   local sel18 = A.select(1, 18, castAt(18), { topUp = false })

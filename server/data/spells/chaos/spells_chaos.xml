@@ -11,11 +11,9 @@
 		<vocation name="Elementalist" />
 	</instant>
 	<instant group="attack" spellid="202" name="Forked Storm" words="kah zhul zarn" level="50" mana="200" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="7000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/chain_lightning.lua">
-		<vocation name="Mystic" />
 		<vocation name="Elementalist" />
 	</instant>
 	<instant group="support" spellid="203" name="Crimson Covenant" words="tor nyx cruor" level="90" mana="50" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/blood_pact.lua">
-		<vocation name="Mystic" />
 		<vocation name="Elementalist" />
 	</instant>
 	<instant group="attack" spellid="204" name="Falling Pyre" words="drai gal vas infr" level="150" mana="700" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/sorcerer/meteor_strike.lua">
@@ -31,7 +29,6 @@
 	<!-- druid kit: the Illusionist (support); the first three also the Mystic -->
 	<instant group="attack" spellid="207" name="Blightswarm" words="drai vex kriv" level="25" mana="110" premium="0" selftarget="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/druid/venom_swarm.lua">
 		<vocation name="Mystic" />
-		<vocation name="Illusionist" />
 	</instant>
 	<instant group="healing" spellid="208" name="Purifying Wellspring" words="saen vas aquen" level="40" mana="160" premium="0" aggressive="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/druid/cleansing_spring.lua">
 		<vocation name="Mystic" />
@@ -39,10 +36,9 @@
 	</instant>
 	<instant group="support" spellid="209" name="Ironbark Hide" words="tor ael skar" level="60" mana="140" premium="0" aggressive="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/druid/barkskin.lua">
 		<vocation name="Mystic" />
-		<vocation name="Illusionist" />
 	</instant>
 	<instant group="attack" spellid="210" name="Briar Prison" words="drai thral brin" level="70" mana="240" premium="0" range="6" needtarget="1" blockwalls="1" cooldown="14000" groupcooldown="2000" needlearn="0" script="chaos/druid/thorn_cage.lua">
-		<vocation name="Illusionist" />
+		<vocation name="Mystic" />
 	</instant>
 	<instant group="support" spellid="211" name="Moonfang Pack" words="vael luth wyrd" level="120" mana="450" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/druid/spirit_wolves.lua">
 		<vocation name="Illusionist" />
@@ -62,7 +58,6 @@
 	<instant group="attack" spellid="215" name="Skewering Line" words="kah sag lanc" level="60" mana="150" premium="0" direction="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/paladin/piercing_volley.lua">
 		<vocation name="Ranger" />
 		<vocation name="Deadeye" />
-		<vocation name="Beastmaster" />
 	</instant>
 	<instant group="attack" spellid="216" name="Blessed Earth" words="drai vas sol hal" level="100" mana="350" premium="0" selftarget="1" cooldown="24000" groupcooldown="2000" needlearn="0" script="chaos/paladin/consecration.lua">
 		<vocation name="Ranger" />
@@ -94,7 +89,6 @@
 	</instant>
 	<instant group="support" spellid="222" name="Red Frenzy" words="vyr ira cruor" level="100" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="40000" groupcooldown="2000" needlearn="0" script="chaos/knight/crimson_fury.lua">
 		<vocation name="Warrior" />
-		<vocation name="Juggernaut" />
 		<vocation name="Berserker" />
 	</instant>
 	<instant group="support" spellid="223" name="Iron Bellow" words="vok vas rhov" level="120" mana="200" premium="0" aggressive="0" selftarget="1" cooldown="20000" groupcooldown="2000" needlearn="0" script="chaos/knight/warcry.lua">
@@ -103,8 +97,6 @@
 	</instant>
 	<instant group="attack" spellid="224" name="Vaulting Cleave" words="kah brak skai" level="170" mana="250" premium="0" range="5" needweapon="1" needtarget="1" blockwalls="1" cooldown="12000" groupcooldown="2000" needlearn="0" script="chaos/knight/leaping_strike.lua">
 		<vocation name="Warrior" />
-		<vocation name="Juggernaut" />
-		<vocation name="Berserker" />
 	</instant>
 	<instant group="attack" spellid="225" name="Colossus Fall" words="kah gal vas tyr" level="260" mana="400" premium="0" selftarget="1" needweapon="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/knight/titans_wrath.lua">
 		<vocation name="Warrior" />
@@ -113,19 +105,16 @@
 	</instant>
 	<!-- illusionist kit: Mystic (base) and Illusionist; Nightburst and Tear in the Weave only the Illusionist -->
 	<instant group="support" spellid="226" name="Hall of Mirrors" words="drai spek" level="40" mana="250" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mirror_image.lua">
-		<vocation name="Mystic" />
 		<vocation name="Illusionist" />
 	</instant>
 	<instant group="attack" spellid="227" name="Umbral Stride" words="ruan nyx umh" level="70" mana="120" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="8000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/shadow_step.lua">
 		<vocation name="Mystic" />
-		<vocation name="Illusionist" />
 	</instant>
 	<instant group="attack" spellid="228" name="Shattered Psyche" words="kah mynd frak" level="110" mana="200" premium="0" range="4" needtarget="1" blockwalls="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/mind_fracture.lua">
 		<vocation name="Mystic" />
 		<vocation name="Illusionist" />
 	</instant>
 	<instant group="support" spellid="229" name="Wraithshroud" words="fen wrai" level="150" mana="350" premium="0" aggressive="0" selftarget="1" cooldown="35000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/phantom_veil.lua">
-		<vocation name="Mystic" />
 		<vocation name="Illusionist" />
 	</instant>
 	<instant group="attack" spellid="230" name="Nightburst" words="drai gal vas umh" level="210" mana="900" premium="0" selftarget="1" cooldown="25000" groupcooldown="2000" needlearn="0" script="chaos/illusionist/umbral_eruption.lua">
@@ -485,17 +474,11 @@
 		<vocation name="Samurai" />
 	</instant>
 	<instant group="attack" spellid="100" name="Seeker Mine" words="kah snar" level="60" mana="110" premium="0" params="1" cooldown="2000" groupcooldown="2000" needlearn="0" script="chaos/shared/seeker_mine.lua">
-		<vocation name="Ranger" />
-		<vocation name="Deadeye" />
-		<vocation name="Beastmaster" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
 	<instant group="support" spellid="104" name="Detonate Mines" words="vok snar" level="60" mana="20" premium="0" aggressive="0" selftarget="1" cooldown="1000" groupcooldown="0" needlearn="0" script="chaos/shared/detonate_mines.lua">
-		<vocation name="Ranger" />
-		<vocation name="Deadeye" />
-		<vocation name="Beastmaster" />
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
@@ -626,7 +609,6 @@
 	<instant group="support" spellid="132" name="Ironhold" words="tor brak" level="55" mana="200" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/knight/ironhold.lua">
 		<vocation name="Warrior" />
 		<vocation name="Juggernaut" />
-		<vocation name="Berserker" />
 	</instant>
 	<!-- the Ranger line's run buff in place of the stock Swift Foot / Windrunner (owner 2026-10-20: it pacified the caster
 	     for 10 s; tools/retire_cure_spells.py retires it and frees id 134): a haste of its own for 12 s, nothing else -->

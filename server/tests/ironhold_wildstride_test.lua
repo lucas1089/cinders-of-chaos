@@ -94,7 +94,7 @@ local function entry(name, id, words, level, mana, vocs)
 	for _ in xml:gmatch('spellid="' .. id .. '"') do count = count + 1 end
 	ok(count == 1, name .. ": one Chaos spell with id " .. id)
 end
-entry("Ironhold", 132, "tor brak", 55, 200, "Warrior,Juggernaut,Berserker")
+entry("Ironhold", 132, "tor brak", 55, 200, "Warrior,Juggernaut") -- the Berserker (no shield) left it: the 15-spell cap
 entry("Wildstride", 134, "ruan vert", 55, 150, "Ranger,Deadeye,Beastmaster")
 
 -- ------------------------------------------------------------------ the retirement

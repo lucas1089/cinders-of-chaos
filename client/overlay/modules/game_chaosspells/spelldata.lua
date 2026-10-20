@@ -3,34 +3,34 @@
 ChaosSpellData = {
   { id = 200, name = "Rime Bloom", words = "drai hyr rhim", level = 20, mana = 120, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = false, range = 0, vocations = { 1, 5 }, iconKey = "chaos_rimebloom", clientId = 201 },
   { id = 201, name = "Witchfire Bolt", words = "kah pyr vesh", level = 30, mana = 70, group = 1, groupCooldown = 2000, cooldown = 4000, premium = false, needTarget = true, range = 5, vocations = { 1, 5 }, iconKey = "chaos_witchfirebolt", clientId = 202 },
-  { id = 202, name = "Forked Storm", words = "kah zhul zarn", level = 50, mana = 200, group = 1, groupCooldown = 2000, cooldown = 7000, premium = false, needTarget = true, range = 6, vocations = { 1, 5 }, iconKey = "chaos_forkedstorm", clientId = 203 },
-  { id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 90, mana = 50, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 1, 5 }, iconKey = "chaos_crimsoncovenant", clientId = 204 },
+  { id = 202, name = "Forked Storm", words = "kah zhul zarn", level = 50, mana = 200, group = 1, groupCooldown = 2000, cooldown = 7000, premium = false, needTarget = true, range = 6, vocations = { 5 }, iconKey = "chaos_forkedstorm", clientId = 203 },
+  { id = 203, name = "Crimson Covenant", words = "tor nyx cruor", level = 90, mana = 50, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 5 }, iconKey = "chaos_crimsoncovenant", clientId = 204 },
   { id = 204, name = "Falling Pyre", words = "drai gal vas infr", level = 150, mana = 700, group = 1, groupCooldown = 2000, cooldown = 20000, premium = false, needTarget = true, range = 7, vocations = { 1, 5 }, iconKey = "chaos_fallingpyre", clientId = 205 },
   { id = 205, name = "Frozen Crypt", words = "drai gal vas hyr krypt", level = 220, mana = 900, group = 1, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = true, range = 7, vocations = { 5 }, iconKey = "chaos_frozencrypt", clientId = 206 },
   { id = 206, name = "Doomtide", words = "drai zhul infr doma", level = 300, mana = 1500, group = 1, groupCooldown = 2000, cooldown = 45000, premium = false, needTarget = false, range = 0, vocations = { 5 }, iconKey = "chaos_doomtide", clientId = 207 },
-  { id = 207, name = "Blightswarm", words = "drai vex kriv", level = 25, mana = 110, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = false, range = 0, vocations = { 1, 10 }, iconKey = "chaos_blightswarm", clientId = 208 },
+  { id = 207, name = "Blightswarm", words = "drai vex kriv", level = 25, mana = 110, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = false, range = 0, vocations = { 1 }, iconKey = "chaos_blightswarm", clientId = 208 },
   { id = 208, name = "Purifying Wellspring", words = "saen vas aquen", level = 40, mana = 160, group = 2, groupCooldown = 2000, cooldown = 6000, premium = false, needTarget = false, range = 0, vocations = { 1, 10 }, iconKey = "chaos_purifyingwellspring", clientId = 209 },
-  { id = 209, name = "Ironbark Hide", words = "tor ael skar", level = 60, mana = 140, group = 3, groupCooldown = 2000, cooldown = 25000, premium = false, needTarget = false, range = 0, vocations = { 1, 10 }, iconKey = "chaos_ironbarkhide", clientId = 210 },
-  { id = 210, name = "Briar Prison", words = "drai thral brin", level = 70, mana = 240, group = 1, groupCooldown = 2000, cooldown = 14000, premium = false, needTarget = true, range = 6, vocations = { 10 }, iconKey = "chaos_briarprison", clientId = 211 },
+  { id = 209, name = "Ironbark Hide", words = "tor ael skar", level = 60, mana = 140, group = 3, groupCooldown = 2000, cooldown = 25000, premium = false, needTarget = false, range = 0, vocations = { 1 }, iconKey = "chaos_ironbarkhide", clientId = 210 },
+  { id = 210, name = "Briar Prison", words = "drai thral brin", level = 70, mana = 240, group = 1, groupCooldown = 2000, cooldown = 14000, premium = false, needTarget = true, range = 6, vocations = { 1 }, iconKey = "chaos_briarprison", clientId = 211 },
   { id = 211, name = "Moonfang Pack", words = "vael luth wyrd", level = 120, mana = 450, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_moonfangpack", clientId = 212 },
   { id = 212, name = "Verdant Sanctuary", words = "saen gal vas vert", level = 180, mana = 600, group = 2, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_verdantsanctuary", clientId = 213 },
   { id = 213, name = "Primordial Squall", words = "drai gal vas stoma", level = 250, mana = 1200, group = 1, groupCooldown = 2000, cooldown = 35000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_primordialsquall", clientId = 214 },
   { id = 214, name = "Dawnpiercer", words = "kah sol aurr", level = 30, mana = 50, group = 1, groupCooldown = 2000, cooldown = 3000, premium = false, needTarget = true, range = 5, vocations = { 3, 7, 15 }, iconKey = "chaos_dawnpiercer", clientId = 215 },
-  { id = 215, name = "Skewering Line", words = "kah sag lanc", level = 60, mana = 150, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_skeweringline", clientId = 216, directional = true, areaName = "AREA_BEAM7" },
+  { id = 215, name = "Skewering Line", words = "kah sag lanc", level = 60, mana = 150, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = false, range = 0, vocations = { 3, 7 }, iconKey = "chaos_skeweringline", clientId = 216, directional = true, areaName = "AREA_BEAM7" },
   { id = 216, name = "Blessed Earth", words = "drai vas sol hal", level = 100, mana = 350, group = 1, groupCooldown = 2000, cooldown = 24000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_blessedearth", clientId = 217 },
   { id = 217, name = "Lightward", words = "tor sol ghar", level = 140, mana = 300, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_lightward", clientId = 218 },
   { id = 218, name = "Final Verdict", words = "kah gal sol judh", level = 200, mana = 450, group = 1, groupCooldown = 2000, cooldown = 14000, premium = false, needTarget = true, range = 6, vocations = { 7 }, iconKey = "chaos_finalverdict", clientId = 219 },
   { id = 219, name = "Hail of Dawn", words = "drai gal vas sol volv", level = 280, mana = 800, group = 1, groupCooldown = 2000, cooldown = 24000, premium = false, needTarget = true, range = 7, vocations = { 3, 7 }, iconKey = "chaos_hailofdawn", clientId = 220 },
   { id = 220, name = "Reaping Gyre", words = "kah spir", level = 30, mana = 30, group = 1, groupCooldown = 2000, cooldown = 6000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_reapinggyre", clientId = 221 },
   { id = 221, name = "Earthbreaker", words = "kah grund krak", level = 60, mana = 50, group = 1, groupCooldown = 2000, cooldown = 10000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_earthbreaker", clientId = 222 },
-  { id = 222, name = "Red Frenzy", words = "vyr ira cruor", level = 100, mana = 300, group = 3, groupCooldown = 2000, cooldown = 40000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_redfrenzy", clientId = 223 },
+  { id = 222, name = "Red Frenzy", words = "vyr ira cruor", level = 100, mana = 300, group = 3, groupCooldown = 2000, cooldown = 40000, premium = false, needTarget = false, range = 0, vocations = { 4, 14 }, iconKey = "chaos_redfrenzy", clientId = 223 },
   { id = 223, name = "Iron Bellow", words = "vok vas rhov", level = 120, mana = 200, group = 3, groupCooldown = 2000, cooldown = 20000, premium = false, needTarget = false, range = 0, vocations = { 4, 8 }, iconKey = "chaos_ironbellow", clientId = 224 },
-  { id = 224, name = "Vaulting Cleave", words = "kah brak skai", level = 170, mana = 250, group = 1, groupCooldown = 2000, cooldown = 12000, premium = false, needTarget = true, range = 5, vocations = { 4, 8, 14 }, iconKey = "chaos_vaultingcleave", clientId = 225 },
+  { id = 224, name = "Vaulting Cleave", words = "kah brak skai", level = 170, mana = 250, group = 1, groupCooldown = 2000, cooldown = 12000, premium = false, needTarget = true, range = 5, vocations = { 4 }, iconKey = "chaos_vaultingcleave", clientId = 225 },
   { id = 225, name = "Colossus Fall", words = "kah gal vas tyr", level = 260, mana = 400, group = 1, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_colossusfall", clientId = 226 },
-  { id = 226, name = "Hall of Mirrors", words = "drai spek", level = 40, mana = 250, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 1, 10 }, iconKey = "chaos_hallofmirrors", clientId = 227 },
-  { id = 227, name = "Umbral Stride", words = "ruan nyx umh", level = 70, mana = 120, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = true, range = 5, vocations = { 1, 10 }, iconKey = "chaos_umbralstride", clientId = 228 },
+  { id = 226, name = "Hall of Mirrors", words = "drai spek", level = 40, mana = 250, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_hallofmirrors", clientId = 227 },
+  { id = 227, name = "Umbral Stride", words = "ruan nyx umh", level = 70, mana = 120, group = 1, groupCooldown = 2000, cooldown = 8000, premium = false, needTarget = true, range = 5, vocations = { 1 }, iconKey = "chaos_umbralstride", clientId = 228 },
   { id = 228, name = "Shattered Psyche", words = "kah mynd frak", level = 110, mana = 200, group = 1, groupCooldown = 2000, cooldown = 6000, premium = false, needTarget = true, range = 4, vocations = { 1, 10 }, iconKey = "chaos_shatteredpsyche", clientId = 229 },
-  { id = 229, name = "Wraithshroud", words = "fen wrai", level = 150, mana = 350, group = 3, groupCooldown = 2000, cooldown = 35000, premium = false, needTarget = false, range = 0, vocations = { 1, 10 }, iconKey = "chaos_wraithshroud", clientId = 230 },
+  { id = 229, name = "Wraithshroud", words = "fen wrai", level = 150, mana = 350, group = 3, groupCooldown = 2000, cooldown = 35000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_wraithshroud", clientId = 230 },
   { id = 230, name = "Nightburst", words = "drai gal vas umh", level = 210, mana = 900, group = 1, groupCooldown = 2000, cooldown = 25000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_nightburst", clientId = 231 },
   { id = 231, name = "Tear in the Weave", words = "drai zhul riv", level = 280, mana = 1300, group = 1, groupCooldown = 2000, cooldown = 40000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_tearintheweave", clientId = 232 },
   { id = 232, name = "Flickerdash", words = "ash flik", level = 35, mana = 80, group = 3, groupCooldown = 2000, cooldown = 6000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 25 }, iconKey = "chaos_flickerdash", clientId = 233 },
@@ -95,8 +95,8 @@ ChaosSpellData = {
   { id = 96, name = "Mirror Mend", words = "saen spek", level = 60, mana = 180, group = 2, groupCooldown = 1000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_mirrormend", clientId = 278 },
   { id = 97, name = "Lucid Reverie", words = "reth vas spek", level = 120, mana = 300, group = 2, groupCooldown = 1000, cooldown = 20000, premium = false, needTarget = false, range = 0, vocations = { 10 }, iconKey = "chaos_lucidreverie", clientId = 279 },
   { id = 99, name = "Snare Trap", words = "drai snar", level = 40, mana = 90, group = 1, groupCooldown = 2000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_snaretrap", clientId = 282 },
-  { id = 100, name = "Seeker Mine", words = "kah snar", level = 60, mana = 110, group = 1, groupCooldown = 2000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_seekermine", clientId = 283 },
-  { id = 104, name = "Detonate Mines", words = "vok snar", level = 60, mana = 20, group = 3, groupCooldown = 0, cooldown = 1000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15, 11, 12, 13 }, iconKey = "chaos_detonatemines", clientId = 284 },
+  { id = 100, name = "Seeker Mine", words = "kah snar", level = 60, mana = 110, group = 1, groupCooldown = 2000, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_seekermine", clientId = 283 },
+  { id = 104, name = "Detonate Mines", words = "vok snar", level = 60, mana = 20, group = 3, groupCooldown = 0, cooldown = 1000, premium = false, needTarget = false, range = 0, vocations = { 11, 12, 13 }, iconKey = "chaos_detonatemines", clientId = 284 },
   { id = 179, name = "Vigil of Wrath", words = "vigh vyr", level = 60, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofwrath", clientId = 285 },
   { id = 255, name = "Vigil of Iron", words = "vigh tor", level = 60, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofiron", clientId = 286 },
   { id = 161, name = "Vigil of Haste", words = "vigh ruan", level = 40, mana = 0, group = 3, groupCooldown = 0, cooldown = 2000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 20, 21, 22, 17, 18, 19, 23, 24, 25 }, iconKey = "chaos_vigilofhaste", clientId = 287 },
@@ -109,7 +109,7 @@ ChaosSpellData = {
   { id = 147, name = "Pack Frenzy", words = "kah ferh vas", level = 380, mana = 450, group = 1, groupCooldown = 2000, cooldown = 20000, premium = false, needTarget = true, range = 7, vocations = { 15 }, iconKey = "chaos_packfrenzy", clientId = 306 },
   { id = 164, name = "Shuriken Tempest", words = "kah sai vas hyr", level = 360, mana = 600, group = 1, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = true, range = 5, vocations = { 12 }, iconKey = "chaos_shurikentempest", clientId = 307 },
   { id = 135, name = "Tautstring", words = "vyr sag", level = 60, mana = 300, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_tautstring", clientId = 308 },
-  { id = 132, name = "Ironhold", words = "tor brak", level = 55, mana = 200, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_ironhold", clientId = 309 },
+  { id = 132, name = "Ironhold", words = "tor brak", level = 55, mana = 200, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 4, 8 }, iconKey = "chaos_ironhold", clientId = 309 },
   { id = 134, name = "Wildstride", words = "ruan vert", level = 55, mana = 150, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_wildstride", clientId = 310 },
 }
 
@@ -320,4 +320,87 @@ ChaosStockSpellLines = {
   ["ash ul"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
   ["ash gor"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
   ["ruan gal ul"] = { 11, 12, 13, 17, 18, 19 },
+}
+
+-- the 15-spell cap: stock spell (Chaos words) -> the classes that keep it, {} = retired (server/tools/patch_spell_cap.py CAP)
+ChaosCappedSpells = {
+  ["saen"] = { 3, 7, 15, 1, 5, 10, 20, 21, 22 }, -- Minor Mending (1)
+  ["saen gal"] = {}, -- Deep Mending (2)
+  ["saen ael"] = { 1, 5, 20, 21, 22 }, -- Grand Mending (3)
+  ["vael kal"] = {}, -- Call Thrall (9)
+  ["drai zhul ul"] = { 5 }, -- Tempest Fan (13)
+  ["drai pyr ul"] = {}, -- Cinder Fan (19)
+  ["drai zhul lyss"] = {}, -- Stormlance (22)
+  ["drai gal zhul lyss"] = {}, -- Thunder Lance (23)
+  ["drai gal vas pyr"] = {}, -- Infernal Heart (24)
+  ["drai ira vas sol"] = { 3 }, -- Radiant Shard (34)
+  ["drai zar nyx"] = {}, -- Lance of the Grave (35)
+  ["vael kal nir"] = {}, -- Skinchanger's Guise (38)
+  ["ruan gal ul"] = { 1, 5, 11, 12, 13, 17, 18, 19, 20, 21, 22 }, -- Galeborne Stride (39)
+  ["drai orr hyr"] = {}, -- Shatterfrost (40)
+  ["drai orr gor"] = {}, -- Quakeburst (41)
+  ["drai gal hyr ul"] = {}, -- Greater Glacier Fan (43)
+  ["tor ael"] = { 5 }, -- Ward of the Mind (44)
+  ["fen ves"] = {}, -- Shroud of Shadows (45)
+  ["vael mur sol"] = { 3 }, -- Hallowed Ground (46)
+  ["drai gal vas ylth"] = {}, -- Fading Step (47)
+  ["drai xir"] = {}, -- Crossfire Hex (52)
+  ["drai gal vas gor"] = {}, -- Wildwood Ruin (56)
+  ["kah gal sag"] = {}, -- Greater Phantom Javelin (57)
+  ["drai skre"] = {}, -- Dread (60)
+  ["kah gal brak"] = {}, -- Ruinous Cleave (62)
+  ["kah"] = {}, -- Reaver's Spin (80)
+  ["saen gal vas kal"] = {}, -- Circle of Mending (82)
+  ["saen kin"] = {}, -- Kindred Mend (84)
+  ["kah nyx"] = {}, -- Gravetouch (87)
+  ["kah zhul"] = {}, -- Arc Bolt (88)
+  ["kah pyr"] = {}, -- Ember Lash (89)
+  ["puir nir"] = {}, -- Unveil (90)
+  ["vok kal"] = { 8 }, -- Taunt of Iron (93)
+  ["saen gal kin"] = {}, -- Heartwood Embrace (101)
+  ["saen zar ael"] = { 20, 21, 22 }, -- Rebirth of Flesh (103)
+  ["kah vas"] = {}, -- Earthrend (106)
+  ["kah ul"] = {}, -- Cyclone Hurl (107)
+  ["kah hyr"] = {}, -- Frostbite (112)
+  ["kah gor"] = {}, -- Thornlash (113)
+  ["drai gal vas hyr"] = {}, -- Endless Rime (118)
+  ["drai gal vas zhul"] = {}, -- Storm Crown's Wrath (119)
+  ["drai gor ul"] = {}, -- Bramble Fan (120)
+  ["drai hyr ul"] = {}, -- Glacier Fan (121)
+  ["kah sol"] = {}, -- Dawnbolt (122)
+  ["vyr vas kin"] = {}, -- Martial Communion (126)
+  ["tor vas kin"] = {}, -- Shielding Communion (127)
+  ["reth vas kin"] = {}, -- Mending Communion (128)
+  ["hesh vas kin"] = {}, -- Arcane Communion (129)
+  ["ruan ira ul"] = {}, -- Warhorse Rush (131)
+  ["vyr ira"] = { 4, 14 }, -- Bloodlust (133)
+  ["hesh pyr"] = {}, -- Smoulder Brand (138)
+  ["hesh nyx"] = {}, -- Hex of Withering (139)
+  ["hesh zhul"] = {}, -- Galvanic Mark (140)
+  ["hesh sang"] = {}, -- Rending Mark (141)
+  ["hesh vex"] = {}, -- Blackroot Venom (142)
+  ["hesh sol"] = {}, -- Glare of Dawn (143)
+  ["kah gro brak"] = {}, -- Hammerfall Palm (148)
+  ["kah rek zhul"] = {}, -- Skyfang (149)
+  ["kah gal pyr"] = {}, -- Greater Ember Lash (150)
+  ["kah gal zhul"] = {}, -- Greater Arc Bolt (151)
+  ["kah gal hyr"] = {}, -- Greater Frostbite (152)
+  ["kah gal gor"] = {}, -- Greater Thornlash (153)
+  ["kah zar pyr"] = {}, -- Supreme Ember Lash (154)
+  ["kah zar zhul"] = {}, -- Supreme Arc Bolt (155)
+  ["kah zar hyr"] = {}, -- Supreme Frostbite (156)
+  ["kah zar gor"] = {}, -- Supreme Thornlash (157)
+  ["saen gal brak"] = {}, -- Warlord's Resolve (158)
+  ["reth"] = {}, -- Second Wind (159)
+  ["reth gal"] = {}, -- Greater Second Wind (160)
+  ["drai gal pyr ul"] = { 5 }, -- Pyre Torrent (163)
+  ["rhut mur"] = {}, -- Gravity Snare (165)
+  ["kah ath"] = {}, -- Riftbolt (168)
+  ["kah gro"] = {}, -- Sunder Guard (171)
+  ["kah tin gor"] = {}, -- Bog Splatter (172)
+  ["drai tin hyr ul"] = {}, -- Rime Breath (173)
+  ["saen tin"] = {}, -- Arcane Stitch (174)
+  ["kah tin zhul"] = {}, -- Static Sting (177)
+  ["drai tin pyr ul"] = {}, -- Searing Gust (178)
+  ["vok rek kal"] = {}, -- Duelist's Oath (237)
 }

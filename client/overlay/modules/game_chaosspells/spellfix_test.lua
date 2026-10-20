@@ -209,6 +209,33 @@ for _, r in ipairs({ { 'utamo tempo', 'Protector', 132, 'Ironhold', 'tor ira' },
   F.restore(undo)
 end
 
+-- the 15-spell cap (ChaosCappedSpells, server/tools/patch_spell_cap.py, 2026-10-20)
+do
+  eq(type(ChaosCappedSpells), 'table', 'ChaosCappedSpells generated')
+  eq(#ChaosCappedSpells['drai zar nyx'], 0, 'Lance of the Grave retired')
+  local removedSet = F.removedWords(ChaosRemovedSpells, ChaosCappedSpells)
+  eq(removedSet['drai zar nyx'], true, 'a retired spell is a removed word')
+  eq(removedSet['saen'], nil, 'Minor Mending stays')
+  eq(table.concat(F.capVocations('saen', { 1, 2, 4, 8, 14, 3, 10 }, ChaosCappedSpells), ','), '1,3,10',
+    'Minor Mending: the Warrior line (4, 8, 14) and the old druid 2 cut')
+  eq(F.capVocations('kah brak', { 4, 8, 14 }, ChaosCappedSpells), nil, 'Bonebreaker: not capped')
+  eq(F.capVocations('saen', { 1, 3 }, ChaosCappedSpells), nil, 'nothing to cut: nil')
+  -- a fix entry never gives a class back that the cap took away
+  for words, fix in pairs(F.STOCK) do
+    local keep = ChaosCappedSpells[words]
+    if fix.vocations and keep and #keep > 0 then
+      eq(F.capVocations(words, fix.vocations, ChaosCappedSpells), nil, words .. ': fix vocations within the cap')
+    end
+  end
+  for _, e in ipairs(F.EXTRA) do
+    eq(ChaosCappedSpells[e.words] == nil or #ChaosCappedSpells[e.words] > 0, true, e.name .. ' is not retired')
+  end
+  local cinfo = { ['Lance of the Grave'] = entry(260, 'Lance of the Grave', 'drai zar nyx') }
+  local cundo = F.apply(cinfo, {}, {}, server, removedSet)
+  eq(cinfo['Lance of the Grave'].notOnServer, true, 'a retired spell is never cast')
+  F.restore(cundo)
+end
+
 -- the base spells the client had no entry for (F.EXTRA) carry the installed server's numbers
 -- (server/data/spells/stock_spells.csv, written from an installed server by server/tools/rotation_sim.py)
 local VOC = { Mystic = 1, Elementalist = 5, Illusionist = 10 }

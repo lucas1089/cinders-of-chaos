@@ -1574,6 +1574,44 @@ lost its attacks for 10 s of every cast; Swift Foot was never offered (`NEVER_WO
   group cooldown; the spell entries, the retirement, the client data), `tools/retire_cure_spells_test.py`,
   `spell_ids_test.lua`, `spellfix_test.lua`. Not run on a live server.
 
+### Spell cap (owner 2026-10-20: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")
+
+Every class and ascension has at most 15 spells of its own (kits, counts and what each class dropped: docs/CLASSES.md
+"Spell cap"; the 15 spells every character shares and Radiant Lantern are not counted).
+
+* `tools/patch_spell_cap.py DATA_DIR [--dry-run|--list]` (install step `spells`, right after `retire_cure_spells.py`,
+  idempotent): `CAP` names the 79 stock instants the cap changes, by script, with the classes that keep each one. Every
+  other class's `<vocation>` line leaves the instant; an instant no class keeps (68 of them) is commented out (marker
+  `Chaos: spell cap`, the tag kept in the comment). The Chaos block is never touched: the Chaos spells' class lists are
+  in `data/spells/chaos/spells_chaos.xml` (14 lists changed, no Chaos spell lost its last class). It must run after
+  `add_vocations.py` (vocations step), which writes the class lists it cuts; on a re-run the vocations step adds nothing
+  back (its conversion runs once).
+* `patch_spell_ids.py` skips the retired scripts of its table (Lance of the Grave, Shatterfrost, Quakeburst, Fading Step,
+  Crossfire Hex, Dread, Gravity Snare, Riftbolt, Sunder Guard); `spell_timings.csv` lost the rows of Sunder Guard,
+  Earthrend, Reaver's Spin and Bramble Fan (patch_spell_timings.py refuses a script it cannot find). `spell_names.csv`
+  keeps the retired rows: `rename_spells.py` still renames the NPC teachers' lines and the learned rows of
+  `player_spells`.
+* `data/spells/stock_spells.csv` re-exported from an install (`rotation_sim.py --export-stock`): 20 stock attack and
+  healing spells left. The helper's Auto rotation presets were regenerated (`rotation_sim.py --write`): every class keeps
+  a set of at most 5 with the same gaps as before; best-set damage in `data/spells/README.md` "Spell cap".
+* Client: `gen_spell_data.py` writes `ChaosCappedSpells` (Chaos words -> the class ids that keep the stock spell, `{}` =
+  retired); `game_chaosspells` cuts the stock entries' class lists to it (`ChaosSpellFix.capVocations`), hides the
+  retired ones from the spell list and marks them never cast (`ChaosSpellFix.removedWords`). `spellfix.lua` lost the
+  `EXTRA` entries of Riftbolt, Crossfire Hex, Fading Step and Gravity Snare; its `STOCK` class lists follow the cap.
+* Other changes: the tutorial spell of the Ranger and Mystic kits is Minor Mending (Arcane Stitch is retired;
+  `newplayer_config.lua`); the Hall of Mirrors class effect moved to the Illusionist's swaps (`chaos_class_fx.lua`).
+* **Live server (install step):** run the `spells` step (or the whole `install_all.py`) and restart. Characters keep the
+  rows of spells they learned in `player_spells`; nothing deletes them. A dropped spell is simply unusable: the engine
+  checks the vocation on every cast ("You have the wrong vocation to cast this spell."; it skips that check only for a
+  `needlearn="1"` spell, and no player spell of the installed `spells.xml` is one) and the spellbook and the client's
+  spell list leave it out. Action bar slots and helper rules a player made with a dropped spell stay until the player
+  removes them; the server refuses each cast. No database change is needed.
+* Tests: `tools/patch_spell_cap_test.py` (the tool on a small `spells.xml`; every class at most 15, counts pinned),
+  `tests/class_spell_progression_test.lua`, `spellfix_test.lua`, `autorotation_test.lua`, `snares_test.lua`,
+  `ironhold_wildstride_test.lua`, `class_fx_test.lua`, `start_stats_test.lua`, `newplayer_test.lua`. Checked with an
+  install on a copy of the base server (the counts per class read back from the installed `spells.xml`). Not run on a
+  live server.
+
 ## Necromancer summons and the summon cap (2026-10-18)
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),

@@ -93,6 +93,20 @@ def main():
         words = ' '.join(parts[t] for t in stock.split())
         out.append('  ["%s"] = { %s },' % (words, ', '.join(str(VOC[v]) for line in lines for v in line)))
     out.append('}')
+    # the 15-spell cap (server/tools/patch_spell_cap.py CAP): Chaos words -> the class ids that keep the stock spell;
+    # an empty list: the server retired it. chaosspells.lua cuts the stock entries' class lists to these and hides the
+    # retired ones like the removed spells (no id of the server any more)
+    from patch_spell_cap import CAP
+    out += ['', '-- the 15-spell cap: stock spell (Chaos words) -> the classes that keep it, {} = retired '
+            '(server/tools/patch_spell_cap.py CAP)', 'ChaosCappedSpells = {']
+    by_words = {}
+    for r in rows:
+        if r['words'] and not r.get('removed'):
+            by_words[r['new_name']] = ' '.join(parts[t] for t in r['words'].split())
+    for script, (sid, name, keep) in sorted(CAP.items(), key=lambda kv: kv[1][0]):
+        ids = '{ %s }' % ', '.join(str(VOC[v]) for v in keep) if keep else '{}'
+        out.append('  ["%s"] = %s, -- %s (%d)' % (by_words[name], ids, name.replace('"', '\\"'), sid))
+    out.append('}')
     path = 'client/overlay/modules/game_chaosspells/spelldata.lua'
     os.makedirs(os.path.dirname(path), exist_ok=True)
     open(path, 'w', encoding='utf-8').write('\n'.join(out) + '\n')

@@ -2353,6 +2353,36 @@ line lacks) about 500, the retired Swift Foot 526 (it replaced the Haste). 150 m
 Ranger's pool, 5 mana a second over its cooldown. Neither is measured in game;
 `server/tests/ironhold_wildstride_test.lua` checks both casts on a mocked player.
 
+### Spell cap (2026-10-20; owner: "mysthic tem magias demais. abaixe pra 15"; computed with rotation_sim.py, not measured in game)
+
+Every class keeps at most 15 spells of its own (docs/CLASSES.md "Spell cap": kits, counts, what each class dropped;
+server/README.md "Spell cap": the install tool). The best attack set of at most 5 (`rotation_sim.py --report`, 1 target
+and the 5-dummy pack, damage per second of spells only) before and after, at levels 100 / 300 / 1000; every row not
+listed is unchanged (Warrior, Juggernaut, Ranger, Deadeye, the Thief, Monk, Necromancer and Templar lines):
+
+| Class | Level | 1 target before -> after | 5 targets before -> after | gap | set after |
+|---|---|---|---|---|---|
+| Berserker | 1000 | 527 -> 568 (+8%) | 1951 -> 1866 (-4%) | 2.0 -> 4.0 | Rampage Leap > Skyfall Cleave > Reaping Gyre > Butcher's Gyre > Headsman's Hurl |
+| Beastmaster | 100 | 130 -> 130 (+0%) | 469 -> 437 (-7%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer |
+| Beastmaster | 300 | 246 -> 246 (+0%) | 921 -> 833 (-9%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer |
+| Beastmaster | 1000 | 483 -> 483 (+0%) | 1690 -> 1619 (-4%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer |
+| Mystic | 300 | 516 -> 502 (-3%) | 1423 -> 1442 (+1%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Arcane Ripple > Shattered Psyche > Bewitching Hex |
+| Mystic | 1000 | 577 -> 682 (+18%) | 2413 -> 2506 (+4%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche |
+| Elementalist | 100 | 168 -> 166 (-1%) | 752 -> 734 (-2%) | 4.0 -> 2.0 | Tempest Fan > Rime Bloom > Forked Storm > Pyre Torrent |
+| Illusionist | 1000 | 722 -> 753 (+4%) | 2395 -> 2090 (-13%) | 4.0 -> 2.0 | Tear in the Weave > Nightburst > Arcane Ripple > Shattered Psyche > Bewitching Hex |
+
+- Beastmaster: Radiant Shard and Skewering Line went (its 15 are the Ranger kit plus the companion spells): -4 to -9% on
+  the pack, one target unchanged.
+- Mystic at 1000: Briar Prison (from the Illusionist) and Blightswarm replace the retired Quakeburst and Bramble Fan:
+  +18% on one target, +4% on the pack.
+- Illusionist at 1000: Briar Prison moved to the Mystic; Bewitching Hex takes its place: -13% on the pack, +4% on one
+  target, the gap 4 s -> 2 s. Its role is the healer.
+- Berserker at 1000: with the retired stock spells out of the 10 candidates the search tries, it finds Skyfall Cleave
+  and Headsman's Hurl in place of Colossus Fall and Scything Arc (score = 1 target + 0.25 x pack: 1015 -> 1034); the
+  4 s gap is Headsman's Hurl's 4 s attack group lock, as the Warrior line already had at 300.
+- Elementalist at 100: Infernal Heart (retired) left the set: -1 / -2%, the gap 4 s -> 2 s (its 4 s group lock is gone).
+- Mana runway (`rotation_sim.py --mana --check`): every class still runs 15 s or more at levels 8-300.
+
 ## Honest notes / limitations
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and

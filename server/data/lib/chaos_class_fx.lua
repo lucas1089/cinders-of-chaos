@@ -66,7 +66,6 @@ C.swaps = {
 	mystic = {
 		[208] = {heal_sparkle = "mystic_mend"},          -- Purifying Wellspring (each healed ally; the caster keeps
 		                                                 -- the pack healing_bloom)
-		[226] = {arcane_sigil = "illusion_mirror"},      -- Hall of Mirrors
 		[227] = {shade_vanish = "illusion_shatter", shade_appear = "illusion_shatter"}, -- Umbral Stride
 	},
 	elementalist = {
@@ -75,6 +74,8 @@ C.swaps = {
 	illusionist = {
 		[96] = {heal_sparkle = "mystic_mend"},           -- Mirror Mend (the mirror heal; the healed ally gets the
 		                                                 -- pack regenerating)
+		[226] = {arcane_sigil = "illusion_mirror"},      -- Hall of Mirrors (the Illusionist's alone since the
+		                                                 -- 15-spell cap, 2026-10-20)
 	},
 	thief = {
 		[98] = {shade_vanish = "thief_vanish"},          -- Shadow Mend

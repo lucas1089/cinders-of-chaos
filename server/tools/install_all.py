@@ -104,6 +104,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                respawn"; after monsters, which it reads)
   spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
                                                  Windrunner go; their ids are free (C6, 2026-10-20)
+               tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
+                                                 have, stock spells no class keeps are retired (docs/CLASSES.md
+                                                 "Spell cap", 2026-10-20)
                tools/register_spells.py          the Chaos spells (README "Install" 3)
                tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
                                                  below 256 (README "Spell ids below 256")
@@ -655,6 +658,12 @@ def step_spawns(server, data, ctx):
 def step_spells(server, data, ctx):
     # the stock cure spells go first: their ids belong to the Chaos block now (retire_cure_spells.py)
     ok, lines = run_tool([tool('retire_cure_spells.py'), data], 'retire_cure_spells.py')
+    if not ok:
+        return False, lines, []
+    # the 15-spell cap (patch_spell_cap.py): after add_vocations.py (vocations step), before the tools that renumber,
+    # rename and tune the stock spells
+    ok, more = run_tool([tool('patch_spell_cap.py'), data], 'patch_spell_cap.py')
+    lines += more
     if not ok:
         return False, lines, []
     ok, more = run_tool([tool('register_spells.py'), data], 'register_spells.py')

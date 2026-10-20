@@ -94,6 +94,7 @@ jobs:
           python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
+          python3 -I server/tools/patch_spell_cap_test.py  # the 15-spell cap: kits of at most 15 spells per class
 
       - name: Client spell data is up to date with the server spells
         run: |
