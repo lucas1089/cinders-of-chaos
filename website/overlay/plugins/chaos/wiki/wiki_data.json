@@ -7108,10 +7108,10 @@
 								["300", "21%", "22%", "24%", "65%"],
 								["600", "21%", "21%", "23%", "55%"],
 								["1000", "21%", "22%", "24%", "40%"],
-								["650 (own level)", "10%", "5%", "6%", "53%"],
-								["1000 (own level)", "7%", "4%", "4%", "40%"],
-								["1300 (own level)", "6%", "3%", "4%", "40%"],
-								["2000 (own level)", "6%", "3%", "3%", "40%"]
+								["650 (own level)", "35%", "91%", "100%", "53%"],
+								["1000 (own level)", "40%", "68%", "74%", "40%"],
+								["1300 (own level)", "42%", "65%", "71%", "40%"],
+								["2000 (own level)", "42%", "60%", "66%", "40%"]
 							]
 						},
 						{
@@ -30095,12 +30095,12 @@
 							"rows": [
 								[
 									"Finished rift",
-									"30% + 10% per modifier (at most 60%) for a next key; 50% + 10% per modifier of those are one tier higher."
+									"45% + 10% per modifier (at most 75%) for a next key; 60% + 10% per modifier of those are one tier higher."
 								],
-								["Rift monsters", "Rare 2%, legendary 6%: a key of the rift's tier."],
+								["Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."],
 								[
 									"Monsters",
-									"Tier-1 keys: 0.05% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."
+									"Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."
 								],
 								[
 									"Bounty board",
@@ -30182,7 +30182,7 @@
 						{
 							"h": "The run",
 							"p": [
-								"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 12 minutes; tiers 6-10 200 x 200 tiles, 13 minutes; tiers 11-15 240 x 240 tiles, 15 minutes.",
+								"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 16 minutes; tiers 6-10 200 x 200 tiles, 18 minutes; tiers 11-15 240 x 240 tiles, 21 minutes.",
 								"The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.",
 								"About 132 monsters solo at tier 1 up to 402 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 102-166 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.",
 								"Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."
@@ -32238,7 +32238,7 @@
 								["Level", "860-900"],
 								[
 									"In hunts (pack combat)",
-									"health x0.074, experience and loot per kill x0.044 / x0.047, damage x0.43 at level 880 (Basics: Pack combat)"
+									"health x0.376, experience and loot per kill x0.723 / x0.794, damage x0.43 at level 880 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -32288,7 +32288,7 @@
 								["Level", "700-740"],
 								[
 									"In hunts (pack combat)",
-									"health x0.088, experience and loot per kill x0.051 / x0.056, damage x0.49 at level 720 (Basics: Pack combat)"
+									"health x0.355, experience and loot per kill x0.837 / x0.918, damage x0.49 at level 720 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -32386,7 +32386,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.067, experience and loot per kill x0.040 / x0.043, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.396, experience and loot per kill x0.684 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -32468,7 +32468,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.082, experience and loot per kill x0.048 / x0.052, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.359, experience and loot per kill x0.775 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -32598,7 +32598,7 @@
 								["Level", "800-840"],
 								[
 									"In hunts (pack combat)",
-									"health x0.079, experience and loot per kill x0.046 / x0.050, damage x0.45 at level 820 (Basics: Pack combat)"
+									"health x0.364, experience and loot per kill x0.746 / x0.820, damage x0.45 at level 820 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -32649,7 +32649,7 @@
 								["Level", "710-750"],
 								[
 									"In hunts (pack combat)",
-									"health x0.087, experience and loot per kill x0.050 / x0.055, damage x0.49 at level 730 (Basics: Pack combat)"
+									"health x0.355, experience and loot per kill x0.827 / x0.906, damage x0.49 at level 730 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33253,7 +33253,7 @@
 								["Level", "880-920"],
 								[
 									"In hunts (pack combat)",
-									"health x0.073, experience and loot per kill x0.043 / x0.046, damage x0.43 at level 900 (Basics: Pack combat)"
+									"health x0.380, experience and loot per kill x0.715 / x0.786, damage x0.43 at level 900 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33342,7 +33342,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.067, experience and loot per kill x0.040 / x0.043, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.396, experience and loot per kill x0.684 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33422,7 +33422,7 @@
 								["Level", "680-720"],
 								[
 									"In hunts (pack combat)",
-									"health x0.090, experience and loot per kill x0.052 / x0.057, damage x0.50 at level 700 (Basics: Pack combat)"
+									"health x0.353, experience and loot per kill x0.858 / x0.940, damage x0.50 at level 700 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33533,7 +33533,7 @@
 								["Level", "920-960"],
 								[
 									"In hunts (pack combat)",
-									"health x0.070, experience and loot per kill x0.041 / x0.045, damage x0.42 at level 940 (Basics: Pack combat)"
+									"health x0.388, experience and loot per kill x0.699 / x0.769, damage x0.42 at level 940 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33616,7 +33616,7 @@
 								["Level", "900-940"],
 								[
 									"In hunts (pack combat)",
-									"health x0.072, experience and loot per kill x0.042 / x0.045, damage x0.42 at level 920 (Basics: Pack combat)"
+									"health x0.384, experience and loot per kill x0.707 / x0.778, damage x0.42 at level 920 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33667,7 +33667,7 @@
 								["Level", "940-980"],
 								[
 									"In hunts (pack combat)",
-									"health x0.069, experience and loot per kill x0.041 / x0.044, damage x0.41 at level 960 (Basics: Pack combat)"
+									"health x0.392, experience and loot per kill x0.692 / x0.761, damage x0.41 at level 960 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33718,7 +33718,7 @@
 								["Level", "790-830"],
 								[
 									"In hunts (pack combat)",
-									"health x0.079, experience and loot per kill x0.046 / x0.050, damage x0.45 at level 810 (Basics: Pack combat)"
+									"health x0.362, experience and loot per kill x0.750 / x0.824, damage x0.45 at level 810 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33987,7 +33987,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.093, experience and loot per kill x0.054 / x0.059, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.351, experience and loot per kill x0.889 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34099,7 +34099,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.078, experience and loot per kill x0.046 / x0.049, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.366, experience and loot per kill x0.742 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34187,7 +34187,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.093, experience and loot per kill x0.054 / x0.059, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.351, experience and loot per kill x0.889 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34321,7 +34321,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.082, experience and loot per kill x0.048 / x0.052, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.359, experience and loot per kill x0.775 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34487,7 +34487,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.078, experience and loot per kill x0.046 / x0.049, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.366, experience and loot per kill x0.742 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},

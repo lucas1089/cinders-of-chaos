@@ -12624,9 +12624,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Finished rift", "30% + 10% per modifier (at most 60%) for a next key; 50% + 10% per modifier of those are one tier higher."},
-								{"Rift monsters", "Rare 2%, legendary 6%: a key of the rift's tier."},
-								{"Monsters", "Tier-1 keys: 0.05% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."},
+								{"Finished rift", "45% + 10% per modifier (at most 75%) for a next key; 60% + 10% per modifier of those are one tier higher."},
+								{"Rift monsters", "Rare 4%, legendary 10%: a key of the rift's tier."},
+								{"Monsters", "Tier-1 keys: 0.25% per kill (Normal x1, Magic x3, Rare x8, Legendary x20, Boss x40) from monsters of hunting level 60 or more and at least 40% of yours."},
 								{"Bounty board", "Tier-1 key for a finished contract: hunt 25%, elite 50%, boss 100%."}
 							}
 						},
@@ -12676,7 +12676,7 @@ CodexData = {
 						},
 						{
 							h = "The run",
-							p = {"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 12 minutes; tiers 6-10 200 x 200 tiles, 13 minutes; tiers 11-15 240 x 240 tiles, 15 minutes.", "The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 132 monsters solo at tier 1 up to 402 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 102-166 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
+							p = {"Every rift is a new generated map: a cave system, an open waste, a ruined complex or a cave with ruined chambers, sometimes on two floors, with the guardian's arena in the far corner. Its size follows the key's tier: tiers 1-5 160 x 160 tiles, 16 minutes; tiers 6-10 200 x 200 tiles, 18 minutes; tiers 11-15 240 x 240 tiles, 21 minutes.", "The guardian comes after 75% of the monsters; 3 shared lives + 1 per extra player; up to 5 players.", "About 132 monsters solo at tier 1 up to 402 at tier 15 on a map of typical size (+25% per extra player; a bigger map holds more), in packs of 5-7 over the whole map; about 102-166 alive at once, the rest gather ahead of you as you advance. Most monsters are husks: experience only. Magic and better monsters always carry loot, so a run drops about what fewer, tougher packs did.", "Each extra player: +100% monster health in total (more packs, tougher monsters), +100% guardian health, +10% damage taken; every finisher's chest +12.5% (at most +50%) and +5% kill loot (at most +20%)."}
 						},
 						{
 							h = "Chest (per player)",
@@ -14291,10 +14291,10 @@ CodexData = {
 								{"300", "21%", "22%", "24%", "65%"},
 								{"600", "21%", "21%", "23%", "55%"},
 								{"1000", "21%", "22%", "24%", "40%"},
-								{"650 (own level)", "10%", "5%", "6%", "53%"},
-								{"1000 (own level)", "7%", "4%", "4%", "40%"},
-								{"1300 (own level)", "6%", "3%", "4%", "40%"},
-								{"2000 (own level)", "6%", "3%", "3%", "40%"}
+								{"650 (own level)", "35%", "91%", "100%", "53%"},
+								{"1000 (own level)", "40%", "68%", "74%", "40%"},
+								{"1300 (own level)", "42%", "65%", "71%", "40%"},
+								{"2000 (own level)", "42%", "60%", "66%", "40%"}
 							}
 						},
 						{
