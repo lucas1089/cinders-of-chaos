@@ -1539,6 +1539,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Item looks show on the item, not on the character."] = "A aparência de item aparece no item, não no personagem.",
   ["This shader is not in your client yet."] = "Este shader ainda não está no seu cliente.",
   ["Your client cannot draw outlines yet."] = "Seu cliente ainda não consegue desenhar contornos.",
+  ["Your look cannot ride: the mount is shown with the plain figure."] = "Sua aparência não pode montar: a montaria é mostrada com o boneco simples.",
   -- game_lootbeams/lootbeams.lua, lootbeams.otui (and the button in game_lootfilter/lootfilter.otui)
   ["Loot Beams"] = "Feixes de saque",
   ["Light pillars over corpses with loot these rules make glow: on or off, height, intensity"] = "Colunas de luz sobre os corpos com saque que estas regras fazem brilhar: ligar ou desligar, altura, intensidade",

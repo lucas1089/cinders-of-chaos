@@ -49,6 +49,14 @@ LookPreviewPanel < ChaosPanelDark
       anchors.top: parent.top
       phantom: true
 
+    // the troll of a spell or kill effect scene (LookPreviewCore "the scene")
+    UICreature
+      id: target
+      anchors.left: parent.left
+      anchors.top: parent.top
+      phantom: true
+      visible: false
+
     // the other effects and the missiles, over the creature
     UIWidget
       id: fxOver

@@ -2462,8 +2462,8 @@ wraps the hard-coded texts of these files. Coverage: 2,453 literal keys in 2,998
 ## Look preview (new, `game_lookpreview`; owner: "show a simple character with the effect applied")
 
 One panel, `LookPreviewPanel`, in every window where a look or a visual effect is picked: a dark stage with the
-character drawn large on a `UICreature`, the zoom (2x, 3x or 4x, the largest that fits the body in the stage) under
-it, `<` and `>` to turn, "Turn slowly" (one direction every 1.6 s), "Walk" (walking in place, `setStaticWalking`, as
+character drawn large on a `UICreature`, the zoom under it (always 2x for a look; an effect scene 2x, 1.5x or 1x),
+`<` and `>` to turn, "Turn slowly" (one direction every 1.6 s), "Walk" (walking in place, `setStaticWalking`, as
 the Outfit window's Movement box) and "Simple figure" (the plain figure, "boneco simples": citizen look 128 in greys,
 no addons, mount, wings, aura or shader, so the effect reads on its own; off for a pet). The three boxes are one
 setting for every panel (g_settings node `chaosLookPreview`). By default the character is the player's own outfit as
@@ -2471,10 +2471,44 @@ worn, with the row under the mouse applied, else the row picked.
 
 **The effect is the engine's.** The option becomes outfit fields on the preview creature (look and addons, mount,
 wings, aura, the outfit shader's name) or the outline call (`game_cosmeticfx.applyOutline`, base patch `0038`, which
-draws on a widget's own preview creature), the same paths as the map. The feet stand where `CharSelectCore.figure` and
-`placeRect` put them (the feet anchors of "Where a character stands"); a mounted look is fitted by its mount plus the
-rider. A shader the client has not registered is left off with a note (the engine would draw nothing). No pictures
-stand in for an effect: spell and kill effects are the client's own effect sprites ("Cosmetics effect previews").
+draws on a widget's own preview creature), the same paths as the map. A shader the client has not registered is left
+off with a note (the engine would draw nothing). No pictures stand in for an effect: spell and kill effects are the
+client's own effect sprites ("Cosmetics effect previews").
+
+**Size and centring (owner beta report, 2026-10-20: "some outfit previews are still very big and off-centre", Prince
+of Lands at 4x, cut and shifted left; "make them all the size of this one", Astral Fire at 2x).** Every look is drawn
+at 2x and the box of everything the engine draws is centred in the stage (`LookPreviewCore.lookBox`, `layout`). The
+old layout picked 4x / 3x / 2x from the figure's height and put the feet (`CharSelectCore.figure`) under the middle:
+Prince of Lands (1221) is a low, wide look whose feet (x 17) are 11 sprite px right of its picture's centre (x -12 to
+24), so at 4x it stood 44 px left and its bottom, 5 px below the feet, was cut. The box is per part, placed by the rules
+of `Outfit::draw` (1098 profile, facing south): the pixel bounds of `CharSelectAnchors` (left, top, right; the bottom
+5 px under its ground row) cut down to the tiles of the frame that hold a sprite for the addons worn (`ThingType:
+getSprites`, displacement applied); a thing the table lacks by those tiles alone; the body, mount and aura 6 px up and
+left of the wings (`GameWingOffset`); a positive mount's extra shift and the rider seated on it; a big aura's centring.
+Checked offline against the pixel bounds drawn by those rules from the pair 30 dat and spr (1221, 1213, 128, 2161 with
+addons, mounts 1338 / 1236 / 901, wings 937 / 941 / 1185 / 1179): within 2 sprite px. The shadow is centred under
+the feet, wider for a mount (60% of the body, 22 to 60 px), also under a mounted look.
+
+**Mounts.** `Outfit::draw` draws a mount only under a rider with the mounted pattern (`zPattern = min(1, patternZ -
+1)`); a look without it stands on foot with no mount, on the map too. 33 looks of pair 30 have none, among them the
+class looks 2163 / 2164 (Ranger) and 2080 / 2081 (Monk). The preview then seats the plain figure (look 128, the
+player's colours, no addons) on the mount and says so ("Your look cannot ride: ..."). Not verified in a client which
+look the beta tester wore.
+
+**Wings.** The engine places wings the same way in the preview and on the map (one `Outfit::draw`; the UICreature only
+scales the result): the body 6 px up and left of the wings, each part moved by its own displacement. The wings that
+look out of place are so by their own data, on the map too: 1185 has displacement 8,8 where the other 2x2 wings have
+0,0 and sits 12 px left and 7 px up of the body (the likely "Bride Wings to the left"); 941 and 938 are drawn at the waist; the 3x3 wings 1178
+/ 1179 / 2141 reach 19-22 px above the body. Not changed here (a pair fix of the wings' displacement, as done for the
+Scarlet Glimmer aura, needs the owner's approval of a new pair).
+
+**Effect scenes (owner, 2026-10-20).** A spell skin plays on a scene: the player on the stage's tile facing east and a
+troll (look 15) two tiles east facing west; a missile flies from the player to the troll, the other effects of a row
+with a missile land on the troll, else an effect whose name says it hits (explosion, lightning, strike, bolt, ...) on
+the troll and the others (war cries, novas, auras, portals) around the player (`LookPreviewCore.landsOn`: the server
+sends no spell geometry with a skin). A kill effect plays on a troll alone: it stands 0.6 s, the effect plays on its
+tile and it fades out in 0.35 s, then the loop starts again with it standing. The scene (both creatures' boxes and
+every effect's tiles) is centred in the stage. "Compare with default" works in the spell scene as before.
 
 **API** (`modules.game_lookpreview`): `create(placeholder)` fills a fixed column the window keeps for it and returns
 a handle with `setOption(opt)`, `setHover(opt)` / `clearHover()`, `setOwnOutfit(outfit)`, `refresh()`, `destroy()`;
@@ -2516,9 +2550,9 @@ The Spell Effects tab showed each skin by a store item a few pixels big, and the
   after the other (250 ms apart, 0.9 s pause, then again): an effect is its thing type's frames drawn tile by tile
   with `UISprite` widgets (no `UIMap`, no engine patch: `ThingType:getSprites`, the size, patterns and frames), placed
   as the map places it (bottom-right tile on the target tile + (dx, dy), each tile w x T left and h x T up, minus the
-  displacement); a missile flies from two tiles left and one up into the character with the direction pattern the
-  client would pick. Frame length: the server's `ms` / frames, else 100 ms a frame (the animator's own durations are
-  not in Lua). The scale is the largest of 4x, 3x, 2x, 1.5x and 1x at which every step fits the stage, so an effect
+  displacement); a missile flies from the player to the troll of the scene ("Effect scenes" above) with the direction
+  pattern the client would pick. Frame length: the server's `ms` / frames, else 100 ms a frame (the animator's own durations are
+  not in Lua). The scale is the largest of 2x, 1.5x and 1x at which the scene fits the stage, so an effect
   keeps its size against the character as in the game (a 6 x 4 dome plays at 1x). "Compare with default" (shown when
   a row has stock effects) plays the stock effects first, captioned "Default effects", then "With this skin".
 - **Draw order.** An effect that `g_map.isGroundEffect` reports (base patch `0055`), or that `game_groundfx`'s list
@@ -2530,7 +2564,7 @@ The Spell Effects tab showed each skin by a store item a few pixels big, and the
   falls back to the sprites: the fullest frame's non-empty tiles fitted into the box (`LookPreviewCore.iconLayout`).
   The detail shows the same at 64 px. Footprints show their print; outlines, loot labels and chat colours keep their
   swatch.
-- **Other tabs.** Kill effects play on the character's tile; footprints walk the character over its prints; outlines
+- **Other tabs.** Kill effects play on a troll that dies ("Effect scenes"); footprints walk the character over its prints; outlines
   are drawn on the preview character (`0038`); loot labels and chat colours keep their text samples in the detail.
 - **Preview button** unchanged: spell skins and kill effects ask the server, which sends the effects to this player
   only around the character (1.5 s cooldown); footprints and outlines are drawn by `game_cosmeticfx`.
