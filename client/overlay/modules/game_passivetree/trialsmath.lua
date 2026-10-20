@@ -1,7 +1,7 @@
 -- Vocation Trials panel maths (no client API, tested by trialsmath_test.lua). `state` is the server's trialState
 -- (server/data/scripts/chaos/trials_core.lua clientState): {supported, trial, story, level, tier (cleared), tokens, maxTokens,
 -- switchGold, running, tiers = [{name, minLevel, cleared, problem, time, lives, bossHealth}],
--- pairs = [{pair, tier (difficulty name), locked, held (0/1/2), nodes = [{id, name, lore, lines = [{text, good}], can, why,
+-- pairs = [{pair, tier (difficulty name), locked, held (0/1/2), clear = {can, why}, nodes = [{id, name, lore, lines = [{text, good}], can, why,
 -- switch, needsSpellEvents}]}]}.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 TrialsMath = {}
@@ -63,6 +63,35 @@ function TrialsMath.card(state, entry, side)
     statusColor = can and HELD or BAD,
     tooltip = tr('Replaces %s. Costs 1 Trial Token and %s gold.', tostring(entry.nodes[entry.held] and entry.nodes[entry.held].name or '?'),
       TrialsMath.gold(state.switchGold))}
+end
+
+-- the Clear button of a pair (gives the pair up: no node held, same price as a switch): {enabled, status, tooltip}
+function TrialsMath.clearCard(state, entry)
+  local held = entry.held or 0
+  if state.running then
+    return {enabled = false, tooltip = tr('Nodes cannot be changed while a trial runs.')}
+  end
+  if entry.locked then
+    return {enabled = false, tooltip = TrialsMath.lockTooltip(state, entry)}
+  end
+  if held == 0 then
+    return {enabled = false, tooltip = tr('No node of this pair is held.')}
+  end
+  local can = entry.clear == nil or entry.clear.can == true
+  local node = entry.nodes[held]
+  local tip = tr('Gives up %s and leaves the pair empty. Costs 1 Trial Token and %s gold.', tostring(node and node.name or '?'),
+    TrialsMath.gold(state.switchGold))
+  if not can then
+    tip = tip .. '\n' .. tr('Needs a Trial Token')
+  end
+  return {enabled = can, tooltip = tip}
+end
+
+-- confirmation text before giving a pair up
+function TrialsMath.clearConfirmText(state, entry)
+  local node = entry.nodes[entry.held or 0]
+  return tr('Give up %s and leave this pair empty? It costs 1 Trial Token and %s gold coins. You can choose a node of the pair again later, which costs a token again.',
+    tostring(node and node.name or '?'), TrialsMath.gold(state.switchGold))
 end
 
 -- the Enter button of tier i

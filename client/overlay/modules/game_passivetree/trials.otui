@@ -84,6 +84,14 @@ TrialPairRow < UIWidget
     text-auto-resize: false
     text-align: topLeft
 
+  ChaosButton
+    id: clearButton
+    anchors.top: rowTitle.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    size: 72 22
+    !text: tr('Clear')
+
   TrialCard
     id: cardA
     anchors.top: parent.top

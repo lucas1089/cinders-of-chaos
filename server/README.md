@@ -2078,7 +2078,7 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   planned node that hangs on it. The plan bar (bottom right) shows "Plan: n / free points" (red when short) with Undo,
   Redo (Ctrl+Z / Ctrl+Y, whole plan states, 100 deep) and Clear Plan. "Info & Bonuses" lists the plan's bonuses under
   PLANNED. Apply Plan sends the whole plan once. The Paragon track does not interact (its points are separate).
-- **Server check (`planApply {nodes, masteries}`).** `validatePlan` checks the whole plan like a save, then the plain
+- **Server check (`planApply {nodes, masteries}`).** Ids the character already holds are first left out of the plan (`dropOwned`; a client view that was a step behind is no reason to refuse the rest; a plan of nothing else answers "You already have those nodes" and sends `sendNodes` so the client catches up; 2026-10-20 beta report "Node N is already allocated"). `validatePlan` then checks the whole plan like a save, then the plain
   save's `validateNodes` runs on the final list: a table of 1 to `maxPlanNodes` (300) ids, every id known and not the
   root, no id twice, none already allocated, every node one the class may hold (`ChaosClassTree.allowed`: class sections
   and ascended paths), saved + planned <= points owned, every planned node connected to the start through saved and
@@ -8954,7 +8954,7 @@ clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token 
 bank up to 15: `repeatBankWeeks` 3, storage 7101766, `M.repeatState`, 2026-10-15; the week is
 the shared Monday 06:00 one, `ChaosBounty.week`, key YYYYMMDD of its Monday in storage 7101761: the old day-of-year keys
 YYYYWW made 31 Dec a one-day week 53 and never match a new key, so the first clear after the switch counts from 0). Switching a
-pick or giving a pair up: 1 Trial Token + level x 250 gold, not in combat or during a run. Special nodes use their own
+pick or giving a pair up (the Clear button of each pair row in the Trials window sends `trialChoose` with side 0, `clear {can, why}` in the state): 1 Trial Token + level x 250 gold, not in combat or during a run. A node's max health / mana (`vitality`, `spirit`, e.g. Steelblood +8%) is kept outside the tree's +50% cap (`trialVitality` / `trialSpirit` in the bonus table, like the Paragon share): at the cap it gave nothing (2026-10-20). Special nodes use their own
 combat code (`trials_effects.lua`, about 40 keys, damage dealt bounded 0.25-2.5 and taken 0.3-2.0), are separate from the
 passive points, survive every tree reset, and are not in build codes. Ten nodes use spell cost / cooldown keys and need
 engine patch 0008. Crash recovery: a marker storage moves the character out at the next login. Tests:

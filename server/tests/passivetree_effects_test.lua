@@ -63,6 +63,15 @@ applyAll(p, {})
 assert(added[7220] == nil, "vitality condition removed")
 assertEq(speed(), 0, "speed removed")
 assert(added[7200] == nil, "condition removed")
+-- a Vocation Trial node's max health (Steelblood +8%) is not cut by the tree's own +50% cap
+applyAll(p, {vitality = 58, trialVitality = 8})
+assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 158, "tree capped at 50, plus the trial's 8")
+applyAll(p, {vitality = 30, trialVitality = 8})
+assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 130, "under the cap: the plain sum")
+applyAll(p, {vitality = 70})
+assertEq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 150, "no trial node: the cap as before")
+applyAll(p, {})
+assert(added[7220] == nil, "the trial node dropped: no condition left")
 -- damage event
 ChaosPassiveCache[7] = b
 local ev = registered["ChaosPassiveDealt"]

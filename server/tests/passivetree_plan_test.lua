@@ -280,6 +280,22 @@ inserts, sent = {}, {}
 ext.onExtendedOpcode(p, OP, {action = "planApply", data = {nodes = {631}}})
 ext.onExtendedOpcode(p, OP, {action = "planApply", data = {nodes = {}}})
 check(#inserts == 1, "the second apply inside a second is dropped")
+-- a plan made from a view that was a step behind: nodes the server already holds are left out, not an error
+rows = {{preset = 1, name = "Preset 1", nodes = "626,627,628,629,630,631,665|665:2"}}
+res = call("planApply", {nodes = {630, 631}})
+check(res and not res.ok and res.message:find("already have") and #inserts == 0, "only held nodes: nothing saved, the tree is sent again: " .. tostring(res and res.message))
+check(nodesSent() ~= nil, "the client catches up with sendNodes")
+res = call("planApply", {nodes = {631, 630, 632, 633}})
+check(res and not res.ok and res.message:find("another class") and #inserts == 0, "the rest is still checked")
+local dp, dn = C.dropOwned({1, 2, 3}, {nodes = {2, 4, 3, 5}, masteries = {{id = 3, choice = 1}, {id = 5, choice = 2}}})
+check(dn == 2 and #dp.nodes == 2 and dp.nodes[1] == 4 and dp.nodes[2] == 5, "dropOwned keeps the new nodes in order")
+check(#dp.masteries == 1 and dp.masteries[1].id == 5, "dropOwned drops the choices of held nodes (a list)")
+dp, dn = C.dropOwned({1, 2}, {nodes = {2, 4}, masteries = {[2] = 1, [4] = 3}})
+check(dn == 1 and dp.masteries[2] == nil and dp.masteries[4] == 3, "dropOwned on a map of choices")
+local same
+same, dn = C.dropOwned({1}, {nodes = {2}})
+check(dn == 0 and same.nodes[1] == 2, "dropOwned: nothing held, the same plan")
+check(select(2, C.dropOwned({1}, "x")) == 0, "dropOwned leaves a malformed plan to validatePlan")
 -- the old plain save still refuses a new mastery without an effect, and keeps saved choices
 rows = {{preset = 1, name = "Preset 1", nodes = "626,627,628"}}
 clock = clock + 2000

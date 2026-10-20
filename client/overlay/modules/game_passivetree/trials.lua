@@ -1,6 +1,6 @@
 -- Vocation Trials panel of the passive tree window. The server (server/data/scripts/chaos/trials.lua) owns the rules and
 -- checks everything again; this panel shows its trialState and sends:
---   trialRequest -> trialState, trialChoose {pair, side} (side 0 gives a pair up), trialEnter {tier}, trialLeave
+--   trialRequest -> trialState, trialChoose {pair, side} (side 0 gives a pair up: the Clear button of each row), trialEnter {tier}, trialLeave
 -- Maths and texts in trialsmath.lua. The window, the node cards and the tier buttons are in trials.otui (ornate skin styles).
 -- The run itself is shown by the rift HUD (game_rift): clock, lives, progress.
 ChaosTreeHandlers = ChaosTreeHandlers or {}
@@ -83,6 +83,9 @@ local function refreshTrials()
     row.rowTitle:setColor(entry.locked and '#8c8070' or COLOR_TITLE)
     setCard(row.cardA, s, entry, 1)
     setCard(row.cardB, s, entry, 2)
+    local clearInfo = TrialsMath.clearCard(s, entry)
+    row.clearButton:setEnabled(clearInfo.enabled)
+    row.clearButton:setTooltip(clearInfo.tooltip)
   end
 end
 
@@ -113,6 +116,25 @@ function chooseTrialNode(pair, side)
   }, ok, closeConfirm)
 end
 
+-- gives a pair up: no node held (trialChoose side 0); the server charges what a switch costs
+function clearTrialPair(pair)
+  local s = trialsState
+  if not s or not s.supported or not s.pairs[pair] or (s.pairs[pair].held or 0) == 0 then
+    return
+  end
+  local entry = s.pairs[pair]
+  closeConfirm()
+  local function ok()
+    sendAction('trialChoose', {pair = pair, side = 0})
+    closeConfirm()
+  end
+  confirmBox = displayGeneralBox(tr('Give up a node'), TrialsMath.clearConfirmText(s, entry), {
+    {text = tr('Ok'), callback = ok},
+    {text = tr('Cancel'), callback = closeConfirm},
+    anchor = AnchorHorizontalCenter
+  }, ok, closeConfirm)
+end
+
 function enterTrialTier(tier)
   if trialsState and trialsState.supported then
     closeTrials()
@@ -137,6 +159,9 @@ function openTrials()
     trialsWindow = g_ui.loadUI('trials', tree)
     for p = 1, 3 do
       local row = trialsWindow.content.pairsPanel['row' .. p]
+      row.clearButton.onClick = function()
+        clearTrialPair(p)
+      end
       for _, id in ipairs({'cardA', 'cardB'}) do
         local card = row[id]
         local pair = p

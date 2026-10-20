@@ -113,6 +113,24 @@ eq(p.gold, 1000000 - 300 * Chaos.trials.switch.goldPerLevel, "gold taken by leve
 eq(p:getStorageValue(S.tokens), 0, "token spent")
 eq(T.picks(p, 8)[1], 2, "now holding the other node")
 eq(achieved.trial_switches, 1, "achievement: a switch")
+-- Steelblood (Juggernaut pair 2 B, +8% max health) reaches the bonus table apart from the tree's sum (outside its cap) and
+-- leaves it again when the other node is chosen
+do
+	local jp = newPlayer(8, 300, 1000000)
+	jp:setStorageValue(S.tierBase + 8, 2)
+	jp:setStorageValue(S.tokens, 2)
+	ok(T.choose(jp, 2, 1), "Juggernaut pair 2: the first node")
+	ok(T.choose(jp, 2, 2), "Juggernaut pair 2: switched to Steelblood")
+	local vb = {vitality = 55}
+	T.addBonuses(jp, vb)
+	eq(vb.vitality, 63, "Steelblood adds to the tree's vitality")
+	eq(vb.trialVitality, 8, "and is named apart for the cap")
+	ok(T.choose(jp, 2, 1), "switched back")
+	vb = {vitality = 55}
+	T.addBonuses(jp, vb)
+	eq(vb.vitality, 55, "the old node's vitality is gone")
+	eq(vb.trialVitality, nil, "no trial vitality left")
+end
 -- a locked pair, the same node, a bad pair
 ok(not T.choose(p, 3, 1), "pair 3 is locked")
 ok(not T.choose(p, 1, 2), "holding it already")

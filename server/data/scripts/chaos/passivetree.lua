@@ -337,8 +337,17 @@ local function handlePlanApply(player, data)
 	local rows = loadPresets(guid)
 	local active = activePreset(rows)
 	local tree = getTree()
+	-- nodes already held are not an error: the client's view was behind (a refund, a reply still on its way). They are
+	-- left out of the plan; a plan of nothing else answers with the saved tree so the client catches up.
+	local plan, dropped = Core.dropOwned(active and active.nodes or {}, type(data) == "table" and data or nil)
+	if dropped > 0 and type(plan.nodes) == "table" and #plan.nodes == 0 then
+		planResult(player, false, "You already have those nodes. Your tree was refreshed.")
+		sendNodes(player, rows)
+		sendPoints(player, rows)
+		return
+	end
 	local result, err = Core.validatePlan(tree, active and active.nodes or {}, active and active.masteries or {},
-		type(data) == "table" and data or nil, {
+		plan, {
 			classKey = ChaosPassiveTree.classKey(player), allowed = ChaosClassTree.allowed, points = totalPoints(player),
 			maxNodes = planCfg.maxPlanNodes
 		})
