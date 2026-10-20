@@ -21,6 +21,9 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` and the review itself (docs/legal/README.md "Placeholders" and "Check" item 17). It
   must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
   (section 6) and the pack prices go to the same review.
+- [ ] **Wings placement (pair 31, a check).** Fiery Wings, Lullaby Wings and Bride Wings get new displacements
+  (client/MANIFEST.md "Wings displacement"). Confirm the before / after look, then approve pair 31 for windows-assets.
+  Also look at Gloomgild and Sunforged Wings (2231 / 2232): offline they stand apart from the body, not changed yet.
 - [ ] **Referral link.** Set `shareUrl` in `server/data/scripts/chaos/referral_config.lua` to
   `https://<site>/register.php?ref=` once the domain exists, so the client shows the link too.
 - [ ] **Character Bazaar cron.** Add the cron line of `website/README.md` "Character Bazaar" on the live site.

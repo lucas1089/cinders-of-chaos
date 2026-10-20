@@ -20,6 +20,11 @@ python3 -I fix_pair_warnings.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --
         --wings: the same for wings looks, drawn by the wings rule (the frame's bottom-right tile on the creature's
         tile, no centring offset).
 
+python3 -I fix_pair_warnings.py --ours-dat P/Tibia.dat --ours-spr P/Tibia.spr --scan-wings-displacement [--looks IDS]
+        (writes nothing) for each wings look of IDS (default --wings-looks): its displacement and, per direction, the
+        centre of its art minus the centre of the body WING_BODY, both drawn by the engine's wings rule (see the wings
+        premise below); "premise ok" marks a look 2x2 or larger whose south centre is outside WING_BOX.
+
 The spec CSV (kind, cat, id, group, arg, reason) lists every fix; nothing else in the pair changes. Kinds:
   durations          arg "P:MS" or "P-Q:MS": phases P..Q of the group's animator get min = max = MS. A phase must
                      be 0 ms (or MS already). Async, loop count and start phase stay as they are.
@@ -46,6 +51,12 @@ The spec CSV (kind, cat, id, group, arg, reason) lists every fix; nothing else i
                      (all phases and layers), drawn by the client's aura rule (GameBigAurasCenter: the frame moves
                      (w-1)*16, (h-1)*16 right / down, then back by the displacement and (w-1)*32, (h-1)*32), the
                      median of the four directions. The stock ground auras (932-934) and 1487 put it 1-7 px up-left.
+                     A wings look (--wings-looks, default WINGS_LOOKS) has its own premise: X, Y may be negative
+                     (-32..32; GameNegativeOffset; the body's negative-offset pass ignores wings) and any old
+                     displacement is replaced. Every frame group 2x2 or larger, and facing south the centre of the
+                     wings minus the centre of the body (wing_offset) is outside WING_BOX with the old displacement
+                     and inside it with X, Y. The engine (Outfit::draw with GameWingOffset) draws the wings at the
+                     creature's place and the body 6, 6 up-left of it, each moved by its own displacement.
 group is a frame-group index or "*" (all groups). Outfits only for the last three kinds.
 
 Idempotent: a fix that is already applied changes nothing, so a run on its own output gives the same files.
@@ -74,6 +85,12 @@ FEET_STOCK = 24     # feet line of the stock player looks (displacement 8,8): ro
 FEET_LOW = 5        # displacement premise: feet line at least this far below FEET_STOCK with no displacement
 AURA_OFF = 8        # aura displacement premise: art centre at least this far right and below the tile centre
 AURA_NEAR = 6       # aura displacement premise: with the new displacement the centre within this of the tile centre
+WING_BODY = 128     # wings premise: the body the wings are measured against (stock citizen, displacement 8,8)
+WING_OFFSET = 6     # GameWingOffset: the body draws this many px up and left of the wings
+WING_BOX = (5, -23, 0)   # wings premise: south centre minus the body's within |x| <= 5 and -23 <= y <= 0 (the stock
+                         # wings sit at x -3.1..+3.9, y -21.5..-4.2 facing south; pair 30)
+# the wings looks of wings.xml: base 1-15, Chaos 16-29 (install_outfits.py, chaos_theme_art.lua, chaos_owner_art.lua)
+WINGS_LOOKS = '937-941,1177-1186,1486,2140-2142,2187,2225-2233'
 TEMPLATE = {bytes(c) for c in ((255, 255, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255))}   # mask colours (RGB)
 
 
@@ -179,8 +196,46 @@ def art_centre(t, spr, disp, wings=False):
     return round(med(cx), 1), round(med(cy), 1)
 
 
-def set_displacement(row, t, chunks, spr, log, auras=()):
-    """the `displacement` fix: edit chunks (flag list) in place (auras: the aura look ids, own premise)."""
+def mean_px(t, spr, d, phases, layers, disp):
+    """alpha-weighted mean (x, y) of the art of direction d (idle group) from the creature's tile top left, drawn with
+    displacement disp; None when empty."""
+    g = t.groups[0]
+    sx = sy = n = 0
+    for ph in phases:
+        for layer in layers:
+            for hh in range(g.h):
+                for ww in range(g.w):
+                    sid = g.sprites[cp.sprite_index(g, x=d, layer=layer, phase=ph, ww=ww, hh=hh)]
+                    for i, v in decode(spr, sid).items():
+                        if v[3]:
+                            sx += v[3] * ((g.w - 1 - ww) * 32 + i % 32)
+                            sy += v[3] * ((g.h - 1 - hh) * 32 + i // 32)
+                            n += v[3]
+    if not n:
+        return None
+    return sx / n - (g.w - 1) * 32 - disp[0], sy / n - (g.h - 1) * 32 - disp[1]
+
+
+def wing_offset(t, body, spr, disp, d=2):
+    """(x, y) px of the wings' art centre (all phases and layers, displacement disp) minus the body's (phase 0, layer
+    0, its own displacement, WING_OFFSET up-left), facing d (2 = south); None when either is empty."""
+    g = t.groups[0]
+    if d >= g.px or d >= body.groups[0].px:
+        return None
+    w = mean_px(t, spr, d, range(g.phases), range(g.layers), disp)
+    b = mean_px(body, spr, d, [0], [0], body.flag('displacement') or (0, 0))
+    if w is None or b is None:
+        return None
+    return round(w[0] - b[0] + WING_OFFSET, 1), round(w[1] - b[1] + WING_OFFSET, 1)
+
+
+def in_wing_box(c):
+    return c is not None and abs(c[0]) <= WING_BOX[0] and WING_BOX[1] <= c[1] <= WING_BOX[2]
+
+
+def set_displacement(row, t, chunks, spr, log, auras=(), wings=(), body=None):
+    """the `displacement` fix: edit chunks (flag list) in place (auras: the aura look ids, wings: the wings look ids,
+    each with its own premise; body: the WING_BODY outfit)."""
     if t.cat != 'outfit':
         raise SystemExit(f'{t.ref}: displacement is for outfits')
     if row['group'] != '*':
@@ -189,19 +244,30 @@ def set_displacement(row, t, chunks, spr, log, auras=()):
         x, y = (int(v) for v in row['arg'].split(','))
     except ValueError:
         raise SystemExit(f'{t.ref}: displacement arg {row["arg"]!r} is not "X,Y"')
-    if not (0 <= x <= 32 and 0 <= y <= 32) or (x, y) == (0, 0):
-        raise SystemExit(f'{t.ref}: displacement {x},{y} out of range (1..32)')
+    lo = -32 if t.id in wings else 0
+    if not (lo <= x <= 32 and lo <= y <= 32) or (x, y) == (0, 0):
+        raise SystemExit(f'{t.ref}: displacement {x},{y} out of range ({lo or 1}..32)')
     new = (25, b'\x19' + struct.pack('<hh', x, y))
     old = [c for c in chunks if c[0] == 25]
     if old and old[0][1] == new[1]:
         return                                      # already applied
-    if old and old[0][1] != b'\x19' + struct.pack('<hh', 0, 0):
-        cur = struct.unpack_from('<hh', old[0][1], 1)
+    cur = struct.unpack_from('<hh', old[0][1], 1) if old else None
+    if old and cur != (0, 0) and t.id not in wings:
         raise SystemExit(f'{t.ref}: already has displacement {cur[0]},{cur[1]}, not none or 0,0')
     for gi, g in enumerate(t.groups):
         if g.w < 2 or g.h < 2:
             raise SystemExit(f'{t.ref} group {gi}: {g.w}x{g.h}, not 2x2 or larger')
-    if t.id in auras:
+    if t.id in wings:
+        if body is None:
+            raise SystemExit(f'{t.ref}: no body outfit {WING_BODY} to measure the wings against')
+        c0, c1 = wing_offset(t, body, spr, cur or (0, 0)), wing_offset(t, body, spr, (x, y))
+        if in_wing_box(c0):
+            raise SystemExit(f'{t.ref}: wings centre {c0} px from the body facing south with the old displacement, '
+                             f'inside the stock range {WING_BOX}: it is not misplaced')
+        if not in_wing_box(c1):
+            raise SystemExit(f'{t.ref}: wings centre {c1} px from the body facing south with {x},{y}, outside the '
+                             f'stock range {WING_BOX}: the displacement does not place it')
+    elif t.id in auras:
         c0, c1 = art_centre(t, spr, (0, 0)) or (0, 0), art_centre(t, spr, (x, y)) or (0, 0)
         if min(c0) < AURA_OFF:
             raise SystemExit(f'{t.ref}: aura art centre {c0} px from the tile centre with no displacement, not '
@@ -220,7 +286,7 @@ def set_displacement(row, t, chunks, spr, log, auras=()):
                              f'{FEET_STOCK}: it does not stand low')
     if old:
         chunks[chunks.index(old[0])] = new
-        log.append(('*', 'displacement', 'flag 25', '0,0', f'{x},{y}'))
+        log.append(('*', 'displacement', 'flag 25', f'{cur[0]},{cur[1]}', f'{x},{y}'))
     else:
         k = next((i for i, c in enumerate(chunks) if c[0] > 25 and c[0] != 254), len(chunks))
         chunks.insert(k, new)
@@ -389,15 +455,16 @@ def groups_sig(g):
     return tuple(tuple(g.sprites) if k == 'sprites' else anim if k == 'anim' else getattr(g, k) for k in cp.Group.__slots__)
 
 
-def semantic_ok(row, ot, nt, kinds=()):
-    """the new thing differs from the old one only in what its fix may change (kinds: every fix kind of the thing)."""
+def semantic_ok(row, ot, nt, kinds=(), wings=()):
+    """the new thing differs from the old one only in what its fix may change (kinds: every fix kind of the thing;
+    wings: the wings looks, whose old displacement may be any value)."""
     kind = row['kind']
     strip = lambda fl: [f for f in fl if f[0] != 25]
     if kind == 'displacement':
         x, y = (int(v) for v in row['arg'].split(','))
         if strip(ot.flags) != strip(nt.flags) or nt.flag('displacement') != (x, y):
             return False
-        if ot.flag('displacement') not in (None, (0, 0), (x, y)):
+        if ot.id not in wings and ot.flag('displacement') not in (None, (0, 0), (x, y)):
             return False
         if set(kinds) - {'displacement'}:
             return True                     # the other fixes of the thing check its frame groups
@@ -521,6 +588,32 @@ def scan_aura_displacement(things, spr, ids, wings=()):
     return found
 
 
+def scan_wings_displacement(things, spr, ids):
+    outs = things['outfit']
+    body = outs[WING_BODY - 1]
+    found = []
+    for o in sorted(ids):
+        if not 1 <= o <= len(outs):
+            raise SystemExit(f'outfit {o} is not in the pair')
+        t = outs[o - 1]
+        if cp.is_blank(t):
+            continue
+        disp = t.flag('displacement')
+        cs = [wing_offset(t, body, spr, disp or (0, 0), d) for d in range(4)]
+        if cs[2] is None:
+            continue
+        off = not in_wing_box(cs[2]) and all(gr.w > 1 and gr.h > 1 for gr in t.groups)
+        if off:
+            found.append(o)
+        g = t.groups[0]
+        dirs = '  '.join(f'{n} {c[0]:+},{c[1]:+}' for n, c in zip('NESW', cs) if c is not None)
+        print(f'  wings {o}: {g.w}x{g.h}, displacement {"none" if disp is None else "%d,%d" % disp}, centre minus '
+              f'body {dirs}{"; premise ok (outside the stock range)" if off else ""}')
+    print(f'{len(found)} wings looks face south outside |x| <= {WING_BOX[0]}, {WING_BOX[1]} <= y <= {WING_BOX[2]} '
+          f'of the body {WING_BODY}: ' + (','.join(map(str, found)) or 'none'))
+    return found
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     ap.add_argument('--ours-dat', required=True)
@@ -535,10 +628,21 @@ def main(argv=None):
     ap.add_argument('--scan-aura-displacement', action='store_true',
                     help='list aura (--looks) and wings (--wings) looks with their art centre, write nothing')
     ap.add_argument('--wings', default='', help='with --scan-aura-displacement: wings look ids')
+    ap.add_argument('--scan-wings-displacement', action='store_true',
+                    help='list wings looks (--looks, default --wings-looks) with their centre minus the body, write nothing')
+    ap.add_argument('--wings-looks', default=WINGS_LOOKS, help='outfit ids that are wings (own displacement premise)')
     ap.add_argument('--aura-looks', default=None, help='outfit ids that are auras (own displacement premise; default: '
                     'client ids of server/data/XML/chaos_auras*.csv)')
     a = ap.parse_args(argv)
     auras = cp.default_auras() if a.aura_looks is None else parse_ids(a.aura_looks)
+    wings = parse_ids(a.wings_looks)
+    if a.scan_wings_displacement:
+        with open(a.ours_dat, 'rb') as f:
+            _, _, things, _ = cp.parse_dat(f.read(), None)
+        spr = cp.SprFile(a.ours_spr)
+        scan_wings_displacement(things, spr, parse_ids(a.looks) or wings)
+        spr.close()
+        return 0
     if a.scan_aura_displacement:
         with open(a.ours_dat, 'rb') as f:
             _, _, things, _ = cp.parse_dat(f.read(), None)
@@ -588,7 +692,8 @@ def main(argv=None):
         for row in rows:
             log = []
             if row['kind'] == 'displacement':
-                set_displacement(row, t, chunks, spr, log, auras)
+                body = things['outfit'][WING_BODY - 1] if len(things['outfit']) >= WING_BODY else None
+                set_displacement(row, t, chunks, spr, log, auras, wings, body)
             else:
                 apply_fix(row, t, spr, log)
             for gi, field, where, old, new in log:
@@ -633,7 +738,7 @@ def main(argv=None):
                 ot0 = old_things[key][0]
                 ot0.groups = old_things[key][1]
                 for row in by_thing[key]:
-                    if not semantic_ok(row, ot0, nt, [r['kind'] for r in by_thing[key]]):
+                    if not semantic_ok(row, ot0, nt, [r['kind'] for r in by_thing[key]], wings):
                         raise SystemExit(f'verify: {ot.ref} changed beyond its fix ({row["kind"]})')
                 if ob != nb:
                     changed.add(key)
