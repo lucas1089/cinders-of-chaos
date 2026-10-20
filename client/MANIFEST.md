@@ -2037,7 +2037,7 @@ items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are 
 - Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
   approved it. Not run in a live client by us.
 
-## Ornate wings re-centred (pair 32: outfits 2231, 2232, `tools/sprites/gen_owner_art.py` WING_SHIFT, `art_import/owner_wings_fix.csv`; built twice, NOT pushed to windows-assets)
+## Ornate wings re-centred (pair 32: outfits 2231, 2232, `tools/sprites/gen_owner_art.py` WING_SHIFT, `art_import/owner_wings_fix.csv`; on windows-assets 1f109dc0, owner approved)
 Gloomgild Wings (2231, wings.xml 27, the Nyxareth drop) and Sunforged Wings (2232, wings.xml 28, the Cinderheart drop),
 found while checking the wings for pair 31. The owner's ornate sheet draws each direction around its own point: two
 separate wings with a gap for the body, and the gap moves from column to column. Against the body (the "Wings
@@ -2072,12 +2072,12 @@ sprites, 373 appended), 38,092 items, 2,384 outfits, 854 effects, 188 missiles. 
 importer verified 576 sprite slots pixel-identical to the sheets and every other thing byte-identical.
 - `check_pair.py`: append-only with `outfit:2231,2232`: 0 errors (without it: 2 errors). Full check: 0 errors, 124
   warnings, line for line those of pair 31; INFO `spr-unused` 29,938 -> 30,270 (the two wings' old records).
-- `outfit_anchors.lua` stays pair 31's until pair 32 is on windows-assets (CI's live pair job checks it against the
-  live pair); regenerate it from pair 32 in the same step (it changes the md5 and the rows 2231, 2232).
+- `outfit_anchors.lua` regenerated from pair 32 with the push (the md5 and the rows 2231, 2232).
 - `things-1098.tar.xz` (the pair 30 / 31 recipe): 88,033,268 bytes, sha256
-  54405b25e7e00a6fff72e32f21f89fb34f8aee69dd66a55652e079613a8ea52b, packed twice with the same sha256. **Not pushed:**
-  the owner approves it first. No server change. A client on pair 31 keeps drawing the two wings off.
-- Checked offline only: a before / after sheet on look 128, four directions. Not run in a live client.
+  54405b25e7e00a6fff72e32f21f89fb34f8aee69dd66a55652e079613a8ea52b, packed twice with the same sha256. **On windows-assets
+  since 2026-10-20 (1f109dc0, owner approved).** No server change. A client on pair 31 keeps drawing the two wings off.
+- Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
+  client by us.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

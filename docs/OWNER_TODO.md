@@ -21,9 +21,6 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   `[REGRAS DE DIVULGAÇÃO DO CRIADOR]` and the review itself (docs/legal/README.md "Placeholders" and "Check" item 17). It
   must be reviewed before the Bazaar and creator codes are switched on for players. The Terms' new helper sentence
   (section 6) and the pack prices go to the same review.
-- [ ] **Gloomgild and Sunforged Wings (pair 32, a check).** Their art is moved per direction so the wings sit on the
-  body in all four directions (client/MANIFEST.md "Ornate wings re-centred"). Confirm the before / after look, then
-  approve pair 32 for windows-assets.
 - [ ] **Referral link.** Set `shareUrl` in `server/data/scripts/chaos/referral_config.lua` to
   `https://<site>/register.php?ref=` once the domain exists, so the client shows the link too.
 - [ ] **Character Bazaar cron.** Add the cron line of `website/README.md` "Character Bazaar" on the live site.
