@@ -1982,6 +1982,61 @@ Intermediate md5s (dat / spr), items after the step:
   (the owner approves after the import). The tree keeps pair 29's `Tibia.dat` md5 reference and `outfit_anchors.lua`
   until the switch-on (`ChaosPack30Art.PAIR30`, off). Not run in a client with the real pair.
 
+## Wings displacement (pair 31: outfits 937, 938, 1185, `tools/sprites/fix_pair_warnings.py` kind `displacement`; on windows-assets ed7db076, owner approved)
+Owner beta report (2026-10-20): "Lullaby Wings below the body, Bride Wings to the left, Fiery Wings shifted", in the
+Outfit window and on the map. The names are the base `data/XML/wings.xml` (base server download on windows-assets;
+the base tree is not in git): 1 Fiery Wings 937, 2 Lullaby Wings 938, 3 Falanaar Wings 939, 4 Vampire Wings 940,
+5 Bark Wings 941, 6 Electric Rider Wings 1177, 7 Vorondor Flames 1178, 8 Mortis Mirage 1179, 9 Angelic Wings 1180,
+10 Nimbus Wings 1181, 11 Butterfly Wings 1182, 12 Dreadbone Spectra 1183, 13 Enslaved Wings 1184, 14 Bride Wings 1185,
+15 Strenght Wings 1186 (sic). 16-29 are ours (1486, 2140-2142, 2187, 2225-2233; server/README.md "Exclusives").
+Only the dat changes: three wings get a new displacement (dat byte 25). No sprite is added or edited.
+- Draw rule (`Outfit::draw` of the base client, 1098 profile with GameWingOffset; the same in a widget and on the map):
+  the wings draw at the creature's place, the body 6, 6 up-left of it (`dest -= Point(6, 6)`), each moved back by its
+  own displacement and (w-1)*32, (h-1)*32. A wings pixel lands at (x - dx - (w-1)*32, y - dy - (h-1)*32). Body or
+  mount negative displacement uses its own pass (`usesNegativeDisplacement`); wings take no part in it, so a negative
+  wings displacement only moves the wings (GameNegativeOffset is on; 2231 / 2232 already have -6,-12).
+- Measure (`--scan-wings-displacement`, `wing_offset`): per direction the alpha-weighted mean of the wings' art (idle
+  group, every phase and layer) minus that of the body, the stock citizen look 128 (8,8, phase 0, layer 0), both drawn
+  by that rule; px, + = right / down. Facing south the stock wings sit at x -3.1..+3.9, y -21.5..-4.2: tall wings
+  further up. Premise box `WING_BOX`: |x| <= 5, -23 <= y <= 0. Pair 30, facing south:
+  937 +0.6,+1.5 (wings at the waist); 938 +2.5,+4.3 (below the waist); 1185 -11.6,-7.2 with 8,8 (12 px left; the only
+  2x2 wings with 8,8, the others use none or 0,0; N -11.7 too); 1186 -3.7,-7.7 (1,8) and 941 +2.2,-5.4 look right on
+  the sheet and stay. Also outside the box: 939 +0.3 y (0.3 px; looks right), 2233 -5.1 x (looks right) and the owner
+  art 2231 / 2232 (Gloomgild, Sunforged; -6,-12) at -12.6,-5.7: on the sheet the two wings stand apart, far left of
+  the body facing south and split facing north. Not reported, not changed here: art or displacement, the owner's call.
+- Fixes (`pair_fixes/fixes.csv`, `pair_fixes/pair31_changes.csv`, picked by eye on a before / after sheet, then the
+  premise): 937 none -> 0,6 (S +0.6,-4.5; up 6 px, toward its sibling art Cinder Plumes 1486 at 4,5: -10.0);
+  938 none -> 0,8 (S +2.5,-3.7; up 8 px); 1185 8,8 -> -4,8 (S +0.4,-7.2; right 12 px, height kept).
+- `fix_pair_warnings.py`: the `displacement` kind has a wings premise for looks of `--wings-looks` (default
+  `WINGS_LOOKS`, the 29 looks above): X, Y in -32..32, any old displacement is replaced, every frame group 2x2 or
+  larger, the south centre outside `WING_BOX` with the old value and inside with the new one. Auras and player looks
+  are unchanged. New `--scan-wings-displacement [--looks IDS]`. Tests: `fix_pair_warnings_test.py`
+  `test_wings_displacement` (inserted, 8,8 replaced by a negative value, a no-op on its output, each refusal, the scan).
+
+```
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr --scan-wings-displacement
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr \
+    --out-dir pair31 --expect-dat-md5 8156792438dabee3aa768663d57a1619 --link-spr \
+    --changes-out client/tools/sprites/pair_fixes/pair31_changes.csv
+python3 -I client/tools/sprites/check_pair.py pair31/Tibia.dat pair31/Tibia.spr \
+    --old pair30/Tibia.dat pair30/Tibia.spr --allow-changed 'outfit:937,938,1185'
+```
+Input pair 30 (the windows-assets archive at 8075c7e, sha256 c3a13c0f... checked against SHA256SUMS.parts; dat
+8156792438dabee3aa768663d57a1619, spr 7ca9981f628cb639a52d1316ae2d9ddc). Output **pair 31**: dat
+f139cdb4be9f692f262fe4a4587697a0 (5,726,926 bytes, +10), spr 7ca9981f628cb639a52d1316ae2d9ddc (unchanged), 38,092
+items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are no-ops on pair 30. 3 things changed,
+41,416 byte-identical. Built twice with identical md5s and changes csv; a run on its own output changes nothing.
+- `check_pair.py`: append-only with `outfit:937,938,1185`: 0 errors (without it: 3 errors). Full check: 0 errors, 124
+  warnings, line for line those of pair 30.
+- `things-1098.tar.xz` like pair 30's (the same tar and `xz -9 -T0` flags, mtime 2026-10-20 00:00Z; that recipe
+  rebuilds pair 30's archive to its sha256): 88,006,208 bytes, sha256
+  83075e18d35a55a59ca5c1cf73aef7740859ac002312d0d9767d15e62b2d1a52, packed twice with the same sha256; unpacks to the
+  md5s above. **On windows-assets since 2026-10-20 (ed7db076, owner approved).** No server change: the look ids stay. A client on pair 30
+  keeps drawing the three wings off.
+  `outfit_anchors.lua` (character select) regenerated from pair 31: the md5 and the rows 937, 938, 1185.
+- Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
+  approved it. Not run in a live client by us.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

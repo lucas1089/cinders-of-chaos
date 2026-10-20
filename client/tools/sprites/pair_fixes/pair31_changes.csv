@@ -1,0 +1,4 @@
+cat,id,group,field,where,old,new,reason
+outfit,937,*,displacement,flag 25,none,"0,6","Fiery Wings (wings.xml 1): no displacement, so facing south the wings sat at the body's waist (centre +0.6,+1.5 px from the body by the engine's wings rule; the stock wings -21.5..-4.2); 0,6 lifts them to the shoulders, -4.5 px, toward its sibling art Cinder Plumes 1486 (4,5: -10.0) (pair 31)"
+outfit,938,*,displacement,flag 25,none,"0,8","Lullaby Wings (wings.xml 2): no displacement, so facing south the wings hung below the body's waist (centre +2.5,+4.3 px from the body); 0,8 lifts them 8 px to the shoulders, -3.7 px (pair 31)"
+outfit,1185,*,displacement,flag 25,"8,8","-4,8","Bride Wings (wings.xml 14): displacement 8,8, the only 2x2 wings with it, so facing north and south the wings stood 12 px left of the body (centre -11.6,-7.2 px); -4,8 centres them, +0.4,-7.2, height kept (pair 31)"
