@@ -56,7 +56,6 @@
 	<loot>
 		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="9006" countmax="1" chance="5"/><!-- toy spider -->
 		<item id="8888" countmax="1" chance="333"/><!-- armors -->
 		<item id="2500" countmax="1" chance="333"/>
 		<item id="2472" countmax="1" chance="333"/>
@@ -73,6 +72,5 @@
 		<item id="2537" countmax="1" chance="286"/>
 		<item id="2514" countmax="1" chance="286"/>
 		<item id="2499" countmax="1" chance="286"/>
-		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
 	</loot>
 </monster>

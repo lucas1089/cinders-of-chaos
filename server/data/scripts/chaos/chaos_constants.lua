@@ -8,6 +8,17 @@
 --
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics). Do not use 5.3-only syntax here.
 
+-- the seven item rarities (names, order, the mapping of the 15 old ids): every script that has Chaos has ChaosRarity
+if not ChaosRarity then
+	-- the server folder is the working directory; the client tests run from the repository root
+	if not pcall(dofile, "data/lib/chaos_rarity.lua") then
+		pcall(dofile, "server/data/lib/chaos_rarity.lua")
+	end
+	if not ChaosRarity then
+		dofile("data/lib/chaos_rarity.lua") -- fails with the real error
+	end
+end
+
 if Chaos then
 	-- the first load can come from a spell (classes.lua), outside the Scripts interface: the opcode dispatch's engine
 	-- events are made on the load that can make them (Chaos.opcodeDispatch.install)
@@ -110,7 +121,7 @@ Chaos.candlemarksTables = {accounts = "chaos_candlemarks", progress = "chaos_can
 -- (modules/game_itemrarity); tests/item_tooltip_test.lua checks the three. item:getClientAttributes() returns them.
 -- ---------------------------------------------------------------------------
 Chaos.itemAttr = {
-	rarity = 1, -- custom attribute "rarity" (1..15)
+	rarity = 1, -- custom attribute "rarity" (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; an old item 1..15)
 	level = 2, -- custom attribute "combatPowerLevel" (item level)
 	locked = 3, -- custom attribute "chaos_locked" (the item lock)
 	unique = 4, -- custom attribute "chaos_unique" present
@@ -134,7 +145,7 @@ Chaos.storage = {
 	dailyLastClaim = 7100002, -- YYYYMMDD of the last claim (int32 safe)
 
 	stashRemote = 7100010, -- >0 : player may keep the stash window open while walking
-	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot migration
+	-- the stash (stash_config.lua storage): 7100011 - 7100019 reserved; 7100011 journal serial, 7100012 depot -> stash migration (retired), 7100013 stash -> depot migration
 	passiveExtraPoints = 7100020, -- bonus passive points granted by quests/GM
 	passiveStatsFixed = 7100021, -- 1 once the stats older passive tree versions wrote into the character are clamped
 	passiveClassFx = 7100022, -- the class nodes of the passive tree the character holds, a bit each (class_tree.lua)
@@ -143,6 +154,7 @@ Chaos.storage = {
 	vigils = 7100025, -- the vigils switched on, a bit each (vigils_config.lua storage)
 	snareElement = 7100026, -- the element the snares carry, chosen last (snares_config.lua storage.element)
 	snareHit = 7100027, -- 1 while a snare's hits are dealt (snares_config.lua storage.hit; read by archetypes.lua)
+	weaponStrike = 7100028, -- 1 while a spell's scripted weapon strike is dealt (ChaosSpell.weaponStrike; weapon_styles.lua leaves it out of the melee skill rule)
 	dungeonQueueLock = 7100030, -- (os.time of the last queue join; anti spam)
 	bountyWeekBonus = 7100300, -- bounty board (bounty.lua): 7100300 - 7100309 reserved; week key of the last weekly bonus
 	riftRun = 7100400, -- rifts (rift.lua): 7100400 - 7100409 reserved; +0 tier of the key of a run in progress, +1..+3 its modifiers, +4 start
@@ -180,6 +192,7 @@ Chaos.storage = {
 	vocationChangeTokens = 7100105, -- unused vocation changes bought in the store
 	shopRarityAutoloot = 7100106, -- 1 = Rarity Autoloot unlocked (lootfilter.lua: autoloot by rarity)
 	-- store pouches (pouches_config.lua storage): 7100107 Loot Pouch rules, 7100108 free Loot Pouch given, 7100109 pouches to give back
+	autosellInterval = 7100152, -- the Auto Seller sells the Loot Bag by itself every N minutes (5/10/15/30/60); unset/0 = off
 	autosellBase = 7100110 -- + 1 .. + Chaos.shopServices.autosellSlots: item ids on the auto-sell list
 }
 
@@ -677,7 +690,7 @@ Chaos.worldBoss = {
 		pool = {{id = 29856, count = 60}, {id = 29857, count = 25}}, -- split by share (floor)
 		gearChance = 1500, -- per 10000: one item of the boss gear list (rolled with rarity gearRarity)
 		gearShareBonus = 3000, -- + share x this (a player with 20% of the score: +600)
-		gearRarity = {6, 9}, -- min, max rarity of that item (Game.createItemWithRarity)
+		gearRarity = {5, 5}, -- min, max rarity of that item (stored ids; Legendary. It was {6, 9} of the 15: Exotic .. Eternal)
 		uniqueChance = 50, -- per 10000: one of the boss-only uniques that list this boss (chaos_unique_items.lua)
 		uniqueShareBonus = 300, -- + share x this
 		-- the top `top` of each category (eligible players only; one player can place in several): rewards[place],
@@ -1042,8 +1055,13 @@ Chaos.classes = {
 	},
 	-- Evasion: chance to dodge a melee or ranged hit (monster or player weapon attacks), per vocation id
 	evasion = {[11] = 0.08, [12] = 0.12, [13] = 0.05},
-	-- Poison Blades: weapon hits poison the target, `share` of the hit as earth damage over `ticks` seconds
-	poisonBlades = {durationMs = 20000, share = 0.6, ticks = 4, tickMs = 1000},
+	-- Poison Blades: weapon hits poison the target, `share` of the hit as earth damage over `ticks` seconds. A hit
+	-- refreshes the poison (the condition is replaced, the tick clock runs on), so a class that hits every 1-2 s takes one
+	-- tick of the last hit per second: the poison deals about share / ticks of a hit per second. 2026-10-17 (owner:
+	-- "O poison do thief é muito fraco"): share 0.6 -> 1.2 (a tick of 15% of the hit became 30%); classScale
+	-- multiplies it per vocation, the Ninja only x0.6 (0.72, +20%) so that the Deadeye keeps its lead on one target
+	-- (server/data/spells/README.md "Thief poison")
+	poisonBlades = {durationMs = 20000, share = 1.2, ticks = 4, tickMs = 1000, classScale = {[12] = 0.6}},
 	-- Ninja dual wield: each main-hand weapon hit adds an off-hand strike of `share` of the hit, scaled by the
 	-- off-hand weapon's attack against the main hand's (clamped to minRatio..maxRatio)
 	dualWield = {share = 0.5, minRatio = 0.5, maxRatio = 1.25, delayMs = 150},
@@ -1057,9 +1075,10 @@ Chaos.classes = {
 	-- Shadow Mend (spell 98, `saen umh`): the line's self heal. Restores level x perLevel + magic level x perMagicLevel +
 	-- maxHealthShare of the maximum health (+-spread); x veiledMultiplier while Shadow Veil is up (healing does not end
 	-- the veil). Below the Illusionist and near the Ranger line: server/data/spells/README.md "Healing"
-	shadowMend = {perLevel = 1.0, perMagicLevel = 10, maxHealthShare = 0.04, veiledMultiplier = 1.3, spread = 0.1},
-	-- shurikens: the throwing stars of the base server; the attack a shuriken spell uses without one in hand
-	shuriken = {items = {2399, 7368}, defaultAttack = 50},
+	shadowMend = {perLevel = 0.5, perMagicLevel = 20, maxHealthShare = 0.05, veiledMultiplier = 1.3, spread = 0.1},
+	-- shurikens: the attack a shuriken spell uses (stackable throwing weapons left the game, owner 2026-10-20: no star is
+	-- needed or carried; a one-handed distance weapon in hand still raises it, ChaosSpell.shurikenPower)
+	shuriken = {defaultAttack = 50},
 	-- (spellLevelScale, the level factor of the line's spell strikes, stood in for the passive tree until the class trees
 	-- of phase 2b; dropped: the tree and class_tree.lua classDamage scale the line now)
 	-- Berserker Rage (passive): every damage the Berserker deals gets up to +maxBonus, growing linearly from 0 at full
@@ -1141,7 +1160,21 @@ function Chaos.send(player, opcode, action, data)
 	if data ~= nil then
 		payload.data = data
 	end
-	player:sendExtendedOpcode(opcode, json.encode(payload))
+	local buffer = json.encode(payload)
+	if #buffer > Chaos.extendedOpcodeMax and Chaos.sendChunked then
+		-- over the engine's 8192-byte string limit: sent in parts (the client side must listen with
+		-- ProtocolGame.registerExtendedJSONOpcode, which joins them; a plain listener gets nothing, as before)
+		-- named once per opcode and action, so a payload that is too big for what it carries can be found and trimmed
+		Chaos.bigSendNamed = Chaos.bigSendNamed or {}
+		local key = tostring(opcode) .. ":" .. tostring(action)
+		if not Chaos.bigSendNamed[key] then
+			Chaos.bigSendNamed[key] = true
+			print("[Chaos] extended opcode " .. tostring(opcode) .. " action '" .. tostring(action) .. "' is " .. #buffer ..
+				" bytes: sent in parts (reduce what it carries if it is sent often)")
+		end
+		return Chaos.sendChunked(player, opcode, buffer)
+	end
+	player:sendExtendedOpcode(opcode, buffer)
 	return true
 end
 
@@ -1769,4 +1802,24 @@ if not ChaosPzGuard then
 end
 if ChaosPzGuard then
 	ChaosPzGuard.install()
+end
+
+-- A magic effect id of 0 (or none) reaches the client as "invalid effect id 0" and the effect is dropped there. Position:
+-- sendMagicEffect refuses it here and names the caller once (a script that computed an effect and got nothing), so the
+-- source can be found and fixed; nothing is sent. Installed once (a reload keeps the first wrapper).
+if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEffectGuard then
+	local rawSendMagicEffect = Position.sendMagicEffect
+	local warned = {}
+	Chaos.magicEffectGuard = true
+	Position.sendMagicEffect = function(self, effect, ...)
+		if effect == nil or effect == 0 then
+			local where = debug.traceback("", 2):sub(1, 300)
+			if not warned[where] then
+				warned[where] = true
+				print("[Warning - Chaos] Position:sendMagicEffect with effect " .. tostring(effect) .. " refused" .. where)
+			end
+			return false
+		end
+		return rawSendMagicEffect(self, effect, ...)
+	end
 end

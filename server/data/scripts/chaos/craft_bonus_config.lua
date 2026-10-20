@@ -12,22 +12,22 @@ return {
 		jewelsmith = 13},
 
 	-- 1. rarity of crafted equipment (every result our item modifiers roll on: ChaosCrafting.isGear, one item a craft).
-	-- The rarities are the item system's 1..15 (Common .. Transcendent; ChaosCrafting.config.rarityNames).
+	-- The rarities are stored ids of data/lib/chaos_rarity.lua (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine).
 	gear = {
 		-- chance in percent of each rarity at mastery 0; the rest is a plain item
 		odds = {
 			{rarity = 1, chance = 12.0}, -- Common
 			{rarity = 2, chance = 6.0}, -- Uncommon
-			{rarity = 3, chance = 3.0}, -- Rare
-			{rarity = 4, chance = 1.2}, -- Epic
-			{rarity = 5, chance = 0.4} -- Legendary
+			{rarity = 3, chance = 3.0}, -- Magic
+			{rarity = 4, chance = 1.2} -- Rare
 		},
 		-- every chance x (1 + mastery x perPoint), at most x (1 + maxBonus)
 		perPoint = 0.01,
 		maxBonus = 0.5,
-		-- never above this rarity (Legendary). A legendary monster's gear has floor 5 and bosses floor 6 (loot_config.lua
-		-- gear.minRarity), so a craft never beats a boss drop; tests/craft_bonus_test.lua checks it.
-		maxRarity = 5,
+		-- never above this rarity (Rare, a stored id; a crafted Legendary at 0.4% went when the 15 rarities became seven: a
+		-- legendary monster's gear has floor 4 and bosses floor 5, loot_config.lua gear.minRarity), so a craft never beats a
+		-- legendary monster's or a boss's drop; tests/craft_bonus_test.lua checks it.
+		maxRarity = 4,
 		-- all rarities together never above this (percent)
 		maxTotal = 35,
 		-- item level: recipe level + mastery x perMastery, never below what the item type's own required level gives a

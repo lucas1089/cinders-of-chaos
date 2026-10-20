@@ -1,4 +1,4 @@
--- Pressure Points: strike a nerve of the target next to you: 1 chi, and a stack of Pressure Points on it.
+-- Pressure Points: strike a nerve of the target next to you: 1 chi, and a stack of Pressure Points on it (+5% damage from Monks, up to 5 stacks, 8 s).
 --
 -- Each stack (max 5, 8 s, refreshed by every cast) makes the target take +5% from Monks' hits and strikes. The stacks
 -- are timer conditions on the target, one sub id per stack (ChaosMonk.ids.subId.pressure), which

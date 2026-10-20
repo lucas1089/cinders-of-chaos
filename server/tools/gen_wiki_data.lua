@@ -1055,7 +1055,10 @@ function W.dungeonEntries(D)
 		sections[#sections + 1] = mechSection(D, def.boss.name:lower(), "The boss fight:")
 		if d.chest then
 			local rows = {}
-			local names = D.loot and D.loot.gear and D.loot.gear.names or {}
+			local names = {}
+			for _, row in ipairs(ChaosRarity.list) do
+				names[row.id] = row.name
+			end
 			for i = 1, #DD.levels do
 				local c = DD.chest(d.chest, i)
 				rows[#rows + 1] = {num(i), money(c.gold), num(c.pieces), names[c.rarity] or num(c.rarity), "+" .. num(c.itemLevel),
@@ -1673,9 +1676,17 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["paragon.startLevel"] = C0.paragon.startLevel
 	-- items
 	local M, Cc = D.M, D.C
-	f["item.rarities"] = #Cc.config.rarityNames
-	f["item.rarityFirst"] = Cc.config.rarityNames[1]
-	f["item.rarityLast"] = Cc.config.rarityNames[#Cc.config.rarityNames]
+	f["item.rarities"] = ChaosRarity.COUNT -- seven, Unique included
+	f["item.rarityFirst"] = ChaosRarity.list[1].name
+	f["item.rarityLast"] = ChaosRarity.list[ChaosRarity.COUNT].name
+	f["item.rarityList"] = table.concat(Cc.config.rarityNames, ", ") .. " and Unique"
+	do -- "1 / 2 / 3 / 4 / 5 / 6": the modifiers a new item of Common .. Divine gets
+		local counts = {}
+		for rank = 1, #Cc.config.rarityNames do
+			counts[rank] = tostring(M.modCount(ChaosRarity.idOfRank(rank)))
+		end
+		f["item.rarityMods"] = table.concat(counts, " / ")
+	end
 	f["item.maxItemLevel"] = M.config.itemLevel.max
 	f["item.tiers"] = M.config.maxTier
 	f["item.powersFrom"] = Cc.rarityName(M.config.powers.minRarity)
@@ -1785,8 +1796,8 @@ function W.facts(D, vocs, spells, T, typeCount)
 	-- item prices (data/lib/chaos_item_prices_data.lua, server/README.md "Item prices")
 	local IP = dofile("data/lib/chaos_item_prices_data.lua")
 	f["prices.uncommon"] = num(IP.rarityMult[2])
-	f["prices.rare"] = num(IP.rarityMult[3])
-	f["prices.epic"] = num(IP.rarityMult[4])
+	f["prices.magic"] = num(IP.rarityMult[3])
+	f["prices.rare"] = num(IP.rarityMult[4])
 	f["prices.legendary"] = num(IP.rarityMult[5])
 	f["prices.top"] = num(IP.rarityMult[#IP.rarityMult])
 	f["prices.perLevel"] = num(100 / IP.ilvlDiv)

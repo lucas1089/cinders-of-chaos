@@ -1,0 +1,60 @@
+# Side panels made after the view mode was applied follow it (client/BASE.md 0077; owner debug item 1: "Show right horizontal panel + resize do mapa: a black bar"). refreshViewMode paints every side panel 'white' (classic view) or 'alpha' (extended view: the map is the full-screen background, the panels float over it) and the two horizontal panels the same. The minimap expansion's spacer panel (reserveMinimapExpansionSpace, made when the minimap is widened), a panel added with addRightPanel / addLeftPanel and the horizontal panels shown later kept the default white image: an opaque near-black frame (12,10,14) over the map. Now each is painted by applySidePanelColor when made or shown. Lua only. Applies after 0001-0076.
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -49,6 +49,16 @@
+   return panel and panel.minimapExpansionReservation == true
+ end
+ 
++-- refreshViewMode paints every side panel 'white' (classic view) or 'alpha' (extended view: the map is the full-screen
++-- background and the panels float over it). A panel or spacer made later has to follow, or it is an opaque near-black
++-- bar over the map (the "black bar" with the right horizontal panel shown and the minimap expanded: the expansion's
++-- spacer panel was created white and covered the map).
++local function applySidePanelColor(panel)
++  if panel then
++    panel:setImageColor(isClassicViewActive() and 'white' or 'alpha')
++  end
++end
++
+ -- The reservation stands in for the space the expanded minimap covers, so it has to stay
+ -- on the edge the minimap grows towards. Inserting a real panel displaces it from there.
+ local function keepMinimapExpansionReservationAtEdge(container, side)
+@@ -2466,6 +2476,7 @@
+   local panel = g_ui.createWidget('GameSidePanel')
+   panel:setId("rightPanel" .. (panelCount + 1))
+   panel.onClick = toggleInternalFocus
++  applySidePanelColor(panel)
+   gameRightPanels:insertChild(1, panel)
+   keepMinimapExpansionReservationAtEdge(gameRightPanels, 'right')
+ 
+@@ -2484,6 +2495,7 @@
+   local panel = g_ui.createWidget('GameSidePanel')
+   panel:setId("leftPanel" .. (panelCount + 1))
+   panel.onClick = toggleInternalFocus
++  applySidePanelColor(panel)
+   gameLeftPanels:addChild(panel)
+   keepMinimapExpansionReservationAtEdge(gameLeftPanels, 'left')
+ 
+@@ -2510,6 +2522,7 @@
+     reservation.minimapExpansionReservation = true
+     reservation.save = false
+     reservation:setFocusable(false)
++    applySidePanelColor(reservation)
+     -- It is a spacer, not a sidebar: refuse mini windows dropped onto it, which
+     -- setFocusable alone does not prevent.
+     reservation.onDrop = function() return false end
+@@ -3085,6 +3098,7 @@
+ end
+ 
+ function showRightHorizontalPanel(visible)
++  applySidePanelColor(horizontalRightPanel)
+   horizontalRightPanel:setHeight(visible and 200 or 0)
+   setRightHorizontalWidth()
+   if not visible then
+@@ -3101,6 +3115,7 @@
+     refreshViewMode()
+   end
+ 
++  applySidePanelColor(horizontalLeftPanel)
+   horizontalLeftPanel:setHeight(visible and 200 or 0)
+   if not visible then
+     local children = horizontalLeftPanel:getChildren()

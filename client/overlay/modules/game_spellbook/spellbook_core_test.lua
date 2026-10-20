@@ -234,4 +234,75 @@ for _, file in ipairs({ 'mods/game_helper/helper.lua', 'modules/game_actionbar/a
   ok(patch:find('%+%+%+ b/' .. file), 'patch edits ' .. file)
 end
 
+-- attack / support kind and the AoE mark
+local function sp(t) return t end
+eq(C.kindOf(sp({ type = 'damage' })), 'attack', 'damage is attack')
+eq(C.kindOf(sp({ type = 'heal' })), 'support', 'heal is support')
+eq(C.kindOf(sp({ type = 'buff' })), 'support', 'buff is support')
+eq(C.kindOf(sp({ type = 'summon', group = 'attack' })), 'support', 'type beats group')
+eq(C.kindOf(sp({ group = 'attack' })), 'attack', 'no type: attack group')
+eq(C.kindOf(sp({ group = 1 })), 'attack', 'no type: numeric attack group')
+eq(C.kindOf(sp({ group = 'healing' })), 'support', 'no type: healing group is support')
+eq(C.kindOf(sp({ group = 3 })), 'support', 'no type: support group')
+local ring = { { 0, 1, 0 }, { 1, 2, 1 }, { 0, 1, 0 } }
+eq(C.hitCells(ring), 4, 'centre only (2) is not a hit')
+eq(C.hitCells({ { 3 } }), 1, 'centre and hit counts')
+eq(C.hitCells(nil), 0, 'no area')
+ok(C.isAoE({ type = 'damage', target = 'area', area = ring }), 'area spell')
+ok(C.isAoE({ type = 'damage', target = 'front', area = { { 1, 1, 1 } } }), 'wave')
+ok(C.isAoE({ type = 'damage', target = 'area' }), 'area target without a matrix')
+ok(not C.isAoE({ type = 'damage', target = 'single', range = 5 }), 'single target')
+ok(not C.isAoE({ type = 'damage', target = 'area', area = { { 3 } } }), 'one tile only')
+ok(not C.isAoE({ type = 'buff', target = 'area', area = ring }), 'support area is not AoE')
+ok(not C.isAoE({ type = 'damage', target = 'self' }), 'self')
+eq(C.normalizeKind('attack'), 'attack', 'kind kept')
+eq(C.normalizeKind('bogus'), 'all', 'bad kind -> all')
+local mix = {
+  { name = 'Bolt', level = 1, vocations = { 1 }, type = 'damage', target = 'single' },
+  { name = 'Nova', level = 1, vocations = { 1 }, type = 'damage', target = 'area', area = ring },
+  { name = 'Mend', level = 1, vocations = { 1 }, type = 'heal', target = 'self' },
+  { name = 'Ward', level = 1, vocations = { 1 }, type = 'buff', target = 'self' }
+}
+local kctx = { vocation = 1, level = 10, magicLevel = 0, learned = {} }
+eq(#C.visibleIndexes(mix, kctx, 'learned', '', 'all'), 4, 'all types')
+eq(#C.visibleIndexes(mix, kctx, 'learned', '', nil), 4, 'no kind = all')
+eq(table.concat(C.visibleIndexes(mix, kctx, 'learned', '', 'attack'), ','), '1,2', 'attack only')
+eq(table.concat(C.visibleIndexes(mix, kctx, 'learned', '', 'support'), ','), '3,4', 'support only')
+eq(table.concat(C.visibleIndexes(mix, kctx, 'learned', 'nov', 'attack'), ','), '2', 'kind and text together')
+eq(#C.visibleIndexes(mix, kctx, 'learned', 'mend', 'attack'), 0, 'kind excludes text match')
+
+-- the pickers (helper shooter, healing, action bar) list what the Spellbook's "Learned" filter lists: the same vocation rule
+do
+  local vinfo = {
+    ['Own Bolt'] = { level = 1, vocations = { 1 } }, ['Other Bolt'] = { level = 1, vocations = { 4 } },
+    ['Asc Bolt'] = { level = 1, vocations = { 10 } }, ['Any Light'] = { level = 1, vocations = {} }
+  }
+  local names = { 'Any Light', 'Asc Bolt', 'Other Bolt', 'Own Bolt' }
+  local vplayer = { getLevel = function() return 25 end, getMagicLevel = function() return 10 end,
+    getVocation = function() return 1 end }
+  local vwin, vlist = pickerWindow(names)
+  C.setupPicker(vwin, vplayer, vinfo, env)
+  vwin.ids.tick:setChecked(true)
+  local spellbook = {}
+  local sctx = { vocation = 1, level = 25, magicLevel = 10, learned = {} }
+  for _, name in ipairs(names) do
+    local sp = { name = name, words = '', level = 1, vocations = vinfo[name].vocations }
+    if C.filterMatches(sp, sctx, 'learned') then spellbook[#spellbook + 1] = name end
+  end
+  table.sort(spellbook)
+  local picked = {}
+  for _, c in ipairs(vlist.children) do
+    if c.visible then picked[#picked + 1] = c.text:match('^(.-)\n') end
+  end
+  table.sort(picked)
+  eq(table.concat(picked, ','), table.concat(spellbook, ','), 'picker learned-only list equals the Spellbook learned list')
+  eq(table.concat(picked, ','), 'Any Light,Own Bolt', 'other vocations stay out of the picker')
+  -- a client that folds ascension ids into the base class (translateVocation) still keeps the ascension spell
+  local fwin, flist = pickerWindow(names)
+  C.setupPicker(fwin, vplayer, vinfo, { tr = env.tr, getSetting = env.getSetting, setSetting = env.setSetting,
+    translate = function(v) return v == 10 and 1 or v end })
+  fwin.ids.tick:setChecked(true)
+  eq(shown(flist), 'Any Light,Own Bolt', 'folding never widens the list on its own')
+end
+
 print('spellbook_core_test: ' .. n .. ' checks ok')

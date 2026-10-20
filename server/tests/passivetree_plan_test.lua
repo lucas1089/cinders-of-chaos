@@ -324,33 +324,43 @@ check(#view.nodes == 4 and view.masteries[1].choice == 4 and view.cls == "ninja"
 local RW = ChaosPassiveTreeConfig.reworked
 check(RW[1].version == 1 and table.concat(RW[1].ids, ",") == "369,376,383,390", "version 1 of the reworked list")
 local set, newest, any = C.reworkedSince(RW, -1)
-check(set[383] and set[369] and set[376] and set[390] and set[108] and set[105] and newest == 3 and any,
+check(set[383] and set[369] and set[376] and set[390] and set[108] and set[105] and set[8] and set[503] and newest == 5 and any,
 	"a character that saw none")
 -- version 2 (the build archetype keystones, 2026-10): twelve small leaves
 check(RW[2].version == 2 and table.concat(RW[2].ids, ",") == "77,78,81,82,106,107,108,109,253,262,355,362",
 	"version 2 of the reworked list")
 set, newest, any = C.reworkedSince(RW, 1)
-check(set[77] and set[362] and set[96] and not set[383] and newest == 3 and any, "a character that saw version 1")
+check(set[77] and set[362] and set[96] and not set[383] and newest == 5 and any, "a character that saw version 1")
 -- version 3 (the second round, 2026-10-12): the four other elemental cluster ends
 check(RW[3].version == 3 and table.concat(RW[3].ids, ",") == "96,99,102,105", "version 3 of the reworked list")
 set, newest, any = C.reworkedSince(RW, 2)
-check(set[96] and set[99] and set[102] and set[105] and not set[77] and newest == 3 and any, "a character that saw version 2")
+check(set[96] and set[99] and set[102] and set[105] and not set[77] and newest == 5 and any, "a character that saw version 2")
+-- version 4 (2026-10, owner: no drown nodes): 23 nodes left the tree
+check(RW[4].version == 4 and #RW[4].ids == 23 and RW[4].ids[1] == 8 and RW[4].ids[23] == 503, "version 4 of the reworked list")
 set, newest, any = C.reworkedSince(RW, 3)
-check(next(set) == nil and newest == 3 and not any, "a character that saw version 3")
+check(set[8] and set[490] and not set[96] and newest == 5 and any, "a character that saw version 3")
+set, newest, any = C.reworkedSince(RW, 4)
+check(next(set) == nil and newest == 5 and not any, "a character that saw version 4")
 set, newest = C.reworkedSince({{version = 1, ids = {5}}, {version = 2, ids = {7}}}, 1)
 check(set[7] and not set[5] and newest == 2, "only what came after")
-local kept, removed = C.dropNodes(tree, {3, 8, 10, 12, 61}, {[61] = true})
-check(table.concat(kept, ",") == "3,8,10,12" and #removed == 1 and removed[1].why == "reworked", "a leaf goes alone")
-kept, removed = C.dropNodes(tree, {3, 8, 10, 12, 61}, {[8] = true})
-check(table.concat(kept, ",") == "3" and #removed == 4 and removed[2].why == "disconnected", "what hangs on it goes too")
-kept, removed = C.dropNodes(tree, {3, 8}, {})
+local kept, removed = C.dropNodes(tree, {2, 9, 11, 13, 61}, {[61] = true})
+check(table.concat(kept, ",") == "2,9,11,13" and #removed == 1 and removed[1].why == "reworked", "a leaf goes alone")
+kept, removed = C.dropNodes(tree, {2, 9, 11, 13, 61}, {[9] = true})
+check(table.concat(kept, ",") == "2" and #removed == 4 and removed[2].why == "disconnected", "what hangs on it goes too")
+kept, removed = C.dropNodes(tree, {3, 32}, {})
 check(#kept == 2 and #removed == 0, "nothing to drop")
 -- at login (passivetree.lua refundReworked): once, presets and loadouts, with a message
-rows = {{preset = 1, name = "Preset 1", nodes = "2,9,11,101,100"}}
+-- nodes without a class lane (a lane node is reworked for its class by version 5)
+local plain = {}
+for id = 2, 400 do
+	local nd = tree.nodes[id]
+	if nd and not nd.v and not nd.c and not nd.m and #plain < 5 then plain[#plain + 1] = id end
+end
+rows = {{preset = 1, name = "Preset 1", nodes = table.concat(plain, ",")}}
 local msgs = {}
 function p:sendTextMessage(_, text) msgs[#msgs + 1] = text end
 p.storage[Chaos.storage.passiveRework] = nil
-check(ChaosPassiveTree.refundReworked(p) == 0 and p.storage[Chaos.storage.passiveRework] == 3 and #msgs == 0,
+check(ChaosPassiveTree.refundReworked(p) == 0 and p.storage[Chaos.storage.passiveRework] == 5 and #msgs == 0,
 	"nothing reworked held: the version is recorded, no message")
 check(ChaosPassiveTree.refundReworked(p) == 0, "and not looked at again")
 -- a Thief line tree up to 383 (Blackblood Creed; it was the mythic leaf "wisdom 10")
@@ -373,12 +383,13 @@ inserts, msgs = {}, {}
 local loadoutDrop
 ChaosLoadouts = {dropNodes = function(player, drop) loadoutDrop = drop; return 2 end}
 p.storage[Chaos.storage.passiveRework] = 0
-check(ChaosPassiveTree.refundReworked(p) == 1, "383 refunded")
+local refunded = ChaosPassiveTree.refundReworked(p)
+check(refunded >= 1, "383 refunded (and, with the class lanes of version 5, the lane nodes before it and what hangs on them)")
 check(#inserts == 1 and not ("," .. inserts[1].nodes .. ","):find(",383,", 1, true), "saved without it")
-check(#C.parseAlloc(inserts[1].nodes) == #path383 - 1, "every other node kept")
+check(#C.parseAlloc(inserts[1].nodes) == #path383 - refunded, "every other node kept")
 check(loadoutDrop and loadoutDrop[383] and loadoutDrop[390], "the loadouts are told the same ids")
-check(msgs[1] and msgs[1]:find("1 node", 1, true) and msgs[1]:find("loadouts lost 2", 1, true), "one message: " .. tostring(msgs[1]))
-check(p.storage[Chaos.storage.passiveRework] == 3, "version recorded")
+check(msgs[1] and msgs[1]:find(refunded .. " node", 1, true) and msgs[1]:find("loadouts lost 2", 1, true), "one message: " .. tostring(msgs[1]))
+check(p.storage[Chaos.storage.passiveRework] == 5, "version recorded")
 inserts = {}
 check(ChaosPassiveTree.refundReworked(p) == 0 and #inserts == 0, "only once")
 ChaosLoadouts = nil

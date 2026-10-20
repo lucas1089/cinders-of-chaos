@@ -26,9 +26,20 @@ def main():
         name = a['name']
         voc = [VOC[v] for v in re.findall(r'<vocation name="([^"]+)"', m.group(2))]
         idx = icon_of[name]
+        # direction="1": the spell hits along the caster's facing (a wave or beam). The helper turns the character toward its
+        # target before it (ChaosHelperRotation.turnDirection), and the area the script uses lets it count monsters in the
+        # beam (areaName: a SpellAreas key of the client's gamelib, found in the spell script's createCombatArea call)
+        directional = ''
+        if a.get('direction') == '1':
+            directional = ', directional = true'
+            script = os.path.join('server', 'data', 'spells', a['script'])
+            am = re.search(r'createCombatArea\((AREA_[A-Z0-9_]+)\)', open(script, encoding='utf-8').read())
+            if am:
+                directional += ', areaName = "%s"' % am.group(1)
         out.append('  {{ id = {id}, name = "{name}", words = "{words}", level = {level}, mana = {mana}, '
                    'group = {g}, groupCooldown = {gcd}, cooldown = {cd}, premium = {prem}, '
-                   'needTarget = {nt}, range = {rng}, vocations = {{ {voc} }}, iconKey = "chaos_{key}", clientId = {cid}{pct} }},'.format(
+                   'needTarget = {nt}, range = {rng}, vocations = {{ {voc} }}, iconKey = "chaos_{key}", clientId = {cid}{pct}{dr} }},'.format(
+                       dr=directional,
                        id=a['spellid'], name=name.replace('"', '\\"'), words=a['words'], level=a['level'], mana=a.get('mana', '0'),
                        # manapercent: the cost is that percentage of the maximum mana (the server's Spell::getManaCost
                        # reads it when mana is 0); chaosspells.lua keeps the entry's mana at the player's current cost

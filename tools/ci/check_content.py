@@ -5,6 +5,8 @@
  - removed spells (spell_names.csv "removed", the conjure spells of data/lib/chaos_rune_supply.lua: the runes and
    R.otherConjures): one csv row per removed script; no class kit names one (spells_chaos.xml, add_vocations.py LINE_STOCK_SPELLS, the tutorial's class
    spells in newplayer_config.lua)
+ - throwing weapons (server/data/lib/chaos_throwables.lua): no Chaos monster loot (XML or Lua), new-player kit or
+   hunt supply price names a stackable throwing weapon, and the shuriken constants list no star
  - items: unique ids in chaos_items.xml
  - monsters (monsters/chaos and its subfolders, e.g. world_bosses/): unique names; a lookType above MAX_OUTFIT must be
    listed in needs_sprites.txt; no loot id lists ("a;b"), monster spells, flags and element keys must be known to the
@@ -49,7 +51,7 @@ def _max_outfit():
                      'monster_looks', 'picks.csv')
     looks = [int(r['look']) for r in csv.DictReader(open(p, newline=''))] if os.path.exists(p) else []
     return max([BASE_OUTFIT] + looks)
-MAX_OUTFIT = _max_outfit()  # 2234 with things_custom27 (see server/data/monster/CUSTOM_MONSTERS.md)
+MAX_OUTFIT = _max_outfit()  # 2311 with things_custom30 (the strip looks 2312-2384 are no monster looks; see server/data/monster/CUSTOM_MONSTERS.md)
 bad = 0
 
 def fail(msg):
@@ -128,6 +130,41 @@ def check_removed_spells():
             if w in words or n.lower() in names:
                 fail(f'{npc_cfg}: the class spell {n!r} ({w}) is a removed conjure spell')
 
+# stackable throwing weapons are out of the game (server/README.md "Throwing weapons")
+def check_throwables():
+    lib = 'server/data/lib/chaos_throwables.lua'
+    if not os.path.exists(lib):
+        return
+    text = re.sub(r'--[^\n]*', '', open(lib, encoding='utf-8').read())
+    m = re.search(r'T\.items\s*=\s*\{(.*?)\n\}', text, re.S)
+    ids = {int(i) for i in re.findall(r'\[(\d+)\]\s*=\s*"', m.group(1))} if m else set()
+    if not ids:
+        fail(f'{lib}: no throwables listed')
+        return
+    for f in glob.glob('server/data/monster/monsters/chaos/**/*.xml', recursive=True):
+        for i in re.findall(r'<item\b[^>]*?\bid="(\d+)"', open(f, encoding='utf-8').read()):
+            if int(i) in ids:
+                fail(f'{f}: loot names the throwing weapon {i} (data/lib/chaos_throwables.lua)')
+    for f in glob.glob('server/data/monster/lua/chaos/**/*.lua', recursive=True):
+        for i in re.findall(r'\bid\s*=\s*(\d+)', open(f, encoding='utf-8').read()):
+            if int(i) in ids:
+                fail(f'{f}: loot names the throwing weapon {i}')
+    kit = 'server/data/scripts/chaos/newplayer_config.lua'
+    if os.path.exists(kit):
+        for i in re.findall(r'\{(?:slot = "\w+", )?id = (\d+)', re.sub(r'--[^\n]*', '', open(kit, encoding='utf-8').read())):
+            if int(i) in ids:
+                fail(f'{kit}: a kit gives the throwing weapon {i}')
+    hs = 'server/data/scripts/chaos/hunt_supplies.lua'
+    if os.path.exists(hs):
+        for i in re.findall(r'\[(\d+)\]\s*=', open(hs, encoding='utf-8').read()):
+            if int(i) in ids:
+                fail(f'{hs}: a supply price for the throwing weapon {i}')
+    if os.path.exists('server/data/scripts/chaos/chaos_constants.lua'):
+        c = open('server/data/scripts/chaos/chaos_constants.lua', encoding='utf-8').read()
+        if re.search(r'shuriken\s*=\s*\{[^}]*items\s*=', c):
+            fail('server/data/scripts/chaos/chaos_constants.lua: shuriken lists items again (no star is needed)')
+check_throwables()
+
 # items
 ip = 'server/data/items/chaos_items.xml'
 if os.path.exists(ip):
@@ -181,6 +218,11 @@ def check_monster_body(f, t):
     rel = os.path.relpath(f, 'server/data/monster/monsters/chaos').replace(os.sep, '/')
     if rel in tune.TUNING and tune.apply(t, tune.TUNING[rel]) != t:
         fail(f'{f}: run server/tools/tune_monsters.py on it')
+
+# no fire immunity (owner decision C7, server/tools/monster_fire_resist.py): Pyre Oath burns its owner every second
+for f, fix in tune.fire_resist_files():
+    if fix(open(f, encoding='utf-8', errors='ignore').read())[1]:
+        fail(f'{f}: fire immunity; run server/tools/tune_monsters.py (a fire resistance of {tune.fire.FIRE_RESIST_PERCENT}% instead)')
 
 # experience > 0 but no loot on purpose: adds and bosses whose system pays the rewards (uber.lua, guildboss.lua,
 # raid.lua). Experience 0 (summons, pets, goblins, wardens) needs no entry. Every other monster needs a loot item.
@@ -293,10 +335,11 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: things_custom29 (client/MANIFEST.md), 2236 outfits (pair 29 adds the
-# Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
+# the client pair the monsters are drawn with: things_custom30 (client/MANIFEST.md), 2384 outfits (pair 30 adds the
+# 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
+# blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'things_custom29', 2236
+PAIR_NAME, PAIR_OUTFITS = 'things_custom30', 2384
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1562-1999 2082-2099 2143-2160 2194-2199')

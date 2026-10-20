@@ -47,7 +47,8 @@ The rules (README "Item prices"):
       BUY_SHARE of what the NPCs ask for it (median of their gold prices), SUPPLY_SHARE for supplies (potions, runes,
       ammunition). install_item_prices.py raises every NPC buy price below twice the sell price.
   price of an instance = base(id) x R(rarity) x L(item level)  (ChaosItemPrices.sellPrice(item))
-    R: plain 1, Common 1, Uncommon 1.5, Rare 3, Epic 6, Legendary 12, then +2 a tier up to Transcendent 32; charms
+    R: plain 1, Common 1, Uncommon 1.5, Magic 3, Rare 6, Legendary 12, Divine 24 (the seven rarities of 2026-10-18; it was
+       Common 1 .. Legendary 12, then +2 a tier up to Transcendent 32 over 15 rarities); charms
        Faint 1, Glowing 1.5, Radiant 3; a unique copy is not sold (0)
     L: 1 + item level / ILVL_DIV for equipment and charms (item level 150: x1.75), else 1
 """
@@ -74,7 +75,18 @@ OUT_LUA = os.path.join(DATA, 'lib', 'chaos_item_prices_data.lua')
 OUT_SELL = os.path.join(DATA, 'scripts', 'chaos', 'sell_prices.lua')
 
 # ------------------------------------------------------------------------------------------------ the numbers
-RARITY_MULT = [1, 1.5, 3, 6, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32]  # rarity 1..15 (Common .. Transcendent)
+RARITY_MULT = [1, 1.5, 3, 6, 12, 24]  # by place: Common, Uncommon, Magic, Rare, Legendary, Divine (data/lib/chaos_rarity.lua)
+# stored rarity id -> place; an old item may carry 6 .. 9 (they became Legendary) and 11 .. 15 (Divine)
+LEGACY_TO_STORED = [1, 2, 3, 4, 5, 5, 5, 5, 5, 10, 10, 10, 10, 10, 10]
+STORED_IDS = [1, 2, 3, 4, 5, 10]
+
+
+def rank_of(rarity):
+    """place 1..6 of a rarity id (0 = none)"""
+    rarity = int(rarity)
+    if rarity < 1 or rarity > 15:
+        return 0
+    return STORED_IDS.index(LEGACY_TO_STORED[rarity - 1]) + 1
 CHARM_MULT = [1, 1.5, 3]  # charm rarity 1..3 (Faint, Glowing, Radiant)
 ILVL_DIV = 200  # L = 1 + item level / ILVL_DIV (item level 150: x1.75)
 # Plain equipment sells for GEAR_SCALE of the price it had (base NPC price or formula): 42% of the gear monsters drop
@@ -571,7 +583,7 @@ def merchant_orbs():
     out = []
     w = [(int(r), int(x)) for r, x in re.findall(r'\{(\d+), (\d+)\}', re.search(r'\n\talchemy = \{(.*?)\}\s*,\s*\n', cr).group(1))]
     tot = float(sum(x for _, x in w))
-    gild = sum(x / tot * RARITY_MULT[r - 1] for r, x in w) - 1
+    gild = sum(x / tot * RARITY_MULT[rank_of(r) - 1] for r, x in w) - 1
     if keys.get('alchemy') in stock:
         out.append(('Orb of Gilding', stock[keys['alchemy']], gild))
     roll = int(re.search(r'divineRollChance = (\d+)', cr).group(1)) / 100.0
@@ -607,11 +619,11 @@ def lua_table_numbers(text, key):
 
 def gamble_ev():
     """expected rarity multiplier of one sealed piece of the Gambler (a port of gamble_core.lua K.odds with
-    loot_config.lua gear; tests/item_prices_test.lua recomputes it with the Lua code)"""
+    loot_config.lua gear, all in places 0..6; tests/item_prices_test.lua recomputes it with the Lua code)"""
     g = read(os.path.join(DATA, 'scripts', 'chaos', 'gamble_config.lua'))
     lc = read(os.path.join(DATA, 'scripts', 'chaos', 'loot_config.lua'))
     o = re.search(r'C\.odds\s*=\s*\{draws = (\d+), floor = (\d+), tier = "(\w+)", find = ([\d.]+), maxRarity = (\d+)\}', g)
-    draws, flo, tier, find, max_r = int(o.group(1)), int(o.group(2)), o.group(3), float(o.group(4)), int(o.group(5))
+    draws, flo, tier, find, max_r = int(o.group(1)), rank_of(o.group(2)), o.group(3), float(o.group(4)), rank_of(o.group(5))
 
     def tier_value(key):
         m = re.search(r'%s\s*=\s*\{[^}]*?\b%s\s*=\s*([\d.]+)' % (key, tier), lc)
@@ -620,11 +632,12 @@ def gamble_ev():
     def pct(x):
         return 0.0 if x <= 0 else 1.0 if x >= 100 else min(1000000, math.floor(x * 10000 + 1e-9)) / 1000000.0
 
+    top = len(STORED_IDS)
     roll = int(re.search(r'stockRollChance\s*=\s*(\d+)', lc).group(1))
     chances = lua_table_numbers(lc, 'stockChances')
-    gear_cap = int(re.search(r'maxRarity\s*=\s*(\d+)', lc).group(1))
+    gear_cap = rank_of(re.search(r'maxRarity\s*=\s*(\d+)', lc).group(1))
     steps = [(int(a), int(b)) for a, b in re.findall(r'\{(\d+), (\d+)\}', re.search(r'bonusSteps\s*=\s*\{(.*?)\}\s*,\s*--', lc, re.S).group(1))]
-    one = [0.0] * 16
+    one = [0.0] * (top + 1)
     rest = min(100, max(0, roll)) / 100.0
     pas = rest
     for i, c in enumerate(chances, 1):
@@ -633,20 +646,21 @@ def gamble_ev():
         rest *= 1 - h
     one[0] = 1 - pas + rest
     cdf, acc = [], 0.0
-    for r in range(16):
+    for r in range(top + 1):
         acc += one[r]
         cdf.append(acc ** draws)
-    best = [cdf[r] - (cdf[r - 1] if r else 0) for r in range(16)]
-    cap = min(max_r, gear_cap)
-    floor_tier = int(tier_value('minRarity'))
+    best = [cdf[r] - (cdf[r - 1] if r else 0) for r in range(top + 1)]
+    cap = min(max_r, top)
+    floor_tier = rank_of(tier_value('minRarity'))
     ensure = pct(tier_value('ensureChance'))
     bonus = pct(tier_value('bonusChance') * find)
+    divine = pct(tier_value('divineChance') * find)
     total = sum(w for _, w in steps)
-    out = [0.0] * 16
+    out = [0.0] * (top + 1)
 
     def add(r, p):
         out[min(r, cap)] += p
-    for r0 in range(16):
+    for r0 in range(top + 1):
         if best[r0] <= 0:
             continue
         cur = max(r0, flo)
@@ -654,12 +668,24 @@ def gamble_ev():
         for tt, pp in paths:
             if pp <= 0:
                 continue
-            fin = lambda v: max(min(v, gear_cap), cur)
-            add(fin(tt), best[r0] * pp * (1 - bonus))
+
+            def fin(v):
+                if v > gear_cap:
+                    v = max(gear_cap, cur)
+                return max(v, cur)
+
+            def put(v, p):
+                v = fin(v)
+                if v < top and divine > 0:
+                    add(top, p * divine)
+                    add(v, p * (1 - divine))
+                else:
+                    add(v, p)
+            put(tt, best[r0] * pp * (1 - bonus))
             if bonus > 0 and total > 0:
-                for s, w in steps:
-                    add(fin(tt + s), best[r0] * pp * bonus * w / total)
-    return out[0] + sum(out[r] * RARITY_MULT[r - 1] for r in range(1, 16))
+                for s_, w in steps:
+                    put(tt + s_, best[r0] * pp * bonus * w / total)
+    return out[0] + sum(out[r] * RARITY_MULT[r - 1] for r in range(1, top + 1))
 
 
 def gamble_caps():
@@ -766,7 +792,7 @@ def craft_ev():
     ps = [(r, c * bonus) for r, c in odds]
     scale = min(1.0, top / sum(c for _, c in ps))
     ps = [(r, c * scale / 100.0) for r, c in ps]
-    er = (1 - sum(p for _, p in ps)) + sum(p * RARITY_MULT[r - 1] for r, p in ps)
+    er = (1 - sum(p for _, p in ps)) + sum(p * RARITY_MULT[rank_of(r) - 1] for r, p in ps)
     ilmax = int(re.search(r'itemLevel = \{perMastery = [\d.]+, max = (\d+)\}', text).group(1))
     return er * (1 + ilmax / float(ILVL_DIV))
 
@@ -838,7 +864,7 @@ def render_lua(table, uq):
          '-- server/README.md "Item prices". Read by data/lib/chaos_item_prices.lua (ChaosItemPrices).',
          'return {',
          '\t-- price of an instance = prices[id] x rarity multiplier x (1 + item level / ilvlDiv)',
-         '\trarityMult = {%s}, -- rarity 1..15 (Common .. Transcendent); no rarity = 1' % ', '.join('%g' % x for x in RARITY_MULT),
+         '\trarityMult = {%s}, -- by place: Common, Uncommon, Magic, Rare, Legendary, Divine; no rarity = 1' % ', '.join('%g' % x for x in RARITY_MULT),
          '\tcharmMult = {%s}, -- charm rarity 1..3 (Faint, Glowing, Radiant)' % ', '.join('%g' % x for x in CHARM_MULT),
          '\tilvlDiv = %d,' % ILVL_DIV,
          '\tbuyShare = %g, -- an NPC asks at least sell / buyShare' % BUY_SHARE,

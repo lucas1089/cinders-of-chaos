@@ -26,6 +26,15 @@ end
 if not ChaosItemTooltip then
 	dofile("data/scripts/chaos/item_tooltip_core.lua")
 end
+if not ChaosWeaponBalance then
+	dofile("data/scripts/chaos/weapon_balance_core.lua")
+end
+if not ChaosWeaponDps then
+	dofile("data/scripts/chaos/weapon_dps_core.lua")
+end
+if not ChaosArchery then
+	dofile("data/lib/chaos_archery_core.lua")
+end
 
 local T = ChaosItemTooltip
 local OPCODE = ChaosOpcodes.itemTooltip or 242
@@ -107,6 +116,18 @@ local function answer(player, data)
 	local voc = player:getVocation()
 	local wielder = {voc = voc and voc:getAttackSpeed() or 2000,
 		dex = CHARSTAT_DEXTERITY and player.getCharacterStat and player:getCharacterStat(CHARSTAT_DEXTERITY) or 0}
+	-- and the inputs of the "Estimated DPS" line (weapon_dps_core.lua): level, best melee skill (one melee skill), distance skill
+	local okSkill = pcall(function()
+		local best = 0
+		for _, sk in ipairs({SKILL_SWORD, SKILL_CLUB, SKILL_AXE}) do
+			best = math.max(best, player:getEffectiveSkillLevel(sk))
+		end
+		wielder.melee, wielder.distance = best, player:getEffectiveSkillLevel(SKILL_DISTANCE)
+		wielder.level = player:getLevel()
+	end)
+	if not okSkill then
+		wielder.level = nil
+	end
 	local out = {}
 	for i = 1, n do
 		local req = type(list[i]) == "table" and list[i] or {}

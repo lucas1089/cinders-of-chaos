@@ -77,7 +77,6 @@
 		<item id="2537" countmax="1" chance="286"/>
 		<item id="2514" countmax="1" chance="286"/>
 		<item id="2499" countmax="1" chance="286"/>
-		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
 		<item id="29001" countmax="1" chance="800"/><!-- colourful snail shell -->
 	</loot>
 </monster>

@@ -321,6 +321,48 @@ do
 	x2.unlock = nil
 end
 
+-- ------------------------------------------------------------------ map spawns: all at once, no respawn during a run
+do
+	local onSpawn = EventCallback.onSpawn
+	ok(type(onSpawn) == "function", "the dungeon's spawn callback is registered")
+	-- two map monsters of dungeon 4 at the server start, one monster of no dungeon
+	local m1 = newCreature(301, "bone minion", P(31576, 31617, 8), false)
+	local m2 = newCreature(302, "bone brute", P(31580, 31618, 8), false)
+	local m3 = newCreature(303, "wolf", P(30000, 30000, 7), false)
+	for _, m in ipairs({m1, m2, m3}) do
+		ok(onSpawn(m, m.pos, true, false) == true, "a start-up spawn is allowed")
+	end
+	-- an earlier run left the area empty: everything is made again when the next run opens
+	m1:remove()
+	m2:remove()
+	local made = {}
+	local nextId = 400
+	Game.createMonster = function(name, pos)
+		nextId = nextId + 1
+		made[#made + 1] = name
+		return newCreature(nextId, name, P(pos.x, pos.y, pos.z), false)
+	end
+	local g = newCreature(5, "Gil", P(32369, 32241, 7), true)
+	login.onLogin(g)
+	ext.onExtendedOpcode(g, ChaosOpcodes.dungeons, {action = "queue", data = {id = 4, difficulty = 1}})
+	ok(ChaosDungeonIsInside(g), "map spawns: the run is on")
+	local seen = {}
+	for _, name in ipairs(made) do seen[name] = (seen[name] or 0) + 1 end
+	eq(seen["bone minion"], 1, "map spawns: the first monster is made at the opening")
+	eq(seen["bone brute"], 1, "map spawns: the second monster is made at the opening")
+	ok(not seen["wolf"], "map spawns: a monster of another place is not part of it")
+	-- during the run the map's own respawn inside the area is refused, outside it and scripts are not
+	local r = newCreature(310, "bone minion", P(31576, 31617, 8), false)
+	ok(onSpawn(r, r.pos, false, false) == false, "map spawns: no respawn inside a running dungeon")
+	ok(onSpawn(r, r.pos, false, true) == true, "map spawns: a monster made by a script is allowed")
+	local w = newCreature(311, "wolf", P(30000, 30000, 7), false)
+	ok(onSpawn(w, w.pos, false, false) == true, "map spawns: a respawn outside every dungeon is allowed")
+	-- the run is over: the area spawns again
+	g.pos = P(temple.x, temple.y, temple.z)
+	advance(3000)
+	ok(onSpawn(r, r.pos, false, false) == true, "map spawns: the respawn is back once the run is over")
+end
+
 print(string.format("dungeons_area_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

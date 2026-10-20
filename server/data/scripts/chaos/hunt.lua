@@ -26,6 +26,10 @@
 --   (see hunt_core.lua H.state). While the window is open the server sends a state every cfg.thinkMs.
 -- Lua 5.1 / LuaJIT compatible.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -116,8 +120,8 @@ local function readCorpse(corpse, out, depth)
 			readCorpse(item, out, depth + 1)
 		end
 		local id = item:getId()
-		local rarity = tonumber(customAttr(item, "rarity")) or 0
-		if rarity < 0 or rarity > 15 then
+		local rarity = ChaosRarity.canon(customAttr(item, "rarity")) -- a stored id; an old 6 .. 15 is the rarity it became
+		if rarity == ChaosRarity.UNIQUE then
 			rarity = 0
 		end
 		local unique = customAttr(item, "chaos_unique") ~= nil

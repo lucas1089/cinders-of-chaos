@@ -114,7 +114,7 @@ function getTreeNodes()
 				1
 			},
 			out = {
-				8, 32
+				32, 104
 			}
 		},
 		--- 4 ---
@@ -190,7 +190,9 @@ function getTreeNodes()
 			}
 		},
 		--- 8 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 70,
 			name = "Drown Damage",
@@ -198,13 +200,12 @@ function getTreeNodes()
 			group = 2,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				3
+				
 			},
 			out = {
-				10
+				
 			}
 		},
 		--- 9 ---
@@ -226,7 +227,9 @@ function getTreeNodes()
 			}
 		},
 		--- 10 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 75,
 			name = "Drown Absorption",
@@ -234,13 +237,12 @@ function getTreeNodes()
 			group = 2,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 1,
 			},
 			inputs = {
-				8
+				
 			},
 			out = {
-				12, 104
+				
 			}
 		},
 		--- 11 ---
@@ -273,10 +275,10 @@ function getTreeNodes()
 				dexterity = 1,
 			},
 			inputs = {
-				10
+				
 			},
 			out = {
-				61
+				61, 104
 			}
 		},
 		--- 13 ---
@@ -2022,7 +2024,7 @@ function getTreeNodes()
 				dexterity = 1,
 			},
 			inputs = {
-				10
+				3, 12
 			},
 			out = {
 				103
@@ -3243,14 +3245,16 @@ function getTreeNodes()
 				intelligence = 1,
 			},
 			inputs = {
-				167
+				
 			},
 			out = {
-				170, 374
+				170, 374, 168
 			}
 		},
 		--- 167 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 0,
 			orbitDist = 70,
 			name = "Attribute",
@@ -3258,13 +3262,12 @@ function getTreeNodes()
 			group = 42,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				168
+				
 			},
 			out = {
-				166
+				
 			}
 		},
 		--- 168 ---
@@ -3279,10 +3282,10 @@ function getTreeNodes()
 				incrementIce = 2,
 			},
 			inputs = {
-				121
+				121, 166
 			},
 			out = {
-				169, 167
+				169
 			}
 		},
 		--- 169 ---
@@ -4070,7 +4073,9 @@ function getTreeNodes()
 			}
 		},
 		--- 212 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 70,
 			name = "Attribute",
@@ -4078,17 +4083,18 @@ function getTreeNodes()
 			group = 52,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				213
+				
 			},
 			out = {
-				238
+				
 			}
 		},
 		--- 213 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 2,
 			orbitDist = 70,
 			name = "Attribute",
@@ -4096,13 +4102,12 @@ function getTreeNodes()
 			group = 52,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 2,
 			},
 			inputs = {
-				216	
+				
 			},
 			out = {
-				212
+				
 			}
 		},
 		--- 214 ---
@@ -4156,7 +4161,7 @@ function getTreeNodes()
 				215
 			},
 			out = {
-				213
+				238
 			}
 		},
 		--- 217 ---
@@ -4482,7 +4487,7 @@ function getTreeNodes()
 				233
 			},
 			out = {
-				237
+				241
 			}
 		},
 		--- 235 ---
@@ -4522,7 +4527,9 @@ function getTreeNodes()
 			}
 		},
 		--- 237 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 70,
 			name = "Attribute",
@@ -4530,13 +4537,12 @@ function getTreeNodes()
 			group = 55,
 			icon = "baseStat",
 			customStats = {
-				absorbDrown = 1,
 			},
 			inputs = {
-				234
+				
 			},
 			out = {
-				241
+				
 			}
 		},
 		--- 238 ---
@@ -4552,7 +4558,7 @@ function getTreeNodes()
 				vitality = 10,
 			},
 			inputs = {
-				193, 212
+				193, 216
 			},
 			out = {
 				255, 467
@@ -4611,7 +4617,7 @@ function getTreeNodes()
 				strength = 5,
 			},
 			inputs = {
-				183, 237
+				183, 234
 			},
 			out = {
 				248, 392
@@ -5006,7 +5012,7 @@ function getTreeNodes()
 			   257, 260
 			},
 			out = {
-				262, 490
+				262, 622
 			}
 		},
 		--- 262 ---
@@ -5028,8 +5034,8 @@ function getTreeNodes()
 				"Mystic and Necromancer lines: an attack spell",
 				"hitting 2 or more enemies raises a Cinder Effigy",
 				"on your tile (at most 2, for 12 s). Every 2 s it",
-				"repeats the cast within 3 sqm of it for 22% of",
-				"the cast's average hit. Your spells deal 35% less."
+				"repeats the cast within 3 sqm of it for 24% of",
+				"the cast's average hit. Your spells deal 25% less."
 			},
 			classes = {"mystic", "elementalist", "illusionist", "necromancer", "lich", "bonelord"},
 			inputs = {
@@ -6096,7 +6102,7 @@ function getTreeNodes()
 			  	326
 			},
 			out = {
-			 	325
+				318
 			}
 		},
 		--- 318 ---
@@ -6111,7 +6117,7 @@ function getTreeNodes()
 				vitality = 2,
 			},
 			inputs = {
-				325
+				317
 			},
 			out = {
 				329, 319
@@ -6170,11 +6176,13 @@ function getTreeNodes()
 				326
 			},
 			out = {
-				326, 322
+				326, 323
 			}
 		},
 		--- 322 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 118,
 			name = "Attribute",
@@ -6182,13 +6190,12 @@ function getTreeNodes()
 			group = 82,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				323, 321
+				
 			},
 			out = {
-				321
+				
 			}
 		},
 		--- 323 ---
@@ -6203,10 +6210,10 @@ function getTreeNodes()
 				vitality = 2,
 			},
 			inputs = {
-				328
+				328, 321
 			},
 			out = {
-				332, 322
+				332
 			}
 		},
 		--- 324 ---
@@ -6228,7 +6235,9 @@ function getTreeNodes()
 			}
 		},
 		--- 325 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 115,
 			name = "Attribute",
@@ -6236,13 +6245,12 @@ function getTreeNodes()
 			group = 82,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				317
+				
 			},
 			out = {
-				318
+				
 			}
 		},
 		--- 326 ---
@@ -9342,7 +9350,9 @@ function getTreeNodes()
 			}
 		},
 		--- 486 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 300,
 			name = "Attribute",
@@ -9350,17 +9360,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 1,
 			},
 			inputs = {
-				490
+				
 			},
 			out = {
-				487
+				
 			}
 		},
 		--- 487 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 300,
 			name = "Drowned Lungs",
@@ -9369,18 +9380,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "ntDrownedLungs",
 			customStats = {
-				absorbDrown = 2,
-				incrementDrown = 2
 			},
 			inputs = {
-				486
+				
 			},
 			out = {
-				488
+				
 			}
 		},
 		--- 488 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 300,
 			name = "Attribute",
@@ -9388,17 +9399,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 1,
 			},
 			inputs = {
-				487, 489
+				
 			},
 			out = {
-				495
+				
 			}
 		},
 		--- 489 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 2,
 			orbitDist = 300,
 			name = "Attribute",
@@ -9406,17 +9418,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 1,
 			},
 			inputs = {
-				491	
+				
 			},
 			out = {
-				488, 622
+				
 			}
 		},
 		--- 490---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 300,
 			name = "Attribute",
@@ -9424,17 +9437,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 1,
 			},
 			inputs = {
-				261	
+				
 			},
 			out = {
-				486, 491
+				
 			}
 		},
 		--- 491 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 300,
 			name = "Attribute",
@@ -9442,13 +9456,12 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 1,
 			},
 			inputs = {
-				490
+				
 			},
 			out = {
-				489
+				
 			}
 		},
 		--- 492 ---
@@ -9467,14 +9480,16 @@ function getTreeNodes()
 				loot = 10
 			},
 			inputs = {
-				493
+				
 			},
 			out = {
-				494
+				495, 504
 			}
 		},
 		--- 493 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 180,
 			name = "Attribute",
@@ -9483,17 +9498,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 2,
 			},
 			inputs = {
-				495
+				
 			},
 			out = {
-				492
+				
 			}
 		},
 		--- 494 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 180,
 			name = "Attribute",
@@ -9502,14 +9518,12 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 4,
-				absorbDrown = 2
 			},
 			inputs = {
-				492, 496
+				
 			},
 			out = {
-				502
+				
 			}
 		},
 		--- 495 ---
@@ -9527,10 +9541,10 @@ function getTreeNodes()
 				intelligence = 1
 			},
 			inputs = {
-				488
+				492
 			},
 			out = {
-				493, 497
+				622, 496
 			}
 		},
 		--- 496 ---
@@ -9549,14 +9563,16 @@ function getTreeNodes()
 				rarityLoot = 3
 			},
 			inputs = {
-				497
+				495
 			},
 			out = {
-				494
+				504
 			}
 		},
 		--- 497 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 180,
 			name = "Attribute",
@@ -9565,17 +9581,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 2,
 			},
 			inputs = {
-				495
+				
 			},
 			out = {
-				496
+				
 			}
 		},
 		--- 498 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9584,17 +9601,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 6,
 			},
 			inputs = {
-				503
+				
 			},
 			out = {
-				499
+				
 			}
 		},
 		--- 499 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 2,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9603,17 +9621,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 4,
 			},
 			inputs = {
-				500, 498
+				
 			},
 			out = {
-				504
+				
 			}
 		},
 		--- 500 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9622,17 +9641,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 6,
 			},
 			inputs = {
-				501
+				
 			},
 			out = {
-				499
+				
 			}
 		},
 		--- 501 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 1,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9641,17 +9661,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 3,
 			},
 			inputs = {
-				502
+				
 			},
 			out = {
-				500
+				
 			}
 		},
 		--- 502 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 2,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9660,17 +9681,18 @@ function getTreeNodes()
 			group = 95,
 			icon = "drownDamage",
 			customStats = {
-				incrementDrown = 5,
 			},
 			inputs = {
-				494
+				
 			},
 			out = {
-				501, 503
+				
 			}
 		},
 		--- 503 ---
+		-- removed 2026-10 (owner: no drown nodes): hidden, no links; the id stays
 		{
+			hidden = true,
 			orbit = 3,
 			orbitDist = 90,
 			name = "Attribute",
@@ -9679,13 +9701,12 @@ function getTreeNodes()
 			group = 95,
 			icon = "absorbDrown",
 			customStats = {
-				absorbDrown = 3,
 			},
 			inputs = {
-				502
+				
 			},
 			out = {
-				498
+				
 			}
 		},
 		--- 504 ---
@@ -9698,14 +9719,12 @@ function getTreeNodes()
 			group = 95,
 			icon = "shamanisticFury",
 			customStats = {
-				incrementDrown = 20,
-				absorbDrown = 6,
 				vitality = 8,
 				spirit = 8,
 				experience = 10
 			},
 			inputs = {
-				499
+				492, 496
 			},
 			out = {
 				
@@ -12022,7 +12041,7 @@ function getTreeNodes()
 					ksRicochet = 1
 				},
 				stats = {
-					"Bow and crossbow hits: 30% chance to ricochet to",
+					"Bow and crossbow hits: 100% chance to ricochet to",
 					"the nearest other enemy within 4 sqm for 65% of",
 					"the hit, then once more for 65% of that (42%).",
 					"Never the same target twice."
@@ -12105,7 +12124,7 @@ function getTreeNodes()
 					ksRicochet = 1
 				},
 				stats = {
-					"Bow and crossbow hits: 30% chance to ricochet to",
+					"Bow and crossbow hits: 100% chance to ricochet to",
 					"the nearest other enemy within 4 sqm for 65% of",
 					"the hit, then once more for 65% of that (42%).",
 					"Never the same target twice."
@@ -12132,7 +12151,7 @@ function getTreeNodes()
 				spirit = 2
 			},
 			inputs = {
-				489
+				261, 495
 			},
 			out = {
 				623

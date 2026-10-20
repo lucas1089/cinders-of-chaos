@@ -156,7 +156,7 @@ local function creatureSayCallback(cid, type, msg)
 		npcHandler:say(t(cid, "The Material Broker pays better for what you gather; I leave those to him."), cid)
 		return true
 	elseif has(text, "rarity", "rare", "level", "price") then
-		npcHandler:say(t(cid, "A plain piece pays the listed price. Uncommon pays half again, rare three times, epic six, legendary twelve, and higher still above that; each item level adds half a percent."), cid)
+		npcHandler:say(t(cid, "A plain piece pays the listed price. Uncommon pays half again, magic three times, rare six, legendary twelve, divine twenty-four; each item level adds half a percent."), cid)
 		return true
 	end
 	return false

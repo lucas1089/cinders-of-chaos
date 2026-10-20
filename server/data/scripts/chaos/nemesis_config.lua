@@ -31,9 +31,12 @@ return {
 	-- maxKills kills (the epithet changes with the kills, the second trait comes with the second kill).
 	level = {bumpMin = 10, bumpMax = 20, growthPct = 10, maxKills = 4, min = 1, max = 1500, healthPerLevel = 20},
 	stats = {
-		healthMult = 3.0, -- the type's max health x this x (level / base level)
-		damageMult = 1.3, -- damage dealt (monster_tiers.lua hit handler, tier "nemesis")
-		xpMult = 4.0, -- experience (monster_tiers.lua experience callback, tier "nemesis")
+		-- owner 2026-10-18 ("Nemesis has too much health and hits too hard"): was health x3.0, damage x1.3, xp x4.0.
+		-- Now about 1.7x the type's health at birth (x1.5 x the +10-20% level), a Magic tier hit, so a kill takes
+		-- roughly half as long as before; xp follows the health so it is not a better farm than before.
+		healthMult = 1.5, -- the type's max health x this x (level / base level)
+		damageMult = 1.0, -- damage dealt (monster_tiers.lua hit handler, tier "nemesis")
+		xpMult = 2.5, -- experience (monster_tiers.lua experience callback, tier "nemesis")
 		speed = 20 -- speed added
 	},
 

@@ -394,6 +394,11 @@ local function showDetails(spell)
 end
 
 -- ---------------------------------------------------------------- list
+local function currentKind()
+  local option = window.kindCombo:getCurrentOption()
+  return Core.normalizeKind(option and option.data)
+end
+
 local function currentFilter()
   local option = window.filterCombo:getCurrentOption()
   return Core.normalizeFilter(option and option.data)
@@ -433,7 +438,7 @@ local function applyFilter()
   local shown, firstShown = 0, nil
   local selectedVisible = false
   for i, row in ipairs(rows) do
-    local visible = Core.matches(spells[i], ctx, filter, text)
+    local visible = Core.matches(spells[i], ctx, filter, text, currentKind())
     row:setVisible(visible)
     if visible then
       shown = shown + 1
@@ -490,6 +495,7 @@ local function buildList()
     setIcon(row.icon, row.item, spell)
     row.name:setText(spell.name or '?')
     row.name:setColor(spell.element and elementColor(spell.element) or '#d6c9ae')
+    row.aoe:setText(Core.isAoE(spell) and tr('AoE') or '')
     row.words:setText((spell.words and spell.words ~= '') and spell.words or (spell.rune and tr('Rune') or ''))
   end
   for i = #rows, #spells + 1, -1 do
@@ -719,6 +725,11 @@ function init()
     saveFilter()
     applyFilter()
   end
+  local kindText = { all = tr('All types'), attack = tr('Attack'), support = tr('Support') }
+  for _, k in ipairs(Core.KINDS) do
+    window.kindCombo:addOption(kindText[k.key] or k.text, k.key)
+  end
+  window.kindCombo.onOptionChange = function() applyFilter() end
   window.searchEdit.onTextChange = function() applyFilter() end
   window.searchEdit.onKeyPress = onKeyPress
   window.onKeyPress = onKeyPress

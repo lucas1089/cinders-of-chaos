@@ -544,7 +544,7 @@ function Items.getId(self) return self.id end
 function Items.getCount(self) return self.count end
 function Items.getName(self) return self.std[ITEM_ATTRIBUTE_NAME] or (types[self.id] or {}).name or "thing" end
 function Items.getType(self) return typeOf(self.id) end
-function Items.getDescription(self) return "You see " .. self:getName() .. "." end
+function Items.getDescription(self) return self.desc or ("You see " .. self:getName() .. ".") end
 function Items.getCustomAttribute(self, k) return self.custom[k:lower()] end
 function Items.setCustomAttribute(self, k, v) self.custom[k:lower()] = v end
 function Items.removeCustomAttribute(self, k) self.custom[k:lower()] = nil end
@@ -772,6 +772,10 @@ end
 dofile("data/scripts/chaos/stash.lua")
 local S = ChaosStash
 local store = S.store
+-- the tests below are the stash as it worked (deposits, the depot -> stash migration); the stash -> depot direction of
+-- 2026-10-17 (stash_config.lua toDepot, depot.migrate) has its own section at the end of this part
+Chaos.stashConfig.toDepot.enabled = false
+Chaos.stashConfig.depot.migrate = true
 check(events.ChaosStashExtended ~= nil and events.ChaosStashLogin ~= nil, "events registered")
 check(ChaosCommands == nil or ChaosCommands.handlers == nil or ChaosCommands.handlers.stash == nil,
 	"no player command: Stow Everything is a button of the window (owner rule)")
@@ -1401,6 +1405,228 @@ eq(openCount(), 0, "staff remove: no journal row left open")
 eq(#st.bp().children, 0, "staff give and remove never touch the backpack")
 end
 
+-- ====================================================================== the stash -> depot migration (2026-10-17)
+;(function() -- a function of its own: the main chunk is at the 200 locals limit
+	local scfg = Chaos.stashConfig
+	eq(scfg.storage.toDepot, 7100013, "the stash -> depot storage key is in the stash block 7100011 - 7100019")
+	local function depotBox(free)
+		local b = container(25453)
+		b.addItemEx = function(self, item)
+			if #self.children >= (self.cap or 1000) then return 1 end
+			self.children[#self.children + 1] = item
+			item.parent = self
+			return RETURNVALUE_NOERROR
+		end
+		return {box = b, free = free, tab = 1}
+	end
+	local function fill(guid)
+		resetDB()
+		DB.plain[plainKey(guid, 2148)] = {player = guid, item = 2148, count = 250, tab = 1}
+		local sword = rolled()
+		local codec2, data2 = IC.encode(sword)
+		DB.nextId = DB.nextId + 1
+		DB.rows[DB.nextId] = {id = DB.nextId, player = guid, item = 2400, count = 1, codec = codec2, data = data2, tab = 1,
+			classes = "", name = "Doombringer", info = "", rarity = 5, state = 0, seq = 0, source = "deposit"}
+		return sword
+	end
+	local function countIn(box, id)
+		local c = 0
+		for _, it in ipairs(box.children) do if it.id == id then c = c + it.count end end
+		return c
+	end
+	-- switched on: the stash takes nothing new
+	scfg.toDepot.enabled = true
+	local hz = newPlayer(31)
+	pz[key3(hz.pos)] = true
+	local gift = newItem(2400)
+	hz.bp():getItems()
+	hz.bp().children[1] = gift; gift.parent = hz.bp()
+	eq(S.deposit(hz, gift), false, "closed: a deposit is refused")
+	has(hz.cancels[#hz.cancels], "closed to new items", "closed: the reason names the depot")
+	eq(ChaosStash.storeItem(hz, gift), false, "closed: scripts cannot deposit either")
+	eq(S.canDeposit(hz), false, "closed: canDeposit")
+	-- everything fits
+	local sword = fill(31)
+	local slot = depotBox(10)
+	local moved, left, done = S.migrateToDepot(hz, {slot})
+	eq(moved .. "/" .. left .. "/" .. tostring(done), "2/0/true", "everything moved")
+	eq(countIn(slot.box, 2148), 250, "250 gold in the depot")
+	eq(#slot.box.children, 4, "3 gold stacks and the sword")
+	local made
+	for _, it in ipairs(slot.box.children) do if it.id == 2400 then made = it end end
+	eq(made and made.custom.rarity, 5, "the stored item came back with its attributes")
+	eq(made and made.std[ITEM_ATTRIBUTE_NAME], "Doombringer", "and its name")
+	eq(next(DB.plain), nil, "the stash has no plain stack left") eq(openRows(), 0, "no journal row left")
+	eq(slot.free, 6, "the room was counted")
+	eq(hz.storage[scfg.storage.toDepot], scfg.toDepot.version, "the version is marked")
+	eq(DB.logs[#DB.logs] and DB.logs[#DB.logs].action, "todepot", "logged")
+	has(hz.texts[#hz.texts], "moved into your depot", "told")
+	local again = S.migrateToDepot(hz, {depotBox(10)})
+	eq(again, 0, "idempotent: nothing moves a second time")
+	-- the depot is nearly full: the rest stays in the stash, nothing lost
+	local hf = newPlayer(32)
+	fill(32)
+	local small = depotBox(2)
+	moved, left, done = S.migrateToDepot(hf, {small})
+	eq(countIn(small.box, 2148), 200, "only 2 stacks fit")
+	eq(DB.plain[plainKey(32, 2148)] and DB.plain[plainKey(32, 2148)].count, 50, "50 gold stay in the stash")
+	eq(left, 2, "the gold remainder and the sword are left")
+	eq(done, true, "done: the open tabs are full (the rest waits, withdraw-only)")
+	local swordRows = 0
+	for _, r in pairs(DB.rows) do if r.player == 32 and r.state == 0 then swordRows = swordRows + 1 end end
+	eq(swordRows, 1, "the sword row stays an entry")
+	-- a failing save puts the entry back (no loss, no doubling)
+	local hs = newPlayer(33)
+	fill(33)
+	hs.saveOk = false
+	local sl = depotBox(10)
+	moved = S.migrateToDepot(hs, {sl})
+	eq(moved, 0, "failed saves: nothing moved")
+	eq(#sl.box.children, 0, "failed saves: the depot is as it was")
+	eq(DB.plain[plainKey(33, 2148)] and DB.plain[plainKey(33, 2148)].count, 250, "failed saves: the stash keeps the gold")
+	eq(hs.storage[scfg.storage.toDepot], nil, "failed saves: the version is not marked (tried again at the next opening)")
+	-- batches
+	local hb = newPlayer(34)
+	fill(34)
+	scfg.toDepot.batch = 1
+	moved, left, done = S.migrateToDepot(hb, {depotBox(10)})
+	eq(moved .. "/" .. tostring(done), "1/false", "batch of 1: one entry, not done")
+	eq(hb.storage[scfg.storage.toDepot], nil, "batch: the version waits")
+	scfg.toDepot.batch = 40
+	-- off: nothing happens
+	scfg.toDepot.enabled = false
+	eq(S.migrateToDepot(newPlayer(35), {depotBox(5)}), 0, "disabled: nothing moves")
+	check(S.toDepotDue(newPlayer(35)) == false, "disabled: not due")
+end)()
+
+-- ====================================================================== the list: 25 entries, deposits and withdrawals
+-- bug: with ~10 entries the whole list vanished after the first row, nothing could be withdrawn, new items did not show.
+-- Every addItems packet carries up to 40 entries with a look text of up to 1000 bytes; a packet over the engine's
+-- 8192 byte string limit is sent in "S/P/E" parts that this window (a plain extended opcode listener) cannot read, so
+-- those packets were lost. Each addItems packet must fit in one extended opcode message, whatever the entries.
+;(function()
+	local function enc(v)
+		local t = type(v)
+		if t == "string" then return '"' .. v:gsub('[%c"\\]', function(c) return string.format("\\u%04x", c:byte()) end) .. '"' end
+		if t ~= "table" then return tostring(v) end
+		local parts = {}
+		if #v > 0 or next(v) == nil then
+			for _, x in ipairs(v) do parts[#parts + 1] = enc(x) end
+			return "[" .. table.concat(parts, ",") .. "]"
+		end
+		for k, x in pairs(v) do parts[#parts + 1] = enc(tostring(k)) .. ":" .. enc(x) end
+		return "{" .. table.concat(parts, ",") .. "}"
+	end
+	local p = newPlayer(60)
+	pz[key3(p.pos)] = true
+	local pbp = p.bp()
+	local function put(item) pbp.children[#pbp.children + 1] = item; item.parent = pbp; return item end
+	local function slot(item)
+		for i, c in ipairs(pbp.children) do if c == item then return i - 1 end end
+	end
+	local longText = ("grim runes of the ashen court "):rep(34):sub(1, 990)
+	-- 12 whole items with a long look text and 13 stack types: 25 entries
+	local items = {}
+	for i = 1, 12 do
+		local w = rolled()
+		w.std[ITEM_ATTRIBUTE_NAME] = "Blade " .. i
+		w.custom.chaos_iid = nil
+		w.desc = "You see Blade " .. i .. ". " .. longText
+		items[#items + 1] = put(w)
+	end
+	for i = 1, 13 do
+		types[9100 + i] = {name = "stack " .. i, stackable = true}
+		items[#items + 1] = put(newItem(9100 + i, 10 + i))
+	end
+	-- the sum of what the character and the stash hold, per item kind (whole items by name)
+	local function sums()
+		local m = {}
+		local function add(k, c) m[k] = (m[k] or 0) + c end
+		for _, it in ipairs(pbp:getItems(true)) do
+			add(Items.isStackable(it) and ("id" .. it.id) or it:getName(), it.count)
+		end
+		for _, r in pairs(DB.plain) do
+			if r.player == 60 then add("id" .. r.item, r.count) end
+		end
+		for _, r in pairs(DB.rows) do
+			if r.player == 60 and r.state == 0 then add(r.name, r.count) end
+		end
+		return m
+	end
+	local function same(a, b)
+		for k, v in pairs(a) do if b[k] ~= v then return false, k end end
+		for k, v in pairs(b) do if a[k] ~= v then return false, k end end
+		return true
+	end
+	local start = sums()
+	local jsonBefore = json.encode
+	json.encode = enc
+	local worst = 0
+	local function measure()
+		for _, s in ipairs(sent) do
+			if s.data and s.data.make == "addItems" then worst = math.max(worst, #enc({action = s.action, data = s.data})) end
+		end
+	end
+	for i, it in ipairs(items) do
+		local before = sums()
+		req(p, {make = "Stash", Pos = {x = 65535, y = 64, z = slot(it)}, UpdateList = true})
+		measure()
+		local ok, k = same(before, sums())
+		check(ok, "deposit " .. i .. ": inventory + stash unchanged (" .. tostring(k) .. ")")
+		eq(#itemsList(), i, "deposit " .. i .. ": the list shows all " .. i .. " entries")
+	end
+	-- a second pile of a stack type merges with its entry
+	for i = 1, 3 do
+		local more = put(newItem(9100 + i, 5))
+		start["id" .. (9100 + i)] = start["id" .. (9100 + i)] + 5
+		local before = sums()
+		req(p, {make = "Stash", Pos = {x = 65535, y = 64, z = slot(more)}, UpdateList = true})
+		check(same(before, sums()), "second pile " .. i .. ": sums unchanged")
+	end
+	eq(#itemsList(), 25, "25 entries after the merges")
+	check(worst > 0 and worst <= Chaos.extendedOpcodeMax, "every addItems packet fits one extended opcode message (" .. worst .. " bytes)")
+	local all = itemsList()
+	local isFirst, isLast = 0, 0
+	for _, s in ipairs(sent) do
+		if s.data and s.data.make == "addItems" then
+			if s.data.isFirst then isFirst = isFirst + 1 end
+			if s.data.isLast then isLast = isLast + 1 end
+		end
+	end
+	eq(isFirst .. "/" .. isLast, "1/1", "one first and one last packet")
+	-- withdraw the 13th listed entry, as the client asks (item, id, row, count of the dialog)
+	local function ask(e)
+		return {make = "Redeem", item = e.id, id = e.uniqueId, row = e.row, count = e.row and 1 or e.count}
+	end
+	local thirteenth = all[13]
+	local before = sums()
+	local expectKey = thirteenth.row and thirteenth.name or ("id" .. thirteenth.id)
+	req(p, ask(thirteenth))
+	local after = sums()
+	check(same(before, after), "withdraw the 13th: inventory + stash unchanged")
+	eq(#itemsList(), 24, "withdraw the 13th: 24 entries left")
+	local gone = true
+	for _, e in ipairs(itemsList()) do
+		if e.row == thirteenth.row and e.id == thirteenth.id and e.name == thirteenth.name then gone = false end
+	end
+	check(gone, "the 13th entry (" .. tostring(thirteenth.name) .. ") is the one that left")
+	-- then every entry out, one by one, from the list as it is shown each time; half of each stack first
+	for round = 1, 30 do
+		local list = itemsList()
+		if #list == 0 then break end
+		local e = list[((round * 7) % #list) + 1]
+		local pre = sums()
+		local req1 = ask(e)
+		if not e.row and e.count > 1 then req1.count = math.ceil(e.count / 2) end
+		req(p, req1)
+		check(same(pre, sums()), "withdraw round " .. round .. ": sums unchanged")
+		measure()
+	end
+	check(worst <= Chaos.extendedOpcodeMax, "every packet fits after the withdrawals (" .. worst .. " bytes)")
+	json.encode = jsonBefore
+	check(same(start, sums()), "after everything: the character and stash hold what they held at the start")
+end)()
+
 -- ====================================================================== the SQL
 -- the real store, against a recording database: integers formatted as integers, texts escaped
 dofile("data/scripts/chaos/stash.lua")
@@ -1420,6 +1646,15 @@ for _, q in ipairs(queries) do
 	check(not q:find("OR 1=1", 1, true), "no injected id in: " .. q:sub(1, 60))
 end
 check(#queries >= 5, "the store wrote its queries (" .. #queries .. ")")
+
+-- a depot locker opens the stash window (depot.lua afterOpen -> S.openWindow): a Toggle that keeps it open
+do
+	local p = newPlayer(9901)
+	sent = {}
+	S.openWindow(p)
+	local t = last("Toggle")
+	check(t ~= nil and t.open == true, "the locker asks the client for the stash window (Toggle with open)")
+end
 
 print(string.format("stash_test: %d checks, %d failures", count, failures))
 if failures > 0 then

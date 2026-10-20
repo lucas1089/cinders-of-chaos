@@ -1,0 +1,151 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+corpselight_lurker,outfit,creature,Corpselight Lurker,pack30_looks/corpselight_lurker,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=30|body=38|legs=76|feet=56
+crag_troll,outfit,creature,Crag Troll,pack30_looks/crag_troll,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=30|body=76|legs=23|feet=19
+deepforge_fiend,outfit,creature,Deepforge Fiend,pack30_looks/deepforge_fiend,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=95|legs=76|feet=38
+doomcrow_flock,outfit,creature,Doomcrow Flock,pack30_looks/doomcrow_flock,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=76|legs=76|feet=95
+gallows_oak,outfit,creature,Gallows Oak,pack30_looks/gallows_oak,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=40|legs=76|feet=62
+gibbet_fledgling,outfit,creature,Gibbet Fledgling,pack30_looks/gibbet_fledgling,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=95|legs=57|feet=76
+gibbetwing,outfit,creature,Gibbetwing,pack30_looks/gibbetwing,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=76|legs=76|feet=76
+grimhowl_werewolf,outfit,creature,Grimhowl Werewolf,pack30_looks/grimhowl_werewolf,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=20|body=57|legs=75|feet=95
+halforc_cutthroat,outfit,creature,Halforc Cutthroat,pack30_looks/halforc_cutthroat,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=95|legs=95|feet=76
+hookspear_goblin,outfit,creature,Hookspear Goblin,pack30_looks/hookspear_goblin,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=95|legs=76|feet=96
+ironbound_troll,outfit,creature,Ironbound Troll,pack30_looks/ironbound_troll,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=95|legs=95|feet=96
+ironmask_bannerman,outfit,creature,Ironmask Bannerman,pack30_looks/ironmask_bannerman,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=96
+ironmask_bowman,outfit,creature,Ironmask Bowman,pack30_looks/ironmask_bowman,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=76|feet=96
+ironmask_brander,outfit,creature,Ironmask Brander,pack30_looks/ironmask_brander,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=96
+ironmask_grunt,outfit,creature,Ironmask Grunt,pack30_looks/ironmask_grunt,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=96
+ironmask_taskmaster,outfit,creature,Ironmask Taskmaster,pack30_looks/ironmask_taskmaster,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=96
+ironmask_warbreaker,outfit,creature,Ironmask Warbreaker,pack30_looks/ironmask_warbreaker,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=95|feet=96
+mound_haunt,outfit,creature,Mound Haunt,pack30_looks/mound_haunt,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=19|body=76|legs=57|feet=95
+nailcrown_regent,outfit,creature,Nailcrown Regent,pack30_looks/nailcrown_regent,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=57|legs=131|feet=114
+shroud_brood,outfit,creature,Shroud Brood,pack30_looks/shroud_brood,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=95|body=19|legs=38|feet=19
+shroudweaver,outfit,creature,Shroudweaver,pack30_looks/shroudweaver,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=95|body=95|legs=76|feet=38
+siege_behemoth,outfit,creature,Siege Behemoth,pack30_looks/siege_behemoth,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=39|legs=115|feet=75
+sootfang_rider,outfit,creature,Sootfang Rider,pack30_looks/sootfang_rider,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=57|legs=95|feet=96
+sootfang_wolf,outfit,creature,Sootfang Wolf,pack30_looks/sootfang_wolf,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=38|feet=96
+thornveil_wraith,outfit,creature,Thornveil Wraith,pack30_looks/thornveil_wraith,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=38|body=95|legs=57|feet=76
+blight_bloom,outfit,creature,Blight Bloom,pack30_looks/blight_bloom,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=19|body=57|legs=76|feet=40
+blight_hound,outfit,creature,Blight Hound,pack30_looks/blight_hound,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=75|body=20|legs=76|feet=76
+blightcrown_matron,outfit,creature,Blightcrown Matron,pack30_looks/blightcrown_matron,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=75|body=38|legs=95|feet=76
+bloom_husk,outfit,creature,Bloom Husk,pack30_looks/bloom_husk,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=75|body=22|legs=76|feet=56
+carrion_drake,outfit,creature,Carrion Drake,pack30_looks/carrion_drake,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=76|legs=95|feet=38
+chained_runt,outfit,creature,Chained Runt,pack30_looks/chained_runt,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=95|legs=76|feet=75
+crypt_crab,outfit,creature,Crypt Crab,pack30_looks/crypt_crab,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=38|body=95|legs=76|feet=2
+dirge_herald,outfit,creature,Dirge Herald,pack30_looks/dirge_herald,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=21|legs=76|feet=38
+gatewrack_ogre,outfit,creature,Gatewrack Ogre,pack30_looks/gatewrack_ogre,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=95|legs=95|feet=95
+geode_seer,outfit,creature,Geode Seer,pack30_looks/geode_seer,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=19|body=57|legs=40|feet=75
+gildguard_revenant,outfit,creature,Gildguard Revenant,pack30_looks/gildguard_revenant,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=95|legs=76|feet=21
+gnawbone_swarm,outfit,creature,Gnawbone Swarm,pack30_looks/gnawbone_swarm,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=2|body=22|legs=76|feet=37
+grave_lantern,outfit,creature,Grave Lantern,pack30_looks/grave_lantern,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=38|legs=76|feet=75
+limb_hoarder,outfit,creature,Limb Hoarder,pack30_looks/limb_hoarder,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=21|body=76|legs=39|feet=40
+masque_dancer,outfit,creature,Masque Dancer,pack30_looks/masque_dancer,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=19|body=76|legs=38|feet=22
+maw_grub,outfit,creature,Maw Grub,pack30_looks/maw_grub,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=22|body=75|legs=1|feet=58
+oathbroken_colossus,outfit,creature,Oathbroken Colossus,pack30_looks/oathbroken_colossus,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=131|legs=76|feet=41
+pyre_stork,outfit,creature,Pyre Stork,pack30_looks/pyre_stork,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=37|legs=95|feet=75
+quicksilver_wraith,outfit,creature,Quicksilver Wraith,pack30_looks/quicksilver_wraith,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=22|body=39|legs=21|feet=2
+reliquary_urn,outfit,creature,Reliquary Urn,pack30_looks/reliquary_urn,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=76|legs=76|feet=75
+rootbound_pilgrim,outfit,creature,Rootbound Pilgrim,pack30_looks/rootbound_pilgrim,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=40|body=76|legs=41|feet=76
+spire_gargoyle,outfit,creature,Spire Gargoyle,pack30_looks/spire_gargoyle,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=38|body=76|legs=30|feet=38
+veiled_crawler,outfit,creature,Veiled Crawler,pack30_looks/veiled_crawler,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=19|legs=76|feet=19
+wan_sentry,outfit,creature,Wan Sentry,pack30_looks/wan_sentry,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=11|legs=95|feet=75
+wax_penitent,outfit,creature,Wax Penitent,pack30_looks/wax_penitent,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=1|body=95|legs=40|feet=2
+ashmaw_bonecaller,outfit,creature,Ashmaw Bonecaller,pack30_looks/ashmaw_bonecaller,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=39|legs=19|feet=57
+ashmaw_raider,outfit,creature,Ashmaw Raider,pack30_looks/ashmaw_raider,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=39|legs=19|feet=57
+ashmaw_warlord,outfit,creature,Ashmaw Warlord,pack30_looks/ashmaw_warlord,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=39|legs=19|feet=57
+ashveil_hierarch,outfit,creature,Ashveil Hierarch,pack30_looks/ashveil_hierarch,0,0,4,4,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=40|feet=38
+bellhelm_zealot,outfit,creature,Bellhelm Zealot,pack30_looks/bellhelm_zealot,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=20|legs=21|feet=57
+bonepicker,outfit,creature,Bonepicker,pack30_looks/bonepicker,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=37|body=21|legs=21|feet=22
+caged_convict,outfit,creature,Caged Convict,pack30_looks/caged_convict,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=38|body=20|legs=22|feet=39
+gashrunner,outfit,creature,Gashrunner,pack30_looks/gashrunner,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=22|legs=95|feet=21
+gnarlback,outfit,creature,Gnarlback,pack30_looks/gnarlback,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=76|legs=76|feet=57
+gorebristle,outfit,creature,Gorebristle,pack30_looks/gorebristle,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=21|body=76|legs=76|feet=21
+gravemoth,outfit,creature,Gravemoth,pack30_looks/gravemoth,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=76|legs=19|feet=76
+gullet_worm,outfit,creature,Gullet Worm,pack30_looks/gullet_worm,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=21|legs=95|feet=38
+hollowhorn,outfit,creature,Hollowhorn,pack30_looks/hollowhorn,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=57|legs=20|feet=95
+leechwing,outfit,creature,Leechwing,pack30_looks/leechwing,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=21|legs=76|feet=56
+mange_hound,outfit,creature,Mange Hound,pack30_looks/mange_hound,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=22|body=39|legs=76|feet=76
+mirejaw,outfit,creature,Mirejaw,pack30_looks/mirejaw,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=76|body=57|legs=95|feet=76
+pit_delver,outfit,creature,Pit Delver,pack30_looks/pit_delver,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=38|body=22|legs=76|feet=39
+pitgnawer,outfit,creature,Pitgnawer,pack30_looks/pitgnawer,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=20|body=76|legs=57|feet=115
+reedgrave,outfit,creature,Reedgrave,pack30_looks/reedgrave,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=57|legs=39|feet=21
+rimecairn,outfit,creature,Rimecairn,pack30_looks/rimecairn,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=30|body=11|legs=76|feet=10
+rustguard,outfit,creature,Rustguard,pack30_looks/rustguard,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=23|body=40|legs=20|feet=39
+slagborer,outfit,creature,Slagborer,pack30_looks/slagborer,0,0,1,1,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=57|legs=21|feet=20
+slagborer_queen,outfit,creature,Slagborer Queen,pack30_looks/slagborer_queen,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=37|legs=57|feet=22
+slagborer_reaver,outfit,creature,Slagborer Reaver,pack30_looks/slagborer_reaver,0,0,2,2,4,2+4,,new,,idle_ms=333|walk_ms=125|head=39|body=20|legs=37|feet=22
+slagheart,outfit,creature,Slagheart,pack30_looks/slagheart,0,0,3,3,4,2+4,,new,,idle_ms=333|walk_ms=125|head=57|body=39|legs=57|feet=22
+corpse_corpselight_lurker,item,corpse,dead corpselight lurker,pack30_looks/corpselight_lurker_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_crag_troll,item,corpse,dead crag troll,pack30_looks/crag_troll_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_deepforge_fiend,item,corpse,dead deepforge fiend,pack30_looks/deepforge_fiend_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_doomcrow_flock,item,corpse,dead doomcrow flock,pack30_looks/doomcrow_flock_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gallows_oak,item,corpse,dead gallows oak,pack30_looks/gallows_oak_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gibbet_fledgling,item,corpse,dead gibbet fledgling,pack30_looks/gibbet_fledgling_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gibbetwing,item,corpse,dead gibbetwing,pack30_looks/gibbetwing_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_grimhowl_werewolf,item,corpse,dead grimhowl werewolf,pack30_looks/grimhowl_werewolf_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_halforc_cutthroat,item,corpse,dead halforc cutthroat,pack30_looks/halforc_cutthroat_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_hookspear_goblin,item,corpse,dead hookspear goblin,pack30_looks/hookspear_goblin_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironbound_troll,item,corpse,dead ironbound troll,pack30_looks/ironbound_troll_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_bannerman,item,corpse,dead ironmask bannerman,pack30_looks/ironmask_bannerman_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_bowman,item,corpse,dead ironmask bowman,pack30_looks/ironmask_bowman_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_brander,item,corpse,dead ironmask brander,pack30_looks/ironmask_brander_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_grunt,item,corpse,dead ironmask grunt,pack30_looks/ironmask_grunt_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_taskmaster,item,corpse,dead ironmask taskmaster,pack30_looks/ironmask_taskmaster_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ironmask_warbreaker,item,corpse,dead ironmask warbreaker,pack30_looks/ironmask_warbreaker_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_mound_haunt,item,corpse,dead mound haunt,pack30_looks/mound_haunt_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_nailcrown_regent,item,corpse,dead nailcrown regent,pack30_looks/nailcrown_regent_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_shroud_brood,item,corpse,dead shroud brood,pack30_looks/shroud_brood_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_shroudweaver,item,corpse,dead shroudweaver,pack30_looks/shroudweaver_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_siege_behemoth,item,corpse,dead siege behemoth,pack30_looks/siege_behemoth_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_sootfang_rider,item,corpse,dead sootfang rider,pack30_looks/sootfang_rider_corpse,0,0,4,4,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_sootfang_wolf,item,corpse,dead sootfang wolf,pack30_looks/sootfang_wolf_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_thornveil_wraith,item,corpse,dead thornveil wraith,pack30_looks/thornveil_wraith_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_blight_bloom,item,corpse,dead blight bloom,pack30_looks/blight_bloom_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_blight_hound,item,corpse,dead blight hound,pack30_looks/blight_hound_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_blightcrown_matron,item,corpse,dead blightcrown matron,pack30_looks/blightcrown_matron_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_bloom_husk,item,corpse,dead bloom husk,pack30_looks/bloom_husk_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_carrion_drake,item,corpse,dead carrion drake,pack30_looks/carrion_drake_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_chained_runt,item,corpse,dead chained runt,pack30_looks/chained_runt_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_crypt_crab,item,corpse,dead crypt crab,pack30_looks/crypt_crab_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_dirge_herald,item,corpse,dead dirge herald,pack30_looks/dirge_herald_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gatewrack_ogre,item,corpse,dead gatewrack ogre,pack30_looks/gatewrack_ogre_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_geode_seer,item,corpse,dead geode seer,pack30_looks/geode_seer_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gildguard_revenant,item,corpse,dead gildguard revenant,pack30_looks/gildguard_revenant_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gnawbone_swarm,item,corpse,dead gnawbone swarm,pack30_looks/gnawbone_swarm_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_grave_lantern,item,corpse,dead grave lantern,pack30_looks/grave_lantern_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_limb_hoarder,item,corpse,dead limb hoarder,pack30_looks/limb_hoarder_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_masque_dancer,item,corpse,dead masque dancer,pack30_looks/masque_dancer_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_maw_grub,item,corpse,dead maw grub,pack30_looks/maw_grub_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_oathbroken_colossus,item,corpse,dead oathbroken colossus,pack30_looks/oathbroken_colossus_corpse,0,0,4,4,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_pyre_stork,item,corpse,dead pyre stork,pack30_looks/pyre_stork_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_quicksilver_wraith,item,corpse,dead quicksilver wraith,pack30_looks/quicksilver_wraith_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_reliquary_urn,item,corpse,dead reliquary urn,pack30_looks/reliquary_urn_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_rootbound_pilgrim,item,corpse,dead rootbound pilgrim,pack30_looks/rootbound_pilgrim_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_spire_gargoyle,item,corpse,dead spire gargoyle,pack30_looks/spire_gargoyle_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_veiled_crawler,item,corpse,dead veiled crawler,pack30_looks/veiled_crawler_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_wan_sentry,item,corpse,dead wan sentry,pack30_looks/wan_sentry_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_wax_penitent,item,corpse,dead wax penitent,pack30_looks/wax_penitent_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ashmaw_bonecaller,item,corpse,dead ashmaw bonecaller,pack30_looks/ashmaw_bonecaller_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ashmaw_raider,item,corpse,dead ashmaw raider,pack30_looks/ashmaw_raider_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ashmaw_warlord,item,corpse,dead ashmaw warlord,pack30_looks/ashmaw_warlord_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_ashveil_hierarch,item,corpse,dead ashveil hierarch,pack30_looks/ashveil_hierarch_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_bellhelm_zealot,item,corpse,dead bellhelm zealot,pack30_looks/bellhelm_zealot_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_bonepicker,item,corpse,dead bonepicker,pack30_looks/bonepicker_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_caged_convict,item,corpse,dead caged convict,pack30_looks/caged_convict_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gashrunner,item,corpse,dead gashrunner,pack30_looks/gashrunner_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gnarlback,item,corpse,dead gnarlback,pack30_looks/gnarlback_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gorebristle,item,corpse,dead gorebristle,pack30_looks/gorebristle_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gravemoth,item,corpse,dead gravemoth,pack30_looks/gravemoth_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_gullet_worm,item,corpse,dead gullet worm,pack30_looks/gullet_worm_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_hollowhorn,item,corpse,dead hollowhorn,pack30_looks/hollowhorn_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_leechwing,item,corpse,dead leechwing,pack30_looks/leechwing_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_mange_hound,item,corpse,dead mange hound,pack30_looks/mange_hound_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_mirejaw,item,corpse,dead mirejaw,pack30_looks/mirejaw_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_pit_delver,item,corpse,dead pit delver,pack30_looks/pit_delver_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_pitgnawer,item,corpse,dead pitgnawer,pack30_looks/pitgnawer_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_reedgrave,item,corpse,dead reedgrave,pack30_looks/reedgrave_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_rimecairn,item,corpse,dead rimecairn,pack30_looks/rimecairn_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_rustguard,item,corpse,dead rustguard,pack30_looks/rustguard_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_slagborer,item,corpse,dead slagborer,pack30_looks/slagborer_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_slagborer_queen,item,corpse,dead slagborer queen,pack30_looks/slagborer_queen_corpse,0,0,3,3,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_slagborer_reaver,item,corpse,dead slagborer reaver,pack30_looks/slagborer_reaver_corpse,0,0,1,1,1,1,container forceuse notmoveable usable,new,,race=blood
+corpse_slagheart,item,corpse,dead slagheart,pack30_looks/slagheart_corpse,0,0,2,2,1,1,container forceuse notmoveable usable,new,,race=blood

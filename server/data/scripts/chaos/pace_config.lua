@@ -110,5 +110,7 @@ return {
 	skip = {},
 
 	-- empty corpses decay after this many seconds (0: the stock decay). More kills leave more corpses.
-	emptyCorpseSeconds = 30
+	emptyCorpseSeconds = 30,
+	-- corpses with loot left in them decay after this many seconds, all monsters (0: the stock decay; never lengthens)
+	corpseSeconds = 120
 }

@@ -24,6 +24,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_season_events.py      season isolation hooks (when the tool exists)
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
+               tools/patch_shadow_mute.py        shadow mute hook in the public channels (when the tool exists)
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
                tools/patch_base_spellbook.py     the stock spellbook item opens the Spellbook window (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
@@ -63,6 +64,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                36995..37442) in items.otb / items.xml, their equip entries in movements.xml and weapon entries in
                weapons.xml (levels, classes, stats; after vocations, whose class names the lists use); dropped only
                once ChaosGearSets.PAIR28 is on (README "Equipment sets (pair 28)")
+  pack30items  tools/install_pack30_items.py     the third-party pack art items of client pair 30 (weapons, flasks, corpses,
+               grounds, decoration, buildings, animated objects; server ids 37443..39999, overflow 40113..) from
+               data/items/pack30_*.csv in items.otb / items.xml (nothing while no manifest exists; used only once
+               ChaosPack30Art.PAIR30 is on; README "Pack art (pair 30)")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -84,6 +89,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   candlemarks  tools/install_candlemarks.py      Osric the Chandler (the Candlemark shop NPC) in data/npc (README "Candlemarks")
   idlekick     tools/patch_base_idle_kick.py     config.lua kickIdlePlayerAfterMinutes = 1440: idle characters stay online and earn
                Candlemarks (the stock 15 kicks them after 16 minutes; README "Candlemarks")
+  servicenpcs  tools/install_service_npcs.py    the five service NPCs (stash keeper, pocket boss NPC, banker, house broker, services
+               clerk) and their shared dialogue in data/npc (README "Service NPCs")
   conquest     tools/install_conquest.py         the Conquest vendor NPC in data/npc (README "Conquest Tokens, the Conquest
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
@@ -92,15 +99,19 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
-  spells       tools/register_spells.py          the Chaos spells (README "Install" 3)
+  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells go; their ids are free (C6, 2026-10-20)
+               tools/register_spells.py          the Chaos spells (README "Install" 3)
                tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
                                                  below 256 (README "Spell ids below 256")
                CLASS HOOK: every tools/install_class_*.py (sorted), called as `install_class_X.py DATA_DIR [--dry-run]`;
                the class lines (Necromancer / Monk / Templar) put their own spell or data installers there
                tools/rename_spells.py --sql      Chaos names of the stock spells and runes (+ the player_spells UPDATEs)
-               tools/patch_spell_timings.py      cooldowns and group cooldowns of base attack spells from
+               tools/patch_spell_timings.py      cooldowns, group cooldowns, levels and mana of base attack spells from
                                                  data/spells/spell_timings.csv (no attack group lock over 2 s; spells
-                                                 README "Rotations")
+                                                 README "Rotations", "Level 8 spells", "Mana runway")
+               tools/patch_aoe_damage.py         area damage of the base attack spells = the single-target hit of their
+                                                 tier (Glacier Fan, Cinder Fan, Rime Breath, Searing Gust, Earthrend,
+                                                 Sanctum Burst, Radiant Shard; spells README "Area damage is uniform")
                tools/patch_mystic_stock_fx.py    Mystic line effects in the base Bewitching Hex and Arcane Ripple
                                                  scripts (spells/README_FX.md "Mystic line effects")
                tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
@@ -113,6 +124,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
                vocations, which still reads the launchers' ammo type, and after spells)
+  throwables   tools/patch_base_throwables.py    the stackable throwing weapons (spear, throwing star, royal spear, ...;
+               data/lib/chaos_throwables.lua) leave monster loot, NPC shops and script rewards (README "Throwing weapons";
+               after archery, whose functions it uses)
   uniqueequip  tools/install_unique_equip.py     the uniques with an equip rule of their own (chaos_items.xml equipLevel /
                equipLines: the second round's archetype uniques) get it: their base items' Equip entries in
                movements.xml check the looser rule and a movement script holds each copy to its own (unique or
@@ -123,6 +137,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
                names with their article by item id, unknown races mapped (README "Base server start warnings"; after
                itemnames)
+  gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
+  annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
+  absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
+               type (README "Absorb ceiling"; matches engine patch 0049)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")
@@ -155,7 +173,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
-               teleports"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
+               teleports"); with tools/hall_hunts.csv the hall is ordered by level (z 7 levels 1-500, z 6 500-1000, z 5
+               1000+), the base quests move to their own hall with their rewards, the daily/weekly reward chests of the
+               plaza go and the low-level hunts are added (README "Hall order"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
                areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
@@ -192,6 +212,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                window instead of the base modal window, so every dungeon entry goes through the queue (one run per
                box, the time cap and warnings); the modal run with its box scan and fixed timer never starts (README
                "Instance limits")
+  waystonehideout tools/patch_waystone_hideout.py  the base waystone device (tier_maps.lua, item 29624, action id 42707)
+               works in the owner's own hideout as well as in a house, and the texts say so (the refusal, the "no space"
+               message, the six Waystone Tier descriptions in items.xml); the hideout has the device built in (README
+               "Hideouts", "Waystone device")
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -222,7 +246,7 @@ REPO_SERVER = os.path.dirname(HERE)
 REPO_DATA = os.path.join(REPO_SERVER, 'data')
 SQL_DIR = os.path.join(REPO_SERVER, 'sql')
 
-STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'storefood', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
+STEPS = ['files', 'lib', 'monsternames', 'vocations', 'events', 'basecrafting', 'basecraftingui', 'basecraftingbonus', 'weapons', 'lategame', 'crafting', 'orbs', 'darktiles', 'gems', 'salvage', 'omens', 'ascended', 'factions', 'pouches', 'storefood', 'depot', 'charms', 'professions', 'gamble', 'supports', 'outfits', 'auras', 'donoritems', 'packitems', 'fistweapons', 'monsters', 'spawns', 'spells', 'archery', 'throwables', 'uniqueequip', 'itemnames', 'towns', 'npcnames', 'worldtexts', 'houses', 'poi', 'autoloot', 'commands', 'autosave', 'stalls', 'sql']
 
 # folders copied from the repo's server/data into SERVER_DIR/data: (repo sub-folder, file filter, recursive)
 COPY = [
@@ -405,6 +429,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_report_chat.py')):
         ok6, more = run_tool([tool('patch_report_chat.py'), data], 'patch_report_chat.py')
         ok, lines = ok6, lines + more
+    if ok and os.path.isfile(tool('patch_shadow_mute.py')):
+        ok8, more = run_tool([tool('patch_shadow_mute.py'), data], 'patch_shadow_mute.py')
+        ok, lines = ok8, lines + more
     if ok:
         ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
         ok, lines = ok5, lines + more
@@ -492,6 +519,13 @@ def step_gearsets(server, data, ctx):
 STEPS.insert(STEPS.index('assetsdecor') + 1, 'gearsets')  # after the catacomb kit (client ids of pair 28 after 27's)
 
 
+def step_pack30items(server, data, ctx):
+    return tool_result(run_tool([tool('install_pack30_items.py'), data], 'install_pack30_items.py'))
+
+
+STEPS.insert(STEPS.index('gearsets') + 1, 'pack30items')  # after the equipment sets (client ids of pair 30 after 29's)
+
+
 def step_gems(server, data, ctx):
     return tool_result(run_tool([tool('install_gems.py'), data], 'install_gems.py'))
 
@@ -550,6 +584,13 @@ def step_candlemarks(server, data, ctx):
 STEPS.insert(STEPS.index('gamble') + 1, 'candlemarks')  # the Candlemark shop NPC, right after the Gambler's step
 
 
+def step_servicenpcs(server, data, ctx):
+    return tool_result(run_tool([tool('install_service_npcs.py'), data], 'install_service_npcs.py'))
+
+
+STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs of the Halls of Services, after Osric
+
+
 def step_idlekick(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_idle_kick.py'), server], 'patch_base_idle_kick.py'))
 
@@ -585,7 +626,12 @@ def step_spawns(server, data, ctx):
 
 
 def step_spells(server, data, ctx):
-    ok, lines = run_tool([tool('register_spells.py'), data], 'register_spells.py')
+    # the stock cure spells go first: their ids belong to the Chaos block now (retire_cure_spells.py)
+    ok, lines = run_tool([tool('retire_cure_spells.py'), data], 'retire_cure_spells.py')
+    if not ok:
+        return False, lines, []
+    ok, more = run_tool([tool('register_spells.py'), data], 'register_spells.py')
+    lines += more
     if not ok:
         return False, lines, []
     ok, more = run_tool([tool('patch_spell_ids.py'), data], 'patch_spell_ids.py')
@@ -607,6 +653,9 @@ def step_spells(server, data, ctx):
         ok, more = run_tool([tool('patch_spell_timings.py'), data], 'patch_spell_timings.py')
         lines += more
     if ok:
+        ok, more = run_tool([tool('patch_aoe_damage.py'), data], 'patch_aoe_damage.py')
+        lines += more
+    if ok:
         ok, more = run_tool([tool('patch_mystic_stock_fx.py'), data], 'patch_mystic_stock_fx.py')
         lines += more
     if ok:
@@ -618,6 +667,10 @@ def step_spells(server, data, ctx):
 
 def step_archery(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_archery.py'), data], 'patch_base_archery.py'))
+
+
+def step_throwables(server, data, ctx):
+    return tool_result(run_tool([tool('patch_base_throwables.py'), data], 'patch_base_throwables.py'))
 
 
 def step_uniqueequip(server, data, ctx):
@@ -633,6 +686,30 @@ def step_basemonsters(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('itemnames') + 1, 'basemonsters')  # after itemnames, which turns old loot names into ids
+
+
+def step_gnometeleports(server, data, ctx):
+    args = [tool('patch_gnome_teleports.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_gnome_teleports.py'))
+
+
+STEPS.insert(STEPS.index('basemonsters') + 1, 'gnometeleports')  # the gnome city teleports open to everyone
+
+
+def step_annihilatorsolo(server, data, ctx):
+    args = [tool('patch_annihilator_solo.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_annihilator_solo.py'))
+
+
+STEPS.insert(STEPS.index('gnometeleports') + 1, 'annihilatorsolo')  # the Annihilator quest soloable
+
+
+def step_absorbceiling(server, data, ctx):
+    args = [tool('patch_absorb_ceiling.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_absorb_ceiling.py'))
+
+
+STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'absorbceiling')  # the absorb ceiling (75 percent) in the base event
 
 
 def step_migrations(server, data, ctx):
@@ -762,6 +839,13 @@ def step_eventrooms(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('bossrooms') + 1, 'eventrooms')  # after bossrooms, before dungeonentry and sql
+
+
+def step_waystonehideout(server, data, ctx):
+    return tool_result(run_tool([tool('patch_waystone_hideout.py'), data], 'patch_waystone_hideout.py'))
+
+
+STEPS.insert(STEPS.index('eventrooms') + 1, 'waystonehideout')  # after eventrooms, before dungeonentry and sql
 
 
 def step_autoloot(server, data, ctx):

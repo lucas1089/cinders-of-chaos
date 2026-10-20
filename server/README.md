@@ -184,6 +184,7 @@ server/
                                       race and of an element hit, and any stock missile, swapped from Lua (nothing by
                                       default; see "Condition auras, blasts and fireworks (pair 29)";
                                       tools/effect_overrides_patch_test.py)
+    remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
@@ -199,6 +200,8 @@ server/
     transmog.lua  transmog_core.lua  transmog_config.lua (transmog: account wardrobe, appearance sets, client game_transmog;
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
+    weapon_dps_core.lua  (the tooltip's "Estimated DPS", see "Estimated DPS")
+    charges_look.lua  charges_look_core.lua ("It has N charges left." in the Look text, see "Item charges")
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
     rift.lua  rift_core.lua  rift_config.lua  rift_layout_core.lua (rifts: keys, a generated map per run built by a
@@ -340,13 +343,14 @@ server/
    deadeye|beastmaster, Mystic: elementalist|illusionist, Thief: ninja|samurai; final, the store's Vocation Change is the only way
    back, except the one free switch of migrated Elite Knights / Royal Paladins). See docs/CLASSES.md.
    The same run installs the Monk (17-19), Necromancer (20-22) and Templar (23-25) lines from `data/XML/chaos_vocations_*.xml`
-   and opens the equipment to them: the Monk line gets two-handed clubs (staves) and what the Ranger may wear, the Templar line
-   one-handed swords and clubs and what the Warrior may wear (shields too), the Necromancer line every wand and rod, what the
+   and opens the equipment to them: every sword, axe and club (one- or two-handed) is open to the Warrior, Thief, Monk and Templar
+   lines ("One melee skill"; the Berserker two-handed only), the Monk line also wears what the Ranger may wear, the Templar line
+   what the Warrior may wear (shields too), the Necromancer line every wand and rod, what the
    casters may wear and the Mystic's stock healing and support instants (no rune conjuring, no stock summon); the potions follow
    (Monk: the Royal Paladin's, Templar: the Elite Knight's and the Royal Paladin's, Necromancer: the Elementalist's).
    The Thief, Monk and Templar lines also get the stock utility spells of the other classes (`LINE_STOCK_SPELLS`: light, great
-   light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures; strong haste for the Thief and Monk
-   lines, cure bleeding for the Monk and Templar lines, cure curse for the Templar line); `client/tools/gen_spell_data.py`
+   light, haste, find person, levitate, magic rope, strong haste for the Thief and Monk
+   lines; the cure spells are retired, see "Spell progression audit (C6)"); `client/tools/gen_spell_data.py`
    writes the same table into the client's spelldata.lua. Test: `tests/stock_spells_patch_test.lua`.
    Then `python3 -I server/tools/patch_base_classes.py <server>/data [--dry-run]` (idempotent; `install_all.py` runs it in the
    vocations step): the base server's own vocation checks (NPCs, quests, familiars, exercise weapons, ...) learn the classes.
@@ -386,6 +390,10 @@ server/
 5i3. Idle kick: `python3 -I server/tools/patch_base_idle_kick.py <server> [--minutes N] [--dry-run]` (idempotent;
    `install_all.py` step `idlekick`, after `candlemarks`) sets `config.lua` `kickIdlePlayerAfterMinutes` to 1440 so idle
    characters stay online and earn Candlemarks (the stock 15 kicks them after 16 minutes). See "Candlemarks".
+5i2b. Service NPCs: `python3 -I server/tools/install_service_npcs.py <server>/data [--dry-run]` (idempotent; `install_all.py`
+   step `servicenpcs`, after `idlekick`) copies the five NPCs of `service_npcs_config.lua` (`data/npc/<name>.xml`, their
+   scripts and the shared `scripts/chaos_service_npc.lua`) into `data/npc`; `service_npcs.lua` places them at startup. No
+   items, no tables, no opcode. See "Service NPCs".
 5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
    missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
@@ -467,11 +475,11 @@ working directory, as with the rest of the base server libs).
 | Module | File | Opcode(s) | Status |
 |---|---|---|---|
 | game_bank | `bank.lua`, `bank_core.lua` | 60 | Gold deposit/withdraw/transfer on the native bank balance, Deposit all / Withdraw all (what fits; the rest stays). Stars off (`starItemId = 0`). Economy > Bank opens the window. `tests/bank_test.lua`. |
-| game_autoloot | `autoloot.lua` | 216 | Window protocol (add / remove / clear over the opcode); list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). |
+| game_autoloot | `autoloot.lua` | 216 | Window protocol (add / remove / clear over the opcode); list lives in the same storages (base 80000) as the base server onDropLoot callback, which does the actual looting. XML talkaction conflict possible (see below). Arrows and bolts cannot be added and are hidden from an old list: they never reach a corpse (`tests/autoloot_ammo_test.lua`; owner report 2026-10-17, an item that "disappears from every monster"). |
 | game_daily | `daily.lua`, `daily_core.lua`, `daily_config.lua` | 207 | 7-day reward cycle with claim, midnight rollover, Adventure > Daily Reward, open on login through the login window queue. Rewards: platinum coins, Orbs of Upheaval and Fate and a crystal coin, plus a week bonus on day 7 (all or nothing); edit `Chaos.daily` in `chaos_constants.lua`. Account-wide login streaks with milestones, titles and grace days (see "Daily reward and login streaks"). |
 | game_notifications | `notifications.lua` | 79 out, 151/152 in | `/gmnotify`, accept/decline of a standard TFS party invite, `ChaosNotify.*` sender API. Catacomb start / leave-queue are hooks only; nothing triggers party/catacomb/task/battle pass toasts automatically. |
 | game_passivetree | `passivetree.lua`, `passivetree_data.lua`, `passivetree_effects.lua`, `passivetree_keystones.lua`, `archetypes.lua` (with `archetypes_core.lua`, `archetypes_config.lua`), `paragon.lua` | 65 | Points, save with full validation (known ids, connected to root, point cap), preset storage, priced reset and single-node refund (see "Respec"), build codes (see "Build sharing"); the bonuses are applied (see "Passive tree effects"); the build archetype keystones (see "Build archetypes"). Paragon track past level 1000 on the same opcode (see "Paragon"). |
-| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
+| game_dungeons | `dungeons.lua` | 109 | Reads the base server `DUNGEON_SYSTEM` table. Queue, group formation, teleport in, timer, monster-count progress, boss kill, difficulty unlock, speed/flawless challenges, solo/group rankings, teleport out. Difficulty does not change monsters; loot panel is display only. A shutdown ends the queue runs without a cooldown (members back where they entered); the first login after a restart or a crash inside a dungeon box goes to the temple (also for runs of the base modal, whose exit timer dies with the server). Map spawns (owner 2026-10-17): every monster the map places at the server start inside a dungeon area is remembered; a run opens by clearing the area and creating all of them at once, and while it lasts the map's own respawn inside the area is refused (EventCallback `onSpawn`, `tests/dungeons_area_test.lua`), so nothing comes back uncounted; the area spawns again after the run (without a start-up record, such as after a script reload or in a generated dungeon, the monsters that stand there stay). A run lasts DungeonTime but at most 45 minutes (`Chaos.dungeons.maxTimeSeconds`) with warnings at 5 min, 1 min and 10 s; the queue shows the wait of the run inside; a relog inside the box while the server runs goes to the temple with the cooldown ("Instance limits"). |
 | game_infinitytower | `infinitytower.lua`, `infinitytower_run.lua` | 214 | Seasons, points, best floor/time, ranking, milestone claim, Adventure > Infinity Tower, `/towerrun` staff test helper. The tower gameplay is `infinitytower_run.lua` (runtime-built arenas, floors as waves, boss floors; results through `ChaosTower.recordRun`; see "Infinity Tower gameplay"). Season-end top 3 chests: "Infinity Tower season rewards"; `/towerseason` staff status. |
 | game_stash | `stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql` | **110** (new), Economy > Supply Stash | The one item storage (the depot boxes retire into it): whole items with every attribute, deposit and withdraw in town, remote deposit as a paid unlock (store or the Chaos Pact), general and affinity tabs, Stow Everything, the never-stash list, the journal (no loss, no duplicate on a crash), the depot migration (see "Stash"). The tabs of before were tested in game; the whole-item stash is tested on a mocked engine only. |
 | game_spellbook | `spellbook.lua` | 219, Character > Spellbook / `/spells` | Spell list window: every player spell of `data/spells/spells.xml` with its data, a short description and its area of effect (see "Spellbook" below). |
@@ -641,6 +649,42 @@ The tests of the newer systems (`tests/<system>_test.lua`, for example `factions
 `gamble_test.lua`) check that their opcode is free against `ChaosOpcodes`, the reference server's list and the base
 client's `ExtendedIds`; `tests/party_finder_test.lua` checks that no two `ChaosOpcodes` share a number.
 
+### Player summons are allies (owner debug items 84, 86 and 83, 2026-10-18)
+
+**Summons (item 86).** Owner report: "the wolf and the player take each other for enemies: the wolf attacks the owner and the
+player keeps it as a target; the only skill the wolf has (the red claw) it uses on the player instead of the monsters".
+Every summon is `Game.createMonster` + `setMaster`. The engine's own rule (a summon of a player is an opponent of everyone
+but its master) and the base `Creature:onTargetCombat` (a summon never hits its master or the master's party members) were
+already there, and the engine source is not in this repo, so the cause could not be reproduced here. What the scripts
+left open, now closed (`summons_core.lua`, `summons.lua`, `tests/summons_test.lua`):
+- the monster is made before its master is set, so the owner standing next to it is in its target list from then on:
+  `ChaosSummonsCore.bind(owner, monster)` (Wild Bond, Moonfang Pack, Mirror Image, the Necromancer's minions, the Cinder
+  Effigy, the Reliquary Warden, the pets; `ChaosSpell.bindSummon` in the spells) sets the master and clears its attack and
+  follow target;
+- a player could take its own summon (or a party member's) as its attack target (a click, the client's auto target) and
+  then Feral Command, the companions' bites and area spells went at it (the "red claw" effect `claw_rake` plays on the
+  target of Feral Command, next to the owner): `summons.lua` refuses every hit between a player and its allies' summons
+  (`EventCallback` onTargetCombat, priority -60) and drops such a target every 0.5 s; `ChaosSpell.canAttack` never takes the
+  caster's own or its party's summons (its comment always said so; the code did not); Feral Command picks the nearest enemy
+  within 7 sqm when its target is an ally (or says "No enemy in range."); the companion's bite skips an ally target;
+- the Moonfang wolves now carry the companion guard too (the owner's area spells do not hurt them).
+Client side the Auto Target already skips summons and effigies (base patch 0076). **To check live**: summon the wolf, stand
+next to it with Auto Target on, hunt, press Feral Command with the wolf clicked (it should hit the nearest monster), and watch
+whether the wolf ever walks at the owner. If it still does, read `Monster::selectTarget` / `isOpponent` in the engine and
+tell me what the fork changed.
+
+**Class change (item 84).** `ChaosClasses.afterVocationChange` (ascension, the Oracle, the free switch and the store's
+Vocation Change) runs `ChaosClassSpells.sync`: spells with `needlearn="1"` the new class does not list are forgotten, the
+ones it lists and the level allows are learned (`class_spells_core.lua`; none exist today: every Chaos and every stock
+player spell is `needlearn="0"`, so the vocation and the level decide and the engine already swaps the whole kit at the
+moment of `setVocation`, the old class's spells being refused by the vocation check). What stayed old was the client:
+`ChaosSpellbook.refresh` now pushes the new vocation to a Spellbook window that is open, the store's message tells the player to
+replace the action bar slots, and the client's Helper takes the old class's rules out (client/MANIFEST.md). Passive tree
+reset, storages and the free-respec rule are untouched. `tests/class_spells_test.lua`, `tests/spellbook_test.lua`.
+
+**Cinder Effigy (item 83).** Price x0.65 -> x0.75 and pulse 22% -> 24%: +10.6% of the spell damage in a pack (was -6.1%),
++27.8% with the Idol, one target -22% (was -31%). Numbers and caveats: server/data/spells/README.md "Effigy rebalance".
+
 ### Opcode collision check
 Searched the reference server for every `onExtendedOpcode`, `sendExtendedOpcode(` and opcode
 constant. Opcodes in use there: 1, 67, 73, 89, 91, 92, 99, 106, 107, 136, 181, 201, 202. (The
@@ -665,7 +709,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 |---|---|
 | 80000 + n | autoloot list, shared on purpose with the base autoloot (`Chaos.storage.autolootBase`) |
 | 7100000 - 7100999 | `Chaos.storage` in `chaos_constants.lua` and the `*_config.lua` blocks it lists (daily, stash, passive tree, bounty, rifts, new player, monk, market, store cosmetics, ...) |
-| 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot migration version done; +2..+8 free |
+| 7100011 - 7100019 | the stash (`stash_config.lua` `storage`): 7100011 the journal serial, 7100012 the depot -> stash migration version done (retired), 7100013 the stash -> depot migration version done; +3..+8 free |
 | 7101000 - 7101004 | ascension quest (`ascension_quest_config.lua`) |
 | 7101100 - 7101109 | infinite arrows (`data/lib/chaos_archery_config.lua` `storage`): +0 the ammunition sweep is done, +1 its stash part is done |
 | 7101200 - 7101299 | quest chests of planned areas (`tools/area_planner.py`, one per quest key; action ids 47960-47999) |
@@ -690,6 +734,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
+| 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1..9 free |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -906,7 +951,7 @@ General
   `MonsterType:getOutfit`, CreatureEvent types `kill` and `death`, `os.mtime` (falls back to `os.time`),
   `result.getNumber`. None verified against a real server.
 - `json` global is the base server `lib/core/json.lua` (rxi). Empty tables encode as `[]`.
-- Packets stay far below the ~24 KB network message limit (stash is chunked at 40 items).
+- Packets stay far below the ~24 KB network message limit (stash `addItems` is cut at 40 entries and 6000 bytes of JSON, see "Stash", "List packets").
 - All client input is validated (integers, ranges, ownership). Flood control: `ratelimit.lua` (`ChaosRateLimit.allow`,
   `Chaos.limited`) drops repeats of the same action within a few hundred ms in the opcode handlers of most modules
   (about 70 scripts use it; "Shared security rules"), and the engine's `maxPacketsPerSecond` limits every connection.
@@ -1053,7 +1098,28 @@ find). Now:
   `currency.maxScale` (3.0), so orb find no longer saturates the entries (a normal-tier Orb of Fate stays rare; boss-tier
   entries above 1/3 still always hit).
 
-`tests/loot_caps_test.lua` loads `loot.lua` against a mocked engine.
+**Rare and magic monsters, orbs and waystones (owner 2026-10-17: "Monstros raros e mágicos estão dropando loot demais";
+"orbs drop too often, waystones only from high level monsters").** Numbers in `loot_config.lua`:
+
+| | before | now |
+|---|---|---|
+| extra loot passes (`extraRolls`) magic / rare / legendary / boss | 1 / 2 / 3 / 2 | 1 / 1 / 2 / 2 |
+| chance of an extra pass (`extraChanceMult`) magic | 1.0 | 0.5 |
+| stack size of an extra pass (`extraCountMult`) rare / legendary | 1.25 / 1.5 | 1.1 / 1.25 |
+| expected loot per kill vs a normal monster (1 + passes x chance) magic / rare / legendary / boss | 2.0 / 3.0 / 4.0 / 3.0 | 1.5 / 2.0 / 3.0 / 3.0 |
+| orb chances per kill, magic (x normal) | about x8 | x3 (1 orb per about 18 kills) |
+| orb chances per kill, rare (x normal) | about x30 | x6 (1 per about 9 kills) |
+
+Legendary and boss orb chances, the guaranteed boss / legendary draw and the unique-item tier multipliers are unchanged.
+**Orbs** (`currency`): the normal-tier column adds up to 183 in 10000, about 1 orb per 50 kills; they drop only from
+monsters of level 100 or more (`currency.minMonsterLevel`; the level is `ChaosLoot.monsterLevel`, the bounty-pool level
+for monsters without a scaled level; bosses are exempt, `levelGateSkip`). **Waystones** (the base server's Waystone Tier I-VI
+items, dropped by the stock loot pass or a monster's own list, neither is in this repository): `loot.lua` takes them out
+of the corpse again (`ChaosLoot.gateWaystones`, matched by item name, `waystone.namePattern`) when the monster is below
+`waystone.minMonsterLevel` (150, owner decision open); no base file is edited, so nothing to install. Diagnostics
+(`ChaosLootRoll`) have no monster and are not gated.
+
+`tests/loot_caps_test.lua` loads `loot.lua` against a mocked engine (also the level gates).
 
 ## Time-friendly progression (catchup) (`catchup.lua`, `catchup_core.lua`, `catchup_config.lua`, `sql/chaos_catchup.sql`)
 
@@ -1388,20 +1454,77 @@ spellfix.lua`). Run on the test server: 16 ids and 3 sub ids changed, a second r
 back as spell 34 with its 26 s cooldown in the client. Sunder Guard's attack group cooldown was 12 s (base data), so a
 Mystic who cast it had no attack spell for 12 s; 2 s since the rotation pass ("Spell timings" below).
 
+### Ids freed by the ammunition conjure spells (2026-10-18)
+
+Until the cure spells were retired (C6 below) every spell id below 256 was in use (base server, `patch_spell_ids.py`, the Chaos block). The Necromancer's three summon
+spells (Raise Bone Warrior 192, Raise Bone Archer 193, Raise Bone Mage 176) took the ids of the base's Fletch Crystal Arrows
+(192), Fletch Wraith Bolts (193) and Arrow Call (176): ammunition conjure spells, switched off by the `archery` step
+(`patch_base_archery.py`, `conjureScripts` of `data/lib/chaos_archery_config.lua`). The `spells` step runs before `archery`,
+so `register_spells.py` no longer counts a base spell whose script is in `conjureScripts` as holding its spellid;
+`tests/spell_ids_test.lua` has the same list (`AMMO_CONJURE`) and checks the three scripts are in `conjureScripts`. The client's
+stock entry of Arrow Call (176) is a spell the server does not have: `spellfix.lua` moves it to 1176. Assumption: the
+installed server runs the `archery` step (the default of `install_all.py`); without it, two spells would share an id.
+
+### Spell progression audit (C6, 2026-10-20)
+
+Report: "Juggernaut level 520 still has the level 300 skills". Cause: no class had a spell above level 300 and the Juggernaut
+had no spell of its own. The vocation change is not the cause: `class_spells.lua` plans the needlearn spells and refreshes the
+Spellbook, every Chaos spell is `needlearn="0"`.
+
+Owner decision: the status-cleanse spells are retired for all classes and their ids are reused. `tools/retire_cure_spells.py
+DATA_DIR [--dry-run|--list]` (first action of the `spells` step, idempotent) comments out the 7 cure instants of `spells.xml`
+by script path (marker `Chaos: cure retired`): Cure Poison 29, Cure Bleeding 144, Cure Burning 145, Cure Electrification 146,
+Cure Curse 147, Cure Splashed 58, Cure Bewitched 164 (ids freed: 29, 58, 144-147, 164). Removed with them: the rows in
+`stock_spells.csv` and `spell_names.csv` (the client's spellfix moves the stock entries to id+1000), `LINE_STOCK_SPELLS`
+entries in `add_vocations.py`, the two `NEW_IDS` in `patch_spell_ids.py`, and the cure checks of the tests. Kept: Lightward and
+the area cure (Purifying Wellspring), because they are not cleanse spells of one status. The Withering Hex of the raid is
+lifted by the Font of Ash or a Lightward-type effect.
+
+New spells (ids reused, `spells_chaos.xml`, scripts in `data/spells/chaos/<class>/`, icon cells 301-307, sheets now 16 rows):
+Juggernaut Bastion Cry 29 (level 340, support: taunt, slow, Iron Will, heal) and Anvil Fall 58 (460); Deadeye Twin Verdict 144
+(400); Berserker Rampage Leap 145 (380); Elementalist Glacial Doom 146 (420, 2 s cast); Beastmaster Pack Frenzy 147 (380);
+Ninja Shuriken Tempest 164 (360). Not covered for lack of ids: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage,
+Inquisitor, Sentinel (next free ids need another retired or merged spell). Numbers are computed with the rotation sim
+(`rotation_model.csv` rows), not measured in game; scripts not run in a live engine. `tests/class_spell_progression_test.lua`
+pins the own-spell counts (max 15) and the new rows; `tests/spell_ids_test.lua` knows the retired ids.
+
+## Necromancer summons and the summon cap (2026-10-18)
+
+Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),
+one minion per cast; the minion types are `monsters/chaos/necro_risen_warrior|archer|mage.xml` (looks 298, 33, 99 of the
+client pair, no new art; registered by the `monsters` step like the other `necro_*.xml`, the spells by `register_spells.py`
+from `spells_chaos.xml`). All numbers: `data/scripts/chaos/necro_config.lua` (`minions`, `summonSpells`). The total cap of a
+class (all minion kinds together; Necromancer 3, Lich 1, Bone Lord 6 / 7 from level 400, plus the passive tree's Legion) is
+enforced in `ChaosNecro.raise` (`necro_lib.lua`): the OLDEST minion is dismissed first (puff, no corpse, no loot), then the
+new one is created, whichever spell raises it. `necro_minions.lua` keeps the minions of a class within its caps as a safety
+net (vocation change, level loss) and gives the new kinds their animation (arrow, energy bolt). Tests:
+`tests/necro_test.lua` (caps, order, numbers, spell entries), `tests/necro_summon_test.lua` (the cap on a mocked engine).
+Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line". Needs a live check: the three casts and the
+minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
+caps, look 33 for the archer.
+
 ## Spell timings (`tools/patch_spell_timings.py`, install step `spells`)
 
 The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma";
 `data/spells/README.md` "Rotations"). `patch_spell_timings.py DATA_DIR [--dry-run]` (run by the `spells` step after
 `rename_spells.py`) sets the cooldown, group cooldown and secondary group of base spells from
 `data/spells/spell_timings.csv`; each row names its spell by script, an empty cell leaves the attribute alone, the Chaos
-block is never touched. Idempotent; refuses when a script of the csv is missing. Two rows today: Sunder Guard's attack
-group cooldown 12 s -> 2 s (the 12 s above is gone) and Bonebreaker's cooldown 6 s -> 2 s (second pass: the Warrior
-line's only attack spell at levels 16-27). The client knows both (`game_chaosspells/spellfix.lua`). Assumption: the
-base spells.xml has one `<instant>` with `attack/brutal_strike.lua` (Bonebreaker).
+block is never touched. Idempotent; refuses when a script of the csv is missing. The csv also sets `level` and `mana`
+(2026-10-17, owner debug items 44 and 45; `data/spells/README.md` "Level 8 spells", "Mana runway"): Bonebreaker (level
+8, 10 mana) and Phantom Javelin (level 8, 20 mana) so that the Warrior and Ranger lines have a spell at the start level,
+and the mana of Earthrend, Reaver's Spin, Scything Arc, Butcher's Gyre, Headsman's Hurl and Bramble Fan lowered to what the
+Warrior's and the Illusionist's pools sustain. Rows today: Sunder Guard's attack group cooldown 12 s -> 2 s (the 12 s
+above is gone), Bonebreaker's cooldown 6 s -> 2 s (second pass: the Warrior line's only attack spell at levels 16-27) and
+the eight above. The client knows them all (`game_chaosspells/spellfix.lua`). Assumption: the base spells.xml has one
+`<instant>` with `attack/brutal_strike.lua` (Bonebreaker), `ethereal_spear.lua` (Phantom Javelin), `groundshaker.lua`,
+`berserk.lua`, `front_sweep.lua`, `fierce_berserk.lua`, `executioners_throw.lua` and `terra_wave.lua`.
+`tools/rotation_sim.py --mana` checks the mana runway of every class (a full pool must sustain the best rotation for 15 s
+with the vocation's regeneration) and `rotation_sim_test.py` runs it in CI, with "every class has an attack spell at level 8".
 `tools/rotation_sim.py` reads the installed stock numbers from `data/spells/stock_spells.csv` (`rotation_sim.py
 --export-stock SERVER_DIR` after an install) and checks in CI that every class and ascension has a rotation of at most 5
 attack spells with no window over 2 s at levels 15 / 30 / 60 / 100 / 300 / 600 / 1000 and at every level where a
-preset changes, from level 15 up (`tools/rotation_sim_test.py`; below 15 exempt). The snares are flagged `utility` in
+preset changes, from level 15 up (`tools/rotation_sim_test.py`; below 15 exempt, and every class has an attack spell
+at level 8 since 2026-10-17). The snares are flagged `utility` in
 `rotation_model.csv`: no preset takes them. Assumption: the
 4 s attack group cooldowns of the supreme strikes and the big stock area spells stay (balance); the rotations leave
 those spells out.
@@ -1738,6 +1861,12 @@ or a random raid.
   `bossPoints` sent after every `sendPoints`). The tooltip first says where the kills come from (2026-10-15): the world
   boss event every 6 hours (level 300), pocket bosses any time from Adventure > Boss Spawns (daily charges), the Trial
   Warden of the Ascension Trial (level 100), the other bosses' spawns, and that party help counts.
+- Spending (owner report 2026-10-18, "not working"): a boss point is not a separate currency. It is a free tree point
+  like a level point (the "points" box counts it, any node can take it); the server path was checked (`totalPoints`, the
+  budget check of `validateNodes`, `sendPoints` after a grant) and passes its tests. The window now says so: the label reads
+  "Boss points 3/10 (+3 passive points)" (translated in the client, no longer the server's English text) and the tooltip's
+  second line says they are already in the points counter. If a live character still sees no free point after a first
+  kill, check the kill was credited (damage map or party within 30 tiles) and the message "First kill of ..." appeared.
 - Removing a boss from the list takes its point back at the next login (a tree with more nodes than points is refunded for
   free); never reuse an id.
 - `server/tests/bosspoints_test.lua`: the list (the five world bosses of `Chaos.worldBoss`, the Trial guardian type and stage
@@ -1753,7 +1882,7 @@ The tree now has an effect: after every save, reset and login the summed node st
   are +value% max health / mana conditions, wisdom has no effect in the engine. Characters whose stats an older version
   inflated are clamped once to the stat window maximum on login (`passiveStatsFixed` storage).
 - **Skills, magic level, critical hit, leech:** a permanent attribute condition (sub ids 7200 to 7219).
-- **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 80% from the tree.
+- **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 75% from the tree.
 - **Damage dealt:** `incrementX` for the type, `multiIncrement` for all elements, `incrementHealth` for healing; the event is registered on the target when a tree player attacks it.
 - **Experience, loot, speed:** experience multiplier, the item-find storage that `loot.lua` reads (loot plus rarity loot), and `changeSpeed` by the difference (capped at 80).
 - **Paragon:** the Paragon track's percentages arrive in the same bonus table and are added here (see "Paragon").
@@ -1770,7 +1899,7 @@ Points go into eight small stats in four categories; a stat takes at most `maxPo
 | Offense | Damage (`damage`) | +0.5% | 40 | +20% | multiplier on damage dealt (every type, not healing), after the tree's own bonuses |
 | Offense | Critical Damage (`critDamage`) | +0.3% | 50 | +15% | added to the tree's `criticalHitAmount` (one condition, sub id 7215) |
 | Defense | Max Health (`health`) | +0.5% | 40 | +20% | added to vitality in the same max health condition (sub id 7220) |
-| Defense | Damage Reduction (`reduction`) | +0.25% | 32 | +8% | added to every absorb storage (977562-977575), with the tree's absorbs, capped at 80% together |
+| Defense | Damage Reduction (`reduction`) | +0.25% | 32 | +8% | added to every absorb storage (977562-977575), with the tree's absorbs, capped at 75% together |
 | Utility | Movement Speed (`speed`) | +0.5% | 20 | +10% | percent of the base speed, added to the tree's flat speed (`changeSpeed` by the difference) |
 | Utility | Max Mana (`mana`) | +0.5% | 40 | +20% | added to spirit in the same max mana condition (sub id 7221) |
 | Fortune | Gold Find (`goldFind`) | +1% | 20 | +20% | extra coins in the kill's corpse (onDropLoot index 2: after the stock loot and the Chaos loot layer, before autoloot) |
@@ -1780,7 +1909,7 @@ All maxed: 282 points (level 1282). Points past that are kept but have nowhere t
 - **Stacking with the tree:** `ChaosPassiveTree.apply` (passivetree.lua) asks `ChaosParagon.addBonuses` to put the Paragon
   percentages into the tree's summed bonus table (keys `paragonDamage`, `paragonHealth`, ...), and `passivetree_effects.lua` applies
   the sum once. So the health and mana conditions (fixed sub ids 7220/7221), the crit condition, the absorb storages and the
-  item-find storage each hold tree + Paragon together and never overwrite each other. The tree's own caps (vitality 50, absorbs 80,
+  item-find storage each hold tree + Paragon together and never overwrite each other. The tree's own caps (vitality 50, absorbs 75,
   speed 80) still apply to the tree's share. A health/mana sum with a half percent (Paragon has 0.5% steps) uses the flat parameter
   with the engine's own formula (current maximum x percent / 100), whole percents keep the percent parameter.
 - Whole numbers: crit damage, damage reduction and item find are engine integers, so the sum (tree + Paragon) is rounded down
@@ -1835,7 +1964,7 @@ variant the server applies (the client's own vocation number did not match: an E
 | Vocation | Wrath (621) | Resolve (624) |
 |---|---|---|
 | Knight | Cleaving Arc: two-handed melee hits also hit up to 3 other enemies next to you for 40% | Bulwark: with a shield, 15% to block a melee/ranged attack completely; 30% of melee damage taken reflected |
-| Paladin | Ricochet: bow/crossbow hits, 30% to bounce to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: a crossbow (no ammunition needed), 15% for a shot with double damage |
+| Paladin | Ricochet: bow/crossbow hits, 100% to bounce (owner 2026-10-17; it was 30%) to the nearest other enemy within 4 sqm for 65%, then once more for 42%; never the same target twice | Deadeye: a crossbow (no ammunition needed), 15% for a shot with double damage |
 | Sorcerer | Arcane Echo: a spell hitting 2+ enemies, 35% to repeat 0.6 s later on the same spots for 50%; 3 s cooldown | Elemental Overload: a spell hit primes the other elements, the next spell of another element within 8 s deals +20% |
 | Iron Sage (621) / Sentinel (624), the old druid pair, since 2026-10-12 | Overgrowth (Iron Sage): heals on others heal 10% more over 6 s (3 pulses; 30% for the old druid) | Thorns (Sentinel): melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 | Illusionist (support) | Shared Phantasm: your hits mark the enemy for 6 s; other party members deal +12% to it | Inspiring Illusion: other party members within 8 sqm deal +8% damage |
@@ -2053,14 +2182,14 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
 | Node | Keystone (flag) | Classes | Effect | Price |
 |---|---|---|---|---|
 | 108 | Pyre Oath (`arPyreOath`) | Warrior, Templar lines | every second, out of a protection zone and in a fight or with an enemy near: enemies within 2 sqm take 4% of your maximum health as fire (a spell of yours: tree bonuses and the class factor apply); you take 2.5% of it as fire (`doTargetCombatHealth` without an attacker, so absorbs apply; never lethal) and heal 2% | other damage x0.75 |
-| 81 | Sanguine Covenant (`arSanguine`) | all | 5% of every hit dealt as health (`Chaos.heal`, a tick later), at most 6% of the maximum health per second | healing received (`COMBAT_HEALING` on the player, any source) x0.7 |
+| 81 | Sanguine Covenant (`arSanguine`) | all | 5% of the damage that landed on every hit as health (`Chaos.heal`, a tick later; the target's health is read again then, so an immune target, a zero hit or overkill leeches only what was really lost), at most 6% of the maximum health per second; the fraction of a point is carried to the next hit (before, a hit under 20 damage gave 0 and the keystone looked dead at low level; owner item C2, the leech in the bottom-left of the tree) | healing received (`COMBAT_HEALING` on the player, any source) x0.7 |
 | 77 | Thornbound Oath (`arThornbound`) | all | a melee, ranged or spell hit from a creature: 20% of what landed (health + energy shield) + the items' Reflect Damage again, physical, at most 50% of the own maximum health a hit; players (only where `ChaosSpell.canAttack`): a third, at most 5% of their maximum health; bosses (`MonsterType:isBoss`): half, at most 2 x level per second per boss; never damage over time, never a reflect inside a reflect | damage dealt x0.9 |
 | 109 | Open Hand Creed (`arOpenHand`) | all but the Monk line | no weapon in the hands (a shield or quiver is fine): the engine's fist hit (attack 7) is scaled to the Monk's fist attack (40 + level x 0.025, at most 60) with the best of fist, sword, axe and club skill, x1.1. `ChaosSpell.meleeAttack` (the Thief and Templar strike spells) returns that attack for an empty hand (it reads the flag storage 7100024 and the worn ring); the Warrior's skill spells keep the engine's fist values | none |
 | 107 | Contagion Rite (`arContagion`) | Thief line | a monster dying within 4 s of a poison tick of yours: 5 ticks of that tick, every 2 s, on the 3 nearest monsters within 2 sqm that do not carry the chain yet; up to 4 steps | weapon hits x0.9 |
 | 78 | Cascade Edge (`arCascade`) | all | a critical hit (8th argument of onHealthChange, engine patch 0001): 60% of it on the other enemies within 1 sqm of the target, as the strongest element increment of the tree (energy without one), once per 0.8 s | non-critical hits x0.95 |
 | 82 | Stormstring (`arStormstring`) | Ranger line | bow and crossbow hits (`ChaosArchery.kindOfType`): 3 arcs of 40% of the hit, energy, to the nearest other enemies within 3 sqm in sight | that hit x0.9 |
 | 355 | Winter's Lattice (`arWinterLattice`) | Mystic, Necromancer lines | a monster dying within 2 s of an ice hit of yours bursts: 6% of its maximum health (at most 12 x level) as ice on enemies within 2 sqm (at most 8); bursts that kill burst again | fire and energy dealt x0.7 |
-| 262 | Effigy Covenant (`arEffigy`) | Mystic, Necromancer lines | a spell cast that hits 2+ enemies in one tick raises a Cinder Effigy on your tile (at most 2, the oldest goes; 12 s); every 2 s it hits the enemies within 3 sqm (as many as the cast hit) for 22% of the cast's average hit, of its main element | spells dealt x0.65 |
+| 262 | Effigy Covenant (`arEffigy`) | Mystic, Necromancer lines | a spell cast that hits 2+ enemies in one tick raises a Cinder Effigy on your tile (at most 2, the oldest goes; 12 s); every 2 s it hits the enemies within 3 sqm (as many as the cast hit) for 24% of the cast's average hit, of its main element (rebalanced 2026-10-18, a net gain of about +11% in a pack: server/data/spells/README.md "Effigy rebalance") | spells dealt x0.75 |
 | 106 | Sigil of Cinders (`arCinderSigil`) | Mystic, Templar lines | fire and holy spell hits ignite (15% of the hit over 4 s, a fire condition owned by you); a cast that hits one enemy brands it for 8 s: 5% of that hit every second on the enemies within 1 sqm of the bearer; it jumps to the nearest enemy within 3 sqm when the bearer dies; an ignited monster that dies passes the burn to 2 within 2 sqm, 3 steps | damage that is not fire or holy x0.8 |
 | 362 | Aether Edge (`arAetherEdge`) | Monk, Templar lines | weapon and fist hits add 6% of the current energy shield as energy (a spell of yours) | maximum health 80% (`CONDITION_ATTRIBUTES`, sub id 71090, set and removed with the keystone) |
 | 253 | Reliquary Vow (`arReliquary`) | Templar line | a Reliquary Warden summon follows you outside protection zones (brought back past 7 sqm); every 2 s it heals you and the party within 3 sqm for 0.6% of their maximum health + 2 x your magic level, gives the other members +5% damage for 3 s, and deals 0.6 x level + 3 x magic level holy to enemies within 2 sqm | own damage x0.9 |
@@ -2285,6 +2414,34 @@ validates and applies; the client only shows what the server sends.
   Build Code panel flow (export / import / apply) and "You need 3,945,000 gold coins" with too little gold. Screenshots in the
   session's scratchpad. Not tested in game: the Paragon part (the character is below level 1000; unit tests only).
 
+## Passive tree: Auto build, class lanes, Primary / Secondary and stat help (2026-10)
+
+Files: `passive_builds.lua` (engine), `passive_builds_core.lua` (pure), `passive_builds_config.lua` (numbers), `passive_builds_data.lua`
+(generated by `tools/gen_passive_builds.lua`, `--check` in CI), `passivetree_stats.lua` / `_core.lua` / `_config.lua`, the lane
+generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, client `treedata/classlanes.lua`). Client: `autobuild.lua`
+/ `.otui` (+ `autobuildview.lua`), `statinfo.lua` / `.otui` (+ `statinfoview.lua`) in `game_passivetree`.
+
+- **Auto build** button (tree window): a dropdown with Recommended (2 to 4 builds per class, 3 roles, 21 classes) and Focus
+  themes (leech, mana, damage, ...), each with its points and a one-line summary. Opcode 65 actions `autobuildList` /
+  `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
+  nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
+  chosen one; the price shown in the preview is the one sent back. Rate limited (`passivetree.autobuild`).
+- **Drown nodes** are gone: 23 nodes hidden in `nodes.lua`, refunded once (`reworked` version 4), the tree has 640 nodes.
+- **Primary / Secondary** per class: `passivetree_stats_config.lua` `classes[...]` (the Templar line counts mana leech as
+  secondary: its spells cost mana). The window shows a header, a gold (primary) or silver (secondary) border on nodes and a
+  legend; the Stats button lists every stat with its description (en + pt-BR in `i18n_strings.lua`), and the node tooltip adds
+  the description lines. `statInfo` message, 10 stats a part.
+- **Class lanes**: every class has its own re-skin of the plain nodes (`v` in `passivetree_data.lua`, from
+  `treedata/classlanes.lua`, which `tools/gen_class_lanes.lua` writes; Mystic and Elementalist share one lane). The test
+  `tests/passivetree_paths_test.lua` checks, for every class, that the shortest route to every keystone and notable it can
+  reach has no irrelevant node and at least `paths.minShare` (70%) primary / secondary nodes. `reworked` version 5
+  (`lanes = true`) refunds once the lane nodes (and what hangs on them) of each character at login.
+- Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
+  treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
+- Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
+  `autobuildview_test.lua`, `statinfoview_test.lua`. Not checked in game: the dropdown, the node borders (`setBorderColor`), the
+  tree preview of a build, the lane balance (damage and resist caps are reached with fewer points).
+
 ## Passive tree pick statistics (`treestats.lua`, `treestats_core.lua`, `treestats_config.lua`)
 Beta telemetry of the tree: how often each node is taken, per class line and level band, read from the saved trees on
 demand (one query over `chaos_passive_tree` joined with `players`; no hook on allocations, nothing stored). Staff only
@@ -2447,6 +2604,21 @@ services, unlocks and boosts in `shop_services.lua` (next section).
 A look offer (outfit, addons, mount, wings, aura, shader) carries its `kind` in the offer the client gets, so the
 Store's look preview (client/MANIFEST.md "Look preview") seats the player's own character on a mount and puts the
 others on it; a pet's offer has none and is drawn alone.
+**Icons and previews (2026-10-17, owner: "os icones da store estao repetidos ... use os proprios cosmeticos como
+icones").** Every appearance offer also carries `look`, its own cosmetic (`shop_core.lua` `K.lookOf`; cosmetic unlocks
+through `cosmetics_core.lua` `K.offerLook` / `ChaosCosmetics.offerLook`): `outfit`/`addons`/`mount`/`wings`/`aura`
+(client ids from the XML files)/`shader`, `outline {art, pulse}`, `footprint {art}`, `effects {play}` (a spell skin or
+kill effect, the same `play` steps as the Cosmetics window), `swatch {color}` (chat colour, loot label accent),
+`nameplate {frame}`, `subject {look}` (a pet) and `bundle {parts}` (the parts that are an appearance; an items-only
+bundle has none). Before this, only outfits, mounts, wings, auras and shaders sold as such had a picture of their
+own: the cosmetic unlocks (outlines, footprints, spell skins, kill effects, the Chaos shaders), the plate frames and
+the bundles were drawn as a stand-in item (one id per kind, so many offers shared one picture) and, being no creature, had
+no preview at all. A look that is worn by a creature (an outline on the plain figure, a Chaos shader, a bundle's parts
+merged: `K.iconOutfit`) is sent as `type = "outfit"` with that outfit; the client draws the rest (print, plate, effect,
+sample) from `look`. A category whose icon is an item and whose first offer has a look shows that cosmetic (Name Plates,
+Outlines ...). Items, services, premium time and convenience unlocks have no `look` and keep the item picture. Tests:
+`tests/shop_looks_test.lua` (every appearance offer of `shop_config.lua` has a look, none repeats within its category,
+bundle icons wear their parts), `tests/shop_test.lua` (mount, plate frame, bundle, item through `shop.lua`).
 
 **Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), This week
 (the weekly rotation, below), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
@@ -2809,10 +2981,11 @@ opcode 226 (`pouches.lua` routes `PO.AUTOSELL_ACTIONS` to `ChaosAutoSell.handleA
 cooldown, last sale, a notice). The server checks everything: the unlock (refused with the reason, nothing stored), an
 unknown rarity or a non-boolean value, an unknown list change, an unknown item, one no NPC buys, orbs, a full list.
 
-**Rarities** (owner 2026-10-13: "Deixe o jogador configurar o autosell por raridade"; `autosell_core.lua` `TIERS`). Five
-choices per character, for the list and for the Loot Bag: Common (rarity 1), Uncommon (2; the "Magic" of the request:
-the game calls its rarity 2 Uncommon), Rare (3), Epic (4) and Legendary+ (5 Legendary and every rarity above it, up to
-15 Transcendent). Default: Common and Uncommon on, Rare, Epic and Legendary+ off. Uniques are never sold, whatever is
+**Rarities** (owner 2026-10-13: "Deixe o jogador configurar o autosell por raridade"; `autosell_core.lua` `TIERS`). Six
+choices per character (since the seven rarities of 2026-10-18), for the list and for the Loot Bag: Common, Uncommon, Magic,
+Rare, Legendary and Divine (bits 1, 2, 4, 8, 16, 32; the bits keep their old place, so the old Rare is now Magic, the old
+Epic is Rare, and the old "Legendary+" choice is Legendary; a version bit 128 marks a choice saved with Divine: without it
+Divine follows Legendary). Default: Common and Uncommon on, the rest off. Uniques are never sold, whatever is
 ticked. Stored in storage 7100103 (`Chaos.storage.autosellRarity`, the old opt-in key): 64 + one bit per tier
 (`packTiers`); unset or the old "off" 0 = the defaults, the old "on" 1 = every tier on. `ChaosShopServices.sellBlocked`
 takes the tiers (or `true` for every rarity).
@@ -2834,8 +3007,18 @@ prices": a rolled copy of a higher rarity or item level sells for more), for the
 library the plain table `sell_prices.lua`, written by `python3 -I server/tools/gen_item_prices.py` (`gen_sell_prices.py`
 is only a shim for it now). The list is managed in the Auto Seller window (above).
 
+**Sell every X minutes** (owner 2026-10-17: "Auto seller: opção de vender a cada X minutos"; `autosell.lua`, `autosell_core.lua`
+`INTERVALS`, window dropdown "Sell the Loot Bag automatically every" in `autoseller.otui`). Off by default; choices 5, 10,
+15, 30, 60 minutes, stored in storage 7100152 (`Chaos.storage.autosellInterval`), action `asevery {minutes = 0|5|10|15|30|60}`
+(anything else: "Bad request.", nothing stored; needs the Auto Seller unlock like every control). The timed sale is the
+button's sale (`A.sellBag`: same rules, same prices, same 30 s limit shared with the button, one chat line only when gold
+was made). Cost: one global timer (`ChaosAutoSellTick`, every 30 s) walks only `A.auto`, the table of the characters that have
+it on (filled by `asevery` and by the login event `ChaosAutoSellLogin`; the first sale comes one interval after login),
+at most 10 sales per tick; a character that left or lost the unlock is dropped from it. No scan of the online players
+and no work in the kill hook. `state` also sends `interval`, `intervals` and `nextIn` (seconds to the next sale).
+
 **Storage keys** (all in `chaos_constants.lua`): 7100100 reserved (the retired Bottomless Loot Pouch), 7100101 Auto Seller,
-7100102 auto seller's corpse selling off, 7100103 the rarities it sells (packed, see Rarities), 7100104 name change tokens, 7100105 vocation change tokens, 7100106 Rarity
+7100102 auto seller's corpse selling off, 7100152 "sell every X minutes" (5/10/15/30/60; unset = off), 7100103 the rarities it sells (packed, see Rarities), 7100104 name change tokens, 7100105 vocation change tokens, 7100106 Rarity
 Autoloot, 7100107-7100109 store pouches, 7100111-7100150 auto-sell list, 7100151 Everfull Ration owed back after a death
 (`store_food_config.lua`; not in `chaos_constants.lua` yet, as the pouches' keys live in `pouches_config.lua`); global
 7100921-7100923 world buffs. Settings: `Chaos.shopServices`.
@@ -2920,8 +3103,9 @@ achievements known; 1-3 spells of the right line; swaps inside one family; kill 
 opaque and every label rarity colour at contrast 3 or more on them; chat colours at contrast 4.5 or more on the console
 background; every store cosmetic has its store offer at its price and name, nothing else is sold as a cosmetic.
 
-Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | select {kind, id, line} (id 0 = the default) |
-preview {id} | hello | close` (`hello`: the client is in the game, the full `style`, `colors` and `looks` again); server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
+Protocol (JSON on `ChaosOpcodes.cosmetics` = 225): client -> server `open | state | select {kind, id, line} (id 0 = the default) |
+preview {id} | hello | close` (`state`: the same `state` answer without opening the window, for the Customise Character window's
+dropdowns; `hello`: the client is in the game, the full `style`, `colors` and `looks` again); server -> client `state {open, line, lineName, rows}`, `style {accent}` (the character's own label
 accent), `colors {names = {[name] = "#rrggbb" | false}, full}` (sent in full at login, a change to everyone online),
 `result {ok, text}`. API: `ChaosCosmetics.swapFor / storeUnlock / storePreview / offerPreview / grant / revoke / owns`.
 Staff: `/cosmetic <character>, <key | all>[, revoke]` and `/cosmetic <character>, sync` (group 4+; a grant needs group 5,
@@ -3196,13 +3380,35 @@ tall wall is never put on the south / east side, where it would hide the floor).
 hovered tile shows the decoration (green fits, red does not, `HideoutLogic.check` mirrors the server); left click places,
 the wheel or Rotate turns it, right click or Done ends. Rules (`K.placeProblem`): one object per tile, a rug under it,
 wall decorations on the north or west wall (the side picks the item), the fixture tiles (arrival, exit, depot, stash,
-dummies, lights) stay free, a path of walkable tiles from the arrival to the exit, the depot, the stash and the dummies
+dummies, lights, the waystone device and the four tiles around it) stay free, a path of walkable tiles from the arrival to the exit, the depot, the stash and the dummies
 (8 directions), a limit per decoration and per theme. Decorations carry an action id: using them does nothing, moving
 them puts them back; items dropped on a hideout floor go back to the player; no PvP inside; the Town Portal inside is a way
 out (below). Entering is refused from inside any registered instance (`Chaos.inAnyInstance`:
 rift, dungeon, tower, arena, world boss arena, siege, raid, Ember Descent, Ascended Omen, guild boss, battleground, trials, ascension
 trial, the Scorched Marches), so no return spot inside one is stored. Leaving never goes back to a spot that lies in an instance area
 now (`Chaos.instanceAt`): such a player goes to the temple instead.
+
+**Waystone device** (owner request 2026-10-17: the waystone texts said "house", the hideout is where it should work, and the
+default hideout should come with the device in the middle). The base waystone system (`customs/waystone_system/tier_maps.lua`)
+works only in a house: the device (item 29624 "Waystone Portal", 29626 is its other rotation; action id 42707, set by the base
+`player.lua` when a kit 29628 is unwrapped) refuses unless `tile:getHouse()` and its portal pads are made only on tiles of a
+house the player owns. The hideout has no engine house, so `tools/patch_waystone_hideout.py` (step `waystonehideout`, idempotent,
+`tools/patch_waystone_hideout_test.py` in CI) gives `tier_maps.lua` a helper `chaosWaystonePlace(player, pos, ownerOnly)`: true on
+a house tile (an owned one for the pads), **or** on a tile of the player's own hideout (`ChaosHideout.isOwnRoomTile(player, pos)`,
+read when used, so load order does not matter); houses keep working as before. It also refuses the "wrap" answer for a
+hideout's device (`ChaosHideout.isFixture(item)`), and changes the texts: "You may only use the Waystone Portal in your hideout or
+inside a house.", "There is no space in your hideout or house to spawn portals.", and the six Waystone Tier descriptions of
+`items.xml` ("Use this waystone on the waystone device in your hideout or house to teleport to a random tier N map."). The
+portal kit (29628) still says "in your house": building a device from a kit needs a house. Every hideout, in every theme, is
+built with the device as a fixture at the middle of the floor (`fixtures.waystone` = 8,6; item `ids.waystone` 29624, action id
+`aid.waystone` 42707 are values of the base data, kept in `hideout_config.lua`): a solid tile like the depot (the path rule
+counts it), never removable or movable (`onItemMoved` puts it back, wrap refused), and the four diagonal tiles around it (7,5 9,5
+7,7 9,7, where the base script puts the portal pads for 60 s) stay free of decorations. A visitor who uses it gets the refusal
+(only the owner's own hideout counts). The pads lead to the waystone maps and the 30-minute timer of the base script; the exit
+leads out of the hideout, like the Town Portal. **Install:** `install_all.py` step `waystonehideout` (after `files`, so
+`hideout.lua` has the API; the patch itself needs only the base files). **Needs a live check:** the device opens its window in a
+hideout, the pads appear and lead to a tier map, a visitor is refused, the wrap button is refused, the pads are not blocked by
+decorations on the other tiles.
 
 **Unlocks** (the catalogue shows each lock reason): every character (thrones, tables, racks, basins, tapestries, rugs,
 banners, bones, trees), achievements (Skull Pillar: rift tier 5; Skull Candle: an omen guardian; Hero Statue: level 300),
@@ -3250,7 +3456,7 @@ visit {guid} | place {key, x, y, r} | move {id, x, y, r} | remove {id} | clear |
 | like {owner}`; server -> client `state {open, me, hideout, inside, layout, themes, catalogue, placed, permissions,
 categories}`, `visits {friends, showcase = {likes, visits}, recent}`, `result {ok, text}`.
 
-**Install.** The `files` and `sql` steps of `install_all.py` (`sql/chaos_hideout.sql`, 5 tables; `hideout.lua` also creates
+**Install.** The `files` and `sql` steps of `install_all.py` (plus `waystonehideout`, above; `sql/chaos_hideout.sql`, 5 tables; `hideout.lua` also creates
 them at startup). The depot locker needs engine patch 0017 (`item:unserializeAttributes` sets its depot id to the owner's
 home town); without it the locker says to use a town depot.
 
@@ -3259,7 +3465,9 @@ store; the opcode against every ChaosOpcodes entry and the reference lists; the 
 (layers, walls, reserved tiles, limits, the path, multi-tile and rotation), unlock sources, permissions, likes, visits,
 the showcase, the slot pool; then `hideout.lua` on a mocked engine and database (enter, build, wall pieces, the locker's
 depot id, place / move / remove, trophy text, store unlock and gift, themes, VIP / guild visits, likes, permission
-change sending a visitor out, no PvP, dropped items, teardown and slot reuse, login inside, staff entry); the way out:
+change sending a visitor out, no PvP, dropped items, teardown and slot reuse, login inside, staff entry, the waystone device:
+built in the middle with the base ids, its pad tiles kept free, `isOwnRoomTile` for the owner / a visitor / outside, never moved);
+the way out:
 `K.exitDestination` (stored spot, next to a stored portal tile, never the grid, home temple, Cinderhold) and, with a
 mocked teleport that runs the step-in of the tile's items like the engine, the portal -> exit round trip (back on the
 tile stepped from, one step-in, no loop), an old return spot on the portal, a teleport from a hideout onto the portal,
@@ -3304,6 +3512,20 @@ autoloot list is needed.
   everything else, overflow), so with no settings opened it takes all the loot of the character's kills; the rules window
   can still narrow it. It is a store item: kept at a relog, back (empty) after a death that drops the backpack (below), never
   traded or sold. 255 different stacks is its only limit: a full bag passes the item to the backpack, then the corpse.
+- **The Loot Bag stays in the purse** (owner 2026-10-17, "Loot bag não pode sair da purse"). The store delivers it to the purse
+  (the engine's store inbox, item 26052, `purseIds`). From the purse it cannot be moved anywhere else: not into the backpack,
+  an inventory slot, a depot, a container on the ground, not dropped, mailed or traded. `Player:onMoveItem` answers the warning
+  line "The Loot Bag stays in your purse: ..." (`ChaosPouchesCore.moveRefusal`: `lootBag` + `inPurse` in the move description;
+  the trade request refuses it with the same line). A bag that sits elsewhere (a character from before the rule) keeps the
+  old rule (backpack or depot only): the engine does not let a player drag into the purse, so it stays where it is. The Orbs and
+  Rift Key pouches may still leave the purse.
+- **The Loot Bag sorts itself by rarity** (owner 2026-10-17, "ordenar automaticamente por raridade"). Rarest first, uniques above
+  every rarity, plain items last, equal ranks keep their order. `ChaosPouchesCore.rank` and `sortPlan` are pure (tested): the plan
+  lists the items that must move to the front (the engine adds an item at the front of a container) and leaves the already sorted
+  tail alone, at most `sort.maxMoves` (120) moves per call; a new plain item in front of a sorted bag moves only the rarer items.
+  `ChaosPouches.sortBag` runs once per kill after the loot is stowed, after a click-to-loot, and when the bag is opened (an Action on
+  the bag's id that sorts and returns false, so the engine opens it as usual). There is no timer and no scan of the whole bag
+  except the O(n) rank read of those events. Only the top level of the bag is sorted; the moves use `FLAG_NOLIMIT` (a full bag).
   **Auto Seller:** "Sell all" in the Auto Seller window (Economy > Auto Seller, or the Loot Bag window's Auto Seller
   button) sells what is in it ("Store services", Auto Seller).
 - **Order in the `onDropLoot` chain** (lower index first): 0 stock loot, 1 Chaos loot layer, 1.5 Echoing Spoils, 2 auto seller +
@@ -3453,8 +3675,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   entries "Never runs out. ..." (the item tooltip shows them). No spirit potion: the first one is the great spirit
   potion (level 80); the hybrid classes start on health and mana potions too (docs/CLASSES.md, `newplayer_config.lua`).
 - **Drinking.** On yourself or another player like the stock potion (not on a monster or an NPC). Never used up, no flask.
-  It shares the stock potions' exhaust (`CONDITION_EXHAUST_HEAL`, the action interval - 100 ms = 900 ms), so it is no
-  faster than a stack of stock potions and blocks them for the same time. "You are exhausted." while it runs. Higher
+  The health and the mana potion each have their own wait (the action interval - 100 ms = 900 ms, a per-player timer in
+  `potions.lua`; owner 2026-10-17: a mana potion after a health potion said "You are exhausted."), so each is no faster
+  than a stack of stock potions and no `CONDITION_EXHAUST_HEAL` is added. "You are exhausted." for the same kind. Higher
   tiers stay consumables: they are the gold sink.
 - **Hotkeys and the action bar** (engine patch 0043, playtest 2026-10-16): the client uses a potion from its action bar,
   hotkeys and helper by client id, and the engine maps 266 / 268 to the stock 7618 / 7620. So a hotkey drinks the stock
@@ -3494,7 +3717,25 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 
 ## Stash (`stash.lua`, `stash_core.lua`, `stash_config.lua`, `item_codec.lua`, `sql/chaos_stash.sql`, `tools/migrate_depot_stash.py`, client `game_stash`)
 
-The owner's decision (2026-10-15): the stash is the one item storage of a character; the per-character depot boxes retire
+**Reversed again 2026-10-17 (later)** (owner: "remova o depot e deixe só o stash", "quando a gente abrir o baú, abra o stash"): the stash is the one
+storage. `stash_config.lua` has `depot.migrate = true`, `depot.withdrawOnly = true` and `toDepot.enabled = false` (the stash -> depot
+migration below stays in the code, off). Opening a depot locker opens the stash window (`ChaosStash.openWindow`, a `Toggle` with `open = true`
+that keeps an open window open; `depot.lua` `afterOpen`); the chest still lists what is left to take out.
+
+**Reversed 2026-10-17** (owner: "Depot e stash estão iguais: migrar o stash para o depot"): the depot is the one storage again.
+`stash_config.lua` `toDepot` (enabled): when a depot locker is opened, `ChaosStash.migrateToDepot` moves the character's stash
+entries into the open depot tabs with room (`ChaosDepot.slots`), once per character (storage 7100013, version in
+`toDepot.version`), at most `toDepot.batch` (40) entries per opening, plain stacks as stacks of `toDepot.stackSize` (100), stored
+items made again with every attribute. It runs every entry through the stash journal (`K.withdraw` with a depot box as the
+destination), so a crash or a failed save puts the entry back: no item lost, none doubled. What does not fit (the open tabs are
+full: with one free tab that is likely) stays in the stash, withdraw-only, and the player is told how many entries remain. The
+stash window stays as a thin view of that leftover: deposits are closed (window drop, Stow Everything, `ChaosStash.storeItem`;
+the `tabs` message carries `closed = true`, the client greys the deposit out), withdrawals work as before. The depot is no longer
+withdraw-only (`depot.withdrawOnly = false`) and no longer moves into the stash (`depot.migrate = false`); the migration waits for a
+locker opening because the engine saves the depot only then. Rollback: `toDepot.enabled = false`, `depot.migrate = true`,
+`depot.withdrawOnly = true`. The text below describes the stash as built on 2026-10-15.
+
+The owner's decision (2026-10-15, reversed above): the stash is the one item storage of a character; the per-character depot boxes retire
 into it. Every number and text is in `stash_config.lua`; the rules are pure functions in `stash_core.lua` (tested by
 `tests/stash_test.lua`, which also runs `stash.lua` against a mocked engine and an in-memory database); `stash.lua` is the
 engine glue. Window: Economy > Supply Stash (client `game_stash`, extended opcode 110). No player command (owner rule):
@@ -3621,6 +3862,18 @@ At most 100 whole items at once; a plain stack is one merged entry. `chaos_stash
 
 **Tables.** `chaos_stash` and `chaos_stash_block` (`sql/chaos.sql`), `chaos_stash.tab` (`sql/chaos_pact.sql`),
 `chaos_stash_items` and `chaos_stash_log` (`sql/chaos_stash.sql`; `stash.lua` creates them at startup too).
+
+
+**List packets (fix 2026-10-20).** `sendItems` answers with `tabs` and then `addItems` packets (`isFirst` / `isLast`). A packet
+is cut at `chunkSize` (40) entries or `chunkBytes` (6000) bytes of JSON, whichever comes first. Before, only the count cut it:
+40 whole items with a look text of up to 1000 bytes were 40 KB, and a payload over the engine's 8192 byte string limit goes
+out through `Chaos.sendChunked` in "S/P/E" parts that the window (a plain `registerExtendedOpcode` listener) cannot read.
+Those packets were lost: with about 10 whole items the list showed only what arrived (a first row, or nothing), nothing could be
+clicked, and a counter that comes from `tabs` (13/100) stayed right. The deposit and withdraw paths take the item by the
+resolved engine item or by item id / row id, never by a list position; `tests/stash_test.lua` ("the list") deposits 25 entries
+one by one, withdraws the 13th, then entries and half stacks, and checks character + stash sums after every step, and that
+every `addItems` packet is under 8192 bytes. No duplication was found on the server. A neighbour item leaving with a deposit can
+only come from a stale container slot in the client request (the slot is the index at the time of the drag); not reproduced.
 
 ## Chaos Pact and account storage (`pact.lua`, `pact_core.lua`, `pact_config.lua`, `sql/chaos_pact.sql`, client `game_pact`)
 
@@ -3764,7 +4017,7 @@ locker Action (`data/scripts/customs/actions/sounds/depot.lua`, it plays a sound
 added (tab 1 first). No engine patch: Lua makes the boxes when the locker opens. `depot.lua` warns at startup when a hook
 is missing, and registers its own locker Action when the base locker script does not exist.
 
-**Limits.** An account may fill `ChaosDepot.tabs(player)` tabs: `pact_config.lua` limit `depotTabs` (4 free, +1 while the
+**Limits.** An account may fill `ChaosDepot.tabs(player)` tabs: `pact_config.lua` limit `depotTabs` (1 free since 2026-10-17, +1 while the
 Chaos Pact runs, up to 9 bought) + one per achievement of `achievementTabs` that any character of the account has, at most
 17. A tab holds 100 items: every item counts once, a container counts as 1 plus everything in it (nested), a stack counts
 as 1. Tabs above the count are withdraw-only. Nothing is ever deleted: contents above a limit stay, only adding is refused.
@@ -3772,9 +4025,9 @@ The tab count is the same in every town; each town's chest has its own 17 tabs.
 
 | Source | Tabs |
 |---|---|
-| Free | 4 |
+| Free | 1 |
 | Chaos Pact (while active) | +1 |
-| Store "Depot Tabs": Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +9 |
+| Store "Depot Tabs": Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +12 |
 | Achievements: Cabinet of Curiosities (25 unique items), Hall of Trophies (100 bestiary entries), Keeper of the Vault (50 sealed rifts) | +1 each |
 
 The store offers are service `pactExtra` with `extra = "depotTabs"` and `amount` 1 or 4 (`pact.lua` adds `amount`; a pack
@@ -3804,7 +4057,13 @@ character), our stash (withdraws to the character). The engine never adds to a d
 into a container that may be a tab must ask `ChaosDepot.checkAdd(player, container, item, count)` first;
 `Item:moveTo` and `Container:addItem` skip `onMoveItem`. Not covered: such a script that does not ask.
 
-**The stash takes over** (2026-10-15, "Stash"): with `stash_config.lua` `depot.withdrawOnly` the boxes and the chest
+**One default tab** (2026-10-17, "Diminuir as tabs do depot padrão para 1"): the free count is 1 (`pact_config.lua`
+`depotTabs.free`; the bought maximum rose from 9 to 12 so the total stays 17 boxes). A locker opening makes only the boxes of
+the account's open tabs (`Depot.ensure(chest, tabs)`), boxes that exist stay (a locked tab with items keeps its box), and the
+`tabs` message's `max` is the number of boxes that exist, so a default depot shows one tab. Buying a tab or earning an
+achievement makes its box at the next locker opening. The stash tabs (`stashTabs` free 4) are unchanged.
+
+**The stash takes over** (2026-10-15, "Stash"; reversed 2026-10-17, see "Stash"): with `stash_config.lua` `depot.withdrawOnly` the boxes and the chest
 are withdraw-only (the move rule answers "closed"; taking out and tidying inside a tab work, the inbox and the market as
 before), and with `depot.migrate` the first locker opening moves the character's depots into the stash
 (`ChaosStash.migrateDepot`). The locker line says the depot is withdraw-only. The depot tab achievements and bought depot
@@ -4227,8 +4486,10 @@ Character > Spellbook in the client menu opens the client window `game_spellbook
 - Parsed once at startup when the `AREA_*` tables already exist, otherwise on the first Character > Spellbook; `/spells reload` (staff) parses again after a spell change. A player can open it once every 2 seconds.
 - Protocol (JSON `{action, data}`): `open` {vocation, level, magicLevel, total, chunks, vocationNames [{id, name}]}, then `spells` {index, spells [...]} until all are sent (about 6.5 KB of JSON per packet), then `done` {total}. A spell: name, words, level, maglevel, mana, manaPercent, soul, cooldown and groupCooldown (ms), group, type, element, target (`single`/`area`/`self`/`front`), center (`caster`/`target`), area (matrix, 1 = hit, 2 = centre, 3 = centre and hit; `front` spells drawn facing north), range, description, scaling, vocations (ids), premium (false for all since "Free spells"; the client no longer shows it), rune and runeClientId. The client sends `open` to ask for the same answer.
 - With the reference spell set (234 player spells) that is 14 packets, about 76 KB.
+- Descriptions of stock buff / utility spells (2026-10-18): the script's literal `CONDITION_PARAM_TICKS` / `setTicks` (a number or a product such as `6 * 60 * 1000`) is appended as "for 33 s" / "for 6 min"; an ATTRIBUTES condition names the stats it raises (`CONDITION_PARAM_STAT_MAGICPOINTS`, `SKILL_*`) and a script that calls `getParty` says "you and your party members"; Levitate, Find Person, Magic Rope, the challenges, Cancel Invisibility, Creature Illusion and Recovery have fixed texts (`Book.FALLBACK_TEXT`). A duration read from a config table is not guessed: the text then has no number. Chaos spells keep the header comment of their script as the description.
 - Cache check (2026-10-16): `open`, `done` also carry `sig` (a checksum of the packed list, cached per display-scale factor), `open` carries `learned` (names of the `needlearn` spells the player learned) and spells carry `id` (spellid) and `needLearn`. The client sends `open {have = sig}`; when it is the current list only `open {unchanged = true, chunks = 0}` and `done` go out, without the 2 s throttle. An old client (no `have`) gets the full list as before.
 - Spellbook items: using a stock spellbook (the base action `data/scripts/actions/others/spellbook.lua`, hooked by `tools/patch_base_spellbook.py`, install_all step `events`) or a Chaos set spellbook (27 gear-set and 10 themed ids, registered by `spellbook.lua`) sends `show` to a client that has spoken opcode 219 this login (its background fetch after login, `open {prefetch = true}`, which the new-player tutorial does not count); the client opens the window. A client without the window keeps the stock "Spells for Level n" text (`ChaosSpellbook.spellText`). Test: `tools/patch_base_spellbook_test.py`.
+- The client window has a second drop-down All types / Attack / Support and an "AoE" tag (pt-BR "Área") on attack spells that hit an area, derived from the spell's `type` (damage = attack; healing, buffs, summons, conjures, utility = support; no type: the XML `group`), `target` (`area` / `front`) and `area` matrix (more than one hit tile): `spellbook_core.lua`, `spellbook_core_test.lua`.
 - `server/tests/spellbook_test.lua` (fixtures in `tests/fixtures/spellbook/`) covers the XML parsing, named, inline and local areas, refusal of unsafe or malformed inline tables, the classification and descriptions, the chunking and the talkaction/opcode flow. Not run on a server.
 
 ## Multi-client (`multiclient.lua`)
@@ -4246,13 +4507,134 @@ The IP is the player's own one behind the gateways too: engine patch 0025 takes 
 
 ## Weapon styles (`weapon_styles.lua`, `tools/two_handed.py`)
 
-- Two-handed weapons (swords, axes, clubs, bows, crossbows) attack 1.5x slower and hit 1.6x harder (about +7% damage
-  per second over one hand + shield). Run `python3 -I server/tools/two_handed.py <server>/data` once: it raises the
-  `attackspeed` of the two-handed weapons in items.xml (2000 -> 3000 ms, 1800 -> 2700 ms; idempotent). The extra damage
-  is applied by `weapon_styles.lua` to weapon hits only (spells, runes and wands are not affected).
+- Two-handed weapons (swords, axes, clubs, bows, crossbows) attack 1.5x slower and hit harder: a two-handed sword, axe or club
+  of one tier deals 1.07x the damage per second of one hand + shield at every level, a launcher still x1.6 (owner debug
+  item 47, 2026-10-17: the flat x1.6 of the two-handed melee weapons was +28% at level 8 and +13% from level 75;
+  `weapon_styles.lua` now multiplies by the factor of the wielder's level, 1.34 at level 8, 1.52 from 100:
+  `weapon_balance_core.lua`, `weapon_balance_config.lua` written by `tools/weapon_sim.py`, numbers and the open launcher
+  decision in server/data/spells/README.md "Weapon damage per second"). Run `python3 -I server/tools/two_handed.py
+  <server>/data` once: it raises the `attackspeed` of the two-handed weapons in items.xml (2000 -> 3000 ms, 1800 -> 2700
+  ms; idempotent). The extra damage is applied by `weapon_styles.lua` to weapon hits only (spells, runes and wands are not
+  affected).
 - Bows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Crossbows hit only
   their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
   ammunition: "Infinite arrows and quivers" below).
+
+## Estimated DPS (`weapon_dps_core.lua`, `item_tooltip_core.lua` `T.dpsRow`)
+
+Owner item 79 (2026-10-18): "Faça um medidor de DPS pra cada arma. Pode ser estimado." The tooltip of a sword, axe, club or
+distance weapon (bows and crossbows included) in the inventory or a container has a base row **Estimated DPS: ~N** under "Your Attack
+Interval". It is an estimate of the auto attack on a target that does not defend, the model `tools/weapon_sim.py` checks the styles with:
+
+- max hit = round(level / 5 (integer) + ((skill / 4 + 1) x (attack / 3) x 1.03) / attack factor), the engine's `Weapons::getMaxWeaponDamage`, attack factor 1 (offensive stance);
+- mean hit = (min + max) / 2, min 0 for melee and ceil(level / 5) for a launcher;
+- hit = mean hit x the style factor of `weapon_styles.lua` (`ChaosWeaponBalance.hitFactor`: two-handed melee, bow, crossbow);
+- DPS = hit x hit chance (launchers: the item's `hitchance`, else 100%) / "Your Attack Interval" in seconds, x the display scale factor of the character's level (like every combat number).
+
+Inputs: the item's attack (a rarity roll or a unique writes it as an attribute), the viewer's level, best melee skill (one melee skill)
+or distance skill (`item_tooltip.lua` puts them in `opts.wielder`), the interval of the tooltip (vocation, dexterity, attack speed cap).
+Left out: critical hits, modifiers of the item, passive tree and gems, resistances, spells, runes, wands and rods (magic level
+damage) and the fist. The row is not shown for a linked or inspected item (no viewer). The client caches a tooltip by item id and
+version, so after a skill or level change the number refreshes when the item is asked for again (the same as "Your Attack
+Interval"). Tests: `tests/weapon_dps_test.lua`, `tests/item_tooltip_test.lua`, client `tooltiplogic_test.lua`. Not checked live.
+
+## Item charges (`loot.lua` `L.restoreCharges`, `charges_look.lua`, `charges_look_core.lua`)
+
+Owner item 80 (2026-10-18): "cargas em amuletos não estão aparecendo" and "os amuletos com charges dropam com 1 charge só".
+- **Drop with 1 charge.** The engine creates a non-stackable item that has charges with the *count* it was given as its charges
+  (`Item::Item`), and a monster loot entry creates its item with count 1. `loot.lua` step 1c (`L.restoreCharges`, after the stock loot
+  and the extra rolls, before the gear steps) sets every such item of the fresh corpse, bags included, to the item type's full charges.
+  Items with fewer charges than the type and stackable items are only touched in a fresh corpse, so a used item is never refilled.
+  Items other scripts create with `Game.createItem(id, 1)` or `addItem(id, 1)` (shops, quest rewards, ground loot) still get
+  1 charge: pass the item type's charges as the count there. Test: `tests/loot_charges_test.lua`.
+- **Charges not shown.** The engine writes "(that has N charges left)" only for types with `showcharges` in items.xml. The Look text
+  now ends with "It has N charges left (of M)." for any non-stackable item with charges (`charges_look.lua`, an `onLook` callback at
+  index 125, skipped when the engine text already has it). The rich tooltip already had "Charges: n of max" (`T.chargeInfo`).
+  Test: `tests/charges_look_test.lua`. Not checked live.
+
+## One melee skill (`melee_skill_core.lua`, `melee_skill.lua`, `weapon_styles.lua`, `add_vocations.py`, client `game_simpleskills`)
+
+Owner debug item 46 (2026-10-17): "Simplificar skills: melee, ranged, magic, wand e shielding. Itens de melee servem a todas as
+classes de melee, e assim por diante." The skills of the game are **Melee, Ranged, Magic (wand), Shielding** (and Fist Fighting
+for the Monk line). What is done without an engine patch, and what is not:
+
+| Owner's skill | What it is on this engine | Done |
+|---|---|---|
+| **Melee** | sword + club + axe (the engine keeps three) | one skill by rule: a hit, a melee spell and the training use the **best of the three** |
+| **Ranged** | distance fighting (bows, crossbows, throwing weapons, shurikens) | unchanged; shown as "Ranged" |
+| **Magic** | magic level | unchanged |
+| **Wand** | wands and rods hit by magic level, they have no skill of their own | nothing to merge; the skills window row reads "Magic / Wand" |
+| **Shielding** | shielding | unchanged |
+| Fist Fighting | the Monk line's bare hands | unchanged; shown for the Monk, Shadowfist and Iron Sage only |
+
+- **The hit** (`weapon_styles.lua`, the one `onHealthChange` the weapon styles already have): a sword, axe or club hit
+  (origin melee) is multiplied by `maxHit(best skill) / maxHit(the weapon's own skill)` of the engine's formula (the attack of
+  the item with a rarity roll, the stance factor from `getFightMode`, the level term): a Warrior with sword 100 who picks up an
+  axe hits as with sword 100, not as with axe 10. Effective levels (items, tree) count, the best of the three. The strikes of the
+  spells (`ChaosSpell.weaponStrike`: Blade Flurry, Iaijutsu, Shadow Step) are worked out with the best skill already and mark
+  storage 7100028 (`Chaos.storage.weaponStrike`) during the call, so the rule is not applied to them a second time. Spells:
+  `ChaosSpell.meleeSkillLevel` (`_common.lua`; Blade Flurry, the shurikens, the Monk's staff strikes, the Templar's strikes
+  already used `bestMeleeSkill`).
+- **The training** (`melee_skill.lua`, `EventCallback.onGainSkillTries` at index 2, after the class lock and before the
+  training multiplier and the island guard): tries of the sword, club or axe skill go to the best of the three
+  (`ChaosMeleeSkill.routeTarget`); a tie keeps them where they are. The vocations' three multipliers are equal now
+  (`chaos_vocations*.xml`: the Thief line sword 1.1, club and axe 1.3 -> 1.1; the Monk line sword and axe 1.3 -> 1.1; the Templar
+  line axe 1.2 -> 1.1), so no skill is slower to level. **Saved characters lose nothing**: the three skills keep their stored
+  values and tries, only the weaker two stop growing; the best one is what counts. The exercise weapons (sword, axe, club) keep
+  their class lists (`patch_base_classes.py`): every melee class can train with at least one.
+- **Items by group, not by type** (`add_vocations.py` step 3, run by `install_all.py` and safe to run again on an installed
+  server; `install_gear_sets.py` FITS the same): every sword, axe and club, one- or two-handed, that lists vocations is open to
+  the Warrior, Thief, Monk and Templar lines (the weapon lists and the hand equip events); the Berserker stays two-handed only
+  (the class rule). Armour, shields, launchers, wands and rods keep their lists. Tested: `tools/add_vocations_melee_test.py`.
+- **The skills window** (client `game_simpleskills`, no base patch): the club and axe rows are hidden, the sword row reads
+  "Melee" with the best of the three and its percent, "Distance Fighting" reads "Ranged", the magic level "Magic / Wand", the
+  Fist row only for the Monk line. Tested: `simpleskills_logic_test.lua`; the widget code is not tested without a client.
+- **Not done: a merged skill in the engine, and the stock Warrior skill spells.** The base spells (Bonebreaker, Reaver's
+  Spin, Earthbreaker, Scything Arc, Butcher's Gyre, ...) get the skill and the attack from the engine by the weapon in hand
+  (`Player::getWeaponSkill`): they still use the skill of the weapon's own type. The Chaos spells and every weapon hit use the best.
+
+**Engine patch proposal "attack at once" (no number yet, not written: the engine source is not in this repository, nothing here compiles it).** One
+change in `src/player.cpp` makes all of the above native and lets `weapon_styles.lua` drop its multiplier:
+1. `Player::getWeaponSkill(const Item*)`: for `WEAPON_SWORD`, `WEAPON_CLUB` and `WEAPON_AXE` return the largest of
+   `getSkillLevel(SKILL_SWORD)`, `getSkillLevel(SKILL_CLUB)` and `getSkillLevel(SKILL_AXE)` (the effective levels). Weapons, the
+   stock skill spells and `Weapons::getMaxWeaponDamage` all read it.
+2. `Player::addSkillAdvance(skills_t, uint64_t)`: a melee skill's tries go to the highest melee skill (what `melee_skill.lua`
+   does from Lua), so the three never drift apart again.
+3. `IOLoginData::loadPlayer`: after the skills are read, set the three melee skills to the highest level, tries and percent
+   (idempotent, once per login; nothing is lost, the lower two are not used any more).
+4. `ProtocolGame::AddPlayerSkills`: send the highest melee skill in the club, sword and axe slots, so a client without
+   `game_simpleskills` shows one number three times (the module can then drop its max).
+5. `CONDITION_PARAM_SKILL_SWORD / AXE / CLUB`: the bonuses of the three added together for the melee skill would triple the
+   "+2 to every melee skill" items (Hornsworn Helm): keep the maximum of the three, as now.
+Order: after 0047. The Lua rescale and the training callback then become no-ops and can be removed in the same change.
+A full rename (a fourth stored `SKILL_MELEE`, a new column, a client protocol change) is not worth it: the three stored
+skills cost nothing and the saves, the highscores and the exercise weapons keep working.
+
+## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
+
+What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a
+stair is a step (`Player::onWalk`), then the floor change moves the player (`Game::internalMoveCreature`) and
+`Creature::onCreatureMove` sees the attacked creature on another floor and drops the target (`onCreatureDisappear`:
+"target lost"; nothing attacks any more). The player (or the helper's Auto Target) picks a new target. In the stock engine the
+first swing of a new target waits for the next creature think (`Creature::onThink` -> `onAttacking`, once per second per
+creature: 0 to 1000 ms, 500 ms on average, then `Player::doAttacking` schedules the following swings itself by the attack
+interval); patches 0028 and 0042 already removed the same wait after a step and after an item move, not after a new target.
+Three delays add up after a stair:
+1. **The target is lost** (engine, stock behaviour): the attack stops until a new one is picked.
+2. **The first swing of the new target waits for the creature think** (engine, up to 1 s, 0.5 s on average): this is the only
+   delay that belongs to the server and it is the one the owner feels, because the helper picks the new target at once.
+3. **The helper's own wait** (base `mods/game_helper`, Auto Target and the magic shooter): not readable here (the base client
+   is not in the repository); the overlay and base patches around it (0052, 0062, 0067, 0074) do not touch the target choice.
+No server setting changes 2 (`prod_config.py` has no key for it: the think interval is a compile-time constant and
+`classicAttackSpeed` only decides which task slot the swings use). The fix is **engine patch "attack-at-once" (proposal, no number yet,
+not written)**: in `Game::playerSetAttackedCreature` queue `Game::checkCreatureAttack(player id)` through the dispatcher after
+`setAttackedCreature` (the same call `Player::doAttacking` schedules), so the first swing waits only for the attack interval
+it was already owing (`lastAttack`, `Player::getAttackSpeed`), not for the think. It helps every new target (monsters
+switched, the first hit of a pull, stairs), spells and runes are not affected. Keeping the target across a floor change
+(only when the creature is still visible) is not proposed: in the game a target on another floor is not attackable.
+Not done: nothing in this change touches 2 or 3, and a client-side guess of a new target after a stair was left out on
+purpose (it would attack a monster the player did not pick when running away upstairs). Needs the owner's call: write the patch
+(a few lines, tested on the test server with a stair pull before and after), and measure item 3 with the helper on and off.
 
 ## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`, `src-patches/0023-quiver-off-hand.patch`)
 
@@ -4431,6 +4813,37 @@ off-hand put the bow away (stock swap); a crossbow beside the quiver; the equip 
 when slot 9 held one and refused a shield beside the crossbow; two time rings turned active in both slots (speed
 +60 each), slot 10's ring lost duration and turned back with its time kept when taken off; the quiver tooltip read
 "Off-hand: Quiver".
+
+## Throwing weapons (`data/lib/chaos_throwables.lua`, `tools/patch_base_throwables.py`, `loot.lua`, `rarity_migrate*.lua`)
+
+Owner decision 2026-10-20: the stackable throwing weapons are out of the game: small stone 1294, spear 2389, throwing
+star 2399, throwing knife 2410, hunting spear 3965, viper star 7366, enchanted spear 7367, assassin star 7368, royal
+spear 7378 (the block `T.items` of `chaos_throwables.lua` is the one list; the tool, the loot layer, the hunt tracker
+generator and the tests read it). Arrows and bolts went the same way earlier ("Infinite arrows and quivers").
+
+- **Install:** step `throwables` (after `archery`, whose editing functions it uses): `tools/patch_base_throwables.py DATA_DIR`
+  removes them from base monster loot (XML and Lua), NPC shops (XML lists; script shop lines and keywords commented), and
+  turns NPC and quest rewards into gold coins (the item's `sell_prices.lua` value, else 5 gold each). Idempotent
+  (`tools/patch_base_throwables_test.py`). `items.xml` and `weapons.xml` are untouched; what a character holds stays.
+  The Chaos monster files had their spear entries (15 goblins) removed in the repo; `tools/ci/check_content.py` fails on
+  any throwable in Chaos monster loot, a new-player kit or `hunt_supplies.lua`.
+- **Loot layer:** `loot.lua` step 0 takes a throwable out of a corpse (a loot table the tool could not read still drops none).
+- **Thief kit (decision):** the Thief, Ninja and Samurai no longer start with 30 throwing stars (and the `testkit` Thief
+  no longer gets 100 assassin stars). The shuriken spells (Shuriken Toss 236, Shuriken Barrage 242) never used them up:
+  `ChaosSpell.shurikenPower` takes `Chaos.classes.shuriken.defaultAttack` (50) unless a one-handed distance weapon is in
+  hand, so the spells and their numbers are unchanged (balance in `data/spells/README.md` "Thief line"). The kit keeps the
+  dagger and the second dagger. `Chaos.classes.shuriken.items` was read by nothing and is gone.
+- **Hunt tracker:** `hunt_supplies.lua` has no thrown weapon; `gen_supply_prices.py` no longer counts them.
+- **No rarity on stackables (same decision):** a stack never carries a rarity. The Chaos gates already refused one
+  (`ChaosLoot.isGearId`, `ChaosCrafting.isGear`), but the stock roll of the base drop script could still set the attribute
+  on a stackable that passed its gear test, and nothing forged it: **that is why a royal spear always came without a
+  rarity** (it is stackable). Now `ChaosLoot.stripStackableRarity` clears the attribute in every corpse before the engine's
+  stat pass and in `finalizeRarity` (autoloot, pouch), and the login walk of `rarity_migrate.lua` (version 2, so
+  characters walked before are walked again) clears it on existing stacks in equipment, backpacks, purse, inbox and
+  depots. Not covered: stacks in house tiles, guild depots, market offers and stash tables (cleared when they pass a
+  player's hands again). The stock roll function itself lives in the base file and is not edited.
+- Tests: `tests/throwables_test.lua`, `tests/rarity_migrate_test.lua`, `tests/newplayer_test.lua`, `tests/class_kit_test.lua`,
+  `tools/patch_base_throwables_test.py`.
 
 ## Second ring slot (`src-patches/0023-quiver-off-hand.patch`, `data/lib/chaos_item_mods.lua`, `archery.lua`, `tools/patch_base_archery.py`, client `game_ringslot`)
 
@@ -4654,9 +5067,9 @@ equipment) must have cooldowns that never conflict: using one never delays or bl
   other group-less spells (only the house spells; monsters do not use them).
 - Lua, cast-time spells (`data/lib/chaos_casting.lua`): any other spell's cast event interrupted the cast and refunded
   it, so a heal cut the attack cast off, and the client helper held every heal while a cast charged.
-- Lua, potions: the Everfull potions add `CONDITION_EXHAUST_HEAL` (900 ms) of their own (`potions.lua`); nothing else
-  uses that condition (no spell), so it holds only the Everfull potions. The stock potions had no exhaust of their own
-  (only the shared 1 s next action).
+- Lua, potions: the Everfull potions wait 900 ms per kind (a health and a mana timer per player in `potions.lua`, no
+  `CONDITION_EXHAUST_HEAL` since 2026-10-17). The stock potions had no exhaust of their own (only the shared 1 s next
+  action).
 - Lua, other exhausts: Town Portal sets its own spell cooldown only (`townportal.lua`, group none with group cooldown 0);
   rift and store service items keep their own per-feature timers; crafting has none; the antibot, combat log and
   supports hooks only read or shorten a spell's own cooldown. None of them is shared with attack, heal or moves.
@@ -4668,10 +5081,15 @@ equipment) must have cooldowns that never conflict: using one never delays or bl
 - **Attack**: attack spells and attack runes share the attack group cooldown (spells.xml); attack runes also wait
   `runeChannelDelay` (1000 ms) after the last attack rune. Nothing else holds them.
 - **Heal**: healing spells and healing runes share the healing group cooldown; healing runes wait `runeChannelDelay`
-  after the last healing rune. **Potions are a channel of their own** (`potionChannelDelay`, 1000 ms, the stock pace):
+  after the last healing rune. **Potions are a channel of their own** (`potionChannelDelay`, 500 ms):
   a potion never waits for a heal spell or rune and never holds one, as in the stock game where potions and healing
   spells never shared a cooldown; one potion a second stays the limit (health and mana potions together). Support runes
   have their own channel the same way.
+- **The helper and runes (client base patch 0082, 2026-10-20, "o helper nao esta usando runas")**: the server never
+  blocked them; the client did. The helper's rune use needed a count above 0 from `LocalPlayer:getInventoryCount`, which
+  sees only equipped items and open containers, so a rune in a closed backpack was never used. The use by id finds it in
+  any carried container, so the helper now probes an uncounted rune every 3 s (`ChaosPotionGate`, `client/BASE.md` 60)
+  and waits 30 s after "Sorry, not possible.". A rune used on a creature only waits `runeChannelDelay` on this server.
 - **Auto attack**: its own queued check and its own interval (`getAttackSpeed`, the 0011 floor and cap). No spell, rune,
   potion, use or move holds or cancels it. Only a step holds a distance shot, as before, and not a kite walk step
   (0028).
@@ -4696,7 +5114,7 @@ of `cooldown_channels_config.lua`, plus the Everfull potions of `potions_config.
 
 Config (`config.lua`, written by `tools/prod_config.py`; the engine defaults are the same): `cooldownChannels = true`
 (false: the stock shared delay and attack task), `moveItemDelay = 50`, `runeChannelDelay = 1000`,
-`potionChannelDelay = 1000` (ms; also in `configKeys`). Balance note: a player may now drink a potion, use an attack rune
+`potionChannelDelay = 500` (ms; also in `configKeys`). Balance note: a player may now drink a potion, use an attack rune
 and a healing rune in the same second (one of each per second at most).
 
 Tests: `tools/cooldown_channels_patch_test.py` (the patch: every stock gate goes, each use and move asks its channel,
@@ -5389,11 +5807,10 @@ tiles away. Mirewake had the Chaos anchors; those are configuration, so they mov
   started guide.
 - `tests/newplayer_test.lua` checks `homeTownFor` and that every temple anchor lists the main city first.
 
-**Slots for NPCs that do not exist yet.** A Chaos NPC that serves every character (a stash keeper, a pocket boss NPC)
-gets a booth in the Halls of Services: name it in a free slot of `npc_booths_config.lua` (`npc = false` rows: the
-economy room's north wall has two) and place it with `ChaosNpcPlace.place` (`npc_place.lua`) for the towns
-`{2, 1}`; the booth is used instead of the temple. No such NPC file was in `data/npc` on 2026-10-15; the stash, the
-pocket bosses and the Candlemarks open from the top menu meanwhile.
+**Slots for NPCs.** A Chaos NPC that serves every character gets a booth in the Halls of Services: name it in a free
+slot of `npc_booths_config.lua` (`npc = false` rows) and place it with `ChaosNpcPlace.place` (`npc_place.lua`) for the
+towns `{2, 1}`; the booth is used instead of the temple. The two slots of the economy room's north wall (stash keeper,
+pocket boss NPC) are filled since 2026-10-20 ("Service NPCs"); the menu entries stay.
 
 ## Halls of Services (`npc_booths.lua`, `npc_booths_core.lua`, `npc_booths_config.lua`, plans `tools/areaplan/rooms/services_*.json`)
 
@@ -5448,6 +5865,66 @@ were rendered for the owner (not in git). Not run on a live server.
 the SQL that moves `players.town_id` (one transaction, the counts first); run it with the server stopped, after
 `tools/backup.sh`. Positions, houses and depots stay (depots are per town; the stash window shows them all). The beta
 has no characters to move. Test: `tools/migrate_home_town_test.py`.
+
+## Service NPCs (`service_npcs.lua`, `service_npcs_core.lua`, `service_npcs_run.lua`, `service_npcs_config.lua`, `data/npc/scripts/chaos_service_npc.lua`)
+
+Owner decision 2026-10-20 (from the menu / NPC list of 2026-10-20): five NPCs that stand in for menu entries, built in
+this order. The menu entries are **not** removed; they stay until the owner has confirmed the NPCs in the game. No Guild,
+Market, Store or Ancestral Store NPC. No player talkaction (the only one is still `!bless`). No new opcode, storage key
+or table: every NPC opens the window of the module that owns the feature, through that module's own opcode and an
+`npc` action (the pattern of Osric the Chandler and the Gambler); every action in the window is checked again by the
+module's own script, never by the NPC.
+
+| NPC | Booth (Cinderhold and Mirewake) | Opens / does | Module reused |
+|---|---|---|---|
+| Tavish Coldhand (stash keeper) | economy room, north wall, slot "stash keeper" (x 41) | the stash window (`Toggle` with `open`, as a depot locker opens it) | `stash.lua`, opcode 110 |
+| Vessa Hollowmark (pocket boss NPC) | economy room, north wall, slot "pocket boss NPC" (x 46) | the Boss Spawns window; says the daily pocket charges (`pocketboss_config.lua`) | `bossspawns.lua` / `pocketboss.lua`, opcode 217 |
+| Cassian Auric (banker) | economy room, north wall, east of the way in (x 56) | the bank window; says the balance | `bank.lua`, opcode 60 |
+| Halvard Deedkeeper (house broker) | economy room, north wall (x 61) | lists the free houses by town, sells one by name after a "yes", runs the base `!leavehouse` and `!sellhouse` | `commands_ui_core.lua` loader, opcode 237 page `house` |
+| Pell Ashmere (services clerk) | progression room, north wall (x 5) | the Services page (name, class, frame); says the token counts; runs the base `!summonfamiliar`, `!familiarlevel`, `!choosefamiliar`, `!shop` | `commands_ui.lua` / `shop_services.lua`, opcode 237 page `services` |
+
+**Pure logic** (`service_npcs_core.lua`, `tests/service_npcs_test.lua`): what each NPC understands (`K.intent`: ordered
+keyword rows, the narrow ones first), the house name after "buy", the house search (an exact name in any case, else the
+one house whose name holds the text), the free houses of a town cheapest first, the towns with free houses, the price,
+and the purchase rules (`K.buyCheck`: sales on, premium, no owner, none owned yet, enough gold). **Engine side**
+(`service_npcs_run.lua`, loaded by the NPC script in the NPC's own Lua state: `R.open` sends the window message,
+`R.houses`, `R.buyHouse`, `R.runBase`). The base commands run in a sandbox with their texts caught, through the loader
+`commands_ui_core.lua` `K.baseHandler` that the Info & Services window (`commands_ui.lua`) uses too (moved there from
+`commands_ui.lua` on 2026-10-20; the window's behaviour is unchanged). The commands that live in the main Lua state
+(`changename`, `changevocation`, `ascend`, `plateframe`) cannot run in an NPC's state: the clerk opens the Services page
+for them. `service_npcs.lua` places the NPCs at startup (4 s after the start, after the booths), booth first, else next
+to the temple (`offsets`).
+
+**The house broker.** He sells from the Hall, so a player need not stand at a door (the base `!buyhouse` does). Say
+`list` for the towns with free houses, `list <town>` for the six cheapest of one, `buy <house name>` to hear the price
+(tiles x `config.lua` `housePriceEachSQM`, `perSqm` 1000 when the base has no value), then `yes`. The house is read again
+at the "yes", so a sale in between is caught. Gold is taken from the backpack, then the bank (`removeTotalMoney`).
+**Assumed, not verified (the base server is not in the repo):** the rules of the base `buyhouse.lua` of TFS 1.4 (premium,
+no owner, none owned yet, enough gold) and the engine API `Game.getHouses`, `House:getTileCount/getOwnerGuid/setOwnerGuid`,
+`Player:getHouse`, `configManager.getNumber(configKeys.HOUSE_PRICE)` (-1 = not for sale). Check on the first live start
+that a bought house shows the player as owner and that the rent is charged as for a house bought at the door.
+
+**Client** (one `npc` action each, an open window stays open): `game_bank` (`bankWindowShow`), `game_bossspawns` (`show`),
+`game_chaosinfo` (`openPage(data.page)`, only a page the client knows); the stash needed none (`Toggle` with `open`).
+
+**Booths.** `npc_booths_config.lua` rows `economy_north` (the two slots), `economy_north_east` and `progression_north`; the
+way in of the economy room (x 49-51) and of the progression room (x 11-13) stays free (`tools/services_halls_test.py`
+checks that no floor tile is cut off and that each booth's own NPC is the nearest in front of it).
+
+**Install:** step `servicenpcs` (`tools/install_service_npcs.py`, `tools/install_service_npcs_test.py`). **Texts:** English
+keys, pt-BR in `i18n_strings.lua` (`tests/service_npcs_test.lua` checks every line has one).
+
+## Tile labels (`tile_labels.lua`, `tile_labels_core.lua`, `tile_labels_config.lua`)
+
+Orange name labels over tiles (owner 2026-10-18: the area of the new NPCs should show their names in orange text, and its
+corners their titles). The Halls of Services (above) are that area. Every `intervalMs` (3 s) each label is sent as animated
+text (`ChaosCombatFx.label`, opcode 0x84, palette byte 198 = `TEXTCOLOR_ORANGE`) to the players who see its tile, so a hall
+nobody is in costs nothing. Labels come from `tile_labels_core.lua` `collect`, derived from `npc_booths_config.lua`: the name
+of every NPC booth (per town where a booth differs), the `rowTitles` text ("Progression", "Economy") at both ends of its row,
+and `labels = {{text, pos = {x, y, z}}}` for fixed tiles. A booth or hall added in `npc_booths_config.lua` is labelled without
+an edit. Needs from the owner: nothing for the halls; for other NPC areas (a town's temple NPCs outside the halls) the tiles
+of the corners, filled into `labels` (empty now). Not seen in a live client (the animated text packet is the one of
+`combat_fx.lua`, tested). `tests/tile_labels_test.lua`.
 
 ## City portals (`cityportals.lua`, `cityportals_core.lua`, `cityportals_config.lua`, `cityportals_fx.lua`)
 
@@ -5792,6 +6269,18 @@ The first start of the Windows package (release winpkg-35, 2026-10-16) printed t
 - **Empty spawns**: ours, `patch_base_spawns.py` (see "What the spawns step changes").
 - **CreatureEvents in the spells' interface**: see "Extended opcode dispatch".
 - **Loot Buyer at Nightwrack**: see "Item prices".
+
+### Monsters are not immune to fire (C7, 2026-10-20)
+
+Pyre Oath (Righteous Fire style) burns its owner every second; against a fire-immune monster the burn was paid for
+nothing. Owner decision: every monster that was immune to fire has a fire resistance of `FIRE_RESIST_PERCENT = 30` in
+`tools/monster_fire_resist.py` (the engine's element percent: 30% of the fire damage is stopped, the monster takes 70%).
+One constant; change it there only. "Immune" is `<immunity fire="1"/>`, `firePercent` 100+, Lua `{type = "fire"}` and
+Lua `COMBAT_FIREDAMAGE` percent 100+; a monster with its own higher fire row keeps it. Our monsters: `tune_monsters.py`
+(`--check` in `check_content.py`) changed 2 files (`monsters/chaos/plant.xml`, `lua/chaos/overcharged_energy_elemental.lua`).
+The 14 pets (`monsters/chaos/pets`) are allies and never a target of the aura: they keep the immunity. The base server's
+monsters (not in this repository): `patch_base_monsters.py` (step `basemonsters`) does the same, so the count there is printed at
+install ("N file(s) changed"). Tests: `tests/monster_fire_resist_test.lua`, `tools/monster_fire_resist_test.py`.
 
 ## Monster lint (`tools/ci/check_content.py`, `tools/fix_monster_xml.py`, `tools/hash_base_monsters.py`)
 
@@ -6895,8 +7384,8 @@ needs no change. The client needs the multi-use flag on two orbs in its `Tibia.d
 `python3 -I client/tools/sprites/set_multiuse.py <client>/data/things/1098/Tibia.dat` (after `gen_effects.py`, which
 writes a new dat).
 
-**How an item carries modifiers (base server).** A rarity is the custom attribute `rarity` (1..15: Common, Uncommon,
-Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal, Celestial, Cosmic, Abyssal, Transcendent).
+**How an item carries modifiers (base server).** A rarity is the custom attribute `rarity` (stored ids 1, 2, 3, 4, 5, 10 =
+Common, Uncommon, Magic, Rare, Legendary, Divine; items from before 2026-10-18 may still carry 6-9 and 11-15, see "Item rarities").
 The engine's C++ roll (`Item::applyRarityEffects`) used to make them; new items are now rolled by `ChaosCrafting.forge` (see "Item modifiers"), the same attributes and an item level
 (`combatPowerLevel`, shown as "Level: N"), a small attack/defense/armor/hit chance bonus, and per rarity a fixed number
 of modifiers, one custom attribute each: absorbs `rarity_<x>Absorb` (%), skills `rarity_<skill>Skill` (magic level is
@@ -6942,7 +7431,7 @@ modifiers"), Chaos modifiers included.
 | orb | id | on gear |
 |---|---|---|
 | Orb of Awakening | 29851 (existing currency item) | normal item (no rarity, no modifiers) -> Common 65% / Uncommon 35%, rolled by `forge` at the item's level |
-| Orb of Gilding | 24691 (rune stone, named by the installer) | normal item -> Rare 55% / Epic 30% / Legendary 15%, rolled by `forge` at the item's level |
+| Orb of Gilding | 24691 (rune stone, named by the installer) | normal item -> Magic 60% / Rare 30% / Legendary 10%, rolled by `forge` at the item's level |
 | Orb of Grafting | 29855 (existing currency item) | item with a rarity and an open prefix or suffix: one new modifier it does not have yet, on an open side, its tier by the item level (weights per type in `ChaosCrafting.affixes()`) |
 | Orb of Unmaking | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
 | Orb of Erasure | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
@@ -6978,7 +7467,7 @@ and slot rules do not apply; the backpack rule and the log do.
 a Rift Key from an open backpack onto the slot, or click one in the grid (bags inside the backpack included, 64 at
 most; keys have a violet frame). The bench shows rarity and item level (a key: tier, level and reward bonuses),
 modifiers / maximum and every orb with your count and, when it fits, a preview of what it would do ("2 -> 3 of 5
-modifiers", "Rare 55%, Epic 30%, Legendary 15%", "same modifiers, new values"; `C.preview`); a button is enabled only
+modifiers", "Magic 60%, Rare 30%, Legendary 10%", "same modifiers, new values"; `C.preview`); a button is enabled only
 when the server says the orb fits. The server checks again on every click: the item is found by its path from the
 backpack plus its id and a signature of its modifiers (moved or changed -> "put it on the bench again"), the orb is
 owned, the rules above, 250 ms between orbs. The last 8 crafts come from `chaos_crafting_log` (rows older than 60 days
@@ -7043,7 +7532,7 @@ Against the stock script the same test gets 5 items for one set of materials.
 
 **The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
 the stock chance of each rarity id 1..15 in turn, made with `Game.createItemWithRarity` (the engine's own stats). The ids
-are the same 15 rarities as ours (Common .. Transcendent), but such an item has no item level, no modifier tiers, no
+are the rarities of ours (stored ids 1, 2, 3, 4, 5, 10; the roll now walks `ChaosRarity.stockRolls`, step 21 of `patch_base_events.py`), but such an item has no item level, no modifier tiers, no
 prefix / suffix split and no sockets: the item_mods layer never rolled it (the comment on `ChaosCrafting.createItem` says
 to stop using that call). It duplicates our roll, so for equipment it is replaced. Any other product (tools, materials,
 the flasks the herbalist makes for the armorsmith) keeps it unchanged; potions and runes keep it too and get the bonus
@@ -7063,13 +7552,12 @@ over:
 |---|---|---|---|
 | Common | 12% | 15% | 18% |
 | Uncommon | 6% | 7.5% | 9% |
-| Rare | 3% | 3.75% | 4.5% |
-| Epic | 1.2% | 1.5% | 1.8% |
-| Legendary | 0.4% | 0.5% | 0.6% |
-| plain | 77.4% | 71.75% | 66.1% |
+| Magic | 3% | 3.75% | 4.5% |
+| Rare | 1.2% | 1.5% | 1.8% |
+| plain | 77.8% | 72.25% | 66.7% |
 
-Every chance x (1 + 1% per mastery point), at most x1.5; all together at most 35%; never above Legendary (5). A
-legendary monster's gear has floor 5 and a boss's floor 6 (`loot_config.lua` `gear.minRarity`), so a craft never beats a
+Every chance x (1 + 1% per mastery point), at most x1.5; all together at most 35%; never above Rare (4); the old crafted Legendary (0.4%) was removed with the seven rarities. A
+legendary monster's gear has floor 4 and a boss's floor 5 (`loot_config.lua` `gear.minRarity`), so a craft never beats a
 boss drop; the test checks it against the real loot config. The item level is the recipe level + mastery / 2, never
 below what the type's required level gives a plain item (as `ChaosCrafting.orbLevel`), at most 90: modifier tiers up to
 T5 (`chaos_item_mods.lua` tierLevels: T6 needs 95; world boss gear is 145). The piece is made by
@@ -7101,7 +7589,7 @@ inbox."). Other products keep the stock texts.
 
 **Window.** Each recipe of a `fetch` page carries `bonus` at the player's skill: `{kind = "gear", level, odds = [{rarity,
 name, pct}]}` or `{kind = "stack", odds = [{extra, pct}]}`. The recipe panel shows it under the gold line: "Rarity at
-item level 37: Common 18% / Uncommon 9% / Rare 4.5% / Epic 1.8% / Legendary 0.6%" or "Bonus yield: +3 at 17.5% / +5 at
+item level 37: Common 18% / Uncommon 9% / Magic 4.5% / Rare 1.8%" or "Bonus yield: +3 at 17.5% / +5 at
 4%"; the result's tooltip too.
 
 **What the patch changes** (after both earlier patches, whose markers it needs): a `CraftingBonus` block before `local
@@ -7349,7 +7837,7 @@ list of these names; the old ones are gone from the player-facing text.
 | orb | id (sprite) | what it does | source |
 |---|---|---|---|
 | Orb of Tempering | 32251 (blue inlay stone) | rolls the values of every modifier that is not bound again, inside the current tiers; on a Rift Key: new values | drops, salvage 20 shards (not in the store) |
-| Orb of Binding | 32252 (violet crystal) | binds one modifier (chosen on the bench; a random one by use-with): Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. At most 1 bound modifier up to Epic, 2 from Legendary (`ChaosItemMods.config.bind.max`). Only an Orb of Erasure frees it | store 30 (3 a week), drops (rare), salvage 75 |
+| Orb of Binding | 32252 (violet crystal) | binds one modifier (chosen on the bench; a random one by use-with): Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. At most 1 bound modifier up to Rare, 2 from Legendary (`ChaosItemMods.config.bind.max`). Only an Orb of Erasure frees it | store 30 (3 a week), drops (rare), salvage 75 |
 | Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25 (3 a week), drops, salvage 60 |
 | Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | drops, salvage 50 (not in the store) |
 | Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
@@ -7415,7 +7903,7 @@ the written `items.otb`. **Tested in game** (test server, ASan engine build with
 unchanged live dat): bench with 14 orbs (scrolling), an Orb of Awakening on a plain sword, Binding of a picked modifier
 (bound mark, Binding / Fate / Excision / Reforging disabled with the reason), Tempering that kept the bound value and rerolled
 the other, Excision of the chosen one, Reforging (T4 -> T5), 9 Whetstones (quality bar, values x1.09), Ruin forced to improve
-tiers (3 modifiers one tier up), improve slot (an extra prefix on a full Epic item, limit 3/3) and ruin (RUINED, every orb
+tiers (3 modifiers one tier up), improve slot (an extra prefix on a full Rare item, limit 2/2) and ruin (RUINED, every orb
 disabled), Upheaval on a bound item (in place, the bound one stayed), Binding and Whetstone by use-with without the bench,
 the tooltip with quality / bound / power, the store (page 2 with the new orbs, since cut to Whetstones, Excision and Binding), the Salvage tab recipes. Not tested in game:
 orbs on a Rift Key (unit-tested), the drops of the new orbs (the loot simulation only), the weekly chest.
@@ -7658,6 +8146,105 @@ The bands overlap, so a character always has a set running and the next one star
 - Open (owner): publish pair 28 and switch on; the Gambler's pool, crafting recipes if wanted. Not run in a client or
   on a live server.
 
+## Pack art (pair 30) (`data/lib/chaos_pack30_art.lua`, `data/lib/chaos_pack30_items.lua`, `tools/install_pack30_items.py`, switch `ChaosPack30Art.PAIR30`, off)
+Items of the third-party art packs imported into the client pair 30 (import-only; plan: weapons icons, flasks, corpses,
+grounds, decoration, buildings, animated objects). Installer part:
+- **Manifests.** The importer writes one `data/items/pack30_<cat>.csv` per category (columns of `art_items.csv`; extra
+  `group=|gw=|gh=|piece=r,c` for big art cut in pieces of 4x4, `hideout=0|1`, `blank=1` for padding rows). Every file of
+  that name whose header starts `client_id,server_id,key` is read (the outfit table is skipped), so an overflow building
+  file works without a change. None exists yet: the installer does nothing and the generated files are empty.
+- **Ids.** Server id = client id + 3000, allowed 37443..39999 and 40113..65535 (the donor items hold 40000..40112; the
+  equipment sets 36995..37442). Blocks (client ids): items-A..D 34443..34758, corpses 34759..34858, grounds
+  34859..35158, decoration 35159..36058, buildings 36059..36458, animated 36459..36758, reserve to 36999, overflow
+  37113+. Padding rows (`blank=1`) get no items.otb / items.xml entry. An id or key twice, an id out of range, or a kind
+  that contradicts its otb flags (weapon not pickupable, flask not stackable, wall not hangable, stump not blocking,
+  decor blocking, ground outside the ground group) stops the script before anything is written.
+- **Install.** `tools/install_pack30_items.py DATA_DIR [--dry-run]` (install_all step `pack30items`, after `gearsets`):
+  items.otb nodes (same rules as `install_assets_decor.py`: identical left alone, same group and flags replaced, an id of
+  another item refused, `.bak` the first time) and an items.xml block between two marker comments (name, article,
+  description "A <kind> from the pack art (pair 30)."; corpses with container size 20, decay 0, duration 600 and the
+  corpse type of their race). Idempotent.
+- **Generated.** `--lua [--check]` writes `data/lib/chaos_pack30_items.lua` (key to id, size, kind; groups with their
+  pieces for the gallery); `--hideout-lua [--check]` writes `data/scripts/chaos/hideout_pack30_config.lua`, a list of
+  Hideout decoration entries (`p30_<key>`, store price 80 / 120 / 200 by size, category by key words, wall items on the
+  wall layer, stumps block) for items with `hideout=1`, or by default decoration-block items of at most 2x2, kind decor or
+  stump, not part of a group. `hideout_config.lua` appends that list (integrator). Keys are never renamed.
+- **Switch.** `M.PAIR30 = false`: the items may be installed, nothing uses them until the owner switches it after the
+  pair is pushed. `ChaosPack30Art.decorId(key, fallback)` and `lookOf(name, current)` fall back while off.
+- Tests: `tools/install_pack30_items_test.py` (synthetic manifests, items.otb and items.xml; no base server needed).
+  Not run against a real manifest or base server yet.
+
+## Item rarities (`data/lib/chaos_rarity.lua`, `rarity_migrate*.lua`, `sql/chaos_zz_rarity_migrate.sql`)
+
+Owner item 87 (2026-10-18): exactly **seven rarities**, in this order: **Common, Uncommon, Magic, Rare, Legendary, Divine,
+Unique** (pt-BR: Comum, Incomum, Mágica, Rara, Lendária, Divina, Única). Before there were 15 (Common .. Transcendent).
+`ChaosRarity` is the one module that names them, gives their colours and maps the old ones; every per-rarity table in the
+scripts is an array of six entries (Unique, where a table has one, is the seventh) read through `ChaosRarity.at(tbl, id)`.
+Tests: `tests/chaos_rarity_test.lua` (293 checks), `tests/rarity_migrate_test.lua`, `tools/rarity_stock_patch_test.py`.
+Stackable items never carry a rarity (2026-10-20; "Throwing weapons"): the loot layer and the login walk clear it.
+
+**Mapping.** The custom attribute `rarity` (and every column that mirrors it) stays in the old number space 1..15, so items
+and engine tables keep loading. Six numbers are rarities of today (the *stored ids*), the others only exist on old items:
+
+| stored id | rarity | old rarities that became it |
+|---|---|---|
+| 1 | Common | Common |
+| 2 | Uncommon | Uncommon |
+| 3 | Magic | Rare |
+| 4 | Rare | Epic |
+| 5 | Legendary | Legendary, Exotic, Mythic, Chaos, Eternal (ids 5-9) |
+| 10 | Divine | Divine, Phantasmal, Celestial, Cosmic, Abyssal, Transcendent (ids 10-15) |
+| (none) | Unique | never stored: the item carries `chaos_unique` |
+
+Thresholds stay monotone in the id, so "Legendary and up" (`>= 5`, shines in the client, `itemrarity.lua pulseFrom`) and
+"Divine" (`>= 10`) mean the same for old and new items. `canon(n)` is the stored id of any number, `rank(n)` its place 1-6.
+
+**Saved items keep working, nothing is lost.** (1) Every reader maps an old id on the fly, so the server needs no migration
+to run. (2) `rarity_migrate.lua`: at a character's first login it walks equipment, backpacks, purse, inbox and the depot
+chest of every town (one container per tick) and rewrites only the `rarity` number of an item with id 6-9 or 11-15 to 5 or
+10 (`rarity_migrate_core.lua`); modifiers, tiers, values, item level, quality, sockets and gems are untouched; it is
+idempotent, remembered in storage 7102490 (version 1), and a GM can repeat it with
+`/lua ChaosRarityMigrate.walk(Player("Name"))`. (3) `sql/chaos_zz_rarity_migrate.sql` (installed by the `sql` step,
+idempotent) canonicalises `chaos_market_offers`, `chaos_stash_items`, `chaos_market_history` and
+`chaos_market_history_daily` (`UPDATE IGNORE`; the daily price history of merged rarities is not summed). The crafting orbs
+and the forge also write the stored id.
+
+**Numbers, before -> now.**
+
+| | before (15) | now (7) |
+|---|---|---|
+| modifiers on a new item | 2,2,3,3,3,4,4,4,5,5,5,5,6,6,6 | 1, 2, 3, 4, 5, 6 (Common .. Divine) |
+| prefix / suffix limit each | 1 .. 3 | 1, 1, 2, 2, 3, 3 |
+| stock drop roll (`ChaosRarity.stockRolls`, patched into `rollRarity` by `patch_base_events.py` step 21) | 43% of gear drops had a rarity | 33%: Common 10.5, Uncommon 8.3, Magic 6.1, Rare 4.5, Legendary 2.84, Divine 0.38 |
+| Chaos loot floors (`loot_config.lua minRarity`) | rare 3 / legendary 5 / boss 7 | Magic / Rare / Legendary ids 3 / 4 / 5; `maxRarity` 5; `divineChance` rare 5%, legendary 30%, boss 150% (more than one roll) |
+| sell price multiplier | 1 .. 32 | 1, 1.5, 3, 6, 12, 24 (`gen_item_prices.py`) |
+| salvage shards (base) | 1 .. 18 | 1, 1, 2, 3, 5, 12; whole-orb chance 0.5, 0.5, 0.75, 1, 1.5, 3% |
+| Orb of Transmutation / Alchemy / Gilding | Common-Uncommon / Rare-Epic-Legendary (55-30-15) | Common 65 Uncommon 35 / Magic 60 Rare 30 Legendary 10 / Magic, Rare or Legendary |
+| Orb of Fate rarity | up to 15 | same 15% divine chance, rank-weighted (`divineChances` 25, 20, 17, 14, 8, 2) |
+| Gambler (Legendary or better) | about 13% | about 4% (Common 70.0, Uncommon 12.2, Magic 8.4, Rare 5.4, Legendary 3.6, Divine 0.4) |
+| Conquest refinement | one rarity up to Celestial | one rank up to Legendary (`perRarity` 60) |
+| craft bonus (`craft_bonus_config.lua`) | up to old Legendary | up to Rare (`maxRarity` 4) |
+| Auto Seller | 5 tier bits | 6 tiers (bit 4 Magic, 8 Rare, 16 Legendary, new 32 Divine; version bit 128: an older saved choice has Divine follow Legendary) |
+
+Loot filter thresholds, pouch `minRarity` and the market filter are stored as canonical ids (a saved old id is clamped on
+read). The achievements "rarity_7 / 9 / 12" are retired (points kept, `data.retired`), "rarity_15" is "Divine Find".
+
+**Known limits.** The base files not in this repo (`default_onLook`, `reroll_rarity_stats`, the stock loot-line names) are
+not patched: the loot line translates the stock names (`lootline_core.lua`), the look text of the stock script may still
+print an old name until the owner supplies the file. Server-built text shows English rarity names; pt-BR names come from the
+client `tr()`. Gear set bonuses are not scaled by the value raise.
+
+**Value raise (owner item 78).** Modifier ranges were small; every tier of every Chaos and engine modifier is now 1.5x to
+3x higher by stat (the bigger raise on low flat values such as dodge and the ailment chances, the smaller on stats close
+to a cap), T8 at or under the cap of the stat and of the engine (attack speed T8 13-15 with cap 15, dodge 5-7 with cap
+10, bossdamage 18-22 with cap 30, thorns 120-190 with cap 250, life on kill 160-260 with cap 300; absorb 10-14, skill
+7-10, critical 8-10, leech 7-10, weapon element 33-52). Examples before -> now, T1 / T8: dot 2-4 / 20-28 -> 4-7 / 36-48;
+cdr 1-2 / 8-10 -> 2-3 / 13-16; experience 1 / 6-8 -> 1-2 / 8-11; absorb 1 / 5-7 -> 2 / 10-14; element 1-3 / 22-35 ->
+2-4 / 33-52. The tables under "Item modifiers" are the current ones. Higher tiers keep scaling (tier weights are
+unchanged); the old ranges stay in `ChaosItemMods.legacy` and `.legacyEngine`, so an item without a stored `ct_` tier keeps
+its tier and its range (`ChaosCrafting.readMods`, `affix.legacy`). Charm ranges are unchanged (only the gear reference
+`gearRef` of `charms_config.lua` was raised so a charm stays under the best gear roll).
+
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
 Every item with a rarity is rolled by `ChaosCrafting.forge` (drops, rift chests, world boss, goblin, tutorial, and the new
@@ -7677,7 +8264,7 @@ into `combatPowerLevel`, which the client frame and the stock scripts read; item
 `combatPowerLevel`, which counts as the item level. The level of a drop is the dropping monster's level
 (`Monster:getMonsterLevel`; a monster without one: its hunting level in `bounty_pool.lua`, else 1.6 x sqrt(experience)
 raised by health / 60, the estimate of `tools/gen_bounty_pool.py`) along the curve `itemLevel.curve` (level 1 -> 1, 50 ->
-22, 100 -> 36, 200 -> 54, 500 -> 90, 900 -> 118, 1500 -> 136, 6000 -> 145), plus: Magic +2, Rare +4, Legendary +7, boss +10;
+22, 100 -> 36, 200 -> 54, 500 -> 90, 900 -> 118, 1500 -> 136, 6000 -> 145), plus: Magic +2, Rare +4, Legendary +7 (Divine as Legendary), boss +10;
 inside a rift +1 per rift tier (at most +15), an Omen guardian arena +15 more; capped at 150. World boss drops and rewards
 are fixed at 145 (`worldBoss`), the tutorial's gear at 5 (`tutorial`), rift chest and coffer gear use the rift boss's
 level (else the top of the tier's window) with the rift bonuses, the treasure goblin its area level as a Legendary.
@@ -7690,24 +8277,26 @@ level (Erasure and Fate too); an item without any level gets one from the item t
 T4 50, T5 70, T6 95, T7 120, T8 140. A modifier rolls among the best five tiers the item level allows
 (`tierWindow`), weighted 100, 90, 80, 65, 50, 35, 22, 12 for T1..T8 (higher tiers are rarer): at item level 150 T8 comes
 6.5%, T4 35%; at item level 40 T1 37%, T2 33%, T3 30%. The five ranges the modifiers had before (tier = ceil(rarity / 3))
-are T2-T6 now, so old items keep their meaning. The tier is stored next to the value as `ct_<attribute key, lower case>`
+were T2-T6; since the value raise of 2026-10-18 (owner item 78) every tier is 1.5x to 3x higher (see "Value raise" below)
+and the old ranges are kept in `M.legacy` / `M.legacyEngine`. The tier is stored next to the value as `ct_<attribute key, lower case>`
 (`ct_chaos_mod_dodge`, `ct_rarity_swordskill`); an item without it (every item from before) reads its tier from the value:
-the lowest of T2-T6 whose range holds it, above T6 the top. The pair attributes (critical, leech) store one tier for both.
+the lowest of T2-T6 whose OLD range (`M.legacy`) holds it, above T6 the top; its value is judged against the old ranges too,
+so an old item neither loses its tier nor shows a value outside its range. The pair attributes (critical, leech) store one tier for both.
 
 **How many, and the sides.** Rarity decides the count (`config.rarity`):
 
 | rarity | modifiers on a new item | prefixes / suffixes at most (each) |
 |---|---|---|
-| Common, Uncommon | 2 | 1 |
-| Rare, Epic, Legendary | 3 | 2 |
-| Exotic | 4 | 2 |
-| Mythic, Chaos | 4 | 3 |
-| Eternal, Divine, Phantasmal, Celestial | 5 | 3 |
-| Cosmic, Abyssal, Transcendent | 6 | 3 |
+| Common | 1 | 1 |
+| Uncommon | 2 | 1 |
+| Magic | 3 | 2 |
+| Rare | 4 | 2 |
+| Legendary | 5 | 3 |
+| Divine | 6 | 3 |
 
-(`config.rarity.count` / `.sides`.) The Orb of Grafting fills up to 2 x the side
+(Before 2026-10-18 there were 15 rarities with 2 to 6 modifiers; see "Item rarities".) (`config.rarity.count` / `.sides`.) The Orb of Grafting fills up to 2 x the side
 limit. Prefixes are damage and defence, suffixes utility, resistances and speed; a new item is rolled until the count or
-both sides are full. Old items keep what they have (an old Epic item may carry more of one side than today's limit; the
+both sides are full. Old items keep what they have (an old item of before 2026-10-18 may carry more of one side than today's limit; the
 orbs only add on a side that is open). **The Orb of Grafting** picks among the modifiers on an open side that the item does not
 have and that suit its kind, **Unmaking** removes one at random, **Upheaval / Awakening / Gilding / Fate** make a new
 copy and `forge` it (so the limits hold), **Erasure** makes a plain copy. An item's description lists them:
@@ -7718,12 +8307,12 @@ against the Chaos types in one list (`ChaosCrafting.affixes()`):
 
 | group | side | weight | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| absorb | suffix | 3 | 1 | 1-2 | 1-3 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 |
-| skill | prefix | 3 | 1 | 1-2 | 1-3 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 |
-| profession | suffix | 1 | 1 | 1-2 | 1-3 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 |
-| critical | prefix | 8 | 1 | 1-2 | 1-3 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 |
-| leech | suffix | 6 | 1 | 1-2 | 1-3 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 |
-| element | prefix | 2 | 1-3 | 3-6 | 5-9 | 7-12 | 10-16 | 13-20 | 17-26 | 22-35 |
+| absorb | suffix | 3 | 2 | 2-4 | 3-5 | 4-6 | 5-8 | 6-10 | 8-12 | 10-14 |
+| skill | prefix | 3 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
+| profession | suffix | 1 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 7-10 |
+| critical | prefix | 8 | 2 | 2-3 | 2-5 | 3-5 | 4-6 | 5-8 | 6-9 | 8-10 |
+| leech | suffix | 6 | 2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-9 | 7-10 |
+| element | prefix | 2 | 2-4 | 4-9 | 7-13 | 10-18 | 15-24 | 20-30 | 26-39 | 33-52 |
 
 (skills: combat skills and magic level; profession skills are `profession`; critical is the amount, the chance part is about
 two thirds of it, `ChaosCrafting.specialChance`.)
@@ -7733,36 +8322,36 @@ other = gloves, belts and the like; cap = the most a character gets from everyth
 
 | key | text | side | kinds | T1 | T2 | T3 | T4 | T5 | T6 | T7 | T8 | cap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| bossdamage | Damage to Elites and Bosses +N% | prefix | jewel, weapon | 1-3 | 2-4 | 3-6 | 5-8 | 6-10 | 8-12 | 10-14 | 12-16 | 30 |
-| dodge | Dodge +N% | prefix | armor, boots, legs, other, shield | 1 | 1 | 1-2 | 1-2 | 2-3 | 2-4 | 3-4 | 3-5 | 10 |
-| reflect | Reflect Damage +N% | prefix | armor, shield | 1 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-8 | 15 |
-| thorns | Thorns +N | prefix | armor, legs, shield | 1-4 | 3-8 | 8-15 | 15-30 | 25-50 | 40-80 | 60-110 | 90-150 | 250 |
-| monsterreduction | Damage Taken from Monsters -N% | prefix | armor, helmet, legs, shield | 1 | 1 | 1-2 | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 12 |
-| block | Block Chance +N% | prefix | shield | 1-2 | 2-3 | 3-4 | 4-5 | 5-7 | 6-8 | 7-10 | 9-12 | 15 |
-| bleedchance | Chance to Bleed +N% | prefix | other, weapon | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 12-16 | 30 |
-| ignitechance | Chance to Ignite +N% | prefix | other, weapon | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 12-16 | 30 |
-| poisonchance | Chance to Poison +N% | prefix | other, weapon | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 12-16 | 30 |
-| chillchance | Chance to Chill +N% | prefix | other, weapon | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 12-16 | 30 |
-| shockchance | Chance to Shock +N% | prefix | other, weapon | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 12-16 | 30 |
-| physpen | Physical Penetration +N% | prefix | jewel, weapon | 1-2 | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 25 |
-| elepen | Elemental Penetration +N% | prefix | jewel, weapon | 1-2 | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 25 |
-| execute | Executes Monsters below N% Health | prefix | weapon | 1 | 1-2 | 2 | 2-3 | 3-4 | 4-5 | 5-6 | 6-8 | 10 |
-| dot | Damage over Time +N% | prefix | jewel, other, weapon | 2-4 | 4-6 | 6-9 | 8-12 | 10-15 | 13-19 | 16-23 | 20-28 | 60 |
-| attackspeed | Attack Speed +N% | suffix | weapon | 1-2 | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 9-12 | 11-14 | 15 |
-| movespeed | Movement Speed +N% | suffix | boots | 1-2 | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-10 | 9-11 | 12 |
-| lifeonkill | Life on Kill +N | suffix | helmet, jewel, weapon | 2-5 | 5-10 | 10-20 | 20-40 | 35-60 | 50-90 | 75-120 | 100-150 | 300 |
-| manaonkill | Mana on Kill +N | suffix | helmet, jewel, weapon | 1-3 | 3-6 | 6-12 | 12-25 | 20-40 | 30-60 | 50-80 | 70-100 | 200 |
-| lifeonhit | Health on Hit +N | suffix | jewel, other, weapon | 1-2 | 2-4 | 3-6 | 5-9 | 7-13 | 10-18 | 14-25 | 20-35 | 120 |
-| manaonhit | Mana on Hit +N | suffix | jewel, other, weapon | 1 | 1-2 | 2-4 | 3-6 | 5-8 | 7-12 | 10-16 | 14-22 | 80 |
-| regen | Health Regeneration +N per Second | suffix | armor, helmet, jewel, legs, shield | 1-2 | 2-4 | 4-7 | 6-10 | 9-15 | 13-21 | 18-28 | 25-40 | 120 |
-| experience | Experience +N% | suffix | helmet, jewel | 1 | 1-2 | 1-3 | 2-4 | 3-5 | 4-6 | 5-7 | 6-8 | 15 |
-| goldfind | Gold Find +N% | suffix | helmet, jewel, legs, other | 1-3 | 2-4 | 3-6 | 4-8 | 6-10 | 8-14 | 11-17 | 14-20 | 40 |
-| itemfind | Item Find +N% | suffix | helmet, jewel | 1 | 1-2 | 2-3 | 2-4 | 3-6 | 4-8 | 6-10 | 8-12 | 25 |
-| rarityfind | Rarity Find +N% | suffix | helmet, jewel | 1-3 | 2-4 | 3-6 | 5-8 | 6-10 | 8-14 | 11-17 | 14-20 | 40 |
-| healing | Healing Done +N% | suffix | jewel, shield, weapon | 1 | 1-2 | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 9-12 | 20 |
-| goblinchance | Treasure Goblin Chance +N% | suffix | helmet, jewel | 6-10 | 10-15 | 14-20 | 18-27 | 22-33 | 28-40 | 35-50 | 45-60 | 100 |
-| cdr | Cooldown Reduction +N% | suffix | helmet, jewel, other | 1-2 | 2-3 | 3-4 | 4-5 | 5-6 | 6-8 | 7-9 | 8-10 | 20 |
-| manacost | Mana Cost Reduction +N% | suffix | armor, helmet, jewel | 1-2 | 2-3 | 3-4 | 4-6 | 5-7 | 6-9 | 8-11 | 10-13 | 25 |
+| bossdamage | Damage to Elites and Bosses +N% | prefix | jewel, weapon | 2-5 | 4-7 | 6-10 | 9-13 | 11-16 | 14-18 | 16-20 | 18-22 | 30 |
+| dodge | Dodge +N% | prefix | armor, boots, legs, other, shield | 1-2 | 2 | 2-3 | 2-4 | 3-5 | 3-5 | 4-6 | 5-7 | 10 |
+| reflect | Reflect Damage +N% | prefix | armor, shield | 2-3 | 3-4 | 4-5 | 5-6 | 6-8 | 7-9 | 8-10 | 9-11 | 15 |
+| thorns | Thorns +N | prefix | armor, legs, shield | 2-6 | 5-12 | 12-24 | 24-45 | 40-75 | 60-110 | 90-150 | 120-190 | 250 |
+| monsterreduction | Damage Taken from Monsters -N% | prefix | armor, helmet, legs, shield | 1-2 | 2 | 2-3 | 3-4 | 3-5 | 4-6 | 5-7 | 6-8 | 12 |
+| block | Block Chance +N% | prefix | shield | 2-3 | 3-5 | 4-6 | 5-8 | 7-10 | 8-11 | 9-12 | 11-14 | 15 |
+| bleedchance | Chance to Bleed +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
+| ignitechance | Chance to Ignite +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
+| poisonchance | Chance to Poison +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
+| chillchance | Chance to Chill +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
+| shockchance | Chance to Shock +N% | prefix | other, weapon | 3-5 | 5-7 | 7-10 | 9-13 | 11-16 | 14-18 | 17-21 | 20-25 | 30 |
+| physpen | Physical Penetration +N% | prefix | jewel, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
+| elepen | Elemental Penetration +N% | prefix | jewel, weapon | 2-4 | 3-5 | 5-7 | 7-10 | 9-13 | 11-15 | 14-18 | 17-22 | 25 |
+| execute | Executes Monsters below N% Health | prefix | weapon | 1-2 | 2-3 | 3 | 3-4 | 4-5 | 5-6 | 6-7 | 7-9 | 10 |
+| dot | Damage over Time +N% | prefix | jewel, other, weapon | 4-7 | 7-11 | 10-15 | 14-20 | 18-26 | 23-32 | 29-39 | 36-48 | 60 |
+| attackspeed | Attack Speed +N% | suffix | weapon | 2-3 | 3-4 | 4-6 | 5-7 | 7-9 | 9-11 | 11-13 | 13-15 | 15 |
+| movespeed | Movement Speed +N% | suffix | boots | 2-3 | 3-4 | 4-5 | 5-7 | 6-8 | 8-10 | 9-11 | 10-12 | 12 |
+| lifeonkill | Life on Kill +N | suffix | helmet, jewel, weapon | 4-9 | 9-18 | 18-36 | 36-70 | 60-100 | 85-150 | 120-200 | 160-260 | 300 |
+| manaonkill | Mana on Kill +N | suffix | helmet, jewel, weapon | 2-5 | 5-10 | 10-20 | 20-40 | 35-65 | 50-95 | 80-130 | 110-170 | 200 |
+| lifeonhit | Health on Hit +N | suffix | jewel, other, weapon | 2-4 | 4-7 | 5-11 | 9-16 | 13-23 | 18-32 | 25-45 | 36-63 | 120 |
+| manaonhit | Mana on Hit +N | suffix | jewel, other, weapon | 2 | 2-4 | 4-7 | 5-11 | 9-14 | 13-21 | 18-29 | 25-40 | 80 |
+| regen | Health Regeneration +N per Second | suffix | armor, helmet, jewel, legs, shield | 2-4 | 4-7 | 7-12 | 11-18 | 16-26 | 23-36 | 32-48 | 44-70 | 120 |
+| experience | Experience +N% | suffix | helmet, jewel | 1-2 | 2-3 | 2-4 | 3-5 | 4-6 | 5-8 | 6-9 | 8-11 | 15 |
+| goldfind | Gold Find +N% | suffix | helmet, jewel, legs, other | 2-5 | 4-7 | 5-10 | 7-14 | 11-18 | 14-23 | 19-28 | 24-34 | 40 |
+| itemfind | Item Find +N% | suffix | helmet, jewel | 2 | 2-3 | 3-5 | 4-7 | 5-10 | 7-13 | 10-16 | 13-19 | 25 |
+| rarityfind | Rarity Find +N% | suffix | helmet, jewel | 2-5 | 4-7 | 5-10 | 9-14 | 11-18 | 14-23 | 19-28 | 24-34 | 40 |
+| healing | Healing Done +N% | suffix | jewel, shield, weapon | 2 | 2-3 | 3-5 | 5-8 | 7-10 | 9-13 | 11-15 | 13-18 | 20 |
+| goblinchance | Treasure Goblin Chance +N% | suffix | helmet, jewel | 9-15 | 15-23 | 21-30 | 27-41 | 33-50 | 42-60 | 53-75 | 68-90 | 100 |
+| cdr | Cooldown Reduction +N% | suffix | helmet, jewel, other | 2-3 | 3-4 | 4-6 | 6-8 | 8-10 | 9-12 | 11-14 | 13-16 | 20 |
+| manacost | Mana Cost Reduction +N% | suffix | armor, helmet, jewel | 2-3 | 3-5 | 5-7 | 7-10 | 9-12 | 11-15 | 14-18 | 17-21 | 25 |
 
 **How the new ones work** (`item_mods.lua`; all through the same totals and caps as the others):
 - *Ailments* (bleed physical, ignite fire, poison earth): on every hit of yours on a monster the chance rolls; a hit
@@ -7873,7 +8462,7 @@ modifiers, seven effects of their own), the player picks one and the choice is f
 
 - **Which drops.** Gear of rarity Rare or better (`minRarity` 3; `high` chance from Legendary, 5), never uniques, set pieces
   or Rift Keys. The source is the killer's content (`ChaosVeiled.contextOf`: rift, raid, Ascended, Descent runs), the first
-  that applies in `sourceOrder`. Chance per item (Rare-Epic / Legendary+): raid 15% / 25%, Ascended 12% / 20%, Omen
+  that applies in `sourceOrder`. Chance per item (Magic-Rare / Legendary+): raid 15% / 25%, Ascended 12% / 20%, Omen
   arenas 10% / 18%, Descent from depth 8 6% / 12%, rifts from tier 10 5% / 10%. Kills: `loot.lua` step 2c hands the corpse to
   `ChaosVeiled.onCorpse` after the forge. Rewards: the rift chest (`rift.lua`), the raid boss gear (`raid.lua`) and the
   Ascended spoils (`uber.lua`) call `ChaosVeiled.rollReward`.
@@ -8219,10 +8808,10 @@ The Codex gem pages and the wiki icons show the new art already (images, not spr
 
 **Sockets on an item**: custom attributes `chaos_sockets` (count) and `chaos_gem1..3` (the gem's server id). The most
 sockets is the lower of two limits. By kind: one-handed weapon 2, two-handed weapon 3, armour 3, shield, helmet and
-legs 2, boots, amulets, rings and other gear 1. By rarity: none, Common-Rare 1; Epic-Exotic, Mythic-Eternal 2;
-Divine-Celestial, Cosmic-Transcendent 3. Sockets come from:
+legs 2, boots, amulets, rings and other gear 1. By rarity: none, Common-Rare 1; Legendary and Divine 2;
+Unique 3 (`chaos_gems_config.lua rarityMax`). Sockets come from:
 - drops: the Chaos loot layer (`loot.lua` step 2b) rolls them on every gear drop with a rarity. Weights for 0/1/2/3 by
-  rarity tier: 80/18/2/0, 60/30/9/1, 45/35/16/4, 35/38/20/7, 25/40/25/10, then capped by the item's maximum. The
+  rarity (Common .. Divine): 80/18/2/0, 75/22/3/0, 70/25/5/0, 60/30/9/1, 45/35/16/4, 25/40/25/10, then capped by the item's maximum. The
   text is written once the engine's rarity pass is done (`ChaosItemMods.afterDrop`).
 - the **Orb of Sockets** (eighth orb on the bench, use-with like the others): a new count from at least the number of
   socketed gems up to the item's maximum, weights 50/35/15 for 1/2/3. Gems stay and move to the front. It is refused
@@ -8327,7 +8916,7 @@ life leech and attack speed from gems in a fight.
 A layer on the passive tree: per vocation (21: 7 base classes and both ascensions of each, in 7 trial families) a
 solo runtime-built challenge arena (x / y 9000+, 8 / 9 / 10 minutes, 3 / 3 / 2 lives, Normal / Cruel / Merciless at level
 100 / 250 / 400) and 3 pairs of special nodes (126 in all); each cleared tier opens one pair, a character holds one node
-per pair. The full design table (every trial, every pair with its trade-off and numbers) is `server/data/scripts/chaos/TRIALS.md`.
+per pair. The full design table (every trial, every pair with its numbers; no node has a downside since the owner decision, and Avatar of Iron is a Berserker node, the Juggernaut got Wall Unbroken) is `server/data/scripts/chaos/TRIALS.md`.
 Entry: the Keeper of Trials NPC (temple) or the Trials button of the Passive Tree window (opcode 65 `extraActions`); the
 run HUD is the rift HUD (opcode 228). A lethal hit costs a life instead of killing (no experience or item loss). First
 clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token and a small reward (5 a week, unused ones
@@ -8370,10 +8959,9 @@ and a duplicate is still worth keeping for a season or a trade.
 
 **Yield** (deterministic, so the preview is exact):
 - shards = floor(base x (1 + 0.5 x position of the item level in its rarity's window)) + 1 per Chaos modifier + 1 per
-  empty socket. The engine rolls rarity r with item level 10r-9..10r, so the top of the window gives up to +50%.
-- base by rarity (Common .. Transcendent): 1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18 (a Transcendent at the top
-  of its window: 27).
-- whole orb on top, per item: 0.5, 0.5, 0.75, 0.75, 1, 1, 1.5, 1.5, 2, 2, 2.5, 3, 3.5, 4, 5%; which orb by weight:
+  empty socket. The window of a rarity is the one of its first old id (10r-9..10r), so the top of the window gives up to +50%.
+- base by rarity (Common .. Divine): 1, 1, 2, 3, 5, 12 (a Divine at the top of its window: 18).
+- whole orb on top, per item: 0.5, 0.5, 0.75, 1, 1.5, 3%; which orb by weight:
   Awakening 35, Upheaval 25, Erasure 12, Gilding 10, Unmaking 8, Fate 5, Sockets 3, Grafting 2, Whetstone 14, Tempering 12, Reforging 4, Excision 3, Binding 2, Ruin 1.
 
 **Shards into orbs** (one click makes 1, Ctrl+click up to 10): Awakening 12, Upheaval 25, Erasure 30, Gilding 40,
@@ -9246,8 +9834,7 @@ the gold per hour.
   gold prices), a fifth for supplies (potions, runes, ammunition); goods an NPC sells for 1-2 gold sell for 1.
 
 **Price of a copy** (`ChaosItemPrices.sellPrice(item)`): base x R x L, rounded down.
-- R, the rarity: none or Common 1, Uncommon 1.5, Rare 3, Epic 6, Legendary 12, Exotic 14, Mythic 16, Chaos 18, Eternal
-  20, Divine 22, Phantasmal 24, Celestial 26, Cosmic 28, Abyssal 30, Transcendent 32. Charms: Faint 1, Glowing 1.5,
+- R, the rarity: none or Common 1, Uncommon 1.5, Magic 3, Rare 6, Legendary 12, Divine 24 (an old id maps to its rarity). Charms: Faint 1, Glowing 1.5,
   Radiant 3. A unique copy (`chaos_unique`) is 0: never sold.
 - L, the item level (`chaos_ilvl`, equipment and charms): 1 + item level / 200 (x1.18 at item level 36, a level 100
   monster's drop; x1.45 at 90, level 500; x1.75 at 150).
@@ -9347,6 +9934,28 @@ lootable or craftable item priced or unsellable, no sell price above a cap or a 
 csv prices, the Auto Seller's table.
 
 Live test 2026-10-14: the Loot Buyer stood next to 18 of the 20 temples (none free at Nightwrack); its trade window listed the carried items, four plate armours of different rarities and item levels sold at base x rarity x level (120 to 2,520 each), a unique was refused; no XML shop sells below the table's price. Not verified in game: "appraise".
+
+## Junk loot (`tools/patch_junk_loot.py`, `tools/patch_junk_loot_test.py`, `data/items/item_price_rules.csv`)
+
+Owner approval 2026-10-20: items that only sell (no gear, supply, food, currency, craft or quest use) leave the Chaos
+monsters' loot. 52 are removed. **Six stay in their loot** (owner decision 2026-10-20): 27053 (cracked alabaster vase) and
+29001 (colourful snail shell), never checked against the base server, and 6097 (hook), 6098 (eye patch), 6088 and 6090
+(music sheets), which may be map quest items. Grep the real `actions`, `npc` and quest data for them before removing.
+- `python3 -I tools/patch_junk_loot.py [DATA_DIR] [--check]` deletes the loot line of each listed id in
+  `monster/monsters/chaos/**/*.xml` (inside `<loot>`) and `monster/lua/chaos/*.lua` (`monster.loot`), nothing else.
+  Idempotent; `--check` exits 1 while a junk line is left; `--list` prints the ids. Run it after any tool that re-adds
+  loot. `tune_monsters.py` and `late_game.py` do not write these ids (checked).
+- The removed ids: 25380 and 25379 tokens, 21399, 9006, 23563, 28036 (items of another world or a floor tile), gems
+  2145 and 2153-2158, 5879, 5913, 6500, 8303, 10567, 10603, 11231, 12401, 12409, 12436, 18425, 20102, 23569 and the creature
+  products 36010-36035 (26 items).
+- Nothing is deleted from the game: the items stay in `items.xml`, `art_items.csv`, `chaos_pack_items.lua`, Grimgan's
+  shop list and the stash (tab 109 holds creature products a player already has; no monster fills it now). Copies the
+  players hold keep selling: the price table is built from the loot, so seven ids that only a monster put there got a
+  fixed price in `item_price_rules.csv` (25380 3800, 25379 300, 21399 98000, 9006 110000, 23563 88000, 28036 62000, 2157
+  200; 2157 would have gone from 200 to 1600 by the formula). `gen_item_prices.py` was run: the table and
+  `sell_prices.lua` hold the same 3393 prices as before.
+- Income: the junk was about 1% of the expected sell value of the loot; watch the hunting income
+  (`gen_item_prices.py income BASE_DATA`) and adjust gold if the hour of hunting drops.
 
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 
@@ -9809,7 +10418,7 @@ is not a member of the hall's guild (left the guild, logged in inside) is sent t
 
 | Upgrade | Guild level | Gold | Needs | What it does |
 |---|---|---|---|---|
-| Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3) |
+| Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3). A portal's look text announces "level N+" and the step-in enforces it (`ChaosGuildCore.hubGate`: below the destination's `level` the player is pushed back with "<name> needs level N."); `tools/check_hub_destinations.py DATA_DIR` reads the map and lists the destinations with no landing tile (they would answer "This portal leads nowhere right now."); run it after the content areas are installed |
 | Training Room | 7 | 1,500,000 | | 3 exercise dummies of the base server (27751/27752; the store's exercise weapons work on them) and a damage dummy monster (the first of `dummyMonsters` the server knows) |
 | Crafting Bench | 8 | 1,000,000 | | an anvil that opens the crafting window (`crafting.lua`) |
 | Guild Depot | 9 | 2,500,000 | | a large trunk shared by the members, see below |
@@ -10541,11 +11150,11 @@ Hardcore, a mana shield.
 Extended opcode 238 (`ChaosOpcodes.lootfilter`), Hunt > Loot Filter (or Hunt > Loot Filter) opens the window; Hunt > Loot Filter applies a preset.
 
 **How rarity reaches the client.** It does not, natively. The base server stores rarity as the item custom attribute
-`rarity` (1..15, Common .. Transcendent, rolled in `eventcallbacks/monster/default_onDropLoot.lua` and by the Chaos loot
+`rarity` (stored ids 1, 2, 3, 4, 5, 10 = Common .. Divine, old ids 6-9 and 11-15 map to 5 and 10, see "Item rarities"; rolled in `eventcallbacks/monster/default_onDropLoot.lua` and by the Chaos loot
 layer); uniques carry `chaos_unique`. `NetworkMessage::addItem` sends only the client id, count and fluid, so a container
 item in the client has no rarity. `game_itemrarity` reads a `[NAME]` tag out of `item:getTooltip()`, but the server never
 fills that tooltip string (the 10.98 packets have no description field; the hover tooltip is a separate 0x9F/0x9E request
-used by `game_itemtooltip`), and its table has 6 names that are not the server's 15. So the filter asks the server: on
+used by `game_itemtooltip`), and its table is id-keyed with the server's aliases now (seven rarities). So the filter asks the server: on
 every container open/change the client sends `peek {cid}` and the server answers the rarity, unique flag, orb flag and
 category of each slot of that container (`player:getContainerById`), and the item's Chaos modifiers as one line (`x`,
 "Item modifiers"; also in the kill rows, shown in the loot channel tooltip). `game_itemrarity` / `game_itemtooltip` are
@@ -10564,8 +11173,9 @@ not changed.
 - *Rarity Autoloot* (store unlock, see below): *leave list gear below* Z keeps autoloot-list equipment of a lower rarity in
   the corpse; *also pick up gear from* W autoloots equipment with rarity >= W, and uniques, even when they are not on the
   autoloot list. Uniques, orbs and coins are never held back.
-- Presets: *Show all* (Rare+ glows, nothing dimmed), *Hunter* (Epic+ glows, below Uncommon dimmed, picks up Epic+),
-  *Strict* (Legendary+ glows, below Epic dimmed, supplies and other dimmed, leaves list gear below Epic, picks up Legendary+).
+- Presets: *Show all* (Magic+ glows, nothing dimmed), *Hunter* (Rare+ glows, Common and plain gear dimmed, picks up Rare+),
+  *Strict* (Legendary+ glows, gear below Rare dimmed, supplies and other dimmed, leaves list gear below Rare, picks up Legendary+).
+  Thresholds are stored as stored ids (1-5, 10); a saved old id is clamped on read.
   Presets keep the two display options (icons, rare-drop message).
 - Settings live in one storage value per character, `Chaos.storage.lootFilter` (7100500), packed by `F.pack`; the client
   mirrors them (pushed after login and asked for with `sync` at game start).
@@ -10595,9 +11205,9 @@ words, so the translated prefix keeps it. Without `lootline.lua` each part sends
 Rarity of stock items: the stock callback (index 0) writes its line with the rarity it rolled ("[Common] fire sword"),
 and the Chaos loot layer (index 1) may raise that rarity afterwards. The raise goes to the record
 (`ChaosLootLine.addUpgrade`: item name, old and new rarity name), and at the flush `K.annotate` rewrites that stock entry
-to the final rarity (no second "[Epic] fire sword" entry) and wraps every stock entry from `lootLine.flagRarity` (3,
-Rare; `pouches_config.lua`) on in `{}`, as the bonus items and the pouch part are: "Loot of a dragon: 120 gold coins,
-{[Epic] fire sword}, [Uncommon] plate armor." A raise with no matching entry is listed as a bonus item. Without
+to the final rarity (no second "[Rare] fire sword" entry) and wraps every stock entry from `lootLine.flagRarity` (3,
+Magic; `pouches_config.lua`) on in `{}`, as the bonus items and the pouch part are: "Loot of a dragon: 120 gold coins,
+{[Rare] fire sword}, [Uncommon] plate armor." A raise with no matching entry is listed as a bonus item. Without
 `lootline.lua` the bonus line lists the raise with the same `{}` rule.
 Every step is in `pcall` and returns nothing, so the chain never stops. `autoloot.lua` and `autosell.lua` are unchanged; the
 auto seller still sells first (sold items never show in the row; checked in game: "Auto seller: sold ..."). The rarity pickup
@@ -10653,9 +11263,9 @@ stayed in the corpse; after buying (Strict) it was picked up and a Common list s
 ### Loot rays (off: `rayEffects = false`)
 - With `rayEffects = true` (for a client without `game_lootbeams`), a beam effect rises from the corpse tile while a
   qualifying item is still in it: uniques (`rayUniques = true`, orange beam
-  `loot_ray_unique`) and items of base rarity >= `rayMinRarity` (5 = Legendary): Legendary/Exotic gold, Mythic/Chaos/Eternal
-  red, Divine/Phantasmal/Celestial white-blue, Cosmic/Abyssal/Transcendent violet (`rayBands`). One beam per corpse: a unique
-  wins, else the highest rarity left. Epic and below never get one.
+  `loot_ray_unique`) and items of rarity >= `rayMinRarity` (5 = Legendary): Legendary gold, Divine white-blue (`rayBands`; the red and violet
+  beams of the old Mythic and Cosmic bands stay in `chaos_fx.lua`, unused). One beam per corpse: a unique
+  wins, else the highest rarity left. Rare and below never get one.
 - Resent every `rayIntervalMs` (1000; the effect is 900 ms) for at most `rayDurationS` (60) and stops as soon as the item
   leaves the corpse or the corpse decays (same tracking as the loot channel; checked in game: orange -> red after looting
   the unique, nothing after looting the last one).
@@ -11968,6 +12578,7 @@ class count as one stock vocation:
 - Exercise weapons: sword Warrior / Thief / Templar lines, axe and shield Warrior / Templar, club Warrior / Monk / Templar,
   bow Ranger / Thief, rod and wand Mystic / Necromancer (the Berserker was refused before).
 - Party shared experience: the bonus for different vocations counts the class lines, at most 5 (the stock x2.5).
+  Why it can look dead, and what tells the leader: see "Party shared experience: why it is off" (`party_xp.lua`).
 - The vocation Oracles (The Oracle, The Oracle3, Captain Ironwake): Warrior, Ranger, Mystic, Thief (the old words choose
   the matching class); the locked lines stay with the store's class unlock. Before: druid / illusionist set ids 2 / 9, and
   the equipment lookup by the stock name failed after the vocation was set.
@@ -12691,7 +13302,8 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
   supports and uniques roll x the factor, outside the `maxRate` / `maxScale` caps. An empty paced corpse decays after
   30 s (`emptyCorpseSeconds`). The check runs at the end of the drop (`loot_config.lua` `emptyCorpseIndex` 99), after
   the Loot Bag, the base autoloot and the Rarity Autoloot, so a corpse the autoloot emptied decays fast too. A corpse
-  with anything left in it keeps the stock decay. The ambush chance (`monster_tiers.lua`), the treasure goblin roll of a respawn
+  with anything left in it decays after 120 s (`corpseSeconds`, owner 2026-10-18; every monster, never longer than the stock
+  decay; 0 = stock). The ambush chance (`monster_tiers.lua`), the treasure goblin roll of a respawn
   (`treasure_goblin.lua`) and the faction token chance (`factions.lua`) are x the loot factor too.
 - **Damage to players** (`monster_damage.lua`): a paced monster's hits, and its summons', x the `damage` curve: every
   element, conditions, mana shield hits and mana drain (healing never). The late-game physical boost stays on top.
@@ -13294,7 +13906,7 @@ writer stays so the owner can open, review or hand-place an area in the map edit
   every finisher gets, straight into the backpack (the inbox when full; the run sends everyone out 10 s after the kill):
   the dungeon's gold x (1 + the difficulty's gold bonus) to the bank (150,000 / 200,000 / 250,000 / 300,000 at
   difficulty 1, x5 at 6); 1 / 1 / 2 / 2 / 3 / 3 pieces of the boss's own gear at the boss level's item level (tier boss)
-  + 0..5, rarity at least Rare / Epic / Legendary / Exotic / Mythic / Chaos (the loot layer's bonus steps of tier rare /
+  + 0..5, rarity at least Magic / Magic / Rare / Rare / Legendary / Legendary (the loot layer's bonus steps of tier rare /
   rare / legendary / legendary / boss / boss on top, item find counts); 1 / 1 / 1 / 2 / 2 / 3 currency rolls of that tier.
   The Vault keeps no chest (unchanged). One hook in `dungeons.lua` `endRun` calls `extra.onClear` per finisher.
 - Achievements: the counters `dungeon_<area id>`, `_top`, `_d6` ("Achievements").
@@ -13450,16 +14062,75 @@ Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock)
 - **Assumption:** the base room lives on floors 5-7 above the open ground of z 7, so the new wings of floor 6 hang over
   grass seen from z 7 outside the hall like the rest of the hall's upper floors.
 
-## Hall order (`tools/hall_order.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
+## Hall order (`tools/hall_order.py`, `tools/hall_quests.py`, `tools/hall_hunts.csv`, `install_content_areas.py`, `hunt_teleports.lua`)
 Owner, 2026-10-16: the teleport hall of Cinderhold ordered by level, floors going up as the monsters get stronger.
-Every hunt teleport of the hall, the base server's 50 (floors 7, 6, 5) and the planned hunts' (17), takes a slot by
-its level (below), then band floor, ceiling and id: the entry floor z 7 first, along the corridor from west to east
-(north before south in a column), then z 6, then z 5. 70 slots (15 + 37 + 18): no new floor or tiles needed. A new
-hunt (a plan file, or a row of the CSV) lands in its place on the next install.
+Owner, 2026-10-18 (after the first order overwrote some quest teleports of the ground floor): the **ground floor z 7
+holds the hunts of levels 1-500, z 6 of 500-1000, z 5 of 1000 and up** (`hall.levels` in the config), and the base
+quests are back, in their own hall. Every hunt teleport of the hall, the base server's and the planned hunts', takes a
+slot of the floor its level belongs on, by its level (below), then band floor, ceiling and id: along the corridor from
+west to east (north before south in a column). A floor with too few slots is grown (`room.wings`; below). A new hunt
+(a plan file, or a row of the CSV) lands in its place on the next install.
+- **Floors by level.** `hall.levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}}`: a hunt whose level is at most
+  `max` goes on that floor, the last floor takes the rest. The floor labels say it ("Floor 7: levels 1-500", "Floor 5:
+  levels 1000+"). `hall_order.assign` refuses with the floor's name when it has fewer slots than hunts; the z 7 wings
+  (`room.wings`, copied from the room's alcoves of floor 6, 8 modules on each side, `sweep = true`: they take the place
+  of the impassable lawn beside the hall, only decoration; `check_swept` refuses a tile with an action id, a unique
+  id, a teleport, a sign or contents) hold the content hunts of 200-500 that the floor's rule puts there. On the
+  test copy of the base map: z 7 48 hunts on 48 slots, z 6 6 on 37, z 5 8 on 18.
 - **Level and band (the rule).** A hunt's level is the weighted median of its monsters' hunting levels (a plan: the
-  middle of its `level`); its band, on its sign and label, is the weighted 20th-80th percentile, to 5s. A floor's
-  label is the lowest to the highest hunt level on it, so floors never overlap: z 7 levels 2-24, z 6 25-317, z 5
-  350-1875 (2026-10-16). One strong monster in a mixed area moves neither.
+  middle of its `level`); its band, on its sign and label, is the weighted 20th-80th percentile, to 5s. One strong
+  monster in a mixed area moves neither.
+- **Quest hall** (`tools/hall_quests.py`, CSV kind `quest`, config `hall.quests`). The 16 base quest teleports of z 7
+  (each an alcove of 4 x 3 tiles: the quest's name on the sign, the rewards on show in the two cells beside the teleport,
+  the teleport itself; items 5023 and 11796) were taken for hunt slots by the first order. They are kept as the base
+  server had them, and moved as they are: every tile of each alcove (teleport with destination and attributes, sign
+  with its text, the rewards with their unique ids and counts) is copied tile for tile to a hall of the same shape (two
+  rows of alcoves, the three-row carpeted corridor between, north quests above, south below, west to east) at x 31674-
+  31706, y 32263-32271, a little below the hall, east of the plaza's aisle where the daily and weekly reward chests
+  stood, joined to the aisle by a three-row corridor from x 31665. The corridor keeps its protection zone; "Quests" ("Missões") floats over it. The
+  rewards stay behind the teleport in the same arrangement; no unique id is shared or changed (the teleports have
+  none; the rewards keep theirs). The quest sites' own way back (16 teleports, found within 4 tiles of the quest's
+  destination by the tile in front of the old alcove they lead to) is rewritten to lead in front of the new alcove.
+  The 16 old alcoves become hunt slots: cells bare, the quest teleport and the sign's text gone (the hunt's own
+  sign is written at startup). Quests, base positions and destinations in `tools/hall_hunts.csv`:
+  | north row y 32254 | quest | to |
+  |---|---|---|
+  | 31630 | Behemoth | 33305,31706,12 |
+  | 31634 | Demon Helmet | 33208,31642,13 |
+  | 31638 | Deeper Fibula | 32169,32439,7 |
+  | 31642 | Elemental Sphere | 33281,31843,3 |
+  | 31654 | The Inquisition | 33190,31659,13 |
+  | 31658 | Dragon Scale | 31645,32880,7 |
+  | 31662 | Astro Mage / Warrior Outfit | 31594,33075,7 |
+  | 31666 | Arodis | 31270,32779,8 |
+
+  | south row y 32258 | quest | to |
+  |---|---|---|
+  | 31630 | Black Knight | 32798,31958,7 |
+  | 31634 | Pits of Inferno | 32764,32345,7 |
+  | 31638 | Annihilator | 33210,31672,13 |
+  | 31642 | Demon Oak | 32715,32339,7 |
+  | 31654 | Queen of the Banshees | 32243,31892,10 |
+  | 31658 | Blessed | 31439,32686,8 |
+  | 31662 | Yalahari and Draken | 31881,33109,8 |
+  | 31666 | Mercurial | 31179,32566,9 |
+
+  The quest names are read from the signs and the quest teleports' destinations; `--remove-hall` puts every quest
+  back in its old alcove (verified against the base map: no tile of the quest rows differs).
+- **Reward chests removed.** The four royal chests of the plaza (item 29327, unique ids 34801 daily reward, 34802 weekly
+  Nightmare Coin, 34803 weekly Stamina Extension, 34804 weekly Star Inlay Stone; x 31639, 31633, 31657, 31663, y 32265
+  with their booth tiles y 32263-32265) are taken away by the same step, after checking that the item there has the
+  expected unique id (else the install stops: it is not ours). No Chaos system uses those unique ids (checked: no
+  reference outside the base `data/scripts/customs`). Left over: the base server's floating texts "Daily Reward" and
+  "Weekly Reward" over those tiles (base data, harmless; not patched). `--remove-hall` does not bring the chests back
+  (restore the map backup for that).
+- **Low-level hunts** (10 rows `low_*` of the CSV, kind `hunt`, no place of their own): base-map caves of levels 4-34 that no
+  hall teleport led to, each with a walkable arrival tile (not a house, not a protection zone, a region of 500 or more
+  walkable tiles, no spawn within 3 tiles; checked on the base map) and the level band of the monsters around it
+  (`hall_order.py band DATA_DIR X,Y,Z`): Rat warren (4), Dworc burrow (9), Orc stronghold (10), Chakoya caves (10),
+  Minotaur hold (11), Jungle camp (17), Tomb vaults (18), Dwarf mines (21), Quara grotto (32), Clay hollow (34). They take
+  the ground floor's slots in level order; the display monsters are the first of the area's monsters.
+
 - **Bands of the base hunts** (`hall_order.py derive <server>/data`, run once on the hall as the base server has it;
   refused when the places file says the order is installed): a teleport on a teleport row, or on the corridor's end
   row when it does not lead to the temple, is a teleport of the hall. Its monsters: those spawned within 40 tiles of
@@ -13478,21 +14149,30 @@ hunt (a plan file, or a row of the CSV) lands in its place on the next install.
   back unchanged is refused), a base hunt's teleport goes to its new slot with its destination, a planned hunt's slot
   has none (`hunt_teleports.lua` puts the scripted one there at startup), the display spawns follow their hunts (the
   base server's unmarked blocks in the hall's cells are taken over, `chaoshunt="base_Z_X_Y"`), and the places file
-  gets `hall = true`, the base hunts (`base`) and the floors' bands (`floors`). The tile flags (PZ) are never touched.
-  `--remove-hall` puts every base hunt back where the CSV says it stood and the planned hunts in the wings again;
+  gets `hall = true`, the base hunts (`base`), the floors' bands (`floors`) and the quest hall's label (`quests`). The
+  tile flags (PZ) of existing tiles are never touched; the quest hall copies the hall's own. A tile attribute we cannot
+  write back (a container) is refused.
+  `--remove-hall` puts every base hunt back where the CSV says it stood, the quests in their old alcoves and the planned hunts in the wings again;
   the map backup `<map>.otbm.bak` is written before the first change as for every content install. Idempotent both ways.
 - **In game**: every hunt's sign and floating label name it and its band (the base ones by their top monster:
-  "Hydra, levels 45-75"); each floor floats "Floor 7: levels 2-24" in its corridor and, over the stairs up, the next
-  floor's range ("Up: floor 6, levels 25-317"); `hall.labels` in the config.
-- Checked on the test server's map (in memory, no file written: the disk was full): 67 hunts on 70 slots, each
-  once, ascending; every slot and the stairs up reachable from each floor's corridor; no tile flag changed; the 51
-  base teleport tiles read and written back byte for byte. Before/after picture for the owner: the session's
-  scratchpad `hall/hall_before_after.jpg`.
+  "Hydra, levels 45-75"); each floor floats "Floor 7: levels 1-500" in its corridor and, over the stairs up, the next
+  floor's range ("Up: floor 6, levels 500-1000"); `hall.labels` in the config.
+- Checked on a copy of the test server's base map (2026-10-20, the installer run for real on the copy; the map
+  changes have not been looked at in a client): 4 chests removed, 16 quests moved, 16 ways back retargeted, 475
+  existing tiles rewritten; every one of the 45 z 7 teleports and of the 17 runtime teleports has a reachable tile in
+  front of it from its floor's corridor, the quest hall's 16 fronts are reachable from the corridor, each of the 10
+  new hunts' arrival tiles is walkable; a second run changes nothing (same file hash); `--remove-hall` restores every
+  tile of the quest rows byte for byte (the wings, the connector and the chests stay changed). Not tried: a live
+  server, a client, the walk through the quest teleports.
 Tests: `tools/install_content_areas_test.py` (bands, tile round trip, a synthetic hall: every hunt once, ascending,
 the base teleport moved with its destination, its old place free, PZ kept, every teleport reachable, base display
 taken over, a `not a hunt` teleport left in place, second run unchanged, --remove-hall and back, the median and the
-nearest group below for a cave), `tests/hunt_teleports_test.lua` (base signs and labels,
-the floor labels in both languages).
+nearest group below for a cave; the floors by level (1-500 / 500-1000 / 1000+, a short floor refused by name); a
+synthetic quest hall: alcoves moved tile for tile with unique ids, counts and sign text, the ways back retargeted, the
+chest and booth gone, a chest with another unique id or an action id under the hall refused, reachable, PZ kept,
+second run unchanged, --remove-hall restores every tile; a wing over a tile with an action id, a unique id, a sign or a
+teleport refused), `tests/hunt_teleports_test.lua` (base signs and labels, the floor labels in both languages, the top
+floor "levels 1000+", the quest hall's label).
 
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a
@@ -13539,6 +14219,35 @@ Safety: the name is fixed by the config and must be a bare file name (letters, d
 cannot be removed stops nothing (logged once), so a stuck file never stops every later start. A leftover file is
 removed at startup (and by both start scripts) instead of being obeyed. Anyone who can write into the server folder
 can stop the server, the same people who can already end its process. Tests: `tests/stop_request_test.lua`.
+
+## Remote admin commands (`remote_cmd.lua`, `remote_cmd_core.lua`, `remote_cmd_config.lua`)
+Owner, 2026-10-20: full control of the live server from a phone (docs/ADMIN_APP.md). The phone app talks ssh to the VPS
+and runs `server/deploy/chaos-ctl.sh`; for the things only the engine can do it appends one line to `remote.cmd` in the
+server folder (the engine's working folder), the same idea as the stop request file above.
+- The globalevent `ChaosRemoteCmd` checks every `intervalMs` (2.5 s). The file is renamed to `remote.cmd.work` first (a
+  writer that appends later makes a new file, nothing is lost), read (at most 8 KB, 20 lines) and removed.
+- Lines are a whitelist, nothing else is ever run: `broadcast TEXT` (1-200 characters, a warning message to everyone),
+  `kick NAME` (a character name: letters, spaces, `'` and `-`, 3-29 characters; an offline name does nothing), `save`
+  (`saveServer()`), `open` and `close` (`Game.setGameState` NORMAL / CLOSED: login open or closed; players online stay).
+  Control characters, long lines and every other word are refused and logged.
+- The whole admin panel (`chaos/admin`, 179 actions) is reachable too, through two more lines: `catalog ACTOR` writes the
+  catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
+  `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
+  appends `{"rid","ok","message","lines"}` to `remote.result` (restarted above `maxResultBytes`). ACTOR is an admin
+  character, online or not: online it is the real player; offline it is a stand-in built from its `players` row
+  (`K.virtualActor`: name, group, guid, account, audit log). Either way the action runs with that character's group, so
+  `minGroup` limits hold. A stand-in has no body: actions that use the actor's position, teleport, ghost mode, speed or
+  conditions answer "this action needs NAME in the game".
+  `chaos-ctl.sh catalog|panel` queues the line and waits up to 15 s for the answer (the app's Comandos tab).
+- Every command and every refusal is logged as `[ChaosRemoteCmd] ...` in the console log (`chaos-ctl.sh logs`).
+- Safety: the file name is a bare name from the config (same rule as the stop request file). A leftover file at startup is
+  removed, not obeyed. A file that cannot be renamed runs nothing (logged once). Anyone who can write into the server
+  folder can run these five commands, the same people who can already end the process. The folder is not reachable from
+  the network. The `panel` line is the strongest: it can do anything the admin panel does, so the folder must stay
+  closed to everyone but the server's own user and root.
+- Tests: `tests/remote_cmd_test.lua` (core and engine file against a mocked engine, a real file), and
+  `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
+  `player:remove()`, `Game.setGameState`) have not run on a real server.
 
 ## Respawn near players (engine patch 0041, config `spawnNearPlayers`, `spawnMinPlayerDistance`)
 Owner, 2026-10-16: monsters must respawn even with players nearby. The stock engine skipped a spawn block while a
@@ -13999,13 +14708,13 @@ meantime). The server is the authority: the client draws what it is told and cou
   The Ember Descent's entries `descent_boon` / `descent_curse` (source `descent`, one item per boon or curse held, icons
   `descent_b_<key>` / `descent_c_<key>`) are drawn by `client/tools/gen_descent_icons.py`; `gen_buff_icons.py` leaves the
   `descent_*` names to it.
-- Covered (84 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
+- Covered (90 entries): the engine conditions haste, regeneration, food ("Well Fed", regeneration with the default id), mana
   shield, invisible, light, spell / potion buffs (attributes without a sub id), poison, burning, energy, bleeding, drowning,
   freezing, dazzled, cursed, paralyze (shown as "Slowed"), drunk, pacified, muted, in fight (also the PZ lock, the engine keeps
   one condition for both), white / red / black skull with the time the engine keeps it; the class buffs by sub id (Crimson
   Covenant, Red Frenzy, Banner Call, Ironbark Hide, Lightward, Soulward, Wraithshroud, Flickerdash, Iron Bellow, Shadow Veil,
   Poison Blades, Counter Stance, Bushido Focus with its stacks, Bloodrage, Banner of Bones, Bone Offering, the Monk's Focus /
-  Chi Ward / Mantra of Stone / Mistborne Step / Kindled Breath, Zealotry, Aegis of Faith); the sources: the three world buffs
+  Chi Ward / Mantra of Stone / Mistborne Step / Kindled Breath, Zealotry, Aegis of Faith, Moonfang Pack, Hall of Mirrors); the sources: the three world buffs
   (global storages of `shop_services.lua`), the Victory buff (server-wide, or only inside its area), Golden Hour and Chaos Storm
   (only for a character standing in the area, `ChaosWorldEvents.active`), the day's events with a bonus (no timer),
   the double experience potion (storage 6000), Vocation Trials kill stacks (Bloodlust, Zeal and the other stack nodes: the stacks
@@ -14018,12 +14727,26 @@ meantime). The server is the authority: the client draws what it is told and cou
   another Templar's aura takes over or the numbers change, and when it ends, never while it simply holds; the **vigils**
   (source `vigils`, section "Vigils"): a row per vigil that covers the player and Iron Tithe's health row, stacks = the
   effect in percent, no timer. `tests/buffs_test.lua` checks the sub ids against the spell files and the class configs.
+- **Support spells** (owner report 2026-10-17, "a support spell does not show on the buff bar"): every support-group spell
+  that puts a timed state on the caster is on the bar. Three gaps were closed. (1) Moonfang Pack (40 s) and Hall of Mirrors
+  (10 s) made summons / decoys but no condition on the caster, so they never showed: the two spells now add a timer-only
+  condition (`ChaosSpell.buffTimer`, sub ids 71070 / 71071 in `ChaosSpell.SUBID`) and have the rows `moonfang_pack` and
+  `mirror_image` (their own spell art as the icon). (2) Mantra of Stone of an Iron Sage with Deep Mantra puts the timer 71037
+  instead of 71032, which had no row: an entry can now name several sub ids (`cond.subs`), and `mantra` looks for both.
+  (3) The stock support spells that are not in this repo (the base `spells.xml`: Haste, Strong Haste, Charge, Swift Foot,
+  Bloodlust, Bulwark, Hawkeye, the party Communions) are engine conditions with the combat id; the plain ones (sub id 0) were
+  shown already, but a base script that gives its condition a small sub id was not, so `spellbuff` looks for the attribute
+  sub ids 0-9 and `haste` for 0-3 (the exact ids of the base scripts could not be checked: the base tree is not committed,
+  they show under the generic names "Spell Buff" / "Haste"). Not on the bar on purpose: the summons without a timer (Raise
+  Dead, Bone Golem, Wild Bond), what a spell does to monsters (Smoke Bomb, Rebuke, Judgement, Iron Palm), instant spells
+  (Town Portal, Hunter's Instinct, Detonate Mines), and the Reprisal / vigil states, which have their own sources. The
+  test `tests/buffs_test.lua` fails when a sub id of `ChaosSpell.SUBID` has no row.
 - Not on the bar: the passive tree's own conditions (permanent, sub ids 7200-7240); the item ailments of `item_mods.lua`
   (bleed, ignite, poison, chill, shock), which are only ever put on monsters, so they cannot appear on a player; what a monster
   does to a player (poison, burning, slow ...) is an engine condition and is covered. Hex / Brand marks sit on monsters (the
   `hexes` table of `supports.lua` is local to it): the optional row under the monster bar for the player's own marks is **not done**.
 - Icons (`icon` of an entry): always `buff:<name>`, our own 26x26 pixel art at the bar's cell size
-  (`client/overlay/data/images/game/buffs/`, 80 icons from `client/tools/gen_buff_icons.py`, one per registry key). Buffs sit in
+  (`client/overlay/data/images/game/buffs/`, 86 icons from `client/tools/gen_buff_icons.py`, one per registry key). Buffs sit in
   an ember-gold frame, debuffs in a blood-red frame with thorns in the corners (the same colours as the client's border). The
   class buffs that come from a Chaos spell show that spell's pixel-art icon inside the buff frame; everything else is drawn by
   the tool. No stock condition art and no spell sheet lookup any more: `validate` refuses any other form, and
@@ -14580,6 +15303,48 @@ policy** (docs/legal/README.md "Placeholders"); the test checks the policy still
   a table at 0 days, a bad config deleting nothing). **Not run on a live server** (no MySQL here): the queries use
   `UNION`, `LEFT JOIN` and `IN` lists only.
 
+## Shadow mute (`shadow_mute.lua`, `shadow_mute_core.lua`, `tools/patch_shadow_mute.py`)
+
+Staff panel actions `players.shadow_mute` (player, 1-1440 minutes) and `players.shadow_unmute` (admin panel, group 4+, in
+the admin log like the other Players actions). A shadow-muted character keeps seeing its own lines in the PUBLIC chat
+channels (`public="1"` in `chatchannels.xml`), but nobody else does, and it gets no message, so a spammer does not switch
+account. `patch_shadow_mute.py` (install step `events`, after `patch_report_chat.py`, idempotent) adds one hook to the top of
+each public channel's `onSpeak`; the line goes back to the speaker with `Player:sendChannelMessage`.
+Limits, stated plainly: say, yell, whisper and private messages are engine paths with no Lua hook, so they are not covered
+(use the plain Mute, `CONDITION_MUTED`, for those); the mute lives in memory and a restart clears it; the hook runs before the
+report hook, so a muted character's lines are not kept for reports while it is muted. No player commands.
+**Tests:** `tests/shadow_mute_test.lua` (state, caps, expiry, list, the patch tool on a copy of a channel script and its
+idempotence) and the shadow mute block of `tests/admin_panel_test.lua`. Not run on a live server.
+
+## Absorb ceiling (engine `src-patches/0049-absorb-ceiling.patch`)
+
+Owner decision 2026-10-20: one global ceiling of **75 percent** absorb per combat type, in the engine. Before it, nothing
+capped the sum: the passive tree stopped at `maxAbsorb = 80` for its own share only and equipment added on top, so one
+element could pass 100 percent.
+
+- **Where absorb is taken off today (three layers):** (1) `Player::blockHit`: the item abilities (`absorbPercent`), each one
+  applied to what the previous left; (2) after it, the base event `rarity_onHealthChangeAbsorb`
+  (`data/scripts/customs/rarity/rarity_onCombat_absorbs.lua`): the SUM of two storages per type, 977544-977553 / 977572 /
+  977574 (gear rarity rolls) and 977562-977575 (passive tree and Paragon, `passivetree_effects.lua`), no cap.
+- **The patch:** in `Player::blockHit` (`player.cpp`) the equipment part is raised back so that equipment and the storages
+  together never remove more than `CHAOS_ABSORB_CEILING_PERCENT` (75, **the one place to change it**). The storages are read
+  with `Player::getStorageValue` (a fixed table of the 12 types), so equipment may take at most `25 / (100 - storage)` of the
+  hit; with storages at 75 or more, equipment takes nothing more. Negative absorbs (weakness) are not touched.
+- **The base event:** install step `absorbceiling` (`tools/patch_absorb_ceiling.py`, idempotent, keeps CRLF, refuses when the
+  expected code is missing; test `tools/patch_absorb_ceiling_test.py`, which runs the patched event against a mock) limits
+  the SUM of the storages in `rarity_onCombat_absorbs.lua` to 75 per type, so the engine and the event agree. Without that
+  step the event takes the full storage sum after `blockHit`. The tree/Paragon share is also clamped by
+  `maxAbsorb` in `passivetree_effects.lua` (**still 80: set it to 75**, together with the "at most 80 percent" texts in
+  `passivetree_stats_config.lua` lines 84-95 and the asserts at `tests/passivetree_stats_test.lua:83` and
+  `tests/passivetree_effects_test.lua:39,52`); gear rarity rolls in storage 9775xx are summed with it and can still pass 75
+  alone only if a character stacks more than 75 of them, which the item caps (T8 absorb 10-14 per line) make unlikely.
+- **Lua side:** `ChaosItemMods.config.absorbCeiling = 75` and `ChaosItemMods.effectiveAbsorb(items, storage)` (the same
+  arithmetic as the patch, for tooltips and tools); the Codex text of every absorb modifier says the 75% cap
+  (`tools/gen_codex_data.lua`, regenerated `game_codex/codex_data.lua`).
+- **Tests:** `tests/absorb_ceiling_test.lua` (the arithmetic, and that the patch constant equals the config).
+- **Apply:** after 0001-0048, `patch -p1 < 0049-absorb-ceiling.patch`, then rebuild. A dry run over 0001-0049 on the base
+  source applies cleanly; **not compiled**, not run in game.
+
 ## Terms acceptance notice (`legal_notice.lua`, `legal_notice_core.lua`, `legal_notice_config.lua`)
 
 The website records each acceptance of the Terms of Use and Privacy Policy in `chaos_legal_acceptance` (account, texts'
@@ -14803,18 +15568,18 @@ unchanged) and can be traded.
 |---|---|---|---|---|
 | Trusted | 5 Orbs of Upheaval, 150k (3/week) | 10 Whetstones, 120k (3/week) | 3 Orbs of Gilding, 140k (3/week) | 5 Orbs of Awakening, 80k (3/week) |
 | Honored | Recipe: Pyre Distillation 100k (40 shards + 3 tokens + 10k -> 1 Orb of Fate) | Recipe: Cinder Tempering 100k (15 shards + 2 tokens + 5k -> 2 Orbs of Tempering) | Recipe: Veiled Binding 100k (50 shards + 3 tokens + 10k -> 1 Orb of Binding) | Recipe: Thorn Reforging 100k (35 shards + 3 tokens + 10k -> 1 Orb of Reforging) |
-| Honored | helm (crown helmet), ilvl 100, Epic: monster damage taken T5, regeneration T5, life on kill T5; 250k + 10 tokens | sword (warlord sword), ilvl 100: boss damage T5, physical penetration T5, attack speed T5 | circlet (charmer's tiara), ilvl 100: monster damage taken T5, cooldown reduction T5, mana cost T5 | boots (terra boots), ilvl 100: dodge T5, movement speed T5 |
+| Honored | helm (crown helmet), ilvl 100, Rare: monster damage taken T5, regeneration T5, life on kill T5; 250k + 10 tokens | sword (warlord sword), ilvl 100: boss damage T5, physical penetration T5, attack speed T5 | circlet (charmer's tiara), ilvl 100: monster damage taken T5, cooldown reduction T5, mana cost T5 | boots (terra boots), ilvl 100: dodge T5, movement speed T5 |
 | Revered | 2 Orbs of Fate, 300k (2/week) | 1 Orb of Grafting, 900k (1/week) | 2 Orbs of Fate, 300k (2/week) | 10 Orbs of Upheaval, 280k (2/week) |
 | Revered | armor (crown armor), ilvl 115: monster damage taken T6, thorns T6, regeneration T6; 600k + 20 tokens | legs (demon legs), ilvl 115: dodge T6, thorns T6, regeneration T6 | amulet (star amulet), ilvl 115: elemental penetration T6, cooldown reduction T6, mana on kill T6 | legs (golden legs), ilvl 115: dodge T6, regeneration T6, gold find T6 |
 | Revered | tabard aura Pyrelight Mantle (aura 25), 300k + 15 tokens | Forgeflame Ring (aura 26) | Veiled Eyes (aura 27) | Thornfire Wreath (aura 28) |
 | Exalted | shield (mastermind shield), ilvl 125: block T7, reflect T7, regeneration T7; 1.5M + 40 tokens | axe (royal axe), ilvl 125: boss damage T7, physical penetration T7, attack speed T7 | wand (wand of starstorm), ilvl 125: elemental penetration T7, damage over time T7, mana on hit T7 | amulet (platinum amulet), ilvl 125: boss damage T7, life on kill T7, healing done T7 |
 | Exalted | Pyrewarden Charger (mount 142), 2M + 60 tokens | Forgeborn Emberwolf (mount 143) | Veilrunner (mount 144) | Thornbound Stag (mount 145) |
 
-Gear is deterministic: the base item gets rarity Epic, the item level, the base bonus and exactly these modifiers at these
+Gear is deterministic: the base item gets rarity Rare (old Epic), the item level, the base bonus and exactly these modifiers at these
 tiers, each value the middle of its tier's range, through `ChaosCrafting.writeAffix` (so tooltips, orbs, salvage, the
 market and transmog treat it like any rolled item); it carries the offer's name and `chaos_faction`. The test holds every
 gear offer to `chaos_item_mods.lua` (the kind may carry the modifier, the tier is allowed at the item level, count and
-prefix / suffix limits of the rarity) and to the faction limits (item level 125, Epic, T7 at most): a catch-up and
+prefix / suffix limits of the rarity) and to the faction limits (item level 125, Rare, T7 at most): a catch-up and
 target-farm path below the top drops (item level 145-150, up to six modifiers, T8). Orbs can change it afterwards like any
 item. Each faction has its own aura and mount (client pair things_custom14, client/MANIFEST.md "Raid boss and faction
 looks"): auras 25..28 (`data/XML/chaos_auras_donor.csv`: Pyrelight Mantle, Forgeflame Ring, Veiled Eyes, Thornfire
@@ -15005,7 +15770,7 @@ pull): boss and add hits x1.75, mechanics 40% more often, 10% of max health on e
 | Cinder Acolytes (add priority) | Kill them first | 1 + 1 per 4 raiders every 40 s (90k health, +10% per raider over 5); each living one: the boss takes 15% less damage (at most 60%) and heals 1% every 5 s |
 | Bone Bloom (spread) | Step out of your circle, not onto another's | a 3 x 3 circle under every raider, 45% |
 | Hex Effigy (kill the totem) | A kill team | 1 + 1 per 8 raiders every 38 s (70k health); each living one adds a Hexed stack (buff bar) to everyone in the room every 3 s, 2% per stack (at most 10), the stacks fall when none lives; not killed in 22 s it detonates for 60% on everyone |
-| Withering Hex (dispel) | Cleanse: a cure curse spell (an engine curse, sub id 71060) or use the Font of Ash | 1 + 1 per 5 raiders every 26 s; not lifted in 8 s it bursts for 45% on everyone within 2 sqm of the hexed |
+| Withering Hex (dispel) | Cleanse: use the Font of Ash (the cure curse spell is retired) | 1 + 1 per 5 raiders every 26 s; not lifted in 8 s it bursts for 45% on everyone within 2 sqm of the hexed |
 
 | Boss | Look | Phases (health) | Mechanics | Enrage |
 |---|---|---|---|---|
@@ -15070,7 +15835,7 @@ minutes, hidden), Keeper of the Sepulchre (10 clears, title Sepulchre Keeper); s
 balance (`chaos_raid_players`, with bosses looted, clears and the best clear; spent with one conditional UPDATE). Each week
 it shows the two orb bundles (10 Upheaval for 40, 3 Fate for 60) and five of the gear offers picked by the week's seed
 (the same for everyone; `K.vendorStock`), each at most `weekly` times a week (`chaos_raid_purchases`). Gear is fixed like
-the faction quartermasters' (Epic, item level 130, three T7 modifiers at the middle of their range, `factions_core.lua`
+the faction quartermasters' (Rare, item level 130, three T7 modifiers at the middle of their range, `factions_core.lua`
 `gearProblems` checks every offer against chaos_item_mods.lua): helm, plate, legs, boots, a two-handed cleaver, a wand,
 an amulet, a shield (100-180 marks); and an Exalted Orb for 150. A catch-up below the world boss drops (item level 145).
 
@@ -15750,22 +16515,17 @@ gets sockets like a drop (`ChaosGems.rollDropSockets`); a full backpack sends it
 
 | Rarity | Gamble | Normal monster gear drop | Magic monster gear drop |
 |---|---|---|---|
-| plain | 0% | 58.28% | 52.45% |
-| Common | 61.90% | 10.50% | 12.95% |
-| Uncommon | 11.62% | 8.33% | 9.88% |
-| Rare | 8.09% | 6.14% | 6.92% |
-| Epic | 5.36% | 4.50% | 4.78% |
-| Legendary | 3.46% | 3.24% | 3.46% |
-| Exotic | 2.74% | 2.61% | 2.74% |
-| Mythic | 2.17% | 2.08% | 2.17% |
-| Chaos | 1.41% | 1.30% | 1.41% |
-| Eternal | 1.01% | 0.94% | 1.01% |
-| Divine | 2.24% (the cap) | 0.91% | 0.94% |
-| Phantasmal and above | 0% | 1.16% | 1.30% |
-| **Legendary or better** | **13.03%** | 12.25% | 13.03% |
+| plain | 0% | 67.31% | 60.58% |
+| Common | 70.03% | 10.50% | 13.49% |
+| Uncommon | 12.17% | 8.33% | 10.15% |
+| Magic | 8.36% | 6.14% | 7.01% |
+| Rare | 5.45% | 4.50% | 4.78% |
+| Legendary | 3.62% | 2.84% | 3.62% |
+| Divine | 0.38% | 0.38% | 0.38% |
+| **Legendary or better** | **3.99%** | 3.21% | 3.99% |
 
 So a crate is always at least as good as a magic monster's gear drop at every rarity up to Divine, never plain, and Legendary
-is exactly as rare as from monsters (one crate in eight); the five rarities above Divine stay with the monsters. A Divine
+is exactly as rare as from a magic monster's drop (about one crate in 28; before the seven rarities Legendary or better was 13%). A Divine
 reveal is told to the players within 8 tiles (`announceFrom`).
 
 **Safety.** Rate limited (`Chaos.limited`, 300 ms per player). A purchase holds a per-character lock, so a second request
@@ -15952,9 +16712,9 @@ The Cinderheart chain (`cinder`): an Omen Key of the kind you choose (150; level
 Key attuned to another kind (40), an Ascended Shard of the kind you choose (300), and conversions: 2 shards of one kind
 into 1 of another, 2 duplicate relics into the missing one (no fee). `uber.lua` exports `ChaosAscended.relicsOf`.
 
-Refinement (`refine`): a worn item with a rarity (not a unique, not ruined) rises one rarity, keeps every modifier and
-gains one random modifier that fits the new rarity (none when full); 60 + 40 x the new rarity tokens (Legendary to
-Exotic 300), never above Celestial (12): the top three rarities stay luck. The Orb of Fate stays the cheap gamble.
+Refinement (`refine`): a worn item with a rarity (not a unique, not ruined) rises one rarity (Common to Legendary, never into Divine), keeps every modifier and
+gains one random modifier that fits the new rarity (none when full); 60 + 60 x the new rank tokens (`refine.base`, `perRarity`; Rare to
+Legendary 300), never above Legendary: Divine stays luck. The Orb of Fate stays the cheap gamble.
 
 **Bad-luck protection** (`pity`). Per character and group, in player storages: every roll of the group that misses
 raises the next chance to base x (1 + step x misses), at most x cap; a drop of the group resets it (a drop of another
@@ -16311,6 +17071,34 @@ has its own limit, website/README.md "Passwords"). Each guess also costs a PBKDF
   a good login, limits off, bounded memory). The chain 0001-0047 applied; `protocollogin.cpp`, `protocolgame.cpp` and
   `configmanager.cpp` compile. Not run in a full server build.
 
+## Leech from real damage (engine `src-patches/0048-leech-real-damage.patch`)
+
+Report C1 (2026-10-20): "mana leech does not work on the Templar (item / buff)". Life and mana leech (patches 0004, 0011, 0015)
+ran for hits that dealt nothing. Fixed in `Combat::doTargetCombat` (one target: weapon hit or spell) and `Combat::doAreaCombat`:
+- A target that cannot be attacked (`!isAttackable()`, which `Game::combatChangeHealth` reports as done) gives no leech.
+- The leech value is rounded first; a value of 0 (zero damage, a hit that rounds to 0) heals nothing and no longer takes the
+  900 ms leech window of patch 0011 (a wasted roll used to block the next real hit).
+- Area: a target that took 0 damage or cannot be attacked is not counted in `totalTargets` and `maxDamageFound`; the divisor
+  is never 0 (the block already needs `maxDamageFound > 0`), and the window is taken only when the area leech is above 0.
+- Not changed: the `getMana() < getMaxMana()` gate (mana leech at full mana does nothing, by design: the most common reason a
+  Templar "sees no leech"), the rule that a leech heal is not leeched again, `ORIGIN_CONDITION` damage never leeching.
+- A Templar-only cause was not found: no Lua, item or buff path treats the Templar differently (`templar_combat.lua` has no leech
+  logic); `passivetree_stats_config.lua` lists `@manaLeech` as irrelevant for the Templar and Sentinel, a stat-pool choice for the
+  tree, not for items. Re-test in game with mana below the maximum.
+- Apply after 0001-0047: `patch -p1 < 0048-leech-real-damage.patch`, then rebuild (applies cleanly to the 0047 tree; not run in
+  a full server build). Test: `tests/leech_real_damage_test.lua` (a Lua mirror of the old and new rule for a weapon hit, a single
+  spell and an area spell, zero damage, an unattackable target, the window, and the patch text).
+
+## Poison Blades with ranged weapons (C3, 2026-10-20)
+
+Reported: the weapon poison does not work with a bow, crossbow or thrown weapon. Checked: `thief_combat.lua` `onOffence`
+counts `ORIGIN_RANGED` as a weapon hit like `ORIGIN_MELEE` (`isWeapon`), the engine sets `ORIGIN_RANGED` for `WEAPON_DISTANCE`
+and `WEAPON_AMMO` (weapons.cpp), and Shuriken Toss strikes with `ORIGIN_RANGED`. `tests/thief_poison_test.lua` pins it: melee and
+ranged poison with the buff; a spell hit (`ORIGIN_SPELL`), zero damage, healing and a non-thief do not; Blackblood Creed needs no
+buff. No code change: the failure did not reproduce in the script layer, so the root cause is not proven (the engine side needs a
+run in game with a bow and the buff active). The Thief line itself carries no bows or crossbows (stackable throwing weapons left
+the game, "Throwing weapons").
+
 ## Gateways and the PROXY protocol (engine `src-patches/0025-proxy-protocol.patch`, `deploy/gateway/`, `deploy/firewall/`)
 
 Owner decision: "put game proxies in front of the game server, and add per-IP connection limits." Players connect to
@@ -16524,8 +17312,9 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 - **The nemesis.** A generated name (syllables, `names`) with an epithet from the kills and the victim's name: "Varkh,
   Bane of Varek", then "Twice-Slayer of", "Thrice-Slayer of", "Doom of" (pt-BR: "Flagelo de", "Duas Vezes Algoz de",
   ...; the shown monster name is one string for every viewer, `nameLang` = English). Level = the killer's
-  (`ChaosLoot.monsterLevel`, else max health / 20) + 10-20%; health x3 x (level / base level), damage x1.3 and
-  experience x4 through its own monster_tiers.lua tier `nemesis` (label "Nemesis" in the monster bar). Look: the
+  (`ChaosLoot.monsterLevel`, else max health / 20) + 10-20%; health x1.5 x (level / base level), damage x1.0 and
+  experience x2.5 (owner 2026-10-18: was x3, x1.3, x4; a kill takes about half as long, config only, applies to every
+  nemesis at its next spawn) through its own monster_tiers.lua tier `nemesis` (label "Nemesis" in the monster bar). Look: the
   Heartblood outfit shader (23), a black skull, a death effect when it appears. No new sprite.
 - **Traits.** One at birth, a second at the second kill: Vengeful (the berserker modifier), Swift, Thorned
   (reflective), Regenerating, Stalker (steps next to its victim when more than 7 tiles away, every 8 s). `nemesis.lua`
@@ -16852,3 +17641,60 @@ the gold carried and then the bank.
   buys nothing until more is used; a session reset starts over. Items go to the backpack, else the inbox.
 - Shares the hunt opcode 241 with `hunt.lua` (actions `restockQuote` / `restock`). No storages.
 - Tests: `tests/restock_test.lua`. Not run on a live server.
+
+## Party shared experience: why it is off (`party_xp.lua`, `party_xp_core.lua`, `tests/party_xp_test.lua`)
+
+Owner report 2026-10-17: "Exp share não parece estar funcionando". The sharing is the engine's (`party.cpp`, no Chaos
+engine patch touches it) plus the stock `Party:onShareExperience` of `data/events/scripts/party.lua` (only patched by
+`tools/patch_base_classes.py` to count the class lines, at most 5). Findings, no Chaos script is in its way (the
+experience callbacks only read the kill's experience and source; the shared share reaches them like any gain):
+
+- The leader must switch it on (party shield menu), and then it works only while EVERY member, the leader included,
+  passes all of these at once; one member failing one rule switches it off for the whole party, and the only sign is the
+  shield icon: the party has 2 or more members; nobody below ceil(2/3 x the highest level of the party); everyone within 30
+  tiles and 1 floor of the leader; everyone attacked a monster or healed a party member in the last pzLocked seconds.
+  A buff, an aura or a shield does not count, so a support that only buffs (or an idle, far or low level member) keeps the
+  share off for the others.
+- The share itself is `exp x bonus / members` (bonus 1.2, or 1 + n(5(n-1)+10)/100 for n class lines, capped at x2.5 by
+  the Chaos patch); with equal damage it is only the bonus (+20% to +150%) over what each member gets alone, so a working share
+  is easy to miss.
+
+`party_xp.lua` (EventCallback `onGainExperience`, index 2000, never changes the experience) makes the cause visible: when
+a member gains experience from a monster in a party whose leader switched sharing on but the engine has it off, the
+leader gets a chat line naming the member and the rule ("Ana has not attacked a monster or healed a member lately (buffs do
+not count)", "Bob is below level 267 ...", "... is too far from the leader (30 tiles, 1 floor)"), at most once per two minutes
+per party and reason; a leader who never switched it on gets a hint once per half hour. No timer and no scan: it runs only
+for such members, on their own gains. The rules are in `party_xp_core.lua` (`diagnose`, pure, tested). Changing the engine
+rule itself (for example counting only the members near the kill, or an aura cast as activity) is a C++ change
+(`server/src-patches`, a new number) and an owner decision.
+
+## XP gain rate display (`xp_rate_display.lua`, `xp_rate_display_core.lua`)
+
+The "XP gain rate" line of the client's Skills window is the engine's base XP gain (plus low level bonus, boost and
+stamina), and the Chaos bonuses (world, self, passive tree, item mods, party, ...) are multipliers in the
+`onGainExperience` chain, so it stayed at 100%. A callback at index 999 (after every bonus, before the hunt tracker at 1000)
+sets the player's base XP gain (`Player:setBaseXpGain`, which resends the stats) to what the last monster kill really
+gave over its base experience (`ChaosXpCap.baseOf`: the monster's experience x level factor x stage x tier), with the
+stamina bonus taken out (the client multiplies it in again). The first kill after a login updates the line; between kills
+it keeps the last value. Assumed engine API, guarded and not verified on a running server: `Player:setBaseXpGain`,
+`Player:getStaminaXpBoost`. Tests: `tests/xp_rate_display_test.lua` (the percent maths).
+
+## Autoloot gold goes to the bank (`autoloot.lua`, `tests/autoloot_gold_test.lua`)
+
+Owner 2026-10-18 ("mande todo o gold que for auto looted pro banco"): when a coin (gold, platinum or crystal coin) is on
+the character's autoloot list, the coins of a kill's corpse are paid into the bank account (`ChaosAutolootGold.toBank`, an
+`onDropLoot` callback at index 2.6: after the auto seller at 2, before the store pouches at 2.7 and the base autoloot at 3)
+instead of being looted into the backpack. No coin stacks to convert, no weight. The chat line reads "Auto loot: N gold to your
+bank." (pt-BR in `i18n_strings.lua`); the economy telemetry counts it as faucet `autoloot_gold`. Without a coin on the list the
+coins stay in the corpse as before.
+
+## Gnome city teleports open to everyone (`tools/patch_gnome_teleports.py`, install_all step `gnometeleports`)
+
+Owner 2026-10-18: the gnome city teleports answered "Sorry, you don't have access to use this teleport!". The base scripts
+`movements/scripts/quests/bigfoot burden/GCTS.lua` (the city, Gnomebase Alpha, crystal grounds, Truffles' Garden, golems and the
+way out to each city) check the Bigfoot's Burden quest line (storage values 1, 14, 15, 16) and the city ones also consume a
+Teleport Crystal; `warzoneTeleports.lua` (the three warzone entrances) wants the storages 955 / 956 / 957. The patch (idempotent,
+text based, marker `-- Chaos: open to everyone`) turns every storage value into -1 (the quest line is -1 for anyone who never
+started it), `needCrystal = true` into false, and skips the warzone refusal. The warzone boss rooms are unchanged. Run it with the
+install (`install_all.py --only gnometeleports`), then `/reload movements`, or restart. Test: `tools/patch_gnome_teleports_test.py`.
+

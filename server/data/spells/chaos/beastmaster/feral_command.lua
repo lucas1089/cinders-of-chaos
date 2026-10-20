@@ -4,6 +4,7 @@
 -- (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond).
 dofile('data/spells/scripts/chaos/_common.lua')
 ChaosSpell.loadClasses()
+local Sides = ChaosSpell.loadSummons()
 
 function onCastSpell(creature, variant, isHotkey)
 	local player = creature:getPlayer()
@@ -13,6 +14,17 @@ function onCastSpell(creature, variant, isHotkey)
 	local target = ChaosSpell.targetOf(variant)
 	if not target or target == player then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUCANONLYUSEITONCREATURES)
+	end
+	-- never an ally (a companion, another summon, a party member or its summon): the claw goes at the nearest enemy
+	-- instead (owner report 2026-10-17: the command went at the player's own wolf)
+	if Sides.isAlly(player, target) then
+		local pos = player:getPosition()
+		target = Sides.nearestEnemy(player, ChaosSpell.spectators(pos, 7), pos, 7, function(c)
+			return ChaosSpell.canAttack(player, c)
+		end)
+		if not target then
+			return ChaosSpell.cancel(player, "No enemy in range.")
+		end
 	end
 	if not ChaosSpell.canAttack(player, target) then
 		return ChaosSpell.cancel(player, RETURNVALUE_YOUMAYNOTATTACKTHISPLAYER)

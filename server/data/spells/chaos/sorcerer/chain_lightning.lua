@@ -1,4 +1,4 @@
--- Forked Storm: hits the target, then jumps to up to 3 more monsters within 3 sqm (70% damage per jump).
+-- Forked Storm: hits the target, then jumps to up to 3 more monsters within 3 sqm (full damage on every jump).
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then
 	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')
@@ -7,7 +7,7 @@ local M = ChaosMysticFx
 
 local JUMPS = 3
 local JUMP_RANGE = 3
-local FALLOFF = 0.7
+local FALLOFF = 1.0 -- no falloff per jump (owner, 2026-10-20): every jump hits as hard as the first
 
 -- the hit lands when the orb arrives: lightning_hit (pair 27 storm_chain) on the first target, a bolt from the sky
 -- (lightning_strike) on each jump; no extra tile effect then (server/data/spells/README_FX.md "Mystic line effects")

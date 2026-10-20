@@ -32,9 +32,9 @@ a party with an Illusionist out-damages the same party without one.
 
 ## Class kits (first draft)
 
-**Thief** (base): fast attack speed with daggers and light swords; shurikens as a throwing weapon with a
-short range; **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
-stealth crits); poison blades; evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
+**Thief** (base): fast attack speed with daggers and light swords; shuriken spells with a
+short range (no stars to carry); **Shadow Veil** stealth (monsters lose track of you, broken by attacking; the first hit out of
+stealth crits); poison blades (a poison tick is 30% of the hit a second, the Ninja's 18%, 2026-10-17); evasion (dodge chance); Blade Flurry (a spin that strikes every monster next to you,
 the line's area strike, 2026-10-15).
 - **Ninja**: dual wield, where the off-hand dagger adds a second, weaker strike on each attack (scripted:
   the engine has no dual wield); Shadow Step (teleport behind the target); smoke bomb (area blind); a
@@ -55,6 +55,10 @@ the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers
 may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot").
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
+  The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never
+  take it as a target, Feral Command goes at the nearest enemy when its target is an ally (server/README.md "Player summons are
+  allies"). Wild Bond and Feral Command show in the action bar's and hotkeys' Assign Spell lists (client base patch 0079).
+  A class change (Vocation Change, ascension) refreshes the Spellbook and takes the old class's rules out of the Helper.
 
 **Mystic** (base): the shared caster kit.
 - **Elementalist**: today's Sorcerer area spells, plus Arcane Echo.
@@ -105,8 +109,8 @@ spell yet has no rotation). The snares (Snare Trap, Seeker Mine) are in no prese
 Bonebreaker went from 6 s to 2 s (the Warrior line's only attack spell at levels 16-27, a 6 s gap), Shuriken Toss from
 3 s to 2 s (damage scaled per class: Thief 1.33, Ninja 1.33 / 1.62 from level 180, Samurai 1.33 / 1.5 from level 120).
 The helper's Auto rotation button sets these (client/MANIFEST.md "Helper auto rotation"); a band left out has the set
-of the band before. Early: Warrior line 16: Bonebreaker, 30: Reaping Gyre > Bonebreaker; Thief line 20: Shuriken Toss;
-Ranger line 23: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 100 / 300 / 1000:
+of the band before. Early (since 2026-10-17 every line starts at level 8, "Level 8 spells" below): Warrior line 8: Bonebreaker, 30:
+Reaping Gyre > Bonebreaker; Thief line 8: Shuriken Toss; Ranger line 8: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 100 / 300 / 1000:
 - **Warrior**: 100: Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin; 300: Headsman's Hurl > Colossus Fall >
   Butcher's Gyre > Scything Arc > Reaping Gyre; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc >
   Reaping Gyre.
@@ -144,6 +148,17 @@ Ranger line 23: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 10
   Smite.
 - **Sentinel**: 100: Consecration > Radiant Smite; 300: Consecration > Shield Wave > Radiant Smite.
 
+## Skills and weapons (owner debug items 46 and 47, 2026-10-17)
+
+The skills of the game are **Melee, Ranged, Magic (wands and rods use the magic level) and Shielding**; Fist Fighting is the Monk
+line's bare-hands skill. The engine still stores sword, club and axe, but a hit, a melee spell and the training use the best of
+the three (one melee skill: server/README.md "One melee skill"), the three train at the same speed in every vocation, and the
+skills window shows one "Melee" row (client `game_simpleskills`). **Melee items serve every melee class**: any sword, axe or club,
+one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the Berserker keeps two-handed weapons only, as its
+class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
+damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
+early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
+
 ## Starting stats
 
 New characters start at level 8 (4200 experience) in the temple of Cinderhold, wearing their full kit (owner design
@@ -163,6 +178,15 @@ at level 1, and so on. Ascended classes start like their base class. The class l
 | Monk | 259 / 115 / 609 | 97, 97, 116, 116 (ochre, brown) |
 | Necromancer | 211 / 262 / 501 | 114, 128, 114, 114 (black, dark purple) |
 | Templar | 278 / 96 / 640 | 79, 0, 79, 57 (gold, white) |
+
+**Level 8 spells (owner debug item 44, 2026-10-17: "A maioria das classes não tem magia no level 8")**: every class and
+ascension has an attack spell it can cast at the start level (`needlearn="0"`: no teaching; the spellbook, the action bar and
+the Helper's Auto setup list it at the first login). Warrior, Juggernaut, Berserker: Bonebreaker (was level 16); Ranger,
+Deadeye, Beastmaster: Phantom Javelin (was 23); Thief, Ninja, Samurai: Shuriken Toss (was 20); Necromancer, Lich, Bone Lord:
+Bone Spear (was 15); Monk, Shadowfist, Iron Sage: Ashen Fist (was 15); Templar, Inquisitor, Sentinel: Radiant Smite (was
+20); Mystic, Elementalist, Illusionist: Kindling Spark (already). Their mana costs were lowered to what the level 8 pool
+sustains: a mana runway of at least 15 s for every class at levels 8-300 (`server/tools/rotation_sim.py --mana`;
+server/data/spells/README.md "Mana runway"). Raise Dead, the Necromancer's signature, stays at level 20.
 
 Level 1 rows:
 
@@ -263,7 +287,7 @@ for free, at the migration.
   | 12 | Ninja | 11 | 16 | 12 / 10 / 22 | 1400 | 232 | 1.2 |
   | 13 | Samurai | 11 | 26 | 13 / 9 / 24 (defense / armor 1.1) | 1800 | 230 | 1.3 |
 
-  Skills: swords 1.1 (like the Knight), distance 1.2, other melee 1.3, magic level 2.0. The tool also adds the line to the
+  Skills: the three melee skills (sword, club, axe) 1.1 (like the Knight's swords; one melee skill since 2026-10-17), distance 1.2, magic level 2.0. The tool also adds the line to the
   vocation lists of one-handed swords and throwing weapons (`weapons.xml`, hand equip in `movements.xml`) and to everything else the
   Paladin may wear. `server/src-patches/0002` scales a weapon's own attack speed by the vocation's (x attackspeed / 2000), so the line
   stays fast with high-level weapons, and lets a Ninja hold a one-handed sword in the shield hand.
@@ -277,8 +301,8 @@ for free, at the migration.
 - **Kit**: 13 spells (ids 236, 238-245, 98 Shadow Mend, the self heal of phase 2b, the area strikes 192 Blade Flurry
   and 193 Iaido Sweep of 2026-10-15, `_blades.lua`, and the Thief's Fan of Knives 136, `_packtools.lua`; `server/data/spells/chaos/thief|ninja|samurai`), evasion, stealth, Poison Blades, scripted dual
   wield, counter stance, Bushido stacks (`server/data/scripts/chaos/thief_combat.lua`). Spells, numbers and the balance measurement
-  are in `server/data/spells/README.md` ("Thief line"). Shurikens are the base server's throwing star (2399) and assassin star (7368),
-  open to every vocation already; the shuriken spells use them when they are in hand.
+  are in `server/data/spells/README.md` ("Thief line"). The shuriken spells need no star: stackable throwing weapons left the game (owner 2026-10-20, server/README.md "Throwing weapons"),
+  the spells use a default attack of 50 (a one-handed distance weapon in hand raises it).
 - **Outfits** (look types 1505-1510, from a third donor sprite set, see `server/data/monster/CUSTOM_MONSTERS.md`): Ninja gets
   Shadow Ninja, Crimson Ninja and Masked Ninja (colourable); Samurai gets Oni Samurai, Ronin and Dark Samurai. Ascending gives the
   class's three (since phase 2b the class's stock look is put on instead, see "Class looks"); characters already in the class get them at their next login (look unchanged). They stay
@@ -295,7 +319,7 @@ Limits of phase 1:
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
 - The line had no healing spell of its own until Shadow Mend (phase 2b; since 2026-10 it costs 2% of the maximum mana, not a
-  flat 80: about 13 / 10 healed per mana at level 300 / 1000, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+  flat 80: about 18 / 11 healed per mana at level 300 / 1000; since 2026-10-20 level x 0.5 + magic level x 20 + 5% every 1.5 s, 751 / 1527 per second, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
   the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells did not list the line either in phase 1; both do now (stock utility spells: see "Item, spell and
@@ -385,11 +409,12 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   gear, stock heals and mana potions (`add_vocations.py`). Locked behind the store's class unlock (`class_unlocks.lua`,
   key "necromancer").
 - **Ascension**: the Ascendant Oracle (`Chaos.classes.ascension.choices[20]`).
-- **Kit**: 10 spells (ids 180-188 and the Necromancer's Bone Shrapnel 197 of 2026-10-15, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
+- **Kit**: 13 spells (ids 180-188, the Necromancer's Bone Shrapnel 197 of 2026-10-15 and the three summon spells Raise Bone Warrior 192 / Archer 193 / Mage 176 of 2026-10-18, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
   minions `necro_minions.lua`, curse and bone shield `necromancer_combat.lua`, engine helpers `necro_lib.lua`, pure
   rules `necro_core.lua` (tests `server/tests/necro_test.lua`), numbers `necro_config.lua`; minion monsters
   `server/data/monster/monsters/chaos/necro_*.xml` (looks: skeleton 33, ghost 48, demon skeleton 37). New-player kit: the
   Mystic's (`newplayer_config.lua`).
+- **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
 - **Summons**: capped per class and level, scale with the owner's level and magic level, follow (brought back past
   7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. Their hits are
   dealt as the owner (full experience, the Chaos loot layer, bounty / leaderboard / hunt credit through the owner);
@@ -415,9 +440,9 @@ Open for the Necromancer:
   | 18 | Shadowfist | 17 | 18 | 12 / 10 / 22 | 1300 | 232 | x1.2 |
   | 19 | Iron Sage | 17 | 28 | 14 / 9 / 25 (defense / armor 1.15) | 1700 | 228 | x1.1 |
 
-  Skills: fist fighting and club 1.1, sword / axe / distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
+  Skills: fist fighting and the three melee skills (club, sword, axe) 1.1, distance 1.3, shielding 1.2 (Iron Sage 1.1), magic level 2.0. the Ascendant Oracle
   at level 100. All ids (vocations, client bytes, spells 63-72, storages 7100800-7100809, condition sub ids 71030-71044, opcode 247) are in
-  `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): two-handed clubs (staves) and
+  `ChaosMonk.ids` (`server/data/scripts/chaos/monk_chi_core.lua`). Equipment (`add_vocations.py`): every sword, axe and club (staves too) and
   whatever the Ranger may wear, and the fist weapons; the Royal Paladin's potions. New-player kit: light armour, no weapon.
 - **Unarmed combat on this engine**: without a weapon the engine hits with fists (`Weapon::useFist`): fist fighting skill, a fixed attack
   value of 7, the vocation's attackspeed (minus the dexterity stat), the usual weapon formula and the fight mode factor, but **not** the
@@ -466,7 +491,7 @@ at level 100+ (the same rules as the other classes).
 | 24 | Inquisitor | 19 | 13 / 10 / 24 | 1.0 | 1.0 |
 | 25 | Sentinel | 29 | 14 / 7 / 25 | 0.9 | 1.15 |
 
-Skills: sword and club 1.1 (as the Warrior), axe and fist 1.2, distance 1.4, shielding 1.1, magic level 2.5. Equipment
+Skills: the three melee skills (sword, club, axe) 1.1 (as the Warrior), fist 1.2, distance 1.4, shielding 1.1, magic level 2.5. Equipment
 (`server/data/XML/chaos_vocations_templar.xml`, installed by `add_vocations.py`): one-handed swords and clubs, shields,
 everything the Warrior wears; potions of the Elite Knight and the Royal Paladin. New-player kit: the Warrior's.
 
@@ -795,6 +820,24 @@ its master's class. Experience per hour in packs (`server/tools/pack_model.py`):
 Elementalist at 300, 800 and 1000 (was 0.47-1.00); leveling 1-1000 of the median class 169 h -> 132 h. Single-target and
 PvP damage unchanged (the cleave never hits a boss or a player; the new spells hit a lone target like the filler).
 Table: `server/data/spells/README.md` "Pack farming for every class".
+
+### Late spells, levels 340-460 (C6, 2026-10-20)
+
+Report: ascended classes had no new spell above level 300. The cure (status-cleanse) spells were retired for all classes
+(`server/tools/retire_cure_spells.py`) and their 7 ids reused. Numbers are computed (rotation sim), not measured in game.
+
+| Class | Spell | Words | Level | Mana | Cooldown | Effect |
+|---|---|---|---|---|---|---|
+| Juggernaut | Bastion Cry (29) | vok gal rhov kor | 340 | 500 | 40 s | Taunt radius 6, 35% slow 6 s, Iron Will 12 s, heals 10% max health |
+| Juggernaut | Anvil Fall (58) | kah gal brak thun | 460 | 450 | 20 s | 5x5 blow, about 0.8 of Colossus Fall, 90% slow 2.5 s |
+| Deadeye | Twin Verdict (144) | kah gal sol judh vael | 400 | 900 | 24 s | Two strikes of 1.3 x Final Verdict, 0.6 s apart |
+| Berserker | Rampage Leap (145) | drai skai hrun vas | 380 | 400 | 18 s | Skyfall variant, 5x5, about 1.6x damage, 50% slow 2.5 s |
+| Elementalist | Glacial Doom (146) | drai hyr infr doma | 420 | 2200 | 60 s | Doomtide variant, ice/energy/ice, x1.9, 2 s cast |
+| Beastmaster | Pack Frenzy (147) | kah ferh vas | 380 | 450 | 20 s | 2.2x the bites of Feral Command |
+| Ninja | Shuriken Tempest (164) | kah sai vas hyr | 360 | 600 | 30 s | Target and 8 within 4 sqm, 2 waves of 1.1x |
+
+Not covered, no free id: Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage, Inquisitor, Sentinel. Max 15 own spells
+per ascension. Pinned by `server/tests/class_spell_progression_test.lua`.
 
 ### Phase 2b (open)
 

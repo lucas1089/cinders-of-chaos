@@ -1,0 +1,119 @@
+# Floor widgets: footprints lie under the creatures (client/BASE.md 0078; owner debug item 14, z-index of the new effects). Tile:setWidget widgets are drawn by MapView::drawTileWidget in the foreground pass, over walls, items, creatures and even the light, so the cosmetic footprints (game_cosmeticfx) covered everything. New Tile:setFloorWidget(widget) / getFloorWidget() / removeFloorWidget(): the widget is placed like a tile widget (centred, moved by its margins) but drawn in MapView::drawFloor next to the ground effects (after the tile's bottom layer, before its creatures, top items and effects; in the negative-offset pass after every bottom layer). Tile::clean destroys it. The overlay module game_cosmeticfx uses it when the engine has it and falls back to setWidget. C++ only. Applies after 0001-0076 (tile.h/.cpp, mapview.cpp, luafunctions_client.cpp).
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -1060,6 +1060,10 @@
+     g_lua.bindClassMemberFunction<Tile>("setWidget", &Tile::setWidget);
+     g_lua.bindClassMemberFunction<Tile>("getWidget", &Tile::getWidget);
+     g_lua.bindClassMemberFunction<Tile>("removeWidget", &Tile::removeWidget);
++    // Chaos (base patch 0078): a widget on the floor of a tile, under the creatures (game_cosmeticfx footprints)
++    g_lua.bindClassMemberFunction<Tile>("setFloorWidget", &Tile::setFloorWidget);
++    g_lua.bindClassMemberFunction<Tile>("getFloorWidget", &Tile::getFloorWidget);
++    g_lua.bindClassMemberFunction<Tile>("removeFloorWidget", &Tile::removeFloorWidget);
+     // Chaos (base patch 0041): more widgets over a tile (overlay module game_tileoverlays)
+     g_lua.bindClassMemberFunction<Tile>("addOverlayWidget", &Tile::addOverlayWidget);
+     g_lua.bindClassMemberFunction<Tile>("removeOverlayWidget", &Tile::removeOverlayWidget);
+--- a/src/client/mapview.cpp
++++ b/src/client/mapview.cpp
+@@ -317,6 +317,11 @@
+             owner->drawGroundEffects(transformPositionTo2D(owner->getPosition(), cameraPosition), m_lightView.get());
+     };
+ 
++    // Chaos (base patch 0078): a floor widget (a footprint) lies with the ground effects, under the creatures
++    auto drawFloorWidgetOf = [&](const TilePtr& tile, const Point& dest) {
++        tile->drawFloorWidget(dest);
++    };
++
+     // Chaos (base patch 0069): the glow pool of a loot beam, on the floor of the camera, under the creatures, with a
+     // small light of its colour so it still reads at night
+     const bool lootBeams = g_map.hasLootBeams() && floor == cameraPosition.z;
+@@ -372,8 +377,10 @@
+         }
+ 
+         // every bottom layer is queued: the ground effects go on top of them, under every creature
+-        for (auto& tile : tiles)
++        for (auto& tile : tiles) {
+             drawGroundEffectsOf(tile);
++            drawFloorWidgetOf(tile, transformPositionTo2D(tile->getPosition(), cameraPosition));
++        }
+ 
+         // Keep creatures, effects, and top objects in the normal per-tile
+         // painter order. Only the layers that may overwrite displaced artwork
+@@ -397,6 +404,7 @@
+             tile->drawLootHighlights(tileDrawPos, m_lightView.get());
+             drawLootBeamPoolOf(tile, tileDrawPos);
+             drawGroundEffectsOf(tile);
++            drawFloorWidgetOf(tile, tileDrawPos);
+ 
+             if (m_crosshair && tile == crosshairTile) {
+                 g_drawQueue->addTexturedRect(Rect(tileDrawPos, tileDrawPos + g_sprites.spriteSize() - 1),
+@@ -424,6 +432,7 @@
+             tile->drawLootHighlights(tileDrawPos, m_lightView.get());
+             drawLootBeamPoolOf(tile, tileDrawPos);
+             drawGroundEffectsOf(tile);
++            drawFloorWidgetOf(tile, tileDrawPos);
+ 
+             if (m_crosshair && tile == crosshairTile) {
+                 g_drawQueue->addTexturedRect(Rect(tileDrawPos, tileDrawPos + g_sprites.spriteSize() - 1),
+--- a/src/client/tile.cpp
++++ b/src/client/tile.cpp
+@@ -430,6 +430,12 @@
+     }
+ }
+ 
++void Tile::drawFloorWidget(Point dest)
++{
++    if (m_floorWidget && !m_floorWidget->isDestroyed() && m_floorWidget->isVisible())
++        drawWidgetOverTile(m_floorWidget, dest);
++}
++
+ void Tile::addOverlayWidget(const UIWidgetPtr& widget)
+ {
+     if (!widget || hasOverlayWidget(widget))
+@@ -515,6 +521,10 @@
+         m_widget->destroy();
+         m_widget = nullptr;
+     }
++    if (m_floorWidget) { // Chaos (base patch 0078)
++        m_floorWidget->destroy();
++        m_floorWidget = nullptr;
++    }
+     m_overlayWidgets.clear(); // Chaos (base patch 0041): Lua owns them and puts them on the new tile
+ 
+     m_hasLootHighlightItem = false;
+--- a/src/client/tile.h
++++ b/src/client/tile.h
+@@ -76,6 +76,7 @@
+     void drawTop(const Point& dest, LightView* lightView = nullptr, bool globalLayerPass = false);
+     void drawTexts(Point dest);
+     void drawWidget(Point dest);
++    void drawFloorWidget(Point dest); // Chaos (base patch 0078)
+     bool drawToImage(const Point& dest, ImagePtr image);
+ 
+ public:
+@@ -177,6 +178,18 @@
+         }
+     }
+ 
++    // Chaos (base patch 0078): one widget lying on the floor, drawn with the ground effects (after the tile's bottom
++    // layer, under every creature, item on top and effect) instead of in the foreground pass over everything the way
++    // setWidget does; placed the same way (centred on the tile, moved by its margins). Footprints (game_cosmeticfx).
++    void setFloorWidget(UIWidgetPtr widget) { m_floorWidget = widget; }
++    UIWidgetPtr getFloorWidget() { return m_floorWidget; }
++    void removeFloorWidget() {
++        if (m_floorWidget) {
++            m_floorWidget->destroy();
++            m_floorWidget = nullptr;
++        }
++    }
++
+     // Chaos (base patch 0041): more widgets over the tile, drawn after the setWidget one and placed the same way
+     // (centred on the tile, moved by their margins); overlay module game_tileoverlays (field timers, server bars).
+     // Lua owns them: clean() forgets them without destroying them.
+@@ -211,6 +224,7 @@
+     Color m_fill = Color::alpha;
+ 	
+ 	UIWidgetPtr m_widget;
++	UIWidgetPtr m_floorWidget; // Chaos (base patch 0078)
+ 	std::vector<UIWidgetPtr> m_overlayWidgets; // Chaos (base patch 0041)
+ 
+     bool m_hasLootHighlightItem = false;

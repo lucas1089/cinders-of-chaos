@@ -14,14 +14,14 @@
      between the Warrior (hp 15 / mana 5 / cap 25) and the Thief line: Templar hp 14 / mana 8 / cap 25, Inquisitor
      hp 13 / mana 10 / cap 24 (its damage is holy spells and Radiant Strikes), Sentinel hp 14 / mana 7 / cap 25 with
      defense / armor 1.15 and weapon hits x0.9 (the tank-support: nearly the Juggernaut's toughness, little damage).
-     Skills: sword and club 1.1 like the Warrior, axe and fist 1.2, distance 1.4, shielding 1.1; magic level 2.5
+     Skills: the three melee skills (sword, club, axe: one melee skill) 1.1 like the Warrior, fist 1.2, distance 1.4, shielding 1.1; magic level 2.5
      (between the Thief line's 2.0 and the Warrior's 3.0: the holy spells use a little magic level). -->
 	<vocation id="23" clientid="9" name="Templar" description="a templar" gaincap="25" gainhp="14" gainmana="8" gainhpticks="4" gainhpamount="5" gainmanaticks="4" gainmanaamount="5" manamultiplier="2.5" attackspeed="2000" basespeed="220" soulmax="100" gainsoulticks="120" fromvoc="23">
 		<formula meleeDamage="1.0" distDamage="1.0" defense="1.05" armor="1.05" />
 		<skill id="0" multiplier="1.2" />
 		<skill id="1" multiplier="1.1" />
 		<skill id="2" multiplier="1.1" />
-		<skill id="3" multiplier="1.2" />
+		<skill id="3" multiplier="1.1" />
 		<skill id="4" multiplier="1.4" />
 		<skill id="5" multiplier="1.1" />
 		<skill id="6" multiplier="1.1" />
@@ -38,7 +38,7 @@
 		<skill id="0" multiplier="1.2" />
 		<skill id="1" multiplier="1.1" />
 		<skill id="2" multiplier="1.1" />
-		<skill id="3" multiplier="1.2" />
+		<skill id="3" multiplier="1.1" />
 		<skill id="4" multiplier="1.4" />
 		<skill id="5" multiplier="1.1" />
 		<skill id="6" multiplier="1.1" />
@@ -55,7 +55,7 @@
 		<skill id="0" multiplier="1.2" />
 		<skill id="1" multiplier="1.1" />
 		<skill id="2" multiplier="1.1" />
-		<skill id="3" multiplier="1.2" />
+		<skill id="3" multiplier="1.1" />
 		<skill id="4" multiplier="1.4" />
 		<skill id="5" multiplier="1.1" />
 		<skill id="6" multiplier="1.1" />

@@ -1,7 +1,7 @@
 -- Footprints and outlines (server cosmetics.lua kinds footprint / outline). Every client draws them itself from the
 -- "looks" the server sends (who wears which art; game_cosmetics forwards them with setLooks), so the server does no
 -- work per step and a viewer can hide other players' footprints / outlines (settings, Character > Cosmetics).
---   footprints  a print on the tile a player just left (Tile:setWidget, like game_groundlabels), turned to the step's
+--   footprints  a print on the tile a player just left (Tile:setFloorWidget, base patch 0078: lies under creatures, items and walls; Tile:setWidget without it), turned to the step's
 --               direction, fading out in CF.PRINT_LIFE_MS; never on a tile that carries another module's widget; no
 --               new prints while the local player stands in a protection zone (temples and depots are crowded)
 --   outlines    a line around the player's silhouette (Creature:setOutline, base patch 0038: the engine draws it
@@ -77,6 +77,11 @@ end
 -- ---------------------------------------------------------------- footprints
 local function dropPrint(p)
   if p.tile and p.widget and not p.widget:isDestroyed() then
+    local fw = p.tile.getFloorWidget and p.tile:getFloorWidget()
+    if fw == p.widget then
+      p.tile:removeFloorWidget()
+      return
+    end
     local w = p.tile:getWidget()
     if w == p.widget then
       p.tile:removeWidget()
@@ -104,7 +109,15 @@ end
 
 local function putPrint(pos, rotation, art, owner)
   local tile = g_map.getTile(pos)
-  if not tile or tile:getWidget() then return end -- ground labels, hideout marks: their tile stays theirs
+  if not tile then return end
+  -- base patch 0078: a print lies on the floor (under creatures, items and walls); an engine without it falls back to
+  -- the tile widget (drawn over everything), which ground labels and hideout marks may already hold
+  local onFloor = type(tile.setFloorWidget) == 'function'
+  if onFloor then
+    if tile:getFloorWidget() then return end
+  elseif tile:getWidget() then
+    return
+  end
   for _, i in ipairs(CF.evictions(prints, owner)) do dropPrint(prints[i]) end
   local keep = {}
   for _, p in ipairs(prints) do
@@ -122,7 +135,7 @@ local function putPrint(pos, rotation, art, owner)
   w:setRotation(rotation)
   w:setOpacity(CF.PRINT_START)
   w:setPhantom(true)
-  tile:setWidget(w)
+  if onFloor then tile:setFloorWidget(w) else tile:setWidget(w) end
   prints[#prints + 1] = { widget = w, tile = tile, owner = owner, born = now() }
 end
 

@@ -1195,8 +1195,8 @@ op(B, "browse", {q = "upheav"})
 eq(lastSent(B, "page").rows[1].id, orbOffer, "name search")
 op(B, "browse", {mod = "chaos_mod_attackspeed"})
 eq(lastSent(B, "page").rows[1].id, swordOffer, "modifier filter")
-op(B, "browse", {rarity = 6})
-eq(lastSent(B, "page").total, 0, "rarity filter")
+op(B, "browse", {rarity = 10})
+eq(lastSent(B, "page").total, 0, "rarity filter (Divine)")
 op(B, "browse", {sort = "price", cur = "gold", priceMax = 99999})
 eq(lastSent(B, "page").total, 0, "price filter")
 op(B, "browse", {cat = "weapon", ilvlMin = 100})
@@ -1627,9 +1627,9 @@ eq(MO.checkOrder(mcfg, {quantity = "1e400", price = 500, cur = "gold", days = 1}
 local of = MO.checkOrder(mcfg, {quantity = 2, price = 500, cur = "gold", days = 1, filter = {rarity = 22, ilvl = 120,
 	mods = {{k = "rarity_firedamage", min = 10, t = 3}, {k = "chaos_mod_attackspeed"}}, need = 1, sockets = 2, quality = 5, freeS = true,
 	power = 1, bound = "1"}}, known).filter
-eq(of.rarity .. "/" .. of.ilvl .. "/" .. of.need, "15/120/1", "filter clamped (rarity 15 at most), at least one of two rows")
+eq(of.rarity .. "/" .. of.ilvl .. "/" .. of.need, "10/120/1", "filter clamped (rarity 15 at most, then read as the stored id of Divine), at least one of two rows")
 local text = MO.encodeFilter(of)
-eq(text, "r=15;l=120;n=1;s=2;q=5;fs=1;pw=1;bd=1;m=rarity_firedamage:10:3,chaos_mod_attackspeed:0:0", "filter text")
+eq(text, "r=10;l=120;n=1;s=2;q=5;fs=1;pw=1;bd=1;m=rarity_firedamage:10:3,chaos_mod_attackspeed:0:0", "filter text")
 local back = MO.decodeFilter(text)
 eq(MO.encodeFilter(back), text, "filter round trip")
 eq(back.freePrefix, false, "no free prefix asked")
@@ -1644,11 +1644,11 @@ local function facts(r, l, mods, extra)
 	return {rarity = r, ilvl = l, index = idx}
 end
 local fire = {key = "rarity_firedamage", value = 12, tier = 3}
-local full = facts(15, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1})
+local full = facts(10, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1})
 eq(MO.matches(back, full), true, "everything matches")
-eq(select(2, MO.matches(back, facts(14, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
+eq(select(2, MO.matches(back, facts(5, 130, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
 	"Its rarity is too low.", "rarity")
-eq(select(2, MO.matches(back, facts(15, 119, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
+eq(select(2, MO.matches(back, facts(10, 119, {fire}, {sockets = 2, quality = 5, freeSuffix = 1, hasPower = 1, bound = 1}))),
 	"Its item level is too low.", "item level")
 eq(select(2, MO.matches(back, facts(15, 130, {{key = "rarity_firedamage", value = 9, tier = 3}}, {sockets = 2, quality = 5, freeSuffix = 1,
 	hasPower = 1, bound = 1}))), "Its modifiers do not match.", "value under the minimum")

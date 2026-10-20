@@ -79,14 +79,20 @@ end
 
 -- is an outfit shader registered (the engine draws nothing for an unknown name)
 local function shaderKnown(name)
+  local asked = false
   if g_shaders and type(g_shaders.getShader) == 'function' then
     local ok, s = pcall(g_shaders.getShader, name)
-    if ok then return s ~= nil end
+    if ok then
+      if s ~= nil then return true end
+      asked = true
+    end
   end
+  -- the engine does not know the name (or cannot be asked): the store's own list of registered names decides, so a
+  -- shader the client registers under another handle is not left off the preview
   local m = modules.game_chaosshaders
   local L = m and m.OutfitShaderList
   if L and type(L.LABELS) == 'table' then return L.LABELS[name] ~= nil end
-  return true
+  return not asked
 end
 
 local function cosmeticfx()
@@ -427,17 +433,19 @@ function Preview:refresh()
   label:setVisible(note ~= nil)
   if note then label:setText(tr(note)) end
   -- effects and footprints on the stage
-  local fxKey = type(opt) == 'table' and opt.kind == 'effects' and opt.play or nil
+  -- (an effects option itself, or a store bundle's part with effects)
+  local fxOpt = P.effectsOf(opt)
+  local fxKey = fxOpt and fxOpt.play or nil
   if fxKey ~= self.fxPlay or (self.fx and self.fx.compare ~= settings.compare) then
     self.fxPlay = fxKey
     if fxKey then
-      self:startFx(opt)
+      self:startFx(fxOpt)
       self.fx.compare = settings.compare
     else
       self:stopFx()
     end
   end
-  local steps = type(opt) == 'table' and opt.kind == 'footprint' and type(opt.art) == 'string' and opt.art or nil
+  local steps = P.footprintArt(opt)
   if steps ~= self.steps then
     self.steps = steps
     if not steps then self.widget.stage.fxUnder:destroyChildren() end
@@ -598,7 +606,9 @@ local function pollOutfitWindow()
   local list = outfitWin.ScrollBar.selectionList
   local shown = outfitOf(outfitWin.preview.previewoutfit.creature)
   local focused = list and list:getFocusedChild()
-  local hovered = list and buttonOf(list, g_ui.getHoveredWidget())
+  -- g_ui.getHoveredWidget is not in every engine build: without it the hover marker is simply not shown
+  local hoveredWidget = g_ui.getHoveredWidget and g_ui.getHoveredWidget() or nil
+  local hovered = list and buttonOf(list, hoveredWidget)
   local focusedOutfit = focused and focused.outfit and outfitOf(focused.outfit)
   local hoverOutfit = hovered and hovered.outfit and outfitOf(hovered.outfit)
   local sig = table.concat({ tostring(row), P.key(shown), P.key(focusedOutfit), P.key(hoverOutfit) }, '|')

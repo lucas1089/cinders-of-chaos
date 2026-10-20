@@ -3,8 +3,10 @@
 -- server/tools/install_potions.py).
 --
 -- An Everfull potion drinks like the stock Health / Mana Potion (the same roll, on yourself or another player) and is
--- never used up and never leaves a flask. It shares the stock potions' exhaust (CONDITION_EXHAUST_HEAL, the action
--- interval - 100 ms), so it is not faster than a stack of stock potions. Store-bound and locked like the Everfull Ration:
+-- never used up and never leaves a flask. The health and the mana potion each have their own wait (the action
+-- interval - 100 ms), so a mana potion right after a health potion works (owner 2026-10-17: it said "You are
+-- exhausted"); no CONDITION_EXHAUST_HEAL is added any more, so healing spells are not held up either. Each kind is
+-- not faster than a stack of stock potions. Store-bound and locked like the Everfull Ration:
 -- not traded, sold, dropped or lost on death (pouches.lua, engine patch 0009, death_keep.lua).
 -- Sources: the starter kit (newplayer.lua calls ChaosPotions.giveAll), a one-time grant at login for characters made
 -- before them, and every potion seller's trade window (one copy, ChaosPotions.npcBuy). Stock potions of every tier
@@ -34,9 +36,22 @@ local function exhaustMs()
 	return PT.cfg().exhaustMs
 end
 
-local exhaust = Condition(CONDITION_EXHAUST_HEAL)
-if exhaust and exhaust.setParameter then
-	exhaust:setParameter(CONDITION_PARAM_TICKS, exhaustMs())
+-- the wait of each kind of potion, per player: [playerId .. ":" .. kind] = the time of the last drink in ms
+local lastDrink = {}
+local function nowMs()
+	if os.mtime then
+		return os.mtime()
+	end
+	return os.time() * 1000
+end
+
+local function kindOf(id)
+	for _, e in ipairs(PT.cfg().everfull) do
+		if e.id == id then
+			return e.key
+		end
+	end
+	return "health"
 end
 
 local function targetKind(player, target)
@@ -57,8 +72,9 @@ end
 local drink = Action()
 function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 	local kind, who = targetKind(player, target)
-	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = player:getCondition(CONDITION_EXHAUST_HEAL) ~= nil,
-		target = kind})
+	local slot = player:getId() .. ":" .. kindOf(item:getId())
+	local waiting = lastDrink[slot] ~= nil and nowMs() - lastDrink[slot] < exhaustMs()
+	local r = K.drink(PT.cfg(), {id = item:getId(), exhausted = waiting, target = kind})
 	if not r.ok then
 		if r.why == "exhausted" then
 			player:sendTextMessage(MESSAGE_STATUS_SMALL, Game.getReturnMessage(RETURNVALUE_YOUAREEXHAUSTED))
@@ -73,7 +89,7 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		doTargetCombat(player, who, COMBAT_MANADRAIN, r.mana[1], r.mana[2])
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
-	player:addCondition(exhaust)
+	lastDrink[slot] = nowMs()
 	return true -- never used up, no flask
 end
 local registered = 0

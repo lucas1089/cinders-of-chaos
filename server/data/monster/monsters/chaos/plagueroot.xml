@@ -64,6 +64,5 @@
 		<item id="2491" countmax="1" chance="250"/>
 		<item id="2488" countmax="1" chance="250"/>
 		<item id="2492" countmax="1" chance="250"/>
-		<item id="11231"  countmax="1" chance="200"/><!-- nettle blossoms -->
 	</loot>
 </monster>

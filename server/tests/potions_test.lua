@@ -151,7 +151,7 @@ local PT = ChaosPotions
 local drink = actions[HEALTH.id]
 check(drink ~= nil and actions[MANA.id] == drink, "one action for both Everfull ids")
 eq(actions[7618], nil, "the stock potions keep the base script")
-eq(exhaustTicks, 900, "the stock exhaust: the action interval - 100 ms")
+eq(exhaustTicks, nil, "no CONDITION_EXHAUST_HEAL is built any more")
 check(registered.ChaosPotionsLogin ~= nil, "login grant registered")
 
 -- drinking: healed, not used up, no flask, exhaust set; a second drink while exhausted is refused
@@ -166,12 +166,12 @@ eq(heals[1].target, ann, "on the drinker")
 eq(pot.removed, 0, "the Everfull potion is not consumed")
 eq(#created, 0, "no flask")
 eq(#ann.bp.kids, 0, "nothing new in the backpack")
-check(ann.conds[CONDITION_EXHAUST_HEAL] ~= nil, "the potion exhaust applies")
+check(ann.conds[CONDITION_EXHAUST_HEAL] == nil, "no shared exhaust condition")
 eq(ann.said[#ann.said], "Aaaah...", "the stock sound")
 eq(drink.onUse(ann, pot, {}, ann, {}, true), true, "exhausted: handled")
 eq(#heals, 1, "no second heal while exhausted")
 eq(ann.msgs[#ann.msgs], "You are exhausted.", "the exhaust message")
-ann.conds = {}
+-- the mana potion has its own wait: right after the health potion it works
 local manaPot = mkItem(MANA.id)
 local bob = mkPlayer(2)
 drink.onUse(ann, manaPot, {}, bob, {}, false)

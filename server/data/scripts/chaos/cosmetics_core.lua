@@ -425,6 +425,39 @@ function C.offerPreview(c)
 	return {effect = true}
 end
 
+-- What the store shows for a cosmetic unlock "cosmetic_<key>": its own appearance, in the shape of the client's look
+-- options (client game_lookpreview LookPreviewCore), used for the offer's icon and the preview beside the list:
+--   outline    {kind = "outline", art, pulse?, color?}            footprint {kind = "footprint", art, color?}
+--   spell skin / kill effect  {kind = "effects", play, killfx?}   (play: playRows, the effects themselves)
+--   chat colour / loot label  {kind = "swatch", color, accent?}   (a sample of the colour; nothing to wear)
+--   outfit shader             {kind = "shader", shader}
+-- nil for an unknown unlock. lookup(type, name) is the one of C.playRows.
+function C.offerLook(cfg, unlockName, lookup)
+	local c = C.ofUnlock(cfg, unlockName)
+	if c then
+		if c.kind == "outline" then
+			return {kind = "outline", art = c.art, pulse = c.pulse or nil, color = c.color}
+		elseif c.kind == "footprint" then
+			return {kind = "footprint", art = c.art, color = c.color}
+		elseif c.kind == "spellskin" or c.kind == "killfx" then
+			local play = lookup and C.playRows(c, lookup) or {}
+			if #play > 0 then
+				return {kind = "effects", play = play, killfx = c.kind == "killfx" or nil}
+			end
+		elseif c.kind == "chatcolor" then
+			return c.color and {kind = "swatch", color = c.color} or nil
+		elseif c.kind == "lootbeam" then
+			return c.accent and {kind = "swatch", color = c.accent, accent = true} or nil
+		end
+		return nil
+	end
+	local s = C.outfitShaderOfUnlock(cfg, unlockName)
+	if s and type(s.shader) == "string" then
+		return {kind = "shader", shader = s.shader}
+	end
+	return nil
+end
+
 -- ---------------------------------------------------------------- Chaos outfit shaders (cfg.outfitShaders)
 -- Engine outfit shaders unlocked like a cosmetic (account-wide, table chaos_cosmetics, key "cosmetic_<key>") and
 -- worn through the Outfit window (Player:addShader). Behind cfg.outfitShaders.enabled: while it is false they are not

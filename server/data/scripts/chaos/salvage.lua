@@ -11,7 +11,7 @@
 --                                                              ("orbs" | "salvage"); answered with the state
 --                     salvageBatch {bag, maxRarity, sig}       salvage what the last preview listed (sig must match)
 --                     combine {key, count}                     shards -> orbs
---   server -> client  state.salvage = {installed, shardId, shardClientId, shardName, shardSingular, shards, rarityNames,
+--   server -> client  state.salvage = {installed, shardId, shardClientId, shardName, shardSingular, shards, rarityNames, rarityIds,
 --                                      recipes = [{key, name, id, clientId, cost, count}], bags = [{path, name, clientId}],
 --                                      batch = {bag, maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths},
 --                                      mode}
@@ -21,6 +21,10 @@
 -- the ground; locked / unique / socketed gems / no rarity are refused; one action per singleIntervalMs, a batch per
 -- batchIntervalMs and at most batchCap items. Every salvaged item is a row in chaos_crafting_log (orb = "Salvage").
 -- Lua 5.1 / LuaJIT compatible.
+
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -335,6 +339,7 @@ function S.benchState(player, data)
 		shardSingular = cfg.shard.name,
 		shards = player:getItemCount(cfg.shard.id),
 		rarityNames = C.config.rarityNames,
+		rarityIds = C.config.rarityIds, -- the stored id of each name (the client sends maxRarity as one of them)
 		recipes = recipes,
 		maxCombine = cfg.maxCombine,
 		bags = bagList(player),
@@ -439,10 +444,11 @@ local function salvageBatch(player, data)
 		return refuse(player, "Salvage is not installed on this server (no rune shard item).")
 	end
 	local bag = type(data.bag) == "string" and data.bag or ""
-	local maxRarity = Chaos.toInt(data.maxRarity, 1, #cfg.baseShards)
+	local maxRarity = Chaos.toInt(data.maxRarity, 1, ChaosRarity.MAX_LEGACY) -- a stored id (an old client's 6 .. 15 map)
 	if not maxRarity then
 		return refuse(player, "Choose a rarity.")
 	end
+	maxRarity = ChaosRarity.canon(maxRarity)
 	local res = batchOf(player, bag, maxRarity)
 	if not res then
 		return refuse(player, "That bag is not in your backpack any more.")
@@ -543,9 +549,9 @@ local function setScope(player, data)
 	if type(data.bag) == "string" and #data.bag <= 32 then
 		sc.bag = data.bag
 	end
-	local r = Chaos.toInt(data.maxRarity, 1, #cfg.baseShards)
+	local r = Chaos.toInt(data.maxRarity, 1, ChaosRarity.MAX_LEGACY)
 	if r then
-		sc.maxRarity = r
+		sc.maxRarity = ChaosRarity.canon(r)
 	end
 	if data.mode == "salvage" or data.mode == "orbs" then
 		sc.mode = data.mode

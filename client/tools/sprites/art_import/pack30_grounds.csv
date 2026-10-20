@@ -1,0 +1,259 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+autumn_graveyard__floors__r0c1,item,ground,Floors R0C1 (Autumn Graveyard),pack30_grounds/grounds_1,0,0,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=autumn_graveyard|variant=1
+autumn_graveyard__floors__r0c2,item,ground,Floors R0C2 (Autumn Graveyard),pack30_grounds/grounds_1,0,32,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=autumn_graveyard|variant=2
+autumn_graveyard__floors__r0c3,item,ground,Floors R0C3 (Autumn Graveyard),pack30_grounds/grounds_1,0,64,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=autumn_graveyard|variant=3
+autumn_graveyard__floors__r0c4,item,ground,Floors R0C4 (Autumn Graveyard),pack30_grounds/grounds_1,0,96,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=4
+autumn_graveyard__floors__r0c5,item,ground,Floors R0C5 (Autumn Graveyard),pack30_grounds/grounds_1,0,128,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=5
+autumn_graveyard__floors__r1c0,item,ground,Floors R1C0 (Autumn Graveyard),pack30_grounds/grounds_1,0,160,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=autumn_graveyard|variant=6
+autumn_graveyard__floors__r1c1,item,ground,Floors R1C1 (Autumn Graveyard),pack30_grounds/grounds_1,0,192,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=autumn_graveyard|variant=7
+autumn_graveyard__floors__r1c2,item,ground,Floors R1C2 (Autumn Graveyard),pack30_grounds/grounds_1,0,224,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=8
+autumn_graveyard__floors__r1c3,item,ground,Floors R1C3 (Autumn Graveyard),pack30_grounds/grounds_1,0,256,1,1,1,1,ground:100 notmoveable minimap:156 fullground,new,,family=autumn_graveyard|variant=9
+autumn_graveyard__floors__r1c4,item,ground,Floors R1C4 (Autumn Graveyard),pack30_grounds/grounds_1,0,288,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=10
+autumn_graveyard__floors__r1c5,item,border,Floors R1C5 (Autumn Graveyard),pack30_grounds/grounds_1,0,320,1,1,1,1,clip notmoveable,new,,family=autumn_graveyard|variant=11
+autumn_graveyard__floors__r2c0,item,ground,Floors R2C0 (Autumn Graveyard),pack30_grounds/grounds_1,0,352,1,1,1,1,ground:100 notmoveable minimap:156 fullground,new,,family=autumn_graveyard|variant=12
+autumn_graveyard__floors__r2c1,item,ground,Floors R2C1 (Autumn Graveyard),pack30_grounds/grounds_1,0,384,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=13
+autumn_graveyard__floors__r2c2,item,ground,Floors R2C2 (Autumn Graveyard),pack30_grounds/grounds_1,0,416,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=14
+autumn_graveyard__floors__r2c3,item,ground,Floors R2C3 (Autumn Graveyard),pack30_grounds/grounds_1,0,448,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=15
+autumn_graveyard__floors__r2c4,item,ground,Floors R2C4 (Autumn Graveyard),pack30_grounds/grounds_1,0,480,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=16
+autumn_graveyard__floors__r2c5,item,ground,Floors R2C5 (Autumn Graveyard),pack30_grounds/grounds_1,0,512,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=17
+autumn_graveyard__floors__r3c0,item,ground,Floors R3C0 (Autumn Graveyard),pack30_grounds/grounds_1,0,544,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=18
+autumn_graveyard__floors__r3c1,item,ground,Floors R3C1 (Autumn Graveyard),pack30_grounds/grounds_1,0,576,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=19
+autumn_graveyard__floors__r3c2,item,ground,Floors R3C2 (Autumn Graveyard),pack30_grounds/grounds_1,0,608,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=20
+autumn_graveyard__floors__r3c3,item,ground,Floors R3C3 (Autumn Graveyard),pack30_grounds/grounds_1,0,640,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=21
+autumn_graveyard__floors__r3c4,item,ground,Floors R3C4 (Autumn Graveyard),pack30_grounds/grounds_1,0,672,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=22
+autumn_graveyard__floors__r3c5,item,ground,Floors R3C5 (Autumn Graveyard),pack30_grounds/grounds_1,0,704,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=autumn_graveyard|variant=23
+bathroom__floor_tiles,item,ground,Floor Tiles (Bathroom),pack30_grounds/grounds_1,0,736,1,1,1,1,ground:100 notmoveable minimap:172 fullground,new,,family=bathroom|variant=1
+desert_camp__sand_floor_tile_1,item,ground,Sand Floor Tile 1 (Desert Camp),pack30_grounds/grounds_1,0,768,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_camp|variant=1
+desert_camp__sand_floor_tile_2,item,ground,Sand Floor Tile 2 (Desert Camp),pack30_grounds/grounds_1,0,800,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_camp|variant=2
+desert_camp__sand_floor_tile_3,item,ground,Sand Floor Tile 3 (Desert Camp),pack30_grounds/grounds_1,0,832,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_camp|variant=3
+desert_camp__sand_floor_tile_4,item,ground,Sand Floor Tile 4 (Desert Camp),pack30_grounds/grounds_1,0,864,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_camp|variant=4
+desert_kit__desert_floor_tiles__r0c0,item,ground,Desert Floor Tiles R0C0 (Desert Kit),pack30_grounds/grounds_1,0,896,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=1
+desert_kit__desert_floor_tiles__r0c4,item,ground,Desert Floor Tiles R0C4 (Desert Kit),pack30_grounds/grounds_1,0,928,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=2
+desert_kit__desert_floor_tiles__r0c5,item,ground,Desert Floor Tiles R0C5 (Desert Kit),pack30_grounds/grounds_1,0,960,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=3
+desert_kit__desert_floor_tiles__r0c7,item,ground,Desert Floor Tiles R0C7 (Desert Kit),pack30_grounds/grounds_1,0,992,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=4
+desert_kit__desert_floor_tiles__r0c8,item,ground,Desert Floor Tiles R0C8 (Desert Kit),pack30_grounds/grounds_1,0,1024,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=5
+desert_kit__desert_floor_tiles__r0c9,item,ground,Desert Floor Tiles R0C9 (Desert Kit),pack30_grounds/grounds_1,0,1056,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=6
+desert_kit__desert_floor_tiles__r0c10,item,ground,Desert Floor Tiles R0C10 (Desert Kit),pack30_grounds/grounds_1,0,1088,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=7
+desert_kit__desert_floor_tiles__r0c11,item,ground,Desert Floor Tiles R0C11 (Desert Kit),pack30_grounds/grounds_1,0,1120,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=8
+desert_kit__desert_floor_tiles__r0c12,item,ground,Desert Floor Tiles R0C12 (Desert Kit),pack30_grounds/grounds_1,0,1152,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=9
+desert_kit__desert_floor_tiles__r0c13,item,ground,Desert Floor Tiles R0C13 (Desert Kit),pack30_grounds/grounds_1,0,1184,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=10
+desert_kit__desert_floor_tiles__r0c14,item,ground,Desert Floor Tiles R0C14 (Desert Kit),pack30_grounds/grounds_1,0,1216,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=11
+desert_kit__desert_floor_tiles__r0c15,item,ground,Desert Floor Tiles R0C15 (Desert Kit),pack30_grounds/grounds_1,0,1248,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=12
+desert_kit__desert_floor_tiles__r0c16,item,ground,Desert Floor Tiles R0C16 (Desert Kit),pack30_grounds/grounds_1,0,1280,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=13
+desert_kit__desert_floor_tiles__r0c17,item,ground,Desert Floor Tiles R0C17 (Desert Kit),pack30_grounds/grounds_1,0,1312,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=14
+desert_kit__desert_floor_tiles__r0c18,item,ground,Desert Floor Tiles R0C18 (Desert Kit),pack30_grounds/grounds_1,0,1344,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=15
+desert_kit__desert_floor_tiles__r0c19,item,ground,Desert Floor Tiles R0C19 (Desert Kit),pack30_grounds/grounds_1,0,1376,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=16
+desert_kit__desert_floor_tiles__r0c20,item,ground,Desert Floor Tiles R0C20 (Desert Kit),pack30_grounds/grounds_1,0,1408,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=17
+desert_kit__desert_floor_tiles__r0c21,item,ground,Desert Floor Tiles R0C21 (Desert Kit),pack30_grounds/grounds_1,0,1440,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=18
+desert_kit__desert_floor_tiles__r0c22,item,ground,Desert Floor Tiles R0C22 (Desert Kit),pack30_grounds/grounds_1,0,1472,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=19
+desert_kit__desert_floor_tiles__r0c23,item,ground,Desert Floor Tiles R0C23 (Desert Kit),pack30_grounds/grounds_1,0,1504,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=20
+desert_kit__desert_floor_tiles__r0c24,item,ground,Desert Floor Tiles R0C24 (Desert Kit),pack30_grounds/grounds_1,0,1536,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=21
+desert_kit__desert_floor_tiles__r0c25,item,ground,Desert Floor Tiles R0C25 (Desert Kit),pack30_grounds/grounds_1,0,1568,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=22
+desert_kit__desert_floor_tiles__r0c26,item,ground,Desert Floor Tiles R0C26 (Desert Kit),pack30_grounds/grounds_1,0,1600,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=23
+desert_kit__desert_floor_tiles__r0c27,item,ground,Desert Floor Tiles R0C27 (Desert Kit),pack30_grounds/grounds_1,0,1632,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=24
+desert_kit__desert_floor_tiles__r0c28,item,ground,Desert Floor Tiles R0C28 (Desert Kit),pack30_grounds/grounds_1,0,1664,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=25
+desert_kit__desert_floor_tiles__r0c29,item,ground,Desert Floor Tiles R0C29 (Desert Kit),pack30_grounds/grounds_1,0,1696,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=26
+desert_kit__desert_floor_tiles__r0c30,item,ground,Desert Floor Tiles R0C30 (Desert Kit),pack30_grounds/grounds_1,0,1728,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=27
+desert_kit__desert_floor_tiles__r0c31,item,ground,Desert Floor Tiles R0C31 (Desert Kit),pack30_grounds/grounds_1,0,1760,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=28
+desert_kit__desert_floor_tiles__r1c4,item,ground,Desert Floor Tiles R1C4 (Desert Kit),pack30_grounds/grounds_1,0,1792,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=29
+desert_kit__desert_floor_tiles__r1c5,item,ground,Desert Floor Tiles R1C5 (Desert Kit),pack30_grounds/grounds_1,0,1824,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=30
+desert_kit__desert_floor_tiles__r1c6,item,ground,Desert Floor Tiles R1C6 (Desert Kit),pack30_grounds/grounds_1,0,1856,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=31
+desert_kit__desert_floor_tiles__r1c7,item,ground,Desert Floor Tiles R1C7 (Desert Kit),pack30_grounds/grounds_1,0,1888,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=32
+desert_kit__desert_floor_tiles__r1c8,item,ground,Desert Floor Tiles R1C8 (Desert Kit),pack30_grounds/grounds_1,0,1920,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=33
+desert_kit__desert_floor_tiles__r1c9,item,ground,Desert Floor Tiles R1C9 (Desert Kit),pack30_grounds/grounds_1,0,1952,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=34
+desert_kit__desert_floor_tiles__r1c10,item,ground,Desert Floor Tiles R1C10 (Desert Kit),pack30_grounds/grounds_1,0,1984,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=35
+desert_kit__desert_floor_tiles__r1c11,item,ground,Desert Floor Tiles R1C11 (Desert Kit),pack30_grounds/grounds_1,0,2016,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=36
+desert_kit__desert_floor_tiles__r1c12,item,ground,Desert Floor Tiles R1C12 (Desert Kit),pack30_grounds/grounds_1,0,2048,1,1,1,1,ground:100 notmoveable minimap:170 fullground,new,,family=desert_kit|variant=37
+desert_kit__desert_floor_tiles__r1c13,item,ground,Desert Floor Tiles R1C13 (Desert Kit),pack30_grounds/grounds_1,0,2080,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=38
+desert_kit__desert_floor_tiles__r1c16,item,ground,Desert Floor Tiles R1C16 (Desert Kit),pack30_grounds/grounds_1,0,2112,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=39
+desert_kit__desert_floor_tiles__r1c17,item,ground,Desert Floor Tiles R1C17 (Desert Kit),pack30_grounds/grounds_1,0,2144,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=40
+desert_kit__desert_floor_tiles__r1c18,item,ground,Desert Floor Tiles R1C18 (Desert Kit),pack30_grounds/grounds_1,0,2176,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=41
+desert_kit__desert_floor_tiles__r1c19,item,ground,Desert Floor Tiles R1C19 (Desert Kit),pack30_grounds/grounds_1,0,2208,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=42
+desert_kit__desert_floor_tiles__r1c20,item,ground,Desert Floor Tiles R1C20 (Desert Kit),pack30_grounds/grounds_1,0,2240,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=43
+desert_kit__desert_floor_tiles__r1c21,item,ground,Desert Floor Tiles R1C21 (Desert Kit),pack30_grounds/grounds_1,0,2272,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=44
+desert_kit__desert_floor_tiles__r1c22,item,ground,Desert Floor Tiles R1C22 (Desert Kit),pack30_grounds/grounds_1,0,2304,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=45
+desert_kit__desert_floor_tiles__r1c23,item,ground,Desert Floor Tiles R1C23 (Desert Kit),pack30_grounds/grounds_1,0,2336,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=46
+desert_kit__desert_floor_tiles__r1c24,item,ground,Desert Floor Tiles R1C24 (Desert Kit),pack30_grounds/grounds_1,0,2368,1,1,1,1,ground:100 notmoveable minimap:128 fullground,new,,family=desert_kit|variant=47
+desert_kit__desert_floor_tiles__r1c25,item,ground,Desert Floor Tiles R1C25 (Desert Kit),pack30_grounds/grounds_1,0,2400,1,1,1,1,ground:100 notmoveable minimap:164 fullground,new,,family=desert_kit|variant=48
+forest_kit_a__dirt_path_corner_down_left_1,item,border,Dirt Path Corner Down Left 1 (Forest Kit A),pack30_grounds/grounds_1,0,2432,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=1
+forest_kit_a__dirt_path_corner_down_right_1,item,border,Dirt Path Corner Down Right 1 (Forest Kit A),pack30_grounds/grounds_1,0,2464,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=2
+forest_kit_a__dirt_path_corner_up_left_1,item,border,Dirt Path Corner Up Left 1 (Forest Kit A),pack30_grounds/grounds_1,0,2496,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=3
+forest_kit_a__dirt_path_corner_up_right_1,item,border,Dirt Path Corner Up Right 1 (Forest Kit A),pack30_grounds/grounds_1,0,2528,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=4
+forest_kit_a__dirt_path_cross_roads_1,item,border,Dirt Path Cross Roads 1 (Forest Kit A),pack30_grounds/grounds_1,0,2560,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=5
+forest_kit_a__dirt_path_horizontal_1,item,border,Dirt Path Horizontal 1 (Forest Kit A),pack30_grounds/grounds_1,0,2592,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=6
+forest_kit_a__dirt_path_t_down_1,item,border,Dirt Path T Down 1 (Forest Kit A),pack30_grounds/grounds_1,0,2624,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=7
+forest_kit_a__dirt_path_t_up_1,item,border,Dirt Path T Up 1 (Forest Kit A),pack30_grounds/grounds_1,0,2656,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=8
+forest_kit_a__dirt_path_vertical_1,item,border,Dirt Path Vertical 1 (Forest Kit A),pack30_grounds/grounds_1,0,2688,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=9
+forest_kit_a__grass_dirt_patch_1,item,border,Grass Dirt Patch 1 (Forest Kit A),pack30_grounds/grounds_1,0,2720,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=10
+forest_kit_a__grass_dirt_patch_2,item,border,Grass Dirt Patch 2 (Forest Kit A),pack30_grounds/grounds_1,0,2752,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=11
+forest_kit_a__grass_dirt_patch_3,item,border,Grass Dirt Patch 3 (Forest Kit A),pack30_grounds/grounds_1,0,2784,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=12
+forest_kit_a__grass_dirt_patch_4,item,border,Grass Dirt Patch 4 (Forest Kit A),pack30_grounds/grounds_1,0,2816,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=13
+forest_kit_a__mud_patch,item,border,Mud Patch (Forest Kit A),pack30_grounds/grounds_1,0,2848,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=14
+forest_kit_a__stone_path_corner_down_left_1,item,border,Stone Path Corner Down Left 1 (Forest Kit A),pack30_grounds/grounds_1,0,2880,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=15
+forest_kit_a__stone_path_corner_down_right_1,item,border,Stone Path Corner Down Right 1 (Forest Kit A),pack30_grounds/grounds_1,0,2912,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=16
+forest_kit_a__stone_path_corner_up_left_1,item,border,Stone Path Corner Up Left 1 (Forest Kit A),pack30_grounds/grounds_1,0,2944,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=17
+forest_kit_a__stone_path_corner_up_right_1,item,border,Stone Path Corner Up Right 1 (Forest Kit A),pack30_grounds/grounds_1,0,2976,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=18
+forest_kit_a__stone_path_cross_roads_1,item,border,Stone Path Cross Roads 1 (Forest Kit A),pack30_grounds/grounds_1,0,3008,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=19
+forest_kit_a__stone_path_horizontal_1,item,border,Stone Path Horizontal 1 (Forest Kit A),pack30_grounds/grounds_1,0,3040,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=20
+forest_kit_a__stone_path_t_down_1,item,border,Stone Path T Down 1 (Forest Kit A),pack30_grounds/grounds_1,0,3072,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=21
+forest_kit_a__stone_path_t_up_1,item,border,Stone Path T Up 1 (Forest Kit A),pack30_grounds/grounds_1,0,3104,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=22
+forest_kit_a__stone_path_vertical_1,item,border,Stone Path Vertical 1 (Forest Kit A),pack30_grounds/grounds_1,0,3136,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=23
+forest_kit_a__mud_1,item,ground,Mud 1 (Forest Kit A),pack30_grounds/grounds_1,0,3168,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=forest_kit_a|variant=24
+forest_kit_a__mud_2,item,ground,Mud 2 (Forest Kit A),pack30_grounds/grounds_2,0,0,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=forest_kit_a|variant=25
+forest_kit_a__mud_bottom,item,ground,Mud Bottom (Forest Kit A),pack30_grounds/grounds_2,0,32,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=26
+forest_kit_a__mud_corner_bl,item,ground,Mud Corner Bl (Forest Kit A),pack30_grounds/grounds_2,0,64,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=27
+forest_kit_a__mud_corner_br,item,ground,Mud Corner Br (Forest Kit A),pack30_grounds/grounds_2,0,96,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=28
+forest_kit_a__mud_corner_tl,item,ground,Mud Corner Tl (Forest Kit A),pack30_grounds/grounds_2,0,128,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=29
+forest_kit_a__mud_corner_tr,item,ground,Mud Corner Tr (Forest Kit A),pack30_grounds/grounds_2,0,160,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=30
+forest_kit_a__mud_down_l,item,ground,Mud Down L (Forest Kit A),pack30_grounds/grounds_2,0,192,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=31
+forest_kit_a__mud_down_r,item,ground,Mud Down R (Forest Kit A),pack30_grounds/grounds_2,0,224,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=32
+forest_kit_a__mud_top,item,ground,Mud Top (Forest Kit A),pack30_grounds/grounds_2,0,256,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=forest_kit_a|variant=33
+forest_kit_a__dirt_patch_1,item,border,Dirt Patch 1 (Forest Kit A),pack30_grounds/grounds_2,0,288,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=34
+forest_kit_a__grass_1,item,ground,Grass 1 (Forest Kit A),pack30_grounds/grounds_2,0,320,1,1,1,1,ground:100 notmoveable minimap:91 fullground,new,,family=forest_kit_a|variant=35
+forest_kit_a__grass_2,item,ground,Grass 2 (Forest Kit A),pack30_grounds/grounds_2,0,352,1,1,1,1,ground:100 notmoveable minimap:91 fullground,new,,family=forest_kit_a|variant=36
+forest_kit_a__grass_3,item,border,Grass 3 (Forest Kit A),pack30_grounds/grounds_2,0,384,1,1,1,1,clip notmoveable,new,,family=forest_kit_a|variant=37
+frozen_ruins__snowy_stone_floor_tiles__r0c0,item,ground,Snowy Stone Floor Tiles R0C0 (Frozen Ruins),pack30_grounds/grounds_2,0,416,1,1,1,1,ground:100 notmoveable minimap:130 fullground,new,,family=frozen_ruins|variant=1
+frozen_ruins__snowy_stone_floor_tiles__r0c1,item,ground,Snowy Stone Floor Tiles R0C1 (Frozen Ruins),pack30_grounds/grounds_2,0,448,1,1,1,1,ground:100 notmoveable minimap:129 fullground,new,,family=frozen_ruins|variant=2
+frozen_ruins__snowy_stone_floor_tiles__r0c2,item,ground,Snowy Stone Floor Tiles R0C2 (Frozen Ruins),pack30_grounds/grounds_2,0,480,1,1,1,1,ground:100 notmoveable minimap:129 fullground,new,,family=frozen_ruins|variant=3
+frozen_ruins__snowy_stone_floor_tiles__r0c3,item,ground,Snowy Stone Floor Tiles R0C3 (Frozen Ruins),pack30_grounds/grounds_2,0,512,1,1,1,1,ground:100 notmoveable minimap:93 fullground,new,,family=frozen_ruins|variant=4
+frozen_ruins__snowy_stone_floor_tiles__r1c0,item,ground,Snowy Stone Floor Tiles R1C0 (Frozen Ruins),pack30_grounds/grounds_2,0,544,1,1,1,1,ground:100 notmoveable minimap:129 fullground,new,,family=frozen_ruins|variant=5
+frozen_ruins__snowy_stone_floor_tiles__r1c1,item,ground,Snowy Stone Floor Tiles R1C1 (Frozen Ruins),pack30_grounds/grounds_2,0,576,1,1,1,1,ground:100 notmoveable minimap:93 fullground,new,,family=frozen_ruins|variant=6
+frozen_ruins__snowy_stone_floor_tiles__r1c2,item,ground,Snowy Stone Floor Tiles R1C2 (Frozen Ruins),pack30_grounds/grounds_2,0,608,1,1,1,1,ground:100 notmoveable minimap:93 fullground,new,,family=frozen_ruins|variant=7
+frozen_ruins__snowy_stone_floor_tiles__r1c3,item,ground,Snowy Stone Floor Tiles R1C3 (Frozen Ruins),pack30_grounds/grounds_2,0,640,1,1,1,1,ground:100 notmoveable minimap:129 fullground,new,,family=frozen_ruins|variant=8
+frozen_ruins__snowy_stone_floor_tiles__r2c0,item,ground,Snowy Stone Floor Tiles R2C0 (Frozen Ruins),pack30_grounds/grounds_2,0,672,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=9
+frozen_ruins__snowy_stone_floor_tiles__r2c1,item,ground,Snowy Stone Floor Tiles R2C1 (Frozen Ruins),pack30_grounds/grounds_2,0,704,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=10
+frozen_ruins__snowy_stone_floor_tiles__r2c2,item,ground,Snowy Stone Floor Tiles R2C2 (Frozen Ruins),pack30_grounds/grounds_2,0,736,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=11
+frozen_ruins__snowy_stone_floor_tiles__r2c3,item,ground,Snowy Stone Floor Tiles R2C3 (Frozen Ruins),pack30_grounds/grounds_2,0,768,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=12
+frozen_ruins__snowy_stone_floor_tiles__r3c0,item,ground,Snowy Stone Floor Tiles R3C0 (Frozen Ruins),pack30_grounds/grounds_2,0,800,1,1,1,1,ground:100 notmoveable minimap:130 fullground,new,,family=frozen_ruins|variant=13
+frozen_ruins__snowy_stone_floor_tiles__r3c1,item,ground,Snowy Stone Floor Tiles R3C1 (Frozen Ruins),pack30_grounds/grounds_2,0,832,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=14
+frozen_ruins__snowy_stone_floor_tiles__r3c2,item,ground,Snowy Stone Floor Tiles R3C2 (Frozen Ruins),pack30_grounds/grounds_2,0,864,1,1,1,1,ground:100 notmoveable minimap:136 fullground,new,,family=frozen_ruins|variant=15
+frozen_ruins__snowy_stone_floor_tiles__r3c3,item,ground,Snowy Stone Floor Tiles R3C3 (Frozen Ruins),pack30_grounds/grounds_2,0,896,1,1,1,1,ground:100 notmoveable minimap:130 fullground,new,,family=frozen_ruins|variant=16
+frozen_ruins__snow_ground_tiles__r0c0,item,ground,Snow Ground Tiles R0C0 (Frozen Ruins),pack30_grounds/grounds_2,0,928,1,1,1,1,ground:100 notmoveable minimap:215 fullground,new,,family=frozen_ruins|variant=17
+frozen_ruins__snow_ground_tiles__r0c2,item,ground,Snow Ground Tiles R0C2 (Frozen Ruins),pack30_grounds/grounds_2,0,960,1,1,1,1,ground:100 notmoveable minimap:215 fullground,new,,family=frozen_ruins|variant=18
+frozen_ruins__snow_ground_tiles__r0c3,item,ground,Snow Ground Tiles R0C3 (Frozen Ruins),pack30_grounds/grounds_2,0,992,1,1,1,1,ground:100 notmoveable minimap:215 fullground,new,,family=frozen_ruins|variant=19
+frozen_ruins__snow_ground_tiles__r1c0,item,ground,Snow Ground Tiles R1C0 (Frozen Ruins),pack30_grounds/grounds_2,0,1024,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=20
+frozen_ruins__snow_ground_tiles__r1c1,item,ground,Snow Ground Tiles R1C1 (Frozen Ruins),pack30_grounds/grounds_2,0,1056,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=21
+frozen_ruins__snow_ground_tiles__r1c2,item,ground,Snow Ground Tiles R1C2 (Frozen Ruins),pack30_grounds/grounds_2,0,1088,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=22
+frozen_ruins__snow_ground_tiles__r1c3,item,ground,Snow Ground Tiles R1C3 (Frozen Ruins),pack30_grounds/grounds_2,0,1120,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=23
+frozen_ruins__snow_ground_tiles__r2c0,item,ground,Snow Ground Tiles R2C0 (Frozen Ruins),pack30_grounds/grounds_2,0,1152,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=24
+frozen_ruins__snow_ground_tiles__r2c1,item,ground,Snow Ground Tiles R2C1 (Frozen Ruins),pack30_grounds/grounds_2,0,1184,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=25
+frozen_ruins__snow_ground_tiles__r2c2,item,ground,Snow Ground Tiles R2C2 (Frozen Ruins),pack30_grounds/grounds_2,0,1216,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=26
+frozen_ruins__snow_ground_tiles__r2c3,item,ground,Snow Ground Tiles R2C3 (Frozen Ruins),pack30_grounds/grounds_2,0,1248,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=27
+frozen_ruins__snow_ground_tiles__r3c0,item,ground,Snow Ground Tiles R3C0 (Frozen Ruins),pack30_grounds/grounds_2,0,1280,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=28
+frozen_ruins__snow_ground_tiles__r3c1,item,ground,Snow Ground Tiles R3C1 (Frozen Ruins),pack30_grounds/grounds_2,0,1312,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=29
+frozen_ruins__snow_ground_tiles__r3c2,item,ground,Snow Ground Tiles R3C2 (Frozen Ruins),pack30_grounds/grounds_2,0,1344,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=30
+frozen_ruins__snow_ground_tiles__r3c3,item,ground,Snow Ground Tiles R3C3 (Frozen Ruins),pack30_grounds/grounds_2,0,1376,1,1,1,1,ground:100 notmoveable minimap:179 fullground,new,,family=frozen_ruins|variant=31
+ghost_town__dark_muddy_ground_1,item,ground,Dark Muddy Ground 1 (Ghost Town),pack30_grounds/grounds_2,0,1408,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=ghost_town|variant=1
+ghost_town__dark_muddy_ground_2,item,ground,Dark Muddy Ground 2 (Ghost Town),pack30_grounds/grounds_2,0,1440,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=ghost_town|variant=2
+ghost_town__old_broken_path,item,ground,Old Broken Path (Ghost Town),pack30_grounds/grounds_2,0,1472,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=ghost_town|variant=3
+ghost_town__old_path_1,item,ground,Old Path 1 (Ghost Town),pack30_grounds/grounds_2,0,1504,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=ghost_town|variant=4
+ghost_town__old_path_2,item,ground,Old Path 2 (Ghost Town),pack30_grounds/grounds_2,0,1536,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=ghost_town|variant=5
+ghost_town__old_path_3,item,ground,Old Path 3 (Ghost Town),pack30_grounds/grounds_2,0,1568,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=ghost_town|variant=6
+graveyard_kit__floortiles_sheet__r0c0,item,ground,Floortiles Sheet R0C0 (Graveyard Kit),pack30_grounds/grounds_2,0,1600,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=1
+graveyard_kit__floortiles_sheet__r0c1,item,ground,Floortiles Sheet R0C1 (Graveyard Kit),pack30_grounds/grounds_2,0,1632,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=2
+graveyard_kit__floortiles_sheet__r0c2,item,ground,Floortiles Sheet R0C2 (Graveyard Kit),pack30_grounds/grounds_2,0,1664,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=3
+graveyard_kit__floortiles_sheet__r0c3,item,ground,Floortiles Sheet R0C3 (Graveyard Kit),pack30_grounds/grounds_2,0,1696,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=4
+graveyard_kit__floortiles_sheet__r0c4,item,ground,Floortiles Sheet R0C4 (Graveyard Kit),pack30_grounds/grounds_2,0,1728,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=5
+graveyard_kit__floortiles_sheet__r0c5,item,ground,Floortiles Sheet R0C5 (Graveyard Kit),pack30_grounds/grounds_2,0,1760,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=6
+graveyard_kit__floortiles_sheet__r0c6,item,ground,Floortiles Sheet R0C6 (Graveyard Kit),pack30_grounds/grounds_2,0,1792,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=7
+graveyard_kit__floortiles_sheet__r0c7,item,ground,Floortiles Sheet R0C7 (Graveyard Kit),pack30_grounds/grounds_2,0,1824,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=8
+graveyard_kit__floortiles_sheet__r0c8,item,ground,Floortiles Sheet R0C8 (Graveyard Kit),pack30_grounds/grounds_2,0,1856,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=9
+graveyard_kit__floortiles_sheet__r0c9,item,ground,Floortiles Sheet R0C9 (Graveyard Kit),pack30_grounds/grounds_2,0,1888,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=10
+graveyard_kit__floortiles_sheet__r0c10,item,ground,Floortiles Sheet R0C10 (Graveyard Kit),pack30_grounds/grounds_2,0,1920,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=11
+graveyard_kit__floortiles_sheet__r0c11,item,ground,Floortiles Sheet R0C11 (Graveyard Kit),pack30_grounds/grounds_2,0,1952,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=12
+graveyard_kit__floortiles_sheet__r0c12,item,ground,Floortiles Sheet R0C12 (Graveyard Kit),pack30_grounds/grounds_2,0,1984,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=13
+graveyard_kit__floortiles_sheet__r0c13,item,ground,Floortiles Sheet R0C13 (Graveyard Kit),pack30_grounds/grounds_2,0,2016,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=14
+graveyard_kit__floortiles_sheet__r0c14,item,ground,Floortiles Sheet R0C14 (Graveyard Kit),pack30_grounds/grounds_2,0,2048,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=15
+graveyard_kit__floortiles_sheet__r0c15,item,ground,Floortiles Sheet R0C15 (Graveyard Kit),pack30_grounds/grounds_2,0,2080,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=16
+graveyard_kit__floortiles_sheet__r0c16,item,ground,Floortiles Sheet R0C16 (Graveyard Kit),pack30_grounds/grounds_2,0,2112,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=17
+graveyard_kit__floortiles_sheet__r0c17,item,ground,Floortiles Sheet R0C17 (Graveyard Kit),pack30_grounds/grounds_2,0,2144,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=18
+graveyard_kit__floortiles_sheet__r0c18,item,ground,Floortiles Sheet R0C18 (Graveyard Kit),pack30_grounds/grounds_2,0,2176,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=19
+graveyard_kit__floortiles_sheet__r0c19,item,ground,Floortiles Sheet R0C19 (Graveyard Kit),pack30_grounds/grounds_2,0,2208,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=20
+graveyard_kit__floortiles_sheet__r0c20,item,ground,Floortiles Sheet R0C20 (Graveyard Kit),pack30_grounds/grounds_2,0,2240,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=21
+graveyard_kit__floortiles_sheet__r0c21,item,ground,Floortiles Sheet R0C21 (Graveyard Kit),pack30_grounds/grounds_2,0,2272,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=22
+graveyard_kit__floortiles_sheet__r0c22,item,ground,Floortiles Sheet R0C22 (Graveyard Kit),pack30_grounds/grounds_2,0,2304,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=23
+graveyard_kit__floortiles_sheet__r0c23,item,ground,Floortiles Sheet R0C23 (Graveyard Kit),pack30_grounds/grounds_2,0,2336,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=24
+graveyard_kit__floortiles_sheet__r0c24,item,ground,Floortiles Sheet R0C24 (Graveyard Kit),pack30_grounds/grounds_2,0,2368,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=25
+graveyard_kit__floortiles_sheet__r0c25,item,ground,Floortiles Sheet R0C25 (Graveyard Kit),pack30_grounds/grounds_2,0,2400,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=26
+graveyard_kit__floortiles_sheet__r0c26,item,ground,Floortiles Sheet R0C26 (Graveyard Kit),pack30_grounds/grounds_2,0,2432,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=27
+graveyard_kit__floortiles_sheet__r0c27,item,ground,Floortiles Sheet R0C27 (Graveyard Kit),pack30_grounds/grounds_2,0,2464,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=28
+graveyard_kit__floortiles_sheet__r0c28,item,ground,Floortiles Sheet R0C28 (Graveyard Kit),pack30_grounds/grounds_2,0,2496,1,1,1,1,ground:100 notmoveable minimap:7 fullground,new,,family=graveyard_kit|variant=29
+graveyard_kit__floortiles_sheet__r0c29,item,ground,Floortiles Sheet R0C29 (Graveyard Kit),pack30_grounds/grounds_2,0,2528,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=30
+graveyard_kit__floortiles_sheet__r0c30,item,ground,Floortiles Sheet R0C30 (Graveyard Kit),pack30_grounds/grounds_2,0,2560,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=31
+graveyard_kit__floortiles_sheet__r0c31,item,ground,Floortiles Sheet R0C31 (Graveyard Kit),pack30_grounds/grounds_2,0,2592,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=32
+graveyard_kit__floortiles_sheet__r1c0,item,ground,Floortiles Sheet R1C0 (Graveyard Kit),pack30_grounds/grounds_2,0,2624,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=33
+graveyard_kit__floortiles_sheet__r1c1,item,ground,Floortiles Sheet R1C1 (Graveyard Kit),pack30_grounds/grounds_2,0,2656,1,1,1,1,ground:100 notmoveable minimap:80 fullground,new,,family=graveyard_kit|variant=34
+graveyard_kit__floortiles_sheet__r1c2,item,ground,Floortiles Sheet R1C2 (Graveyard Kit),pack30_grounds/grounds_2,0,2688,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=35
+graveyard_kit__floortiles_sheet__r1c3,item,ground,Floortiles Sheet R1C3 (Graveyard Kit),pack30_grounds/grounds_2,0,2720,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=36
+graveyard_kit__floortiles_sheet__r1c4,item,ground,Floortiles Sheet R1C4 (Graveyard Kit),pack30_grounds/grounds_2,0,2752,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=37
+graveyard_kit__floortiles_sheet__r1c5,item,ground,Floortiles Sheet R1C5 (Graveyard Kit),pack30_grounds/grounds_2,0,2784,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=38
+graveyard_kit__floortiles_sheet__r1c6,item,ground,Floortiles Sheet R1C6 (Graveyard Kit),pack30_grounds/grounds_2,0,2816,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=graveyard_kit|variant=39
+graveyard_kit__floortiles_sheet__r1c7,item,ground,Floortiles Sheet R1C7 (Graveyard Kit),pack30_grounds/grounds_2,0,2848,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=40
+graveyard_kit__floortiles_sheet__r1c8,item,ground,Floortiles Sheet R1C8 (Graveyard Kit),pack30_grounds/grounds_2,0,2880,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=41
+graveyard_kit__floortiles_sheet__r1c9,item,ground,Floortiles Sheet R1C9 (Graveyard Kit),pack30_grounds/grounds_2,0,2912,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=42
+graveyard_kit__floortiles_sheet__r1c10,item,ground,Floortiles Sheet R1C10 (Graveyard Kit),pack30_grounds/grounds_2,0,2944,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=43
+graveyard_kit__floortiles_sheet__r1c11,item,ground,Floortiles Sheet R1C11 (Graveyard Kit),pack30_grounds/grounds_2,0,2976,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=44
+graveyard_kit__floortiles_sheet__r1c12,item,ground,Floortiles Sheet R1C12 (Graveyard Kit),pack30_grounds/grounds_2,0,3008,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=graveyard_kit|variant=45
+graveyard_kit__floortiles_sheet__r1c13,item,ground,Floortiles Sheet R1C13 (Graveyard Kit),pack30_grounds/grounds_2,0,3040,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=46
+graveyard_kit__floortiles_sheet__r1c14,item,ground,Floortiles Sheet R1C14 (Graveyard Kit),pack30_grounds/grounds_2,0,3072,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=graveyard_kit|variant=47
+graveyard_kit__floortiles_sheet__r1c15,item,ground,Floortiles Sheet R1C15 (Graveyard Kit),pack30_grounds/grounds_2,0,3104,1,1,1,1,ground:100 notmoveable minimap:50 fullground,new,,family=graveyard_kit|variant=48
+haunted_manor__dark_grass,item,ground,Dark Grass (Haunted Manor),pack30_grounds/grounds_2,0,3136,1,1,1,1,ground:100 notmoveable minimap:49 fullground,new,,family=haunted_manor|variant=1
+haunted_manor__stone_floor,item,ground,Stone Floor (Haunted Manor),pack30_grounds/grounds_2,0,3168,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=haunted_manor|variant=2
+lava_islands__lava,item,water,Lava (Lava Islands),pack30_grounds/grounds_3,0,0,1,1,1,1,ground:100 notmoveable minimap:186 fullground notwalkable light:2:195,new,,family=lava_islands|variant=1
+lava_islands__lava_bubbles,item,border,Lava Bubbles (Lava Islands),pack30_grounds/grounds_3,0,32,1,1,1,9,clip notmoveable animateAlways,new,,family=lava_islands|variant=2|ms=160
+lava_islands__lava_island_bottom_left,item,ground,Lava Island Bottom Left (Lava Islands),pack30_grounds/grounds_3,0,64,1,1,1,9,ground:100 notmoveable minimap:150 fullground animateAlways,new,,family=lava_islands|variant=3|ms=160
+lava_islands__lava_island_bottom_right,item,ground,Lava Island Bottom Right (Lava Islands),pack30_grounds/grounds_3,0,96,1,1,1,9,ground:100 notmoveable minimap:150 fullground animateAlways,new,,family=lava_islands|variant=4|ms=160
+lava_islands__lava_island_bottom,item,ground,Lava Island Bottom (Lava Islands),pack30_grounds/grounds_3,0,128,1,1,1,9,ground:100 notmoveable minimap:115 fullground animateAlways,new,,family=lava_islands|variant=5|ms=160
+lava_islands__lava_island_floor,item,ground,Lava Island Floor (Lava Islands),pack30_grounds/grounds_3,0,160,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=lava_islands|variant=6
+lava_islands__lava_island_left,item,ground,Lava Island Left (Lava Islands),pack30_grounds/grounds_3,0,192,1,1,1,9,ground:100 notmoveable minimap:115 fullground animateAlways,new,,family=lava_islands|variant=7|ms=160
+lava_islands__lava_island_right,item,ground,Lava Island Right (Lava Islands),pack30_grounds/grounds_3,0,224,1,1,1,9,ground:100 notmoveable minimap:115 fullground animateAlways,new,,family=lava_islands|variant=8|ms=160
+lava_islands__lava_island_top_left,item,ground,Lava Island Top Left (Lava Islands),pack30_grounds/grounds_3,0,256,1,1,1,9,ground:100 notmoveable minimap:150 fullground animateAlways,new,,family=lava_islands|variant=9|ms=160
+lava_islands__lava_island_top_right,item,ground,Lava Island Top Right (Lava Islands),pack30_grounds/grounds_3,0,288,1,1,1,9,ground:100 notmoveable minimap:150 fullground animateAlways,new,,family=lava_islands|variant=10|ms=160
+lava_islands__lava_island_top,item,ground,Lava Island Top (Lava Islands),pack30_grounds/grounds_3,0,320,1,1,1,9,ground:100 notmoveable minimap:115 fullground animateAlways,new,,family=lava_islands|variant=11|ms=160
+lava_islands__lava_pool__r0c0,item,water,Lava Pool R0C0 (Lava Islands),pack30_grounds/grounds_3,0,352,1,1,1,9,ground:100 notmoveable minimap:79 fullground notwalkable light:2:195 animateAlways,new,,family=lava_islands|variant=12|ms=160
+lava_islands__lava_pool__r0c1,item,water,Lava Pool R0C1 (Lava Islands),pack30_grounds/grounds_3,0,384,1,1,1,9,ground:100 notmoveable minimap:79 fullground notwalkable light:2:195 animateAlways,new,,family=lava_islands|variant=13|ms=160
+lava_islands__lava_pool__r1c0,item,water,Lava Pool R1C0 (Lava Islands),pack30_grounds/grounds_3,0,416,1,1,1,9,ground:100 notmoveable minimap:79 fullground notwalkable light:2:195 animateAlways,new,,family=lava_islands|variant=14|ms=160
+lava_islands__lava_pool__r1c1,item,water,Lava Pool R1C1 (Lava Islands),pack30_grounds/grounds_3,0,448,1,1,1,9,ground:100 notmoveable minimap:79 fullground notwalkable light:2:195 animateAlways,new,,family=lava_islands|variant=15|ms=160
+magic_forest__lake_tile_2,item,border,Lake Tile 2 (Magic Forest),pack30_grounds/grounds_3,0,480,1,1,1,7,clip notmoveable animateAlways,new,,family=magic_forest|variant=1|ms=160
+magic_forest__lake_tile,item,border,Lake Tile (Magic Forest),pack30_grounds/grounds_3,0,512,1,1,1,7,clip notmoveable animateAlways,new,,family=magic_forest|variant=2|ms=160
+market_stalls__grass,item,ground,Grass (Market Stalls),pack30_grounds/grounds_3,0,544,1,1,1,1,ground:100 notmoveable minimap:121 fullground,new,,family=market_stalls|variant=1
+market_stalls__grass_2,item,ground,Grass 2 (Market Stalls),pack30_grounds/grounds_3,0,576,1,1,1,1,ground:100 notmoveable minimap:121 fullground,new,,family=market_stalls|variant=2
+market_stalls__mud,item,ground,Mud (Market Stalls),pack30_grounds/grounds_3,0,608,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=market_stalls|variant=3
+market_stalls__mud2,item,ground,Mud2 (Market Stalls),pack30_grounds/grounds_3,0,640,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=market_stalls|variant=4
+market_stalls__mud_grass,item,ground,Mud Grass (Market Stalls),pack30_grounds/grounds_3,0,672,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=market_stalls|variant=5
+market_stalls__mud_wood,item,ground,Mud Wood (Market Stalls),pack30_grounds/grounds_3,0,704,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=market_stalls|variant=6
+market_stalls__stone_mud,item,ground,Stone Mud (Market Stalls),pack30_grounds/grounds_3,0,736,1,1,1,1,ground:100 notmoveable minimap:79 fullground,new,,family=market_stalls|variant=7
+market_stalls__wood,item,ground,Wood (Market Stalls),pack30_grounds/grounds_3,0,768,1,1,1,1,ground:100 notmoveable minimap:121 fullground,new,,family=market_stalls|variant=8
+mineshaft__mud_floor,item,ground,Mud Floor (Mineshaft),pack30_grounds/grounds_3,0,800,1,1,1,1,ground:100 notmoveable minimap:42 fullground,new,,family=mineshaft|variant=1
+ruined_village__dark_grass_1,item,ground,Dark Grass 1 (Ruined Village),pack30_grounds/grounds_3,0,832,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=1
+ruined_village__path_b_l,item,ground,Path B L (Ruined Village),pack30_grounds/grounds_3,0,864,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=2
+ruined_village__path_b_r,item,ground,Path B R (Ruined Village),pack30_grounds/grounds_3,0,896,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=3
+ruined_village__path_t_l,item,ground,Path T L (Ruined Village),pack30_grounds/grounds_3,0,928,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=4
+ruined_village__path_t_r,item,ground,Path T R (Ruined Village),pack30_grounds/grounds_3,0,960,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=5
+ruined_village__path_down,item,ground,Path Down (Ruined Village),pack30_grounds/grounds_3,0,992,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=6
+ruined_village__path_h_1,item,ground,Path H 1 (Ruined Village),pack30_grounds/grounds_3,0,1024,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=7
+ruined_village__path_h_2,item,ground,Path H 2 (Ruined Village),pack30_grounds/grounds_3,0,1056,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=8
+ruined_village__path_up,item,ground,Path Up (Ruined Village),pack30_grounds/grounds_3,0,1088,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=9
+ruined_village__path_v_1,item,ground,Path V 1 (Ruined Village),pack30_grounds/grounds_3,0,1120,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=10
+ruined_village__path_v_2,item,ground,Path V 2 (Ruined Village),pack30_grounds/grounds_3,0,1152,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=ruined_village|variant=11
+sewer_kit__sewer_floor_1,item,ground,Sewer Floor 1 (Sewer Kit),pack30_grounds/grounds_3,0,1184,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=sewer_kit|variant=1
+sewer_kit__sewer_floor_2,item,ground,Sewer Floor 2 (Sewer Kit),pack30_grounds/grounds_3,0,1216,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=sewer_kit|variant=2
+sewer_kit__sewer_floor_3,item,ground,Sewer Floor 3 (Sewer Kit),pack30_grounds/grounds_3,0,1248,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=sewer_kit|variant=3
+sewer_kit__sewer_floor_4,item,ground,Sewer Floor 4 (Sewer Kit),pack30_grounds/grounds_3,0,1280,1,1,1,1,ground:100 notmoveable minimap:49 fullground,new,,family=sewer_kit|variant=4
+sewer_kit__sewer_floor_5,item,ground,Sewer Floor 5 (Sewer Kit),pack30_grounds/grounds_3,0,1312,1,1,1,7,ground:100 notmoveable minimap:49 fullground animateAlways,new,,family=sewer_kit|variant=5|ms=140
+sewer_kit__sewer_water_1,item,water,Sewer Water 1 (Sewer Kit),pack30_grounds/grounds_3,0,1344,1,1,1,13,ground:100 notmoveable minimap:49 fullground notwalkable animateAlways,new,,family=sewer_kit|variant=6|ms=160
+survivor_base__grass_tile_1,item,ground,Grass Tile 1 (Survivor Base),pack30_grounds/grounds_3,0,1376,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=survivor_base|variant=1
+survivor_base__grass_tile_2,item,ground,Grass Tile 2 (Survivor Base),pack30_grounds/grounds_3,0,1408,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=survivor_base|variant=2
+survivor_base__grass_tile_3,item,ground,Grass Tile 3 (Survivor Base),pack30_grounds/grounds_3,0,1440,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=survivor_base|variant=3
+survivor_base__grass_title_4,item,ground,Grass Title 4 (Survivor Base),pack30_grounds/grounds_3,0,1472,1,1,1,1,ground:100 notmoveable minimap:85 fullground,new,,family=survivor_base|variant=4
+survivor_base__old_path_h__r0c0,item,border,Old Path H R0C0 (Survivor Base),pack30_grounds/grounds_3,0,1504,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=5
+survivor_base__old_path_h__r0c1,item,border,Old Path H R0C1 (Survivor Base),pack30_grounds/grounds_3,0,1536,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=6
+survivor_base__old_path_h__r1c0,item,border,Old Path H R1C0 (Survivor Base),pack30_grounds/grounds_3,0,1568,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=7
+survivor_base__old_path_h__r1c1,item,border,Old Path H R1C1 (Survivor Base),pack30_grounds/grounds_3,0,1600,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=8
+survivor_base__old_path_v__r0c0,item,border,Old Path V R0C0 (Survivor Base),pack30_grounds/grounds_3,0,1632,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=9
+survivor_base__old_path_v__r0c1,item,border,Old Path V R0C1 (Survivor Base),pack30_grounds/grounds_3,0,1664,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=10
+survivor_base__old_path_v__r1c0,item,border,Old Path V R1C0 (Survivor Base),pack30_grounds/grounds_3,0,1696,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=11
+survivor_base__old_path_v__r1c1,item,border,Old Path V R1C1 (Survivor Base),pack30_grounds/grounds_3,0,1728,1,1,1,1,clip notmoveable,new,,family=survivor_base|variant=12
+throne_room__castle_floor_title,item,ground,Castle Floor Title (Throne Room),pack30_grounds/grounds_3,0,1760,1,1,1,1,ground:100 notmoveable minimap:86 fullground,new,,family=throne_room|variant=1
+worship_interior__stone_floor,item,ground,Stone Floor (Worship Interior),pack30_grounds/grounds_3,0,1792,1,1,1,1,ground:100 notmoveable minimap:43 fullground,new,,family=worship_interior|variant=1
+worship_interior__stone_floor_blood,item,border,Stone Floor Blood (Worship Interior),pack30_grounds/grounds_3,0,1824,1,1,1,1,clip notmoveable,new,,family=worship_interior|variant=2

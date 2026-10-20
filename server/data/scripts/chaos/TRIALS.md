@@ -3,8 +3,7 @@
 A second layer on top of the passive tree. Every vocation has a **Trial**: a solo, runtime-built instance with three
 difficulties (Normal, Cruel, Merciless). The first clear of a difficulty opens one **pair** of special nodes for that
 vocation, so a character ends up with three pairs (six nodes) and holds **one node of each pair, never both**. The nodes
-are strong, build-defining and carry a price (a "changing passive": more damage but more damage taken, a signature
-element up and the others down ...). Holding another node of a pair later costs a Trial Token and gold.
+are strong, build-defining and used to carry a price; since the owner decision they are pure gains (the downsides were removed from all 126 nodes). Holding another node of a pair later costs a Trial Token and gold. Ascension nodes have no downside (owner decision): every node is a pure gain.
 
 The special nodes are **not** passive points: they have their own storage, are not touched by the tree's resets
 (refund, full reset, build codes, store reset), and need no connection to the tree.
@@ -99,14 +98,14 @@ asks for a confirmation that lists the gain and the price. Protocol: `trialReque
 * The guardian's health is the one number that cannot be derived from the damage a build deals; it is set by level
   (`hp` per tier in `trials_config.lua`) and will need tuning with play data. Hits are a share of the maximum health, so only
   the kill time can be wrong, never an unwinnable one-shot.
-* Several nodes are strong on purpose (Red Mist +22% melee, Cataclysm +25% spell damage, Final Verdict +40% to enemies
-  under 30%). Their prices are first guesses; the aim is that no pair has a node that is better for everyone.
+* Several nodes are strong on purpose (Avatar of Iron, Frenzy +35% below 35% health, Cataclysm +25% spell damage, Final Verdict +40% to enemies
+  under 30%). With the downsides gone, the pair choice is only a choice between two different gains; watch for a node that is better for everyone.
 * Nodes that scale with target health (`dealFirst`, `dealExecute`) work against bosses only through the 90% / 30% windows.
 * `dealMinion` only affects hits whose attacker is a summon with a player master; the necromancer lines whose minions hit
   "as their owner" (necromancer scripts) get the Necromancer's `dealSpell` instead if the hit is attributed to the player.
 * The special nodes stack with the keystones and Paragon (multipliers are separate: the nodes are one additional multiplier
   after the passive tree's); the bounds above are the safety net.
-* Spell events (patch 0008): 10 nodes name a cost or cooldown part; they are marked in the table.
+* Spell events (patch 0008): 3 nodes name a cost or cooldown part (Thrifty Weave, Arcane Haste, Lucid Mind); they are marked in the table.
 * After an ascension the new vocation's nodes apply at the next passive tree apply (login, a tree save); the old set stays stored.
 * Test numbers: merciless guardian health at level 1000 is about 500k; thrall health 9-10% of it.
 
@@ -118,7 +117,7 @@ asks for a confirmation that lists the gain and the price. Protocol: `trialReque
 
 ## Tests and verification
 
-* `server/tests/trials_test.lua`: the node tables of all 21 vocations (126 nodes, names, trade-offs, signs, line lengths), packing,
+* `server/tests/trials_test.lua`: the node tables of all 21 vocations (126 nodes, names, no downsides, signs, line lengths), packing,
   choosing and switching rules, tiers and scaling, rewards and the weekly cap, the combat maths, the run mechanics, the room
   geometry (no overlap with the rift grid or the ascension trial), the client state. `server/tests/trials_flow_test.lua`:
   trials.lua / trials_effects.lua with a mocked engine (load, names, the choose / switch / bonus flow, the spell events).
@@ -139,15 +138,15 @@ Waves of iron-bound thralls, then the Champion. Do not stand still against it: i
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Warrior | 1 (Normal) | **Reckless Blows**. Gives: +15% melee damage. Costs: +6% damage taken. | **Steady Guard**. Gives: -12% melee and ranged damage taken. Costs: -6% melee damage. |
-|  | 2 (Cruel) | **Second Wind**. Gives: 2.5% of max health restored per kill. Costs: +6% melee and ranged damage taken. | **Iron Hide**. Gives: +6% physical damage absorbed. Costs: -5% damage. |
-|  | 3 (Merciless) | **Warlord's Rage**. Gives: Each kill: +3% damage for 8 s, up to 8 times. Costs: +8% damage taken. | **Last Bastion**. Gives: Survive a lethal hit (once per 90 s). Costs: -8% damage. |
-| Juggernaut | 1 (Normal) | **Bulwark of Ages**. Gives: -10% damage taken. Costs: -10% damage. | **Thornwall**. Gives: 18% of melee damage is reflected back. Costs: -8% melee damage. |
-|  | 2 (Cruel) | **Rallying Roar**. Gives: 3% of max health restored per kill. Costs: +8% spell damage taken. | **Steelblood**. Gives: +8% maximum health. Costs: -30% healing you receive. |
-|  | 3 (Merciless) | **Immortal Stand**. Gives: Survive a lethal hit (once per 75 s). Costs: -12% damage. | **Avatar of Iron**. Gives: +20% damage below 35% health; -25% damage taken below 35% health. Costs: +5% damage taken. |
-| Berserker | 1 (Normal) | **Bloodlust**. Gives: Each kill: +4% damage for 6 s, up to 6 times. Costs: +8% damage taken. | **Cleaver's Hunger**. Gives: 4% of melee damage returned as health. Costs: +8% melee and ranged damage taken. |
-|  | 2 (Cruel) | **Frenzy**. Gives: +35% damage below 35% health. Costs: +10% damage taken below 35% health. | **Rend Flesh**. Gives: +30% damage over time. Costs: -8% melee damage. |
-|  | 3 (Merciless) | **Red Mist**. Gives: +22% melee damage. Costs: +12% damage taken. | **Deathless Fury**. Gives: +20% damage below 35% health; Survive a lethal hit (once per 100 s). Costs: -50% healing you receive. |
+| Warrior | 1 (Normal) | **Reckless Blows**. Gives: +15% melee damage. | **Steady Guard**. Gives: -12% melee and ranged damage taken. |
+|  | 2 (Cruel) | **Second Wind**. Gives: 2.5% of max health restored per kill. | **Iron Hide**. Gives: +6% physical damage absorbed. |
+|  | 3 (Merciless) | **Warlord's Rage**. Gives: Each kill: +3% damage for 8 s, up to 8 times. | **Last Bastion**. Gives: Survive a lethal hit (once per 90 s). |
+| Juggernaut | 1 (Normal) | **Bulwark of Ages**. Gives: -10% damage taken. | **Thornwall**. Gives: 18% of melee damage is reflected back. |
+|  | 2 (Cruel) | **Rallying Roar**. Gives: 3% of max health restored per kill. | **Steelblood**. Gives: +8% maximum health. |
+|  | 3 (Merciless) | **Immortal Stand**. Gives: Survive a lethal hit (once per 75 s). | **Wall Unbroken**. Gives: -30% damage taken below 35% health. |
+| Berserker | 1 (Normal) | **Bloodlust**. Gives: Each kill: +4% damage for 6 s, up to 6 times. | **Cleaver's Hunger**. Gives: 4% of melee damage returned as health. |
+|  | 2 (Cruel) | **Frenzy**. Gives: +35% damage below 35% health. | **Rend Flesh**. Gives: +30% damage over time. |
+|  | 3 (Merciless) | **Avatar of Iron**. Gives: +20% damage below 35% health; -25% damage taken below 35% health. | **Deathless Fury**. Gives: +20% damage below 35% health; Survive a lethal hit (once per 100 s). |
 
 #### Ranger - The Hollow Moon Hunt
 
@@ -155,15 +154,15 @@ A fast pack, then the Stalker, whose volleys mark the ground before they land. R
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Ranger | 1 (Normal) | **Steady Aim**. Gives: +14% ranged damage. Costs: +5% damage taken. | **Quick Draw**. Gives: 15% chance: a hit strikes again for 50%. Costs: -8% ranged damage. |
-|  | 2 (Cruel) | **Hunter's Instinct**. Gives: +25% damage vs enemies over 90% health. Costs: +8% melee and ranged damage taken. | **Fleet Footed**. Gives: +8% chance to avoid a melee or ranged hit. Costs: -6% ranged damage. |
-|  | 3 (Merciless) | **Death From Afar**. Gives: +30% damage vs enemies under 30% health. Costs: +8% damage taken. | **Pack Leader**. Gives: 12% chance: a hit bursts within 2 sqm for 40%. Costs: -6% damage. |
-| Deadeye | 1 (Normal) | **Dead Center**. Gives: +25% critical hit damage; +4% critical hit chance. Costs: +6% damage taken. | **Called Shot**. Gives: +30% damage vs enemies over 90% health. Costs: -6% ranged damage. |
-|  | 2 (Cruel) | **Marksman's Patience**. Gives: +22% damage above 90% health. Costs: +5% damage taken. | **Hair Trigger**. Gives: 18% chance: a hit strikes again for 60%. Costs: -10% ranged damage. |
-|  | 3 (Merciless) | **Final Verdict**. Gives: +40% damage vs enemies under 30% health. Costs: -10% ranged damage. | **Ghost Quiver**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. Costs: -8% damage. |
-| Beastmaster | 1 (Normal) | **Alpha Bond**. Gives: +25% minion damage. Costs: -10% ranged damage. | **Wild Volley**. Gives: 14% chance: a hit bursts within 2 sqm for 45%. Costs: -15% minion damage. |
-|  | 2 (Cruel) | **Pack Hide**. Gives: -8% damage taken. Costs: -6% ranged damage. | **Feral Surge**. Gives: Each kill: +3% damage for 8 s, up to 6 times. Costs: +6% melee and ranged damage taken. |
-|  | 3 (Merciless) | **Apex Predator**. Gives: +40% minion damage. Costs: +10% damage taken. | **Spirit Hunter**. Gives: 3% of all damage returned as health. Costs: -20% minion damage. |
+| Ranger | 1 (Normal) | **Steady Aim**. Gives: +14% ranged damage. | **Quick Draw**. Gives: 15% chance: a hit strikes again for 50%. |
+|  | 2 (Cruel) | **Hunter's Instinct**. Gives: +25% damage vs enemies over 90% health. | **Fleet Footed**. Gives: +8% chance to avoid a melee or ranged hit. |
+|  | 3 (Merciless) | **Death From Afar**. Gives: +30% damage vs enemies under 30% health. | **Pack Leader**. Gives: 12% chance: a hit bursts within 2 sqm for 40%. |
+| Deadeye | 1 (Normal) | **Dead Center**. Gives: +25% critical hit damage; +4% critical hit chance. | **Called Shot**. Gives: +30% damage vs enemies over 90% health. |
+|  | 2 (Cruel) | **Marksman's Patience**. Gives: +22% damage above 90% health. | **Hair Trigger**. Gives: 18% chance: a hit strikes again for 60%. |
+|  | 3 (Merciless) | **Final Verdict**. Gives: +40% damage vs enemies under 30% health. | **Ghost Quiver**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. |
+| Beastmaster | 1 (Normal) | **Alpha Bond**. Gives: +25% minion damage. | **Wild Volley**. Gives: 14% chance: a hit bursts within 2 sqm for 45%. |
+|  | 2 (Cruel) | **Pack Hide**. Gives: -8% damage taken. | **Feral Surge**. Gives: Each kill: +3% damage for 8 s, up to 6 times. |
+|  | 3 (Merciless) | **Apex Predator**. Gives: +40% minion damage. | **Spirit Hunter**. Gives: 3% of all damage returned as health. |
 
 #### Mystic - The Seals of the Elements
 
@@ -171,15 +170,15 @@ Four seals burn in four colours. Break them in the order the Keeper speaks, or t
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Mystic | 1 (Normal) | **Overchannel** *(needs patch 0008)*. Gives: +15% spell damage. Costs: +20% mana cost of spells. | **Thrifty Weave** *(needs patch 0008)*. Gives: -20% mana cost of spells. Costs: -8% spell damage. |
-|  | 2 (Cruel) | **Mana Ward**. Gives: 25% of damage taken is paid from mana. Costs: -6% spell damage. | **Arcane Haste** *(needs patch 0008)*. Gives: -15% spell cooldowns. Costs: +10% mana cost of spells. |
-|  | 3 (Merciless) | **Elemental Surge** *(needs patch 0008)*. Gives: 15% chance: a hit strikes again for 50%. Costs: +10% spell cooldowns. | **Archmage's Poise**. Gives: +25% damage above 90% health. Costs: +8% damage taken. |
-| Elementalist | 1 (Normal) | **Pyromania**. Gives: +22% fire damage. Costs: -15% ice damage. | **Glacial Focus**. Gives: +22% ice damage. Costs: -15% fire damage. |
-|  | 2 (Cruel) | **Stormcaller**. Gives: +22% energy damage. Costs: -10% fire damage; -10% ice damage. | **Chain Reaction**. Gives: 15% chance: a hit bursts within 2 sqm for 45%. Costs: -10% spell damage. |
-|  | 3 (Merciless) | **Cataclysm** *(needs patch 0008)*. Gives: +25% spell damage. Costs: +15% spell cooldowns; +25% mana cost of spells. | **Prismatic Ward**. Gives: +10% energy damage absorbed; +10% fire damage absorbed; +10% ice damage absorbed. Costs: -10% spell damage. |
-| Illusionist | 1 (Normal) | **Mender's Gift**. Gives: +20% healing you cast. Costs: -15% spell damage. | **Lucid Mind** *(needs patch 0008)*. Gives: -25% mana cost of spells. Costs: -10% spell damage. |
-|  | 2 (Cruel) | **Warding Veil**. Gives: -10% damage taken. Costs: -8% healing you cast. | **Phantom Strike**. Gives: +20% spell damage. Costs: -20% healing you cast. |
-|  | 3 (Merciless) | **Wellspring**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. Costs: +10% spell damage taken. | **Grand Illusion** *(needs patch 0008)*. Gives: Survive a lethal hit (once per 80 s). Costs: +12% spell cooldowns. |
+| Mystic | 1 (Normal) | **Overchannel**. Gives: +15% spell damage. | **Thrifty Weave** *(needs patch 0008)*. Gives: -20% mana cost of spells. |
+|  | 2 (Cruel) | **Mana Ward**. Gives: 25% of damage taken is paid from mana. | **Arcane Haste** *(needs patch 0008)*. Gives: -15% spell cooldowns. |
+|  | 3 (Merciless) | **Elemental Surge**. Gives: 15% chance: a hit strikes again for 50%. | **Archmage's Poise**. Gives: +25% damage above 90% health. |
+| Elementalist | 1 (Normal) | **Pyromania**. Gives: +22% fire damage. | **Glacial Focus**. Gives: +22% ice damage. |
+|  | 2 (Cruel) | **Stormcaller**. Gives: +22% energy damage. | **Chain Reaction**. Gives: 15% chance: a hit bursts within 2 sqm for 45%. |
+|  | 3 (Merciless) | **Cataclysm**. Gives: +25% spell damage. | **Prismatic Ward**. Gives: +10% energy damage absorbed; +10% fire damage absorbed; +10% ice damage absorbed. |
+| Illusionist | 1 (Normal) | **Mender's Gift**. Gives: +20% healing you cast. | **Lucid Mind** *(needs patch 0008)*. Gives: -25% mana cost of spells. |
+|  | 2 (Cruel) | **Warding Veil**. Gives: -10% damage taken. | **Phantom Strike**. Gives: +20% spell damage. |
+|  | 3 (Merciless) | **Wellspring**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. | **Grand Illusion**. Gives: Survive a lethal hit (once per 80 s). |
 
 #### Thief - The Night Run
 
@@ -187,15 +186,15 @@ Marked cutthroats come one after another, fast. Each that slips away costs you t
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Thief | 1 (Normal) | **Cutpurse's Edge**. Gives: +14% melee damage. Costs: +6% damage taken. | **Slippery**. Gives: +10% chance to avoid a melee or ranged hit. Costs: -8% melee damage. |
-|  | 2 (Cruel) | **Opportunist**. Gives: +28% damage vs enemies over 90% health. Costs: +6% melee and ranged damage taken. | **Poison Craft**. Gives: +30% damage over time. Costs: -8% melee damage. |
-|  | 3 (Merciless) | **Kingpin's Backstab**. Gives: +30% critical hit damage; +4% critical hit chance. Costs: +8% damage taken. | **Vanishing Act**. Gives: Survive a lethal hit (once per 80 s). Costs: -6% damage. |
-| Ninja | 1 (Normal) | **Twin Fangs**. Gives: 20% chance: a hit strikes again for 50%. Costs: +6% damage taken. | **Shadow Flurry**. Gives: +20% melee damage. Costs: +10% melee and ranged damage taken. |
-|  | 2 (Cruel) | **Smoke Cloak**. Gives: +12% chance to avoid a melee or ranged hit. Costs: -10% melee damage. | **Venom Dance**. Gives: +40% damage over time. Costs: -12% melee damage. |
-|  | 3 (Merciless) | **Shadow Clones**. Gives: 15% chance: a hit bursts within 2 sqm for 50%. Costs: -8% melee damage. | **Assassinate**. Gives: +40% damage vs enemies under 30% health; +20% damage vs enemies over 90% health. Costs: +10% damage taken. |
-| Samurai | 1 (Normal) | **Iaijutsu Edge**. Gives: +35% damage vs enemies over 90% health. Costs: -10% melee damage. | **Way of the Counter**. Gives: 22% of melee damage is reflected back. Costs: -8% melee damage. |
-|  | 2 (Cruel) | **Bushido Resolve**. Gives: +25% critical hit damage; +4% critical hit chance. Costs: +8% damage taken. | **Parry Master**. Gives: +12% chance to avoid a melee or ranged hit. Costs: -8% melee damage. |
-|  | 3 (Merciless) | **Heavenly Strike**. Gives: +28% melee damage. Costs: +12% damage taken. | **Last Honour**. Gives: +40% damage below 35% health; Survive a lethal hit (once per 100 s). Costs: -40% healing you receive. |
+| Thief | 1 (Normal) | **Cutpurse's Edge**. Gives: +14% melee damage. | **Slippery**. Gives: +10% chance to avoid a melee or ranged hit. |
+|  | 2 (Cruel) | **Opportunist**. Gives: +28% damage vs enemies over 90% health. | **Poison Craft**. Gives: +30% damage over time. |
+|  | 3 (Merciless) | **Kingpin's Backstab**. Gives: +30% critical hit damage; +4% critical hit chance. | **Vanishing Act**. Gives: Survive a lethal hit (once per 80 s). |
+| Ninja | 1 (Normal) | **Twin Fangs**. Gives: 20% chance: a hit strikes again for 50%. | **Shadow Flurry**. Gives: +20% melee damage. |
+|  | 2 (Cruel) | **Smoke Cloak**. Gives: +12% chance to avoid a melee or ranged hit. | **Venom Dance**. Gives: +40% damage over time. |
+|  | 3 (Merciless) | **Shadow Clones**. Gives: 15% chance: a hit bursts within 2 sqm for 50%. | **Assassinate**. Gives: +40% damage vs enemies under 30% health; +20% damage vs enemies over 90% health. |
+| Samurai | 1 (Normal) | **Iaijutsu Edge**. Gives: +35% damage vs enemies over 90% health. | **Way of the Counter**. Gives: 22% of melee damage is reflected back. |
+|  | 2 (Cruel) | **Bushido Resolve**. Gives: +25% critical hit damage; +4% critical hit chance. | **Parry Master**. Gives: +12% chance to avoid a melee or ranged hit. |
+|  | 3 (Merciless) | **Heavenly Strike**. Gives: +28% melee damage. | **Last Honour**. Gives: +40% damage below 35% health; Survive a lethal hit (once per 100 s). |
 
 #### Monk - The Silent Ascent
 
@@ -203,15 +202,15 @@ Two waves of acolytes, then the Warden. Stillness is the lesson: keep your feet 
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Monk | 1 (Normal) | **Quick Palm**. Gives: +14% melee damage. Costs: +6% damage taken. | **Flowing Water**. Gives: +10% chance to avoid a melee or ranged hit. Costs: -6% melee damage. |
-|  | 2 (Cruel) | **Inner Fire**. Gives: 2% of max health restored per kill; 3% of max mana restored per kill. Costs: +6% melee and ranged damage taken. | **Stone Breath**. Gives: -8% damage taken. Costs: -6% melee damage. |
-|  | 3 (Merciless) | **Hundred Fists**. Gives: 20% chance: a hit strikes again for 50%. Costs: +8% damage taken. | **Enlightened**. Gives: +4% critical hit chance; 3% of melee damage returned as health. Costs: -8% melee damage. |
-| Shadowfist | 1 (Normal) | **Pressure Point**. Gives: +20% damage vs enemies under 30% health; +25% damage vs enemies over 90% health. Costs: +6% damage taken. | **Focus Break**. Gives: +25% critical hit damage; +5% critical hit chance. Costs: +8% melee and ranged damage taken. |
-|  | 2 (Cruel) | **Flurry Master**. Gives: 22% chance: a hit strikes again for 55%. Costs: -10% melee damage. | **Ghost Step**. Gives: +14% chance to avoid a melee or ranged hit. Costs: -8% melee damage. |
-|  | 3 (Merciless) | **Killing Touch**. Gives: +30% melee damage. Costs: +14% damage taken. | **Soul Siphon**. Gives: 3% of max mana restored per kill; 6% of melee damage returned as health. Costs: -10% melee damage. |
-| Iron Sage | 1 (Normal) | **Mantra of Stone**. Gives: -10% damage taken. Costs: -10% melee damage. | **Iron Palm Echo**. Gives: 14% chance: a hit bursts within 2 sqm for 40%. Costs: -8% melee damage. |
-|  | 2 (Cruel) | **Chi Reservoir**. Gives: 30% of damage taken is paid from mana. Costs: -6% damage. | **Warden's Breath**. Gives: +25% healing you cast. Costs: -12% melee damage. |
-|  | 3 (Merciless) | **Mountain Stance**. Gives: Survive a lethal hit (once per 70 s). Costs: -10% damage. | **Avatar of Calm**. Gives: -30% damage taken below 35% health. Costs: -8% damage. |
+| Monk | 1 (Normal) | **Quick Palm**. Gives: +14% melee damage. | **Flowing Water**. Gives: +10% chance to avoid a melee or ranged hit. |
+|  | 2 (Cruel) | **Inner Fire**. Gives: 2% of max health restored per kill; 3% of max mana restored per kill. | **Stone Breath**. Gives: -8% damage taken. |
+|  | 3 (Merciless) | **Hundred Fists**. Gives: 20% chance: a hit strikes again for 50%. | **Enlightened**. Gives: +4% critical hit chance; 3% of melee damage returned as health. |
+| Shadowfist | 1 (Normal) | **Pressure Point**. Gives: +20% damage vs enemies under 30% health; +25% damage vs enemies over 90% health. | **Focus Break**. Gives: +25% critical hit damage; +5% critical hit chance. |
+|  | 2 (Cruel) | **Flurry Master**. Gives: 22% chance: a hit strikes again for 55%. | **Ghost Step**. Gives: +14% chance to avoid a melee or ranged hit. |
+|  | 3 (Merciless) | **Killing Touch**. Gives: +30% melee damage. | **Soul Siphon**. Gives: 3% of max mana restored per kill; 6% of melee damage returned as health. |
+| Iron Sage | 1 (Normal) | **Mantra of Stone**. Gives: -10% damage taken. | **Iron Palm Echo**. Gives: 14% chance: a hit bursts within 2 sqm for 40%. |
+|  | 2 (Cruel) | **Chi Reservoir**. Gives: 30% of damage taken is paid from mana. | **Warden's Breath**. Gives: +25% healing you cast. |
+|  | 3 (Merciless) | **Mountain Stance**. Gives: Survive a lethal hit (once per 70 s). | **Avatar of Calm**. Gives: -30% damage taken below 35% health. |
 
 #### Necromancer - The Grave Tithe
 
@@ -219,15 +218,15 @@ The dead here stand up a second time. Break them again, and the Collector who ca
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Necromancer | 1 (Normal) | **Grave Pact**. Gives: +22% minion damage. Costs: -8% spell damage. | **Bone Spear Mastery**. Gives: +10% death damage; +18% spell damage. Costs: -12% minion damage. |
-|  | 2 (Cruel) | **Corpse Harvest**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. Costs: +6% damage taken. | **Withering Aura**. Gives: +30% damage over time. Costs: -8% spell damage. |
-|  | 3 (Merciless) | **Lord of Rot**. Gives: +25% death damage. Costs: +8% damage taken. | **Deathless Servant**. Gives: 25% of damage taken is paid from mana. Costs: -12% death damage. |
-| Lich | 1 (Normal) | **Soul Rot**. Gives: +40% damage over time. Costs: -10% spell damage. | **Phylactery** *(needs patch 0008)*. Gives: Survive a lethal hit (once per 80 s). Costs: +15% mana cost of spells. |
-|  | 2 (Cruel) | **Siphon Spirit**. Gives: 5% of spell damage returned as health. Costs: +6% damage taken. | **Doom Whisper**. Gives: +25% death damage. Costs: -30% minion damage. |
-|  | 3 (Merciless) | **Corpse Cascade** *(needs patch 0008)*. Gives: 18% chance: a hit bursts within 2 sqm for 55%. Costs: +12% spell cooldowns. | **Eternal Hunger**. Gives: Each kill: +3% damage for 8 s, up to 8 times. Costs: +10% spell damage taken. |
-| Bone Lord | 1 (Normal) | **Marrow Banner**. Gives: +30% minion damage. Costs: -12% spell damage. | **Ossified Plate**. Gives: -8% damage taken. Costs: -10% minion damage. |
-|  | 2 (Cruel) | **Bone Shrapnel**. Gives: 15% chance: a hit bursts within 2 sqm for 40%. Costs: -8% spell damage. | **Grave Tithe**. Gives: 3% of max health restored per kill; 2% of max mana restored per kill. Costs: +6% damage taken. |
-|  | 3 (Merciless) | **Colossus Slam**. Gives: +45% minion damage. Costs: +12% damage taken. | **Sacrifice Rite**. Gives: Survive a lethal hit (once per 100 s); 30% of damage taken is paid from mana. Costs: -20% minion damage. |
+| Necromancer | 1 (Normal) | **Grave Pact**. Gives: +22% minion damage. | **Bone Spear Mastery**. Gives: +10% death damage; +18% spell damage. |
+|  | 2 (Cruel) | **Corpse Harvest**. Gives: 3% of max health restored per kill; 3% of max mana restored per kill. | **Withering Aura**. Gives: +30% damage over time. |
+|  | 3 (Merciless) | **Lord of Rot**. Gives: +25% death damage. | **Deathless Servant**. Gives: 25% of damage taken is paid from mana. |
+| Lich | 1 (Normal) | **Soul Rot**. Gives: +40% damage over time. | **Phylactery**. Gives: Survive a lethal hit (once per 80 s). |
+|  | 2 (Cruel) | **Siphon Spirit**. Gives: 5% of spell damage returned as health. | **Doom Whisper**. Gives: +25% death damage. |
+|  | 3 (Merciless) | **Corpse Cascade**. Gives: 18% chance: a hit bursts within 2 sqm for 55%. | **Eternal Hunger**. Gives: Each kill: +3% damage for 8 s, up to 8 times. |
+| Bone Lord | 1 (Normal) | **Marrow Banner**. Gives: +30% minion damage. | **Ossified Plate**. Gives: -8% damage taken. |
+|  | 2 (Cruel) | **Bone Shrapnel**. Gives: 15% chance: a hit bursts within 2 sqm for 40%. | **Grave Tithe**. Gives: 3% of max health restored per kill; 2% of max mana restored per kill. |
+|  | 3 (Merciless) | **Colossus Slam**. Gives: +45% minion damage. | **Sacrifice Rite**. Gives: Survive a lethal hit (once per 100 s); 30% of damage taken is paid from mana. |
 
 #### Templar - The Trial of Fire
 
@@ -235,12 +234,12 @@ The fire sweeps the whole room. Stand beside a sanctuary light when it breaks, a
 
 | Vocation | Pair | Node A | Node B |
 |---|---|---|---|
-| Templar | 1 (Normal) | **Radiant Strikes**. Gives: +18% holy damage. Costs: -10% physical damage. | **Shieldbearer**. Gives: -8% damage taken. Costs: -6% melee damage. |
-|  | 2 (Cruel) | **Vow of Mending**. Gives: +15% healing you cast; 2% of max health restored per kill. Costs: -6% damage. | **Zeal**. Gives: Each kill: +3% damage for 8 s, up to 8 times. Costs: +6% damage taken. |
-|  | 3 (Merciless) | **Consecrated Ground**. Gives: 15% chance: a hit bursts within 2 sqm for 45%. Costs: -8% melee damage. | **Martyr's Grace**. Gives: +10% holy damage absorbed; Survive a lethal hit (once per 80 s). Costs: -8% damage. |
-| Inquisitor | 1 (Normal) | **Judgement**. Gives: +25% holy damage. Costs: +8% damage taken. | **Purging Fire** *(needs patch 0008)*. Gives: +12% holy damage; 12% chance: a hit bursts within 2 sqm for 40%. Costs: +10% spell cooldowns. |
-|  | 2 (Cruel) | **Zealotry**. Gives: Each kill: +4% damage for 6 s, up to 6 times. Costs: +8% damage taken. | **Penance**. Gives: 20% of melee damage is reflected back. Costs: -10% holy damage. |
-|  | 3 (Merciless) | **Wrath of Dawn**. Gives: +40% damage vs enemies under 30% health. Costs: +10% damage taken. | **Light's Retribution**. Gives: 20% chance: a hit strikes again for 55%. Costs: -10% holy damage. |
-| Sentinel | 1 (Normal) | **Aegis of Faith**. Gives: -12% damage taken. Costs: -10% holy damage. | **Rebuke**. Gives: 25% of melee damage is reflected back. Costs: -8% damage. |
-|  | 2 (Cruel) | **Lay on Hands**. Gives: +25% healing you cast. Costs: -10% damage. | **Vigil**. Gives: 25% of damage taken is paid from mana. Costs: -6% damage. |
-|  | 3 (Merciless) | **Unyielding Faith**. Gives: Survive a lethal hit (once per 70 s). Costs: -10% damage. | **Beacon**. Gives: +6% elemental damage absorbed; +12% holy damage absorbed. Costs: -12% damage. |
+| Templar | 1 (Normal) | **Radiant Strikes**. Gives: +18% holy damage. | **Shieldbearer**. Gives: -8% damage taken. |
+|  | 2 (Cruel) | **Vow of Mending**. Gives: +15% healing you cast; 2% of max health restored per kill. | **Zeal**. Gives: Each kill: +3% damage for 8 s, up to 8 times. |
+|  | 3 (Merciless) | **Consecrated Ground**. Gives: 15% chance: a hit bursts within 2 sqm for 45%. | **Martyr's Grace**. Gives: +10% holy damage absorbed; Survive a lethal hit (once per 80 s). |
+| Inquisitor | 1 (Normal) | **Judgement**. Gives: +25% holy damage. | **Purging Fire**. Gives: +12% holy damage; 12% chance: a hit bursts within 2 sqm for 40%. |
+|  | 2 (Cruel) | **Zealotry**. Gives: Each kill: +4% damage for 6 s, up to 6 times. | **Penance**. Gives: 20% of melee damage is reflected back. |
+|  | 3 (Merciless) | **Wrath of Dawn**. Gives: +40% damage vs enemies under 30% health. | **Light's Retribution**. Gives: 20% chance: a hit strikes again for 55%. |
+| Sentinel | 1 (Normal) | **Aegis of Faith**. Gives: -12% damage taken. | **Rebuke**. Gives: 25% of melee damage is reflected back. |
+|  | 2 (Cruel) | **Lay on Hands**. Gives: +25% healing you cast. | **Vigil**. Gives: 25% of damage taken is paid from mana. |
+|  | 3 (Merciless) | **Unyielding Faith**. Gives: Survive a lethal hit (once per 70 s). | **Beacon**. Gives: +6% elemental damage absorbed; +12% holy damage absorbed. |

@@ -40,7 +40,5 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="37" chance="60000" /><!-- gold coin -->
-		<item id="36023" countmax="2" chance="18000" /><!-- lump of moss gel -->
-		<item id="36032" countmax="1" chance="8000" /><!-- moss clump -->
 	</loot>
 </monster>

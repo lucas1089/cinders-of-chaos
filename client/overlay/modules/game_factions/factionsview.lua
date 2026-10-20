@@ -236,10 +236,12 @@ function V.offerKindText(o)
   return o.desc or ''
 end
 
-local RARITY = {'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Exotic', 'Mythic', 'Chaos', 'Eternal', 'Divine',
-  'Phantasmal', 'Celestial', 'Cosmic', 'Abyssal', 'Transcendent'}
+-- by rarity id (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; an old 6 .. 9 and 11 .. 15 are the rarity they became)
+local RARITY = {'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary', 'Legendary', 'Legendary', 'Legendary', 'Legendary', 'Divine',
+  'Divine', 'Divine', 'Divine', 'Divine', 'Divine'}
 function V.rarityName(r)
-  return RARITY[math.floor(num(r))] or 'Normal'
+  local name = RARITY[math.floor(num(r))]
+  return name and tr(name) or 'Normal'
 end
 
 function V.offerTooltip(o, f)

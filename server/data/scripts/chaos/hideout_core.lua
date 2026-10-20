@@ -201,6 +201,17 @@ function K.fixtureTiles(cfg)
 	for i, p in ipairs(f.lights or {}) do
 		out[#out + 1] = {name = "light" .. i, x = p[1], y = p[2], solid = true, decor = true}
 	end
+	if f.waystone then
+		-- the device blocks its tile; its portal pads (base tier_maps.lua) go on the four diagonal tiles: kept free of
+		-- decorations, not checked for the path (a pad that finds no free tile is simply not made)
+		out[#out + 1] = {name = "waystone", x = f.waystone[1], y = f.waystone[2], solid = true}
+		local n = 0
+		for _, d in ipairs({{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) do
+			n = n + 1
+			out[#out + 1] = {name = "waystonepad" .. n, x = f.waystone[1] + d[1], y = f.waystone[2] + d[2], solid = false,
+				decor = true}
+		end
+	end
 	return out
 end
 
@@ -269,7 +280,7 @@ local function reachSet(cfg, solid)
 	return seen
 end
 
--- nil when every fixture (exit, depot, stash, dummies) can still be reached from the arrival tile; else the text
+-- nil when every fixture (exit, depot, stash, dummies, waystone) can still be reached from the arrival tile; else the text
 function K.reachProblem(cfg, placed, extraSolid)
 	local occ = K.occupancy(cfg, placed)
 	for k in pairs(extraSolid or {}) do
@@ -336,7 +347,8 @@ function K.placeProblem(cfg, themeKey, placed, cand, ignoreId)
 		end
 		if reserved[k] then
 			return "That tile is kept free (" .. (reserved[k].name:match("^light") and "a light" or
-				reserved[k].name:match("^dummy") and "a dummy" or reserved[k].name) .. ")."
+				reserved[k].name:match("^dummy") and "a dummy" or
+				reserved[k].name:match("^waystone") and "the waystone" or reserved[k].name) .. ")."
 		end
 		if occ[d.layer][k] then
 			return d.layer == "floor" and "There is a rug there already." or "Something already stands there."
@@ -780,6 +792,14 @@ function K.validate(cfg, achievementsData, factionsConfig, shopConfig)
 	end
 	if K.reachProblem(cfg, {}) then
 		bad("the empty room does not reach every fixture")
+	end
+	local at = {}
+	for _, f in ipairs(K.fixtureTiles(cfg)) do
+		local k = key(f.x, f.y)
+		if at[k] then
+			bad("fixtures " .. at[k] .. " and " .. f.name .. " on one tile")
+		end
+		at[k] = f.name
 	end
 	local _ = reserved
 	for _, d in ipairs(cfg.decorations) do

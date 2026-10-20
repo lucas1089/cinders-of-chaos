@@ -18,6 +18,7 @@ local function eq(a, b, m) check(a == b, tostring(m) .. " (" .. tostring(a) .. "
 local events = {}
 function CreatureEvent(name) local o = {}; function o:type() end; function o:register() events[name] = o end; return o end
 EventCallback = {register = function() end}
+function TalkAction() local o = {}; function o:separator() end; function o:register() end; return o end -- actions_pack30_gallery.lua
 local queries, async = {}, {}
 db = {
 	query = function(q) queries[#queries + 1] = q; return true end, asyncQuery = function(q) async[#async + 1] = q end,
@@ -56,7 +57,8 @@ Chaos.sendChunked = function(player, opcode, buffer) sent[#sent + 1] = {player =
 
 local FILES = {"actions_players", "actions_server", "actions_world", "actions_economy", "actions_events", "actions_content",
 	"actions_security", "actions_tools", "actions_store", "actions_chaos_currency", "actions_chaos_progress", "actions_chaos_class",
-	"actions_chaos_player", "actions_chaos_bosses", "actions_chaos_instances", "actions_chaos_social", "actions_staff_tools"}
+	"actions_chaos_player", "actions_chaos_bosses", "actions_chaos_instances", "actions_chaos_social", "actions_staff_tools",
+	"actions_pack30_gallery"}
 for _, f in ipairs(FILES) do dofile("data/scripts/chaos/admin/" .. f .. ".lua") end
 local okLs, ls = pcall(io.popen, "ls data/scripts/chaos/admin")
 if okLs and ls then
@@ -314,6 +316,28 @@ ChaosCandlemarks = nil
 r = run(admin, "chaos_currency.candlemarks_view", {player = "Plain"})
 eq(r and r.ok, false, "a system that is not loaded: refused, not an error")
 check(r and r.message:find("not loaded", 1, true), "and says so")
+
+-- ---------------------------------------------------------------- shadow mute (public channels, the muted one sees itself)
+dofile("data/scripts/chaos/shadow_mute_core.lua")
+dofile("data/scripts/chaos/shadow_mute.lua")
+local echoed = {}
+function player:sendChannelMessage(author, text, tt, cid) echoed[#echoed + 1] = {author, text, tt, cid} end
+r = run(gm, "players.shadow_mute", {player = "Plain", minutes = 30})
+eq(r and r.ok, true, "a gamemaster shadow-mutes")
+check(#player.texts == 0 or not tostring(player.texts[#player.texts]):find("muted", 1, true), "the player is not told")
+eq(ChaosShadowMute.onChannelSpeak(player, 3, 5, "buy my stuff"), true, "the line is swallowed")
+eq(echoed[1] and echoed[1][2], "buy my stuff", "and shown to the speaker")
+eq(echoed[1] and echoed[1][4], 3, "in the same channel")
+eq(ChaosShadowMute.onChannelSpeak(gm, 3, 5, "hello"), false, "others are not affected")
+r = run(gm, "players.shadow_mute", {player = "Plain", minutes = 99999})
+eq(r and r.ok, false, "more than 24 h is refused by the schema")
+r = run(gm, "players.shadow_unmute", {player = "Plain"})
+eq(r and r.ok, true, "unmute")
+eq(ChaosShadowMute.onChannelSpeak(player, 3, 5, "hi"), false, "speaks normally again")
+r = run(gm, "players.shadow_unmute", {player = "Plain"})
+eq(r and r.ok, false, "unmute of a player that is not muted says so")
+r = run(player, "players.shadow_mute", {player = "Gamemaster", minutes = 5})
+check(not (r and r.ok), "a plain player cannot")
 
 print = realPrint
 print(string.format("admin_panel_test: %d checks, %d failures (%d actions, catalog %d bytes in %d parts)", checks, failures, #ids, #raw, #parts))

@@ -62,16 +62,11 @@
 		<item id="2160" countmax="8" chance="100000"/><!-- crystal coin -->
 		<item id="29856" countmax="3" chance="50000"/><!-- Orb of Upheaval -->
 		<item id="29857" chance="15000"/><!-- Orb of Fate -->
-		<item id="2156" countmax="3" chance="20000"/><!-- red gem -->
-		<item id="2158" countmax="3" chance="20000"/><!-- blue gem -->
-		<item id="2155" countmax="3" chance="20000"/><!-- green gem -->
-		<item id="2154" countmax="2" chance="10000"/><!-- yellow gem -->
 		<item id="2466" chance="1000"/><!-- golden armor -->
 		<item id="2470" chance="1000"/><!-- golden legs -->
 		<item id="2492" chance="1500"/><!-- dragon scale mail -->
 		<item id="29879" chance="800"/><!-- Dawnforged Plate -->
 		<item id="29871" chance="800"/><!-- Seraphic Greaves -->
 		<item id="29863" chance="800"/><!-- Myst Regalia Legs -->
-		<item id="25380" countmax="1" chance="500"/><!-- talent token -->
 	</loot>
 </monster>

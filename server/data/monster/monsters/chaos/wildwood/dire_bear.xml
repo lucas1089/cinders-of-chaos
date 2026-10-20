@@ -35,7 +35,6 @@
 	<loot>
 		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
 		<item id="2152" countmax="2" chance="40000" /><!-- platinum coin -->
-		<item id="36018" countmax="2" chance="18000" /><!-- bear pelt -->
 		<item id="36049" countmax="2" chance="12000" /><!-- wild honeycomb -->
 		<item id="36047" countmax="2" chance="12000" /><!-- fried fish -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->

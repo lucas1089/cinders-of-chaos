@@ -112,6 +112,7 @@ end
 
 -- ---------------------------------------------------------------- stash.lua
 dofile("data/scripts/chaos/stash.lua")
+Chaos.stashConfig.toDepot.enabled = false -- these checks are about the deposit path itself (the stash is closed since 2026-10-17)
 local stashEvent = events.ChaosStashExtended
 local OP = ChaosOpcodes.stash
 local function stashAt(player, x, y, z)

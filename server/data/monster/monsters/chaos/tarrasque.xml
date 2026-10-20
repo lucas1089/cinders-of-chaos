@@ -66,9 +66,6 @@
 		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
 		<item id="2152" countmax="70" chance="80000"/><!-- platinum coin -->
 		<item id="2160" countmax="2" chance="20000"/><!-- crystal coin -->
-		<item id="2156" countmax="2" chance="8000"/><!-- red gem -->
-		<item id="2155" countmax="2" chance="8000"/><!-- green gem -->
-		<item id="2154" chance="3000"/><!-- yellow gem -->
 		<item id="2492" chance="400"/><!-- dragon scale mail -->
 		<item id="2469" chance="500"/><!-- dragon scale legs -->
 		<item id="11118" chance="500"/><!-- dragon scale boots -->
@@ -76,6 +73,5 @@
 		<item id="7899" chance="300"/><!-- magma coat -->
 		<item id="7894" chance="300"/><!-- magma legs -->
 		<item id="7430" chance="300"/><!-- dragonbone staff -->
-		<item id="25380" countmax="1" chance="25"/><!-- talent token -->
 	</loot>
 </monster>

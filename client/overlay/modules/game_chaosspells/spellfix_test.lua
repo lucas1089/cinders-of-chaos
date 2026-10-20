@@ -77,6 +77,8 @@ eq(info['Radiant Shard'].needTarget, true, 'Radiant Shard needs a target')
 eq(info['Kindred Mend'].mana, 140, 'Kindred Mend mana')
 eq(info['Bonebreaker'].id, 61, 'Bonebreaker keeps its id')
 eq(info['Bonebreaker'].exhaustion, 2000, 'Bonebreaker 2 s (second rotation pass)')
+eq(info['Bonebreaker'].level, 8, 'Bonebreaker level 8 (the Warrior line has a spell at the start level)')
+eq(info['Bonebreaker'].mana, 10, 'Bonebreaker 10 mana (mana runway, patch_spell_timings.py)')
 eq(runes[3180].group, 1, 'Bastion Rune in the attack group')
 eq(info['Bonebreaker'].premium, false, 'stock spell free (no premium)')
 eq(runes[3189].premium, false, 'rune free (no premium)')
@@ -195,6 +197,98 @@ if fh then
     end
     eq(chaosIds[e.id], nil, e.name .. ': not a Chaos spell id')
     eq(seen[e.id], nil, e.name .. ': id not used by a fixed stock entry')
+  end
+end
+
+-- the helper's lists get every castable spell (owner 2026-10-17: "some spells appear in the spellbook but not in the helper")
+do
+  local lists = { byVoc = { [3] = { 5 }, [13] = { 5 } }, healing = {}, support = {}, supportSet = {}, ignored = { [90] = true } }
+  local data = {
+    getSpellFilterByVocation = function() return lists.byVoc end,
+    getHealingSpellFilter = function() return lists.healing end,
+    getSupportSpellsWhitelist = function() return lists.support end,
+    getSupportSpellsWhitelistSet = function() return lists.supportSet end,
+    getIgnoredSpellsIds = function() return lists.ignored end,
+  }
+  local HV = { [1] = 3, [4] = 1, [10] = 4 }
+  local function has(list, id) for _, v in ipairs(list or {}) do if v == id then return true end end return false end
+  local spells = {
+    { id = 5, name = 'Already There', groups = { 1 }, vocations = { 1 } },
+    { id = 168, name = 'Riftbolt', groups = { 1 }, vocations = { 1, 5, 10 } },       -- F.EXTRA style: attack
+    { id = 130, name = 'Mend', groups = { 2 }, vocations = { 1 } },                  -- healing
+    { id = 131, name = 'Ward', groups = { 3 }, vocations = { 4 } },                  -- support
+    { id = 90, name = 'Ignored', groups = { 1 }, vocations = { 1 } },                -- the helper ignores it
+    { id = 179, name = 'Excluded', groups = { 1 }, vocations = { 1 } },
+    { id = 140, name = 'Nobody', groups = { 1 }, vocations = { 99 } },               -- no helper class
+  }
+  local added = F.extendHelperLists(data, spells, HV, { [179] = true }, true)
+  eq(has(lists.byVoc[3], 168) and has(lists.byVoc[13], 168), true, 'Riftbolt: Mystic helper class and its promoted +10')
+  eq(has(lists.byVoc[4], 168), true, 'Riftbolt: Illusionist helper class (4)')
+  eq(#lists.byVoc[3], 3, 'Mystic list: Already There once, Riftbolt, Mend')
+  eq(has(lists.healing[130], 3) and has(lists.healing[130], 13), true, 'healing filter for the healing spell')
+  eq(has(lists.byVoc[3], 130), true, 'a healing spell is also in the vocation list')
+  eq(has(lists.support[1], 131) and lists.supportSet[1][131], true, 'support whitelist for the support spell')
+  eq(has(lists.byVoc[3], 90), false, 'the helper ignores 90: left out')
+  eq(has(lists.byVoc[3], 179), false, 'excluded id: left out')
+  eq(has(lists.byVoc[3], 140), false, 'no helper class: left out')
+  eq(#added > 0, true, 'additions are reported')
+  eq(#F.extendHelperLists(data, spells, HV, { [179] = true }, true), 0, 'a second pass changes nothing (idempotent)')
+  -- the Chaos pass does not skip ignored ids
+  local c = F.extendHelperLists(data, { { id = 90, name = 'Ignored', groups = { 1 }, vocations = { 1 } } }, HV, {}, false)
+  eq(#c > 0 and has(lists.byVoc[3], 90), true, 'skipIgnored = false offers it')
+  eq(#F.extendHelperLists(nil, spells, HV, {}, true), 0, 'no helper data: nothing')
+  -- castableFromInfo: instants the server has
+  local info = {
+    A = { id = 10, type = 'Instant', vocations = { 1 }, group = { [1] = 2000 } },
+    B = { id = 11, type = 'Rune', vocations = { 1 }, group = { [1] = 2000 } },
+    C = { id = 12, type = 'Instant', vocations = { 1 }, group = { [2] = 1000 }, notOnServer = true },
+    D = { id = 1012, type = 'Instant', vocations = { 1 }, group = { [1] = 1 } },
+    E = { id = 13, type = 'Instant', vocations = {}, group = { [1] = 1 } },
+    F = { id = 14, type = 'Instant', vocations = { 4 }, group = { [3] = 1000, [1] = 2000 } },
+    G = { id = 15, type = 'Instant', vocations = { 4 }, group = { [1] = 1 } },
+  }
+  local list = F.castableFromInfo(info, { [15] = true })
+  eq(#list, 2, 'castable: instants on the server with a vocation, not removed')
+  eq(list[1].id .. ',' .. list[2].id, '10,14', 'sorted by id')
+  eq(table.concat(list[2].groups, ','), '1,3', 'its groups')
+end
+
+-- allowsVocation (base patch 0079): the picker rule of the action bar and the custom hotkeys
+do
+  local function fold(id)
+    if id == 15 or id == 7 or id == 3 then return 7 end
+    if id == 10 then return 6 end
+    if id == 1 or id == 5 then return 5 end
+    return 0
+  end
+  local wild = { vocations = { 15 } }
+  local moon = { vocations = { 10 } }
+  local stock = { vocations = { 3, 7, 15 } }
+  eq(F.allowsVocation(wild, 15, fold), true, 'Wild Bond is offered to the Beastmaster (server id, not the folded 7)')
+  eq(F.allowsVocation(wild, 7, fold), false, 'Wild Bond not offered to the Deadeye')
+  eq(F.allowsVocation({ vocations = { 7 } }, 15, fold), true, 'a spell listed under the folded id 7 is still offered (base behaviour kept)')
+  eq(F.allowsVocation(wild, 4, fold), false, 'Wild Bond not offered to the Warrior')
+  eq(F.allowsVocation(moon, 10, fold), true, 'Moonfang Pack is offered to the Illusionist (folded 6 is not in its list)')
+  eq(F.allowsVocation(moon, 1, fold), false, 'Moonfang Pack not offered to the Mystic')
+  eq(F.allowsVocation(stock, 15, fold), true, 'a stock spell listed for the Beastmaster')
+  eq(F.allowsVocation({ vocations = { 7 }, notOnServer = true }, 7, fold), false, 'a spell the server lacks is never offered')
+  eq(F.allowsVocation({ vocations = { 8 } }, 15, fold), false, 'Summon Knight Familiar: not for the Beastmaster')
+  eq(F.allowsVocation({}, 15, fold), true, 'no vocation list: not restricted')
+  eq(F.allowsVocation(nil, 15, fold), false, 'no entry')
+  eq(F.allowsVocation({ vocations = { 15 } }, 15, nil), true, 'no translate function: the server id still matches')
+  -- every real summon spell is offered to its own classes (generated data)
+  local function offered(name, vocation)
+    for _, s in ipairs(ChaosSpellData) do
+      if s.name == name then return F.allowsVocation(s, vocation, fold) end
+    end
+    return nil
+  end
+  eq(offered('Wild Bond', 15), true, 'generated data: Wild Bond for the Beastmaster')
+  eq(offered('Moonfang Pack', 10), true, 'generated data: Moonfang Pack for the Illusionist')
+  for _, s in ipairs(ChaosSpellData) do
+    for _, v in ipairs(s.vocations) do
+      eq(F.allowsVocation(s, v, fold), true, s.name .. ' is offered to vocation ' .. v)
+    end
   end
 end
 

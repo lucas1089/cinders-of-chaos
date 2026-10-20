@@ -1,0 +1,390 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+autumn_graveyard__ground_objects__r0c1,item,decor,Ground Objects R0C1 (Autumn Graveyard),pack30_decor/decor1_1,0,0,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c2,item,decor,Ground Objects R0C2 (Autumn Graveyard),pack30_decor/decor1_1,0,32,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c2,item,decor,Ground Objects R1C2 (Autumn Graveyard),pack30_decor/decor1_1,0,64,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c3,item,decor,Ground Objects R1C3 (Autumn Graveyard),pack30_decor/decor1_1,0,96,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c3,item,decor,Ground Objects R6C3 (Autumn Graveyard),pack30_decor/decor1_1,0,128,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c4,item,decor,Ground Objects R6C4 (Autumn Graveyard),pack30_decor/decor1_1,0,160,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c5,item,decor,Ground Objects R6C5 (Autumn Graveyard),pack30_decor/decor1_1,0,192,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c1,item,decor,Props R2C1 (Autumn Graveyard),pack30_decor/decor1_1,0,224,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c5,item,decor,Props R2C5 (Autumn Graveyard),pack30_decor/decor1_1,0,256,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c0,item,decor,Props R3C0 (Autumn Graveyard),pack30_decor/decor1_1,0,288,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c1,item,decor,Props R3C1 (Autumn Graveyard),pack30_decor/decor1_1,0,320,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c2,item,decor,Props R3C2 (Autumn Graveyard),pack30_decor/decor1_1,0,352,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c0,item,decor,Props R4C0 (Autumn Graveyard),pack30_decor/decor1_1,0,384,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c4,item,decor,Props R4C4 (Autumn Graveyard),pack30_decor/decor1_1,0,416,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c4,item,decor,Props R5C4 (Autumn Graveyard),pack30_decor/decor1_1,0,448,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c6,item,decor,Props R6C6 (Autumn Graveyard),pack30_decor/decor1_1,0,480,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c0,item,decor,Props R7C0 (Autumn Graveyard),pack30_decor/decor1_1,0,512,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c4,item,decor,Props R7C4 (Autumn Graveyard),pack30_decor/decor1_1,0,544,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c6,item,decor,Props R7C6 (Autumn Graveyard),pack30_decor/decor1_1,0,576,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c2,item,decor,Nature Details R0C2 (Autumn Graveyard),pack30_decor/decor1_1,0,608,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c3,item,decor,Nature Details R0C3 (Autumn Graveyard),pack30_decor/decor1_1,0,640,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c4,item,decor,Nature Details R0C4 (Autumn Graveyard),pack30_decor/decor1_1,0,672,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c5,item,decor,Nature Details R0C5 (Autumn Graveyard),pack30_decor/decor1_1,0,704,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c7,item,decor,Nature Details R5C7 (Autumn Graveyard),pack30_decor/decor1_1,0,736,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c7,item,decor,Nature Details R7C7 (Autumn Graveyard),pack30_decor/decor1_1,0,768,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c4,item,stump,Autumn Gravestones R0C4 (Autumn Graveyard),pack30_decor/decor1_1,0,800,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c5,item,stump,Autumn Gravestones R0C5 (Autumn Graveyard),pack30_decor/decor1_1,0,832,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c7,item,stump,Autumn Gravestones R0C7 (Autumn Graveyard),pack30_decor/decor1_1,0,864,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c1,item,stump,Autumn Gravestones R1C1 (Autumn Graveyard),pack30_decor/decor1_1,0,896,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c2,item,stump,Autumn Gravestones R1C2 (Autumn Graveyard),pack30_decor/decor1_1,0,928,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c3,item,stump,Autumn Gravestones R1C3 (Autumn Graveyard),pack30_decor/decor1_1,0,960,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c4,item,stump,Autumn Gravestones R1C4 (Autumn Graveyard),pack30_decor/decor1_1,0,992,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c6,item,stump,Autumn Gravestones R1C6 (Autumn Graveyard),pack30_decor/decor1_1,0,1024,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c7,item,stump,Autumn Gravestones R1C7 (Autumn Graveyard),pack30_decor/decor1_1,0,1056,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c1,item,stump,Autumn Gravestones R2C1 (Autumn Graveyard),pack30_decor/decor1_1,0,1088,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c2,item,stump,Autumn Gravestones R2C2 (Autumn Graveyard),pack30_decor/decor1_1,0,1120,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c3,item,stump,Autumn Gravestones R2C3 (Autumn Graveyard),pack30_decor/decor1_1,0,1152,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c4,item,stump,Autumn Gravestones R2C4 (Autumn Graveyard),pack30_decor/decor1_1,0,1184,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c5,item,stump,Autumn Gravestones R2C5 (Autumn Graveyard),pack30_decor/decor1_1,0,1216,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c6,item,stump,Autumn Gravestones R2C6 (Autumn Graveyard),pack30_decor/decor1_1,0,1248,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c7,item,stump,Autumn Gravestones R2C7 (Autumn Graveyard),pack30_decor/decor1_1,0,1280,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c0,item,stump,Autumn Gravestones R3C0 (Autumn Graveyard),pack30_decor/decor1_1,0,1312,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c1,item,stump,Autumn Gravestones R3C1 (Autumn Graveyard),pack30_decor/decor1_1,0,1344,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c2,item,stump,Autumn Gravestones R3C2 (Autumn Graveyard),pack30_decor/decor1_1,0,1376,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c3,item,stump,Autumn Gravestones R3C3 (Autumn Graveyard),pack30_decor/decor1_1,0,1408,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c5,item,stump,Autumn Gravestones R3C5 (Autumn Graveyard),pack30_decor/decor1_1,0,1440,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c0,item,stump,Autumn Gravestones R4C0 (Autumn Graveyard),pack30_decor/decor1_1,0,1472,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c1,item,stump,Autumn Gravestones R4C1 (Autumn Graveyard),pack30_decor/decor1_1,0,1504,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c2,item,stump,Autumn Gravestones R4C2 (Autumn Graveyard),pack30_decor/decor1_1,0,1536,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c3,item,stump,Autumn Gravestones R4C3 (Autumn Graveyard),pack30_decor/decor1_1,0,1568,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c4,item,stump,Autumn Gravestones R4C4 (Autumn Graveyard),pack30_decor/decor1_1,0,1600,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c5,item,stump,Autumn Gravestones R4C5 (Autumn Graveyard),pack30_decor/decor1_1,0,1632,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c6,item,stump,Autumn Gravestones R4C6 (Autumn Graveyard),pack30_decor/decor1_1,0,1664,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r4c7,item,stump,Autumn Gravestones R4C7 (Autumn Graveyard),pack30_decor/decor1_1,0,1696,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c0,item,stump,Autumn Gravestones R5C0 (Autumn Graveyard),pack30_decor/decor1_1,0,1728,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c1,item,stump,Autumn Gravestones R5C1 (Autumn Graveyard),pack30_decor/decor1_1,0,1760,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c2,item,stump,Autumn Gravestones R5C2 (Autumn Graveyard),pack30_decor/decor1_1,0,1792,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c4,item,stump,Autumn Gravestones R5C4 (Autumn Graveyard),pack30_decor/decor1_1,0,1824,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c5,item,stump,Autumn Gravestones R5C5 (Autumn Graveyard),pack30_decor/decor1_1,0,1856,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c6,item,stump,Autumn Gravestones R5C6 (Autumn Graveyard),pack30_decor/decor1_1,0,1888,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c7,item,stump,Autumn Gravestones R5C7 (Autumn Graveyard),pack30_decor/decor1_1,0,1920,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c0,item,stump,Autumn Gravestones R6C0 (Autumn Graveyard),pack30_decor/decor1_1,0,1952,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c1,item,stump,Autumn Gravestones R6C1 (Autumn Graveyard),pack30_decor/decor1_1,0,1984,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c2,item,stump,Autumn Gravestones R6C2 (Autumn Graveyard),pack30_decor/decor1_1,0,2016,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c3,item,stump,Autumn Gravestones R6C3 (Autumn Graveyard),pack30_decor/decor1_1,0,2048,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c4,item,stump,Autumn Gravestones R6C4 (Autumn Graveyard),pack30_decor/decor1_1,0,2080,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c5,item,stump,Autumn Gravestones R6C5 (Autumn Graveyard),pack30_decor/decor1_1,0,2112,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c6,item,stump,Autumn Gravestones R6C6 (Autumn Graveyard),pack30_decor/decor1_1,0,2144,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r6c7,item,stump,Autumn Gravestones R6C7 (Autumn Graveyard),pack30_decor/decor1_1,0,2176,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c1,item,stump,Autumn Gravestones R7C1 (Autumn Graveyard),pack30_decor/decor1_1,0,2208,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c2,item,stump,Autumn Gravestones R7C2 (Autumn Graveyard),pack30_decor/decor1_1,0,2240,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c3,item,stump,Autumn Gravestones R7C3 (Autumn Graveyard),pack30_decor/decor1_1,0,2272,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c4,item,stump,Autumn Gravestones R7C4 (Autumn Graveyard),pack30_decor/decor1_1,0,2304,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c5,item,stump,Autumn Gravestones R7C5 (Autumn Graveyard),pack30_decor/decor1_1,0,2336,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c6,item,stump,Autumn Gravestones R7C6 (Autumn Graveyard),pack30_decor/decor1_1,0,2368,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c7,item,stump,Autumn Gravestones R7C7 (Autumn Graveyard),pack30_decor/decor1_1,0,2400,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gates__r6c2,item,stump,Autumn Gates R6C2 (Autumn Graveyard),pack30_decor/decor1_1,0,2432,1,2,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gates__r6c3,item,stump,Autumn Gates R6C3 (Autumn Graveyard),pack30_decor/decor1_1,0,2496,1,2,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gates__r6c4,item,stump,Autumn Gates R6C4 (Autumn Graveyard),pack30_decor/decor1_1,0,2560,1,2,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gates__r6c5,item,stump,Autumn Gates R6C5 (Autumn Graveyard),pack30_decor/decor1_1,0,2624,1,2,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+bushes__bush_1,item,decor,Bush 1 (Bushes),pack30_decor/decor1_1,0,2688,1,1,1,1,notmoveable,new,,family=bushes|hideout=1
+bushes__bush_10,item,decor,Bush 10 (Bushes),pack30_decor/decor1_1,0,2720,1,1,1,1,notmoveable,new,,family=bushes|hideout=1
+bushes__bush_11,item,decor,Bush 11 (Bushes),pack30_decor/decor1_1,0,2752,1,1,1,1,notmoveable,new,,family=bushes|hideout=1
+bushes__bush_12,item,decor,Bush 12 (Bushes),pack30_decor/decor1_1,0,2784,1,1,1,1,notmoveable,new,,family=bushes|hideout=1
+bushes__bush_13,item,decor,Bush 13 (Bushes),pack30_decor/decor1_1,0,2816,1,1,1,1,notmoveable,new,,family=bushes|hideout=1
+castle_kit__boxes_stack,item,decor,Boxes Stack (Castle Kit),pack30_decor/decor1_1,0,2848,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__cannon_balls,item,decor,Cannon Balls (Castle Kit),pack30_decor/decor1_1,0,2880,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__castle_bow,item,decor,Castle Bow (Castle Kit),pack30_decor/decor1_1,0,2912,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__gold,item,decor,Gold (Castle Kit),pack30_decor/decor1_1,0,2944,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__hay,item,decor,Hay (Castle Kit),pack30_decor/decor1_1,0,2976,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__log_stack,item,decor,Log Stack (Castle Kit),pack30_decor/decor1_1,0,3008,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__red_flag,item,decor,Red Flag (Castle Kit),pack30_decor/decor1_1,0,3040,1,1,1,1,notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__stone_bench,item,stump,Stone Bench (Castle Kit),pack30_decor/decor1_1,0,3072,1,1,1,1,bottom notwalkable notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__target,item,stump,Target (Castle Kit),pack30_decor/decor1_1,0,3104,1,1,1,1,bottom notwalkable notmoveable,new,,family=castle_kit|hideout=1
+castle_kit__training_dummy,item,stump,Training Dummy (Castle Kit),pack30_decor/decor1_1,0,3136,1,1,1,1,bottom notwalkable notmoveable,new,,family=castle_kit|hideout=1
+dungeon_cells__dungeon_bars,item,stump,Dungeon Bars (Dungeon Cells),pack30_decor/decor1_1,0,3168,1,2,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__dungeon_cell_door,item,decor,Dungeon Cell Door (Dungeon Cells),pack30_decor/decor1_1,0,3232,1,2,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__dungeon_cell_window,item,wall,Dungeon Cell Window (Dungeon Cells),pack30_decor/decor1_1,0,3296,1,2,1,1,hangable notmoveable,new,,family=dungeon_cells|hideout=0
+dungeon_cells__dungeon_wall_1,item,stump,Dungeon Wall 1 (Dungeon Cells),pack30_decor/decor1_1,0,3360,1,2,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__dungeon_wall_2,item,stump,Dungeon Wall 2 (Dungeon Cells),pack30_decor/decor1_1,0,3424,1,2,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__floor_title,item,decor,Floor Title (Dungeon Cells),pack30_decor/decor1_1,0,3488,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__hanging_chains,item,wall,Hanging Chains (Dungeon Cells),pack30_decor/decor1_1,0,3520,1,2,1,1,hangable notmoveable,new,,family=dungeon_cells|hideout=0
+dungeon_cells__rock_pile,item,stump,Rock Pile (Dungeon Cells),pack30_decor/decor1_1,0,3584,1,1,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__skull,item,decor,Skull (Dungeon Cells),pack30_decor/decor1_1,0,3616,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__table,item,stump,Table (Dungeon Cells),pack30_decor/decor1_1,0,3648,2,1,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__top_of_wall,item,stump,Top Of Wall (Dungeon Cells),pack30_decor/decor1_1,0,3680,1,1,1,1,bottom notwalkable notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_bottom,item,decor,Wood Trim Bottom (Dungeon Cells),pack30_decor/decor1_1,0,3712,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_c_down_left,item,decor,Wood Trim C Down Left (Dungeon Cells),pack30_decor/decor1_1,0,3744,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_c_down_right,item,decor,Wood Trim C Down Right (Dungeon Cells),pack30_decor/decor1_1,0,3776,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_c_up_left,item,decor,Wood Trim C Up Left (Dungeon Cells),pack30_decor/decor1_1,0,3808,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_c_up_right,item,decor,Wood Trim C Up Right (Dungeon Cells),pack30_decor/decor1_1,0,3840,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_down_left,item,decor,Wood Trim Down Left (Dungeon Cells),pack30_decor/decor1_1,0,3872,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_down_right,item,decor,Wood Trim Down Right (Dungeon Cells),pack30_decor/decor1_1,0,3904,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wood_trim_top,item,decor,Wood Trim Top (Dungeon Cells),pack30_decor/decor1_1,0,3936,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+dungeon_cells__wine,item,decor,Wine (Dungeon Cells),pack30_decor/decor1_1,0,3968,1,1,1,1,notmoveable,new,,family=dungeon_cells|hideout=1
+forest_kit_a__bush_2,item,decor,Bush 2 (Forest Kit A),pack30_decor/decor1_1,0,4000,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_3,item,decor,Bush 3 (Forest Kit A),pack30_decor/decor1_1,0,4032,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_4,item,decor,Bush 4 (Forest Kit A),pack30_decor/decor1_1,0,4064,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_5,item,decor,Bush 5 (Forest Kit A),pack30_decor/decor1_2,0,0,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_6,item,decor,Bush 6 (Forest Kit A),pack30_decor/decor1_2,0,32,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_7,item,decor,Bush 7 (Forest Kit A),pack30_decor/decor1_2,0,64,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_8,item,decor,Bush 8 (Forest Kit A),pack30_decor/decor1_2,0,96,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__flower_1,item,decor,Flower 1 (Forest Kit A),pack30_decor/decor1_2,0,128,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__flower_2,item,decor,Flower 2 (Forest Kit A),pack30_decor/decor1_2,0,160,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__flower_3,item,decor,Flower 3 (Forest Kit A),pack30_decor/decor1_2,0,192,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__flower_4,item,decor,Flower 4 (Forest Kit A),pack30_decor/decor1_2,0,224,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__grass_tuft_1,item,decor,Grass Tuft 1 (Forest Kit A),pack30_decor/decor1_2,0,256,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__grass_tuft_2,item,decor,Grass Tuft 2 (Forest Kit A),pack30_decor/decor1_2,0,288,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__leaf_pile_1,item,decor,Leaf Pile 1 (Forest Kit A),pack30_decor/decor1_2,0,320,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__log_1,item,decor,Log 1 (Forest Kit A),pack30_decor/decor1_2,0,352,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__log_2,item,decor,Log 2 (Forest Kit A),pack30_decor/decor1_2,0,384,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__mushrooms_1,item,decor,Mushrooms 1 (Forest Kit A),pack30_decor/decor1_2,0,416,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__mushrooms_2,item,decor,Mushrooms 2 (Forest Kit A),pack30_decor/decor1_2,0,448,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock,item,stump,Rock (Forest Kit A),pack30_decor/decor1_2,0,480,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_stump_1,item,stump,Tree Stump 1 (Forest Kit A),pack30_decor/decor1_2,0,512,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_stump_2,item,stump,Tree Stump 2 (Forest Kit A),pack30_decor/decor1_2,0,544,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_stump_3,item,stump,Tree Stump 3 (Forest Kit A),pack30_decor/decor1_2,0,576,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_1,item,stump,Rock 1 (Forest Kit A),pack30_decor/decor1_2,0,608,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_2,item,stump,Rock 2 (Forest Kit A),pack30_decor/decor1_2,0,640,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_3,item,stump,Rock 3 (Forest Kit A),pack30_decor/decor1_2,0,672,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_4,item,stump,Rock 4 (Forest Kit A),pack30_decor/decor1_2,0,704,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_8,item,stump,Rock 8 (Forest Kit A),pack30_decor/decor1_2,0,736,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_ruins__ancient_pillow_3,item,stump,Ancient Pillow 3 (Forest Ruins),pack30_decor/decor1_2,0,768,1,2,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__broken_wall,item,stump,Broken Wall (Forest Ruins),pack30_decor/decor1_2,0,832,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__old_stone_1,item,stump,Old Stone 1 (Forest Ruins),pack30_decor/decor1_2,0,864,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__old_stone_2,item,stump,Old Stone 2 (Forest Ruins),pack30_decor/decor1_2,0,896,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__old_stone_3,item,stump,Old Stone 3 (Forest Ruins),pack30_decor/decor1_2,0,928,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__old_stone_floor_1,item,stump,Old Stone Floor 1 (Forest Ruins),pack30_decor/decor1_2,0,960,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1
+forest_ruins__stone_rock,item,stump,Stone Rock (Forest Ruins),pack30_decor/decor1_2,0,992,1,1,1,1,bottom notwalkable notmoveable,new,,family=forest_ruins|hideout=1|scale2x=1
+ghost_town__candle,item,decor,Candle (Ghost Town),pack30_decor/decor1_2,0,1024,1,1,1,1,notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__pile_of_skulls,item,decor,Pile Of Skulls (Ghost Town),pack30_decor/decor1_2,0,1056,1,1,1,1,notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_1,item,stump,Small Rock 1 (Ghost Town),pack30_decor/decor1_2,0,1088,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_2,item,stump,Small Rock 2 (Ghost Town),pack30_decor/decor1_2,0,1120,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_3,item,stump,Small Rock 3 (Ghost Town),pack30_decor/decor1_2,0,1152,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_4,item,stump,Small Rock 4 (Ghost Town),pack30_decor/decor1_2,0,1184,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_5,item,stump,Small Rock 5 (Ghost Town),pack30_decor/decor1_2,0,1216,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_6,item,stump,Small Rock 6 (Ghost Town),pack30_decor/decor1_2,0,1248,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+ghost_town__small_rock_7,item,stump,Small Rock 7 (Ghost Town),pack30_decor/decor1_2,0,1280,1,1,1,1,bottom notwalkable notmoveable,new,,family=ghost_town|hideout=1
+graveyard_kit__tombstones_graves_sheet__r6c8,item,stump,Tombstones Graves Sheet R6C8 (Graveyard Kit),pack30_decor/decor1_2,0,1312,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r6c12,item,stump,Tombstones Graves Sheet R6C12 (Graveyard Kit),pack30_decor/decor1_2,0,1344,1,2,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r6c20,item,stump,Tombstones Graves Sheet R6C20 (Graveyard Kit),pack30_decor/decor1_2,0,1408,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r7c4,item,stump,Tombstones Graves Sheet R7C4 (Graveyard Kit),pack30_decor/decor1_2,0,1440,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r7c16,item,stump,Tombstones Graves Sheet R7C16 (Graveyard Kit),pack30_decor/decor1_2,0,1472,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r7c28,item,stump,Tombstones Graves Sheet R7C28 (Graveyard Kit),pack30_decor/decor1_2,0,1504,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r10c4,item,stump,Tombstones Graves Sheet R10C4 (Graveyard Kit),pack30_decor/decor1_2,0,1536,1,2,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r10c12,item,stump,Tombstones Graves Sheet R10C12 (Graveyard Kit),pack30_decor/decor1_2,0,1600,1,2,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r10c20,item,stump,Tombstones Graves Sheet R10C20 (Graveyard Kit),pack30_decor/decor1_2,0,1664,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r10c28,item,stump,Tombstones Graves Sheet R10C28 (Graveyard Kit),pack30_decor/decor1_2,0,1696,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r11c20,item,stump,Tombstones Graves Sheet R11C20 (Graveyard Kit),pack30_decor/decor1_2,0,1728,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r15c12,item,stump,Tombstones Graves Sheet R15C12 (Graveyard Kit),pack30_decor/decor1_2,0,1760,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r18c12,item,stump,Tombstones Graves Sheet R18C12 (Graveyard Kit),pack30_decor/decor1_2,0,1792,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r19c12,item,stump,Tombstones Graves Sheet R19C12 (Graveyard Kit),pack30_decor/decor1_2,0,1824,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r22c24,item,stump,Tombstones Graves Sheet R22C24 (Graveyard Kit),pack30_decor/decor1_2,0,1856,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r26c28,item,stump,Tombstones Graves Sheet R26C28 (Graveyard Kit),pack30_decor/decor1_2,0,1888,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r27c24,item,stump,Tombstones Graves Sheet R27C24 (Graveyard Kit),pack30_decor/decor1_2,0,1920,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+graveyard_kit__tombstones_graves_sheet__r27c28,item,stump,Tombstones Graves Sheet R27C28 (Graveyard Kit),pack30_decor/decor1_2,0,1952,1,1,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=1
+haunted_manor__wall_up,item,stump,Wall Up (Haunted Manor),pack30_decor/decor1_2,0,1984,1,1,1,1,bottom notwalkable notmoveable,new,,family=haunted_manor|hideout=1
+lava_islands__dark_rock_1,item,stump,Dark Rock 1 (Lava Islands),pack30_decor/decor1_2,0,2016,1,1,1,1,bottom notwalkable notmoveable,new,,family=lava_islands|hideout=1
+lava_islands__dark_rock_2,item,stump,Dark Rock 2 (Lava Islands),pack30_decor/decor1_2,0,2048,1,1,1,1,bottom notwalkable notmoveable,new,,family=lava_islands|hideout=1
+lava_islands__dark_rock_3,item,stump,Dark Rock 3 (Lava Islands),pack30_decor/decor1_2,0,2080,1,1,1,1,bottom notwalkable notmoveable,new,,family=lava_islands|hideout=1
+lava_islands__bones_and_ash,item,decor,Bones And Ash (Lava Islands),pack30_decor/decor1_2,0,2112,1,1,1,1,notmoveable,new,,family=lava_islands|hideout=1
+lava_islands__skulls,item,decor,Skulls (Lava Islands),pack30_decor/decor1_2,0,2144,1,1,1,1,notmoveable,new,,family=lava_islands|hideout=1
+magic_forest__grass_tile_1,item,decor,Grass Tile 1 (Magic Forest),pack30_decor/decor1_2,0,2176,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__grass_tile_2,item,decor,Grass Tile 2 (Magic Forest),pack30_decor/decor1_2,0,2208,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__grass_tile_3,item,decor,Grass Tile 3 (Magic Forest),pack30_decor/decor1_2,0,2240,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__grass_tile_4,item,decor,Grass Tile 4 (Magic Forest),pack30_decor/decor1_2,0,2272,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__grass_tile_5,item,decor,Grass Tile 5 (Magic Forest),pack30_decor/decor1_2,0,2304,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_4_way,item,decor,Purple Path 4 Way (Magic Forest),pack30_decor/decor1_2,0,2336,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_h,item,decor,Purple Path Tile H (Magic Forest),pack30_decor/decor1_2,0,2368,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_h_crack,item,decor,Purple Path Tile H Crack (Magic Forest),pack30_decor/decor1_2,0,2400,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_left_down,item,decor,Purple Path Tile Left Down (Magic Forest),pack30_decor/decor1_2,0,2432,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_left_up,item,decor,Purple Path Tile Left Up (Magic Forest),pack30_decor/decor1_2,0,2464,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_right_down,item,decor,Purple Path Tile Right Down (Magic Forest),pack30_decor/decor1_2,0,2496,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_right_up,item,decor,Purple Path Tile Right Up (Magic Forest),pack30_decor/decor1_2,0,2528,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_t_down,item,decor,Purple Path Tile T Down (Magic Forest),pack30_decor/decor1_2,0,2560,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_t_up,item,decor,Purple Path Tile T Up (Magic Forest),pack30_decor/decor1_2,0,2592,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_v,item,decor,Purple Path Tile V (Magic Forest),pack30_decor/decor1_2,0,2624,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__purple_path_tile_v_crack,item,decor,Purple Path Tile V Crack (Magic Forest),pack30_decor/decor1_2,0,2656,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__dark_bush_1,item,decor,Dark Bush 1 (Magic Forest),pack30_decor/decor1_2,0,2688,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__dark_flower_1,item,decor,Dark Flower 1 (Magic Forest),pack30_decor/decor1_2,0,2720,1,1,1,1,notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__moss_rock_1,item,stump,Moss Rock 1 (Magic Forest),pack30_decor/decor1_2,0,2752,1,1,1,1,bottom notwalkable notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__moss_rock_2,item,stump,Moss Rock 2 (Magic Forest),pack30_decor/decor1_2,0,2784,1,1,1,1,bottom notwalkable notmoveable,new,,family=magic_forest|hideout=1
+magic_forest__moss_rock_3,item,stump,Moss Rock 3 (Magic Forest),pack30_decor/decor1_2,0,2816,1,1,1,1,bottom notwalkable notmoveable,new,,family=magic_forest|hideout=1
+mineshaft__cob_web,item,decor,Cob Web (Mineshaft),pack30_decor/decor1_2,0,2848,1,1,1,1,notmoveable,new,,family=mineshaft|hideout=1
+mineshaft__mine_bone_1,item,decor,Mine Bone 1 (Mineshaft),pack30_decor/decor1_2,0,2880,1,1,1,1,notmoveable,new,,family=mineshaft|hideout=1
+mineshaft__mine_skull,item,decor,Mine Skull (Mineshaft),pack30_decor/decor1_2,0,2912,1,1,1,1,notmoveable,new,,family=mineshaft|hideout=1
+mineshaft__small_rock_1,item,stump,Small Rock 1 (Mineshaft),pack30_decor/decor1_2,0,2944,1,1,1,1,bottom notwalkable notmoveable,new,,family=mineshaft|hideout=1|scale2x=1
+mineshaft__small_rock_2,item,stump,Small Rock 2 (Mineshaft),pack30_decor/decor1_2,0,2976,1,1,1,1,bottom notwalkable notmoveable,new,,family=mineshaft|hideout=1|scale2x=1
+throne_room__castle_wall,item,stump,Castle Wall (Throne Room),pack30_decor/decor1_2,0,3008,1,2,1,1,bottom notwalkable notmoveable,new,,family=throne_room|hideout=1
+throne_room__red_banner,item,wall,Red Banner (Throne Room),pack30_decor/decor1_2,0,3072,1,2,1,1,hangable notmoveable,new,,family=throne_room|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r0c0,item,wall,Hero And Battle Portraits Sheet R0C0 (Wall Decor),pack30_decor/decor1_2,0,3136,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r0c1,item,wall,Hero And Battle Portraits Sheet R0C1 (Wall Decor),pack30_decor/decor1_2,0,3168,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r0c2,item,wall,Hero And Battle Portraits Sheet R0C2 (Wall Decor),pack30_decor/decor1_2,0,3200,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r0c3,item,wall,Hero And Battle Portraits Sheet R0C3 (Wall Decor),pack30_decor/decor1_2,0,3232,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r1c0,item,wall,Hero And Battle Portraits Sheet R1C0 (Wall Decor),pack30_decor/decor1_2,0,3264,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r1c1,item,wall,Hero And Battle Portraits Sheet R1C1 (Wall Decor),pack30_decor/decor1_2,0,3296,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r1c2,item,wall,Hero And Battle Portraits Sheet R1C2 (Wall Decor),pack30_decor/decor1_2,0,3328,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r1c3,item,wall,Hero And Battle Portraits Sheet R1C3 (Wall Decor),pack30_decor/decor1_2,0,3360,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r2c0,item,wall,Hero And Battle Portraits Sheet R2C0 (Wall Decor),pack30_decor/decor1_2,0,3392,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r2c1,item,wall,Hero And Battle Portraits Sheet R2C1 (Wall Decor),pack30_decor/decor1_2,0,3424,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r2c2,item,wall,Hero And Battle Portraits Sheet R2C2 (Wall Decor),pack30_decor/decor1_2,0,3456,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r2c3,item,wall,Hero And Battle Portraits Sheet R2C3 (Wall Decor),pack30_decor/decor1_2,0,3488,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r3c0,item,wall,Hero And Battle Portraits Sheet R3C0 (Wall Decor),pack30_decor/decor1_2,0,3520,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r3c1,item,wall,Hero And Battle Portraits Sheet R3C1 (Wall Decor),pack30_decor/decor1_2,0,3552,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r3c2,item,wall,Hero And Battle Portraits Sheet R3C2 (Wall Decor),pack30_decor/decor1_2,0,3584,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__hero_and_battle_portraits_sheet__r3c3,item,wall,Hero And Battle Portraits Sheet R3C3 (Wall Decor),pack30_decor/decor1_2,0,3616,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r0c0,item,wall,Medieval Banners Sheet R0C0 (Wall Decor),pack30_decor/decor1_2,0,3648,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r0c1,item,wall,Medieval Banners Sheet R0C1 (Wall Decor),pack30_decor/decor1_2,0,3680,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r0c2,item,wall,Medieval Banners Sheet R0C2 (Wall Decor),pack30_decor/decor1_2,0,3712,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r0c3,item,wall,Medieval Banners Sheet R0C3 (Wall Decor),pack30_decor/decor1_2,0,3744,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r1c0,item,wall,Medieval Banners Sheet R1C0 (Wall Decor),pack30_decor/decor1_2,0,3776,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r1c1,item,wall,Medieval Banners Sheet R1C1 (Wall Decor),pack30_decor/decor1_2,0,3808,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r1c2,item,wall,Medieval Banners Sheet R1C2 (Wall Decor),pack30_decor/decor1_2,0,3840,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r1c3,item,wall,Medieval Banners Sheet R1C3 (Wall Decor),pack30_decor/decor1_2,0,3872,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r2c0,item,wall,Medieval Banners Sheet R2C0 (Wall Decor),pack30_decor/decor1_2,0,3904,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r2c1,item,wall,Medieval Banners Sheet R2C1 (Wall Decor),pack30_decor/decor1_2,0,3936,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r2c2,item,wall,Medieval Banners Sheet R2C2 (Wall Decor),pack30_decor/decor1_2,0,3968,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r2c3,item,wall,Medieval Banners Sheet R2C3 (Wall Decor),pack30_decor/decor1_2,0,4000,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r3c0,item,wall,Medieval Banners Sheet R3C0 (Wall Decor),pack30_decor/decor1_2,0,4032,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r3c1,item,wall,Medieval Banners Sheet R3C1 (Wall Decor),pack30_decor/decor1_2,0,4064,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r3c2,item,wall,Medieval Banners Sheet R3C2 (Wall Decor),pack30_decor/decor1_3,0,0,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_banners_sheet__r3c3,item,wall,Medieval Banners Sheet R3C3 (Wall Decor),pack30_decor/decor1_3,0,32,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r0c0,item,wall,Medieval Paintings Sheet R0C0 (Wall Decor),pack30_decor/decor1_3,0,64,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r0c1,item,wall,Medieval Paintings Sheet R0C1 (Wall Decor),pack30_decor/decor1_3,0,96,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r0c2,item,wall,Medieval Paintings Sheet R0C2 (Wall Decor),pack30_decor/decor1_3,0,128,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r0c3,item,wall,Medieval Paintings Sheet R0C3 (Wall Decor),pack30_decor/decor1_3,0,160,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r1c0,item,wall,Medieval Paintings Sheet R1C0 (Wall Decor),pack30_decor/decor1_3,0,192,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r1c1,item,wall,Medieval Paintings Sheet R1C1 (Wall Decor),pack30_decor/decor1_3,0,224,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r1c2,item,wall,Medieval Paintings Sheet R1C2 (Wall Decor),pack30_decor/decor1_3,0,256,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r1c3,item,wall,Medieval Paintings Sheet R1C3 (Wall Decor),pack30_decor/decor1_3,0,288,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r2c0,item,wall,Medieval Paintings Sheet R2C0 (Wall Decor),pack30_decor/decor1_3,0,320,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r2c1,item,wall,Medieval Paintings Sheet R2C1 (Wall Decor),pack30_decor/decor1_3,0,352,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r2c2,item,wall,Medieval Paintings Sheet R2C2 (Wall Decor),pack30_decor/decor1_3,0,384,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r2c3,item,wall,Medieval Paintings Sheet R2C3 (Wall Decor),pack30_decor/decor1_3,0,416,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r3c0,item,wall,Medieval Paintings Sheet R3C0 (Wall Decor),pack30_decor/decor1_3,0,448,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r3c1,item,wall,Medieval Paintings Sheet R3C1 (Wall Decor),pack30_decor/decor1_3,0,480,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r3c2,item,wall,Medieval Paintings Sheet R3C2 (Wall Decor),pack30_decor/decor1_3,0,512,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__medieval_paintings_sheet__r3c3,item,wall,Medieval Paintings Sheet R3C3 (Wall Decor),pack30_decor/decor1_3,0,544,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r0c0,item,wall,Royal Portraits Sheet R0C0 (Wall Decor),pack30_decor/decor1_3,0,576,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r0c1,item,wall,Royal Portraits Sheet R0C1 (Wall Decor),pack30_decor/decor1_3,0,608,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r0c2,item,wall,Royal Portraits Sheet R0C2 (Wall Decor),pack30_decor/decor1_3,0,640,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r0c3,item,wall,Royal Portraits Sheet R0C3 (Wall Decor),pack30_decor/decor1_3,0,672,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r1c0,item,wall,Royal Portraits Sheet R1C0 (Wall Decor),pack30_decor/decor1_3,0,704,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r1c1,item,wall,Royal Portraits Sheet R1C1 (Wall Decor),pack30_decor/decor1_3,0,736,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r1c2,item,wall,Royal Portraits Sheet R1C2 (Wall Decor),pack30_decor/decor1_3,0,768,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r1c3,item,wall,Royal Portraits Sheet R1C3 (Wall Decor),pack30_decor/decor1_3,0,800,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r2c0,item,wall,Royal Portraits Sheet R2C0 (Wall Decor),pack30_decor/decor1_3,0,832,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r2c1,item,wall,Royal Portraits Sheet R2C1 (Wall Decor),pack30_decor/decor1_3,0,864,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r2c2,item,wall,Royal Portraits Sheet R2C2 (Wall Decor),pack30_decor/decor1_3,0,896,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r2c3,item,wall,Royal Portraits Sheet R2C3 (Wall Decor),pack30_decor/decor1_3,0,928,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r3c0,item,wall,Royal Portraits Sheet R3C0 (Wall Decor),pack30_decor/decor1_3,0,960,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r3c1,item,wall,Royal Portraits Sheet R3C1 (Wall Decor),pack30_decor/decor1_3,0,992,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r3c2,item,wall,Royal Portraits Sheet R3C2 (Wall Decor),pack30_decor/decor1_3,0,1024,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__royal_portraits_sheet__r3c3,item,wall,Royal Portraits Sheet R3C3 (Wall Decor),pack30_decor/decor1_3,0,1056,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r0c0,item,wall,Wall Shields Sheet R0C0 (Wall Decor),pack30_decor/decor1_3,0,1088,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r0c1,item,wall,Wall Shields Sheet R0C1 (Wall Decor),pack30_decor/decor1_3,0,1120,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r0c2,item,wall,Wall Shields Sheet R0C2 (Wall Decor),pack30_decor/decor1_3,0,1152,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r0c3,item,wall,Wall Shields Sheet R0C3 (Wall Decor),pack30_decor/decor1_3,0,1184,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r1c0,item,wall,Wall Shields Sheet R1C0 (Wall Decor),pack30_decor/decor1_3,0,1216,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r1c1,item,wall,Wall Shields Sheet R1C1 (Wall Decor),pack30_decor/decor1_3,0,1248,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r1c2,item,wall,Wall Shields Sheet R1C2 (Wall Decor),pack30_decor/decor1_3,0,1280,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r1c3,item,wall,Wall Shields Sheet R1C3 (Wall Decor),pack30_decor/decor1_3,0,1312,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r2c0,item,wall,Wall Shields Sheet R2C0 (Wall Decor),pack30_decor/decor1_3,0,1344,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r2c1,item,wall,Wall Shields Sheet R2C1 (Wall Decor),pack30_decor/decor1_3,0,1376,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r2c2,item,wall,Wall Shields Sheet R2C2 (Wall Decor),pack30_decor/decor1_3,0,1408,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r2c3,item,wall,Wall Shields Sheet R2C3 (Wall Decor),pack30_decor/decor1_3,0,1440,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r3c0,item,wall,Wall Shields Sheet R3C0 (Wall Decor),pack30_decor/decor1_3,0,1472,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r3c1,item,wall,Wall Shields Sheet R3C1 (Wall Decor),pack30_decor/decor1_3,0,1504,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r3c2,item,wall,Wall Shields Sheet R3C2 (Wall Decor),pack30_decor/decor1_3,0,1536,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+wall_decor__wall_shields_sheet__r3c3,item,wall,Wall Shields Sheet R3C3 (Wall Decor),pack30_decor/decor1_3,0,1568,1,1,1,1,hangable notmoveable,new,,family=wall_decor|hideout=0
+worship_interior__ribs,item,decor,Ribs (Worship Interior),pack30_decor/decor1_3,0,1600,1,1,1,1,notmoveable,new,,family=worship_interior|hideout=1
+worship_interior__skull_bone,item,decor,Skull Bone (Worship Interior),pack30_decor/decor1_3,0,1632,1,1,1,1,notmoveable,new,,family=worship_interior|hideout=1
+worship_interior__skull_stand,item,stump,Skull Stand (Worship Interior),pack30_decor/decor1_3,0,1664,1,1,1,1,bottom notwalkable notmoveable,new,,family=worship_interior|hideout=1
+worship_interior__stone_walls,item,stump,Stone Walls (Worship Interior),pack30_decor/decor1_3,0,1696,1,2,1,1,bottom notwalkable notmoveable,new,,family=worship_interior|hideout=1
+boats_docks__box_1,item,stump,Box 1 (Boats Docks),pack30_decor/decor1_3,0,1760,1,1,1,1,bottom notwalkable notmoveable,new,,family=boats_docks|hideout=1
+boats_docks__box_of_seafood,item,stump,Box Of Seafood (Boats Docks),pack30_decor/decor1_3,0,1792,1,1,1,1,bottom notwalkable notmoveable,new,,family=boats_docks|hideout=1
+boats_docks__dock_wood,item,decor,Dock Wood (Boats Docks),pack30_decor/decor1_3,0,1824,2,1,1,1,notmoveable,new,,family=boats_docks|hideout=1
+boats_docks__rope_1,item,decor,Rope 1 (Boats Docks),pack30_decor/decor1_3,0,1856,1,1,1,1,notmoveable,new,,family=boats_docks|hideout=1
+boats_docks__rope_2,item,decor,Rope 2 (Boats Docks),pack30_decor/decor1_3,0,1888,1,1,1,1,notmoveable,new,,family=boats_docks|hideout=1
+boats_docks__wood_pole,item,decor,Wood Pole (Boats Docks),pack30_decor/decor1_3,0,1920,1,1,1,1,notmoveable,new,,family=boats_docks|hideout=1
+desert_camp__back_pack,item,decor,Back Pack (Desert Camp),pack30_decor/decor1_3,0,1952,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__bed_roll_1,item,decor,Bed Roll 1 (Desert Camp),pack30_decor/decor1_3,0,1984,2,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__desert_pot,item,decor,Desert Pot (Desert Camp),pack30_decor/decor1_3,0,2016,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__food_basket,item,decor,Food Basket (Desert Camp),pack30_decor/decor1_3,0,2048,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__food_basket_2,item,decor,Food Basket 2 (Desert Camp),pack30_decor/decor1_3,0,2080,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__honey_jar_1,item,decor,Honey Jar 1 (Desert Camp),pack30_decor/decor1_3,0,2112,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__lantern,item,decor,Lantern (Desert Camp),pack30_decor/decor1_3,0,2144,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__small_desert_rock,item,stump,Small Desert Rock (Desert Camp),pack30_decor/decor1_3,0,2176,1,1,1,1,bottom notwalkable notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__water_jar_1,item,decor,Water Jar 1 (Desert Camp),pack30_decor/decor1_3,0,2208,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__water_jar_2,item,decor,Water Jar 2 (Desert Camp),pack30_decor/decor1_3,0,2240,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_camp__wooden_stools,item,decor,Wooden Stools (Desert Camp),pack30_decor/decor1_3,0,2272,1,1,1,1,notmoveable,new,,family=desert_camp|hideout=1
+desert_kit__desert_nature__r25c14,item,decor,Desert Nature R25C14 (Desert Kit),pack30_decor/decor1_3,0,2304,2,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c0,item,decor,Desert Props R0C0 (Desert Kit),pack30_decor/decor1_3,0,2336,2,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c2,item,decor,Desert Props R0C2 (Desert Kit),pack30_decor/decor1_3,0,2368,1,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c3,item,decor,Desert Props R0C3 (Desert Kit),pack30_decor/decor1_3,0,2432,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c4,item,decor,Desert Props R0C4 (Desert Kit),pack30_decor/decor1_3,0,2464,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c5,item,decor,Desert Props R0C5 (Desert Kit),pack30_decor/decor1_3,0,2496,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c3,item,decor,Desert Props R1C3 (Desert Kit),pack30_decor/decor1_3,0,2528,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c5,item,decor,Desert Props R1C5 (Desert Kit),pack30_decor/decor1_3,0,2560,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c1,item,decor,Desert Props R2C1 (Desert Kit),pack30_decor/decor1_3,0,2592,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c4,item,decor,Desert Props R2C4 (Desert Kit),pack30_decor/decor1_3,0,2624,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c6,item,decor,Desert Props R2C6 (Desert Kit),pack30_decor/decor1_3,0,2656,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c7,item,decor,Desert Props R2C7 (Desert Kit),pack30_decor/decor1_3,0,2688,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c0,item,decor,Desert Props R3C0 (Desert Kit),pack30_decor/decor1_3,0,2720,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c3,item,decor,Desert Props R3C3 (Desert Kit),pack30_decor/decor1_3,0,2752,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c7,item,decor,Desert Props R3C7 (Desert Kit),pack30_decor/decor1_3,0,2784,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c0,item,decor,Desert Props R4C0 (Desert Kit),pack30_decor/decor1_3,0,2816,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c1,item,decor,Desert Props R4C1 (Desert Kit),pack30_decor/decor1_3,0,2848,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c2,item,decor,Desert Props R4C2 (Desert Kit),pack30_decor/decor1_3,0,2880,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c3,item,decor,Desert Props R4C3 (Desert Kit),pack30_decor/decor1_3,0,2912,1,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c4,item,decor,Desert Props R4C4 (Desert Kit),pack30_decor/decor1_3,0,2976,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c5,item,decor,Desert Props R4C5 (Desert Kit),pack30_decor/decor1_3,0,3008,1,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c6,item,decor,Desert Props R4C6 (Desert Kit),pack30_decor/decor1_3,0,3072,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r4c7,item,decor,Desert Props R4C7 (Desert Kit),pack30_decor/decor1_3,0,3104,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c4,item,decor,Desert Props R5C4 (Desert Kit),pack30_decor/decor1_3,0,3136,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c7,item,decor,Desert Props R5C7 (Desert Kit),pack30_decor/decor1_3,0,3168,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c0,item,decor,Desert Props R6C0 (Desert Kit),pack30_decor/decor1_3,0,3200,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c1,item,decor,Desert Props R6C1 (Desert Kit),pack30_decor/decor1_3,0,3232,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c5,item,decor,Desert Props R6C5 (Desert Kit),pack30_decor/decor1_3,0,3264,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c5,item,decor,Desert Props R7C5 (Desert Kit),pack30_decor/decor1_3,0,3296,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c7,item,decor,Desert Props R7C7 (Desert Kit),pack30_decor/decor1_3,0,3328,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+royal_bedroom__bedroom_picture,item,wall,Bedroom Picture (Royal Bedroom),pack30_decor/decor1_3,0,3360,1,1,1,1,hangable notmoveable,new,,family=royal_bedroom|hideout=0
+royal_bedroom__books,item,decor,Books (Royal Bedroom),pack30_decor/decor1_3,0,3392,1,1,1,1,notmoveable,new,,family=royal_bedroom|hideout=1
+royal_bedroom__pillow,item,decor,Pillow (Royal Bedroom),pack30_decor/decor1_3,0,3424,1,1,1,1,notmoveable,new,,family=royal_bedroom|hideout=1
+royal_bedroom__small_rug,item,decor,Small Rug (Royal Bedroom),pack30_decor/decor1_3,0,3456,2,1,1,1,notmoveable,new,,family=royal_bedroom|hideout=1
+sewer_kit__laders,item,decor,Laders (Sewer Kit),pack30_decor/decor1_3,0,3488,1,2,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__old_green_barrel,item,stump,Old Green Barrel (Sewer Kit),pack30_decor/decor1_3,0,3552,1,1,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__old_pips,item,decor,Old Pips (Sewer Kit),pack30_decor/decor1_3,0,3584,1,2,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__rubbish,item,decor,Rubbish (Sewer Kit),pack30_decor/decor1_3,0,3648,2,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__sewer_wall_1,item,stump,Sewer Wall 1 (Sewer Kit),pack30_decor/decor1_3,0,3680,1,2,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__sewer_wall_2,item,stump,Sewer Wall 2 (Sewer Kit),pack30_decor/decor1_3,0,3744,1,2,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__sewer_wall_3,item,stump,Sewer Wall 3 (Sewer Kit),pack30_decor/decor1_3,0,3808,1,2,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__sewer_wall_4,item,stump,Sewer Wall 4 (Sewer Kit),pack30_decor/decor1_3,0,3872,1,2,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+war_camp__small_fence,item,stump,Small Fence (War Camp),pack30_decor/decor1_3,0,3936,2,1,1,1,bottom notwalkable notmoveable,new,,family=war_camp|hideout=1
+war_camp__wooden_fence_5,item,stump,Wooden Fence 5 (War Camp),pack30_decor/decor1_3,0,3968,1,2,1,1,bottom notwalkable notmoveable,new,,family=war_camp|hideout=1
+bathroom__mirror,item,wall,Mirror (Bathroom),pack30_decor/decor1_3,0,4032,1,1,1,1,hangable notmoveable,new,,family=bathroom|hideout=0
+bathroom__table,item,stump,Table (Bathroom),pack30_decor/decor1_4,0,0,1,2,1,1,bottom notwalkable notmoveable,new,,family=bathroom|hideout=0
+bathroom__big_lamp,item,decor,Big Lamp (Bathroom),pack30_decor/decor1_4,0,64,1,2,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__plant_2,item,decor,Plant 2 (Bathroom),pack30_decor/decor1_4,0,128,1,2,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__side_table,item,stump,Side Table (Bathroom),pack30_decor/decor1_4,0,192,1,2,1,1,bottom notwalkable notmoveable,new,,family=bathroom|hideout=0
+bathroom__toilet,item,decor,Toilet (Bathroom),pack30_decor/decor1_4,0,256,1,2,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__walls,item,stump,Walls (Bathroom),pack30_decor/decor1_4,0,320,1,2,1,1,bottom notwalkable notmoveable,new,,family=bathroom|hideout=0
+bathroom__window,item,wall,Window (Bathroom),pack30_decor/decor1_4,0,384,1,1,1,1,hangable notmoveable,new,,family=bathroom|hideout=0
+fishing_village__boat,item,decor,Boat (Fishing Village),pack30_decor/decor1_4,0,416,1,2,1,1,notmoveable,new,,family=fishing_village|hideout=0
+fishing_village__fish_net,item,decor,Fish Net (Fishing Village),pack30_decor/decor1_4,0,480,2,1,1,1,notmoveable,new,,family=fishing_village|hideout=0
+market_stalls__apple_basket,item,decor,Apple Basket (Market Stalls),pack30_decor/decor1_4,0,512,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__doll,item,decor,Doll (Market Stalls),pack30_decor/decor1_4,0,544,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__hay,item,decor,Hay (Market Stalls),pack30_decor/decor1_4,0,576,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__pie,item,decor,Pie (Market Stalls),pack30_decor/decor1_4,0,608,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__potion_1,item,decor,Potion 1 (Market Stalls),pack30_decor/decor1_4,0,640,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__potion_2,item,decor,Potion 2 (Market Stalls),pack30_decor/decor1_4,0,672,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__pumpkin_basket,item,decor,Pumpkin Basket (Market Stalls),pack30_decor/decor1_4,0,704,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__scattered_leaves,item,decor,Scattered Leaves (Market Stalls),pack30_decor/decor1_4,0,736,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__small_lantern,item,decor,Small Lantern (Market Stalls),pack30_decor/decor1_4,0,768,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__sweet_bowl,item,decor,Sweet Bowl (Market Stalls),pack30_decor/decor1_4,0,800,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+market_stalls__witch_hat,item,decor,Witch Hat (Market Stalls),pack30_decor/decor1_4,0,832,1,1,1,1,notmoveable,new,,family=market_stalls|hideout=0
+survivor_base__green_bottle,item,decor,Green Bottle (Survivor Base),pack30_decor/decor1_4,0,864,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0|scale2x=1
+survivor_base__news_paper,item,decor,News Paper (Survivor Base),pack30_decor/decor1_4,0,896,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0|scale2x=1
+survivor_base__paper_pile,item,decor,Paper Pile (Survivor Base),pack30_decor/decor1_4,0,928,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0
+survivor_base__tire,item,decor,Tire (Survivor Base),pack30_decor/decor1_4,0,960,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0
+survivor_base__waste_bag_1,item,decor,Waste Bag 1 (Survivor Base),pack30_decor/decor1_4,0,992,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0
+survivor_base__water_bottle,item,decor,Water Bottle (Survivor Base),pack30_decor/decor1_4,0,1024,1,1,1,1,notmoveable,new,,family=survivor_base|hideout=0
+zombie_city__boxes,item,decor,Boxes (Zombie City),pack30_decor/decor1_4,0,1056,1,1,1,1,notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__fire_hydrant,item,stump,Fire Hydrant (Zombie City),pack30_decor/decor1_4,0,1088,1,1,1,1,bottom notwalkable notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__road_stop_sign,item,decor,Road Stop Sign (Zombie City),pack30_decor/decor1_4,0,1120,1,2,1,1,notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__street_bench,item,stump,Street Bench (Zombie City),pack30_decor/decor1_4,0,1184,2,1,1,1,bottom notwalkable notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__trash_bag,item,decor,Trash Bag (Zombie City),pack30_decor/decor1_4,0,1216,1,1,1,1,notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__trash_bin_full,item,stump,Trash Bin Full (Zombie City),pack30_decor/decor1_4,0,1248,1,1,1,1,bottom notwalkable notmoveable,new,,family=zombie_city|hideout=0
+zombie_city__trash_bin_nothing,item,stump,Trash Bin Nothing (Zombie City),pack30_decor/decor1_4,0,1280,1,1,1,1,bottom notwalkable notmoveable,new,,family=zombie_city|hideout=0

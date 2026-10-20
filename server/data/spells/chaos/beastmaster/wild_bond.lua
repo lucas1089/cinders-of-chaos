@@ -5,6 +5,7 @@
 -- it attacks your target (data/scripts/chaos/beastmaster.lua, numbers in Chaos.classes.companion).
 dofile('data/spells/scripts/chaos/_common.lua')
 ChaosSpell.loadClasses()
+ChaosSpell.loadSummons()
 
 local function companionType()
 	for _, name in ipairs(Chaos.classes.companion.monsters) do
@@ -70,7 +71,7 @@ function onCastSpell(creature, variant, isHotkey)
 			end
 			local m = Game.createMonster(name, spot.pos, false, true)
 			if m then
-				m:setMaster(player)
+				ChaosSpell.bindSummon(player, m) -- an ally of its owner: no target of its own from the start
 				m:setDropLoot(false)
 				m:registerEvent("ChaosCompanionGuard")
 				m:setMaxHealth(hp)

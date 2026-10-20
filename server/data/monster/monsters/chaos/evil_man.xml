@@ -52,7 +52,6 @@
 		<voice sentence="The end is near!" />
 	</voices>
 	<loot>
-        <item id="2157" countmax="6" chance="30000"/><!-- crystal coins -->
         <item id="2666" countmax="2" chance="11111"/><!-- meat -->
     </loot>
 </monster>

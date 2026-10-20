@@ -202,6 +202,14 @@ eq(C.dodges(NINJA, false, 0.0), false, "spells are not dodged")
 eq(C.dodges(4, true, 0.0), false, "knights do not dodge")
 eq(C.poisonTick(400), math.floor(400 * cfg.poisonBlades.share / cfg.poisonBlades.ticks + 0.5), "poison per tick")
 eq(C.poisonTick(0), 1, "at least 1")
+-- 2026-10-17 (owner: "O poison do thief é muito fraco"): a tick is 30% of the hit (share 1.2 over 4 ticks) for the Thief and
+-- the Samurai, 18% for the Ninja (classScale 0.6: the Deadeye keeps its lead); 15% before
+eq(cfg.poisonBlades.share, 1.2, "Poison Blades share 1.2 (was 0.6)")
+eq(C.poisonTick(1000, 0, THIEF), 300, "Thief: a tick is 30% of the hit")
+eq(C.poisonTick(1000, 0, SAMURAI), 300, "Samurai: 30%")
+eq(C.poisonTick(1000, 0, NINJA), 180, "Ninja: 18% (classScale 0.6)")
+eq(C.poisonTick(1000, 0.3, THIEF), 390, "Thief with the Creed's +30%")
+eq(C.poisonTick(1000, 0, 4), 300, "a vocation without a classScale: the plain share")
 
 -- ------------------------------------------------------------------ the Monk, Necromancer and Templar lines
 -- (ids and choices in chaos_constants.lua; each line's own rules: tests/monk_test.lua, necro_test.lua, templar_test.lua)

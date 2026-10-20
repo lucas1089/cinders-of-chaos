@@ -625,7 +625,7 @@ FEATURES = [
                                 "Balanced at levels 300 and 1000"]),
     ("Passive tree and Paragon", ["Over 600 nodes, class keystones", "Build codes to share, priced respec",
                                   "Paragon points after level 1000"]),
-    ("Items and loot", ["15 rarities, item levels, modifiers", "About 50 build-defining uniques",
+    ("Items and loot", ["7 rarities, item levels, modifiers", "About 50 build-defining uniques",
                         "Loot filter, loot rays, rarity autoloot"]),
     ("Crafting orbs", ["Awakening, Gilding, Grafting", "Unmaking, Erasure, Upheaval, Fate",
                        "A crafting bench that shows it all"]),

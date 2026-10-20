@@ -1,0 +1,122 @@
+# Chaos: damage number scatter (client/BASE.md 0081; after 0001-0080). The animated texts above the map (damage, healing, mana, experience) all rose on the same line, so an area hit or a group hunt stacked them into one unreadable column. AnimatedText gets a fixed pixel shift on top of the stacking offset (setScatter / getScatter) and a speed scale (setSpeedScale / getSpeedScale, clamped to 0.5 .. 2; 1 is the stock rise and fade of Otc::ANIMATED_TEXT_DURATION, 1.2 is 20% quicker): drawText uses the scaled duration for the rise, the sideways drift and the fade, and a text past its life is not drawn. The removal event checks the scaled life, so a slower text is not cut at the stock 1000 ms. Defaults (no shift, scale 1) draw exactly as before. No protocol change. The overlay module game_damagescatter calls them from g_map.onAnimatedText. C++ only.
+diff -ru a/src/client/animatedtext.h b/src/client/animatedtext.h
+--- a/src/client/animatedtext.h
++++ b/src/client/animatedtext.h
+@@ -41,12 +41,18 @@
+     void setText(const std::string& text);
+     void setOffset(const Point& offset) { m_targetOffset = PointF(offset.x, offset.y); }
+     void setFont(const std::string& fontName);
++    // Chaos (base patch 0081): a fixed shift in pixels on top of the stacking offset, and a speed scale (1 = the stock
++    // rise and fade of Otc::ANIMATED_TEXT_DURATION; 1.2 is 20% quicker, 0.8 is 20% slower). Set from Lua on appear.
++    void setScatter(const Point& scatter) { m_scatter = scatter; }
++    void setSpeedScale(float scale);
+ 
+     Color getColor() { return m_color; }
+     const CachedText& getCachedText() const { return m_cachedText; }
+     Size getTextSize() { return m_cachedText.getTextSize(); }
+     Point getOffset() { return Point(static_cast<int>(std::round(m_offset.x)), static_cast<int>(std::round(m_offset.y))); }
+     Timer getTimer() { return m_animationTimer; }
++    Point getScatter() { return m_scatter; }
++    float getSpeedScale() { return m_speedScale; }
+ 
+     bool merge(const AnimatedTextPtr& other);
+ 
+@@ -59,6 +65,7 @@
+ 
+ private:
+     void updateOffset(float dt);
++    void scheduleRemoval(int delay);
+ 
+     Color m_color;
+     Timer m_animationTimer;
+@@ -66,6 +73,9 @@
+     CachedText m_cachedText;
+     PointF m_offset;
+     PointF m_targetOffset;
++    Point m_scatter;
++    float m_speedScale = 1.0f;
++    float m_duration = Otc::ANIMATED_TEXT_DURATION;
+ };
+ 
+ #endif
+diff -ru a/src/client/animatedtext.cpp b/src/client/animatedtext.cpp
+--- a/src/client/animatedtext.cpp
++++ b/src/client/animatedtext.cpp
+@@ -26,6 +26,7 @@
+ #include <framework/core/clock.h>
+ #include <framework/core/eventdispatcher.h>
+ #include <framework/graphics/graphics.h>
++#include <algorithm>
+ 
+ AnimatedText::AnimatedText()
+ {
+@@ -35,12 +36,15 @@
+ 
+ void AnimatedText::drawText(const Point& dest, const Rect& visibleRect)
+ {
+-    static float tf = Otc::ANIMATED_TEXT_DURATION;
+-    static float tftf = Otc::ANIMATED_TEXT_DURATION * Otc::ANIMATED_TEXT_DURATION;
++    // Chaos (base patch 0081): the speed scale shortens or stretches the whole animation
++    const float tf = m_duration;
++    const float tftf = m_duration * m_duration;
+ 
+     Point p = dest;
+     Size textSize = m_cachedText.getTextSize();
+     float t = m_animationTimer.ticksElapsed();
++    if(t >= tf)
++        return;
+     p.x -= textSize.width() / 2;
+ 
+     if(g_game.getFeature(Otc::GameDiagonalAnimatedText)) {
+@@ -53,6 +57,7 @@
+     m_offsetTimer.restart();
+ 
+     p += Point(static_cast<int>(std::round(m_offset.x)), static_cast<int>(std::round(m_offset.y)));
++    p += m_scatter;
+     Rect rect(p, textSize);
+ 
+     if(visibleRect.contains(rect)) {
+@@ -71,8 +76,28 @@
+     m_offsetTimer.restart();
+ 
+     // schedule removal
++    scheduleRemoval(Otc::ANIMATED_TEXT_DURATION);
++}
++
++// Chaos (base patch 0081): a speed scale below 1 set after onAppear lengthens the life of the text: the first removal
++// finds time left and asks again for the rest
++void AnimatedText::scheduleRemoval(int delay)
++{
+     auto self = asAnimatedText();
+-    g_dispatcher.scheduleEvent([self]() { g_map.removeThing(self); }, Otc::ANIMATED_TEXT_DURATION);
++    g_dispatcher.scheduleEvent([self]() {
++        const float left = self->m_duration - self->m_animationTimer.ticksElapsed();
++        if(left > 1.0f)
++            self->scheduleRemoval(static_cast<int>(std::ceil(left)));
++        else
++            g_map.removeThing(self);
++    }, delay);
++}
++
++void AnimatedText::setSpeedScale(float scale)
++{
++    // 0.5 .. 2: half or twice the stock speed
++    m_speedScale = std::max(0.5f, std::min(2.0f, scale));
++    m_duration = Otc::ANIMATED_TEXT_DURATION / m_speedScale;
+ }
+ 
+ void AnimatedText::updateOffset(float dt)
+diff -ru a/src/client/luafunctions_client.cpp b/src/client/luafunctions_client.cpp
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -913,6 +913,10 @@
+     g_lua.bindClassMemberFunction<AnimatedText>("getText", &AnimatedText::getText);
+     g_lua.bindClassMemberFunction<AnimatedText>("getOffset", &AnimatedText::getOffset);
+     g_lua.bindClassMemberFunction<AnimatedText>("getColor", &AnimatedText::getColor);
++    g_lua.bindClassMemberFunction<AnimatedText>("setScatter", &AnimatedText::setScatter);
++    g_lua.bindClassMemberFunction<AnimatedText>("getScatter", &AnimatedText::getScatter);
++    g_lua.bindClassMemberFunction<AnimatedText>("setSpeedScale", &AnimatedText::setSpeedScale);
++    g_lua.bindClassMemberFunction<AnimatedText>("getSpeedScale", &AnimatedText::getSpeedScale);
+ 
+     g_lua.registerClass<Player, Creature>();
+     g_lua.registerClass<Npc, Creature>();

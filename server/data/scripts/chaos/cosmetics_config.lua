@@ -50,9 +50,9 @@ return {
 	staffGroup = 4, -- /cosmetic <character>, <key | all>[, revoke]
 	previewCooldownMs = 1500, -- a store / window preview (an effect only the asking player sees)
 	consoleBackground = "#1c1a18", -- chat colours must stay readable on this (contrast 4.5 or more)
-	labelRarityColors = { -- the rarity colours of the ground labels (client game_lootfilter); accents keep them readable
-		"#c8c8c8", "#5ccf5c", "#4a90ff", "#a35cf0", "#ffd040", "#f5b13a", "#ff5a5a", "#e02424", "#ff8a70",
-		"#c8e8ff", "#9ad8ff", "#e4f2ff", "#b878ff", "#9a4ce0", "#e070ff", "#e07b24"},
+	labelRarityColors = { -- the rarity colours of the ground labels (client game_lootfilter): Common, Uncommon, Magic, Rare,
+		-- Legendary, Divine, Unique (data/lib/chaos_rarity.lua); accents keep them readable
+		"#c8c8c8", "#5ccf5c", "#4a90ff", "#a35cf0", "#ffd040", "#c8e8ff", "#e07b24"},
 
 	kinds = {
 		{key = "spellskin", name = "Spell Effects", store = "Spell Effects"},

@@ -88,12 +88,24 @@ jobs:
         run: |
           python3 -I server/tools/gen_item_prices.py --check
           python3 -I server/tools/install_item_prices_test.py
+          python3 -I server/tools/install_service_npcs_test.py  # the five service NPCs of the Halls of Services
+          python3 -I server/tools/add_vocations_potion_text_test.py
+          python3 -I server/tools/exercise_charges_patch_test.py
+          python3 -I server/tools/rarity_stock_patch_test.py  # the seven rarities: the stock roll of default_onDropLoot.lua
+          python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
 
       - name: Client spell data is up to date with the server spells
         run: |
           pip install --quiet pillow
           python3 client/tools/gen_spell_data.py  # not -I: isolated mode ignores the user site where pip put Pillow
           git diff --exit-code client/overlay/modules/game_chaosspells/spelldata.lua
+
+      - name: Weapon damage per second across styles (weapon_sim.py; the generated weapon_balance_config.lua) and melee items for every melee class
+        run: |
+          python3 -I server/tools/weapon_sim_test.py
+          python3 -I server/tools/weapon_sim.py --check
+          python3 -I server/tools/add_vocations_melee_test.py
+          python3 -I server/tools/monster_fire_resist_test.py
 
       - name: Rotations of at most 5 spells, never 2 s without one (rotation_sim.py; the helper's auto rotation data)
         run: |
@@ -166,6 +178,12 @@ jobs:
       - name: Spellbook item patch (patch_base_spellbook.py on a copy of the stock spellbook action)
         run: python3 -I server/tools/patch_base_spellbook_test.py
 
+      - name: Waystone device in the hideout (patch_waystone_hideout.py on copies of the base tier_maps.lua lines and items.xml)
+        run: python3 -I server/tools/patch_waystone_hideout_test.py
+
+      - name: Base area spell damage patch (patch_aoe_damage.py on synthetic LF and CRLF copies of the base scripts)
+        run: python3 -I server/tools/patch_aoe_damage_test.py
+
       - name: Mystic stock spell effects patch (patch_mystic_stock_fx.py on copies of the base Hex and Ripple lines)
         run: python3 -I server/tools/patch_mystic_stock_fx_test.py
 
@@ -182,6 +200,12 @@ jobs:
 
       - name: Base monster load warnings (patch_base_monsters.py on made-up monsters)
         run: python3 -I server/tools/patch_base_monsters_test.py
+      - name: Gnome city teleports open to everyone (patch_gnome_teleports.py on made-up scripts)
+        run: python3 -I server/tools/patch_gnome_teleports_test.py
+      - name: Annihilator soloable (patch_annihilator_solo.py on made-up scripts)
+        run: python3 -I server/tools/patch_annihilator_solo_test.py
+      - name: Absorb ceiling (patch_absorb_ceiling.py on made-up scripts)
+        run: python3 -I server/tools/patch_absorb_ceiling_test.py
 
       - name: Database migrations on a fresh database (patch_base_migrations.py; fresh_db_check.py needs MariaDB, else skipped)
         run: python3 -I server/tools/fresh_db_check_test.py
@@ -364,6 +388,11 @@ jobs:
           bash -n server/deploy/chaos_update.sh
           python3 -I server/deploy/chaos_update_test.py
 
+      - name: Admin app server side (chaos-ctl.sh with stubs; remote.cmd commands)
+        run: |
+          shellcheck server/deploy/chaos-ctl.sh
+          python3 -I server/deploy/chaos_ctl_test.py
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py
@@ -423,6 +452,24 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_fx.py build --check
           # condition auras, blasts, missiles, fireworks and hit splashes of pair 29 (the VFX packs, not in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack29_vfx.py build --check
+          # third-party art of pair 30 (set30 packs, import-only, not in git): spec, sums and sources match each generator's tables
+          python3 -I client/tools/sprites/pack30lib_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_looks_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_strips_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_grounds_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_decor_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_bldg_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_anim_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items_test.py
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx_test.py
           # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
@@ -446,6 +493,10 @@ jobs:
           python3 -I client/tools/sprites/gen_gear_sets_art_test.py
           python3 -I server/tools/install_gear_sets.py --lua --check
           python3 -I server/tools/install_gear_sets_test.py
+          # pack art of pair 30 (import-only): item installer, generated item Lua and Hideout list match the manifests (none yet: empty)
+          python3 -I server/tools/install_pack30_items.py --lua --check
+          python3 -I server/tools/install_pack30_items.py --hideout-lua --check
+          python3 -I server/tools/install_pack30_items_test.py
           # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
           # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check

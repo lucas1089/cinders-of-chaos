@@ -459,7 +459,7 @@ do
 	ok(p:getSlotItem(4) and p:getSlotItem(4).id == ARMOR, "still wearing it")
 	ok(p:getSlotItem(3) == bp, "the kit's backpack stays")
 	eq(p:getItemCount(EVERFULL_H) + p:getItemCount(EVERFULL_M), 2, "the Everfull potions stay")
-	eq(p:getItemCount(2399), 0, "the rest of the kit (throwing stars) is not given before the island ends")
+	eq(p:getItemCount(2379), 1, "the rest of the kit (the second dagger) is not given before the island ends: only the worn one")
 end
 -- a character already on the island when the wearable kit came (the owner's): the snapshot's counts follow it, so an
 -- armor without its tag never takes the kit's

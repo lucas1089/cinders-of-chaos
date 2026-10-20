@@ -17,7 +17,7 @@ $icon = static function (string $name): string {
 };
 $features = array(
 	'Passive tree and Paragon' => array('Over 600 nodes, and never enough points for all of them', 'Class keystones: Cleaving Arc, Ricochet, Arcane Echo, party auras', 'Build codes to share; respec priced by your level', 'Paragon points for every level after 1000'),
-	'Items and loot' => array('15 rarities from Common to Transcendent', 'Item levels and random modifiers; about 50 uniques', 'Monsters roll Magic, Rare or Legendary affixes', 'Loot filter, loot rays and treasure goblins'),
+	'Items and loot' => array('7 rarities from Common to Divine, and the uniques', 'Item levels and random modifiers; about 50 uniques', 'Monsters roll Magic, Rare or Legendary affixes', 'Loot filter, loot rays and treasure goblins'),
 	'Crafting orbs' => array('Awakening and Gilding make magic items', 'Grafting adds a modifier, Unmaking removes one', 'Upheaval and Fate reroll; Erasure starts over', 'All at the Crafting Bench (!craft)'),
 	'Endgame' => array('Five colossal world bosses with phases', 'Rifts: keys with tiers 1-15 and modifiers', 'Infinity Tower, dungeons and the bounty board', '17 level-scaled monsters in the deepest grounds'),
 	'Seasons and PvP' => array('Fresh season characters with their own ladder', 'Season uniques and an account-wide reward track', 'Ranked arena 1v1 and 2v2 with Elo ratings', 'Weekly Guild Siege for the Chaos Obelisk'),

@@ -68,10 +68,10 @@ local function roll(rate)
 	C.rateMult = rate
 	-- rnd(a, b) -> b: the count is the maximum, lootRandom() is MAX_LOOTCHANCE (needs threshold >= 100000)
 	L.setRandom(function(a, b) return b end)
-	return L.rollExtraLoot({{itemId = 2160, chance = 50000, minCount = 1, maxCount = 10}}, "magic", {level = 0})
+	return L.rollExtraLoot({{itemId = 2160, chance = 100000, minCount = 1, maxCount = 10}}, "magic", {level = 0})
 end
 local out = roll(1)
-ok(#out == 0, "chance 50% x rate 1 misses at the top roll")
+ok(#out == 0, "chance 100% x magic 0.5 x rate 1 misses at the top roll")
 out = roll(2)
 ok(#out == 1 and out[1].count == 10, "rate 2: hits, count 10 (not 20): " .. tostring(out[1] and out[1].count))
 out = roll(3)
@@ -193,6 +193,7 @@ do
 		local c = {items = n, duration = nil, decays = 0}
 		function c:getSize() return self.items end
 		function c:setAttribute(k, v) if k == ITEM_ATTRIBUTE_DURATION then self.duration = v end end
+		function c:getAttribute(k) return self.stock or 0 end
 		function c:decay() self.decays = self.decays + 1 end
 		return c
 	end
@@ -211,7 +212,17 @@ do
 		ok(looted.duration == 30000 and looted.decays == 1, "emptied by autoloot: short decay")
 		local left = corpseOf(2)
 		late(pacedMonster, left)
-		ok(left.duration == nil and left.decays == 0, "items left in it: stock decay")
+		ok(left.duration == nil and left.decays == 0, "items left in it: stock decay (corpseSeconds unset)")
+		ChaosPaceConfig.corpseSeconds = 120
+		local full = corpseOf(2)
+		full.stock = 300000
+		late(stockMonster, full)
+		ok(full.duration == 120000 and full.decays == 1, "corpse with loot: shortened to corpseSeconds")
+		local brief = corpseOf(2)
+		brief.stock = 60000
+		late(stockMonster, brief)
+		ok(brief.duration == nil, "stock decay already shorter: kept")
+		ChaosPaceConfig.corpseSeconds = nil
 		local stock = corpseOf(0)
 		late(stockMonster, stock)
 		ok(stock.duration == nil, "not paced: stock decay")
@@ -256,6 +267,40 @@ do
 	ok(#records == 0, "no owner: no pity")
 	ChaosConquest = nil
 	L.setRandom(math.random)
+end
+
+-- owner 2026-10-17: orbs only from monsters of level 100+ (bosses exempt), waystones only from level 150+
+do
+	local cur0 = C.currency
+	local saved = {entries = cur0.entries, guaranteed = cur0.guaranteed, scale = cur0.maxScale}
+	cur0.entries = {{id = 1, count = {1, 1}, chance = {normal = 10000, boss = 10000}}}
+	cur0.guaranteed = {}
+	cur0.maxScale = 3.0
+	L.setRandom(function(a, b) return a end)
+	ok(cur0.minMonsterLevel == 100, "orb level gate default 100")
+	ok(#L.rollCurrency("normal", {orbLevel = 99}) == 0, "level 99: no orb")
+	ok(#L.rollCurrency("normal", {orbLevel = 100}) == 1, "level 100: orbs drop")
+	ok(#L.rollCurrency("normal", {}) == 1, "no level in ctx (diagnostics): not gated")
+	ok(#L.rollCurrency("boss", {orbLevel = 10}) == 1, "bosses are exempt")
+	cur0.entries, cur0.guaranteed, cur0.maxScale = saved.entries, saved.guaranteed, saved.scale
+	L.setRandom(math.random)
+
+	local function mkCorpse(names)
+		local removed = {}
+		local items = {}
+		for i, n in ipairs(names) do
+			items[i] = {getName = function() return n end, remove = function() removed[n] = true; items[i].gone = true end}
+		end
+		local corpse = {getSize = function() return #items end, getItem = function(_, slot) return items[slot + 1] end}
+		return corpse, removed
+	end
+	local corpse, removed = mkCorpse({"Waystone Tier III", "gold coin", "Waystone Tier I"})
+	ok(L.gateWaystones(corpse, 149, "normal") == 2 and removed["Waystone Tier III"] and removed["Waystone Tier I"]
+		and not removed["gold coin"], "level 149: waystones taken out, other loot kept")
+	corpse, removed = mkCorpse({"Waystone Tier III"})
+	ok(L.gateWaystones(corpse, 150, "normal") == 0 and not next(removed), "level 150: waystone stays")
+	corpse, removed = mkCorpse({"Waystone Tier III"})
+	ok(L.gateWaystones(corpse, 20, "boss") == 0, "boss tier is skipped")
 end
 
 print(string.format("loot_caps_test: %d checks, %d failures", checks, fails))

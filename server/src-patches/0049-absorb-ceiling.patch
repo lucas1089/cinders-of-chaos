@@ -1,0 +1,80 @@
+# Global absorb ceiling of 75 percent per combat type (server/README.md "Absorb ceiling"). Owner decision 2026-10-20.
+# Before: equipment absorbs (Player::blockHit, item abilities, each one applied to what was left) and the absorb storages
+# (rarity_onCombat_absorbs.lua, after blockHit: gear rarity storages 977544-977553/972/974 plus the passive tree and Paragon
+# storages 977562-977575, summed, no cap) stacked without limit and could pass 100 percent on one element.
+# After: in Player::blockHit the equipment part is raised back so that (equipment and storages) together never remove more
+# than CHAOS_ABSORB_CEILING_PERCENT (75, player.cpp, the one place to change). The storage part is read with
+# Player::getStorageValue, so equipment takes at most 25/(100-storage) of the hit; with storages at 75 or more, equipment
+# takes nothing more. Not covered: the Lua event itself still takes the full storage sum after blockHit, so the storage
+# sum must stay at or under 75 (passivetree_effects.lua maxAbsorb 75, see README) or the ceiling is only met for equipment.
+# Applies after 0001-0048: patch -p1 < 0049-absorb-ceiling.patch, then rebuild (applies cleanly; NOT compiled).
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -2158,6 +2158,40 @@
+ 	return false;
+ }
+ 
++// Chaos (patch 0049): global absorb ceiling. The share of a hit that equipment and the absorb storages together can
++// take away is at most this many percent per combat type. THE ONE PLACE TO CHANGE IT (server/README.md "Absorb ceiling").
++static constexpr int32_t CHAOS_ABSORB_CEILING_PERCENT = 75;
++
++// Chaos (patch 0049): the percent that scripts/customs/rarity/rarity_onCombat_absorbs.lua will take off after blockHit
++// (the sum of the two absorb storages of the type: gear rarity roll 9775xx and the passive tree / Paragon 9775xx)
++static int32_t chaosStorageAbsorbPercent(const Player* player, CombatType_t combatType)
++{
++	uint32_t keys[2];
++	switch (combatType) {
++		case COMBAT_FIREDAMAGE: keys[0] = 977544; keys[1] = 977562; break;
++		case COMBAT_PHYSICALDAMAGE: keys[0] = 977545; keys[1] = 977563; break;
++		case COMBAT_ENERGYDAMAGE: keys[0] = 977546; keys[1] = 977564; break;
++		case COMBAT_EARTHDAMAGE: keys[0] = 977547; keys[1] = 977565; break;
++		case COMBAT_DROWNDAMAGE: keys[0] = 977548; keys[1] = 977566; break;
++		case COMBAT_ICEDAMAGE: keys[0] = 977549; keys[1] = 977567; break;
++		case COMBAT_HOLYDAMAGE: keys[0] = 977550; keys[1] = 977568; break;
++		case COMBAT_DEATHDAMAGE: keys[0] = 977551; keys[1] = 977569; break;
++		case COMBAT_WATERDAMAGE: keys[0] = 977552; keys[1] = 977570; break;
++		case COMBAT_ARCANEDAMAGE: keys[0] = 977553; keys[1] = 977571; break;
++		case COMBAT_LIFEDRAIN: keys[0] = 977572; keys[1] = 977573; break;
++		case COMBAT_MANADRAIN: keys[0] = 977574; keys[1] = 977575; break;
++		default: return 0;
++	}
++	int32_t total = 0;
++	for (uint32_t key : keys) {
++		int32_t value;
++		if (player->getStorageValue(key, value) && value > 0) {
++			total += value;
++		}
++	}
++	return std::min<int32_t>(total, 100);
++}
++
+ BlockType_t Player::blockHit(Creature* attacker, CombatType_t combatType, int32_t& damage,
+                              bool checkDefense /* = false*/, bool checkArmor /* = false*/, bool field /* = false*/, bool ignoreResistances /* = false*/)
+ {
+@@ -2177,6 +2211,7 @@
+ 	}
+ 
+ 	if (!ignoreResistances) {
++		const int32_t chaosDamageBefore = damage; // Chaos (patch 0049)
+ 		for (int32_t slot = CONST_SLOT_FIRST; slot <= CONST_SLOT_BADGE; ++slot) { 
+ 			if (!isItemAbilityEnabled(static_cast<slots_t>(slot))) {
+ 				continue;
+@@ -2219,6 +2254,18 @@
+ 				}
+ 			}
+ 		}
++
++		// Chaos (patch 0049): equipment and the storage absorbs (taken off later by the Lua event) together never remove
++		// more than the ceiling. Equipment may take at most (100 - ceiling) / (100 - storage) of the hit; when the
++		// storages alone reach the ceiling, equipment takes nothing more.
++		if (damage < chaosDamageBefore) {
++			const int32_t storageAbsorb = std::min<int32_t>(chaosStorageAbsorbPercent(this, combatType), CHAOS_ABSORB_CEILING_PERCENT);
++			const int32_t leftPercent = 100 - CHAOS_ABSORB_CEILING_PERCENT; // what must get through at least
++			const int32_t minDamage = static_cast<int32_t>(std::ceil(chaosDamageBefore * (leftPercent / (100. - storageAbsorb)) - 1e-9));
++			if (damage < minDamage) {
++				damage = std::min(minDamage, chaosDamageBefore);
++			}
++		}
+ 	}
+ 
+ 	if (damage <= 0) {

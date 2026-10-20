@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Vessa Hollowmark: the pocket boss NPC, who opens the Boss Spawns ledger and its pocket fights (server/data/scripts/chaos/service_npcs.lua, service_npcs_config.lua; server/README.md "Service NPCs").
+     Stands in a booth of the Hall of Services; installed by server/tools/install_service_npcs.py. The same window opens
+     from the game menu. -->
+<npc name="Vessa Hollowmark" script="vessa_hollowmark.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="136" head="19" body="94" legs="76" feet="115" addons="2" />
+	<parameters>
+		<parameter key="message_greet" value="Hunter, |PLAYERNAME|. I keep the ledger of every boss and the hour it returns. Ask for the {bosses}, or about your daily {charges}." />
+		<parameter key="message_farewell" value="Good hunting, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The ledger stays open." />
+	</parameters>
+</npc>

@@ -11,6 +11,10 @@
 --   chaos_gem1 .. 3    server id of the gem in that socket (absent = empty)
 -- The description gets one section at its end: "Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty."
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosGems = ChaosGems or {}
 local G = ChaosGems
 if not ChaosItemMods then
@@ -217,7 +221,7 @@ local function isGear(item)
 end
 
 local function rarityOf(item)
-	return clamp(customNumber(item, "rarity"), 0, 15)
+	return clamp(customNumber(item, "rarity"), 0, 15) -- an id of ChaosRarity (G.rarityIndex reads old ids too)
 end
 
 local function twoHanded(item)
@@ -226,13 +230,10 @@ local function twoHanded(item)
 	return ok and floor((tonumber(slots) or 0) / bit) % 2 == 1
 end
 
--- rarity tier for the socket tables: 1 = no rarity, 2 = Common-Rare ... 6 = Cosmic-Transcendent
+-- rarity place for the socket tables: 1 = no rarity, 2 = Common, 3 = Uncommon, 4 = Magic, 5 = Rare, 6 = Legendary,
+-- 7 = Divine (ChaosRarity rank + 1; an old id counts as the rarity it became)
 function G.rarityIndex(rarity)
-	rarity = clamp(floor(tonumber(rarity) or 0), 0, 15)
-	if rarity == 0 then
-		return 1
-	end
-	return math.ceil(rarity / 3) + 1
+	return (ChaosRarity and ChaosRarity.rank(rarity) or 0) + 1
 end
 
 -- the most sockets this item may have (0 = none: not gear)

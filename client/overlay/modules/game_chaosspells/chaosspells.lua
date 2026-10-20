@@ -126,6 +126,7 @@ local HELPER_VOCATION = { [1] = 3, [3] = 2, [4] = 1, [5] = 3, [7] = 2, [8] = 1, 
   [11] = 6, [12] = 6, [13] = 6, [14] = 1, [15] = 2, [17] = 8, [18] = 8, [19] = 8, [20] = 7, [21] = 7, [22] = 7,
   [23] = 9, [24] = 9, [25] = 9 }
 local helperExtended = false
+local helperAdded = {} -- what the generic pass added to the helper's lists (for the tests and the log)
 local fixUndo, fixIdMap, fixRemovedIds = {}, {}, {} -- ChaosSpellFix.apply (spellfix.lua): undo list, stock id ->
 -- server id, ids of the spells the server removed (ChaosRemovedSpells)
 
@@ -148,12 +149,6 @@ local function showRemovedSpells(order)
   hiddenOrder = {}
 end
 
-local function addOnce(list, value)
-  if not table.contains(list, value) then
-    table.insert(list, value)
-  end
-end
-
 local function extendHelper()
   if helperExtended then
     return true
@@ -164,36 +159,19 @@ local function extendHelper()
   end
   -- the helper's lists are keyed by the stock ids: move them to the server's ids first (spellfix.lua)
   ChaosSpellFix.remapHelper(data, fixIdMap, fixRemovedIds)
-  local byVocation = data.getSpellFilterByVocation()
-  local healing = data.getHealingSpellFilter()
-  local support, supportSet = data.getSupportSpellsWhitelist(), data.getSupportSpellsWhitelistSet()
+  -- the Chaos spells and the base spells the client had no entry for (F.EXTRA, their SpellInfo entries come after this
+  -- call), then every other castable spell of the client's table (F.EXTRA, stock spells the helper's own lists
+  -- lack): the pickers offer every spell the spellbook lists
+  local chaos = {}
   for _, s in ipairs(ChaosSpellData) do
-    if ChaosSpellFix.HELPER_EXCLUDE[s.id] then
-      goto nextSpell
-    end
-    local vocs = {}
-    for _, v in ipairs(s.vocations) do
-      local h = HELPER_VOCATION[v]
-      if h then
-        vocs[h] = true
-        vocs[h + 10] = true
-      end
-    end
-    for v in pairs(vocs) do
-      byVocation[v] = byVocation[v] or {}
-      addOnce(byVocation[v], s.id)
-      if s.group == 2 then
-        healing[s.id] = healing[s.id] or {}
-        addOnce(healing[s.id], v)
-      elseif s.group == 3 then
-        support[v] = support[v] or {}
-        supportSet[v] = supportSet[v] or {}
-        addOnce(support[v], s.id)
-        supportSet[v][s.id] = true
-      end
-    end
-    ::nextSpell::
+    chaos[#chaos + 1] = { id = s.id, name = s.name, groups = { s.group }, vocations = s.vocations }
   end
+  for _, e in ipairs(ChaosSpellFix.EXTRA) do
+    chaos[#chaos + 1] = { id = e.id, name = e.name, groups = { 1 }, vocations = e.vocations }
+  end
+  ChaosSpellFix.extendHelperLists(data, chaos, HELPER_VOCATION, ChaosSpellFix.HELPER_EXCLUDE, false)
+  local rest = ChaosSpellFix.castableFromInfo(SpellInfo.Default, fixRemovedIds)
+  helperAdded = ChaosSpellFix.extendHelperLists(data, rest, HELPER_VOCATION, ChaosSpellFix.HELPER_EXCLUDE, true)
   helperExtended = true
   return true
 end
@@ -240,7 +218,10 @@ function init()
     SpellInfo.Default[s.name] = {
       id = s.id, name = s.name, words = s.words, type = 'Instant', level = s.level, mana = s.mana, soul = 0,
       icon = s.iconKey, group = { [s.group] = s.groupCooldown }, needTarget = s.needTarget, parameter = false,
-      range = s.range, exhaustion = s.cooldown, premium = s.premium, vocations = s.vocations, manaPercent = s.manaPercent
+      range = s.range, exhaustion = s.cooldown, premium = s.premium, vocations = s.vocations, manaPercent = s.manaPercent,
+      -- a wave or beam along the facing (server direction="1"): the helper turns toward the target before it (owner
+      -- report 2026-10-17, "Auto turn"); the area lets its monster counter look along the beam
+      directional = s.directional, area = s.areaName and SpellAreas and SpellAreas[s.areaName] or nil
     }
     SpellIcons[s.iconKey] = { s.clientId, s.id }
     if order then

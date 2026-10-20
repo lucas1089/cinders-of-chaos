@@ -290,7 +290,10 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		displayInfoBox(tr('Stow Everything'), V.reportText(buffer))
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
-		Stash.Toggle()
+		-- open = true: the depot locker asks for the window (it stays open when it already is)
+		if not (buffer.open == true and Stash.UI and Stash.UI:isVisible()) then
+			Stash.Toggle()
+		end
 	elseif buffer.make == "addCategorys" then
 		Stash.CategoryData = buffer
 		Stash.remoteAccess = (buffer.remote == true)
@@ -521,7 +524,7 @@ end
 -- the locked deposit: a line that says where to unlock remote deposit
 Stash.ShowLocked = function()
 	if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
-		modules.game_textmessage.displayFailureMessage(V.depositLockedText())
+		modules.game_textmessage.displayFailureMessage(V.depositLockedText(Stash.Tabs))
 	end
 end
 

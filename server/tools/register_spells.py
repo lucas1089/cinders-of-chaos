@@ -11,6 +11,10 @@ Steps:
   2. inserts  <DATA_DIR>/spells/chaos/spells_chaos.xml  into <DATA_DIR>/spells/spells.xml before </spells>,
      wrapped in marker comments; re-running replaces that block, it never duplicates.
 Refuses (exit 1) if a chaos spellid, words or name is already used by a spell outside the marker block.
+A base spell whose script is one of the ammunition conjure scripts (chaos_archery_config.lua conjureScripts: Arrow Call
+176, Fletch Crystal Arrows 192, Fletch Wraith Bolts 193 ...) does not hold its spellid: the "archery" step
+(patch_base_archery.py, right after this one) comments those spells out of spells.xml, so the ids are free for the
+Chaos block. The Necromancer's three summon spells use 176, 192 and 193 (every other id below 256 is taken).
 """
 import os, re, shutil, sys
 
@@ -22,6 +26,18 @@ INSTANT = re.compile(r'<instant\b[^>]*?(?:/>|>.*?</instant>)', re.S)
 def attrs(block):
     head = re.match(r'<instant\b([^>]*)', block, re.S).group(1)
     return dict(re.findall(r'(\w+)="([^"]*)"', head))
+
+
+def ammo_conjure_scripts(data):
+    """script file names of the conjure spells patch_base_archery.py switches off (chaos_archery_config.lua), read from
+    the installed lib folder, else from this repository"""
+    for p in (os.path.join(data, 'lib', 'chaos_archery_config.lua'),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'lib', 'chaos_archery_config.lua')):
+        if os.path.isfile(p):
+            m = re.search(r'\bconjureScripts\s*=\s*\{(.*?)\}', open(p, encoding='utf-8').read(), re.S)
+            if m:
+                return set(re.findall(r'"([^"]+)"', m.group(1)))
+    return set()
 
 
 def main():
@@ -48,7 +64,9 @@ def main():
         b = text.index(END) + len(END)
         text = text[:a] + text[b:]
     others = [attrs(b) for b in INSTANT.findall(re.sub(r'<!--.*?-->', '', text, flags=re.S))]
-    used_id = {o['spellid'] for o in others if 'spellid' in o}
+    ammo = ammo_conjure_scripts(data)
+    used_id = {o['spellid'] for o in others
+               if 'spellid' in o and os.path.basename(o.get('script', '')) not in ammo}
     used_words = {o['words'].lower() for o in others if 'words' in o}
     used_name = {o['name'].lower() for o in others if 'name' in o}
 

@@ -16,7 +16,7 @@ local s = {
   level = 1000, gate = 123, near = true, money = 5000000, left = 3 * 3600 + 5 * 60 + 9, hours = 4, at = '08:00', tz = 'UTC-3',
   reroll = 862500, rerolls = 1, rerollMax = 3,
   odds = { { r = 1, n = 'Common', p = 61.9 }, { r = 2, n = 'Uncommon', p = 11.62 }, { r = 5, n = 'Legendary', p = 3.46 },
-    { r = 10, n = 'Divine', p = 2.24 }, { r = 9, n = 'Eternal', p = 0.75 } },
+    { r = 6, n = 'Divine', p = 0.38 }, { r = 4, n = 'Rare', p = 5.4 } },
   npc = 'Mordecai Ashwager',
   last = { r = 5, rn = 'Legendary', id = 29879, c = 9879, n = 'Dawnforged Plate', l = 119, s = 'armor', i = 2 }
 }
@@ -94,8 +94,8 @@ eq(select(2, V.reroll({ rerollMax = 0 })), false, 'switched off')
 
 -- odds and the reveal
 has(V.oddsText(s), 'Common 61.9%', 'odds text')
-has(V.oddsText(s), 'Eternal 0.75%', 'small odds keep two decimals')
-eq(V.legendaryOrBetter(s), 3.46 + 2.24 + 0.75, 'legendary or better')
+has(V.oddsText(s), 'Divine 0.38%', 'small odds keep two decimals')
+eq(V.legendaryOrBetter(s), 3.46 + 0.38, 'legendary or better')
 local rv, rc = V.reveal(s.last)
 eq(rv, 'The seal breaks: Legendary Dawnforged Plate (item level 119)', 'reveal text')
 eq(rc, V.RARITY[5], 'reveal colour')

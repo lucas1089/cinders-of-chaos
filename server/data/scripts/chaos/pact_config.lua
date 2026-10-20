@@ -73,8 +73,9 @@ return {
 		-- (2026-10-15), so the free count grew from 2 tabs of 48 to 4 of 100 (stash_config.lua "Free sizing")
 		stashTabs = {label = "Stash tabs (100 entries)", free = 4, pact = 2, maxExtra = 6},
 		-- depot tabs (depot.lua, depot_config.lua): 100 items each; achievement tabs come on top (depot_config.lua
-		-- achievementTabs, at most 3): free + pact + maxExtra + 3 = 17, the number of depot boxes
-		depotTabs = {label = "Depot tabs (100 items)", free = 4, pact = 1, maxExtra = 9},
+		-- achievementTabs, at most 3): free + pact + maxExtra + 3 = 17, the number of depot boxes. One free tab (owner
+		-- 2026-10-17: the default depot has a single tab); the rest is bought, earned or lent by the Pact
+		depotTabs = {label = "Depot tabs (100 items)", free = 1, pact = 1, maxExtra = 12},
 		marketListings = {label = "Market listings (character)", free = 20, pact = 10, maxExtra = 0},
 		marketAccount = {label = "Market listings (account)", free = 40, pact = 20, maxExtra = 0},
 		buildSlots = {label = "Saved builds", free = 2, pact = 3, maxExtra = 6},

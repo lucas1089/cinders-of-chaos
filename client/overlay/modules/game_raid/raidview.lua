@@ -147,12 +147,12 @@ function RaidView.lootText(line)
 end
 
 -- ---------------------------------------------------------------- vendor
-local RARITY = { 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary' }
+local RARITY = { 'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary' } -- by rarity id (the vendor gear is 4, Rare)
 function RaidView.vendorRow(e, marks)
   e = type(e) == 'table' and e or {}
   local sub
   if e.kind == 'gear' then
-    sub = tr('%s, item level %d: %s', RARITY[num(e.rarity) or 0] or 'Epic', num(e.level) or 0,
+    sub = tr('%s, item level %d: %s', tr(RARITY[num(e.rarity) or 0] or 'Rare'), num(e.level) or 0,
       table.concat(type(e.mods) == 'table' and e.mods or {}, ', '))
   else
     local parts = {}

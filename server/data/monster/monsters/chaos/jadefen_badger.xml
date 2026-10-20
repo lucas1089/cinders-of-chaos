@@ -31,6 +31,5 @@
 		<item id="7896" countmax="1" chance="200"/>
 		<item id="11303" countmax="1" chance="200"/>
 		<item id="2527" countmax="1" chance="200"/>
-		<item id="25379" countmax="1" chance="50"/><!-- plainum tokens -->
 	</loot>
 </monster>

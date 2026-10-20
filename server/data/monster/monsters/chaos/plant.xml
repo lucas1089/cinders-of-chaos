@@ -37,10 +37,12 @@
 			<attribute key="areaEffect" value="blueshimmer"/>
 		</defense>
 	</defenses>
+	<elements>
+		<element firePercent="30"/>
+	</elements>
 	<immunities>
 		<immunity physical="1"/>
 		<immunity energy="1"/>
-		<immunity fire="1"/>
 		<immunity poison="1"/>
 		<immunity ice="1"/>
 		<immunity holy="1"/>

@@ -25,6 +25,10 @@ local list = { { k = 'haste', n = 'Haste', d = 'Faster.', i = 'spell:utani hur',
   { k = 'rage', n = 'Rage +20%', d = 'Hit harder.', i = 'buff:rage', t = 0, s = 20 } }
 eq(M.apply(st, 'full', { list = list }, now), true, 'full changes')
 eq(M.count(st), 3, 'three entries')
+eq(M.activeNames({}, now), nil, 'no list yet: nil, not an empty set')
+local names = M.activeNames(st, now)
+eq(names.haste, true, 'active names: a buff by its lowercase name'); eq(names['rage +20%'], true, 'active names: stacks text stays in the name')
+eq(names.poisoned, nil, 'active names: a debuff is not a buff'); eq(M.activeNames(st, now + 100).haste, nil, 'active names: a buff past its time is gone')
 eq(st.buffs.haste.endAt, 1012, 'end time from ms'); eq(st.buffs.poison.debuff, true, 'debuff'); eq(st.buffs.rage.endAt, nil, 'no timer'); eq(st.buffs.rage.stacks, 20, 'stacks')
 eq(M.remaining(st.buffs.haste, 1004), 8, 'time left'); eq(M.remaining(st.buffs.haste, 1100), 0, 'never negative'); eq(M.remaining(st.buffs.rage, 1004), nil, 'no time')
 -- update: recast and stacks; the order stays
@@ -114,6 +118,8 @@ eq(M.iconPath('regen', true, function(f) return f == '/images/game/buffs_painted
   '/images/game/buffs_painted/regen', 'painted on, the file is there')
 eq(M.iconPath('new_one', true, function() return false end), '/images/game/buffs/new_one', 'no painted icon: the own one')
 eq(M.iconPath('../x', true), nil, 'painted path is checked too')
+
+do local c = {}; M.apply(c, 'full', {}, 1); eq(M.activeNames(c, 1) ~= nil, true, 'an empty full list is still a list'); M.clear(c); eq(M.activeNames(c, 1), nil, 'cleared: unknown again') end
 
 if fails > 0 then os.exit(1) end
 print('buff bar tests OK (' .. checks .. ' checks)')

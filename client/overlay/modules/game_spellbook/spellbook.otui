@@ -59,10 +59,23 @@ SpellbookRow < UIWidget
     color: #8c8070
     phantom: true
 
+  // "AoE" tag of an attack spell that hits an area, left of the level (empty for the others; always takes its width)
+  UILabel
+    id: aoe
+    anchors.right: level.left
+    anchors.top: name.bottom
+    margin-top: 2
+    margin-right: 2
+    width: 28
+    text-align: right
+    font: verdana-11px-rounded
+    color: #e8902a
+    phantom: true
+
   UILabel
     id: words
     anchors.left: name.left
-    anchors.right: level.left
+    anchors.right: aoe.left
     anchors.top: name.bottom
     margin-top: 2
     margin-right: 2
@@ -132,14 +145,20 @@ ChaosMainWindow
     anchors.top: searchEdit.bottom
     anchors.left: parent.left
     margin-top: 5
-    width: 130
+    width: 112
+
+  ChaosComboBox
+    id: kindCombo
+    anchors.top: filterCombo.top
+    anchors.left: filterCombo.right
+    anchors.right: searchEdit.right
+    margin-left: 6
 
   ChaosLabelDim
     id: countLabel
-    anchors.left: filterCombo.right
-    anchors.right: searchEdit.right
-    anchors.verticalCenter: filterCombo.verticalCenter
-    text-align: right
+    anchors.left: parent.left
+    anchors.verticalCenter: closeButton.verticalCenter
+    text-align: left
 
   ChaosPanelDark
     id: listFrame

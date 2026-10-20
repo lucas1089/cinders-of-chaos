@@ -286,33 +286,33 @@ ItemType = function(id)
 end
 dofile("data/scripts/chaos/loot.lua")
 local L, LC = ChaosLoot, ChaosLootConfig
-local odds = K.odds(cfg, LC.gear)
+local odds = K.odds(cfg, LC.gear) -- by place: 0 none, 1 Common .. 6 Divine
 local total = 0
-for v = 0, 15 do
+for v = 0, 6 do
 	total = total + odds[v]
 end
 check(math.abs(total - 1) < 1e-9, "odds sum to 1 (" .. total .. ")")
 eq(odds[0], 0, "never plain")
-for v = cfg.odds.maxRarity + 1, 15 do
+for v = ChaosRarity.rank(cfg.odds.maxRarity) + 1, 6 do
 	eq(odds[v], 0, "nothing above the cap " .. v)
 end
-local leg = K.atLeast(odds, 5)
-local normalDrop = K.odds({odds = {draws = 1, floor = 0, tier = "normal", find = 1, maxRarity = 15}}, LC.gear)
-local magicDrop = K.odds({odds = {draws = 1, floor = 0, tier = "magic", find = 1, maxRarity = 15}}, LC.gear)
+local leg = K.atLeast(odds, 5) -- Legendary or better
+local normalDrop = K.odds({odds = {draws = 1, floor = 0, tier = "normal", find = 1, maxRarity = 10}}, LC.gear)
+local magicDrop = K.odds({odds = {draws = 1, floor = 0, tier = "magic", find = 1, maxRarity = 10}}, LC.gear)
 -- Legendary stays as rare as on drops: no more often than on a magic monster's gear drop
 check(leg <= K.atLeast(magicDrop, 5) + 1e-12, string.format("Legendary or better %.2f%% <= a magic drop's %.2f%%", leg * 100,
 	K.atLeast(magicDrop, 5) * 100))
 check(leg < 0.15, string.format("Legendary or better stays rare: %.2f%%", leg * 100))
-check(K.atLeast(odds, 10) < 0.03, string.format("Divine %.2f%%", K.atLeast(odds, 10) * 100))
+check(K.atLeast(odds, 6) < 0.03, string.format("Divine %.2f%%", K.atLeast(odds, 6) * 100))
 -- the drops' own numbers (for server/README.md)
 print(string.format("drops: normal plain %.1f%%, Legendary+ %.2f%%; magic plain %.1f%%, Legendary+ %.2f%%",
 	normalDrop[0] * 100, K.atLeast(normalDrop, 5) * 100, magicDrop[0] * 100, K.atLeast(magicDrop, 5) * 100))
 -- better than a gear drop of a normal and of a magic monster at every rarity
 for _, tier in ipairs({"normal", "magic"}) do
-	local drop = K.odds({odds = {draws = 1, floor = 0, tier = tier, find = 1, maxRarity = 15}}, LC.gear)
-	for v = 1, cfg.odds.maxRarity do
+	local drop = K.odds({odds = {draws = 1, floor = 0, tier = tier, find = 1, maxRarity = 10}}, LC.gear)
+	for v = 1, ChaosRarity.rank(cfg.odds.maxRarity) do
 		check(K.atLeast(odds, v) >= K.atLeast(drop, v) - 1e-12,
-			string.format("rarity %d+: gamble %.2f%% >= %s drop %.2f%%", v, K.atLeast(odds, v) * 100, tier, K.atLeast(drop, v) * 100))
+			string.format("rarity place %d+: gamble %.2f%% >= %s drop %.2f%%", v, K.atLeast(odds, v) * 100, tier, K.atLeast(drop, v) * 100))
 	end
 end
 -- the real roll (loot.lua's own functions) agrees with the table
@@ -321,20 +321,20 @@ do
 	L.setRandom(function(a, b) return rand(a, b) end)
 	local n, hits = 200000, {}
 	for _ = 1, n do
-		local v = K.rollRarity(cfg, L)
+		local v = ChaosRarity.rank(K.rollRarity(cfg, L)) -- the roll gives a stored id
 		hits[v] = (hits[v] or 0) + 1
 	end
 	L.setRandom(nil)
-	for v = 0, 15 do
+	for v = 0, 6 do
 		local seen = (hits[v] or 0) / n
 		local want = odds[v]
 		local tol = 4 * math.sqrt(math.max(want * (1 - want), 1e-9) / n) + 1e-4
-		check(math.abs(seen - want) <= tol, string.format("rarity %d: rolled %.4f, table %.4f", v, seen, want))
+		check(math.abs(seen - want) <= tol, string.format("rarity place %d: rolled %.4f, table %.4f", v, seen, want))
 	end
 	eq(hits[0], nil, "the real roll never gives a plain piece")
 end
-print(string.format("odds: Common %.1f%%, Uncommon %.1f%%, Rare %.1f%%, Epic %.1f%%, Legendary+ %.2f%%, Divine %.2f%%",
-	odds[1] * 100, odds[2] * 100, odds[3] * 100, odds[4] * 100, leg * 100, odds[10] * 100))
+print(string.format("odds: Common %.1f%%, Uncommon %.1f%%, Magic %.1f%%, Rare %.1f%%, Legendary+ %.2f%%, Divine %.2f%%",
+	odds[1] * 100, odds[2] * 100, odds[3] * 100, odds[4] * 100, leg * 100, odds[6] * 100))
 
 -- ---------------------------------------------------------------- purchase refusals (in order)
 do

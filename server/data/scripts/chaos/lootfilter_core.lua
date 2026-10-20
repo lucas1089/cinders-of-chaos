@@ -16,33 +16,38 @@
 --   ChaosLootFilter.packSound / unpackSound   sound per rule, volume, mute, hunt tracker flag <-> one int32 storage value
 --   ChaosLootFilter.pickSound(hits, snd)      the alert sound of a kill;  resetPlan(scope, rule)  what a reset clears
 --   ChaosLootFilter.look(outfit, shaders, fallback) / parseShaders(xml)   the monster icon of a loot row (client outfit table)
--- info = {id, rarity = 0..15, unique = bool, orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
+-- info = {id, rarity = 0 or a stored id of data/lib/chaos_rarity.lua (1, 2, 3, 4, 5, 10), unique = bool, orb = bool, power = bool (a legendary power: always glows), category = "equipment"|"currency"|"supplies"|"other", name, count,
 --         level = item level, bestTier = the best modifier tier on it (0 = none)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosLootFilter = ChaosLootFilter or {}
 local F = ChaosLootFilter
 
--- The base server's rarity table (data/scripts/eventcallbacks/monster/default_onDropLoot.lua): ids 1..15.
--- Colours are ours (the client module game_lootfilter has the same list); the ray bands follow them.
-F.RARITY = {
-	{name = "Common", color = "#c8c8c8"},
-	{name = "Uncommon", color = "#5ccf5c"},
-	{name = "Rare", color = "#4a90ff"},
-	{name = "Epic", color = "#a35cf0"},
-	{name = "Legendary", color = "#ffd040"},
-	{name = "Exotic", color = "#f5b13a"},
-	{name = "Mythic", color = "#ff5a5a"},
-	{name = "Chaos", color = "#e02424"},
-	{name = "Eternal", color = "#ff8a70"},
-	{name = "Divine", color = "#c8e8ff"},
-	{name = "Phantasmal", color = "#9ad8ff"},
-	{name = "Celestial", color = "#e4f2ff"},
-	{name = "Cosmic", color = "#b878ff"},
-	{name = "Abyssal", color = "#9a4ce0"},
-	{name = "Transcendent", color = "#e070ff"}
-}
-F.MAX_RARITY = #F.RARITY
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
+-- The rarities (data/lib/chaos_rarity.lua): Common, Uncommon, Magic, Rare, Legendary, Divine in rank order (Unique is
+-- the unique flag of an item, F.UNIQUE_COLOR). Each row has its stored id; the client module game_lootfilter has the
+-- same list. An old item that still carries one of the 15 ids is read as the rarity it became (F.row, ChaosRarity.canon).
+F.RARITY = {}
+for rank = 1, ChaosRarity.STORED do
+	local r = ChaosRarity.list[rank]
+	F.RARITY[rank] = {id = r.id, name = r.name, color = r.color}
+end
+F.MAX_RARITY = F.RARITY[#F.RARITY].id -- 10: the highest stored id; the thresholds below are stored ids too
+
+-- the row of a rarity number (any of the 15 old ids), nil for none
+function F.row(rarity)
+	local rank = ChaosRarity.rank(rarity)
+	return rank > 0 and F.RARITY[rank] or nil
+end
+
+-- the stored id of a rarity number (0 = none)
+function F.id(rarity)
+	local c = ChaosRarity.canon(rarity)
+	return c == ChaosRarity.UNIQUE and 0 or c
+end
 F.UNIQUE_COLOR = "#e07b24"
 F.ORB_COLOR = "#4fd8d0"
 F.CATEGORIES = {"equipment", "currency", "supplies", "other"}
@@ -63,9 +68,9 @@ end
 F.MAX_TIER = 8
 
 F.PRESETS = {
-	{key = "all", name = "Show all", desc = "Rare+ glows, nothing is dimmed, autoloot as on your list."},
-	{key = "hunter", name = "Hunter", desc = "Epic+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Epic+."},
-	{key = "strict", name = "Strict", desc = "Legendary+ glows, gear below Epic dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Epic, picks up Legendary+."}
+	{key = "all", name = "Show all", desc = "Magic+ glows, nothing is dimmed, autoloot as on your list."},
+	{key = "hunter", name = "Hunter", desc = "Rare+ glows, Common and plain gear dimmed; Rarity Autoloot picks up Rare+."},
+	{key = "strict", name = "Strict", desc = "Legendary+ glows, gear below Rare dimmed, supplies and other dimmed; Rarity Autoloot: nothing below Rare, picks up Legendary+."}
 }
 
 function F.applyPreset(name)
@@ -92,10 +97,11 @@ local function clampRarity(v, default)
 	if v < 0 then
 		return 0
 	end
-	if v > F.MAX_RARITY then
+	if v > ChaosRarity.MAX_LEGACY then
 		return F.MAX_RARITY
 	end
-	return v
+	-- a threshold saved before the seven rarities (6 .. 15) means the rarity it became
+	return F.id(v)
 end
 
 local function bool(v, default)
@@ -181,7 +187,7 @@ function F.classify(info, s)
 	local category = info.category or "other"
 	local shown = not (s.show and s.show[category] == false)
 	if category == "equipment" then
-		local r = tonumber(info.rarity) or 0
+		local r = F.id(info.rarity)
 		if s.highlight > 0 and r >= s.highlight then
 			return "highlight"
 		end
@@ -200,7 +206,7 @@ function F.color(info)
 	if info.unique then
 		return F.UNIQUE_COLOR
 	end
-	local r = F.RARITY[tonumber(info.rarity) or 0]
+	local r = F.row(info.rarity)
 	if r then
 		return r.color
 	end
@@ -214,7 +220,7 @@ function F.autoloot(info, s, onList, unlocked)
 	if not unlocked then
 		return nil
 	end
-	local r = tonumber(info.rarity) or 0
+	local r = F.id(info.rarity)
 	local gear = info.category == "equipment" and not info.unique
 	if onList then
 		if gear and s.lootMin > 0 and r < s.lootMin then
@@ -233,7 +239,7 @@ function F.rayEffect(info, cfg)
 	if info.unique then
 		return cfg.rayUniques and cfg.rayUniqueEffect or nil
 	end
-	local r = tonumber(info.rarity) or 0
+	local r = F.id(info.rarity)
 	if r < 1 or r < (cfg.rayMinRarity or math.huge) then
 		return nil
 	end
@@ -262,7 +268,7 @@ function F.beamCandidate(info, cfg)
 	if info.orb then
 		return cfg.beamOrbs and true or false
 	end
-	local r = tonumber(info.rarity) or 0
+	local r = F.id(info.rarity)
 	return r >= 1 and r >= (tonumber(cfg.beamMinRarity) or 1)
 end
 
@@ -279,7 +285,7 @@ end
 
 -- ---------------------------------------------------------------- tracking
 function F.signature(info)
-	return string.format("%d:%d:%s", tonumber(info.id) or 0, tonumber(info.rarity) or 0, info.unique and (info.name or "?") or "")
+	return string.format("%d:%d:%s", tonumber(info.id) or 0, F.id(info.rarity), info.unique and (info.name or "?") or "")
 end
 
 -- entries = {{sig, count}, ...} (the kill as it dropped, in corpse order); present = {[sig] = count still in the corpse}.
@@ -334,7 +340,7 @@ function F.label(info)
 	if info.unique then
 		return "[Unique] " .. name
 	end
-	local r = F.RARITY[tonumber(info.rarity) or 0]
+	local r = F.row(info.rarity)
 	if r then
 		return "[" .. r.name .. "] " .. name
 	end
@@ -389,7 +395,7 @@ function F.ruleHits(info, s)
 		out[#out + 1] = "power"
 	end
 	if info.category == "equipment" then
-		local r = tonumber(info.rarity) or 0
+		local r = F.id(info.rarity)
 		if (s.highlight or 0) > 0 and r >= s.highlight then
 			out[#out + 1] = "rarity"
 		end

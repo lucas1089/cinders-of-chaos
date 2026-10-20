@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Slagborer Queen" nameDescription="a slagborer queen" race="venom" experience="4300" speed="48" manacost="0">
+	<health now="12600" max="12600" />
+	<look type="2309" head="39" body="37" legs="57" feet="22" corpse="6068"/>
+	<level min="640" max="660"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-640" max="-980"/>
+		<attack name="earth" interval="2000" chance="35" radius="5" target="0" min="-560" max="-940">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+		<attack name="poisoncondition" interval="2000" chance="20" radius="3" target="0" range="5" min="-200" max="-300">
+			<attribute key="areaEffect" value="greenspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="100" defense="100">
+	</defenses>
+	<elements>
+		<element firePercent="30" />
+		<element earthPercent="20" />
+		<element icePercent="-20" />
+	</elements>
+	<immunities>
+		<immunity invisible="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The warrens are mine."/>
+		<voice sentence="Skrrrrk! Skrrrrk!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+        <item id="11302" chance="375"/><!-- jadefen helmet -->
+        <item id="11301" chance="375"/>
+        <item id="11304" chance="375"/>
+        <item id="11303" chance="375"/>
+        <item id="8891" chance="375"/>
+        <item id="9931" chance="375"/>
+        <item id="11356" chance="375"/>
+        <item id="2645" chance="375"/>
+		<item id="8889" chance="250"/><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
+	</loot>
+</monster>

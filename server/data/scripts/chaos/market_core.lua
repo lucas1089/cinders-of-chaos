@@ -13,6 +13,10 @@
 --   ChaosMarketCore.hex / unhex, encodeAttrs / decodeAttrs   the escrow codecs' text forms
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosMarketCore = ChaosMarketCore or {}
 local C = ChaosMarketCore
 
@@ -406,7 +410,9 @@ function C.browseQuery(filter, realm, now, cfg, esc, season, known)
 	end
 	local rarity = int(filter.rarity)
 	if rarity and rarity > 0 and rarity <= 15 then
-		w[#w + 1] = "`rarity` >= " .. rarity
+		-- a stored id of data/lib/chaos_rarity.lua; offers saved before the seven rarities may hold 6 .. 15, which the
+		-- comparison still orders right (the login migration and sql/chaos_rarity_migrate.sql make them stored ids)
+		w[#w + 1] = "`rarity` >= " .. ChaosRarity.canon(rarity)
 	end
 	local lo, hi = int(filter.ilvlMin), int(filter.ilvlMax)
 	if lo and lo > 0 then

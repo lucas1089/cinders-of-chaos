@@ -38,12 +38,9 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="26" chance="60000" /><!-- gold coin -->
-		<item id="36016" countmax="2" chance="18000" /><!-- tribal feather -->
-		<item id="36017" countmax="1" chance="8000" /><!-- boar hide -->
 		<item id="36051" countmax="2" chance="12000" /><!-- roast lamb -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
 		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
-		<item id="2389" chance="4000" /><!-- spear -->
 		<item id="2406" chance="3000" /><!-- short sword -->
 		<item id="2511" chance="1500" /><!-- brass shield -->
 		<item id="2473" chance="1000" /><!-- viking helmet -->

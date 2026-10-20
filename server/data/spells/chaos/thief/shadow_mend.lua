@@ -1,4 +1,4 @@
--- Shadow Mend: heals you for your level + magic level x 10 + 4% of your maximum health, 30% more while Shadow Veil is
+-- Shadow Mend: heals you for your level / 2 + magic level x 20 + 5% of your maximum health, 30% more while Shadow Veil is
 -- up. Healing does not end the veil.
 --
 -- The Thief line's self heal (Thief, Ninja, Samurai). Numbers: Chaos.classes.shadowMend, rule ChaosClasses.shadowMendRange

@@ -12,28 +12,26 @@ function LB.setFilterLogic(logic)
   LF = logic
 end
 
--- The 15 tiers are grouped into six beam colours, so a beam reads at a glance; uniques and orbs have their own.
+-- The rarities are grouped into four beam colours, so a beam reads at a glance; uniques and orbs have their own. (Until
+-- 2026-10-18 there were 15 rarities in six colours; red and violet went with Mythic .. Transcendent.)
 -- height: share of the chosen beam height (low tiers stand shorter); order: which group wins on a tile.
 LB.GROUPS = {
-  white     = { color = '#eef3f8', height = 0.75, order = 1 },
-  blue      = { color = '#3d8bff', height = 0.85, order = 2 },
-  orange    = { color = '#ff8c1a', height = 1.00, order = 3 },
-  red       = { color = '#ff2a2a', height = 1.05, order = 4 },
-  celestial = { color = '#7fe3ff', height = 1.10, order = 5 },
-  violet    = { color = '#b45cff', height = 1.15, order = 6 },
-  unique    = { color = '#2bff7a', height = 1.15, order = 7 },
-  orb       = { color = '#39e0c8', height = 0.80, order = 0 },
+  white  = { color = '#eef3f8', height = 0.75, order = 1 },
+  blue   = { color = '#3d8bff', height = 0.85, order = 2 },
+  orange = { color = '#ff8c1a', height = 1.00, order = 3 },
+  divine = { color = '#7fe3ff', height = 1.10, order = 4 },
+  unique = { color = '#2bff7a', height = 1.15, order = 5 },
+  orb    = { color = '#39e0c8', height = 0.80, order = 0 },
 }
-LB.GROUP_ORDER = { 'white', 'blue', 'orange', 'red', 'celestial', 'violet', 'unique', 'orb' }
+LB.GROUP_ORDER = { 'white', 'blue', 'orange', 'divine', 'unique', 'orb' }
 
--- tier 1..15 (Common .. Transcendent) -> group
+-- rarity id 1..15 -> group (an id of today: 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; the others only
+-- exist on items saved before the seven rarities and go with the rarity they became)
 LB.TIER_GROUP = {
-  'white', 'white',                 -- Common, Uncommon
-  'blue', 'blue',                   -- Rare, Epic
-  'orange', 'orange',               -- Legendary, Exotic
-  'red', 'red', 'red',              -- Mythic, Chaos, Eternal
-  'celestial', 'celestial', 'celestial', -- Divine, Phantasmal, Celestial
-  'violet', 'violet', 'violet',     -- Cosmic, Abyssal, Transcendent
+  'white', 'white',                          -- Common, Uncommon
+  'blue', 'blue',                            -- Magic, Rare
+  'orange', 'orange', 'orange', 'orange', 'orange', -- Legendary (5, and the old 6 .. 9)
+  'divine', 'divine', 'divine', 'divine', 'divine', 'divine', -- Divine (10, and the old 11 .. 15)
 }
 
 LB.HEIGHTS = { short = 2.5, normal = 3.5, tall = 4.5 } -- tiles

@@ -31,8 +31,8 @@ L.COLORS = {
 }
 -- modifier tiers T1 (lowest) .. T8 (highest)
 L.TIER_COLORS = { '#8c8070', '#a89c88', '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ff8a40' }
-L.RARITY_COLORS = { '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#f5b13a', '#ff5a5a', '#e02424', '#ff8a70',
-  '#c8e8ff', '#9ad8ff', '#e4f2ff', '#b878ff', '#9a4ce0', '#e070ff' }
+L.RARITY_COLORS = { '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ffd040', '#ffd040', '#ffd040', '#ffd040',
+  '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff' } -- by rarity id: 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine (6 .. 9 and 11 .. 15: an old item, the rarity it became)
 
 -- ---------------------------------------------------------------- keys and requests
 -- attrs = {id = per-item id, ver = version} from the item's custom attributes (0 when missing)
@@ -125,6 +125,8 @@ function L.formatValue(v, fmt, signed)
     s = trim(v) .. 's'
   elseif fmt == 'pct' then
     s = trim(v) .. '%'
+  elseif fmt == 'est' then
+    s = '~' .. L.int(v) -- an estimate (server weapon_dps_core.lua "Estimated DPS")
   else
     s = trim(v)
   end
@@ -185,9 +187,9 @@ function L.lines(tip, ctx)
   if tip.unique and tip.unique.set then
     sub[#sub + 1] = 'Set'
   elseif tip.unique then
-    sub[#sub + 1] = 'Unique'
+    sub[#sub + 1] = tr('Unique')
   elseif tip.rarityName then
-    sub[#sub + 1] = tip.rarityName
+    sub[#sub + 1] = tr(tip.rarityName)
   end
   -- a slot of the form 'Where: What' (the server's quiver: 'Off-hand: Quiver'): the title names what, a line of its
   -- own says where it is worn

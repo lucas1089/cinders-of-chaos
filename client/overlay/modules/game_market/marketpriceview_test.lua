@@ -19,7 +19,7 @@ eq(V.priceAgo(600), '10m ago', 'ago minutes')
 eq(V.priceAgo(7200), '2h ago', 'ago hours')
 eq(V.priceAgo(3 * 86400), '3d ago', 'ago days')
 eq(V.priceAgo(nil), '', 'ago none')
-eq(V.priceKeyText(3, 'iLvl 60-69'), 'Rare - iLvl 60-69', 'key text')
+eq(V.priceKeyText(3, 'iLvl 60-69'), 'Magic - iLvl 60-69', 'key text')
 eq(V.priceKeyText(0, ''), '', 'key text empty')
 eq(V.priceKeyText(0, 'iLvl 10-19'), 'iLvl 10-19', 'key text band only')
 

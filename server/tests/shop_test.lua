@@ -521,6 +521,25 @@ eq(buy(A, "mount:121"), "Purchase complete", "mount"); ok(A.mounts[121], "mount 
 eq(buy(A, "mount:121"), "Not possible", "duplicate mount refused")
 eq(buy(A, "aura:6"), "Purchase complete", "aura"); ok(A.auras[6] and A.storage[Chaos.storage.shopAuraBase + 6] == 1, "aura and storage")
 eq(buy(A, "aura:6"), "Not possible", "duplicate aura")
+-- the offers carry their own look (client icon and preview): a mount, a frame, a bundle of parts
+do
+	local function viewOf(key)
+		local c, page, o = find(A, key)
+		ok(c, "offer in view for its look: " .. key)
+		request(A, "get_page", {category = c, page = page})
+		return last("category_page").data.offers[o]
+	end
+	local mv = viewOf("mount:119")
+	eq(mv.look.kind, "mount", "mount look"); eq(mv.look.look, mv.outfit.type, "the mount look is the icon's creature")
+	local fv = viewOf("frame:ember")
+	eq(fv.look.kind, "nameplate", "frame look"); eq(fv.look.frame, "ember", "frame name")
+	local bv = viewOf("bundle:glacial")
+	eq(bv.look.kind, "bundle", "bundle look"); ok(#bv.look.parts >= 2, "the bundle shows its parts (outfit and mount; wings and auras need the XML files)")
+	eq(bv.type, "outfit", "a bundle of looks is drawn as a creature wearing them")
+	ok(bv.outfit.mount, "the mount is on the bundle icon (wings and auras need the XML files, absent in this test)")
+	local iv = viewOf("item:2304x100")
+	eq(iv.look, nil, "an item has no look"); eq(iv.type, "item", "an item keeps its picture")
+end
 eq(buy(A, "frame:frost"), "Purchase complete", "frame")
 eq(Shop.frameOf(A), "frost", "frame shown")
 Shop.plateFrame(A, "off"); eq(Shop.frameOf(A), nil, "title frame")

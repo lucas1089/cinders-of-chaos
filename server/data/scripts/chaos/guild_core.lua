@@ -393,6 +393,45 @@ function C.layout(slot, cfg)
 	return L
 end
 
+-- teleport hub (guild_hall.lua). The portal's look text announces "level N+": a player below it is refused.
+-- Returns nil when the player may go, else the text for the refusal ("nowhere" for no destination).
+function C.hubGate(dest, level)
+	if not dest then
+		return "nowhere"
+	end
+	local need = tonumber(dest.level) or 0
+	if (tonumber(level) or 0) < need then
+		return string.format("%s needs level %d.", tostring(dest.name or "This portal"), need)
+	end
+	return nil
+end
+
+-- the nearest free tile around pos, within `radius` tiles (3), square rings outwards; isFree(x, y, z) -> boolean
+-- (the engine: ground, nothing blocking, no creature, no house). nil when there is none.
+function C.landingSpot(pos, isFree, radius)
+	for r = 0, radius or 3 do
+		for dy = -r, r do
+			for dx = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r and isFree(pos.x + dx, pos.y + dy, pos.z) then
+					return {x = pos.x + dx, y = pos.y + dy, z = pos.z}
+				end
+			end
+		end
+	end
+	return nil
+end
+
+-- the indexes of the destinations that would answer "This portal leads nowhere right now." (no landing tile)
+function C.hubDeadEnds(hub, isFree)
+	local out = {}
+	for i, d in ipairs(hub or {}) do
+		if not C.landingSpot(d.pos, isFree) then
+			out[#out + 1] = i
+		end
+	end
+	return out
+end
+
 function C.footprint(slot, cfg)
 	local L = C.layout(slot, cfg)
 	local b = L.box

@@ -57,7 +57,6 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="75" chance="65000"/><!-- platinum coin -->
-		<item id="25380" chance="70"/><!-- titanium token -->
 		<item id="2522" chance="562"/><!-- great shield: the Cinderhorn Juggernaut's own drop -->
 		<item id="3983" chance="444"/>
 		<item id="2495" chance="444"/>

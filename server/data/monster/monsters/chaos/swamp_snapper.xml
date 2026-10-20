@@ -75,7 +75,5 @@
 		<item id="2520" chance="562" />
 		<item id="11117" chance="562" />
 		<item id="5741" chance="562" />
-		<item id="10603" countmax="1" chance="1500" /><!-- swamp grass -->
-		<item id="20102" countmax="1" chance="1500" /><!-- swampling mosses -->
 	</loot>
 </monster>

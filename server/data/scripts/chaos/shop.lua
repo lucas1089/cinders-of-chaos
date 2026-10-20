@@ -426,6 +426,46 @@ local function stackable(it)
 	return ok and v and true or false
 end
 
+-- the plain figure an outline or an outfit shader is shown on (client LookPreviewCore.NEUTRAL)
+local NEUTRAL = {type = 128, head = 76, body = 57, legs = 76, feet = 95, addons = 0}
+
+-- what only this side knows for K.lookOf: the viewer's sex, the client ids of wings and auras, shader names, the
+-- cosmetics' own appearance (cosmetics.lua)
+local function lookSource(player)
+	return {
+		outfitLook = function(o)
+			return player and sexLook(player, o) or o.looktype
+		end,
+		wings = function(id)
+			return (WINGS[id] or {}).clientid or 0
+		end,
+		aura = function(id)
+			return (AURAS[id] or {}).clientid or 0
+		end,
+		shader = function(id)
+			return (SHADERS[id] or {}).name
+		end,
+		cosmetic = function(unlock)
+			if not (ChaosCosmetics and ChaosCosmetics.offerLook) then
+				return nil
+			end
+			local okLook, l = pcall(ChaosCosmetics.offerLook, unlock)
+			return okLook and l or nil
+		end
+	}
+end
+
+-- the picture of an offer or a category: its own cosmetic (outfit, mount, aura, wings, shader, outline, effect, print,
+-- plate frame, colour), not a stand-in item. Returns the look option (sent as `look`) and the creature outfit the icon
+-- is drawn with when it is a creature (outline, shader unlock, bundle); the client draws the rest from the look.
+local function appearanceOf(offer, player)
+	local look = K.lookOf(offer, lookSource(player))
+	if not look then
+		return nil, nil
+	end
+	return look, K.iconOutfit(look, PREVIEW, NEUTRAL)
+end
+
 local function clientOffer(e, player)
 	local offer = e.offer
 	local view = {cost = e.cost, oldCost = e.oldCost, title = offer.name, description = offer.description or ""}
@@ -469,6 +509,15 @@ local function clientOffer(e, player)
 		local it = ItemType(offer.icon or 1949)
 		view.type, view.item, view.count = "item", it:getClientId(), K.iconCount(offer, stackable(it))
 	end
+	-- its own appearance: the client draws the icon from it (a creature, a picture or the effect itself) and shows it on
+	-- the character when the offer is picked; items, services and the like have none and keep the item picture
+	local look, iconOutfit = appearanceOf(offer, player)
+	if look then
+		view.look = look
+		if iconOutfit and view.type ~= "outfit" then
+			view.type, view.outfit, view.item, view.count = "outfit", iconOutfit, nil, nil
+		end
+	end
 	-- what a look offer is (outfit, addons, mount, wings, aura, shader): the client's look preview puts a mount under
 	-- the player's own character and the others on it (client/MANIFEST.md "Look preview"); a pet has none
 	if view.type == "outfit" and offer.kind ~= "unlock" then
@@ -503,6 +552,18 @@ local function categoriesView(player, list)
 		if category.icon.item then
 			local it = ItemType(category.icon.item)
 			entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(category.icon, stackable(it))
+			-- a category of cosmetics (plate frames, outlines, effects ...) shows its first cosmetic, not a stand-in item
+			local first = category.offers[1] and category.offers[1].offer
+			local look, iconOutfit
+			if first then
+				look, iconOutfit = appearanceOf(first, player)
+			end
+			if look and look.kind ~= "bundle" then
+				entry.look = look
+				if iconOutfit then
+					entry.type, entry.outfit, entry.item, entry.count = "outfit", iconOutfit, nil, nil
+				end
+			end
 		else
 			entry.type, entry.outfit = "outfit", category.icon.outfit
 		end

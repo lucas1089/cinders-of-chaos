@@ -23,6 +23,10 @@
 -- Exports: ChaosAscended.isInside(player), ChaosAscended.onRiftSealed(info), ChaosAscended.giveSigil / giveShard /
 -- giveRelic (staff, tests). Staff: /ascended (see onCommand).
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -711,8 +715,7 @@ function A.deliver(player, run)
 				end
 				if item then
 					inbox = giveEx(player, item) or inbox
-					local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
-					found[#found + 1] = (rarity > 0 and ("[" .. (names and names[rarity] or rarity) .. "] ") or "") .. itemName(pick.itemId)
+					found[#found + 1] = (rarity > 0 and ("[" .. (ChaosRarity.name(rarity) or rarity) .. "] ") or "") .. itemName(pick.itemId)
 				end
 			end
 		end

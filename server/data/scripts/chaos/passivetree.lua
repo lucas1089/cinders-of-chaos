@@ -517,7 +517,7 @@ local function refundReworked(player)
 		return 0
 	end
 	local seen = player:getStorageValue(key)
-	local drop, newest, any = Core.reworkedSince(list, seen)
+	local drop, newest, any = Core.reworkedSince(list, seen, getTree(), ChaosPassiveTree.vocationKey(player))
 	if newest == seen then
 		return 0
 	end
@@ -543,8 +543,8 @@ local function refundReworked(player)
 	player:setStorageValue(key, newest)
 	if total + inLoadouts > 0 then
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, total == 1 and
-			"Your passive tree: %d node whose effect changed (now class keystones) was refunded for free%s." or
-			"Your passive tree: %d nodes whose effect changed (now class keystones) were refunded for free%s.", total,
+			"Your passive tree: %d node whose effect changed or that left the tree was refunded for free%s." or
+			"Your passive tree: %d nodes whose effect changed or that left the tree were refunded for free%s.", total,
 			inLoadouts > 0 and Chaos.t(player, "; your saved loadouts lost %d", inLoadouts) or ""))
 	end
 	return total

@@ -57,7 +57,6 @@
 		<loot>
 		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="25380" countmax="1" chance="50"/><!-- talent token -->
 		<item id="3983" countmax="1" chance="444"/><!-- legs -->
 		<item id="2495" countmax="1" chance="444"/>
 		<item id="2469" countmax="1" chance="444"/>

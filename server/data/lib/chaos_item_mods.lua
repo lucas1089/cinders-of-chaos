@@ -29,6 +29,10 @@
 -- Attack speed is local to the weapon: the weapon's own attack interval (item attribute ITEM_ATTRIBUTE_ATTACK_SPEED,
 -- which the engine uses for whoever wields it and the look text shows as "Atk Spd") is set from its base interval.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua") -- the seven rarities: names, order, the mapping of the 15 old ids
+end
+
 ChaosItemMods = ChaosItemMods or {}
 local M = ChaosItemMods
 
@@ -47,12 +51,17 @@ M.QUIVER_SPEED = "chaos_qspd" -- on a launcher: the Attack Speed with Bows of th
 -- ---------------------------------------------------------------------------------------------------------------
 -- kinds of items (M.kindOf): weapon, shield, helmet, armor, legs, boots, jewel (amulet or ring), other (gloves, belts..)
 -- side: "prefix" (damage and defence) or "suffix" (utility, resistances, speed); a rarity allows so many of each.
--- tiers: value range per tier, T1 (lowest) .. T8 (highest). The five ranges the modifiers had before item levels
--- (tier = ceil(rarity / 3)) are T2 .. T6 here, so an old item keeps what its numbers meant; T1 is new below them,
--- T7 and T8 are new above them. cap: the most a character gets from all equipped items together.
+-- tiers: value range per tier, T1 (lowest) .. T8 (highest). Raised on 2026-10-18 (owner item 78, about x1.5 to x3 for the
+-- small numbers, less at the top where a cap sits near: no single item beats its cap, and a stat with a hard engine cap
+-- keeps its top tier under it); the ranges before are in M.legacy / M.legacyEngine, which still read the tier of an old
+-- item without a stored tier. cap: the most a character gets from all equipped items together.
 -- fmt: "pct" = "+N%", "flat" = "+N", "less" = "-N%"; text: a format of its own ("%d" = the value).
 -- weight: chance to be picked among every modifier an item may get (the engine's types weigh in, chaos_crafting.lua).
 M.config = {
+	-- Global absorb ceiling, percent per combat type: equipment and the absorb storages (gear rolls, passive tree, Paragon)
+	-- together never remove more than this. Owner decision 2026-10-20. The engine copy is CHAOS_ABSORB_CEILING_PERCENT in
+	-- src-patches/0049-absorb-ceiling.patch (tests/absorb_ceiling_test.lua keeps the two equal).
+	absorbCeiling = 75,
 	maxTier = 8,
 	-- the item level a tier needs (T1 .. T8)
 	tierLevels = {1, 15, 30, 50, 70, 95, 120, 140},
@@ -63,11 +72,12 @@ M.config = {
 	-- today's five tiers on the new scale (old tier t = new tier oldTiers[t])
 	oldTiers = {2, 3, 4, 5, 6},
 
-	-- rarity 1..15 (Common .. Transcendent): how many modifiers a new item gets, and how many prefixes and how many
-	-- suffixes it may carry at most (the orbs fill up to 2 x sides)
+	-- per rarity (ChaosRarity order: Common, Uncommon, Magic, Rare, Legendary, Divine): how many modifiers a new item
+	-- gets, and how many prefixes and how many suffixes it may carry at most (the orbs fill up to 2 x sides). Before the
+	-- seven rarities (2026-10-18) the 15 rarities had 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6 modifiers
 	rarity = {
-		count = {2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6, 6, 6},
-		sides = {1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3}
+		count = {1, 2, 3, 4, 5, 6},
+		sides = {1, 1, 2, 2, 3, 3}
 	},
 
 	-- item level of a drop: the dropping monster's level (Monster:getMonsterLevel, else its hunting level from
@@ -90,25 +100,25 @@ M.config = {
 	-- tiers too. The values replace item.cpp's ranges per rarity; old items keep theirs.
 	engine = {
 		absorb = {side = "suffix", weight = 3,
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+			tiers = {{2, 2}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}}},
 		skill = {side = "prefix", weight = 3, -- fist, club, sword, axe, distance, shielding, magic level
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
 		profession = {side = "suffix", weight = 1, -- fishing, crafting, woodcutting, mining, herbalism, smithing
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}}},
 		critical = {side = "prefix", weight = 8, -- the amount; the chance is about two thirds of it (C.specialChance)
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+			tiers = {{2, 2}, {2, 3}, {2, 5}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 10}}},
 		leech = {side = "suffix", weight = 6, -- life and mana leech, each
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}}},
+			tiers = {{2, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 9}, {7, 10}}},
 		element = {side = "prefix", weight = 2, -- weapons without an element of their own, one element at most
-			tiers = {{1, 3}, {3, 6}, {5, 9}, {7, 12}, {10, 16}, {13, 20}, {17, 26}, {22, 35}}}
+			tiers = {{2, 4}, {4, 9}, {7, 13}, {10, 18}, {15, 24}, {20, 30}, {26, 39}, {33, 52}}}
 	},
 
 	-- item quality (orbs v2, the Whetstone): every modifier value is multiplied by (100 + quality) / 100 and rounded; one
 	-- Whetstone adds `perStone` percent, up to `cap` (`capHigh` from rarity `highFrom`, Divine and better)
 	quality = {perStone = 1, cap = 20, capHigh = 30, highFrom = 10},
 
-	-- bound modifiers (Orb of Binding): how many an item of a rarity may have, index = rarity 1..15
-	bind = {max = {1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2}},
+	-- bound modifiers (Orb of Binding): how many an item of a rarity may have, index = ChaosRarity rank (Common .. Divine)
+	bind = {max = {1, 1, 1, 1, 2, 2}},
 
 	-- legendary powers (chaos_powers.lua): only on items of rarity `minRarity` (Legendary) or better, one per item
 	powers = {minRarity = 5, maxPerItem = 1},
@@ -117,98 +127,98 @@ M.config = {
 		-- prefixes: damage and defence
 		{key = "bossdamage", label = "Damage to Elites and Bosses", fmt = "pct", side = "prefix", weight = 6, cap = 30,
 			kinds = {weapon = true, jewel = true},
-			tiers = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}, {12, 16}}},
+			tiers = {{2, 5}, {4, 7}, {6, 10}, {9, 13}, {11, 16}, {14, 18}, {16, 20}, {18, 22}}},
 		{key = "dodge", label = "Dodge", fmt = "pct", side = "prefix", weight = 5, cap = 10,
 			kinds = {armor = true, legs = true, boots = true, shield = true, other = true},
-			tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 4}, {3, 5}}},
+			tiers = {{1, 2}, {2, 2}, {2, 3}, {2, 4}, {3, 5}, {3, 5}, {4, 6}, {5, 7}}},
 		{key = "reflect", label = "Reflect Damage", fmt = "pct", side = "prefix", weight = 5, cap = 15,
 			kinds = {armor = true, shield = true},
-			tiers = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
+			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}, {9, 11}}},
 		{key = "thorns", label = "Thorns", fmt = "flat", side = "prefix", weight = 6, cap = 250,
 			kinds = {armor = true, shield = true, legs = true},
-			tiers = {{1, 4}, {3, 8}, {8, 15}, {15, 30}, {25, 50}, {40, 80}, {60, 110}, {90, 150}}},
+			tiers = {{2, 6}, {5, 12}, {12, 24}, {24, 45}, {40, 75}, {60, 110}, {90, 150}, {120, 190}}},
 		{key = "monsterreduction", label = "Damage Taken from Monsters", fmt = "less", side = "prefix", weight = 6,
 			cap = 12, kinds = {armor = true, helmet = true, legs = true, shield = true},
-			tiers = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}}},
+			tiers = {{1, 2}, {2, 2}, {2, 3}, {3, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
 		{key = "block", label = "Block Chance", fmt = "pct", side = "prefix", weight = 8, cap = 15,
 			kinds = {shield = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {7, 10}, {9, 12}}},
+			tiers = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {8, 11}, {9, 12}, {11, 14}}},
 		{key = "bleedchance", label = "Chance to Bleed", fmt = "pct", side = "prefix", weight = 4, cap = 30,
 			kinds = {weapon = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
 		{key = "ignitechance", label = "Chance to Ignite", fmt = "pct", side = "prefix", weight = 4, cap = 30,
 			kinds = {weapon = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
 		{key = "poisonchance", label = "Chance to Poison", fmt = "pct", side = "prefix", weight = 4, cap = 30,
 			kinds = {weapon = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
 		{key = "chillchance", label = "Chance to Chill", fmt = "pct", side = "prefix", weight = 4, cap = 30,
 			kinds = {weapon = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
 		{key = "shockchance", label = "Chance to Shock", fmt = "pct", side = "prefix", weight = 4, cap = 30,
 			kinds = {weapon = true, other = true},
-			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}}},
+			tiers = {{3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 16}, {14, 18}, {17, 21}, {20, 25}}},
 		{key = "physpen", label = "Physical Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
 			kinds = {weapon = true, jewel = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}},
+			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
 		{key = "elepen", label = "Elemental Penetration", fmt = "pct", side = "prefix", weight = 4, cap = 25,
 			kinds = {weapon = true, jewel = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}},
+			tiers = {{2, 4}, {3, 5}, {5, 7}, {7, 10}, {9, 13}, {11, 15}, {14, 18}, {17, 22}}},
 		{key = "execute", label = "Execute", text = "Executes Monsters below %d%% Health", side = "prefix", weight = 3,
 			cap = 10, kinds = {weapon = true},
-			tiers = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}}},
+			tiers = {{1, 2}, {2, 3}, {3, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 7}, {7, 9}}},
 		{key = "dot", label = "Damage over Time", fmt = "pct", side = "prefix", weight = 4, cap = 60,
 			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}}},
+			tiers = {{4, 7}, {7, 11}, {10, 15}, {14, 20}, {18, 26}, {23, 32}, {29, 39}, {36, 48}}},
 
 		-- suffixes: utility, resistances and speed
 		{key = "attackspeed", label = "Attack Speed", fmt = "pct", side = "suffix", weight = 8, cap = 15,
 			kinds = {weapon = true},
-			tiers = {{1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}, {11, 14}}},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {7, 9}, {9, 11}, {11, 13}, {13, 15}}},
 		{key = "movespeed", label = "Movement Speed", fmt = "pct", side = "suffix", weight = 10, cap = 12,
 			kinds = {boots = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 10}, {9, 11}}},
+			tiers = {{2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {8, 10}, {9, 11}, {10, 12}}},
 		{key = "lifeonkill", label = "Life on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 300,
 			kinds = {weapon = true, jewel = true, helmet = true},
-			tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 60}, {50, 90}, {75, 120}, {100, 150}}},
+			tiers = {{4, 9}, {9, 18}, {18, 36}, {36, 70}, {60, 100}, {85, 150}, {120, 200}, {160, 260}}},
 		{key = "manaonkill", label = "Mana on Kill", fmt = "flat", side = "suffix", weight = 6, cap = 200,
 			kinds = {weapon = true, jewel = true, helmet = true},
-			tiers = {{1, 3}, {3, 6}, {6, 12}, {12, 25}, {20, 40}, {30, 60}, {50, 80}, {70, 100}}},
+			tiers = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 65}, {50, 95}, {80, 130}, {110, 170}}},
 		{key = "lifeonhit", label = "Health on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 120,
 			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{1, 2}, {2, 4}, {3, 6}, {5, 9}, {7, 13}, {10, 18}, {14, 25}, {20, 35}}},
+			tiers = {{2, 4}, {4, 7}, {5, 11}, {9, 16}, {13, 23}, {18, 32}, {25, 45}, {36, 63}}},
 		{key = "manaonhit", label = "Mana on Hit", fmt = "flat", side = "suffix", weight = 5, cap = 80,
 			kinds = {weapon = true, jewel = true, other = true},
-			tiers = {{1, 1}, {1, 2}, {2, 4}, {3, 6}, {5, 8}, {7, 12}, {10, 16}, {14, 22}}},
+			tiers = {{2, 2}, {2, 4}, {4, 7}, {5, 11}, {9, 14}, {13, 21}, {18, 29}, {25, 40}}},
 		{key = "regen", label = "Health Regeneration", text = "Health Regeneration +%d per Second", side = "suffix",
 			weight = 6, cap = 120, kinds = {armor = true, legs = true, helmet = true, jewel = true, shield = true},
-			tiers = {{1, 2}, {2, 4}, {4, 7}, {6, 10}, {9, 15}, {13, 21}, {18, 28}, {25, 40}}},
+			tiers = {{2, 4}, {4, 7}, {7, 12}, {11, 18}, {16, 26}, {23, 36}, {32, 48}, {44, 70}}},
 		{key = "experience", label = "Experience", fmt = "pct", side = "suffix", weight = 4, cap = 15,
 			kinds = {helmet = true, jewel = true},
-			tiers = {{1, 1}, {1, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}}},
+			tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {8, 11}}},
 		{key = "goldfind", label = "Gold Find", fmt = "pct", side = "suffix", weight = 5, cap = 40,
 			kinds = {helmet = true, jewel = true, legs = true, other = true},
-			tiers = {{1, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}}},
+			tiers = {{2, 5}, {4, 7}, {5, 10}, {7, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}}},
 		{key = "itemfind", label = "Item Find", fmt = "pct", side = "suffix", weight = 4, cap = 25,
 			kinds = {helmet = true, jewel = true},
-			tiers = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 12}}},
+			tiers = {{2, 2}, {2, 3}, {3, 5}, {4, 7}, {5, 10}, {7, 13}, {10, 16}, {13, 19}}},
 		{key = "rarityfind", label = "Rarity Find", fmt = "pct", side = "suffix", weight = 4, cap = 40,
 			kinds = {helmet = true, jewel = true},
-			tiers = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}}},
+			tiers = {{2, 5}, {4, 7}, {5, 10}, {9, 14}, {11, 18}, {14, 23}, {19, 28}, {24, 34}}},
 		{key = "healing", label = "Healing Done", fmt = "pct", side = "suffix", weight = 5, cap = 20,
 			kinds = {weapon = true, shield = true, jewel = true},
-			tiers = {{1, 1}, {1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}}},
+			tiers = {{2, 2}, {2, 3}, {3, 5}, {5, 8}, {7, 10}, {9, 13}, {11, 15}, {13, 18}}},
 		-- the treasure goblin roll of a respawn near the player (treasure_goblin.lua: the highest total of the players
 		-- around the spawn point counts; +100% = twice the odds)
 		{key = "goblinchance", label = "Treasure Goblin Chance", fmt = "pct", side = "suffix", weight = 3, cap = 100,
 			kinds = {helmet = true, jewel = true},
-			tiers = {{6, 10}, {10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}, {35, 50}, {45, 60}}},
+			tiers = {{9, 15}, {15, 23}, {21, 30}, {27, 41}, {33, 50}, {42, 60}, {53, 75}, {68, 90}}},
 		{key = "cdr", label = "Cooldown Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 20,
 			kinds = {helmet = true, jewel = true, other = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}}},
+			tiers = {{2, 3}, {3, 4}, {4, 6}, {6, 8}, {8, 10}, {9, 12}, {11, 14}, {13, 16}}},
 		{key = "manacost", label = "Mana Cost Reduction", fmt = "pct", side = "suffix", weight = 4, cap = 25,
 			kinds = {helmet = true, armor = true, jewel = true},
-			tiers = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}}
+			tiers = {{2, 3}, {3, 5}, {5, 7}, {7, 10}, {9, 12}, {11, 15}, {14, 18}, {17, 21}}}
 	},
 
 	-- what the new modifiers do (item_mods.lua): an ailment deals `share` % of the hit that caused it over `rounds`
@@ -301,6 +311,52 @@ end
 function M.tierAttr(attrKey)
 	return M.TIER_PREFIX .. tostring(attrKey):lower()
 end
+
+
+-- The value ranges the modifiers had until 2026-10-18 (owner item 78: "the prefixes and suffixes must raise the values more,
+-- most of them are tiny"). Items rolled before that keep their numbers; the tier of one without a stored tier ("ct_" attribute)
+-- is still read from these ranges, so an old +4% reads as the tier it was rolled in. Chaos modifiers by key, the engine's
+-- types by group.
+M.legacy = {
+	bossdamage = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 12}, {10, 14}, {12, 16}},
+	dodge = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 4}, {3, 5}},
+	reflect = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}},
+	thorns = {{1, 4}, {3, 8}, {8, 15}, {15, 30}, {25, 50}, {40, 80}, {60, 110}, {90, 150}},
+	monsterreduction = {{1, 1}, {1, 1}, {1, 2}, {1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}},
+	block = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 7}, {6, 8}, {7, 10}, {9, 12}},
+	bleedchance = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+	ignitechance = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+	poisonchance = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+	chillchance = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+	shockchance = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+	physpen = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}},
+	elepen = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}},
+	execute = {{1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}},
+	dot = {{2, 4}, {4, 6}, {6, 9}, {8, 12}, {10, 15}, {13, 19}, {16, 23}, {20, 28}},
+	attackspeed = {{1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}, {11, 14}},
+	movespeed = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 10}, {9, 11}},
+	lifeonkill = {{2, 5}, {5, 10}, {10, 20}, {20, 40}, {35, 60}, {50, 90}, {75, 120}, {100, 150}},
+	manaonkill = {{1, 3}, {3, 6}, {6, 12}, {12, 25}, {20, 40}, {30, 60}, {50, 80}, {70, 100}},
+	lifeonhit = {{1, 2}, {2, 4}, {3, 6}, {5, 9}, {7, 13}, {10, 18}, {14, 25}, {20, 35}},
+	manaonhit = {{1, 1}, {1, 2}, {2, 4}, {3, 6}, {5, 8}, {7, 12}, {10, 16}, {14, 22}},
+	regen = {{1, 2}, {2, 4}, {4, 7}, {6, 10}, {9, 15}, {13, 21}, {18, 28}, {25, 40}},
+	experience = {{1, 1}, {1, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}, {6, 8}},
+	goldfind = {{1, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}},
+	itemfind = {{1, 1}, {1, 2}, {2, 3}, {2, 4}, {3, 6}, {4, 8}, {6, 10}, {8, 12}},
+	rarityfind = {{1, 3}, {2, 4}, {3, 6}, {5, 8}, {6, 10}, {8, 14}, {11, 17}, {14, 20}},
+	healing = {{1, 1}, {1, 2}, {2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}, {9, 12}},
+	goblinchance = {{6, 10}, {10, 15}, {14, 20}, {18, 27}, {22, 33}, {28, 40}, {35, 50}, {45, 60}},
+	cdr = {{1, 2}, {2, 3}, {3, 4}, {4, 5}, {5, 6}, {6, 8}, {7, 9}, {8, 10}},
+	manacost = {{1, 2}, {2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}}
+}
+M.legacyEngine = {
+	absorb = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}},
+	skill = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}},
+	profession = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}},
+	critical = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}},
+	leech = {{1, 1}, {1, 2}, {1, 3}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 7}},
+	element = {{1, 3}, {3, 6}, {5, 9}, {7, 12}, {10, 16}, {13, 20}, {17, 26}, {22, 35}}
+}
 
 -- ---------------------------------------------------------------------------------------------------------------
 -- kinds
@@ -523,8 +579,7 @@ end
 
 -- how many modifiers an item of this rarity may have bound
 function M.maxBinds(rarity)
-	local r = floor(tonumber(rarity) or 0)
-	return r > 0 and (M.config.bind.max[math.min(r, #M.config.bind.max)] or 1) or 0
+	return M.rankOf(rarity) > 0 and ChaosRarity.at(M.config.bind.max, rarity, 1) or 0
 end
 
 -- the side the Orb of Ruin gave an extra slot ("prefix", "suffix") or nil
@@ -558,8 +613,15 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- rarity: how many modifiers
 -- ---------------------------------------------------------------------------------------------------------------
+-- the place of a rarity in the tables above (0 = none; any number is read through ChaosRarity, so an item that still
+-- carries one of the 15 old ids counts as the rarity it became)
+function M.rankOf(rarity)
+	return ChaosRarity.rank(rarity)
+end
+
 local function rarityIndex(rarity)
-	return clamp(floor(tonumber(rarity) or 0), 0, #M.config.rarity.count)
+	local rank = M.rankOf(rarity)
+	return rank <= #M.config.rarity.count and rank or 0 -- Unique (place 7) is no rolled rarity
 end
 
 -- modifiers a new item of this rarity gets
@@ -654,7 +716,8 @@ function M.tierOf(item, key, value)
 		return t or 1
 	end
 	local old = M.config.oldTiers
-	return M.tierOfValue(def.tiers, value or M.value(item, key), old[1], old[#old])
+	-- an item without a stored tier was rolled before the ranges were raised (2026-10-18): read it from the old ranges
+	return M.tierOfValue(M.legacy[key] or def.tiers, value or M.value(item, key), old[1], old[#old])
 end
 
 -- the Chaos modifiers of an item in catalogue order: {key, value, def, label, tier, side}
@@ -901,6 +964,24 @@ function M.equippedItems(player)
 		end
 	end
 	return out
+end
+
+-- the absorb percent a character really gets on one combat type, as engine patch 0049 computes it: equipment (a list of
+-- percents, each applied to what the previous one left, the stock rule) and the absorb storages (percent, taken off after
+-- by the Lua absorb event). Held at config.absorbCeiling; a storage sum past the ceiling is not held (the Lua event takes it).
+function M.effectiveAbsorb(items, storage)
+	local cap = M.config.absorbCeiling
+	storage = math.max(0, math.min(100, tonumber(storage) or 0))
+	local items_ = 1
+	for _, p in ipairs(items or {}) do
+		items_ = items_ * (1 - (tonumber(p) or 0) / 100)
+	end
+	local least = (1 - cap / 100) / (1 - math.min(storage, cap) / 100) -- equipment may leave this share at the least
+	if items_ < 1 and items_ < least then
+		items_ = math.min(least, 1)
+	end
+	local total = (1 - items_ * (1 - storage / 100)) * 100
+	return math.floor(total * 1e6 + 0.5) / 1e6
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

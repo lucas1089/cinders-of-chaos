@@ -171,18 +171,41 @@ function A.pyreActive(inPz, inFight, enemyNear)
 end
 
 -- ------------------------------------------------------------------------------------------------ Sanguine Covenant
--- state = {start, sum}: the leech of the last second. Returns the health to give for a hit of `amount` at `now`.
+-- state = {start, sum, frac}: the leech of the last second and the fraction of a health point carried to the next hit.
+-- Returns the health to give for a hit that did `amount` damage at `now`.
+-- Fix (2026-10, owner item C2: the Sanguine Covenant leech "does not work"): the share was floored per hit, so every hit
+-- under 20 damage (5%) gave 0 and an early character never saw a heal; the fraction is carried now. A hit that did no
+-- damage (0, nil, not a number) gives nothing and touches no state.
 function A.leech(state, now, amount, maxHealth, unique)
+	amount = tonumber(amount) or 0
+	if amount == 0 or amount ~= amount then
+		return 0
+	end
 	local s = cfg().arSanguine
 	local share = s.share + (unique and s.uniqueShare or 0)
 	local cap = math.floor((maxHealth or 0) * (s.capPerSecond + (unique and s.uniqueCap or 0)))
 	if not state.start or now - state.start >= 1000 then
 		state.start, state.sum = now, 0
 	end
-	local want = math.floor(math.abs(amount or 0) * share)
-	local give = math.max(0, math.min(want, cap - state.sum))
+	local want = math.abs(amount) * share + (state.frac or 0)
+	local whole = math.floor(want + 1e-9)
+	local give = math.max(0, math.min(whole, cap - state.sum))
 	state.sum = state.sum + give
+	state.frac = (give == whole) and math.max(0, want - whole) or 0 -- the cap eats the rest
 	return give
+end
+
+-- The damage that really landed: the health the target lost, at most the hit. The hit event sees the damage before the
+-- later events (a boss ward that is immune, a shield, an absorb) change it, and a hit can be larger than what was left
+-- (overkill), so the leech reads the target's health after the hit. Nothing lost (immune target, zero damage, a target
+-- that was healed meanwhile) is 0: no heal and no division.
+function A.landed(amount, healthBefore, healthAfter)
+	amount, healthBefore, healthAfter = tonumber(amount) or 0, tonumber(healthBefore) or 0, tonumber(healthAfter) or 0
+	local lost = healthBefore - healthAfter
+	if lost <= 0 or amount <= 0 then
+		return 0
+	end
+	return math.min(math.abs(amount), lost)
 end
 
 function A.healingTaken(value)
@@ -481,6 +504,23 @@ function A.effigyAdd(list, effigy, unique)
 		gone[#gone + 1] = table.remove(list, 1)
 	end
 	return gone
+end
+
+-- The keystone's net effect on the spell damage of a pack (2+ targets), as a fraction of the damage without it: the pulses
+-- of every standing effigy (max, plus the Idol's) give back share x ownSpell of a cast each (the pulse is a share of the
+-- already priced hit) per cast interval, the price takes 1 - ownSpell. castMs: the time between the caster's area casts
+-- (default the pulse time: a cast every 2 s); spellShare: the part of the damage that comes from spells (0.96 for the
+-- Elementalist's area rotation, 0.88 on one target). One target raises no effigy: A.effigyNetSingle.
+function A.effigyNetGain(unique, spellShare, castMs)
+	local e = cfg().arEffigy
+	local effigies = e.max + (unique and e.uniqueMax or 0)
+	local pulses = (castMs or e.pulseMs) / e.pulseMs
+	return (spellShare or 1) * (effigies * e.share * e.ownSpell * pulses - (1 - e.ownSpell))
+end
+
+-- one target: no effigy (minTargets), only the price
+function A.effigyNetSingle(spellShare)
+	return -(spellShare or 1) * (1 - cfg().arEffigy.ownSpell)
 end
 
 -- the damage of one pulse per enemy

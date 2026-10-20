@@ -1,0 +1,283 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+weapons__swords_blades__r0c0,item,sword,swords blades r0c0,pack30_items/items_a,0,0,2,2,1,1,pickupable,new,,family=weapons|variant=1|grid=64
+weapons__swords_blades__r0c1,item,sword,swords blades r0c1,pack30_items/items_a,0,64,2,2,1,1,pickupable,new,,family=weapons|variant=2|grid=64
+weapons__swords_blades__r0c2,item,sword,swords blades r0c2,pack30_items/items_a,0,128,2,2,1,1,pickupable,new,,family=weapons|variant=3|grid=64
+weapons__swords_blades__r0c3,item,sword,swords blades r0c3,pack30_items/items_a,0,192,2,2,1,1,pickupable,new,,family=weapons|variant=4|grid=64
+weapons__swords_blades__r1c0,item,sword,swords blades r1c0,pack30_items/items_a,0,256,2,2,1,1,pickupable,new,,family=weapons|variant=5|grid=64
+weapons__swords_blades__r1c1,item,sword,swords blades r1c1,pack30_items/items_a,0,320,2,2,1,1,pickupable,new,,family=weapons|variant=6|grid=64
+weapons__swords_blades__r1c2,item,sword,swords blades r1c2,pack30_items/items_a,0,384,2,2,1,1,pickupable,new,,family=weapons|variant=7|grid=64
+weapons__swords_blades__r1c3,item,sword,swords blades r1c3,pack30_items/items_a,0,448,2,2,1,1,pickupable,new,,family=weapons|variant=8|grid=64
+weapons__swords_blades__r2c0,item,sword,swords blades r2c0,pack30_items/items_a,0,512,2,2,1,1,pickupable,new,,family=weapons|variant=9|grid=64
+weapons__swords_blades__r2c1,item,sword,swords blades r2c1,pack30_items/items_a,0,576,2,2,1,1,pickupable,new,,family=weapons|variant=10|grid=64
+weapons__swords_blades__r2c2,item,sword,swords blades r2c2,pack30_items/items_a,0,640,2,2,1,1,pickupable,new,,family=weapons|variant=11|grid=64
+weapons__swords_blades__r2c3,item,sword,swords blades r2c3,pack30_items/items_a,0,704,2,2,1,1,pickupable,new,,family=weapons|variant=12|grid=64
+weapons__swords_blades__r3c0,item,sword,swords blades r3c0,pack30_items/items_a,0,768,2,2,1,1,pickupable,new,,family=weapons|variant=13|grid=64
+weapons__swords_blades__r3c1,item,sword,swords blades r3c1,pack30_items/items_a,0,832,2,2,1,1,pickupable,new,,family=weapons|variant=14|grid=64
+weapons__swords_blades__r3c2,item,sword,swords blades r3c2,pack30_items/items_a,0,896,2,2,1,1,pickupable,new,,family=weapons|variant=15|grid=64
+weapons__swords_blades__r3c3,item,sword,swords blades r3c3,pack30_items/items_a,0,960,2,2,1,1,pickupable,new,,family=weapons|variant=16|grid=64
+weapons__axes_maces_hammers__r0c0,item,weapon,axes maces hammers r0c0,pack30_items/items_a,0,1024,2,2,1,1,pickupable,new,,family=weapons|variant=17|grid=64
+weapons__axes_maces_hammers__r0c1,item,weapon,axes maces hammers r0c1,pack30_items/items_a,0,1088,2,2,1,1,pickupable,new,,family=weapons|variant=18|grid=64
+weapons__axes_maces_hammers__r0c2,item,weapon,axes maces hammers r0c2,pack30_items/items_a,0,1152,2,2,1,1,pickupable,new,,family=weapons|variant=19|grid=64
+weapons__axes_maces_hammers__r0c3,item,weapon,axes maces hammers r0c3,pack30_items/items_a,0,1216,2,2,1,1,pickupable,new,,family=weapons|variant=20|grid=64
+weapons__axes_maces_hammers__r1c0,item,weapon,axes maces hammers r1c0,pack30_items/items_a,0,1280,2,2,1,1,pickupable,new,,family=weapons|variant=21|grid=64
+weapons__axes_maces_hammers__r1c1,item,weapon,axes maces hammers r1c1,pack30_items/items_a,0,1344,2,2,1,1,pickupable,new,,family=weapons|variant=22|grid=64
+weapons__axes_maces_hammers__r1c2,item,weapon,axes maces hammers r1c2,pack30_items/items_a,0,1408,2,2,1,1,pickupable,new,,family=weapons|variant=23|grid=64
+weapons__axes_maces_hammers__r1c3,item,weapon,axes maces hammers r1c3,pack30_items/items_a,0,1472,2,2,1,1,pickupable,new,,family=weapons|variant=24|grid=64
+weapons__axes_maces_hammers__r2c0,item,weapon,axes maces hammers r2c0,pack30_items/items_a,0,1536,2,2,1,1,pickupable,new,,family=weapons|variant=25|grid=64
+weapons__axes_maces_hammers__r2c1,item,weapon,axes maces hammers r2c1,pack30_items/items_a,0,1600,2,2,1,1,pickupable,new,,family=weapons|variant=26|grid=64
+weapons__axes_maces_hammers__r2c2,item,weapon,axes maces hammers r2c2,pack30_items/items_a,0,1664,2,2,1,1,pickupable,new,,family=weapons|variant=27|grid=64
+weapons__axes_maces_hammers__r2c3,item,weapon,axes maces hammers r2c3,pack30_items/items_a,0,1728,2,2,1,1,pickupable,new,,family=weapons|variant=28|grid=64
+weapons__axes_maces_hammers__r3c0,item,weapon,axes maces hammers r3c0,pack30_items/items_a,0,1792,2,2,1,1,pickupable,new,,family=weapons|variant=29|grid=64
+weapons__axes_maces_hammers__r3c1,item,weapon,axes maces hammers r3c1,pack30_items/items_a,0,1856,2,2,1,1,pickupable,new,,family=weapons|variant=30|grid=64
+weapons__axes_maces_hammers__r3c2,item,weapon,axes maces hammers r3c2,pack30_items/items_a,0,1920,2,2,1,1,pickupable,new,,family=weapons|variant=31|grid=64
+weapons__axes_maces_hammers__r3c3,item,weapon,axes maces hammers r3c3,pack30_items/items_a,0,1984,2,2,1,1,pickupable,new,,family=weapons|variant=32|grid=64
+weapons__ranged__r0c0,item,weapon,ranged r0c0,pack30_items/items_a,0,2048,2,2,1,1,pickupable,new,,family=weapons|variant=33|grid=64
+weapons__ranged__r0c1,item,weapon,ranged r0c1,pack30_items/items_a,0,2112,2,2,1,1,pickupable,new,,family=weapons|variant=34|grid=64
+weapons__ranged__r0c2,item,weapon,ranged r0c2,pack30_items/items_a,0,2176,2,2,1,1,pickupable,new,,family=weapons|variant=35|grid=64
+weapons__ranged__r0c3,item,weapon,ranged r0c3,pack30_items/items_a,0,2240,2,2,1,1,pickupable,new,,family=weapons|variant=36|grid=64
+weapons__ranged__r1c0,item,weapon,ranged r1c0,pack30_items/items_a,0,2304,2,2,1,1,pickupable,new,,family=weapons|variant=37|grid=64
+weapons__ranged__r1c1,item,weapon,ranged r1c1,pack30_items/items_a,0,2368,2,2,1,1,pickupable,new,,family=weapons|variant=38|grid=64
+weapons__ranged__r1c2,item,weapon,ranged r1c2,pack30_items/items_a,0,2432,2,2,1,1,pickupable,new,,family=weapons|variant=39|grid=64
+weapons__ranged__r1c3,item,weapon,ranged r1c3,pack30_items/items_a,0,2496,2,2,1,1,pickupable,new,,family=weapons|variant=40|grid=64
+weapons__ranged__r2c0,item,weapon,ranged r2c0,pack30_items/items_a,0,2560,2,2,1,1,pickupable,new,,family=weapons|variant=41|grid=64
+weapons__ranged__r2c1,item,weapon,ranged r2c1,pack30_items/items_a,0,2624,2,2,1,1,pickupable,new,,family=weapons|variant=42|grid=64
+weapons__ranged__r2c2,item,weapon,ranged r2c2,pack30_items/items_a,0,2688,2,2,1,1,pickupable,new,,family=weapons|variant=43|grid=64
+weapons__ranged__r2c3,item,weapon,ranged r2c3,pack30_items/items_a,0,2752,2,2,1,1,pickupable,new,,family=weapons|variant=44|grid=64
+weapons__ranged__r3c0,item,weapon,ranged r3c0,pack30_items/items_a,0,2816,2,2,1,1,pickupable,new,,family=weapons|variant=45|grid=64
+weapons__ranged__r3c1,item,weapon,ranged r3c1,pack30_items/items_a,0,2880,2,2,1,1,pickupable,new,,family=weapons|variant=46|grid=64
+weapons__ranged__r3c2,item,weapon,ranged r3c2,pack30_items/items_a,0,2944,2,2,1,1,pickupable,new,,family=weapons|variant=47|grid=64
+weapons__ranged__r3c3,item,weapon,ranged r3c3,pack30_items/items_a,0,3008,2,2,1,1,pickupable,new,,family=weapons|variant=48|grid=64
+weapons__shields_and_magic__r0c0,item,weapon,shields and magic r0c0,pack30_items/items_a,0,3072,2,2,1,1,pickupable,new,,family=weapons|variant=49|grid=64
+weapons__shields_and_magic__r0c1,item,weapon,shields and magic r0c1,pack30_items/items_a,0,3136,2,2,1,1,pickupable,new,,family=weapons|variant=50|grid=64
+weapons__shields_and_magic__r0c2,item,weapon,shields and magic r0c2,pack30_items/items_a,0,3200,2,2,1,1,pickupable,new,,family=weapons|variant=51|grid=64
+weapons__shields_and_magic__r0c3,item,weapon,shields and magic r0c3,pack30_items/items_a,0,3264,2,2,1,1,pickupable,new,,family=weapons|variant=52|grid=64
+weapons__shields_and_magic__r1c0,item,weapon,shields and magic r1c0,pack30_items/items_a,0,3328,2,2,1,1,pickupable,new,,family=weapons|variant=53|grid=64
+weapons__shields_and_magic__r1c1,item,weapon,shields and magic r1c1,pack30_items/items_a,0,3392,2,2,1,1,pickupable,new,,family=weapons|variant=54|grid=64
+weapons__shields_and_magic__r1c2,item,weapon,shields and magic r1c2,pack30_items/items_a,0,3456,2,2,1,1,pickupable,new,,family=weapons|variant=55|grid=64
+weapons__shields_and_magic__r1c3,item,weapon,shields and magic r1c3,pack30_items/items_a,0,3520,2,2,1,1,pickupable,new,,family=weapons|variant=56|grid=64
+weapons__shields_and_magic__r2c0,item,weapon,shields and magic r2c0,pack30_items/items_a,0,3584,2,2,1,1,pickupable,new,,family=weapons|variant=57|grid=64
+weapons__shields_and_magic__r2c1,item,weapon,shields and magic r2c1,pack30_items/items_a,0,3648,2,2,1,1,pickupable,new,,family=weapons|variant=58|grid=64
+weapons__shields_and_magic__r2c2,item,weapon,shields and magic r2c2,pack30_items/items_a,0,3712,2,2,1,1,pickupable,new,,family=weapons|variant=59|grid=64
+weapons__shields_and_magic__r2c3,item,weapon,shields and magic r2c3,pack30_items/items_a,0,3776,2,2,1,1,pickupable,new,,family=weapons|variant=60|grid=64
+weapons__shields_and_magic__r3c0,item,weapon,shields and magic r3c0,pack30_items/items_a,0,3840,2,2,1,1,pickupable,new,,family=weapons|variant=61|grid=64
+weapons__shields_and_magic__r3c1,item,weapon,shields and magic r3c1,pack30_items/items_a,0,3904,2,2,1,1,pickupable,new,,family=weapons|variant=62|grid=64
+weapons__shields_and_magic__r3c2,item,weapon,shields and magic r3c2,pack30_items/items_a,0,3968,2,2,1,1,pickupable,new,,family=weapons|variant=63|grid=64
+weapons__shields_and_magic__r3c3,item,weapon,shields and magic r3c3,pack30_items/items_a,0,4032,2,2,1,1,pickupable,new,,family=weapons|variant=64|grid=64
+pad_34507,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34508,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34509,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34510,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34511,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34512,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34513,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34514,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34515,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34516,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34517,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34518,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34519,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34520,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34521,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34522,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34523,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34524,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34525,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34526,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34527,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34528,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34529,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34530,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34531,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34532,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34533,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34534,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34535,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34536,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34537,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34538,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34539,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34540,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34541,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34542,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34543,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34544,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34545,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34546,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34547,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34548,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34549,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34550,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34551,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34552,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34553,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34554,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34555,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34556,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34557,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34558,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34559,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34560,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34561,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34562,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34563,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34564,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34565,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34566,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34567,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34568,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34569,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34570,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34571,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34572,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34573,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34574,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34575,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34576,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34577,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34578,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34579,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34580,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34581,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34582,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34583,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34584,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34585,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34586,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34587,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34588,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34589,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34590,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34591,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34592,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34593,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34594,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34595,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34596,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34597,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34598,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34599,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34600,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34601,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34602,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34603,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34604,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34605,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34606,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34607,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34608,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34609,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34610,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34611,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34612,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34613,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34614,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34615,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34616,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34617,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34618,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34619,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34620,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34621,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34622,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34623,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34624,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34625,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34626,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34627,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34628,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34629,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34630,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34631,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34632,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34633,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34634,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34635,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34636,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34637,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34638,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34639,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34640,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34641,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34642,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34643,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34644,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34645,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34646,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34647,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34648,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34649,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34650,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34651,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34652,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34653,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34654,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34655,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34656,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34657,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34658,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34659,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34660,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34661,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34662,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34663,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34664,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34665,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34666,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34667,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34668,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34669,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34670,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34671,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34672,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34673,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34674,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34675,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34676,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34677,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34678,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34679,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34680,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34681,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34682,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34683,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34684,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34685,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34686,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34687,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34688,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34689,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34690,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34691,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34692,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34693,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34694,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34695,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34696,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34697,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34698,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34699,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34700,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34701,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34702,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34703,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34704,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34705,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34706,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34707,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34708,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34709,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34710,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34711,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34712,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34713,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34714,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34715,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34716,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34717,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+pad_34718,item,decor,blank padding,pack30_items/items_a,0,4096,1,1,1,1,,new,,blank=1
+potions__lava_flask_small,item,flask,lava flask (small),pack30_items/items_c,0,0,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=1|ms=125|element=lava|size=small
+potions__lava_flask_medium,item,flask,lava flask (medium),pack30_items/items_c,0,32,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=2|ms=125|element=lava|size=medium
+potions__lava_flask_large,item,flask,lava flask (large),pack30_items/items_c,0,64,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=3|ms=125|element=lava|size=large
+potions__venom_flask_small,item,flask,venom flask (small),pack30_items/items_c,0,96,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=4|ms=125|element=venom|size=small
+potions__venom_flask_medium,item,flask,venom flask (medium),pack30_items/items_c,0,128,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=5|ms=125|element=venom|size=medium
+potions__venom_flask_large,item,flask,venom flask (large),pack30_items/items_c,0,160,1,1,1,8,pickupable stackable animateAlways,new,,family=potions|variant=6|ms=125|element=venom|size=large

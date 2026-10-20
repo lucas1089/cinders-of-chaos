@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Tavish Coldhand: the stash keeper, who opens the supply stash (server/data/scripts/chaos/service_npcs.lua, service_npcs_config.lua; server/README.md "Service NPCs").
+     Stands in a booth of the Hall of Services; installed by server/tools/install_service_npcs.py. The same window opens
+     from the game menu. -->
+<npc name="Tavish Coldhand" script="tavish_coldhand.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="132" head="95" body="79" legs="38" feet="115" addons="1" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. What you cannot carry, I keep. Shall I open your {stash}?" />
+		<parameter key="message_farewell" value="Come back for it any time, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The shelves wait." />
+	</parameters>
+</npc>

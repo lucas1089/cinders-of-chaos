@@ -24,6 +24,12 @@ local function obj(name)
 	return o
 end
 function CreatureEvent(name) return obj(name) end
+local actions = {}
+function Action()
+	local o = obj("action")
+	function o:id(i) actions[i] = o end
+	return o
+end
 EventCallback = setmetatable({}, {
 	__index = function(_, k)
 		if k == "register" then
@@ -232,13 +238,15 @@ end
 local d = P.defaults(cfg)
 eq(d.list, true, "default: autoloot list") eq(d.gold, true, "default: gold") eq(d.gear, true, "default: all gear (the Loot Bag takes everything)")
 eq(d.other, true, "default: everything else") eq(d.supplies, true, "default: supplies") eq(d.gems, true, "default: gems") eq(d.minRarity, 1, "default: any rarity")
-local packed = P.packRules({list = false, gold = false, uniques = false, gear = true, minRarity = 7, supplies = true})
+local packed = P.packRules({list = false, gold = false, uniques = false, gear = true, minRarity = 4, supplies = true})
 local r = P.unpackRules(cfg, packed)
-eq(r.list, false, "packed list off") eq(r.gear, true, "packed gear") eq(r.minRarity, 7, "packed rarity") eq(r.supplies, true, "supplies")
+eq(r.list, false, "packed list off") eq(r.gear, true, "packed gear") eq(r.minRarity, 4, "packed rarity (Rare)") eq(r.supplies, true, "supplies")
 eq(P.unpackRules(cfg, -1).list, true, "unset = defaults")
 local none = P.unpackRules(cfg, P.packRules({minRarity = 1}))
 eq(none.list, false, "everything off is kept (not the defaults)")
-eq(P.sanitizeRules(cfg, {gear = true, minRarity = 99}).minRarity, 15, "rarity clamped")
+eq(P.sanitizeRules(cfg, {gear = true, minRarity = 99}).minRarity, 1, "an id out of range: any rarity")
+eq(P.sanitizeRules(cfg, {gear = true, minRarity = 12}).minRarity, 10, "an old Celestial is Divine")
+eq(P.unpackRules(cfg, P.packRules({minRarity = 7})).minRarity, 5, "an old Mythic is saved as Legendary")
 eq(P.sanitizeRules(cfg, {list = "yes"}).list, false, "only true / 1 switch a rule on")
 eq(P.sanitizeRules(cfg, "junk").list, true, "junk input = defaults")
 eq(d.overflow, true, "default: the Loot Bag takes the specialist pouches' overflow")
@@ -523,7 +531,7 @@ set.onExtendedOpcode(hero, 226, {action = "open"})
 eq(sent[#sent].data.open, true, "open") eq(sent[#sent].data.owned.loot, true, "owned kinds sent")
 eq(sent[#sent].data.ids.loot, 32082, "client id of the Loot Bag (mock: id + 1)")
 -- the Auto Seller window's actions go to autosell.lua (ChaosAutoSell.handleAction) and come back as `autoseller`
-for _, a in ipairs({"as_open", "as_sync", "sell", "asrar", "aslist", "aspause"}) do
+for _, a in ipairs({"as_open", "as_sync", "sell", "asrar", "aslist", "aspause", "asevery"}) do
 	eq(PO.AUTOSELL_ACTIONS[a], true, "Auto Seller action routed: " .. a)
 end
 do
@@ -556,6 +564,75 @@ hero.storage[ST.lootRules] = nil
 eq(PO.stow(hero, clickedGem), true, "stow: overflow on (default): the Loot Bag takes it")
 eq(clickedGem.parent, lootPouch, "into the Loot Bag as overflow")
 
+-- ------------------------------------------------------------------ Loot Bag order (rarest first)
+local function sortedRanks(r, limit)
+	local order = P.sortPlan(r, limit)
+	-- apply: each listed index moves to the front, in order
+	local cur = {}
+	for i = 1, #r do cur[i] = i end
+	for _, idx in ipairs(order) do
+		for pos, v in ipairs(cur) do
+			if v == idx then table.remove(cur, pos) break end
+		end
+		table.insert(cur, 1, idx)
+	end
+	local out = {}
+	for i, v in ipairs(cur) do out[i] = r[v] end
+	return out, order
+end
+eq(P.rank(0, false), 0, "rank: plain") eq(P.rank(5, false), 5, "rank: rarity") eq(P.rank(2, true), 102, "rank: uniques above rarity")
+eq(#P.sortPlan({}), 0, "sort: empty bag") eq(#P.sortPlan({3}), 0, "sort: one item")
+eq(#P.sortPlan({9, 5, 5, 0, 0}), 0, "sort: already sorted: nothing moves")
+local out, order = sortedRanks({0, 0, 5, 9, 0, 2})
+eq(table.concat(out, ","), "9,5,2,0,0,0", "sort: rarest first")
+eq(#order, 3, "sort: only the items ahead of the sorted tail move")
+out, order = sortedRanks({0, 9, 5, 5, 0, 0})
+eq(table.concat(out, ","), "9,5,5,0,0,0", "sort: a plain item in front of the sorted rest moves nothing but the rarer ones")
+eq(#order, 3, "sort: the 3 rarer items move, not the 3 plain ones")
+out = sortedRanks({1, 2, 3, 4, 5, 6, 7, 8})
+eq(table.concat(out, ","), "8,7,6,5,4,3,2,1", "sort: reversed bag")
+out, order = sortedRanks({1, 2, 3, 4, 5, 6, 7, 8}, 3)
+eq(#order, 3, "sort: limited to 3 moves")
+local out2 = sortedRanks({102, 7, 0, 3, 0, 11})
+eq(table.concat(out2, ","), "102,11,7,3,0,0", "sort: a unique rank leads")
+out = sortedRanks({4, 4, 4})
+eq(#P.sortPlan({4, 4, 4}), 0, "sort: ties keep their order")
+-- engine glue: the engine adds at the FRONT of a container; the mock adds at the back, so use a front-adding mover
+do
+	local saved = Item.moveTo
+	function Item:moveTo(target, flags)
+		if self.parent == target then
+			for i, x in ipairs(target.items) do if x == self then table.remove(target.items, i) break end end
+			table.insert(target.items, 1, self)
+			return true
+		end
+		return saved(self, target, flags)
+	end
+	local bag = item(32081); bag.cap = 255
+	local function mkRare(id, r, uniq)
+		local it = item(id, {cat = "equipment", rarity = r})
+		it.custom = it.custom or {}
+		it.custom.rarity = r
+		if uniq then it.custom.chaos_unique = 1 end
+		it.parent = bag; bag.items[#bag.items + 1] = it
+		return it
+	end
+	local a, b, c2, d = mkRare(2400, 0), mkRare(2401, 5), mkRare(2402, 2), mkRare(2403, 3, true)
+	bag.items = {a, b, c2, d}
+	local n = PO.sortBag(bag)
+	eq(bag.items[1], d, "bag: the unique first") eq(bag.items[2], b, "bag: then rarity 5")
+	eq(bag.items[3], c2, "bag: then rarity 2") eq(bag.items[4], a, "bag: plain last")
+	eq(n > 0, true, "bag: moves counted")
+	eq(PO.sortBag(bag), 0, "bag: a sorted bag costs no move")
+	eq(PO.sortBag(nil), 0, "bag: nil is fine")
+	local actionBag = actions[cfg.kinds.loot.id]
+	ok(actionBag, "an Action on the Loot Bag id sorts it when opened")
+	bag.items = {a, b, c2, d}
+	eq(actionBag.onUse(hero, bag), false, "opening: the engine's default use goes on")
+	eq(bag.items[1], d, "opening: the bag is sorted")
+	Item.moveTo = saved
+end
+
 -- ------------------------------------------------------------------ moves and trade
 local function move(it, toPos, toCyl) return PO.onMoveItem(hero, it, 1, {x = CONTAINER_POSITION}, toPos, nil, toCyl) end
 eq(move(orbsPouch, {x = 100, y = 100, z = 7}), RETURNVALUE_NOTPOSSIBLE, "pouch to the ground refused")
@@ -573,8 +650,28 @@ eq(move(orbsPouch, {x = CONTAINER_POSITION, y = 0x42}, box), RETURNVALUE_NOERROR
 eq(move(orbsPouch, {x = CONTAINER_POSITION, y = 0x43}, bp2), RETURNVALUE_NOTPOSSIBLE, "into another player's backpack")
 eq(move(keysPouch, {x = CONTAINER_POSITION, y = 0x44}, lootPouch), RETURNVALUE_NOTPOSSIBLE, "pouch into pouch")
 ok(hero.msgs[#hero.msgs]:find("another pouch"), "reason told")
+-- the Loot Bag stays in the purse (owner 2026-10-17)
+eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, chain = {"item", "self"}}), P.LOOT_BAG_STAYS, "pure: out of the purse into the backpack")
+eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, toGround = true}), P.LOOT_BAG_STAYS, "pure: out of the purse to the ground")
+eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, chain = {"depot", "tile"}}), P.LOOT_BAG_STAYS, "pure: out of the purse into the depot")
+eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = true, chain = {"purse", "self"}}), nil, "pure: within the purse")
+eq(P.moveRefusal({holdsPouch = true, lootBag = true, inPurse = false, chain = {"item", "self"}}), nil, "pure: a Loot Bag outside the purse (older character) keeps the old rule")
+eq(P.moveRefusal({holdsPouch = true, inPurse = true, chain = {"item", "self"}}), nil, "pure: the other pouches may leave the purse")
+local purseBox = item(26052); purseBox.parent = hero
+local purseLoot = item(32081, {custom = {chaos_pouch_owner = 7, chaos_storebound = 1}}); purseLoot.parent = purseBox
+purseBox.items[1] = purseLoot
+eq(PO.isLootBag(purseLoot), true, "isLootBag") eq(PO.isLootBag(orbsPouch), false, "the Orbs Pouch is no Loot Bag")
+eq(PO.inPurse(hero, purseLoot), true, "inPurse") eq(PO.inPurse(hero, orbsPouch), false, "a pouch in the backpack is not in the purse")
+eq(move(purseLoot, {x = CONTAINER_POSITION, y = 0x40}, bag), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: out of the purse into a bag refused")
+ok(hero.msgs[#hero.msgs]:find("stays in your purse"), "Loot Bag: reason told")
+eq(move(purseLoot, {x = CONTAINER_POSITION, y = 1}, hero), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: out of the purse into an inventory slot refused")
+eq(move(purseLoot, {x = 100, y = 100, z = 7}), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: dropped from the purse refused")
+eq(move(purseLoot, {x = CONTAINER_POSITION, y = 0x42}, box), RETURNVALUE_NOTPOSSIBLE, "Loot Bag: out of the purse into the depot refused")
+eq(move(purseLoot, {x = CONTAINER_POSITION, y = 0x45}, purseBox), RETURNVALUE_NOERROR, "Loot Bag: within the purse allowed")
 local tradeReq = callback("onTradeRequest", 1)
 eq(tradeReq(hero, other2, orbsPouch), false, "trade window refuses a pouch")
+eq(tradeReq(hero, other2, purseLoot), false, "trade window refuses the Loot Bag in the purse")
+ok(hero.msgs[#hero.msgs] ~= nil, "trade refusal told")
 eq(tradeReq(hero, other2, bp), false, "trade window refuses a backpack holding a pouch")
 eq(tradeReq(hero, other2, item(2400)), true, "other trades go on")
 eq(callback("onTradeAccept", 1)(hero, other2, item(2400), bp2), false, "accept refused when the other side holds one")

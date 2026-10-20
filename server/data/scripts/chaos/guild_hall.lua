@@ -435,22 +435,13 @@ exit:register()
 
 -- the nearest free walkable tile around pos (within 3 tiles)
 local function landing(pos)
-	for r = 0, 3 do
-		for dy = -r, r do
-			for dx = -r, r do
-				if math.max(math.abs(dx), math.abs(dy)) == r then
-					local p = Position(pos.x + dx, pos.y + dy, pos.z)
-					local tile = Tile(p)
-					if tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID)
-							and not tile:hasProperty(CONST_PROP_BLOCKPATH) and not tile:getTopCreature()
-							and not (tile.getHouse and tile:getHouse()) then
-						return p
-					end
-				end
-			end
-		end
-	end
-	return nil
+	local p = C.landingSpot(pos, function(x, y, z)
+		local tile = Tile(Position(x, y, z))
+		return tile and tile:getGround() and not tile:hasProperty(CONST_PROP_BLOCKSOLID)
+			and not tile:hasProperty(CONST_PROP_BLOCKPATH) and not tile:getTopCreature()
+			and not (tile.getHouse and tile:getHouse())
+	end)
+	return p and Position(p.x, p.y, p.z)
 end
 
 local hub = MoveEvent()
@@ -472,6 +463,11 @@ function hub.onStepIn(creature, item, position, fromPosition)
 		end
 	end
 	local dest = index and H.hub[index]
+	local gate = C.hubGate(dest, player:getLevel())
+	if gate and gate ~= "nowhere" then
+		pushBack(player, fromPosition, gate)
+		return true
+	end
 	local to = dest and landing(dest.pos)
 	if not to then
 		pushBack(player, fromPosition, "This portal leads nowhere right now.")

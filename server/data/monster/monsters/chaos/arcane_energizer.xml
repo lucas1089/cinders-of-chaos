@@ -64,8 +64,6 @@
 		<item id="2152" countmax="100" chance="90000"/><!-- platinum coin -->
 		<item id="2160" countmax="6" chance="50000"/><!-- crystal coin -->
 		<item id="2146" countmax="6" chance="12000"/><!-- small sapphire -->
-		<item id="2158" countmax="3" chance="10000"/><!-- blue gem -->
-		<item id="2153" countmax="2" chance="6000"/><!-- violet gem -->
 		<item id="7898" chance="600"/><!-- lightning robe -->
 		<item id="7895" chance="600"/><!-- lightning legs -->
 		<item id="7893" chance="600"/><!-- lightning boots -->
@@ -74,6 +72,5 @@
 		<item id="2123" chance="500"/><!-- ring of the sky -->
 		<item id="29865" chance="60"/><!-- Myst Regalia Spellbook -->
 		<item id="29868" chance="60"/><!-- Myst Regalia Ring -->
-		<item id="25380" countmax="1" chance="100"/><!-- talent token -->
 	</loot>
 </monster>

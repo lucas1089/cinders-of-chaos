@@ -56,6 +56,15 @@ local cfg = {
 }
 ChaosTierConfig = cfg
 
+-- A training monster (a trainer or a dummy: names with "train" or "dummy") never gets a tier or its modifiers; its
+-- health and behaviour have to stay what the training room says (owner 2026-10-17: trainers spawned with monster
+-- modifiers). cfg.skip lists exact names; this adds the training names without listing each one.
+local function isSkipped(name)
+	name = tostring(name or ""):lower()
+	return cfg.skip[name] == true or name:find("train", 1, true) ~= nil or name:find("dummy", 1, true) ~= nil
+end
+ChaosTierIsSkipped = isSkipped
+
 -- the multiplier on spawnChance at a position: the Chaos Rift day (events_schedule.lua) x the Chaos Storm
 -- (worldevents.lua), capped at cfg.maxSpawnMult (2 x 1.5 x 3 was 9x)
 function ChaosTierSpawnMult(position)
@@ -186,7 +195,7 @@ local function eligible(monster, position)
 	if monster:getMaster() or isDisplaySpot(position or monster:getPosition()) then
 		return false
 	end
-	if cfg.skip[typeNameOf(monster):lower()] or isBoss(monster) then
+	if isSkipped(typeNameOf(monster)) or isBoss(monster) then
 		return false
 	end
 	return monster:getMaxHealth() >= cfg.minMaxHealth
@@ -416,7 +425,7 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 				return true
 			end
 		end
-	elseif cfg.bossMods and not self:getMaster() and not cfg.skip[typeNameOf(self):lower()] and isBoss(self) then
+	elseif cfg.bossMods and not self:getMaster() and not isSkipped(typeNameOf(self)) and isBoss(self) then
 		self:registerEvent(rollEvent.boss)
 	end
 	return true

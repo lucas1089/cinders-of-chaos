@@ -479,9 +479,39 @@ UIWindow
     @onClick: modules.game_passivetree.toggleBuildShare()
 
   TreeButton
-    id: trialsButton
+    id: autoBuildButton
     anchors.top: applyPoints.top
     anchors.left: buildShareButton.right
+    margin-left: 5
+    !text: tr('Auto build')
+    width: 110
+    enabled: true
+    !tooltip: tr('Pick a recommended build or a focus theme for your class and apply it')
+    @onClick: modules.game_passivetree.toggleAutoBuild()
+
+  TreeButton
+    id: statInfoButton
+    anchors.top: applyPoints.top
+    anchors.left: trialsButton.right
+    margin-left: 5
+    !text: tr('Stats')
+    width: 110
+    enabled: true
+    !tooltip: tr('What every stat of the tree does. Gold marks a Primary stat of your class, silver a Secondary one.')
+    @onClick: modules.game_passivetree.toggleStatInfo()
+
+  UILabel
+    id: statHeader
+    anchors.top: parent.top
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 12
+    color: #d8cfc0
+    text-auto-resize: true
+
+  TreeButton
+    id: trialsButton
+    anchors.top: applyPoints.top
+    anchors.left: autoBuildButton.right
     margin-left: 5
     !text: tr('Trials')
     width: 110

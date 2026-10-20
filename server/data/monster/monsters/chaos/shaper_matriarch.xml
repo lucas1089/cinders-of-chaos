@@ -69,6 +69,5 @@
 		<item id="2520" chance="562" />
 		<item id="11117" chance="562" />
 		<item id="5741" chance="562" />
-		<item id="5913" countmax="1" chance="1000" /><!-- brown pieces of cloth -->
 	</loot>
 </monster>

@@ -19,6 +19,9 @@ end
 if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua")
 end
+if not ChaosSummonsCore then
+	pcall(dofile, "data/scripts/chaos/summons_core.lua")
+end
 local C = ChaosClasses
 local function cfg()
 	return Chaos.classes.companion
@@ -95,6 +98,10 @@ end
 
 local function think(owner, now)
 	local target = owner:getTarget()
+	-- a companion never bites an ally: the owner's own wolf, a summon, a party member (summons_core.lua)
+	if target and ChaosSummonsCore and ChaosSummonsCore.isAlly(owner, target) then
+		target = nil
+	end
 	local opos = owner:getPosition()
 	for _, companion in ipairs(B.companions(owner)) do
 		local cpos = companion:getPosition()

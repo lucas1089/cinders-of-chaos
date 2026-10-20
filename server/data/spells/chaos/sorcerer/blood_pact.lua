@@ -1,4 +1,4 @@
--- Crimson Covenant: sacrifice 15% of max health for mana and a short magic level boost.
+-- Crimson Covenant: sacrifice 15% of max health for mana and +15% magic level for 12 s.
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosMysticFx then
 	pcall(dofile, 'data/lib/chaos_mystic_fx.lua')

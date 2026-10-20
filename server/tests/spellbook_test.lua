@@ -86,7 +86,7 @@ local f = io.open(B.spellsXml); local xml = f:read("*a"); f:close()
 local entries = B.parseXml(xml)
 local names = {}
 for _, e in ipairs(entries) do names[#names + 1] = e.attrs.name end
-eq(#entries, 14, "entries (the commented-out one is skipped)")
+eq(#entries, 17, "entries (the commented-out one is skipped)")
 eq(entries[1].tag, "instant", "tag")
 eq(entries[1].attrs.words, "exevo flam hur", "words attr")
 eq(entries[1].attrs.direction, "1", "direction attr")
@@ -104,7 +104,7 @@ local player, skipped = 0, {}
 for _, e in ipairs(entries) do
 	if B.isPlayerSpell(e) then player = player + 1 else skipped[e.attrs.name] = true end
 end
-eq(player, 12, "player spells")
+eq(player, 15, "player spells")
 assert(skipped["Monster Breath"] and skipped["House Kick"], "monster and house spells skipped")
 
 -- ---------------------------------------------------------------- areas
@@ -120,7 +120,7 @@ eq(B.findArea("no area here"), nil, "no area")
 -- ---------------------------------------------------------------- built spells
 local byName = {}
 for _, s in ipairs(B.spells) do byName[s.name .. (s.rune and " (rune)" or "")] = s end
-eq(#B.spells, 12, "spells built")
+eq(#B.spells, 15, "spells built")
 for i = 2, #B.spells do assert(B.spells[i - 1].level <= B.spells[i].level, "sorted by level") end
 
 local wave = byName["Ember Fan"]
@@ -163,7 +163,10 @@ eq(heal.type, "heal", "heal type"); eq(heal.element, "healing", "heal element");
 eq(heal.description, "Heals you and cures paralysis.", "heal description")
 
 local haste = byName["Fleetfoot"]
-eq(haste.type, "buff", "buff type"); eq(haste.description, "Increases your speed.", "haste description")
+eq(haste.type, "buff", "buff type"); eq(haste.description, "Increases your speed for 33 s.", "haste description (duration of the script)")
+eq(byName["Wraith Step"].description, "Lets you move up or down one floor in the direction you face.", "stock fallback text by script file")
+eq(byName["Martial Communion"].description, "Raises melee skills and shielding of you and your party members for 2 min.", "stats, party and duration")
+eq(byName["Lantern"].description, "Creates light around you for 6 min.", "product duration in minutes")
 
 local conj = byName["Searing Orb Rune"]
 eq(conj.type, "conjure", "conjure type"); eq(conj.soul, 3, "soul")
@@ -224,7 +227,7 @@ eq(talks["/spells"].onSay(p, "/spells", ""), false, "talkaction returns false")
 p.getGroup = gmGroup
 eq(sent[1].action, "open", "open first"); eq(sent[1].opcode, 219, "opcode on the wire")
 eq(sent[1].data.vocation, 5, "player vocation"); eq(sent[1].data.level, 120, "level"); eq(sent[1].data.magicLevel, 60, "magic level")
-eq(sent[1].data.total, 12, "total")
+eq(sent[1].data.total, 15, "total")
 eq(sent[1].data.vocationNames[6].id, 5, "vocation list id"); eq(sent[1].data.vocationNames[6].name, "Master Sorcerer", "vocation list name")
 local got = 0
 for i = 2, #sent - 1 do
@@ -232,7 +235,7 @@ for i = 2, #sent - 1 do
 	got = got + #sent[i].data.spells
 	assert(#encode({action = "spells", data = sent[i].data}) < 2500, "packet size")
 end
-eq(got, 12, "all spells sent"); eq(sent[1].data.chunks, #sent - 2, "chunk count announced")
+eq(got, 15, "all spells sent"); eq(sent[1].data.chunks, #sent - 2, "chunk count announced")
 assert(#sent - 2 > 1, "more than one chunk")
 eq(sent[#sent].action, "done", "done last")
 
@@ -281,6 +284,17 @@ eq(B.openWindow(fresh), true, "the client spoke 219: the window")
 eq(sent[#sent].action, "show", "show sent"); eq(sent[#sent].opcode, 219, "on the spellbook opcode")
 registry["ChaosSpellbookLogout"].onLogout(fresh)
 eq(B.openWindow(fresh), false, "forgotten at logout")
+-- a class change (class_spells.lua) pushes the header to a client that has the window, without the throttle or the list
+registry["ChaosSpellbookExtended"].onExtendedOpcode(fresh, 219, {action = "open", data = {have = sig, prefetch = true}})
+n = #sent
+eq(B.refresh(fresh), true, "refresh: a client with the window")
+eq(#sent, n + 2, "refresh: open (header) and done only"); eq(sent[n + 1].action, "open", "refresh: the header")
+eq(sent[n + 1].data.unchanged, true, "refresh: the client keeps its cached list"); eq(sent[n + 1].data.chunks, 0, "refresh: no chunks")
+registry["ChaosSpellbookLogout"].onLogout(fresh)
+n = #sent
+eq(B.refresh(fresh), false, "refresh: a client without the window gets nothing"); eq(#sent, n, "refresh: nothing sent")
+eq(B.refresh(nil), false, "refresh: no player")
+registry["ChaosSpellbookExtended"].onExtendedOpcode(fresh, 219, {action = "open", data = {have = sig, prefetch = true}})
 -- the background fetch does not count as the player opening the window (the new-player tutorial hooks sendTo)
 local hooked = 0
 local realSendTo = B.sendTo
@@ -311,7 +325,7 @@ local gm = {id = 8, msgs = {}}
 for k, v in pairs(p) do if type(v) == "function" then gm[k] = v end end
 function gm:getGroup() return {getAccess = function() return true end} end
 talks["/spells"].onSay(gm, "/spells", "reload")
-assert(gm.msgs[1] and gm.msgs[1]:find("12 spells"), "reload message")
+assert(gm.msgs[1] and gm.msgs[1]:find("15 spells"), "reload message")
 
 -- control characters from script files (CR, tabs, NUL) never reach the client
 assert(ChaosSpellbook.clean("Heals\r\nyou\0 and\tfriends") == "Heals you and friends", "clean control characters")

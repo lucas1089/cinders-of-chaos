@@ -57,6 +57,110 @@ function C.iconCount(icon, stackable)
 	return stackable and C.ICON_PILE or 1
 end
 
+-- ------------------------------------------------------------------ what an offer looks like (icon and preview)
+-- An offer's own appearance as a look option, the shape of the client's LookPreviewCore options (sent as `look` in the
+-- offer; the client draws the icon from it and, when the offer is picked, the character preview):
+--   {kind = "outfit" | "addons", look = looktype, addons = 3}   {kind = "mount" | "wings" | "aura", look = client id}
+--   {kind = "shader", shader = name}   {kind = "outline", art, pulse?}   {kind = "footprint", art}
+--   {kind = "effects", play, killfx?}  {kind = "swatch", color, accent?}  {kind = "nameplate", frame}
+--   {kind = "subject", look = looktype}  (a pet)   {kind = "bundle", parts = {look, ...}}
+-- nil for offers that are not an appearance (items, services, premium time, convenience unlocks): the client then
+-- draws the item picture. src supplies what only the engine side knows: outfitLook(offer) (the viewer's sex),
+-- wings(id) / aura(id) -> client id, shader(id) -> name, cosmetic(unlockName) -> a cosmetics_core.lua offerLook.
+function C.lookOf(offer, src)
+	if type(offer) ~= "table" then
+		return nil
+	end
+	src = src or {}
+	local k = offer.kind
+	if k == "outfit" or k == "addons" then
+		local look = src.outfitLook and src.outfitLook(offer) or offer.looktype
+		return look and {kind = k, look = look, addons = 3} or nil
+	elseif k == "mount" then
+		return (offer.clientid or 0) > 0 and {kind = "mount", look = offer.clientid} or nil
+	elseif k == "wings" or k == "aura" then
+		local id = src[k] and src[k](offer.id) or 0
+		return (id or 0) > 0 and {kind = k, look = id} or nil
+	elseif k == "shader" then
+		local name = src.shader and src.shader(offer.id)
+		return type(name) == "string" and name ~= "" and {kind = "shader", shader = name} or nil
+	elseif k == "frame" then
+		return type(offer.frame) == "string" and {kind = "nameplate", frame = offer.frame} or nil
+	elseif k == "unlock" then
+		if offer.look then
+			return {kind = "subject", look = offer.look}
+		end
+		return src.cosmetic and type(offer.unlock) == "string" and src.cosmetic(offer.unlock) or nil
+	elseif k == "bundle" then
+		local parts = {}
+		for _, p in ipairs(offer.resolved or {}) do
+			local l = C.lookOf(p, src)
+			if l then
+				parts[#parts + 1] = l
+			end
+		end
+		return #parts > 0 and {kind = "bundle", parts = parts} or nil
+	end
+	return nil
+end
+
+-- The outfit a creature icon of a look is drawn with, or nil when the icon is no creature (a print, an effect, a colour,
+-- a plate frame): an outline is worn by the plain figure (neutral), a mount alone or a pet is drawn alone, the other
+-- parts on the preview figure, a bundle by its parts merged (outfit, mount, wings, aura, shader).
+-- preview / neutral: the outfit tables of shop_config.lua (the store's preview figure, the plain one).
+local function copyTable(t)
+	local o = {}
+	for k, v in pairs(t or {}) do
+		o[k] = v
+	end
+	return o
+end
+
+-- put one look on outfit o; true when it changed something
+local function wear(o, p)
+	if p.kind == "outfit" or p.kind == "addons" then
+		o.type, o.addons = p.look, 3
+		o.head, o.body, o.legs, o.feet = 2, 116, 114, 114 -- the colours the store gives an outfit
+	elseif p.kind == "mount" or p.kind == "wings" or p.kind == "aura" then
+		o[p.kind] = p.look
+	elseif p.kind == "shader" then
+		o.shader = p.shader
+	else
+		return false
+	end
+	return true
+end
+
+function C.iconOutfit(look, preview, neutral)
+	if type(look) ~= "table" then
+		return nil
+	end
+	local o
+	if look.kind == "outline" then
+		o = copyTable(neutral)
+	elseif look.kind == "subject" then
+		o = {type = look.look}
+	elseif look.kind == "mount" then
+		o = {type = look.look} -- a mount is drawn alone, as a creature
+	elseif look.kind == "bundle" then
+		o = copyTable(preview)
+		local any = false
+		for _, p in ipairs(look.parts or {}) do
+			any = wear(o, p) or p.kind == "outline" or any
+		end
+		if not any then
+			return nil
+		end
+	else
+		o = copyTable(preview)
+		if not wear(o, look) then
+			return nil
+		end
+	end
+	o.rotating = true
+	return o
+end
+
 -- ------------------------------------------------------------------ name plate frames
 -- index = the frame's slot: never reorder, only append. 1-5 the first store frames, 6-13 the second set of store frames,
 -- 14-16 never sold (exclusives_config.lua). Slots 1-8 own storage Chaos.storage.shopFrameBase + i (7100761-7100768),

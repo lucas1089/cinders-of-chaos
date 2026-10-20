@@ -144,10 +144,11 @@ C.reroll = {max = 3, mult = 0.5, growth = 2}
 -- The loot layer's own roll (loot.lua, the same API monster drops and the rift / raid / goblin rewards use):
 -- best of `draws` ChaosLoot.stockRarity(), raised to at least `floor`, then ChaosLoot.upgradeRarity(tier, r, find),
 -- capped at maxRarity. With these numbers the roll is a magic monster's gear drop that is never plain: every piece has a
--- rarity (a normal monster's gear drop has none 58% of the time, a magic one's 52%), Common 61.9%, Uncommon 11.6%,
--- Rare 8.1%, Epic 5.4%, Legendary or better 13.0% (12.2% of a normal monster's gear drops, 13.0% of a magic one's: no
--- more often than from monsters), the top at Divine (2.2%; Phantasmal and above only from monsters). The exact table
--- is ChaosGambleCore.odds (in the window and in server/README.md). No item find applies.
+-- rarity (a normal monster's gear drop has none 67% of the time, a magic one's 67%): Common 70.0%, Uncommon 12.2%,
+-- Magic 8.4%, Rare 5.4%, Legendary 3.6%, Divine 0.4% (about what a monster's gear drop gives: Legendary 2.8% + 1% steps
+-- and floors, Divine 0.38%). Before the seven rarities: Common 61.9%, Uncommon 11.6%, Rare 8.1%, Epic 5.4%, Legendary or
+-- better 13.0%, the top at Divine (2.2%). The exact table is ChaosGambleCore.odds (in the window and in server/README.md).
+-- No item find applies. floor and maxRarity are stored ids (data/lib/chaos_rarity.lua).
 C.odds = {draws = 1, floor = 1, tier = "magic", find = 1, maxRarity = 10}
 -- players within 8 tiles see "<name> opened a [Divine] ..." from this rarity on (0 = never)
 C.announceFrom = 10

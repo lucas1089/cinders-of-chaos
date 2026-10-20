@@ -35,7 +35,6 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="30" chance="60000" /><!-- gold coin -->
-		<item id="36017" countmax="2" chance="18000" /><!-- boar hide -->
 		<item id="36057" countmax="2" chance="12000" /><!-- grilled sausage -->
 	</loot>
 </monster>

@@ -317,10 +317,13 @@ local function clampPanel()
   panel:setMarginTop(y)
 end
 
+local checkInvitation -- the invitation window, below
+
 local function tick()
   if not alive(panel) or not g_game.isOnline() then return end
   updateAllFrames()
   clampPanel()
+  checkInvitation()
 end
 
 -- ---------------------------------------------------------------- opcode
@@ -465,7 +468,70 @@ local function onHeaderRelease(w, pos, button)
 end
 
 -- ---------------------------------------------------------------- lifecycle
+-- ---------------------------------------------------------------- the invitation window
+-- The server's line "<Leader> has invited you to join his party." opens a window with Accept / Decline (owner
+-- 2026-10-17: it was only a chat line). Accept joins by the leader's creature in view (g_game.partyJoin takes a creature
+-- id); a leader out of view cannot be joined from here: say so. The stock protocol has no decline: it closes the window
+-- and the invitation stays with the leader until revoked. A revoke line, joining a party and leaving the game close it.
+local invitedWindow
+local invitedBy
+local invitedAt = 0
+local INVITE_KEEP_S = 300
+
+local function closeInvitation()
+  invitedBy = nil
+  if alive(invitedWindow) then invitedWindow:hide() end
+end
+
+local function showInvitation(name)
+  if not alive(invitedWindow) then
+    invitedWindow = g_ui.createWidget('PartyInvitedWindow', g_ui.getRootWidget())
+  end
+  invitedBy, invitedAt = name, now()
+  invitedWindow:recursiveGetChildById('inviter'):setText(tr('%s invited you to join their party.', name))
+  invitedWindow:show()
+  invitedWindow:raise()
+  invitedWindow:focus()
+end
+
+function acceptInvitation()
+  local name = invitedBy
+  if not name or not g_game.isOnline() then return closeInvitation() end
+  local me = g_game.getLocalPlayer()
+  local list = {}
+  for _, c in ipairs(me and g_map.getSpectators(me:getPosition(), true) or {}) do
+    if c:isPlayer() then list[#list + 1] = { id = c:getId(), name = c:getName() } end
+  end
+  local id = PartyMath.findLeader(list, name)
+  if id then
+    g_game.partyJoin(id)
+  else
+    say(tr('%s is out of sight: go near to join the party.', name))
+  end
+  closeInvitation()
+end
+
+function declineInvitation()
+  closeInvitation()
+end
+
+local function onTextMessage(mode, text)
+  local leader = PartyMath.inviterOf(text)
+  if leader then
+    showInvitation(leader)
+    return
+  end
+  local revoker = PartyMath.revokerOf(text)
+  if revoker and invitedBy and revoker:lower() == invitedBy:lower() then closeInvitation() end
+end
+
+checkInvitation = function()
+  if not invitedBy then return end
+  if now() - invitedAt > INVITE_KEEP_S or PartyMath.inParty(state) then closeInvitation() end
+end
+
 local function onGameStart()
+  closeInvitation()
   PartyMath.clear(state)
   watching = false
   updateAllFrames()
@@ -474,6 +540,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  closeInvitation()
   watching = false
   PartyMath.clear(state)
   selectedId = nil
@@ -491,13 +558,13 @@ function init()
   header.onMouseRelease = onHeaderRelease
   panel:hide()
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
-  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   tickEvent = cycleEvent(tick, 250)
   if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
-  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   if tickEvent then removeEvent(tickEvent) tickEvent = nil end
   stopWatching()
@@ -505,6 +572,7 @@ function terminate()
   frames = {}
   if alive(settingsWindow) then settingsWindow:destroy() end
   if alive(inviteWindow) then inviteWindow:destroy() end
+  if alive(invitedWindow) then invitedWindow:destroy() end
   if alive(panel) then panel:destroy() end
-  panel, settingsWindow, inviteWindow = nil, nil, nil
+  panel, settingsWindow, inviteWindow, invitedWindow, invitedBy = nil, nil, nil, nil, nil
 end

@@ -47,7 +47,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   "Conquest Tokens, the Conquest vendor and bad-luck protection"). Target: a chosen item in 1-3 weeks of dedicated play
   (about 1,800 tokens a week), 3-6 weeks casual (about 360 a week). Now: monster uniques 600 + 1.5 x level, boss uniques
   1,000 + 3 x level, set pieces 900 + 1.2 x level, raid uniques 2,400 (Crown 3,600), Ascended uniques 4,200 (Signet 5,400);
-  Omen Key of a chosen kind 150, attune 40, Ascended Shard 300; refinement 60 + 40 x the new rarity, up to Celestial.
+  Omen Key of a chosen kind 150, attune 40, Ascended Shard 300; refinement 60 + 60 x the new rank, up to Legendary.
   Only the numbers are left for the owner; the design questions are under "Decided".
 
 ## Accounts and services
@@ -188,8 +188,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
     supplies, runes and services kept. The Donation Terms tables (EN, PT) are filled in.
 
 - Item prices (owner, 2026-10-14; server/README.md "Item prices"):
-  - Kept as built: plain equipment at 31% of its old NPC price (the gear scale), rolled copies x1.5 to x32 by rarity and
-    up to x1.75 by item level; the rarities above Legendary +2 a tier; currency, keys, 25 base quest items
+  - Kept as built: plain equipment at 31% of its old NPC price (the gear scale), rolled copies x1.5 to x24 by rarity (1, 1.5, 3, 6, 12, 24) and
+    up to x1.75 by item level; Divine is the top tier; currency, keys, 25 base quest items
     (`server/data/items/item_price_rules.csv`), store items and the profession materials not sold to NPCs.
   - Wandering Merchant's Orb of Gilding: 250,000 (was 60,000; "Ok"). Every plain equipment price is capped at 30,252
     so neither Gilding nor his Orb of Fate on a plain copy pays off at item level 150 (tested).
@@ -213,8 +213,8 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
 - Pact experience and season characters (owner, 2026-10-13: "Ok"): season characters get no Pact experience, as
   with World Experience (`pact_perks.lua`).
 - Auto Seller rarities (owner, 2026-10-13: "Deixe o jogador configurar o autosell por raridade"): each character ticks
-  the rarities the Auto Seller sells: Common, Uncommon (the game's name for the "Magic" tier, rarity 2), Rare, Epic,
-  Legendary+ (Legendary and every rarity above it). Default Common and Uncommon on, the rest off. Uniques never.
+  the rarities the Auto Seller sells: Common, Uncommon, Magic, Rare, Legendary, Divine (seven rarities since 2026-10-18,
+  item 87). Default Common and Uncommon on, the rest off. Uniques never.
 - Auto Seller commands (owner, 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): no `!autosell` and no
   Info & Services page; the Auto Seller window is in the top menu (Economy > Auto Seller): Sell all with its 30 s
   countdown, the last sale, the rarity checkboxes, the corpse list.

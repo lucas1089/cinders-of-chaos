@@ -4,9 +4,9 @@
 usage: python3 -I patch_base_crafting_bonus.py DATA_DIR [--dry-run]
 
 The base script data/scripts/customs/crafting/1crafting_mod.lua (extended opcode 91) gives every product the stock
-rarity roll: 5% of crafts, then the stock chance of each of the 15 rarities, made with Game.createItemWithRarity (the
+rarity roll: 5% of crafts, then the stock chance of each of the base's rarities, made with Game.createItemWithRarity (the
 engine's own stats, no item level, no modifier tiers). With this patch crafted equipment rolls a Chaos rarity (Common ..
-Legendary) and an item level the way a drop does (ChaosCraftBonus.make: ChaosCrafting.createItem, sockets by
+Rare; data/lib/chaos_rarity.lua) and an item level the way a drop does (ChaosCraftBonus.make: ChaosCrafting.createItem, sockets by
 ChaosGems.rollDropSockets), and potions and runes may come with extra pieces; both grow with the crafter's skill above
 the recipe's level (numbers in data/scripts/chaos/craft_bonus_config.lua). Any other product keeps the stock roll.
 

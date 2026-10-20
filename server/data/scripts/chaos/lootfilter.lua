@@ -224,12 +224,9 @@ local function itemInfo(item)
 		clientId = itemType:getClientId(),
 		count = item:getCount(),
 		name = item:getName(),
-		rarity = tonumber(customAttr(item, "rarity")) or 0,
+		rarity = F.id(customAttr(item, "rarity")), -- a stored id; an old id (6 .. 15) counts as the rarity it became
 		unique = customAttr(item, "chaos_unique") ~= nil
 	}
-	if info.rarity < 0 or info.rarity > F.MAX_RARITY then
-		info.rarity = 0
-	end
 	local orbs = sets()
 	local lname = (info.name or ""):lower()
 	info.orb = orbs[id] or (not info.unique and info.rarity == 0 and itemType:isStackable()

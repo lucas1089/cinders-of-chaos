@@ -3,7 +3,9 @@
 
 CandlemarkCounter < UIButton
   height: 22
-  width: 200
+  // the widget grows with its text (the text is longer in pt-BR; a fixed 200 px cut it off)
+  text-auto-resize: true
+  padding: 0 12
   font: verdana-11px-antialised
   color: #e8b84a
   text-align: center
@@ -78,7 +80,7 @@ CandlemarkRow < UIWidget
 
 CandlemarkWindow < ChaosMainWindow
   id: candlemarkWindow
-  size: 600 540
+  size: 480 330
   !text: tr('Candlemarks')
   @onEscape: modules.game_candlemarks.hide()
 

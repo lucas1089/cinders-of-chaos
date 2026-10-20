@@ -4,7 +4,7 @@ Items are the heart of the game. One good drop changes your build.
 
 ## Rarity and modifiers
 
-- There are {{item.rarities}} rarities, from {{item.rarityFirst}} to {{item.rarityLast}}. The rarity decides how many modifiers an item has.
+- There are {{item.rarities}} rarities: {{item.rarityList}}. The rarity decides how many modifiers an item has: {{item.rarityMods}} from Common to Divine. Uniques have fixed stats of their own.
 - Every item has an item level, from 1 to {{item.maxItemLevel}}. It decides the tiers of its modifiers, from T1 to T{{item.tiers}}.
 - Prefixes are damage and defence. Suffixes are utility, resistances and speed.
 - From {{item.powersFrom}} up, an item can roll a legendary power.

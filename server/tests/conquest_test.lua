@@ -232,14 +232,15 @@ eq(#rows, #offers, "every offer in the window")
 check(rows[1].k and rows[1].p and rows[1].n, "row fields")
 
 -- ---------------------------------------------------------------- refinement, conversion, salvage
-eq(K.refinePrice(cfg, 5), 300, "Legendary to Exotic")
-eq(K.refinePrice(cfg, 11), 540, "to the top rarity a refinement reaches")
-eq(K.refinePrice(cfg, 12), nil, "never above maxRarity")
+eq(K.refinePrice(cfg, 4), 360, "Rare to Legendary: 60 + 60 x the new place (5)")
+eq(K.refinePrice(cfg, 1), 180, "Common to Uncommon")
+eq(K.refinePrice(cfg, 7), nil, "an old Mythic reads as Legendary: Divine is luck")
+eq(K.refinePrice(cfg, 5), nil, "never above maxRarity (Legendary)")
 eq(K.refinePrice(cfg, 0), nil, "a normal item has no rarity to raise")
-eq(K.refineCheck(cfg, {gear = true, rarity = 3}), true, "a Rare item")
+eq(K.refineCheck(cfg, {gear = true, rarity = 3}), true, "a Magic item")
 eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 3, unique = true})), "unique", "no uniques")
 eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 3, ruined = true})), "ruined", "no ruined items")
-eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 12})), "maxRarity", "the top stays luck")
+eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 12})), "maxRarity", "the top stays luck (an old Celestial is Divine)")
 eq(select(2, K.refineCheck(cfg, {gear = false, rarity = 0})), "notGear", "not gear")
 local kinds = {"bloodmoon", "hollow", "storm"}
 local okc, need = K.convertCheck(cfg, "shards", "bloodmoon", "storm", {bloodmoon = 2}, kinds)
@@ -561,7 +562,7 @@ eq(r1.removed + r2.removed, 2, "two duplicate relics taken")
 eq(relicsGiven[#relicsGiven], "storm", "the missing relic given")
 
 -- refinement of a worn item (crafting mocked)
-local refined = {rarity = 5, custom = {}}
+local refined = {rarity = 4, custom = {}}
 function refined:getId() return 2400 end
 function refined:setCustomAttribute(k, v) self.custom[k] = v if k == "rarity" then self.rarity = v end end
 local added = 0
@@ -577,12 +578,12 @@ hero.slots[CONST_SLOT_LEFT] = refined
 DB.balance[1] = 1000
 X.bal[1] = nil
 X.buy(hero, {k = "refine:" .. CONST_SLOT_LEFT})
-eq(refined.rarity, 6, "one rarity up")
+eq(refined.rarity, 5, "one rarity up")
 eq(added, 1, "one modifier added, the others kept")
-eq(DB.balance[1], 1000 - K.refinePrice(cfg, 5), "its price")
+eq(DB.balance[1], 1000 - K.refinePrice(cfg, 4), "its price")
 refined.rarity = 12
 X.buy(hero, {k = "refine:" .. CONST_SLOT_LEFT})
-eq(refined.rarity, 12, "the top rarities stay luck")
+eq(refined.rarity, 12, "the top rarity stays luck")
 X.buy(hero, {k = "refine:99"})
 
 -- the window

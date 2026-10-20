@@ -1,0 +1,66 @@
+// Customise Character extras (game_outfitextras): the panel of dropdowns under the outfit window's two lower panels.
+
+OutfitExtrasRow < UIWidget
+  height: 22
+  phantom: false
+
+  UILabel
+    id: label
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    width: 96
+    font: Verdana Bold-11px
+    color: #c0c0c0
+    text-align: left
+    phantom: true
+
+  ComboBox
+    id: combo
+    anchors.left: label.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    margin-right: 6
+    height: 20
+
+OutfitExtrasPanel < UIWindow
+  id: extrasPanel
+  size: 477 160
+  !text: tr('Cosmetics')
+  font: Verdana Bold-11px
+  color: #909090
+  text-offset: -2 1
+  text-align: Center
+  text-align: Top
+  image-source: /game_cyclopedia/images/ui/bestiary-slot
+  image-border-top: 18
+  image-border-bottom: 2
+  image-border-left: 2
+  image-border-right: 2
+  padding-top: 20
+  padding-bottom: 4
+  padding-left: 6
+  padding-right: 6
+  draggable: false
+  focusable: false
+
+  UIWidget
+    id: left
+    anchors.top: parent.top
+    anchors.left: parent.left
+    width: 226
+    height: 130
+    margin-top: 0
+    layout:
+      type: verticalBox
+      spacing: 4
+
+  UIWidget
+    id: right
+    anchors.top: parent.top
+    anchors.right: parent.right
+    width: 226
+    height: 130
+    layout:
+      type: verticalBox
+      spacing: 4

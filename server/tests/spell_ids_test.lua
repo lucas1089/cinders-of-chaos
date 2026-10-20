@@ -11,12 +11,41 @@ local BASE = {
 	140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 163, 166,
 	167, 169, 172, 173, 174, 175, 176, 177, 178, 192, 193, 237
 }
-local PATCHED = { -- tools/patch_spell_ids.py NEW_IDS
-	34, 35, 37, 40, 41, 46, 47, 52, 53, 58, 60, 85, 164, 165, 168, 171
+-- Ids of the base's ammunition conjure spells (Arrow Call 176, Fletch Crystal Arrows 192, Fletch Wraith Bolts 193). The
+-- "archery" step (patch_base_archery.py) comments them out of spells.xml and tools/register_spells.py does not count them
+-- as taken, so the Chaos block may reuse them (the Necromancer's Raise Bone Warrior / Archer / Mage, 2026-10-18): every
+-- other id below 256 was in use until the cure spells were retired (RETIRED below). The client's stock entry of Arrow Call is moved off the byte range by spellfix.lua.
+local AMMO_CONJURE = {176, 192, 193}
+local PATCHED = { -- tools/patch_spell_ids.py NEW_IDS (Wash Taint 58 and Break Glamour 164 went with the cure spells)
+	34, 35, 37, 40, 41, 46, 47, 52, 53, 60, 85, 165, 168, 171
 }
+-- Ids of the stock cure (status cleansing) spells that tools/retire_cure_spells.py comments out of spells.xml (owner
+-- 2026-10-20, C6): Purge Venom 29, Wash Taint 58, Staunch Blood 144, Douse Embers 145, Ground Static 146, Lift Hex 147,
+-- Break Glamour 164. The Chaos block uses them for the new late spells of the ascended classes.
+local RETIRED = {29, 58, 144, 145, 146, 147, 164}
+do
+	local tool = io.open("tools/retire_cure_spells.py"):read("*a")
+	local rows = {}
+	for id in tool:gmatch("': %((%d+), '") do rows[#rows + 1] = tonumber(id) end
+	table.sort(rows)
+	for i, id in ipairs(RETIRED) do
+		if rows[i] ~= id then error("spell_ids_test: RETIRED " .. id .. " is not in retire_cure_spells.py CURES") end
+	end
+	if #rows ~= #RETIRED then error("spell_ids_test: RETIRED and retire_cure_spells.py CURES differ") end
+end
 local taken = {}
 for _, id in ipairs(BASE) do taken[id] = "base" end
+for _, id in ipairs(AMMO_CONJURE) do taken[id] = nil end
+for _, id in ipairs(RETIRED) do taken[id] = nil end
 for _, id in ipairs(PATCHED) do taken[id] = "patch_spell_ids.py" end
+-- the three ids are really switched off: their conjure scripts are in the archery config
+local arch = io.open("data/lib/chaos_archery_config.lua"):read("*a")
+for _, name in ipairs({"arrow_call.lua", "conjure_diamond_arrow.lua", "spectral_bolt.lua"}) do
+	if not arch:find('"' .. name .. '"', 1, true) then
+		print("FAIL " .. name .. " is not in conjureScripts (chaos_archery_config.lua)")
+		error("spell_ids_test: the ammunition conjure ids are not free")
+	end
+end
 local xml = io.open("data/spells/chaos/spells_chaos.xml"):read("*a"):gsub("<!%-%-.-%-%->", "")
 local fails, seen, n = 0, {}, 0
 for tag in xml:gmatch("<instant[^>]*>") do

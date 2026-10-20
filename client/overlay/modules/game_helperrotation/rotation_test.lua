@@ -228,5 +228,108 @@ ok(burst <= 40, 'no burst of casts (two groups may fire in one tick): ' .. burst
 eq(stalled.exhausted, 0, 'no exhausted after a stall')
 ok((stalled.ok[2] or 0) >= 15, 'rotation goes on after a stall')
 
+-- a spell held for a long time writes one line to the client log (and a free spell none)
+do
+  local lines = {}
+  local oldLog = R.log
+  R.log = function(text) lines[#lines + 1] = text end
+  local st = R.new()
+  for t = 0, 4900, 100 do
+    st.backoff[9] = 999999
+    R.blocked(st, 9, { [1] = 2000 }, t)
+  end
+  eq(#lines, 0, 'no stuck line before 5 s')
+  R.blocked(st, 9, { [1] = 2000 }, 5000)
+  eq(#lines, 1, 'one stuck line at 5 s')
+  ok(lines[1]:find('spell 9 held') and lines[1]:find('backoff'), 'the line names the spell and the reason: ' .. tostring(lines[1]))
+  for t = 5100, 14900, 100 do
+    st.backoff[9] = 999999
+    R.blocked(st, 9, { [1] = 2000 }, t)
+  end
+  eq(#lines, 1, 'no second line within 10 s')
+  R.blocked(st, 9, { [1] = 2000 }, 15000)
+  eq(#lines, 2, 'a second line after 10 s')
+  st.backoff[9] = nil
+  eq(R.blocked(st, 9, { [1] = 2000 }, 15100), nil, 'free again')
+  eq(st.held[9], nil, 'a free spell clears the watch')
+  R.log = oldLog
+end
+
+-- auto turn (base patch 0080): wave and beam spells face the target
+do
+  local N, E, S, W = R.DIR.North, R.DIR.East, R.DIR.South, R.DIR.West
+  local WAVE5, BEAM7, CIRCLE = { 'w' }, { 'b' }, { 'c' }
+  local areas = { AREA_SQUAREWAVE5 = WAVE5, AREA_BEAM7 = BEAM7, AREA_CIRCLE3X3 = CIRCLE }
+  local wave = { id = 240, directional = true, area = WAVE5, needTarget = false }
+  local sweep = { id = 271, area = WAVE5, needTarget = false }            -- Lesser Front Sweep: the area, no flag
+  local circle = { id = 5, area = CIRCLE, needTarget = false }
+  local bolt = { id = 6, directional = true, needTarget = true }
+  ok(R.isDirectional(wave, areas), 'a flagged wave is directional')
+  ok(R.isDirectional(sweep, areas), 'a wave area without the flag is directional')
+  ok(not R.isDirectional(circle, areas), 'a circle is not')
+  ok(not R.isDirectional(bolt, areas), 'a spell aimed by its target is not')
+  ok(not R.isDirectional(sweep, nil), 'no area table: only the flag counts')
+  ok(not R.isDirectional(nil, areas), 'no spell')
+  ok(R.isDirectional({ area = BEAM7 }, areas), 'a beam area is directional')
+  local from = { x = 100, y = 100, z = 7 }
+  local function turn(spell, facing, target, best, enabled)
+    return R.turnDirection(spell, areas, { enabled = enabled, facing = facing, from = from, target = target, best = best })
+  end
+  eq(turn(wave, N, { x = 105, y = 100, z = 7 }, nil, true), E, 'target to the east: face east')
+  eq(turn(wave, N, { x = 95, y = 101, z = 7 }, nil, true), W, 'target to the west')
+  eq(turn(wave, E, { x = 100, y = 104, z = 7 }, nil, true), S, 'target to the south')
+  eq(turn(wave, S, { x = 99, y = 96, z = 7 }, nil, true), N, 'target to the north')
+  eq(turn(wave, E, { x = 105, y = 101, z = 7 }, nil, true), nil, 'already facing the target: no turn')
+  eq(turn(wave, 5, { x = 105, y = 100, z = 7 }, nil, true), E, 'a diagonal facing is turned to a cardinal one')
+  eq(turn(wave, N, { x = 103, y = 103, z = 7 }, nil, true), S, 'exact diagonal, facing neither side: vertical')
+  eq(turn(wave, E, { x = 103, y = 103, z = 7 }, nil, true), nil, 'exact diagonal, facing one side: kept')
+  eq(turn(wave, N, nil, W, true), W, 'no target: the facing with most monsters')
+  eq(turn(wave, W, nil, W, true), nil, 'no target, already that way')
+  eq(turn(wave, N, nil, nil, true), nil, 'no target and no count: nothing to turn to')
+  eq(turn(wave, N, { x = 105, y = 100, z = 8 }, S, true), S, 'target on another floor: the counted facing')
+  eq(turn(wave, N, { x = 100, y = 100, z = 7 }, E, true), E, 'target on our tile: the counted facing')
+  eq(turn(wave, N, { x = 105, y = 100, z = 7 }, nil, false), nil, 'option off: never turns')
+  eq(turn(wave, N, { x = 105, y = 100, z = 7 }, nil, nil), E, 'option unset in ctx: on')
+  eq(turn(circle, N, { x = 105, y = 100, z = 7 }, E, true), nil, 'a circle spell never turns')
+  eq(turn(bolt, N, { x = 105, y = 100, z = 7 }, E, true), nil, 'a targeted bolt never turns')
+  eq(R.turnDirection(wave, areas, nil), nil, 'no context')
+  -- the option: default on, kept in the settings
+  local store = {}
+  local settings = {
+    exists = function(k) return store[k] ~= nil end,
+    getBoolean = function(k) return store[k] end,
+    set = function(k, v) store[k] = v end,
+    save = function() store.saved = true end,
+  }
+  ok(R.autoTurnEnabled(settings), 'default on')
+  ok(R.autoTurnEnabled(nil) == true, 'no settings object: on')
+  R.setAutoTurn(false, settings)
+  eq(R.autoTurnEnabled(settings), false, 'switched off')
+  ok(store.saved, 'saved to disk')
+  R.setAutoTurn(true, settings)
+  eq(R.autoTurnEnabled(settings), true, 'switched on again')
+  -- the generated Chaos entry of a direction="1" spell is directional with the beam area of its script
+  dofile(dir .. '../game_chaosspells/spelldata.lua')
+  local line
+  for _, sp in ipairs(ChaosSpellData) do
+    if sp.name == 'Skewering Line' then line = sp end
+  end
+  ok(line and line.directional == true, 'Skewering Line is generated directional')
+  eq(line and line.areaName, 'AREA_BEAM7', 'Skewering Line: the beam area of its script')
+  local n = 0
+  for _, sp in ipairs(ChaosSpellData) do
+    if sp.directional then n = n + 1 end
+  end
+  eq(n, 1, 'one Chaos spell is directional (server direction="1")')
+  -- the base patch calls it before the words go out
+  local f = io.open(dir .. '../../../base-patches/0080-helper-auto-turn.patch', 'r')
+  ok(f, 'patch 0080 exists')
+  if f then
+    local patch = f:read('*a'); f:close()
+    ok(patch:find('ChaosHelperRotation.turnDirection', 1, true), 'patch 0080 asks turnDirection')
+    ok(patch:find('g_game.turn(chaosTurn)', 1, true), 'patch 0080 turns before g_game.talk')
+  end
+end
+
 if fails > 0 then os.exit(1) end
 print('helper rotation tests OK')

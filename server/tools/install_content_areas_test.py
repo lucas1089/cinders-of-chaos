@@ -245,6 +245,189 @@ def hall_order_checks(root):
         check('not a tile of the map' in str(e), 'refused: %s' % e)
 
 
+QP1, QP2, REWARD, CHEST, BOOTH = 5023, 11796, 2160, 29327, 1500
+
+
+def text_attr(text):
+    b = text.encode('latin-1')
+    return bytes([6]) + struct.pack('<H', len(b)) + b
+
+
+def tile_at(srv, pos):
+    """a tile of the written map, parsed with every attribute (hall_order.parse_tile)"""
+    import hall_order as H
+    path = os.path.join(srv, 'data', 'world', 'w.otbm')
+    data = open(path, 'rb').read()
+    s, e = T.tile_ranges(data, [pos])[pos]
+    return H.parse_tile(data[s:e + 1], pos)
+
+
+def floor_rule_checks():
+    """the owner's floors by level: z 7 for levels 1-500, z 6 for 501-1000, z 5 for the rest (hall.levels)"""
+    import hall_order as H
+    hall = {'floors': [7, 6, 5], 'levels': [{'z': 7, 'max': 500}, {'z': 6, 'max': 1000}, {'z': 5}]}
+    got = [H.floor_for(hall, lv) for lv in (1, 60, 500, 501, 1000, 1001, 5000)]
+    check(got == [7, 7, 7, 6, 6, 5, 5], 'floor of a level: %s' % got)
+    check([H.floor_range_text(hall, z) for z in (7, 6, 5)] == ['1-500', '500-1000', '1000+'], 'floor ranges')
+    check(H.floor_bands({}, [], hall) == [dict(z=7, level=[1, 500]), dict(z=6, level=[500, 1000]), dict(z=5, level=[1000, 0])],
+          'floor bands with the rule: %s' % H.floor_bands({}, [], hall))
+    hunts = [dict(id='low', lo=5, hi=10, level=8), dict(id='mid', lo=600, hi=700, level=650),
+             dict(id='top', lo=1500, hi=1600, level=1550), dict(id='low2', lo=20, hi=30, level=25)]
+    slots = [dict(teleport=(x, 11, z)) for z in (7, 6, 5) for x in (10, 14)]
+    got = H.assign(hunts, slots, hall)
+    check({k: v['teleport'] for k, v in got.items()} == {'low': (10, 11, 7), 'low2': (14, 11, 7), 'mid': (10, 11, 6),
+                                                         'top': (10, 11, 5)}, 'hunts on the floor of their level, ascending: %s' % got)
+    check(H.check_ascending(got, hunts, hall) == [], 'no ordering problem: %s' % H.check_ascending(got, hunts, hall))
+    try:
+        H.assign(hunts + [dict(id='low3', lo=1, hi=5, level=3)], [s for s in slots if s['teleport'][2] != 7] + slots[:1], hall)
+        check(False, 'a floor with too few slots refused')
+    except H.HallError as e:
+        check('floor 7' in str(e) and 'grow' in str(e), 'refused, names the floor: %s' % e)
+
+
+def quest_hall_checks(root):
+    """the base quests leave the level-ordered floor: each alcove (teleport with destination and unique id, the sign with
+    its text, the rewards on show with their attributes) moves tile for tile to the quest hall, the way back from the
+    quest leads in front of the new alcove, the reward chests are gone; a second run changes nothing; --remove-hall
+    puts the quests back"""
+    import hall_order as H
+    import hall_quests as Q
+    QZ = 7  # the quests stand on the entry floor, the room's module on Z
+    cfg = json.loads(json.dumps(CFG))
+    cfg['items'] = {'portal': PORTAL, 'sign': SIGN, 'questPortals': [QP1, QP2]}
+    cfg['hall'] = {'enabled': True, 'floors': [QZ, Z], 'levels': [{'z': QZ, 'max': 500}, {'z': Z}], 'x': [0, 60], 'endRow': 13, 'temple': [500, 500, 7], 'labels': [],
+                   'quests': {'z': QZ, 'origin': {'x': 30, 'y': 20}, 'connector': {'x': 26}, 'step': 4, 'returnRadius': 4,
+                              'chests': [{'x': 36, 'y': 25, 'item': CHEST, 'uid': 34801, 'rows': [23, 25]}]}}
+    q1, q2 = (700, 700, 7), (710, 700, 7)
+
+    def t(*items, flags=0):
+        return dict(ground=None, items=[(G, {})] + list(items), flags=flags)
+    extra = {
+        (12, 11, QZ): t((QP1, {'tele': q1, 'uid': 44001}), (STONE, {}), flags=1),
+        (12, 15, QZ): t((QP2, {'tele': q2}), (STONE, {}), flags=1),
+        (11, 10, QZ): t((REWARD, {'uid': 44002, 'raw': bytes([15, 3])})),
+        (13, 10, QZ): t((REWARD + 1, {})),
+        (11, 16, QZ): t((REWARD + 2, {'raw': bytes([15, 7])})),
+        (13, 16, QZ): t((REWARD + 3, {})),
+        (12, 9, QZ): t((COUNTER, {}), (SIGN, {'raw': text_attr('Quest A')})),
+        (12, 17, QZ): t((COUNTER, {}), (SIGN, {'raw': text_attr('Quest B')})),
+        # the quest sites' way back, and a teleport nearby that is not one
+        (701, 700, 7): t((PORTAL, {'tele': (12, 12, QZ)})),
+        (711, 700, 7): t((PORTAL, {'tele': (12, 14, QZ)})),
+        (702, 700, 7): t((PORTAL, {'tele': (5, 5, QZ)})),
+        # the reward chest and its booth
+        (36, 23, QZ): t((BOOTH, {})), (36, 24, QZ): t((BOOTH, {})), (36, 25, QZ): t((CHEST, {'uid': 34801})),
+    }
+    for x in range(10, 15):  # every tile of the old alcoves exists on the map
+        for y in range(9, 18):
+            extra.setdefault((x, y, QZ), t())
+    for y in (12, 13, 14):  # the hall's corridor on the quest floor
+        extra[(12, y, QZ)] = t(flags=1)
+    for x in range(24, 41):  # the plaza's ground where the quest hall goes
+        for y in range(19, 30):
+            extra.setdefault((x, y, QZ), t())
+    srv, plans, comp = setup(os.path.join(root, 'quests'), extra)
+    csvp = os.path.join(root, 'quests', 'hall_hunts.csv')
+    base = dict(spawntime=120, display='', monsters='', lo=0, hi=0, level=0)
+    rows = [dict(base, id='base_7_12_11', z=QZ, x=12, y=11, dest_x=700, dest_y=700, dest_z=7, kind='quest', name='Quest A'),
+            dict(base, id='base_7_12_15', z=QZ, x=12, y=15, dest_x=710, dest_y=700, dest_z=7, kind='quest', name='Quest B'),
+            dict(base, id='base_6_12_11', z=Z, x=12, y=11, dest_x=900, dest_y=900, dest_z=7, name='Dragon', lo=600, hi=700, level=650, monsters='Dragon'),
+            dict(base, id='base_6_12_15', z=Z, x=12, y=15, dest_x=910, dest_y=900, dest_z=7, name='Demon', lo=900, hi=1100, level=1000, monsters='Demon'),
+            dict(base, id='low_cave', z='', x='', y='', dest_x=800, dest_y=800, dest_z=7, kind='hunt', name='Rat', lo=5, hi=10,
+                 level=8, display='Hydra', monsters='Rat')]
+    H.write_csv(rows, csvp)
+    before = {p: tile_at(srv, p) for p in extra}
+
+    def go(**kw):
+        return T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg, compiled=comp, log=lambda s: None,
+                     fixed_dirs=(), hall_csv=csvp, **kw)
+    res = go()
+    qrows = H.quests_of(H.read_csv(csvp))
+    lay = Q.layout(cfg['hall']['quests'], cfg['room'], qrows)
+    al = {a['id']: a for a in lay['alcoves']}
+    check(al['base_7_12_11']['new'] == (30, 22, QZ) and al['base_7_12_15']['new'] == (30, 26, QZ), 'quest hall: the north alcove above the corridor, the south one below: %s' % [a['new'] for a in lay['alcoves']])
+    for a in lay['alcoves']:
+        for old, new in a['tiles'].items():
+            if old not in before:  # the map has no tile there: the quest hall has plain floor
+                continue
+            check(tile_at(srv, new) == before[old], 'alcove tile %s -> %s moved with every attribute: %s vs %s' % (old, new, tile_at(srv, new), before[old]))
+    tele_tile = tile_at(srv, (30, 22, QZ))
+    check(tele_tile['items'][1] == (QP1, {'tele': q1, 'uid': 44001}), 'the quest teleport keeps its destination and unique id')
+    check(tile_at(srv, (29, 21, QZ))['items'][1] == (REWARD, {'uid': 44002, 'raw': bytes([15, 3])}), 'the reward on show keeps its unique id and count')
+    check(tile_at(srv, (30, 20, QZ))['items'][-1][1].get('raw') == text_attr('Quest A'), 'the sign keeps its text')
+    check(tile_at(srv, (30, 26, QZ))['items'][1] == (QP2, {'tele': q2}), 'the south quest teleport moved')
+    # the old alcoves: no quest teleport, bare cells, blank signs
+    hunt_at = res['hall']['assign']['low_cave']
+    for old in (al['base_7_12_11']['old'], al['base_7_12_15']['old']):
+        items = [i for i, _a in tile_at(srv, old)['items']]
+        check(QP1 not in items and QP2 not in items, 'old quest teleport gone at %s' % (old,))
+    check(tile_at(srv, hunt_at)['items'][0] == (PORTAL, {'tele': (800, 800, 7)}), 'the new low-level hunt takes the first free slot %s' % (hunt_at,))
+    for c in ((11, 10, QZ), (13, 10, QZ), (11, 16, QZ), (13, 16, QZ)):
+        check([i for i, _a in tile_at(srv, c)['items']] == [G], 'old cell %s bare' % (c,))
+    for sg in ((12, 9, QZ), (12, 17, QZ)):
+        check(all(a.get('raw', b'') == b'' for i, a in tile_at(srv, sg)['items'] if i == SIGN), 'old sign %s blank' % (sg,))
+    # the way back from the quest sites
+    tele = map_state(srv)[1]
+    check(tele.get((701, 700, 7)) == (30, 23, QZ) and tele.get((711, 700, 7)) == (30, 25, QZ), 'way back leads in front of the new alcoves: %s' % tele)
+    check(tele.get((702, 700, 7)) == (5, 5, QZ), 'a teleport that does not lead to the hall is left alone')
+    # the chest and its booth are gone
+    check(all([i for i, _a in tile_at(srv, (36, y, QZ))['items']] == [G] for y in (23, 24, 25)), 'chest and booth removed')
+    # reachable, and the corridor keeps its protection zone
+    stacks, tele, flags = map_state(srv)
+    seen = reachable(stacks, (26, 24, QZ), QZ)
+    check((30, 23, QZ) in seen and (30, 25, QZ) in seen, 'both new fronts reachable from the connector')
+    check(all(flags[(x, y, QZ)] == 1 for x in range(26, 33) for y in (23, 24, 25)), 'quest corridor and connector are protection zone')
+    pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
+    check('quests = {' in pl and 'x = 31, y = 24, z = 7' in pl, 'places file: the quest label')
+    once = digest(srv)
+    state_once = map_state(srv)
+    snap_spawn = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    go()
+    check(digest(srv) == once, 'quest hall: a second run changes nothing')
+    # --remove-hall: the quests where they were, with everything
+    go(hall_on=False)
+    for a in lay['alcoves']:
+        for old in a['tiles']:
+            if old not in before:
+                continue
+            check(tile_at(srv, old) == before[old], 'remove: alcove tile %s restored: %s vs %s' % (old, tile_at(srv, old), before[old]))
+    tele = map_state(srv)[1]
+    check(tele.get((701, 700, 7)) == (12, 12, QZ) and tele.get((711, 700, 7)) == (12, 14, QZ), 'remove: way back leads to the old fronts')
+    check([i for i, _a in tile_at(srv, (30, 22, QZ))['items']] == [G], 'remove: the quest hall is floor again')
+    again = digest(srv)
+    go(hall_on=False)
+    check(digest(srv) == again, 'remove: a second run changes nothing')
+    go()
+    check(map_state(srv) == state_once, 'order again after a remove: the same tiles, teleports and flags')
+    sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    check(sp.count('chaoshunt=') == snap_spawn.count('chaoshunt='), 'order again after a remove: the same display monsters')
+    # a unique id or an action id where the quest hall would go is refused
+    srv2, plans2, comp2 = setup(os.path.join(root, 'quests2'), {**extra, (31, 24, QZ): t((BOOTH, {'aid': 9999}))})
+    try:
+        T.run(os.path.join(srv2, 'data'), plans_dir=plans2, config=cfg, compiled=comp2, log=lambda s: None, fixed_dirs=(),
+              hall_csv=csvp)
+        check(False, 'an action id under the quest hall refused')
+    except T.InstallError as e:
+        check('action id' in str(e), 'refused: %s' % e)
+    # a wing that sweeps open ground: only decoration may go (no action id, unique id, teleport, sign)
+    m2 = os.path.join(srv2, 'data', 'world', 'w.otbm')
+    T.check_swept(m2, {(36, 23, QZ), (30, 22, QZ)}, PORTAL, cfg['items'], lambda s: None)
+    for pos in ((31, 24, QZ), (12, 9, QZ), (12, 11, QZ)):
+        try:
+            T.check_swept(m2, {pos}, PORTAL, cfg['items'], lambda s: None)
+            check(False, 'a swept tile with an action id, sign or teleport refused: %s' % (pos,))
+        except T.InstallError as e:
+            check('nothing written' in str(e), 'swept %s refused: %s' % (pos, e))
+    # a chest with another unique id is not removed (not ours)
+    srv3, plans3, comp3 = setup(os.path.join(root, 'quests3'), {**extra, (36, 25, QZ): t((CHEST, {'uid': 1}))})
+    try:
+        T.run(os.path.join(srv3, 'data'), plans_dir=plans3, config=cfg, compiled=comp3, log=lambda s: None, fixed_dirs=(),
+              hall_csv=csvp)
+        check(False, 'a chest with another unique id refused')
+    except T.InstallError as e:
+        check('unique id' in str(e), 'refused: %s' % e)
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -393,6 +576,8 @@ def main():
 
         # the hall order: the base hunts (a hall_hunts.csv) and the content hunts in one band order over every slot
         hall_order_checks(root)
+        floor_rule_checks()
+        quest_hall_checks(root)
 
         # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots
         real = T.plan_files(T.PLANS_DIR)

@@ -355,4 +355,75 @@ function K.stubEnv(base)
 	return env, talks
 end
 
+-- ---------------------------------------------------------------- loading the base commands
+-- Shared by commands_ui.lua (the main Lua state) and the service NPCs (service_npcs_run.lua, an NPC's own state): the
+-- base talkaction scripts are loaded into a sandbox and only their onSay is kept. Plain io and load: no engine API.
+K.XML_PATH = "data/talkactions/talkactions.xml"
+
+function K.readFile(path)
+	local f = io.open(path, "r")
+	if not f then
+		return nil
+	end
+	local text = f:read("*a")
+	f:close()
+	return text
+end
+
+-- loads a chunk into its own environment (LuaJIT / 5.1: setfenv; 5.2+: load with env)
+function K.loadInto(path, env)
+	local text = K.readFile(path)
+	if not text then
+		return nil
+	end
+	local chunk
+	if setfenv then
+		chunk = loadstring(text, "@" .. path)
+		if chunk then
+			setfenv(chunk, env)
+		end
+	else
+		chunk = load(text, "@" .. path, "t", env)
+	end
+	if not chunk then
+		return nil
+	end
+	local ok = pcall(chunk)
+	return ok
+end
+
+-- onSay of a base XML talkaction (xmlMap: K.parseXml of talkactions.xml), or nil
+function K.xmlHandler(words, xmlMap)
+	local script = (xmlMap or {})[words]
+	if not script then
+		return nil
+	end
+	local env = setmetatable({}, {__index = _G})
+	if not K.loadInto("data/talkactions/scripts/" .. script, env) then
+		return nil
+	end
+	return type(rawget(env, "onSay")) == "function" and rawget(env, "onSay") or nil
+end
+
+-- onSay of a base revscript talkaction (def.file, def.index-th TalkAction(...) of the file), or nil
+function K.revHandler(def)
+	local env, talks = K.stubEnv(_G)
+	if not K.loadInto(def.file, env) then
+		return nil
+	end
+	local t = talks[def.index or 1]
+	return t and type(rawget(t, "onSay")) == "function" and rawget(t, "onSay") or nil
+end
+
+-- onSay of the base command K.BASE[id], or nil (not on this server)
+function K.baseHandler(id, xmlMap)
+	local def = K.BASE[id]
+	if def and def.kind == "xml" then
+		return K.xmlHandler(def.words, xmlMap)
+	elseif def and def.kind == "rev" then
+		return K.revHandler(def)
+	end
+	return nil
+end
+
 return K

@@ -95,11 +95,10 @@ C.uses = {
 	stun = "stun_stars",               -- Iron Palm: a monster really stunned
 }
 
--- loot ray effect (lootfilter_config.lua) -> the pair 27 beam; the other rarities keep their ray
+-- loot ray effect (lootfilter_config.lua: Legendary, Divine and uniques) -> the pair 27 beam
 C.rays = {
 	loot_ray_legendary = "loot_beam_gold",
 	loot_ray_divine = "loot_beam_steel",
-	loot_ray_cosmic = "loot_beam_amethyst",
 	loot_ray_unique = "loot_beam_emerald",
 }
 

@@ -1,0 +1,50 @@
+// Stat help panel of the passive tree window (statinfo.lua): every stat of the tree with what it does, Primary first.
+ChaosWindow
+  id: statInfoWindow
+  !text: tr('Stats')
+  size: 420 440
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: 80
+  margin-right: 20
+  @onEscape: modules.game_passivetree.closeStatInfo()
+
+  Panel
+    id: listPanel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-bottom: 8
+    background: #000000aa
+
+    ScrollablePanel
+      id: rows
+      anchors.fill: parent
+      padding: 4
+      vertical-scrollbar: rowsScrollBar
+      layout:
+        type: verticalBox
+        spacing: 2
+
+    VerticalScrollBar
+      id: rowsScrollBar
+      anchors.top: rows.top
+      anchors.right: rows.right
+      anchors.bottom: rows.bottom
+      step: 30
+      pixels-scroll: true
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 110
+    !text: tr('Close')
+    @onClick: modules.game_passivetree.closeStatInfo()
+
+StatInfoRow < UILabel
+  text-wrap: true
+  text-auto-resize: true
+  text-align: left
+  margin-right: 14

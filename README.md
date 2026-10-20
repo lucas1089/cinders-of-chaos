@@ -29,7 +29,7 @@ systems built for weeks of play rather than days.
 | Classes | 7 class lines (Warrior, Ranger, Mystic, Thief, plus Necromancer, Monk and Templar as a store unlock), each with 2 ascensions: **14 ascended classes**, earned through the ascension quest |
 | Level cap | 1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting |
 | Build | a passive tree of over 600 nodes with class keystones and class sections, Vocation Trials, Paragon, spell supports, saved Loadouts |
-| Items | 15 rarities from Common to Transcendent, item levels 1 to 150, prefixes and suffixes in tiers T1 to T8, legendary powers, veiled modifiers, uniques, ten item sets, gems and sockets, charms, two ring slots, and loot for every monster |
+| Items | seven rarities (Common, Uncommon, Magic, Rare, Legendary, Divine, Unique), item levels 1 to 150, prefixes and suffixes in tiers T1 to T8, legendary powers, veiled modifiers, uniques, ten item sets, gems and sockets, charms, two ring slots, and loot for every monster |
 | Archery | bows and crossbows fire without arrows; quivers are off-hand gear with modifiers of their own |
 | Crafting | 14 orbs plus the Orb of Unveiling, the Orb of Sockets and the Whetstone, item quality, bound modifiers, salvage into Rune Shards, and the crafting tables, whose gear can roll a rarity |
 | Professions | four gathering professions up to level 100; sell the materials to the Material Broker and earn up to +10% monster experience |
@@ -250,15 +250,15 @@ sockets (the second opens 60 levels after you learn the spell, the third 150 lev
 > *"The Chaos seeps into everything it touches. Most of it is rust. Some of it glows."*
 > (a scavenger of the deep hunting grounds)
 
-![The fifteen rarities and the loot filter](docs/images/feature_loot.png)
+![The seven rarities and the loot filter](docs/images/feature_loot.png)
 
-- **15 rarities**: Common, Uncommon, Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal,
-  Celestial, Cosmic, Abyssal and Transcendent.
+- **Seven rarities**: Common, Uncommon, Magic, Rare, Legendary, Divine and Unique. Legendary and up shines. Items of
+  the 15 rarities of before were mapped onto them without losing a modifier.
 - **Item levels:** every piece of gear that drops has an item level from 1 to 150. It comes from what dropped it: the
   monster's level, plus a bonus for Magic, Rare and Legendary monsters, bosses, the rift's tier and Omen guardians. World
   boss gear is item level 145. Orbs never change an item's level.
-- **Rarity decides how many modifiers, item level decides how good they are.** A Common item has one prefix and one
-  suffix; top rarities carry up to three of each (Rare to Exotic: two of each; Mythic and above: three). **Prefixes** are
+- **Rarity decides how many modifiers, item level decides how good they are.** A Common item has one modifier, a Divine one six; a rarity carries
+  up to three prefixes and three suffixes (Magic and Rare: two of each; Legendary and Divine: three). **Prefixes** are
   damage and defence (skills, critical hits, element damage, ailments, penetration, block, dodge, thorns, energy shield
   ...), **suffixes** are utility, resistances and speed (absorbs, leech, attack and movement speed, find bonuses,
   cooldown reduction, shield recharge ...).
@@ -370,7 +370,7 @@ opens on its craft:
   result for its full tooltip.
 - **Craft one or many:** Craft x N keeps going until it is done or something runs out, with a bar for each craft and
   the answer in the window. You need to stay at the table.
-- **Crafted gear can roll a rarity**, from Common up to Legendary, with an item level and modifiers like a drop. The
+- **Crafted gear can roll a rarity**, from Common up to Rare, with an item level and modifiers like a drop. The
   higher your skill above the recipe's level, the better the odds (up to 35% for any rarity) and the higher the item
   level (up to 90). A crafted piece never beats a boss drop.
 - **Potions by skill:** potion recipes can give 50% more, or even twice as many, the more your skill is above the
@@ -922,7 +922,7 @@ Mordecai Ashwager stands behind his counter in the Hall of Services of Cinderhol
 - **New crates every 4 hours,** at 00:00, 04:00, 08:00, 12:00, 16:00 and 20:00 server time, with a countdown in the
   window. Your stock stays the same through relogs and restarts.
 - **The odds are on the window:** never plain, at least as good as a magic monster's gear drop at every rarity up to
-  Divine, and Legendary or better about one crate in eight. The rarities above Divine stay with the monsters.
+  Divine, and Legendary or better about one crate in 25 (about 4%). Divine is rare, a crate in 260.
 - **Prices** follow your level: an armour piece costs about 18% of an hour of hunting. *Fresh Crates* gives you a new
   stock at once for half an armour piece, doubling each time, three times per window.
 - A Divine reveal is told to everyone nearby. Bow classes can find quivers in the crates.

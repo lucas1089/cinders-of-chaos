@@ -38,18 +38,29 @@ base_6_31662_32254,6,31662,32254,32880,32636,11,hunt,Serpent Spawn,88,35,105,Hyd
 base_6_31662_32258,6,31662,32258,33622,31793,13,hunt,Rustheap Golem,77,75,80,Sea Serpent,120,Rustheap Golem|Sludgebrass Golem,
 base_6_31666_32254,6,31666,32254,33284,31698,14,hunt,Behemoth,26,20,80,Behemoth,120,Behemoth|Cyclops Smith|Cyclops Drone,
 base_6_31666_32258,6,31666,32258,33458,31724,9,hunt,Hellspawn,119,80,135,Dark Torturer,120,Hellspawn|Dark Torturer|Grim Reaper,
-base_7_31630_32254,7,31630,32254,33305,31706,12,hunt,Cyclops Smith,26,20,100,,120,Cyclops Smith|Cyclops Drone|Bog Raider,
-base_7_31630_32258,7,31630,32258,32798,31958,7,hunt,Amazon,12,5,20,,120,Amazon|Slime|Snake,
-base_7_31634_32254,7,31634,32254,33208,31642,13,hunt,Fire Elemental,24,20,25,,120,Fire Elemental|Minotaur Guard|Monk,
-base_7_31634_32258,7,31634,32258,32764,32345,7,hunt,Giant Spider,15,5,50,,120,Giant Spider|Wolf|Skeleton,
-base_7_31638_32254,7,31638,32254,32169,32439,7,hunt,Wolf,7,1,10,,120,Wolf|Seagull|Chicken,
-base_7_31638_32258,7,31638,32258,33210,31672,13,hunt,Hellfire Fighter,24,20,100,,120,Hellfire Fighter|Minotaur Guard|Fire Elemental,
-base_7_31642_32254,7,31642,32254,33281,31843,3,hunt,Aeliana,283,265,310,,120,Aeliana|Oroniel|Sagittarius,
-base_7_31642_32258,7,31642,32258,32715,32339,7,hunt,Giant Spider,9,5,50,,120,Giant Spider|Wolf|Poison Spider,
-base_7_31654_32258,7,31654,32258,32243,31892,10,hunt,Cave Rat,9,5,15,,120,Cave Rat|Skeleton|Slime,
-base_7_31658_32254,7,31658,32254,31645,32880,7,hunt,Bog Raider,45,45,75,,120,Bog Raider|Hydra,
-base_7_31658_32258,7,31658,32258,31439,32686,8,hunt,Ogre rowdy,113,100,120,,120,Ogre rowdy|Ogre sage|Ogre ruffian,a lava cave whose stairs lead down: its band is the ogre camp 20-40 tiles away three floors below (no spawn on its own floor)
-base_7_31662_32254,7,31662,32254,31594,33075,7,hunt,Wolf,2,1,10,,120,Wolf|Sheep|Chicken,
-base_7_31662_32258,7,31662,32258,31881,33109,8,hunt,Lizard Chosen,75,55,75,,120,Lizard Chosen|Lizard Warbound|Souleater,
-base_7_31666_32254,7,31666,32254,31270,32779,8,hunt,fangclaw,317,305,350,,120,fangclaw|slinkhide|lurkskin,the arrival is above the hunt: its band is the fangclaw cave two floors below (15-25 tiles away)
-base_7_31666_32258,7,31666,32258,31179,32566,9,hunt,grothar,313,300,335,,120,grothar|krag'lok|krulmash,
+base_7_31630_32254,7,31630,32254,33305,31706,12,quest,Behemoth Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31630_32258,7,31630,32258,32798,31958,7,quest,Black Knight Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31634_32254,7,31634,32254,33208,31642,13,quest,Demon Helmet Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31634_32258,7,31634,32258,32764,32345,7,quest,Pits of Inferno Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31638_32254,7,31638,32254,32169,32439,7,quest,Deeper Fibula Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31638_32258,7,31638,32258,33210,31672,13,quest,Annihilator,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31642_32254,7,31642,32254,33281,31843,3,quest,Elemental Sphere Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31642_32258,7,31642,32258,32715,32339,7,quest,Demon Oak Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31654_32254,7,31654,32254,33190,31659,13,quest,The Inquisition Quest,0,0,0,,120,,"base quest teleport (another teleport item, 5023): the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31654_32258,7,31654,32258,32243,31892,10,quest,Queen of the Banshees Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31658_32254,7,31658,32254,31645,32880,7,quest,Dragon Scale Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31658_32258,7,31658,32258,31439,32686,8,quest,Blessed Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31662_32254,7,31662,32254,31594,33075,7,quest,Astro Mage / Astro Warrior Outfit Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31662_32258,7,31662,32258,31881,33109,8,quest,Yalahari and Draken Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31666_32254,7,31666,32254,31270,32779,8,quest,Arodis Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+base_7_31666_32258,7,31666,32258,31179,32566,9,quest,Mercurial Quest,0,0,0,,120,,"base quest teleport: the sign behind it names the quest, the rewards stand on show beside it, the quest site has a way back to the tile in front of it"
+low_rat_warren,,,,32366,32214,8,hunt,Rat,4,1,6,Rat,120,Rat|Cave Rat|Spider,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_dworc_burrow,,,,32701,32933,9,hunt,Dworc Fleshhunter,9,5,10,Dworc Fleshhunter,120,Dworc Fleshhunter|Centipede|Dworc Venomsniper,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_orc_stronghold,,,,32311,32125,10,hunt,Orc,10,5,15,Orc,120,Orc|Orc Spearman|Orc Warrior,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_chakoya_caves,,,,32462,31090,10,hunt,Chakoya Toolshaper,10,10,15,Chakoya Toolshaper,120,Chakoya Toolshaper|Chakoya Tribewarden|Chakoya Windcaller,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_minotaur_hold,,,,32416,32169,15,hunt,Minotaur,11,10,20,Minotaur,120,Minotaur|Minotaur Guard|Minotaur Archer,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_jungle_camp,,,,32770,32504,9,hunt,Sibang,17,15,20,Sibang,120,Sibang|Kongra|Merlkin,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_tomb_vaults,,,,33151,32974,14,hunt,Stalker,18,15,30,Stalker,120,Stalker|Ghost|Vampire,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_dwarf_mines,,,,32502,31953,14,hunt,Dwarf Guard,21,10,25,Dwarf Guard,120,Dwarf Guard|Dwarf Soldier|Dwarf Geomancer,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_quara_grotto,,,,32074,32770,12,hunt,Quara Mantassin,32,25,55,Quara Mantassin,120,Quara Mantassin|Quara Constrictor|Quara Pincher,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"
+low_clay_hollow,,,,32220,32579,12,hunt,Clay Guardian,34,30,40,Clay Guardian,120,Earth Elemental|Clay Guardian|Crystalcrusher,"added: low-level hunt on the base map (arrival tile walkable, 500+ tile region, no spawn within 3 tiles)"

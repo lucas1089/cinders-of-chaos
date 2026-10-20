@@ -5,7 +5,24 @@ ShopCategory < Panel
 
   $focus:
     background: #99999999
-  
+
+  // the cosmetic itself as the icon where it is no item or creature: a print, a plate, an effect, a colour sample
+  // (shopicon.lua draws into it; hidden until then)
+  UIWidget
+    id: art
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-top: 2
+    margin-bottom: 2
+    margin-left: 2
+    size: 32 32
+    phantom: true
+    visible: false
+    image-fixed-ratio: true
+    text-align: center
+    font: verdana-11px-rounded
+
   Label
     id: name
     anchors.top: parent.top
@@ -56,9 +73,26 @@ ShopCategoryImage < ShopCategory
 ShopOffer < Panel
   height: 60
   background: alpha
+  focusable: true
   
   $focus:
     background: #99999999
+
+  // as ShopCategory's art, 48 px
+  UIWidget
+    id: art
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.bottom: parent.bottom
+    margin-top: 4
+    margin-bottom: 4
+    margin-left: 2
+    size: 48 48
+    phantom: true
+    visible: false
+    image-fixed-ratio: true
+    text-align: center
+    font: verdana-11px-rounded
 
   Label
     id: title

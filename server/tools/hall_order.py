@@ -3,10 +3,17 @@
 
 usage: python3 -I server/tools/hall_order.py derive DATA_DIR [--map FILE] [--force]
        python3 -I server/tools/hall_order.py show [--csv FILE]
+       python3 -I server/tools/hall_order.py band DATA_DIR X,Y,Z
 
 The hall (hunt_teleports_config.lua `room` and `hall`) has the base server's own hunt teleports on three floors (z 7,
 6, 5) and the planned content hunts' teleports in the grown wings of floor 6. The owner wants the whole hall ordered by
 level: the lowest bands on the entry floor (z 7) along the corridor, each floor up the next bands.
+
+Floors by level (owner, 2026-10-18): the ground floor z 7 holds the hunts of levels 1-500, z 6 of 501-1000, z 5 the
+rest (config `hall.levels`); inside a floor they ascend by level along the corridor. A floor with too few slots is
+grown (install_content_areas.py). The base server's quest teleports (kind `quest`, the entry floor's own alcoves) take
+no level slot: they move, with the rewards shown beside them, to the quest hall east of the corridor's aisle
+(hall_quests.py), and their old alcoves become hunt slots.
 
 derive  reads the base server's hunt teleports of the hall from the map (a teleport on a teleport row of the room, or
         on the corridor's end row when it does not lead to the temple) and gives each a level and a band from the
@@ -18,6 +25,7 @@ derive  reads the base server's hunt teleports of the hall from the map (a telep
         read the hall as the base server has it: refused when the CSV exists (--force) or the places file says the
         hall order is installed.
 show    prints the CSV in hall order with the floor of each hunt.
+band    prints the level, band and top monsters around a destination, for a hunt added to the CSV by hand (empty z, x, y).
 
 install_content_areas.py does the rest (step `contentareas`): with the CSV present it owns every hunt slot of the
 hall (the base teleports' tiles, their display cells and signs, and the wings' slots), assigns the base and content
@@ -37,7 +45,8 @@ sys.path.insert(0, os.path.join(ROOT, 'tools', 'map'))
 CSV_PATH = os.path.join(HERE, 'hall_hunts.csv')
 FIELDS = ['id', 'z', 'x', 'y', 'dest_x', 'dest_y', 'dest_z', 'kind', 'name', 'level', 'lo', 'hi', 'display', 'spawntime',
           'monsters', 'note']
-KIND_HUNT, KIND_NOT = 'hunt', 'not a hunt'
+KIND_HUNT, KIND_NOT, KIND_QUEST = 'hunt', 'not a hunt', 'quest'
+KINDS = (KIND_HUNT, KIND_NOT, KIND_QUEST)
 # hand decisions kept by a new derive (--force): the kind, a note and, for a hunt, its band
 KEEP = ('kind', 'note')
 
@@ -53,12 +62,17 @@ def read_csv(path=CSV_PATH):
     rows = []
     with open(path, encoding='utf-8', newline='') as f:
         for r in csv.DictReader(l for l in f if not l.startswith('#')):
-            for k in ('z', 'x', 'y', 'dest_x', 'dest_y', 'dest_z', 'lo', 'hi', 'spawntime'):
+            for k in ('dest_x', 'dest_y', 'dest_z', 'lo', 'hi', 'spawntime'):
                 r[k] = int(r[k])
+            # a hunt added to the hall (not a base teleport) has no place of its own: z, x, y empty
+            for k in ('z', 'x', 'y'):
+                r[k] = int(r[k]) if r.get(k) not in (None, '') else None
             r['level'] = int(r['level']) if r.get('level') not in (None, '') else (r['lo'] + r['hi']) // 2
             r['kind'] = r.get('kind') or KIND_HUNT
-            if r['kind'] not in (KIND_HUNT, KIND_NOT):
-                raise HallError('%s: kind %r (hunt or not a hunt)' % (r['id'], r['kind']))
+            if r['kind'] not in KINDS:
+                raise HallError('%s: kind %r (hunt, quest or not a hunt)' % (r['id'], r['kind']))
+            if r['x'] is None and r['kind'] != KIND_HUNT:
+                raise HallError('%s: only a hunt can be without a place' % r['id'])
             r['note'] = r.get('note') or ''
             rows.append(r)
     ids = [r['id'] for r in rows]
@@ -122,20 +136,66 @@ def order_hunts(hunts):
     return sorted(hunts, key=band_key)
 
 
+def floor_for(hall, level):
+    """the floor a hunt of `level` belongs on by the owner's rule (hall.levels: [{z, max}, ..., {z}] in floor order, a
+    hunt of level <= max goes on that floor, the last floor takes the rest); None without the rule"""
+    rule = hall.get('levels')
+    if not rule:
+        return None
+    for f in rule:
+        if f.get('max') is None or level <= f['max']:
+            return f['z']
+    return rule[-1]['z']
+
+
 def assign(hunts, slots, hall):
-    """{hunt id: slot}: the hunts by band, the slots in hall order (slot_key), one to one; refused when short"""
+    """{hunt id: slot}: the hunts by band, the slots in hall order (slot_key), one to one; refused when short.
+    With hall.levels each hunt takes a slot of the floor its level belongs on (floor_for), the hunts of one floor in
+    band order along that floor's slots; a floor with fewer slots than hunts is refused (grow it); without the rule
+    the hunts fill all slots from the entry floor up."""
     ordered = sorted(slots, key=lambda s: slot_key(hall, s['teleport']))
     hs = order_hunts(hunts)
-    if len(hs) > len(ordered):
-        raise HallError('the hall has %d hunt slots for %d hunts: grow the room (`modules`)' % (len(ordered), len(hs)))
-    return {h['id']: s for h, s in zip(hs, ordered)}
+    if not hall.get('levels'):
+        if len(hs) > len(ordered):
+            raise HallError('the hall has %d hunt slots for %d hunts: grow the room (`modules`)' % (len(ordered), len(hs)))
+        return {h['id']: s for h, s in zip(hs, ordered)}
+    out = {}
+    for z in hall['floors']:
+        mine = [h for h in hs if floor_for(hall, level_of(h)) == z]
+        free = [s for s in ordered if s['teleport'][2] == z]
+        if len(mine) > len(free):
+            raise HallError('floor %d has %d hunt slots for %d hunts (levels %s): grow it (`room.wings`)'
+                            % (z, len(free), len(mine), floor_range_text(hall, z)))
+        out.update({h['id']: s for h, s in zip(mine, free)})
+    return out
+
+
+def floor_range(hall, z):
+    """(lo, hi) of the levels a floor holds by the rule; hi 0 = no limit (the top floor); None without the rule"""
+    rule = hall.get('levels')
+    if not rule:
+        return None
+    lo = 1
+    for f in rule:
+        if f['z'] == z:
+            return (lo, f.get('max') or 0)
+        lo = f.get('max') or lo
+    return None
+
+
+def floor_range_text(hall, z):
+    r = floor_range(hall, z)
+    return 'any' if not r else ('%d+' % r[0] if not r[1] else '%d-%d' % r)
 
 
 def original(hunts_base, slots):
-    """{base hunt id: slot}: every base hunt at the slot it had (the base server's order)"""
+    """{base hunt id: slot}: every base hunt at the slot it had (the base server's order); a hunt added to the hall
+    (no place of its own) is not there"""
     by = {tuple(s['teleport']): s for s in slots}
     out = {}
     for r in hunts_base:
+        if r['x'] is None:
+            continue
         s = by.get((r['x'], r['y'], r['z']))
         if not s:
             raise HallError('%s: its slot %d,%d,%d is not a slot of the hall' % (r['id'], r['x'], r['y'], r['z']))
@@ -144,26 +204,32 @@ def original(hunts_base, slots):
 
 
 def floor_bands(assignment, hunts, hall):
-    """[{z, level = [lo, hi]}] per floor of the hall (the hunts on it), in hall.floors order; a floor without hunts
-    is left out"""
+    """[{z, level = [lo, hi]}] per floor of the hall in hall.floors order. With hall.levels the owner's ranges (hi 0:
+    and up); else the lowest to the highest hunt level on it (a floor without hunts is left out), so floors never
+    overlap"""
+    if hall.get('levels'):
+        return [dict(z=z, level=list(floor_range(hall, z))) for z in hall['floors']]
     by = {h['id']: h for h in hunts}
     out = []
     for z in hall['floors']:
         on = [by[i] for i, s in assignment.items() if s['teleport'][2] == z and i in by]
         if on:
-            # the floor's range: the lowest and highest hunt level (median) on it, so floors never overlap
             out.append(dict(z=z, level=[min(level_of(h) for h in on), max(level_of(h) for h in on)]))
     return out
 
 
 def check_ascending(assignment, hunts, hall):
-    """problems (strings) when the hall's slots do not ascend by band"""
+    """problems (strings) when the hall's slots do not ascend by band, or a hunt stands on the wrong floor"""
     by = {h['id']: h for h in hunts}
     seq = sorted(assignment.items(), key=lambda kv: slot_key(hall, kv[1]['teleport']))
     out = []
     for (a, _sa), (b, _sb) in zip(seq, seq[1:]):
         if band_key(by[a]) > band_key(by[b]):
             out.append('%s (%d) before %s (%d)' % (a, level_of(by[a]), b, level_of(by[b])))
+    for i, s in assignment.items():
+        want = floor_for(hall, level_of(by[i]))
+        if want is not None and s['teleport'][2] != want:
+            out.append('%s (%d) on floor %d, its floor is %d' % (i, level_of(by[i]), s['teleport'][2], want))
     return out
 
 
@@ -268,7 +334,7 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
         raise HallError('the places file says the hall order is installed: run install_content_areas.py --remove-hall '
                         'first, so the hall is the base server\'s again')
     log('reading %s ...' % map_path)
-    world = T.load_world(map_path, cfg['items']['portal'])
+    world = T.load_world(map_path, cfg['items']['portal'], cfg['items'].get('questPortals') or ())
     sp_text = open(T.spawn_path(map_path), encoding='latin-1').read()
     points = spawn_points(sp_text)
     cells = spawn_blocks_at(sp_text)
@@ -295,6 +361,8 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
         rows.append(dict(id=base_id(z, x, y), z=z, x=x, y=y, dest_x=dest[0], dest_y=dest[1], dest_z=dest[2],
                          kind=kind, name=name, level=med, lo=lo, hi=hi, display=disp, spawntime=st,
                          monsters='|'.join(top), note=old.get('note', '')))
+    # the hunts added to the hall by hand (no place of their own) carry over
+    rows += [r for r in (keep or []) if r['x'] is None]
     return rows
 
 
@@ -328,20 +396,40 @@ def sign_of(world, room, pos, sign_id):
 
 
 def hunts_of(rows):
-    """the rows that are hunts (a `not a hunt` row keeps its teleport where it is and is not ordered)"""
+    """the rows that are hunts (a `not a hunt` row keeps its teleport where it is and is not ordered; a `quest` row
+    moves to the quest hall)"""
     return [r for r in rows if r['kind'] == KIND_HUNT]
 
 
-def hall_slots(world, room, sign_id, base_rows, wing_slots):
-    """every hunt slot of the hall: the base hunts' places (from the CSV, whatever stands there now) and the
-    grown wings' slots. A display cell goes to the first slot (hall order) that claims it."""
+def quests_of(rows):
+    return [r for r in rows if r['kind'] == KIND_QUEST]
+
+
+def cells_of(room, pos):
+    """the two cells beside a teleport whatever stands in them now (a quest alcove's cells hold the rewards on show
+    until the install clears them)"""
+    x, y, z = pos
+    rows = room['teleportRows']
+    if y not in rows:
+        return []
+    row = room['cellRows'][rows.index(y)]
+    return [(x - 1, row, z), (x + 1, row, z)]
+
+
+def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=()):
+    """every hunt slot of the hall: the base hunts' places (from the CSV, whatever stands there now), the places of
+    the quest teleports (their alcoves become hunt slots once the quests have moved) and the grown wings' slots. A
+    display cell goes to the first slot (hall order) that claims it. A hunt without a place is not a slot."""
     slots = []
-    for r in hunts_of(base_rows):
+    quest_at = {(r['x'], r['y'], r['z']) for r in quest_rows}
+    for r in list(hunts_of(base_rows)) + list(quest_rows):
+        if r['x'] is None:
+            continue
         p = (r['x'], r['y'], r['z'])
         if not world.has(p):
             raise HallError('%s: %d,%d,%d is not a tile of the map (hall_hunts.csv is for another map?)' % ((r['id'],) + p))
-        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=display_cells(world, room, p),
-                          base=r['id']))
+        cells = cells_of(room, p) if p in quest_at else display_cells(world, room, p)
+        slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id']))
     have = {s['teleport'] for s in slots}
     for s in wing_slots:
         if tuple(s['teleport']) not in have:
@@ -380,6 +468,11 @@ def _node(data, i):
             i += 1
 
 
+# item attributes kept as they are when a tile is rewritten (OTBM: 1/2/6/7/19 strings, the rest fixed sizes)
+ITEM_STRING_ATTRS = (1, 2, 6, 7, 19)
+ITEM_FIXED_ATTRS = {10: 2, 12: 1, 13: 1, 14: 1, 15: 1, 16: 4, 17: 1, 18: 4, 20: 4, 21: 4, 22: 2}
+
+
 def parse_tile(raw, pos):
     """a map tile node (escaped bytes, 0xFE .. 0xFF) as {'flags', 'ground', 'items': [(id, attrs)]}; refused when
     it is a house tile or holds anything we cannot write back unchanged (containers, texts, other attributes)"""
@@ -403,7 +496,7 @@ def parse_tile(raw, pos):
         if kpay[0] != 6 or kkids:
             raise HallError('%d,%d,%d: an item with contents; not rewritten' % pos)
         iid = struct.unpack_from('<H', kpay, 1)[0]
-        attrs, j = {}, 3
+        attrs, j, raw = {}, 3, bytearray()
         while j < len(kpay):
             a = kpay[j]
             if a == 4:
@@ -415,8 +508,18 @@ def parse_tile(raw, pos):
             elif a == 8:
                 attrs['tele'] = struct.unpack_from('<HHB', kpay, j + 1)
                 j += 6
+            elif a in ITEM_STRING_ATTRS:  # a sign's text, a description: kept byte for byte
+                n = 3 + struct.unpack_from('<H', kpay, j + 1)[0]
+                raw += kpay[j:j + n]
+                j += n
+            elif a in ITEM_FIXED_ATTRS:  # a count, charges, a date: kept byte for byte
+                n = 1 + ITEM_FIXED_ATTRS[a]
+                raw += kpay[j:j + n]
+                j += n
             else:
                 raise HallError('%d,%d,%d: item %d has attribute %d; not rewritten' % (pos + (iid, a)))
+        if raw:
+            attrs['raw'] = bytes(raw)
         items.append((iid, attrs))
     return dict(flags=flags, ground=ground, items=items)
 
@@ -449,8 +552,23 @@ def main(argv):
         rows = read_csv(path) or []
         cfg = T.load_config()
         for r in order_hunts(rows):
-            print('%-22s z%d %5d %5d  %4d (%4d-%-4d) %-10s %s %s' % (r['id'], r['z'], r['x'], r['y'], r['level'], r['lo'],
-                  r['hi'], r['kind'], r['monsters'], r['note']))
+            print('%-22s %-15s  %4d (%4d-%-4d) %-10s %s %s' % (r['id'], ('z%d %5d %5d' % (r['z'], r['x'], r['y']))
+                  if r['x'] is not None else 'added', r['level'], r['lo'], r['hi'], r['kind'], r['monsters'], r['note']))
+        return 0
+    if cmd == 'band':
+        # band DATA_DIR X,Y,Z: the level band and top monsters around a destination (for a hunt added by hand)
+        import gen_bounty_pool as B
+        import patch_base_towns
+        if len(rest) != 2:
+            print(__doc__)
+            return 2
+        dest = tuple(int(v) for v in rest[1].split(','))
+        text = open(T.spawn_path(patch_base_towns.map_path(rest[0])), encoding='latin-1').read()
+        levels = {k: B.estimate_level(m) for k, m in B.load_monsters(rest[0]).items()}
+        got = hunt_band(spawn_points(text), levels, dest)
+        if not got:
+            sys.exit('no monster spawns near %s' % (dest,))
+        print('level %d (%d-%d) %s' % (got[2], got[0], got[1], '|'.join(got[3])))
         return 0
     if cmd == 'derive':
         pos = [a for a in rest if not a.startswith('--')]

@@ -21,7 +21,7 @@ assert(cfg.lootBeforeIndex < 2 and cfg.lootAfterIndex > 2 and cfg.lootAfterIndex
 	"corpse read around the index-2 callbacks and before the loot filter snapshot")
 assert(cfg.expIndex > 100, "experience read after every bonus")
 eq(supplies[7618], 45, "health potion price from the NPCs")
-eq(supplies[2389], 2, "spear: the cheapest NPC")
+eq(supplies[2389], nil, "no spears: stackable throwables left the game")
 eq(supplies[2544], nil, "no arrows: bows fire without ammunition")
 eq(supplies[2260], nil, "unscribed runes are not supplies")
 eq(prices[2148], nil, "no NPC buys gold coins: the coin table values them")

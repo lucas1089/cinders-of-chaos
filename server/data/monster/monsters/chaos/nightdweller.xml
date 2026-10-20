@@ -64,8 +64,6 @@
 		<item id="2160" countmax="4" chance="45000"/><!-- crystal coin -->
 		<item id="5944" countmax="3" chance="20000"/><!-- soul orb -->
 		<item id="2150" countmax="6" chance="12000"/><!-- small amethyst -->
-		<item id="2145" countmax="3" chance="8000"/><!-- small diamond -->
-		<item id="2153" countmax="2" chance="8000"/><!-- violet gem -->
 		<item id="8890" chance="500"/><!-- robe of the underworld -->
 		<item id="8903" chance="500"/><!-- spellbook of lost souls -->
 		<item id="8918" chance="400"/><!-- spellbook of dark mysteries -->
@@ -74,6 +72,5 @@
 		<item id="6300" chance="800"/><!-- death ring -->
 		<item id="29861" chance="60"/><!-- Myst Regalia Helmet -->
 		<item id="29866" chance="60"/><!-- Myst Regalia Wand -->
-		<item id="25380" countmax="1" chance="80"/><!-- talent token -->
 	</loot>
 </monster>

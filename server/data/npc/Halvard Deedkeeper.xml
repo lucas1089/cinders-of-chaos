@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Halvard Deedkeeper: the house broker, who sells the free houses and takes back the ones you leave (server/data/scripts/chaos/service_npcs.lua, service_npcs_config.lua; server/README.md "Service NPCs").
+     Stands in a booth of the Hall of Services; installed by server/tools/install_service_npcs.py. The same window opens
+     from the game menu. -->
+<npc name="Halvard Deedkeeper" script="halvard_deedkeeper.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="130" head="78" body="38" legs="95" feet="76" addons="3" />
+	<parameters>
+		<parameter key="message_greet" value="Good day, |PLAYERNAME|. A roof of your own? Ask for the {list} of free houses, or say {buy} and a name." />
+		<parameter key="message_farewell" value="A roof keeps the rain off, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The deeds wait." />
+	</parameters>
+</npc>

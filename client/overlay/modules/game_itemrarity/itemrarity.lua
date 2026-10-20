@@ -19,7 +19,7 @@
 -- in server/data/scripts/chaos/chaos_constants.lua (server/tests/item_tooltip_test.lua
 -- checks all three).
 ChaosItemAttr = {
-	RARITY = 1, -- 1..15 (Common .. Transcendent)
+	RARITY = 1, -- 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine (an old item: 1..15, see RARITY below)
 	LEVEL = 2, -- item level
 	LOCKED = 3, -- 1 = locked
 	UNIQUE = 4, -- 1 = unique item
@@ -59,42 +59,37 @@ local worldShadersEnabled     = true
 --   tint        : hex multiplied into sprite / smoke / frame
 --   textBase/Hi : base and highlight colors of the rarity-name font shimmer
 --   label       : color of the rarity-name label
--- the 15 rarities of the server (chaos_crafting.lua rarityNames); colours as the loot filter's
-local RARITY = {
-	[1]  = { name = "Common",       color = "#c8c8c8" },
-	[2]  = { name = "Uncommon",     color = "#5ccf5c" },
-	[3]  = { name = "Rare",         color = "#4a90ff" },
-	[4]  = { name = "Epic",         color = "#a35cf0" },
-	[5]  = { name = "Legendary",    color = "#ffd040" },
-	[6]  = { name = "Exotic",       color = "#f5b13a" },
-	[7]  = { name = "Mythic",       color = "#ff5a5a",
-		metal = { -- purple, parallel-waves glow
-			itemShader = "item_metal_purple", spriteWhite = true, strength = 0.5,
-			tint = "#a30ff6", textBase = "#c98bff", textHi = "#f0e0ff", label = "#d5a5ff",
-		},
+-- the seven rarities of the server (server/data/lib/chaos_rarity.lua): Common, Uncommon, Magic, Rare, Legendary, Divine
+-- and Unique (the unique flag, UNIQUE_COLOR). An item carries one of the ids 1, 2, 3, 4, 5, 10; an item saved before the
+-- seven rarities may carry 6 .. 9 (they became Legendary) or 11 .. 15 (Divine), so those ids are rows too: the same row as
+-- the rarity they became. RARITY_IDS lists the ids of today, in order, for the lists the player picks from. Colours as the
+-- loot filter's.
+local COMMON = { name = "Common", color = "#c8c8c8" }
+local UNCOMMON = { name = "Uncommon", color = "#5ccf5c" }
+local MAGIC = { name = "Magic", color = "#4a90ff" }
+local RARE = { name = "Rare", color = "#a35cf0" }
+local LEGENDARY = { name = "Legendary", color = "#ffd040" }
+local DIVINE = { name = "Divine", color = "#c8e8ff",
+	metal = { -- cyan, big outline glow
+		itemShader = "item_metal_cyan", spriteWhite = true, strength = 0.5,
+		tint = "#22e5ff", textBase = "#79e6ff", textHi = "#e8ffff", label = "#8ff2ff",
 	},
-	[8]  = { name = "Chaos",        color = "#e02424" },
-	[9]  = { name = "Eternal",      color = "#ff8a70" },
-	[10] = { name = "Divine",       color = "#c8e8ff",
-		metal = { -- cyan, big outline glow
-			itemShader = "item_metal_cyan", spriteWhite = true, strength = 0.5,
-			tint = "#22e5ff", textBase = "#79e6ff", textHi = "#e8ffff", label = "#8ff2ff",
-		},
-	},
-	[11] = { name = "Phantasmal",   color = "#9ad8ff" },
-	[12] = { name = "Celestial",    color = "#e4f2ff" },
-	[13] = { name = "Cosmic",       color = "#b878ff" },
-	[14] = { name = "Abyssal",      color = "#9a4ce0" },
-	[15] = { name = "Transcendent", color = "#e070ff" },
 }
+local RARITY = {
+	[1] = COMMON, [2] = UNCOMMON, [3] = MAGIC, [4] = RARE,
+	[5] = LEGENDARY, [6] = LEGENDARY, [7] = LEGENDARY, [8] = LEGENDARY, [9] = LEGENDARY,
+	[10] = DIVINE, [11] = DIVINE, [12] = DIVINE, [13] = DIVINE, [14] = DIVINE, [15] = DIVINE,
+}
+local RARITY_IDS = { 1, 2, 3, 4, 5, 10 }
 local UNIQUE_COLOR = "#e07b24"
 local FRAME_IMAGES = { "/modules/game_lootfilter/images/lf_frame", "/modules/game_itemrarity/images/frame" }
 
 -- Uppercase "[NAME]" tag -> id, derived from RARITY (for parsing descriptions).
 -- Older servers tagged six rarities with other names; they map to the nearest.
-local TAG_TO_ID = { STRANGE = 1, RARE = 3, EPIC = 4, LEGENDARY = 5, MYTHIC = 7, DIVINE = 10 }
-for id, r in pairs(RARITY) do
-	TAG_TO_ID[r.name:upper()] = id
+local TAG_TO_ID = { STRANGE = 1, EPIC = 4, EXOTIC = 5, MYTHIC = 5, CHAOS = 5, ETERNAL = 5, PHANTASMAL = 10, CELESTIAL = 10,
+	COSMIC = 10, ABYSSAL = 10, TRANSCENDENT = 10 }
+for _, id in ipairs(RARITY_IDS) do
+	TAG_TO_ID[RARITY[id].name:upper()] = id
 end
 
 -- ===========================================================================
@@ -116,6 +111,29 @@ function hasItemAttributes()
 	return g_game ~= nil and g_game.getFeature ~= nil and g_game.getFeature(FEATURE_ITEM_ATTRIBUTES) == true
 end
 
+-- the id of today's rarity an id stands for: 6 .. 9 -> 5 (Legendary), 11 .. 15 -> 10 (Divine); 0 for anything unknown
+function getRarityCanonId(rarityId)
+	local r = RARITY[rarityId]
+	if not r then
+		return 0
+	end
+	for _, id in ipairs(RARITY_IDS) do
+		if RARITY[id] == r then
+			return id
+		end
+	end
+	return 0
+end
+
+-- the ids of the six rarities an item can carry, in order (Unique is the unique flag): for lists the player picks from
+function getRarityIds()
+	local out = {}
+	for i, id in ipairs(RARITY_IDS) do
+		out[i] = id
+	end
+	return out
+end
+
 -- Rarity id of an item (0 = none): the custom attribute, else the "[NAME]" tag
 -- the server prepends to the item description (any other bracketed uppercase
 -- tag is ignored).
@@ -125,7 +143,7 @@ function getItemRarityId(item)
 	end
 	local r = getItemAttribute(item, ChaosItemAttr.RARITY)
 	if r > 0 then
-		return RARITY[r] and r or 0
+		return getRarityCanonId(r)
 	end
 	if hasItemAttributes() then
 		return 0 -- the server sends attributes: no attribute = no rarity
@@ -147,9 +165,15 @@ function isUniqueItem(item)
 	return getItemAttribute(item, ChaosItemAttr.UNIQUE) > 0
 end
 
+-- the name in the player's language (client_chaos_locale: Comum, Incomum, Mágica, Rara, Lendária, Divina)
+local function localName(name)
+	local t = rawget(_G, "tr")
+	return t and t(name) or name
+end
+
 function getRarityName(rarityId)
 	local r = RARITY[rarityId]
-	return r and r.name or nil
+	return r and localName(r.name) or nil
 end
 
 function getRarityColor(rarityId)
@@ -424,11 +448,11 @@ end
 -- map and around items in inventory and container slots; this module hands it
 -- the colours (the RARITY table above, uniques in UNIQUE_COLOR) and the two
 -- Graphics options (rarityOutlineMap, rarityOutlineSlots). Common items get no
--- outline (minRarity); Mythic and up breathe (pulseFrom). A client without the
+-- outline (minRarity); Legendary and up breathe (pulseFrom). A client without the
 -- patch has no Item.setRarityOutlineColor: nothing happens.
 -- ===========================================================================
 
-local OUTLINE = { width = 3, minRarity = 2, pulseFrom = 7, pulseMs = 2200, alpha = 225, uniqueSlot = 16 }
+local OUTLINE = { width = 3, minRarity = 2, pulseFrom = 5, pulseMs = 2200, alpha = 225, uniqueSlot = 16 }
 local outlineMap, outlineSlots = true, true
 
 -- "#rrggbb" -> r, g, b (nil for anything else)

@@ -4,6 +4,9 @@
 -- the health/mana bars of the right panel are hidden, and the Helper's shortcut column starts hidden.
 local hud
 local BAR_W = 166
+local SETTINGS_NODE = 'chaosHud'
+local asPercent = false
+local lastHp, lastMp = { 0, 0 }, { 0, 0 }
 
 local function child(id)
   return hud and hud:getChildById(id)
@@ -26,13 +29,50 @@ local function onHealthChange(player, health, maxHealth)
   ensureFresh()
   setFill('hpFill', health, maxHealth)
   local t = child('hpText')
-  if t then t:setText(HudMath.pair(health, maxHealth)) end
+  lastHp = { health, maxHealth }
+  if t then t:setText(HudMath.barText(health, maxHealth, asPercent)) end
 end
 
 local function onManaChange(player, mana, maxMana)
   setFill('mpFill', mana, maxMana)
   local t = child('mpText')
-  if t then t:setText(HudMath.pair(mana, maxMana)) end
+  lastMp = { mana, maxMana }
+  if t then t:setText(HudMath.barText(mana, maxMana, asPercent)) end
+end
+
+-- Health and mana as a percentage instead of numbers: a per-character option, right click on the bars.
+local function redrawTexts()
+  local h, m = child('hpText'), child('mpText')
+  if h then h:setText(HudMath.barText(lastHp[1], lastHp[2], asPercent)) end
+  if m then m:setText(HudMath.barText(lastMp[1], lastMp[2], asPercent)) end
+end
+
+local function loadChoice()
+  local player = g_game.getLocalPlayer()
+  asPercent = HudMath.isOn(HudMath.normalize(g_settings.getNode(SETTINGS_NODE)), player and player:getName())
+  redrawTexts()
+end
+
+local function setChoice(on)
+  local player = g_game.getLocalPlayer()
+  if not player then return end
+  g_settings.setNode(SETTINGS_NODE, HudMath.withChoice(g_settings.getNode(SETTINGS_NODE), player:getName(), on))
+  g_settings.save()
+  asPercent = on
+  redrawTexts()
+end
+
+local function showBarMenu(widget, pos, button)
+  if button ~= MouseRightButton then return false end
+  local menu = g_ui.createWidget('PopupMenu')
+  menu:setGameMenu(true)
+  if asPercent then
+    menu:addOption(tr('Show health and mana as numbers'), function() setChoice(false) end)
+  else
+    menu:addOption(tr('Show health and mana as percent'), function() setChoice(true) end)
+  end
+  menu:display(pos)
+  return true
 end
 
 local function onLevelChange(player, level, percent)
@@ -53,6 +93,7 @@ end
 local function refresh()
   local player = g_game.getLocalPlayer()
   if not hud or not player then return end
+  loadChoice()
   local p = hud:recursiveGetChildById('portrait')
   if p then p:setOutfit(player:getOutfit()) end
   local n = child('name')
@@ -138,6 +179,8 @@ end
 function init()
   -- in the game root panel next to the map (the map panel itself reaches above the visible area)
   hud = g_ui.loadUI('chaoshud', modules.game_interface.getRootPanel())
+  local bars = child('barsHover')
+  if bars then bars.onMouseRelease = showBarMenu end
   -- the outfit hook goes on LocalPlayer: another module's LocalPlayer.onOutfitChange hides Creature.onOutfitChange for
   -- the local player, so a Creature hook never fired and the portrait kept the login outfit
   connect(LocalPlayer, { onHealthChange = onHealthChange, onManaChange = onManaChange, onLevelChange = onLevelChange,

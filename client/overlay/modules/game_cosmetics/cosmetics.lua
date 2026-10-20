@@ -155,7 +155,7 @@ local function showSample(r)
     local bg = r and CL.validColor(r.accent) and r.accent or '#100c0ef0'
     for _, s in ipairs(CL.SAMPLE_RARITY) do
       local l = g_ui.createWidget('CosmeticSampleLabel', box)
-      l:setText(tr('%s Ashen Blade', s.name))
+      l:setText(tr('%s Ashen Blade', tr(s.name)))
       l:setColor(s.color)
       l:setBorderColor(s.color)
       l:setBackgroundColor(bg)
@@ -330,6 +330,29 @@ function toggle()
   end
 end
 
+-- ---------------------------------------------------------------- for the Customise Character window (game_outfitextras)
+-- That window lists the same choices as dropdowns: it reads the rows the server sent, asks for them without opening
+-- this window (action "state"), and sends a choice the way Use does. It is told when a new state arrives.
+function getState()
+  return state
+end
+
+function requestState()
+  if g_game.isOnline() then send('state') end
+end
+
+function selectCosmetic(kind, id, line)
+  send('select', { kind = kind, id = id, line = line })
+end
+
+local function notifyExtras()
+  local m = modules.game_outfitextras
+  if m and type(m.onData) == 'function' then
+    local ok, err = pcall(m.onData, 'cosmetics')
+    if not ok then g_logger.warning('[cosmetics] outfit extras: ' .. tostring(err)) end
+  end
+end
+
 function useCurrent()
   local r = rowOf(selectedId)
   if r and CL.canUse(r) then
@@ -412,6 +435,7 @@ local function onMessage(protocol, opcode, msg)
     state = data
     showList()
     if data.open then show() end
+    notifyExtras()
   elseif msg.action == 'style' then
     accent = CL.validColor(data.accent) and data.accent or nil
     pushAccent()

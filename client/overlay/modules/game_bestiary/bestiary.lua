@@ -24,6 +24,9 @@ local rows = {}        -- every list row (V.row)
 local byId = {}
 local listComplete = false
 local listAsked = false
+local listRetryEvent = nil   -- asks for the list again while it has not arrived complete (a lost packet stuck the window on "Loading")
+local LIST_RETRY_MS = 4000
+local LIST_RETRIES = 3
 local selectedCat = V.ALL
 local currentPage = 1
 local selectedId
@@ -439,6 +442,18 @@ function foldTracker()
 end
 
 -- ---------------------------------------------------------------- protocol
+-- the list comes in chunks, one packet per server tick: when it is not complete after LIST_RETRY_MS the request is
+-- sent again (the server answers with a fresh first chunk, which resets the rows), at most LIST_RETRIES times
+function askListAgain(left)
+  if listRetryEvent then removeEvent(listRetryEvent) end
+  listRetryEvent = scheduleEvent(function()
+    listRetryEvent = nil
+    if listComplete or left <= 0 then return end
+    send('list')
+    askListAgain(left - 1)
+  end, LIST_RETRY_MS)
+end
+
 local function onSummary(data)
   summary = data
   updateHeader()
@@ -450,6 +465,7 @@ local function onSummary(data)
   if (not listComplete or #rows ~= num(data.count)) and not listAsked then
     listAsked = true
     send('list')
+    askListAgain(LIST_RETRIES)
   end
 end
 
@@ -582,6 +598,7 @@ end
 
 local function onGameEnd()
   hide()
+  if listRetryEvent then removeEvent(listRetryEvent) listRetryEvent = nil end
   summary, rows, byId, listComplete, listAsked = nil, {}, {}, false, false
   selectedId, detail, board, trackerRows = nil, nil, nil, {}
   renderTracker()

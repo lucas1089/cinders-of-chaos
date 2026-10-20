@@ -1,0 +1,381 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+autumn_graveyard__ground_objects__r0c0,item,decor,Ground Objects R0C0 (Autumn Graveyard),pack30_decor/decor3_1,0,0,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c3,item,decor,Ground Objects R0C3 (Autumn Graveyard),pack30_decor/decor3_1,0,32,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c4,item,decor,Ground Objects R0C4 (Autumn Graveyard),pack30_decor/decor3_1,0,64,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c5,item,decor,Ground Objects R0C5 (Autumn Graveyard),pack30_decor/decor3_1,0,96,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c6,item,decor,Ground Objects R0C6 (Autumn Graveyard),pack30_decor/decor3_1,0,128,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r0c7,item,decor,Ground Objects R0C7 (Autumn Graveyard),pack30_decor/decor3_1,0,160,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c0,item,decor,Ground Objects R1C0 (Autumn Graveyard),pack30_decor/decor3_1,0,192,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c1,item,decor,Ground Objects R1C1 (Autumn Graveyard),pack30_decor/decor3_1,0,224,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c4,item,decor,Ground Objects R1C4 (Autumn Graveyard),pack30_decor/decor3_1,0,256,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c5,item,decor,Ground Objects R1C5 (Autumn Graveyard),pack30_decor/decor3_1,0,288,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c6,item,decor,Ground Objects R1C6 (Autumn Graveyard),pack30_decor/decor3_1,0,320,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r1c7,item,decor,Ground Objects R1C7 (Autumn Graveyard),pack30_decor/decor3_1,0,352,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c0,item,decor,Ground Objects R2C0 (Autumn Graveyard),pack30_decor/decor3_1,0,384,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c1,item,decor,Ground Objects R2C1 (Autumn Graveyard),pack30_decor/decor3_1,0,416,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c2,item,decor,Ground Objects R2C2 (Autumn Graveyard),pack30_decor/decor3_1,0,448,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c3,item,decor,Ground Objects R2C3 (Autumn Graveyard),pack30_decor/decor3_1,0,480,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c4,item,decor,Ground Objects R2C4 (Autumn Graveyard),pack30_decor/decor3_1,0,512,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c5,item,decor,Ground Objects R2C5 (Autumn Graveyard),pack30_decor/decor3_1,0,544,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c6,item,decor,Ground Objects R2C6 (Autumn Graveyard),pack30_decor/decor3_1,0,576,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r2c7,item,decor,Ground Objects R2C7 (Autumn Graveyard),pack30_decor/decor3_1,0,608,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c0,item,decor,Ground Objects R3C0 (Autumn Graveyard),pack30_decor/decor3_1,0,640,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c1,item,decor,Ground Objects R3C1 (Autumn Graveyard),pack30_decor/decor3_1,0,672,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c2,item,decor,Ground Objects R3C2 (Autumn Graveyard),pack30_decor/decor3_1,0,704,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c3,item,decor,Ground Objects R3C3 (Autumn Graveyard),pack30_decor/decor3_1,0,736,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c4,item,decor,Ground Objects R3C4 (Autumn Graveyard),pack30_decor/decor3_1,0,768,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c5,item,decor,Ground Objects R3C5 (Autumn Graveyard),pack30_decor/decor3_1,0,800,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c6,item,decor,Ground Objects R3C6 (Autumn Graveyard),pack30_decor/decor3_1,0,832,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r3c7,item,decor,Ground Objects R3C7 (Autumn Graveyard),pack30_decor/decor3_1,0,864,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c0,item,decor,Ground Objects R4C0 (Autumn Graveyard),pack30_decor/decor3_1,0,896,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c1,item,decor,Ground Objects R4C1 (Autumn Graveyard),pack30_decor/decor3_1,0,928,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c2,item,decor,Ground Objects R4C2 (Autumn Graveyard),pack30_decor/decor3_1,0,960,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c3,item,decor,Ground Objects R4C3 (Autumn Graveyard),pack30_decor/decor3_1,0,992,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c4,item,decor,Ground Objects R4C4 (Autumn Graveyard),pack30_decor/decor3_1,0,1024,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c5,item,decor,Ground Objects R4C5 (Autumn Graveyard),pack30_decor/decor3_1,0,1056,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c6,item,decor,Ground Objects R4C6 (Autumn Graveyard),pack30_decor/decor3_1,0,1088,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r4c7,item,decor,Ground Objects R4C7 (Autumn Graveyard),pack30_decor/decor3_1,0,1120,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c0,item,decor,Ground Objects R5C0 (Autumn Graveyard),pack30_decor/decor3_1,0,1152,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c1,item,decor,Ground Objects R5C1 (Autumn Graveyard),pack30_decor/decor3_1,0,1184,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c2,item,decor,Ground Objects R5C2 (Autumn Graveyard),pack30_decor/decor3_1,0,1216,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c3,item,decor,Ground Objects R5C3 (Autumn Graveyard),pack30_decor/decor3_1,0,1248,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c4,item,decor,Ground Objects R5C4 (Autumn Graveyard),pack30_decor/decor3_1,0,1280,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c5,item,decor,Ground Objects R5C5 (Autumn Graveyard),pack30_decor/decor3_1,0,1312,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c6,item,decor,Ground Objects R5C6 (Autumn Graveyard),pack30_decor/decor3_1,0,1344,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r5c7,item,decor,Ground Objects R5C7 (Autumn Graveyard),pack30_decor/decor3_1,0,1376,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c0,item,decor,Ground Objects R6C0 (Autumn Graveyard),pack30_decor/decor3_1,0,1408,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c1,item,decor,Ground Objects R6C1 (Autumn Graveyard),pack30_decor/decor3_1,0,1440,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c2,item,decor,Ground Objects R6C2 (Autumn Graveyard),pack30_decor/decor3_1,0,1472,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c6,item,decor,Ground Objects R6C6 (Autumn Graveyard),pack30_decor/decor3_1,0,1504,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r6c7,item,decor,Ground Objects R6C7 (Autumn Graveyard),pack30_decor/decor3_1,0,1536,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c0,item,decor,Ground Objects R7C0 (Autumn Graveyard),pack30_decor/decor3_1,0,1568,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c1,item,decor,Ground Objects R7C1 (Autumn Graveyard),pack30_decor/decor3_1,0,1600,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c2,item,decor,Ground Objects R7C2 (Autumn Graveyard),pack30_decor/decor3_1,0,1632,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c3,item,decor,Ground Objects R7C3 (Autumn Graveyard),pack30_decor/decor3_1,0,1664,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c4,item,decor,Ground Objects R7C4 (Autumn Graveyard),pack30_decor/decor3_1,0,1696,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c5,item,decor,Ground Objects R7C5 (Autumn Graveyard),pack30_decor/decor3_1,0,1728,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c6,item,decor,Ground Objects R7C6 (Autumn Graveyard),pack30_decor/decor3_1,0,1760,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__ground_objects__r7c7,item,decor,Ground Objects R7C7 (Autumn Graveyard),pack30_decor/decor3_1,0,1792,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c0,item,decor,Props R0C0 (Autumn Graveyard),pack30_decor/decor3_1,0,1824,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c1,item,decor,Props R0C1 (Autumn Graveyard),pack30_decor/decor3_1,0,1856,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c2,item,decor,Props R0C2 (Autumn Graveyard),pack30_decor/decor3_1,0,1888,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c3,item,decor,Props R0C3 (Autumn Graveyard),pack30_decor/decor3_1,0,1920,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c4,item,decor,Props R0C4 (Autumn Graveyard),pack30_decor/decor3_1,0,1952,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c5,item,decor,Props R0C5 (Autumn Graveyard),pack30_decor/decor3_1,0,1984,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c6,item,decor,Props R0C6 (Autumn Graveyard),pack30_decor/decor3_1,0,2016,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r0c7,item,decor,Props R0C7 (Autumn Graveyard),pack30_decor/decor3_1,0,2048,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c0,item,decor,Props R1C0 (Autumn Graveyard),pack30_decor/decor3_1,0,2080,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c1,item,decor,Props R1C1 (Autumn Graveyard),pack30_decor/decor3_1,0,2112,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c2,item,decor,Props R1C2 (Autumn Graveyard),pack30_decor/decor3_1,0,2144,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c3,item,decor,Props R1C3 (Autumn Graveyard),pack30_decor/decor3_1,0,2176,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c4,item,decor,Props R1C4 (Autumn Graveyard),pack30_decor/decor3_1,0,2208,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c5,item,decor,Props R1C5 (Autumn Graveyard),pack30_decor/decor3_1,0,2240,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c6,item,decor,Props R1C6 (Autumn Graveyard),pack30_decor/decor3_1,0,2272,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r1c7,item,decor,Props R1C7 (Autumn Graveyard),pack30_decor/decor3_1,0,2304,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c0,item,decor,Props R2C0 (Autumn Graveyard),pack30_decor/decor3_1,0,2336,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c2,item,decor,Props R2C2 (Autumn Graveyard),pack30_decor/decor3_1,0,2368,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c3,item,decor,Props R2C3 (Autumn Graveyard),pack30_decor/decor3_1,0,2400,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c4,item,decor,Props R2C4 (Autumn Graveyard),pack30_decor/decor3_1,0,2432,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c6,item,decor,Props R2C6 (Autumn Graveyard),pack30_decor/decor3_1,0,2464,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r2c7,item,decor,Props R2C7 (Autumn Graveyard),pack30_decor/decor3_1,0,2496,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c3,item,decor,Props R3C3 (Autumn Graveyard),pack30_decor/decor3_1,0,2528,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c4,item,decor,Props R3C4 (Autumn Graveyard),pack30_decor/decor3_1,0,2560,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c5,item,decor,Props R3C5 (Autumn Graveyard),pack30_decor/decor3_1,0,2592,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c6,item,decor,Props R3C6 (Autumn Graveyard),pack30_decor/decor3_1,0,2624,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r3c7,item,decor,Props R3C7 (Autumn Graveyard),pack30_decor/decor3_1,0,2656,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c1,item,decor,Props R4C1 (Autumn Graveyard),pack30_decor/decor3_1,0,2688,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c2,item,decor,Props R4C2 (Autumn Graveyard),pack30_decor/decor3_1,0,2720,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c3,item,decor,Props R4C3 (Autumn Graveyard),pack30_decor/decor3_1,0,2752,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c5,item,decor,Props R4C5 (Autumn Graveyard),pack30_decor/decor3_1,0,2784,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c6,item,decor,Props R4C6 (Autumn Graveyard),pack30_decor/decor3_1,0,2816,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r4c7,item,decor,Props R4C7 (Autumn Graveyard),pack30_decor/decor3_1,0,2848,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c0,item,decor,Props R5C0 (Autumn Graveyard),pack30_decor/decor3_1,0,2880,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c1,item,decor,Props R5C1 (Autumn Graveyard),pack30_decor/decor3_1,0,2912,2,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c3,item,decor,Props R5C3 (Autumn Graveyard),pack30_decor/decor3_1,0,2944,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c5,item,decor,Props R5C5 (Autumn Graveyard),pack30_decor/decor3_1,0,2976,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c6,item,decor,Props R5C6 (Autumn Graveyard),pack30_decor/decor3_1,0,3008,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r5c7,item,decor,Props R5C7 (Autumn Graveyard),pack30_decor/decor3_1,0,3040,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c0,item,decor,Props R6C0 (Autumn Graveyard),pack30_decor/decor3_1,0,3072,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c1,item,decor,Props R6C1 (Autumn Graveyard),pack30_decor/decor3_1,0,3104,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c2,item,decor,Props R6C2 (Autumn Graveyard),pack30_decor/decor3_1,0,3136,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c3,item,decor,Props R6C3 (Autumn Graveyard),pack30_decor/decor3_1,0,3168,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c4,item,decor,Props R6C4 (Autumn Graveyard),pack30_decor/decor3_1,0,3200,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c5,item,decor,Props R6C5 (Autumn Graveyard),pack30_decor/decor3_1,0,3232,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r6c7,item,decor,Props R6C7 (Autumn Graveyard),pack30_decor/decor3_1,0,3264,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c1,item,decor,Props R7C1 (Autumn Graveyard),pack30_decor/decor3_1,0,3296,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c2,item,decor,Props R7C2 (Autumn Graveyard),pack30_decor/decor3_1,0,3328,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c3,item,decor,Props R7C3 (Autumn Graveyard),pack30_decor/decor3_1,0,3360,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c5,item,decor,Props R7C5 (Autumn Graveyard),pack30_decor/decor3_1,0,3392,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__props__r7c7,item,decor,Props R7C7 (Autumn Graveyard),pack30_decor/decor3_1,0,3424,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c0,item,decor,Nature Details R0C0 (Autumn Graveyard),pack30_decor/decor3_1,0,3456,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c1,item,decor,Nature Details R0C1 (Autumn Graveyard),pack30_decor/decor3_1,0,3488,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c6,item,decor,Nature Details R0C6 (Autumn Graveyard),pack30_decor/decor3_1,0,3520,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r0c7,item,decor,Nature Details R0C7 (Autumn Graveyard),pack30_decor/decor3_1,0,3552,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c0,item,decor,Nature Details R1C0 (Autumn Graveyard),pack30_decor/decor3_1,0,3584,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c1,item,decor,Nature Details R1C1 (Autumn Graveyard),pack30_decor/decor3_1,0,3616,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c2,item,decor,Nature Details R1C2 (Autumn Graveyard),pack30_decor/decor3_1,0,3648,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c3,item,decor,Nature Details R1C3 (Autumn Graveyard),pack30_decor/decor3_1,0,3680,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c4,item,decor,Nature Details R1C4 (Autumn Graveyard),pack30_decor/decor3_1,0,3712,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c5,item,decor,Nature Details R1C5 (Autumn Graveyard),pack30_decor/decor3_1,0,3744,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c6,item,decor,Nature Details R1C6 (Autumn Graveyard),pack30_decor/decor3_1,0,3776,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r1c7,item,decor,Nature Details R1C7 (Autumn Graveyard),pack30_decor/decor3_1,0,3808,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c0,item,decor,Nature Details R2C0 (Autumn Graveyard),pack30_decor/decor3_1,0,3840,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c1,item,decor,Nature Details R2C1 (Autumn Graveyard),pack30_decor/decor3_1,0,3872,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c2,item,decor,Nature Details R2C2 (Autumn Graveyard),pack30_decor/decor3_1,0,3904,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c3,item,decor,Nature Details R2C3 (Autumn Graveyard),pack30_decor/decor3_1,0,3936,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c4,item,decor,Nature Details R2C4 (Autumn Graveyard),pack30_decor/decor3_1,0,3968,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c5,item,decor,Nature Details R2C5 (Autumn Graveyard),pack30_decor/decor3_1,0,4000,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c6,item,decor,Nature Details R2C6 (Autumn Graveyard),pack30_decor/decor3_1,0,4032,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r2c7,item,decor,Nature Details R2C7 (Autumn Graveyard),pack30_decor/decor3_1,0,4064,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c0,item,decor,Nature Details R3C0 (Autumn Graveyard),pack30_decor/decor3_2,0,0,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c1,item,decor,Nature Details R3C1 (Autumn Graveyard),pack30_decor/decor3_2,0,32,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c2,item,decor,Nature Details R3C2 (Autumn Graveyard),pack30_decor/decor3_2,0,64,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c3,item,decor,Nature Details R3C3 (Autumn Graveyard),pack30_decor/decor3_2,0,96,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c4,item,decor,Nature Details R3C4 (Autumn Graveyard),pack30_decor/decor3_2,0,128,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c5,item,decor,Nature Details R3C5 (Autumn Graveyard),pack30_decor/decor3_2,0,160,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c6,item,decor,Nature Details R3C6 (Autumn Graveyard),pack30_decor/decor3_2,0,192,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r3c7,item,decor,Nature Details R3C7 (Autumn Graveyard),pack30_decor/decor3_2,0,224,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c0,item,decor,Nature Details R4C0 (Autumn Graveyard),pack30_decor/decor3_2,0,256,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c1,item,decor,Nature Details R4C1 (Autumn Graveyard),pack30_decor/decor3_2,0,288,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c2,item,decor,Nature Details R4C2 (Autumn Graveyard),pack30_decor/decor3_2,0,320,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c3,item,decor,Nature Details R4C3 (Autumn Graveyard),pack30_decor/decor3_2,0,352,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c4,item,decor,Nature Details R4C4 (Autumn Graveyard),pack30_decor/decor3_2,0,384,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c5,item,decor,Nature Details R4C5 (Autumn Graveyard),pack30_decor/decor3_2,0,416,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c6,item,decor,Nature Details R4C6 (Autumn Graveyard),pack30_decor/decor3_2,0,448,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r4c7,item,decor,Nature Details R4C7 (Autumn Graveyard),pack30_decor/decor3_2,0,480,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c0,item,decor,Nature Details R5C0 (Autumn Graveyard),pack30_decor/decor3_2,0,512,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c1,item,decor,Nature Details R5C1 (Autumn Graveyard),pack30_decor/decor3_2,0,544,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c2,item,decor,Nature Details R5C2 (Autumn Graveyard),pack30_decor/decor3_2,0,576,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c3,item,decor,Nature Details R5C3 (Autumn Graveyard),pack30_decor/decor3_2,0,608,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c4,item,decor,Nature Details R5C4 (Autumn Graveyard),pack30_decor/decor3_2,0,640,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c5,item,decor,Nature Details R5C5 (Autumn Graveyard),pack30_decor/decor3_2,0,672,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r5c6,item,decor,Nature Details R5C6 (Autumn Graveyard),pack30_decor/decor3_2,0,704,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c0,item,decor,Nature Details R6C0 (Autumn Graveyard),pack30_decor/decor3_2,0,736,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c1,item,decor,Nature Details R6C1 (Autumn Graveyard),pack30_decor/decor3_2,0,768,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c2,item,decor,Nature Details R6C2 (Autumn Graveyard),pack30_decor/decor3_2,0,800,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c3,item,decor,Nature Details R6C3 (Autumn Graveyard),pack30_decor/decor3_2,0,832,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c4,item,decor,Nature Details R6C4 (Autumn Graveyard),pack30_decor/decor3_2,0,864,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c5,item,decor,Nature Details R6C5 (Autumn Graveyard),pack30_decor/decor3_2,0,896,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c6,item,decor,Nature Details R6C6 (Autumn Graveyard),pack30_decor/decor3_2,0,928,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r6c7,item,decor,Nature Details R6C7 (Autumn Graveyard),pack30_decor/decor3_2,0,960,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c0,item,decor,Nature Details R7C0 (Autumn Graveyard),pack30_decor/decor3_2,0,992,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c1,item,decor,Nature Details R7C1 (Autumn Graveyard),pack30_decor/decor3_2,0,1024,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c2,item,decor,Nature Details R7C2 (Autumn Graveyard),pack30_decor/decor3_2,0,1056,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c3,item,decor,Nature Details R7C3 (Autumn Graveyard),pack30_decor/decor3_2,0,1088,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c4,item,decor,Nature Details R7C4 (Autumn Graveyard),pack30_decor/decor3_2,0,1120,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c5,item,decor,Nature Details R7C5 (Autumn Graveyard),pack30_decor/decor3_2,0,1152,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__nature_details__r7c6,item,decor,Nature Details R7C6 (Autumn Graveyard),pack30_decor/decor3_2,0,1184,1,1,1,1,notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c0,item,stump,Autumn Gravestones R0C0 (Autumn Graveyard),pack30_decor/decor3_2,0,1216,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c1,item,stump,Autumn Gravestones R0C1 (Autumn Graveyard),pack30_decor/decor3_2,0,1248,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c2,item,stump,Autumn Gravestones R0C2 (Autumn Graveyard),pack30_decor/decor3_2,0,1280,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c3,item,stump,Autumn Gravestones R0C3 (Autumn Graveyard),pack30_decor/decor3_2,0,1312,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r0c6,item,stump,Autumn Gravestones R0C6 (Autumn Graveyard),pack30_decor/decor3_2,0,1344,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c0,item,stump,Autumn Gravestones R1C0 (Autumn Graveyard),pack30_decor/decor3_2,0,1376,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r1c5,item,stump,Autumn Gravestones R1C5 (Autumn Graveyard),pack30_decor/decor3_2,0,1408,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r2c0,item,stump,Autumn Gravestones R2C0 (Autumn Graveyard),pack30_decor/decor3_2,0,1440,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c4,item,stump,Autumn Gravestones R3C4 (Autumn Graveyard),pack30_decor/decor3_2,0,1472,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c6,item,stump,Autumn Gravestones R3C6 (Autumn Graveyard),pack30_decor/decor3_2,0,1504,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r3c7,item,stump,Autumn Gravestones R3C7 (Autumn Graveyard),pack30_decor/decor3_2,0,1536,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r5c3,item,stump,Autumn Gravestones R5C3 (Autumn Graveyard),pack30_decor/decor3_2,0,1568,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+autumn_graveyard__autumn_gravestones__r7c0,item,stump,Autumn Gravestones R7C0 (Autumn Graveyard),pack30_decor/decor3_2,0,1600,1,1,1,1,bottom notwalkable notmoveable,new,,family=autumn_graveyard|hideout=1
+forest_kit_a__bush_9,item,decor,Bush 9 (Forest Kit A),pack30_decor/decor3_2,0,1632,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_14,item,decor,Bush 14 (Forest Kit A),pack30_decor/decor3_2,0,1664,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_15,item,decor,Bush 15 (Forest Kit A),pack30_decor/decor3_2,0,1696,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__bush_16,item,decor,Bush 16 (Forest Kit A),pack30_decor/decor3_2,0,1728,1,1,1,1,notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_9,item,stump,Rock 9 (Forest Kit A),pack30_decor/decor3_2,0,1760,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_10,item,stump,Rock 10 (Forest Kit A),pack30_decor/decor3_2,0,1824,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_11,item,stump,Rock 11 (Forest Kit A),pack30_decor/decor3_2,0,1888,2,1,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__rock_12,item,stump,Rock 12 (Forest Kit A),pack30_decor/decor3_2,0,1920,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_9,item,stump,Autumn Tree 9 (Forest Kit A),pack30_decor/decor3_2,0,1984,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_10,item,stump,Autumn Tree 10 (Forest Kit A),pack30_decor/decor3_2,0,2048,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_11,item,stump,Autumn Tree 11 (Forest Kit A),pack30_decor/decor3_2,0,2112,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_12,item,stump,Autumn Tree 12 (Forest Kit A),pack30_decor/decor3_2,0,2176,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_13,item,stump,Autumn Tree 13 (Forest Kit A),pack30_decor/decor3_2,0,2240,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_14,item,stump,Autumn Tree 14 (Forest Kit A),pack30_decor/decor3_2,0,2304,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_15,item,stump,Autumn Tree 15 (Forest Kit A),pack30_decor/decor3_2,0,2368,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__autumn_tree_16,item,stump,Autumn Tree 16 (Forest Kit A),pack30_decor/decor3_2,0,2432,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__big_tree_9,item,stump,Big Tree 9 (Forest Kit A),pack30_decor/decor3_2,0,2496,2,3,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=0
+forest_kit_a__big_tree_10,item,stump,Big Tree 10 (Forest Kit A),pack30_decor/decor3_2,0,2592,2,3,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=0
+forest_kit_a__big_tree_11,item,stump,Big Tree 11 (Forest Kit A),pack30_decor/decor3_2,0,2688,2,3,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=0
+forest_kit_a__big_tree_12,item,stump,Big Tree 12 (Forest Kit A),pack30_decor/decor3_2,0,2784,2,3,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=0
+forest_kit_a__cherry_blossom_tree_9,item,stump,Cherry Blossom Tree 9 (Forest Kit A),pack30_decor/decor3_2,0,2880,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_10,item,stump,Cherry Blossom Tree 10 (Forest Kit A),pack30_decor/decor3_2,0,2944,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_11,item,stump,Cherry Blossom Tree 11 (Forest Kit A),pack30_decor/decor3_2,0,3008,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_12,item,stump,Cherry Blossom Tree 12 (Forest Kit A),pack30_decor/decor3_2,0,3072,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_13,item,stump,Cherry Blossom Tree 13 (Forest Kit A),pack30_decor/decor3_2,0,3136,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_14,item,stump,Cherry Blossom Tree 14 (Forest Kit A),pack30_decor/decor3_2,0,3200,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_15,item,stump,Cherry Blossom Tree 15 (Forest Kit A),pack30_decor/decor3_2,0,3264,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__cherry_blossom_tree_16,item,stump,Cherry Blossom Tree 16 (Forest Kit A),pack30_decor/decor3_2,0,3328,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_9,item,stump,Dark Tree 9 (Forest Kit A),pack30_decor/decor3_2,0,3392,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_10,item,stump,Dark Tree 10 (Forest Kit A),pack30_decor/decor3_2,0,3456,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_11,item,stump,Dark Tree 11 (Forest Kit A),pack30_decor/decor3_2,0,3520,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_12,item,stump,Dark Tree 12 (Forest Kit A),pack30_decor/decor3_2,0,3584,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_13,item,stump,Dark Tree 13 (Forest Kit A),pack30_decor/decor3_2,0,3648,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_14,item,stump,Dark Tree 14 (Forest Kit A),pack30_decor/decor3_2,0,3712,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_15,item,stump,Dark Tree 15 (Forest Kit A),pack30_decor/decor3_2,0,3776,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__dark_tree_16,item,stump,Dark Tree 16 (Forest Kit A),pack30_decor/decor3_2,0,3840,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_9,item,stump,Tree 9 (Forest Kit A),pack30_decor/decor3_2,0,3904,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_10,item,stump,Tree 10 (Forest Kit A),pack30_decor/decor3_2,0,3968,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_11,item,stump,Tree 11 (Forest Kit A),pack30_decor/decor3_2,0,4032,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_12,item,stump,Tree 12 (Forest Kit A),pack30_decor/decor3_3,0,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_13,item,stump,Tree 13 (Forest Kit A),pack30_decor/decor3_3,0,64,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_14,item,stump,Tree 14 (Forest Kit A),pack30_decor/decor3_3,0,128,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_15,item,stump,Tree 15 (Forest Kit A),pack30_decor/decor3_3,0,192,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+forest_kit_a__tree_16,item,stump,Tree 16 (Forest Kit A),pack30_decor/decor3_3,0,256,2,2,1,1,bottom notwalkable notmoveable,new,,family=forest_kit_a|hideout=1
+graveyard_kit__tombstones_graves_sheet__r0c0,item,stump,Tombstones Graves Sheet R0C0 (Graveyard Kit),pack30_decor/decor3_3,0,320,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c4,item,stump,Tombstones Graves Sheet R0C4 (Graveyard Kit),pack30_decor/decor3_3,0,448,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c8,item,stump,Tombstones Graves Sheet R0C8 (Graveyard Kit),pack30_decor/decor3_3,0,576,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c12,item,stump,Tombstones Graves Sheet R0C12 (Graveyard Kit),pack30_decor/decor3_3,0,704,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c16,item,stump,Tombstones Graves Sheet R0C16 (Graveyard Kit),pack30_decor/decor3_3,0,832,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c20,item,stump,Tombstones Graves Sheet R0C20 (Graveyard Kit),pack30_decor/decor3_3,0,960,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c24,item,stump,Tombstones Graves Sheet R0C24 (Graveyard Kit),pack30_decor/decor3_3,0,1088,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r0c28,item,stump,Tombstones Graves Sheet R0C28 (Graveyard Kit),pack30_decor/decor3_3,0,1216,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c0,item,stump,Tombstones Graves Sheet R4C0 (Graveyard Kit),pack30_decor/decor3_3,0,1344,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c5,item,stump,Tombstones Graves Sheet R4C5 (Graveyard Kit),pack30_decor/decor3_3,0,1472,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c9,item,stump,Tombstones Graves Sheet R4C9 (Graveyard Kit),pack30_decor/decor3_3,0,1600,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c13,item,stump,Tombstones Graves Sheet R4C13 (Graveyard Kit),pack30_decor/decor3_3,0,1728,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c17,item,stump,Tombstones Graves Sheet R4C17 (Graveyard Kit),pack30_decor/decor3_3,0,1856,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c21,item,stump,Tombstones Graves Sheet R4C21 (Graveyard Kit),pack30_decor/decor3_3,0,1984,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c24,item,stump,Tombstones Graves Sheet R4C24 (Graveyard Kit),pack30_decor/decor3_3,0,2112,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r4c29,item,stump,Tombstones Graves Sheet R4C29 (Graveyard Kit),pack30_decor/decor3_3,0,2240,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c5,item,stump,Tombstones Graves Sheet R8C5 (Graveyard Kit),pack30_decor/decor3_3,0,2368,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c8,item,stump,Tombstones Graves Sheet R8C8 (Graveyard Kit),pack30_decor/decor3_3,0,2496,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c13,item,stump,Tombstones Graves Sheet R8C13 (Graveyard Kit),pack30_decor/decor3_3,0,2624,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c16,item,stump,Tombstones Graves Sheet R8C16 (Graveyard Kit),pack30_decor/decor3_3,0,2752,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c21,item,stump,Tombstones Graves Sheet R8C21 (Graveyard Kit),pack30_decor/decor3_3,0,2880,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r8c29,item,stump,Tombstones Graves Sheet R8C29 (Graveyard Kit),pack30_decor/decor3_3,0,3008,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r12c0,item,stump,Tombstones Graves Sheet R12C0 (Graveyard Kit),pack30_decor/decor3_3,0,3136,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r12c8,item,stump,Tombstones Graves Sheet R12C8 (Graveyard Kit),pack30_decor/decor3_3,0,3264,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r12c13,item,stump,Tombstones Graves Sheet R12C13 (Graveyard Kit),pack30_decor/decor3_3,0,3392,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r12c24,item,stump,Tombstones Graves Sheet R12C24 (Graveyard Kit),pack30_decor/decor3_3,0,3520,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r13c16,item,stump,Tombstones Graves Sheet R13C16 (Graveyard Kit),pack30_decor/decor3_3,0,3648,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r13c20,item,stump,Tombstones Graves Sheet R13C20 (Graveyard Kit),pack30_decor/decor3_3,0,3744,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c0,item,stump,Tombstones Graves Sheet R16C0 (Graveyard Kit),pack30_decor/decor3_3,0,3840,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c4,item,stump,Tombstones Graves Sheet R16C4 (Graveyard Kit),pack30_decor/decor3_3,0,3968,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c8,item,stump,Tombstones Graves Sheet R16C8 (Graveyard Kit),pack30_decor/decor3_4,0,0,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c13,item,stump,Tombstones Graves Sheet R16C13 (Graveyard Kit),pack30_decor/decor3_4,0,128,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c20,item,stump,Tombstones Graves Sheet R16C20 (Graveyard Kit),pack30_decor/decor3_4,0,256,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c24,item,stump,Tombstones Graves Sheet R16C24 (Graveyard Kit),pack30_decor/decor3_4,0,384,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r16c28,item,stump,Tombstones Graves Sheet R16C28 (Graveyard Kit),pack30_decor/decor3_4,0,512,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r17c16,item,stump,Tombstones Graves Sheet R17C16 (Graveyard Kit),pack30_decor/decor3_4,0,640,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r20c0,item,stump,Tombstones Graves Sheet R20C0 (Graveyard Kit),pack30_decor/decor3_4,0,736,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r20c8,item,stump,Tombstones Graves Sheet R20C8 (Graveyard Kit),pack30_decor/decor3_4,0,864,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r20c25,item,stump,Tombstones Graves Sheet R20C25 (Graveyard Kit),pack30_decor/decor3_4,0,992,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r20c28,item,stump,Tombstones Graves Sheet R20C28 (Graveyard Kit),pack30_decor/decor3_4,0,1120,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r24c12,item,stump,Tombstones Graves Sheet R24C12 (Graveyard Kit),pack30_decor/decor3_4,0,1248,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r24c16,item,stump,Tombstones Graves Sheet R24C16 (Graveyard Kit),pack30_decor/decor3_4,0,1376,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r24c20,item,stump,Tombstones Graves Sheet R24C20 (Graveyard Kit),pack30_decor/decor3_4,0,1504,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r24c25,item,stump,Tombstones Graves Sheet R24C25 (Graveyard Kit),pack30_decor/decor3_4,0,1632,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r24c29,item,stump,Tombstones Graves Sheet R24C29 (Graveyard Kit),pack30_decor/decor3_4,0,1760,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r28c8,item,stump,Tombstones Graves Sheet R28C8 (Graveyard Kit),pack30_decor/decor3_4,0,1888,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__tombstones_graves_sheet__r28c28,item,stump,Tombstones Graves Sheet R28C28 (Graveyard Kit),pack30_decor/decor3_4,0,2016,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r0c0,item,stump,Gates Fences Sheet R0C0 (Graveyard Kit),pack30_decor/decor3_4,0,2144,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r0c4,item,stump,Gates Fences Sheet R0C4 (Graveyard Kit),pack30_decor/decor3_4,0,2272,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r0c8,item,stump,Gates Fences Sheet R0C8 (Graveyard Kit),pack30_decor/decor3_4,0,2400,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r0c12,item,stump,Gates Fences Sheet R0C12 (Graveyard Kit),pack30_decor/decor3_4,0,2528,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r1c16,item,stump,Gates Fences Sheet R1C16 (Graveyard Kit),pack30_decor/decor3_4,0,2656,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r1c20,item,stump,Gates Fences Sheet R1C20 (Graveyard Kit),pack30_decor/decor3_4,0,2752,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r4c0,item,stump,Gates Fences Sheet R4C0 (Graveyard Kit),pack30_decor/decor3_4,0,2848,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r4c4,item,stump,Gates Fences Sheet R4C4 (Graveyard Kit),pack30_decor/decor3_4,0,2976,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r4c12,item,stump,Gates Fences Sheet R4C12 (Graveyard Kit),pack30_decor/decor3_4,0,3104,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r8c8,item,stump,Gates Fences Sheet R8C8 (Graveyard Kit),pack30_decor/decor3_4,0,3232,2,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r8c10,item,stump,Gates Fences Sheet R8C10 (Graveyard Kit),pack30_decor/decor3_4,0,3360,2,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r8c21,item,stump,Gates Fences Sheet R8C21 (Graveyard Kit),pack30_decor/decor3_4,0,3488,2,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r8c25,item,stump,Gates Fences Sheet R8C25 (Graveyard Kit),pack30_decor/decor3_4,0,3616,2,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r12c0,item,stump,Gates Fences Sheet R12C0 (Graveyard Kit),pack30_decor/decor3_4,0,3744,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r12c8,item,stump,Gates Fences Sheet R12C8 (Graveyard Kit),pack30_decor/decor3_4,0,3872,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r13c4,item,stump,Gates Fences Sheet R13C4 (Graveyard Kit),pack30_decor/decor3_4,0,4000,4,3,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r16c9,item,stump,Gates Fences Sheet R16C9 (Graveyard Kit),pack30_decor/decor3_5,0,0,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r16c12,item,stump,Gates Fences Sheet R16C12 (Graveyard Kit),pack30_decor/decor3_5,0,128,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r16c17,item,stump,Gates Fences Sheet R16C17 (Graveyard Kit),pack30_decor/decor3_5,0,256,3,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__gates_fences_sheet__r24c12,item,stump,Gates Fences Sheet R24C12 (Graveyard Kit),pack30_decor/decor3_5,0,384,4,4,1,1,bottom notwalkable notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r0c0,item,decor,Nature Assets Sheet R0C0 (Graveyard Kit),pack30_decor/decor3_5,0,512,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r0c8,item,decor,Nature Assets Sheet R0C8 (Graveyard Kit),pack30_decor/decor3_5,0,640,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r0c24,item,decor,Nature Assets Sheet R0C24 (Graveyard Kit),pack30_decor/decor3_5,0,768,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r12c0,item,decor,Nature Assets Sheet R12C0 (Graveyard Kit),pack30_decor/decor3_5,0,896,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r12c8,item,decor,Nature Assets Sheet R12C8 (Graveyard Kit),pack30_decor/decor3_5,0,1024,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r12c16,item,decor,Nature Assets Sheet R12C16 (Graveyard Kit),pack30_decor/decor3_5,0,1152,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r12c28,item,decor,Nature Assets Sheet R12C28 (Graveyard Kit),pack30_decor/decor3_5,0,1280,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r28c0,item,decor,Nature Assets Sheet R28C0 (Graveyard Kit),pack30_decor/decor3_5,0,1408,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r28c8,item,decor,Nature Assets Sheet R28C8 (Graveyard Kit),pack30_decor/decor3_5,0,1536,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+graveyard_kit__nature_assets_sheet__r28c28,item,decor,Nature Assets Sheet R28C28 (Graveyard Kit),pack30_decor/decor3_5,0,1664,4,4,1,1,notmoveable,new,,family=graveyard_kit|hideout=0
+desert_kit__desert_nature__r4c24,item,decor,Desert Nature R4C24 (Desert Kit),pack30_decor/decor3_5,0,1792,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r5c21,item,decor,Desert Nature R5C21 (Desert Kit),pack30_decor/decor3_5,0,1920,2,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r8c20,item,decor,Desert Nature R8C20 (Desert Kit),pack30_decor/decor3_5,0,2016,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r8c24,item,decor,Desert Nature R8C24 (Desert Kit),pack30_decor/decor3_5,0,2144,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r9c12,item,decor,Desert Nature R9C12 (Desert Kit),pack30_decor/decor3_5,0,2272,4,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r9c29,item,decor,Desert Nature R9C29 (Desert Kit),pack30_decor/decor3_5,0,2368,2,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r13c16,item,decor,Desert Nature R13C16 (Desert Kit),pack30_decor/decor3_5,0,2464,4,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r16c16,item,decor,Desert Nature R16C16 (Desert Kit),pack30_decor/decor3_5,0,2560,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r16c20,item,decor,Desert Nature R16C20 (Desert Kit),pack30_decor/decor3_5,0,2688,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r17c0,item,decor,Desert Nature R17C0 (Desert Kit),pack30_decor/decor3_5,0,2816,4,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r17c4,item,decor,Desert Nature R17C4 (Desert Kit),pack30_decor/decor3_5,0,2912,4,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r17c28,item,decor,Desert Nature R17C28 (Desert Kit),pack30_decor/decor3_5,0,3008,4,3,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r24c0,item,decor,Desert Nature R24C0 (Desert Kit),pack30_decor/decor3_5,0,3104,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r24c4,item,decor,Desert Nature R24C4 (Desert Kit),pack30_decor/decor3_5,0,3232,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r24c12,item,decor,Desert Nature R24C12 (Desert Kit),pack30_decor/decor3_5,0,3360,2,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_nature__r24c16,item,decor,Desert Nature R24C16 (Desert Kit),pack30_decor/decor3_5,0,3424,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r24c20,item,decor,Desert Nature R24C20 (Desert Kit),pack30_decor/decor3_5,0,3552,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r26c12,item,decor,Desert Nature R26C12 (Desert Kit),pack30_decor/decor3_5,0,3680,2,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_nature__r26c14,item,decor,Desert Nature R26C14 (Desert Kit),pack30_decor/decor3_5,0,3744,2,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_nature__r28c4,item,decor,Desert Nature R28C4 (Desert Kit),pack30_decor/decor3_5,0,3808,4,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r28c21,item,decor,Desert Nature R28C21 (Desert Kit),pack30_decor/decor3_5,0,3936,2,4,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r29c8,item,decor,Desert Nature R29C8 (Desert Kit),pack30_decor/decor3_6,0,0,4,2,1,1,notmoveable,new,,family=desert_kit|hideout=0
+desert_kit__desert_nature__r29c13,item,decor,Desert Nature R29C13 (Desert Kit),pack30_decor/decor3_6,0,64,2,2,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c6,item,decor,Desert Props R0C6 (Desert Kit),pack30_decor/decor3_6,0,128,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r0c7,item,decor,Desert Props R0C7 (Desert Kit),pack30_decor/decor3_6,0,160,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c0,item,decor,Desert Props R1C0 (Desert Kit),pack30_decor/decor3_6,0,192,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c1,item,decor,Desert Props R1C1 (Desert Kit),pack30_decor/decor3_6,0,224,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c4,item,decor,Desert Props R1C4 (Desert Kit),pack30_decor/decor3_6,0,256,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c6,item,decor,Desert Props R1C6 (Desert Kit),pack30_decor/decor3_6,0,288,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r1c7,item,decor,Desert Props R1C7 (Desert Kit),pack30_decor/decor3_6,0,320,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c0,item,decor,Desert Props R2C0 (Desert Kit),pack30_decor/decor3_6,0,352,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c2,item,decor,Desert Props R2C2 (Desert Kit),pack30_decor/decor3_6,0,384,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c3,item,decor,Desert Props R2C3 (Desert Kit),pack30_decor/decor3_6,0,416,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r2c5,item,decor,Desert Props R2C5 (Desert Kit),pack30_decor/decor3_6,0,448,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c1,item,decor,Desert Props R3C1 (Desert Kit),pack30_decor/decor3_6,0,480,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c2,item,decor,Desert Props R3C2 (Desert Kit),pack30_decor/decor3_6,0,512,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c4,item,decor,Desert Props R3C4 (Desert Kit),pack30_decor/decor3_6,0,544,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c5,item,decor,Desert Props R3C5 (Desert Kit),pack30_decor/decor3_6,0,576,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r3c6,item,decor,Desert Props R3C6 (Desert Kit),pack30_decor/decor3_6,0,608,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c0,item,decor,Desert Props R5C0 (Desert Kit),pack30_decor/decor3_6,0,640,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c1,item,decor,Desert Props R5C1 (Desert Kit),pack30_decor/decor3_6,0,672,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c2,item,decor,Desert Props R5C2 (Desert Kit),pack30_decor/decor3_6,0,704,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r5c6,item,decor,Desert Props R5C6 (Desert Kit),pack30_decor/decor3_6,0,736,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c2,item,decor,Desert Props R6C2 (Desert Kit),pack30_decor/decor3_6,0,768,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c3,item,decor,Desert Props R6C3 (Desert Kit),pack30_decor/decor3_6,0,800,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c4,item,decor,Desert Props R6C4 (Desert Kit),pack30_decor/decor3_6,0,832,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c6,item,decor,Desert Props R6C6 (Desert Kit),pack30_decor/decor3_6,0,864,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r6c7,item,decor,Desert Props R6C7 (Desert Kit),pack30_decor/decor3_6,0,896,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c0,item,decor,Desert Props R7C0 (Desert Kit),pack30_decor/decor3_6,0,928,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c1,item,decor,Desert Props R7C1 (Desert Kit),pack30_decor/decor3_6,0,960,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c2,item,decor,Desert Props R7C2 (Desert Kit),pack30_decor/decor3_6,0,992,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c3,item,decor,Desert Props R7C3 (Desert Kit),pack30_decor/decor3_6,0,1024,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c4,item,decor,Desert Props R7C4 (Desert Kit),pack30_decor/decor3_6,0,1056,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+desert_kit__desert_props__r7c6,item,decor,Desert Props R7C6 (Desert Kit),pack30_decor/decor3_6,0,1088,1,1,1,1,notmoveable,new,,family=desert_kit|hideout=1
+sewer_kit__bones_1,item,decor,Bones 1 (Sewer Kit),pack30_decor/decor3_6,0,1120,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__bones_2,item,decor,Bones 2 (Sewer Kit),pack30_decor/decor3_6,0,1152,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__bones_3,item,decor,Bones 3 (Sewer Kit),pack30_decor/decor3_6,0,1184,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__green_barrel,item,stump,Green Barrel (Sewer Kit),pack30_decor/decor3_6,0,1216,1,1,1,1,bottom notwalkable notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__old_rags_1,item,decor,Old Rags 1 (Sewer Kit),pack30_decor/decor3_6,0,1248,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__old_rags_2,item,decor,Old Rags 2 (Sewer Kit),pack30_decor/decor3_6,0,1280,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__plank,item,decor,Plank (Sewer Kit),pack30_decor/decor3_6,0,1312,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+sewer_kit__trash_1,item,decor,Trash 1 (Sewer Kit),pack30_decor/decor3_6,0,1344,1,1,1,1,notmoveable,new,,family=sewer_kit|hideout=1
+bathroom__basket,item,decor,Basket (Bathroom),pack30_decor/decor3_6,0,1376,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__basket_2,item,decor,Basket 2 (Bathroom),pack30_decor/decor3_6,0,1408,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__bear_rug,item,decor,Bear Rug (Bathroom),pack30_decor/decor3_6,0,1440,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__fall_towels,item,decor,Fall Towels (Bathroom),pack30_decor/decor3_6,0,1472,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__fruit_picture,item,wall,Fruit Picture (Bathroom),pack30_decor/decor3_6,0,1504,1,1,1,1,hangable notmoveable,new,,family=bathroom|hideout=0
+bathroom__hanging_plant,item,wall,Hanging Plant (Bathroom),pack30_decor/decor3_6,0,1536,1,1,1,1,hangable notmoveable,new,,family=bathroom|hideout=0
+bathroom__plant_1,item,decor,Plant 1 (Bathroom),pack30_decor/decor3_6,0,1568,1,2,1,1,notmoveable,new,,family=bathroom|hideout=0
+bathroom__plant_on_table,item,stump,Plant On Table (Bathroom),pack30_decor/decor3_6,0,1632,1,1,1,1,bottom notwalkable notmoveable,new,,family=bathroom|hideout=0
+bathroom__roll,item,decor,Roll (Bathroom),pack30_decor/decor3_6,0,1664,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__shark_picture,item,wall,Shark Picture (Bathroom),pack30_decor/decor3_6,0,1696,1,1,1,1,hangable notmoveable,new,,family=bathroom|hideout=0
+bathroom__trim_bottom,item,decor,Trim Bottom (Bathroom),pack30_decor/decor3_6,0,1728,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_corner_bottom_left,item,decor,Trim Corner Bottom Left (Bathroom),pack30_decor/decor3_6,0,1760,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_corner_bottom_right,item,decor,Trim Corner Bottom Right (Bathroom),pack30_decor/decor3_6,0,1792,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_corner_top_left,item,decor,Trim Corner Top Left (Bathroom),pack30_decor/decor3_6,0,1824,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_corner_top_right,item,decor,Trim Corner Top Right (Bathroom),pack30_decor/decor3_6,0,1856,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_down_left,item,decor,Trim Down Left (Bathroom),pack30_decor/decor3_6,0,1888,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_down_right,item,decor,Trim Down Right (Bathroom),pack30_decor/decor3_6,0,1920,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1
+bathroom__trim_top,item,decor,Trim Top (Bathroom),pack30_decor/decor3_6,0,1952,1,1,1,1,notmoveable,new,,family=bathroom|hideout=0|scale2x=1

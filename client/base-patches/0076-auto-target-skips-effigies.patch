@@ -1,0 +1,18 @@
+# Chaos: Auto Target never picks summons, effigies or decoys (after 0001-0075). The Necromancer's and Mystic's effigies are monsters
+# standing on the map; the helper attacked them. isValidCreature now skips summon creature types (own, other) and names with
+# 'effigy' or 'decoy'.
+--- a/mods/game_helper/classes/auto_target.lua
++++ b/mods/game_helper/classes/auto_target.lua
+@@ -149,6 +149,12 @@
+   if not creature:isMonster() then return false end
+   if creature:getMasterId() ~= 0 then return false end
+   if creature:getHealthPercent() <= 0 then return false end
++  -- Chaos: summons (own or another player's, CreatureTypeSummonOwn / Other) and effigies, totems and decoys are never
++  -- targets: the Necromancer's and Mystic's effigies stand on the map as monsters of their own caster
++  local creatureType = creature.getType and creature:getType()
++  if creatureType == 3 or creatureType == 4 then return false end
++  local lowerName = (creature:getName() or ""):lower()
++  if lowerName:find("effigy", 1, true) or lowerName:find("decoy", 1, true) then return false end
+   return true
+ end
+ 

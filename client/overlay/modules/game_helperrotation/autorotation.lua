@@ -12,7 +12,6 @@ ChaosAutoRotation = ChaosAutoRotation or {}
 local A = ChaosAutoRotation
 
 A.MAX_SPELLS = 5
-A.GAP_LIMIT = 2.0
 A.HORIZON = 120          -- seconds the gap check simulates
 A.HEAL_PERCENTS = { 45, 65, 85 } -- the healing tab's slots: the strongest heal at the lowest health
 A.MARKER = 'chaosAutoRotation'  -- the shooter profile key that remembers the spell ids the button set last
@@ -113,12 +112,6 @@ function A.select(vocId, level, canCast, opts)
       changed = true
     end
   end
-  if changed then
-    -- an area spell may not wait for 2 monsters any more: the rest has to keep the gap on a lone target
-    for i = 1, #creatures do
-      creatures[i] = 1
-    end
-  end
   -- The simulator keeps the smallest set that holds the 2 s rhythm (one spell from level 8 to 11 for a Mystic),
   -- so the button wrote a single rule. Top it up to MAX_SPELLS with the other spells the character can cast, below
   -- the preset's: earlier presets newest first, then the later ones. Those only fire while the ones above wait;
@@ -138,8 +131,8 @@ function A.select(vocId, level, canCast, opts)
     for _, id in ipairs(c.presets[j].spells) do
       if #ids < A.MAX_SPELLS and not seen[id] and canCast(id) then
         ids[#ids + 1] = id
-        -- a set that lost a spell needs every filler on a lone target to keep the gap
-        creatures[#creatures + 1] = (not changed and spells[id] and spells[id].area) and 2 or 1
+        -- an area filler waits for 2 monsters, like the preset's own area spells
+        creatures[#creatures + 1] = (spells[id] and spells[id].area) and 2 or 1
         seen[id] = true
         added = true
       end
@@ -196,6 +189,36 @@ function A.merge(userRules, autoRules)
     end
   end
   return out, added
+end
+
+-- A class change (the store's Vocation Change, an ascension): the shooter rules and healing slots of spells the new class
+-- cannot cast stay in the Helper and the server refuses every one of them ("kept the old class's spells", owner report
+-- 2026-10-17). Drops them; item rules and the player's other rules stay. classOk(spellId) -> bool (the class lists the
+-- spell; the level does not matter: it will be reached). Returns the new rule list and how many rules went.
+function A.dropForeignRules(rules, classOk)
+  local out, dropped = {}, 0
+  for _, r in ipairs(rules or {}) do
+    if r.type == 'spell' and r.spellId and r.spellId > 0 and not classOk(r.spellId) then
+      dropped = dropped + 1
+    else
+      local c = {}
+      for k, v in pairs(r) do c[k] = v end
+      out[#out + 1] = c
+    end
+  end
+  return out, dropped
+end
+
+-- the healing slots ({id, percent}): a slot of a spell the new class cannot cast is emptied (id 0). Returns how many.
+function A.dropForeignHeals(slots, classOk)
+  local dropped = 0
+  for _, s in ipairs(slots or {}) do
+    if s.id and s.id ~= 0 and not classOk(s.id) then
+      s.id = 0
+      dropped = dropped + 1
+    end
+  end
+  return dropped
 end
 
 -- the spell ids of a rule list (spells only, in order)

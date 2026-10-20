@@ -11,13 +11,13 @@ return {
 	-- the new orbs and the Whetstone: id, key (ChaosCrafting orb key), client sprite, name, plural, article, weight,
 	-- description (items.xml)
 	items = {
-		{id = 32251, key = "tempering", clientId = 24483, name = "Orb of Tempering", plural = "Orbs of Tempering", article = "an", weight = 50, description = "Use it with an item with a rarity: the values of every modifier that is not bound are rolled again inside their tiers. On a Rift Key: new values."},
-		{id = 32252, key = "binding", clientId = 25047, name = "Orb of Binding", plural = "Orbs of Binding", article = "an", weight = 50, description = "Binds one modifier of an item with a rarity: the Orbs of Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone. Choose the modifier on the crafting bench. Only an Orb of Erasure frees it."},
-		{id = 32253, key = "excision", clientId = 25049, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the crafting bench (a random one that is not bound when used directly). On a Rift Key: one modifier."},
-		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rolls the tier (by the item level) and the value of the one modifier you choose on the crafting bench again."},
-		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble for an item with a rarity: it improves (one tier more on every modifier that is not bound, or an extra modifier) or nothing happens. It never ruins the item."},
-		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "Use it with an item with a rarity: +1% quality (every modifier value is multiplied), up to 20% (30% from Divine rarity)."},
-		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Use it with an item that has a veiled modifier: choose one of three modifiers of the veiled pool. The choice is final."}
+		{id = 32251, key = "tempering", clientId = 24483, name = "Orb of Tempering", plural = "Orbs of Tempering", article = "an", weight = 50, description = "Rerolls the values of every unbound modifier inside their tiers. Rift Key: new values."},
+		{id = 32252, key = "binding", clientId = 25047, name = "Orb of Binding", plural = "Orbs of Binding", article = "an", weight = 50, description = "Binds one modifier (chosen on the bench) against orbs. Only an Orb of Erasure frees it."},
+		{id = 32253, key = "excision", clientId = 25049, name = "Orb of Excision", plural = "Orbs of Excision", article = "an", weight = 50, description = "Removes the modifier you choose on the bench (a random unbound one if used directly)."},
+		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rerolls the tier and value of one modifier you choose on the crafting bench."},
+		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble on an item with a rarity: its modifiers improve or nothing happens."},
+		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "+1% quality on an item with a rarity, up to 20% (30% from Divine rarity)."},
+		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Reveals a veiled modifier: pick one of three. The choice is final."}
 	},
 
 	-- the names of the base server's currency items, changed by install_orbs.py (items.xml names and every name the base

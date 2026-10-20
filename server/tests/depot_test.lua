@@ -43,7 +43,7 @@ eq(D.tabOf(cfg, 2594), nil, "the chest is no tab")
 check(D.isChest(cfg, 2594), "depot chest")
 eq(cfg.tabSize, 100, "100 items per tab")
 check(cfg.boxSlots >= cfg.tabSize, "a box has a slot for every item it may hold")
-eq(L.free, 4, "4 free tabs")
+eq(L.free, 1, "1 free tab (the default depot has a single tab)")
 eq(L.pact, 1, "the Chaos Pact adds 1")
 eq(L.free + L.pact + L.maxExtra + #cfg.achievementTabs, D.maxTabs(cfg), "free + Pact + bought + achievements = boxes")
 check(#cfg.achievementTabs >= 2 and #cfg.achievementTabs <= 3, "2 or 3 achievement tabs")
@@ -93,12 +93,12 @@ local NOW = 1800000000
 local function tabsFor(state, achTabs)
 	return D.tabCount(cfg, P.limit(pc, state, "depotTabs", NOW), achTabs)
 end
-eq(tabsFor({pactEnds = 0, extras = {}}, 0), 4, "free account: 4 tabs")
-eq(tabsFor({pactEnds = NOW + 100, extras = {}}, 0), 5, "Chaos Pact: 5 tabs")
-eq(tabsFor({pactEnds = NOW - 1, extras = {}}, 0), 4, "Pact ended: 4 tabs")
-eq(tabsFor({pactEnds = 0, extras = {depotTabs = 5}}, 0), 9, "bought 5")
-eq(tabsFor({pactEnds = 0, extras = {depotTabs = 5}}, 2), 11, "bought 5 + 2 achievements")
-eq(tabsFor({pactEnds = NOW + 100, extras = {depotTabs = 9}}, 3), 17, "everything: 17")
+eq(tabsFor({pactEnds = 0, extras = {}}, 0), 1, "free account: 1 tab")
+eq(tabsFor({pactEnds = NOW + 100, extras = {}}, 0), 2, "Chaos Pact: 2 tabs")
+eq(tabsFor({pactEnds = NOW - 1, extras = {}}, 0), 1, "Pact ended: 1 tab")
+eq(tabsFor({pactEnds = 0, extras = {depotTabs = 5}}, 0), 6, "bought 5")
+eq(tabsFor({pactEnds = 0, extras = {depotTabs = 5}}, 2), 8, "bought 5 + 2 achievements")
+eq(tabsFor({pactEnds = NOW + 100, extras = {depotTabs = 12}}, 3), 17, "everything: 17")
 eq(tabsFor({pactEnds = NOW + 100, extras = {depotTabs = 50}}, 9), 17, "never above the boxes")
 eq(D.tabCount(cfg, -3, 0), 0, "never below 0")
 
@@ -493,7 +493,7 @@ itemsBefore = countAll(old)
 
 local lockerItem = mk(2589, {uid = LOCKER_UID})
 eq(lockerAction.onUse(hero, lockerItem), false, "the locker still opens")
-eq(#hero.chests[3].items, 17 + 133, "boxes made at once, the old items wait for the open locker")
+eq(#hero.chests[3].items, 4 + 133, "boxes made at once, the old items wait for the open locker")
 openLockers(hero)
 runTimers()
 local chest = hero.chests[3]
@@ -508,10 +508,10 @@ local nBoxes = 0
 for _ in pairs(boxes) do
 	nBoxes = nBoxes + 1
 end
-eq(nBoxes, 17, "17 boxes made")
+eq(nBoxes, 4, "only the account's 4 open tabs are made (a default depot is not 17 boxes)")
 eq(chest.items[1].id, cfg.boxIds[1], "tab 1 comes first")
-eq(chest.items[17].id, cfg.boxIds[17], "tab 17 is the 17th")
-eq(countAll(chest) - 17, itemsBefore, "nothing deleted")
+eq(chest.items[4].id, cfg.boxIds[4], "tab 4 is the 4th")
+eq(countAll(chest) - 4, itemsBefore, "nothing deleted")
 eq(#boxes[1].items, 100, "tab 1 full")
 eq(#boxes[2].items, 31, "tab 2: the rest of the loose items and the bag of 3")
 eq(D.holding(boxes[2], function(n) return n.items end), 34, "tab 2 holds 34")
@@ -531,10 +531,15 @@ end
 has(sortedMsg, "131 item(s) in open tabs", "sorted message")
 has(sortedMsg, "2 item(s) did not fit", "sorted message: loose")
 eq(boxes[1].attrs[ITEM_ATTRIBUTE_DESCRIPTION], "100 of 100 items.", "tab 1 look text")
-has(boxes[5].attrs[ITEM_ATTRIBUTE_DESCRIPTION], "Locked", "tab 5 look text")
+local slotList = Dp.slots(chest, 4)
+eq(slotList[1] and slotList[1].tab, 2, "slots: the full tab 1 is left out, tab 2 is the first with room")
+eq(slotList[1] and slotList[1].free, cfg.tabSize - 34, "slots: its free room")
+eq(slotList[1] and slotList[1].box, boxes[2], "slots: the box")
+eq(#Dp.slots(chest, 1), 0, "slots: only the account's open tabs")
+eq(boxes[5], nil, "tab 5 has no box yet (locked tabs are made when they open)")
 local last = sent[#sent]
 eq(last and last.op, 111, "client message on opcode 111") eq(last and last.action, "tabs", "tabs message")
-eq(last and last.data.tabs, 4, "4 tabs") eq(last and last.data.max, 17, "of 17") eq(last and last.data.used[1], 100, "used of tab 1")
+eq(last and last.data.tabs, 4, "4 tabs") eq(last and last.data.max, 4, "the window shows the 4 existing tabs") eq(last and last.data.used[1], 100, "used of tab 1")
 eq(last and last.data.ids[1], 25453 - 1000, "client id of tab 1") eq(last and last.data.chest[1], 2594 - 1000, "client id of the chest")
 -- a second opening changes nothing
 local before = #chest.items
@@ -556,6 +561,14 @@ end
 local function lastWarning()
 	local m = hero.messages[#hero.messages]
 	return m and m.text
+end
+-- the locked-tab rules below need boxes of locked tabs: an older depot has them all (ensure without a tab count)
+Dp.ensure(chest)
+for _, c in ipairs(chest.items) do
+	local t = D.tabOf(cfg, c.id)
+	if t and not boxes[t] then
+		boxes[t] = c
+	end
 end
 local sword = mk(2400)
 local backpack = mk(1988, {items = {sword}})

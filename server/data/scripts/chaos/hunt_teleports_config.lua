@@ -14,7 +14,10 @@ return {
 	aid = 47930,
 	items = {
 		portal = 1387, -- magic forcefield, the same item as the room's own teleports
-		sign = 5360 -- the sign on the counter behind each teleport (its text is written at startup)
+		sign = 5360, -- the sign on the counter behind each teleport (its text is written at startup)
+		-- the base quests' other teleport items: the entry floor's Inquisition alcove (5023) and the two quest sites'
+		-- own ways back (5023, 11796); read with the portal so the quest hall can move them (hall_quests.py)
+		questPortals = {5023, 11796}
 	},
 	-- floating label over each teleport, in the player's language, like the base server's own labels of the room
 	-- (a "monster say" text sent only to players within `range`, every `interval` ms; 0 turns it off)
@@ -40,7 +43,14 @@ return {
 		east = {module = {31664, 31667}, cap = {31668, 31670}, modules = 5},
 		west = {module = {31629, 31632}, cap = {31626, 31628}, modules = 5},
 		-- where a plan's exit portal sends players: the middle of the corridor
-		back = {x = 31648, y = 32256, z = 6}
+		back = {x = 31648, y = 32256, z = 6},
+		-- The other floors grow the same way (owner, 2026-10-18: the ground floor z 7 holds the hunts of levels 1-500,
+		-- more than its 16 alcoves): `from` is the floor whose alcoves are copied (bare of rewards and signs), the
+		-- ends are the floor's own; `sweep`: the new tiles may replace the open lawn beside the hall (checked: no
+		-- house, nothing but decoration). 8 modules a side: 32 new slots, 48 on z 7.
+		wings = {
+			{z = 7, from = 6, sweep = true, east = {modules = 8}, west = {modules = 8}}
+		}
 	},
 
 	-- The whole hall in level order (owner, 2026-10-16; server/README.md "Hall order"): every hunt teleport of the hall,
@@ -49,10 +59,34 @@ return {
 	-- writes it; --remove-hall puts the base hunts back. `floors`: the hall's floors, lowest bands first; `x`: the
 	-- hall's span; `endRow`: the corridor's end teleports (a hunt unless it leads to `temple`); `labels`: the floor's
 	-- floating label ("Floor 7: levels 1-80") over `at`, and over `up` (the stairs up) the next floor's.
+	-- `levels`: the owner's rule of 2026-10-18 (server/README.md "Hall order"): a hunt stands on the floor of its level,
+	-- the hunt's level being the weighted median of its monsters (a plan: the middle of its `level`). The ground floor
+	-- z 7 holds levels 1-500, z 6 501-1000, z 5 the rest; `max` is the highest level of a floor. Same order as `floors`.
+	-- `quests`: the quest hall (tools/hall_quests.py): the base quests' alcoves move, with their rewards on show and
+	-- their quest signs, to a hall of the same shape (two rows of alcoves round a 3-row corridor, 9 rows from
+	-- `origin`.y, the first alcove's teleport column `origin`.x, 33 columns for 8 alcoves a row) at the east end of the
+	-- plaza's aisle south of the corridor, joined to it by a corridor from `connector`.x; `returnRadius`: how far from a
+	-- quest's destination its way back is looked for; `chests`: the base server's daily and weekly reward chests of the
+	-- plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests) taken away with their
+	-- booth (the rows `rows`), owner 2026-10-18.
 	hall = {
 		enabled = true,
 		floors = {7, 6, 5},
-		x = {31600, 31696},
+		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
+		quests = {
+			z = 7,
+			origin = {x = 31676, y = 32263},
+			connector = {x = 31665}, -- the aisle's last column; the corridor runs from there to the hall
+			step = 4,
+			returnRadius = 4,
+			chests = {
+				{x = 31639, y = 32265, item = 29327, uid = 34801, rows = {32263, 32265}}, -- daily reward
+				{x = 31633, y = 32265, item = 29327, uid = 34802, rows = {32263, 32265}}, -- weekly: Nightmare Coin
+				{x = 31657, y = 32265, item = 29327, uid = 34803, rows = {32263, 32265}}, -- weekly: Stamina Extension
+				{x = 31663, y = 32265, item = 29327, uid = 34804, rows = {32263, 32265}} -- weekly: Star Inlay Stone
+			}
+		},
+		x = {31590, 31712},
 		endRow = 32256,
 		temple = {32369, 32241, 7},
 		labels = {
@@ -67,7 +101,7 @@ return {
 	-- where display monsters stand: the cell rows (room.cellRows) of the hall's floors, across the grown floor 6.
 	-- A monster there (no master) is a display: no boss mechanics, no tier roll, no treasure goblin, and it never hits
 	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
-	display = {x = {31606, 31690}, floors = {5, 7}},
+	display = {x = {31594, 31706}, floors = {5, 7}},
 
 	-- 5 modules a side: 20 new teleports (17 plans, 3 spare).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
@@ -108,6 +142,9 @@ return {
 			["%s, levels %d-%d"] = "%s, níveis %d-%d",
 			["Floor %d: levels %d-%d"] = "Andar %d: níveis %d-%d",
 			["Up: floor %d, levels %d-%d"] = "Acima: andar %d, níveis %d-%d",
+			["Floor %d: levels %d+"] = "Andar %d: níveis %d+",
+			["Up: floor %d, levels %d+"] = "Acima: andar %d, níveis %d+",
+			["Quests"] = "Missões",
 			["%s is for level %d and above."] = "%s é para nível %d ou mais.",
 			["%s: monsters of level %d-%d. The portal at the camp leads back to the teleport room."] =
 				"%s: monstros de nível %d-%d. O portal do acampamento leva de volta à sala de teleportes."

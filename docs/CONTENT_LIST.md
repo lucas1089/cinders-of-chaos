@@ -29,7 +29,7 @@ Rules for this list:
 | Rift themes | 4 | `rift_config.lua` |
 | Rift modifiers | 36 | `rift_config.lua` `mods` |
 | Rift Atlas nodes | 81 | `atlas_config.lua` |
-| Item rarities | 15 | Codex data |
+| Item rarities | 7 | Codex data |
 | Item modifiers | 77 | Codex "Modifiers" |
 | Legendary powers | 12 | Codex "Powers" |
 | Uniques | 106 | Codex "Uniques" |
@@ -255,7 +255,7 @@ Boss systems:
 | World boss arena | Built at runtime, 40 players | done |
 | Pocket boss arenas | 16 runtime arenas, a private copy of a world, island or raid boss for a party of 1-5 (#160) | done, not run live |
 | Guild hall and guild boss | Guild instance and weekly boss (#30, #70) | done |
-| Personal hideout | Instanced room per character (#72) | done |
+| Personal hideout | Instanced room per character (#72), with the base waystone device in the middle (usable in the own hideout) | done |
 | Instance limits | Time limits, warnings and waiting lines for every instance (#108) | done, not run in game |
 
 ## 7. Endgame systems
@@ -283,7 +283,7 @@ Boss systems:
 
 ## 8. Items and crafting
 
-- **Item rarities.** 15, from Common to Transcendent.
+- **Item rarities.** 7: Common, Uncommon, Magic, Rare, Legendary, Divine and Unique (#87; the 15 of before map onto them).
 - **Item modifiers.** 77 prefixes and suffixes with tiers by item level.
 - **Legendary powers.** 12 powers on Legendary or better items.
 - **Uniques.** 106 uniques, some with their own equip rules.

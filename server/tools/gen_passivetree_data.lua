@@ -5,6 +5,8 @@
 -- Edges are taken from both `out` and `inputs` and stored undirected; per-node customStats are kept.
 -- Per-class variants (node.knight / .juggernaut / ... , the keys of VARIANTS below, used by the keystones) with their own
 -- customStats are stored in `v`; passivetree.lua uses them instead of `s` for that variant key (ChaosClasses.keystoneKey).
+-- The class lanes (treedata/classlanes.lua, tools/gen_class_lanes.lua) are stored in the same `v` for the plain nodes: the stats
+-- a node gives one class instead of its own. Run gen_class_lanes.lua BEFORE this when the tree or the stat lists changed.
 -- node.classes (the classes that may take the node) is stored as `c` = {[class key] = true} (class_tree.lua checks it).
 -- A mastery node (node.masteries = {{name, customStats}, ...}: 2-4 effects, the player picks one) is stored as
 -- `m` = {{customStats of effect 1}, {effect 2}, ...} in that order (passivetree_core.lua; never reorder, only append).
@@ -13,7 +15,9 @@
 -- node of the original tree, never reachable) are not stored either.
 -- (One client node has the typo `customStast` and therefore carries no stats; fix it client-side.)
 dofile("nodes.lua")
+dofile("classlanes.lua")
 local nodes = getTreeNodes()
+local LANES = getClassLanes() -- {[variant key] = {[node id] = stats}}: the per-class re-skin of plain nodes (tools/gen_class_lanes.lua)
 local ids = {}
 for id in pairs(nodes) do ids[#ids+1] = id end
 table.sort(ids)
@@ -66,13 +70,25 @@ for _, id in ipairs(ids) do
   local s = n.customStats and statList(n.customStats) or {}
   stats_total = stats_total + #s
   local v = {}
+  local vmap = {}
   for _, voc in ipairs(VARIANTS) do
     local variant = n[voc]
     if type(variant) == "table" and variant.customStats then
-      local vs = statList(variant.customStats)
-      stats_total = stats_total + #vs
-      v[#v+1] = voc .. "={" .. table.concat(vs, ",") .. "}"
+      vmap[voc] = statList(variant.customStats)
     end
+  end
+  -- a class lane re-skins a plain node (one with no variant of its own) for one variant key
+  if next(vmap) == nil and n.customStats and not n.masteries then
+    for key, lane in pairs(LANES) do
+      if lane[id] then vmap[key] = statList(lane[id]) end
+    end
+  end
+  local vkeys = {}
+  for key in pairs(vmap) do vkeys[#vkeys + 1] = key end
+  table.sort(vkeys)
+  for _, key in ipairs(vkeys) do
+    stats_total = stats_total + #vmap[key]
+    v[#v+1] = key .. "={" .. table.concat(vmap[key], ",") .. "}"
   end
   local c = {}
   if n.classes then

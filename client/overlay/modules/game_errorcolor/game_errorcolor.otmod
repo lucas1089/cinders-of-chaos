@@ -1,0 +1,11 @@
+Module
+  name: game_errorcolor
+  description: Error messages (cannot do that, not enough mana, ...) in their own colour instead of white
+  author: Cinders of Chaos
+  sandboxed: true
+  autoload: true
+  autoload-priority: 1010
+  dependencies: [ game_textmessage ]
+  scripts: [ errorcolor_core, errorcolor ]
+  @onLoad: init()
+  @onUnload: terminate()

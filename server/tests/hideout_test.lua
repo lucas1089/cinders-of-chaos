@@ -96,6 +96,18 @@ do
 	ok(text:find("store decoration without its store offer", 1, true), "missing offer found")
 	ok(text:find("sold in the store but its source is default", 1, true), "an earned decoration sold is found")
 	cfg._decoIndex = nil
+	-- two fixtures on one tile (the device on the stash) are found
+	local clash = {}
+	for k, v in pairs(cfg) do
+		clash[k] = v
+	end
+	clash.fixtures = {}
+	for k, v in pairs(cfg.fixtures) do
+		clash.fixtures[k] = v
+	end
+	clash.fixtures.waystone = {cfg.fixtures.stash[1], cfg.fixtures.stash[2]}
+	text = table.concat(K.validate(clash, achievements, factions, nil), "\n")
+	ok(text:find("on one tile", 1, true), "fixtures sharing a tile found")
 end
 
 -- ---------------------------------------------------------------- the grid
@@ -268,10 +280,10 @@ do
 	local pl = {}
 	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = W, y = 5, rot = 1}) ~= nil, true, "east part out of the room")
 	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = W, y = 5, rot = 2}), nil, "rotated it fits")
-	pl[1] = {id = 1, key = "bench", x = 5, y = 5, rot = 1}
-	ok(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 6, y = 4, rot = 2}) ~= nil, "overlaps the second tile")
-	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 5, y = 6, rot = 1}), nil, "below is free")
-	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 6, y = 5, rot = 1}, 1), nil, "moving onto its own old tiles")
+	pl[1] = {id = 1, key = "bench", x = 2, y = 5, rot = 1}
+	ok(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 3, y = 4, rot = 2}) ~= nil, "overlaps the second tile")
+	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 2, y = 6, rot = 1}), nil, "below is free")
+	eq(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 3, y = 5, rot = 1}, 1), nil, "moving onto its own old tiles")
 	ok(K.placeProblem(c2, "ashen_crypt", pl, {key = "bench", x = 7, y = 10, rot = 1}):find("kept free", 1, true),
 		"second part on the arrival tile")
 end
@@ -294,10 +306,10 @@ do
 			x, y = 1, y + 1
 		end
 	end
-	local p = place("crimson_rug", 9, 7)
+	local p = place("crimson_rug", 10, 7)
 	ok(p and p:find("Ashen Crypt holds at most 24", 1, true), "theme limit: " .. tostring(p))
 	eq(#placed, 24, "24 placed")
-	eq(K.placeProblem(cfg, "veiled_sanctum", placed, {key = "woven_rug", x = 9, y = 7, rot = 1}), nil,
+	eq(K.placeProblem(cfg, "veiled_sanctum", placed, {key = "woven_rug", x = 10, y = 7, rot = 1}), nil,
 		"the Veiled Sanctum holds more")
 	local _, total = K.occupancy(cfg, placed)
 	eq(total, 24, "occupancy count")
@@ -1005,6 +1017,49 @@ eq(throneItem.backTo, fromP, "a decoration goes back")
 eq(actions[cfg.aid.depot].onUse(bo, locker), true, "visitors cannot open the owner's depot")
 eq(actions[cfg.aid.depot].onUse(ana, locker), false, "the engine opens the owner's depot")
 eq(actions[cfg.aid.decor].onUse(ana, throneItem), true, "decorations do nothing on use")
+
+-- the waystone device: a fixture in the middle of every room, with the base server's own item and action id
+eq(cfg.ids.waystone, 29624, "waystone device item id (Waystone Portal of the base items.xml)")
+eq(cfg.aid.waystone, 42707, "waystone device action id (tier_maps.lua showTabletUI:aid)")
+eq(cfg.fixtures.waystone[1], math.floor(W / 2) + 1, "device in the middle (x)")
+eq(cfg.fixtures.waystone[2], math.floor(H / 2) + 1, "device in the middle (y)")
+local device = hasItem(1, cfg.fixtures.waystone[1], cfg.fixtures.waystone[2], cfg.ids.waystone)
+ok(device, "the waystone device is built with the room")
+eq(device and device:getActionId(), cfg.aid.waystone, "the device carries the base action id")
+for _, d in ipairs({{-1, -1}, {1, -1}, {-1, 1}, {1, 1}}) do
+	local px, py = cfg.fixtures.waystone[1] + d[1], cfg.fixtures.waystone[2] + d[2]
+	ok(K.reserved(cfg)[px .. "," .. py], "pad tile " .. px .. "," .. py .. " is kept free")
+	ok(K.placeProblem(cfg, "ashen_crypt", {}, {key = "dead_tree", x = px, y = py, rot = 1}):find("waystone", 1, true),
+		"no decoration on a pad tile")
+end
+ok(K.placeProblem(cfg, "ashen_crypt", {}, {key = "dead_tree", x = cfg.fixtures.waystone[1], y = cfg.fixtures.waystone[2],
+	rot = 1}):find("waystone", 1, true), "no decoration on the device")
+eq(K.reachProblem(cfg, {}), nil, "the empty room still reaches every fixture")
+do -- the device blocks its tile: a wall of tables around the whole room still counts, the device is reachable
+	local lv = K.layoutView(cfg)
+	local found = false
+	for _, t in ipairs(lv.reserved) do
+		if t[3] == "waystone" then found = true end
+	end
+	ok(found, "the layout view lists the device")
+end
+local owned = ChaosHideout.isOwnRoomTile
+local dpos = device:getPosition()
+eq(owned(ana, dpos), true, "the owner is at home on the device's tile")
+eq(owned(bo, dpos), false, "a visitor is not")
+eq(owned(ana, {x = 1, y = 1, z = 7}), false, "outside every room")
+eq(owned(nil, dpos), false, "no player")
+eq(owned(ana, nil), false, "no position")
+eq(ChaosHideout.isFixture(device), true, "the device is a fixture")
+eq(ChaosHideout.isFixture(throneItem), false, "a decoration is not")
+function device:moveTo(to) self.backTo = to end
+callbacks.onItemMoved(ana, device, 1, dpos, K.toWorld(cfg, 1, 11, 6), nil, nil)
+eq(device.backTo, dpos, "the device goes back when someone moves it")
+-- a changed theme keeps it
+do
+	local before = #itemsAt(1, cfg.fixtures.waystone[1], cfg.fixtures.waystone[2])
+	eq(before, 1, "one device on its tile")
+end
 
 -- the Town Portal inside leads out through the hideout's exit logic (townportal_core.lua K.hideoutExit)
 dofile("data/scripts/chaos/townportal_core.lua")

@@ -37,7 +37,6 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="35" chance="60000" /><!-- gold coin -->
-		<item id="36022" countmax="2" chance="18000" /><!-- spore sack -->
 		<item id="36042" countmax="2" chance="12000" /><!-- wild carrot -->
 	</loot>
 </monster>

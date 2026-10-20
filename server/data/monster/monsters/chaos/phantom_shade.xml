@@ -14,7 +14,7 @@
 		<flag canpushcreatures="1"/>
 		<flag targetdistance="1"/>
 		<flag staticattack="50"/>
-		<flag runonhealth="30000"/>
+		<flag runonhealth="0"/>
 	</flags>
 	<attacks>
 		<attack name="melee" interval="1500" min="-8500" max="-11000"/>
@@ -75,7 +75,6 @@
 		<item id="2152" countmax="40" chance="65000"/><!-- platinum coin -->
 		<item id="2160" chance="3000"/><!-- crystal coin -->
 		<item id="2150" countmax="3" chance="8000"/><!-- small amethyst -->
-		<item id="2153" chance="1500"/><!-- violet gem -->
 		<item id="5944" chance="10000"/><!-- soul orb -->
 		<item id="8890" chance="300"/><!-- robe of the underworld -->
 		<item id="8903" chance="300"/><!-- spellbook of lost souls -->
@@ -83,6 +82,5 @@
 		<item id="6300" chance="500"/><!-- death ring -->
 		<item id="7451" chance="200"/><!-- shadow sceptre -->
 		<item id="2136" chance="150"/><!-- demonbone amulet -->
-		<item id="25380" countmax="1" chance="5"/><!-- talent token -->
 	</loot>
 </monster>

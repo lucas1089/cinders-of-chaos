@@ -67,7 +67,7 @@ eq(st.cfg.cast.heal.maxPerSecond, 6, 'heal rate set')
 eq(st.cfg.cast.heal.sameWordsGap, 500, 'heal gap kept')
 eq(st.cfg.cast.attack.maxPerSecond, 4, 'attack untouched')
 eq(st.cfg.use.potion, 900, 'potion ms set')
-eq(T.defaults.use.potion, 1000, 'defaults untouched')
+eq(T.defaults.use.potion, 600, 'defaults untouched')
 
 -- base patch 0062 routes the helper through these channels
 local function read(path)

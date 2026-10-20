@@ -45,6 +45,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `tests/chaos_pay_test.php`, `tests/chaos_donation_page_test.php` | the donation flow and page (php-cli with pdo_sqlite, a mocked provider) |
 | `overlay/plugins/chaos/creator_lib.php`, `pages/creator.php` | creator codes: a donor's pick, the creator's totals, the administrators' codes, the account's referral link (see "Creator codes") |
 | `tests/chaos_creator_test.php` | `php website/tests/chaos_creator_test.php`: settings from `creator_codes_config.lua`, picks (unknown, off, own code), totals, the admin check and actions, the referral link (php-cli with pdo_sqlite) |
+| `overlay/plugins/chaos/delete_lib.php`, `pages/deletecharacter.php`, `tests/chaos_delete_character_test.php` | deleting a character (see "Deleting a character"); `php website/tests/chaos_delete_character_test.php` |
 | `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
 | `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/discord_lib.php`, `discord_worker.php` | Discord announcements: posts the game's queued events and the bazaar's new auctions and sales to channel webhooks from the environment (see "Discord announcements") |
@@ -942,6 +943,28 @@ page says so, and that donations are voluntary.
      the e-mail the charge was made with. The raw value is never stored; set `CHAOS_PAY_PAYER_SALT` once and keep it (a
      new salt makes old and new hashes differ). Skipped (logged) when the table is missing.
 - Test: `php website/tests/chaos_creator_test.php`.
+
+## Deleting a character
+
+Owner report 2026-10-17: "Deletar personagem no site não funciona". ZnoteX itself is not in this repository (it is fetched at
+a pinned commit by `install_site.sh`) and could not be fetched for this fix, so the failure of its own deletion page was
+not reproduced. What the repository side was checked for: no Chaos table blocks a `DELETE FROM players` (every foreign key
+to `players` in `server/sql` and the plugin is `ON DELETE CASCADE`), no clean-address rule touches a POST, the legal gate
+only redirects an account that has not accepted the Terms. So the page is replaced by ours, whose rules are in the repository
+and tested: `plugins/chaos/delete_lib.php` and `pages/deletecharacter.php` (`page?plugin=chaos&p=deletecharacter`);
+`plugin.php` sends ZnoteX's own addresses `deletecharacter.php` and `delete_character.php` there (303), so the link on the
+account page leads to it.
+
+- **Needs** the form's CSRF token (session), the account password (the same PBKDF2 check as login; a legacy hash is upgraded;
+  5 wrong passwords per 15 minutes per session, then "Too many wrong passwords") and the character's name typed again.
+- **Refused** for a character that is not on the account, is online, is staff (group above 1), leads a guild or is a
+  vice-leader, owns a house or has an open Character Bazaar listing. The page shows the reason instead of the form.
+- **Removes** the `players` row first (the foreign keys take the items, depot, storages and per-character Chaos tables with
+  it; if the database refuses, nothing else was touched and the error is logged), then the rows without a foreign key:
+  `znote_players`, VIP entries of other accounts, guild invites, name locks and the live rows of titles, the Marches, pocket
+  bosses and mentors. Logs and the shop purchase history stay.
+- Not indexed (`seo_lib.php` private pages). Test: `php website/tests/chaos_delete_character_test.php` (SQLite with foreign
+  keys on: the rules, the CSRF token, the typed name, the password and its limit, what goes and what stays, the redirect list).
 
 ## Character Bazaar
 

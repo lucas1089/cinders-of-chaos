@@ -20,7 +20,7 @@
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
 -- Salvage tab (server data/scripts/chaos/salvage.lua, same opcode): state.salvage = {installed, shardClientId,
--- shardName, shards, rarityNames, recipes = [{key, name, clientId, cost, count}], bags = [{path, name}], batch = {bag,
+-- shardName, shards, rarityNames, rarityIds, recipes = [{key, name, clientId, cost, count}], bags = [{path, name}], batch = {bag,
 -- maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths}, mode}; state.items[i].locked, state.item.locked,
 -- state.item.salvage = {ok, why, shards, orbChance}. Client -> server: salvage {path, id, sig} | lock {path, id, on} |
 -- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count}.
@@ -32,11 +32,13 @@
 
 local OPCODE = 232
 
--- rarity 1..15 (names from the server): text colours from grey to red, like the loot messages
+-- rarity by id (names from the server): 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; an item saved before
+-- the seven rarities may carry 6 .. 9 (they became Legendary) or 11 .. 15 (Divine): the colour of the rarity they became
 local RARITY_COLOR = {
-  '#c4cebc', '#5fd35f', '#4a8cff', '#b070ff', '#f6cf72', '#ff9c3a', '#d860ff', '#e03a1e', '#7fe6ff',
-  '#ffe680', '#c0a0ff', '#9fe0ff', '#ff70c0', '#ff4040', '#ffffff'
+  '#c4cebc', '#5fd35f', '#4a8cff', '#b070ff', '#f6cf72', '#f6cf72', '#f6cf72', '#f6cf72', '#f6cf72',
+  '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff', '#7fe6ff'
 }
+local RARITY_ID_FALLBACK = { 1, 2, 3, 4, 5, 10 } -- the ids of the six names when an older server sends no rarityIds
 local GROUP_COLOR = { absorb = '#7fa8ff', skill = '#9fdc7f', special = '#f6cf72', element = '#ff8a5a',
   chaos = '#ff70c0', rift = '#c0a0ff' }
 local POWER_COLOR = '#ff9a3c' -- legendary powers
@@ -575,11 +577,14 @@ local function fillCombos(sv)
   if #bags > 0 then bagCombo:setCurrentIndex(current) end
   local rarityCombo = window.salvagePanel.batchBox.rarityCombo
   rarityCombo:clearOptions()
-  for i, name in ipairs(list(sv.rarityNames)) do
-    rarityCombo:addOption(name, i)
-  end
+  local ids = #list(sv.rarityIds) > 0 and list(sv.rarityIds) or RARITY_ID_FALLBACK
   local r = tonumber(batch.maxRarity) or 1
-  if #list(sv.rarityNames) >= r then rarityCombo:setCurrentIndex(r) end
+  local at = 1
+  for i, name in ipairs(list(sv.rarityNames)) do
+    rarityCombo:addOption(tr(name), ids[i] or i)
+    if (ids[i] or i) <= r then at = i end -- the highest rarity not above the chosen id (an old 6 .. 9 shows as Legendary)
+  end
+  if #list(sv.rarityNames) > 0 then rarityCombo:setCurrentIndex(at) end
   updatingUi = false
 end
 
@@ -706,9 +711,13 @@ function salvageAll()
   local function no()
     if confirmBox then confirmBox:destroy() confirmBox = nil end
   end
-  local names = list(sv.rarityNames)
+  local names, ids = list(sv.rarityNames), #list(sv.rarityIds) > 0 and list(sv.rarityIds) or RARITY_ID_FALLBACK
+  local upTo = '?'
+  for i, name in ipairs(names) do
+    if (ids[i] or i) <= (tonumber(batch.maxRarity) or 1) then upTo = tr(name) end
+  end
   local text = tr('Salvage %d item(s) (rarity up to %s) into %d %s?\nLocked items, uniques and items with gems are kept.\nThis cannot be undone.',
-    tonumber(batch.count) or 0, names[tonumber(batch.maxRarity) or 1] or '?', tonumber(batch.shards) or 0,
+    tonumber(batch.count) or 0, upTo, tonumber(batch.shards) or 0,
     sv.shardName or 'shards')
   if displayGeneralBox then
     confirmBox = displayGeneralBox(tr('Salvage all'), text,

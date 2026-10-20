@@ -18,6 +18,10 @@
 --   K.recipe(key, cfg)                    the recipe of an orb key
 --   K.combineCheck(owned, key, count, cfg) ok, cost | nil, reason key
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosSalvageCore = ChaosSalvageCore or {}
 local K = ChaosSalvageCore
 local floor = math.floor
@@ -88,8 +92,9 @@ local function clamp(v, lo, hi)
 	return v
 end
 
+-- the place of the item's rarity in the config tables (Common = 1 .. Divine = 6; an old id counts as the rarity it became)
 local function rarityIndex(info, cfg)
-	return clamp(floor(tonumber(info.rarity) or 0), 1, #cfg.baseShards)
+	return clamp(ChaosRarity.rank(info.rarity), 1, #cfg.baseShards)
 end
 
 -- the item level as a share of the highest, 0..1
@@ -173,7 +178,7 @@ end
 -- Items above maxRarity are skipped as "above"; anything K.check refuses is skipped under its reason.
 -- Non-gear (potions, runes, bags, ...) is not counted at all: a backpack holds many things that are no candidates.
 function K.batch(entries, maxRarity, cfg)
-	maxRarity = clamp(floor(tonumber(maxRarity) or 0), 1, #cfg.baseShards)
+	maxRarity = math.max(1, ChaosRarity.canon(maxRarity)) -- a stored id; compared by place below
 	local out = {picked = {}, shards = 0, orbs = 0, capped = false, skipped = {}, count = 0, maxRarity = maxRarity}
 	for i, info in ipairs(entries) do
 		local why
@@ -182,7 +187,7 @@ function K.batch(entries, maxRarity, cfg)
 		else
 			why = K.check(info, cfg)
 		end
-		if not why and (info.rarity or 0) > maxRarity then
+		if not why and ChaosRarity.rank(info.rarity) > ChaosRarity.rank(maxRarity) then
 			why = "above"
 		end
 		if why == nil then

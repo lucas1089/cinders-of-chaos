@@ -320,8 +320,9 @@ function M.validate()
 					if next(node.fx) == nil then
 						problems[#problems + 1] = where .. " gives nothing"
 					end
-					if next(node.cost) == nil then
-						problems[#problems + 1] = where .. " has no trade-off"
+					-- owner decision: ascension nodes carry no downside; a cost would be a balance regression
+					if next(node.cost) ~= nil then
+						problems[#problems + 1] = where .. " has a downside (ascension nodes have none)"
 					end
 					for _, part in ipairs({{node.fx, false}, {node.cost, true}}) do
 						for key, v in pairs(part[1]) do

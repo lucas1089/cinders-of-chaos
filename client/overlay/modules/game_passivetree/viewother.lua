@@ -4,7 +4,7 @@
 -- of the own one: the other class's section and keystone variants, the chosen mastery effects in the tooltips, its
 -- bonuses in "Info & Bonuses". Nothing can be planned, applied or refunded; the editing buttons are off and a banner
 -- names the character. "Back to my tree", Close or the top menu button show the own tree again.
-local EDIT_BUTTONS = {'applyPoints', 'resetPresetButton', 'paragonButton', 'buildShareButton', 'trialsButton'}
+local EDIT_BUTTONS = {'applyPoints', 'resetPresetButton', 'paragonButton', 'buildShareButton', 'autoBuildButton', 'trialsButton'}
 
 local function child(id)
   local window = getTreeWindow()
@@ -33,6 +33,9 @@ function showOtherTree(data)
   closeTrials()
   if closeBuildShare then
     closeBuildShare()
+  end
+  if closeAutoBuild then
+    closeAutoBuild()
   end
   plannerReset()
   setEditing(false)

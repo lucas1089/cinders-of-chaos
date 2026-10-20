@@ -14,7 +14,9 @@
 --              on the north / west wall, the fixture tiles free, a path to every fixture, and the limits.
 --   utilities  the owner's depot of their home town (a locker; its depot id is set with engine patch 0017's
 --              item:unserializeAttributes, else the locker refuses and says to use a town depot), the supply stash,
---              two exercise dummies. No buffs, nothing that changes a fight.
+--              two exercise dummies, the base server's waystone device in the middle of the room (its portal pads on
+--              the four diagonal tiles; patch_waystone_hideout.py lets the base action accept the own hideout).
+--              No buffs, nothing that changes a fight.
 --   access     permission private / friends (VIP list, party) / guild / public; season and standard characters never
 --              mix while a season runs; staff (group cfg.staffGroup+) may enter any. A visitor who loses access (the
 --              owner changed it) is sent out at once. No player may attack another inside; items dropped inside go
@@ -29,7 +31,8 @@
 --                     remove {id} | clear | theme {key} | perm {level} | kick | visits | like {owner}
 --   server -> client  state {open, me, hideout, inside, layout, themes, catalogue, placed, permissions, categories}
 --                     visits {friends, showcase = {likes, visits}, recent}   result {ok, text}
--- API: ChaosHideout.isInside(pos), .enter(player, ownerGuid), .leave(player), .storeUnlock(name),
+-- API: ChaosHideout.isInside(pos), .isOwnRoomTile(player, pos), .isFixture(item), .enter(player, ownerGuid), .leave(player),
+--      .storeUnlock(name),
 --      .sourceProbes.journey = fn(player) -> chapters done (the season journey sets it; else probed by name)
 -- Staff: /hideout <character> (enter that character's hideout)
 -- Lua 5.1 / LuaJIT compatible.
@@ -540,6 +543,11 @@ function M.furnish(slot, owner)
 	for _, p in ipairs(f.lights) do
 		fixtureItem(at(p), theme.light, A.fixture)
 	end
+	if f.waystone and cfg.ids.waystone then
+		-- the base server's waystone device: its own action id (the base action opens the waystone window) and
+		-- the hideout accepts it through ChaosHideout.isOwnRoomTile (patch_waystone_hideout.py)
+		fixtureItem(at(f.waystone), cfg.ids.waystone, A.waystone, "The waystone device of your hideout. Use it to open the waystone window.")
+	end
 	for _, p in ipairs(d.decor) do
 		placeItems(slot, room, p)
 	end
@@ -822,6 +830,25 @@ local function recheckVisitors(slot)
 end
 
 -- ---------------------------------------------------------------- the window
+-- true when pos is a tile of the hideout that `player` owns (the base waystone device asks this instead of "is it a
+-- house", server/tools/patch_waystone_hideout.py)
+function M.isOwnRoomTile(player, pos)
+	if not player or not pos then
+		return false
+	end
+	local _, room = M.roomAt(pos)
+	return room ~= nil and room.owner == player:getGuid()
+end
+
+-- true when `item` is the waystone device built into a hideout (it is never wrapped or moved)
+function M.isFixture(item)
+	if not item or not item.getActionId or item:getActionId() ~= A.waystone then
+		return false
+	end
+	local _, room = M.roomAt(item:getPosition())
+	return room ~= nil
+end
+
 local function inOwnRoom(player)
 	local slot, room = M.roomAt(player:getPosition())
 	if room and room.owner == player:getGuid() then
@@ -1289,7 +1316,8 @@ moved.onItemMoved = function(player, item, count, fromPosition, toPosition, from
 		return
 	end
 	local aid = item:getActionId()
-	if aid == A.decor or aid == A.fixture or aid == A.depot or aid == A.stash or aid == A.exit then
+	if aid == A.decor or aid == A.fixture or aid == A.depot or aid == A.stash or aid == A.exit or
+		(aid == A.waystone and M.isFixture(item)) then
 		if fromPosition and K.fromWorld(cfg, fromPosition) and fromPosition.x ~= (CONTAINER_POSITION or 0xFFFF) then
 			item:moveTo(fromPosition)
 		end

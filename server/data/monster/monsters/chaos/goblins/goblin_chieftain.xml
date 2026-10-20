@@ -46,16 +46,12 @@
 	<loot>
 		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
 		<item id="2152" countmax="4" chance="40000" /><!-- platinum coin -->
-		<item id="36011" countmax="2" chance="18000" /><!-- goblin skull -->
-		<item id="36016" countmax="1" chance="8000" /><!-- tribal feather -->
-		<item id="36012" countmax="1" chance="8000" /><!-- piece of scrap metal -->
 		<item id="36060" countmax="2" chance="12000" /><!-- hunter's platter -->
 		<item id="36041" countmax="2" chance="12000" /><!-- honey cake -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
 		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->
 		<item id="7588" chance="4000" /><!-- strong health potion -->
 		<item id="7589" chance="4000" /><!-- strong mana potion -->
-		<item id="2389" chance="4000" /><!-- spear -->
 		<item id="2406" chance="3000" /><!-- short sword -->
 		<item id="2511" chance="1500" /><!-- brass shield -->
 		<item id="2473" chance="1000" /><!-- viking helmet -->

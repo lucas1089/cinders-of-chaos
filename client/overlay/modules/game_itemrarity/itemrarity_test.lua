@@ -27,7 +27,20 @@ eq(getItemRarityId(item({ [1] = 5 })), 5, 'rarity from the attribute')
 eq(getRarityName(5), 'Legendary', 'name')
 eq(getItemRarityId(item({}, 'a [MYTHIC] sword')), 0, 'with attributes the description tag is not read')
 eq(getItemRarityId(item({ [1] = 99 })), 0, 'unknown rarity')
-eq(getItemFrameColor(item({ [1] = 3 })), '#4a90ff', 'rare frame')
+eq(getItemFrameColor(item({ [1] = 3 })), '#4a90ff', 'magic frame')
+-- the seven rarities: Common 1, Uncommon 2, Magic 3, Rare 4, Legendary 5, Divine 10; an old item's 6 .. 9 and 11 .. 15 are the rarity they became
+local names = { 'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary', 'Divine' }
+local ids = getRarityIds()
+eq(#ids, 6, 'six rarities an item can carry')
+for i, id in ipairs(ids) do eq(getRarityName(id), names[i], 'name of ' .. id) end
+eq(getRarityName(3), 'Magic', 'id 3 is Magic') eq(getRarityName(4), 'Rare', 'id 4 is Rare')
+for old, want in pairs({ [6] = 5, [7] = 5, [8] = 5, [9] = 5, [11] = 10, [12] = 10, [13] = 10, [14] = 10, [15] = 10 }) do
+  eq(getRarityCanonId(old), want, 'old id ' .. old)
+  eq(getItemRarityId(item({ [1] = old })), want, 'an item with the old id ' .. old)
+  eq(getRarityColor(old), getRarityColor(want), 'its colour is the rarity it became')
+end
+eq(getRarityCanonId(0), 0) eq(getRarityCanonId(16), 0, 'Unique is the flag, not an id')
+eq(getRarityStyle(7), nil, 'an old Mythic has no metal look any more') eq(getRarityStyle(10) ~= nil, true, 'Divine keeps it') eq(getRarityStyle(13) ~= nil, true, 'an old Cosmic is Divine')
 eq(getItemFrameColor(item({ [1] = 3, [4] = 1 })), getUniqueColor(), 'unique frame wins')
 eq(isUniqueItem(item({ [4] = 1 })), true, 'unique flag')
 eq(getItemFrameColor(item({})), nil, 'plain item: no frame')
@@ -36,7 +49,8 @@ eq(getItemAttribute({}, 1), 0, 'an item without the method (old engine)')
 
 -- a server without the patch: the description tag
 features[126] = nil
-eq(getItemRarityId(item({}, '[EPIC] Dawnforged Helmet')), 4, 'tag fallback')
+eq(getItemRarityId(item({}, '[EPIC] Dawnforged Helmet')), 4, 'tag fallback (an old name)')
+eq(getItemRarityId(item({}, '[MAGIC] ring')), 3, 'tag of today') eq(getItemRarityId(item({}, '[MYTHIC] ring')), 5, 'an old name maps')
 eq(getItemRarityId(item({}, '[DIVINE] [X] ring')), 10, 'older tag name')
 eq(getItemRarityId(item({}, '[FOO] ring')), 0, 'other tags ignored')
 eq(getItemRarityId(nil), 0, 'nil item')
@@ -45,11 +59,11 @@ eq(getItemRarityId(nil), 0, 'nil item')
 eq(select(1, rarityHexToRgb('#4a90ff')), 74, 'hex red') eq(select(3, rarityHexToRgb('#4a90ff')), 255, 'hex blue')
 eq(rarityHexToRgb('blue'), nil, 'not a colour') eq(rarityHexToRgb(nil), nil, 'nil colour')
 local plan = getRarityOutlinePlan()
-eq(#plan.colors, 16, '15 rarities and the unique colour')
-eq(plan.colors[3][1], 3, 'rare slot') eq(plan.colors[3][2], 74, 'rare red') eq(plan.colors[3][4], 255, 'rare blue')
+eq(#plan.colors, 16, '15 ids (the old ones are rows too) and the unique colour')
+eq(plan.colors[3][1], 3, 'magic slot') eq(plan.colors[3][2], 74, 'rare red') eq(plan.colors[3][4], 255, 'rare blue')
 eq(plan.colors[16][1], 16, 'unique slot (the engine reads 16 as unique)')
 eq(string.format('#%02x%02x%02x', plan.colors[16][2], plan.colors[16][3], plan.colors[16][4]), getUniqueColor(), 'unique colour')
-eq(plan.minRarity, 2, 'common items get no outline') eq(plan.pulseFrom, 7, 'mythic and up breathe')
+eq(plan.minRarity, 2, 'common items get no outline') eq(plan.pulseFrom, 5, 'legendary and up breathe')
 eq(plan.width >= 1 and plan.width <= 4, true, 'reach the engine accepts')
 for _, c in ipairs(plan.colors) do
   eq(c[5] > 0 and c[5] <= 255, true, 'alpha of slot ' .. c[1])

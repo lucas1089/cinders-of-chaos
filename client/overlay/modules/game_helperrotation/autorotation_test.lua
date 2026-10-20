@@ -11,7 +11,7 @@ end
 local function ok(c, what) eq(not not c, true, what) end
 
 -- every class of docs/CLASSES.md has presets; at the level bands every preset has at most 5 spells and from level 15
--- up never 2 s without one (the generator's own check, tools/rotation_sim_test.py, runs the full simulation)
+-- (the 2 s rule was removed on 2026-10-17; the generator's own checks are in tools/rotation_sim_test.py)
 local classes = 0
 for vocId, c in pairs(D.classes) do
   classes = classes + 1
@@ -31,17 +31,12 @@ for vocId, c in pairs(D.classes) do
       -- the Lua gap check agrees with the generator's simulation
       eq(A.gap(p.spells), p.gap, c.name .. ' ' .. p.level .. ': Lua gap = generated gap')
     end
-    -- from level 15 up never 2 s without a cast (below 15 exempt)
-    if p.level >= 15 then
-      ok(p.gap <= A.GAP_LIMIT, c.name .. ' ' .. p.level .. ': gap ' .. p.gap .. ' <= 2.0 s')
-    end
   end
   for _, band in ipairs({ 30, 60, 100, 300, 600, 1000 }) do
     local p = A.presetFor(vocId, band)
     ok(p, c.name .. ' has a preset at ' .. band)
     if p then
       ok(#p.spells <= 5, c.name .. ' ' .. band .. ': at most 5')
-      ok(p.gap <= A.GAP_LIMIT, c.name .. ' ' .. band .. ': gap ' .. p.gap .. ' <= 2.0 s')
     end
   end
 end
@@ -85,8 +80,10 @@ for _, id in ipairs(sel2.ids) do
 end
 ok(#sel2.ids <= 5 and #sel2.ids >= #p300.spells - 1, 'filled up to 5')
 eq(sel2.gap, A.gap(sel2.ids), 'gap simulated again')
+-- the monster count of a changed set is the preset's own (an area spell waits for 2, the rest for 1)
+eq(#sel2.creatures, #sel2.ids, 'one monster count per spell')
 for _, n in ipairs(sel2.creatures) do
-  eq(n, 1, 'a changed set waits for no crowd')
+  ok(n == 1 or n == 2, 'a monster count of 1 or 2')
 end
 -- below the first preset, an unknown class
 eq(A.select(4, 1), nil, 'level 1 Warrior: nothing yet')
@@ -236,6 +233,28 @@ eq(A.autoBoxLabel(150, W), 'short', 'narrower: the short label')
 eq(A.autoBoxLabel(40, W), 'none', 'the box alone')
 eq(A.autoBoxLabel(10, W), 'hidden', 'no room at all: hidden, never over another widget')
 eq(A.autoBoxLabel(nil, W), 'hidden', 'no measure yet')
+
+-- a class change: rules and heals of spells the new class lacks go (base: the Vocation Change kept them)
+do
+  local classOk = function(id) return id == 10 or id == 11 end
+  local rules = {
+    { type = 'spell', spellId = 10, name = 'A' }, { type = 'spell', spellId = 99, name = 'old class' },
+    { type = 'item', itemId = 3160, spellId = 0 }, { type = 'spell', spellId = 11, name = 'B' },
+    { type = 'spell', spellId = 98, name = 'old class 2' },
+  }
+  local out, dropped = A.dropForeignRules(rules, classOk)
+  eq(dropped, 2, 'two old-class rules dropped')
+  eq(#out, 3, 'the rest stays')
+  eq(out[1].spellId .. ',' .. out[2].type .. ',' .. out[3].spellId, '10,item,11', 'order and item rules kept')
+  eq(#rules, 5, 'the source list is not changed')
+  local _, none = A.dropForeignRules(out, classOk)
+  eq(none, 0, 'a second pass drops nothing')
+  eq(#A.dropForeignRules(nil, classOk), 0, 'no rules')
+  local slots = { { id = 10, percent = 45 }, { id = 99, percent = 65 }, { id = 0, percent = 85 } }
+  eq(A.dropForeignHeals(slots, classOk), 1, 'one heal slot emptied')
+  eq(slots[1].id .. ',' .. slots[2].id .. ',' .. slots[2].percent, '10,0,65', 'the slot is emptied, its percent kept')
+  eq(A.dropForeignHeals(slots, classOk), 0, 'idempotent')
+end
 
 if fails > 0 then
   error(fails .. ' failure(s)')

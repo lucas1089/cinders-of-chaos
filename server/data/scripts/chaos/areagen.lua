@@ -17,6 +17,10 @@
 -- Creature:setMaxHealth/setHealth/getMonsterLevel/getTarget/teleportTo, Game.getSpectators, MoveEvent stepin by aid,
 -- CreatureEvent death/healthchange/manachange/login, EventCallback onGainExperience, GlobalEvent startup/think.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -341,7 +345,6 @@ function AG.giveChest(entry, player, difficulty, rand)
 	if level and M.config and M.config.itemLevel then
 		level = math.min(M.config.itemLevel.max, level + c.itemLevel)
 	end
-	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
 	for _ = 1, (total > 0 and c.pieces or 0) do
 		local roll, pick = rand(1, total), rows[#rows]
 		for _, e in ipairs(rows) do
@@ -356,7 +359,7 @@ function AG.giveChest(entry, player, difficulty, rand)
 			or Game.createItem(pick.itemId, 1)
 		if item then
 			inbox = giveEx(player, item) or inbox
-			found[#found + 1] = "[" .. (names and names[rarity] or rarity) .. "] " .. itemName(pick.itemId)
+			found[#found + 1] = "[" .. (ChaosRarity.name(rarity) or rarity) .. "] " .. itemName(pick.itemId)
 		end
 	end
 	if L and L.rollCurrency then

@@ -22,17 +22,19 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    two-handed swords, axes and clubs, and never to shields. The Beastmaster fights with a bow: on weapons, hand items
    and ammunition it is only added to bows and arrows. Spells and every other piece of equipment get both.
    An ascended class gets showInDescription="0" when its base class is in the same list (items then read "warriors").
-3. The Thief line may wield what it is built for. Weapon entries that list vocations get Thief, Ninja and Samurai when
-   the item is a one-handed sword (daggers and light swords; items.xml weaponType "sword", not two-handed) or a throwing
-   weapon (weaponType "distance" without ammoType: throwing stars, assassin stars, knives, spears). Equip events that
-   list vocations get the three when the slot is not a hand and the Ranger may wear it, or the slot is a hand and the
-   item is a one-handed sword or a throwing weapon. A list that names "Thief" already is left as it is.
-   The Monk line (Monk, Shadowfist, Iron Sage) fights unarmed or with a staff: weapon entries of two-handed clubs get
-   the three; equip events get them when the slot is not a hand and the Ranger may wear it (light armour), or the slot
-   is a hand and the item is a two-handed club, or the item is a fist weapon (items.xml weaponType "shield" with an
-   attack: no stock shield has one; the fist weapons and their Monk-only equip entries come from install_fist_weapons.py).
-   The Templar line (Templar, Inquisitor, Sentinel) gets one-handed swords and clubs, and every non-hand equip entry
-   (shields too) that the Warrior may wear.
+3. MELEE ITEMS SERVE EVERY MELEE CLASS (owner debug item 46, 2026-10-17: "Itens de melee servem a todas as classes de
+   melee"; server/README.md "One melee skill"). A weapon entry that lists vocations and is a sword, axe or club of any
+   size (items.xml weaponType; one- or two-handed) gets the Thief line (Thief, Ninja, Samurai), the Monk line (Monk,
+   Shadowfist, Iron Sage) and the Templar line (Templar, Inquisitor, Sentinel), on top of the Warrior line the Knight's
+   list converts to. So do the equip events of the hand slot for those items. The Berserker stays two-handed only (the
+   conversion above). The Thief line also gets throwing weapons (weaponType "distance" without ammoType: throwing stars,
+   assassin stars, knives, spears). Equip events that list vocations get the Thief line when the slot is not a hand and
+   the Ranger may wear it, or the slot is a hand and the item is a melee weapon or a throwing weapon. A list that names
+   "Thief" already is left as it is. The Monk line also wears the fist weapons (items.xml weaponType "shield" with an
+   attack: no stock shield has one; the fist weapons and their Monk-only equip entries come from install_fist_weapons.py)
+   and, for the other slots, what the Ranger may wear (light armour). The Templar line also gets every non-hand equip
+   entry (shields too) that the Warrior may wear. (Before: the Thief line one-handed swords, the Monk line two-handed
+   clubs, the Templar line one-handed swords and clubs.)
    The Necromancer line (Necromancer, Lich, Bone Lord) wields and wears what the Mystic does: every <wand> and every
    equip event whose list names a caster (Mystic, Elementalist, Illusionist). The stock healing and support instants
    of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
@@ -50,6 +52,7 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    (also on an install of the former rule) changes nothing. Each refusal text is rebuilt from its list with our class
    names ("Only Warriors and Templars of level 80 or above may drink this fluid."; a line by its base class when all
    three are in the list; "Only characters of level 50 or above ..." when every class is).
+   data/spells/spells.xml: every rune gets level="1" (no level requirement, owner 2026-10-17; the magic level stays).
    data/actions/scripts/other/strengthening_potions.lua: the mastermind potion asks Player.isMage (Sorcerer and Druid
    ids only); it gets the stock mastermind list plus the Necromancer line (Mystic, Elementalist, Illusionist,
    Necromancer, Lich, Bone Lord) and the text "Only Mystics and Necromancers may drink this fluid.".
@@ -80,7 +83,7 @@ CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer
 NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
 NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/')
 # the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
-# the first nine): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
+# the first six; the cure spells were retired, retire_cure_spells.py): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
 # the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
 THIEF_MONK_TEMPLAR = (LINE, MONK_LINE, TEMPLAR_LINE)
 LINE_STOCK_SPELLS = [
@@ -90,12 +93,7 @@ LINE_STOCK_SPELLS = [
     ('support/find_person.lua', 'exiva', THIEF_MONK_TEMPLAR),
     ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),
     ('support/magic_rope.lua', 'exani tera', THIEF_MONK_TEMPLAR),
-    ('healing/cure_poison.lua', 'exana pox', THIEF_MONK_TEMPLAR),
-    ('healing/cure_splashed.lua', 'exana splash', THIEF_MONK_TEMPLAR),
-    ('healing/cure_bewitched.lua', 'exana arcane', THIEF_MONK_TEMPLAR),
     ('support/strong_haste.lua', 'utani gran hur', (LINE, MONK_LINE)),       # the mobile lines
-    ('healing/cure_bleeding.lua', 'exana kor', (MONK_LINE, TEMPLAR_LINE)),   # melee lines, as the Warrior
-    ('healing/cure_curse.lua', 'exana mort', (TEMPLAR_LINE,)),               # the holy line, as the Ranger
 ]
 
 # old name -> new names; 'B' / 'BM' mark the Berserker / Beastmaster, added only where the item allows it
@@ -178,6 +176,8 @@ def item_info(items_xml):
         ammo = re.search(r'key="ammoType"\s+value="([^"]+)"', body, re.I)
         ammo = ammo.group(1).lower() if ammo else None
         flags = set()
+        if wt in ('sword', 'axe', 'club'):
+            flags.add('melee')           # any sword, axe or club: every melee class may wield it
         if wt == 'sword' and not two:
             flags.add('sword1h')
         if wt == 'club' and not two:
@@ -331,15 +331,15 @@ def names_in(element):
 
 
 def thief_ok(fl):
-    return 'sword1h' in fl or 'throwing' in fl
+    return 'melee' in fl or 'throwing' in fl
 
 
 def monk_ok(fl):
-    return 'staff' in fl or 'fist' in fl
+    return 'melee' in fl or 'fist' in fl
 
 
 def templar_ok(fl):
-    return 'sword1h' in fl or 'club1h' in fl
+    return 'melee' in fl
 
 
 def caster_list(element):
@@ -539,6 +539,64 @@ def patch_potions(text, names=None):
     return ''.join(parts), count[0]
 
 
+# spells.xml: the runes have no level requirement (owner 2026-10-17: "remover o level requirement das runas"); the
+# magic level of a rune stays. level="1" is what the engine reads as "none".
+RUNE_ELEMENT = re.compile(r'<rune\b[^>]*>')
+RUNE_LEVEL = re.compile(r'(\blevel=")(\d+)(")')
+
+
+def patch_rune_levels(spells_text):
+    """every <rune ...> of spells.xml gets level="1"; returns (new text, number of runes changed); a re-run changes nothing"""
+    count = [0]
+
+    def one(m):
+        tag = m.group(0)
+
+        def level(l):
+            if l.group(2) == '1':
+                return l.group(0)
+            count[0] += 1
+            return l.group(1) + '1' + l.group(3)
+        return RUNE_LEVEL.sub(level, tag, count=1)
+    return RUNE_ELEMENT.sub(one, spells_text), count[0]
+
+
+# items.xml: the Look text of a potion ("This potion can only be consumed by knights of level 80 or higher.") names the stock
+# classes. It gets the classes of the potion's refusal text in potions.lua (patch_potions), so both say the same.
+ITEM_POTION_TEXT = re.compile(r'(value=")This potion can only be consumed by [^"]*?( of level \d+ or higher)?\.(")')
+POTION_REFUSAL = re.compile(r'description\s*=\s*"(?:Only (.*?)|Anyone)( of level (\d+) or above)? may drink this (?:fluid|potion)\.')
+
+
+def patch_item_potion_texts(items_text, potions_text):
+    """the Look text of every potion of potions.lua that items.xml describes as "can only be consumed by": the classes of
+    its refusal text. Returns (new items.xml text, number of items changed); a re-run changes nothing"""
+    new_text = {}
+    parts = POTION_ENTRY.split(potions_text)
+    for i in range(1, len(parts) - 1, 2):
+        item_id = re.search(r'\[(\d+)\]', parts[i]).group(1)
+        m = POTION_REFUSAL.search(parts[i + 1])
+        if not m or not m.group(1):
+            continue
+        level = int(m.group(3)) if m.group(3) else 0
+        new_text[item_id] = 'This potion can only be consumed by %s%s.' % (
+            m.group(1), (' of level %d or higher' % level) if level else '')
+    count = [0]
+
+    def item_block(m):
+        item_id = re.search(r'id="(\d+)"', m.group(0))
+        if not item_id or item_id.group(1) not in new_text:
+            return m.group(0)
+        sentence = new_text[item_id.group(1)]
+        block = re.sub(r'(value=")This potion can only be consumed by [^"]*(")',
+                       lambda t: t.group(1) + sentence + t.group(2), m.group(0), count=1)
+        if block != m.group(0):
+            count[0] += 1
+        return block
+    # an item with a body: not a self-closing <item ... /> (that one would swallow the next item)
+    out = re.sub(r'<item\s[^>]*\bid="\d+"[^>]*[^/>]>(?:(?!<item\s).)*?</item>', item_block, items_text, flags=re.S)
+    return out, count[0]
+
+
 # strengthening_potions.lua: the mastermind potion (7440) asks Player.isMage, which knows the Sorcerer and the Druid
 # ids only (1, 2, 5, 6): the Illusionist (10) and the Necromancer line were refused. The stock mastermind list of
 # potions.lua with the Necromancer line instead, and our class names in the text.
@@ -600,6 +658,7 @@ def main():
     moves, cm = patch_movements(moves, info)
     spells, nsn = patch_spells_necro(spells)
     spells, nsl = patch_spells_lines(spells)
+    spells, nrl = patch_rune_levels(spells)
     nw, nm = sum(cw.values()), sum(cm.values())
     ns += nsn + nsl
 
@@ -609,11 +668,12 @@ def main():
     print('spells.xml: %d vocation lists converted, %d stock healing / support spells get the Necromancer line'
           % (ns - nsn - nsl, nsn))
     print('spells.xml: %d stock utility spells get the Thief / Monk / Templar lines' % nsl)
+    print('spells.xml: %d runes lose their level requirement' % nrl)
     print('weapons.xml: %d vocation lists converted; weapon entries: %s' % (nwc, per_line(cw)))
     print('movements.xml: %d vocation lists converted; equip entries: %s' % (nmc, per_line(cm)))
     if status == 'patched':
         changes[paths['voc']] = voc
-    if ns or CONVERTED in spells and CONVERTED not in read(paths['spells']):
+    if ns or nrl or CONVERTED in spells and CONVERTED not in read(paths['spells']):
         changes[paths['spells']] = spells
     if nwc or nw or (CONVERTED in weapons and CONVERTED not in read(paths['weapons'])):
         changes[paths['weapons']] = weapons
@@ -632,6 +692,14 @@ def main():
                 changes[p] = new
         else:
             print('%s: not found, skipped' % '/'.join(rel))
+    # the Look text of the potions in items.xml names the same classes as the refusal text of potions.lua
+    pot = os.path.join(data, 'actions', 'scripts', 'other', 'potions.lua')
+    if os.path.exists(pot):
+        items_now = changes.get(paths['items'], read(paths['items']))
+        items_new, nit = patch_item_potion_texts(items_now, changes.get(pot, read(pot)))
+        print('items.xml: %d potion descriptions name the new classes' % nit)
+        if nit:
+            changes[paths['items']] = items_new
     if dry:
         print('dry run: nothing written')
         return

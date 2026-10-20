@@ -310,6 +310,26 @@ local CONDITION_TEXT = {
 	PACIFIED = "Prevents the target from attacking."
 }
 
+-- CONDITION_PARAM_ names of an ATTRIBUTES condition and what they raise (prefix match, first listed wins its word)
+Book.STAT_PARAMS = {
+	{"STAT_MAGICPOINTS", "magic level"}, {"SKILL_MELEE", "melee skills"}, {"SKILL_FIST", "melee skills"},
+	{"SKILL_CLUB", "melee skills"}, {"SKILL_SWORD", "melee skills"}, {"SKILL_AXE", "melee skills"},
+	{"SKILL_DISTANCE", "distance skill"}, {"SKILL_SHIELD", "shielding"}, {"STAT_MAXHITPOINTS", "maximum health"},
+	{"STAT_MAXMANAPOINTS", "maximum mana"}
+}
+
+-- spells whose scripts show no condition or healing the description could be built from, by script file name
+Book.FALLBACK_TEXT = {
+	["levitate.lua"] = "Lets you move up or down one floor in the direction you face.",
+	["find_person.lua"] = "Shows the direction and distance of a player you name.",
+	["magic_rope.lua"] = "Takes you up to the floor above from a rope spot.",
+	["challenge.lua"] = "Makes the monsters around you target you.",
+	["chivalrous_challenge.lua"] = "Makes the monster you target attack you.",
+	["cancel_invisibility.lua"] = "Reveals invisible creatures around you.",
+	["creature_illusion.lua"] = "Gives you the look of a creature.",
+	["recovery.lua"] = "Heals you over time."
+}
+
 -- names of the conditions a spell can remove
 local CURE_NAME = {
 	POISON = "poison", FIRE = "burning", ENERGY = "electrification", PARALYZE = "paralysis", CURSED = "curse",
@@ -427,6 +447,28 @@ function Book.analyzeScript(src)
 	end
 	info.dispels = #info.cures > 0
 	info.hasCondition = #info.grants > 0
+	-- how long a granted condition lasts: the first literal CONDITION_PARAM_TICKS / setTicks of the script (a plain number
+	-- or a product such as 6 * 60 * 1000); a value that comes from a config table is not read
+	local ticks = code:match("CONDITION_PARAM_TICKS%s*,%s*([%d%s%*]-)%s*%)") or code:match("setTicks%s*%(%s*([%d%s%*]-)%s*%)")
+	if ticks and ticks:match("^%d[%d%s%*]*$") and not ticks:match("%*%s*$") then
+		local value = 1
+		for factor in ticks:gmatch("%d+") do
+			value = value * tonumber(factor)
+		end
+		if value >= 1000 then
+			info.durationMs = value
+		end
+	end
+	-- the stats an ATTRIBUTES condition raises
+	info.stats = {}
+	local statSeen = {}
+	for _, row in ipairs(Book.STAT_PARAMS) do
+		if code:find("CONDITION_PARAM_" .. row[1]) and not statSeen[row[2]] then
+			statSeen[row[2]] = true
+			info.stats[#info.stats + 1] = row[2]
+		end
+	end
+	info.party = code:find("getParty%s*%(") ~= nil
 	info.createsField = code:find("COMBAT_PARAM_CREATEITEM", 1, true) ~= nil
 	return info
 end
@@ -496,6 +538,18 @@ local function areaShape(area)
 	return (#area[1] == 1) and "beam" or "wave"
 end
 
+-- "33 s", "6 min" from a duration in ms
+local function durationText(ms)
+	if not ms or ms <= 0 then
+		return nil
+	end
+	local sec = ms / 1000
+	if sec >= 120 and sec % 60 == 0 then
+		return string.format("%d min", sec / 60)
+	end
+	return (sec == math.floor(sec) and string.format("%d s", sec)) or string.format("%.1f s", sec)
+end
+
 -- short generated description of a stock spell
 function Book.describe(spell, info, conjureName)
 	local kind, target = spell.type, spell.target
@@ -546,10 +600,24 @@ function Book.describe(spell, info, conjureName)
 		end
 		return text .. "."
 	elseif kind == "buff" or kind == "utility" then
+		local lasts = durationText(info.durationMs)
 		for _, cond in ipairs(info.grants or {}) do
 			if CONDITION_TEXT[cond] and not (cond == "PARALYZE" and target == "self") then
-				return CONDITION_TEXT[cond]
+				local text = CONDITION_TEXT[cond]
+				if cond == "ATTRIBUTES" and #(info.stats or {}) > 0 then
+					text = string.format("Raises %s of %s.", joinList(info.stats), info.party and "you and your party members" or "you")
+				elseif info.party and cond == "HASTE" then
+					text = "Increases the speed of you and your party members."
+				end
+				if lasts then
+					text = (text:gsub("%.$", "")) .. " for " .. lasts .. "."
+				end
+				return text
 			end
+		end
+		local fallback = Book.FALLBACK_TEXT[(info.scriptFile or ""):match("([^/]+)$") or ""]
+		if fallback then
+			return fallback
 		end
 		if #(info.cures or {}) > 0 then
 			if info.cures[1] == "invisibility" then
@@ -665,6 +733,7 @@ function Book.buildSpell(entry, scriptCache)
 	end
 	info.damage = info.damage or {}
 	info.elements = info.elements or {}
+	info.scriptFile = script
 
 	local spell = {
 		name = a.name,
@@ -911,6 +980,17 @@ end
 
 function Book.sendTo(player, have)
 	return Book.sendList(player, have)
+end
+
+-- A class change (class_spells.lua): the Spellbook window of that client learns the new vocation, level and learned
+-- spells at once. The list itself does not depend on the character (the client filters it), so the client keeps its
+-- cached list (header only, no throttle). Nothing is sent to a client that never opened the Spellbook.
+function Book.refresh(player)
+	if not player or not Book.clients[player:getId()] then
+		return false
+	end
+	local packed = packedFor(player)
+	return Book.sendList(player, packed and packed.sig)
 end
 
 -- The stock spellbook text, for a client without the Spellbook window: "Spells for Level n" and "words - name : mana".

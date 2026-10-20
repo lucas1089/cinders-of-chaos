@@ -23,7 +23,7 @@ ChaosPotionsConfig = {
 	-- the potion exhaust: CONDITION_EXHAUST_HEAL for the action interval - 100 ms; only the Everfull potions add it,
 	-- stock potions are paced by the potion cooldown channel (patch 0042); exhaustMs is used when the engine's config
 	-- cannot be read
-	exhaustMs = 900,
+	exhaustMs = 500,
 	sound = "Aaaah...",
 
 	-- the old empty flasks (strong, great and small/"empty potion flask"): no potion makes them any more and no NPC

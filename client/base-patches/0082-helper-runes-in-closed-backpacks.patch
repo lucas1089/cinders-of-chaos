@@ -1,0 +1,59 @@
+# Chaos: the helper uses runes in closed backpacks (Lua only; after 0001-0081). Owner, 2026-10-20: "o helper nao esta usando runas".
+# LocalPlayer:getInventoryCount counts only the equipped items and the OPEN containers on this 10.98 server (client
+# localplayer.cpp; the same fact as base patch 0070 for potions). The magic shooter used a rune only with a count above
+# 0 (classes/magic_shooter.lua) and Auto UH only through hasItemInBackpack (the same count), so a rune in a closed
+# backpack, where every rune sits, was never used: the shooter went on with its spells, or did nothing with only runes
+# set. ChaosPotionGate (overlay game_helperrotation/potiongate.lua, tested) now also gates runes: a rune the client
+# cannot count is used as a probe every 3 s (the server finds it by id in any carried container); the answer "Sorry,
+# not possible." (none carried) backs it off 30 s; a counted rune is used as before. Without the module the old check
+# runs. Tests: overlay game_helperrotation/potiongate_test.lua.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -4593,10 +4593,14 @@
+   helperConfig.magicShooterOnHold = true
+ 
+   local casted = false
+-  if hasItemInBackpack(runeId) then
++  -- Chaos (base-patch 0082): a healing rune in a closed backpack is not counted; ChaosPotionGate allows a probe
++  local runeGate = ChaosPotionGate
++  local runeSeen = hasItemInBackpack(runeId)
++  if runeSeen or (runeGate and runeGate.canUse and runeGate.canUse(runeId, 0, g_clock.millis())) then
+     safeDoThing(false)
+     g_game.useInventoryItemWith(runeId, target, 0, true)
+     safeDoThing(true)
++    if runeGate and runeGate.noteUse then runeGate.noteUse(runeId, runeSeen and 1 or 0, g_clock.millis()) end
+     markObjectUse("healRune", g_clock.millis(), potionConfig.exhaustion)
+     lastObjectUseWasRune = true
+     casted = true
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -922,9 +922,20 @@
+       end
+ 
+       -- Usar getInventoryCount que funciona com containers fechados (igual potions)
++      -- Chaos (base-patch 0082): on this server the count sees only equipped items and open containers, so a rune in
++      -- a closed backpack was never used; ChaosPotionGate also allows a probe (the server's use by id finds the rune
++      -- in any carried container) and backs off when the server answers that there is none
+       local runeCount = myCharacter:getInventoryCount(config.id, 0)
++      local runeGate = ChaosPotionGate
++      local runeNow = g_clock.millis()
++      local runeAvailable
++      if runeGate and runeGate.canUse then
++        runeAvailable = runeGate.canUse(config.id, runeCount, runeNow)
++      else
++        runeAvailable = runeCount and runeCount > 0
++      end
+ 
+-      if runeCount and runeCount > 0 then
++      if runeAvailable then
+         local bestTarget = nil
+         local maxCreaturesHit = 0
+         if runeSpell.area then
+@@ -992,6 +1003,7 @@
+           if _Helper.safeDoThing then _Helper.safeDoThing(false) end
+           g_game.useInventoryItemWith(config.id, bestTarget, 0, true)
+           if _Helper.safeDoThing then _Helper.safeDoThing(true) end
++          if runeGate and runeGate.noteUse then runeGate.noteUse(config.id, runeCount, runeNow) end
+           if rotation then
+             ChaosHelperRotation.cast(rotation, runeSpell.id, runeSpell.group, castAt)
+           end

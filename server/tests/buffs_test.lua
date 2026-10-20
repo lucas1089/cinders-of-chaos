@@ -155,6 +155,38 @@ local templar = readFile("data/scripts/chaos/templar_aura_core.lua")
 ok(templar and templar:find("zealotry = 71051", 1, true) and templar:find("aegis = 71052", 1, true), "templar sub ids")
 eq(B.byKey.zealotry.cond.sub, 71051, "zealotry"); eq(B.byKey.aegis_faith.cond.sub, 71052, "aegis")
 
+-- support spells with a duration: every sub id of ChaosSpell.SUBID has a row (the summon / decoy timers, 71070 / 71071,
+-- included), and the two spells set their timer
+local registered = {}
+for _, def in ipairs(B.entries) do
+	if def.cond then
+		for _, s in ipairs(def.cond.subs or {def.cond.sub}) do
+			registered[s] = def.key
+		end
+	end
+end
+if common then
+	local block = common:match("ChaosSpell%.SUBID = (%b{})")
+	ok(block ~= nil, "ChaosSpell.SUBID found")
+	local count = 0
+	for sub in (block or ""):gmatch("(%d%d%d%d%d)") do
+		count = count + 1
+		ok(registered[tonumber(sub)] ~= nil, "ChaosSpell.SUBID " .. sub .. " has a buff bar row")
+	end
+	ok(count >= 11, "SUBID entries read: " .. count)
+	ok(common:find("moonfang_pack = 71070", 1, true) and common:find("mirror_image = 71071", 1, true), "timer sub ids")
+end
+eq(B.byKey.moonfang_pack.cond.sub, 71070, "Moonfang Pack sub id"); eq(B.byKey.mirror_image.cond.sub, 71071, "Hall of Mirrors sub id")
+ok(B.byKey.moonfang_pack.desc:find("40 seconds", 1, true) and B.byKey.mirror_image.desc:find("10 seconds", 1, true), "durations in the text")
+local wolves = readFile("data/spells/chaos/druid/spirit_wolves.lua")
+local mirrors = readFile("data/spells/chaos/illusionist/mirror_image.lua")
+if wolves and mirrors then
+	ok(wolves:find("buffTimer(player, ChaosSpell.SUBID.moonfang_pack, DURATION)", 1, true) and wolves:find("DURATION = 40000", 1, true), "wolves set the timer (40 s)")
+	ok(mirrors:find("buffTimer(player, ChaosSpell.SUBID.mirror_image, DURATION)", 1, true) and mirrors:find("DURATION = 10000", 1, true), "mirrors set the timer (10 s)")
+end
+-- the Iron Sage's Deep Mantra timer (71037) is the same row as Mantra of Stone
+eq(registered[ChaosMonk.ids.subId.mantraDeep], "mantra", "Deep Mantra shows as Mantra of Stone")
+
 -- the opcodes are unique and the two new ones are in the right place
 local ops = {}
 for name, op in pairs(ChaosOpcodes) do
@@ -202,6 +234,23 @@ cond(c, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, 71031, 7000)
 list = B.collect(c, now)
 eq(#list, 3, "three class buffs")
 ok(byKey(list, "bloodrage") and byKey(list, "stealth") and byKey(list, "chi_ward"), "bloodrage, stealth, chi ward")
+-- the support spells' timers, Deep Mantra, and the stock buffs that carry a small sub id (cond.subs)
+local sup = mockPlayer(20)
+cond(sup, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, 71070, 38000)
+cond(sup, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, 71071, 9000)
+cond(sup, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, ChaosMonk.ids.subId.mantraDeep, 3000)
+list = B.collect(sup, now)
+eq(#list, 3, "wolves, mirrors, deep mantra")
+eq(byKey(list, "moonfang_pack").leftMs, 38000, "wolves time left"); eq(byKey(list, "mirror_image").leftMs, 9000, "mirrors time left")
+eq(byKey(list, "mantra").leftMs, 3000, "deep mantra time left")
+local stock = mockPlayer(21)
+cond(stock, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, 1, 10000) -- a stock attribute buff with sub id 1
+cond(stock, CONDITION_HASTE, CONDITIONID_COMBAT, 1, 10000)
+list = B.collect(stock, now)
+eq(#list, 2, "stock buffs with a sub id"); ok(byKey(list, "spellbuff") and byKey(list, "haste"), "spell buff and haste by sub id")
+local other = mockPlayer(22)
+cond(other, CONDITION_ATTRIBUTES, CONDITIONID_COMBAT, 7210, 10000) -- a passive tree condition stays off the bar
+eq(#B.collect(other, now), 0, "an unknown sub id is not a buff")
 -- Bushido stacks from the class module
 ChaosClasses = {bushidoStacks = function(id, t) return id == 7 and 4 or 0 end, now = function() return now end}
 local bu = mockPlayer(7)

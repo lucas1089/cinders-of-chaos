@@ -22,6 +22,7 @@
  *  - Legal texts (legal_lib.php, pages/legal.php): Terms of Use, Privacy Policy, Donation Terms; account creation
  *    needs the Terms checkbox, and the acceptance is recorded. A logged-in account without the acceptance of the
  *    current texts is sent to pages/accept.php first.
+ *  - Deleting a character: delete_lib.php and pages/deletecharacter.php replace ZnoteX's own deletion page.
  *  - The stock pages this server does not use (shop, points, creatures, spells,
  *    forum, the stock payment callbacks) send the visitor to pages/notused.php.
  *  - SEO and link previews (seo_lib.php): the <head> of every HTML page is rewritten at the end of the request
@@ -66,6 +67,14 @@ $chaosScript = (string)($_SERVER['SCRIPT_FILENAME'] ?? '');
 $chaosWhat = chaos_unused_pages()[strtolower(basename($chaosScript))] ?? null;
 if ($chaosWhat !== null && PHP_SAPI !== 'cli' && realpath(dirname($chaosScript)) === realpath(__DIR__ . '/../..')) {
 	header('Location: page?plugin=chaos&p=notused&what=' . $chaosWhat, true, 302);
+	exit;
+}
+// ZnoteX's own character deletion page is replaced by pages/deletecharacter.php (delete_lib.php: owner report
+// 2026-10-17 "Deletar personagem no site nao funciona"); its addresses lead there
+require_once __DIR__ . '/delete_lib.php';
+if (PHP_SAPI !== 'cli' && in_array(strtolower(basename($chaosScript)), chaos_delete_stock_pages(), true)
+	&& realpath(dirname($chaosScript)) === realpath(__DIR__ . '/../..')) {
+	header('Location: page?plugin=chaos&p=deletecharacter', true, 303);
 	exit;
 }
 unset($chaosScript, $chaosWhat);

@@ -59,7 +59,6 @@
 	<loot>
 		<item id="2160" countmax="10" chance="100000"/><!-- crystal coin -->
 		<item id="2152" countmax="75" chance="100000"/><!-- platinum coin -->
-		<item id="25380" chance="2500"/><!-- token -->
 		<item id="2522" chance="6000"/><!-- great shield: Kharzun's own drop -->
 		<item id="3983" chance="4440"/>
 		<item id="2495" chance="4440"/>

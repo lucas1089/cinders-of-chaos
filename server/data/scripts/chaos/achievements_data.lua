@@ -97,6 +97,8 @@ return {
 	},
 
 	-- world boss name (lower case, a part of it is enough) -> its stat
+	-- achievements that no longer exist: a character that earned one keeps its points (id -> points); nothing shows them
+	retired = {rarity_7 = 15, rarity_9 = 25, rarity_12 = 25},
 	bossStats = {
 		kaelgor = "wb_kaelgor", skaldra = "wb_skaldra", rotmother = "wb_rotmother", nyxareth = "wb_nyxareth", vharok = "wb_vharok"
 	},
@@ -329,13 +331,11 @@ return {
 			target = 50, title = "Relic Keeper"},
 		{id = "rarity_5", cat = "items", name = "Legendary Find", desc = "Find a Legendary item.", points = 10, stat = "rarity_max",
 			target = 5},
-		{id = "rarity_7", cat = "items", name = "Mythic Find", desc = "Find a Mythic item.", points = 15, stat = "rarity_max", target = 7},
-		{id = "rarity_9", cat = "items", name = "Eternal Find", desc = "Find an Eternal item.", points = 25, stat = "rarity_max",
-			target = 9},
-		{id = "rarity_12", cat = "items", name = "Celestial Find", desc = "Find a Celestial item.", points = 25, stat = "rarity_max",
-			target = 12},
-		{id = "rarity_15", cat = "items", name = "Transcendent", desc = "Find a Transcendent item.", points = 50, stat = "rarity_max",
-			target = 15, title = "the Transcendent"},
+		-- the seven rarities (2026-10-18): the stat is the best stored rarity id found (Legendary 5, Divine 10; an old
+		-- character's best may still be 6 .. 15 and counts as the rarity it became). rarity_15 (Transcendent, 50 points,
+		-- a title) is Divine Find now; rarity_7 / 9 / 12 (Mythic, Eternal, Celestial) are retired, see `retired` below
+		{id = "rarity_15", cat = "items", name = "Divine Find", desc = "Find a Divine item.", points = 50, stat = "rarity_max",
+			target = 10, title = "the Divine"},
 		{id = "orbs_1", cat = "items", name = "Tinkerer", desc = "Use an orb at the Crafting Bench.", points = 5, stat = "orbs_used"},
 		{id = "orbs_100", cat = "items", name = "Orbweaver", desc = "Use 100 orbs at the Crafting Bench.", points = 15,
 			stat = "orbs_used", target = 100, reward = {items = orbs(0, 0, 2)}},

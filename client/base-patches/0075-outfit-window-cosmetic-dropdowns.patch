@@ -1,0 +1,52 @@
+# Outfit window hooks for the cosmetic dropdowns (client/MANIFEST.md "Customise Character extras", BASE.md 75). modules/game_outfit/outfit.lua hands the new window to the overlay module game_outfitextras (attach with the wing list, the outfit being edited and a wings setter; refresh when the wardrobe catalogue comes; apply on Ok before the outfit is sent; detach on close), which adds a panel of dropdowns for wings, outline, footprints, kill effect, loot label, chat colour, spell effect, name plate frame and pet. Every call is guarded: without the module the window is as before.
+diff --git a/modules/game_outfit/outfit.lua b/modules/game_outfit/outfit.lua
+--- a/modules/game_outfit/outfit.lua
++++ b/modules/game_outfit/outfit.lua
+@@ -359,6 +359,9 @@
+   refreshLocks()
+   reshow()
+   updateOkButton()
++  if modules.game_outfitextras and modules.game_outfitextras.refresh then
++    modules.game_outfitextras.refresh()
++  end
+ end
+ 
+ function onMountCheckChange(checkBox, checked)
+@@ -442,6 +445,16 @@
+   g_client.setInputLockWidget(window)
+   refreshLocks()
+ 
++  -- Chaos (base patch 0075): the cosmetic dropdowns under the lower panels (overlay module game_outfitextras); wings
++  -- are part of the outfit, so the window hands over its wing list and a setter for the outfit being edited
++  if modules.game_outfitextras and modules.game_outfitextras.attach then
++    modules.game_outfitextras.attach(window, {
++      wings = wingList,
++      current = currentOutfit,
++      setWings = function(id) tempOutfit.wings = id end
++    })
++  end
++
+   for _, appKey in ipairs(AppearanceData) do
+     updateAppearanceText(appKey, "None")
+   end
+@@ -603,6 +616,9 @@
+ function destroy()
+   cancelPopulate()
+   if window then
++    if modules.game_outfitextras and modules.game_outfitextras.detach then
++      modules.game_outfitextras.detach()
++    end
+     g_client.setInputLockWidget()
+     window:destroy()
+     window = nil
+@@ -1713,6 +1729,10 @@
+     tempOutfit.shader = OSL.outgoing(ServerData.shaders, tempOutfit.shader)
+   end
+ 
++  if modules.game_outfitextras and modules.game_outfitextras.apply then
++    modules.game_outfitextras.apply() -- Chaos (base patch 0075): the dropdowns' choices
++  end
++
+   g_game.changeOutfit(tempOutfit, globalRandomMount)
+   g_client.setInputLockWidget()
+   destroy()

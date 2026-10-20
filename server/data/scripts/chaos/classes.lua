@@ -371,9 +371,11 @@ function M.offhandDamage(hit, mainAttack, offAttack, targetIsPlayer, extraShare)
 end
 
 -- Poison Blades: damage per tick for a weapon hit of `hit`. bonus: Blackblood Creed's poisonBonus (0 / nil = none).
-function M.poisonTick(hit, bonus)
+-- vocId: the attacker's vocation (cfg.poisonBlades.classScale; nil = the plain share)
+function M.poisonTick(hit, bonus, vocId)
 	local p = cfg().poisonBlades
-	return math.max(1, math.floor(math.abs(hit or 0) * p.share * (1 + (bonus or 0)) / p.ticks + 0.5))
+	local scale = vocId and p.classScale and p.classScale[vocId] or 1
+	return math.max(1, math.floor(math.abs(hit or 0) * p.share * scale * (1 + (bonus or 0)) / p.ticks + 0.5))
 end
 
 -- Blackblood Creed (the line keystone): does a weapon hit poison? With the keystone always, else while Poison Blades lasts

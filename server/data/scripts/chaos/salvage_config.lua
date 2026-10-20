@@ -21,8 +21,9 @@ return {
 			.. "(Economy > Salvage)."
 	},
 
-	-- shards per rarity 1..15 (Common .. Transcendent) at item level 1
-	baseShards = {1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18},
+	-- shards per rarity at item level 1, in the order Common, Uncommon, Magic, Rare, Legendary, Divine (before the seven
+	-- rarities: 1, 1, 2, 2, 3, 3, 4, 5, 6, 7, 8, 10, 12, 14, 18 for the 15; Legendary now covers old 5 .. 9, Divine old 10 .. 15)
+	baseShards = {1, 1, 2, 3, 5, 12},
 	-- the item level (chaos_item_mods.lua, 1 .. maxLevel) gives up to this share more: floor(base x (1 + levelBonus x
 	-- level / maxLevel)), so Common and Uncommon stay at 1
 	maxLevel = 150,
@@ -32,8 +33,8 @@ return {
 	perHighTier = 1,
 	perSocket = 1,
 
-	-- chance (per 10000) of a whole orb on top of the shards, by rarity 1..15
-	orbChance = {50, 50, 75, 75, 100, 100, 150, 150, 200, 200, 250, 300, 350, 400, 500},
+	-- chance (per 10000) of a whole orb on top of the shards, by rarity (same order; it was 50 .. 500 over the 15)
+	orbChance = {50, 50, 75, 100, 150, 300},
 	-- which orb (ChaosCrafting orb keys), by weight
 	orbWeights = {
 		{"transmutation", 35}, {"chaos", 25}, {"scouring", 12}, {"alchemy", 10}, {"annulment", 8}, {"divine", 5},
@@ -68,14 +69,14 @@ return {
 	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,
 	-- ... but item set pieces (data/lib/chaos_item_sets.lua): duplicates are common enough, each gives this many shards
-	-- (about a Mythic drop; no orb chance beyond the Common one)
+	-- (about a Legendary drop; no orb chance beyond the Common one)
 	setPieceShards = 8,
 	-- ... and, with Conquest Tokens loaded (conquest.lua), every unique: a share of its Conquest vendor price in tokens
 	-- (conquest_config.lua salvage: 10%, at least 25) plus uniqueShards rune shards (a set piece keeps setPieceShards)
 	uniqueTokens = true,
 	uniqueShards = 4,
 
-	-- "salvage all": items of rarity <= maxRarity directly inside one container (the backpack or one bag in it),
+	-- "salvage all": items of rarity <= maxRarity (a stored id: 1, 2, 3, 4, 5 or 10) directly inside one container (the backpack or one bag in it),
 	-- at most batchCap items per action
 	batchCap = 50,
 	batchDefaultMaxRarity = 2,

@@ -101,11 +101,11 @@ K.kits.berserker = derive("knight", {slots = {
 K.kits.beastmaster = derive("paladin", {slots = {
 	[CONST_SLOT_LEFT] = 27230}, -- Doomtide Longbow (unique)
 	quiver = {id = 28050, rarity = 5}}) -- a Legendary quiver of level 500
--- the Thief line: one-handed swords, the Ranger's armour, shurikens (docs/CLASSES.md). Samurai: the same kit
+-- the Thief line: one-handed swords, the Ranger's armour; the shuriken spells need no star (docs/CLASSES.md). Samurai: the same kit
 K.kits.thief = derive("paladin", {
 	skills = {[SKILL_SWORD] = 120, [SKILL_DISTANCE] = 110, [SKILL_SHIELD] = 90}, magic = 30,
 	slots = {[CONST_SLOT_LEFT] = 8209}, -- Soulreaper (unique)
-	quiver = false, extra = {{id = 7368, count = 100}}}) -- assassin stars (the shuriken spells use them)
+	quiver = false})
 -- the Ninja: a second blade in the shield hand (dual wield, server/src-patches/0002; without it it goes to the backpack)
 K.kits.ninja = derive("thief", {slots = {[CONST_SLOT_RIGHT] = 11395}}) -- Bloodmoon Edge (unique)
 -- the Monk line fights unarmed in the Ranger's armour

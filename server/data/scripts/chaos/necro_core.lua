@@ -41,18 +41,10 @@ function N.raiseKind(cfg, classKey)
 	return c and c.kind or nil
 end
 
--- how many minions of `kind` a class of `level` may have out (the golem: Bone Lord only); bonus: more of a kind the class
--- raises at all (the passive tree's Legion)
-function N.minionCap(cfg, classKey, kind, level, bonus)
-	if kind == "golem" then
-		return classKey == "bonelord" and cfg.minions.golemClass.count or 0
-	end
-	local c = classCfg(cfg, classKey)
-	if not c or c.kind ~= kind then
-		return 0
-	end
+-- the count of the last step {level, count} reached at `level`, + bonus when there is any
+local function stepCap(steps, level, bonus)
 	local count = 0
-	for _, step in ipairs(c.caps) do
+	for _, step in ipairs(steps) do
 		if (level or 0) >= step[1] then
 			count = step[2]
 		end
@@ -61,6 +53,48 @@ function N.minionCap(cfg, classKey, kind, level, bonus)
 		count = count + (bonus or 0)
 	end
 	return count
+end
+
+-- how many minions of `kind` a class of `level` may have out (the golem: Bone Lord only); bonus: more of a kind the class
+-- raises at all (the passive tree's Legion)
+function N.minionCap(cfg, classKey, kind, level, bonus)
+	if kind == "golem" then
+		return classKey == "bonelord" and cfg.minions.golemClass.count or 0
+	end
+	local c = classCfg(cfg, classKey)
+	if c and cfg.minions[kind] and cfg.minions[kind].summon then
+		-- a summon spell's minion (warrior / archer / mage): only the total cap limits it
+		return N.totalCap(cfg, classKey, level, bonus)
+	end
+	if not c or c.kind ~= kind then
+		return 0
+	end
+	return stepCap(c.caps, level, bonus)
+end
+
+-- the most minions of every kind together at `level` (the class's `total` steps + the passive tree's Legion bonus); 0 for
+-- no class
+function N.totalCap(cfg, classKey, level, bonus)
+	local c = classCfg(cfg, classKey)
+	if not c or not c.total then
+		return 0
+	end
+	return stepCap(c.total, level, bonus)
+end
+
+-- room for one more minion: `list` = the owner's minions {kind} in summon order (oldest first). Returns the indexes of
+-- `list` to dismiss (oldest first; often empty) so that one more fits under the total cap, or nil, reason when the
+-- class has no minions at all. The total cap wins over every per-kind cap.
+function N.makeRoom(cfg, classKey, level, list, bonus)
+	local cap = N.totalCap(cfg, classKey, level, bonus)
+	if cap <= 0 then
+		return nil, "Only a necromancer can raise minions."
+	end
+	local out = {}
+	for i = 1, max(0, #(list or {}) + 1 - cap) do
+		out[#out + 1] = i
+	end
+	return out
 end
 
 -- class factors of a minion kind: hit, health (the golem has its own)
@@ -77,17 +111,19 @@ end
 
 -- extra: a factor on top (the passive tree's Bone Colossus for the golem)
 function N.minionHealth(cfg, classKey, kind, level, ml, extra)
-	local h = cfg.minions[kind].health
+	local k = cfg.minions[kind]
+	local h = k.health
 	local _, f = factors(cfg, classKey, kind)
-	return max(1, floor((h.base + (level or 0) * h.perLevel + (ml or 0) * h.perMl) * f * (extra or 1)))
+	return max(1, floor((h.base + (level or 0) * h.perLevel + (ml or 0) * h.perMl) * f * (k.mult and k.mult.health or 1) * (extra or 1)))
 end
 
 -- positive min, max of one minion hit; `aura` = Banner of Bones is up on the owner (true: the banner's bonus; a number:
 -- that bonus, the passive tree's Banner Bearer included); extra: a factor on top (Bone Colossus for the golem)
 function N.minionHit(cfg, classKey, kind, level, ml, aura, extra)
-	local h = cfg.minions[kind].hit
+	local k = cfg.minions[kind]
+	local h = k.hit
 	local f = factors(cfg, classKey, kind)
-	local avg = ((level or 0) * h.a + (ml or 0) * h.b) * f * (extra or 1)
+	local avg = ((level or 0) * h.a + (ml or 0) * h.b) * f * (k.mult and k.mult.hit or 1) * (extra or 1)
 	if aura then
 		avg = avg * (1 + (type(aura) == "number" and aura or cfg.bannerOfBones.damage))
 	end
@@ -354,7 +390,7 @@ function N.restFilter(cfg, classKey, level, list, bonus)
 	local out, count = {}, {}
 	for _, m in ipairs(list or {}) do
 		local c = count[m.kind] or 0
-		if c < N.minionCap(cfg, classKey, m.kind, level, bonus) then
+		if c < N.minionCap(cfg, classKey, m.kind, level, bonus) and #out < N.totalCap(cfg, classKey, level, bonus) then
 			out[#out + 1] = m
 			count[m.kind] = c + 1
 		end
@@ -365,22 +401,36 @@ end
 -- minions over the cap or of a kind the class does not raise (after a vocation change or a level loss): returns
 -- the indexes of `list` ({kind}) to dismiss, newest (last) first
 function N.overCap(cfg, classKey, level, list, bonus)
-	local count, out = {}, {}
+	local count, out, dropped = {}, {}, {}
 	for i, m in ipairs(list or {}) do
 		local c = (count[m.kind] or 0) + 1
 		count[m.kind] = c
 		if c > N.minionCap(cfg, classKey, m.kind, level, bonus) then
 			out[#out + 1] = i
+			dropped[i] = true
 		end
+	end
+	-- the total cap: of what is left, the newest go
+	local kept = {}
+	for i = 1, #(list or {}) do
+		if not dropped[i] then
+			kept[#kept + 1] = i
+		end
+	end
+	for j = #kept, N.totalCap(cfg, classKey, level, bonus) + 1, -1 do
+		out[#out + 1] = kept[j]
 	end
 	table.sort(out, function(a, b) return a > b end)
 	return out
 end
 
+-- every minion kind (monster types of necro_*.xml)
+N.kinds = {"skeleton", "shade", "golem", "warrior", "archer", "mage"}
+
 -- the minion kind of a monster name, nil for any other monster
 function N.kindOf(cfg, name)
 	name = (name or ""):lower()
-	for _, kind in ipairs({"skeleton", "shade", "golem"}) do
+	for _, kind in ipairs(N.kinds) do
 		if cfg.minions[kind].monster:lower() == name then
 			return kind
 		end

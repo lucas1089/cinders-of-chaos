@@ -200,10 +200,43 @@ local OLD = {attackspeed = {{2, 3}, {3, 5}, {4, 6}, {5, 8}, {7, 10}}, lifeonkill
 	{2, 4}}, movespeed = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}}}
 for key, old in pairs(OLD) do
 	for t, r in ipairs(old) do
-		local n = M.byKey[key].tiers[M.config.oldTiers[t]]
+		-- the ranges were raised on 2026-10-18 (owner item 78); the old ones are M.legacy and still read the tier of an old item
+		local n = M.legacy[key][M.config.oldTiers[t]]
 		eq(n[1], r[1], key .. " old tier " .. t .. " low"); eq(n[2], r[2], key .. " old tier " .. t .. " high")
 	end
 end
+-- item 78: every Chaos modifier and every engine type got bigger numbers (about x1.5 to x3 for the small ones, less at
+-- the top where a cap or the engine sits close) and no tier got smaller
+local grown, total = 0, 0
+for _, def in ipairs(M.config.mods) do
+	local legacy = M.legacy[def.key]
+	if legacy then -- the legendary powers, the energy shield and the quiver modifiers have their own tables
+		for t = 1, 8 do
+			assert(def.tiers[t][1] >= legacy[t][1] and def.tiers[t][2] >= legacy[t][2], def.key .. " T" .. t .. " never shrank")
+		end
+		local oldSum, newSum = 0, 0
+		for t = 1, 8 do
+			oldSum, newSum = oldSum + legacy[t][1] + legacy[t][2], newSum + def.tiers[t][1] + def.tiers[t][2]
+		end
+		total = total + 1
+		if newSum >= oldSum * 1.3 then
+			grown = grown + 1
+		end
+		assert(newSum >= oldSum * 1.15, def.key .. " grew by at least 15%: " .. oldSum .. " -> " .. newSum)
+	end
+end
+eq(total, 30, "thirty modifiers with an old table")
+assert(grown >= 26, "most grew by 30% or more: " .. grown)
+for name, e in pairs(M.config.engine) do
+	for t = 1, 8 do
+		assert(e.tiers[t][2] >= M.legacyEngine[name][t][2], name .. " T" .. t .. " never shrank")
+	end
+	assert(e.tiers[8][2] >= M.legacyEngine[name][8][2] * 1.4, name .. " T8 grew by at least 40%")
+end
+-- the stats an engine cap sits on stay under it: attack speed 15 (and the weapon's -20% / -25% rules), movement 12, dodge 10
+eq(M.byKey.attackspeed.tiers[8][2], 15, "attack speed T8 tops at its cap") eq(M.byKey.movespeed.tiers[8][2], 12)
+assert(M.byKey.dodge.tiers[8][2] <= 7, "dodge: one item takes at most 7 of the 10")
+assert(M.config.engine.leech.tiers[8][2] <= 10 and M.config.engine.critical.tiers[8][2] <= 10, "critical / leech tops at 10")
 eq(M.byKey.movespeed.cap, 12)
 eq(M.byKey.dodge.cap, 10)
 eq(M.byKey.experience.cap, 15)
@@ -268,9 +301,10 @@ end
 assert(mean(20) < mean(60) and mean(60) < mean(100) and mean(100) < mean(150), "higher item levels roll higher tiers")
 -- ranges and old values
 local as = M.byKey.attackspeed
-eq(M.range(as, 1)[1], 1); eq(M.range(as, 8)[2], 14); eq(M.range(as, 99)[2], 14, "clamped")
-eq(M.tierOfValue(as.tiers, 10), 6, "+10% attack speed: the lowest tier that holds it, T6 (7-10)")
-eq(M.tierOfValue(as.tiers, 3), 2, "+3%: T2 (2-3)")
+eq(M.range(as, 1)[1], 2); eq(M.range(as, 8)[2], 15); eq(M.range(as, 99)[2], 15, "clamped")
+eq(M.tierOfValue(as.tiers, 10), 6, "+10% attack speed: the lowest tier that holds it, T6 (9-11)")
+eq(M.tierOfValue(as.tiers, 3), 1, "+3%: T1 (2-3)")
+eq(M.tierOfValue(M.legacy.attackspeed, 3), 2, "the old table: +3% was T2 (2-3)")
 eq(M.tierOfValue(as.tiers, 20), 8, "above every range: the top tier")
 eq(M.tierOfValue(as.tiers, 0), 1)
 eq(M.tierOfValue(as.tiers, 2, 2, 6), 2, "searched in T2..T6 only")
@@ -296,14 +330,25 @@ eq(M.read(sw)[1].tier, 2, "an old +2%: T2 (the old T1), not the new T1")
 eq(sw:getCustomAttribute("ct_chaos_mod_attackspeed"), nil, "set without a tier drops a stale one")
 
 -- ---------------------------------------------------------------- rarity: how many
-eq(M.modCount(1), 2); eq(M.sideLimit(1), 1); eq(M.maxMods(1), 2, "Common: one prefix, one suffix")
-eq(M.modCount(4), 3); eq(M.maxMods(4), 4)
-eq(M.modCount(15), 6); eq(M.sideLimit(15), 3); eq(M.maxMods(15), 6, "top rarities: 3 + 3")
-eq(M.modCount(0), 0); eq(M.maxMods(0), 0)
-for r = 1, 15 do
+-- the seven rarities (data/lib/chaos_rarity.lua): Common 1 modifier, Uncommon 2, Magic 3, Rare 4, Legendary 5, Divine 6
+eq(M.modCount(1), 1); eq(M.sideLimit(1), 1); eq(M.maxMods(1), 2, "Common: one prefix, one suffix")
+eq(M.modCount(2), 2); eq(M.sideLimit(2), 1); eq(M.maxMods(2), 2, "Uncommon: two modifiers, one on each side")
+eq(M.modCount(3), 3); eq(M.sideLimit(3), 2); eq(M.maxMods(3), 4, "Magic")
+eq(M.modCount(4), 4); eq(M.maxMods(4), 4, "Rare")
+eq(M.modCount(5), 5); eq(M.sideLimit(5), 3); eq(M.maxMods(5), 6, "Legendary")
+eq(M.modCount(10), 6); eq(M.sideLimit(10), 3); eq(M.maxMods(10), 6, "Divine: 3 + 3")
+-- an item with one of the 15 old ids counts as the rarity it became
+eq(M.modCount(7), M.modCount(5), "an old Mythic is Legendary") eq(M.modCount(15), 6, "an old Transcendent is Divine")
+eq(M.maxMods(12), 6); eq(M.sideLimit(8), 3)
+eq(M.modCount(0), 0); eq(M.maxMods(0), 0); eq(M.modCount(16), 0, "Unique is no rarity of a roll")
+local last = 0
+for _, r in ipairs({1, 2, 3, 4, 5, 10}) do
 	assert(M.modCount(r) <= M.maxMods(r), "count within the limits at rarity " .. r)
-	assert(r == 1 or M.modCount(r) >= M.modCount(r - 1), "never fewer at a higher rarity")
+	assert(M.modCount(r) >= last, "never fewer at a higher rarity")
+	last = M.modCount(r)
 end
+eq(M.maxBinds(1), 1); eq(M.maxBinds(4), 1); eq(M.maxBinds(5), 2); eq(M.maxBinds(10), 2); eq(M.maxBinds(9), 2, "an old Eternal: Legendary's")
+eq(M.qualityCap(5), 20); eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20, "an old Eternal: below Divine") eq(M.qualityCap(11), 30, "an old Phantasmal: Divine's")
 
 -- ---------------------------------------------------------------- item level of a drop
 eq(M.levelFromMonster(1), 1); eq(M.levelFromMonster(50), 22); eq(M.levelFromMonster(75), 29, "between 50 and 100")
@@ -363,8 +408,8 @@ eq(M.experience(1000, 4), 1040)
 do
 	local gc = M.byKey.goblinchance
 	eq(gc.label, "Treasure Goblin Chance"); eq(gc.fmt, "pct"); eq(gc.cap, 100)
-	eq(gc.tiers[1][1], 6, "+6% at the bottom"); eq(gc.tiers[6][2], 40, "+40% at the top of the old tiers")
-	eq(gc.tiers[8][2], 60, "+60% at T8")
+	eq(gc.tiers[1][1], 9, "+9% at the bottom (it was 6)"); eq(M.legacy.goblinchance[6][2], 40, "+40% at the top of the old tiers")
+	eq(gc.tiers[8][2], 90, "+90% at T8 (it was 60)")
 	eq(M.text("goblinchance", 25), "Treasure Goblin Chance +25%")
 	eq(addableKeys(newItem(2471)).goblinchance, true, "on helmets")
 	eq(addableKeys(newItem(2171)).goblinchance, true, "on amulets")
@@ -375,7 +420,7 @@ do
 	-- rolls: the tier's range
 	local lo = M.rollValue(gc, 1, function(a, b) return a end)
 	local hi = M.rollValue(gc, 8, function(a, b) return b end)
-	eq(lo, 6); eq(hi, 60)
+	eq(lo, 9); eq(hi, 90)
 	-- helmets may get it
 	local helm = newItem(2471)
 	local found = false

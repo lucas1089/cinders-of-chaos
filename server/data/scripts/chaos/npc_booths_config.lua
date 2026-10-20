@@ -61,10 +61,20 @@ return {
 			{x = 56, npc = "Iselde Varrow"},
 			{x = 61, npc = "Osric the Chandler"}
 		}},
-		-- free slots on the economy room's north wall, for NPCs whose files do not exist yet (2026-10-15): set the name
+		-- the north walls: the services that stand in for menu entries (service_npcs_config.lua, README "Service NPCs";
+		-- owner 2026-10-20). The stash keeper and the pocket boss NPC fill the two free slots west of the economy room's
+		-- way in (x 49-51: the path from the lobby), the banker and the house broker stand east of it, the services
+		-- clerk on the progression room's north wall (west of its way in, x 11-13). A free slot (npc = false) builds nothing.
 		{key = "economy_north", room = "economy", npcRow = 17, counterRow = 18, from = 39, to = 48, booths = {
-			{x = 41, npc = false, slot = "stash keeper"},
-			{x = 46, npc = false, slot = "pocket boss NPC"}
+			{x = 41, npc = "Tavish Coldhand", slot = "stash keeper"},
+			{x = 46, npc = "Vessa Hollowmark", slot = "pocket boss NPC"}
+		}},
+		{key = "economy_north_east", room = "economy", npcRow = 17, counterRow = 18, from = 53, to = 62, booths = {
+			{x = 56, npc = "Cassian Auric"},
+			{x = 61, npc = "Halvard Deedkeeper"}
+		}},
+		{key = "progression_north", room = "progression", npcRow = 17, counterRow = 18, from = 3, to = 8, booths = {
+			{x = 5, npc = "Pell Ashmere"}
 		}}
 	},
 

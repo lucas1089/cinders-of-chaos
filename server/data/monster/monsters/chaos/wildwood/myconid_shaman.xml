@@ -43,8 +43,6 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="80" chance="60000" /><!-- gold coin -->
-		<item id="36022" countmax="2" chance="18000" /><!-- spore sack -->
-		<item id="36035" countmax="1" chance="8000" /><!-- cloud of royal spores -->
 		<item id="36059" countmax="2" chance="12000" /><!-- bowl of mushroom stew -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
 		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->

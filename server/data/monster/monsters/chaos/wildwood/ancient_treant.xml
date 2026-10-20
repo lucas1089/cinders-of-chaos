@@ -48,9 +48,6 @@
 	<loot>
 		<item id="2148" countmax="100" chance="60000" /><!-- gold coin -->
 		<item id="2152" countmax="7" chance="40000" /><!-- platinum coin -->
-		<item id="36021" countmax="2" chance="18000" /><!-- piece of heartwood -->
-		<item id="36031" countmax="1" chance="8000" /><!-- handful of treant seeds -->
-		<item id="36030" countmax="1" chance="8000" /><!-- withered leaf -->
 		<item id="36052" countmax="2" chance="12000" /><!-- wild pear -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
 		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->

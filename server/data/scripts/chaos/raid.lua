@@ -28,6 +28,10 @@
 -- Exports: ChaosRaid.isInside(player), ChaosRaid.buffItems(player, kind) (buff bar source "raid").
 -- Staff: /raid (see onCommand).
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -1266,8 +1270,7 @@ function X.deliver(player, b, idx)
 		end
 		if item then
 			inbox = giveEx(player, item) or inbox
-			local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
-			lines[#lines + 1] = (rarity > 0 and ("[" .. (names and names[rarity] or rarity) .. "] ") or "") ..
+			lines[#lines + 1] = (rarity > 0 and ("[" .. (ChaosRarity.name(rarity) or rarity) .. "] ") or "") ..
 				itemName(id) .. " (item level " .. level .. ")"
 		end
 	end

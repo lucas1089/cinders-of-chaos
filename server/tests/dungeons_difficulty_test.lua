@@ -132,13 +132,15 @@ for d = 1, 6 do
 	local c = D.chest(spec, d)
 	eq(c.gold, math.floor(100000 * (1 + D.levels[d].gold / 100)), "chest gold at " .. d)
 	if prev then
-		eq(c.pieces >= prev.pieces and c.rarity > prev.rarity and c.itemLevel > prev.itemLevel and c.gold > prev.gold, true,
+		-- the rarity floor never falls (six steps over three floors since the seven rarities: 3, 3, 4, 4, 5, 5; the tier's bonus
+		-- steps and the item level rise every step)
+		eq(c.pieces >= prev.pieces and c.rarity >= prev.rarity and c.itemLevel > prev.itemLevel and c.gold > prev.gold, true,
 			"chest " .. d .. " is better than " .. (d - 1))
 	end
 	prev = c
 end
-eq(D.chest(spec, 1).rarity, 3, "difficulty 1: Rare")
-eq(D.chest(spec, 6).rarity, 8, "difficulty 6: Chaos")
+eq(D.chest(spec, 1).rarity, 3, "difficulty 1: Magic")
+eq(D.chest(spec, 6).rarity, 5, "difficulty 6: Legendary")
 eq(D.chest(spec, 6).pieces, 3, "difficulty 6: three pieces")
 eq(D.chest(spec, 9).pieces, 3, "clamped to 6")
 eq(D.chest(nil, 1).gold, 0, "no chest spec: no gold")

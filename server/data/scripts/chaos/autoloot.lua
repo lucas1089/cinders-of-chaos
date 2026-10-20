@@ -44,13 +44,21 @@ if Chaos.pactConfig then
 end
 -- <<< Chaos Pact loot rules
 
+-- Arrows and bolts never reach a corpse (bows need no ammunition any more: loot.lua step 0 takes them out of every
+-- corpse, data/lib/chaos_archery_core.lua). One on the list could never be looted: owner report 2026-10-17 "an item
+-- shows in the autoloot list but disappears when looting from any monster (no gold gained)". They cannot be added and
+-- an old entry is not shown or counted (it is dropped at the next change of the list).
+local function isAmmo(itemType)
+	return ChaosArchery ~= nil and ChaosArchery.isAmmoId ~= nil and ChaosArchery.isAmmoId(itemType:getId(), itemType) == true
+end
+
 local function readList(player)
 	local items = {}
 	for i = 1, MAX_SLOTS do
 		local value = player:getStorageValue(BASE + i)
 		if value and value > 0 then
 			local itemType = ItemType(value)
-			if itemType and itemType:getId() ~= 0 then
+			if itemType and itemType:getId() ~= 0 and not isAmmo(itemType) then
 				items[#items + 1] = itemType:getId()
 			end
 		end
@@ -140,7 +148,9 @@ local function handleCommand(player, param, byClient, reply)
 			end
 		end
 		if action == "add" then
-			if index then
+			if isAmmo(itemType) then
+				player:sendCancelMessage(Chaos.t(player, "%s no longer drops: bows and crossbows need no ammunition, so it cannot be on the auto loot list.", itemType:getName()))
+			elseif index then
 				player:sendCancelMessage(Chaos.t(player, "The item %s already exists!", itemType:getName()))
 			elseif #items >= getLimit(player) then
 				player:sendCancelMessage(Chaos.t(player, "Your auto loot only allows you to add %d items.", getLimit(player)))
@@ -203,3 +213,85 @@ LoginEvent:register()
 ExtendedEvent:type("extendedopcode")
 ExtendedEvent:register()
 
+
+-- ---------------------------------------------------------------- gold goes to the bank (owner 2026-10-18)
+-- "Mande todo o gold que for auto looted pro banco": when a coin (gold, platinum or crystal) is on the owner's autoloot
+-- list, the coins of a kill's corpse are paid into the bank account instead of being looted into the backpack (no coin
+-- stacks to convert, no weight). onDropLoot index 2.6: after the auto seller (2), before the store pouches (2.7) and the
+-- base autoloot (3), which then find no coins. The corpse owner is the one who gets it.
+local COIN_VALUE = {[2148] = 1, [2152] = 100, [2160] = 10000}
+ChaosAutolootGold = ChaosAutolootGold or {}
+local G = ChaosAutolootGold
+
+-- the gold in `coins` = {{id, count}, ...}: the total, ignoring anything that is not a coin
+function G.total(coins)
+	local sum = 0
+	for _, c in ipairs(coins) do
+		local v = COIN_VALUE[c.id]
+		if v then
+			sum = sum + v * (tonumber(c.count) or 0)
+		end
+	end
+	return sum
+end
+
+-- true when a coin is on the owner's list
+function G.wanted(owner)
+	for _, id in ipairs(readList(owner)) do
+		if COIN_VALUE[id] then
+			return true
+		end
+	end
+	return false
+end
+
+function G.toBank(owner, corpse)
+	if not G.wanted(owner) then
+		return 0
+	end
+	local total, taken = 0, {}
+	for _, item in ipairs(corpse:getItems()) do
+		local v = COIN_VALUE[item:getId()]
+		if v and not item:getType():isContainer() then
+			taken[#taken + 1] = item
+			total = total + v * item:getCount()
+		end
+	end
+	if total <= 0 then
+		return 0
+	end
+	local paid = 0
+	for _, item in ipairs(taken) do
+		local v, n = COIN_VALUE[item:getId()], item:getCount()
+		if item:remove() then
+			paid = paid + v * n
+		end
+	end
+	if paid > 0 then
+		owner:setBankBalance(owner:getBankBalance() + paid)
+		if ChaosTelemetry and ChaosTelemetry.economy then
+			pcall(ChaosTelemetry.economy, owner, "faucet", "autoloot_gold", paid)
+		end
+		owner:sendTextMessage(MESSAGE_LOOT or MESSAGE_INFO_DESCR, Chaos.t(owner, "Auto loot: %d gold to your bank.", paid))
+	end
+	return paid
+end
+
+if EventCallback then
+	local goldCb = EventCallback
+	goldCb.onDropLoot = function(self, corpse)
+		local ok, err = pcall(function()
+			if not corpse:getType():isContainer() then
+				return
+			end
+			local owner = Player(corpse:getCorpseOwner())
+			if owner then
+				G.toBank(owner, corpse)
+			end
+		end)
+		if not ok then
+			print("[Chaos autoloot] gold to bank failed: " .. tostring(err))
+		end
+	end
+	goldCb:register(2.6)
+end

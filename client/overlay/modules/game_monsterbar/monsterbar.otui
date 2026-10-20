@@ -58,7 +58,7 @@ Panel
     id: percent
     anchors.horizontalCenter: barBack.horizontalCenter
     anchors.verticalCenter: barBack.verticalCenter
-    font: verdana-11px-rounded
+    font: chaos-outline-11px
     text-auto-resize: true
     color: #f4ead2
     // a dark backing keeps it legible over the pale damage trail
@@ -77,7 +77,7 @@ Panel
     id: name
     anchors.horizontalCenter: namePlate.horizontalCenter
     anchors.verticalCenter: namePlate.verticalCenter
-    font: verdana-11px-rounded
+    font: chaos-outline-11px
     text-auto-resize: true
     color: #d6c9ae
     phantom: true
@@ -94,7 +94,7 @@ Panel
     id: level
     anchors.horizontalCenter: levelPlate.horizontalCenter
     anchors.verticalCenter: levelPlate.verticalCenter
-    font: verdana-11px-rounded
+    font: chaos-outline-11px
     text-auto-resize: true
     color: #d6c9ae
     phantom: true

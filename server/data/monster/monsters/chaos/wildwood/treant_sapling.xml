@@ -40,8 +40,6 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="45" chance="60000" /><!-- gold coin -->
-		<item id="36031" countmax="2" chance="18000" /><!-- handful of treant seeds -->
-		<item id="36029" countmax="1" chance="8000" /><!-- dryad leaf -->
 		<item id="36052" countmax="2" chance="12000" /><!-- wild pear -->
 		<item id="7618" countmax="2" chance="6000" /><!-- health potion -->
 		<item id="7620" countmax="2" chance="6000" /><!-- mana potion -->

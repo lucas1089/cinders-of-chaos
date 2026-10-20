@@ -878,7 +878,7 @@ do
 		x.onClear(player, {difficulty = 6})
 		eq(bank, th.def.dungeon.chest.gold + DD.chest(th.def.dungeon.chest, 6).gold, "difficulty 6: x5 gold")
 		eq(#made, 3, "difficulty 6: three pieces")
-		ok(made[1].rarity == 8 and made[1].level == 143, "difficulty 6: Chaos rarity, item level + 5")
+		ok(made[1].rarity == 5 and made[1].level == 143, "difficulty 6: Legendary rarity, item level + 5")
 		eq(stats.dungeon_throne, 2, "two clears counted")
 		eq(stats.dungeon_throne_top, 6, "the best difficulty")
 		eq(stats.dungeon_throne_d6, 1, "won on difficulty 6")

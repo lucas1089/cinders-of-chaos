@@ -57,7 +57,7 @@ function chaos_seo_private_pages(): array {
 		'twofa', 'accountsettings', 'paymentlog', 'changename', 'changesex', 'protected', 'failed', 'success', 'payment',
 		'buypoints', 'shop', 'ipn', 'paygol_ipn', 'pagseguro_ipn', 'pagseguro_retorno', 'payment_webhook', 'twtrNews',
 		'sub', 'blank', 'mailtest', 'auctionChar', 'market', 'voting', 'page_not_found', 'page_chaos_accept',
-		'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_telemetry', 'page_chaos_notused');
+		'page_chaos_reports', 'page_chaos_botreview', 'page_chaos_telemetry', 'page_chaos_notused', 'page_chaos_deletecharacter');
 }
 
 /** The plugin pages whose body follows the visitor's language (the <html lang> is set for these). */

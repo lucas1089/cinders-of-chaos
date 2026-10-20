@@ -29,12 +29,15 @@ The gap is the longest time between two casts over HORIZON seconds from a fresh 
 attack group cooldown. The damage is relative (no passive tree, no class factor, no auto attack, no minions); the
 change of a class's spell damage bounds the change of its total.
 
-The 2.0 s rule holds from level 15 (GAP_FROM) up, at every band and every preset level of a class that has an attack
-spell there; below level 15 a class may have one spell on a longer cooldown (a new character's first levels).
-
 --report prints, per class and level band (15 / 30 / 60 / 100 / 300 / 600 / 1000), the best set of at most 5 with
 its gap and damage against the measured kit (the C4 harness: every Chaos attack spell of the class on cooldown);
 --class / --level also list the class's spells with their numbers.
+--mana [--check] [--class NAME]: the mana runway (owner, 2026-10-17: "Magias com custo de mana muito alto, difíceis de
+manter"): per class and checked level, how long the best set runs from a full pool with the vocation's own regeneration
+(mana_runway); a row under MANA_RUNWAY (15 s) is SHORT, and --check exits 1 on any.
+--heal: Shadow Mend (the Thief line's self heal) at level 300 and 1000 against the measured self heal per second of the Ranger
+line and the Illusionist (server/data/spells/README.md "Healing"): the formula of chaos_constants.lua, the cooldown and manapercent
+of spells_chaos.xml, the base health and the mana pool of the data.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
 button: the best set for every level where the class gets a new attack spell, and its heals).
 """
@@ -51,13 +54,15 @@ TOSS_SCRIPT = os.path.join(SPELLS, 'chaos', 'thief', 'shuriken_toss.lua')
 BLADES = os.path.join(SPELLS, 'chaos', '_blades.lua')
 PACKTOOLS = os.path.join(SPELLS, 'chaos', '_packtools.lua')
 CLIENT_DATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
+VOCATION_XMLS = os.path.join(REPO, 'server', 'data', 'XML')      # chaos_vocations*.xml: mana gain and regeneration
+START_STATS = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'start_stats.lua')  # level 1 mana per class
 
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
 HORIZON = 120.0               # seconds simulated from a fresh start
 MAX_SPELLS = 5
-GAP_LIMIT = 2.0
 BANDS = (15, 30, 60, 100, 300, 600, 1000)
-GAP_FROM = 15                 # the 2.0 s rule holds from this level up (below: exempt, see the docstring)
+MANA_RUNWAY = 15.0                # a class's best set must run this many seconds on a full mana pool (see mana_runway)
+MANA_MAX_LEVEL = 300              # checked at the bands and preset levels up to here (the owner's review: 8 to 100; 200 and 300 too)
 NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation the simulator builds
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
@@ -310,7 +315,7 @@ def class_spells(spells, cls, level, group='attack'):
 
 # ---------------------------------------------------------------------------------------------------------- sim
 class Spell(object):
-    __slots__ = ('chaos', 'words', 'name', 'id', 'cd', 'gcd', 'sec', 'seccd', 'cast', 'dmg', 'dmg5', 'chi', 'gain', 'keep')
+    __slots__ = ('chaos', 'words', 'name', 'id', 'cd', 'gcd', 'sec', 'seccd', 'cast', 'dmg', 'dmg5', 'chi', 'gain', 'keep', 'area')
 
 
 def prepare(spells, model, cls, level):
@@ -332,6 +337,7 @@ def prepare(spells, model, cls, level):
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)
         p.keep = 'keep' in m['flags']
+        p.area = m['t5'] >= 3  # the same rule as creatures(): an area spell hits 3+ of a pack
         out.append(p)
     return out
 
@@ -342,8 +348,9 @@ def score(one, five):
 
 
 def order(spells):
-    """priority: the debuffs kept up first, then the most damage per cast (the harness: the strongest ready spell)"""
-    return sorted(spells, key=lambda s: (not s.keep, -score(s.dmg, s.dmg5), s.words))
+    """priority: the debuffs kept up first, then the area spells (3+ targets of the pack), then the single-target spells;
+    inside each group the longest cooldown first, then the most damage per cast (the harness: the strongest ready spell)"""
+    return sorted(spells, key=lambda s: (not s.keep, not s.area, -s.cd, -score(s.dmg, s.dmg5), s.words))
 
 
 def simulate(rotation, horizon=HORIZON):
@@ -434,8 +441,7 @@ def search(pool, ref, limit, by_rate, by_cast):
             _, gap, d1, d5 = simulate(rot)
             share = min(d1 / ref['dps1'], d5 / ref['dps5']) if ref and ref['dps1'] and ref['dps5'] else 1.0
             short = share < KEEP_SHARE
-            key = (gap > GAP_LIMIT + 1e-9, round(gap, 2) if gap > GAP_LIMIT + 1e-9 else 0, short,
-                   -round(share, 3) if short else 0, -score(d1, d5), k)
+            key = (short, -round(share, 3) if short else 0, -score(d1, d5), k)
             if best is None or key < best[0]:
                 best = (key, rot, gap, d1, d5)
     return best
@@ -452,9 +458,16 @@ def harness(pool):
     return {'spells': rot, 'gap': gap, 'dps1': d1, 'dps5': d5}
 
 
+_ANALYSED = {}
+
+
 def analyse(spells, model, cls, level):
-    pool = prepare(class_spells(spells, cls, level), model, cls, level)
-    return {'pool': pool, 'best': best_set(pool), 'all': harness(pool)}
+    key = (id(spells), id(model), cls, level)  # the callers pass the same loaded lists: the search runs once per class and level
+    if key not in _ANALYSED:
+        pool = prepare(class_spells(spells, cls, level), model, cls, level)
+        best = best_set(pool)
+        _ANALYSED[key] = {'pool': pool, 'best': mana_fit(best, pool, spells, cls, level), 'all': harness(pool)}
+    return _ANALYSED[key]
 
 
 # ---------------------------------------------------------------------------------------------------------- client
@@ -466,11 +479,10 @@ def breakpoints(spells, model, cls):
 
 
 def creatures(rotation, model):
-    """the helper's monster count per spell: an area spell (3+ of the pack) waits for 2 monsters when the rest of the
-    rotation still casts every 2 s on a lone target; otherwise 1, so a lone target never waits"""
+    """the helper's monster count per spell: an area spell (3+ of the pack) waits for 2 monsters when the rotation has a
+    single-target spell to cast on a lone target; otherwise 1, so a lone target never leaves the helper idle"""
     area = [model[s.words]['t5'] >= 3 for s in rotation]
-    single = [s for s, a in zip(rotation, area) if not a]
-    ok = bool(single) and simulate(single)[1] <= GAP_LIMIT + 1e-9
+    ok = any(not a for a in area)
     return [2 if a and ok else 1 for a in area]
 
 
@@ -535,6 +547,145 @@ def client_data(spells, model):
     return '\n'.join(out) + '\n'
 
 
+# ---------------------------------------------------------------------------------------------------------- mana
+@functools.lru_cache(maxsize=None)
+def mana_stats():
+    """{class: (level 1 mana, mana per level, regeneration per second)} from start_stats.lua and chaos_vocations*.xml.
+    The regeneration is the vocation's own (gainmanaamount per gainmanaticks seconds): no gear, passive tree or potion"""
+    start = {int(v): int(m) for v, m in re.findall(r'\[(\d+)\] = \{health = \d+, mana = (\d+)',
+                                                    open(START_STATS, encoding='utf-8').read())}
+    out = {}
+    for fn in sorted(os.listdir(VOCATION_XMLS)):
+        if not (fn.startswith('chaos_vocations') and fn.endswith('.xml')):
+            continue
+        text = re.sub(r'<!--.*?-->', '', open(os.path.join(VOCATION_XMLS, fn), encoding='utf-8').read(), flags=re.S)
+        for m in re.finditer(r'<vocation\b([^>]*)>', text):
+            a = attrs(m.group(1))
+            if a.get('name') in VOC:
+                out[a['name']] = (start[int(a['id'])], int(a['gainmana']),
+                                  int(a['gainmanaamount']) / float(a['gainmanaticks']))
+    return out
+
+
+def mana_pool(cls, level):
+    first, gain, _ = mana_stats()[cls]
+    return first + (level - 1) * gain
+
+
+def set_runway(rot, spells, cls, level):
+    """seconds a rotation runs from a full mana pool with the vocation's own regeneration (inf when the regeneration pays
+    for it); mana_runway() below is this for the class's best set"""
+    cost = {s['words']: s['mana'] for s in spells if cls in s['vocations'] and s['group'] == 'attack'}
+    casts, _, _, _ = simulate(rot)
+    spent = sum(cost[w] for _, w in casts) / HORIZON
+    net = spent - mana_stats()[cls][2]
+    return mana_pool(cls, level) / net if net > 0 else float('inf')
+
+
+def mana_fit(best, pool, spells, cls, level):
+    """the best set, unless it runs under MANA_RUNWAY seconds on a full pool (2026-10-20: a stronger area spell, Skewering
+    Line, joined the Ranger line's set at level 60 and its 150 mana put the set at 14.8 s): then the best set without
+    one of its spells that keeps the gap and the runway, by the same damage score. The mana costs stay as they are."""
+    if not best or set_runway(best['spells'], spells, cls, level) >= MANA_RUNWAY:
+        return best
+    fits = []
+    for drop in best['spells']:
+        alt = best_set([s for s in pool if s is not drop])
+        if alt and alt['gap'] <= GCD and set_runway(alt['spells'], spells, cls, level) >= MANA_RUNWAY:
+            fits.append(alt)
+    if not fits:
+        return best
+    return max(fits, key=lambda a: score(a['dps1'], a['dps5']))
+
+
+def mana_runway(spells, model, cls, level):
+    """how long the class's best set (at most 5 spells, the helper's auto rotation) can be cast without a pause from a
+    full mana pool, with the vocation's own regeneration only: pool / (mana spent per second - regeneration), in seconds
+    (None when the regeneration pays for it, or the class has no attack spell yet). The set is the one the damage score
+    picks; mana is not part of the choice. Returns (runway, pool, regeneration/s, spent/s, the set with its costs)"""
+    best = analyse(spells, model, cls, level)['best']
+    if not best:
+        return None
+    cost = {s['words']: s['mana'] for s in spells if cls in s['vocations'] and s['group'] == 'attack'}
+    casts, _, _, _ = simulate(best['spells'])
+    spent = sum(cost[w] for _, w in casts) / HORIZON
+    pool, regen = mana_pool(cls, level), mana_stats()[cls][2]
+    net = spent - regen
+    return (pool / net if net > 0 else float('inf'), pool, regen, spent, [(s.name, cost[s.words]) for s in best['spells']])
+
+
+def mana_levels(spells, model, cls):
+    """the levels a class is checked at: the bands and the preset levels from 8 (the start level) to MANA_MAX_LEVEL"""
+    return sorted(l for l in set(BANDS) | set(breakpoints(spells, model, cls)) | {8} if l <= MANA_MAX_LEVEL)
+
+
+def mana_report(spells, model, only_cls=None):
+    """prints the runway of every class at every checked level; returns the rows under MANA_RUNWAY"""
+    short = []
+    for cls, _, _ in CLASSES:
+        if only_cls and cls != only_cls:
+            continue
+        for lv in mana_levels(spells, model, cls):
+            r = mana_runway(spells, model, cls, lv)
+            if not r:
+                continue
+            flag = r[0] < MANA_RUNWAY
+            if flag:
+                short.append((cls, lv, r))
+            print('%-12s %4d  pool %6d  regen %5.2f/s  spent %7.2f/s  runway %7.1f s%s  %s' % (
+                cls, lv, r[1], r[2], r[3], r[0], '  SHORT' if flag else '',
+                ' > '.join('%s %d' % c for c in r[4])))
+    return short
+
+
+# ---------------------------------------------------------------------------------------------------------- healing
+CONSTANTS = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'chaos_constants.lua')
+HEAL_INT = 1.2                    # intelligence 20: the engine adds 20% to every non-physical value (the harness)
+HEAL_ML = {300: 30, 1000: 40}     # the harness's magic level of the Thief line (server/data/spells/README.md "Healing")
+HEAL_REF = {300: {'Ranger line': 798, 'Illusionist': 1538}, 1000: {'Ranger line': 1180, 'Illusionist': 2317}}  # measured self heal /s
+
+
+def shadow_mend_cfg():
+    """{perLevel, perMagicLevel, maxHealthShare, spread} of Chaos.classes.shadowMend, and the spell's cooldown (ms) and
+    manapercent from spells_chaos.xml"""
+    text = open(CONSTANTS, encoding='utf-8').read()
+    m = re.search(r'shadowMend = \{([^}]*)\}', text)
+    cfg = {k: float(v) for k, v in re.findall(r'(\w+) = ([\d.]+)', m.group(1))}
+    xml = open(CHAOS_XML, encoding='utf-8').read()
+    a = attrs(re.search(r'<instant\b[^>]*name="Shadow Mend"[^>]*>', xml).group(0))
+    cfg['cooldown'] = int(a['cooldown'])
+    cfg['manapercent'] = float(a['manapercent'])
+    return cfg
+
+
+def heal_health(cls, level):
+    """base maximum health of a class at a level: start_stats.lua plus the vocation's gain per level (no gear, no tree)"""
+    start = {int(v): int(h) for v, h in re.findall(r'\[(\d+)\] = \{health = (\d+)', open(START_STATS, encoding='utf-8').read())}
+    ids = {'Thief': 11}
+    gain = {'Thief': 12}
+    return start[ids[cls]] + (level - 1) * gain[cls]
+
+
+def shadow_mend_rate(level, ml, health=None):
+    """Shadow Mend on the Thief: (average heal of a cast, heal per second at the cooldown, mana per cast, heal per mana,
+    mana per minute); the same formula as ChaosClasses.shadowMendRange x the intelligence bonus"""
+    c = shadow_mend_cfg()
+    health = heal_health('Thief', level) if health is None else health
+    avg = (level * c['perLevel'] + ml * c['perMagicLevel'] + health * c['maxHealthShare']) * HEAL_INT
+    cost = mana_pool('Thief', level) * c['manapercent'] / 100.0
+    per_s = avg / (c['cooldown'] / 1000.0)
+    return avg, per_s, cost, avg / cost, cost * 60000.0 / c['cooldown']
+
+
+def heal_report():
+    """prints Shadow Mend against the measured self heals of the Ranger line and the Illusionist (README "Healing")"""
+    for lv, ml in sorted(HEAL_ML.items()):
+        avg, per_s, cost, per_mana, per_min = shadow_mend_rate(lv, ml)
+        ref = HEAL_REF[lv]
+        print('Thief %4d  ml %2d  cast %6.0f  %6.0f/s  cost %5.0f  %5.1f heal/mana  %6.0f mana/min  Ranger line %4d  Illusionist %4d' % (
+            lv, ml, avg, per_s, cost, per_mana, per_min, ref['Ranger line'], ref['Illusionist']))
+
+
 # ---------------------------------------------------------------------------------------------------------- report
 def fmt_set(r):
     return ' > '.join(s.name for s in r['spells'])
@@ -577,6 +728,13 @@ def main(argv):
     spells, model = load_all()
     cls = argv[argv.index('--class') + 1] if '--class' in argv else None
     lv = int(argv[argv.index('--level') + 1]) if '--level' in argv else None
+    if '--mana' in argv:
+        short = mana_report(spells, model, cls)
+        print('%d class/level rows under %.0f s of mana' % (len(short), MANA_RUNWAY))
+        return 1 if short and '--check' in argv else 0
+    if '--heal' in argv:
+        heal_report()
+        return 0
     if '--report' in argv or cls or lv:
         report(spells, model, cls, lv)
     if '--write' in argv or '--check' in argv:

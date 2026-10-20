@@ -25,7 +25,7 @@ local function itemAttack(item)
 	return a or 0
 end
 
--- skill x attack of the Monk's strikes: a staff (any club) in hand uses club skill x its attack, otherwise the fists
+-- skill x attack of the Monk's strikes: a staff (any club) in hand uses the melee skill x its attack, otherwise the fists
 -- (fist skill x the level-based fist attack, or a fist weapon's attack)
 function MonkSpell.power(player)
 	local fistWeapon = 0
@@ -34,7 +34,7 @@ function MonkSpell.power(player)
 		if item then
 			local wt = ItemType(item:getId()):getWeaponType()
 			if wt == WEAPON_CLUB then
-				return player:getEffectiveSkillLevel(SKILL_CLUB) * math.max(20, itemAttack(item))
+				return ChaosSpell.meleeSkillLevel(player) * math.max(20, itemAttack(item))
 			end
 			for _, id in ipairs(M.cfg.unarmed.fistWeapons) do
 				if id == item:getId() then

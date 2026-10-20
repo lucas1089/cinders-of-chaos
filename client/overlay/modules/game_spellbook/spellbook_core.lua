@@ -19,6 +19,13 @@ Core.FILTERS = {
   { key = 'runes', text = 'Runes' } -- the rune entries only; every other filter lists spells only
 }
 Core.DEFAULT_FILTER = 'learned'
+-- second drop-down: attack or support spells (any spell that does not hurt: healing, buffs, summons, utility)
+Core.KINDS = {
+  { key = 'all', text = 'All types' },
+  { key = 'attack', text = 'Attack' },
+  { key = 'support', text = 'Support' }
+}
+Core.DEFAULT_KIND = 'all'
 Core.SETTINGS_NODE = 'chaosSpellbook'       -- g_settings node: {[character name] = filter key}
 Core.PICKER_SETTING = 'chaosPickerLearnedOnly' -- the pickers' "Only show learned spells" box
 
@@ -65,12 +72,14 @@ local function vocationList(spell)
 end
 
 -- ctx.vocation nil: the caller already kept only the character's spells (the pickers)
-function Core.vocationOk(spell, vocation)
+-- fold: the vocation as the client folds it (translateVocation), also accepted when it is not 0
+function Core.vocationOk(spell, vocation, fold)
   if vocation == nil then return true end
   local ids = vocationList(spell)
   if #ids == 0 then return true end
+  fold = tonumber(fold)
   for _, id in ipairs(ids) do
-    if id == tonumber(vocation) then return true end
+    if id == tonumber(vocation) or (fold and fold ~= 0 and id == fold) then return true end
   end
   return false
 end
@@ -87,7 +96,7 @@ end
 -- 'ready' castable now; 'vocation' not of this vocation; 'learn' needs learning; 'level' level or magic level too low
 function Core.status(spell, ctx)
   ctx = ctx or {}
-  if not Core.vocationOk(spell, ctx.vocation) then return 'vocation' end
+  if not Core.vocationOk(spell, ctx.vocation, ctx.fold) then return 'vocation' end
   if spell.needLearn then
     local learned = ctx.learned or Core.learnedNames
     if not learned[lower(spell.name)] then return 'learn' end
@@ -124,8 +133,59 @@ function Core.filterMatches(spell, ctx, filter)
   return spellLevel(spell) <= level + Core.SOON_LEVELS
 end
 
-function Core.matches(spell, ctx, filter, text)
-  return Core.filterMatches(spell, ctx, filter) and Core.textMatches(spell, text)
+function Core.normalizeKind(key)
+  for _, k in ipairs(Core.KINDS) do
+    if k.key == key then return key end
+  end
+  return Core.DEFAULT_KIND
+end
+
+-- 'attack' or 'support' from the spell's data. The server's kind (type, read from the spell script) decides: damage is
+-- an attack, healing, buffs, summons, conjures and utility are support. A spell without a type falls back to the XML
+-- group (attack; healing and support are support). Runes: their group (a rune has no script kind).
+function Core.kindOf(spell)
+  local t = lower(spell.type)
+  if t == 'damage' then return 'attack' end
+  if t == 'heal' or t == 'buff' or t == 'summon' or t == 'conjure' or t == 'utility' then return 'support' end
+  local g = spell.group
+  if g == 1 or lower(g) == 'attack' then return 'attack' end
+  return 'support'
+end
+
+-- number of tiles the area matrix hits (1 = hit, 3 = centre and hit)
+local function hitCells(area)
+  local n = 0
+  if type(area) ~= 'table' then return n end
+  for _, row in pairs(area) do
+    if type(row) == 'table' then
+      for _, v in pairs(row) do
+        v = tonumber(v)
+        if v == 1 or v == 3 then n = n + 1 end
+      end
+    end
+  end
+  return n
+end
+Core.hitCells = hitCells
+
+-- an attack spell that hits an area: target "area" (round) or "front" (wave / beam), more than one tile hit. A spell
+-- without an area matrix counts when the server called its target an area.
+function Core.isAoE(spell)
+  if Core.kindOf(spell) ~= 'attack' then return false end
+  local target = lower(spell.target)
+  if target ~= 'area' and target ~= 'front' then return false end
+  if type(spell.area) == 'table' and next(spell.area) ~= nil then return hitCells(spell.area) > 1 end
+  return true
+end
+
+function Core.kindMatches(spell, kind)
+  kind = Core.normalizeKind(kind)
+  if kind == 'all' then return true end
+  return Core.kindOf(spell) == kind
+end
+
+function Core.matches(spell, ctx, filter, text, kind)
+  return Core.filterMatches(spell, ctx, filter) and Core.kindMatches(spell, kind) and Core.textMatches(spell, text)
 end
 
 -- level, then name, then words (every spell list and picker)
@@ -143,10 +203,10 @@ function Core.sort(list)
 end
 
 -- indexes of `spells` that pass, in order
-function Core.visibleIndexes(spells, ctx, filter, text)
+function Core.visibleIndexes(spells, ctx, filter, text, kind)
   local out = {}
   for i, spell in ipairs(spells) do
-    if Core.matches(spell, ctx, filter, text) then out[#out + 1] = i end
+    if Core.matches(spell, ctx, filter, text, kind) then out[#out + 1] = i end
   end
   return out
 end
@@ -187,10 +247,20 @@ local function child(window, id)
   return ok and w or nil
 end
 
--- player context of a picker: level and magic level of the local player; the picker filtered the vocation already
-function Core.pickerContext(player)
+-- player context of a picker: vocation, level and magic level of the local player (the Spellbook's rule, so both lists
+-- agree). translate: translateVocation (default: the global)
+function Core.pickerContext(player, translate)
   local ctx = { learned = Core.learnedNames }
   if player then
+    local okv, voc = pcall(function() return player:getVocation() end)
+    if okv and tonumber(voc) then
+      ctx.vocation = tonumber(voc)
+      translate = translate or rawget(_G, 'translateVocation')
+      if translate then
+        local okt, folded = pcall(translate, ctx.vocation)
+        if okt then ctx.fold = tonumber(folded) end
+      end
+    end
     local ok, level = pcall(function() return player:getLevel() end)
     if ok then ctx.level = tonumber(level) end
     local okm, ml = pcall(function() return player:getMagicLevel() end)
@@ -206,7 +276,7 @@ function Core.setupPicker(window, player, spells, env)
   local list = window and child(window, 'spellList')
   if not list then return nil end
   spells = spells or {}
-  local ctx = Core.pickerContext(player)
+  local ctx = Core.pickerContext(player, env.translate)
 
   local rows = {}
   for _, w in ipairs(list:getChildren()) do
@@ -217,7 +287,7 @@ function Core.setupPicker(window, player, spells, env)
     local row = {
       widget = w,
       spell = { name = name, words = words, level = data.level, maglevel = data.mlevel or data.maglevel,
-        needLearn = data.needLearn, type = data.type, rune = data.rune }
+        needLearn = data.needLearn, type = data.type, rune = data.rune, vocations = data.vocations }
     }
     -- a spell picker lists spells; a rune entry stays out unless the caller picks runes (env.runes)
     row.hidden = Core.isRune(row.spell) and not env.runes

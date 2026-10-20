@@ -4,7 +4,7 @@ Os itens são o coração do jogo. Um bom drop muda sua build.
 
 ## Raridade e modificadores
 
-- Há {{item.rarities}} raridades, de {{item.rarityFirst}} a {{item.rarityLast}}. A raridade decide quantos modificadores o item tem.
+- Há {{item.rarities}} raridades: Comum, Incomum, Mágica, Rara, Lendária, Divina e Única. A raridade decide quantos modificadores o item tem: {{item.rarityMods}}, de Comum a Divina. Os itens únicos têm atributos fixos próprios.
 - Cada item tem um item level, de 1 a {{item.maxItemLevel}}. Ele decide os tiers dos modificadores, de T1 a T{{item.tiers}}.
 - Prefixos são dano e defesa. Sufixos são utilidade, resistências e velocidade.
 - A partir de {{item.powersFrom}}, um item pode ter um poder lendário.

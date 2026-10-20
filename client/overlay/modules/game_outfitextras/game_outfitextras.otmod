@@ -1,0 +1,10 @@
+Module
+  name: game_outfitextras
+  description: Customise Character window - dropdowns for wings, outline, footprints, kill effect, loot label, chat colour, spell effect, name plate frame and pet
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ outfitextrascore, outfitextras ]
+  autoload: true
+  autoload-priority: 988
+  @onLoad: init()
+  @onUnload: terminate()

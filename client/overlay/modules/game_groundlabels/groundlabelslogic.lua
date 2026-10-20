@@ -14,7 +14,7 @@ function GL.setFilterLogic(logic)
 end
 
 GL.MAX_LABELS = 40
-GL.RARE = 3 -- "Rare+" = rarity 3 (Rare) or better, uniques, orbs and legendary powers
+GL.RARE = 3 -- "Magic+" = rarity 3 (Magic) or better, uniques, orbs and legendary powers (the setting key stays rarePlus)
 GL.TEXT_COLOR = '#d8cfbf' -- items without a rarity colour
 GL.DIM_COLOR = '#8c8478'
 GL.HIGHLIGHT_BACKGROUND = '#100c0ef0'
@@ -80,6 +80,24 @@ end
 -- ---------------------------------------------------------------- what is on a tile
 function GL.posKey(pos)
   return pos.x .. ',' .. pos.y .. ',' .. pos.z
+end
+
+-- A number for a position: the scan looks at 200+ tiles every 60-400 ms, and a string key per tile made it the biggest
+-- source of Lua garbage while walking (the garbage collector's pauses then land in the walking callbacks).
+function GL.numKey(x, y, z)
+  return z * 4294967296 + y * 65536 + x
+end
+
+-- The scan reads a tile's items (ids and counts, the costly part) only when the tile's thing count changed, or when its
+-- last full look is older than VERIFY_MS (a stack that grew by one, an item swapped for another: the count stays).
+-- The next full look of a tile is staggered by its key, so they do not all fall into one scan.
+GL.VERIFY_MS = 1000
+function GL.needsLook(c, count, nowMs)
+  return c == nil or c.cnt ~= count or nowMs >= c.verifyAt
+end
+
+function GL.nextLook(nowMs, nkey)
+  return nowMs + GL.VERIFY_MS + (nkey % 10) * 40
 end
 
 -- f = {ground, border, bottom, top, pickupable, container, corpse}: the things the labels are about
@@ -289,6 +307,15 @@ function GL.widgetBox(b)
   local W = 2 * math.max(math.abs(b.x), math.abs(b.x + b.w))
   local H = 2 * math.max(math.abs(b.y), math.abs(b.y + b.h))
   return { w = W, h = H, cx = math.floor(W / 2 + b.x), cy = math.floor(H / 2 + b.y) }
+end
+
+-- A press on a label is a click only when the mouse stays put; the engine starts a drag after 4 pixels
+-- (UIManager::inputEvent), so a press that moved that far is a drag of the item and never a click on the label.
+GL.DRAG_PIXELS = 4
+function GL.isDrag(down, up)
+  if type(down) ~= 'table' or type(up) ~= 'table' then return false end
+  local dx, dy = (up.x or 0) - (down.x or 0), (up.y or 0) - (down.y or 0)
+  return math.sqrt(dx * dx + dy * dy) >= GL.DRAG_PIXELS
 end
 
 -- the client's settings fingerprint of the loot filter (labels are rebuilt when it changes)

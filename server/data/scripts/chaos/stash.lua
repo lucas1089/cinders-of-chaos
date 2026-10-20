@@ -42,6 +42,10 @@
 --     access {canWithdraw} | {canDeposit}   after a refused withdrawal or deposit
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -300,7 +304,7 @@ function S.factsOf(player, item)
 	f.riftKey = custom(item, "rift_tier") ~= nil or (rk ~= nil and id == rk.itemId and f.actionId == rk.actionId) or nil
 	f.bound = isBound(item)
 	f.locked = int(custom(item, "chaos_locked")) ~= 0
-	f.rarity = int(custom(item, "rarity"))
+	f.rarity = ChaosRarity.canon(int(custom(item, "rarity"))) % ChaosRarity.UNIQUE -- a stored id (an old 6 .. 15 is the rarity it became)
 	f.blocked = player and blockedSet(player:getGuid())[id] == true or false
 	f.plain = f.stackable and IC.isPlain(item)
 	local name = call(item, "getName")
@@ -787,13 +791,20 @@ end
 
 -- true, why ("pz" | "hideout" | "remote") when the player may deposit here: in town for everybody, anywhere with the
 -- remote deposit unlock (bought, or lent by an active Chaos Pact)
+function S.depositClosed()
+	return cfg.toDepot ~= nil and cfg.toDepot.enabled == true
+end
+
 function S.canDeposit(player, view)
+	if S.depositClosed() then
+		return false, "depot" -- the depot is the storage (stash_config.lua toDepot)
+	end
 	return Core.canDeposit(cfg, view or S.viewOf(player), S.place(player))
 end
 
 local function refuseDeposit(player, quiet)
 	if not quiet then
-		player:sendCancelMessage(Chaos.t(player, M.depositPz))
+		player:sendCancelMessage(Chaos.t(player, S.depositClosed() and M.depositClosed or M.depositPz))
 		send(player, {make = "access", canDeposit = false})
 	end
 end
@@ -838,6 +849,9 @@ function S.sendItems(player)
 	local place = S.place(player)
 	local can = Core.canWithdraw(cfg, place)
 	local canDep, depWhy = Core.canDeposit(cfg, view, place)
+	if S.depositClosed() then
+		canDep, depWhy = false, "depot"
+	end
 	local tabList = Core.tabsView(cfg, view, entries)
 	for _, t in ipairs(tabList) do
 		if t.icon then
@@ -846,18 +860,28 @@ function S.sendItems(player)
 	end
 	send(player, {make = "tabs", tabs = tabList, limit = view.general, pact = active,
 		tabSize = cfg.tabSize, canWithdraw = can, withdrawWhy = can and (place.pz and "pz" or "hideout") or nil,
-		canDeposit = canDep, depositWhy = depWhy, remote = view.remote})
+		canDeposit = canDep, depositWhy = depWhy, remote = view.remote, closed = S.depositClosed() or nil})
 	if #list == 0 then
 		send(player, {make = "addItems", isFirst = true, isLast = true, items = {}})
 		return
 	end
-	local size = cfg.chunkSize
-	for first = 1, #list, size do
-		local chunk = {}
-		for i = first, math.min(first + size - 1, #list) do
-			chunk[#chunk + 1] = list[i]
+	-- packets are cut by size as well as by count: a packet over the engine's 8192 byte string limit goes out in
+	-- "S/P/E" parts that this window (a plain extended opcode listener) cannot read, so the entries in it were lost
+	local size, budget = cfg.chunkSize, cfg.chunkBytes or 6000
+	local chunks, chunk, bytes = {}, {}, 0
+	for _, entry in ipairs(list) do
+		local ok, text = pcall(json.encode, entry)
+		local n = ok and type(text) == "string" and #text + 1 or 0
+		if #chunk > 0 and (#chunk >= size or bytes + n > budget) then
+			chunks[#chunks + 1] = chunk
+			chunk, bytes = {}, 0
 		end
-		send(player, {make = "addItems", isFirst = first == 1, isLast = first + size > #list, items = chunk})
+		chunk[#chunk + 1] = entry
+		bytes = bytes + n
+	end
+	chunks[#chunks + 1] = chunk
+	for i, part in ipairs(chunks) do
+		send(player, {make = "addItems", isFirst = i == 1, isLast = i == #chunks, items = part})
 	end
 end
 
@@ -1320,6 +1344,145 @@ function S.migrateDepot(player)
 	return #stowed, overflow, kept + failed, done
 end
 
+-- ---------------------------------------------------------------- the stash -> depot migration (at a depot locker opening)
+-- true when the migration is on and this character still has to move
+function S.toDepotDue(player)
+	local t = cfg.toDepot
+	return t ~= nil and t.enabled == true and int(player:getStorageValue(cfg.storage.toDepot)) < int(t.version)
+end
+
+-- moves stash entries into depot tabs. slots = {{box = container, free = n}} the open tabs with room, in tab order
+-- (depot.lua Depot.slots). Every entry is a journalled withdrawal (stash_core.lua K.withdraw) whose destination is a
+-- depot box instead of the backpack: a crash or a failed save puts it back. Returns moved, left, done.
+function S.migrateToDepot(player, slots)
+	if not S.toDepotDue(player) then
+		return 0, 0, true
+	end
+	local t = cfg.toDepot
+	local guid = player:getGuid()
+	local stack = math.max(1, int(t.stackSize))
+	local function freeSlot()
+		for _, s in ipairs(slots) do
+			if s.free > 0 then
+				return s
+			end
+		end
+		return nil
+	end
+	local env = S.env(player)
+	function env.give(rec)
+		rec.made = {}
+		local stackable = S.typeFacts(rec.itemId).stackable
+		if rec.plain then
+			local left = int(rec.count)
+			while left > 0 do
+				local slot = freeSlot()
+				if not slot then
+					break
+				end
+				local n = stackable and math.min(stack, left) or 1
+				local item = Game.createItem(rec.itemId, n)
+				if not item then
+					break
+				end
+				local ret = call(slot.box, "addItemEx", item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
+				if ret ~= NOERR and ret ~= true then
+					call(item, "remove")
+					break
+				end
+				slot.free = slot.free - 1
+				rec.made[#rec.made + 1] = item
+				left = left - n
+			end
+			local given = int(rec.count) - left
+			if given <= 0 then
+				return false
+			end
+			if given < rec.count then
+				store.shrinkTake(guid, rec, given)
+				rec.count = given
+			end
+			return true
+		end
+		local slot = freeSlot()
+		if not slot then
+			return false
+		end
+		local item, why = IC.decode(rec.itemId, rec.count, rec.codec, rec.data)
+		if not item then
+			rec.corrupt = why
+			return false
+		end
+		local ret = call(slot.box, "addItemEx", item, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
+		if ret ~= NOERR and ret ~= true then
+			call(item, "remove")
+			return false
+		end
+		slot.free = slot.free - 1
+		rec.made[1] = item
+		return true
+	end
+	function env.ungive(rec)
+		for _, it in ipairs(rec.made or {}) do
+			call(it, "remove")
+		end
+		rec.made = nil
+	end
+	local rows = {}
+	for _, r in ipairs(store.plainRows(guid)) do
+		rows[#rows + 1] = {plain = true, itemId = r.item_id, count = r.count, tab = r.tab, codec = "plain", data = "", sort = r.tab * 1e9 + r.item_id}
+	end
+	for _, r in ipairs(store.itemRows(guid)) do
+		rows[#rows + 1] = {plain = false, id = r.id, row = true, sort = r.tab * 1e9 + 5e8 + r.id}
+	end
+	table.sort(rows, function(a, b) return a.sort < b.sort end)
+	local moved, failed, i = 0, 0, 1
+	local limit = math.max(1, int(t.batch))
+	while i <= #rows and moved + failed < limit and freeSlot() do
+		local rec = rows[i]
+		i = i + 1
+		if rec.row then
+			local r = store.itemRow(guid, rec.id)
+			if r then
+				rec = {id = r.id, itemId = r.item_id, count = math.max(1, r.count), codec = r.codec, data = r.data, tab = r.tab, plain = false}
+			else
+				rec = nil
+			end
+		end
+		if rec then
+			local have = rec.plain and store.plainCount(guid, rec.itemId) or rec.count
+			if rec.plain then
+				rec.count = have
+			end
+			local ok = have > 0 and Core.withdraw(env, rec)
+			if ok then
+				moved = moved + 1
+			else
+				failed = failed + 1
+				if rec.corrupt then
+					warn(player:getName() .. ": stash row " .. tostring(rec.id) .. " could not be moved to the depot: " .. tostring(rec.corrupt))
+				end
+			end
+		end
+	end
+	-- done: every entry tried, or the open tabs are full (what is left waits in the stash, withdraw-only)
+	local more = (i <= #rows and freeSlot() ~= nil) or failed > 0 -- a failed entry (save, corrupt row) is tried again
+	local left = #store.plainRows(guid) + #store.itemRows(guid) -- what is still in the stash
+	if not more then
+		player:setStorageValue(cfg.storage.toDepot, t.version)
+	end
+	if moved > 0 or left > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player, M.toDepot, moved, left))
+		if more then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, M.toDepotMore))
+		end
+		store.log(guid, "todepot", moved, 0, left, more and "partial" or "done")
+		print(string.format("[Chaos stash] %s: stash -> depot, %d moved, %d left, %s", player:getName(), moved, left,
+			more and "more next time" or "done"))
+	end
+	return moved, left, not more
+end
+
 -- ---------------------------------------------------------------- events
 local LoginEvent = CreatureEvent("ChaosStashLogin")
 
@@ -1338,6 +1501,11 @@ function LoginEvent.onLogin(player)
 		warn("login: " .. tostring(err))
 	end
 	return true
+end
+
+-- a depot locker opened (depot.lua afterOpen): the stash window opens (it stays open when it already is)
+function S.openWindow(player)
+	send(player, {make = "Toggle", remote = isRemote(player), open = true})
 end
 
 local ExtendedEvent = CreatureEvent("ChaosStashExtended")

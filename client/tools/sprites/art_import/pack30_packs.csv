@@ -1,0 +1,107 @@
+slug,label,vendor_class,status,category,also,licence_class,fit,dup_of,readme_md5,file_count,png_count,note
+autumn_graveyard,set30 mutter,v1,ready,decor,grounds+bldg,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,8,8,
+bathroom,set30 pocket,v2,ready,decor,grounds,cm-noml-noshare-credit,low,,88b74a8cf1db6209a3be75bfab6a5cd4,35,35,
+boats_docks,set30 pocket,v2,ready,decor,anim,cm-noml-noshare-credit,medium,,cfff7f5279a6bd039c727b224b1a6ecf,16,16,
+bushes,set30 pocket,v2,ready,decor,,cm-noml-noshare-credit,high,,cfff7f5279a6bd039c727b224b1a6ecf,6,6,partial: 6 of 16 members recovered from a damaged archive
+castle_buildings,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,17,17,
+castle_kit,set30 mutter,v1,ready,bldg,anim+decor,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,23,23,
+cult_npcs,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+demon_creatures,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,24,24,
+desert_camp,set30 mutter,v1,ready,decor,grounds+anim+bldg,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,40,40,
+desert_kit,set30 mutter,v1,ready,grounds,decor,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,5,5,
+desert_village,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,18,18,
+dungeon_cells,set30 mutter,v1,ready,decor,grounds+anim,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,38,38,
+dwarven_mountain,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+fishing_village,set30 pocket,v2,ready,bldg,anim+decor,cm-noml-noshare-credit,low,,8f4608d94cfa88375eac60d94ca4a0dc,24,24,
+forest_kit_a,set30 pocket,v2,ready,decor,grounds,cm-noml-noshare-credit,high,,cfff7f5279a6bd039c727b224b1a6ecf,158,158,
+forest_ruins,set30 pocket,v12,ready,decor,,cm-noml-noshare-credit,high,,e3e7ec0da69709f0349ecf688865815a,23,23,"licence text names two studios; credited under both, labelled with the second"
+fossil_site,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,7,7,
+frozen_ruins,set30 mutter,v1,ready,bldg,grounds+decor,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,9,9,
+ghost_town,set30 mutter,v1,ready,decor,grounds+bldg,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,45,45,
+ghosts,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+giant_squid,set30 mutter,v1,ready,strips,anim,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,3,3,
+goblin_camp,set30 mutter,v1,ready,decor,grounds+anim+bldg,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,40,40,
+goblins,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+gothic_buildings,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,15,15,
+graveyard_kit,set30 mutter,v1,ready,grounds,decor+bldg,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,6,6,
+guard_buildings,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,17,17,
+haunted_manor,set30 mutter,v1,ready,decor,grounds+bldg,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,31,31,
+horror_monsters,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,30,30,
+icebergs,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,5,5,
+landmarks,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,15,15,
+lava_islands,set30 mutter,v1,ready,grounds,anim+decor,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,23,23,
+magic_forest,set30 mutter,v1,ready,anim,grounds+decor,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,56,56,
+magic_fx,set30 mutter,v1,ready,fx,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+magic_shops,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+market_stalls,set30 mutter,v1,ready,decor,grounds+bldg,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,40,40,
+mineshaft,set30 mutter,v1,ready,decor,grounds+anim,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,32,32,
+mon_a,set30 monsters,v3,ready,looks,,cm-noml-noshare-nocredit,high,,2d60d706e2750e58224b977499cffefb,75,50,
+mon_b,set30 monsters,v3,ready,looks,,cm-noml-noshare-nocredit,high,,5e2743a008ec36bb88a1da6f0725577a,75,50,
+mon_c,set30 monsters,v3,ready,looks,,cm-noml-noshare-nocredit,high,,de0032d5da7a1dfd0abd22df0db35d05,79,54,
+mushroom_houses,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,18,18,
+orchard_trees,set30 mutter,v1,ready,decor,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+outbreak_zombies,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,20,20,
+pirate_ships,set30 mutter,v1,ready,anim,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,8,8,
+portals_big,set30 mutter,v1,ready,anim,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,9,9,
+portals_small,set30 mutter,v1,ready,anim,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,8,8,
+potions,set30 potions,v4,ready,fx,items,none-found,high,,622c43001ff0857b6bc4795d4ebe57b7,138,127,
+pyramids,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+roman_arenas,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,14,14,
+roman_city,set30 mutter,v1,ready,bldg,grounds,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,32,32,
+roman_temples,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,6,6,
+royal_bedroom,set30 mutter,v1,ready,decor,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,31,31,
+ruined_buildings,set30 mutter,v1,ready,bldg,anim,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,8,8,
+ruined_towers,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,6,6,
+ruined_village,set30 mutter,v1,ready,grounds,bldg+decor,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,17,17,
+sewer_kit,set30 pocket,v2,ready,decor,grounds+anim,cm-noml-noshare-credit,medium,,8f4608d94cfa88375eac60d94ca4a0dc,28,28,
+skeleton_npcs,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,15,15,
+summoning_circles,set30 mutter,v1,ready,fx,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,9,9,
+survivor_base,set30 mutter,v1,ready,decor,grounds+bldg+anim,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,33,33,
+survivors,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,20,20,
+throne_room,set30 mutter,v1,ready,decor,grounds+anim,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,23,23,
+trees_anim,set30 mutter,v1,ready,anim,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,18,18,
+trick_treaters,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+vermin,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,21,21,inner folder is named like an archive; an empty nested folder beside it
+vineyards,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,10,10,
+volcanoes,set30 mutter,v1,ready,anim,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,9,9,
+wall_decor,set30 mutter,v1,ready,decor,,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,5,5,
+war_beasts,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+war_camp,set30 mutter,v1,ready,decor,grounds+anim+bldg,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,42,42,
+war_machines,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+wasteland_city,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,12,12,
+wasteland_town,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,19,19,
+weapons,set30 mutter,v1,ready,items,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,4,4,inner folder title differs from the pack
+wizard_buildings,set30 mutter,v1,ready,bldg,,cm-noml-noshare-credit,medium,,b7935c5c71e55b1fc547d12eff0c7754,14,14,
+worship_interior,set30 mutter,v1,ready,decor,grounds+anim,cm-noml-noshare-credit,high,,b7935c5c71e55b1fc547d12eff0c7754,32,32,
+zombie_city,set30 mutter,v1,ready,bldg,decor+anim,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,40,40,
+zombie_civilians,set30 mutter,v1,ready,strips,,cm-noml-noshare-credit,low,,b7935c5c71e55b1fc547d12eff0c7754,16,16,
+autumn_graveyard_dup,set30 mutter,v1,dup,decor,grounds+bldg,cm-noml-noshare-credit,high,autumn_graveyard,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+cult_npcs_dup,set30 mutter,v1,dup,strips,,cm-noml-noshare-credit,high,cult_npcs,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+dungeon_cells_dup,set30 mutter,v1,dup,decor,grounds+anim,cm-noml-noshare-credit,high,dungeon_cells,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+fossil_site_dup,set30 mutter,v1,dup,bldg,,cm-noml-noshare-credit,low,fossil_site,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+gothic_buildings_dup,set30 mutter,v1,dup,bldg,,cm-noml-noshare-credit,medium,gothic_buildings,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+magic_shops_dup,set30 mutter,v1,dup,bldg,,cm-noml-noshare-credit,medium,magic_shops,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+mineshaft_dup,set30 mutter,v1,dup,decor,grounds+anim,cm-noml-noshare-credit,high,mineshaft,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+portals_big_dup,set30 mutter,v1,dup,anim,,cm-noml-noshare-credit,medium,portals_big,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+royal_bedroom_dup,set30 mutter,v1,dup,decor,,cm-noml-noshare-credit,medium,royal_bedroom,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+summoning_circles_dup,set30 mutter,v1,dup,fx,,cm-noml-noshare-credit,high,summoning_circles,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+survivor_base_dup,set30 mutter,v1,dup,decor,grounds+bldg+anim,cm-noml-noshare-credit,low,survivor_base,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+trees_anim_dup,set30 mutter,v1,dup,anim,,cm-noml-noshare-credit,medium,trees_anim,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+trick_treaters_dup,set30 mutter,v1,dup,strips,,cm-noml-noshare-credit,low,trick_treaters,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+zombie_city_dup,set30 mutter,v1,dup,bldg,decor+anim,cm-noml-noshare-credit,low,zombie_city,b7935c5c71e55b1fc547d12eff0c7754,0,0,archive only; same files as the ready folder
+forest_kit_x,,v0,excluded,decor,grounds,none-found,low,,d41d8cd98f00b204e9800998ecf8427e,52,52,owner decision; licence text file is empty
+autumn_trees,,v0,pending,decor,,unread,high,,,0,0,second batch
+bridges,,v0,pending,decor,,unread,unknown,,,0,0,second batch
+cherry_trees,,v0,pending,decor,,unread,low,,,0,0,second batch
+dark_dungeon_kit,,v0,pending,grounds,,unread,high,,,0,0,second batch; partial download
+dark_forest_trees,,v0,pending,decor,,unread,high,,,0,0,second batch
+farmhouse_bedroom,,v0,pending,decor,,unread,low,,,0,0,second batch
+farmhouse_kitchen,,v0,pending,decor,,unread,low,,,0,0,second batch
+forest_rocks,,v0,pending,decor,,unread,high,,,0,0,second batch
+large_forest_trees,,v0,pending,decor,,unread,unknown,,,0,0,second batch
+mini_books,,v0,pending,items,,unread,medium,,,0,0,"second batch; 9 books, open and closed strips of 7 frames"
+palm_trees,,v0,pending,decor,,unread,unknown,,,0,0,second batch
+pumpkins_anim,,v0,pending,anim,,unread,low,,,0,0,second batch
+river_island_kit,,v0,pending,grounds,,unread,medium,,,0,0,"second batch; list says a zip of 19 files, check"
+snowy_trees,,v0,pending,decor,,unread,medium,,,0,0,second batch
+vermin_starter,,v0,pending,strips,,unread,medium,,,0,0,second batch

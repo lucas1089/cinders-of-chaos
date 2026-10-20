@@ -21,7 +21,7 @@ local s = {
   cinder = { omenKey = 150, attune = 40, shard = 300, convert = { shards = 2, relics = 2, fee = 0 },
     omens = { { k = 'storm', n = 'Stormcall' } }, ascended = { { k = 'storm', n = 'Storm' }, { k = 'hollow', n = 'Hollow Crown' } },
     shards = { storm = 3 }, relics = {} },
-  refine = { { slot = 6, n = 'a blade', c = 100, r = 5, rn = 'Legendary', to = 'Exotic', p = 300, ok = true } },
+  refine = { { slot = 6, n = 'a blade', c = 100, r = 4, rn = 'Rare', to = 'Legendary', p = 360, ok = true } },
 }
 
 has(V.header(s), '1,500', 'balance in the header')
@@ -48,7 +48,7 @@ for _, r in ipairs(rows) do if r.key == 'conv:shards:storm:hollow' then conv = r
 eq(conv and conv.canBuy, true, 'two storm shards convert')
 rows = V.rows(s, 'refine')
 eq(rows[1].key, 'refine:6', 'refine the worn slot')
-has(rows[1].sub, 'Legendary to Exotic', 'refine text')
+has(rows[1].sub, 'Rare to Legendary', 'refine text')
 local lines = V.progressLines(s)
 has(table.concat(lines, '\n'), 'Raid uniques: 4 misses in a row, chance x2.00', 'pity line')
 has(table.concat(lines, '\n'), 'world boss: 24 of 72', 'today line')

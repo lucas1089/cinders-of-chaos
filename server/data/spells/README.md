@@ -57,7 +57,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | **sorcerer** | | | | | | | |
 | 200 | Rime Bloom | `drai hyr rhim` | M, E | 20 | 120 | 8s | Ice burst (7x7 circle) around you; hit enemies are slowed 40% for 4s. |
 | 201 | Witchfire Bolt | `kah pyr vesh` | M, E | 30 | 70 | 4s | Fire bolt at one target that also leaves it burning (4 ticks). |
-| 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (70% damage per jump). |
+| 202 | Forked Storm | `kah zhul zarn` | M, E | 50 | 200 | 7s | Energy bolt that jumps to up to 3 more monsters within 3 sqm (full damage on every jump since 2026-10-20; was 70% per jump). |
 | 203 | Crimson Covenant | `tor nyx cruor` | M, E | 90 | 50 | 30s | Sacrifice 15% max health: restore 1.5x that as mana and +15% magic level for 12s. |
 | 204 | Falling Pyre | `drai gal vas infr` | M, E | 150 | 700 | 20s | Marks the target position; 1.2s later a meteor hits a 5x5 area for heavy fire damage and ignites enemies. |
 | 205 | Frozen Crypt | `drai gal vas hyr krypt` | E | 220 | 900 | 30s | Ice zone (5x5) on the target for 6 pulses over 5s; enemies inside are slowed 70%. |
@@ -71,19 +71,19 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 212 | Verdant Sanctuary | `saen gal vas vert` | I | 180 | 600 | 30s | Healing zone on your tile: 8 pulses (1/s) heal allies within 3 sqm. |
 | 213 | Primordial Squall | `drai gal vas stoma` | I | 250 | 1200 | 35s | **Cast time 1.5 s.** Three waves (earth, ice, earth) over an 11x11 circle; the ice wave slows 50%. |
 | **paladin** | | | | | | | |
-| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 60 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
-| 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; scales with distance skill. |
+| 214 | Dawnpiercer | `kah sol aurr` | R, D, BM | 30 | 50 | 3s | Holy bolt at one target, the paladin filler; scales mainly with distance skill. |
+| 215 | Skewering Line | `kah sag lanc` | R, D, BM | 60 | 150 | 8s | 7 sqm line of spears in your facing direction; every target takes a Dawnpiercer hit since 2026-10-20 (distance skill x attack 0.042-0.065, magic level 1.0-1.6; was 0.0195-0.0325, no magic level). |
 | 216 | Blessed Earth | `drai vas sol hal` | R, D, BM | 100 | 350 | 24s | Consecrates your tile for 6s: holy damage to enemies within 2 sqm each second, allies are healed half as much. |
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | **knight** | | | | | | | |
-| 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 80 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
-| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 150 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
+| 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
+| 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
-| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 650 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
+| 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
 | **illusionist** | | | | | | | |
 | 226 | Hall of Mirrors | `drai spek` | M, I | 40 | 250 | 30s | Up to 3 decoy clones in your outfit for 10s (needs the Clone monster). |
 | 227 | Umbral Stride | `ruan nyx umh` | M, I | 70 | 120 | 8s | Teleport to the far side of the target and stab it for death damage. |
@@ -99,7 +99,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). |
 | 235 | Hunter's Instinct | `ash senn` | every class | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
 | **thief** (T Thief, N Ninja, Sa Samurai) | | | | | | | |
-| 236 | Shuriken Toss | `kah shur` | T, N, Sa | 20 | 50 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x the star in hand (or a default star). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
+| 236 | Shuriken Toss | `kah shur` | T, N, Sa | 8 | 16 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x a default shuriken attack of 50 (a one-handed distance weapon in hand raises it; no stars, stackable throwing weapons left the game 2026-10-20). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
 | 238 | Shadow Veil | `fen umh` | T, N, Sa | 40 | 120 | 20s | 4 s stealth: monsters drop you and cannot pick you; dealing damage or taking a hit ends it; the first weapon hit out of it crits (x2). |
 | 239 | Poison Blades | `vyr vex thyss` | T, N, Sa | 60 | 150 | 30s | 20 s: weapon hits and weapon strikes poison the target, 60% of the hit as earth damage over 4 s. |
 | 73 | Blade Flurry | `drai vas kaen` | T, N, Sa | 50 | 120 | 8s | Spin: a melee weapon strike on every monster within 2 sqm of you (the 5x5 square; 3x3 in the first pass; players are never hit). On one target it hits like a Shuriken Toss of the class (`_blades.lua` class scale: Thief 1.33, Ninja 1.08 plus the off-hand strike, 0.89 below 180, Samurai 1.5, 1.33 below 120); its worth is the pack (2026-10-15, "Pack farming for every class"). |
@@ -112,13 +112,16 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 74 | Iaido Sweep | `drai gal kaen` | Sa | 200 | 450 | 12s | A wide draw cut towards the target (range 2), no charge, cooldown 8 s (12 s in the first pass): the target takes a melee weapon strike of (P x 0.10-0.16 + 30-60) x 0.8, about half an Iaijutsu, every monster in the 3 x 2 tiles in front of you (the 7 nearest of the quarter on a diagonal) 1.5x that. Other players only when they are the target, with the plain hit (2026-10-15). |
 | 136 | Fan of Knives | `drai vas nyx shur` | T | 80 | 150 | 6s | The Thief only (range 4): a Shuriken Toss of the Thief (x1.33) on the target and on the nearest 5 monsters within 4 sqm of you, ranged weapon strikes (2026-10-15, `_packtools.lua`). |
 | **berserker** (B) / **beastmaster** (BM) | | | | | | | |
-| 246 | Skyfall Cleave | `drai skai hrun` | B | 100 | 300 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) x 0.7 physical, 30% slow 2 s. Needs a weapon. |
+| 246 | Skyfall Cleave | `drai skai hrun` | B | 100 | 100 | 10s | Leap next to the target (range 5) and slam a 3x3 square around it: (level/5 + skill x attack x 0.060..0.105 + 20..40) physical (x0.7 until 2026-10-20), 30% slow 2 s. Needs a weapon. |
 | 247 | Bloodrage | `vyr sang khar` | B | 120 | 200 | 30s | Costs 10% of the current health; 12 s: Rage +10% and every melee weapon hit also strikes up to 4 other enemies next to you for 40% of it. |
 | 248 | Wild Bond | `vael ferh` | BM | 100 | 300 | 10s | Calls the companion (a War Wolf; 2 from level 400): health 500 + 15 x level; companions already out come back to you and heal 50%. |
 | 249 | Feral Command | `kah ferh` | BM | 110 | 200 | 8s | Every companion leaps to the target (range 7) and mauls it for 1.5 bites. |
 | **necromancer** (N Necromancer, L Lich, BL Bone Lord; per-cast numbers: formula; rotations measured, see "Necromancer line") | | | | | | | |
 | 180 | Raise Dead | `vael oss` | N, L, BL | 20 | 60 | 2s | Raises a minion from an empty corpse (never one with loot), else one from nothing for twice the mana; skeletons, the Lich's shade. |
-| 181 | Bone Spear | `kah oss lanc` | N, L, BL | 15 | 40 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
+| 192 | Raise Bone Warrior | `vael oss brak` | N, L, BL | 8 | 50 | 4s | Raises ONE Risen Warrior next to you: melee (range 1, physical), health x1.8 of a skeleton. The oldest minion dies when the total cap is reached. |
+| 193 | Raise Bone Archer | `vael oss sag` | N, L, BL | 12 | 60 | 4s | Raises ONE Risen Archer: range 5, physical arrows, hit x1.25, health x0.6. |
+| 176 | Raise Bone Mage | `vael oss mynd` | N, L, BL | 16 | 70 | 4s | Raises ONE Risen Mage: range 4, energy bolts, hit x1.35, health x0.6. |
+| 181 | Bone Spear | `kah oss lanc` | N, L, BL | 8 | 30 | 2s | The filler: a bone spear at the target (range 5) that pierces to the creature behind. |
 | 182 | Withering Curse | `kah nyx maled` | N, L, BL | 40 | 120 | 8s | The target takes +15% damage from everyone and rots (Lich: +25%, spreads to 2 more; monsters only, players just rot). |
 | 183 | Soul Rot | `kah nyx putr` | L | 100 | 220 | 6s | 6 s death damage over time that jumps to a new host when the target dies. |
 | 184 | Life Siphon | `kah sang nyx` | L | 130 | 260 | 8s | Death damage to the target; heals the Lich for 50% of it. |
@@ -128,9 +131,9 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 12s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
 | 197 | Bone Shrapnel | `drai oss krak` | N | 60 | 100 | 4s | The Necromancer only (range 7): a Bone Spear's hit on the target, every monster within 1 sqm of it 2.5x that (2026-10-15, `_packtools.lua`). |
 | **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
-| 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 15 | 30 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
-| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 80 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
-| 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 120 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
+| 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 8 | 15 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
+| 64 | Sundering Palm | `kah gal dhun` | Mo, SF, IS | 30 | 50 | 6s | Finisher: heavy palm strike, x(0.30 + 0.14 per chi). |
+| 65 | Whirling Heel | `drai spir dhun` | Mo, SF, IS | 50 | 80 | 8s | Finisher: spinning kick on everything next to you (3x3), x chi scale. |
 | 66 | Kindled Breath | `saen qhal` | Mo, SF, IS | 40 | 100 | 8s | Finisher: heals yourself (level x 2 + fist x 6) x chi scale. Iron Sage (the second healer): the most hurt party member within 5 sqm (you without a party) for fist x 33 x chi scale, and 60% more over 6 s. |
 | 67 | Mistborne Step | `ash qhal` | Mo, SF, IS | 35 | 60 | 10s | Roll up to 3 sqm forward; +25% dodge for 2 s. |
 | 68 | Pressure Points | `kah mynd dhun` | SF | 100 | 120 | 4s | Strike + 1 chi + a stack on the target (max 5, 8 s): +5% damage taken from Monks per stack. |
@@ -138,12 +141,12 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 70 | Chi Ward | `tor qhal ["Name"]` | IS | 100 | 200 | 12s | Finisher: shield absorbing (level x 2.5 + fist x 8) x chi scale for 8 s on a party member within 5 sqm (the named one, or the most hurt; you without a party). |
 | 71 | Iron Palm | `kah brak dhun` | IS | 120 | 200 | 8s | Finisher: strike x chi scale; stuns a monster 0.6 s + 0.4 s per chi (cannot move or attack), then 4 s immune; >50000 max health: only slowed 50%. A player (when the hit lands): 0.5 s + 0.1 s per chi (no moving, attacks or attack spells), then 6 s immune, half as long within 15 s (server/README.md "Iron Palm stun on players"). |
 | 72 | Mantra of Stone | `tor vas qhal` | IS | 150 | 400 | 30s | 12 s aura: you and party members within 6 sqm take 8% less damage, and every 2 s each is healed for level + fist x 26. |
-| 194 | Palm Shockwave | `drai gal dhun` | Mo, SF, IS | 50 | 120 | 4s | An Ashen Fist on the target next to you (+2 chi) and a shockwave through every monster within 2 sqm of the target for 2x that (2026-10-15, `_packtools.lua`). |
+| 194 | Palm Shockwave | `drai gal dhun` | Mo, SF, IS | 50 | 70 | 4s | An Ashen Fist on the target next to you (+2 chi) and a shockwave through every monster within 2 sqm of the target for 2x that (2026-10-15, `_packtools.lua`). |
 | 195 | Shadow Ricochet | `kah umh dhun` | SF | 150 | 300 | 8s | An Ashen Fist on the target (range 4, +2 chi) that jumps to 4 more monsters, each within 3 sqm of the last, for 2.5x that. |
 | 196 | Iron Chain | `kah brak vinc` | IS | 150 | 300 | 8s | An Ashen Fist on the target (range 4, +2 chi) that links on to 4 more monsters, each within 2 sqm of the last, for 2x that. |
 | **templar** (T Templar, I Inquisitor, Se Sentinel; P = weapon power, see "Templar line"; rotations measured there) | | | | | | | |
-| 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 20 | 60 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
-| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 200 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
+| 189 | Radiant Smite | `kah sol dyr` | T, I, Se | 8 | 15 | 2s | Holy strike on one target within 3 sqm: (P x 0.10-0.16 + ml x 1-1.5 + 30-60) x the class scale (Templar 0.56, Inquisitor 0.69, below level 120 0.55, Sentinel 0.56). The filler. Cooldown 4 s and no scale until the rotation pass ("Rotations"). |
+| 190 | Consecration | `drai sol haln` | T, I, Se | 40 | 160 | 20s | Holy ground (circle 2) for 6 pulses: P x 0.025-0.04 + ml x 0.4-0.6 + 10-20 per pulse; allies in it healed 30% of a pulse. |
 | 191 | Vow of Mending | `saen tor fidh` | T, I, Se | 30 | 150 | 8s | Self heal: 8% max health + level/5 + ml x 4 (±10%). |
 | 198 | Judgement | `kah sol vehm` | I | 100 | 250 | 12s | Holy strike (range 5): P x 0.08-0.12 + ml x 1-1.5 + 20-40; the target takes +20% holy damage from everyone for 8 s. |
 | 199 | Purging Nova | `drai gal sol orr` | I | 120 | 350 | 8s | Holy circle of 3 sqm: P x 0.08-0.13 + ml x 1-1.5 + 20-40; heals 10% of the damage, at most 5% max health. |
@@ -151,7 +154,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 251 | Rebuke | `vok sol kal` | Se | 100 | 150 | 12s | Taunts every monster within 4 sqm, 25% slow for 6 s. |
 | 252 | Aegis of Faith | `tor gal sol aeg` | Se | 120 | 150 | 25s | With a shield: -40% damage taken for 5 s. |
 | 253 | Lay on Hands | `saen gal manh "Name"` | Se | 150 | 400 | 60s | Party member (named, or the lowest health share) or itself within 5 sqm: 35% max health + ml x 10. |
-| 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 200 | 8s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
+| 137 | Sanctified Ground | `drai sol sanct` | T | 60 | 160 | 8s | The Templar only: 3 holy pulses a second apart within 2 sqm of the cast tile; the Templar's target takes a third of a Radiant Smite a pulse, every other creature 2.5x that (players the plain hit, the PvP rules; 2026-10-15, `_packtools.lua`). |
 | 170 | Shield Wave | `drai sol aeg` | Se | 150 | 250 | 8s | A Radiant Smite of the Sentinel on the target (range 3) and a wave of holy force through the 3 x 3 tiles in front for 2x that (players the plain hit). |
 | **build archetypes, second round** (2026-10-12; docs/BUILDS.md "Snares", "Vigils"; server/README.md "Snares", "Vigils"; Rl = the Ranger line R, D, BM; Tl = the Thief line T, N, S; all = every class) | | | | | | | |
 | 99 | Snare Trap | `drai snar ["element"]` | Rl, Tl | 40 | 90 | 2s | A trap thrown up to 4 sqm (the target or ahead), armed after 0.6 s; a monster within 1 sqm sets it off: up to 8 enemies within 2 sqm take level x 0.4 + power x 0.09-0.135 + 20-40 (power: the best of bow, blade and shuriken). The element (fire, ice, energy, earth, death, holy, physical) is spoken, remembered, or the spell's brand rune. 3 at once, 20 s. |
@@ -179,6 +182,8 @@ in range, in sight) and refunds when it fails. Damage taken does not interrupt. 
 | Primordial Squall (213, Illusionist) | 1.5 s | x0.85 | x0.98 (+15%) |
 | Hail of Dawn (219, Ranger, Deadeye) | 1.0 s | x1.00 | x1.10 (+10%) |
 | Colossus Fall (225, Warrior, Juggernaut, Berserker) | 1.0 s | x0.70 (skill formula) | x0.77 (+10%) |
+
+Since 2026-10-20 ("Area damage is uniform" below) Primordial Squall and Colossus Fall are x1.0.
 
 Mana, cooldowns and levels are unchanged (`spells_chaos.xml` and the client's `spelldata.lua` are the same). The per-cast numbers in
 "Classes" and "PvP" below were measured before this change. Tested in game (Elementalist, Deadeye, Juggernaut, Illusionist):
@@ -377,18 +382,39 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | 1000 | Thief line (Shadow Mend) | 0 | 10.0 | 0 | 0 | 1201 | 0 |
 | 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
 
-**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 2% of the maximum mana, cooldown 2 s, healing group 1 s; Thief,
-Ninja, Samurai): level + magic level x 10 + 4% of the maximum health (+-10%), x1.3 while Shadow Veil is up; healing does not
+**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 2% of the maximum mana, cooldown 1.5 s (2 s until 2026-10-20), healing group 1 s; Thief,
+Ninja, Samurai): level x 0.5 + magic level x 20 + 5% of the maximum health (+-10%; it was level + magic level x 10 + 4%), x1.3 while Shadow Veil is up; healing does not
 end the veil (`Chaos.classes.shadowMend`, `ChaosClasses.shadowMendRange`, script `chaos/thief/shadow_mend.lua`). Id 98 is free in
 the base server's spells.xml, the client's stock spell list and the Chaos block. Measured on the test server by its words in the
 game client (a male Thief, intelligence 20, no tree, no gear, hurt to 20% before each cast): level 300 magic level 30 (4485
 health) 932 per cast (12 casts, 878-974), 1250 veiled (5 casts); level 1000 magic level 40 (42 with the stat bonus, 14565
-health) 2401 (12 casts, 2271-2497), 3140 veiled (4 casts). Every 2 s that is 466 / 1201 per second on itself: about the Ranger
-line's self heal (798 / 1180), well below the Illusionist (1538 / 2317 on itself, and the line heals nobody else). Potions stay
+health) 2401 (12 casts, 2271-2497), 3140 veiled (4 casts). Under the first formula (every 2 s) that was 466 / 1201 per second on itself: 42% under the Ranger
+line's self heal (798 / 1180) at level 300 (see "Shadow Mend rebalance C5" below), well below the Illusionist (1538 / 2317 on itself, and the line heals nobody else). Potions stay
 the Royal Paladin's. The cost is `manapercent="2"` (2% of the maximum mana; it was a flat 80 mana, 11.6 / 30.0 healed per mana,
 far above every other class at level 1000): measured 72 mana at level 300 (3612 mana) and 240 at level 1000 (12012 mana), so
 12.9 / 10.0 healed per mana, about the Mystic's stock heals (10.2 / 14.1). The client shows the current cost
 (`game_chaosspells` keeps the entry's mana at 2% of the player's maximum mana; the spellbook shows "2%").
+
+**Shadow Mend rebalance (C5, 2026-10-20).** Report: "the Thief's healing is too low". Measured with
+`python3 -I server/tools/rotation_sim.py --heal` (the new mode: the formula of `chaos_constants.lua`, the cooldown and
+`manapercent` of `spells_chaos.xml`, the base health and mana pool of the data, magic level 30 / 40, intelligence x1.2) against
+the measured self heals above. Cause: the old formula grew 2.6x from level 300 to 1000 (Ranger line and Illusionist: 1.5x) and
+was 42% under the Ranger line at level 300, the level where players judge it. Cheaper levels now come from the magic level
+(20 per point, it hardly grows) and not from the level.
+
+| Level | Formula / cooldown | Cast (avg) | Per second | Heal per mana | Mana/min | Ranger line | Illusionist |
+|---|---|---|---|---|---|---|---|
+| 300 | before: level + ml x 10 + 4%, 2 s | 901 | 450 | 14.8 | 1821 | 798 | 1538 |
+| 300 | **after: level x 0.5 + ml x 20 + 5%, 1.5 s** | 1126 | **751** | 18.5 | 2428 | 798 | 1538 |
+| 1000 | before | 2264 | 1132 | 11.3 | 6021 | 1180 | 2317 |
+| 1000 | **after** | 2290 | **1527** | 11.4 | 8028 | 1180 | 2317 |
+
+(The tool uses the base health and mana pool, so it is ~4% under the harness' 466 / 1201 before; the ratio is what counts.)
+After: +67% at level 300, +35% at level 1000; level 300 within 6% of the Ranger line (the harness gap suggests ~780), level
+1000 above it (+29%) and still 34% under the Illusionist (who also heals the party). The mana cost stays 2% of the pool: the
+mana per minute rises with the faster cooldown, 2428 of a 3035 pool at level 300 (a Thief that only heals runs out after ~75 s,
+and the attack rotation of `--mana` still runs 83 s). Test: `server/tests/class_kit_test.lua` (Ranger line floor, Illusionist
+ceiling, cooldown 1500). Not re-measured in the game client after the change.
 
 Before -> after for the Illusionist: on another player +14% / +23% (level 300 / 1000), the party +12% / +18%, heal per mana up,
 self heal unchanged. Lead after: on another player +22% / +33% over the next class (the Mystic and the Necromancer line share the
@@ -466,6 +492,21 @@ Ascension at level 100 (the Ascendant Oracle), behind the store unlock of the Ne
   splash on the enemies next to the target, golem 1.8); health: (200 + level x 9 + magic level x 6) x class factor
   (1 / 2.5 / 1.2 / golem 4). Caps: Necromancer 1 / 2 (level 40) / 3 (80) / 4 (200) skeletons; Lich 1 shade; Bone Lord
   5 / 6 (400) skeletons + the golem.
+- **Summon spells and the total cap (2026-10-18)**: Raise Bone Warrior / Archer / Mage (levels 8 / 12 / 16, mana 50 / 60 / 70, 4 s)
+  each create one minion; hit and health use the skeleton formula above with a per-kind factor (`necro_config.lua`
+  `minions.warrior|archer|mage.mult`: warrior hit 1.0 / health 1.8, archer 1.25 / 0.6, mage 1.35 / 0.6) and then the class
+  factor (a Lich's single minion is x2.4 / x2.5, a Bone Lord's x0.6 / x1.2). The warrior has the most health, the archer and the
+  mage hit harder from a distance and break sooner. All minions of the line count together (skeletons, shade, golem and the
+  three kinds) against the class's **total cap** (`minions.classes[].total`): Necromancer 3, Lich 1, Bone Lord 6 (7 from
+  level 400); the passive tree's Legion (+skeletons) raises it by the same number. When the cap is reached, the next
+  summon (any spell, Raise Dead and the Bone Golem included) first dismisses the OLDEST minion (a puff, no corpse, no loot)
+  and then creates the new one (`necro_lib.lua` `M.raise`, pure rule `necro_core.lua` `N.makeRoom`; tested by
+  `tests/necro_test.lua` and `tests/necro_summon_test.lua`). Raise Dead keeps its per-kind caps (they still stop it with
+  "Your army is complete") but the total wins: a Necromancer's old skeleton cap of 4 is never reached, the Lich and the
+  Bone Lord keep their old sums. The level 8 rule is untouched (Bone Spear 8; the summons are support spells, not in the
+  rotation model, so `rotation_sim.py --mana --check` is unchanged). Mana: the three together cost 180, Raise Dead 60 (120
+  from nothing); a Necromancer's pool at level 16 is over 400. Assumption: ids 176, 192, 193 are free on the installed server
+  (they were ammunition conjure spells that the `archery` step switches off; `register_spells.py` skips them).
 - **Raise Dead** uses empty corpses only (never destroys loot; yours, your party's or nobody's), else raises one from
   nothing for twice the mana. Minions follow and are brought back past 7 sqm or across floors, rest while the owner
   stands in a protection zone (monsters cannot enter one) and rise again outside, and go with the owner's logout or death.
@@ -1253,10 +1294,10 @@ for Contagion Rite a kill every 6 / 9 s seeding 3 x 5 ticks of 24% of a weapon h
 | Cascade (Cascade Edge) | Ninja | 1121 -> 1077 | 1424 -> 1931 | 3565 -> 3446 | 5101 -> 7783 | 1T -18% / -25%, 5T -44% / -29% |
 | Cascade (Cascade Edge) | Shadowfist | 1181 -> 1145 | 1262 -> 2333 | 3683 -> 3591 | 3948 -> 8269 | 1T -13% / -21%, 5T -32% / -25% |
 | Cascade (Cascade Edge) | Deadeye | 1312 -> 1260 | 1446 -> 2048 | 4571 -> 4419 | 5385 -> 8862 | 1T -4% / -3%, 5T -40% / -19% |
-| Effigy Caller (Effigy Covenant) | Elementalist | 913 -> 632 | 3442 -> 3231 | 2954 -> 2044 | 11004 -> 10328 | 1T -52% / -55%, 5T -6% / -6% |
-| Effigy Caller (Effigy Covenant) + Idol | Elementalist | 913 -> 632 | 3442 -> 3703 | 2954 -> 2044 | 11004 -> 11839 | 1T -52% / -55%, 5T +8% / +8% |
-| Effigy Caller (Effigy Covenant) | Mystic | 803 -> 556 | 2692 -> 2527 | 2439 -> 1688 | 8354 -> 7841 | 1T -58% / -63%, 5T -27% / -29% |
-| Effigy Caller (Effigy Covenant) | Necromancer | 1009 -> 698 | 1069 -> 1003 | 2598 -> 1798 | 2622 -> 2461 | 1T -47% / -61%, 5T -71% / -78% |
+| Effigy Caller (Effigy Covenant) | Elementalist | 913 -> 712 | 3442 -> 3805 | 2954 -> 2304 | 11004 -> 12166 | 1T -46% / -50%, 5T +11% / +11% |
+| Effigy Caller (Effigy Covenant) + Idol | Elementalist | 913 -> 712 | 3442 -> 4400 | 2954 -> 2304 | 11004 -> 14067 | 1T -46% / -50%, 5T +28% / +28% |
+| Effigy Caller (Effigy Covenant) | Mystic | 803 -> 626 | 2692 -> 2976 | 2439 -> 1902 | 8354 -> 9236 | 1T -52% / -58%, 5T -14% / -16% |
+| Effigy Caller (Effigy Covenant) | Necromancer | 1009 -> 787 | 1069 -> 1182 | 2598 -> 2026 | 2622 -> 2899 | 1T -40% / -56%, 5T -66% / -74% |
 | Rime Orb (Winter's Lattice) | Elementalist | 913 -> 831 | 3442 -> 3633 | 2954 -> 2688 | 11004 -> 11616 | 1T -37% / -41%, 5T +6% / +6% |
 | Rime Orb (Winter's Lattice) + Shard | Elementalist | 913 -> 831 | 3442 -> 3790 | 2954 -> 2688 | 11004 -> 12117 | 1T -37% / -41%, 5T +10% / +10% |
 | Ember Brand (Sigil of Cinders) | Inquisitor | 1086 -> 1142 | 2056 -> 2395 | 3556 -> 3694 | 6192 -> 7084 | 1T -13% / -19%, 5T -30% / -36% |
@@ -1270,10 +1311,37 @@ for Contagion Rite a kill every 6 / 9 s seeding 3 x 5 ticks of 24% of a weapon h
 | Plaguebearer (Contagion Rite + Blackblood Creed) | Thief | 870 -> ~850 | 870 -> ~1500 while the pack dies | 2391 -> ~2340 | 2297 -> ~3500 while the pack dies | 1T -35% / -49%, 5T -56% / -68% |
 | Plaguebearer | Ninja | 1121 -> ~1090 | 1424 -> ~2200 while the pack dies | 3565 -> ~3480 | 5101 -> ~6700 while the pack dies | 1T -17% / -24%, 5T -36% / -39% |
 
+### Effigy rebalance (2026-10-18, computed)
+
+Owner report: "the effigy lowers my DPS, make it hit harder". Cause, from the model the table above used: the price took
+35% of the spell damage (`ownSpell` 0.65) and each pulse is a share of the already priced hit, so two effigies gave back
+2 x 0.22 x 0.65 = 0.286 of a cast: a net loss in a pack (-6% for the Elementalist, -27% for the Mystic), -31% on one
+target (no effigy there) and only +8% with the Idol's third effigy.
+
+| | before | now |
+|---|---|---|
+| price (`ownSpell`) | spells x0.65 | spells x0.75 |
+| pulse (`share`, of the priced average hit, per enemy, every 2 s) | 22% | 24% |
+| back per cast, two effigies (2 x share x ownSpell) | 0.286 | 0.360 |
+| net in a pack (2+ targets), Elementalist rotation (spells 96% of the area damage) | -6.1% | **+10.6%** |
+| net in a pack with the Idol (three effigies) | +7.6% | **+27.8%** |
+| net on one target (spells 88% of the damage; no effigy rises, the price stays) | -30.8% | **-22%** |
+
+`ChaosArchetypesCore.effigyNetGain(unique, spellShare, castMs)` and `effigyNetSingle(spellShare)` compute those lines
+(`archetypes_test.lua` pins them). One target remains a loss because no effigy rises there (`minTargets` 2) and a ranged
+caster would stand out of the effigy's 3 sqm anyway: the keystone is an area one (docs/BUILDS.md says "single target is
+poor"). Rows moved in the table above: Effigy Caller Elementalist 3231 -> 3805 (5 targets, level 300) and 10328 -> 12166
+(level 1000), with the Idol 4400 / 14067; Mystic 2527 -> 2976 / 7841 -> 9236; Necromancer (the old row, before the
+Covenant of the Grave change) 1003 -> 1182 / 2461 -> 2899. The Elementalist still leads area (3442 / 11004 without a
+keystone); with the Idol it is +28% over that, in line with the other archetype gains in the table (Cascade Edge Deadeye
++42% / +65%, Pyre Oath Warrior +32% / +47% in a pack). **Not measured in game**: run the C4 harness with a dying pack (the
+dummies never die) before the next tuning, and watch that a pulse of 24% of 750 = 180 per enemy every 2 s per effigy does
+not outgrow a boss fight.
+
 Leaders after the change (the owner's order kept): the Deadeye leads single target (1312 / 4571; its own archetypes
 1262 / 4347 with Stormstring, 1260 / 4419 with Cascade Edge, both still first); the Elementalist leads area (3442 /
 11004; Rime Orb 3633 / 11616, +6%; with the Shard of the Long Winter 3790 / 12117, +10%; Effigy Caller with the Idol
-3703 / 11839, +8%); no other class passes either leader (the closest: a Pyre Oath Berserker at level 1000, 10385, -6%
+4400 / 14067, +28% after the 2026-10-18 rebalance, was 3703 / 11839, +8%); no other class passes either leader (the closest: a Pyre Oath Berserker at level 1000, 10385, -6%
 in area; Ember Brand Inquisitor 1142 / 3694 on one target, -13% / -19%). The single-target order behind the Deadeye
 keeps (Cascade Edge bursts only on the other enemies, so it adds area, not single target).
 
@@ -1678,8 +1746,9 @@ rotation held Sunder Guard (stock, no damage, +5% damage taken for 16 s) had no 
 - **The 2.0 s rule from level 15.** The bands are 15 / 30 / 60 / 100 / 300 / 600 / 1000 for every class, and the test
   checks every band and every level where a class's preset changes from level 15 up (`GAP_FROM`). Below level 15 the rule
   is exempt: those are a new character's first levels, and a class may get its first spell on a longer cooldown there
-  (today every preset below 15, the Mystic line's, already casts every 2 s). A class with no attack spell yet has no preset (the Warrior line until 16, Thief and Templar lines until 20,
-  Ranger line until 23); it fights with its weapon. A check of every level 15-200 found no other gap.
+  (today every preset below 15, the Mystic line's, already casts every 2 s). A class with no attack spell yet has no preset (until 2026-10-17 the Warrior line until 16, Thief and Templar
+  lines until 20, Ranger line until 23; now every class has its first attack spell at the start level 8, "Level 8 spells"
+  below); it fights with its weapon. A check of every level 15-200 found no other gap.
 - **Bonebreaker** (stock, 61, Warrior line from level 16; `spell_timings.csv`, install step `spells`): cooldown 6 s ->
   2 s. It was the line's only attack spell at levels 16-27 (gap 6 s; 4 s at 28-29 with Cyclone Hurl). Damage unchanged
   (a stock script). A Warrior's spell damage per second at levels 16 / 20 / 25 / 28: 3.2 / 3.7 / 4.4 / 8.3 -> 9.6 / 11.1 /
@@ -1892,6 +1961,291 @@ cast about 0.3 s. Since then the helper's `ChaosHelperRotation.castable` reads t
 an empty healing tab filled (Templar: Vow of Mending at 45%), a question before replacing a changed rotation and before
 replacing a filled healing tab, the box "Rotation set: Consecration > Radiant Smite (max gap 2.0 s)", and a level-up
 (the Deadeye from 279 to 300) that changed the set without a click (Hail of Dawn added).
+
+### Level 8 spells (2026-10-17; owner debug item 44: "A maioria das classes não tem magia no level 8")
+
+New characters start at level 8 (docs/CLASSES.md "Starting stats"), but only the Mystic line had an attack spell there
+(Kindling Spark). The first attack spell of every other line came at level 15 (Necromancer, Monk lines), 16 (Warrior), 20
+(Thief, Templar) or 23 (Ranger): a Warrior, Ranger, Thief, Monk, Necromancer or Templar had nothing to cast for its first
+7 to 15 levels. Every class and ascension now has its first attack spell at level 8 (spells spend mana as they were, see
+"Mana runway"; `needlearn="0"`, so every character of the vocation and level can cast it: nothing to teach, the spellbook
+(Alt+S), the action bar and the Helper's Auto setup list it from the first login):
+
+| Line | Level 8 spell | Was | Mana (was) | Notes |
+|---|---|---|---|---|
+| Warrior, Juggernaut, Berserker | Bonebreaker (stock, `kah brak`) | 16 | 10 (30) | needs a weapon (the kit's jagged sword) |
+| Ranger, Deadeye, Beastmaster | Phantom Javelin (stock, `kah sag`) | 23 | 20 (25) | range 7, no ammunition needed |
+| Thief, Ninja, Samurai | Shuriken Toss (236, `kah shur`) | 20 | 16 (50) | the kit carries 30 throwing stars (a default star otherwise) |
+| Necromancer, Lich, Bone Lord | Bone Spear (181, `kah oss lanc`) | 15 | 30 (40) | Raise Dead stays at level 20 |
+| Monk, Shadowfist, Iron Sage | Ashen Fist (63, `kah dhun`) | 15 | 15 (30) | the chi builder, +2 chi |
+| Templar, Inquisitor, Sentinel | Radiant Smite (189, `kah sol dyr`) | 20 | 15 (60) | holy filler, range 3 |
+
+The Mystic, Elementalist and Illusionist keep Kindling Spark (stock, level 8, 6 mana). Damage of the moved spells is
+unchanged: every formula is a level and skill expression (`(level / 5 + skill x attack x ... + 20..40)`), so at level 8 a
+cast deals the flat part, about 20-40, with the class scale; the Helper presets of the six lines get their first entry at
+level 8 (`autorotation_data.lua`: one spell, a lone 2 s filler, gap 2.0 s). The stock Bonebreaker and Phantom Javelin
+change through `server/tools/patch_spell_timings.py` (`spell_timings.csv` now carries `level` and `mana` columns), the
+others in `chaos/spells_chaos.xml`; the client's stock entries follow in `game_chaosspells/spellfix.lua`.
+`rotation_sim_test.py` fails when a class has no attack spell at level 8.
+
+### Mana runway (2026-10-17; owner debug item 45: "Magias com custo de mana muito alto, difíceis de manter"; computed)
+
+**The check** (`python3 -I server/tools/rotation_sim.py --mana [--class NAME] [--check]`, run by `rotation_sim_test.py` in
+CI): the **mana runway** of a class at a level is how long its best rotation (the Helper's Auto rotation set of at most 5
+spells, "Rotations") can be cast without a pause from a **full mana pool** with the **vocation's own regeneration** only
+(no potion, gear, passive tree or Mana Cost Reduction): `pool / (mana spent per second - regeneration)`.
+- pool = level 1 mana + (level - 1) x mana per level (`start_stats.lua`, `chaos_vocations*.xml`): Warrior 70 at level 8,
+  530 at 100; Ranger 165 / 1545; Thief and Monk 115 / 1035; Templar 96 / 832; Necromancer 262 / 2654; Mystic 300 / 3060.
+- regeneration = `gainmanaamount / gainmanaticks` of the vocation: Warrior 0.83 a second, Ranger, Thief, Monk and Templar
+  1.25, Mystic and Necromancer 1.67, Juggernaut, Berserker 2.5, Ninja, Samurai, Shadowfist, Iron Sage, Deadeye,
+  Beastmaster, Inquisitor 3.33, Elementalist, Lich, Bone Lord 5.
+- mana spent = the cast list of the 120 s simulation x each spell's mana.
+- **The rule: a runway of at least 15 s** at every band (8 / 15 / 30 / 60 / 100 / 300) and every level where a class's
+  preset changes, up to level 300. It is a floor, not a target: a hunt pull lasts about 10-20 s and potions and the
+  tree come on top; the Mystic line was at 19-26 s at its worst level and is untouched.
+- Only a spell that sits in a failing class's best set was touched, and only as far as the failing row needed (to 15-20 s).
+
+**Before: 69 rows of 21 classes x 14-17 levels under 15 s**, the worst: the Warrior line (4.5 s at levels 90-100: a full
+pool of 480-530 mana against Butcher's Gyre 340, Scything Arc 200, Earthbreaker 150, Reaver's Spin 115 on 4-6 s cooldowns,
+107 mana a second; the Berserker 5.2 s), the Templar line (6.3-9.5 s at levels 20-60: Radiant Smite 60 mana every 2 s
+against a pool of 173-272), the Thief line at 20-30 (9.9-14.1 s, Shuriken Toss 50), the Monk line at 15 and 50-60
+(10-14.7 s), and four marginal rows (Ranger and Beastmaster 50: 14.4-14.8 s; the Illusionist 38-40: 13.7-14.3 s). **After:
+none**. Costs changed (22 spells; level, mana before -> after; cooldowns and damage unchanged):
+
+| Line | Spell | Mana |
+|---|---|---|
+| Warrior, Juggernaut, Berserker | Bonebreaker (stock, level 16 -> 8) | 30 -> 10 |
+| | Reaping Gyre (220) | 80 -> 30 |
+| | Earthrend (stock) | 160 -> 60 |
+| | Reaver's Spin (stock) | 115 -> 40 |
+| | Earthbreaker (221) | 150 -> 50 |
+| | Scything Arc (stock) | 200 -> 55 |
+| | Butcher's Gyre (stock) | 340 -> 100 |
+| | Headsman's Hurl (stock) | 225 -> 100 |
+| | Colossus Fall (225) | 650 -> 400 |
+| Berserker | Skyfall Cleave (246) | 300 -> 100 |
+| Ranger, Deadeye, Beastmaster | Phantom Javelin (stock, level 23 -> 8) | 25 -> 20 |
+| | Dawnpiercer (214) | 60 -> 50 |
+| Mystic, Illusionist | Bramble Fan (stock) | 210 -> 180 |
+| Thief, Ninja, Samurai | Shuriken Toss (236, level 20 -> 8) | 50 -> 16 |
+| Necromancer, Lich, Bone Lord | Bone Spear (181, level 15 -> 8) | 40 -> 30 |
+| Monk, Shadowfist, Iron Sage | Ashen Fist (63, level 15 -> 8) | 30 -> 15 |
+| | Sundering Palm (64) | 80 -> 50 |
+| | Whirling Heel (65) | 120 -> 80 |
+| | Palm Shockwave (194) | 120 -> 70 |
+| Templar, Inquisitor, Sentinel | Radiant Smite (189, level 20 -> 8) | 60 -> 15 |
+| | Consecration (190) | 200 -> 160 |
+| Templar | Sanctified Ground (137) | 200 -> 160 |
+
+**Runway in seconds of the best set** (before -> after; one number where nothing changed; "-" = no attack spell yet; the
+row of the highest checked level at or below the column):
+
+| Class | 8 | 15 | 30 | 60 | 100 | 300 |
+|---|---|---|---|---|---|---|
+| Warrior | - -> **17** | - -> **25** | 8 -> **24** | 7 -> **20** | 5 -> **17** | 12 -> **35** |
+| Juggernaut | - -> **28** | - -> **42** | 9 -> **31** | 7 -> **22** | 5 -> **18** | 12 -> **36** |
+| Berserker | - -> **31** | - -> **48** | 10 -> **36** | 9 -> **26** | 5 -> **18** | 14 -> **39** |
+| Ranger | - -> **19** | - -> **31** | 25 -> **30** | 18 | 24 | 47 -> **48** |
+| Deadeye | - -> **25** | - -> **40** | 28 -> **35** | 18 -> **19** | 24 -> **25** | 43 -> **44** |
+| Beastmaster | - -> **24** | - -> **38** | 26 -> **33** | 17 -> **18** | 23 | 67 -> **69** |
+| Mystic | 225 | 61 | 19 | 31 | 50 | 83 |
+| Elementalist | inf | 102 | 26 | 20 | 34 | 66 |
+| Illusionist | inf | 78 | 47 | 29 | 47 | 52 |
+| Thief | - -> **17** | - -> **27** | 14 -> **50** | 20 -> **32** | 23 -> **28** | 67 -> **83** |
+| Ninja | - -> **25** | - -> **40** | 16 -> **72** | 21 -> **36** | 24 -> **30** | 41 -> **45** |
+| Samurai | - -> **23** | - -> **37** | 14 -> **66** | 19 -> **33** | 31 -> **53** | 26 -> **27** |
+| Necromancer | - -> **20** | 24 -> **33** | 46 -> **62** | 37 -> **38** | 61 -> **63** | 181 -> **187** |
+| Lich | - -> **28** | 32 -> **47** | 60 -> **89** | 69 -> **82** | 60 -> **63** | 113 -> **115** |
+| Bone Lord | - -> **25** | 28 -> **42** | 52 -> **78** | 60 -> **70** | 98 -> **116** | 171 -> **183** |
+| Monk | - -> **18** | 14 -> **30** | 15 -> **28** | 12 -> **20** | 19 -> **32** | 57 -> **94** |
+| Shadowfist | - -> **28** | 16 -> **44** | 17 -> **34** | 12 -> **21** | 18 -> **23** | 38 -> **41** |
+| Iron Sage | - -> **26** | 15 -> **41** | 15 -> **31** | 11 -> **19** | 18 -> **31** | 35 -> **44** |
+| Templar | - -> **15** | - -> **24** | 10 -> **44** | 10 -> **16** | 16 -> **26** | 46 -> **77** |
+| Inquisitor | - -> **26** | - -> **43** | 12 -> **79** | 19 -> **55** | 21 -> **33** | 39 -> **47** |
+| Sentinel | - -> **18** | - -> **28** | 9 -> **49** | 13 -> **37** | 21 -> **60** | 37 -> **51** |
+
+Notes: the Mystic line's Kindling Spark (6 mana) at level 8 runs for ever on the Elementalist and the Illusionist (3 mana
+a second against 4-5 regeneration). The mana spent per second of the Warrior's best set at 100 went 107.5 -> 32.3, the
+Templar's at 60 54.5 -> 32.9, the Monk's at 60 54.6 -> 36.0, the Thief's at 30 25 -> 8. Magic level training follows the
+mana spent, so the cheaper spells train the magic level more slowly (a Warrior's level-100 rotation spends a third of
+before); the Warrior line's magic level matters for little (its spells scale with level and weapon skill). No damage
+changed, so every damage table in this file stands; the Warrior line, the Thief line and the Monk line now spend 20-70%
+less mana for the same damage, which is the point (the owner's complaint). The runway is computed from the
+simulator's pool and regeneration; potions (the Everfull mana potion restores 75-125 on a 1 s exhaust) and tree
+regeneration were deliberately left out, so a real fight lasts longer. Needs the owner's call: whether 15 s is the right
+floor (a floor of 20 s would cut the Warrior line again by about a quarter at levels 60-100).
+
+### Thief poison (2026-10-17; owner debug item 49: "O poison do thief é muito fraco"; computed from the 2026-10-12 measurements)
+
+Poison Blades (239) and the Blackblood Creed poison every weapon hit with a poison condition of `share` of the hit over
+4 ticks of 1 s (`Chaos.classes.poisonBlades`, `classes.lua poisonTick`, applied in `thief_combat.lua`). A new hit
+**replaces** the condition (the tick clock runs on), so a class that hits every 1-2 s takes one tick of its last hit a second:
+the poison deals `share / ticks` of a hit per second however fast the weapon is. At `share 0.6` that is **15% of a hit a
+second**, so a tick showed as a small green number and measured (the Creed runs of 2026-10-12, the poison is the `cond/earth`
+share of the harness): at full uptime 48 / 37 / 30 per second at level 300 (Thief / Ninja / Samurai: 5.6% / 3.3% / 4.5% of
+their damage) and 239 / 286 / 180 at level 1000 (9.1% / 7.0% / 7.4%), the weakest part of the kit; the line's Venom Glands
+and Venom Craft nodes add 3-6% earth on it.
+
+**Changed**: `share` 0.6 -> **1.2** (a tick is 30% of the hit, 4 ticks of 1 s), with `classScale` per vocation: Thief x1, Samurai
+x1, **Ninja x0.6** (share 0.72, a tick of 18%, +20% over before). The Ninja's poison stays small because the Deadeye must
+keep leading on one target: the Ninja with the Creed was 8.2% behind it at level 1000 (computed, "Class order fixes"), and
+the full x2 would put it 1.4% behind (4665 against 4733). Blackblood Creed unchanged (+30% poison, evasion halved).
+
+Computed from the measured poison gains of the Creed table above (the poison scales linearly with `share`; Creed runs,
+1 target, damage per second; the Deadeye 1258 / 4733):
+
+| Class | Level | Poison at full uptime, before -> after (share of the run without the Creed) | With the Creed, before -> after | Deadeye ahead, before -> after |
+|---|---|---|---|---|
+| Thief | 300 | 48 -> 96 (5.6% -> 11.1% of damage) | 914 -> 964 | +38% -> +30% |
+| Thief | 1000 | 239 -> 478 (9.1% -> 18.1%) | 2873 -> 3108 | +65% -> +52% |
+| Ninja | 300 | 37 -> 44 (3.3% -> 3.9%) | 1154 -> 1162 | +9.0% -> +8.3% |
+| Ninja | 1000 | 286 -> 343 (7.0% -> 8.4%) | 4374 -> 4432 | +8.2% -> +6.8% |
+| Samurai | 300 | 30 -> 60 (4.5% -> 9.0%) | 701 -> 733 | +79% -> +72% |
+| Samurai | 1000 | 180 -> 360 (7.4% -> 14.8%) | 2601 -> 2776 | +82% -> +70% |
+
+Without the keystone a Thief keeps Poison Blades up 20 s of every 30 (150 mana, level 60): about two thirds of the
+"full uptime" column. The Thief is still the line's lowest single-target class (as designed: the Ninja is the burst
+class); its poison is now 11-18% of its damage (the "without" run) instead of 6-9%. `tests/classes_test.lua` checks the ticks (Thief and
+Samurai 30% of a hit, Ninja 18%, a plain vocation the base share). Needs the owner's call: the Ninja at x1.2 (the
+Deadeye's lead kept at 6.8%, the 8-10% rule of "Class order fixes" is now 1.5 points under at level 1000); the
+passive tree nodes (Venom Glands +6% earth, Venom Craft, the Plaguebearer build's poison spread) were not touched.
+
+### Weapon damage per second (2026-10-17; owner debug item 47: "Fórmula de dano das armas muito inconsistente"; computed)
+
+**The check** (`python3 -I server/tools/weapon_sim.py [--report | --check | --write | --audit DATA_DIR]`, `--check` run by CI,
+`tests/weapon_balance_test.lua`): the engine's formula, `max hit = level / 5 + ((skill / 4 + 1) x (attack / 3) x 1.03) / stance
+factor`, a bell curve over `min .. max` (min 0 for melee, a fifth of the level for a launcher), x the style factor of
+`weapon_styles.lua`, x the hit chance, over the weapon's own attack interval (one-handed 2000 ms, two-handed and launchers
+3000 ms, `two_handed.py`). One tier = the attack of the equipment sets at that level (`install_gear_sets.py` CURVES, which
+were anchored to the stock gear: one-handed 16 at level 8, 40 at 50, 46 at 100, 51 at 300; launchers 31 / 38 / 68 / 72 with
+the ammunition of their band built in, hit chance 90-96%); sword, axe and club of one tier have the same attack there. The
+skill is the same for every style (10 + 0.4 per level above 8: 47 at level 100, 127 at 300), the stance offensive. DPS in the
+table is against **one hand + shield = 1.00**.
+
+| Level | Two-handed before | after | Bow before = after | Bow if aligned | Crossbow before = after | Crossbow if aligned | Widest melee gap before | after | Monk fists |
+|---|---|---|---|---|---|---|---|---|---|
+| 8 | 1.28 | **1.07** | 1.92 | 1.00 | 2.11 | 1.07 | 28% | **7%** | 2.45 |
+| 15 | 1.20 | **1.07** | 1.57 | 1.00 | 1.72 | 1.07 | 20% | **7%** | 1.91 |
+| 30 | 1.17 | **1.07** | 1.26 | 1.00 | 1.35 | 1.07 | 17% | **7%** | 1.39 |
+| 50 | 1.14 | **1.07** | 1.03 | 1.00 | 1.09 | 1.07 | 14% | **7%** | 1.03 |
+| 75 | 1.13 | **1.07** | 1.30 | 1.00 | 1.37 | 1.07 | 13% | **7%** | 0.98 |
+| 100 | 1.13 | **1.07** | 1.55 | 1.00 | 1.60 | 1.07 | 13% | **7%** | 0.93 |
+| 150 | 1.13 | **1.07** | 1.53 | 1.00 | 1.59 | 1.07 | 13% | **7%** | 0.93 |
+| 200 | 1.12 | **1.07** | 1.52 | 1.00 | 1.58 | 1.07 | 12% | **7%** | 0.93 |
+| 300 | 1.12 | **1.07** | 1.49 | 1.00 | 1.55 | 1.07 | 12% | **7%** | 0.94 |
+
+What was inconsistent (all of it in the style factor and the item attacks, none in the engine formula itself):
+- **Two-handed melee** hit x1.6 at 1.5x the interval (the design intent, `two_handed.py`: "about +7% over one hand + shield"),
+  but with a bigger attack (+3) and the level term (`level / 5`, multiplied by the factor too) it came out +28% at level 8,
+  +20% at 15, +13% from 75 on: the lower the level the more it paid to hold two hands. **Now the factor is a function of the
+  level** (`data/scripts/chaos/weapon_balance_config.lua`, written by `weapon_sim.py --write`, read through
+  `weapon_balance_core.lua`; linear between 23 anchor levels): 1.34 at level 8, 1.43 at 15, 1.46 at 30, 1.50 at 50, 1.52 from
+  100 (flat 1.6 before), and a two-handed sword, axe or club of one tier deals **1.07 x one hand** at every level from 8 to 300,
+  7% ahead as designed (at half or one and a half times the model's skill the gap stays within 12%). Sword, axe and club
+  are the same by construction (one tier attack, one skill: "One melee skill" in server/README.md).
+- **Launchers** are 49-60% ahead of one hand + shield from level 100 (bow attack 68 against 46 because the ammunition's attack is
+  in the launcher: `chaos_archery_config.lua` bands) and 92-111% ahead at level 8, with bows' 50% splash on top. **Left as it
+  is (flat x1.6)**: the class order of the Ranger line was measured with it ("Class order fixes": the Deadeye leads single target
+  at 1258 / 4733 and its crossbow auto attack is 464 / 2228 of that, 37-47%). Aligning them (`RANGED_ALIGN = True` in
+  `weapon_sim.py`, then `--write`; bows 0.83 .. 1.56 .. 1.07, crossbows 0.81 .. 1.56 .. 1.11 by level) takes about a third off the
+  auto attacks of the Ranger, Deadeye and Beastmaster (computed: the Deadeye 1258 -> about 1100 at level 300, under the Ninja's
+  1154), which then needs a class factor back (`distDamage` of the three, about 1.5 in `chaos_vocations.xml`; spells and
+  throwing stars are not affected by the launcher factor). **Needs the owner's call**: align and compensate, or keep the
+  ranged advantage as the Ranger line's class trait.
+- **Monk fists** (attack 40 + 0.025 per level, `monk_chi_core.lua`) are 2.45x one hand at level 8, 1.39x at 30, level with it from
+  50 (0.93-0.98 from 75; the class factor `meleeDamage` 1.1-1.2 is the Monk's, as the Thief's 1.2). The early fists are the
+  Monk's kit (no weapon) and the fist weapons start at 42; left alone, the mid and late game is level. Needs the owner's call
+  whether level 8 .. 30 should come down (`attackBase` 40 -> about 20).
+- **Not weapon formula, left as class design**: `meleeDamage` / `distDamage` per vocation (Thief 1.2, Ninja 1.2, Samurai 1.3,
+  Monk 1.2, Iron Sage 1.1, Berserker x1.05, Sentinel x0.9), the vocation attack speeds (Shadowfist 1300 .. Warrior 2000 ms),
+  the Ninja's off-hand strike and every passive tree factor. A class's total differs from its weapon on purpose.
+- **Stock item attacks by type** cannot be seen from the repository (the base `items.xml` is not committed). `weapon_sim.py
+  --audit SERVER_DIR/data` prints the median attack of the installed one-handed and two-handed swords, axes, clubs and
+  launchers per level band against the tier; a type that is off goes into `TYPE_FACTOR` (a multiplier per type in the
+  generated config) and `--write`, the base items stay untouched. Not run: no base tree here (the audit is tested on a small
+  synthetic items.xml and weapons.xml).
+
+Effect on the class numbers above (computed from the shares measured in "Weapon (auto attack) re-measured", not measured in
+game): one-handed users (Thief line, Templar line, Warrior with a shield) are unchanged; the two-handed melee auto attacks
+(Berserker, Warrior and Juggernaut with two hands, the Monk with a staff) lose 5% from level 100 (1.6 -> 1.52), 9-16% below level
+30 (the early game: 1.6 -> 1.34); with weapon hits 40-60% of those classes' damage, a class total drops 2-3% at level 300 and
+a little more early. The Warrior's best two-handed at 300 goes 500 / 1096 -> about 475 / 1041 (1 / 5 targets). Measure again in
+game with the next "Weapon (auto attack)" run; no keystone or spell number changed.
+
+### Area damage is uniform (2026-10-20; owner decision; computed with rotation_sim.py, not measured in game)
+
+Owner: "o dano de skills AoE deve ser IGUAL em toda a area e igual ao dano single-target (sem queda por alvo/distancia);
+AoE por volta do lvl 80 muito baixa vs single target." Rule: the hit of an area spell is the same on every target (no
+falloff per target, per jump or by distance, no split between targets) and has no area discount (no factor below 1).
+Mana, cooldowns, levels, areas and cast times unchanged. Test: `server/tests/aoe_uniform_test.lua` (failed 24 checks
+before the change; scans the area scripts for factors below 1 and for a falloff, checks that Skewering Line is not under
+Dawnpiercer at level 80 and that `rotation_model.csv` mirrors the scripts).
+
+| Spell (id) | Class | Before | Now |
+|---|---|---|---|
+| Forked Storm (202) | Elementalist, Mystic | jumps x0.7, x0.49, x0.34 | every jump x1.0 (model 3.1 -> 4 targets) |
+| Skewering Line (215) | Ranger line | 0.0195-0.0325 x power, no magic level (about half a Dawnpiercer at 80) | Dawnpiercer's hit: 0.042-0.065 x power + magic level 1.0-1.6 |
+| Reaping Gyre (220) | Warrior line | x0.7 per spin | x1.0 |
+| Earthbreaker (221) | Warrior line | x0.7 | x1.0 |
+| Skyfall Cleave (246) | Berserker | x0.7 | x1.0 |
+| Colossus Fall (225) | Warrior line | x0.77 | x1.0 |
+| Briar Prison (210) | Illusionist | x0.85 | x1.0 |
+| Blightswarm (207) | Mystic, Illusionist | x0.85 (the poison unchanged) | x1.0 |
+| Primordial Squall (213) | Illusionist | x0.98 | x1.0 |
+
+Base spells (`server/tools/patch_aoe_damage.py`, test `patch_aoe_damage_test.py` on LF and CRLF copies, step `spells` of
+install_all.py after `patch_spell_timings.py`; formulas read from the base scripts, 2026-10-20): the area spells that were
+under the single-target hit of their tier now deal that hit on every target.
+
+| Spell (script) | Class | Before | Now (= single-target hit of the tier) |
+|---|---|---|---|
+| Glacier Fan (ice_wave) | Mystic, Illusionist | magic level 0.8 / 2, +5 / +12 | Frostbite: 1.4 / 2.2, +8 / +14 |
+| Cinder Fan (fire_wave) | Mystic, Elementalist | 1.2 / 2, +7 / +12 | Ember Lash: 1.4 / 2.2, +8 / +14 |
+| Rime Breath (chill_out), Searing Gust (scorch) | Mystic lines | 0.3 / 0.45, +2 / +3 | Bog Splatter / Static Sting: 0.4 / 0.8, +2 / +5 (level and magic level cap 20 kept) |
+| Earthrend (groundshaker, 5 blocks) | Warrior line | skill x attack 0.02 / 0.03, +4 / +6 | Bonebreaker: 0.02 / 0.04, +4 / +9 |
+| Sanctum Burst (divine_caldera, 5 blocks), Radiant Shard (divine_grenade) | Ranger line | magic level only (4-6.2 x ML) | never under Dawnpiercer (distance skill x attack 0.042 / 0.065, ML 1.0 / 1.6, +20 / +40), through `chaosAoeFloor` when ChaosSpell is loaded |
+
+Vaulting Cleave (224, `knight/leaping_strike.lua`, the Knight line's single-target jump) lost its x0.7 too (owner,
+2026-10-20), so the Knight line is x1.0 everywhere. Every other base area spell already dealt at least its tier's
+single-target hit (Greater Glacier Fan, Tempest Fan, Pyre Torrent, Bramble Fan, the beams, Quakeburst, Shatterfrost,
+Reaver's Spin, Scything Arc, Butcher's Gyre). The patch is checked against the base scripts; it refuses when a line is not
+as expected.
+
+`rotation_model.csv` and the helper's Auto rotation data (`autorotation_data.lua`, `rotation_sim.py --write`) follow.
+`rotation_sim.py` got one rule (`mana_fit`): when the best set runs under the 15 s mana limit, the best set without one
+of its spells that keeps the gap and the limit is taken (Skewering Line's 150 mana put the Ranger line's level 60 set at
+14.8 s; mana costs unchanged). Computed, best set of at most 5 and every spell, damage per second 1 target / 5 targets,
+before (HEAD) -> after (level 80 / 300 / 1000):
+
+| Class | Level | Best set 1t | Best set 5t | Every spell 1t | Every spell 5t |
+|---|---|---|---|---|---|
+| Warrior | 80 | 74 -> 88 | 281 -> 338 | 34 -> 49 | 134 -> 192 |
+| Warrior | 300 | 297 -> 304 | 823 -> 994 | 131 -> 184 | 476 -> 663 |
+| Warrior | 1000 | 501 -> 540 | 1395 -> 1675 | 244 -> 342 | 869 -> 1212 |
+| Berserker | 80 | 74 -> 88 | 281 -> 338 | 34 -> 49 | 134 -> 192 |
+| Berserker | 300 | 283 -> 309 | 891 -> 1020 | 162 -> 228 | 650 -> 911 |
+| Berserker | 1000 | 501 -> 547 | 1395 -> 1712 | 289 -> 407 | 1142 -> 1601 |
+| Elementalist | 80 | 137 -> 137 | 590 -> 616 | 107 -> 107 | 307 -> 340 |
+| Elementalist | 1000 | 681 -> 681 | 2716 -> 2716 | 673 -> 673 | 2674 -> 2773 |
+| Illusionist | 80 | 409 -> 409 | 675 -> 675 | 121 -> 129 | 349 -> 385 |
+| Illusionist | 300 | 537 -> 538 | 1558 -> 1562 | 500 -> 516 | 1509 -> 1586 |
+| Illusionist | 1000 | 697 -> 722 | 2195 -> 2395 | 770 -> 797 | 2365 -> 2501 |
+| Ranger | 80 | 71 -> 95 | 167 -> 309 | 61 -> 71 | 75 -> 95 |
+| Ranger | 300 | 452 -> 512 | 799 -> 1139 | 446 -> 473 | 590 -> 644 |
+| Ranger | 1000 | 1067 -> 1167 | 1803 -> 2374 | 1052 -> 1095 | 1393 -> 1480 |
+| Deadeye | 300 | 559 -> 588 | 700 -> 1103 | 559 -> 583 | 700 -> 746 |
+| Beastmaster | 80 | 71 -> 95 | 167 -> 309 | 61 -> 71 | 75 -> 95 |
+| Beastmaster | 300 | 186 -> 246 | 533 -> 921 | 174 -> 200 | 318 -> 372 |
+| Beastmaster | 1000 | 363 -> 463 | 1099 -> 1756 | 376 -> 420 | 717 -> 804 |
+
+Where a best-set number drops (Mystic 1000 1t 718 -> 577) no spell got weaker: the kit the 95% rule measures against got
+stronger, so the picker takes another set of 5. The "every spell" columns are the like-for-like numbers.
+
+**Not changed**
+- The pack tools (`_packtools.lua`, Iaido Sweep in `_blades.lua`) hit the spell's target with the class filler and the
+  rest of the pack with 1.5-2.5x that: a deliberate pack-farming design (owner, 2026-10-20: stays), `blades_test.lua`
+  asserts it. Fan of Knives and Blade Flurry are already uniform.
+- Sanctified Ground, Consecration and the other pulse spells: the pulses add up to one hit; no split between targets.
 
 ## Honest notes / limitations
 

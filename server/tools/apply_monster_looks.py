@@ -17,7 +17,11 @@ wings of exclusives_config.lua, wings.xml); --check makes sure no monster file u
 either; --check makes sure rift_config.lua `looks.variants` lists each. Rows of family "bigguardian" (the bigger
 guardian looks, client/tools/sprites/monster_looks/big_boss_picks.csv) belong to no monster file either; --check makes
 sure rift_config.lua `looks.bigGuardians` maps a guardian look to each. Rows of family "storewings" (the store wings of
-pair 26, data/lib/chaos_owner_art.lua) belong to no monster file either.
+pair 26, data/lib/chaos_owner_art.lua) belong to no monster file either, and so do the rows of family "gallery" (pair 30
+looks no monster file uses, shown by the admin gallery) and "sheetlook" (pair 30 sheet looks that keep their colour
+template, for NPCs and decoration). A look of a sheet (rows with lib "pack30", client/tools/sprites/monster_looks/
+pack30_picks.csv) has a colour mask: when a `hunt` row names one, head, body, legs and feet of the monster's <look>
+stay (only addons go); the other looks lose all five.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
 """
 import csv, os, re, sys
@@ -29,12 +33,16 @@ RIFT_CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'rift_con
 COLOURS = ('head', 'body', 'legs', 'feet', 'addons')
 # families whose rows name one monster file each (column `monsters`, the exact <monster name>)
 MONSTER_FAMILIES = ('world', 'omen', 'raid', 'hunt', 'dungeonboss', 'catacombs')
+SHEET_LIB = 'pack30'  # looks cut from 4-direction sheets: colour mask, so head/body/legs/feet are kept
+SHEET_COLOURS = ('head', 'body', 'legs', 'feet')
 FAMILY_THEME = {'abyss': 'Abyssal Rift', 'obsidian': 'Obsidian Hall', 'crypt': 'Ashen Crypt', 'sanctum': 'Forsaken Sanctum'}
 
 
-def new_look_tag(tag, look):
+def new_look_tag(tag, look, keep=()):
     tag = re.sub(r'\btype\s*=\s*"\d+"', 'type="%d"' % look, tag, count=1)
     for c in COLOURS:
+        if c in keep:
+            continue
         tag = re.sub(r'\s+%s\s*=\s*"[^"]*"' % c, '', tag)
     return tag
 
@@ -50,9 +58,10 @@ def main():
     mdir = args[0] if args else os.path.join(REPO, 'server', 'data', 'monster')
     rows = list(csv.DictReader(open(picks, newline='')))
     want = {r['monsters']: int(r['look']) for r in rows if r['family'] in MONSTER_FAMILIES}
+    keep = {r['monsters']: SHEET_COLOURS for r in rows if r['family'] in MONSTER_FAMILIES and r['lib'] == SHEET_LIB}
     rift = {int(r['look']): r['key'] for r in rows
             if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant', 'bigguardian',
-                                                              'storewings')}
+                                                              'storewings', 'gallery', 'sheetlook')}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):
@@ -71,7 +80,7 @@ def main():
             if name not in want:
                 continue
             found.add(name)
-            tag = new_look_tag(lk.group(0), want[name])
+            tag = new_look_tag(lk.group(0), want[name], keep.get(name, ()))
             if tag != lk.group(0):
                 changed += 1
                 print(f'{"would update" if check else "updated"} {os.path.relpath(p, mdir)}: {lk.group(0)} -> {tag}')

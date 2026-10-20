@@ -1,0 +1,259 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+34859,37859,autumn_graveyard__floors__r0c1,ground,new,Floors R0C1 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=1
+34860,37860,autumn_graveyard__floors__r0c2,ground,new,Floors R0C2 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=2
+34861,37861,autumn_graveyard__floors__r0c3,ground,new,Floors R0C3 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=3
+34862,37862,autumn_graveyard__floors__r0c4,ground,new,Floors R0C4 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=4
+34863,37863,autumn_graveyard__floors__r0c5,ground,new,Floors R0C5 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=5
+34864,37864,autumn_graveyard__floors__r1c0,ground,new,Floors R1C0 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=6
+34865,37865,autumn_graveyard__floors__r1c1,ground,new,Floors R1C1 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=7
+34866,37866,autumn_graveyard__floors__r1c2,ground,new,Floors R1C2 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=8
+34867,37867,autumn_graveyard__floors__r1c3,ground,new,Floors R1C3 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=9
+34868,37868,autumn_graveyard__floors__r1c4,ground,new,Floors R1C4 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=10
+34869,37869,autumn_graveyard__floors__r1c5,border,new,Floors R1C5 (Autumn Graveyard),1x1,0,8192,1,0,0,0,family=autumn_graveyard|variant=11
+34870,37870,autumn_graveyard__floors__r2c0,ground,new,Floors R2C0 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=12
+34871,37871,autumn_graveyard__floors__r2c1,ground,new,Floors R2C1 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=13
+34872,37872,autumn_graveyard__floors__r2c2,ground,new,Floors R2C2 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=14
+34873,37873,autumn_graveyard__floors__r2c3,ground,new,Floors R2C3 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=15
+34874,37874,autumn_graveyard__floors__r2c4,ground,new,Floors R2C4 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=16
+34875,37875,autumn_graveyard__floors__r2c5,ground,new,Floors R2C5 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=17
+34876,37876,autumn_graveyard__floors__r3c0,ground,new,Floors R3C0 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=18
+34877,37877,autumn_graveyard__floors__r3c1,ground,new,Floors R3C1 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=19
+34878,37878,autumn_graveyard__floors__r3c2,ground,new,Floors R3C2 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=20
+34879,37879,autumn_graveyard__floors__r3c3,ground,new,Floors R3C3 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=21
+34880,37880,autumn_graveyard__floors__r3c4,ground,new,Floors R3C4 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=22
+34881,37881,autumn_graveyard__floors__r3c5,ground,new,Floors R3C5 (Autumn Graveyard),1x1,1,0,0,100,0,0,family=autumn_graveyard|variant=23
+34882,37882,bathroom__floor_tiles,ground,new,Floor Tiles (Bathroom),1x1,1,0,0,100,0,0,family=bathroom|variant=1
+34883,37883,desert_camp__sand_floor_tile_1,ground,new,Sand Floor Tile 1 (Desert Camp),1x1,1,0,0,100,0,0,family=desert_camp|variant=1
+34884,37884,desert_camp__sand_floor_tile_2,ground,new,Sand Floor Tile 2 (Desert Camp),1x1,1,0,0,100,0,0,family=desert_camp|variant=2
+34885,37885,desert_camp__sand_floor_tile_3,ground,new,Sand Floor Tile 3 (Desert Camp),1x1,1,0,0,100,0,0,family=desert_camp|variant=3
+34886,37886,desert_camp__sand_floor_tile_4,ground,new,Sand Floor Tile 4 (Desert Camp),1x1,1,0,0,100,0,0,family=desert_camp|variant=4
+34887,37887,desert_kit__desert_floor_tiles__r0c0,ground,new,Desert Floor Tiles R0C0 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=1
+34888,37888,desert_kit__desert_floor_tiles__r0c4,ground,new,Desert Floor Tiles R0C4 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=2
+34889,37889,desert_kit__desert_floor_tiles__r0c5,ground,new,Desert Floor Tiles R0C5 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=3
+34890,37890,desert_kit__desert_floor_tiles__r0c7,ground,new,Desert Floor Tiles R0C7 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=4
+34891,37891,desert_kit__desert_floor_tiles__r0c8,ground,new,Desert Floor Tiles R0C8 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=5
+34892,37892,desert_kit__desert_floor_tiles__r0c9,ground,new,Desert Floor Tiles R0C9 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=6
+34893,37893,desert_kit__desert_floor_tiles__r0c10,ground,new,Desert Floor Tiles R0C10 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=7
+34894,37894,desert_kit__desert_floor_tiles__r0c11,ground,new,Desert Floor Tiles R0C11 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=8
+34895,37895,desert_kit__desert_floor_tiles__r0c12,ground,new,Desert Floor Tiles R0C12 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=9
+34896,37896,desert_kit__desert_floor_tiles__r0c13,ground,new,Desert Floor Tiles R0C13 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=10
+34897,37897,desert_kit__desert_floor_tiles__r0c14,ground,new,Desert Floor Tiles R0C14 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=11
+34898,37898,desert_kit__desert_floor_tiles__r0c15,ground,new,Desert Floor Tiles R0C15 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=12
+34899,37899,desert_kit__desert_floor_tiles__r0c16,ground,new,Desert Floor Tiles R0C16 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=13
+34900,37900,desert_kit__desert_floor_tiles__r0c17,ground,new,Desert Floor Tiles R0C17 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=14
+34901,37901,desert_kit__desert_floor_tiles__r0c18,ground,new,Desert Floor Tiles R0C18 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=15
+34902,37902,desert_kit__desert_floor_tiles__r0c19,ground,new,Desert Floor Tiles R0C19 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=16
+34903,37903,desert_kit__desert_floor_tiles__r0c20,ground,new,Desert Floor Tiles R0C20 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=17
+34904,37904,desert_kit__desert_floor_tiles__r0c21,ground,new,Desert Floor Tiles R0C21 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=18
+34905,37905,desert_kit__desert_floor_tiles__r0c22,ground,new,Desert Floor Tiles R0C22 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=19
+34906,37906,desert_kit__desert_floor_tiles__r0c23,ground,new,Desert Floor Tiles R0C23 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=20
+34907,37907,desert_kit__desert_floor_tiles__r0c24,ground,new,Desert Floor Tiles R0C24 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=21
+34908,37908,desert_kit__desert_floor_tiles__r0c25,ground,new,Desert Floor Tiles R0C25 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=22
+34909,37909,desert_kit__desert_floor_tiles__r0c26,ground,new,Desert Floor Tiles R0C26 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=23
+34910,37910,desert_kit__desert_floor_tiles__r0c27,ground,new,Desert Floor Tiles R0C27 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=24
+34911,37911,desert_kit__desert_floor_tiles__r0c28,ground,new,Desert Floor Tiles R0C28 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=25
+34912,37912,desert_kit__desert_floor_tiles__r0c29,ground,new,Desert Floor Tiles R0C29 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=26
+34913,37913,desert_kit__desert_floor_tiles__r0c30,ground,new,Desert Floor Tiles R0C30 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=27
+34914,37914,desert_kit__desert_floor_tiles__r0c31,ground,new,Desert Floor Tiles R0C31 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=28
+34915,37915,desert_kit__desert_floor_tiles__r1c4,ground,new,Desert Floor Tiles R1C4 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=29
+34916,37916,desert_kit__desert_floor_tiles__r1c5,ground,new,Desert Floor Tiles R1C5 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=30
+34917,37917,desert_kit__desert_floor_tiles__r1c6,ground,new,Desert Floor Tiles R1C6 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=31
+34918,37918,desert_kit__desert_floor_tiles__r1c7,ground,new,Desert Floor Tiles R1C7 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=32
+34919,37919,desert_kit__desert_floor_tiles__r1c8,ground,new,Desert Floor Tiles R1C8 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=33
+34920,37920,desert_kit__desert_floor_tiles__r1c9,ground,new,Desert Floor Tiles R1C9 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=34
+34921,37921,desert_kit__desert_floor_tiles__r1c10,ground,new,Desert Floor Tiles R1C10 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=35
+34922,37922,desert_kit__desert_floor_tiles__r1c11,ground,new,Desert Floor Tiles R1C11 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=36
+34923,37923,desert_kit__desert_floor_tiles__r1c12,ground,new,Desert Floor Tiles R1C12 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=37
+34924,37924,desert_kit__desert_floor_tiles__r1c13,ground,new,Desert Floor Tiles R1C13 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=38
+34925,37925,desert_kit__desert_floor_tiles__r1c16,ground,new,Desert Floor Tiles R1C16 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=39
+34926,37926,desert_kit__desert_floor_tiles__r1c17,ground,new,Desert Floor Tiles R1C17 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=40
+34927,37927,desert_kit__desert_floor_tiles__r1c18,ground,new,Desert Floor Tiles R1C18 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=41
+34928,37928,desert_kit__desert_floor_tiles__r1c19,ground,new,Desert Floor Tiles R1C19 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=42
+34929,37929,desert_kit__desert_floor_tiles__r1c20,ground,new,Desert Floor Tiles R1C20 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=43
+34930,37930,desert_kit__desert_floor_tiles__r1c21,ground,new,Desert Floor Tiles R1C21 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=44
+34931,37931,desert_kit__desert_floor_tiles__r1c22,ground,new,Desert Floor Tiles R1C22 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=45
+34932,37932,desert_kit__desert_floor_tiles__r1c23,ground,new,Desert Floor Tiles R1C23 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=46
+34933,37933,desert_kit__desert_floor_tiles__r1c24,ground,new,Desert Floor Tiles R1C24 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=47
+34934,37934,desert_kit__desert_floor_tiles__r1c25,ground,new,Desert Floor Tiles R1C25 (Desert Kit),1x1,1,0,0,100,0,0,family=desert_kit|variant=48
+34935,37935,forest_kit_a__dirt_path_corner_down_left_1,border,new,Dirt Path Corner Down Left 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=1
+34936,37936,forest_kit_a__dirt_path_corner_down_right_1,border,new,Dirt Path Corner Down Right 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=2
+34937,37937,forest_kit_a__dirt_path_corner_up_left_1,border,new,Dirt Path Corner Up Left 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=3
+34938,37938,forest_kit_a__dirt_path_corner_up_right_1,border,new,Dirt Path Corner Up Right 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=4
+34939,37939,forest_kit_a__dirt_path_cross_roads_1,border,new,Dirt Path Cross Roads 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=5
+34940,37940,forest_kit_a__dirt_path_horizontal_1,border,new,Dirt Path Horizontal 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=6
+34941,37941,forest_kit_a__dirt_path_t_down_1,border,new,Dirt Path T Down 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=7
+34942,37942,forest_kit_a__dirt_path_t_up_1,border,new,Dirt Path T Up 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=8
+34943,37943,forest_kit_a__dirt_path_vertical_1,border,new,Dirt Path Vertical 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=9
+34944,37944,forest_kit_a__grass_dirt_patch_1,border,new,Grass Dirt Patch 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=10
+34945,37945,forest_kit_a__grass_dirt_patch_2,border,new,Grass Dirt Patch 2 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=11
+34946,37946,forest_kit_a__grass_dirt_patch_3,border,new,Grass Dirt Patch 3 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=12
+34947,37947,forest_kit_a__grass_dirt_patch_4,border,new,Grass Dirt Patch 4 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=13
+34948,37948,forest_kit_a__mud_patch,border,new,Mud Patch (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=14
+34949,37949,forest_kit_a__stone_path_corner_down_left_1,border,new,Stone Path Corner Down Left 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=15
+34950,37950,forest_kit_a__stone_path_corner_down_right_1,border,new,Stone Path Corner Down Right 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=16
+34951,37951,forest_kit_a__stone_path_corner_up_left_1,border,new,Stone Path Corner Up Left 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=17
+34952,37952,forest_kit_a__stone_path_corner_up_right_1,border,new,Stone Path Corner Up Right 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=18
+34953,37953,forest_kit_a__stone_path_cross_roads_1,border,new,Stone Path Cross Roads 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=19
+34954,37954,forest_kit_a__stone_path_horizontal_1,border,new,Stone Path Horizontal 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=20
+34955,37955,forest_kit_a__stone_path_t_down_1,border,new,Stone Path T Down 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=21
+34956,37956,forest_kit_a__stone_path_t_up_1,border,new,Stone Path T Up 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=22
+34957,37957,forest_kit_a__stone_path_vertical_1,border,new,Stone Path Vertical 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=23
+34958,37958,forest_kit_a__mud_1,ground,new,Mud 1 (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=24
+34959,37959,forest_kit_a__mud_2,ground,new,Mud 2 (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=25
+34960,37960,forest_kit_a__mud_bottom,ground,new,Mud Bottom (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=26
+34961,37961,forest_kit_a__mud_corner_bl,ground,new,Mud Corner Bl (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=27
+34962,37962,forest_kit_a__mud_corner_br,ground,new,Mud Corner Br (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=28
+34963,37963,forest_kit_a__mud_corner_tl,ground,new,Mud Corner Tl (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=29
+34964,37964,forest_kit_a__mud_corner_tr,ground,new,Mud Corner Tr (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=30
+34965,37965,forest_kit_a__mud_down_l,ground,new,Mud Down L (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=31
+34966,37966,forest_kit_a__mud_down_r,ground,new,Mud Down R (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=32
+34967,37967,forest_kit_a__mud_top,ground,new,Mud Top (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=33
+34968,37968,forest_kit_a__dirt_patch_1,border,new,Dirt Patch 1 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=34
+34969,37969,forest_kit_a__grass_1,ground,new,Grass 1 (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=35
+34970,37970,forest_kit_a__grass_2,ground,new,Grass 2 (Forest Kit A),1x1,1,0,0,100,0,0,family=forest_kit_a|variant=36
+34971,37971,forest_kit_a__grass_3,border,new,Grass 3 (Forest Kit A),1x1,0,8192,1,0,0,0,family=forest_kit_a|variant=37
+34972,37972,frozen_ruins__snowy_stone_floor_tiles__r0c0,ground,new,Snowy Stone Floor Tiles R0C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=1
+34973,37973,frozen_ruins__snowy_stone_floor_tiles__r0c1,ground,new,Snowy Stone Floor Tiles R0C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=2
+34974,37974,frozen_ruins__snowy_stone_floor_tiles__r0c2,ground,new,Snowy Stone Floor Tiles R0C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=3
+34975,37975,frozen_ruins__snowy_stone_floor_tiles__r0c3,ground,new,Snowy Stone Floor Tiles R0C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=4
+34976,37976,frozen_ruins__snowy_stone_floor_tiles__r1c0,ground,new,Snowy Stone Floor Tiles R1C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=5
+34977,37977,frozen_ruins__snowy_stone_floor_tiles__r1c1,ground,new,Snowy Stone Floor Tiles R1C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=6
+34978,37978,frozen_ruins__snowy_stone_floor_tiles__r1c2,ground,new,Snowy Stone Floor Tiles R1C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=7
+34979,37979,frozen_ruins__snowy_stone_floor_tiles__r1c3,ground,new,Snowy Stone Floor Tiles R1C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=8
+34980,37980,frozen_ruins__snowy_stone_floor_tiles__r2c0,ground,new,Snowy Stone Floor Tiles R2C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=9
+34981,37981,frozen_ruins__snowy_stone_floor_tiles__r2c1,ground,new,Snowy Stone Floor Tiles R2C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=10
+34982,37982,frozen_ruins__snowy_stone_floor_tiles__r2c2,ground,new,Snowy Stone Floor Tiles R2C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=11
+34983,37983,frozen_ruins__snowy_stone_floor_tiles__r2c3,ground,new,Snowy Stone Floor Tiles R2C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=12
+34984,37984,frozen_ruins__snowy_stone_floor_tiles__r3c0,ground,new,Snowy Stone Floor Tiles R3C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=13
+34985,37985,frozen_ruins__snowy_stone_floor_tiles__r3c1,ground,new,Snowy Stone Floor Tiles R3C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=14
+34986,37986,frozen_ruins__snowy_stone_floor_tiles__r3c2,ground,new,Snowy Stone Floor Tiles R3C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=15
+34987,37987,frozen_ruins__snowy_stone_floor_tiles__r3c3,ground,new,Snowy Stone Floor Tiles R3C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=16
+34988,37988,frozen_ruins__snow_ground_tiles__r0c0,ground,new,Snow Ground Tiles R0C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=17
+34989,37989,frozen_ruins__snow_ground_tiles__r0c2,ground,new,Snow Ground Tiles R0C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=18
+34990,37990,frozen_ruins__snow_ground_tiles__r0c3,ground,new,Snow Ground Tiles R0C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=19
+34991,37991,frozen_ruins__snow_ground_tiles__r1c0,ground,new,Snow Ground Tiles R1C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=20
+34992,37992,frozen_ruins__snow_ground_tiles__r1c1,ground,new,Snow Ground Tiles R1C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=21
+34993,37993,frozen_ruins__snow_ground_tiles__r1c2,ground,new,Snow Ground Tiles R1C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=22
+34994,37994,frozen_ruins__snow_ground_tiles__r1c3,ground,new,Snow Ground Tiles R1C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=23
+34995,37995,frozen_ruins__snow_ground_tiles__r2c0,ground,new,Snow Ground Tiles R2C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=24
+34996,37996,frozen_ruins__snow_ground_tiles__r2c1,ground,new,Snow Ground Tiles R2C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=25
+34997,37997,frozen_ruins__snow_ground_tiles__r2c2,ground,new,Snow Ground Tiles R2C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=26
+34998,37998,frozen_ruins__snow_ground_tiles__r2c3,ground,new,Snow Ground Tiles R2C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=27
+34999,37999,frozen_ruins__snow_ground_tiles__r3c0,ground,new,Snow Ground Tiles R3C0 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=28
+35000,38000,frozen_ruins__snow_ground_tiles__r3c1,ground,new,Snow Ground Tiles R3C1 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=29
+35001,38001,frozen_ruins__snow_ground_tiles__r3c2,ground,new,Snow Ground Tiles R3C2 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=30
+35002,38002,frozen_ruins__snow_ground_tiles__r3c3,ground,new,Snow Ground Tiles R3C3 (Frozen Ruins),1x1,1,0,0,100,0,0,family=frozen_ruins|variant=31
+35003,38003,ghost_town__dark_muddy_ground_1,ground,new,Dark Muddy Ground 1 (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=1
+35004,38004,ghost_town__dark_muddy_ground_2,ground,new,Dark Muddy Ground 2 (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=2
+35005,38005,ghost_town__old_broken_path,ground,new,Old Broken Path (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=3
+35006,38006,ghost_town__old_path_1,ground,new,Old Path 1 (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=4
+35007,38007,ghost_town__old_path_2,ground,new,Old Path 2 (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=5
+35008,38008,ghost_town__old_path_3,ground,new,Old Path 3 (Ghost Town),1x1,1,0,0,100,0,0,family=ghost_town|variant=6
+35009,38009,graveyard_kit__floortiles_sheet__r0c0,ground,new,Floortiles Sheet R0C0 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=1
+35010,38010,graveyard_kit__floortiles_sheet__r0c1,ground,new,Floortiles Sheet R0C1 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=2
+35011,38011,graveyard_kit__floortiles_sheet__r0c2,ground,new,Floortiles Sheet R0C2 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=3
+35012,38012,graveyard_kit__floortiles_sheet__r0c3,ground,new,Floortiles Sheet R0C3 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=4
+35013,38013,graveyard_kit__floortiles_sheet__r0c4,ground,new,Floortiles Sheet R0C4 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=5
+35014,38014,graveyard_kit__floortiles_sheet__r0c5,ground,new,Floortiles Sheet R0C5 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=6
+35015,38015,graveyard_kit__floortiles_sheet__r0c6,ground,new,Floortiles Sheet R0C6 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=7
+35016,38016,graveyard_kit__floortiles_sheet__r0c7,ground,new,Floortiles Sheet R0C7 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=8
+35017,38017,graveyard_kit__floortiles_sheet__r0c8,ground,new,Floortiles Sheet R0C8 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=9
+35018,38018,graveyard_kit__floortiles_sheet__r0c9,ground,new,Floortiles Sheet R0C9 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=10
+35019,38019,graveyard_kit__floortiles_sheet__r0c10,ground,new,Floortiles Sheet R0C10 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=11
+35020,38020,graveyard_kit__floortiles_sheet__r0c11,ground,new,Floortiles Sheet R0C11 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=12
+35021,38021,graveyard_kit__floortiles_sheet__r0c12,ground,new,Floortiles Sheet R0C12 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=13
+35022,38022,graveyard_kit__floortiles_sheet__r0c13,ground,new,Floortiles Sheet R0C13 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=14
+35023,38023,graveyard_kit__floortiles_sheet__r0c14,ground,new,Floortiles Sheet R0C14 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=15
+35024,38024,graveyard_kit__floortiles_sheet__r0c15,ground,new,Floortiles Sheet R0C15 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=16
+35025,38025,graveyard_kit__floortiles_sheet__r0c16,ground,new,Floortiles Sheet R0C16 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=17
+35026,38026,graveyard_kit__floortiles_sheet__r0c17,ground,new,Floortiles Sheet R0C17 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=18
+35027,38027,graveyard_kit__floortiles_sheet__r0c18,ground,new,Floortiles Sheet R0C18 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=19
+35028,38028,graveyard_kit__floortiles_sheet__r0c19,ground,new,Floortiles Sheet R0C19 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=20
+35029,38029,graveyard_kit__floortiles_sheet__r0c20,ground,new,Floortiles Sheet R0C20 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=21
+35030,38030,graveyard_kit__floortiles_sheet__r0c21,ground,new,Floortiles Sheet R0C21 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=22
+35031,38031,graveyard_kit__floortiles_sheet__r0c22,ground,new,Floortiles Sheet R0C22 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=23
+35032,38032,graveyard_kit__floortiles_sheet__r0c23,ground,new,Floortiles Sheet R0C23 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=24
+35033,38033,graveyard_kit__floortiles_sheet__r0c24,ground,new,Floortiles Sheet R0C24 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=25
+35034,38034,graveyard_kit__floortiles_sheet__r0c25,ground,new,Floortiles Sheet R0C25 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=26
+35035,38035,graveyard_kit__floortiles_sheet__r0c26,ground,new,Floortiles Sheet R0C26 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=27
+35036,38036,graveyard_kit__floortiles_sheet__r0c27,ground,new,Floortiles Sheet R0C27 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=28
+35037,38037,graveyard_kit__floortiles_sheet__r0c28,ground,new,Floortiles Sheet R0C28 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=29
+35038,38038,graveyard_kit__floortiles_sheet__r0c29,ground,new,Floortiles Sheet R0C29 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=30
+35039,38039,graveyard_kit__floortiles_sheet__r0c30,ground,new,Floortiles Sheet R0C30 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=31
+35040,38040,graveyard_kit__floortiles_sheet__r0c31,ground,new,Floortiles Sheet R0C31 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=32
+35041,38041,graveyard_kit__floortiles_sheet__r1c0,ground,new,Floortiles Sheet R1C0 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=33
+35042,38042,graveyard_kit__floortiles_sheet__r1c1,ground,new,Floortiles Sheet R1C1 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=34
+35043,38043,graveyard_kit__floortiles_sheet__r1c2,ground,new,Floortiles Sheet R1C2 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=35
+35044,38044,graveyard_kit__floortiles_sheet__r1c3,ground,new,Floortiles Sheet R1C3 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=36
+35045,38045,graveyard_kit__floortiles_sheet__r1c4,ground,new,Floortiles Sheet R1C4 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=37
+35046,38046,graveyard_kit__floortiles_sheet__r1c5,ground,new,Floortiles Sheet R1C5 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=38
+35047,38047,graveyard_kit__floortiles_sheet__r1c6,ground,new,Floortiles Sheet R1C6 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=39
+35048,38048,graveyard_kit__floortiles_sheet__r1c7,ground,new,Floortiles Sheet R1C7 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=40
+35049,38049,graveyard_kit__floortiles_sheet__r1c8,ground,new,Floortiles Sheet R1C8 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=41
+35050,38050,graveyard_kit__floortiles_sheet__r1c9,ground,new,Floortiles Sheet R1C9 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=42
+35051,38051,graveyard_kit__floortiles_sheet__r1c10,ground,new,Floortiles Sheet R1C10 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=43
+35052,38052,graveyard_kit__floortiles_sheet__r1c11,ground,new,Floortiles Sheet R1C11 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=44
+35053,38053,graveyard_kit__floortiles_sheet__r1c12,ground,new,Floortiles Sheet R1C12 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=45
+35054,38054,graveyard_kit__floortiles_sheet__r1c13,ground,new,Floortiles Sheet R1C13 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=46
+35055,38055,graveyard_kit__floortiles_sheet__r1c14,ground,new,Floortiles Sheet R1C14 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=47
+35056,38056,graveyard_kit__floortiles_sheet__r1c15,ground,new,Floortiles Sheet R1C15 (Graveyard Kit),1x1,1,0,0,100,0,0,family=graveyard_kit|variant=48
+35057,38057,haunted_manor__dark_grass,ground,new,Dark Grass (Haunted Manor),1x1,1,0,0,100,0,0,family=haunted_manor|variant=1
+35058,38058,haunted_manor__stone_floor,ground,new,Stone Floor (Haunted Manor),1x1,1,0,0,100,0,0,family=haunted_manor|variant=2
+35059,38059,lava_islands__lava,water,new,Lava (Lava Islands),1x1,1,1,0,100,2,195,family=lava_islands|variant=1
+35060,38060,lava_islands__lava_bubbles,border,new,Lava Bubbles (Lava Islands),1x1,0,16785408,1,0,0,0,family=lava_islands|variant=2|ms=160
+35061,38061,lava_islands__lava_island_bottom_left,ground,new,Lava Island Bottom Left (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=3|ms=160
+35062,38062,lava_islands__lava_island_bottom_right,ground,new,Lava Island Bottom Right (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=4|ms=160
+35063,38063,lava_islands__lava_island_bottom,ground,new,Lava Island Bottom (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=5|ms=160
+35064,38064,lava_islands__lava_island_floor,ground,new,Lava Island Floor (Lava Islands),1x1,1,0,0,100,0,0,family=lava_islands|variant=6
+35065,38065,lava_islands__lava_island_left,ground,new,Lava Island Left (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=7|ms=160
+35066,38066,lava_islands__lava_island_right,ground,new,Lava Island Right (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=8|ms=160
+35067,38067,lava_islands__lava_island_top_left,ground,new,Lava Island Top Left (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=9|ms=160
+35068,38068,lava_islands__lava_island_top_right,ground,new,Lava Island Top Right (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=10|ms=160
+35069,38069,lava_islands__lava_island_top,ground,new,Lava Island Top (Lava Islands),1x1,1,16777216,0,100,0,0,family=lava_islands|variant=11|ms=160
+35070,38070,lava_islands__lava_pool__r0c0,water,new,Lava Pool R0C0 (Lava Islands),1x1,1,16777217,0,100,2,195,family=lava_islands|variant=12|ms=160
+35071,38071,lava_islands__lava_pool__r0c1,water,new,Lava Pool R0C1 (Lava Islands),1x1,1,16777217,0,100,2,195,family=lava_islands|variant=13|ms=160
+35072,38072,lava_islands__lava_pool__r1c0,water,new,Lava Pool R1C0 (Lava Islands),1x1,1,16777217,0,100,2,195,family=lava_islands|variant=14|ms=160
+35073,38073,lava_islands__lava_pool__r1c1,water,new,Lava Pool R1C1 (Lava Islands),1x1,1,16777217,0,100,2,195,family=lava_islands|variant=15|ms=160
+35074,38074,magic_forest__lake_tile_2,border,new,Lake Tile 2 (Magic Forest),1x1,0,16785408,1,0,0,0,family=magic_forest|variant=1|ms=160
+35075,38075,magic_forest__lake_tile,border,new,Lake Tile (Magic Forest),1x1,0,16785408,1,0,0,0,family=magic_forest|variant=2|ms=160
+35076,38076,market_stalls__grass,ground,new,Grass (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=1
+35077,38077,market_stalls__grass_2,ground,new,Grass 2 (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=2
+35078,38078,market_stalls__mud,ground,new,Mud (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=3
+35079,38079,market_stalls__mud2,ground,new,Mud2 (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=4
+35080,38080,market_stalls__mud_grass,ground,new,Mud Grass (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=5
+35081,38081,market_stalls__mud_wood,ground,new,Mud Wood (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=6
+35082,38082,market_stalls__stone_mud,ground,new,Stone Mud (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=7
+35083,38083,market_stalls__wood,ground,new,Wood (Market Stalls),1x1,1,0,0,100,0,0,family=market_stalls|variant=8
+35084,38084,mineshaft__mud_floor,ground,new,Mud Floor (Mineshaft),1x1,1,0,0,100,0,0,family=mineshaft|variant=1
+35085,38085,ruined_village__dark_grass_1,ground,new,Dark Grass 1 (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=1
+35086,38086,ruined_village__path_b_l,ground,new,Path B L (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=2
+35087,38087,ruined_village__path_b_r,ground,new,Path B R (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=3
+35088,38088,ruined_village__path_t_l,ground,new,Path T L (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=4
+35089,38089,ruined_village__path_t_r,ground,new,Path T R (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=5
+35090,38090,ruined_village__path_down,ground,new,Path Down (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=6
+35091,38091,ruined_village__path_h_1,ground,new,Path H 1 (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=7
+35092,38092,ruined_village__path_h_2,ground,new,Path H 2 (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=8
+35093,38093,ruined_village__path_up,ground,new,Path Up (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=9
+35094,38094,ruined_village__path_v_1,ground,new,Path V 1 (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=10
+35095,38095,ruined_village__path_v_2,ground,new,Path V 2 (Ruined Village),1x1,1,0,0,100,0,0,family=ruined_village|variant=11
+35096,38096,sewer_kit__sewer_floor_1,ground,new,Sewer Floor 1 (Sewer Kit),1x1,1,0,0,100,0,0,family=sewer_kit|variant=1
+35097,38097,sewer_kit__sewer_floor_2,ground,new,Sewer Floor 2 (Sewer Kit),1x1,1,0,0,100,0,0,family=sewer_kit|variant=2
+35098,38098,sewer_kit__sewer_floor_3,ground,new,Sewer Floor 3 (Sewer Kit),1x1,1,0,0,100,0,0,family=sewer_kit|variant=3
+35099,38099,sewer_kit__sewer_floor_4,ground,new,Sewer Floor 4 (Sewer Kit),1x1,1,0,0,100,0,0,family=sewer_kit|variant=4
+35100,38100,sewer_kit__sewer_floor_5,ground,new,Sewer Floor 5 (Sewer Kit),1x1,1,16777216,0,100,0,0,family=sewer_kit|variant=5|ms=140
+35101,38101,sewer_kit__sewer_water_1,water,new,Sewer Water 1 (Sewer Kit),1x1,1,16777217,0,100,0,0,family=sewer_kit|variant=6|ms=160
+35102,38102,survivor_base__grass_tile_1,ground,new,Grass Tile 1 (Survivor Base),1x1,1,0,0,100,0,0,family=survivor_base|variant=1
+35103,38103,survivor_base__grass_tile_2,ground,new,Grass Tile 2 (Survivor Base),1x1,1,0,0,100,0,0,family=survivor_base|variant=2
+35104,38104,survivor_base__grass_tile_3,ground,new,Grass Tile 3 (Survivor Base),1x1,1,0,0,100,0,0,family=survivor_base|variant=3
+35105,38105,survivor_base__grass_title_4,ground,new,Grass Title 4 (Survivor Base),1x1,1,0,0,100,0,0,family=survivor_base|variant=4
+35106,38106,survivor_base__old_path_h__r0c0,border,new,Old Path H R0C0 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=5
+35107,38107,survivor_base__old_path_h__r0c1,border,new,Old Path H R0C1 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=6
+35108,38108,survivor_base__old_path_h__r1c0,border,new,Old Path H R1C0 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=7
+35109,38109,survivor_base__old_path_h__r1c1,border,new,Old Path H R1C1 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=8
+35110,38110,survivor_base__old_path_v__r0c0,border,new,Old Path V R0C0 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=9
+35111,38111,survivor_base__old_path_v__r0c1,border,new,Old Path V R0C1 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=10
+35112,38112,survivor_base__old_path_v__r1c0,border,new,Old Path V R1C0 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=11
+35113,38113,survivor_base__old_path_v__r1c1,border,new,Old Path V R1C1 (Survivor Base),1x1,0,8192,1,0,0,0,family=survivor_base|variant=12
+35114,38114,throne_room__castle_floor_title,ground,new,Castle Floor Title (Throne Room),1x1,1,0,0,100,0,0,family=throne_room|variant=1
+35115,38115,worship_interior__stone_floor,ground,new,Stone Floor (Worship Interior),1x1,1,0,0,100,0,0,family=worship_interior|variant=1
+35116,38116,worship_interior__stone_floor_blood,border,new,Stone Floor Blood (Worship Interior),1x1,0,8192,1,0,0,0,family=worship_interior|variant=2

@@ -219,11 +219,13 @@ local function usedOf(boxes)
 	return used
 end
 
--- the boxes that are missing (in reverse, so that tab 1 comes first: a container adds at the front)
-function Depot.ensure(chest)
+-- the boxes that are missing (in reverse, so that tab 1 comes first: a container adds at the front). tabs: the account's
+-- open tabs; only those boxes are made (a default depot is one tab, owner 2026-10-17), boxes that exist stay; nil = all
+function Depot.ensure(chest, tabs)
 	local boxes = scan(chest)
 	local made = 0
-	for t = Core.maxTabs(cfg), 1, -1 do
+	local top = tabs and math.max(0, math.min(Core.maxTabs(cfg), tabs)) or Core.maxTabs(cfg)
+	for t = top, 1, -1 do
 		if not boxes[t] then
 			local box = chest:addItem(cfg.boxIds[t], 1, INDEX_WHEREEVER or -1, FLAG_NOLIMIT or 1)
 			if not box then
@@ -235,6 +237,21 @@ function Depot.ensure(chest)
 		end
 	end
 	return made
+end
+
+-- the open tabs with room, in tab order: {{box, free, tab}} (the stash -> depot migration puts its entries there)
+function Depot.slots(chest, tabs)
+	local boxes = scan(chest)
+	local used = usedOf(boxes)
+	local out = {}
+	for t = 1, tabs do
+		local box = boxes[t]
+		local free = cfg.tabSize - (used[t] or 0)
+		if box and free > 0 then
+			out[#out + 1] = {box = box, free = free, tab = t}
+		end
+	end
+	return out
 end
 
 -- loose items of the chest of before tabs go into tabs (open ones first, then locked ones); nil when there were none
@@ -299,7 +316,13 @@ end
 
 local function sendTabs(player, tabs, used, depotId)
 	local list
+	local shown = Core.maxTabs(cfg)
 	if used then
+		-- the window shows the open tabs and any older box that still exists (a locked one with items), not the unmade ones
+		shown = math.max(0, math.min(shown, tonumber(tabs) or 0))
+		for t in pairs(used) do
+			shown = math.max(shown, t)
+		end
 		list = {}
 		for t = 1, Core.maxTabs(cfg) do
 			list[t] = used[t] or 0
@@ -307,7 +330,7 @@ local function sendTabs(player, tabs, used, depotId)
 	end
 	local i = ids()
 	local names, colors = Core.styleLists(cfg, Depot.stylesOf(player))
-	Chaos.send(player, OPCODE, "tabs", {tabs = tabs, max = Core.maxTabs(cfg), size = cfg.tabSize, used = list, ids = i.tabs,
+	Chaos.send(player, OPCODE, "tabs", {tabs = tabs, max = shown, size = cfg.tabSize, used = list, ids = i.tabs,
 		chest = i.chest, lockers = i.lockers, inbox = i.inbox, market = i.market, hint = cfg.messages.hint,
 		store = cfg.store.name, names = names, colors = colors, palette = cfg.palette, nameMax = cfg.nameMax,
 		town = depotId and townName(depotId) or nil})
@@ -342,7 +365,7 @@ function Depot.onOpenLocker(player, locker)
 		loadAchievementTabs(player:getAccountId())
 		pcall(Depot.loadStyles, player:getAccountId())
 		Depot.at[player:getId()] = {depotId = depotId, pos = locker:getPosition()}
-		Depot.ensure(chest)
+		Depot.ensure(chest, Depot.tabs(player))
 		-- the rest waits until the engine has opened the locker: a chest the engine has not put into its locker yet has
 		-- no parent, and the engine treats its contents as removed (Item:moveTo does nothing)
 		local cid = player:getId()
@@ -368,13 +391,27 @@ function Depot.afterOpen(player, depotId)
 		local counts = Depot.migrate(chest, tabs)
 		Depot.refresh(player, chest, tabs, depotId)
 		local tr = Depot.transition()
-		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, tr.withdrawOnly and cfg.messages.closed or Core.openText(cfg, tabs))
+		if tr.withdrawOnly and ChaosStash and ChaosStash.openWindow then
+			-- the stash is the storage: the locker opens its window (the chest still lists what is left to take out)
+			ChaosStash.openWindow(player)
+		else
+			player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, tr.withdrawOnly and cfg.messages.closed or Core.openText(cfg, tabs))
+		end
 		-- the engine writes the depot with the character from now on (a locker was opened this session): the depots can
 		-- move into the stash safely
 		if tr.migrate and ChaosStash and ChaosStash.migrateDepot then
 			local okM, errM = pcall(ChaosStash.migrateDepot, player)
 			if not okM then
 				print("[Chaos depot] migration: " .. tostring(errM))
+			else
+				Depot.refresh(player, chest, tabs, depotId)
+			end
+		end
+		-- the stash gives its content to the depot (stash_config.lua toDepot): after the sorting, so the room is known
+		if ChaosStash and ChaosStash.toDepotDue and ChaosStash.migrateToDepot and ChaosStash.toDepotDue(player) then
+			local okT, errT = pcall(ChaosStash.migrateToDepot, player, Depot.slots(chest, tabs))
+			if not okT then
+				print("[Chaos depot] stash migration: " .. tostring(errT))
 			else
 				Depot.refresh(player, chest, tabs, depotId)
 			end

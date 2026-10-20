@@ -50,18 +50,39 @@ local NOTHING = {["nothing"] = true, ["nothing (due to low stamina)"] = true}
 -- The stock callback (index 0) writes its line with the rarity it rolled ("[Rare] fire sword", no {}); the Chaos loot
 -- layer (index 1, loot.lua) may raise that rarity afterwards. Its raises come as upgrades ({name, from, to}), and at
 -- the flush every stock entry shows its final rarity, wrapped in {} (the client's loot highlight) from flagRarity
--- (3 = Rare) on, as the bonus items and the pouch part are. Rarity names: loot_config.lua gear.names (the stock ones).
+-- (3 = Magic) on, as the bonus items and the pouch part are. The base server writes its own names for the ids the stock
+-- roll gives (data/lib/chaos_rarity.lua legacyNames: Rare for 3, Epic for 4, Divine for 10), so a stock entry's rarity is
+-- translated to the name of today ("[Rare]" of id 3 is "[Magic]"); the raises of loot.lua name today's rarities.
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
 K.FLAG_RARITY = 3
-K.RARITY_NAMES = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos", "Eternal", "Divine",
-	"Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"}
+K.RARITY_NAMES = ChaosRarity.storedNames()
 
--- name -> rarity id
+-- name -> stored rarity id (today's names; `names` = a list of names whose position is the id, for a test)
 function K.rarityIds(names)
 	local ids = {}
-	for i, n in ipairs(names or K.RARITY_NAMES) do
-		ids[n] = i
+	if names then
+		for i, n in ipairs(names) do
+			ids[n] = i
+		end
+		return ids
+	end
+	for i = 1, ChaosRarity.STORED do
+		ids[ChaosRarity.list[i].name] = ChaosRarity.list[i].id
 	end
 	return ids
+end
+
+-- a rarity name of the stock line -> the name of today for the same id ("Rare" -> "Magic", "Epic" -> "Rare", "Exotic" ->
+-- "Legendary"); a name it does not know stays
+function K.stockName(name)
+	for i, n in ipairs(ChaosRarity.legacyNames) do
+		if n == name then
+			return ChaosRarity.name(i) or name
+		end
+	end
+	return name
 end
 
 -- one stock entry: "2x [Rare] fire sword" -> {count = "2x ", rarity = "Rare", name = "fire sword"}; an entry already
@@ -73,7 +94,7 @@ function K.parseEntry(s)
 	local count, rest = s:match("^(%d+x )(.*)$")
 	rest = rest or s
 	local rarity, name = rest:match("^%[([^%]]+)%] (.+)$")
-	return {count = count or "", rarity = rarity, name = name or rest}
+	return {count = count or "", rarity = rarity and K.stockName(rarity), name = name or rest}
 end
 
 function K.formatEntry(e, ids, flag)

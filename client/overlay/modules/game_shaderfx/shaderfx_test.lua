@@ -36,9 +36,9 @@ eq(L.phaseOf('slot1') ~= L.phaseOf('slot2'), true, 'different keys differ')
 eq(L.phaseOf(nil) >= 0 and L.phaseOf(nil) < 1, true, 'in range')
 
 -- shine: legendary (5) and up and uniques, only with the option on
-eq(L.shineParams(4, false, true, 'k'), nil, 'epic: no shine')
+eq(L.shineParams(4, false, true, 'k'), nil, 'rare: no shine')
 eq(L.shineParams(5, false, true, 'k') ~= nil, true, 'legendary shines')
-eq(L.shineParams(15, false, true, 'k') ~= nil, true, 'transcendent shines')
+eq(L.shineParams(15, false, true, 'k') ~= nil, true, 'an old Transcendent (Divine) shines')
 eq(L.shineParams(1, true, true, 'k') ~= nil, true, 'a unique shines whatever its rarity')
 eq(L.shineParams(9, false, false, 'k'), nil, 'option off: no shine')
 local p1, p2, p3, p4 = L.shineParams(5, false, true, 'k')

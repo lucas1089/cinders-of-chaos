@@ -62,7 +62,7 @@ return {
 		offers = {
 			{kind = "service", service = "pactExtra", extra = "depotTabs", key = "service:pactExtra:depotTabs", icon = 25453,
 				cost = 150, name = "Extra Depot Tab",
-				description = "Permanent, account-wide: one more depot tab of 100 items. Up to 9."},
+				description = "Permanent, account-wide: one more depot tab of 100 items. Up to 12."},
 			{kind = "service", service = "pactExtra", extra = "depotTabs", amount = 4, key = "service:pactExtra:depotTabs:4",
 				icon = 25456, cost = 500, name = "4 Depot Tabs",
 				description = "Permanent, account-wide: four more depot tabs of 100 items each."}

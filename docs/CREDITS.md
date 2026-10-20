@@ -53,8 +53,10 @@ Game design, world, server systems, client interface, website and original art: 
 Purchased packs. Their licence: use in personal and commercial games, modified or not; no attribution needed; the
 assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style
 reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other WsT packs
-here have no such clause. The MutterPixel Studio packs (bought 2026-10-16) may be modified and recoloured, are never
-used as AI training data or a style reference, and ask for credit (appreciated, not required). Listed here as thanks.
+here (spell, aura, tile and Meadow Monsters packs) have no such clause. The WsT monster packs bought later do: they
+are never used for machine-learning training. The MutterPixel Studio packs (bought 2026-10-16 and later) and the
+Pocket Cozy Pixels packs may be modified and recoloured, are never used as AI training data or a style reference, and
+ask for credit (appreciated, not required). Listed here as thanks.
 
 - **Magic VFX Spells & Impacts**
   - Author: WsT
@@ -100,6 +102,25 @@ used as AI training data or a style reference, and ask for credit (appreciated, 
   - Credit: Art by MutterPixel Studio
   - Used for: condition auras, element blasts, missiles, level-up and boss fireworks, hit splashes
   - Source: Pixel Status Effects - Animated VFX Pack, Pixel Projectiles - Animated VFX, Pixel Fireworks - Animated VFX, Pixel Blood VFX - Animated VFX, Pixel Explosions - Animated VFX
+- **MutterPixel Studio pixel art packs**
+  - Author: MutterPixel Studio
+  - Licence: purchased; use in games incl. commercial, modified or recoloured; no resale or sharing of the raw files (they ship only inside the compiled game); never AI or NFT training data or a style reference
+  - Credit: Art by MutterPixel Studio
+  - Used for: monsters, tiles, buildings, decoration, portals, magic effects
+  - Source: Frozen Ruins, Classic Horror Monsters, Trick-or-Treaters, Autumn Graveyard Builder, RPG Magic Shops, Big RPG Portal Gates, Survivor Base, Zombie City, Gothic Buildings, Animated Cult NPCs, Lava Islands, Animated Goblins, Wasteland City Buildings, Castle Throne Room, Dwarven Mountain, Fantasy Wall Decorations, Roman Battle Arenas, Medieval Castle Builder Kit, Ruined Medieval Buildings, Animated Volcano Pack, Pirate Ships Pack, Fantasy Portal Gates, Pixel Icebergs, Cozy Halloween Market, RPG Castle Buildings, Haunted Ghosts, Ghost Town Builder, Zombie Outbreak Response, Desert Campsite, Haunted Manor Builder Kit, Dark Worship Interior, Animated War Beasts 1, Goblin Camp, Wasteland Town Buildings, Mushroom Buildings, Wizard Buildings, Roman Vineyards & Wineries, Orchard Trees Pack, Medieval War Machines, Colossal Ruined Towers, Ancient Pyramid Pack, Desert World Builder Kit, Magic Forest Ancient Ruins & Mystic Flora, Demon Creatures, Magic Effects, Summoning Circles, Haunted Graveyard Builder Kit, Castle Dungeon, Mineshaft Builder Kit, Ruined Village Builder Kit, Ancient & Mysterious Landmarks, Animated Skeleton NPC Pack, Vermin Pro Expansion, Giant Squid Boss, Animated Trees, Medieval War Camp, RPG Guard Buildings, Desert Village Buildings, Roman Temples & Shrines, RPG Weapons, Castle Royal Bedroom, Survivor Characters, Zombie Civilians, Dinosaur Fossil Dig Site, Roman City Builder
+- **Pocket Cozy Pixels packs**
+  - Author: BloomPixle / Pocket Cozy Pixels
+  - Licence: purchased; commercial use and edits allowed; no resale or free sharing of the raw files (they ship only inside the compiled game); no AI image generator or NFT training
+  - Credit: Art by Pocket Cozy Pixels
+  - Used for: bushes, water tiles, village decoration
+  - Source: Cozy Farmhouse Bathroom, Boats & Docks Pack, Forest Bushes & Berry Shrubs, Fishing Village Pack, Forest Builder Packs, Forgotten Forest Ruins, Cozy World Animated Sewer Builder Kit
+- **WsT monster packs**
+  - Author: WsT
+  - Licence: purchased; modified or not, no attribution needed; no resale or sharing of the raw files; never machine-learning training data or a style reference
+  - Used for: monsters
+- **A freely shared potion-throwing pack**
+  - Licence: shared freely by its maker; no licence text
+  - Used for: throwable potion flasks, projectiles and bursts
 
 ## Free assets {pt-BR: Recursos gratuitos}
 
@@ -207,6 +228,11 @@ them are named by role, so they carry no Reserved Font Name.
   - Licence: LGPL-2.1
   - Used for: website mail
   - Source: https://github.com/PHPMailer/PHPMailer
+- **JSch (mwiede fork)**
+  - Author: Michael Wiedenbauer and the JSch contributors
+  - Licence: BSD-3-Clause style
+  - Used for: the ssh connection of the Cinders Admin phone app
+  - Source: https://github.com/mwiede/jsch
 
 ## Tools {pt-BR: Ferramentas}
 
@@ -229,3 +255,11 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
   labels of the five MutterPixel Studio packs above, in the order of its Source line (status effects, projectiles,
   fireworks, blood, explosions). `client/tools/sprites/art_import/pack29_vfx_sources.csv` names each pick's pack by
   its label, so the pack names stay in this file (tools/ci/check_names.py).
+- **set30 mutter**: the MutterPixel Studio pixel art packs above (tiles, builder kits, buildings, decoration, monsters,
+  NPCs, portals, magic effects; the pack titles are the Source line of that entry).
+- **set30 pocket**: the Pocket Cozy Pixels packs above (Cozy Farmhouse Bathroom, Boats & Docks Pack, Forest Bushes &
+  Berry Shrubs, Fishing Village Pack, Forest Builder Packs, Forgotten Forest Ruins, Cozy World Animated Sewer Builder Kit).
+- **set30 monsters**: the three WsT monster packs (75 creatures).
+- **set30 potions**: the freely shared potion-throwing pack.
+  `client/tools/sprites/art_import/pack30_*_sources.csv` name each pick's pack by these four labels; the vendor and
+  pack names stay in this file (tools/ci/check_names.py).

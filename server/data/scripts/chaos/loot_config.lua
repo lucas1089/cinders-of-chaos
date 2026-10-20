@@ -48,28 +48,34 @@ return {
 	minStamina = 840,
 
 	-- 1. extra rolls from the monster's own loot table
-	extraRolls = {normal = 0, magic = 1, rare = 2, legendary = 3, boss = 2},
+	-- owner 2026-10-17 ("monstros raros e magicos dropam loot demais"): the expected loot per kill is
+	-- 1 + extraRolls x extraChanceMult (stack counts apart): normal 1.0, magic 1.5, rare 2.0, legendary 3.0, boss 3.0.
+	-- It was magic 2.0, rare 3.0, legendary 4.0 (and the stack counts below x1.25 / x1.5 on top)
+	extraRolls = {normal = 0, magic = 1, rare = 1, legendary = 2, boss = 2},
 	-- multiplier on the dropped stack count of an extra roll (on top of levelCountMult below)
-	extraCountMult = {normal = 1.0, magic = 1.0, rare = 1.25, legendary = 1.5, boss = 1.5},
+	extraCountMult = {normal = 1.0, magic = 1.0, rare = 1.1, legendary = 1.25, boss = 1.5},
 	-- same table as the stock callback: {minLevel, maxLevel, multiplier} of Monster:getMonsterLevel()
 	levelCountMult = {
 		{5, 50, 1.15}, {51, 100, 1.35}, {101, 200, 1.65}, {201, 300, 1.95}, {301, 500, 2.25}, {501, 10000, 2.70}
 	},
 	-- chance of a single extra roll per entry is lootData.chance (stock units, 0..MAX_LOOTCHANCE) times:
-	extraChanceMult = {normal = 1.0, magic = 1.0, rare = 1.0, legendary = 1.0, boss = 1.0},
+	extraChanceMult = {normal = 1.0, magic = 0.5, rare = 1.0, legendary = 1.0, boss = 1.0},
 	-- extra rolls never add these (ids), e.g. quest items
 	extraSkipItems = {},
 
 	-- 2. gear quality
 	gear = {
-		-- floor rarity per tier (0 = no floor)
-		minRarity = {normal = 0, magic = 0, rare = 3, legendary = 5, boss = 6},
+		-- floor rarity per tier (a stored id of data/lib/chaos_rarity.lua: 3 Magic, 4 Rare, 5 Legendary; 0 = no floor).
+		-- Before the seven rarities (2026-10-18): rare 3, legendary 5, boss 6 of the 15
+		minRarity = {normal = 0, magic = 0, rare = 3, legendary = 4, boss = 5},
 		-- chance (percent) that a gear item of this tier gets the floor applied at all
 		ensureChance = {normal = 0, magic = 0, rare = 100, legendary = 100, boss = 100},
 		-- chance (percent) for a bonus after the floor, then +1..+3 steps with the weights below
 		bonusChance = {normal = 0, magic = 10, rare = 20, legendary = 35, boss = 50},
-		bonusSteps = {{1, 60}, {2, 30}, {3, 10}}, -- {steps, weight}
-		maxRarity = 15,
+		bonusSteps = {{1, 60}, {2, 30}, {3, 10}}, -- {steps, weight}: places up the order Common, Uncommon, Magic, Rare, Legendary
+		maxRarity = 5, -- the bonus steps stop at Legendary; Divine only comes from divineChance (and the stock roll)
+		-- percent per gear drop of a Divine item, on top of the steps (x item find; the stock roll gives 0.38% more)
+		divineChance = {normal = 0, magic = 0, rare = 0.05, legendary = 0.3, boss = 1.5},
 		-- ids that are never touched (boats etc., same as customs/rarity/reroll_rarity_stats.lua)
 		excludedItems = {
 			[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true
@@ -77,60 +83,72 @@ return {
 		-- stock rarity roll, copied from default_onDropLoot.lua; used only by ChaosLootRoll to
 		-- simulate what the stock pass would have produced
 		stockRollChance = 70, -- math.random(100) > 70 -> no rarity
-		stockChances = {
-			15.0, 14.0, 12.0, 10.0, 8.5, 7.0, 6.0, 4.5, 3.8, 3.0, 2.3, 1.7, 1.2, 0.8, 0.5
-		},
-		names = {
-			"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos", "Eternal",
-			"Divine", "Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"
-		}
+		-- the chances in the order Common, Uncommon, Magic, Rare, Legendary, Divine (ChaosRarity.stockRolls, which
+		-- tools/patch_base_events.py step 17 puts into the base roll; 15 rows 15, 14, 12, 10, 8.5, 7, 6, ... 0.5 before)
+		stockChances = {15, 14, 12, 10, 7, 1}
 	},
 
 	-- 3. currency / crafting drops
 	currency = {
 		-- cap on the chance scale of the entries: rate x item find x orb find (charms) x Ember of the Forge
 		maxScale = 3.0,
-		-- chance per kill in 1/10000 for EACH entry whose chance table has the tier
+		-- orbs only drop from monsters of this level or higher (Monster:getMonsterLevel, see loot.lua monsterLevel);
+		-- bosses (levelGateSkip) are exempt. Owner 2026-10-17: "orbs drop too often". 0 = no gate
+		minMonsterLevel = 100,
+		levelGateSkip = {boss = true},
+		-- chance per kill in 1/10000 for EACH entry whose chance table has the tier. The normal column adds up to 183
+		-- (about 1 orb per 50 kills of a monster of level 100+, counting the Awakening / Whetstone stacks of 2);
+		-- magic is x3 of normal (about 1 per 18 kills) and rare x6 (about 1 per 9). Was magic ~x8 and rare ~x30 of normal.
+		-- legendary and boss are unchanged (they also get the guaranteed draw below)
 		entries = {
 			{id = 29857, name = "Orb of Fate", weight = 30, count = {1, 1},
-				chance = {normal = 20, magic = 150, rare = 600, legendary = 2500, boss = 4000}},
+				chance = {normal = 20, magic = 60, rare = 120, legendary = 2500, boss = 4000}},
 			{id = 29856, name = "Orb of Upheaval", weight = 70, count = {1, 1},
-				chance = {normal = 40, magic = 300, rare = 1200, legendary = 4000, boss = 5000}},
+				chance = {normal = 40, magic = 120, rare = 240, legendary = 4000, boss = 5000}},
 			-- crafting orbs (data/lib/chaos_crafting.lua): Awakening common, Gilding / Unmaking / Erasure
 			-- uncommon, Grafting rare
 			{id = 29851, name = "Orb of Awakening", weight = 20, count = {1, 2},
-				chance = {normal = 30, magic = 200, rare = 700, legendary = 2500, boss = 3500}},
+				chance = {normal = 30, magic = 90, rare = 180, legendary = 2500, boss = 3500}},
 			{id = 24691, name = "Orb of Gilding", weight = 10, count = {1, 1},
-				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
+				chance = {normal = 10, magic = 30, rare = 60, legendary = 1200, boss = 2000}},
 			{id = 24697, name = "Orb of Unmaking", weight = 10, count = {1, 1},
-				chance = {normal = 10, magic = 80, rare = 300, legendary = 1200, boss = 2000}},
+				chance = {normal = 10, magic = 30, rare = 60, legendary = 1200, boss = 2000}},
 			{id = 24688, name = "Orb of Erasure", weight = 10, count = {1, 1},
-				chance = {normal = 15, magic = 100, rare = 400, legendary = 1500, boss = 2500}},
+				chance = {normal = 15, magic = 45, rare = 90, legendary = 1500, boss = 2500}},
 			{id = 29855, name = "Orb of Grafting", weight = 5, count = {1, 1},
-				chance = {normal = 4, magic = 30, rare = 120, legendary = 600, boss = 1000}},
+				chance = {normal = 4, magic = 12, rare = 24, legendary = 600, boss = 1000}},
 			-- orbs v2 (data/lib/chaos_orbs.lua): the Whetstone and the Orb of Tempering often, Reforging, Excision and Binding
 			-- rare, the Orb of Ruin very rare (and mostly from legendary monsters and bosses)
 			{id = 32256, name = "Whetstone", weight = 18, count = {1, 2},
-				chance = {normal = 25, magic = 180, rare = 600, legendary = 2000, boss = 3000}},
+				chance = {normal = 25, magic = 75, rare = 150, legendary = 2000, boss = 3000}},
 			{id = 32251, name = "Orb of Tempering", weight = 14, count = {1, 1},
-				chance = {normal = 12, magic = 90, rare = 350, legendary = 1400, boss = 2200}},
+				chance = {normal = 12, magic = 36, rare = 72, legendary = 1400, boss = 2200}},
 			{id = 32254, name = "Orb of Reforging", weight = 6, count = {1, 1},
-				chance = {normal = 4, magic = 35, rare = 140, legendary = 600, boss = 1000}},
+				chance = {normal = 4, magic = 12, rare = 24, legendary = 600, boss = 1000}},
 			{id = 32253, name = "Orb of Excision", weight = 5, count = {1, 1},
-				chance = {normal = 3, magic = 25, rare = 100, legendary = 450, boss = 800}},
+				chance = {normal = 3, magic = 9, rare = 18, legendary = 450, boss = 800}},
 			{id = 32252, name = "Orb of Binding", weight = 3, count = {1, 1},
-				chance = {normal = 2, magic = 15, rare = 60, legendary = 250, boss = 500}},
+				chance = {normal = 2, magic = 6, rare = 12, legendary = 250, boss = 500}},
 			{id = 32255, name = "Orb of Ruin", weight = 1, count = {1, 1},
-				chance = {normal = 0, magic = 4, rare = 18, legendary = 80, boss = 160}},
+				chance = {normal = 0, magic = 1, rare = 4, legendary = 80, boss = 160}},
 			-- gems and sockets (data/lib/chaos_gems_config.lua socketOrb; the gems drop through chaos_gems_config.lua)
 			{id = 24692, name = "Orb of Sockets", weight = 8, count = {1, 1},
-				chance = {normal = 8, magic = 60, rare = 250, legendary = 1000, boss = 1500}}
+				chance = {normal = 8, magic = 24, rare = 48, legendary = 1000, boss = 1500}}
 			-- add more: {id = 12345, name = "Soul Shard", weight = 50, count = {1, 3}, chance = {...}}
 		},
 		-- guaranteed number of entries drawn by weight (in addition to the chances above)
 		guaranteed = {legendary = 1, boss = 1},
 		-- bonus count for guaranteed/rolled stackables: floor(count * mult)
 		countMult = {normal = 1.0, magic = 1.0, rare = 1.0, legendary = 1.5, boss = 2.0}
+	},
+
+	-- 3d. waystones (the base server's Waystone Tier I-VI items, dropped by the stock pass): a monster below this level
+	-- (L.monsterLevel) drops none; loot.lua takes them out of the corpse again (L.gateWaystones). Items are found by
+	-- name (lowercase Lua pattern), so the base item ids need not be known. 0 = no gate. Owner 2026-10-17.
+	waystone = {
+		minMonsterLevel = 150,
+		namePattern = "^waystone tier",
+		skipTiers = {boss = true}
 	},
 
 	-- 4. unique items (global ChaosUniqueItems, see LOOT.md)
@@ -152,7 +170,7 @@ return {
 	},
 
 	-- announce a legendary/boss kill with rarity >= this on a gear drop (0 disables)
-	announceRarityFrom = 10,
+	announceRarityFrom = 10, -- Divine (a stored id)
 
 	-- 6. diagnostic (ChaosLootRoll): hard cap of simulated kills per call, and a fake loot table
 	-- used when MonsterType(name):getLoot() is unavailable or empty

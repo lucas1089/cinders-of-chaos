@@ -100,7 +100,7 @@ return {
 	--   marks    spread: a circle under every player, hit after the warning: step out and away from the others
 	--   totem    kill the totem: effigies that put a stack of Hexed on everyone in the room every hexMs (stackShare x
 	--            stacks per tick, on the buff bar) and detonate after lifeMs (detonateShare to everyone)
-	--   hex      dispel: Withering Hex on random players (an engine curse: a cure curse spell or the Font of Ash takes it
+	--   hex      dispel: Withering Hex on random players (an engine curse: the Font of Ash (the cure curse spell is retired) takes it
 	--            off); not cleansed within windowMs it bursts on everyone within radius sqm of the hexed player
 	mechanics = {
 		sunder = {stackPct = 15, swapAt = 4, maxStacks = 8, expireMs = 20000, challengeRange = 1, verdictShare = 0.55,

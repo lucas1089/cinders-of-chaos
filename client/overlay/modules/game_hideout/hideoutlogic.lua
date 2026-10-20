@@ -134,7 +134,7 @@ function HL.occupancy(state, ignoreId)
   return occ, total
 end
 
-local SOLID_FIXTURES = { depot = true, stash = true }
+local SOLID_FIXTURES = { depot = true, stash = true, waystone = true }
 local function fixtureSolid(name)
   return SOLID_FIXTURES[name] or name:match('^dummy') ~= nil or name:match('^light') ~= nil
 end
@@ -165,7 +165,7 @@ function HL.reachOk(layout, solid)
   end
   for _, t in ipairs(layout.reserved or {}) do
     local name = t[3]
-    if name ~= 'arrival' and not name:match('^light') then
+    if name ~= 'arrival' and not name:match('^light') and not name:match('^waystonepad') then
       local reached = false
       if not fixtureSolid(name) then
         reached = seen[key(t[1], t[2])] == true

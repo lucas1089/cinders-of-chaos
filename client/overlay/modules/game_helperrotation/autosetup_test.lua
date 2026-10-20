@@ -4,6 +4,7 @@ dofile(dir .. 'autorotation_data.lua')
 dofile(dir .. 'autorotation.lua')
 dofile(dir .. 'autosetup.lua')
 dofile(dir .. '../game_chaosspells/spelldata.lua')
+dofile(dir .. '../game_helpersupport/supportspells.lua')
 local A, S = ChaosAutoRotation, ChaosAutoSetup
 local fails = 0
 local function eq(a, b, what)
@@ -164,6 +165,41 @@ eq(#S.mergeTimers(timers, planFor(3, 150).timers, 'replace'), 2, 'replace: only 
 eq(S.mergeHaste(6, 39, 'add'), 6, 'add: the player\'s haste stays')
 eq(S.mergeHaste(6, 39, 'replace'), 39, 'replace: the plan\'s haste')
 eq(S.mergeHaste(0, nil, 'replace'), 0, 'no haste to cast: unchanged')
+
+-- the Support spells section (game_helpersupport): the plan takes the timers and the support rows from the spell data
+local entries = {}
+for _, s in ipairs(ChaosSpellData) do
+  entries[#entries + 1] = { id = s.id, name = s.name, words = s.words, level = s.level, mana = s.mana,
+    group = { [s.group] = s.groupCooldown }, exhaustion = s.cooldown, needTarget = s.needTarget, parameter = false,
+    vocations = s.vocations }
+end
+local function planWithSupport(voc, level)
+  local canCast = canCastFor(voc, level)
+  return S.plan({ vocId = voc, level = level, canCast = canCast, has = function() return false end,
+    heals = A.heals(voc, level, canCast), rotation = A.select(voc, level, canCast),
+    support = ChaosHelperSupport.autoPlan(entries, canCast) })
+end
+local sp = planWithSupport(13, 200)           -- Samurai
+local more, total = 0, 0
+for _, voc in ipairs({ 4, 8, 14, 3, 7, 15, 1, 5, 10, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 25 }) do
+  local new, old = planWithSupport(voc, 300), planFor(voc, 300)
+  ok(#new.timers >= #old.timers, 'vocation ' .. voc .. ': no fewer timer rules than before')
+  ok(#new.timers <= ChaosHelperSupport.TIMER_MAX, 'vocation ' .. voc .. ': within the timer limit')
+  if #new.timers > #old.timers then more = more + 1 end
+  total = total + #new.support
+end
+ok(more >= 5, 'at least five classes get more timer rules than the hand-written list gave (' .. more .. ')')
+ok(total >= 21, 'every class has a support row or more (' .. total .. ')')
+eq(sp.timers[1].unit, 'sec', 'timer rule in seconds')
+eq(sp.timers[1].targetingMonster, true, 'timer rule: only while attacking a monster')
+eq(sp.timers[1].inNonPz, true, 'timer rule: outside protection zones')
+ok(sp.timers[1].chaosAutoSetup, 'timer rule: marked as Auto setup\'s')
+ok(#sp.support >= 1, 'the plan lists support spells for the new section')
+eq(planFor(13, 200).support and #planFor(13, 200).support or 0, 0, 'without the module\'s plan: no support rows')
+eq(#S.ownTabs({ support = {} }, sp), 0, 'an empty support section is nobody\'s')
+eq(#S.ownTabs({ support = { { id = sp.support[1] } } }, sp), 0, 'a row of the plan is not the player\'s own')
+local own = S.ownTabs({ support = { { id = 12345 } } }, sp)
+eq(own[1], 'support', 'a row of the player\'s own is asked about')
 
 if fails > 0 then error(fails .. ' failure(s)') end
 print('autosetup_test: OK')

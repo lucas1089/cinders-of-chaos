@@ -824,6 +824,7 @@ SPELL_ICONS = {
     'bushido': 'vyr mynd', 'bloodrage': 'vyr sang khar', 'bone_aura': 'tor vas oss', 'bone_shield': 'drai sang oss',
     'chi_ward': 'tor qhal', 'mantra': 'tor vas qhal', 'roll': 'ash qhal', 'breath': 'saen qhal',
     'zealotry': 'vyr sol zel', 'aegis_faith': 'tor gal sol aeg',
+    'moonfang_pack': 'vael luth wyrd', 'mirror_image': 'drai spek',
 }
 
 DEBUFFS = {'poison', 'burning', 'energy', 'bleeding', 'drowning', 'freezing', 'dazzled', 'cursed', 'paralyze', 'drunk',

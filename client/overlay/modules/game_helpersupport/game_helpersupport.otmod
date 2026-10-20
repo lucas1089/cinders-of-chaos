@@ -1,0 +1,10 @@
+Module
+  name: game_helpersupport
+  description: The helper's Support spells tab (ChaosHelperSupport, ChaosHelperSupportUI): a list of support spells (shields, summons, vigils, buffs) the helper casts by itself whenever they are off cooldown, with the cast safeguards of the attack rotation; Auto setup fills it (game_helperrotation)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 100
+  scripts: [ supportspells, supportspells_ui ]
+  @onLoad: ChaosHelperSupportUI.init()
+  @onUnload: ChaosHelperSupportUI.terminate()

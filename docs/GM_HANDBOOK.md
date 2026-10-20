@@ -79,6 +79,38 @@ characters only. A refund after a confirmed bug goes through an administrator (g
 `Chaos.staffCommand(..., true)`, so the code enforces the rule; a gamemaster is refused with a message and every use,
 refused or not, is in the admin audit log (`tests/staff_permissions_test.lua`).
 
+### 2b. Reload without a restart (updated 2026-10-18)
+
+A **god** account (group 6, `ACCOUNT_TYPE_GOD`) types `/reload <type>` in the default channel, or uses the admin panel (Server >
+Reload system; god only, logged). Nothing here touches the engine, `items.xml`/`items.otb`, `vocations.xml`, the map, spawns or
+houses: those need a restart. Read the console for `Lua Script Error` after every reload. A reload runs the files again, so
+state a system keeps only in memory (timers, runs in progress, caches) can reset: the system's section in server/README.md says so.
+
+`/reload` types: `all`, `scripts` (every revscript under `data/scripts`, that is every Chaos system), `libs` or `global`
+(`data/lib` and the global scripts), `config`, `actions`, `creaturescripts`, `movements`, `talkactions`, `globalevents`,
+`spells`, `weapons`, `monsters`, `npcs`, `mounts`, `auras`, `wings`, `shaders`, `quests`, `raids`, `events`, `chat`, `items`
+(avoid on a live server).
+
+| What you changed | Reload with | Notes |
+|---|---|---|
+| a Chaos Lua system (`data/scripts/chaos/*.lua`, configs `*_config.lua`: balance numbers, potions, loot, nemesis, effigy ...) | `/reload scripts` | the common case; players online keep their state, in-memory timers restart |
+| a shared lib (`data/lib/*.lua`, e.g. `chaos_buffs.lua`, `chaos_orbs_config.lua`, item mods) | `/reload libs`, then `/reload scripts` | scripts cache lib tables: reload both, libs first |
+| a spell script or the spell list (`data/spells/**`, `spells_chaos.xml`) | `/reload spells`, then `/spells reload` | players see new spells after a relog; `/spells reload` re-parses the Spellbook texts |
+| monster files (`data/monster/**`: health, flags such as `runonhealth`, loot) | `/reload monsters` | monsters already alive keep the old values until they die |
+| NPC files (`data/npc/**`) | `/reload npcs` | |
+| `config.lua` keys (rates, `potionChannelDelay`, `runeChannelDelay`, `moveItemDelay`, `proxyProtocolTrusted`, ...) | `/reload config` | ports, database, the RSA key file and the map are read only at start |
+| talkactions, actions, movements, globalevents, creaturescripts files | `/reload talkactions` / `actions` / `movements` / `globalevents` / `creaturescripts` | `/reload scripts` already covers the revscripts among them |
+| Chaos patch notes (`data/patchnotes/*.md`) | `/patchnotes reload` | group 4+ |
+| Chaos spell supports catalogue | `/supports reload` | group 4+ |
+| website (PHP, wiki, credits) | the site installer (`docs/LAUNCH.md`), no game restart | |
+| a new client build | players download it (the signed updater) | not a reload |
+
+Needs a **restart**: engine patches (`server/src-patches/`), `items.xml` / `items.otb`, `vocations.xml`, map and spawns, houses,
+any `install_all.py` step but `files`, SQL changes (run the SQL, then restart if a table is read at start).
+
+Typical hotfix, as in docs/LAUNCH.md section "Hotfix without a restart": `install_all.py ... --only files`, `chown`, then in game
+`/reload scripts` (and `/reload monsters` / `/reload spells` for those files), then the admin panel's Online list to check nobody was kicked.
+
 ## 3. Report handling
 
 From server/README.md "Anti-bot and player reports", Staff guide:

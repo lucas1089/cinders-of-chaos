@@ -37,7 +37,6 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="32" chance="60000" /><!-- gold coin -->
-		<item id="36024" countmax="2" chance="18000" /><!-- hornet stinger -->
 		<item id="36049" countmax="2" chance="12000" /><!-- wild honeycomb -->
 	</loot>
 </monster>

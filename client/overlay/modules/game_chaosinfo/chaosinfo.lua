@@ -383,6 +383,8 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     end
   elseif msg.action == 'services' then
     services = d
+    local extras = modules.game_outfitextras
+    if extras and type(extras.onData) == 'function' then pcall(extras.onData, 'services') end
     if window and current == 'services' then
       applyState()
       showServices()
@@ -390,7 +392,27 @@ local function onExtendedOpcode(protocol, opcode, buffer)
   elseif msg.action == 'store' then
     storeData = d
     showStore()
+  elseif msg.action == 'npc' then
+    -- the house broker and the services clerk (service_npcs*.lua) open their page; d.page is checked here
+    local page = type(d.page) == 'string' and V.page(d.page) or nil
+    if page then openPage(d.page) end
   end
+end
+
+-- for the Customise Character window (game_outfitextras): the Services state (owned and shown name plate frames), a
+-- fresh one, and a frame switch (the server command "plateframe": a frame name, or "off" for the title's own frame)
+function getServices()
+  return services
+end
+
+function requestServices()
+  if g_game.isOnline() then send('services') end
+end
+
+function usePlateFrame(name)
+  if type(name) ~= 'string' then return end
+  send('run', { page = 'services', ids = { 'plateframe' }, params = { name == '' and 'off' or name } })
+  send('services')
 end
 
 local function onGameStart()

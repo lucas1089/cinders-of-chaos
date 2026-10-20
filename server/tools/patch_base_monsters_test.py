@@ -134,4 +134,14 @@ check(P.resolve('An Apple', {'apple': 5}) == 5 and P.resolve('apple', {'apple': 
 if fails:
     print('patch_base_monsters_test: %d check(s) failed' % len(fails))
     sys.exit(1)
+# no fleeing at low health
+t, ch = P.patch_xml('<monster name="x"><flags><flag runonhealth="15" /></flags></monster>', {})
+check('runonhealth="0"' in t and any('runonhealth' in c for c in ch), 'XML runonhealth becomes 0')
+t2, ch2 = P.patch_xml(t, {})
+check(t2 == t and not ch2, 'XML runonhealth: second run changes nothing')
+t, ch = P.patch_lua('monster.flags = { runHealth = 10, hostile = true }')
+check('runHealth = 0' in t, 'Lua runHealth becomes 0')
+t2, ch2 = P.patch_lua(t)
+check(t2 == t and not ch2, 'Lua runHealth: second run changes nothing')
+
 print('patch_base_monsters_test: all checks passed')

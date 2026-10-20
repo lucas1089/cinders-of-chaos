@@ -546,10 +546,12 @@ end
 local function rarityCombo(combo, offText, value, suffix)
   combo:clearOptions()
   combo:addOption(offText, 0)
-  for i, r in ipairs(L.RARITY) do
-    combo:addOption(r.name .. (suffix or ''), i)
+  local at = 1
+  for i, id in ipairs(L.RARITY_IDS) do
+    combo:addOption(L.rarityName(id) .. (suffix or ''), id)
+    if id == L.canon(value) then at = i + 1 end
   end
-  combo:setCurrentIndex((value or 0) + 1)
+  combo:setCurrentIndex(at)
 end
 
 -- modifier tier threshold: Off, T1+ .. T8+
@@ -577,8 +579,8 @@ local function buildPreview()
   local gear = tonumber(samples.gear) or 0
   local entries = {}
   entries[#entries + 1] = { id = gear, r = 0, g = 'equipment', nm = tr('Gear without rarity') }
-  for i, r in ipairs(L.RARITY) do
-    entries[#entries + 1] = { id = gear, r = i, g = 'equipment', nm = r.name .. ' gear' }
+  for _, id in ipairs(L.RARITY_IDS) do
+    entries[#entries + 1] = { id = gear, r = id, g = 'equipment', nm = tr('%s gear', L.rarityName(id)) }
   end
   if (settings.tier or 0) > 0 then
     entries[#entries + 1] = { id = gear, r = 1, t = settings.tier, g = 'equipment',
@@ -689,9 +691,19 @@ local function onSettings(data)
   if data.open then show() end
 end
 
+-- registered with registerExtendedJSONOpcode: the message arrives decoded, and a payload over 8192 bytes (the server
+-- sends it in parts, Chaos.send) is joined first. A raw string is decoded here (tests).
 local function onExtendedOpcode(protocol, opcode, buffer)
-  local ok, msg = pcall(json.decode, buffer)
-  if not ok or type(msg) ~= 'table' then
+  local msg = buffer
+  if type(buffer) == 'string' then
+    local ok, decoded = pcall(json.decode, buffer)
+    if not ok then
+      g_logger.error('[lootfilter] invalid JSON: ' .. tostring(decoded))
+      return
+    end
+    msg = decoded
+  end
+  if type(msg) ~= 'table' then
     g_logger.error('[lootfilter] invalid JSON: ' .. tostring(msg))
     return
   end
@@ -789,7 +801,7 @@ function init()
     window = nil
     g_logger.warning('[lootfilter] window not loaded (theme styles missing?): ' .. tostring(ui))
   end
-  ProtocolGame.registerExtendedOpcode(OPCODE, handlers.opcode)
+  ProtocolGame.registerExtendedJSONOpcode(OPCODE, handlers.opcode)
   connect(Container, handlers.container)
   connect(g_game, handlers.game)
   if g_game.isOnline() then handlers.game.onGameStart() end
@@ -798,7 +810,7 @@ end
 function terminate()
   if handlers.container then disconnect(Container, handlers.container) end
   if handlers.game then disconnect(g_game, handlers.game) end
-  pcall(ProtocolGame.unregisterExtendedOpcode, OPCODE)
+  pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   for _, e in pairs(peekEvents) do removeEvent(e) end
   peekEvents = {}
   if saveEvent then removeEvent(saveEvent) saveEvent = nil end
