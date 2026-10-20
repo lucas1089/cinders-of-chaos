@@ -57,6 +57,20 @@ v = V.build(state)
 eq(P(v.spark), 'Daily Spark lit', 'spark lit'); eq(v.sparkColor, V.REACHED, 'lit colour')
 eq(P(v.bonus), 'Double points used up today.', 'bonus used')
 
+-- the junk orb offering (server embercache.lua E.offerQuote)
+src = V.sources({ { 'offering', 1, 10, 60, 17 } })
+eq(src[1].label[1], 'Junk orbs offered (the button below)', 'offering label')
+eq(P(src[1].pts), '10 for 1 point', 'offering rate'); eq(P(src[1].cap), 'at most 60 a day (17 today)', 'offering cap')
+local o = V.offer({ orbs = 600, points = 60, room = 60, per = 10, carried = 2000 })
+ok(o.can, 'an offer to confirm')
+eq(P(o.text), 'Offer 600 junk orbs for 60 Ember points? They are destroyed. (10 orbs a point, 60 points left today)',
+  'offer text')
+o = V.offer({ orbs = 0, points = 0, room = 60, per = 10, carried = 7 })
+ok(not o.can, 'nothing to offer'); eq(P(o.text), 'You carry 7 junk orbs: at least 10 make an Ember point (locked orbs do not count).', 'too few')
+o = V.offer({ orbs = 0, points = 0, room = 0, per = 10, carried = 500 })
+ok(not o.can, 'day full'); eq(P(o.text), 'The Ember Cache takes no more junk orbs today. More tomorrow.', 'day full text')
+o = V.offer('bad'); ok(not o.can, 'garbage: nothing to offer')
+
 -- garbage never errors
 v = V.build(nil); eq(#v.tiers, 0, 'nil state'); eq(P(v.week), 'This week: 0 Ember points', 'nil week')
 v = V.build({ week = 'x', day = 5, book = {}, src = 'y' }); eq(#v.sources, 0, 'bad shapes')

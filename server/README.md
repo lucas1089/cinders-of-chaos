@@ -736,7 +736,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7102640 - 7102689 | Conquest Tokens (`conquest_config.lua` `storage`, `Chaos.storage.conquest`): +0 the day of the counters, +1..+29 tokens earned today per source, +30..+39 bad-luck misses in a row per pity group; +40..+49 free |
 | 7102300 - 7102309 | Nemesis (`Chaos.storage.nemesis`, `nemesis_config.lua` `storage`): +0 nemeses avenged, +1 nemeses of others slain, +2 last hunter bounty, +3 last avenge loot bonus, +4 the character's last nemesis ended (birth cooldown), +5 trophies; +6..9 free |
-| 7102700 - 7102719 | Ember Cache (`embercache_config.lua` `storage`): +0 week, +1 week points, +2 milestones given, +3 Sparks this week, +4 day, +5 day points, +6 day points before the bonus, +7 Spark lit, +8 kills toward the next point, +9..+11 points today of the capped sources (kill, elite, craft); +12..19 free |
+| 7102700 - 7102719 | Ember Cache (`embercache_config.lua` `storage`): +0 week, +1 week points, +2 milestones given, +3 Sparks this week, +4 day, +5 day points, +6 day points before the bonus, +7 Spark lit, +8 kills toward the next point, +9..+12 points today of the capped sources (kill, elite, craft, offering); +13..19 free |
 | 7102720 - 7102739 | day book (`embercache_config.lua` `daybook`): +0 day, +1/+2 experience (hi x 1e9 + lo), +3 kills, +4/+5 loot gold, +6/+7 supplies gold, +8 orbs, +9 uniques, +10 rarity items, +11 deaths, +12 level at the day's start, +13 seconds played, +14 Ember points; +15..19 free |
 | 7102750 - 7102779 | tutorial reset (`Chaos.storage.tutorialSnapshot`, `newplayer_core.lua` `NP.SNAP`): +0 saved, +1 level, +2/+3 experience (hi x 1e9 + lo), +4 magic level, +5 mana spent, +6 max health, +7 max mana, +8 capacity, +9 leather armors, +10 orbs, +11..+17 skill levels, +18..+24 skill tries; +25..29 free |
 | 7102740 - 7102744 | gentle deaths (`gentledeath_config.lua` `storage`): +0 day of the last first-death-of-the-day discount, +1 Eternal Blessing owned; +2..4 free |
@@ -7328,9 +7328,20 @@ invasion, the Victory buff and the world event; offline rewards wait in memory l
   boss's health, the top 3 contributors with their share, your rank, share and kills. Click it to fold it. It sits
   under the character plate (the rift HUD's spot) and moves right of the rift HUD while a rift runs.
 
+- **The count** (`I.sweep` every second, `stragglers`; beta 2026-10-20: "10 left" after every invader in sight was
+  slain, no victory, no reward; commit 88f7fd76 had only dropped the removed ones). An invader that no longer exists
+  (removed by another script, a despawn) or that has a master now (a summon, a tamed or convinced monster) leaves the
+  count and counts with the slain for "Horde slain". One that exists but cannot be reached is called back to a free
+  tile 2-6 tiles from the target: on another floor, more than 8 tiles outside the area, or stuck (no target, no step)
+  for 30 s with no player hit for 30 s; with no free tile it is removed and leaves the count. Occupiers that became
+  summons leave the occupation count too.
+- **Rout** (`rout.seconds`): once the warlord is slain the horde breaks ("the last N invaders flee in 90 seconds"); 90 s
+  later the invaders still alive flee and the invasion is **won** with the full rewards. At the time limit a slain
+  warlord is a victory too; with the warlord alive the time limit is still a defeat.
+
 ### Win
 
-All waves and the boss slain within 20 minutes. Contribution = damage dealt to invaders + 0.6 x healing done to other
+All waves and the boss slain within 20 minutes (or the warlord slain and the rout over, see above). Contribution = damage dealt to invaders + 0.6 x healing done to other
 players inside the area (+10 tiles, effective healing only) + kills x 0.25 x the average invader health. A player needs
 0.2% of the total invader health in contribution to be rewarded. Multi-client characters fight but get nothing
 (`mcReward`). Rewards per player, by share of the total:
@@ -8445,6 +8456,42 @@ cdr 1-2 / 8-10 -> 2-3 / 13-16; experience 1 / 6-8 -> 1-2 / 8-11; absorb 1 / 5-7 
 unchanged); the old ranges stay in `ChaosItemMods.legacy` and `.legacyEngine`, so an item without a stored `ct_` tier keeps
 its tier and its range (`ChaosCrafting.readMods`, `affix.legacy`). Charm ranges are unchanged (only the gear reference
 `gearRef` of `charms_config.lua` was raised so a charm stays under the best gear roll).
+
+### Level 500+ rarity (`loot.lua` `L.levelRarityChance`, `L.upgradeRarity`, `loot_config.lua` `gear.levelRarity`)
+
+Beta 2026-10-20: two days at level 500+ and about 30 kills a minute gave orbs and plain gear, no Rare and no Legendary
+item. The audit (monster levels, item levels, the 500+ loot tables, `tests/loot_level_rarity_test.lua`):
+
+- For normal and magic monsters (98% of the kills: `monster_tiers.lua` spawn chances 6% magic, 1.5% rare, 0.25%
+  legendary) the loot layer gave at most Magic (no floor, bonus steps from nothing): every Rare and Legendary of a
+  normal hunt came from the base server's stock roll alone (`default_onDropLoot.lua`, 7.7% of the gear drops Rare+).
+  That roll is not in this repository and its result in a live corpse was never measured; the beta's zero says it gives
+  nothing there for these monsters, or that the gear never reaches the corpse with it. No level gate exists in the
+  layer: item levels (`M.sourceLevel`, cap 150), the waystone and orb gates and the pace thinning were checked.
+- The level 500+ loot tables (`data/monster/monsters/chaos`, `pack30`) hold gear at 4-7% a kill (16-20 entries of
+  250-375 / 100000) against 23% at the level 380 Hollow Rider, and pack combat keeps it with chance 0.73-0.97
+  (`pace_config.lua` `scaled.loot` x `scale.loot`).
+- Fix: the layer's own roll by hunting level (`ChaosPace.levelOf`: the monster's level, a generated point's, else 2 x the
+  bounty pool estimate). A gear drop of a monster at hunting level 500 gets at least Rare with 4% (6% at 1000, 8% at
+  2000 and beyond; nothing below 450; x item find), 30% of those Legendary (`legendaryShare`). It runs in
+  `L.upgradeRarity` after the tier's floor and steps, never lowers an item and stops at `maxRarity` (Divine stays the
+  divine roll's). Rare monsters keep their Magic floor with the level roll on top.
+
+Measured with the core (`L.simulate` on the real loot tables, the tier mix of `monster_tiers.lua`, the pace factor;
+36,000 kills each, rare+ gear per hour at 30 kills a minute):
+
+| Monster (level) | stock roll, before | stock roll, after | no stock roll, before | no stock roll, after |
+|---|---|---|---|---|
+| Ashmaw Raider (540) | 7.0 | 8.9 | 1.4 | 3.1 |
+| Mercenary (670) | 8.1 | 10.9 | 1.6 | 4.4 |
+| Golden Lord (880) | 6.8 | 9.7 | 1.4 | 4.1 |
+| Vyrm (1180) | 6.1 | 11.7 | 1.1 | 6.0 |
+| Hollow Rider (380, under the curve) | 22.8 | 22.8 | 2.6 | 2.6 |
+
+"No stock roll" is the beta's case (the base pass gives nothing): before, only the rare and legendary monsters' floors
+gave a Rare now and then (1.1-1.6 an hour, mostly Magic); now 3-6 an hour from the layer alone. Not verified: why the
+stock roll gives nothing on the live server (its script is the base server's); a live hunt with the loot channel open
+would tell.
 
 ## Item modifiers (`data/lib/chaos_item_mods.lua`, `chaos_crafting.lua`, `item_mods.lua`)
 
@@ -11033,6 +11080,15 @@ Hardcore run", `hcAccept`) would be needed. Self-Found characters may enter but 
 **Inside.** Open PvP whatever the world type allows through the scripts: `ChaosPvpZone.targetCombat` (base hook,
 an EventCallback and the Chaos spells) lets players of the same instance attack each other regardless of the target's
 secure mode; refused: across the border, protected or held players, party members (allies), a multi-client attacker.
+**The battle lock** (beta 2026-10-20: "the debuff lasts 3+ minutes and the player respawns on a safe zone"). The debuff
+is the engine's `CONDITION_INFIGHT`: the PvP lock (no logout, no protection zone on foot, the Town Portal and the temple
+cleanse refuse) with the white skull riding on it, renewed with the server's whole `pzLocked` time by every player hit.
+Inside it is cut to `combatLock.maxSeconds` (60) every tick (`K.lockTicks`). Leaving (a safe exit, a defeat, any other
+way out) removes it with the skull and the monsters' harmful conditions, and again 100 ms and 1 s later
+(`combatLock.clearAfterMs`): a cancelled lethal hit still runs the engine's attack bookkeeping after `onPrepareDeath`
+and put the lock back for the full `pzLocked` time, so a defeated player stood in a protection zone with a lock the
+temple cleanse would not touch. The respawn point: the temple, as every other death (`K.defeatDestination`), never a
+spot inside the zone (the 90 s cooldown would keep him waiting there) nor the protection zone he happened to enter from.
 The client turns its own secure mode off inside (and back on when leaving). No white skull (taken back every second),
 and since the lethal hit is cancelled, no unjustified kill, no frag, no item, experience or blessing loss. PvP damage is
 scaled like the battleground (`normalise` of `battleground_config.lua`, the target's bracket sets the reference level:
@@ -11044,8 +11100,8 @@ engine refuses every player attack before any script is asked (`Combat::canDoCom
 **Embers.** Carried (storage 7100522, at most 2,500) and banked (`chaos_pvpzone_players`, at most 200,000).
 Monster kills inside give the player with the most damage 2 / 6 / 15 / 40 / 150 by tier (normal .. boss), the
 shrine's warden +100, a capture +200 to every pledged player of the capturing faction in the circle.
-A defeat (`onPrepareDeath` cancels the lethal hit): the player is thrown out to where he entered, healed, 90 s
-cooldown; all carried embers fall as a pile (an ashes marker and fire effects) where he stood. The killer (the last
+A defeat (`onPrepareDeath` cancels the lethal hit): the player is sent to his home town's temple (`death.respawn =
+"temple"`, decided 2026-10-20; `"entry"` = back where he entered, the rule before), healed, 90 s cooldown; all carried embers fall as a pile (an ashes marker and fire effects) where he stood. The killer (the last
 player hit within 10 s also counts when a monster lands the blow) alone may take it for 30 s, then anyone; at most 800
 per pile and player and 4,000 a day from other players' piles, never past the carry cap; the victim may take his own
 back; after 120 s the rest burns. Pickup: stand on the pile or next to it. Banking: stand in a safe exit circle for 5 s
@@ -15377,6 +15433,21 @@ them (capped at the missing health). At the death every player other than the co
 (each entry at its chance x `lootMult` 1.0, count 1..max) into the backpack, the rest to the store inbox; gear gets the stock
 rarity roll and the kill's item level. The corpse owner keeps the corpse.
 
+**After the kill** (beta 2026-10-20, "Shadow of ..." pocket: no drop, stairs that cannot be entered). A pocket spawns
+the boss's own monster type away from its home. Two things of the home came with it: a reward boss (the base server's
+`rewardBoss` flag) drops no corpse loot, its loot goes to the reward chest of its home room, which a pocket does not
+have; and a boss whose own death script opens the way on (stairs, a teleport) put that way into the pocket, where it
+leads nowhere. Now `bossDeath` records the corpse (items in it, `MonsterType:isRewardBoss`, the loot table) and, for
+island and raid bosses (`K.needsFallbackLoot`: a reward boss, no corpse or an empty one), every player of the run gets a
+personal roll of the loot table x `lootMult` (gear with the stock rarity roll and the boss floor of the loot layer, the
+kill's item level; backpack, else inbox; "Pocket loot of ..."). Any teleport or floor-change tile of the pocket other
+than its two forcefields is cleared at the kill and again 1 s and 5 s later (`K.foreignExits`; a floor-change ground
+becomes the arena ground). The arena's own forcefield (b89d8cad) is chosen before the room is painted
+(`K.arenaGate`) and reserved from the dark paint; it was placed after the paint, on whatever decoration landed there.
+The kill message says the way out is the forcefield by the arrival. Which boss "Shadow of ..." is cannot be read here:
+the name is the base server's (the renamed raid and island bosses, `base_monster_names.csv` holds only hashes); the
+fix is for every pocket boss.
+
 **API.** `ChaosPocketBoss.bosses()` -> `{{key, name, minLevel}}` (every pocket boss);
 `ChaosPocketBoss.addCharges(player, bossKey, n)` -> added, reason (bonus charges, capped as above; the online-time shop);
 `ChaosPocketBoss.charges(player, key)`, `.view(player)`, `.isInside(player)`, `.lootMultOf(monster)`,
@@ -18057,7 +18128,19 @@ activity gives **Ember points**; any mix fills the same bar. Adventure > Ember C
 | Ashen Sepulchre boss, Omen or Ascended Omen guardian | 10 | |
 | Treasure goblin | 5 | |
 | Crafting orb used | 1 | 15 |
+| Junk orbs offered (the window's button) | 1 per 10 orbs | 60 |
 
+- **Junk orb offering** (beta 2026-10-20: a player held about 2,000 low-value orbs with no use for them). The window's
+  **Offer junk orbs** button asks the server for a quote (`offerQuote`: the junk orbs in the backpack and the bags in it,
+  what an offer takes and gives, the points left today); a box shows it, Yes sends `offer`. The client sends no number:
+  the server counts again, takes the orbs (`offering.orbs`: Orb of Upheaval, Orb of Awakening, Whetstone, Orb of Erasure,
+  the four most common drops, taken in that order) and only then credits the points through `E.credit` like any
+  activity (the day's double points and the Spark included). Whole points only (`offering.perPoint` 10 orbs a point; a
+  rest stays in the backpack), at most the source's daily cap (60 points, 600 orbs; storage +12, kept with the other
+  capped sources). Never counted: locked orbs (`chaos_locked`) and store orbs. A removal the engine refuses credits only
+  what left (the part that is no whole point goes back, the backpack else the inbox). Rate limit `offering.requestMs`
+  (1.5 s) per player on top of the window's 300 ms per action. Pure plan `embercache_core.lua K.offerPlan`. It is a sink:
+  10 orbs (about 20 minutes of hunting income by the value of the rewards above) buy one point.
 - **Daily Spark.** The first 40 points of a day count double. 30 points (counted) in a day light the Spark. About 15
   minutes of hunting, or two dungeons.
 - **Ember Cache (weekly).** Milestones at 120 / 300 / 600 points (counted), the week from Monday 06:00.
@@ -18091,10 +18174,12 @@ activity gives **Ember points**; any mix fills the same bar. Adventure > Ember C
 - **Storage.** Player storages 7102700-7102719 (cache) and 7102720-7102739 (day book; experience and gold as hi x 1e9 +
   lo so a day past 2^31 fits). No tables.
 - **Opcode.** 174 (`ChaosOpcodes.emberCache`), free in the reference server, the base client's `ExtendedIds` and every
-  Chaos module. `open` / `close` / `get` in, `state {open?, week, day, src, book}` out.
+  Chaos module. `open` / `close` / `get` / `offerQuote` / `offer` in, `state {open?, week, day, src, book}` and `offer
+  {orbs, points, room, per, carried}` out.
 - Tests: `tests/embercache_test.lua` (days, weeks, caps, bonus, Spark, milestones, rewards, storages, day book, the engine
-  on mocks with a party, counters, a new day's recap, pt-BR), client `game_embercache/cacheview_test.lua`. Not run on a
-  live server.
+  on mocks with a party, counters, a new day's recap, pt-BR; the offering plan, a backpack with a locked stack and a bag,
+  the quote, the offer, the daily cap and the next day), client `game_embercache/cacheview_test.lua` (the confirmation
+  texts). Not run on a live server.
 
 ## Restock (`restock.lua`, `restock_core.lua`, `restock_config.lua`, client `game_hunt` Restock button)
 

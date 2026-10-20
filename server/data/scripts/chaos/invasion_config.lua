@@ -52,6 +52,17 @@ return {
 	-- breach meter (percent): invaders within `radius` of the target point push it up, perInvader per second each
 	-- (the boss counts bossWeight), at most maxPerSecond; it falls by decay per second while none is there. 100 = lost.
 	breach = {radius = 2, perInvader = 0.25, bossWeight = 4, maxPerSecond = 1.5, decay = 0.25},
+	-- the count follows the invaders that can still be fought (beta 2026-10-20: "10 left" after every invader in sight
+	-- was slain, no victory, no reward). Every second (invasion_core.lua I.sweep):
+	--   gone     the monster no longer exists (removed by another script, a despawn), or it has a master now (a summon,
+	--            a tamed or convinced monster): it leaves the count, counted with the slain for the progress
+	--   stray    it exists but cannot be reached: on another floor, more than `margin` sqm outside the area, or stuck
+	--            (no target, no step) for `stuckSeconds` with no player hit for `idleSeconds`: it is called back to a
+	--            free tile near the target (else it leaves the count as gone)
+	-- rout: once the warlord is slain the horde breaks. Invaders still alive `routSeconds` later flee and the invasion
+	-- is won (rewards as for a full clear); at the time limit a slain warlord is a victory too.
+	stragglers = {margin = 8, stuckSeconds = 30, idleSeconds = 30, recallRadius = {2, 6}},
+	rout = {seconds = 90},
 
 	-- ======================================================================= rewards (a defended invasion)
 	-- score = damage dealt to invaders x damage + healing done to other players inside the area x healing

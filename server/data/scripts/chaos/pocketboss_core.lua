@@ -353,6 +353,45 @@ function K.personalRoll(loot, mult, rand)
 	return out
 end
 
+-- ======================================================================== after the kill (beta 2026-10-20)
+-- A pocket spawns the boss's own monster type outside its home: a boss whose loot is not a corpse of its own (the base
+-- server's reward bosses: the loot goes to a reward chest of its home room) left nothing, and a boss whose death opens
+-- its home's way on (stairs, a teleport, made by its own death script) put that way into the pocket, where it leads
+-- nowhere. info = {rewardBoss = bool, corpseItems = items in the corpse at the death (nil: no corpse), lootEntries =
+-- entries of its loot table}. True when the players get a personal roll of the loot table instead.
+function K.needsFallbackLoot(info)
+	info = info or {}
+	if (info.lootEntries or 0) <= 0 then
+		return false
+	end
+	return info.rewardBoss == true or info.corpseItems == nil or info.corpseItems <= 0
+end
+
+-- the tiles of the pocket after the kill that hold a way out the pocket did not make: tiles = {{x, y, exit = bool (a
+-- teleport or a floor change on it)}}, gates = {["x,y"] = true} (the pocket's two forcefields). -> the tiles to clean
+function K.foreignExits(tiles, gates)
+	local out = {}
+	for _, t in ipairs(tiles or {}) do
+		if t.exit and not (gates or {})[t.x .. "," .. t.y] then
+			out[#out + 1] = t
+		end
+	end
+	return out
+end
+
+-- the arena's own way out, chosen before the room is painted (so no decoration lands on it): the floor tile nearest to
+-- `from` (the arrival) at Chebyshev distance >= 2 that is not taken ({["x,y"] = true}); first in list order on a tie
+function K.arenaGate(floorList, from, taken)
+	local best, bestD
+	for _, t in ipairs(floorList or {}) do
+		local d = max(math.abs(t.x - from.x), math.abs(t.y - from.y))
+		if d >= 2 and not (taken or {})[t.x .. "," .. t.y] and (not bestD or d < bestD) then
+			best, bestD = t, d
+		end
+	end
+	return best
+end
+
 -- ======================================================================== the Boss Spawns list
 -- rows = the Boss Spawns payload rows ({k, c, n, ...}), levels = {key -> pocket level}, sorted = {category -> true}:
 -- every pocket row gets pl (its pocket level); the rows of a sorted category go by pocket level, then name; every other

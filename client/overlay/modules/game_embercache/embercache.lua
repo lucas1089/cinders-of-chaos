@@ -2,8 +2,10 @@
 -- today's points and the Daily Spark, the day book (what the character did today) and how to earn points (the
 -- tooltip of "How to earn points"). Opened from the menu, Adventure > Ember Cache (ChaosTopBar.addEntry).
 -- The server talks on extended opcode 174 (JSON, joined by registerExtendedJSONOpcode):
---   client -> server  open | close | get
---   server -> client  state {open?, week, day, src, book}
+--   client -> server  open | close | get | offerQuote | offer
+--   server -> client  state {open?, week, day, src, book} | offer {orbs, points, room, per, carried} (the quote)
+-- Offer junk orbs: the button asks the server for a quote, a box shows it, Yes sends offer. The server decides what
+-- is taken from the backpack (the client sends no number).
 -- Rewards are given by the server when a milestone or the Spark is reached (a toast tells); the window only shows.
 -- Pure parts: cacheview.lua (cacheview_test.lua).
 
@@ -103,8 +105,45 @@ function toggle()
   end
 end
 
+local offerBox
+
+local function closeOffer()
+  if offerBox then
+    pcall(function() offerBox:destroy() end)
+    offerBox = nil
+  end
+end
+
+-- the quote came: a box with Yes / No (or only why there is nothing to offer)
+local function showOffer(q)
+  closeOffer()
+  local v = CacheView.offer(q)
+  if not displayGeneralBox then
+    if v.can then send('offer') end
+    return
+  end
+  local function yes() closeOffer() send('offer') end
+  if v.can then
+    offerBox = displayGeneralBox(tr('Offer junk orbs'), text(v.text),
+      { { text = tr('Yes'), callback = yes }, { text = tr('No'), callback = closeOffer }, anchor = AnchorHorizontalCenter },
+      yes, closeOffer)
+  else
+    offerBox = displayGeneralBox(tr('Offer junk orbs'), text(v.text),
+      { { text = tr('Close'), callback = closeOffer }, anchor = AnchorHorizontalCenter }, closeOffer, closeOffer)
+  end
+end
+
+function offerOrbs()
+  send('offerQuote')
+end
+
 local function onMessage(protocol, opcode, msg)
-  if type(msg) ~= 'table' or msg.action ~= 'state' or type(msg.data) ~= 'table' then return end
+  if type(msg) ~= 'table' or type(msg.data) ~= 'table' then return end
+  if msg.action == 'offer' then
+    showOffer(msg.data)
+    return
+  end
+  if msg.action ~= 'state' then return end
   state = msg.data
   render()
 end
@@ -130,6 +169,7 @@ local function onGameStart()
 end
 
 local function onGameEnd()
+  closeOffer()
   if alive(window) then window:hide() end
   state = nil
 end
@@ -151,6 +191,7 @@ end
 function terminate()
   if handlers.game then disconnect(g_game, handlers.game) end
   pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
+  closeOffer()
   if alive(window) then window:destroy() end
   window, state = nil, nil
   handlers = {}

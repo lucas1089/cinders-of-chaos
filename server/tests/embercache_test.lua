@@ -302,13 +302,104 @@ E.credit(a, "rift", 1)
 E.credit(a, "rift", 1) -- 48 counted: spark in pt-BR
 check(a.said[#a.said]:find("aceso", 1, true) ~= nil, "pt-BR spark text: " .. tostring(a.said[#a.said]))
 
+-- ---------------------------------------------------------------- the junk orb offering (beta 2026-10-20)
+do
+	local o = cfg.offering
+	eq(#K.validate(cfg), 0, "config valid with the offering source")
+	-- the plan: whole points, the day's room, the configured order
+	local plan = K.offerPlan(cfg, {[29856] = 1500, [29851] = 400, [32256] = 7, [99] = 50}, 0)
+	eq(plan.carried, 1907, "only the junk orbs count")
+	eq(plan.points, cfg.sources.offering.cap, "capped at the day's room")
+	eq(plan.orbs, cfg.sources.offering.cap * o.perPoint, "orbs taken = points x perPoint")
+	eq(#plan.take, 1, "Upheaval first, enough of them")
+	eq(plan.take[1].id, 29856); eq(plan.take[1].n, plan.orbs)
+	plan = K.offerPlan(cfg, {[29856] = 5, [29851] = 4, [32256] = 7}, 0)
+	eq(plan.points, 1, "16 orbs: one point"); eq(plan.orbs, 10)
+	eq(plan.take[1].n, 5); eq(plan.take[2].n, 4); eq(plan.take[3].n, 1)
+	plan = K.offerPlan(cfg, {[29856] = 9}, 0)
+	eq(plan.points, 0, "under a point: nothing"); eq(#plan.take, 0)
+	plan = K.offerPlan(cfg, {[29856] = 1000}, cfg.sources.offering.cap - 3)
+	eq(plan.points, 3, "the rest of the day's room"); eq(plan.room, 3)
+	plan = K.offerPlan(cfg, {[29856] = 1000}, cfg.sources.offering.cap)
+	eq(plan.points, 0, "room used up")
+	plan = K.offerPlan(cfg, {[29856] = -5, [29851] = 0 / 0}, 0)
+	eq(plan.points, 0, "bad counts are nothing")
+
+	-- the engine: a backpack with junk orbs (one stack locked, one in a bag), the quote, the offer
+	local function stack(id, count, extra)
+		local it = {id = id, count = count, attrs = extra or {}}
+		function it:getId() return self.id end
+		function it:getCount() return self.count end
+		function it:getCustomAttribute(k) return self.attrs[k] end
+		function it:isContainer() return false end
+		function it:isStoreItem() return false end
+		function it:remove(k)
+			k = k or self.count
+			if k > self.count then return false end
+			self.count = self.count - k
+			return true
+		end
+		return it
+	end
+	local function bag(items)
+		local b = {items = items}
+		function b:getSize() return #self.items end
+		function b:getItem(i) return self.items[i + 1] end
+		function b:isContainer() return true end
+		function b:getId() return 1988 end
+		function b:getCount() return 1 end
+		function b:getCustomAttribute() return nil end
+		function b:isStoreItem() return false end
+		return b
+	end
+	local u1, u2, aw, locked = stack(29856, 100), stack(29856, 45), stack(29851, 30), stack(29856, 100, {chaos_locked = 1})
+	local other = stack(29857, 100)
+	local inner = bag({aw})
+	local o2 = mkPlayer(9, 600)
+	function o2:getSlotItem(slot) return slot == (CONST_SLOT_BACKPACK or 3) and bag({u1, locked, other, inner, u2}) or nil end
+	registry.ChaosEmberCacheLogin.onLogin(o2)
+	sent = {}
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offerQuote")
+	local q = sent[#sent]
+	eq(q and q.action, "offer", "the quote answers")
+	eq(q.data.carried, 175, "locked orbs and other orbs do not count")
+	eq(q.data.points, 17, "175 orbs: 17 points"); eq(q.data.orbs, 170)
+	eq(u1.count, 100, "a quote takes nothing")
+	local before = E.st[o2:getId()].weekPoints
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offer")
+	eq(u1.count + u2.count + aw.count, 5, "170 orbs left the backpack")
+	eq(locked.count, 100, "the locked stack stays"); eq(other.count, 100, "other orbs stay")
+	eq(E.st[o2:getId()].dayRaw, 17, "17 raw points")
+	eq(E.st[o2:getId()].weekPoints - before, 34, "doubled by the day's bonus like any point")
+	eq(E.st[o2:getId()].caps.offering, 17, "the day's offering cap counts")
+	eq(o2.st[cfg.storage.base + cfg.storage.capBase + 3], 17, "the cap is saved in its storage")
+	check(o2.said[#o2.said]:find("170 junk orbs", 1, true) ~= nil, "told: " .. tostring(o2.said[#o2.said]))
+	-- again: 5 left, not a point; nothing taken, told why
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offer")
+	eq(u1.count + u2.count + aw.count, 5, "under a point: nothing taken")
+	check(o2.said[#o2.said]:find("at least 10", 1, true) ~= nil, "told why")
+	-- the day's cap: a full room refuses
+	u1.count = 2000
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offer")
+	eq(E.st[o2:getId()].caps.offering, cfg.sources.offering.cap, "filled up to the cap")
+	eq(u1.count, 2000 - (cfg.sources.offering.cap - 17) * o.perPoint, "only the room's orbs taken")
+	local left = u1.count
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offer")
+	eq(u1.count, left, "cap reached: nothing taken")
+	check(o2.said[#o2.said]:find("today", 1, true) ~= nil, "told the day is full")
+	-- a new day: room again
+	clock = clock + 86400
+	registry.ChaosEmberCacheExtended.onExtendedOpcode(o2, 174, "offer")
+	eq(u1.count, left - cfg.sources.offering.cap * o.perPoint, "the next day takes again")
+end
+
 -- ---------------------------------------------------------------- pt-BR keys of embercache.lua
 local strings = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
 local fh = io.open("data/scripts/chaos/embercache.lua", "r")
 local src = fh:read("*a")
 fh:close()
 local keys = 0
-for key in src:gmatch('Chaos%.t%(player, "([^"]+)"') do
+for key in src:gmatch('Chaos%.t%(player,%s*"([^"]+)"') do
 	keys = keys + 1
 	check(strings[key] ~= nil, "pt-BR for: " .. key)
 end

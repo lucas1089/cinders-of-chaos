@@ -503,6 +503,162 @@ end
 logout:type("logout")
 logout:register()
 
+-- ---------------------------------------------------------------- the junk orb offering (cfg().offering)
+-- The window's "Offer junk orbs" button: "offerQuote" answers what an offer would take and give (action "offer"), and
+-- "offer" does it. Everything is decided here from the backpack: the client sends no number. The orbs leave the
+-- backpack before a single point is credited, a refused removal credits only what was taken (the rest goes back).
+local BACKPACK = CONST_SLOT_BACKPACK or 3
+
+local function attr(item, key)
+	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	return ok and v or nil
+end
+
+local function call(item, method)
+	local ok, v = pcall(function() return item[method](item) end)
+	return ok and v or nil
+end
+
+-- the junk orb stacks in the backpack and the bags in it: {itemId -> {stacks, total}}; locked orbs (the item lock,
+-- "chaos_locked") and store orbs never count
+local function junkStacks(player)
+	local want = {}
+	for _, id in ipairs((cfg().offering or {}).orbs or {}) do
+		want[id] = true
+	end
+	local out = {}
+	local function walk(container, depth)
+		for i = 0, (tonumber(call(container, "getSize")) or 0) - 1 do
+			local item = container:getItem(i)
+			if item then
+				local id = item:getId()
+				local locked = tonumber(attr(item, "chaos_locked")) or 0
+				if want[id] and locked == 0 and call(item, "isStoreItem") ~= true then
+					local e = out[id]
+					if not e then
+						e = {stacks = {}, total = 0}
+						out[id] = e
+					end
+					e.stacks[#e.stacks + 1] = item
+					e.total = e.total + math.max(1, tonumber(call(item, "getCount")) or 1)
+				end
+				if call(item, "isContainer") == true and depth < 6 then
+					walk(item, depth + 1)
+				end
+			end
+		end
+	end
+	local bag = player:getSlotItem(BACKPACK)
+	if bag and call(bag, "isContainer") == true then
+		walk(bag, 1)
+	end
+	return out
+end
+
+local function offerPlan(player)
+	local st = stateOf(player)
+	K.roll(st, os.time(), cfg())
+	local stacks = junkStacks(player)
+	local have = {}
+	for id, e in pairs(stacks) do
+		have[id] = e.total
+	end
+	return K.offerPlan(cfg(), have, st.caps.offering), stacks
+end
+
+-- n orbs out of the stacks; returns how many left the backpack
+local function takeFrom(stacks, n)
+	local taken = 0
+	for _, item in ipairs(stacks or {}) do
+		if taken >= n then
+			break
+		end
+		local count = math.max(1, tonumber(call(item, "getCount")) or 1)
+		local k = math.min(count, n - taken)
+		local ok
+		if k < count then
+			ok = item:remove(k)
+		else
+			ok = item:remove()
+		end
+		if not ok then
+			break
+		end
+		taken = taken + k
+	end
+	return taken
+end
+
+local function offerLimited(player)
+	return Chaos.limited and Chaos.limited(player, "embercache.offering", (cfg().offering or {}).requestMs or 1500)
+end
+
+-- what an offer would do now (the confirmation of the window)
+function E.offerQuote(player)
+	if not cfg().enabled or offerLimited(player) then
+		return nil
+	end
+	local plan = offerPlan(player)
+	local quote = {orbs = plan.orbs, points = plan.points, room = plan.room, per = plan.per, carried = plan.carried}
+	Chaos.send(player, OPCODE, "offer", quote)
+	return quote
+end
+
+-- the offer: whole points only, at most the day's room. Returns the points credited.
+function E.offer(player)
+	if not cfg().enabled or offerLimited(player) then
+		return 0
+	end
+	local plan, stacks = offerPlan(player)
+	if plan.points <= 0 then
+		if plan.room <= 0 then
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+				"You have offered all the junk orbs the Ember Cache takes today. More tomorrow."))
+		else
+			player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+				"You need at least %d junk orbs in your backpack (locked orbs do not count).", plan.per))
+		end
+		return 0
+	end
+	local taken, got = 0, {}
+	for _, t in ipairs(plan.take) do
+		local n = takeFrom(stacks[t.id] and stacks[t.id].stacks, t.n)
+		got[#got + 1] = {id = t.id, n = n}
+		taken = taken + n
+		if n < t.n then
+			break
+		end
+	end
+	local points = math.min(plan.points, math.floor(taken / plan.per))
+	-- a removal the engine refused: what does not make a whole point goes back
+	local back = taken - points * plan.per
+	for i = #got, 1, -1 do
+		if back <= 0 then
+			break
+		end
+		local k = math.min(back, got[i].n)
+		if k > 0 then
+			local rest = k - Chaos.giveItem(player, got[i].id, k)
+			local inbox = rest > 0 and player:getInbox()
+			if inbox then
+				inbox:addItem(got[i].id, rest)
+			end
+			back = back - k
+		end
+	end
+	if points <= 0 then
+		return 0
+	end
+	local counted = E.credit(player, "offering", points)
+	local left = math.max(0, plan.room - points)
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
+		"You offered %d junk orbs to the Ember Cache: %d Ember points (%d more points today).", points * plan.per,
+		counted, left))
+	log(string.format("%s offered %d junk orbs for %d points", player:getName(), points * plan.per, points))
+	send(player, false)
+	return points
+end
+
 local ext = CreatureEvent("ChaosEmberCacheExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
@@ -523,6 +679,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		E.watch[player:getId()] = nil
 	elseif action == "get" then
 		send(player, false)
+	elseif action == "offerQuote" then
+		E.offerQuote(player)
+	elseif action == "offer" then
+		E.offer(player)
 	end
 end
 ext:type("extendedopcode")

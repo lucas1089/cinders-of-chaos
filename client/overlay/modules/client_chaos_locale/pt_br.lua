@@ -2968,6 +2968,16 @@ ChaosLocaleStrings['pt-BR'] = {
   ["A battleground or a siege"] = "Um battleground ou um siege",
   ["A treasure goblin"] = "Um treasure goblin",
   ["A crafting orb used"] = "Um orbe de crafting usado",
+  ["Junk orbs offered (the button below)"] = "Orbes comuns oferecidos (o botão abaixo)",
+  ["Offer junk orbs"] = "Oferecer orbes comuns",
+  ["Trade the common orbs you do not need (Upheaval, Awakening, Whetstone, Erasure) for Ember points: 10 orbs a point, at most 60 points a day."] =
+    "Troque os orbes comuns que você não usa (Upheaval, Awakening, Whetstone, Erasure) por pontos Ember: 10 orbes por ponto, no máximo 60 pontos por dia.",
+  ["Offer %d junk orbs for %d Ember points? They are destroyed. (%d orbs a point, %d points left today)"] =
+    "Oferecer %d orbes comuns por %d pontos Ember? Eles são destruídos. (%d orbes por ponto, restam %d pontos hoje)",
+  ["You carry %d junk orbs: at least %d make an Ember point (locked orbs do not count)."] =
+    "Você carrega %d orbes comuns: pelo menos %d fazem um ponto Ember (orbes travados não contam).",
+  ["The Ember Cache takes no more junk orbs today. More tomorrow."] =
+    "O Ember Cache não aceita mais orbes comuns hoje. Mais amanhã.",
   ["%d for 1 point"] = "%d por 1 ponto",
   ["%d point"] = "%d ponto",
   ["%d points"] = "%d pontos",

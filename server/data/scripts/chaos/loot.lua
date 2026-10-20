@@ -333,9 +333,28 @@ local function weightedPick(rows) -- rows = {{value, weight}, ...}
 	return rows[#rows][1]
 end
 
+-- the hunting level's rarity roll (loot_config.lua gear.levelRarity): percent per gear drop of at least Rare at this
+-- hunting level (0 below the first point), linear between the points, flat beyond
+function L.levelRarityChance(huntLevel)
+	local lr = cfg().gear.levelRarity
+	local pts = lr and lr.points
+	huntLevel = tonumber(huntLevel) or 0
+	if type(pts) ~= "table" or #pts == 0 or huntLevel < pts[1][1] then
+		return 0
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if huntLevel <= b[1] then
+			return a[2] + (b[2] - a[2]) * (huntLevel - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
 -- returns the new rarity as a stored id (never below the current one; 0 = none). The floor, the bonus steps (places up the
--- order Common .. Legendary, stopping at maxRarity) and the Divine chance work on ranks; itemFind scales the chances.
-function L.upgradeRarity(tier, current, itemFind)
+-- order Common .. Legendary, stopping at maxRarity), the hunting level's roll (huntLevel, gear.levelRarity) and the
+-- Divine chance work on ranks; itemFind scales the chances.
+function L.upgradeRarity(tier, current, itemFind, huntLevel)
 	local g = cfg().gear
 	local R = ChaosRarity
 	tier = L.normTier(tier)
@@ -352,6 +371,15 @@ function L.upgradeRarity(tier, current, itemFind)
 	local top = R.rank(g.maxRarity)
 	if target > top then
 		target = math.max(top, cur)
+	end
+	local lc = L.levelRarityChance(huntLevel) * (itemFind or 1)
+	if lc > 0 and pct(lc) then
+		local share = tonumber((g.levelRarity or {}).legendaryShare) or 0
+		local want = R.rank(4) -- Rare
+		if share > 0 and pct(share) then
+			want = R.rank(5) -- Legendary
+		end
+		target = math.max(target, math.min(want, top))
 	end
 	local divine = tierValue(g.divineChance, tier, 0) * (itemFind or 1)
 	if divine > 0 and target < R.STORED and pct(divine) then
@@ -729,7 +757,7 @@ function L.simulate(monsterName, tier, kills, opts)
 			end
 			for _, d in ipairs(drops) do
 				if L.isGearId(d.id) then
-					local nr = L.upgradeRarity(tier, d.rarity, ctx.itemFind)
+					local nr = L.upgradeRarity(tier, d.rarity, ctx.itemFind, opts.huntLevel or ctx.level)
 					if ChaosRarity.rank(nr) > ChaosRarity.rank(d.rarity) then
 						res.upgraded = res.upgraded + 1
 					end
@@ -896,6 +924,17 @@ function L.monsterLevel(monster)
 	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
 end
 
+-- the hunting level of a monster (pace.lua PC.levelOf: the level players hunt it at); `fallback` without pace.lua
+function L.huntLevel(monster, fallback)
+	if ChaosPace and ChaosPace.levelOf then
+		local ok, lv = pcall(ChaosPace.levelOf, monster)
+		if ok and tonumber(lv) and tonumber(lv) > 0 then
+			return tonumber(lv)
+		end
+	end
+	return tonumber(fallback) or 0
+end
+
 -- the item level of this kill's drops (owner = the corpse owner; inside a rift / Omen arena its run counts)
 function L.dropLevel(monster, owner, tier)
 	local M = ChaosItemMods
@@ -979,6 +1018,9 @@ local function processKill(monster, corpse)
 		pace = pace, catchup = catchup}
 	-- the level the orb and waystone gates read (monsterLevel falls back to the bounty pool / exp estimate)
 	ctx.orbLevel = L.monsterLevel(monster)
+	-- the hunting level the rarity roll reads (gear.levelRarity): pace.lua's (its own level, a generated point's, else
+	-- 2 x the bounty pool estimate), else the level above
+	ctx.huntLevel = L.huntLevel(monster, ctx.orbLevel)
 	-- the Orb Find of the placed charms (charms.lua): the currency chances only
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
@@ -1082,7 +1124,7 @@ local function processKill(monster, corpse)
 		local id = item:getId()
 		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
-			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
+			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100), ctx.huntLevel)
 			if ChaosRarity.rank(target) > ChaosRarity.rank(current) then
 				item:setCustomAttribute("rarity", target)
 				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)

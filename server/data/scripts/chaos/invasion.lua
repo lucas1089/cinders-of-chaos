@@ -489,7 +489,7 @@ local function moveInvader(id, info, t, target, radius)
 		return
 	end
 	if monster:getTarget() then
-		info.path = nil
+		info.path, info.stuckSince = nil, nil
 		return
 	end
 	if t < (info.nextStep or 0) then
@@ -524,6 +524,12 @@ local function moveInvader(id, info, t, target, radius)
 		moved = greedyStep(monster, pos, target)
 	end
 	info.stuck = moved and 0 or (info.stuck or 0) + 1
+	-- since when it has not moved (I.sweep calls a long-stuck invader back)
+	if moved then
+		info.stuckSince = nil
+	elseif not info.stuckSince then
+		info.stuckSince = now()
+	end
 end
 
 local function moveLoop(token)
@@ -585,25 +591,77 @@ local function breachBar(on)
 	end
 end
 
--- the counters follow the invaders that still exist: one that left the world without dying (removed by another script,
--- fell out of the map) would otherwise stay counted for the whole event ("10 left" with none in sight, no victory)
-local function reconcileInvaders()
-	local alive, waveAlive = 0, 0
-	for id, info in pairs(V.invaders) do
-		if Monster(id) then
-			alive = alive + 1
-			if info.wave and info.wave == state.wave then
-				waveAlive = waveAlive + 1
+-- a free tile near the target for an invader called back (stragglers.recallRadius rings)
+local function recallSpot()
+	local r = (C().stragglers or {}).recallRadius or {2, 6}
+	local t = state.target
+	for ring = r[1], r[2] do
+		local start = math.random(0, 8 * ring - 1)
+		local ringTiles = {}
+		for dx = -ring, ring do
+			for dy = -ring, ring do
+				if math.max(math.abs(dx), math.abs(dy)) == ring then
+					ringTiles[#ringTiles + 1] = {x = t.x + dx, y = t.y + dy, z = t.z}
+				end
 			end
-		else
-			V.invaders[id] = nil
-			if info.boss and id == state.bossId then
-				state.bossAlive = false
-				state.bossHp = 0
+		end
+		for k = 0, #ringTiles - 1 do
+			local p = ringTiles[(start + k) % #ringTiles + 1]
+			if V.tileOk(P(p), state.area) then
+				return P(p)
 			end
 		end
 	end
-	state.alive, state.waveAlive = alive, waveAlive
+	return nil
+end
+
+-- the counters follow the invaders that can still be fought (I.sweep): one that left the world without dying (removed
+-- by another script, a despawn) or became a summon leaves the count; one on another floor, far outside the area or
+-- stuck out of reach is called back near the target. Beta 2026-10-20: "10 left" with none in sight, no victory.
+local function reconcileInvaders()
+	local res = I.sweep(V.invaders, function(id)
+		local m = Monster(id)
+		if not m then
+			return nil
+		end
+		local okM, master = pcall(function() return m:getMaster() end)
+		local okT, target = pcall(function() return m:getTarget() end)
+		local pos = m:getPosition()
+		return {pos = {x = pos.x, y = pos.y, z = pos.z}, master = okM and master ~= nil or false,
+			target = okT and target ~= nil or false}
+	end, {now = now(), wave = state.wave, target = state.target, area = state.area}, C().stragglers)
+	for _, id in ipairs(res.gone) do
+		local info = V.invaders[id]
+		V.invaders[id] = nil
+		state.gone = (state.gone or 0) + 1
+		if info and info.boss and id == state.bossId and state.bossAlive then
+			state.bossAlive = false
+			state.bossHp = 0
+			state.bossDownAt = state.bossDownAt or now()
+		end
+	end
+	for _, id in ipairs(res.strays) do
+		local m, info = Monster(id), V.invaders[id]
+		local spot = m and recallSpot()
+		if spot and pcall(function() m:teleportTo(spot, false) end) then
+			spot:sendMagicEffect(CONST_ME_TELEPORT)
+			info.stuckSince, info.path = nil, nil
+		elseif m then
+			-- nowhere to put it: out of the count rather than holding the event open
+			V.invaders[id] = nil
+			state.gone = (state.gone or 0) + 1
+			res.alive = res.alive - 1
+			if info.wave and info.wave == state.wave then
+				res.waveAlive = res.waveAlive - 1
+			end
+			if info.boss and id == state.bossId then
+				state.bossAlive, state.bossHp = false, 0
+				state.bossDownAt = state.bossDownAt or now()
+			end
+			m:remove()
+		end
+	end
+	state.alive, state.waveAlive = math.max(0, res.alive), math.max(0, res.waveAlive)
 end
 
 local function tick(token)
@@ -631,7 +689,14 @@ local function tick(token)
 		if I.nextWaveDue(state, t, C().waves) then
 			spawnWave(state.wave + 1)
 		end
-		local result = I.outcome(state, t)
+		if state.bossSpawned and not state.bossAlive and not state.bossDownAt then
+			state.bossDownAt = t
+			if (state.alive or 0) > 0 then
+				announce(ChaosI18n.msg("The horde of %s breaks: the last %d invaders flee in %d seconds.", state.areaName,
+					state.alive, (C().rout or {}).seconds or 90))
+			end
+		end
+		local result = I.outcome(state, t, C().rout)
 		if result then
 			finish(result)
 			return
@@ -640,8 +705,12 @@ local function tick(token)
 		local occ = state.occupation
 		local alive = 0
 		for id in pairs(V.invaders) do
-			if Monster(id) then
+			local m = Monster(id)
+			local okM, master = pcall(function() return m and m:getMaster() end)
+			if m and not (okM and master) then
 				alive = alive + 1
+			else
+				V.invaders[id] = nil -- gone, or a summon now: not an occupier any more
 			end
 		end
 		occ.alive = alive
@@ -725,6 +794,7 @@ finish = function(result)
 	breachBar(false)
 	if result == "win" then
 		state.phase = "ending"
+		local fled = state.alive or 0
 		local list = giveRewards(1, state.contrib, false)
 		local names = {}
 		for i = 1, math.min(3, #list) do
@@ -732,6 +802,9 @@ finish = function(result)
 		end
 		announce(ChaosI18n.msg("VICTORY! %s held: the %s is broken in %s. Top defenders: %s.", state.areaName,
 			state.factionName, I.clock(now() - state.startedAt), #names > 0 and table.concat(names, ", ") or "nobody"))
+		if fled > 0 then
+			announce(ChaosI18n.msg("The last %d invaders flee from %s.", fled, state.areaName))
+		end
 		V.startBuff(state.area)
 		state.result = "win"
 		sendAll("end", {result = "win", text = string.format("%s held!", state.areaName)})
@@ -1091,6 +1164,7 @@ function health.onHealthChange(creature, attacker, primaryDamage, primaryType, s
 		dmg = math.min(dmg, creature:getHealth())
 		local player = playerOf(attacker)
 		if player and dmg > 0 then
+			V.invaders[creature:getId()].lastHitAt = now()
 			local e = creditPlayer(contrib, player, "damage", dmg)
 			if e and V.invaders[creature:getId()].boss then
 				e.boss = (e.boss or 0) + dmg

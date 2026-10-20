@@ -324,6 +324,67 @@ do
 	eq(I.outcome(run, 1500), nil, "boss alive: not yet")
 	run.bossAlive, run.alive = false, 1
 	eq(I.outcome(run, 1500), nil, "an invader left: not yet")
+	-- the rout (beta 2026-10-20: invaders left with the warlord dead held the event open until the time ran out)
+	local rout = cfg.rout
+	ok(rout and rout.seconds > 0, "rout configured")
+	eq(I.outcome(run, 1500, rout), nil, "warlord down, no time of the rout known yet: running")
+	run.bossDownAt = 1500
+	eq(I.outcome(run, 1500 + rout.seconds - 1, rout), nil, "the rout runs")
+	eq(I.outcome(run, 1500 + rout.seconds, rout), "win", "the rest flee: win")
+	eq(I.outcome(run, 2000, rout), "win", "time up with the warlord down: win")
+	eq(I.outcome(run, 2000), "time", "without the rout rule: the old defeat")
+	run.bossAlive = true
+	eq(I.outcome(run, 2000, rout), "time", "time up with the warlord alive: defeat")
+	run.bossAlive, run.breach = false, 100
+	eq(I.outcome(run, 1600, rout), "breach", "the breach beats the rout")
+end
+
+-- ------------------------------------------------------------------ the invaders that still count (I.sweep)
+do
+	local area = {from = {x = 100, y = 100, z = 7}, to = {x = 140, y = 140, z = 7}}
+	local target = {x = 120, y = 120, z = 7}
+	local s = cfg.stragglers
+	local invaders = {
+		[1] = {wave = 5}, -- fighting near the target
+		[2] = {wave = 5}, -- removed by another script
+		[3] = {wave = 4}, -- a summon now (tamed)
+		[4] = {wave = 5}, -- one floor down
+		[5] = {wave = 5}, -- far outside the area
+		[6] = {wave = 5, stuckSince = 1000, lastHitAt = 0}, -- stuck behind a wall, nobody hits it
+		[7] = {wave = 5, stuckSince = 1000, lastHitAt = 1025}, -- stuck but a player hits it: stays
+		[8] = {wave = 5, boss = true}, -- the warlord, despawned
+		[9] = {wave = 5, stuckSince = 1000} -- stuck but has a target: fighting, stays
+	}
+	local world = {
+		[1] = {pos = {x = 121, y = 120, z = 7}},
+		[3] = {pos = {x = 110, y = 110, z = 7}, master = true},
+		[4] = {pos = {x = 120, y = 120, z = 8}},
+		[5] = {pos = {x = 160, y = 120, z = 7}},
+		[6] = {pos = {x = 101, y = 101, z = 7}},
+		[7] = {pos = {x = 102, y = 101, z = 7}},
+		[9] = {pos = {x = 103, y = 101, z = 7}, target = true}
+	}
+	local res = I.sweep(invaders, function(id) return world[id] end, {now = 1040, wave = 5, target = target, area = area}, s)
+	eq(table.concat(res.gone, ","), "2,3,8", "gone: removed, summon, despawned warlord")
+	eq(table.concat(res.strays, ","), "4,5,6", "strays: other floor, outside, stuck and idle")
+	eq(res.alive, 6, "alive: the ones that exist and fight for the horde")
+	eq(res.waveAlive, 6, "wave 5 alive")
+	ok(res.bossGone, "the warlord is gone")
+	eq(invaders[2].wave, 5, "the sweep changes nothing itself")
+	res = I.sweep(invaders, function(id) return world[id] end, {now = 1020, wave = 5, target = target, area = area}, s)
+	eq(table.concat(res.strays, ","), "4,5", "stuck for 20 s only: not yet a stray")
+	res = I.sweep({}, function() return nil end, {now = 1, wave = 1, target = target, area = area}, s)
+	eq(res.alive, 0, "nothing to count")
+	-- the old symptom: ten invaders gone without a death event -> 0 left, the event can be won
+	local ten = {}
+	for i = 1, 10 do
+		ten[i] = {wave = 5}
+	end
+	res = I.sweep(ten, function() return nil end, {now = 1, wave = 5, target = target, area = area}, s)
+	eq(#res.gone, 10, "ten gone")
+	eq(res.alive, 0, "0 left")
+	local hud = I.hud({phase = "running", planned = 20, slain = 10, gone = 10, alive = 0}, 1, {}, nil, cfg)
+	eq(hud.progress, 100, "the progress counts the gone ones")
 end
 
 -- ------------------------------------------------------------------ contribution, shares, rewards

@@ -76,6 +76,15 @@ return {
 		maxRarity = 5, -- the bonus steps stop at Legendary; Divine only comes from divineChance (and the stock roll)
 		-- percent per gear drop of a Divine item, on top of the steps (x item find; the stock roll gives 0.38% more)
 		divineChance = {normal = 0, magic = 0, rare = 0.05, legendary = 0.3, boss = 1.5},
+		-- the hunting level's own rarity roll (beta 2026-10-20: two days at level 500+ and 30 kills a minute gave no Rare
+		-- or Legendary item). Normal and magic monsters are 98% of the kills, and for them every Rare / Legendary came
+		-- from the base server's stock roll alone: this layer gave those tiers at most Magic, whatever the level. Now a
+		-- gear drop of a monster of hunting level (pace.lua: its own level, else 2 x the bounty pool estimate) at or above
+		-- the first point gets at least Rare with `chance` percent (linear between the points, flat beyond, x item find),
+		-- and `legendaryShare` percent of those at least Legendary. Below the first point nothing changes.
+		-- Measured with the core (server/README.md "Level 500+ rarity"), rare+ gear per hour at 30 kills a minute: level
+		-- 540 7.0 -> 8.9, level 1180 6.1 -> 11.7 with the stock roll; without it (the beta's zero) 1.4 -> 3.1 and 1.1 -> 6.0.
+		levelRarity = {points = {{450, 0}, {500, 4}, {1000, 6}, {2000, 8}}, legendaryShare = 30},
 		-- ids that are never touched (boats etc., same as customs/rarity/reroll_rarity_stats.lua)
 		excludedItems = {
 			[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true

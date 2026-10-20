@@ -552,6 +552,11 @@ local function newPlayer(name, level, ip)
   function p:addMana(m) self.mana = math.min(self.maxMana, self.mana + m) end
   function p:removeCondition(t) if t == CONDITION_INFIGHT then self.infight = false end end
   function p:hasCondition(t) return t == CONDITION_INFIGHT and self.infight end
+  function p:getCondition(t)
+    if t ~= CONDITION_INFIGHT or not self.infight then return nil end
+    local me = self
+    return {getTicks = function() return me.infightTicks or 60000 end, setTicks = function(_, v) me.infightTicks = v end}
+  end
   function p:isPzLocked() return false end
   function p:getSkull() return self.skull end
   function p:setSkull(s) self.skull = s end
@@ -653,6 +658,20 @@ eq(dealt, math.floor(1000 * K.pvpFactor(bg, 400, 380) + 0.5), "PvP damage scaled
 ana.skull = SKULL_WHITE
 advance(1000)
 eq(ana.skull, SKULL_NONE, "no white skull inside")
+-- the battle lock inside: the server's 3 minute pzLocked time is cut to combatLock.maxSeconds
+ana.infight, ana.infightTicks = true, 180000
+advance(1000)
+eq(ana.infightTicks, cfg.combatLock.maxSeconds * 1000, "the battle lock is capped inside")
+ana.infightTicks = 20000
+advance(1000)
+eq(ana.infightTicks, 20000, "a short lock is left alone")
+ana.infight = false
+eq(K.lockTicks(cfg, 180000), 60000, "lockTicks: capped")
+eq(K.lockTicks(cfg, 60000), nil, "lockTicks: at the cap, nothing")
+eq(K.lockTicks({}, 180000), nil, "lockTicks: no cap configured")
+eq(K.defeatDestination(cfg, true), "temple", "defeat: the temple by default")
+eq(K.defeatDestination({death = {respawn = "entry"}}, true), "entry", "defeat: entry when configured")
+eq(K.defeatDestination({death = {respawn = "entry"}}, false), "temple", "defeat: entry gone -> temple")
 -- monsters: stronger, embers for the kill
 check(monsterCount >= 2 * #Lz.spawns, "monsters at every spawn point of both instances")
 local mon
@@ -670,7 +689,13 @@ bo.pos = {x = Lz.shrine.x - 8, y = Lz.shrine.y - 6, z = 7} -- out in the open, a
 bo.health = 50
 check(kill(bo, ana) == false, "the lethal hit is cancelled (nobody dies)")
 check(not Z.isInside(bo), "Bo is out")
-eq(bo.pos.x, bo.home.x, "back where he entered")
+eq(bo.pos.x .. "," .. bo.pos.y, "1,1", "a defeat sends him to his temple (death.respawn)")
+check(not bo.infight, "no battle lock after the defeat")
+-- the engine puts the lock back after the cancelled hit: the second clear takes it off again
+bo.infight, bo.skull = true, SKULL_WHITE
+advance(cfg.combatLock.clearAfterMs[#cfg.combatLock.clearAfterMs] + 10)
+check(not bo.infight, "the lock put back after the defeat is cleared again")
+eq(bo.skull, SKULL_NONE, "and the white skull")
 eq(bo.health, bo.maxHealth, "healed")
 eq(bo.st[cfg.storage.carried], 0, "his carried embers fell")
 eq(bo.st[cfg.storage.inside], 0, "marker cleared")
@@ -709,6 +734,7 @@ local burnedPile = 0
 for _, p2 in pairs(Z.inst[0].piles) do burnedPile = burnedPile + p2.amount end
 eq(burnedPile, 0, "same IP: the pile burns")
 Z.cooldown = {}
+bo.pos = {x = bo.home.x, y = bo.home.y, z = 7} -- walks from the temple to his protection zone
 check(Z.enter(bo, {accept = true}), "Bo comes back")
 advance(25 * 1000)
 kill(bo, ana)

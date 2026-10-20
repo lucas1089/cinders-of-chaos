@@ -240,6 +240,36 @@ function K.validate(cfg)
 	return out
 end
 
+-- the junk orb offering (cfg.offering): have = {[itemId] = count} of the orbs of cfg.offering.orbs the player carries
+-- (locked and store orbs already left out), used = the offering points counted today (st.caps.offering after K.roll).
+-- Returns {take = {{id, n}} in the order of cfg.offering.orbs, orbs = how many go, points, room = points left today,
+-- per = orbs a point, carried = the junk orbs carried}. Whole points only, never more than the day's room.
+function K.offerPlan(cfg, have, used)
+	local o = cfg.offering or {}
+	local per = max(1, floor(num(o.perPoint, 10)))
+	local cap = floor(num(((cfg.sources or {}).offering or {}).cap, 0))
+	local room = max(0, cap - floor(num(used)))
+	have = type(have) == "table" and have or {}
+	local carried = 0
+	for _, id in ipairs(o.orbs or {}) do
+		carried = carried + max(0, floor(num(have[id])))
+	end
+	local points = min(room, floor(carried / per))
+	local need = points * per
+	local take = {}
+	for _, id in ipairs(o.orbs or {}) do
+		if need <= 0 then
+			break
+		end
+		local n = min(need, max(0, floor(num(have[id]))))
+		if n > 0 then
+			take[#take + 1] = {id = id, n = n}
+			need = need - n
+		end
+	end
+	return {take = take, orbs = points * per, points = points, room = room, per = per, carried = carried}
+end
+
 -- the window's view of a state (client game_embercache): numbers only, the client writes the texts
 function K.view(st, cfg, t, level, itemInfo)
 	local hour = cfg.resetHour or 6
@@ -260,7 +290,9 @@ function K.view(st, cfg, t, level, itemInfo)
 	for _, key in ipairs(cfg.order or {}) do
 		local s = cfg.sources[key]
 		if s then
-			src[#src + 1] = {key, s.points or 1, s.per or 1, s.cap or 0, st.caps[key] or 0}
+			-- the offering's rate is orbs a point (cfg.offering.perPoint; never `per`, which is the kill counter's)
+			local per = key == "offering" and (cfg.offering or {}).perPoint or s.per
+			src[#src + 1] = {key, s.points or 1, per or 1, s.cap or 0, st.caps[key] or 0}
 		end
 	end
 	return {
