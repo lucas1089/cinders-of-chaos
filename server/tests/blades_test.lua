@@ -281,7 +281,7 @@ do
 	eq(fl:match('words="([^"]+)"'), "drai vas kaen", "Blade Flurry words")
 	eq(fl:match('group="(%a+)"'), "attack", "Blade Flurry: attack group")
 	eq(fl:match('level="(%d+)"'), "50", "Blade Flurry level")
-	eq(fl:match('cooldown="(%d+)"'), "8000", "Blade Flurry cooldown")
+	eq(fl:match(' cooldown="(%d+)"'), "10000", "Blade Flurry cooldown (the cooldown ladder, 2026-10-20: was 8 s)")
 	eq(fl:match('groupcooldown="(%d+)"'), "2000", "Blade Flurry group cooldown")
 	ok(fl:find('selftarget="1"', 1, true), "Blade Flurry: around the caster")
 	for _, v in ipairs({"Thief", "Ninja", "Samurai"}) do

@@ -250,6 +250,13 @@ if fh then
     rows[tonumber(f[1]) or -1] = f
   end
   fh:close()
+  -- a cooldown a fix entry gives is the server's (the cooldown ladder, 2026-10-20)
+  for id, r in pairs(rows) do
+    local fix = r[3] and F.STOCK[r[3]]
+    if id > 0 and fix and fix.exhaustion then
+      eq(fix.exhaustion, tonumber(r[7]), r[2] .. ': fix cooldown = the server cooldown')
+    end
+  end
   for _, e in ipairs(F.EXTRA) do
     local r = rows[e.id]
     eq(r ~= nil, true, e.name .. ' is a server spell')

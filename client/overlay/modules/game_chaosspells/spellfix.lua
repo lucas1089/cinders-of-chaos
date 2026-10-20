@@ -36,9 +36,9 @@ F.STOCK = {
   ["kah tin gor"] = { id = 172 },                                   -- Bog Splatter (174)
   ["saen tin"] = { id = 174 },                                      -- Arcane Stitch (172)
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
-  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3 } }, -- Radiant Shard (258)
+  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3 }, exhaustion = 12000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 } }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 }, exhaustion = 16000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)
@@ -61,8 +61,10 @@ F.STOCK = {
   ["kah sag"] = { level = 8, mana = 20 },                           -- Phantom Javelin: level 8, 20 mana (server patch_spell_timings.py)
   ["kah vas"] = { mana = 60 },                                      -- Earthrend: the Warrior line's mana runway
   ["kah"] = { mana = 40 },                                          -- Reaver's Spin
-  ["kah ti"] = { mana = 55 },                                       -- Scything Arc
-  ["kah gal"] = { mana = 100 },                                     -- Butcher's Gyre
+  ["kah ti"] = { mana = 55, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
+  ["kah gal"] = { mana = 100, exhaustion = 12000 },                 -- Butcher's Gyre (cooldown ladder)
+  ["drai vas sol"] = { exhaustion = 8000 },                         -- Sanctum Burst (cooldown ladder)
+  ["drai zhul ul"] = { exhaustion = 12000 },                        -- Tempest Fan (cooldown ladder)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
   ["drai pyr ul"] = { exhaustion = 4000 },                          -- Cinder Fan
@@ -80,7 +82,7 @@ F.STOCK = {
 F.EXTRA = {
   { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 40, mana = 175, cooldown = 4000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
-  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 4000, groupCooldown = 2000,
+  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 6000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },
 }
 

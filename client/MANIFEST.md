@@ -254,7 +254,8 @@ With it (found by the live check, server/data/spells/README.md "Rotations"): `ga
 adds the base server spells the client had no entry for (Arcane Ripple and Bewitching Hex; Riftbolt, Crossfire Hex,
 Fading Step and Gravity Snare left with the 15-spell cap of 2026-10-20; the server's numbers, checked by
 `spellfix_test.lua` against `stock_spells.csv`), so the helper can cast them; the presets were regenerated for the cap
-(the Mystic at level 8 has Kindling Spark alone); Sunder Guard's attack group cooldown is 2 s like the server's; `game_monkchi` tells its chi
+(the Mystic at level 8 has Kindling Spark alone) and for the cooldown ladder of the same day (attack cooldowns 2, 4,
+6 s ... per class; the stock entries' `exhaustion` in `spellfix.lua` follows the server, checked by `spellfix_test.lua`); Sunder Guard's attack group cooldown is 2 s like the server's; `game_monkchi` tells its chi
 (`currentChi`) and `ChaosHelperRotation.castable` holds a Monk finisher until it has its chi (attack finishers 4, Kindled
 Breath and Chi Ward 1) instead of sending it to be refused.
 

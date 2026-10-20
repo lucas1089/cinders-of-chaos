@@ -1,5 +1,5 @@
 -- Pack Frenzy: Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for
--- 3.3 bites at once (Feral Command: 1.5). 20 s cooldown.
+-- 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s).
 --
 -- The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill
 -- (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond).

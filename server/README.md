@@ -1612,6 +1612,26 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   install on a copy of the base server (the counts per class read back from the installed `spells.xml`). Not run on a
   live server.
 
+### Cooldown ladder (owner 2026-10-20: "faça todas as magias de ataque terem 2s de diferença, começando pela primeira delas")
+
+Every class's attack spells have the cooldowns 2, 4, 6 s ... from its first (level 8) spell, then from the weakest to the
+strongest (rule, ladders and the spells several classes share: docs/CLASSES.md "Cooldown ladder"; damage per second
+before and after and the retune proposals: `data/spells/README.md` "Cooldown ladder").
+
+* `tools/rotation_sim.py --ladder [--check]` computes the ladder from the repo data (`ladder()`); CI runs `--check` and
+  `rotation_sim_test.py` pins it (every attack spell on its rung, group cooldown 2 s, every class's first spell 2 s).
+* Chaos spells: the `cooldown` of `data/spells/chaos/spells_chaos.xml` (51 spells). Stock spells: rows of
+  `data/spells/spell_timings.csv` applied by `tools/patch_spell_timings.py` (install step `spells`; 7 spells: Scything
+  Arc, Butcher's Gyre, Headsman's Hurl, Sanctum Burst, Radiant Shard, Tempest Fan, Bewitching Hex). Two base scripts
+  put their own cooldown condition on the caster after the cast; `patch_spell_timings.py` (`SCRIPT_COOLDOWNS`) writes the
+  csv cooldown into them too: `attack/divine_grenade.lua` (Radiant Shard, 26 s hard-coded) and
+  `attack/executioners_throw.lua` (Headsman's Hurl, `(18000 * 1000)` ms: five hours next to its 18 s). Test:
+  `tools/patch_spell_timings_test.py`.
+* `data/spells/stock_spells.csv` re-exported from an install; helper presets (`rotation_sim.py --write`), client spell
+  data and the `spellfix.lua` cooldowns of the stock entries (`exhaustion`, checked against the csv by
+  `spellfix_test.lua`), wiki data regenerated; the cooldowns named in six spell scripts' comments updated.
+* Damage per cast is unchanged. Live server: the `spells` step and a restart; nothing in the database.
+
 ## Necromancer summons and the summon cap (2026-10-18)
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),

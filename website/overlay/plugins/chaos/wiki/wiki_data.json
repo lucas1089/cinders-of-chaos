@@ -475,7 +475,7 @@
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Ironhold", "tor brak", "55", "200", "30 s", "Warrior, Juggernaut"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
-								["Earthbreaker", "kah grund krak", "60", "50", "10 s", "whole line"],
+								["Earthbreaker", "kah grund krak", "60", "50", "8 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
@@ -483,11 +483,11 @@
 								["Skyfall Cleave", "drai skai hrun", "100", "100", "10 s", "Berserker"],
 								["Iron Bellow", "vok vas rhov", "120", "200", "20 s", "Warrior, Juggernaut"],
 								["Bloodrage", "vyr sang khar", "120", "200", "30 s", "Berserker"],
-								["Vaulting Cleave", "kah brak skai", "170", "250", "12 s", "Warrior"],
-								["Colossus Fall", "kah gal vas tyr", "260", "400", "30 s", "whole line"],
+								["Vaulting Cleave", "kah brak skai", "170", "250", "8 s", "Warrior"],
+								["Colossus Fall", "kah gal vas tyr", "260", "400", "14 s", "whole line"],
 								["Bastion Cry", "vok gal rhov kor", "340", "500", "40 s", "Juggernaut"],
-								["Rampage Leap", "drai skai hrun vas", "380", "400", "18 s", "Berserker"],
-								["Anvil Fall", "kah gal brak thun", "460", "450", "20 s", "Juggernaut"]
+								["Rampage Leap", "drai skai hrun vas", "380", "400", "14 s", "Berserker"],
+								["Anvil Fall", "kah gal brak thun", "460", "450", "12 s", "Juggernaut"]
 							],
 							"links": [
 								"spell:254",
@@ -608,26 +608,26 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
-								["Dawnpiercer", "kah sol aurr", "30", "50", "3 s", "whole line"],
+								["Dawnpiercer", "kah sol aurr", "30", "50", "6 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
-								["Snare Trap", "drai snar", "40", "90", "2 s", "whole line"],
+								["Snare Trap", "drai snar", "40", "90", "4 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Wildstride", "ruan vert", "55", "150", "30 s", "whole line"],
 								["Tautstring", "vyr sag", "60", "300", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
-								["Skewering Line", "kah sag lanc", "60", "150", "8 s", "Ranger, Deadeye"],
+								["Skewering Line", "kah sag lanc", "60", "150", "10 s", "Ranger, Deadeye"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Blessed Earth", "drai vas sol hal", "100", "350", "24 s", "whole line"],
+								["Blessed Earth", "drai vas sol hal", "100", "350", "14 s", "whole line"],
 								["Wild Bond", "vael ferh", "100", "300", "10 s", "Beastmaster"],
-								["Feral Command", "kah ferh", "110", "200", "8 s", "Beastmaster"],
+								["Feral Command", "kah ferh", "110", "200", "4 s", "Beastmaster"],
 								["Lightward", "tor sol ghar", "140", "300", "30 s", "whole line"],
 								["Final Verdict", "kah gal sol judh", "200", "450", "14 s", "Deadeye"],
-								["Hail of Dawn", "drai gal vas sol volv", "280", "800", "24 s", "Ranger, Deadeye"],
-								["Pack Frenzy", "kah ferh vas", "380", "450", "20 s", "Beastmaster"],
-								["Twin Verdict", "kah gal sol judh vael", "400", "900", "24 s", "Deadeye"]
+								["Hail of Dawn", "drai gal vas sol volv", "280", "800", "16 s", "Ranger, Deadeye"],
+								["Pack Frenzy", "kah ferh vas", "380", "450", "6 s", "Beastmaster"],
+								["Twin Verdict", "kah gal sol judh vael", "400", "900", "16 s", "Deadeye"]
 							],
 							"links": [
 								"spell:254",
@@ -745,10 +745,10 @@
 							"w": [22, 22, 9, 12, 12, 23],
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
-								["Rime Bloom", "drai hyr rhim", "20", "120", "8 s", "Mystic, Elementalist"],
-								["Blightswarm", "drai vex kriv", "25", "110", "8 s", "Mystic"],
+								["Rime Bloom", "drai hyr rhim", "20", "120", "4 s", "Mystic, Elementalist"],
+								["Blightswarm", "drai vex kriv", "25", "110", "6 s", "Mystic"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
-								["Witchfire Bolt", "kah pyr vesh", "30", "70", "4 s", "Mystic, Elementalist"],
+								["Witchfire Bolt", "kah pyr vesh", "30", "70", "8 s", "Mystic, Elementalist"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
@@ -761,28 +761,28 @@
 									"Mystic, Illusionist"
 								],
 								["Hall of Mirrors", "drai spek", "40", "250", "30 s", "Illusionist"],
-								["Forked Storm", "kah zhul zarn", "50", "200", "7 s", "Elementalist"],
+								["Forked Storm", "kah zhul zarn", "50", "200", "8 s", "Elementalist"],
 								["Mirror Mend", "saen spek", "60", "180", "2 s", "Illusionist"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Ironbark Hide", "tor ael skar", "60", "140", "25 s", "Mystic"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
-								["Briar Prison", "drai thral brin", "70", "240", "14 s", "Mystic"],
-								["Umbral Stride", "ruan nyx umh", "70", "120", "8 s", "Mystic"],
+								["Briar Prison", "drai thral brin", "70", "240", "10 s", "Mystic"],
+								["Umbral Stride", "ruan nyx umh", "70", "120", "14 s", "Mystic"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
 								["Crimson Covenant", "tor nyx cruor", "90", "50", "30 s", "Elementalist"],
-								["Shattered Psyche", "kah mynd frak", "110", "200", "6 s", "Mystic, Illusionist"],
+								["Shattered Psyche", "kah mynd frak", "110", "200", "12 s", "Mystic, Illusionist"],
 								["Lucid Reverie", "reth vas spek", "120", "300", "20 s", "Illusionist"],
 								["Moonfang Pack", "vael luth wyrd", "120", "450", "30 s", "Illusionist"],
-								["Falling Pyre", "drai gal vas infr", "150", "700", "20 s", "Mystic, Elementalist"],
+								["Falling Pyre", "drai gal vas infr", "150", "700", "14 s", "Mystic, Elementalist"],
 								["Wraithshroud", "fen wrai", "150", "350", "35 s", "Illusionist"],
 								["Verdant Sanctuary", "saen gal vas vert", "180", "600", "30 s", "Illusionist"],
-								["Nightburst", "drai gal vas umh", "210", "900", "25 s", "Illusionist"],
-								["Frozen Crypt", "drai gal vas hyr krypt", "220", "900", "30 s", "Elementalist"],
-								["Primordial Squall", "drai gal vas stoma", "250", "1200", "35 s", "Illusionist"],
-								["Tear in the Weave", "drai zhul riv", "280", "1300", "40 s", "Illusionist"],
-								["Doomtide", "drai zhul infr doma", "300", "1500", "45 s", "Elementalist"],
-								["Glacial Doom", "drai hyr infr doma", "420", "2200", "1 min", "Elementalist"]
+								["Nightburst", "drai gal vas umh", "210", "900", "10 s", "Illusionist"],
+								["Frozen Crypt", "drai gal vas hyr krypt", "220", "900", "16 s", "Elementalist"],
+								["Primordial Squall", "drai gal vas stoma", "250", "1200", "8 s", "Illusionist"],
+								["Tear in the Weave", "drai zhul riv", "280", "1300", "14 s", "Illusionist"],
+								["Doomtide", "drai zhul infr doma", "300", "1500", "18 s", "Elementalist"],
+								["Glacial Doom", "drai hyr infr doma", "420", "2200", "20 s", "Elementalist"]
 							],
 							"links": [
 								"spell:254",
@@ -927,27 +927,27 @@
 								["Shadow Mend", "saen umh", "25", "2% max mana", "1.5 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
-								["Snare Trap", "drai snar", "40", "90", "2 s", "whole line"],
+								["Snare Trap", "drai snar", "40", "90", "4 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Shadow Veil", "fen umh", "40", "120", "20 s", "whole line"],
-								["Blade Flurry", "drai vas kaen", "50", "120", "8 s", "whole line"],
-								["Seeker Mine", "kah snar", "60", "110", "2 s", "whole line"],
+								["Blade Flurry", "drai vas kaen", "50", "120", "10 s", "whole line"],
+								["Seeker Mine", "kah snar", "60", "110", "6 s", "whole line"],
 								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Poison Blades", "vyr vex thyss", "60", "150", "30 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
-								["Fan of Knives", "drai vas nyx shur", "80", "150", "6 s", "Thief"],
+								["Fan of Knives", "drai vas nyx shur", "80", "150", "10 s", "Thief"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Shadow Step", "ash umh", "100", "150", "8 s", "Ninja"],
+								["Shadow Step", "ash umh", "100", "150", "12 s", "Ninja"],
 								["Counter Stance", "tor ryx", "100", "100", "8 s", "Samurai"],
-								["Iaijutsu", "kah gal kaen", "120", "350", "10 s", "Samurai"],
+								["Iaijutsu", "kah gal kaen", "120", "350", "12 s", "Samurai"],
 								["Smoke Bomb", "drai nebh", "130", "300", "20 s", "Ninja"],
 								["Bushido Focus", "vyr mynd", "150", "200", "30 s", "Samurai"],
-								["Shuriken Barrage", "drai vas shur", "180", "400", "10 s", "Ninja"],
+								["Shuriken Barrage", "drai vas shur", "180", "400", "8 s", "Ninja"],
 								["Iaido Sweep", "drai gal kaen", "200", "450", "8 s", "Samurai"],
-								["Shuriken Tempest", "kah sai vas hyr", "360", "600", "30 s", "Ninja"]
+								["Shuriken Tempest", "kah sai vas hyr", "360", "600", "14 s", "Ninja"]
 							],
 							"links": [
 								"spell:254",
@@ -1065,25 +1065,25 @@
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Ashen Fist", "kah dhun", "8", "15", "2 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
-								["Sundering Palm", "kah gal dhun", "30", "50", "6 s", "whole line"],
+								["Sundering Palm", "kah gal dhun", "30", "50", "12 s", "whole line"],
 								["Mistborne Step", "ash qhal", "35", "60", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Kindled Breath", "saen qhal", "40", "100", "8 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
-								["Whirling Heel", "drai spir dhun", "50", "80", "8 s", "whole line"],
+								["Whirling Heel", "drai spir dhun", "50", "80", "6 s", "whole line"],
 								["Palm Shockwave", "drai gal dhun", "50", "70", "4 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Pressure Points", "kah mynd dhun", "100", "120", "4 s", "Shadowfist"],
+								["Pressure Points", "kah mynd dhun", "100", "120", "8 s", "Shadowfist"],
 								["Chi Ward", "tor qhal", "100", "200", "12 s", "Iron Sage"],
-								["Iron Palm", "kah brak dhun", "120", "200", "8 s", "Iron Sage"],
-								["Shadowfist Flurry", "kah gal umh dhun", "150", "300", "12 s", "Shadowfist"],
+								["Iron Palm", "kah brak dhun", "120", "200", "10 s", "Iron Sage"],
+								["Shadowfist Flurry", "kah gal umh dhun", "150", "300", "14 s", "Shadowfist"],
 								["Mantra of Stone", "tor vas qhal", "150", "400", "30 s", "Iron Sage"],
-								["Shadow Ricochet", "kah umh dhun", "150", "300", "8 s", "Shadowfist"],
-								["Iron Chain", "kah brak vinc", "150", "300", "8 s", "Iron Sage"]
+								["Shadow Ricochet", "kah umh dhun", "150", "300", "6 s", "Shadowfist"],
+								["Iron Chain", "kah brak vinc", "150", "300", "6 s", "Iron Sage"]
 							],
 							"links": [
 								"spell:254",
@@ -1204,18 +1204,18 @@
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
-								["Withering Curse", "kah nyx maled", "40", "120", "8 s", "whole line"],
+								["Withering Curse", "kah nyx maled", "40", "120", "4 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Bone Shrapnel", "drai oss krak", "60", "100", "4 s", "Necromancer"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Soul Rot", "kah nyx putr", "100", "220", "6 s", "Lich"],
+								["Soul Rot", "kah nyx putr", "100", "220", "8 s", "Lich"],
 								["Bone Golem", "vael gal oss", "100", "500", "30 s", "Bone Lord"],
 								["Banner of Bones", "tor vas oss", "120", "300", "30 s", "Bone Lord"],
-								["Life Siphon", "kah sang nyx", "130", "260", "8 s", "Lich"],
-								["Bone Offering", "drai sang oss", "150", "250", "12 s", "Bone Lord"],
-								["Corpse Explosion", "drai kadh krak", "160", "400", "6 s", "Lich"]
+								["Life Siphon", "kah sang nyx", "130", "260", "6 s", "Lich"],
+								["Bone Offering", "drai sang oss", "150", "250", "6 s", "Bone Lord"],
+								["Corpse Explosion", "drai kadh krak", "160", "400", "4 s", "Lich"]
 							],
 							"links": [
 								"spell:254",
@@ -1349,17 +1349,17 @@
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
-								["Consecration", "drai sol haln", "40", "160", "20 s", "whole line"],
-								["Sanctified Ground", "drai sol sanct", "60", "160", "8 s", "Templar"],
+								["Consecration", "drai sol haln", "40", "160", "6 s", "whole line"],
+								["Sanctified Ground", "drai sol sanct", "60", "160", "4 s", "Templar"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
 								["Vigil of Iron", "vigh tor", "60", "0", "2 s", "whole line"],
 								["Soulward", "tor anh", "80", "150", "40 s", "whole line"],
-								["Judgement", "kah sol vehm", "100", "250", "12 s", "Inquisitor"],
+								["Judgement", "kah sol vehm", "100", "250", "4 s", "Inquisitor"],
 								["Rebuke", "vok sol kal", "100", "150", "12 s", "Sentinel"],
-								["Purging Nova", "drai gal sol orr", "120", "350", "8 s", "Inquisitor"],
+								["Purging Nova", "drai gal sol orr", "120", "350", "6 s", "Inquisitor"],
 								["Aegis of Faith", "tor gal sol aeg", "120", "150", "25 s", "Sentinel"],
-								["Shield Wave", "drai sol aeg", "150", "250", "8 s", "Sentinel"],
+								["Shield Wave", "drai sol aeg", "150", "250", "4 s", "Sentinel"],
 								["Zealotry", "vyr sol zel", "150", "200", "30 s", "Inquisitor"],
 								["Lay on Hands", "saen gal manh", "150", "400", "1 min", "Sentinel"]
 							],
@@ -1708,7 +1708,7 @@
 				{
 					"id": "spell:200",
 					"name": "Rime Bloom",
-					"sub": "\"drai hyr rhim\", level 20, 120 mana, cooldown 8 s",
+					"sub": "\"drai hyr rhim\", level 20, 120 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{"h": "Effect", "p": ["Ice burst around the caster, chills everything it hits."]},
@@ -1720,7 +1720,7 @@
 								["Words", "drai hyr rhim"],
 								["Level", "20"],
 								["Mana", "120"],
-								["Cooldown", "8 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic, Elementalist"]
 							]
@@ -1759,7 +1759,7 @@
 				{
 					"id": "spell:207",
 					"name": "Blightswarm",
-					"sub": "\"drai vex kriv\", level 25, 110 mana, cooldown 8 s",
+					"sub": "\"drai vex kriv\", level 25, 110 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{"h": "Effect", "p": ["Toxic cloud around the caster, poisons everything it hits."]},
@@ -1771,7 +1771,7 @@
 								["Words", "drai vex kriv"],
 								["Level", "25"],
 								["Mana", "110"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic"]
 							]
@@ -1813,7 +1813,7 @@
 				{
 					"id": "spell:64",
 					"name": "Sundering Palm",
-					"sub": "\"kah gal dhun\", level 30, 50 mana, cooldown 6 s",
+					"sub": "\"kah gal dhun\", level 30, 50 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1830,7 +1830,7 @@
 								["Words", "kah gal dhun"],
 								["Level", "30"],
 								["Mana", "50"],
-								["Cooldown", "6 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
@@ -1869,7 +1869,7 @@
 				{
 					"id": "spell:201",
 					"name": "Witchfire Bolt",
-					"sub": "\"kah pyr vesh\", level 30, 70 mana, cooldown 4 s",
+					"sub": "\"kah pyr vesh\", level 30, 70 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{"h": "Effect", "p": ["Single target fire bolt that leaves the target burning."]},
@@ -1881,7 +1881,7 @@
 								["Words", "kah pyr vesh"],
 								["Level", "30"],
 								["Mana", "70"],
-								["Cooldown", "4 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic, Elementalist"]
 							]
@@ -1892,7 +1892,7 @@
 				{
 					"id": "spell:214",
 					"name": "Dawnpiercer",
-					"sub": "\"kah sol aurr\", level 30, 50 mana, cooldown 3 s",
+					"sub": "\"kah sol aurr\", level 30, 50 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1909,7 +1909,7 @@
 								["Words", "kah sol aurr"],
 								["Level", "30"],
 								["Mana", "50"],
-								["Cooldown", "3 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
@@ -2035,7 +2035,7 @@
 				{
 					"id": "spell:99",
 					"name": "Snare Trap",
-					"sub": "\"drai snar\", level 40, 90 mana, cooldown 2 s",
+					"sub": "\"drai snar\", level 40, 90 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2052,7 +2052,7 @@
 								["Words", "drai snar"],
 								["Level", "40"],
 								["Mana", "90"],
-								["Cooldown", "2 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"]
 							]
@@ -2125,7 +2125,7 @@
 				{
 					"id": "spell:182",
 					"name": "Withering Curse",
-					"sub": "\"kah nyx maled\", level 40, 120 mana, cooldown 8 s",
+					"sub": "\"kah nyx maled\", level 40, 120 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2142,7 +2142,7 @@
 								["Words", "kah nyx maled"],
 								["Level", "40"],
 								["Mana", "120"],
-								["Cooldown", "8 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Necromancer, Lich, Bone Lord"]
 							]
@@ -2153,7 +2153,7 @@
 				{
 					"id": "spell:190",
 					"name": "Consecration",
-					"sub": "\"drai sol haln\", level 40, 160 mana, cooldown 20 s",
+					"sub": "\"drai sol haln\", level 40, 160 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2170,7 +2170,7 @@
 								["Words", "drai sol haln"],
 								["Level", "40"],
 								["Mana", "160"],
-								["Cooldown", "20 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Templar, Inquisitor, Sentinel"]
 							]
@@ -2265,7 +2265,7 @@
 				{
 					"id": "spell:65",
 					"name": "Whirling Heel",
-					"sub": "\"drai spir dhun\", level 50, 80 mana, cooldown 8 s",
+					"sub": "\"drai spir dhun\", level 50, 80 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2282,7 +2282,7 @@
 								["Words", "drai spir dhun"],
 								["Level", "50"],
 								["Mana", "80"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Monk, Shadowfist, Iron Sage"]
 							]
@@ -2293,7 +2293,7 @@
 				{
 					"id": "spell:73",
 					"name": "Blade Flurry",
-					"sub": "\"drai vas kaen\", level 50, 120 mana, cooldown 8 s",
+					"sub": "\"drai vas kaen\", level 50, 120 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2310,7 +2310,7 @@
 								["Words", "drai vas kaen"],
 								["Level", "50"],
 								["Mana", "120"],
-								["Cooldown", "8 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Thief, Ninja, Samurai"]
 							]
@@ -2349,7 +2349,7 @@
 				{
 					"id": "spell:202",
 					"name": "Forked Storm",
-					"sub": "\"kah zhul zarn\", level 50, 200 mana, cooldown 7 s",
+					"sub": "\"kah zhul zarn\", level 50, 200 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2366,7 +2366,7 @@
 								["Words", "kah zhul zarn"],
 								["Level", "50"],
 								["Mana", "200"],
-								["Cooldown", "7 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Elementalist"]
 							]
@@ -2461,7 +2461,7 @@
 				{
 					"id": "spell:100",
 					"name": "Seeker Mine",
-					"sub": "\"kah snar\", level 60, 110 mana, cooldown 2 s",
+					"sub": "\"kah snar\", level 60, 110 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2478,7 +2478,7 @@
 								["Words", "kah snar"],
 								["Level", "60"],
 								["Mana", "110"],
-								["Cooldown", "2 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Thief, Ninja, Samurai"]
 							]
@@ -2545,7 +2545,7 @@
 				{
 					"id": "spell:137",
 					"name": "Sanctified Ground",
-					"sub": "\"drai sol sanct\", level 60, 160 mana, cooldown 8 s",
+					"sub": "\"drai sol sanct\", level 60, 160 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2562,7 +2562,7 @@
 								["Words", "drai sol sanct"],
 								["Level", "60"],
 								["Mana", "160"],
-								["Cooldown", "8 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Templar"]
 							]
@@ -2655,7 +2655,7 @@
 				{
 					"id": "spell:215",
 					"name": "Skewering Line",
-					"sub": "\"kah sag lanc\", level 60, 150 mana, cooldown 8 s",
+					"sub": "\"kah sag lanc\", level 60, 150 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2672,7 +2672,7 @@
 								["Words", "kah sag lanc"],
 								["Level", "60"],
 								["Mana", "150"],
-								["Cooldown", "8 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Ranger, Deadeye"]
 							]
@@ -2683,7 +2683,7 @@
 				{
 					"id": "spell:221",
 					"name": "Earthbreaker",
-					"sub": "\"kah grund krak\", level 60, 50 mana, cooldown 10 s",
+					"sub": "\"kah grund krak\", level 60, 50 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2698,7 +2698,7 @@
 								["Words", "kah grund krak"],
 								["Level", "60"],
 								["Mana", "50"],
-								["Cooldown", "10 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
@@ -2799,7 +2799,7 @@
 				{
 					"id": "spell:210",
 					"name": "Briar Prison",
-					"sub": "\"drai thral brin\", level 70, 240 mana, cooldown 14 s",
+					"sub": "\"drai thral brin\", level 70, 240 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2814,7 +2814,7 @@
 								["Words", "drai thral brin"],
 								["Level", "70"],
 								["Mana", "240"],
-								["Cooldown", "14 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic"]
 							]
@@ -2825,7 +2825,7 @@
 				{
 					"id": "spell:227",
 					"name": "Umbral Stride",
-					"sub": "\"ruan nyx umh\", level 70, 120 mana, cooldown 8 s",
+					"sub": "\"ruan nyx umh\", level 70, 120 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2840,7 +2840,7 @@
 								["Words", "ruan nyx umh"],
 								["Level", "70"],
 								["Mana", "120"],
-								["Cooldown", "8 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic"]
 							]
@@ -2851,7 +2851,7 @@
 				{
 					"id": "spell:136",
 					"name": "Fan of Knives",
-					"sub": "\"drai vas nyx shur\", level 80, 150 mana, cooldown 6 s",
+					"sub": "\"drai vas nyx shur\", level 80, 150 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2868,7 +2868,7 @@
 								["Words", "drai vas nyx shur"],
 								["Level", "80"],
 								["Mana", "150"],
-								["Cooldown", "6 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Thief"]
 							]
@@ -2936,7 +2936,7 @@
 				{
 					"id": "spell:68",
 					"name": "Pressure Points",
-					"sub": "\"kah mynd dhun\", level 100, 120 mana, cooldown 4 s",
+					"sub": "\"kah mynd dhun\", level 100, 120 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -2953,7 +2953,7 @@
 								["Words", "kah mynd dhun"],
 								["Level", "100"],
 								["Mana", "120"],
-								["Cooldown", "4 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Shadowfist"]
 							]
@@ -2992,7 +2992,7 @@
 				{
 					"id": "spell:183",
 					"name": "Soul Rot",
-					"sub": "\"kah nyx putr\", level 100, 220 mana, cooldown 6 s",
+					"sub": "\"kah nyx putr\", level 100, 220 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3009,7 +3009,7 @@
 								["Words", "kah nyx putr"],
 								["Level", "100"],
 								["Mana", "220"],
-								["Cooldown", "6 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Lich"]
 							]
@@ -3048,7 +3048,7 @@
 				{
 					"id": "spell:198",
 					"name": "Judgement",
-					"sub": "\"kah sol vehm\", level 100, 250 mana, cooldown 12 s",
+					"sub": "\"kah sol vehm\", level 100, 250 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3065,7 +3065,7 @@
 								["Words", "kah sol vehm"],
 								["Level", "100"],
 								["Mana", "250"],
-								["Cooldown", "12 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Inquisitor"]
 							]
@@ -3076,7 +3076,7 @@
 				{
 					"id": "spell:216",
 					"name": "Blessed Earth",
-					"sub": "\"drai vas sol hal\", level 100, 350 mana, cooldown 24 s",
+					"sub": "\"drai vas sol hal\", level 100, 350 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3093,7 +3093,7 @@
 								["Words", "drai vas sol hal"],
 								["Level", "100"],
 								["Mana", "350"],
-								["Cooldown", "24 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Ranger, Deadeye, Beastmaster"]
 							]
@@ -3130,7 +3130,7 @@
 				{
 					"id": "spell:240",
 					"name": "Shadow Step",
-					"sub": "\"ash umh\", level 100, 150 mana, cooldown 8 s",
+					"sub": "\"ash umh\", level 100, 150 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3147,7 +3147,7 @@
 								["Words", "ash umh"],
 								["Level", "100"],
 								["Mana", "150"],
-								["Cooldown", "8 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Ninja"]
 							]
@@ -3270,7 +3270,7 @@
 				{
 					"id": "spell:228",
 					"name": "Shattered Psyche",
-					"sub": "\"kah mynd frak\", level 110, 200 mana, cooldown 6 s",
+					"sub": "\"kah mynd frak\", level 110, 200 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3285,7 +3285,7 @@
 								["Words", "kah mynd frak"],
 								["Level", "110"],
 								["Mana", "200"],
-								["Cooldown", "6 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic, Illusionist"]
 							]
@@ -3296,7 +3296,7 @@
 				{
 					"id": "spell:249",
 					"name": "Feral Command",
-					"sub": "\"kah ferh\", level 110, 200 mana, cooldown 8 s",
+					"sub": "\"kah ferh\", level 110, 200 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3313,7 +3313,7 @@
 								["Words", "kah ferh"],
 								["Level", "110"],
 								["Mana", "200"],
-								["Cooldown", "8 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Beastmaster"]
 							]
@@ -3324,7 +3324,7 @@
 				{
 					"id": "spell:71",
 					"name": "Iron Palm",
-					"sub": "\"kah brak dhun\", level 120, 200 mana, cooldown 8 s",
+					"sub": "\"kah brak dhun\", level 120, 200 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3341,7 +3341,7 @@
 								["Words", "kah brak dhun"],
 								["Level", "120"],
 								["Mana", "200"],
-								["Cooldown", "8 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Iron Sage"]
 							]
@@ -3408,7 +3408,7 @@
 				{
 					"id": "spell:199",
 					"name": "Purging Nova",
-					"sub": "\"drai gal sol orr\", level 120, 350 mana, cooldown 8 s",
+					"sub": "\"drai gal sol orr\", level 120, 350 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3425,7 +3425,7 @@
 								["Words", "drai gal sol orr"],
 								["Level", "120"],
 								["Mana", "350"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Inquisitor"]
 							]
@@ -3492,7 +3492,7 @@
 				{
 					"id": "spell:244",
 					"name": "Iaijutsu",
-					"sub": "\"kah gal kaen\", level 120, 350 mana, cooldown 10 s",
+					"sub": "\"kah gal kaen\", level 120, 350 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3509,7 +3509,7 @@
 								["Words", "kah gal kaen"],
 								["Level", "120"],
 								["Mana", "350"],
-								["Cooldown", "10 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Samurai"]
 							]
@@ -3576,7 +3576,7 @@
 				{
 					"id": "spell:184",
 					"name": "Life Siphon",
-					"sub": "\"kah sang nyx\", level 130, 260 mana, cooldown 8 s",
+					"sub": "\"kah sang nyx\", level 130, 260 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3593,7 +3593,7 @@
 								["Words", "kah sang nyx"],
 								["Level", "130"],
 								["Mana", "260"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Lich"]
 							]
@@ -3655,7 +3655,7 @@
 				{
 					"id": "spell:69",
 					"name": "Shadowfist Flurry",
-					"sub": "\"kah gal umh dhun\", level 150, 300 mana, cooldown 12 s",
+					"sub": "\"kah gal umh dhun\", level 150, 300 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3672,7 +3672,7 @@
 								["Words", "kah gal umh dhun"],
 								["Level", "150"],
 								["Mana", "300"],
-								["Cooldown", "12 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Shadowfist"]
 							]
@@ -3711,7 +3711,7 @@
 				{
 					"id": "spell:170",
 					"name": "Shield Wave",
-					"sub": "\"drai sol aeg\", level 150, 250 mana, cooldown 8 s",
+					"sub": "\"drai sol aeg\", level 150, 250 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3728,7 +3728,7 @@
 								["Words", "drai sol aeg"],
 								["Level", "150"],
 								["Mana", "250"],
-								["Cooldown", "8 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Sentinel"]
 							]
@@ -3739,7 +3739,7 @@
 				{
 					"id": "spell:188",
 					"name": "Bone Offering",
-					"sub": "\"drai sang oss\", level 150, 250 mana, cooldown 12 s",
+					"sub": "\"drai sang oss\", level 150, 250 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3756,7 +3756,7 @@
 								["Words", "drai sang oss"],
 								["Level", "150"],
 								["Mana", "250"],
-								["Cooldown", "12 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Bone Lord"]
 							]
@@ -3767,7 +3767,7 @@
 				{
 					"id": "spell:195",
 					"name": "Shadow Ricochet",
-					"sub": "\"kah umh dhun\", level 150, 300 mana, cooldown 8 s",
+					"sub": "\"kah umh dhun\", level 150, 300 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3784,7 +3784,7 @@
 								["Words", "kah umh dhun"],
 								["Level", "150"],
 								["Mana", "300"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Shadowfist"]
 							]
@@ -3795,7 +3795,7 @@
 				{
 					"id": "spell:196",
 					"name": "Iron Chain",
-					"sub": "\"kah brak vinc\", level 150, 300 mana, cooldown 8 s",
+					"sub": "\"kah brak vinc\", level 150, 300 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3812,7 +3812,7 @@
 								["Words", "kah brak vinc"],
 								["Level", "150"],
 								["Mana", "300"],
-								["Cooldown", "8 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Iron Sage"]
 							]
@@ -3823,7 +3823,7 @@
 				{
 					"id": "spell:204",
 					"name": "Falling Pyre",
-					"sub": "\"drai gal vas infr\", level 150, 700 mana, cooldown 20 s",
+					"sub": "\"drai gal vas infr\", level 150, 700 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3840,7 +3840,7 @@
 								["Words", "drai gal vas infr"],
 								["Level", "150"],
 								["Mana", "700"],
-								["Cooldown", "20 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Mystic, Elementalist"]
 							]
@@ -3958,7 +3958,7 @@
 				{
 					"id": "spell:185",
 					"name": "Corpse Explosion",
-					"sub": "\"drai kadh krak\", level 160, 400 mana, cooldown 6 s",
+					"sub": "\"drai kadh krak\", level 160, 400 mana, cooldown 4 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -3975,7 +3975,7 @@
 								["Words", "drai kadh krak"],
 								["Level", "160"],
 								["Mana", "400"],
-								["Cooldown", "6 s"],
+								["Cooldown", "4 s"],
 								["Kind", "Attack"],
 								["Classes", "Lich"]
 							]
@@ -3986,7 +3986,7 @@
 				{
 					"id": "spell:224",
 					"name": "Vaulting Cleave",
-					"sub": "\"kah brak skai\", level 170, 250 mana, cooldown 12 s",
+					"sub": "\"kah brak skai\", level 170, 250 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4001,7 +4001,7 @@
 								["Words", "kah brak skai"],
 								["Level", "170"],
 								["Mana", "250"],
-								["Cooldown", "12 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Warrior"]
 							]
@@ -4040,7 +4040,7 @@
 				{
 					"id": "spell:242",
 					"name": "Shuriken Barrage",
-					"sub": "\"drai vas shur\", level 180, 400 mana, cooldown 10 s",
+					"sub": "\"drai vas shur\", level 180, 400 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4057,7 +4057,7 @@
 								["Words", "drai vas shur"],
 								["Level", "180"],
 								["Mana", "400"],
-								["Cooldown", "10 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Ninja"]
 							]
@@ -4119,7 +4119,7 @@
 				{
 					"id": "spell:230",
 					"name": "Nightburst",
-					"sub": "\"drai gal vas umh\", level 210, 900 mana, cooldown 25 s",
+					"sub": "\"drai gal vas umh\", level 210, 900 mana, cooldown 10 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4134,7 +4134,7 @@
 								["Words", "drai gal vas umh"],
 								["Level", "210"],
 								["Mana", "900"],
-								["Cooldown", "25 s"],
+								["Cooldown", "10 s"],
 								["Kind", "Attack"],
 								["Classes", "Illusionist"]
 							]
@@ -4145,7 +4145,7 @@
 				{
 					"id": "spell:205",
 					"name": "Frozen Crypt",
-					"sub": "\"drai gal vas hyr krypt\", level 220, 900 mana, cooldown 30 s",
+					"sub": "\"drai gal vas hyr krypt\", level 220, 900 mana, cooldown 16 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4162,7 +4162,7 @@
 								["Words", "drai gal vas hyr krypt"],
 								["Level", "220"],
 								["Mana", "900"],
-								["Cooldown", "30 s"],
+								["Cooldown", "16 s"],
 								["Kind", "Attack"],
 								["Classes", "Elementalist"]
 							]
@@ -4173,7 +4173,7 @@
 				{
 					"id": "spell:213",
 					"name": "Primordial Squall",
-					"sub": "\"drai gal vas stoma\", level 250, 1200 mana, cooldown 35 s",
+					"sub": "\"drai gal vas stoma\", level 250, 1200 mana, cooldown 8 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4190,7 +4190,7 @@
 								["Words", "drai gal vas stoma"],
 								["Level", "250"],
 								["Mana", "1200"],
-								["Cooldown", "35 s"],
+								["Cooldown", "8 s"],
 								["Kind", "Attack"],
 								["Classes", "Illusionist"]
 							]
@@ -4201,7 +4201,7 @@
 				{
 					"id": "spell:225",
 					"name": "Colossus Fall",
-					"sub": "\"kah gal vas tyr\", level 260, 400 mana, cooldown 30 s",
+					"sub": "\"kah gal vas tyr\", level 260, 400 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4218,7 +4218,7 @@
 								["Words", "kah gal vas tyr"],
 								["Level", "260"],
 								["Mana", "400"],
-								["Cooldown", "30 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Warrior, Juggernaut, Berserker"]
 							]
@@ -4229,7 +4229,7 @@
 				{
 					"id": "spell:219",
 					"name": "Hail of Dawn",
-					"sub": "\"drai gal vas sol volv\", level 280, 800 mana, cooldown 24 s",
+					"sub": "\"drai gal vas sol volv\", level 280, 800 mana, cooldown 16 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4246,7 +4246,7 @@
 								["Words", "drai gal vas sol volv"],
 								["Level", "280"],
 								["Mana", "800"],
-								["Cooldown", "24 s"],
+								["Cooldown", "16 s"],
 								["Kind", "Attack"],
 								["Classes", "Ranger, Deadeye"]
 							]
@@ -4257,7 +4257,7 @@
 				{
 					"id": "spell:231",
 					"name": "Tear in the Weave",
-					"sub": "\"drai zhul riv\", level 280, 1300 mana, cooldown 40 s",
+					"sub": "\"drai zhul riv\", level 280, 1300 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4274,7 +4274,7 @@
 								["Words", "drai zhul riv"],
 								["Level", "280"],
 								["Mana", "1300"],
-								["Cooldown", "40 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Illusionist"]
 							]
@@ -4285,7 +4285,7 @@
 				{
 					"id": "spell:206",
 					"name": "Doomtide",
-					"sub": "\"drai zhul infr doma\", level 300, 1500 mana, cooldown 45 s",
+					"sub": "\"drai zhul infr doma\", level 300, 1500 mana, cooldown 18 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -4302,7 +4302,7 @@
 								["Words", "drai zhul infr doma"],
 								["Level", "300"],
 								["Mana", "1500"],
-								["Cooldown", "45 s"],
+								["Cooldown", "18 s"],
 								["Kind", "Attack"],
 								["Classes", "Elementalist"]
 							]
@@ -4341,13 +4341,13 @@
 				{
 					"id": "spell:164",
 					"name": "Shuriken Tempest",
-					"sub": "\"kah sai vas hyr\", level 360, 600 mana, cooldown 30 s",
+					"sub": "\"kah sai vas hyr\", level 360, 600 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike). 30 s cooldown. Other players are only hit when they are the spell's target."
+								"Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike). 14 s cooldown (the cooldown ladder, 2026-10-20; was 30 s). Other players are only hit when they are the spell's target."
 							]
 						},
 						{
@@ -4358,7 +4358,7 @@
 								["Words", "kah sai vas hyr"],
 								["Level", "360"],
 								["Mana", "600"],
-								["Cooldown", "30 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Ninja"]
 							]
@@ -4369,13 +4369,13 @@
 				{
 					"id": "spell:145",
 					"name": "Rampage Leap",
-					"sub": "\"drai skai hrun vas\", level 380, 400 mana, cooldown 18 s",
+					"sub": "\"drai skai hrun vas\", level 380, 400 mana, cooldown 14 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50% slow, 2.5 s). 18 s cooldown."
+								"Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50% slow, 2.5 s). 14 s cooldown (the cooldown ladder, 2026-10-20; was 18 s)."
 							]
 						},
 						{
@@ -4386,7 +4386,7 @@
 								["Words", "drai skai hrun vas"],
 								["Level", "380"],
 								["Mana", "400"],
-								["Cooldown", "18 s"],
+								["Cooldown", "14 s"],
 								["Kind", "Attack"],
 								["Classes", "Berserker"]
 							]
@@ -4397,13 +4397,13 @@
 				{
 					"id": "spell:147",
 					"name": "Pack Frenzy",
-					"sub": "\"kah ferh vas\", level 380, 450 mana, cooldown 20 s",
+					"sub": "\"kah ferh vas\", level 380, 450 mana, cooldown 6 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 20 s cooldown. The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
+								"Feral Command's late sibling. Your companions leap at the target (range 7) and maul it in a frenzy, each for 3.3 bites at once (Feral Command: 1.5). 6 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). The Beastmaster's command. A bite is physical damage dealt as you, from your level and distance skill (ChaosClasses.biteValues, Chaos.classes.companion); it needs a companion out (Wild Bond)."
 							]
 						},
 						{
@@ -4414,7 +4414,7 @@
 								["Words", "kah ferh vas"],
 								["Level", "380"],
 								["Mana", "450"],
-								["Cooldown", "20 s"],
+								["Cooldown", "6 s"],
 								["Kind", "Attack"],
 								["Classes", "Beastmaster"]
 							]
@@ -4425,13 +4425,13 @@
 				{
 					"id": "spell:144",
 					"name": "Twin Verdict",
-					"sub": "\"kah gal sol judh vael\", level 400, 900 mana, cooldown 24 s",
+					"sub": "\"kah gal sol judh vael\", level 400, 900 mana, cooldown 16 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50% against a target below 25% health, checked for each strike. 24 s cooldown."
+								"Two heavy holy strikes at the target 0.6 s apart, each 1.3 times Final Verdict's; +50% against a target below 25% health, checked for each strike. 16 s cooldown (the cooldown ladder, 2026-10-20; was 24 s)."
 							]
 						},
 						{
@@ -4442,7 +4442,7 @@
 								["Words", "kah gal sol judh vael"],
 								["Level", "400"],
 								["Mana", "900"],
-								["Cooldown", "24 s"],
+								["Cooldown", "16 s"],
 								["Kind", "Attack"],
 								["Classes", "Deadeye"]
 							]
@@ -4453,13 +4453,13 @@
 				{
 					"id": "spell:146",
 					"name": "Glacial Doom",
-					"sub": "\"drai hyr infr doma\", level 420, 2200 mana, cooldown 1 min",
+					"sub": "\"drai hyr infr doma\", level 420, 2200 mana, cooldown 20 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 60 s cooldown. Cast time 2 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give the mana and cooldown back. Power x1.9 (Doomtide x1.38; the cast time is longer and the cooldown 15 s longer)."
+								"Doomtide's late sibling in ice. Three waves (ice, energy, ice) rolling out from the caster over a 6x6 area; the energy wave in the middle. 20 s cooldown (the cooldown ladder, 2026-10-20; was 60 s). Cast time 2 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give the mana and cooldown back. Power x1.9 (Doomtide x1.38; the cast time is longer; before the cooldown ladder the cooldown was also 15 s longer, 2 s now)."
 							]
 						},
 						{
@@ -4470,7 +4470,7 @@
 								["Words", "drai hyr infr doma"],
 								["Level", "420"],
 								["Mana", "2200"],
-								["Cooldown", "1 min"],
+								["Cooldown", "20 s"],
 								["Kind", "Attack"],
 								["Classes", "Elementalist"]
 							]
@@ -4481,13 +4481,13 @@
 				{
 					"id": "spell:58",
 					"name": "Anvil Fall",
-					"sub": "\"kah gal brak thun\", level 460, 450 mana, cooldown 20 s",
+					"sub": "\"kah gal brak thun\", level 460, 450 mana, cooldown 12 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90% slow) for 2.5 s. 20 s cooldown. About 0.8 of Colossus Fall's damage on a smaller area, in one hit (docs/CLASSES.md \"Spells by level\")."
+								"The Juggernaut brings its weapon down on the target (range 3): one crushing blow to everything in a 5x5 square around it, from weapon attack and skill; every enemy hit is stunned (90% slow) for 2.5 s. 12 s cooldown (the cooldown ladder, 2026-10-20; was 20 s). About 0.8 of Colossus Fall's damage on a smaller area, in one hit (docs/CLASSES.md \"Spells by level\")."
 							]
 						},
 						{
@@ -4498,7 +4498,7 @@
 								["Words", "kah gal brak thun"],
 								["Level", "460"],
 								["Mana", "450"],
-								["Cooldown", "20 s"],
+								["Cooldown", "12 s"],
 								["Kind", "Attack"],
 								["Classes", "Juggernaut"]
 							]

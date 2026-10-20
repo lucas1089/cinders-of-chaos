@@ -118,6 +118,18 @@ for cls, _, _ in R.CLASSES:
             check(len(best['spells']) <= R.MAX_SPELLS, '%s %d: at most 5 spells' % (cls, lv))
             check(not {s.words for s in best['spells']} & utility, '%s %d: no snare in the set' % (cls, lv))
 
+# the cooldown ladder (owner 2026-10-20): every attack spell's cooldown is its rung x 2 s, the group cooldown 2 s, and
+# every class's first (level 8) spell is 2 s
+final, per_class, _ = R.ladder(spells, model)
+for s in spells:
+    if s['group'] == 'attack':
+        check(s['cooldown'] == final[s['name']], '%s: cooldown %d, the ladder %d' % (s['name'], s['cooldown'],
+                                                                                    final[s['name']]))
+        check(s['groupcooldown'] == 2000, '%s: group cooldown 2 s' % s['name'])
+for cls, rows in per_class.items():
+    check(final[rows[0][0]] == 2000, '%s: the first spell %s is 2 s' % (cls, rows[0][0]))
+    check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
+
 # the client data is up to date
 text = R.client_data(spells, model)
 check(open(R.CLIENT_DATA, encoding='utf-8').read() == text,

@@ -38,6 +38,9 @@ manter"): per class and checked level, how long the best set runs from a full po
 --heal: Shadow Mend (the Thief line's self heal) at level 300 and 1000 against the measured self heal per second of the Ranger
 line and the Illusionist (server/data/spells/README.md "Healing"): the formula of chaos_constants.lua, the cooldown and manapercent
 of spells_chaos.xml, the base health and the mana pool of the data.
+--ladder [--check]: the cooldown ladder per class (owner, 2026-10-20: the attack spells at 2, 4, 6 s ... from the
+first to the strongest; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
+cooldown or group cooldown is off it.
 --write / --check: client/overlay/modules/game_helperrotation/autorotation_data.lua (the helper's "Auto rotation"
 button: the best set for every level where the class gets a new attack spell, and its heals).
 """
@@ -721,7 +724,63 @@ def report(spells, model, only_cls=None, only_level=None):
     return rows
 
 
+LADDER_LEVEL = 300   # the damage per cast the cooldown ladder ranks by (the C4 measurement level)
+LADDER_STEP = 2000   # ms between two rungs
+
+
+def ladder(spells, model, level=LADDER_LEVEL):
+    """The cooldown ladder (owner 2026-10-20: "faça todas as magias de ataque terem 2s de diferença, começando pela
+    primeira delas. assim elas ficam com 2s, 4s, 6s de cooldown, da mais fraca pra mais forte"). Per class: the first
+    attack spell (the lowest level, the class's level 8 spell) is rung 1, the others follow from the weakest to the
+    strongest by the damage of one cast on one target at `level` (rotation_model.csv with the class's stats; an area
+    spell by its main-target hit). A spell several classes share has one cooldown: the rung most of them give it (a tie:
+    the lower). Returns ({name: cooldown ms}, {class: [(name, rung, damage)]}, [(name, {class: rung}, rung)])."""
+    attack = [s for s in spells if s['group'] == 'attack']
+    rungs, per_class = {}, {}
+    for cls, _, _ in CLASSES:
+        env = stats(cls, level)
+        rows = [(evaluate(model[s['words']]['dmg'], env), s['level'], s['name']) for s in attack if cls in s['vocations']]
+        if not rows:
+            continue
+        first = min(rows, key=lambda r: (r[1], r[0]))
+        rows = [first] + sorted(r for r in rows if r is not first)
+        per_class[cls] = [(n, i + 1, d) for i, (d, _, n) in enumerate(rows)]
+        for n, rung, _ in per_class[cls]:
+            rungs.setdefault(n, {})[cls] = rung
+    final, conflicts = {}, []
+    for n, by in rungs.items():
+        counts = {}
+        for r in by.values():
+            counts[r] = counts.get(r, 0) + 1
+        rung = sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[0][0]
+        final[n] = rung * LADDER_STEP
+        if len(counts) > 1:
+            conflicts.append((n, by, rung))
+    return final, per_class, sorted(conflicts)
+
+
+def ladder_report(spells, model, check=False):
+    final, per_class, conflicts = ladder(spells, model)
+    cd = {s['name']: s['cooldown'] for s in spells if s['group'] == 'attack'}
+    gcd = {s['name']: s['groupcooldown'] for s in spells if s['group'] == 'attack'}
+    for cls, rows in per_class.items():
+        print('%-12s %s' % (cls, ' < '.join('%s %d s%s' % (n, final[n] // 1000, '' if final[n] == rung * LADDER_STEP
+                                                          else ' (rung %d)' % rung) for n, rung, _ in rows)))
+    for n, by, rung in conflicts:
+        print('shared: %s %s -> rung %d (%d s)' % (n, ', '.join('%s %d' % kv for kv in sorted(by.items())), rung,
+                                                    rung * LADDER_STEP // 1000))
+    wrong = ['%s: cooldown %d, the ladder %d' % (n, cd[n], c) for n, c in sorted(final.items()) if cd[n] != c]
+    wrong += ['%s: group cooldown %d, not %d' % (n, g, int(GCD * 1000)) for n, g in sorted(gcd.items())
+              if g != int(GCD * 1000)]
+    for w in wrong:
+        print('OFF THE LADDER ' + w)
+    return 1 if wrong and check else 0
+
+
 def main(argv):
+    if '--ladder' in argv:
+        spells, model = load_all()
+        return ladder_report(spells, model, '--check' in argv)
     if '--export-stock' in argv:
         export_stock(argv[argv.index('--export-stock') + 1])
         return 0

@@ -117,44 +117,104 @@ Bonebreaker went from 6 s to 2 s (the Warrior line's only attack spell at levels
 The helper's Auto rotation button sets these (client/MANIFEST.md "Helper auto rotation"); a band left out has the set
 of the band before. Early (since 2026-10-17 every line starts at level 8, "Level 8 spells" below): Warrior line 8: Bonebreaker, 30:
 Reaping Gyre > Bonebreaker; Thief line 8: Shuriken Toss; Ranger line 8: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 100 / 300 / 1000:
-- **Warrior**: 100: Earthbreaker > Butcher's Gyre > Scything Arc > Reaping Gyre; 300: Colossus Fall > Earthbreaker >
-  Butcher's Gyre > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Earthbreaker > Reaping Gyre > Butcher's Gyre >
-  Headsman's Hurl.
-- **Juggernaut**: 100: Earthbreaker > Butcher's Gyre > Scything Arc > Reaping Gyre; 300: Colossus Fall > Earthbreaker >
-  Butcher's Gyre > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Anvil Fall > Reaping Gyre > Butcher's Gyre >
-  Scything Arc.
-- **Berserker**: 100: Skyfall Cleave > Earthbreaker > Butcher's Gyre > Scything Arc > Reaping Gyre; 300: Colossus Fall >
-  Skyfall Cleave > Butcher's Gyre > Scything Arc > Headsman's Hurl; 1000: Rampage Leap > Skyfall Cleave > Reaping Gyre >
-  Butcher's Gyre > Headsman's Hurl.
-- **Ranger**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer; 300: Blessed Earth > Sanctum Burst >
-  Hail of Dawn > Skewering Line > Dawnpiercer.
-- **Deadeye**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer; 300: Sanctum Burst > Hail of Dawn >
-  Final Verdict > Skewering Line > Dawnpiercer; 1000: Sanctum Burst > Hail of Dawn > Twin Verdict > Final Verdict >
-  Dawnpiercer.
-- **Beastmaster**: 100: Blessed Earth > Sanctum Burst > Dawnpiercer; 1000: Blessed Earth > Sanctum Burst > Pack Frenzy >
-  Dawnpiercer.
-- **Mystic**: 100: Arcane Ripple > Bewitching Hex; 300: Falling Pyre > Briar Prison > Arcane Ripple > Shattered Psyche >
-  Bewitching Hex; 1000: Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche.
-- **Elementalist**: 100: Tempest Fan > Rime Bloom > Forked Storm > Pyre Torrent; 300: Doomtide > Frozen Crypt > Falling
-  Pyre > Pyre Torrent > Witchfire Bolt; 1000: Glacial Doom > Doomtide > Frozen Crypt > Pyre Torrent > Witchfire Bolt.
-- **Illusionist**: 100: Arcane Ripple > Bewitching Hex; 300: Tear in the Weave > Primordial Squall > Nightburst > Arcane
-  Ripple > Bewitching Hex; 1000: Tear in the Weave > Nightburst > Arcane Ripple > Shattered Psyche > Bewitching Hex.
+- **Warrior**: 100: Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Earthbreaker > Scything Arc > Headsman's Hurl > Vaulting Cleave; 1000: Colossus Fall > Earthbreaker > Reaping Gyre >
+  Scything Arc > Headsman's Hurl.
+- **Juggernaut**: 100: Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Anvil Fall > Earthbreaker >
+  Scything Arc > Headsman's Hurl.
+- **Berserker**: 100: Butcher's Gyre > Skyfall Cleave > Earthbreaker > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Skyfall Cleave > Earthbreaker > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Rampage Leap > Earthbreaker >
+  Scything Arc > Headsman's Hurl.
+- **Ranger**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin; 300: Radiant Shard >
+  Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer.
+- **Deadeye**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin; 300: Blessed Earth >
+  Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer; 1000: Blessed Earth > Hail of Dawn > Twin Verdict > Final
+  Verdict > Dawnpiercer.
+- **Beastmaster**: 100: Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin; 1000: Blessed Earth > Sanctum
+  Burst > Pack Frenzy > Dawnpiercer > Feral Command.
+- **Mystic**: 100: Blightswarm > Arcane Ripple > Bewitching Hex; 300: Falling Pyre > Briar Prison > Blightswarm > Arcane
+  Ripple > Bewitching Hex; 1000: Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche.
+- **Elementalist**: 100: Tempest Fan > Forked Storm > Rime Bloom > Pyre Torrent; 300: Doomtide > Frozen Crypt > Falling
+  Pyre > Rime Bloom > Pyre Torrent; 1000: Glacial Doom > Doomtide > Frozen Crypt > Rime Bloom > Pyre Torrent.
+- **Illusionist**: 100: Arcane Ripple > Bewitching Hex > Kindling Spark; 300: Tear in the Weave > Nightburst >
+  Primordial Squall > Arcane Ripple > Shattered Psyche.
 - **Thief**: 100: Blade Flurry > Fan of Knives > Shuriken Toss.
-- **Ninja**: 100: Blade Flurry > Shadow Step > Shuriken Toss; 300: Shuriken Barrage > Blade Flurry > Shadow Step >
-  Shuriken Toss; 1000: Shuriken Tempest > Shuriken Barrage > Blade Flurry > Shadow Step > Shuriken Toss.
-- **Samurai**: 100: Blade Flurry > Shuriken Toss; 300: Iaido Sweep > Blade Flurry > Iaijutsu > Shuriken Toss.
-- **Necromancer**: 100: Withering Curse > Bone Shrapnel > Bone Spear.
-- **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Life Siphon > Soul Rot > Bone Spear.
+- **Ninja**: 100: Blade Flurry > Shadow Step > Shuriken Toss; 300: Blade Flurry > Shuriken Barrage > Shadow Step >
+  Shuriken Toss; 1000: Shuriken Tempest > Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss.
+- **Samurai**: 100: Blade Flurry > Shuriken Toss; 300: Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss.
+- **Necromancer**: 100: Withering Curse > Bone Shrapnel.
+- **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Soul Rot > Life Siphon.
 - **Bone Lord**: 100: Withering Curse > Bone Spear; 300: Withering Curse > Bone Offering > Bone Spear.
 - **Monk**: 100: Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist.
-- **Shadowfist**: 100: Pressure Points > Whirling Heel > Palm Shockwave; 300: Pressure Points > Shadow Ricochet >
-  Whirling Heel.
+- **Shadowfist**: 100: Pressure Points > Whirling Heel > Palm Shockwave > Sundering Palm; 300: Pressure Points > Shadow
+  Ricochet > Whirling Heel > Palm Shockwave; 1000: Pressure Points > Shadow Ricochet > Palm Shockwave > Shadowfist
+  Flurry > Sundering Palm.
 - **Iron Sage**: 100: Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist; 300: Whirling Heel > Iron Chain >
   Palm Shockwave.
 - **Templar**: 100: Consecration > Sanctified Ground > Radiant Smite.
-- **Inquisitor**: 100: Judgement > Consecration > Radiant Smite; 300: Judgement > Consecration > Purging Nova > Radiant
-  Smite.
+- **Inquisitor**: 100: Judgement > Consecration > Radiant Smite; 300: Judgement > Consecration > Purging Nova.
 - **Sentinel**: 100: Consecration > Radiant Smite; 300: Consecration > Shield Wave > Radiant Smite.
+
+**Cooldown ladder (2026-10-20, owner: "faça todas as magias de ataque terem 2s de diferença, começando pela primeira
+delas. assim elas ficam com 2s, 4s, 6s de cooldown, da mais fraca pra mais forte")**: every class's attack spells have
+the cooldowns 2, 4, 6 s ... in a ladder: the first spell (the lowest level, the class's level 8 spell, so a 2 s spell is
+there from the start) is 2 s, then the others from the weakest to the strongest by the damage of one cast on one target
+at level 300 (`server/data/spells/rotation_model.csv` with the class's stats; an area spell by its main-target hit, a
+damage over time by its total). Group cooldown 2 s on every attack spell. A spell several classes share has one
+cooldown: the rung most of them give it, a tie the lower (listed below). The snares, Feral Command and Corpse Explosion
+are attack spells and take their rung too; the cast-time spells (Colossus Fall, Doomtide, Glacial Doom, Primordial
+Squall, Tear in the Weave, Hail of Dawn) as well. `server/tools/rotation_sim.py --ladder [--check]` computes it and CI
+checks it. Damage per cast unchanged; what it does to the damage per second: server/data/spells/README.md "Cooldown
+ladder". The ladders ("rung n": the class's own rung when a shared spell took another):
+- **Warrior**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Vaulting Cleave 8 s < Earthbreaker 8 s (rung 5) <
+  Butcher's Gyre 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
+- **Juggernaut**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Butcher's Gyre 12 s (rung
+  5) < Anvil Fall 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
+- **Berserker**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Skyfall Cleave 10 s <
+  Butcher's Gyre 12 s < Rampage Leap 14 s < Colossus Fall 14 s (rung 8) < Headsman's Hurl 16 s (rung 9).
+- **Ranger**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s < Radiant
+  Shard 12 s < Blessed Earth 14 s < Hail of Dawn 16 s.
+- **Deadeye**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s <
+  Blessed Earth 14 s (rung 6) < Final Verdict 14 s < Twin Verdict 16 s < Hail of Dawn 16 s (rung 9).
+- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Pack Frenzy 6 s < Snare Trap 4 s (rung 4) < Dawnpiercer 6 s
+  (rung 5) < Sanctum Burst 8 s (rung 6) < Blessed Earth 14 s.
+- **Mystic**: Kindling Spark 2 s < Rime Bloom 4 s < Blightswarm 6 s < Witchfire Bolt 8 s < Briar Prison 10 s < Arcane
+  Ripple 4 s (rung 6) < Umbral Stride 14 s < Bewitching Hex 6 s (rung 8) < Shattered Psyche 12 s (rung 9) < Falling Pyre
+  14 s (rung 10).
+- **Elementalist**: Kindling Spark 2 s < Pyre Torrent 4 s < Rime Bloom 4 s (rung 3) < Forked Storm 8 s < Witchfire Bolt
+  8 s (rung 5) < Tempest Fan 12 s < Falling Pyre 14 s < Frozen Crypt 16 s < Doomtide 18 s < Glacial Doom 20 s.
+- **Illusionist**: Kindling Spark 2 s < Arcane Ripple 4 s < Bewitching Hex 6 s < Primordial Squall 8 s < Nightburst 10 s
+  < Shattered Psyche 12 s < Tear in the Weave 14 s.
+- **Thief**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Blade Flurry 10 s (rung 4) < Fan of Knives 10 s.
+- **Ninja**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Shuriken Barrage 8 s < Blade Flurry 10 s < Shadow
+  Step 12 s < Shuriken Tempest 14 s.
+- **Samurai**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Iaido Sweep 8 s < Blade Flurry 10 s < Iaijutsu 12
+  s.
+- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Withering Curse 4 s (rung 3).
+- **Lich**: Bone Spear 2 s < Corpse Explosion 4 s < Life Siphon 6 s < Soul Rot 8 s < Withering Curse 4 s (rung 5).
+- **Bone Lord**: Bone Spear 2 s < Withering Curse 4 s < Bone Offering 6 s.
+- **Monk**: Ashen Fist 2 s < Palm Shockwave 4 s < Whirling Heel 6 s < Sundering Palm 12 s (rung 4).
+- **Shadowfist**: Ashen Fist 2 s < Palm Shockwave 4 s < Shadow Ricochet 6 s < Pressure Points 8 s < Whirling Heel 6 s
+  (rung 5) < Sundering Palm 12 s < Shadowfist Flurry 14 s.
+- **Iron Sage**: Ashen Fist 2 s < Palm Shockwave 4 s < Iron Chain 6 s < Whirling Heel 6 s (rung 4) < Iron Palm 10 s <
+  Sundering Palm 12 s.
+- **Templar**: Radiant Smite 2 s < Sanctified Ground 4 s < Consecration 6 s.
+- **Inquisitor**: Radiant Smite 2 s < Judgement 4 s < Purging Nova 6 s < Consecration 6 s (rung 4).
+- **Sentinel**: Radiant Smite 2 s < Shield Wave 4 s < Consecration 6 s.
+
+Shared spells, one cooldown (the rung per class -> the rung taken):
+Arcane Ripple Illusionist 2, Mystic 6 -> rung 2 (4 s); Bewitching Hex Illusionist 3, Mystic 8 -> rung 3 (6 s); Blade
+Flurry Ninja 5, Samurai 5, Thief 4 -> rung 5 (10 s); Blessed Earth Beastmaster 7, Deadeye 6, Ranger 7 -> rung 7 (14 s);
+Butcher's Gyre Berserker 6, Juggernaut 5, Warrior 6 -> rung 6 (12 s); Colossus Fall Berserker 8, Juggernaut 7, Warrior 7
+-> rung 7 (14 s); Consecration Inquisitor 4, Sentinel 3, Templar 3 -> rung 3 (6 s); Dawnpiercer Beastmaster 5, Deadeye
+3, Ranger 3 -> rung 3 (6 s); Earthbreaker Berserker 4, Juggernaut 4, Warrior 5 -> rung 4 (8 s); Falling Pyre
+Elementalist 7, Mystic 10 -> rung 7 (14 s); Hail of Dawn Deadeye 9, Ranger 8 -> rung 8 (16 s); Headsman's Hurl Berserker
+9, Juggernaut 8, Warrior 8 -> rung 8 (16 s); Rime Bloom Elementalist 3, Mystic 2 -> rung 2 (4 s); Sanctum Burst
+Beastmaster 6, Deadeye 4, Ranger 4 -> rung 4 (8 s); Shattered Psyche Illusionist 6, Mystic 9 -> rung 6 (12 s); Snare
+Trap Beastmaster 4, Deadeye 2, Ninja 2, Ranger 2, Samurai 2, Thief 2 -> rung 2 (4 s); Sundering Palm Iron Sage 6, Monk
+4, Shadowfist 6 -> rung 6 (12 s); Whirling Heel Iron Sage 4, Monk 3, Shadowfist 5 -> rung 3 (6 s); Witchfire Bolt
+Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, Necromancer 3 -> rung 2 (4 s).
 
 ## Spell cap
 

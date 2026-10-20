@@ -1,7 +1,7 @@
 -- Rampage Leap: Skyfall Cleave's late sibling. Leap next to the target (range 6) and bring the two-handed weapon down: heavy
 -- physical damage to everything in a 5x5 square around the target (about 1.6 times Skyfall Cleave per hit), from weapon
 -- attack and skill. Every hit gets Rage (data/scripts/chaos/berserker_combat.lua); the slam staggers (50% slow, 2.5 s).
--- 18 s cooldown.
+-- 14 s cooldown (the cooldown ladder, 2026-10-20; was 18 s).
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
