@@ -195,9 +195,8 @@ local CATEGORIES = {
       entry('Inventory',          'inventory',   { modules = { 'game_inventory' }, fns = { 'toggle' } }),
       entry('Outfit',             'inventory',   { custom = function() g_game.requestOutfit() end }),
       entry('Portal Style',       'inventory',   { modules = { 'game_townportal' }, fns = { 'toggle' } }),
-      -- Weapon Proficiency lists the weapons from the client's item data (game_proficiencycatalog; the server sends no
-      -- catalogue). No Blessings (game_blessing) entry: the server has no handler for the base request on 10.98
-      entry('Weapon Proficiency', 'proficiency', { modules = { 'game_proficiency' }, fns = { 'requestOpenWindow' } }),
+      -- No Weapon Proficiency entry (owner 2026-10-20: out of the menu) and no Blessings (game_blessing) entry: the
+      -- server has no handler for the base request on 10.98
     } }),
   } },
   { id = 'hunt', text = 'Hunt', icon = 'battlelist', entries = {
