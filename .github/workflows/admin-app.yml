@@ -1,0 +1,87 @@
+# Cinders Admin (android/, docs/ADMIN_APP.md): the Android app that controls the live server over ssh.
+#   pull_request (paths android/**): compiles the release build, so a broken change shows up red. Nothing is published.
+#   workflow_dispatch: builds, signs and publishes the prerelease adminapp-<run number> with CindersAdmin.apk.
+#
+# Signing: the repository secret ANDROID_KEYSTORE_B64 (the keystore file, base64) with ANDROID_KEYSTORE_PASS and
+# ANDROID_KEY_ALIAS signs every release the same way, so a new APK installs over the old one and the app keeps its ssh
+# key. Without the secret the run makes a one-off keystore: the APK installs, but the next one has another signature
+# (uninstall first, then generate and install the key again). docs/ADMIN_APP.md says how to create the secret.
+name: Admin app
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "android/**"
+      - ".github/workflows/admin-app.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      ADMIN_APP_VERSION_CODE: ${{ github.run_number }}
+      ADMIN_APP_VERSION_NAME: "1.${{ github.run_number }}"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.9"
+      - name: Keystore
+        id: ks
+        run: |
+          set -euo pipefail
+          KS="$RUNNER_TEMP/admin.jks"
+          if [ -n "${{ secrets.ANDROID_KEYSTORE_B64 }}" ]; then
+            echo "${{ secrets.ANDROID_KEYSTORE_B64 }}" | base64 -d > "$KS"
+            echo "pass=${{ secrets.ANDROID_KEYSTORE_PASS }}" >> "$GITHUB_OUTPUT"
+            echo "alias=${{ secrets.ANDROID_KEY_ALIAS }}" >> "$GITHUB_OUTPUT"
+            echo "stable=yes" >> "$GITHUB_OUTPUT"
+          else
+            PASS=$(openssl rand -hex 16)
+            keytool -genkeypair -keystore "$KS" -storepass "$PASS" -keypass "$PASS" -alias cinders \
+              -keyalg RSA -keysize 3072 -validity 9125 -dname "CN=Cinders Admin"
+            echo "::add-mask::$PASS"
+            echo "pass=$PASS" >> "$GITHUB_OUTPUT"
+            echo "alias=cinders" >> "$GITHUB_OUTPUT"
+            echo "stable=no" >> "$GITHUB_OUTPUT"
+            echo "::warning::No ANDROID_KEYSTORE_B64 secret: this APK has a one-off signature (docs/ADMIN_APP.md)."
+          fi
+          echo "file=$KS" >> "$GITHUB_OUTPUT"
+      - name: Build
+        working-directory: android
+        env:
+          CHAOS_KS_FILE: ${{ steps.ks.outputs.file }}
+          CHAOS_KS_PASS: ${{ steps.ks.outputs.pass }}
+          CHAOS_KS_ALIAS: ${{ steps.ks.outputs.alias }}
+        run: gradle --no-daemon :app:assembleRelease
+      - name: APK
+        run: |
+          set -euo pipefail
+          APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
+          [ -n "$APK" ] || { echo "no APK built"; exit 1; }
+          cp "$APK" CindersAdmin.apk
+          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs CindersAdmin.apk | head -3
+          sha256sum CindersAdmin.apk
+      - name: Publish
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          set -euo pipefail
+          TAG="adminapp-${{ github.run_number }}"
+          NOTE="Cinders Admin 1.${{ github.run_number }}, built from ${GITHUB_SHA}. Install the APK on the phone (allow installs from this source), then follow docs/ADMIN_APP.md."
+          if [ "${{ steps.ks.outputs.stable }}" != "yes" ]; then
+            NOTE="$NOTE
+          Signed with a one-off key (no ANDROID_KEYSTORE_B64 secret): uninstall the old app before installing this one."
+          fi
+          gh release create "$TAG" CindersAdmin.apk -R "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --prerelease \
+            --title "Cinders Admin ${{ github.run_number }}" --notes "$NOTE"
+          echo "Release: https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG" >> "$GITHUB_STEP_SUMMARY"

@@ -184,6 +184,7 @@ server/
                                       race and of an element hit, and any stock missile, swapped from Lua (nothing by
                                       default; see "Condition auras, blasts and fireworks (pair 29)";
                                       tools/effect_overrides_patch_test.py)
+    remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
@@ -14218,6 +14219,26 @@ Safety: the name is fixed by the config and must be a bare file name (letters, d
 cannot be removed stops nothing (logged once), so a stuck file never stops every later start. A leftover file is
 removed at startup (and by both start scripts) instead of being obeyed. Anyone who can write into the server folder
 can stop the server, the same people who can already end its process. Tests: `tests/stop_request_test.lua`.
+
+## Remote admin commands (`remote_cmd.lua`, `remote_cmd_core.lua`, `remote_cmd_config.lua`)
+Owner, 2026-10-20: full control of the live server from a phone (docs/ADMIN_APP.md). The phone app talks ssh to the VPS
+and runs `server/deploy/chaos-ctl.sh`; for the things only the engine can do it appends one line to `remote.cmd` in the
+server folder (the engine's working folder), the same idea as the stop request file above.
+- The globalevent `ChaosRemoteCmd` checks every `intervalMs` (2.5 s). The file is renamed to `remote.cmd.work` first (a
+  writer that appends later makes a new file, nothing is lost), read (at most 8 KB, 20 lines) and removed.
+- Lines are a whitelist, nothing else is ever run: `broadcast TEXT` (1-200 characters, a warning message to everyone),
+  `kick NAME` (a character name: letters, spaces, `'` and `-`, 3-29 characters; an offline name does nothing), `save`
+  (`saveServer()`), `open` and `close` (`Game.setGameState` NORMAL / CLOSED: login open or closed; players online stay).
+  Control characters, long lines and every other word are refused and logged.
+- Every command and every refusal is logged as `[ChaosRemoteCmd] ...` in the console log (`chaos-ctl.sh logs`).
+- Safety: the file name is a bare name from the config (same rule as the stop request file). A leftover file at startup is
+  removed, not obeyed. A file that cannot be renamed runs nothing (logged once). Anyone who can write into the server
+  folder can run these five commands, the same people who can already end the process. The folder is not reachable from
+  the network. Ban, premium, items and the rest stay in the in-game admin panel (`data/scripts/chaos/admin/`) and in
+  the terminal of the app.
+- Tests: `tests/remote_cmd_test.lua` (core and engine file against a mocked engine, a real file), and
+  `server/deploy/chaos_ctl_test.py` for the script that writes the lines. Untested: the engine calls (`Player(name)`,
+  `player:remove()`, `Game.setGameState`) have not run on a real server.
 
 ## Respawn near players (engine patch 0041, config `spawnNearPlayers`, `spawnMinPlayerDistance`)
 Owner, 2026-10-16: monsters must respawn even with players nearby. The stock engine skipped a spawn block while a

@@ -1,0 +1,57 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.cindersofchaos.admin'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'com.cindersofchaos.admin'
+        minSdk 26
+        targetSdk 34
+        versionCode (System.getenv('ADMIN_APP_VERSION_CODE') ?: '1') as int
+        versionName System.getenv('ADMIN_APP_VERSION_NAME') ?: '1.0'
+    }
+
+    // The release is signed with the keystore of the workflow (.github/workflows/admin-app.yml): CHAOS_KS_FILE,
+    // CHAOS_KS_PASS, CHAOS_KS_ALIAS. Without them the build is unsigned (a local test build).
+    signingConfigs {
+        release {
+            if (System.getenv('CHAOS_KS_FILE')) {
+                storeFile file(System.getenv('CHAOS_KS_FILE'))
+                storePassword System.getenv('CHAOS_KS_PASS')
+                keyAlias System.getenv('CHAOS_KS_ALIAS')
+                keyPassword System.getenv('CHAOS_KS_PASS')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('CHAOS_KS_FILE')) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    packagingOptions {
+        resources {
+            excludes += ['META-INF/versions/**', 'META-INF/LICENSE*', 'META-INF/NOTICE*']
+        }
+    }
+    lint {
+        abortOnError false
+    }
+}
+
+dependencies {
+    // SSH client (JSch fork with rsa-sha2 and modern ciphers; pure Java, no native code)
+    implementation 'com.github.mwiede:jsch:0.2.19'
+}

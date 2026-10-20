@@ -388,6 +388,11 @@ jobs:
           bash -n server/deploy/chaos_update.sh
           python3 -I server/deploy/chaos_update_test.py
 
+      - name: Admin app server side (chaos-ctl.sh with stubs; remote.cmd commands)
+        run: |
+          shellcheck server/deploy/chaos-ctl.sh
+          python3 -I server/deploy/chaos_ctl_test.py
+
       - name: Unique item specs are up to date with chaos_items.xml
         run: |
           cd server && python3 -I tools/gen_unique_specs.py

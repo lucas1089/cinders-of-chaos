@@ -228,6 +228,11 @@ them are named by role, so they carry no Reserved Font Name.
   - Licence: LGPL-2.1
   - Used for: website mail
   - Source: https://github.com/PHPMailer/PHPMailer
+- **JSch (mwiede fork)**
+  - Author: Michael Wiedenbauer and the JSch contributors
+  - Licence: BSD-3-Clause style
+  - Used for: the ssh connection of the Cinders Admin phone app
+  - Source: https://github.com/mwiede/jsch
 
 ## Tools {pt-BR: Ferramentas}
 

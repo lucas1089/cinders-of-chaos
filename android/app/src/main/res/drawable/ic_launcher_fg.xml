@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- a flame over embers, drawn here (no third-party art) -->
+    <path
+        android:fillColor="#E8590C"
+        android:pathData="M54,22 C62,36 74,44 74,60 C74,72 65,82 54,82 C43,82 34,72 34,60 C34,50 40,44 44,38 C46,44 49,46 51,46 C51,38 50,30 54,22 Z" />
+    <path
+        android:fillColor="#FFB84D"
+        android:pathData="M54,46 C58,54 64,58 64,66 C64,73 59,78 54,78 C49,78 44,73 44,66 C44,60 49,56 54,46 Z" />
+</vector>

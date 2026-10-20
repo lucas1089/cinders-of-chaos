@@ -84,6 +84,7 @@ ChaosCreditsData = {
       { name = "Znote AAC", author = "Znote and contributors", licence = "open source", use = "the base of ZnoteX", source = "https://github.com/Znote/ZnoteAAC" },
       { name = "Void layout", author = "Alex (opengamescommunity.com)", use = "the website layout, re-coloured for Cinders of Chaos" },
       { name = "PHPMailer", author = "the PHPMailer contributors", licence = "LGPL-2.1", use = "website mail", source = "https://github.com/PHPMailer/PHPMailer" },
+      { name = "JSch (mwiede fork)", author = "Michael Wiedenbauer and the JSch contributors", licence = "BSD-3-Clause style", use = "the ssh connection of the Cinders Admin phone app", source = "https://github.com/mwiede/jsch" },
     },
   },
   {
