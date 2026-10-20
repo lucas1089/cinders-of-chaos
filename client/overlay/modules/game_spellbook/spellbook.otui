@@ -5,6 +5,10 @@ SpellbookRow < UIWidget
   focusable: true
   phantom: false
   background-color: alpha
+  // the base style sets the frame too: a state style's properties are not undone when the state ends, so without it
+  // the gold frame of $focus stayed on every row ever selected
+  border-width: 1
+  border-color: alpha
   padding: 2
 
   // hover: a faint lift; selected: a soft gold tint and a thin gold frame (the element-coloured names stay readable)

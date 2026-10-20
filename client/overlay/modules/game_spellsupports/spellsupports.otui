@@ -1,6 +1,10 @@
 // Spell supports window (game_spellsupports). Styles from client_chaos_theme (styles.otui).
 
 SupportSpellRow < UIWidget
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  border-width: 1
+  border-color: alpha
   height: 40
   focusable: true
   phantom: false
@@ -134,6 +138,10 @@ SupportSocket < UIWidget
       height: 22
 
 SupportRuneCell < UIWidget
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  border-width: 1
+  border-color: alpha
   size: 38 38
   focusable: true
   phantom: false

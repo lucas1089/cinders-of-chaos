@@ -1,4 +1,7 @@
 NameShaderItem < UIWidget
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  opacity: 1
   height: 50
   background-color: #2a2a2a
   focusable: true

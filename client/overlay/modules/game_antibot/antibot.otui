@@ -2,6 +2,9 @@
 // Styles from client_chaos_theme; the picture tiles use the buff icon frame (1 px #b8923a on a dark plate).
 
 AntibotChoice < UIWidget
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  opacity: 1
   size: 72 72
   margin-right: 10
   background-color: #1a151a

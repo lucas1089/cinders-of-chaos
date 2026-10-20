@@ -120,6 +120,9 @@ ChaosButton < UIButton
 
 // ---------------------------------------------------------------- text edit
 ChaosTextEdit < UITextEdit
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  opacity: 1
   font: verdana-11px-antialised
   color: #d6c9ae
   size: 86 22
@@ -190,6 +193,9 @@ ChaosManaBar < ChaosProgressBar
 
 // ---------------------------------------------------------------- scrollbar
 ChaosScrollBarSlider < UIButton
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  image-color: #ffffff
   id: sliderButton
   anchors.centerIn: parent
   size: 13 17
@@ -244,6 +250,9 @@ ChaosScrollBar < UIScrollBar
 // ---------------------------------------------------------------- checkbox
 // checkbox.png is a 16x32 sheet: top = unchecked, bottom = checked
 ChaosCheckBox < UICheckBox
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  image-color: #ffffff
   size: 16 16
   font: verdana-11px-antialised
   text-align: left
@@ -270,6 +279,9 @@ ChaosCheckBox < UICheckBox
 
 // ---------------------------------------------------------------- combobox
 ChaosComboBox < UIComboBox
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  opacity: 1
   font: verdana-11px-antialised
   color: #d6c9ae
   size: 91 22

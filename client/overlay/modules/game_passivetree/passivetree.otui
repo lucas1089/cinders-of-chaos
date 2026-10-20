@@ -339,6 +339,9 @@ TreeComboBoxPopupMenu < UIPopupMenu
   image-border: 3
 
 TreeComboBox < UIComboBox
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  opacity: 1
   font: verdana-11px-antialised
   color: #dfdfdf
   size: 179 25
