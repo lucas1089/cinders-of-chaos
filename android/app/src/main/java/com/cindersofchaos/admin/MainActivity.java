@@ -466,7 +466,7 @@ public class MainActivity extends Activity {
         } catch (Exception e) {
             catalog = new JSONArray();
         }
-        cmdInfo.setText(catalog.length() == 0 ? "Lista vazia: toque em Atualizar lista (o personagem admin precisa estar online)."
+        cmdInfo.setText(catalog.length() == 0 ? "Lista vazia: toque em Atualizar lista (o personagem admin precisa existir e ter grupo de admin)."
                 : catalog.length() + " comandos.");
     }
 
@@ -756,7 +756,7 @@ public class MainActivity extends Activity {
         fPort = field("Porta ssh", String.valueOf(store.port()), true);
         fUser = field("Usuario ssh", store.user(), false);
         fCtl = field("Caminho do chaos-ctl.sh", store.ctl(), false);
-        fActor = field("Personagem admin (precisa estar online no jogo)", store.actor(), false);
+        fActor = field("Personagem admin (nome; pode estar offline)", store.actor(), false);
         cfgInfo = mono();
         Button saveCfg = button("Salvar", true);
         saveCfg.setOnClickListener(v -> {

@@ -13,8 +13,8 @@
 #   players                     online characters: name, level, vocation id
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
 #   kick NAME | open | close    kick one character / let players log in / close the server for login
-#   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the online character ACTOR
-#   panel ACTOR ACTION JSON     run one admin panel action as ACTOR (online, admin group); prints the answer line (JSON)
+#   catalog ACTOR               the admin panel's catalog (all actions and their parameters) for the admin character ACTOR
+#   panel ACTOR ACTION JSON     run one admin panel action as ACTOR (an admin character, online or not); prints the answer line (JSON)
 #   update TAG now|at-save      chaos_update.sh --ref TAG (--now | --at-save) --yes, in the background (update-log)
 #   rollback now|at-save        chaos_update.sh --rollback, in the background
 #   update-log [N]              the last N lines of the update log
@@ -143,7 +143,7 @@ case $cmd in
     ;;
   catalog|panel)
     actor=${1:-}
-    [[ $actor =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || die "$cmd ACTOR: the name of an online admin character"
+    [[ $actor =~ ^[A-Za-z][A-Za-z\ \'-]{2,28}$ ]] || die "$cmd ACTOR: the name of an admin character"
     out="$SERVER/remote.catalog"
     if [ "$cmd" = catalog ]; then
       [ $# -eq 1 ] || die "catalog ACTOR"
@@ -153,7 +153,7 @@ case $cmd in
         [ -s "$out" ] && { cat "$out"; exit 0; }
         sleep 0.5
       done
-      die "no answer in 15 s: is $actor online, and is the server running the remote command script?"
+      die "no answer in 15 s: is $actor an admin character, and is the server running the remote command script?"
     fi
     action=${2:-}
     json=${3:-}

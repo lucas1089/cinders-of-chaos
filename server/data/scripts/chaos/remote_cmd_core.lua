@@ -90,6 +90,43 @@ function K.parse(line)
 	return nil, "unknown command"
 end
 
+-- An admin character that is not online: a stand-in built from its database row {guid, account, group, name}. The
+-- identity calls the panel uses (name, group, guid, account, audit log) work; anything that needs the character in the
+-- world (position, teleport, ghost, speed, conditions, storage) raises a clear error, which ChaosAdmin.execute turns
+-- into the answer of the action. Actions that only act on other players or on the server therefore run offline.
+function K.virtualActor(row)
+	local actor = {}
+	local group = {
+		getId = function() return row.group end,
+		getAccess = function() return true end,
+		getName = function() return "admin" end,
+	}
+	local own = {
+		isPlayer = function() return true end,
+		isCreature = function() return true end,
+		getName = function() return row.name end,
+		getId = function() return 0 end,
+		getGuid = function() return row.guid end,
+		getAccountId = function() return row.account end,
+		getIp = function() return 0 end,
+		getGroup = function() return group end,
+		sendTextMessage = function() return true end,
+		sendCancelMessage = function() return true end,
+		registerEvent = function() return true end,
+		unregisterEvent = function() return true end,
+	}
+	return setmetatable(actor, {
+		__index = function(_, method)
+			if own[method] then
+				return function() return own[method]() end
+			end
+			return function()
+				error("this action needs " .. row.name .. " in the game (" .. tostring(method) .. "); log in or pick another action", 0)
+			end
+		end,
+	})
+end
+
 -- the text of a taken file -> list of parsed commands (at most MAX_LINES) and a list of refused lines {line, reason}
 function K.parseAll(text)
 	local cmds, refused, n = {}, {}, 0

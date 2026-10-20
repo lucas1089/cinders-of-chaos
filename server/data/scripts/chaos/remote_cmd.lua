@@ -59,16 +59,31 @@ local function catalogName()
 	return K.bareName(cfg.catalogFile, "remote.catalog")
 end
 
--- the online admin character a panel command runs as; nil and a reason when it cannot
+-- the admin character a panel command runs as: the online player, or (offline) a stand-in from the database row
+-- (K.virtualActor); nil and a reason when it cannot
 local function actorFor(name)
 	local p = Player(name)
-	if not p then
-		return nil, "the admin character " .. name .. " is not online"
+	if p then
+		if not (ChaosAdmin and ChaosAdmin.isAdmin and ChaosAdmin.isAdmin(p)) then
+			return nil, name .. " is not an admin character"
+		end
+		return p
 	end
-	if not (ChaosAdmin and ChaosAdmin.isAdmin and ChaosAdmin.isAdmin(p)) then
+	local res = db.storeQuery("SELECT `id`, `account_id`, `group_id`, `name` FROM `players` WHERE `deletion` = 0 AND `name` = "
+		.. db.escapeString(name))
+	if not res then
+		return nil, "no character named " .. name
+	end
+	local row = {
+		guid = result.getNumber(res, "id"), account = result.getNumber(res, "account_id"),
+		group = result.getNumber(res, "group_id"), name = result.getString(res, "name"),
+	}
+	result.free(res)
+	local v = K.virtualActor(row)
+	if not (ChaosAdmin and ChaosAdmin.isAdmin and ChaosAdmin.isAdmin(v)) then
 		return nil, name .. " is not an admin character"
 	end
-	return p
+	return v
 end
 
 local function writeResult(rid, ok, message, lines)

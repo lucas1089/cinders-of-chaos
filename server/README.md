@@ -14234,7 +14234,10 @@ server folder (the engine's working folder), the same idea as the stop request f
   catalog of the panel for ACTOR's group to `remote.catalog` (JSON, same as the in-game panel gets), and
   `panel RID ACTION|ACTOR|JSON` runs one action (`ChaosAdmin.execute`: group check, parameter validation, audit log) and
   appends `{"rid","ok","message","lines"}` to `remote.result` (restarted above `maxResultBytes`). ACTOR is an admin
-  character that must be online; the action runs as that player with that player's group, so `minGroup` limits hold.
+  character, online or not: online it is the real player; offline it is a stand-in built from its `players` row
+  (`K.virtualActor`: name, group, guid, account, audit log). Either way the action runs with that character's group, so
+  `minGroup` limits hold. A stand-in has no body: actions that use the actor's position, teleport, ghost mode, speed or
+  conditions answer "this action needs NAME in the game".
   `chaos-ctl.sh catalog|panel` queues the line and waits up to 15 s for the answer (the app's Comandos tab).
 - Every command and every refusal is logged as `[ChaosRemoteCmd] ...` in the console log (`chaos-ctl.sh logs`).
 - Safety: the file name is a bare name from the config (same rule as the stop request file). A leftover file at startup is

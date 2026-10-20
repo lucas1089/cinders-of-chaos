@@ -205,21 +205,43 @@ json = {
 	decode = function(text)
 		if text == '{"player":"Bob"}' then return {player = "Bob"} end
 		if text == "{}" then return {} end
+		if text == '{"player":"Pos"}' then return {player = "Pos"} end
 		error("bad json")
 	end
 }
 local executed = {}
 local admins = {Gma = true}
 ChaosAdmin = {
-	isAdmin = function(p) return p.admin end,
+	isAdmin = function(p)
+		if type(p.admin) == "boolean" then return p.admin end
+		return p:getGroup():getId() >= 4
+	end,
 	execute = function(p, id, params)
-		executed[#executed + 1] = {p.name, id, params.player}
+		local nm = type(p.name) == "string" and p.name or p:getName()
+		executed[#executed + 1] = {nm, id, params.player}
+		if params.player == "Pos" then
+			local ok, err = pcall(function() return p:getPosition() end)
+			return {ok = false, message = tostring(err)}
+		end
 		if id == "players.kick" then
 			return {ok = true, message = "Kicked", lines = {"one", "two"}}
 		end
 		return {ok = false, message = "Unknown action."}
 	end,
 	buildCatalog = function(p) return {group = 6, categories = {}} end
+}
+local rows = {Offa = {1001, 77, 6, "Offa"}, Lowly = {1002, 78, 1, "Lowly"}}
+db = {
+	escapeString = function(v) return "'" .. v .. "'" end,
+	storeQuery = function(q)
+		local name = q:match("`name` = '([^']*)'")
+		return name and rows[name] or nil
+	end,
+}
+result = {
+	getNumber = function(r, col) return ({id = r[1], account_id = r[2], group_id = r[3]})[col] end,
+	getString = function(r, col) return r[4] end,
+	free = function() end,
 }
 function Player(name)
 	if name == "Gma" then return {name = "Gma", admin = true} end
@@ -231,8 +253,9 @@ disk = {}
 RC.fs = memFs2(disk)
 disk["remote.cmd"] = 'panel 77 players.kick|Gma|{"player":"Bob"}\npanel 78 nope.nothing|Gma|{}\npanel 79 players.kick|Pleb|{}\n'
     .. 'panel 80 players.kick|Ghost|{}\npanel 81 players.kick|Gma|{}\ncatalog Gma\ncatalog Ghost\n'
-eq(RC.check(), 7, "seven panel and catalog commands ran")
-eq(#executed, 3, "three reached the panel (the two without an admin character did not)")
+    .. 'panel 82 players.kick|Offa|{"player":"Bob"}\npanel 83 players.kick|Lowly|{}\npanel 84 x.y|Offa|{"player":"Pos"}\ncatalog Offa\n'
+eq(RC.check(), 11, "eleven panel and catalog commands ran")
+eq(#executed, 5, "five reached the panel (the ones without an admin character did not)")
 eq(executed[1] and executed[1][1], "Gma", "run as the admin character")
 eq(executed[1] and executed[1][2], "players.kick", "the action")
 eq(executed[1] and executed[1][3], "Bob", "with the decoded parameters")
@@ -241,7 +264,12 @@ check(res:find("rid=77", 1, true) ~= nil and res:find("ok=true", 1, true) ~= nil
 check(res:find("message=Kicked", 1, true) ~= nil, "with the message")
 check(res:find("rid=78", 1, true) ~= nil and res:find("Unknown action", 1, true) ~= nil, "answer for 78: refused by the panel")
 check(res:find("rid=79", 1, true) ~= nil and res:find("is not an admin character", 1, true) ~= nil, "a non-admin character is refused")
-check(res:find("rid=80", 1, true) ~= nil and res:find("is not online", 1, true) ~= nil, "an offline admin character is reported")
+check(res:find("rid=80", 1, true) ~= nil and res:find("no character named", 1, true) ~= nil, "a name with no character is reported")
+check(res:find("no character named Ghost", 1, true) ~= nil, "with the name")
+check(res:find("rid=82", 1, true) ~= nil and res:find("message=Kicked", 1, true) ~= nil, "an offline admin character runs actions")
+eq(executed[4] and executed[4][1], "Offa", "as the stand-in")
+check(res:find("rid=83", 1, true) ~= nil and res:find("Lowly is not an admin character", 1, true) ~= nil, "an offline low group is refused")
+check(res:find("needs Offa in the game", 1, true) ~= nil, "a world action says the character must be in the game")
 check(res:find("rid=81", 1, true) ~= nil and res:find("not a JSON object", 1, true) ~= nil or res:find("rid=81", 1, true) ~= nil,
 	"bad parameters are answered too")
 check(disk["remote.catalog"] ~= nil and disk["remote.catalog"]:find("group=6", 1, true) ~= nil, "the catalog file is written")

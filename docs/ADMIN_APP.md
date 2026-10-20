@@ -19,9 +19,11 @@ Banir, dar itens, premium, spawn, eventos e tudo que o painel de admin do jogo f
 comandos do seu grupo e monta o formulário de cada um (texto, número, caixa, escolha, jogador, posição, IP).
 
 1. Aba **Config**, campo **Personagem admin**: o nome de um personagem seu com grupo de admin. Salvar.
-2. **Esse personagem precisa estar online no jogo.** Os comandos rodam como ele, com o grupo dele: grupo 4 ou mais vê
-   os comandos, ações perigosas pedem grupo 5 ou 6. Os limites do painel continuam valendo.
-3. Aba **Comandos**, **Atualizar lista** (espera até 15 s). Depois **Buscar comando**, preencha e **Executar**.
+2. **O personagem não precisa estar online.** Os comandos rodam como ele, com o grupo dele: grupo 4 ou mais vê
+   os comandos, ações perigosas pedem grupo 5 ou 6. Os limites do painel continuam valendo. Offline, só as ações que
+   dependem do corpo do personagem no mapa (posição, teleporte, modo fantasma, velocidade) respondem "precisa do
+   personagem no jogo"; as outras (banir, itens para outro jogador, premium, eventos, servidor) funcionam normal.
+3. Aba **Comandos**, **Atualizar lista** (até 15 s). Depois **Buscar comando**, preencha e **Executar**.
    Ações marcadas como perigosas pedem confirmação. A resposta do jogo aparece abaixo.
 
 O pedido vai por `chaos-ctl.sh catalog NOME` e `chaos-ctl.sh panel NOME ACAO JSON`: o script grava uma linha em
