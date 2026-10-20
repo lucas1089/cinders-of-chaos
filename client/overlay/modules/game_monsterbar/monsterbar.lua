@@ -159,7 +159,8 @@ local function labelCreature(creature, tier, mods, role)
     for i = 1, #mods, 2 do
       lines[#lines + 1] = mods[i + 1] and (mods[i] .. ' - ' .. mods[i + 1]) or mods[i]
     end
-    creature:setTitle(table.concat(lines, '\n'), 'verdana-11px-antialised', st.world)
+    -- the bordered Chaos font: on grass, blood or spell effects the thin coloured text was hard to read (beta 2026-10-20)
+    creature:setTitle(table.concat(lines, '\n'), 'chaos-outline-11px', st.world)
   end
 end
 
