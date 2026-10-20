@@ -1,0 +1,303 @@
+#!/usr/bin/env bash
+# Cinders of Chaos: publish a signed client update on the website from a client package (docs/LAUNCH.md "Publishing a
+# client update", client/MANIFEST.md "Signed updater", website/README.md "Client updates").
+#
+# usage: publish_client_update.sh [options] TAG|ZIP          (as root: the private key is readable by root only)
+#
+#   TAG   a release of the repository (winpkg-46): downloads its CindersOfChaos-Client-Windows.zip
+#   ZIP   a local client zip instead (not offered by chaos-ctl.sh, which publishes release tags only)
+#
+#   --version N       the manifest version. Default: the number at the end of the tag (winpkg-46 -> 46); for a ZIP,
+#                     the published version + 1. It must be above the published one: clients refuse an older manifest.
+#   --min-package N   clients whose package (Services.update.package = the workflow input client_build) is below N
+#                     must download the new package and cannot log in. Default: this package's own client build
+#                     (BUILD_INFO.txt "client build: N", the same as Services.update.package in its init.lua).
+#                     --min-package 0 blocks nobody.
+#   --check-only      no publish: only the web server check of the published manifest (below)
+#   --no-check        skip the web server check
+#   --keep            keep the work folder (the download and the extracted client) for a look afterwards
+#
+# Steps: download (curl -fL, https only) into a new empty work folder, size check, SHA-256 printed; extract with
+# python3 -I zipfile (absolute paths, "..", links and odd names refused, at most 8 GB unpacked); find the client
+# folder (init.lua, modules/, data/things/1098/); check that the package's public key (init.lua) is the one of the
+# private key; client/tools/make_update_manifest.py build (blobs first, manifest.json last) and verify; then the web
+# server check: GET the manifest URL (the package's Services.update.manifest, or CHAOS_UPDATE_URL) and compare it
+# with the file just written, its Content-Type and Cache-Control, and a Range request on one blob (206 expected).
+#
+# Settings (environment; chaos-ctl.sh passes its /etc/chaos/ctl.conf keys of the same names):
+#   CHAOS_SITE_DIR        /var/www/chaos      the site folder; the update goes to $CHAOS_SITE_DIR/updates/live
+#   CHAOS_UPDATE_KEY      /etc/chaos/update-key.hex   the private key (a path, never the key itself)
+#   CHAOS_UPDATE_PUBLIC   (empty)             the public key, 64 hex digits; else /etc/chaos/update-key.pub when it
+#                                             exists; else derived from the private key. All that are given must agree.
+#   CHAOS_UPDATE_REPO     lucas1089/cinders-of-chaos      the GitHub repository of the releases
+#   CHAOS_UPDATE_ASSET    CindersOfChaos-Client-Windows.zip
+#   CHAOS_UPDATE_URL      (empty)             the public manifest URL for the check (default: the package's own)
+#   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 3x the zip size free)
+#   CHAOS_UPDATE_MIN_MB   50                  a smaller download is refused (an error page, a wrong asset)
+# Exit: 0 published (a failed web server check only warns), 1 refused or failed, nothing published.
+set -euo pipefail
+umask 022
+
+SELF=$(readlink -f "$0")
+REPO_DIR=$(cd "$(dirname "$SELF")/../.." && pwd)
+TOOL="$REPO_DIR/client/tools/make_update_manifest.py"
+
+SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
+KEY=${CHAOS_UPDATE_KEY:-/etc/chaos/update-key.hex}
+PUBLIC=${CHAOS_UPDATE_PUBLIC:-}
+PUBFILE=${CHAOS_UPDATE_PUBLIC_FILE:-/etc/chaos/update-key.pub}
+GHREPO=${CHAOS_UPDATE_REPO:-lucas1089/cinders-of-chaos}
+ASSET=${CHAOS_UPDATE_ASSET:-CindersOfChaos-Client-Windows.zip}
+CHECK_URL=${CHAOS_UPDATE_URL:-}
+WORKBASE=${CHAOS_WORK_DIR:-/var/tmp}
+MIN_MB=${CHAOS_UPDATE_MIN_MB:-50}
+
+say() { printf '%s\n' "$*"; }
+die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
+usage() { sed -n '2,/^set -euo/p' "$SELF" | sed '$d' | sed 's/^# \{0,1\}//'; }
+isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
+
+VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC=""
+while [ $# -gt 0 ]; do
+  case $1 in
+    --version) isnum "${2:-}" || die "--version N"; VERSION=$((10#$2)); shift 2 ;;
+    --min-package) isnum "${2:-}" || die "--min-package N"; MINPKG=$((10#$2)); shift 2 ;;
+    --check-only) PUBLISH=0; shift ;;
+    --no-check) CHECK=0; shift ;;
+    --keep) KEEP=1; shift ;;
+    -h|--help) usage; exit 0 ;;
+    --) shift; { [ $# -eq 1 ] && [ -z "$SRC" ]; } || die "one TAG or ZIP"; SRC=$1; shift ;;
+    -*) die "unknown option $1 (--help)" ;;
+    *) [ -z "$SRC" ] || die "one TAG or ZIP"; SRC=$1; shift ;;
+  esac
+done
+
+LIVE="$SITE/updates/live"
+[[ $SITE == /* ]] || die "CHAOS_SITE_DIR must be an absolute path"
+[ -d "$SITE" ] || die "no site folder $SITE (CHAOS_SITE_DIR)"
+command -v python3 >/dev/null || die "python3 is missing"
+[ -f "$TOOL" ] || die "no $TOOL"
+
+# the web server check: what a client gets from the manifest URL ($1), compared with the local manifest.json
+web_check() {
+  local url=$1 dir hdr code ctype cache blob bcode ok=0
+  if [ -z "$url" ]; then
+    say "check: no manifest URL (the package's init.lua has none; set CHAOS_UPDATE_URL); skipped"
+    return 0
+  fi
+  command -v curl >/dev/null || { say "check: WARN curl is missing"; return 1; }
+  dir=$(mktemp -d)
+  hdr="$dir/h"
+  code=$(curl -sS -o "$dir/body" -D "$hdr" -w '%{http_code}' --max-time 30 "$url?t=$(date +%s)" 2>"$dir/err") \
+    || { say "check: WARN $url: $(head -c 300 "$dir/err")"; rm -rf "$dir"; return 1; }
+  ctype=$(grep -i '^content-type:' "$hdr" | tail -n 1 | tr -d '\r' | cut -d: -f2- | sed 's/^ *//')
+  cache=$(grep -i '^cache-control:' "$hdr" | tail -n 1 | tr -d '\r' | cut -d: -f2- | sed 's/^ *//')
+  say "check: GET $url -> HTTP $code, Content-Type: ${ctype:-none}, Cache-Control: ${cache:-none}"
+  [ "$code" = 200 ] || { say "check: WARN the manifest URL does not answer 200"; ok=1; }
+  if [ "$code" = 200 ] && [ -f "$LIVE/manifest.json" ]; then
+    if cmp -s "$dir/body" "$LIVE/manifest.json"; then
+      say "check: the served manifest is the published one"
+    else
+      say "check: WARN the served manifest differs from $LIVE/manifest.json (another folder, or a cache in front)"
+      ok=1
+    fi
+  fi
+  [[ ${ctype,,} == application/json* ]] || { say "check: WARN Content-Type should be application/json"; ok=1; }
+  [[ ${cache,,} == *no-cache* ]] || { say "check: WARN Cache-Control should be no-cache (website/README.md \"Client updates\")"; ok=1; }
+  blob=$(python3 -I - "$LIVE/manifest.json" <<'PY' 2>/dev/null || true
+import json, sys
+m = json.loads(json.load(open(sys.argv[1]))['payload'])
+big = max(m['files'], key=lambda f: f['size'])
+print(big['sha256'])
+PY
+)
+  if [ -n "$blob" ]; then
+    bcode=$(curl -sS -o /dev/null -D "$hdr" -w '%{http_code}' --max-time 30 -r 0-15 \
+      "${url%manifest.json}files/${blob:0:2}/$blob" 2>/dev/null || echo 000)
+    cache=$(grep -i '^cache-control:' "$hdr" | tail -n 1 | tr -d '\r' | cut -d: -f2- | sed 's/^ *//')
+    say "check: Range GET of the largest blob -> HTTP $bcode, Cache-Control: ${cache:-none}"
+    [ "$bcode" = 206 ] || { say "check: WARN a blob Range request should answer 206 (large files come in parts)"; ok=1; }
+  fi
+  rm -rf "$dir"
+  [ "$ok" = 0 ] && say "check: ok"
+  return "$ok"
+}
+
+if [ "$PUBLISH" = 0 ]; then
+  [ -f "$LIVE/manifest.json" ] || die "nothing published in $LIVE"
+  url=$CHECK_URL
+  [ -n "$url" ] || die "--check-only needs CHAOS_UPDATE_URL (the public manifest URL)"
+  web_check "$url" || exit 1
+  exit 0
+fi
+
+[ -n "$SRC" ] || die "TAG or ZIP (--help)"
+[ -r "$KEY" ] || die "cannot read the private key $KEY (CHAOS_UPDATE_KEY; run as root)"
+
+TAG="" ZIP=""
+if [ -f "$SRC" ]; then
+  ZIP=$(readlink -f "$SRC")
+elif [[ $SRC =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] && [[ $SRC != *..* ]]; then
+  TAG=$SRC
+else
+  die "$SRC: not a local file and not a release tag"
+fi
+if [ -z "$VERSION" ] && [[ $TAG =~ -([0-9]{1,9})$ ]]; then VERSION=$((10#${BASH_REMATCH[1]})); fi
+
+# one publish at a time
+mkdir -p "$SITE/updates"
+if command -v flock >/dev/null; then
+  exec 9> "$SITE/updates/.publish.lock"
+  flock -n 9 || die "another publish is running"
+fi
+
+WORK=$(mktemp -d "$WORKBASE/chaos-publish.XXXXXX")
+if [ "$KEEP" = 1 ]; then trap 'say "work folder kept: $WORK"' EXIT; else trap 'rm -rf "$WORK"' EXIT; fi
+mkdir "$WORK/dl" "$WORK/x"
+
+if [ -n "$TAG" ]; then
+  command -v curl >/dev/null || die "curl is missing"
+  url="https://github.com/$GHREPO/releases/download/$TAG/$ASSET"
+  say "download: $url"
+  curl -fL --proto '=https' --proto-redir '=https' --retry 3 --retry-delay 5 --max-filesize 8589934592 \
+    -sS -o "$WORK/dl/client.zip" "$url" || die "download failed ($url)"
+  ZIP="$WORK/dl/client.zip"
+fi
+size=$(stat -c %s "$ZIP")
+[ "$size" -ge $((MIN_MB * 1024 * 1024)) ] || die "$ZIP: $size bytes, below $MIN_MB MB (an error page or a wrong asset?)"
+say "zip: $size bytes, sha256 $(sha256sum "$ZIP" | cut -d' ' -f1)"
+
+# safe extract: every entry must stay inside the empty folder; links, devices and odd names are refused
+python3 -I - "$ZIP" "$WORK/x" <<'PY' || die "the zip was refused"
+import os, re, stat, sys, zipfile
+src, dest = sys.argv[1], os.path.realpath(sys.argv[2])
+LIMIT, MAXN = 8 * 1024 ** 3, 200000
+with zipfile.ZipFile(src) as z:
+    infos = z.infolist()
+    if len(infos) > MAXN:
+        sys.exit(f'{len(infos)} entries (at most {MAXN})')
+    total = 0
+    for i in infos:
+        n = i.filename
+        mode = i.external_attr >> 16
+        if (n.startswith(('/', '\\')) or '\\' in n or ':' in n or '\0' in n
+                or any(p in ('..', '.') for p in n.rstrip('/').split('/'))):
+            sys.exit(f'refused entry {n!r}: unsafe path')
+        if stat.S_IFMT(mode) not in (0, stat.S_IFREG, stat.S_IFDIR):
+            sys.exit(f'refused entry {n!r}: a link or special file')
+        target = os.path.realpath(os.path.join(dest, n))
+        if target != dest and not target.startswith(dest + os.sep):
+            sys.exit(f'refused entry {n!r}: outside the folder')
+        total += i.file_size
+        if total > LIMIT:
+            sys.exit('more than 8 GB unpacked')
+    for i in infos:
+        target = os.path.join(dest, i.filename)
+        if i.is_dir():
+            os.makedirs(target, exist_ok=True)
+            continue
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with z.open(i) as f, open(target, 'xb') as out:
+            while True:
+                block = f.read(1 << 20)
+                if not block:
+                    break
+                out.write(block)
+print(f'extracted {len(infos)} entries, {total} bytes')
+PY
+
+# the client folder: init.lua, modules/ and data/things/1098/ (the package's CindersOfChaos-Client/)
+mapfile -t found < <(find "$WORK/x" -maxdepth 3 -type f -name init.lua -printf '%h\n' | while read -r d; do
+  [ -d "$d/modules" ] && [ -d "$d/data/things/1098" ] && printf '%s\n' "$d"; done)
+[ "${#found[@]}" -eq 1 ] || die "expected one client folder (init.lua, modules/, data/things/1098/), found ${#found[@]}"
+CLIENT=${found[0]}
+say "client: ${CLIENT#"$WORK/x/"}"
+[ -d "$CLIENT/mods" ] || say "note: the client has no mods/ folder"
+
+# the package's own settings: Services.update in init.lua, the build in BUILD_INFO.txt
+info=$(python3 -I - "$CLIENT" <<'PY'
+import os, re, sys
+d = sys.argv[1]
+text = open(os.path.join(d, 'init.lua'), encoding='utf-8', errors='replace').read()
+block = re.search(r'\n  update = \{\n(.*?)\n  \}', text, re.S)
+def field(name):
+    if not block:
+        return ''
+    m = re.search(r'\n?\s*%s = ("([^"\n]*)"|(\d+))' % name, block.group(1))
+    return (m.group(2) if m and m.group(2) is not None else (m.group(3) if m else '')) or ''
+build = ''
+try:
+    m = re.search(r'^client build: *(\d+)', open(os.path.join(d, 'BUILD_INFO.txt'), encoding='utf-8',
+                                                   errors='replace').read(), re.M)
+    build = m.group(1) if m else ''
+except OSError:
+    pass
+for k, v in (('block', 'yes' if block else ''), ('manifest', field('manifest')), ('key', field('publicKey')),
+             ('package', field('package')), ('build', build)):
+    if not re.fullmatch(r'[A-Za-z0-9:/._~-]*', v):
+        v = '?'
+    print(f'{k}={v}')
+PY
+) || die "cannot read the client's init.lua"
+get() { printf '%s\n' "$info" | sed -n "s/^$1=//p"; }
+PKG_URL=$(get manifest) PKG_KEY=$(get key) PKG_PACKAGE=$(get package) PKG_BUILD=$(get build)
+[ -n "$(get block)" ] || say "WARN: init.lua has no Services.update block: this exe has no updater (base patch 0031)"
+say "package: client build ${PKG_BUILD:-unknown}, Services.update.package ${PKG_PACKAGE:-unset}, manifest ${PKG_URL:-none}"
+
+# the keys: the derived one, the configured one, the package's own must all be the same
+DERIVED=$(python3 -I "$TOOL" pubkey --private "$KEY") || die "cannot read the private key $KEY"
+if [ -z "$PUBLIC" ] && [ -f "$PUBFILE" ]; then PUBLIC=$(tr -d ' \r\n' < "$PUBFILE"); fi
+if [ -n "$PUBLIC" ]; then
+  [[ $PUBLIC =~ ^[0-9a-f]{64}$ ]] || die "the public key (CHAOS_UPDATE_PUBLIC or $PUBFILE) is not 64 lowercase hex digits"
+  [ "$PUBLIC" = "$DERIVED" ] || die "the public key $PUBLIC is not the one of $KEY ($DERIVED)"
+fi
+PUBLIC=$DERIVED
+if [ -z "$PKG_KEY" ]; then
+  say "WARN: this package's updater is off (no Services.update.publicKey): its players never fetch this update"
+elif [ "$PKG_KEY" != "$PUBLIC" ]; then
+  die "the package's public key $PKG_KEY is not the one of $KEY ($PUBLIC): its clients would refuse the update"
+fi
+
+# min_package: the package's own build unless given
+if [ -z "$MINPKG" ]; then
+  if [ -n "$PKG_BUILD" ] && [ -n "$PKG_PACKAGE" ] && [ "$PKG_BUILD" != "$PKG_PACKAGE" ]; then
+    die "BUILD_INFO.txt says client build $PKG_BUILD but init.lua package $PKG_PACKAGE; give --min-package"
+  fi
+  MINPKG=${PKG_PACKAGE:-${PKG_BUILD:-0}}
+  MINPKG=$((10#$MINPKG))
+fi
+if [ -n "$PKG_PACKAGE" ] && [ "$MINPKG" -gt "$((10#$PKG_PACKAGE))" ]; then
+  die "--min-package $MINPKG is above this package's own $PKG_PACKAGE: its own players would be told to download it again"
+fi
+
+PREV=$(python3 -I - "$LIVE/manifest.json" <<'PY'
+import json, sys
+try:
+    print(json.loads(json.load(open(sys.argv[1]))['payload'])['version'])
+except Exception:
+    print(0)
+PY
+)
+if [ -n "$VERSION" ] && [ "$VERSION" -le "$PREV" ]; then
+  die "version $VERSION is not above the published $PREV (clients refuse an older manifest); give --version $((PREV + 1)) or more"
+fi
+
+args=(build "$CLIENT" --out "$LIVE" --key "$KEY" --min-package "$MINPKG")
+[ -n "$VERSION" ] && args+=(--version "$VERSION")
+say "build: version ${VERSION:-$((PREV + 1))}, min_package $MINPKG -> $LIVE"
+python3 -I "$TOOL" "${args[@]}" || die "make_update_manifest.py build failed; nothing new was published"
+python3 -I "$TOOL" verify "$LIVE" --public "$PUBLIC" || die "verify failed: check $LIVE/manifest.json before players fetch it"
+NEWV=$(python3 -I -c 'import json,sys; print(json.loads(json.load(open(sys.argv[1]))["payload"])["version"])' "$LIVE/manifest.json")
+
+chk="skipped"
+if [ "$CHECK" = 1 ]; then
+  if web_check "${CHECK_URL:-$PKG_URL}"; then chk=ok; else chk="WARN (see above)"; fi
+fi
+
+say ""
+say "published: version $NEWV (was $PREV), min_package $MINPKG, from ${TAG:-$SRC}"
+say "  folder: $LIVE"
+say "  public key: $PUBLIC"
+say "  clients of package $MINPKG or newer with this key apply it at their next start; older packages with the"
+say "  updater are told to download the new client (the game server refuses them when clientGuardManifest names it)"
+say "  web server check: $chk"

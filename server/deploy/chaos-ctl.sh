@@ -24,6 +24,11 @@
 #   update TAG now|at-save      chaos_update.sh --ref TAG (--now | --at-save) --yes, in the background (update-log)
 #   rollback now|at-save        chaos_update.sh --rollback, in the background
 #   update-log [N]              the last N lines of the update log
+#   publish-update TAG [--version N] [--min-package N]
+#                               publish_client_update.sh TAG in the background (publish-log): the release's client zip
+#                               becomes the signed client update on the site (docs/LAUNCH.md "Publishing a client
+#                               update"). Release tags only, never a local file.
+#   publish-log [N]             the last N lines of the publish log
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
@@ -33,7 +38,9 @@
 # CHAOS_LOG /var/log/chaos/server.log, CHAOS_UPDATE_LOG /var/log/chaos/update.log, CHAOS_ADMIN_USER chaosadmin,
 # CHAOS_PID_FILE $CHAOS_ROOT/run/server.pid (the engine's pid, written by the Linux kit's start-server.sh),
 # CHAOS_DB_SOCKET (empty: TCP host/port of the env file), CHAOS_MYSQL (the client: mysql, mariadb or the kit's own),
-# CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos).
+# CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos). For publish-update: CHAOS_PUBLISH_LOG
+# /var/log/chaos/publish-update.log and, passed on to publish_client_update.sh (its defaults when unset), CHAOS_SITE_DIR,
+# CHAOS_UPDATE_KEY, CHAOS_UPDATE_PUBLIC, CHAOS_UPDATE_REPO, CHAOS_UPDATE_URL, CHAOS_WORK_DIR.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -53,7 +60,8 @@ fi
 CONF=/etc/chaos/ctl.conf
 [ -z "${SUDO_USER:-}" ] && [ -n "${CHAOS_CTL_CONF:-}" ] && CONF=$CHAOS_CTL_CONF
 CONF_KEYS=" CHAOS_UNIT CHAOS_ROOT CHAOS_SERVER_DIR CHAOS_REPO CHAOS_ENV CHAOS_LOG CHAOS_UPDATE_LOG CHAOS_ADMIN_USER \
-CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR "
+CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CHAOS_SITE_DIR CHAOS_UPDATE_KEY \
+CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -101,6 +109,7 @@ PIDFILE=$(setting CHAOS_PID_FILE "$ROOT/run/server.pid")
 DBSOCK=$(setting CHAOS_DB_SOCKET "")
 MYSQL=$(setting CHAOS_MYSQL "")
 BACKUPDIR=$(setting CHAOS_BACKUP_DIR "")
+PLOG=$(setting CHAOS_PUBLISH_LOG /var/log/chaos/publish-update.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -375,6 +384,34 @@ case $cmd in
     ;;
   update-log)
     tail -n "$(lines_arg "${1:-60}")" "$ULOG" 2>&1
+    ;;
+  publish-update)
+    tag=${1:-}
+    if ! [[ $tag =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ ]] || [[ $tag == *..* ]]; then
+      die "publish-update TAG [--version N] [--min-package N] (TAG: a release tag like winpkg-46)"
+    fi
+    shift
+    args=()
+    while [ $# -gt 0 ]; do
+      case $1 in
+        --version|--min-package) { num "${2:-}" && [ "${#2}" -le 9 ]; } || die "$1 N"; args+=("$1" "$2"); shift 2 ;;
+        *) die "publish-update TAG [--version N] [--min-package N]" ;;
+      esac
+    done
+    pub="$REPO/server/deploy/publish_client_update.sh"
+    [ -x "$pub" ] || die "no $pub"
+    penv=()
+    for k in CHAOS_SITE_DIR CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR; do
+      v=$(setting "$k" "")
+      [ -z "$v" ] || penv+=("$k=$v")
+    done
+    mkdir -p "$(dirname "$PLOG")"
+    : > "$PLOG"
+    setsid env "${penv[@]}" "$pub" "${args[@]}" -- "$tag" >> "$PLOG" 2>&1 < /dev/null &
+    echo "started (publish-update $tag ${args[*]}); follow it with: chaos-ctl.sh publish-log"
+    ;;
+  publish-log)
+    tail -n "$(lines_arg "${1:-60}")" "$PLOG" 2>&1
     ;;
   install-admin)
     full=0

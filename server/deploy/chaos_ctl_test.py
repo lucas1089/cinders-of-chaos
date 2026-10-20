@@ -21,6 +21,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, 'chaos-ctl.sh')
@@ -165,9 +166,32 @@ def main():
         check(run('bogus').returncode != 0, 'unknown command')
         check('usage: chaos-ctl.sh' in run('help').stdout, 'help prints the usage')
 
+        # publish-update: release tags only, settings of ctl.conf passed on, runs in the background into publish-log
+        plog = os.path.join(tmp, 'publish.log')
+        pdir = os.path.join(tmp, 'repo', 'server', 'deploy')
+        os.makedirs(pdir, exist_ok=True)
+        pub = os.path.join(pdir, 'publish_client_update.sh')
+        with open(pub, 'w') as f:
+            f.write('#!/usr/bin/env bash\necho "args $*"\necho "site=${CHAOS_SITE_DIR:-} key=${CHAOS_UPDATE_KEY:-}"\n')
+        os.chmod(pub, 0o755)
+        pe = {'CHAOS_PUBLISH_LOG': plog, 'CHAOS_SITE_DIR': '/srv/site'}
+        for bad in (('publish-update',), ('publish-update', '/tmp/x.zip'), ('publish-update', 'a;b'),
+                    ('publish-update', 'v1..2'), ('publish-update', 'winpkg-46', '--version', 'x'),
+                    ('publish-update', 'winpkg-46', '--key', '/tmp/k')):
+            check(run(*bad, extra=pe).returncode != 0, 'publish-update refuses %r' % (bad,))
+        r = run('publish-update', 'winpkg-46', '--min-package', '11', extra=pe)
+        check(r.returncode == 0 and 'publish-log' in r.stdout, 'publish-update starts: ' + r.stdout + r.stderr)
+        for _ in range(50):
+            if os.path.exists(plog) and 'site=' in open(plog).read():
+                break
+            time.sleep(0.1)
+        out = run('publish-log', extra=pe).stdout
+        check('args --min-package 11 -- winpkg-46' in out and 'site=/srv/site key=' in out,
+              'publish-update passes the tag, the options and the settings: ' + out)
+
 
         # catalog and panel: a thread plays the engine and answers what the script queued
-        import threading, time
+        import threading
 
         def engine(kind):
             def go():

@@ -14886,7 +14886,7 @@ unit, and `systemctl` exits 5 for a unit that does not exist. Setting `CHAOS_UNI
 script re-runs itself with `sudo -n`, which drops the environment.
 - The script now reads `/etc/chaos/ctl.conf` first. Keys: `CHAOS_UNIT`, `CHAOS_ROOT`, `CHAOS_SERVER_DIR`, `CHAOS_REPO`,
   `CHAOS_ENV`, `CHAOS_LOG`, `CHAOS_UPDATE_LOG`, `CHAOS_ADMIN_USER`, `CHAOS_PID_FILE`, `CHAOS_DB_SOCKET`, `CHAOS_MYSQL`,
-  `CHAOS_BACKUP_DIR`. Order: the environment, then the file, then the default.
+  `CHAOS_BACKUP_DIR` (and the publish-update keys below). Order: the environment, then the file, then the default.
 - Safety: the file is parsed, never sourced. Plain `KEY=VALUE` lines, optional quotes, `#` comments. A value may only
   hold `A-Z a-z 0-9 . _ / @ : + -`. Other keys and values are skipped with a warning. The whole file is ignored unless
   it is a plain file owned by root (or by the user running the script) and not writable by group or others.
@@ -14904,6 +14904,16 @@ script re-runs itself with `sudo -n`, which drops the environment.
   current. Identical entries are counted once (`56x ...`, a leading time stamp kept apart as `[stamp]`), a Lua error
   joins its next two lines. Output: `@run DATE [current]`, the entries, `@older K` (earlier starts with errors).
   `status errors=` counts the error lines of the current start. Tested with mawk and gawk.
+- `publish-update TAG [--version N] [--min-package N]` and `publish-log [N]` (2026-10-20): runs
+  `server/deploy/publish_client_update.sh TAG` in the background (log `CHAOS_PUBLISH_LOG`,
+  `/var/log/chaos/publish-update.log`). It publishes the release's `CindersOfChaos-Client-Windows.zip` as the signed
+  client update in `CHAOS_SITE_DIR/updates/live` with the key `CHAOS_UPDATE_KEY` (docs/LAUNCH.md "Publishing a client
+  update": the owner's commands, the version and min_package rules). More ctl.conf keys, passed on to that script:
+  `CHAOS_SITE_DIR`, `CHAOS_UPDATE_KEY`, `CHAOS_UPDATE_PUBLIC`, `CHAOS_UPDATE_REPO`, `CHAOS_UPDATE_URL`,
+  `CHAOS_WORK_DIR`, plus `CHAOS_PUBLISH_LOG`. Release tags only: the admin user cannot hand the script a file of its
+  own to sign. Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and
+  `publish_client_update_test.py` (the real script on a synthetic package with a throwaway key: the manifest verifies,
+  version and min_package, unsafe zips and key mismatches refused, the web server check against a local HTTP server).
 - `players` prints the class name (`VOCATIONS` in the script: every id of `docs/CLASSES.md`, 0 None; the retired 2, 6 and
   9 print `vocation N`); `vocations` lists the map. The test checks it against `docs/CLASSES.md` and
   `server/data/XML/chaos_vocations*.xml`.

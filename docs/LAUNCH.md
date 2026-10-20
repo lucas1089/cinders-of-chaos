@@ -924,7 +924,10 @@ The client checks the website for a signed manifest before login and downloads c
 the dat/spr pair (client/MANIFEST.md "Signed updater"; files on the site: website/README.md "Client updates").
 The exe and its DLLs are never updated this way: a new exe is a new Windows package (below).
 
-**Keys (once).** On the operator's own machine, never on the game or web server and never in the repository:
+**Keys (once).** Never in the repository. Two places, the owner picks one (owner, 2026-10-20: the VPS, below
+"Publishing a client update"): the operator's own machine (offline, the safest), or the web server as root
+(`/etc/chaos/update-key.hex`, so `chaos-ctl.sh publish-update` can sign there). On the server, anyone who becomes root
+there can sign an update for every player: keep root logins to ssh keys and back the key up offline. On your own machine:
 
 ```
 python3 -I client/tools/make_update_manifest.py keygen --private ~/chaos-keys/update.key --public ~/chaos-keys/update.pub
@@ -981,6 +984,74 @@ re-sends the index, the dat and the last shard or two, not 600 MB. Rules the bui
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.
 
+### Publishing a client update
+
+`server/deploy/publish_client_update.sh` publishes one Windows client package of a release (`winpkg-N`) as the
+signed update, on the VPS that holds the site (`/var/www/chaos`, `install_site.sh`). `chaos-ctl.sh publish-update` runs
+it in the background (so the admin app can start it too) and `chaos-ctl.sh publish-log` shows its log.
+
+**Once, as root on the VPS** (owner, 2026-10-20: done; the public key is
+`7f4ae1b812e3ca86ac4551683b987b8bf68d2256b36b1785c07cb4f3ffb72224`):
+
+```
+sudo python3 -I /opt/chaos/repo/client/tools/make_update_manifest.py keygen \
+    --private /etc/chaos/update-key.hex --public /etc/chaos/update-key.pub
+sudo chmod 600 /etc/chaos/update-key.hex          # keygen writes it 600 already; root only
+sudo python3 -I /opt/chaos/repo/client/tools/make_update_manifest.py pubkey --private /etc/chaos/update-key.hex
+```
+
+The last line prints the public key of an existing key file (when no `.pub` was written; writing it is optional:
+`... pubkey --private /etc/chaos/update-key.hex | sudo tee /etc/chaos/update-key.pub`). Copy the key file to an
+offline place. Then build the package with the updater on: Actions -> Windows package with `update_manifest`
+`https://www.cindersofchaos.com/updates/live/manifest.json`, `update_public_key` (that key) and `client_build` (11 for
+the first updater build). Only a package built with both inputs ever checks for updates.
+
+**Every update** (as root, or as `chaosadmin` through `chaos-ctl.sh`):
+
+```
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh publish-update winpkg-46     # background; then:
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh publish-log
+# or in the foreground, with its output on the terminal:
+sudo /opt/chaos/repo/server/deploy/publish_client_update.sh winpkg-46
+```
+
+What it does: downloads `CindersOfChaos-Client-Windows.zip` of the release (`curl -fL`, https only) into a new folder
+under `/var/tmp`, refuses a download under 50 MB, prints its size and SHA-256; extracts it with `python3 -I zipfile`,
+refusing absolute paths, `..`, links and more than 8 GB; finds the client folder (`init.lua`, `modules/`,
+`data/things/1098/`); checks that the public key in the package's `init.lua` is the one of `/etc/chaos/update-key.hex`
+(and of `CHAOS_UPDATE_PUBLIC` or `/etc/chaos/update-key.pub` when set); runs `make_update_manifest.py build` into
+`/var/www/chaos/updates/live` (blobs first, `manifest.json` last) and `verify`; then checks the web server: a GET of the
+package's manifest URL must give HTTP 200, the same bytes as the file just written, `application/json` and
+`no-cache`, and a `Range` request on the largest blob must give 206. A failed web check only warns (the update is
+published); `publish_client_update.sh --check-only` with `CHAOS_UPDATE_URL` repeats it. The work folder is removed.
+
+Numbers, and why a client of build N accepts the update:
+- **version** = the tag's number (`winpkg-46` -> 46), `--version N` to choose. The client compares it only with the
+  update it applied last (none at first) and refuses a lower one; it has nothing to do with the build number. Each
+  publish must be above the last one (the script stops before signing otherwise). A second publish of the same tag
+  needs `--version` above it; a later tag then needs a higher number too.
+- **min_package** = the package's own client build (`BUILD_INFO.txt` "client build: N", the same as
+  `Services.update.package` in its `init.lua`; the script refuses when they differ), `--min-package N` to choose,
+  `--min-package 0` for none. A client accepts the update when its package (build) is at least min_package; an older
+  updater client is told "A new client download is required" and cannot log in, and the game server refuses its exe
+  too when `clientGuardManifest` names this manifest (server/README.md "Client guard"). Publishing the files of a
+  newer package to an older exe is what min_package prevents: the modules may need the newer exe.
+- **Sprites:** the package keeps the single `Tibia.spr`, so no shard rule applies. A package with a shard set needs
+  min_package at least the first build with base patch 0048 (the build step refuses a shard set with min_package 0).
+- **A client without the updater** (built without `update_manifest` / `update_public_key`, or an exe without base
+  patch 0031) never asks for the manifest: it keeps its files, is never blocked by the updater, and gets the update
+  only by downloading a new package. Only the game server's client guard can turn it away (`clientGuardBuilds`, or
+  `clientGuardManifest` with a min_package above its build).
+
+Settings: `/etc/chaos/ctl.conf` keys `CHAOS_SITE_DIR` (`/var/www/chaos`), `CHAOS_UPDATE_KEY`
+(`/etc/chaos/update-key.hex`), `CHAOS_UPDATE_PUBLIC` (empty: derived from the key), `CHAOS_UPDATE_REPO`
+(`lucas1089/cinders-of-chaos`), `CHAOS_UPDATE_URL` (the manifest URL for the check; empty: the package's own),
+`CHAOS_WORK_DIR` (`/var/tmp`, needs about three times the zip size free), `CHAOS_PUBLISH_LOG`
+(`/var/log/chaos/publish-update.log`). A local zip (`publish_client_update.sh /path/client.zip`) works from the shell as
+root only: `chaos-ctl.sh` takes release tags only, so the admin user can never sign a file of its own.
+The web server: Apache reads `updates/.htaccess` (`install_site.sh` copies it); nginx needs the `location` block of
+website/README.md "Client updates". The site's `dl` folder is not involved.
+
 
 ## Updating the live server
 
@@ -995,7 +1066,7 @@ Its test drives stubs, not a real systemd (`server/deploy/chaos_update_test.py`)
 | Read only at start | `config.lua` values, `items.otb`, the map, its spawn and house files, vocations | `install_all.py` writes them; the engine reads them at the next start. |
 | Engine | `server/src-patches/` | A rebuild of the engine from the release (section 1), into a new file such as `/opt/chaos/build/tfs`, never over the running `/opt/chaos/server/tfs`. The script takes it with `--engine` and swaps it in while the server is down. |
 | Database | `server/sql/` | The `sql` step applies it: `CREATE TABLE IF NOT EXISTS` and plain updates, safe to repeat. A rollback does not undo it. |
-| Client files | `client/overlay/` | A signed client update, published from the owner's machine ("Client updates (signed updater)"). |
+| Client files | `client/overlay/` | A signed client update: a Windows package, then `chaos-ctl.sh publish-update winpkg-N` ("Publishing a client update"). |
 | Client exe | `client/base-patches/` | A new package from `windows-package.yml` with a higher `Services.update.package`, then a signed update with `--min-package` set to it. List the new `client_build` in `clientGuardBuilds` first. |
 | systemd units, logrotate | `server/deploy/*.service`, `*.timer`, `chaos.logrotate` | Copy them again and `systemctl daemon-reload` (section 5). |
 | Website | `website/` | Its own install ("Website"). |
@@ -1069,8 +1140,9 @@ and `history.log`. A second run for the same tag does nothing.
 After it:
 - Log in with a staff character and try what the update changed. Watch the health alerts for the next hour: a burst of
   error lines right after an update is a bug in that update (section 9).
-- **Client files changed:** publish the signed update from the owner's machine with the offline key ("Client updates
-  (signed updater)": assemble from the same tag, dry run, publish, verify). Never on the game or web server.
+- **Client files changed:** build a Windows package from the same commit, then publish it as the signed update:
+  `chaos-ctl.sh publish-update winpkg-N` ("Publishing a client update"), or from the owner's machine with an offline key
+  ("Client updates (signed updater)": assemble, dry run, publish, verify).
 - **A new exe:** the package first, then the update with `--min-package`.
 - Delete old engines from `/var/lib/chaos/deploy/` now and then; keep the newest.
 

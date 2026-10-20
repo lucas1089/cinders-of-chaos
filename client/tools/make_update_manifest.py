@@ -5,6 +5,8 @@
   keygen  --private PATH [--public PATH]
           New Ed25519 key pair. The private key (32-byte seed, hex) is written with mode 600 and must stay OUTSIDE
           the repository (refused inside a git work tree). Prints the public key for init.lua (Services.update).
+  pubkey  --private PATH
+          Prints only the public key (64 hex digits) of a private key file (server/deploy/publish_client_update.sh).
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
           [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--hardlink]
           [--with-single-spr]
@@ -435,12 +437,19 @@ def keygen(args):
     return 0
 
 
+def pubkey(args):
+    print(public_from_seed(read_seed(args.private)).hex())
+    return 0
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split('\n')[0])
     sub = ap.add_subparsers(dest='cmd', required=True)
     k = sub.add_parser('keygen')
     k.add_argument('--private', required=True)
     k.add_argument('--public')
+    pk = sub.add_parser('pubkey')
+    pk.add_argument('--private', required=True)
     b = sub.add_parser('build')
     b.add_argument('client_dir')
     b.add_argument('--out')
@@ -464,7 +473,7 @@ def main(argv=None):
         ap.error('build needs --out (or --dry-run)')
     if args.cmd == 'build' and not re.fullmatch(r'[a-z0-9-]{1,32}', args.channel):
         ap.error('--channel: lowercase letters, digits and dashes')
-    return {'keygen': keygen, 'build': build, 'verify': verify}[args.cmd](args)
+    return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify}[args.cmd](args)
 
 
 if __name__ == '__main__':

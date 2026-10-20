@@ -1048,6 +1048,9 @@ location ^~ /updates/ {
 ```
 
 `install_site.sh` copies `overlay/updates/.htaccess` and never touches `updates/live/`.
+On the VPS, `server/deploy/publish_client_update.sh` (or `chaos-ctl.sh publish-update winpkg-N`) fills `updates/live/`
+from a release's client zip and checks these headers and a Range request afterwards (docs/LAUNCH.md "Publishing a
+client update").
 
 ## Client API
 

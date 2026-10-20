@@ -2489,10 +2489,12 @@ download is required" (with `Services.update.download`) and cannot log in.
 repeated concatenation and took minutes and gigabytes on the 0.8 MB manifest), paths, envelope, manifest, diff,
 pool, apply; `updater_core_test.lua`, 192 checks, LuaJIT and Lua 5.3, fake HTTP server and disk), `bootstrap.lua`, `updater.lua` + `updater.otui` (panel),
 `signature_vectors.lua` (`ChaosUpdater.selfTest()` runs them through `g_crypt` in the client).
-Tools: `tools/make_update_manifest.py` (keygen / build / verify; `cryptography` when installed, else
+Tools: `tools/make_update_manifest.py` (keygen / pubkey / build / verify; `cryptography` when installed, else
 `tools/ed25519_ref.py`, the RFC 8032 reference code), `tools/make_update_manifest_test.py`, `tools/chaosupdate_test.cpp`
 (native vectors), `tools/set_update_config.py` (writes `Services.update` into an assembled `init.lua`),
 `tools/serve_updates.py` (local test server: ranges, per-connection rate, latency, dropped connections; tests only).
+On the VPS: `server/deploy/publish_client_update.sh` / `chaos-ctl.sh publish-update winpkg-N` publishes a release's
+client zip (docs/LAUNCH.md "Publishing a client update").
 CI (`ci.yml`): the Python tests, an unsigned dry run over the overlay, the C++ vectors, the Lua tests;
 `windows-package.yml` dry-runs the real package folder (dat/spr included).
 

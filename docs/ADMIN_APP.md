@@ -75,7 +75,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Comandos do servidor (`chaos-ctl.sh`)
 
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `logs [n]`, `errors [n]`, `players`,
-`broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`, `panel NOME ACAO JSON`, `update TAG now|at-save`, `rollback now|at-save`, `update-log`,
+`broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`, `panel NOME ACAO JSON`, `update TAG now|at-save`, `rollback now|at-save`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client update"), `publish-log`,
 `install-admin`. Rode `chaos-ctl.sh help`. Aviso, expulsar, abrir, fechar e salvar passam pelo arquivo `remote.cmd`
 (`server/README.md`, "Remote admin commands"): o servidor do jogo precisa estar com os scripts novos.
 

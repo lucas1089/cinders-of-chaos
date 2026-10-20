@@ -118,6 +118,12 @@ class Build(unittest.TestCase):
         self.assertEqual(oct(os.stat(self.key).st_mode & 0o777), '0o600')
         return open(self.key + '.pub').read().strip()
 
+    def test_pubkey(self):
+        pub = self.keygen()
+        code, out, err = run(['pubkey', '--private', self.key])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(out.strip(), pub)
+
     def test_dry_run_needs_no_key(self):
         code, out, err = run(['build', self.client, '--dry-run'])
         self.assertEqual(code, 0, err)
