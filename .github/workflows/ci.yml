@@ -449,6 +449,8 @@ jobs:
           python3 -m venv /tmp/fxenv
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
+          # level-up wings frames (game_levelwings: front, east and west sets) match the generator (same pins)
+          /tmp/fxenv/bin/python -I client/tools/gen_levelwings_art.py --check
           # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
           python3 -I server/tools/install_theme_items.py --lua --check

@@ -7,8 +7,11 @@
 -- a 32 px sprite's middle (the tile centre moved by the look's displacement), so the image is moved onto the body's
 -- shoulders by LevelWingsMath.offsetFor; bottom widgets before its outfit (behind), top widgets after it (in front), on the map and in its
 -- walk, so the wings follow the character and nothing in the .dat / .spr pair changes. The frames are
--- images/wings_01..12.png (client/tools/gen_levelwings_art.py); the timing is in levelwingsmath.lua.
--- The wings sit behind the character, or in front while it faces north (its back to the viewer).
+-- images/wings_01..12.png, the front pair, and wings_east_ / wings_west_01..12.png, the side pair
+-- (client/tools/gen_levelwings_art.py); the timing is in levelwingsmath.lua.
+-- The wings follow the character's facing (LevelWingsMath.viewFor, read every tick, so a turn mid-animation switches
+-- the set without a restart): the front pair facing south or north, the side pair facing east or west, placed on the
+-- back. They sit behind the character, or in front while it faces north (its back to the viewer).
 --
 -- Settings (Options > Effects, client base patch 0036): "Level-up wings on my character" (levelWingsOwn) and
 -- "Level-up wings on other characters" (levelWingsOthers), both on by default. Without them (an older settings
@@ -58,7 +61,7 @@ local function anchorsTable()
   return CharSelectAnchors
 end
 
-local function lookOffset(c, k)
+local function lookOffset(c, k, view)
   local ok, outfit = pcall(c.getOutfit, c)
   local look = ok and type(outfit) == 'table' and outfit.type or nil
   local anchors = anchorsTable()
@@ -70,7 +73,7 @@ local function lookOffset(c, k)
       dx, dy = tt:getDisplacementX() or 0, tt:getDisplacementY() or 0
     end
   end
-  return LevelWingsMath.offsetFor(anchor, dx, dy, k)
+  return LevelWingsMath.offsetFor(anchor, dx, dy, k, view)
 end
 
 local function newWidget()
@@ -125,8 +128,12 @@ local function draw(entry, now)
   if done then return false end
   local scale = c.getDrawScale and c:getDrawScale() or 1
   local w, h = LevelWingsMath.sizeFor(g_sprites.spriteSize(), scale)
-  local ox, oy = lookOffset(c, (g_sprites.spriteSize() / 32) * (tonumber(scale) or 1))
-  local layer = LevelWingsMath.layerFor(c:getDirection())
+  -- the direction is read every tick: a turn mid-animation switches the frame set (and the place and layer), the
+  -- timing goes on
+  local direction = c:getDirection()
+  local view = LevelWingsMath.viewFor(direction)
+  local ox, oy = lookOffset(c, (g_sprites.spriteSize() / 32) * (tonumber(scale) or 1), view)
+  local layer = LevelWingsMath.layerFor(direction)
   local show, blank = entry.bottom, entry.top
   if layer == 'top' then
     if not entry.top then
@@ -142,7 +149,7 @@ local function draw(entry, now)
   show:setSize({ width = w, height = h })
   -- the engine centres the widget on a 32 px sprite's middle; the image moves to the body's shoulders
   show:setImageRect({ x = ox, y = oy, width = w, height = h })
-  show:setImageSource(LevelWingsMath.framePath(frame))
+  show:setImageSource(LevelWingsMath.framePath(frame, view))
   show:setOpacity(opacity)
   return true
 end

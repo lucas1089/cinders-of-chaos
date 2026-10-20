@@ -15152,7 +15152,8 @@ meantime). The server is the authority: the client draws what it is told and cou
 
 ## Level-up wings (`levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua`, client `game_levelwings`)
 
-When a character gains a level, a pair of golden wings opens behind it for about 1.8 s, and everyone on screen sees it.
+When a character gains a level, a pair of golden wings opens behind it for about 1.8 s, and everyone on screen sees it
+(the client draws a front or a side pair as the character faces).
 The stock level-up text and magic effect are the engine's and stay as they were. No change to the `.dat` / `.spr` pair
 and no engine patch: the client draws PNG frames as creature widgets (client/MANIFEST.md "game_levelwings").
 
@@ -15173,7 +15174,7 @@ and no engine patch: the client draws PNG frames as creature widgets (client/MAN
 - **Tests:** `tests/levelwings_test.lua` (opcode unique and not a base one, the payload, the per-character cooldown, the
   server-wide and per-viewer budgets with their windows, prune and forget, and `levelwings.lua` against a mocked engine:
   the events, one message per spectator, cooldown, other skills and a lost level, an engine error caught); client
-  `game_levelwings/levelwingsmath_test.lua` (frame timing, layer, size, settings rule, message check). Tested on a live
+  `game_levelwings/levelwingsmath_test.lua` (frame timing, view and layer of each direction, frame sets, size, place, settings rule, message check). Tested on a live
   test server with two Linux clients: a real level-up through `addExperience` showed the wings to the character and to
   a second player next to it; each setting turned off hid them on that client only.
 

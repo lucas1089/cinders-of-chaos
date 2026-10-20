@@ -1,10 +1,11 @@
--- Pure helpers of the level-up wings (game_levelwings): the frame timing, the draw layer, the size and place on the
--- map, the settings rule and the message check. No client API here; tested by levelwingsmath_test.lua (luajit and lua5.3).
+-- Pure helpers of the level-up wings (game_levelwings): the frame timing, the view and draw layer of a direction, the
+-- size and place on the map, the settings rule and the message check. No client API here; tested by levelwingsmath_test.lua (luajit and lua5.3).
 
 LevelWingsMath = {}
 local M = LevelWingsMath
 
-M.FRAMES = 12          -- images/wings_01.png .. wings_12.png (client/tools/gen_levelwings_art.py)
+M.FRAMES = 12          -- per view (client/tools/gen_levelwings_art.py): images/wings_01..12 (the front pair),
+                       -- wings_east_01..12 and wings_west_01..12 (the side pair)
 M.FRAME_MS = 55        -- the opening: 12 x 55 ms = 660 ms
 M.FADE_IN_MS = 120     -- from transparent while the first frames show
 M.HOLD_UNTIL_MS = 1150 -- the open wings stay at full strength until here
@@ -22,6 +23,14 @@ M.SHOULDER = 0.3
 M.ROOT_Y = -6
 -- a look the anchor table does not know (a newer pair): a usual 2x2 body, {centre x, ground row, top, left, right}
 M.DEFAULT_ANCHOR = {16, 20, -24, -10, 22}
+-- the side views (2026-10-20, owner: "the level-up wings don't turn sideways"). The anchors are measured on the south
+-- frame only, so the shoulder blades of a look facing east or west are found from it. The side art's root (the near
+-- wing's shoulder) is on the image's centre column, ROOT_Y above the centre like the front roots; it goes SIDE_X
+-- pixels (1x) across from the front pair's place, at the same height. Measured on pair 30 (dat 81567924: the 60
+-- class looks and the stock outfits 128-143, the body without what it holds, at the shoulder row): the side body
+-- sits a little left of the front one (every sprite leans up and left), its back is its left edge facing east and
+-- its right edge facing west, and the root goes in from the back edge to the shoulder blades.
+M.SIDE_X = { east = -6, west = 2 }
 
 local function round(v)
   return math.floor(v + 0.5)
@@ -39,7 +48,8 @@ end
 -- how far to move the wing image from the widget centre (pixels at the current scale): anchor = the look's row of the
 -- character select's outfit anchors ({cx, ground, top, ...}: 1x pixels relative to the tile, displacement applied),
 -- dx, dy = the look's displacement (signed), scale = sprite size / 32 times the creature's draw scale
-function M.offsetFor(anchor, dx, dy, scale)
+-- view: 'south' (also nil), 'north', 'east' or 'west' (M.viewFor); a side view moves the root onto the back
+function M.offsetFor(anchor, dx, dy, scale, view)
   local a = type(anchor) == 'table' and anchor[1] and anchor[2] and anchor[3] and anchor or M.DEFAULT_ANCHOR
   local k = tonumber(scale) or 1
   if k <= 0 then k = 1 end
@@ -48,6 +58,7 @@ function M.offsetFor(anchor, dx, dy, scale)
   -- across: the middle of the visible box (left, right) at the shoulders; the feet centre (cx) of an oblique look is
   -- right of its shoulders, its body leans up and left
   local x = (a[4] and a[5]) and (a[4] + a[5]) / 2 or a[1]
+  x = x + (M.SIDE_X[view] or 0)
   return round((x - wx) * k), round((shoulder - M.ROOT_Y - wy) * k)
 end
 
@@ -76,14 +87,28 @@ function M.at(elapsed)
   return frame, clamp(opacity, 0, 1), false
 end
 
-function M.framePath(frame)
-  return string.format('/modules/game_levelwings/images/wings_%02d', clamp(tonumber(frame) or 1, 1, M.FRAMES))
+-- the frame set of a view: the front pair facing south or north, a side pair facing east or west
+M.SETS = { south = 'wings_', north = 'wings_', east = 'wings_east_', west = 'wings_west_' }
+
+function M.framePath(frame, view)
+  return string.format('/modules/game_levelwings/images/%s%02d', M.SETS[view] or M.SETS.south,
+    clamp(tonumber(frame) or 1, 1, M.FRAMES))
 end
 
--- the wings are behind the character, except when it faces north (its back to the viewer): then in front.
--- Directions: 0 north, 1 east, 2 south, 3 west, 4..7 diagonals (NE, SE, SW, NW).
+-- the view of a creature's direction: 0 north, 1 east, 2 south, 3 west, 4..7 diagonals (NE, SE, SW, NW). A creature
+-- has no diagonal frames: a diagonal shows the front pair (north-east and north-west its back, south-east and
+-- south-west its front); unknown counts as south.
+local VIEWS = { [0] = 'north', [1] = 'east', [2] = 'south', [3] = 'west',
+  [4] = 'north', [5] = 'south', [6] = 'south', [7] = 'north' }
+
+function M.viewFor(direction)
+  return VIEWS[direction] or 'south'
+end
+
+-- the wings are behind the character, except when it faces north (its back to the viewer): then in front. Facing
+-- east or west the side pair is behind it too (the body hides the far wing and the near wing's root).
 function M.layerFor(direction)
-  if direction == 0 or direction == 4 or direction == 7 then
+  if M.viewFor(direction) == 'north' then
     return 'top'
   end
   return 'bottom'
