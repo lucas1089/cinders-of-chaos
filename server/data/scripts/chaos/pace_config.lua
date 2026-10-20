@@ -57,10 +57,10 @@ return {
 
 	-- generated area / dungeon points (areagen: the point's level): the points the run-time model of the queue dungeons
 	-- (dungeons_difficulty.lua, tests/areagen_test.lua: about 10 minutes at difficulty 1) was calibrated on. Kept as they
-	-- were; their experience is the generator's own (areagen_core.lua levelScale). Not part of the 2026-10-20 re-measure.
+	-- were; their health stays; the experience points were raised 2026-10-20 so that experience per health point matches the base monsters (about 0.8-1.2, it was 0.2-0.8: a generated area paid 4-6% of a base monster's experience per kill). The generator's own levelScale experience applies first.
 	generated = {
 		health = {{650, 0.095}, {800, 0.080}, {1000, 0.066}, {1300, 0.062}, {1600, 0.059}, {2000, 0.056}},
-		xp = {{650, 0.042}, {800, 0.036}, {1000, 0.030}, {1300, 0.026}, {1600, 0.024}, {2000, 0.023}},
+		xp = {{650, 0.19}, {800, 0.15}, {1000, 0.075}, {1300, 0.045}, {1600, 0.032}, {2000, 0.026}},
 		loot = {{650, 0.050}, {800, 0.042}, {1000, 0.035}, {1300, 0.031}, {1600, 0.029}, {2000, 0.027}},
 		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
 	},
