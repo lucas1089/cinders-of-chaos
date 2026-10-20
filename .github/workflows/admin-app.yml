@@ -72,7 +72,8 @@ jobs:
           APK=$(find android/app/build/outputs/apk/release -name '*.apk' | head -1)
           [ -n "$APK" ] || { echo "no APK built"; exit 1; }
           cp "$APK" CindersAdmin.apk
-          "$ANDROID_HOME"/build-tools/*/apksigner verify --print-certs CindersAdmin.apk | head -3
+          SIGNER=$(ls -d "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          "$SIGNER" verify --print-certs CindersAdmin.apk | head -3
           sha256sum CindersAdmin.apk
       - name: Publish
         if: github.event_name == 'workflow_dispatch'
