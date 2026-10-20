@@ -396,9 +396,13 @@ local function trackerEnabled()
   return g_settings.getBoolean(SETTING_TRACKER, true)
 end
 
+local trackerOpened = false -- the menu turned it on this session: shown even without a task, with a hint
+
 local function renderTracker()
   if not tracker then return end
-  local show = trackerEnabled() and #trackerRows > 0
+  -- an empty tracker stays out of the way, unless the player just opened it from the menu (it looked as if it did not
+  -- open: beta 2026-10-20)
+  local show = trackerEnabled() and (#trackerRows > 0 or trackerOpened)
   tracker:setVisible(show)
   if not show then return end
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
@@ -407,6 +411,14 @@ local function renderTracker()
   tracker.rows:setVisible(not folded)
   if folded then
     tracker.rows:setHeight(0)
+    return
+  end
+  if #trackerRows == 0 then
+    local w = g_ui.createWidget('BestiaryTrackerRow', tracker.rows)
+    w.kind:setText('')
+    w.label:setText(tr('No task yet: Hunt > Kill Tasks or Adventure > Bounty Board.'))
+    w.label:setColor('#8c8070')
+    w.bar:setVisible(false)
     return
   end
   for _, r in ipairs(trackerRows) do
@@ -427,12 +439,17 @@ function setTrackerEnabled(on)
   renderTracker()
 end
 
+-- the menu entry: it opens the tracker (it is on by default, so the first click used to turn it off and nothing
+-- showed); shown and opened, a second click hides it
 function toggleTracker()
-  setTrackerEnabled(not trackerEnabled())
-  if trackerEnabled() and #trackerRows == 0 then
-    pcall(function()
-      modules.game_textmessage.displayStatusMessage(tr('Task tracker on: it shows up while you hold a kill task or a bounty contract.'))
-    end)
+  local visible = tracker and tracker:isVisible()
+  if visible then
+    trackerOpened = false
+    setTrackerEnabled(false)
+    pcall(function() modules.game_textmessage.displayStatusMessage(tr('Task tracker off.')) end)
+  else
+    trackerOpened = true
+    setTrackerEnabled(true)
   end
 end
 

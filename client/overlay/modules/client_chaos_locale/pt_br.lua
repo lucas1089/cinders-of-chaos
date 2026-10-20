@@ -404,7 +404,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["New board in %s"] = "Quadro novo em %s",
   ["Tasks (%d) +"] = "Tasks (%d) +",
   ["Tasks"] = "Tasks",
-  ["Task tracker on: it shows up while you hold a kill task or a bounty contract."] = "Rastreador de tasks ligado: aparece enquanto você tem uma kill task ou um contrato de bounty.",
+  ["No task yet: Hunt > Kill Tasks or Adventure > Bounty Board."] = "Nenhuma task ainda: Hunt > Kill Tasks ou Adventure > Bounty Board.",
+  ["Task tracker off."] = "Rastreador de tasks desligado.",
   ["Bestiary"] = "Bestiário",
   ["Kill Tasks"] = "Kill Tasks",
   -- game_bestiary/bestiary.otui
