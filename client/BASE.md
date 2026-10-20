@@ -625,7 +625,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     blue button sheet (`/images/ui/buttons-blue`, not part of the Chaos skin), 83 px wide, so "Advanced Options" ran out
     of a blue block. It is a plain themed button, 120 px wide. Applies after `0001`-`0086`.
 
-62. `0100` (C++ `src/client/animatedtext.h/.cpp`, `map.cpp`, `mapview.cpp`, `protocolgameparse.cpp`, `protocolgamesend.cpp`,
+68. `0100` (C++ `src/client/animatedtext.h/.cpp`, `map.cpp`, `mapview.cpp`, `protocolgameparse.cpp`, `protocolgamesend.cpp`,
     `const.h`, `luafunctions_client.cpp`; Lua `modules/gamelib/const.lua`, `mods/client_settings/classes/dataset.lua`,
     `options/interface.otui`): **Typed impact numbers** (slice B of the damage number work; server src-patch `0051`,
     server/README.md "Typed impact numbers"). Numbered 0100 to leave 0085-0099 to the patches in flight; renumber at
