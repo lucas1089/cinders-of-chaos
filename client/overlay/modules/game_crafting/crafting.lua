@@ -23,7 +23,7 @@
 -- shardName, shards, rarityNames, rarityIds, recipes = [{key, name, clientId, cost, count}], bags = [{path, name}], batch = {bag,
 -- maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths}, mode}; state.items[i].locked, state.item.locked,
 -- state.item.salvage = {ok, why, shards, orbChance}. Client -> server: salvage {path, id, sig} | lock {path, id, on} |
--- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count}.
+-- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count} | recycle {key, count}.
 -- The server checks everything (orb owned, item in the backpack, orb fits the item, no uniques); the buttons here only
 -- mirror its answer. The top menu (Economy > Crafting Bench, Economy > Salvage) calls toggle() and openSalvage().
 -- Long texts are never cut at the window edge: they wrap (crafting.otui CraftWrapLabel) and the row or box around them
@@ -608,11 +608,22 @@ local function updateRecipes(sv)
     fitText(row.name, ((r.name or r.key):gsub('^Orb of ', '')))
     fitText(row.cost, tr('%d shards', cost))
     row.cost:setColor(shards >= cost and '#c0a0ff' or '#6b6258')
+    local back = tonumber(r.back) or 0
     setTip(row, tr('%d %s -> 1 %s (you have %d).\nCtrl+click: as many as you can, up to %d.', cost,
-      sv.shardName or 'shards', r.name or r.key, tonumber(r.count) or 0, tonumber(sv.maxCombine) or 1))
-    row.make:setEnabled(sv.installed ~= false and shards >= cost)
+      sv.shardName or 'shards', r.name or r.key, tonumber(r.count) or 0, tonumber(sv.maxCombine) or 1) ..
+      (back > 0 and '\n' .. tr('Shift+click: recycle your %s into %d %s each.', r.name or r.key, back, sv.shardName or 'shards') or ''))
+    row.make:setEnabled(sv.installed ~= false and (shards >= cost or (tonumber(r.count) or 0) > 0))
     local key = r.key
+    local owned = tonumber(r.count) or 0
     row.make.onClick = function()
+      if g_keyboard and g_keyboard.isShiftPressed and g_keyboard.isShiftPressed() and back > 0 then
+        if owned > 0 then
+          row.make:setEnabled(false)
+          send('recycle', { key = key, count = math.min(owned, 100) })
+        end
+        return
+      end
+      if shards < cost then return end
       local n = 1
       if g_keyboard and g_keyboard.isCtrlPressed and g_keyboard.isCtrlPressed() and cost > 0 then
         n = math.max(1, math.min(tonumber(sv.maxCombine) or 1, math.floor(shards / cost)))

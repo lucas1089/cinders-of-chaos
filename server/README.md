@@ -8942,6 +8942,9 @@ hit rate are first guesses.
 
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
 
+
+**Recycling (2026-10-20).** The recipe rows of the bench also work backwards: Shift+click a row turns the orbs of that kind in the backpack (up to 100 a click) into shards at `recycleShare` (0.4) of the recipe cost, rounded down (`K.recycleShards`, action `recycle`; always fewer shards than making one costs). Beta: a tester held ~2000 orbs nobody could use.
+
 **Uniques (2026-10-15).** A unique on the bench salvages for Conquest Tokens: 10% of its Conquest vendor price (at least
 25) plus `uniqueShards` (4) rune shards; a set piece keeps its `setPieceShards` (8) and gets the tokens too. The
 character is saved before the tokens go into the database. "Salvage all" never takes a unique. See "Conquest Tokens,

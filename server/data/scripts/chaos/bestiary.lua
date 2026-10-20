@@ -356,10 +356,21 @@ local function sendSummary(player, open)
 end
 
 -- the whole list in packets of about chunkBytes, one per chunkDelay ms (as the spellbook)
+
+-- the level the window shows: the monster's hunting level, the same scale as the level-scaled monsters (a base monster's
+-- bounty pool level x ChaosPaceConfig.baseLevelMult; beta 2026-10-20: a "level 500" widow paid more than a "level 800"
+-- monster because the two were on different scales). The task windows and difficulties keep e.level.
+local function shownLevel(e)
+	if (e.minLevel or 0) > 0 then
+		return e.level
+	end
+	return e.level * ((ChaosPaceConfig and ChaosPaceConfig.baseLevelMult) or 2)
+end
+
 local function rowOf(e, st)
 	local kills = st.kills[e.key] or 0
 	local stage = C.stageOf(kills, e.th)
-	return {e.id, e.name, e.cat, e.diff, e.level, kills, stage, stage >= 1 and lookOf(e) or 0}
+	return {e.id, e.name, e.cat, e.diff, shownLevel(e), kills, stage, stage >= 1 and lookOf(e) or 0}
 end
 
 local function sendList(player)
@@ -412,7 +423,7 @@ local function sendEntry(player, id)
 	local kills = st.kills[e.key] or 0
 	local stage = C.stageOf(kills, e.th)
 	local diff = C.difficultyByKey(e.diff, cfg)
-	local data = {id = e.id, name = e.name, cat = e.cat, diff = e.diff, diffName = diff and diff.name, level = e.level,
+	local data = {id = e.id, name = e.name, cat = e.cat, diff = e.diff, diffName = diff and diff.name, level = shownLevel(e),
 		kills = kills, stage = stage, th = e.th, next = C.nextOf(kills, e.th), boss = e.boss,
 		points = diff and diff.points, bonus = C.bonusOf(e, cfg), spawns = e.spawns > 0}
 	local mt = MonsterType(e.name)

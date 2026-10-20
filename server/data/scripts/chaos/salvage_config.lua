@@ -67,6 +67,10 @@ return {
 		{key = "ruin", cost = 150}
 	},
 	maxCombine = 10, -- orbs made by one click
+	-- recycling (beta 2026-10-20: ~2000 orbs nobody could use): an orb back into shards at this share of its recipe cost
+	-- (rounded down, at least 1); the loss keeps shards -> orb -> shards from being a free loop. Up to maxRecycle per click.
+	recycleShare = 0.4,
+	maxRecycle = 100,
 
 	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,

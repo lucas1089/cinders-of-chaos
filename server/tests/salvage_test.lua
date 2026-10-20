@@ -228,6 +228,18 @@ eq(select(2, K.combineCheck(1000, "chaos", 11, cfg)), "count", "more than maxCom
 eq(select(2, K.combineCheck(1000, "chaos", 0, cfg)), "count", "zero")
 eq(select(2, K.combineCheck(1000, "mirror", 1, cfg)), "unknownRecipe", "unknown orb")
 
+-- recycling: an orb back into shards at recycleShare of its recipe cost, always less than the cost
+eq(K.recycleShards("chaos", cfg), 10, "an Orb of Upheaval (25) recycles into 10 shards")
+eq(K.recycleShards("whetstone", cfg), 2, "a Whetstone (5): 2")
+ok, cost = K.recycleCheck(7, "chaos", 7, cfg)
+eq(cost, 70, "seven at once")
+eq(select(2, K.recycleCheck(6, "chaos", 7, cfg)), "orbs", "not that many")
+eq(select(2, K.recycleCheck(500, "chaos", 101, cfg)), "count", "more than maxRecycle")
+eq(select(2, K.recycleCheck(5, "mirror", 1, cfg)), "unknownRecipe", "unknown orb")
+for _, r in ipairs(cfg.recipes) do
+	assert(K.recycleShards(r.key, cfg) < r.cost, r.key .. ": recycling loses shards")
+end
+
 -- ================================================================ salvage.lua against a mocked engine
 RETURNVALUE_NOERROR, INDEX_WHEREEVER, FLAG_NOLIMIT, MESSAGE_INFO_DESCR = 0, -1, 1, 22
 CONST_ME_BLOCKHIT, CONST_ME_MAGIC_GREEN = 9, 13
