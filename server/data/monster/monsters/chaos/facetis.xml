@@ -34,7 +34,7 @@
         <attack name="physical" interval="1500" chance="25" range="7" radius="3" target="1" min="-910" max="-1300">
             <attribute key="shootEffect" value="snowball"/>
         </attack>
-        <attack name="speed" interval="1000" chance="10" range="7" speedchange="-600" duration="20000">
+        <attack name="speed" interval="1000" chance="10" range="7" speedchange="-600" duration="10000">
             <attribute key="areaEffect" value="redshimmer"/>
         </attack>
     </attacks>

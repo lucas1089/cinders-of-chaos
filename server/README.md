@@ -1503,6 +1503,15 @@ Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
 
+## Monster debuff durations (`tools/patch_debuff_durations.py`, install step `debuffs`)
+
+Owner, 2026-10-20 (beta): stock debuffs lasted up to a minute; they now last at most 10 s. Every `<attack>` of a monster
+file whose name is a debuff (`speed`, `drunk`, `outfit`, `strength`, `skill`, `weakness`) and whose `duration` is over
+10000 gets `duration="10000"`: a slow, a rabbit or chicken disguise, drunkenness. A monster's own haste or disguise
+(`<defense>`) and damage attacks are untouched; shorter debuffs keep theirs. On the base files it changes 150 attacks in
+129 monsters; the Chaos monsters of the repository follow the rule already (17 attacks in 15 files cut when it was
+added). Idempotent; `tools/patch_debuff_durations_test.py`. Needs a server restart (monster files load at start).
+
 ## Spell timings (`tools/patch_spell_timings.py`, install step `spells`)
 
 The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma";
