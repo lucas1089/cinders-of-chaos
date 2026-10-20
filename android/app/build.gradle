@@ -10,8 +10,8 @@ android {
         applicationId 'com.cindersofchaos.admin'
         minSdk 26
         targetSdk 34
-        versionCode (System.getenv('ADMIN_APP_VERSION_CODE') ?: '1') as int
-        versionName System.getenv('ADMIN_APP_VERSION_NAME') ?: '1.0'
+        versionCode = (System.getenv('ADMIN_APP_VERSION_CODE') ?: '1').toInteger()
+        versionName = System.getenv('ADMIN_APP_VERSION_NAME') ?: '1.0'
     }
 
     // The release is signed with the keystore of the workflow (.github/workflows/admin-app.yml): CHAOS_KS_FILE,
