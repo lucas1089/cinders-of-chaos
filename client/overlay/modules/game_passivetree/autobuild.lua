@@ -2,7 +2,9 @@
 -- of the class (Recommended per role, Focus themes), previews one (nodes, points, price) and applies it. The client
 -- shows the lists in a dropdown, the preview in the tree and the maths of autobuildview.lua; it never builds a plan itself.
 --   autobuildList -> autobuildList {group, builds, owned, held, free, cap} (twice: role, focus)
---   autobuildPreview {build} -> autobuildPreview {...} | autobuildError {message}
+--   autobuildPreview {build} -> autobuildPreview {...} | autobuildError {message, build, retry}
+-- The picked build's preview is asked for whenever none is shown (a new pick, opening the window again, after an
+-- Apply) and every request ends: an answer, or asked again on a timeout, then an error line (autobuildview.lua).
 --   autobuildApply {build, mode = "add" | "reset", cost} -> autobuildApplied {message} | autobuildError {message}
 ChaosTreeHandlers = ChaosTreeHandlers or {}
 local abWindow = nil
@@ -13,6 +15,10 @@ local preview = nil
 local selected = nil -- id of the picked build
 local confirmBox = nil
 local filling = false
+local pending = nil -- {build, tries, event}: the preview asked for and not answered yet
+local failed = nil -- id of the build whose preview failed (not asked again until it is picked again)
+local note = nil -- {text, color}: the server's last word (an error, the applied message), shown under the preview
+local RED = '#e07060'
 
 local function alive()
   if abWindow and abWindow.isDestroyed and abWindow:isDestroyed() then
@@ -34,7 +40,7 @@ end
 local function refresh()
   local label = child('detailText')
   if label then
-    local text, color = AutoBuildView.detail(currentBuild(), state, preview)
+    local text, color = AutoBuildView.detail(currentBuild(), state, preview, note)
     label:setText(text)
     label:setColor(color)
   end
@@ -68,9 +74,48 @@ local function fillCombo()
   filling = false
 end
 
-local function askPreview()
+local function clearPending()
+  if pending and pending.event then
+    removeEvent(pending.event)
+  end
+  pending = nil
+end
+
+local askPreview
+
+local function previewFailed(text)
+  if pending then
+    failed = pending.build
+  end
+  clearPending()
+  note = {text = text, color = RED}
+  refresh()
+end
+
+local function onPreviewTimeout()
+  if not pending then
+    return
+  end
+  pending.event = nil
+  if not alive() or not abWindow:isVisible() then
+    clearPending()
+    return
+  end
+  if AutoBuildView.onTimeout(pending) == 'retry' then
+    askPreview()
+  else
+    previewFailed(tr('The server did not answer the preview. Close and reopen Auto build to try again.'))
+  end
+end
+
+-- asks for the picked build's preview (again: the same build counts its tries); the answer or the timeout ends the wait
+askPreview = function()
   preview = nil
+  local before = pending
+  clearPending()
   if selected then
+    pending = AutoBuildView.ask(before, selected)
+    pending.event = scheduleEvent(onPreviewTimeout, AutoBuildView.PREVIEW_TIMEOUT_MS)
     sendAction('autobuildPreview', {build = selected})
   else
     showTreeAllocation({}, false)
@@ -97,8 +142,10 @@ local function onPick(combo, text, data)
     end
     return
   end
-  if r.id ~= selected then
+  if r.id ~= selected or failed == r.id then
     selected = r.id
+    failed, note = nil, nil
+    clearPending()
     askPreview()
   end
 end
@@ -115,9 +162,10 @@ function openAutoBuild()
   abWindow:show()
   abWindow:raise()
   abWindow:focus()
+  failed, note = nil, nil
   fillCombo()
   refresh()
-  sendAction('autobuildList')
+  sendAction('autobuildList') -- its answer asks for the picked build's preview (autobuildList below)
 end
 
 local function closeConfirm()
@@ -130,6 +178,7 @@ end
 -- leave the preview: the tree shows the saved allocation again
 local function leavePreview()
   closeConfirm()
+  clearPending()
   if preview then
     preview = nil
     sendAction('requestNodesUnlocked')
@@ -154,7 +203,8 @@ end
 
 function destroyAutoBuild()
   closeConfirm()
-  preview = nil
+  clearPending()
+  preview, failed, note = nil, nil, nil
   if abWindow then
     abWindow:destroy()
     abWindow = nil
@@ -193,9 +243,10 @@ ChaosTreeHandlers.autobuildList = function(data)
   end
   groups[data.group] = type(data.builds) == 'table' and data.builds or {}
   state = {owned = data.owned or 0, held = data.held or 0, free = data.free or 0, cap = data.cap}
-  local first = selected == nil
   fillCombo()
-  if first and selected then
+  -- not only on the first list: after reopening the window or an Apply no preview is shown, and waiting for one that
+  -- was never asked for left "Asking the server for a preview..." for good
+  if AutoBuildView.needsPreview(selected, preview, pending, failed) then
     askPreview()
   else
     refresh()
@@ -208,6 +259,11 @@ ChaosTreeHandlers.autobuildPreview = function(data)
   end
   if data.build ~= selected then
     return -- an answer to an earlier pick
+  end
+  clearPending()
+  failed = nil
+  if note and note.color == RED then
+    note = nil
   end
   preview = data
   -- the tree shows what Reset and apply would build when it takes something back, else what Apply adds on top
@@ -223,22 +279,35 @@ end
 
 ChaosTreeHandlers.autobuildError = function(data)
   local text = type(data) == 'table' and data.message or tr('The build could not be applied.')
-  local label = child('detailText')
-  if abWindow and abWindow:isVisible() and label then
-    label:setText(text)
-    label:setColor('#e07060')
-  else
+  if not (alive() and abWindow:isVisible()) then
+    clearPending()
     sendMessageBox(tr('Auto build'), text)
+    return
   end
+  local answer = AutoBuildView.onError(pending, data)
+  if answer == 'retry' then
+    -- too fast: ask again in a moment (MAX_TRIES still ends the wait)
+    if pending.event then
+      removeEvent(pending.event)
+    end
+    pending.event = scheduleEvent(onPreviewTimeout, AutoBuildView.RETRY_DELAY_MS)
+    return
+  elseif answer == 'fail' then
+    previewFailed(text)
+    return
+  end
+  if type(data) == 'table' and data.build ~= nil and data.build ~= selected then
+    return -- the error of an earlier pick's preview
+  end
+  note = {text = text, color = RED}
+  refresh()
 end
 
 ChaosTreeHandlers.autobuildApplied = function(data)
   preview = nil
-  local label = child('detailText')
+  clearPending()
+  failed = nil
+  note = {text = type(data) == 'table' and data.message or tr('Build applied.'), color = AutoBuildView.GOOD}
   refresh()
-  if label then
-    label:setText(type(data) == 'table' and data.message or tr('Build applied.'))
-    label:setColor(AutoBuildView.GOOD)
-  end
-  sendAction('autobuildList')
+  sendAction('autobuildList') -- the new points; its answer asks for the preview on the new tree
 end

@@ -135,10 +135,12 @@ function M.plan(tree, build, ctx)
 			-- already held (Apply): nothing to do
 		elseif not allowed(node) then
 			skipped[#skipped + 1] = {id = id, why = "class"}
+		elseif count >= points then
+			-- before the link test: once the points run out the rest of the path is not taken, so its later nodes do
+			-- not touch a taken one, and they were counted as "disconnected" (the client said "your class cannot hold")
+			skipped[#skipped + 1] = {id = id, why = "points"}
 		elseif not touches(id) then
 			skipped[#skipped + 1] = {id = id, why = "disconnected"}
-		elseif count >= points then
-			skipped[#skipped + 1] = {id = id, why = "points"}
 		else
 			taken[id] = true
 			order[#order + 1] = id

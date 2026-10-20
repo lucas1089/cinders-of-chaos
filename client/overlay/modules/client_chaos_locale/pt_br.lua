@@ -2130,6 +2130,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_passivetree/buildshare.lua
   ["Paste a build code into the box first."] = "Cole um código de build na caixa primeiro.",
   ["Asking the server for a preview..."] = "Pedindo uma prévia ao servidor...",
+  ["The server did not answer the preview. Close and reopen Auto build to try again."] = "O servidor não respondeu a prévia. Feche e reabra a Build automática para tentar de novo.",
   ["%s gold coins"] = "%s gold coins",
   ["Apply this build (%d nodes%s)?\nPrice: %s."] = "Aplicar esta build (%d nós%s)?\nPreço: %s.",
   [", %d of your nodes taken back"] = ", %d dos seus nós devolvidos",

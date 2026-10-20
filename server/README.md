@@ -2540,7 +2540,14 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   themes (leech, mana, damage, ...), each with its points and a one-line summary. Opcode 65 actions `autobuildList` /
   `autobuildPreview` / `autobuildApply {build, mode = "add" | "reset", cost}`. Apply only adds the nodes you can pay and takes
   nothing back. Reset and apply takes the tree back at the normal respec price (a free reset is used first) and builds the
-  chosen one; the price shown in the preview is the one sent back. Rate limited (`passivetree.autobuild`).
+  chosen one; the price shown in the preview is the one sent back. Rate limited: Apply `passivetree.autobuild` (1 s),
+  the preview its own `passivetree.autobuildPreview` (`previewRateMs`, 500 ms). Every preview request is answered: a
+  refused one with `autobuildError {message, build, retry}` (retry: too fast), a Lua error with `autobuildError` too.
+  Fix 2026-10-20 (owner report: stuck at "Asking the server for a preview..."): the client asked for a preview only on
+  its first list, so after an Apply or on reopening the window it waited for an answer to a request it never sent. It
+  now asks whenever no preview is shown, asks again after 4 s (3 tries) and then shows an error. The skipped count of
+  the plan also says "points" for the rest of a path once the points run out (it said "disconnected", which the client
+  showed as nodes the class cannot hold). A preview is at most about 2.3 KB (one message, tested for every build).
 - **Drown nodes** are gone: 23 nodes hidden in `nodes.lua`, refunded once (`reworked` version 4), the tree has 640 nodes.
 - **Primary / Secondary** per class: `passivetree_stats_config.lua` `classes[...]` (the Templar line counts mana leech as
   secondary: its spells cost mana). The window shows a header, a gold (primary) or silver (secondary) border on nodes and a
@@ -2554,7 +2561,8 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
 - Regenerate in this order after a tree or config change: `gen_class_lanes.lua`, `gen_passivetree_data.lua` (from the client
   treedata folder), `gen_passive_builds.lua`, `gen_wiki_data.lua`, `gen_codex_data.lua`.
 - Tests: `passive_builds_test`, `passivetree_stats_test`, `passivetree_paths_test`, `passivetree_plan_test`; client
-  `autobuildview_test.lua`, `statinfoview_test.lua`. Not checked in game: the dropdown, the node borders (`setBorderColor`), the
+  `autobuildview_test.lua`, `autobuild_test.lua` (the window's requests against a mocked client), `statinfoview_test.lua`.
+  Not checked in game: the dropdown, the node borders (`setBorderColor`), the
   tree preview of a build, the lane balance (damage and resist caps are reached with fewer points).
 
 ## Passive tree pick statistics (`treestats.lua`, `treestats_core.lua`, `treestats_config.lua`)

@@ -2898,6 +2898,10 @@ return {
 			"Mais %d nós da build precisam de mais pontos.",
 		["Too fast: wait a moment and apply again."] =
 			"Rápido demais: espere um momento e aplique de novo.",
+		["Too fast: wait a moment and pick the build again."] =
+			"Rápido demais: espere um momento e escolha a build de novo.",
+		["The preview could not be made. Try another build or try again later."] =
+			"Não foi possível montar a prévia. Tente outra build ou tente mais tarde.",
 		-- Service NPCs (service_npcs*.lua, data/npc/scripts/chaos_service_npc.lua and the five NPC XMLs)
 		["%s has %d free houses, the cheapest: %s. Say {buy} and a name."] =
 			"%s tem %d casas livres, as mais baratas: %s. Diga {buy} e um nome.",

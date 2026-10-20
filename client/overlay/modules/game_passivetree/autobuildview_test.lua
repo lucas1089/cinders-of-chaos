@@ -63,5 +63,32 @@ eq(V.canReset({reset = {added = 2, removed = 0}}), true, 'adding counts')
 eq(V.confirmText({name = 'Slayer', reset = {removed = 4, cost = 1000}}), 'Reset your tree and apply Slayer?\nNodes taken back: 4. Price: 1,000 gold coins.', 'confirm text')
 eq(V.confirmText({build = 'x', reset = {}}), 'Reset your tree and apply x?\nNodes taken back: 0. Price: free.', 'confirm text, no name')
 
+-- a note (the server's answer) stands in for "Asking..." and follows a preview
+text = V.detail(b, state, nil, {text = 'No answer.', color = '#e07060'})
+eq(text:find('Asking the server', 1, true), nil, 'a note replaces the waiting line')
+eq(select(2, V.detail(b, state, nil, {text = 'No answer.', color = '#e07060'})), '#e07060', 'in its colour')
+text = V.detail(b, state, preview, {text = 'Auto build: 5 nodes added.', color = V.GOOD})
+eq(text:sub(-#'Auto build: 5 nodes added.'), 'Auto build: 5 nodes added.', 'the applied message under the preview')
+
+-- the preview request: when to ask, the tries, the timeout and the errors
+eq(V.needsPreview(nil, nil, nil, nil), false, 'nothing picked')
+eq(V.needsPreview('a', nil, nil, nil), true, 'picked, nothing shown: ask')
+eq(V.needsPreview('a', {build = 'a'}, nil, nil), false, 'shown already')
+eq(V.needsPreview('a', {build = 'b'}, nil, nil), true, 'another build shown')
+eq(V.needsPreview('a', nil, {build = 'a', tries = 1}, nil), false, 'asked already')
+eq(V.needsPreview('a', nil, {build = 'b', tries = 1}, nil), true, 'another build asked')
+eq(V.needsPreview('a', nil, nil, 'a'), false, 'failed: not again until picked again')
+local pend = V.ask(nil, 'a')
+eq(pend.tries, 1, 'first try'); eq(V.ask(pend, 'a').tries, 2, 'again: second try'); eq(V.ask(pend, 'b').tries, 1, 'new pick')
+eq(V.onTimeout(pend), 'retry', 'timeout: retry')
+eq(V.onTimeout({build = 'a', tries = V.MAX_TRIES}), 'fail', 'timeout: give up after the last try')
+eq(V.onTimeout(nil), 'fail', 'timeout without a request')
+eq(V.onError(nil, {message = 'x'}), 'ignore', 'error without a request (an Apply error)')
+eq(V.onError(pend, {message = 'x', build = 'b'}), 'ignore', 'error of another build')
+eq(V.onError(pend, {message = 'x', build = 'a', retry = true}), 'retry', 'too fast: retry')
+eq(V.onError({build = 'a', tries = V.MAX_TRIES}, {build = 'a', retry = true}), 'fail', 'too fast on the last try')
+eq(V.onError(pend, {message = 'not your class', build = 'a'}), 'fail', 'refused')
+eq(V.onError(pend, {message = 'old server'}), 'fail', 'an error without a build answers the pending one')
+
 if fails > 0 then os.exit(1) end
 print('autobuildview_test: ok')
