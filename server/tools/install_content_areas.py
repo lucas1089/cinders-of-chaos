@@ -36,7 +36,11 @@ gets a hunt by band, the base server's and the planned ones together: the entry 
 west to east, then each floor up. The base teleport tiles are rewritten (a base hunt's teleport with its destination,
 or none where a planned hunt's teleport goes at startup), the display spawns follow their hunts (the base server's
 unmarked display blocks of the hall's cells are taken over) and the places file lists the base hunts and the floors'
-bands. --remove-hall puts every base hunt back where the CSV says it stood (the planned hunts in the wings again).
+bands. Each room shows the monster its sign names (hall_order.room_monster). The way back from every base hunt and
+quest (a teleport outside the hall leading in front of a hall teleport) is rewritten to lead in front of the teleport
+it has now, and a placed plan's places entry gets that tile (`front`) for its exit. The ground floor's wings get
+ground under every tile (their copies of floor 6 have none under the outer walls; items.otb names the grounds).
+--remove-hall puts every base hunt back where the CSV says it stood (the planned hunts in the wings again).
 Idempotent: a placed plan (every tile there, the same items) and a grown room are recognised and left alone; a plan
 that changed since it was placed (other tiles) is refused with the reason (restore the map from <map>.otbm.bak, which
 is written before the first change when missing, and run the whole install again). The map is written through
@@ -127,6 +131,33 @@ class World:
 
     def count(self):
         return len(self.m.tiles['x'])
+
+
+def item_kinds(data_dir, log=print):
+    """(ground item ids, teleport item ids) of the server's items.otb (tools/map/itemdb.py: group 1 and group 7);
+    (None, set()) without one (the ground under the wings is then not checked, the ways back only with the room's
+    teleport items)"""
+    otb = os.path.join(data_dir, 'items', 'items.otb')
+    if not os.path.isfile(otb):
+        log('no %s: the ground of the hall\'s wings is not checked' % otb)
+        return None, set()
+    import numpy as np
+    from itemdb import ItemDB
+    db = ItemDB(otb)
+    tele = {int(i) for i in np.flatnonzero(db.group == 7)}
+    # the engine takes a teleport from items.xml (type "teleport"); the otb group is not always set
+    xml = os.path.join(data_dir, 'items', 'items.xml')
+    if os.path.isfile(xml):
+        text = open(xml, encoding='latin-1').read()
+        for m in re.finditer(r'<item\b([^>]*?)>(.*?)</item>', text, re.S):
+            if not re.search(r'key="type"\s+value="teleport"', m.group(2)):
+                continue
+            a = dict(re.findall(r'(\w+)="([^"]*)"', m.group(1)))
+            if 'id' in a:
+                tele.add(int(a['id']))
+            elif 'fromid' in a and 'toid' in a:
+                tele.update(range(int(a['fromid']), int(a['toid']) + 1))
+    return {int(i) for i in np.flatnonzero(db.group == 1)}, tele
 
 
 def load_world(path, portal, extra=()):
@@ -222,7 +253,7 @@ def room_layout(world, room, portal, portal_at=None, wing=None):
             slots.append(dict(teleport=(x, row, z), sign=(x, sign, z), cells=cells, side=side))
     # along the corridor: west to east, the north teleport of a column before the south one (the bands ascend that way)
     slots.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
-    return dict(tiles=tiles, module=module, caps=caps, old=old, swept=swept, slots=slots)
+    return dict(tiles=tiles, module=module, caps=caps, old=old, swept=swept, slots=slots, z=z)
 
 
 def check_swept(map_path, swept, portal, items, log):
@@ -245,14 +276,22 @@ def check_swept(map_path, swept, portal, items, log):
     log('room: %d tile(s) of open ground replaced by the wings hold only decoration' % len(swept))
 
 
-def room_state(world, lay, portal=None):
+def closed_ids(cfg):
+    """the items a closed room's teleport tile changes (hall.closed): left out where the room's state is compared"""
+    c = (cfg.get('hall') or {}).get('closed') or {}
+    return ({c['wall']} if c.get('wall') else set()) | set(c.get('decor') or ())
+
+
+def room_state(world, lay, portal=None, grounds=None):
     """'done' (grown already), 'todo' (can grow), or raises with the reason. A teleport on a copied tile (the hall
-    order puts base hunts in the wings) does not count."""
+    order puts base hunts in the wings) does not count, nor a ground (grounds: their ids; the hall order puts ground
+    under the ground floor's wings)."""
     if not lay['tiles']:
         return 'done'
+    skip = {portal} | set(grounds or ())
 
     def bare(st):
-        return None if st is None else [i for i in st if i != portal]
+        return None if st is None else [i for i in st if i not in skip]
     same = [p for p in lay['module'] if bare(world.stack(p)) == bare(stack_of(lay['tiles'][p]))]
     if len(same) == len(lay['module']):
         return 'done'  # the copies stand where the old ends were: grown (the ends were moved then)
@@ -394,8 +433,9 @@ def _unesc_head(data, i, n):
     return bytes(out)
 
 
-def tile_ranges(data, positions):
-    """{pos: (start, end)} raw offsets (FE .. FF inclusive) of the tile nodes at these positions"""
+def tile_ranges(data, positions, houses=None):
+    """{pos: (start, end)} raw offsets (FE .. FF inclusive) of the tile nodes at these positions. A house tile is
+    refused, or, with `houses` (a set), put there and left out."""
     import numpy as np
     import area_plan_place as PL
     want = set(positions)
@@ -426,12 +466,15 @@ def tile_ranges(data, positions):
                     e += 1
                 if pos in want:
                     if kind == T_HOUSETILE:
-                        raise InstallError('the tile %d,%d,%d is a house tile; not replaced' % pos)
-                    out[pos] = (s, int(mk[e]))
+                        if houses is None:
+                            raise InstallError('the tile %d,%d,%d is a house tile; not replaced' % pos)
+                        houses.add(pos)
+                    else:
+                        out[pos] = (s, int(mk[e]))
                 j = e + 1
             else:
                 j += 1
-    missing = want - set(out)
+    missing = want - set(out) - (houses or set())
     if missing:
         raise InstallError('%d tile(s) to replace were not found in the map file (first %s)' % (len(missing), sorted(missing)[0]))
     return out
@@ -561,9 +604,11 @@ def places_lua(back, entries, base=None, floors=None, hall=False, quests=None):
              '-- The placed content hunts and their teleports (data/scripts/chaos/hunt_teleports.lua).',
              'return {', '\tback = %s,' % pos(back), '\tplaces = {']
     for e in entries:
+        # front: the tile in front of the teleport, where the hunt's exit portal sends players back to
         lines.append('\t\t{id = "%s", name = %s, level = {%d, %d}, teleport = %s, sign = %s, arrival = %s, exit = %s, '
-                     'monster = %s},' % (e['id'], q(e['name']), e['level'][0], e['level'][1], pos(e['teleport']),
-                                         pos(e['sign']), pos(e['arrival']), pos(e['exit']), q(e.get('monster'))))
+                     'monster = %s%s},' % (e['id'], q(e['name']), e['level'][0], e['level'][1], pos(e['teleport']),
+                                           pos(e['sign']), pos(e['arrival']), pos(e['exit']), q(e.get('monster')),
+                                           ', front = %s' % pos(e['front']) if e.get('front') else ''))
     lines.append('\t},')
     if base is not None:
         # the base server's hunt teleports of the hall (hall_hunts.csv): the map's teleport leads there; the script
@@ -580,8 +625,11 @@ def places_lua(back, entries, base=None, floors=None, hall=False, quests=None):
             lines.append('\t\t{z = %d, level = {%d, %d}},' % (f['z'], f['level'][0], f['level'][1]))
         lines.append('\t},')
         if quests:
-            # the quest hall (hall_quests.py): where its "Quests" label floats and how many alcoves it has
-            lines.append('\tquests = {label = %s, count = %d},' % (pos(quests['label']), quests['count']))
+            # the quest hall (hall_quests.py): where its "Quests" label floats (over its corridor and where the plaza's
+            # aisle meets its connector) and how many alcoves it has
+            lines.append('\tquests = {label = %s,%s count = %d},' % (
+                pos(quests['label']), ' entrance = %s,' % pos(quests['entrance']) if quests.get('entrance') else '',
+                quests['count']))
     lines += ['}', '']
     return '\n'.join(lines)
 
@@ -608,14 +656,17 @@ def fixed_plans(dirs, hunts, log=print):
     return out
 
 
-def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log):
+def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log, monsters=None):
     """the hall order (hall_order.py): every hunt slot of the hall (the base teleports' places, the quest alcoves'
     places and the wings'), the base hunts of `rows` (hall_hunts.csv) and the placed content hunts, assigned by
     floor and band (hall_on) or as the base server had them (the content hunts in the wings as before; the quests
-    stay in their alcoves). Returns {'assign': {id: slot}, 'portal': {pos: dest or None}, 'displays': {id: (monster,
-    cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...], 'slots': [...], 'quests': rows}"""
+    stay in their alcoves). monsters: {lower name: file} of the server's monsters (hall_order.monster_files) to check
+    the display monsters against, None: not checked. Returns {'assign': {id: slot}, 'portal': {pos: dest or None},
+    'displays': {id: (monster, cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...], 'slots': [...],
+    'quests': rows}"""
     import hall_order as H
     room, hall = cfg['room'], cfg['hall']
+    all_rows = rows
     quests = H.quests_of(rows) if hall_on else []  # a quest alcove is a hunt slot once its quest has moved
     rows = H.hunts_of(rows)  # a `not a hunt` row keeps its teleport where it stands, untouched
     slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots, quests), hall)
@@ -624,11 +675,18 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log)
     hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows] + ours
     if hall_on:
         assign = H.assign(hunts, slots, hall)
+        ordered = assign
     else:
         assign = H.original(rows, slots)
         wing = [s for s in slots if s['base'] is None]
         wing.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
         assign.update(assign_slots(order, wing, set(placed)))
+        # where the order puts each hunt: a way back that leads there goes back to the old place
+        try:
+            ordered = H.assign(hunts, H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots,
+                                                                  H.quests_of(all_rows)), hall), hall)
+        except H.HallError:
+            ordered = {}
     by_row = {r['id']: r for r in rows}
     portal = {}
     for s in slots:
@@ -640,8 +698,17 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log)
     displays = {}
     for hid, s in assign.items():
         if hid in by_row:
-            if by_row[hid]['display']:
-                displays[hid] = (by_row[hid]['display'], s['cells'], by_row[hid]['spawntime'])
+            # the room shows the monster its sign and label name (H.room_monster), checked against the server's
+            # monsters when they can be read: an unknown one is left out (no spawn errors), one that turns invisible
+            # is named in the log (it would show nothing)
+            m = H.room_monster(by_row[hid])
+            f = monsters.get(m.lower()) if monsters else None
+            if monsters and not f:
+                log('hall: %s: no monster named %s on this server: no display monster (fix hall_hunts.csv)' % (hid, m))
+            elif m:
+                if f and H.is_invisible(f):
+                    log('hall: %s: %s turns invisible: its room shows nothing (choose another in hall_hunts.csv)' % (hid, m))
+                displays[hid] = (m, s['cells'], by_row[hid]['spawntime'])
         else:
             p = mons.get(hid) or {}
             if p.get('monster') and p.get('display', True):
@@ -651,7 +718,7 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log)
     for hid, s in sorted(assign.items(), key=lambda kv: H.slot_key(hall, kv[1]['teleport'])):
         r = by_row.get(hid)
         if r:
-            base.append(dict(id=hid, name=r['name'], level=(r['lo'], r['hi']), teleport=s['teleport'], sign=s['sign'],
+            base.append(dict(id=hid, name=H.room_monster(r), level=(r['lo'], r['hi']), teleport=s['teleport'], sign=s['sign'],
                              dest=(r['dest_x'], r['dest_y'], r['dest_z'])))
     floors = H.floor_bands(assign, hunts, hall)
     if hall_on:
@@ -664,31 +731,118 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log)
                 f['z'], H.floor_range_text(hall, f['z']), on, sum(1 for s in slots if s['teleport'][2] == f['z'])))
     log('hall: %d hunts on %d slots (%s)' % (len(assign), len(slots), 'by floor and level' if hall_on else 'as the base server had them'))
     return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, base=base, floors=floors, slots=slots,
-                quests=quests)
+                quests=quests, ordered=ordered)
 
 
-def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log):
+def close_slot(tile, closed, portal):
+    """an unused room's teleport tile: no teleport, no ring or sparkle (`closed.decor`), the wall (`closed.wall`) on"""
+    drop = {portal} | set(closed.get('decor') or ())
+    items = [(i, a) for i, a in tile['items'] if i not in drop and not a.get('tele')]
+    if not any(i == closed['wall'] for i, _a in items):
+        items.append((closed['wall'], {}))
+    return dict(flags=tile['flags'], ground=tile['ground'], items=items)
+
+
+def open_slot(tile, closed, grounds=None):
+    """a closed room's teleport tile opened again: the wall off, the ring and sparkle back after the ground; a tile
+    without our wall is left as it is"""
+    if not any(i == closed['wall'] for i, _a in tile['items']):
+        return tile
+    items = [(i, a) for i, a in tile['items'] if i != closed['wall']]
+    at = 1 if (not tile['ground'] and items and (grounds is None or items[0][0] in grounds)) else 0
+    for k, i in enumerate(closed.get('decor') or ()):
+        items.insert(at + k, (i, {}))
+    return dict(flags=tile['flags'], ground=tile['ground'], items=items)
+
+
+def wing_box(lay, room):
+    """every position of a grown floor's wings and moved ends: the columns of the copies and of the old and new ends,
+    the room's rows (`rows`), on the wing's floor"""
+    ps = list(lay['tiles']) + list(lay['old'])
+    if not ps:
+        return set()
+    z = ps[0][2]
+    xs = {p[0] for p in ps}
+    r0, r1 = room['rows']
+    return {(x, y, z) for x in xs for y in range(r0, r1 + 1)}
+
+
+def plan_ground(ed, world, box, grounds, room, gone=frozenset()):
+    """{pos: tile}: ground under every tile of `box` (the ground floor's wings) that has none, and a ground tile where
+    there is no tile at all. The wings of the ground floor are copies of floor 6, whose outer walls stand on no ground
+    (floor 6 shows the floor below there); on the ground floor that is a black, unmapped square under the wall, and an
+    old end tile with no copy over it was cut and left nothing (beta 2026-10-20: "many black squares in the teleport
+    room"). The ground comes from the nearest tile of the same column outwards (the lawn outside the outer walls),
+    then of the same row, then of the column inwards; flags from that tile for a new one. gone: the tiles this run cuts
+    from the map without a new one there (the old ends where the copy has no tile). A second run finds every tile with
+    its ground and changes nothing."""
+    r0, r1 = room['rows']
+    mid = (room['teleportRows'][0] + room['teleportRows'][1]) // 2
+
+    def ground_of(q):
+        if q in gone and q not in ed.cur:
+            return None
+        if not (q in ed.cur or q in ed.new or q in ed.orig):
+            st = world.stack(q) if world.has(q) else None
+            return (st[0], world.flags(q)) if st and st[0] in grounds else None
+        t = ed.get(q)
+        if t is None:
+            return None
+        if t['ground']:
+            return t['ground'], t['flags']
+        if t['items'] and t['items'][0][0] in grounds:
+            return t['items'][0][0], t['flags']
+        return None
+
+    writes = {}
+    for p in sorted(box):
+        if ed.is_bad(p):
+            continue
+        t = None if (p in gone and p not in ed.cur) else (ed.get(p) if ed.has(p) else None)
+        if t is not None and ground_of(p):
+            continue
+        x, y, z = p
+        up = [(x, yy, z) for yy in range(y - 1, r0 - 2, -1)]
+        down = [(x, yy, z) for yy in range(y + 1, r1 + 2)]
+        row = [(x + s * k, y, z) for k in range(1, 5) for s in (1, -1)]
+        order = up + row + down if y <= mid else down + row + up
+        g = None
+        for q in order:
+            g = ground_of(q)
+            if g:
+                break
+        if not g:
+            continue
+        if t is None:
+            writes[p] = dict(flags=g[1], ground=g[0], items=[])
+        else:
+            writes[p] = dict(flags=t['flags'], ground=g[0], items=list(t['items']))
+    return writes
+
+
+def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays=(), grounds=None, gone=frozenset()):
     """The hall order's changes to existing tiles, through one reading of them (hall_quests.TileEditor): the quest
-    alcoves moved to the quest hall (or back) with their way back from the quest sites, the reward chests of the plaza
-    taken away, the hunt teleports of every slot (the slot's hunt, or none), the signs of unused slots blank.
+    alcoves moved to the quest hall (or back), the reward chests of the plaza taken away, the hunt teleports of every
+    slot (the slot's hunt, or none), the signs of unused slots blank, the way back from every hunt and quest leading in
+    front of the teleport it has now, and ground under the ground floor's wings (grounds: the ground item ids of
+    items.otb; None leaves that out; gone: the map tiles the room's growth cuts without a new tile there).
     Returns ({pos: tile} to write - the map's own tiles that differ now, and the quest layout or None)."""
     import hall_order as H
     import hall_quests as Q
-    room, portal, sign = cfg['room'], cfg['items']['portal'], cfg['items']['sign']
-    qcfg = cfg['hall'].get('quests')
+    room, hall, portal, sign = cfg['room'], cfg['hall'], cfg['items']['portal'], cfg['items']['sign']
+    qcfg = hall.get('quests')
     qrows = H.quests_of(rows)
     qlay = Q.layout(qcfg, room, qrows) if (qcfg and qrows) else None
+    models = Q.model_cells(qcfg, room) if qlay else None
     ed = Q.TileEditor(world, map_path, new_tiles)
     ed.need(*hl['portal'])
     used = {s['teleport'] for s in hl['assign'].values()}
     for s in hl['slots']:
         if s['sign']:
             ed.need(tuple(s['sign']))
-    found, chests, template_at = [], [], None
+    chests, template_at = [], None
     if qlay:
-        ed.need(*Q.need_positions(qlay))
-        found = Q.find_returns(world.tele, qlay, qcfg.get('returnRadius', 4))
-        ed.need(*[p for _a, p in found])
+        ed.need(*Q.need_positions(qlay, models))
         for c in qcfg.get('chests') or []:
             c = dict(c, z=qcfg['z'])
             chests.append(c)
@@ -696,6 +850,37 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log):
         tn, ts = room['teleportRows']
         template_at = [(qrows[0]['x'], y, qrows[0]['z']) for y in (tn + 1, (tn + ts) // 2, ts - 1)]  # the corridor's 3 rows
         ed.need(*template_at)
+    # the ways back: every teleport outside the hall that leads in front of one of its teleports, to the tile in front
+    # of the one its hunt or quest has now (the hall order moves them; before, only the quests' ways back near their
+    # destination were rewritten, so a hunt's way back led in front of another hunt's teleport, often on another floor)
+    owners = []
+    for r in rows:
+        if r['x'] is None or r['kind'] == H.KIND_QUEST:
+            continue
+        old = (r['x'], r['y'], r['z'])
+        s = hl['assign'].get(r['id'])
+        new = tuple(s['teleport']) if s else old
+        o = (hl.get('ordered') or {}).get(r['id'])
+        ordered = tuple(o['teleport']) if o else new
+        owners.append(dict(id=r['id'], dest=(r['dest_x'], r['dest_y'], r['dest_z']),
+                           fronts=(H.front_of(room, old), H.front_of(room, ordered)), want=H.front_of(room, new)))
+    for a in (qlay['alcoves'] if qlay else []):
+        owners.append(dict(id=a['id'], dest=a['dest'], fronts=(a['front_old'], a['front_new']),
+                           want=a['front_new'] if hall_on else a['front_old']))
+    r0, r1 = room['rows']
+    quest_spots = set(qlay['rect']) | set(qlay['endwall']) if qlay else set()
+
+    def in_hall(p):
+        return (p[2] in hall['floors'] and hall['x'][0] <= p[0] <= hall['x'][1] and r0 <= p[1] <= r1) or p in quest_spots
+    found = Q.ways_back(world.tele, owners, in_hall)
+    ed.need(*[p for p, _d, _o in found], optional=True)
+    # ground under the ground floor's wings
+    box = set()
+    if grounds is not None:
+        for lay in wing_lays:
+            box |= wing_box(lay, room)
+        ed.need(*box, optional=True)
+        ed.need(*{(x, y, z) for x, _y, z in box for y in (r0 - 1, r1 + 1)}, optional=True)
     try:
         ed.load()
         if qlay:
@@ -708,38 +893,69 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log):
                     ed.set(p, t)
                 for n in notes:
                     log('quests: ' + n)
-            w, notes = Q.plan_move(ed, qlay, room, portal, sign, template, forward=hall_on)
+            names = {r['id']: r['name'] for r in qrows}
+            w, notes = Q.plan_move(ed, qlay, room, portal, sign, template, forward=hall_on, models=models,
+                                   items=qcfg.get('portalItems') or {}, names=names, grounds=grounds,
+                                   log=lambda s: log('quests: ' + s))
             for p, t in w.items():
                 ed.set(p, t)
             for n in notes:
                 log('quests: ' + n)
-            for p, t in Q.plan_returns(ed, found, hall_on).items():
-                ed.set(p, t)
-            if found:
-                log('quests: %d way(s) back from the quest sites point to the %s' % (
-                    len(found), 'quest hall' if hall_on else 'old alcoves'))
         for p, dest in hl['portal'].items():
             t = ed.get(p)
             if t is None:
                 raise Q.QuestError('no tile at %d,%d,%d for a hunt teleport' % p)
-            ed.set(p, H.with_portal(t, portal, dest))
+            ed.set(p, H.with_portal(t, portal, dest, grounds))
         if hall_on:
             for s in hl['slots']:
                 if s['teleport'] not in used and s['sign']:
                     t = ed.get(tuple(s['sign']))
                     if t is not None:
                         ed.set(tuple(s['sign']), Q.blank_sign(t, sign))
+        # the rooms no hunt takes are closed: a wall on the teleport tile, its ring and sparkle off (beta 2026-10-20:
+        # "many unused spawns", a stretch of rooms with a dead teleport ring and no label); a room a hunt takes again
+        # (a new hunt, --remove-hall) is opened: the wall off, the ring and sparkle back
+        closed = hall.get('closed')
+        if closed:
+            n_closed = 0
+            for s in hl['slots']:
+                p = tuple(s['teleport'])
+                t = ed.get(p)
+                if t is None:
+                    continue
+                shut = hall_on and p not in used
+                nt = close_slot(t, closed, portal) if shut else open_slot(t, closed, grounds)
+                n_closed += shut
+                if nt != t:
+                    ed.set(p, nt)
+            log('hall: %d room(s) without a hunt closed' % n_closed)
+        w = Q.plan_ways_back(ed, found)
+        for p, t in w.items():
+            ed.set(p, t)
+        if found:
+            log('hall: %d way(s) back from the hunts and quests, %d rewritten to lead in front of their teleport' % (
+                len(found), len(w)))
+        skipped = [p for p, _d, _o in found if ed.is_bad(p)]
+        if skipped:
+            log('hall: %d way(s) back on a tile that cannot be rewritten, left (first %d,%d,%d)' % ((len(skipped),) + skipped[0]))
+        if box:
+            w = plan_ground(ed, world, box, grounds, room, gone)
+            for p, t in w.items():
+                ed.set(p, t)
+            if w:
+                log('room: ground under %d tile(s) of the ground floor\'s wings' % len(w))
     except (Q.QuestError, H.HallError) as e:
         raise InstallError(str(e))
     return ed.changed(), qlay
 
 
 def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, config=CONFIG, map_path=None,
-        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS, hall_csv=None, hall_on=None):
+        compiled=None, world=None, log=print, fixed_dirs=FIXED_DIRS, hall_csv=None, hall_on=None, kinds=None):
     """compiled: {id: out_dir} already compiled (tests); world: a World (tests); fixed_dirs: the folders of the fixed
     areas (placed at their origin, no teleport); hall_csv: the base hunts of the hall (default tools/hall_hunts.csv;
     without it the hall is left as it is); hall_on: False puts the base hunts back where they were (--remove-hall),
-    default the config's hall.enabled. Returns a summary dict."""
+    default the config's hall.enabled; kinds: (ground ids, teleport ids) of the items (tests), default item_kinds of
+    the server's items.otb. Returns a summary dict."""
     import area_plan_place as PL
     import hall_order
     cfg = load_config(config) if isinstance(config, str) else config
@@ -773,9 +989,10 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 compile_plan(path, out)
             tiles, man = read_area(out, pid)
             areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan)
+        grounds, tele_ids = kinds if kinds is not None else item_kinds(data_dir, log)
         if world is None:
             log('reading %s ...' % map_path)
-            world = load_world(map_path, portal, cfg['items'].get('questPortals') or ())
+            world = load_world(map_path, portal, list(cfg['items'].get('questPortals') or ()) + sorted(tele_ids))
         # the hall order's data (tools/hall_hunts.csv): the base hunts and where they stood
         rows = None
         if room_on and cfg.get('hall'):
@@ -784,13 +1001,14 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             hall_on = bool(cfg.get('hall', {}).get('enabled'))
         base_at = {(r['x'], r['y'], r['z']) for r in rows if r['x'] is not None} if rows else None
         # the room: floor 6 and, with the hall order, the other floors' wings (hall_order.assign names a floor's missing slots)
-        lays, rstates = [], []
+        lays, rstates, wing_lays = [], [], []
         if room_on:
             lays.append(room_layout(world, cfg['room'], portal, base_at))
             for w in (cfg['room'].get('wings') or []) if rows else []:
-                lays.append(room_layout(world, cfg['room'], portal, base_at, wing=w))
+                wing_lays.append(room_layout(world, cfg['room'], portal, base_at, wing=w))
+                lays.append(wing_lays[-1])
         for l in lays:
-            rstates.append(room_state(world, l, portal))
+            rstates.append(room_state(world, l, portal, set(grounds or ()) | closed_ids(cfg)))
         todo_lays = [l for l, st in zip(lays, rstates) if st == 'todo']
         rstate = 'todo' if todo_lays else 'done'
         lay = dict(tiles={}, module=set(), caps=set(), old=set(), swept=set(), slots=[])
@@ -838,7 +1056,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         hl = None
         if rows:
             try:
-                hl = hall_layout(world, cfg, rows, lay['slots'], order, plans, placed, hall_on, log)
+                hl = hall_layout(world, cfg, rows, lay['slots'], order, plans, placed, hall_on, log,
+                                 monsters=hall_order.monster_files(data_dir) or None)
             except hall_order.HallError as e:
                 raise InstallError('hall order: %s' % e)
             slots = {pid: s for pid, s in hl['assign'].items() if pid in placed}
@@ -862,7 +1081,9 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         remove = sorted(grow_cut) if rstate == 'todo' else []
         qlay = None
         if hl:
-            changed, qlay = hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log)
+            changed, qlay = hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log,
+                                      wing_lays=[l for l in wing_lays if l['z'] >= 7],  # the ground floor's
+                                      grounds=grounds, gone=set(remove) - set(new_tiles))
             if changed:
                 log('hall: %d existing tile(s) to rewrite' % len(changed))
             new_tiles.update(changed)
@@ -920,9 +1141,10 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             ex = a['man'].get('exit') or {}
             entries.append(dict(id=pid, name=a['man'].get('name') or a['plan'].get('name') or pid, level=a['plan']['level'],
                                 teleport=slots[pid]['teleport'], sign=slots[pid]['sign'], arrival=a['man']['arrival'],
-                                exit=ex.get('at'), monster=p.get('monster')))
+                                exit=ex.get('at'), monster=p.get('monster'),
+                                front=hall_order.front_of(cfg['room'], slots[pid]['teleport'])))
         if hl:
-            quests = dict(label=qlay['label'], count=len(qlay['alcoves'])) if (qlay and hall_on) else None
+            quests = dict(label=qlay['label'], entrance=qlay['entrance'], count=len(qlay['alcoves'])) if (qlay and hall_on) else None
             text = places_lua(cfg['room']['back'], entries, hl['base'], hl['floors'] if hall_on else [], hall_on, quests)
             summary['hall'] = dict(on=hall_on, assign={k: v['teleport'] for k, v in hl['assign'].items()},
                                    floors=hl['floors'], displays={k: v[0] for k, v in hl['displays'].items()})

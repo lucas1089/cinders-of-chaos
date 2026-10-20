@@ -42,7 +42,9 @@ return {
 		signRows = {32252, 32260}, -- the counter with the sign behind each teleport
 		east = {module = {31664, 31667}, cap = {31668, 31670}, modules = 5},
 		west = {module = {31629, 31632}, cap = {31626, 31628}, modules = 5},
-		-- where a plan's exit portal sends players: the middle of the corridor
+		-- the middle of the corridor (the stairs' column): where a plan's exit portal sends players when its places
+		-- entry has no `front` (the tile in front of its own teleport) and the room has no teleport rows; the end
+		-- teleports' fronts face this column
 		back = {x = 31648, y = 32256, z = 6},
 		-- The other floors grow the same way (owner, 2026-10-18: the ground floor z 7 holds the hunts of levels 1-500,
 		-- more than its 16 alcoves): `from` is the floor whose alcoves are copied (bare of rewards and signs), the
@@ -65,8 +67,8 @@ return {
 	-- `quests`: the quest hall (tools/hall_quests.py): the base quests' alcoves move, with their rewards on show and
 	-- their quest signs, to a hall of the same shape (two rows of alcoves round a 3-row corridor, 9 rows from
 	-- `origin`.y, the first alcove's teleport column `origin`.x, 33 columns for 8 alcoves a row) at the east end of the
-	-- plaza's aisle south of the corridor, joined to it by a corridor from `connector`.x; `returnRadius`: how far from a
-	-- quest's destination its way back is looked for; `chests`: the base server's daily and weekly reward chests of the
+	-- plaza's aisle south of the corridor, joined to it by a corridor from `connector`.x (the corridor's far end is
+	-- closed by a wall); `chests`: the base server's daily and weekly reward chests of the
 	-- plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests) taken away with their
 	-- booth (the rows `rows`), owner 2026-10-18.
 	hall = {
@@ -78,7 +80,13 @@ return {
 			origin = {x = 31676, y = 32263},
 			connector = {x = 31665}, -- the aisle's last column; the corridor runs from there to the hall
 			step = 4,
-			returnRadius = 4,
+			-- the cell row an old quest alcove gets once its quest has moved (the rewards stood on all three tiles:
+			-- both cells and the counter between): the hunt alcove of this teleport column on floor `z` is the model
+			-- (bare cells without protection zone, so the display monsters can stand there, and the counter)
+			model = {x = 31666, z = 6},
+			-- the teleport item of a quest whose teleport an earlier install lost (a hunt's took its alcove): the
+			-- quest hall makes it again to the CSV's destination with this item (default items.portal)
+			portalItems = {base_7_31654_32254 = 5023},
 			chests = {
 				{x = 31639, y = 32265, item = 29327, uid = 34801, rows = {32263, 32265}}, -- daily reward
 				{x = 31633, y = 32265, item = 29327, uid = 34802, rows = {32263, 32265}}, -- weekly: Nightmare Coin
@@ -86,6 +94,10 @@ return {
 				{x = 31663, y = 32265, item = 29327, uid = 34804, rows = {32263, 32265}} -- weekly: Star Inlay Stone
 			}
 		},
+		-- a room no hunt takes (the floors have more rooms than hunts) is closed: the room's own wall piece of the
+		-- teleport row (`wall`) on its teleport tile, the ring and the sparkle (`decor`) off; a hunt that takes it later
+		-- opens it again (beta 2026-10-20: "many unused spawns")
+		closed = {wall = 29306, decor = {8047, 1421}},
 		x = {31590, 31712},
 		endRow = 32256,
 		temple = {32369, 32241, 7},

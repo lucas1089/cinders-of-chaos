@@ -53,9 +53,13 @@ local places = {
 	back = {x = 100, y = 100, z = 6},
 	places = {
 		{id = "widowmere", name = "Widowmere", level = {480, 640}, teleport = {x = 110, y = 98, z = 6},
-			sign = {x = 110, y = 96, z = 6}, arrival = {x = 500, y = 500, z = 8}, exit = {x = 500, y = 498, z = 8}},
+			sign = {x = 110, y = 96, z = 6}, arrival = {x = 500, y = 500, z = 8}, exit = {x = 500, y = 498, z = 8},
+			front = {x = 110, y = 99, z = 6}},
 		{id = "not_in_config", name = "X", level = {1, 2}, teleport = {x = 111, y = 98, z = 6},
-			arrival = {x = 1, y = 1, z = 7}, monster = "Rat"}
+			arrival = {x = 1, y = 1, z = 7}, exit = {x = 2, y = 1, z = 7}, monster = "Rat"},
+		-- a hunt of levels 1-500 on the ground floor's north row, without a front in the places file
+		{id = "low_hunt", name = "Low", level = {200, 300}, teleport = {x = 31630, y = 32254, z = 7},
+			arrival = {x = 700, y = 700, z = 9}, exit = {x = 701, y = 700, z = 9}}
 	},
 	-- the hall order (tools/hall_order.py): a base hunt and the floors' bands
 	hall = true,
@@ -65,14 +69,14 @@ local places = {
 	},
 	floors = {{z = 7, level = {1, 500}}, {z = 6, level = {500, 1000}}, {z = 5, level = {1000, 0}}},
 	-- the quest hall (tools/hall_quests.py): the label's spot and how many quests stand there
-	quests = {label = {x = 31, y = 24, z = 7}, count = 16}
+	quests = {label = {x = 31, y = 24, z = 7}, entrance = {x = 26, y = 24, z = 7}, count = 16}
 }
 eq(#H.validate(cfg, places), 0, "places valid")
 local dup = {back = places.back, places = {places.places[1], places.places[1]}}
 eq(#H.validate(cfg, dup), 1, "a shared teleport tile is reported")
 eq(#H.validate(cfg, {places = {{id = "q"}}}), 4, "missing back, teleport, arrival, level")
 local idx = H.index(cfg, places)
-eq(#idx.list, 2, "a plan missing from the config gets its teleport too")
+eq(#idx.list, 3, "a plan missing from the config gets its teleport too")
 eq(idx.byTeleport["111,98,6"].monster, "Rat", "its display monster from the places file")
 eq(idx.byTeleport["111,98,6"].minLevel, 1, "its floor from the band")
 local e = idx.byTeleport["110,98,6"]
@@ -91,9 +95,22 @@ ok(msg:find("480-640", 1, true) ~= nil, "arrival message names the band")
 eq(H.lang("pt-BR"), "pt-BR", "lang pt")
 eq(H.lang("pt"), "pt-BR", "lang pt short")
 eq(H.lang(nil), "en", "lang default")
+-- the exit leads back in front of the plan's own teleport (beta 2026-10-20: every exit led to the middle of floor 6)
 local b = H.backFor(idx, {x = 500, y = 498, z = 8})
-ok(b and b.x == 100, "exit goes back to the room")
+ok(b and b.x == 110 and b.y == 99 and b.z == 6, "exit goes back in front of its teleport (places file's front)")
+b = H.backFor(idx, {x = 701, y = 700, z = 9})
+ok(b and b.x == 31630 and b.y == 32255 and b.z == 7, "no front in the places file: below a north-row teleport, on its floor")
+b = H.backFor(idx, {x = 2, y = 1, z = 7})
+ok(b and b.x == 112 and b.y == 98 and b.z == 6, "a teleport off the rows: the tile towards the stairs")
 eq(H.backFor(idx, {x = 500, y = 497, z = 8}), nil, "another tile: no room")
+local f = H.frontOf(cfg, {x = 31634, y = cfg.room.teleportRows[2], z = 5})
+ok(f.x == 31634 and f.y == cfg.room.teleportRows[2] - 1 and f.z == 5, "front of a south-row teleport: the tile above")
+f = H.frontOf(cfg, {x = 31667, y = 32256, z = 5})
+ok(f.x == 31666 and f.y == 32256, "front of the east end teleport: towards the stairs")
+f = H.frontOf(cfg, {x = 31629, y = 32256, z = 5})
+ok(f.x == 31630 and f.y == 32256, "front of the west end teleport: towards the stairs")
+eq(H.backFor({byExit = {["1,1,1"] = {}}, back = {x = 9, y = 9, z = 9}}, {x = 1, y = 1, z = 1}).x, 9,
+	"an entry without any front: the room's back tile")
 eq(#idx.base, 1, "the base hunt is indexed")
 eq(H.label(cfg, idx.base[1], "pt-BR"), "Rat, níveis 1-20", "a base hunt's label")
 local fl = H.floorLabels(cfg, idx, "en")
@@ -111,6 +128,9 @@ local ql = H.questLabel(cfg, idx, "en")
 ok(ql ~= nil and ql.text == "Quests" and ql.pos.x == 31 and ql.pos.z == 7, "the quest hall's label")
 eq(H.questLabel(cfg, idx, "pt-BR").text, "Missões", "pt-BR quest label")
 eq(H.questLabel(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), nil, "no quest hall: no label")
+local qls = H.questLabels(cfg, idx, "pt-BR")
+ok(#qls == 2 and qls[2].pos.x == 26 and qls[2].text == "Missões", "a second quest label where the aisle meets the way in")
+eq(#H.questLabels(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), 0, "no quest hall: no labels")
 eq(#H.floorLabels(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), 0, "no hall order: no floor label")
 local cfg2 = {aid = 47930, plans = {{id = "widowmere", monster = "M", minLevel = 600}}, texts = {}}
 eq(H.index(cfg2, places).list[1].minLevel, 600, "minLevel override")
@@ -277,12 +297,12 @@ function reader:say(text, kind, ghost, to, pos)
 	said[#said + 1] = {text, kind, to, pkey(pos)}
 end
 Game.getSpectators = function(pos)
-	return (pkey(pos) == "110,98,6" or pkey(pos) == "31,24,7") and {reader} or {}
+	return (pkey(pos) == "110,98,6" or pkey(pos) == "31,24,7" or pkey(pos) == "26,24,7") and {reader} or {}
 end
 local fl = registered.ChaosHuntTeleportsLabels
 ok(fl ~= nil and fl.ms == cfg.floatText.interval, "label think registered")
 fl.onThink()
-eq(#said, 2, "the teleport's label and the quest hall's")
+eq(#said, 3, "the teleport's label and the quest hall's two")
 eq(said[1][1], "Widowmere, níveis 480-640", "label in the reader's language")
 ok(said[1][3] == reader and said[1][4] == "110,98,6", "sent to the reader only, over the teleport")
 local qsay
@@ -292,8 +312,15 @@ for _, m in ipairs(said) do
 	end
 end
 ok(qsay ~= nil and qsay[1] == "Missões" and qsay[3] == reader, "the quest hall's label, in the reader's language")
+local esay
+for _, m in ipairs(said) do
+	if m[4] == "26,24,7" then
+		esay = m
+	end
+end
+ok(esay ~= nil and esay[1] == "Missões", "the label where the aisle meets the way to the quest hall")
 local back = ChaosHuntTeleports.backFor({x = 500, y = 498, z = 8})
-ok(back and back.x == 100 and back.z == 6, "areagen exit lookup returns the room")
+ok(back and back.x == 110 and back.y == 99 and back.z == 6, "areagen exit lookup returns the tile in front of its teleport")
 
 -- display monsters: the cells of the room are harmless (owner's bug 2026-10-16: a display Mirecoil Wyrm killed a
 -- level 8 player on the carpet with its telegraphs)

@@ -20,7 +20,8 @@ derive  reads the base server's hunt teleports of the hall from the map (a telep
         monsters spawned around its destination (hunt_band; each monster's hunting level as tools/gen_bounty_pool.py
         estimates it: the middle of <level min max>, else 1.6 x sqrt(experience) raised by health). The level is the
         weighted median (the order and the floors' ranges), the band the weighted 20th to 80th percentile (signs).
-        Nothing spawns near: kind `not a hunt` (left in place, unordered). Writes tools/hall_hunts.csv (review it; it
+        The room's monster (`display`: in the two cells beside the teleport and on its sign and label) is the first
+        top monster that does not turn invisible. Nothing spawns near: kind `not a hunt` (left in place, unordered). Writes tools/hall_hunts.csv (review it; it
         is the install's input; --force keeps each row's kind and note, the hand decisions). It must
         read the hall as the base server has it: refused when the CSV exists (--force) or the places file says the
         hall order is installed.
@@ -29,7 +30,8 @@ band    prints the level, band and top monsters around a destination, for a hunt
 
 install_content_areas.py does the rest (step `contentareas`): with the CSV present it owns every hunt slot of the
 hall (the base teleports' tiles, their display cells and signs, and the wings' slots), assigns the base and content
-hunts to them by band (hall_order.assign) and writes the teleport tiles, the display spawns and the places file.
+hunts to them by band (hall_order.assign) and writes the teleport tiles, the display spawns, the hunts' ways back
+(front_of: in front of the teleport each hunt has now) and the places file.
 --remove-hall puts the base hunts back where the base server had them (the CSV keeps every original position,
 destination and display monster).
 Python 3 standard library; numpy through tools/map/otbm.py.
@@ -339,6 +341,7 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
     points = spawn_points(sp_text)
     cells = spawn_blocks_at(sp_text)
     levels = {k: B.estimate_level(m) for k, m in B.load_monsters(data_dir).items()}
+    files = monster_files(data_dir)
     rows = []
     kept = {r['id']: r for r in (keep or [])}
     for pos, dest in hall_teleports(world.tele, room, hall):
@@ -351,11 +354,14 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
             got = (1, 5, 1, [])
             kind = KIND_NOT
         lo, hi, med, top = got
-        disp = ''
+        # the room's monster is the hunt's own top monster (the first that stays visible), not whatever the base
+        # server's cells beside that teleport held (beta 2026-10-20: "Novice of the Cult" showed two Wyrms); only
+        # the spawn time of the base display is kept
+        disp = visible_monster(top, files) if top else ''
         st = cfg.get('displaySpawntime', 120)
         for c in display_cells(world, room, pos):
             if c in cells and cells[c][0]:
-                disp, st = cells[c]
+                st = cells[c][1]
                 break
         name = top[0] if top else 'Hunt'
         rows.append(dict(id=base_id(z, x, y), z=z, x=x, y=y, dest_x=dest[0], dest_y=dest[1], dest_z=dest[2],
@@ -367,6 +373,59 @@ def derive(data_dir, cfg, map_path=None, log=print, keep=None):
 
 
 # ------------------------------------------------------------------------------------------------ slots
+def front_of(room, pos):
+    """the corridor tile in front of a hall teleport: below a north-row teleport, above a south-row one, and for a
+    teleport on the corridor's end row the tile towards the stairs (room.back.x). The way back from a hunt leads there."""
+    x, y, z = pos
+    tn, ts = room['teleportRows']
+    if y == tn:
+        return (x, y + 1, z)
+    if y == ts:
+        return (x, y - 1, z)
+    return (x + 1 if x < room['back']['x'] else x - 1, y, z)
+
+
+def room_monster(row):
+    """the monster of a hunt's room: shown in the two cells beside its teleport and named on its sign and label (the
+    CSV's `display`; empty: the top monster `name`). One name for both, so the room shows what it says."""
+    return row.get('display') or row.get('name') or ''
+
+
+def monster_files(data_dir):
+    """{lower name: file} of the server's monsters (data/monster/monsters.xml and the Lua monster files); {} without"""
+    import glob
+    base = os.path.join(data_dir, 'monster')
+    out = {}
+    reg = os.path.join(base, 'monsters.xml')
+    if os.path.isfile(reg):
+        for m in re.finditer(r'<monster\s+name="([^"]+)"\s+file="([^"]+)"', open(reg, encoding='latin-1').read()):
+            out[m.group(1).lower()] = os.path.join(base, m.group(2))
+    for p in sorted(glob.glob(os.path.join(base, '**', '*.lua'), recursive=True)):
+        if '#' in os.path.basename(p):
+            continue
+        for m in re.finditer(r'createMonsterType\(\s*"([^"]+)"', open(p, encoding='latin-1').read()):
+            out[m.group(1).lower()] = p
+    return out
+
+
+def is_invisible(path):
+    """the monster turns invisible (an `invisible` defense in its XML or Lua file): a display of it shows nothing"""
+    try:
+        text = open(path, encoding='latin-1').read()
+    except OSError:
+        return False
+    return bool(re.search(r'<defense\b[^>]*name="invisible"|name\s*=\s*"invisible"', text))
+
+
+def visible_monster(names, files):
+    """the first of `names` the server has and that does not turn invisible; the first name when none is known"""
+    for n in names:
+        f = files.get(n.lower())
+        if f and not is_invisible(f):
+            return n
+    return names[0] if names else ''
+
+
 def display_cells(world, room, pos):
     """the closed one-tile cells beside a teleport (non-PZ tiles with only ground on the cell row of its side)"""
     x, y, z = pos
@@ -524,11 +583,16 @@ def parse_tile(raw, pos):
     return dict(flags=flags, ground=ground, items=items)
 
 
-def with_portal(tile, portal, dest):
-    """the tile with no teleport item (dest None) or with one leading to dest (first after the ground)"""
+def with_portal(tile, portal, dest, grounds=None):
+    """the tile with no teleport item (dest None) or with one leading to dest, first after the ground. A tile whose
+    ground is its first item node (the grown wings' copies) keeps it first: the teleport goes after it (before, it went
+    in front of the ground). grounds: the ground item ids (items.otb), else the first item node is taken for one."""
     items = [(i, a) for i, a in tile['items'] if i != portal]
     if dest is not None:
-        items.insert(0, (portal, {'tele': tuple(dest)}))
+        at = 0
+        if not tile['ground'] and items and (grounds is None or items[0][0] in grounds):
+            at = 1
+        items.insert(at, (portal, {'tele': tuple(dest)}))
     return dict(flags=tile['flags'], ground=tile['ground'], items=items)
 
 

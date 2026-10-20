@@ -14125,7 +14125,7 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   cell, "Couldn't spawn monster" for Hellspawn, Warlock and Fleshcarver at every start; playtest 2026-10-16;
   `tools/install_content_areas_test.py`).
 - Chest scripts (`area_planner.py install`) and `data/lib/chaos_hunt_places.lua`: per plan its teleport, sign,
-  arrival, exit and band.
+  arrival, exit, band and the tile in front of its teleport (`front`, where its exit sends players back).
 - Idempotent: a placed plan (same tiles) and a grown room are left alone; a plan changed after it was placed is
   refused (restore `<map>.otbm.bak`, written before the first change when missing, and run the install again). The
   map goes through `<map>.otbm.tmp` and its tile count is checked before it replaces the old one. The action id must not
@@ -14138,8 +14138,12 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
 the players near it, each in their own language (the base room labels its teleports the same way). Stepping in below
 the floor of the band (`minLevel` overrides it): back where the player came from, a poff and "Widowmere is for level
 480 and above." (pt-BR: "Widowmere é para nível 480 ou mais."); else the teleport effect, the arrival tile and the band.
-The camp portal of a placed plan (action id 47951, `areagen.lua`) sends players back to the corridor (31648, 32256, 6)
-through `ChaosHuntTeleports.backFor`; other areas keep their exits. Slot order (owner, 2026-10-16: "ordered by level"):
+The camp portal of a placed plan (action id 47951, `areagen.lua`) sends players back to the tile in front of the
+plan's own teleport, on its floor (`front` of its places entry, written by the install; else computed from
+`room.teleportRows`: below a north-row teleport, above a south-row one, towards the stairs for an end-row one), through
+`ChaosHuntTeleports.backFor`; other areas keep their exits. (Before 2026-10-20 every exit led to the middle of floor 6,
+(31648, 32256, 6), though the hunts of levels 200-500 stand on floor 7: beta report "the teleports inside the hunts
+take you to random places".) Slot order (owner, 2026-10-16: "ordered by level"):
 the plans by level band ascending (the plan file's `level`: floor, ceiling, id), along the corridor from west to east,
 north before south in each column; the config's order does not count, so a new hunt lands in its band's place on the
 next install (the display spawns follow). `slot` pins one (1 = the westmost north teleport). A plan missing from
@@ -14177,10 +14181,17 @@ west to east (north before south in a column). A floor with too few slots is gro
   31706, y 32263-32271, a little below the hall, east of the plaza's aisle where the daily and weekly reward chests
   stood, joined to the aisle by a three-row corridor from x 31665. The corridor keeps its protection zone; "Quests" ("Missões") floats over it. The
   rewards stay behind the teleport in the same arrangement; no unique id is shared or changed (the teleports have
-  none; the rewards keep theirs). The quest sites' own way back (16 teleports, found within 4 tiles of the quest's
-  destination by the tile in front of the old alcove they lead to) is rewritten to lead in front of the new alcove.
-  The 16 old alcoves become hunt slots: cells bare, the quest teleport and the sign's text gone (the hunt's own
-  sign is written at startup). Quests, base positions and destinations in `tools/hall_hunts.csv`:
+  none; the rewards keep theirs). The quest sites' own ways back (the teleports that lead in front of the old alcove,
+  near the quest's destination or deeper in the quest) are rewritten to lead in front of the new alcove (the ways
+  back of every hunt and quest, below).
+  The 16 old alcoves become hunt slots: their cell row (both cells and the counter between them: the rewards stood
+  on all three) becomes the model hunt alcove's (`hall.quests.model`, the alcove of teleport column 31666 on floor 6:
+  bare cells without protection zone, so the display monsters can stand there, and the plain counter), the quest
+  teleport and the sign's text gone (the hunt's own sign is written at startup). A quest whose teleport an earlier
+  install lost (a hunt's teleport in its alcove, neither there nor in the quest hall) is moved all the same and its
+  teleport made again to the CSV's destination (`hall.quests.portalItems`, else the room's portal item), its sign
+  named after the CSV when blank. The corridor's far end (x 31707) is closed by the hall's wall, and "Quests" also
+  floats where the plaza's aisle meets the connector (31665, 32267), the way in. Quests, base positions and destinations in `tools/hall_hunts.csv`:
   | north row y 32254 | quest | to |
   |---|---|---|
   | 31630 | Behemoth | 33305,31706,12 |
@@ -14242,7 +14253,60 @@ west to east (north before south in a column). A floor with too few slots is gro
   write back (a container) is refused.
   `--remove-hall` puts every base hunt back where the CSV says it stood, the quests in their old alcoves and the planned hunts in the wings again;
   the map backup `<map>.otbm.bak` is written before the first change as for every content install. Idempotent both ways.
-- **In game**: every hunt's sign and floating label name it and its band (the base ones by their top monster:
+- **Beta fixes, 2026-10-20** (owner: "the teleports are wrong ... the quest rewards stayed and the quests are gone",
+  "many black squares in the TP room", "the teleports inside the hunts take you to random places"; the cause of each
+  checked on a copy of the base map with the installer of the time):
+  - *Rewards left in the hunt rooms.* The rewards of a quest alcove stand on three counters: the two cells and the
+    counter between them. The move cleared only the two cells (to bare tiles that kept the protection zone, where no
+    monster can stand: the old alcoves showed no display monster), so the middle counter kept its rewards ("a stone on
+    a pedestal"). Now the cell row is the model hunt alcove's (above).
+  - *Display monsters that do not match the room.* `hall_order.py derive` took the CSV's `display` from the monster
+    the base server had in the cells beside each teleport, which is often another hunt's ("Novice of the Cult" showed
+    two Wyrms, "Haunted Treeling" Werewolves, "Demon Skeleton" Nightglass Constructs). The room's monster is now one
+    name for both (`hall_order.room_monster`: the CSV's `display`, default `name`): the cells show it, the sign and
+    the label name it. `display` is the top monster, except where it turns invisible (an `invisible` defense: the
+    Stalker room showed nothing): Tomb vaults shows Ghost, Quara grotto Quara Constrictor, the Blackblade hunt Urzog.
+    derive writes it that way; the install logs a room monster the server does not have (no display then) or one
+    that turns invisible. Several base hunts' top monsters are 3x3 sprites (Aeliana, grothar, Fleshcarver, Scaledrake,
+    fangclaw; the base server showed 3x3 monsters in those cells too); not changed.
+  - *Black squares.* The ground floor's wings are copies of floor 6's alcoves, and floor 6's outer walls stand on no
+    ground (an upper floor shows the floor below there); on the ground floor each became a black, unmapped square under
+    the wall, and the old end tiles where the copy has no tile were cut and left nothing (16 holes at the room's old
+    corners). The install now puts ground under every tile of the ground floor's wings and ends (the nearest ground
+    of the same column outwards, the lawn; then the same row; then inwards) and a ground tile in every hole; ground
+    ids from `items.otb` (group 1), without it the step is left out with a line in the log. A hunt teleport put on a
+    copied tile went in front of its ground item; it goes after it now.
+  - *Ways back.* Every base hunt has a way back beside its arrival that leads in front of the teleport where the base
+    server had it (57 teleports on the base map lead into the hall). The hall order moved the hunts but rewrote only the
+    quests' ways back within 4 tiles of the quest, so a hunt's way back led in front of another hunt's teleport, often
+    on another floor, and the far ways back of three quests to a hunt's room. Now every teleport outside the hall that
+    leads in front of a hall teleport belongs to the hunt or quest whose arrival is nearest among those it leads in
+    front of (where the base server had them or where they stand now), and leads in front of the teleport that one
+    has now (`hall_quests.ways_back`); --remove-hall turns them back. The teleport items are those of `items.otb`
+    (group 7) with the room's own.
+  - *Rooms without a hunt* ("many unused spawns"). The hall has 103 hunt rooms and 62 hunts (45 base, 17 planned):
+    floor 7 48 on 48, floor 6 6 on 37, floor 5 8 on 18, by the owner's level rule; there are no hunts without a room.
+    A room no hunt takes showed a dead teleport (the ring and sparkle of the alcove, no teleport, no label, no
+    display). Now it is closed (`hall.closed`): the alcove's own teleport-row wall piece (29306) on its teleport
+    tile, the ring and sparkle (8047, 1421) off, the sign blank; the counter stays behind the wall as a niche. A room a
+    hunt takes again (a new hunt, `--remove-hall`) is opened: the wall off, the ring and sparkle back. The room's
+    state check leaves these items and the grounds out, so a grown room stays "grown".
+  - *Re-run over the broken hall.* The install repairs the hall an earlier run left: the cell rows of the old
+    alcoves, lost quest teleports, the ways back, the ground and the display spawns; a second run changes nothing.
+  - *Checked* (2026-10-20, on copies of the base map with the base items and monsters; not in a client, not on a
+    live server): the installer of the time run on the base map reproduces the report (the middle counters with
+    rewards, protection-zone cells, the Wyrms beside "Novice of the Cult", 16 holes and about 70 walls without ground
+    on floor 7, 41 of the 55 ways back into the hall leading in front of another teleport). The new installer run over
+    that map: 41 rooms closed, 41 ways back rewritten, ground under 102 tiles, the old alcoves' cell rows replaced;
+    every tile of the hall and quest hall, the display spawns and the places file are then the same as a fresh install
+    on the base map, no hole or groundless tile on floor 7 that the base map did not have, every way back leads in
+    front of a teleport that leads back near it; a second run changes nothing (same map and spawn file hash), on both.
+  - *Where the quests are.* The owner asked for the quests "further south, where the daily and weekly rewards are":
+    the quest hall stays where it was placed on 2026-10-18, at the east end of the plaza's aisle where the daily and
+    weekly reward booths are (x 31674-31706, y 32263-32271, on the pond east of the plaza), now with the second label at
+    the way in. Moving it into the plaza itself would replace its booths, statues and two event teleports; left for
+    the owner to decide.
+- **In game**: every hunt's sign and floating label name it and its band (the base ones by their room monster:
   "Hydra, levels 45-75"); each floor floats "Floor 7: levels 1-500" in its corridor and, over the stairs up, the next
   floor's range ("Up: floor 6, levels 500-1000"); `hall.labels` in the config.
 - Checked on a copy of the test server's base map (2026-10-20, the installer run for real on the copy; the map
@@ -14259,8 +14323,14 @@ nearest group below for a cave; the floors by level (1-500 / 500-1000 / 1000+, a
 synthetic quest hall: alcoves moved tile for tile with unique ids, counts and sign text, the ways back retargeted, the
 chest and booth gone, a chest with another unique id or an action id under the hall refused, reachable, PZ kept,
 second run unchanged, --remove-hall restores every tile; a wing over a tile with an action id, a unique id, a sign or a
-teleport refused), `tests/hunt_teleports_test.lua` (base signs and labels, the floor labels in both languages, the top
-floor "levels 1000+", the quest hall's label).
+teleport refused; the old alcoves' cell row as the model's, no reward left on the middle counter, cells without
+protection zone with the hunt's display monster, the corridor's end wall, both quest labels in the places file; a lost
+quest made again with its teleport, sign text and rewards, second run unchanged; a moved base hunt's way back in front
+of its new teleport, the other's left, and back with --remove-hall; a ground-floor wing over a floor-6 wall without
+ground and an old end tile without a copy: ground everywhere, the teleport after the ground, its way back on the new
+floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and labels, the floor labels in both
+languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
+places file's `front` or computed for both rows and the end row).
 
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a

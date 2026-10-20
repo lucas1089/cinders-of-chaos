@@ -10,7 +10,7 @@
 --   step in  below the band's floor: back where the player came from, a poff and the reason in the player's
 --            language; else to the plan's arrival tile with the teleport effect at both ends
 --   exits    areagen.lua's exit portal (action id 47951) asks ChaosHuntTeleports.backFor: a placed plan's exit sends
---            players back to the room instead of the temple
+--            players back in front of the plan's own teleport (its floor and slot) instead of the temple
 --   display  the display monsters in the closed cells are harmless: HT.isDisplay / isDisplaySpot for the other
 --            systems (boss mechanics, monster tiers, treasure goblin skip them), onTargetCombat refuses their hits
 -- Assumed engine API (TFS 1.4): Tile, Game.createItem, Item:setActionId/setAttribute, MoveEvent stepin by aid,
@@ -194,13 +194,19 @@ function float.onThink()
 			end
 		end
 	end
-	-- the quest hall: "Quests" over its corridor, for the players in it (the hall is 33 columns wide)
+	-- the quest hall: "Quests" over its corridor, for the players in it (the hall is 33 columns wide), and where the
+	-- plaza's aisle meets the corridor to it, for the players near
 	if cfg.hall and HT.idx.quests then
-		local pos = P(HT.idx.quests.label)
-		for _, spec in ipairs(Game.getSpectators(pos, false, true, 17, 17, 4, 4) or {}) do
-			local l = H.questLabel(cfg, HT.idx, langOf(spec))
-			if l then
-				spec:say(l.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
+		local areas = {{HT.idx.quests.label, 17, 4}, {HT.idx.quests.entrance, r, r}}
+		for i, a in ipairs(areas) do
+			if a[1] then
+				local pos = P(a[1])
+				for _, spec in ipairs(Game.getSpectators(pos, false, true, a[2], a[2], a[3], a[3]) or {}) do
+					local l = H.questLabels(cfg, HT.idx, langOf(spec))[i]
+					if l then
+						spec:say(l.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
+					end
+				end
 			end
 		end
 	end

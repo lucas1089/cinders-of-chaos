@@ -96,8 +96,25 @@ local function cfgPlans(cfg)
 	return by
 end
 
+-- the corridor tile in front of a teleport of the room: below a north-row teleport, above a south-row one, towards
+-- the stairs' column (room.back.x) for one on the corridor's end row; nil without the room's rows
+function H.frontOf(cfg, pos)
+	local r = cfg and cfg.room
+	if not isPos(pos) or type(r) ~= "table" or type(r.teleportRows) ~= "table" then
+		return nil
+	end
+	if pos.y == r.teleportRows[1] then
+		return {x = pos.x, y = pos.y + 1, z = pos.z}
+	elseif pos.y == r.teleportRows[2] then
+		return {x = pos.x, y = pos.y - 1, z = pos.z}
+	end
+	local mid = r.back and r.back.x or pos.x
+	return {x = pos.x < mid and pos.x + 1 or pos.x - 1, y = pos.y, z = pos.z}
+end
+
 -- the lookup tables: byTeleport[tile key] and byExit[tile key] -> entry {id, name, level, minLevel, teleport, sign,
--- arrival, exit, monster}; the config's entry of a plan (when it has one) gives minLevel and the display monster
+-- arrival, exit, front, monster}; the config's entry of a plan (when it has one) gives minLevel and the display
+-- monster; front (where the exit sends players back) is the places file's, else H.frontOf the teleport
 function H.index(cfg, places)
 	local idx = {byTeleport = {}, byExit = {}, list = {}, back = places and places.back}
 	if type(places) ~= "table" or type(places.places) ~= "table" then
@@ -110,7 +127,8 @@ function H.index(cfg, places)
 			local entry = {
 				id = e.id, name = e.name or e.id, level = {e.level[1], e.level[2]},
 				minLevel = c.minLevel or e.level[1], teleport = e.teleport, sign = e.sign, arrival = e.arrival,
-				exit = e.exit, monster = c.monster or e.monster
+				exit = e.exit, monster = c.monster or e.monster,
+				front = isPos(e.front) and e.front or H.frontOf(cfg, e.teleport)
 			}
 			idx.byTeleport[key(e.teleport)] = entry
 			if isPos(e.exit) then
@@ -133,9 +151,10 @@ function H.index(cfg, places)
 			idx.floors[f.z] = {f.level[1], f.level[2]}
 		end
 	end
-	-- the quest hall (tools/hall_quests.py): where its "Quests" label floats
+	-- the quest hall (tools/hall_quests.py): where its "Quests" labels float (its corridor, the plaza's way in)
 	if type(places.quests) == "table" and isPos(places.quests.label) then
-		idx.quests = {label = places.quests.label, count = tonumber(places.quests.count) or 0}
+		idx.quests = {label = places.quests.label, count = tonumber(places.quests.count) or 0,
+			entrance = isPos(places.quests.entrance) and places.quests.entrance or nil}
 	end
 	return idx
 end
@@ -187,6 +206,20 @@ function H.questLabel(cfg, idx, lang)
 	return {pos = q.label, text = H.text(cfg, lang, "Quests")}
 end
 
+-- every "Quests" label: over the quest hall's corridor and, when the places file has it, where the plaza's aisle
+-- meets the corridor to the hall (beta 2026-10-20: the hall off the aisle was not found)
+function H.questLabels(cfg, idx, lang)
+	local out = {}
+	local l = H.questLabel(cfg, idx, lang)
+	if l then
+		out[1] = l
+		if idx.quests.entrance then
+			out[2] = {pos = idx.quests.entrance, text = l.text}
+		end
+	end
+	return out
+end
+
 -- a display monster's spot: a cell row of the room (cfg.room.cellRows) on a floor of the hall (cfg.display)
 function H.isDisplaySpot(cfg, pos)
 	local d, r = cfg and cfg.display, cfg and cfg.room
@@ -223,12 +256,15 @@ function H.enter(cfg, entry, level, lang)
 		entry.name, entry.level[1], entry.level[2])
 end
 
--- where the exit portal at `pos` sends players: the room's back tile for a placed plan's exit, else nil
+-- where the exit portal at `pos` sends players: the tile in front of the plan's own teleport (the floor and the slot
+-- the player left from; beta 2026-10-20: every exit led to the middle of floor 6, though the hunts of levels 1-500
+-- stand on floor 7), the room's back tile when the entry has none; nil for an exit that is not a placed plan's
 function H.backFor(idx, pos)
-	if not isPos(pos) or not idx or not idx.byExit[key(pos)] then
+	local e = isPos(pos) and idx and idx.byExit[key(pos)]
+	if not e then
 		return nil
 	end
-	return idx.back
+	return e.front or idx.back
 end
 
 return H

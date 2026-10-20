@@ -177,7 +177,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
                teleports"); with tools/hall_hunts.csv the hall is ordered by level (z 7 levels 1-500, z 6 500-1000, z 5
                1000+), the base quests move to their own hall with their rewards, the daily/weekly reward chests of the
-               plaza go and the low-level hunts are added (README "Hall order"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
+               plaza go and the low-level hunts are added, the ways back from the hunts and quests follow their
+               teleports and the ground floor's wings get ground under every tile (README "Hall order"; re-run over
+               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes);
+               also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
                areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
