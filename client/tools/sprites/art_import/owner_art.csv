@@ -17,8 +17,8 @@ wings_duskfeather,outfit,wings,Duskfeather Wings,owner_art/wings_duskfeather,0,0
 wings_emberplume,outfit,wings,Emberplume Wings,owner_art/wings_emberplume,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
 wings_wildgrove,outfit,wings,Wildgrove Wings,owner_art/wings_wildgrove,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
 wings_bloodfeather,outfit,wings,Bloodfeather Wings,owner_art/wings_bloodfeather,0,0,3,3,4,9,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=110/110/110/110/110/110/110/110/110|anim0=0:0:0
-wings_gloomgild,outfit,wings,Gloomgild Wings,owner_art/wings_gloomgild,0,0,3,3,4,8,animateAlways displacement:-6:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
-wings_sunforged,outfit,wings,Sunforged Wings,owner_art/wings_sunforged,0,0,3,3,4,8,animateAlways displacement:-6:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
+wings_gloomgild,outfit,wings,Gloomgild Wings,owner_art/wings_gloomgild,0,0,3,3,4,8,animateAlways displacement:-12:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
+wings_sunforged,outfit,wings,Sunforged Wings,owner_art/wings_sunforged,0,0,3,3,4,8,animateAlways displacement:-12:-12,new,,gtypes=1|layers=1|exact=96|durs0=120/120/120/120/120/120/120/120|anim0=0:0:0
 wings_starmoth,outfit,wings,Starmoth Wings,owner_art/wings_starmoth,0,0,3,3,4,5,animateAlways,new,,gtypes=1|layers=1|exact=96|durs0=140/140/140/140/140|anim0=0:0:0
 cactus_01,item,stump,leaning cactus,owner_art/cacti,0,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
 cactus_02,item,stump,leaning cactus,owner_art/cacti,64,0,2,2,1,1,bottom notwalkable notmoveable,new,,family=cacti|block=1
