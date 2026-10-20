@@ -2033,6 +2033,7 @@ items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are 
   83075e18d35a55a59ca5c1cf73aef7740859ac002312d0d9767d15e62b2d1a52, packed twice with the same sha256; unpacks to the
   md5s above. **On windows-assets since 2026-10-20 (ed7db076, owner approved).** No server change: the look ids stay. A client on pair 30
   keeps drawing the three wings off.
+  `outfit_anchors.lua` (character select) regenerated from pair 31: the md5 and the rows 937, 938, 1185.
 - Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
   approved it. Not run in a live client by us.
 
