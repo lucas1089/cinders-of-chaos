@@ -90,6 +90,31 @@ function A.gap(ids, spells)
   return math.floor(gap * 100 + 0.5) / 100
 end
 
+-- ids with the area spells first, then the others, each group in its order; creatures follow their spell.
+-- Returns ids, creatures, moved (true when the order changed)
+function A.areaFirst(ids, creatures, spells)
+  spells = spells or (data() and data().spells) or {}
+  local outIds, outCreatures, rest, restCreatures = {}, {}, {}, {}
+  for i, id in ipairs(ids) do
+    if spells[id] and spells[id].area then
+      outIds[#outIds + 1] = id
+      outCreatures[#outCreatures + 1] = creatures[i]
+    else
+      rest[#rest + 1] = id
+      restCreatures[#restCreatures + 1] = creatures[i]
+    end
+  end
+  for i, id in ipairs(rest) do
+    outIds[#outIds + 1] = id
+    outCreatures[#outCreatures + 1] = restCreatures[i]
+  end
+  local moved = false
+  for i = 1, #ids do
+    if ids[i] ~= outIds[i] then moved = true break end
+  end
+  return outIds, outCreatures, moved
+end
+
 -- the rotation for a character: vocId (the server's), level, canCast(id) -> true when the character can cast the spell
 -- (knows it, its class and level). Returns { level, ids, creatures, gap, changed } or nil, reason.
 function A.select(vocId, level, canCast, opts)
@@ -141,7 +166,13 @@ function A.select(vocId, level, canCast, opts)
   if #ids == 0 then
     return nil, 'spells'
   end
-  local gap = (changed or added) and A.gap(ids) or preset.gap
+  -- Owner, 2026-10-20: "o helper ainda está colocando as magias de área embaixo das de single target. elas devem ficar
+  -- em cima para serem castadas". The helper casts the first rule that can fire, so a single-target spell above an
+  -- area one always wins. Area spells go first (each waits for its monster count), then the single-target ones;
+  -- each group keeps its order.
+  local moved = false
+  ids, creatures, moved = A.areaFirst(ids, creatures, spells)
+  local gap = (changed or added or moved) and A.gap(ids) or preset.gap
   return { level = preset.level, ids = ids, creatures = creatures, gap = gap, changed = changed }
 end
 
