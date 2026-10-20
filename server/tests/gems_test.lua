@@ -296,7 +296,7 @@ eq(plain:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "It shines. Sockets (1/1): Ch
 
 -- ---------------------------------------------------------------- the Orb of Sockets and the other orbs
 local orb = C.orbByKey.sockets
-eq(orb.id, cfg.socketOrb.id, "eighth orb"); eq(#C.config.orbs, 15, "eight orbs, the six of orbs v2 and the Orb of Unveiling")
+eq(orb.id, cfg.socketOrb.id, "eighth orb"); eq(#C.config.orbs, 17, "eight orbs, the six of orbs v2, the Orb of Unveiling, the Ember Orb and the Crown Orb")
 eq(C.orbById[24692].key, "sockets", "by id")
 local axe = gear(2431, 13)
 eq(C.check("sockets", axe), true, "a fresh two-hander")

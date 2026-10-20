@@ -73,7 +73,7 @@ local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
 for k, v in pairs(cfg.messages) do
 	check(pt[v] ~= nil, "pt-BR for message " .. k)
 end
-local named = {["3 Orbs of Awakening"] = true, ["3 Ember Orbs"] = true, ["Orb of Tempering"] = true,
+local named = {["3 Orbs of Awakening"] = true, ["Ember Orb"] = true, ["Crown Orb"] = true, ["Orb of Tempering"] = true,
 	["Orb of Unmaking"] = true, ["Orb of Grafting"] = true, ["2 Whetstones"] = true, ["10 Rune Shards"] = true}
 for _, o in ipairs(cfg.offers) do
 	check(pt[o.desc] ~= nil, "pt-BR for the text of " .. o.key)

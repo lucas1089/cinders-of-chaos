@@ -27026,22 +27026,6 @@
 					"icon": "wiki/i/orb-holy-banner.png"
 				},
 				{
-					"id": "cur:29853",
-					"name": "Crown Shard",
-					"sub": "Currency of the character upgrades; no crafting use.",
-					"color": "#c0a0ff",
-					"sections": [
-						{
-							"h": "What it does",
-							"p": [
-								"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."
-							]
-						},
-						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					],
-					"icon": "wiki/i/orb-holy-banner.png"
-				},
-				{
 					"id": "cur:29858",
 					"name": "Dawn Orb",
 					"sub": "Currency of the character upgrades; no crafting use.",
@@ -27056,22 +27040,6 @@
 						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
 					],
 					"icon": "wiki/i/orb-light-burst.png"
-				},
-				{
-					"id": "cur:29852",
-					"name": "Ember Shard",
-					"sub": "Currency of the character upgrades; no crafting use.",
-					"color": "#c0a0ff",
-					"sections": [
-						{
-							"h": "What it does",
-							"p": [
-								"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."
-							]
-						},
-						{"h": "Sources", "p": ["Monster loot lists of the base world."]}
-					],
-					"icon": "wiki/i/orb-fire-flame.png"
 				},
 				{
 					"id": "cur:29852",

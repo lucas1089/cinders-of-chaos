@@ -5468,21 +5468,6 @@ CodexData = {
 					items = {29853}
 				},
 				{
-					id = "cur:29853",
-					name = "Crown Shard",
-					color = "#c0a0ff",
-					sub = "Currency of the character upgrades; no crafting use.",
-					f = {group = "currency"},
-					sections = {
-						{
-							h = "What it does",
-							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
-						},
-						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					},
-					items = {29853}
-				},
-				{
 					id = "cur:29858",
 					name = "Dawn Orb",
 					color = "#c0a0ff",
@@ -5496,21 +5481,6 @@ CodexData = {
 						{h = "Sources", p = {"Monster loot lists of the base world."}}
 					},
 					items = {29858}
-				},
-				{
-					id = "cur:29852",
-					name = "Ember Shard",
-					color = "#c0a0ff",
-					sub = "Currency of the character upgrades; no crafting use.",
-					f = {group = "currency"},
-					sections = {
-						{
-							h = "What it does",
-							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
-						},
-						{h = "Sources", p = {"Monster loot lists of the base world."}}
-					},
-					items = {29852}
 				},
 				{
 					id = "cur:29852",

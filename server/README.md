@@ -17706,3 +17706,11 @@ text based, marker `-- Chaos: open to everyone`) turns every storage value into 
 started it), `needCrystal = true` into false, and skips the warzone refusal. The warzone boss rooms are unchanged. Run it with the
 install (`install_all.py --only gnometeleports`), then `/reload movements`, or restart. Test: `tools/patch_gnome_teleports_test.py`.
 
+
+## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
+
+Beta report 2026-10-20: a boss's 10-minute fire kept characters in battle mode, so they could not use the town portal or
+the NPCs and had to wait it out. Every 2 seconds a player standing in a protection zone, not locked for PvP and without a
+white, red or black skull, loses the harmful conditions of monsters (fire, poison, energy, bleeding, freezing, dazzle,
+curse, drown, paralysis, root) and the battle lock. Outside protection zones nothing changes. The list is
+`ChaosTempleCleanseCore.conditions`. Tests: `tests/temple_cleanse_test.lua`.

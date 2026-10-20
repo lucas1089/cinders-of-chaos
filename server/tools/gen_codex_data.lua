@@ -907,8 +907,10 @@ function Gen.orbEntries(D)
 	for _, orb in ipairs(C.config.orbs) do
 		crafting[orb.id] = true
 	end
+	local seenRename = {}
 	for _, r in ipairs(O.config.renames) do
-		if not crafting[r.id] then
+		if not crafting[r.id] and not seenRename[r.id] then -- one row per id in the codex (a rename may list two old names)
+			seenRename[r.id] = true
 			out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
 				sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"}, items = {r.id},
 				sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}},
