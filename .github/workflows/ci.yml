@@ -436,6 +436,8 @@ jobs:
           python3 -I client/tools/sprites/compose_outfit_test.py
           # the character select's anchors: centre, ground row, floating looks (synthetic figures)
           python3 -I client/tools/sprites/gen_outfit_anchors_test.py
+          # mounted frames and wings placement (fix_mounts_wings.py on a synthetic pair)
+          python3 -I client/tools/sprites/fix_mounts_wings_test.py
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
