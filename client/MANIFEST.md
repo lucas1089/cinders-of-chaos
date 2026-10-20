@@ -1982,7 +1982,7 @@ Intermediate md5s (dat / spr), items after the step:
   (the owner approves after the import). The tree keeps pair 29's `Tibia.dat` md5 reference and `outfit_anchors.lua`
   until the switch-on (`ChaosPack30Art.PAIR30`, off). Not run in a client with the real pair.
 
-## Wings displacement (pair 31: outfits 937, 938, 1185, `tools/sprites/fix_pair_warnings.py` kind `displacement`; built twice, NOT pushed to windows-assets)
+## Wings displacement (pair 31: outfits 937, 938, 1185, `tools/sprites/fix_pair_warnings.py` kind `displacement`; on windows-assets ed7db076, owner approved)
 Owner beta report (2026-10-20): "Lullaby Wings below the body, Bride Wings to the left, Fiery Wings shifted", in the
 Outfit window and on the map. The names are the base `data/XML/wings.xml` (base server download on windows-assets;
 the base tree is not in git): 1 Fiery Wings 937, 2 Lullaby Wings 938, 3 Falanaar Wings 939, 4 Vampire Wings 940,
@@ -2031,10 +2031,10 @@ items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are 
 - `things-1098.tar.xz` like pair 30's (the same tar and `xz -9 -T0` flags, mtime 2026-10-20 00:00Z; that recipe
   rebuilds pair 30's archive to its sha256): 88,006,208 bytes, sha256
   83075e18d35a55a59ca5c1cf73aef7740859ac002312d0d9767d15e62b2d1a52, packed twice with the same sha256; unpacks to the
-  md5s above. **Not pushed:** the owner approves it first. No server change: the look ids stay. A client on pair 30
+  md5s above. **On windows-assets since 2026-10-20 (ed7db076, owner approved).** No server change: the look ids stay. A client on pair 30
   keeps drawing the three wings off.
-- Checked offline only: a before / after sheet, four directions, the wings on look 128 by the rule above. Not run in a
-  live client; the owner confirms the in-game look before the push.
+- Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
+  approved it. Not run in a live client by us.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
