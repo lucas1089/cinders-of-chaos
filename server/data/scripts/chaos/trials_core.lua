@@ -852,6 +852,9 @@ function M.clientState(state)
 				needsSpellEvents = M.needsSpellEvents(node) or nil, can = plan ~= nil, why = why,
 				switch = plan and not plan.free or (not plan and held[p] ~= 0 and held[p] ~= side) or nil}
 		end
+		-- giving the pair up (choose side 0): the same price as a switch; can / why as for a node
+		local cplan, cwhy = M.planPick(state, p, 0)
+		entry.clear = {can = cplan ~= nil, why = cwhy}
 		pairs_[p] = entry
 	end
 	return {supported = true, voc = voc, family = famKey, trial = fam.name, story = fam.story, level = state.level,

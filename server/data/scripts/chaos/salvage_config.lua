@@ -40,12 +40,12 @@ return {
 		{"transmutation", 35}, {"chaos", 25}, {"scouring", 12}, {"alchemy", 10}, {"annulment", 8}, {"divine", 5},
 		{"sockets", 3}, {"exalted", 2},
 		-- orbs v2: the cheap ones often, the gamble almost never
-		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"excision", 3}, {"binding", 2}, {"ruin", 1}
+		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"ember", 4}, {"excision", 3}, {"crown", 3}, {"binding", 2}, {"ruin", 1}
 	},
 
 	-- shards -> one orb, about 2.5 shards per Chaos Coin of a reference price: Awakening (transmutation) 5, Upheaval
 	-- (chaos) 10, Erasure (scouring) 12, Gilding (alchemy) 15, Unmaking (annulment) 20, Fate (divine) 25, Sockets 25,
-	-- Grafting (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30, Ruin 60. The store
+	-- Grafting (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Ember 20, Excision 25, Crown 40, Binding 30, Ruin 60. The store
 	-- (shop_config.lua) sells only Whetstones, the Orb of Excision and the Orb of Binding, with weekly limits; the
 	-- other prices are reference values for the shard costs, not store offers.
 	recipes = {
@@ -60,11 +60,17 @@ return {
 		{key = "whetstone", cost = 5},
 		{key = "tempering", cost = 20},
 		{key = "reforging", cost = 50},
+		{key = "ember", cost = 50},
 		{key = "excision", cost = 60},
+		{key = "crown", cost = 100},
 		{key = "binding", cost = 75},
 		{key = "ruin", cost = 150}
 	},
 	maxCombine = 10, -- orbs made by one click
+	-- recycling (beta 2026-10-20: ~2000 orbs nobody could use): an orb back into shards at this share of its recipe cost
+	-- (rounded down, at least 1); the loss keeps shards -> orb -> shards from being a free loop. Up to maxRecycle per click.
+	recycleShare = 0.4,
+	maxRecycle = 100,
 
 	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,

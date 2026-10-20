@@ -11,6 +11,7 @@
 --                                                              ("orbs" | "salvage"); answered with the state
 --                     salvageBatch {bag, maxRarity, sig}       salvage what the last preview listed (sig must match)
 --                     combine {key, count}                     shards -> orbs
+--                     recycle {key, count}                     orbs -> shards (cfg.recycleShare of the recipe cost)
 --   server -> client  state.salvage = {installed, shardId, shardClientId, shardName, shardSingular, shards, rarityNames, rarityIds,
 --                                      recipes = [{key, name, id, clientId, cost, count}], bags = [{path, name, clientId}],
 --                                      batch = {bag, maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths},
@@ -47,7 +48,7 @@ local OPCODE = ChaosOpcodes.crafting or 232
 local LOCK = cfg.lockAttr
 
 S.config = cfg
-S.actions = {salvage = true, lock = true, salvageScope = true, salvageBatch = true, combine = true}
+S.actions = {salvage = true, lock = true, salvageScope = true, salvageBatch = true, combine = true, recycle = true}
 
 local scope = {} -- player id -> {bag, maxRarity, mode}
 local last = {} -- player id -> {single, batch, combine} time in ms
@@ -327,7 +328,7 @@ function S.benchState(player, data)
 	for _, r in ipairs(cfg.recipes) do
 		local orb = C.orbByKey[r.key]
 		if orb then
-			recipes[#recipes + 1] = {key = r.key, name = orb.name, id = orb.id, clientId = clientIdOf(orb.id), cost = r.cost,
+			recipes[#recipes + 1] = {key = r.key, name = orb.name, id = orb.id, clientId = clientIdOf(orb.id), cost = r.cost, back = K.recycleShards(r.key, cfg),
 				count = player:getItemCount(orb.id)}
 		end
 	end
@@ -540,6 +541,32 @@ local function combine(player, data)
 	b.sendState(player, false)
 end
 
+local function recycle(player, data)
+	local b = bench()
+	if limited(player, "combine", cfg.combineIntervalMs) then
+		b.sendState(player, false)
+		return
+	end
+	local key = type(data.key) == "string" and data.key or ""
+	local count = Chaos.toInt(data.count, 1, cfg.maxRecycle or 1) or 0
+	local orb = C.orbByKey[key]
+	local ok, shards = K.recycleCheck(orb and player:getItemCount(orb.id) or 0, key, count, cfg)
+	if not ok or not orb then
+		return refuse(player, K.reasons[shards] or "That cannot be recycled.")
+	end
+	if not player:removeItem(orb.id, count) then
+		return refuse(player, K.reasons.orbs)
+	end
+	local _, inbox = give(player, cfg.shard.id, shards)
+	local text = string.format("%dx %s -> %d %s", count, orb.name, shards, cfg.shard.plural)
+	logRows(player, {{orb = "Recycle", item = orb.name, text = text}})
+	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE or 11)
+	local msg = text .. "." .. ((inbox or 0) > 0 and Chaos.t(player, " Your backpack is full: it went to your inbox.") or "")
+	player:sendTextMessage(MESSAGE_INFO_DESCR, msg)
+	b.sendResult(player, true, "salvage", msg)
+	b.sendState(player, false)
+end
+
 local function setScope(player, data)
 	local b = bench()
 	if ChaosRateLimit and not ChaosRateLimit.allow(player, "salvage.scope", 100) then
@@ -575,6 +602,8 @@ function S.onAction(player, action, data)
 		lockAction(player, data)
 	elseif action == "combine" then
 		combine(player, data)
+	elseif action == "recycle" then
+		recycle(player, data)
 	elseif action == "salvageScope" then
 		setScope(player, data)
 	end

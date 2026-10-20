@@ -33,7 +33,7 @@ dofile("data/scripts/chaos/archetypes_core.lua")
 local C, A = ChaosArchetypesConfig, ChaosArchetypesCore
 
 -- ------------------------------------------------------------------------------------------------ core: prices
-eq(#A.FLAGS, 16, "sixteen keystones (twelve, then four of the second round)")
+eq(#A.FLAGS, 24, "twenty-four keystones (twelve, four of the second round, eight of the third)")
 local all = {}
 for _, f in ipairs(A.FLAGS) do all[f] = true end
 local f1 = A.flagsOf({arPyreOath = 1, strength = 3})
@@ -246,6 +246,122 @@ eq(A.percentBase(5000, 2000, false), 5000, "percent base: health alone")
 local mflags = A.flagsOfMask(A.mask({arHollowVessel = true, arVigils = true}))
 check(mflags.arHollowVessel and mflags.arVigils and not mflags.arSnarewright, "flags of a mask")
 
+-- the third round (2026-10-20): the Warrior and Ranger line keystones, core rules
+-- Executioner's Verdict
+do
+	local pd, sd, ex = A.executeHit(1500, 10000, -1400, 0, false)
+	check(ex and pd == -1500 and sd == 0, "executioner: a hit that leaves 100 of 10000 kills")
+	pd, sd, ex = A.executeHit(1600, 10000, -100, 0, false)
+	check(ex and pd == -1600, "executioner: leaves 1500, which is 15%: kills")
+	pd, sd, ex = A.executeHit(1601, 10000, -100, 0, false)
+	check(not ex and pd == -100, "executioner: leaves 1501, above 15%: no")
+	pd, sd, ex = A.executeHit(1500, 10000, -1400, 0, true)
+	check(not ex and pd == -1400, "executioner: never a boss")
+	pd, sd, ex = A.executeHit(1500, 10000, -2000, 0, false)
+	check(not ex and pd == -2000, "executioner: an overkill is left as it is")
+	pd, sd, ex = A.executeHit(1500, 10000, -1000, -300, false)
+	check(ex and pd == -1200 and sd == -300, "executioner: the second half counts, the first takes the rest")
+	near(A.hitFactor({arExecutioner = true}, {origin = "melee", targetFraction = 0.9}), 0.9, "executioner: a healthy monster")
+	near(A.hitFactor({arExecutioner = true}, {origin = "melee", targetFraction = 0.6}), 1, "executioner: 60% is not above 60%")
+	near(A.hitFactor({arExecutioner = true}, {origin = "ranged", targetFraction = 0.9}), 1, "executioner: melee only")
+	near(A.hitFactor({arExecutioner = true}, {origin = "melee"}), 1, "executioner: a player target has no price")
+end
+-- Earthbreaker
+do
+	local st = {}
+	local m, slam
+	for i = 1, 3 do
+		m, slam = A.slamStep(st, 1000 * i)
+		check(m == 0.9 and not slam, "earthbreaker: hit " .. i .. " x0.9")
+	end
+	m, slam = A.slamStep(st, 4000)
+	check(m == 1.5 and slam, "earthbreaker: the fourth hit x1.5 and slams")
+	m, slam = A.slamStep(st, 5000)
+	check(m == 0.9 and not slam, "earthbreaker: the count starts over")
+	st = {}
+	A.slamStep(st, 0); A.slamStep(st, 1000); A.slamStep(st, 2000)
+	m, slam = A.slamStep(st, 5500)
+	check(m == 0.9 and not slam, "earthbreaker: 3.5 s of quiet starts the count over")
+	eq(A.slamAmount(1500), 900, "earthbreaker: the slam is 60% of the hit")
+end
+-- Rampage
+do
+	local st = {}
+	eq(A.rampageStacks(st, 0), 0, "rampage: none")
+	for i = 1, 7 do A.rampageKill(st, 1000 * i) end
+	eq(A.rampageStacks(st, 7000), 5, "rampage: at most 5")
+	eq(A.rampageStacks(st, 13000), 5, "rampage: 6 s after the last kill still")
+	eq(A.rampageStacks(st, 13001), 0, "rampage: gone after 6 s")
+	eq(A.rampageKill(st, 20000), 1, "rampage: a kill after the end starts at 1")
+	near(A.rampageDealt(3), 1.18, "rampage: 3 stacks deal 18% more")
+	near(A.rampageTaken(3), 1.12, "rampage: 3 stacks take 12% more")
+	near(A.hitFactor({arRampage = true}, {origin = "spell", rampage = 2}), 1.12, "rampage: spells count")
+	near(A.hitFactor({arRampage = true}, {origin = "melee", rampage = 2, source = "pyre"}), 1, "rampage: an archetype's own damage")
+end
+-- Last Stand
+do
+	local st = {}
+	local pd, sd, on = A.lastStandHit(st, 1000, 5000, 0, 5000, -3000, 0)
+	check(not on and pd == -3000, "last stand: a hit that leaves 2000 of 5000 is no trigger")
+	pd, sd, on = A.lastStandHit(st, 1000, 1500, 0, 5000, -1000, 0)
+	check(on and pd == -500, "last stand: cut to leave the 20% floor (" .. tostring(pd) .. ")")
+	check(st.readyAt == 1000 + 90000 and st.activeUntil == 1000 + 5000, "last stand: cooldown and window")
+	pd = A.lastStandHit(st, 2000, 1000, 0, 5000, -1000, 0)
+	eq(pd, -600, "last stand: the window takes 40% off")
+	pd, sd, on = A.lastStandHit(st, 7000, 1500, 0, 5000, -1000, 0)
+	check(not on and pd == -1000, "last stand: no second trigger before the cooldown")
+	pd, sd, on = A.lastStandHit(st, 91001, 1500, 0, 5000, -1000, 0)
+	check(on and pd == -500, "last stand: ready again after 90 s")
+	st = {}
+	pd, sd, on = A.lastStandHit(st, 1000, 1000, 0, 5000, -500, 0)
+	check(not on and pd == -500, "last stand: already at the floor, no trigger")
+	pd, sd, on = A.lastStandHit(st, 1000, 1500, 300, 5000, -1000, 0)
+	check(on and pd == -800, "last stand: the energy shield counts (800 of 1000: " .. tostring(pd) .. ")")
+	st = {}
+	pd, sd, on = A.lastStandHit(st, 1000, 1500, 600, 5000, -1000, 0)
+	check(not on and pd == -1000, "last stand: the shield alone absorbs enough")
+	st = {}
+	pd, sd, on = A.lastStandHit(st, 1000, 1500, 0, 5000, -600, -400)
+	check(on and pd == -300 and sd == -200, "last stand: both halves are cut alike")
+	eq(A.lastStandHealing(1000), 800, "last stand: healing x0.8")
+end
+-- Longshot, Barbed Quiver, Opening Shot, Hobbling Shot
+do
+	near(A.longshotFactor(1), 0.85, "longshot: next to you")
+	near(A.longshotFactor(2), 0.85, "longshot: 2 sqm still close")
+	near(A.longshotFactor(3), 1.06, "longshot: 3 sqm")
+	near(A.longshotFactor(5), 1.18, "longshot: 5 sqm")
+	near(A.longshotFactor(7), 1.30, "longshot: 7 sqm is the cap")
+	near(A.longshotFactor(12), 1.30, "longshot: the cap holds")
+	local ranged = {origin = "ranged", distWeapon = true}
+	near(A.hitFactor({arLongshot = true}, {origin = "ranged", distWeapon = true, distance = 5}), 1.18, "longshot: the hit")
+	near(A.hitFactor({arLongshot = true}, {origin = "ranged", distance = 5}), 1, "longshot: a wand is not a distance weapon")
+	near(A.hitFactor({arLongshot = true}, {origin = "melee", distWeapon = true, distance = 5}), 1, "longshot: ranged hits only")
+	near(A.hitFactor({arBarbed = true}, ranged), 0.9, "barbed: the hit itself x0.9")
+	near(A.hitFactor({arOpeningShot = true}, {origin = "ranged", distWeapon = true, full = true}), 1.8, "opening shot: full health")
+	near(A.hitFactor({arOpeningShot = true}, ranged), 0.93, "opening shot: later hits x0.93")
+	near(A.hitFactor({arHobble = true}, {origin = "ranged", distWeapon = true, hobbled = true}), 1.2, "hobble: a hobbled target")
+	near(A.hitFactor({arHobble = true}, ranged), 0.92, "hobble: other hits x0.92")
+	local tick, ticks, ms = A.bleedOf(900)
+	check(tick == 135 and ticks == 4 and ms == 1000, "barbed: 60% of 900 over 4 ticks")
+	check(A.bleedOf(3) == nil, "barbed: a hit too small to bleed")
+	local marks = {}
+	check(A.hobbleRoll(marks, 7, 1000, function() return 25 end), "hobble: 25 of 100 hobbles")
+	check(not A.hobbleRoll(marks, 7, 1000, function() return 26 end), "hobble: 26 does not")
+	A.hobbleMark(marks, 7, 1000)
+	check(A.hobbled(marks, 7, 3999) and not A.hobbled(marks, 7, 4000), "hobble: 3 s")
+	check(not A.hobbleRoll(marks, 7, 2000, function() return 1 end), "hobble: never twice at once")
+	check(A.hobbleRoll(marks, 7, 4000, function() return 1 end), "hobble: again after it ended")
+end
+for _, f in ipairs({"arExecutioner", "arEarthbreaker", "arRampage", "arLastStand"}) do
+	check(A.classMay(f, "warrior") and A.classMay(f, "juggernaut") and A.classMay(f, "berserker")
+		and not A.classMay(f, "ranger") and not A.classMay(f, "monk"), f .. ": the Warrior line only")
+end
+for _, f in ipairs({"arLongshot", "arBarbed", "arOpeningShot", "arHobble"}) do
+	check(A.classMay(f, "ranger") and A.classMay(f, "deadeye") and A.classMay(f, "beastmaster")
+		and not A.classMay(f, "warrior") and not A.classMay(f, "thief"), f .. ": the Ranger line only")
+end
+
 -- ------------------------------------------------------------------------------------------------ data
 local tree = dofile("data/scripts/chaos/passivetree_data.lua")
 local ids = {}
@@ -280,10 +396,11 @@ eq(rw[2].version, 2, "rework version 2")
 eq(rw[3].version, 3, "rework version 3")
 dofile("data/scripts/chaos/buildshare_core.lua")
 for i, id in ipairs(ids) do
-	-- the first twelve came with rework 2 and code format 4, the second round with rework 3 and format 5
-	local round2 = i > 12
-	eq(refunded[id], round2 and 3 or 2, "refunded once: " .. id)
-	eq(ChaosBuildShare.REWORKED[id], round2 and 5 or 4, "older codes leave out " .. id)
+	-- the first twelve came with rework 2 and code format 4, the second round with rework 3 and format 5, the third round
+	-- (the Warrior and Ranger lines) with rework 6 and format 6
+	local round = i > 16 and 3 or (i > 12 and 2 or 1)
+	eq(refunded[id], ({2, 3, 6})[round], "refunded once: " .. id)
+	eq(ChaosBuildShare.REWORKED[id], ({4, 5, 6})[round], "older codes leave out " .. id)
 end
 -- client tooltips state the numbers
 local TD = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"
@@ -336,6 +453,26 @@ if fh then
 	has(96, "health is " .. C.arHollowVessel.health); has(96, "+" .. pct(C.arHollowVessel.more))
 	has(96, pct(C.arHollowVessel.fromHealth) .. " of the health"); has(96, pct(C.arHollowVessel.recharge / 1000))
 	has(96, math.floor(C.arHollowVessel.earlyMs / 1000) .. " s after")
+	-- the third round
+	has(428, pct(C.arExecutioner.threshold)); has(428, "above " .. pct(C.arExecutioner.priceAbove))
+	has(428, pct(1 - C.arExecutioner.price) .. " less"); has(428, "not a boss")
+	has(409, "every " .. C.arEarthbreaker.every .. "th"); has(409, pct(C.arEarthbreaker.mainBonus) .. " more")
+	has(409, "up to " .. C.arEarthbreaker.maxTargets .. " other enemies"); has(409, C.arEarthbreaker.radius .. " sqm")
+	has(409, pct(C.arEarthbreaker.slamShare)); has(409, pct(1 - C.arEarthbreaker.price) .. " less")
+	has(466, "at most " .. C.arRampage.maxStacks); has(466, math.floor(C.arRampage.durationMs / 1000) .. " s")
+	has(466, pct(C.arRampage.damagePerStack) .. " more damage"); has(466, pct(C.arRampage.takenPerStack) .. " more damage")
+	has(523, "below " .. pct(C.arLastStand.floor)); has(523, "keep " .. pct(C.arLastStand.floor))
+	has(523, pct(C.arLastStand.reduction) .. " less damage"); has(523, math.floor(C.arLastStand.durationMs / 1000) .. " s")
+	has(523, math.floor(C.arLastStand.cooldownMs / 1000) .. " s"); has(523, pct(1 - C.arLastStand.healingTaken) .. " less")
+	has(561, pct(C.arLongshot.perSqm) .. " more"); has(561, "beyond " .. C.arLongshot.minRange)
+	has(561, "at most " .. pct(C.arLongshot.cap)); has(561, C.arLongshot.closeRange .. " sqm or closer")
+	has(561, pct(1 - C.arLongshot.close) .. " less")
+	has(542, pct(C.arBarbed.share) .. " of the hit"); has(542, string.format("%d", C.arBarbed.ticks * C.arBarbed.tickMs / 1000) .. " s")
+	has(542, pct(1 - C.arBarbed.mainDamage) .. " less")
+	has(599, pct(C.arOpeningShot.bonus) .. " more"); has(599, pct(1 - C.arOpeningShot.price) .. " less")
+	has(447, C.arHobble.chance .. "% chance"); has(447, math.floor(C.arHobble.durationMs / 1000) .. " s")
+	has(447, pct(C.arHobble.slow) .. " slower"); has(447, pct(C.arHobble.bonus) .. " more")
+	has(447, pct(1 - C.arHobble.price) .. " less")
 	for _, node in ipairs(C.nodes) do
 		local cn = nodes[node.id]
 		check(cn.isKeystone and cn.isDivine and cn.icon == node.flag, node.id .. " drawn as a keystone with its icon")
@@ -453,7 +590,7 @@ local function mk(kind, opt)
 		if t == CONDITION_INFIGHT and c.inFight then return {} end
 		return nil
 	end
-	function m:addCondition(cd) c.conds[#c.conds + 1] = cd; conditionsAdded[#conditionsAdded + 1] = {target = c.id, cond = cd} end
+	function m:addCondition(cd) c.conds[#c.conds + 1] = cd; conditionsAdded[#conditionsAdded + 1] = {target = c.id, cond = cd}; return true end
 	function m:removeCondition(t, id, sub)
 		for i = #c.conds, 1, -1 do if c.conds[i].type == t and c.conds[i].sub == sub then table.remove(c.conds, i) end end
 	end
@@ -498,7 +635,7 @@ function doTargetCombat(attacker, target, ctype, a, b, effect, origin)
 		if target.c.hp <= 0 and target:isMonster() then
 			target.c.hp = 0
 			if registered.ChaosArchetypesDeath and target.c.events.ChaosArchetypesDeath then
-				registered.ChaosArchetypesDeath.onDeath(target)
+				registered.ChaosArchetypesDeath.onDeath(target, nil, attacker)
 			end
 			creatures[target:getId()] = nil
 		end
@@ -513,6 +650,7 @@ function Condition(t)
 	local cd = {type = t, params = {}}
 	function cd:setParameter(k, v) self.params[k] = v; if k == CONDITION_PARAM_SUBID then self.sub = v end end
 	function cd:addDamage(rounds, ms, value) self.rounds, self.ms, self.value = rounds, ms, value end
+	function cd:setFormula(a, b, c2, d) self.formula = {a, b, c2, d} end
 	return cd
 end
 function ItemType(id)
@@ -909,6 +1047,138 @@ NOW = NOW + 1800
 registered.ChaosArchetypesThink.onThink(1000)
 eq(sage.c.es, math.floor(740 * 300 * 800 / 1000000), "the diadem's early start without the keystone")
 ChaosEnergyShield = nil
+
+-- ------------------------------------------------------------------------------------------------ the third round
+-- Executioner's Verdict (a Warrior with a sword)
+creatures, dealt = {}, {}
+local exe = mk("player", {hp = 5000, pos = P(2000, 2000), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(exe, {arExecutioner = 1})
+local wounded = mk("monster", {hp = 1500, maxHp = 10000, pos = P(2001, 2000)})
+eq(hitBy(exe, wounded, 1400), 1500, "executioner: the hit kills a monster it leaves at 100 of 10000")
+local healthy = mk("monster", {hp = 10000, maxHp = 10000, pos = P(2001, 2001)})
+eq(hitBy(exe, healthy, 1000), 900, "executioner: a healthy monster takes 90%")
+local bossy = mk("monster", {hp = 1500, maxHp = 10000, pos = P(2002, 2000), boss = true})
+eq(hitBy(exe, bossy, 1400), 1400, "executioner: a boss is not executed")
+local summon = mk("monster", {hp = 1500, maxHp = 10000, pos = P(2002, 2001)})
+summon.c.master = exe
+eq(hitBy(exe, summon, 1400), 1400, "executioner: a summon is not executed")
+local ally = mk("player", {hp = 1500, maxHp = 10000, pos = P(2003, 2000)})
+eq(hitBy(exe, ally, 1400), 1400, "executioner: no execution without the PvP rules")
+
+-- Earthbreaker: the fourth hit
+creatures, dealt = {}, {}
+local brk = mk("player", {hp = 5000, pos = P(2100, 2100), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(brk, {arEarthbreaker = 1})
+local anvil = mk("monster", {hp = 900000, pos = P(2101, 2100)})
+local near1 = mk("monster", {hp = 50000, pos = P(2102, 2100)})
+local near2 = mk("monster", {hp = 50000, pos = P(2103, 2101)})
+local far1 = mk("monster", {hp = 50000, pos = P(2106, 2100)})
+local seen = {}
+for i = 1, 4 do seen[i] = hitBy(brk, anvil, 1000) end
+check(seen[1] == 900 and seen[2] == 900 and seen[3] == 900 and seen[4] == 1500, "earthbreaker: 900 900 900 1500 (" ..
+	table.concat(seen, " ") .. ")")
+runEvents()
+local slams = {}
+for _, d in ipairs(dealt) do if d.depth > 0 and d.type == COMBAT_PHYSICALDAMAGE then slams[d.target] = d.amount end end
+check(slams[near1:getId()] == 900 and slams[near2:getId()] == 900, "earthbreaker: 60% of the hit on the ones next to it")
+check(slams[far1:getId()] == nil and slams[anvil:getId()] == nil, "earthbreaker: not the far one, not the target")
+NOW = NOW + 4000
+eq(hitBy(brk, anvil, 1000), 900, "earthbreaker: after 4 s of quiet the count starts over")
+
+-- Rampage: kills stack
+creatures, dealt = {}, {}
+local ram = mk("player", {hp = 5000, maxHp = 5000, pos = P(2200, 2200), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(ram, {arRampage = 1})
+for i = 1, 3 do
+	local prey = mk("monster", {hp = 100, pos = P(2201, 2200)})
+	prey.c.events.ChaosArchetypesHit = true
+	prey.c.events.ChaosArchetypesDeath = true
+	doTargetCombat(ram, prey, COMBAT_PHYSICALDAMAGE, -500, -500, 0, ORIGIN_MELEE)
+end
+local target = mk("monster", {hp = 90000, pos = P(2201, 2201)})
+eq(hitBy(ram, target, 1000), 1180, "rampage: 3 kills, 18% more damage")
+ram.c.events.ChaosArchetypesHit = true
+eq(math.abs(hitEv.onHealthChange(ram, target, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 1120,
+	"rampage: 12% more damage taken")
+local pet = mk("monster", {hp = 100, pos = P(2202, 2200)})
+pet.c.master = ram
+pet.c.events.ChaosArchetypesHit = true
+pet.c.events.ChaosArchetypesDeath = true
+doTargetCombat(ram, pet, COMBAT_PHYSICALDAMAGE, -500, -500, 0, ORIGIN_MELEE)
+eq(hitBy(ram, target, 1000), 1180, "rampage: a summon's death is no kill")
+NOW = NOW + 7000
+eq(hitBy(ram, target, 1000), 1000, "rampage: gone 6 s after the last kill")
+
+-- Last Stand
+creatures, dealt = {}, {}
+local stand = mk("player", {hp = 1500, maxHp = 5000, pos = P(2300, 2300), slots = {[CONST_SLOT_LEFT] = sword}})
+setTree(stand, {arLastStand = 1})
+local brute = mk("monster", {hp = 90000, pos = P(2301, 2300)})
+stand.c.events.ChaosArchetypesHit = true
+local function struck(by, amount) return math.abs(hitEv.onHealthChange(stand, by, -amount, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)) end
+eq(struck(brute, 1000), 500, "last stand: the hit is cut to leave 20%")
+eq(struck(brute, 1000), 600, "last stand: 40% less for 5 s")
+NOW = NOW + 6000
+eq(struck(brute, 1000), 1000, "last stand: then the cooldown (90 s)")
+NOW = NOW + 90000
+local hunter = mk("player", {hp = 100, pos = P(2302, 2300)})
+eq(struck(hunter, 1000), 1000, "last stand: not against players")
+eq(struck(brute, 1000), 500, "last stand: ready again after the cooldown")
+eq(math.abs(hitEv.onHealthChange(stand, stand, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL)), 800, "last stand: healing x0.8")
+
+-- the Ranger line: a crossbow
+creatures, dealt, conditionsAdded = {}, {}, {}
+local ranger = mk("player", {hp = 5000, pos = P(2400, 2400), slots = {[CONST_SLOT_LEFT] = bowItem2}})
+setTree(ranger, {arLongshot = 1})
+local d1 = mk("monster", {hp = 900000, pos = P(2401, 2400)})
+local d4 = mk("monster", {hp = 900000, pos = P(2404, 2400)})
+local d7 = mk("monster", {hp = 900000, pos = P(2407, 2400)})
+eq(hitBy(ranger, d1, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 850, "longshot: 1 sqm x0.85")
+eq(hitBy(ranger, d4, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 1120, "longshot: 4 sqm +12%")
+eq(hitBy(ranger, d7, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 1300, "longshot: 7 sqm +30%")
+eq(hitBy(ranger, d7, 1000), 1000, "longshot: a melee hit is not touched")
+
+-- Barbed Quiver
+setTree(ranger, {arBarbed = 1})
+conditionsAdded = {}
+eq(hitBy(ranger, d4, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 900, "barbed: the hit x0.9")
+runEvents()
+local bleed
+for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_BLEEDING then bleed = ca end end
+check(bleed and bleed.target == d4:getId() and bleed.cond.value == -135 and bleed.cond.rounds == 4 and bleed.cond.ms == 1000
+	and bleed.cond.params[CONDITION_PARAM_OWNER] == ranger:getId(), "barbed: a bleed of 135 x 4 owned by the ranger")
+
+-- Opening Shot
+setTree(ranger, {arOpeningShot = 1})
+local fresh = mk("monster", {hp = 1000, maxHp = 1000, pos = P(2403, 2401)})
+eq(hitBy(ranger, fresh, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 1800, "opening shot: a monster at full health")
+fresh.c.hp = 900
+eq(hitBy(ranger, fresh, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 930, "opening shot: the next hits x0.93")
+
+-- Hobbling Shot
+setTree(ranger, {arHobble = 1})
+conditionsAdded = {}
+local realRandom = math.random
+math.random = function() return 1 end
+local mark = mk("monster", {hp = 900000, pos = P(2404, 2401)})
+eq(hitBy(ranger, mark, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 920, "hobble: a hit on a free target x0.92")
+runEvents()
+local slows = 0
+for _, ca in ipairs(conditionsAdded) do
+	if ca.cond.type == CONDITION_PARALYZE and ca.target == mark:getId() then
+		slows = slows + 1
+		check(ca.cond.params[CONDITION_PARAM_TICKS] == 3000 and ca.cond.formula[1] == -0.4, "hobble: 3 s, 40% slower")
+	end
+end
+eq(slows, 1, "hobble: the target is slowed")
+eq(hitBy(ranger, mark, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 1200, "hobble: a hobbled target takes 20% more")
+runEvents()
+slows = 0
+for _, ca in ipairs(conditionsAdded) do if ca.cond.type == CONDITION_PARALYZE then slows = slows + 1 end end
+eq(slows, 1, "hobble: not slowed again while it lasts")
+NOW = NOW + 3500
+eq(hitBy(ranger, mark, 1000, COMBAT_PHYSICALDAMAGE, ORIGIN_RANGED), 920, "hobble: over after 3 s")
+math.random = realRandom
 
 -- ------------------------------------------------------------------------------------------------ spawn registration
 -- the engine runs onSpawn before the placement: the monster's id is 0 until it is placed. The events must still land on

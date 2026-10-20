@@ -79,8 +79,10 @@ C.offers = {
 	-- crafting: the common orbs, never the chase ones
 	{key = "orb_awakening", kind = "item", items = {{29851, 3}}, price = 5, weekly = 10, minLevel = 20,
 		name = "3 Orbs of Awakening", desc = "Common crafting orbs."},
-	{key = "orb_ember", kind = "item", items = {{29852, 3}}, price = 5, weekly = 10, minLevel = 20,
-		name = "3 Ember Orbs", desc = "Common crafting orbs."},
+	{key = "orb_ember", kind = "item", items = {{32258, 1}}, price = 10, weekly = 5, minLevel = 40,
+		name = "Ember Orb", desc = "Raises a modifier you choose by one tier."},
+	{key = "orb_crown", kind = "item", items = {{32259, 1}}, price = 25, weekly = 2, minLevel = 80,
+		name = "Crown Orb", desc = "Lifts an item one rarity, up to Legendary."},
 	{key = "orb_tempering", kind = "item", items = {{32251, 1}}, price = 8, weekly = 5, minLevel = 40,
 		name = "Orb of Tempering", desc = "Rolls the values of an item's modifiers again."},
 	{key = "orb_unmaking", kind = "item", items = {{24697, 1}}, price = 12, weekly = 3, minLevel = 60,

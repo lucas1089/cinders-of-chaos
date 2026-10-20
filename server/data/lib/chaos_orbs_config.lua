@@ -2,7 +2,7 @@
 -- "Crafting orbs v2"). Plain table, loaded with  ChaosOrbsConfig = dofile("data/lib/chaos_orbs_config.lua").
 -- Lua 5.1 / LuaJIT and 5.3. Keep one entry per line: the installer reads this file with regular expressions.
 --
--- Item ids 32251..32257 are new items.otb nodes (install_orbs.py): copies of the stock node of a client sprite that already
+-- Item ids 32251..32259 are new items.otb nodes (install_orbs.py): copies of the stock node of a client sprite that already
 -- has the multi-use flag in Tibia.dat (the inlay stones and essence crystals, the moonlight crystals), so the client needs
 -- no new sprite and Tibia.dat no change. Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, supports
 -- 32101..32200; 32251..32260 are these.
@@ -17,15 +17,22 @@ return {
 		{id = 32254, key = "reforging", clientId = 25048, name = "Orb of Reforging", plural = "Orbs of Reforging", article = "an", weight = 50, description = "Rerolls the tier and value of one modifier you choose on the crafting bench."},
 		{id = 32255, key = "ruin", clientId = 24477, name = "Orb of Ruin", plural = "Orbs of Ruin", article = "an", weight = 50, description = "A gamble on an item with a rarity: its modifiers improve or nothing happens."},
 		{id = 32256, key = "whetstone", clientId = 22083, name = "Whetstone", plural = "Whetstones", article = "a", weight = 10, description = "+1% quality on an item with a rarity, up to 20% (30% from Divine rarity)."},
-		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Reveals a veiled modifier: pick one of three. The choice is final."}
+		{id = 32257, key = "unveiling", clientId = 25046, name = "Orb of Unveiling", plural = "Orbs of Unveiling", article = "an", weight = 50, description = "Reveals a veiled modifier: pick one of three. The choice is final."},
+		{id = 32258, key = "ember", clientId = 25045, name = "Ember Orb", plural = "Ember Orbs", article = "an", weight = 50, description = "Raises one modifier you choose on the bench by exactly one tier, with a new value in the new tier."},
+		{id = 32259, key = "crown", clientId = 25044, name = "Crown Orb", plural = "Crown Orbs", article = "a", weight = 50, description = "Lifts an item one rarity (Common to Legendary), keeping every modifier and adding one."}
 	},
 
 	-- the names of the base server's currency items, changed by install_orbs.py (items.xml names and every name the base
 	-- data refers to them by: monster loot lists). old = the name written by the base server.
 	renames = {
+		-- 29852 and 29853 were the Ember and Crown Orb of the waystone upgrade shop (no client window, no use-with): they stay
+		-- shop currency as shards; the Ember Orb and Crown Orb of today are 32258 and 32259. Two rows each: a server installed
+		-- before the rework knows them by the old name.
 		{id = 29851, name = "Orb of Awakening", plural = "Orbs of Awakening", old = "Orb of Transmutation"},
-		{id = 29852, name = "Ember Orb", plural = "Ember Orbs", old = "Orb of Augmentation"},
-		{id = 29853, name = "Crown Orb", plural = "Crown Orbs", old = "Regal Orb"},
+		{id = 29852, name = "Ember Shard", plural = "Ember Shards", old = "Orb of Augmentation"},
+		{id = 29852, name = "Ember Shard", plural = "Ember Shards", old = "Ember Orb"},
+		{id = 29853, name = "Crown Shard", plural = "Crown Shards", old = "Regal Orb"},
+		{id = 29853, name = "Crown Shard", plural = "Crown Shards", old = "Crown Orb"},
 		{id = 29854, name = "Void Orb", plural = "Void Orbs", old = "Vaal Orb"},
 		{id = 29855, name = "Orb of Grafting", plural = "Orbs of Grafting", old = "Exalted Orb"},
 		{id = 29856, name = "Orb of Upheaval", plural = "Orbs of Upheaval", old = "Chaos Orb"},
@@ -41,6 +48,10 @@ return {
 	-- more tier on every modifier that is not bound, else (or when every modifier is at T8) one extra modifier above
 	-- the side limit (once per item). ruin = 0 since the Conquest rework (2026-10-15): the worst case is that nothing
 	-- happens; a ruin above 0 would bring the old "ruined for good" outcome back (items ruined before stay ruined).
-	ruin = {improve = 40, nothing = 60, ruin = 0, tiers = 60}
+	ruin = {improve = 40, nothing = 60, ruin = 0, tiers = 60},
+
+	-- the Crown Orb: the highest rarity it lifts an item to (a stored rank: 5 = Legendary; Divine only comes from the Orb
+	-- of Fate and the drops), and how many modifiers the lift adds
+	crown = {maxRank = 5, add = 1}
 
 }

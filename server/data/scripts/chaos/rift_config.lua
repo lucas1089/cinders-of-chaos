@@ -85,7 +85,7 @@ return {
 		live = {base = 60, perExtraPlayer = 10, per100 = 0.5, max = 260},
 		reinforce = {perTick = 2, minDistance = 16, window = 90, visit = 10},
 		populate = {perStep = 20, stepMs = 100},
-		model = {dps5 = 5240, dps5Exp = 1.07, dps1 = 2600, dps1Exp = 0.87, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
+		model = {dps5 = 5240, dps5Exp = 1.35, dps1 = 2600, dps1Exp = 1.1, gear = 1.15, uptime = 0.6, guardianUptime = 0.75,
 			packSeconds = 225, guardianSeconds = 55, tierHp = {magic = 2.0, rare = 3.5, legendary = 6.0},
 			walk = {sweep = 1.8}},
 		damage = 0.6,
@@ -357,14 +357,14 @@ return {
 
 	-- next key from a completed rift (one per run, to the player who used the key, else a random finisher):
 	-- chance = base + perMod x modifiers (capped at max), and of those `nextTier` + perMod x modifiers are tier + 1
-	keyDrop = {base = 30, perMod = 10, max = 60, nextTier = 50, nextPerMod = 10},
+	keyDrop = {base = 45, perMod = 10, max = 75, nextTier = 60, nextPerMod = 10},
 	-- rare / legendary monsters killed inside a rift: percent chance of a key of the rift's tier in the corpse
-	eliteKeyChance = {rare = 2, legendary = 6},
+	eliteKeyChance = {rare = 4, legendary = 10},
 
 	-- tier-1 keys from normal monsters (any map hunt, not inside a rift): per 100000 per kill, x tierMult of the
 	-- monster's tier, when the monster's hunting level (bounty pool) is at least max(minMonsterLevel,
 	-- killer level x levelShare) and the killer is at least minKillerLevel (tier 1 minLevel)
-	monsterKey = {chance = 50, minMonsterLevel = 60, levelShare = 0.4,
+	monsterKey = {chance = 250, minMonsterLevel = 60, levelShare = 0.4,
 		tierMult = {normal = 1, magic = 3, rare = 8, legendary = 20, boss = 40}},
 	-- completed bounty contracts give a tier-1 key with this percent chance (players at tier 1 minLevel or more)
 	bountyKey = {hunt = 25, elite = 50, boss = 100},
@@ -400,7 +400,7 @@ return {
 		enabled = true,
 		-- side of the square layout by key tier and the run's time limit (seconds): {up to tier, side, limit}. A two
 		-- floor layout has twoFloorScale x the side on each floor (about 1.3x the area of one floor).
-		sizes = {{5, 160, 720}, {10, 200, 780}, {15, 240, 900}},
+		sizes = {{5, 160, 1000}, {10, 200, 1100}, {15, 240, 1260}},
 		-- walkable tiles and walking distance arrival -> arena of a typical layout per band (the mean of 16 layouts
 		-- per band over the four themes, tests/rift_layout_test.lua keeps them honest): the density's model
 		typical = {{walkable = 8500, route = 200}, {walkable = 14800, route = 265}, {walkable = 21200, route = 340}},

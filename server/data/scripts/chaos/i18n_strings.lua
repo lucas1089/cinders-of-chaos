@@ -2366,6 +2366,8 @@ return {
 		["Pocket Boss Charge"] = "Carga de Pocket Boss",
 		["One extra charge for the pocket boss you choose."] = "Uma carga extra para o pocket boss que você escolher.",
 		["Common crafting orbs."] = "Orbes de criação comuns.",
+		["Raises a modifier you choose by one tier."] = "Sobe em um tier um modificador que você escolher.",
+		["Lifts an item one rarity, up to Legendary."] = "Sobe um item em uma raridade, até Lendário.",
 		["Rolls the values of an item's modifiers again."] = "Rola de novo os valores dos modificadores de um item.",
 		["A crafting orb for the patient."] = "Um orbe de criação para os pacientes.",
 		["A rare crafting orb, once a week."] = "Um orbe de criação raro, uma vez por semana.",

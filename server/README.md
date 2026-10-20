@@ -1077,7 +1077,7 @@ Everything adjustable is in `chaos_constants.lua`: rewards, limits, boss names, 
 When the tier is applied: the engine runs `onSpawn` before the placement and gives a monster its id only at the placement, so nothing keyed by the id can be written in `onSpawn`. The natural roll is decided there and the monster gets a think event for that tier (`ChaosTierRollMagic` / `Rare` / `Legendary` / `Boss`); at its first think, after the placement, the tier is applied and the event removes itself. A map respawn or `Game.createMonster` thinks within about a second; a startup spawn once a player comes near. A tier set in between (`ChaosApplyTier`: rift, invasion, tower) wins over the roll. Ambush copies get their tier right after `Game.createMonster` returns. Loading the script drops any entry an older version left under id 0 in `ChaosTierState` (the table survives a reload, so a server that ran the old roll would otherwise keep it). `tests/monster_tiers_test.lua` runs the file against a mocked engine whose `getId()` is 0 until the placement. Checked in game: a forced legendary roll lands under the monster's id with modifiers, monster bar tier and announcement; a normal kill after it still brings an ambush.
 
 ### Modifiers and shaders (monster_tiers.lua)
-Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Thirteen modifiers in `ChaosMods`: Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals from damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15%), Regenerating (2% health every 2.5 s), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
+Every magic, rare, legendary and boss monster rolls modifiers: magic 1-2, rare 2-3, legendary 3-4, boss 4-5 (`modCount`). Thirteen modifiers in `ChaosMods`: Blazing, Chilling, Venomous and Shocking (on-hit conditions), Vampiric (heals 15% of the damage dealt), Berserker (more damage below half health), Brutal (+40% damage), Stoneskin (-30% damage taken), Reflective (reflects 15%), Regenerating (1% health every 2.5 s; never together with Vampiric: `exclusive`, beta report 2026-10-20 of a monster that could not be brought below 90%), Swift (+40 speed), Explosive (fire blast on death), Juggernaut (+60% health). The monster is drawn with the outfit shader of its strongest modifier, from the 17 shaders already in `data/XML/shaders.xml` (animated, glowing), and a rotating magic effect plays one modifier's icon at a time, so the look follows the modifiers. Only one shader fits one monster, so a monster with five modifiers shows the colour of the strongest one. Bosses get modifiers too (`bossMods`), without stat scaling. The names are listed under the bar. The client must register those shader names (base server does it in `game_shaders`; the base client base needs the same list, see below). Shader ids 5 ("blue Dortmond", name differs from the client's "blue_Dortmond") is not used.
 
 The server also pushes `info` for tiered monsters to players within about 10 tiles every 15 s (from the monster's own 2.5 s tick), so the client can label them in the world without a query.
 
@@ -2078,7 +2078,7 @@ effect. Rules in `passivetree_core.lua` (pure), numbers in `passivetree_config.l
   planned node that hangs on it. The plan bar (bottom right) shows "Plan: n / free points" (red when short) with Undo,
   Redo (Ctrl+Z / Ctrl+Y, whole plan states, 100 deep) and Clear Plan. "Info & Bonuses" lists the plan's bonuses under
   PLANNED. Apply Plan sends the whole plan once. The Paragon track does not interact (its points are separate).
-- **Server check (`planApply {nodes, masteries}`).** `validatePlan` checks the whole plan like a save, then the plain
+- **Server check (`planApply {nodes, masteries}`).** Ids the character already holds are first left out of the plan (`dropOwned`; a client view that was a step behind is no reason to refuse the rest; a plan of nothing else answers "You already have those nodes" and sends `sendNodes` so the client catches up; 2026-10-20 beta report "Node N is already allocated"). `validatePlan` then checks the whole plan like a save, then the plain
   save's `validateNodes` runs on the final list: a table of 1 to `maxPlanNodes` (300) ids, every id known and not the
   root, no id twice, none already allocated, every node one the class may hold (`ChaosClassTree.allowed`: class sections
   and ascended paths), saved + planned <= points owned, every planned node connected to the start through saved and
@@ -2236,6 +2236,20 @@ docs/BUILDS.md. Computed numbers: `data/spells/README.md` "Build archetypes" (no
   icons `keystones.png` cells 28-39 (`client/tools/gen_keystone_icons.py`). The second round (96, 99, 102, 105, the
   ends of the four other elemental clusters): reworked version 3, build code format 5, `keystones.png` cells 40-43,
   flag bits 13-16 of storage 7100024.
+- **Third round: the Warrior and Ranger lines (2026-10-20).** Beta feedback: the Warrior line had no keystone of its own
+  and the Ranger line few. Eight keystones on converted leaves, flag bits 17-24 of storage 7100024 (numbers in
+  `archetypes_config.lua`, rules in `archetypes_core.lua`, glue in `archetypes.lua`). Warrior, Juggernaut, Berserker:
+  Executioner's Verdict (428: a melee hit that would leave a non-boss monster at 15% or less kills it; x0.60 above 15%;
+  x0.90 otherwise), Earthbreaker (409: every 4th melee hit within 3 s deals +50% and a 60% slam to up to 6 monsters
+  within 2 sqm; the other hits x0.90), Rampage (466: a monster kill gives a stack, 5 at most, 6 s, +6% damage and +4%
+  damage taken per stack), Last Stand (523: a hit that would take you under 20% health is cut to leave you there, then
+  5 s of -40% damage taken, healing taken x0.80, 90 s cooldown; not against players). Ranger, Deadeye, Beastmaster:
+  Longshot (561: distance weapons +6% per sqm beyond 2, at most +30%; at 2 sqm or nearer x0.85), Barbed Quiver (542:
+  distance weapon hits bleed for 60% of the hit over 4 s, the hit x0.90), Opening Shot (599: the first hit on a full
+  health monster +80%, other hits x0.93), Hobbling Shot (447: 25% to hobble 3 s, 40% slower, +20% damage on hobbled
+  targets, other hits x0.92). Reworked version 6 refunds the eight nodes once, build code format 6 (`CB6-`),
+  `keystones.png` cells 44-51. `classlanes.lua` lost the lanes of the eight nodes and some lane skill values were
+  trimmed by hand to keep the supply cap (`gen_class_lanes.lua --check` would differ).
 - **Hollow Vessel and the other rules.** Every percent-of-maximum-health hit on a player takes `Chaos.percentBase(player)`
   (`chaos_constants.lua`, over `ChaosArchetypes.percentBase`): health + maximum energy shield for a holder, so the fixed
   100 health is no way around them. That is the rifts' `percentHit` (Scorched Earth, Rimefloor, Veilstorm, the Wrathful
@@ -2286,6 +2300,29 @@ Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 9
 - PvP: monsters only. Tests: `tests/snares_test.lua` (rules; the glue against a mocked engine: thrown, armed,
   triggered, bursts, sight, the marker, the combat log's spell name per hit, elements, mines, the fuse, caps, the
   protection zone, the cleanup, the work per tick with 400 snares, the spells in the XML). Not run on a live server.
+
+## Mana flow (`mana_flow.lua`, `mana_flow_core.lua`, `mana_flow_config.lua`; beta report 2026-10-20)
+
+Report: a level 800 Juggernaut (7M health shown) could only keep his skills up with infinite mana potions, and "the mana
+cost scales, one skill costs 400k". Findings: (1) the cost does not scale in the engine. Spell costs are flat
+(Juggernaut kit 30-500); the 400k is the display scale (`display_scale_core.lua`, factor 215 at level 800, 1000 at 1000)
+shown on the spellbook and the mana bar, and the pool is shown scaled the same, so cost against pool never moved.
+(2) The real gap was regeneration: pool 5 mana a level, vocation regeneration 2.5 a second, the best rotation 44 a second
+at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and without regeneration from the tree).
+
+- **Regeneration**: from level 100 every player gets mana a second on top of the vocation's, flat for every class, linear
+  between 100 -> 4, 300 -> 24, 600 -> 45, 1000 -> 60 (level 800: 52.5, shown x the display factor). A think every second
+  (`GlobalEvent`), none at a full pool, dead, or under the rift's Parched Veins (`fx.noMana`). Juggernaut: level 300 pool
+  1530 against 44 a second: runway 37 s -> 87 s; level 600 and up the Juggernaut rotation is paid by the regeneration alone.
+  Casters (Elementalist rotation about 183 a second at level 1000, pool ~30000) still drain: runway about 4 minutes.
+- **Cost cap**: from level 100 a cast costs at most 25% of the maximum mana (the mana reserved by vigils is added back,
+  `ChaosVigils.applied`), through `ChaosSpellEvents` "cost" (engine patch 0008). Thrift and Mana Cost Reduction apply as
+  before. Binds only the Juggernaut's Colossus Fall (400) at levels 100-319 and the like: 400 -> 332 at level 260.
+- Numbers: `mana_flow_config.lua`. Test: `tests/mana_flow_test.lua`. No storage, no DB.
+- **Righteous Fire style skill**: that is Pyre Oath (keystone `arPyreOath`, `archetypes.lua`), not a spell: it burns and
+  heals every second and costs no mana. Support runes are keyed by spell id and wrap a spell's `onCastSpell`; a keystone
+  has neither, so it cannot take runes without a new socket kind (storage, window, client). Not done. The mana the
+  report mentions is the Juggernaut's other spells (and mana-on-hit gear), which the regeneration above now pays.
 
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
@@ -7814,8 +7851,8 @@ ids, keys (`transmutation`, `exalted`, ...), storages and the character-upgrade 
 | old name | new name | id |
 |---|---|---|
 | Orb of Transmutation | Orb of Awakening | 29851 |
-| Orb of Augmentation | Ember Orb (character upgrades only) | 29852 |
-| Regal Orb | Crown Orb (character upgrades only) | 29853 |
+| Orb of Augmentation | Ember Shard (character upgrades only; the Ember Orb of crafting is the new item 32258) | 29852 |
+| Regal Orb | Crown Shard (character upgrades only; the Crown Orb of crafting is the new item 32259) | 29853 |
 | Vaal Orb | Void Orb (character upgrades only) | 29854 |
 | Exalted Orb | Orb of Grafting | 29855 |
 | Chaos Orb | Orb of Upheaval | 29856 |
@@ -7841,12 +7878,20 @@ list of these names; the old ones are gone from the player-facing text.
 | Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25 (3 a week), drops, salvage 60 |
 | Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | drops, salvage 50 (not in the store) |
 | Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
+| Ember Orb | 32258 (red crowned gem) | raises the one modifier you choose by exactly one tier (new value in the new tier; never past T8, not on bound modifiers; a random one by use-with) | drops, salvage 50, Candlemarks 10 (5 a week) |
+| Crown Orb | 32259 (purple crowned gem) | lifts the item one rarity, Common up to Legendary (never Divine): every modifier stays, the base bonus becomes the new rarity's, the item gets one more modifier | drops (rare), salvage 100, Candlemarks 25 (2 a week) |
 | Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 10 for 20 (5 packs a week), bounty chest (5), drops, salvage 5 |
 
 The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
-24477, 22083): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
+24477, 22083; the Ember and Crown Orb use the crowned gems 25045 and 25044): they have the multi-use flag in `Tibia.dat` already, so **no client dat change and no `set_multiuse.py` run**
 is needed; the live dat pair is untouched. The server nodes are copies of the stock nodes with the `useable` flag (the same
 way as the gems and the salvage shard, `install_gems.py`' helpers). Ids 32251..32260 are reserved for this set.
+
+**Ember and Crown rework (2026-10-20).** The base server's Ember Orb (29852) and Crown Orb (29853) were currency of the
+waystone upgrade window, which has no client window, and their sprites have no multi-use flag: they could not be spent and
+the wiki explained nothing. They are now the **Ember Shard** and **Crown Shard** (still dropped, still shop currency), and
+Ember Orb and Crown Orb are real crafting orbs, items 32258 and 32259 (`ChaosOrbsConfig.crown` = max rank 5 and modifiers
+added). A server installed before keeps working: `install_orbs.py` renames by id and rewrites the old names in base data.
 
 **The Orb of Ruin.** Odds in `ChaosOrbsConfig.ruin`, shown on the bench and in the orb's text: 40% the item **improves**,
 60% nothing happens (since 2026-10-15, "Conquest Tokens": it never ruins an item any more; before, 45% nothing and 15% the
@@ -8923,7 +8968,7 @@ clear: bank gold, Orbs of Upheaval and Fate and the pair; repeat: 1 Trial Token 
 bank up to 15: `repeatBankWeeks` 3, storage 7101766, `M.repeatState`, 2026-10-15; the week is
 the shared Monday 06:00 one, `ChaosBounty.week`, key YYYYMMDD of its Monday in storage 7101761: the old day-of-year keys
 YYYYWW made 31 Dec a one-day week 53 and never match a new key, so the first clear after the switch counts from 0). Switching a
-pick or giving a pair up: 1 Trial Token + level x 250 gold, not in combat or during a run. Special nodes use their own
+pick or giving a pair up (the Clear button of each pair row in the Trials window sends `trialChoose` with side 0, `clear {can, why}` in the state): 1 Trial Token + level x 250 gold, not in combat or during a run. A node's max health / mana (`vitality`, `spirit`, e.g. Steelblood +8%) is kept outside the tree's +50% cap (`trialVitality` / `trialSpirit` in the bonus table, like the Paragon share): at the cap it gave nothing (2026-10-20). Special nodes use their own
 combat code (`trials_effects.lua`, about 40 keys, damage dealt bounded 0.25-2.5 and taken 0.3-2.0), are separate from the
 passive points, survive every tree reset, and are not in build codes. Ten nodes use spell cost / cooldown keys and need
 engine patch 0008. Crash recovery: a marker storage moves the character out at the next login. Tests:
@@ -8933,6 +8978,9 @@ mark and fire mechanics and the evade / reflect / mana shield nodes. Balance: bo
 hit rate are first guesses.
 
 ## Salvage (`salvage.lua`, `salvage_core.lua`, `salvage_config.lua`, `tools/install_salvage.py`, client `game_crafting`)
+
+
+**Recycling (2026-10-20).** The recipe rows of the bench also work backwards: Shift+click a row turns the orbs of that kind in the backpack (up to 100 a click) into shards at `recycleShare` (0.4) of the recipe cost, rounded down (`K.recycleShards`, action `recycle`; always fewer shards than making one costs). Beta: a tester held ~2000 orbs nobody could use.
 
 **Uniques (2026-10-15).** A unique on the bench salvages for Conquest Tokens: 10% of its Conquest vendor price (at least
 25) plus `uniqueShards` (4) rune shards; a set piece keeps its `setPieceShards` (8) and gets the tokens too. The
@@ -13270,6 +13318,19 @@ illusionists (earth/ice/death are resisted too).
 Owner request (pt-BR, paraphrased): players must feel strong and kill several monsters at once, not one by one, with
 some danger left; more monsters, experience compensated; dungeons at most 10-15 minutes. Design and model:
 `scratchpad/rebal/DESIGN.md` of the session (not in the repo); this section is what was built.
+
+**Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
+  1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800
+  monsters. New points follow the base monsters (`luajit tools/pace_scan.lua` prints the median experience and health by
+  hunting level: now rising with the level in every band). Generated area / dungeon points keep their old points as the new
+  `generated` set (the queue dungeons' 10-minute model is calibrated on them; their experience is the generator's own
+  and was not re-measured). (2) New `gold` factor (`pace_config.lua`, base and scaled,
+  0.30 from hunting level 450): a second thinning of coins and NPC-sellable items that are not gear (`L.isGoldLike`,
+  `L.thinCorpse(corpse, f, g)`); orbs, gems, keys and gear keep only `loot`. Reason: gold per hour at level 500-600 was
+  about 16M against the income model's 5.5-6.3M. Check it with the hunt tracker in the beta. (3) Rifts: time limit
+  1000 / 1100 / 1260 s per band, pack health model exponents `dps5Exp` 1.35 / `dps1Exp` 1.1 (tier 1 packs have half the
+  health), completed-rift key chance 45% + 10% per modifier (cap 75%), rare / legendary in a rift 4% / 10%, tier 1 key
+  from a normal kill 250 per 100000.
 
 **One runtime layer.** Base monsters are about 95% of the spawns and their XML is not ours, so nothing is edited per
 monster: `pace.lua` scales health, experience, loot and damage by the monster's hunting level at runtime, for base and
@@ -17698,3 +17759,11 @@ text based, marker `-- Chaos: open to everyone`) turns every storage value into 
 started it), `needCrystal = true` into false, and skips the warzone refusal. The warzone boss rooms are unchanged. Run it with the
 install (`install_all.py --only gnometeleports`), then `/reload movements`, or restart. Test: `tools/patch_gnome_teleports_test.py`.
 
+
+## Temple cleanse (`temple_cleanse.lua`, `temple_cleanse_core.lua`)
+
+Beta report 2026-10-20: a boss's 10-minute fire kept characters in battle mode, so they could not use the town portal or
+the NPCs and had to wait it out. Every 2 seconds a player standing in a protection zone, not locked for PvP and without a
+white, red or black skull, loses the harmful conditions of monsters (fire, poison, energy, bleeding, freezing, dazzle,
+curse, drown, paralysis, root) and the battle lock. Outside protection zones nothing changes. The list is
+`ChaosTempleCleanseCore.conditions`. Tests: `tests/temple_cleanse_test.lua`.

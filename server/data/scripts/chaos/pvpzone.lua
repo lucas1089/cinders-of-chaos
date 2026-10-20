@@ -1270,6 +1270,11 @@ function Z.tick()
 			clearSkull(player)
 			local inst = Z.inst[slot]
 			if not st.moveAt and K.exitAt(cfg, inst.L, player:getPosition()) then
+				-- burning, poison and the like would keep resetting the channel (beta report 2026-10-20: a 3 minute debuff
+				-- held a player in the circle)
+				if ChaosTempleCleanse and not player:isPzLocked() then
+					ChaosTempleCleanse.clear(player)
+				end
 				st.exitSince = st.exitSince or t
 				local _, done = K.exitProgress(cfg, st.exitSince, st.lastCombat, t)
 				if done then

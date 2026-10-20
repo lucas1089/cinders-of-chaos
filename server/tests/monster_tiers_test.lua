@@ -198,6 +198,22 @@ check(s ~= nil, "natural roll: state under the placed id")
 eq(s and s.tier, "legendary", "natural roll: tier")
 eq(ChaosTierOf(legend), "legendary", "natural roll: ChaosTierOf")
 check(s and #s.mods >= 3, "natural roll: legendary modifiers")
+-- Vampiric and Regenerating never come together (two healing sources made a monster nobody could bring under 90%)
+local both = 0
+for i = 1, 300 do
+	local m = Game.createMonster("Dragon", position(300 + i % 50, 100, 7), true, false)
+	think(m)
+	local st = state[m:getId()]
+	local v, r = false, false
+	for _, key in ipairs(st and st.mods or {}) do
+		v = v or key == "vampiric"
+		r = r or key == "regenerating"
+	end
+	if v and r then
+		both = both + 1
+	end
+end
+eq(both, 0, "natural roll: never Vampiric with Regenerating")
 check(legend.maxHealth >= 6000, "natural roll: health multiplier")
 check(legend.outfit.lookShader ~= 0, "natural roll: shader")
 check(legend.events.ChaosTierDeath, "natural roll: death event")

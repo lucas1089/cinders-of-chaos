@@ -42,7 +42,7 @@ for _, th in ipairs(cfg.themes) do
 end
 for i, row in ipairs(lc.sizes) do
 	ok(row[2] >= 160 and row[2] <= 250, "band " .. i .. " side 160-250")
-	ok(row[3] >= 600 and row[3] <= 900, "band " .. i .. " limit 10-15 minutes")
+	ok(row[3] >= 600 and row[3] <= 1300, "band " .. i .. " limit 10-21 minutes")
 	if i > 1 then
 		ok(row[1] > lc.sizes[i - 1][1] and row[2] > lc.sizes[i - 1][2], "bands grow with the tier")
 	end

@@ -37,7 +37,8 @@ K.reasons = {
 	stack = "Stacks cannot be salvaged.",
 	unknownRecipe = "There is no such recipe.",
 	shards = "You do not have enough rune shards.",
-	count = "Choose how many orbs to make."
+	count = "Choose how many orbs to make.",
+	orbs = "You do not have that many orbs."
 }
 
 function K.isLocked(value)
@@ -242,6 +243,30 @@ function K.combineCheck(owned, key, count, cfg)
 		return nil, "shards"
 	end
 	return true, cost
+end
+
+-- shards one orb gives back, and the check of recycling `count` orbs of recipe `key` when the player owns `owned` of them
+function K.recycleShards(key, cfg)
+	local r = K.recipe(key, cfg)
+	if not r then
+		return nil
+	end
+	return math.max(1, floor(r.cost * (cfg.recycleShare or 0.4)))
+end
+
+function K.recycleCheck(owned, key, count, cfg)
+	local each = K.recycleShards(key, cfg)
+	if not each then
+		return nil, "unknownRecipe"
+	end
+	count = floor(tonumber(count) or 0)
+	if count < 1 or count > (cfg.maxRecycle or 1) then
+		return nil, "count"
+	end
+	if (tonumber(owned) or 0) < count then
+		return nil, "orbs"
+	end
+	return true, each * count
 end
 
 return K

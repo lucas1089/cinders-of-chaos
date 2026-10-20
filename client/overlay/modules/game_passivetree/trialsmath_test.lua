@@ -49,5 +49,20 @@ eq(M.confirmText(state, state.pairs[3], 1):find('Choose E') ~= nil, true, 'confi
 eq(M.confirmText(state, state.pairs[1], 2):find('30,000 gold coins') ~= nil, true, 'confirm text: switch price')
 eq(M.confirmText(state, state.pairs[3], 1):find('%- %+6%% damage taken') ~= nil, true, 'confirm text lists the price')
 
+-- Clear: give a pair up (side 0), the price of a switch
+state.pairs[1].clear = {can = true}
+local cl = M.clearCard(state, state.pairs[1])
+eq(cl.enabled, true, 'a held node can be cleared with a token')
+eq(cl.tooltip:find('Gives up A') ~= nil and cl.tooltip:find('30,000 gold') ~= nil, true, 'clear tooltip names the node and the price')
+state.pairs[1].clear = {can = false, why = 'You need a Trial Token.'}
+eq(M.clearCard(state, state.pairs[1]).enabled, false, 'no token, no clear')
+eq(M.clearCard(state, state.pairs[3]).enabled, false, 'nothing held, nothing to clear')
+eq(M.clearCard(state, state.pairs[2]).enabled, false, 'a locked pair has nothing to clear')
+eq(M.clearConfirmText(state, state.pairs[1]):find('Give up A') ~= nil, true, 'clear confirm text')
+state.running = true
+state.pairs[1].clear = {can = true}
+eq(M.clearCard(state, state.pairs[1]).enabled, false, 'no clear during a run')
+state.running = nil
+
 if fails > 0 then os.exit(1) end
 print('trialsmath_test: OK')

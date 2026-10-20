@@ -28,7 +28,7 @@ end
 eq(#cfg.baseShards, 6, "a yield per rarity (Common .. Divine)")
 eq(#cfg.orbChance, 6, "an orb chance per rarity")
 local known = {transmutation = 1, alchemy = 1, exalted = 1, annulment = 1, scouring = 1, chaos = 1, divine = 1, sockets = 1,
-	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1}
+	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1, ember = 1, crown = 1}
 for i = 2, 6 do
 	assert(cfg.baseShards[i] >= cfg.baseShards[i - 1], "yield never falls with the rarity")
 	assert(cfg.orbChance[i] >= cfg.orbChance[i - 1], "orb chance never falls with the rarity")
@@ -46,7 +46,7 @@ end
 -- recipe costs follow reference coin prices (about 2.5 shards per coin): the cheap orbs cheap, the Grafting dearest. The
 -- store sells only Whetstones, Excision and Binding; the other values are reference prices, not store offers
 local store = {transmutation = 5, chaos = 10, scouring = 12, alchemy = 15, annulment = 20, divine = 25, sockets = 25, exalted = 40,
-	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60}
+	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60, ember = 20, crown = 40}
 for _, r in ipairs(cfg.recipes) do
 	local ratio = r.cost / store[r.key]
 	assert(ratio >= 2.3 and ratio <= 2.7, "shards per coin for " .. r.key .. ": " .. ratio)
@@ -228,6 +228,18 @@ eq(select(2, K.combineCheck(1000, "chaos", 11, cfg)), "count", "more than maxCom
 eq(select(2, K.combineCheck(1000, "chaos", 0, cfg)), "count", "zero")
 eq(select(2, K.combineCheck(1000, "mirror", 1, cfg)), "unknownRecipe", "unknown orb")
 
+-- recycling: an orb back into shards at recycleShare of its recipe cost, always less than the cost
+eq(K.recycleShards("chaos", cfg), 10, "an Orb of Upheaval (25) recycles into 10 shards")
+eq(K.recycleShards("whetstone", cfg), 2, "a Whetstone (5): 2")
+ok, cost = K.recycleCheck(7, "chaos", 7, cfg)
+eq(cost, 70, "seven at once")
+eq(select(2, K.recycleCheck(6, "chaos", 7, cfg)), "orbs", "not that many")
+eq(select(2, K.recycleCheck(500, "chaos", 101, cfg)), "count", "more than maxRecycle")
+eq(select(2, K.recycleCheck(5, "mirror", 1, cfg)), "unknownRecipe", "unknown orb")
+for _, r in ipairs(cfg.recipes) do
+	assert(K.recycleShards(r.key, cfg) < r.cost, r.key .. ": recycling loses shards")
+end
+
 -- ================================================================ salvage.lua against a mocked engine
 RETURNVALUE_NOERROR, INDEX_WHEREEVER, FLAG_NOLIMIT, MESSAGE_INFO_DESCR = 0, -1, 1, 22
 CONST_ME_BLOCKHIT, CONST_ME_MAGIC_GREEN = 9, 13
@@ -347,7 +359,8 @@ ChaosCrafting = {
 		divine = {id = 29857, name = "Orb of Fate"}, sockets = {id = 24692, name = "Orb of Sockets"},
 		tempering = {id = 32251, name = "Orb of Tempering"}, binding = {id = 32252, name = "Orb of Binding"},
 		excision = {id = 32253, name = "Orb of Excision"}, reforging = {id = 32254, name = "Orb of Reforging"},
-		ruin = {id = 32255, name = "Orb of Ruin"}, whetstone = {id = 32256, name = "Whetstone"}},
+		ruin = {id = 32255, name = "Orb of Ruin"}, whetstone = {id = 32256, name = "Whetstone"},
+		ember = {id = 32258, name = "Ember Orb"}, crown = {id = 32259, name = "Crown Orb"}},
 	isGear = function(item) return item.id >= 2000 and item.id < 3000 end,
 	isRiftKey = function(item) return item.id == 10155 end,
 	rarityOf = function(item) return tonumber(item.custom.rarity) or 0 end,

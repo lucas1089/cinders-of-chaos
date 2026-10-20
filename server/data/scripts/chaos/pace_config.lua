@@ -35,14 +35,32 @@ return {
 			{800, 0.16}, {1000, 0.17}},
 		loot = {{20, 1.00}, {35, 0.59}, {60, 0.54}, {100, 0.37}, {175, 0.27}, {250, 0.20}, {450, 0.20}, {600, 0.19},
 			{800, 0.19}, {1000, 0.20}},
+		-- on top of `loot`, for coins and NPC-sellable items that are not gear (orbs, gems and keys keep `loot`): the gold
+		-- per hour at hunting level 450-600 was 16M against the income model's 5.5-6.3M (beta 2026-10-20)
+		gold = {{250, 1.0}, {450, 0.30}, {1000, 0.30}},
 		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}}
 	},
 
-	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level (about 1.8x bulkier than a base monster
-	-- of the same hunting level after the curve, as before it)
+	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level. Re-measured 2026-10-20 against the base
+	-- curves (tester: spiders at level 500 gave more experience than monsters at level 800): the old points left a
+	-- level-scaled monster with 1/15 of the experience and 1/4.6 of the health of a base monster of the same hunting
+	-- level. Now the experience per kill follows the base monsters' (about 4000 at 650, 6300 at 800, 10000 at 1000,
+	-- 16500 at 1300, then +13.5 a level) and the health the same ratio as there (experience about 1 x health).
+	-- Check with: luajit tools/pace_scan.lua
 	scaled = {
+		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
+		xp = {{100, 0.115}, {650, 0.70}, {800, 0.58}, {1000, 0.52}, {1300, 0.50}, {1600, 0.48}, {2000, 0.46}},
+		loot = {{100, 0.137}, {650, 0.83}, {800, 0.69}, {1000, 0.62}, {1300, 0.595}, {1600, 0.57}, {2000, 0.55}},
+		gold = {{100, 1.0}, {450, 0.30}, {2000, 0.30}},
+		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
+	},
+
+	-- generated area / dungeon points (areagen: the point's level): the points the run-time model of the queue dungeons
+	-- (dungeons_difficulty.lua, tests/areagen_test.lua: about 10 minutes at difficulty 1) was calibrated on. Kept as they
+	-- were; their health stays; the experience points were raised 2026-10-20 so that experience per health point matches the base monsters (about 0.8-1.2, it was 0.2-0.8: a generated area paid 4-6% of a base monster's experience per kill). The generator's own levelScale experience applies first.
+	generated = {
 		health = {{650, 0.095}, {800, 0.080}, {1000, 0.066}, {1300, 0.062}, {1600, 0.059}, {2000, 0.056}},
-		xp = {{650, 0.042}, {800, 0.036}, {1000, 0.030}, {1300, 0.026}, {1600, 0.024}, {2000, 0.023}},
+		xp = {{650, 0.19}, {800, 0.15}, {1000, 0.075}, {1300, 0.045}, {1600, 0.032}, {2000, 0.026}},
 		loot = {{650, 0.050}, {800, 0.042}, {1000, 0.035}, {1300, 0.031}, {1600, 0.029}, {2000, 0.027}},
 		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
 	},

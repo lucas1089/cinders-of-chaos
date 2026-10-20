@@ -159,9 +159,13 @@ function T.addBonuses(player, bonuses)
 	if #held == 0 then
 		return
 	end
-	for key, v in pairs(M.effects(voc, tier, picks)) do
+	local effects = M.effects(voc, tier, picks)
+	for key, v in pairs(effects) do
 		bonuses[key] = (bonuses[key] or 0) + v
 	end
+	-- max health / mana of a node: also named apart, so passivetree_effects.lua keeps it outside the tree's cap
+	bonuses.trialVitality = effects.vitality
+	bonuses.trialSpirit = effects.spirit
 	bonuses.trialNodes = #held
 end
 

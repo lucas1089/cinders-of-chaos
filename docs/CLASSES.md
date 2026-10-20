@@ -854,3 +854,9 @@ per ascension. Pinned by `server/tests/class_spell_progression_test.lua`.
 - **Chronomancer**: slows, hastes and rewinds (restore health and position from 3 seconds ago).
 - **Engineer / Gunslinger**: turrets, traps and a heavy ranged weapon (needs new art).
 - **Spellblade**: melee hits charge spell power, and spells empower the next weapon hits.
+
+### Build archetypes, third round (2026-10-20)
+
+Eight keystones for the lines with the fewest: Warrior, Juggernaut, Berserker (Executioner's Verdict, Earthbreaker,
+Rampage, Last Stand) and Ranger, Deadeye, Beastmaster (Longshot, Barbed Quiver, Opening Shot, Hobbling Shot). Refunded
+once (build code format 6). Rules server/README.md "Build archetypes"; guide docs/BUILDS.md.

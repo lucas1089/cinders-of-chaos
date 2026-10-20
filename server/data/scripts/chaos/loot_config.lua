@@ -129,6 +129,11 @@ return {
 				chance = {normal = 3, magic = 9, rare = 18, legendary = 450, boss = 800}},
 			{id = 32252, name = "Orb of Binding", weight = 3, count = {1, 1},
 				chance = {normal = 2, magic = 6, rare = 12, legendary = 250, boss = 500}},
+			-- Ember Orb (a tier up on a chosen modifier) like Reforging, Crown Orb (a rarity up) like Excision
+			{id = 32258, name = "Ember Orb", weight = 6, count = {1, 1},
+				chance = {normal = 4, magic = 12, rare = 24, legendary = 600, boss = 1000}},
+			{id = 32259, name = "Crown Orb", weight = 3, count = {1, 1},
+				chance = {normal = 2, magic = 6, rare = 12, legendary = 300, boss = 600}},
 			{id = 32255, name = "Orb of Ruin", weight = 1, count = {1, 1},
 				chance = {normal = 0, magic = 1, rare = 4, legendary = 80, boss = 160}},
 			-- gems and sockets (data/lib/chaos_gems_config.lua socketOrb; the gems drop through chaos_gems_config.lua)

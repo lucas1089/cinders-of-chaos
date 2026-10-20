@@ -571,7 +571,9 @@ C.reasons = {
 	keyFull = "This Rift Key has the most modifiers a key can have.",
 	keyNothing = "There is no modifier left that this Rift Key could get.",
 	keySockets = "Rift Keys have no sockets.",
-	keyOrb = "This orb does not work on Rift Keys."
+	keyOrb = "This orb does not work on Rift Keys.",
+	nothingToRaise = "No modifier of this item can rise: bound ones stay and the top tier is the limit.",
+	crownTop = "This item is at the highest rarity a Crown Orb can lift it to."
 }
 
 -- the modifiers an orb may be aimed at (attribute keys), for the orbs that take one (orb.pick); empty = none

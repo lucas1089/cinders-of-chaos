@@ -176,6 +176,49 @@ local function reach(tree, set)
 end
 M.reach = reach
 
+-- The plan without the nodes the character already holds (a plan made from a view of the tree that was a step behind the
+-- server: a refund, a second window, a reply still on its way). Holding a node already is what the plan wants, so it is no
+-- reason to refuse the rest: plan.nodes / plan.masteries are copied without those ids. Returns the new plan and the number
+-- of nodes dropped; a malformed plan is returned as it is (validatePlan refuses it).
+function M.dropOwned(current, plan)
+	if type(plan) ~= "table" or type(plan.nodes) ~= "table" then
+		return plan, 0
+	end
+	local owned = {}
+	for _, id in ipairs(current or {}) do
+		owned[id] = true
+	end
+	local nodes, dropped = {}, 0
+	for _, value in ipairs(plan.nodes) do
+		local id = int(value)
+		if id and owned[id] then
+			dropped = dropped + 1
+		else
+			nodes[#nodes + 1] = value
+		end
+	end
+	if dropped == 0 then
+		return plan, 0
+	end
+	local masteries = plan.masteries
+	if type(masteries) == "table" then
+		local kept = {}
+		for key, value in pairs(masteries) do
+			local isEntry = type(value) == "table"
+			local id = isEntry and int(value.id) or int(key)
+			if not (id and owned[id]) then
+				if isEntry then
+					kept[#kept + 1] = value -- a list of {id, choice} stays a list
+				else
+					kept[key] = value -- a map {[id] = choice} stays a map
+				end
+			end
+		end
+		masteries = kept
+	end
+	return {nodes = nodes, masteries = masteries}, dropped
+end
+
 -- A whole planned allocation (planApply), checked like a save of the saved nodes plus the plan:
 --   tree             passivetree_data.lua
 --   current          the saved node ids (list), currentMasteries their chosen effects ({[id] = choice})

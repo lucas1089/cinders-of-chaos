@@ -2090,7 +2090,11 @@ KEYSTONE_NAMES = {
 	arStormstring = "Stormstring", arWinterLattice = "Winter's Lattice", arEffigy = "Effigy Covenant",
 	arCinderSigil = "Sigil of Cinders", arAetherEdge = "Aether Edge", arReliquary = "Reliquary Vow",
 	arSnarewright = "Snarewright's Creed", arVigils = "Covenant of Vigils", arIronTithe = "Iron Tithe",
-	arHollowVessel = "Hollow Vessel"
+	arHollowVessel = "Hollow Vessel",
+	-- the third round: the Warrior and Ranger lines
+	arExecutioner = "Executioner's Verdict", arEarthbreaker = "Earthbreaker", arRampage = "Rampage",
+	arLastStand = "Last Stand", arLongshot = "Longshot", arBarbed = "Barbed Quiver", arOpeningShot = "Opening Shot",
+	arHobble = "Hobbling Shot"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

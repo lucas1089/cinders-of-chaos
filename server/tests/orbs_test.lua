@@ -111,7 +111,7 @@ end
 
 -- ---------------------------------------------------------------- registration
 local cfg = ChaosOrbsConfig
-eq(#cfg.items, 7, "six new items and the Orb of Unveiling (chaos_veiled.lua)")
+eq(#cfg.items, 9, "six new items, the Orb of Unveiling (chaos_veiled.lua), the Ember Orb and the Crown Orb")
 local ids = {}
 for _, orb in ipairs(C.config.orbs) do
 	ok(not ids[orb.id], "unique id " .. orb.id)
@@ -541,6 +541,75 @@ eq(#C.readKey(key).mods, 1)
 local empty = newKey(4, "")
 eq(select(2, C.check("tempering", empty)), "keyNoMods")
 eq(select(2, C.check("excision", empty)), "keyNoMods")
+
+-- ---------------------------------------------------------------- Ember Orb
+eq(C.orbByKey.ember.name, "Ember Orb")
+eq(C.orbByKey.crown.name, "Crown Orb")
+eq(C.orbByKey.ember.id, 32258)
+eq(C.orbByKey.crown.id, 32259)
+local em = forged(2400, 4, 100)
+local emBefore = {}
+for _, m in ipairs(C.readMods(em)) do emBefore[m.key] = m.tier end
+local emPick = C.pickList("ember", em)
+eq(#emPick, #C.readMods(em), "every modifier below the top tier is offered")
+isOk, res = C.apply("ember", em, {mod = emPick[1]})
+eq(isOk, true)
+for _, m in ipairs(C.readMods(em)) do
+	eq(m.tier, emBefore[m.key] + (m.key == emPick[1] and 1 or 0), "only the chosen modifier rose: " .. m.key)
+	ok(m.value >= m.lo and m.value <= m.hi, "a value inside the new tier")
+end
+ok(res.text:find("rose from T" .. emBefore[emPick[1]]), res.text)
+-- direct use: a random one that can still rise
+isOk = C.apply("ember", em)
+eq(isOk, true)
+-- the top tier is not offered; all at the top = refused
+local top = forged(2400, 2, 100)
+for _, m in ipairs(C.readMods(top)) do
+	C.writeAffix(top, m.affix, M.config.maxTier, nil, function(a) return a end)
+end
+eq(#C.pickList("ember", top), 0, "nothing below the top tier")
+eq(select(2, C.check("ember", top)), "nothingToRaise", "no modifier can rise")
+-- a bound modifier is not raised
+local eb = forged(2400, 3, 100)
+local ebMods = C.readMods(eb)
+C.setBound(eb, ebMods[1], true)
+eq(select(2, C.check("ember", eb, {mod = ebMods[1].key})), "badMod")
+eq(select(2, C.check("ember", put(newItem(2400)))), "needRarity")
+eq(select(2, C.check("ember", bare)), "noMods")
+ok(C.describe(em).preview.ember:find("up one tier"), "bench preview")
+
+-- ---------------------------------------------------------------- Crown Orb
+local cw = forged(2400, 3, 100) -- Magic sword
+local cwMods = {}
+for _, m in ipairs(C.readMods(cw)) do cwMods[m.key] = m.value end
+local cwAtk = cw:getAttribute(ITEM_ATTRIBUTE_ATTACK)
+eq(C.check("crown", cw), true)
+dice = {}
+isOk, res = C.apply("crown", cw)
+eq(isOk, true)
+eq(res.rarity, 4)
+eq(C.rarityOf(cw), 4, "Magic -> Rare")
+eq(#C.readMods(cw), 4, "one modifier more")
+for k, v in pairs(cwMods) do
+	eq(C.modByKey(cw, k).value, v, "the old modifier " .. k .. " is kept")
+end
+ok(cw:getAttribute(ITEM_ATTRIBUTE_ATTACK) >= (cwAtk or 0), "the base bonus of the new rarity")
+eq(#res.added, 1)
+ok(res.text:find("is now Rare"), res.text)
+-- up to Legendary, then refused
+C.apply("crown", cw)
+eq(C.rarityOf(cw), 5, "Rare -> Legendary")
+eq(select(2, C.check("crown", cw)), "crownTop", "Legendary is the top")
+local div = forged(2400, 10, 100)
+eq(select(2, C.check("crown", div)), "crownTop", "Divine only comes from Fate and drops")
+eq(select(2, C.check("crown", put(newItem(2400)))), "needRarity")
+-- a Common item with no free candidate still lifts
+local cc = forged(2400, 1, 100)
+eq(C.check("crown", cc), true)
+isOk = C.apply("crown", cc)
+eq(C.rarityOf(cc), 2)
+ok(C.describe(cw).preview.crown ~= nil, "bench preview")
+ok(cfg.crown.maxRank <= 5, "the Crown Orb never makes Divine")
 
 -- ---------------------------------------------------------------- the bench view
 local view2 = C.describe(forged(2400, 5, 100))

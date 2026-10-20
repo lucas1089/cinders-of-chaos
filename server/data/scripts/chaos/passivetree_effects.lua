@@ -166,8 +166,13 @@ end
 
 -- max health / mana percent: tree vitality / spirit (capped) + Paragon health / mana
 local PARAGON_PERCENT = {vitality = "paragonHealth", spirit = "paragonMana"}
+-- the share of the stat that comes from a held Vocation Trial node (trials.lua addBonuses writes it next to the summed
+-- stat): outside the tree's cap, like the Paragon share. A character at the tree's +50% got nothing from Steelblood (+8%)
+-- when the cap cut the sum.
+local TRIAL_PERCENT = {vitality = "trialVitality", spirit = "trialSpirit"}
 function ChaosPassiveMaxPercent(bonuses, stat)
-	return clamp(bonuses[stat] or 0, 0, cfg.charStatCap[stat]) + (bonuses[PARAGON_PERCENT[stat]] or 0)
+	local trial = math.max(0, bonuses[TRIAL_PERCENT[stat] or ""] or 0)
+	return clamp((bonuses[stat] or 0) - trial, 0, cfg.charStatCap[stat]) + trial + (bonuses[PARAGON_PERCENT[stat]] or 0)
 end
 
 -- condition stats that Paragon adds to (one condition for both, so neither overwrites the other)

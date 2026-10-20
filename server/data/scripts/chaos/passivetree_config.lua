@@ -29,13 +29,17 @@ ChaosPassiveTreeConfig = {
 	-- tools/gen_class_lanes.lua. About 170 to 300 plain nodes per class give that class other stats (same place, same
 	-- cost), so the character loses the plain nodes that have a lane for its class (and what hung on them), for free,
 	-- once, with the message. `lanes = true` lets the core read the nodes from the tree data instead of listing them.
+	-- Version 6 (2026-10-20, the third round: four Warrior line and four Ranger line keystones, beta feedback): the
+	-- mythic leaves 428, 409, 466, 523 (Executioner's Verdict, Earthbreaker, Rampage, Last Stand) and 561, 542, 599, 447
+	-- (Longshot, Barbed Quiver, Opening Shot, Hobbling Shot) became keystones (build codes format 6).
 	reworked = {
 		{version = 1, ids = {369, 376, 383, 390}},
 		{version = 2, ids = {77, 78, 81, 82, 106, 107, 108, 109, 253, 262, 355, 362}},
 		{version = 3, ids = {96, 99, 102, 105}},
 		{version = 4, ids = {8, 10, 167, 212, 213, 237, 322, 325, 486, 487, 488, 489, 490, 491, 493, 494, 497, 498, 499, 500,
 			501, 502, 503}},
-		{version = 5, ids = {}, lanes = true}
+		{version = 5, ids = {}, lanes = true},
+		{version = 6, ids = {428, 409, 466, 523, 561, 542, 599, 447}}
 	}
 }
 

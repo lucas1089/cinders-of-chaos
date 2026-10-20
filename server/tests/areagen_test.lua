@@ -221,7 +221,7 @@ do
 		local mons = {}
 		for _, s in ipairs(m.spawns) do
 			mons[#mons + 1] = {hp = fileHp(s.monster), level = s.level, count = s.count,
-				pace = ChaosPaceCore.factors(pc, s.level, true).health}
+				pace = ChaosPaceCore.factors(pc, s.level, true, true).health}
 		end
 		local b = def.boss
 		local spec = {level = def.dungeon.level + 25, monsters = mons, need = 0.85, packs = #m.spawns,

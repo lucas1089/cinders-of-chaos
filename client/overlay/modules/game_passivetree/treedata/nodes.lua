@@ -7863,24 +7863,31 @@ function getTreeNodes()
 			}
 		},
 		--- 409 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Breath Of Flames",
-			orbitIndex = 0,
+			name = "Earthbreaker",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 90,
-			icon = "breathOfFlames",
+			icon = "arEarthbreaker",
 			customStats = {
-				absorbFire = 6,
-				incrementFire = 15,
-				shieldingSkill = 3
+				arEarthbreaker = 1
 			},
+			stats = {
+				"Warrior line: every 4th melee hit deals 50% more and",
+				"slams the ground: up to 6 other enemies within 2 sqm",
+				"take 60% of that hit as physical damage.",
+				"Your other melee hits deal 10% less."
+			},
+			classes = {"warrior", "juggernaut", "berserker"},
 			inputs = {
 				406
 			},
 			out = {
-				
 			}
 		},
 		--- 410 ---
@@ -8227,26 +8234,31 @@ function getTreeNodes()
 			}
 		},
 		--- 428 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Whisper Of Doom",
-			orbitIndex = 0,
+			name = "Executioner's Verdict",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 91,
-			icon = "whisperOfDoom",
+			icon = "arExecutioner",
 			customStats = {
-				incrementPhysical = 15,
-				absorbPhysical = 6,
-				swordSkill = 2,
-				axeSkill = 2,
-				clubSkill = 2
+				arExecutioner = 1
 			},
+			stats = {
+				"Warrior line: a melee hit that would leave a monster",
+				"(not a boss) at 15% of its health or less kills it.",
+				"Your melee hits on monsters above 60% health deal",
+				"10% less."
+			},
+			classes = {"warrior", "juggernaut", "berserker"},
 			inputs = {
 				425
 			},
 			out = {
-				
 			}
 		},
 		--- 429 ---
@@ -8593,25 +8605,31 @@ function getTreeNodes()
 			}
 		},
 		--- 447 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Tempest Blast",
-			orbitIndex = 0,
+			name = "Hobbling Shot",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 92,
-			icon = "tempestBlast",
+			icon = "arHobble",
 			customStats = {
-				incrementEnergy = 15,
-				absorbEnergy = 6,
-				magicSkill = 2,
-				speed = 600
+				arHobble = 1
 			},
+			stats = {
+				"Ranger line: bow, crossbow and thrown weapon hits have a",
+				"25% chance to hobble the target for 3 s (40% slower).",
+				"Your hits on a hobbled target deal 20% more, on any",
+				"other 8% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster"},
 			inputs = {
 				443
 			},
 			out = {
-				
 			}
 		},
 		--- 448 ---
@@ -8962,26 +8980,30 @@ function getTreeNodes()
 			}
 		},
 		--- 466 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Divine Fervour",
-			orbitIndex = 0,
+			name = "Rampage",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 93,
-			icon = "divineFervour",
+			icon = "arRampage",
 			customStats = {
-				incrementEarth = 15,
-				absorbEarth = 6,
-				strength = 3,
-				dexterity = 3,
-				intelligence = 3
+				arRampage = 1
 			},
+			stats = {
+				"Warrior line: killing a monster gives a stack (at most",
+				"5; they end 6 s after the last kill). Each stack: you",
+				"deal 6% more damage and take 4% more damage."
+			},
+			classes = {"warrior", "juggernaut", "berserker"},
 			inputs = {
 				462
 			},
 			out = {
-				
 			}
 		},
 		--- 467 ---
@@ -10074,25 +10096,31 @@ function getTreeNodes()
 			}
 		},
 		--- 523 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Revelry",
-			orbitIndex = 0,
+			name = "Last Stand",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 96,
-			icon = "revelry",
+			icon = "arLastStand",
 			customStats = {
-				incrementIce = 15,
-				absorbIce = 6,
-				magicSkill = 2,
-				speed = 600
+				arLastStand = 1
 			},
+			stats = {
+				"Warrior line: a hit that would take you below 20% of",
+				"your maximum health is cut so you keep 20%; then you",
+				"take 40% less damage for 5 s. Once every 90 s, not",
+				"against players. Healing you receive is 20% less."
+			},
+			classes = {"warrior", "juggernaut", "berserker"},
 			inputs = {
-				517	
+				517
 			},
 			out = {
-				
 			}
 		},
 		--- 524 ---
@@ -10456,27 +10484,30 @@ function getTreeNodes()
 			}
 		},
 		--- 542 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Brutal Skewering",
-			orbitIndex = 0,
+			name = "Barbed Quiver",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 97,
-			icon = "brutalSkewering",
+			icon = "arBarbed",
 			customStats = {
-				incrementLifeDrain = 20,
-				incrementManaDrain = 20,
-				absorbLife = 6,
-				absorbMana = 6,
-				vitality = 8,
-				spirit = 8
+				arBarbed = 1
 			},
+			stats = {
+				"Ranger line: bow, crossbow and thrown weapon hits bleed",
+				"for 60% of the hit as physical damage over 4 s.",
+				"The hit itself deals 10% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster"},
 			inputs = {
 				536
 			},
 			out = {
-				
 			}
 		},
 		--- 543 ---
@@ -10823,26 +10854,30 @@ function getTreeNodes()
 			}
 		},
 		--- 561 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Concusive Dexterity",
-			orbitIndex = 0,
+			name = "Longshot",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 98,
-			icon = "concusiveDexterity",
+			icon = "arLongshot",
 			customStats = {
-				dexterity = 3,
-				incrementHoly = 15,
-				absorbHoly = 6,
-				speed = 500,
-				distanceSkill = 2
+				arLongshot = 1
 			},
+			stats = {
+				"Ranger line: bow, crossbow and thrown weapon hits deal",
+				"6% more for every square of distance beyond 2, at most",
+				"30% more. Hits from 2 sqm or closer deal 15% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster"},
 			inputs = {
 				560
 			},
 			out = {
-				
 			}
 		},
 		--- 562 ---
@@ -11569,26 +11604,30 @@ function getTreeNodes()
 			}
 		},
 		--- 599 ---
+		-- build archetype keystone, third round (2026-10-20; was a mythic leaf: passivetree_config.lua reworked version 4;
+		-- numbers in server/data/scripts/chaos/archetypes_config.lua, effects in archetypes.lua)
 		{
 			orbit = 0,
 			orbitDist = 0,
-			name = "Arcane Surge",
-			orbitIndex = 0,
+			name = "Opening Shot",
 			isDivine = true,
+			isKeystone = true,
+			orbitIndex = 0,
 			group = 100,
-			icon = "arcaneSurge",
+			icon = "arOpeningShot",
 			customStats = {
-				intelligence = 3,
-				speed = 500,
-				incrementArcane = 15,
-				absorbArcane = 6,
-				magicSkill = 2
+				arOpeningShot = 1
 			},
+			stats = {
+				"Ranger line: your first bow, crossbow or thrown weapon",
+				"hit on a monster at full health deals 80% more.",
+				"Your other such hits deal 7% less."
+			},
+			classes = {"ranger", "deadeye", "beastmaster"},
 			inputs = {
 				598
 			},
 			out = {
-				
 			}
 		},
 		--- 600 ---

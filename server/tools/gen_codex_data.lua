@@ -541,6 +541,7 @@ local function affixOrbs(D, a, isPower)
 	add("scouring", "Removes it with the rarity and every other modifier.")
 	add("tempering", "New value inside its tier (unless bound).")
 	add("reforging", "New tier (by item level) and value when you pick it.")
+	add("ember", "One tier up when you pick it (never past the top tier), new value inside the new tier.")
 	add("binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone.")
 	add("ruin", ruin.ruin > 0 and string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing, %d%% ruined.",
 		ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing; it never ruins the item.",
@@ -858,6 +859,9 @@ function Gen.orbEntries(D)
 			M.config.bind.max[1], C.rarityName(4), M.config.bind.max[5], C.rarityName(5)),
 		excision = "Only an item with a rarity and a modifier that is not bound.",
 		reforging = "Only an item with a rarity and a modifier that is not bound.",
+		ember = "Only an item with a rarity and a modifier that is not bound and below the top tier (T8).",
+		crown = string.format("Only an item with a rarity below %s. It never makes Divine; unique items are refused.",
+			C.rarityName(ChaosRarity.idOfRank(O.config.crown.maxRank))),
 		ruin = "Only an item with a rarity and a modifier; a ruined item can never be changed again.",
 		whetstone = string.format("Only an item with a rarity and a modifier, below its quality cap (%d%%, %d%% from %s).",
 			M.config.quality.cap, M.config.quality.capHigh, C.rarityName(M.config.quality.highFrom)),
@@ -903,8 +907,10 @@ function Gen.orbEntries(D)
 	for _, orb in ipairs(C.config.orbs) do
 		crafting[orb.id] = true
 	end
+	local seenRename = {}
 	for _, r in ipairs(O.config.renames) do
-		if not crafting[r.id] then
+		if not crafting[r.id] and not seenRename[r.id] then -- one row per id in the codex (a rename may list two old names)
+			seenRename[r.id] = true
 			out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
 				sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"}, items = {r.id},
 				sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}},

@@ -178,6 +178,20 @@ do
 	L.thinCorpse(corpse, 0.3)
 	ok(#removed == 0 and sword2.count == 1, "pace: a sword at 0.0 < 0.3 kept")
 	ok(L.thinCorpse(corpse, 1) == 0, "pace: factor 1 changes nothing")
+	-- the gold factor: coins and sellable junk thinned again, gear and orbs untouched
+	coins.count = 100
+	removed = {}
+	local orb = item(29851, 10)
+	stackable[29851] = true
+	corpse.items = {coins, orb}
+	L.setRandom(function(a, b) return math.floor((a + b) / 2) end)
+	local savedP = ChaosItemPrices
+	ChaosItemPrices = {unsellable = function(id) return id == 29851 end, basePrice = function(id) return 50 end}
+	L.thinCorpse(corpse, 1, 0.3)
+	ok(coins.count == 30, "gold factor: 100 coins x0.3 = 30 (" .. coins.count .. ")")
+	ok(orb.count == 10, "gold factor: an orb (unsellable currency) keeps its count")
+	ok(L.isGoldLike(2148) and not L.isGoldLike(29851), "gold-like: coins yes, an unsellable currency no")
+	ChaosItemPrices = savedP
 	L.isStackableId = savedS
 	L.setRandom(nil)
 end

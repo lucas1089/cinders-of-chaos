@@ -9,7 +9,8 @@ Every icon here is a cell of data/images/passivetree/skills.png, the atlas the s
 nothing comes from outside the repository, so the medium and large nodes have the same painted look, light and palette
 as the small ones.
  * KEYSTONES (keystone frame, nodes 369, 376, 383, 390, 621, 624 with their per-class variants, 631-664, and the build
-   archetype keystones 77, 78, 81, 82, 96, 99, 102, 105-109, 253, 262, 355, 362): one row of
+   archetype keystones 77, 78, 81, 82, 96, 99, 102, 105-109, 253, 262, 355, 362, and the Warrior and Ranger line
+   keystones 409, 428, 447, 466, 523, 542, 561, 599): one row of
    64x64 cells in keystones.png, in the order below (treedata/icons.lua: x = index * 64). Each cell is the atlas icon
    scaled up once here (Lanczos, a light unsharp mask), so the client does not stretch a 25 px clip to 60 px.
  * START (class section start nodes 625, 635, 645, 655): classstart_<line>.png, 150x150, written next to the sheet:
@@ -91,6 +92,15 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('arVigils', 'B1.32'),             # 99 a ring of element sigils
     ('arIronTithe', 'B3.36'),          # 102 a shield with a heart
     ('arHollowVessel', 'B5.10'),       # 96 a hollow orb of blue energy
+    # the third round (2026-10-20): four keystones for the Warrior line, four for the Ranger line
+    ('arExecutioner', 'A1.30'), # 428 a red axe
+    ('arEarthbreaker', 'A1.20'), # 409 a red hammer
+    ('arRampage', 'A2.13'),     # 466 a raging figure
+    ('arLastStand', 'A1.23'),   # 523 a shield
+    ('arLongshot', 'A8.13'),    # 561 a long arrow
+    ('arBarbed', 'A6.10'),      # 542 a barbed arrow
+    ('arOpeningShot', 'A6.20'), # 599 an arrow in flight
+    ('arHobble', 'A7.28'),      # 447 a tumbling figure
 ]
 
 START = [  # (line, atlas cell): the start node of each class section
