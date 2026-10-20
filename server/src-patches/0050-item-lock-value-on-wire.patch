@@ -1,0 +1,16 @@
+# The lock's own value on the wire (server/README.md "Potions"). Patch 0003 sent the item key 3 (custom attribute "chaos_locked") as 1
+# for any lock, so the client could not tell the player's lock (1, drawn grey by game_shaderfx) from a bound item (2, the
+# Everfull potions): their potions showed grey in the backpack (beta 2026-10-20) although potions_config.lua binds them with 2.
+# The key now carries the value. Every engine and server check treats any value but 0 as locked (patch 0009), unchanged.
+--- a/src/item.cpp
++++ b/src/item.cpp
+@@ -2688,7 +2688,8 @@
+ 		out.emplace_back(CHAOS_ITEM_KEY_LEVEL, static_cast<uint64_t>(level));
+ 	}
+ 	if (locked > 0) {
+-		out.emplace_back(CHAOS_ITEM_KEY_LOCKED, 1);
++		// the lock's own value: 1 the player's lock (the client draws it grey), 2 a bound item such as the Everfull potions
++		out.emplace_back(CHAOS_ITEM_KEY_LOCKED, static_cast<uint64_t>(locked));
+ 	}
+ 	if (unique) {
+ 		out.emplace_back(CHAOS_ITEM_KEY_UNIQUE, 1);

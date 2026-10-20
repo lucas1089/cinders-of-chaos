@@ -3752,7 +3752,9 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
   `game_shaderfx`, which draws every item with lock attribute 3 > 0 grey, and a grey red flask reads as a black one. The
   client now greys only a player's own lock (1, the crafting bench's Lock button); every server and engine check treats
   any value but 0 as locked, so 2 stays bound. Potions given before get 2 at their owner's next login
-  (`ChaosPotions.rebind`, sent again to the client). Patch 0043's hotkey lookup goes by client id and `chaos_storebound`
+  (`ChaosPotions.rebind`, sent again to the client). Beta 2026-10-20: still grey, because patch 0003 sent key 3 as 1 for any
+  lock value, so the client never saw the 2; engine patch `0050-item-lock-value-on-wire` sends the value (needs a new
+  engine build). Patch 0043's hotkey lookup goes by client id and `chaos_storebound`
   and is unchanged. `tests/potions_test.lua`, client `game_shaderfx/shaderfx_test.lua`.
 - **Sources.** The starter kit, its wearable part on arrival at the tutorial island (`newplayer.lua` calls
   `ChaosPotions.giveAll` into the kit backpack; the only starting potions, no kit carries stock potions); a one-time grant at
