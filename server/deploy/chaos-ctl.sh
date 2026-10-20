@@ -171,7 +171,7 @@ case $cmd in
       fi
       sleep 0.5
     done
-    die "no answer in 15 s: is $actor online, and is the server running the remote command script?"
+    die "no answer in 15 s: is $actor an admin character, and is the server running the remote command script?"
     ;;
   update|rollback)
     if [ "$cmd" = update ]; then
