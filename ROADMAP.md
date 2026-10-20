@@ -267,6 +267,10 @@ Estimated before items 4 and 5: ~155 h to level 1000 for a sorcerer, ~285 h for 
 
 ## Open decisions and loose ends
 
+- TODO (owner 2026-10-20, later; "Eu prefiro a 3. Coloque no TODO por enquanto"): a live spectator view of a player
+  in the admin app (android/): the real game view with sprites (the .dat/.spr on the device) fed by a server cast /
+  spectator system (engine patch). The simpler options (a JSON map of the surroundings, a client screenshot with a
+  notice to the player) were offered and not chosen.
 - Done (monster lint follow-up, server/README.md "Monster lint", `tools/tune_monsters.py`): Wild Boar and Giant
   Hornet renamed Gloomtusk Boar and Blightwing Hornet; donor boss experience in the world boss band; the 2,005,500
   hits and Vharok's dead bleed fixed; late-game gold, Garack's loot, Azure Dragon's elements; Orcaruz, Fenmaw,
