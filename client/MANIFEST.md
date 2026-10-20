@@ -2003,7 +2003,7 @@ Only the dat changes: three wings get a new displacement (dat byte 25). No sprit
   2x2 wings with 8,8, the others use none or 0,0; N -11.7 too); 1186 -3.7,-7.7 (1,8) and 941 +2.2,-5.4 look right on
   the sheet and stay. Also outside the box: 939 +0.3 y (0.3 px; looks right), 2233 -5.1 x (looks right) and the owner
   art 2231 / 2232 (Gloomgild, Sunforged; -6,-12) at -12.6,-5.7: on the sheet the two wings stand apart, far left of
-  the body facing south and split facing north. Not reported, not changed here: art or displacement, the owner's call.
+  the body facing south and split facing north. Not changed here; re-centred in pair 32 ("Ornate wings re-centred").
 - Fixes (`pair_fixes/fixes.csv`, `pair_fixes/pair31_changes.csv`, picked by eye on a before / after sheet, then the
   premise): 937 none -> 0,6 (S +0.6,-4.5; up 6 px, toward its sibling art Cinder Plumes 1486 at 4,5: -10.0);
   938 none -> 0,8 (S +2.5,-3.7; up 8 px); 1185 8,8 -> -4,8 (S +0.4,-7.2; right 12 px, height kept).
@@ -2037,6 +2037,48 @@ items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are 
 - Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
   approved it. Not run in a live client by us.
 
+## Ornate wings re-centred (pair 32: outfits 2231, 2232, `tools/sprites/gen_owner_art.py` WING_SHIFT, `art_import/owner_wings_fix.csv`; on windows-assets 1f109dc0, owner approved)
+Gloomgild Wings (2231, wings.xml 27, the Nyxareth drop) and Sunforged Wings (2232, wings.xml 28, the Cinderheart drop),
+found while checking the wings for pair 31. The owner's ornate sheet draws each direction around its own point: two
+separate wings with a gap for the body, and the gap moves from column to column. Against the body (the "Wings
+displacement" rule and `wing_offset`), the displacement that would put each direction where the stock 3x3 wings
+(940, 1178, 1179, 1181, 1183, 1184, 2140-2142, 2187) sit, by the per-direction median: N -23,0, E +10,-16, S -17,-5,
+W -2,-22. Our other wings stay within about 10 px of their own value (2225, 2233). No single displacement places all
+four: pair 26's -6,-12 (chosen from the old tile-centre scan, no body) was already the best one, each direction up to
+16 px off (facing south the wings stood apart from the body, facing east in front of it). The committed art matched
+the owner's sheet pixel for pixel, so this was the source, not the cut.
+- Fix: every cell of a direction moves by whole pixels, the same for every phase (`gen_owner_art.py` `WING_SHIFT`,
+  `shift_cell`; it refuses to push art past the 96 px cell edge), and one displacement, -12,-12, places all four:
+  N +11,-12, E -22,+4, S +5,-7, W -10,+10 (displacement minus need; -12,-12 is inside the range the cells' free room
+  allows, x -23..-9, y -21..-7, and keeps the old y). No pixel is edited; the sheets `owner_art/wings_gloomgild.png`
+  and `wings_sunforged.png` are the old ones with the shift (`build --src` gives the same: the shift runs after the
+  cut). After: each direction at its stock median (S -1.6,-12.7 from the body; 2140 -2.9,-11.8).
+- `import_art_things.py`: new in-place mode. An outfit row with mode=replace and look=ID rewrites that existing outfit
+  (its sprites appended, its entry bytes replaced, the outfit count unchanged), so the look ids, wings.xml and the
+  server stay as they are; the append-only guard allows exactly those outfits. `gen_owner_art.py` writes the two rows
+  (`art_import/owner_wings_fix.csv`, covered by `build --check`). Test: `compose_outfit_test.py` (replace in place,
+  counts, the other things byte-identical, the two refusals).
+
+```
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair31/Tibia.dat --ours-spr pair31/Tibia.spr \
+    --out-dir pair32 --things client/tools/sprites/art_import/owner_wings_fix.csv --expect-items 38092
+python3 -I client/tools/sprites/check_pair.py pair32/Tibia.dat pair32/Tibia.spr \
+    --old pair31/Tibia.dat pair31/Tibia.spr --allow-changed 'outfit:2231,2232'
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair32/Tibia.dat pair32/Tibia.spr
+```
+Input pair 31 (windows-assets ed7db076). Output **pair 32**: dat 23c7265b887dfc61ac80e516490a390a (5,726,926 bytes,
+the same size: the entries keep their length), spr 8b4af2e6cf8dbcf886df1d67f349a980 (766,089,521 bytes, 842,592
+sprites, 373 appended), 38,092 items, 2,384 outfits, 854 effects, 188 missiles. Built twice with identical md5s. The
+importer verified 576 sprite slots pixel-identical to the sheets and every other thing byte-identical.
+- `check_pair.py`: append-only with `outfit:2231,2232`: 0 errors (without it: 2 errors). Full check: 0 errors, 124
+  warnings, line for line those of pair 31; INFO `spr-unused` 29,938 -> 30,270 (the two wings' old records).
+- `outfit_anchors.lua` regenerated from pair 32 with the push (the md5 and the rows 2231, 2232).
+- `things-1098.tar.xz` (the pair 30 / 31 recipe): 88,033,268 bytes, sha256
+  54405b25e7e00a6fff72e32f21f89fb34f8aee69dd66a55652e079613a8ea52b, packed twice with the same sha256. **On windows-assets
+  since 2026-10-20 (1f109dc0, owner approved).** No server change. A client on pair 31 keeps drawing the two wings off.
+- Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
+  client by us.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
@@ -2049,7 +2091,8 @@ sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
   Server use: server/README.md "Owner art (pair 26)" (the four deep dungeon bosses and eight 1300-2000 hunt monsters).
 - Wings 2225-2233 (3x3, one group, animateAlways): six feathered wings (9 phases, 110 ms; the sheets repeat the east
   column as the west one, so west is east mirrored about the wearer's axis), two ornate wings (8 phases, 120 ms,
-  displacement -6,-12: the scan put their art 6 px left and 12 px above the other wings), moth wings (5 phases).
+  displacement -6,-12: the scan put their art 6 px left and 12 px above the other wings; re-centred per direction in
+  pair 32, -12,-12: "Ornate wings re-centred"), moth wings (5 phases).
   `fix_pair_warnings.py --scan-aura-displacement --wings 2225-2233`: art centres x -19.6..-22.5, y -18.9..-21.3 px;
   the wings already in the pair (1486, 2140-2142, 2187) span x -14.5..-20.2, y -17.8..-22.5, so ours sit up to 2.3 px
   further left, which looks right in the previews.

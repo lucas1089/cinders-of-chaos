@@ -31,6 +31,9 @@ Outputs (committed):
   art_import/owner_art/waypoint.png  the 60 frames side by side (one item, 60 phases)
   art_import/owner_art.csv         the things file: outfits 2213-2233 (after pair 25's 2212), items 33940-33985
                                    (after pair 25's 33939), server id = client id + 3000
+  art_import/owner_wings_fix.csv   the two ornate wings (WING_SHIFT) as mode=replace rows, look=2231 / 2232: the
+                                   shifted art written over their pair 26 entries (pair 32; client/MANIFEST.md
+                                   "Ornate wings re-centred")
   monster_looks/owner_art_picks.csv  picks.csv rows of the 21 looks (families hunt, dungeonboss, storewings, exclusive);
                                    appended to picks.csv with pair 26 (done 2026-10-15; client/MANIFEST.md "Owner art")
 Append to a pair (pair 25 = things_custom25; the output is things_custom26, on windows-assets at 50645056):
@@ -55,6 +58,7 @@ REPO = os.path.normpath(os.path.join(HERE, '..', '..', '..'))
 ART = os.path.join(HERE, 'art_import')
 OUT_DIR = os.path.join(ART, 'owner_art')
 THINGS = os.path.join(ART, 'owner_art.csv')
+WING_FIX = os.path.join(ART, 'owner_wings_fix.csv')   # the shifted wings, rewritten in place in a later pair
 PICKS = os.path.join(HERE, 'monster_looks', 'owner_art_picks.csv')
 
 FIRST_OUTFIT = 2213         # after things_custom25's 2212 outfits
@@ -143,10 +147,13 @@ WINGS = [
     ('wings_starmoth', 'wings_moth_violet.png', 5, 'Starmoth Wings', 'exclusive', 'boss drop (the Ascended Omens)',
      'violet moth wings dusted with starlight', 140, False),
 ]
-# the ornate wings stand 6 px left and 12 px higher than the stock and our other wings (fix_pair_warnings.py
-# --scan-aura-displacement: art centre -25.6,-33.3 px against -17.8..-20.8,-17.8..-22.5); a shift of the art would cut
-# their tips at the cell edge, so the dat moves them (displacement may be negative: drawn right and down)
-WING_DISPLACEMENT = {'wings_gloomgild': (-6, -12), 'wings_sunforged': (-6, -12)}
+# the ornate wings' sheet draws each direction around its own point: against the body (fix_pair_warnings.py
+# --scan-wings-displacement, wing_offset) the displacement that would put each direction where the stock 3x3 wings
+# sit is N -23,0, E +10,-16, S -17,-5, W -2,-22, so no one value places all four (the first pair 26 value -6,-12 left
+# each up to 16 px off). Each direction's cells move by WING_SHIFT (whole pixels, every phase alike, nothing cut at the
+# cell edge) so that one displacement, -12,-12, places all four (displacement may be negative: drawn right and down)
+WING_DISPLACEMENT = {'wings_gloomgild': (-12, -12), 'wings_sunforged': (-12, -12)}
+WING_SHIFT = {k: ((11, -12), (-22, 4), (5, -7), (-10, 10)) for k in ('wings_gloomgild', 'wings_sunforged')}  # N E S W
 WAYPOINT = ('waypoint_seal', 'waypoint.png', 60, 'waypoint seal', 100, 'notmoveable light:3:35')
 # the 45 plants in sheet order (rows of the source, left to right): name; blocking = more than BLOCK_PX art pixels
 CACTI = ['leaning cactus', 'leaning cactus', 'tall cactus', 'tall cactus', 'tall cactus', 'budding tall cactus',
@@ -213,7 +220,21 @@ def mirror_about(cell, axis):
     return out
 
 
-def wings_frames(a, phases, west_from_east):
+def shift_cell(cell, dx, dy):
+    """the cell moved dx right and dy down (whole pixels); refuses to push art past the cell edge"""
+    h, w = cell.shape[:2]
+    on = cell[..., 3] > 0
+    if on.any():
+        ys, xs = np.nonzero(on)
+        if xs.min() + dx < 0 or xs.max() + dx >= w or ys.min() + dy < 0 or ys.max() + dy >= h:
+            raise SystemExit('shift %d,%d pushes art past the cell edge' % (dx, dy))
+    out = np.zeros_like(cell)
+    out[max(0, dy):h + min(0, dy), max(0, dx):w + min(0, dx)] = cell[max(0, -dy):h - max(0, dy),
+                                                                     max(0, -dx):w - max(0, dx)]
+    return out
+
+
+def wings_frames(a, phases, west_from_east, shift=None):
     g = cells(a, 96)
     assert len(g) == phases and len(g[0]) == 4, (a.shape, phases)
     frames = [[g[p][d].copy() for d in range(4)] for p in range(phases)]
@@ -222,6 +243,8 @@ def wings_frames(a, phases, west_from_east):
         axis = sum(cs) / len(cs)
         for p in range(phases):
             frames[p][3] = mirror_about(frames[p][1], axis)
+    if shift:
+        frames = [[shift_cell(frames[p][d], *shift[d]) for d in range(4)] for p in range(phases)]
     return frames
 
 
@@ -296,7 +319,7 @@ def build_sheets(src):
         idle, wk = monster_frames(load(src, name), layout, c, walk)
         out[key] = look_sheet(idle, wk)
     for key, name, phases, _n, _f, _u, _d, _ms, west in WINGS:
-        out[key] = wings_sheet(wings_frames(load(src, name), phases, west))
+        out[key] = wings_sheet(wings_frames(load(src, name), phases, west, WING_SHIFT.get(key)))
     cac = load(src, 'cacti.png')
     bl = blobs(cac)
     assert len(bl) == len(CACTI), ('plants', len(bl), len(CACTI))
@@ -347,6 +370,19 @@ def things_rows(sheets):
     rows.append([key, 'item', 'decor', name, 'owner_art/waypoint', 0, 0, 3, 3, 1, ph, flags, 'new', '',
                  'ms=%d|family=waypoint|block=0' % ms])
     return rows
+
+
+def wing_fix_rows(sheets):
+    """the owner_art.csv rows of the WING_SHIFT wings with mode replace and look=<their pair 26 id>"""
+    looks = {k: FIRST_OUTFIT + len(LOOKS) + j for j, (k, *_r) in enumerate(WINGS)}
+    out = []
+    for r in things_rows(sheets):
+        if r[0] in WING_SHIFT:
+            r = list(r)
+            r[12] = 'replace'
+            r[14] += '|look=%d' % looks[r[0]]
+            out.append(r)
+    return out
 
 
 def picks_rows():
@@ -408,6 +444,7 @@ def check_rules(sheets):
 def outputs(sheets):
     out = {os.path.join(OUT_DIR, k + '.png'): png_bytes(v) for k, v in sheets.items()}
     out[THINGS] = csv_bytes(FIELDS, things_rows(sheets))
+    out[WING_FIX] = csv_bytes(FIELDS, wing_fix_rows(sheets))
     out[PICKS] = csv_bytes(PICK_FIELDS, picks_rows())
     return out
 

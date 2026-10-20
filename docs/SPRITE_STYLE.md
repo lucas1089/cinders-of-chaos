@@ -58,7 +58,9 @@ Third-party packs (licence audit of 2026-10-15, owner's confirmation the same da
 - **Displacement** moves a whole thing up and left by that many pixels (dat flag `displacement:x:y`):
   - player looks: 2 x 2 tiles, displacement 8, 8 (the stock player place; client/MANIFEST.md "New class look art");
   - the owner's monsters: 2 x 2 or 4 x 4 tiles, no displacement;
-  - wings: 3 x 3 tiles, none (two owner wings use -6, -12);
+  - wings: 3 x 3 tiles, none (the two ornate owner wings use -12, -12 with their art moved per direction:
+    client/MANIFEST.md "Ornate wings re-centred"); check wings against the body with
+    `fix_pair_warnings.py --scan-wings-displacement`;
   - auras: centre of the art on the feet point (14, 20) (client/MANIFEST.md "Raid boss and faction looks");
   - effects: the send offset `dx, dy` = (w - 1) / 2 tiles, so a 3 x 3 effect has 1, 1 and is centred on the target.
 - An outfit cannot draw past the right or bottom edge of its frame. Weapons and strides that would cross it are held
