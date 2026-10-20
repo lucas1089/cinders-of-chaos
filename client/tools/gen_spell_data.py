@@ -17,8 +17,8 @@ GROUP = {'attack': 1, 'healing': 2, 'support': 3}
 CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
 # stock spells the server retired (server/tools/retire_cure_spells.py OTHERS; old words, client name). Unlike the removed
 # ones they keep no id: spellfix.lua moves them off the server's ids like every stock entry the server does not know
-# (Tautstring has Hawkeye's id 135 now). The spell list leaves them out (chaosspells.lua hideRemovedSpells).
-RETIRED_STOCK = [('utito tempo san', 'Sharpshooter')]
+# (Tautstring has Hawkeye's id 135 now, Ironhold Bulwark's 132, Wildstride Windrunner's 134). The spell list leaves them out (chaosspells.lua hideRemovedSpells).
+RETIRED_STOCK = [('utito tempo san', 'Sharpshooter'), ('utamo tempo', 'Protector'), ('utamo tempo san', 'Swift Foot')]
 
 def main():
     xml = open('server/data/spells/chaos/spells_chaos.xml', encoding='utf-8').read()

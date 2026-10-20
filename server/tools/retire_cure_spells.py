@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Take the status-cleansing spells (and Hawkeye) out of the base spells.xml (idempotent). install_all.py step `spells`,
-first.
+"""Take the status-cleansing spells (and Hawkeye, Bulwark, Windrunner) out of the base spells.xml (idempotent).
+install_all.py step `spells`, first.
 
 usage: python3 -I retire_cure_spells.py DATA_DIR [--dry-run]       (python3 -I retire_cure_spells.py --list prints the table)
 
@@ -18,6 +18,12 @@ slow (CONDITION_PARALYZE, -0.7 x speed + 56) on the caster for 10 s next to the 
 way it stopped the bow: a slowed Ranger in Chase Opponent mode keeps stepping after its target and every chase step holds
 a distance swing (engine 0042, stepEndTime), while the helper kept the buff up. Its id 135 belongs to the Chaos replacement
 Tautstring (data/spells/chaos/paladin/tautstring.lua, no slow, no lock).
+
+Owner decision (2026-10-20, "pode trocar essas duas também"): the stock Protector (Chaos name Bulwark, "utamo tempo" /
+"tor ira", id 132, Warrior line) and Swift Foot (Windrunner, "utamo tempo san" / "tor ira sol", id 134, Ranger line) go
+too. Both scripts add CONDITION_PACIFIED for 10 s (no auto attack at all) and a 10 s attack group cooldown; the helper's
+Auto setup kept Protector up, so the Warrior did not attack. Their ids belong to the Chaos replacements Ironhold
+(data/spells/chaos/knight/ironhold.lua) and Wildstride (data/spells/chaos/paladin/wildstride.lua), no pacify, no lock.
 """
 import os
 import re
@@ -37,6 +43,8 @@ CURES = {
 # other stock spells the owner retired: script -> (stock spell id, Chaos name)
 OTHERS = {
     'support/sharpshooter.lua': (135, 'Hawkeye'),
+    'support/protector.lua': (132, 'Bulwark'),
+    'support/swift_foot.lua': (134, 'Windrunner'),
 }
 OTHER_MARK = 'Chaos: spell retired (retire_cure_spells.py): '
 FREED_IDS = sorted(i for i, _ in list(CURES.values()) + list(OTHERS.values()))
@@ -82,8 +90,8 @@ def main(argv):
     new, n = patch(text)
     if n and '--dry-run' not in argv:
         open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
-    print('cure spells and Hawkeye: %d retired%s' % (n, ' (dry run)' if '--dry-run' in argv else '') if n else
-          'cure spells and Hawkeye: nothing to retire')
+    print('cure spells, Hawkeye, Bulwark and Windrunner: %d retired%s' % (n, ' (dry run)' if '--dry-run' in argv else '') if n else
+          'cure spells, Hawkeye, Bulwark and Windrunner: nothing to retire')
     return 0
 
 

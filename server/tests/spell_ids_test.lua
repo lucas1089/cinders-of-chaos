@@ -22,8 +22,10 @@ local PATCHED = { -- tools/patch_spell_ids.py NEW_IDS (Wash Taint 58 and Break G
 -- Ids of the stock cure (status cleansing) spells that tools/retire_cure_spells.py comments out of spells.xml (owner
 -- 2026-10-20, C6): Purge Venom 29, Wash Taint 58, Staunch Blood 144, Douse Embers 145, Ground Static 146, Lift Hex 147,
 -- Break Glamour 164. The Chaos block uses them for the new late spells of the ascended classes. The same tool retires
--- the stock Sharpshooter (Hawkeye, 135; owner 2026-10-20: its slow kept the Ranger's bow from firing): Tautstring has it.
-local RETIRED = {29, 58, 135, 144, 145, 146, 147, 164}
+-- the stock Sharpshooter (Hawkeye, 135; owner 2026-10-20: its slow kept the Ranger's bow from firing): Tautstring has it;
+-- and the stock Protector (Bulwark, 132) and Swift Foot (Windrunner, 134), which pacified the caster: Ironhold and
+-- Wildstride have them.
+local RETIRED = {29, 58, 132, 134, 135, 144, 145, 146, 147, 164}
 do
 	local tool = io.open("tools/retire_cure_spells.py"):read("*a")
 	local rows = {}

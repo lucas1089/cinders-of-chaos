@@ -78,10 +78,12 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
 | 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
+| 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
+| 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
 | 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
@@ -2270,6 +2272,36 @@ weapon damage while it runs (Dawnpiercer and the other distance-skill spells gai
 about +9% over a fight: the same as Red Frenzy's mean for the Warrior line and without its shielding price. 300 mana is
 a third of a level 60 Ranger's pool (about 900), 10 mana a second over its cooldown. The Banner Call stacks with it (own
 sub ids 71003 / 71072). Not measured in game; `server/tests/tautstring_test.lua` checks the cast on a mocked player.
+
+### Ironhold and Wildstride (2026-10-20; owner: "pode trocar essas duas também"; computed, not measured in game)
+
+The stock Protector (Bulwark, `utamo tempo` / `tor ira`, id 132, Warrior line, level 55, 200 mana, cooldown 2 s) and Swift
+Foot (Windrunner, `utamo tempo san` / `tor ira sol`, id 134, Ranger line, level 55, 400 mana, cooldown 2 s) are retired
+(`tools/retire_cure_spells.py`, server/README.md "Bulwark and Windrunner retired, Ironhold and Wildstride"). Protector:
++120% shielding for 13 s; Swift Foot: haste 0.8 x speed - 64 for 10 s. Both add `CONDITION_PACIFIED` for 10 s (no auto
+attack, no attack spell) and a 10 s attack group cooldown. Kept up by the helper (Protector was an Auto setup timer), the
+Warrior had +120% shielding and no attacks at all.
+
+Ironhold (id 132, `tor brak`, W / J / B, level 55, 200 mana, cooldown 30 s, support group 2 s): +40% shielding
+(`SKILL_SHIELDPERCENT` 140) for 12 s, sub id 71073. Wildstride (id 134, `ruan vert`, R / D / BM, level 55, 150 mana,
+cooldown 30 s, support group 2 s): haste 0.5 x speed - 40 for 12 s, sub id 71074, so it adds to the Haste the helper's
+Tools tab keeps up (0.3 x speed - 24): together 0.8 x speed - 64, Swift Foot's number, for 12 s of every 30.
+
+| Buff | Class | Level | Mana | Effect | Uptime | Mean gain | Price |
+|---|---|---|---|---|---|---|---|
+| Iron Will (Iron Bellow) | W, J | 120 | 200 | -25% damage taken, +15% shielding, 8 s / 20 s | 40% | -10% damage taken, +6% shielding | a taunt with it |
+| Red Frenzy | W, J, B | 100 | 300 | +30% melee skill, -30% shielding, 12 s / 40 s | 30% | +9% melee skill | -9% shielding |
+| Ironhold | W, J, B | 55 | 200 | +40% shielding, 12 s / 30 s | 40% | +16% shielding | - |
+| Bulwark (retired) | W, J, B | 55 | 200 | +120% shielding, 13 s / 2 s | 100% | +120% shielding | no attacks while it ran |
+| Wildstride | R, D, BM | 55 | 150 | +0.5 x speed, 12 s / 30 s | 40% | +0.2 x speed | - |
+| Windrunner (retired) | R, D, BM | 55 | 400 | +0.8 x speed, 10 s / 2 s | 100% | +0.8 x speed | no attacks while it ran |
+
+Shielding: the skill counts x1.4 while Ironhold runs (block chance and defence follow the skill). Red Frenzy's -30% runs
+on top of it (own sub ids 71002 / 71073: +10% net), so the two can be cast together. Speed (engine base speed 220 + 2 per
+level, 328 at level 55): Haste alone about 400, Haste and Wildstride about 525 for 12 s, Strong Haste (which the Ranger
+line lacks) about 500, the retired Swift Foot 526 (it replaced the Haste). 150 mana is about a sixth of a level 55
+Ranger's pool, 5 mana a second over its cooldown. Neither is measured in game;
+`server/tests/ironhold_wildstride_test.lua` checks both casts on a mocked player.
 
 ## Honest notes / limitations
 

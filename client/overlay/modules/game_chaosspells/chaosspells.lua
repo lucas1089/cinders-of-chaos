@@ -131,8 +131,8 @@ local fixUndo, fixIdMap, fixRemovedIds = {}, {}, {} -- ChaosSpellFix.apply (spel
 -- server id, ids of the spells the server removed (ChaosRemovedSpells)
 
 -- the spells the server removed (ChaosRemovedSpells, the conjure spells) leave the spell list; their SpellInfo entries
--- stay (the rune cooldown icons need their ids). The stock spells it retired (ChaosRetiredSpells: Sharpshooter, whose
--- id 135 is Tautstring's now) leave it too.
+-- stay (the rune cooldown icons need their ids). The stock spells it retired (ChaosRetiredSpells: Sharpshooter, Protector
+-- and Swift Foot, whose ids 135, 132 and 134 are Tautstring's, Ironhold's and Wildstride's now) leave it too.
 local hiddenOrder = {}
 local function hideRemovedSpells(order)
   if not order or type(ChaosRemovedSpells) ~= 'table' then return end

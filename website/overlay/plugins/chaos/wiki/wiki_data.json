@@ -366,7 +366,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 108,
+		"spell.count": 110,
 		"store.categories": 34,
 		"store.cosmetic": 350,
 		"store.offers": 465,
@@ -473,6 +473,7 @@
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
+								["Ironhold", "tor brak", "55", "200", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Earthbreaker", "kah grund krak", "60", "50", "10 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
@@ -495,6 +496,7 @@
 								"spell:232",
 								"spell:161",
 								"spell:162",
+								"spell:132",
 								"spell:179",
 								"spell:221",
 								"spell:233",
@@ -611,6 +613,7 @@
 								["Snare Trap", "drai snar", "40", "90", "2 s", "whole line"],
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
+								["Wildstride", "ruan vert", "55", "150", "30 s", "whole line"],
 								["Seeker Mine", "kah snar", "60", "110", "2 s", "whole line"],
 								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
 								["Tautstring", "vyr sag", "60", "300", "30 s", "whole line"],
@@ -636,6 +639,7 @@
 								"spell:99",
 								"spell:161",
 								"spell:162",
+								"spell:134",
 								"spell:100",
 								"spell:104",
 								"spell:135",
@@ -2341,6 +2345,62 @@
 						}
 					],
 					"icon": "wiki/i/sp-203.png"
+				},
+				{
+					"id": "spell:132",
+					"name": "Ironhold",
+					"sub": "\"tor brak\", level 55, 200 mana, cooldown 30 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"+40% shielding for 12 s. No pacify and no lock on other spells: the weapon keeps swinging."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "tor brak"],
+								["Level", "55"],
+								["Mana", "200"],
+								["Cooldown", "30 s"],
+								["Kind", "Support"],
+								["Classes", "Warrior, Juggernaut, Berserker"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-shield.png"
+				},
+				{
+					"id": "spell:134",
+					"name": "Wildstride",
+					"sub": "\"ruan vert\", level 55, 150 mana, cooldown 30 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"+50% speed for 12 s, on top of Haste. No pacify and no lock on other spells: the bow keeps firing."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "ruan vert"],
+								["Level", "55"],
+								["Mana", "150"],
+								["Cooldown", "30 s"],
+								["Kind", "Support"],
+								["Classes", "Ranger, Deadeye, Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-nature-dash.png"
 				},
 				{
 					"id": "spell:96",

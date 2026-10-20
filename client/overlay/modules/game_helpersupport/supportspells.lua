@@ -101,11 +101,12 @@ H.KINDS = {
   [243] = { auto = 'timer', dur = 3 },   -- Counter Stance
   [251] = { auto = 'timer', dur = 6 },   -- Rebuke
   [133] = { auto = 'timer', dur = 10 },  -- Blood Rage (stock)
-  [132] = { auto = 'timer', dur = 10 },  -- Protector (stock)
+  [132] = { auto = 'timer', dur = 12 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
   [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' } },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' } },
+  [134] = { auto = false, kind = 'buff', dur = 12 },  -- Wildstride (the Chaos id 134 of the retired stock Windrunner)
   -- the support section
   [234] = { auto = 'support', kind = 'shield', dur = 15, rank = 2 },        -- Soulward
   [44] = { auto = 'support', kind = 'shield', dur = 200, bar = { 'magic shield' }, rank = 2 }, -- Ward of the Mind

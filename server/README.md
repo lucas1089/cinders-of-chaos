@@ -1534,17 +1534,43 @@ Owner decision: the spell goes and a Chaos one takes its place.
   cooldown; the spell entry, the retirement, the client data), `tools/retire_cure_spells_test.py` (now in CI),
   `spell_ids_test.lua`, `spellfix_test.lua`.
 
-The other stock self buffs (base scripts, not changed; owner to decide): Protector (Bulwark, `utamo tempo`, Warrior line)
-and Swift Foot (Windrunner, `utamo tempo san`, Ranger line) add `CONDITION_PACIFIED` for 10 s, which blocks every auto
-attack (`Player::doAttacking` returns at once) and puts the attack group on a 10 s cooldown; Blood Rage (Bloodlust,
-`utito tempo`, Warrior line) has `DISABLE_DEFENSE` only (no attack block); Charge (`utani tempo hur`) is a haste. The helper
-never offers Swift Foot (`NEVER_WORDS`, and Auto setup leaves it out of the hastes), but Auto setup times Protector
-(`supportspells.lua` `[132]`): a Warrior with it in the Timer section loses its attacks for 10 s of every cast.
+The other stock self buffs: Protector (Bulwark) and Swift Foot (Windrunner) pacified the caster; retired the same day
+("Bulwark and Windrunner retired, Ironhold and Wildstride" below). Blood Rage (Bloodlust, `utito tempo`, Warrior line) has
+`DISABLE_DEFENSE` only (no attack block) and stays; Charge (`utani tempo hur`) is a haste and stays.
 
 What to look for on the live server: nothing in the log (no Lua error comes with it). In game: while the buff bar shows
 "Spell Buff" and "Slowed" (Hawkeye), the Ranger walks in short slow steps and the bow is silent; turning Chase Opponent
 off (Stand) brings the shots back at once. After the update, `vyr ira sol` says the words as chat and `vyr sag` casts
 Tautstring.
+
+### Bulwark and Windrunner retired, Ironhold and Wildstride (owner 2026-10-20: "pode trocar essas duas também")
+
+The two stock self buffs that still blocked attacks. Base scripts (`support/protector.lua`, `support/swift_foot.lua`):
+Protector (Chaos name Bulwark, `utamo tempo` / `tor ira`, id 132, Warrior / Juggernaut / Berserker, level 55, 200 mana,
+cooldown 2 s) gives +120% shielding for 13 s; Swift Foot (Windrunner, `utamo tempo san` / `tor ira sol`, id 134, Ranger /
+Deadeye / Beastmaster, level 55, 400 mana, cooldown 2 s) a haste of 0.8 x speed - 64 for 10 s. Both add
+`CONDITION_PACIFIED` for 10 s (`Player::doAttacking` returns at once: no auto attack) and a 10 s cooldown on the attack
+group. The helper's Auto setup put Protector in the Timer section (`supportspells.lua` `[132]`), so a Warrior with it
+lost its attacks for 10 s of every cast; Swift Foot was never offered (`NEVER_WORDS`) but a hand cast did the same.
+
+* `tools/retire_cure_spells.py` (`OTHERS`, marker `Chaos: spell retired`) comments both out of `spells.xml` by script,
+  whatever name and words they have; their rows left `spell_names.csv`. Both were `needlearn="0"`.
+* **Ironhold** (id 132, `tor brak`, Warrior / Juggernaut / Berserker, level 55, 200 mana, cooldown 30 s, support group
+  2 s; `data/spells/chaos/knight/ironhold.lua`): +40% shielding for 12 s (`CONDITION_ATTRIBUTES`, sub id 71073, buff bar
+  row `ironhold`).
+* **Wildstride** (id 134, `ruan vert`, Ranger / Deadeye / Beastmaster, level 55, 150 mana, cooldown 30 s, support group
+  2 s; `data/spells/chaos/paladin/wildstride.lua`): haste 0.5 x speed - 40 for 12 s (`CONDITION_HASTE`, sub id 71074,
+  buff bar row `wildstride`); its own sub id adds it to the Haste the helper keeps up instead of replacing it.
+* Neither has a pacify, a slow, a defence loss or another group cooldown. Numbers: `data/spells/README.md` "Ironhold and
+  Wildstride".
+* Client: `gen_spell_data.py` writes both and adds `utamo tempo` and `utamo tempo san` to `ChaosRetiredSpells` (out of
+  the spell list, moved off the server ids by `spellfix.lua`, dropped from the helper's lists); the `tor ira sol` fix
+  entry is gone. The helper's Auto setup entry for id 132 is Ironhold (timer, 12 s); id 134 is Wildstride (offered in
+  the Support tab, not set up by Auto setup: the Tools tab keeps Haste up). Icon cells 309 and 310, buff icons
+  `ironhold.png` and `wildstride.png`. A Timer rule typed by hand with `tor ira` stays as written (plain speech now).
+* Test: `tests/ironhold_wildstride_test.lua` (both casts on a mocked player: one condition each, no pacify / paralyze /
+  group cooldown; the spell entries, the retirement, the client data), `tools/retire_cure_spells_test.py`,
+  `spell_ids_test.lua`, `spellfix_test.lua`. Not run on a live server.
 
 ## Necromancer summons and the summon cap (2026-10-18)
 
@@ -5191,10 +5217,11 @@ equipment) must have cooldowns that never conflict: using one never delays or bl
 - Engine, spells: the spell cooldown (per spell id) and the group cooldowns (`CONDITION_SPELLGROUPCOOLDOWN` per group)
   are separate per group. Every Chaos spell has its group (55 attack, 8 healing, 34 support in
   `spells/chaos/spells_chaos.xml`, none without a group, no secondary group), every stock rune its right group (28
-  attack, 3 healing, 5 support), the stock spells too. Kept on purpose: two stock support buffs whose trade-off is a
-  group lock (Protector and Swift Foot put a 10 s cooldown on the attack group from their scripts; Hawkeye, which had the
-  healing group as its secondary group, was retired on 2026-10-20: "Hawkeye retired, Tautstring"), and a spell without a group shares the "none" group cooldown with the
-  other group-less spells (only the house spells; monsters do not use them).
+  attack, 3 healing, 5 support), the stock spells too. Kept on purpose: a spell without a group shares the
+  "none" group cooldown with the other group-less spells (only the house spells; monsters do not use them). The stock
+  buffs with a group lock are gone: Protector and Swift Foot (a 10 s attack group cooldown and a pacify from their
+  scripts; "Bulwark and Windrunner retired, Ironhold and Wildstride") and Hawkeye (the healing group as its secondary
+  group; "Hawkeye retired, Tautstring"), all retired on 2026-10-20.
 - Lua, cast-time spells (`data/lib/chaos_casting.lua`): any other spell's cast event interrupted the cast and refunded
   it, so a heal cut the attack cast off, and the client helper held every heal while a cast charged.
 - Lua, potions: the Everfull potions wait 900 ms per kind (a health and a mana timer per player in `potions.lua`, no

@@ -44,7 +44,9 @@ the line's area strike, 2026-10-15).
   Bushido focus (crit stacks while not taking damage); Iaido Sweep (a wide draw cut: the target and every monster in
   the 3 x 2 tiles in front, 2026-10-15).
 
-**Warrior** (base): today's Knight kit.
+**Warrior** (base): today's Knight kit. The line's guard buff is Ironhold (level 55, +40% shielding for 12 s); the stock
+Protector (the spell named Bulwark) it replaced was retired on 2026-10-20 because it pacified the caster for 10 s
+(server/README.md "Bulwark and Windrunner retired, Ironhold and Wildstride").
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
 - **Berserker**: Cleaving Arc (two-handed hits strike everything adjacent), rage.
 
@@ -54,7 +56,9 @@ critical strike, extra projectiles, elemental shares; server/README.md "Infinite
 the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
 may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot"). The line's fight buff is
 Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
-because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring").
+because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
+(level 55, +50% speed for 12 s on top of Haste) in place of the stock Swift Foot / Windrunner, retired the same day: it
+pacified the caster for 10 s.
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
   The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never

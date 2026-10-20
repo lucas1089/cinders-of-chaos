@@ -102,8 +102,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
-  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells and Hawkeye go; their ids are free (C6,
-                                                 2026-10-20)
+  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
+                                                 Windrunner go; their ids are free (C6, 2026-10-20)
                tools/register_spells.py          the Chaos spells (README "Install" 3)
                tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
                                                  below 256 (README "Spell ids below 256")

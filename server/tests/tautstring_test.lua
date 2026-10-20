@@ -86,7 +86,7 @@ ok(tool:find("'support/sharpshooter.lua': (135, 'Hawkeye')", 1, true), "retire_c
 ok(not read("data/spells/spell_names.csv"):find("utito tempo san", 1, true), "no Chaos name for the retired spell")
 local buffs = read("data/lib/chaos_buffs.lua")
 ok(buffs:find('cond("tautstring", "CONDITION_ATTRIBUTES", 71072', 1, true), "a buff bar row")
--- no Chaos spell script pacifies anyone (the stock Bulwark and Windrunner do; they are listed, not changed)
+-- no Chaos spell script pacifies anyone (the stock Bulwark and Windrunner did; retired 2026-10-20, ironhold_wildstride_test.lua)
 for name in xml:gmatch('script="chaos/([^"]+)"') do
 	local f = io.open("data/spells/chaos/" .. name, "r")
 	if f then

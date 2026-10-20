@@ -109,6 +109,8 @@ ChaosSpellData = {
   { id = 147, name = "Pack Frenzy", words = "kah ferh vas", level = 380, mana = 450, group = 1, groupCooldown = 2000, cooldown = 20000, premium = false, needTarget = true, range = 7, vocations = { 15 }, iconKey = "chaos_packfrenzy", clientId = 306 },
   { id = 164, name = "Shuriken Tempest", words = "kah sai vas hyr", level = 360, mana = 600, group = 1, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = true, range = 5, vocations = { 12 }, iconKey = "chaos_shurikentempest", clientId = 307 },
   { id = 135, name = "Tautstring", words = "vyr sag", level = 60, mana = 300, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_tautstring", clientId = 308 },
+  { id = 132, name = "Ironhold", words = "tor brak", level = 55, mana = 200, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 4, 8, 14 }, iconKey = "chaos_ironhold", clientId = 309 },
+  { id = 134, name = "Wildstride", words = "ruan vert", level = 55, mana = 150, group = 3, groupCooldown = 2000, cooldown = 30000, premium = false, needTarget = false, range = 0, vocations = { 3, 7, 15 }, iconKey = "chaos_wildstride", clientId = 310 },
 }
 
 -- stock spells: old words -> Chaos name and words (server/data/spells/spell_names.csv, spell_words.csv)
@@ -203,10 +205,8 @@ ChaosSpellNames = {
   ["utevo lux"] = { name = "Lantern", words = "vael lyss" },
   ["exani tera"] = { name = "Ghost Rope", words = "ash gor" },
   ["utamo vita"] = { name = "Ward of the Mind", words = "tor ael" },
-  ["utamo tempo"] = { name = "Bulwark", words = "tor ira" },
   ["utani gran hur"] = { name = "Galeborne Stride", words = "ruan gal ul" },
   ["utevo res"] = { name = "Call Thrall", words = "vael kal" },
-  ["utamo tempo san"] = { name = "Windrunner", words = "tor ira sol" },
   ["utevo vis lux"] = { name = "Radiant Lantern", words = "vael zhul lyss" },
   ["utori mas sio"] = { name = "Arcane Communion", words = "hesh vas kin" },
   ["utura mas sio"] = { name = "Mending Communion", words = "reth vas kin" },
@@ -307,6 +307,8 @@ ChaosRemovedSpells = {
 -- stock spells the server retired: old words, out of the spell list, off the server ids (gen_spell_data.py RETIRED_STOCK)
 ChaosRetiredSpells = {
   ["utito tempo san"] = true, -- Sharpshooter
+  ["utamo tempo"] = true, -- Protector
+  ["utamo tempo san"] = true, -- Swift Foot
 }
 
 -- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids (server/tools/add_vocations.py, LINE_STOCK_SPELLS)

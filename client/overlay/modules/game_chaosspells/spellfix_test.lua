@@ -189,6 +189,26 @@ eq(tinfo['Sharpshooter'].id, 135 + F.OFF_SERVER, 'Sharpshooter moved off the ser
 eq(tmap[135], false, 'the stock 135 leaves the helper lists')
 F.restore(tundo)
 
+-- the same for Protector (Bulwark, 132 -> Ironhold) and Swift Foot (Windrunner, 134 -> Wildstride), 2026-10-20: both
+-- pacified the caster for 10 s
+for _, r in ipairs({ { 'utamo tempo', 'Protector', 132, 'Ironhold', 'tor ira' },
+    { 'utamo tempo san', 'Swift Foot', 134, 'Wildstride', 'tor ira sol' } }) do
+  local old, stock, id, chaos, oldWords = r[1], r[2], r[3], r[4], r[5]
+  eq(ChaosRetiredSpells[old], true, stock .. ' is a retired stock spell')
+  local new
+  for _, s in ipairs(ChaosSpellData) do if s.name == chaos then new = s end end
+  eq(new and new.id, id, chaos .. ' has the retired id ' .. id)
+  eq(new and new.group, 3, chaos .. ' is a support spell')
+  eq(ChaosSpellNames[old], nil, 'no Chaos name for the retired ' .. stock)
+  eq(F.STOCK[oldWords], nil, 'no fix entry for the retired ' .. stock)
+  local info = { [stock] = entry(id, stock, old, { group = { [3] = 2000 } }) }
+  local undo, map = F.apply(info, {}, {}, tserver, F.removedWords(ChaosRemovedSpells))
+  eq(info[stock].notOnServer, true, stock .. ' is never cast')
+  eq(info[stock].id, id + F.OFF_SERVER, stock .. ' moved off the server ids')
+  eq(map[id], false, 'the stock ' .. id .. ' leaves the helper lists')
+  F.restore(undo)
+end
+
 -- the base spells the client had no entry for (F.EXTRA) carry the installed server's numbers
 -- (server/data/spells/stock_spells.csv, written from an installed server by server/tools/rotation_sim.py)
 local VOC = { Mystic = 1, Elementalist = 5, Illusionist = 10 }

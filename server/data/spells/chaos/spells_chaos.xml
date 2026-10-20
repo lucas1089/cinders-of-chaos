@@ -621,3 +621,17 @@
 		<vocation name="Deadeye" />
 		<vocation name="Beastmaster" />
 	</instant>
+	<!-- the Warrior line's guard buff in place of the stock Protector / Bulwark (owner 2026-10-20: it pacified the caster
+	     for 10 s; tools/retire_cure_spells.py retires it and frees id 132): +40% shielding for 12 s, nothing else -->
+	<instant group="support" spellid="132" name="Ironhold" words="tor brak" level="55" mana="200" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/knight/ironhold.lua">
+		<vocation name="Warrior" />
+		<vocation name="Juggernaut" />
+		<vocation name="Berserker" />
+	</instant>
+	<!-- the Ranger line's run buff in place of the stock Swift Foot / Windrunner (owner 2026-10-20: it pacified the caster
+	     for 10 s; tools/retire_cure_spells.py retires it and frees id 134): a haste of its own for 12 s, nothing else -->
+	<instant group="support" spellid="134" name="Wildstride" words="ruan vert" level="55" mana="150" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/paladin/wildstride.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+	</instant>
