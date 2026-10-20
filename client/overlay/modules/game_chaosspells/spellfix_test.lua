@@ -170,6 +170,25 @@ eq(table.concat(rd.getSpellFilterByVocation()[1], ','), '61', 'removed spell out
 F.restore(rundo)
 eq(rinfo['Hexdart Rune'].notOnServer, nil, 'restore removed flag')
 
+-- a stock spell the server retired (ChaosRetiredSpells: Sharpshooter, 2026-10-20): no rename, so its stock words are not
+-- the server's; it leaves id 135 to the Chaos Tautstring and is never cast, and the helper's lists drop the stock 135
+eq(ChaosRetiredSpells and ChaosRetiredSpells['utito tempo san'], true, 'Sharpshooter is a retired stock spell')
+local taut
+for _, s in ipairs(ChaosSpellData) do if s.name == 'Tautstring' then taut = s end end
+eq(taut and taut.id, 135, 'Tautstring has the retired id 135')
+eq(taut and taut.group, 3, 'Tautstring is a support spell')
+for _, e in pairs(ChaosSpellNames) do
+  eq(e.words == 'vyr ira sol', false, 'no rename to the retired Hawkeye words')
+end
+eq(F.STOCK['vyr ira sol'], nil, 'no fix entry for the retired Hawkeye')
+local tinfo = { ['Sharpshooter'] = entry(135, 'Sharpshooter', 'utito tempo san', { group = { [3] = 2000, [2] = 10000 } }) }
+local tserver = F.serverWords(ChaosSpellData, ChaosSpellNames)
+local tundo, tmap = F.apply(tinfo, {}, {}, tserver, F.removedWords(ChaosRemovedSpells))
+eq(tinfo['Sharpshooter'].notOnServer, true, 'Sharpshooter is never cast')
+eq(tinfo['Sharpshooter'].id, 135 + F.OFF_SERVER, 'Sharpshooter moved off the server ids')
+eq(tmap[135], false, 'the stock 135 leaves the helper lists')
+F.restore(tundo)
+
 -- the base spells the client had no entry for (F.EXTRA) carry the installed server's numbers
 -- (server/data/spells/stock_spells.csv, written from an installed server by server/tools/rotation_sim.py)
 local VOC = { Mystic = 1, Elementalist = 5, Illusionist = 10 }

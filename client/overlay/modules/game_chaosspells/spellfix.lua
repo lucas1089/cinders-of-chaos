@@ -50,7 +50,6 @@ F.STOCK = {
   ["kah zar zhul"] = { group = { [1] = 4000 } },                    -- ultimate strikes group on the server
   ["kah zar hyr"] = { group = { [1] = 4000 } },
   ["kah zar gor"] = { group = { [1] = 4000 } },
-  ["vyr ira sol"] = { group = { [3] = 10000, [2] = 10000 }, exhaustion = 2000 }, -- Hawkeye: also the healing group
   ["tor ira sol"] = { group = { [3] = 2000 }, exhaustion = 2000 },  -- Windrunner
   ["vyr vas kin"] = { mana = 0 },                                   -- the communions cost no mana on the server
   ["tor vas kin"] = { mana = 0 },

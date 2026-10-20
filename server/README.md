@@ -1496,6 +1496,56 @@ Inquisitor, Sentinel (next free ids need another retired or merged spell). Numbe
 (`rotation_model.csv` rows), not measured in game; scripts not run in a live engine. `tests/class_spell_progression_test.lua`
 pins the own-spell counts (max 15) and the new rows; `tests/spell_ids_test.lua` knows the retired ids.
 
+### Hawkeye retired, Tautstring (beta report 2026-10-20: the Ranger's auto attack stops)
+
+Report (owner, beta, live commit 53e35f94): "sometimes in a box or a small place the auto attack does not work", then "it
+stopped completely", then "it came back, then stopped again". A level ~25 Ranger, bow, Demon Skeletons and a Nightmare in a
+narrow corridor; the owner found that the bow stopped while the helper's Support tab kept the stock Sharpshooter up (Chaos
+name Hawkeye, stock words `utito tempo san`, Chaos words `vyr ira sol`, spell id 135) and fired again when it ran out.
+
+What the base script (`data/spells/scripts/support/sharpshooter.lua` of the base server) puts on the caster for 10 s (12-20 s
+with the base's upgrade storages 37036-37039): `CONDITION_ATTRIBUTES` with `SKILL_DISTANCEPERCENT` 150 (152-158),
+`DISABLE_DEFENSE` and `BUFF_SPELL`, and a `CONDITION_PARALYZE` of `-0.7 x speed + 56` (the upgraded variants call
+`setFormula` on the first condition by mistake, so theirs slow nothing). spells.xml adds the healing group as secondary
+group (10 s). No `CONDITION_PACIFIED` and no exhaust: nothing in it refuses an attack by itself. The likely way it stopped
+the bow (engine reading, not reproduced on a live server): the 70% slow. With Chase Opponent on, a slowed Ranger keeps
+stepping after a target it cannot reach in a corridor full of monsters (the monsters walk faster than it now), and every
+step that is not a kite walk step holds the distance swing until the step ends (src-patch 0042, `stepEndTime` in
+`Player::doAttacking`; 0028 frees only kite walk steps). The next step starts the moment the last one ends, so the swing
+waits again and again; when the buff ends the Ranger reaches its spot and the bow fires. Nothing in the server Lua aborts
+the attack: the 2026-10-20 keystones (Longshot, Barbed Quiver, Opening Shot, Hobbling Shot) only scale a hit in
+`onHealthChange` (`archetypes.lua`), and an error there would leave the hit as it was, not stop the swing.
+
+Owner decision: the spell goes and a Chaos one takes its place.
+* `tools/retire_cure_spells.py` (first action of the `spells` step) comments it out of `spells.xml` by script
+  (`support/sharpshooter.lua`, `OTHERS`, marker `Chaos: spell retired`), whatever name and words it has; its row left
+  `spell_names.csv`. The spell was `needlearn="0"`: nobody "learned" it, and the words no longer cast anything.
+* **Tautstring** (id 135, `vyr sag`, Ranger / Deadeye / Beastmaster, level 60, 300 mana, cooldown 30 s, support group 2 s;
+  `data/spells/chaos/paladin/tautstring.lua`): +25% distance skill for 12 s (`CONDITION_ATTRIBUTES`, sub id 71072, buff bar
+  row `tautstring`). No slow, no pacify, no defence loss, no other group cooldown. Numbers: `data/spells/README.md`
+  "Tautstring".
+* Client: `gen_spell_data.py` writes Tautstring and `ChaosRetiredSpells` (the stock entry `utito tempo san` leaves the
+  spell list; `spellfix.lua` moves it to 1135 like every stock spell the server lacks, and the helper's lists drop the
+  stock 135); the `vyr ira sol` fix entry is gone. The helper's Support / Auto setup entry for id 135 is Tautstring now
+  (`supportspells.lua`, timer, 12 s), so a Support row or an Auto setup that had Hawkeye has Tautstring. A Timer rule a
+  player typed by hand with `vyr ira sol` stays as written (the words are plain speech now). Icon cell 308, buff icon
+  `tautstring.png`.
+* Test: `tests/tautstring_test.lua` (the cast on a mocked player: one attribute condition, no paralyze / pacify / group
+  cooldown; the spell entry, the retirement, the client data), `tools/retire_cure_spells_test.py` (now in CI),
+  `spell_ids_test.lua`, `spellfix_test.lua`.
+
+The other stock self buffs (base scripts, not changed; owner to decide): Protector (Bulwark, `utamo tempo`, Warrior line)
+and Swift Foot (Windrunner, `utamo tempo san`, Ranger line) add `CONDITION_PACIFIED` for 10 s, which blocks every auto
+attack (`Player::doAttacking` returns at once) and puts the attack group on a 10 s cooldown; Blood Rage (Bloodlust,
+`utito tempo`, Warrior line) has `DISABLE_DEFENSE` only (no attack block); Charge (`utani tempo hur`) is a haste. The helper
+never offers Swift Foot (`NEVER_WORDS`, and Auto setup leaves it out of the hastes), but Auto setup times Protector
+(`supportspells.lua` `[132]`): a Warrior with it in the Timer section loses its attacks for 10 s of every cast.
+
+What to look for on the live server: nothing in the log (no Lua error comes with it). In game: while the buff bar shows
+"Spell Buff" and "Slowed" (Hawkeye), the Ranger walks in short slow steps and the bow is silent; turning Chase Opponent
+off (Stand) brings the shots back at once. After the update, `vyr ira sol` says the words as chat and `vyr sag` casts
+Tautstring.
+
 ## Necromancer summons and the summon cap (2026-10-18)
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),
@@ -5133,9 +5183,9 @@ equipment) must have cooldowns that never conflict: using one never delays or bl
 - Engine, spells: the spell cooldown (per spell id) and the group cooldowns (`CONDITION_SPELLGROUPCOOLDOWN` per group)
   are separate per group. Every Chaos spell has its group (55 attack, 8 healing, 34 support in
   `spells/chaos/spells_chaos.xml`, none without a group, no secondary group), every stock rune its right group (28
-  attack, 3 healing, 5 support), the stock spells too. Kept on purpose: three stock support buffs whose trade-off is a
-  group lock (Protector and Swift Foot put a 10 s cooldown on the attack group from their scripts, Hawkeye has the
-  healing group as its secondary group, 10 s), and a spell without a group shares the "none" group cooldown with the
+  attack, 3 healing, 5 support), the stock spells too. Kept on purpose: two stock support buffs whose trade-off is a
+  group lock (Protector and Swift Foot put a 10 s cooldown on the attack group from their scripts; Hawkeye, which had the
+  healing group as its secondary group, was retired on 2026-10-20: "Hawkeye retired, Tautstring"), and a spell without a group shares the "none" group cooldown with the
   other group-less spells (only the house spells; monsters do not use them).
 - Lua, cast-time spells (`data/lib/chaos_casting.lua`): any other spell's cast event interrupted the cast and refunded
   it, so a heal cut the attack cast off, and the client helper held every heal while a cast charged.

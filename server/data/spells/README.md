@@ -77,6 +77,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
+| 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
@@ -2246,6 +2247,29 @@ stronger, so the picker takes another set of 5. The "every spell" columns are th
   rest of the pack with 1.5-2.5x that: a deliberate pack-farming design (owner, 2026-10-20: stays), `blades_test.lua`
   asserts it. Fan of Knives and Blade Flurry are already uniform.
 - Sanctified Ground, Consecration and the other pulse spells: the pulses add up to one hit; no split between targets.
+
+### Tautstring (2026-10-20; owner decision after the beta report "the auto attack stops"; computed, not measured in game)
+
+The stock Sharpshooter (Hawkeye, `utito tempo san` / `vyr ira sol`, id 135, level 60, 450 mana) is retired
+(`tools/retire_cure_spells.py`, server/README.md "Hawkeye retired, Tautstring"): +50% distance skill for 10 s, cooldown 2 s,
+support group 10 s and the healing group 10 s, and a 70% slow on the caster for the whole time. Kept up by the helper it
+was +50% at all times, paid with no healing spells and the slow; the slow is the likely reason the bow stopped.
+
+Tautstring (id 135, `vyr sag`, level 60, 300 mana, cooldown 30 s, support group 2 s): +25% distance skill
+(`SKILL_DISTANCEPERCENT` 125) for 12 s. Measured against the other fight buffs:
+
+| Buff | Class | Level | Mana | Effect | Uptime | Mean gain | Price |
+|---|---|---|---|---|---|---|---|
+| Red Frenzy | W, J, B | 100 | 300 | +30% melee skill, 12 s / 40 s | 30% | +9% melee skill | -30% shielding while it runs |
+| Banner Call | all | 60 | 250 | +10% melee / distance / magic, 12 s / 35 s | 34% | +3.4% | - |
+| Tautstring | R, D, BM | 60 | 300 | +25% distance skill, 12 s / 30 s | 40% | +10% distance skill | - |
+| Hawkeye (retired) | R, D, BM | 60 | 450 | +50% distance skill, 10 s / 10 s | 100% | +50% | no healing spells, 70% slow |
+
+Distance weapon damage grows about linearly with the skill (the level term is level / 5), so +25% skill is about +20-24%
+weapon damage while it runs (Dawnpiercer and the other distance-skill spells gain the same share of their skill part),
+about +9% over a fight: the same as Red Frenzy's mean for the Warrior line and without its shielding price. 300 mana is
+a third of a level 60 Ranger's pool (about 900), 10 mana a second over its cooldown. The Banner Call stacks with it (own
+sub ids 71003 / 71072). Not measured in game; `server/tests/tautstring_test.lua` checks the cast on a mocked player.
 
 ## Honest notes / limitations
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Take the status-cleansing spells out of the base spells.xml (idempotent). install_all.py step `spells`, first.
+"""Take the status-cleansing spells (and Hawkeye) out of the base spells.xml (idempotent). install_all.py step `spells`,
+first.
 
 usage: python3 -I retire_cure_spells.py DATA_DIR [--dry-run]       (python3 -I retire_cure_spells.py --list prints the table)
 
@@ -10,6 +11,13 @@ register_spells.py ignores comments, so it may use them; the ids are listed in s
 Lightward (Ranger line, data/spells/chaos/paladin/divine_ward.lua, a cleanse plus eight seconds of regeneration) is not a
 cure spell and stays; it also takes the raid's Withering Hex off. Cure runes (Purge Rune) are runes, not spells.
 Needs to run before register_spells.py (ids) and patch_spell_ids.py (it no longer moves Wash Taint / Break Glamour).
+
+Owner decision (2026-10-20, beta report "the auto attack stops"): the stock Sharpshooter (Chaos name Hawkeye, stock words
+"utito tempo san", Chaos words "vyr ira sol") goes too (OTHERS, marker "Chaos: spell retired"). Its script put a 70%
+slow (CONDITION_PARALYZE, -0.7 x speed + 56) on the caster for 10 s next to the +50% distance skill; the most likely
+way it stopped the bow: a slowed Ranger in Chase Opponent mode keeps stepping after its target and every chase step holds
+a distance swing (engine 0042, stepEndTime), while the helper kept the buff up. Its id 135 belongs to the Chaos replacement
+Tautstring (data/spells/chaos/paladin/tautstring.lua, no slow, no lock).
 """
 import os
 import re
@@ -26,7 +34,12 @@ CURES = {
     'healing/cure_curse.lua': (147, 'Lift Hex'),
     'healing/cure_bewitched.lua': (164, 'Break Glamour'),
 }
-FREED_IDS = sorted(i for i, _ in CURES.values())
+# other stock spells the owner retired: script -> (stock spell id, Chaos name)
+OTHERS = {
+    'support/sharpshooter.lua': (135, 'Hawkeye'),
+}
+OTHER_MARK = 'Chaos: spell retired (retire_cure_spells.py): '
+FREED_IDS = sorted(i for i, _ in list(CURES.values()) + list(OTHERS.values()))
 TAG = re.compile(r'<instant\b[^>]*?(?:/>|>.*?</instant>)', re.S)
 
 
@@ -42,9 +55,10 @@ def patch(text):
         if chaos_a != -1 and chaos_a <= m.start() < chaos_b:
             continue
         script = re.search(r'\bscript="([^"]*)"', m.group(0))
-        if script and script.group(1) in CURES:
+        if script and (script.group(1) in CURES or script.group(1) in OTHERS):
             out.append(text[pos:m.start()])
-            out.append('<!-- ' + MARK + m.group(0).replace('--', '- -') + ' -->')
+            mark = MARK if script.group(1) in CURES else OTHER_MARK
+            out.append('<!-- ' + mark + m.group(0).replace('--', '- -') + ' -->')
             pos = m.end()
             count += 1
     out.append(text[pos:])
@@ -53,7 +67,7 @@ def patch(text):
 
 def main(argv):
     if '--list' in argv:
-        for script, (sid, name) in sorted(CURES.items(), key=lambda kv: kv[1][0]):
+        for script, (sid, name) in sorted(list(CURES.items()) + list(OTHERS.items()), key=lambda kv: kv[1][0]):
             print('%3d  %-14s %s' % (sid, name, script))
         return 0
     args = [a for a in argv if not a.startswith('--')]
@@ -68,8 +82,8 @@ def main(argv):
     new, n = patch(text)
     if n and '--dry-run' not in argv:
         open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
-    print('cure spells: %d retired%s' % (n, ' (dry run)' if '--dry-run' in argv else '') if n else
-          'cure spells: nothing to retire')
+    print('cure spells and Hawkeye: %d retired%s' % (n, ' (dry run)' if '--dry-run' in argv else '') if n else
+          'cure spells and Hawkeye: nothing to retire')
     return 0
 
 

@@ -603,6 +603,7 @@ end
 ChaosSpell.SUBID = {
 	blood_pact = 71001, crimson_fury = 71002, rally = 71003, barkskin = 71004,
 	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009,
+	tautstring = 71072, -- Tautstring (the Ranger line, in place of the stock Hawkeye)
 	-- timer-only conditions (no attributes) that stand for a summon / decoy spell on the buff bar (chaos_buffs.lua)
 	moonfang_pack = 71070, mirror_image = 71071,
 }

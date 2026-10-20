@@ -15,6 +15,10 @@ GROUP = {'attack': 1, 'healing': 2, 'support': 3}
 # stale stock entries of the client that no server spell has: hidden from the spell list with the removed spells
 # (old words, client name). "Conjure Wand of Darkness" carries spell id 92, the server's Enchant Staff id; no rune shares it.
 CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
+# stock spells the server retired (server/tools/retire_cure_spells.py OTHERS; old words, client name). Unlike the removed
+# ones they keep no id: spellfix.lua moves them off the server's ids like every stock entry the server does not know
+# (Tautstring has Hawkeye's id 135 now). The spell list leaves them out (chaosspells.lua hideRemovedSpells).
+RETIRED_STOCK = [('utito tempo san', 'Sharpshooter')]
 
 def main():
     xml = open('server/data/spells/chaos/spells_chaos.xml', encoding='utf-8').read()
@@ -73,6 +77,11 @@ def main():
             out.append('  ["%s"] = "%s", -- %s (%s)' % (r['words'], words, r['new_name'].replace('"', '\\"'), r['removed']))
     for old, name in CLIENT_ONLY_REMOVED:
         out.append('  ["%s"] = "%s", -- %s (client only, no server spell)' % (old, old, name))
+    out.append('}')
+    out += ['', '-- stock spells the server retired: old words, out of the spell list, off the server ids (gen_spell_data.py '
+            'RETIRED_STOCK)', 'ChaosRetiredSpells = {']
+    for old, name in RETIRED_STOCK:
+        out.append('  ["%s"] = true, -- %s' % (old, name))
     out.append('}')
     # stock utility spells the Thief, Monk and Templar lines get on the server (server/tools/add_vocations.py,
     # LINE_STOCK_SPELLS); chaosspells.lua adds the ids to the client's stock entries, keyed by the Chaos words

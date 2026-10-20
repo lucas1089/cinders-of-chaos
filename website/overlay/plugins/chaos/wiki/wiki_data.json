@@ -366,7 +366,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 107,
+		"spell.count": 108,
 		"store.categories": 34,
 		"store.cosmetic": 350,
 		"store.offers": 465,
@@ -613,6 +613,7 @@
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Seeker Mine", "kah snar", "60", "110", "2 s", "whole line"],
 								["Detonate Mines", "vok snar", "60", "20", "1 s", "whole line"],
+								["Tautstring", "vyr sag", "60", "300", "30 s", "whole line"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Skewering Line", "kah sag lanc", "60", "150", "8 s", "whole line"],
 								["Banner Call", "tor vas vant", "60", "250", "35 s", "whole line"],
@@ -637,6 +638,7 @@
 								"spell:162",
 								"spell:100",
 								"spell:104",
+								"spell:135",
 								"spell:179",
 								"spell:215",
 								"spell:233",
@@ -2423,6 +2425,34 @@
 						}
 					],
 					"icon": "wiki/i/sp-284.png"
+				},
+				{
+					"id": "spell:135",
+					"name": "Tautstring",
+					"sub": "\"vyr sag\", level 60, 300 mana, cooldown 30 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"+25% distance skill for 12 s. No slow and no lock on other spells: the bow keeps firing."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "vyr sag"],
+								["Level", "60"],
+								["Mana", "300"],
+								["Cooldown", "30 s"],
+								["Kind", "Support"],
+								["Classes", "Ranger, Deadeye, Beastmaster"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-nature-arrowup.png"
 				},
 				{
 					"id": "spell:137",

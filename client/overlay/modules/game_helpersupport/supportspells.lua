@@ -102,7 +102,7 @@ H.KINDS = {
   [251] = { auto = 'timer', dur = 6 },   -- Rebuke
   [133] = { auto = 'timer', dur = 10 },  -- Blood Rage (stock)
   [132] = { auto = 'timer', dur = 10 },  -- Protector (stock)
-  [135] = { auto = 'timer', dur = 10 },  -- Sharpshooter / Hawkeye (stock)
+  [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' } },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' } },

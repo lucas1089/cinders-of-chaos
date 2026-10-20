@@ -52,7 +52,9 @@ the line's area strike, 2026-10-15).
 bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
 the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
-may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot").
+may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot"). The line's fight buff is
+Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
+because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring").
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
   The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never

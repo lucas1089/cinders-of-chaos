@@ -407,7 +407,9 @@ ICONS = [  # (spell name, theme, glyph)
     # the late spells of the ascended classes (C6, 2026-10-20): cells 301..307, past the old 300-cell sheets (the sheets get a 16th row)
     ('Bastion Cry', 'steel', 'banner'), ('Anvil Fall', 'steel', 'hammer'), ('Twin Verdict', 'holy', 'twin'),
     ('Rampage Leap', 'blood', 'slam'), ('Glacial Doom', 'frost', 'swirl'), ('Pack Frenzy', 'nature', 'paw'),
-    ('Shuriken Tempest', 'steel', 'shuriken')]
+    ('Shuriken Tempest', 'steel', 'shuriken'),
+    # the Ranger line's fight buff in place of the stock Hawkeye (2026-10-20, cell 308)
+    ('Tautstring', 'nature', 'arrowup')]
 
 def render(theme, glyph):
     c = COL[theme]

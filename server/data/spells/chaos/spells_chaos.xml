@@ -614,3 +614,10 @@
 	<instant group="attack" spellid="164" name="Shuriken Tempest" words="kah sai vas hyr" level="360" mana="600" premium="0" range="5" needtarget="1" blockwalls="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/ninja/shuriken_tempest.lua">
 		<vocation name="Ninja" />
 	</instant>
+	<!-- the Ranger line's fight buff in place of the stock Sharpshooter / Hawkeye (owner 2026-10-20: its slow stopped the
+	     bow; tools/retire_cure_spells.py retires it and frees id 135): +25% distance skill for 12 s, nothing else -->
+	<instant group="support" spellid="135" name="Tautstring" words="vyr sag" level="60" mana="300" premium="0" aggressive="0" selftarget="1" cooldown="30000" groupcooldown="2000" needlearn="0" script="chaos/paladin/tautstring.lua">
+		<vocation name="Ranger" />
+		<vocation name="Deadeye" />
+		<vocation name="Beastmaster" />
+	</instant>
