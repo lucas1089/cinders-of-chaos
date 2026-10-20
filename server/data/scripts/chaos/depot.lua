@@ -11,7 +11,7 @@
 --   ChaosDepot.onMoveItem(...)                called first in Player:onMoveItem (hook by patch_base_depot.py): refuses
 --                                             a move that adds to a locked or full tab, or loose into the chest, and
 --                                             any new item while the stash transition makes the depot withdraw-only
---   ChaosDepot.transition()                   stash_config.lua `depot` (withdrawOnly, migrate, version)
+--   ChaosDepot.transition()                   stash_config.lua `depot` (withdrawOnly, migrate, version, openStash)
 --   ChaosDepot.checkAdd(player, container, item, count)  the same rule for a script that adds into a container
 --   ChaosDepot.tabs(player)                   the account's tab count
 --   ChaosDepot.onLimitsChanged(player)        pact.lua calls it after a store purchase of tabs
@@ -391,11 +391,11 @@ function Depot.afterOpen(player, depotId)
 		local counts = Depot.migrate(chest, tabs)
 		Depot.refresh(player, chest, tabs, depotId)
 		local tr = Depot.transition()
-		if tr.withdrawOnly and ChaosStash and ChaosStash.openWindow then
-			-- the stash is the storage: the locker opens its window (the chest still lists what is left to take out)
+		-- a locker opens the depot window only; the stash keeps its own entry points (depot_core.lua D.lockerOpen)
+		local shown = Core.lockerOpen(cfg, tr, tabs)
+		player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, shown.text)
+		if shown.stash and ChaosStash and ChaosStash.openWindow then
 			ChaosStash.openWindow(player)
-		else
-			player:sendTextMessage(MESSAGE_STATUS_DEFAULT or MESSAGE_INFO_DESCR, tr.withdrawOnly and cfg.messages.closed or Core.openText(cfg, tabs))
 		end
 		-- the engine writes the depot with the character from now on (a locker was opened this session): the depots can
 		-- move into the stash safely

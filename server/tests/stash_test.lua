@@ -1647,7 +1647,8 @@ for _, q in ipairs(queries) do
 end
 check(#queries >= 5, "the store wrote its queries (" .. #queries .. ")")
 
--- a depot locker opens the stash window (depot.lua afterOpen -> S.openWindow): a Toggle that keeps it open
+-- S.openWindow: a Toggle that keeps the window open (a depot locker uses it only with depot.openStash)
+eq(cfg.depot.openStash, false,"a depot locker does not open the stash window (owner report 2026-10-20)")
 do
 	local p = newPlayer(9901)
 	sent = {}

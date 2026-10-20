@@ -248,6 +248,17 @@ has(D.description(cfg, 6, 4, 0), "Store", "empty locked tab")
 has(D.openText(cfg, 4), "4 of 17", "open text") has(D.openText(cfg, 4), "Store", "open text hint")
 has(D.openText(cfg, 17), "Every tab is open", "all open")
 has(D.sortedText(cfg, {open = 3, locked = 1, loose = 2}), "2 item(s) did not fit", "sorted text with loose items")
+-- a locker opening: the depot window and a line; the stash window only on request (owner report 2026-10-20)
+local lo = D.lockerOpen(cfg, {withdrawOnly = true, migrate = true}, 4)
+eq(lo.stash, false, "locker: withdraw-only depot does not open the stash window")
+eq(lo.text, cfg.messages.closed, "locker: withdraw-only line")
+lo = D.lockerOpen(cfg, {withdrawOnly = false}, 4)
+eq(lo.stash, false, "locker: plain depot does not open the stash window")
+has(lo.text, "4 of 17", "locker: the tab line")
+eq(D.lockerOpen(cfg, nil, 4).stash, false, "locker: no transition table")
+eq(D.lockerOpen(cfg, {withdrawOnly = true, openStash = true}, 4).stash, true, "locker: openStash asks for the stash window")
+local realStash = dofile("data/scripts/chaos/stash_config.lua")
+eq(D.lockerOpen(cfg, realStash.depot, 4).stash, false, "locker: the shipped stash_config opens the depot alone")
 
 -- ================================================================ engine part (depot.lua) against a mocked engine
 CONTAINER_POSITION = 0xFFFF
@@ -663,6 +674,29 @@ local code, why = Dp.checkAdd(hero, boxes[3], sword, 1)
 check(code ~= 0 and type(why) == "string" and why:find("stash", 1, true) ~= nil, "transition: a script's add is refused too")
 local D2 = D.decide(cfg, {to = {kind = "tab", tab = 1}, from = {kind = "other"}, tabs = 4, used = 0, weight = 1, closed = true})
 eq(D2 and D2.code, "closed", "decide: closed")
+-- a locker opening while withdraw-only: the depot window and the locker line, never the stash window as well
+do
+	local stashOpened = 0
+	local savedStash = ChaosStash
+	ChaosStash = {openWindow = function() stashOpened = stashOpened + 1 end}
+	hero.messages = {}
+	sent = {}
+	eq(lockerAction.onUse(hero, lockerItem), false, "withdraw-only: the locker still opens")
+	runTimers()
+	eq(stashOpened, 0, "withdraw-only: the locker does not open the stash window (owner report 2026-10-20)")
+	local line = false
+	for _, m in ipairs(hero.messages) do
+		line = line or m.text == cfg.messages.closed
+	end
+	check(line, "withdraw-only: the locker line says the depot is withdraw-only")
+	check(#sent >= 1 and sent[#sent].action == "tabs" and sent[#sent].op == 111, "withdraw-only: the depot window gets its tabs")
+	Chaos.stashConfig.depot.openStash = true
+	lockerAction.onUse(hero, lockerItem)
+	runTimers()
+	eq(stashOpened, 1, "openStash = true: the locker opens the stash window too")
+	Chaos.stashConfig.depot.openStash = nil
+	ChaosStash = savedStash
+end
 Chaos.stashConfig.depot.withdrawOnly = false
 -- moves that have nothing to do with the depot
 eq(Dp.onMoveItem(hero, sword, 1, INV, cpos(0), nil, backpack), 0, "into a backpack")

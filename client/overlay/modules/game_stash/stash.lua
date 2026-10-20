@@ -290,7 +290,7 @@ Stash.DataManager = function(protocol, opcode, buffer)
 		displayInfoBox(tr('Stow Everything'), V.reportText(buffer))
 	elseif buffer.make == "Toggle" then
 		Stash.remoteAccess = (buffer.remote == true)
-		-- open = true: the depot locker asks for the window (it stays open when it already is)
+		-- open = true: the stash keeper NPC asks for the window (it stays open when it already is)
 		if not (buffer.open == true and Stash.UI and Stash.UI:isVisible()) then
 			Stash.Toggle()
 		end

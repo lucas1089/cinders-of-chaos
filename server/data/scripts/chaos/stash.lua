@@ -1503,7 +1503,8 @@ function LoginEvent.onLogin(player)
 	return true
 end
 
--- a depot locker opened (depot.lua afterOpen): the stash window opens (it stays open when it already is)
+-- opens the stash window (it stays open when it already is). A depot locker calls it only with stash_config.lua
+-- depot.openStash (off since 2026-10-20: the locker opens the depot window alone)
 function S.openWindow(player)
 	send(player, {make = "Toggle", remote = isRemote(player), open = true})
 end

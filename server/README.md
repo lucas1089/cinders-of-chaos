@@ -3756,8 +3756,13 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 
 **Reversed again 2026-10-17 (later)** (owner: "remova o depot e deixe só o stash", "quando a gente abrir o baú, abra o stash"): the stash is the one
 storage. `stash_config.lua` has `depot.migrate = true`, `depot.withdrawOnly = true` and `toDepot.enabled = false` (the stash -> depot
-migration below stays in the code, off). Opening a depot locker opens the stash window (`ChaosStash.openWindow`, a `Toggle` with `open = true`
-that keeps an open window open; `depot.lua` `afterOpen`); the chest still lists what is left to take out.
+migration below stays in the code, off). The chest still lists what is left to take out.
+
+**Locker opens the depot only (2026-10-20)** (owner beta report: clicking a depot chest opened the depot window and the stash
+window together). A depot locker opens the depot window alone and shows the withdraw-only line. The stash opens from its own
+entry points: the top bar (Economy > Supply Stash), the "Toggle Stash" keybind and the stash keeper NPC. `depot.lua` `afterOpen`
+asks `depot_core.lua` `D.lockerOpen`; it calls `ChaosStash.openWindow` (a `Toggle` with `open = true`) only when
+`stash_config.lua` `depot.openStash = true` (off). Tests: `depot_test.lua` (the rule and a locker opening on the mocked engine).
 
 **Reversed 2026-10-17** (owner: "Depot e stash estão iguais: migrar o stash para o depot"): the depot is the one storage again.
 `stash_config.lua` `toDepot` (enabled): when a depot locker is opened, `ChaosStash.migrateToDepot` moves the character's stash
@@ -5914,7 +5919,7 @@ module's own script, never by the NPC.
 
 | NPC | Booth (Cinderhold and Mirewake) | Opens / does | Module reused |
 |---|---|---|---|
-| Tavish Coldhand (stash keeper) | economy room, north wall, slot "stash keeper" (x 41) | the stash window (`Toggle` with `open`, as a depot locker opens it) | `stash.lua`, opcode 110 |
+| Tavish Coldhand (stash keeper) | economy room, north wall, slot "stash keeper" (x 41) | the stash window (`Toggle` with `open`) | `stash.lua`, opcode 110 |
 | Vessa Hollowmark (pocket boss NPC) | economy room, north wall, slot "pocket boss NPC" (x 46) | the Boss Spawns window; says the daily pocket charges (`pocketboss_config.lua`) | `bossspawns.lua` / `pocketboss.lua`, opcode 217 |
 | Cassian Auric (banker) | economy room, north wall, east of the way in (x 56) | the bank window; says the balance | `bank.lua`, opcode 60 |
 | Halvard Deedkeeper (house broker) | economy room, north wall (x 61) | lists the free houses by town, sells one by name after a "yes", runs the base `!leavehouse` and `!sellhouse` | `commands_ui_core.lua` loader, opcode 237 page `house` |
