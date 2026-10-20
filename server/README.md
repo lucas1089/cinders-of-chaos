@@ -1512,6 +1512,17 @@ file whose name is a debuff (`speed`, `drunk`, `outfit`, `strength`, `skill`, `w
 129 monsters; the Chaos monsters of the repository follow the rule already (17 attacks in 15 files cut when it was
 added). Idempotent; `tools/patch_debuff_durations_test.py`. Needs a server restart (monster files load at start).
 
+## Corpse decay (`tools/patch_corpse_decay.py`, install step `corpses`)
+
+Owner, 2026-10-20 (beta, the ground label "Corpse: 1 item 20:41"): corpse timers and the time a corpse stays on the
+ground are at most 5 minutes. A corpse decays through stages (items.xml `decayTo` + `duration`: the fresh corpse with
+the loot, a decayed one, the remains); the stock chains lasted up to 75 minutes. Every chain of corpse items
+(`corpseType` set) longer than 300 s is scaled down, every stage by the same factor (at least 1 s), so the loot stage
+keeps most of the time; chains that share their later stages are rescaled until every chain fits. Base items.xml:
+1774 stages changed, the longest chain 300 s. Shorter chains and non-corpse items are untouched; the two corpses
+defined by fromid/toid ranges are kept. Runs late (before `sql`), after every step that adds items. Idempotent;
+`tools/patch_corpse_decay_test.py`. Needs a server restart.
+
 ## Spell timings (`tools/patch_spell_timings.py`, install step `spells`)
 
 The rotation pass (2026-10-14, owner: "Faça todas as classes terem até 5 magias na rotação e nunca ficarem 2s sem uma";

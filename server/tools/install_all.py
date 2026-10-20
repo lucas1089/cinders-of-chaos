@@ -96,6 +96,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
   debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
+  corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
@@ -626,6 +627,13 @@ def step_debuffs(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('monsters') + 1, 'debuffs')  # after the Chaos monsters are registered (base and Chaos files)
+
+
+def step_corpses(server, data, ctx):
+    return tool_result(run_tool([tool('patch_corpse_decay.py'), data], 'patch_corpse_decay.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'corpses')  # late: after every step that adds corpse items to items.xml
 
 
 def step_spawns(server, data, ctx):
