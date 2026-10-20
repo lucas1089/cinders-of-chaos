@@ -27,7 +27,8 @@ fires. The Monk line's chi: +1 per auto-attack hit (one per 2 s at most, the aut
 minPlayerAttackInterval), +2 Ashen Fist, +1 Pressure Points, max 5; a finisher waits for 4 chi (the measured harness).
 The gap is the longest time between two casts over HORIZON seconds from a fresh start; 2.0 s means a cast on every
 attack group cooldown. The damage is relative (no passive tree, no class factor, no auto attack, no minions); the
-change of a class's spell damage bounds the change of its total.
+change of a class's spell damage bounds the change of its total. Every spell's damage is x the class spell factor
+of server/data/scripts/chaos/spell_factor_config.lua (owner, 2026-10-20), the table the server applies to spell hits.
 
 --report prints, per class and level band (15 / 30 / 60 / 100 / 300 / 600 / 1000), the best set of at most 5 with
 its gap and damage against the measured kit (the C4 harness: every Chaos attack spell of the class on cooldown);
@@ -59,6 +60,8 @@ PACKTOOLS = os.path.join(SPELLS, 'chaos', '_packtools.lua')
 CLIENT_DATA = os.path.join(REPO, 'client', 'overlay', 'modules', 'game_helperrotation', 'autorotation_data.lua')
 VOCATION_XMLS = os.path.join(REPO, 'server', 'data', 'XML')      # chaos_vocations*.xml: mana gain and regeneration
 START_STATS = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'start_stats.lua')  # level 1 mana per class
+# the class factor on spell damage the server applies (passivetree_effects.lua, spell_factor_core.lua)
+SPELL_FACTOR = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'spell_factor_config.lua')
 
 GCD = 2.0                     # the attack group cooldown of nearly every attack spell
 HORIZON = 120.0               # seconds simulated from a fresh start
@@ -122,6 +125,19 @@ def stats(cls, level):
             'SMITE': smite_for(cls, level), 'TOSS': toss_for(cls, level), 'FLURRY': flurry_for(cls, level),
             'SWEEP': sweep_scale(), 'OFFHAND': OFFHAND.get(cls, 1.0), 'FAN': pack_scale('fan'),
             'SANCT': pack_scale('sanctified'), 'WAVE': pack_scale('shieldWave')}
+
+
+@functools.lru_cache(maxsize=None)
+def spell_factors():
+    """{vocation id: factor} of ChaosSpellFactorConfig.byVocation (spell_factor_config.lua)"""
+    text = open(SPELL_FACTOR, encoding='utf-8').read()
+    block = re.search(r'byVocation\s*=\s*\{(.*?)\n\t\}', text, re.S).group(1)
+    return {int(v): float(f) for v, f in re.findall(r'\[(\d+)\]\s*=\s*([0-9.]+)', block)}
+
+
+def spell_factor(cls):
+    """the class spell factor of class `cls` (1 when not listed): every spell's damage of the model is x this"""
+    return spell_factors().get(VOC[cls], 1.0)
 
 
 def smite_for(cls, level):
@@ -335,7 +351,7 @@ def prepare(spells, model, cls, level):
         p.sec = s['secondarygroup']
         p.seccd = s['secondarygroupcooldown'] / 1000.0
         p.cast = s['cast'] / 1000.0
-        p.dmg = evaluate(m['dmg'], env)
+        p.dmg = evaluate(m['dmg'], env) * spell_factor(cls)  # the class spell factor (spell_factor_config.lua)
         p.dmg5 = p.dmg * m['t5']
         p.chi = 'chi' in m['flags']
         p.gain = 2 if 'chi2' in m['flags'] else (1 if 'chi1' in m['flags'] else 0)

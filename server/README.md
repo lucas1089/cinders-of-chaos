@@ -1632,6 +1632,31 @@ before and after and the retune proposals: `data/spells/README.md` "Cooldown lad
   `spellfix_test.lua`), wiki data regenerated; the cooldowns named in six spell scripts' comments updated.
 * Damage per cast is unchanged. Live server: the `spells` step and a restart; nothing in the database.
 
+### Class spell factor (owner 2026-10-20: the cooldown ladder's retune proposals applied)
+
+One factor on a class's spell damage: `data/scripts/chaos/spell_factor_config.lua` (`ChaosSpellFactorConfig.byVocation`,
+by vocation id: Templar 23 and Sentinel 25 x0.6; Inquisitor 24, Elementalist 5, Illusionist 10, Lich 21, Bone Lord 22,
+Shadowfist 18 x0.7; Necromancer 20 x0.8; Beastmaster 15 x1.25; the rest 1). Rules in `spell_factor_core.lua`
+(`ChaosSpellFactor.factor`), tested by `tests/spell_factor_test.lua` (the table, the rule, the event on a mocked engine,
+the guards).
+
+* Where: the `ChaosPassiveDealt` onHealthChange event of `passivetree_effects.lua`, the event every damage a player deals
+  already passes (the passive tree, Paragon, the class tree's factor). The factor goes on damage with origin
+  `ORIGIN_SPELL` from a player of a listed class, before the tree's bonuses (they multiply, so the order does not
+  matter), also for a player without tree data.
+* Not on: weapon and auto-attack hits (`ORIGIN_MELEE`, `ORIGIN_RANGED`, `ORIGIN_WAND`), conditions (`ORIGIN_CONDITION`:
+  a burn or rot a spell leaves ticks unscaled), healing, keystone / support / archetype procs (`ChaosKeystones.depth`:
+  a share of a hit that had the factor already), and hits inside the factor's guard (`ChaosSpellFactor.depth`): the
+  Templar line's holy strike on a weapon hit (`templar_combat.lua` radiantStrike) and every Necromancer minion hit
+  (`necro_minions.lua`; the rotation model has no minions). The Beastmaster's companion bites are `ORIGIN_NONE` and no
+  event sees them; Feral Command and Pack Frenzy are spells and take the x1.25.
+* Assumption: runes. The engine gives a rune's hit `ORIGIN_SPELL` as well; a rune used by a listed class takes its
+  factor (onHealthChange cannot tell a rune from an instant).
+* `tools/rotation_sim.py` reads the same table (`spell_factors()`) and multiplies every spell of the class: `--report`,
+  the presets and `--check` match the server; `rotation_sim_test.py` checks the table and the multiplication. The
+  presets did not change. Numbers: `data/spells/README.md` "Class spell factor".
+* Live server: the `files` step (copies the scripts) and a restart. No database change. Not run on a live server.
+
 ## Necromancer summons and the summon cap (2026-10-18)
 
 Raise Bone Warrior / Archer / Mage (`data/spells/chaos/necromancer/raise_*.lua`, helper `NecroSpell.summon` in `_necro.lua`),

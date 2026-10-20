@@ -322,12 +322,31 @@ function ChaosPassiveLineFactor(player)
 	return ChaosClassTree.damageFactor(ChaosClasses.classKey(id), ChaosClasses.lineKey(id), player:getLevel())
 end
 
+-- the class factor on spell damage (spell_factor_config.lua, spell_factor_core.lua)
+if not ChaosSpellFactorConfig then
+	dofile("data/scripts/chaos/spell_factor_config.lua")
+end
+if not ChaosSpellFactor or not ChaosSpellFactor.factor then
+	dofile("data/scripts/chaos/spell_factor_core.lua")
+end
+
 -- ---------------------------------------------------------------- damage dealt / healing
 local dealt = CreatureEvent("ChaosPassiveDealt")
 function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	-- keystone procs (passivetree_keystones.lua) are a share of a hit that already had these bonuses
 	local procActive = ChaosKeystones and ChaosKeystones.depth and ChaosKeystones.depth > 0
 	if attacker and attacker:isPlayer() and not procActive then
+		-- the class spell factor (server/README.md "Class spell factor"): spell damage only, never healing
+		local vocation = attacker.getVocation and attacker:getVocation()
+		local vocId = vocation and vocation:getId() or 0
+		local f1 = ChaosSpellFactor.factor(vocId, origin, primaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive)
+		local f2 = ChaosSpellFactor.factor(vocId, origin, secondaryType, ORIGIN_SPELL, COMBAT_HEALING, procActive)
+		if f1 ~= 1 then
+			primaryDamage = scale(primaryDamage, f1)
+		end
+		if f2 ~= 1 then
+			secondaryDamage = scale(secondaryDamage, f2)
+		end
 		local bonuses = ChaosPassiveCache[attacker:getId()]
 		if bonuses then
 			-- the factor of the classes tuned without a tree (class_tree.lua classDamage); not on healing

@@ -203,6 +203,14 @@ ladder". The ladders ("rung n": the class's own rung when a shared spell took an
 - **Inquisitor**: Radiant Smite 2 s < Judgement 4 s < Purging Nova 6 s < Consecration 6 s (rung 4).
 - **Sentinel**: Radiant Smite 2 s < Shield Wave 4 s < Consecration 6 s.
 
+**Class spell factor (2026-10-20, the owner's decision on the ladder's proposals)**: the ladder raised the damage per
+second of the classes built on long-cooldown spells; one factor on all of a class's spell damage brings them back
+without changing the ladder's order: Templar and Sentinel x0.6, Inquisitor, Elementalist, Illusionist, Lich, Bone Lord
+and Shadowfist x0.7, Necromancer x0.8, Beastmaster x1.25 (it lost most to the ladder). Table:
+`server/data/scripts/chaos/spell_factor_config.lua`; spell hits only (not weapon hits, healing, minions, the Templar
+line's holy strike on a weapon hit, conditions); numbers: server/data/spells/README.md "Class spell factor". The
+balance targets hold: the Deadeye has the best single target, the Elementalist the best area damage.
+
 Shared spells, one cooldown (the rung per class -> the rung taken):
 Arcane Ripple Illusionist 2, Mystic 6 -> rung 2 (4 s); Bewitching Hex Illusionist 3, Mystic 8 -> rung 3 (6 s); Blade
 Flurry Ninja 5, Samurai 5, Thief 4 -> rung 5 (10 s); Blessed Earth Beastmaster 7, Deadeye 6, Ranger 7 -> rung 7 (14 s);

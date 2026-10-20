@@ -130,6 +130,15 @@ for cls, rows in per_class.items():
     check(final[rows[0][0]] == 2000, '%s: the first spell %s is 2 s' % (cls, rows[0][0]))
     check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
 
+# the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
+check(R.spell_factors() == {23: 0.6, 25: 0.6, 24: 0.7, 5: 0.7, 10: 0.7, 21: 0.7, 22: 0.7, 18: 0.7, 20: 0.8, 15: 1.25},
+      'the class spell factors of spell_factor_config.lua')
+check(R.spell_factor('Warrior') == 1.0 and R.spell_factor('Templar') == 0.6, 'a class not listed keeps 1')
+smite = [s for s in spells if s['name'] == 'Radiant Smite']
+t = R.prepare(smite, model, 'Templar', 300)[0].dmg
+w = R.evaluate(model[smite[0]['words']]['dmg'], R.stats('Templar', 300))
+check(abs(t - 0.6 * w) < 1e-6, 'Templar 300: Radiant Smite x0.6 in the simulation (%.1f, %.1f)' % (t, w))
+
 # the client data is up to date
 text = R.client_data(spells, model)
 check(open(R.CLIENT_DATA, encoding='utf-8').read() == text,

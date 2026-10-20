@@ -2504,8 +2504,8 @@ bring it back to before the ladder:
 
 - The balance targets still hold at 1000: the Deadeye has the best single target (2168), the Elementalist the best pack
   damage (4909; the Templar 4309 next).
-- Proposals, not applied (owner decision): the long ultimates got the biggest cut (Primordial Squall 35 -> 8 s, Glacial
-  Doom 60 -> 20, Tear in the Weave 40 -> 14, Doomtide 45 -> 18, Consecration 20 -> 6, Judgement 12 -> 4), so the classes
+- Proposals (applied the same day by the owner's decision: "Class spell factor" below): the long ultimates got the
+  biggest cut (Primordial Squall 35 -> 8 s, Glacial Doom 60 -> 20, Tear in the Weave 40 -> 14, Doomtide 45 -> 18, Consecration 20 -> 6, Judgement 12 -> 4), so the classes
   built on them gain most: the Templar line (+41 to +76%), the Elementalist and Illusionist (+35 to +59%), the
   Necromancer line (+21 to +47%), the Shadowfist at 1000 (+44%). A class-wide factor on spell damage keeps the ladder
   order (the order is by damage per cast): Templar and Sentinel x0.6, Inquisitor x0.7, Elementalist and Illusionist
@@ -2516,6 +2516,72 @@ bring it back to before the ladder:
   2 s filler is always in the kit. Sets with a 4-6 s gap at 300-1000: Warrior 1000, Juggernaut 300 / 1000, Berserker
   300 / 1000, Ranger 300 / 1000, Deadeye 300 / 1000, Mystic 1000 (the search prefers more damage over the filler).
 - Mana runway (`rotation_sim.py --mana --check`): every class still runs 15 s or more at levels 8-300.
+
+### Class spell factor (2026-10-20; owner decision on the cooldown ladder proposals; computed with rotation_sim.py, not measured in game)
+
+A factor on every spell hit of a class (`data/scripts/chaos/spell_factor_config.lua`, by vocation id): Templar and
+Sentinel x0.6, Inquisitor, Elementalist, Illusionist, Lich, Bone Lord and Shadowfist x0.7, Necromancer x0.8, Beastmaster
+x1.25; every other class 1. The server applies it to damage with origin ORIGIN_SPELL (server/README.md "Class spell
+factor": what it leaves alone); `rotation_sim.py` multiplies every spell of the class by the same table, so the presets,
+`--report` and `--check` use it. One factor per class keeps the cooldown ladder's order. The presets did not change.
+
+The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pack) before and after the factor:
+
+| Class | Level | 1 target before -> after | 5 targets before -> after | gap | set after |
+|---|---|---|---|---|---|
+| Warrior | 300 | 336 -> 336 (+0%) | 1197 -> 1197 (+0%) | 2.0 -> 2.0 | Colossus Fall > Earthbreaker > Scything Arc > Headsman's Hurl > Vaulting Cleave |
+| Warrior | 1000 | 576 -> 576 (+0%) | 2066 -> 2066 (+0%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 300 | 329 -> 329 (+0%) | 1176 -> 1176 (+0%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 1000 | 567 -> 567 (+0%) | 2292 -> 2292 (+0%) | 4.0 -> 4.0 | Colossus Fall > Anvil Fall > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 300 | 326 -> 326 (+0%) | 1302 -> 1302 (+0%) | 4.0 -> 4.0 | Colossus Fall > Skyfall Cleave > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 1000 | 575 -> 575 (+0%) | 2335 -> 2335 (+0%) | 4.0 -> 4.0 | Colossus Fall > Rampage Leap > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Ranger | 300 | 640 -> 640 (+0%) | 1076 -> 1076 (+0%) | 4.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Ranger | 1000 | 1513 -> 1513 (+0%) | 2300 -> 2300 (+0%) | 4.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Deadeye | 300 | 711 -> 711 (+0%) | 952 -> 952 (+0%) | 6.0 -> 6.0 | Blessed Earth > Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer |
+| Deadeye | 1000 | 2168 -> 2168 (+0%) | 2666 -> 2666 (+0%) | 6.0 -> 6.0 | Blessed Earth > Hail of Dawn > Twin Verdict > Final Verdict > Dawnpiercer |
+| Beastmaster | 300 | 194 -> 242 (+25%) | 633 -> 791 (+25%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin |
+| Beastmaster | 1000 | 530 -> 663 (+25%) | 1458 -> 1823 (+25%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer > Feral Command |
+| Mystic | 300 | 436 -> 436 (+0%) | 1760 -> 1760 (+0%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Bewitching Hex |
+| Mystic | 1000 | 657 -> 657 (+0%) | 2735 -> 2735 (+0%) | 4.0 -> 4.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche |
+| Elementalist | 300 | 543 -> 380 (-30%) | 2714 -> 1900 (-30%) | 2.0 -> 2.0 | Doomtide > Frozen Crypt > Falling Pyre > Rime Bloom > Pyre Torrent |
+| Elementalist | 1000 | 982 -> 687 (-30%) | 4909 -> 3436 (-30%) | 2.0 -> 2.0 | Glacial Doom > Doomtide > Frozen Crypt > Rime Bloom > Pyre Torrent |
+| Illusionist | 300 | 611 -> 428 (-30%) | 2558 -> 1791 (-30%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Illusionist | 1000 | 925 -> 648 (-30%) | 3890 -> 2723 (-30%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Thief | 300 | 321 -> 321 (+0%) | 836 -> 836 (+0%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Thief | 1000 | 546 -> 546 (+0%) | 1420 -> 1420 (+0%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Ninja | 300 | 381 -> 381 (+0%) | 887 -> 887 (+0%) | 2.0 -> 2.0 | Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Ninja | 1000 | 678 -> 678 (+0%) | 2623 -> 2623 (+0%) | 2.0 -> 2.0 | Shuriken Tempest > Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Samurai | 300 | 432 -> 432 (+0%) | 1150 -> 1150 (+0%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Samurai | 1000 | 707 -> 707 (+0%) | 1885 -> 1885 (+0%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Necromancer | 300 | 319 -> 255 (-20%) | 1069 -> 855 (-20%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Necromancer | 1000 | 755 -> 604 (-20%) | 2065 -> 1652 (-20%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Lich | 300 | 734 -> 514 (-30%) | 833 -> 583 (-30%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Lich | 1000 | 1671 -> 1170 (-30%) | 1855 -> 1298 (-30%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Bone Lord | 300 | 451 -> 316 (-30%) | 1150 -> 805 (-30%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Bone Lord | 1000 | 1051 -> 736 (-30%) | 2533 -> 1773 (-30%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Monk | 300 | 299 -> 299 (+0%) | 1165 -> 1165 (+0%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Monk | 1000 | 518 -> 518 (+0%) | 2075 -> 2075 (+0%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Shadowfist | 300 | 248 -> 174 (-30%) | 1297 -> 908 (-30%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Whirling Heel > Palm Shockwave |
+| Shadowfist | 1000 | 686 -> 480 (-30%) | 2243 -> 1570 (-30%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Palm Shockwave > Shadowfist Flurry > Sundering Palm |
+| Iron Sage | 300 | 259 -> 259 (+0%) | 1532 -> 1532 (+0%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Iron Sage | 1000 | 456 -> 456 (+0%) | 2752 -> 2752 (+0%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Templar | 300 | 456 -> 274 (-40%) | 2454 -> 1473 (-40%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Templar | 1000 | 807 -> 484 (-40%) | 4309 -> 2586 (-40%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Inquisitor | 300 | 489 -> 342 (-30%) | 1720 -> 1204 (-30%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Inquisitor | 1000 | 850 -> 595 (-30%) | 3060 -> 2142 (-30%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Sentinel | 300 | 456 -> 274 (-40%) | 2282 -> 1369 (-40%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+| Sentinel | 1000 | 807 -> 484 (-40%) | 4033 -> 2420 (-40%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+
+- The balance targets hold. Single target: the Deadeye leads (711 at 300, 2168 at 1000; the Ranger 640 / 1513 next).
+  Pack: the Elementalist leads (1900 at 300, 3436 at 1000; next at 1000 the Iron Sage 2752, the Illusionist 2723, the
+  Ninja 2623; at 300 the Illusionist 1791 and the Mystic 1760).
+- Against before the ladder (after the cap), the score (1 target + 0.25 x pack) of the factored classes at 300 / 1000:
+  Templar 0 / +4%, Sentinel +1 / +6%, Inquisitor -1 / +3%, Elementalist -1 / +11%, Illusionist -6 / +4%, Necromancer
+  -3 / +5%, Lich -8 / -2%, Bone Lord -2 / +3%, Shadowfist -18 / +1% (one factor for both levels: the ladder raised it
+  +18% at 300 and +44% at 1000), Beastmaster -3 / +26%. The classes without a factor keep the ladder's changes
+  ("Cooldown ladder" above).
+- Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
+  factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
 
 ## Honest notes / limitations
 
