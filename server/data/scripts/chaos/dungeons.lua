@@ -359,7 +359,8 @@ end
 
 -- The "Potential Boss Loot" panel (28 slots): what the dungeon's config lists first (the crystal coins of the clear),
 -- then what the boss monster can really drop (MonsterType:getLoot(), the rarest first, each item once). Display only:
--- the real loot is what the boss drops (owner 2026-10-17: the panel showed 3 crystal coins and nothing else).
+-- the real loot is what the boss drops (owner 2026-10-17: the panel showed 3 crystal coins and nothing else). Each slot
+-- carries the item's name for the client's tooltip.
 local LOOT_SLOTS = 28
 local function bossLootPanel(extra)
 	local loot, seen = {}, {}
@@ -372,13 +373,13 @@ local function bossLootPanel(extra)
 			return
 		end
 		seen[itemId] = true
-		loot[#loot + 1] = {clientId = itemType:getClientId(), count = math.max(1, count or 1)}
+		loot[#loot + 1] = {clientId = itemType:getClientId(), count = math.max(1, count or 1), name = itemType.getName and itemType:getName() or nil}
 	end
 	for _, item in ipairs(extra.loot or {}) do
 		local itemType = ItemType(item.id)
 		if itemType and itemType:getId() ~= 0 then
 			seen[item.id] = true
-			loot[#loot + 1] = {clientId = itemType:getClientId(), count = item.count}
+			loot[#loot + 1] = {clientId = itemType:getClientId(), count = item.count, name = itemType.getName and itemType:getName() or nil}
 		else
 			loot[#loot + 1] = {clientId = item.id, count = item.count}
 		end
