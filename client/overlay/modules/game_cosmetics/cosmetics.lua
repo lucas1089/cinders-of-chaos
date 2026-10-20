@@ -146,7 +146,8 @@ local function showSample(r)
         p:addAnchor(AnchorVerticalCenter, 'parent', AnchorVerticalCenter)
         p:setMarginLeft(off > 0 and off or 0)
         p:setMarginRight(off < 0 and -off or 0)
-        p:setRotation(i == 1 and 90 or 270)
+        -- no setRotation: inside a list a widget's rotation spills onto the rows drawn after it (the store's
+        -- Footprints page drew turned, beta 2026-10-20)
         p:setPhantom(true)
       end
     end

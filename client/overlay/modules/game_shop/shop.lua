@@ -194,7 +194,6 @@ local function applyArt(widget, data, size)
     elseif plan.mode == 'image' then
       if exists(plan.image) then
         art:setImageSource(plan.image)
-        if plan.rotation then art:setRotation(plan.rotation) end
         show()
       end
     elseif plan.mode == 'effect' then

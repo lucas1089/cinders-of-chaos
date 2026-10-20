@@ -40,7 +40,7 @@ end
 -- of the effect to draw (LookPreviewCore.mainEffect). Returns {mode = ...}:
 --   'native'   the widget the type asks for (item or creature) as before
 --   'creature' the creature, plus outline = {art, pulse} and glow = the picture to use when the engine cannot outline
---   'image'    image = path (without .png), fixed = keep the ratio, rotation
+--   'image'    image = path (without .png), fixed = keep the ratio
 --   'effect'   spec = {id, dx, dy, ms, m, n}
 --   'swatch'   color, accent = true for a loot label (a bar), else the chat colour as text
 function S.plan(data, mainEffect)
@@ -48,7 +48,9 @@ function S.plan(data, mainEffect)
   if type(look) ~= 'table' then return { mode = 'native' } end
   local k = look.kind
   if k == 'footprint' and artName(look.art) then
-    return { mode = 'image', image = S.PRINTS .. look.art, rotation = 90 }
+    -- not rotated: a widget rotation is not undone after it draws in this engine, and every row after the icon
+    -- drew turned by 90 degrees (the whole Footprints page, beta 2026-10-20)
+    return { mode = 'image', image = S.PRINTS .. look.art }
   elseif k == 'nameplate' and artName(look.frame) then
     return { mode = 'image', image = S.PLATES .. look.frame, fixed = true }
   elseif k == 'effects' and type(look.play) == 'table' then

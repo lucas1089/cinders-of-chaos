@@ -104,6 +104,26 @@ function C.lookOf(offer, src)
 	return nil
 end
 
+-- Whether a category of the store shows its first cosmetic as its icon. The category cell is small and tall, so a plate
+-- frame (a wide 9-slice), a footprint (a long print, rotated), a loot label accent (a plain colour block) and a spell
+-- effect (its frame reads as a dark ring) drew as broken pictures in the beta; those categories keep their item icon.
+-- A kill effect, an outline, a chat colour sample and the creatures (outfits, mounts, wings ...) read well.
+function C.categoryShowsLook(look)
+	if type(look) ~= "table" or look.kind == "bundle" then
+		return false
+	end
+	if look.kind == "nameplate" or look.kind == "footprint" then
+		return false
+	end
+	if look.kind == "swatch" then
+		return look.accent ~= true
+	end
+	if look.kind == "effects" then
+		return look.killfx == true
+	end
+	return true
+end
+
 -- The outfit a creature icon of a look is drawn with, or nil when the icon is no creature (a print, an effect, a colour,
 -- a plate frame): an outline is worn by the plain figure (neutral), a mount alone or a pet is drawn alone, the other
 -- parts on the preview figure, a bundle by its parts merged (outfit, mount, wings, aura, shader).

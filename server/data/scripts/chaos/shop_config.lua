@@ -320,7 +320,7 @@ return {
 			-- name plate frames (nameplate.lua; shop.lua registers the titles.lua frame source "store"): 13 store frames.
 			-- Gold (staff) and crimson (Siege Champions) stay theirs; laurel, sepulchre and infernal are exclusives. The frame bought last is shown;
 			-- switches (commands_ui id "plateframe").
-			name = "Name Plates", icon = {item = 2160},
+			name = "Name Plates", icon = {item = 2153},
 			offers = {
 				{kind = "frame", frame = "violet", icon = 2153, cost = 300, name = "Violet Plate Frame",
 					description = "A violet frame round your name plate, for good. Switch frames in Info & Services > Services."},

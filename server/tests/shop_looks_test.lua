@@ -166,6 +166,18 @@ for _, c in ipairs(ccfg.cosmetics) do
 end
 check(fx > 5, "spell skins and kill effects carry their effects (" .. fx .. ")")
 
+-- category icons (beta 2026-10-20: plate frames, prints, loot label blocks and spell effect rings drew as broken pictures)
+check(K.categoryShowsLook({kind = "nameplate", frame = "violet"}) == false, "a plate frame category keeps its item icon")
+check(K.categoryShowsLook({kind = "footprint", art = "ember"}) == false, "a footprint category keeps its item icon")
+check(K.categoryShowsLook({kind = "swatch", color = "#ff8800", accent = true}) == false, "a loot label category keeps its item icon")
+check(K.categoryShowsLook({kind = "swatch", color = "#ff8800"}) == true, "a chat colour sample is a good icon")
+check(K.categoryShowsLook({kind = "effects", play = {1}}) == false, "a spell effect category keeps its item icon")
+check(K.categoryShowsLook({kind = "effects", play = {1}, killfx = true}) == true, "a kill effect is a good icon")
+check(K.categoryShowsLook({kind = "outline", art = "gold"}) == true, "an outline is a good icon")
+check(K.categoryShowsLook({kind = "mount", look = 368}) == true, "a mount is a good icon")
+check(K.categoryShowsLook({kind = "bundle", parts = {}}) == false, "a bundle keeps its item icon")
+check(K.categoryShowsLook(nil) == false, "no look, no icon")
+
 if failures > 0 then
 	error(string.format("%d of %d checks failed", failures, checks))
 end
