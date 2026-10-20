@@ -585,12 +585,34 @@ local function breachBar(on)
 	end
 end
 
+-- the counters follow the invaders that still exist: one that left the world without dying (removed by another script,
+-- fell out of the map) would otherwise stay counted for the whole event ("10 left" with none in sight, no victory)
+local function reconcileInvaders()
+	local alive, waveAlive = 0, 0
+	for id, info in pairs(V.invaders) do
+		if Monster(id) then
+			alive = alive + 1
+			if info.wave and info.wave == state.wave then
+				waveAlive = waveAlive + 1
+			end
+		else
+			V.invaders[id] = nil
+			if info.boss and id == state.bossId then
+				state.bossAlive = false
+				state.bossHp = 0
+			end
+		end
+	end
+	state.alive, state.waveAlive = alive, waveAlive
+end
+
 local function tick(token)
 	if state.token ~= token then
 		return
 	end
 	local t = now()
 	if state.phase == "running" then
+		reconcileInvaders()
 		local n, boss = invadersAtTarget()
 		local before = state.breach
 		state.breach = I.breachStep(state.breach, n, boss, 1, C().breach)
