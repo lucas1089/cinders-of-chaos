@@ -35,14 +35,14 @@ function P.lin(points, x, default)
 	return points[#points][2]
 end
 
-local ONE = {health = 1, xp = 1, loot = 1, goal = 1, damage = 1}
+local ONE = {health = 1, xp = 1, loot = 1, gold = 1, goal = 1, damage = 1}
 
 -- the factors of a monster of hunting level `level` (scaled: a level of its own). All 1 when the layer is off.
-function P.factors(cfg, level, scaled)
+function P.factors(cfg, level, scaled, generated)
 	if not cfg or cfg.enabled == false then
 		return ONE
 	end
-	local set = scaled and cfg.scaled or cfg.base
+	local set = scaled and ((generated and cfg.generated) or cfg.scaled) or cfg.base
 	if not set then
 		return ONE
 	end
@@ -55,18 +55,19 @@ function P.factors(cfg, level, scaled)
 		health = P.lin(set.health, level, 1),
 		xp = scaled(P.lin(set.xp, level, 1), "xp"),
 		loot = scaled(P.lin(set.loot, level, 1), "loot"),
+		gold = P.lin(set.gold, level, 1),
 		goal = P.lin(set.goal, level, 1),
 		damage = P.lin(cfg.damage, level, 1)
 	}
 end
 
 -- the hunting level and the curve set of a monster. info = {native = Monster:getMonsterLevel(), point = a generated
--- area point's level, pool = ChaosLoot.monsterLevel}. Returns level, scaled.
+-- area point's level, pool = ChaosLoot.monsterLevel}. Returns level, scaled, generated (a generated area / dungeon point).
 function P.levelOf(cfg, info)
 	info = info or {}
 	local point = num(info.point, 0)
 	if point > 0 then
-		return point, true
+		return point, true, true
 	end
 	local native = num(info.native, 0)
 	if native > 0 then

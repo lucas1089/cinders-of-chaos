@@ -100,17 +100,17 @@ function PC.apply(m, include)
 	if (point and point.boss) or m:getMaster() or isBoss(m) or (c.skip and c.skip[tostring(typeName(m)):lower()]) then
 		return false
 	end
-	local level, scaled = PC.levelOf(m)
+	local level, scaled, generated = PC.levelOf(m)
 	if not level or level <= 0 then
 		return false
 	end
-	local f = P.factors(c, level, scaled)
+	local f = P.factors(c, level, scaled, generated)
 	if f.health ~= 1 then
 		local hp = P.scaleHealth(m:getMaxHealth(), f.health)
 		m:setMaxHealth(hp)
 		m:setHealth(hp)
 	end
-	paced[id] = {level = level, scaled = scaled, f = f}
+	paced[id] = {level = level, scaled = scaled, generated = generated, f = f}
 	m:registerEvent(DEATH)
 	m:registerEvent(CLEAVE)
 	return true
@@ -123,11 +123,11 @@ function PC.spawnLootMult(m)
 	if not c or c.enabled == false or not m or m:getMaster() or isBoss(m) then
 		return 1
 	end
-	local ok, level, scaled = pcall(PC.levelOf, m)
+	local ok, level, scaled, generated = pcall(PC.levelOf, m)
 	if not ok or not level or level <= 0 then
 		return 1
 	end
-	return P.factors(c, level, scaled).loot
+	return P.factors(c, level, scaled, generated).loot
 end
 
 -- other scripts: pace this monster at its first think (a base dungeon's monsters, an ambush copy of a paced monster)
@@ -153,6 +153,15 @@ function PC.lootMultOf(m)
 	end
 	local f = PC.factorsOf(m)
 	return f and f.loot or 1
+end
+
+-- the extra factor on coins and NPC-sellable items that are not gear (loot.lua L.thinCorpse); 1 when not paced
+function PC.goldMultOf(m)
+	if cfg().enabled == false then
+		return 1
+	end
+	local f = PC.factorsOf(m)
+	return f and f.gold or 1
 end
 
 function PC.goalMultOf(m)

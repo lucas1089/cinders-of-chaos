@@ -230,11 +230,11 @@ end
 -- ------------------------------------------------------------------ key drops
 do
 	local o0, o1, o3 = R.keyOdds(cfg, 0), R.keyOdds(cfg, 1), R.keyOdds(cfg, 3)
-	eq(o1.chance, 40, "1 modifier: 40%")
-	eq(o3.chance, 60, "3 modifiers: 60%")
-	eq(o0.chance, 30, "no modifier: 30%")
-	eq(o1.nextTier, 60, "1 modifier: 60% of the keys are the next tier")
-	eq(o3.nextTier, 80, "3 modifiers: 80% next tier")
+	eq(o1.chance, 55, "1 modifier: 55%")
+	eq(o3.chance, 75, "3 modifiers: 75%")
+	eq(o0.chance, 45, "no modifier: 45%")
+	eq(o1.nextTier, 70, "1 modifier: 70% of the keys are the next tier")
+	eq(o3.nextTier, 90, "3 modifiers: 90% next tier")
 	local rand = rng(99)
 	local n, keys, up, same, mods = 20000, 0, 0, 0, 0
 	for _ = 1, n do
@@ -251,8 +251,8 @@ do
 			end
 		end
 	end
-	ok(math.abs(keys / n - 0.50) < 0.015, "2 modifiers: ~50% key drop: " .. keys / n)
-	ok(math.abs(up / keys - 0.70) < 0.02, "~70% of them next tier: " .. up / keys)
+	ok(math.abs(keys / n - 0.65) < 0.015, "2 modifiers: ~65% key drop: " .. keys / n)
+	ok(math.abs(up / keys - 0.80) < 0.02, "~80% of them next tier: " .. up / keys)
 	ok(mods / up > 1.9, "next-tier keys roll more modifiers: " .. mods / up)
 	for _ = 1, 500 do
 		local k = R.rollKeyDrop(cfg, cfg.maxTier, 3, rand)
@@ -262,8 +262,8 @@ do
 	eq(R.monsterKeyChance(cfg, 200, 99, "normal"), 0, "killer below level 100")
 	eq(R.monsterKeyChance(cfg, 50, 120, "normal"), 0, "monster below level 60")
 	eq(R.monsterKeyChance(cfg, 300, 1000, "normal"), 0, "monster far below the killer (level x 0.4)")
-	eq(R.monsterKeyChance(cfg, 400, 1000, "normal"), 50, "level-appropriate kill")
-	eq(R.monsterKeyChance(cfg, 400, 1000, "legendary"), 1000, "legendary x20")
+	eq(R.monsterKeyChance(cfg, 400, 1000, "normal"), 250, "level-appropriate kill")
+	eq(R.monsterKeyChance(cfg, 400, 1000, "legendary"), 5000, "legendary x20")
 	eq(R.monsterKeyChance(cfg, nil, 1000, "normal"), 0, "monster not in the pool")
 end
 

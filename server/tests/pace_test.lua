@@ -41,7 +41,7 @@ end
 -- ------------------------------------------------------------------ config
 ok(cfg.enabled == true, "on by default")
 eq(cfg.baseLevelMult, 2, "hunting level = 2 x the pool estimate")
-for _, set in ipairs({"base", "scaled"}) do
+for _, set in ipairs({"base", "scaled", "generated"}) do
 	for _, k in ipairs({"health", "xp", "loot", "goal"}) do
 		local pts = cfg[set][k]
 		ok(type(pts) == "table" and #pts >= 2, set .. "." .. k .. " has points")
@@ -75,7 +75,7 @@ for _, L in ipairs({35, 60, 100, 175, 250, 450, 800, 1000, 1500}) do
 end
 for _, L in ipairs({650, 800, 1000, 1300, 1600, 2000}) do
 	local f = P.factors(cfg, L, true)
-	ok(f.xp / f.health >= 0.35 and f.xp / f.health <= 0.5, "scaled xp per health at " .. L)
+	ok(f.xp / f.health >= 1.0 and f.xp / f.health <= 2.8, "scaled xp per health at " .. L)
 	ok(f.loot >= f.xp, "scaled loot >= xp at " .. L)
 end
 -- multikill steps
@@ -119,12 +119,12 @@ near(f.health, 0.21, 1e-9, "flat health past 250")
 near(f.xp, 0.17, 1e-9, "flat xp past 1000")
 near(f.damage, 0.40, 1e-9, "flat damage past 1000")
 f = P.factors(cfg, 1000, true)
-near(f.health, 0.066, 1e-9, "scaled 1000 health")
-near(f.xp, 0.030, 1e-9, "scaled 1000 xp")
+near(f.health, 0.40, 1e-9, "scaled 1000 health")
+near(f.xp, 0.52, 1e-9, "scaled 1000 xp")
 near(f.goal, 28, 1e-9, "scaled 1000 goal")
 near(f.damage, 0.40, 1e-9, "scaled monsters share the damage curve")
-f = P.factors(cfg, 400, true)
-near(f.health, 0.095, 1e-9, "scaled flat below 650")
+f = P.factors(cfg, 50, true)
+near(f.health, 0.10, 1e-9, "scaled flat below 100")
 -- switch
 local off = {enabled = false, base = cfg.base, scaled = cfg.scaled, damage = cfg.damage}
 f = P.factors(off, 300, false)
@@ -149,6 +149,8 @@ local L, s = P.levelOf(cfg, {native = 980, pool = 980})
 ok(L == 980 and s == true, "level-scaled monster: its own level, scaled curve")
 L, s = P.levelOf(cfg, {point = 1100, native = 0, pool = 60})
 ok(L == 1100 and s == true, "generated point: the point's level, scaled curve")
+local _, _, gen = P.levelOf(cfg, {point = 1100})
+ok(gen == true, "a point is generated")
 L, s = P.levelOf(cfg, {point = 1100, native = 830})
 eq(L, 1100, "the point wins over the native level")
 L, s = P.levelOf(cfg, {native = 0, pool = 125})
@@ -502,13 +504,13 @@ do
 	local sc = monster({max = 100000, native = 1000})
 	onSpawn(sc, {}, false, false)
 	think(sc)
-	eq(sc._max, 6600, "scaled 1000: x0.066")
+	eq(sc._max, 40000, "scaled 1000: x0.40")
 	-- a generated area point
 	local g = monster({max = 50000})
 	ChaosAreaGen.pointOf[g._id] = {level = 1300}
 	PC.mark(g)
 	think(g)
-	eq(g._max, P.scaleHealth(50000, 0.062), "generated point: scaled curve at the point level")
+	eq(g._max, P.scaleHealth(50000, 0.062), "generated point: generated curve at the point level")
 	local gb = monster({max = 50000})
 	ChaosAreaGen.pointOf[gb._id] = {level = 1300, boss = true}
 	PC.mark(gb)

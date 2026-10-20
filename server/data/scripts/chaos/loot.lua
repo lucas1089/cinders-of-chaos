@@ -1021,8 +1021,9 @@ local function processKill(monster, corpse)
 
 	-- 0b. pack combat (pace.lua): the stock loot thinned by the loot factor. A stack keeps count x factor rounded at
 	-- random (gold included); any other item stays with chance = factor. The expected value per hour stays.
-	if pace < 1 then
-		L.thinCorpse(corpse, pace)
+	local goldMult = ChaosPace and ChaosPace.goldMultOf and ChaosPace.goldMultOf(monster) or 1
+	if pace < 1 or goldMult < 1 then
+		L.thinCorpse(corpse, pace, goldMult)
 	end
 
 	-- 1. extra rolls
@@ -1194,9 +1195,10 @@ L.processKill = processKill
 
 -- pack combat (pace.lua): thin the top-level items of a corpse by factor f (pace_core.lua P.thinPlan); returns the
 -- number of items removed or reduced
-function L.thinCorpse(corpse, f)
+function L.thinCorpse(corpse, f, g)
 	local P = ChaosPaceCore
-	if not P or not corpse or f >= 1 then
+	g = tonumber(g) or 1
+	if not P or not corpse or (f >= 1 and g >= 1) then
 		return 0
 	end
 	local items, list = {}, {}
@@ -1207,7 +1209,23 @@ function L.thinCorpse(corpse, f)
 			items[#items + 1] = {count = item:getCount(), stackable = L.isStackableId(item:getId())}
 		end
 	end
-	local plan = P.thinPlan(items, f, function() return rnd(0, 999999) / 1000000 end)
+	local function rand() return rnd(0, 999999) / 1000000 end
+	local plan = P.thinPlan(items, f, rand)
+	if g < 1 then
+		-- the gold factor (pace_config.lua `gold`): a second thinning of the coins and of the NPC-sellable items that
+		-- are not gear; orbs, gems, keys and gear are not touched by it
+		local junk, at = {}, {}
+		for i, item in ipairs(list) do
+			if L.isGoldLike(item:getId()) then
+				junk[#junk + 1] = {count = plan[i], stackable = items[i].stackable}
+				at[#at + 1] = i
+			end
+		end
+		local second = P.thinPlan(junk, g, rand)
+		for k, i in ipairs(at) do
+			plan[i] = second[k]
+		end
+	end
 	local changed = 0
 	for i, item in ipairs(list) do
 		local keep = plan[i]
@@ -1220,6 +1238,19 @@ function L.thinCorpse(corpse, f)
 		end
 	end
 	return changed
+end
+
+-- coins, and what an NPC buys that is neither gear nor a currency (orb, gem, token, key: ChaosItemPrices.unsellable)
+local COIN_IDS = {[2148] = true, [2152] = true, [2160] = true}
+function L.isGoldLike(id)
+	if COIN_IDS[id] then
+		return true
+	end
+	local IP = ChaosItemPrices
+	if not IP or L.isGearId(id) or IP.unsellable(id) then
+		return false
+	end
+	return (IP.basePrice(id) or 0) > 0
 end
 
 -- pack combat: an empty corpse decays after ChaosPaceConfig.emptyCorpseSeconds (more kills leave more corpses). A corpse

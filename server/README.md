@@ -13279,6 +13279,19 @@ Owner request (pt-BR, paraphrased): players must feel strong and kill several mo
 some danger left; more monsters, experience compensated; dungeons at most 10-15 minutes. Design and model:
 `scratchpad/rebal/DESIGN.md` of the session (not in the repo); this section is what was built.
 
+**Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
+  1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800
+  monsters. New points follow the base monsters (`luajit tools/pace_scan.lua` prints the median experience and health by
+  hunting level: now rising with the level in every band). Generated area / dungeon points keep their old points as the new
+  `generated` set (the queue dungeons' 10-minute model is calibrated on them; their experience is the generator's own
+  and was not re-measured). (2) New `gold` factor (`pace_config.lua`, base and scaled,
+  0.30 from hunting level 450): a second thinning of coins and NPC-sellable items that are not gear (`L.isGoldLike`,
+  `L.thinCorpse(corpse, f, g)`); orbs, gems, keys and gear keep only `loot`. Reason: gold per hour at level 500-600 was
+  about 16M against the income model's 5.5-6.3M. Check it with the hunt tracker in the beta. (3) Rifts: time limit
+  1000 / 1100 / 1260 s per band, pack health model exponents `dps5Exp` 1.35 / `dps1Exp` 1.1 (tier 1 packs have half the
+  health), completed-rift key chance 45% + 10% per modifier (cap 75%), rare / legendary in a rift 4% / 10%, tier 1 key
+  from a normal kill 250 per 100000.
+
 **One runtime layer.** Base monsters are about 95% of the spawns and their XML is not ours, so nothing is edited per
 monster: `pace.lua` scales health, experience, loot and damage by the monster's hunting level at runtime, for base and
 Chaos monsters alike. `pace_config.lua` `enabled = false` switches every part off (health, experience, loot, damage,

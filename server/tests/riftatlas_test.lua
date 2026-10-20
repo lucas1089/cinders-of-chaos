@@ -199,7 +199,7 @@ do
 		ok(s < typical, "swift tier " .. tier .. ": under the typical clear time")
 		ok(R.clearSeconds(rcfg, tier, 1, 1.5) < s, "swift tier " .. tier .. ": a player with 1.5x the damage makes it")
 		ok(s < 0.6 * R.timeLimit(rcfg, tier), "swift tier " .. tier .. ": well inside the run's limit")
-		ok(s >= 0.3 * R.timeLimit(rcfg, tier), "swift tier " .. tier .. ": not a sprint")
+		ok(s >= 0.25 * R.timeLimit(rcfg, tier), "swift tier " .. tier .. ": not a sprint")
 		-- a party of five (the party model: 4.98 typical players) gets about the same time
 		ok(math.abs(R.clearSeconds(rcfg, tier, 5, 4.98 * cfg.swiftDps) - strong) < 20, "swift tier " .. tier .. ": party")
 	end
