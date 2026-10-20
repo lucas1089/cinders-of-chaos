@@ -113,7 +113,7 @@ local function poison(attacker, target, hit, bonus)
 	local c = Condition(CONDITION_POISON)
 	c:setParameter(CONDITION_PARAM_OWNER, attacker:getId())
 	c:setParameter(CONDITION_PARAM_DELAYED, true)
-	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit, bonus))
+	c:addDamage(p.ticks, p.tickMs, -C.poisonTick(hit, bonus, attacker:getVocation():getId()))
 	target:addCondition(c)
 end
 

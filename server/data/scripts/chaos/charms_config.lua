@@ -81,14 +81,14 @@ C.shapeWeights = {{"small", 50}, {"tall", 20}, {"wide", 20}, {"grand", 10}}
 -- totals under the gear cap as well. range: the roll of a 1x1 charm at full scale (rarity Radiant, item level max);
 -- a charm rolls lo..hi x its shape's mult x the rarity scale x the item level scale, rounded, at least 1.
 -- cap: the most every placed charm gives together. gearRef: the best roll of one gear slot (T8 high) of the matching
--- gear modifier; the best charm roll must stay below it. weight: roll weight.
+-- gear modifier (raised on 2026-10-18, owner item 78); the best charm roll must stay below it. weight: roll weight.
 local function family(key, name)
 	return {key = "dmg_" .. key, family = key, label = "Damage to " .. name, fmt = "pct", range = {1, 3}, cap = 15,
-		gearRef = 16, weight = 4, group = "family"}
+		gearRef = 22, weight = 4, group = "family"}
 end
 local function element(key, name, combat)
 	return {key = "res_" .. key, element = combat, label = name .. " Resistance", fmt = "pct", range = {1, 2}, cap = 8,
-		gearRef = 7, weight = 3, group = "element"}
+		gearRef = 14, weight = 3, group = "element"}
 end
 C.pool = {
 	family("dragons", "Dragons"), family("demons", "Demons"), family("undead", "Undead"), family("humans", "Humans"),
@@ -97,8 +97,8 @@ C.pool = {
 	element("fire", "Fire", "COMBAT_FIREDAMAGE"), element("ice", "Ice", "COMBAT_ICEDAMAGE"),
 	element("energy", "Energy", "COMBAT_ENERGYDAMAGE"), element("earth", "Earth", "COMBAT_EARTHDAMAGE"),
 	element("death", "Death", "COMBAT_DEATHDAMAGE"), element("holy", "Holy", "COMBAT_HOLYDAMAGE"),
-	{key = "lifeonkill", gear = true, label = "Life on Kill", fmt = "flat", range = {4, 10}, cap = 60, gearRef = 150, weight = 8},
-	{key = "goldfind", gear = true, label = "Gold Find", fmt = "pct", range = {1, 2}, cap = 10, gearRef = 20, weight = 8},
+	{key = "lifeonkill", gear = true, label = "Life on Kill", fmt = "flat", range = {4, 10}, cap = 60, gearRef = 260, weight = 8},
+	{key = "goldfind", gear = true, label = "Gold Find", fmt = "pct", range = {1, 2}, cap = 10, gearRef = 34, weight = 8},
 	{key = "orbfind", label = "Orb Find", fmt = "pct", range = {1, 3}, cap = 20, gearRef = 12, weight = 6},
 	{key = "oocspeed", label = "Movement Speed out of Combat", fmt = "pct", range = {1, 2}, cap = 8, gearRef = 11, weight = 6},
 	{key = "reputation", label = "Reputation", fmt = "pct", range = {1, 3}, cap = 15, weight = 5},
@@ -106,8 +106,8 @@ C.pool = {
 }
 -- keys a unique charm or its signature adds that are no roll of the pool (gear catalogue keys, under the gear caps)
 C.extraKeys = {
-	goblinchance = {gear = true, label = "Treasure Goblin Chance", fmt = "pct", cap = 15, gearRef = 60},
-	manaonkill = {gear = true, label = "Mana on Kill", fmt = "flat", cap = 30, gearRef = 100}
+	goblinchance = {gear = true, label = "Treasure Goblin Chance", fmt = "pct", cap = 15, gearRef = 90},
+	manaonkill = {gear = true, label = "Mana on Kill", fmt = "flat", cap = 30, gearRef = 170}
 }
 
 -- ------------------------------------------------------------------ uniques

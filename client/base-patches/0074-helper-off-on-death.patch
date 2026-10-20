@@ -1,0 +1,28 @@
+# Chaos: dying turns Auto Target and Magic Shooter off (after 0001-0073). The helper kept both on through the death screen and the
+# respawn, so the character started hunting by itself in the temple. onHelperDeath calls _Helper.disableCombatOnDeath, which
+# uses the existing pzDisableSystem (checkbox, config flag, locked target, shortcut buttons), without the Protection Zone text.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1026,6 +1026,9 @@
+ -- Chaos 0067: a death writes the pending change at once (the client may be closed on the death screen)
+ function onHelperDeath()
+   if _Helper.flushSettings then _Helper.flushSettings() end
++  -- Chaos: dying switches Auto Target and Magic Shooter off, so the character does not start hunting by itself
++  -- after the respawn (pzDisableSystem below; the Combat row of the bot HUD and the shortcut buttons follow)
++  if _Helper.disableCombatOnDeath then _Helper.disableCombatOnDeath() end
+ end
+ 
+ function onHelperVocationChange(changedPlayer)
+@@ -2370,6 +2373,12 @@
+   end
+ end
+ 
++-- Chaos: called from onHelperDeath
++_Helper.disableCombatOnDeath = function()
++  pzDisableSystem("autoTarget", false)
++  pzDisableSystem("magicShooter", false)
++end
++
+ -- Internal helper: suspend a system temporarily (used when disableInProtectZone == false)
+ -- For Case A2: We do NOT modify enabled flag, just cancel current attack silently
+ local function pzSuspendSystem(systemName)

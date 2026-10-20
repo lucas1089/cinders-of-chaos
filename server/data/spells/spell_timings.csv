@@ -1,3 +1,10 @@
-script,name,cooldown,groupcooldown,secondarygroup,secondarygroupcooldown,reason
-attack/expose_weakness.lua,Sunder Guard,,2000,,,"locked the attack group for 12 s (the owner saw it on the Mystic): 2 s like every attack spell"
-attack/brutal_strike.lua,Bonebreaker,2000,,,,"the Warrior line's only attack spell at levels 16-27 (6 s, a 6 s gap; 4 s at 28-29): 2 s like the other fillers. Damage unchanged (no Chaos script): at levels 16-29 a Warrior's spell damage goes from ~4 to ~11 per second, still below a Mystic's; from level 30 its presets keep their damage"
+script,name,cooldown,groupcooldown,secondarygroup,secondarygroupcooldown,level,mana,reason
+attack/expose_weakness.lua,Sunder Guard,,2000,,,,,locked the attack group for 12 s (the owner saw it on the Mystic): 2 s like every attack spell
+attack/brutal_strike.lua,Bonebreaker,2000,,,,8,10,"the Warrior line's only attack spell at levels 16-27 (6 s, a 6 s gap; 4 s at 28-29): 2 s like the other fillers. Damage unchanged (no Chaos script): at levels 16-29 a Warrior's spell damage goes from ~4 to ~11 per second, still below a Mystic's; from level 30 its presets keep their damage. Level 16 -> 8 and 30 -> 10 mana (2026-10-17, owner debug items 44 and 45): the Warrior line had no attack spell at the start level 8, and 30 mana was 3 casts of the 70 a level 8 Warrior has"
+attack/ethereal_spear.lua,Phantom Javelin,,,,,8,20,"the Ranger line had no attack spell before level 23 (owner debug item 44, 2026-10-17: every class has a spell at the start level 8); 25 -> 20 mana: a level 8 Ranger (165 mana, 1.25 per second) runs the spell 18.9 s instead of 14.7 s"
+attack/groundshaker.lua,Earthrend,,,,,,60,"mana runway (owner debug item 45, 2026-10-17): 160 -> 60; server/data/spells/README.md ""Mana runway"""
+attack/berserk.lua,Reaver's Spin,,,,,,40,"mana runway (owner debug item 45, 2026-10-17): 115 -> 40; server/data/spells/README.md ""Mana runway"""
+attack/front_sweep.lua,Scything Arc,,,,,,55,"mana runway (owner debug item 45, 2026-10-17): 200 -> 55; server/data/spells/README.md ""Mana runway"""
+attack/fierce_berserk.lua,Butcher's Gyre,,,,,,100,"mana runway (owner debug item 45, 2026-10-17): 340 -> 100; server/data/spells/README.md ""Mana runway"""
+attack/executioners_throw.lua,Headsman's Hurl,,,,,,100,"mana runway (owner debug item 45, 2026-10-17): 225 -> 100; server/data/spells/README.md ""Mana runway"""
+attack/terra_wave.lua,Bramble Fan,,,,,,180,"mana runway (owner debug item 45, 2026-10-17): 210 -> 180; server/data/spells/README.md ""Mana runway"""

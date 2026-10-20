@@ -221,9 +221,9 @@ G.insert(sword, G.gemId(1, 4)) -- Flawless Ruby: Fire Damage +9% in a weapon
 local tip = T.build(sword, {attrs = {[1] = 4, [2] = 37, [5] = 2, [6] = 1873000000123, [7] = 3054}})
 eq(tip.key, "1873000000123:3054", "cache key from the client attributes")
 eq(tip.name, "magic sword") eq(tip.id, 3400, "client id") eq(tip.kind, "weapon") eq(tip.slot, "Weapon")
-eq(tip.rarity, 4) eq(tip.rarityName, "Epic") eq(tip.level, 37) eq(tip.maxTier, 3, "item level 37: up to T3")
+eq(tip.rarity, 4) eq(tip.rarityName, "Rare") eq(tip.level, 37) eq(tip.maxTier, 3, "item level 37: up to T3")
 eq(tip.tier, nil, "no rarity tier any more")
-eq(tip.sides.p, 3) eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Epic: two of each (an old item may carry more)")
+eq(tip.sides.p, 3) eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
 eq(tip.cmp[1], 6) eq(tip.cmp[2], 5)
 eq(tip.base[1].k, "attack") eq(tip.base[1].v, 50, "attack from the item, not the type")
 eq(tip.base[2].k, "defense") eq(tip.base[2].v, 35)
@@ -240,7 +240,7 @@ eq(tip.mods[1].sd, "p", "prefixes first") eq(tip.mods[#tip.mods].sd, "s", "suffi
 eq(byKey.rarity_criticalHitChance.t, "Critical Chance +2%, Critical Hit +1%")
 eq(byKey.rarity_criticalHitChance.v2, 1)
 local lok = byKey.chaos_mod_lifeonkill
-local r = M.range(M.byKey.lifeonkill, 3)
+local r = M.legacy.lifeonkill[3] -- no stored tier: the range it was rolled in (before the ranges were raised)
 eq(lok.t, "Life on Kill +15") eq(lok.g, "chaos") eq(lok.lo, r[1]) eq(lok.hi, r[2]) eq(lok.tr, 3) eq(lok.sd, "s")
 eq(tip.sockets.count, 2) eq(tip.sockets.max, 2)
 eq(tip.sockets.list[1].name, "Flawless Ruby") eq(tip.sockets.list[1].text, "Fire Damage +9%")
@@ -267,7 +267,7 @@ sword:setCustomAttribute(M.RUINED, 1)
 tip = T.build(sword)
 eq(tip.quality.q, 7, "item quality") eq(tip.quality.cap, 20)
 eq(tip.ruined, true, "ruined")
-eq(tip.sides.mp, 3, "Legendary: two prefixes, one more from the extra slot") eq(tip.sides.ms, 2)
+eq(tip.sides.mp, 4, "Legendary: three prefixes, one more from the extra slot") eq(tip.sides.ms, 3)
 local rows = {}
 for _, m in ipairs(tip.mods) do rows[m.k] = m end
 eq(rows.chaos_mod_lifeonkill.bd, true, "a bound modifier") eq(rows.rarity_swordSkill.bd, nil)
@@ -365,6 +365,31 @@ eq(y.v, 1.0, "Shadowfist with dexterity: the floor") eq(y.l, "Your Attack Interv
 y = yours(T.build(fast, {wielder = {voc = 2000, dex = 20}}))
 eq(y.v, 1.5, "weapon + dexterity: at most -25%") eq(y.l, "Your Attack Interval (capped)")
 eq(yours(T.build(armor, {wielder = {voc = 2000, dex = 0}})), nil, "only weapons")
+
+-- the estimated DPS of a weapon (weapon_dps_core.lua): from the wielder's level and best skill
+dofile("data/scripts/chaos/weapon_balance_core.lua")
+dofile("data/scripts/chaos/weapon_dps_core.lua")
+local function dpsOf(t)
+	for _, s in ipairs(t.base) do
+		if s.k == "dps" then
+			return s
+		end
+	end
+end
+local sword = newItem(2400) -- one-handed, attack 48, default 2 s interval
+local row = dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70, distance = 10}}))
+eq(row ~= nil, true, "a sword has the line") eq(row.l, "Estimated DPS") eq(row.fmt, "est")
+eq(row.v, ChaosWeaponDps.round(ChaosWeaponDps.maxHit(100, 70, 48) / 2 / 2), "level 100, melee 70, attack 48, 2 s")
+local row2 = dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 90, distance = 10}}))
+eq(row2.v > row.v, true, "more skill, more DPS")
+eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0}})), nil, "no level: no estimate")
+eq(dpsOf(T.build(sword, {})), nil, "no viewer: no estimate")
+eq(dpsOf(T.build(armor, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}})), nil, "armour has none")
+local twoH = dpsOf(T.build(newItem(2431), {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}}))
+eq(twoH ~= nil, true, "a two-handed axe has one")
+ChaosDisplayScale = {factor = function() return 10 end}
+eq(dpsOf(T.build(sword, {wielder = {voc = 2000, dex = 0, level = 100, melee = 70}})).v, row.v * 10, "x the display scale of the level")
+ChaosDisplayScale = nil
 
 -- a transmog look travels in the tip (also in item link snapshots, itemlink.lua builds them with T.build): the client
 -- draws the tooltip icon with it (game_itemtooltip setAppearanceId) and names it

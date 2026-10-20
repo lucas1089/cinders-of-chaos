@@ -53,7 +53,6 @@
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
-		<item id="12401" chance="7000"/><!-- bamboo stick -->
 		<item id="8888" chance="120"/><!-- armors -->
 		<item id="2500" chance="120"/>
 		<item id="2472" chance="120"/>

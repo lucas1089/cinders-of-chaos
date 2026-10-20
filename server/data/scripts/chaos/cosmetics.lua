@@ -18,11 +18,12 @@
 --   ChaosCosmetics.storeUnlock(unlockName) -> {name, done, owned = fn(player), grant = fn(player)} | nil
 --   ChaosCosmetics.storePreview(player, unlockName) -> true when it showed something (shop.lua "preview")
 --   ChaosCosmetics.offerPreview(unlockName) -> the store offer's preview table for the client, or nil
+--   ChaosCosmetics.offerLook(unlockName) -> the cosmetic's own appearance for the store's icon and preview (K.offerLook)
 --   ChaosCosmetics.grant(accountId, key, source) / revoke(accountId, key) / owns(accountId, key)
 -- ==============================================================
 --
 -- Protocol (JSON {action, data}) on ChaosOpcodes.cosmetics (225):
---   client -> server  open | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | hello (in the game: the full lists again) | close
+--   client -> server  open | state (the state, window not opened) | select {kind, id, line} (id 0 = the default; line for spell skins) | preview {id} | hello (in the game: the full lists again) | close
 --                     wardrobe (answered by wardrobe.lua: the full appearance catalogue with owned flags, action "wardrobe")
 --   server -> client  state {open, line, lineName, rows = [K.rows + item (client id of the icon) + play (spell skins and
 --                     kill effects: [{a = stock effect, b = the skin's}], each {id, dx, dy, ms, m, n}, K.playRows)]}      style {accent}  (the character's own label accent)
@@ -497,6 +498,10 @@ function M.offerPreview(unlockName)
 	return K.offerPreview(K.ofUnlock(cfg, unlockName))
 end
 
+function M.offerLook(unlockName)
+	return K.offerLook(cfg, unlockName, playLookup)
+end
+
 function M.storePreview(player, unlockName)
 	return M.preview(player, K.ofUnlock(cfg, unlockName))
 end
@@ -519,6 +524,10 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if msg.action == "open" then
 			sync(player)
 			M.sendState(player, true)
+		elseif msg.action == "state" then
+			-- the rows and the choices without opening the Cosmetics window (the Customise Character window's dropdowns)
+			sync(player)
+			M.sendState(player, false)
 		elseif msg.action == "hello" then
 			-- the client is in the game: the full lists again (what onLogin sends can reach the client before it is in
 			-- the game and is dropped there, and a reconnect into a character still online runs no login event)

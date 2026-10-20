@@ -32,7 +32,7 @@ R.defaults = {
 -- server gives the cooldown back: the shooter's next spell cut Colossus Fall off every time, and with its cooldown
 -- refunded it took every turn of the attack group again. A heal or a support spell does not interrupt it (server
 -- README "Cooldown channels", base patch 0062).
-R.CAST_MS = { [206] = 1500, [213] = 1500, [219] = 1000, [225] = 1000 }
+R.CAST_MS = { [206] = 1500, [213] = 1500, [219] = 1000, [225] = 1000, [146] = 2000 }
 
 local function groupList(groups)
   local list = {}
@@ -105,6 +105,12 @@ end
 -- cast of one of its groups waits for the answer); nil: free. holdGroups = false skips the group rule (healing: a
 -- refused big heal must not keep the small one back).
 function R.blocked(st, id, groups, now, holdGroups)
+  local why = R.blockedWhy(st, id, groups, now, holdGroups)
+  R.watch(st, id, why, now)
+  return why
+end
+
+function R.blockedWhy(st, id, groups, now, holdGroups)
   R.expire(st, now)
   local b = st.backoff[id]
   if b then
@@ -130,6 +136,36 @@ function R.blocked(st, id, groups, now, holdGroups)
     end
   end
   return nil
+end
+
+-- A spell held for a long time (a rotation that seems to use only its first spell): after R.STUCK_MS in a row, one line
+-- in the client log says why (backoff: the server refused it, pending: no answer yet, group: another cast of its
+-- group waits for an answer), at most one line per spell per R.STUCK_LOG_MS. R.log is replaced in the tests.
+R.STUCK_MS = 5000
+R.STUCK_LOG_MS = 10000
+R.log = function(text)
+  if g_logger and g_logger.info then
+    g_logger.info(text)
+  end
+end
+
+function R.watch(st, id, why, now)
+  st.held = st.held or {}
+  if not why then
+    st.held[id] = nil
+    return
+  end
+  local h = st.held[id]
+  if not h or h.why ~= why then
+    h = { since = now, why = why, logged = nil }
+    st.held[id] = h
+  end
+  if now - h.since >= R.STUCK_MS and (not h.logged or now - h.logged >= R.STUCK_LOG_MS) then
+    h.logged = now
+    local fails = st.fails and st.fails[id] or 0
+    R.log(string.format("[helper] spell %s held %.1f s: %s (refused %d times in a row, round trip %s ms)",
+      tostring(id), (now - h.since) / 1000, why, fails, st.rtt and tostring(st.rtt) or "?"))
+  end
 end
 
 function R.cast(st, id, groups, now)
@@ -252,4 +288,112 @@ function R.countNear(entries, pos, radius)
     end
   end
   return n
+end
+
+-- ------------------------------------------------------------------------------------------------ auto turn
+-- A wave or beam spell hits along the caster's facing. The shooter counted monsters for the best facing but only turned
+-- for the one stock spell flagged aimAtTarget, so every other wave / beam (Great Fire Wave, Energy Beam, Ice Wave, the
+-- Warrior's sweeps, Skewering Line, ...) went out wherever the character happened to look (owner report 2026-10-17:
+-- "turn on auto turn to use wave spells"). Base patch 0080 asks R.turnDirection before the words go out: with a target the
+-- character faces it, without one the facing with most monsters (the shooter's own count). Option "Auto turn" (default on)
+-- in the Targeting & Spell Rules panel, kept in g_settings under R.AUTOTURN_KEY.
+R.AUTOTURN_KEY = "chaosHelperAutoTurn"
+R.DIR = { North = 0, East = 1, South = 2, West = 3 } -- the client's Directions
+
+local function settingsOf(settings)
+  return settings or rawget(_G, "g_settings")
+end
+
+-- the option: on unless the player switched it off
+function R.autoTurnEnabled(settings)
+  local s = settingsOf(settings)
+  if not s then
+    return true
+  end
+  local okHas, has = pcall(s.exists, R.AUTOTURN_KEY)
+  if not (okHas and has) then
+    return true
+  end
+  local ok, v = pcall(s.getBoolean, R.AUTOTURN_KEY)
+  if not ok then
+    return true
+  end
+  return v ~= false
+end
+
+function R.setAutoTurn(on, settings)
+  local s = settingsOf(settings)
+  if s then
+    pcall(s.set, R.AUTOTURN_KEY, on == true)
+    if s.save then
+      pcall(s.save)
+    end
+  end
+end
+
+-- a spell that hits along the caster's facing: flagged directional (the stock wave and beam entries, the generated Chaos
+-- entries of a direction="1" spell) or with one of the gamelib's wave / beam areas (SpellAreas: the *WAVE* and *BEAM*
+-- keys; Lesser Front Sweep has the area but no flag). A spell that needs a target is aimed by that target, not by facing.
+function R.isDirectional(spell, areas)
+  if type(spell) ~= "table" or spell.needTarget then
+    return false
+  end
+  if spell.directional == true then
+    return true
+  end
+  if type(areas) == "table" and type(spell.area) == "table" then
+    for name, area in pairs(areas) do
+      if area == spell.area and type(name) == "string" and (name:find("WAVE", 1, true) or name:find("BEAM", 1, true)) then
+        return true
+      end
+    end
+  end
+  return false
+end
+
+-- the cardinal facing from one position toward another (nil: same tile or another floor). A diagonal keeps the current
+-- facing when it is one of the two sides (a wave covers both), else the vertical one.
+function R.dirToward(from, to, facing)
+  if type(from) ~= "table" or type(to) ~= "table" or from.z ~= to.z then
+    return nil
+  end
+  local dx, dy = to.x - from.x, to.y - from.y
+  if dx == 0 and dy == 0 then
+    return nil
+  end
+  local horizontal = dx > 0 and R.DIR.East or R.DIR.West
+  local vertical = dy > 0 and R.DIR.South or R.DIR.North
+  if dx == 0 then
+    return vertical
+  elseif dy == 0 then
+    return horizontal
+  end
+  if math.abs(dx) > math.abs(dy) then
+    return horizontal
+  elseif math.abs(dy) > math.abs(dx) then
+    return vertical
+  end
+  if facing == horizontal or facing == vertical then
+    return facing
+  end
+  return vertical
+end
+
+-- The facing to turn to before casting `spell`, or nil (leave it): the option is off, the spell is not directional, the
+-- character already faces that way.
+--   ctx.enabled  the option (R.autoTurnEnabled())     ctx.facing  the character's direction (0..3, diagonals 4..7)
+--   ctx.from     the character's position             ctx.target  the attacked creature's position (nil: none)
+--   ctx.best     the facing with most monsters (the shooter's count), used without a target
+function R.turnDirection(spell, areas, ctx)
+  if not ctx or ctx.enabled == false or not R.isDirectional(spell, areas) then
+    return nil
+  end
+  local want = ctx.target and R.dirToward(ctx.from, ctx.target, ctx.facing) or nil
+  if want == nil then
+    want = ctx.best
+  end
+  if want == nil or want == ctx.facing then
+    return nil
+  end
+  return want
 end

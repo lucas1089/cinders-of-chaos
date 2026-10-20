@@ -35,15 +35,7 @@ local XML_PATH = "data/talkactions/talkactions.xml"
 local xmlMap -- words -> script file, read once
 local loaded = {} -- id -> onSay (false: not available)
 
-local function readFile(path)
-	local f = io.open(path, "r")
-	if not f then
-		return nil
-	end
-	local text = f:read("*a")
-	f:close()
-	return text
-end
+local readFile = K.readFile
 
 local function xml()
 	if not xmlMap then
@@ -52,59 +44,9 @@ local function xml()
 	return xmlMap
 end
 
--- loads a chunk into its own environment (LuaJIT / 5.1: setfenv; 5.2+: load with env)
-local function loadInto(path, env)
-	local text = readFile(path)
-	if not text then
-		return nil
-	end
-	local chunk
-	if setfenv then
-		chunk = loadstring(text, "@" .. path)
-		if chunk then
-			setfenv(chunk, env)
-		end
-	else
-		chunk = load(text, "@" .. path, "t", env)
-	end
-	if not chunk then
-		return nil
-	end
-	local ok = pcall(chunk)
-	return ok
-end
-
-local function xmlHandler(words)
-	local script = xml()[words]
-	if not script then
-		return nil
-	end
-	local env = setmetatable({}, {__index = _G})
-	if not loadInto("data/talkactions/scripts/" .. script, env) then
-		return nil
-	end
-	return type(rawget(env, "onSay")) == "function" and rawget(env, "onSay") or nil
-end
-
-local function revHandler(def)
-	local env, talks = K.stubEnv(_G)
-	if not loadInto(def.file, env) then
-		return nil
-	end
-	local t = talks[def.index or 1]
-	return t and type(rawget(t, "onSay")) == "function" and rawget(t, "onSay") or nil
-end
-
 local function baseHandler(id)
 	if loaded[id] == nil then
-		local def = K.BASE[id]
-		local fn
-		if def and def.kind == "xml" then
-			fn = xmlHandler(def.words)
-		elseif def and def.kind == "rev" then
-			fn = revHandler(def)
-		end
-		loaded[id] = fn or false
+		loaded[id] = K.baseHandler(id, xml()) or false
 	end
 	return loaded[id] or nil
 end

@@ -24,7 +24,7 @@ function onCastSpell(creature, variant, isHotkey)
 		if clone then
 			clone:setOutfit(player:getOutfit())
 			clone:rename(player:getName())
-			clone:setMaster(player)
+			ChaosSpell.bindSummon(player, clone)
 			-- each clone: the sigil (class swap chaos_class_fx.lua: arcane_sigil -> illusion_mirror, the mirror panes)
 			if not ChaosSpell.vfx(spots[i].pos, "arcane_sigil") then
 				ChaosSpell.fx(spots[i].pos, "summon_portal", CONST_ME_MAGIC_BLUE)
@@ -36,6 +36,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if made == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
+	ChaosSpell.buffTimer(player, ChaosSpell.SUBID.mirror_image, DURATION) -- the buff bar's timer
 	-- the caster: runes orbiting it (pack arcane_orbit; server/data/spells/README_FX.md "Mystic line effects")
 	if not (ChaosMysticFx and ChaosMysticFx.send(pos, "arcane_orbit")) then
 		ChaosSpell.vfxOr(pos, "arcane_sigil", "arcane_circle", CONST_ME_MAGIC_BLUE)

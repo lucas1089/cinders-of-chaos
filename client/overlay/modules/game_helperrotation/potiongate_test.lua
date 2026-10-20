@@ -34,5 +34,26 @@ G.used(st, 268, 50000, 0)
 eq(G.onText(st, 'Sorry, not possible.', 60000), false, 'a late failure is not the probe\'s')
 eq(G.allowed(st, 268, 53000, 0), true, 'no backoff from it')
 
+-- runes (owner 2026-10-20: "o helper nao esta usando runas"): the magic shooter and the healing rune ran only with a
+-- count above 0, so a rune in a closed backpack was never used. The call sites (base patch 0082) go through
+-- ChaosPotionGate.canUse / noteUse on the shared session
+local SUDDEN_DEATH = 3155 -- the client look of the Reaper's Rune
+G.session = G.newState()
+eq(type(G.canUse), 'function', 'canUse exists')
+eq(type(G.noteUse), 'function', 'noteUse exists')
+eq(G.canUse(SUDDEN_DEATH, 0, 1000), true, 'a rune the client cannot count gets a probe')
+G.noteUse(SUDDEN_DEATH, 0, 1000)
+eq(G.canUse(SUDDEN_DEATH, 0, 2000), false, 'no second rune probe within 3 s')
+eq(G.canUse(3191, 0, 2000), true, 'another rune has its own probe')
+eq(G.canUse(SUDDEN_DEATH, 5, 2000), true, 'a rune the client counts is used at once')
+G.noteUse(SUDDEN_DEATH, 5, 2000)
+eq(G.canUse(SUDDEN_DEATH, 0, 2100), true, 'seeing it again cleared the wait')
+G.noteUse(SUDDEN_DEATH, 0, 5000)
+eq(G.onText(G.session, 'Sorry, not possible.', 5400), true, 'no rune carried: the answer backs the probe off')
+eq(G.canUse(SUDDEN_DEATH, 0, 9000), false, 'rune backed off')
+eq(G.canUse(SUDDEN_DEATH, 0, 35500), true, 'and tried again after 30 s')
+G.reset()
+eq(G.canUse(SUDDEN_DEATH, 0, 0), true, 'reset forgets the waits')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('potiongate_test: OK')

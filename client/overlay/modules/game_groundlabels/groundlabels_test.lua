@@ -40,7 +40,7 @@ eq(GL.signature({}), '', 'empty signature')
 eq(GL.posKey({ x = 1, y = 2, z = 7 }), '1,2,7', 'key')
 
 -- ---------------------------------------------------------------- decisions
-local filter = L.normalize({ highlight = 4, dim = 2, show = { supplies = false } }) -- Epic+ glows, Common dimmed
+local filter = L.normalize({ highlight = 4, dim = 2, show = { supplies = false } }) -- Rare+ glows, Common dimmed
 local on = GL.defaults()
 local function decide(row, alt, st) return GL.decide(row, st or on, filter, alt) end
 local epic = { id = 1, nm = 'fire sword', r = 4, g = 'equipment', c = 1 }
@@ -53,8 +53,8 @@ local unique = { id = 4, nm = 'soulreaper', u = 1, g = 'equipment', c = 1 }
 local orb = { id = 5, nm = 'chaos orb', o = 1, g = 'currency', c = 3 }
 local power = { id = 6, nm = 'axe', r = 1, pw = 1, g = 'equipment', c = 1 }
 
-eq(decide(epic).highlight, true, 'Epic glows: label, highlighted')
-eq(decide(rare).highlight, false, 'Rare: label (Rare+), not highlighted')
+eq(decide(epic).highlight, true, 'Rare glows: label, highlighted')
+eq(decide(rare).highlight, false, 'Magic: label (Magic+), not highlighted')
 eq(decide(unc), nil, 'Uncommon: no label without Alt')
 eq(decide(common), nil, 'Common is dimmed: no label')
 eq(decide(potion), nil, 'supplies switched off: hidden')
@@ -63,10 +63,10 @@ eq(decide(unique).highlight, true, 'unique always')
 eq(decide(orb).highlight, true, 'orb always')
 eq(decide(power).highlight, true, 'a legendary power always glows')
 local noRare = GL.normalize({ rarePlus = false })
-eq(decide(rare, false, noRare), nil, 'Rare+ off: Rare is only shown when it glows')
-eq(decide(epic, false, noRare).highlight, true, 'Rare+ off: what glows still shows')
+eq(decide(rare, false, noRare), nil, 'Magic+ off: Magic is only shown when it glows')
+eq(decide(epic, false, noRare).highlight, true, 'Magic+ off: what glows still shows')
 local strict = L.normalize({ highlight = 5, dim = 4 })
-eq(GL.decide(rare, on, strict, false), nil, 'the filter hides Rare (dim below Epic): no label even with Rare+')
+eq(GL.decide(rare, on, strict, false), nil, 'the filter hides Magic (dim below Rare): no label even with Magic+')
 -- Alt
 eq(decide(unc, true).dim, false, 'Alt: Uncommon shown')
 eq(decide(common, true).dim, true, 'Alt: hidden item shown faded')
@@ -80,12 +80,12 @@ eq(GL.decide(nil, on, filter, false), nil, 'no row')
 local corpse = { id = 9, k = 1, n = 4, i = { epic, common, potion, { nm = 'gold coin', g = 'currency', c = 30 } }, e = 100 }
 local cd = decide(corpse)
 eq(cd.kind, 'corpse', 'corpse label')
-eq(cd.matches, 1, 'one item glows (the Epic)')
+eq(cd.matches, 1, 'one item glows (the Rare)')
 eq(cd.best, epic, 'best item for the colour')
 eq(GL.corpseText(corpse, cd), 'Corpse: 1 item', 'singular')
 local corpse2 = { id = 9, k = 1, n = 3, i = { epic, rare, unique } }
 local cd2 = decide(corpse2)
-eq(cd2.matches, 3, 'Epic, Rare (Rare+) and the unique')
+eq(cd2.matches, 3, 'Rare, Magic (Magic+) and the unique')
 eq(cd2.best, unique, 'unique colour wins')
 eq(GL.corpseText(corpse2, cd2), 'Corpse: 3 items', 'plural')
 local dull = { id = 9, k = 1, n = 2, i = { common, junk } }
@@ -98,7 +98,7 @@ eq(decide(corpse, false, GL.normalize({ corpses = false })), nil, 'corpse labels
 -- ---------------------------------------------------------------- text, timer, colour
 eq(GL.titleCase('fire sword'), 'Fire Sword', 'title case')
 eq(GL.titleCase("knight's axe"), "Knight's Axe", 'apostrophe')
-eq(GL.itemText(rare), 'Rare Fire Sword', 'rarity prefix')
+eq(GL.itemText(rare), 'Magic Fire Sword', 'rarity prefix')
 eq(GL.itemText(unique), 'Soulreaper', 'unique: its own name')
 eq(GL.itemText(orb), '3x Chaos Orb', 'stack count')
 eq(GL.itemText(junk), 'Bone', 'plain')
@@ -110,13 +110,13 @@ local timed = { id = 1, nm = 'sword', r = 3, g = 'equipment', c = 1, e = 120, at
 eq(GL.secondsLeft(timed, 1018), 102, 'counts down from when it arrived')
 eq(GL.secondsLeft(timed, 5000), 0, 'stops at 0')
 eq(GL.secondsLeft(rare, 5000), nil, 'no decay')
-eq(GL.text(timed, decide(timed), on, 1018), 'Rare Sword  1:42', 'Rare Sword  1:42')
-eq(GL.text(timed, decide(timed), GL.normalize({ timers = false }), 1018), 'Rare Sword', 'timers off')
+eq(GL.text(timed, decide(timed), on, 1018), 'Magic Sword  1:42', 'Magic Sword  1:42')
+eq(GL.text(timed, decide(timed), GL.normalize({ timers = false }), 1018), 'Magic Sword', 'timers off')
 local timedJunk = { id = 3, nm = 'bone', g = 'other', c = 1, e = 50, at = 0 }
 eq(GL.showTimer(timedJunk, decide(timedJunk, true), on), false, 'no timer for junk (Alt)')
 corpse.at = 0
 eq(GL.text(corpse, cd, on, 10), 'Corpse: 1 item  1:30', 'corpse timer')
-eq(GL.color(epic, decide(epic)), L.RARITY[4].color, 'Epic colour')
+eq(GL.color(epic, decide(epic)), L.RARITY[4].color, 'Rare colour')
 eq(GL.color(unique, decide(unique)), L.UNIQUE_COLOR, 'unique colour')
 eq(GL.color(orb, decide(orb)), L.ORB_COLOR, 'orb colour')
 eq(GL.color(junk, decide(junk, true)), GL.TEXT_COLOR, 'plain colour')
@@ -130,7 +130,7 @@ eq(tip:find('and 12 more', 1, true) ~= nil, true, 'tooltip: the rest')
 -- ---------------------------------------------------------------- priority and cap
 eq(GL.priority(unique, decide(unique)) > GL.priority(epic, decide(epic)), true, 'unique first')
 eq(GL.priority(epic, decide(epic)) > GL.priority(rare, decide(rare)), true, 'higher rarity first')
-eq(GL.priority(rare, decide(rare)) > GL.priority(junk, decide(junk, true)), true, 'Rare before junk')
+eq(GL.priority(rare, decide(rare)) > GL.priority(junk, decide(junk, true)), true, 'Magic before junk')
 eq(GL.priority(junk, decide(junk, true)) > GL.priority(common, decide(common, true)), true, 'faded last')
 local many = {}
 for i = 1, 100 do many[i] = { prio = i % 3, dist = i % 7, order = i } end
@@ -209,6 +209,26 @@ eq(st.text, '#ffd040', 'rarity text colour kept') eq(st.border, '#ffd040', 'rari
 eq(GL.style(plain, '#ffd040').background, GL.PLAIN_BACKGROUND, 'labels that do not glow keep theirs')
 eq(GL.setAccent('url(evil)'), nil, 'a bad colour is ignored')
 eq(GL.style(hl, '#4a90ff').background, GL.HIGHLIGHT_BACKGROUND, 'back to the default')
+
+-- a press on a label that moved 4 pixels is a drag of the item, not a click
+eq(GL.isDrag({ x = 10, y = 10 }, { x = 10, y = 10 }), false, 'no move: a click')
+eq(GL.isDrag({ x = 10, y = 10 }, { x = 12, y = 11 }), false, 'a small shake: a click')
+eq(GL.isDrag({ x = 10, y = 10 }, { x = 14, y = 10 }), true, '4 pixels: a drag')
+eq(GL.isDrag({ x = 10, y = 10 }, { x = 7, y = 14 }), true, 'diagonal 5 pixels: a drag')
+eq(GL.isDrag(nil, { x = 1, y = 1 }), false, 'no press position')
+
+-- the scan's cheap tile test: a full look only on a changed thing count or an old look
+eq(GL.numKey(1, 2, 7), 7 * 4294967296 + 2 * 65536 + 1, 'numeric key')
+eq(GL.numKey(32958, 32081, 7) ~= GL.numKey(32958, 32082, 7), true, 'numeric keys differ by y')
+eq(GL.numKey(32958, 32081, 7) ~= GL.numKey(32958, 32081, 6), true, 'numeric keys differ by floor')
+eq(GL.needsLook(nil, 3, 0), true, 'a tile never seen is looked at')
+local seenTile = { cnt = 3, verifyAt = GL.nextLook(1000, 5) }
+eq(GL.needsLook(seenTile, 3, 1500), false, 'same count, look still fresh: skipped')
+eq(GL.needsLook(seenTile, 4, 1500), true, 'a changed thing count: looked at')
+eq(GL.needsLook(seenTile, 3, seenTile.verifyAt), true, 'an old look is repeated')
+eq(GL.nextLook(1000, 0), 1000 + GL.VERIFY_MS, 'verify time')
+eq(GL.nextLook(1000, 9) > GL.nextLook(1000, 0), true, 'verify times are staggered by key')
+eq(GL.nextLook(1000, 9) - 1000 < 2 * GL.VERIFY_MS, true, 'stagger stays inside one verify period')
 
 print(string.format('groundlabels_test: %d checks, %d failed', checks, fails))
 if fails > 0 then os.exit(1) end

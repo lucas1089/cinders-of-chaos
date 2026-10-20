@@ -22,6 +22,10 @@
 -- ChaosRift.onBountyPaid(player, contract) (bounty.lua), ChaosRift.createKey / giveKey.
 -- Client: game_rift, extended opcode ChaosOpcodes.rift (server -> client {"action": "start"|"update"|"end", "data"}).
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -1055,8 +1059,7 @@ function RF.deliver(player, run, auto)
 					end
 					if item then
 						inbox = giveEx(player, item) or inbox
-						local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
-						found[#found + 1] = (rarity > 0 and ("[" .. (names and names[rarity] or rarity) .. "] ") or "") .. itemName(e.itemId)
+						found[#found + 1] = (rarity > 0 and ("[" .. (ChaosRarity.name(rarity) or rarity) .. "] ") or "") .. itemName(e.itemId)
 					end
 				else
 					local maxC = math.max(e.maxCount or 1, e.minCount or 1)

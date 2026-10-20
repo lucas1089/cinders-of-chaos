@@ -296,3 +296,20 @@ function M.cornerRect(panelW, panelH)
   local h = math.floor(clamp(panelH * 0.36, 140, 320))
   return w, h
 end
+
+-- A death sends the client through game end and game start again (the Ok button of the death window logs the character
+-- back in). The overlay closes at game end, so a death note remembers it was open and the next game start reopens it,
+-- for the same character within DEATH_REOPEN_MS. A plain logout or a character switch never reopens it.
+M.DEATH_REOPEN_MS = 120000
+
+-- the note kept at a death: nil when the overlay was closed
+function M.deathNote(wasShown, name, now)
+  if not wasShown or type(name) ~= 'string' or name == '' then return nil end
+  return { name = name, at = tonumber(now) or 0 }
+end
+
+function M.reopenAfterDeath(note, name, now)
+  if type(note) ~= 'table' or note.name ~= name then return false end
+  local dt = (tonumber(now) or 0) - note.at
+  return dt >= 0 and dt <= M.DEATH_REOPEN_MS
+end

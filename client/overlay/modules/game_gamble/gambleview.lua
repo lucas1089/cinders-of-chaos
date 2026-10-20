@@ -7,7 +7,7 @@
 --   near, money                             at the Gambler; gold carried plus the bank
 --   left, hours, at, tz                     seconds to the next stock, its period, its clock time, the time zone text
 --   reroll, rerolls, rerollMax              the price of an early refresh (nil: none left), used, allowed per window
---   odds = {{r, n, p}}                      rarity, name, percent
+--   odds = {{r, n, p}}                      rarity place (1 Common .. 6 Divine), name, percent
 --   npc, last = {r, rn, id, c, n, l, s, i}  the Gambler's name; the last piece bought (the reveal)
 -- The purchase rules here mirror the server's (gamble_core.lua K.checkBuy) for the buttons only; the server decides.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
@@ -17,11 +17,12 @@ local V = GambleView
 
 V.COLORS = { gold = '#e8b84a', text = '#d8ccb4', dim = '#8c8070', good = '#8fd16a', bad = '#e07060', warn = '#e0a050',
   sold = '#6a6058' }
--- the rarity colours of game_itemrarity (frames and names)
+-- the rarity colours of game_itemrarity (frames and names), by rarity id: 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary,
+-- 10 Divine (6 .. 9 and 11 .. 15 only on items saved before the seven rarities: the rarity they became)
 V.RARITY = {
-  [1] = '#c8c8c8', [2] = '#5ccf5c', [3] = '#4a90ff', [4] = '#a35cf0', [5] = '#ffd040', [6] = '#f5b13a', [7] = '#ff5a5a',
-  [8] = '#e02424', [9] = '#ff8a70', [10] = '#c8e8ff', [11] = '#9ad8ff', [12] = '#e4f2ff', [13] = '#b878ff', [14] = '#9a4ce0',
-  [15] = '#e070ff'
+  [1] = '#c8c8c8', [2] = '#5ccf5c', [3] = '#4a90ff', [4] = '#a35cf0', [5] = '#ffd040', [6] = '#ffd040', [7] = '#ffd040',
+  [8] = '#ffd040', [9] = '#ffd040', [10] = '#c8e8ff', [11] = '#c8e8ff', [12] = '#c8e8ff', [13] = '#c8e8ff', [14] = '#c8e8ff',
+  [15] = '#c8e8ff'
 }
 
 local function num(v) return tonumber(v) or 0 end
@@ -157,7 +158,7 @@ function V.oddsText(s)
   return tr('Odds per crate: %s', table.concat(parts, ', '))
 end
 
--- the odds of Legendary (rarity 5) or better
+-- the odds of Legendary (place 5) or better (Divine is place 6)
 function V.legendaryOrBetter(s)
   local t = 0
   for _, o in ipairs(s and s.odds or {}) do

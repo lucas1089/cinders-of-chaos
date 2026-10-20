@@ -46,6 +46,8 @@ eq(L.formatValue(2.2, 'sec'), '2.2s', 'seconds')
 eq(L.formatValue(1.25, nil), '1.25', 'decimals')
 eq(L.formatValue(15, nil, true), '+15', 'signed flat')
 eq(L.formatValue(-4, 'pct', true), '-4%', 'negative')
+eq(L.formatValue(1234, 'est'), '~1,234', 'an estimate is marked with ~')
+eq(L.diffText({ d = -120, fmt = 'est', l = 'Estimated DPS' }), '-~120 Estimated DPS', 'estimate difference')
 local w = L.wrap('Every soul it cuts only feeds the hunger of its blade. (Requires level 120.)', 30)
 eq(#w, 3, 'wrapped in three lines')
 eq(w[1], 'Every soul it cuts only feeds', 'first line')
@@ -56,7 +58,7 @@ eq(L.title('Soulreaper'), 'Soulreaper', 'already capital')
 
 -- ---------------------------------------------------------------- lines
 local sword = {
-  key = '1:2', id = 3400, name = 'magic sword', kind = 'weapon', slot = 'Weapon', rarity = 4, rarityName = 'Epic',
+  key = '1:2', id = 3400, name = 'magic sword', kind = 'weapon', slot = 'Weapon', rarity = 4, rarityName = 'Rare',
   level = 37, maxTier = 3, sides = { p = 1, s = 2, max = 2 },
   base = { { k = 'attack', l = 'Attack', v = 50 }, { k = 'defense', l = 'Defense', v = 35 } },
   mods = {
@@ -77,7 +79,7 @@ local lines = L.lines(sword, { level = 60 })
 local texts = {}
 for i, l in ipairs(lines) do texts[i] = l.text end
 local all = table.concat(texts, '|')
-eq(lines[1].text, 'Epic Weapon', 'rarity and slot')
+eq(lines[1].text, 'Rare Weapon', 'rarity and slot')
 eq(lines[1].color, L.rarityColor(4), 'in the rarity colour')
 eq(lines[2].text, 'Item Level 37  (up to T3)', 'item level and the best tier it allows')
 eq(lines[3].text, 'Attack: 50', 'base stat')

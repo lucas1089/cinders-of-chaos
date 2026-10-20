@@ -356,4 +356,38 @@ eq(C.durationText(90061), "1d 1h", "duration days")
 eq(C.durationText(3720), "1h 2m", "duration hours")
 eq(C.durationText(-5), "0m", "duration negative")
 
+-- ---------------------------------------------------------------- teleport hub
+-- the level a portal announces ("Teleport to X (level N+)") is enforced when stepping in (2026-10-20: it was not)
+local hubDest = cfg.hall.hub[1]
+ok(hubDest.level and hubDest.level > 0, "every hub destination has a level")
+eq(C.hubGate(hubDest, hubDest.level), nil, "the announced level may enter")
+eq(C.hubGate(hubDest, hubDest.level + 100), nil, "a higher level may enter")
+local why = C.hubGate(hubDest, hubDest.level - 1)
+ok(why and why:find(tostring(hubDest.level), 1, true), "one level short is refused and the text names the level")
+ok(C.hubGate(hubDest, 1), "level 1 is refused")
+eq(C.hubGate({name = "Anywhere", pos = hubDest.pos}, 1), nil, "a destination without a level is open")
+eq(C.hubGate(nil, 500), "nowhere", "no destination")
+for i, d in ipairs(cfg.hall.hub) do
+	ok(C.hubGate(d, d.level - 1), "destination " .. i .. " is gated by its own level")
+end
+-- landing: the nearest free tile within 3, scanning outwards; nil when there is none
+local free = {}
+local function isFree(x, y, z)
+	return free[x .. "," .. y .. "," .. z] == true
+end
+eq(C.landingSpot({x = 10, y = 10, z = 7}, isFree), nil, "no free tile, no landing")
+free["12,13,7"] = true
+local lp = C.landingSpot({x = 10, y = 10, z = 7}, isFree)
+ok(lp and lp.x == 12 and lp.y == 13 and lp.z == 7, "finds a free tile 3 away")
+free["10,10,7"] = true
+lp = C.landingSpot({x = 10, y = 10, z = 7}, isFree)
+ok(lp and lp.x == 10 and lp.y == 10, "the exact tile first")
+free = {["14,10,7"] = true}
+eq(C.landingSpot({x = 10, y = 10, z = 7}, isFree), nil, "4 tiles away is out of reach")
+-- the hub check: which destinations would answer "leads nowhere"
+local bad = C.hubDeadEnds(cfg.hall.hub, function(x, y, z) return x == cfg.hall.hub[2].pos.x and y == cfg.hall.hub[2].pos.y end)
+eq(#bad, 3, "three of four have no landing")
+eq(bad[1], 1, "the first is a dead end")
+eq(#C.hubDeadEnds(cfg.hall.hub, function() return true end), 0, "all land when everything is free")
+
 print(string.format("guild tests OK (%d checks)", checks))

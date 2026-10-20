@@ -5,7 +5,7 @@
 -- allocated keystone:
 --   knight       ksCleavingArc  two-handed melee hits also hit up to 3 other enemies next to the knight for 40%
 --                ksBulwark      with a shield: 15% to block a melee/ranged attack fully, 30% of melee damage reflected
---   paladin      ksRicochet     bow/crossbow hits: 30% to bounce to the nearest other enemy (4 sqm) for 65%, then once
+--   paladin      ksRicochet     bow/crossbow hits: 100% to bounce to the nearest other enemy (4 sqm) for 65%, then once
 --                               more for 65% of that; never the same target twice
 --                ksDeadeye      crossbow: 15% for a Deadeye shot, double damage
 --   sorcerer     ksArcaneEcho   a spell that hits 2+ enemies: 35% to echo 0.6 s later on the same spots for 50%, 3 s cooldown
@@ -48,7 +48,7 @@ K.depth = K.depth or 0
 local cfg = {
 	cleave = {percent = 0.40, maxTargets = 3},
 	bulwark = {blockChance = 15, reflectPercent = 0.30},
-	ricochet = {chance = 30, percent = 0.65, falloff = 0.65, bounces = 2, range = 4, delay = 120},
+	ricochet = {chance = 100, percent = 0.65, falloff = 0.65, bounces = 2, range = 4, delay = 120},
 	deadeye = {chance = 15, multiplier = 2.0},
 	echo = {chance = 35, percent = 0.50, delay = 600, cooldown = 3000, minTargets = 2},
 	overload = {bonus = 0.20, window = 8000, castWindow = 150},

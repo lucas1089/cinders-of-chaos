@@ -24,24 +24,34 @@ import os, re, sys
 
 NEW_ITEMS = [
     (24691, 'an', 'Orb of Gilding', 'Orbs of Gilding',
-     'Use it with a normal item: it becomes Rare, Epic or Legendary with random modifiers. On a Rift Key without modifiers: 2-3 modifiers.'),
+     'Turns a normal item into Magic, Rare or Legendary. On a Rift Key: 2-3 modifiers.'),
     (24697, 'an', 'Orb of Unmaking', 'Orbs of Unmaking',
-     'Use it with an item with a rarity or a Rift Key: one random modifier is removed.'),
+     'Removes one random modifier from an item with a rarity or a Rift Key.'),
     (24688, 'an', 'Orb of Erasure', 'Orbs of Erasure',
-     'Use it with an item with a rarity: the rarity and every modifier are removed. On a Rift Key: every modifier is removed.'),
+     'Strips the rarity and every modifier from an item. On a Rift Key: every modifier.'),
 ]
 EXTEND = {
-    29851: 'Crafting: use it with a normal item to make it Common or Uncommon, or with a Rift Key without modifiers to give it one.',
-    29855: 'Crafting: use it with an item with a rarity or a Rift Key to add one random modifier.',
+    29851: 'Turns a normal item into Common or Uncommon. On a Rift Key: one modifier.',
+    29855: 'Adds one random modifier to an item with a rarity or a Rift Key.',
 }
 # texts of older versions of this script, replaced by the ones above
 OLD_TEXTS = [
+    ('Turns a normal item into Rare, Epic or Legendary. On a Rift Key: 2-3 modifiers.', NEW_ITEMS[0][4]),  # before the seven rarities (2026-10-18)
     ('Use it with a normal item: it becomes Rare, Epic or Legendary with random modifiers. Or use it at the crafting bench (!craft).',
      NEW_ITEMS[0][4]),
     ('Use it with an item with a rarity: one random modifier is removed. Or use it at the crafting bench (!craft).',
      NEW_ITEMS[1][4]),
     ('Use it with an item with a rarity: the rarity and every modifier are removed. Or use it at the crafting bench (!craft).',
      NEW_ITEMS[2][4]),
+    # the longer texts of the previous version
+    ('Use it with a normal item: it becomes Rare, Epic or Legendary with random modifiers. On a Rift Key without modifiers: 2-3 modifiers.',
+     NEW_ITEMS[0][4]),
+    ('Use it with an item with a rarity or a Rift Key: one random modifier is removed.', NEW_ITEMS[1][4]),
+    ('Use it with an item with a rarity: the rarity and every modifier are removed. On a Rift Key: every modifier is removed.',
+     NEW_ITEMS[2][4]),
+    ('Crafting: use it with a normal item to make it Common or Uncommon, or with a Rift Key without modifiers to give it one.',
+     EXTEND[29851]),
+    ('Crafting: use it with an item with a rarity or a Rift Key to add one random modifier.', EXTEND[29855]),
     (' Crafting: turns a normal item into a Common or Uncommon one (use it to open the crafting bench).', ''),
     (' Crafting: adds one random modifier to an item with a rarity (use it to open the crafting bench).', ''),
 ]

@@ -16,8 +16,8 @@ L.GONE_TTL = 60 -- seconds an "expired" answer is believed
 L.MAX_STORE = 120 -- snapshots kept
 
 -- the rarity colours of the item tooltip (game_itemtooltip tooltiplogic.lua RARITY_COLORS: the test compares them)
-L.RARITY_COLORS = { '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#f5b13a', '#ff5a5a', '#e02424', '#ff8a70',
-  '#c8e8ff', '#9ad8ff', '#e4f2ff', '#b878ff', '#9a4ce0', '#e070ff' }
+L.RARITY_COLORS = { '#c8c8c8', '#5ccf5c', '#4a90ff', '#a35cf0', '#ffd040', '#ffd040', '#ffd040', '#ffd040', '#ffd040',
+  '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff', '#c8e8ff' } -- by rarity id: 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine (6 .. 9 and 11 .. 15: an old item, the rarity it became)
 L.NORMAL_COLOR = '#e4d8c0'
 L.UNIQUE_COLOR = '#e07b24' -- the unique orange of the tooltip
 

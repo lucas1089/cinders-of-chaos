@@ -21,6 +21,10 @@
 --   K.titlesOf(cfg, idx, st)              titles a character holds (rank titles; the Exalted one with the frame)
 --   K.payload(cfg, idx, st, ctx)          the window data
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosFactionsCore = ChaosFactionsCore or {}
 local K = ChaosFactionsCore
 local unpack = unpack or table.unpack
@@ -106,7 +110,8 @@ function K.gearProblems(offer, itemMods, limits)
 		bad("no base item id")
 	end
 	local rarity, level = tonumber(offer.rarity) or 0, tonumber(offer.level) or 0
-	if rarity < 1 or rarity > #c.rarity.count then
+	local rank = ChaosRarity.isStored(rarity) and ChaosRarity.rank(rarity) or 0 -- a stored id: the place in c.rarity's tables
+	if rank < 1 then
 		bad("rarity %s out of range", tostring(offer.rarity))
 		return out
 	end
@@ -116,15 +121,15 @@ function K.gearProblems(offer, itemMods, limits)
 	if limits.maxLevel and level > limits.maxLevel then
 		bad("item level %d above the faction limit %d", level, limits.maxLevel)
 	end
-	if limits.maxRarity and rarity > limits.maxRarity then
+	if limits.maxRarity and rank > ChaosRarity.rank(limits.maxRarity) then
 		bad("rarity %d above the faction limit %d", rarity, limits.maxRarity)
 	end
 	local mods = offer.mods or {}
 	if #mods == 0 then
 		bad("no modifiers")
 	end
-	if #mods > c.rarity.count[rarity] then
-		bad("%d modifiers, the rarity allows %d", #mods, c.rarity.count[rarity])
+	if #mods > c.rarity.count[rank] then
+		bad("%d modifiers, the rarity allows %d", #mods, c.rarity.count[rank])
 	end
 	local sides, seen = {prefix = 0, suffix = 0}, {}
 	for _, m in ipairs(mods) do
@@ -151,7 +156,7 @@ function K.gearProblems(offer, itemMods, limits)
 			end
 		end
 	end
-	local side = c.rarity.sides[rarity]
+	local side = c.rarity.sides[rank]
 	if sides.prefix > side or sides.suffix > side then
 		bad("%d prefixes / %d suffixes, the rarity allows %d of each", sides.prefix, sides.suffix, side)
 	end

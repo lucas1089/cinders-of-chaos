@@ -120,3 +120,12 @@ UIWidget
     margin-left: 94
     margin-top: 68
     size: 170 11
+
+  UIWidget
+    id: barsHover
+    anchors.left: parent.left
+    anchors.top: parent.top
+    margin-left: 94
+    margin-top: 33
+    size: 170 36
+    focusable: false

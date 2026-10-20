@@ -124,7 +124,13 @@ ChaosArchetypesConfig = {
 	-- Effigy on your tile (a stationary summon; at most `max`, the oldest goes) that lives lifeMs and every pulseMs
 	-- repeats that cast: each enemy within `radius` of it (as many as the cast hit, nearest first) takes share x the
 	-- cast's average hit, of the cast's element. Price: your spells x ownSpell. Unique Effigy Carver's Idol: +uniqueMax.
-	arEffigy = {max = 2, lifeMs = 12000, pulseMs = 2000, share = 0.22, radius = 3, minTargets = 2, ownSpell = 0.65,
+	-- Rebalanced 2026-10-18 (owner: "the effigy lowers my dps, make it hit harder"): the price was spells x0.65 and each
+	-- pulse 22% of the (already priced) hit, so two effigies gave back 2 x 0.22 x 0.65 = 0.286 of a cast for the 0.35 the
+	-- price took: a net loss (-6% in a pack, -31% on one target, +8% with the Idol). Now price x0.75 and pulse 24%: two
+	-- effigies give back 2 x 0.24 x 0.75 = 0.36 for 0.25 lost, net +11% of the spell damage from 2 targets on (+28% with the
+	-- Idol's third effigy). One target raises no effigy, so the price alone (-25% of the spell damage, was -35%) stays
+	-- there: the keystone is an area one. ChaosArchetypesCore.effigyNetGain computes it; numbers in data/spells/README.md.
+	arEffigy = {max = 2, lifeMs = 12000, pulseMs = 2000, share = 0.24, radius = 3, minTargets = 2, ownSpell = 0.75,
 		monster = "Cinder Effigy", uniqueMax = 1},
 
 	-- Sigil of Cinders (Mystic and Templar lines): your fire and holy spell hits ignite (igniteShare of the hit as

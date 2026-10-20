@@ -410,8 +410,8 @@ local function affixOverview(D, a)
 	local top = a.tiers[#a.tiers]
 	local p = {}
 	if a.group == "absorb" then
-		p[#p + 1] = string.format("Absorbs a share of the %s damage you take (shown on the item as \"%s +N%%\").",
-			a.label:lower(), a.label)
+		p[#p + 1] = string.format("Absorbs a share of the %s damage you take (shown on the item as \"%s +N%%\"). All your %s absorb together, gear and passives, is capped at %d%%.",
+			a.label:lower(), a.label, a.label:lower(), M.config.absorbCeiling or 75)
 	elseif a.group == "skill" then
 		local skill = a.key:match("^rarity_(%a+)Skill$") or ""
 		if PROFESSIONS[skill] then
@@ -811,7 +811,7 @@ function Gen.veiledSections(V)
 	local rows = {}
 	for _, k in ipairs(c.sourceOrder) do
 		local s = c.sources[k]
-		rows[#rows + 1] = {names[k], string.format("Veiled slot on Rare to Epic gear %s, Legendary and better %s; the orb from kills %s (x%d from bosses).",
+		rows[#rows + 1] = {names[k], string.format("Veiled slot on Rare gear %s, Legendary and better %s; the orb from kills %s (x%d from bosses).",
 			Gen.per10k(s.chance), Gen.per10k(s.high), Gen.per10k(c.orbDrop.perKill[k]), c.orbDrop.tierMult.boss)}
 	end
 	rows[#rows + 1] = {"Raid vendor", string.format("%d orbs for %d Sepulchre Marks, once a week.", c.vendorBundle.count,
@@ -871,7 +871,7 @@ function Gen.orbEntries(D)
 			table.insert(rules, 1, reasons[orb.key])
 		end
 		if orb.key == "sockets" then
-			rules = {orb.text, string.format("Sockets by kind at most: %s; by rarity at most %s (Common-Rare .. Cosmic-Transcendent).",
+			rules = {orb.text, string.format("Sockets by kind at most: %s; by rarity at most %s (Common, Uncommon, Magic, Rare, Legendary, Divine).",
 				(function()
 					local parts = {}
 					for _, k in ipairs({"weapon", "weapon2h", "armor", "shield", "helmet", "legs", "boots", "jewel", "other"}) do
@@ -915,7 +915,7 @@ function Gen.orbEntries(D)
 	local sv = D.salvage
 	local shardRows = {}
 	for r = 1, #sv.baseShards do
-		shardRows[#shardRows + 1] = {C.rarityName(r), Gen.num(sv.baseShards[r]), Gen.per10k(sv.orbChance[r])}
+		shardRows[#shardRows + 1] = {C.rarityName(ChaosRarity.idOfRank(r)), Gen.num(sv.baseShards[r]), Gen.per10k(sv.orbChance[r])}
 	end
 	local recipeRows, recipeLinks = {}, {}
 	for _, r in ipairs(sv.recipes) do
@@ -1027,10 +1027,9 @@ function Gen.gemEntries(D)
 	end
 	-- sockets
 	local rarityRows = {{"No rarity", Gen.num(cfg.rarityMax[1])}}
-	local names = D.C.config.rarityNames
+	local names = D.C.config.rarityNames -- by place: Common .. Divine
 	for i = 2, #cfg.rarityMax do
-		local a, b = (i - 2) * 3 + 1, (i - 1) * 3
-		rarityRows[#rarityRows + 1] = {names[a] .. " - " .. names[b], Gen.num(cfg.rarityMax[i])}
+		rarityRows[#rarityRows + 1] = {names[i - 1], Gen.num(cfg.rarityMax[i])}
 	end
 	local kindRows = {}
 	for _, k in ipairs({"weapon", "weapon2h", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}) do
@@ -1039,8 +1038,7 @@ function Gen.gemEntries(D)
 	local dropRows = {}
 	for i, w in ipairs(cfg.dropWeights) do
 		local total = w[1] + w[2] + w[3] + w[4]
-		local a, b = (i - 1) * 3 + 1, i * 3
-		dropRows[#dropRows + 1] = {names[a] .. " - " .. names[b], Gen.share(w[1], total), Gen.share(w[2], total),
+		dropRows[#dropRows + 1] = {names[i], Gen.share(w[1], total), Gen.share(w[2], total),
 			Gen.share(w[3], total), Gen.share(w[4], total)}
 	end
 	out[#out + 1] = {id = "gem:sockets", name = "Sockets", color = COLORS.basics, sub = "How many sockets gear can have.",
@@ -1561,8 +1559,8 @@ function Gen.basicsEntries(D)
 	end
 	add("items", "How items work", "Rarity, item level, tiers, prefixes and suffixes in short.", {
 		{h = "In short", p = {
-			string.format("Gear can carry a rarity: %d of them, from %s to %s. The rarity decides how many modifiers a new item gets and how many prefixes and suffixes it may carry.",
-				#C.config.rarityNames, C.config.rarityNames[1], C.config.rarityNames[#C.config.rarityNames]),
+			string.format("Items come in seven rarities: %s and Unique. Gear can carry one of the first six; a unique has fixed stats of its own. The rarity decides how many modifiers a new item gets and how many prefixes and suffixes it may carry.",
+				table.concat(C.config.rarityNames, ", ")),
 			string.format("Every item has an item level (1-%d) from where it dropped. The item level decides which tiers its modifiers can roll: T1 (lowest) to T8 (highest).",
 				M.config.itemLevel.max),
 			"Prefixes are damage and defence, suffixes utility, resistances and speed.",
@@ -1570,11 +1568,13 @@ function Gen.basicsEntries(D)
 				C.rarityName(M.config.powers.minRarity)),
 			"Uniques have fixed stats and are never changed by orbs."}}})
 	local rows = {}
-	for r = 1, #C.config.rarityNames do
-		local gi = G.rarityIndex and G.rarityIndex(r) or (floor((r + 2) / 3) + 1)
-		rows[r] = {C.rarityName(r), Gen.num(M.modCount(r)), Gen.num(M.sideLimit(r)), Gen.num(M.maxMods(r)),
+	for rank = 1, #C.config.rarityNames do
+		local r = ChaosRarity.idOfRank(rank)
+		local gi = G.rarityIndex(r)
+		rows[rank] = {C.rarityName(r), Gen.num(M.modCount(r)), Gen.num(M.sideLimit(r)), Gen.num(M.maxMods(r)),
 			Gen.num(M.maxBinds(r)), Gen.num(M.qualityCap(r)) .. "%", Gen.num(G.config.rarityMax[gi] or 0)}
 	end
+	rows[#rows + 1] = {"Unique", "fixed", "-", "-", "-", "-", Gen.num(G.config.uniqueSockets)}
 	add("rarity", "Rarity", "Modifier counts and limits per rarity.", {
 		{h = "Rarity", p = {"New = modifiers on a new item; Sides = most prefixes (and suffixes); Max = what the Orb of Grafting fills up to; Binds = bound modifiers allowed; Quality = Whetstone cap; Sockets = most sockets by rarity."},
 			cols = {"Rarity", "New", "Sides", "Max", "Binds", "Quality", "Sockets"}, w = {22, 11, 11, 11, 13, 16, 16}, rows = rows},
@@ -1666,7 +1666,7 @@ function Gen.basicsEntries(D)
 	local bb = {}
 	for r = 1, #C.config.baseBonus do
 		local b = C.config.baseBonus[r]
-		bb[r] = {C.rarityName(r), Gen.range(b[1], b[2])}
+		bb[r] = {C.rarityName(ChaosRarity.idOfRank(r)), Gen.range(b[1], b[2])}
 	end
 	-- pack combat (pace_config.lua, server/README.md "Pack combat (pace)")
 	local pc = D.pace

@@ -168,6 +168,9 @@ local function onMessage(protocol, opcode, msg)
     pocket = msg.data
     pocketAt = now()
     if data then render() end
+  elseif msg.action == 'npc' then
+    -- the pocket boss NPC (service_npcs*.lua) opens the window; an open one stays open
+    if not (window and window:isVisible()) then show() end
   elseif msg.action == 'pocketError' and type(msg.data) == 'table' and type(msg.data.text) == 'string' then
     pocketMsg, pocketMsgAt = msg.data.text, now()
     updateLive()

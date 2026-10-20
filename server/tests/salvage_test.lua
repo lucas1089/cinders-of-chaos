@@ -25,11 +25,11 @@ local function gear(rarity, level, o)
 end
 
 -- ---------------------------------------------------------------- config sanity
-eq(#cfg.baseShards, 15, "a yield per rarity")
-eq(#cfg.orbChance, 15, "an orb chance per rarity")
+eq(#cfg.baseShards, 6, "a yield per rarity (Common .. Divine)")
+eq(#cfg.orbChance, 6, "an orb chance per rarity")
 local known = {transmutation = 1, alchemy = 1, exalted = 1, annulment = 1, scouring = 1, chaos = 1, divine = 1, sockets = 1,
 	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1}
-for i = 2, 15 do
+for i = 2, 6 do
 	assert(cfg.baseShards[i] >= cfg.baseShards[i - 1], "yield never falls with the rarity")
 	assert(cfg.orbChance[i] >= cfg.orbChance[i - 1], "orb chance never falls with the rarity")
 end
@@ -57,21 +57,23 @@ assert(not cfg.allowUniques, "uniques are not salvaged")
 -- ---------------------------------------------------------------- yields
 eq(K.shards(gear(1, 1), cfg), 1, "Common, item level 1")
 eq(K.shards(gear(1, 150), cfg), 1, "Common, item level 150: floor(1.5)")
-eq(K.shards(gear(3, 1), cfg), 2, "Rare at item level 1")
-eq(K.shards(gear(3, 150), cfg), 3, "Rare at 150: +50%")
-eq(K.shards(gear(5, 75), cfg), 3, "Legendary at 75: floor(3.75)")
-eq(K.shards(gear(5, 150), cfg), 4, "Legendary at 150")
-eq(K.shards(gear(10, 1), cfg), 7, "Divine at 1")
-eq(K.shards(gear(10, 150), cfg), 10, "Divine at 150")
-eq(K.shards(gear(15, 1), cfg), 18, "Transcendent at 1")
-eq(K.shards(gear(15, 150), cfg), 27, "Transcendent at 150")
-eq(K.shards(gear(5, 0), cfg), 3, "no item level counts as the bottom")
-eq(K.shards(gear(5, 999), cfg), 4, "above the top counts as the top")
-eq(K.shards(gear(4, 1, {highTiers = 2}), cfg), 4, "+1 per modifier of T6 or better")
-eq(K.shards(gear(4, 1, {sockets = 3}), cfg), 5, "+1 per empty socket")
-eq(K.shards(gear(99, 0), cfg), cfg.baseShards[15], "rarity clamped to 15")
+eq(K.shards(gear(3, 1), cfg), 2, "Magic at item level 1")
+eq(K.shards(gear(3, 150), cfg), 3, "Magic at 150: +50%")
+eq(K.shards(gear(5, 75), cfg), 6, "Legendary at 75: floor(6.25)")
+eq(K.shards(gear(5, 150), cfg), 7, "Legendary at 150")
+eq(K.shards(gear(10, 1), cfg), 12, "Divine at 1")
+eq(K.shards(gear(10, 150), cfg), 18, "Divine at 150")
+eq(K.shards(gear(7, 1), cfg), 5, "an old Mythic is Legendary")
+eq(K.shards(gear(15, 1), cfg), 12, "an old Transcendent is Divine")
+eq(K.shards(gear(15, 150), cfg), 18, "an old Transcendent at 150")
+eq(K.shards(gear(5, 0), cfg), 5, "no item level counts as the bottom")
+eq(K.shards(gear(5, 999), cfg), 7, "above the top counts as the top")
+eq(K.shards(gear(4, 1, {highTiers = 2}), cfg), 5, "+1 per modifier of T6 or better")
+eq(K.shards(gear(4, 1, {sockets = 3}), cfg), 6, "+1 per empty socket")
+eq(K.shards(gear(99, 0), cfg), cfg.baseShards[1], "an id out of range counts as Common")
 eq(K.orbChance(gear(1), cfg), 50, "0.5% on a Common")
-eq(K.orbChance(gear(15), cfg), 500, "5% on a Transcendent")
+eq(K.orbChance(gear(10), cfg), 300, "3% on a Divine")
+eq(K.orbChance(gear(15), cfg), 300, "an old Transcendent is Divine")
 eq(K.percent(50), "0.5", "percent text")
 eq(K.percent(100), "1", "whole percent")
 eq(K.percent(75), "0.75", "two decimals")
@@ -118,8 +120,8 @@ for reason in pairs({locked = 1, unique = 1, normal = 1, gems = 1, riftKey = 1, 
 end
 local p = K.preview(gear(5, 150), cfg)
 eq(p.ok, true, "preview ok")
-eq(p.shards, 4, "preview shards")
-eq(p.orbChance, "1", "preview orb chance")
+eq(p.shards, 7, "preview shards")
+eq(p.orbChance, "1.5", "preview orb chance")
 p = K.preview(gear(5, 50, {locked = true}), cfg)
 eq(p.ok, false, "preview refused")
 eq(p.why, K.reasons.locked, "preview reason")
@@ -135,43 +137,43 @@ local function seq(values)
 		return v
 	end
 end
-local r = K.roll(gear(5, 41), cfg, seq({101}))
+local r = K.roll(gear(4, 41), cfg, seq({101}))
 eq(r.shards, 3, "roll shards")
 eq(r.orb, nil, "101 > 100: no orb")
-r = K.roll(gear(5, 41), cfg, seq({100, 1}))
+r = K.roll(gear(4, 41), cfg, seq({100, 1}))
 eq(r.orb, "transmutation", "100 <= 100: an orb, the first by weight")
-r = K.roll(gear(5, 41), cfg, seq({1, 100}))
+r = K.roll(gear(4, 41), cfg, seq({1, 100}))
 eq(r.orb, "exalted", "the last weight")
 -- the orb mix over many rolls follows the weights
 math.randomseed(7)
 local counts, orbs = {}, 0
 for _ = 1, 200000 do
-	local x = K.roll(gear(15, 141), cfg, math.random)
+	local x = K.roll(gear(10, 141), cfg, math.random)
 	if x.orb then
 		orbs = orbs + 1
 		counts[x.orb] = (counts[x.orb] or 0) + 1
 	end
 end
-assert(orbs > 9000 and orbs < 11000, "5% orbs on Transcendent: " .. orbs)
+assert(orbs > 5400 and orbs < 6600, "3% orbs on Divine: " .. orbs)
 assert(counts.transmutation > counts.chaos and counts.chaos > counts.exalted, "Transmutation most, Exalted least")
 
 -- ---------------------------------------------------------------- economy: the stock rarity roll
--- default_onDropLoot.lua: 70% of gear passes, then each rarity in order with its own chance
-local stock = {15.0, 14.0, 12.0, 10.0, 8.5, 7.0, 6.0, 4.5, 3.8, 3.0, 2.3, 1.7, 1.2, 0.8, 0.5}
+-- default_onDropLoot.lua: 70% of gear passes, then each rarity in order with its own chance (ChaosRarity.stockRolls)
 local left, total, shards, orbChance = 1, 0, 0, 0
-for rr, c in ipairs(stock) do
+for rank, row in ipairs(ChaosRarity.stockRolls) do
+	local c = row.chance
 	local pr = left * c / 100
 	left = left * (1 - c / 100)
 	total = total + pr
 	local s = 0
-	for lv = rr * 10 - 9, rr * 10 do
-		s = s + K.shards(gear(rr, lv), cfg)
+	for lv = rank * 20 - 19, rank * 20 do -- the better rarities come from the better levels
+		s = s + K.shards(gear(row.id, lv), cfg)
 	end
-	shards = shards + pr * s / 10
-	orbChance = orbChance + pr * K.orbChance(gear(rr), cfg)
+	shards = shards + pr * s / 20
+	orbChance = orbChance + pr * K.orbChance(gear(row.id), cfg)
 end
 shards, orbChance = shards / total, orbChance / total / 10000
-assert(shards > 2.2 and shards < 3.5, "an average rolled drop gives 2.2-3.5 shards: " .. shards)
+assert(shards > 2.0 and shards < 3.5, "an average rolled drop gives 2-3.5 shards: " .. shards)
 assert(orbChance > 0.005 and orbChance < 0.015, "about 1% orb chance per item: " .. orbChance)
 -- an Orb of Upheaval's worth of shards takes about 10 rolled items (without modifiers and sockets)
 local chaosCost = K.recipe("chaos", cfg).cost
@@ -336,8 +338,7 @@ end
 Game = {createItem = function(id, n) return newItem(id, {count = n}) end}
 
 -- the crafting library and the bench, reduced to what salvage.lua reads
-local NAMES = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos", "Eternal", "Divine",
-	"Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"}
+local NAMES = ChaosRarity.storedNames()
 ChaosCrafting = {
 	config = {historyTable = "chaos_crafting_log", rarityNames = NAMES},
 	orbByKey = {chaos = {id = 29856, name = "Orb of Upheaval"}, transmutation = {id = 29851, name = "Orb of Awakening"},
@@ -353,7 +354,7 @@ ChaosCrafting = {
 	customNumber = function(item, k) return tonumber(item.custom[k]) or 0 end,
 	isUnique = function(item) return item.custom.chaos_unique ~= nil end,
 	itemName = function(item) return "item" .. item.id end,
-	rarityName = function(r) return NAMES[r] end,
+	rarityName = function(r) return ChaosRarity.name(r) end,
 	signature = function(item) return item.id .. ";" .. tostring(item.custom.rarity) .. ";" .. tostring(item.custom.combatPowerLevel) end,
 	levelOf = function(item) return tonumber(item.custom.chaos_ilvl) or tonumber(item.custom.combatPowerLevel) or 0 end,
 	readMods = function(item) return item.mods or {} end
@@ -405,7 +406,7 @@ local sword = put(backpack, newItem(2400, {custom = {rarity = 5, chaos_ilvl = 15
 local state = {items = {{path = "0", id = 2400}}, item = {path = "0", id = 2400}}
 S.benchState(player, state)
 eq(state.item.salvage.ok, true, "the bench previews the salvage")
-eq(state.item.salvage.shards, 4, "Legendary at item level 150: 4 shards")
+eq(state.item.salvage.shards, 7, "Legendary at item level 150: 7 shards")
 eq(state.salvage.installed, true, "the shard item exists")
 eq(#state.salvage.recipes, #cfg.recipes, "every recipe on the bench")
 eq(state.salvage.batch, nil, "no batch preview outside the Salvage mode")
@@ -416,7 +417,7 @@ math.randomseed(1)
 act("salvage", {path = "0", id = 2400, sig = ChaosCrafting.signature(sword)})
 eq(lastResult().ok, true, "salvaged: " .. tostring(lastResult().text))
 eq(sword.removed, true, "the item is gone")
-eq(player:getItemCount(cfg.shard.id), 4, "4 shards in the backpack")
+eq(player:getItemCount(cfg.shard.id), 7, "7 shards in the backpack")
 eq(#queries, 1, "one log row")
 assert(queries[1]:find("chaos_crafting_log", 1, true) and queries[1]:find("'Salvage'", 1, true), "logged as Salvage")
 eq(selection, nil, "the bench is cleared")

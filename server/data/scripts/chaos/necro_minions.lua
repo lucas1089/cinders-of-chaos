@@ -1,7 +1,7 @@
 -- necro_minions.lua: the Necromancer line's minions (docs/CLASSES.md "Necromancer"; numbers in necro_config.lua,
 -- rules in necro_core.lua, engine helpers in necro_lib.lua).
 --
--- Minions are raised by the spells (Raise Dead, Bone Golem) as the player's summons: the engine makes them follow
+-- Minions are raised by the spells (Raise Dead, Bone Golem, Raise Bone Warrior / Archer / Mage) as the player's summons: the engine makes them follow
 -- the owner and go for the owner's target. This file does the rest, every Chaos minions.thinkMs:
 --   * Hits: the monster types have no attacks of their own. A minion that reaches the owner's target (or its own)
 --     hits it every intervalMs, and the hit is dealt as the owner (doTargetCombat with the owner as attacker), so it
@@ -16,7 +16,8 @@
 --     stands in a protection zone its minions are put to rest (removed, kind and health kept); they rise next to it
 --     when it steps out (within restKeepSeconds).
 --   * Caps: minions over the class's cap or of a kind the class does not raise (vocation change, level loss) are
---     dismissed.
+--     dismissed. The total cap (all kinds together; necro_config.lua minions.classes[].total) is enforced when a minion is
+--     raised (necro_lib.lua M.raise: the oldest goes first) and here as a safety net.
 --   * Logout and death: the engine removes summons with their owner; the rest and the timers are forgotten.
 -- The minions' own guard: the owner's hits and those of its other summons do not hurt them (area spells).
 
@@ -122,9 +123,11 @@ local function hit(owner, classKey, minion, kind, target, aura)
 		return
 	end
 	if k.range > 1 then
-		mpos:sendDistanceEffect(target:getPosition(), FxMissile("skull_orb", CONST_ANI_DEATH))
+		-- the shade's skull orb; the archer's arrow and the mage's energy bolt (config `ani`, no Chaos missile)
+		local ani = k.ani and L.animation(k) or FxMissile("skull_orb", CONST_ANI_DEATH)
+		mpos:sendDistanceEffect(target:getPosition(), ani)
 	end
-	local effect = ctype == COMBAT_DEATHDAMAGE and CONST_ME_MORTAREA or CONST_ME_HITAREA
+	local effect = L.hitEffect(k)
 	local tpos = target:getPosition()
 	local dealt = L.damage(owner, target, ctype, min, max, effect, ORIGIN_SPELL)
 	local share = N.splashShare(cfg(), classKey, kind)

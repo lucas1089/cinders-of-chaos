@@ -44,11 +44,9 @@ PARCH = hexc("#d9c9a6")
 PARCH_DIM = hexc("#a8977a")
 EMBER = hexc("#ff8a2a")
 
-RARITIES = [  # names and colours as in the client loot filter (game_lootfilter/lootfilterlogic.lua)
-    ("Common", "#c8c8c8"), ("Uncommon", "#5ccf5c"), ("Rare", "#4a90ff"), ("Epic", "#a35cf0"),
-    ("Legendary", "#ffd040"), ("Exotic", "#f5b13a"), ("Mythic", "#ff5a5a"), ("Chaos", "#e02424"),
-    ("Eternal", "#ff8a70"), ("Divine", "#c8e8ff"), ("Phantasmal", "#9ad8ff"), ("Celestial", "#e4f2ff"),
-    ("Cosmic", "#b878ff"), ("Abyssal", "#9a4ce0"), ("Transcendent", "#e070ff"),
+RARITIES = [  # names and colours as in the client loot filter (game_lootfilter/lootfilterlogic.lua); the seven rarities
+    ("Common", "#c8c8c8"), ("Uncommon", "#5ccf5c"), ("Magic", "#4a90ff"), ("Rare", "#a35cf0"),
+    ("Legendary", "#ffd040"), ("Divine", "#c8e8ff"), ("Unique", "#e07b24"),
 ]
 
 # ---------------------------------------------------------------- fonts
@@ -651,7 +649,7 @@ def panel_rarity():
         add_glow(p, g, col, 5, 1.4)
         d.polygon(gem, fill=col + (255,), outline=BLACK + (255,))
         d.polygon([(x, y - 5), (x + 3, y - 1), (x, y), (x - 3, y - 1)], fill=(255, 255, 255, 140))
-        bar_w = int(60 + i * 8.5)
+        bar_w = int(60 + i * 17)
         for k in range(bar_w):
             a = int(120 * (1 - k / bar_w))
             d.point((x + 16 + k, y), fill=col + (a,))
@@ -831,15 +829,14 @@ def card_bosses_rifts(sd):
 
 
 def card_loot(sd):
-    ims = shots_or_none(sd, "loot")
+    # the card shows the seven rarities only: the loot filter screenshot of 2026-10-12 still names Epic and Exotic
+    # (15 rarities), so it is not used until a new one is taken (SHOTS["loot"])
     panels = [(panel_rarity(), 1.0, False)]
+    ims = shots_or_none(sd, "loot") if os.environ.get("CHAOS_LOOT_SHOT") else None
     if ims:
         panels.append((ims[0], 1.0, True))
-    elif os.path.exists(os.path.join(OUT, "feature_loot.png")):
-        print("skip feature_loot.png (screenshot missing, kept the existing image)")
-        return
-    make_card("feature_loot.png", "Fifteen Rarities",
-              "From Common to Transcendent. The loot filter makes the good drops glow in their colour.",
+    make_card("feature_loot.png", "Seven Rarities",
+              "From Common to Divine, and the uniques. The loot filter makes the good drops glow in their colour.",
               panels, seed=31)
 
 

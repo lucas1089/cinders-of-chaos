@@ -133,11 +133,31 @@ function H.index(cfg, places)
 			idx.floors[f.z] = {f.level[1], f.level[2]}
 		end
 	end
+	-- the quest hall (tools/hall_quests.py): where its "Quests" label floats
+	if type(places.quests) == "table" and isPos(places.quests.label) then
+		idx.quests = {label = places.quests.label, count = tonumber(places.quests.count) or 0}
+	end
 	return idx
 end
 
+-- the texts of a floor's band: "Floor 7: levels 1-500", "Floor 5: levels 1000+" (hi 0: no upper limit, the top floor)
+local function floorText(cfg, lang, z, band)
+	if band[2] == 0 then
+		return H.text(cfg, lang, "Floor %d: levels %d+", z, band[1])
+	end
+	return H.text(cfg, lang, "Floor %d: levels %d-%d", z, band[1], band[2])
+end
+
+local function upText(cfg, lang, z, band)
+	if band[2] == 0 then
+		return H.text(cfg, lang, "Up: floor %d, levels %d+", z, band[1])
+	end
+	return H.text(cfg, lang, "Up: floor %d, levels %d-%d", z, band[1], band[2])
+end
+
 -- the floating labels of the hall's floors (cfg.hall.labels, the bands of idx.floors): {{pos, text}} in `lang`
--- "Floor 7: levels 1-80" over `at`; over `up` (the stairs up) the next floor's band, "Up: floor 6, levels 80-300"
+-- "Floor 7: levels 1-500" over `at`; over `up` (the stairs up) the next floor's band, "Up: floor 6, levels 500-1000"
+-- (a floor without an upper limit: "Floor 5: levels 1000+")
 function H.floorLabels(cfg, idx, lang)
 	local out = {}
 	local hall = cfg.hall
@@ -147,17 +167,24 @@ function H.floorLabels(cfg, idx, lang)
 	for i, l in ipairs(hall.labels or {}) do
 		local band = idx.floors[l.z]
 		if band and l.at then
-			out[#out + 1] = {pos = {x = l.at.x, y = l.at.y, z = l.z},
-				text = H.text(cfg, lang, "Floor %d: levels %d-%d", l.z, band[1], band[2])}
+			out[#out + 1] = {pos = {x = l.at.x, y = l.at.y, z = l.z}, text = floorText(cfg, lang, l.z, band)}
 		end
 		local nz = hall.floors and hall.floors[i + 1]
 		local up = nz and idx.floors[nz]
 		if up and l.up then
-			out[#out + 1] = {pos = {x = l.up.x, y = l.up.y, z = l.z},
-				text = H.text(cfg, lang, "Up: floor %d, levels %d-%d", nz, up[1], up[2])}
+			out[#out + 1] = {pos = {x = l.up.x, y = l.up.y, z = l.z}, text = upText(cfg, lang, nz, up)}
 		end
 	end
 	return out
+end
+
+-- the quest hall's floating label: {pos, text} in `lang`, nil when the hall is not installed
+function H.questLabel(cfg, idx, lang)
+	local q = idx and idx.quests
+	if not q then
+		return nil
+	end
+	return {pos = q.label, text = H.text(cfg, lang, "Quests")}
 end
 
 -- a display monster's spot: a cell row of the room (cfg.room.cellRows) on a floor of the hall (cfg.display)

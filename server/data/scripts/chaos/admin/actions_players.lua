@@ -99,6 +99,26 @@ reg{id = "mute", name = "Mute", description = "Mute a player for N minutes (COND
 		return true, t:getName() .. " muted for " .. p.minutes .. " min."
 	end}
 
+reg{id = "shadow_mute", name = "Shadow mute", description = "Mute a player in the public chat channels without telling them: they still see their own lines, nobody else does (at most 24 h, kept until restart). Say, yell and private messages are not covered: use Mute for those.",
+	params = {PLAYER, {name = "minutes", label = "Minutes", type = "int", min = 1, max = ChaosAdminLadder.muteMaxMinutes, default = 60}},
+	handler = function(actor, p)
+		local t, err = ChaosAdmin.targetOnline(actor, p.player)
+		if not t then return false, err end
+		if not ChaosShadowMute then return false, "Shadow mute is not installed." end
+		ChaosShadowMute.mute(t, p.minutes, ChaosAdminLadder.muteMaxMinutes)
+		return true, t:getName() .. " shadow-muted for " .. p.minutes .. " min (public channels only, no message to the player)."
+	end}
+
+reg{id = "shadow_unmute", name = "Shadow unmute", description = "End a shadow mute.",
+	params = {PLAYER},
+	handler = function(actor, p)
+		local t, err = ChaosAdmin.targetOnline(actor, p.player)
+		if not t then return false, err end
+		if not ChaosShadowMute then return false, "Shadow mute is not installed." end
+		if not ChaosShadowMute.unmute(t) then return false, t:getName() .. " is not shadow-muted." end
+		return true, t:getName() .. " can be read again."
+	end}
+
 reg{id = "set_level", name = "Set level", description = "Set the level of an online player (adds/removes experience).",
 	params = {PLAYER_OPT, {name = "level", label = "Level", type = "int", min = 1, max = 5000}},
 	handler = function(actor, p)

@@ -194,7 +194,7 @@ reg{id = "gearset_list", name = "Gear sets: pieces", description = "The pieces o
 reg{id = "gearset_give", name = "Gear sets: give piece", description = "Makes one set piece with a rarity and an item level (ChaosCrafting.createItem, the forge every gear reward uses) and gives it.",
 	minGroup = 5,
 	params = {ONLINE, {name = "piece", label = "Piece item id", type = "int", min = 1, max = 65535},
-		{name = "rarity", label = "Rarity (0 plain, 1 Common .. 15)", type = "int", min = 0, max = 15, default = 0},
+		{name = "rarity", label = "Rarity id (0 plain, 1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine)", type = "int", min = 0, max = 10, default = 0},
 		{name = "ilvl", label = "Item level", type = "int", min = 1, max = 2000, default = 100}},
 	handler = function(actor, p)
 		local G = gearSets()

@@ -1,9 +1,9 @@
 -- Store pouches (server data/scripts/chaos/pouches.lua, extended opcode 226, JSON {action, data}).
 --   client -> server  open | sync | set {rules}
 --                     Auto Seller window (server autosell.lua): as_open | as_sync | sell | asrar {tier, on} |
---                     aslist {op = add|remove|clear, item} | aspause {on}
+--                     aslist {op = add|remove|clear, item} | aspause {on} | asevery {minutes = 0|5|10|15|30|60}
 --   server -> client  settings {rules, ids = {loot, orbs, keys} (client ids), titles, owned (on open), rarities, open}
---                     autoseller {unlocked, needs, paused, tiers, list, slots, cooldown, cooldownMax, last, notice, open}
+--                     autoseller {unlocked, needs, paused, interval, intervals, nextIn, tiers, list, slots, cooldown, cooldownMax, last, notice, open}
 -- The pouches themselves are ordinary containers (use = open). Two windows: the Loot Bag rules (right-click the Loot
 -- Bag > "Pouch settings", or the Loot Filter's "Loot Bag" button) and the Auto Seller (Economy > Auto Seller in the
 -- top menu, or the Loot Bag window's Auto Seller button; owner 2026-10-13: "Tire os comandos do autosell e coloque no
@@ -67,8 +67,8 @@ local function refreshWindow()
   end
   local combo = window.rarityCombo
   combo:clearOptions()
-  for i, name in ipairs(V.rarityOptions(rarities)) do combo:addOption(name, i) end
-  combo:setCurrentIndex(rules.minRarity)
+  for i, name in ipairs(V.rarityOptions(rarities)) do combo:addOption(name, V.RARITY_IDS[i]) end
+  combo:setCurrentIndex(V.rarityIndex(rules.minRarity))
   combo:setEnabled(rules.gear == true)
   window.status:setText(V.statusText(owned, titles.loot))
   window.storeButton:setVisible(type(owned) == 'table' and not owned.loot)
@@ -107,10 +107,16 @@ local function refreshAutoSeller()
     if cb then
       cb:setChecked(t.on)
       cb:setEnabled(s.unlocked)
-      cb:setTooltip(tip or (t.key == 'legendary' and tr('Legendary and every rarity above it') or ''))
+      cb:setTooltip(tip or '')
     end
   end
   asWindow.corpseCheck:setChecked(not s.paused)
+  local every = asWindow.everyCombo
+  every:clearOptions()
+  for _, o in ipairs(AV.intervalOptions(s.intervals)) do every:addOption(o.text, o.minutes) end
+  every:setCurrentIndex(AV.intervalIndex(s.intervals, s.interval))
+  every:setEnabled(s.unlocked)
+  every:setTooltip(tip or '')
   asWindow.listPanel.listText:setText(AV.listText(s.list, s.slots)) -- listText sits inside listPanel
   for _, id in ipairs({ 'corpseCheck', 'itemEdit', 'addButton', 'removeButton', 'clearButton', 'sellButton' }) do
     local w = asWindow[id]
@@ -182,6 +188,13 @@ local function onCorpseCheck(widget, checked)
   send('aspause', { on = checked == true })
 end
 
+local function onEveryChange(widget)
+  if updating then return end
+  local opt = widget:getCurrentOption()
+  local req = opt and AV.everyRequest(opt.data)
+  if req then send('asevery', req) end
+end
+
 local function buildAutoSeller()
   local ok, ui = pcall(g_ui.createWidget, 'AutoSellerWindow', rootWidget)
   if not ok or not ui then
@@ -191,7 +204,7 @@ local function buildAutoSeller()
   asWindow = ui
   asWindow:hide()
   for i, t in ipairs(AV.TIERS) do
-    local cb = g_ui.createWidget('AutoSellerRarityCheck', asWindow.rarityRow)
+    local cb = g_ui.createWidget('AutoSellerRarityCheck', i <= AV.ROW_SIZE and asWindow.rarityRow or asWindow.rarityRow2)
     cb:setId('rarity_' .. t.key)
     cb:setText(tr(t.name))
     cb:setWidth(AV.checkWidth(cb:getTextSize().width)) -- as wide as its text (a fixed width clipped the names)
@@ -201,6 +214,7 @@ local function buildAutoSeller()
     asChecks[i] = cb
   end
   asWindow.corpseCheck.onCheckChange = safe('corpse', onCorpseCheck)
+  asWindow.everyCombo.onOptionChange = safe('every', onEveryChange)
   refreshAutoSeller()
 end
 

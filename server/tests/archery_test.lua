@@ -928,6 +928,10 @@ local hitEv = styleEvents.ChaosWeaponStyle
 local shooter = mkCreature(1, "player", 90)
 shooter.slots = {}
 function shooter:getSlotItem(s) return self.slots[s] end
+function shooter:getLevel() return 100 end -- the style factor is a function of the level (weapon_balance_core.lua)
+-- the factor of a launcher style at level 100, as the hit is scaled (rounded to a whole number)
+local W = ChaosWeaponBalance
+local function styled(n, style) return math.floor(n * W.factor(style, 100) + 0.5) end
 local mob = mkCreature(2, "monster", 100)
 local mob2 = mkCreature(3, "monster", 102)
 local function runTimers()
@@ -940,11 +944,12 @@ local function runTimers()
 end
 local cache = {}
 ChaosItemMods.playerBonus = function(pl, key) return cache[key] or 0 end
--- a crossbow: the two-handed factor, no splash, no quiver
+-- a crossbow: its style factor (weapon_balance_config.lua), no splash, no quiver
 shooter.slots[CONST_SLOT_LEFT] = newItem(29875)
 math.random = function(a, b) return b or a end -- every roll fails (the highest number)
 local d = hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
-eq(d, -160, "crossbow: x1.6, no ammunition needed")
+eq(d, -styled(100, "crossbow"), "crossbow: its style factor, no ammunition needed")
+ok(styled(100, "crossbow") > 0 and styled(100, "bow") > 0, "the launcher factors are set")
 runTimers()
 eq(#area, 0, "crossbow: no splash")
 -- a bow: splash
@@ -952,21 +957,21 @@ shooter.slots[CONST_SLOT_LEFT] = newItem(2456)
 hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
 runTimers()
 eq(#area, 1, "bow: splash")
-eq(area[1].amount, -80, "half of the hit")
+eq(area[1].amount, -math.floor(styled(100, "bow") * 0.5), "half of the hit")
 -- the quiver: critical strike, element share against the resistance, extra projectile at the other monster
 math.random = function(a, b) return a end -- every roll succeeds
 cache = {bowcrit = 10, multishot = 20}
 ChaosItemModsCache[shooter:getId()] = {arrowfire = 20}
 area = {}
 local pd, pt, sd, st = hitEv.onHealthChange(mob, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
-eq(pd, -240, "x1.6 then a +50% critical strike")
+eq(pd, -(math.floor(styled(100, "bow") * 3 / 2)), "the style factor, then a +50% critical strike")
 eq(st, COMBAT_FIREDAMAGE, "fire share")
-eq(sd, -24, "20% of 240 against 50% fire resistance")
+eq(sd, -math.floor(math.floor(styled(100, "bow") * 3 / 2) * 20 / 100 * 0.5), "20% of the hit against 50% fire resistance")
 eq(fx.crit, 1, "the crit shows")
 runTimers()
 eq(#dealt, 1, "one extra projectile")
 eq(dealt[1].target, mob2, "at the other monster")
-eq(dealt[1].amount, -math.floor((240 + 24) * A_CFG.effects.multishotShare / 100), "60% of the hit")
+eq(dealt[1].amount, -math.floor((math.floor(styled(100, "bow") * 3 / 2) + -sd) * A_CFG.effects.multishotShare / 100), "60% of the hit")
 eq(#area, 1, "and the bow's splash")
 -- another type shown under the same name (a rift name): its own resistance, not the cached one of the first "Mob"
 local wisp = mkCreature(4, "monster", 140)
@@ -974,7 +979,7 @@ function wisp:getType()
 	return {name = function() return "Ember Wisp" end, getElementList = function() return {[COMBAT_FIREDAMAGE] = 0} end}
 end
 local _, _, wsd = hitEv.onHealthChange(wisp, shooter, -100, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
-eq(wsd, -48, "same shown name, other type: 20% of 240 against 0% fire resistance")
+eq(wsd, -math.floor(math.floor(styled(100, "bow") * 3 / 2) * 20 / 100), "same shown name, other type: 20% of the hit against 0% fire resistance")
 creatures[4] = nil
 timers, area, dealt = {}, {}, {}
 -- melee and spells are not touched by the quiver

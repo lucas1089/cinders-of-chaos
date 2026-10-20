@@ -42,6 +42,10 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
 7. data/scripts/customs/waystone_system/character_upgrades.lua: the waystone upgrades "Critical Chance",
    "Life Chance" and "Mana Chance" give about two thirds of their level as chance (same rule as 6).
 
+20. actions/scripts/other/exercise_weapons.lua: an exercise weapon's charges are changed with setAttribute, which the
+   client never hears about, so the charges of a weapon in a backpack stayed old (owner 2026-10-17). transform() to
+   the same id with the new count sends the item again; the last charge keeps setAttribute (tools/exercise_charges_patch_test.py).
+
 8. Spell events (engine patch 0008-spell-events.patch): data/events/events.xml gets the Player entries onSpellCost,
    onSpellPreCast, onSpellCast and onSpellCooldown, shipped DISABLED (enabled="0": an engine without the patch warns
    about unknown methods only when they are enabled), and data/events/scripts/player.lua gets the four stubs. A stub
@@ -110,6 +114,12 @@ pet share, so the bonuses multiply the staged experience and the pet gets its sh
    loss (and before the amulet of loss is used up) when ChaosGentleDeath.keepAll(player) says so: nobody loses items
    on death except with a red or black skull (data/scripts/chaos/gentledeath.lua). Without that script the stock rule
    (and step 15) runs unchanged.
+
+21. data/scripts/eventcallbacks/monster/default_onDropLoot.lua: the stock rarity roll (rollRarity, patched by step 2)
+   walks the base server's own 15 rows (`rarities`: ids 1 .. 15, chances 15 .. 0.5). The game has seven rarities since
+   2026-10-18 (Common, Uncommon, Magic, Rare, Legendary, Divine, Unique; data/lib/chaos_rarity.lua), so the roll walks
+   ChaosRarity.stockRolls instead (ids 1, 2, 3, 4, 5, 10 with the chances 15, 14, 12, 10, 7, 1) when that table exists.
+   Without data/lib/chaos_rarity.lua the base rows are walked as before. server/README.md "Item rarities".
 
 Idempotent: every inserted block carries a marker comment and is not added twice.
 """
@@ -183,6 +193,33 @@ def patch_loot(text):
     text = text.replace(old_chance,
         'if roll <= lootData.chance * (1 + chaosUpgradeLevel(player, CHAOS_WAYSTONE_LOOT) / 100) then', 1)
     return text, 'patched'
+
+
+STOCK_MARKER = '-- Chaos: the stock rarity roll of the seven rarities (patch_base_events.py)'
+STOCK_FN_RE = re.compile(r'^([ \t]*)local function rollRarity\(player\)[ \t]*(\r?\n)', re.M)
+
+
+def patch_stock_rarities(text):
+    """default_onDropLoot.lua: rollRarity walks ChaosRarity.stockRolls when it exists; returns (new text, status)"""
+    if STOCK_MARKER in text:
+        return text, 'already'
+    m = STOCK_FN_RE.search(text)
+    if not m:
+        return text, 'unexpected default_onDropLoot.lua ("local function rollRarity(player)" not found; run step 2 first)'
+    end = text.find('\nend\n', m.end())
+    body = text[m.end():end]
+    if body.count('ipairs(rarities)') != 1:
+        return text, 'unexpected rollRarity (ipairs(rarities) not found once)'
+    nl = m.group(2)
+    body = body.replace('ipairs(rarities)', 'ipairs(chaosStockRolls())')
+    helper = (STOCK_MARKER + nl
+              + 'local function chaosStockRolls()' + nl
+              + '\tif ChaosRarity and ChaosRarity.stockRolls then' + nl
+              + '\t\treturn ChaosRarity.stockRolls' + nl
+              + '\tend' + nl
+              + '\treturn rarities' + nl
+              + 'end' + nl + nl)
+    return text[:m.start()] + helper + m.group(0) + body + text[end:], 'patched'
 
 
 COMBAT_MARKER = '-- Chaos: guild siege rules before the base PvP rules (patch_base_events.py)'
@@ -646,6 +683,31 @@ def patch_keep_all(text):
     return text[:m.start()] + block + text[m.start():], 'patched'
 
 
+EXERCISE_MARKER = '-- Chaos: the exercise weapon sends its new charges to the client (patch_base_events.py)'
+EXERCISE_RE = re.compile(r'^([ \t]*)exercise:setAttribute\(ITEM_ATTRIBUTE_CHARGES, \(charges_n - 1\)\)[ \t]*(\r?\n)', re.M)
+
+
+def patch_exercise_charges(text):
+    """actions/scripts/other/exercise_weapons.lua: setAttribute changes the charges on the server only, so an exercise
+    weapon in a backpack kept showing its old charges (and a tooltip read them stale). transform() to the same id with
+    the new charge count sends the item again; the last charge keeps setAttribute (a transform to 0 removes the item
+    and the script reads it after). Returns (new text, status)"""
+    if EXERCISE_MARKER in text:
+        return text, 'already'
+    found = EXERCISE_RE.findall(text)
+    if len(found) != 1:
+        return text, 'unexpected exercise_weapons.lua ("exercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, (charges_n - 1))" not found once)'
+    m = EXERCISE_RE.search(text)
+    ind, nl = m.group(1), m.group(2)
+    block = (ind + EXERCISE_MARKER + nl
+             + ind + 'if charges_n - 1 >= 1 then' + nl
+             + ind + '\texercise:transform(exercise:getId(), charges_n - 1)' + nl
+             + ind + 'else' + nl
+             + ind + '\texercise:setAttribute(ITEM_ATTRIBUTE_CHARGES, 0)' + nl
+             + ind + 'end' + nl)
+    return text[:m.start()] + block + text[m.end():], 'patched'
+
+
 def apply(path, fn, dry):
     text = open(path, encoding='utf-8', errors='surrogateescape').read()
     new, status = fn(text)
@@ -691,6 +753,10 @@ def main():
     ok = apply(os.path.join(args[0], 'events', 'scripts', 'player.lua'), patch_lose_experience, dry) and ok
     ok = apply(os.path.join(args[0], 'events', 'events.xml'), patch_lose_event, dry) and ok
     ok = apply(os.path.join(args[0], 'creaturescripts', 'scripts', 'droploot.lua'), patch_keep_all, dry) and ok
+    ok = apply(os.path.join(args[0], 'actions', 'scripts', 'other', 'exercise_weapons.lua'),
+               patch_exercise_charges, dry) and ok
+    ok = apply(os.path.join(args[0], 'scripts', 'eventcallbacks', 'monster', 'default_onDropLoot.lua'),
+               patch_stock_rarities, dry) and ok
     return 0 if ok else 1
 
 

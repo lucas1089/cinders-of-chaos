@@ -30,6 +30,7 @@ end
 -- depositing: in town for everybody (the live protection zone state, or the server's hideout answer); anywhere with the
 -- remote deposit unlock (the server's `remote`: bought, or lent by an active Chaos Pact). The server checks again.
 function V.canDeposit(tabs, states)
+  if type(tabs) == 'table' and tabs.closed == true then return false end -- the depot is the storage (server toDepot)
   if V.hasFlag(states, V.PZ_FLAG) then return true end
   if type(tabs) ~= 'table' then return false end
   if tabs.remote then return true end
@@ -37,14 +38,17 @@ function V.canDeposit(tabs, states)
 end
 
 -- the locked state of depositing: where to unlock it
-function V.depositLockedText()
+function V.depositLockedText(tabs)
+  if type(tabs) == 'table' and tabs.closed == true then
+    return tr('The stash is closed to new items: put them into your depot. It only gives items back.')
+  end
   return tr('Deposit only in a protection zone. Remote deposit from anywhere: Store > Storage & Slots, or an active Chaos Pact.')
 end
 
 -- the Stow Everything button's tooltip
 function V.stowTooltip(canDeposit, tabs)
   if not canDeposit then
-    return V.depositLockedText()
+    return V.depositLockedText(tabs)
   end
   local text = tr('Put everything in your backpack, through its bags, into the stash: each item into its tab. Equipped, locked, store-bound and quest items stay.')
   if type(tabs) == 'table' and tabs.remote then
@@ -117,7 +121,9 @@ function V.infoText(d, selected, canWithdraw, canDeposit)
       text = text .. tr('. Withdraw-only tabs: %d', locked)
     end
   end
-  if canDeposit == false then
+  if d.closed == true then
+    text = text .. tr('. The stash is closed to new items: use your depot.')
+  elseif canDeposit == false then
     text = text .. tr('. Deposit and withdraw in a protection zone (remote deposit: Store > Storage & Slots).')
   elseif not canWithdraw then
     text = text .. tr('. Withdraw in a protection zone.')

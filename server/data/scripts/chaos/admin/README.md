@@ -40,6 +40,7 @@ systems. See "Untested" at the end.
 | `actions_chaos_instances.lua` | Chaos: Instances & PvP (every instance type, rifts, Infinity Tower, arena, battleground, guild siege) |
 | `actions_chaos_social.lua` | Chaos: Guilds & Market (mentors, market and Orb Exchange sweeps, guild wars, weekly guild boss, community goal) |
 | `actions_staff_tools.lua` | Tools: the staff chat commands of the Chaos systems as panel actions (`/testkit`, `/areagen`, `/creatorcodes`, `/itemfinder`, `/memorial`, `/hideout`, `/gmnotify`, `/telemetry`, `/records`) |
+| `actions_pack30_gallery.lua` | Tools > Pair 30 gallery and the staff talkaction `/pack30gallery <what> [arg]`: shows the pair 30 art in game (`items <block\|from-to>`, `groups`, `grounds`, `anim`, `looks <from-to>`, `schemes <look>`, `fx <from-to>`, `missiles`, `wear <look> [scheme]`, `clear`). Admin only, max 150 objects per call, auto clear after 30 min, grounds refuse protection zone and house tiles and `clear` restores them. Layout in `../pack30_gallery_core.lua`, test `tests/pack30_gallery_test.lua`; reads `data/lib/chaos_pack30_items.lua` and needs the monster "Look Model" (`pack30_gallery.xml`). No opcode, no storage key |
 | `testkit.lua` | `/testkit` and `ChaosTestKit.give` (the panel's Tools > Test kit calls the same function) |
 | `actions_store.lua` | Store category: sales dashboard (per day, category, top offers), recent purchases, donations (coin orders; Pix / PayPal with their provider status; refunds and chargebacks with the coins taken back), record a donation, give Chaos Coins (`chaos_shop_purchases`, `chaos_coin_orders`, `chaos_coin_payments`; server/README.md "Store") |
 
@@ -140,7 +141,7 @@ add a `ChaosAdminRegisterHook` call next to them.
 
 ## Actions
 
-Players: info, kick, ban (account), unban, mute, set_level, set_skill (raise only), set_vocation, give_item, remove_item,
+Players: info, kick, ban (account), unban, mute, shadow_mute / shadow_unmute (public channels only, see server/README.md "Shadow mute"), set_level, set_skill (raise only), set_vocation, give_item, remove_item,
 give_premium, teleport_to, summon, heal, set_group (dangerous), add_storage (set storage).
 give_item (Players) and create_item (World) create items, so they need group 5 like the Economy actions
 (`minGroup = 5` on the action); the other Players and World actions stay at group 4.

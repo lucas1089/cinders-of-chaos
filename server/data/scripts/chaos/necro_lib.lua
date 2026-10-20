@@ -51,10 +51,23 @@ end
 -- player corpses (male, female) of the 10.98 items: never raised or exploded
 M.playerCorpses = {[3058] = true, [3065] = true}
 
-local COMBAT = {physical = COMBAT_PHYSICALDAMAGE, death = COMBAT_DEATHDAMAGE}
+local COMBAT = {physical = COMBAT_PHYSICALDAMAGE, death = COMBAT_DEATHDAMAGE, energy = COMBAT_ENERGYDAMAGE}
 
 function M.combatType(name)
 	return COMBAT[name] or COMBAT_PHYSICALDAMAGE
+end
+
+-- the animations the ranged minions throw (necro_config.lua minions[kind].ani) and the effects on their target
+-- (hitEffect); a kind without them throws the death skull and uses the combat type's effect
+local ANI = {death = CONST_ANI_DEATH, arrow = CONST_ANI_ARROW, energy = CONST_ANI_ENERGY}
+local EFFECT = {hitarea = CONST_ME_HITAREA, energyhit = CONST_ME_ENERGYHIT, mortarea = CONST_ME_MORTAREA}
+
+function M.animation(k)
+	return ANI[k.ani or "death"] or CONST_ANI_DEATH
+end
+
+function M.hitEffect(k)
+	return EFFECT[k.hitEffect or ""] or (M.combatType(k.combat) == COMBAT_DEATHDAMAGE and CONST_ME_MORTAREA or CONST_ME_HITAREA)
 end
 
 -- "necromancer" | "lich" | "bonelord" | nil
@@ -113,7 +126,10 @@ function M.spotAt(pos, ref)
 	return spots[1] and spots[1].pos or nil
 end
 
--- create a minion of `kind` for `player` at `pos` with `ratio` (0-1, default 1) of its health; returns it or nil
+-- Create a minion of `kind` for `player` at `pos` with `ratio` (0-1, default 1) of its health; returns it or nil.
+-- The class's total cap (necro_config.lua minions.classes[].total, all kinds together) is enforced here, so every
+-- spell follows it: when the cap is reached, the OLDEST minion is dismissed (a puff, no corpse, no loot) and then the
+-- new one is created.
 function M.raise(player, kind, pos, ratio)
 	local classKey = M.classOf(player)
 	if not classKey then
@@ -123,11 +139,19 @@ function M.raise(player, kind, pos, ratio)
 	if not spot then
 		return nil
 	end
+	local list = M.minions(player)
+	local drop = N.makeRoom(cfg(), classKey, player:getLevel(), list, M.capBonus(player))
+	if not drop then
+		return nil
+	end
+	for _, i in ipairs(drop) do
+		M.dismiss(list[i].creature)
+	end
 	local m = Game.createMonster(cfg().minions[kind].monster, spot, false, true)
 	if not m then
 		return nil
 	end
-	m:setMaster(player)
+	ChaosSpell.bindSummon(player, m) -- an ally of its owner: no target of its own from the start
 	m:setDropLoot(false)
 	m:registerEvent("ChaosNecroMinionGuard")
 	local level, ml = player:getLevel(), player:getMagicLevel()
@@ -252,9 +276,9 @@ function M.hoard(player)
 	if classKey ~= "lich" then
 		return 1
 	end
-	local kind = N.raiseKind(cfg(), classKey)
+	-- the Lich's slot is its one minion of any kind (a summon spell's minion takes the shade's place)
 	local tree = CT.has(player, "ksHoardedSouls") and CT.fx.ksHoardedSouls or nil
-	return N.soulHoard(cfg(), classKey, N.minionCap(cfg(), classKey, kind, player:getLevel()), M.count(player, kind), tree)
+	return N.soulHoard(cfg(), classKey, N.totalCap(cfg(), classKey, player:getLevel(), M.capBonus(player)), M.count(player), tree)
 end
 
 -- the factor of the own spells' damage: Soul Hoard (Lich) x Covenant of the Grave

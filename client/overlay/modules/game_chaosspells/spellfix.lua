@@ -18,6 +18,8 @@
 
 ChaosSpellFix = {}
 local F = ChaosSpellFix
+-- the module is sandboxed: the global must be set on _G for the base's action bar and hotkeys (base patch 0079)
+_G.ChaosSpellFix = F
 
 F.OFF_SERVER = 1000
 
@@ -34,13 +36,13 @@ F.STOCK = {
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
   ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, 7, 15 } }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, range = 7, vocations = { 4, 8, 14 } }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 } }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3, 7, 15 } },         -- Hallowed Ground (268)
   ["vok rek kal"] = { range = 7, needTarget = true },               -- Duelist's Oath: the server needs a target
   ["saen kin"] = { mana = 140 },                                    -- Kindred Mend
-  ["drai gor ul"] = { mana = 210 },                                 -- Bramble Fan
+  ["drai gor ul"] = { mana = 180 },                                 -- Bramble Fan (server patch_spell_timings.py)
   ["saen"] = { vocations = { 1, 3, 4, 5, 7, 8, 10, 14, 15, 20, 21, 22 } }, -- Minor Mending: the Warrior line too
   ["kah tin zhul"] = { vocations = { 1, 5, 10 } },                  -- Static Sting: the Illusionist too
   ["kah gal brak"] = { group = { [1] = 4000 } },                    -- Ruinous Cleave
@@ -55,7 +57,12 @@ F.STOCK = {
   ["reth vas kin"] = { mana = 0 },
   ["hesh vas kin"] = { mana = 0 },
   ["kah rek zhul"] = { range = 5, exhaustion = 8000 },              -- Skyfang
-  ["kah brak"] = { exhaustion = 2000 },                             -- Bonebreaker: 2 s (server patch_spell_timings.py)
+  ["kah brak"] = { exhaustion = 2000, level = 8, mana = 10 },       -- Bonebreaker: 2 s, level 8, 10 mana (server patch_spell_timings.py)
+  ["kah sag"] = { level = 8, mana = 20 },                           -- Phantom Javelin: level 8, 20 mana (server patch_spell_timings.py)
+  ["kah vas"] = { mana = 60 },                                      -- Earthrend: the Warrior line's mana runway
+  ["kah"] = { mana = 40 },                                          -- Reaver's Spin
+  ["kah ti"] = { mana = 55 },                                       -- Scything Arc
+  ["kah gal"] = { mana = 100 },                                     -- Butcher's Gyre
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
   ["drai pyr ul"] = { exhaustion = 4000 },                          -- Cinder Fan
@@ -323,6 +330,32 @@ function F.remapHelper(data, idMap, removedIds)
   return true
 end
 
+-- Does the character's class list this spell in a picker (base patch 0079: the action bar's Assign Spell, the custom
+-- hotkeys' Assign Spell, and the bar's can-cast checks)? The base compared the spell's vocation list with
+-- translateVocation(vocation), which folds the Chaos classes onto old ids (Beastmaster / Deadeye / Ranger 7, Illusionist
+-- 6, Mystic / Elementalist 5, ...). A Chaos spell lists the server ids (Moonfang Pack {10}, Wild Bond {15}), so it never
+-- matched and the Beastmaster saw only the stock "Summon Paladin Familiar" (owner report 2026-10-17: "the wolf is not
+-- in the hotbar list, only a paladin summon that does not work"). A spell matches by the server id or the folded id (so
+-- nothing the base listed disappears); an entry the server does not have (notOnServer) never matches.
+-- spell: a SpellInfo entry; vocation: the player's server vocation id; translate: translateVocation (default: the global)
+function F.allowsVocation(spell, vocation, translate)
+  if type(spell) ~= 'table' or spell.notOnServer then
+    return false
+  end
+  local list = spell.vocations
+  if type(list) ~= 'table' then
+    return true
+  end
+  translate = translate or rawget(_G, 'translateVocation')
+  local folded = translate and translate(vocation) or nil
+  for _, v in ipairs(list) do
+    if v == vocation or (folded ~= nil and folded ~= 0 and v == folded) then
+      return true
+    end
+  end
+  return false
+end
+
 -- the words the server has: the Chaos spells' and the renamed stock spells' (ChaosSpellNames values)
 function F.serverWords(chaosSpells, chaosNames)
   local s = {}
@@ -333,4 +366,95 @@ function F.serverWords(chaosSpells, chaosNames)
     s[e.words:lower()] = true
   end
   return s
+end
+
+-- The helper offers a spell only from its own per-vocation id lists (HelperSpellData). Adds every spell of `spells` to
+-- them, for each helper class of its server vocations (and the promoted class, +10): the attack-type spells to the
+-- vocation list, healing ones (group 2) also to the healing filter, support ones (group 3) also to the support
+-- whitelist. Owner report 2026-10-17 ("some spells appear in the spellbook but not in the helper"): the base spells the
+-- client had no entry for (F.EXTRA) were never added, and a stock spell the helper's own list lacks stayed out.
+--   data: HelperSpellData; helperVocation: server vocation id -> helper class; exclude: set of ids never offered;
+--   spells: {{id, groups = {group numbers}, vocations = {server ids}, name}}; skipIgnored: leave out the ids the
+--   helper itself ignores (data.getIgnoredSpellsIds)
+-- Returns the list of additions {id, name, vocation} (empty when everything was already there; idempotent).
+function F.extendHelperLists(data, spells, helperVocation, exclude, skipIgnored)
+  local added = {}
+  if not data or not data.getSpellFilterByVocation then
+    return added
+  end
+  local byVocation = data.getSpellFilterByVocation()
+  local healing = data.getHealingSpellFilter and data.getHealingSpellFilter() or {}
+  local support = data.getSupportSpellsWhitelist and data.getSupportSpellsWhitelist() or {}
+  local supportSet = data.getSupportSpellsWhitelistSet and data.getSupportSpellsWhitelistSet() or {}
+  local ignored = skipIgnored and data.getIgnoredSpellsIds and data.getIgnoredSpellsIds() or {}
+  local function has(list, id)
+    for _, v in ipairs(list or {}) do
+      if v == id then return true end
+    end
+    return false
+  end
+  for _, s in ipairs(spells) do
+    if not (exclude and exclude[s.id]) and not ignored[s.id] then
+      local vocs = {}
+      for _, v in ipairs(s.vocations or {}) do
+        local h = helperVocation[v]
+        if h then
+          vocs[h] = true
+          vocs[h + 10] = true
+        end
+      end
+      local isHealing, isSupport = false, false
+      for _, g in ipairs(s.groups or {}) do
+        if g == 2 then isHealing = true elseif g == 3 then isSupport = true end
+      end
+      for v in pairs(vocs) do
+        byVocation[v] = byVocation[v] or {}
+        local new = false
+        if not has(byVocation[v], s.id) then
+          table.insert(byVocation[v], s.id)
+          new = true
+        end
+        if isHealing then
+          healing[s.id] = healing[s.id] or {}
+          if not has(healing[s.id], v) then
+            table.insert(healing[s.id], v)
+            new = true
+          end
+        elseif isSupport then
+          support[v] = support[v] or {}
+          supportSet[v] = supportSet[v] or {}
+          if not has(support[v], s.id) then
+            table.insert(support[v], s.id)
+            new = true
+          end
+          supportSet[v][s.id] = true
+        end
+        if new then
+          added[#added + 1] = { id = s.id, name = s.name, vocation = v }
+        end
+      end
+    end
+  end
+  return added
+end
+
+-- the castable spells of the client's own spell table (SpellInfo.Default after the fixes): instants the server has, as
+-- {id, name, groups, vocations}. notOnServer entries, ids past the server's byte range, runes and conjure spells, and the
+-- ids of removedIds (the spells the server removed) are left out.
+function F.castableFromInfo(info, removedIds)
+  local out = {}
+  for name, s in pairs(info or {}) do
+    if type(s) == 'table' and type(s.id) == 'number' and s.id < F.OFF_SERVER and not s.notOnServer
+        and (s.type == nil or s.type == 'Instant') and type(s.vocations) == 'table' and #s.vocations > 0
+        and not (removedIds and removedIds[s.id]) then
+      local groups = {}
+      if type(s.group) == 'table' then
+        for g in pairs(s.group) do groups[#groups + 1] = g end
+        table.sort(groups)
+      end
+      out[#out + 1] = { id = s.id, name = name, groups = groups, vocations = s.vocations }
+    end
+  end
+  table.sort(out, function(a, b) return a.id < b.id end)
+  return out
 end

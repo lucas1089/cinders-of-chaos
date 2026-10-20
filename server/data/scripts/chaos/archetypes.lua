@@ -36,6 +36,16 @@ end
 if not ChaosSpell then
 	pcall(dofile, "data/spells/scripts/chaos/_common.lua") -- canAttack / isEnemy (PvP rules), Fx
 end
+if not ChaosSummonsCore then
+	pcall(dofile, "data/scripts/chaos/summons_core.lua") -- bind: a summon starts as an ally of its owner
+end
+local function bindSummon(player, monster)
+	if ChaosSummonsCore then
+		return ChaosSummonsCore.bind(player, monster)
+	end
+	monster:setMaster(player)
+	return monster
+end
 ChaosKeystones = ChaosKeystones or {}
 ChaosKeystones.depth = ChaosKeystones.depth or 0
 ChaosPassiveTree = ChaosPassiveTree or {}
@@ -513,7 +523,7 @@ local function raiseEffigy(player, cast)
 		cast = cast}
 	local ok, m = pcall(Game.createMonster, cfg().arEffigy.monster, pos, false, true)
 	if ok and m then
-		m:setMaster(player)
+		bindSummon(player, m)
 		if m.setDropLoot then
 			m:setDropLoot(false)
 		end
@@ -783,17 +793,22 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 		end
 	end
 
-	-- Sanguine Covenant: the leech
+	-- Sanguine Covenant: the leech, on the damage that really landed (read from the target's health a tick later)
 	if flags.arSanguine and oname ~= "condition" then
-		local give = A.leech(stateOf(pid).leech, t, amount, player:getMaxHealth(), hasUnique(pid, "sanguineVein"))
-		if give > 0 then
-			addEvent(function()
-				local p = Player(pid)
-				if p and p:getHealth() > 0 and Chaos and Chaos.heal then
-					Chaos.heal(p, give)
-				end
-			end, 0)
-		end
+		local before = creature:getHealth()
+		local unique = hasUnique(pid, "sanguineVein")
+		addEvent(function()
+			local p = Player(pid)
+			if not p or p:getHealth() <= 0 then
+				return
+			end
+			local target = Creature(cid)
+			local landed = A.landed(amount, before, target and target:getHealth() or 0)
+			local give = A.leech(stateOf(pid).leech, now(), landed, p:getMaxHealth(), unique)
+			if give > 0 and Chaos and Chaos.heal then
+				Chaos.heal(p, give)
+			end
+		end, 0)
 	end
 
 	if source then
@@ -1133,7 +1148,7 @@ local function relicTick(player, s, t)
 		if not ok or not m then
 			return
 		end
-		m:setMaster(player)
+		bindSummon(player, m)
 		if m.setDropLoot then
 			m:setDropLoot(false)
 		end

@@ -357,6 +357,54 @@ local function bossOutfit(id)
 	return outfit
 end
 
+-- The "Potential Boss Loot" panel (28 slots): what the dungeon's config lists first (the crystal coins of the clear),
+-- then what the boss monster can really drop (MonsterType:getLoot(), the rarest first, each item once). Display only:
+-- the real loot is what the boss drops (owner 2026-10-17: the panel showed 3 crystal coins and nothing else).
+local LOOT_SLOTS = 28
+local function bossLootPanel(extra)
+	local loot, seen = {}, {}
+	local function push(itemId, count)
+		if #loot >= LOOT_SLOTS or seen[itemId] then
+			return
+		end
+		local itemType = ItemType(itemId)
+		if not itemType or itemType:getId() == 0 then
+			return
+		end
+		seen[itemId] = true
+		loot[#loot + 1] = {clientId = itemType:getClientId(), count = math.max(1, count or 1)}
+	end
+	for _, item in ipairs(extra.loot or {}) do
+		local itemType = ItemType(item.id)
+		if itemType and itemType:getId() ~= 0 then
+			seen[item.id] = true
+			loot[#loot + 1] = {clientId = itemType:getClientId(), count = item.count}
+		else
+			loot[#loot + 1] = {clientId = item.id, count = item.count}
+		end
+	end
+	local name = extra.bossType or extra.bossName
+	local monsterType = name and MonsterType and MonsterType(name)
+	if monsterType and monsterType.getLoot then
+		local rows = {}
+		for _, e in ipairs(monsterType:getLoot() or {}) do
+			if e.itemId and (e.chance or 0) > 0 then
+				rows[#rows + 1] = e
+			end
+		end
+		table.sort(rows, function(a, b)
+			if (a.chance or 0) ~= (b.chance or 0) then
+				return (a.chance or 0) < (b.chance or 0)
+			end
+			return (a.itemId or 0) < (b.itemId or 0)
+		end)
+		for _, e in ipairs(rows) do
+			push(e.itemId, e.maxCount)
+		end
+	end
+	return loot
+end
+
 local function dungeonPayload(player, id, dg)
 	local extra = extraOf(id)
 	local progress = loadProgress(player:getGuid(), id)
@@ -366,11 +414,7 @@ local function dungeonPayload(player, id, dg)
 		req.party = groupSizeOf(dg)
 	end
 
-	local loot = {}
-	for i, item in ipairs(extra.loot or {}) do
-		local itemType = ItemType(item.id)
-		loot[i] = {clientId = itemType:getId() ~= 0 and itemType:getClientId() or item.id, count = item.count}
-	end
+	local loot = bossLootPanel(extra)
 
 	local challenges = {}
 	for i, ch in ipairs(extra.challenges or {}) do
@@ -733,6 +777,79 @@ function ChaosDungeons.inside(id, pos)
 	return dg ~= nil and dg.FromPos ~= nil and dg.ToPos ~= nil and dg.DungeonPos ~= nil and inBox(id, dg, pos)
 end
 
+-- ------------------------------------------------------------------ map spawns
+-- The map's own spawn system makes monsters come back inside a running dungeon, and they were not part of the count
+-- the run was started with (a dungeon never reached its percentage). So: (1) every monster the map places at the server
+-- start inside a dungeon area is remembered (name and tile); (2) a run starts by clearing its area and creating all of
+-- them at once; (3) while a run lasts, the map's own respawn inside its area is refused (EventCallback onSpawn: a
+-- spawn that is neither the server start nor made by a script). The area spawns again when the run is over.
+local mapSpawns = {} -- [dungeonId] = { {name = , pos = }, ... }
+
+local function dungeonIdAt(pos)
+	for id, dg in pairs(baseDungeons()) do
+		if dg.FromPos and dg.ToPos and dg.DungeonPos and inBox(id, dg, pos) then
+			return id, dg
+		end
+	end
+	return nil
+end
+
+local function runAt(pos)
+	for _, run in pairs(runs) do
+		if not run.ended then
+			local dg = baseDungeons()[run.dungeonId]
+			if dg and dg.FromPos and inBox(run.dungeonId, dg, pos) then
+				return run
+			end
+		end
+	end
+	return nil
+end
+
+-- the base dungeon's own spawn list (dg.Monsters, SpawnMonsters) is created by startRun already; the map's are these
+local function fillFromMap(dungeonId, dg, bossName)
+	local list = mapSpawns[dungeonId]
+	if not list or #list == 0 then
+		return 0 -- no start-up record (scripts reloaded, or a generated dungeon): the monsters that stand there stay
+	end
+	cleanArea(dungeonId, dg, bossName)
+	local made = 0
+	for _, e in ipairs(list) do
+		local m = Game.createMonster(e.name, Position(e.pos.x, e.pos.y, e.pos.z), false, true)
+		if m then
+			made = made + 1
+			if ChaosPace and ChaosPace.mark then
+				ChaosPace.mark(m)
+			end
+		end
+	end
+	return made
+end
+
+local spawnCb = EventCallback
+spawnCb.onSpawn = function(self, position, startup, artificial)
+	if artificial then
+		return true -- made by a script (the run's own monsters, summons, bosses, adds)
+	end
+	if startup then
+		local id = dungeonIdAt(position)
+		if id and not self:getMaster() then
+			local list = mapSpawns[id]
+			if not list then
+				list = {}
+				mapSpawns[id] = list
+			end
+			list[#list + 1] = {name = self:getName(), pos = {x = position.x, y = position.y, z = position.z}}
+		end
+		return true
+	end
+	if runAt(position) then
+		return false -- no respawn inside a running dungeon
+	end
+	return true
+end
+spawnCb:register(5)
+
 local function startRun(dungeonId, difficulty, players)
 	local dg = baseDungeons()[dungeonId]
 	local extra = extraOf(dungeonId)
@@ -764,6 +881,8 @@ local function startRun(dungeonId, difficulty, players)
 			end
 		end
 	end
+	-- the map's monsters all stand there from the first second (see "map spawns")
+	fillFromMap(dungeonId, dg, bossName)
 	-- a generated dungeon (areagen.lua) fills its spawn points and its boss for every run
 	if extra.populate then
 		pcall(extra.populate, dungeonId)

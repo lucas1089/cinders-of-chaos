@@ -12,7 +12,8 @@ local function ok(v, m) eq(not not v, true, m) end
 -- a state as the server sends it (hideout_core.lua K.catalogueView / K.layoutView)
 local layout = { w = 15, h = 11, arrival = { 8, 10 }, reserved = {
   { 8, 10, 'arrival' }, { 8, 11, 'exit' }, { 2, 1, 'depot' }, { 4, 1, 'stash' }, { 13, 1, 'dummy1' }, { 14, 1, 'dummy2' },
-  { 1, 1, 'light1' }, { 15, 1, 'light2' }, { 1, 11, 'light3' }, { 15, 11, 'light4' } } }
+  { 1, 1, 'light1' }, { 15, 1, 'light2' }, { 1, 11, 'light3' }, { 15, 11, 'light4' },
+  { 8, 6, 'waystone' }, { 7, 5, 'waystonepad1' }, { 9, 5, 'waystonepad2' }, { 7, 7, 'waystonepad3' }, { 9, 7, 'waystonepad4' } } }
 local catalogue = {
   { key = 'throne', name = 'Ashen Throne', cat = 'furniture', layer = 'object', owned = true, max = 2, placed = 0,
     source = 'default', rots = { { { 0, 0, 101 } }, { { 0, 0, 102 } }, { { 0, 0, 103 } }, { { 0, 0, 104 } } } },

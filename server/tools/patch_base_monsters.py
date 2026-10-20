@@ -11,6 +11,11 @@ DATA_DIR is the base server's data folder. Every monster file under DATA_DIR/mon
   * a loot item named with its article ("the torso of a jester doll") becomes the item id of that name in
     DATA_DIR/items/items.xml (the engine looks loot names up without the article: "Unknown loot item", "Cant load
     loot"; undead_jester.xml). The old name stays as a comment after the tag
+  * a monster no longer flees at low health (owner 2026-10-18): runonhealth="N" (XML) / runHealth = N (Lua) with N > 0
+    becomes 0
+  * fire immunity (XML <immunity fire="1"/> or firePercent 100+; Lua {type = "fire"} or a fire percent of 100+) becomes
+    a fire resistance of FIRE_RESIST_PERCENT (30: the monster takes 70%) so that Pyre Oath never burns its owner for
+    nothing (owner decision, C7; tools/monster_fire_resist.py holds the number)
   * a race the engine does not know (Lua monster.race = "magical", "dragon"; XML race="...") gets a known one:
     RACE_MAP, else blood ("Unknown race type")
 Only those attributes change. A second run changes nothing. Prints one line per changed file and a summary.
@@ -18,6 +23,10 @@ Only those attributes change. A second run changes nothing. Prints one line per 
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.dont_write_bytecode = True
+import monster_fire_resist as fire  # noqa: E402
 
 KNOWN_RACES = ('venom', 'blood', 'undead', 'fire', 'energy')
 RACE_MAP = {'magical': 'energy', 'magic': 'energy', 'dragon': 'blood', 'demon': 'fire', 'elemental': 'energy',
@@ -30,6 +39,8 @@ OWN = ('chaos',)
 XML_SPEED_RE = re.compile(r'(\s(?:speedchange|minspeedchange|maxspeedchange)\s*=\s*")(-?\d+)(")', re.I)
 LUA_SPEED_RE = re.compile(r'(\b(?:speedChange|minSpeedChange|maxSpeedChange)\s*=\s*)(-\s*\d+)')
 LOOT_RE = re.compile(r'<item\b[^>]*?\bname="([^"]*)"[^>]*?/?>')
+XML_RUN_RE = re.compile(r'(\brunonhealth\s*=\s*")(\d+)(")', re.I)
+LUA_RUN_RE = re.compile(r'(\brunHealth\s*=\s*)(\d+)')
 XML_RACE_RE = re.compile(r'(<monster\b[^>]*?\srace=")([^"]*)(")')
 LUA_RACE_RE = re.compile(r'(\.race\s*=\s*)(["\'])([^"\']*)\2')
 ITEM_RE = re.compile(r'<item\b([^>]*)>')
@@ -98,6 +109,13 @@ def patch_xml(text, names):
         return m.group(1) + str(MIN_SPEED) + m.group(3)
     text = XML_SPEED_RE.sub(speed, text)
 
+    def run(m):
+        if int(m.group(2)) == 0:
+            return m.group(0)
+        changes.append('runonhealth %s -> 0' % m.group(2))
+        return m.group(1) + '0' + m.group(3)
+    text = XML_RUN_RE.sub(run, text)
+
     def loot(m):
         tag, name = m.group(0), m.group(1)
         if attr(tag, 'id') is not None:
@@ -117,6 +135,9 @@ def patch_xml(text, names):
         changes.append('race %s -> %s' % (m.group(2), r))
         return m.group(1) + r + m.group(3)
     text = XML_RACE_RE.sub(race, text, count=1)
+    text, immune = fire.xml(text)
+    if immune:
+        changes.append('fire immunity -> %d%% resistance' % fire.FIRE_RESIST_PERCENT)
     return text, changes
 
 
@@ -131,6 +152,13 @@ def patch_lua(text):
         return m.group(1) + str(MIN_SPEED)
     text = LUA_SPEED_RE.sub(speed, text)
 
+    def run(m):
+        if int(m.group(2)) == 0:
+            return m.group(0)
+        changes.append('runHealth %s -> 0' % m.group(2))
+        return m.group(1) + '0'
+    text = LUA_RUN_RE.sub(run, text)
+
     def race(m):
         r = new_race(m.group(3))
         if r is None:
@@ -138,6 +166,9 @@ def patch_lua(text):
         changes.append('race %s -> %s' % (m.group(3), r))
         return m.group(1) + m.group(2) + r + m.group(2)
     text = LUA_RACE_RE.sub(race, text)
+    text, immune = fire.lua(text)
+    if immune:
+        changes.append('fire immunity -> %d%% resistance' % fire.FIRE_RESIST_PERCENT)
     return text, changes
 
 

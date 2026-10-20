@@ -65,6 +65,10 @@ eq(V.canDeposit({ canDeposit = true, depositWhy = 'pz' }, 0), false, 'left the z
 eq(V.canDeposit({ canDeposit = true, depositWhy = 'hideout' }, 0), true, 'inside a hideout')
 has(V.depositLockedText(), 'Storage & Slots', 'the locked state says where to unlock')
 has(V.stowTooltip(false, {}), 'Chaos Pact', 'Stow Everything locked: where to unlock')
+eq(V.canDeposit({ closed = true, canDeposit = false }, 0), false, 'closed: no deposit, not even in a protection zone')
+has(V.depositLockedText({ closed = true }), 'your depot', 'closed: the line names the depot')
+has(V.stowTooltip(false, { closed = true }), 'closed to new items', 'closed: Stow Everything says so')
+has(V.infoText({ tabs = {}, limit = 1, tabSize = 100, closed = true }, 0, true, false), 'use your depot', 'closed: the line under the list')
 has(V.stowTooltip(true, { remote = 'pact' }), 'lent by your Chaos Pact', 'Stow Everything: the unlock source')
 has(V.infoText(d, 0, false, false), 'remote deposit', 'the line under the list when locked')
 

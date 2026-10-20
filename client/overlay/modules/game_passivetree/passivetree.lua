@@ -475,7 +475,25 @@ function setNodeTooltip(widget, node)
 		end
 	end
 	if texts then
+		if customStats and not node.isMastery and statInfoLines then
+			for _, line in ipairs(statInfoLines(customStats)) do
+				table.insert(texts, line) -- statinfo.lua: what each stat does
+			end
+		end
 		widget.setExtendedTooltip(widget, title, texts, tooltipType)
+	end
+	if markStatNode and not node.isMastery then
+		markStatNode(widget, customStats) -- statinfo.lua: gold / silver border for Primary / Secondary
+	end
+end
+
+-- statinfo.lua: new stat texts arrived; redo the tooltip and mark of every node widget
+function refreshStatMarks()
+	for id, widget in pairs(nodeWidgets or {}) do
+		local node = treeData and treeData.nodes and treeData.nodes[id]
+		if node and not widget:isDestroyed() then
+			setNodeTooltip(widget, node)
+		end
 	end
 end
 
@@ -1824,6 +1842,9 @@ function show()
 	sendAction("requestPoints")
 	sendAction("requestNodesUnlocked")
 	sendAction("paragonRequest")
+	if requestStatInfo then
+		requestStatInfo() -- statinfo.lua
+	end
 	window:show()
 	window:raise()
 	window:focus()
@@ -1855,6 +1876,12 @@ function hide()
 	window.presets:hide()
 	closeParagon()
 	closeTrials()
+	if closeAutoBuild then
+		closeAutoBuild() -- autobuild.lua
+	end
+	if closeStatInfo then
+		closeStatInfo() -- statinfo.lua
+	end
 	if closeMasteryChoice then
 		closeMasteryChoice() -- planner.lua
 	end

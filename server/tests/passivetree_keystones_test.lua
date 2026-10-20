@@ -204,9 +204,13 @@ pal.slots[CONST_SLOT_LEFT] = item(2456, WEAPON_DISTANCE, SLOTP_TWO_HAND); dealt 
 pd = ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED)
 eq(pd, 500, "deadeye needs a crossbow"); runEvents()
 pal.slots[CONST_SLOT_LEFT] = item(2455, WEAPON_DISTANCE, SLOTP_TWO_HAND)
+-- the ricochet is a sure bounce (chance 100 since 2026-10-17): a failing roll needs a lower chance
+local ricochetChance = cfg.ricochet.chance
+cfg.ricochet.chance = 50
 math.random = function() return 100 end; dealt = {}
 ev.onHealthChange(t1, pal, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED); runEvents()
 eq(#dealt, 0, "no proc when the roll fails")
+cfg.ricochet.chance = ricochetChance
 math.random = function() return 1 end
 
 -- knight with a shield: block, reflect; sentinel: thorns; both only against weapon attacks
@@ -347,7 +351,7 @@ for id, byVoc in pairs(expected) do
   for voc, key in pairs(byVoc) do eq(node.v[voc][key], 1, id .. " " .. voc) end
   eq(#node.n, 1, "keystone " .. id .. " ends its path")
 end
-eq(data.nodes[600].n[3], 619, "Wrath path starts at node 600"); eq(data.nodes[489].n[3], 622, "Resolve path starts at 489")
+eq(data.nodes[600].n[3], 619, "Wrath path starts at node 600"); eq(data.nodes[489], nil, "node 489 (drown) left the tree"); local has623 = false; for _, nb in ipairs(data.nodes[622].n) do has623 = has623 or nb == 623 end; eq(has623, true, "Resolve path: 622 leads to 623")
 
 -- passivetree.lua picks the class's variant (the real class table: class keys)
 local savedChaos = Chaos

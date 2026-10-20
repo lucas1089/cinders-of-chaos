@@ -21,7 +21,8 @@ return {
 	-- player storages (chaos_constants.lua block 7100011 - 7100019)
 	storage = {
 		seq = 7100011, -- the journal serial: saved with the character, it tells after a crash which side is true
-		migrated = 7100012 -- the depot migration version done for this character
+		migrated = 7100012, -- the depot migration version done for this character (depot -> stash, retired 2026-10-17)
+		toDepot = 7100013 -- the stash -> depot migration version done for this character
 	},
 
 	-- ------------------------------------------------------------------ room
@@ -93,15 +94,30 @@ return {
 	remoteDeposit = {extra = "stashRemote", pact = true},
 
 	-- ------------------------------------------------------------------ the depot transition (depot.lua, stash.lua)
+	-- Owner decision 2026-10-17 (later that day: "remova o depot e deixe so o stash") keeps the stash as the one storage:
+	-- the depot moves into it and is withdraw-only. The stash -> depot migration of the earlier 2026-10-17 request
+	-- (toDepot) stays in the code but is off.
 	depot = {
-		migrate = true, -- at login, once per character: every item of the depot boxes and chests moves into the stash
+		migrate = true, -- at a locker opening, once per character: every item of the depot boxes and chests moves into the stash
 		version = 1, -- raise to run the migration again (only what is still in a depot moves)
 		withdrawOnly = true -- the depot boxes and chests take no new items; the inbox and the market work as before
+	},
+	-- the stash -> depot migration (stash.lua S.migrateToDepot, run by depot.lua when a locker is opened: the engine
+	-- saves the depot only then). Every stash entry (a merged stack becomes stacks of `stackSize`, a stored item is made
+	-- again with all its attributes) goes into an open depot tab with room, through the stash journal (the same crash
+	-- safety as a withdrawal). What does not fit stays in the stash, withdraw-only: nothing is ever lost or deleted.
+	-- enabled: also closes the stash to new items (window drop, Stow Everything, scripts): it only gives items back.
+	toDepot = {
+		enabled = false,
+		version = 1, -- raise to run it again (only what is still in the stash moves)
+		batch = 40, -- entries moved per locker opening at most (each is one journalled, saved withdrawal)
+		stackSize = 100 -- items per depot stack
 	},
 	migrationBatch = 400, -- items moved per login at most (the rest at the next login)
 
 	-- ------------------------------------------------------------------ protocol
-	chunkSize = 40, -- entries per addItems packet (well under the 8 KB limit)
+	chunkSize = 40, -- entries per addItems packet at most
+	chunkBytes = 6000, -- and its entries' JSON at most this long: a packet over 8192 bytes is lost to this window (stash.lua sendItems)
 	maxDistance = 1, -- Chebyshev distance to a floor item deposited from the map
 	rate = {list = 300, withdraw = 250, stow = 1500, block = 100, open = 300, deposit = 100}, -- ms between requests
 
@@ -130,6 +146,10 @@ return {
 		migrated = "Your depot moved into your stash: %d item(s); %d did not fit and wait in the Old depot tab " ..
 			"(withdraw-only). %d stay in the depot.",
 		migratedMore = "More depot items move at your next login.",
+		toDepot = "Your stash moved into your depot: %d entr(ies). %d stay in the stash because the open depot tabs are full " ..
+			"(take them out in a protection zone and put them into your depot).",
+		toDepotMore = "More of your stash moves into your depot when you open a depot locker again.",
+		depositClosed = "The stash is closed to new items: put them into your depot. It only gives items back.",
 		depotClosed = "The depot boxes are withdraw-only now: everything goes into the stash (Economy > Supply Stash). " ..
 			"You can still take items out."
 	},

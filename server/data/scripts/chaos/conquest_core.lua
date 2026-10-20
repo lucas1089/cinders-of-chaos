@@ -23,6 +23,10 @@
 --   K.payload(cfg, offers, ctx)              -> the window's rows {k, id, n, g, l, p, s, set, ok, why}
 -- Reason keys map to the English texts of K.reasons (the pt-BR entries are in i18n_strings.lua).
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosConquestCore = ChaosConquestCore or {}
 local K = ChaosConquestCore
 local floor = math.floor
@@ -354,11 +358,12 @@ end
 -- ---------------------------------------------------------------- refinement
 function K.refinePrice(cfg, rarity)
 	local r = cfg.refine or {}
-	rarity = floor(num(rarity, 0))
-	if rarity < 1 or rarity + 1 > num(r.maxRarity, 0) then
+	-- by place in the order (data/lib/chaos_rarity.lua: Common 1 .. Divine 6): one place up, never above maxRarity
+	local rank = ChaosRarity.rank(rarity)
+	if rank < 1 or rank + 1 > ChaosRarity.rank(r.maxRarity) then
 		return nil
 	end
-	return floor(num(r.base, 0) + num(r.perRarity, 0) * (rarity + 1))
+	return floor(num(r.base, 0) + num(r.perRarity, 0) * (rank + 1))
 end
 
 function K.refineCheck(cfg, info)
@@ -366,7 +371,7 @@ function K.refineCheck(cfg, info)
 	if info.unique then
 		return nil, "unique"
 	end
-	if not info.gear or num(info.rarity, 0) < 1 then
+	if not info.gear or ChaosRarity.rank(info.rarity) < 1 then
 		return nil, "notGear"
 	end
 	if info.ruined then

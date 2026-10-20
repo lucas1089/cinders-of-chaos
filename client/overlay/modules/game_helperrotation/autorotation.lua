@@ -191,6 +191,36 @@ function A.merge(userRules, autoRules)
   return out, added
 end
 
+-- A class change (the store's Vocation Change, an ascension): the shooter rules and healing slots of spells the new class
+-- cannot cast stay in the Helper and the server refuses every one of them ("kept the old class's spells", owner report
+-- 2026-10-17). Drops them; item rules and the player's other rules stay. classOk(spellId) -> bool (the class lists the
+-- spell; the level does not matter: it will be reached). Returns the new rule list and how many rules went.
+function A.dropForeignRules(rules, classOk)
+  local out, dropped = {}, 0
+  for _, r in ipairs(rules or {}) do
+    if r.type == 'spell' and r.spellId and r.spellId > 0 and not classOk(r.spellId) then
+      dropped = dropped + 1
+    else
+      local c = {}
+      for k, v in pairs(r) do c[k] = v end
+      out[#out + 1] = c
+    end
+  end
+  return out, dropped
+end
+
+-- the healing slots ({id, percent}): a slot of a spell the new class cannot cast is emptied (id 0). Returns how many.
+function A.dropForeignHeals(slots, classOk)
+  local dropped = 0
+  for _, s in ipairs(slots or {}) do
+    if s.id and s.id ~= 0 and not classOk(s.id) then
+      s.id = 0
+      dropped = dropped + 1
+    end
+  end
+  return dropped
+end
+
 -- the spell ids of a rule list (spells only, in order)
 function A.ruleIds(rules)
   local ids = {}

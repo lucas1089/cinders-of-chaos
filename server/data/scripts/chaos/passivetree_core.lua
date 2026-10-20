@@ -9,7 +9,7 @@
 --   ChaosPassiveTreeCore.toMap(raw) / toList(map)     masteries from a request ({{id, choice}} or {[id] = choice}) / to JSON
 --   ChaosPassiveTreeCore.validatePlan(tree, current, currentMasteries, plan, ctx)   a whole planned allocation, see there
 --   ChaosPassiveTreeCore.checkMasteryChange(tree, current, masteries, id, choice)  changing the effect of a saved mastery
---   ChaosPassiveTreeCore.reworkedSince(list, seen) / dropNodes(tree, ids, drop)   the free refund of reworked nodes
+--   ChaosPassiveTreeCore.reworkedSince(list, seen, tree, variantKey) / dropNodes(tree, ids, drop)   the free refund of reworked nodes
 --
 -- Saved allocation text (the `nodes` column of chaos_passive_tree and the `tree` column of chaos_loadouts):
 --   "2,3,9"              node ids (root excluded), as before
@@ -318,9 +318,11 @@ end
 -- ------------------------------------------------------------------------------------------------ reworked nodes
 -- A node whose meaning changed a lot (config `reworked`: {{version, ids}}, append only) is refunded once, for free:
 -- the saved trees lose it, and the nodes only connected through it, at the first login after its version.
--- reworkedSince(list, seen) -> set of the ids reworked after version `seen` (a storage value; -1 / nil = none seen),
--- the newest version (seen when there is nothing newer)
-function M.reworkedSince(list, seen)
+-- reworkedSince(list, seen, tree, variantKey) -> set of the ids reworked after version `seen` (a storage value; -1 /
+-- nil = none seen), the newest version (seen when there is nothing newer). An entry with `lanes = true` also reworks,
+-- for a character whose variant key is `variantKey`, every plain node that has a class lane for that key (the
+-- generated re-skin of the tree for one class, tools/gen_class_lanes.lua): its stat changed for that class only.
+function M.reworkedSince(list, seen, tree, variantKey)
 	seen = tonumber(seen) or -1
 	local set, newest, any = {}, seen, false
 	for _, entry in ipairs(list or {}) do
@@ -329,6 +331,14 @@ function M.reworkedSince(list, seen)
 			for _, id in ipairs(entry.ids or {}) do
 				set[id] = true
 				any = true
+			end
+			if entry.lanes and tree and variantKey then
+				for id, node in pairs(tree.nodes) do
+					if node.s and node.v and node.v[variantKey] then
+						set[id] = true
+						any = true
+					end
+				end
 			end
 		end
 		if v > newest then

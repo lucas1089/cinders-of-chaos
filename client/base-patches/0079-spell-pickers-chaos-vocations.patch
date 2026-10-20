@@ -1,0 +1,56 @@
+# Chaos: the action bar's and the custom hotkeys' Assign Spell list the Chaos spells of the class (after 0001-0078). The pickers
+# compared a spell's vocation list with translateVocation(vocation), which folds the Chaos classes onto old ids (Beastmaster 7,
+# Illusionist 6, ...). The Chaos spells list the server ids (Wild Bond {15}, Moonfang Pack {10}), so they never showed, and the
+# stock "Summon Paladin Familiar" (a spell the server does not have) was the only summon of a Beastmaster. They now ask
+# ChaosSpellFix.allowsVocation (overlay game_chaosspells/spellfix.lua: the server id or the folded id; entries the server lacks
+# never match) for the picker rows and for the action bar's can-cast checks. Without the module the old test is used.
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -1936,7 +1936,9 @@
+ 
+ 	local spells = modules.gamelib.SpellInfo['Default']
+ 	for spellName, spellData in pairs(spells) do
+-		if not table.contains(spellData.vocations, translateVocation(player:getVocation())) then
++		-- Chaos: the class rule of ChaosSpellFix (the Chaos spells list server vocation ids; spells the server lacks stay out)
++		if not (ChaosSpellFix and ChaosSpellFix.allowsVocation and ChaosSpellFix.allowsVocation(spellData, player:getVocation(), translateVocation)
++				or (not ChaosSpellFix and table.contains(spellData.vocations, translateVocation(player:getVocation())))) then
+ 			goto continue
+ 		end
+ 
+@@ -2672,7 +2674,11 @@
+ 		return false
+ 	end
+ 
+-	if spellData.vocations and (not table.contains(spellData.vocations, translateVocation(player:getVocation()))) then
++	if ChaosSpellFix and ChaosSpellFix.allowsVocation then
++		if not ChaosSpellFix.allowsVocation(spellData, player:getVocation(), translateVocation) then
++			return false
++		end
++	elseif spellData.vocations and (not table.contains(spellData.vocations, translateVocation(player:getVocation()))) then
+ 		return false
+ 	end
+ 
+@@ -3430,7 +3436,9 @@
+ 	if spellData.mana and player and player:getMana() < spellData.mana then return false end
+ 	if spellData.level and player and player:getLevel() < spellData.level then return false end
+ 	if spellData.soul and player and player:getSoul() < spellData.soul then return false end
+-	if spellData.vocations and player and not table.contains(spellData.vocations, translateVocation(player:getVocation())) then return false end
++	if player and ChaosSpellFix and ChaosSpellFix.allowsVocation then
++		if not ChaosSpellFix.allowsVocation(spellData, player:getVocation(), translateVocation) then return false end
++	elseif spellData.vocations and player and not table.contains(spellData.vocations, translateVocation(player:getVocation())) then return false end
+ 	return true
+ end
+ 
+--- a/mods/client_settings/classes/custom-hotkeys.lua
++++ b/mods/client_settings/classes/custom-hotkeys.lua
+@@ -209,7 +209,9 @@
+       break
+     end
+ 
+-		if not table.contains(spellData.vocations, translateVocation(player:getVocation())) then
++		-- Chaos: the class rule of ChaosSpellFix (the Chaos spells list server vocation ids; spells the server lacks stay out)
++		if not (ChaosSpellFix and ChaosSpellFix.allowsVocation and ChaosSpellFix.allowsVocation(spellData, player:getVocation(), translateVocation)
++				or (not ChaosSpellFix and table.contains(spellData.vocations, translateVocation(player:getVocation())))) then
+ 			goto continue
+ 		end
+ 

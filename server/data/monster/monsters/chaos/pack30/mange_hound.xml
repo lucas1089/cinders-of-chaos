@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Mange Hound" nameDescription="a mange hound" race="blood" experience="3550" speed="70" manacost="0">
+	<health now="11440" max="11440" />
+	<look type="2301" head="22" body="39" legs="76" feet="76" corpse="6068"/>
+	<level min="580" max="600"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-510" max="-740"/>
+		<attack name="poisoncondition" interval="2000" chance="25" radius="2" target="0" range="3" min="-180" max="-270">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+	</attacks>
+	<defenses armor="90" defense="90">
+	</defenses>
+	<elements>
+		<element firePercent="-10" />
+		<element earthPercent="10" />
+	</elements>
+	<immunities>
+		<immunity invisible="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Grrrrr!"/>
+		<voice sentence="*snarl*"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+        <item id="11302" chance="375"/><!-- jadefen helmet -->
+        <item id="11301" chance="375"/>
+        <item id="11304" chance="375"/>
+        <item id="11303" chance="375"/>
+        <item id="8891" chance="375"/>
+        <item id="9931" chance="375"/>
+        <item id="11356" chance="375"/>
+        <item id="2645" chance="375"/>
+		<item id="8889" chance="250"/><!-- skullcrackerarmor;frozen plate;elite wyrmblood mail;swamplair armor -->
+		<item id="8887" chance="250"/>
+		<item id="12607" chance="250"/>
+		<item id="8880" chance="250"/>
+		<item id="2522" chance="250"/>
+		<item id="2520" chance="250"/>
+		<item id="11117" chance="250"/>
+		<item id="5741" chance="250"/>
+	</loot>
+</monster>

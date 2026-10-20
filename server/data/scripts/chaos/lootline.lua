@@ -173,8 +173,9 @@ local function begin(monster, corpse)
 		local okD, d = pcall(Chaos.monsterNameDescription, monster)
 		desc = okD and d or nil
 	end
-	-- the rarity names of the stock line (loot_config.lua gear.names) and the {} rarity (pouches_config.lua lootLine)
-	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names or nil
+	-- the rarity names come from data/lib/chaos_rarity.lua (lootline_core.lua translates the stock line's) and the {}
+	-- rarity from pouches_config.lua lootLine
+	local names = nil
 	local pc = ChaosPouchesConfig
 	local flag = pc and pc.lootLine and pc.lootLine.flagRarity or nil
 	X.current = {id = idOf(monster), owner = idOf(owner), monster = desc, bonus = {}, names = names, flag = flag}

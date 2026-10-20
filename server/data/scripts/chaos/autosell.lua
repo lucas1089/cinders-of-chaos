@@ -17,11 +17,18 @@
 -- No chat or Info & Services command (owner 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): the
 -- client's Auto Seller window (Economy > Auto Seller, module game_pouches) talks to A.handleAction through the pouches
 -- opcode 226 (pouches.lua): as_open | as_sync | sell | asrar {tier, on} | aslist {op = add|remove|clear, item} |
--- aspause {on}; the answer is the window state `autoseller` (A.state).
+-- aspause {on} | asevery {minutes = 0|5|10|15|30|60}; the answer is the window state `autoseller` (A.state).
+-- "Sell every X minutes" (owner 2026-10-17, off by default, storage autosellInterval): the same Loot Bag sale as the
+--   window's button (A.sellBag: same rules, same 30 s limit), started by one global timer (30 s) that walks only the
+--   registry of characters that have it on (A.auto), at most AK.MAX_PER_TICK sales per tick. No scan of the online list.
 -- (The Bottomless Loot Pouch unlock that used to live here is retired: pouches.lua.)
 --
 -- An EventCallback.onDropLoot, around the callbacks that already exist (lower index runs first):
 --   0 stock loot, 1 Chaos loot layer (loot.lua), 2 AUTO SELLER, 2.7 store pouches (pouches.lua), 3 base autoloot.
+
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -103,7 +110,7 @@ end
 local function itemInfo(item)
 	return {
 		unique = customAttr(item, "chaos_unique") ~= nil,
-		rarity = tonumber(customAttr(item, "rarity")) or 0,
+		rarity = ChaosRarity.canon(customAttr(item, "rarity")),
 		locked = (tonumber(customAttr(item, "chaos_locked")) or 0) ~= 0, -- the item lock (salvage.lua): never sold
 		attributes = item:hasAttribute(ITEM_ATTRIBUTE_NAME) or item:hasAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
 			or item:hasAttribute(ITEM_ATTRIBUTE_TEXT) or ownCustom(item)
@@ -247,6 +254,86 @@ function A.sellBag(player)
 	return plan
 end
 
+-- ------------------------------------------------------------------------ sell every X minutes
+-- A.auto[creature id] = {minutes =, nextAt =}: characters with the option on (read at login, set by asevery). Entries
+-- of characters that left or lost the unlock are dropped by the tick itself.
+A.auto = A.auto or {}
+
+local function registerAuto(player, minutes)
+	local id = player:getId()
+	if minutes > 0 then
+		A.auto[id] = {minutes = minutes, nextAt = os.time() + minutes * 60}
+	else
+		A.auto[id] = nil
+	end
+end
+
+function A.setInterval(player, minutes)
+	player:setStorageValue(ST.autosellInterval, minutes)
+	registerAuto(player, minutes)
+end
+
+-- one automatic sale of a registered character; returns false when it has to be tried again at the next tick
+local function autoSale(player, entry, now)
+	if player:getStorageValue(ST.shopAutoSeller) < 1 then
+		A.auto[player:getId()] = nil -- the Pact ended: off until it is set again
+		return true
+	end
+	-- the 30 s limit of the manual sale is shared: a sale just made by hand delays this one to the next tick
+	if AK.cooldownLeft(A.lastBagSale[player:getGuid()], now, AK.COOLDOWN) > 0 then
+		return false
+	end
+	entry.nextAt = now + entry.minutes * 60
+	local plan = A.sellBag(player)
+	if plan and plan.gold > 0 then
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, AK.saleText(plan, Chaos.lang(player)))
+	end
+	return true
+end
+
+function A.tick()
+	local now = os.time()
+	local made = 0
+	for id, entry in pairs(A.auto) do
+		if made >= AK.MAX_PER_TICK then
+			break
+		end
+		if AK.dueIn(entry.nextAt, now) <= 0 then
+			local player = Player(id)
+			if not player then
+				A.auto[id] = nil
+			else
+				local ok, done = pcall(autoSale, player, entry, now)
+				if not ok then
+					entry.nextAt = now + entry.minutes * 60
+					print("[Chaos autosell] timed sale failed: " .. tostring(done))
+				elseif done then
+					made = made + 1
+				end
+			end
+		end
+	end
+	return made
+end
+
+local tickEvent = GlobalEvent("ChaosAutoSellTick")
+function tickEvent.onThink(interval)
+	A.tick()
+	return true
+end
+tickEvent:interval(AK.TICK * 1000)
+tickEvent:register()
+
+local autoLogin = CreatureEvent("ChaosAutoSellLogin")
+function autoLogin.onLogin(player)
+	local minutes = AK.storedInterval(player:getStorageValue(ST.autosellInterval))
+	if minutes > 0 and player:getStorageValue(ST.shopAutoSeller) >= 1 then
+		registerAuto(player, minutes)
+	end
+	return true
+end
+autoLogin:register()
+
 -- ------------------------------------------------------------------------ the Auto Seller window (opcode 226)
 local NEEDS = "Needs the Auto Seller (Store > Convenience) or an active Chaos Pact."
 
@@ -262,6 +349,8 @@ function A.state(player, notice)
 		unlocked = player:getStorageValue(ST.shopAutoSeller) >= 1,
 		needs = Chaos.t(player, NEEDS),
 		paused = player:getStorageValue(ST.autosellPaused) == 1,
+		interval = AK.storedInterval(player:getStorageValue(ST.autosellInterval)), intervals = AK.INTERVALS,
+		nextIn = A.auto[player:getId()] and AK.dueIn(A.auto[player:getId()].nextAt, os.time()) or nil,
 		tiers = AK.tierList(AK.unpackTiers(player:getStorageValue(ST.autosellRarity))),
 		list = list, slots = SLOTS,
 		cooldown = AK.cooldownLeft(A.lastBagSale[guid], os.time(), AK.COOLDOWN), cooldownMax = AK.COOLDOWN,
@@ -321,7 +410,7 @@ function A.handleAction(player, action, data)
 		st.open = action == "as_open"
 		return st
 	end
-	if action ~= "sell" and action ~= "asrar" and action ~= "aslist" and action ~= "aspause" then
+	if action ~= "sell" and action ~= "asrar" and action ~= "aslist" and action ~= "aspause" and action ~= "asevery" then
 		return nil
 	end
 	if player:getStorageValue(ST.shopAutoSeller) < 1 then
@@ -344,6 +433,14 @@ function A.handleAction(player, action, data)
 		return A.state(player)
 	elseif action == "aslist" then
 		return A.state(player, listChange(player, d))
+	elseif action == "asevery" then
+		local minutes = AK.intervalOf(d.minutes)
+		if minutes == nil then
+			return A.state(player, Chaos.t(player, "Bad request."))
+		end
+		A.setInterval(player, minutes)
+		return A.state(player, minutes > 0 and Chaos.t(player, "Auto Seller: your Loot Bag is sold every %d minutes.", minutes)
+			or Chaos.t(player, "Auto Seller: timed selling is off."))
 	end
 	-- aspause {on = true}: corpse selling on; false: off
 	if type(d.on) ~= "boolean" then

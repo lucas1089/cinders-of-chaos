@@ -36,6 +36,10 @@ for _, p in ipairs(cfg.plans) do
 	end
 end
 ok(cfg.aid >= 47930 and cfg.aid <= 47939, "aid in its block")
+local lv = cfg.hall.levels
+ok(lv and #lv == 3 and lv[1].z == 7 and lv[1].max == 500 and lv[2].z == 6 and lv[2].max == 1000 and lv[3].z == 5 and lv[3].max == nil,
+	"floors by level: 7 for 1-500, 6 for 500-1000, 5 for 1000 and up")
+ok(cfg.hall.quests and cfg.hall.quests.z == 7 and #cfg.hall.quests.chests == 4, "the quest hall and the four reward chests of the base plaza")
 for k, v in pairs(cfg.texts["pt-BR"]) do
 	local a, b = select(2, k:gsub("%%[ds]", "")), select(2, v:gsub("%%[ds]", ""))
 	eq(a, b, "pt-BR keeps the conversions of " .. k)
@@ -59,7 +63,9 @@ local places = {
 		{id = "base_7_120_98", name = "Rat", level = {1, 20}, teleport = {x = 120, y = 98, z = 6},
 			sign = {x = 120, y = 96, z = 6}, dest = {x = 900, y = 900, z = 7}}
 	},
-	floors = {{z = 7, level = {1, 80}}, {z = 6, level = {80, 300}}, {z = 5, level = {300, 2000}}}
+	floors = {{z = 7, level = {1, 500}}, {z = 6, level = {500, 1000}}, {z = 5, level = {1000, 0}}},
+	-- the quest hall (tools/hall_quests.py): the label's spot and how many quests stand there
+	quests = {label = {x = 31, y = 24, z = 7}, count = 16}
 }
 eq(#H.validate(cfg, places), 0, "places valid")
 local dup = {back = places.back, places = {places.places[1], places.places[1]}}
@@ -92,11 +98,19 @@ eq(#idx.base, 1, "the base hunt is indexed")
 eq(H.label(cfg, idx.base[1], "pt-BR"), "Rat, níveis 1-20", "a base hunt's label")
 local fl = H.floorLabels(cfg, idx, "en")
 eq(#fl, 5, "a label per floor and one over each stairs up")
-eq(fl[1].text, "Floor 7: levels 1-80", "the entry floor's label")
+eq(fl[1].text, "Floor 7: levels 1-500", "the entry floor's label")
 eq(fl[1].pos.z, 7, "on its floor")
-eq(fl[2].text, "Up: floor 6, levels 80-300", "the stairs up name the next floor")
+eq(fl[2].text, "Up: floor 6, levels 500-1000", "the stairs up name the next floor")
 eq(fl[2].pos.y, cfg.hall.labels[1].up.y, "over the stairs up")
-eq(H.floorLabels(cfg, idx, "pt-BR")[1].text, "Andar 7: níveis 1-80", "pt-BR floor label")
+eq(H.floorLabels(cfg, idx, "pt-BR")[1].text, "Andar 7: níveis 1-500", "pt-BR floor label")
+local top = H.floorLabels(cfg, idx, "en")
+eq(top[#top].text, "Floor 5: levels 1000+", "the top floor has no ceiling")
+eq(top[4].text, "Up: floor 5, levels 1000+", "the stairs up to the top floor")
+eq(H.floorLabels(cfg, idx, "pt-BR")[#top].text, "Andar 5: níveis 1000+", "pt-BR top floor label")
+local ql = H.questLabel(cfg, idx, "en")
+ok(ql ~= nil and ql.text == "Quests" and ql.pos.x == 31 and ql.pos.z == 7, "the quest hall's label")
+eq(H.questLabel(cfg, idx, "pt-BR").text, "Missões", "pt-BR quest label")
+eq(H.questLabel(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), nil, "no quest hall: no label")
 eq(#H.floorLabels(cfg, H.index(cfg, {back = places.back, places = places.places}), "en"), 0, "no hall order: no floor label")
 local cfg2 = {aid = 47930, plans = {{id = "widowmere", monster = "M", minLevel = 600}}, texts = {}}
 eq(H.index(cfg2, places).list[1].minLevel, 600, "minLevel override")
@@ -263,14 +277,21 @@ function reader:say(text, kind, ghost, to, pos)
 	said[#said + 1] = {text, kind, to, pkey(pos)}
 end
 Game.getSpectators = function(pos)
-	return pkey(pos) == "110,98,6" and {reader} or {}
+	return (pkey(pos) == "110,98,6" or pkey(pos) == "31,24,7") and {reader} or {}
 end
 local fl = registered.ChaosHuntTeleportsLabels
 ok(fl ~= nil and fl.ms == cfg.floatText.interval, "label think registered")
 fl.onThink()
-eq(#said, 1, "one label")
+eq(#said, 2, "the teleport's label and the quest hall's")
 eq(said[1][1], "Widowmere, níveis 480-640", "label in the reader's language")
 ok(said[1][3] == reader and said[1][4] == "110,98,6", "sent to the reader only, over the teleport")
+local qsay
+for _, m in ipairs(said) do
+	if m[4] == "31,24,7" then
+		qsay = m
+	end
+end
+ok(qsay ~= nil and qsay[1] == "Missões" and qsay[3] == reader, "the quest hall's label, in the reader's language")
 local back = ChaosHuntTeleports.backFor({x = 500, y = 498, z = 8})
 ok(back and back.x == 100 and back.z == 6, "areagen exit lookup returns the room")
 

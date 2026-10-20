@@ -24,17 +24,17 @@ D.coins = {[2148] = true, [2152] = true, [2160] = true} -- gold, platinum, cryst
 
 -- The boss chest of a generated dungeon (areagen_config.lua `dungeon.chest`, areagen.lua AG.giveChest): every finisher
 -- gets it at the end of a won run. Per difficulty: gear pieces from the boss's own loot table, their rarity floor
--- (loot_config.lua gear.names: 3 Rare, 4 Epic, 5 Legendary, 6 Exotic, 7 Mythic, 8 Chaos) and the loot layer's bonus
+-- (stored ids of data/lib/chaos_rarity.lua: 3 Magic, 4 Rare, 5 Legendary; the six steps were 3, 4, 5, 6, 7, 8 of the 15) and the loot layer's bonus
 -- steps of `tier`, item levels above the boss drop (chaos_item_mods.lua M.sourceLevel of the boss level, tier boss;
 -- capped at its max), the dungeon's gold x (1 + the difficulty's gold bonus) to the bank, currency rolls at `tier`.
 -- The steps follow the Vault's boss curve (100-225%: a quarter more work per difficulty, so a little more each step).
 D.chestLevels = {
 	{pieces = 1, rarity = 3, itemLevel = 0, tier = "rare", currency = 1},
-	{pieces = 1, rarity = 4, itemLevel = 1, tier = "rare", currency = 1},
-	{pieces = 2, rarity = 5, itemLevel = 2, tier = "legendary", currency = 1},
-	{pieces = 2, rarity = 6, itemLevel = 3, tier = "legendary", currency = 2},
-	{pieces = 3, rarity = 7, itemLevel = 4, tier = "boss", currency = 2},
-	{pieces = 3, rarity = 8, itemLevel = 5, tier = "boss", currency = 3}
+	{pieces = 1, rarity = 3, itemLevel = 1, tier = "rare", currency = 1},
+	{pieces = 2, rarity = 4, itemLevel = 2, tier = "legendary", currency = 1},
+	{pieces = 2, rarity = 4, itemLevel = 3, tier = "legendary", currency = 2},
+	{pieces = 3, rarity = 5, itemLevel = 4, tier = "boss", currency = 2},
+	{pieces = 3, rarity = 5, itemLevel = 5, tier = "boss", currency = 3}
 }
 
 -- what one finisher's chest holds at this difficulty: {pieces, rarity, itemLevel (bonus), tier, currency, gold}

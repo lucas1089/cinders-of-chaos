@@ -380,6 +380,38 @@ function T.chargeInfo(charges, typeCharges)
 	return {n = math.max(0, floor(charges)), max = typeCharges > charges and floor(typeCharges) or nil}
 end
 
+-- "Estimated DPS" row of a weapon (weapon_dps_core.lua). w = the wielder {level, melee (best melee skill), distance};
+-- ms = the interval the viewer swings it at. Melee swords, axes, clubs and distance weapons only; nil otherwise.
+-- The number is x the display scale of the wielder's level, like every combat number (display_scale_core.lua).
+function T.dpsRow(item, it, w, ms)
+	local D = ChaosWeaponDps
+	if not (D and w and w.level) then
+		return nil
+	end
+	local wt = int(call(it, "getWeaponType"))
+	local melee = {[int(WEAPON_SWORD or 1)] = "sword", [int(WEAPON_CLUB or 2)] = "club", [int(WEAPON_AXE or 3)] = "axe"}
+	local typeName = melee[wt]
+	local isDistance = wt == int(WEAPON_DISTANCE or 5)
+	if not typeName and not isDistance then
+		return nil
+	end
+	local launcher = isDistance and ChaosArchery and ChaosArchery.kindOfType and ChaosArchery.kindOfType(it) or nil
+	local hasBit = bit and bit.band and bit.band(int(call(it, "getSlotPosition")), int(SLOTP_TWO_HAND or 2048)) ~= 0
+	local dps = D.round(D.estimate({
+		level = w.level, skill = typeName and w.melee or w.distance,
+		attack = attrOr(item, ITEM_ATTRIBUTE_ATTACK, call(it, "getAttack")), interval = ms,
+		launcher = launcher, twoHanded = hasBit or false, weaponType = typeName,
+		hitChance = attrOr(item, ITEM_ATTRIBUTE_HITCHANCE, call(it, "getHitChance"))}))
+	if not dps then
+		return nil
+	end
+	local DS = ChaosDisplayScale
+	if DS and DS.factor then
+		dps = dps * DS.factor(w.level)
+	end
+	return {k = "dps", l = "Estimated DPS", v = dps, fmt = "est"}
+end
+
 -- everything the tooltip shows. opts = {equippedIds = {[server id] = true}, attrs = item:getClientAttributes()}
 function T.build(item, opts)
 	opts = opts or {}
@@ -432,6 +464,11 @@ function T.build(item, opts)
 		local ms, capped = M.effectiveInterval(int(call(it, "getAttackSpeed")), own, w.voc, w.dex, w.cap)
 		tip.base[#tip.base + 1] = {k = "yourinterval", l = capped and "Your Attack Interval (capped)" or
 			"Your Attack Interval", v = floor(ms / 10 + 0.5) / 100, fmt = "sec", low = true}
+		-- the estimated damage per second of the auto attack with this weapon (weapon_dps_core.lua; an estimate)
+		local est = T.dpsRow(item, it, w, ms)
+		if est then
+			tip.base[#tip.base + 1] = est
+		end
 	end
 
 	local stats = {}

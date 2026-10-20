@@ -48,7 +48,7 @@ near(A.hitFactor({arCascade = true}, {origin = "melee"}), 0.95, "cascade: non-cr
 near(A.hitFactor({arCascade = true}, {origin = "condition"}), 1, "cascade: damage over time free")
 near(A.hitFactor({arStormstring = true}, {origin = "ranged", bow = true}), 0.9, "stormstring: bow hit")
 near(A.hitFactor({arStormstring = true}, {origin = "ranged", bow = false}), 1, "stormstring: a spear")
-near(A.hitFactor({arEffigy = true}, {origin = "spell"}), 0.65, "effigy: spells")
+near(A.hitFactor({arEffigy = true}, {origin = "spell"}), 0.75, "effigy: spells")
 near(A.hitFactor({arThornbound = true, arReliquary = true}, {origin = "melee"}), 0.81, "two prices multiply")
 near(A.hitFactor({arReliquary = true}, {origin = "spell", source = "relic"}), 1, "the relic's own pulse")
 -- the second round's prices
@@ -81,6 +81,22 @@ eq(A.leech(ls, 1200, 10000, 5000), 250, "capped at 6% a second (300)")
 eq(A.leech(ls, 1900, 1000, 5000), 0, "cap reached")
 eq(A.leech(ls, 2100, 1000, 5000), 50, "a new second")
 eq(A.leech({}, 0, 1000, 5000, true), 60, "the unique: 6%")
+-- C2: nothing to leech, nothing to divide
+eq(A.leech({}, 0, 0, 5000), 0, "zero damage")
+eq(A.leech({}, 0, nil, 5000), 0, "no amount")
+eq(A.leech({}, 0, 0 / 0, 5000), 0, "NaN")
+eq(A.leech({}, 0, 1000, 0), 0, "no maximum health")
+eq(A.leech({}, 0, 1000, nil), 0, "unknown maximum health")
+local cs = {}
+local got = 0
+for i = 1, 40 do got = got + A.leech(cs, 0, 10, 5000) end
+eq(got, 20, "40 hits of 10 leech 20 in total (0.5 carried)")
+eq(A.landed(900, 50000, 49100), 900, "landed: what the hit did")
+eq(A.landed(900, 50000, 50000), 0, "landed: an immune target lost nothing")
+eq(A.landed(0, 50000, 49000), 0, "landed: a zero hit")
+eq(A.landed(1000, 40, 0), 40, "landed: overkill is what was left")
+eq(A.landed(900, 100, 150), 0, "landed: healed meanwhile")
+eq(A.landed(nil, nil, nil), 0, "landed: nils")
 eq(A.healingTaken(-1000), -700, "healing taken 70%")
 
 -- Thornbound Oath
@@ -164,7 +180,23 @@ eq(A.shatterRadius(true), 3, "the wand: +1 sqm")
 eq(A.effigyCast({{id = 1, amount = 100, type = "ice"}}), nil, "one target: no effigy")
 local cast = A.effigyCast({{id = 1, amount = 100, type = "ice"}, {id = 2, amount = 300, type = "ice"}, {id = 3, amount = 50, type = "fire"}})
 check(cast and cast.count == 3 and cast.average == 150 and cast.type == "ice", "a cast")
-eq(A.effigyPulse(cast), 33, "22% of the average")
+eq(A.effigyPulse(cast), 36, "24% of the average")
+-- the rebalance (owner 2026-10-18, "the effigy lowers my dps"): a net gain in a pack, a smaller loss on one target
+do
+  local e = C.arEffigy
+  check(e.share == 0.24 and e.ownSpell == 0.75, "effigy numbers: pulse 24%, price x0.75")
+  near(A.effigyNetGain(false, 0.96), 0.1056, "effigy: +10.6% of the area damage (two effigies, Elementalist rotation)")
+  near(A.effigyNetGain(true, 0.96), 0.2784, "effigy: +27.8% with the Idol's third effigy")
+  check(A.effigyNetGain(false, 1) > 0.10 and A.effigyNetGain(false, 1) < 0.12, "a pack: a net gain of about 11%")
+  check(A.effigyNetGain(false, 0.5) > 0, "a net gain for any share of spell damage")
+  near(A.effigyNetGain(false, 1, 4000), 0.72 - 0.25, "a caster that casts every 4 s gets two pulses per cast")
+  near(A.effigyNetSingle(0.88), -0.22, "one target: no effigy, the price alone (was -31%)")
+  check(A.effigyNetSingle(0.88) > -0.31, "less than the old price on one target")
+  -- the old numbers lost in a pack: 2 x 0.22 x 0.65 = 0.286 against a price of 0.35
+  check(0.96 * (2 * 0.22 * 0.65 - 0.35) < 0, "(the old numbers were a net loss)")
+  -- the pulse is never below the price: every pulse of two effigies together beats what the price takes
+  check(2 * e.share * e.ownSpell > 1 - e.ownSpell, "2 effigies repay the price")
+end
 local list = {}
 eq(#A.effigyAdd(list, {n = 1}), 0, "first")
 eq(#A.effigyAdd(list, {n = 2}), 0, "second")
@@ -518,8 +550,24 @@ local war = mk("player", {hp = 4000, maxHp = 5000, slots = {[CONST_SLOT_LEFT] = 
 setTree(war, {arSanguine = 1, arThornbound = 1})
 local mob = mk("monster", {hp = 50000, pos = P(101, 100)})
 eq(hitBy(war, mob, 1000), 900, "Thornbound: own damage 90%")
+mob.c.hp = mob.c.hp - 900 -- the engine applies the damage after the events
 runEvents()
 eq(war.c.hp, 4045, "leeched 5% of 900")
+-- C2: an immune target (its health does not move) gives no heal; zero damage neither; overkill counts what was left
+war.c.hp = 4000
+hitBy(war, mob, 1000); runEvents()
+eq(war.c.hp, 4000, "immune target: the hit event saw 900 but nothing landed, no heal")
+hitBy(war, mob, 0); runEvents()
+eq(war.c.hp, 4000, "zero damage: no heal")
+local weak = mk("monster", {hp = 40, pos = P(101, 100)})
+hitBy(war, weak, 1000); weak.c.hp = 0; runEvents()
+eq(war.c.hp, 4000 + 2, "overkill: only the 40 health that was left leeches (5% = 2)")
+-- C2: small hits leech through the carried fraction (hits of 10 gave 0 each time before)
+war.c.hp = 4000
+for _ = 1, 4 do
+	hitBy(war, mob, 12); mob.c.hp = mob.c.hp - 11; runEvents()
+end
+check(war.c.hp > 4000, "small hits leech over time (" .. war.c.hp .. ")")
 -- healing price
 local healed = hitEv.onHealthChange(war, war, 1000, COMBAT_HEALING, 0, COMBAT_NONE, ORIGIN_SPELL)
 eq(healed, 700, "healing received 70%")
@@ -643,17 +691,17 @@ local caster = mk("player", {hp = 2000, pos = P(500, 500)})
 setTree(caster, {arEffigy = 1})
 local e1 = mk("monster", {hp = 90000, pos = P(501, 500)})
 local e2 = mk("monster", {hp = 90000, pos = P(502, 500)})
-eq(hitBy(caster, e1, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 650, "effigy price: spells 65%")
+eq(hitBy(caster, e1, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL), 750, "effigy price: spells 75%")
 hitBy(caster, e2, 1000, COMBAT_ICEDAMAGE, ORIGIN_SPELL)
 runEvents()
 local st = M.state[caster:getId()]
-check(st and #st.effigies == 1 and st.effigies[1].cast.average == 650 and st.effigies[1].cast.count == 2, "one effigy")
+check(st and #st.effigies == 1 and st.effigies[1].cast.average == 750 and st.effigies[1].cast.count == 2, "one effigy")
 check(st.effigies[1].id and creatures[st.effigies[1].id] and creatures[st.effigies[1].id]:getMaster() == caster, "a summon")
 NOW = NOW + 2100
 registered.ChaosArchetypesThink.onThink(1000)
 local pulses = 0
-for _, d in ipairs(dealt) do if d.amount == 143 and d.type == COMBAT_ICEDAMAGE and d.depth == 1 then pulses = pulses + 1 end end
-eq(pulses, 2, "the pulse hits both for 22% of 650")
+for _, d in ipairs(dealt) do if d.amount == 180 and d.type == COMBAT_ICEDAMAGE and d.depth == 1 then pulses = pulses + 1 end end
+eq(pulses, 2, "the pulse hits both for 24% of 750")
 NOW = NOW + 12000
 registered.ChaosArchetypesThink.onThink(1000)
 eq(#M.state[caster:getId()].effigies, 0, "gone after its life")

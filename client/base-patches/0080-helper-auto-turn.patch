@@ -1,0 +1,25 @@
+# Chaos: the helper's Magic Shooter turns the character toward its target before a wave or beam spell (after 0001-0079). The shooter
+# counted monsters for the best facing but only turned for a spell flagged aimAtTarget, so Great Fire Wave, Energy Beam, Ice Wave,
+# the Warrior's sweeps and Skewering Line went out along whatever the character looked at. ChaosHelperRotation.turnDirection
+# (overlay game_helperrotation/rotation.lua) answers for directional spells (the entry's directional flag, or a wave / beam area
+# of SpellAreas): the facing toward the target, else the facing with most monsters, nil when the character already faces it, the
+# spell is not directional or the option "Auto turn" (default on, g_settings chaosHelperAutoTurn) is off. Without the module
+# the old rule (aimAtTarget) stays.
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -839,7 +839,14 @@
+         if _Helper.safeDoThing then _Helper.safeDoThing(false) end
+         -- Virar o personagem na direcao com mais criaturas para spells com aimAtTarget = true
+         local shouldTurn = spell.aimAtTarget and config.bestDirection and config.bestDirection ~= direction
+-        if shouldTurn then
++        -- Chaos (base-patch 0080): a wave or beam goes along the facing: turn toward the target (without one, to the facing
++        -- with most monsters) unless the "Auto turn" option is off (ChaosHelperRotation, overlay game_helperrotation)
++        local chaosTurn = ChaosHelperRotation and ChaosHelperRotation.turnDirection and
++            ChaosHelperRotation.turnDirection(spell, SpellAreas, { enabled = ChaosHelperRotation.autoTurnEnabled(),
++              facing = direction, best = config.bestDirection, from = position, target = target and positionTarget or nil })
++        if chaosTurn then
++          g_game.turn(chaosTurn)
++        elseif shouldTurn then
+           g_game.turn(config.bestDirection)
+         end
+         if castOnFoot then

@@ -1,7 +1,7 @@
 -- Shuriken Toss: throw a shuriken at one target; physical damage from your sword or distance skill.
 --
--- The Thief's filler (range 5). A ranged weapon strike: the better of sword and distance skill x the throwing star in
--- hand (or a default star), so it works with a blade in hand too. It crits out of Shadow Veil and carries Poison Blades.
+-- The Thief's filler (range 5). A ranged weapon strike: the better of sword and distance skill x a default shuriken attack
+-- (no star is carried; a one-handed distance weapon in hand raises it), so it works with a blade in hand too. It crits out of Shadow Veil and carries Poison Blades.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 -- Damage scale per class (server vocation id). Cooldown 2 s since the rotation pass (2026-10-14; was 3 s at x2.0, a

@@ -24,6 +24,10 @@
 --                     today, cinder, refine} | result {ok, text} | npc {} (the vendor's NPC script)
 -- Lua 5.1 / LuaJIT.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -410,7 +414,7 @@ local function refineRows(player)
 		if info and info.gear and not info.unique and (info.rarity or 0) > 0 then
 			local ok, why = K.refineCheck(cfg, info)
 			rows[#rows + 1] = {slot = slot, n = C.itemName(item), c = clientId(item:getId()), r = info.rarity,
-				rn = C.rarityName(info.rarity), to = C.rarityName(info.rarity + 1), p = K.refinePrice(cfg, info.rarity),
+				rn = C.rarityName(info.rarity), to = C.rarityName(ChaosRarity.idOfRank(ChaosRarity.rank(info.rarity) + 1)), p = K.refinePrice(cfg, info.rarity),
 				ok = ok and true or nil, why = why and K.reasons[why] or nil}
 		end
 	end
@@ -677,7 +681,7 @@ local function refine(player, slot)
 	if not spend(player, price, "refine:" .. id) then
 		return refuse(player, "tokens")
 	end
-	local rarity = info.rarity + 1
+	local rarity = ChaosRarity.idOfRank(ChaosRarity.rank(info.rarity) + 1) -- the next stored id
 	item:setCustomAttribute("rarity", rarity)
 	local added = ""
 	local affix = M.pick(C.candidates(item, rarity), C.random)

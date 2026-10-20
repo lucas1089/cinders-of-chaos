@@ -82,6 +82,5 @@
 		<item id="2537" chance="286"/>
 		<item id="2514" chance="286"/>
 		<item id="2499" chance="286"/>
-		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
 	</loot>
 </monster>

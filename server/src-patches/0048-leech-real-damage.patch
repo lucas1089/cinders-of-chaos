@@ -1,0 +1,87 @@
+# Leech from real damage only (server/README.md "Leech from real damage"). Life and mana leech (single target and area)
+# only count a hit that dealt damage to a target that can be attacked:
+#   * Single target (Combat::doTargetCombat): no leech from a target that is not attackable (healthChange is reported as
+#     done for it by Game::combatChangeHealth), and the leech value is rounded before the checks: a value of 0 (zero
+#     damage, or a tiny hit that rounds to 0) neither heals nor takes the 900 ms leech window (patch 0011).
+#   * Area (Combat::doAreaCombat): a target that took 0 damage or cannot be attacked is not counted in totalTargets /
+#     maxDamageFound, so it does not dilute or inflate the area leech (the divisor is never 0, see calcLeechValue).
+#   * Area: the leech window is only taken when the leech is above 0.
+# Apply in the server source root after 0001-0047: patch -p1 < 0048-leech-real-damage.patch, then rebuild.
+--- a/src/combat.cpp
++++ b/src/combat.cpp
+@@ -914,7 +914,7 @@
+ 
+ 		// Chaos: no engine crit effect; onHealthChange gets `critical` and scripts/chaos/combat_fx.lua shows it
+ 
+-		if (!damage.leeched && damage.primary.type != COMBAT_HEALING && casterPlayer && target != caster && damage.origin != ORIGIN_CONDITION) {
++		if (!damage.leeched && damage.primary.type != COMBAT_HEALING && casterPlayer && target != caster && damage.origin != ORIGIN_CONDITION && target->isAttackable()) { // Chaos (patch 0048): not from a target that cannot be attacked
+ 			CombatDamage leechCombat;
+ 			leechCombat.origin = ORIGIN_NONE;
+ 			leechCombat.leeched = true;
+@@ -924,9 +924,10 @@
+ 			if (casterPlayer->getHealth() < casterPlayer->getMaxHealth()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && casterPlayer->canLeech(false) && uniform_random(1, 100) <= chance) {
++				int32_t leechValue = std::round(totalDamage * (skill / 100.)); // Chaos (patch 0048): no damage dealt, nothing to leech
++				if (chance > 0 && skill > 0 && leechValue > 0 && casterPlayer->canLeech(false) && uniform_random(1, 100) <= chance) {
+ 					casterPlayer->setLeeched(false);
+-					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
++					leechCombat.primary.value = leechValue;
+ 					g_game.combatChangeHealth(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_RED);
+ 				}
+@@ -935,9 +936,10 @@
+ 			if (casterPlayer->getMana() < casterPlayer->getMaxMana()) {
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+-				if (chance > 0 && skill > 0 && casterPlayer->canLeech(true) && uniform_random(1, 100) <= chance) {
++				int32_t leechValue = std::round(totalDamage * (skill / 100.)); // Chaos (patch 0048)
++				if (chance > 0 && skill > 0 && leechValue > 0 && casterPlayer->canLeech(true) && uniform_random(1, 100) <= chance) {
+ 					casterPlayer->setLeeched(true);
+-					leechCombat.primary.value = std::round(totalDamage * (skill / 100.));
++					leechCombat.primary.value = leechValue;
+ 					g_game.combatChangeMana(nullptr, casterPlayer, leechCombat);
+ 					casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_BLUE);
+ 				}
+@@ -1078,10 +1080,13 @@
+ 		}
+ 		if (success) {
+ 			int32_t dmgDealt = std::abs(damageCopy.primary.value + damageCopy.secondary.value) + damageCopy.absorbed; // Chaos (patch 0015)
+-			if (dmgDealt > maxDamageFound) {
+-				maxDamageFound = dmgDealt;
++			// Chaos (patch 0048): only a target that took damage and can be attacked counts for the leech
++			if (dmgDealt > 0 && creature->isAttackable()) {
++				if (dmgDealt > maxDamageFound) {
++					maxDamageFound = dmgDealt;
++				}
++				++totalTargets;
+ 			}
+-			++totalTargets;
+ 			if (damage.blockType == BLOCK_NONE || damage.blockType == BLOCK_ARMOR) {
+ 				for (const auto& condition : params.conditionList) {
+ 					if (caster == creature || !creature->isImmune(condition->getType())) {
+@@ -1130,10 +1135,10 @@
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_LIFELEECHAMOUNT);
+ 				if (chance > 0 && skill > 0 && casterPlayer->canLeech(false) && uniform_random(1, 100) <= chance) {
+-					casterPlayer->setLeeched(false);
+ 					int32_t finalLeech = calcLeechValue(skill, 10.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {
++						casterPlayer->setLeeched(false); // Chaos (patch 0048): a roll that heals nothing keeps the window free
+ 						g_game.combatChangeHealth(nullptr, casterPlayer, leechCombat);
+ 						casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_RED);
+ 					}
+@@ -1143,10 +1148,10 @@
+ 				uint16_t chance = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHCHANCE);
+ 				uint16_t skill = casterPlayer->getSpecialSkill(SPECIALSKILL_MANALEECHAMOUNT);
+ 				if (chance > 0 && skill > 0 && casterPlayer->canLeech(true) && uniform_random(1, 100) <= chance) {
+-					casterPlayer->setLeeched(true);
+ 					int32_t finalLeech = calcLeechValue(skill, 5.0);
+ 					leechCombat.primary.value = finalLeech;
+ 					if (finalLeech > 0) {
++						casterPlayer->setLeeched(true);
+ 						g_game.combatChangeMana(nullptr, casterPlayer, leechCombat);
+ 						casterPlayer->sendMagicEffect(casterPlayer->getPosition(), CONST_ME_MAGIC_BLUE);
+ 					}

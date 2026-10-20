@@ -43,6 +43,10 @@
 -- "achievement" method of ChaosClassUnlocksCore is replaced by K.unlockMethod (points or an achievement id); see
 -- server/README.md "Achievements". Lua 5.1 / LuaJIT compatible.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -924,14 +928,14 @@ local function scanItem(owner, item, best)
 		A.progress(owner, "unique_found", 1)
 	end
 	local okR, rarity = pcall(function() return tonumber(item:getCustomAttribute("rarity")) end)
-	rarity = okR and rarity or 0
-	if rarity > best.rarity and rarity <= 15 then
+	rarity = ChaosRarity.canon(okR and rarity or 0) -- a stored id (an old 6 .. 15 counts as the rarity it became)
+	if rarity > best.rarity and rarity < ChaosRarity.UNIQUE then
 		best.rarity = rarity
 	end
 	if rarity >= 5 and ChaosCrafting and ChaosCrafting.readMods then
 		local okM, mods = pcall(ChaosCrafting.readMods, item)
 		if okM and type(mods) == "table" then
-			if rarity >= 13 and #mods > best.mods then
+			if rarity >= 10 and #mods > best.mods then -- Divine: the 6-modifier items
 				best.mods = #mods
 			end
 			for _, m in ipairs(mods) do

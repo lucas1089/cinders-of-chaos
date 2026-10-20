@@ -306,3 +306,32 @@ function PartyMath.tooltip(m, now)
   if #names > 0 then lines[#lines + 1] = table.concat(names, ', ') end
   return table.concat(lines, '\n')
 end
+
+-- ---------------------------------------------------------------- the invitation window
+-- The stock server tells an invited player "<Leader> has invited you to join his / her party." (MESSAGE_INFO_DESCR) and
+-- "<Leader> has revoked his / her invitation." when it is taken back. Returns the leader's name, or nil.
+function PartyMath.inviterOf(text)
+  if type(text) ~= 'string' then return nil end
+  local name = text:match('^(.-) has invited you to ')
+  if name and #name >= 2 and #name <= 30 and not name:find('[\r\n]') then return name end
+  return nil
+end
+
+-- the leader named in a "revoked" line, or nil
+function PartyMath.revokerOf(text)
+  if type(text) ~= 'string' then return nil end
+  local name = text:match('^(.-) has revoked ')
+  if name and #name >= 2 and #name <= 30 and not name:find('[\r\n]') then return name end
+  return nil
+end
+
+-- the creature to join: the one of this name among the creatures in view (a player's name is unique), or nil.
+-- creatures = list of {id, name}.
+function PartyMath.findLeader(creatures, name)
+  if type(name) ~= 'string' then return nil end
+  local want = name:lower()
+  for _, c in ipairs(creatures or {}) do
+    if type(c) == 'table' and type(c.name) == 'string' and c.name:lower() == want and c.id then return c.id end
+  end
+  return nil
+end

@@ -25,6 +25,10 @@
 -- Optional hooks, called guarded, never created here: ChaosLeaderboard.record(board, player, 1, "add") when Chaos.leaderboardConfig has the board
 -- (cfg.leaderboard.board, "goblin"); ChaosNotify.gmBroadcast(player, text) for the appear toast.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -408,8 +412,7 @@ local function addStack(corpse, id, count, bonus)
 end
 
 local function rarityName(r)
-	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
-	return names and names[r] or ("Rarity " .. r)
+	return ChaosRarity.name(r) or ("Rarity " .. r)
 end
 
 -- returns a list of text pieces and the best "kind" for the loot rays (unique / legendary / rare / magic)
@@ -479,7 +482,6 @@ function TG.fillCorpse(corpse, st, owner)
 		addStack(corpse, id, n, bonus)
 	end
 
-	local maxRarity = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.maxRarity or 15
 	local ids = G.pickGear(c, level, st.gear, G.itemCount(c, rand), rand)
 	for _, id in ipairs(ids) do
 		local t = G.pickItemTier(c, rand)
@@ -487,7 +489,6 @@ function TG.fillCorpse(corpse, st, owner)
 		if L and L.upgradeRarity then
 			r = math.max(r, L.upgradeRarity(t.tier, L.stockRarity(), itemFind))
 		end
-		r = math.min(r, maxRarity)
 		local placed = false
 		if r > 0 and ChaosCrafting and ChaosCrafting.createItem then
 			-- rolled now at the goblin's item level (its area level, as a legendary kill) and kept as text through the

@@ -1,30 +1,42 @@
 -- Loot filter rules on the client (no client API, tested by lootfilter_test.lua). Mirror of the server's
 -- server/data/scripts/chaos/lootfilter_core.lua (classify, color, label): keep both in step. The server stays the
 -- authority for autoloot and click-to-loot; the client uses these rules only to draw.
--- info = {r = rarity 0..15, u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count,
+-- info = {r = rarity 0 or an id (1 2 3 4 5 10; an old item 1..15), u = unique (0/1 or bool), o = orb (0/1 or bool), g = category, nm = name, c = count,
 --         t = the best modifier tier on it (1..8, nil = none), il = item level}
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 LootFilterLogic = {}
 local L = LootFilterLogic
 
+-- The seven rarities (server/data/lib/chaos_rarity.lua): an item carries the id 1 Common, 2 Uncommon, 3 Magic, 4 Rare,
+-- 5 Legendary or 10 Divine (Unique is the unique flag). An item saved before the seven rarities may carry 6 .. 9 (they
+-- became Legendary) or 11 .. 15 (Divine), so L.RARITY has a row for every id 1 .. 15; L.RARITY_IDS are the ids of today, in
+-- order, for the lists the player picks from.
+local COMMON = { name = 'Common', color = '#c8c8c8' }
+local UNCOMMON = { name = 'Uncommon', color = '#5ccf5c' }
+local MAGIC = { name = 'Magic', color = '#4a90ff' }
+local RARE = { name = 'Rare', color = '#a35cf0' }
+local LEGENDARY = { name = 'Legendary', color = '#ffd040' }
+local DIVINE = { name = 'Divine', color = '#c8e8ff' }
 L.RARITY = {
-  { name = 'Common',       color = '#c8c8c8' },
-  { name = 'Uncommon',     color = '#5ccf5c' },
-  { name = 'Rare',         color = '#4a90ff' },
-  { name = 'Epic',         color = '#a35cf0' },
-  { name = 'Legendary',    color = '#ffd040' },
-  { name = 'Exotic',       color = '#f5b13a' },
-  { name = 'Mythic',       color = '#ff5a5a' },
-  { name = 'Chaos',        color = '#e02424' },
-  { name = 'Eternal',      color = '#ff8a70' },
-  { name = 'Divine',       color = '#c8e8ff' },
-  { name = 'Phantasmal',   color = '#9ad8ff' },
-  { name = 'Celestial',    color = '#e4f2ff' },
-  { name = 'Cosmic',       color = '#b878ff' },
-  { name = 'Abyssal',      color = '#9a4ce0' },
-  { name = 'Transcendent', color = '#e070ff' },
+  [1] = COMMON, [2] = UNCOMMON, [3] = MAGIC, [4] = RARE,
+  [5] = LEGENDARY, [6] = LEGENDARY, [7] = LEGENDARY, [8] = LEGENDARY, [9] = LEGENDARY,
+  [10] = DIVINE, [11] = DIVINE, [12] = DIVINE, [13] = DIVINE, [14] = DIVINE, [15] = DIVINE,
 }
+L.RARITY_IDS = { 1, 2, 3, 4, 5, 10 }
+L.MAX_RARITY = 10
+
+-- the id of today's rarity for any id (0 stays 0; an id above 15 is the highest)
+function L.canon(id)
+  id = math.floor(tonumber(id) or 0)
+  if id <= 0 then return 0 end
+  if id > 15 then return L.MAX_RARITY end
+  local row = L.RARITY[id]
+  for _, c in ipairs(L.RARITY_IDS) do
+    if L.RARITY[c] == row then return c end
+  end
+  return 0
+end
 L.MAX_TIER = 8
 L.UNIQUE_COLOR = '#e07b24'
 L.ORB_COLOR = '#4fd8d0'
@@ -47,7 +59,7 @@ function L.normalize(s)
   local out = { show = {} }
   for _, k in ipairs({ 'highlight', 'dim', 'lootMin', 'lootFrom' }) do
     local v = tonumber(s[k])
-    out[k] = v and math.max(0, math.min(#L.RARITY, math.floor(v))) or d[k]
+    out[k] = v and L.canon(math.max(0, v)) or d[k] -- a threshold saved with an old id (6 .. 15) is the rarity it became
   end
   local show = type(s.show) == 'table' and s.show or {}
   for _, c in ipairs(L.CATEGORIES) do
@@ -67,7 +79,7 @@ function L.classify(info, s)
   local category = info.g or 'other'
   local shown = not (s.show and s.show[category] == false)
   if category == 'equipment' then
-    local r = tonumber(info.r) or 0
+    local r = L.canon(info.r)
     if s.highlight > 0 and r >= s.highlight then return 'highlight' end
     if (s.tier or 0) > 0 and (tonumber(info.t) or 0) >= s.tier then return 'highlight' end
     if not shown or r < s.dim then return 'dim' end
@@ -86,12 +98,12 @@ end
 
 function L.rarityName(r)
   local e = L.RARITY[tonumber(r) or 0]
-  return e and e.name or nil
+  return e and tr(e.name) or nil
 end
 
 function L.label(info)
   local name = info.nm or 'item'
-  if flag(info.u) then return '[Unique] ' .. name end
+  if flag(info.u) then return '[' .. tr('Unique') .. '] ' .. name end
   local r = L.rarityName(info.r)
   if r then return '[' .. r .. '] ' .. name end
   return name
@@ -118,7 +130,7 @@ end
 function L.thresholdText(v, offText)
   local r = L.RARITY[v]
   if not r then return offText or 'Off' end
-  return r.name .. '+'
+  return tr(r.name) .. '+'
 end
 
 -- keep at most `max` entries of an ordered list of keys; returns the keys dropped from the front

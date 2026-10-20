@@ -38,7 +38,8 @@ function onCastSpell(creature, variant, isHotkey)
 		end
 		local wolf = Game.createMonster(monsterName, free[i].pos)
 		if wolf then
-			wolf:setMaster(player)
+			ChaosSpell.bindSummon(player, wolf) -- an ally of its owner: no target of its own from the start
+			wolf:registerEvent("ChaosCompanionGuard") -- the owner's area spells and its other summons do not hurt it
 			ChaosSpell.vfxOr(free[i].pos, "teleport_in", "summon_portal", CONST_ME_TELEPORT)
 			addEvent(ChaosSpell.removeLater, DURATION, wolf:getId())
 			created = created + 1
@@ -47,6 +48,7 @@ function onCastSpell(creature, variant, isHotkey)
 	if created == 0 then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
+	ChaosSpell.buffTimer(player, ChaosSpell.SUBID.moonfang_pack, DURATION) -- the buff bar's timer
 	ChaosSpell.fx(player:getPosition(), "summon_portal", CONST_ME_MAGIC_GREEN)
 	return true
 end

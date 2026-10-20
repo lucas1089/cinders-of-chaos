@@ -1,0 +1,66 @@
+// Auto build panel of the passive tree window (autobuild.lua). Ornate skin styles from client_chaos_theme.
+ChaosWindow
+  id: autoBuildWindow
+  !text: tr('Auto build')
+  size: 420 380
+  anchors.top: parent.top
+  anchors.right: parent.right
+  margin-top: 80
+  margin-right: 20
+  @onEscape: modules.game_passivetree.closeAutoBuild()
+
+  ChaosComboBox
+    id: buildCombo
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 24
+    menu-height: 200
+    menu-scroll: true
+
+  ChaosSeparator
+    id: sep
+    anchors.top: buildCombo.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+
+  ChaosLabel
+    id: detailText
+    anchors.top: sep.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: applyButton.top
+    margin-top: 8
+    margin-bottom: 8
+    text-wrap: true
+    text-auto-resize: false
+    text-align: topLeft
+
+  ChaosButton
+    id: applyButton
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    width: 120
+    !text: tr('Apply')
+    !tooltip: tr('Add the nodes of the build you can afford. Takes nothing back.')
+    enabled: false
+    @onClick: modules.game_passivetree.applyAutoBuild()
+
+  ChaosButton
+    id: resetButton
+    anchors.bottom: parent.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    width: 150
+    !text: tr('Reset and apply')
+    !tooltip: tr('Take back your nodes (respec price) and build this one')
+    enabled: false
+    @onClick: modules.game_passivetree.resetAndApplyAutoBuild()
+
+  ChaosButton
+    id: closeButton
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    width: 110
+    !text: tr('Close')
+    @onClick: modules.game_passivetree.closeAutoBuild()

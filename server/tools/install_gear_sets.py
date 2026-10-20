@@ -20,9 +20,9 @@ Everything a piece is comes from here (server/README.md "Equipment sets (pair 28
     copy goes.
   * who may wear it (FITS): heavy armour the Warrior and Templar lines, medium the Ranger, Thief and Monk lines, cloth
     the Mystic and Necromancer lines, boots, rings, amulets and A pieces everyone; weapons as the stock ones of their
-    kind after add_vocations.py (one-handed swords also the Thief and Templar lines, two-handed clubs the Monk line,
-    bows the Beastmaster, wands and rods the Necromancer line, shields the Warrior without the Berserker and the
-    Templar line).
+    kind after add_vocations.py (swords, axes and clubs, one- and two-handed, every melee class: the Warrior, Thief,
+    Monk and Templar lines, the Berserker only the two-handed ones; bows the Beastmaster, wands and rods the
+    Necromancer line, shields the Warrior without the Berserker and the Templar line).
 
 1. items.otb: one node per row (install_pack_items.py's node rules; refused when a server id belongs to another item).
 2. items.xml: the entries between two marker comments before </items>, rewritten when the manifest or a number changed.
@@ -82,9 +82,10 @@ FITS = {   # track -> the classes that may wear it ([] = everyone)
     'H': WARRIOR + TEMPLAR, 'M': RANGER + THIEF + MONK, 'C': MYSTIC + NECRO, 'A': [],
     'boots': [], 'amulet': [], 'ring': [],
     'shield': WARRIOR[:2] + TEMPLAR, 'spellbook': MYSTIC + NECRO,
-    'sword1': WARRIOR[:2] + TEMPLAR + THIEF, 'sword2': WARRIOR,
-    'axe1': WARRIOR[:2], 'axe2': WARRIOR,
-    'club1': WARRIOR[:2] + TEMPLAR, 'club2': WARRIOR + MONK,
+    # melee items serve every melee class (owner debug item 46): the Berserker only the two-handed ones
+    'sword1': WARRIOR[:2] + TEMPLAR + THIEF + MONK, 'sword2': WARRIOR + TEMPLAR + THIEF + MONK,
+    'axe1': WARRIOR[:2] + TEMPLAR + THIEF + MONK, 'axe2': WARRIOR + TEMPLAR + THIEF + MONK,
+    'club1': WARRIOR[:2] + TEMPLAR + THIEF + MONK, 'club2': WARRIOR + TEMPLAR + THIEF + MONK,
     'bow': RANGER, 'crossbow': RANGER[:2],
     'wand': MYSTIC[:2] + NECRO, 'rod': [MYSTIC[0], MYSTIC[2]] + NECRO,
 }

@@ -22,9 +22,9 @@ T.defaults = {
     attack = { sameWordsGap = 500, maxPerSecond = 4 },
     support = { sameWordsGap = 500, maxPerSecond = 3 },
   },
-  -- object uses: the server's channel delays (runeChannelDelay, potionChannelDelay: 1000 ms; a special food is a
+  -- object uses: the server's channel delays (runeChannelDelay, potionChannelDelay: 500 ms, so the helper waits 100 ms more: two uses a little under the server's delay apart by network jitter were refused; a special food is a
   -- plain use, the helper keeps its own 1 s)
-  use = { potion = 1000, healRune = 1000, attackRune = 1000, supportRune = 1000, food = 1000 },
+  use = { potion = 600, healRune = 1000, attackRune = 1000, supportRune = 1000, food = 1000 },
 }
 
 T.CAST_CHANNELS = { "heal", "attack", "support" }

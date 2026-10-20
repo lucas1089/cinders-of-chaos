@@ -16,8 +16,11 @@ V.SORT_NAMES = {
   new = 'Newest', price = 'Price: low to high', price_desc = 'Price: high to low', ilvl = 'Item level',
   rarity = 'Rarity', name = 'Name', ending = 'Ending soon'
 }
-V.RARITIES = { 'Common', 'Uncommon', 'Rare', 'Epic', 'Legendary', 'Exotic', 'Mythic', 'Chaos', 'Eternal', 'Divine',
-  'Phantasmal', 'Celestial', 'Cosmic', 'Abyssal', 'Transcendent' }
+-- by rarity id (1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; an old offer may hold 6 .. 9 or 11 .. 15,
+-- which are the rarity they became); V.RARITY_IDS are the ids of today, in order, for the filter lists
+V.RARITIES = { 'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary', 'Legendary', 'Legendary', 'Legendary', 'Legendary', 'Divine',
+  'Divine', 'Divine', 'Divine', 'Divine', 'Divine' }
+V.RARITY_IDS = { 1, 2, 3, 4, 5, 10 }
 
 local floor = math.floor
 
@@ -277,13 +280,14 @@ function V.priceLines(row)
 end
 
 function V.rarityName(r)
-  return V.RARITIES[tonumber(r) or 0]
+  local name = V.RARITIES[tonumber(r) or 0]
+  return name and tr(name) or nil
 end
 
 -- the line under a Browse row's name
 function V.subLine(row)
   local parts = {}
-  if row.unique then parts[#parts + 1] = 'Unique'
+  if row.unique then parts[#parts + 1] = tr('Unique')
   elseif (row.rarity or 0) > 0 then parts[#parts + 1] = V.rarityName(row.rarity) or ('Rarity ' .. row.rarity) end
   if (row.ilvl or 0) > 0 then parts[#parts + 1] = 'iLvl ' .. row.ilvl end
   if row.veil then parts[#parts + 1] = row.veil == 'open' and 'Unveiled' or 'Veiled' end -- the veiled slot (server market.lua)

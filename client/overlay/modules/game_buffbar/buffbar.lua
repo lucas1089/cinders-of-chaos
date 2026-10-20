@@ -306,6 +306,10 @@ end
 
 function isShown() return settings.shown end
 
+-- the names (lowercase) of the buffs on the character, or nil when the server's list has not come (bar hidden): for the
+-- helper's Support spells (game_helpersupport)
+function activeBuffs() return BuffMath.activeNames(state, now()) end
+
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
   BuffMath.clear(state)

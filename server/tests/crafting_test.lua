@@ -141,7 +141,11 @@ eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
 	"Item Level: 42. Prefixes: Sword +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
 	"Suffixes: Physical +2% (T2)", "item level, prefixes and suffixes with their tiers")
 eq(C.rarityOf(sword), 4)
-eq(C.rarityName(4), "Epic")
+eq(C.rarityName(4), "Rare")
+eq(C.rarityName(6), "Legendary", "an old Exotic reads as Legendary")
+eq(C.rarityName(15), "Divine", "an old Transcendent reads as Divine")
+eq(C.rarityOf(rareItem(2466, 9, {})), 5, "an old Eternal: stored id 5")
+eq(C.rarityOf(rareItem(2466, 12, {})), 10, "an old Celestial: stored id 10")
 eq(C.levelOf(sword), 42, "an old item's level: combatPowerLevel")
 -- keys are case-insensitive like the engine's (the stock equip script reads rarity_FireAbsorb)
 local fireArmor = rareItem(2466, 2, {rarity_FireAbsorb = 1})
@@ -217,13 +221,13 @@ eq(C.isUnique(put(newItem(2466))), false, "a plain copy of the base item is not 
 ChaosUniqueSpecs = nil
 
 -- ---------------------------------------------------------------- limits: prefixes and suffixes
-eq(C.maxMods(1), 2); eq(C.maxMods(4), 4); eq(C.maxMods(15), 6)
+eq(C.maxMods(1), 2); eq(C.maxMods(4), 4); eq(C.maxMods(5), 6); eq(C.maxMods(10), 6); eq(C.maxMods(15), 6, "an old id counts as the rarity it became")
 local full = rareItem(2466, 1, {rarity_physicalAbsorb = 1, rarity_clubSkill = 1})
 eq(select(2, C.check("exalted", full)), "full", "a Common item: one prefix and one suffix, full")
 eq(C.apply("exalted", full), false)
 eq(#C.readMods(full), 2, "nothing added to a full item")
 eq(C.check("annulment", full), true, "a full item can still be annulled")
--- two suffixes on an Epic item (2 + 2): only prefixes can come
+-- two suffixes on a Rare item (2 + 2): only prefixes can come
 local twoSuf = rareItem(2466, 4, {rarity_physicalAbsorb = 1, rarity_iceAbsorb = 1})
 for _, row in ipairs(C.candidates(twoSuf)) do
 	eq(row.entry.side, "prefix", "suffixes full: " .. row.entry.key)
@@ -238,28 +242,28 @@ eq(select(2, C.check("exalted", legacyFull)), "full")
 -- ---------------------------------------------------------------- Orb of Grafting
 -- armor, item level 42 (T1-T3 can roll, best first). Lowest dice: the first candidate (Physical, a suffix), the first
 -- tier row (T3), the lowest value of T3 (1)
-local armor = rareItem(2466, 6, {rarity_holyAbsorb = 2})
+local armor = rareItem(2466, 4, {rarity_holyAbsorb = 2})
 dice = {}
 local ok, res = C.apply("exalted", armor)
 eq(ok, true, "exalted on armor")
 eq(res.added.key, "rarity_physicalAbsorb")
 eq(res.added.tier, 3, "T3: the best tier item level 42 allows (lowest dice)")
 eq(armor:getCustomAttribute("ct_rarity_physicalabsorb"), 3, "tier stored")
-eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 1)
-eq(res.text, "golden armor gained Physical +1% (T3) (suffix).")
-eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +1% (T3); Holy +2% (T2)")
+eq(armor:getCustomAttribute("rarity_physicalAbsorb"), 3, "the lowest value of T3 (3-5 since the ranges were raised)")
+eq(res.text, "golden armor gained Physical +3% (T3) (suffix).")
+eq(armor:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Suffixes: Physical +3% (T3); Holy +2% (T2)")
 -- the tier roll: highest dice = the last row (T1)
 dice = {1, 270, 1}
 ok, res = C.apply("exalted", armor)
 eq(res.added.tier, 1, "highest tier dice: T1")
-eq(res.added.key, "rarity_fistSkill", "two suffixes on an Exotic item: the first prefix")
+eq(res.added.key, "rarity_fistSkill", "two suffixes on a Rare item: the first prefix")
 -- a critical / leech pair: the chance is two thirds of the roll, the amount the roll
-local pair = rareItem(2466, 6, {})
+local pair = rareItem(2466, 4, {})
 local pm = C.writeAffix(pair, C.affixOf("rarity_manaLeechChance"), 4, 3)
 eq(pair:getCustomAttribute("rarity_manaLeechChance"), 2, "the chance is two thirds of the roll (uniform chance rolls)")
 eq(pair:getCustomAttribute("rarity_manaLeechAmount"), 3, "the amount the full roll")
 eq(pair:getCustomAttribute("ct_rarity_manaleechchance"), 4)
-eq(pm.lo, 1); eq(pm.hi, 2, "T4 (2-3): chance 1..2"); eq(pm.lo2, 2); eq(pm.hi2, 3)
+eq(pm.lo, 2); eq(pm.hi, 3, "T4 (3-5): chance 2..3"); eq(pm.lo2, 3); eq(pm.hi2, 5)
 eq(C.readMods(pair)[1].tier, 4, "the stored tier wins")
 for v, want in ipairs({1, 1, 2, 3, 3, 4}) do
 	eq(C.specialChance(v), want, "special chance of a roll of " .. v .. " (as engine patch 0004)")
@@ -285,7 +289,7 @@ eq(kinds.chaos_mod_thorns, true)
 eq(kinds.rarity_holyabsorb or kinds.rarity_holyAbsorb, nil, "never a modifier the item has")
 
 -- ---------------------------------------------------------------- Orb of Unmaking
-local ann = rareItem(2400, 6, {rarity_swordSkill = 2, rarity_lifeLeechChance = 3, rarity_lifeLeechAmount = 3})
+local ann = rareItem(2400, 5, {rarity_swordSkill = 2, rarity_lifeLeechChance = 3, rarity_lifeLeechAmount = 3})
 ann:setCustomAttribute("ct_rarity_lifeleechchance", 5)
 dice = {2}
 ok, res = C.apply("annulment", ann)
@@ -294,7 +298,7 @@ eq(res.removed.key, "rarity_lifeLeechChance", "second modifier removed")
 eq(ann:getCustomAttribute("rarity_lifeLeechAmount"), nil, "both keys of the pair go")
 eq(ann:getCustomAttribute("ct_rarity_lifeleechchance"), nil, "and its tier")
 eq(ann:getCustomAttribute("rarity_swordSkill"), 2, "the other stays")
-eq(C.rarityOf(ann), 6, "rarity stays")
+eq(C.rarityOf(ann), 5, "rarity stays")
 eq(ann:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Sword +2 (T2)")
 dice = {1}
 C.apply("annulment", ann)
@@ -309,10 +313,10 @@ deco:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Forged by Ana, Level: 42, Ice +1%
 dice = {1}
 C.apply("exalted", deco)
 eq(deco:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
-	"Forged by Ana. Item Level: 42. Prefixes: Fist +1 (T3). Suffixes: Ice +1% (T1) [Armor+2]")
+	"Forged by Ana. Item Level: 42. Prefixes: Fist +2 (T3). Suffixes: Ice +1% (T1) [Armor+2]")
 C.rewriteDescription(deco)
 eq(deco:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
-	"Forged by Ana. Item Level: 42. Prefixes: Fist +1 (T3). Suffixes: Ice +1% (T1) [Armor+2]", "stable on a rewrite")
+	"Forged by Ana. Item Level: 42. Prefixes: Fist +2 (T3). Suffixes: Ice +1% (T1) [Armor+2]", "stable on a rewrite")
 
 -- ---------------------------------------------------------------- Orb of Erasure (a new plain copy)
 local sc = rareItem(2466, 7, {rarity_deathAbsorb = 3})
@@ -353,14 +357,14 @@ for _, m in ipairs(C.readMods(res.item)) do
 end
 local ch = rareItem(2400, 9, {rarity_axeSkill = 3})
 ok, res = C.apply("chaos", ch)
-eq(C.rarityOf(res.item), 9, "chaos keeps the rarity")
+eq(C.rarityOf(res.item), 5, "chaos keeps the rarity (an old Eternal is stored as Legendary, 5)")
 eq(C.levelOf(res.item), 42, "and the item level")
 eq(#C.readMods(res.item), M.modCount(9), "a new set of five")
-dice = {16} -- above the 15% stock chance: no rarity
+dice = {16} -- above the 15% chance: no rarity
 ok, res = C.apply("divine", rareItem(2400, 12, {}))
 eq(res.rarity, 0, "the stock divine roll mostly removes the rarity")
 eq(C.levelOf(res.item), 42, "the level stays on the plain copy")
-dice = {15, 100, 18} -- inside 15%, rarity 1 fails (100 > 25), rarity 2 hits (18 <= 18)
+dice = {15, 100, 18} -- inside 15%, rarity 1 fails (100 > 25), rarity 2 hits (18 <= 20)
 eq(C.rollDivineRarity(), 2)
 
 -- ---------------------------------------------------------------- the forge (drops, every orb copy)
@@ -386,19 +390,20 @@ for _, case in ipairs({{2400, 1, 10}, {2400, 9, 75}, {2466, 15, 150}, {2400, 15,
 		end
 		assert(elements <= 1, "one element at most")
 		eq(C.levelOf(it), case[3])
-		eq(C.rarityOf(it), case[2])
+		eq(C.rarityOf(it), ChaosRarity.canon(case[2]), "stored as the id of its rarity")
 	end
 end
 -- the base bonus (item.cpp's formula at the item level)
-eq(C.baseBonusOf(15, 150), 9 + math.floor(150 * 7 / 100))
+eq(C.baseBonusOf(10, 150), 6 + math.floor(150 * 7 / 100), "Divine {6, 12}")
+eq(C.baseBonusOf(15, 150), C.baseBonusOf(10, 150), "an old Transcendent has Divine's")
 eq(C.baseBonusOf(1, 1), 1)
 local fw = put(newItem(2400))
 C.forge(fw, 15, 150)
-eq(fw:getAttribute(ITEM_ATTRIBUTE_ATTACK), 48 + 19, "magic sword 48 + 19")
+eq(fw:getAttribute(ITEM_ATTRIBUTE_ATTACK), 48 + 16, "magic sword 48 + 16")
 -- forging again replaces every modifier (no leftovers, no stale tiers)
 local before = C.readMods(fw)
 C.forge(fw, 1, 1)
-eq(#C.readMods(fw), 2, "Common now")
+eq(#C.readMods(fw), 1, "Common now: one modifier")
 for _, m in ipairs(before) do
 	local still = C.customNumber(fw, m.key) ~= 0
 	if still then
@@ -419,7 +424,7 @@ eq(plain:getCustomAttribute("chaos_ilvl"), 33, "plain drop: the item level")
 eq(C.isNormal(plain), true, "still a normal item")
 local drop = put(newItem(2400))
 drop:setCustomAttribute("rarity", 4)
-eq(#C.forgeDrop(drop, 70, function(a) return a end), 3, "Epic: three modifiers")
+eq(#C.forgeDrop(drop, 70, function(a) return a end), 4, "Rare: four modifiers")
 eq(drop:getCustomAttribute("rarity"), "4", "shielded from the engine's pass")
 eq(C.levelOf(drop), 70)
 assert(drop:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("^Item Level: 70%. Prefixes: "), "description written")
@@ -469,7 +474,7 @@ C.orbByKey.testorb, C.orbById[30001] = nil, nil
 
 -- ---------------------------------------------------------------- describe / signature / preview
 local d = C.describe(sword)
-eq(d.rarityName, "Epic")
+eq(d.rarityName, "Rare")
 eq(d.maxMods, 4)
 eq(#d.mods, 4)
 eq(d.mods[1].side, "prefix", "prefixes first")
@@ -487,16 +492,16 @@ assert(C.signature(sword) ~= sig, "signature changes with the modifiers")
 local pv = C.describe(rareItem(2466, 4, {rarity_iceAbsorb = 2}))
 eq(pv.preview.exalted, "1 -> 2 of 4 (prefixes 0/2, suffixes 1/2), T1-T3")
 eq(pv.preview.annulment, "one of 1 modifiers goes")
-eq(pv.preview.chaos, "stays Epic, item level 42: 3 new modifiers, T1-T3")
+eq(pv.preview.chaos, "stays Rare, item level 42: 4 new modifiers, T1-T3")
 eq(pv.preview.transmutation, "", "no preview for an orb that does not fit")
 local pn = put(newItem(2400))
 pn:setCustomAttribute("chaos_ilvl", 150)
-eq(C.describe(pn).preview.alchemy, "Rare 55%, Epic 30%, Legendary 15%; item level 150: T4-T8")
+eq(C.describe(pn).preview.alchemy, "Magic 60%, Rare 30%, Legendary 10%; item level 150: T4-T8")
 
 -- attack speed is the weapon's own interval (ITEM_ATTRIBUTE_ATTACK_SPEED); removing it gives the base back
 ITEM_ATTRIBUTE_ATTACK_SPEED = 99
 function Item:removeAttribute(k) self.attrs[k] = nil end
-local aw = rareItem(2400, 7, {})
+local aw = rareItem(2400, 5, {})
 M.set(aw, "attackspeed", 8, 5)
 eq(aw:getAttribute(ITEM_ATTRIBUTE_ATTACK_SPEED), 1840, "2000 ms base (no own interval) -8%")
 C.rewriteDescription(aw)

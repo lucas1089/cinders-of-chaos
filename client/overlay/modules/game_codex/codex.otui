@@ -138,12 +138,21 @@ ChaosMainWindow
     color: #8c8070
 
   // ------------------------------------------------------------ the list
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    size: 80 24
+    !text: tr('Close')
+    @onClick: modules.game_codex.hide()
+
   ChaosPanelDark
     id: listFrame
     anchors.top: searchEdit.bottom
     anchors.left: parent.left
-    anchors.bottom: parent.bottom
+    anchors.bottom: closeButton.top
     margin-top: 8
+    margin-bottom: 8
     width: 290
 
   UIScrollArea
@@ -185,8 +194,9 @@ ChaosMainWindow
     anchors.top: listFrame.top
     anchors.left: listFrame.right
     anchors.right: parent.right
-    anchors.bottom: parent.bottom
+    anchors.bottom: closeButton.top
     margin-left: 8
+    margin-bottom: 8
 
   CodexText
     id: pageTitle

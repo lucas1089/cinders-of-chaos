@@ -29,9 +29,12 @@ do
 	local l1, h1 = C.shadowMendRange(14506, 1000, 40, false)
 	ok(l1 > mn * 2, "grows with level")
 	eq(C.shadowMendRange(0, 0, 0, false), 0, "nothing from nothing")
-	-- under the Illusionist's self heal per second (1538 / 2317 measured, x1.2 intelligence, every 2 s)
-	ok((mn + mx) / 2 * 1.2 / 2 < 1538, "level 300 below the Illusionist")
-	ok((l1 + h1) / 2 * 1.2 / 2 < 2317, "level 1000 below the Illusionist")
+	-- under the Illusionist's self heal per second (1538 / 2317 measured, x1.2 intelligence, every 1.5 s)
+	ok((mn + mx) / 2 * 1.2 / 1.5 < 1538, "level 300 below the Illusionist")
+	ok((l1 + h1) / 2 * 1.2 / 1.5 < 2317, "level 1000 below the Illusionist")
+	-- C5 (2026-10-20): at least the Ranger line's self heal per second at level 300 (798 measured), well above at 1000 (1180)
+	ok((mn + mx) / 2 * 1.2 / 1.5 >= 0.9 * 798 - 1, "level 300 about the Ranger line")
+	ok((l1 + h1) / 2 * 1.2 / 1.5 > 1180, "level 1000 above the Ranger line")
 
 	-- the spell entry: id 98, healing group, the three classes of the line
 	local xml = io.open("data/spells/chaos/spells_chaos.xml"):read("*a")
@@ -39,6 +42,7 @@ do
 	ok(block, "Shadow Mend in spells_chaos.xml")
 	eq(block:match('spellid="(%d+)"'), "98", "spell id"); eq(block:match('words="([^"]+)"'), "saen umh", "words")
 	eq(block:match('group="(%a+)"'), "healing", "healing group")
+	eq(block:match('cooldown="(%d+)"'), "1500", "cooldown")
 	eq(block:match('script="([^"]+)"'), "chaos/thief/shadow_mend.lua", "script")
 	for _, v in ipairs({"Thief", "Ninja", "Samurai"}) do
 		ok(block:find('<vocation name="' .. v .. '" />', 1, true), "for the " .. v)
@@ -432,7 +436,7 @@ do
 	eq(K.kits.beastmaster.quiver.id, 28050, "beastmaster quiver"); eq(K.kits.paladin.quiver.id, 29566, "paladin quiver")
 	eq(K.kits.beastmaster.ammo, nil, "no arrows"); eq(K.kits.paladin.ammo, nil, "no bolts")
 	eq(K.kits.ninja.slots[CONST_SLOT_RIGHT], 11395, "ninja off-hand"); eq(K.kits.thief.slots[CONST_SLOT_RIGHT], nil, "thief: none")
-	eq(K.kits.thief.quiver, false, "thief: no quiver"); eq(K.kits.thief.extra[1].id, 7368, "assassin stars")
+	eq(K.kits.thief.quiver, false, "thief: no quiver"); eq(K.kits.thief.extra, nil, "no assassin stars (throwables left the game)")
 	eq(K.kits.monk.slots[CONST_SLOT_LEFT], nil, "monk: unarmed"); eq(K.kits.monk.skills[SKILL_FIST], 120, "fist")
 	eq(K.kits.necromancer.druidWeapon, false, "necromancer keeps the wand")
 	eq(K.kits.templar.slots[CONST_SLOT_RIGHT], 10318, "templar shield"); eq(K.kits.templar.magic, 25, "templar magic level")

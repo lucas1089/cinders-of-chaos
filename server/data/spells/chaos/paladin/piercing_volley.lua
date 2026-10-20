@@ -1,4 +1,4 @@
--- Skewering Line: a 7 sqm line of spears hitting everything in it. Scales with distance skill x weapon attack.
+-- Skewering Line: a 7 sqm line of spears hitting everything in it. Every target takes a Dawnpiercer hit (owner, 2026-10-20: an area hit equals the single-target hit). Scales with distance skill x weapon attack.
 dofile('data/spells/scripts/chaos/_common.lua')
 
 local combat = Combat()
@@ -9,8 +9,8 @@ combat:setArea(createCombatArea(AREA_BEAM7))
 
 function onGetFormulaValues(player, skill, attack, factor)
 	local power = player:getEffectiveSkillLevel(SKILL_DISTANCE) * ChaosSpell.distanceAttack(player)
-	local min = (player:getLevel() / 5) + (power * 0.0195) + 20
-	local max = (player:getLevel() / 5) + (power * 0.0325) + 40
+	local min = (player:getLevel() / 5) + (power * 0.042) + (player:getMagicLevel() * 1.0) + 20
+	local max = (player:getLevel() / 5) + (power * 0.065) + (player:getMagicLevel() * 1.6) + 40
 	return -min, -max
 end
 

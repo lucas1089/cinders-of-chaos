@@ -168,7 +168,12 @@ function bankOpcode(protocol, code, buffer)
 		return false
 	end
 
-	if json_data.action == "open" then
+	if json_data.action == "npc" then
+		-- the banker NPC (server/data/scripts/chaos/service_npcs*.lua) opens the window; an open one stays open
+		if not bankingWindow:isVisible() then
+			bankWindowShow()
+		end
+	elseif json_data.action == "open" then
 		bankInfoTable = json_data.data
 		if B.onReply(bankingWindow:isVisible(), pending) == "show" then
 			pending = false

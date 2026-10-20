@@ -30,7 +30,9 @@ local LIFT = 0.18          -- the block's bottom sits this much of a tile above 
 local BACKPACK_POS = { x = 65535, y = 3, z = 0 } -- InventorySlotBack: the engine puts the item inside the backpack
 
 local settings = GL.defaults()
-local rawCache = {}    -- posKey -> {raw, n, sig}: the last look at a tile in view (ids and counts of all its items)
+local rawCache = {}    -- GL.numKey -> {raw, n, sig, cnt, verifyAt, gen}: the last look at a tile in view (ids and counts of all its items)
+local scanGen = 0
+local scanProbe = { x = 0, y = 0, z = 0 }
 local lastScanMs = 0
 local tiles = {}       -- posKey -> {pos, sig, rows, at, askedSig, askedAt, widget, wid, render}
 local labels = {}      -- the drawn labels: {widget = row label, tile, row, d}
@@ -156,7 +158,10 @@ local function thingOf(t, row)
     if x.id == tonumber(row.id) then
       local score = 0
       if x.c == (tonumber(row.c) or 1) then score = score + 8 end
-      if attr(x.thing, A.RARITY) == (tonumber(row.r) or 0) then score = score + 4 end
+      local LF = LootFilterLogic -- the item may carry an old rarity id: both sides are read as the rarity they stand for
+      local want = LF and LF.canon and LF.canon(row.r) or (tonumber(row.r) or 0)
+      local have = LF and LF.canon and LF.canon(attr(x.thing, A.RARITY)) or attr(x.thing, A.RARITY)
+      if have == want then score = score + 4 end
       if (attr(x.thing, A.UNIQUE) > 0) == (tonumber(row.u) == 1) then score = score + 2 end
       if x.thing:getStackPos() == tonumber(row.s) then score = score + 1 end
       if not bestScore or score > bestScore then best, bestScore = x.thing, score end
@@ -335,26 +340,38 @@ local function scan()
   local seen, need, changed = {}, {}, false
   local t0 = now()
   local started = g_clock.millis()
-  local cache = {}
+  scanGen = scanGen + 1
+  local gen = scanGen
+  local px, py, pz = ppos.x, ppos.y, ppos.z
+  local probe = scanProbe -- one position table for every getTile of the scan (no table per tile)
+  probe.z = pz
   for dy = -ry, ry do
+    probe.y = py + dy
     for dx = -rx, rx do
-      local pos = { x = ppos.x + dx, y = ppos.y + dy, z = ppos.z }
-      local tile = g_map.getTile(pos)
-      if tile and tile:getThingCount() > 1 then
-        -- ids and counts of everything on the tile; the candidate test (several engine calls per item) only runs
-        -- again when they change
-        local key = GL.posKey(pos)
-        local items = tile:getItems() or {}
-        local parts = {}
-        for i, item in ipairs(items) do parts[i] = item:getId() .. 'x' .. item:getCount() end
-        local raw = table.concat(parts, ';')
-        local c = rawCache[key]
-        if not c or c.raw ~= raw then
-          local list = candidates(tile)
-          c = { raw = raw, n = #list, sig = GL.signature(list) }
+      probe.x = px + dx
+      local tile = g_map.getTile(probe)
+      local count = tile and tile:getThingCount() or 0
+      if count > 1 then
+        local nk = GL.numKey(probe.x, probe.y, pz)
+        local c = rawCache[nk]
+        if GL.needsLook(c, count, started) then
+          -- ids and counts of everything on the tile; the candidate test (several engine calls per item) only runs
+          -- again when they change
+          local items = tile:getItems() or {}
+          local parts = {}
+          for i, item in ipairs(items) do parts[i] = item:getId() .. 'x' .. item:getCount() end
+          local raw = table.concat(parts, ';')
+          if not c or c.raw ~= raw then
+            local list = candidates(tile)
+            c = { raw = raw, n = #list, sig = GL.signature(list) }
+          end
+          c.cnt, c.verifyAt = count, GL.nextLook(started, nk)
+          rawCache[nk] = c
         end
-        cache[key] = c
+        c.gen = gen
         if c.n > 0 then
+          local pos = { x = probe.x, y = probe.y, z = pz }
+          local key = GL.posKey(pos)
           seen[key] = true
           local t = tiles[key]
           if not t then
@@ -383,7 +400,9 @@ local function scan()
       end
     end
   end
-  rawCache = cache
+  for nk, c in pairs(rawCache) do
+    if c.gen ~= gen then rawCache[nk] = nil end -- left the view
+  end
   lastScanMs = g_clock.millis() - started
   for key in pairs(tiles) do
     if not seen[key] then
@@ -583,16 +602,21 @@ local function onMousePress(widget, mousePos, button)
     pressed = nil
     return false
   end
-  pressed = { l = l, button = button }
-  return true
+  pressed = { l = l, button = button, pos = { x = mousePos.x, y = mousePos.y } }
+  -- A left press goes on to the map: UIGameMap:onMousePress remembers the tile there, and without it onDragEnter
+  -- refuses, so an item under a label could not be dragged (owner 2026-10-17). The click is told apart from a drag on
+  -- release (GL.isDrag). The right button has no drag; its press stays ours.
+  return button ~= MouseLeftButton
 end
 
 local function onMouseRelease(widget, mousePos, button)
   if not pressed then return false end
   local p = pressed
   pressed = nil
+  if button ~= p.button then return false end
+  if GL.isDrag(p.pos, mousePos) then return false end -- a drag the engine did not take: the map decides
   local l = labelAt(mousePos)
-  if l and l.label == p.l.label and button == p.button then
+  if l and l.label == p.l.label then
     activate(l, mousePos, button)
   end
   return true

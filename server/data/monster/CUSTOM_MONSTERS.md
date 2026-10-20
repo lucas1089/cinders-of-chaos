@@ -67,7 +67,8 @@ by replacing a rare natural respawn; never put it in a spawn file. See `server/R
 
 **Goblins and the wildwood (`monsters/chaos/goblins/`, `monsters/chaos/wildwood/`).** 39 monsters of our own on the new
 outfits 2000-2038 (client `import_art_things.py`, server/README.md "Pack items and monsters"), each with its own corpse
-(36061-36099) and loot of creature products and food (36010-36060, step `packitems`). They have no `<level>` tag (normal
+(36061-36099) and loot of food (36037-36060, step `packitems`); the creature products 36010-36035 left the loot on
+2026-10-20 (server/README.md "Junk loot"). They have no `<level>` tag (normal
 hunting monsters, no level skull). Not in a spawn file yet: they come with the invasion factions Goblin Tribe and Wildwood
 Uprising. Cunning Hyaena now uses the Forest Wolf outfit 2015 (sand colours) instead of the wrong art at 1051. The XML
 files were generated from a table (stats per monster: health, experience, speed, armor, attacks scaled by hunting level);

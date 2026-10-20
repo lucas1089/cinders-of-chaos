@@ -275,7 +275,11 @@ local function spawn(player, live)
 	if not pet then
 		return nil
 	end
-	pet:setMaster(player)
+	if ChaosSummonsCore then
+		ChaosSummonsCore.bind(player, pet)
+	else
+		pet:setMaster(player)
+	end
 	pcall(function()
 		local name = displayName(row, species)
 		pet:rename(name, string.format("%s, the %s of %s", name, species.name:lower(), player:getName()))

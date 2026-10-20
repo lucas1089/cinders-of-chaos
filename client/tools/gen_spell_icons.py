@@ -401,7 +401,13 @@ ICONS = [  # (spell name, theme, glyph)
     # the pack tools of the second pass (cells 291..297)
     ('Palm Shockwave', 'ember', 'palmwave'), ('Shadow Ricochet', 'shadow', 'ricochet'), ('Iron Chain', 'steel', 'chain'),
     ('Bone Shrapnel', 'bone', 'shrapnel'), ('Sanctified Ground', 'holy', 'ring'), ('Shield Wave', 'light', 'shieldwave'),
-    ('Fan of Knives', 'steel', 'knives')]
+    ('Fan of Knives', 'steel', 'knives'),
+    # the Necromancer line's summon spells (2026-10-18, cells 298..300: the last three of the 300-cell sheets)
+    ('Raise Bone Warrior', 'bone', 'sword'), ('Raise Bone Archer', 'bone', 'arrows'), ('Raise Bone Mage', 'necrotic', 'eye'),
+    # the late spells of the ascended classes (C6, 2026-10-20): cells 301..307, past the old 300-cell sheets (the sheets get a 16th row)
+    ('Bastion Cry', 'steel', 'banner'), ('Anvil Fall', 'steel', 'hammer'), ('Twin Verdict', 'holy', 'twin'),
+    ('Rampage Leap', 'blood', 'slam'), ('Glacial Doom', 'frost', 'swirl'), ('Pack Frenzy', 'nature', 'paw'),
+    ('Shuriken Tempest', 'steel', 'shuriken')]
 
 def render(theme, glyph):
     c = COL[theme]

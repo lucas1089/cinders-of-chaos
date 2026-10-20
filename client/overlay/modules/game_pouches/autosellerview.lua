@@ -2,20 +2,24 @@
 -- The server (data/scripts/chaos/autosell.lua A.state) sends the state over the pouches opcode 226, action
 -- `autoseller`: {unlocked, needs, paused, tiers = {{key, name, on}}, list = {{id, name, price}}, slots, cooldown,
 -- cooldownMax, last = {gold, count, at}, notice, open}. The client never decides a sale: it only shows the state and
--- sends the player's choices (sell, asrar, aslist, aspause) for the server to check.
+-- sends the player's choices (sell, asrar, aslist, aspause, asevery) for the server to check.
+-- interval / intervals: the minutes of "sell every X minutes" (0 = off) and the choices of the dropdown.
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 
 AutoSellerView = {}
 local V = AutoSellerView
 
--- the five rarity choices (server autosell_core.lua TIERS), in the loot filter's rarity colours
+-- the six rarity choices (server autosell_core.lua TIERS; Unique is never sold), in the loot filter's rarity colours.
+-- Since the seven rarities (2026-10-18) the keys magic and rare are what rare and epic were, and Divine is its own choice.
 V.TIERS = {
   { key = 'common', name = 'Common', color = '#c8c8c8' },
   { key = 'uncommon', name = 'Uncommon', color = '#5ccf5c' },
-  { key = 'rare', name = 'Rare', color = '#4a90ff' },
-  { key = 'epic', name = 'Epic', color = '#a35cf0' },
-  { key = 'legendary', name = 'Legendary+', color = '#ffd040' },
+  { key = 'magic', name = 'Magic', color = '#4a90ff' },
+  { key = 'rare', name = 'Rare', color = '#a35cf0' },
+  { key = 'legendary', name = 'Legendary', color = '#ffd040' },
+  { key = 'divine', name = 'Divine', color = '#c8e8ff' },
 }
+V.ROW_SIZE = 3 -- boxes in the first row; the rest go in the second (autoseller.otui rarityRow, rarityRow2)
 V.DEFAULT_ON = { common = true, uncommon = true }
 
 -- a rarity checkbox as wide as its text: the box and the text offset (ChaosCheckBox text-offset 22) + 2 px. The
@@ -43,6 +47,8 @@ function V.normalize(s)
     unlocked = s.unlocked == true,
     needs = type(s.needs) == 'string' and s.needs or V.NEEDS,
     paused = s.paused == true,
+    interval = V.intervalOf(s.interval) or 0,
+    intervals = V.intervalChoices(s.intervals),
     slots = math.max(0, math.floor(tonumber(s.slots) or 40)),
     cooldown = math.max(0, math.floor(tonumber(s.cooldown) or 0)),
     cooldownMax = math.max(1, math.floor(tonumber(s.cooldownMax) or 30)),
@@ -69,6 +75,54 @@ function V.normalize(s)
     out.last = { gold = math.floor(tonumber(s.last.gold)), count = math.floor(tonumber(s.last.count) or 0) }
   end
   return out
+end
+
+-- "Sell every X minutes": the dropdown's choices (server autosell_core.lua INTERVALS); 0 = off
+V.INTERVALS = { 5, 10, 15, 30, 60 }
+function V.intervalOf(v)
+  local n = tonumber(v)
+  if n == 0 then return 0 end
+  for _, m in ipairs(V.INTERVALS) do
+    if n == m then return m end
+  end
+  return nil
+end
+
+-- the minutes the server offers, only the known ones; the defaults when it sent none
+function V.intervalChoices(list)
+  local out = {}
+  for _, m in ipairs(type(list) == 'table' and list or {}) do
+    local v = V.intervalOf(m)
+    if v and v > 0 then out[#out + 1] = v end
+  end
+  if #out == 0 then for i, m in ipairs(V.INTERVALS) do out[i] = m end end
+  return out
+end
+
+-- the dropdown's entries: Off first, then the minutes; {text, minutes}
+function V.intervalOptions(choices)
+  local out = { { text = tr('Off'), minutes = 0 } }
+  for _, m in ipairs(choices or V.INTERVALS) do
+    out[#out + 1] = { text = tr('%d minutes', m), minutes = m }
+  end
+  return out
+end
+
+-- the index (1 based) of the current choice in intervalOptions
+function V.intervalIndex(choices, interval)
+  if interval and interval > 0 then
+    for i, m in ipairs(choices or V.INTERVALS) do
+      if m == interval then return i + 1 end
+    end
+  end
+  return 1
+end
+
+-- the request of the dropdown (sent as `asevery`); nil for a number that is not a choice
+function V.everyRequest(minutes)
+  local m = V.intervalOf(minutes)
+  if m == nil then return nil end
+  return { minutes = m }
 end
 
 -- the Sell all button: its text counts the cooldown down

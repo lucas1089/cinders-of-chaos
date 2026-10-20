@@ -152,9 +152,9 @@ end
 
 local function renderTracker()
   if not tracker then return end
-  local show = trackerEnabled() and #st.tracker > 0 and g_game.isOnline()
-  tracker:setVisible(show)
-  if not show then return end
+  local shown = trackerEnabled() and #st.tracker > 0 and g_game.isOnline()
+  tracker:setVisible(shown)
+  if not shown then return end
   local folded = g_settings.getBoolean(SETTING_FOLDED, false)
   tracker.title:setText(folded and tr('Next Goals (%d) +', #st.tracker) or tr('Next Goals'))
   tracker.rows:destroyChildren()

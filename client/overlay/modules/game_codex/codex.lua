@@ -394,6 +394,8 @@ function init()
   -- Backspace goes back. The search box has the focus whenever the Codex is open (show), so it gets the key first:
   -- while it is empty (nothing to delete) Backspace goes back from there too
   local function onBackspace(widget, keyCode)
+    -- Escape closes the window: replacing window.onKeyDown here also replaced the window's own Escape handling
+    if keyCode == KeyEscape then hide() return true end
     if keyCode ~= KeyBackspace then return false end
     local search = window.searchEdit
     if search:isFocused() and search:getText() ~= '' then return false end
@@ -401,6 +403,7 @@ function init()
   end
   window.onKeyDown = onBackspace
   window.searchEdit.onKeyDown = function(widget, keyCode)
+    if keyCode == KeyEscape then hide() return true end
     if keyCode == KeyBackspace and widget:getText() == '' then return back() end
     return false
   end

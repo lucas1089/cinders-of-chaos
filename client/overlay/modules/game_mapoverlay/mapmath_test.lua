@@ -258,5 +258,15 @@ eq(M.startsPan(true, true, false), true, 'Shift+middle pans')
 eq(M.startsPan(true, true, true), false, 'not over the strip')
 eq(M.startsPan(false, true, false), false, 'Shift+left click reaches the game map (look)')
 
+-- death: an open overlay is reopened after the relogin of the same character
+eq(M.deathNote(false, 'Nekros', 100), nil, 'closed overlay: no note')
+eq(M.deathNote(true, '', 100), nil, 'no name: no note')
+local note = M.deathNote(true, 'Nekros', 1000)
+eq(M.reopenAfterDeath(note, 'Nekros', 9000), true, 'reopens after the relogin')
+eq(M.reopenAfterDeath(note, 'Nekros', 1000 + M.DEATH_REOPEN_MS + 1), false, 'too late (death window left open)')
+eq(M.reopenAfterDeath(note, 'Other', 2000), false, 'another character')
+eq(M.reopenAfterDeath(note, 'Nekros', 500), false, 'clock went back')
+eq(M.reopenAfterDeath(nil, 'Nekros', 2000), false, 'no note: stays closed')
+
 if fails > 0 then error(fails .. ' failure(s)') end
 print('mapmath_test: ok')

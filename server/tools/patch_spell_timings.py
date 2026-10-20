@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Cooldowns and group cooldowns of base attack spells, from server/data/spells/spell_timings.csv (idempotent).
+"""Cooldowns, group cooldowns, levels and mana costs of base attack spells, from server/data/spells/spell_timings.csv
+(idempotent).
 
 usage: python3 -I patch_spell_timings.py DATA_DIR [--dry-run]
 
@@ -9,6 +10,10 @@ than the 2 s every other attack spell uses left a window with nothing to cast (S
 the Mystic). Bonebreaker's 6 s cooldown (2026-10-14, second pass) left the Warrior line at levels 16-29 with one
 spell and a 6 s gap. The 4 s locks of the supreme strikes and the big area spells stay: they hold back strong spells (without
 them a Mystic casting everything deals ~30% more), and the rotations of at most 5 spells leave those spells out.
+Level and mana (2026-10-17, owner debug items 44 and 45: "A maioria das classes não tem magia no level 8", "Magias com
+custo de mana muito alto, difíceis de manter"): the Warrior and Ranger lines have no Chaos attack spell before level 30, so
+their first stock spells (Bonebreaker, Phantom Javelin) come at level 8 like the other classes' first spell, and the stock
+Warrior spells cost what a Warrior's mana pool and regeneration can sustain (server/data/spells/README.md "Mana runway").
 Each row of the csv names a base spell by its script
 (rename_spells.py changes names and words, never scripts) and the values it gets in data/spells/spells.xml: an empty
 cell keeps the attribute as it is. The Chaos block is never touched (its numbers are in chaos/spells_chaos.xml).
@@ -18,7 +23,7 @@ import csv, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = os.path.join(HERE, '..', 'data', 'spells', 'spell_timings.csv')
-ATTRS = ('cooldown', 'groupcooldown', 'secondarygroup', 'secondarygroupcooldown')
+ATTRS = ('cooldown', 'groupcooldown', 'secondarygroup', 'secondarygroupcooldown', 'level', 'mana')
 CHAOS_BEGIN = '<!-- BEGIN chaos spells'
 CHAOS_END = '<!-- END chaos spells -->'
 

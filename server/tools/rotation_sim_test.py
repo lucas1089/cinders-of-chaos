@@ -12,6 +12,8 @@ usage: python3 -I server/tools/rotation_sim_test.py
 - the data: rotation_model.csv has a row for every attack spell, stock_spells.csv carries every row of
   spell_timings.csv (patch_spell_timings.py) and patch_spell_timings.py does what the csv says (synthetic spells.xml);
 - Radiant Smite's class scale is read from templar_aura_core.lua, Shuriken Toss's from shuriken_toss.lua;
+- the mana runway: every class has an attack spell at level 8 and its best set runs 15 s on a full mana pool (vocation
+  regeneration only) at every band and preset level up to 300 (rotation_sim.py --mana);
 - the client's autorotation_data.lua is up to date (--check).
 """
 import os, sys
@@ -60,7 +62,7 @@ stock = {s['name']: s for s in spells if not s['chaos']}
 for row in P.load():
     s = stock.get(row['name'])
     check(s is not None, 'stock_spells.csv has %s' % row['name'])
-    for a in ('cooldown', 'groupcooldown', 'secondarygroupcooldown'):
+    for a in ('cooldown', 'groupcooldown', 'secondarygroupcooldown', 'level', 'mana'):
         if s and (row.get(a) or '').strip():
             check(s[a] == int(row[a]), 'stock_spells.csv %s %s = spell_timings.csv' % (row['name'], a))
 check(R.smite_scale() == {23: 0.56, 24: 0.69, 25: 0.56}, 'Radiant Smite scales from templar_aura_core.lua')
@@ -89,6 +91,23 @@ check(len(changes) == 1 and not missing, 'one change')
 check(P.patch_text(new, rows)[1] == [], 'idempotent')
 check(P.patch_text(xml.replace('expose_weakness', 'other'), rows)[2] == ['attack/expose_weakness.lua'],
       'a missing script is reported')
+
+# the mana runway (owner debug items 44 and 45): every class has an attack spell at the start level 8, and every class's best
+# set runs MANA_RUNWAY seconds from a full pool at every band and preset level up to MANA_MAX_LEVEL
+for cls, _, _ in R.CLASSES:
+    first = min(s['level'] for s in spells if s['group'] == 'attack' and cls in s['vocations'] and
+                not model[s['words']]['flags'] & set(R.NO_PRESET))
+    check(first <= 8, '%s has an attack spell at level 8 (first at %d)' % (cls, first))
+    for lv in R.mana_levels(spells, model, cls):
+        r = R.mana_runway(spells, model, cls, lv)
+        check(r is not None, '%s %d: a mana runway' % (cls, lv))
+        if r:
+            check(r[0] >= R.MANA_RUNWAY, '%s %d: the best set runs %.1f s on a full pool, under %.0f s (%s)' % (
+                cls, lv, r[0], R.MANA_RUNWAY, ' > '.join('%s %d' % c for c in r[4])))
+# synthetic pool: 100 mana, 10 regeneration a second is not asserted here; the pool and regeneration come from the data
+check(R.mana_pool('Warrior', 8) == 70 and R.mana_pool('Mystic', 8) == 300, 'mana pool at level 8 = start_stats.lua')
+check(abs(R.mana_stats()['Warrior'][2] - 5 / 6.0) < 1e-9 and R.mana_stats()['Elementalist'][2] == 5.0,
+      'regeneration = gainmanaamount / gainmanaticks')
 
 # every class and ascension at every band and every preset level: at most 5 spells, never a snare
 for cls, _, _ in R.CLASSES:

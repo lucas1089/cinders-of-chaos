@@ -25,8 +25,9 @@ DENY = re.compile(r'hellgrave|tenkaiser|drakantos|exodus|evolisca|black ?talon|m
                   r'grand ?line|\bgla\b|vision ?ot|boteq', re.I)
 DENY_HASHES = {
     '356d28a3e5895f80',  # the base client's bot (side-bar tooltip, base patch 0059)
+    '9a7be5bb26fa4e65',  # the maker of the shared potion pack (pair 30)
 }
-ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|'
+ART_PACKS = re.compile(r'\bwst(_|\b)|raven ?fantasy|pixel ?spellcraft|anime ?ki ?auras|mutter ?pixel|pocket ?cozy|bloom ?pixle|'
                        r'pixel ?(status ?effects|projectiles|fireworks|blood ?vfx)|animated ?vfx', re.I)
 CREDITS_FILES = ('docs/CREDITS.md', 'client/overlay/modules/client_chaos_credits/credits_data.lua',
                  'website/overlay/plugins/chaos/credits/credits_data.json')

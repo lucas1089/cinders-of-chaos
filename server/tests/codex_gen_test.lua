@@ -152,12 +152,12 @@ for _, tab in ipairs({tabs.modifiers, tabs.powers}) do
 end
 local speed = ids["mod:chaos_mod_attackspeed"]
 eq(speed.side, "suffix", "attack speed side"); count()
-eq(speed.tv[8], "+11-14%", "attack speed T8"); count()
+eq(speed.tv[8], "+13-15%", "attack speed T8"); count()
 eq(speed.f.kind[1], "weapon", "attack speed on weapons"); count()
 eq(#speed.f.kind, 1, "attack speed only on weapons"); count()
 local crit = ids["mod:rarity_criticalhitchance"]
 eq(crit.name, "Critical Hit", "critical pair name"); count()
-eq(crit.tv[8], "3-5% chance, +5-7%", "critical T8 (chance two thirds)"); count()
+eq(crit.tv[8], "5-7% chance, +8-10%", "critical T8 (chance two thirds)"); count()
 eq(ids["mod:rarity_physicalabsorb"].f.kind[8], "other", "absorbs on any gear"); count()
 
 -- links and shared sections resolve

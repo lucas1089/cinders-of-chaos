@@ -76,6 +76,7 @@ return {
 		-- Pack combat (pace.lua)
 		["Multikill x%d: +%d%% experience on the chain."] = "Multikill x%d: +%d%% de experiência na sequência.",
 		-- Auto Seller (autosell.lua, autosell_core.lua)
+		["Auto loot: %d gold to your bank."] = "Auto Loot: %d de ouro no seu banco.",
 		["Auto seller: sold %s for %d gold (to your bank)."] = "Auto Seller: vendeu %s por %d de ouro (no seu banco).",
 		["Auto seller: kept an item of a rarity you keep, a unique or a named item (Economy > Auto Seller)."] =
 			"Auto Seller: guardou um item de uma raridade que você guarda, um único ou um item com nome (Economy > Auto Seller).",
@@ -93,6 +94,20 @@ return {
 		["Removed %s."] = "%s removido.",
 		["Rarities: %s."] = "Raridades: %s.",
 		["Bad request."] = "Pedido inválido.",
+		["%s no longer drops: bows and crossbows need no ammunition, so it cannot be on the auto loot list."] =
+			"%s não cai mais: arcos e bestas não precisam de munição, então não pode estar na lista de auto loot.",
+		-- Party shared experience (party_xp.lua)
+		["Shared experience is off. The party leader can turn it on from the party shield menu."] =
+			"A experiência compartilhada está desligada. O líder do grupo pode ligá-la no menu do escudo do grupo.",
+		["Shared experience is not working: every member must pass these at once."] =
+			"A experiência compartilhada não está funcionando: todos os membros precisam cumprir estas regras ao mesmo tempo.",
+		["%s is below level %d (the party shares only within two thirds of its highest level)"] =
+			"%s está abaixo do nível %d (o grupo só compartilha dentro de dois terços do maior nível)",
+		["%s is too far from the leader (30 tiles, 1 floor)"] = "%s está longe demais do líder (30 sqm, 1 andar)",
+		["%s has not attacked a monster or healed a member lately (buffs do not count)"] =
+			"%s não atacou um monstro nem curou um membro há pouco (buffs não contam)",
+		["Auto Seller: your Loot Bag is sold every %d minutes."] = "Auto Seller: sua Loot Bag é vendida a cada %d minutos.",
+		["Auto Seller: timed selling is off."] = "Auto Seller: a venda automática por tempo está desligada.",
 		["bad request"] = "pedido inválido",
 		["unknown rarity"] = "raridade desconhecida",
 		["on must be true or false"] = "on precisa ser true ou false",
@@ -498,6 +513,8 @@ return {
 		["You cannot change your vocation in combat."] = "Você não pode trocar de vocação em combate.",
 		["You are now %s. Health, mana and capacity follow the new vocation; skills and magic level are kept; your passive tree was reset for free. Relog if anything looks stale."] =
 			"Agora você é %s. Vida, mana e capacidade seguem a nova vocação; skills e magic level ficam; sua árvore passiva foi zerada de graça. Relogue se algo parecer desatualizado.",
+		["Your spellbook now lists the spells of your new class. Spells of the old class no longer work: replace them on your action bar, or press Auto setup in the Helper."] =
+			"Seu Spellbook agora lista as magias da sua nova classe. As magias da classe antiga não funcionam mais: troque-as na sua barra de ação ou use o Auto setup no Helper.",
 
 		-- New players: the welcome, the kit, the level gifts and the tutorial island (newplayer.lua, newplayer_core.lua, newplayer_tutorial.lua, newplayer_config.lua)
 		["Welcome to Cinders of Chaos"] = "Bem-vindo a Cinders of Chaos",
@@ -807,8 +824,8 @@ return {
 			"Orbes, moedas, chaves, tokens e fragmentos valem mais para você do que para mim: troque orbes no Orb Exchange.",
 		["The Material Broker pays better for what you gather; I leave those to him."] =
 			"O Material Broker paga melhor pelo que você coleta; deixo isso com ele.",
-		["A plain piece pays the listed price. Uncommon pays half again, rare three times, epic six, legendary twelve, and higher still above that; each item level adds half a percent."] =
-			"Uma peça comum paga o preço da lista. Incomum paga uma vez e meia, rara três vezes, épica seis, lendária doze, e mais ainda acima disso; cada item level soma meio por cento.",
+		["A plain piece pays the listed price. Uncommon pays half again, magic three times, rare six, legendary twelve, divine twenty-four; each item level adds half a percent."] =
+			"Uma peça comum paga o preço da lista. Incomum paga uma vez e meia, mágica três vezes, rara seis, lendária doze, divina vinte e quatro; cada item level soma meio por cento.",
 		["Ore, herbs, hides and fish, |PLAYERNAME|: I pay for all of it. Ask me to {sell}, about this week's {demand}, or {trade} for tools."] =
 			"Minério, ervas, couros e peixes, |PLAYERNAME|: eu pago por tudo. Peça para {sell}, pergunte a {demand} desta semana, ou faça {trade} por ferramentas.",
 		["Come back with full bags, |PLAYERNAME|."] = "Volte com as bolsas cheias, |PLAYERNAME|.",
@@ -825,8 +842,8 @@ return {
 		["The crates will wait. They always do."] = "As caixas vão esperar. Sempre esperam.",
 		["Pick a crate. You see the make and the craft, never the luck inside. That you pay to learn."] =
 			"Escolha uma caixa. Você vê o modelo e o trabalho, nunca a sorte lá dentro. Isso você paga para descobrir.",
-		["Every crate holds something touched by Chaos, never plain iron. Most are modest. One in eight is Legendary or better, no more than the beasts give. The window lists the odds; I hide nothing but the crate."] =
-			"Toda caixa guarda algo tocado pelo Chaos, nunca ferro comum. A maioria é modesta. Uma em oito é Legendary ou melhor, não mais do que as feras dão. A janela mostra as chances; eu só escondo a caixa.",
+		["Every crate holds something touched by Chaos, never plain iron. Most are modest. One in twenty-five is Legendary or better, no more than the beasts give. The window lists the odds; I hide nothing but the crate."] =
+			"Toda caixa guarda algo tocado pelo Chaos, nunca ferro comum. A maioria é modesta. Uma em vinte e cinco é Lendária ou melhor, não mais do que as feras dão. A janela mostra as chances; eu só escondo a caixa.",
 		["New crates every %d hours, on the mark: midnight, four, eight and so on, by the temple bell. For a price I fetch fresh ones sooner."] =
 			"Caixas novas a cada %d horas, na hora cheia: meia-noite, quatro, oito e assim por diante, pelo sino do templo. Por um preço eu trago novas antes.",
 		["Mordecai Ashwager. I sell what the Chaos left sealed. Ask me to {gamble}."] =
@@ -1113,11 +1130,8 @@ return {
 		["Find a unique item."] = "Encontre um item único.",
 		["Find 10 unique items."] = "Encontre 10 itens únicos.",
 		["Find 50 unique items."] = "Encontre 50 itens únicos.",
-		["Find a Legendary item."] = "Encontre um item Legendary.",
-		["Find a Mythic item."] = "Encontre um item Mythic.",
-		["Find an Eternal item."] = "Encontre um item Eternal.",
-		["Find a Celestial item."] = "Encontre um item Celestial.",
-		["Find a Transcendent item."] = "Encontre um item Transcendent.",
+		["Find a Legendary item."] = "Encontre um item Lendário.",
+		["Find a Divine item."] = "Encontre um item Divino.",
 		["Use an orb at the Crafting Bench."] = "Use um orbe na Crafting Bench.",
 		["Use 100 orbs at the Crafting Bench."] = "Use 100 orbes na Crafting Bench.",
 		["Use 1,000 orbs at the Crafting Bench."] = "Use 1.000 orbes na Crafting Bench.",
@@ -1269,6 +1283,12 @@ return {
 		["More depot items move at your next login."] = "Mais itens do depot vão para o stash no seu próximo login.",
 		["The depot boxes are withdraw-only now: everything goes into the stash (Economy > Supply Stash). You can still take items out."] =
 			"As caixas do depot agora só permitem retirar: tudo vai para o stash (Economy > Supply Stash). Você ainda pode retirar itens.",
+		["Your stash moved into your depot: %d entr(ies). %d stay in the stash because the open depot tabs are full (take them out in a protection zone and put them into your depot)."] =
+			"Seu stash foi para o seu depot: %d entrada(s). %d ficam no stash porque as abas abertas do depot estão cheias (retire-as numa zona de proteção e coloque-as no depot).",
+		["More of your stash moves into your depot when you open a depot locker again."] =
+			"Mais itens do seu stash vão para o depot quando você abrir um depot locker de novo.",
+		["The stash is closed to new items: put them into your depot. It only gives items back."] =
+			"O stash está fechado para novos itens: coloque-os no seu depot. Ele só devolve itens.",
 		["containers"] = "recipientes",
 		["cannot be moved"] = "não podem ser movidos",
 		["store-bound"] = "presos à conta (loja)",
@@ -1313,6 +1333,8 @@ return {
 			"O portal de volta ao lado do templo te leva de volta.",
 		["You do not own that portal style."] = "Você não tem esse estilo de portal.",
 		["Store items cannot be traded."] = "Itens da loja não podem ser negociados.",
+		["The Loot Bag stays in your purse: it cannot be moved out, dropped, traded or mailed."] =
+			"A Loot Bag fica na sua purse: ela não pode ser movida para fora, jogada fora, negociada ou enviada.",
 		["%s: your %s is in your %s. It collects %s while you carry it."] =
 			"%s: seu %s está na sua %s. Ele coleta %s enquanto você o carrega.",
 		["%s: your %s is in your %s. It collects %s from now on, there or in your backpack."] =
@@ -1894,10 +1916,10 @@ return {
 			"Sua árvore passiva: %d nó que sua classe não pode ter (ou que saiu da árvore) foi devolvido de graça.",
 		["Your passive tree: %d nodes your class cannot hold (or that left the tree) were refunded for free."] =
 			"Sua árvore passiva: %d nós que sua classe não pode ter (ou que saíram da árvore) foram devolvidos de graça.",
-		["Your passive tree: %d node whose effect changed (now class keystones) was refunded for free%s."] =
-			"Sua árvore passiva: %d nó cujo efeito mudou (agora keystones de classe) foi devolvido de graça%s.",
-		["Your passive tree: %d nodes whose effect changed (now class keystones) were refunded for free%s."] =
-			"Sua árvore passiva: %d nós cujo efeito mudou (agora keystones de classe) foram devolvidos de graça%s.",
+		["Your passive tree: %d node whose effect changed or that left the tree was refunded for free%s."] =
+			"Sua árvore passiva: %d nó cujo efeito mudou (ou que saiu da árvore) foi devolvido de graça%s.",
+		["Your passive tree: %d nodes whose effect changed or that left the tree were refunded for free%s."] =
+			"Sua árvore passiva: %d nós cujo efeito mudou (ou que saíram da árvore) foram devolvidos de graça%s.",
 		["; your saved loadouts lost %d"] = "; seus loadouts salvos perderam %d",
 		["First kill of %s: +1 passive point! %s."] = "Primeira morte de %s: +1 ponto passivo! %s.",
 		["Boss passive points: +%d for bosses you had already slain (%s). %s."] =
@@ -2401,5 +2423,573 @@ return {
 			"Classes bloqueadas: %s. Chegue ao nível %d com qualquer personagem para desbloquear.",
 		["Locked classes: %s. To unlock: %s."] = "Classes bloqueadas: %s. Para desbloquear: %s.",
 		["Ascension unlocks at level %d (you are level %d)."] = "A ascensão abre no nível %d (você está no nível %d).",
+		-- Passive tree stat help (passivetree_stats_config.lua)
+		["Elemental damage"] =
+			"Dano elemental",
+		["Resists"] =
+			"Resistências",
+		["Melee skills"] =
+			"Skills corpo a corpo",
+		["Life leech"] =
+			"Roubo de vida",
+		["Mana leech"] =
+			"Roubo de mana",
+		["Critical hits"] =
+			"Golpes críticos",
+		["Shielding"] =
+			"Escudo",
+		["Crafting skills"] =
+			"Skills de criação",
+		["Strength"] =
+			"Força",
+		["Intelligence"] =
+			"Inteligência",
+		["Dexterity"] =
+			"Destreza",
+		["Vitality"] =
+			"Vitalidade",
+		["Spirit"] =
+			"Espírito",
+		["Wisdom"] =
+			"Sabedoria",
+		["Speed"] =
+			"Velocidade",
+		["Experience"] =
+			"Experiência",
+		["Item find"] =
+			"Item find",
+		["Item rarity"] =
+			"Raridade de item",
+		["Sword skill"] =
+			"Skill de espada",
+		["Axe skill"] =
+			"Skill de machado",
+		["Club skill"] =
+			"Skill de clava",
+		["Distance skill"] =
+			"Skill de distância",
+		["Magic level"] =
+			"Magic level",
+		["Crit chance"] =
+			"Chance de crítico",
+		["Crit amount"] =
+			"Dano crítico",
+		["Life leech chance"] =
+			"Chance de roubo de vida",
+		["Life leech amount"] =
+			"Quantidade de roubo de vida",
+		["Mana leech chance"] =
+			"Chance de roubo de mana",
+		["Mana leech amount"] =
+			"Quantidade de roubo de mana",
+		["All elements"] =
+			"Todos os elementos",
+		["Physical damage"] =
+			"Dano físico",
+		["Fire damage"] =
+			"Dano de fogo",
+		["Ice damage"] =
+			"Dano de gelo",
+		["Energy damage"] =
+			"Dano de energia",
+		["Earth damage"] =
+			"Dano de terra",
+		["Death damage"] =
+			"Dano de morte",
+		["Holy damage"] =
+			"Dano sagrado",
+		["Arcane damage"] =
+			"Dano arcano",
+		["Water damage"] =
+			"Dano de água",
+		["Healing"] =
+			"Cura",
+		["Life drain damage"] =
+			"Dano de life drain",
+		["Mana drain damage"] =
+			"Dano de mana drain",
+		["Physical resist"] =
+			"Resistência física",
+		["Fire resist"] =
+			"Resistência a fogo",
+		["Ice resist"] =
+			"Resistência a gelo",
+		["Energy resist"] =
+			"Resistência a energia",
+		["Earth resist"] =
+			"Resistência a terra",
+		["Death resist"] =
+			"Resistência a morte",
+		["Holy resist"] =
+			"Resistência sagrada",
+		["Arcane resist"] =
+			"Resistência arcana",
+		["Water resist"] =
+			"Resistência a água",
+		["Life drain resist"] =
+			"Resistência a life drain",
+		["Mana drain resist"] =
+			"Resistência a mana drain",
+		["All resists"] =
+			"Todas as resistências",
+		["Crafting skill"] =
+			"Skill de criação",
+		["Armorsmith skill"] =
+			"Skill de armorsmith",
+		["Weaponsmith skill"] =
+			"Skill de weaponsmith",
+		["Jewelsmith skill"] =
+			"Skill de jewelsmith",
+		["Mining skill"] =
+			"Skill de mineração",
+		["Woodcutting skill"] =
+			"Skill de lenhador",
+		["Herbalist skill"] =
+			"Skill de herbalista",
+		["Physical damage x (1 + points / 230), at most 60 points (+26%)."] =
+			"Dano físico x (1 + pontos / 230), no máximo 60 pontos (+26%).",
+		["Damage of every type but physical, and healing, x (1 + points / 230), at most 60 points (+26%)."] =
+			"Dano de todo tipo menos físico, e cura, x (1 + pontos / 230), no máximo 60 pontos (+26%).",
+		["Weapon hits (melee, distance, wand) deal 1 / (1 - points%) times the damage, like attacking faster: at most 20 points (+25%)."] =
+			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - pontos%) vezes o dano, como atacar mais rápido: no máximo 20 pontos (+25%).",
+		["+1 percent maximum health per point, at most +50%."] =
+			"+1 percent de vida máxima por ponto, no máximo +50%.",
+		["+1 percent maximum mana per point, at most +50%."] =
+			"+1 percent de mana máxima por ponto, no máximo +50%.",
+		["No effect yet: the game gives wisdom no use."] =
+			"Sem efeito por enquanto: o jogo ainda não dá uso à sabedoria.",
+		["Walking speed. The tooltip shows the speed you gain; at most +80."] =
+			"Velocidade de caminhada. A dica mostra a velocidade que você ganha; no máximo +80.",
+		["Experience from monsters, in the percent shown."] =
+			"Experiência de monstros, na porcentagem mostrada.",
+		["Item find +0.2 per point (shown as the percent): scales the chance of better item rarities, +300 percent at most with everything else."] =
+			"Item find +0,2 por ponto (mostrado como a porcentagem): aumenta a chance de raridades melhores de item, no máximo +300 percent com todo o resto.",
+		["Item find +1 per point (shown as the percent): scales the chance of better item rarities, +300 percent at most with everything else."] =
+			"Item find +1 por ponto (mostrado como a porcentagem): aumenta a chance de raridades melhores de item, no máximo +300 percent com todo o resto.",
+		["+1 sword skill level per point: sword hit damage and accuracy."] =
+			"+1 nível de skill de espada por ponto: dano e precisão dos golpes de espada.",
+		["+1 axe skill level per point: axe hit damage and accuracy."] =
+			"+1 nível de skill de machado por ponto: dano e precisão dos golpes de machado.",
+		["+1 club skill level per point: club hit damage and accuracy."] =
+			"+1 nível de skill de clava por ponto: dano e precisão dos golpes de clava.",
+		["+1 distance skill level per point: bow, crossbow and throwing damage and accuracy."] =
+			"+1 nível de skill de distância por ponto: dano e precisão de arco, besta e arremesso.",
+		["+1 magic level per point: stronger spells, healing and runes."] =
+			"+1 magic level por ponto: magias, curas e runas mais fortes.",
+		["+1 shielding skill level per point: you block more of the hits you take with a shield."] =
+			"+1 nível de escudo por ponto: você bloqueia mais dos golpes que recebe com um escudo.",
+		["Percent chance that a hit is critical, rolled once against the sum of tree, gear and gems."] =
+			"Chance em porcentagem de um golpe ser crítico, sorteada uma vez contra a soma da árvore, equipamento e gemas.",
+		["A critical hit deals this many percent more damage."] =
+			"Um golpe crítico causa essa porcentagem a mais de dano.",
+		["Percent chance on each hit that it also heals you."] =
+			"Chance em porcentagem de cada golpe também curar você.",
+		["A leeching hit heals you for this percent of the damage it dealt."] =
+			"Um golpe com roubo de vida cura você nessa porcentagem do dano causado.",
+		["Percent chance on each hit that it also refills your mana."] =
+			"Chance em porcentagem de cada golpe também recuperar sua mana.",
+		["A leeching hit gives you this percent of the damage it dealt as mana."] =
+			"Um golpe com roubo de mana dá a você essa porcentagem do dano causado como mana.",
+		["+percent damage to every element at once (fire, ice, energy, earth, death, holy, water, arcane; not physical)."] =
+			"+porcentagem de dano em todos os elementos de uma vez (fogo, gelo, energia, terra, morte, sagrado, água, arcano; não físico).",
+		["+percent physical damage, up to +150 percent together with every other source of the type."] =
+			"+porcentagem de dano físico, até +150 percent junto com toda outra fonte do tipo.",
+		["+percent fire damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de fogo, até +150 percent junto com todos os elementos.",
+		["+percent ice damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de gelo, até +150 percent junto com todos os elementos.",
+		["+percent energy damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de energia, até +150 percent junto com todos os elementos.",
+		["+percent earth damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de terra, até +150 percent junto com todos os elementos.",
+		["+percent death damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de morte, até +150 percent junto com todos os elementos.",
+		["+percent holy damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano sagrado, até +150 percent junto com todos os elementos.",
+		["+percent arcane damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano arcano, até +150 percent junto com todos os elementos.",
+		["+percent water damage, up to +150 percent together with all elements."] =
+			"+porcentagem de dano de água, até +150 percent junto com todos os elementos.",
+		["+percent healing done by your heal spells."] =
+			"+porcentagem de cura feita pelas suas magias de cura.",
+		["+percent life drain damage."] =
+			"+porcentagem de dano de life drain.",
+		["+percent mana drain damage."] =
+			"+porcentagem de dano de mana drain.",
+		["Takes this percent less physical damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano físico, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less fire damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de fogo, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less ice damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de gelo, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less energy damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de energia, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less earth damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de terra, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less death damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de morte, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less holy damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano sagrado, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less arcane damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano arcano, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less water damage, at most 75 percent (gear adds on top)."] =
+			"Recebe essa porcentagem a menos de dano de água, no máximo 75 por cento (o equipamento soma por cima).",
+		["Takes this percent less life drain damage, at most 75%."] =
+			"Recebe essa porcentagem a menos de dano de life drain, no máximo 75%.",
+		["Takes this percent less mana drain damage, at most 75%."] =
+			"Recebe essa porcentagem a menos de dano de mana drain, no máximo 75%.",
+		["Adds this percent to the resist of every element (fire, ice, energy, earth, death, holy, water, arcane), at most 75 percent each."] =
+			"Soma essa porcentagem à resistência de todos os elementos (fogo, gelo, energia, terra, morte, sagrado, água, arcano), no máximo 75 por cento cada.",
+		["Raises your crafting skill; no combat effect."] =
+			"Aumenta seu skill de criação; sem efeito em combate.",
+		["Raises your armorsmith skill; no combat effect."] =
+			"Aumenta seu skill de armorsmith; sem efeito em combate.",
+		["Raises your weaponsmith skill; no combat effect."] =
+			"Aumenta seu skill de weaponsmith; sem efeito em combate.",
+		["Raises your jewelsmith skill; no combat effect."] =
+			"Aumenta seu skill de jewelsmith; sem efeito em combate.",
+		["Raises your mining skill; no combat effect."] =
+			"Aumenta seu skill de mineração; sem efeito em combate.",
+		["Raises your woodcutting skill; no combat effect."] =
+			"Aumenta seu skill de lenhador; sem efeito em combate.",
+		["Raises your herbalist skill; no combat effect."] =
+			"Aumenta seu skill de herbalista; sem efeito em combate.",
+		-- Auto build (passive_builds_config.lua, passive_builds.lua)
+		["Damage"] =
+			"Dano",
+		["Raw damage: the damage nodes, your weapon or spell skill and the damage multipliers."] =
+			"Dano bruto: os nós de dano, o skill da sua arma ou magia e os multiplicadores de dano.",
+		["Critical strikes"] =
+			"Golpes críticos",
+		["Critical hit chance and amount, with the skill and attributes that feed your hits."] =
+			"Chance e dano de crítico, com o skill e os atributos que alimentam seus golpes.",
+		["Life and mana leech"] =
+			"Roubo de vida e mana",
+		["Life and mana leech chance and amount, and healing spells, to sustain yourself from your own hits."] =
+			"Chance e quantidade de roubo de vida e mana, e magias de cura, para se manter com os próprios golpes.",
+		["Mana"] =
+			"Mana",
+		["A deeper mana pool and leech for it, mana drain damage and absorb, and magic level."] =
+			"Uma mana maior e roubo de mana, dano e resistência a mana drain, e magic level.",
+		["Defense"] =
+			"Defesa",
+		["Health, resistances to every damage type and the shielding skill."] =
+			"Vida, resistência a todo tipo de dano e o skill de escudo.",
+		["Movement speed first; attack speed (dexterity) and evasion nodes on the way."] =
+			"Velocidade de movimento primeiro; velocidade de ataque (destreza) e nós de esquiva pelo caminho.",
+		["Loot"] =
+			"Loot",
+		["Item find and item rarity: more drops, better drops."] =
+			"Item find e raridade de item: mais drops, drops melhores.",
+		["Experience gained from monsters."] =
+			"Experiência ganha de monstros.",
+		["Physical"] =
+			"Físico",
+		["Physical damage, physical absorb and the melee or distance skills."] =
+			"Dano físico, resistência física e os skills corpo a corpo ou de distância.",
+		["Fire"] =
+			"Fogo",
+		["Fire damage and fire resistance."] =
+			"Dano e resistência a fogo.",
+		["Ice"] =
+			"Gelo",
+		["Ice damage and ice resistance."] =
+			"Dano e resistência a gelo.",
+		["Energy"] =
+			"Energia",
+		["Energy damage and energy resistance."] =
+			"Dano e resistência a energia.",
+		["Earth"] =
+			"Terra",
+		["Earth damage and earth resistance."] =
+			"Dano e resistência a terra.",
+		["Holy"] =
+			"Sagrado",
+		["Holy damage and holy resistance."] =
+			"Dano e resistência sagrada.",
+		["Death"] =
+			"Morte",
+		["Death damage and death resistance."] =
+			"Dano e resistência a morte.",
+		["Summons"] =
+			"Invocações",
+		["The army and companion nodes of the class, with health and mana for the owner."] =
+			"Os nós de exército e companheiro da classe, com vida e mana para o dono.",
+		["Hybrid"] =
+			"Híbrido",
+		["A balance of damage, health and resistances."] =
+			"Um equilíbrio de dano, vida e resistências.",
+		["Damage first: the damage nodes of your class, then crit and skill."] =
+			"Dano primeiro: os nós de dano da sua classe, depois crítico e skill.",
+		["Survivability first: health, resistances and the shielding skill."] =
+			"Sobrevivência primeiro: vida, resistências e o skill de escudo.",
+		["Staying power: leech and health on the way to the class keystones."] =
+			"Resistência: roubo de vida e vida no caminho dos keystones da classe.",
+		["Support: mana and the support keystones of the class."] =
+			"Suporte: mana e os keystones de suporte da classe.",
+		["Summons: the army or companion nodes, with health for the owner."] =
+			"Invocações: os nós de exército ou companheiro, com vida para o dono.",
+		["Speed and evasion with enough damage to hunt."] =
+			"Velocidade e esquiva com dano suficiente para caçar.",
+		["Critical strikes: chance and amount on the class path."] =
+			"Golpes críticos: chance e dano no caminho da classe.",
+		["One element: its damage nodes and resistance."] =
+			"Um elemento: seus nós de dano e de resistência.",
+		["All damage"] =
+			"Todo dano",
+		["Experience %"] =
+			"Experiência %",
+		["Item find %"] =
+			"Item find %",
+		["Item rarity %"] =
+			"Raridade de item %",
+		["Healing spells"] =
+			"Magias de cura",
+		["Slayer"] =
+			"Carniceiro",
+		["Bulwark"] =
+			"Baluarte",
+		["Bloodied"] =
+			"Sanguinário",
+		["Unbreakable"] =
+			"Inquebrável",
+		["Retaliator"] =
+			"Retaliador",
+		["Heavy Hitter"] =
+			"Golpe Pesado",
+		["Rage Engine"] =
+			"Motor da Fúria",
+		["Bloodrunner"] =
+			"Corredor de Sangue",
+		["Crusher"] =
+			"Esmagador",
+		["Sharpshooter"] =
+			"Atirador",
+		["Skirmisher"] =
+			"Escaramuçador",
+		["Steady Aim"] =
+			"Mira Firme",
+		["Marked Target"] =
+			"Alvo Marcado",
+		["Hunter's Focus"] =
+			"Foco do Caçador",
+		["Evasive Hunter"] =
+			"Caçador Evasivo",
+		["Pack Leader"] =
+			"Líder da Matilha",
+		["Wild Volley"] =
+			"Saraivada Selvagem",
+		["Hardy Warden"] =
+			"Guardião Robusto",
+		["Arcanist"] =
+			"Arcanista",
+		["Mana Weaver"] =
+			"Tecelão de Mana",
+		["Warded Mage"] =
+			"Mago Protegido",
+		["Overloaded"] =
+			"Sobrecarregado",
+		["Pyromancer"] =
+			"Piromante",
+		["Channeler"] =
+			"Canalizador",
+		["Support Weaver"] =
+			"Tecelão de Apoio",
+		["Lifeline"] =
+			"Linha de Vida",
+		["Illusory Striker"] =
+			"Golpeador Ilusório",
+		["Venomblade"] =
+			"Lâmina Venenosa",
+		["Shadow Dancer"] =
+			"Dançarino das Sombras",
+		["Cutthroat"] =
+			"Degolador",
+		["Twin Fangs"] =
+			"Presas Gêmeas",
+		["Phantom"] =
+			"Fantasma",
+		["Plaguebearer"] =
+			"Portador da Praga",
+		["Duelist"] =
+			"Duelista",
+		["Iaido Striker"] =
+			"Golpeador Iaido",
+		["Bloodblade"] =
+			"Lâmina de Sangue",
+		["Grave Caller"] =
+			"Invocador de Tumbas",
+		["Soul Siphon"] =
+			"Sifão de Almas",
+		["Death Mage"] =
+			"Mago da Morte",
+		["Rot Curser"] =
+			"Amaldiçoador da Podridão",
+		["Soul Hoarder"] =
+			"Acumulador de Almas",
+		["Lifedrinker"] =
+			"Bebedor de Vida",
+		["Bone Army"] =
+			"Exército de Ossos",
+		["Bone Warden"] =
+			"Guardião de Ossos",
+		["Ossuary Fury"] =
+			"Fúria do Ossuário",
+		["Iron Body"] =
+			"Corpo de Ferro",
+		["Fist Flurry"] =
+			"Rajada de Punhos",
+		["Chi Surge"] =
+			"Surto de Chi",
+		["Hundred Fists"] =
+			"Cem Punhos",
+		["Pressure Points"] =
+			"Pontos de Pressão",
+		["Shadow Step"] =
+			"Passo Sombrio",
+		["Chi Healer"] =
+			"Curandeiro de Chi",
+		["Stone Sage"] =
+			"Sábio de Pedra",
+		["Healing Fist"] =
+			"Punho Curador",
+		["Zealot"] =
+			"Zeloso",
+		["Shield Wall"] =
+			"Muralha de Escudos",
+		["Penitent"] =
+			"Penitente",
+		["Judge"] =
+			"Juiz",
+		["Burning Zeal"] =
+			"Zelo Ardente",
+		["Purifier"] =
+			"Purificador",
+		["Bastion"] =
+			"Bastião",
+		["Beacon"] =
+			"Farol",
+		["Retributor"] =
+			"Retribuidor",
+		-- Auto build messages (passive_builds.lua)
+		["Unknown build."] =
+			"Build desconhecida.",
+		["That build is not for your class."] =
+			"Essa build não é para a sua classe.",
+		["Malformed request."] =
+			"Pedido inválido.",
+		["Nothing would change: you already have this build, or you have no free points."] =
+			"Nada mudaria: você já tem essa build, ou não tem pontos livres.",
+		["The price changed since the preview. Open the build again."] =
+			"O preço mudou desde a prévia. Abra a build de novo.",
+		["You need %s gold coins (carried or in the bank) to reset your tree first."] =
+			"Você precisa de %s gold coins (na bolsa ou no banco) para resetar sua árvore primeiro.",
+		["Auto build: %d nodes now allocated, %d taken back%s."] =
+			"Auto build: %d nós alocados agora, %d devolvidos%s.",
+		["for %s gold coins"] =
+			"por %s gold coins",
+		["(free)"] =
+			"(grátis)",
+		["Auto build: %d nodes added, %d in all."] =
+			"Auto build: %d nós adicionados, %d no total.",
+		["%d more nodes of the build need more points."] =
+			"Mais %d nós da build precisam de mais pontos.",
+		["Too fast: wait a moment and apply again."] =
+			"Rápido demais: espere um momento e aplique de novo.",
+		-- Service NPCs (service_npcs*.lua, data/npc/scripts/chaos_service_npc.lua and the five NPC XMLs)
+		["%s has %d free houses, the cheapest: %s. Say {buy} and a name."] =
+			"%s tem %d casas livres, as mais baratas: %s. Diga {buy} e um nome.",
+		["%s in %s costs %s gold coins, paid from your backpack and then the bank. Do you want it? Say {yes}."] =
+			"%s em %s custa %s gold coins, pagos da sua mochila e depois do banco. Quer? Diga {yes}.",
+		["%s is yours. Keep the rent in your bank, or the house returns to me."] =
+			"%s é sua. Deixe o aluguel no banco, ou a casa volta para mim.",
+		["A class change takes a token from the store, and you have %d. The window shows the free switch of an old character as well."] =
+			"Uma troca de classe usa um token da loja, e você tem %d. A janela mostra também a troca grátis de um personagem antigo.",
+		["A house needs a premium account."] =
+			"Uma casa exige conta premium.",
+		["A name change takes a token from the store, and you have %d. Choose the new name in the window."] =
+			"Uma troca de nome usa um token da loja, e você tem %d. Escolha o novo nome na janela.",
+		["A roof keeps the rain off, |PLAYERNAME|."] =
+			"Um teto afasta a chuva, |PLAYERNAME|.",
+		["As you wish."] =
+			"Como quiser.",
+		["Cassian Auric. I keep the gold that you cannot carry. Ask to {open} your account."] =
+			"Cassian Auric. Guardo o ouro que você não consegue carregar. Peça para {open} sua conta.",
+		["Come again, |PLAYERNAME|."] =
+			"Volte sempre, |PLAYERNAME|.",
+		["Come back for it any time, |PLAYERNAME|."] =
+			"Volte para buscar quando quiser, |PLAYERNAME|.",
+		["Every boss gives you %d free pocket charges a day, renewed at midnight. A charge buys a private fight. The ledger shows what you hold."] =
+			"Cada chefe dá %d cargas de bolso grátis por dia, renovadas à meia-noite. Uma carga compra uma luta privada. O registro mostra quantas você tem.",
+		["Familiars are not on this server."] =
+			"Não há familiares neste servidor.",
+		["Free houses by town: %s. Ask for the {list} of a town."] =
+			"Casas livres por cidade: %s. Peça a {list} de uma cidade.",
+		["Good day, |PLAYERNAME|. A roof of your own? Ask for the {list} of free houses, or say {buy} and a name."] =
+			"Bom dia, |PLAYERNAME|. Um teto só seu? Peça a {list} das casas livres, ou diga {buy} e um nome.",
+		["Good hunting, |PLAYERNAME|."] =
+			"Boa caçada, |PLAYERNAME|.",
+		["Halvard Deedkeeper. I sell the free houses of the land and take back the ones you leave. Ask for the {list}, or say {buy} and a house name."] =
+			"Halvard Deedkeeper. Vendo as casas livres da terra e recebo de volta as que você deixa. Peça a {list}, ou diga {buy} e o nome da casa.",
+		["Here is the ledger. A boss that is out of reach can be fought in a pocket of its own: the Pocket button spends a charge."] =
+			"Aqui está o registro. Um chefe fora de alcance pode ser enfrentado num bolso só dele: o botão Pocket gasta uma carga.",
+		["Houses are not for sale on this server."] =
+			"Casas não estão à venda neste servidor.",
+		["Hunter, |PLAYERNAME|. I keep the ledger of every boss and the hour it returns. Ask for the {bosses}, or about your daily {charges}."] =
+			"Caçador, |PLAYERNAME|. Guardo o registro de cada chefe e da hora em que volta. Peça os {bosses}, ou pergunte das suas {charges} diárias.",
+		["I know no house of that name."] =
+			"Não conheço casa com esse nome.",
+		["More than one house fits that name. Say it fully."] =
+			"Mais de uma casa combina com esse nome. Diga o nome completo.",
+		["No house is free at the moment."] =
+			"Nenhuma casa está livre no momento.",
+		["Pell Ashmere. I see to your name, your class, your familiar, your plate frame and your web shop orders. Ask what you need."] =
+			"Pell Ashmere. Cuido do seu nome, da sua classe, do seu familiar, da moldura da placa e dos pedidos da loja web. Diga o que precisa.",
+		["Say {sell} and the name of the one who buys it. Both of you must be here."] =
+			"Diga {sell} e o nome de quem compra. Vocês dois precisam estar aqui.",
+		["Tavish Coldhand. I keep the supply stash of every adventurer. Ask me to open your {stash}."] =
+			"Tavish Coldhand. Guardo o estoque de suprimentos de todo aventureiro. Peça para abrir seu {stash}.",
+		["That cannot be done now."] =
+			"Isso não pode ser feito agora.",
+		["That house already has an owner."] =
+			"Essa casa já tem dono.",
+		["The deeds wait."] =
+			"As escrituras esperam.",
+		["The ink dries."] =
+			"A tinta seca.",
+		["The ledger stays open."] =
+			"O registro continua aberto.",
+		["The services are open. Name, class and frame changes are done in that window."] =
+			"Os serviços estão abertos. Trocas de nome, classe e moldura são feitas nessa janela.",
+		["The shelves wait."] =
+			"As prateleiras esperam.",
+		["The vault door closes."] =
+			"A porta do cofre se fecha.",
+		["The web shop is not on this server."] =
+			"A loja web não existe neste servidor.",
+		["Vessa Hollowmark. I keep the ledger of every boss: where it lives and when it returns. Ask for the {bosses}."] =
+			"Vessa Hollowmark. Guardo o registro de cada chefe: onde vive e quando volta. Peça os {bosses}.",
+		["Welcome, |PLAYERNAME|. A new name, a new class, a familiar or a plate frame? Ask, or say {services}."] =
+			"Bem-vindo, |PLAYERNAME|. Um novo nome, uma nova classe, um familiar ou uma moldura de placa? Pergunte, ou diga {services}.",
+		["Welcome, |PLAYERNAME|. What you cannot carry, I keep. Shall I open your {stash}?"] =
+			"Bem-vindo, |PLAYERNAME|. O que você não consegue carregar, eu guardo. Abro seu {stash}?",
+		["Welcome, |PLAYERNAME|. Your gold is safe with me. Shall I {open} your account?"] =
+			"Bem-vindo, |PLAYERNAME|. Seu ouro está seguro comigo. Devo {open} sua conta?",
+		["Which house? Say {buy} and its name; ask for the {list} to hear the free ones."] =
+			"Qual casa? Diga {buy} e o nome dela; peça a {list} para ouvir as livres.",
+		["You already own a house. Leave it first."] =
+			"Você já tem uma casa. Deixe-a primeiro.",
+		["You need %d gold coins (carried or in the bank) for that house."] =
+			"Você precisa de %d gold coins (na bolsa ou no banco) para essa casa.",
+		["Your account holds %s gold coins."] =
+			"Sua conta guarda %s gold coins.",
+		["Your account is open. You can deposit, withdraw or transfer gold. Your balance is %s gold coins."] =
+			"Sua conta está aberta. Você pode depositar, sacar ou transferir ouro. Seu saldo é %s gold coins.",
+		["Your gold sleeps safe, |PLAYERNAME|."] =
+			"Seu ouro dorme seguro, |PLAYERNAME|.",
+		["Your plate frames are in the window. Pick one, or switch it off."] =
+			"Suas molduras de placa estão na janela. Escolha uma, ou desligue.",
+		["Your stash is open. Drag items onto it, or take them out. Taking out works in town only, mind you."] =
+			"Seu estoque está aberto. Arraste itens para ele, ou retire-os. Retirar só funciona na cidade, atenção.",
 	},
 }

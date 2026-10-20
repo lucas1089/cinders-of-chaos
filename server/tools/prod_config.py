@@ -66,7 +66,7 @@ What it sets, and why (docs/LAUNCH.md has the full checklist):
                           spawntime of it). The stock 1 refilled a pack of five in five spawntimes; 3 brings most packs
                           back in one or two. Not a time multiplier: the timers are in the spawn file
                           (tools/patch_base_spawns.py, server/README.md "Spawn density and respawn")
-  cooldownChannels = true, moveItemDelay = 50, runeChannelDelay = 1000, potionChannelDelay = 1000
+  cooldownChannels = true, moveItemDelay = 50, runeChannelDelay = 1000, potionChannelDelay = 500
                           the cooldown channels (engine patch 0042, README "Cooldown channels"): attack, healing and
                           support runes, potions, item moves and other uses each wait only for their own channel, the
                           auto attack for none of them; the numbers are each channel's anti-spam delay in ms (floor 50)
@@ -187,7 +187,7 @@ def settings(opts, text=''):
         ('cooldownChannels', 'true'),
         ('moveItemDelay', '50'),
         ('runeChannelDelay', '1000'),
-        ('potionChannelDelay', '1000'),
+        ('potionChannelDelay', '500'),
         ('spawnNearPlayers', near),
         ('spawnMinPlayerDistance', near_dist),
         ('clientGuardMode', '"enforce"'),

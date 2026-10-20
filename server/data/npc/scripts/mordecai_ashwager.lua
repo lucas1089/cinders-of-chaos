@@ -59,7 +59,7 @@ local function creatureSayCallback(cid, type, msg)
 		npcHandler:say(t(cid, "Pick a crate. You see the make and the craft, never the luck inside. That you pay to learn."), cid)
 		return true
 	elseif has(text, "odds", "chance", "rarity", "luck") then
-		npcHandler:say(t(cid, "Every crate holds something touched by Chaos, never plain iron. Most are modest. One in eight is Legendary or better, no more than the beasts give. The window lists the odds; I hide nothing but the crate."), cid)
+		npcHandler:say(t(cid, "Every crate holds something touched by Chaos, never plain iron. Most are modest. One in twenty-five is Legendary or better, no more than the beasts give. The window lists the odds; I hide nothing but the crate."), cid)
 		return true
 	elseif has(text, "time", "refresh", "new", "when", "change") then
 		npcHandler:say(t(cid, "New crates every %d hours, on the mark: midnight, four, eight and so on, by the temple bell. For a price I fetch fresh ones sooner.",

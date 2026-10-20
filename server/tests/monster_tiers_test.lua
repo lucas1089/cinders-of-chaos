@@ -349,6 +349,11 @@ cfg.skip["dragon lord"] = true
 local skipped = Game.createMonster("Dragon Lord", position(105, 100, 7), true, false)
 think(skipped)
 eq(state[skipped:getId()], nil, "skip list: no tier")
+-- training monsters (names with "train" or "dummy") never get a tier
+eq(ChaosTierIsSkipped("Training Dummy"), true, "a dummy is skipped")
+eq(ChaosTierIsSkipped("Salamander Trainer"), true, "a trainer is skipped")
+eq(ChaosTierIsSkipped("Dragon Lord"), true, "the exact skip list still works")
+eq(ChaosTierIsSkipped("Rotworm"), false, "a normal monster is not skipped")
 check(not skipped.events.ChaosTierDeath, "skip list: no ambush death event")
 cfg.skip["dragon lord"] = nil
 

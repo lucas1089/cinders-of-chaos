@@ -43,6 +43,7 @@ XML_BEGIN = '\t<!-- Chaos gems and the Orb of Sockets (server/tools/install_gems
 XML_END = '\t<!-- end of the Chaos gems -->\n'
 GEM_WEIGHT = 10
 ORB_WEIGHT = 50
+ORB_ITEM_TEXT = 'Rolls a new number of sockets on a piece of gear. Gems stay; uniques keep one.'
 
 
 # ------------------------------------------------------------------------------------------------ config
@@ -301,8 +302,7 @@ def xml_block(rows, orb):
                  '\t\t<attribute key="description" value="%s" />\n'
                  '\t\t<attribute key="weight" value="%d" />\n'
                  '\t</item>\n' % (orb['id'], xml_escape(orb['name']), xml_escape(orb['name'].replace('Orb of', 'Orbs of')),
-                                  xml_escape('Use it with a piece of gear in your backpack: ' + orb['text'][0].lower()
-                                             + orb['text'][1:] + ' Uniques keep their one socket.'), ORB_WEIGHT))
+                                  xml_escape(ORB_ITEM_TEXT), ORB_WEIGHT))
     lines.append(XML_END)
     return ''.join(lines)
 

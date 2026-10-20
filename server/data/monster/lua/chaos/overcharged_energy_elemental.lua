@@ -45,7 +45,7 @@ monster.flags = {
 	canPushCreatures = false,
 	staticAttackChance = 85,
 	targetDistance = 1,
-	runHealth = 1,
+	runHealth = 0,
 	healthHidden = false,
 	isBlockable = false,
 	canWalkOnEnergy = false,
@@ -71,7 +71,6 @@ monster.loot = {
 	{id = 2148, chance = 50000, maxCount = 56},	-- gold coin
 	{id = 2152, chance = 15000, maxCount = 2},	-- platinum coin
 	{id = 2150, chance = 10000, maxCount = 2},	-- small amethyst
-	{id = 8303, chance = 14285},	-- energy soil
 	{id = 7591, chance = 10000},	-- great health potion
 	{id = 7590, chance = 5000},	-- great mana potion
 	{id = 7439, chance = 2173},	-- berserk potion
@@ -99,7 +98,7 @@ monster.elements = {
 	{type = COMBAT_PHYSICALDAMAGE, percent = 0},
 	{type = COMBAT_ENERGYDAMAGE, percent = 100},
 	{type = COMBAT_EARTHDAMAGE, percent = -20},
-	{type = COMBAT_FIREDAMAGE, percent = 100},
+	{type = COMBAT_FIREDAMAGE, percent = 30},
 	{type = COMBAT_LIFEDRAIN, percent = 0},
 	{type = COMBAT_MANADRAIN, percent = 0},
 	{type = COMBAT_DROWNDAMAGE, percent = 0},

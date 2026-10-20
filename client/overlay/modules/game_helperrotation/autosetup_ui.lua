@@ -1,7 +1,8 @@
 -- The helper's "Auto setup" button, beside Helper Status at the bottom of the helper window (the choice is
 -- autosetup.lua; client/MANIFEST.md "Helper Auto setup"). One click: healing (class heals, the best potions), tools
--- (eat food, haste kept up), the shooter (the class rotation, as Auto rotation) and the timers (class buffs), for the
--- character's class and level, only with spells it can cast and potions it may drink. Where the player has set
+-- (eat food, haste kept up), the shooter (the class rotation, as Auto rotation), the timers (the class's fight buffs,
+-- staggered so their first casts do not collide) and the Support spells tab (game_helpersupport: shields, summons, a
+-- vigil), for the character's class and level, only with spells it can cast and potions it may drink. Where the player has set
 -- something of their own, one question for the whole setup: Replace / Add / Cancel. Undo (in the result box and on
 -- the button's right-click) puts every tab back as it was. The helper itself is not changed: its tables and
 -- functions are used (modules.game_helper: _Helper.getHelperConfig, getShooterProfile, Timer, saveSettings,
@@ -14,6 +15,8 @@ W.BUTTON_ID = 'chaosAutoSetupButton'
 W.undo = nil
 local SETTINGS_NODE = 'chaos_helper_autosetup' -- [character] = { timerWords = { words, ... } } (rules it wrote)
 local box = nil
+
+local function support() return ChaosHelperSupportUI end
 
 local function helper()
   local m = modules.game_helper
@@ -108,8 +111,31 @@ local function refresh(H, M, cfg)
   U.save()
 end
 
+-- the first casts of the rules Auto setup wrote go out STAGGER ms apart (the first at once): the support spells share
+-- one group cooldown on the server and a timer rule does not wait for an answer, so rules that fell due together would
+-- lose all but one cast for a whole cooldown. The loader drops lastExecuted, so this runs after the refresh.
+local function stagger(H, rules)
+  if not (H.Timer and H.Timer.getRules and H.Timer.cooldownToMs and g_clock) then return end
+  local now = g_clock.millis()
+  local step = ChaosHelperSupport and ChaosHelperSupport.TIMER_STAGGER_MS or 2500
+  local n = 0
+  for _, planned in ipairs(rules) do
+    if planned.chaosAutoSetup then
+      for _, live in ipairs(H.Timer.getRules()) do
+        if live.type == 'words' and tostring(live.value):lower() == tostring(planned.value):lower() then
+          if n > 0 then live.lastExecuted = now - H.Timer.cooldownToMs(live.cooldown, live.unit) + n * step end
+          n = n + 1
+          break
+        end
+      end
+    end
+  end
+end
+
 local function snapshot(H, cfg, profile)
+  local sup = support()
   return {
+    support = sup and sup.slots(), supportOn = sup and sup.enabled(),
     spells = copySlots(cfg.spells), potions = copySlots(cfg.potions), haste = copySlots(cfg.haste),
     autoEatFood = cfg.autoEatFood, rules = profile and A.copyRules(profile.rules), marker = profile and profile[A.MARKER],
     profile = profile, timers = timerRules(H), timerOn = H.Timer and H.Timer.isEnabled and H.Timer.isEnabled(),
@@ -131,6 +157,7 @@ function W.undoSetup()
   end
   setTimers(H, u.timers)
   rememberWords(u.timers)
+  if u.support and support() then support().setSlots(u.support, u.supportOn) end
   if H.Timer and H.Timer.isEnabled and H.Timer.isEnabled() ~= u.timerOn then H.Timer.toggle() end
   W.undo = nil
   refresh(H, M, cfg)
@@ -160,6 +187,12 @@ local function apply(ctx, mode)
   rememberWords(rules)
   if #rules > 0 and H.Timer and H.Timer.isEnabled and not H.Timer.isEnabled() then H.Timer.toggle() end
   refresh(H, M, cfg)
+  stagger(H, rules)
+  -- support spells
+  local sup = support()
+  if sup then
+    sup.setSlots(ChaosHelperSupport.mergeSlots(sup.slots(), plan.support, mode), true)
+  end
 
   local lines = { tr('Auto setup done for %s, level %d.'):format(ctx.className, ctx.level) }
   lines[#lines + 1] = tr('Healing: %d spells, %d potions.'):format(#plan.healing.spells, #plan.healing.potions)
@@ -168,6 +201,7 @@ local function apply(ctx, mode)
   lines[#lines + 1] = plan.rotation and tr('Shooter: %d attack spells.'):format(#plan.rotation.ids)
     or tr('Shooter: no attack spell at this level yet.')
   lines[#lines + 1] = tr('Timers: %d buffs.'):format(#plan.timers)
+  if support() then lines[#lines + 1] = tr('Support spells: %d.'):format(#plan.support) end
   closeBox()
   local ok = function() closeBox() end
   local undo = function() closeBox() W.undoSetup() end
@@ -175,7 +209,7 @@ local function apply(ctx, mode)
     { text = tr('Undo'), callback = undo }, anchor = AnchorHorizontalCenter }, ok, ok)
 end
 
-local TAB_NAMES = { healing = 'Healing', tools = 'Tools', shooter = 'Shooter', timers = 'Timers' }
+local TAB_NAMES = { healing = 'Healing', tools = 'Tools', shooter = 'Shooter', timers = 'Timers', support = 'Support spells' }
 
 function W.run()
   local H, M = helper()
@@ -193,13 +227,15 @@ function W.run()
     return ok and (tonumber(n) or 0) > 0
   end
   local plan = S.plan({ vocId = voc, level = level, canCast = canCast, has = has,
-    heals = A.heals(voc, level, canCast), rotation = (A.select(voc, level, canCast, { topUp = true })) })
+    heals = A.heals(voc, level, canCast), rotation = (A.select(voc, level, canCast, { topUp = true })),
+    support = support() and support().plan() })
   local profile = H.getShooterProfile and H.getShooterProfile()
   local c = A.classOf(voc)
   local ctx = { H = H, M = M, cfg = cfg, plan = plan, profile = profile, level = level,
     className = c and c.name or tostring(voc) }
   local cur = { spells = cfg.spells, potions = cfg.potions, haste = cfg.haste and cfg.haste[1] and cfg.haste[1].id,
-    rotationCustom = profile and A.isCustom(profile.rules, profile[A.MARKER]), timers = timerRules(H) }
+    rotationCustom = profile and A.isCustom(profile.rules, profile[A.MARKER]), timers = timerRules(H),
+    support = support() and support().slots() or {} }
   local tabs = S.ownTabs(cur, plan)
   if #tabs == 0 then
     apply(ctx, 'replace')
@@ -230,7 +266,7 @@ function W.addButton()
   local b = g_ui.createWidget('Button', parent)
   b:setId(W.BUTTON_ID)
   b:setText(tr('Auto setup'))
-  b:setTooltip(tr('Set up healing, tools, shooter and timers for your class and level in one click\n' ..
+  b:setTooltip(tr('Set up healing, tools, shooter, timers and support spells for your class and level in one click\n' ..
     '(only spells you can cast and potions you may drink). Right-click: undo the last Auto setup.'))
   b:setHeight(17)
   b:setTextHorizontalAutoResize(true)

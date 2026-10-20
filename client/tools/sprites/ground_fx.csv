@@ -227,3 +227,23 @@ blast_ground,ground,pair 29 VFX packs: earth and rocks burst up from the floor a
 blast_energy,ground,pair 29 VFX packs: rule 4: the energy star covers the body for 0.56 s
 fw_gold_ring,above,pair 29 VFX packs: a firework ring bursting in the air over the head; 'ring' is not a floor shape
 fw_white_ring,above,pair 29 VFX packs: a firework ring bursting in the air over the head; 'ring' is not a floor shape
+mfx_arcane,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_blood,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_dark,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_energy,ground,pair 30 packs: rule 4: the burst covers the body for 0.72 s
+mfx_fire,ground,pair 30 packs: rule 4: the burst covers the body for 0.78 s
+mfx_holy,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_lightning,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_nature,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_poison,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+mfx_water,ground,pair 30 packs: rule 4: the burst covers the body for 0.60 s
+mfx_wind,ground,pair 30 packs: rule 4: the burst covers the body for 1.02 s
+summon_circle_1,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_2,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_3,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_4,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_5,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_6,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_7,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_8,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"
+summon_circle_9,ground,"pair 30 packs: a floor circle, the plan puts the summoning circles under the creatures (rule 4: covers the body for 0.99 s)"

@@ -8,7 +8,7 @@
 --   K.progressOf(def, stats, points)      -> value (capped at target), target
 --   K.evaluate(index, stats, unlocked)    -> list of defs that are met now and not in `unlocked` (id -> time), in list
 --                                            order; achievements on "points" see the points of the new ones too
---   K.points(index, unlocked)             -> sum of points of the unlocked ids (unknown ids count 0)
+--   K.points(index, unlocked)             -> sum of points of the unlocked ids (unknown ids count 0, retired ones their points)
 --   K.maxPoints(index)
 --   K.categorySummary(index, unlocked)    -> [{key, name, done, total, points, max}]
 --   K.view(index, stats, unlocked)        -> the window's rows (hidden + locked -> "???", no progress)
@@ -98,7 +98,8 @@ function K.validate(data)
 end
 
 function K.build(data)
-	local index = {list = {}, byId = {}, categories = {}, catByKey = {}, bossStats = data and data.bossStats or {}}
+	local index = {list = {}, byId = {}, categories = {}, catByKey = {}, bossStats = data and data.bossStats or {},
+		retired = data and data.retired or {}}
 	local bad
 	index.problems, bad = K.validate(data)
 	for _, c in ipairs(data and data.categories or {}) do
@@ -172,6 +173,8 @@ function K.points(index, unlocked)
 		local def = index.byId[id]
 		if def then
 			sum = sum + def.points
+		elseif index.retired and index.retired[id] then
+			sum = sum + index.retired[id] -- an achievement that was retired: the points stay
 		end
 	end
 	return sum

@@ -143,7 +143,7 @@ def main():
     import prod_config
     prod = dict(prod_config.settings({'--public-host': 'play.example.com'}))
     for key, value in (('cooldownChannels', 'true'), ('moveItemDelay', '50'), ('runeChannelDelay', '1000'),
-                       ('potionChannelDelay', '1000')):
+                       ('potionChannelDelay', '500')):
         check(prod.get(key) == value, 'prod_config.py %s = %s' % (key, value))
         check('"%s"' % key in plus, 'the engine reads %s' % key)
 

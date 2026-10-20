@@ -30,16 +30,14 @@ ChaosLootFilterConfig = {
 	-- Off since the loot beams: rayEffects = true sends them again (for a client without game_lootbeams).
 	rayEffects = false,
 	rayUniques = true,       -- uniques (ChaosUniqueItems, custom attribute chaos_unique) get the gold/orange ray
-	rayMinRarity = 5,        -- base rarity id from which items get a ray (5 = Legendary ... 15 = Transcendent)
+	rayMinRarity = 5,        -- stored rarity id from which items get a ray (5 = Legendary, 10 = Divine)
 	rayIntervalMs = 1000,    -- the beam effect is 900 ms long; resent this often while the item is in the corpse
 	rayDurationS = 60,       -- stop after this long even if the item is still there
 	rayVisibleTo = "looters", -- "looters": the corpse owner and party members (the players allowed to loot it); "all": everyone
 	rayUniqueEffect = "loot_ray_unique",
 	rayBands = { -- rarity id -> effect name (server/data/lib/chaos_fx.lua); the highest band <= rarity wins
-		{from = 5, effect = "loot_ray_legendary"}, -- Legendary, Exotic: gold
-		{from = 7, effect = "loot_ray_mythic"},    -- Mythic, Chaos, Eternal: red
-		{from = 10, effect = "loot_ray_divine"},   -- Divine, Phantasmal, Celestial: white-blue
-		{from = 13, effect = "loot_ray_cosmic"}    -- Cosmic, Abyssal, Transcendent: violet
+		{from = 5, effect = "loot_ray_legendary"}, -- Legendary: gold
+		{from = 10, effect = "loot_ray_divine"}    -- Divine: white-blue (loot_ray_mythic and loot_ray_cosmic stay in chaos_fx.lua, unused)
 	},
 
 	-- item categories (equipment = rarity gear or anything worn/wielded; see lootfilter.lua itemInfo)

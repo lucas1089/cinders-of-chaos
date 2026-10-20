@@ -1,6 +1,6 @@
 -- Primordial Squall: three waves (earth, ice, earth) around the caster, the ice wave chills.
 -- Cast time 1.5 s (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it and give
--- the mana and cooldown back. Power x0.98 (was x0.85 before the cast time).
+-- the mana and cooldown back. Power x1.0 (owner, 2026-10-20: no area discount; was x0.98, x0.85 before the cast time).
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosCasting then
 	dofile('data/lib/chaos_casting.lua')
@@ -23,7 +23,7 @@ onCastSpell = ChaosCasting.spell({
 	fire = function(player)
 		local p = player:getPosition()
 		local center = {x = p.x, y = p.y, z = p.z}
-		local min, max = ChaosSpell.mlValues(player, 2.1, 3.9, 45, 90, 0.98)
+		local min, max = ChaosSpell.mlValues(player, 2.1, 3.9, 45, 90)
 		ChaosSpell.pulse(player:getId(), #WAVES, 800, function(caster, step)
 			local w = WAVES[step]
 			local pos = Position(center)

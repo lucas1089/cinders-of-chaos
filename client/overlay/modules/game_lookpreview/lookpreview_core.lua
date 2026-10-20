@@ -44,11 +44,16 @@ end
 --   { kind = 'outline', art = key, pulse = bool }    drawn by game_cosmeticfx.applyOutline (engine patch 0038)
 --   { kind = 'look', outfit = {...} }                a whole outfit as a window holds it (the Outfit window's choice)
 --   { kind = 'subject', look = id }                  something that is not worn: a pet, drawn alone
+--   { kind = 'bundle', parts = {option, ...} }       a store bundle: every part on the character, in order (outfit,
+--                                                    mount, wings, aura, shader, an outline, an effect)
+--   { kind = 'effects', play, killfx }               a spell skin / kill effect, played on the stage (fromPlayRow)
+--   { kind = 'footprint', art }                      prints behind the walking figure
+--   { kind = 'nameplate', frame }                    a plate frame: a note (the map draws it)
 --   nil or { kind = 'none' }                         the base unchanged
 -- Kinds a UICreature cannot show (footprints are tile widgets, name plates are drawn by the map only, transmog and
 -- rarity outlines are item looks): P.UNSHOWN gives the note the panel prints instead of a picture.
 P.KINDS = { outfit = true, addons = true, mount = true, wings = true, aura = true, shader = true, outline = true, effects = true,
-  look = true, subject = true, none = true }
+  look = true, subject = true, bundle = true, none = true }
 P.UNSHOWN = {
   footprint = 'Footprints are left on the ground as you walk.',
   nameplate = 'Name plates show over characters in the game world.',
@@ -92,6 +97,18 @@ function P.composeRaw(mode, own, opt)
   end
   local o = P.base(mode, own)
   local outline
+  if kind == 'bundle' then
+    -- the parts one after the other on the same figure: a later part of the same field wins
+    local note
+    for _, part in ipairs(type(opt.parts) == 'table' and opt.parts or {}) do
+      local pk = type(part) == 'table' and part.kind
+      if pk and pk ~= 'bundle' and pk ~= 'subject' and pk ~= 'effects' and pk ~= 'footprint' then
+        local po, pl, pn = P.composeRaw('own', o, part)
+        o, outline, note = po, pl or outline, note or pn
+      end
+    end
+    return o, outline, note
+  end
   if kind == 'look' and type(opt.outfit) == 'table' then
     if mode == 'simple' then
       for _, k in ipairs(P.EXTRAS) do o[k] = num(opt.outfit[k]) end
@@ -115,9 +132,70 @@ function P.composeRaw(mode, own, opt)
 end
 
 -- ---------------------------------------------------------------- options from window data
--- a store offer (server shop.lua clientOffer: kind, outfit). Without a kind: wings / aura / shader by their field, a
+-- The `look` of a store offer or category (server shop_core.lua K.lookOf) as an option; nil for what is not worn (a
+-- colour sample) or not understood. Everything is checked: the server's table is data.
+local function name(v) return type(v) == 'string' and v:match('^[%w_ ]+$') and #v <= 64 and v or nil end
+function P.fromStoreLook(l, depth)
+  if type(l) ~= 'table' or (depth or 0) > 1 then return nil end
+  local k = l.kind
+  if k == 'outfit' or k == 'addons' then
+    return num(l.look) > 0 and { kind = 'outfit', look = num(l.look), addons = k == 'addons' and 3 or (tonumber(l.addons) or 3) } or nil
+  elseif k == 'mount' or k == 'wings' or k == 'aura' or k == 'subject' then
+    return num(l.look) > 0 and { kind = k, look = num(l.look) } or nil
+  elseif k == 'shader' then
+    return type(l.shader) == 'string' and l.shader ~= '' and { kind = 'shader', shader = l.shader } or nil
+  elseif k == 'outline' then
+    return name(l.art) and { kind = 'outline', art = l.art, pulse = l.pulse == true } or nil
+  elseif k == 'footprint' then
+    return name(l.art) and { kind = 'footprint', art = l.art } or nil
+  elseif k == 'effects' then
+    return type(l.play) == 'table' and #l.play > 0 and { kind = 'effects', play = l.play, killfx = l.killfx == true or nil } or nil
+  elseif k == 'nameplate' then
+    return name(l.frame) and { kind = 'nameplate', frame = l.frame } or nil
+  elseif k == 'bundle' then
+    local parts = {}
+    for _, p in ipairs(type(l.parts) == 'table' and l.parts or {}) do
+      local o = P.fromStoreLook(p, (depth or 0) + 1)
+      if o then parts[#parts + 1] = o end
+    end
+    return #parts > 0 and { kind = 'bundle', parts = parts } or nil
+  end
+  return nil
+end
+
+-- the effects option inside an option (a spell skin itself, or a bundle's part), for the stage; nil when none
+function P.effectsOf(opt)
+  if type(opt) ~= 'table' then return nil end
+  if opt.kind == 'effects' and type(opt.play) == 'table' then return opt end
+  if opt.kind == 'bundle' then
+    for _, p in ipairs(opt.parts or {}) do
+      local e = P.effectsOf(p)
+      if e then return e end
+    end
+  end
+  return nil
+end
+
+-- the footprint art of an option (itself or a bundle's part), for the prints behind the figure; nil when none
+function P.footprintArt(opt)
+  if type(opt) ~= 'table' then return nil end
+  if opt.kind == 'footprint' and type(opt.art) == 'string' and opt.art ~= '' then return opt.art end
+  if opt.kind == 'bundle' then
+    for _, p in ipairs(opt.parts or {}) do
+      local a = P.footprintArt(p)
+      if a then return a end
+    end
+  end
+  return nil
+end
+
+-- a store offer (server shop.lua clientOffer: look; older servers: kind, outfit). Without a kind: wings / aura / shader by their field, a
 -- coloured look is an outfit, a bare look a subject (a pet, or a mount of an older server)
 function P.fromShopOffer(data)
+  if type(data) == 'table' and type(data.look) == 'table' then
+    -- the server sends the offer's own appearance (shop_core.lua K.lookOf): outlines, shaders, mounts, bundles ...
+    return P.fromStoreLook(data.look)
+  end
   if type(data) ~= 'table' or data.type ~= 'outfit' or type(data.outfit) ~= 'table' then return nil end
   local o, kind = data.outfit, data.kind
   if kind == 'mount' then return { kind = 'mount', look = num(o.type) } end

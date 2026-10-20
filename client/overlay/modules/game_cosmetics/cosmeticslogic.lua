@@ -26,8 +26,8 @@ CL.DEFAULT_TEXT = {
   footprint = 'You leave no footprints.',
   outline = 'No outline around you.',
 }
-CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Rare', color = '#4a90ff' },
-  { name = 'Mythic', color = '#ff5a5a' } }
+CL.SAMPLE_RARITY = { { name = 'Legendary', color = '#ffd040' }, { name = 'Magic', color = '#4a90ff' },
+  { name = 'Divine', color = '#c8e8ff' } }
 
 function CL.validColor(s)
   return type(s) == 'string' and (s:match('^#%x%x%x%x%x%x$') ~= nil or s:match('^#%x%x%x%x%x%x%x%x$') ~= nil)

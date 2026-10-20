@@ -1,4 +1,4 @@
--- Kindled Breath: breathe the chi in and heal; the heal grows with the chi spent.
+-- Kindled Breath: breathe the chi in and heal; the heal grows with the chi spent (the Iron Sage's heal keeps healing for 6 s).
 --
 -- Finisher (needs 1 chi). Monk and Shadowfist: heal yourself for (level x 2 + fist x 6) x the finisher scale.
 -- Iron Sage (the line's healer): the most hurt party member within 5 sqm (yourself without a party, or when you are the

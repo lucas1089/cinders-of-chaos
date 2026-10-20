@@ -6,3 +6,5 @@ client/local-fonts/
 # donation settings with credentials (website/payments.env.example): never in git
 payments.env
 pixellab-pip-generations/
+# real folder names of the third-party packs behind the neutral slugs of pack30_packs.csv (pack30lib.py)
+client/tools/sprites/art_import/pack30_packs.private.csv

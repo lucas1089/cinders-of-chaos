@@ -19,6 +19,10 @@
 --                     | result {ok, text, reveal = {r, rn, id, c, n, l, s}} | npc {} (the Gambler's NPC script)
 -- Lua 5.1 / LuaJIT.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -62,12 +66,12 @@ local function now()
 	return os.time() + (P.clockShift or 0)
 end
 
-local function rarityNames()
-	return ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names or {}
+local function rarityNames() -- by place: Common .. Divine
+	return ChaosRarity.storedNames()
 end
 
-local function rarityName(r)
-	return rarityNames()[r] or ("Rarity " .. tostring(r))
+local function rarityName(r) -- r = a stored id
+	return ChaosRarity.name(r) or ("Rarity " .. tostring(r))
 end
 
 local function itemName(id)
@@ -587,9 +591,9 @@ function talk.onSay(player, words, param)
 	if param:match("^%s*odds%s*$") then
 		local o = P.odds() or {}
 		local parts = {}
-		for r = 1, cfg.odds.maxRarity do
+		for r = 1, ChaosRarity.rank(cfg.odds.maxRarity) do
 			if (o[r] or 0) > 0 then
-				parts[#parts + 1] = string.format("%s %.2f%%", rarityName(r), o[r] * 100)
+				parts[#parts + 1] = string.format("%s %.2f%%", rarityNames()[r], o[r] * 100)
 			end
 		end
 		player:sendTextMessage(MESSAGE_INFO_DESCR, "Gamble odds: " .. table.concat(parts, ", "))

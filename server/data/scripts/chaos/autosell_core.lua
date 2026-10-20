@@ -9,13 +9,13 @@
 --       -> {sell = {{ref, id, count, gold}}, gold, kept = {locked, unique, rarity, custom, noPrice, protected}}
 --   Rarities the Auto Seller sells (owner 2026-10-13: "Deixe o jogador configurar o autosell por raridade"): one choice
 --   per tier, per character, in one storage value (Chaos.storage.autosellRarity, 7100103):
---   ChaosAutoSellCore.TIERS                            {{key, name, from, to}}: Common 1, Uncommon 2 (the "Magic" of the
---                                                      request: the game's rarity 2), Rare 3, Epic 4, Legendary 5..15
---                                                      (Legendary and every rarity above it)
---   ChaosAutoSellCore.DEFAULT_TIERS                    Common and Uncommon on; Rare, Epic, Legendary off
+--   ChaosAutoSellCore.TIERS                            {{key, name, rank, bit}}: Common, Uncommon, Magic, Rare, Legendary, Divine
+--                                                      (data/lib/chaos_rarity.lua; before 2026-10-18 the last was Legendary+, every
+--                                                      rarity from 5 up; a choice saved then ticked Divine with it)
+--   ChaosAutoSellCore.DEFAULT_TIERS                    Common and Uncommon on; Magic, Rare, Legendary, Divine off
 --   ChaosAutoSellCore.unpackTiers(v) / packTiers(t)    storage value <-> {key = bool}; unset = the defaults; the old
 --                                                      "!autosell rarity on" value 1 = every tier on, 0 = the defaults
---   ChaosAutoSellCore.tierOf(rarity)                   the tier key of a rarity 1..15 (nil for 0)
+--   ChaosAutoSellCore.tierOf(rarity)                   the tier key of a rarity (any of the 15 old ids too; nil for 0)
 --   ChaosAutoSellCore.sells(tiers, rarity)             true when a rarity item may be sold (rarity 0: true)
 --   ChaosAutoSellCore.rarityChange(tiers, data)        validates a client change {tier = key, on = bool} or {tiers =
 --                                                      {key = bool}} -> new tiers, or nil and the reason
@@ -25,17 +25,60 @@ ChaosAutoSellCore = ChaosAutoSellCore or {}
 local K = ChaosAutoSellCore
 
 K.COOLDOWN = 30
+-- "sell every X minutes" (owner 2026-10-17): the choices of the window's dropdown; off (0) by default
+K.INTERVALS = {5, 10, 15, 30, 60}
+K.TICK = 30 -- seconds between two looks at the (small) list of characters that have it on
+K.MAX_PER_TICK = 10 -- sales one tick makes at most; the rest are still due at the next one
+
+-- a stored or requested number of minutes -> minutes (0 = off), or nil when it is not one of the choices
+function K.intervalOf(v)
+	local n = tonumber(v)
+	if n == nil or n ~= n then
+		return nil
+	end
+	if n == 0 then
+		return 0
+	end
+	for _, m in ipairs(K.INTERVALS) do
+		if n == m then
+			return m
+		end
+	end
+	return nil
+end
+
+-- the stored value (unset -1 / garbage reads as off)
+function K.storedInterval(v)
+	return K.intervalOf(v) or 0
+end
+
+-- seconds until `nextAt` (0 = due)
+function K.dueIn(nextAt, now)
+	if not nextAt then
+		return 0
+	end
+	return math.max(0, nextAt - now)
+end
 K.COINS = {[2148] = 1, [2152] = 100, [2160] = 10000}
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
+-- one choice per rarity (data/lib/chaos_rarity.lua rank); the bits of the first five are the ones the choices had since
+-- 2026-10-13 (Common, Uncommon, Rare = today's Magic, Epic = today's Rare, Legendary+ = today's Legendary), so a saved
+-- choice keeps its meaning; Divine (32) is new. A choice saved before it (no LEGACY_END bit) sold Divine with Legendary.
 K.TIERS = {
-	{key = "common", name = "Common", from = 1, to = 1, bit = 1},
-	{key = "uncommon", name = "Uncommon", from = 2, to = 2, bit = 2},
-	{key = "rare", name = "Rare", from = 3, to = 3, bit = 4},
-	{key = "epic", name = "Epic", from = 4, to = 4, bit = 8},
-	{key = "legendary", name = "Legendary+", from = 5, to = 15, bit = 16}
+	{key = "common", name = "Common", rank = 1, bit = 1},
+	{key = "uncommon", name = "Uncommon", rank = 2, bit = 2},
+	{key = "magic", name = "Magic", rank = 3, bit = 4},
+	{key = "rare", name = "Rare", rank = 4, bit = 8},
+	{key = "legendary", name = "Legendary", rank = 5, bit = 16},
+	{key = "divine", name = "Divine", rank = 6, bit = 32}
 }
-K.DEFAULT_TIERS = {common = true, uncommon = true, rare = false, epic = false, legendary = false}
+K.DEFAULT_TIERS = {common = true, uncommon = true, magic = false, rare = false, legendary = false, divine = false}
 local TIER_MARK = 64 -- a stored choice always has it (0 = every tier off is a valid choice)
+local VERSION_MARK = 128 -- a choice saved since the seven rarities has it; one without it ticked Divine with Legendary+
 
 local function copyTiers(t)
 	local out = {}
@@ -61,11 +104,14 @@ function K.unpackTiers(v)
 	for _, tier in ipairs(K.TIERS) do
 		out[tier.key] = math.floor(v / tier.bit) % 2 == 1
 	end
+	if v < VERSION_MARK then
+		out.divine = out.legendary -- "Legendary+" of before covered every rarity above Legendary
+	end
 	return out
 end
 
 function K.packTiers(t)
-	local v = TIER_MARK
+	local v = TIER_MARK + VERSION_MARK
 	for _, tier in ipairs(K.TIERS) do
 		if type(t) == "table" and t[tier.key] == true then
 			v = v + tier.bit
@@ -74,10 +120,11 @@ function K.packTiers(t)
 	return v
 end
 
+-- the tier key of a rarity (any of the 15 old ids counts as the rarity it became); nil for none
 function K.tierOf(rarity)
-	rarity = math.floor(tonumber(rarity) or 0)
+	local rank = ChaosRarity.rank(rarity)
 	for _, tier in ipairs(K.TIERS) do
-		if rarity >= tier.from and rarity <= tier.to then
+		if rank == tier.rank then
 			return tier.key
 		end
 	end

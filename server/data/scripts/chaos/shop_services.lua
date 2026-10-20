@@ -957,6 +957,10 @@ function vocTalk.onSay(player, words, param)
 	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player,
 		"You are now %s. Health, mana and capacity follow the new vocation; skills and magic level are kept; your passive tree was reset for free. Relog if anything looks stale.",
 		newVoc:getDescription()))
+	-- the spellbook was refreshed (ChaosClasses.afterVocationChange -> class_spells.lua); the client's own action bar and
+	-- Helper lists are the player's choices
+	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
+		"Your spellbook now lists the spells of your new class. Spells of the old class no longer work: replace them on your action bar, or press Auto setup in the Helper."))
 	return false
 end
 ChaosCommands.register("changevocation", function(player, param) return vocTalk.onSay(player, "", param) end)

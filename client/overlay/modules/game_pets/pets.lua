@@ -130,6 +130,28 @@ local function showList()
 end
 
 -- ---------------------------------------------------------------- actions (buttons in pets.otui)
+-- for the Customise Character window (game_outfitextras): the state, a fresh one without opening this window, and a
+-- summon by species (the pet's choice there is applied with Ok)
+function getState()
+  return state
+end
+
+function requestState()
+  if g_game.isOnline() then send('get') end
+end
+
+function summonSpecies(species)
+  if type(species) == 'string' and species ~= '' then send('summon', { species = species }) end
+end
+
+local function notifyExtras()
+  local m = modules.game_outfitextras
+  if m and type(m.onData) == 'function' then
+    local ok, err = pcall(m.onData, 'pets')
+    if not ok then g_logger.warning('[pets] outfit extras: ' .. tostring(err)) end
+  end
+end
+
 function summonSelected()
   if selected then send('summon', { species = selected }) end
 end
@@ -156,6 +178,7 @@ local function onExtendedOpcode(protocol, opcode, buffer)
     state = data
     showList()
     if data.open then show() end
+    notifyExtras()
   elseif msg.action == 'xp' then
     if state and V.applyXp(state, data) then
       local e = V.find(V.entries(state), data.species)

@@ -732,8 +732,29 @@ local function assignDefaultKeys()
 end
 
 -- ---------------------------------------------------------------- lifecycle
+local deathNote   -- MapOverlayMath.deathNote: the overlay was open at a death (the relogin closes it)
+
+local function playerName()
+  local p = g_game.getLocalPlayer()
+  return p and p:getName() or nil
+end
+
+local function onDeath()
+  deathNote = S().deathNote(shown, playerName(), g_clock.millis())
+end
+
 local function onGameStart()
   marks = {}
+  if deathNote then
+    -- the local player exists only after the first packets of the session; a session that ends first (a second
+    -- login in a row) keeps the note for the next start, it expires by itself (DEATH_REOPEN_MS)
+    scheduleEvent(function()
+      local note, name = deathNote, playerName()
+      if not note or not name then return end
+      deathNote = nil
+      if S().reopenAfterDeath(note, name, g_clock.millis()) then setShown(true) end
+    end, 500)
+  end
   scheduleEvent(function() pcall(assignDefaultKeys) end, 1500)
 end
 
@@ -768,12 +789,12 @@ function init()
   wheelHooked = mapPanel
   ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
   registerHotkey()
-  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   if g_game.isOnline() then onGameStart() end
 end
 
 function terminate()
-  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
+  disconnect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd, onDeath = onDeath })
   setShown(false)
   stopTick()
   ProtocolGame.unregisterExtendedOpcode(OPCODE)

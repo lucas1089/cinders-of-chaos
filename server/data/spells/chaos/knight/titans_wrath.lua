@@ -1,6 +1,6 @@
 -- Colossus Fall: two crushing blows (0 / 0.6s) in a 7x7 circle; enemies are slowed 70% for 4s.
 -- Cast time 1 s, a wind-up (data/lib/chaos_casting.lua): moving, a new paralysis, another spell or death interrupt it
--- and give the mana and cooldown back. Damage x0.77 (was x0.7 before the cast time).
+-- and give the mana and cooldown back. Damage x1.0 (owner, 2026-10-20: no area discount; was x0.77, x0.7 before the cast time).
 dofile('data/spells/scripts/chaos/_common.lua')
 if not ChaosCasting then
 	dofile('data/lib/chaos_casting.lua')
@@ -14,8 +14,8 @@ combat:setParameter(COMBAT_PARAM_USECHARGES, true)
 combat:setArea(createCombatArea(AREA_CIRCLE3X3))
 
 function onGetFormulaValues(player, skill, attack, factor)
-	local min = ((player:getLevel() / 5) + (skill * attack * 0.052) + 20) * 0.77
-	local max = ((player:getLevel() / 5) + (skill * attack * 0.093) + 40) * 0.77
+	local min = ((player:getLevel() / 5) + (skill * attack * 0.052) + 20)
+	local max = ((player:getLevel() / 5) + (skill * attack * 0.093) + 40)
 	return -min, -max
 end
 

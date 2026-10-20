@@ -332,10 +332,10 @@ local gm = K.gearMods(helm, M)
 eq(#gm, 3, "three modifiers")
 eq(gm[1].key, "monsterreduction", "first modifier")
 eq(gm[1].tier, 5, "its tier")
-eq(gm[1].value, 2, "middle of T5 2-3")
-eq(K.modText(gm[1]), "Damage Taken from Monsters -2%", "text")
+eq(gm[1].value, 4, "middle of T5 3-5")
+eq(K.modText(gm[1]), "Damage Taken from Monsters -4%", "text")
 local axe = K.gearMods(idx.offers.compact_axe, M)
-eq(axe[1].value, 12, "bossdamage T7 10-14 -> 12")
+eq(axe[1].value, 18, "bossdamage T7 16-20 -> 18")
 eq(K.tokenChance(cfg, "rare"), 120, "token chance")
 
 -- ---------------------------------------------------------------- titles and payload
@@ -365,7 +365,7 @@ for _, o in ipairs(pl.offers) do
 end
 eq(helmRow.st, "ok", "helm buyable at Revered")
 eq(#helmRow.mods, 3, "helm modifier lines")
-eq(helmRow.mods[1], "T5 Damage Taken from Monsters -2%", "helm line")
+eq(helmRow.mods[1], "T5 Damage Taken from Monsters -4%", "helm line")
 
 -- ---------------------------------------------------------------- factions.lua against a mocked engine
 local registry, globals, spawnCb, talks = {}, {}, nil, {}
@@ -665,7 +665,7 @@ eq(g.custom[M.ILVL], 100, "gear item level")
 eq(#written, 3, "three modifiers written")
 eq(written[1][1], M.attr("monsterreduction"), "modifier key")
 eq(written[1][2], 5, "fixed tier")
-eq(written[1][3], 2, "fixed value")
+eq(written[1][3], 4, "fixed value (the middle of T5 3-5)")
 -- orbs with a weekly limit (Trusted)
 local before2 = hero.items[29856] or 0
 for _ = 1, 4 do

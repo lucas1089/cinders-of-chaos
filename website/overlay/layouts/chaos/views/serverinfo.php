@@ -16,7 +16,7 @@ $sections = array(
 		'<strong>Paragon:</strong> after level 1000 every level gives a Paragon point for small, capped bonuses in four categories.',
 	)),
 	'items' => array('Items and loot', array(
-		'<strong>15 rarities:</strong> Common, Uncommon, Rare, Epic, Legendary, Exotic, Mythic, Chaos, Eternal, Divine, Phantasmal, Celestial, Cosmic, Abyssal and Transcendent.',
+		'<strong>7 rarities:</strong> Common, Uncommon, Magic, Rare, Legendary, Divine and Unique.',
 		'<strong>Item levels and modifiers:</strong> elemental damage, absorbs, skills, critical hits, life and mana leech. About 50 uniques with fixed, build-defining stats; some only drop from bosses.',
 		'<strong>Monster tiers:</strong> every spawn can roll Magic, Rare or Legendary, with modifiers such as <em>Blazing, Chilling, Venomous, Vampiric</em> or <em>Berserker</em>. Killing one can trigger an ambush.',
 		'<strong>Treasure goblins:</strong> a very rare, cowardly goblin that flees, blinks away and escapes 18 seconds after the first hit. Catch it in time for a hoard.',
@@ -61,7 +61,7 @@ $sections = array(
 			<tr><th>Client</th><td>Our own client (protocol 10.98) with a custom skin, a top menu and a window for every system</td></tr>
 			<tr><th>Classes</th><td>7 class lines, each with 2 ascensions (14 ascended classes); the Necromancer, Monk and Templar unlock per account in the store</td></tr>
 			<tr><th>Level cap</th><td>1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting</td></tr>
-			<tr><th>Items</th><td>15 rarities, item levels, random modifiers, about 50 uniques</td></tr>
+			<tr><th>Items</th><td>7 rarities, item levels, random modifiers, about 50 uniques</td></tr>
 			<tr><th>Endgame</th><td>World bosses, bounties, rifts, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards</td></tr>
 			<tr><th>Fair play</th><td>Multi-client rules; staff characters are left out of every leaderboard. Read the <a href="page?p=rules">rules</a>.</td></tr>
 		</tbody>

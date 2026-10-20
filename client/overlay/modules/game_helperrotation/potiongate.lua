@@ -5,7 +5,7 @@
 -- the Everfull potions usually are (one per character, look of the Health / Mana Potion), was never used, although
 -- the server's use by id finds the item in any carried container. Now a count of 0 still allows a use every PROBE_MS
 -- (a probe); when the server answers it with "Sorry, not possible." (nothing to use) within REPLY_MS, the potion waits
--- BACKOFF_MS. A potion the client sees (count > 0) is used as before.
+-- BACKOFF_MS. A potion the client sees (count > 0) is used as before. Runes go the same way (canUse / noteUse below).
 ChaosPotionGate = ChaosPotionGate or {}
 local G = ChaosPotionGate
 
@@ -58,5 +58,21 @@ function G.onText(st, text, now)
 end
 
 G.session = G.session or G.newState()
+
+-- The same gate for runes (base patch 0082; owner 2026-10-20: "o helper nao esta usando runas"). The magic shooter and
+-- the healing rune (Auto UH) used a rune only when getInventoryCount saw one, and that count misses a rune in a closed
+-- backpack, where every rune sits, so the helper never used a rune. The call sites use the shared session:
+-- canUse(id, count, now) before the use, noteUse(id, count, now) after it; onText (autorotation_ui) backs a probe off.
+function G.canUse(id, count, now)
+  return G.allowed(G.session, id, now, count)
+end
+
+function G.noteUse(id, count, now)
+  G.used(G.session, id, now, count)
+end
+
+function G.reset()
+  G.session = G.newState()
+end
 
 return ChaosPotionGate

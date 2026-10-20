@@ -1,0 +1,192 @@
+// The helper's Support spells tab (game_helpersupport, client/MANIFEST.md "Helper Support spells"): a tab button in the
+// helper's tab bar and one panel with the section's switch, the mana reserve, a row per spell and Fill / Clear.
+// Built beside the helper's own panels in the helper window; supportspells_ui.lua fills it.
+
+ChaosSupportTab < UIButton
+  size: 114 38
+  border-width: 0
+  anchors.top: parent.top
+  margin-left: 1
+  margin-top: 1
+  image-source: /images/ui/helper
+  image-clip: 34 272 34 34
+  image-size: 34 34
+  image-offset: 3 2
+  $checked:
+    image-clip: 34 306 34 34
+    border-width: 1
+    border-color: #d7b46a
+
+  Label
+    id: caption
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 38
+    margin-right: 3
+    !text: tr('Support')
+    font: $var-main-font
+    color: $var-text-color
+    phantom: true
+
+ChaosSupportRow < Panel
+  height: 28
+
+  CheckBox
+    id: enable
+    size: 15 15
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    checked: true
+    !tooltip: tr('Cast this spell')
+
+  Label
+    id: number
+    width: 14
+    anchors.left: enable.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 6
+    font: $var-main-font
+    color: #888888
+
+  ComboBox
+    id: spell
+    width: 280
+    height: 20
+    anchors.left: number.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+
+  Label
+    id: status
+    anchors.left: spell.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 12
+    margin-right: 4
+    font: $var-main-font
+    color: #9fb2bd
+    text-auto-resize: false
+    text-wrap: false
+    phantom: true
+
+ChaosSupportPanel < Panel
+  visible: false
+
+  Panel
+    id: box
+    anchors.fill: parent
+    image-source: /images/ui/t2pixel-up-frame-borderimage
+    image-border: 18
+
+    Label
+      id: title
+      anchors.top: parent.top
+      anchors.horizontalCenter: parent.horizontalCenter
+      margin-top: 1
+      !text: tr('Support spells')
+      font: $var-main-font
+      color: #AAAAAA
+      text-auto-resize: true
+
+    Label
+      id: hint
+      anchors.top: title.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin: 6 14 0 14
+      height: 44
+      text-wrap: true
+      !text: tr('Spells the helper casts by itself as soon as they are off cooldown, from the top row down: shields, summons, vigils, buffs. A buff is not cast again while it is on (the Buff Bar tells). Nothing is cast in a protection zone.')
+      font: $var-main-font
+      color: $var-text-color
+
+    Panel
+      id: options
+      anchors.top: hint.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin: 6 14 0 14
+      height: 24
+
+      CheckBox
+        id: enableAll
+        width: 230
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        !text: tr('Cast support spells automatically')
+        font: $var-main-font
+        color: $var-text-color
+        text-offset: 18 0
+        checked: true
+
+      Label
+        id: reserveLabel
+        anchors.left: enableAll.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 20
+        !text: tr('Keep this much mana:')
+        font: $var-main-font
+        color: #aaaaaa
+        text-auto-resize: true
+
+      ComboBox
+        id: reserve
+        width: 70
+        height: 20
+        anchors.left: reserveLabel.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 8
+
+      UITooltipGrey
+        id: reserveHelp
+        anchors.left: reserve.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 6
+        !tooltip: tr('A support spell is only cast when this share of your maximum mana is left after it,\nso healing and attack spells keep their mana.')
+
+    Panel
+      id: rows
+      anchors.top: options.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin: 10 14 0 14
+      height: 232
+
+    Label
+      id: statusLine
+      anchors.bottom: buttons.top
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin: 0 14 4 14
+      height: 16
+      font: $var-main-font
+      color: #d7b46a
+      text-wrap: false
+
+    Panel
+      id: buttons
+      height: 24
+      anchors.bottom: parent.bottom
+      anchors.left: parent.left
+      anchors.right: parent.right
+      margin: 0 14 10 14
+
+      Button
+        id: fill
+        height: 20
+        anchors.left: parent.left
+        anchors.verticalCenter: parent.verticalCenter
+        text-auto-resize: true
+        !text: tr('Fill for my class')
+        !tooltip: tr('Add the support spells of your class and level that are not in the list yet.')
+
+      Button
+        id: clear
+        height: 20
+        anchors.left: fill.right
+        anchors.verticalCenter: parent.verticalCenter
+        margin-left: 8
+        text-auto-resize: true
+        !text: tr('Clear list')

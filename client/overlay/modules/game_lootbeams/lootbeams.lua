@@ -131,9 +131,8 @@ end
 -- ---------------------------------------------------------------- settings window
 -- names are looked up when the window is filled (tr follows the language picked at login)
 local function groupNames()
-  return { white = tr('Common, Uncommon'), blue = tr('Rare, Epic'), orange = tr('Legendary, Exotic'),
-    red = tr('Mythic, Chaos, Eternal'), celestial = tr('Divine, Phantasmal, Celestial'),
-    violet = tr('Cosmic, Abyssal, Transcendent'), unique = tr('Uniques'), orb = tr('Orbs') }
+  return { white = tr('Common, Uncommon'), blue = tr('Magic, Rare'), orange = tr('Legendary'),
+    divine = tr('Divine'), unique = tr('Uniques'), orb = tr('Orbs') }
 end
 
 local function heightNames()

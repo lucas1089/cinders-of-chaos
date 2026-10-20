@@ -26,6 +26,10 @@
 -- no corpse too (a death on water). The corpse search below is the fallback for a server without that hook.
 -- The retired Bottomless Loot Pouch unlock (storage 7100100): its owners get a Loot Bag for free once, at login.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -71,6 +75,15 @@ function PO.isPouch(item)
 		return true
 	end
 	return customAttr(item, cfg().attr.storebound) ~= nil
+end
+
+-- the Loot Bag itself (any copy of the item)
+function PO.isLootBag(item)
+	if not item then
+		return false
+	end
+	local ok, id = pcall(function() return item:getId() end)
+	return ok and PO.kindOfId(id) == "loot"
 end
 
 -- the item is a pouch or a container with a pouch somewhere inside. Every nesting level is walked (a depth limit let a
@@ -320,13 +333,45 @@ local function infoOf(item, list)
 		end
 	end
 	if not info.category then
-		info.rarity = tonumber(customAttr(item, "rarity")) or 0
+		info.rarity = ChaosRarity.canon(customAttr(item, "rarity"))
 		info.unique = customAttr(item, "chaos_unique") ~= nil
 		info.category = (info.unique or info.rarity > 0) and "equipment" or "other"
 	end
 	return info
 end
 PO.infoOf = infoOf
+
+-- ---------------------------------------------------------------- Loot Bag order (rarest first)
+-- The top level of the bag is sorted by rarity (uniques first) with moves to the front (pouches_core.lua sortPlan: only
+-- the items ahead of an already sorted tail move, at most cfg.sort.maxMoves per call). Called when loot has entered the
+-- bag (a kill, a click in the loot channel) and when the bag is opened, never on a timer. An item that cannot move is
+-- left where it is.
+local function rankOf(item)
+	return P.rank(ChaosRarity.canon(customAttr(item, "rarity")), customAttr(item, "chaos_unique") ~= nil)
+end
+
+function PO.sortBag(bag)
+	local sc = cfg().sort
+	if not bag or (sc and sc.enabled == false) then
+		return 0
+	end
+	local ok, items = pcall(function() return bag:getItems(false) end)
+	if not ok or not items or #items < 2 then
+		return 0
+	end
+	local ranks = {}
+	for i, it in ipairs(items) do
+		ranks[i] = rankOf(it)
+	end
+	local moved = 0
+	for _, idx in ipairs(P.sortPlan(ranks, sc and sc.maxMoves or 120)) do
+		local okM, res = pcall(function() return items[idx]:moveTo(bag, FLAG_NOLIMIT or 1) end)
+		if okM and res then
+			moved = moved + 1
+		end
+	end
+	return moved
+end
 
 -- into the backpack and the bags inside it, capacity checked, never into an equipment slot (as the loot filter does)
 local function intoBags(player, item)
@@ -375,6 +420,11 @@ local function stowInto(pouches, kinds, item, container, notes)
 		local pouch = pouches[kind]
 		if pouch then
 			if item:moveTo(pouch, 0) and not stillIn(item, container) then
+				if kind == "loot" and notes.sortLater then
+					notes.sortLater[pouch] = true
+				elseif kind == "loot" then
+					PO.sortBag(pouch)
+				end
 				return "pouch", kind
 			end
 			if isFull(pouch) then
@@ -402,12 +452,7 @@ end
 local lastFull = {} -- [guid .. kind] = os.time of the last "is full" note
 
 local function rarityName(r)
-	local list = ChaosLootFilter and ChaosLootFilter.RARITY
-	if list and list[r] and list[r].name then
-		return list[r].name
-	end
-	local names = ChaosLootConfig and ChaosLootConfig.gear and ChaosLootConfig.gear.names
-	return names and names[r] or nil
+	return ChaosRarity.name(r)
 end
 
 -- one row of the loot line (pouches_core.lua lootList), read before the move (a stack merged into a pouch is gone)
@@ -440,7 +485,7 @@ local function collect(monster, corpse)
 	local c = cfg()
 	local rules, list, s = PO.rulesOf(owner), autolootSet(owner), sets()
 	local looted, backpack, left, overflow = {}, 0, 0, 0
-	local notes = {full = {}}
+	local notes = {full = {}, sortLater = {}}
 	for _, item in ipairs(corpse:getItems() or {}) do
 		local info = infoOf(item, list)
 		local kinds, spilled = P.plan(info, rules, s, c, pouches)
@@ -463,6 +508,9 @@ local function collect(monster, corpse)
 				left = left + 1
 			end
 		end
+	end
+	for bag in pairs(notes.sortLater) do -- once per kill, not once per item
+		PO.sortBag(bag)
 	end
 	local now, guid = os.time(), owner:getGuid()
 	for kind in pairs(notes.full) do
@@ -500,6 +548,35 @@ local function isPlayerCyl(c)
 	return ok and v
 end
 
+-- the item lies in the purse (the store inbox, one level or deeper), judged from its parents
+function PO.inPurse(player, item)
+	local purse = purseOf and purseOf(player) or nil
+	local ids = {}
+	for _, id in ipairs(cfg().purseIds or {}) do
+		ids[id] = true
+	end
+	local ok, c = pcall(function() return item:getParent() end)
+	local n = 0
+	while ok and c and type(c) ~= "boolean" and n < 30 do
+		n = n + 1
+		if isPlayerCyl(c) then
+			return false
+		end
+		if purse then
+			local okS, same = pcall(function() return c == purse end)
+			if okS and same then
+				return true
+			end
+		end
+		local okI, id = pcall(function() return c:getId() end)
+		if okI and ids[id] then
+			return true
+		end
+		ok, c = pcall(function() return c:getParent() end)
+	end
+	return false
+end
+
 local function isItemCyl(c)
 	local ok, v = pcall(function() return c.isItem and c:isItem() end)
 	return ok and v
@@ -509,6 +586,11 @@ local function chainOf(player, toPosition, toCylinder)
 	local depot = {}
 	for _, id in ipairs(cfg().depotIds) do
 		depot[id] = true
+	end
+	local purseSet = {}
+	for _, id in ipairs(cfg().purseIds or {}) do
+		purseSet[id] = true
+		depot[id] = nil
 	end
 	local c = toCylinder
 	if (not c or type(c) == "boolean") and toPosition.x == CONTAINER_POS then
@@ -525,7 +607,7 @@ local function chainOf(player, toPosition, toCylinder)
 			break
 		elseif isItemCyl(c) then
 			local id = c:getId()
-			out[#out + 1] = depot[id] and "depot" or (PO.kindOfId(id) and "pouch") or "item"
+			out[#out + 1] = purseSet[id] and "purse" or depot[id] and "depot" or (PO.kindOfId(id) and "pouch") or "item"
 			c = c:getParent()
 		else
 			out[#out + 1] = "tile"
@@ -545,13 +627,16 @@ function PO.onMoveItem(player, item, count, fromPosition, toPosition, fromCylind
 		return NOERR
 	end
 	local m = {holdsPouch = true, toGround = toPosition.x ~= CONTAINER_POS}
+	if PO.isLootBag(item) then
+		m.lootBag, m.inPurse = true, PO.inPurse(player, item)
+	end
 	if not m.toGround then
 		m.chain = chainOf(player, toPosition, toCylinder)
 	end
 	local why = P.moveRefusal(m)
 	if why then
 		-- a warning line: the engine's own "Sorry, not possible." replaces a cancel message
-		player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, why)
+		player:sendTextMessage(MESSAGE_STATUS_WARNING or MESSAGE_INFO_DESCR, Chaos.t and Chaos.t(player, why) or why)
 		return NOTPOSSIBLE
 	end
 	return NOERR
@@ -559,6 +644,10 @@ end
 
 local trade = EventCallback
 trade.onTradeRequest = function(player, target, item)
+	if PO.isLootBag(item) and PO.inPurse(player, item) then
+		player:sendCancelMessage(Chaos.t(player, P.LOOT_BAG_STAYS))
+		return false
+	end
 	if PO.holdsPouch(item) then
 		player:sendCancelMessage(Chaos.t(player, "Store items cannot be traded."))
 		return false
@@ -576,6 +665,17 @@ accept.onTradeAccept = function(player, target, item, targetItem)
 	return true
 end
 accept:register(1)
+
+-- opening the Loot Bag sorts it first (rarest first), then the engine opens it as usual (false = default use)
+if Action and cfg().kinds.loot then
+	local openBag = Action()
+	function openBag.onUse(player, item)
+		pcall(PO.sortBag, item)
+		return false
+	end
+	openBag:id(cfg().kinds.loot.id)
+	openBag:register()
+end
 
 -- ---------------------------------------------------------------- death
 -- the engine dropped a backpack with a pouch into the corpse: the pouch leaves the corpse (its contents stay), and
@@ -696,17 +796,15 @@ local function sendSettings(player, open)
 		ids[kind] = it and it:getId() ~= 0 and it:getClientId() or 0
 		titles[kind] = k.title
 	end
-	local rarities = {}
-	for i, r in ipairs(ChaosLootFilter and ChaosLootFilter.RARITY or {}) do
-		rarities[i] = r.name
-	end
+	local rarities = ChaosRarity.storedNames()
 	Chaos.send(player, OPCODE, "settings", {rules = PO.rulesOf(player), ids = ids, titles = titles,
-		owned = open and PO.owned(player) or nil, rarities = rarities, open = open and true or false})
+		owned = open and PO.owned(player) or nil, rarities = rarities, rarityIds = ChaosRarity.storedIds(),
+		open = open and true or false})
 end
 PO.sendSettings = sendSettings
 
 -- actions of the Auto Seller window, handled by autosell.lua (ChaosAutoSell.handleAction)
-PO.AUTOSELL_ACTIONS = {as_open = true, as_sync = true, sell = true, asrar = true, aslist = true, aspause = true}
+PO.AUTOSELL_ACTIONS = {as_open = true, as_sync = true, sell = true, asrar = true, aslist = true, aspause = true, asevery = true}
 
 local ext = CreatureEvent("ChaosPouchesExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)

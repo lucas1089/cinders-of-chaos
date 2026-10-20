@@ -1,0 +1,12 @@
+Module
+  name: game_simpleskills
+  description: The skills window lists Melee, Ranged, Magic / Wand and Shielding (Fist Fighting for Monks) instead of the seven weapon skills
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ simpleskills_logic, simpleskills ]
+  dependencies:
+    - game_skills
+  autoload: true
+  autoload-priority: 1001
+  @onLoad: init()
+  @onUnload: terminate()

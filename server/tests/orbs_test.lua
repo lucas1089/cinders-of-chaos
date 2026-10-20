@@ -138,7 +138,7 @@ eq(C.orbByKey.chaos.name, "Orb of Upheaval")
 eq(C.orbByKey.divine.name, "Orb of Fate")
 
 -- ---------------------------------------------------------------- Tempering
-local sword = forged(2400, 4, 100) -- Epic: 3 modifiers, 2 / 2
+local sword = forged(2400, 3, 100) -- Magic: 3 modifiers, 2 / 2
 local before = {}
 for _, m in ipairs(C.readMods(sword)) do
 	before[m.key] = {value = m.value, tier = m.tier}
@@ -170,7 +170,7 @@ eq(C.readMods(sword)[1].value, keep, "a bound modifier keeps its value through T
 eq(C.readMods(sword)[1].bound, true)
 eq(C.readMods(sword)[2].bound, false)
 -- everything bound: refused
-local two = forged(2400, 1, 100) -- Common: 2 modifiers
+local two = forged(2400, 2, 100) -- Uncommon: 2 modifiers
 for _, m in ipairs(C.readMods(two)) do
 	C.setBound(two, m, true)
 end
@@ -180,7 +180,7 @@ local bare = put(newItem(2400)); bare:setCustomAttribute("rarity", 3)
 eq(select(2, C.check("tempering", bare)), "noMods")
 
 -- ---------------------------------------------------------------- Binding
-local epic = forged(2400, 4, 100)
+local epic = forged(2400, 3, 100)
 eq(M.maxBinds(4), 1, "an Epic item binds one")
 eq(M.maxBinds(5), 2, "a Legendary item binds two")
 eq(M.maxBinds(0), 0)
@@ -193,7 +193,7 @@ eq(C.modByKey(epic, chosen).bound, true, "the chosen one is bound")
 eq(C.bindCount(C.readMods(epic)), 1)
 eq(epic:getCustomAttribute(M.bindAttr(chosen)), 1, "stored as cb_<key>")
 ok(epic:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find(", bound%)"), "the description says bound")
-eq(select(2, C.check("binding", epic)), "tooManyBinds", "one bound modifier on an Epic item is the limit")
+eq(select(2, C.check("binding", epic)), "tooManyBinds", "one bound modifier on a Magic item is the limit")
 eq(#C.pickList("binding", epic), 2, "the bound one is not offered again")
 local legendary = forged(2400, 5, 100)
 C.apply("binding", legendary, {mod = C.pickList("binding", legendary)[1]})
@@ -213,7 +213,7 @@ C.setBound(epic, C.modByKey(epic, chosen), false)
 ok(sigA ~= C.signature(epic), "signature covers binds")
 
 -- ---------------------------------------------------------------- Excision
-local ex = forged(2466, 4, 100)
+local ex = forged(2466, 3, 100)
 local exMods = C.readMods(ex)
 local victim = exMods[2]
 C.setBound(ex, exMods[1], true)
@@ -228,13 +228,13 @@ ok(res.text:find("lost"), res.text)
 C.apply("excision", ex, {mod = C.readMods(ex)[2].key})
 eq(select(2, C.check("excision", ex)), "allBound")
 -- by use-with: a random free one
-local ex2 = forged(2466, 4, 100)
+local ex2 = forged(2466, 3, 100)
 dice = {1}
 C.apply("excision", ex2)
 eq(#C.readMods(ex2), 2, "a random one went")
 
 -- ---------------------------------------------------------------- Reforging
-local rf = forged(2400, 4, 150)
+local rf = forged(2400, 3, 150)
 local target = C.readMods(rf)[1]
 dice = {1, target.lo} -- tier row 1 (the best tier of item level 150), lowest value
 isOk, res = C.apply("reforging", rf, {mod = target.key})
@@ -251,7 +251,7 @@ C.setBound(rf, C.modByKey(rf, target.key), true)
 eq(select(2, C.check("reforging", rf, {mod = target.key})), "badMod", "a bound modifier is not reforged")
 
 -- ---------------------------------------------------------------- Ruin
-local ruinItem = forged(2400, 4, 100)
+local ruinItem = forged(2400, 3, 100)
 O.forceRuin = "nothing"
 isOk, res = C.apply("ruin", ruinItem)
 eq(isOk, true); eq(res.outcome, "nothing")
@@ -273,7 +273,7 @@ for i, m in ipairs(C.readMods(ruinItem)) do
 end
 -- improve: an extra modifier above the limit (Epic: 2 prefixes + 2 suffixes; fill them first)
 O.forceImprove = "slot"
-local slotItem = forged(2466, 4, 100)
+local slotItem = forged(2466, 3, 100)
 dice = {}
 for _ = 1, 4 do
 	local a = M.pick(C.candidates(slotItem), C.random)
@@ -314,7 +314,7 @@ eq(C.describe(slotItem).ruined, true, "the bench shows it")
 eq(M.isRuined(put(newItem(2400))), false)
 O.forceRuin, O.forceImprove = nil, nil
 -- an item with nothing left to improve: nothing happens
-local maxed = forged(2400, 1, 150)
+local maxed = forged(2400, 2, 150)
 for _, m in ipairs(C.readMods(maxed)) do C.writeAffix(maxed, m.affix, 8, nil, function(a, b) return b end) end
 M.config.rarity.sides[1] = 1
 O.forceRuin, O.forceImprove = "improve", "tiers"
@@ -339,10 +339,10 @@ C.random = function(a, b)
 	if v == nil then return a end
 	return v
 end
-eq(C.preview("ruin", forged(2400, 4, 100)), "40% improves, 60% nothing", "the bench shows the odds")
+eq(C.preview("ruin", forged(2400, 3, 100)), "40% improves, 60% nothing", "the bench shows the odds")
 
 -- ---------------------------------------------------------------- Whetstone (quality)
-local q = forged(2400, 4, 100)
+local q = forged(2400, 3, 100)
 local rawBefore = {}
 for _, m in ipairs(C.readMods(q)) do rawBefore[m.key] = m.value end
 eq(M.qualityOf(q), 0)
@@ -376,7 +376,7 @@ eq(M.qualityCap(10), 30); eq(M.qualityCap(9), 20)
 C.addQuality(divine, 30)
 eq(M.qualityOf(divine), 30)
 -- quality survives the orbs that make a new copy
-local qc = forged(2400, 4, 100)
+local qc = forged(2400, 3, 100)
 C.addQuality(qc, 5)
 dice = {}
 isOk, res = C.apply("chaos", qc)
@@ -397,13 +397,13 @@ eq(M.scaleQuality(5, 20), 6); eq(M.scaleQuality(10, 7), 11); eq(M.scaleQuality(1
 eq(select(2, C.check("whetstone", put(newItem(2400)))), "needRarity")
 
 -- ---------------------------------------------------------------- the older orbs with bound modifiers
-local b1 = forged(2400, 4, 100)
+local b1 = forged(2400, 3, 100)
 local bm = C.readMods(b1)
 C.setBound(b1, bm[1], true)
 local boundKey = bm[1].key
 for _ = 1, 30 do
 	dice = {}
-	local copy = forged(2400, 4, 100)
+	local copy = forged(2400, 3, 100)
 	C.setBound(copy, C.readMods(copy)[1], true)
 	local k = C.readMods(copy)[1].key
 	local v = C.readMods(copy)[1].value
@@ -414,12 +414,12 @@ for _ = 1, 30 do
 	eq(#C.readMods(copy), 2)
 end
 -- everything bound: Unmaking and Upheaval refuse
-local allb = forged(2400, 1, 100)
+local allb = forged(2400, 2, 100)
 for _, m in ipairs(C.readMods(allb)) do C.setBound(allb, m, true) end
 eq(select(2, C.check("annulment", allb)), "allBound")
 eq(select(2, C.check("chaos", allb)), "allBound")
 -- Upheaval: the bound modifier stays, the rest is rolled again (in place, the same item)
-local up = forged(2400, 4, 100)
+local up = forged(2400, 3, 100)
 local um = C.readMods(up)
 C.setBound(up, um[1], true)
 local upKey, upValue, upTier = um[1].key, um[1].value, um[1].tier
@@ -427,7 +427,7 @@ dice = {}
 isOk, res = C.apply("chaos", up)
 eq(isOk, true)
 eq(res.item, up, "in place")
-eq(#C.readMods(up), M.modCount(4), "the rarity's count again")
+eq(#C.readMods(up), M.modCount(3), "the rarity's count again")
 eq(C.modByKey(up, upKey).bound, true); eq(C.modByKey(up, upKey).value, upValue); eq(C.modByKey(up, upKey).tier, upTier)
 ok(res.text:find("bound ones stayed"), res.text)
 -- Fate refuses a bound item; Erasure frees everything
@@ -437,7 +437,7 @@ eq(isOk, true)
 eq(C.bindCount(C.readMods(res.item)), 0, "Erasure frees the binds (a plain copy)")
 eq(#C.readMods(res.item), 0)
 -- clearMods wipes binds, raw values and the extra slot
-local cl = forged(2400, 4, 100)
+local cl = forged(2400, 3, 100)
 C.setBound(cl, C.readMods(cl)[1], true)
 cl:setCustomAttribute(M.EXTRA, 1)
 C.addQuality(cl, 3)
@@ -546,7 +546,7 @@ eq(select(2, C.check("excision", empty)), "keyNoMods")
 local view2 = C.describe(forged(2400, 5, 100))
 eq(view2.binds[2], 2)
 eq(view2.binds[1], 0)
-eq(#view2.pick.binding, 3)
+eq(#view2.pick.binding, 5)
 eq(view2.orbs.ruin, "")
 ok(view2.preview.tempering:find("modifiers new values"), view2.preview.tempering)
 ok(view2.preview.binding:find("0 of 2 bound"), view2.preview.binding)

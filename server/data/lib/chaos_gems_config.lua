@@ -93,18 +93,19 @@ return {
 	},
 
 	-- ------------------------------------------------------------------ sockets
-	-- the most sockets per kind of item (chaos_item_mods.lua kinds) and per rarity tier (tier = ceil(rarity / 3):
-	-- index 1 = no rarity, 2 = Common-Rare, 3 = Epic-Exotic, 4 = Mythic-Eternal, 5 = Divine-Celestial,
-	-- 6 = Cosmic-Transcendent); an item gets the lower of the two. Two-handed weapons: weapon2h.
+	-- the most sockets per kind of item (chaos_item_mods.lua kinds) and per rarity (index 1 = no rarity, 2 = Common,
+	-- 3 = Uncommon, 4 = Magic, 5 = Rare, 6 = Legendary, 7 = Divine; before the seven rarities the 15 were in five groups
+	-- of three: 1, 2, 2, 3, 3); an item gets the lower of the two. Two-handed weapons: weapon2h.
 	kindMax = {weapon = 2, weapon2h = 3, armor = 3, shield = 2, helmet = 2, legs = 2, boots = 1, jewel = 1, other = 1},
-	rarityMax = {1, 1, 2, 2, 3, 3},
-	-- drops (the Chaos loot layer, on gear with a rarity): weights of 0, 1, 2, 3 sockets per rarity tier (index 1 =
-	-- Common-Rare ... 5 = Cosmic-Transcendent), then capped by the item's maximum
+	rarityMax = {1, 1, 1, 1, 2, 2, 3},
+	-- drops (the Chaos loot layer, on gear with a rarity): weights of 0, 1, 2, 3 sockets per rarity (index 1 = Common ..
+	-- 6 = Divine), then capped by the item's maximum
 	dropWeights = {
 		{80, 18, 2, 0},
+		{75, 22, 3, 0},
+		{70, 25, 5, 0},
 		{60, 30, 9, 1},
 		{45, 35, 16, 4},
-		{35, 38, 20, 7},
 		{25, 40, 25, 10}
 	},
 	-- the Orb of Sockets: a new number of sockets, 1 .. the item's maximum, with these weights (index = sockets)

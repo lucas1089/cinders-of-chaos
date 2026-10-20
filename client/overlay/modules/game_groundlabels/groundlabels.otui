@@ -44,8 +44,8 @@ GroundLabelsWindow < ChaosMainWindow
   GroundLabelsCheck
     id: rarePlus
     anchors.top: enabled.bottom
-    !text: tr('Always label Rare+ items (else only what glows)')
-    !tooltip: tr('Rare and better gear, uniques, orbs and legendary powers get a label even when the filter does not make them glow. Items the filter dims never do.')
+    !text: tr('Always label Magic+ items (else only what glows)')
+    !tooltip: tr('Magic and better gear, uniques, orbs and legendary powers get a label even when the filter does not make them glow. Items the filter dims never do.')
 
   GroundLabelsCheck
     id: altAll

@@ -355,3 +355,45 @@ PartyInviteWindow < ChaosMainWindow
     anchors.bottom: parent.bottom
     anchors.right: parent.right
     @onClick: modules.game_partyframes.closeInvite()
+
+// The invitation window: opens when a leader invites this character (the server's text line), Accept joins.
+PartyInvitedWindow < ChaosMainWindow
+  id: partyInvitedWindow
+  !text: tr('Party invitation')
+  size: 320 150
+  @onEscape: modules.game_partyframes.declineInvitation()
+  @onEnter: modules.game_partyframes.acceptInvitation()
+
+  ChaosLabel
+    id: inviter
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+  ChaosLabelDim
+    id: hint
+    anchors.top: prev.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    text-align: center
+    text-wrap: true
+    text-auto-resize: true
+    !text: tr('Accept to join the party, decline to ignore the invitation.')
+  ChaosButton
+    id: acceptButton
+    !text: tr('Accept')
+    width: 100
+    anchors.bottom: parent.bottom
+    anchors.left: parent.left
+    @onClick: modules.game_partyframes.acceptInvitation()
+  ChaosButton
+    id: declineButton
+    !text: tr('Decline')
+    width: 100
+    anchors.bottom: parent.bottom
+    anchors.right: parent.right
+    @onClick: modules.game_partyframes.declineInvitation()

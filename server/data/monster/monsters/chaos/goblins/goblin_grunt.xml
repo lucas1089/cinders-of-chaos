@@ -32,11 +32,8 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="15" chance="60000" /><!-- gold coin -->
-		<item id="36010" countmax="2" chance="18000" /><!-- goblin tooth -->
-		<item id="36012" countmax="1" chance="8000" /><!-- piece of scrap metal -->
 		<item id="36039" countmax="2" chance="12000" /><!-- loaf of rye bread -->
 		<item id="36043" countmax="2" chance="12000" /><!-- wedge of cheese -->
-		<item id="2389" chance="4000" /><!-- spear -->
 		<item id="2406" chance="3000" /><!-- short sword -->
 		<item id="2511" chance="1500" /><!-- brass shield -->
 		<item id="2473" chance="1000" /><!-- viking helmet -->

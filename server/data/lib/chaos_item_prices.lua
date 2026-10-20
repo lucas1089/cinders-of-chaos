@@ -12,7 +12,7 @@
 --   ChaosItemPrices.unsellable(id)           reason key ("currency", "key", "quest", "store", "bound", "broker",
 --                                            "unique") or nil
 --   ChaosItemPrices.reasonText(id)           the reason as a sentence, or nil
---   ChaosItemPrices.priceFor(id, info)       gold for one copy described by info = {rarity = 0..15, ilvl = 0..150,
+--   ChaosItemPrices.priceFor(id, info)       gold for one copy described by info = {rarity = 0 or an id of ChaosRarity (1, 2, 3, 4, 5, 10; 6..15 of an old item count as the rarity they became), ilvl = 0..150,
 --                                            unique = name or nil, charmRarity = 0..3}; pure
 --   ChaosItemPrices.instanceInfo(item)       info of an item (custom attributes "rarity", "chaos_ilvl", "chaos_unique"
 --                                            with the item's name, "charm_r")
@@ -32,10 +32,14 @@
 --                                            gold, units, kept (copies refused by saleBlock), sold names; pays nothing
 --
 -- Formula: price of a copy = prices[id] x R x L, rounded down.
---   R: no rarity 1; rarity 1..15 rarityMult (Common 1, Uncommon 1.5, Rare 3, Epic 6, Legendary 12, ... Transcendent
---      32); a charm charmMult. A unique copy (chaos_unique) is never sold to an NPC: 0 (owner 2026-10-14: salvage or
+--   R: no rarity 1; rarityMult by place (Common 1, Uncommon 1.5, Magic 3, Rare 6, Legendary 12, Divine 24; it was 1 .. Transcendent 32
+--      over 15 rarities); a charm charmMult. A unique copy (chaos_unique) is never sold to an NPC: 0 (owner 2026-10-14: salvage or
 --      market)
 --   L: 1 + item level / ilvlDiv, for equipment and charms (`gear`); 1 for everything else
+
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
 
 ChaosItemPrices = ChaosItemPrices or {}
 local P = ChaosItemPrices
@@ -94,12 +98,8 @@ end
 
 -- the multiplier of a rarity (0 = none)
 function P.rarityMult(rarity)
-	rarity = floor(num(rarity))
-	if rarity < 1 then
-		return 1
-	end
-	local m = P.data.rarityMult
-	return m[math.min(rarity, #m)] or 1
+	-- by place (data/lib/chaos_rarity.lua): an old item with one of the 15 ids is priced as the rarity it became
+	return ChaosRarity.at(P.data.rarityMult, floor(num(rarity)), 1)
 end
 
 function P.levelMult(id, ilvl)

@@ -32,6 +32,5 @@
 	</voices>
 	<loot>
 		<item id="2148" countmax="11" chance="60000" /><!-- gold coin -->
-		<item id="36019" countmax="2" chance="18000" /><!-- wolf pelt -->
 	</loot>
 </monster>

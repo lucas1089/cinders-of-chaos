@@ -62,7 +62,7 @@ eq(V.journalBoss(nil, 1).title, '1. ?', 'empty boss')
 -- the vendor
 local v = V.vendorRow({ k = 'v_helm', n = 'Sepulchre Warden Helm', kind = 'gear', price = 120, weekly = 1, bought = 0,
   level = 130, rarity = 4, mods = { 'a +1 (T7)', 'b (T7)' } }, 130)
-eq(v.sub, 'Epic, item level 130: a +1 (T7), b (T7)', 'gear line'); eq(v.button, '120 marks', 'price'); eq(v.can, true, 'can buy')
+eq(v.sub, 'Rare, item level 130: a +1 (T7), b (T7)', 'gear line'); eq(v.button, '120 marks', 'price'); eq(v.can, true, 'can buy')
 eq(V.vendorRow({ kind = 'gear', price = 120, weekly = 1, bought = 0 }, 100).can, false, 'too few marks')
 local o = V.vendorRow({ n = 'Ashen Upheaval (10)', kind = 'orbs', price = 40, weekly = 3, bought = 3,
   items = { { n = 'orbs of upheaval', c = 10 } } }, 999)

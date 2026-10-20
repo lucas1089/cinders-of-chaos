@@ -81,13 +81,13 @@ eq(K.gearMult(cfg, 500), 1.5, "capped at +50%")
 
 local o0 = oddsOf(K.gearOdds(cfg, 30, 30), "rarity")
 eq(o0[1], 12, "Common at mastery 0")
-eq(o0[3], 3, "Rare at mastery 0")
-eq(o0[5], 0.4, "Legendary at mastery 0")
-eq(o0[6], nil, "nothing above Legendary")
-eq(K.gearOdds(cfg, 30, 30)[1].rarity, 5, "best rarity first")
+eq(o0[3], 3, "Magic at mastery 0")
+eq(o0[4], 1.2, "Rare at mastery 0")
+eq(o0[5], nil, "nothing above Rare: a craft never gives Legendary or Divine")
+eq(K.gearOdds(cfg, 30, 30)[1].rarity, 4, "best rarity first")
 local oMax = oddsOf(K.gearOdds(cfg, 10, 400), "rarity")
 eq(oMax[1], 18, "Common at the cap")
-eq(oMax[5], 0.6, "Legendary at the cap")
+eq(oMax[4], 1.8, "Rare at the cap")
 local total = 0
 for _, p in pairs(oMax) do
 	total = total + p
@@ -115,12 +115,12 @@ eq(K.itemLevel(cfg, 10, 10, 40), 40, "never below the item type's own level")
 eq(K.itemLevel(cfg, 10, 10, 140), cfg.gear.itemLevel.max, "the type level is capped too")
 
 -- ---------------------------------------------------------------- gear rolls
--- at mastery 0 the summed odds are Legendary 0.4, Epic 1.6, Rare 4.6, Uncommon 10.6, Common 22.6 (x 1000 units)
-eq(K.rollGear(cfg, 30, 30, seq({400})), 5, "roll 400: Legendary")
-eq(K.rollGear(cfg, 30, 30, seq({401})), 4, "roll 401: Epic")
-eq(K.rollGear(cfg, 30, 30, seq({4600})), 3, "roll 4600: Rare")
-eq(K.rollGear(cfg, 30, 30, seq({22600})), 1, "roll 22600: Common")
-eq(K.rollGear(cfg, 30, 30, seq({22601})), 0, "roll 22601: plain")
+-- at mastery 0 the summed odds are Rare 1.2, Magic 4.2, Uncommon 10.2, Common 22.2 (x 1000 units)
+eq(K.rollGear(cfg, 30, 30, seq({1200})), 4, "roll 1200: Rare")
+eq(K.rollGear(cfg, 30, 30, seq({1201})), 3, "roll 1201: Magic")
+eq(K.rollGear(cfg, 30, 30, seq({4200})), 3, "roll 4200: Magic")
+eq(K.rollGear(cfg, 30, 30, seq({22200})), 1, "roll 22200: Common")
+eq(K.rollGear(cfg, 30, 30, seq({22201})), 0, "roll 22201: plain")
 eq(K.rollGear(cfg, 30, 30, seq({100000})), 0, "roll 100000: plain")
 local rand, counts, N = lcg(7), {[0] = 0, 0, 0, 0, 0, 0}, 200000
 for _ = 1, N do
@@ -128,9 +128,9 @@ for _ = 1, N do
 	counts[r] = counts[r] + 1
 end
 near(counts[1] * 100 / N, 12, 0.4, "Common rate")
-near(counts[3] * 100 / N, 3, 0.2, "Rare rate")
-near(counts[5] * 100 / N, 0.4, 0.08, "Legendary rate")
-near(counts[0] * 100 / N, 77.4, 0.5, "plain rate")
+near(counts[3] * 100 / N, 3, 0.2, "Magic rate")
+near(counts[4] * 100 / N, 1.2, 0.15, "Rare rate")
+near(counts[0] * 100 / N, 77.8, 0.5, "plain rate")
 
 -- ---------------------------------------------------------------- tools
 ok(K.isTool(cfg, "other", 48), "hands only: a tool")
@@ -170,7 +170,7 @@ near(extra / N, K.yieldMean(cfg, 15, 65, 5), 0.02, "rolled mean")
 eq(K.plural("Exalted Health Potion"), "Exalted Health Potions", "plural")
 eq(K.plural("Glass"), "Glasses", "plural -s")
 eq(K.plural("Ruby"), "Rubies", "plural -y")
-eq(K.article("Epic Axe"), "an", "an")
+eq(K.article("Epic Axe"), "an", "an") -- any word starting with a vowel
 eq(K.article("Rare Axe"), "a", "a")
 eq(K.gearText("Steel Axe", "Rare", 32), "You crafted a Rare Steel Axe (item level 32).", "gear text")
 eq(K.gearText("Epee", nil, 10), "You crafted an Epee (item level 10).", "plain gear text")
@@ -206,7 +206,7 @@ ChaosCrafting = {
 		createdLog[#createdLog + 1] = it
 		return it
 	end,
-	rarityName = function(r) return ({"Common", "Uncommon", "Rare", "Epic", "Legendary"})[r] end,
+	rarityName = function(r) return ChaosRarity.name(r) end,
 }
 local sockets = 0
 ChaosGems = {rollDropSockets = function() sockets = sockets + 1 return 1 end}
@@ -243,7 +243,7 @@ local od = B.odds(player, "armorsmith", shield)
 eq(player.asked, 11, "armorsmith skill asked")
 eq(od.kind, "gear", "gear odds")
 eq(od.level, 20, "item level: recipe 10 + mastery 20 / 2")
-eq(od.odds[1].name, "Legendary", "odds carry the names")
+eq(od.odds[1].name, "Rare", "odds carry the names")
 near(od.odds[#od.odds].pct, 14.4, 1e-9, "Common at mastery 20")
 local hi = B.odds(player, "weaponsmith", {id = 7000, name = "High Blade", level = 10, count = 1})
 eq(hi.level, B.typeLevel(7000), "a high level type keeps its own item level")
@@ -256,11 +256,11 @@ eq(B.odds(player, "generalcrafting", {id = 26713, count = 1, level = 10}), nil, 
 B.random = seq({1})
 local made = B.make(player, "armorsmith", shield, 30)
 eq(made.kind, "gear", "made gear")
-eq(made.rarity, 5, "roll 1: Legendary")
+eq(made.rarity, 4, "roll 1: Rare")
 eq(made.item.level, 20, "forged at the item level")
-eq(createdLog[#createdLog].rarity, 5, "ChaosCrafting.createItem with the rarity")
+eq(createdLog[#createdLog].rarity, 4, "ChaosCrafting.createItem with the rarity")
 eq(sockets, 1, "sockets rolled for a rarity")
-eq(B.finish(player, shield, made), "You crafted a Legendary Crown Shield (item level 20).", "gear finish text")
+eq(B.finish(player, shield, made), "You crafted a Rare Crown Shield (item level 20).", "gear finish text")
 B.random = seq({99999})
 made = B.make(player, "armorsmith", shield, 30)
 eq(made.rarity, 0, "plain")
@@ -287,6 +287,6 @@ print("craft_bonus_test: " .. checks .. " checks passed")
 for _, s in ipairs({15, 40, 65, 90, 115}) do
 	local g = oddsOf(K.gearOdds(cfg, 15, s), "rarity")
 	local y = oddsOf(K.yieldOdds(cfg, 15, s, 5), "extra")
-	print(string.format("  recipe 15, skill %3d: ilvl %2d  C %.2f U %.2f R %.2f E %.2f L %.2f | x5: +3 %.2f%% +5 %.2f%%",
-		s, K.itemLevel(cfg, 15, s, 1), g[1], g[2], g[3], g[4], g[5], y[3] or 0, y[5] or 0))
+	print(string.format("  recipe 15, skill %3d: ilvl %2d  Common %.2f Uncommon %.2f Magic %.2f Rare %.2f | x5: +3 %.2f%% +5 %.2f%%",
+		s, K.itemLevel(cfg, 15, s, 1), g[1] or 0, g[2] or 0, g[3] or 0, g[4] or 0, y[3] or 0, y[5] or 0))
 end

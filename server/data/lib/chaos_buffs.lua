@@ -5,6 +5,7 @@
 --   * conditions     engine conditions (haste, poison, mana shield, in fight ...) and the Chaos class buffs, which are
 --                    conditions with a sub id (the spells and the combat scripts run in different Lua states; the
 --                    condition is what everybody sees). {cond = {type = "CONDITION_HASTE", sub = 0, ids = {...}}}
+--                    (cond.subs = {a, b ...} looks for several sub ids; the first one found is the buff)
 --   * sources        everything else, a function B.sources[name](player, nowMs, def) that returns a list of items: skull
 --                    timers, world buffs, the Victory buff, the Golden Hour / Chaos Storm world events, the day's events,
 --                    the double experience potion, Vocation Trials kill stacks (Bloodlust and the like), the Monk's
@@ -113,9 +114,14 @@ cond("bone_aura", "CONDITION_ATTRIBUTES", 71022, "buff", "Banner of Bones", "buf
 cond("bone_shield", "CONDITION_ATTRIBUTES", 71023, "buff", "Bone Offering", "buff:bone_shield", "A shield of bone guards you.", 30)
 cond("focus", "CONDITION_ATTRIBUTES", 71030, "buff", "Focus", "buff:focus", "Critical chance from the chi your last finisher spent.", 30)
 cond("chi_ward", "CONDITION_ATTRIBUTES", 71031, "buff", "Chi Ward", "buff:chi_ward", "A ward absorbs damage.", 30)
-cond("mantra", "CONDITION_ATTRIBUTES", 71032, "buff", "Mantra of Stone", "buff:mantra", "Damage taken is reduced.", 30)
+-- 71037 is the Iron Sage's stronger timer of the same spell (Deep Mantra of the passive tree): one row for both
+cond("mantra", "CONDITION_ATTRIBUTES", 71032, "buff", "Mantra of Stone", "buff:mantra",
+	"Damage taken is reduced while you stay near the Sage (refreshed every pulse of the 12 second chant).", 30,
+	{cond = {type = "CONDITION_ATTRIBUTES", sub = 71032, subs = {71032, 71037}, ids = {"CONDITIONID_COMBAT"}}})
 cond("roll", "CONDITION_ATTRIBUTES", 71033, "buff", "Mistborne Step", "buff:roll", "You may slip the next blow.", 30)
 cond("breath", "CONDITION_REGENERATION", 71036, "buff", "Kindled Breath", "buff:breath", "Heals you over time.", 30)
+cond("moonfang_pack", "CONDITION_ATTRIBUTES", 71070, "buff", "Moonfang Pack", "buff:moonfang_pack", "Your summoned wolves fight for you. They vanish after 40 seconds.", 30)
+cond("mirror_image", "CONDITION_ATTRIBUTES", 71071, "buff", "Hall of Mirrors", "buff:mirror_image", "Mirror images of you distract monsters. They vanish after 10 seconds.", 30)
 cond("zealotry", "CONDITION_ATTRIBUTES", 71051, "buff", "Zealotry", "buff:zealotry", "A fervour that strengthens your strikes.", 30)
 cond("aegis_faith", "CONDITION_ATTRIBUTES", 71052, "buff", "Aegis of Faith", "buff:aegis_faith", "Faith shields you.", 30)
 
@@ -164,14 +170,20 @@ source("catchup", "catchup", "buff", "Catch-up", "buff:catchup", "More experienc
 source("low_stamina", "catchup", "debuff", "Low Stamina", "buff:low_stamina", "Less experience and loot until your stamina comes back.", 42, {part = "low"})
 
 -- ---- engine conditions: buffs
-cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50)
+-- the stock support spells (Haste, Strong Haste, Charge, Swift Foot) are haste conditions; the base scripts may give them
+-- a small sub id, so cond.subs lists the ones to look for (the first found is shown)
+cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50,
+	{cond = {type = "CONDITION_HASTE", sub = 0, subs = {0, 1, 2, 3}, ids = {"CONDITIONID_COMBAT"}}})
 cond("regen", "CONDITION_REGENERATION", 0, "buff", "Regeneration", "buff:regen", "Health and mana come back faster.", 51)
 cond("fed", "CONDITION_REGENERATION", 0, "buff", "Well Fed", "buff:fed", "Food makes health and mana regenerate.", 52,
 	{cond = {type = "CONDITION_REGENERATION", sub = 0, ids = {"CONDITIONID_DEFAULT"}}})
 cond("manashield", "CONDITION_MANASHIELD", 0, "buff", "Magic Shield", "buff:manashield", "Damage is taken from mana first.", 50)
 cond("invisible", "CONDITION_INVISIBLE", 0, "buff", "Invisible", "buff:invisible", "Monsters cannot see you.", 50)
 cond("light", "CONDITION_LIGHT", 0, "buff", "Light", "buff:light", "You carry a light.", 55)
-cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "buff:spellbuff", "A spell or potion boosts your skills.", 50)
+-- the stock attribute buffs (Bloodlust, Bulwark, Hawkeye, the party Communions) and the potions: sub ids 0-9 of the base
+cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "buff:spellbuff",
+	"A support spell or potion boosts your skills for a short time.", 50,
+	{cond = {type = "CONDITION_ATTRIBUTES", sub = 0, subs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ids = {"CONDITIONID_COMBAT"}}})
 
 -- the Ashen Sepulchre (data/scripts/chaos/raid.lua): a raid boss's debuffs on the player in a fight, each with its own
 -- icon: Sundered (the tank swap stacks, "buff:raid_sunder"), Hexed (effigy stacks, "buff:raid_hexed") and Withering Hex
@@ -570,9 +582,11 @@ local function findCondition(player, def)
 	for _, idName in ipairs(def.cond.ids or {"CONDITIONID_COMBAT"}) do
 		local id = constant(idName)
 		if id then
-			local c = player:getCondition(ctype, id, def.cond.sub or 0)
-			if c then
-				return c
+			for _, sub in ipairs(def.cond.subs or {def.cond.sub or 0}) do
+				local c = player:getCondition(ctype, id, sub)
+				if c then
+					return c
+				end
 			end
 		end
 	end

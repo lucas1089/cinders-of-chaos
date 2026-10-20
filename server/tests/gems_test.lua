@@ -191,10 +191,11 @@ eq(G.groupOf(gear(2400)), "weapon", "sword group")
 eq(G.groupOf(gear(2514)), "armour", "shields are armour")
 eq(G.groupOf(gear(2171)), "jewel", "amulet")
 eq(G.maxSockets(gear(2400)), 1, "a normal sword: 1")
-eq(G.maxSockets(gear(2400, 4)), 2, "an Epic sword: 2")
+eq(G.maxSockets(gear(2400, 4)), 2, "a Rare sword: 2")
+eq(G.maxSockets(gear(2400, 3)), 1, "a Magic sword: 1")
 eq(G.maxSockets(gear(2400, 13)), 2, "one-handed weapons: 2 at most")
 eq(G.maxSockets(gear(2431, 13)), 3, "two-handed: 3")
-eq(G.maxSockets(gear(2466, 7)), 2, "a Mythic armour: 2 (rarity)")
+eq(G.maxSockets(gear(2466, 7)), 2, "a Legendary armour (an old Mythic): 2 (rarity)")
 eq(G.maxSockets(gear(2466, 10)), 3, "a Divine armour: 3")
 eq(G.maxSockets(gear(2195, 15)), 1, "boots: 1")
 eq(G.maxSockets(gear(2171, 15)), 1, "jewellery: 1")
@@ -339,8 +340,8 @@ eq(select(2, G.combineResult(2147)), "notGem", "not a gem")
 eq(G.removeCost(32003), cfg.removeCost[3], "cost by tier")
 
 -- ---------------------------------------------------------------- drops and rewards
-eq(G.rarityIndex(0), 1, "no rarity"); eq(G.rarityIndex(3), 2, "Rare"); eq(G.rarityIndex(15), 6, "Transcendent")
-dice = {100} -- Common-Rare weights 80/18/2/0: 100 = 2 sockets
+eq(G.rarityIndex(0), 1, "no rarity"); eq(G.rarityIndex(3), 4, "Magic"); eq(G.rarityIndex(10), 7, "Divine"); eq(G.rarityIndex(15), 7, "an old Transcendent is Divine"); eq(G.rarityIndex(7), 6, "an old Mythic is Legendary")
+dice = {100} -- Uncommon weights 75/22/3/0: 100 = 2 sockets
 eq(G.rollDropCount(2), 2, "drop count")
 dice = {100}
 local drop = gear(2195, 2)

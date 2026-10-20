@@ -26,10 +26,8 @@ NEW_IDS = {
     'custom/illusionist_class/evasion.lua': 47,         # 389 Fading Step
     'custom/illusionist_class/cruz.lua': 52,            # 390 Crossfire Hex
     'custom/illusionist_class/bewitched_curse.lua': 53, # 391 Bewitching Hex
-    'healing/cure_splashed.lua': 58,                    # 392 Wash Taint
     'custom/illusionist_class/fear.lua': 60,            # 393 Dread
     'custom/illusionist_class/arcane_wave.lua': 85,     # 394 Arcane Ripple
-    'healing/cure_bewitched.lua': 164,                  # 395 Break Glamour
     'custom/illusionist_class/adento_grav.lua': 165,    # 396 Gravity Snare
     'custom/illusionist_class/arcane_strike.lua': 168,  # 397 Riftbolt
     'attack/expose_weakness.lua': 171,                  # 106 Sunder Guard (Earthrend keeps 106)

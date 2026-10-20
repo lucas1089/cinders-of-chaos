@@ -23,14 +23,14 @@ local function sorted(list)
 	return table.concat(copy, ",")
 end
 
--- a connected build: walk from the root, breadth first, n nodes (no keystones)
+-- a connected build: walk from the root, breadth first, n nodes (no keystones; a class lane node has stats and a variant)
 local function connected(n)
 	local out, seen, queue, head = {}, {[tree.root] = true}, {tree.root}, 1
 	while head <= #queue and #out < n do
 		local id = queue[head]
 		head = head + 1
 		for _, nb in ipairs(tree.nodes[id].n) do
-			if not seen[nb] and not tree.nodes[nb].v and not tree.nodes[nb].c and #out < n then
+			if not seen[nb] and (tree.nodes[nb].s or not tree.nodes[nb].v) and not tree.nodes[nb].c and #out < n then
 				seen[nb] = true
 				out[#out + 1] = nb
 				queue[#queue + 1] = nb
@@ -286,7 +286,7 @@ local function pathTo(target, classKey)
 		head = head + 1
 		for _, nb in ipairs(tree.nodes[id].n) do
 			local node = tree.nodes[nb]
-			if not prev[nb] and (not node.c or node.c[classKey]) and not node.v then
+			if not prev[nb] and (not node.c or node.c[classKey]) and (node.s or not node.v) then
 				prev[nb] = id
 				queue[#queue + 1] = nb
 			end

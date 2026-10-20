@@ -37,7 +37,7 @@
 --   icon    item id shown in the window and the store (default: the first id)
 -- Item ids are server ids of the base item set (non-moveable, not containers; checked by hand against items.otb).
 
-return {
+local cfg = {
 	opcode = 192, -- ChaosOpcodes.hideout (chaos_constants.lua)
 	staffGroup = 4, -- may enter any hideout (moderation) and use /hideout
 
@@ -69,15 +69,21 @@ return {
 		depot = {2, 1}, -- a locker: the owner's own depot of their home town (engine patch 0017 sets its depot id)
 		stash = {4, 1}, -- the supply stash (stash.lua window)
 		dummies = {{13, 1}, {14, 1}}, -- exercise dummies of the base server (the store's exercise weapons work on them)
+		-- the base server's waystone device (ids.waystone, aid.waystone) in the middle of the room: its portal pads
+		-- appear on the four diagonal tiles around it (tier_maps.lua), so those stay free of decorations
+		waystone = {8, 6},
 		lights = {{1, 1}, {15, 1}, {1, 11}, {15, 11}}
 	},
 	ids = {
 		portal = 1387, -- magic forcefield (exit; the temple entry)
 		depot = 2589, -- locker (type depot)
 		stash = 10081, -- storage chest: opens the supply stash
-		dummies = {27751, 27752}
+		dummies = {27751, 27752},
+		waystone = 29624 -- "Waystone Portal" (items.xml of the base server; 29626 is its other rotation); the base
+		-- player.lua puts action id 42707 on a device that is unwrapped (kit 29628 -> 29624)
 	},
-	aid = {enter = 47610, exit = 47611, depot = 47612, stash = 47613, decor = 47614, fixture = 47615},
+	aid = {enter = 47610, exit = 47611, depot = 47612, stash = 47613, decor = 47614, fixture = 47615,
+		waystone = 42707}, -- waystone: the base action id of the device (tier_maps.lua showTabletUI:aid), not ours
 
 	-- the Hideout Portal of every town: placed by cityportals.lua (cityportals_config.lua: the portal room of the Hall
 	-- of Services in Cinderhold and Mirewake, a fixed spot next to every other temple); these offsets only when neither
@@ -265,3 +271,8 @@ return {
 			source = {type = "stat", stat = "wb_vharok", min = 1, group = "trophy"}}
 	}
 }
+-- Third-party pack decorations of client pair 30 (hideout_pack30_config.lua, generated): only once the pair is switched on.
+if dofile("data/lib/chaos_pack30_art.lua").PAIR30 then
+	for _, d in ipairs(dofile("data/scripts/chaos/hideout_pack30_config.lua")) do cfg.decorations[#cfg.decorations + 1] = d end
+end
+return cfg

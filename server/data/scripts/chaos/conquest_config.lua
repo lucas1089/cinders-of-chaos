@@ -140,8 +140,9 @@ C.cinder = {
 -- ------------------------------------------------------------------ refinement (a deterministic rarity step)
 -- A worn item with a rarity (not a unique, not ruined) goes one rarity up, keeps every modifier and gains one random
 -- modifier that fits the new rarity (none when it is full). Price = base + perRarity x the new rarity; never above
--- maxRarity (the top rarities stay a matter of luck).
-C.refine = {base = 60, perRarity = 40, maxRarity = 12}
+-- maxRarity (a stored id of data/lib/chaos_rarity.lua; Divine stays a matter of luck). The price counts the new place in the
+-- order Common 1 .. Divine 6; it was base 60 + 40 x the new id of 15 (140 .. 540), up to Celestial
+C.refine = {base = 60, perRarity = 60, maxRarity = 5}
 
 -- ------------------------------------------------------------------ salvage of uniques (salvage.lua)
 -- a unique (or set piece) on the bench gives share x its vendor price in tokens, at least min (on top of the set

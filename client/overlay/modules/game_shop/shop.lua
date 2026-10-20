@@ -161,6 +161,54 @@ local function createPreview()
   end })
 end
 
+-- The cosmetic itself as the icon (shopicon.lua; the server's `look` of the offer or category): a creature with the
+-- outline on it, a print, a plate, the effect's own picture or sprites, a colour sample. Nothing here is needed to
+-- sell: an engine call that is missing leaves the stand-in item or creature in place.
+local function applyArt(widget, data, size)
+  if not widget or not widget.art or type(data) ~= 'table' or type(data['look']) ~= 'table' then return end
+  local ok, err = pcall(function()
+    local lp = modules.game_lookpreview
+    local plan = ShopIcon.plan(data, function(play)
+      local LP = lp and lp.LookPreviewCore
+      return LP and LP.mainEffect(play) or nil
+    end)
+    if plan.mode == 'native' then return end
+    local art = widget.art
+    local function show()
+      if widget.item then widget.item:setVisible(false) end
+      if widget.creature then widget.creature:setVisible(false) end
+      art:setVisible(true)
+    end
+    local function exists(path) return g_resources.fileExists(path .. '.png') end
+    if plan.mode == 'creature' then
+      local fx = modules.game_cosmeticfx
+      local c = widget.creature and widget.creature:getCreature() or nil
+      if c and fx and type(fx.applyOutline) == 'function' and fx.applyOutline(c, plan.outline.art, plan.outline.pulse) == true then
+        return
+      end
+      -- an engine without the outline pass (base patch 0038): the glow picture of the cosmetic instead
+      if exists(plan.glow) then
+        art:setImageSource(plan.glow)
+        show()
+      end
+    elseif plan.mode == 'image' then
+      if exists(plan.image) then
+        art:setImageSource(plan.image)
+        if plan.rotation then art:setRotation(plan.rotation) end
+        show()
+      end
+    elseif plan.mode == 'effect' then
+      if lp and type(lp.effectIcon) == 'function' and lp.effectIcon(art, plan.spec, size, ShopIcon.FX) then show() end
+    elseif plan.mode == 'swatch' then
+      art:setBackgroundColor(plan.accent and plan.color or '#1c1a18')
+      art:setText(ShopIcon.sampleText(plan))
+      if not plan.accent then art:setColor(plan.color) end
+      show()
+    end
+  end)
+  if not ok then g_logger.warning('[shop] icon: ' .. tostring(err)) end
+end
+
 function createShop()
   if shop then return end
   shop = g_ui.displayUI('shop')
@@ -405,12 +453,14 @@ function addCategory(data)
     category.item:setItemId(data["item"])
     category.item:setItemCount(data["count"])
     category.item:setShowCount(false)
+    applyArt(category, data, 32)
   elseif data["type"] == "outfit" then
     category = g_ui.createWidget('ShopCategoryCreature', shop.categories)
     category.creature:setOutfit(data["outfit"])
     if data["outfit"]["rotating"] then
       category.creature:setAutoRotating(true)
     end
+    applyArt(category, data, 32)
   elseif data["type"] == "image" then
     category = g_ui.createWidget('ShopCategoryImage', shop.categories)
     if data["image"] and data["image"]:sub(1, 4):lower() == "http" then
@@ -471,12 +521,14 @@ function addOffer(category, data)
     offer.item:setItemId(data["item"])
     offer.item:setItemCount(data["count"])
     offer.item:setShowCount(false)
+    applyArt(offer, data, 48)
   elseif data["type"] == "outfit" then
     offer = g_ui.createWidget('ShopOfferCreature', shop.offers)
     offer.creature:setOutfit(data["outfit"])
     if data["outfit"]["rotating"] then
       offer.creature:setAutoRotating(true)
     end
+    applyArt(offer, data, 48)
   elseif data["type"] == "image" then
     offer = g_ui.createWidget('ShopOfferImage', shop.offers)
     if data["image"] and data["image"]:sub(1, 4):lower() == "http" then

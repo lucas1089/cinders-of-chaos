@@ -234,6 +234,28 @@ eq(A.autoBoxLabel(40, W), 'none', 'the box alone')
 eq(A.autoBoxLabel(10, W), 'hidden', 'no room at all: hidden, never over another widget')
 eq(A.autoBoxLabel(nil, W), 'hidden', 'no measure yet')
 
+-- a class change: rules and heals of spells the new class lacks go (base: the Vocation Change kept them)
+do
+  local classOk = function(id) return id == 10 or id == 11 end
+  local rules = {
+    { type = 'spell', spellId = 10, name = 'A' }, { type = 'spell', spellId = 99, name = 'old class' },
+    { type = 'item', itemId = 3160, spellId = 0 }, { type = 'spell', spellId = 11, name = 'B' },
+    { type = 'spell', spellId = 98, name = 'old class 2' },
+  }
+  local out, dropped = A.dropForeignRules(rules, classOk)
+  eq(dropped, 2, 'two old-class rules dropped')
+  eq(#out, 3, 'the rest stays')
+  eq(out[1].spellId .. ',' .. out[2].type .. ',' .. out[3].spellId, '10,item,11', 'order and item rules kept')
+  eq(#rules, 5, 'the source list is not changed')
+  local _, none = A.dropForeignRules(out, classOk)
+  eq(none, 0, 'a second pass drops nothing')
+  eq(#A.dropForeignRules(nil, classOk), 0, 'no rules')
+  local slots = { { id = 10, percent = 45 }, { id = 99, percent = 65 }, { id = 0, percent = 85 } }
+  eq(A.dropForeignHeals(slots, classOk), 1, 'one heal slot emptied')
+  eq(slots[1].id .. ',' .. slots[2].id .. ',' .. slots[2].percent, '10,0,65', 'the slot is emptied, its percent kept')
+  eq(A.dropForeignHeals(slots, classOk), 0, 'idempotent')
+end
+
 if fails > 0 then
   error(fails .. ' failure(s)')
 end

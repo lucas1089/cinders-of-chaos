@@ -62,10 +62,6 @@
 		<item id="2148" countmax="100" chance="60000"/><!-- gold coin -->
 		<item id="2152" countmax="80" chance="80000"/><!-- platinum coin -->
 		<item id="2160" countmax="2" chance="25000"/><!-- crystal coin -->
-		<item id="2156" countmax="2" chance="8000"/><!-- red gem -->
-		<item id="2158" countmax="2" chance="8000"/><!-- blue gem -->
-		<item id="2155" countmax="2" chance="8000"/><!-- green gem -->
-		<item id="2153" chance="4000"/><!-- violet gem -->
 		<item id="8888" chance="600"/><!-- armors -->
 		<item id="2500" chance="600"/>
 		<item id="2472" chance="600"/>
@@ -77,6 +73,5 @@
 		<item id="2644" chance="500"/>
 		<item id="11240" chance="500"/>
 		<item id="2514" chance="500"/>
-		<item id="25380" countmax="1" chance="30"/><!-- talent token -->
 	</loot>
 </monster>

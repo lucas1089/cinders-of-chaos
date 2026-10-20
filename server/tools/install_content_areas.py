@@ -129,11 +129,13 @@ class World:
         return len(self.m.tiles['x'])
 
 
-def load_world(path, portal):
+def load_world(path, portal, extra=()):
+    """the map and its teleports: {pos: destination} of the `portal` item and of the `extra` teleport items (the base
+    quests' own teleport items: the hall order moves them too)"""
     import otbm
     m = otbm.load_otbm(path)
     tele = {}
-    for ti, _iid, d in otbm.teleports(m, [portal]):
+    for ti, _iid, d in otbm.teleports(m, [portal] + list(extra)):
         tele[(int(m.tiles['x'][ti]), int(m.tiles['y'][ti]), int(m.tiles['z'][ti]))] = tuple(d)
     return World(m, tele)
 
@@ -144,21 +146,27 @@ def stack_of(tile):
 
 
 # ------------------------------------------------------------------------------------------------ the room
-def room_layout(world, room, portal, portal_at=None):
+def room_layout(world, room, portal, portal_at=None, wing=None):
     """the grown room: {'tiles': {pos: tile}, 'module': set(pos), 'caps': set(pos) (new place of the ends),
-    'old': set(pos) (tiles of the old ends, replaced), 'slots': [...]}. portal_at: the places that hold a teleport
-    in the base room (the hall order moves them; hall_hunts.csv keeps where they were), else the map says it"""
-    z = room['z']
+    'old': set(pos) (tiles of the old ends, replaced), 'swept': set(pos) (open ground of a wing's floor that the new
+    tiles replace), 'slots': [...]}. portal_at: the places that hold a teleport in the base room (the hall order moves
+    them; hall_hunts.csv keeps where they were), else the map says it.
+    wing: grow another floor the same way ({z, from, east: {modules}, west: {modules}, sweep}): the alcoves are
+    copied from floor `from` (the room's own, bare of rewards and signs), the ends are that floor's own; with `sweep`
+    the new tiles may replace open ground (no house, nothing but decoration) where the floor has the town's lawn"""
+    z = wing['z'] if wing else room['z']
+    src_z = (wing.get('from') or z) if wing else z
     r0, r1 = room['rows']
-    tiles, module, caps, old, cols = {}, set(), set(), set(), []
+    tiles, module, caps, old, swept, cols = {}, set(), set(), set(), set(), []
     for side in ('east', 'west'):
         s = room.get(side)
-        if not s or not s.get('modules'):
+        n_mod = (wing.get(side) or {}).get('modules', 0) if wing else (s or {}).get('modules', 0)
+        if not s or not n_mod:
             continue
         a, b = s['module']
         c0, c1 = s['cap']
         per = b - a + 1
-        n = s['modules'] * per
+        n = n_mod * per
         if side == 'east':
             new = list(range(c0, c0 + n))
             src = lambda x: a + (x - c0) % per
@@ -170,13 +178,13 @@ def room_layout(world, room, portal, portal_at=None):
         for x in new:
             sx = src(x)
             for y in range(r0, r1 + 1):
-                st = world.stack((sx, y, z))
+                st = world.stack((sx, y, src_z))
                 if st is None:
                     continue
-                if world.house((sx, y, z)):
-                    raise InstallError('room: the module tile %d,%d,%d belongs to a house' % (sx, y, z))
+                if world.house((sx, y, src_z)):
+                    raise InstallError('room: the module tile %d,%d,%d belongs to a house' % (sx, y, src_z))
                 items = [(i, {}) for i in st if i != portal]
-                tiles[(x, y, z)] = dict(ground=None, items=items, flags=world.flags((sx, y, z)))
+                tiles[(x, y, z)] = dict(ground=None, items=items, flags=world.flags((sx, y, src_z)))
                 module.add((x, y, z))
             cols.append((side, x, sx))
         for x in range(c0, c1 + 1):
@@ -195,12 +203,14 @@ def room_layout(world, room, portal, portal_at=None):
                 q = (x + shift, y, z)
                 tiles[q] = dict(ground=None, items=items, flags=world.flags(p))
                 caps.add(q)
+    if wing and wing.get('sweep'):
+        swept = {p for p in tiles if world.has(p) and p not in old}
     # the slots: new columns whose source column has a teleport on the north teleport row
     tn, ts = room['teleportRows']
     slots = []
     for side, x, sx in cols:
-        st = world.stack((sx, tn, z))
-        has = (sx, tn, z) in portal_at if portal_at is not None else bool(st and portal in st)
+        st = world.stack((sx, tn, src_z))
+        has = (sx, tn, src_z) in portal_at if portal_at is not None else bool(st and portal in st)
         if not has:
             continue
         for row, cell, sign in ((tn, room['cellRows'][0], room['signRows'][0]), (ts, room['cellRows'][1], room['signRows'][1])):
@@ -212,7 +222,27 @@ def room_layout(world, room, portal, portal_at=None):
             slots.append(dict(teleport=(x, row, z), sign=(x, sign, z), cells=cells, side=side))
     # along the corridor: west to east, the north teleport of a column before the south one (the bands ascend that way)
     slots.sort(key=lambda s: (s['teleport'][0], s['teleport'][1]))
-    return dict(tiles=tiles, module=module, caps=caps, old=old, slots=slots)
+    return dict(tiles=tiles, module=module, caps=caps, old=old, swept=swept, slots=slots)
+
+
+def check_swept(map_path, swept, portal, items, log):
+    """A wing may take the place of open ground (room_layout `sweep`): refused when one of those tiles holds anything
+    but decoration - an action id, a unique id, a teleport, a sign, a container or an attribute we cannot write back."""
+    import hall_order as H
+    data = open(map_path, 'rb').read()
+    ranges = tile_ranges(data, sorted(swept))
+    sign, quest = items.get('sign'), set(items.get('questPortals') or ())
+    for p in sorted(swept):
+        s, e = ranges[p]
+        try:
+            t = H.parse_tile(data[s:e + 1], p)
+        except H.HallError as ex:
+            raise InstallError('room: a wing would replace a tile we cannot read back: %s' % ex)
+        for iid, a in t['items']:
+            if a.get('aid') or a.get('uid') or a.get('tele') or iid in (portal, sign) or iid in quest:
+                raise InstallError('room: a wing would replace an action id, unique id, teleport or sign at %d,%d,%d '
+                                   '(item %d); nothing written' % (p + (iid,)))
+    log('room: %d tile(s) of open ground replaced by the wings hold only decoration' % len(swept))
 
 
 def room_state(world, lay, portal=None):
@@ -226,15 +256,15 @@ def room_state(world, lay, portal=None):
     same = [p for p in lay['module'] if bare(world.stack(p)) == bare(stack_of(lay['tiles'][p]))]
     if len(same) == len(lay['module']):
         return 'done'  # the copies stand where the old ends were: grown (the ends were moved then)
-    taken = [p for p in lay['tiles'] if world.has(p) and p not in lay['old']]
+    taken = [p for p in lay['tiles'] if world.has(p) and p not in lay['old'] and p not in lay.get('swept', ())]
     if taken:
         raise InstallError('room: %d target tile(s) are taken (first %d,%d,%d) and the room is not the one this '
                            'config grows from; nothing written' % ((len(taken),) + taken[0]))
     if not lay['old']:
         raise InstallError('room: no end (cap) tiles where the config says')
-    for p in lay['old']:
+    for p in set(lay['old']) | set(lay.get('swept', ())):
         if world.house(p):
-            raise InstallError('room: the end tile %d,%d,%d belongs to a house' % p)
+            raise InstallError('room: the tile %d,%d,%d belongs to a house; not replaced' % p)
     return 'todo'
 
 
@@ -339,6 +369,8 @@ def tile_nodes(tiles):
                 q += bytes([5]) + struct.pack('<H', attrs['uid'])
             if attrs.get('tele'):
                 q += bytes([ATTR_TELE]) + struct.pack('<HHB', *attrs['tele'])
+            if attrs.get('raw'):  # other attributes kept as read (a sign's text, a count)
+                q += attrs['raw']
             out += b'\xFE' + _esc(q) + b'\xFF'
         out += b'\xFF'
     if cur is not None:
@@ -517,7 +549,7 @@ def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
 
 
 # ------------------------------------------------------------------------------------------------ places file
-def places_lua(back, entries, base=None, floors=None, hall=False):
+def places_lua(back, entries, base=None, floors=None, hall=False, quests=None):
     def q(s):
         return 'nil' if s is None else '"%s"' % s.replace('\\', '\\\\').replace('"', '\\"')
 
@@ -544,9 +576,12 @@ def places_lua(back, entries, base=None, floors=None, hall=False):
                             pos(e['dest'])))
         lines.append('\t},')
         lines.append('\tfloors = {')
-        for f in floors or []:
+        for f in floors or []:  # level {lo, 0}: no upper limit (the top floor)
             lines.append('\t\t{z = %d, level = {%d, %d}},' % (f['z'], f['level'][0], f['level'][1]))
         lines.append('\t},')
+        if quests:
+            # the quest hall (hall_quests.py): where its "Quests" label floats and how many alcoves it has
+            lines.append('\tquests = {label = %s, count = %d},' % (pos(quests['label']), quests['count']))
     lines += ['}', '']
     return '\n'.join(lines)
 
@@ -574,14 +609,16 @@ def fixed_plans(dirs, hunts, log=print):
 
 
 def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log):
-    """the hall order (hall_order.py): every hunt slot of the hall (the base teleports' places and the wings'), the
-    base hunts of `rows` (hall_hunts.csv) and the placed content hunts, assigned by band (hall_on) or as the base
-    server had them (the content hunts in the wings as before). Returns {'assign': {id: slot}, 'portal': {pos: dest
-    or None}, 'displays': {id: (monster, cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...]}"""
+    """the hall order (hall_order.py): every hunt slot of the hall (the base teleports' places, the quest alcoves'
+    places and the wings'), the base hunts of `rows` (hall_hunts.csv) and the placed content hunts, assigned by
+    floor and band (hall_on) or as the base server had them (the content hunts in the wings as before; the quests
+    stay in their alcoves). Returns {'assign': {id: slot}, 'portal': {pos: dest or None}, 'displays': {id: (monster,
+    cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...], 'slots': [...], 'quests': rows}"""
     import hall_order as H
     room, hall = cfg['room'], cfg['hall']
+    quests = H.quests_of(rows) if hall_on else []  # a quest alcove is a hunt slot once its quest has moved
     rows = H.hunts_of(rows)  # a `not a hunt` row keeps its teleport where it stands, untouched
-    slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots), hall)
+    slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots, quests), hall)
     mons = {p['id']: p for p in order}
     ours = [dict(id=pid, lo=int(plans[pid][1]['level'][0]), hi=int(plans[pid][1]['level'][1]), level=None) for pid in placed]
     hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows] + ours
@@ -622,32 +659,79 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log)
         if bad:
             raise InstallError('hall order: not ascending: %s' % bad[0])
         for f in floors:
-            log('hall: floor %d holds levels %d-%d' % (f['z'], f['level'][0], f['level'][1]))
-    log('hall: %d hunts on %d slots (%s)' % (len(assign), len(slots), 'in level order' if hall_on else 'as the base server had them'))
-    return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, base=base, floors=floors, slots=slots)
+            on = sum(1 for s in assign.values() if s['teleport'][2] == f['z'])
+            log('hall: floor %d (levels %s): %d hunts on %d slots' % (
+                f['z'], H.floor_range_text(hall, f['z']), on, sum(1 for s in slots if s['teleport'][2] == f['z'])))
+    log('hall: %d hunts on %d slots (%s)' % (len(assign), len(slots), 'by floor and level' if hall_on else 'as the base server had them'))
+    return dict(assign=assign, portal=portal, displays=displays, takeover=takeover, base=base, floors=floors, slots=slots,
+                quests=quests)
 
 
-def hall_tiles(world, map_path, portal_want, portal, new_tiles):
-    """{pos: tile} for the hall's teleport tiles whose teleport differs from portal_want ({pos: dest or None}); a tile
-    the room adds in this run is changed in new_tiles itself. Returns (tiles, positions to cut from the map)"""
+def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log):
+    """The hall order's changes to existing tiles, through one reading of them (hall_quests.TileEditor): the quest
+    alcoves moved to the quest hall (or back) with their way back from the quest sites, the reward chests of the plaza
+    taken away, the hunt teleports of every slot (the slot's hunt, or none), the signs of unused slots blank.
+    Returns ({pos: tile} to write - the map's own tiles that differ now, and the quest layout or None)."""
     import hall_order as H
-    change = [p for p, d in sorted(portal_want.items()) if p not in new_tiles and H.portal_state(world, p, portal) != (tuple(d) if d else None)]
-    out = {}
-    for p, d in portal_want.items():
-        if p in new_tiles:
-            t = new_tiles[p]
-            new_tiles[p] = H.with_portal(dict(flags=t.get('flags', 0), ground=t.get('ground'), items=t['items']), portal, d)
-    if not change:
-        return out, []
-    data = open(map_path, 'rb').read()
-    ranges = tile_ranges(data, change)
-    for p in change:
-        s, e = ranges[p]
-        try:
-            out[p] = H.with_portal(H.parse_tile(data[s:e + 1], p), portal, portal_want[p])
-        except H.HallError as ex:
-            raise InstallError(str(ex))
-    return out, change
+    import hall_quests as Q
+    room, portal, sign = cfg['room'], cfg['items']['portal'], cfg['items']['sign']
+    qcfg = cfg['hall'].get('quests')
+    qrows = H.quests_of(rows)
+    qlay = Q.layout(qcfg, room, qrows) if (qcfg and qrows) else None
+    ed = Q.TileEditor(world, map_path, new_tiles)
+    ed.need(*hl['portal'])
+    used = {s['teleport'] for s in hl['assign'].values()}
+    for s in hl['slots']:
+        if s['sign']:
+            ed.need(tuple(s['sign']))
+    found, chests, template_at = [], [], None
+    if qlay:
+        ed.need(*Q.need_positions(qlay))
+        found = Q.find_returns(world.tele, qlay, qcfg.get('returnRadius', 4))
+        ed.need(*[p for _a, p in found])
+        for c in qcfg.get('chests') or []:
+            c = dict(c, z=qcfg['z'])
+            chests.append(c)
+            ed.need(*[(c['x'], y, c['z']) for y in range(c['rows'][0], c['rows'][1] + 1)])
+        tn, ts = room['teleportRows']
+        template_at = [(qrows[0]['x'], y, qrows[0]['z']) for y in (tn + 1, (tn + ts) // 2, ts - 1)]  # the corridor's 3 rows
+        ed.need(*template_at)
+    try:
+        ed.load()
+        if qlay:
+            template = [ed.get(p) for p in template_at]
+            if None in template:
+                raise Q.QuestError('no corridor tile at %s' % (template_at,))
+            if hall_on:
+                w, notes = Q.plan_chests(ed, chests)
+                for p, t in w.items():
+                    ed.set(p, t)
+                for n in notes:
+                    log('quests: ' + n)
+            w, notes = Q.plan_move(ed, qlay, room, portal, sign, template, forward=hall_on)
+            for p, t in w.items():
+                ed.set(p, t)
+            for n in notes:
+                log('quests: ' + n)
+            for p, t in Q.plan_returns(ed, found, hall_on).items():
+                ed.set(p, t)
+            if found:
+                log('quests: %d way(s) back from the quest sites point to the %s' % (
+                    len(found), 'quest hall' if hall_on else 'old alcoves'))
+        for p, dest in hl['portal'].items():
+            t = ed.get(p)
+            if t is None:
+                raise Q.QuestError('no tile at %d,%d,%d for a hunt teleport' % p)
+            ed.set(p, H.with_portal(t, portal, dest))
+        if hall_on:
+            for s in hl['slots']:
+                if s['teleport'] not in used and s['sign']:
+                    t = ed.get(tuple(s['sign']))
+                    if t is not None:
+                        ed.set(tuple(s['sign']), Q.blank_sign(t, sign))
+    except (Q.QuestError, H.HallError) as e:
+        raise InstallError(str(e))
+    return ed.changed(), qlay
 
 
 def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, config=CONFIG, map_path=None,
@@ -691,20 +775,44 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan)
         if world is None:
             log('reading %s ...' % map_path)
-            world = load_world(map_path, portal)
+            world = load_world(map_path, portal, cfg['items'].get('questPortals') or ())
         # the hall order's data (tools/hall_hunts.csv): the base hunts and where they stood
         rows = None
         if room_on and cfg.get('hall'):
             rows = hall_order.read_csv(hall_csv or hall_order.CSV_PATH)
         if hall_on is None:
             hall_on = bool(cfg.get('hall', {}).get('enabled'))
-        base_at = {(r['x'], r['y'], r['z']) for r in rows} if rows else None
-        # the room
-        lay = room_layout(world, cfg['room'], portal, base_at) if room_on else dict(tiles={}, module=set(), caps=set(), old=set(), slots=[])
-        rstate = room_state(world, lay, portal)
+        base_at = {(r['x'], r['y'], r['z']) for r in rows if r['x'] is not None} if rows else None
+        # the room: floor 6 and, with the hall order, the other floors' wings (hall_order.assign names a floor's missing slots)
+        lays, rstates = [], []
+        if room_on:
+            lays.append(room_layout(world, cfg['room'], portal, base_at))
+            for w in (cfg['room'].get('wings') or []) if rows else []:
+                lays.append(room_layout(world, cfg['room'], portal, base_at, wing=w))
+        for l in lays:
+            rstates.append(room_state(world, l, portal))
+        todo_lays = [l for l, st in zip(lays, rstates) if st == 'todo']
+        rstate = 'todo' if todo_lays else 'done'
+        lay = dict(tiles={}, module=set(), caps=set(), old=set(), swept=set(), slots=[])
+        for l in lays:
+            for k in ('tiles',):
+                lay[k].update(l[k])
+            for k in ('module', 'caps', 'old', 'swept'):
+                lay[k] |= l[k]
+            lay['slots'] += l['slots']
+        lay['slots'].sort(key=lambda s: (s['teleport'][0], s['teleport'][1], s['teleport'][2]))
+        grow_tiles = {}
+        for l in todo_lays:
+            grow_tiles.update(l['tiles'])
+        grow_cut = set()
+        for l in todo_lays:
+            grow_cut |= l['old'] | l['swept']
+        swept_all = set().union(*[l['swept'] for l in todo_lays]) if todo_lays else set()
+        if swept_all:
+            check_swept(map_path, swept_all, portal, cfg['items'], log)
         log('room: %s (%d new tiles, %d replaced, %d teleport slots)' % (
-            'grown already' if rstate == 'done' else 'grows', len(set(lay['tiles']) - lay['old']) if rstate == 'todo' else 0,
-            len(lay['old'] & set(lay['tiles'])) if rstate == 'todo' else 0, len(lay['slots'])))
+            'grown already' if rstate == 'done' else 'grows', len(set(grow_tiles) - grow_cut) if rstate == 'todo' else 0,
+            len(grow_cut & set(grow_tiles)) if rstate == 'todo' else 0, len(lay['slots'])))
         # the areas
         state = {}
         for pid, a in areas.items():
@@ -747,17 +855,18 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         # the map
         new_tiles = {}
         if rstate == 'todo':
-            new_tiles.update(lay['tiles'])
+            new_tiles.update(grow_tiles)
         for pid, st in state.items():
             if st == 'todo':
                 new_tiles.update(areas[pid]['tiles'])
-        remove = sorted(lay['old']) if rstate == 'todo' else []
+        remove = sorted(grow_cut) if rstate == 'todo' else []
+        qlay = None
         if hl:
-            ht, cut = hall_tiles(world, map_path, hl['portal'], portal, new_tiles)
-            if ht:
-                log('hall: %d teleport tile(s) to rewrite' % len(ht))
-            new_tiles.update(ht)
-            remove = sorted(set(remove) | set(cut))
+            changed, qlay = hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log)
+            if changed:
+                log('hall: %d existing tile(s) to rewrite' % len(changed))
+            new_tiles.update(changed)
+            remove = sorted(set(remove) | {p for p in changed if world.has(p)})
         summary = dict(room=rstate, areas=state, slots={k: v['teleport'] for k, v in slots.items()}, new_tiles=len(new_tiles),
                        removed=len(remove))
         if new_tiles and not dry:
@@ -813,7 +922,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                                 teleport=slots[pid]['teleport'], sign=slots[pid]['sign'], arrival=a['man']['arrival'],
                                 exit=ex.get('at'), monster=p.get('monster')))
         if hl:
-            text = places_lua(cfg['room']['back'], entries, hl['base'], hl['floors'] if hall_on else [], hall_on)
+            quests = dict(label=qlay['label'], count=len(qlay['alcoves'])) if (qlay and hall_on) else None
+            text = places_lua(cfg['room']['back'], entries, hl['base'], hl['floors'] if hall_on else [], hall_on, quests)
             summary['hall'] = dict(on=hall_on, assign={k: v['teleport'] for k, v in hl['assign'].items()},
                                    floors=hl['floors'], displays={k: v[0] for k, v in hl['displays'].items()})
         else:

@@ -1,0 +1,16 @@
+# Chaos: the capacity number in the inventory panel (after 0001-0072). Short numbers ("123k", "1.25M") are wider than the 34 px
+# plate and the label wrapped them onto a second line. The label now reaches 8 px past the plate on both sides and does not wrap.
+--- a/modules/game_inventory/inventory.otui
++++ b/modules/game_inventory/inventory.otui
+@@ -256,8 +256,11 @@
+       Label
+         id: label
+         anchors.fill: parent
++        margin-left: -8
++        margin-right: -8
+         text-offset: 0 7
+         text-align: center
++        text-wrap: false
+         font: verdana-cap-bold
+         color: $var-text-cip-color
+ 

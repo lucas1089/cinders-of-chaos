@@ -62,6 +62,17 @@ check('A plain description.' in new, 'an item that is no potion is untouched')
 again, n2 = A.patch_item_potion_texts(new, POTIONS)
 check(n2 == 0 and again == new, 'a second run changes nothing')
 
+# runes lose their level requirement, the magic level stays; a second run changes nothing
+RUNES = ('<spells>\n<rune group="attack" spellid="55" name="Storm Seed Rune" id="2262" charges="2" level="37" magiclevel="10" />\n'
+         '<rune group="support" spellid="1" name="Test Rune" id="1" level="1" magiclevel="3" />\n'
+         '<instant name="Not A Rune" level="30" magiclevel="5" />\n</spells>\n')
+rn, count = A.patch_rune_levels(RUNES)
+check(count == 1, 'one rune changed (got %d)' % count)
+check('name="Storm Seed Rune" id="2262" charges="2" level="1" magiclevel="10"' in rn, 'level 1, magic level kept')
+check('name="Not A Rune" level="30" magiclevel="5"' in rn, 'an instant spell is untouched')
+rn2, count2 = A.patch_rune_levels(rn)
+check(count2 == 0 and rn2 == rn, 'a second run changes nothing')
+
 if fails:
     for f in fails:
         print('FAIL ' + f)

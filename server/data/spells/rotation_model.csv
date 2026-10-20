@@ -1,6 +1,6 @@
 words,name,dmg,t5,flags,source
-drai tin hyr ul,Rime Breath,"avg(l+ML*0.3+2,l+ML*0.45+3)",3,,attack/chill_out.lua
-drai tin pyr ul,Searing Gust,"avg(l+ML*0.3+2,l+ML*0.45+3)",3,,attack/scorch.lua
+drai tin hyr ul,Rime Breath,"avg(l+ML*0.4+2,l+ML*0.8+5)",3,,attack/chill_out.lua
+drai tin pyr ul,Searing Gust,"avg(l+ML*0.4+2,l+ML*0.8+5)",3,,attack/scorch.lua
 kah tin gor,Bog Splatter,"avg(l+ML*0.4+2,l+ML*0.8+5)",1,,attack/mud_attack.lua
 kah tin zhul,Static Sting,"avg(l+ML*0.4+2,l+ML*0.8+5)",1,,attack/buzz.lua
 kah ti pyr,Kindling Spark,15,1,,attack/apprentice's_strike.lua (flat 10-20)
@@ -12,14 +12,14 @@ kah hyr,Frostbite,"avg(l+ML*1.4+8,l+ML*2.2+14)",1,,attack/ice_strike.lua
 kah brak,Bonebreaker,"avg(l+P*0.02+4,l+P*0.04+9)",1,,attack/brutal_strike.lua (skill x attack)
 kah gro brak,Hammerfall Palm,"avg(l+ML*1.6+9,l+ML*2.4+14)",1,,attack/physical_strike.lua
 kah nyx,Gravetouch,"avg(l+ML*1.4+8,l+ML*2.2+14)",1,,attack/death_strike.lua
-drai hyr ul,Glacier Fan,"avg(l+ML*0.8+5,l+ML*2+12)",4,,attack/ice_wave.lua (wave 4)
-drai pyr ul,Cinder Fan,"avg(l+ML*1.2+7,l+ML*2+12)",4,,attack/fire_wave.lua (wave 4)
+drai hyr ul,Glacier Fan,"avg(l+ML*1.4+8,l+ML*2.2+14)",4,,attack/ice_wave.lua (wave 4)
+drai pyr ul,Cinder Fan,"avg(l+ML*1.4+8,l+ML*2.2+14)",4,,attack/fire_wave.lua (wave 4)
 drai zhul lyss,Stormlance,"avg(l+ML*1.8+11,l+ML*3+19)",2,,attack/energy_beam.lua (beam 5)
 kah sag,Phantom Javelin,"avg(l+SK*0.7,l+SK+5)",1,,attack/ethereal_spear.lua (distance skill)
 hesh pyr,Smoulder Brand,"10*avg(L/80+ML*0.3+2,L/80+ML*0.6+4)",1,,attack/ignite.lua (10 per round)
 kah ul,Cyclone Hurl,"avg(l+P*0.01+1,l+P*0.03+6)",1,,attack/whirlwind_throw.lua
 drai gal zhul lyss,Thunder Lance,"avg(l+ML*3.6+22,l+ML*6+37)",2,,attack/great_energy_beam.lua (beam 8)
-kah vas,Earthrend,"avg(l+P*0.02+4,l+P*0.03+6)",5,,attack/groundshaker.lua (circle 3)
+kah vas,Earthrend,"avg(l+P*0.02+4,l+P*0.04+9)",5,,attack/groundshaker.lua (circle 3)
 hesh zhul,Galvanic Mark,"25*avg(L/80+ML*0.15+1,L/80+ML*0.25+1)",1,,attack/electrify.lua (25 per round)
 kah,Reaver's Spin,"avg(l+P*0.03+7,l+P*0.05+11)",3,,attack/berserk.lua (around the caster)
 drai gal pyr ul,Pyre Torrent,"avg(l+ML*2.8+16,l+ML*4.4+28)",5,,attack/great_fire_wave.lua (wave 7)
@@ -30,7 +30,7 @@ drai gal hyr ul,Greater Glacier Fan,"avg(l+ML*4.5+20,l+ML*7.6+48)",3,,attack/str
 drai ondr,Arcane Ripple,"avg(l+ML*4+75,l+ML*7.6+48)",4,,custom/illusionist_class/arcane_wave.lua
 hesh sang,Rending Mark,"6*avg(L/80+SK*0.2+2,L/80+SK*0.4+2)",1,,attack/inflict_wound.lua (bleeding)
 kah sol,Dawnbolt,"avg(l+ML*1.9+8,l+ML*3+18)",1,,attack/divine_missile.lua
-drai vas sol,Sanctum Burst,"avg(l+ML*5+25,l+ML*6.2+45)",5,,attack/divine_caldera.lua (circle 3)
+drai vas sol,Sanctum Burst,"avg(max(l+ML*5+25,l+P*0.042+ML*1.0+20),max(l+ML*6.2+45,l+P*0.065+ML*1.6+40))",5,,attack/divine_caldera.lua (circle 3)
 hesh vex,Blackroot Venom,"6*avg(L/80+ML*0.55+6,L/80+ML*0.75+7)",1,,attack/envenom.lua (poison)
 drai gal vas gor,Wildwood Ruin,"avg(l+ML*3+32,l+ML*9+40)",5,,attack/wrath_of_nature.lua (circle 6)
 drai gal vas zhul,Storm Crown's Wrath,"avg(l+ML*4+75,l+ML*10+150)",5,,attack/rage_of_the_skies.lua (circle 6)
@@ -55,7 +55,7 @@ kah zar zhul,Supreme Arc Bolt,"avg(l+ML*4.5+35,l+ML*7.3+55)",1,,attack/ultimate_
 kah gal brak,Ruinous Cleave,"avg(l+P*0.06+13,l+P*0.14+34)",1,,attack/annihilation.lua
 rhut mur,Gravity Snare,"avg(l+ML*1.4+8,l+ML*2.2+14)",3,,custom/illusionist_class/adento_grav.lua
 kah gro,Sunder Guard,0,5,skip,attack/expose_weakness.lua: no damage (+5% damage taken for 16 s)
-drai ira vas sol,Radiant Shard,"avg(l+ML*4,l+ML*6)",5,,attack/divine_grenade.lua (circle 2 on the target)
+drai ira vas sol,Radiant Shard,"avg(max(l+ML*4,l+P*0.042+ML*1.0+20),max(l+ML*6,l+P*0.065+ML*1.6+40))",5,,attack/divine_grenade.lua (circle 2 on the target)
 drai orr gor,Quakeburst,"avg(l+ML*7,l+ML*10.5)",4,,attack/terra_burst.lua (ring burst)
 drai orr hyr,Shatterfrost,"avg(l+ML*7,l+ML*10.5)",4,,attack/ice_burst.lua (ring burst)
 drai zar nyx,Lance of the Grave,"avg(l+ML*5.5,l+ML*9)",2,,attack/grand_death_beam.lua (beam 8)
@@ -65,24 +65,24 @@ kah dhun,Ashen Fist,"avg(l+P*0.04+20,l+P*0.07+40)",1,chi2,ChaosMonk.formula.ashe
 drai hyr rhim,Rime Bloom,"avg(l+ML*2.5+23,l+ML*4.15+40)*1.2",5,,chaos/sorcerer/frost_nova.lua
 kah shur,Shuriken Toss,"avg(l+P*0.05+20,l+P*0.08+40)*TOSS",1,,chaos/thief/shuriken_toss.lua (TOSS: the class scale in the script)
 kah sol dyr,Radiant Smite,"avg(l+P*0.10+ML*1.0+30,l+P*0.16+ML*1.5+60)*SMITE",1,,chaos/templar/radiant_smite.lua (SMITE: ChaosTemplar.cfg.radiantSmite.scale)
-drai vex kriv,Blightswarm,"avg(l+ML*2.4+18,l+ML*4.1+36)*0.85+8*(ML*0.25+3)",5,,chaos/druid/venom_swarm.lua (+ poison)
+drai vex kriv,Blightswarm,"avg(l+ML*2.4+18,l+ML*4.1+36)+8*(ML*0.25+3)",5,,chaos/druid/venom_swarm.lua (+ poison)
 kah pyr vesh,Witchfire Bolt,"avg(l+ML*3+15,l+ML*5+30)*1.2+4*(ML*0.15+3)",1,,chaos/sorcerer/hexfire_bolt.lua (+ burn)
 kah sol aurr,Dawnpiercer,"avg(l+P*0.042+ML*1.0+20,l+P*0.065+ML*1.6+40)",1,,chaos/paladin/holy_smite.lua
-kah spir,Reaping Gyre,"3*avg(l+P*0.010+4,l+P*0.019+7)*0.7",3,,chaos/knight/whirlwind.lua (3 spins)
+kah spir,Reaping Gyre,"3*avg(l+P*0.010+4,l+P*0.019+7)",3,,chaos/knight/whirlwind.lua (3 spins)
 kah gal dhun,Sundering Palm,"avg(l+P*0.20+60,l+P*0.30+120)",1,chi,ChaosMonk.formula.sunderingPalm (finisher)
 kah nyx maled,Withering Curse,"10*avg(l+ML*0.25+5,l+ML*0.35+10)*(1.8 if cls=='Lich' else 1)",1,keep,necro_config witheringCurse (rot; +15% / +25% taken)
 drai sol haln,Consecration,"6*avg(l+P*0.025+ML*0.4+10,l+P*0.04+ML*0.6+20)",5,,chaos/templar/consecration.lua (6 pulses)
 drai snar,Snare Trap,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)",5,utility,snares_config damage (a snare: cast by hand, never in a preset)
-kah zhul zarn,Forked Storm,"avg(l+ML*2.85+28,l+ML*4.85+55)*1.2",3.1,,chaos/sorcerer/chain_lightning.lua (3 jumps x0.7)
+kah zhul zarn,Forked Storm,"avg(l+ML*2.85+28,l+ML*4.85+55)*1.2",4,,chaos/sorcerer/chain_lightning.lua (3 jumps, full damage)
 drai spir dhun,Whirling Heel,"avg(l+P*0.10+40,l+P*0.16+80)",3,chi,ChaosMonk.formula.whirlingHeel (finisher)
-kah sag lanc,Skewering Line,"avg(l+P*0.0195+20,l+P*0.0325+40)",2,,chaos/paladin/piercing_volley.lua (line 7)
-kah grund krak,Earthbreaker,"avg(l+P*0.05+16,l+P*0.10+32)*0.7",5,,chaos/knight/ground_slam.lua
+kah sag lanc,Skewering Line,"avg(l+P*0.042+ML*1.0+20,l+P*0.065+ML*1.6+40)",2,,chaos/paladin/piercing_volley.lua (line 7)
+kah grund krak,Earthbreaker,"avg(l+P*0.05+16,l+P*0.10+32)",5,,chaos/knight/ground_slam.lua
 kah snar,Seeker Mine,"avg(L*0.2+P*0.045+10,L*0.2+P*0.0675+20)*1.15",5,utility,snares_config damage x mine.damageFactor (a snare: cast by hand, never in a preset)
-drai thral brin,Briar Prison,"3*avg(l+ML*1.1+14,l+ML*1.95+25)*0.85",5,,chaos/druid/thorn_cage.lua (3 pulses)
+drai thral brin,Briar Prison,"3*avg(l+ML*1.1+14,l+ML*1.95+25)",5,,chaos/druid/thorn_cage.lua (3 pulses)
 ruan nyx umh,Umbral Stride,"avg(l+ML*4.7+54,l+ML*7.9+99)*1.4",1,,chaos/illusionist/shadow_step.lua
 drai vas sol hal,Blessed Earth,"6*avg(l+P*0.00325+ML*0.4+8,l+P*0.0052+ML*0.6+15)",5,,chaos/paladin/consecration.lua (6 pulses)
 ash umh,Shadow Step,"avg(l+P*0.075+30,l+P*0.12+60)*1.5",1,,chaos/ninja/shadow_step.lua (+ the off-hand strike)
-drai skai hrun,Skyfall Cleave,"avg(l+P*0.06+20,l+P*0.105+40)*0.7",5,,chaos/berserker/skyfall_cleave.lua
+drai skai hrun,Skyfall Cleave,"avg(l+P*0.06+20,l+P*0.105+40)",5,,chaos/berserker/skyfall_cleave.lua
 kah nyx putr,Soul Rot,"6*avg(l+ML*1.2+20,l+ML*1.6+40)*1.15",1.5,,necro_config soulRot (6 ticks; jumps)
 kah mynd dhun,Pressure Points,"avg(l+P*0.05+20,l+P*0.08+40)",1,keep;chi1,ChaosMonk.formula.pressurePoints (+1 chi; +5% per stack)
 kah mynd frak,Shattered Psyche,"avg(l+ML*5.7+55,l+ML*9.7+100)*1.4+5*(ML*0.3+4)",1,,chaos/illusionist/mind_fracture.lua (+ curse)
@@ -96,13 +96,13 @@ drai gal vas infr,Falling Pyre,"avg(l+ML*6.6+145,l+ML*10.8+265)*1.2+4*(ML*0.2+5)
 drai sang oss,Bone Offering,"avg(l+ML*4.5+80,l+ML*6.5+160)+0.15*(200+L*9+ML*6)*1.2",5,,necro_config boneOffering (+15% of a skeleton's health)
 kah gal umh dhun,Shadowfist Flurry,"7*avg(l+P*0.035+10,l+P*0.055+20)",1,chi,ChaosMonk.formula.flurryHit (2 + 1 per chi hits; 7 at 5 chi)
 drai kadh krak,Corpse Explosion,"avg(l+ML*2.0+40,l+ML*3.0+80)",5,skip,necro_config corpseExplosion: needs corpses (refused without)
-kah brak skai,Vaulting Cleave,"avg(l+P*0.047+17,l+P*0.093+33)*0.7",1,,chaos/knight/leaping_strike.lua
+kah brak skai,Vaulting Cleave,"avg(l+P*0.047+17,l+P*0.093+33)",1,,chaos/knight/leaping_strike.lua
 drai vas shur,Shuriken Barrage,"avg(l+P*0.05+20,l+P*0.08+40)",5,,chaos/ninja/shuriken_barrage.lua (target + 4)
 kah gal sol judh,Final Verdict,"avg(L+P*0.143+ML*3+60,L+P*0.234+ML*5+110)",1,,chaos/paladin/judgement.lua
 drai gal vas umh,Nightburst,"avg(l+ML*5.2+130,l+ML*10.4+235)*1.4",5,,chaos/illusionist/umbral_eruption.lua
 drai gal vas hyr krypt,Frozen Crypt,"6*avg(l+ML*1.8+20,l+ML*3.0+40)*1.2",5,,chaos/sorcerer/glacial_tomb.lua (6 pulses)
-drai gal vas stoma,Primordial Squall,"3*avg(l+ML*2.1+45,l+ML*3.9+90)*0.98",5,,chaos/druid/ancient_tempest.lua (3 waves)
-kah gal vas tyr,Colossus Fall,"2*avg(l+P*0.052+20,l+P*0.093+40)*0.77",5,,chaos/knight/titans_wrath.lua (2 blows)
+drai gal vas stoma,Primordial Squall,"3*avg(l+ML*2.1+45,l+ML*3.9+90)",5,,chaos/druid/ancient_tempest.lua (3 waves)
+kah gal vas tyr,Colossus Fall,"2*avg(l+P*0.052+20,l+P*0.093+40)",5,,chaos/knight/titans_wrath.lua (2 blows)
 drai gal vas sol volv,Hail of Dawn,"12*avg(L+P*0.021+ML*0.5+15,L+P*0.034+ML*0.8+30)*1.1",1,,chaos/paladin/sanctified_barrage.lua (3 volleys x 4 arrows)
 drai zhul riv,Tear in the Weave,"2*avg(l+ML*3.35+72,l+ML*6.0+132)*1.4",5,,chaos/illusionist/reality_rift.lua (2 implosions)
 drai zhul infr doma,Doomtide,"3*avg(l+ML*3.5+80,l+ML*6.5+160)*1.38",5,,chaos/sorcerer/cataclysm.lua (3 waves)
@@ -115,3 +115,9 @@ drai oss krak,Bone Shrapnel,"avg(l+ML*1.6+20,l+ML*2.6+40)",11,,chaos/necromancer
 drai sol sanct,Sanctified Ground,"3*avg(l+P*0.10+ML*1.0+30,l+P*0.16+ML*1.5+60)*SANCT",11,,chaos/templar/sanctified_ground.lua (3 pulses of a third of a Radiant Smite: SANCT = sanctified.scale; the others x2.5)
 drai sol aeg,Shield Wave,"avg(l+P*0.10+ML*1.0+30,l+P*0.16+ML*1.5+60)*WAVE",9,,chaos/sentinel/shield_wave.lua (a Radiant Smite of the Sentinel on the target: WAVE = shieldWave.scale; 3 x 3 in front x2.0)
 drai vas nyx shur,Fan of Knives,"avg(l+P*0.05+20,l+P*0.08+40)*FAN",5,,chaos/thief/fan_of_knives.lua (a Shuriken Toss of the Thief on the target and 5 more: FAN = fan.scale, fan.pack 1.0)
+kah gal brak thun,Anvil Fall,"avg(l+P*0.085+40,l+P*0.15+80)",5,,chaos/knight/anvil_fall.lua (one blow in a 5x5 square)
+kah gal sol judh vael,Twin Verdict,"2*1.3*avg(L+P*0.143+ML*3+60,L+P*0.234+ML*5+110)",1,,chaos/paladin/twin_verdict.lua (2 strikes x1.3)
+drai skai hrun vas,Rampage Leap,"avg(l+P*0.095+40,l+P*0.165+80)",5,,chaos/berserker/rampage_leap.lua (5x5 square)
+drai hyr infr doma,Glacial Doom,"3*avg(l+ML*3.5+80,l+ML*6.5+160)*1.9",5,,chaos/sorcerer/glacial_doom.lua (3 waves)
+kah ferh vas,Pack Frenzy,"3.3*BITE*PETS",1,,Chaos.classes.companion (1.5 bites x2.2 per companion)
+kah sai vas hyr,Shuriken Tempest,"2*1.1*avg(l+P*0.05+20,l+P*0.08+40)",9,,chaos/ninja/shuriken_tempest.lua (target + 8, 2 strikes x1.1)

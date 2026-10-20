@@ -47,6 +47,13 @@ B.REWORKED = {[369] = 3, [376] = 3, [383] = 3, [390] = 3,
 	[77] = 4, [78] = 4, [81] = 4, [82] = 4, [106] = 4, [107] = 4, [108] = 4, [109] = 4, [253] = 4, [262] = 4, [355] = 4,
 	[362] = 4,
 	[96] = 5, [99] = 5, [102] = 5, [105] = 5}
+-- Nodes taken out of the tree (2026-10, owner: no drown nodes; they are hidden in the client's nodes.lua and not in
+-- passivetree_data.lua). A code that holds one leaves it out on import, in any version, with a note.
+B.REMOVED = {}
+for _, id in ipairs({8, 10, 167, 212, 213, 237, 322, 325, 486, 487, 488, 489, 490, 491, 493, 494, 497, 498, 499, 500, 501,
+	502, 503}) do
+	B.REMOVED[id] = true
+end
 -- class lines (the base classes of Chaos.classes.ids); index = the code's class byte. Append only, never reorder.
 B.CLASS_LINES = {"warrior", "ranger", "mystic", "thief"}
 B.PARAGON_KEYS = {"damage", "critDamage", "health", "reduction", "speed", "mana", "goldFind", "itemFind"}
@@ -312,10 +319,11 @@ function B.plan(tree, build, ctx)
 	local codeVersion = build.version or B.VERSION
 	for _, id in ipairs(build.nodes) do
 		local node = tree.nodes[id]
-		if not node then
+		if not node and B.REMOVED[id] then
+			reworked = reworked + 1
+		elseif not node then
 			return nil, string.format("This build uses node %d, which is not in the passive tree (the tree changed).", id)
-		end
-		if B.REWORKED[id] and codeVersion < B.REWORKED[id] then
+		elseif B.REWORKED[id] and codeVersion < B.REWORKED[id] then
 			-- made before the node changed its meaning: left out (a free refund at login did the same to saved trees)
 			reworked = reworked + 1
 		elseif id ~= tree.root and not set[id] then

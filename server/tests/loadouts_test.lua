@@ -851,18 +851,18 @@ has(table.concat(res.lines, " "), "sword: in your depot", "the missing sword nam
 -- reworked nodes (passivetree.lua refundReworked): every saved loadout loses them, and what only hung on them
 dofile("data/scripts/chaos/passivetree_core.lua")
 local g = player:getGuid()
-local path = {3, 8, 10, 12, 61} -- a chain from the root
+local path = {2, 9, 11, 13, 61} -- a chain from the root
 local savedRows = DB[g]
 DB[g] = {}
 DB[g][3] = {slot = 3, name = "Old", icon = "", voc = 4, tree = table.concat(path, ","), paragon = "", supports = "",
 	gear = "", serial = 0, undo = "", updated = 0}
-DB[g][4] = {slot = 4, name = "Untouched", icon = "", voc = 4, tree = "2,9", paragon = "", supports = "", gear = "", serial = 0,
+DB[g][4] = {slot = 4, name = "Untouched", icon = "", voc = 4, tree = "3,32", paragon = "", supports = "", gear = "", serial = 0,
 	undo = "", updated = 0}
 eq(LO.dropNodes(player, {[61] = true}), 1, "the end of the chain goes")
-eq(DB[g][3].tree, "3,8,10,12", "slot 3 keeps the rest")
-eq(LO.dropNodes(player, {[8] = true}), 3, "node 8 and the two behind it")
-eq(DB[g][3].tree, "3", "slot 3 keeps the first")
-eq(DB[g][4].tree, "2,9", "a loadout without them is not touched")
+eq(DB[g][3].tree, "2,9,11,13", "slot 3 keeps the rest")
+eq(LO.dropNodes(player, {[9] = true}), 3, "node 9 and the two behind it")
+eq(DB[g][3].tree, "2", "slot 3 keeps the first")
+eq(DB[g][4].tree, "3,32", "a loadout without them is not touched")
 eq(LO.dropNodes(player, {}), 0, "nothing to drop")
 DB[g] = savedRows
 

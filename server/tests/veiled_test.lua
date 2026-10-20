@@ -185,10 +185,11 @@ eq(V.sourceOf({descentDepth = 8}), "descent", "Descent depth 8")
 eq(V.sourceOf({raid = true, riftTier = 15}), "raid", "raid first")
 eq(V.sourceOf({ascended = true}), "ascended", "Ascended")
 eq(V.chance("rift", 2), 0, "Uncommon never")
-eq(V.chance("rift", 3), 500, "Rare: the base chance")
-eq(V.chance("rift", 4), 500, "Epic: the base chance")
+eq(V.chance("rift", 3), 0, "Magic never (the first step up is Rare)")
+eq(V.chance("rift", 4), 500, "Rare: the base chance")
 eq(V.chance("rift", 5), 1000, "Legendary: the high chance")
-eq(V.chance("raid", 9), 2500, "raid, Eternal")
+eq(V.chance("raid", 9), 2500, "raid, an old Eternal (Legendary)")
+eq(V.chance("raid", 10), 2500, "raid, Divine")
 eq(V.chance(nil, 9), 0, "no source")
 eq(V.orbChance("rift", "normal"), 5, "orb from a rift kill")
 eq(V.orbChance("raid", "boss"), 1000, "orb from a raid boss")
@@ -200,13 +201,13 @@ ok(not V.rollOrb({riftTier = 10}, "normal"), "roll 6 of 5")
 
 -- rolls on items
 local rift = {riftTier = 11}
-local sword = gear(2400, 3)
+local sword = gear(2400, 4)
 dice = {500}
-ok(V.rollItem(sword, rift), "a Rare sword, roll 500 of 500")
+ok(V.rollItem(sword, rift), "a Rare sword, roll 500 of 500 (Magic never rolls a veiled slot)")
 eq(V.stateOf(sword), 1, "veiled")
 dice = {1}
 ok(not V.rollItem(sword, rift), "never a second slot")
-local sword2 = gear(2400, 3)
+local sword2 = gear(2400, 4)
 dice = {501}
 ok(not V.rollItem(sword2, rift), "roll 501 of 500")
 eq(V.stateOf(sword2), 0)
@@ -335,7 +336,7 @@ eq(okAgain, false); eq(msg, C.reasons.alreadyUnveiled, "final: no second choice"
 eq(select(2, V.unveil(sword, 1)), "alreadyUnveiled")
 -- the slot is outside the prefixes and suffixes: the item's modifier count is unchanged
 local p, s = C.sideCounts(C.readMods(sword))
-eq(p + s, M.modCount(3), "readMods does not see the veiled slot")
+eq(p + s, M.modCount(4), "readMods does not see the veiled slot")
 -- look text of a veiled item
 C.rewriteDescription(fresh)
 ok(fresh:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Veiled modifier: not revealed", 1, true), "veiled look text")

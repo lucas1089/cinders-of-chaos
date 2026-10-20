@@ -77,8 +77,6 @@
 		<item id="2537" countmax="1" chance="286" />
 		<item id="2514" countmax="1" chance="286" />
 		<item id="2499" countmax="1" chance="286" />
-		<item id="25380" countmax="1" chance="10"/><!-- talent token -->
-		<item id="23569" countmax="1" chance="200"/><!-- metal toes -->
 		<item id="6090" countmax="1" chance="25"/><!-- music sheet 4 -->
 	</loot>
 </monster>

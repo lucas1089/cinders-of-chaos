@@ -20,7 +20,10 @@ return {
 	spellIds = {
 		raiseDead = 180, boneSpear = 181, witheringCurse = 182,
 		soulRot = 183, lifeSiphon = 184, corpseExplosion = 185,
-		boneGolem = 186, bannerOfBones = 187, boneOffering = 188
+		boneGolem = 186, bannerOfBones = 187, boneOffering = 188,
+		-- the summon spells (2026-10-18): free in the base server, the client and the Chaos block (the stock spells end
+		-- at 178 and the packs use 194-199), below 256
+		raiseWarrior = 192, raiseArcher = 193, raiseMage = 176
 	},
 
 	-- condition sub ids (CONDITIONID_COMBAT): the spells and the scripts run in different Lua states, so the
@@ -58,12 +61,41 @@ return {
 			-- the golem's hit strikes every enemy next to it (a slam), and it taunts monsters near it
 			slam = true, tauntMs = 6000, tauntRadius = 3,
 		},
+		-- The three summon spells' minions (Raise Bone Warrior / Archer / Mage; the monster types necro_risen_warrior.xml,
+		-- necro_risen_archer.xml, necro_risen_mage.xml). Same formulas as the others, with `mult` on top of the hit and the
+		-- health (and then the class factors below, so the Lich's single minion is strong and the Bone Lord's weaker).
+		-- `summon = true`: raised by a summon spell, not by Raise Dead: no cap of its own, only the total cap (`total`).
+		-- ani / effect / hitEffect: the animation the ranged ones throw (a name of necro_lib.lua M.ANI / M.EFFECT), the
+		-- effect on the target; fx: a Chaos missile name (chaos_fx.lua) tried before `ani`.
+		warrior = {
+			monster = "Risen Warrior", range = 1, intervalMs = 2000, combat = "physical", summon = true,
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+			mult = {hit = 1.0, health = 1.8}, hitEffect = "hitarea",
+		},
+		archer = {
+			monster = "Risen Archer", range = 5, intervalMs = 2000, combat = "physical", summon = true,
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+			mult = {hit = 1.25, health = 0.6}, ani = "arrow", hitEffect = "hitarea",
+		},
+		mage = {
+			monster = "Risen Mage", range = 4, intervalMs = 2000, combat = "energy", summon = true,
+			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
+			mult = {hit = 1.35, health = 0.6}, ani = "energy", hitEffect = "energyhit",
+		},
 		spread = 0.2,
-		-- what each class raises and how strong: {kind, caps = {{level, count}, ...}, hit, health} (factors)
+		-- what each class raises and how strong: {kind, caps = {{level, count}, ...}, total = {{level, count}, ...}, hit,
+		-- health} (factors). caps: the most minions of the Raise Dead kind. total: the most minions of ALL kinds at once
+		-- (skeletons, shades, the golem and the three summon spells' minions together); a new minion past it kills the
+		-- OLDEST one first (necro_core.lua N.makeRoom, necro_lib.lua M.raise); the total wins over `caps`. The
+		-- Necromancer's total is 3 at every level (its skeleton caps of 3 and 4 are never reached on their own). The Lich
+		-- (one shade) and the Bone Lord (5 / 6 skeletons + the golem) keep their old sums, so their identities stay:
+		-- a Lich's Raise Bone Warrior replaces its shade, a Bone Lord has room for the three kinds beside his army.
+		-- The passive tree's Legion (+skeletons) raises the total by the same number.
 		classes = {
-			necromancer = {kind = "skeleton", caps = {{0, 1}, {40, 2}, {80, 3}, {200, 4}}, hit = 1.0, health = 1.0},
-			lich = {kind = "shade", caps = {{0, 1}}, hit = 2.4, health = 2.5},
-			bonelord = {kind = "skeleton", caps = {{0, 5}, {400, 6}}, hit = 0.6, health = 1.2,
+			necromancer = {kind = "skeleton", caps = {{0, 1}, {40, 2}, {80, 3}, {200, 4}}, total = {{0, 3}},
+				hit = 1.0, health = 1.0},
+			lich = {kind = "shade", caps = {{0, 1}}, total = {{0, 1}}, hit = 2.4, health = 2.5},
+			bonelord = {kind = "skeleton", caps = {{0, 5}, {400, 6}}, total = {{0, 6}, {400, 7}}, hit = 0.6, health = 1.2,
 				-- Bone Lord skeletons: shards of each hit strike the other enemies next to the target for this share
 				splash = 0.75},
 		},
@@ -82,6 +114,15 @@ return {
 	-- from nothing for `nothingManaFactor` x the spell's mana on top. A corpse is usable when it is a monster corpse,
 	-- holds no items (never destroys loot) and belongs to nobody else (corpse owner: the caster, its party, or none).
 	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 60},
+
+	-- The summon spells (Raise Bone Warrior / Archer / Mage): each creates ONE minion of its kind next to the caster; the
+	-- total cap of the class (minions.classes[].total) decides what happens to the oldest minion. The xml entries
+	-- (spells_chaos.xml) carry level / mana / cooldown; they are repeated here for the tests and the docs.
+	summonSpells = {
+		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 50, cooldownMs = 4000},
+		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss sag", level = 12, mana = 60, cooldownMs = 4000},
+		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 70, cooldownMs = 4000},
+	},
 
 	-- Bone Spear: physical; the creature right behind the target takes `pierce` of it. Formula as mlValues:
 	-- (level / 5 + ml x mlMin + baseMin) x scale .. (level / 5 + ml x mlMax + baseMax) x scale, then the level scale.

@@ -9,7 +9,8 @@
 --   .candidates(cfg, slot, level, canUse)                 the base types a character may get in a slot
 --   .stock(cfg, ctx)                                      the whole stock: {{i, id, slot, lv, ilvl, price}, ...}
 --   .isSold / .markSold / .unmarkSold(mask, i)            the sold slots as a bit mask (a player storage)
---   .odds(cfg, gear)                                      exact chance of every rarity 0..15 (gear = ChaosLootConfig.gear)
+--   .odds(cfg, gear)                                      exact chance of every rarity place 0..6 (0 none, 1 Common .. 6 Divine, the
+--                                                         ChaosRarity ranks; gear = ChaosLootConfig.gear)
 --   .rollRarity(cfg, api)                                 the roll itself through the loot layer's API (ChaosLoot)
 --   .checkBuy(cfg, s)                                     every refusal of a purchase, in order
 --   .huntIncome(cfg, level) / .shareAt(cfg, level, gateFn) the price against hunting gold per hour
@@ -18,6 +19,10 @@
 
 ChaosGambleCore = ChaosGambleCore or {}
 local K = ChaosGambleCore
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 local floor, min, max = math.floor, math.min, math.max
 
 K.SLOT_NAMES = {weapon = "Weapon", shield = "Shield", helmet = "Helmet", armor = "Armor", legs = "Legs", boots = "Boots",
@@ -86,7 +91,7 @@ function K.validate(cfg)
 		end
 		prev = p
 	end
-	if cfg.odds.floor < 0 or cfg.odds.maxRarity < cfg.odds.floor or cfg.odds.draws < 1 then
+	if cfg.odds.floor < 0 or ChaosRarity.rank(cfg.odds.maxRarity) < ChaosRarity.rank(cfg.odds.floor) or cfg.odds.draws < 1 then
 		bad("odds: draws >= 1, 0 <= floor <= maxRarity")
 	end
 	return out
@@ -330,60 +335,66 @@ local function pctHit(p)
 	return min(1000000, floor(p * 10000 + 1e-9)) / 1000000
 end
 
--- the stock roll's distribution (loot.lua L.stockRarity): index 0..15
+-- the stock roll's distribution (loot.lua L.stockRarity): index 0 (none) .. 6, the rarity places
 function K.stockOdds(gear)
 	local d = {}
-	for r = 0, 15 do
+	for r = 0, ChaosRarity.STORED do
 		d[r] = 0
 	end
 	-- rnd(1, 100) > stockRollChance gives no rarity: the roll goes on stockRollChance times in 100
 	local pass = min(100, max(0, floor(gear.stockRollChance or 70))) / 100
 	local rest = pass
-	for id, chance in ipairs(gear.stockChances or {}) do
+	for rank, chance in ipairs(gear.stockChances or {}) do
 		local h = stockHit(chance)
-		d[id] = d[id] + rest * h
+		d[rank] = d[rank] + rest * h
 		rest = rest * (1 - h)
 	end
 	d[0] = 1 - pass + rest
 	return d
 end
 
--- exact chance of every rarity 0..15 of one purchase (gear = ChaosLootConfig.gear); mirrors K.rollRarity
+-- exact chance of every rarity place 0 .. 6 of one purchase (gear = ChaosLootConfig.gear); mirrors K.rollRarity and
+-- loot.lua L.upgradeRarity, all in places (ChaosRarity ranks): the floor, the bonus steps up to gear.maxRarity, then the
+-- Divine chance
 function K.odds(cfg, gear)
 	local o = cfg.odds
+	local R = ChaosRarity
+	local top = R.STORED
 	local one = K.stockOdds(gear)
 	-- best of `draws`: P(best <= r) = P(one <= r) ^ draws
 	local cdf, acc = {}, 0
-	for r = 0, 15 do
+	for r = 0, top do
 		acc = acc + one[r]
 		cdf[r] = acc ^ o.draws
 	end
 	local best = {}
-	for r = 0, 15 do
+	for r = 0, top do
 		best[r] = cdf[r] - (r > 0 and cdf[r - 1] or 0)
 	end
 	local tier = o.tier
-	local cap = min(o.maxRarity, gear.maxRarity or 15)
-	local floorTier = (gear.minRarity or {})[tier] or 0
+	local cap = min(R.rank(o.maxRarity), top)
+	local oFloor = R.rank(o.floor)
+	local floorTier = R.rank((gear.minRarity or {})[tier] or 0)
 	local ensure = pctHit((gear.ensureChance or {})[tier] or 0)
 	local bonus = pctHit(((gear.bonusChance or {})[tier] or 0) * (o.find or 1))
+	local divine = pctHit(((gear.divineChance or {})[tier] or 0) * (o.find or 1))
 	local stepTotal = 0
 	for _, s in ipairs(gear.bonusSteps or {}) do
 		stepTotal = stepTotal + s[2]
 	end
 	local out = {}
-	for r = 0, 15 do
+	for r = 0, top do
 		out[r] = 0
 	end
 	local function add(r, p)
 		r = min(r, cap)
 		out[r] = out[r] + p
 	end
-	local gearCap = gear.maxRarity or 15
-	for r0 = 0, 15 do
+	local gearCap = R.rank(gear.maxRarity or 5)
+	for r0 = 0, top do
 		local p0 = best[r0]
 		if p0 > 0 then
-			local cur = max(r0, o.floor)
+			local cur = max(r0, oFloor)
 			-- L.upgradeRarity(tier, cur, find)
 			local paths = {}
 			if floorTier > 0 and cur < floorTier then
@@ -396,13 +407,25 @@ function K.odds(cfg, gear)
 				local t, pp = path[1], path[2]
 				if pp > 0 then
 					local function final(v)
-						v = min(v, gearCap)
+						if v > gearCap then
+							v = max(gearCap, cur)
+						end
 						return max(v, cur)
 					end
-					add(final(t), p0 * pp * (1 - bonus))
+					-- the Divine chance lifts what is below Divine to Divine (L.upgradeRarity, after the steps)
+					local function put(v, p)
+						v = final(v)
+						if v < top and divine > 0 then
+							add(top, p * divine)
+							add(v, p * (1 - divine))
+						else
+							add(v, p)
+						end
+					end
+					put(t, p0 * pp * (1 - bonus))
 					if bonus > 0 and stepTotal > 0 then
 						for _, s in ipairs(gear.bonusSteps) do
-							add(final(t + s[1]), p0 * pp * bonus * s[2] / stepTotal)
+							put(t + s[1], p0 * pp * bonus * s[2] / stepTotal)
 						end
 					end
 				end
@@ -412,10 +435,10 @@ function K.odds(cfg, gear)
 	return out
 end
 
--- P(rarity >= r) from an odds table
+-- P(rarity place >= r) from an odds table
 function K.atLeast(odds, r)
 	local s = 0
-	for v = r, 15 do
+	for v = r, ChaosRarity.STORED do
 		s = s + (odds[v] or 0)
 	end
 	return s
@@ -493,7 +516,7 @@ function K.payload(cfg, view)
 	end
 	local odds = {}
 	if view.odds then
-		for r = 1, cfg.odds.maxRarity do
+		for r = 1, ChaosRarity.rank(cfg.odds.maxRarity) do -- r = the rarity's place (1 Common .. 6 Divine)
 			if (view.odds[r] or 0) > 0 then
 				odds[#odds + 1] = {r = r, n = view.rarityNames and view.rarityNames[r] or tostring(r),
 					p = floor(view.odds[r] * 100000 + 0.5) / 1000}

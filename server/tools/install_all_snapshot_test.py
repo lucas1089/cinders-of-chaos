@@ -64,5 +64,10 @@ try:
 finally:
     shutil.rmtree(root, ignore_errors=True)
 
+# the pair 30 item step sits right after the equipment sets and has its step function
+check(I.STEPS.index('pack30items') == I.STEPS.index('gearsets') + 1, 'step pack30items follows gearsets')
+check(callable(getattr(I, 'step_pack30items', None)), 'step_pack30items exists')
+check(len(I.STEPS) == len(set(I.STEPS)), 'no step twice')
+
 print('install_all_snapshot_test: %s' % ('ok' if not failed else '%d failed' % failed))
 sys.exit(1 if failed else 0)

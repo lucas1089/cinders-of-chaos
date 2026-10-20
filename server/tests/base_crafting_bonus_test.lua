@@ -185,7 +185,7 @@ ChaosCrafting = {
 		log[#log + 1] = "forge " .. rarity
 		return {id = id, count = 1, rarity = rarity, level = level}
 	end,
-	rarityName = function(r) return ({"Common", "Uncommon", "Rare", "Epic", "Legendary"})[r] end,
+	rarityName = function(r) return ({"Common", "Uncommon", "Magic", "Rare", "Legendary"})[r] end,
 }
 ChaosItemMods = {sourceLevel = function() return 1 end}
 ChaosGems = {rollDropSockets = function() return 0 end}
@@ -283,7 +283,7 @@ end
 -- the rolls craft_bonus.lua makes: a fixed value
 local function rolls(v) B.random = function() return v end end
 
--- 1. equipment: a Legendary roll, made after gold and materials, five requests give one item
+-- 1. equipment: a Rare roll (the best a craft gives), made after gold and materials, five requests give one item
 local a = newPlayer(0x10000001)
 useTable(a, 38825)
 rolls(1)
@@ -293,14 +293,14 @@ end
 eq(#events, 1, "five requests: one craft queued")
 runEvents()
 eq(#a.received, 1, "one item")
-eq(a.received[1].rarity, 5, "Legendary")
+eq(a.received[1].rarity, 4, "Rare")
 eq(a.received[1].level, 37, "item level: recipe 10 + (65 - 10) / 2")
-eq(table.concat(log, ","), "removeMoney,removeItem 26712,removeItem 26729,forge 5,addItemEx",
+eq(table.concat(log, ","), "removeMoney,removeItem 26712,removeItem 26729,forge 4,addItemEx",
 	"gold and materials first, then the Chaos roll, then the add")
 eq(a.money, 49000, "gold once")
 local m = lastMessage(a)
 eq(m.kind, "ok", "ok")
-eq(m.text, "You crafted a Legendary Crown Shield (item level 37).", "rarity named in the text")
+eq(m.text, "You crafted a Rare Crown Shield (item level 37).", "rarity named in the text")
 
 -- 2. a plain roll
 reset()
@@ -355,7 +355,7 @@ send(a, "fetch", {category = "armorsmith", page = 1})
 local gear = captured.data.crafts[1].bonus
 eq(gear.kind, "gear", "shield: gear odds")
 eq(gear.level, 37, "shield: item level")
-eq(gear.odds[1].name, "Legendary", "shield: best first")
+eq(gear.odds[1].name, "Rare", "shield: best first")
 
 -- 7. ChaosCraftBonus failing or missing: the stock way
 reset()

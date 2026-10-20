@@ -8,6 +8,8 @@
 --   ChaosPouchesCore.specialistOf(info, sets, cfg)  the first specialist pouch (cfg.priority: orbs, keys) whose kind it is
 --   ChaosPouchesCore.plan(info, rules, sets, cfg, carried)   the carried pouches to try, in order, and the overflow kind
 --   ChaosPouchesCore.route(info, rules, sets, cfg)  plan() with every pouch carried: the kinds, in order
+--   ChaosPouchesCore.rank(rarity, unique)           the sort rank of an item of the Loot Bag (uniques above every rarity)
+--   ChaosPouchesCore.sortPlan(ranks, limit)         which items of a bag to move to the front, in order, to sort it by rarity
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
 --   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
 --   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
@@ -16,10 +18,20 @@
 --         gem = bool, container = bool, pouch = bool (a pouch itself), onList = bool (on the base autoloot list)}
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosPouchesCore = ChaosPouchesCore or {}
 local P = ChaosPouchesCore
 
-P.MAX_RARITY = 15
+P.MAX_RARITY = 15 -- the highest id a saved rule can hold (4 bits); minRarity is a stored id of ChaosRarity (1, 2, 3, 4, 5, 10)
+
+-- a minRarity as a stored id, at least 1 (an old rule saved with one of the 15 ids means the rarity it became)
+local function minId(v)
+	local c = ChaosRarity.canon(v)
+	return (c == 0 or c == ChaosRarity.UNIQUE) and 1 or c
+end
 P.FLAGS = {list = 1, gold = 2, uniques = 4, gear = 8, supplies = 16, gems = 32, other = 64, overflow = 128}
 P.FLAG_ORDER = {"list", "gold", "uniques", "gear", "supplies", "gems", "other", "overflow"}
 -- stored inverted (bit set = off), so rules saved before the overflow rule existed read it as on (its default)
@@ -56,8 +68,7 @@ function P.packRules(r)
 			v = v + P.FLAGS[k]
 		end
 	end
-	local m = math.max(1, math.min(P.MAX_RARITY, math.floor(tonumber(r.minRarity) or 1)))
-	return v + m * RARITY_UNIT
+	return v + minId(r.minRarity) * RARITY_UNIT
 end
 
 function P.unpackRules(cfg, v)
@@ -69,10 +80,7 @@ function P.unpackRules(cfg, v)
 	for _, k in ipairs(P.FLAG_ORDER) do
 		r[k] = hasBit(v, P.FLAGS[k]) ~= (INVERTED[k] or false)
 	end
-	r.minRarity = math.floor(v / RARITY_UNIT) % 16
-	if r.minRarity < 1 then
-		r.minRarity = 1
-	end
+	r.minRarity = minId(math.floor(v / RARITY_UNIT) % 16)
 	return r
 end
 
@@ -89,8 +97,7 @@ function P.sanitizeRules(cfg, t)
 			r[k] = t[k] == true or t[k] == 1
 		end
 	end
-	local m = math.floor(tonumber(t.minRarity) or d.minRarity)
-	r.minRarity = math.max(1, math.min(P.MAX_RARITY, m))
+	r.minRarity = minId(math.floor(tonumber(t.minRarity) or d.minRarity))
 	return r
 end
 
@@ -192,11 +199,71 @@ function P.route(info, rules, sets, cfg)
 	return (P.plan(info, rules, sets, cfg, all))
 end
 
+-- ---------------------------------------------------------------- Loot Bag order (rarest first)
+-- rank of one item: uniques above everything, then the rarity (0 = plain). Higher = nearer the front.
+function P.rank(rarity, unique)
+	return (unique and 100 or 0) + ChaosRarity.rank(rarity)
+end
+
+-- The engine adds an item at the FRONT of a container, so a bag is sorted by moving items to the front, last of the
+-- wanted order first. ranks = the rank of every item in the bag's current order (index 1 = the front). Ties keep the
+-- current order (stable), so a new plain item in front of plain items does not move. The items that already sit in
+-- the wanted order at the back are left alone: only the items ahead of that tail move. Returns the indices (into
+-- `ranks`) to move to the front, in the order to move them; at most `limit` of them (the rest at the next call, the
+-- bag then is sorted in part and every call only gets closer). An empty list = already sorted. Pure, O(n log n).
+function P.sortPlan(ranks, limit)
+	local n = #ranks
+	local want = {}
+	for i = 1, n do
+		want[i] = i
+	end
+	table.sort(want, function(a, b)
+		local ra, rb = tonumber(ranks[a]) or 0, tonumber(ranks[b]) or 0
+		if ra ~= rb then
+			return ra > rb
+		end
+		return a < b
+	end)
+	local keep = 0 -- the length of the tail of `want` that is also in current order
+	if n > 0 then
+		keep = 1
+		while keep < n and want[n - keep] < want[n - keep + 1] do
+			keep = keep + 1
+		end
+	end
+	local moves = {}
+	local max = tonumber(limit) or n
+	for k = n - keep, 1, -1 do
+		if #moves >= max then
+			break
+		end
+		moves[#moves + 1] = want[k]
+	end
+	return moves
+end
+
+P.LOOT_BAG_STAYS = "The Loot Bag stays in your purse: it cannot be moved out, dropped, traded or mailed."
+
 -- m = {holdsPouch = bool (the moved item is a pouch or holds one),
+--      lootBag = bool (the moved item is the Loot Bag), inPurse = bool (it lies in the purse now),
 --      toGround = bool (a map tile: the ground, a mailbox, a trash holder), chain = the destination and its parents,
 --      innermost first: "self" (the mover), "player" (another one), "depot", "pouch", "item", "tile"}
 function P.moveRefusal(m)
 	if not m.holdsPouch then
+		return nil
+	end
+	-- the Loot Bag lives in the purse (owner 2026-10-17): from there it goes nowhere but back into the purse
+	if m.lootBag and m.inPurse then
+		local toPurse = false
+		for _, c in ipairs(m.chain or {}) do
+			if c == "purse" then
+				toPurse = true
+				break
+			end
+		end
+		if m.toGround or not toPurse then
+			return P.LOOT_BAG_STAYS
+		end
 		return nil
 	end
 	if m.toGround then
@@ -205,7 +272,7 @@ function P.moveRefusal(m)
 	for _, c in ipairs(m.chain or {}) do
 		if c == "pouch" then
 			return "A pouch cannot go into another pouch."
-		elseif c == "self" or c == "depot" then
+		elseif c == "self" or c == "depot" or c == "purse" then
 			return nil
 		elseif c == "player" or c == "tile" then
 			break
@@ -230,7 +297,7 @@ function P.lootList(looted, opts, t)
 	local maxEntries, flag = opts.maxEntries or 5, opts.flagRarity or 3
 	local groups, byKey = {}, {}
 	for i, e in ipairs(looted or {}) do
-		local rarity = tonumber(e.rarity) or 0
+		local rarity = ChaosRarity.rank(e.rarity) -- the place in the order (an old id counts as the rarity it became)
 		local key = tostring(e.id) .. ":" .. rarity .. ":" .. (e.unique and 1 or 0)
 		local g = byKey[key]
 		if not g then
@@ -264,7 +331,7 @@ function P.lootList(looted, opts, t)
 		if g.rarity > 0 and e.rarityName then
 			name = "[" .. e.rarityName .. "] " .. name
 		end
-		if e.unique or g.rarity >= flag then
+		if e.unique or g.rarity >= ChaosRarity.rank(flag) then
 			name = "{" .. name .. "}"
 		end
 		parts[#parts + 1] = name

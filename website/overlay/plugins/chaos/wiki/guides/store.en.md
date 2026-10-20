@@ -23,7 +23,7 @@ The full list, with the type of every offer, is in the [store reference](wiki:st
 - **Everfull Ration:** food that never runs out (Convenience), as good as the best food; it stays with you.
 - **Rune packs:** 100, 250 or 500 runes of the main attack and healing runes (fewer of Shackle), at about the rune sellers' price; what does not fit in your backpack goes to the store inbox.
 - **Loot Bag:** a bottomless bag (Convenience). While you carry it, all the loot of your kills goes into it: 255 slots, and what is in it weighs nothing. It stays yours: you keep it when you log out and get it back, empty, after a death.
-- **Auto Seller:** in the top menu, Economy > Auto Seller. "Sell all" sells what is in your Loot Bag at the NPC price, once every 30 seconds; the gold goes to your bank. Tick the rarities it may sell (Common and Uncommon by default; Rare, Epic and Legendary+ when you tick them). Locked items, uniques, orbs, gems and keys are never sold. The same window keeps a list of items it sells straight from your kills.
+- **Auto Seller:** in the top menu, Economy > Auto Seller. "Sell all" sells what is in your Loot Bag at the NPC price, once every 30 seconds; the gold goes to your bank. Tick the rarities it may sell (Common and Uncommon by default; Magic, Rare, Legendary and Divine when you tick them). Locked items, uniques, orbs, gems and keys are never sold. The same window keeps a list of items it sells straight from your kills.
 - **Chaos Pact (VIP):** besides more storage and daily coins, while it lasts: +10% experience from monsters, stamina back 1.5 times faster (offline and on the stamina trainer), one more loadout slot, the Auto Seller, a chat colour and a cosmetic every month.
 
 ## Season Pass

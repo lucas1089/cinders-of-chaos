@@ -88,10 +88,6 @@
         <item id="2160" countmax="30" chance="100000"/><!-- crystal coin -->
         <item id="29856" countmax="6" chance="100000"/><!-- Orb of Upheaval -->
         <item id="29857" countmax="2" chance="50000"/><!-- Orb of Fate -->
-        <item id="2156" countmax="4" chance="30000"/><!-- red gem -->
-        <item id="2158" countmax="4" chance="30000"/><!-- blue gem -->
-        <item id="2155" countmax="4" chance="30000"/><!-- green gem -->
-        <item id="2153" countmax="2" chance="20000"/><!-- violet gem -->
         <item id="7884" chance="3000"/><!-- terra mantle -->
         <item id="7885" chance="3000"/><!-- terra legs -->
         <item id="7897" chance="3000"/><!-- glacier robe -->
@@ -100,6 +96,5 @@
         <item id="29871" chance="1500"/><!-- Seraphic Greaves -->
         <item id="29875" chance="1500"/><!-- Seraphic Piercer -->
         <item id="29877" chance="1000"/><!-- Seraphic Ring -->
-        <item id="25380" countmax="1" chance="2000"/><!-- talent token -->
     </loot>
 </monster>

@@ -83,6 +83,13 @@ ChaosPouchesConfig = {
 	depotIds = {2589, 2590, 2591, 2592, 2594, 14404, 26052, 25453, 25454, 25455, 25456, 25457, 25458, 25459, 25460,
 		25461, 25462, 25463, 25464, 25465, 25466, 25467, 25468, 25469},
 
+	-- Loot Bag order (owner 2026-10-17): rarest first, uniques above all. Sorted when loot enters the bag and when it is
+	-- opened (no timer). maxMoves: item moves per sort at most (each is a container update for the client)
+	sort = {enabled = true, maxMoves = 120},
+
+	-- the purse = the engine's store inbox: the Loot Bag may not leave it (pouches.lua onMoveItem)
+	purseIds = {26052},
+
 	scanLimit = 60, -- containers looked through to find the carried pouches (inventory, breadth first)
 	fullNoticeSeconds = 60, -- "your X Pouch is full" at most this often per pouch
 

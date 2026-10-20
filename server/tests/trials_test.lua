@@ -137,10 +137,11 @@ do
 	eq(#M.heldNodes(8, 2, {1, 1, 1}), 2, "two held at tier 2")
 	-- fx and cost add up under their keys
 	local f2 = M.effects(4, 1, {1, 0, 0})
-	eq(f2.dealMelee, 15, "Reckless Blows gives +15% melee"); eq(f2.takeAll, 6, "and takes 6% more damage")
+	eq(f2.dealMelee, 15, "Reckless Blows gives +15% melee"); eq(f2.takeAll, nil, "and takes nothing: ascension nodes have no downside")
 	-- the same key from two nodes sums
-	local sum = M.effects(8, 3, {2, 2, 1})
-	ok(type(sum.dealAll) == "number", "dealAll summed from two nodes")
+	local sum = M.effects(14, 3, {0, 1, 1})
+	eq(sum.dealLowHp, 55, "dealLowHp summed from Frenzy and Avatar of Iron (Berserker)")
+	eq(sum.takeLowHp, -25, "Avatar of Iron wall effect")
 end
 
 -- ------------------------------------------------------------------ choosing and switching
@@ -313,11 +314,10 @@ end
 -- ------------------------------------------------------------------ descriptions
 do
 	local lines = M.describe(M.nodeById(411))
-	eq(#lines, 2, "gain and price"); ok(lines[1].good and not lines[2].good, "gain good, price bad")
-	eq(lines[1].text, "+15% melee damage", "text of the gain"); eq(lines[2].text, "+6% damage taken", "text of the price")
+	eq(#lines, 1, "a gain and no price"); ok(lines[1].good, "gain good")
+	eq(lines[1].text, "+15% melee damage", "text of the gain")
 	lines = M.describe(M.nodeById(412))
 	ok(lines[1].good and lines[1].text == "-12% melee and ranged damage taken", "less damage taken is good: " .. lines[1].text)
-	ok(not lines[2].good and lines[2].text == "-6% melee damage", "less damage dealt is bad")
 	-- special lines
 	local stack = M.describe(M.nodeById(431))
 	ok(stack[1].text:find("Each kill") and stack[1].text:find("8 times") and stack[1].text:find("8 s"), "stack line: " .. stack[1].text)
@@ -334,13 +334,23 @@ do
 		for _, entry in ipairs(M.pairsOf(voc)) do
 			for _, node in ipairs({entry.a, entry.b}) do
 				local ls = M.describe(node)
-				ok(#ls >= 2 and #ls <= 5, "node " .. node.name .. " has 2-5 lines")
+				ok(#ls >= 1 and #ls <= 5, "node " .. node.name .. " has 1-5 lines")
+				ok(next(node.cost) == nil, "node " .. node.name .. " has no downside")
 				for _, l in ipairs(ls) do
 					ok(#l.text <= 46, "line fits a card: " .. l.text)
 				end
 			end
 		end
 	end
+	-- owner decisions: Avatar of Iron belongs to the Berserker (vocation 14), not the Juggernaut (8)
+	local function has(voc, name)
+		for _, entry in ipairs(M.pairsOf(voc)) do
+			for _, node in ipairs({entry.a, entry.b}) do if node.name == name then return true end end
+		end
+		return false
+	end
+	ok(has(14, "Avatar of Iron") and not has(8, "Avatar of Iron"), "Avatar of Iron is a Berserker node")
+	ok(has(8, "Wall Unbroken"), "the Juggernaut got a replacement")
 	-- spell events: exactly the nodes with spellCost / spellCd say so
 	local needs = 0
 	for _, voc in ipairs(M.vocations()) do
@@ -352,7 +362,7 @@ do
 			end
 		end
 	end
-	ok(needs >= 5 and needs <= 16, "a few nodes need the spell events (" .. needs .. ")")
+	ok(needs >= 2 and needs <= 16, "a few nodes need the spell events (" .. needs .. ")")
 end
 
 -- ------------------------------------------------------------------ run mechanics

@@ -151,7 +151,7 @@ return {
 		items = {min = 2, max = 4},
 		-- weights of the tier each gear roll is treated as; floor = minimum rarity of that roll
 		itemTiers = {{tier = "magic", weight = 50, floor = 2}, {tier = "rare", weight = 35, floor = 3},
-			{tier = "legendary", weight = 15, floor = 5}},
+			{tier = "legendary", weight = 15, floor = 4}},
 		-- gear comes from the replaced monster's loot table (its gear entries); otherwise from this pool,
 		-- by area level band {minLevel, {item ids}}
 		pool = {

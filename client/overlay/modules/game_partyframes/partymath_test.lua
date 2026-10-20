@@ -140,4 +140,17 @@ do
 end
 
 if fails > 0 then os.exit(1) end
+-- the invitation window
+eq(M.inviterOf('Aria has invited you to join her party.'), 'Aria', 'inviter, her')
+eq(M.inviterOf('Sir Odo has invited you to join his party.'), 'Sir Odo', 'inviter, two words')
+eq(M.inviterOf('Aria has been invited.'), nil, 'the leader\'s own line is not an invitation')
+eq(M.inviterOf('You have joined Aria\'s party.'), nil, 'a join line')
+eq(M.inviterOf(nil), nil, 'no text')
+eq(M.inviterOf(' has invited you to x'), nil, 'no name')
+eq(M.revokerOf('Aria has revoked her invitation.'), 'Aria', 'revoker')
+eq(M.revokerOf('Aria has invited you to join her party.'), nil, 'not a revoke')
+eq(M.findLeader({ { id = 3, name = 'Bob' }, { id = 9, name = 'Aria' } }, 'aria'), 9, 'leader by name, any case')
+eq(M.findLeader({ { id = 3, name = 'Bob' } }, 'Aria'), nil, 'leader out of view')
+eq(M.findLeader(nil, 'Aria'), nil, 'no creatures')
+
 print('party frames tests OK (' .. checks .. ' checks)')

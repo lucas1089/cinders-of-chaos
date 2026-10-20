@@ -11,6 +11,8 @@
 -- "Add to my rules" (the default: their rules stay on top, the class spells not in the list yet go below) or "Replace".
 -- The list before the click is kept for "Undo" (the button beside it and the result box) for the session. A filled
 -- healing tab is only replaced after a yes.
+-- The Auto turn box (under the button; default on) switches the shooter's turn toward the target before wave and beam
+-- spells (rotation.lua, base patch 0080).
 -- The helper never changes the spells unasked (owner, 2026-10-16). A level-up that brings a new attack spell asks
 -- "New spell available: X. Add to rotation?" (Add / Ignore; an ignored spell is not asked again for this character).
 -- Only with "Auto-update my spells" checked (off by default, kept per character) does a level-up update a rotation
@@ -24,6 +26,7 @@ U.BUTTON_ID = 'chaosAutoRotationButton'
 U.UNDO_ID = 'chaosAutoRotationUndo'
 U.undo = nil -- {profile, rules, marker}: the list before the last click
 U.AUTO_ID = 'chaosAutoUpdateSpells'
+U.TURN_ID = 'chaosAutoTurn'
 local SETTINGS_NODE = 'chaos_helper_spells' -- [character] = {autoUpdate = bool, ignored = {[id] = true}}
 local pollEvent = nil
 local box = nil
@@ -319,6 +322,22 @@ local function addButton()
   u:setMarginRight(4)
   u.onClick = function() U.undoRotation() end
   u:setVisible(U.undo ~= nil)
+  -- "Auto turn" (default on): the shooter faces the target before a wave or beam spell (base patch 0080,
+  -- ChaosHelperRotation.turnDirection); under the Auto rotation button
+  local t = g_ui.createWidget('CheckBox', panel)
+  t:setId(U.TURN_ID)
+  t:setText(tr('Auto turn'))
+  t:setTooltip(tr('Auto turn') .. '\n' ..
+    tr('Turn toward the target before a wave or beam spell, so it hits in front of the target.\n' ..
+    'Without a target the character faces the side with most monsters.'))
+  t:setTextHorizontalAutoResize(true)
+  t:setHeight(16)
+  t:addAnchor(AnchorTop, U.BUTTON_ID, AnchorBottom)
+  t:addAnchor(AnchorRight, 'parent', AnchorRight)
+  t:setMarginTop(2)
+  t:setMarginRight(10)
+  t:setChecked(ChaosHelperRotation.autoTurnEnabled())
+  t.onCheckChange = function(self, checked) ChaosHelperRotation.setAutoTurn(checked) end
   -- the box sits on the presets row, left of Rename (in the title row it covered "RULES" of the centred title)
   local presets = panel:recursiveGetChildById('presetsSection')
   local rename = presets and presets:getChildById('renameButton')
@@ -334,7 +353,7 @@ local function addButton()
     c:addAnchor(AnchorRight, 'renameButton', AnchorLeft)
     c:setMarginRight(10)
   else
-    c:addAnchor(AnchorTop, U.BUTTON_ID, AnchorBottom)
+    c:addAnchor(AnchorTop, U.TURN_ID, AnchorBottom)
     c:addAnchor(AnchorRight, 'parent', AnchorRight)
     c:setMarginTop(4)
     c:setMarginRight(10)
@@ -442,6 +461,65 @@ local function onLevelChange(localPlayer, level, levelPercent, oldLevel)
   end
 end
 
+-- A class change (the store's Vocation Change): the Helper keeps the old class's spell rules and heals, which the server
+-- refuses. They go, with a message; the player presses Auto rotation for the new class (owner report 2026-10-17: the
+-- change "kept the old spells"). The first vocation of a login (old vocation 0) is not a change.
+local function classListsSpell(player)
+  return function(id)
+    local sp = spellEntry(id)
+    if not sp or sp.notOnServer then
+      return false
+    end
+    if ChaosSpellFix and ChaosSpellFix.allowsVocation then
+      return ChaosSpellFix.allowsVocation(sp, player:getVocation(), rawget(_G, 'translateVocation'))
+    end
+    return type(sp.vocations) ~= 'table' or table.contains(sp.vocations, player:getVocation())
+  end
+end
+
+function U.dropOldClass(player)
+  local H = helper()
+  if not (H and player and H.getShooterProfile) then return 0 end
+  local classOk = classListsSpell(player)
+  local dropped = 0
+  local profile = H.getShooterProfile()
+  if profile and profile.rules then
+    local kept, n = A.dropForeignRules(profile.rules, classOk)
+    if n > 0 then
+      profile.rules = kept
+      profile[A.MARKER] = nil
+      dropped = dropped + n
+    end
+  end
+  local cfg = H.getHelperConfig and H.getHelperConfig()
+  if cfg and cfg.spells then
+    dropped = dropped + A.dropForeignHeals(cfg.spells, classOk)
+  end
+  if dropped > 0 then
+    U.undo = nil
+    refreshUndoButton()
+    refreshShooter()
+    local _, M = helper()
+    if M and M.onLoadHelperData then
+      H._suppressMessages = true
+      pcall(M.onLoadHelperData)
+      H._suppressMessages = false
+    end
+    save()
+    say(tr('Class changed: %d spell(s) of your old class were taken out of the Helper. Press Auto rotation for your new class.',
+      dropped))
+  end
+  return dropped
+end
+
+local function onVocationChange(player, vocation, oldVocation)
+  if not oldVocation or oldVocation == 0 then return end
+  -- after the helper's own refresh on a vocation change (100 ms) and the spell list of the same packet
+  scheduleEvent(function()
+    if g_game.isOnline() then U.dropOldClass(g_game.getLocalPlayer()) end
+  end, 400)
+end
+
 -- the undo belongs to this character's session
 local function onGameEnd()
   U.undo = nil
@@ -453,13 +531,13 @@ local function onTextMessage(mode, text)
 end
 
 function U.init()
-  connect(LocalPlayer, { onLevelChange = onLevelChange })
+  connect(LocalPlayer, { onLevelChange = onLevelChange, onVocationChange = onVocationChange })
   connect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   poll()
 end
 
 function U.terminate()
-  disconnect(LocalPlayer, { onLevelChange = onLevelChange })
+  disconnect(LocalPlayer, { onLevelChange = onLevelChange, onVocationChange = onVocationChange })
   disconnect(g_game, { onGameEnd = onGameEnd, onTextMessage = onTextMessage })
   if pollEvent then
     removeEvent(pollEvent)
@@ -468,7 +546,7 @@ function U.terminate()
   closeBox()
   if ChaosAutoSetupUI and ChaosAutoSetupUI.terminate then ChaosAutoSetupUI.terminate() end
   local root = g_ui.getRootWidget()
-  for _, id in ipairs({ U.AUTO_ID, U.UNDO_ID, U.BUTTON_ID }) do
+  for _, id in ipairs({ U.AUTO_ID, U.TURN_ID, U.UNDO_ID, U.BUTTON_ID }) do
     local b = root and root:recursiveGetChildById(id)
     if b then
       b:destroy()

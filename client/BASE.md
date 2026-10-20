@@ -505,6 +505,89 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     The chain `0001`-`0072` applied to the base archive; `protocol.cpp` compiles (`g++ -std=c++20 -fsyntax-only`),
     `const.lua` and `init.lua` parse in LuaJIT and Lua 5.3; `client/tools/set_rsa_key_test.py` runs the const.lua hunk.
     Not tried in a client run.
+51. `0073` (`modules/game_inventory/inventory.otui`): **capacity number**. Short numbers ("123k", "1.25M") are wider than the
+    34 px plate and the label wrapped them; it now reaches 8 px past the plate on both sides and does not wrap.
+    Applies on top of `0001`-`0072`. Not tried in a client run.
+52. `0074` (`mods/game_helper/helper.lua`): **dying turns Auto Target and Magic Shooter off**. `onHelperDeath` calls
+    `_Helper.disableCombatOnDeath`, which uses `pzDisableSystem` (checkbox, config flag, locked target, shortcut buttons).
+    Not tried in a client run.
+53. `0076` (`mods/game_helper/classes/auto_target.lua`): **Auto Target skips summons, effigies and decoys**.
+    `isValidCreature` refuses creature types summon own / other and names with "effigy" or "decoy". Not tried in a client run.
+54. `0075` (Lua `modules/game_outfit/outfit.lua`): **cosmetic dropdowns in the Customise Character window**. Four guarded
+    calls into the overlay module `game_outfitextras`: `attach(window, {wings, current, setWings})` after the window is
+    built, `refresh()` when the wardrobe catalogue arrives, `apply()` on Ok before the outfit is sent, `detach()` on
+    close. The module adds a panel of dropdowns (wings, outline, footprints, kill effect, loot label, chat colour, spell
+    effect, name plate frame, pet) and makes the window taller; wings travel with the outfit (`tempOutfit.wings`).
+    Without the module the window is as before (`MANIFEST.md` "Customise Character extras"). Applies after
+    `0001`-`0074` (checked with `patch --dry-run` on the assembled tree). Not tried in a client run.
+55. `0077` (Lua `modules/game_interface/gameinterface.lua`): **side panels made later follow the view mode**. The minimap
+    expansion's spacer panel, panels added with `addRightPanel` / `addLeftPanel` and the horizontal panels shown later
+    kept the default white image (a near-black frame, 12,10,14) while `refreshViewMode` paints the panels `alpha` in
+    the extended view: a black bar over the map when the right horizontal panel is shown and the minimap is widened.
+    `applySidePanelColor` paints each as it is made or shown. Cause deduced from the code, not seen in a client run.
+56. `0078` (C++ `src/client/tile.h/.cpp`, `mapview.cpp`, `luafunctions_client.cpp`): **floor widgets**.
+    `Tile:setFloorWidget` / `getFloorWidget` / `removeFloorWidget`: a widget drawn in `MapView::drawFloor` with the
+    ground effects (after the bottom layer, under creatures, top items and effects). `Tile:setWidget` widgets are
+    drawn in the foreground pass over everything, so the cosmetic footprints covered walls and creatures.
+    `game_cosmeticfx` uses it when present. Applies after `0001`-`0076`, the four files `patch --dry-run` clean; compiled
+    with `g++ -fsyntax-only` (see MANIFEST). Not run in a client.
+
+57. `0079` (Lua `modules/game_actionbar/actionbar.lua`, `mods/client_settings/classes/custom-hotkeys.lua`): **Assign Spell
+    lists the Chaos spells of the class**. The pickers and the action bar's can-cast checks compared a spell's vocation
+    list with `translateVocation(vocation)`, which folds the Chaos classes onto old ids (Beastmaster / Deadeye / Ranger 7,
+    Illusionist 6, Mystic / Elementalist 5), so a Chaos spell listing the server id (Wild Bond {15}, Moonfang Pack {10})
+    never showed and the stock "Summon Paladin Familiar" (a spell the server lacks) did (owner debug item 85). They now ask
+    `ChaosSpellFix.allowsVocation` (overlay `game_chaosspells/spellfix.lua`, exported on `_G` because the module is
+    sandboxed): the server id or the folded id, never an entry marked `notOnServer`. Without the module the old test is
+    used. Applies after `0001`-`0078` (`patch --dry-run` clean on the assembled tree). Not tried in a client run.
+58. `0080` (Lua `mods/game_helper/classes/magic_shooter.lua`): **Auto turn for wave and beam spells**. Before the words go
+    out the shooter asks `ChaosHelperRotation.turnDirection(spell, SpellAreas, ctx)` (overlay `game_helperrotation/
+    rotation.lua`): for a spell with the `directional` flag or a wave / beam area it answers the facing toward the target
+    (without a target the facing with most monsters, the shooter's own count), nil when the character already faces it or
+    the option "Auto turn" (g_settings `chaosHelperAutoTurn`, default on) is off; the base's `aimAtTarget` turn stays as the
+    fallback (owner debug item 75). Applies after `0001`-`0079` (`patch --dry-run` clean). Not tried in a client run.
+59. `0081` (C++ `src/client/animatedtext.h/.cpp`, `luafunctions_client.cpp`): **Damage number scatter**. `AnimatedText` gets a fixed
+    pixel shift added after the stacking offset (`setScatter` / `getScatter`, Lua `{x=, y=}`) and a speed scale
+    (`setSpeedScale` / `getSpeedScale`, clamped to 0.5 .. 2): `drawText` runs the rise, the sideways drift and the fade on the
+    scaled duration and skips a text past its life; the removal event rechecks the scaled life, so a slower text is not cut at
+    1000 ms. Defaults (no shift, scale 1) draw as before. No protocol change. The overlay module `game_damagescatter` rolls the
+    values from `g_map.onAnimatedText`. Applies after `0001`-`0080` (`patch --dry-run` clean on a tree with all of them; the
+    three files compile with `g++ -fsyntax-only`). Not tried in a client run.
+60. `0082` (Lua `mods/game_helper/classes/magic_shooter.lua`, `helper.lua`): **the helper uses runes in closed backpacks.**
+    Owner, 2026-10-20: "o helper nao esta usando runas". `LocalPlayer:getInventoryCount` counts only equipped items and
+    open containers (`localplayer.cpp`), and the shooter's rune branch and Auto UH (`hasItemInBackpack`, the same count)
+    ran only with a count above 0, so a rune in a closed backpack, where every rune sits, was never used. The same
+    `ChaosPotionGate` as `0070` (`game_helperrotation/potiongate.lua`, now with `canUse` / `noteUse` / `reset`) allows a
+    probe every 3 s for an uncounted rune and waits 30 s after the server's "Sorry, not possible."; a counted rune is
+    used as before; without the module the old check runs. The server is not the blocker: it finds a rune by id in any
+    carried container (README "Cooldown channels": runes only wait `runeChannelDelay`). Applies after `0001`-`0081`
+    (`patch --dry-run` clean; both files parse in LuaJIT and Lua 5.3). Not tried in a client run (the rig character
+    had no backpack contents to count; see the report).
+61. `0083` (Lua `modules/corelib/mouse.lua`): **the "+" of Use with stays**. With the system cursor (the default) the target
+    cursor is set once by `g_mouse.setGrabber`; a resize border (the bottom edge of each container window, the minimap),
+    a splitter, a chat grip or a chat link replaced it through `g_mouse.applyNativeCursor` when the pointer crossed it,
+    and the end of the hover did not give it back, so after "right-click an upgrade orb, move over another item" the "+"
+    was gone. `applyNativeCursor` and `restoreNativeCursor` now keep the cursor of the active grabber
+    (`getActiveGrabberCursor`: Use with and the helper's item picker); `''` (popup menus) is honoured and a destroyed
+    grabber owns nothing. No overlay module needed. Applies after `0001`-`0082` (`patch --dry-run` clean on the rig's
+    base `mouse.lua`); `game_helperrotation/cursorowner_test.lua` rebuilds the new file from the patch and tests it.
+    Checked in the Linux client with the system cursor: before the patch the pointer over a container window's bottom
+    border or the minimap border showed a resize arrow during Use with (and kept it over the next item), after it the
+    "+" stayed over borders, splitters and items, and a click on the target still ran the use; without a selection the
+    borders show their arrows as before. The click that "did not work" was not reproduced on its own (a click on a
+    target item worked with the arrow shown); it may have been a click on the 3 px border itself.
+
+### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
+The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
+spells") is overlay only, so it needs no patch and none of the helper's lines change. It reads these parts of the patched
+base helper, which later patches must keep: the window ids `helperWindow`, `optionsTabBar`, `helperSidebar`,
+`separator`, `settingsFolderMenu` and `timerPanelContainer` and the tab buttons `healingMenu` ... `settingsFolderMenu`
+(it hides its panel when one of them is checked and hides the helper's panels, ids `healingPanel`,
+`toolsPanelContainer`, `shooterPanel`, `equipPanelContainer`, `cavebotPanel`, `timerPanelContainer`, `scriptingPanel`,
+`settingsPanel`, when its own tab is pressed), and `_Helper.isHelperAutomaticFunctionsEnabled`, `getSpellDataById`,
+`isSpellOnCooldown`, `getRotation` (base patch 0052), `safeDoThing`; Auto setup also uses `_Helper.Timer.getRules` and
+`cooldownToMs`. If the helper gets a tab or a panel id of its own with a later patch, add it to `PANEL_IDS` / `TAB_IDS`
+in `supportspells_ui.lua`.
 
 ### Names check of the assembled client
 

@@ -27,7 +27,7 @@ local STAFF = {
 	["/towerseason"] = "infinitytower.lua", ["/instances"] = "instance_limits.lua", ["/invasion"] = "invasion.lua",
 	["/itemfinder"] = "itemfinder.lua", ["/leaderboard"] = "leaderboard.lua", ["/market"] = "market.lua",
 	["/memorial"] = "memorial.lua", ["/mentor"] = "mentor.lua", ["/newplayerkit"] = "newplayer.lua",
-	["/gmnotify"] = "notifications.lua", ["/orbx"] = "orbexchange.lua", ["/pact"] = "pact.lua",
+	["/gmnotify"] = "notifications.lua", ["/orbx"] = "orbexchange.lua", ["/pack30gallery"] = "admin/actions_pack30_gallery.lua", ["/pact"] = "pact.lua",
 	["/patchnotes"] = "patchnotes.lua", ["/pet"] = "pets.lua", ["/pocketboss"] = "pocketboss.lua",
 	["/poi"] = "poi.lua", ["/professions"] = "professions.lua", ["/marches"] = "pvpzone.lua", ["/raid"] = "raid.lua",
 	["/records"] = "records.lua", ["/referral"] = "referral.lua", ["/reports"] = "reports.lua", ["/rift"] = "rift.lua",

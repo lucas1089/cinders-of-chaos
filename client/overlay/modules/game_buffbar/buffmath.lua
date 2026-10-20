@@ -66,6 +66,7 @@ function BuffMath.apply(state, action, data, now)
   if action == 'full' then
     state.buffs = {}
     state.seq = 0
+    state.synced = true
     for _, e in ipairs(type(data.list) == 'table' and data.list or {}) do put(e) end
     changed = true
   elseif action == 'diff' then
@@ -87,7 +88,19 @@ function BuffMath.apply(state, action, data, now)
 end
 
 function BuffMath.clear(state)
-  state.buffs, state.seq = {}, 0
+  state.buffs, state.seq, state.synced = {}, 0, false
+end
+
+-- the buffs on the character now as { [lowercase name] = true } (debuffs and buffs whose time is over left out), or nil
+-- while the server has not sent its list yet (the bar is hidden, offline): the helper's Support spells read this
+-- (modules.game_buffbar.activeBuffs) to know whether a buff is up
+function BuffMath.activeNames(state, now)
+  if not state.synced then return nil end
+  local set = {}
+  for _, e in pairs(state.buffs or {}) do
+    if not e.debuff and not (e.endAt and now > e.endAt) then set[tostring(e.name):lower()] = true end
+  end
+  return set
 end
 
 -- seconds left (never negative), or nil for a buff without a timer

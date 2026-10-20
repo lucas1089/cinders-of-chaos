@@ -75,7 +75,6 @@
 	<loot>
 		<item id="2160" countmax="2" chance="100000"/><!-- crystal coin -->
 		<item id="2152" countmax="40" chance="100000"/><!-- platinum coin -->
-		<item id="25380" chance="2000"/><!-- token -->
 		<item id="2498" chance="4500"/><!-- royal helmet -->
 		<item id="2516" chance="4500"/><!-- dragon shield -->
 		<item id="2466" chance="4000"/><!-- golden armor -->

@@ -5,7 +5,8 @@
 --   startup  a magic forcefield with action id `aid` on each placed plan's teleport tile (kept when it is already
 --            there), its description and the sign behind it name the hunt and its level band
 --   labels   every floatText.interval ms the label floats over each teleport for the players near it, each in their
---            own language (the base room labels its teleports the same way: a monster-say text)
+--            own language (the base room labels its teleports the same way: a monster-say text); the floors' level
+--            ranges and "Quests" over the quest hall too
 --   step in  below the band's floor: back where the player came from, a poff and the reason in the player's
 --            language; else to the plan's arrival tile with the teleport effect at both ends
 --   exits    areagen.lua's exit portal (action id 47951) asks ChaosHuntTeleports.backFor: a placed plan's exit sends
@@ -190,6 +191,16 @@ function float.onThink()
 						end
 					end
 				end
+			end
+		end
+	end
+	-- the quest hall: "Quests" over its corridor, for the players in it (the hall is 33 columns wide)
+	if cfg.hall and HT.idx.quests then
+		local pos = P(HT.idx.quests.label)
+		for _, spec in ipairs(Game.getSpectators(pos, false, true, 17, 17, 4, 4) or {}) do
+			local l = H.questLabel(cfg, HT.idx, langOf(spec))
+			if l then
+				spec:say(l.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
 			end
 		end
 	end

@@ -4,8 +4,11 @@
 -- Necromancer lines) or 30 %. A potion counts when the class may drink it at its level (docs/CLASSES.md, "Item, spell
 -- and potion lists") and the character carries it; without one the Everfull potion's look (the Health / Mana Potion,
 -- every character has one) is taken. Tools: eat food on (the Everfull Ration counts) and the best haste it can cast,
--- kept up. Shooter: the class rotation (ChaosAutoRotation.select). Timers: the class's own buffs on their cooldown,
--- only out of protection zones and while attacking a monster.
+-- kept up. Shooter: the class rotation (ChaosAutoRotation.select). Timers: the class's fight buffs on their
+-- cooldown, only out of protection zones and while attacking a monster (up to ChaosHelperSupport.TIMER_MAX, from the
+-- spell data: game_helpersupport/supportspells.lua; the hand-written S.BUFFS only when that module is missing).
+-- Support spells: the rest of the class's support spells (shields, summons, a vigil ...) for the helper's Support spells
+-- section, cast whenever they are off cooldown (ChaosHelperSupport.autoPlan, the same module).
 -- Spells always pass the caller's canCast (class, level, learned: autorotation_ui.lua's canCastFor).
 ChaosAutoSetup = ChaosAutoSetup or {}
 local S = ChaosAutoSetup
@@ -109,20 +112,31 @@ S.BUFFS = {
     { id = 233, words = 'tor vas vant', cooldown = 35 } },
 }
 
--- the timer rules (the helper's _Helper.Timer rule data) for the buffs the character can cast
-function S.timerRules(vocId, canCast)
+local function timerRule(id, words, cooldownSec)
+  return { type = 'words', value = words, cooldown = cooldownSec, unit = 'sec',
+    forceDecrease = false, inPz = false, inNonPz = true, targetingMonster = true, chaosAutoSetup = id }
+end
+
+-- the timer rules (the helper's _Helper.Timer rule data) for the buffs the character can cast. support: the result of
+-- ChaosHelperSupport.autoPlan (its timer list); without it the class list S.BUFFS
+function S.timerRules(vocId, canCast, support)
   local out = {}
+  if support then
+    for _, r in ipairs(support.timer or {}) do
+      out[#out + 1] = timerRule(r.id, r.words, r.cooldown)
+    end
+    return out
+  end
   for _, b in ipairs(S.BUFFS[S.lineOf(vocId)] or {}) do
     if canCast and canCast(b.id) then
-      out[#out + 1] = { type = 'words', value = b.words, cooldown = b.cooldown + 1, unit = 'sec',
-        forceDecrease = false, inPz = false, inNonPz = true, targetingMonster = true, chaosAutoSetup = b.id }
+      out[#out + 1] = timerRule(b.id, b.words, b.cooldown + 1)
     end
   end
   return out
 end
 
 -- the whole plan. p: vocId, level, canCast(id), has(clientId), heals (ChaosAutoRotation.heals), rotation
--- (ChaosAutoRotation.select's result or nil)
+-- (ChaosAutoRotation.select's result or nil), support (ChaosHelperSupport.autoPlan's result or nil)
 function S.plan(p)
   local line = S.lineOf(p.vocId)
   local manaPercent = S.CASTERS[line] and S.MANA_POTION_PERCENT.caster or S.MANA_POTION_PERCENT.other
@@ -137,7 +151,8 @@ function S.plan(p)
     },
     tools = { autoEatFood = true, haste = S.haste(p.canCast) },
     rotation = p.rotation,
-    timers = S.timerRules(p.vocId, p.canCast),
+    timers = S.timerRules(p.vocId, p.canCast, p.support),
+    support = p.support and p.support.support or {},
   }
 end
 
@@ -151,7 +166,8 @@ end
 
 -- the tabs where the player has set something of their own that the plan would change. cur: { spells, potions
 -- (helperConfig slots), haste (helperConfig.haste[1].id), rotationCustom (ChaosAutoRotation.isCustom), timers (rule
--- list) }. A timer rule Auto setup wrote (chaosAutoSetup) is not the player's.
+-- list), support (the Support spells rows, { {id = n}, ... }) }. A timer rule Auto setup wrote (chaosAutoSetup) is not
+-- the player's; a support row is the player's unless its spell is one of the plan's.
 function S.ownTabs(cur, plan)
   local tabs = {}
   if filled(cur.spells) or filled(cur.potions) then tabs[#tabs + 1] = 'healing' end
@@ -160,6 +176,11 @@ function S.ownTabs(cur, plan)
   if cur.rotationCustom and plan.rotation then tabs[#tabs + 1] = 'shooter' end
   for _, r in ipairs(cur.timers or {}) do
     if not r.chaosAutoSetup then tabs[#tabs + 1] = 'timers' break end
+  end
+  local planned = {}
+  for _, id in ipairs(plan.support or {}) do planned[id] = true end
+  for _, row in ipairs(cur.support or {}) do
+    if not planned[row.id] then tabs[#tabs + 1] = 'support' break end
   end
   return tabs
 end

@@ -42,4 +42,13 @@
 		<vocation name="Knight" />
 	</instant>
 	<instant group="attack" name="No Script" words="exori nihil" level="5" mana="5" needtarget="1" />
+	<instant group="support" spellid="11" name="Wraith Step" words="exani hur" level="12" mana="50" selftarget="1" aggressive="0" cooldown="2000" script="support/levitate.lua">
+		<vocation name="Knight" />
+	</instant>
+	<instant group="support" spellid="12" name="Martial Communion" words="utito mas sio" level="32" mana="250" selftarget="1" aggressive="0" cooldown="2000" script="support/train_party.lua">
+		<vocation name="Paladin" />
+	</instant>
+	<instant group="support" spellid="13" name="Lantern" words="utevo lux" level="8" mana="20" selftarget="1" aggressive="0" cooldown="2000" script="support/light.lua">
+		<vocation name="Knight" />
+	</instant>
 </spells>

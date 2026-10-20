@@ -8,17 +8,26 @@ local V = PouchesView
 
 V.FLAGS = { 'list', 'gold', 'uniques', 'gear', 'supplies', 'gems', 'other', 'overflow' }
 V.DEFAULT_ON = { overflow = true }
-V.MAX_RARITY = 15
+V.MAX_RARITY = 15 -- the highest id a saved rule can hold; the seven rarities are the ids 1 2 3 4 5 10 (V.RARITY_IDS)
+V.RARITY_IDS = { 1, 2, 3, 4, 5, 10 } -- Common, Uncommon, Magic, Rare, Legendary, Divine (server data/lib/chaos_rarity.lua)
 
--- rules from the server (missing keys: off, overflow on; minRarity clamped to 1..15)
+-- the id of today's rarity an id stands for: 6 .. 9 -> 5 (Legendary), 10 .. 15 -> 10 (Divine); at least 1
+function V.canonRarity(id)
+  id = math.floor(tonumber(id) or 1)
+  if id <= 1 then return 1 end
+  if id <= 5 then return id end
+  if id <= 9 then return 5 end
+  return 10
+end
+
+-- rules from the server (missing keys: off, overflow on; minRarity an id of the seven rarities, an old 6 .. 15 mapped)
 function V.normalize(r)
   r = type(r) == 'table' and r or {}
   local out = {}
   for _, k in ipairs(V.FLAGS) do
     if r[k] == nil and V.DEFAULT_ON[k] then out[k] = true else out[k] = r[k] == true end
   end
-  local m = math.floor(tonumber(r.minRarity) or 5)
-  out.minRarity = math.max(1, math.min(V.MAX_RARITY, m))
+  out.minRarity = V.canonRarity(tonumber(r.minRarity) or 5)
   return out
 end
 
@@ -49,11 +58,22 @@ function V.isLootPouch(clientId, lockFlag, ids)
   return clientId == ids.loot and (tonumber(lockFlag) or 0) ~= 0
 end
 
--- the rarity combo: names 1..15 from the server, else numbers
+-- the rarity combo: the names in order from the server (Common .. Divine), else the built-in ones; the id of each is
+-- V.RARITY_IDS[i]
+V.RARITY_NAMES = { 'Common', 'Uncommon', 'Magic', 'Rare', 'Legendary', 'Divine' }
 function V.rarityOptions(names)
   local out = {}
-  for i = 1, V.MAX_RARITY do
-    out[i] = (type(names) == 'table' and names[i]) or ('Rarity ' .. i)
+  for i = 1, #V.RARITY_IDS do
+    out[i] = tr((type(names) == 'table' and names[i]) or V.RARITY_NAMES[i])
   end
   return out
+end
+
+-- the combo position (1..6) of a rule's minRarity
+function V.rarityIndex(minRarity)
+  local c = V.canonRarity(minRarity)
+  for i, id in ipairs(V.RARITY_IDS) do
+    if id == c then return i end
+  end
+  return 1
 end

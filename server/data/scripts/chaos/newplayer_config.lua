@@ -14,7 +14,7 @@
 -- fallback is equipped and the real weapon goes into the backpack (a wand of level 7 is no use at level 1).
 -- Checked in the base server's weapons.xml / movements.xml: every item below can be worn or wielded by its classes at
 -- level 1 (the wands and rods at level 7, with a level 1 fallback); the Thief line gets what add_vocations.py lets it
--- use (one-handed swords, throwing weapons, the Ranger's armour).
+-- use (one-handed swords, the Ranger's armour). No throwing stars: the shuriken spells need none (data/lib/chaos_throwables.lua).
 -- Weight: a level 1 character carries 400-470 oz (start_stats.lua). Every kit stays under about 360 oz with everything
 -- in it (the warrior's brass set is the heaviest); what does not fit goes to the inbox.
 -- Potions: the only starting potions are the two Everfull potions (potions_config.lua, ChaosPotions.giveAll; owner
@@ -73,7 +73,7 @@ return {
 				{slot = "feet", id = 2643}
 			},
 			backpack = {
-				{id = 2399, count = 30} -- throwing stars: the shurikens of the Thief line
+				{id = 2379, count = 1} -- the second dagger (owner 2026-10-17: the Thief starts with 2 daggers)
 			},
 			role = "ranged" -- the Royal Paladin's potions (add_vocations.py)
 		},
@@ -111,11 +111,8 @@ return {
 				{slot = "left", id = 2412} -- katana
 			}
 		},
-		ninja = { -- like the Thief, with a second dagger for the off hand
-			base = "thief",
-			backpack = {
-				{id = 2379, count = 1}
-			}
+		ninja = { -- like the Thief (which carries the second dagger for the off hand)
+			base = "thief"
 		},
 		default = {
 			equip = {

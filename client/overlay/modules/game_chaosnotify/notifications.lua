@@ -820,6 +820,17 @@ local function createCompactNotification(data, isPinned)
     end
     
     -- Sistema de pause
+    -- the pause ends with the release of the button, but a release that never reaches this widget (the cursor moved off
+    -- it, a button inside took the click) left the toast paused for ever ("clicking the notification freezes it"):
+    -- leaving the toast and any release of the left button resume it too
+    local function resumeFromPause()
+        if not isPaused then return false end
+        isPaused = false
+        local pauseDuration = g_clock.millis() - pauseStartTime
+        totalPausedTime = totalPausedTime + pauseDuration
+        return true
+    end
+
     notification.onMousePress = function(widget, mousePos, mouseButton)
         if mouseButton == MouseLeftButton then
             isPaused = true
@@ -830,14 +841,16 @@ local function createCompactNotification(data, isPinned)
     end
     
     notification.onMouseRelease = function(widget, mousePos, mouseButton)
-        if mouseButton == MouseLeftButton and isPaused then
-            isPaused = false
-            local pauseDuration = g_clock.millis() - pauseStartTime
-            totalPausedTime = totalPausedTime + pauseDuration
-            
-            return true
+        if mouseButton == MouseLeftButton then
+            return resumeFromPause()
         end
         return false
+    end
+
+    notification.onHoverChange = function(widget, hovered)
+        if not hovered then
+            resumeFromPause()
+        end
     end
     
     return {

@@ -22,10 +22,20 @@ ChaosPassiveTreeConfig = {
 	-- 355, 362 (mythic leaves).
 	-- Version 3 (2026-10-12, the second round: snares, vigils, Hollow Vessel): the four other elemental cluster ends 96,
 	-- 99, 102, 105 became Hollow Vessel, Covenant of Vigils, Iron Tithe and Snarewright's Creed (build codes format 5).
+	-- Version 4 (2026-10, owner: no drown nodes): 23 drown nodes left the tree (hidden in the client's nodes.lua, bridged
+	-- so the rest stays connected); node 504 keeps its vitality, spirit and experience. The presets lose them at login
+	-- anyway (refundForeignNodes); this entry takes them out of the saved loadouts too. buildshare_core.lua REMOVED.
+	-- Version 5 (2026-10, owner: the routes to every keystone and notable must be relevant to the class): the class lanes,
+	-- tools/gen_class_lanes.lua. About 170 to 300 plain nodes per class give that class other stats (same place, same
+	-- cost), so the character loses the plain nodes that have a lane for its class (and what hung on them), for free,
+	-- once, with the message. `lanes = true` lets the core read the nodes from the tree data instead of listing them.
 	reworked = {
 		{version = 1, ids = {369, 376, 383, 390}},
 		{version = 2, ids = {77, 78, 81, 82, 106, 107, 108, 109, 253, 262, 355, 362}},
-		{version = 3, ids = {96, 99, 102, 105}}
+		{version = 3, ids = {96, 99, 102, 105}},
+		{version = 4, ids = {8, 10, 167, 212, 213, 237, 322, 325, 486, 487, 488, 489, 490, 491, 493, 494, 497, 498, 499, 500,
+			501, 502, 503}},
+		{version = 5, ids = {}, lanes = true}
 	}
 }
 

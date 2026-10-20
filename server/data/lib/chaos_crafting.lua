@@ -4,7 +4,9 @@
 -- .createItem); tested by server/tests/crafting_test.lua against a mocked item. Lua 5.1 / LuaJIT compatible.
 --
 -- How an item carries a rarity and its modifiers:
---   custom attribute "rarity"            1..15 (Common .. Transcendent, names in Chaos loot_config.lua gear.names)
+--   custom attribute "rarity"            1 Common, 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine (an old item may carry
+--                                        6..9 or 11..15 too: data/lib/chaos_rarity.lua maps them; Unique is no value, the
+--                                        item carries "chaos_unique")
 --   custom attribute "chaos_ilvl"        the item level (1..150, from the drop's source: chaos_item_mods.lua
 --                                        M.sourceLevel), mirrored into "combatPowerLevel" (the client and the engine
 --                                        show that one); an item from before item levels has only "combatPowerLevel"
@@ -38,6 +40,9 @@
 
 ChaosCrafting = ChaosCrafting or {}
 local C = ChaosCrafting
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
 if not ChaosItemMods then
 	dofile("data/lib/chaos_item_mods.lua")
 end
@@ -58,7 +63,7 @@ C.config = {
 			text = "Turns a normal item into a Common or Uncommon one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers one modifier."},
 		{key = "alchemy", id = 24691, name = "Orb of Gilding",
-			text = "Turns a normal item into a Rare, Epic or Legendary one with random modifiers (tiers by its item level).",
+			text = "Turns a normal item into a Magic, Rare or Legendary one with random modifiers (tiers by its item level).",
 			keyText = "Gives a Rift Key without modifiers two or three modifiers."},
 		{key = "exalted", id = 29855, name = "Orb of Grafting",
 			text = "Adds one random modifier on an open prefix or suffix of an item with a rarity.",
@@ -81,25 +86,26 @@ C.config = {
 			keyText = "Rift Keys have no sockets."}
 	},
 
-	-- rarity names (same as the stock look text, default_onLook.lua)
-	rarityNames = {"Common", "Uncommon", "Rare", "Epic", "Legendary", "Exotic", "Mythic", "Chaos", "Eternal",
-		"Divine", "Phantasmal", "Celestial", "Cosmic", "Abyssal", "Transcendent"},
+	-- the rarities a craft can give, in order (ChaosRarity: Common, Uncommon, Magic, Rare, Legendary, Divine; Unique is
+	-- never rolled). The index is the rank, not the stored id: C.rarityName(id) names an id.
+	rarityNames = ChaosRarity.storedNames(),
+	rarityIds = ChaosRarity.storedIds(),
 
-	-- the attack / defense / armor / hit chance bonus of a rarity (item.cpp's table): {min, max}; the bonus is
-	-- min + floor(item level x (max - min + 1) / 100)
-	baseBonus = {{1, 1}, {1, 2}, {1, 2}, {1, 3}, {1, 3}, {2, 4}, {2, 5}, {3, 6}, {3, 7}, {4, 8}, {4, 9}, {5, 10},
-		{6, 10}, {7, 12}, {9, 15}},
+	-- the attack / defense / armor / hit chance bonus of a rarity (index = rank): {min, max}; the bonus is
+	-- min + floor(item level x (max - min + 1) / 100). Before the seven rarities: 15 rows from {1, 1} to {9, 15}
+	baseBonus = {{1, 1}, {1, 2}, {1, 3}, {2, 4}, {3, 7}, {6, 12}},
 
 	maxElements = 1, -- element modifiers per weapon (the stock roll never gives more than one)
 
-	-- Orbs of Awakening and Alchemy: {rarity, weight}
+	-- Orbs of Awakening and Gilding: {rarity id, weight}. Awakening: Common or Uncommon; Gilding: Magic, Rare or Legendary
 	transmutation = {{1, 65}, {2, 35}},
-	alchemy = {{3, 55}, {4, 30}, {5, 15}},
+	alchemy = {{3, 60}, {4, 30}, {5, 10}},
 
-	-- the stock Orb of Fate roll (customs/rarity/reroll_rarity_stats.lua rollRarityForReroll): rollChance % to get a
-	-- rarity at all, then each rarity in order with its own chance
+	-- the Orb of Fate roll (stock customs/rarity/reroll_rarity_stats.lua rollRarityForReroll, seven rows now):
+	-- rollChance % to get a rarity at all, then each rarity in rank order with its own chance (Common .. Divine). The
+	-- shares of a roll: none 85 %, Common 3.8, Uncommon 2.9, Magic 2.1, Rare 1.6, Legendary 0.9, Divine 0.04 (x0.15 each)
 	divineRollChance = 15,
-	divineChances = {25.0, 18.0, 15.0, 12.0, 10.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.5, 3.0, 2.5, 2.0, 1.0},
+	divineChances = {25.0, 20.0, 17.0, 14.0, 8.0, 2.0},
 
 	-- items no orb may touch (boats, same list as customs/rarity/reroll_rarity_stats.lua)
 	excludedItems = {[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true},
@@ -198,25 +204,27 @@ function C.affixes()
 		return affixCache
 	end
 	local E, list = M.config.engine, {}
-	local function add(row, e)
-		row.side, row.weight, row.tiers = e.side, e.weight, e.tiers
+	-- name = the engine group whose ranges before 2026-10-18 (M.legacyEngine) read the tier of an old item
+	local function add(row, e, name)
+		row.side, row.weight, row.tiers, row.legacy = e.side, e.weight, e.tiers, M.legacyEngine[name]
 		list[#list + 1] = row
 	end
 	for _, a in ipairs(C.absorbs) do
-		add({key = a.key, group = "absorb", label = a.label}, E.absorb)
+		add({key = a.key, group = "absorb", label = a.label}, E.absorb, "absorb")
 	end
 	for _, s in ipairs(C.skills) do
-		add({key = s.key, group = "skill", label = s.label}, s.kind == "profession" and E.profession or E.skill)
+		local name = s.kind == "profession" and "profession" or "skill"
+		add({key = s.key, group = "skill", label = s.label}, E[name], name)
 	end
 	for _, s in ipairs(C.specials) do
-		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind])
+		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind], s.kind)
 	end
 	for _, def in ipairs(M.config.mods) do
 		list[#list + 1] = {key = M.attr(def.key), chaosKey = def.key, group = "chaos", label = def.label, side = def.side,
-			weight = def.weight, tiers = def.tiers, kinds = def.kinds, def = def}
+			weight = def.weight, tiers = def.tiers, legacy = M.legacy[def.key], kinds = def.kinds, def = def}
 	end
 	for _, e in ipairs(C.elements) do
-		add({key = e.key, group = "element", label = e.label}, E.element)
+		add({key = e.key, group = "element", label = e.label}, E.element, "element")
 	end
 	affixCache = list
 	C.affixByKey = {}
@@ -276,17 +284,14 @@ function C.customNumber(item, key)
 	return num(custom(item, key)) or 0
 end
 
--- the rarity (a drop's rarity is a text while the engine's own roll passes the corpse: C.shield)
+-- the rarity as a stored id (1, 2, 3, 4, 5 or 10; 0 = none): an old item with another id reads as the rarity it became,
+-- ChaosRarity.canon (a drop's rarity is a text while the engine's own roll passes the corpse: C.shield)
 function C.rarityOf(item)
-	local r = math.floor(C.customNumber(item, "rarity"))
-	if r < 0 or r > #C.config.rarityNames then
-		return 0
-	end
-	return r
+	return ChaosRarity.canon(C.customNumber(item, "rarity")) % ChaosRarity.UNIQUE -- 0 .. 10 (a stored id, 16 never)
 end
 
 function C.rarityName(r)
-	return C.config.rarityNames[r] or ("Rarity " .. tostring(r))
+	return ChaosRarity.name(r) or ("Rarity " .. tostring(r))
 end
 
 function C.levelOf(item)
@@ -314,7 +319,7 @@ local function tierOf(item, affix, value)
 	if t then
 		return t
 	end
-	return M.tierOfValue(affix.tiers, value)
+	return M.tierOfValue(affix.legacy or affix.tiers, value) -- no stored tier: an item rolled before the ranges were raised
 end
 
 -- list of modifiers in description order:
@@ -328,7 +333,9 @@ function C.readMods(item)
 		m.bound = M.isBound(item, m.key)
 		m.power = affix and affix.def and M.isPower(affix.def) or false
 		if affix then
-			local r = M.tierRange(affix.tiers, m.tier)
+			-- an item without a stored tier was rolled before the ranges were raised (2026-10-18): its range is the old one
+			local ranges = (affix.legacy and not M.storedTier(item, affix.key)) and affix.legacy or affix.tiers
+			local r = M.tierRange(ranges, m.tier)
 			m.lo, m.hi = r[1], r[2]
 			if m.group == "special" then
 				m.lo, m.hi = C.specialChance(r[1]), C.specialChance(r[2]) -- the chance part (value); value2 = amount
@@ -690,9 +697,9 @@ function C.rollDivineRarity()
 	if C.random(1, 100) > C.config.divineRollChance then
 		return 0
 	end
-	for id, chance in ipairs(C.config.divineChances) do
+	for rank, chance in ipairs(C.config.divineChances) do
 		if C.random(1, 100) <= chance then
-			return id
+			return ChaosRarity.idOfRank(rank) -- the stored id of that place (Divine is 10)
 		end
 	end
 	return 0
@@ -875,7 +882,7 @@ end
 
 -- the base stat bonus of a rarity at an item level (item.cpp's formula)
 function C.baseBonusOf(rarity, level)
-	local b = C.config.baseBonus[rarity]
+	local b = ChaosRarity.at(C.config.baseBonus, rarity)
 	if not b then
 		return 0
 	end
@@ -912,6 +919,10 @@ end
 function C.forge(item, rarity, level, rand, opts)
 	rand = rand or C.random
 	level = math.max(1, math.min(M.config.itemLevel.max, math.floor(tonumber(level) or 1)))
+	rarity = ChaosRarity.canon(rarity) -- an old id (a config, a saved offer) becomes the stored id of the rarity it maps to
+	if rarity == ChaosRarity.UNIQUE then
+		rarity = 0
+	end
 	C.clearMods(item)
 	item:setCustomAttribute("rarity", rarity)
 	item:setCustomAttribute(M.ILVL, level)

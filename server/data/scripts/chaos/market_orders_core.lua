@@ -15,6 +15,10 @@ if not ChaosMarketCore then
 	dofile("data/scripts/chaos/market_core.lua")
 end
 
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
 ChaosMarketOrders = ChaosMarketOrders or {}
 local O = ChaosMarketOrders
 local MC = ChaosMarketCore
@@ -39,7 +43,7 @@ function O.checkFilter(f, cfg, known)
 	if not mf then
 		return nil, why
 	end
-	mf.rarity = MC.clampInt(f.rarity, 0, 15)
+	mf.rarity = ChaosRarity.canon(MC.clampInt(f.rarity, 0, 15)) -- a stored id (an order saved with an old id maps)
 	mf.ilvl = MC.clampInt(f.ilvl or f.ilvlMin, 0, ordersCfg(cfg).maxIlvl or 1000)
 	return mf
 end
@@ -127,7 +131,7 @@ function O.decodeFilter(text)
 				f.mods[#f.mods + 1] = {key = key:lower(), min = tonumber(min), tier = tonumber(tier)}
 			end
 		elseif k == "r" then
-			f.rarity = tonumber(v) or 0
+			f.rarity = ChaosRarity.canon(tonumber(v) or 0)
 		elseif k == "l" then
 			f.ilvl = tonumber(v) or 0
 		elseif k == "n" then
@@ -168,7 +172,7 @@ end
 function O.matches(f, facts)
 	facts = facts or {}
 	local idx = facts.index or {mods = {}, sockets = 0, quality = 0, freePrefix = 0, freeSuffix = 0, hasPower = 0, bound = 0}
-	if (f.rarity or 0) > 0 and (tonumber(facts.rarity) or 0) < f.rarity then
+	if (f.rarity or 0) > 0 and ChaosRarity.canon(facts.rarity) < ChaosRarity.canon(f.rarity) then
 		return false, "Its rarity is too low."
 	end
 	if (f.ilvl or 0) > 0 and (tonumber(facts.ilvl) or 0) < f.ilvl then

@@ -251,12 +251,12 @@ local function render()
       local partner = o
       if hovered.external then
         -- a linked or inspected item has no "Your Attack Interval" (it is the viewer's own number): leave it out of
-        -- the equipped item's side too, or the difference would list it as a change
+        -- the equipped item's side too, or the difference would list it as a change (the estimated DPS is the viewer's too)
         partner = {}
         for k, v in pairs(o) do partner[k] = v end
         partner.stats = {}
         for _, st in ipairs(o.stats or {}) do
-          if st.k ~= 'yourinterval' then partner.stats[#partner.stats + 1] = st end
+          if st.k ~= 'yourinterval' and st.k ~= 'dps' then partner.stats[#partner.stats + 1] = st end
         end
       end
       for _, r in ipairs(diffRows(tip, partner)) do extra[#extra + 1] = r end

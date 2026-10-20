@@ -168,7 +168,7 @@ local function fillFilterCombos()
   end
   fillCombo(window.browsePanel.catCombo, cats, lastFilter.cat or '')
   local rar = { { 'Any rarity', 0 } }
-  for i, name in ipairs(V.RARITIES) do rar[#rar + 1] = { name .. ' +', i } end
+  for _, id in ipairs(V.RARITY_IDS) do rar[#rar + 1] = { V.rarityName(id) .. ' +', id } end
   fillCombo(window.browsePanel.rarityCombo, rar, lastFilter.rarity or 0)
   fillCombo(window.browsePanel.curCombo, { { 'Any price', '' }, { 'Gold', 'gold' }, { 'Chaos Coins', 'coins' } }, lastFilter.cur or '')
   local sorts = {}
@@ -904,7 +904,7 @@ local function fillOrderCombos()
   local cur = comboValue(f.orderPayCombo)
   fillCombo(f.orderPayCombo, pay, (cur == 'coins' and #pay > 1) and 'coins' or 'gold')
   local rar = { { 'Any rarity', 0 } }
-  for i, name in ipairs(V.RARITIES) do rar[#rar + 1] = { name .. ' +', i } end
+  for _, id in ipairs(V.RARITY_IDS) do rar[#rar + 1] = { V.rarityName(id) .. ' +', id } end
   fillCombo(f.orderRarityCombo, rar, tonumber(comboValue(f.orderRarityCombo)) or 0)
 end
 

@@ -37,7 +37,7 @@ local cfg = {
 	rarityLootPerPoint = 1.0, -- node value 10 = +10% (added to item find)
 	speedPerPoint = 0.1,      -- node value 600 = +60 speed, before the cap
 	maxSpeed = 80,
-	maxAbsorb = 80,           -- percent, passive absorbs only (equipment adds on top)
+	maxAbsorb = 75,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less):
 	charStatCap = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40} -- dexterity 20: weapon hits x1.25 (at 40 knights out-damaged everyone at level 1000)

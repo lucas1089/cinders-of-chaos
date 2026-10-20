@@ -2,6 +2,7 @@
 -- corpse AFTER the stock data/scripts/eventcallbacks/monster/default_onDropLoot.lua.
 --
 --   1. extra loot rolls from the monster's own loot table by tier (magic x1, rare x2, legendary x3, boss x2)
+--   1c. charged items (amulets with charges, exercise weapons) get the item type's full charges (L.restoreCharges)
 --   2. gear quality: floor + bonus rarity per tier (the "rarity" attribute)
 --   2b. item level and modifiers: every gear drop gets the item level of this kill (L.dropLevel: the monster's level,
 --       its tier, boss, rift tier, Omen guardian, world boss; chaos_item_mods.lua M.sourceLevel); drops with a rarity
@@ -18,6 +19,14 @@
 -- MonsterType:getLoot, Monster:getMonsterLevel) are read from the base server sources.
 --
 -- Lua dialect: TFS 1.4.2 / LuaJIT (Lua 5.1 semantics).
+
+if not ChaosRarity then
+	dofile("data/lib/chaos_rarity.lua")
+end
+
+if not ChaosThrowables then
+	dofile("data/lib/chaos_throwables.lua")
+end
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -159,8 +168,7 @@ local function itemName(id)
 end
 
 local function rarityName(r)
-	local names = cfg().gear.names
-	return names and names[r] or ("Rarity " .. tostring(r))
+	return ChaosRarity.name(r) or ("Rarity " .. tostring(r))
 end
 
 local function uniqueSet()
@@ -268,18 +276,40 @@ function L.isStackableId(id)
 	return true
 end
 
+-- A stackable item never carries a rarity (owner 2026-10-20). The stock roll of the base drop script can still give a
+-- stack one (a royal spear passed its gear test), and the engine would roll stats on the stack: the attribute goes
+-- before that pass. Returns how many items lost it. Every Chaos gear gate (isGearId, ChaosCrafting.isGear) already
+-- refuses a stackable, so nothing forges it afterwards: that is why such a drop was always without a rarity.
+function L.stripStackableRarity(items)
+	local n = 0
+	for _, item in ipairs(items) do
+		local okR, r = pcall(function() return item:getCustomAttribute("rarity") end)
+		if okR and r ~= nil and L.isStackableId(item:getId()) then
+			pcall(function() item:removeCustomAttribute("rarity") end)
+			n = n + 1
+		end
+	end
+	return n
+end
+
+-- ids that leave every corpse: the stackable throwing weapons (data/lib/chaos_throwables.lua)
+function L.isRemovedId(id)
+	return ChaosThrowables.isThrowable(id)
+end
+
 -- ---------------------------------------------------------------------------
 -- rarity maths
 -- ---------------------------------------------------------------------------
--- port of the stock rollRarity (so extra gear is comparable and the simulation can mimic stock)
+-- port of the stock rollRarity (so extra gear is comparable and the simulation can mimic stock): returns a stored id
+-- (1, 2, 3, 4, 5 or 10)
 function L.stockRarity()
 	local g = cfg().gear
 	if rnd(1, 100) > g.stockRollChance then
 		return 0
 	end
-	for id, chance in ipairs(g.stockChances) do
+	for rank, chance in ipairs(g.stockChances) do
 		if rnd(1, 100) <= chance then
-			return id
+			return ChaosRarity.idOfRank(rank)
 		end
 	end
 	return 0
@@ -303,13 +333,15 @@ local function weightedPick(rows) -- rows = {{value, weight}, ...}
 	return rows[#rows][1]
 end
 
--- returns the new rarity (>= current, <= maxRarity). itemFind scales the bonus chance.
+-- returns the new rarity as a stored id (never below the current one; 0 = none). The floor, the bonus steps (places up the
+-- order Common .. Legendary, stopping at maxRarity) and the Divine chance work on ranks; itemFind scales the chances.
 function L.upgradeRarity(tier, current, itemFind)
 	local g = cfg().gear
+	local R = ChaosRarity
 	tier = L.normTier(tier)
-	current = tonumber(current) or 0
-	local target = current
-	local floor = tierValue(g.minRarity, tier, 0)
+	local cur = R.rank(current)
+	local target = cur
+	local floor = R.rank(tierValue(g.minRarity, tier, 0))
 	if floor > 0 and pct(tierValue(g.ensureChance, tier, 0)) and target < floor then
 		target = floor
 	end
@@ -317,13 +349,21 @@ function L.upgradeRarity(tier, current, itemFind)
 	if bonus > 0 and pct(bonus) then
 		target = target + (weightedPick(g.bonusSteps) or 0)
 	end
-	if target > g.maxRarity then
-		target = g.maxRarity
+	local top = R.rank(g.maxRarity)
+	if target > top then
+		target = math.max(top, cur)
 	end
-	if target < current then
-		target = current
+	local divine = tierValue(g.divineChance, tier, 0) * (itemFind or 1)
+	if divine > 0 and target < R.STORED and pct(divine) then
+		target = R.STORED
 	end
-	return target
+	if target < cur then
+		target = cur
+	end
+	if target == cur and cur > 0 and R.canon(current) ~= (tonumber(current) or 0) then
+		return tonumber(current) or 0 -- an unchanged old id stays as it is: nothing to announce, the forge maps it
+	end
+	return R.idOfRank(target)
 end
 
 -- ---------------------------------------------------------------------------
@@ -375,6 +415,66 @@ function L.rollExtraLoot(lootTable, tier, ctx)
 	return out
 end
 
+-- waystone drops (loot_config.lua waystone): removes the waystone items of a corpse when the monster is below the level.
+-- Returns the number of items removed. Matches by item name (the base items.xml names them "Waystone Tier I".."VI").
+function L.isWaystone(item)
+	local w = cfg().waystone
+	if not (w and w.namePattern) then
+		return false
+	end
+	local ok, name = pcall(function() return item:getName() end)
+	return ok and type(name) == "string" and name:lower():find(w.namePattern) ~= nil
+end
+
+-- Charged items (amulets with charges, exercise weapons ...) dropped with ONE charge: the engine treats the count a
+-- loot entry creates an item with as the charges of a non-stackable item with charges (Item::Item), and a loot entry
+-- has count 1. restoreCharges gives every such item of the corpse (and of the containers in it) the item type's full
+-- charges. Only called on a fresh corpse, so an item that really has fewer charges is never refilled.
+-- itemTypeFn(id) -> ItemType (tests pass a mock); returns how many items it set.
+function L.restoreCharges(container, itemTypeFn, depth)
+	itemTypeFn = itemTypeFn or ItemType
+	depth = depth or 0
+	if not container or not itemTypeFn or depth > 4 then
+		return 0
+	end
+	local fixed = 0
+	for slot = 0, container:getSize() - 1 do
+		local item = container:getItem(slot)
+		if item then
+			local it = itemTypeFn(item:getId())
+			if it and it.getCharges and not it:isStackable() then
+				local full = tonumber(it:getCharges()) or 0
+				local have = item.getCharges and tonumber(item:getCharges()) or 0
+				if full > 1 and have > 0 and have < full then
+					item:setAttribute(ITEM_ATTRIBUTE_CHARGES, full)
+					fixed = fixed + 1
+				end
+			end
+			if item.isContainer and item:isContainer() then
+				fixed = fixed + L.restoreCharges(item, itemTypeFn, depth + 1)
+			end
+		end
+	end
+	return fixed
+end
+
+function L.gateWaystones(corpse, level, tier)
+	local w = cfg().waystone
+	local minLevel = w and tonumber(w.minMonsterLevel) or 0
+	if minLevel <= 0 or not tonumber(level) or level >= minLevel or (w.skipTiers and w.skipTiers[tier]) then
+		return 0
+	end
+	local removed = 0
+	for slot = corpse:getSize() - 1, 0, -1 do
+		local item = corpse:getItem(slot)
+		if item and L.isWaystone(item) then
+			item:remove()
+			removed = removed + 1
+		end
+	end
+	return removed
+end
+
 -- ---------------------------------------------------------------------------
 -- 3. currency
 -- returns list of {id=, count=, name=} (merged by id)
@@ -383,6 +483,12 @@ function L.rollCurrency(tier, ctx)
 	local cur = cfg().currency
 	tier = L.normTier(tier)
 	ctx = ctx or {}
+	-- level gate (loot_config.lua currency.minMonsterLevel): a monster below it drops no orbs at all; a ctx without a
+	-- level (diagnostics) is not gated, bosses are exempt (levelGateSkip)
+	local minLevel = tonumber(cur.minMonsterLevel) or 0
+	if minLevel > 0 and tonumber(ctx.orbLevel) and ctx.orbLevel < minLevel and not tierValue(cur.levelGateSkip, tier, false) then
+		return {}
+	end
 	local scale = rateMult(ctx) * (ctx.itemFind or 1) * (ctx.orbFind or 1) -- orbFind: charms.lua
 	-- the Ember of the Forge blessing of the corpse owner (blessings.lua): every orb of the list more often
 	scale = scale * (ChaosBlessings and ChaosBlessings.mult and ChaosBlessings.mult(ctx.player, "orb") or 1)
@@ -564,7 +670,7 @@ end
 -- ---------------------------------------------------------------------------
 -- 6. simulation (no corpse, no engine objects): ChaosLootRoll(monsterName, tier, kills [, opts])
 -- opts = {lootTable=, level=, itemFind=, uniques=, rand=function(a,b)}
--- returns {monster, tier, kills, items={[id]=n}, gear=N, rarity={[0..15]=n}, upgraded=N,
+-- returns {monster, tier, kills, items={[id]=n}, gear=N, rarity={[0 or a stored id]=n}, upgraded=N,
 --          extraItems=N, currency={[id]=n}, uniques={[name]=n}}
 -- ---------------------------------------------------------------------------
 local function lootTableOf(monsterName)
@@ -597,8 +703,9 @@ function L.simulate(monsterName, tier, kills, opts)
 	local ctx = {tier = tier, level = opts.level or 0, itemFind = opts.itemFind or 1}
 	local res = {monster = monsterName, tier = tier, kills = kills, items = {}, gear = 0, rarity = {},
 		upgraded = 0, extraItems = 0, currency = {}, uniques = {}}
-	for r = 0, c.gear.maxRarity do
-		res.rarity[r] = 0
+	res.rarity[0] = 0
+	for _, id in ipairs(ChaosRarity.storedIds()) do
+		res.rarity[id] = 0
 	end
 	local ok, err = pcall(function()
 		for _ = 1, kills do
@@ -623,11 +730,12 @@ function L.simulate(monsterName, tier, kills, opts)
 			for _, d in ipairs(drops) do
 				if L.isGearId(d.id) then
 					local nr = L.upgradeRarity(tier, d.rarity, ctx.itemFind)
-					if nr > d.rarity then
+					if ChaosRarity.rank(nr) > ChaosRarity.rank(d.rarity) then
 						res.upgraded = res.upgraded + 1
 					end
 					res.gear = res.gear + 1
-					res.rarity[nr] = res.rarity[nr] + 1
+					local key = ChaosRarity.canon(nr)
+					res.rarity[key] = (res.rarity[key] or 0) + 1
 				end
 				res.items[d.id] = (res.items[d.id] or 0) + (d.count or 1)
 			end
@@ -650,7 +758,11 @@ function L.formatSim(res)
 	local lines = {string.format("ChaosLootRoll %s [%s] x%d: gear %d (upgraded %d), extra items %d",
 		res.monster, res.tier, res.kills, res.gear, res.upgraded, res.extraItems)}
 	local parts = {}
-	for r = 0, #res.rarity do
+	local order = {0}
+	for _, id in ipairs(ChaosRarity.storedIds()) do
+		order[#order + 1] = id
+	end
+	for _, r in ipairs(order) do
 		if res.rarity[r] and res.rarity[r] > 0 then
 			parts[#parts + 1] = string.format("%s=%d", r == 0 and "none" or rarityName(r), res.rarity[r])
 		end
@@ -713,6 +825,7 @@ local function tierOfMonster(monster)
 	return "normal"
 end
 
+-- the item's "rarity" attribute as it is stored (an old id stays; the readers map it: ChaosRarity.canon / rank)
 local function itemRarityOf(item)
 	local ok, r = pcall(function() return item:getCustomAttribute("rarity") end)
 	return ok and tonumber(r) or 0
@@ -729,6 +842,8 @@ end
 -- back now. An item with a rarity nobody rolled yet (a corpse the layer skipped) is forged here, in place, at the item
 -- level it carries (or its type's). Returns the item to move (always the item itself now; callers keep the return).
 function L.finalizeRarity(item)
+	-- a stackable has no rarity, whatever the stock roll gave it
+	L.stripStackableRarity({item})
 	local C = ChaosCrafting
 	if not C then
 		return item
@@ -862,6 +977,8 @@ local function processKill(monster, corpse)
 	pace = pace * (ChaosPocketBoss and ChaosPocketBoss.lootMultOf and ChaosPocketBoss.lootMultOf(monster) or 1)
 	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner),
 		pace = pace, catchup = catchup}
+	-- the level the orb and waystone gates read (monsterLevel falls back to the bounty pool / exp estimate)
+	ctx.orbLevel = L.monsterLevel(monster)
 	-- the Orb Find of the placed charms (charms.lua): the currency chances only
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
@@ -876,16 +993,31 @@ local function processKill(monster, corpse)
 	-- them out of the base loot tables; a loot table it could not read still drops none.
 	local A = ChaosArchery
 	local function isAmmo(id)
-		return A ~= nil and A.isAmmoId(id, ItemType and ItemType(id) or nil)
+		-- the stackable throwing weapons leave the game the same way (data/lib/chaos_throwables.lua; the install tool
+		-- patch_base_throwables.py takes them out of the base tables)
+		return L.isRemovedId(id) or (A ~= nil and A.isAmmoId(id, ItemType and ItemType(id) or nil))
 	end
-	if A then
-		for slot = corpse:getSize() - 1, 0, -1 do
-			local item = corpse:getItem(slot)
-			if item and isAmmo(item:getId()) then
-				item:remove()
-			end
+	for slot = corpse:getSize() - 1, 0, -1 do
+		local item = corpse:getItem(slot)
+		if item and isAmmo(item:getId()) then
+			item:remove()
 		end
 	end
+	-- 0'. a stackable never keeps a rarity from the stock roll (L.stripStackableRarity)
+	do
+		local stacks = {}
+		for slot = 0, corpse:getSize() - 1 do
+			local item = corpse:getItem(slot)
+			if item and item:isItem() then
+				stacks[#stacks + 1] = item
+			end
+		end
+		L.stripStackableRarity(stacks)
+	end
+
+	-- 0a. waystones only drop from high level monsters (owner 2026-10-17). The stock pass (or the monster's own loot
+	-- list) already put them in the corpse; the ones of a monster below waystone.minMonsterLevel are taken out again
+	L.gateWaystones(corpse, ctx.orbLevel, tier)
 
 	-- 0b. pack combat (pace.lua): the stock loot thinned by the loot factor. A stack keeps count x factor rounded at
 	-- random (gold included); any other item stays with chance = factor. The expected value per hour stays.
@@ -922,6 +1054,10 @@ local function processKill(monster, corpse)
 		end
 	end
 
+	-- 1c. charged items (amulets, exercise weapons) drop with the item type's full charges, not with the 1 of the
+	-- loot entry's count (L.restoreCharges)
+	L.restoreCharges(corpse)
+
 	-- 2. gear quality over everything in the corpse
 	local items = {}
 	for slot = 0, corpse:getSize() - 1 do
@@ -946,7 +1082,7 @@ local function processKill(monster, corpse)
 		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
 			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
-			if target > current then
+			if ChaosRarity.rank(target) > ChaosRarity.rank(current) then
 				item:setCustomAttribute("rarity", target)
 				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
 				-- shows the new rarity, {} from Rare on; without it a bonus item, marked the same way
@@ -1111,10 +1247,29 @@ ec:register(cfg().priority or 1)
 
 -- the empty corpse check at the end of the drop: the Loot Bag (pouches.lua), the base autoloot and the Rarity Autoloot
 -- (lootfilter.lua) take items out after the loot layer, so a corpse they empty is only empty here
+-- a corpse with loot left in it decays after ChaosPaceConfig.corpseSeconds (owner 2026-10-18: bodies stayed too long);
+-- the duration only ever shrinks, a stock decay already shorter stays
+local function shortenCorpse(corpse)
+	local secs = ChaosPaceConfig and ChaosPaceConfig.enabled ~= false and tonumber(ChaosPaceConfig.corpseSeconds) or 0
+	if secs <= 0 or not corpse or not ITEM_ATTRIBUTE_DURATION then
+		return
+	end
+	pcall(function()
+		local cur = tonumber(corpse:getAttribute(ITEM_ATTRIBUTE_DURATION)) or 0
+		if cur <= 0 or cur > secs * 1000 then
+			corpse:setAttribute(ITEM_ATTRIBUTE_DURATION, secs * 1000)
+			corpse:decay()
+		end
+	end)
+end
+L.shortenCorpse = shortenCorpse
+
 local emptyCb = EventCallback
 emptyCb.onDropLoot = function(self, corpse)
-	if ChaosPace and ChaosPace.isPaced and ChaosPace.isPaced(self) then
+	if ChaosPace and ChaosPace.isPaced and ChaosPace.isPaced(self) and corpse and corpse:getSize() == 0 then
 		shortenEmptyCorpse(corpse)
+	else
+		shortenCorpse(corpse)
 	end
 end
 emptyCb:register(cfg().emptyCorpseIndex or 99)

@@ -1,7 +1,12 @@
 -- weapon_styles.lua: how weapon styles differ in auto attacks (spells are not affected).
 --   * two-handed weapons (swords, axes, clubs, bows, crossbows) swing slower and hit harder: the slower speed is
---     the `attackspeed` items.xml gets from server/tools/two_handed.py (x1.5), this script multiplies the hit
---     (x twoHandedDamage), so a two-handed weapon does a bit more damage per second than one hand + shield
+--     the `attackspeed` items.xml gets from server/tools/two_handed.py (x1.5), this script multiplies the hit by the
+--     factor of the wielder's level (weapon_balance_core.lua, weapon_balance_config.lua written by
+--     server/tools/weapon_sim.py), so a two-handed weapon, a bow and a crossbow of one tier deal the damage per second
+--     of one hand + shield within 4% (owner debug item 47; it was a flat x1.6: +12-26% for two hands, up to +99% for
+--     launchers; server/data/spells/README.md "Weapon damage per second")
+--   * ONE melee skill (owner debug item 46, melee_skill_core.lua): a sword, axe or club hit uses the best of the three
+--     melee skills, not only the skill of its own type (the hit is multiplied by the ratio of the two maximum hits)
 --   * bows splash: the creatures around the target take arrowSplash of the hit (engine PvP rules apply)
 --   * crossbows hit only their target (no splash)
 --   * the quiver (data/lib/chaos_archery_core.lua), while it counts (a bow or crossbow in the hands): Critical Strike
@@ -11,7 +16,6 @@
 -- is comes from chaos_archery_config.lua, not from an ammunition slot.
 -- Only weapon hits are touched (combat origin melee / ranged); runes, spells and wands are not.
 local cfg = {
-	twoHandedDamage = 1.6,
 	arrowSplash = 0.5,
 }
 ChaosWeaponStyles = cfg
@@ -20,6 +24,14 @@ if not ChaosArchery then
 	dofile("data/lib/chaos_archery_core.lua")
 end
 local A = ChaosArchery
+if not ChaosWeaponBalance then
+	dofile("data/scripts/chaos/weapon_balance_core.lua")
+end
+local WB = ChaosWeaponBalance
+if not ChaosMeleeSkill then
+	dofile("data/scripts/chaos/melee_skill_core.lua")
+end
+local MS = ChaosMeleeSkill
 
 local splashArea = createCombatArea({
 	{1, 1, 1},
@@ -27,7 +39,7 @@ local splashArea = createCombatArea({
 	{1, 1, 1},
 })
 
--- weapon in the hands (not a shield, not ammunition, not a quiver) and its item type
+-- weapon in the hands (not a shield, not ammunition, not a quiver): its item type, then the item
 local function handWeapon(player)
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
@@ -35,11 +47,52 @@ local function handWeapon(player)
 			local it = ItemType(item:getId())
 			local wt = it:getWeaponType()
 			if wt ~= WEAPON_NONE and wt ~= WEAPON_SHIELD and wt ~= WEAPON_AMMO and wt ~= (WEAPON_QUIVER or 8) then
-				return it
+				return it, item
 			end
 		end
 	end
 	return nil
+end
+
+-- 1 while ChaosSpell.weaponStrike deals a strike (Chaos.storage.weaponStrike)
+local STRIKE_KEY = (Chaos and Chaos.storage and Chaos.storage.weaponStrike) or 7100028
+
+-- the melee weapon types and their skills (ONE melee skill: melee_skill_core.lua)
+local MELEE_NAME = {[WEAPON_SWORD] = "sword", [WEAPON_CLUB] = "club", [WEAPON_AXE] = "axe"}
+local MELEE_SKILL = {sword = SKILL_SWORD, club = SKILL_CLUB, axe = SKILL_AXE}
+
+-- the attack of the weapon item the way the engine adds it up: a rarity roll or a unique writes it as an item attribute
+local function itemAttack(item, it)
+	local a = item:getAttribute(ITEM_ATTRIBUTE_ATTACK)
+	if not a or a == 0 then
+		a = it:getAttack()
+	end
+	return a or 0
+end
+
+-- Player::getAttackFactor: 1 offensive, 2 balanced, 3 defensive
+local function attackFactor(player)
+	local mode = player.getFightMode and player:getFightMode() or 1
+	if mode == 2 then
+		return 1.2
+	elseif mode == 3 then
+		return 2.0
+	end
+	return 1.0
+end
+
+-- what a hit of a sword, axe or club is multiplied by to be the hit of the best melee skill (1 when its own is the best)
+local function meleeSkillMultiplier(player, item, it, typeName)
+	local own = player:getEffectiveSkillLevel(MELEE_SKILL[typeName])
+	local levels = {}
+	for name, skill in pairs(MELEE_SKILL) do
+		levels[name] = name == typeName and own or player:getEffectiveSkillLevel(skill)
+	end
+	local _, best = MS.best(levels)
+	if best <= own then
+		return 1
+	end
+	return MS.hitMultiplier(player:getLevel(), own, best, itemAttack(item, it), attackFactor(player))
 end
 
 local function isTwoHanded(it)
@@ -136,15 +189,26 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 			or (origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED) then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local weapon = handWeapon(attacker)
+	local weapon, weaponItem = handWeapon(attacker)
 	if not weapon then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	if isTwoHanded(weapon) then
-		primaryDamage = scale(primaryDamage, cfg.twoHandedDamage)
-		secondaryDamage = scale(secondaryDamage, cfg.twoHandedDamage)
+	local typeName = MELEE_NAME[weapon:getWeaponType()]
+	-- a spell's scripted weapon strike (ChaosSpell.weaponStrike) was worked out with the best melee skill already
+	if typeName and origin == ORIGIN_MELEE and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
+		local m = meleeSkillMultiplier(attacker, weaponItem, weapon, typeName)
+		if m ~= 1 then
+			primaryDamage = scale(primaryDamage, m)
+			secondaryDamage = scale(secondaryDamage, m)
+		end
 	end
-	local kind = origin == ORIGIN_RANGED and A.kindOfType(weapon) or nil
+	local launcher = A.kindOfType(weapon)
+	local styleFactor = WB.hitFactor(attacker:getLevel(), isTwoHanded(weapon), launcher, typeName)
+	if styleFactor ~= 1 then
+		primaryDamage = scale(primaryDamage, styleFactor)
+		secondaryDamage = scale(secondaryDamage, styleFactor)
+	end
+	local kind = origin == ORIGIN_RANGED and launcher or nil
 	if not kind then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end

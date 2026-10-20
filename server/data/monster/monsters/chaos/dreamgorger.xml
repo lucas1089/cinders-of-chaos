@@ -64,7 +64,6 @@
 		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
 		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
 		<item id="2152" countmax="25" chance="65000"/><!-- Platinum Coin -->
-		<item id="6500" countmax="1" chance="400"/><!-- demonic essences -->
 		<item id="11302" chance="375" /><!-- jadefen helmet -->
 		<item id="11301" chance="375" />
 		<item id="11304" chance="375" />

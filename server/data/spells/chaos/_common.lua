@@ -365,6 +365,12 @@ function ChaosSpell.bestMeleeSkill(player)
 	return best
 end
 
+-- ONE melee skill (data/scripts/chaos/melee_skill_core.lua): the level a melee spell or strike uses is the best of the
+-- sword, club and axe skills, whichever weapon is in the hand
+function ChaosSpell.meleeSkillLevel(player)
+	return player:getEffectiveSkillLevel(ChaosSpell.bestMeleeSkill(player))
+end
+
 function ChaosSpell.spectators(pos, radius, onlyPlayers)
 	return Game.getSpectators(Position(pos), false, onlyPlayers or false, radius, radius, radius, radius) or {}
 end
@@ -379,6 +385,16 @@ function ChaosSpell.canAttack(caster, target)
 	end
 	local targetPlayer = target:getPlayer()
 	if not targetPlayer then
+		-- never the caster's own summons or its party's (summons_core.lua; the comment above always said so)
+		local targetMaster = target:getMaster()
+		local masterPlayer = targetMaster and targetMaster:getPlayer()
+		if masterPlayer then
+			local casterMaster = caster:getMaster()
+			local owner = caster:getPlayer() or (casterMaster and casterMaster:getPlayer())
+			if owner and (owner == masterPlayer or (owner:getParty() and owner:getParty() == masterPlayer:getParty())) then
+				return false
+			end
+		end
 		return true
 	end
 	local master = caster:getMaster()
@@ -587,7 +603,18 @@ end
 ChaosSpell.SUBID = {
 	blood_pact = 71001, crimson_fury = 71002, rally = 71003, barkskin = 71004,
 	divine_ward = 71005, soul_aegis = 71006, phantom_veil = 71007, dash = 71008, iron_will = 71009,
+	-- timer-only conditions (no attributes) that stand for a summon / decoy spell on the buff bar (chaos_buffs.lua)
+	moonfang_pack = 71070, mirror_image = 71071,
 }
+
+-- A timer condition on the caster for a support spell that has a duration but no stat of its own (summons, decoys): the
+-- buff bar finds it by its sub id (data/lib/chaos_buffs.lua) and shows the time left.
+function ChaosSpell.buffTimer(player, subId, ticks)
+	local c = Condition(CONDITION_ATTRIBUTES, CONDITIONID_COMBAT)
+	c:setParameter(CONDITION_PARAM_SUBID, subId)
+	c:setParameter(CONDITION_PARAM_TICKS, ticks)
+	player:addCondition(c)
+end
 
 -- ------------------------------------------------------------------------------------------------ Thief line
 -- (thief/ ninja/ samurai/; the class rules are data/scripts/chaos/classes.lua, loaded here once)
@@ -596,6 +623,24 @@ function ChaosSpell.loadClasses()
 		dofile('data/scripts/chaos/classes.lua')
 	end
 	return ChaosClasses
+end
+
+-- whose side a creature is on (data/scripts/chaos/summons_core.lua): a summon is made with ChaosSummonsCore.bind(owner, m)
+function ChaosSpell.loadSummons()
+	if not ChaosSummonsCore then
+		dofile('data/scripts/chaos/summons_core.lua')
+	end
+	return ChaosSummonsCore
+end
+
+-- make `monster` the summon of `player` (setMaster plus clearing the target its creation gave it)
+function ChaosSpell.bindSummon(player, monster)
+	local K = ChaosSpell.loadSummons()
+	if K then
+		return K.bind(player, monster)
+	end
+	monster:setMaster(player)
+	return monster
 end
 
 -- attack of the main-hand melee weapon (left hand first, as the engine picks it), never below 20 (an empty hand). An
@@ -622,15 +667,15 @@ function ChaosSpell.meleeAttack(player)
 	return 20
 end
 
--- skill x attack of a Thief-line weapon strike: the sword skill and the main-hand blade
+-- skill x attack of a Thief-line weapon strike: the melee skill and the main-hand blade
 function ChaosSpell.bladePower(player)
-	return player:getEffectiveSkillLevel(SKILL_SWORD) * ChaosSpell.meleeAttack(player)
+	return ChaosSpell.meleeSkillLevel(player) * ChaosSpell.meleeAttack(player)
 end
 
--- skill x attack of a shuriken: the better of sword and distance skill, the throwing star in hand (any throwing
+-- skill x attack of a shuriken: the better of the melee and distance skill, the throwing star in hand (any throwing
 -- weapon) or Chaos.classes.shuriken.defaultAttack
 function ChaosSpell.shurikenPower(player)
-	local skill = math.max(player:getEffectiveSkillLevel(SKILL_SWORD), player:getEffectiveSkillLevel(SKILL_DISTANCE))
+	local skill = math.max(ChaosSpell.meleeSkillLevel(player), player:getEffectiveSkillLevel(SKILL_DISTANCE))
 	local attack = (Chaos and Chaos.classes and Chaos.classes.shuriken.defaultAttack) or 50
 	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
 		local item = player:getSlotItem(slot)
@@ -664,8 +709,17 @@ function ChaosSpell.weaponStrike(caster, target, min, max, effect, origin)
 	end
 	local k = ChaosSpell.thiefLevelScale(caster)
 	min, max = min * k, max * k
-	return doTargetCombat(caster, target, COMBAT_PHYSICALDAMAGE, -math.floor(min), -math.floor(max), effect,
-		origin or ORIGIN_MELEE)
+	-- the strike's numbers come from ChaosSpell.meleeSkillLevel already: weapon_styles.lua must not apply the melee skill
+	-- rule (the ratio of the best skill to the weapon's own) to it a second time; it reads this storage during the call
+	local key = (Chaos and Chaos.storage and Chaos.storage.weaponStrike) or 7100028
+	caster:setStorageValue(key, 1)
+	local ok, result = pcall(doTargetCombat, caster, target, COMBAT_PHYSICALDAMAGE, -math.floor(min), -math.floor(max),
+		effect, origin or ORIGIN_MELEE)
+	caster:setStorageValue(key, 0)
+	if not ok then
+		error(result, 0)
+	end
+	return result
 end
 
 -- Make monsters around `pos` let go of `player` (or of every player, when player is nil): drop it as attack and

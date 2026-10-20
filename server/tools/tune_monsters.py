@@ -38,6 +38,7 @@ ROOT = os.path.join(os.path.dirname(HERE), 'data', 'monster', 'monsters', 'chaos
 sys.path.insert(0, HERE)
 sys.dont_write_bytecode = True
 from fix_monster_xml import DAMAGE_SPELLS, _set_attr, _num
+import monster_fire_resist as fire
 
 LATE_ELEMENTS = [('physicalPercent', -15), ('holyPercent', -15), ('firePercent', 20), ('energyPercent', 20),
                  ('icePercent', 20), ('earthPercent', 20), ('deathPercent', 10)]
@@ -171,6 +172,19 @@ TUNING = {
     'ironhook_corsair.xml': {'attacks_xml': PIRATE_RANGED, 'flags': {'targetdistance': '4'}},
     'stormy_seadevil.xml': {'attacks_xml': PIRATE_CASTER, 'flags': {'targetdistance': '3'}},
     'captain_bloodbeard.xml': {'attacks_xml': PIRATE_SUMMONER, 'summons_xml': PIRATE_SUMMONS},
+    # 8. pack 30: ten hunting monsters of levels 420-660 below the Cunning Hyaena (650), the template scaled by L/650
+    #    (health x L/650, experience x (L/650)^2, hits x L/650; client/tools/sprites/art_import/pack30_looks.csv looks).
+    #    XML only, no spawns (area planning is a later step); server/README.md "Pack 30 art".
+    'pack30/gibbet_fledgling.xml': {'name': 'Gallows Fledgling', 'health': 8340, 'experience': 1900, 'speed': 70, 'level': (420, 440)},
+    'pack30/doomcrow_flock.xml': {'name': 'Doomcrow Flock', 'health': 8720, 'experience': 2050, 'speed': 62, 'level': (440, 460)},
+    'pack30/mound_haunt.xml': {'name': 'Barrow Haunt', 'health': 9110, 'experience': 2250, 'speed': 48, 'level': (460, 480)},
+    'pack30/gibbetwing.xml': {'name': 'Gibbetwing', 'health': 9890, 'experience': 2650, 'speed': 66, 'level': (500, 520)},
+    'pack30/ashmaw_raider.xml': {'name': 'Ashmaw Raider', 'health': 10660, 'experience': 3100, 'speed': 55, 'level': (540, 560)},
+    'pack30/ashmaw_bonecaller.xml': {'name': 'Ashmaw Bonecaller', 'health': 11050, 'experience': 3300, 'speed': 50, 'level': (560, 580)},
+    'pack30/mange_hound.xml': {'name': 'Mange Hound', 'health': 11440, 'experience': 3550, 'speed': 70, 'level': (580, 600)},
+    'pack30/ashmaw_warlord.xml': {'name': 'Ashmaw Warlord', 'health': 12210, 'experience': 4050, 'speed': 58, 'level': (620, 640)},
+    'pack30/slagborer.xml': {'name': 'Slagborer', 'health': 11820, 'experience': 3800, 'speed': 52, 'level': (600, 620)},
+    'pack30/slagborer_queen.xml': {'name': 'Slagborer Queen', 'health': 12600, 'experience': 4300, 'speed': 48, 'level': (640, 660)},
 }
 for _i, _f in enumerate(DORMANT):
     _L = round((670 + _i * (1280 - 670) / (len(DORMANT) - 1)) / 10) * 10
@@ -332,9 +346,37 @@ def stats(t):
             'exp': a('experience'), 'speed': a('speed'), 'hit': max(hits) if hits else 0}
 
 
+LUA_ROOT = os.path.join(os.path.dirname(HERE), 'data', 'monster', 'lua', 'chaos')
+PETS = 'pets'  # allies of the player: never a target of Pyre Oath, they keep their fire immunity
+
+
+def fire_resist_files():
+    """(path, fix function) of every monster file of ours that must hold no fire immunity (monster_fire_resist.py,
+    owner decision C7: a formerly immune monster has FIRE_RESIST_PERCENT); the pets are left out"""
+    out = []
+    for folder, dirs, files in os.walk(ROOT):
+        dirs[:] = sorted(d for d in dirs if d != PETS)
+        out += [(os.path.join(folder, f), fire.xml) for f in sorted(files) if f.endswith('.xml')]
+    for folder, dirs, files in os.walk(LUA_ROOT):
+        dirs.sort()
+        out += [(os.path.join(folder, f), fire.lua) for f in sorted(files) if f.endswith('.lua')]
+    return out
+
+
 def main(argv):
     check, table = '--check' in argv, '--table' in argv
     bad = 0
+    for p, fix in fire_resist_files():
+        t = open(p, encoding='utf-8', errors='surrogateescape', newline='').read()
+        new, immune = fix(t)
+        if immune:
+            bad += 1
+            rel = os.path.relpath(p, os.path.dirname(HERE)).replace(os.sep, '/')
+            if check:
+                print('not up to date (fire immunity -> %d%% resistance):' % fire.FIRE_RESIST_PERCENT, rel)
+            elif not table:
+                open(p, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
+                print('fire resistance %d%%:' % fire.FIRE_RESIST_PERCENT, rel)
     for rel, row in sorted(TUNING.items()):
         p = os.path.join(ROOT, rel)
         t = open(p, encoding='utf-8').read()

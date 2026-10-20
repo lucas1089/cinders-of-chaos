@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Pell Ashmere: the services clerk, who opens the Info and Services window (server/data/scripts/chaos/service_npcs.lua, service_npcs_config.lua; server/README.md "Service NPCs").
+     Stands in a booth of the Hall of Services; installed by server/tools/install_service_npcs.py. The same window opens
+     from the game menu. -->
+<npc name="Pell Ashmere" script="pell_ashmere.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="133" head="116" body="3" legs="116" feet="115" addons="1" />
+	<parameters>
+		<parameter key="message_greet" value="Welcome, |PLAYERNAME|. A new name, a new class, a familiar or a plate frame? Ask, or say {services}." />
+		<parameter key="message_farewell" value="Come again, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The ink dries." />
+	</parameters>
+</npc>

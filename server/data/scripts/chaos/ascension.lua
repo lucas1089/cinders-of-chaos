@@ -143,6 +143,11 @@ function C.afterVocationChange(player)
 	if ChaosBeastmaster and ChaosBeastmaster.dismissIfNotBeastmaster then
 		ChaosBeastmaster.dismissIfNotBeastmaster(player)
 	end
+	-- the new class's spells (class_spells.lua): needlearn spells of the old class are forgotten, the new class's are
+	-- taught at the level, and the client's Spellbook gets the new vocation at once
+	if ChaosClassSpells and ChaosClassSpells.sync then
+		ChaosClassSpells.sync(player)
+	end
 	-- the Necromancer's minions go when the character leaves the line (necro_minions.lua also trims them to the new
 	-- class's caps on its own every 0.5 s; this makes it immediate)
 	if ChaosNecroMinions and ChaosNecroMinions.onVocationChange then

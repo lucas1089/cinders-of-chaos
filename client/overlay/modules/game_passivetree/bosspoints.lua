@@ -13,6 +13,7 @@ end
 local function tooltipOf(data)
   local lines = {
     tr('First kill of each major boss: +1 passive point (kept through resets).'),
+    tr('They are already in the points counter above: spend them on any node of the tree.'),
     tr('Where to get them:'),
     tr('- World bosses: the event every 6 hours (portals by the temples, level 300).'),
     tr('- Pocket bosses: a private copy any time, Adventure > Boss Spawns (daily charges).'),
@@ -34,7 +35,8 @@ local function refreshBossPoints()
     return
   end
   local got, total = tonumber(bossPointsState.got) or 0, tonumber(bossPointsState.total) or 0
-  label:setText(bossPointsState.label or tr('Boss points %d/%d', got, total))
+  -- the points are free tree points (no separate currency): say so next to the count
+  label:setText(tr('Boss points %d/%d', got, total) .. ' ' .. tr('(+%d passive points)', got))
   label:setColor(got >= total and total > 0 and '#7fd06a' or '#d8a03a')
   label:setTooltip(tooltipOf(bossPointsState))
   label:setVisible(total > 0)

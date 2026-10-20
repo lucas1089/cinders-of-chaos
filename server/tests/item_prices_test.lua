@@ -72,11 +72,13 @@ P.setData({
 eq(P.priceFor(100, nil), 1000, "plain gear")
 eq(P.priceFor(100, {rarity = 1}), 1000, "Common x1")
 eq(P.priceFor(100, {rarity = 2}), 1500, "Uncommon x1.5")
-eq(P.priceFor(100, {rarity = 3}), 3000, "Rare x3")
-eq(P.priceFor(100, {rarity = 4}), 6000, "Epic x6")
+eq(P.priceFor(100, {rarity = 3}), 3000, "Magic x3")
+eq(P.priceFor(100, {rarity = 4}), 6000, "Rare x6")
 eq(P.priceFor(100, {rarity = 5}), 12000, "Legendary x12")
-eq(P.priceFor(100, {rarity = 15}), 32000, "Transcendent x32")
-eq(P.priceFor(100, {rarity = 99}), 32000, "rarity above the table: the top")
+eq(P.priceFor(100, {rarity = 10}), 24000, "Divine x24")
+eq(P.priceFor(100, {rarity = 15}), 24000, "an old Transcendent is Divine: x24")
+eq(P.priceFor(100, {rarity = 7}), 12000, "an old Mythic is Legendary: x12")
+eq(P.priceFor(100, {rarity = 99}), 1000, "an id out of range: no rarity")
 eq(P.priceFor(100, {ilvl = 100}), 1500, "item level 100: x1.5")
 eq(P.priceFor(100, {ilvl = 150, rarity = 5}), 21000, "Legendary at item level 150: x12 x1.75")
 eq(P.priceFor(100, {ilvl = 900}), 1750, "item level capped at 150")
@@ -89,8 +91,9 @@ eq(P.priceFor(999, {}), 0, "unknown item 0")
 eq(P.sellPrice(100, 3), 3000, "an id: plain x count")
 eq(P.minBuyPrice(100), 2000, "an NPC asks at least twice the sell price")
 -- rarer and higher sells for more
-for r = 2, 15 do
-	check(P.rarityMult(r) > P.rarityMult(r - 1), "rarity " .. r .. " pays more than " .. (r - 1))
+for rank = 2, 6 do
+	local r, below = ChaosRarity.idOfRank(rank), ChaosRarity.idOfRank(rank - 1)
+	check(P.rarityMult(r) > P.rarityMult(below), ChaosRarity.name(r) .. " pays more than " .. ChaosRarity.name(below))
 end
 check(real.reasons.unique ~= nil and real.reasons.unique:find("salvage or market", 1, true) ~= nil, "unique reason documented")
 check(real.uniques == nil and real.uniqueMult == nil, "no unique prices in the table")
@@ -173,7 +176,7 @@ local inv = dofile("data/scripts/chaos/invasion_config.lua")
 for _, it in ipairs(inv.worldEvents.merchant.items) do
 	check(P.basePrice(it.id) < it.price, "Wandering Merchant: " .. it.name .. " sells for more than an NPC pays")
 	-- even the best copy: an orb is unsellable, a potion is no gear
-	check(P.priceFor(it.id, {rarity = 15, ilvl = 150}) < it.price, "Wandering Merchant: the best copy of " .. it.name)
+	check(P.priceFor(it.id, {rarity = 10, ilvl = 150}) < it.price, "Wandering Merchant: the best copy of " .. it.name)
 end
 -- the Wandering Merchant's rarity orbs on a plain copy (owner 2026-10-14: Gilding 250,000): the expected gain at item
 -- level 150 never reaches the orb's price, for any equipment (the real orb tables of chaos_crafting.lua)
@@ -199,7 +202,7 @@ if okc and ChaosCrafting then
 	local left, fate, got = cc.divineRollChance / 100, 0, 0
 	for r, c in ipairs(cc.divineChances) do
 		local p = left * math.floor(c) / 100
-		fate, got = fate + p * P.rarityMult(r), got + p
+		fate, got = fate + p * P.rarityMult(ChaosRarity.idOfRank(r)), got + p
 		left = left * (1 - math.floor(c) / 100)
 	end
 	fate = fate + (1 - got)
@@ -228,8 +231,8 @@ local K, M = ChaosGambleCore, ChaosItemMods
 local lootcfg = dofile("data/scripts/chaos/loot_config.lua")
 local odds = K.odds(gcfg, lootcfg.gear)
 local ev = 0
-for r = 0, 15 do
-	ev = ev + (odds[r] or 0) * P.rarityMult(r)
+for rank = 0, 6 do -- odds are by place (0 none, 1 Common .. 6 Divine)
+	ev = ev + (odds[rank] or 0) * (rank == 0 and 1 or P.rarityMult(ChaosRarity.idOfRank(rank)))
 end
 check(ev > 1 and ev < 20, "gamble expected rarity multiplier " .. ev)
 local worst, worstText = 0, ""

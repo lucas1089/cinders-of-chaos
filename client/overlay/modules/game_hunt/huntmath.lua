@@ -2,13 +2,16 @@
 local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) end if select('#', ...) > 0 then return string.format(s, ...) end return s end -- i18n (client_chaos_locale)
 HuntMath = {}
 
--- the base server's rarity names and our colours (same list as game_lootfilter and lootfilter_core.lua)
+-- the seven rarities' names and colours by rarity id (same list as game_lootfilter and lootfilter_core.lua): 1 Common,
+-- 2 Uncommon, 3 Magic, 4 Rare, 5 Legendary, 10 Divine; 6 .. 9 and 11 .. 15 only exist on items saved before the seven
+-- rarities and are the rarity they became
+local LEGENDARY = { name = 'Legendary', color = '#ffd040' }
+local DIVINE = { name = 'Divine', color = '#c8e8ff' }
 HuntMath.RARITY = {
-  { name = 'Common', color = '#c8c8c8' }, { name = 'Uncommon', color = '#5ccf5c' }, { name = 'Rare', color = '#4a90ff' },
-  { name = 'Epic', color = '#a35cf0' }, { name = 'Legendary', color = '#ffd040' }, { name = 'Exotic', color = '#f5b13a' },
-  { name = 'Mythic', color = '#ff5a5a' }, { name = 'Chaos', color = '#e02424' }, { name = 'Eternal', color = '#ff8a70' },
-  { name = 'Divine', color = '#c8e8ff' }, { name = 'Phantasmal', color = '#9ad8ff' }, { name = 'Celestial', color = '#e4f2ff' },
-  { name = 'Cosmic', color = '#b878ff' }, { name = 'Abyssal', color = '#9a4ce0' }, { name = 'Transcendent', color = '#e070ff' },
+  [1] = { name = 'Common', color = '#c8c8c8' }, [2] = { name = 'Uncommon', color = '#5ccf5c' },
+  [3] = { name = 'Magic', color = '#4a90ff' }, [4] = { name = 'Rare', color = '#a35cf0' },
+  [5] = LEGENDARY, [6] = LEGENDARY, [7] = LEGENDARY, [8] = LEGENDARY, [9] = LEGENDARY,
+  [10] = DIVINE, [11] = DIVINE, [12] = DIVINE, [13] = DIVINE, [14] = DIVINE, [15] = DIVINE,
 }
 HuntMath.UNIQUE_COLOR = '#e07b24'
 HuntMath.ORB_COLOR = '#4fd8d0'
@@ -86,9 +89,9 @@ end
 -- label and colour of an item row: "[Legendary] Magic Sword", "[Unique] Soulreaper", "Orb of Upheaval"
 function HuntMath.itemLabel(name, rarity, unique, orb)
   rarity = tonumber(rarity) or 0
-  if unique == 1 or unique == true then return '[Unique] ' .. cap(name), HuntMath.UNIQUE_COLOR end
+  if unique == 1 or unique == true then return '[' .. tr('Unique') .. '] ' .. cap(name), HuntMath.UNIQUE_COLOR end
   local r = HuntMath.RARITY[rarity]
-  if r then return '[' .. r.name .. '] ' .. cap(name), r.color end
+  if r then return '[' .. tr(r.name) .. '] ' .. cap(name), r.color end
   if orb == 1 or orb == true then return cap(name), HuntMath.ORB_COLOR end
   return cap(name), HuntMath.TEXT_COLOR
 end

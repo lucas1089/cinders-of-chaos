@@ -30,6 +30,9 @@ rm -f "$OUT/mods/game_helper/cavebot_panel.lua" "$OUT/mods/game_helper/scripting
 rm -f "$OUT/data/images/splash.png" "$OUT"/data/images/*-client-emblem.png
 cp -a "$HERE"/overlay/modules/. "$OUT/modules/"
 cp -a "$HERE"/overlay/data/. "$OUT/data/"
+# our executable icon (src/otcicon.rc names otcicon.ico; the window icon data/images/clienticon.png came with the overlay data);
+# made by tools/gen_client_icon.py from docs/brand/cinders_logo_icon.png
+if [ -d "$HERE/overlay/src" ]; then mkdir -p "$OUT/src" && cp -a "$HERE"/overlay/src/. "$OUT/src/"; fi
 # (the overlay's data/images/game/spells/spell-icons-*.png are complete generated sheets, Chaos spells at cells
 #  201..277 included, and replace the base ones; regenerate them with tools/gen_all_spell_icons.py)
 # the Chaos bitmap fonts (client_chaos_theme ChaosTheme.fonts), made from the OFL fonts in client/fonts-src/ by

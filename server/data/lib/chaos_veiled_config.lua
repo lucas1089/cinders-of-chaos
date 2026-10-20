@@ -18,9 +18,10 @@ return {
 		value = "chaos_veil_val" -- its value
 	},
 
-	-- which items may roll a veiled slot: gear with a rarity of at least minRarity (Rare); from highRarity (Legendary) on
-	-- the `high` chance of the source counts. Uniques and set pieces never do.
-	minRarity = 3,
+	-- which items may roll a veiled slot: gear with a rarity of at least minRarity (Rare, a stored id of
+	-- data/lib/chaos_rarity.lua; it was 3, the old Rare, which is Magic now: with seven rarities Magic is the first step up
+	-- from the plain ones); from highRarity (Legendary) on the `high` chance of the source counts. Uniques and set pieces never do.
+	minRarity = 4,
 	highRarity = 5,
 
 	-- the sources and their chance per item (per 10000) for a veiled slot; the best source of a drop counts

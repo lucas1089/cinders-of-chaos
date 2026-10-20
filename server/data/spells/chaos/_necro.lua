@@ -33,6 +33,25 @@ function S.fx(pos, vnames, name, fallback)
 	return nil
 end
 
+-- A summon spell (Raise Bone Warrior / Archer / Mage): ONE minion of `kind` next to the caster. The class's total cap is
+-- enforced by ChaosNecro.raise (the oldest minion is dismissed first). Returns true, or cancels with a message.
+function S.summon(player, kind)
+	local classKey = S.class(player)
+	if not classKey then
+		return false
+	end
+	if player:getSkull() == SKULL_BLACK then
+		return ChaosSpell.cancel(player)
+	end
+	local minion = L.raise(player, kind, player:getPosition())
+	if not minion then
+		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
+	end
+	-- the seal where the minion rises (it may be placed next to the caster)
+	ChaosSpell.vfxOr(minion:getPosition(), "necro_seal", "summon_portal", CONST_ME_MORTAREA)
+	return true
+end
+
 -- running damage-over-time effects: key -> token (a recast replaces the running one)
 S.dots = {}
 local tokens = 0
