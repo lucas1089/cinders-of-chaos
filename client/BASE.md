@@ -510,7 +510,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Applies on top of `0001`-`0072`. Not tried in a client run.
 52. `0074` (`mods/game_helper/helper.lua`): **dying turns Auto Target and Magic Shooter off**. `onHelperDeath` calls
     `_Helper.disableCombatOnDeath`, which uses `pzDisableSystem` (checkbox, config flag, locked target, shortcut buttons).
-    Not tried in a client run.
+    Not tried in a client run. Superseded by `0086`: the settings are no longer switched off, only the attack stops.
 53. `0076` (`mods/game_helper/classes/auto_target.lua`): **Auto Target skips summons, effigies and decoys**.
     `isValidCreature` refuses creature types summon own / other and names with "effigy" or "decoy". Not tried in a client run.
 54. `0075` (Lua `modules/game_outfit/outfit.lua`): **cosmetic dropdowns in the Customise Character window**. Four guarded
@@ -610,6 +610,15 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     off (10.98); Show Floor moves into its place. Aura, Shader and Show Aura stay: the server sells auras and shaders
     (they are greyed out only while the character owns none). Protocol unchanged. Applies after `0001`-`0085` (the
     full chain applies to the base archive). Not tried in a client run.
+66. `0086` (Lua `mods/game_helper/helper.lua`): **a death keeps the helper's target options**. Owner beta, 2026-10-20:
+    "The target options still turn off when the player dies." Cause: `0074`'s `_Helper.disableCombatOnDeath` ran
+    `pzDisableSystem` for Auto Target and Magic Shooter (checkbox, config flag, shortcut buttons; the change was saved),
+    so both were off after every death. Now it only clears the locked target and cancels the attack. `0074`'s aim (no
+    hunting by itself in the temple after the respawn) holds through the protection zone: `handlePZState` pauses both
+    systems there without touching their settings, and they resume outside it as the player set them. `0074` stays (the
+    hook in `onHelperDeath`); `0086` replaces the body. Applies after `0001`-`0085` (checked: the chain `0001`-`0083` of
+    main, and `0001`-`0085` + `0090` + `0095` of the branch that adds `0084` / `0085`, each with `0086`, apply cleanly
+    on the base tree with `patch -p1 --forward`; the patched file parses in LuaJIT). Not tried in a client run.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
@@ -621,7 +630,11 @@ base helper, which later patches must keep: the window ids `helperWindow`, `opti
 `settingsPanel`, when its own tab is pressed), and `_Helper.isHelperAutomaticFunctionsEnabled`, `getSpellDataById`,
 `isSpellOnCooldown`, `getRotation` (base patch 0052), `safeDoThing`; Auto setup also uses `_Helper.Timer.getRules` and
 `cooldownToMs`. If the helper gets a tab or a panel id of its own with a later patch, add it to `PANEL_IDS` / `TAB_IDS`
-in `supportspells_ui.lua`.
+in `supportspells_ui.lua`. It also calls the helper's global `onHelperViewportChange` (the tab buttons are refitted to
+the bar's width once its tab is added). Checked against the chain up to `0086` (2026-10-20): no later patch renames or
+moves any of these ids (only `0015` touches the tab bar, before the module existed). The owner's "the Support tab does
+not open" was not an id: the module imported its styles at load (autoload priority 100), before `client_styles`
+defines `Panel`, so only the tab style existed and the panel was never made (`MANIFEST.md` "Helper Support spells").
 
 ### Names check of the assembled client
 

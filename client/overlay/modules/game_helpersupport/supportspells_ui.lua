@@ -175,19 +175,25 @@ local function castChecks()
       if not (rotation and R) then return nil end
       return R.blockedWhy(rotation, spell.id, spell.group, now)
     end,
-    -- the character's own summons: creatures whose master is the player (all, and those named `name`); nil when the
-    -- client cannot tell (no master id), so a capped summon is not cast blind
+    -- the character's own summons: creatures whose master is the player (all, and those named `name`, a name or a list
+    -- of names); nil when the client cannot tell (no master id), so a capped summon is not cast blind
     summonCount = function(name)
       if not (player.getId and g_map and g_map.getSpectators) then return nil end
       local id, total, own = player:getId(), 0, 0
-      local want = name and tostring(name):lower() or nil
+      local want = {}
+      for _, n in ipairs(type(name) == 'table' and name or { name }) do want[tostring(n):lower()] = true end
       for _, c in ipairs(g_map.getSpectators(player:getPosition(), false) or {}) do
         if c.getMasterId and c:getMasterId() == id then
           total = total + 1
-          if want and tostring(c:getName()):lower() == want then own = own + 1 end
+          if want[tostring(c:getName()):lower()] then own = own + 1 end
         end
       end
       return total, own
+    end,
+    level = level,
+    -- the server's refusals of this spell in a row (ChaosHelperRotation: casts it never answered with a cooldown)
+    refusals = function(spell)
+      return rotation and rotation.fails and rotation.fails[spell.id] or 0
     end,
     summonCap = function()
       return S.summonCap(player:getVocation(), level)
@@ -313,6 +319,7 @@ end
 
 local function buildPanel(parent)
   local p = g_ui.createWidget('ChaosSupportPanel', parent)
+  if not p then return nil end
   p:setId(U.PANEL_ID)
   local rows = p:recursiveGetChildById('rows')
   local previous = nil
@@ -373,7 +380,12 @@ local function showPanel()
     if b then b:setChecked(false) end
   end
   t:setChecked(true)
-  U.rebuild()
+  -- the panel opens even when filling the rows fails (logged once)
+  local ok, err = pcall(U.rebuild)
+  if not ok and not U.loggedRebuildError then
+    U.loggedRebuildError = true
+    g_logger.error('[helper support] ' .. tostring(err))
+  end
   p:show(true)
   p:raise()
 end
@@ -384,6 +396,33 @@ local function hidePanel()
   if t then t:setChecked(false) end
 end
 
+-- Owner beta, 2026-10-20: "The helper's Support tab does not open." The styles were imported in U.init, and this
+-- module loads at autoload priority 100, before client_styles (loaded with the `client` module after the 100-499
+-- modules) defines Panel, Label, CheckBox, ComboBox and Button. The import stopped at ChaosSupportRow < Panel ("base
+-- style 'Panel', is not defined"): only ChaosSupportTab < UIButton existed, so the tab was made, the panel was not
+-- (createWidget gave nil), and every later poll saw the tab and returned. The styles are now imported here, once the
+-- helper window (a mod, loaded after client_styles) exists, and the tab is only made with its panel.
+local stylesReady = false
+local function importStyles()
+  if stylesReady then return true end
+  if g_ui.getStyle and not g_ui.getStyle('Panel') then return false end -- client_styles not loaded yet: next poll
+  g_ui.importStyle('supportspells')
+  if g_ui.getStyle then
+    stylesReady = g_ui.getStyle('ChaosSupportPanel') ~= nil and g_ui.getStyle('ChaosSupportRow') ~= nil
+  else
+    stylesReady = true
+  end
+  return stylesReady
+end
+U.importStyles = importStyles
+
+-- the helper sizes its tab buttons to fill the bar (fitHelperWindow, on show and on a resize); a tab added later is
+-- refitted at once, else it can lie past the bar's right edge, where no click reaches it
+local function refit()
+  local m = modules.game_helper
+  if m and m.onHelperViewportChange then pcall(m.onHelperViewportChange) end
+end
+
 -- the tab button after the helper's last tab, the panel where the Timer panel is; any other tab hides ours
 function U.addTab()
   local r = root()
@@ -392,15 +431,23 @@ function U.addTab()
   local anchorTab = bar and bar:getChildById('settingsFolderMenu')
   local timerPanel = win and win:recursiveGetChildById('timerPanelContainer')
   if not (bar and anchorTab and timerPanel) then return false end
-  if bar:getChildById(U.TAB_ID) then return true end
+  local oldTab = bar:getChildById(U.TAB_ID)
+  if oldTab and panel() then return true end
+  if oldTab then oldTab:destroy() end -- a tab without its panel (an earlier try that failed half way)
+  if not importStyles() then return false end
+  local parent = timerPanel:getParent()
+  local p = buildPanel(parent)
+  if not p then return false end
   local t = g_ui.createWidget('ChaosSupportTab', bar)
+  if not t then
+    p:destroy()
+    return false
+  end
   t:setId(U.TAB_ID)
   t:addAnchor(AnchorLeft, 'settingsFolderMenu', AnchorRight)
   t:getChildById('caption'):setText(tr('Support'))
   t:setTooltip(tr('Support spells: the helper casts them by itself when they are off cooldown'))
   t.onClick = function() showPanel() end
-  local parent = timerPanel:getParent()
-  local p = buildPanel(parent)
   p:addAnchor(AnchorTop, 'optionsTabBar', AnchorBottom)
   p:addAnchor(AnchorLeft, 'helperSidebar', AnchorRight)
   p:addAnchor(AnchorRight, 'parent', AnchorRight)
@@ -410,7 +457,8 @@ function U.addTab()
   p:setMarginBottom(8)
   for _, id in ipairs(TAB_IDS) do
     local b = bar:getChildById(id)
-    if b then
+    if b and not b.chaosSupportWrapped then
+      b.chaosSupportWrapped = true
       local old = b.onCheckChange
       b.onCheckChange = function(self, checked, ...)
         if checked then hidePanel() end
@@ -418,6 +466,7 @@ function U.addTab()
       end
     end
   end
+  refit()
   U.rebuild()
   return true
 end
@@ -456,7 +505,7 @@ local function onLevelChange(localPlayer, level, levelPercent, oldLevel)
 end
 
 function U.init()
-  g_ui.importStyle('supportspells')
+  -- the styles: importStyles(), from the first poll that finds the helper window (see there)
   connect(g_game, { onGameStart = onGameStart, onGameEnd = onGameEnd })
   connect(LocalPlayer, { onLevelChange = onLevelChange })
   cycle = cycleEvent(tick, S.CYCLE_MS)

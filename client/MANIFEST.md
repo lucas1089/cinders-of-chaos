@@ -2718,9 +2718,25 @@ window exists (polled every second, like the Auto setup button), and any other h
 - "Buff not active": `game_buffbar` now exports `activeBuffs()` (the lowercase names of the buffs on the character, from
   the server's list; `nil` while the list has not come, e.g. with the Buff Bar hidden, which then does not ask the
   server). A buff is skipped while the bar shows a buff of the spell's name (the class buffs and the vigils carry their
-  spell's name; Ward of the Mind is "Magic Shield" there). Without bar data the spell's own `dur` since our last cast
-  stands in; a spell with neither is cast whenever the server says it is off cooldown. A vigil is a switch (a second
-  cast turns it off) and needs bar data, else it is not cast. Only one vigil is set up by Auto setup (Clarity).
+  spell's name; Ward of the Mind is "Magic Shield" there). The bar's "not shown" counts only for a buff it has shown
+  before (`seen`); otherwise (no bar data, or a spell the server's bar does not list: a summon, Hunter's Instinct,
+  Smoke Bomb, a stock buff listed as "Spell Buff") the spell's own `dur` since our last cast stands in, else at least
+  `RECAST_MIN_MS` (60 s) or its cooldown if longer. A vigil is a switch (a second cast turns it off) and needs bar
+  data, else it is not cast; one the bar has not shown after our cast is not cast again within that gap. Only one
+  vigil is set up by Auto setup (Clarity).
+- Fixes of 2026-10-20 (owner beta): (1) "the Support tab does not open": `U.init` imported `supportspells.otui` while
+  the module loads (autoload priority 100), before `client_styles` (loaded with `client`) defines `Panel`, `Label`,
+  `CheckBox`, `ComboBox`, `Button`. The import stopped at `ChaosSupportRow < Panel`, so only `ChaosSupportTab <
+  UIButton` existed: the tab was made, `createWidget('ChaosSupportPanel')` gave nil, and every later poll saw the tab
+  and returned, so the click found no panel. The styles are now imported by the poll once `Panel` exists, the tab is
+  made only together with its panel (a tab left without one is replaced), the helper refits its tab buttons
+  (`onHelperViewportChange`) so the new tab lies inside the bar, and the tab's base style sets `border-color`.
+  (2) "Support keeps casting nonstop, the cloud all the time": Wild Bond went out every 10 s and Bone Golem every 30 s
+  (a recast with them out calls them back and heals them, with its effect), and any spell the bar does not list was
+  cast whenever it came off cooldown. Now the rule above, Bone Golem / Wild Bond count their creatures (`minions`,
+  `keep`: 1 golem; 1 companion, 2 from level 400), and a spell the server refused `REFUSE_LIMIT` (3) times in a row
+  (ChaosHelperRotation's unanswered casts, base patch `0052`: the module uses the same pending / back-off) rests 30 s
+  after the last try. `supportspells_ui_test.lua` checks the tab against a mock helper window and style table.
 - Capped summons (2026-10-18): the Necromancer line has a total cap of summons (3 for the Necromancer, 1 Lich, 6 / 7 Bone Lord);
   the next summon kills the oldest, so a summon spell marked `capped` in `KINDS` (Raise Dead 180, Raise Bone Warrior 192, Archer
   193, Mage 176) is cast only while the character has fewer summons than `ChaosHelperSupport.summonCap(vocation, level)`, and one
@@ -2729,7 +2745,8 @@ window exists (polled every second, like the Auto setup button), and any other h
   (status "Cannot count summons"). Row statuses `full` ("Summons at the limit"), `have` ("Already out"), `nocount`. Needs a live
   check that `getMasterId()` is set for own summons on 10.98.
 - Tests: `supportspells_test.lua` (eligibility on the generated spell data, the plan per class, the limits, the saved list,
-  every refusal reason of the cycle), `autosetup_test.lua` (the plan's timer and support lists), `buffmath_test.lua`
+  every refusal reason of the cycle, the recast gap, the counted summons, the refusal rest), `supportspells_ui_test.lua`
+  (the tab and its panel against the load order of the styles, open / close, a tab left without its panel), `autosetup_test.lua` (the plan's timer and support lists), `buffmath_test.lua`
   (`activeNames`). Needs a live check: the tab in the helper window (button position, panel size at 960 x 580, the
   dropdown contents per class, the buff names the server sends against the spell names), the cast cycle against the
   server, Auto setup's staggered timer casts.

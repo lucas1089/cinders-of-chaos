@@ -1,0 +1,38 @@
+# Chaos: a death keeps the helper's target options (mods/game_helper/helper.lua; after 0001-0085). Owner beta 2026-10-20:
+# "The target options still turn off when the player dies." Base patch 0074 made onHelperDeath call
+# _Helper.disableCombatOnDeath, which ran pzDisableSystem for Auto Target and Magic Shooter: their checkboxes, config flags
+# and shortcut buttons went off and were saved. Now a death only drops the locked target and the current attack. The
+# respawn is in a protection zone, where handlePZState already pauses both systems without touching their settings
+# (0074's aim, no hunting in the temple, holds there); outside it they run as the player set them.
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1026,8 +1026,8 @@
+ -- Chaos 0067: a death writes the pending change at once (the client may be closed on the death screen)
+ function onHelperDeath()
+   if _Helper.flushSettings then _Helper.flushSettings() end
+-  -- Chaos: dying switches Auto Target and Magic Shooter off, so the character does not start hunting by itself
+-  -- after the respawn (pzDisableSystem below; the Combat row of the bot HUD and the shortcut buttons follow)
++  -- Chaos 0086: dying drops the locked target and the attack; Auto Target and Magic Shooter stay as the player set them
++  -- (the respawn is in a protection zone, where handlePZState pauses both until the player walks out)
+   if _Helper.disableCombatOnDeath then _Helper.disableCombatOnDeath() end
+ end
+ 
+@@ -2373,10 +2373,15 @@
+   end
+ end
+ 
+--- Chaos: called from onHelperDeath
++-- Chaos: called from onHelperDeath. 0074 switched Auto Target and Magic Shooter off here (pzDisableSystem: checkbox,
++-- config flag, shortcut buttons, saved with the settings), so the player's target options were off after every death.
++-- 0086: a death is a pause, not a settings change (like a protection zone, see handlePZState): only the locked target
++-- and the current attack go.
+ _Helper.disableCombatOnDeath = function()
+-  pzDisableSystem("autoTarget", false)
+-  pzDisableSystem("magicShooter", false)
++  if helperConfig then
++    helperConfig.currentLockedTargetId = 0
++  end
++  g_game.cancelAttack()
+ end
+ 
+ -- Internal helper: suspend a system temporarily (used when disableInProtectZone == false)

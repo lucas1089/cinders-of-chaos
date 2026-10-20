@@ -12,6 +12,8 @@ ChaosSupportTab < UIButton
   image-clip: 34 272 34 34
   image-size: 34 34
   image-offset: 3 2
+  // the state block's border-color is restored on state exit only when the base block sets it too
+  border-color: #d7b46a00
   $checked:
     image-clip: 34 306 34 34
     border-width: 1
