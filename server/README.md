@@ -14176,10 +14176,16 @@ west to east (north before south in a column). A floor with too few slots is gro
   (each an alcove of 4 x 3 tiles: the quest's name on the sign, the rewards on show in the two cells beside the teleport,
   the teleport itself; items 5023 and 11796) were taken for hunt slots by the first order. They are kept as the base
   server had them, and moved as they are: every tile of each alcove (teleport with destination and attributes, sign
-  with its text, the rewards with their unique ids and counts) is copied tile for tile to a hall of the same shape (two
-  rows of alcoves, the three-row carpeted corridor between, north quests above, south below, west to east) at x 31674-
-  31706, y 32263-32271, a little below the hall, east of the plaza's aisle where the daily and weekly reward chests
-  stood, joined to the aisle by a three-row corridor from x 31665. The corridor keeps its protection zone; "Quests" ("Missões") floats over it. The
+  with its text, the rewards with their unique ids and counts) is copied tile for tile into the plaza just south of
+  the hall, the island's green square where the daily and weekly reward booths stood (owner, 2026-10-20: "you can
+  overwrite this green region"; config `north`, `south`, `corridor`): the 8 north quests in a row of alcoves on the
+  booths' rows (signs y 32263, teleports y 32265, the hall's own teleport columns 31630-31642 and 31654-31666), the 8
+  south quests in a row facing them (teleports y 32270, signs y 32272, columns 31628-31640 and 31654-31666: the west
+  ones two tiles off, so that no alcove's front is a tile of the plaza's two event teleports at 31634 and 31638,
+  32269), the plaza's aisle between them (x 31628-31668, y 32266-32269) in the hall's carpet; the gap in the middle of
+  both rows (x 31643-31653) keeps the way from the hall's south door to the island's garden path. The plaza's own
+  teleports on the aisle (31631, 32267; 31634 and 31638, 32269) stay where they are. The corridor keeps its protection
+  zone; "Quests" ("Missões") floats over its middle (31648, 32267). The
   rewards stay behind the teleport in the same arrangement; no unique id is shared or changed (the teleports have
   none; the rewards keep theirs). The quest sites' own ways back (the teleports that lead in front of the old alcove,
   near the quest's destination or deeper in the quest) are rewritten to lead in front of the new alcove (the ways
@@ -14190,8 +14196,12 @@ west to east (north before south in a column). A floor with too few slots is gro
   teleport and the sign's text gone (the hunt's own sign is written at startup). A quest whose teleport an earlier
   install lost (a hunt's teleport in its alcove, neither there nor in the quest hall) is moved all the same and its
   teleport made again to the CSV's destination (`hall.quests.portalItems`, else the room's portal item), its sign
-  named after the CSV when blank. The corridor's far end (x 31707) is closed by the hall's wall, and "Quests" also
-  floats where the plaza's aisle meets the connector (31665, 32267), the way in. Quests, base positions and destinations in `tools/hall_hunts.csv`:
+  named after the CSV when blank. The quest hall of 2026-10-18 (x 31674-31706, y 32263-32271 over the pond east of
+  the plaza, joined to the aisle by a corridor from x 31665; `previous`) is taken away once its quests have moved on
+  from it: each of its tiles as the map's backup `<map>.otbm.bak` has it (the map before the first content install),
+  a tile the backup does not have deep water; the ways back that led into it are rewritten too. (A placement of the
+  grid kind, `origin` instead of `north`/`south`, still works: there the corridor's far end is closed by the hall's
+  wall and "Quests" also floats where the aisle meets the connector.) Quests, base positions and destinations in `tools/hall_hunts.csv`:
   | north row y 32254 | quest | to |
   |---|---|---|
   | 31630 | Behemoth | 33305,31706,12 |
@@ -14294,18 +14304,18 @@ west to east (north before south in a column). A floor with too few slots is gro
   - *Re-run over the broken hall.* The install repairs the hall an earlier run left: the cell rows of the old
     alcoves, lost quest teleports, the ways back, the ground and the display spawns; a second run changes nothing.
   - *Checked* (2026-10-20, on copies of the base map with the base items and monsters; not in a client, not on a
-    live server): the installer of the time run on the base map reproduces the report (the middle counters with
-    rewards, protection-zone cells, the Wyrms beside "Novice of the Cult", 16 holes and about 70 walls without ground
-    on floor 7, 41 of the 55 ways back into the hall leading in front of another teleport). The new installer run over
-    that map: 41 rooms closed, 41 ways back rewritten, ground under 102 tiles, the old alcoves' cell rows replaced;
-    every tile of the hall and quest hall, the display spawns and the places file are then the same as a fresh install
-    on the base map, no hole or groundless tile on floor 7 that the base map did not have, every way back leads in
-    front of a teleport that leads back near it; a second run changes nothing (same map and spawn file hash), on both.
-  - *Where the quests are.* The owner asked for the quests "further south, where the daily and weekly rewards are":
-    the quest hall stays where it was placed on 2026-10-18, at the east end of the plaza's aisle where the daily and
-    weekly reward booths are (x 31674-31706, y 32263-32271, on the pond east of the plaza), now with the second label at
-    the way in. Moving it into the plaza itself would replace its booths, statues and two event teleports; left for
-    the owner to decide.
+    live server): the installer of the time (07b1a06e) run on the base map reproduces the report (the middle counters
+    with rewards, protection-zone cells, the Wyrms beside "Novice of the Cult", 16 holes and about 70 walls without
+    ground on floor 7, 41 of the 55 ways back into the hall leading in front of another teleport). The new installer run
+    over that map (the live beta's case, its backup the base map): the quests moved on from the pond into the plaza,
+    the pond's hall taken back from the backup (312 tiles), 41 rooms closed, 57 ways back rewritten, ground under 102
+    tiles; the hall, the plaza, the display spawns and the places file are then the same as a fresh install on the base
+    map, but for the tiles east of the pond the base map has none (now water); no hole or groundless tile on floor 7
+    that the base map did not have, every way back leads in front of a teleport that leads back near it; a second run
+    changes nothing (same map hash), on both.
+  - *Where the quests are.* The owner: "the quests should be further down, where the daily and weekly rewards are",
+    then, on the minimap, the hall over the pond "looks ugly; you can overwrite this green region". The quests now
+    stand in the plaza itself (above); the hall over the pond is taken away (`previous`).
 - **In game**: every hunt's sign and floating label name it and its band (the base ones by their room monster:
   "Hydra, levels 45-75"); each floor floats "Floor 7: levels 1-500" in its corridor and, over the stairs up, the next
   floor's range ("Up: floor 6, levels 500-1000"); `hall.labels` in the config.

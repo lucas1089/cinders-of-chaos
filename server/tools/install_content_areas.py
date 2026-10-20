@@ -433,9 +433,10 @@ def _unesc_head(data, i, n):
     return bytes(out)
 
 
-def tile_ranges(data, positions, houses=None):
+def tile_ranges(data, positions, houses=None, missing=None):
     """{pos: (start, end)} raw offsets (FE .. FF inclusive) of the tile nodes at these positions. A house tile is
-    refused, or, with `houses` (a set), put there and left out."""
+    refused, or, with `houses` (a set), put there and left out; a position without a tile is refused, or, with
+    `missing` (a set), put there."""
     import numpy as np
     import area_plan_place as PL
     want = set(positions)
@@ -474,9 +475,11 @@ def tile_ranges(data, positions, houses=None):
                 j = e + 1
             else:
                 j += 1
-    missing = want - set(out) - (houses or set())
-    if missing:
-        raise InstallError('%d tile(s) to replace were not found in the map file (first %s)' % (len(missing), sorted(missing)[0]))
+    gone = want - set(out) - (houses or set())
+    if gone and missing is not None:
+        missing |= gone
+    elif gone:
+        raise InstallError('%d tile(s) to replace were not found in the map file (first %s)' % (len(gone), sorted(gone)[0]))
     return out
 
 
@@ -755,6 +758,52 @@ def open_slot(tile, closed, grounds=None):
     return dict(flags=tile['flags'], ground=tile['ground'], items=items)
 
 
+def plan_prev_cleanup(ed, qlay, map_path, pcfg, log, moved=False):
+    """{pos: tile}: the quest hall of an earlier placement (hall.quests.previous: over the pond east of the plaza,
+    joined to its aisle by a corridor) taken away once its quests have moved: each of its tiles as the map had it before
+    the first content install (<map>.otbm.bak, written then); a tile the backup does not have, or every tile when there
+    is no backup and the quests were found there (moved), the pond's water (`fill`), so nothing of the old hall stays.
+    A second run changes nothing."""
+    import hall_order as H
+    bak = map_path + '.bak'
+    base = {}
+    if os.path.isfile(bak):
+        data = open(bak, 'rb').read()
+        houses, missing = set(), set()
+        for p, (s0, e0) in tile_ranges(data, qlay['prev'], houses=houses, missing=missing).items():
+            try:
+                base[p] = H.parse_tile(data[s0:e0 + 1], p)
+            except H.HallError:
+                continue
+        # a backup written after the earlier hall was built (it holds a quest teleport there) is no use
+        dests = {tuple(a['dest']) for a in qlay['alcoves']}
+        if any(at.get('tele') and tuple(at['tele']) in dests for t in base.values() for _i, at in t['items']):
+            log('quests: %s holds the earlier quest hall; not used' % os.path.basename(bak))
+            base, bak_ok = {}, False
+        else:
+            bak_ok = True
+    else:
+        bak_ok = False
+    writes = {}
+    fill = pcfg.get('fill')
+    for p in qlay['prev']:
+        if ed.is_bad(p):
+            continue
+        t = ed.get(p) if ed.has(p) else None
+        want = base.get(p)
+        if want is None:
+            # a tile the backup does not have (unmapped before the earlier hall), or no backup and the quests were there
+            if t is None or not fill or not (bak_ok or moved):
+                continue
+            want = dict(flags=0, ground=fill, items=[])
+        if t != want:
+            writes[p] = want
+    if writes:
+        log('quests: the earlier quest hall taken away: %d tile(s), %s' % (
+            len(writes), 'as before the first install (%s)' % os.path.basename(bak) if base else 'made water'))
+    return writes
+
+
 def wing_box(lay, room):
     """every position of a grown floor's wings and moved ends: the columns of the copies and of the old and new ends,
     the room's rows (`rows`), on the wing's floor"""
@@ -865,10 +914,11 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
         owners.append(dict(id=r['id'], dest=(r['dest_x'], r['dest_y'], r['dest_z']),
                            fronts=(H.front_of(room, old), H.front_of(room, ordered)), want=H.front_of(room, new)))
     for a in (qlay['alcoves'] if qlay else []):
-        owners.append(dict(id=a['id'], dest=a['dest'], fronts=(a['front_old'], a['front_new']),
+        owners.append(dict(id=a['id'], dest=a['dest'],
+                           fronts=(a['front_old'], a['front_new']) + ((a['front_prev'],) if a.get('front_prev') else ()),
                            want=a['front_new'] if hall_on else a['front_old']))
     r0, r1 = room['rows']
-    quest_spots = set(qlay['rect']) | set(qlay['endwall']) if qlay else set()
+    quest_spots = set(qlay['rect']) | set(qlay['endwall']) | set(qlay['prev']) if qlay else set()
 
     def in_hall(p):
         return (p[2] in hall['floors'] and hall['x'][0] <= p[0] <= hall['x'][1] and r0 <= p[1] <= r1) or p in quest_spots
@@ -894,6 +944,7 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
                 for n in notes:
                     log('quests: ' + n)
             names = {r['id']: r['name'] for r in qrows}
+            moved = any(v == 'moved' for v in Q.state(ed, qlay).values())
             w, notes = Q.plan_move(ed, qlay, room, portal, sign, template, forward=hall_on, models=models,
                                    items=qcfg.get('portalItems') or {}, names=names, grounds=grounds,
                                    log=lambda s: log('quests: ' + s))
@@ -901,6 +952,10 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
                 ed.set(p, t)
             for n in notes:
                 log('quests: ' + n)
+            if qlay['prev'] and hall_on:
+                w = plan_prev_cleanup(ed, qlay, map_path, qcfg['previous'], log, moved)
+                for p, t in w.items():
+                    ed.set(p, t)
         for p, dest in hl['portal'].items():
             t = ed.get(p)
             if t is None:

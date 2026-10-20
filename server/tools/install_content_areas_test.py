@@ -276,6 +276,11 @@ def tile_at(srv, pos):
     return H.parse_tile(data[s:e + 1], pos)
 
 
+def lay0_rect(cfg, qrows):
+    import hall_quests as HQ
+    return HQ.layout_grid(dict(cfg['hall']['quests']), cfg['room'], qrows)['rect']
+
+
 def tele_of(srv, pos):
     return map_state(srv)[1].get(pos)
 
@@ -497,6 +502,43 @@ def quest_hall_checks(root):
             check(False, 'a swept tile with an action id, sign or teleport refused: %s' % (pos,))
         except T.InstallError as e:
             check('nothing written' in str(e), 'swept %s refused: %s' % (pos, e))
+    # the quests move on from the quest hall over the pond to two rows round a corridor of the plaza (owner,
+    # 2026-10-20: "you can overwrite this green region"); the earlier hall is taken back to the map's backup; a
+    # teleport of the plaza on the corridor stays where it is
+    plaza = {}
+    for x in range(44, 57):
+        for y in range(39, 51):
+            plaza[(x, y, QZ)] = t(flags=1)
+    plaza[(48, 44, QZ)] = t((PORTAL, {'tele': (321, 321, 7)}), flags=1)
+    import hall_quests as HQ
+    srv5, plans5, comp5 = setup(os.path.join(root, 'quests5'), {**extra, **plaza})
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg, compiled=comp5, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    first = map_state(srv5)
+    cfg5 = json.loads(json.dumps(cfg))
+    q5 = cfg5['hall']['quests']
+    q5['previous'] = {'origin': q5.pop('origin'), 'connector': q5.pop('connector'), 'step': q5.pop('step'), 'fill': 28915}
+    q5.update({'north': {'y': 40, 'x': [50]}, 'south': {'y': 46, 'x': [50]}, 'corridor': {'x': [47, 53], 'y': [43, 45]}})
+    logs = []
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg5, compiled=comp5, log=logs.append, fixed_dirs=(),
+          hall_csv=csvp)
+    stacks, tele, flags = map_state(srv5)
+    check(tile_at(srv5, (50, 42, QZ))['items'][1] == (QP1, {'tele': q1, 'uid': 44001})
+          and tile_at(srv5, (50, 46, QZ))['items'][1] == (QP2, {'tele': q2}), 'quests moved on to the plaza rows')
+    check(not any(i in (QP1, QP2) for p in lay0_rect(cfg, qrows) for i, _a in (tile_at(srv5, p)['items'] if p in stacks else [])),
+          'no quest teleport left in the earlier quest hall')
+    check(tile_at(srv5, (49, 41, QZ))['items'][1] == (REWARD, {'uid': 44002, 'raw': bytes([15, 3])}), 'with their rewards')
+    check(tele.get((701, 700, 7)) == (50, 43, QZ) and tele.get((711, 700, 7)) == (50, 45, QZ), 'ways back to the new fronts: %s' % tele)
+    check(tele.get((48, 44, QZ)) == (321, 321, 7), 'the plaza\'s own teleport on the corridor stays')
+    lay0 = HQ.layout_grid(dict(cfg['hall']['quests']), cfg['room'], qrows)
+    check(all(stacks.get(p) == [G] for p in lay0['rect'] if p in plaza or (24 <= p[0] <= 40 and 19 <= p[1] <= 29)),
+          'the earlier quest hall back as the backup has it: %s' % [(p, stacks.get(p)) for p in lay0['rect'][:3]])
+    check(all(flags[(x, y, QZ)] == 1 for x in range(47, 54) for y in (43, 44, 45)), 'the plaza corridor is protection zone')
+    once = digest(srv5)
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg5, compiled=comp5, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    check(digest(srv5) == once, 'moved on: a second run changes nothing')
+    check(first != stacks, 'moved on: the map changed')
     # an earlier install lost a quest (a hunt's teleport took its alcove, the sign blank, the rewards still there): the
     # alcove moves to the quest hall all the same, its teleport made again from the CSV and the sign named
     lost = dict(extra)

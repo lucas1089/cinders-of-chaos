@@ -65,21 +65,26 @@ return {
 	-- the hunt's level being the weighted median of its monsters (a plan: the middle of its `level`). The ground floor
 	-- z 7 holds levels 1-500, z 6 501-1000, z 5 the rest; `max` is the highest level of a floor. Same order as `floors`.
 	-- `quests`: the quest hall (tools/hall_quests.py): the base quests' alcoves move, with their rewards on show and
-	-- their quest signs, to a hall of the same shape (two rows of alcoves round a 3-row corridor, 9 rows from
-	-- `origin`.y, the first alcove's teleport column `origin`.x, 33 columns for 8 alcoves a row) at the east end of the
-	-- plaza's aisle south of the corridor, joined to it by a corridor from `connector`.x (the corridor's far end is
-	-- closed by a wall); `chests`: the base server's daily and weekly reward chests of the
-	-- plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests) taken away with their
-	-- booth (the rows `rows`), owner 2026-10-18.
+	-- their quest signs, to the plaza south of the hall, where the daily and weekly reward booths stood (owner,
+	-- 2026-10-20: "you can overwrite this green region"): `north` the row of the base room's north alcoves (`y` its sign
+	-- row, the teleports on y + 2, `x` the teleport columns: the hall's own, the gap in the middle the way from the
+	-- hall's south door), `south` the row of the south alcoves (`y` its teleport row, the signs on y + 2; the west
+	-- columns two tiles off the hall's so that no front is a tile of the plaza's two event teleports), `corridor` the
+	-- floor between them in the hall's carpet (the plaza's aisle; its own teleports stay). `previous`: the quest hall of
+	-- 2026-10-18 over the pond east of the plaza (origin, connector, step; `fill`: deep water for a tile the map's
+	-- backup does not have), taken away once its quests have moved on. `chests`: the base server's daily and weekly
+	-- reward chests of the plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests)
+	-- taken away with their booth (the rows `rows`), owner 2026-10-18.
 	hall = {
 		enabled = true,
 		floors = {7, 6, 5},
 		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
 		quests = {
 			z = 7,
-			origin = {x = 31676, y = 32263},
-			connector = {x = 31665}, -- the aisle's last column; the corridor runs from there to the hall
-			step = 4,
+			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
+			south = {y = 32270, x = {31628, 31632, 31636, 31640, 31654, 31658, 31662, 31666}},
+			corridor = {x = {31628, 31668}, y = {32266, 32269}},
+			previous = {origin = {x = 31676, y = 32263}, connector = {x = 31665}, step = 4, fill = 28915},
 			-- the cell row an old quest alcove gets once its quest has moved (the rewards stood on all three tiles:
 			-- both cells and the counter between): the hunt alcove of this teleport column on floor `z` is the model
 			-- (bare cells without protection zone, so the display monsters can stand there, and the counter)
