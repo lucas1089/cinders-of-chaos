@@ -2287,6 +2287,29 @@ Traps and mines for the Ranger and Thief lines (2026-10-12): Snare Trap (spell 9
   triggered, bursts, sight, the marker, the combat log's spell name per hit, elements, mines, the fuse, caps, the
   protection zone, the cleanup, the work per tick with 400 snares, the spells in the XML). Not run on a live server.
 
+## Mana flow (`mana_flow.lua`, `mana_flow_core.lua`, `mana_flow_config.lua`; beta report 2026-10-20)
+
+Report: a level 800 Juggernaut (7M health shown) could only keep his skills up with infinite mana potions, and "the mana
+cost scales, one skill costs 400k". Findings: (1) the cost does not scale in the engine. Spell costs are flat
+(Juggernaut kit 30-500); the 400k is the display scale (`display_scale_core.lua`, factor 215 at level 800, 1000 at 1000)
+shown on the spellbook and the mana bar, and the pool is shown scaled the same, so cost against pool never moved.
+(2) The real gap was regeneration: pool 5 mana a level, vocation regeneration 2.5 a second, the best rotation 44 a second
+at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and without regeneration from the tree).
+
+- **Regeneration**: from level 100 every player gets mana a second on top of the vocation's, flat for every class, linear
+  between 100 -> 4, 300 -> 24, 600 -> 45, 1000 -> 60 (level 800: 52.5, shown x the display factor). A think every second
+  (`GlobalEvent`), none at a full pool, dead, or under the rift's Parched Veins (`fx.noMana`). Juggernaut: level 300 pool
+  1530 against 44 a second: runway 37 s -> 87 s; level 600 and up the Juggernaut rotation is paid by the regeneration alone.
+  Casters (Elementalist rotation about 183 a second at level 1000, pool ~30000) still drain: runway about 4 minutes.
+- **Cost cap**: from level 100 a cast costs at most 25% of the maximum mana (the mana reserved by vigils is added back,
+  `ChaosVigils.applied`), through `ChaosSpellEvents` "cost" (engine patch 0008). Thrift and Mana Cost Reduction apply as
+  before. Binds only the Juggernaut's Colossus Fall (400) at levels 100-319 and the like: 400 -> 332 at level 260.
+- Numbers: `mana_flow_config.lua`. Test: `tests/mana_flow_test.lua`. No storage, no DB.
+- **Righteous Fire style skill**: that is Pyre Oath (keystone `arPyreOath`, `archetypes.lua`), not a spell: it burns and
+  heals every second and costs no mana. Support runes are keyed by spell id and wrap a spell's `onCastSpell`; a keystone
+  has neither, so it cannot take runes without a new socket kind (storage, window, client). Not done. The mana the
+  report mentions is the Juggernaut's other spells (and mana-on-hit gear), which the regeneration above now pays.
+
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
 +5% damage), Vigil of Iron (255, `vigh tor`, 60, 35%, -6% damage taken), Vigil of Haste (161, `vigh ruan`, 40, 20%,
