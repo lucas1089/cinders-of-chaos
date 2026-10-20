@@ -202,6 +202,19 @@ sudo systemctl enable --now chaos-server chaos-clientservices chaos-backup.timer
   (Apache `ProxyPass "/clientservices" "http://127.0.0.1:8090/clientservices"` with `proxy` and `proxy_http`; nginx
   `location = /clientservices { proxy_pass http://127.0.0.1:8090/clientservices; }`) and keep 8090 closed. The Linux
   server package starts it on 127.0.0.1 itself (`start-server.sh`). Without it the client hides the login screen's bar.
+- `chaos-helpai.service` (optional, not in the `enable` line above): Ember, the Help channel assistant
+  (`server/tools/helpai.py`, server/README.md "Help channel assistant"). It answers players' questions in the Help
+  channel through the model API, paid per use with a monthly budget (`server/tools/helpai_config.json`). The key goes in
+  its own file, never in `/etc/chaos/chaos.env` (the game server reads that one):
+  ```
+  sudo install -m 600 -o root -g root /dev/null /etc/chaos/helpai.env
+  echo 'CHAOS_ANTHROPIC_API_KEY=<your key>' | sudo tee /etc/chaos/helpai.env >/dev/null
+  sudo python3 -m venv /opt/chaos/helpai-venv && sudo /opt/chaos/helpai-venv/bin/pip install anthropic
+  sudo cp server/deploy/chaos-helpai.service /etc/systemd/system/
+  sudo systemctl daemon-reload && sudo systemctl enable --now chaos-helpai
+  ```
+  Log: `/var/log/chaos/helpai.log` (rotated by `chaos.logrotate`). Without a key it exits at once and
+  the Help channel works as before; off again: `sudo systemctl disable --now chaos-helpai`.
 - `chaos.logrotate`: daily, 14 days, compressed, `copytruncate` (systemd keeps the files open). Also the client guard's
   `data/logs/clientguard.log` (IPs, accounts), as the privacy policy says (docs/legal/).
 - `chaos-health.timer`: every 5 minutes `server/tools/chaos_health.py` checks the services, ports, status protocol,

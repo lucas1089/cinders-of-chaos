@@ -25,6 +25,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_shadow_mute.py        shadow mute hook in the public channels (when the tool exists)
+               tools/patch_help_ai.py            the Help channel assistant's hook in help.lua (when the tool exists)
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
                tools/patch_base_spellbook.py     the stock spellbook item opens the Spellbook window (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
@@ -440,6 +441,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_shadow_mute.py')):
         ok8, more = run_tool([tool('patch_shadow_mute.py'), data], 'patch_shadow_mute.py')
         ok, lines = ok8, lines + more
+    if ok and os.path.isfile(tool('patch_help_ai.py')):
+        ok9, more = run_tool([tool('patch_help_ai.py'), data], 'patch_help_ai.py')
+        ok, lines = ok9, lines + more
     if ok:
         ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
         ok, lines = ok5, lines + more

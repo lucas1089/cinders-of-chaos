@@ -305,6 +305,13 @@
      "licence": "BSD-3-Clause style",
      "use": "the ssh connection of the Cinders Admin phone app",
      "source": "https://github.com/mwiede/jsch"
+    },
+    {
+     "name": "Anthropic Python SDK and the Claude API",
+     "author": "Anthropic",
+     "licence": "MIT (the SDK); the API is a paid service under Anthropic's terms",
+     "use": "Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)",
+     "source": "https://github.com/anthropics/anthropic-sdk-python"
     }
    ]
   },

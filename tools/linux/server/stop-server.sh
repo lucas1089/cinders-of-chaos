@@ -82,6 +82,10 @@ if alive "$RUN/clientservices.pid"; then
   kill "$(cat "$RUN/clientservices.pid")" 2>/dev/null && echo "Login-screen services stopped."
 fi
 rm -f "$RUN/clientservices.pid"
+if alive "$RUN/helpai.pid"; then
+  kill "$(cat "$RUN/helpai.pid")" 2>/dev/null && echo "Help channel assistant stopped."
+fi
+rm -f "$RUN/helpai.pid"
 
 if db_up; then
   "$MDB/bin/mariadb-admin" --no-defaults --socket="$SOCK" -u "$ME" shutdown && echo "Database stopped."

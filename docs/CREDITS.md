@@ -233,6 +233,11 @@ them are named by role, so they carry no Reserved Font Name.
   - Licence: BSD-3-Clause style
   - Used for: the ssh connection of the Cinders Admin phone app
   - Source: https://github.com/mwiede/jsch
+- **Anthropic Python SDK and the Claude API**
+  - Author: Anthropic
+  - Licence: MIT (the SDK); the API is a paid service under Anthropic's terms
+  - Used for: Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)
+  - Source: https://github.com/anthropics/anthropic-sdk-python
 
 ## Tools {pt-BR: Ferramentas}
 

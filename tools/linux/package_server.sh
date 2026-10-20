@@ -66,6 +66,10 @@ install -m 0644 "$REPO/tools/linux/server/README.txt" "$OUT/README.txt"
 # the login-screen services (boosted creature / boss, event schedule): start-server.sh runs it on 127.0.0.1:8090
 mkdir -p "$OUT/server/tools"
 install -m 0644 "$REPO/server/tools/clientservices.py" "$OUT/server/tools/clientservices.py"
+# Ember, the Help channel assistant: the sidecar, its numbers and the wiki data it answers from (off without a key)
+install -m 0644 "$REPO/server/tools/helpai.py" "$OUT/server/tools/helpai.py"
+install -m 0644 "$REPO/server/tools/helpai_config.json" "$OUT/server/tools/helpai_config.json"
+install -m 0644 "$REPO/website/overlay/plugins/chaos/wiki/wiki_data.json" "$OUT/server/tools/wiki_data.json"
 # security: our own RSA login key and the VPS hardening (docs/SECURITY_CHECKLIST.md)
 install -m 0644 "$REPO/server/tools/rsa_key.py" "$OUT/server/tools/rsa_key.py"
 install -m 0755 "$REPO/tools/linux/harden_vps.sh" "$OUT/harden_vps.sh"

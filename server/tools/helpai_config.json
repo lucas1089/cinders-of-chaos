@@ -1,0 +1,35 @@
+{
+  "_comment": "Ember, the Help channel assistant (server/tools/helpai.py; server/README.md 'Help channel assistant'). Read at start; restart the sidecar after a change. chaos.env may override: CHAOS_HELPAI=0 (off), CHAOS_HELPAI_MODEL, CHAOS_HELPAI_MONTHLY_USD, CHAOS_HELPAI_LOG_QUESTIONS=1.",
+  "enabled": true,
+  "model": "claude-haiku-5-5",
+  "effort": "low",
+  "maxTokens": 1200,
+  "timeoutSeconds": 20,
+  "retries": 2,
+  "cacheTtl": "5m",
+
+  "_comment_prices": "USD per million tokens of the model above (published list price, prompts of 100K tokens or fewer, checked 2026-10). Cache writes cost cacheWriteFactor x input, cache reads cacheReadFactor x input. Change them with the model.",
+  "priceInputPerMTok": 0.10,
+  "priceOutputPerMTok": 0.50,
+  "cacheWriteFactor": 1.25,
+  "cacheReadFactor": 0.1,
+  "monthlyBudgetUsd": 20.0,
+
+  "maxQuestionChars": 200,
+  "maxAnswerChars": 900,
+  "maxAgeSeconds": 60,
+  "playerCooldownSeconds": 20,
+  "playerPerDay": 30,
+  "globalPerMinute": 20,
+  "globalPerDay": 1500,
+  "backoffSeconds": 30,
+  "backoffMaxSeconds": 600,
+
+  "coreTabs": ["basics", "classes", "events", "dungeons"],
+  "retrieveChars": 9000,
+  "retrieveEntries": 6,
+  "entryChars": 3000,
+
+  "logQuestions": false,
+  "logQuestionChars": 120
+}

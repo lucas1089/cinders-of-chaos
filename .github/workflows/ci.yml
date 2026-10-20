@@ -133,6 +133,9 @@ jobs:
       - name: Server health alerts (state changes, error-line rate limit, daily summary)
         run: python3 -I server/tools/chaos_health_test.py
 
+      - name: Help channel assistant sidecar (limits, budget, API errors, knowledge; fake client, no network) and its help.lua hook
+        run: python3 -I server/tools/helpai_test.py
+
       - name: Host trial (steal, fio and ping parsing, single-core maths, verdicts, load report; bash -n of the scripts)
         run: python3 -I server/tools/host_trial_test.py
 

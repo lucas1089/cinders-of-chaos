@@ -1,0 +1,42 @@
+# Cinders of Chaos: Ember, the Help channel assistant (server/tools/helpai.py; server/README.md "Help channel
+# assistant"). Optional: without a key it exits at once and the Help channel works as before.
+# The key lives in its own file, so the game server (chaos-server.service reads /etc/chaos/chaos.env) never sees it:
+#   sudo install -m 600 -o root -g root /dev/null /etc/chaos/helpai.env
+#   echo 'CHAOS_ANTHROPIC_API_KEY=<your key>' | sudo tee /etc/chaos/helpai.env >/dev/null
+#   sudo python3 -m venv /opt/chaos/helpai-venv && sudo /opt/chaos/helpai-venv/bin/pip install anthropic
+#   sudo cp server/deploy/chaos-helpai.service /etc/systemd/system/
+#   sudo systemctl daemon-reload && sudo systemctl enable --now chaos-helpai
+# /opt/chaos/repo is a checkout of this repository (server/tools/helpai.py, helpai_config.json and the website's
+# wiki_data.json are used). It exchanges small files with the game server in /opt/chaos/server (helpai.queue,
+# helpai.answers, helpai.alive, helpai.usage.json), so it runs as the server's user.
+
+[Unit]
+Description=Cinders of Chaos Help channel assistant
+Wants=network-online.target
+After=network-online.target chaos-server.service
+
+[Service]
+Type=simple
+User=chaos
+Group=chaos
+EnvironmentFile=-/etc/chaos/helpai.env
+ExecStart=/opt/chaos/helpai-venv/bin/python3 -I /opt/chaos/repo/server/tools/helpai.py /opt/chaos/server
+# a crash restarts it; "no key" and "switched off" exit cleanly and stay off
+Restart=on-failure
+RestartSec=30
+StandardOutput=append:/var/log/chaos/helpai.log
+StandardError=append:/var/log/chaos/helpai.log
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ReadWritePaths=/opt/chaos/server
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

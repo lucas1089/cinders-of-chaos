@@ -67,6 +67,18 @@ Login screen services
   The client release built with the workflow input site_url (https://example.org) asks
   https://example.org/clientservices. Without the service the client hides that bar.
 
+Help channel assistant
+  Ember answers players' questions in the Help channel ("?question", "Ember, question", or a line that ends in "?")
+  from the game's own wiki data, through the model API (paid per use; a monthly budget stops it). Off until you
+  give it a key. To turn it on, in this folder:
+    python3 -m venv helpai-venv && helpai-venv/bin/pip install anthropic
+    add CHAOS_ANTHROPIC_API_KEY=<your key> to chaos.env (keep chaos.env mode 600), then ./stop-server.sh and
+    ./start-server.sh -d. "Help channel assistant on" is printed; its log is logs/helpai.log (no names, no
+    question texts unless you switch that on). The key is given to the assistant only, never to the game server.
+  Off again: CHAOS_HELPAI=0 in chaos.env (or remove the key) and restart. Budget and limits:
+  server/tools/helpai_config.json; CHAOS_HELPAI_MONTHLY_USD in chaos.env overrides the budget. Details:
+  server/README.md "Help channel assistant" in the repository.
+
 Production
   For a public server run by systemd (its own user, the system's MariaDB, backups, monitoring, gateways) follow
   docs/LAUNCH.md in the Cinders of Chaos repository. deploy/ holds the systemd units and chaos.env.example it uses;
