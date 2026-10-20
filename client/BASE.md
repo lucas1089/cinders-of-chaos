@@ -592,6 +592,11 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `verdana-cap-bold`, has glyphs for the digits only (no `.`, `,` or letters; checked on its texture), so the short
     number of `0073` ("14.2k") drew as "14 2". The plate shows the free capacity as plain digits (7 fit in the 50 px
     label of `0073`); the tooltip keeps the grouped number. Applies after `0001`-`0084`.
+64. `0095` (Lua `mods/client_settings/settings.lua`): **no "Control Buttons" options page**. It listed the base client's
+    side buttons (Wheel of Destiny, Task Hunt, Prey, Reward Wall...), which the top menu bar replaced. The page is gone
+    from Interface, and the "Manage Control Buttons" hotkey opens the options window. Its other functions stay (they
+    return early when the page is not the selected one). Applies after `0001`-`0085` (`0086`-`0094` do not touch the
+    file).
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support

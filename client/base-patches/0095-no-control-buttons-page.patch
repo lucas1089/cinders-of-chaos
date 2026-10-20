@@ -1,0 +1,29 @@
+# Chaos: no "Control Buttons" options page (after 0001-0085). It listed the base client's side buttons (Wheel of Destiny, Task Hunt, Prey,
+# Reward Wall...), which the top menu bar replaced, so it showed buttons the client does not have. The page is gone from Interface;
+# the "Manage Control Buttons" hotkey opens the options window.
+--- a/mods/client_settings/settings.lua
++++ b/mods/client_settings/settings.lua
+@@ -116,12 +116,13 @@
+   {id = "actionsHotkeys", style = "HotkeysWindow", parent = "controls"},
+   {id = "customHotkeys", style = "HotkeysWindow", parent = "controls"},
+   -- Interface
+-  {id = "interface", style = "InterfaceWindow", children = {"hud", "console", "gameWindow", "actionsBars", "controlButtons"}},
++  {id = "interface", style = "InterfaceWindow", children = {"hud", "console", "gameWindow", "actionsBars"}},
+   {id = "hud", style = "HudWindow", parent = "interface"},
+   {id = "console", style = "ConsoleWindow", parent = "interface"},
+   {id = "gameWindow", style = "GameWindow", parent = "interface"},
+   {id = "actionsBars", style = "ActionsWindow", parent = "interface"},
+-  {id = "controlButtons", style = "ControlsButtonsWindow", parent = "interface"},
++  -- Chaos: no "Control Buttons" page: it listed the base client's side buttons (Wheel of Destiny, Task Hunt, Prey...),
++  -- which the top menu bar replaced
+   -- Graphics
+   {id = "graphics", style = "GraphicsWindow", children = {"effects"}},
+   {id = "effects", style = "EffectsWindow", parent = "graphics"},
+@@ -591,7 +592,6 @@
+ 
+ function toggleShortcuts()
+   m_settings:openOptions()
+-  onClickOptionButton(loadedButton["interface"], "controlButtons")
+ end
+ 
+ function toggleOption(key)
