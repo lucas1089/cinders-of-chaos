@@ -619,6 +619,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     hook in `onHelperDeath`); `0086` replaces the body. Applies after `0001`-`0085` (checked: the chain `0001`-`0083` of
     main, and `0001`-`0085` + `0090` + `0095` of the branch that adds `0084` / `0085`, each with `0086`, apply cleanly
     on the base tree with `patch -p1 --forward`; the patched file parses in LuaJIT). Not tried in a client run.
+67. `0087` (OTUI `mods/game_lootsplitter/lootsplitter.otui`): **loot splitter Advanced Options button**. It used the base
+    blue button sheet (`/images/ui/buttons-blue`, not part of the Chaos skin), 83 px wide, so "Advanced Options" ran out
+    of a blue block. It is a plain themed button, 120 px wide. Applies after `0001`-`0086`.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support

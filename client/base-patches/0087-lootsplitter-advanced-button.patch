@@ -1,0 +1,14 @@
+# Chaos: the loot splitter's Advanced Options button (after 0001-0086). It used the base blue button sheet, which the Chaos skin does
+# not slice (a broken blue block with the text running out of it, 83 px wide). It is now a plain themed button, 120 px wide.
+--- a/mods/game_lootsplitter/lootsplitter.otui
++++ b/mods/game_lootsplitter/lootsplitter.otui
+@@ -120,8 +120,7 @@
+       @onClick: copyResultText()
+     Button
+       id: advancedOptions
+-      size: 83 20
+-      image-source: /images/ui/buttons-blue
++      size: 120 20
+       anchors.bottom: parent.bottom
+       anchors.left: parent.left
+       !text: tr('Advanced Options')
