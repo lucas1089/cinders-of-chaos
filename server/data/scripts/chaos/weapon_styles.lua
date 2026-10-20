@@ -7,6 +7,9 @@
 --     launchers; server/data/spells/README.md "Weapon damage per second")
 --   * ONE melee skill (owner debug item 46, melee_skill_core.lua): a sword, axe or club hit uses the best of the three
 --     melee skills, not only the skill of its own type (the hit is multiplied by the ratio of the two maximum hits)
+--   * wands and rods scale with the magic level (weapon_skill_core.lua): the engine's flat min .. max of weapons.xml
+--     is multiplied by the magic level against the typical one of the wielder's level (owner 2026-10-20: "faça o dano
+--     das armas/auto attack escalar com as skills"); the other weapons scale with their skill in the engine already
 --   * bows splash: the creatures around the target take arrowSplash of the hit (engine PvP rules apply)
 --   * crossbows hit only their target (no splash)
 --   * the quiver (data/lib/chaos_archery_core.lua), while it counts (a bow or crossbow in the hands): Critical Strike
@@ -14,7 +17,8 @@
 --     Extra Projectile Chance (a second missile at another monster close to the target, else at the target)
 -- Bows and crossbows fire without ammunition (server/README.md "Infinite arrows and quivers"): which kind a launcher
 -- is comes from chaos_archery_config.lua, not from an ammunition slot.
--- Only weapon hits are touched (combat origin melee / ranged); runes, spells and wands are not.
+-- Only weapon hits are touched (combat origin melee / ranged; a wand hit has the melee origin in this engine); runes and
+-- spells are not.
 local cfg = {
 	arrowSplash = 0.5,
 }
@@ -32,6 +36,10 @@ if not ChaosMeleeSkill then
 	dofile("data/scripts/chaos/melee_skill_core.lua")
 end
 local MS = ChaosMeleeSkill
+if not ChaosWeaponSkill then
+	dofile("data/scripts/chaos/weapon_skill_core.lua")
+end
+local WS = ChaosWeaponSkill
 
 local splashArea = createCombatArea({
 	{1, 1, 1},
@@ -201,6 +209,17 @@ function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, seco
 			primaryDamage = scale(primaryDamage, m)
 			secondaryDamage = scale(secondaryDamage, m)
 		end
+	end
+	-- a wand or rod: the flat hit of weapons.xml scaled by the magic level (weapon_skill_core.lua); nothing else applies
+	if weapon:getWeaponType() == WEAPON_WAND then
+		if origin == ORIGIN_MELEE and attacker:getStorageValue(STRIKE_KEY) ~= 1 then
+			local m = WS.wandFactor(attacker:getLevel(), attacker:getMagicLevel())
+			if m ~= 1 then
+				primaryDamage = scale(primaryDamage, m)
+				secondaryDamage = scale(secondaryDamage, m)
+			end
+		end
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
 	local launcher = A.kindOfType(weapon)
 	local styleFactor = WB.hitFactor(attacker:getLevel(), isTwoHanded(weapon), launcher, typeName)

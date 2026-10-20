@@ -2175,6 +2175,56 @@ game): one-handed users (Thief line, Templar line, Warrior with a shield) are un
 a little more early. The Warrior's best two-handed at 300 goes 500 / 1096 -> about 475 / 1041 (1 / 5 targets). Measure again in
 game with the next "Weapon (auto attack)" run; no keystone or spell number changed.
 
+### Weapon damage and skills (2026-10-20; owner: "faça o dano das armas/auto attack escalar com as skills dos players"; computed)
+
+**The audit** (server/README.md "Weapon damage scales with skills"): swords, axes, clubs, distance weapons and the fist already
+scaled with their skill through the engine's `Weapons::getMaxWeaponDamage` (`level / 5 + (skill / 4 + 1) x attack / 3 x
+1.03`; no src-patch changes it): at the typical skills below the skill term is 94% of the maximum hit at level 50, 89% at 300
+and 79% at 1000, and +10 skill is +19% / +8% / +5% damage there. Wands and rods did not scale at all: a flat roll over the
+weapons.xml `min .. max`. **Change:** a wand or rod hit x `(magic level + 20) / (typical magic level + 20)` (0.5 .. 2.0,
+`weapon_skill_core.lua`, `weapon_skill_config.lua`); the physical weapons are unchanged.
+
+**The table** (`python3 -I server/tools/weapon_sim.py --skills`): the mean hit of one auto attack, offensive stance, a
+monster that does not defend, no class factor (`meleeDamage` / `distDamage`, passive tree and keystones multiply before and
+after alike). Typical stats: skill 10 at level 1, 80 at 100, 110 at 300, 125 at 600, 140 at 1000; magic level 0 at level 8,
+60 at 100, 100 at 300, 120 at 600, 140 at 1000 (the C4 measurement, `rotation_sim.py` ANCHORS). Attack: the gear sets'
+tier (`install_gear_sets.py` CURVES; two-handed + 3 and the level's style factor, launchers x1.6 and their hit chance, the
+Monk's fist 40 + 0.025 per level, wands the sets' mean wand damage).
+
+| Weapon type (classes) | Level | Typical skill / magic level | Mean hit before | after | after at 0.8x the stat | after at 1.2x | before at 0.8x / 1.2x |
+|---|---|---|---|---|---|---|---|
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 50 | 45 | 88 | 88 | 73 | 104 | 73 / 104 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 150 | 88 | 202 | 202 | 166 | 237 | 166 / 237 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 300 | 110 | 280 | 280 | 232 | 328 | 232 / 328 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 500 | 120 | 339 | 339 | 283 | 395 | 283 / 395 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 1000 | 140 | 477 | 477 | 404 | 550 | 404 / 550 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 50 | 45 | 143 | 143 | 118 | 167 | 118 / 167 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 150 | 88 | 324 | 324 | 267 | 381 | 267 / 381 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 300 | 110 | 448 | 448 | 371 | 526 | 371 / 526 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 500 | 120 | 543 | 543 | 452 | 633 | 452 / 633 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 1000 | 140 | 761 | 761 | 643 | 879 | 643 / 879 |
+| bow / crossbow (Ranger line) | 50 | 45 | 133 | 133 | 112 | 155 | 112 / 155 |
+| bow / crossbow (Ranger line) | 150 | 88 | 461 | 461 | 381 | 540 | 381 / 540 |
+| bow / crossbow (Ranger line) | 300 | 110 | 630 | 630 | 526 | 733 | 526 / 733 |
+| bow / crossbow (Ranger line) | 500 | 120 | 759 | 759 | 641 | 876 | 641 / 876 |
+| bow / crossbow (Ranger line) | 1000 | 140 | 1068 | 1068 | 921 | 1215 | 921 / 1215 |
+| fist (Monk line (no weapon)) | 50 | 45 | 91 | 91 | 76 | 107 | 76 / 107 |
+| fist (Monk line (no weapon)) | 150 | 88 | 187 | 187 | 154 | 220 | 154 / 220 |
+| fist (Monk line (no weapon)) | 300 | 110 | 262 | 262 | 218 | 307 | 218 / 307 |
+| fist (Monk line (no weapon)) | 500 | 120 | 330 | 330 | 276 | 384 | 276 / 384 |
+| fist (Monk line (no weapon)) | 1000 | 140 | 471 | 471 | 398 | 543 | 398 / 543 |
+| wand / rod (Mystic line, Necromancer line) | 50 | 27 | 40 | 40 | 35 | 45 | 40 / 40 |
+| wand / rod (Mystic line, Necromancer line) | 150 | 70 | 74 | 74 | 62 | 85 | 74 / 74 |
+| wand / rod (Mystic line, Necromancer line) | 300 | 100 | 92 | 92 | 76 | 107 | 92 / 92 |
+| wand / rod (Mystic line, Necromancer line) | 500 | 113 | 101 | 101 | 84 | 119 | 101 / 101 |
+| wand / rod (Mystic line, Necromancer line) | 1000 | 140 | 118 | 118 | 97 | 139 | 118 / 118 |
+
+At the typical stat every type deals what it dealt before (no balance jump, no class total changes); a character above the
+typical skill or magic level of its level hits harder, one below it hits less, for every weapon type now. The wand rows were
+flat before (the "before at 0.8x / 1.2x" column); now 0.8x the magic level is 12-18% less and 1.2x is 12-18% more, close to
+the melee slope (15-18%). A Mystic or Necromancer at level 8 with magic level 0 (a new character) hits as before. Not
+measured in game.
+
 ### Area damage is uniform (2026-10-20; owner decision; computed with rotation_sim.py, not measured in game)
 
 Owner: "o dano de skills AoE deve ser IGUAL em toda a area e igual ao dano single-target (sem queda por alvo/distancia);

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Weapon damage per second across weapon styles (owner debug item 47: "Fórmula de dano das armas muito inconsistente").
 
-usage: python3 -I server/tools/weapon_sim.py [--report] [--write | --check] [--audit DATA_DIR]
+usage: python3 -I server/tools/weapon_sim.py [--report] [--write | --check] [--audit DATA_DIR] [--skills]
 
 The model (computed, not measured; the engine's formula, Weapons::getMaxWeaponDamage):
   max hit  = round(level / 5 (integer) + ((skill / 4 + 1) * (attack / 3) * 1.03) / attack factor)
@@ -30,6 +30,10 @@ bring them on target (the class compensation is then the owner's call).
            are not within TOLERANCE (10%) of each other at any level 8 .. 300 (within 12% at half and at one and a half
            times the usual skill)
 --write    write server/data/scripts/chaos/weapon_balance_config.lua
+--skills   the mean hit of every weapon type at levels 50 .. 1000 at the typical skill or magic level of the level
+           (weapon_skill_config.lua), before and after the wand scaling, and at 0.8x and 1.2x that skill (owner
+           2026-10-20: "faça o dano das armas/auto attack escalar com as skills dos players"; server/data/spells/README.md
+           "Weapon damage and skills")
 --audit DATA_DIR   read the base items.xml and weapons.xml of an installed server: the attack of the one-handed and
            two-handed swords, axes and clubs and of the launchers, per level band, against the tier curve; run it on the
            server after install_all.py and put a type that is off into TYPE_FACTOR (the base items are never hand edited)
@@ -214,6 +218,92 @@ def problems(factors=None):
     return bad
 
 
+# ------------------------------------------------------------------------------------------------ skills (weapon_skill_core.lua)
+SKILL_CONFIG = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'weapon_skill_config.lua')
+SKILL_LEVELS = (50, 150, 300, 500, 1000)
+# the weapon types and the class lines that hit with them (docs/CLASSES.md); class factors (meleeDamage, distDamage,
+# the passive tree) are left out: they multiply before and after alike
+SKILL_ROWS = (
+    ('one-handed melee', 'Warrior, Juggernaut, Thief line, Templar line', 'melee1'),
+    ('two-handed melee', 'Berserker (and any melee class with two hands)', 'melee2'),
+    ('bow / crossbow', 'Ranger line', 'bow'),
+    ('fist', 'Monk line (no weapon)', 'fist'),
+    ('wand / rod', 'Mystic line, Necromancer line', 'wand'),
+)
+
+
+def skill_config(path=SKILL_CONFIG):
+    """the anchors and the wand numbers of weapon_skill_config.lua (a plain data file: read with patterns)"""
+    text = open(path, encoding='utf-8').read()
+
+    def anchors(name):
+        body = re.search(r'\b%s\s*=\s*\{((?:\s*\{[^{}]*\},?)+)\s*\}' % name, text).group(1)
+        return [(float(a), float(b)) for a, b in re.findall(r'\{\s*([\d.]+)\s*,\s*([\d.]+)\s*\}', body)]
+
+    def number(name):
+        return float(re.search(r'\b%s\s*=\s*([\d.]+)' % name, text).group(1))
+    return {'skill': anchors('skill'), 'magic': anchors('magic'),
+            'offset': number('offset'), 'min': number('minFactor'), 'max': number('maxFactor')}
+
+
+def anchor_interp(points, level):
+    if level <= points[0][0]:
+        return points[0][1]
+    for (x0, y0), (x1, y1) in zip(points, points[1:]):
+        if level <= x1:
+            return y0 + (y1 - y0) * (level - x0) / float(x1 - x0)
+    return points[-1][1]
+
+
+def wand_factor(cfg, level, ml):
+    """weapon_skill_core.lua M.wandFactor"""
+    f = (max(0.0, ml) + cfg['offset']) / (max(0.0, anchor_interp(cfg['magic'], level)) + cfg['offset'])
+    return min(cfg['max'], max(cfg['min'], f))
+
+
+def typed_mean_hit(kind, level, skill):
+    """the mean hit of one auto attack (no class factor, offensive stance, a monster that does not defend): the
+    engine's formula for the physical weapons with the style factor of weapon_styles.lua and the launcher's hit
+    chance; the gear's mean wand damage (install_gear_sets.py CURVES 'wand') for a wand before the scaling"""
+    if kind == 'wand':
+        return G.curve('wand', level)
+    if kind == 'fist':
+        attack = min(60.0, 40.0 + 0.025 * level)   # monk_chi_core.lua cfg.unarmed
+        return max_hit(level, skill, attack) / 2.0
+    top = max_hit(level, skill, attack_of(kind, level))
+    low = min(top, -(-level // 5)) if kind == 'bow' else 0
+    factors = solve_factors()
+    return (low + top) / 2.0 * style_factor(factors, kind, level) * hit_chance(kind, level)
+
+
+def skills_rows(cfg=None):
+    """[(type, classes, level, typical stat, before, after, after at x0.8, after at x1.2, before at x0.8, before at
+    x1.2)]: after = before for the physical weapons (the engine scales them by the skill already)"""
+    cfg = cfg or skill_config()
+    out = []
+    for name, classes, kind in SKILL_ROWS:
+        for lv in SKILL_LEVELS:
+            stat = anchor_interp(cfg['magic' if kind == 'wand' else 'skill'], lv)
+            if kind == 'wand':
+                base = typed_mean_hit(kind, lv, stat)
+                after = [base * wand_factor(cfg, lv, stat * k) for k in (1.0, 0.8, 1.2)]
+                before = [base, base, base]
+            else:
+                before = [typed_mean_hit(kind, lv, stat * k) for k in (1.0, 0.8, 1.2)]
+                after = list(before)
+            out.append((name, classes, lv, stat, before[0], after[0], after[1], after[2], before[1], before[2]))
+    return out
+
+
+def skills_report():
+    lines = ['Mean auto attack hit at the typical skill / magic level of the level (weapon_skill_config.lua); x0.8 and x1.2',
+             'are that skill or magic level times 0.8 and 1.2. Class factors left out; offensive stance; no defence.',
+             'type              level  stat | before   after | after x0.8  x1.2 (before x0.8  x1.2)']
+    for name, _, lv, stat, b, a, lo, hi, blo, bhi in skills_rows():
+        lines.append('%-16s %6d %5.0f | %6.0f %7.0f | %10.0f %5.0f (%11.0f %5.0f)' % (name, lv, stat, b, a, lo, hi, blo, bhi))
+    return '\n'.join(lines)
+
+
 # ------------------------------------------------------------------------------------------------ audit of a server
 def audit(data_dir):
     """rows (kind, band, count, median attack) from the installed items.xml and weapons.xml, and the tier's attack"""
@@ -271,6 +361,9 @@ def main(argv):
             print(__doc__)
             return 1
         print(audit_report(argv[i + 1]))
+        return 0
+    if '--skills' in argv:
+        print(skills_report())
         return 0
     factors = solve_factors()
     text = config_text(factors)

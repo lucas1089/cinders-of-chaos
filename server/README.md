@@ -207,6 +207,8 @@ server/
                                       sql/chaos_transmog.sql, see "Transmog")
     item_tooltip.lua  item_tooltip_core.lua (rich item tooltips with the equipped-item compare, client game_itemtooltip)
     weapon_dps_core.lua  (the tooltip's "Estimated DPS", see "Estimated DPS")
+    weapon_skill_core.lua  weapon_skill_config.lua (wand and rod hits scale with the magic level; see "Weapon damage scales
+                                      with skills")
     charges_look.lua  charges_look_core.lua ("It has N charges left." in the Look text, see "Item charges")
     shop.lua  shop_config.lua  shop_services.lua  autosell.lua  sell_prices.lua (store, see "Store services")
     bounty.lua  bounty_core.lua  bounty_config.lua  bounty_pool.lua (bounty board; pool from tools/gen_bounty_pool.py)
@@ -4697,10 +4699,44 @@ The IP is the player's own one behind the gateways too: engine patch 0025 takes 
   decision in server/data/spells/README.md "Weapon damage per second"). Run `python3 -I server/tools/two_handed.py
   <server>/data` once: it raises the `attackspeed` of the two-handed weapons in items.xml (2000 -> 3000 ms, 1800 -> 2700
   ms; idempotent). The extra damage is applied by `weapon_styles.lua` to weapon hits only (spells, runes and wands are not
-  affected).
+  affected; a wand or rod hit gets only the magic level factor of "Weapon damage scales with skills").
 - Bows splash: creatures around the target take 50% of the hit (normal PvP / protection zone rules). Crossbows hit only
   their target. Which kind a launcher is comes from `data/lib/chaos_archery_config.lua` (bows and crossbows fire without
   ammunition: "Infinite arrows and quivers" below).
+
+## Weapon damage scales with skills (`weapon_skill_core.lua`, `weapon_skill_config.lua`, `weapon_styles.lua`)
+
+Owner 2026-10-20: "faça o dano das armas/auto attack escalar com as skills dos players". Audit of every auto attack (the
+base engine is TFS 1.4.2; no src-patch touches `weapons.cpp`'s damage):
+
+| Weapon type | Classes | Before | Now |
+|---|---|---|---|
+| sword, axe, club | Warrior, Juggernaut, Berserker, Thief line, Templar line, Monk with a staff | engine `Weapons::getMaxWeaponDamage`: `level / 5 + (skill / 4 + 1) x attack / 3 x 1.03`, the best melee skill ("One melee skill") | unchanged: the skill term is 79-94% of the hit at levels 50 .. 1000 |
+| bow, crossbow, throwing | Ranger line, Thief line (stars) | the same formula with the distance skill (min hit ceil(level / 5)) | unchanged |
+| fist | Monk line, Open Hand Creed | the same formula with the fist skill; `monk_combat.lua` rescales attack 7 to the Monk's fist attack, the fist skill kept | unchanged |
+| wand, rod | Mystic line, Necromancer line | **flat**: a uniform roll over weapons.xml `min .. max` (`WeaponWand::getWeaponDamage`), no skill, no magic level | **x the magic level factor** |
+
+So the physical weapons already scaled with the skill (+10 skill is +20% damage at level 50, +8% at 300, +5% at 1000, see server/data/spells/README.md
+"Weapon damage and skills"); only the wands and rods did not, although docs/CLASSES.md said they "use the magic level".
+Now `weapon_styles.lua` (the `onHealthChange` of weapon hits; a wand hit has the melee origin in this engine) multiplies
+a wand or rod hit by `ChaosWeaponSkill.wandFactor(level, magic level)`:
+
+    factor = (magic level + 20) / (typical magic level of the level + 20), clamped to 0.5 .. 2.0
+
+The typical magic level (`weapon_skill_config.lua` `typical.magic`) is the C4 measurement's caster magic level
+(`rotation_sim.py` ANCHORS: 60 at level 100, 100 at 300, 120 at 600, 140 at 1000) starting from 0 at level 8, so a
+character at the typical magic level of its level, and a new character, hit exactly as before: no balance jump. +10% magic
+level is about +8% damage at level 300 (the same slope the engine gives the skill of a weapon). The magic level is the
+effective one (equipment included), like the skill of a weapon hit. Spells (also a scripted weapon strike, storage
+7100028) are not touched. A wand no longer goes through the two-handed / launcher style factor (no stock wand is two-handed;
+the factor was meant for swords, axes, clubs and launchers only).
+
+No engine build, no install step: a reload of the scripts is enough. Numbers: `python3 -I server/tools/weapon_sim.py
+--skills`. Tests: `tests/weapon_skill_test.lua` (the core), `tests/melee_skill_test.lua` (the hit through
+`weapon_styles.lua` against a mocked player), `tools/weapon_sim_test.py` (the report: a typical stat deals what it did,
+0.8x / 1.2x the stat is clearly less / more for every type). Not measured in game. The item tooltip shows no wand damage
+(the engine does not give weapons.xml `min` / `max` to Lua), so nothing there changed; the "Estimated DPS" of melee and
+distance weapons already uses the skill.
 
 ## Estimated DPS (`weapon_dps_core.lua`, `item_tooltip_core.lua` `T.dpsRow`)
 
