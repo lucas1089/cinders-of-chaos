@@ -523,9 +523,12 @@ end
 -- the undo belongs to this character's session
 local function onGameEnd()
   U.undo = nil
+  -- the probes' answers belong to this character (another one may carry its potions elsewhere)
+  if ChaosPotionGate and ChaosPotionGate.reset then ChaosPotionGate.reset() end
 end
 
--- the server's answer to a potion probe (ChaosPotionGate, base patch 0070): nothing to use -> the potion waits
+-- the server's answer to a potion probe (ChaosPotionGate, base patch 0070): "Using ..." -> found, a failure that
+-- no "Using ..." takes back -> the potion waits
 local function onTextMessage(mode, text)
   if ChaosPotionGate then ChaosPotionGate.onText(ChaosPotionGate.session, text, g_clock.millis()) end
 end

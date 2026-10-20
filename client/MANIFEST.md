@@ -271,7 +271,9 @@ entries, kept out of the other filters and of the spell pickers; conjure spells 
 `chaosSpellbook`). The selected row has a soft gold tint and frame (hover a faint lift); Up / Down move the selection. Long names are cut with "..." (full name in the row tooltip). A single-target spell's area shows the
 target at its range (up to 5) and the legend's target square matches it. The spell pickers share the order and the
 learned rule (base patch `0057`). Using a spellbook item opens the window (server `show` on opcode 219). Not run
-in a client.
+in a client. 2026-10-20 (owner log "[SlowLua] ... spellbook.lua:732 took 7.161 ms", from the combo box): one filter
+pass per change of the Type box, not a loop; the filter and Type boxes no longer change on the mouse wheel, and box
+and search changes are coalesced into one pass (30 ms).
 
 ## Short numbers (new)
 Every number the client shows is short: 1000 -> 1k, 15300 -> 15.3k, 2450000 -> 2.45M, 1200000000 -> 1.2B (three significant digits, trailing zeros dropped, rounded down so 999999 is 999k, below 1000 as it is, negatives keep the sign). `client_chaos_numbers` (not sandboxed, autoload-priority 10, so it loads before gamelib and every game module) defines the globals `formatShortNumber(n)`, `formatExactNumber(n)` (15,300, for tooltips), `shortNumbersIn(text)` (shortens standalone integers inside a text, `1,234,567` and `1.234.567` included, and leaves times, dates and years, coordinates, ids, `#123`, numbers glued to letters, decimals and the loot markup `{id:value|...}` alone) and `shortNumbersInMessage(mode, text)` (only the look, damage, healing, experience, status, loot, NPC trade, mana and potion message modes; chat, private, NPC talk, login and broadcasts stay as they are). `numbers_test.lua` (luajit and lua5.3, CI step "Client unit tests") checks the rule against an integer reference and the text cases. The numbers above the map use the same rule in C++ (base patch 0018).
@@ -2907,6 +2909,19 @@ rune branch and Auto UH used a rune only with a count above 0, so a rune in a cl
 `ChaosPotionGate.canUse(id, count, now)` / `noteUse(id, count, now)` (shared session, `reset()`) gate runes like potions:
 a probe every 3 s for an uncounted rune, 30 s back-off after "Sorry, not possible."; a counted rune is used as before.
 Tests in `potiongate_test.lua`.
+
+Fix of 2026-10-20 (owner beta, client build 9: "the helper stopped using the potion", a Ranger at 21 mana with the
+log "[helper] spell 16 held 6.1 s: backoff (refused 6 times in a row ...)"). The gate backed off every probe of the
+last 1.5 s at the first failure-like text, and its texts included "you do not have", the start of the server's "You do
+not have enough mana." The health check sends the heal spell and the potion probe in the same tick; with the mana gone
+the server refused the spell, and each refusal put the Everfull health and mana potions on a 30 s wait, so no potion
+went out while the character ran dry. Now: "You do not have ..." is not a failure (only "Sorry, not possible." and
+"You cannot use this object.", the answers of a use by id that finds nothing); the answers are matched to the probes in
+the order they were sent; a failure waits `SETTLE_MS` (500 ms) and is taken back when the probe's own "Using ..." (the
+server's hotkey message, "Using an everfull mana potion (never runs out).") follows; and an item whose probe answered
+"Using ..." is used like a counted one (no 3 s probe wait) until a probe of it fails. The gate is reset at logout. Not
+from the 0052 rotation back-off (it holds spells only), base patch `0086` (death) or the Support changes (no potion
+code). No base patch: `helper.lua` calls the gate's same `allowed` / `used` / `canUse` / `noteUse`.
 
 ### Window layout per character (`game_chaoslayout`)
 The base client's `UIMiniWindow:setup` restores from a global `MiniWindows` node that no module writes (and skips it

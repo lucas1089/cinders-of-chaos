@@ -485,7 +485,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     (the server's use by id finds it anywhere carried). `ChaosPotionGate` (`game_helperrotation/potiongate.lua`) allows
     a probe every 3 s for an uncounted potion and waits 30 s after the server's "Sorry, not possible."; a counted potion
     is used as before. The Everfull potions also need server patch `0043` (use by look, Everfull first). The chain
-    `0001`-`0070` applied; the helper parses in LuaJIT and Lua 5.3. Not tried in a client run.
+    `0001`-`0070` applied; the helper parses in LuaJIT and Lua 5.3. Not tried in a client run. 2026-10-20: the gate
+    no longer takes a spell's "You do not have enough mana." for the probe's answer, and a probe answered "Using ..."
+    makes the item usable without the 3 s wait (overlay only, `MANIFEST.md` "Helper potions in closed backpacks").
 49. `0071` (Lua `modules/client_background/background.lua`, `casts.lua`): **the login screen's bottom bar shows only
     what it has.** Owner: the event schedule / boosted / casts bar stayed on the character select (over the play hint)
     and showed empty panels when nothing served `clientServicesLink`. `background.lua` adds `hasBoostedInfo()`; the

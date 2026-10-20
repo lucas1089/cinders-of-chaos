@@ -462,6 +462,16 @@ local function applyFilter()
   end
 end
 
+-- one filter pass for the changes of this moment (see init: the boxes and the search)
+local filterEvent = nil
+local function queueFilter()
+  if filterEvent then return end
+  filterEvent = scheduleEvent(function()
+    filterEvent = nil
+    applyFilter()
+  end, 30)
+end
+
 -- learned / level / cooldown of every row, then the filter (a reopen does only this)
 local function refreshState()
   if not window then return end
@@ -721,16 +731,22 @@ function init()
   for _, f in ipairs(Core.FILTERS) do
     window.filterCombo:addOption(filterText[f.key] or f.text, f.key)
   end
+  -- Owner beta 2026-10-20 log: "[SlowLua] callback anonymous (spellbook.lua:732) took 7.161 ms; signal origin:
+  -- uicombobox.lua:108" (setCurrentIndex: a pick or a mouse-wheel step on the Type box). One filter pass over every row
+  -- per change: not a loop, but the wheel over a box changed the filter at every step while the player scrolled. The
+  -- boxes no longer take the wheel, and changes (a box, typing in the search) are coalesced into one pass.
+  window.filterCombo.mouseScroll = false
+  window.kindCombo.mouseScroll = false
   window.filterCombo.onOptionChange = function()
     saveFilter()
-    applyFilter()
+    queueFilter()
   end
   local kindText = { all = tr('All types'), attack = tr('Attack'), support = tr('Support') }
   for _, k in ipairs(Core.KINDS) do
     window.kindCombo:addOption(kindText[k.key] or k.text, k.key)
   end
-  window.kindCombo.onOptionChange = function() applyFilter() end
-  window.searchEdit.onTextChange = function() applyFilter() end
+  window.kindCombo.onOptionChange = function() queueFilter() end
+  window.searchEdit.onTextChange = function() queueFilter() end
   window.searchEdit.onKeyPress = onKeyPress
   window.onKeyPress = onKeyPress
   window.spellList.onChildFocusChange = onListFocus
@@ -748,6 +764,10 @@ function terminate()
   disconnect(LocalPlayer, { onLevelChange = onLevelChange, onMagicLevelChange = onLevelChange })
   ProtocolGame.unregisterExtendedOpcode(OPCODE)
   stopCooldownTick()
+  if filterEvent then
+    removeEvent(filterEvent)
+    filterEvent = nil
+  end
   if prefetchEvent then
     removeEvent(prefetchEvent)
     prefetchEvent = nil
