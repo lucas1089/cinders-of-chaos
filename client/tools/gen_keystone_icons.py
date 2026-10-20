@@ -10,7 +10,8 @@ nothing comes from outside the repository, so the medium and large nodes have th
 as the small ones.
  * KEYSTONES (keystone frame, nodes 369, 376, 383, 390, 621, 624 with their per-class variants, 631-664, and the build
    archetype keystones 77, 78, 81, 82, 96, 99, 102, 105-109, 253, 262, 355, 362, and the Warrior and Ranger line
-   keystones 409, 428, 447, 466, 523, 542, 561, 599): one row of
+   keystones 409, 428, 447, 466, 523, 542, 561, 599; the Thief, Necromancer, Monk and Templar line variants of 621 and
+   624 since 2026-10-20): one row of
    64x64 cells in keystones.png, in the order below (treedata/icons.lua: x = index * 64). Each cell is the atlas icon
    scaled up once here (Lanczos, a light unsharp mask), so the client does not stretch a 25 px clip to 60 px.
  * START (class section start nodes 625, 635, 645, 655): classstart_<line>.png, 150x150, written next to the sheet:
@@ -101,6 +102,15 @@ KEYSTONES = [  # (icon key in treedata/icons.lua, atlas cell): the order fixes t
     ('arBarbed', 'A6.10'),      # 542 a barbed arrow
     ('arOpeningShot', 'A6.20'), # 599 an arrow in flight
     ('arHobble', 'A7.28'),      # 447 a tumbling figure
+    # the signature keystones of the Thief, Necromancer, Monk and Templar lines (2026-10-20, 621 / 624 variants)
+    ('ksShadowTwin', 'A1.18'),    # Thief line 621: a figure and its afterimage
+    ('ksViperVerdict', 'A5.24'),  # Thief line 624: crossed venom blades
+    ('ksCorpseBlast', 'B22.24'),  # Necromancer line 621: a dark bursting orb
+    ('ksReapersToll', 'B10.18'),  # Necromancer line 624: a hooded reaper
+    ('ksSeventhPalm', 'B18.16'),  # Monk line 621: a raised blue fist
+    ('ksPiercingPalm', 'B3.13'),  # Monk line 624: a fist bursting through
+    ('ksRadiantRebuke', 'B18.17'),  # Templar line 621: a shield with a cross
+    ('ksDawnchain', 'B19.14'),    # Templar line 624: a figure in radiant light
 ]
 
 START = [  # (line, atlas cell): the start node of each class section

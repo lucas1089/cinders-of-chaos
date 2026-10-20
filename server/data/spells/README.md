@@ -2347,3 +2347,36 @@ Earthbreaker: 3 hits x0.90 and the 4th x1.50, plus a 60% slam on up to 6 monster
 Rampage: 5 stacks give +30% damage and +20% damage taken. Last Stand: one lethal hit per 90 s, then 5 s of -40%.
 Longshot: +30% at 7 sqm, x0.85 at 2 sqm or less. Barbed Quiver: hit x0.90 plus 60% bleed, 1.50 of a hit over 4 s.
 Opening Shot: +80% on the first hit, x0.93 after. Hobbling Shot: 25% chance, hobbled targets take +20%, x0.92 else.
+
+### Signature keystones of the Thief, Necromancer, Monk and Templar lines (2026-10-20, computed, not measured in game)
+
+The 621 / 624 variants of those lines (`class_keystones_config.lua`; server/README.md "Passive tree keystones"). Sized
+against the two keystones the owner named, read the way "Keystones verified in game" measured them: the damage of a fight
+with the keystone over the same fight without it, on one enemy and on a pack of five standing together. The model is
+`ChaosClassKeystones.model` (`class_keystones_core.lua`); `tests/class_keystones_test.lua` asserts that every damage
+keystone's best case is at least Deadeye's +15% and at most 5% over Ricochet's pack, and that none gains more than
+Shadow Twin's +18% or loses more than its price on one enemy.
+
+| Keystone | Class line | One enemy | Pack of 5 | How |
+|---|---|---|---|---|
+| Ricochet (reference) | Ranger | 1.00 | 2.07 | 1 + 65% + 42% on the bounces |
+| Deadeye (reference) | Ranger | 1.15 | 1.15 | 15% of the bolts x2 |
+| Shadow Twin | Thief | 1.18 | 1.18 | 30% x 60%; price: 6% more damage taken |
+| Viper's Verdict | Thief | 1.165 | 1.165 | 20% x2 on a poisoned target (1.20), x0.85 without poison; 90% of the hits on a poisoned target (Blackblood Creed or the Poison Blades buff poison every hit, the first hit lands before the poison) |
+| Corpse Detonation | Necromancer | 0.92 | 1.21 | 5 monsters of one health: 4 + 3 + 2 + 1 explosions of 12% = 1.2 of a monster's health for free; 5 / (3.8 / 0.92) |
+| Reaper's Toll | Necromancer | 1.17 | 1.17 | 60% of a monster's health at x0.92, the last 40% at x2: 1 / (0.6 / 0.92 + 0.4 / 2) |
+| Seventh Palm | Monk | 1.16 | 2.04 | (4 x 0.90 + 2.2) / 5; + 2.2 x 50% x 4 neighbours / 5 |
+| Piercing Palm | Monk | 0.95 | 2.00 | 0.95 x (1 + 70% + 40%) with two enemies behind the target in a line; a ring of monsters gives about half the gain |
+| Dawnchain | Templar | 1.00 (spells x0.90) | 1.85 | 1 + 55% + 30% on melee weapon hits |
+| Radiant Rebuke | Templar | 0.90 (weapon hits) | 0.90 + nova | defensive: 20% of melee / ranged hits blocked (Bulwark 15%) |
+
+- Radiant Rebuke's nova, an estimate with the numbers of the Thorns check (server/README.md "Passive tree: class
+  sections", level 300, magic level 25, monster hits of 568 after the defences): 4 monsters hitting every 2 s give 2 hits
+  a second, 0.4 blocks a second and, with the 1 s internal cooldown, about 0.3 novas a second of 568 + 100 on up to 4 of
+  them (x1.2 stat window): about 960 a second, near 40% of the Templar's computed 5-target damage at level 300 (C4 1422 +
+  the kit's 982), while melee and ranged damage taken drops by 20%. One enemy: about a quarter of that. Weapon hits pay
+  10%, so a Templar that fights mostly with spells keeps nearly all of it; the nova scales with what the pack hits for.
+- The prices follow the existing keystones: a trade that every fight sees (Shadow Twin takes more damage, Viper's Verdict
+  needs poison, Corpse Detonation and Reaper's Toll lose 8% outside their window, Seventh Palm and Piercing Palm lose on
+  the plain hits, Dawnchain on the spells, Radiant Rebuke on the weapon hits and needs a shield).
+- Not measured on the dummies or in game. The pack numbers assume every proc finds its targets, as the Ricochet row does.

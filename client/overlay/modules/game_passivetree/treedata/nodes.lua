@@ -12046,7 +12046,8 @@ function getTreeNodes()
 			}
 		},
 		--- 621 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Iron Sage, sees (and gets) its own keystone
+		-- keystone: every class sees (and gets) its own keystone here (the Thief, Necromancer, Monk and Templar lines since
+		-- 2026-10-20: server/data/scripts/chaos/class_keystones_config.lua)
 		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
@@ -12058,9 +12059,8 @@ function getTreeNodes()
 			group = 102,
 			icon = "ksWrath",
 			stats = {
-				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines, the Iron Sage; other",
-				"classes have theirs in their class section)."
+				"Holds the keystone of your class: every",
+				"class has its own here."
 			},
 			knight = {
 				icon = "ksCleavingArc",
@@ -12169,7 +12169,150 @@ function getTreeNodes()
 					"Never the same target twice."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "ironsage"},
+			thief = {
+				icon = "ksShadowTwin",
+				name = "Shadow Twin",
+				customStats = {
+					ksShadowTwin = 1
+				},
+				stats = {
+					"Weapon hits: 30% chance for your shadow to strike",
+					"the same target again 0.3 s later for 60% of the",
+					"hit. You take 6% more damage."
+				}
+			},
+			ninja = {
+				icon = "ksShadowTwin",
+				name = "Shadow Twin",
+				customStats = {
+					ksShadowTwin = 1
+				},
+				stats = {
+					"Weapon hits: 30% chance for your shadow to strike",
+					"the same target again 0.3 s later for 60% of the",
+					"hit. You take 6% more damage."
+				}
+			},
+			samurai = {
+				icon = "ksShadowTwin",
+				name = "Shadow Twin",
+				customStats = {
+					ksShadowTwin = 1
+				},
+				stats = {
+					"Weapon hits: 30% chance for your shadow to strike",
+					"the same target again 0.3 s later for 60% of the",
+					"hit. You take 6% more damage."
+				}
+			},
+			necromancer = {
+				icon = "ksCorpseBlast",
+				name = "Corpse Detonation",
+				customStats = {
+					ksCorpseBlast = 1
+				},
+				stats = {
+					"A monster you or your minions kill explodes: 12%",
+					"of its maximum health (at most 15 x your level) as",
+					"death damage on up to 6 enemies within 2 sqm.",
+					"Your and your minions' hits deal 8% less."
+				}
+			},
+			lich = {
+				icon = "ksCorpseBlast",
+				name = "Corpse Detonation",
+				customStats = {
+					ksCorpseBlast = 1
+				},
+				stats = {
+					"A monster you or your minions kill explodes: 12%",
+					"of its maximum health (at most 15 x your level) as",
+					"death damage on up to 6 enemies within 2 sqm.",
+					"Your and your minions' hits deal 8% less."
+				}
+			},
+			bonelord = {
+				icon = "ksCorpseBlast",
+				name = "Corpse Detonation",
+				customStats = {
+					ksCorpseBlast = 1
+				},
+				stats = {
+					"A monster you or your minions kill explodes: 12%",
+					"of its maximum health (at most 15 x your level) as",
+					"death damage on up to 6 enemies within 2 sqm.",
+					"Your and your minions' hits deal 8% less."
+				}
+			},
+			monk = {
+				icon = "ksSeventhPalm",
+				name = "Seventh Palm",
+				customStats = {
+					ksSeventhPalm = 1
+				},
+				stats = {
+					"Every 5th melee hit (fists or weapon) within 4 s",
+					"is a finisher: 120% more damage, and a shockwave",
+					"hits up to 4 enemies next to the target for 50%",
+					"of it. Your other melee hits deal 10% less."
+				}
+			},
+			shadowfist = {
+				icon = "ksSeventhPalm",
+				name = "Seventh Palm",
+				customStats = {
+					ksSeventhPalm = 1
+				},
+				stats = {
+					"Every 5th melee hit (fists or weapon) within 4 s",
+					"is a finisher: 120% more damage, and a shockwave",
+					"hits up to 4 enemies next to the target for 50%",
+					"of it. Your other melee hits deal 10% less."
+				}
+			},
+			templar = {
+				icon = "ksRadiantRebuke",
+				name = "Radiant Rebuke",
+				customStats = {
+					ksRadiantRebuke = 1
+				},
+				stats = {
+					"With a shield: 20% chance to block a melee or",
+					"ranged attack completely. A block sends a holy",
+					"nova (once per 1 s): up to 8 enemies within 2 sqm",
+					"take the blocked hit + 4 x your magic level.",
+					"Your weapon hits deal 10% less."
+				}
+			},
+			inquisitor = {
+				icon = "ksRadiantRebuke",
+				name = "Radiant Rebuke",
+				customStats = {
+					ksRadiantRebuke = 1
+				},
+				stats = {
+					"With a shield: 20% chance to block a melee or",
+					"ranged attack completely. A block sends a holy",
+					"nova (once per 1 s): up to 8 enemies within 2 sqm",
+					"take the blocked hit + 4 x your magic level.",
+					"Your weapon hits deal 10% less."
+				}
+			},
+			sentinel = {
+				icon = "ksRadiantRebuke",
+				name = "Radiant Rebuke",
+				customStats = {
+					ksRadiantRebuke = 1
+				},
+				stats = {
+					"With a shield: 20% chance to block a melee or",
+					"ranged attack completely. A block sends a holy",
+					"nova (once per 1 s): up to 8 enemies within 2 sqm",
+					"take the blocked hit + 4 x your magic level.",
+					"Your weapon hits deal 10% less."
+				}
+			},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "thief", "ninja", "samurai", "necromancer", "lich", "bonelord", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				620
 			},
@@ -12217,7 +12360,8 @@ function getTreeNodes()
 			}
 		},
 		--- 624 ---
-		-- keystone: every class of the Warrior, Ranger and Mystic lines, and the Sentinel, sees (and gets) its own keystone
+		-- keystone: every class sees (and gets) its own keystone here (the Thief, Necromancer, Monk and Templar lines since
+		-- 2026-10-20: server/data/scripts/chaos/class_keystones_config.lua)
 		-- here (the variant key is ChaosClasses.keystoneKey); the server reads the same per-class customStats (passivetree_data.lua `v`); effects in passivetree_keystones.lua
 		{
 			orbit = 0,
@@ -12229,9 +12373,8 @@ function getTreeNodes()
 			group = 103,
 			icon = "ksResolve",
 			stats = {
-				"Holds the keystone of your class (Warrior,",
-				"Ranger and Mystic lines, the Sentinel; other",
-				"classes have theirs in their class section)."
+				"Holds the keystone of your class: every",
+				"class has its own here."
 			},
 			knight = {
 				icon = "ksBulwark",
@@ -12335,7 +12478,147 @@ function getTreeNodes()
 					"+35% damage, and companions take 20% less."
 				}
 			},
-			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "sentinel"},
+			thief = {
+				icon = "ksViperVerdict",
+				name = "Viper's Verdict",
+				customStats = {
+					ksViperVerdict = 1
+				},
+				stats = {
+					"Weapon hits on a poisoned target: 20% chance to",
+					"strike a vital for double damage (+100%). Weapon",
+					"hits on a target that is not poisoned deal 15%",
+					"less."
+				}
+			},
+			ninja = {
+				icon = "ksViperVerdict",
+				name = "Viper's Verdict",
+				customStats = {
+					ksViperVerdict = 1
+				},
+				stats = {
+					"Weapon hits on a poisoned target: 20% chance to",
+					"strike a vital for double damage (+100%). Weapon",
+					"hits on a target that is not poisoned deal 15%",
+					"less."
+				}
+			},
+			samurai = {
+				icon = "ksViperVerdict",
+				name = "Viper's Verdict",
+				customStats = {
+					ksViperVerdict = 1
+				},
+				stats = {
+					"Weapon hits on a poisoned target: 20% chance to",
+					"strike a vital for double damage (+100%). Weapon",
+					"hits on a target that is not poisoned deal 15%",
+					"less."
+				}
+			},
+			necromancer = {
+				icon = "ksReapersToll",
+				name = "Reaper's Toll",
+				customStats = {
+					ksReapersToll = 1
+				},
+				stats = {
+					"Your and your minions' hits on a monster at 40%",
+					"health or less deal 100% more; on a monster above",
+					"40% they deal 8% less."
+				}
+			},
+			lich = {
+				icon = "ksReapersToll",
+				name = "Reaper's Toll",
+				customStats = {
+					ksReapersToll = 1
+				},
+				stats = {
+					"Your and your minions' hits on a monster at 40%",
+					"health or less deal 100% more; on a monster above",
+					"40% they deal 8% less."
+				}
+			},
+			bonelord = {
+				icon = "ksReapersToll",
+				name = "Reaper's Toll",
+				customStats = {
+					ksReapersToll = 1
+				},
+				stats = {
+					"Your and your minions' hits on a monster at 40%",
+					"health or less deal 100% more; on a monster above",
+					"40% they deal 8% less."
+				}
+			},
+			monk = {
+				icon = "ksPiercingPalm",
+				name = "Piercing Palm",
+				customStats = {
+					ksPiercingPalm = 1
+				},
+				stats = {
+					"Melee hits (fists or weapon) pass through: the",
+					"enemy behind the target takes 70% of the hit, the",
+					"next one behind it 40%. The hit itself deals 5%",
+					"less."
+				}
+			},
+			shadowfist = {
+				icon = "ksPiercingPalm",
+				name = "Piercing Palm",
+				customStats = {
+					ksPiercingPalm = 1
+				},
+				stats = {
+					"Melee hits (fists or weapon) pass through: the",
+					"enemy behind the target takes 70% of the hit, the",
+					"next one behind it 40%. The hit itself deals 5%",
+					"less."
+				}
+			},
+			ironsage = {
+				icon = "ksPiercingPalm",
+				name = "Piercing Palm",
+				customStats = {
+					ksPiercingPalm = 1
+				},
+				stats = {
+					"Melee hits (fists or weapon) pass through: the",
+					"enemy behind the target takes 70% of the hit, the",
+					"next one behind it 40%. The hit itself deals 5%",
+					"less."
+				}
+			},
+			templar = {
+				icon = "ksDawnchain",
+				name = "Dawnchain",
+				customStats = {
+					ksDawnchain = 1
+				},
+				stats = {
+					"Melee weapon hits chain holy light to the nearest",
+					"other enemy within 3 sqm for 55% of the hit, then",
+					"once more for 55% of that (30%). Never the same",
+					"target twice. Your spells deal 10% less."
+				}
+			},
+			inquisitor = {
+				icon = "ksDawnchain",
+				name = "Dawnchain",
+				customStats = {
+					ksDawnchain = 1
+				},
+				stats = {
+					"Melee weapon hits chain holy light to the nearest",
+					"other enemy within 3 sqm for 55% of the hit, then",
+					"once more for 55% of that (30%). Never the same",
+					"target twice. Your spells deal 10% less."
+				}
+			},
+			classes = {"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist", "thief", "ninja", "samurai", "necromancer", "lich", "bonelord", "monk", "shadowfist", "ironsage", "templar", "inquisitor", "sentinel"},
 			inputs = {
 				623
 			},

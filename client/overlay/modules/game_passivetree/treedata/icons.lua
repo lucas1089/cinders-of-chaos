@@ -1207,7 +1207,16 @@ function getTreeIcons()
 		arLongshot = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3072, y = 0},
 		arBarbed = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3136, y = 0},
 		arOpeningShot = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3200, y = 0},
-		arHobble = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3264, y = 0}
+		arHobble = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3264, y = 0},
+		-- the signature keystones of the Thief, Necromancer, Monk and Templar lines (621 / 624 variants, 2026-10-20)
+		ksShadowTwin = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3328, y = 0},
+		ksViperVerdict = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3392, y = 0},
+		ksCorpseBlast = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3456, y = 0},
+		ksReapersToll = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3520, y = 0},
+		ksSeventhPalm = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3584, y = 0},
+		ksPiercingPalm = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3648, y = 0},
+		ksRadiantRebuke = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3712, y = 0},
+		ksDawnchain = {file = "/images/passivetree/keystones", w = 64, h = 64, x = 3776, y = 0}
 	}
 end
 

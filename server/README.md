@@ -2072,7 +2072,31 @@ variant the server applies (the client's own vocation number did not match: an E
 | Sorcerer | Arcane Echo: a spell hitting 2+ enemies, 35% to repeat 0.6 s later on the same spots for 50%; 3 s cooldown | Elemental Overload: a spell hit primes the other elements, the next spell of another element within 8 s deals +20% |
 | Iron Sage (621) / Sentinel (624), the old druid pair, since 2026-10-12 | Overgrowth (Iron Sage): heals on others heal 10% more over 6 s (3 pulses; 30% for the old druid) | Thorns (Sentinel): melee/ranged attackers take 30% of their hit + 2 x magic level as earth damage |
 | Illusionist (support) | Shared Phantasm: your hits mark the enemy for 6 s; other party members deal +12% to it | Inspiring Illusion: other party members within 8 sqm deal +8% damage |
+| Thief, Ninja, Samurai (2026-10-20) | Shadow Twin: weapon hits (melee or ranged, not a wand), 30% for the shadow to strike the same target again 0.3 s later for 60%; price: you take 6% more damage | Viper's Verdict: weapon hits on a poisoned target, 20% to strike a vital for x2; weapon hits on a target that is not poisoned x0.85 |
+| Necromancer, Lich, Bone Lord (2026-10-20) | Corpse Detonation: a monster you or your minions kill explodes, 12% of its maximum health (at most 15 x your level) as death on up to 6 enemies within 2 sqm; an explosion's kill does not explode; price: your and your minions' hits x0.92 | Reaper's Toll: your and your minions' hits on a monster at 40% health or less x2, above x0.92 |
+| Monk, Shadowfist (2026-10-20; the Iron Sage keeps Overgrowth) | Seventh Palm: every 5th melee hit (fists or a melee weapon, 4 s window) is a finisher, x2.2 and a shockwave of 50% of it on up to 4 enemies next to the target; the other melee hits x0.90 | Piercing Palm (the Iron Sage too): a melee hit passes through, the nearest enemy next to the target and farther from you takes 70%, the next one behind it 40%; the hit x0.95 |
+| Templar, Inquisitor (2026-10-20; the Sentinel keeps Thorns) | Radiant Rebuke (the Sentinel too): with a shield, 20% to block a melee/ranged hit completely; a block sends a holy nova (at most one a second) on up to 8 enemies within 2 sqm for the blocked hit + 4 x magic level; your weapon hits x0.90 | Dawnchain: melee weapon hits chain holy light to the nearest other enemy within 3 sqm (in sight) for 55%, then 55% of that (30%); your spells x0.90 |
 
+- **Signature keystones of the Thief, Necromancer, Monk and Templar lines (2026-10-20).** The owner asked for nodes "like
+  Ricochet and Deadeye for all classes". Those four lines had only their class section keystones and the main tree
+  archetypes: a poison buff (Blackblood Creed), minion and aura scaling, a no-evasion trade, a stance tweak; nothing that
+  shows in every fight the way a bouncing bolt or a doubled shot does. Each class of the four lines now has its own pair
+  on 621 / 624 (the rows above; variant key = class key, `ChaosClasses.keystoneKey`), so every one of the 21 classes may
+  take both nodes. Numbers `class_keystones_config.lua`, rules `class_keystones_core.lua`, glue here. No character of
+  those classes could hold 621 / 624 before (the class check of every save and the login sanitize refused them) and the
+  ids, links and meaning for every other class are unchanged, so nothing is refunded (no `reworked` version) and the build
+  code format stays 6. Weapon procs (Shadow Twin, Seventh Palm's shockwave, Piercing Palm, Dawnchain, Radiant Rebuke's
+  nova) are dealt like Ricochet (guarded, `ORIGIN_SPELL`, PvP rules). The pure factors (Corpse Detonation's price,
+  Reaper's Toll, Dawnchain's spell price) are a second event, `ChaosClassKeystones`, on every monster from its spawn
+  (EventCallback onSpawn index 11) and on every player from login, so area spells and minion hits on monsters nobody
+  targeted count too (a factor does not depend on the event order); `ChaosClassKeystonesDeath` (same registration)
+  sets off Corpse Detonation. Every new branch runs in `pcall`: an error is printed and the hit lands unchanged.
+  Visuals: Shadow Twin `shadow_smoke`, Viper's Verdict `poison_burst` + crit, Corpse Detonation `necro_skull`, Reaper's
+  Toll `shadow_flame` once per monster, Seventh Palm `crit_burst` + `ground_slam`, Piercing Palm `shockwave`, Radiant
+  Rebuke block + `holy_spiral`, Dawnchain `holy_bolt` missile + `holy_cross`. Icons: `keystones.png` cells 52-59.
+  Computed balance against Ricochet and Deadeye (`ChaosClassKeystones.model`, asserted in the test):
+  `data/spells/README.md` "Signature keystones of the Thief, Necromancer, Monk and Templar lines". Not measured in
+  game. Test: `tests/class_keystones_test.lua`.
 - Every extra hit (cleave, ricochet, echo, reflect, thorns) is dealt from an `addEvent` with `ChaosKeystones.depth > 0` and
   `ORIGIN_SPELL`: no keystone, no passive bonus (`passivetree_effects.lua` skips it) and no weapon style (two-handed factor, arrow
   splash) applies to it, so nothing chains. Targets: monsters that are not a player's summon; players only where
@@ -2118,7 +2142,9 @@ variant the server applies (the client's own vocation number did not match: an E
   Elementalist `sorcerer`, Illusionist `illusionist`. Since 2026-10-12 also the Iron Sage `ironsage` (621 only:
   **Overgrowth**, heals on others heal 10% more over 6 s) and the Sentinel `sentinel` (624 only: **Thorns**, melee and
   ranged attackers take 30% of their hit + 2 x magic level as earth damage), the old druid pair. Only these eleven classes
-  may take 621 / 624 (`c` in the data; the Iron Sage only 621, the Sentinel only 624). No character could hold them before
+  could take 621 / 624 (`c` in the data; the Iron Sage only 621, the Sentinel only 624) until 2026-10-20; since then
+  every class may take both (the signature pair of the Thief, Necromancer, Monk and Templar lines, "Passive tree
+  keystones" above; the Iron Sage Piercing Palm on 624, the Sentinel Radiant Rebuke on 621). No character could hold them before
   (the login sanitize removed them), so nothing is refunded; the node ids and links are unchanged, so the build code
   format stays. Numbers: `data/spells/README.md` "Overgrowth and Thorns for the Iron Sage and the Sentinel" (computed).
 - Checked in a live client, 2026-10-13, level 300, tree build with the node. Thorns, Sentinel 624, ML 25: 20 melee

@@ -132,17 +132,15 @@ for k in pairs(lineOf) do
 	end
 	eq(ks, (k == "thief" or k == "necromancer" or k == "monk" or k == "templar") and 1 or 2, "keystones " .. k .. " may take")
 end
--- 621 / 624: the Warrior, Ranger and Mystic lines, and since 2026-10-12 the Iron Sage (621, Overgrowth) and the Sentinel
--- (624, Thorns); a variant for each
-local only = {[621] = "ironsage", [624] = "sentinel"}
+-- 621 / 624: every class since 2026-10-20 (the Warrior, Ranger and Mystic lines first, the Iron Sage's Overgrowth and the
+-- Sentinel's Thorns since 2026-10-12, the Thief, Necromancer, Monk and Templar lines' signature pair: class_keystones_config.lua);
+-- a variant for each
 for _, id in ipairs({621, 624}) do
-	for _, k in ipairs({"warrior", "juggernaut", "berserker", "ranger", "deadeye", "beastmaster", "mystic", "elementalist", "illusionist",
-			only[id]}) do
-		eq(tree.nodes[id].c[k], true, id .. " for " .. k)
-	end
-	for _, k in ipairs({"thief", "ninja", "lich", "monk", "shadowfist", "templar", "inquisitor",
-			id == 621 and "sentinel" or "ironsage"}) do
-		eq(tree.nodes[id].c[k], nil, id .. " not for " .. k)
+	for v = 1, 25 do
+		local k = C.classKey(v)
+		if k then
+			eq(tree.nodes[id].c[k], true, id .. " for " .. k)
+		end
 	end
 	eq(tree.nodes[id].v.druid, nil, id .. ": no druid variant left")
 	for v = 1, 25 do
@@ -173,10 +171,11 @@ eq(#kept, 1, "a warrior keeps only the shared node"); eq(#removed, 6)
 kept, removed = CT.sanitize(tree, {626, 627, 628, 629}, "samurai")
 eq(#kept, 3); eq(removed[1].id, 629)
 -- a node behind a removed one goes too (disconnected)
-kept, removed = CT.sanitize(tree, {619, 620, 621, 600, 601}, "thief")
+-- (621 was the example until 2026-10-20; every class has a variant there now: 383, the Thief line's, for a warrior)
+kept, removed = CT.sanitize(tree, {619, 620, 621, 600, 601, 383}, "warrior")
 local why = {}
 for _, r in ipairs(removed) do why[r.id] = r.why end
-eq(why[621], "class", "621 is not the thief's")
+eq(why[383], "class", "383 is not the warrior's"); eq(why[621], "disconnected", "621 is the warrior's (cut off here only by the path)")
 kept, removed = CT.sanitize(tree, {2, 9, 99999, 11}, "warrior")
 eq(#removed, 1); eq(removed[1].why, "unknown")
 kept, removed = CT.sanitize(tree, {626, 627}, nil)

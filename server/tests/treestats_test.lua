@@ -63,7 +63,8 @@ eq(top[1].count, 3); eq(top[1].share, 1)
 local lineIds = S.lineNodes(tree, ctx.lineClasses.thief)
 local has = {}
 for _, id in ipairs(lineIds) do has[id] = true end
-check(has[626] and has[383] and has[2] and not has[636] and not has[621], "the Thief line's nodes: its section and 383, not others'")
+check(has[626] and has[383] and has[2] and has[621] and has[624] and not has[636] and not has[369],
+  "the Thief line's nodes: its section, 383 and its own 621 / 624, not others'")
 local never = S.never(stats.thief.all, lineIds)
 local nv = {}
 for _, id in ipairs(never) do nv[id] = true end
@@ -74,7 +75,7 @@ eq(#S.never(nil, lineIds), #lineIds, "a line without characters: every node")
 eq(S.describe(tree.nodes[393]), "absorbFire+1 incrementFire+3", "a notable")
 eq(S.describe(tree.nodes[383]), "ksBlackbloodCreed", "a keystone by its key")
 eq(S.describe(tree.nodes[665]), "mastery (4 effects)", "a mastery")
-eq(S.describe(tree.nodes[621]), "variants (9 classes)", "the per-class keystone")
+eq(S.describe(tree.nodes[621]), "variants (20 classes)", "the per-class keystone (variant keys: Mystic and Elementalist share one)")
 -- the report
 local lines = S.report(stats, tree, ctx, "warrior", "300-499", 3, 5)
 check(lines[1]:find("warrior, level 300-499, 3 characters.", 1, true), "report head: " .. lines[1])

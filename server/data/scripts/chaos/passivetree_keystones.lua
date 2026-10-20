@@ -26,7 +26,26 @@
 --                                    and heal for 4% of the damage they deal to it (the illusionist heals them)
 --                ksInspiringIllusion other party members within 8 sqm (same floor) deal +8% damage
 --                Both need a party; multi-client characters neither give nor get them (Chaos.isMultiClient).
--- The numbers are in `cfg` below; the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
+--   Since 2026-10-20 the Thief, Necromancer, Monk and Templar lines have their own pair here too (the variant key is the
+--   class key; numbers class_keystones_config.lua, rules class_keystones_core.lua, glue below):
+--   thief / ninja / samurai            ksShadowTwin    weapon hits: 30% for the shadow to strike again 0.3 s later for 60%;
+--                                                      you take 6% more damage
+--                                      ksViperVerdict  weapon hits on a poisoned target: 20% for x2; on any other x0.85
+--   necromancer / lich / bonelord      ksCorpseBlast   a monster you or your minions kill explodes: 12% of its maximum health
+--                                                      (at most 15 x level) as death on up to 6 within 2 sqm; your and your
+--                                                      minions' hits x0.92 (the ChaosClassKeystones events below)
+--                                      ksReapersToll   your and your minions' hits on a monster at 40% health or less x2,
+--                                                      above x0.92
+--   monk / shadowfist                  ksSeventhPalm   every 5th melee hit (fist or weapon) x2.2 and a shockwave of 50% of it
+--                                                      on up to 4 next to the target; the other melee hits x0.90
+--   monk / shadowfist / ironsage (624) ksPiercingPalm  melee hits pass through: the enemy behind takes 70%, the next 40%;
+--                                                      the hit x0.95
+--   templar / inquisitor / sentinel    ksRadiantRebuke with a shield: 20% to block a melee/ranged hit completely and send a
+--                                                      holy nova (blocked hit + 4 x magic level, 2 sqm, once a second);
+--                                                      your weapon hits x0.90
+--   templar / inquisitor (624)         ksDawnchain     melee weapon hits chain holy light to the nearest enemy within 3 sqm
+--                                                      for 55%, then 55% of that; your spells x0.90
+-- The numbers are in `cfg` below (the new pair's in class_keystones_config.lua); the client tooltips (treedata/nodes.lua) repeat them and the unit test checks that.
 --
 -- Recursion: every extra hit (cleave, ricochet, echo, phantom, reflect, thorns) is dealt from an addEvent
 -- with ChaosKeystones.depth > 0 around doTargetCombat. All damage events run synchronously inside that call, so this
@@ -246,6 +265,18 @@ local function fx(name, fallback)
 	return fallback
 end
 
+local function fxMissile(name, fallback)
+	if FxMissile then
+		return FxMissile(name, fallback)
+	end
+	return fallback
+end
+
+if not ChaosClassKeystones then
+	dofile("data/scripts/chaos/class_keystones_core.lua")
+end
+local CK = ChaosClassKeystones
+
 -- combat_fx.lua (crit / dodge / reflect visuals) when it is loaded; throttled there and safe with nil
 local function combatFx(kind, arg)
 	if ChaosCombatFx and ChaosCombatFx[kind] then
@@ -397,6 +428,93 @@ local function ricochet(pid, mainId, startPos, base, ctype, missile)
 				procDamage(a, target, ctype, step.amount, CONST_ME_HITAREA)
 			end
 		end, (i - 1) * cfg.ricochet.delay)
+	end
+end
+
+-- ---- Thief line: Shadow Twin (the shadow strikes the same target again)
+local function shadowStrike(pid, targetId, amount, ctype)
+	local p, target = Player(pid), Creature(targetId)
+	if p and target and validTarget(p, target) then
+		target:getPosition():sendMagicEffect(fx("shadow_smoke", CONST_ME_MORTAREA))
+		procDamage(p, target, ctype, amount, CONST_ME_NONE)
+	end
+end
+
+-- ---- Necromancer line: Corpse Detonation (from the death event below)
+local function corpseBlast(pid, deadId, center, amount)
+	local p = Player(pid)
+	if not p or amount <= 0 then
+		return
+	end
+	Position(center.x, center.y, center.z):sendMagicEffect(fx("necro_skull", CONST_ME_MORTAREA))
+	local radius = CK.cfg.ksCorpseBlast.radius
+	for _, v in ipairs(CK.corpseBlastPick(candidatesAround(p, center, radius, true), center, deadId)) do
+		procDamage(p, Creature(v.id), COMBAT_DEATHDAMAGE, amount, CONST_ME_MORTAREA)
+	end
+end
+
+-- ---- Monk line: Seventh Palm's shockwave, Piercing Palm
+local function palmShock(pid, mainId, center, amount, ctype)
+	local p = Player(pid)
+	if not p then
+		return
+	end
+	Position(center.x, center.y, center.z):sendMagicEffect(fx("ground_slam", CONST_ME_GROUNDSHAKER))
+	for _, v in ipairs(CK.palmShockPick(candidatesAround(p, center, 1, false), center, mainId)) do
+		procDamage(p, Creature(v.id), ctype, amount, fx("shockwave", CONST_ME_EXPLOSIONHIT))
+	end
+end
+
+local function pierce(pid, target, base, ctype)
+	local p = Player(pid)
+	if not p then
+		return
+	end
+	local steps = CK.piercePlan(copyPos(p:getPosition()), target, base, function(pos)
+		return candidatesAround(p, pos, 1, true)
+	end)
+	for i, step in ipairs(steps) do
+		addEvent(function()
+			local a, t = Player(pid), Creature(step.id)
+			if a and t and validTarget(a, t) then
+				procDamage(a, t, ctype, step.amount, fx("shockwave", CONST_ME_EXPLOSIONHIT))
+			end
+		end, i * CK.cfg.ksPiercingPalm.delayMs)
+	end
+end
+
+-- ---- Templar line: Radiant Rebuke's nova, Dawnchain
+local function rebukeNova(pid, center, amount)
+	local p = Player(pid)
+	if not p or amount <= 0 then
+		return
+	end
+	Position(center.x, center.y, center.z):sendMagicEffect(fx("holy_spiral", CONST_ME_HOLYAREA))
+	local radius = CK.cfg.ksRadiantRebuke.radius
+	for _, v in ipairs(CK.rebukePick(candidatesAround(p, center, radius, true), center)) do
+		procDamage(p, Creature(v.id), COMBAT_HOLYDAMAGE, amount, fx("holy_cross", CONST_ME_HOLYDAMAGE))
+	end
+end
+
+local function dawnchain(pid, mainId, startPos, base)
+	local p = Player(pid)
+	if not p then
+		return
+	end
+	local d = CK.cfg.ksDawnchain
+	local steps = CK.dawnchainPlan(startPos, mainId, base, function(pos)
+		return candidatesAround(p, pos, d.range, true)
+	end)
+	for i, step in ipairs(steps) do
+		addEvent(function()
+			local a = Player(pid)
+			local target = Creature(step.id)
+			if a and target and validTarget(a, target) then
+				Position(step.from.x, step.from.y, step.from.z):sendDistanceEffect(target:getPosition(),
+					fxMissile("holy_bolt", CONST_ANI_HOLY))
+				procDamage(a, target, COMBAT_HOLYDAMAGE, step.amount, fx("holy_cross", CONST_ME_HOLYDAMAGE))
+			end
+		end, (i - 1) * d.delay)
 	end
 end
 
@@ -608,10 +726,28 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 		local m = K.immovableFactor(player:getHealth(), player:getMaxHealth())
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
 	end
+	if b.ksShadowTwin then -- Shadow Twin's price: every hit taken
+		local m = CK.shadowTwinTaken()
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
 	if origin ~= ORIGIN_MELEE and origin ~= ORIGIN_RANGED then
 		return pd, sd
 	end
 	local total = math.abs(pd) + math.abs(sd)
+	if b.ksRadiantRebuke and hasShield(player) then
+		local s = stateOf(player:getId())
+		s.rebuke = s.rebuke or {}
+		local blocked, nova = CK.rebukeBlock(s.rebuke, now())
+		if blocked then
+			player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
+			combatFx("dodge", player)
+			if nova then
+				addEvent(rebukeNova, 0, player:getId(), copyPos(player:getPosition()),
+					CK.rebukeNova(total, player:getMagicLevel()))
+			end
+			return 0, 0
+		end
+	end
 	if b.ksBulwark and hasShield(player) then
 		if K.roll(cfg.bulwark.blockChance) then
 			player:getPosition():sendMagicEffect(CONST_ME_BLOCKHIT)
@@ -632,6 +768,62 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 	return pd, sd
 end
 
+-- the signature keystones of the Thief, Monk and Templar lines on a weapon (or, for the Monk line, fist) hit; pd, sd
+-- already carry the other events' bonuses. Procs go out through addEvent with the hit after this keystone's factor.
+local function classHit(player, b, creature, pd, pt, sd, origin, weapon)
+	local pid, cid = player:getId(), creature:getId()
+	local wt = weapon and weapon:getWeaponType() or nil
+	local melee = origin == ORIGIN_MELEE
+	if melee and (b.ksSeventhPalm or b.ksPiercingPalm) and (not weapon or MELEE_WEAPON[wt]) then
+		if b.ksSeventhPalm then
+			local s = stateOf(pid)
+			s.palm = s.palm or {}
+			local m, finisher = CK.palmStep(s.palm, now())
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			if finisher then
+				local cpos = creature:getPosition()
+				cpos:sendMagicEffect(fx("crit_burst", CONST_ME_EXPLOSIONHIT))
+				combatFx("crit", cpos)
+				addEvent(palmShock, 0, pid, cid, copyPos(cpos), CK.palmShock(math.abs(pd) + math.abs(sd)), procType(pt))
+			end
+		end
+		if b.ksPiercingPalm then
+			local m = CK.piercePrice()
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+			addEvent(pierce, 0, pid, {id = cid, pos = copyPos(creature:getPosition())}, math.abs(pd) + math.abs(sd),
+				procType(pt))
+		end
+	end
+	if not weapon or wt == WEAPON_WAND then
+		return pd, sd
+	end
+	if b.ksViperVerdict then
+		local m, vital = CK.viperStep(creature:hasCondition(CONDITION_POISON))
+		if m ~= 1 then
+			pd, sd = K.scale(pd, m), K.scale(sd, m)
+		end
+		if vital then
+			creature:getPosition():sendMagicEffect(fx("poison_burst", CONST_ME_GREEN_RINGS))
+			combatFx("crit", creature:getPosition())
+		end
+	end
+	if b.ksRadiantRebuke then
+		local m = CK.cfg.ksRadiantRebuke.price
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
+	local base = math.abs(pd) + math.abs(sd)
+	if b.ksShadowTwin then
+		local amount = CK.shadowTwin(base)
+		if amount > 0 then
+			addEvent(shadowStrike, CK.cfg.ksShadowTwin.delayMs, pid, cid, amount, procType(pt))
+		end
+	end
+	if b.ksDawnchain and melee and MELEE_WEAPON[wt] then
+		addEvent(dawnchain, 0, pid, cid, copyPos(creature:getPosition()), base)
+	end
+	return pd, sd
+end
+
 -- keystones of the player who hits
 local function attack(player, b, creature, pd, pt, sd, st, origin)
 	local pid = player:getId()
@@ -646,10 +838,19 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 	end
 
 	if origin == ORIGIN_MELEE or origin == ORIGIN_RANGED then
-		if not (b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
+		local classKs = CK.holds(b)
+		if not (classKs or b.ksCleavingArc or b.ksRicochet or b.ksDeadeye or b.ksUndyingRage or b.ksHuntersFocus) then
 			return pd, sd
 		end
 		local weapon = handWeapon(player)
+		if classKs then -- the Thief, Necromancer, Monk and Templar lines (an error never breaks the hit)
+			local ok, a, c = pcall(classHit, player, b, creature, pd, pt, sd, origin, weapon)
+			if ok then
+				pd, sd = a, c
+			else
+				print("[ChaosKeystones] " .. tostring(a))
+			end
+		end
 		if not weapon then
 			return pd, sd
 		end
@@ -727,8 +928,13 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	end
 	if creature:isPlayer() then
 		local b = ChaosPassiveCache[creature:getId()]
-		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable) then
-			pd, sd = defend(creature, b, attacker, pd, pt, sd, st, origin)
+		if b and (b.ksBulwark or b.ksThorns or b.ksImmovable or b.ksShadowTwin or b.ksRadiantRebuke) then
+			local ok, a, c = pcall(defend, creature, b, attacker, pd, pt, sd, st, origin) -- an error never breaks the hit
+			if ok then
+				pd, sd = a, c
+			else
+				print("[ChaosKeystones] " .. tostring(a))
+			end
 			if pd == 0 and sd == 0 then
 				return pd, pt, sd, st
 			end
@@ -779,6 +985,7 @@ function login.onLogin(player)
 		local p = Player(pid)
 		if p then
 			p:registerEvent("ChaosKeystones")
+			p:registerEvent("ChaosClassKeystones")
 		end
 	end, 0)
 	return true
@@ -792,3 +999,106 @@ function logout.onLogout(player)
 	return true
 end
 logout:register()
+
+-- ---------------------------------------------------------------- the factors of the Necromancer and Templar lines
+-- Corpse Detonation's price, Reaper's Toll and Dawnchain's spell price are plain factors of the hits of the holder and
+-- (the Necromancer line) its minions, area spells and minion hits on monsters nobody targeted included, so this event
+-- sits on every monster from its spawn and on every player from login. A factor does not depend on the order of the
+-- events. Procs (K.depth > 0) and damage over time are left alone.
+local reaped = {} -- monster id -> true once Reaper's Toll showed its scythe on it
+
+-- the player behind a hit: the player itself, or the player whose summon it is (minion = true)
+local function ownerOf(attacker)
+	if attacker:isPlayer() then
+		return attacker, false
+	end
+	local master = attacker:getMaster()
+	if master and master:isPlayer() then
+		return master, true
+	end
+	return nil, false
+end
+
+local function classFactor(creature, attacker, pd, sd, origin)
+	local owner, minion = ownerOf(attacker)
+	if not owner or owner:getId() == creature:getId() then
+		return pd, sd
+	end
+	local hisMaster = creature:getMaster()
+	if hisMaster and hisMaster:getId() == owner:getId() then -- its own minion
+		return pd, sd
+	end
+	local b = ChaosPassiveCache[owner:getId()]
+	if not b or not (b.ksCorpseBlast or b.ksReapersToll or b.ksDawnchain) then
+		return pd, sd
+	end
+	local m = 1
+	if b.ksCorpseBlast then
+		m = m * CK.corpseBlastPrice()
+	end
+	if b.ksReapersToll and creature:isMonster() then
+		local f, low = CK.reaperFactor(creature:getHealth(), creature:getMaxHealth())
+		m = m * f
+		local cid = creature:getId()
+		if low and not reaped[cid] then
+			reaped[cid] = true
+			creature:getPosition():sendMagicEffect(fx("shadow_flame", CONST_ME_MORTAREA))
+		end
+	end
+	if b.ksDawnchain and not minion and origin == ORIGIN_SPELL then
+		m = m * CK.dawnchainSpellPrice()
+	end
+	if m ~= 1 then
+		pd, sd = K.scale(pd, m), K.scale(sd, m)
+	end
+	return pd, sd
+end
+
+local classEvent = CreatureEvent("ChaosClassKeystones")
+function classEvent.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
+	if K.depth > 0 or not attacker or not creature or pt == COMBAT_HEALING or origin == ORIGIN_CONDITION then
+		return pd, pt, sd, st
+	end
+	local ok, a, c = pcall(classFactor, creature, attacker, pd, sd, origin) -- an error never breaks the hit
+	if ok then
+		pd, sd = a, c
+	else
+		print("[ChaosKeystones] " .. tostring(a))
+	end
+	return pd, pt, sd, st
+end
+classEvent:register()
+
+-- Corpse Detonation: a monster (not a summon) killed by a holder or its minion explodes. A kill by a proc (an explosion,
+-- a ricochet, any guarded share: K.depth > 0) does not, so explosions never chain.
+local classDeath = CreatureEvent("ChaosClassKeystonesDeath")
+function classDeath.onDeath(creature, corpse, killer, mostDamageKiller)
+	local cid = creature:getId()
+	reaped[cid] = nil
+	if K.depth > 0 or not creature:isMonster() or creature:getMaster() then
+		return true
+	end
+	local ok, err = pcall(function()
+		local owner = (killer and ownerOf(killer)) or (mostDamageKiller and ownerOf(mostDamageKiller)) or nil
+		local b = owner and ChaosPassiveCache[owner:getId()]
+		if b and b.ksCorpseBlast then
+			addEvent(corpseBlast, 0, owner:getId(), cid, copyPos(creature:getPosition()),
+				CK.corpseBlastAmount(creature:getMaxHealth(), owner:getLevel()))
+		end
+	end)
+	if not ok then
+		print("[ChaosKeystones] " .. tostring(err))
+	end
+	return true
+end
+classDeath:register()
+
+-- every monster gets both events when it appears (getId() is still 0 in onSpawn: straight onto the creature, as
+-- archetypes.lua does); index 11, after the passive tree's and the archetypes' callbacks
+local spawnCb = EventCallback
+spawnCb.onSpawn = function(self, position, startup, artificial)
+	self:registerEvent("ChaosClassKeystones")
+	self:registerEvent("ChaosClassKeystonesDeath")
+	return true
+end
+spawnCb:register(11)

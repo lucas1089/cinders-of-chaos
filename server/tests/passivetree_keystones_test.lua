@@ -383,12 +383,10 @@ b = ChaosPassiveTree.getBonuses(voc(19)); eq(b.ksOvergrowth, 1, "iron sage wrath
 eq(b.ksThorns, nil, "624 is not the Iron Sage's"); eq(b.ksSharedPhantasm, nil, "no other class's keystone")
 b = ChaosPassiveTree.getBonuses(voc(25)); eq(b.ksThorns, 1, "sentinel resolve: Thorns")
 eq(b.ksOvergrowth, nil, "621 is not the Sentinel's"); eq(b.ksBulwark, nil, "no other class's keystone")
-for _, v in ipairs({17, 18, 23, 24}) do
-  assert(not K.hasKeystone(ChaosPassiveTree.getBonuses(voc(v))), "621 / 624 are not class " .. v .. "'s")
-end
+-- since 2026-10-20 the Thief, Necromancer, Monk and Templar lines have their own pair (class_keystones_test.lua)
 b = ChaosPassiveTree.getBonuses(voc(0)); assert(not K.hasKeystone(b), "no vocation: no keystone")
-b = ChaosPassiveTree.getBonuses(voc(12)); assert(not K.hasKeystone(b), "621 / 624 are not the Thief line's")
-eq(b.incrementPhysical, 7, "a Ninja still gets the shared notables of those paths")
+b = ChaosPassiveTree.getBonuses(voc(12)); eq(b.ksShadowTwin, 1, "the Ninja's own Wrath"); eq(b.ksRicochet, nil, "no Ranger keystone")
+eq(b.incrementPhysical, 7, "a Ninja gets the shared notables of those paths")
 
 -- ---------------------------------------------------------------- the client tooltips state the server numbers
 local nodesFile = "../client/overlay/modules/game_passivetree/treedata/nodes.lua"

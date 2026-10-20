@@ -1845,18 +1845,18 @@ local vocationSpecials = {
 	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Ascends: Elementalist or Illusionist."}),
 	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload."}),
 	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion."}),
-	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed."}),
-	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed."}),
-	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed."}),
-	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension.", "Line keystone: Covenant of the Grave."}),
-	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls; Covenant of the Grave."}),
-	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave."}),
-	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline."}),
-	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline."}),
-	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy; Scarred", "Discipline; Overgrowth (Wrath)."}),
-	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath."}),
-	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath."}),
-	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath; Thorns", "(Resolve)."})
+	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed.", "Wrath / Resolve: Shadow Twin,", "Viper's Verdict."}),
+	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed;", "Shadow Twin, Viper's Verdict."}),
+	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed; Shadow Twin,", "Viper's Verdict."}),
+	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension.", "Line keystone: Covenant of the Grave.", "Wrath / Resolve: Corpse Detonation,", "Reaper's Toll."}),
+	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls; Covenant of the Grave;", "Corpse Detonation, Reaper's Toll."}),
+	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave;", "Corpse Detonation, Reaper's Toll."}),
+	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline.", "Wrath / Resolve: Seventh Palm,", "Piercing Palm."}),
+	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline;", "Seventh Palm, Piercing Palm."}),
+	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy; Scarred", "Discipline; Overgrowth (Wrath);", "Piercing Palm (Resolve)."}),
+	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath.", "Wrath / Resolve: Radiant Rebuke,", "Dawnchain."}),
+	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath;", "Radiant Rebuke, Dawnchain."}),
+	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath; Radiant", "Rebuke (Wrath); Thorns (Resolve)."})
 }
 
 function calculateStats()
@@ -2199,8 +2199,8 @@ function sendMessageBox(title, message)
 	return 
 end
 
--- keystone stats (nodes 621 and 624, one per class of the Warrior, Ranger and Mystic lines, the Iron Sage on 621 and the
--- Sentinel on 624, and the keystones of the class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
+-- keystone stats (nodes 621 and 624, one pair per class since 2026-10-20: the Iron Sage Overgrowth and Piercing Palm,
+-- the Sentinel Radiant Rebuke and Thorns; and the keystones of the class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
 KEYSTONE_NAMES = {
 	ksCleavingArc = "Cleaving Arc", ksBulwark = "Bulwark", ksRicochet = "Ricochet", ksDeadeye = "Deadeye",
 	ksArcaneEcho = "Arcane Echo", ksOverload = "Elemental Overload", ksOvergrowth = "Overgrowth", ksThorns = "Thorns",
@@ -2221,7 +2221,11 @@ KEYSTONE_NAMES = {
 	-- the third round: the Warrior and Ranger lines
 	arExecutioner = "Executioner's Verdict", arEarthbreaker = "Earthbreaker", arRampage = "Rampage",
 	arLastStand = "Last Stand", arLongshot = "Longshot", arBarbed = "Barbed Quiver", arOpeningShot = "Opening Shot",
-	arHobble = "Hobbling Shot"
+	arHobble = "Hobbling Shot",
+	-- 621 / 624 of the Thief, Necromancer, Monk and Templar lines (server class_keystones_config.lua)
+	ksShadowTwin = "Shadow Twin", ksViperVerdict = "Viper's Verdict", ksCorpseBlast = "Corpse Detonation",
+	ksReapersToll = "Reaper's Toll", ksSeventhPalm = "Seventh Palm", ksPiercingPalm = "Piercing Palm",
+	ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

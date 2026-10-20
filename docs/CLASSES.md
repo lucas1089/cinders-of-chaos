@@ -624,10 +624,17 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
   | Mystic, Elementalist | Arcane Echo | Elemental Overload |
   | Illusionist | Shared Phantasm | Inspiring Illusion |
-  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | (not its node) |
-  | Sentinel (since 2026-10-12) | (not its node) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | **Piercing Palm** (since 2026-10-20) |
+  | Sentinel (since 2026-10-12) | **Radiant Rebuke** (since 2026-10-20) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+  | Thief, Ninja, Samurai (2026-10-20) | **Shadow Twin**: weapon hits, 30% for the shadow to strike again 0.3 s later for 60%; you take 6% more damage | **Viper's Verdict**: weapon hits on a poisoned target, 20% for x2; on a target that is not poisoned x0.85 |
+  | Necromancer, Lich, Bone Lord (2026-10-20) | **Corpse Detonation**: a monster you or your minions kill explodes for 12% of its maximum health (at most 15 x level) as death on up to 6 within 2 sqm; your and your minions' hits x0.92 | **Reaper's Toll**: your and your minions' hits on a monster at 40% health or less x2, above x0.92 |
+  | Monk, Shadowfist (2026-10-20) | **Seventh Palm**: every 5th melee hit (fists or weapon, 4 s) x2.2 and a 50% shockwave on up to 4 next to the target; the other melee hits x0.90 | **Piercing Palm**: melee hits pass through, 70% to the enemy behind the target, 40% to the next; the hit x0.95 |
+  | Templar, Inquisitor (2026-10-20) | **Radiant Rebuke**: with a shield, 20% to block a melee/ranged hit; a block sends a holy nova (blocked hit + 4 x magic level, 2 sqm, once a second); weapon hits x0.90 | **Dawnchain**: melee weapon hits chain holy light to 2 more enemies (3 sqm) for 55% and 30%; spells x0.90 |
 
-  Only these classes may take 621 / 624. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
+  Since 2026-10-20 every class may take 621 / 624 (owner: "excellent nodes like Ricochet and Deadeye for all classes";
+  server/README.md "Passive tree keystones", numbers `class_keystones_config.lua`, balance `server/data/spells/README.md`
+  "Signature keystones of the Thief, Necromancer, Monk and Templar lines"). Before, only the classes above the 2026-10-20
+  rows could. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
   approved, 2026-10-12): Overgrowth to the Iron Sage, the second healer, and Thorns to the Sentinel, the tank-support, next to
   the Juggernaut's Bulwark. Each takes only the node of its keystone, in the existing slot: no new node, no tree layout change,
   so the build code format stays, and no character held them before (nothing to refund). Overgrowth is 10% for the Iron Sage

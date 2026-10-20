@@ -376,7 +376,7 @@
 		"support.sockets": 3,
 		"tower.pointsPerFloor": "1,000",
 		"tower.seasonDays": 30,
-		"tree.keystones": 54,
+		"tree.keystones": 58,
 		"tree.levelsPerPoint": 4,
 		"tree.nodes": 639,
 		"tree.notables": 112,
@@ -518,9 +518,9 @@
 							"cols": ["Keystone", "Classes"],
 							"w": [40, 60],
 							"rows": [
-								["Bulwark", "Warrior"],
+								["Bulwark", "Warrior, Juggernaut"],
 								["Cascade Edge", "every class"],
-								["Cleaving Arc", "Warrior"],
+								["Cleaving Arc", "Warrior, Berserker"],
 								["Earthbreaker", "Warrior, Juggernaut, Berserker"],
 								["Executioner's Verdict", "Warrior, Juggernaut, Berserker"],
 								[
@@ -665,7 +665,7 @@
 							"rows": [
 								["Barbed Quiver", "Ranger, Deadeye, Beastmaster"],
 								["Cascade Edge", "every class"],
-								["Deadeye", "Ranger"],
+								["Deadeye", "Ranger, Deadeye"],
 								["Hobbling Shot", "Ranger, Deadeye, Beastmaster"],
 								["Longshot", "Ranger, Deadeye, Beastmaster"],
 								[
@@ -673,7 +673,7 @@
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
 								["Opening Shot", "Ranger, Deadeye, Beastmaster"],
-								["Ricochet", "Ranger"],
+								["Ricochet", "Ranger, Beastmaster"],
 								["Sanguine Covenant", "every class"],
 								["Snarewright's Creed", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"],
 								["Stormstring", "Ranger, Deadeye, Beastmaster"],
@@ -995,10 +995,22 @@
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
 								["Sanguine Covenant", "every class"],
+								["Shadow Twin", "Thief, Ninja, Samurai"],
 								["Snarewright's Creed", "Ranger, Deadeye, Beastmaster, Thief, Ninja, Samurai"],
-								["Thornbound Oath", "every class"]
+								["Thornbound Oath", "every class"],
+								["Viper's Verdict", "Thief, Ninja, Samurai"]
 							],
-							"links": ["tree:383", "tree:78", "tree:107", "tree:109", "tree:81", "tree:105", "tree:77"]
+							"links": [
+								"tree:383",
+								"tree:78",
+								"tree:107",
+								"tree:109",
+								"tree:81",
+								"tree:621:thief",
+								"tree:105",
+								"tree:77",
+								"tree:624:thief"
+							]
 						}
 					],
 					"icon": "img/class-thief.png"
@@ -1117,11 +1129,23 @@
 									"Iron Tithe",
 									"Warrior, Juggernaut, Berserker, Monk, Shadowfist, Iron Sage, Templar, Inquisitor, Sentinel"
 								],
+								["Piercing Palm", "Monk, Shadowfist, Iron Sage"],
 								["Sanguine Covenant", "every class"],
 								["Scarred Discipline", "Monk, Shadowfist, Iron Sage"],
+								["Seventh Palm", "Monk, Shadowfist"],
 								["Thornbound Oath", "every class"]
 							],
-							"links": ["tree:362", "tree:78", "tree:96", "tree:102", "tree:81", "tree:390", "tree:77"]
+							"links": [
+								"tree:362",
+								"tree:78",
+								"tree:96",
+								"tree:102",
+								"tree:624:monk",
+								"tree:81",
+								"tree:390",
+								"tree:621:monk",
+								"tree:77"
+							]
 						}
 					],
 					"icon": "img/class-monk.png"
@@ -1228,6 +1252,7 @@
 							"w": [40, 60],
 							"rows": [
 								["Cascade Edge", "every class"],
+								["Corpse Detonation", "Necromancer, Lich, Bone Lord"],
 								[
 									"Covenant of Vigils",
 									"Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
@@ -1245,6 +1270,7 @@
 									"Open Hand Creed",
 									"Warrior, Juggernaut, Berserker, Ranger, Deadeye, Beastmaster, Mystic, Elementalist, Illusionist, Thief, Ninja, Samurai, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
+								["Reaper's Toll", "Necromancer, Lich, Bone Lord"],
 								["Sanguine Covenant", "every class"],
 								["Thornbound Oath", "every class"],
 								[
@@ -1254,11 +1280,13 @@
 							],
 							"links": [
 								"tree:78",
+								"tree:621:necromancer",
 								"tree:99",
 								"tree:369",
 								"tree:262",
 								"tree:96",
 								"tree:109",
+								"tree:624:necromancer",
 								"tree:81",
 								"tree:77",
 								"tree:355"
@@ -1373,6 +1401,7 @@
 									"Covenant of Vigils",
 									"Mystic, Elementalist, Illusionist, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
 								],
+								["Dawnchain", "Templar, Inquisitor"],
 								[
 									"Hollow Vessel",
 									"Mystic, Elementalist, Illusionist, Monk, Shadowfist, Iron Sage, Necromancer, Lich, Bone Lord, Templar, Inquisitor, Sentinel"
@@ -1387,6 +1416,7 @@
 								],
 								["Penitent's Wrath", "Templar, Inquisitor, Sentinel"],
 								["Pyre Oath", "Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel"],
+								["Radiant Rebuke", "Templar, Inquisitor, Sentinel"],
 								["Reliquary Vow", "Templar, Inquisitor, Sentinel"],
 								["Sanguine Covenant", "every class"],
 								[
@@ -1399,11 +1429,13 @@
 								"tree:362",
 								"tree:78",
 								"tree:99",
+								"tree:624:templar",
 								"tree:96",
 								"tree:102",
 								"tree:109",
 								"tree:376",
 								"tree:108",
+								"tree:621:templar",
 								"tree:253",
 								"tree:81",
 								"tree:106",
@@ -4620,26 +4652,9 @@
 					"icon": "wiki/i/tr-ksBoneColossus.png"
 				},
 				{
-					"id": "tree:624:juggernaut",
-					"name": "Bulwark",
-					"sub": "Keystone. Juggernaut.",
-					"color": "#e8b84a",
-					"group": "keystone",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"With a shield: 15% chance to block a melee or ranged attack completely, and 30% of melee damage taken is reflected to the attacker."
-							]
-						},
-						{"h": "Who", "p": ["Classes: Juggernaut."]}
-					],
-					"icon": "wiki/i/tr-ksBulwark.png"
-				},
-				{
 					"id": "tree:624:knight",
 					"name": "Bulwark",
-					"sub": "Keystone. Warrior.",
+					"sub": "Keystone. Warrior, Juggernaut.",
 					"color": "#e8b84a",
 					"group": "keystone",
 					"sections": [
@@ -4649,7 +4664,7 @@
 								"With a shield: 15% chance to block a melee or ranged attack completely, and 30% of melee damage taken is reflected to the attacker."
 							]
 						},
-						{"h": "Who", "p": ["Classes: Warrior."]}
+						{"h": "Who", "p": ["Classes: Warrior, Juggernaut."]}
 					],
 					"icon": "wiki/i/tr-ksBulwark.png"
 				},
@@ -4671,24 +4686,9 @@
 					"icon": "wiki/i/tr-arCascade.png"
 				},
 				{
-					"id": "tree:621:berserker",
-					"name": "Cleaving Arc",
-					"sub": "Keystone. Berserker.",
-					"color": "#e8b84a",
-					"group": "keystone",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": ["Two-handed melee hits cleave: up to 3 other enemies next to you take 40% of the hit."]
-						},
-						{"h": "Who", "p": ["Classes: Berserker."]}
-					],
-					"icon": "wiki/i/tr-ksCleavingArc.png"
-				},
-				{
 					"id": "tree:621:knight",
 					"name": "Cleaving Arc",
-					"sub": "Keystone. Warrior.",
+					"sub": "Keystone. Warrior, Berserker.",
 					"color": "#e8b84a",
 					"group": "keystone",
 					"sections": [
@@ -4696,7 +4696,7 @@
 							"h": "Effect",
 							"p": ["Two-handed melee hits cleave: up to 3 other enemies next to you take 40% of the hit."]
 						},
-						{"h": "Who", "p": ["Classes: Warrior."]}
+						{"h": "Who", "p": ["Classes: Warrior, Berserker."]}
 					],
 					"icon": "wiki/i/tr-ksCleavingArc.png"
 				},
@@ -4716,6 +4716,23 @@
 						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
 					],
 					"icon": "wiki/i/tr-arContagion.png"
+				},
+				{
+					"id": "tree:621:necromancer",
+					"name": "Corpse Detonation",
+					"sub": "Keystone. Necromancer, Lich, Bone Lord.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"A monster you or your minions kill explodes: 12% of its maximum health (at most 15 x your level) as death damage on up to 6 enemies within 2 sqm. Your and your minions' hits deal 8% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:99",
@@ -4757,24 +4774,26 @@
 					"icon": "wiki/i/tr-ksGraveCovenant.png"
 				},
 				{
-					"id": "tree:624:deadeye",
-					"name": "Deadeye",
-					"sub": "Keystone. Deadeye.",
+					"id": "tree:624:templar",
+					"name": "Dawnchain",
+					"sub": "Keystone. Templar, Inquisitor.",
 					"color": "#e8b84a",
 					"group": "keystone",
 					"sections": [
 						{
 							"h": "Effect",
-							"p": ["Crossbow and bolts: 15% chance for a Deadeye shot that deals double damage (+100%)."]
+							"p": [
+								"Melee weapon hits chain holy light to the nearest other enemy within 3 sqm for 55% of the hit, then once more for 55% of that (30%). Never the same target twice. Your spells deal 10% less."
+							]
 						},
-						{"h": "Who", "p": ["Classes: Deadeye."]}
+						{"h": "Who", "p": ["Classes: Templar, Inquisitor."]}
 					],
-					"icon": "wiki/i/tr-ksDeadeye.png"
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:624:paladin",
 					"name": "Deadeye",
-					"sub": "Keystone. Ranger.",
+					"sub": "Keystone. Ranger, Deadeye.",
 					"color": "#e8b84a",
 					"group": "keystone",
 					"sections": [
@@ -4782,7 +4801,7 @@
 							"h": "Effect",
 							"p": ["Crossbow and bolts: 15% chance for a Deadeye shot that deals double damage (+100%)."]
 						},
-						{"h": "Who", "p": ["Classes: Ranger."]}
+						{"h": "Who", "p": ["Classes: Ranger, Deadeye."]}
 					],
 					"icon": "wiki/i/tr-ksDeadeye.png"
 				},
@@ -5167,6 +5186,23 @@
 					"icon": "wiki/i/tr-ksPenitentWrath.png"
 				},
 				{
+					"id": "tree:624:monk",
+					"name": "Piercing Palm",
+					"sub": "Keystone. Monk, Shadowfist, Iron Sage.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Melee hits (fists or weapon) pass through: the enemy behind the target takes 70% of the hit, the next one behind it 40%. The hit itself deals 5% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:108",
 					"name": "Pyre Oath",
 					"sub": "Keystone. Warrior, Juggernaut, Berserker, Templar, Inquisitor, Sentinel.",
@@ -5187,6 +5223,23 @@
 					"icon": "wiki/i/tr-arPyreOath.png"
 				},
 				{
+					"id": "tree:621:templar",
+					"name": "Radiant Rebuke",
+					"sub": "Keystone. Templar, Inquisitor, Sentinel.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"With a shield: 20% chance to block a melee or ranged attack completely. A block sends a holy nova (once per 1 s): up to 8 enemies within 2 sqm take the blocked hit + 4 x your magic level. Your weapon hits deal 10% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Templar, Inquisitor, Sentinel."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
 					"id": "tree:466",
 					"name": "Rampage",
 					"sub": "Keystone. Warrior, Juggernaut, Berserker.",
@@ -5200,6 +5253,23 @@
 							]
 						},
 						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
+					"id": "tree:624:necromancer",
+					"name": "Reaper's Toll",
+					"sub": "Keystone. Necromancer, Lich, Bone Lord.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Your and your minions' hits on a monster at 40% health or less deal 100% more; on a monster above 40% they deal 8% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Necromancer, Lich, Bone Lord."]}
 					],
 					"icon": "wiki/i/k-holy-nodes.png"
 				},
@@ -5221,26 +5291,9 @@
 					"icon": "wiki/i/tr-arReliquary.png"
 				},
 				{
-					"id": "tree:621:beastmaster",
-					"name": "Ricochet",
-					"sub": "Keystone. Beastmaster.",
-					"color": "#e8b84a",
-					"group": "keystone",
-					"sections": [
-						{
-							"h": "Effect",
-							"p": [
-								"Bow and crossbow hits: 100% chance to ricochet to the nearest other enemy within 4 sqm for 65% of the hit, then once more for 65% of that (42%). Never the same target twice."
-							]
-						},
-						{"h": "Who", "p": ["Classes: Beastmaster."]}
-					],
-					"icon": "wiki/i/tr-ksRicochet.png"
-				},
-				{
 					"id": "tree:621:paladin",
 					"name": "Ricochet",
-					"sub": "Keystone. Ranger.",
+					"sub": "Keystone. Ranger, Beastmaster.",
 					"color": "#e8b84a",
 					"group": "keystone",
 					"sections": [
@@ -5250,7 +5303,7 @@
 								"Bow and crossbow hits: 100% chance to ricochet to the nearest other enemy within 4 sqm for 65% of the hit, then once more for 65% of that (42%). Never the same target twice."
 							]
 						},
-						{"h": "Who", "p": ["Classes: Ranger."]}
+						{"h": "Who", "p": ["Classes: Ranger, Beastmaster."]}
 					],
 					"icon": "wiki/i/tr-ksRicochet.png"
 				},
@@ -5287,6 +5340,40 @@
 						{"h": "Who", "p": ["Classes: Monk, Shadowfist, Iron Sage."]}
 					],
 					"icon": "wiki/i/tr-ksScarredDiscipline.png"
+				},
+				{
+					"id": "tree:621:monk",
+					"name": "Seventh Palm",
+					"sub": "Keystone. Monk, Shadowfist.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Every 5th melee hit (fists or weapon) within 4 s is a finisher: 120% more damage, and a shockwave hits up to 4 enemies next to the target for 50% of it. Your other melee hits deal 10% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Monk, Shadowfist."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
+				},
+				{
+					"id": "tree:621:thief",
+					"name": "Shadow Twin",
+					"sub": "Keystone. Thief, Ninja, Samurai.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Weapon hits: 30% chance for your shadow to strike the same target again 0.3 s later for 60% of the hit. You take 6% more damage."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:621:illusionist",
@@ -5407,6 +5494,23 @@
 						{"h": "Who", "p": ["Classes: Berserker."]}
 					],
 					"icon": "wiki/i/tr-ksUndyingRage.png"
+				},
+				{
+					"id": "tree:624:thief",
+					"name": "Viper's Verdict",
+					"sub": "Keystone. Thief, Ninja, Samurai.",
+					"color": "#e8b84a",
+					"group": "keystone",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"Weapon hits on a poisoned target: 20% chance to strike a vital for double damage (+100%). Weapon hits on a target that is not poisoned deal 15% less."
+							]
+						},
+						{"h": "Who", "p": ["Classes: Thief, Ninja, Samurai."]}
+					],
+					"icon": "wiki/i/k-holy-nodes.png"
 				},
 				{
 					"id": "tree:634",

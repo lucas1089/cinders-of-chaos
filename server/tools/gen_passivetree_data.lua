@@ -50,8 +50,10 @@ w("--         m = {{customStats of effect 1}, ...} (mastery nodes: the player pi
 w("if ChaosPassiveTreeData then return ChaosPassiveTreeData end")
 w("ChaosPassiveTreeData = { root = 1, nodes = {")
 local stats_total = 0
-local VARIANTS = {"beastmaster", "berserker", "deadeye", "illusionist", "ironsage", "juggernaut", "knight", "monk", "paladin",
-  "sentinel", "sorcerer"}
+-- (the Thief, Necromancer, Monk and Templar line keys since 2026-10-20: their own 621 / 624, class_keystones_config.lua)
+local VARIANTS = {"beastmaster", "berserker", "bonelord", "deadeye", "illusionist", "inquisitor", "ironsage", "juggernaut",
+  "knight", "lich", "monk", "necromancer", "ninja", "paladin", "samurai", "sentinel", "shadowfist", "sorcerer", "templar",
+  "thief"}
 local function statList(cs)
   local keys, s = {}, {}
   for k in pairs(cs) do keys[#keys+1] = k end
