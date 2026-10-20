@@ -110,7 +110,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_outfitextras | the Cosmetics opcode 225 (`state` out, answered with `state`), the pets opcode 254 (`get`), the Info opcode 237 (`services`, `run plateframe`); reads `game_cosmetics`, `game_pets`, `game_chaosinfo`, `game_unlocks` | `0075`, `0090` | Customise Character window: the cosmetics as rows of Change Appearance (owner 2026-10-17, 2026-10-20), see below. |
 | game_mapoverlay | extended opcode 245 (JSON, `watch` to the server, `marks` and `rift` back); server `map_marks.lua` | `g_minimap.clearArea` (client base-patch 0024, forgets the explored tiles of a rift square so each run starts fresh) | See-through map over the game view, centred on the character (on its drawn sprite, refreshed every frame while it walks so the map scrolls with the game view instead of jumping a tile per step; `MapOverlayMath.follow`; a step frame costs about 15 screen-to-tile lookups via `tileCentreNear`, the full view measure only runs on a resize or zoom) (Tab by default; the stock Next Channel moves to Ctrl+Tab; rebindable in Options > Hotkeys), click-through (every overlay widget but the control strip is phantom, so plain clicks, drags, hover and the wheel reach the game map; `mapoverlay_layout_test.lua` checks the .otui), Shift + wheel (or the wheel over the strip) or +/- zoom x1..x16 (toward the cursor while panned), Ctrl + wheel opacity 20-100% in 10% steps, centred or top-right box; Shift + middle-drag (or Shift + arrows, Ctrl + Shift + arrows while chat is on) to pan the map and its icons, Home / Ctrl+Home (hotkey "Minimap: Map Overlay Centre", rebindable) or the strip's Centre button snaps back to the character; while panned a "Panned" note shows on the strip and the character keeps a marker (an edge arrow when off screen); the pan is kept in memory only and resets when the overlay closes, on logout and when a new rift run starts. A compact control strip (opacity -/+, zoom -/+, Centre, Close, hint; the only clickable part, the rest stays click-through) sits in the bottom right corner of the free game view. A settings window (Hunt > Map Overlay Settings) with opacity, zoom, position, the strip switch and mark filters. Own icons (`tools/gen_mapoverlay_icons.py`) for party members, temple, depots, NPCs, rift entrance / guardian / chest / coffer / goblin, treasure goblins, world boss, invasion target and boss, dungeon bosses, and the character. Pure helpers `mapmath.lua` (pan, zoom toward the cursor, clamping, free view area; tested by `mapmath_test.lua`); server rules in `map_marks_core.lua` (tested by `tests/map_marks_test.lua`). Tested in game in town, in a hunting area and in a rift; also a party member (two clients), a rift's coffer (until it is opened or crumbles at the seal), chest, guardian and goblin, a treasure goblin, the world boss, an invasion target and boss, wheel / Ctrl+wheel / strip buttons / middle-drag pan with the icons moving with the map |
 | game_mapmarkers | extended opcode 153 (JSON: `hello {party, poi}` at login and `set {party}` / `set {poi}` out; `party {m}`, `poi {v, marks}` (chunked) and `reveal {marks}` back; server `partymarkers.lua`, `poi.lua`) + Hunt > More > Map Markers | none (children of the base minimap widget, `UIMinimap:getTilePoint`, `connect` on its camera, zoom, geometry and mouse move) | Map markers on the minimap and on the full map (the same widget, Ctrl+Shift+M): the other party members as pins in a party colour (one white image tinted per member, a member keeps its colour), an up / down triangle when on another floor than the one shown, an arrow on the edge toward a member out of view (8 directions, clear of the minimap window's controls), gliding to the new place in 0.8 s; points of interest (temples, depots, banks, Chaos NPCs, shops, travel, blessings, crafting, guild hall, portals, dungeons, boss places, hunting areas), the remote ones once discovered. Hover: name, health, floor and distance of a member, the name of a point. The markers never take the mouse (clicks, drags, the wheel stay the minimap's). Settings window with party members on / off, points of interest on / off and a check box per category (g_settings node `mapMarkers`). Icons `data/images/chaos/mapmarkers/*.png` (`client/tools/gen_mapmarker_art.py`). Pure helpers `markermath.lua`, tested by `markermath_test.lua` (settings, colours, floor arrows, edge clamp, glide, hover text, category filters). Tested in the Linux client against a live test server with two clients and a bot in a party (server/README.md "Map markers") |
-| game_minimapsync | none (client only) | none (reads `game_minimap`'s `minimapWidget`, `minimapWindow`, `fullmapView` and calls its `open`, `toggleFullMap`, `updateFloorImage`; `g_game` onGameStart / onMapKnown / onTeleport / onDeath / onGameEnd) | The minimap ("Map View") after a death, a respawn or a far teleport, see "Minimap after a death". Logic `minimapsync_logic.lua`, tested by `minimapsync_logic_test.lua`. Not run in a client |
+| game_minimapsync | none (client only) | base patch 0096 (the layout restore goes on after a failing window; without it the module still puts the minimap back). Reads `game_minimap`'s `minimapWidget`, `minimapWindow`, `fullmapView` and calls its `move`, `toggleFullMap`, `updateFloorImage`; `g_game` onGameStart / onMapKnown / onTeleport / onDeath / onGameEnd | The minimap ("Map View") window after a death, a respawn or a far teleport, see "Minimap after a death". Logic `minimapsync_logic.lua`, tested by `minimapsync_logic_test.lua` (also checks patch 0096). Not run in a client |
 | game_sidebars | none | none | Not in the overlay: it is the base client's own module |
 | game_realminimap | none | none | Not in the overlay: it is the base client's own module |
 | game_nameshaders | extended opcode 96 | also hooks `onOpenOutfitWindow` with extra shader lists | Needs engine and server work |
@@ -2935,27 +2935,31 @@ server's hotkey message, "Using an everfull mana potion (never runs out).") foll
 from the 0052 rotation back-off (it holds spells only), base patch `0086` (death) or the Support changes (no potion
 code). No base patch: `helper.lua` calls the gate's same `allowed` / `used` / `canUse` / `noteUse`.
 
-### Minimap after a death (`game_minimapsync`)
-Owner beta report 2026-10-20 ("O mapa ainda some do nada depois de morrer"): the minimap at the top right (the base
-`game_minimap` window, "Map View") is black after the character dies and respawns in the temple, and comes back
-after a logout and login. A death in this client is a relog: Ok in the death window (`game_playerdeath`) calls
-`CharacterList.doLogin`, whose `LoginEvent:tryLogin` logs out (`safeLogout`) and logs in again at once, without the
-character list; the engine ends the game (`onGameEnd`) and starts it again. `game_minimap` moves its camera only in
-`updateCameraPosition`, connected to `LocalPlayer.onPositionChange` (`modules/game_minimap/minimap.lua`), and skips
-it while its widget counts as dragged or the full map view (Ctrl+Shift+M) is open; `online()` runs before the first
-map description of the session (its own camera call finds no position), `offline()` does not close a full map view,
-and nothing sets the view up again once the map of the new session is known. The minimap draws its black background
-(`color: black`) wherever its camera has no explored data, so a camera left off the character shows black.
-The code read for this (the death relog, `onGameEnd` / `onGameStart` of the minimap, `game_interface`,
-`game_sidebars`, `game_chaoslayout`, the map overlay and markers, `Map::cleanTile`, `Minimap::draw` / `updateTile`)
-did not show a step that only a death takes; the black minimap was not reproduced (no client run).
-`game_minimapsync` makes the view independent of that one callback: when the map of a new session is known
-(`g_game.onMapKnown`, then again at 0.4, 1.2 and 3 s, after the side panels, the minimap's own expansion restore and
-`game_chaoslayout`) and after every teleport, it puts the camera and the cross on the character's tile, closes a full
-map view left from the last session (also at the end of a session), puts the minimap widget back in its window, and
-reopens the window when it was open at the death or the end of the session (once: a window the player closes stays
-closed). The explored map is never cleaned or reloaded (`g_minimap`, `minimap.otmm`). A teleport while the full map
-is open leaves it open. `MinimapSyncLogic.plan` (`minimapsync_logic.lua`), `minimapsync_logic_test.lua`.
+### Minimap after a death (`game_minimapsync`, base patch `0096`)
+Owner beta report 2026-10-20 ("O mapa ainda some do nada depois de morrer"), with the owner's answers: after the
+character dies and respawns in the temple the whole minimap window ("Map View", the base `game_minimap`) is gone (no
+window, no centre button; walking does not bring it back; no full map view or expanded minimap at the death); a
+logout and login brings it back. A death in this client is a fast relog: Ok in the death window (`game_playerdeath`)
+calls `CharacterList.doLogin`, whose `LoginEvent:tryLogin` logs out (`safeLogout`) and logs in again at once,
+without the character list; the engine ends the game (`onGameEnd`) and starts it again.
+At every login `game_interface.onPlayerLoad` (from `game_sidebars`) closes every side panel window that is not
+primordial (the minimap is not) and reopens the saved ones, in order, in one `addEvent` through each module's
+`move`; the minimap is always in the saved layout (`onPlayerUnload` keeps it even when closed) and `game_minimap`
+puts it in the rightmost side panel, the last one restored. Those `move` calls had no error isolation: one failing
+window ended the event and every window after it stayed closed. That matches the report: closed for that session, and
+the next logout saves it again (as a closed `miniMap` entry) so the next login's restore opens it. Base patch `0096`
+restores each window in a `pcall` and logs `[game_interface] restoring window <n> (<type>) failed: <error>`. Which
+window failed in the owner's client after a death is not known (no client log; not reproduced), so this is the most
+likely cause read from the code, not a seen one; the warning names it in the next beta log.
+`game_minimapsync` puts the window back whatever closed it. It remembers the window (shown or not, its panel, place
+and height) at the death and at the end of a session; when the map of the new session is known (`g_game.onMapKnown`,
+then again at 0.4, 1.2 and 3 s, after the layout restore, the minimap's expansion restore and `game_chaoslayout`) a
+window that was open and is now closed or in no shown side panel goes back to its panel (or the rightmost one) through
+`game_minimap.move`, the call the layout restore uses, and logs `[minimapsync] minimap window ... back in <panel>`.
+Once the window is seen open, or after the last pass, it is left alone (a close by the player stays). The same
+passes and every teleport put the camera and cross on the character's tile and close a full map view left from the
+last session. The explored map is never cleaned or reloaded (`g_minimap`, `minimap.otmm`).
+`MinimapSyncLogic` (`minimapsync_logic.lua`: `remember`, `pickPanel`, `plan`), `minimapsync_logic_test.lua`.
 Not run in a client.
 
 ### Window layout per character (`game_chaoslayout`)

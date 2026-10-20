@@ -661,6 +661,18 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     after `0001`-`0083` (`patch` clean, no fuzz, on the base files with all of them). **Built:** the whole client with
     `0001`-`0083` and `0100` compiled and linked on Linux (CMake Release, `-DLUAJIT=ON`, g++ 13). Not run in a client
     against a server.
+69. `0096` (Lua `modules/game_interface/gameinterface.lua`): **the saved side panel layout is restored window by
+    window**. At every login `onPlayerLoad` (fed by `game_sidebars`) closes every side panel window that is not
+    primordial, then, in one `addEvent`, reopens the saved ones in order through each module's `move`. Those calls had
+    no error isolation: a Lua error in one window's `move` ended the event and every window after it stayed closed
+    until the next login. The minimap ("Map View") is put in the rightmost side panel (`getRightPanel()`, the last one
+    restored), so it is the most exposed. Owner beta report 2026-10-20: the minimap window gone after a death (a fast
+    relog), back after a logout and login. Each saved entry (right, left, horizontal right, horizontal left) now goes
+    through `restoreEach`: `pcall`, a warning `[game_interface] restoring window <n> (<type>) failed: <error>`, then the
+    next window. Which window's `move` failed in the owner's client is not known (no client log); the warning names
+    it. `game_minimapsync` also puts the minimap back (`MANIFEST.md` "Minimap after a death"). Applies after
+    `0001`-`0095` and before `0100` (full chain on the base archive, `patch` clean); Lua only, parses in LuaJIT and
+    Lua 5.3. Not run in a client.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support

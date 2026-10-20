@@ -1,0 +1,88 @@
+# Chaos: the saved side panel layout is restored window by window (client/BASE.md 0096; after 0001-0100).
+# game_interface.onPlayerLoad closes every side panel window and reopens the saved ones one by one in an addEvent;
+# a Lua error in one window's move function ended the event, so every window after it stayed closed until the next
+# login (owner beta report 2026-10-20: the minimap window gone after a death, back after a relog). Each window now
+# goes through restoreEach: pcall, a warning naming the window that failed, then the next window is restored.
+--- a/modules/game_interface/gameinterface.lua
++++ b/modules/game_interface/gameinterface.lua
+@@ -3237,6 +3237,20 @@
+ 
+   refreshViewMode()
+ 
++  -- Chaos (base patch 0096): every window of the saved layout is restored on its own. The loop below closes
++  -- every side panel window first and opens the saved ones one by one; a Lua error in one window's move
++  -- function used to end the whole event, so every window after it (the minimap is the last one of the
++  -- rightmost panel) stayed closed until the next login. The failing window is now logged and skipped.
++  local function restoreEach(list, fn)
++    for k, x in ipairs(list or {}) do
++      local ok, err = pcall(fn, k, x)
++      if not ok and g_logger then
++        g_logger.warning(string.format('[game_interface] restoring window %s (%s) failed: %s', tostring(k),
++          tostring(type(x) == 'table' and x.type or x), tostring(err)))
++      end
++    end
++  end
++
+   addEvent(function()
+     -- get RightPanels
+     for i = 1, rightPanels do
+@@ -3246,9 +3260,9 @@
+           closeRestoredWidget(widget, primordial)
+         end
+ 
+-        for k, x in ipairs(config.openWidgetsOrderPerSidebar[i]) do
++        restoreEach(config.openWidgetsOrderPerSidebar[i], function(k, x)
+           _moveChildren(panel, x, k)
+-        end
++        end)
+       end
+     end
+ 
+@@ -3260,9 +3274,9 @@
+           closeRestoredWidget(widget, primordial)
+         end
+ 
+-        for k, x in ipairs(config.openWidgetsOrderPerSidebar[i + rightPanels]) do
++        restoreEach(config.openWidgetsOrderPerSidebar[i + rightPanels], function(k, x)
+           _moveChildren(panel, x, k)
+-        end
++        end)
+       end
+     end
+ 
+@@ -3272,7 +3286,7 @@
+         closeRestoredWidget(widget, primordial)
+       end
+ 
+-      for k, x in ipairs(config.openWidgetsHorizontalRight) do
++      restoreEach(config.openWidgetsHorizontalRight, function(k, x)
+         if x.type == 'container' then
+           modules.game_containers.move(x.instance, horizontalRightPanel, x.height, k)
+         elseif x.type == 'analyticsSelector' then
+@@ -3308,7 +3322,7 @@
+         elseif x.type == 'helper' then
+           modules.game_helper.move(horizontalRightPanel, x.height, k)
+         end
+-      end
++      end)
+     end
+     -- get Left Horizontal
+     if config.openWidgetsHorizontalLeft then
+@@ -3316,7 +3330,7 @@
+         closeRestoredWidget(widget, primordial)
+       end
+ 
+-      for k, x in ipairs(config.openWidgetsHorizontalLeft) do
++      restoreEach(config.openWidgetsHorizontalLeft, function(k, x)
+         if x.type == 'container' then
+            modules.game_containers.move(x.instance, horizontalLeftPanel, x.heigh, k)
+         elseif x.type == 'analyticsSelector' then
+@@ -3352,7 +3366,7 @@
+         elseif x.type == 'helper' then
+           modules.game_helper.move(horizontalLeftPanel, x.height, k)
+         end
+-      end
++      end)
+     end
+   end)
+ end

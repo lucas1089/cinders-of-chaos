@@ -1,18 +1,20 @@
--- game_minimapsync: the minimap (game_minimap, the "Map View" window) shows the explored map around the character
--- after a death and the respawn in the temple, and after any far teleport (client/MANIFEST.md "Minimap after a
--- death"). game_minimap moves its camera only from LocalPlayer.onPositionChange and skips it while its widget is
--- being dragged or the full map view (Ctrl+Shift+M) is open; nothing sets the view up again when a session starts.
--- This module does, from outside the base module: when the map of a new session is known (several passes, after the
--- side panels and the layout modules placed the windows) and on every teleport it puts the camera and the cross on
--- the character's tile, closes a full map view left over from the last session, puts the minimap widget back in its
--- window and reopens the window when it was open at the death or the end of the session. Nothing is cleaned: the
--- explored map (g_minimap, minimap.otmm) stays as it is. Rules in minimapsync_logic.lua.
+-- game_minimapsync: the minimap window of game_minimap ("Map View") is back, in a shown side panel and centred on
+-- the character, after a death and the respawn in the temple (client/MANIFEST.md "Minimap after a death").
+-- A death here is a fast relog (game_playerdeath Ok -> CharacterList.doLogin -> LoginEvent:tryLogin: logout and
+-- login again at once). At every login game_interface.onPlayerLoad closes every side panel window and reopens the
+-- saved ones one by one in an addEvent; until base patch 0096 one failing window ended that event and left every
+-- window after it closed, the minimap (the last window of the rightmost panel) among them, until the next login.
+-- This module remembers the window at the death and at the end of a session and, when the map of the new session is
+-- known (passes after the layout restores) and after a teleport: closes a full map view left over, puts the minimap
+-- widget back in its window, puts the window back in a shown side panel and opens it when it was open
+-- (game_minimap.move, the same call the layout restore uses), and puts the camera and the cross on the character.
+-- The explored map is never cleaned or reloaded. Rules in minimapsync_logic.lua.
 ChaosMinimapSync = ChaosMinimapSync or {}
 local M = ChaosMinimapSync
 local L = MinimapSyncLogic
 
 local events = {}
-local wantOpen = nil   -- the window was open at the death / the end of the last session
+local want = nil       -- MinimapSyncLogic.remember of the window at the death / the end of the last session
 local handlers = {}
 
 local function alive(w)
@@ -32,24 +34,76 @@ local function playerPos()
   return player and player:getPosition() or nil
 end
 
--- the state MinimapSyncLogic.plan reads
+local function call(m, name, ...)
+  local fn = rawget(m, name)
+  if type(fn) ~= 'function' then return nil end
+  local ok, res = pcall(fn, ...)
+  if not ok then g_logger.warning('[minimapsync] ' .. name .. ': ' .. tostring(res)) return nil end
+  return res
+end
+
+-- the side panels a window can live in: { { id, widget, usable } }
+local function sidePanels()
+  local out = {}
+  local gi = modules.game_interface
+  local root = gi and gi.getRootPanel and gi.getRootPanel() or nil
+  if not alive(root) then return out end
+  for _, holderId in ipairs({ 'gameRightPanels', 'gameLeftPanels' }) do
+    local holder = root:getChildById(holderId)
+    for _, p in ipairs(holder and holder:getChildren() or {}) do
+      if p:getClassName() == 'UIMiniWindowContainer' and not p.minimapExpansionReservation then
+        out[#out + 1] = { id = p:getId(), widget = p, usable = alive(p) and p:isVisible() }
+      end
+    end
+  end
+  for _, id in ipairs({ 'horizontalRightPanel', 'horizontalLeftPanel' }) do
+    local p = root:getChildById(id)
+    if alive(p) then
+      out[#out + 1] = { id = id, widget = p, usable = p:isVisible() and p:getWidth() > 0 }
+    end
+  end
+  return out
+end
+
+local function panelOf(window)
+  local parent = window:getParent()
+  for _, p in ipairs(sidePanels()) do
+    if p.widget == parent then return p end
+  end
+  return nil
+end
+
 local function readState(reason, m, widget, window)
+  local p = panelOf(window)
   return {
     reason = reason,
     fullmap = rawget(m, 'fullmapView') == true,
     inWindow = widget:getParent() == window,
-    windowOpen = window:isVisible(),
-    wantOpen = wantOpen,
+    windowShown = window:isExplicitlyVisible(),
+    inPanel = p ~= nil and p.usable == true,
+    want = want,
     pos = playerPos(),
     camera = widget:getCameraPosition(),
   }
 end
 
-local function call(m, name, ...)
-  local fn = rawget(m, name)
-  if type(fn) == 'function' then
-    local ok, err = pcall(fn, ...)
-    if not ok then g_logger.warning('[minimapsync] ' .. name .. ': ' .. tostring(err)) end
+local function restoreWindow(m, window)
+  local panels = sidePanels()
+  local gi = modules.game_interface
+  local fallback = gi and gi.getRightPanel and gi.getRightPanel() or nil
+  local id = L.pickPanel(want, panels, alive(fallback) and fallback:getId() or nil)
+  local target = nil
+  for _, p in ipairs(panels) do
+    if p.id == id then target = p.widget end
+  end
+  target = target or fallback
+  if not alive(target) then return end
+  g_logger.info(string.format('[minimapsync] minimap window shown=%s parent=%s after the login: back in %s',
+    tostring(window:isExplicitlyVisible()), tostring(window:getParent() and window:getParent():getId()),
+    tostring(target:getId())))
+  call(m, 'move', target, want and want.height or nil, want and want.index or 1)
+  if target:hasChild(window) then
+    target:moveChildToIndex(window, math.max(1, math.min(want and want.index or 1, target:getChildCount())))
   end
 end
 
@@ -65,11 +119,11 @@ function M.sync(reason)
     widget:setParent(window)
     widget:fill('parent')
   end
-  if plan.open then
-    call(m, 'open')
+  if plan.restore then
+    restoreWindow(m, window)
   end
   if plan.consumeWant then
-    wantOpen = nil
+    want = nil
   end
   if plan.recentre then
     local pos = playerPos()
@@ -87,23 +141,26 @@ end
 
 local function schedulePasses()
   cancelPasses()
-  for _, delay in ipairs(L.PASSES) do
+  for i, delay in ipairs(L.PASSES) do
+    local last = i == #L.PASSES
     events[#events + 1] = scheduleEvent(function()
       if g_game.isOnline() then M.sync('start') end
+      if last then want = nil end -- a later close by the player is never undone
     end, delay)
   end
 end
 
-local function rememberOpen()
+local function rememberWindow()
   local m, _, window = minimapModule()
-  if m then
-    wantOpen = L.openAtEnd(window:isVisible(), rawget(m, 'fullmapView') == true) or nil
-  end
+  if not m then return end
+  local p = panelOf(window)
+  want = L.remember({ visible = window:isExplicitlyVisible(), fullmap = rawget(m, 'fullmapView') == true,
+    panelId = p and p.id or nil, index = p and p.widget:getChildIndex(window) or 1, height = window:getHeight() })
 end
 
 local function onGameStart()
   cancelPasses()
-  -- a session that starts with the map already known (a module reload while online)
+  -- a module reload while online: the map is already known
   if L.validPos(playerPos()) then schedulePasses() end
 end
 
@@ -112,20 +169,19 @@ local function onMapKnown()
 end
 
 local function onTeleport()
-  -- after game_minimap's own handlers of the same packet
   addEvent(function()
     if g_game.isOnline() then M.sync('teleport') end
   end)
 end
 
 local function onDeath()
-  rememberOpen()
+  rememberWindow()
 end
 
 local function onGameEnd()
   cancelPasses()
-  -- a death already remembered the window; a plain logout remembers it now
-  if wantOpen == nil then rememberOpen() end
+  -- a death already remembered the window as it was before the death window
+  if want == nil then rememberWindow() end
   M.sync('end')
 end
 
@@ -137,7 +193,7 @@ local function safe(name, fn)
 end
 
 function M.init()
-  -- a handler that returns nothing: the engine stops a handler table at the first one that returns true
+  -- the handlers return nothing: the engine stops a handler table at the first one that returns true
   handlers.game = { onGameStart = safe('start', onGameStart), onMapKnown = safe('mapKnown', onMapKnown),
     onTeleport = safe('teleport', onTeleport), onDeath = safe('death', onDeath), onGameEnd = safe('end', onGameEnd) }
   connect(g_game, handlers.game)
