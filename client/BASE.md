@@ -588,6 +588,10 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Previous Page, Next Page), are in `client_chaos_locale/pt_br.lua`. Lua only; replaces the `0063` help text, so it
     applies after `0001`-`0083` (the whole chain applied to the base archive; the patched file parses in LuaJIT and
     Lua 5.3). Not run in a client yet.
+63. `0085` (Lua `modules/game_inventory/inventory.lua`): **capacity plate, digits only**. The plate's font,
+    `verdana-cap-bold`, has glyphs for the digits only (no `.`, `,` or letters; checked on its texture), so the short
+    number of `0073` ("14.2k") drew as "14 2". The plate shows the free capacity as plain digits (7 fit in the 50 px
+    label of `0073`); the tooltip keeps the grouped number. Applies after `0001`-`0084`.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
