@@ -48,7 +48,7 @@ local rows = E.rows({ cosmetics = cosmetics, wings = { stock = { { 5, 'Gold Wing
   services = { frames = { 'frost' } }, pets = { pets = {} } })
 eq(#rows, 9, 'every dropdown has its data: wings, six cosmetic kinds, frame, pet')
 eq(rows[1].key, 'wings', 'wings first'); eq(rows[1].label, 'Wings', 'label')
-eq(E.lineCount(rows), 5, 'two columns'); eq(E.lineCount({}), 0, 'no rows no lines')
+eq(rows[8].label, 'Plate frame', 'short frame label')
 eq(#E.rows({}), 0, 'no sources, no rows')
 
 -- Ok
@@ -62,6 +62,27 @@ eq(#E.plan(rows, nil), 0, 'nothing chosen')
 eq(#E.plan(nil, { outline = 1 }), 0, 'no rows')
 eq(E.plan({ { key = 'pet', options = { { text = 'None', value = '' }, { text = 'A', value = 'a' } }, current = 'a' } }, { pet = '' })[1].act, 'pet', 'dismiss the pet')
 eq(E.indexOf(rows[2], 11), 2, 'indexOf')
+
+-- the right-hand list of a row
+local src = { cosmetics = cosmetics, wings = { stock = { { 5, 'Gold Wings' } }, wardrobe = { { l = 5, n = 'Gold Wings' },
+  { l = 7, n = 'Storm Wings', s = 'Store' } }, current = 5 }, services = { frames = { 'frost' } },
+  pets = { pets = { { species = 'ashwolf', name = 'Fang' } }, catalog = { { key = 'ashwolf', owned = true },
+  { key = 'emberfox', name = 'Ember Fox', how = 'Achievement.' } } } }
+local c = E.choices(src, 'outline', false)
+eq(#c, 4, 'default, two owned, one locked outline'); eq(c[1].value, 0, 'default first'); eq(c[1].locked, nil, 'default not locked')
+eq(c[4].text, 'Storm Outline', 'locked last'); eq(c[4].locked, true, 'locked flag')
+eq(#E.choices(src, 'outline', true), 3, 'only mine drops the locked one')
+eq(#E.choices(src, 'outline', false, 'VOID'), 1, 'search, any case')
+eq(#E.choices(src, 'spellskin', false), 3, 'spell skins of the own line, none locked')
+local wc = E.choices(src, 'wings', false)
+eq(#wc, 3, 'none, owned and locked wings'); eq(wc[3].value, 7, 'locked wings value'); eq(wc[3].how, 'Store', 'wings source')
+local pc = E.choices(src, 'pet', false)
+eq(#pc, 3, 'none, owned and locked pet'); eq(pc[3].text, 'Ember Fox', 'locked pet name'); eq(pc[3].how, 'Achievement.', 'pet how')
+eq(#E.choices(src, 'frame', false), 2, 'frames: no catalogue, nothing locked')
+eq(E.choices({}, 'outline', false), nil, 'no source, no list')
+eq(E.choices(src, 'bogus', false), nil, 'unknown key')
+eq(E.textOf(E.row(src, 'outline'), 12), 'Void Outline', 'value text'); eq(E.textOf(E.row(src, 'outline'), 99), nil, 'unknown value')
+eq(E.keyOfId('petExtrasCheck'), 'pet', 'row id'); eq(E.keyOfId('outfitCheck'), nil, 'a base row')
 
 print('outfitextras tests OK (' .. checks .. ' checks)')
 if fails > 0 then os.exit(1) end

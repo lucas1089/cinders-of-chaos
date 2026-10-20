@@ -1,0 +1,306 @@
+# Cosmetics inside Change Appearance (client/MANIFEST.md "Customise Character extras", BASE.md 62; owner 2026-10-20: "put all the options inside Change Appearance"). The separate Cosmetics panel of 0075 is gone: modules/game_outfit/outfit.lua now hands the overlay module game_outfitextras its radio group (addRow), a helper that clears the right-hand list (prepareList) and the "Only mine" sync, after the group is built; selecting a cosmetic row calls show(key), search and "Only mine" re-show it, a base row first calls leave(). data/styles/40-outfitwindow.otui makes room: window 796x720 (was 756x565, 729 with the old panel), preview 517x180, Configure and Change Appearance from y 214 and 456 px tall (Change Appearance 367 wide, value boxes at x 130 so longer row names fit), right-hand list 585 px tall. The Show Familiar box is hidden when the outfit packet has no familiars and the client has no familiar feature (10.98), Show Floor moves up into its place. Every call is guarded: without the module the rows are not there.
+diff --git a/modules/game_outfit/outfit.lua b/modules/game_outfit/outfit.lua
+--- a/modules/game_outfit/outfit.lua
++++ b/modules/game_outfit/outfit.lua
+@@ -69,6 +69,24 @@
+   return shaderLogic() ~= nil and g_game.getFeature(GameOutfitShaders) and not g_game.getFeature(GamePlayerFamiliars)
+ end
+ 
++-- Chaos (base patch 0090): the cosmetic rows of Change Appearance (wings, outline, footprints, kill effect, loot label,
++-- chat colour, spell effect, plate frame, pet) belong to the overlay module game_outfitextras; nil without it
++local function extras()
++  local m = modules.game_outfitextras
++  return m and m.show and m or nil
++end
++
++-- the cosmetic row whose list is shown, or nil
++local function activeExtras()
++  local x = extras()
++  return x and x.activeKey and x.activeKey() or nil
++end
++
++local function extrasKey(id)
++  local x = extras()
++  return x and x.rowKey and x.rowKey(id) or nil
++end
++
+ -- Chaos (base patch 0060, client/MANIFEST.md "Owned and locked lists"): every outfit, mount, aura and shader of the
+ -- game is listed, the ones the character does not own greyed out with their source in the tooltip; they can be
+ -- looked at but not worn (Ok stays disabled and accept() sends nothing; the server refuses them too). The catalogue
+@@ -332,7 +350,7 @@
+   elseif window.appearance.shaderCheck:isChecked() then return "shader"
+   elseif window.appearance.presetCheck:isChecked() then return "preset"
+   end
+-  return nil
++  return activeExtras()
+ end
+ 
+ local function reshow()
+@@ -342,6 +360,7 @@
+   elseif list == "aura" then showAuras()
+   elseif list == "shader" then showShaders()
+   elseif list == "preset" then showPresets()
++  elseif list and extras() then extras().show(list)
+   end
+ end
+ 
+@@ -445,16 +464,6 @@
+   g_client.setInputLockWidget(window)
+   refreshLocks()
+ 
+-  -- Chaos (base patch 0075): the cosmetic dropdowns under the lower panels (overlay module game_outfitextras); wings
+-  -- are part of the outfit, so the window hands over its wing list and a setter for the outfit being edited
+-  if modules.game_outfitextras and modules.game_outfitextras.attach then
+-    modules.game_outfitextras.attach(window, {
+-      wings = wingList,
+-      current = currentOutfit,
+-      setWings = function(id) tempOutfit.wings = id end
+-    })
+-  end
+-
+   for _, appKey in ipairs(AppearanceData) do
+     updateAppearanceText(appKey, "None")
+   end
+@@ -525,6 +534,11 @@
+   showFloorCheck:setChecked(true)
+ 
+   showFamiliarCheck:setEnabled(not table.empty(familiarList))
++  -- Chaos (base patch 0090): 10.98 has no familiars; the box is hidden and Show Floor takes its place
++  if table.empty(familiarList) and not g_game.getFeature(GamePlayerFamiliars) then
++    window.preview.showfamiliar:setVisible(false)
++    window.preview.showfloor:setMarginTop(window.preview.showfamiliar:getMarginTop())
++  end
+   if table.empty(familiarList) then
+     window.appearance.familiarCheck:setEnabled(false)
+   else
+@@ -586,6 +600,26 @@
+   appearanceGroup:addWidget(window.appearance.auraCheck)
+   appearanceGroup:addWidget(window.appearance.shaderCheck)
+ 
++  -- Chaos (base patches 0075, 0090): the cosmetic rows under Preset (overlay module game_outfitextras), in this radio
++  -- group; a row lists its choices in the right-hand list. Wings are part of the outfit, so the window hands over its
++  -- wing list and a setter for the outfit being edited.
++  if modules.game_outfitextras and modules.game_outfitextras.attach then
++    modules.game_outfitextras.attach(window, {
++      wings = wingList,
++      current = currentOutfit,
++      setWings = function(id) tempOutfit.wings = id end,
++      addRow = function(check) appearanceGroup:addWidget(check) end,
++      prepareList = function()
++        onHidePresetWindow()
++        cancelPopulate()
++        window.ScrollBar.selectionList.onChildFocusChange = nil
++        window.ScrollBar.selectionList:destroyChildren()
++        window.appearance.grayHover:setVisible(true) -- the colours are not part of a cosmetic
++      end,
++      syncOnlyMine = function(list) syncOnlyMine(list) end
++    })
++  end
++
+   appearanceGroup.onSelectionChange = onAppearanceChange
+ 
+   colorModeGroup = UIRadioGroup.create()
+@@ -756,6 +790,8 @@
+ 
+ function onAppearanceChange(widget, selectedWidget)
+   local id = selectedWidget:getId()
++  local x = extras()
++  if x and x.leave then x.leave() end -- a cosmetic row's list gives the right-hand area back
+ 
+   if id == "presetCheck" then
+     showPresets()
+@@ -769,6 +805,8 @@
+     showAuras()
+   elseif id == "shaderCheck" then
+     showShaders()
++  elseif extrasKey(id) then
++    extras().show(extrasKey(id))
+   end
+ end
+ 
+@@ -1593,6 +1631,8 @@
+     showMounts(widget:getText())
+   elseif window.appearance.shaderCheck:isChecked() then
+     showShaders(widget:getText())
++  elseif activeExtras() then
++    extras().show(activeExtras(), widget:getText())
+   end
+ end
+ 
+@@ -1604,6 +1644,8 @@
+     showMounts()
+   elseif window.appearance.shaderCheck:isChecked() then
+     showShaders()
++  elseif activeExtras() then
++    extras().show(activeExtras())
+   end
+ end
+ 
+@@ -1730,7 +1772,7 @@
+   end
+ 
+   if modules.game_outfitextras and modules.game_outfitextras.apply then
+-    modules.game_outfitextras.apply() -- Chaos (base patch 0075): the dropdowns' choices
++    modules.game_outfitextras.apply() -- Chaos (base patches 0075, 0090): the cosmetic rows' choices
+   end
+ 
+   g_game.changeOutfit(tempOutfit, globalRandomMount)
+diff --git a/data/styles/40-outfitwindow.otui b/data/styles/40-outfitwindow.otui
+--- a/data/styles/40-outfitwindow.otui
++++ b/data/styles/40-outfitwindow.otui
+@@ -108,8 +108,10 @@
+     color: $var-text-cip-color
+     font: $var-cip-font
+ 
++// Chaos (base patch 0090): the cosmetics are rows of Change Appearance (overlay module game_outfitextras), so the lower
++// panels are taller and the value boxes start further right (longer row names); the preview is shorter to make room
+ OutfitWindow < MainWindow
+-  size: 756 565
++  size: 796 720
+   text: Customise Character
+   color: #929292
+   padding-top: 0
+@@ -121,7 +123,7 @@
+ 
+   WindowCyclopedia
+     id: preview
+-    size: 477 221
++    size: 517 180
+     !text: tr('Preview')
+     font: Verdana Bold-11px
+     color: #909090
+@@ -169,7 +171,7 @@
+ 
+     FlatPanel
+       id: previewoutfit
+-      size: 320 192
++      size: 360 151
+       image-source: /images/game/outfit_ground
+       padding: 1 1 1 1
+       anchors.top: parent.top
+@@ -361,7 +363,7 @@
+     anchors.top: parent.top
+     anchors.left: parent.left
+     margin-top: 29
+-    margin-left: 498
++    margin-left: 538
+     !text: tr('Manage Presets')
+     image-source: /game_cyclopedia/images/ui/bestiary-slot
+     image-border-top: 18
+@@ -454,7 +456,7 @@
+     anchors.top: parent.top
+     anchors.left: parent.left
+     margin-top: 29
+-    margin-left: 498
++    margin-left: 538
+     image-source: /game_cyclopedia/images/ui/bestiary-slot
+     image-border-top: 18
+     image-border-bottom: 2
+@@ -536,7 +538,7 @@
+ 
+   FlatPanel
+     id: presetList
+-    size: 240 430
++    size: 240 585
+     image-source: /game_cyclopedia/images/ui/panel-background
+     padding: 1 1 1 1
+     anchors.top: parent.top
+@@ -570,7 +572,7 @@
+ 
+   FlatPanel
+     id: ScrollBar
+-    size: 240 430
++    size: 240 585
+     image-source: /game_cyclopedia/images/ui/panel-background
+     padding: 1 1 1 1
+     anchors.top: parent.top
+@@ -606,7 +608,7 @@
+ 
+   WindowCyclopedia
+     id: configure
+-    size: 145 260
++    size: 145 456
+     !text: tr('Configure')
+     font: Verdana Bold-11px
+     color: #909090
+@@ -615,7 +617,7 @@
+     text-align: Top
+     anchors.top: parent.top
+     anchors.left: parent.left
+-    margin-top: 255
++    margin-top: 214
+     margin-left: 16
+     image-source: /game_cyclopedia/images/ui/bestiary-slot
+     image-border-top: 18
+@@ -772,7 +774,7 @@
+ 
+   WindowCyclopedia
+     id: appearance
+-    size: 327 260
++    size: 367 456
+     !text: tr('Change Appearance')
+     font: Verdana Bold-11px
+     color: #909090
+@@ -781,7 +783,7 @@
+     text-align: Top
+     anchors.top: parent.top
+     anchors.left: parent.left
+-    margin-top: 255
++    margin-top: 214
+     margin-left: 166
+     image-source: /game_cyclopedia/images/ui/bestiary-slot
+     image-border-top: 18
+@@ -804,7 +806,7 @@
+       image-source: /images/ui/pressed-large-button
+       image-clip: 0 0 230 20
+       margin-top: 22
+-      margin-left: 90
++      margin-left: 130
+ 
+       $pressed:
+         image-clip: 0 20 230 20
+@@ -855,7 +857,7 @@
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 44
+-      margin-left: 90
++      margin-left: 130
+       $pressed:
+         image-clip: 0 20 230 20
+       UIWidget
+@@ -904,7 +906,7 @@
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 66
+-      margin-left: 90
++      margin-left: 130
+       font: $var-cip-font
+       color: $var-text-cip-color
+ 
+@@ -936,7 +938,7 @@
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 88
+-      margin-left: 90
++      margin-left: 130
+       font: $var-cip-font
+       color: $var-text-cip-color
+ 
+@@ -969,7 +971,7 @@
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 88
+-      margin-left: 90
++      margin-left: 130
+       font: $var-cip-font
+       color: $var-text-cip-color
+       visible: false
+@@ -1003,7 +1005,7 @@
+       anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 110
+-      margin-left: 90
++      margin-left: 130
+       font: $var-cip-font
+       color: $var-text-cip-color
+ 

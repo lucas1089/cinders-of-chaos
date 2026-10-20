@@ -597,6 +597,19 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     from Interface, and the "Manage Control Buttons" hotkey opens the options window. Its other functions stay (they
     return early when the page is not the selected one). Applies after `0001`-`0085` (`0086`-`0094` do not touch the
     file).
+65. `0090` (Lua `modules/game_outfit/outfit.lua`, OTUI `data/styles/40-outfitwindow.otui`): **cosmetics inside Change
+    Appearance**. Owner, 2026-10-20: the Customise Character window was bad, every option should be in Change Appearance.
+    The separate Cosmetics panel of `0075` is gone; `game_outfitextras` adds one row per cosmetic (Wings, Outline,
+    Footprints, Kill effect, Loot label, Chat colour, Spell effect, Plate frame, Pet) under Preset, a radio and a value
+    box like the Aura and Preset rows. `outfit.lua` calls `attach` after the radio group exists and hands over `addRow`
+    (the group), `prepareList` (clears the right-hand list and covers the colours) and `syncOnlyMine`; selecting a
+    cosmetic row calls `show(key)`, search and "Only mine" re-show it, a base row first calls `leave()`. The window is
+    796 x 720 (was 756 x 565, 729 tall with the old panel): preview 517 x 180, Configure and Change Appearance from
+    y 214, 456 px tall, Change Appearance 367 wide with the value boxes at x 130 so the longer row names fit, the
+    right-hand list 585 px tall. Show Familiar is hidden when the packet has no familiars and `GamePlayerFamiliars` is
+    off (10.98); Show Floor moves into its place. Aura, Shader and Show Aura stay: the server sells auras and shaders
+    (they are greyed out only while the character owns none). Protocol unchanged. Applies after `0001`-`0085` (the
+    full chain applies to the base archive). Not tried in a client run.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
