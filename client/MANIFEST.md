@@ -2181,7 +2181,7 @@ holds the font file used, its `OFL.txt` and a README (source URL, version, upstr
 | | | `chaos-heading-14px` (shadow) | `heading` | Codex section headings, the NPC's name in the dialogue bubble |
 | IM Fell English | IMFeENrm28P.ttf (3.00) | `chaos-dialogue-15px` | `dialogue` | what NPCs say in the dialogue bubble (`game_npctalk`) |
 | Alegreya Sans | AlegreyaSans-Medium.ttf (2.004) | `chaos-body-13px`, `chaos-body-12px` | `body` (off) | trial body font: Codex paragraphs, only when switched on |
-| | | `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names (the 12 px size, unused, was dropped 2026-10-14 for the splash's room) |
+| | | `chaos-outline-11px` (antialiased border) | `outline`, `outlineSmall` | text straight over the game picture: the login scene's monster names, the modifier line over monsters (`game_monsterbar`) (the 12 px size, unused, was dropped 2026-10-14 for the splash's room) |
 
 | PT Sans | PT_Sans-Web-Regular.ttf (2.003) | `chaos-ui-10px`, `chaos-ui-bold-9px`, `chaos-ui-rounded-8px` / `-10px` / `-11px` (hinted monochrome, pixel accents) | none: they replace stock fonts by name | `verdana-9px`, `verdana-9px-bold`, `verdana-9px-rounded`, `verdana-11px-rounded` (the main button and panel font), `verdana-11px-rounded-lowspace`, `verdana-8px-rounded` |
 
