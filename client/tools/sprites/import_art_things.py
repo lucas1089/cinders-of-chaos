@@ -28,6 +28,9 @@ for items (displacement:x:y may be negative) and bones:nx:ny:sx:sy:ex:ey:wx:wy (
 one row per group and phase (group 0's phases first) and one column per ((z * addons + y) * layers + layer) * 4 +
 direction, each cell w x h tiles; the row's x / y are the sheet's top-left corner.
 Atlas names are paths without .png relative to the directory of the --things file.
+An outfit row with mode=replace and extra look=ID rewrites the existing outfit ID in place instead of appending one
+(new art for a look the server already uses: its sprites are appended, the old entry's bytes are replaced, the outfit
+count stays); the append-only guard then allows exactly those outfits to change.
 
 Outputs: OUT/Tibia.dat, OUT/Tibia.spr; --manifest-out: the items.otb / items.xml manifest for
 server/tools/install_pack_items.py (client id, server id = client id + --server-offset, or the existing server id for
@@ -318,6 +321,15 @@ def main():
     rows = read_things(a.things)
     items = [r for r in rows if r['cat'] == 'item']
     outfits = [r for r in rows if r['cat'] == 'outfit']
+    for r in outfits:
+        if r['mode'] == 'replace':
+            if 'look' not in r['ex']:
+                sys.exit(f'{r["key"]}: an outfit with mode=replace needs look=ID in extra')
+            r['look'] = int(r['ex']['look'])
+    replaced = sorted(r['look'] for r in outfits if r['mode'] == 'replace')
+    if len(set(replaced)) != len(replaced):
+        sys.exit('an outfit is replaced twice')
+    appended = [r for r in outfits if r['mode'] != 'replace']
 
     od = Dat(a.ours_dat); ospr = Spr(a.ours_spr)
     assert od.variant[0] == 'new' and all(od.variant[1:]), f'expected our 10.98 dat (animator, u32, frame groups): {od.variant}'
@@ -331,7 +343,10 @@ def main():
         sys.exit(f'--first-item {first_item} is not above the last item {ni} of the input (wrong pair, or already imported)')
     if first_outfit <= no:
         sys.exit(f'--first-outfit {first_outfit} is not above the last outfit {no} of the input (wrong pair, or already imported)')
-    pad_i, pad_o = first_item - ni - 1, first_outfit - no - 1
+    pad_i, pad_o = first_item - ni - 1, (first_outfit - no - 1) if appended else 0
+    for look in replaced:
+        if not 1 <= look <= no:
+            sys.exit(f'look={look}: not an outfit of the input')
     last_item = first_item + len(items) - 1
     assert last_item <= 0xFFFF and last_item + a.server_offset <= 0xFFFF, 'ids above 65535'
     print(f'ours: dat {od.signature:#x} items {ni}, outfits {no}; spr {ospr.count} sprites')
@@ -399,11 +414,19 @@ def main():
         item_blob += item_entry(item_flags(r, od), r['w'], r['h'], shp.px, shp.py, shp.phases, int(r['ex'].get('ms', 140)),
                                 [rec_id[x] for x in ids])
     outfit_blob = bytearray(BLANK_OUTFIT * pad_o)
+    swaps = []          # (start, end, bytes) of the replaced outfits in the input dat
     for r, frames, groups, lay in per_outfit:
-        outfit_blob += outfit_entry(r['w'], r['h'], lay, [[rec_id[x] for x in ids] for shp, ids in groups],
-                                    outfit_flags(r))
-    out = bytearray(d[:items_end]) + item_blob + d[items_end:outfits_end] + outfit_blob + d[outfits_end:]
-    struct.pack_into('<HH', out, 4, last_item if items else ni, first_outfit + len(outfits) - 1 if outfits else no)
+        e = outfit_entry(r['w'], r['h'], lay, [[rec_id[x] for x in ids] for shp, ids in groups], outfit_flags(r))
+        if r['mode'] == 'replace':
+            s0, e0 = od.outfit(r['look']).raw
+            swaps.append((s0, e0, e))
+        else:
+            outfit_blob += e
+    mid = bytearray(d[items_end:outfits_end])
+    for s0, e0, e in sorted(swaps, reverse=True):
+        mid[s0 - items_end:e0 - items_end] = e
+    out = bytearray(d[:items_end]) + item_blob + mid + outfit_blob + d[outfits_end:]
+    struct.pack_into('<HH', out, 4, last_item if items else ni, first_outfit + len(appended) - 1 if appended else no)
     open(os.path.join(a.out_dir, 'Tibia.dat'), 'wb').write(out)
 
     # --- spr (streamed: bigger table, old records shifted by 4*n, new records appended)
@@ -423,7 +446,8 @@ def main():
         for rec in newrecs:
             f.write(rec)
     print(f'dat: items {ni} -> {last_item} ({pad_i} blank, new client ids {first_item}..{last_item}); outfits {no} -> '
-          f'{first_outfit + len(outfits) - 1} ({pad_o} blank, new {first_outfit}..{first_outfit + len(outfits) - 1}); '
+          f'{first_outfit + len(appended) - 1 if appended else no} ({pad_o} blank, new '
+          f'{first_outfit}..{first_outfit + len(appended) - 1}; replaced {",".join(map(str, replaced)) or "none"}); '
           f'spr: {len(recs)} distinct sprites, {nn} appended, {len(recs) - nn} reused ({cnt} -> {cnt + nn})')
 
     # --- verification
@@ -435,6 +459,8 @@ def main():
         mt = md.items[t.id - 100]
         assert md.data[mt.raw[0]:mt.raw[1]] == d[t.raw[0]:t.raw[1]], ('item changed', t.id)
     for t in od.outfits + od.effects + od.missiles:
+        if t.cat == 'o' and t.id in replaced:
+            continue
         lst = {'o': md.outfits, 'e': md.effects, 'm': md.missiles}[t.cat]
         mt = lst[t.id - 1]
         assert md.data[mt.raw[0]:mt.raw[1]] == d[t.raw[0]:t.raw[1]], ('thing changed', t.cat, t.id)
@@ -458,8 +484,13 @@ def main():
                     assert np.array_equal(got, decoded(tile)), (r['key'], x, y, ph, ww, hh)
                 nslot += 1
     from import_outfits import parse_body
-    for k, (r, frames, groups, lay) in enumerate(per_outfit):
-        mt = md.outfit(first_outfit + k)
+    k_new = 0
+    for r, frames, groups, lay in per_outfit:
+        if r['mode'] == 'replace':
+            mt = md.outfit(r['look'])
+        else:
+            mt = md.outfit(first_outfit + k_new)
+            k_new += 1
         mg = parse_body(md, mt)
         assert len(mg) == len(lay.phases), r['key']
         fl = outfit_flags(r)
@@ -482,9 +513,10 @@ def main():
     for sid in random.sample(range(1, cnt + 1), min(3000, cnt)) + [1, cnt]:
         x, y = ospr.sprite(sid), ms_.sprite(sid)
         assert (x is None) == (y is None) and (x is None or (x == y).all()), sid
-    print(f'verified: output dat parses ({md.variant}); {len(items)} items and {len(outfits)} outfits, {nslot} sprite slots '
-          f'pixel-identical to the art; {pad_i} + {pad_o} blank padding entries; every old item, outfit, effect and missile '
-          f'byte-identical; 3000 sampled old sprites unchanged')
+    print(f'verified: output dat parses ({md.variant}); {len(items)} items and {len(outfits)} outfits '
+          f'({len(replaced)} replaced in place), {nslot} sprite slots '
+          f'pixel-identical to the art; {pad_i} + {pad_o} blank padding entries; every other old item, outfit, effect and '
+          f'missile byte-identical; 3000 sampled old sprites unchanged')
 
     # --- manifests
     if a.manifest_out:
@@ -514,13 +546,20 @@ def main():
         with open(a.outfits_out, 'w', newline='') as fh:
             w = csv.writer(fh, lineterminator='\n')
             w.writerow(['look_type', 'key', 'name', 'size', 'head', 'body', 'legs', 'feet'])
-            for k, (r, frames, groups, lay) in enumerate(per_outfit):
+            k_new = 0
+            for r, frames, groups, lay in per_outfit:
                 e = r['ex']
-                w.writerow([first_outfit + k, r['key'], r['name'], '%dx%d' % (r['w'], r['h']), e.get('head', ''),
+                if r['mode'] == 'replace':
+                    look = r['look']
+                else:
+                    look = first_outfit + k_new
+                    k_new += 1
+                w.writerow([look, r['key'], r['name'], '%dx%d' % (r['w'], r['h']), e.get('head', ''),
                             e.get('body', ''), e.get('legs', ''), e.get('feet', '')])
         print('outfits', a.outfits_out)
     from check_pair import check_append_only
-    check_append_only(a.ours_dat, a.ours_spr, os.path.join(a.out_dir, 'Tibia.dat'), os.path.join(a.out_dir, 'Tibia.spr'))
+    check_append_only(a.ours_dat, a.ours_spr, os.path.join(a.out_dir, 'Tibia.dat'), os.path.join(a.out_dir, 'Tibia.spr'),
+                      allow_changed={('outfit', look) for look in replaced})
     if a.sheets:
         os.makedirs(a.sheets, exist_ok=True)
         from datspr import render_thing

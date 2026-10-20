@@ -392,6 +392,37 @@ def test_import_roundtrip(tmp):
                            '--first-outfit', '3'], capture_output=True, text=True)
     expect(res2.returncode == 0 and open(os.path.join(tmp, 'new2', 'Tibia.dat'), 'rb').read() == data,
            'deterministic import')
+    # the same row with mode=replace and look=1 rewrites outfit 1 in place: no outfit appended, sprites appended
+    rows = list(csv.DictReader(open(os.path.join(out, 'things.csv'), newline='')))
+
+    def replace_run(name, extra):
+        r = dict(rows[0], mode='replace', extra=(rows[0]['extra'] + extra).lstrip('|'))
+        path = os.path.join(out, name + '.csv')
+        with open(path, 'w', newline='') as f:
+            w = csv.DictWriter(f, fieldnames=list(rows[0]), lineterminator='\n')
+            w.writeheader()
+            w.writerow(r)
+        return subprocess.run([sys.executable, '-I', os.path.join(HERE, 'import_art_things.py'),
+                               '--ours-dat', os.path.join(pair, 'Tibia.dat'), '--ours-spr', os.path.join(pair, 'Tibia.spr'),
+                               '--out-dir', os.path.join(tmp, name), '--things', path], capture_output=True, text=True)
+    res3 = replace_run('rep', '|look=1')
+    expect(res3.returncode == 0 and 'replaced 1' in res3.stdout and 'append-only guard passed' in res3.stdout,
+           f'mode=replace look=1 rewrites outfit 1: {res3.stdout[-800:]} {res3.stderr[-1500:]}')
+    if not res3.returncode:
+        rdata = open(os.path.join(tmp, 'rep', 'Tibia.dat'), 'rb').read()
+        _, rc, rth, _ = cp.parse_dat(rdata)
+        old = open(os.path.join(pair, 'Tibia.dat'), 'rb').read()
+        _, oc, oth, _ = cp.parse_dat(old)
+        r1, n3 = rth['outfit'][0], things['outfit'][2]
+        expect(rc == oc, f'counts unchanged by a replace: {rc} {oc}')
+        expect([(x.gtype, x.w, x.h, x.layers, x.px, x.py, x.pz, x.phases) for x in r1.groups] ==
+               [(x.gtype, x.w, x.h, x.layers, x.px, x.py, x.pz, x.phases) for x in n3.groups]
+               and r1.flag('displacement') == comp.disp, 'outfit 1 has the new layout and flags')
+        expect(all(rdata[a.start:a.end] == old[b.start:b.end] for cat in ('item', 'effect', 'missile')
+                   for a, b in zip(rth[cat], oth[cat])), 'every other thing byte-identical')
+    for name, extra, needle in (('rep_nolook', '', 'needs look=ID'), ('rep_far', '|look=9', 'not an outfit of the input')):
+        r = replace_run(name, extra)
+        expect(r.returncode != 0 and needle in (r.stdout + r.stderr), f'{name} refused ({needle}): {r.stderr[-400:]}')
 
 
 def test_png_source(tmp):

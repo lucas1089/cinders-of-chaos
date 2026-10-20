@@ -83,9 +83,9 @@ P.NO_RIDE = 'Your look cannot ride: the mount is shown with the plain figure.'
 -- the option itself: for a whole outfit that is its extras (mount, wings, aura, shader) on the plain figure.
 -- known(name): is the outfit shader registered in the client (the engine draws nothing for an unknown name, so it is
 -- left off and the note says why).
--- canRide(type): has that look the mounted pattern (pattern z 2). Outfit::draw draws the mount only for a rider with
--- that pattern (zPattern = min(1, patternZ - 1)), so a look without it (some class looks of the pair) stood on foot
--- with no mount. Such a rider is replaced by the plain figure in its colours, and the note says why.
+-- canRide(type), optional: has that look the mounted pattern (pattern z 2). Before base patch 0088 Outfit::draw drew
+-- the mount only for such a rider, so a look without it stood on foot with no mount; given, such a rider is replaced by
+-- the plain figure in its colours and the note says why. The window passes none: with 0088 every look rides.
 function P.compose(mode, own, opt, known, canRide)
   local o, outline, note = P.composeRaw(mode, own, opt)
   if o.shader and o.shader ~= '' and known and not known(o.shader) then

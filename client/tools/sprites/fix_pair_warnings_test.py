@@ -232,10 +232,70 @@ def test_aura_displacement(d):
     assert txt.rstrip().endswith('stand 8 px or more right and below: 1,2'), txt
 
 
+def test_wings_displacement(d):
+    """wings (2x2, 4 directions) against the body 128 (1x1, 8,8, a 16 px square at the sprite's centre: its centre
+    6 px up-left of the wings' tile is 1.5 px up-left of the tile's top left). 1 art on the frame's bottom-right tile,
+    no displacement: +14,+14 from the body -> 14,20 puts it at 0,-6; 2 art on the top-left tile with 8,8: -26,-26 ->
+    -16,-14 (negative, replaces 8,8) puts it at -2,-4; 3 like 1 with 12,18 (2,-4: in place). 5 like 1 but not wings."""
+    src = os.path.join(d, 'wsrc'); os.makedirs(src)
+    sq = {y * 32 + x: (200, 30, 30, 255) for y in range(8, 24) for x in range(8, 24)}
+    recs = [record(sq)]
+
+    def big(sl1):
+        return group(sl1 * 4, w=2, h=2, px=4, gtype=0)
+    outs = [entry(b'', [big([1, 0, 0, 0])], outfit=True), entry(disp_flag(8, 8), [big([0, 0, 0, 1])], outfit=True),
+            entry(disp_flag(12, 18), [big([1, 0, 0, 0])], outfit=True),
+            entry(b'', [group([1, 1, 1, 1], px=4, gtype=0)], outfit=True), entry(b'', [big([1, 0, 0, 0])], outfit=True)]
+    outs += [entry(b'', [group([0], gtype=0)], outfit=True)] * (fx.WING_BODY - 1 - len(outs))
+    outs.append(entry(disp_flag(8, 8), [group([1, 1, 1, 1], px=4, gtype=0)], outfit=True))
+    dp, sp = os.path.join(src, 'Tibia.dat'), os.path.join(src, 'Tibia.spr')
+    with open(dp, 'wb') as f:
+        f.write(dat_bytes([], outs, [], []))
+    with open(sp, 'wb') as f:
+        f.write(spr_bytes(recs))
+    _, _, th0, _ = cp.parse_dat(open(dp, 'rb').read(), None)
+    spr = cp.SprFile(sp)
+    body = th0['outfit'][fx.WING_BODY - 1]
+    assert fx.wing_offset(th0['outfit'][0], body, spr, (0, 0)) == (14.0, 14.0)
+    assert fx.wing_offset(th0['outfit'][0], body, spr, (14, 20)) == (0.0, -6.0)
+    assert fx.wing_offset(th0['outfit'][1], body, spr, (8, 8)) == (-26.0, -26.0)
+    assert fx.wing_offset(th0['outfit'][1], body, spr, (-16, -14)) == (-2.0, -4.0)
+    spr.close()
+    spec = os.path.join(d, 'wings.csv')
+    write_spec(spec, [('displacement', 'outfit', 1, '*', '14,20', 't'), ('displacement', 'outfit', 2, '*', '-16,-14', 't')])
+    out, out2 = os.path.join(d, 'wout'), os.path.join(d, 'wout2')
+    base = ['--wings-looks', '1-4', '--aura-looks', '']
+    ch = os.path.join(d, 'wchanges.csv')
+    txt = run(['--ours-dat', dp, '--ours-spr', sp, '--out-dir', out, '--spec', spec, '--changes-out', ch] + base)
+    assert "'outfit:1,2'" in txt and txt.startswith('2 field changes in 2 things'), txt
+    rows = list(csv.reader(open(ch, encoding='utf-8')))[1:]
+    assert [r[5:7] for r in rows] == [['none', '14,20'], ['8,8', '-16,-14']], rows
+    od = os.path.join(out, 'Tibia.dat')
+    _, _, th, _ = cp.parse_dat(open(od, 'rb').read(), None)
+    assert th['outfit'][0].flag('displacement') == (14, 20) and th['outfit'][1].flag('displacement') == (-16, -14)
+    assert [fx.groups_sig(g) for g in th['outfit'][1].groups] == [fx.groups_sig(g) for g in th0['outfit'][1].groups]
+    txt = run(['--ours-dat', od, '--ours-spr', os.path.join(out, 'Tibia.spr'), '--out-dir', out2, '--spec', spec,
+               '--link-spr'] + base)
+    assert txt.startswith('0 field changes'), txt
+    bad = os.path.join(d, 'wbad.csv')
+    a = ['--ours-dat', dp, '--ours-spr', sp, '--out-dir', os.path.join(d, 'wx'), '--spec', bad] + base
+    for row, needle in ((('displacement', 'outfit', 3, '*', '14,20', 't'), 'it is not misplaced'),
+                        (('displacement', 'outfit', 1, '*', '2,2', 't'), 'does not place it'),
+                        (('displacement', 'outfit', 1, '*', '-40,2', 't'), 'out of range (-32..32)'),
+                        (('displacement', 'outfit', 4, '*', '14,20', 't'), 'not 2x2 or larger'),
+                        (('displacement', 'outfit', 5, '*', '-4,8', 't'), 'out of range (1..32)')):
+        write_spec(bad, [row])
+        expect_exit(a, needle)
+    txt = run(['--ours-dat', dp, '--ours-spr', sp, '--scan-wings-displacement'] + base)
+    assert 'wings 3: 2x2, displacement 12,18, centre minus body N +2.0,-4.0  E +2.0,-4.0  S +2.0,-4.0  W +2.0,-4.0\n' in txt, txt
+    assert txt.count('premise ok') == 2 and txt.rstrip().endswith('of the body 128: 1,2'), txt
+
+
 def main():
     with tempfile.TemporaryDirectory() as d:
         test_displacement(d)
         test_aura_displacement(d)
+        test_wings_displacement(d)
         src = os.path.join(d, 'src'); os.makedirs(src)
         dp, sp = build(src)
         before = cp.check(dp, sp, auras=set())

@@ -53,7 +53,7 @@ local function charselect()
 end
 
 -- the client's thing data of a creature thing: size, displacement, patterns and sprite ids (LookPreviewCore.lookBox
--- measures a look the anchors do not know from its tiles; canRide reads its pattern z). Read once per id.
+-- measures a look the anchors do not know from its tiles). Read once per id.
 local creatureThings = {}
 local function thingInfo(id)
   id = num(id)
@@ -71,13 +71,6 @@ local function thingInfo(id)
   end
   creatureThings[id] = info
   return info or nil
-end
-
--- can this look ride (Outfit::draw draws a mount only under a rider with the mounted pattern)
-local function canRide(lookType)
-  local info = thingInfo(lookType)
-  if not info or info.pz == nil then return true end
-  return num(info.pz) >= 2
 end
 
 local function anchorOf(id)
@@ -494,7 +487,7 @@ end
 function Preview:refresh()
   if not alive(self.widget) then return end
   local opt = self.hover or self.opt
-  local outfit, outline, note = P.compose(self:mode(), self.own or localOutfit(), opt, shaderKnown, canRide)
+  local outfit, outline, note = P.compose(self:mode(), self.own or localOutfit(), opt, shaderKnown)
   local cw = self.widget.stage.creature
   local ok = pcall(cw.setOutfit, cw, outfit)
   if not ok then

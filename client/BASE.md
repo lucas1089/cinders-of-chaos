@@ -673,6 +673,18 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     it. `game_minimapsync` also puts the minimap back (`MANIFEST.md` "Minimap after a death"). Applies after
     `0001`-`0095` and before `0100` (full chain on the base archive, `patch` clean); Lua only, parses in LuaJIT and
     Lua 5.3. Not run in a client.
+70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
+    `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
+    with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
+    outfits.xml plus the class looks and exclusives `install_outfits.py` adds) have pattern Z 1: the class looks
+    Mystic 2060 / 2061, Elementalist 2062 / 2063, Samurai 2071 / 2072, Monk 2080 / 2081 and Ranger 2163 / 2164, the
+    "(old)" class looks 2039-2042, 2044, 2051, 2052, 2064-2070, 2078, 2079, and the class and exclusive outfits 1459,
+    1505-1510, 1551-1560. Owner's choice (2026-10-20) over new seated art and over refusing the mount on the server:
+    the mount is drawn and the standing frame (pattern Z 0) is lifted by the median shift of the seated frames of 48
+    stock looks (top-left of the figure, north -9,-7; east -17,-6; south -6,-17; west -8,-9 px, times the offset
+    factor). The legs stay straight and hang over the mount's side. Wings and the top aura take their mounted shifts
+    (`riding`). A look with pattern Z 2 draws exactly as before. Applies after `0001`-`0087` (numbered 0084 on main, renumbered 0088 when merged with the branch that already had a 0084); the assembled
+    `outfit.cpp` passes `g++ -std=c++17 -fsyntax-only`. Not tried in a client run.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support

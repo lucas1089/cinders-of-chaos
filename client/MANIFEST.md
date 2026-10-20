@@ -1999,100 +1999,103 @@ Intermediate md5s (dat / spr), items after the step:
   (the owner approves after the import). The tree keeps pair 29's `Tibia.dat` md5 reference and `outfit_anchors.lua`
   until the switch-on (`ChaosPack30Art.PAIR30`, off). Not run in a client with the real pair.
 
-## Mounted frames and wings placement (pair 31, `tools/sprites/fix_mounts_wings.py`, `pair_fixes/mounts_wings.csv`; NOT on windows-assets until the owner approves)
-The owner approved two fixes found by the Shop look preview investigation. Only these looks change; nothing is
-appended to the item, effect or missile lists, and no look id changes (no server change).
-- **Mounted frames.** `Outfit::draw` draws the mount only when the rider's look has a mounted pattern (zPattern =
-  min(1, patternZ - 1), mount drawn for zPattern > 0). 43 looks of the installed outfits.xml (base server +
-  `install_outfits.py`: 293 wearable looks) had pattern Z 1, so a player wearing them never showed the mount, on the map
-  or in a preview: 1459 (Ashen Seraph), 1505-1510 (the ninja and samurai class outfits), 1551-1560 (the donor B class
-  outfits, Archmage (old) 1559 included), the class looks 2039 / 2040, 2041 / 2042, 2044, 2051 / 2052, 2060-2072,
-  2078-2081 (Monk 2080 / 2081) and 2163 / 2164 (Ranger). The earlier count of 33 left out the ten donor B looks 1551-1560
-  (one walk group, negative displacement); they are wearable too. No other wearable look lacks the pattern (the pair 29
-  Archmage 2235 / 2236 has it).
-- How the mounted frames are made (measured on the pair's 90 stock riders: outfits 128-999, 2x2, 8,8, idle 1 + walk 8,
-  pattern Z 2). The stock mounted pose is art of its own (a pixel match of the torso fails), so each look's mounted frame is
-  its own standing frame placed and cut the way the stock ones relate to theirs, per direction: head delta on screen
-  (mounted head minus standing head, the mounted frame drawn with no displacement on a stock mount) north +2.7,+2.0, east
-  -7.2,+2.0, south +2.0,-9.0, west +1.2,-0.5; trim (standing minus mounted height) 7 / 2 / 3 / 0 rows of a 31-33 row
-  figure, scaled by the look's height; walk bob of the 8 mounted walk phases (north x 1,2,1,0,..., east y -1,0,1,0,...,
-  south x -1,0,1,0,..., west y 1,2,1,0,...). Idle phases keep their animation; the walk group uses idle phase 0 plus the
-  bob (stock riders do not walk their legs); a look with only a walk group uses its phase 0. Base layer, colour mask and
-  addon patterns move and are cut alike. A rider with a negative displacement is drawn by it on a stock mount too, so
-  its frame moves by the screen delta only. Five donor B looks (1554, 1555, 1556, 1558, 1560: 3x2 or 1x2) grow one tile up
-  (1555 also one left) to hold the raised art; the standing frames keep their sprites and draw exactly as before. 1555
-  facing north: the art touches the frame's right edge, so the 3 px right move is held back. 1553 (Seraph) has one
-  direction, so it uses the south values. A look's feet anchor against the stock one is printed by `scan` and not
-  applied (the looks already stand right since things_custom21). On the five donor mounts with a negative displacement
-  the rider is drawn by its own displacement plus the seat of patch 0034 (set for stock 8,8 riders), so a rider of
-  another displacement sits that much off there, as before this change (the donor B looks 8 px right and low).
-- **Wings placement.** Every wings look of wings.xml (29: 937-941, 1177-1186, 1486, 2140-2142, 2187, 2225-2233) measured
-  against the body (the stock riders 128-131 and 136-139 as drawn with wings: the body 6 px up-left), every phase:
-  across = the mean of the art on the axis across the body (x facing north / south, y facing east / west), root = the
-  mean on the other axis of the art within 3 px of that line (where the wings meet). Targets: the medians of the base
-  wings 937-941, 1177-1184 (across north +0.1, east +1.3, south +1.3, west +0.1; root +4.0, -4.3, -4.3, +5.4). A look is
-  off when the mean across error of an axis is 4 px or more (the base wings stay within 3.9). One displacement moves all
-  four directions, and x comes from north / south, y from east / west, so the new value is old + mean error (rounded); per
-  direction differences stay (printed by `scan`). Frames are moved where a displacement cannot do it: Gravecrow 2141
-  west sat 14.7 px off while east sat 1.7 px (north, east and south frames up 13 with the displacement 13 lower, so only
-  west moves); and where a root was off, read with the contact sheets: Lullaby 938 (south root +10.5, the wings at the
-  hips; north -10.6, over the head), Runic 2187 south, Gloomgild / Sunforged 2231 / 2232 east and south, Starmoth 2233
-  north. The root is not fixed blindly: for a fan of feathers (2225-2230 facing west) it lands on a feather tip.
-  Before -> after, mean across error x (north / south), y (east / west), px:
-
-  | look | displacement | across error | frames moved |
-  |---|---|---|---|
-  | 938 Lullaby Wings | 0,0 -> 2,2 | +2.0,+2.0 -> 0.0,0.0 | north 0,+13, south 0,-8 (roots -10.6 / +10.5 -> +0.4 / +0.5) |
-  | 940 Vampire Wings | 0,0 -> -6,-6 | -6.0,-6.0 -> 0.0,0.0 | |
-  | 1185 Bride Wings | 8,8 -> -4,-4 | -12.2,-12.2 -> -0.2,-0.2 (south was -11.6 x, "to the left") | |
-  | 1186 Strenght Wings | 1,8 -> 0,-1 | -1.3,-8.9 -> -0.3,+0.1 | |
-  | 1486 Cinder Plumes | 4,5 -> 1,0 | -2.9,-4.9 -> +0.1,+0.1 | |
-  | 2141 Gravecrow Wings | none -> -4,-15 | -4.1,-8.2 -> -0.1,+0.3 | north, east, south 0,-13 (west alone moves 13 down) |
-  | 2142 Riftglass Wings | none -> -6,-6 | -5.7,-6.2 -> +0.3,-0.2 | |
-  | 2187 Runic Wings | none -> 0,-7 | -0.2,-7.0 -> -0.2,0.0 | south 0,-11 (root +4.5, +11.5 with the new value alone, -> +0.5) |
-  | 2225 Jadeleaf Pinions | none -> -6,-6 | -5.7,-6.2 -> +0.3,-0.2 | |
-  | 2226-2230 Tidewing, Duskfeather, Emberplume, Wildgrove, Bloodfeather | none -> -6,-7 | -5.9,-6.5 -> +0.1,+0.5 | |
-  | 2231 / 2232 Gloomgild / Sunforged Wings | -6,-12 -> -23,-23 | -16.8,-11.1 -> +0.2,-0.1 | east -31,0, south 0,-15 (roots +13.7 / +4.0 -> -0.3 / 0.0) |
-  | 2233 Starmoth Wings | none -> -6,-5 | -5.6,-4.6 -> +0.4,+0.4 | north 0,-21 (root +15.7 -> -0.3) |
-
-  Not changed (within the base wings' spread): 937, 939, 941 (Bark Wings: across +1.0 / +1.1, root +2.5 / 0.0 / 0.0 /
-  +1.1, at the stock place: facing north and west every small base wings, 1182 and 1184 too, covers the back down to
-  the waist), 1177-1184, 2140. The "3x3 wings 19-22 px high" are the tall base wings 1178 / 1179 and 2141 / 2142 / 2225-2233:
-  their art centre is high because they are tall; the across fix lowers the owner wings by 5-7 px.
-  Wings displacements here are negative (as 2231 / 2232 and the donor mounts had already): wings are drawn by
-  `ThingType::draw` only; no negative-displacement path of `Outfit::draw` applies to them.
+## Wings displacement (pair 31: outfits 937, 938, 1185, `tools/sprites/fix_pair_warnings.py` kind `displacement`; on windows-assets ed7db076, owner approved)
+Owner beta report (2026-10-20): "Lullaby Wings below the body, Bride Wings to the left, Fiery Wings shifted", in the
+Outfit window and on the map. The names are the base `data/XML/wings.xml` (base server download on windows-assets;
+the base tree is not in git): 1 Fiery Wings 937, 2 Lullaby Wings 938, 3 Falanaar Wings 939, 4 Vampire Wings 940,
+5 Bark Wings 941, 6 Electric Rider Wings 1177, 7 Vorondor Flames 1178, 8 Mortis Mirage 1179, 9 Angelic Wings 1180,
+10 Nimbus Wings 1181, 11 Butterfly Wings 1182, 12 Dreadbone Spectra 1183, 13 Enslaved Wings 1184, 14 Bride Wings 1185,
+15 Strenght Wings 1186 (sic). 16-29 are ours (1486, 2140-2142, 2187, 2225-2233; server/README.md "Exclusives").
+Only the dat changes: three wings get a new displacement (dat byte 25). No sprite is added or edited.
+- Draw rule (`Outfit::draw` of the base client, 1098 profile with GameWingOffset; the same in a widget and on the map):
+  the wings draw at the creature's place, the body 6, 6 up-left of it (`dest -= Point(6, 6)`), each moved back by its
+  own displacement and (w-1)*32, (h-1)*32. A wings pixel lands at (x - dx - (w-1)*32, y - dy - (h-1)*32). Body or
+  mount negative displacement uses its own pass (`usesNegativeDisplacement`); wings take no part in it, so a negative
+  wings displacement only moves the wings (GameNegativeOffset is on; 2231 / 2232 already have -6,-12).
+- Measure (`--scan-wings-displacement`, `wing_offset`): per direction the alpha-weighted mean of the wings' art (idle
+  group, every phase and layer) minus that of the body, the stock citizen look 128 (8,8, phase 0, layer 0), both drawn
+  by that rule; px, + = right / down. Facing south the stock wings sit at x -3.1..+3.9, y -21.5..-4.2: tall wings
+  further up. Premise box `WING_BOX`: |x| <= 5, -23 <= y <= 0. Pair 30, facing south:
+  937 +0.6,+1.5 (wings at the waist); 938 +2.5,+4.3 (below the waist); 1185 -11.6,-7.2 with 8,8 (12 px left; the only
+  2x2 wings with 8,8, the others use none or 0,0; N -11.7 too); 1186 -3.7,-7.7 (1,8) and 941 +2.2,-5.4 look right on
+  the sheet and stay. Also outside the box: 939 +0.3 y (0.3 px; looks right), 2233 -5.1 x (looks right) and the owner
+  art 2231 / 2232 (Gloomgild, Sunforged; -6,-12) at -12.6,-5.7: on the sheet the two wings stand apart, far left of
+  the body facing south and split facing north. Not changed here; re-centred in pair 32 ("Ornate wings re-centred").
+- Fixes (`pair_fixes/fixes.csv`, `pair_fixes/pair31_changes.csv`, picked by eye on a before / after sheet, then the
+  premise): 937 none -> 0,6 (S +0.6,-4.5; up 6 px, toward its sibling art Cinder Plumes 1486 at 4,5: -10.0);
+  938 none -> 0,8 (S +2.5,-3.7; up 8 px); 1185 8,8 -> -4,8 (S +0.4,-7.2; right 12 px, height kept).
+- `fix_pair_warnings.py`: the `displacement` kind has a wings premise for looks of `--wings-looks` (default
+  `WINGS_LOOKS`, the 29 looks above): X, Y in -32..32, any old displacement is replaced, every frame group 2x2 or
+  larger, the south centre outside `WING_BOX` with the old value and inside with the new one. Auras and player looks
+  are unchanged. New `--scan-wings-displacement [--looks IDS]`. Tests: `fix_pair_warnings_test.py`
+  `test_wings_displacement` (inserted, 8,8 replaced by a negative value, a no-op on its output, each refusal, the scan).
 
 ```
-python3 -I client/tools/sprites/fix_mounts_wings.py scan --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr \
-    --looks 1459,1505-1510,1551-1560,2039-2042,2044,2051,2052,2060-2072,2078-2081,2163,2164 \
-    --wings 937-941,1177-1186,1486,2140-2142,2187,2225-2233
-python3 -I client/tools/sprites/fix_mounts_wings.py build --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr \
-    --out-dir pair31 --expect-dat-md5 8156792438dabee3aa768663d57a1619 \
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr --scan-wings-displacement
+python3 -I client/tools/sprites/fix_pair_warnings.py --ours-dat pair30/Tibia.dat --ours-spr pair30/Tibia.spr \
+    --out-dir pair31 --expect-dat-md5 8156792438dabee3aa768663d57a1619 --link-spr \
     --changes-out client/tools/sprites/pair_fixes/pair31_changes.csv
-python3 -I client/tools/sprites/check_pair.py pair31/Tibia.dat pair31/Tibia.spr --old pair30/Tibia.dat pair30/Tibia.spr \
-    --allow-changed 'outfit:938,940,1185,1186,1459,1486,1505-1510,1551-1560,2039-2042,2044,2051,2052,2060-2072,2078-2081,2141,2142,2163,2164,2187,2225-2233'
-python3 -I client/tools/sprites/fix_mounts_wings.py sheet --dat pair31/Tibia.dat --spr pair31/Tibia.spr --out S.png \
-    --riders 128,2163,2164,2080,2081 --mounts 368,373,377,1561 [--wings IDS] [--group 1 --phase 2]
+python3 -I client/tools/sprites/check_pair.py pair31/Tibia.dat pair31/Tibia.spr \
+    --old pair30/Tibia.dat pair30/Tibia.spr --allow-changed 'outfit:937,938,1185'
 ```
-Input pair 30 (windows-assets 8075c7eb: dat 8156792438dabee3aa768663d57a1619, spr 7ca9981f628cb639a52d1316ae2d9ddc).
-Output **pair 31**: dat d2b22f0c9ddf90b6b209902491af9202 (5,781,188 bytes), spr d868f117239f0d164af774c0fd56c91a
-(769,110,545 bytes, 846,400 sprites: 4,181 appended), 38,092 items, 2,384 outfits, 854 effects, 188 missiles. 60 looks
-changed (43 mounted, 17 wings), 41,359 things byte-identical. Built twice with identical md5s and changes CSV; a run on its
-own output changes nothing. `pair_fixes/pair31_changes.csv`: 66 rows.
-- `check_pair.py`: append-only with those 60 ids: 0 errors. Full check: 0 errors, 124 warnings, those of pair 30 (333
-  more unused sprite records: the old frames of the moved wings directions).
-- `gen_outfit_anchors.py`: `outfit_anchors.lua` regenerated for pair 31 (13 lines: the dat md5, the moved wings and the
-  grown frames). The live-pair CI job checks it against windows-assets, so it fails there until pair 31 is pushed (the
-  regeneration is its own commit: drop it to keep pair 30's file). `gen_dungeon_banners.py --check` and
-  `gen_theme_art.py recolour --check` pass on pair 31.
-- `things-1098.tar.xz` like pair 30's (tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-20 00:00:00Z'
-  --format=gnu of Tibia.dat and Tibia.spr, `xz -9 -T0`, xz 5.4.5): 88,296,900 bytes, sha256
-  cbd1e58e12fbf3e87f905229f9fe9fcf42b7ed1485c43fc83a7a333c529d0f47; packed twice with the same sha256; it unpacks to the
-  md5s above. Not pushed: windows-assets keeps pair 30 until the owner approves.
-- Checked offline only: contact sheets by `sheet` (the `Outfit::draw` rule of the engine: mount by its displacement or
-  the 0034 seat, rider zPattern, wings behind facing south / east and in front facing north / west, the 6 px lift):
-  every changed look on stock mounts 368 / 373 / 377 and the donor 1561 against the stock rider 128, idle and walking,
-  and every wings look before / after. Not run in a client.
+Input pair 30 (the windows-assets archive at 8075c7e, sha256 c3a13c0f... checked against SHA256SUMS.parts; dat
+8156792438dabee3aa768663d57a1619, spr 7ca9981f628cb639a52d1316ae2d9ddc). Output **pair 31**: dat
+f139cdb4be9f692f262fe4a4587697a0 (5,726,926 bytes, +10), spr 7ca9981f628cb639a52d1316ae2d9ddc (unchanged), 38,092
+items, 2,384 outfits, 854 effects, 188 missiles. The earlier fixes.csv rows are no-ops on pair 30. 3 things changed,
+41,416 byte-identical. Built twice with identical md5s and changes csv; a run on its own output changes nothing.
+- `check_pair.py`: append-only with `outfit:937,938,1185`: 0 errors (without it: 3 errors). Full check: 0 errors, 124
+  warnings, line for line those of pair 30.
+- `things-1098.tar.xz` like pair 30's (the same tar and `xz -9 -T0` flags, mtime 2026-10-20 00:00Z; that recipe
+  rebuilds pair 30's archive to its sha256): 88,006,208 bytes, sha256
+  83075e18d35a55a59ca5c1cf73aef7740859ac002312d0d9767d15e62b2d1a52, packed twice with the same sha256; unpacks to the
+  md5s above. **On windows-assets since 2026-10-20 (ed7db076, owner approved).** No server change: the look ids stay. A client on pair 30
+  keeps drawing the three wings off.
+  `outfit_anchors.lua` (character select) regenerated from pair 31: the md5 and the rows 937, 938, 1185.
+- Checked offline: a before / after sheet, four directions, the wings on look 128 by the rule above; the owner
+  approved it. Not run in a live client by us.
+
+## Ornate wings re-centred (pair 32: outfits 2231, 2232, `tools/sprites/gen_owner_art.py` WING_SHIFT, `art_import/owner_wings_fix.csv`; on windows-assets 1f109dc0, owner approved)
+Gloomgild Wings (2231, wings.xml 27, the Nyxareth drop) and Sunforged Wings (2232, wings.xml 28, the Cinderheart drop),
+found while checking the wings for pair 31. The owner's ornate sheet draws each direction around its own point: two
+separate wings with a gap for the body, and the gap moves from column to column. Against the body (the "Wings
+displacement" rule and `wing_offset`), the displacement that would put each direction where the stock 3x3 wings
+(940, 1178, 1179, 1181, 1183, 1184, 2140-2142, 2187) sit, by the per-direction median: N -23,0, E +10,-16, S -17,-5,
+W -2,-22. Our other wings stay within about 10 px of their own value (2225, 2233). No single displacement places all
+four: pair 26's -6,-12 (chosen from the old tile-centre scan, no body) was already the best one, each direction up to
+16 px off (facing south the wings stood apart from the body, facing east in front of it). The committed art matched
+the owner's sheet pixel for pixel, so this was the source, not the cut.
+- Fix: every cell of a direction moves by whole pixels, the same for every phase (`gen_owner_art.py` `WING_SHIFT`,
+  `shift_cell`; it refuses to push art past the 96 px cell edge), and one displacement, -12,-12, places all four:
+  N +11,-12, E -22,+4, S +5,-7, W -10,+10 (displacement minus need; -12,-12 is inside the range the cells' free room
+  allows, x -23..-9, y -21..-7, and keeps the old y). No pixel is edited; the sheets `owner_art/wings_gloomgild.png`
+  and `wings_sunforged.png` are the old ones with the shift (`build --src` gives the same: the shift runs after the
+  cut). After: each direction at its stock median (S -1.6,-12.7 from the body; 2140 -2.9,-11.8).
+- `import_art_things.py`: new in-place mode. An outfit row with mode=replace and look=ID rewrites that existing outfit
+  (its sprites appended, its entry bytes replaced, the outfit count unchanged), so the look ids, wings.xml and the
+  server stay as they are; the append-only guard allows exactly those outfits. `gen_owner_art.py` writes the two rows
+  (`art_import/owner_wings_fix.csv`, covered by `build --check`). Test: `compose_outfit_test.py` (replace in place,
+  counts, the other things byte-identical, the two refusals).
+
+```
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair31/Tibia.dat --ours-spr pair31/Tibia.spr \
+    --out-dir pair32 --things client/tools/sprites/art_import/owner_wings_fix.csv --expect-items 38092
+python3 -I client/tools/sprites/check_pair.py pair32/Tibia.dat pair32/Tibia.spr \
+    --old pair31/Tibia.dat pair31/Tibia.spr --allow-changed 'outfit:2231,2232'
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair32/Tibia.dat pair32/Tibia.spr
+```
+Input pair 31 (windows-assets ed7db076). Output **pair 32**: dat 23c7265b887dfc61ac80e516490a390a (5,726,926 bytes,
+the same size: the entries keep their length), spr 8b4af2e6cf8dbcf886df1d67f349a980 (766,089,521 bytes, 842,592
+sprites, 373 appended), 38,092 items, 2,384 outfits, 854 effects, 188 missiles. Built twice with identical md5s. The
+importer verified 576 sprite slots pixel-identical to the sheets and every other thing byte-identical.
+- `check_pair.py`: append-only with `outfit:2231,2232`: 0 errors (without it: 2 errors). Full check: 0 errors, 124
+  warnings, line for line those of pair 31; INFO `spr-unused` 29,938 -> 30,270 (the two wings' old records).
+- `outfit_anchors.lua` regenerated from pair 32 with the push (the md5 and the rows 2231, 2232).
+- `things-1098.tar.xz` (the pair 30 / 31 recipe): 88,033,268 bytes, sha256
+  54405b25e7e00a6fff72e32f21f89fb34f8aee69dd66a55652e079613a8ea52b, packed twice with the same sha256. **On windows-assets
+  since 2026-10-20 (1f109dc0, owner approved).** No server change. A client on pair 31 keeps drawing the two wings off.
+- Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
+  client by us.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
@@ -2105,7 +2108,8 @@ sheet, three outfit sheets, a second moth wings sheet, two "filth" sheets).
   Server use: server/README.md "Owner art (pair 26)" (the four deep dungeon bosses and eight 1300-2000 hunt monsters).
 - Wings 2225-2233 (3x3, one group, animateAlways): six feathered wings (9 phases, 110 ms; the sheets repeat the east
   column as the west one, so west is east mirrored about the wearer's axis), two ornate wings (8 phases, 120 ms,
-  displacement -6,-12: the scan put their art 6 px left and 12 px above the other wings), moth wings (5 phases).
+  displacement -6,-12: the scan put their art 6 px left and 12 px above the other wings; re-centred per direction in
+  pair 32, -12,-12: "Ornate wings re-centred"), moth wings (5 phases).
   `fix_pair_warnings.py --scan-aura-displacement --wings 2225-2233`: art centres x -19.6..-22.5, y -18.9..-21.3 px;
   the wings already in the pair (1486, 2140-2142, 2187) span x -14.5..-20.2, y -17.8..-22.5, so ours sit up to 2.3 px
   further left, which looks right in the previews.
@@ -2582,7 +2586,8 @@ worn, with the row under the mouse applied, else the row picked.
 
 **The effect is the engine's.** The option becomes outfit fields on the preview creature (look and addons, mount,
 wings, aura, the outfit shader's name) or the outline call (`game_cosmeticfx.applyOutline`, base patch `0038`, which
-draws on a widget's own preview creature), the same paths as the map. A shader the client has not registered is left
+draws on a widget's own preview creature), the same paths as the map. The feet stand where `CharSelectCore.figure` and
+`placeRect` put them (the feet anchors of "Where a character stands"). A shader the client has not registered is left
 off with a note (the engine would draw nothing). No pictures stand in for an effect: spell and kill effects are the
 client's own effect sprites ("Cosmetics effect previews").
 
@@ -2600,11 +2605,10 @@ Checked offline against the pixel bounds drawn by those rules from the pair 30 d
 addons, mounts 1338 / 1236 / 901, wings 937 / 941 / 1185 / 1179): within 2 sprite px. The shadow is centred under
 the feet, wider for a mount (60% of the body, 22 to 60 px), also under a mounted look.
 
-**Mounts.** `Outfit::draw` draws a mount only under a rider with the mounted pattern (`zPattern = min(1, patternZ -
-1)`); a look without it stands on foot with no mount, on the map too. 33 looks of pair 30 have none, among them the
-class looks 2163 / 2164 (Ranger) and 2080 / 2081 (Monk). The preview then seats the plain figure (look 128, the
-player's colours, no addons) on the mount and says so ("Your look cannot ride: ..."). Not verified in a client which
-look the beta tester wore.
+**Mounts.** A look without a mounted pattern (pattern Z 1) rides standing, lifted onto the mount (base patch
+`0088`, `client/BASE.md`), in the preview as on the map. The preview no longer swaps such a rider for the plain
+figure (`LookPreviewCore.compose` keeps the optional `canRide` check for an engine without `0088`; the window passes
+none).
 
 **Wings.** The engine places wings the same way in the preview and on the map (one `Outfit::draw`; the UICreature only
 scales the result): the body 6 px up and left of the wings, each part moved by its own displacement. The wings that
