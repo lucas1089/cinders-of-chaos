@@ -3,7 +3,9 @@
 -- config, validation of the places file, the index, labels and sign text in both languages, the level gate, the exit
 -- lookup; then hunt_teleports.lua against a mocked engine: startup places the teleports and writes the signs, the
 -- floating labels in each reader's language, the step-in refuses a low level (back, poff, pt-BR text) and sends a player of the band to the arrival; areagen's exit
--- lookup returns the room.
+-- lookup returns the room. The ways back (cfg.returns): every hunt of tools/hall_hunts.csv without a base teleport has
+-- one, pairing with the hunt's teleport, the tile choice; startup places them, the step sends players in front of the
+-- hunt's teleport and the label floats over them.
 local checks, fails = 0, 0
 local function ok(cond, what)
 	checks = checks + 1
@@ -135,6 +137,161 @@ eq(#H.floorLabels(cfg, H.index(cfg, {back = places.back, places = places.places}
 local cfg2 = {aid = 47930, plans = {{id = "widowmere", monster = "M", minLevel = 600}}, texts = {}}
 eq(H.index(cfg2, places).list[1].minLevel, 600, "minLevel override")
 
+-- ------------------------------------------------------------------ ways back (cfg.returns)
+-- the full list: every hunt of the hall must have a way back (owner 2026-10-20: "many teleports to hunts have no
+-- teleport back"). A base hunt (a row with a place) has its own on the map (tools/check_hunt_returns.py checks the
+-- map); a planned hunt has its camp portal (the plan's `exit`); a row without a place (added to the hall, `low_*`)
+-- needs an entry in cfg.returns.
+local csvHunts, csvAdded = {}, {}
+do
+	local fh = io.open("tools/hall_hunts.csv", "r")
+	ok(fh ~= nil, "tools/hall_hunts.csv readable")
+	local header = true
+	for line in (fh and fh:lines() or function() end) do
+		if line:sub(1, 1) ~= "#" then
+			if header then
+				header = false
+			else
+				local f, pos = {}, 1
+				for _ = 1, 8 do
+					local c = line:find(",", pos, true)
+					f[#f + 1] = line:sub(pos, (c or 0) - 1)
+					pos = (c or #line) + 1
+				end
+				if f[8] == "hunt" then
+					csvHunts[f[1]] = {arrival = {x = tonumber(f[5]), y = tonumber(f[6]), z = tonumber(f[7])}}
+					if f[3] == "" then
+						csvAdded[#csvAdded + 1] = f[1]
+					end
+				end
+			end
+		end
+	end
+	if fh then
+		fh:close()
+	end
+end
+ok(#csvAdded >= 10, "the CSV's hunts without a base teleport: " .. #csvAdded)
+local listed = {}
+for _, r in ipairs(cfg.returns.list) do
+	listed[r.id] = r
+end
+for _, id in ipairs(csvAdded) do
+	ok(listed[id] ~= nil, id .. ": a hunt of the hall without a way back (add it to hunt_teleports_config.lua returns)")
+end
+eq(#H.validateReturns(cfg, csvHunts), 0, "the shipped ways back: each a hunt of the CSV, its tile 1-radius from the arrival")
+for _, p in ipairs(cfg.plans) do
+	local fh = io.open("tools/areaplan/plans/" .. p.id .. ".json", "r")
+	local text = fh and fh:read("*a") or ""
+	if fh then
+		fh:close()
+	end
+	ok(text:find('"exit"', 1, true) ~= nil, p.id .. ": the planned hunt has its camp portal (exit) back to the hall")
+end
+for k, v in pairs(csvHunts) do
+	ok(v.arrival.x and v.arrival.y and v.arrival.z, k .. ": the CSV gives the arrival")
+end
+-- validation
+local badR = {returns = {radius = 9, list = {{id = "a", at = {x = 1, y = 1, z = 7}}, {id = "a", at = {x = 1, y = 1, z = 7}},
+	{id = "b"}, {at = {x = 5, y = 5, z = 7}}, {id = "far", at = {x = 50, y = 1, z = 7}}, {id = "same", at = {x = 10, y = 10, z = 7}}}}}
+local probs = H.validateReturns(badR, {a = {arrival = {x = 2, y = 1, z = 7}}, b = {}, far = {arrival = {x = 1, y = 1, z = 7}},
+	same = {arrival = {x = 10, y = 10, z = 7}}})
+-- radius; a twice; a shares its tile; b no at; the unnamed: no id, not a hunt; far and same out of reach
+eq(#probs, 8, "bad ways back: " .. table.concat(probs, "; "))
+eq(#H.validateReturns({}, nil), 0, "no returns: nothing to check")
+-- pairing: each way back with its hunt's teleport in the hall, wherever the hall order put it
+local rcfg = {room = cfg.room, returns = {radius = 4, list = {
+	{id = "low_a", at = {x = 1001, y = 1000, z = 9}},
+	{id = "low_b"},
+	{id = "plan_c", at = {x = 2001, y = 2000, z = 8}},
+	{id = "low_gone", at = {x = 1, y = 1, z = 7}},
+	{id = "low_other_floor", at = {x = 3001, y = 3000, z = 7}}}}, plans = {}}
+local rplaces = {back = {x = 31648, y = 32256, z = 6}, places = {
+	{id = "plan_c", name = "C", level = {1, 2}, teleport = {x = 31610, y = 32258, z = 6}, arrival = {x = 2000, y = 2000, z = 8},
+		exit = {x = 2002, y = 2000, z = 8}, front = {x = 31610, y = 32257, z = 6}}},
+	base = {
+		{id = "low_a", name = "A", level = {4, 10}, teleport = {x = 31630, y = 32254, z = 7}, dest = {x = 1000, y = 1000, z = 9}},
+		{id = "low_b", name = "B", level = {4, 10}, teleport = {x = 31634, y = 32258, z = 7}, dest = {x = 1500, y = 1500, z = 9}},
+		{id = "low_other_floor", name = "O", level = {4, 10}, teleport = {x = 31638, y = 32258, z = 7}, dest = {x = 3000, y = 3000, z = 8}}
+	}}
+local ridx = H.index(rcfg, rplaces)
+eq(#ridx.returns, 3, "paired: a, b and c; the hunt not in the hall and the `at` on another floor are left out")
+local ra = ridx.returns[1]
+ok(ra.id == "low_a" and ra.target.x == 31630 and ra.target.y == 32255 and ra.target.z == 7,
+	"a north-row hunt: back to the tile below its teleport, on its floor")
+ok(ra.arrival.x == 1000 and ra.at.x == 1001, "arrival from the places file, the tile from the config")
+local rb = ridx.returns[2]
+ok(rb.id == "low_b" and rb.target.y == 32257 and rb.at == nil, "a south-row hunt: the tile above; no `at`: picked")
+local rc = ridx.returns[3]
+ok(rc.id == "plan_c" and rc.target.x == 31610 and rc.target.y == 32257 and rc.target.z == 6, "a planned hunt: its front")
+ridx.byReturn["1001,1000,9"] = ra
+local t = H.returnFor(ridx, {x = 1001, y = 1000, z = 9})
+ok(t and t.x == 31630 and t.y == 32255, "returnFor the way back's tile")
+eq(H.returnFor(ridx, {x = 1002, y = 1000, z = 9}), nil, "another tile: nothing")
+eq(H.returnFor(nil, {x = 1, y = 1, z = 1}), nil, "no index: nothing")
+eq(H.returnLabel(cfg, "en"), "Back to the teleport room", "label en")
+eq(H.returnLabel(cfg, "pt-BR"), "Voltar à sala de teleportes", "label pt-BR")
+eq(#H.index(rcfg, {back = rplaces.back}).returns, 0, "no places: no ways back")
+-- the tile choice. A map drawn as text: '#' no tile or blocked, '.' free, ',' walkable with something on it,
+-- 'S' stairs, 'P' protection zone (walkable, no spot), 'A' the arrival (free)
+local function grid(rows, z)
+	local cells = {}
+	for y, row in ipairs(rows) do
+		for x = 1, #row do
+			local c = row:sub(x, x)
+			if c ~= "#" then
+				cells[x .. "," .. y] = {walk = c ~= "S", spot = c == "." or c == "A"}
+			end
+		end
+	end
+	return function(p)
+		return p.z == (z or 7) and cells[p.x .. "," .. p.y] or nil
+	end
+end
+local function at(p)
+	return p and (p.x .. "," .. p.y) or "nil"
+end
+local room = grid({
+	"#####",
+	"#...#",
+	"#.A.#",
+	"#...#",
+	"#####"})
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, room)), "2,2", "an open room: the nearest, north-west first")
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, room, {x = 4, y = 4, z = 7})), "4,4", "the config's tile when it fits")
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, room, {x = 3, y = 3, z = 7})), "2,2", "never the arrival itself")
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, room, {x = 9, y = 9, z = 7})), "2,2", "a config tile that is not reached: picked")
+-- a one-tile corridor with a nook: its tiles would block the way (a diagonal step past a corner does not count); the
+-- nook and the dead end do not
+local corridor = grid({
+	"#######",
+	"#A....#",
+	"####.##",
+	"#######"})
+eq(at(H.pickReturnTile({x = 2, y = 2, z = 7}, 4, corridor)), "5,3", "a corridor: not on the way, the nook beside it")
+ok(H.cutsWay({x = 3, y = 2, z = 7}, corridor), "a corridor tile splits the way")
+ok(not H.cutsWay({x = 6, y = 2, z = 7}, corridor), "a dead end does not")
+ok(not H.cutsWay({x = 5, y = 3, z = 7}, corridor), "the nook does not")
+ok(H.cutsWay({x = 5, y = 2, z = 7}, corridor), "the junction does")
+-- stairs, protection zone, things lying on a tile, a wall between
+local busy = grid({
+	"#########",
+	"#S,P#...#",
+	"#,A,#...#",
+	"#.,.....#",
+	"#########"})
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, busy)), "2,4", "not the stairs, the protection zone or a tile with things on it")
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 4, busy, {x = 2, y = 2, z = 7})), "2,4", "the config's tile on stairs: picked")
+eq(at(H.pickReturnTile({x = 2, y = 2, z = 7}, 1, grid({"###", "#A#", "###"}))), "nil", "no tile: nil")
+eq(at(H.pickReturnTile({x = 3, y = 3, z = 7}, 1, busy)), "2,4", "within the radius")
+eq(at(H.pickReturnTile({x = 2, y = 2, z = 7}, 4, grid({"####", "#A,#", "#,,#", "####"}))), "nil", "only busy tiles: nil")
+local behind = grid({
+	"#######",
+	"#,A,#.#",
+	"#,,,#.#",
+	"#######"})
+eq(at(H.pickReturnTile({x = 3, y = 2, z = 7}, 4, behind)), "nil", "a free tile behind a wall is not reached")
+
 -- ------------------------------------------------------------------ the engine file, mocked
 local tiles = {}
 local function pkey(p)
@@ -154,10 +311,19 @@ local function newItem(id)
 	end
 	return it
 end
-local function addTile(p, items)
-	local t = {items = items or {}}
+local function addTile(p, items, flags)
+	local t = {items = items or {}, flags = flags or {}}
 	function t:getGround()
 		return true
+	end
+	function t:hasFlag(f)
+		return self.flags[f] == true
+	end
+	function t:getHouse()
+		return nil
+	end
+	function t:getDownItemCount()
+		return self.down or 0
 	end
 	function t:getItemById(id)
 		for _, it in ipairs(self.items) do
@@ -170,6 +336,8 @@ local function addTile(p, items)
 	return t
 end
 ITEM_ATTRIBUTE_DESCRIPTION, ITEM_ATTRIBUTE_TEXT, MESSAGE_EVENT_ADVANCE = "desc", "text", 19
+TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE, TILESTATE_TELEPORT, TILESTATE_MAGICFIELD = "pz", "fc", "tp", "mf"
+TILESTATE_BLOCKSOLID, TILESTATE_BLOCKPATH = "bs", "bp"
 function Position(x, y, z)
 	local p = {x = x, y = y, z = z}
 	function p:sendMagicEffect(e)
@@ -241,12 +409,46 @@ print = function(s)
 end
 addTile({x = 110, y = 98, z = 6})
 addTile({x = 110, y = 96, z = 6}, {newItem(5360)})
+-- an added hunt of the hall (the config's first way back) at its slot on the ground floor's north row, its arrival
+-- in an open cave: the way back goes on the config's tile
+local ret1 = cfg.returns.list[1]
+local rArr = {x = ret1.at.x - 1, y = ret1.at.y + 1, z = ret1.at.z}
+places.base[#places.base + 1] = {id = ret1.id, name = "Rat", level = {4, 5}, teleport = {x = 31630, y = 32254, z = 7},
+	dest = rArr}
+for dy = -4, 4 do
+	for dx = -4, 4 do
+		addTile({x = rArr.x + dx, y = rArr.y + dy, z = rArr.z})
+	end
+end
+-- the second one's arrival: its config tile has something on it, so the nearest free tile is taken
+local ret2 = cfg.returns.list[2]
+local rArr2 = {x = ret2.at.x + 1, y = ret2.at.y + 1, z = ret2.at.z}
+places.base[#places.base + 1] = {id = ret2.id, name = "Dworc", level = {9, 15}, teleport = {x = 31634, y = 32258, z = 7},
+	dest = rArr2}
+for dy = -4, 4 do
+	for dx = -4, 4 do
+		addTile({x = rArr2.x + dx, y = rArr2.y + dy, z = rArr2.z})
+	end
+end
+tiles[pkey(ret2.at)].down = 1
 addTile({x = 120, y = 96, z = 6}, {newItem(5360)})
 dofile("data/scripts/chaos/hunt_teleports.lua")
 registered.startup.onStartup()
 print = realPrint
-eq(#created, 1, "one teleport created")
+eq(#created, 3, "one hall teleport and two ways back created")
 eq(created[1].aid, 47930, "with the aid")
+eq(tiles[pkey(ret1.at)].items[1], created[2], "the first way back on the config's tile")
+eq(created[2].aid, cfg.aid, "the way back has the hall's action id")
+ok(created[2].attrs.desc:find("Back to the teleport room", 1, true) ~= nil, "the way back's description")
+local moved = ChaosHuntTeleports.idx.returns[2].pos
+ok(moved and pkey(moved) ~= pkey(ret2.at) and moved.z == ret2.at.z
+	and math.max(math.abs(moved.x - rArr2.x), math.abs(moved.y - rArr2.y)) == 1,
+	"the config's tile taken: the nearest free tile beside the arrival")
+local warned = false
+for _, line in ipairs(printed) do
+	warned = warned or (tostring(line):find("its `at` is not free", 1, true) ~= nil)
+end
+ok(warned, "the log names a way back that stands off its config tile")
 ok(created[1].attrs.desc:find("Widowmere, levels 480-640", 1, true) ~= nil, "description")
 eq(tiles["110,96,6"].items[1].attrs.text, "Widowmere, levels 480-640\nWidowmere, níveis 480-640", "sign written")
 eq(registered.step.aidv, 47930, "step-in registered on the aid")
@@ -255,7 +457,7 @@ eq(tiles["120,96,6"].items[1].attrs.text, "Rat, levels 1-20\nRat, níveis 1-20",
 print = function() end
 registered.startup.onStartup()
 print = realPrint
-eq(#created, 1, "startup again: no second teleport")
+eq(#created, 3, "startup again: no second teleport, no second way back")
 io.open, dofile = realOpen, realDofile
 
 local function player(level, lang)
@@ -319,6 +521,24 @@ for _, m in ipairs(said) do
 	end
 end
 ok(esay ~= nil and esay[1] == "Missões", "the label where the aisle meets the way to the quest hall")
+-- the way back: in front of the hunt's teleport (north row: the tile below), with the teleport effect
+local walker = player(5, "en")
+registered.step.onStepIn(walker, created[2], Position(ret1.at.x, ret1.at.y, ret1.at.z), Position(rArr.x, rArr.y, rArr.z))
+eq(pkey(walker.pos), "31630,32255,7", "the way back leads in front of the hunt's teleport")
+eq(effects[#effects][2], cfg.effects.go, "with the teleport effect")
+local rsaid = {}
+local near = player(5, "pt-BR")
+function near:say(text, kind, ghost, to, pos)
+	rsaid[#rsaid + 1] = {text, kind, pkey(pos)}
+end
+local oldSpec = Game.getSpectators
+Game.getSpectators = function(pos)
+	return pkey(pos) == pkey(ret1.at) and {near} or {}
+end
+fl.onThink()
+Game.getSpectators = oldSpec
+ok(#rsaid == 1 and rsaid[1][1] == "Voltar à sala de teleportes" and rsaid[1][2] == TALKTYPE_MONSTER_SAY
+	and rsaid[1][3] == pkey(ret1.at), "the way back's label floats over it in the reader's language (orange monster say)")
 local back = ChaosHuntTeleports.backFor({x = 500, y = 498, z = 8})
 ok(back and back.x == 110 and back.y == 99 and back.z == 6, "areagen exit lookup returns the tile in front of its teleport")
 

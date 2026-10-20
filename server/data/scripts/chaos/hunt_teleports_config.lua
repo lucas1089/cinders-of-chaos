@@ -153,6 +153,33 @@ return {
 		{id = "hollow_crypt", monster = "Sopping Carcass"}
 	},
 
+	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",
+	-- "Ways back from the added hunts"). The base hunts have their way back on the map beside the arrival (checked on
+	-- the base map: 35 of 35) and the planned hunts their camp portal (areagen exit, ChaosHuntTeleports.backFor). The
+	-- hunts added to the hall without a base teleport (hall_hunts.csv rows without a place, `low_*`) had none. At
+	-- startup each one listed here gets a magic forcefield (items.portal, action id `aid`) on `at` that leads in front
+	-- of the hunt's own teleport of the hall, wherever the hall order put it, and the label "Back to the teleport room"
+	-- floats over it like the hall's labels. `at`: chosen on the base map with ChaosHuntTeleportsCore.pickReturnTile
+	-- (reached on foot from the arrival, a free tile: no stairs, no protection zone, no house, nothing on it, not
+	-- splitting a corridor). When `at` cannot take it on the live map, startup picks the nearest such tile within
+	-- `radius` of the arrival. tests/hunt_teleports_test.lua fails when a hunt of the CSV without a base teleport is
+	-- missing here; tools/check_hunt_returns.py checks the map.
+	returns = {
+		radius = 4,
+		list = {
+			{id = "low_rat_warren", at = {x = 32367, y = 32213, z = 8}},
+			{id = "low_dworc_burrow", at = {x = 32700, y = 32932, z = 9}},
+			{id = "low_orc_stronghold", at = {x = 32310, y = 32124, z = 10}},
+			{id = "low_chakoya_caves", at = {x = 32461, y = 31089, z = 10}},
+			{id = "low_minotaur_hold", at = {x = 32415, y = 32168, z = 15}},
+			{id = "low_jungle_camp", at = {x = 32769, y = 32503, z = 9}},
+			{id = "low_tomb_vaults", at = {x = 33151, y = 32973, z = 14}},
+			{id = "low_dwarf_mines", at = {x = 32503, y = 31952, z = 14}},
+			{id = "low_quara_grotto", at = {x = 32073, y = 32769, z = 12}},
+			{id = "low_clay_hollow", at = {x = 32219, y = 32578, z = 12}}
+		}
+	},
+
 	-- texts: the English one is the key; pt-BR beside it
 	texts = {
 		["pt-BR"] = {
@@ -162,6 +189,7 @@ return {
 			["Floor %d: levels %d+"] = "Andar %d: níveis %d+",
 			["Up: floor %d, levels %d+"] = "Acima: andar %d, níveis %d+",
 			["Quests"] = "Missões",
+			["Back to the teleport room"] = "Voltar à sala de teleportes",
 			["%s is for level %d and above."] = "%s é para nível %d ou mais.",
 			["%s: monsters of level %d-%d. The portal at the camp leads back to the teleport room."] =
 				"%s: monstros de nível %d-%d. O portal do acampamento leva de volta à sala de teleportes."

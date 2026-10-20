@@ -116,7 +116,7 @@ end
 -- arrival, exit, front, monster}; the config's entry of a plan (when it has one) gives minLevel and the display
 -- monster; front (where the exit sends players back) is the places file's, else H.frontOf the teleport
 function H.index(cfg, places)
-	local idx = {byTeleport = {}, byExit = {}, list = {}, back = places and places.back}
+	local idx = {byTeleport = {}, byExit = {}, list = {}, back = places and places.back, returns = {}, byReturn = {}}
 	if type(places) ~= "table" or type(places.places) ~= "table" then
 		return idx
 	end
@@ -143,9 +143,11 @@ function H.index(cfg, places)
 	for _, e in ipairs(type(places.base) == "table" and places.base or {}) do
 		if isPos(e.teleport) and type(e.level) == "table" then
 			idx.base[#idx.base + 1] = {id = e.id, name = e.name or e.id, level = {e.level[1], e.level[2]},
-				teleport = e.teleport, sign = e.sign}
+				teleport = e.teleport, sign = e.sign, arrival = isPos(e.dest) and e.dest or nil,
+				front = H.frontOf(cfg, e.teleport)}
 		end
 	end
+	H.indexReturns(cfg, idx)
 	for _, f in ipairs(type(places.floors) == "table" and places.floors or {}) do
 		if type(f.z) == "number" and type(f.level) == "table" then
 			idx.floors[f.z] = {f.level[1], f.level[2]}
@@ -265,6 +267,180 @@ function H.backFor(idx, pos)
 		return nil
 	end
 	return e.front or idx.back
+end
+
+-- ------------------------------------------------------------------ ways back (cfg.returns)
+-- Owner, 2026-10-20: "many teleports to hunts have no teleport back". The base hunts have their way back on the map
+-- and the planned hunts their camp portal; the hunts added to the hall without a base teleport (hall_hunts.csv rows
+-- without a place) have none. cfg.returns lists them: startup puts a teleport beside the arrival that leads back in
+-- front of the hunt's own teleport of the hall, wherever the hall order put it.
+
+-- problems of cfg.returns (strings); `hunts` (optional): {id = {arrival = pos}} of the hall's hunts to check against
+function H.validateReturns(cfg, hunts)
+	local out = {}
+	local r = cfg and cfg.returns
+	if r == nil then
+		return out
+	end
+	if type(r.radius) ~= "number" or r.radius < 1 or r.radius > 6 then
+		out[#out + 1] = "returns.radius must be 1-6"
+	end
+	local ids, tiles = {}, {}
+	for i, e in ipairs(r.list or {}) do
+		local name = tostring(e.id or ("returns[" .. i .. "]"))
+		if type(e.id) ~= "string" then
+			out[#out + 1] = name .. ": no id"
+		elseif ids[e.id] then
+			out[#out + 1] = name .. ": listed twice"
+		end
+		ids[e.id or name] = true
+		if not isPos(e.at) then
+			out[#out + 1] = name .. ": no `at` tile"
+		else
+			if tiles[key(e.at)] then
+				out[#out + 1] = name .. ": shares its tile with " .. tiles[key(e.at)]
+			end
+			tiles[key(e.at)] = name
+			local h = hunts and hunts[e.id]
+			if hunts and not h then
+				out[#out + 1] = name .. ": not a hunt of the hall"
+			elseif h and isPos(h.arrival) then
+				local a = h.arrival
+				local d = math.max(math.abs(a.x - e.at.x), math.abs(a.y - e.at.y))
+				if a.z ~= e.at.z or d < 1 or d > (tonumber(r.radius) or 0) then
+					out[#out + 1] = name .. ": `at` must be 1-" .. tostring(r.radius) .. " tiles from the arrival, same floor"
+				end
+			end
+		end
+	end
+	return out
+end
+
+-- pairs each entry of cfg.returns.list with its hunt in the index (a placed plan of idx.list or a base hunt of
+-- idx.base, by id): idx.returns = {{id, name, at, arrival, target}}, target the tile in front of the hunt's teleport.
+-- A hunt without a teleport in the hall (not installed) gets no way back. idx.byReturn is filled by the engine with
+-- the tile each one stands on.
+function H.indexReturns(cfg, idx)
+	idx.returns, idx.byReturn = {}, {}
+	local byId = {}
+	for _, list in ipairs({idx.list or {}, idx.base or {}}) do
+		for _, e in ipairs(list) do
+			byId[e.id] = e
+		end
+	end
+	for _, r in ipairs(cfg.returns and cfg.returns.list or {}) do
+		local e = byId[r.id]
+		local target = e and (e.front or H.frontOf(cfg, e.teleport))
+		local arrival = e and (e.arrival or e.dest)
+		if e and isPos(target) and isPos(arrival) and (not isPos(r.at) or r.at.z == arrival.z) then
+			idx.returns[#idx.returns + 1] = {id = r.id, name = e.name, at = isPos(r.at) and r.at or nil,
+				arrival = arrival, target = target}
+		end
+	end
+	return idx.returns
+end
+
+-- where the way back at `pos` sends players: the tile in front of its hunt's teleport; nil for another tile
+function H.returnFor(idx, pos)
+	local r = isPos(pos) and idx and idx.byReturn and idx.byReturn[key(pos)]
+	return r and r.target or nil
+end
+
+-- the floating label over a way back, in `lang`
+function H.returnLabel(cfg, lang)
+	return H.text(cfg, lang, "Back to the teleport room")
+end
+
+-- the 8 tiles around p
+local function around(p)
+	local out = {}
+	for dy = -1, 1 do
+		for dx = -1, 1 do
+			if dx ~= 0 or dy ~= 0 then
+				out[#out + 1] = {x = p.x + dx, y = p.y + dy, z = p.z}
+			end
+		end
+	end
+	return out
+end
+
+-- true when a teleport on p would split the walkable tiles around it: the walkable ones of its 8 neighbours must all
+-- reach each other through neighbours side by side (no diagonal squeeze past the corner), else p is a corridor, a
+-- junction or a door and the teleport would block the way. info(pos) -> {walk, spot} or nil (see H.pickReturnTile).
+function H.cutsWay(p, info)
+	local walk = {}
+	for _, q in ipairs(around(p)) do
+		local i = info(q)
+		if i and i.walk then
+			walk[#walk + 1] = q
+		end
+	end
+	if #walk == 0 then
+		return true
+	end
+	local seen, stack, n = {[1] = true}, {1}, 1
+	while #stack > 0 do
+		local a = walk[table.remove(stack)]
+		for j, b in ipairs(walk) do
+			if not seen[j] and math.abs(a.x - b.x) + math.abs(a.y - b.y) == 1 then
+				seen[j] = true
+				n = n + 1
+				stack[#stack + 1] = j
+			end
+		end
+	end
+	return n < #walk
+end
+
+-- the tile for the way back of a hunt arriving at `arrival`: a tile a player reaches from the arrival on foot within
+-- `radius` tiles (8 directions, through walkable tiles), not the arrival itself, fit for a teleport (spot: walkable,
+-- no stairs or hole, no protection zone, no house, no teleport, nothing lying on it) and not splitting the way
+-- (H.cutsWay). `prefer` (the config's `at`) wins when it qualifies; else the nearest on foot, then north to south,
+-- west to east. info(pos) -> {walk = bool, spot = bool} or nil (no tile). Returns the tile or nil.
+function H.pickReturnTile(arrival, radius, info, prefer)
+	if not isPos(arrival) then
+		return nil
+	end
+	local steps, order = {[key(arrival)] = 0}, {}
+	local queue, head = {arrival}, 1
+	while head <= #queue do
+		local p = queue[head]
+		head = head + 1
+		for _, q in ipairs(around(p)) do
+			local k = key(q)
+			if not steps[k] and math.max(math.abs(q.x - arrival.x), math.abs(q.y - arrival.y)) <= radius then
+				local i = info(q)
+				if i and i.walk then
+					steps[k] = steps[key(p)] + 1
+					queue[#queue + 1] = q
+					order[#order + 1] = q
+				end
+			end
+		end
+	end
+	local function fits(q)
+		local i = info(q)
+		return steps[key(q)] ~= nil and steps[key(q)] > 0 and i and i.spot and not H.cutsWay(q, info)
+	end
+	if isPos(prefer) and prefer.z == arrival.z and fits(prefer) then
+		return prefer
+	end
+	table.sort(order, function(a, b)
+		local sa, sb = steps[key(a)], steps[key(b)]
+		if sa ~= sb then
+			return sa < sb
+		end
+		if a.y ~= b.y then
+			return a.y < b.y
+		end
+		return a.x < b.x
+	end)
+	for _, q in ipairs(order) do
+		if fits(q) then
+			return q
+		end
+	end
+	return nil
 end
 
 return H

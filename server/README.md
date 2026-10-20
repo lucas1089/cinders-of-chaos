@@ -14472,7 +14472,7 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   20 display spawns, 87 s; a second run changes nothing.
 
 **In game.** At startup `hunt_teleports.lua` puts a magic forcefield (1387) with action id **47930** (block
-**47930-47939**, the rest free) on each slot of a placed plan, gives it a description and writes the sign behind it
+**47930-47939**, the rest free; the ways back of the added hunts share it, "Hall order") on each slot of a placed plan, gives it a description and writes the sign behind it
 ("Widowmere, levels 480-640" and the pt-BR line). Every `floatText.interval` ms the label floats over each teleport for
 the players near it, each in their own language (the base room labels its teleports the same way). Stepping in below
 the floor of the band (`minLevel` overrides it): back where the player came from, a poff and "Widowmere is for level
@@ -14652,6 +14652,35 @@ west to east (north before south in a column). A floor with too few slots is gro
     map, but for the tiles east of the pond the base map has none (now water); no hole or groundless tile on floor 7
     that the base map did not have, every way back leads in front of a teleport that leads back near it; a second run
     changes nothing (same map hash), on both.
+  - *Ways back from the added hunts* (owner, 2026-10-20: "many teleports to hunts have no teleport back"). Checked on
+    the base map (2026-10-20): the hall has 62 hunts. The 35 base hunts each have their way back one to three tiles
+    from the arrival (after the install every one leads in front of the hunt's teleport); the 17 planned hunts have
+    their camp portal (`exit`, `ChaosHuntTeleports.backFor`); the 10 low-level hunts (`low_*`, added to the hall with
+    no base teleport) had none: a player had to walk out of the cave. Now `hunt_teleports_config.lua` `returns` lists
+    them: at startup `hunt_teleports.lua` puts a magic forcefield (1387, action id 47930, the hall teleports' own) on
+    the entry's `at` tile, gives it the description "Back to the teleport room" and floats that label over it like the
+    hall's labels (orange monster say, each reader's language; pt-BR "Voltar à sala de teleportes"). Stepping on it
+    leads, with the teleport effect, to the tile in front of the hunt's own teleport of the hall, read from the places
+    file (`base`: the slot the hall order gave it), so it follows a new order without a change here. The `at` tiles
+    were chosen on the base map with the same rule startup falls back to when `at` is not free on the live map
+    (`ChaosHuntTeleportsCore.pickReturnTile`, radius `returns.radius` 4): reached on foot from the arrival (not the
+    arrival itself), ground and nothing blocking, no stairs, ramp or hole, no protection zone, no house, no teleport
+    or field, nothing lying on it (borders and tops are fine), and not splitting the way: the walkable tiles around
+    it still reach each other side by side (`cutsWay`; a corridor, a junction or a door is refused, a nook or an open
+    floor is fine). All ten are one tile from the arrival (Rat warren 32367,32213,8; Dworc burrow 32700,32932,9; Orc
+    stronghold 32310,32124,10; Chakoya caves 32461,31089,10; Minotaur hold 32415,32168,15; Jungle camp 32769,32503,9;
+    Tomb vaults 33151,32973,14; Dwarf mines 32503,31952,14; Quara grotto 32073,32769,12; Clay hollow 32219,32578,12).
+    A way back that cannot be placed is logged ("no free tile within 4"), one that stands off its `at` too. A second
+    startup keeps the one there. No map edit and no new install step: the places file of `contentareas` already lists
+    these hunts under `base`.
+    Checks: `tests/hunt_teleports_test.lua` reads `tools/hall_hunts.csv` and fails when a hunt without a base teleport
+    has no `returns` entry or an entry's `at` is off its arrival (and when a plan has no `exit`); the tile rule, the
+    pairing (north row: the tile below the teleport, south row: above, a planned hunt: its `front`) and the engine
+    file against a mock. `tools/check_hunt_returns.py DATA_DIR [--map FILE]` reads the installed map: every CSV hunt
+    needs a map teleport within 4 tiles of its arrival into the hall (with the places file: in front of the hunt's
+    teleport now) or a `returns` entry whose tile is free there, and every placed plan its `exit`; exit 1 otherwise
+    (`tools/check_hunt_returns_test.py`). Run on a copy of the base map after `install_content_areas.py`: 45 of 45
+    CSV hunts (35 on the map in front of their teleport, 10 at startup on their `at`) and 17 of 17 camp portals.
   - *Where the quests are.* The owner: "the quests should be further down, where the daily and weekly rewards are",
     then, on the minimap, the hall over the pond "looks ugly; you can overwrite this green region". The quests now
     stand in the plaza itself (above); the hall over the pond is taken away (`previous`).
