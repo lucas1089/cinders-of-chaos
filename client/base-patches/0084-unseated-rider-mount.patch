@@ -1,0 +1,61 @@
+# Mounts for looks without a mounted pattern (client/BASE.md 0084): Outfit::draw drew a mount only when the look had pattern Z 2, so 43 wearable looks of pair 30 (class looks Mystic, Elementalist, Samurai, Monk, Ranger and others) showed no mount when mounted. Such a look now rides: the mount is drawn and the standing frame (pattern Z 0) is lifted by the median shift of a stock seated frame per direction (north -9,-7; east -17,-6; south -6,-17; west -8,-9 px). Wings and the top aura take their mounted shifts too. Looks with pattern Z 2 draw exactly as before.
+--- a/src/client/outfit.cpp
++++ b/src/client/outfit.cpp
+@@ -151,6 +151,10 @@
+     }
+ 
+     int zPattern = m_mount > 0 ? std::min<int>(1, type->getNumPatternZ() - 1) : 0;
++    // Cinders of Chaos (base patch 0084): a look without a mounted pattern (pattern Z 1) still rides. The mount is
++    // drawn and the standing figure is lifted onto it by the shift a stock seated frame has (client/BASE.md).
++    const bool unseatedRider = m_mount > 0 && zPattern == 0 && m_category == ThingCategoryCreature;
++    const bool riding = zPattern > 0 || unseatedRider;
+     // Cinders of Chaos: the silhouette outline, queued under the mount and the body; collects their parts
+     DrawQueueItemOutfitOutline* outline = nullptr;
+     auto addOutlinePart = [&](DrawQueueItem* item, ThingType* partType, int partPhase) {
+@@ -165,7 +169,7 @@
+     auto drawMount = [&] {
+         // The isolated editor preview must not depend on the base outfit
+         // exposing a mounted Z pattern. Normal in-game rendering is unchanged.
+-        if (m_mount > 0 && (zPattern > 0 || mountOnly)) {
++        if (m_mount > 0 && (riding || mountOnly)) {
+             int mountAnimationPhase = walkAnimationPhase;
+             auto mountType = g_things.rawGetThingType(m_mount, ThingCategoryCreature);
+             auto idleAnimator = mountType->getIdleAnimator();
+@@ -368,6 +372,10 @@
+     drawMount();
+     if (mountOnly)
+         return;
++    if (unseatedRider) {
++        static const Point seatedShift[4] = { Point(-9, -7), Point(-17, -6), Point(-6, -17), Point(-8, -9) };
++        dest += seatedShift[direction <= Otc::West ? direction : Otc::South] * g_sprites.getOffsetFactor();
++    }
+ 
+     if (m_wings && (direction == Otc::South || direction == Otc::East)) {
+         auto wingsType = g_things.rawGetThingType(m_wings, ThingCategoryCreature);
+@@ -397,7 +405,7 @@
+                 wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
+             }
+         }
+-        if (g_game.getFeature(Otc::GameWingOffset) && zPattern > 0) {
++        if (g_game.getFeature(Otc::GameWingOffset) && riding) {
+             if (direction == Otc::East)
+                 wingDest -= Point(6, 2) * g_sprites.getOffsetFactor();
+             else
+@@ -480,7 +488,7 @@
+                 wingDest = dest + boneOffset * g_sprites.getOffsetFactor();
+             }
+         }
+-        if (g_game.getFeature(Otc::GameWingOffset) && zPattern > 0)
++        if (g_game.getFeature(Otc::GameWingOffset) && riding)
+             wingDest += Point(4, 6);
+ 
+         drawWings();
+@@ -488,7 +496,7 @@
+     
+     if (m_aura && (g_game.getFeature(Otc::GameDrawAuraOnTop) || g_game.getFeature(Otc::GameAuraFrontAndBack))) {
+         if (g_game.getFeature(Otc::GameAuraFrontAndBack)){
+-            if (zPattern > 0) {
++            if (riding) {
+                 if (direction == Otc::East)
+                     topAuraDest -= Point(12, 6) * g_sprites.getOffsetFactor();
+                 else if (direction == Otc::South)
