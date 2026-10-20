@@ -11660,7 +11660,7 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   | Teeming | +20-50% packs | 80, 1+ | quantity 0.5x, experience 0.3x |
   | Gilded Trail (boon) | 30-70% chance that the existing Treasure Goblin (`ChaosTreasureGoblin.spawn`) appears in a random open room after 25-60% of the kills, at the level of the strongest type | 40, 1+ | - |
   | Warbands | 10-30% of packs: every member rare, the first legendary | 60, 2+ | rarity 1x, quantity 0.3x |
-  | Sealed Coffer (boon) | 40-100% chance of a coffer (treasure chest 1746, action id 47403) in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 2,000 x tier^2, Orbs of Upheaval 0.25 + 0.05 x tier, Orbs of Fate 0.03 x tier and 2 + 0.25 x tier item rolls, all x quantity and x the party's loot bonus (one coffer for the party). An unwoken coffer crumbles at the seal | 50, 1+ | - |
+  | Sealed Coffer (boon) | 40-100% chance of a coffer (big treasure chest 12664, action id 47403; "Reward chests") in an open room. Using it wakes 5 (+1 per extra player) magic+ rift monsters, which do not count towards the guardian. Once they are dead it opens with coins worth 2,000 x tier^2, Orbs of Upheaval 0.25 + 0.05 x tier, Orbs of Fate 0.03 x tier and 2 + 0.25 x tier item rolls, all x quantity and x the party's loot bonus (one coffer for the party). An unwoken coffer crumbles at the seal | 50, 1+ | - |
   | Twin Guardians | two guardians, each with 55-75% of the guardian health; both must die | 50, 3+ | rarity 0.25x, quantity 0.2x |
   | Echoing Spoils (boon) | 5-15% of kills: every corpse item is copied once (onDropLoot 1.5, before the loot snapshot so rays and autoloot see the copies; Rift Keys are not copied) | 35, 2+ | - |
   | Cinderdeath | 1.5 s after a kill, players within 1 sqm take fire damage: 5-15% of the monster's max health, at most 300 + 150 x tier | 70, 3+ | quantity 1.2x, rarity 0.8x |
@@ -11856,8 +11856,8 @@ storages 7100400-7100409, action ids 47401 (key), 47402 (reward chest) and 47403
   rift, legendary, with 3x its base health (+100% per extra player). With a party every pack monster gets more health
   too, so the rift's total monster health is +100% per extra player (see "Party scaling"). Time limit 12-15 minutes by the map's size. The HUD (top left, under the
   character plate) shows tier, theme, time left, kills / left, the guardian, the modifiers and the bonuses.
-- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a chest (1740, action id 47402)
-  appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
+- **End.** Guardian killed in time: the rift is sealed, the remaining monsters vanish, a reward chest (21584, action id 47402,
+  "Reward chests") appears where it died and every finisher may open it once within 60 s; whoever did not gets it delivered at the exit
   (or at the next login when offline). Time up: "the rift collapses", everyone is sent back to where they used the key,
   the key is lost. Death inside: the normal death rules (temple, losses), the player is out of the run. Logout inside: the
   player is put back at their entry position and is out of the run. A run whose last player left fails.
@@ -14032,6 +14032,36 @@ Current ones are in `docs/map_guide/generated/`: sprite renders per floor, minim
 the entrances, in-game shots. A rift map: `--area "rift:<theme>:<band>:<seed>[:<kind>[:<floors>]]"` (the dump adds its
 sections, drawn orange on the minimap map; `summary` prints its tiles and walkable count).
 
+## Reward chests (`rift_config.lua`, `descent_config.lua`, `reward_sparkle*.lua`, `tools/patch_reward_chests.py`)
+
+Owner request 2026-10-20: the plain wooden chest was hard to see on dark cave floors. Every chest a player takes a reward
+from is now one of two big chests of the 10.98 item set, picked from a rendered contact sheet of every chest of the
+sprite pair (gold and readable on dark floors, 2x2, not moveable, not pickupable):
+
+| Chest | Item | Was | Where |
+|---|---|---|---|
+| reward chest (gold, on a stone plinth, container 32) | 21584 | 1740 | the rift chest where the guardian died (`rift_config.lua` `chest`), the Ember Descent's treasure room chest (`descent_config.lua` `objects.chest`), the quest chests of every planned area (`tools/areaplan_build.lua` hands the rift chest to the planner) |
+| treasure chest (blue and silver, container 20) | 12664 | 1746 | the rift's Sealed Coffer (`rift_config.lua` `coffer`): it must be a container, its spoils go inside |
+
+The old ids could be moved and picked up (1740 and 1746 are pickupable in items.otb); the new ones cannot. Neither id
+is used by another system (the base server's own handler of 21584 is commented out in its actions.xml; the plaza's
+daily chests are 29327). The reward chests of the other systems are not map items: dungeon boss chests
+(`areagen.lua` AG.giveChest), world bosses, invasions, arenas, pocket bosses and trials give straight to the backpack
+or inbox; the Infinity Tower season chests (`chaos_constants.lua`) and the bounty chest (1990) are items sent to the
+inbox, so they keep their small looks.
+
+- **Sparkle:** `reward_sparkle.lua` (one GlobalEvent every `intervalMs`, 2.5 s) sends `CONST_ME_YELLOW_RINGS` over each
+  registered chest. The rift registers its chest (while a finisher has not taken their share) and the coffer (while it
+  is sealed). An entry ends when its check says so, when the item is no longer on its tile, after `maxAge` (30 min), or
+  past `maxEntries` (200). The planned areas' quest chests do not glint: they are per character and on the map always.
+  Rules: `reward_sparkle_core.lua`, `tests/reward_sparkle_test.lua` (also checks the ids of the configs).
+- **Install** (`install_all.py` step `rewardchests`, right before `contentareas`): `tools/patch_reward_chests.py
+  DATA_DIR [--dry-run] [--map FILE] [--out FILE]` turns every old chest 1740 on the map that carries a quest chest action
+  id (47960-47999, or a plan's own `chest_action`) into the reward chest of `rift_config.lua`. It rewrites only the item
+  id of those nodes (action id, tile and the rest stay), so the `contentareas` step sees its placed areas unchanged
+  instead of refusing them as changed plans. Refused when the new id is not in `items/items.otb`. A second run changes
+  nothing. `<map>.otbm.bak` is written first when missing. `tools/patch_reward_chests_test.py` (synthetic map).
+
 ## Area planner (`tools/area_planner.py`, `tools/area_plan_*.py`, `tools/areaplan_build.lua`, `tools/areaplan/`)
 
 A semantic plan (JSON, `tools/areaplan/schema.json`, version `chaos-area-plan/1`) becomes an OTBM piece for the map
@@ -14065,7 +14095,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
-- **Quest chests:** chest 1740 with the area's action id (block **47960-47999**, plan `chest_action` or one from the
+- **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 21584; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
   block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
   writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
   from our item tables, gold, experience) once per character, keyed by the chest's offset from the area's ORIGIN.

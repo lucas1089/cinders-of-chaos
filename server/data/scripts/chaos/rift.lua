@@ -1188,6 +1188,20 @@ local function success(run, pos)
 		chest:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, run.omen and "The guardian's hoard. Every finisher may open it once."
 			or "The spoils of the rift. Every finisher may open it once.")
 		chestPos:sendMagicEffect(CONST_ME_FIREWORK_RED)
+		-- a soft glint while a finisher has not taken their share (reward_sparkle.lua, one shared timer)
+		if ChaosRewardSparkle and ChaosRewardSparkle.add then
+			ChaosRewardSparkle.add("rift:chest:" .. run.id, chestPos, cfg.chest.itemId, function()
+				if run.ended then
+					return false
+				end
+				for guid in pairs(run.finishers or {}) do
+					if not run.claimed[guid] then
+						return true
+					end
+				end
+				return false
+			end)
+		end
 	end
 	-- the next key: to the player who used the key, else a random finisher
 	local drop = not run.omen and R.rollKeyDrop(cfg, run.key.tier, #run.key.mods, rand, run.atlasRun) or nil
@@ -1578,6 +1592,11 @@ local function placeCoffer(run)
 		item:setAttribute(ITEM_ATTRIBUTE_NAME, "sealed coffer")
 		item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "A coffer sealed by the rift. Breaking the seal wakes its guards.")
 		run.coffer = {state = "closed", room = room, pos = pos, waveLeft = 0, wave = {}, dir = compass(run.L.start, pos)}
+		if ChaosRewardSparkle and ChaosRewardSparkle.add then -- glints while nobody broke its seal
+			ChaosRewardSparkle.add("rift:coffer:" .. run.id, P(pos), cfg.coffer.itemId, function()
+				return not run.ended and run.coffer ~= nil and run.coffer.state == "closed"
+			end)
+		end
 	end
 end
 

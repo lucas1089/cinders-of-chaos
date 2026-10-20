@@ -171,6 +171,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                name"; after worldtexts)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
+  rewardchests tools/patch_reward_chests.py     the old plain quest chests of the planned areas already on the map
+               (chest 1740 with an action id of 47960-47999) become the reward chest of rift_config.lua (21584), so the
+               contentareas step sees its placed areas unchanged (README "Reward chests"; right before contentareas)
   contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
@@ -806,11 +809,28 @@ def step_poi(server, data, ctx):
     return tool_result(run_tool([tool('gen_poi.py'), server], 'gen_poi.py'))
 
 
-def step_contentareas(server, data, ctx):
+def step_rewardchests(server, data, ctx):
     if ctx['dry']:
-        # the dry copy has no map: read the real one, write nothing
+        # the dry copy has no map: read the real one; a changed map goes into the copy's temp folder, where the
+        # contentareas step reads it
         real = os.path.join(ctx['server'], 'data')
         mp = tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        out = os.path.join(ctx['tmp'], 'reward_chests.otbm')
+        ok, lines = run_tool([tool('patch_reward_chests.py'), real, '--dry-run', '--map', mp, '--out', out],
+                             'patch_reward_chests.py')
+        if ok and os.path.isfile(out):
+            ctx['dry_map'] = out
+        return tool_result((ok, lines))
+    return tool_result(run_tool([tool('patch_reward_chests.py'), data], 'patch_reward_chests.py'))
+
+
+def step_contentareas(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one (or the rewardchests step's patched copy), write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
         if not mp:
             return tool_result((False, ['no map in %s/world' % real]))
         return tool_result(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
@@ -819,6 +839,7 @@ def step_contentareas(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
+STEPS.insert(STEPS.index('contentareas'), 'rewardchests')  # right before contentareas (same map, its placed check)
 
 
 def tool_map_path(data_dir):
