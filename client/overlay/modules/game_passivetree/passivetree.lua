@@ -216,9 +216,96 @@ function paintedTreeIcon(node, vocationNode)
 	return key and treeData.painted[key] or nil
 end
 
+-- ------------------------------------------------------------------------------------------------ the toolbar
+-- passivetree.otui "toolbar": row 1 the free points, the boss points (bosspoints.lua) and the Primary / Secondary line
+-- (statinfo.lua); row 2 the action buttons, one width each (toolbarview.lua), with game_loadouts' Loadouts button last
+local TOOLBAR_BUTTONS = {"applyPoints", "resetPresetButton", "paragonButton", "buildShareButton", "autoBuildButton",
+	"statInfoButton", "trialsButton", "loadoutsButton"}
+local TOOLBAR_GAP, TOOLBAR_SIDE, TOOLBAR_MAX = 4, 12, 150
+local toolbarBusy = false
+local headerText, headerFit = "", nil -- the whole Primary / Secondary line; the {text, width} it was last fitted for
+
+local function layoutToolbar(bar)
+	local buttons = {}
+	for _, id in ipairs(TOOLBAR_BUTTONS) do
+		local button = window:getChildById(id)
+		if button then
+			buttons[#buttons + 1] = button
+		end
+	end
+	local row = TreeToolbar.row(bar:getWidth(), #buttons, TOOLBAR_GAP, TOOLBAR_SIDE, TOOLBAR_MAX)
+	for i, button in ipairs(buttons) do
+		if button:getWidth() ~= row.width then
+			button:setWidth(row.width)
+		end
+		local margin = i == 1 and row.left or TOOLBAR_GAP
+		if button:getMarginLeft() ~= margin then
+			button:setMarginLeft(margin)
+		end
+		if button:getId() == "loadoutsButton" and button:getHeight() ~= buttons[1]:getHeight() then
+			-- made at runtime by game_loadouts as a plain TreeButton: same height and label wrapping as the others
+			button:setHeight(buttons[1]:getHeight())
+			button:setTextWrap(true)
+		end
+	end
+	-- the Primary / Secondary line starts after the counters
+	local points, boss, header = bar:getChildById("points"), bar:getChildById("bossPoints"), bar:getChildById("statHeader")
+	if header and points then
+		local margin = 24
+		if boss and boss:isExplicitlyVisible() then
+			margin = margin + 16 + boss:getWidth()
+		end
+		if header:getMarginLeft() ~= margin then
+			header:setMarginLeft(margin)
+		end
+		local width = bar:getWidth() - points:getMarginLeft() - points:getWidth() - margin - header:getMarginRight()
+		if not headerFit or headerFit.text ~= headerText or headerFit.width ~= width then
+			headerFit = {text = headerText, width = width}
+			local text, cut = TreeToolbar.fit(headerText, math.max(0, width), function(s)
+				header:setText(s)
+				return header:getTextSize().width
+			end)
+			header:setText(text)
+			if cut then
+				header:setTooltip(headerText)
+			else
+				header:removeTooltip()
+			end
+		end
+	end
+end
+
+-- called on every layout update of the window and the toolbar: changes only what differs, so it settles at once
+function layoutTreeToolbar()
+	local bar = window and window:getChildById("toolbar")
+	if not bar or toolbarBusy then
+		return
+	end
+	toolbarBusy = true
+	local ok, err = pcall(layoutToolbar, bar)
+	toolbarBusy = false
+	if not ok then
+		g_logger.error("[Passive tree] toolbar layout failed: " .. tostring(err))
+	end
+end
+
+-- statinfo.lua: the Primary / Secondary line of the class
+function setTreeHeaderText(text)
+	headerText = tostring(text or "")
+	layoutTreeToolbar()
+end
+
+local function setTreePointsText()
+	local label = window and window:recursiveGetChildById("points")
+	if label then
+		label:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	end
+	layoutTreeToolbar()
+end
+
 function create()
 	if window then
-		return 
+		return
 	end
 
 	local treeX = getTreeData()
@@ -238,7 +325,11 @@ function create()
 		return 
 	end
 
-	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	-- the toolbar follows the window's size and the Loadouts button game_loadouts adds later
+	headerFit = nil
+	connect(window, {onGeometryChange = layoutTreeToolbar, onLayoutUpdate = layoutTreeToolbar})
+	connect(window.toolbar, {onLayoutUpdate = layoutTreeToolbar})
+	setTreePointsText()
 
 	view = window:recursiveGetChildById("view")
 	background = window:recursiveGetChildById("background")
@@ -484,6 +575,40 @@ function setNodeTooltip(widget, node)
 	end
 	if markStatNode and not node.isMastery then
 		markStatNode(widget, customStats) -- statinfo.lua: gold / silver border for Primary / Secondary
+	end
+end
+
+-- The border of a node widget: a search match (search.lua, widget.searchFrame = {width, color}) wins; else the gold /
+-- silver Primary / Secondary mark (statinfo.lua, widget.statColor), only while the Stats panel is open. Shown always,
+-- the marks framed almost every node of the tree (most nodes carry a Primary or Secondary stat), so a tree with no
+-- point spent looked lit up.
+local statMarksShown = false
+
+function applyTreeNodeBorder(widget)
+	if not widget or widget:isDestroyed() then
+		return
+	end
+	local frame = widget.searchFrame
+	if frame then
+		widget:setBorderWidth(frame.width)
+		widget:setBorderColor(frame.color)
+	elseif statMarksShown and widget.statColor then
+		widget:setBorderWidth(2)
+		widget:setBorderColor(widget.statColor)
+	else
+		widget:setBorderWidth(0)
+	end
+end
+
+-- statinfo.lua: the Stats panel opened (true) or closed
+function setTreeStatMarksShown(shown)
+	shown = shown == true
+	if statMarksShown == shown then
+		return
+	end
+	statMarksShown = shown
+	for _, widget in pairs(nodeWidgets or {}) do
+		applyTreeNodeBorder(widget)
 	end
 end
 
@@ -1036,6 +1161,7 @@ local function syncLayer()
 			if node.isMastery then
 				setNodeTooltip(widget, node)
 			end
+			applyTreeNodeBorder(widget) -- the Stats panel may have opened or closed while this layer was hidden
 		end
 	end
 	for _, node in pairs(nodeMap) do
@@ -1848,6 +1974,7 @@ function show()
 	window:show()
 	window:raise()
 	window:focus()
+	layoutTreeToolbar()
 	-- The widgets are kept between openings: the tree shows the allocation it had (rebuilt only when the zoom went back
 	-- to the default) until the server's sendNodes, which then changes only the nodes that differ. Before the first
 	-- sendNodes the vocation (keystone icons) is not known, so the first build waits for it instead of building twice.
@@ -1947,7 +2074,7 @@ end
 function updatePoints(value)
 	pointsOwned = pointsOwned + value
 
-	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	setTreePointsText()
 	if plannerUpdateBar then
 		plannerUpdateBar() -- planner.lua: the plan's cost against the free points
 	end

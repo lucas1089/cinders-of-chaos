@@ -62,7 +62,8 @@ end
 local function unmarkAll()
   for widget in pairs(marked) do
     if not widget:isDestroyed() then
-      widget:setBorderWidth(0)
+      widget.searchFrame = nil
+      applyTreeNodeBorder(widget) -- passivetree.lua: back to the Stats mark or none
     end
   end
   marked = {}
@@ -73,8 +74,8 @@ local function mark()
   for i, id in ipairs(matches) do
     local widget = getTreeNodeWidget(id)
     if widget then
-      widget:setBorderWidth(i == index and 3 or 2)
-      widget:setBorderColor(i == index and CURRENT or MATCH)
+      widget.searchFrame = {width = i == index and 3 or 2, color = i == index and CURRENT or MATCH}
+      applyTreeNodeBorder(widget)
       marked[widget] = true
     end
   end

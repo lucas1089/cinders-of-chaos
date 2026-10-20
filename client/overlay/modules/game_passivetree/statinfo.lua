@@ -1,6 +1,7 @@
 -- Stat help of the passive tree window (server/data/scripts/chaos/passivetree_stats.lua, maths: statinfoview.lua).
 -- The server sends the stats of the class with their names, descriptions and Primary / Secondary tag. The window shows
--- the Primary / Secondary header, marks the nodes (gold border: a Primary stat, silver: a Secondary one), adds the
+-- the Primary / Secondary line in the toolbar, marks the nodes while the Stats panel is open (gold border: a Primary
+-- stat, silver: a Secondary one), adds the
 -- description lines to a node tooltip and lists the stats in the Stats panel. Without the message everything stays as before.
 --   statInfo -> statInfo {cls, part, parts, header, stats} (a few messages)
 ChaosTreeHandlers = ChaosTreeHandlers or {}
@@ -19,15 +20,11 @@ function requestStatInfo()
   sendAction('statInfo')
 end
 
--- node widget border by the tag of the node's stats
+-- the node widget's mark by the tag of the node's stats; drawn as a border only while the Stats panel is open
+-- (passivetree.lua applyTreeNodeBorder: always on, it framed nearly every node of the tree)
 function markStatNode(widget, stats)
-  local color = StatInfoView.color(StatInfoView.tag(info, stats))
-  if color then
-    widget:setBorderWidth(2)
-    widget:setBorderColor(color)
-  else
-    widget:setBorderWidth(0)
-  end
+  widget.statColor = StatInfoView.color(StatInfoView.tag(info, stats))
+  applyTreeNodeBorder(widget)
 end
 
 -- extra tooltip lines: what each stat of the node does
@@ -50,9 +47,8 @@ end
 
 local function refreshHeader()
   local tree = getTreeWindow()
-  local label = tree and tree:recursiveGetChildById('statHeader')
-  if label then
-    label:setText(StatInfoView.headerText(info))
+  if tree then
+    setTreeHeaderText(StatInfoView.headerText(info)) -- passivetree.lua: fitted into the toolbar, the whole line as tooltip
   end
 end
 
@@ -68,12 +64,14 @@ function openStatInfo()
   siWindow:raise()
   siWindow:focus()
   fillPanel()
+  setTreeStatMarksShown(true)
 end
 
 function closeStatInfo()
   if siWindow then
     siWindow:hide()
   end
+  setTreeStatMarksShown(false)
 end
 
 function toggleStatInfo()

@@ -1,3 +1,7 @@
+// Node states (passivetree.lua): on = allocated, checked = planned (planner.lua), neither = not allocated (dim).
+// State names have no "$" after "!": the engine reads "!$on" as an unknown state that never matches, so "$hover !$on"
+// was plain "$hover". Every property a state block sets is also in the base block, so it is reset when the state ends.
+// The Primary / Secondary border of statinfo.lua shows only while the Stats panel is open (applyTreeNodeBorder).
 CommonNode < Panel
   anchors.centerIn: parent
   image-source: /images/passivetree/skills
@@ -9,7 +13,7 @@ CommonNode < Panel
   icon-offset: -15 -15
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/commont_canallocate
     image-color: #ffffff
 
@@ -18,7 +22,7 @@ CommonNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/commont_canallocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -39,7 +43,7 @@ UncommonNode < Panel
   icon-offset: -27 -27
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/uncommon_canallocate
     image-color: #ffffff
 
@@ -48,7 +52,7 @@ UncommonNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/uncommon_canallocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -64,7 +68,7 @@ RareNode < Panel
   icon-offset: -27 -27
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/rare_canallocate
     image-color: #ffffff
 
@@ -73,7 +77,7 @@ RareNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/rare_canallocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -89,7 +93,7 @@ VeryRareNode < Panel
   icon-offset: -27 -27
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/veryrare_canallocate
     image-color: #ffffff
 
@@ -98,7 +102,7 @@ VeryRareNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/veryrare_canallocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -114,7 +118,7 @@ MythicNode < Panel
   icon-offset: -27 -27
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/NotableFrameCanAllocate
     image-color: #ffffff
 
@@ -123,7 +127,7 @@ MythicNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/NotableFrameCanAllocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -139,7 +143,7 @@ DivineNode < Panel
   icon-offset: -42 -44
   icon-color: #ffffff
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/KeystoneFrameCanAllocate
     image-color: #ffffff
 
@@ -148,7 +152,7 @@ DivineNode < Panel
     image-color: #ffffff
 
   // planned (planner.lua): the can-allocate frame, tinted
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/KeystoneFrameCanAllocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -164,7 +168,7 @@ MasteryNode < Panel
   icon-offset: -30 -30
   icon-color: #e6c27a
 
-  $hover !$on:
+  $hover !on:
     icon-source: /images/passivetree/rare_canallocate
     image-color: #ffffff
 
@@ -174,7 +178,7 @@ MasteryNode < Panel
     icon-color: #ffd98a
 
   // planned (planner.lua)
-  $checked !$on:
+  $checked !on:
     icon-source: /images/passivetree/rare_canallocate
     icon-color: #7fd8ff
     image-color: #cfefff
@@ -288,6 +292,16 @@ TreeButton < UIButton
     color: #aaaaaa
     image-color: #888888
 
+// an action of the toolbar's second row; layoutTreeToolbar (passivetree.lua) sets the width and the first one's margin
+ToolbarButton < TreeButton
+  anchors.top: toolbar.top
+  margin-top: 30
+  margin-left: 4
+  size: 106 32
+  padding: 2 4 2 4
+  text-wrap: true
+  text-auto-resize: false
+
 PresetItem < TreeButton
   anchors.top: parent.top
   anchors.right: parent.right
@@ -352,6 +366,7 @@ TreeComboBox < UIComboBox
   image-border-right: 34
   image-clip: 0 0 179 25
   menu-scroll-step: 25
+  opacity: 1
 
   $hover !disabled:
     image-clip: 0 25 179 25
@@ -398,10 +413,11 @@ UIWindow
       
   Panel
     id: stats
-    anchors.top: parent.top
+    anchors.top: toolbar.bottom
     anchors.left: parent.left
     width: 300
     height: 300
+    margin-top: 6
     margin-left: 20
 
     Panel
@@ -438,95 +454,111 @@ UIWindow
       !text: tr('Info & Bonuses')
       @onClick: modules.game_passivetree.toggleStats()
 
-  TreeButton
-    id: applyPoints
+  // The toolbar: a solid strip over the tree. Row 1: the free points, the boss points and the class's Primary /
+  // Secondary line (cut to the width with "...", the whole line in its tooltip). Row 2: the actions, one width each,
+  // centred, sized to the window by layoutTreeToolbar (passivetree.lua, maths in toolbarview.lua); a long label wraps
+  // to two lines. The buttons are children of the window: game_loadouts adds its Loadouts button after trialsButton.
+  Panel
+    id: toolbar
     anchors.top: parent.top
-    anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 40
-    margin-right: 3
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 68
+    background-color: #120d09
+    border-width-bottom: 1
+    border-color-bottom: #6b5232
+    phantom: false
+
+    Label
+      id: points
+      anchors.top: parent.top
+      anchors.left: parent.left
+      margin-top: 7
+      margin-left: 12
+      height: 16
+      font: verdana-11px-rounded
+      color: #f0d79a
+      text-auto-resize: true
+
+    Label
+      id: bossPoints
+      anchors.top: points.top
+      anchors.left: points.right
+      margin-left: 16
+      height: 16
+      font: verdana-11px-rounded
+      color: #d8a03a
+      text-auto-resize: true
+      phantom: false
+      visible: false
+
+    Label
+      id: statHeader
+      anchors.top: points.top
+      anchors.left: points.right
+      anchors.right: parent.right
+      margin-left: 24
+      margin-right: 12
+      height: 16
+      font: verdana-11px-rounded
+      color: #d8cfc0
+      text-align: right
+      text-auto-resize: false
+      phantom: false
+
+  ToolbarButton
+    id: applyPoints
+    anchors.left: parent.left
+    margin-left: 12
     !text: tr('Apply Plan')
-    width: 110
     !tooltip: tr('Allocate every planned node in one go (left-click a node to plan the path to it)')
-    enabled: true
     @onClick: modules.game_passivetree.applyPoints()
 
-  TreeButton
+  ToolbarButton
     id: resetPresetButton
-    anchors.top: applyPoints.top
     anchors.left: applyPoints.right
-    margin-left: 5
     !text: tr('Reset')
-    width: 110
-    enabled: true
     @onClick: modules.game_passivetree.reset()
 
-  TreeButton
+  ToolbarButton
     id: paragonButton
-    anchors.top: applyPoints.top
     anchors.left: resetPresetButton.right
-    margin-left: 5
     !text: tr('Paragon')
-    width: 110
-    enabled: true
     @onClick: modules.game_passivetree.toggleParagon()
 
-  TreeButton
+  ToolbarButton
     id: buildShareButton
-    anchors.top: applyPoints.top
     anchors.left: paragonButton.right
-    margin-left: 5
     !text: tr('Build Code')
-    width: 110
-    enabled: true
     !tooltip: tr('Export your build as a code, or import a code (preview first)')
     @onClick: modules.game_passivetree.toggleBuildShare()
 
-  TreeButton
+  ToolbarButton
     id: autoBuildButton
-    anchors.top: applyPoints.top
     anchors.left: buildShareButton.right
-    margin-left: 5
     !text: tr('Auto build')
-    width: 110
-    enabled: true
     !tooltip: tr('Pick a recommended build or a focus theme for your class and apply it')
     @onClick: modules.game_passivetree.toggleAutoBuild()
 
-  TreeButton
+  ToolbarButton
     id: statInfoButton
-    anchors.top: applyPoints.top
-    anchors.left: trialsButton.right
-    margin-left: 5
+    anchors.left: autoBuildButton.right
     !text: tr('Stats')
-    width: 110
-    enabled: true
     !tooltip: tr('What every stat of the tree does. Gold marks a Primary stat of your class, silver a Secondary one.')
     @onClick: modules.game_passivetree.toggleStatInfo()
 
-  UILabel
-    id: statHeader
-    anchors.top: parent.top
-    anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 12
-    color: #d8cfc0
-    text-auto-resize: true
-
-  TreeButton
+  ToolbarButton
     id: trialsButton
-    anchors.top: applyPoints.top
-    anchors.left: autoBuildButton.right
-    margin-left: 5
+    anchors.left: statInfoButton.right
     !text: tr('Trials')
-    width: 110
-    enabled: true
     !tooltip: tr('Vocation Trials: clear your vocation trial to open pairs of special nodes (choose one of each pair)')
     @onClick: modules.game_passivetree.toggleTrials()
 
   UIWidget
     id: presets
-    anchors.top: presetsButton.bottom
-    anchors.horizontalCenter: applyPoints.horizontalCenter
-    margin-top: 40
+    anchors.top: toolbar.bottom
+    anchors.horizontalCenter: parent.horizontalCenter
+    margin-top: 10
     size: 200 340
     image-source: /images/ui/miniwindow
     image-border: 20
@@ -610,35 +642,6 @@ UIWindow
       margin: 0 7 7 0
       @onClick: modules.game_passivetree.presets()
 
-  
-  Panel
-    id: pWindow
-    anchors.top: applyPoints.top
-    anchors.right: applyPoints.left
-    margin-right: 6
-    image-source: /images/passivetree/PSPointsFrame
-    size: 110 30
-    padding: 7 15
-    
-    Label
-      id: points
-      font: verdana-11px-rounded
-      anchors.centerIn: parent
-      text-auto-resize: true
-      !text: tr('10 Passive Points')
-
-  Label
-    id: bossPoints
-    anchors.top: pWindow.bottom
-    anchors.horizontalCenter: pWindow.horizontalCenter
-    margin-top: 3
-    font: verdana-11px-rounded
-    color: #d8a03a
-    text-auto-resize: true
-    background-color: #000000a0
-    padding: 1 4
-    phantom: false
-    visible: false
 
 
 
@@ -750,9 +753,9 @@ UIWindow
   // another character's tree (viewother.lua, from Inspect Player)
   Panel
     id: viewBanner
-    anchors.top: applyPoints.bottom
+    anchors.top: toolbar.bottom
     anchors.horizontalCenter: parent.horizontalCenter
-    margin-top: 30
+    margin-top: 8
     size: 460 34
     background: #301c0cd8
     padding: 4
