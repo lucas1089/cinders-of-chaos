@@ -410,8 +410,10 @@ InfinityTowerWindow < NewHeadlessWindow
     anchors.top: rewardPanel.bottom
     margin-top: 10
 
+  // 104 px: the skin button's 64 px cut "Enter Tower" / "Leave Tower" (and the longer pt-BR texts)
   Button
     id: enterButton
+    width: 104
     !text: tr('Enter Tower')
     anchors.top: bottomSeparator.bottom
     anchors.right: closeButton.left
@@ -421,6 +423,7 @@ InfinityTowerWindow < NewHeadlessWindow
 
   Button
     id: leaveButton
+    width: 104
     !text: tr('Leave Tower')
     !tooltip: tr('Leave the tower run you are in (your progress so far counts).')
     anchors.top: bottomSeparator.bottom
