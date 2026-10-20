@@ -78,6 +78,12 @@ put beta players ahead at launch. Keeping accounts saves everyone a new sign-up.
   character (alts get nothing), recorded in `chaos_beta_grants`, so restarts never give them twice (server/README.md
   "Beta starter coins"). Season characters: the coins are the account's; the season store rules apply. **Turn the switch
   off at launch** (docs/LAUNCH.md section 11). Announce it in the patch note and on Discord.
+- **Unlimited coins for testers (beta only):** a cron job, `/etc/cron.d/chaos-beta-coins`, runs every minute
+  `INSERT INTO chaos_shop_coins (account_id, coins) SELECT id, 100000000 FROM accounts ON DUPLICATE KEY UPDATE coins =
+  GREATEST(coins, 100000000)`, so a balance never stays below 100,000,000 (the column is `int(11)`; do not go higher).
+  **Before the wipe (section 9) and the launch: `rm /etc/cron.d/chaos-beta-coins`, and turn the beta switch off
+  (`enabled = false` in `beta_config.lua`, docs/LAUNCH.md section 11), which also stops the 5,000 starter coins.**
+  Otherwise the cron refills the wiped table every minute and new accounts still get the starter coins.
 - Extra top-ups (optional, e.g. at the start of weekend 2): an administrator (group 5+) runs, with the server online:
   ```sql
   -- every account up to 5,000 Chaos Coins (never lowers a balance)
