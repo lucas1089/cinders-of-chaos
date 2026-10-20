@@ -1,0 +1,237 @@
+{
+ "format": 1,
+ "about": "Thrown flasks: which burst effect and projectile each flask uses and the area it covers. Data only, no throw system uses it yet. Ids are those of the pair 30 build (art_import/pack30_fx.csv).",
+ "legend": {
+  "0": "outside the area",
+  "1": "inside the area",
+  "3": "centre, the tile that is hit"
+ },
+ "flights": {
+  "ms_per_frame": 125
+ },
+ "bursts": {
+  "fire_splash_a": {
+   "id": 851,
+   "size": "3x3",
+   "send_offset": "1,1",
+   "phases": 15,
+   "ms": 60,
+   "total_ms": 900
+  },
+  "fire_splash_b": {
+   "id": 852,
+   "size": "3x3",
+   "send_offset": "1,1",
+   "phases": 15,
+   "ms": 60,
+   "total_ms": 900
+  },
+  "poison_burst_a": {
+   "id": 853,
+   "size": "1x1",
+   "send_offset": "0,0",
+   "phases": 13,
+   "ms": 50,
+   "total_ms": 650
+  },
+  "poison_burst_b": {
+   "id": 854,
+   "size": "3x3",
+   "send_offset": "1,1",
+   "phases": 15,
+   "ms": 60,
+   "total_ms": 900
+  }
+ },
+ "missiles": {
+  "potion_lava": {
+   "id": 186,
+   "size": "3x3",
+   "send_offset": "1,1",
+   "phases": 1,
+   "ms": 125
+  },
+  "potion_flask_lava": {
+   "id": 187,
+   "size": "1x1",
+   "send_offset": "0,0",
+   "phases": 8,
+   "ms": 125
+  },
+  "potion_flask_poison": {
+   "id": 188,
+   "size": "1x1",
+   "send_offset": "0,0",
+   "phases": 8,
+   "ms": 125
+  }
+ },
+ "flasks": [
+  {
+   "key": "lava_small",
+   "element": "lava",
+   "size": "small",
+   "burst": "fire_splash_a",
+   "missile": "potion_lava",
+   "flask_missile": "potion_flask_lava",
+   "area": [
+    [
+     3
+    ]
+   ]
+  },
+  {
+   "key": "lava_medium",
+   "element": "lava",
+   "size": "medium",
+   "burst": "fire_splash_a",
+   "missile": "potion_lava",
+   "flask_missile": "potion_flask_lava",
+   "area": [
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     1,
+     3,
+     1
+    ],
+    [
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "key": "lava_large",
+   "element": "lava",
+   "size": "large",
+   "burst": "fire_splash_b",
+   "missile": "potion_lava",
+   "flask_missile": "potion_flask_lava",
+   "area": [
+    [
+     0,
+     1,
+     1,
+     1,
+     0
+    ],
+    [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     3,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    [
+     0,
+     1,
+     1,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "key": "venom_small",
+   "element": "venom",
+   "size": "small",
+   "burst": "poison_burst_a",
+   "missile": "potion_flask_poison",
+   "flask_missile": "potion_flask_poison",
+   "area": [
+    [
+     3
+    ]
+   ]
+  },
+  {
+   "key": "venom_medium",
+   "element": "venom",
+   "size": "medium",
+   "burst": "poison_burst_a",
+   "missile": "potion_flask_poison",
+   "flask_missile": "potion_flask_poison",
+   "area": [
+    [
+     0,
+     1,
+     0
+    ],
+    [
+     1,
+     3,
+     1
+    ],
+    [
+     0,
+     1,
+     0
+    ]
+   ]
+  },
+  {
+   "key": "venom_large",
+   "element": "venom",
+   "size": "large",
+   "burst": "poison_burst_b",
+   "missile": "potion_flask_poison",
+   "flask_missile": "potion_flask_poison",
+   "area": [
+    [
+     0,
+     1,
+     1,
+     1,
+     0
+    ],
+    [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     3,
+     1,
+     1
+    ],
+    [
+     1,
+     1,
+     1,
+     1,
+     1
+    ],
+    [
+     0,
+     1,
+     1,
+     1,
+     0
+    ]
+   ]
+  }
+ ]
+}

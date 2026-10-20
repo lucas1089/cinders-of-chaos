@@ -1,0 +1,76 @@
+look_type,key,name,size,head,body,legs,feet
+2237,corpselight_lurker,Corpselight Lurker,2x2,30,38,76,56
+2238,crag_troll,Crag Troll,3x3,30,76,23,19
+2239,deepforge_fiend,Deepforge Fiend,4x4,76,95,76,38
+2240,doomcrow_flock,Doomcrow Flock,2x2,76,76,76,95
+2241,gallows_oak,Gallows Oak,2x2,76,40,76,62
+2242,gibbet_fledgling,Gibbet Fledgling,2x2,57,95,57,76
+2243,gibbetwing,Gibbetwing,4x4,76,76,76,76
+2244,grimhowl_werewolf,Grimhowl Werewolf,2x2,20,57,75,95
+2245,halforc_cutthroat,Halforc Cutthroat,2x2,57,95,95,76
+2246,hookspear_goblin,Hookspear Goblin,2x2,57,95,76,96
+2247,ironbound_troll,Ironbound Troll,3x3,76,95,95,96
+2248,ironmask_bannerman,Ironmask Bannerman,2x2,57,76,95,96
+2249,ironmask_bowman,Ironmask Bowman,2x2,57,76,76,96
+2250,ironmask_brander,Ironmask Brander,2x2,57,76,95,96
+2251,ironmask_grunt,Ironmask Grunt,2x2,57,76,95,96
+2252,ironmask_taskmaster,Ironmask Taskmaster,2x2,57,76,95,96
+2253,ironmask_warbreaker,Ironmask Warbreaker,3x3,57,76,95,96
+2254,mound_haunt,Mound Haunt,2x2,19,76,57,95
+2255,nailcrown_regent,Nailcrown Regent,4x4,76,57,131,114
+2256,shroud_brood,Shroud Brood,1x1,95,19,38,19
+2257,shroudweaver,Shroudweaver,3x3,95,95,76,38
+2258,siege_behemoth,Siege Behemoth,3x3,76,39,115,75
+2259,sootfang_rider,Sootfang Rider,4x4,57,57,95,96
+2260,sootfang_wolf,Sootfang Wolf,2x2,57,76,38,96
+2261,thornveil_wraith,Thornveil Wraith,2x2,38,95,57,76
+2262,blight_bloom,Blight Bloom,3x3,19,57,76,40
+2263,blight_hound,Blight Hound,2x2,75,20,76,76
+2264,blightcrown_matron,Blightcrown Matron,4x4,75,38,95,76
+2265,bloom_husk,Bloom Husk,2x2,75,22,76,56
+2266,carrion_drake,Carrion Drake,4x4,76,76,95,38
+2267,chained_runt,Chained Runt,2x2,57,95,76,75
+2268,crypt_crab,Crypt Crab,3x3,38,95,76,2
+2269,dirge_herald,Dirge Herald,2x2,76,21,76,38
+2270,gatewrack_ogre,Gatewrack Ogre,3x3,40,95,95,95
+2271,geode_seer,Geode Seer,2x2,19,57,40,75
+2272,gildguard_revenant,Gildguard Revenant,4x4,39,95,76,21
+2273,gnawbone_swarm,Gnawbone Swarm,1x1,2,22,76,37
+2274,grave_lantern,Grave Lantern,2x2,76,38,76,75
+2275,limb_hoarder,Limb Hoarder,3x3,21,76,39,40
+2276,masque_dancer,Masque Dancer,2x2,19,76,38,22
+2277,maw_grub,Maw Grub,1x1,22,75,1,58
+2278,oathbroken_colossus,Oathbroken Colossus,4x4,76,131,76,41
+2279,pyre_stork,Pyre Stork,4x4,39,37,95,75
+2280,quicksilver_wraith,Quicksilver Wraith,2x2,22,39,21,2
+2281,reliquary_urn,Reliquary Urn,2x2,39,76,76,75
+2282,rootbound_pilgrim,Rootbound Pilgrim,2x2,40,76,41,76
+2283,spire_gargoyle,Spire Gargoyle,2x2,38,76,30,38
+2284,veiled_crawler,Veiled Crawler,1x1,76,19,76,19
+2285,wan_sentry,Wan Sentry,2x2,57,11,95,75
+2286,wax_penitent,Wax Penitent,1x1,1,95,40,2
+2287,ashmaw_bonecaller,Ashmaw Bonecaller,2x2,57,39,19,57
+2288,ashmaw_raider,Ashmaw Raider,2x2,57,39,19,57
+2289,ashmaw_warlord,Ashmaw Warlord,3x3,57,39,19,57
+2290,ashveil_hierarch,Ashveil Hierarch,4x4,57,76,40,38
+2291,bellhelm_zealot,Bellhelm Zealot,2x2,39,20,21,57
+2292,bonepicker,Bonepicker,2x2,37,21,21,22
+2293,caged_convict,Caged Convict,2x2,38,20,22,39
+2294,gashrunner,Gashrunner,2x2,57,22,95,21
+2295,gnarlback,Gnarlback,3x3,76,76,76,57
+2296,gorebristle,Gorebristle,3x3,21,76,76,21
+2297,gravemoth,Gravemoth,2x2,57,76,19,76
+2298,gullet_worm,Gullet Worm,2x2,76,21,95,38
+2299,hollowhorn,Hollowhorn,3x3,76,57,20,95
+2300,leechwing,Leechwing,2x2,76,21,76,56
+2301,mange_hound,Mange Hound,1x1,22,39,76,76
+2302,mirejaw,Mirejaw,3x3,76,57,95,76
+2303,pit_delver,Pit Delver,2x2,38,22,76,39
+2304,pitgnawer,Pitgnawer,1x1,20,76,57,115
+2305,reedgrave,Reedgrave,2x2,57,57,39,21
+2306,rimecairn,Rimecairn,3x3,30,11,76,10
+2307,rustguard,Rustguard,2x2,23,40,20,39
+2308,slagborer,Slagborer,1x1,57,57,21,20
+2309,slagborer_queen,Slagborer Queen,3x3,39,37,57,22
+2310,slagborer_reaver,Slagborer Reaver,2x2,39,20,37,22
+2311,slagheart,Slagheart,3x3,57,39,57,22

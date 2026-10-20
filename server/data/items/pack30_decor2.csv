@@ -1,0 +1,488 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+35559,38559,autumn_graveyard__autumn_gates__r0c0,stump,new,Autumn Gates R0C0 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35560,38560,autumn_graveyard__autumn_gates__r0c2,stump,new,Autumn Gates R0C2 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35561,38561,autumn_graveyard__autumn_gates__r0c4,stump,new,Autumn Gates R0C4 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35562,38562,autumn_graveyard__autumn_gates__r0c6,stump,new,Autumn Gates R0C6 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35563,38563,autumn_graveyard__autumn_gates__r2c0,stump,new,Autumn Gates R2C0 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35564,38564,autumn_graveyard__autumn_gates__r2c2,stump,new,Autumn Gates R2C2 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35565,38565,autumn_graveyard__autumn_gates__r2c4,stump,new,Autumn Gates R2C4 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35566,38566,autumn_graveyard__autumn_gates__r2c6,stump,new,Autumn Gates R2C6 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35567,38567,autumn_graveyard__autumn_gates__r4c0,stump,new,Autumn Gates R4C0 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35568,38568,autumn_graveyard__autumn_gates__r4c2,stump,new,Autumn Gates R4C2 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35569,38569,autumn_graveyard__autumn_gates__r4c4,stump,new,Autumn Gates R4C4 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35570,38570,autumn_graveyard__autumn_gates__r4c6,stump,new,Autumn Gates R4C6 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35571,38571,autumn_graveyard__autumn_gates__r6c0,stump,new,Autumn Gates R6C0 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35572,38572,autumn_graveyard__autumn_gates__r6c6,stump,new,Autumn Gates R6C6 (Autumn Graveyard),2x2,0,8193,2,0,0,0,family=autumn_graveyard|hideout=1
+35573,38573,autumn_graveyard__autumm_trees__r0c0,stump,new,Autumm Trees R0C0 (Autumn Graveyard),4x4,0,8193,2,0,0,0,family=autumn_graveyard|hideout=0
+35574,38574,autumn_graveyard__autumm_trees__r0c4,stump,new,Autumm Trees R0C4 (Autumn Graveyard),4x4,0,8193,2,0,0,0,family=autumn_graveyard|hideout=0
+35575,38575,autumn_graveyard__autumm_trees__r4c0,stump,new,Autumm Trees R4C0 (Autumn Graveyard),4x4,0,8193,2,0,0,0,family=autumn_graveyard|hideout=0
+35576,38576,autumn_graveyard__autumm_trees__r4c4,stump,new,Autumm Trees R4C4 (Autumn Graveyard),4x4,0,8193,2,0,0,0,family=autumn_graveyard|hideout=0
+35577,38577,castle_kit__castle_wall_4,stump,new,Castle Wall 4 (Castle Kit),2x2,0,8193,2,0,0,0,family=castle_kit|hideout=1
+35578,38578,dungeon_cells__ball_chain,decor,new,Ball Chain (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35579,38579,dungeon_cells__basket_of_strew,decor,new,Basket Of Strew (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35580,38580,dungeon_cells__blood,decor,new,Blood (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35581,38581,dungeon_cells__bone_shelf,stump,new,Bone Shelf (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35582,38582,dungeon_cells__bucket_of_water,decor,new,Bucket Of Water (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35583,38583,dungeon_cells__cell_barrel,stump,new,Cell Barrel (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35584,38584,dungeon_cells__cell_bed,stump,new,Cell Bed (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35585,38585,dungeon_cells__chain_unit,decor,new,Chain Unit (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35586,38586,dungeon_cells__chair,decor,new,Chair (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35587,38587,dungeon_cells__cob_webs,decor,new,Cob Webs (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35588,38588,dungeon_cells__iron_cage,stump,new,Iron Cage (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35589,38589,dungeon_cells__old_chest,stump,new,Old Chest (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35590,38590,dungeon_cells__pile_of_bones,decor,new,Pile Of Bones (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35591,38591,dungeon_cells__pile_of_strew,decor,new,Pile Of Strew (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35592,38592,dungeon_cells__skeleton_remains,decor,new,Skeleton Remains (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35593,38593,dungeon_cells__small_table,stump,new,Small Table (Dungeon Cells),2x2,0,8193,2,0,0,0,family=dungeon_cells|hideout=1
+35594,38594,dungeon_cells__stairs,decor,new,Stairs (Dungeon Cells),2x2,0,0,0,0,0,0,family=dungeon_cells|hideout=1
+35595,38595,forest_kit_a__tall_grass_1,decor,new,Tall Grass 1 (Forest Kit A),2x2,0,0,0,0,0,0,family=forest_kit_a|hideout=1
+35596,38596,forest_kit_a__tall_grass_2,decor,new,Tall Grass 2 (Forest Kit A),2x2,0,0,0,0,0,0,family=forest_kit_a|hideout=1
+35597,38597,forest_kit_a__rock_5,stump,new,Rock 5 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35598,38598,forest_kit_a__rock_6,stump,new,Rock 6 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35599,38599,forest_kit_a__rock_7,stump,new,Rock 7 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35600,38600,forest_kit_a__autumn_tree_1,stump,new,Autumn Tree 1 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35601,38601,forest_kit_a__autumn_tree_2,stump,new,Autumn Tree 2 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35602,38602,forest_kit_a__autumn_tree_3,stump,new,Autumn Tree 3 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35603,38603,forest_kit_a__autumn_tree_4,stump,new,Autumn Tree 4 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35604,38604,forest_kit_a__autumn_tree_5,stump,new,Autumn Tree 5 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35605,38605,forest_kit_a__autumn_tree_6,stump,new,Autumn Tree 6 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35606,38606,forest_kit_a__autumn_tree_7,stump,new,Autumn Tree 7 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35607,38607,forest_kit_a__autumn_tree_8,stump,new,Autumn Tree 8 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35608,38608,forest_kit_a__big_tree_1,stump,new,Big Tree 1 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35609,38609,forest_kit_a__big_tree_2,stump,new,Big Tree 2 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35610,38610,forest_kit_a__big_tree_3,stump,new,Big Tree 3 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35611,38611,forest_kit_a__big_tree_4,stump,new,Big Tree 4 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35612,38612,forest_kit_a__big_tree_5,stump,new,Big Tree 5 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35613,38613,forest_kit_a__big_tree_6,stump,new,Big Tree 6 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35614,38614,forest_kit_a__big_tree_7,stump,new,Big Tree 7 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35615,38615,forest_kit_a__big_tree_8,stump,new,Big Tree 8 (Forest Kit A),2x3,0,8193,2,0,0,0,family=forest_kit_a|hideout=0
+35616,38616,forest_kit_a__cherry_blossom_tree_1,stump,new,Cherry Blossom Tree 1 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35617,38617,forest_kit_a__cherry_blossom_tree_2,stump,new,Cherry Blossom Tree 2 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35618,38618,forest_kit_a__cherry_blossom_tree_3,stump,new,Cherry Blossom Tree 3 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35619,38619,forest_kit_a__cherry_blossom_tree_4,stump,new,Cherry Blossom Tree 4 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35620,38620,forest_kit_a__cherry_blossom_tree_5,stump,new,Cherry Blossom Tree 5 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35621,38621,forest_kit_a__cherry_blossom_tree_6,stump,new,Cherry Blossom Tree 6 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35622,38622,forest_kit_a__cherry_blossom_tree_7,stump,new,Cherry Blossom Tree 7 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35623,38623,forest_kit_a__cherry_blossom_tree_8,stump,new,Cherry Blossom Tree 8 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35624,38624,forest_kit_a__dark_tree_1,stump,new,Dark Tree 1 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35625,38625,forest_kit_a__dark_tree_2,stump,new,Dark Tree 2 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35626,38626,forest_kit_a__dark_tree_3,stump,new,Dark Tree 3 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35627,38627,forest_kit_a__dark_tree_4,stump,new,Dark Tree 4 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35628,38628,forest_kit_a__dark_tree_5,stump,new,Dark Tree 5 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35629,38629,forest_kit_a__dark_tree_6,stump,new,Dark Tree 6 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35630,38630,forest_kit_a__dark_tree_7,stump,new,Dark Tree 7 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35631,38631,forest_kit_a__dark_tree_8,stump,new,Dark Tree 8 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35632,38632,forest_kit_a__tree_1,stump,new,Tree 1 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35633,38633,forest_kit_a__tree_2,stump,new,Tree 2 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35634,38634,forest_kit_a__tree_3,stump,new,Tree 3 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35635,38635,forest_kit_a__tree_4,stump,new,Tree 4 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35636,38636,forest_kit_a__tree_5,stump,new,Tree 5 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35637,38637,forest_kit_a__tree_6,stump,new,Tree 6 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35638,38638,forest_kit_a__tree_7,stump,new,Tree 7 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35639,38639,forest_kit_a__tree_8,stump,new,Tree 8 (Forest Kit A),2x2,0,8193,2,0,0,0,family=forest_kit_a|hideout=1
+35640,38640,forest_ruins__ancient_archway_1_big,decor,new,Ancient Archway 1 Big (Forest Ruins),3x3,0,0,0,0,0,0,family=forest_ruins|hideout=0
+35641,38641,forest_ruins__ancient_pillow_1,stump,new,Ancient Pillow 1 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35642,38642,forest_ruins__ancient_pillow_2,stump,new,Ancient Pillow 2 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35643,38643,forest_ruins__ancient_pillows,stump,new,Ancient Pillows (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35644,38644,forest_ruins__ancient_wall_1,stump,new,Ancient Wall 1 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35645,38645,forest_ruins__ancient_wall_2,stump,new,Ancient Wall 2 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35646,38646,forest_ruins__ancient_wall_3,stump,new,Ancient Wall 3 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35647,38647,forest_ruins__ancient_wall_4,stump,new,Ancient Wall 4 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35648,38648,forest_ruins__broken_cabin_1,decor,new,Broken Cabin 1 (Forest Ruins),2x2,0,0,0,0,0,0,family=forest_ruins|hideout=1
+35649,38649,forest_ruins__broken_cabin_2,decor,new,Broken Cabin 2 (Forest Ruins),2x2,0,0,0,0,0,0,family=forest_ruins|hideout=1
+35650,38650,forest_ruins__broken_cabin_3,decor,new,Broken Cabin 3 (Forest Ruins),2x2,0,0,0,0,0,0,family=forest_ruins|hideout=1
+35651,38651,forest_ruins__fallen_pillow_1,decor,new,Fallen Pillow 1 (Forest Ruins),2x2,0,0,0,0,0,0,family=forest_ruins|hideout=1
+35652,38652,forest_ruins__heros_tomb,stump,new,Heros Tomb (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35653,38653,forest_ruins__old_statue,stump,new,Old Statue (Forest Ruins),2x3,0,8193,2,0,0,0,family=forest_ruins|hideout=0
+35654,38654,forest_ruins__rock_pile_1,stump,new,Rock Pile 1 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35655,38655,forest_ruins__rock_pile_2,stump,new,Rock Pile 2 (Forest Ruins),2x2,0,8193,2,0,0,0,family=forest_ruins|hideout=1
+35656,38656,ghost_town__abandoned_handcart,decor,new,Abandoned Handcart (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35657,38657,ghost_town__carved_pumpkin_1,decor,new,Carved Pumpkin 1 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35658,38658,ghost_town__carved_pumpkin_2,decor,new,Carved Pumpkin 2 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35659,38659,ghost_town__carved_pumpkin_3,decor,new,Carved Pumpkin 3 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35660,38660,ghost_town__dead_flower,decor,new,Dead Flower (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35661,38661,ghost_town__dead_flower_2,decor,new,Dead Flower 2 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35662,38662,ghost_town__dead_grass_1,decor,new,Dead Grass 1 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35663,38663,ghost_town__dead_grass_2,decor,new,Dead Grass 2 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35664,38664,ghost_town__dead_grass_3,decor,new,Dead Grass 3 (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35665,38665,ghost_town__dead_tree_1,stump,new,Dead Tree 1 (Ghost Town),4x4,0,8193,2,0,0,0,family=ghost_town|hideout=0
+35666,38666,ghost_town__dead_tree_2,stump,new,Dead Tree 2 (Ghost Town),4x4,0,8193,2,0,0,0,family=ghost_town|hideout=0
+35667,38667,ghost_town__dead_tree_3,stump,new,Dead Tree 3 (Ghost Town),4x4,0,8193,2,0,0,0,family=ghost_town|hideout=0
+35668,38668,ghost_town__dead_tree_4,stump,new,Dead Tree 4 (Ghost Town),4x4,0,8193,2,0,0,0,family=ghost_town|hideout=0
+35669,38669,ghost_town__grass,decor,new,Grass (Ghost Town),2x2,0,0,0,0,0,0,family=ghost_town|hideout=1
+35670,38670,ghost_town__old_bench,stump,new,Old Bench (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35671,38671,ghost_town__old_fence,stump,new,Old Fence (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35672,38672,ghost_town__old_gravestone_1,stump,new,Old Gravestone 1 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35673,38673,ghost_town__old_gravestone_2,stump,new,Old Gravestone 2 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35674,38674,ghost_town__old_gravestone_3,stump,new,Old Gravestone 3 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35675,38675,ghost_town__old_gravestone_4,stump,new,Old Gravestone 4 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35676,38676,ghost_town__old_gravestone_5,stump,new,Old Gravestone 5 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35677,38677,ghost_town__old_gravestone_6,stump,new,Old Gravestone 6 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35678,38678,ghost_town__old_gravestone_7,stump,new,Old Gravestone 7 (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35679,38679,ghost_town__old_town_well,stump,new,Old Town Well (Ghost Town),2x2,0,8193,2,0,0,0,family=ghost_town|hideout=1
+35680,38680,goblin_camp__barrel,stump,new,Barrel (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35681,38681,goblin_camp__bear_heads,decor,new,Bear Heads (Goblin Camp),2x2,0,0,0,0,0,0,family=goblin_camp|hideout=1
+35682,38682,goblin_camp__bone_chair,decor,new,Bone Chair (Goblin Camp),2x2,0,0,0,0,0,0,family=goblin_camp|hideout=1
+35683,38683,goblin_camp__box_of_meat,stump,new,Box Of Meat (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35684,38684,goblin_camp__camp_fence,stump,new,Camp Fence (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35685,38685,goblin_camp__camp_fence_spar,stump,new,Camp Fence Spar (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35686,38686,goblin_camp__goblin_banner_1,wall,new,Goblin Banner 1 (Goblin Camp),2x2,0,65536,0,0,0,0,family=goblin_camp|hideout=0
+35687,38687,goblin_camp__goblin_banner_2,wall,new,Goblin Banner 2 (Goblin Camp),2x2,0,65536,0,0,0,0,family=goblin_camp|hideout=0
+35688,38688,goblin_camp__goblin_banner_3,wall,new,Goblin Banner 3 (Goblin Camp),2x2,0,65536,0,0,0,0,family=goblin_camp|hideout=0
+35689,38689,goblin_camp__goblin_tent_1,stump,new,Goblin Tent 1 (Goblin Camp),4x4,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35690,38690,goblin_camp__goblin_tent_2,stump,new,Goblin Tent 2 (Goblin Camp),4x4,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35691,38691,goblin_camp__goblin_tent_3,stump,new,Goblin Tent 3 (Goblin Camp),4x4,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35692,38692,goblin_camp__goblin_tent_4,stump,new,Goblin Tent 4 (Goblin Camp),4x4,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35693,38693,goblin_camp__goblin_tent_5,stump,new,Goblin Tent 5 (Goblin Camp),4x4,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35694,38694,goblin_camp__meat_drying_rack,stump,new,Meat Drying Rack (Goblin Camp),3x3,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35695,38695,goblin_camp__meat_drying_rack_2,stump,new,Meat Drying Rack 2 (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35696,38696,goblin_camp__meat_table,stump,new,Meat Table (Goblin Camp),3x2,0,8193,2,0,0,0,family=goblin_camp|hideout=0
+35697,38697,goblin_camp__mushroom_basket,decor,new,Mushroom Basket (Goblin Camp),2x2,0,0,0,0,0,0,family=goblin_camp|hideout=1
+35698,38698,goblin_camp__open_chest,stump,new,Open Chest (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35699,38699,goblin_camp__sack_of_food,decor,new,Sack Of Food (Goblin Camp),2x2,0,0,0,0,0,0,family=goblin_camp|hideout=1
+35700,38700,goblin_camp__skull_box,stump,new,Skull Box (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35701,38701,goblin_camp__skull_totem,stump,new,Skull Totem (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35702,38702,goblin_camp__totem,stump,new,Totem (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35703,38703,goblin_camp__war_drum,stump,new,War Drum (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35704,38704,goblin_camp__wep_rack_1,stump,new,Wep Rack 1 (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35705,38705,goblin_camp__wep_rack_2,stump,new,Wep Rack 2 (Goblin Camp),2x2,0,8193,2,0,0,0,family=goblin_camp|hideout=1
+35706,38706,graveyard_kit__tombstones_graves_sheet__r8c0,stump,new,Tombstones Graves Sheet R8C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35707,38707,graveyard_kit__tombstones_graves_sheet__r8c24,stump,new,Tombstones Graves Sheet R8C24 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35708,38708,graveyard_kit__tombstones_graves_sheet__r12c4,stump,new,Tombstones Graves Sheet R12C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35709,38709,graveyard_kit__tombstones_graves_sheet__r12c28,stump,new,Tombstones Graves Sheet R12C28 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35710,38710,graveyard_kit__tombstones_graves_sheet__r20c4,stump,new,Tombstones Graves Sheet R20C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35711,38711,graveyard_kit__tombstones_graves_sheet__r20c12,stump,new,Tombstones Graves Sheet R20C12 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35712,38712,graveyard_kit__tombstones_graves_sheet__r20c16,stump,new,Tombstones Graves Sheet R20C16 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35713,38713,graveyard_kit__tombstones_graves_sheet__r20c20,stump,new,Tombstones Graves Sheet R20C20 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35714,38714,graveyard_kit__tombstones_graves_sheet__r24c0,stump,new,Tombstones Graves Sheet R24C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35715,38715,graveyard_kit__tombstones_graves_sheet__r24c4,stump,new,Tombstones Graves Sheet R24C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35716,38716,graveyard_kit__tombstones_graves_sheet__r24c8,stump,new,Tombstones Graves Sheet R24C8 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35717,38717,graveyard_kit__tombstones_graves_sheet__r28c0,stump,new,Tombstones Graves Sheet R28C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35718,38718,graveyard_kit__tombstones_graves_sheet__r28c4,stump,new,Tombstones Graves Sheet R28C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35719,38719,graveyard_kit__tombstones_graves_sheet__r28c12,stump,new,Tombstones Graves Sheet R28C12 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35720,38720,graveyard_kit__tombstones_graves_sheet__r28c16,stump,new,Tombstones Graves Sheet R28C16 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35721,38721,graveyard_kit__tombstones_graves_sheet__r28c20,stump,new,Tombstones Graves Sheet R28C20 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35722,38722,graveyard_kit__tombstones_graves_sheet__r28c24,stump,new,Tombstones Graves Sheet R28C24 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35723,38723,graveyard_kit__gates_fences_sheet__r4c8,stump,new,Gates Fences Sheet R4C8 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35724,38724,graveyard_kit__gates_fences_sheet__r4c16,stump,new,Gates Fences Sheet R4C16 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35725,38725,graveyard_kit__gates_fences_sheet__r4c20,stump,new,Gates Fences Sheet R4C20 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35726,38726,graveyard_kit__gates_fences_sheet__r8c0,stump,new,Gates Fences Sheet R8C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35727,38727,graveyard_kit__gates_fences_sheet__r8c4,stump,new,Gates Fences Sheet R8C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35728,38728,graveyard_kit__gates_fences_sheet__r8c28,stump,new,Gates Fences Sheet R8C28 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35729,38729,graveyard_kit__gates_fences_sheet__r12c20,stump,new,Gates Fences Sheet R12C20 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35730,38730,graveyard_kit__gates_fences_sheet__r12c24,stump,new,Gates Fences Sheet R12C24 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35731,38731,graveyard_kit__gates_fences_sheet__r12c28,stump,new,Gates Fences Sheet R12C28 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35732,38732,graveyard_kit__gates_fences_sheet__r16c24,stump,new,Gates Fences Sheet R16C24 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35733,38733,graveyard_kit__gates_fences_sheet__r16c28,stump,new,Gates Fences Sheet R16C28 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35734,38734,graveyard_kit__gates_fences_sheet__r20c8,stump,new,Gates Fences Sheet R20C8 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35735,38735,graveyard_kit__gates_fences_sheet__r20c24,stump,new,Gates Fences Sheet R20C24 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35736,38736,graveyard_kit__gates_fences_sheet__r20c28,stump,new,Gates Fences Sheet R20C28 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35737,38737,graveyard_kit__gates_fences_sheet__r24c0,stump,new,Gates Fences Sheet R24C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35738,38738,graveyard_kit__gates_fences_sheet__r24c8,stump,new,Gates Fences Sheet R24C8 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35739,38739,graveyard_kit__gates_fences_sheet__r24c16,stump,new,Gates Fences Sheet R24C16 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35740,38740,graveyard_kit__gates_fences_sheet__r28c0,stump,new,Gates Fences Sheet R28C0 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35741,38741,graveyard_kit__gates_fences_sheet__r28c4,stump,new,Gates Fences Sheet R28C4 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35742,38742,graveyard_kit__gates_fences_sheet__r28c8,stump,new,Gates Fences Sheet R28C8 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35743,38743,graveyard_kit__gates_fences_sheet__r28c12,stump,new,Gates Fences Sheet R28C12 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35744,38744,graveyard_kit__gates_fences_sheet__r28c16,stump,new,Gates Fences Sheet R28C16 (Graveyard Kit),4x4,0,8193,2,0,0,0,family=graveyard_kit|hideout=0
+35745,38745,graveyard_kit__nature_assets_sheet__r0c16,decor,new,Nature Assets Sheet R0C16 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35746,38746,graveyard_kit__nature_assets_sheet__r0c20,decor,new,Nature Assets Sheet R0C20 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35747,38747,graveyard_kit__nature_assets_sheet__r4c0,decor,new,Nature Assets Sheet R4C0 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35748,38748,graveyard_kit__nature_assets_sheet__r4c8,decor,new,Nature Assets Sheet R4C8 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35749,38749,graveyard_kit__nature_assets_sheet__r4c16,decor,new,Nature Assets Sheet R4C16 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35750,38750,graveyard_kit__nature_assets_sheet__r4c20,decor,new,Nature Assets Sheet R4C20 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35751,38751,graveyard_kit__nature_assets_sheet__r4c24,decor,new,Nature Assets Sheet R4C24 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35752,38752,graveyard_kit__nature_assets_sheet__r8c0,decor,new,Nature Assets Sheet R8C0 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35753,38753,graveyard_kit__nature_assets_sheet__r8c4,decor,new,Nature Assets Sheet R8C4 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35754,38754,graveyard_kit__nature_assets_sheet__r8c8,decor,new,Nature Assets Sheet R8C8 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35755,38755,graveyard_kit__nature_assets_sheet__r8c16,decor,new,Nature Assets Sheet R8C16 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35756,38756,graveyard_kit__nature_assets_sheet__r8c28,decor,new,Nature Assets Sheet R8C28 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35757,38757,graveyard_kit__nature_assets_sheet__r12c4,decor,new,Nature Assets Sheet R12C4 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35758,38758,graveyard_kit__nature_assets_sheet__r28c4,decor,new,Nature Assets Sheet R28C4 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35759,38759,graveyard_kit__nature_assets_sheet__r28c12,decor,new,Nature Assets Sheet R28C12 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35760,38760,graveyard_kit__nature_assets_sheet__r28c24,decor,new,Nature Assets Sheet R28C24 (Graveyard Kit),4x4,0,0,0,0,0,0,family=graveyard_kit|hideout=0
+35761,38761,haunted_manor__angel_statue,stump,new,Angel Statue (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35762,38762,haunted_manor__big_leaf_plant,decor,new,Big Leaf Plant (Haunted Manor),2x2,0,0,0,0,0,0,family=haunted_manor|hideout=1
+35763,38763,haunted_manor__bush_1,decor,new,Bush 1 (Haunted Manor),3x1,0,0,0,0,0,0,family=haunted_manor|hideout=0
+35764,38764,haunted_manor__bush_2,decor,new,Bush 2 (Haunted Manor),2x2,0,0,0,0,0,0,family=haunted_manor|hideout=1
+35765,38765,haunted_manor__dead_flower_bed,stump,new,Dead Flower Bed (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35766,38766,haunted_manor__dead_tree,stump,new,Dead Tree (Haunted Manor),4x4,0,8193,2,0,0,0,family=haunted_manor|hideout=0
+35767,38767,haunted_manor__gargoyle_statue,stump,new,Gargoyle Statue (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35768,38768,haunted_manor__hanging_ivy,wall,new,Hanging Ivy (Haunted Manor),2x2,0,65536,0,0,0,0,family=haunted_manor|hideout=0
+35769,38769,haunted_manor__lamp,decor,new,Lamp (Haunted Manor),2x3,0,0,0,0,0,0,family=haunted_manor|hideout=0
+35770,38770,haunted_manor__lion_statue,stump,new,Lion Statue (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35771,38771,haunted_manor__manor_gates,stump,new,Manor Gates (Haunted Manor),3x3,0,8193,2,0,0,0,family=haunted_manor|hideout=0
+35772,38772,haunted_manor__manor_walls,stump,new,Manor Walls (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35773,38773,haunted_manor__overgrown_bramble,decor,new,Overgrown Bramble (Haunted Manor),2x2,0,0,0,0,0,0,family=haunted_manor|hideout=1
+35774,38774,haunted_manor__plant_pot,decor,new,Plant Pot (Haunted Manor),2x2,0,0,0,0,0,0,family=haunted_manor|hideout=1
+35775,38775,haunted_manor__rotten_tree_stump,stump,new,Rotten Tree Stump (Haunted Manor),2x2,0,8193,2,0,0,0,family=haunted_manor|hideout=1
+35776,38776,haunted_manor__stone_fountain,stump,new,Stone Fountain (Haunted Manor),4x3,0,8193,2,0,0,0,family=haunted_manor|hideout=0
+35777,38777,lava_islands__giant_stone_statue,stump,new,Giant Stone Statue (Lava Islands),4x4,0,8193,2,0,0,0,family=lava_islands|hideout=0
+35778,38778,lava_islands__burned_tree_1,stump,new,Burned Tree 1 (Lava Islands),2x2,0,8193,2,0,0,0,family=lava_islands|hideout=1
+35779,38779,lava_islands__burned_tree_2,stump,new,Burned Tree 2 (Lava Islands),4x4,0,8193,2,0,0,0,family=lava_islands|hideout=0
+35780,38780,lava_islands__burned_tree_3,stump,new,Burned Tree 3 (Lava Islands),4x4,0,8193,2,0,0,0,family=lava_islands|hideout=0
+35781,38781,lava_islands__burned_tree_4,stump,new,Burned Tree 4 (Lava Islands),4x4,0,8193,2,0,0,0,family=lava_islands|hideout=0
+35782,38782,magic_forest__small_rock_1,stump,new,Small Rock 1 (Magic Forest),2x2,0,8193,2,0,0,0,family=magic_forest|hideout=1
+35783,38783,magic_forest__tall_rock_1,stump,new,Tall Rock 1 (Magic Forest),2x2,0,8193,2,0,0,0,family=magic_forest|hideout=1
+35784,38784,magic_forest__tall_rock_2,stump,new,Tall Rock 2 (Magic Forest),2x2,0,8193,2,0,0,0,family=magic_forest|hideout=1
+35785,38785,magic_forest__tall_rock_3,stump,new,Tall Rock 3 (Magic Forest),2x2,0,8193,2,0,0,0,family=magic_forest|hideout=1
+35786,38786,magic_forest__bridge_v_1,decor,new,Bridge V 1 (Magic Forest),2x3,0,0,0,0,0,0,family=magic_forest|hideout=0
+35787,38787,magic_forest__bridge_v_2,decor,new,Bridge V 2 (Magic Forest),2x2,0,0,0,0,0,0,family=magic_forest|hideout=1
+35788,38788,magic_forest__magic_small_1,decor,new,Magic Small 1 (Magic Forest),2x2,0,0,0,0,0,0,family=magic_forest|hideout=1
+35789,38789,magic_forest__magic_small_2,decor,new,Magic Small 2 (Magic Forest),2x2,0,0,0,0,0,0,family=magic_forest|hideout=1
+35790,38790,mineshaft__bucket,decor,new,Bucket (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35791,38791,mineshaft__cart_1,stump,new,Cart 1 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35792,38792,mineshaft__cart_2,stump,new,Cart 2 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35793,38793,mineshaft__cart_3,stump,new,Cart 3 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35794,38794,mineshaft__cave_stone,stump,new,Cave Stone (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35795,38795,mineshaft__chest_1,stump,new,Chest 1 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35796,38796,mineshaft__chest_2,stump,new,Chest 2 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35797,38797,mineshaft__coal_pile,decor,new,Coal Pile (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35798,38798,mineshaft__crystal_cluster_1,stump,new,Crystal Cluster 1 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35799,38799,mineshaft__crystal_cluster_2,stump,new,Crystal Cluster 2 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35800,38800,mineshaft__entrance_arch,decor,new,Entrance Arch (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35801,38801,mineshaft__gold_pile,decor,new,Gold Pile (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35802,38802,mineshaft__map,decor,new,Map (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35803,38803,mineshaft__mine_wall_1,stump,new,Mine Wall 1 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35804,38804,mineshaft__mine_wall_2,stump,new,Mine Wall 2 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35805,38805,mineshaft__mine_wall_3,stump,new,Mine Wall 3 (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35806,38806,mineshaft__oil_lantern,decor,new,Oil Lantern (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35807,38807,mineshaft__old_barrel,stump,new,Old Barrel (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35808,38808,mineshaft__open_chest_gold,stump,new,Open Chest Gold (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35809,38809,mineshaft__signs,decor,new,Signs (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35810,38810,mineshaft__spend,decor,new,Spend (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35811,38811,mineshaft__track_1,decor,new,Track 1 (Mineshaft),2x2,0,0,0,0,0,0,family=mineshaft|hideout=1
+35812,38812,mineshaft__wheelbarrow,stump,new,Wheelbarrow (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35813,38813,mineshaft__wooden_lift_mechanism,stump,new,Wooden Lift Mechanism (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35814,38814,mineshaft__wooden_wheelbarrow,stump,new,Wooden Wheelbarrow (Mineshaft),2x2,0,8193,2,0,0,0,family=mineshaft|hideout=1
+35815,38815,ruined_village__overgrown_nature__r0c0,decor,new,Overgrown Nature R0C0 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35816,38816,ruined_village__overgrown_nature__r0c4,decor,new,Overgrown Nature R0C4 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35817,38817,ruined_village__overgrown_nature__r4c0,decor,new,Overgrown Nature R4C0 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35818,38818,ruined_village__overgrown_nature__r4c4,decor,new,Overgrown Nature R4C4 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35819,38819,ruined_village__props__r0c0,decor,new,Props R0C0 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35820,38820,ruined_village__props__r0c4,decor,new,Props R0C4 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35821,38821,ruined_village__props__r4c0,decor,new,Props R4C0 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35822,38822,ruined_village__props__r4c4,decor,new,Props R4C4 (Ruined Village),4x4,0,0,0,0,0,0,family=ruined_village|hideout=0
+35823,38823,throne_room__big_castle_window,wall,new,Big Castle Window (Throne Room),2x3,0,65536,0,0,0,0,family=throne_room|hideout=0
+35824,38824,throne_room__castle_red_rug,decor,new,Castle Red Rug (Throne Room),2x4,0,0,0,0,0,0,family=throne_room|hideout=0
+35825,38825,throne_room__castle_window,wall,new,Castle Window (Throne Room),2x2,0,65536,0,0,0,0,family=throne_room|hideout=0
+35826,38826,throne_room__coin_chest_1,stump,new,Coin Chest 1 (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35827,38827,throne_room__coin_chest_2,stump,new,Coin Chest 2 (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35828,38828,throne_room__coin_chest_3,stump,new,Coin Chest 3 (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35829,38829,throne_room__golden_urn,decor,new,Golden Urn (Throne Room),2x2,0,0,0,0,0,0,family=throne_room|hideout=1
+35830,38830,throne_room__pink_flowers,decor,new,Pink Flowers (Throne Room),2x2,0,0,0,0,0,0,family=throne_room|hideout=1
+35831,38831,throne_room__red_banner_stand,stump,new,Red Banner Stand (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35832,38832,throne_room__royal_big_statue,stump,new,Royal Big Statue (Throne Room),1x3,0,8193,2,0,0,0,family=throne_room|hideout=0
+35833,38833,throne_room__royal_statue_1,stump,new,Royal Statue 1 (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35834,38834,throne_room__royal_statue_2,stump,new,Royal Statue 2 (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35835,38835,throne_room__royal_table_and_chairs,stump,new,Royal Table And Chairs (Throne Room),4x2,0,8193,2,0,0,0,family=throne_room|hideout=0
+35836,38836,throne_room__royal_throne,stump,new,Royal Throne (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35837,38837,throne_room__swords,decor,new,Swords (Throne Room),2x2,0,0,0,0,0,0,family=throne_room|hideout=1
+35838,38838,throne_room__table_crown,stump,new,Table Crown (Throne Room),2x2,0,8193,2,0,0,0,family=throne_room|hideout=1
+35839,38839,worship_interior__bench_up,stump,new,Bench Up (Worship Interior),2x2,0,8193,2,0,0,0,family=worship_interior|hideout=1
+35840,38840,worship_interior__blood_bowl,decor,new,Blood Bowl (Worship Interior),2x2,0,0,0,0,0,0,family=worship_interior|hideout=1
+35841,38841,worship_interior__book_unit,stump,new,Book Unit (Worship Interior),2x2,0,8193,2,0,0,0,family=worship_interior|hideout=1
+35842,38842,worship_interior__chains,decor,new,Chains (Worship Interior),2x2,0,0,0,0,0,0,family=worship_interior|hideout=1
+35843,38843,worship_interior__cult_picture,wall,new,Cult Picture (Worship Interior),2x2,0,65536,0,0,0,0,family=worship_interior|hideout=0
+35844,38844,worship_interior__demon_picture,wall,new,Demon Picture (Worship Interior),2x2,0,65536,0,0,0,0,family=worship_interior|hideout=0
+35845,38845,worship_interior__gargoyle_statue,stump,new,Gargoyle Statue (Worship Interior),2x2,0,8193,2,0,0,0,family=worship_interior|hideout=1
+35846,38846,worship_interior__hooded_cult_statue,stump,new,Hooded Cult Statue (Worship Interior),2x3,0,8193,2,0,0,0,family=worship_interior|hideout=0
+35847,38847,worship_interior__old_window,wall,new,Old Window (Worship Interior),2x2,0,65536,0,0,0,0,family=worship_interior|hideout=0
+35848,38848,worship_interior__pile_of_skulls,decor,new,Pile Of Skulls (Worship Interior),2x2,0,0,0,0,0,0,family=worship_interior|hideout=1
+35849,38849,worship_interior__red_rug_up,decor,new,Red Rug Up (Worship Interior),2x2,0,0,0,0,0,0,family=worship_interior|hideout=1
+35850,38850,worship_interior__small_bench,stump,new,Small Bench (Worship Interior),2x2,0,8193,2,0,0,0,family=worship_interior|hideout=1
+35851,38851,worship_interior__wall_banner,wall,new,Wall Banner (Worship Interior),2x2,0,65536,0,0,0,0,family=worship_interior|hideout=0
+35852,38852,worship_interior__wall_banner_2,wall,new,Wall Banner 2 (Worship Interior),2x2,0,65536,0,0,0,0,family=worship_interior|hideout=0
+35853,38853,boats_docks__boat_4,decor,new,Boat 4 (Boats Docks),3x2,0,0,0,0,0,0,family=boats_docks|hideout=0
+35854,38854,boats_docks__dock_1,decor,new,Dock 1 (Boats Docks),3x4,0,0,0,0,0,0,family=boats_docks|hideout=0
+35855,38855,boats_docks__dock_2,decor,new,Dock 2 (Boats Docks),3x2,0,0,0,0,0,0,family=boats_docks|hideout=0
+35856,38856,boats_docks__fishing_net,decor,new,Fishing Net (Boats Docks),2x2,0,0,0,0,0,0,family=boats_docks|hideout=1
+35857,38857,boats_docks__platform,decor,new,Platform (Boats Docks),3x2,0,0,0,0,0,0,family=boats_docks|hideout=0
+35858,38858,desert_camp__cactus1,stump,new,Cactus1 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35859,38859,desert_camp__cactus2,stump,new,Cactus2 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35860,38860,desert_camp__cactus3,stump,new,Cactus3 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35861,38861,desert_camp__camp_banner,wall,new,Camp Banner (Desert Camp),2x2,0,65536,0,0,0,0,family=desert_camp|hideout=0
+35862,38862,desert_camp__camp_bed,stump,new,Camp Bed (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35863,38863,desert_camp__camp_storage,decor,new,Camp Storage (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35864,38864,desert_camp__desert_rock_1,stump,new,Desert Rock 1 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35865,38865,desert_camp__desert_rock_2,stump,new,Desert Rock 2 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35866,38866,desert_camp__desert_rock_3,stump,new,Desert Rock 3 (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35867,38867,desert_camp__desert_rug,decor,new,Desert Rug (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35868,38868,desert_camp__desert_table,stump,new,Desert Table (Desert Camp),2x2,0,8193,2,0,0,0,family=desert_camp|hideout=1
+35869,38869,desert_camp__dry_grass,decor,new,Dry Grass (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35870,38870,desert_camp__small_desert_bush_1,decor,new,Small Desert Bush 1 (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35871,38871,desert_camp__small_desert_bush_2,decor,new,Small Desert Bush 2 (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35872,38872,desert_camp__small_desert_tent_1,stump,new,Small Desert Tent 1 (Desert Camp),4x4,0,8193,2,0,0,0,family=desert_camp|hideout=0
+35873,38873,desert_camp__small_desert_tent_2,stump,new,Small Desert Tent 2 (Desert Camp),4x4,0,8193,2,0,0,0,family=desert_camp|hideout=0
+35874,38874,desert_camp__small_desert_tent_3,stump,new,Small Desert Tent 3 (Desert Camp),4x4,0,8193,2,0,0,0,family=desert_camp|hideout=0
+35875,38875,desert_camp__small_desert_tent_4,stump,new,Small Desert Tent 4 (Desert Camp),4x4,0,8193,2,0,0,0,family=desert_camp|hideout=0
+35876,38876,desert_camp__small_desert_tent_5,stump,new,Small Desert Tent 5 (Desert Camp),4x4,0,8193,2,0,0,0,family=desert_camp|hideout=0
+35877,38877,desert_camp__supplies_sack,decor,new,Supplies Sack (Desert Camp),2x2,0,0,0,0,0,0,family=desert_camp|hideout=1
+35878,38878,desert_kit__desert_nature__r4c0,decor,new,Desert Nature R4C0 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35879,38879,desert_kit__desert_nature__r4c4,decor,new,Desert Nature R4C4 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35880,38880,desert_kit__desert_nature__r4c8,decor,new,Desert Nature R4C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35881,38881,desert_kit__desert_nature__r4c16,decor,new,Desert Nature R4C16 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35882,38882,desert_kit__desert_nature__r5c12,decor,new,Desert Nature R5C12 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35883,38883,desert_kit__desert_nature__r5c28,decor,new,Desert Nature R5C28 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35884,38884,desert_kit__desert_nature__r8c0,decor,new,Desert Nature R8C0 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35885,38885,desert_kit__desert_nature__r8c4,decor,new,Desert Nature R8C4 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35886,38886,desert_kit__desert_nature__r8c8,decor,new,Desert Nature R8C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35887,38887,desert_kit__desert_nature__r8c16,decor,new,Desert Nature R8C16 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35888,38888,desert_kit__desert_nature__r12c8,decor,new,Desert Nature R12C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35889,38889,desert_kit__desert_nature__r12c12,decor,new,Desert Nature R12C12 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35890,38890,desert_kit__desert_nature__r12c20,decor,new,Desert Nature R12C20 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35891,38891,desert_kit__desert_nature__r12c24,decor,new,Desert Nature R12C24 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35892,38892,desert_kit__desert_nature__r13c0,decor,new,Desert Nature R13C0 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35893,38893,desert_kit__desert_nature__r13c4,decor,new,Desert Nature R13C4 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35894,38894,desert_kit__desert_nature__r13c28,decor,new,Desert Nature R13C28 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35895,38895,desert_kit__desert_nature__r16c8,decor,new,Desert Nature R16C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35896,38896,desert_kit__desert_nature__r16c12,decor,new,Desert Nature R16C12 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35897,38897,desert_kit__desert_nature__r17c24,decor,new,Desert Nature R17C24 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35898,38898,desert_kit__desert_nature__r20c0,decor,new,Desert Nature R20C0 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35899,38899,desert_kit__desert_nature__r20c4,decor,new,Desert Nature R20C4 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35900,38900,desert_kit__desert_nature__r20c8,decor,new,Desert Nature R20C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35901,38901,desert_kit__desert_nature__r20c16,decor,new,Desert Nature R20C16 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35902,38902,desert_kit__desert_nature__r20c20,decor,new,Desert Nature R20C20 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35903,38903,desert_kit__desert_nature__r20c24,decor,new,Desert Nature R20C24 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35904,38904,desert_kit__desert_nature__r20c28,decor,new,Desert Nature R20C28 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35905,38905,desert_kit__desert_nature__r21c12,decor,new,Desert Nature R21C12 (Desert Kit),4x3,0,0,0,0,0,0,family=desert_kit|hideout=0
+35906,38906,desert_kit__desert_nature__r24c8,decor,new,Desert Nature R24C8 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35907,38907,desert_kit__desert_nature__r24c24,decor,new,Desert Nature R24C24 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35908,38908,desert_kit__desert_nature__r24c28,decor,new,Desert Nature R24C28 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35909,38909,desert_kit__desert_nature__r28c0,decor,new,Desert Nature R28C0 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35910,38910,desert_kit__desert_nature__r28c16,decor,new,Desert Nature R28C16 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35911,38911,desert_kit__desert_nature__r28c24,decor,new,Desert Nature R28C24 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35912,38912,desert_kit__desert_nature__r28c28,decor,new,Desert Nature R28C28 (Desert Kit),4x4,0,0,0,0,0,0,family=desert_kit|hideout=0
+35913,38913,frozen_ruins__ruins_decorations__r0c0,decor,new,Ruins Decorations R0C0 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35914,38914,frozen_ruins__ruins_decorations__r0c2,decor,new,Ruins Decorations R0C2 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35915,38915,frozen_ruins__ruins_decorations__r0c4,decor,new,Ruins Decorations R0C4 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35916,38916,frozen_ruins__ruins_decorations__r0c6,decor,new,Ruins Decorations R0C6 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35917,38917,frozen_ruins__ruins_decorations__r2c0,decor,new,Ruins Decorations R2C0 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35918,38918,frozen_ruins__ruins_decorations__r2c2,decor,new,Ruins Decorations R2C2 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35919,38919,frozen_ruins__ruins_decorations__r2c4,decor,new,Ruins Decorations R2C4 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35920,38920,frozen_ruins__ruins_decorations__r2c6,decor,new,Ruins Decorations R2C6 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35921,38921,frozen_ruins__ruins_decorations__r4c0,decor,new,Ruins Decorations R4C0 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35922,38922,frozen_ruins__ruins_decorations__r4c2,decor,new,Ruins Decorations R4C2 (Frozen Ruins),4x2,0,0,0,0,0,0,family=frozen_ruins|hideout=0
+35923,38923,frozen_ruins__ruins_decorations__r4c6,decor,new,Ruins Decorations R4C6 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35924,38924,frozen_ruins__ruins_decorations__r6c0,decor,new,Ruins Decorations R6C0 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35925,38925,frozen_ruins__ruins_decorations__r6c2,decor,new,Ruins Decorations R6C2 (Frozen Ruins),4x2,0,0,0,0,0,0,family=frozen_ruins|hideout=0
+35926,38926,frozen_ruins__ruins_decorations__r6c6,decor,new,Ruins Decorations R6C6 (Frozen Ruins),2x2,0,0,0,0,0,0,family=frozen_ruins|hideout=1
+35927,38927,royal_bedroom__big_rug,decor,new,Big Rug (Royal Bedroom),3x3,0,0,0,0,0,0,family=royal_bedroom|hideout=0
+35928,38928,royal_bedroom__book_shelf,stump,new,Book Shelf (Royal Bedroom),2x2,0,8193,2,0,0,0,family=royal_bedroom|hideout=1
+35929,38929,royal_bedroom__chest,stump,new,Chest (Royal Bedroom),2x2,0,8193,2,0,0,0,family=royal_bedroom|hideout=1
+35930,38930,royal_bedroom__coat_rack,stump,new,Coat Rack (Royal Bedroom),2x2,0,8193,2,0,0,0,family=royal_bedroom|hideout=1
+35931,38931,royal_bedroom__crown_on_table,stump,new,Crown On Table (Royal Bedroom),2x2,0,8193,2,0,0,0,family=royal_bedroom|hideout=1
+35932,38932,royal_bedroom__drassing_table,stump,new,Drassing Table (Royal Bedroom),3x3,0,8193,2,0,0,0,family=royal_bedroom|hideout=0
+35933,38933,royal_bedroom__dress_rack,stump,new,Dress Rack (Royal Bedroom),2x2,0,8193,2,0,0,0,family=royal_bedroom|hideout=1
+35934,38934,royal_bedroom__red_chair,decor,new,Red Chair (Royal Bedroom),2x2,0,0,0,0,0,0,family=royal_bedroom|hideout=1
+35935,38935,royal_bedroom__royal_bed,stump,new,Royal Bed (Royal Bedroom),2x3,0,8193,2,0,0,0,family=royal_bedroom|hideout=0
+35936,38936,royal_bedroom__fireplace,stump,new,Fireplace (Royal Bedroom),2x3,0,8193,2,0,0,0,family=royal_bedroom|hideout=0
+35937,38937,royal_bedroom__window,wall,new,Window (Royal Bedroom),3x3,0,65536,0,0,0,0,family=royal_bedroom|hideout=0
+35938,38938,royal_bedroom__royal_clock,stump,new,Royal Clock (Royal Bedroom),2x3,0,8193,2,0,0,0,family=royal_bedroom|hideout=0
+35939,38939,royal_bedroom__royal_wardrobe,stump,new,Royal Wardrobe (Royal Bedroom),2x3,0,8193,2,0,0,0,family=royal_bedroom|hideout=0
+35940,38940,royal_bedroom__small_plant,decor,new,Small Plant (Royal Bedroom),2x2,0,0,0,0,0,0,family=royal_bedroom|hideout=1
+35941,38941,royal_bedroom__small_plant_2,decor,new,Small Plant 2 (Royal Bedroom),2x2,0,0,0,0,0,0,family=royal_bedroom|hideout=1
+35942,38942,royal_bedroom__small_stol,decor,new,Small Stol (Royal Bedroom),2x2,0,0,0,0,0,0,family=royal_bedroom|hideout=1
+35943,38943,royal_bedroom__vase,decor,new,Vase (Royal Bedroom),2x2,0,0,0,0,0,0,family=royal_bedroom|hideout=1
+35944,38944,royal_bedroom__wall_pillow,wall,new,Wall Pillow (Royal Bedroom),1x3,0,65536,0,0,0,0,family=royal_bedroom|hideout=0
+35945,38945,war_camp__spike_barricade_1,stump,new,Spike Barricade 1 (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35946,38946,war_camp__massive_gate,stump,new,Massive Gate (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35947,38947,war_camp__wooden_fence_1,stump,new,Wooden Fence 1 (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35948,38948,war_camp__wooden_fence_2,stump,new,Wooden Fence 2 (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35949,38949,war_camp__wooden_fence_3,stump,new,Wooden Fence 3 (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35950,38950,war_camp__wooden_fence_4,stump,new,Wooden Fence 4 (War Camp),2x3,0,8193,2,0,0,0,family=war_camp|hideout=0
+35951,38951,war_camp__banner,wall,new,Banner (War Camp),2x2,0,65536,0,0,0,0,family=war_camp|hideout=0
+35952,38952,war_camp__barrels,stump,new,Barrels (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35953,38953,war_camp__boxes,decor,new,Boxes (War Camp),2x2,0,0,0,0,0,0,family=war_camp|hideout=1
+35954,38954,war_camp__chest,stump,new,Chest (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35955,38955,war_camp__lamp_post,stump,new,Lamp Post (War Camp),3x3,0,8193,2,0,0,0,family=war_camp|hideout=0
+35956,38956,war_camp__log_pile,decor,new,Log Pile (War Camp),2x2,0,0,0,0,0,0,family=war_camp|hideout=1
+35957,38957,war_camp__military_supplies,decor,new,Military Supplies (War Camp),2x2,0,0,0,0,0,0,family=war_camp|hideout=1
+35958,38958,war_camp__sacks,decor,new,Sacks (War Camp),2x2,0,0,0,0,0,0,family=war_camp|hideout=1
+35959,38959,war_camp__shield_stand,stump,new,Shield Stand (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35960,38960,war_camp__spear_rack,stump,new,Spear Rack (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35961,38961,war_camp__tool_rack,stump,new,Tool Rack (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35962,38962,war_camp__water_barrel,stump,new,Water Barrel (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35963,38963,war_camp__weapon_rack,stump,new,Weapon Rack (War Camp),2x2,0,8193,2,0,0,0,family=war_camp|hideout=1
+35964,38964,war_camp__tent_1,stump,new,Tent 1 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35965,38965,war_camp__tent_2,stump,new,Tent 2 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35966,38966,war_camp__tent_3,stump,new,Tent 3 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35967,38967,war_camp__tent_4,stump,new,Tent 4 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35968,38968,war_camp__tent_5,stump,new,Tent 5 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35969,38969,war_camp__tent_6,stump,new,Tent 6 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35970,38970,war_camp__tent_7,stump,new,Tent 7 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35971,38971,war_camp__tent_8,stump,new,Tent 8 (War Camp),4x4,0,8193,2,0,0,0,family=war_camp|hideout=0
+35972,38972,bathroom__bath,decor,new,Bath (Bathroom),2x2,0,0,0,0,0,0,family=bathroom|hideout=0
+35973,38973,bathroom__draws,stump,new,Draws (Bathroom),2x2,0,8193,2,0,0,0,family=bathroom|hideout=0
+35974,38974,bathroom__rug_2,decor,new,Rug 2 (Bathroom),2x2,0,0,0,0,0,0,family=bathroom|hideout=0
+35975,38975,bathroom__hanging_light,wall,new,Hanging Light (Bathroom),2x2,0,65536,0,0,0,0,family=bathroom|hideout=0
+35976,38976,bathroom__towel_rain,decor,new,Towel Rain (Bathroom),2x2,0,0,0,0,0,0,family=bathroom|hideout=0
+35977,38977,bathroom__rug,decor,new,Rug (Bathroom),2x2,0,0,0,0,0,0,family=bathroom|hideout=0
+35978,38978,fishing_village__bench,stump,new,Bench (Fishing Village),2x2,0,8193,2,0,0,0,family=fishing_village|hideout=0
+35979,38979,fishing_village__fish_stall,stump,new,Fish Stall (Fishing Village),2x2,0,8193,2,0,0,0,family=fishing_village|hideout=0
+35980,38980,fishing_village__fish_stall_2,stump,new,Fish Stall 2 (Fishing Village),2x2,0,8193,2,0,0,0,family=fishing_village|hideout=0
+35981,38981,fishing_village__fishing_boxes,decor,new,Fishing Boxes (Fishing Village),2x2,0,0,0,0,0,0,family=fishing_village|hideout=0
+35982,38982,fishing_village__fishing_dock,decor,new,Fishing Dock (Fishing Village),2x2,0,0,0,0,0,0,family=fishing_village|hideout=0
+35983,38983,market_stalls__barrel_1,stump,new,Barrel 1 (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35984,38984,market_stalls__fruit_box,stump,new,Fruit Box (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35985,38985,market_stalls__halloween_stall_1,stump,new,Halloween Stall 1 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35986,38986,market_stalls__halloween_stall_2,stump,new,Halloween Stall 2 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35987,38987,market_stalls__halloween_stall_3,stump,new,Halloween Stall 3 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35988,38988,market_stalls__halloween_stall_4,stump,new,Halloween Stall 4 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35989,38989,market_stalls__halloween_stall_5,stump,new,Halloween Stall 5 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35990,38990,market_stalls__halloween_stall_6,stump,new,Halloween Stall 6 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35991,38991,market_stalls__halloween_stall_7,stump,new,Halloween Stall 7 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35992,38992,market_stalls__halloween_stall_8,stump,new,Halloween Stall 8 (Market Stalls),4x4,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35993,38993,market_stalls__hanging_lights_1,wall,new,Hanging Lights 1 (Market Stalls),2x2,0,65536,0,0,0,0,family=market_stalls|hideout=0
+35994,38994,market_stalls__hanging_lights_2,wall,new,Hanging Lights 2 (Market Stalls),2x2,0,65536,0,0,0,0,family=market_stalls|hideout=0
+35995,38995,market_stalls__hanging_lights_3,wall,new,Hanging Lights 3 (Market Stalls),2x2,0,65536,0,0,0,0,family=market_stalls|hideout=0
+35996,38996,market_stalls__hanging_lights_4,wall,new,Hanging Lights 4 (Market Stalls),2x2,0,65536,0,0,0,0,family=market_stalls|hideout=0
+35997,38997,market_stalls__pumpkin_box,stump,new,Pumpkin Box (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35998,38998,market_stalls__pumpkin_table,stump,new,Pumpkin Table (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+35999,38999,market_stalls__pumpkin_table_2,stump,new,Pumpkin Table 2 (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+36000,39000,market_stalls__rack_1,stump,new,Rack 1 (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+36001,39001,market_stalls__shelf_unit,stump,new,Shelf Unit (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+36002,39002,market_stalls__sweet_table,stump,new,Sweet Table (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+36003,39003,market_stalls__table_1,stump,new,Table 1 (Market Stalls),2x2,0,8193,2,0,0,0,family=market_stalls|hideout=0
+36004,39004,orchard_trees__apple_tree,stump,new,Apple Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36005,39005,orchard_trees__autumn_fruit_tree,stump,new,Autumn Fruit Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36006,39006,orchard_trees__blossom_fruit_tree,stump,new,Blossom Fruit Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36007,39007,orchard_trees__cherry_tree,stump,new,Cherry Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36008,39008,orchard_trees__fig_tree,stump,new,Fig Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36009,39009,orchard_trees__golden_pear_tree,stump,new,Golden Pear Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36010,39010,orchard_trees__green_apple_tree,stump,new,Green Apple Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36011,39011,orchard_trees__lemon_tree,stump,new,Lemon Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36012,39012,orchard_trees__orange_tree,stump,new,Orange Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36013,39013,orchard_trees__peach_tree,stump,new,Peach Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36014,39014,orchard_trees__pear_tree,stump,new,Pear Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36015,39015,orchard_trees__plum_tree,stump,new,Plum Tree (Orchard Trees),2x2,0,8193,2,0,0,0,family=orchard_trees|hideout=0
+36016,39016,survivor_base__fence,stump,new,Fence (Survivor Base),3x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36017,39017,survivor_base__gate,stump,new,Gate (Survivor Base),2x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36018,39018,survivor_base__hazardous_waste,decor,new,Hazardous Waste (Survivor Base),2x2,0,0,0,0,0,0,family=survivor_base|hideout=0
+36019,39019,survivor_base__old_flag,decor,new,Old Flag (Survivor Base),2x3,0,0,0,0,0,0,family=survivor_base|hideout=0
+36020,39020,survivor_base__outdoor_cloths_rack,stump,new,Outdoor Cloths Rack (Survivor Base),3x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36021,39021,survivor_base__raised_garden_bed_1,stump,new,Raised Garden Bed 1 (Survivor Base),3x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36022,39022,survivor_base__raised_garden_bed_2,stump,new,Raised Garden Bed 2 (Survivor Base),3x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36023,39023,survivor_base__raised_garden_bed_3,stump,new,Raised Garden Bed 3 (Survivor Base),3x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36024,39024,survivor_base__survivor_banner,wall,new,Survivor Banner (Survivor Base),4x3,0,65536,0,0,0,0,family=survivor_base|hideout=0
+36025,39025,survivor_base__waste_pile,decor,new,Waste Pile (Survivor Base),2x2,0,0,0,0,0,0,family=survivor_base|hideout=0
+36026,39026,survivor_base__waste_pile_2,decor,new,Waste Pile 2 (Survivor Base),2x2,0,0,0,0,0,0,family=survivor_base|hideout=0
+36027,39027,survivor_base__water_pump,stump,new,Water Pump (Survivor Base),2x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36028,39028,survivor_base__water_tank_r0c0,decor,new,Water Tank (Survivor Base) R0C0,4x1,0,0,0,0,0,0,"family=survivor_base|hideout=0|group=survivor_base__water_tank|gw=4|gh=5|piece=0,0"
+36029,39029,survivor_base__water_tank_r1c0,stump,new,Water Tank (Survivor Base) R1C0,4x4,0,8193,2,0,0,0,"family=survivor_base|hideout=0|group=survivor_base__water_tank|gw=4|gh=5|piece=1,0"
+36030,39030,survivor_base__wooden_barrel,stump,new,Wooden Barrel (Survivor Base),2x2,0,8193,2,0,0,0,family=survivor_base|hideout=0
+36031,39031,zombie_city__abandoned_bike,decor,new,Abandoned Bike (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36032,39032,zombie_city__dead_flower,decor,new,Dead Flower (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36033,39033,zombie_city__dumpster,stump,new,Dumpster (Zombie City),2x2,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36034,39034,zombie_city__old_dead_tree,stump,new,Old Dead Tree (Zombie City),2x3,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36035,39035,zombie_city__old_path_h,decor,new,Old Path H (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36036,39036,zombie_city__old_path_v,decor,new,Old Path V (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36037,39037,zombie_city__old_road_h,decor,new,Old Road H (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36038,39038,zombie_city__old_road_v,decor,new,Old Road V (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36039,39039,zombie_city__old_road_v_box,stump,new,Old Road V Box (Zombie City),2x2,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36040,39040,zombie_city__overgrown_bored,decor,new,Overgrown Bored (Zombie City),3x2,0,0,0,0,0,0,family=zombie_city|hideout=0
+36041,39041,zombie_city__road_barrier,stump,new,Road Barrier (Zombie City),2x2,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36042,39042,zombie_city__rusted_bus_shelter,stump,new,Rusted Bus Shelter (Zombie City),3x2,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36043,39043,zombie_city__street_lamp,stump,new,Street Lamp (Zombie City),2x3,0,8193,2,0,0,0,family=zombie_city|hideout=0
+36044,39044,zombie_city__traffic_light,decor,new,Traffic Light (Zombie City),1x3,0,0,0,0,0,0,family=zombie_city|hideout=0
+36045,39045,zombie_city__vendingmachine,decor,new,Vendingmachine (Zombie City),2x2,0,0,0,0,0,0,family=zombie_city|hideout=0

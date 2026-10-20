@@ -1,0 +1,554 @@
+slug,path,size,md5,w,h
+boats_docks,spr_boat_1_strip2.png,7425,5d7742ea7245c6fc9052116039f6c391,192,64
+boats_docks,spr_boat_2_strip2.png,2610,dfd3fd56cd15bbfa4f948ac11ce8f506,128,64
+boats_docks,spr_boat_3_strip2.png,3668,f5fd122cf4554f7ab1115b6873052b9e,192,64
+boats_docks,spr_boat_4.png,3917,6806962232f84d6506e5084cb074f363,96,64
+boats_docks,spr_boat_5_strip2.png,4133,4e0e62b3f3f4a368b60c15495a622d55,192,64
+boats_docks,spr_box_1.png,886,efe59260b60b2a731e89c52d590cb02a,32,32
+boats_docks,spr_box_of_seafood.png,968,f80df95aeac0f8b6962e090736723319,32,32
+boats_docks,spr_buoy_1_strip2.png,1101,e5c8b152394d09faca4d608d5e02c4d3,64,32
+boats_docks,spr_dock_1.png,4225,a69891b4e85dd685861ef554c6ec1c3c,96,128
+boats_docks,spr_dock_2.png,2691,ff89c2677c54fb0d68ad395a9960f63c,96,64
+boats_docks,spr_dock_wood.png,495,3e878275eb4782b3c8ce8a2c2c3f6c65,34,34
+boats_docks,spr_fishing_net.png,1461,67141ae4b9cb62f02ca0ae715458d137,64,64
+boats_docks,spr_platform.png,4125,59687db57b966faae184f69f9cf2a25b,96,64
+boats_docks,spr_rope_1.png,1148,66d008fd51a79e23039217b9aeaf025d,32,32
+boats_docks,spr_rope_2.png,863,911bf91e602aa8d9840cb36f83a5a881,32,32
+boats_docks,spr_wood_pole.png,732,6facd229768a9a96a99e2a1118f4ee9e,32,32
+castle_kit,spr_Barracks.png,9317,88d0f74c8876b5e79667ba021f0cb072,128,128
+castle_kit,spr_black_smiths.png,11506,223e0bceb6ae8458257da69321a6f09c,128,128
+castle_kit,spr_boxes_stack.png,1225,cf9f7b9f02350c857e163ac36fc7b974,32,32
+castle_kit,spr_cannon_balls.png,1238,507722cee171979eea53e52eaca85c18,32,32
+castle_kit,spr_castle_bow.png,1523,d8863166dfa11a39df0e059d41a5ce64,32,32
+castle_kit,spr_castle_gate.png,8881,eb4a4814ec81707adfbb93bf8add86a8,128,128
+castle_kit,spr_castle_keep_strip9.png,175975,f6a4e34ec2cbc7c0b2e510ce84e77e96,2304,256
+castle_kit,spr_castle_tower.png,8956,714b2549a60345225276988ce1ec2e8f,128,128
+castle_kit,spr_castle_wall_1.png,8476,90a061d7691e34e505070210c292b77c,128,128
+castle_kit,spr_castle_wall_2.png,9241,8927f26065e2689e5ceb9b7d453366ee,128,128
+castle_kit,spr_castle_wall_3.png,4270,08194e549fd30258736ac82748793138,128,128
+castle_kit,spr_castle_wall_4.png,2409,3211d901a8a1ff9714fb3a325e5e88d0,64,64
+castle_kit,spr_fire_pit_strip9.png,4484,ce936b8ba1f291a0c7932a1357718556,288,32
+castle_kit,spr_gold.png,1203,c6e3316872147675c79aca5a1ff8b727,32,32
+castle_kit,spr_hay.png,1615,6457a5415e30488bc9b98de86580852c,32,32
+castle_kit,spr_log_stack.png,1589,daf2a4ff554b8444df1a90cd0fa29cc6,32,32
+castle_kit,spr_red_flag.png,1047,ad7a33684f9f5fc964b6df577f374ea3,32,32
+castle_kit,spr_small_keep.png,12154,aca4fced04b2a5198035e2e6d30ded41,128,128
+castle_kit,spr_small_torch_strip9.png,1526,7f040e1efc7705549a557836f4c2b108,288,32
+castle_kit,spr_stone_bench.png,651,b7a61536507d51547d583a301488e14b,32,32
+castle_kit,spr_store_house.png,10592,c37362ec88df339c340220a404e66f7d,128,128
+castle_kit,spr_target.png,1202,b5866b7d1d1edeb2ee38a593c4267233,32,32
+castle_kit,spr_training_dummy.png,1124,06ba7f4a02d8d54798c09d3fb0e87d0e,32,32
+desert_camp,Cactus1.png,1477,2ae9544b26422978d1d9c839f5609af0,48,48
+desert_camp,Cactus2.png,1653,a2cb9b3f88ca51268c031b6e7124cdc3,48,48
+desert_camp,Cactus3.png,1740,3d7b13c93fd3ecc296046af9716c5b2b,48,48
+desert_camp,Camp_Bed.png,1591,a11ae19c5fb32417f5093c4b0006bfd5,64,64
+desert_camp,Camp_Fire_strip9.png,9429,4d49e7270e0c776e795f40fdd3ab373a,576,64
+desert_camp,Camp_banner.png,1191,a324b5040cf8fd4c654bfbb732d67781,64,64
+desert_camp,Camp_cooking_pot_strip9.png,7631,36e66eb45b7cae50cab8b8ce06d837b4,576,64
+desert_camp,Camp_storage.png,1336,65cc32a0eff2399fb178b1cadb27dc87,64,64
+desert_camp,Desert_rock_1.png,3632,b423dc3a98a4da2f4dc8d76ec439410f,64,64
+desert_camp,Desert_rock_2.png,4024,4103a4852c24f97c27cf34af5cb596e2,64,64
+desert_camp,Desert_rock_3.png,3949,3d337bac4502f1e97eb9fbae7910329c,64,64
+desert_camp,Dry_grass.png,1753,915f0b6a96ebbcd7b2923220ddd4bc6f,48,48
+desert_camp,Large_Desert_Caravan_Tent.png,41679,484fdaefe0d6d668de39634c4cbc660f,256,256
+desert_camp,Large_Desert_Nomad_Tent.png,39637,aecb3a0521b837a6230ae05a03a381d0,256,256
+desert_camp,Large_Desert_Nomad_Tent_2.png,39520,1bc0025f7798069626abeb37b153f1e5,256,256
+desert_camp,Small_Desert_rock.png,992,ae403320caf1d97ecac075a843d7ec1a,32,32
+desert_camp,Small_desert_bush_1.png,1881,26d207c6469a3d4c85fb9412235c357b,48,48
+desert_camp,Small_desert_bush_2.png,2012,22c3ce44abbee14232c5d7cf913ac84b,48,48
+desert_camp,Wooden_stools.png,1181,cf2cbe80b3248462793cc98d5dc2b03f,32,32
+desert_camp,back_pack.png,1436,6d6b2f570a6785a8f87e241a5d0ea2ed,32,32
+desert_camp,bed_roll_1.png,799,e56918fb698021e943fbcb3aec9253c7,48,32
+desert_camp,desert_pot.png,1104,33b02e0a3d69641b40047cfa7a0ae0a7,32,32
+desert_camp,desert_rug.png,1129,e9ff1bb2973329a82dac7e698d43a8c3,64,64
+desert_camp,desert_table.png,858,684f82dfa99fd421147087a43060bd79,64,64
+desert_camp,food_basket.png,1404,b6723c4c2c7e2c5db83c1e47771e3449,32,32
+desert_camp,food_basket_2.png,1482,a80e5110e00c1914b79836cadd57e77a,32,32
+desert_camp,honey_jar_1.png,1066,95002e4bf678652fa0605c1d044d75e9,32,32
+desert_camp,lantern.png,880,cd62d80d06915190adf69af2f7cc313a,32,32
+desert_camp,sand_floor_tile_1.png,919,127a7495f4f31af8b94162be1709af43,32,32
+desert_camp,sand_floor_tile_2.png,1185,7f66cd52f283bd435bb6915d42f9b845,32,32
+desert_camp,sand_floor_tile_3.png,1309,3e51df66af32ba5e1551eae1d6e2ab62,32,32
+desert_camp,sand_floor_tile_4.png,1459,1f7e219e9491c6dabe496b2decaebdcd,32,32
+desert_camp,small_desert_tent_1.png,10427,5680fe3dcc39b7c641e769d4897b25b3,128,128
+desert_camp,small_desert_tent_2.png,8622,8776ba456a1d7b9166786a4b44bd319b,128,128
+desert_camp,small_desert_tent_3.png,8154,29805b9ef028459ceac7c91cdd571afa,128,128
+desert_camp,small_desert_tent_4.png,8786,03f71fbda25f59c5fb7b5000c7d5cdc5,128,128
+desert_camp,small_desert_tent_5.png,5272,9ad664a93e2112faca37cda9012c4129,128,128
+desert_camp,supplies_sack.png,1364,3cc9723cbe28931763154b43caf684f7,48,48
+desert_camp,water_jar_1.png,693,a7468fe15f9e9d1457cf63d8817f80d2,32,32
+desert_camp,water_jar_2.png,760,ea587ce28fc3fde787096a66a65c7178,32,32
+dungeon_cells,Hanging_chains.png,743,23037793f1970588d155484798684005,48,48
+dungeon_cells,Iron_cage.png,3184,27ae1bef95c558ecfd20a7bfc2b3ca8e,64,64
+dungeon_cells,Skeleton_remains.png,1859,50b8c4c9ed7743f7608d5494f626b5bf,48,48
+dungeon_cells,Trim#/spr_wood_trim_bottom.png,337,0b310445abd18d5743698c126e6b3902,32,32
+dungeon_cells,Trim#/spr_wood_trim_c_down_left.png,486,c09db6a21cf1b6e6afdc351412e5918a,32,32
+dungeon_cells,Trim#/spr_wood_trim_c_down_right.png,494,0983d786b32584312e7077d7e5b5016b,32,32
+dungeon_cells,Trim#/spr_wood_trim_c_up_left.png,465,4c3bcf0ebc537f4355adf0fecbec2213,32,32
+dungeon_cells,Trim#/spr_wood_trim_c_up_right.png,459,6a76e9d5aa48fa51e7cde2bae509346a,32,32
+dungeon_cells,Trim#/spr_wood_trim_down_left.png,357,129ebd3024eb57162868fb767bba1f96,32,32
+dungeon_cells,Trim#/spr_wood_trim_down_right.png,353,c3ee62e21fb9acaaa24980c66514dacc,32,32
+dungeon_cells,Trim#/spr_wood_trim_top.png,371,6b4df9817c42f84b27a34a8a78b3d864,32,32
+dungeon_cells,ball_chain.png,1340,55183d3f226bf1390776bb54ffe7b060,48,48
+dungeon_cells,basket_of_strew.png,1944,5f0317b8e5c3d94c3455db97051d3c4e,64,64
+dungeon_cells,blood.png,516,0c404f30a4da571fda7a6da7e96cd578,48,48
+dungeon_cells,bone_shelf.png,2108,3c97dd0bc44ae2e7bf6f4b2ba40cfd20,64,64
+dungeon_cells,bucket_of_water.png,1113,98249528f13d22bc21958017bd6a253b,48,48
+dungeon_cells,cell_barrel.png,2146,e7bb1da33146900b7f0cbe7b98b7da8d,48,48
+dungeon_cells,cell_bed.png,1916,bd5eaf3d84b5de914532a68d5ef6787a,64,64
+dungeon_cells,cell_wall_candle_strip9.png,3690,79e4da2f941fee67971d3546003ba3da,432,48
+dungeon_cells,chain_unit.png,2291,24f83f48828fea583dce0ab7904529a0,64,64
+dungeon_cells,chair.png,1108,3ee0bae98b851aa5bf79dabdbb0baded,64,64
+dungeon_cells,cob_webs.png,907,a9adc46bcee1e593fbc8448e869a573f,48,48
+dungeon_cells,dungeon_bars.png,1086,ebe8291354c0b3dda7cce74dcb597895,32,48
+dungeon_cells,dungeon_cell_door.png,1491,236d9783e2687395ce3e13db5d176f38,32,48
+dungeon_cells,dungeon_cell_window.png,2741,22a222a6c53de4ef77a4a0f4b461802c,32,48
+dungeon_cells,dungeon_wall_1.png,2911,d1f39fe23e4b532da0f0d951c838c287,32,48
+dungeon_cells,dungeon_wall_2.png,3312,dfbc5095af91a961c076c8f0e444807b,32,48
+dungeon_cells,floor_title.png,1935,a513224b77c806b5727c5f38b02abd23,32,32
+dungeon_cells,old_chest.png,1679,f7d268f5260c52a2d0550531360a0e4b,64,64
+dungeon_cells,pile_of_bones.png,1399,baed21f828469d22ec6a3a2c83d0dfae,48,48
+dungeon_cells,pile_of_strew.png,2223,99bfea6122932e3c382b0b02152c2802,64,64
+dungeon_cells,rock_pile.png,1474,28dc3c549206ad1273e336b34c0ecdb5,32,32
+dungeon_cells,skull.png,632,b91bb472e4cbdadf94575031a1fab773,32,32
+dungeon_cells,small_table.png,863,38fd178ef6d18f7590deeae727ee6f0a,48,48
+dungeon_cells,stairs.png,2973,fb51fe06ab805a5d91d95a0c9185cfd2,64,64
+dungeon_cells,table.png,898,88138bc972ba75bbf34d86ce767c5923,64,32
+dungeon_cells,top_of_wall.png,914,84f0ed0fc76ff3d3b6e25c43e86b383b,32,32
+dungeon_cells,wine.png,525,7cdcf0f9299ef2c44c3a640d7cbd7b86,32,32
+fishing_village,spr_bench.png,1490,2d1218c107472f35cc9e668f45f5c812,48,48
+fishing_village,spr_big_house.png,5779,ba76936ed62bac503adf9eb613048264,96,96
+fishing_village,spr_boat.png,1119,8c114eae2933524e2a04e28a8a0184ad,48,48
+fishing_village,spr_fish_net.png,1558,eef7aece5ffe667d62d570b21cf47673,46,32
+fishing_village,spr_fish_stall.png,3200,e039ea5e128903541dd4331bc0dd0c2d,64,64
+fishing_village,spr_fish_stall_2.png,4088,03962db2e2b8a7f9514cd3d3c1c25d54,64,64
+fishing_village,spr_fish_workshop_1.png,3665,d93799e6acfd097622eaf7bd89d17e1d,64,64
+fishing_village,spr_fishing_boxes.png,2665,b11fd987cf409ef76b870d37a1d4b5e3,64,64
+fishing_village,spr_fishing_dock.png,2549,8961e0612e67b71f24700604b5ee228b,64,64
+fishing_village,spr_fishing_store.png,8278,568eb7c0f2c455b1e6ff611b24de837c,96,96
+fishing_village,spr_gray_building.png,6263,bc1ca6bba03b0c3d8dfa83922d3a5138,96,96
+fishing_village,spr_house_1.png,3639,62112d229a4997ffbc4ccab5adcfeb9f,96,96
+fishing_village,spr_house_smoke_strip8.png,3296,3041d61fb9718a1c7a36e88a0d22f865,256,32
+fishing_village,spr_lighthouse.png,4296,9d43860ab015772a05dff4d08ba0ddcf,96,96
+fishing_village,spr_little_house_1.png,3163,d7ffc232d3a252e2bfacded60b712628,64,64
+fishing_village,spr_little_house_2.png,3934,3ff5b8f0032516d4c058825250392ee7,64,64
+fishing_village,spr_little_house_3.png,3672,cc5ced7cf383d99bb122b0d4e44906c3,64,64
+fishing_village,spr_shed_1.png,3165,bfdc8cd96d4fceed995cff4789e1445d,64,64
+fishing_village,spr_shed_2.png,2516,98cc8f3eb11b5cdde8774b738fbfcdbc,64,64
+fishing_village,spr_shed_3.png,2882,e0f37c618fe0e56dfc5bafdc07935105,64,64
+fishing_village,spr_shed_4.png,2861,a2b753536f1e3180a4838a11facc807d,64,64
+fishing_village,spr_shed_5.png,3073,095f5ced776466f152b48ae4733e7304,64,64
+fishing_village,spr_warehouse.png,4923,4e34e94dad25c825895843568dd37a95,96,96
+fishing_village,spr_wood_house_1.png,4842,30dbba88e32fb7a29662e492456a64d2,96,96
+giant_squid,spr_Giant_Squid_attack_strip17.png,175455,952794a7ee7600e136ab7f425b35e3b6,2176,128
+giant_squid,spr_Giant_Squid_death_strip17.png,150667,f75678437a819c237b81d9c1e1b6db2c,2176,128
+giant_squid,spr_Giant_Squid_idle_strip17.png,184896,d0c2781fe3912905eb3b2e209d41c43d,2176,128
+goblin_camp,Goblin_Tent_1.png,9805,e19461463c30e42016d58c50bd9f6915,128,128
+goblin_camp,Goblin_Tent_2.png,4906,7e35ccb54ea22f6c8ae5a84fcf8c1c70,128,128
+goblin_camp,Goblin_Tent_3.png,5683,33c799acb6b663e03423c07946d0f4ba,128,128
+goblin_camp,Goblin_Tent_4.png,4482,9555831fe64c9bebd17a568535f62666,128,128
+goblin_camp,Goblin_Tent_5.png,7012,5e68c1a245b0615a6719b3442d3aed6c,128,128
+goblin_camp,Meat_Drying_Rack.png,2495,cf0086f2e932381729925961d510e521,92,92
+goblin_camp,Meat_Drying_Rack_2.png,1715,217dc4a7dde9c681d91cc105cd645548,64,64
+goblin_camp,Totem.png,2399,2662185eacd624080581b8517d75b236,64,64
+goblin_camp,War_Drum.png,2019,d673dfae57bb571ab7afc3959049fd69,48,48
+goblin_camp,barrel.png,2218,bb70249d5cfdc19ff4bc86bfefaaf307,64,64
+goblin_camp,bear_heads.png,3237,b72312266f8cf25441229bafdd0647d7,64,64
+goblin_camp,bone_chair.png,2369,382dbb61c6d01651f24ad8a8cfd37e07,64,64
+goblin_camp,box_of_meat.png,2497,932e620fd2b3ca0b363fd4d9e3e356dd,64,64
+goblin_camp,camp_fence.png,2545,10b2f37b7840552f5a4c4c2c49558ee2,64,64
+goblin_camp,camp_fence_spar.png,1021,7b7c93179ed581907f283eae37bf965d,64,64
+goblin_camp,cooking_pot_1_strip9.png,8827,875bfef4a2e9ad2f3841a84eec6a334e,576,64
+goblin_camp,floor/spr_grass_188.png,524,8feb6798f7eab3bdbdcd8dcc5130f17f,32,32
+goblin_camp,floor/spr_grass_3.png,841,abfef3d24df21a0973560a120b53c166,32,32
+goblin_camp,floor/spr_mud_1.png,584,86ee04eaeab8444585ee555e6b9dae78,32,32
+goblin_camp,floor/spr_mud_2.png,724,2b79e48c2c682d53b34a4272f1f4147d,32,32
+goblin_camp,floor/spr_mud_bottom.png,789,ae9a584cf7a707c4baa90008f38871b8,32,32
+goblin_camp,floor/spr_mud_corner_bl.png,827,95f239097c86cf55da4beeddc2e86de2,32,32
+goblin_camp,floor/spr_mud_corner_br.png,838,b863580aaf83da7f2ed4774a6e7bf30f,32,32
+goblin_camp,floor/spr_mud_corner_tl.png,808,8e5aa773a06618f3eec36226f9b03197,32,32
+goblin_camp,floor/spr_mud_corner_tr.png,816,0dd5097028e9fc79ae1814678f049234,32,32
+goblin_camp,floor/spr_mud_down_l.png,853,a4bdc415bddc27dca926e1eac79f914c,32,32
+goblin_camp,floor/spr_mud_down_r.png,804,c7e2b4924fd8ebf9dd5155fd7a602f3d,32,32
+goblin_camp,floor/spr_mud_top.png,766,0d2b5f10ce5adf6d53edf4b80192cd96,32,32
+goblin_camp,floor/spr_rock.png,879,8bda05279b95ed69ff6174d8f511a152,32,32
+goblin_camp,goblin_banner_1.png,1835,7be35690cd4f0e4665574ac0585d866b,64,64
+goblin_camp,goblin_banner_2.png,2020,2727d92cb5c2742c430f06b7475e37a7,64,64
+goblin_camp,goblin_banner_3.png,2470,cabf282981c3efe96289801950aa240d,64,64
+goblin_camp,meat_table.png,1411,e22587e9348690e566247c14cb0f919f,94,47
+goblin_camp,mushroom_basket.png,2190,f65524399cd87f8151a65b5f986eb867,64,64
+goblin_camp,open_chest.png,1625,7d4d600a33c2513f0a5b81254637f09a,48,48
+goblin_camp,sack_of_food.png,1585,49c614b32801de439f25877fa9f4bb85,64,64
+goblin_camp,skull_box.png,2118,b3b5764e82c37dcdbb52c4ab81d05ab2,48,48
+goblin_camp,skull_totem.png,2012,ccde15353e803af5b486bee70594b06e,64,64
+goblin_camp,wep_rack_1.png,3363,46c0abd443beb7b1953aabdb441522e1,64,64
+goblin_camp,wep_rack_2.png,3281,36a41b358c337ab5b88f50facc073570,64,64
+lava_islands,Giant_Stone_Statue.png,9292,e24d470a639b56b570714eacb819958f,128,128
+lava_islands,dark_rock_1.png,1252,2238eb9755ad8e7bef1165818c731f46,32,32
+lava_islands,dark_rock_2.png,1141,7da740c0879dc7378d50932376ebf831,32,32
+lava_islands,dark_rock_3.png,1191,a846cdd092b850ee68418343eff12c75,32,32
+lava_islands,giant_volcano_strip9.png,192840,a6873d552bbfa41fffd025f2d7d82c7f,2304,256
+lava_islands,spr_bones_and_ash.png,1428,b595465968ceba6ed766aafbf0fbf8b2,32,32
+lava_islands,spr_burned_tree_1.png,1353,61d041d4b608d5011e2fb675a3d60771,64,64
+lava_islands,spr_burned_tree_2.png,6664,1d96ebd775fbc29f3ea4944224ea7993,128,128
+lava_islands,spr_burned_tree_3.png,5714,baaed3cd50f90d79a3076688a6d20066,128,128
+lava_islands,spr_burned_tree_4.png,6253,86293b25f83ec5908be60edcba908ac5,128,128
+lava_islands,spr_lava.png,319,3c834e63184a1943e2d5f8bd780e672e,32,32
+lava_islands,spr_lava_bubbles_strip9.png,4615,c48e7abb230b381bc6624f7e0934239a,288,32
+lava_islands,spr_lava_island_bottom_left_strip9.png,3233,1ed06efd7c37f515f3028c10fac5762d,288,32
+lava_islands,spr_lava_island_bottom_right_strip9.png,3156,3b03008905b5c7b17f75ea54d496f7df,288,32
+lava_islands,spr_lava_island_bottom_strip9.png,2590,cdb4a47096e907dd308786d9d1fffb40,288,32
+lava_islands,spr_lava_island_floor.png,1331,8e553cdb4f968e1296d02cee161b019f,32,32
+lava_islands,spr_lava_island_left_strip9.png,3216,a3179a98d879154db932f1edf953578a,288,32
+lava_islands,spr_lava_island_right_strip9.png,3216,b4ae643c0c5bc443b1484961df67d7fa,288,32
+lava_islands,spr_lava_island_top_left_strip9.png,3169,c8ce0327b8edc5bc0eb99efe79ae98e7,288,32
+lava_islands,spr_lava_island_top_right_strip9.png,3131,433fd5df267c202227d72e445a45d6ab,288,32
+lava_islands,spr_lava_island_top_strip9.png,2518,908c46d7350b4d7abbfce4a779956db4,288,32
+lava_islands,spr_lava_pool_strip9.png,16899,f5bb72e920ace474c6bd77095075ee34,576,64
+lava_islands,spr_skulls.png,1526,6e5810b9ec0eba6cd5cce7d2614cc780,32,32
+magic_forest,FLOOR TILES/spr_grass_TILE_1.png,535,5e0a8b58f53562a8f15c5efeee7ca45a,32,32
+magic_forest,FLOOR TILES/spr_grass_TILE_2.png,604,1eb803afef2f287b19c7563d38c8be45,32,32
+magic_forest,FLOOR TILES/spr_grass_TILE_3.png,1301,13aca4d83fdc1fb7aa0e22e401ab167d,32,32
+magic_forest,FLOOR TILES/spr_grass_TILE_4.png,884,f44b2ab47c8f3935961c8d2864cb0318,32,32
+magic_forest,FLOOR TILES/spr_grass_TILE_5.png,887,7456f4041cd49fb10bf9ced76f26741c,32,32
+magic_forest,FLOOR TILES/spr_lake_TILE_2_strip7.png,2071,f638a5f0ab5919466828fb335f2d5a79,224,32
+magic_forest,FLOOR TILES/spr_lake_TILE_strip7.png,1469,19040d23e41dad0b52605027b24330dc,224,32
+magic_forest,FLOOR TILES/spr_purple_path_4_way.png,1266,dd33fe2732747978fcd7945861e65322,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_h.png,1303,00b117839314021e353ee187dfeffca0,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_h_crack.png,1284,d0114cf10f96754f645fa793734d660b,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_left_down.png,1467,466ff443a8ecbf9aafa1b19c5572f135,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_left_up.png,1469,9295f45bb552e9f0f912fbe149f88865,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_right_down.png,1477,5fb6a1527ef0fdfc42d3e79d6ae12500,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_right_up.png,1443,2a3b32ca62bd9efae4cbeaef9fd39ca1,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_t_down.png,1455,eea494f241fa1bba49d860ca64e3c832,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_t_up.png,1478,4e635d84a0222ffadfb946333171cb17,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_v.png,1399,daf2fab533b2acb34b4fac97de451beb,32,32
+magic_forest,FLOOR TILES/spr_purple_path_TILE_v_crack.png,1405,4043e75f1a9887006c281f0566ecfa15,32,32
+magic_forest,Flora and Rocks/spr_dark_bush_1.png,1426,914b3b43fe39e844b78ededf7234bd02,32,32
+magic_forest,Flora and Rocks/spr_dark_flower_1.png,960,daf7a339ad88d2623b2bbb882d69dd87,32,32
+magic_forest,Flora and Rocks/spr_long_grass_1_strip7.png,6475,4badacbe3fb59f775bb2249e18d00842,448,64
+magic_forest,Flora and Rocks/spr_long_grass_2_strip7.png,6529,2999ce7eac74984fa7fbd5ec58186a92,448,64
+magic_forest,Flora and Rocks/spr_moss_rock_1.png,1615,37abc34db550ede227f8c1b8f61fae61,32,32
+magic_forest,Flora and Rocks/spr_moss_rock_2.png,1795,38fdc09fbcf556ea390d7b484412bcb7,32,32
+magic_forest,Flora and Rocks/spr_moss_rock_3.png,1450,cf78ccc9a4906da672abf89892a20005,32,32
+magic_forest,Flora and Rocks/spr_small_plant_1_strip7.png,3019,c389975ef98f88b89f07de9b4dc1da81,224,32
+magic_forest,Flora and Rocks/spr_small_plant_2_strip7.png,3471,702e2add9117e917668758251c4687d7,224,32
+magic_forest,Flora and Rocks/spr_small_rock_1.png,2019,875d486483673d51c1536cc8d27c1f78,64,64
+magic_forest,Flora and Rocks/spr_tall_rock_1.png,2550,fb266169dd2bfa3cfb6beb4352e6c2e1,64,64
+magic_forest,Flora and Rocks/spr_tall_rock_2.png,2157,dc5e7c53e64e0547255ec4e2a31a08e2,64,64
+magic_forest,Flora and Rocks/spr_tall_rock_3.png,2071,2f19be69c32f18c3d0a81ba167d79e4d,64,64
+magic_forest,Flora and Rocks/spr_trap_plant_1_strip4.png,3682,ea0bbdcf8f81f48551b7eb486117ca89,256,64
+magic_forest,Flora and Rocks/spr_trap_plant_2_strip7.png,6475,6b5ac71eb4f3573720ee3c91ccd9fb56,448,64
+magic_forest,Towers and Bridges/spr_bridge_v_1.png,3358,87847284ad7446a54f46bbafcfa33646,64,96
+magic_forest,Towers and Bridges/spr_bridge_v_2.png,2182,174315689f6975b5cd560653cf838cf3,64,64
+magic_forest,Towers and Bridges/spr_magic_small_1.png,2942,3b049996275dca2e28eabbcd8ac4c954,64,64
+magic_forest,Towers and Bridges/spr_magic_small_2.png,2894,db10c4338395df4192cb565d96efea80,64,64
+magic_forest,Towers and Bridges/spr_magic_tower_1_strip7.png,16544,3fe23bca9dd2c1f21e7d27d6d6b8102a,476,128
+magic_forest,Towers and Bridges/spr_magic_tower_2_strip7.png,28002,2827d6feaa04cb144a61c8712e2348eb,476,128
+magic_forest,Towers and Bridges/spr_magic_tower_3_strip7.png,24311,5a95c468eb3a7fdd092b48c70053bc38,476,128
+magic_forest,Towers and Bridges/spr_magic_tower_4_strip7.png,13439,ca8fc80431782889a61632f0e2927a71,448,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_10_strip7.png,33818,ce8192c850291ccebe9bc002f6adb507,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_11_strip7.png,39415,97b77fc1e024d368d558fd6e0b2d56e1,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_12_strip7.png,41066,9f87cea541a56b3c0bd3a0a070cbf31b,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_1_strip7.png,39512,d3a92fc5fc7076b9ec00ee9a512cd4ce,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_2_strip7.png,31308,aafc1ca9e8794282c3b6862e31f70219,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_3_strip7.png,36188,b5076745208d3418ce60a16212263306,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_4_strip7.png,27976,c813542b4a8d37cb4e967a83fd4b2069,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_5_strip7.png,38433,2f11b4a3631a01100a6a80b553a88247,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_6_strip7.png,22051,d3663c54712e4a256d3c53af9dd1b0d1,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_7_strip7.png,36724,ab477165372e66c8f3500e81b3568c83,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_8_strip7.png,40223,c15f485dfd3df9e91a93769453d5d5f4,672,96
+magic_forest,Trees and Mushrooms/spr_magic_tree_9_strip7.png,43217,69c8c568b5b12db5a9bdcd35643abb47,672,96
+magic_forest,Trees and Mushrooms/spr_mushroom_1_strip7.png,35607,360895de9112e734bb0e25c29f7d8d0c,672,96
+magic_forest,Trees and Mushrooms/spr_mushroom_2_strip7.png,37211,802e0ef3118d5ba27da2e50c4bae10a7,672,96
+magic_forest,Trees and Mushrooms/spr_mushroom_3_strip7.png,47927,72a6995454d0b21b2e0862d716428a6a,672,96
+mineshaft,Coal_pile.png,1498,f9a1bc13737bd16703f0d84327591ea5,64,64
+mineshaft,Mine_wall_1.png,3118,d50b34169348ba565fa648643f33a5b5,64,64
+mineshaft,Mine_wall_2.png,3127,b76c8878ed6f47226dc11cc28f40bc4a,64,64
+mineshaft,Mine_wall_3.png,4043,50f7354d5d642cf6cde66b13c46d0606,64,64
+mineshaft,Oil_lantern.png,1403,0ff1de38604fe2a65ec20b554c3a1c9b,64,64
+mineshaft,Wooden_lift_mechanism.png,1916,1adba7579e4c1e26860f990ffb80b46c,64,64
+mineshaft,Wooden_wheelbarrow.png,1877,a23a7a036d26ee1d8203e4000aaad43f,64,64
+mineshaft,bucket.png,1724,82b65850a6ef39df72f91f8762a3cf58,64,64
+mineshaft,cart_1.png,2165,2d6c7e8c3a42739e6ed0490d31945555,64,64
+mineshaft,cart_2.png,2114,facf323112ff888548bd0b8c68ef2549,64,64
+mineshaft,cart_3.png,2600,4d31dd38d9315e06e06e1b8cbe851a15,64,64
+mineshaft,cave_stone.png,2128,bd2e65d5fcf1409a35790aa1291d8b30,64,64
+mineshaft,chest_1.png,1464,673229290fb095bda34dae556fe58171,64,64
+mineshaft,chest_2.png,1426,990efcac5c8d697484e03597ea5ebffe,64,64
+mineshaft,cob_web.png,521,df68559ff1eec6090e1a2eea311ee00f,32,32
+mineshaft,crystal_cluster_1.png,1841,1b01dfbe4e6a9e673b39600d5e21b4f7,64,64
+mineshaft,crystal_cluster_2.png,1904,6eddee6d23c460060a46e7bcdb4f01ba,64,64
+mineshaft,entrance_arch.png,2403,2009ea8f68d1b202e8136429c59e793c,64,64
+mineshaft,gold_pile.png,1419,9454a53587a453ae20768c0304871622,64,64
+mineshaft,map.png,1635,dba82d3be4b3bf3c872d340069ef6391,64,64
+mineshaft,mine_bone_1.png,531,c087c5aa6aa09dffc6cb50d1895ca3fb,32,32
+mineshaft,mine_skull.png,483,9252022d01c68ec52a661dbdd53891e2,32,32
+mineshaft,mine_wall_light_strip9.png,4391,17028a603c23399c7650c31330f031ea,576,64
+mineshaft,mud_floor.png,1137,3b0f5aff31d4b00c51f72b82ac362148,32,32
+mineshaft,old_barrel.png,1932,f481c7070e7e5777ec574e7f2115992b,64,64
+mineshaft,open_chest_gold.png,1543,7b8366ed0e7dc4d074a8f8e2c5334ed2,64,64
+mineshaft,signs.png,1242,01fe9c9ac9508e41f154dc552d425e46,64,64
+mineshaft,small_rock_1.png,472,8213c6a9432d1273db0136c838828801,16,16
+mineshaft,small_rock_2.png,497,9023d2cdb6a29a779c26d89dd888d71c,16,16
+mineshaft,spend.png,1165,0fdad8f816083deb3aff79e8241c2a86,64,64
+mineshaft,track_1.png,1145,3cb6fe886839d300ff36edf3d21cee4e,64,64
+mineshaft,wheelbarrow.png,2209,d56c72a2363611c35fb5b9d5980e21d4,64,64
+pirate_ships,spr_ship_1_strip9.png,14130,ba24deff908bbb82dfe978bcb52eb01c,864,96
+pirate_ships,spr_ship_2_strip9.png,19356,d7f2140af1802632f1ceccb132e90285,864,96
+pirate_ships,spr_ship_3_strip9.png,20291,6ab8ad1ca89a25c5482eea792c877842,864,96
+pirate_ships,spr_ship_4_strip9.png,16818,f92677c921027869635efe1781622acd,864,96
+pirate_ships,spr_ship_5_strip9.png,18356,b74998be5d3a9514b192065f012ae7fa,864,96
+pirate_ships,spr_ship_6_strip9.png,25721,47e7923ba3bcb92f446b31b9d8950877,864,96
+pirate_ships,spr_ship_7_strip9.png,26562,4222e3e02d3ddf82406f243ff45144ef,864,96
+pirate_ships,spr_ship_8_strip9.png,27855,845ff666ad624bf2d955bda67dd76a98,864,96
+portals_big,portal_1_strip16.png,180817,b90aa5978aed5ee882f89f44e817d825,3072,192
+portals_big,portal_2_strip16.png,287248,0a37575bed0e769e45e6a24ee33441a7,3072,192
+portals_big,portal_3_strip16.png,193712,3a328c460cd30addbee868e21d42436c,3072,192
+portals_big,portal_4_strip16.png,198122,29307caacdd386845d93845f595a3fa7,3072,192
+portals_big,portal_5_strip16.png,260359,20029de679cc5dde38c39a79322a8378,3072,192
+portals_big,portal_6_strip16.png,281675,448023f1901e0090550063df0cf83c8f,3072,192
+portals_big,portal_7_strip16.png,228104,dd30b3d5c29303c04212ea0fc595a359,3072,192
+portals_big,portal_8_strip16.png,166648,61133976ce44f99c085e57aed53288bf,3072,192
+portals_big,portal_9_strip16.png,240228,eab47e7d94ae25509e58f3967a603983,3072,192
+portals_small,Spr_Void_Portal_strip7.png,15740,db31def6dbfe55c462f0fe3ba6f520f2,448,64
+portals_small,spr_Lava_Portal_strip7.png,11736,f919fdeb5791f0a9b9d23dd2e0e3e2e6,448,64
+portals_small,spr_Nature_portal_strip7.png,16424,1953756403e574c4dbc6f01b5686eb23,448,64
+portals_small,spr_dark_portal_strip7.png,18620,40d07597e16afdb33925b9c185785dc9,448,64
+portals_small,spr_fire_portal_strip7.png,10616,3eb8b1ffc5a79e14dcb17010c312da0b,448,64
+portals_small,spr_holy_portal_strip7.png,15223,149363944defc96a19e6d537992eda62,448,64
+portals_small,spr_ice_portal_strip7.png,17327,bcc14611a0bd0ec8df02f31e556f221c,448,64
+portals_small,spr_lighting_portal_strip7.png,21007,0d3b87ff2fd473786ed7a20bb532d4f0,448,64
+ruined_buildings,Spr_Abandoned_Windmill_strip9.png,357974,91c03f18f30d1357252ecb4ba3e1aa2d,2304,256
+ruined_buildings,Spr_Clock_Tower.png,34913,13ecc3b884228e96cfd1b0a18dbebadd,256,256
+ruined_buildings,Spr_Ruined_Castle.png,76434,db73f1fb986d8281e0a9085eb66de9cb,512,512
+ruined_buildings,Spr_Ruined_Library.png,66861,07b3011a88eeba5e49939e9735745094,256,256
+ruined_buildings,spr_Abandoned_Town_Hall.png,55204,38dd6ad7691f040e219c610ba8c05a0b,256,256
+ruined_buildings,spr_Gothic_Cathedral.png,51840,62369b413f535a2dff8c42b2a6cc88a1,512,512
+ruined_buildings,spr_Ruined_Tavern.png,44551,e78585b069c1289f8156e79352c75ef8,256,256
+ruined_buildings,spr_manor.png,39816,c24a458b6e7e52d8eb40539b57fb856b,256,256
+sewer_kit,sp_sewer_barrel_strip13.png,3473,923ebdd04a7803ce5d929b2a7d776642,416,32
+sewer_kit,spr_Sewer_wall_1.png,1476,09beef0b4f6ec950494a83c4e2ecb038,32,64
+sewer_kit,spr_Sewer_wall_2.png,2479,ec3df83220ea28dec3f724d9a3462f92,32,64
+sewer_kit,spr_Sewer_wall_3.png,2970,f0bd42a584edd7786280545b0eb4f011,32,64
+sewer_kit,spr_Sewer_wall_4.png,2661,be091e8d54334cba92b30082fdc4ee98,32,64
+sewer_kit,spr_Sewer_wall_hole_strip13.png,4673,2d9c56ef26a6e92143449ac511681ee7,416,64
+sewer_kit,spr_bones_1.png,810,00011007a43932e970004bd5761958e6,32,32
+sewer_kit,spr_bones_2.png,719,a0e5b18b3d0fb0e8972675c06aa3c9d1,32,32
+sewer_kit,spr_bones_3.png,681,2ac5e09244c7991c9d4565eb4cb1864c,32,32
+sewer_kit,spr_green_barrel.png,1370,c7fe4ab69e920748bdca526df33e0ea3,32,32
+sewer_kit,spr_laders.png,1064,d8f6746be91b537b236bdfed4b47ced3,32,64
+sewer_kit,spr_old_green_barrel.png,1574,b6c8561f1de2d8c1653e7a43d7358465,32,32
+sewer_kit,spr_old_pips.png,866,dd936f251095ca6649189ee1ae0f247d,32,64
+sewer_kit,spr_old_rags_1.png,856,e0e19463826e41627460f4376eeb5147,32,32
+sewer_kit,spr_old_rags_2.png,718,954cb2cc8cdc71a2e2912645008d9b63,32,32
+sewer_kit,spr_plank.png,826,ce9999172fb0574d34b3d14da219d70e,32,32
+sewer_kit,spr_rubbish.png,1503,caf733ac716d9e08931d2402a313602a,64,32
+sewer_kit,spr_sewer_fan_strip13.png,5794,ff03c823181399459d8f3e01c80b5e55,416,32
+sewer_kit,spr_sewer_floor_1.png,1007,728988f1c7736a2cf41ca6ac44781611,32,32
+sewer_kit,spr_sewer_floor_2.png,1293,1bfa1d45e9e85a353bad38aafdce6c37,32,32
+sewer_kit,spr_sewer_floor_3.png,1401,43850a3da577acd7951566993abf14b2,32,32
+sewer_kit,spr_sewer_floor_4.png,1639,51cc6dcc39253bd6500e0ac30fb3f6ce,32,32
+sewer_kit,spr_sewer_floor_5_strip7.png,3542,fe863bfa708fd95f7fc9e41f5a805a5b,224,32
+sewer_kit,spr_sewer_wall_eyes_strip13.png,7008,e25f61e3653a4c4f55f3b2a5ad146fe8,416,64
+sewer_kit,spr_sewer_wall_pip_strip7.png,4227,21a87601a1f5045a1eb958a7ede3a6d8,224,64
+sewer_kit,spr_sewer_water_1_strip13.png,3969,2e7ce7676285cd032fc801fc45067901,416,32
+sewer_kit,spr_trash_1.png,980,ff3b4dc3c7b6eb1749fc77a6f689978c,32,32
+sewer_kit,spr_vent_strip13.png,4628,8525b4a9bd67b425a23c91d682ca35a5,416,64
+survivor_base,GREEN_BOTTLE.png,460,c6b08780c1218987e6e53324f0e69f2d,16,16
+survivor_base,HAZARDOUS_WASTE.png,1480,dc5f2ac4c1c9a6369c49dd1c0b1e7d3b,48,48
+survivor_base,MAIN_SURVIVOR_BASE.png,53617,ba5eb583875565522a8c3368c93b2e5d,256,256
+survivor_base,OUTDOOR_CLOTHS_RACK.png,2261,e0f00756221cdaccdea015afa95ed11d,92,92
+survivor_base,PAPER_PILE.png,1325,8a397b45c6e19c280e93edf6e1bdc8a5,32,32
+survivor_base,Raised_Garden_Bed_1.png,4662,ddbeaa5b5677372662f6cced0c1e42ea,92,64
+survivor_base,Raised_Garden_Bed_2.png,4464,7b46b2e4ae9dd4ca6cf37e521bfaaac7,92,64
+survivor_base,Raised_Garden_Bed_3.png,5068,1e9fb65eb3adf8f23e2c960fbba0ff00,92,64
+survivor_base,SURVIVOR_BANNER.png,2585,6c3eaec5f85d24ea73d7acfcd07b2688,128,92
+survivor_base,SURVIVOR_BARRACKS.png,10378,4ab37fdf2b7cd3ac4db770a81e4c5267,128,128
+survivor_base,SURVIVOR_MEDICAL_BUILDING.png,10507,5af7c68c4f0c98c73750521f042086e8,128,128
+survivor_base,SURVIVOR_RADIO_TOWER.png,27334,26d80bd0036c5ccf8b05db5c11f8fe0e,256,256
+survivor_base,SURVIVOR_STORAGE_BUILDING.png,6175,b6ba690c02a815c3016b427da8864f37,128,128
+survivor_base,SURVIVOR_WORKSHOP.png,8781,72134e23d2e000ee9d5128ce8937da09,128,128
+survivor_base,TIRE.png,1277,9a123f3c0f28d915d138f909d98d40d4,32,32
+survivor_base,WASTE_BAG_1.png,1344,d393f8bd80e00e189650853c90e23ce5,32,32
+survivor_base,WASTE_FIRE_strip9.png,8137,0a7b6ae631593357832a0ee1c6aadae3,576,64
+survivor_base,WASTE_PILE.png,2926,7d03613b60d33ec109f6b4f2750ad7c6,64,64
+survivor_base,WASTE_PILE_2.png,3054,efbc5104b2aa0a526d85dee30947422a,64,64
+survivor_base,WATER_BOTTLE.png,861,685614d753a1d64e90cb3d79e9da8cb7,32,32
+survivor_base,WATER_PUMP.png,1265,ae99bfa3925060fe6607a6b38e70e269,48,48
+survivor_base,WOODEN_BARREL.png,1382,4f9d50a63af453efc1a69c220a52248e,48,48
+survivor_base,Water_Tank.png,11453,be03bd679d81159bb466c2dd1f4b1b16,148,148
+survivor_base,fence.png,6651,165cb04f5248ac8d8cf623bd6af7b7db,92,64
+survivor_base,floor/grass_tile_1.png,1148,9ff8d6773d6764b4992bd3987eb19732,32,32
+survivor_base,floor/grass_tile_2.png,1330,ca640832e2600093c05fb330f34a4e3b,32,32
+survivor_base,floor/grass_tile_3.png,1784,6e2461dd0322bd72d5185c97dad404e9,32,32
+survivor_base,floor/grass_title_4.png,1742,5f251b7164d9e2c218f91de9348bb093,32,32
+survivor_base,floor/old_path_h.png,1662,a269615c6dabf4cb4b0927cabcd13e85,64,64
+survivor_base,floor/old_path_v.png,1759,d7748d0601cc2fd0d15b922c1f627e6d,64,64
+survivor_base,gate.png,4320,4ee7293794dae5cd995887842a9d2051,64,64
+survivor_base,news_paper.png,700,8d39050d984724cdeebde3f16717c819,16,16
+survivor_base,old_flag.png,1875,9e92f29f2399ee78584589803555097a,64,92
+throne_room,Golden_Urn.png,1567,43041e18ef681b263ef3c1bb7f7dde09,48,48
+throne_room,Royal_throne.png,2252,2ad296b0b2f5b30cb6b01575050a75af,45,64
+throne_room,big_castle_window.png,4365,38c19b3657ca0bd8f56a6afd4c5d884c,64,128
+throne_room,candle_stand_strip9.png,3030,c64d2acf98a8f8dac6bd824379634863,576,64
+throne_room,castle_ceiling_light_strip9.png,15361,f5fef4716dfa6645b105d8da6ad4bb94,576,64
+throne_room,castle_fire_strip9.png,10341,286b1a8c822cef853c44b5342c60c486,576,64
+throne_room,castle_floor_title.png,1455,af1d2cb3d6b19b8bb07af1b5c32a2ce7,32,32
+throne_room,castle_red_rug.png,1373,d977771d5833a231f7f317f15a1313b0,128,128
+throne_room,castle_wall.png,943,5dd11b1ad6051095480d28b0b5e3b001,32,48
+throne_room,castle_window.png,3301,3775bca8a2b1eef9db1b5b49cfd17fa0,64,64
+throne_room,coin_chest_1.png,2103,3348e82f3fb6858e73f0d831a5c3c63a,64,64
+throne_room,coin_chest_2.png,1995,9c670d6bb304bb2b0bcc1f2d6f041905,64,64
+throne_room,coin_chest_3.png,2071,7eefd60a108e627732d12a84d4177499,64,64
+throne_room,pink_flowers.png,2074,a21e1be32e6fc5db9f77a70ff6701fb5,64,64
+throne_room,red_banner.png,1465,9fa0109786502ad71310a37824286dcf,32,48
+throne_room,red_banner_stand.png,1608,133412cb6018e4e529342db472aa53a3,48,48
+throne_room,royal_big_statue.png,2712,df5d42924006fb3cf65b31422d26fce6,32,128
+throne_room,royal_statue_1.png,1383,9c4237b8a1cb4299b91941989e776f6e,64,64
+throne_room,royal_statue_2.png,1641,130f54825b56092d80021c30b7a27f6f,64,64
+throne_room,royal_table_and_chairs.png,3167,e99dbd69f24665156fbe90fefe254ecd,128,64
+throne_room,swords.png,2653,eba392ba32675c27e73db9bba2a0d792,64,64
+throne_room,table_crown.png,1499,4a10e429b09e93b5b32c75e338448f78,48,48
+throne_room,window_light.png,678,7f91091b201192d83b4c1e343b5965be,64,128
+trees_anim,tree_10_strip9.png,87289,b9a4ad047a3fdc6f1bdd837897e55a97,1152,128
+trees_anim,tree_11_strip9.png,103938,abbaefd66233bb5014d4eedd2fc6f49c,1152,128
+trees_anim,tree_12_strip9.png,53823,95a37c23db7a59d7e963834558284f40,1152,128
+trees_anim,tree_13_strip9.png,53626,5003d96407a75f15631352be1b311cb8,1152,128
+trees_anim,tree_14_strip9.png,84880,01298ce18a8ff872fd7e971771d4facc,1152,128
+trees_anim,tree_15_strip9.png,91094,57c60ef2c9e754986f7437cf158523db,1152,128
+trees_anim,tree_16_strip9.png,47091,d65e688aaa98cc8e06cb8017b5000e70,1152,128
+trees_anim,tree_17_strip9.png,98249,dac560bc3b28eaa7919545e1c265b89d,1152,128
+trees_anim,tree_18_strip9.png,71034,994056cd85c025457a6c4c13cfe07b3a,1152,128
+trees_anim,tree_1_strip9.png,49881,e57aa7ea63ef12055c8d1cd7e1c65820,1152,128
+trees_anim,tree_2_strip9.png,38333,2e53c8628893ce415aacb678ef60d63a,1152,128
+trees_anim,tree_3_strip9.png,49362,3be641b312b0f18f772718a10e49570c,1152,128
+trees_anim,tree_4_strip9.png,80319,359c6b9f635852c6ffafb3bd6ba37c9d,1152,128
+trees_anim,tree_5_strip9.png,65440,ea1b847c4f2d89a41eeb739e7303686e,1152,128
+trees_anim,tree_6_strip9.png,31251,26a1f57c3cef484ebea252b1853c9c05,1152,128
+trees_anim,tree_7_strip9.png,67031,41b775ddcf6ebec72eac6aae72e86d9e,1152,128
+trees_anim,tree_8_strip9.png,36483,0056e566f2323d0dea1276371d0e8fc1,1152,128
+trees_anim,tree_9_strip9.png,60992,5d6669cb6521bdb54703d7f4732a63b0,1152,128
+volcanoes,spr_volcano_1_strip9.png,120107,7ba4d2dea512893c163a802d493055c0,2304,256
+volcanoes,spr_volcano_2_strip9.png,233681,9db043f7e559076ec24725677b9b84b6,2304,256
+volcanoes,spr_volcano_3_strip9.png,236331,a9fc21a4773381c396a4fe1b8a03d86d,2304,256
+volcanoes,spr_volcano_4_strip9.png,181653,e6a0c8ba1b8f1cf18be06772b6f4f26a,2304,256
+volcanoes,spr_volcano_5_strip9.png,241753,6340499d43668a97fc611d42b883a355,2304,256
+volcanoes,spr_volcano_6_strip9.png,201924,03eea6b622c1ff7679ca1fe7929c6897,2304,256
+volcanoes,spr_volcano_7_strip9.png,193535,026fc671dc0c803c98ee61a988de4957,2304,256
+volcanoes,spr_volcano_8_strip7.png,221547,0976211613478f2086fd10d980df8ee4,1792,256
+volcanoes,spr_volcano_9_strip9.png,216249,e4cea7db5fc70a20284bf8b5af17c904,2304,256
+war_camp,Spr_Military_Supplies.png,4550,f0758f635ed1b05bdf66afa33911e036,64,64
+war_camp,Spr_Spear_Rack.png,2524,e20a977ec634d0d8c09b8f60d9e057e5,64,64
+war_camp,Spr_Weapon_Rack.png,2918,4e1beaac6ffadd7bd455d4b02e410d3f,64,64
+war_camp,Tents/spr_main_tent.png,43545,80f33c416cdf8ae04a59780f21949f5a,256,256
+war_camp,Tents/spr_tent_1.png,7196,c9de56faf2b159ede0cb32f146f0ec21,128,128
+war_camp,Tents/spr_tent_2.png,10864,31074e7faaddf52bb0e62607a22b5663,128,128
+war_camp,Tents/spr_tent_3.png,8288,0e252257be4c724af5a3d8f2de7dcaf1,128,128
+war_camp,Tents/spr_tent_4.png,13437,a655dcd866e7f8a7c238665cd4805379,128,128
+war_camp,Tents/spr_tent_5.png,13230,7571d108cb83a610feea1dac8fcca2b4,128,128
+war_camp,Tents/spr_tent_6.png,10071,87839c06b387c3b451f4709057dcffeb,128,128
+war_camp,Tents/spr_tent_7.png,9679,c63cbac4794ac6a210ded759a36553c0,128,128
+war_camp,Tents/spr_tent_8.png,12196,9eff98ef4da7b631ff7657f1d6a3f37a,128,128
+war_camp,fences/sp_Spike_Barricade_1.png,1801,97384435aa9f0d7dfe0767bebb108477,48,48
+war_camp,fences/spr_massive_gate.png,12805,8a7098ef08e8cb1f9c912bbcb07c0608,128,128
+war_camp,fences/spr_small_fence.png,1700,66852955b06dbb0d235fba34e06e332e,48,48
+war_camp,fences/spr_wooden_fence_1.png,4006,e5e980226e2654bb3c7b77ccc7bd25d0,64,64
+war_camp,fences/spr_wooden_fence_2.png,4515,bcc94d4e3ab2c6b78bd4ca5efdf7fa63,64,64
+war_camp,fences/spr_wooden_fence_3.png,3857,3c5c64e26ff937a132ab6b73d826cc35,64,64
+war_camp,fences/spr_wooden_fence_4.png,5662,030bcd74842035b68804329afe259c97,96,96
+war_camp,fences/spr_wooden_fence_5.png,1012,5df7e19bd262807fb1a88c621cdad9bf,32,64
+war_camp,floor_tiles/spr_grass_188.png,524,4bc346250b5fea562896c4d57d7dc942,32,32
+war_camp,floor_tiles/spr_mud_1.png,584,30adc6f4c7b3fe3f0046b20e26a81295,32,32
+war_camp,floor_tiles/spr_mud_2.png,724,d1e0858c3e184d3a63d5c5ec47023802,32,32
+war_camp,floor_tiles/spr_mud_bottom.png,789,2f258e59de67c810c9b32e347aff2edc,32,32
+war_camp,floor_tiles/spr_mud_corner_bl.png,827,5c291d651c0d6ed9be0398baf6b2ccfc,32,32
+war_camp,floor_tiles/spr_mud_corner_br.png,838,fa1d6a6d4a4d8b178d89eedcc54ea886,32,32
+war_camp,floor_tiles/spr_mud_corner_tl.png,808,ba0bd7e62075cc6463286f3b082ff21b,32,32
+war_camp,floor_tiles/spr_mud_corner_tr.png,816,9d13b7b6c9ce6f929a5dbd3899fb3576,32,32
+war_camp,floor_tiles/spr_mud_down_l.png,853,b470f9f5c99f8beb93738248aac62e51,32,32
+war_camp,floor_tiles/spr_mud_down_r.png,804,070a13af493f7782882c10a73eea9bd2,32,32
+war_camp,floor_tiles/spr_mud_top.png,766,909c4284dafd4b152f12dd7286f85f49,32,32
+war_camp,spr_Shield_Stand.png,2139,a3b7a8eede7802f04a3d8c6c0c3fe59f,64,64
+war_camp,spr_banner.png,1611,b805671c798269d54dece88b02c770f5,64,64
+war_camp,spr_barrels.png,4406,521e3009cc8a73a4ef3a9dc312c1798f,64,64
+war_camp,spr_boxes.png,2471,73debbc45e5cfcee3f42a390a0455509,64,64
+war_camp,spr_camp_fire_strip9.png,8924,08a4140317a213a4a6c5796b7eaf13c8,576,64
+war_camp,spr_chest.png,2644,9e508bc904ac914f2cc2eb1b92ea98ce,64,64
+war_camp,spr_lamp_post.png,2295,6e03862960ce64d8d574eb498d449d2f,96,96
+war_camp,spr_log_pile.png,3555,272b556f6d53725fd52abe9278548bf9,64,64
+war_camp,spr_sacks.png,2764,442f2da9de9e77b194bba39357d4a133,64,64
+war_camp,spr_tool_rack.png,2990,0bc3fae3e4a121ddd77b612a2c4fe206,64,64
+war_camp,spr_water_barrel.png,2463,a0e743b2857b52519a6a83b6edc5c599,64,64
+worship_interior,Blood_stained_sacrificial_altar_strip4.png,5785,51306f5e5456b48493d17c7a3d32692d,368,64
+worship_interior,Gargoyle_statue.png,3221,107b2a747f625d008aeb65b4c24fb257,64,64
+worship_interior,Hooded_cult_statue.png,3246,07906294a90560493613f453b347ed6c,64,92
+worship_interior,Large_stone_altar_strip5.png,7802,7ff57dc77c7b0f3bcf1e4e63a85a0038,460,64
+worship_interior,bench_up.png,1237,0896472fe2726a827a00735444d8564e,64,64
+worship_interior,blood_Bowl.png,1789,c7d952b79f89aff0743db587a4b1125c,64,64
+worship_interior,book_unit.png,3239,2e12ad4ad2fa95d768918f3d83c4e013,64,64
+worship_interior,candle_strip4.png,4309,5a8cfc096974631f5dfabf085d061241,256,64
+worship_interior,chains.png,1762,524db28070a171dfeb715592179ae2c2,64,64
+worship_interior,cult_picture.png,1882,8767e92b47b39ae28da306819d7a3aad,64,64
+worship_interior,demon_picture.png,2095,71917880eb19e80726f80a12f0902cf4,64,64
+worship_interior,fire_strip5.png,4031,d75eb4f8d24c19a36babbfa8bf71dc21,320,64
+worship_interior,old_window.png,1729,6582928425e82259635900024270e5ab,48,48
+worship_interior,pile_of_skulls.png,2179,03ffb22fd173e06b0b7baeba070c3fed,64,64
+worship_interior,red_rug_up.png,2496,6e7eea35c6f934349c20c5197fc01424,64,64
+worship_interior,ribs.png,1115,4e8dc7058ed16ad9dff88778f0a939d0,32,32
+worship_interior,skull_bone.png,969,fe6dbf37b39f41041948cece5add7e2e,32,32
+worship_interior,skull_stand.png,1131,df239e9cfff578455fff8b7b67a18b69,32,32
+worship_interior,small_bench.png,1309,a76fbf2ac6692f9b15327c39c4405722,64,64
+worship_interior,stone_floor.png,1240,0dd2db7dddc0fb56bc03e8d9ad5f00ec,32,32
+worship_interior,stone_floor_blood.png,1487,5765e4e0cb2dd029c70d7908bb3129a0,32,32
+worship_interior,stone_walls.png,901,a5e3d16a00f6d493c3d5d3290d7c798c,32,48
+worship_interior,trim/spr_wood_trim_bottom.png,337,545dd88a195d92b726c620152fcf370c,32,32
+worship_interior,trim/spr_wood_trim_c_down_left.png,486,2275f9d6f2ea5b690347a2b15e204f5c,32,32
+worship_interior,trim/spr_wood_trim_c_down_right.png,494,f67c6af648513587c2a2df74e3e0e6f9,32,32
+worship_interior,trim/spr_wood_trim_c_up_left.png,465,1520fd938d0010b6b9aab79df9a0c073,32,32
+worship_interior,trim/spr_wood_trim_c_up_right.png,459,a8094c7db8d6b09215dce508466673d7,32,32
+worship_interior,trim/spr_wood_trim_down_left.png,357,be63fb29ef23461a61c21c5048c3d644,32,32
+worship_interior,trim/spr_wood_trim_down_right.png,353,31f33bb35c8f0ef51f82bd54b975c3a3,32,32
+worship_interior,trim/spr_wood_trim_top.png,371,59f462bff14551c79e6038ec747c043e,32,32
+worship_interior,wall_banner.png,1086,0060c7e9469f762530a5dc2e751b12e9,64,64
+worship_interior,wall_banner_2.png,1404,1545b5b5654caf118c14a7ccf53c8490,64,64
+zombie_city,AbandonedSchool.png,32868,e575e7c7180d1ea327106f64f82e6eda,256,256
+zombie_city,Abandoned_Apartment_Building.png,48118,afc59fe27b5f7a0d98fb99fbcf2d0609,256,256
+zombie_city,Abandoned_Clothing_store.png,12442,7542c1184c50eb6acacb59ce2fadbd4c,128,128
+zombie_city,Abandoned_Diner_Store.png,7767,51a7259face6ca22e08ab9b7fbd2e756,128,128
+zombie_city,Abandoned_Fire_Station.png,34125,9a7f39d966bce53e36c36981c2d5a16f,256,256
+zombie_city,Abandoned_Gaming_Store.png,11729,197af47321da72acc05588b7066f07f6,128,128
+zombie_city,Abandoned_Gas_station.png,24625,8649355f1221bf4b28b7bb6249cadd1c,256,256
+zombie_city,Abandoned_Hospital.png,36589,c995630ae40b0155cd391e90d17c677b,256,256
+zombie_city,Abandoned_Pharmacy.png,9128,743e324eca74e26605096351e168e848,128,128
+zombie_city,Abandoned_Police_Car.png,4875,4aa79a30f3135127fbe3577cccd5985f,128,64
+zombie_city,Abandoned_Police_Station.png,26815,f9fb9f94ec7ed88432902545fee55fd0,256,256
+zombie_city,Abandoned_Sedan.png,6520,bb53dec1e684b32eef4c76053c5a61d9,128,64
+zombie_city,Abandoned_Supermarket.png,23553,aa35b1a92e5b0e16c7c6f93efe9d3511,256,256
+zombie_city,Abandoned_Taxi.png,4949,ed969a5c6ec675d00a3e9ceda6800301,128,64
+zombie_city,Abandoned_bike.png,2125,91cc38a82b79632907f5c254b7e5cf90,64,64
+zombie_city,Abandoned_hardware_store.png,11033,e7239a5aa36c39fed5f20dac4fd96246,128,128
+zombie_city,Abandoned_pizza_store.png,10858,b8c7b335a580bdc161e090d00958d30d,128,128
+zombie_city,Abandoned_store.png,8919,bac95977afa1f0a6e2850281336d36e7,128,128
+zombie_city,Dumpster.png,1003,141c67d97b92d44b6ba6668524839793,64,64
+zombie_city,Fire_hydrant.png,1083,607b75206dc56fe45ea6d3af65e1548d,32,32
+zombie_city,Road_Stop_Sign.png,1254,9857362cf0bc392b675043c931a74d16,32,64
+zombie_city,Road_barrier.png,1152,9830d5b8b672de6377a1c90e137e299c,64,64
+zombie_city,Rusted_bus_shelter.png,3834,93a41edb4df8027f0b8883cc4d1aca92,92,64
+zombie_city,Street_bench.png,1013,16a31ee09931656f278f85a9764a20dd,64,32
+zombie_city,Traffic_light.png,1305,c722dbc9dba71103258b30b2faf825bc,32,92
+zombie_city,VendingMachine.png,1868,d8dee351596a30091e1af6c7dc1df198,64,64
+zombie_city,boxes.png,723,71c04bac46139551b96f7bdd47c26c84,32,32
+zombie_city,dead_flower.png,2569,4bf0166608eceb84673b655d8cb7199c,64,64
+zombie_city,old_dead_tree.png,4458,854cabfa6b69e86b6055b83643a8a464,64,92
+zombie_city,old_path_h.png,1662,7ba5fed9fd243688b7629e2103d5d94b,64,64
+zombie_city,old_path_v.png,1759,45c0770b0f3affbe97b2420d291a343e,64,64
+zombie_city,old_road_h.png,1418,7798b30f9c3925c7fb9c5825080e78fa,64,64
+zombie_city,old_road_v.png,1314,83747af484a953b50918d89145ccb9f7,64,64
+zombie_city,old_road_v_box.png,754,9287a7a5a9565db79ecc5637708be474,64,64
+zombie_city,overgrown_bored.png,3297,9cdb8edfb0194ba8fcd8e4811c80a354,92,64
+zombie_city,street_fire_strip9.png,16110,36d2eb507060b0c1ee39e83754fb52d1,828,92
+zombie_city,street_lamp.png,1638,65eb06728e91918167e491c22a8dd44b,64,92
+zombie_city,trash_bag.png,1207,27df8ad01330bc9e51806b4aee086a8f,32,32
+zombie_city,trash_bin_full.png,1022,8b4428709a50cef2332f443eae198d7b,32,32
+zombie_city,trash_bin_nothing.png,882,7e6447ffc57e1faa4b39162581488da0,32,32

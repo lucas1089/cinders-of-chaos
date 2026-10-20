@@ -1,0 +1,283 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+34443,37443,weapons__swords_blades__r0c0,sword,new,swords blades r0c0,2x2,0,112,0,0,0,0,family=weapons|variant=1|grid=64
+34444,37444,weapons__swords_blades__r0c1,sword,new,swords blades r0c1,2x2,0,112,0,0,0,0,family=weapons|variant=2|grid=64
+34445,37445,weapons__swords_blades__r0c2,sword,new,swords blades r0c2,2x2,0,112,0,0,0,0,family=weapons|variant=3|grid=64
+34446,37446,weapons__swords_blades__r0c3,sword,new,swords blades r0c3,2x2,0,112,0,0,0,0,family=weapons|variant=4|grid=64
+34447,37447,weapons__swords_blades__r1c0,sword,new,swords blades r1c0,2x2,0,112,0,0,0,0,family=weapons|variant=5|grid=64
+34448,37448,weapons__swords_blades__r1c1,sword,new,swords blades r1c1,2x2,0,112,0,0,0,0,family=weapons|variant=6|grid=64
+34449,37449,weapons__swords_blades__r1c2,sword,new,swords blades r1c2,2x2,0,112,0,0,0,0,family=weapons|variant=7|grid=64
+34450,37450,weapons__swords_blades__r1c3,sword,new,swords blades r1c3,2x2,0,112,0,0,0,0,family=weapons|variant=8|grid=64
+34451,37451,weapons__swords_blades__r2c0,sword,new,swords blades r2c0,2x2,0,112,0,0,0,0,family=weapons|variant=9|grid=64
+34452,37452,weapons__swords_blades__r2c1,sword,new,swords blades r2c1,2x2,0,112,0,0,0,0,family=weapons|variant=10|grid=64
+34453,37453,weapons__swords_blades__r2c2,sword,new,swords blades r2c2,2x2,0,112,0,0,0,0,family=weapons|variant=11|grid=64
+34454,37454,weapons__swords_blades__r2c3,sword,new,swords blades r2c3,2x2,0,112,0,0,0,0,family=weapons|variant=12|grid=64
+34455,37455,weapons__swords_blades__r3c0,sword,new,swords blades r3c0,2x2,0,112,0,0,0,0,family=weapons|variant=13|grid=64
+34456,37456,weapons__swords_blades__r3c1,sword,new,swords blades r3c1,2x2,0,112,0,0,0,0,family=weapons|variant=14|grid=64
+34457,37457,weapons__swords_blades__r3c2,sword,new,swords blades r3c2,2x2,0,112,0,0,0,0,family=weapons|variant=15|grid=64
+34458,37458,weapons__swords_blades__r3c3,sword,new,swords blades r3c3,2x2,0,112,0,0,0,0,family=weapons|variant=16|grid=64
+34459,37459,weapons__axes_maces_hammers__r0c0,weapon,new,axes maces hammers r0c0,2x2,0,96,0,0,0,0,family=weapons|variant=17|grid=64
+34460,37460,weapons__axes_maces_hammers__r0c1,weapon,new,axes maces hammers r0c1,2x2,0,96,0,0,0,0,family=weapons|variant=18|grid=64
+34461,37461,weapons__axes_maces_hammers__r0c2,weapon,new,axes maces hammers r0c2,2x2,0,96,0,0,0,0,family=weapons|variant=19|grid=64
+34462,37462,weapons__axes_maces_hammers__r0c3,weapon,new,axes maces hammers r0c3,2x2,0,96,0,0,0,0,family=weapons|variant=20|grid=64
+34463,37463,weapons__axes_maces_hammers__r1c0,weapon,new,axes maces hammers r1c0,2x2,0,96,0,0,0,0,family=weapons|variant=21|grid=64
+34464,37464,weapons__axes_maces_hammers__r1c1,weapon,new,axes maces hammers r1c1,2x2,0,96,0,0,0,0,family=weapons|variant=22|grid=64
+34465,37465,weapons__axes_maces_hammers__r1c2,weapon,new,axes maces hammers r1c2,2x2,0,96,0,0,0,0,family=weapons|variant=23|grid=64
+34466,37466,weapons__axes_maces_hammers__r1c3,weapon,new,axes maces hammers r1c3,2x2,0,96,0,0,0,0,family=weapons|variant=24|grid=64
+34467,37467,weapons__axes_maces_hammers__r2c0,weapon,new,axes maces hammers r2c0,2x2,0,96,0,0,0,0,family=weapons|variant=25|grid=64
+34468,37468,weapons__axes_maces_hammers__r2c1,weapon,new,axes maces hammers r2c1,2x2,0,96,0,0,0,0,family=weapons|variant=26|grid=64
+34469,37469,weapons__axes_maces_hammers__r2c2,weapon,new,axes maces hammers r2c2,2x2,0,96,0,0,0,0,family=weapons|variant=27|grid=64
+34470,37470,weapons__axes_maces_hammers__r2c3,weapon,new,axes maces hammers r2c3,2x2,0,96,0,0,0,0,family=weapons|variant=28|grid=64
+34471,37471,weapons__axes_maces_hammers__r3c0,weapon,new,axes maces hammers r3c0,2x2,0,96,0,0,0,0,family=weapons|variant=29|grid=64
+34472,37472,weapons__axes_maces_hammers__r3c1,weapon,new,axes maces hammers r3c1,2x2,0,96,0,0,0,0,family=weapons|variant=30|grid=64
+34473,37473,weapons__axes_maces_hammers__r3c2,weapon,new,axes maces hammers r3c2,2x2,0,96,0,0,0,0,family=weapons|variant=31|grid=64
+34474,37474,weapons__axes_maces_hammers__r3c3,weapon,new,axes maces hammers r3c3,2x2,0,96,0,0,0,0,family=weapons|variant=32|grid=64
+34475,37475,weapons__ranged__r0c0,weapon,new,ranged r0c0,2x2,0,96,0,0,0,0,family=weapons|variant=33|grid=64
+34476,37476,weapons__ranged__r0c1,weapon,new,ranged r0c1,2x2,0,96,0,0,0,0,family=weapons|variant=34|grid=64
+34477,37477,weapons__ranged__r0c2,weapon,new,ranged r0c2,2x2,0,96,0,0,0,0,family=weapons|variant=35|grid=64
+34478,37478,weapons__ranged__r0c3,weapon,new,ranged r0c3,2x2,0,96,0,0,0,0,family=weapons|variant=36|grid=64
+34479,37479,weapons__ranged__r1c0,weapon,new,ranged r1c0,2x2,0,96,0,0,0,0,family=weapons|variant=37|grid=64
+34480,37480,weapons__ranged__r1c1,weapon,new,ranged r1c1,2x2,0,96,0,0,0,0,family=weapons|variant=38|grid=64
+34481,37481,weapons__ranged__r1c2,weapon,new,ranged r1c2,2x2,0,96,0,0,0,0,family=weapons|variant=39|grid=64
+34482,37482,weapons__ranged__r1c3,weapon,new,ranged r1c3,2x2,0,96,0,0,0,0,family=weapons|variant=40|grid=64
+34483,37483,weapons__ranged__r2c0,weapon,new,ranged r2c0,2x2,0,96,0,0,0,0,family=weapons|variant=41|grid=64
+34484,37484,weapons__ranged__r2c1,weapon,new,ranged r2c1,2x2,0,96,0,0,0,0,family=weapons|variant=42|grid=64
+34485,37485,weapons__ranged__r2c2,weapon,new,ranged r2c2,2x2,0,96,0,0,0,0,family=weapons|variant=43|grid=64
+34486,37486,weapons__ranged__r2c3,weapon,new,ranged r2c3,2x2,0,96,0,0,0,0,family=weapons|variant=44|grid=64
+34487,37487,weapons__ranged__r3c0,weapon,new,ranged r3c0,2x2,0,96,0,0,0,0,family=weapons|variant=45|grid=64
+34488,37488,weapons__ranged__r3c1,weapon,new,ranged r3c1,2x2,0,96,0,0,0,0,family=weapons|variant=46|grid=64
+34489,37489,weapons__ranged__r3c2,weapon,new,ranged r3c2,2x2,0,96,0,0,0,0,family=weapons|variant=47|grid=64
+34490,37490,weapons__ranged__r3c3,weapon,new,ranged r3c3,2x2,0,96,0,0,0,0,family=weapons|variant=48|grid=64
+34491,37491,weapons__shields_and_magic__r0c0,weapon,new,shields and magic r0c0,2x2,0,96,0,0,0,0,family=weapons|variant=49|grid=64
+34492,37492,weapons__shields_and_magic__r0c1,weapon,new,shields and magic r0c1,2x2,0,96,0,0,0,0,family=weapons|variant=50|grid=64
+34493,37493,weapons__shields_and_magic__r0c2,weapon,new,shields and magic r0c2,2x2,0,96,0,0,0,0,family=weapons|variant=51|grid=64
+34494,37494,weapons__shields_and_magic__r0c3,weapon,new,shields and magic r0c3,2x2,0,96,0,0,0,0,family=weapons|variant=52|grid=64
+34495,37495,weapons__shields_and_magic__r1c0,weapon,new,shields and magic r1c0,2x2,0,96,0,0,0,0,family=weapons|variant=53|grid=64
+34496,37496,weapons__shields_and_magic__r1c1,weapon,new,shields and magic r1c1,2x2,0,96,0,0,0,0,family=weapons|variant=54|grid=64
+34497,37497,weapons__shields_and_magic__r1c2,weapon,new,shields and magic r1c2,2x2,0,96,0,0,0,0,family=weapons|variant=55|grid=64
+34498,37498,weapons__shields_and_magic__r1c3,weapon,new,shields and magic r1c3,2x2,0,96,0,0,0,0,family=weapons|variant=56|grid=64
+34499,37499,weapons__shields_and_magic__r2c0,weapon,new,shields and magic r2c0,2x2,0,96,0,0,0,0,family=weapons|variant=57|grid=64
+34500,37500,weapons__shields_and_magic__r2c1,weapon,new,shields and magic r2c1,2x2,0,96,0,0,0,0,family=weapons|variant=58|grid=64
+34501,37501,weapons__shields_and_magic__r2c2,weapon,new,shields and magic r2c2,2x2,0,96,0,0,0,0,family=weapons|variant=59|grid=64
+34502,37502,weapons__shields_and_magic__r2c3,weapon,new,shields and magic r2c3,2x2,0,96,0,0,0,0,family=weapons|variant=60|grid=64
+34503,37503,weapons__shields_and_magic__r3c0,weapon,new,shields and magic r3c0,2x2,0,96,0,0,0,0,family=weapons|variant=61|grid=64
+34504,37504,weapons__shields_and_magic__r3c1,weapon,new,shields and magic r3c1,2x2,0,96,0,0,0,0,family=weapons|variant=62|grid=64
+34505,37505,weapons__shields_and_magic__r3c2,weapon,new,shields and magic r3c2,2x2,0,96,0,0,0,0,family=weapons|variant=63|grid=64
+34506,37506,weapons__shields_and_magic__r3c3,weapon,new,shields and magic r3c3,2x2,0,96,0,0,0,0,family=weapons|variant=64|grid=64
+34507,37507,pad_34507,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34508,37508,pad_34508,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34509,37509,pad_34509,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34510,37510,pad_34510,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34511,37511,pad_34511,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34512,37512,pad_34512,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34513,37513,pad_34513,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34514,37514,pad_34514,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34515,37515,pad_34515,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34516,37516,pad_34516,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34517,37517,pad_34517,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34518,37518,pad_34518,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34519,37519,pad_34519,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34520,37520,pad_34520,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34521,37521,pad_34521,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34522,37522,pad_34522,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34523,37523,pad_34523,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34524,37524,pad_34524,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34525,37525,pad_34525,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34526,37526,pad_34526,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34527,37527,pad_34527,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34528,37528,pad_34528,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34529,37529,pad_34529,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34530,37530,pad_34530,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34531,37531,pad_34531,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34532,37532,pad_34532,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34533,37533,pad_34533,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34534,37534,pad_34534,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34535,37535,pad_34535,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34536,37536,pad_34536,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34537,37537,pad_34537,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34538,37538,pad_34538,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34539,37539,pad_34539,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34540,37540,pad_34540,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34541,37541,pad_34541,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34542,37542,pad_34542,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34543,37543,pad_34543,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34544,37544,pad_34544,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34545,37545,pad_34545,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34546,37546,pad_34546,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34547,37547,pad_34547,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34548,37548,pad_34548,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34549,37549,pad_34549,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34550,37550,pad_34550,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34551,37551,pad_34551,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34552,37552,pad_34552,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34553,37553,pad_34553,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34554,37554,pad_34554,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34555,37555,pad_34555,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34556,37556,pad_34556,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34557,37557,pad_34557,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34558,37558,pad_34558,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34559,37559,pad_34559,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34560,37560,pad_34560,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34561,37561,pad_34561,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34562,37562,pad_34562,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34563,37563,pad_34563,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34564,37564,pad_34564,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34565,37565,pad_34565,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34566,37566,pad_34566,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34567,37567,pad_34567,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34568,37568,pad_34568,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34569,37569,pad_34569,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34570,37570,pad_34570,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34571,37571,pad_34571,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34572,37572,pad_34572,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34573,37573,pad_34573,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34574,37574,pad_34574,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34575,37575,pad_34575,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34576,37576,pad_34576,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34577,37577,pad_34577,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34578,37578,pad_34578,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34579,37579,pad_34579,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34580,37580,pad_34580,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34581,37581,pad_34581,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34582,37582,pad_34582,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34583,37583,pad_34583,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34584,37584,pad_34584,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34585,37585,pad_34585,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34586,37586,pad_34586,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34587,37587,pad_34587,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34588,37588,pad_34588,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34589,37589,pad_34589,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34590,37590,pad_34590,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34591,37591,pad_34591,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34592,37592,pad_34592,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34593,37593,pad_34593,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34594,37594,pad_34594,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34595,37595,pad_34595,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34596,37596,pad_34596,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34597,37597,pad_34597,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34598,37598,pad_34598,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34599,37599,pad_34599,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34600,37600,pad_34600,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34601,37601,pad_34601,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34602,37602,pad_34602,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34603,37603,pad_34603,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34604,37604,pad_34604,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34605,37605,pad_34605,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34606,37606,pad_34606,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34607,37607,pad_34607,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34608,37608,pad_34608,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34609,37609,pad_34609,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34610,37610,pad_34610,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34611,37611,pad_34611,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34612,37612,pad_34612,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34613,37613,pad_34613,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34614,37614,pad_34614,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34615,37615,pad_34615,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34616,37616,pad_34616,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34617,37617,pad_34617,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34618,37618,pad_34618,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34619,37619,pad_34619,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34620,37620,pad_34620,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34621,37621,pad_34621,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34622,37622,pad_34622,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34623,37623,pad_34623,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34624,37624,pad_34624,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34625,37625,pad_34625,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34626,37626,pad_34626,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34627,37627,pad_34627,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34628,37628,pad_34628,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34629,37629,pad_34629,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34630,37630,pad_34630,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34631,37631,pad_34631,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34632,37632,pad_34632,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34633,37633,pad_34633,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34634,37634,pad_34634,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34635,37635,pad_34635,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34636,37636,pad_34636,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34637,37637,pad_34637,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34638,37638,pad_34638,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34639,37639,pad_34639,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34640,37640,pad_34640,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34641,37641,pad_34641,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34642,37642,pad_34642,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34643,37643,pad_34643,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34644,37644,pad_34644,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34645,37645,pad_34645,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34646,37646,pad_34646,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34647,37647,pad_34647,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34648,37648,pad_34648,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34649,37649,pad_34649,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34650,37650,pad_34650,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34651,37651,pad_34651,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34652,37652,pad_34652,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34653,37653,pad_34653,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34654,37654,pad_34654,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34655,37655,pad_34655,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34656,37656,pad_34656,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34657,37657,pad_34657,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34658,37658,pad_34658,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34659,37659,pad_34659,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34660,37660,pad_34660,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34661,37661,pad_34661,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34662,37662,pad_34662,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34663,37663,pad_34663,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34664,37664,pad_34664,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34665,37665,pad_34665,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34666,37666,pad_34666,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34667,37667,pad_34667,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34668,37668,pad_34668,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34669,37669,pad_34669,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34670,37670,pad_34670,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34671,37671,pad_34671,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34672,37672,pad_34672,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34673,37673,pad_34673,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34674,37674,pad_34674,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34675,37675,pad_34675,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34676,37676,pad_34676,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34677,37677,pad_34677,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34678,37678,pad_34678,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34679,37679,pad_34679,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34680,37680,pad_34680,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34681,37681,pad_34681,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34682,37682,pad_34682,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34683,37683,pad_34683,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34684,37684,pad_34684,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34685,37685,pad_34685,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34686,37686,pad_34686,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34687,37687,pad_34687,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34688,37688,pad_34688,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34689,37689,pad_34689,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34690,37690,pad_34690,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34691,37691,pad_34691,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34692,37692,pad_34692,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34693,37693,pad_34693,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34694,37694,pad_34694,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34695,37695,pad_34695,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34696,37696,pad_34696,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34697,37697,pad_34697,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34698,37698,pad_34698,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34699,37699,pad_34699,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34700,37700,pad_34700,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34701,37701,pad_34701,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34702,37702,pad_34702,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34703,37703,pad_34703,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34704,37704,pad_34704,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34705,37705,pad_34705,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34706,37706,pad_34706,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34707,37707,pad_34707,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34708,37708,pad_34708,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34709,37709,pad_34709,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34710,37710,pad_34710,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34711,37711,pad_34711,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34712,37712,pad_34712,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34713,37713,pad_34713,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34714,37714,pad_34714,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34715,37715,pad_34715,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34716,37716,pad_34716,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34717,37717,pad_34717,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34718,37718,pad_34718,decor,new,blank padding,1x1,0,0,0,0,0,0,blank=1
+34719,37719,potions__lava_flask_small,flask,new,lava flask (small),1x1,0,16777440,0,0,0,0,family=potions|variant=1|ms=125|element=lava|size=small
+34720,37720,potions__lava_flask_medium,flask,new,lava flask (medium),1x1,0,16777440,0,0,0,0,family=potions|variant=2|ms=125|element=lava|size=medium
+34721,37721,potions__lava_flask_large,flask,new,lava flask (large),1x1,0,16777440,0,0,0,0,family=potions|variant=3|ms=125|element=lava|size=large
+34722,37722,potions__venom_flask_small,flask,new,venom flask (small),1x1,0,16777440,0,0,0,0,family=potions|variant=4|ms=125|element=venom|size=small
+34723,37723,potions__venom_flask_medium,flask,new,venom flask (medium),1x1,0,16777440,0,0,0,0,family=potions|variant=5|ms=125|element=venom|size=medium
+34724,37724,potions__venom_flask_large,flask,new,venom flask (large),1x1,0,16777440,0,0,0,0,family=potions|variant=6|ms=125|element=venom|size=large

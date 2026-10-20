@@ -1,0 +1,169 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+36459,39459,boats_docks__boat_1,stump,new,Boat 1 (Boats Docks),3x2,0,16785409,2,0,0,0,family=boats_docks|ms=140
+36460,39460,boats_docks__boat_2,stump,new,Boat 2 (Boats Docks),2x2,0,16785409,2,0,0,0,family=boats_docks|ms=140
+36461,39461,boats_docks__boat_3,stump,new,Boat 3 (Boats Docks),3x2,0,16785409,2,0,0,0,family=boats_docks|ms=140
+36462,39462,boats_docks__boat_5,stump,new,Boat 5 (Boats Docks),3x2,0,16785409,2,0,0,0,family=boats_docks|ms=140
+36463,39463,boats_docks__buoy_1,decor,new,Buoy 1 (Boats Docks),1x1,0,16777216,0,0,0,0,family=boats_docks|ms=140
+36464,39464,castle_kit__castle_keep_r0c0,decor,new,Castle Keep (Castle Kit) R0C0,4x4,0,16777216,0,0,0,0,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=0,0"
+36465,39465,castle_kit__castle_keep_r0c1,decor,new,Castle Keep (Castle Kit) R0C1,4x4,0,16777216,0,0,0,0,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=0,1"
+36466,39466,castle_kit__castle_keep_r1c0,decor,new,Castle Keep (Castle Kit) R1C0,4x4,0,16777216,0,0,0,0,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=1,0"
+36467,39467,castle_kit__castle_keep_r1c1,stump,new,Castle Keep (Castle Kit) R1C1,4x4,0,16785409,2,0,0,0,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=1,1"
+36468,39468,castle_kit__fire_pit,decor,new,Fire Pit (Castle Kit),1x1,0,16777216,0,0,3,207,family=castle_kit|ms=100
+36469,39469,castle_kit__small_torch,decor,new,Small Torch (Castle Kit),1x1,0,16777216,0,0,2,208,family=castle_kit|ms=100
+36470,39470,desert_camp__camp_cooking_pot,decor,new,Camp Cooking Pot (Desert Camp),2x2,0,16777216,0,0,2,208,family=desert_camp|ms=100
+36471,39471,desert_camp__camp_fire,decor,new,Camp Fire (Desert Camp),2x2,0,16777216,0,0,3,207,family=desert_camp|ms=100
+36472,39472,dungeon_cells__cell_wall_candle,wall,new,Cell Wall Candle (Dungeon Cells),2x2,0,16842752,0,0,2,208,family=dungeon_cells|ms=100
+36473,39473,fishing_village__house_smoke,decor,new,House Smoke (Fishing Village),1x1,0,16777216,0,0,0,0,family=fishing_village|ms=140
+36474,39474,giant_squid__giant_squid_idle,stump,new,Giant Squid Idle (Giant Squid),4x4,0,16785409,2,0,0,0,family=giant_squid|ms=140
+36475,39475,goblin_camp__cooking_pot_1,decor,new,Cooking Pot 1 (Goblin Camp),2x2,0,16777216,0,0,2,208,family=goblin_camp|ms=100
+36476,39476,lava_islands__giant_volcano_r0c0,decor,new,Giant Volcano (Lava Islands) R0C0,4x4,0,16777216,0,0,0,0,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=0,0"
+36477,39477,lava_islands__giant_volcano_r0c1,decor,new,Giant Volcano (Lava Islands) R0C1,4x4,0,16777216,0,0,0,0,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=0,1"
+36478,39478,lava_islands__giant_volcano_r1c0,decor,new,Giant Volcano (Lava Islands) R1C0,4x4,0,16777216,0,0,0,0,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=1,0"
+36479,39479,lava_islands__giant_volcano_r1c1,stump,new,Giant Volcano (Lava Islands) R1C1,4x4,0,16785409,2,0,5,207,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=1,1"
+36480,39480,magic_forest__long_grass_1,decor,new,Long Grass 1 (Magic Forest),2x2,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36481,39481,magic_forest__long_grass_2,decor,new,Long Grass 2 (Magic Forest),2x2,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36482,39482,magic_forest__small_plant_1,decor,new,Small Plant 1 (Magic Forest),1x1,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36483,39483,magic_forest__small_plant_2,decor,new,Small Plant 2 (Magic Forest),1x1,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36484,39484,magic_forest__trap_plant_1,decor,new,Trap Plant 1 (Magic Forest),2x2,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36485,39485,magic_forest__trap_plant_2,decor,new,Trap Plant 2 (Magic Forest),2x2,0,16777216,0,0,0,0,family=magic_forest|ms=140
+36486,39486,magic_forest__magic_tower_1,stump,new,Magic Tower 1 (Magic Forest),3x4,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36487,39487,magic_forest__magic_tower_2,stump,new,Magic Tower 2 (Magic Forest),3x4,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36488,39488,magic_forest__magic_tower_3,stump,new,Magic Tower 3 (Magic Forest),3x4,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36489,39489,magic_forest__magic_tower_4,stump,new,Magic Tower 4 (Magic Forest),2x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36490,39490,magic_forest__magic_tree_10,stump,new,Magic Tree 10 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36491,39491,magic_forest__magic_tree_11,stump,new,Magic Tree 11 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36492,39492,magic_forest__magic_tree_12,stump,new,Magic Tree 12 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36493,39493,magic_forest__magic_tree_1,stump,new,Magic Tree 1 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36494,39494,magic_forest__magic_tree_2,stump,new,Magic Tree 2 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36495,39495,magic_forest__magic_tree_3,stump,new,Magic Tree 3 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36496,39496,magic_forest__magic_tree_4,stump,new,Magic Tree 4 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36497,39497,magic_forest__magic_tree_5,stump,new,Magic Tree 5 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36498,39498,magic_forest__magic_tree_6,stump,new,Magic Tree 6 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36499,39499,magic_forest__magic_tree_7,stump,new,Magic Tree 7 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36500,39500,magic_forest__magic_tree_8,stump,new,Magic Tree 8 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36501,39501,magic_forest__magic_tree_9,stump,new,Magic Tree 9 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36502,39502,magic_forest__mushroom_1,stump,new,Mushroom 1 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36503,39503,magic_forest__mushroom_2,stump,new,Mushroom 2 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36504,39504,magic_forest__mushroom_3,stump,new,Mushroom 3 (Magic Forest),3x3,0,16785409,2,0,0,0,family=magic_forest|ms=140
+36505,39505,mineshaft__mine_wall_light,wall,new,Mine Wall Light (Mineshaft),2x2,0,16842752,0,0,3,208,family=mineshaft|ms=100
+36506,39506,pirate_ships__ship_1,stump,new,Ship 1 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36507,39507,pirate_ships__ship_2,stump,new,Ship 2 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36508,39508,pirate_ships__ship_3,stump,new,Ship 3 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36509,39509,pirate_ships__ship_4,stump,new,Ship 4 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36510,39510,pirate_ships__ship_5,stump,new,Ship 5 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36511,39511,pirate_ships__ship_6,stump,new,Ship 6 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36512,39512,pirate_ships__ship_7,stump,new,Ship 7 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36513,39513,pirate_ships__ship_8,stump,new,Ship 8 (Pirate Ships),3x3,0,16785409,2,0,0,0,family=pirate_ships|ms=140
+36514,39514,portals_big__portal_1_r0c0,decor,new,Portal 1 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=0,0"
+36515,39515,portals_big__portal_1_r0c1,decor,new,Portal 1 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=0,1"
+36516,39516,portals_big__portal_1_r1c0,decor,new,Portal 1 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=1,0"
+36517,39517,portals_big__portal_1_r1c1,decor,new,Portal 1 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=1,1"
+36518,39518,portals_big__portal_2_r0c0,decor,new,Portal 2 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=0,0"
+36519,39519,portals_big__portal_2_r0c1,decor,new,Portal 2 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=0,1"
+36520,39520,portals_big__portal_2_r1c0,decor,new,Portal 2 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=1,0"
+36521,39521,portals_big__portal_2_r1c1,decor,new,Portal 2 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=1,1"
+36522,39522,portals_big__portal_3_r0c0,decor,new,Portal 3 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=0,0"
+36523,39523,portals_big__portal_3_r0c1,decor,new,Portal 3 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=0,1"
+36524,39524,portals_big__portal_3_r1c0,decor,new,Portal 3 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=1,0"
+36525,39525,portals_big__portal_3_r1c1,decor,new,Portal 3 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=1,1"
+36526,39526,portals_big__portal_4_r0c0,decor,new,Portal 4 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=0,0"
+36527,39527,portals_big__portal_4_r0c1,decor,new,Portal 4 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=0,1"
+36528,39528,portals_big__portal_4_r1c0,decor,new,Portal 4 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=1,0"
+36529,39529,portals_big__portal_4_r1c1,decor,new,Portal 4 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=1,1"
+36530,39530,portals_big__portal_5_r0c0,decor,new,Portal 5 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=0,0"
+36531,39531,portals_big__portal_5_r0c1,decor,new,Portal 5 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=0,1"
+36532,39532,portals_big__portal_5_r1c0,decor,new,Portal 5 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=1,0"
+36533,39533,portals_big__portal_5_r1c1,decor,new,Portal 5 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=1,1"
+36534,39534,portals_big__portal_6_r1c0,decor,new,Portal 6 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_6|gw=6|gh=6|piece=1,0"
+36535,39535,portals_big__portal_6_r1c1,decor,new,Portal 6 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_6|gw=6|gh=6|piece=1,1"
+36536,39536,portals_big__portal_7_r0c1,decor,new,Portal 7 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=0,1"
+36537,39537,portals_big__portal_7_r1c0,decor,new,Portal 7 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=1,0"
+36538,39538,portals_big__portal_7_r1c1,decor,new,Portal 7 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=1,1"
+36539,39539,portals_big__portal_8_r0c0,decor,new,Portal 8 (Portals Big) R0C0,2x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=0,0"
+36540,39540,portals_big__portal_8_r0c1,decor,new,Portal 8 (Portals Big) R0C1,4x2,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=0,1"
+36541,39541,portals_big__portal_8_r1c0,decor,new,Portal 8 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=1,0"
+36542,39542,portals_big__portal_8_r1c1,decor,new,Portal 8 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=1,1"
+36543,39543,portals_big__portal_9_r1c0,decor,new,Portal 9 (Portals Big) R1C0,2x4,0,16777216,0,0,0,0,"family=portals_big|ms=120|group=portals_big__portal_9|gw=6|gh=6|piece=1,0"
+36544,39544,portals_big__portal_9_r1c1,decor,new,Portal 9 (Portals Big) R1C1,4x4,0,16777216,0,0,4,208,"family=portals_big|ms=120|group=portals_big__portal_9|gw=6|gh=6|piece=1,1"
+36545,39545,portals_small__dark_portal,decor,new,Dark Portal (Portals Small),2x2,0,16777216,0,0,3,164,family=portals_small|ms=120
+36546,39546,portals_small__fire_portal,decor,new,Fire Portal (Portals Small),2x2,0,16777216,0,0,3,207,family=portals_small|ms=100
+36547,39547,portals_small__holy_portal,decor,new,Holy Portal (Portals Small),2x2,0,16777216,0,0,3,215,family=portals_small|ms=120
+36548,39548,portals_small__ice_portal,decor,new,Ice Portal (Portals Small),2x2,0,16777216,0,0,3,143,family=portals_small|ms=120
+36549,39549,portals_small__lava_portal,decor,new,Lava Portal (Portals Small),2x2,0,16777216,0,0,3,207,family=portals_small|ms=120
+36550,39550,portals_small__lighting_portal,decor,new,Lighting Portal (Portals Small),2x2,0,16777216,0,0,3,191,family=portals_small|ms=100
+36551,39551,portals_small__nature_portal,decor,new,Nature Portal (Portals Small),2x2,0,16777216,0,0,3,130,family=portals_small|ms=120
+36552,39552,portals_small__void_portal,decor,new,Void Portal (Portals Small),2x2,0,16777216,0,0,3,164,family=portals_small|ms=120
+36553,39553,ruined_buildings__abandoned_windmill_r0c0,decor,new,Abandoned Windmill (Ruined Buildings) R0C0,4x4,0,16777216,0,0,0,0,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=0,0"
+36554,39554,ruined_buildings__abandoned_windmill_r0c1,decor,new,Abandoned Windmill (Ruined Buildings) R0C1,4x4,0,16777216,0,0,0,0,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=0,1"
+36555,39555,ruined_buildings__abandoned_windmill_r1c0,decor,new,Abandoned Windmill (Ruined Buildings) R1C0,4x4,0,16777216,0,0,0,0,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=1,0"
+36556,39556,ruined_buildings__abandoned_windmill_r1c1,stump,new,Abandoned Windmill (Ruined Buildings) R1C1,4x4,0,16785409,2,0,0,0,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=1,1"
+36557,39557,sewer_kit__sewer_barrel,stump,new,Sewer Barrel (Sewer Kit),1x1,0,16785409,2,0,0,0,family=sewer_kit|ms=140
+36558,39558,sewer_kit__sewer_fan,wall,new,Sewer Fan (Sewer Kit),1x1,0,16842752,0,0,0,0,family=sewer_kit|ms=140
+36559,39559,sewer_kit__sewer_wall_eyes,wall,new,Sewer Wall Eyes (Sewer Kit),1x2,0,16842752,0,0,0,0,family=sewer_kit|ms=140
+36560,39560,sewer_kit__sewer_wall_hole,wall,new,Sewer Wall Hole (Sewer Kit),1x2,0,16842752,0,0,0,0,family=sewer_kit|ms=140
+36561,39561,sewer_kit__sewer_wall_pip,wall,new,Sewer Wall Pip (Sewer Kit),1x2,0,16842752,0,0,0,0,family=sewer_kit|ms=140
+36562,39562,sewer_kit__vent,wall,new,Vent (Sewer Kit),1x2,0,16842752,0,0,0,0,family=sewer_kit|ms=140
+36563,39563,survivor_base__waste_fire,decor,new,Waste Fire (Survivor Base),2x2,0,16777216,0,0,3,207,family=survivor_base|ms=100
+36564,39564,throne_room__candle_stand,decor,new,Candle Stand (Throne Room),2x2,0,16777216,0,0,2,208,family=throne_room|ms=100
+36565,39565,throne_room__castle_ceiling_light,wall,new,Castle Ceiling Light (Throne Room),2x2,0,16842752,0,0,3,208,family=throne_room|ms=100
+36566,39566,throne_room__castle_fire,decor,new,Castle Fire (Throne Room),2x2,0,16777216,0,0,3,207,family=throne_room|ms=100
+36567,39567,trees_anim__tree_10,stump,new,Tree 10 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36568,39568,trees_anim__tree_11,stump,new,Tree 11 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36569,39569,trees_anim__tree_12,stump,new,Tree 12 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36570,39570,trees_anim__tree_13,stump,new,Tree 13 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36571,39571,trees_anim__tree_14,stump,new,Tree 14 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36572,39572,trees_anim__tree_15,stump,new,Tree 15 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36573,39573,trees_anim__tree_16,stump,new,Tree 16 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36574,39574,trees_anim__tree_17,stump,new,Tree 17 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36575,39575,trees_anim__tree_18,stump,new,Tree 18 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36576,39576,trees_anim__tree_1,stump,new,Tree 1 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36577,39577,trees_anim__tree_2,stump,new,Tree 2 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36578,39578,trees_anim__tree_3,stump,new,Tree 3 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36579,39579,trees_anim__tree_4,stump,new,Tree 4 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36580,39580,trees_anim__tree_5,stump,new,Tree 5 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36581,39581,trees_anim__tree_6,stump,new,Tree 6 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36582,39582,trees_anim__tree_7,stump,new,Tree 7 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36583,39583,trees_anim__tree_8,stump,new,Tree 8 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36584,39584,trees_anim__tree_9,stump,new,Tree 9 (Trees Anim),4x4,0,16785409,2,0,0,0,family=trees_anim|ms=140
+36585,39585,volcanoes__volcano_1_r0c0,decor,new,Volcano 1 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=0,0"
+36586,39586,volcanoes__volcano_1_r0c1,decor,new,Volcano 1 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=0,1"
+36587,39587,volcanoes__volcano_1_r1c0,decor,new,Volcano 1 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=1,0"
+36588,39588,volcanoes__volcano_1_r1c1,stump,new,Volcano 1 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=1,1"
+36589,39589,volcanoes__volcano_2_r0c0,decor,new,Volcano 2 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=0,0"
+36590,39590,volcanoes__volcano_2_r0c1,decor,new,Volcano 2 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=0,1"
+36591,39591,volcanoes__volcano_2_r1c0,decor,new,Volcano 2 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=1,0"
+36592,39592,volcanoes__volcano_2_r1c1,stump,new,Volcano 2 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=1,1"
+36593,39593,volcanoes__volcano_3_r0c0,decor,new,Volcano 3 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=0,0"
+36594,39594,volcanoes__volcano_3_r0c1,decor,new,Volcano 3 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=0,1"
+36595,39595,volcanoes__volcano_3_r1c0,decor,new,Volcano 3 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=1,0"
+36596,39596,volcanoes__volcano_3_r1c1,stump,new,Volcano 3 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=1,1"
+36597,39597,volcanoes__volcano_4_r0c0,decor,new,Volcano 4 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=0,0"
+36598,39598,volcanoes__volcano_4_r0c1,decor,new,Volcano 4 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=0,1"
+36599,39599,volcanoes__volcano_4_r1c0,decor,new,Volcano 4 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=1,0"
+36600,39600,volcanoes__volcano_4_r1c1,stump,new,Volcano 4 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=1,1"
+36601,39601,volcanoes__volcano_5_r0c0,decor,new,Volcano 5 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=0,0"
+36602,39602,volcanoes__volcano_5_r0c1,decor,new,Volcano 5 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=0,1"
+36603,39603,volcanoes__volcano_5_r1c0,decor,new,Volcano 5 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=1,0"
+36604,39604,volcanoes__volcano_5_r1c1,stump,new,Volcano 5 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=1,1"
+36605,39605,volcanoes__volcano_6_r0c0,decor,new,Volcano 6 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=0,0"
+36606,39606,volcanoes__volcano_6_r0c1,decor,new,Volcano 6 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=0,1"
+36607,39607,volcanoes__volcano_6_r1c0,decor,new,Volcano 6 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=1,0"
+36608,39608,volcanoes__volcano_6_r1c1,stump,new,Volcano 6 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=1,1"
+36609,39609,volcanoes__volcano_7_r0c0,decor,new,Volcano 7 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=0,0"
+36610,39610,volcanoes__volcano_7_r0c1,decor,new,Volcano 7 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=0,1"
+36611,39611,volcanoes__volcano_7_r1c0,decor,new,Volcano 7 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=1,0"
+36612,39612,volcanoes__volcano_7_r1c1,stump,new,Volcano 7 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=1,1"
+36613,39613,volcanoes__volcano_8_r0c0,decor,new,Volcano 8 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=0,0"
+36614,39614,volcanoes__volcano_8_r0c1,decor,new,Volcano 8 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=0,1"
+36615,39615,volcanoes__volcano_8_r1c0,decor,new,Volcano 8 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=1,0"
+36616,39616,volcanoes__volcano_8_r1c1,stump,new,Volcano 8 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=1,1"
+36617,39617,volcanoes__volcano_9_r0c0,decor,new,Volcano 9 (Volcanoes) R0C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=0,0"
+36618,39618,volcanoes__volcano_9_r0c1,decor,new,Volcano 9 (Volcanoes) R0C1,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=0,1"
+36619,39619,volcanoes__volcano_9_r1c0,decor,new,Volcano 9 (Volcanoes) R1C0,4x4,0,16777216,0,0,0,0,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=1,0"
+36620,39620,volcanoes__volcano_9_r1c1,stump,new,Volcano 9 (Volcanoes) R1C1,4x4,0,16785409,2,0,5,207,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=1,1"
+36621,39621,war_camp__camp_fire,decor,new,Camp Fire (War Camp),2x2,0,16777216,0,0,3,207,family=war_camp|ms=100
+36622,39622,worship_interior__blood_stained_sacrificial_altar,stump,new,Blood Stained Sacrificial Altar (Worship Interior),3x2,0,16785409,2,0,0,0,family=worship_interior|ms=140
+36623,39623,worship_interior__candle,decor,new,Candle (Worship Interior),2x2,0,16777216,0,0,2,208,family=worship_interior|ms=100
+36624,39624,worship_interior__fire,decor,new,Fire (Worship Interior),2x2,0,16777216,0,0,3,207,family=worship_interior|ms=100
+36625,39625,worship_interior__large_stone_altar,stump,new,Large Stone Altar (Worship Interior),3x2,0,16785409,2,0,0,0,family=worship_interior|ms=140
+36626,39626,zombie_city__street_fire,stump,new,Street Fire (Zombie City),3x3,0,16785409,2,0,3,207,family=zombie_city|ms=100

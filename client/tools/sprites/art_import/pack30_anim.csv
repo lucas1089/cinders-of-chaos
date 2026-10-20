@@ -1,0 +1,169 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+boats_docks__boat_1,item,stump,Boat 1 (Boats Docks),pack30_anim/boats_docks,0,0,3,2,1,2,bottom notwalkable notmoveable animateAlways,new,,family=boats_docks|ms=140
+boats_docks__boat_2,item,stump,Boat 2 (Boats Docks),pack30_anim/boats_docks,0,64,2,2,1,2,bottom notwalkable notmoveable animateAlways,new,,family=boats_docks|ms=140
+boats_docks__boat_3,item,stump,Boat 3 (Boats Docks),pack30_anim/boats_docks,0,128,3,2,1,2,bottom notwalkable notmoveable animateAlways,new,,family=boats_docks|ms=140
+boats_docks__boat_5,item,stump,Boat 5 (Boats Docks),pack30_anim/boats_docks,0,192,3,2,1,2,bottom notwalkable notmoveable animateAlways,new,,family=boats_docks|ms=140
+boats_docks__buoy_1,item,decor,Buoy 1 (Boats Docks),pack30_anim/boats_docks,0,256,1,1,1,2,notmoveable animateAlways,new,,family=boats_docks|ms=140
+castle_kit__castle_keep_r0c0,item,decor,Castle Keep (Castle Kit) R0C0,pack30_anim/castle_kit,0,0,4,4,1,9,notmoveable animateAlways,new,,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=0,0"
+castle_kit__castle_keep_r0c1,item,decor,Castle Keep (Castle Kit) R0C1,pack30_anim/castle_kit,0,128,4,4,1,9,notmoveable animateAlways,new,,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=0,1"
+castle_kit__castle_keep_r1c0,item,decor,Castle Keep (Castle Kit) R1C0,pack30_anim/castle_kit,0,256,4,4,1,9,notmoveable animateAlways,new,,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=1,0"
+castle_kit__castle_keep_r1c1,item,stump,Castle Keep (Castle Kit) R1C1,pack30_anim/castle_kit,0,384,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,"family=castle_kit|ms=140|group=castle_kit__castle_keep|gw=8|gh=8|piece=1,1"
+castle_kit__fire_pit,item,decor,Fire Pit (Castle Kit),pack30_anim/castle_kit,0,512,1,1,1,9,notmoveable light:3:207 animateAlways,new,,family=castle_kit|ms=100
+castle_kit__small_torch,item,decor,Small Torch (Castle Kit),pack30_anim/castle_kit,0,544,1,1,1,9,notmoveable light:2:208 animateAlways,new,,family=castle_kit|ms=100
+desert_camp__camp_cooking_pot,item,decor,Camp Cooking Pot (Desert Camp),pack30_anim/desert_camp,0,0,2,2,1,9,notmoveable light:2:208 animateAlways,new,,family=desert_camp|ms=100
+desert_camp__camp_fire,item,decor,Camp Fire (Desert Camp),pack30_anim/desert_camp,0,64,2,2,1,9,notmoveable light:3:207 animateAlways,new,,family=desert_camp|ms=100
+dungeon_cells__cell_wall_candle,item,wall,Cell Wall Candle (Dungeon Cells),pack30_anim/dungeon_cells,0,0,2,2,1,9,hangable notmoveable light:2:208 animateAlways,new,,family=dungeon_cells|ms=100
+fishing_village__house_smoke,item,decor,House Smoke (Fishing Village),pack30_anim/fishing_village,0,0,1,1,1,8,notmoveable animateAlways,new,,family=fishing_village|ms=140
+giant_squid__giant_squid_idle,item,stump,Giant Squid Idle (Giant Squid),pack30_anim/giant_squid,0,0,4,4,1,17,bottom notwalkable notmoveable animateAlways,new,,family=giant_squid|ms=140
+goblin_camp__cooking_pot_1,item,decor,Cooking Pot 1 (Goblin Camp),pack30_anim/goblin_camp,0,0,2,2,1,9,notmoveable light:2:208 animateAlways,new,,family=goblin_camp|ms=100
+lava_islands__giant_volcano_r0c0,item,decor,Giant Volcano (Lava Islands) R0C0,pack30_anim/lava_islands,0,0,4,4,1,9,notmoveable animateAlways,new,,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=0,0"
+lava_islands__giant_volcano_r0c1,item,decor,Giant Volcano (Lava Islands) R0C1,pack30_anim/lava_islands,0,128,4,4,1,9,notmoveable animateAlways,new,,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=0,1"
+lava_islands__giant_volcano_r1c0,item,decor,Giant Volcano (Lava Islands) R1C0,pack30_anim/lava_islands,0,256,4,4,1,9,notmoveable animateAlways,new,,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=1,0"
+lava_islands__giant_volcano_r1c1,item,stump,Giant Volcano (Lava Islands) R1C1,pack30_anim/lava_islands,0,384,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=lava_islands|ms=140|group=lava_islands__giant_volcano|gw=8|gh=8|piece=1,1"
+magic_forest__long_grass_1,item,decor,Long Grass 1 (Magic Forest),pack30_anim/magic_forest,0,0,2,2,1,7,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__long_grass_2,item,decor,Long Grass 2 (Magic Forest),pack30_anim/magic_forest,0,64,2,2,1,7,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__small_plant_1,item,decor,Small Plant 1 (Magic Forest),pack30_anim/magic_forest,0,128,1,1,1,7,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__small_plant_2,item,decor,Small Plant 2 (Magic Forest),pack30_anim/magic_forest,0,160,1,1,1,7,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__trap_plant_1,item,decor,Trap Plant 1 (Magic Forest),pack30_anim/magic_forest,0,192,2,2,1,4,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__trap_plant_2,item,decor,Trap Plant 2 (Magic Forest),pack30_anim/magic_forest,0,256,2,2,1,7,notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tower_1,item,stump,Magic Tower 1 (Magic Forest),pack30_anim/magic_forest,0,320,3,4,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tower_2,item,stump,Magic Tower 2 (Magic Forest),pack30_anim/magic_forest,0,448,3,4,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tower_3,item,stump,Magic Tower 3 (Magic Forest),pack30_anim/magic_forest,0,576,3,4,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tower_4,item,stump,Magic Tower 4 (Magic Forest),pack30_anim/magic_forest,0,704,2,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_10,item,stump,Magic Tree 10 (Magic Forest),pack30_anim/magic_forest,0,800,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_11,item,stump,Magic Tree 11 (Magic Forest),pack30_anim/magic_forest,0,896,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_12,item,stump,Magic Tree 12 (Magic Forest),pack30_anim/magic_forest,0,992,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_1,item,stump,Magic Tree 1 (Magic Forest),pack30_anim/magic_forest,0,1088,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_2,item,stump,Magic Tree 2 (Magic Forest),pack30_anim/magic_forest,0,1184,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_3,item,stump,Magic Tree 3 (Magic Forest),pack30_anim/magic_forest,0,1280,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_4,item,stump,Magic Tree 4 (Magic Forest),pack30_anim/magic_forest,0,1376,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_5,item,stump,Magic Tree 5 (Magic Forest),pack30_anim/magic_forest,0,1472,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_6,item,stump,Magic Tree 6 (Magic Forest),pack30_anim/magic_forest,0,1568,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_7,item,stump,Magic Tree 7 (Magic Forest),pack30_anim/magic_forest,0,1664,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_8,item,stump,Magic Tree 8 (Magic Forest),pack30_anim/magic_forest,0,1760,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__magic_tree_9,item,stump,Magic Tree 9 (Magic Forest),pack30_anim/magic_forest,0,1856,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__mushroom_1,item,stump,Mushroom 1 (Magic Forest),pack30_anim/magic_forest,0,1952,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__mushroom_2,item,stump,Mushroom 2 (Magic Forest),pack30_anim/magic_forest,0,2048,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+magic_forest__mushroom_3,item,stump,Mushroom 3 (Magic Forest),pack30_anim/magic_forest,0,2144,3,3,1,7,bottom notwalkable notmoveable animateAlways,new,,family=magic_forest|ms=140
+mineshaft__mine_wall_light,item,wall,Mine Wall Light (Mineshaft),pack30_anim/mineshaft,0,0,2,2,1,9,hangable notmoveable light:3:208 animateAlways,new,,family=mineshaft|ms=100
+pirate_ships__ship_1,item,stump,Ship 1 (Pirate Ships),pack30_anim/pirate_ships,0,0,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_2,item,stump,Ship 2 (Pirate Ships),pack30_anim/pirate_ships,0,96,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_3,item,stump,Ship 3 (Pirate Ships),pack30_anim/pirate_ships,0,192,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_4,item,stump,Ship 4 (Pirate Ships),pack30_anim/pirate_ships,0,288,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_5,item,stump,Ship 5 (Pirate Ships),pack30_anim/pirate_ships,0,384,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_6,item,stump,Ship 6 (Pirate Ships),pack30_anim/pirate_ships,0,480,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_7,item,stump,Ship 7 (Pirate Ships),pack30_anim/pirate_ships,0,576,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+pirate_ships__ship_8,item,stump,Ship 8 (Pirate Ships),pack30_anim/pirate_ships,0,672,3,3,1,9,bottom notwalkable notmoveable animateAlways,new,,family=pirate_ships|ms=140
+portals_big__portal_1_r0c0,item,decor,Portal 1 (Portals Big) R0C0,pack30_anim/portals_big,0,0,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=0,0"
+portals_big__portal_1_r0c1,item,decor,Portal 1 (Portals Big) R0C1,pack30_anim/portals_big,0,64,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=0,1"
+portals_big__portal_1_r1c0,item,decor,Portal 1 (Portals Big) R1C0,pack30_anim/portals_big,0,128,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=1,0"
+portals_big__portal_1_r1c1,item,decor,Portal 1 (Portals Big) R1C1,pack30_anim/portals_big,0,256,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_1|gw=6|gh=6|piece=1,1"
+portals_big__portal_2_r0c0,item,decor,Portal 2 (Portals Big) R0C0,pack30_anim/portals_big,0,384,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=0,0"
+portals_big__portal_2_r0c1,item,decor,Portal 2 (Portals Big) R0C1,pack30_anim/portals_big,0,448,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=0,1"
+portals_big__portal_2_r1c0,item,decor,Portal 2 (Portals Big) R1C0,pack30_anim/portals_big,0,512,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=1,0"
+portals_big__portal_2_r1c1,item,decor,Portal 2 (Portals Big) R1C1,pack30_anim/portals_big,0,640,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_2|gw=6|gh=6|piece=1,1"
+portals_big__portal_3_r0c0,item,decor,Portal 3 (Portals Big) R0C0,pack30_anim/portals_big,0,768,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=0,0"
+portals_big__portal_3_r0c1,item,decor,Portal 3 (Portals Big) R0C1,pack30_anim/portals_big,0,832,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=0,1"
+portals_big__portal_3_r1c0,item,decor,Portal 3 (Portals Big) R1C0,pack30_anim/portals_big,0,896,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=1,0"
+portals_big__portal_3_r1c1,item,decor,Portal 3 (Portals Big) R1C1,pack30_anim/portals_big,0,1024,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_3|gw=6|gh=6|piece=1,1"
+portals_big__portal_4_r0c0,item,decor,Portal 4 (Portals Big) R0C0,pack30_anim/portals_big,0,1152,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=0,0"
+portals_big__portal_4_r0c1,item,decor,Portal 4 (Portals Big) R0C1,pack30_anim/portals_big,0,1216,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=0,1"
+portals_big__portal_4_r1c0,item,decor,Portal 4 (Portals Big) R1C0,pack30_anim/portals_big,0,1280,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=1,0"
+portals_big__portal_4_r1c1,item,decor,Portal 4 (Portals Big) R1C1,pack30_anim/portals_big,0,1408,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_4|gw=6|gh=6|piece=1,1"
+portals_big__portal_5_r0c0,item,decor,Portal 5 (Portals Big) R0C0,pack30_anim/portals_big,0,1536,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=0,0"
+portals_big__portal_5_r0c1,item,decor,Portal 5 (Portals Big) R0C1,pack30_anim/portals_big,0,1600,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=0,1"
+portals_big__portal_5_r1c0,item,decor,Portal 5 (Portals Big) R1C0,pack30_anim/portals_big,0,1664,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=1,0"
+portals_big__portal_5_r1c1,item,decor,Portal 5 (Portals Big) R1C1,pack30_anim/portals_big,0,1792,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_5|gw=6|gh=6|piece=1,1"
+portals_big__portal_6_r1c0,item,decor,Portal 6 (Portals Big) R1C0,pack30_anim/portals_big,0,1920,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_6|gw=6|gh=6|piece=1,0"
+portals_big__portal_6_r1c1,item,decor,Portal 6 (Portals Big) R1C1,pack30_anim/portals_big,0,2048,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_6|gw=6|gh=6|piece=1,1"
+portals_big__portal_7_r0c1,item,decor,Portal 7 (Portals Big) R0C1,pack30_anim/portals_big,0,2176,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=0,1"
+portals_big__portal_7_r1c0,item,decor,Portal 7 (Portals Big) R1C0,pack30_anim/portals_big,0,2240,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=1,0"
+portals_big__portal_7_r1c1,item,decor,Portal 7 (Portals Big) R1C1,pack30_anim/portals_big,0,2368,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_7|gw=6|gh=6|piece=1,1"
+portals_big__portal_8_r0c0,item,decor,Portal 8 (Portals Big) R0C0,pack30_anim/portals_big,0,2496,2,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=0,0"
+portals_big__portal_8_r0c1,item,decor,Portal 8 (Portals Big) R0C1,pack30_anim/portals_big,0,2560,4,2,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=0,1"
+portals_big__portal_8_r1c0,item,decor,Portal 8 (Portals Big) R1C0,pack30_anim/portals_big,0,2624,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=1,0"
+portals_big__portal_8_r1c1,item,decor,Portal 8 (Portals Big) R1C1,pack30_anim/portals_big,0,2752,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_8|gw=6|gh=6|piece=1,1"
+portals_big__portal_9_r1c0,item,decor,Portal 9 (Portals Big) R1C0,pack30_anim/portals_big,0,2880,2,4,1,16,notmoveable animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_9|gw=6|gh=6|piece=1,0"
+portals_big__portal_9_r1c1,item,decor,Portal 9 (Portals Big) R1C1,pack30_anim/portals_big,0,3008,4,4,1,16,notmoveable light:4:208 animateAlways,new,,"family=portals_big|ms=120|group=portals_big__portal_9|gw=6|gh=6|piece=1,1"
+portals_small__dark_portal,item,decor,Dark Portal (Portals Small),pack30_anim/portals_small,0,0,2,2,1,7,notmoveable light:3:164 animateAlways,new,,family=portals_small|ms=120
+portals_small__fire_portal,item,decor,Fire Portal (Portals Small),pack30_anim/portals_small,0,64,2,2,1,7,notmoveable light:3:207 animateAlways,new,,family=portals_small|ms=100
+portals_small__holy_portal,item,decor,Holy Portal (Portals Small),pack30_anim/portals_small,0,128,2,2,1,7,notmoveable light:3:215 animateAlways,new,,family=portals_small|ms=120
+portals_small__ice_portal,item,decor,Ice Portal (Portals Small),pack30_anim/portals_small,0,192,2,2,1,7,notmoveable light:3:143 animateAlways,new,,family=portals_small|ms=120
+portals_small__lava_portal,item,decor,Lava Portal (Portals Small),pack30_anim/portals_small,0,256,2,2,1,7,notmoveable light:3:207 animateAlways,new,,family=portals_small|ms=120
+portals_small__lighting_portal,item,decor,Lighting Portal (Portals Small),pack30_anim/portals_small,0,320,2,2,1,7,notmoveable light:3:191 animateAlways,new,,family=portals_small|ms=100
+portals_small__nature_portal,item,decor,Nature Portal (Portals Small),pack30_anim/portals_small,0,384,2,2,1,7,notmoveable light:3:130 animateAlways,new,,family=portals_small|ms=120
+portals_small__void_portal,item,decor,Void Portal (Portals Small),pack30_anim/portals_small,0,448,2,2,1,7,notmoveable light:3:164 animateAlways,new,,family=portals_small|ms=120
+ruined_buildings__abandoned_windmill_r0c0,item,decor,Abandoned Windmill (Ruined Buildings) R0C0,pack30_anim/ruined_buildings,0,0,4,4,1,9,notmoveable animateAlways,new,,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=0,0"
+ruined_buildings__abandoned_windmill_r0c1,item,decor,Abandoned Windmill (Ruined Buildings) R0C1,pack30_anim/ruined_buildings,0,128,4,4,1,9,notmoveable animateAlways,new,,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=0,1"
+ruined_buildings__abandoned_windmill_r1c0,item,decor,Abandoned Windmill (Ruined Buildings) R1C0,pack30_anim/ruined_buildings,0,256,4,4,1,9,notmoveable animateAlways,new,,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=1,0"
+ruined_buildings__abandoned_windmill_r1c1,item,stump,Abandoned Windmill (Ruined Buildings) R1C1,pack30_anim/ruined_buildings,0,384,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,"family=ruined_buildings|ms=140|group=ruined_buildings__abandoned_windmill|gw=8|gh=8|piece=1,1"
+sewer_kit__sewer_barrel,item,stump,Sewer Barrel (Sewer Kit),pack30_anim/sewer_kit,0,0,1,1,1,13,bottom notwalkable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+sewer_kit__sewer_fan,item,wall,Sewer Fan (Sewer Kit),pack30_anim/sewer_kit,0,32,1,1,1,13,hangable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+sewer_kit__sewer_wall_eyes,item,wall,Sewer Wall Eyes (Sewer Kit),pack30_anim/sewer_kit,0,64,1,2,1,13,hangable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+sewer_kit__sewer_wall_hole,item,wall,Sewer Wall Hole (Sewer Kit),pack30_anim/sewer_kit,0,128,1,2,1,13,hangable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+sewer_kit__sewer_wall_pip,item,wall,Sewer Wall Pip (Sewer Kit),pack30_anim/sewer_kit,0,192,1,2,1,7,hangable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+sewer_kit__vent,item,wall,Vent (Sewer Kit),pack30_anim/sewer_kit,0,256,1,2,1,13,hangable notmoveable animateAlways,new,,family=sewer_kit|ms=140
+survivor_base__waste_fire,item,decor,Waste Fire (Survivor Base),pack30_anim/survivor_base,0,0,2,2,1,9,notmoveable light:3:207 animateAlways,new,,family=survivor_base|ms=100
+throne_room__candle_stand,item,decor,Candle Stand (Throne Room),pack30_anim/throne_room,0,0,2,2,1,9,notmoveable light:2:208 animateAlways,new,,family=throne_room|ms=100
+throne_room__castle_ceiling_light,item,wall,Castle Ceiling Light (Throne Room),pack30_anim/throne_room,0,64,2,2,1,9,hangable notmoveable light:3:208 animateAlways,new,,family=throne_room|ms=100
+throne_room__castle_fire,item,decor,Castle Fire (Throne Room),pack30_anim/throne_room,0,128,2,2,1,9,notmoveable light:3:207 animateAlways,new,,family=throne_room|ms=100
+trees_anim__tree_10,item,stump,Tree 10 (Trees Anim),pack30_anim/trees_anim,0,0,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_11,item,stump,Tree 11 (Trees Anim),pack30_anim/trees_anim,0,128,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_12,item,stump,Tree 12 (Trees Anim),pack30_anim/trees_anim,0,256,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_13,item,stump,Tree 13 (Trees Anim),pack30_anim/trees_anim,0,384,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_14,item,stump,Tree 14 (Trees Anim),pack30_anim/trees_anim,0,512,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_15,item,stump,Tree 15 (Trees Anim),pack30_anim/trees_anim,0,640,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_16,item,stump,Tree 16 (Trees Anim),pack30_anim/trees_anim,0,768,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_17,item,stump,Tree 17 (Trees Anim),pack30_anim/trees_anim,0,896,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_18,item,stump,Tree 18 (Trees Anim),pack30_anim/trees_anim,0,1024,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_1,item,stump,Tree 1 (Trees Anim),pack30_anim/trees_anim,0,1152,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_2,item,stump,Tree 2 (Trees Anim),pack30_anim/trees_anim,0,1280,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_3,item,stump,Tree 3 (Trees Anim),pack30_anim/trees_anim,0,1408,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_4,item,stump,Tree 4 (Trees Anim),pack30_anim/trees_anim,0,1536,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_5,item,stump,Tree 5 (Trees Anim),pack30_anim/trees_anim,0,1664,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_6,item,stump,Tree 6 (Trees Anim),pack30_anim/trees_anim,0,1792,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_7,item,stump,Tree 7 (Trees Anim),pack30_anim/trees_anim,0,1920,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_8,item,stump,Tree 8 (Trees Anim),pack30_anim/trees_anim,0,2048,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+trees_anim__tree_9,item,stump,Tree 9 (Trees Anim),pack30_anim/trees_anim,0,2176,4,4,1,9,bottom notwalkable notmoveable animateAlways,new,,family=trees_anim|ms=140
+volcanoes__volcano_1_r0c0,item,decor,Volcano 1 (Volcanoes) R0C0,pack30_anim/volcanoes,0,0,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_1_r0c1,item,decor,Volcano 1 (Volcanoes) R0C1,pack30_anim/volcanoes,0,128,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_1_r1c0,item,decor,Volcano 1 (Volcanoes) R1C0,pack30_anim/volcanoes,0,256,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_1_r1c1,item,stump,Volcano 1 (Volcanoes) R1C1,pack30_anim/volcanoes,0,384,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_1|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_2_r0c0,item,decor,Volcano 2 (Volcanoes) R0C0,pack30_anim/volcanoes,0,512,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_2_r0c1,item,decor,Volcano 2 (Volcanoes) R0C1,pack30_anim/volcanoes,0,640,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_2_r1c0,item,decor,Volcano 2 (Volcanoes) R1C0,pack30_anim/volcanoes,0,768,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_2_r1c1,item,stump,Volcano 2 (Volcanoes) R1C1,pack30_anim/volcanoes,0,896,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_2|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_3_r0c0,item,decor,Volcano 3 (Volcanoes) R0C0,pack30_anim/volcanoes,0,1024,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_3_r0c1,item,decor,Volcano 3 (Volcanoes) R0C1,pack30_anim/volcanoes,0,1152,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_3_r1c0,item,decor,Volcano 3 (Volcanoes) R1C0,pack30_anim/volcanoes,0,1280,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_3_r1c1,item,stump,Volcano 3 (Volcanoes) R1C1,pack30_anim/volcanoes,0,1408,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_3|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_4_r0c0,item,decor,Volcano 4 (Volcanoes) R0C0,pack30_anim/volcanoes,0,1536,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_4_r0c1,item,decor,Volcano 4 (Volcanoes) R0C1,pack30_anim/volcanoes,0,1664,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_4_r1c0,item,decor,Volcano 4 (Volcanoes) R1C0,pack30_anim/volcanoes,0,1792,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_4_r1c1,item,stump,Volcano 4 (Volcanoes) R1C1,pack30_anim/volcanoes,0,1920,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_4|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_5_r0c0,item,decor,Volcano 5 (Volcanoes) R0C0,pack30_anim/volcanoes,0,2048,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_5_r0c1,item,decor,Volcano 5 (Volcanoes) R0C1,pack30_anim/volcanoes,0,2176,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_5_r1c0,item,decor,Volcano 5 (Volcanoes) R1C0,pack30_anim/volcanoes,0,2304,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_5_r1c1,item,stump,Volcano 5 (Volcanoes) R1C1,pack30_anim/volcanoes,0,2432,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_5|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_6_r0c0,item,decor,Volcano 6 (Volcanoes) R0C0,pack30_anim/volcanoes,0,2560,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_6_r0c1,item,decor,Volcano 6 (Volcanoes) R0C1,pack30_anim/volcanoes,0,2688,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_6_r1c0,item,decor,Volcano 6 (Volcanoes) R1C0,pack30_anim/volcanoes,0,2816,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_6_r1c1,item,stump,Volcano 6 (Volcanoes) R1C1,pack30_anim/volcanoes,0,2944,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_6|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_7_r0c0,item,decor,Volcano 7 (Volcanoes) R0C0,pack30_anim/volcanoes,0,3072,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_7_r0c1,item,decor,Volcano 7 (Volcanoes) R0C1,pack30_anim/volcanoes,0,3200,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_7_r1c0,item,decor,Volcano 7 (Volcanoes) R1C0,pack30_anim/volcanoes,0,3328,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_7_r1c1,item,stump,Volcano 7 (Volcanoes) R1C1,pack30_anim/volcanoes,0,3456,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_7|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_8_r0c0,item,decor,Volcano 8 (Volcanoes) R0C0,pack30_anim/volcanoes,0,3584,4,4,1,7,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_8_r0c1,item,decor,Volcano 8 (Volcanoes) R0C1,pack30_anim/volcanoes,0,3712,4,4,1,7,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_8_r1c0,item,decor,Volcano 8 (Volcanoes) R1C0,pack30_anim/volcanoes,0,3840,4,4,1,7,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_8_r1c1,item,stump,Volcano 8 (Volcanoes) R1C1,pack30_anim/volcanoes,0,3968,4,4,1,7,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_8|gw=8|gh=8|piece=1,1"
+volcanoes__volcano_9_r0c0,item,decor,Volcano 9 (Volcanoes) R0C0,pack30_anim/volcanoes,0,4096,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=0,0"
+volcanoes__volcano_9_r0c1,item,decor,Volcano 9 (Volcanoes) R0C1,pack30_anim/volcanoes,0,4224,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=0,1"
+volcanoes__volcano_9_r1c0,item,decor,Volcano 9 (Volcanoes) R1C0,pack30_anim/volcanoes,0,4352,4,4,1,9,notmoveable animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=1,0"
+volcanoes__volcano_9_r1c1,item,stump,Volcano 9 (Volcanoes) R1C1,pack30_anim/volcanoes,0,4480,4,4,1,9,bottom notwalkable notmoveable light:5:207 animateAlways,new,,"family=volcanoes|ms=140|group=volcanoes__volcano_9|gw=8|gh=8|piece=1,1"
+war_camp__camp_fire,item,decor,Camp Fire (War Camp),pack30_anim/war_camp,0,0,2,2,1,9,notmoveable light:3:207 animateAlways,new,,family=war_camp|ms=100
+worship_interior__blood_stained_sacrificial_altar,item,stump,Blood Stained Sacrificial Altar (Worship Interior),pack30_anim/worship_interior,0,0,3,2,1,4,bottom notwalkable notmoveable animateAlways,new,,family=worship_interior|ms=140
+worship_interior__candle,item,decor,Candle (Worship Interior),pack30_anim/worship_interior,0,64,2,2,1,4,notmoveable light:2:208 animateAlways,new,,family=worship_interior|ms=100
+worship_interior__fire,item,decor,Fire (Worship Interior),pack30_anim/worship_interior,0,128,2,2,1,5,notmoveable light:3:207 animateAlways,new,,family=worship_interior|ms=100
+worship_interior__large_stone_altar,item,stump,Large Stone Altar (Worship Interior),pack30_anim/worship_interior,0,192,3,2,1,5,bottom notwalkable notmoveable animateAlways,new,,family=worship_interior|ms=140
+zombie_city__street_fire,item,stump,Street Fire (Zombie City),pack30_anim/zombie_city,0,0,3,3,1,9,bottom notwalkable notmoveable light:3:207 animateAlways,new,,family=zombie_city|ms=100

@@ -1,0 +1,26 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+34834,37834,goblins__goblin_archer_corpse,corpse,new,dead goblin archer,2x2,2,67108864,0,0,0,0,family=goblins
+34835,37835,goblins__goblin_berserker_corpse,corpse,new,dead goblin berserker,2x2,2,67108864,0,0,0,0,family=goblins
+34836,37836,goblins__goblin_shaman_corpse,corpse,new,dead goblin shaman,2x2,2,67108864,0,0,0,0,family=goblins
+34837,37837,goblins__goblin_warrior_corpse,corpse,new,dead goblin warrior,2x2,2,67108864,0,0,0,0,family=goblins
+34838,37838,giant_squid__giant_squid_corpse,corpse,new,dead giant squid,4x4,2,67108864,0,0,0,0,family=giant_squid
+34839,37839,skeleton_npcs__armored_skeleton_corpse,corpse,new,dead armored skeleton,1x1,2,67108864,0,0,0,0,family=skeleton_npcs
+34840,37840,skeleton_npcs__basic_skeleton_corpse,corpse,new,dead basic skeleton,1x1,2,67108864,0,0,0,0,family=skeleton_npcs
+34841,37841,skeleton_npcs__bone_archer_corpse,corpse,new,dead bone archer,1x1,2,67108864,0,0,0,0,family=skeleton_npcs
+34842,37842,vermin__rat_1_corpse,corpse,new,dead rat 1,1x1,2,67108864,0,0,0,0,family=vermin
+34843,37843,vermin__rat_2_corpse,corpse,new,dead rat 2,1x1,2,67108864,0,0,0,0,family=vermin
+34844,37844,vermin__rat_3_corpse,corpse,new,dead rat 3,1x1,2,67108864,0,0,0,0,family=vermin
+34845,37845,vermin__rat_4_corpse,corpse,new,dead rat 4,1x1,2,67108864,0,0,0,0,family=vermin
+34846,37846,vermin__rat_king_corpse,corpse,new,dead rat king,2x2,2,67108864,0,0,0,0,family=vermin
+34847,37847,war_beasts__boar_charger_corpse,corpse,new,dead boar charger,2x2,2,67108864,0,0,0,0,family=war_beasts
+34848,37848,war_beasts__lizard_mystic_corpse,corpse,new,dead lizard mystic,2x2,2,67108864,0,0,0,0,family=war_beasts
+34849,37849,war_beasts__spider_ravager_corpse,corpse,new,dead spider ravager,2x2,2,67108864,0,0,0,0,family=war_beasts
+34850,37850,war_beasts__warg_raider_corpse,corpse,new,dead warg raider,2x2,2,67108864,0,0,0,0,family=war_beasts
+34851,37851,outbreak_zombies__fireman_zombie_corpse,corpse,new,dead fireman zombie,2x2,2,67108864,0,0,0,0,family=outbreak_zombies
+34852,37852,outbreak_zombies__hazmat_zombie_corpse,corpse,new,dead hazmat zombie,2x2,2,67108864,0,0,0,0,family=outbreak_zombies
+34853,37853,outbreak_zombies__nurse_zombie_corpse,corpse,new,dead nurse zombie,2x2,2,67108864,0,0,0,0,family=outbreak_zombies
+34854,37854,outbreak_zombies__police_zombie_corpse,corpse,new,dead police zombie,2x2,2,67108864,0,0,0,0,family=outbreak_zombies
+34855,37855,zombie_civilians__businessman_zombie_corpse,corpse,new,dead businessman zombie,2x2,2,67108864,0,0,0,0,family=zombie_civilians
+34856,37856,zombie_civilians__classic_walker_zombie_corpse,corpse,new,dead classic walker zombie,2x2,2,67108864,0,0,0,0,family=zombie_civilians
+34857,37857,zombie_civilians__prisoner_zombie_corpse,corpse,new,dead prisoner zombie,2x2,2,67108864,0,0,0,0,family=zombie_civilians
+34858,37858,zombie_civilians__woman_zombie_corpse,corpse,new,dead woman zombie,2x2,2,67108864,0,0,0,0,family=zombie_civilians
