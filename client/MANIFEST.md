@@ -2473,7 +2473,8 @@ worn, with the row under the mouse applied, else the row picked.
 wings, aura, the outfit shader's name) or the outline call (`game_cosmeticfx.applyOutline`, base patch `0038`, which
 draws on a widget's own preview creature), the same paths as the map. The feet stand where `CharSelectCore.figure` and
 `placeRect` put them (the feet anchors of "Where a character stands"); a mounted look is fitted by its mount plus the
-rider. A shader the client has not registered is left off with a note (the engine would draw nothing). No pictures
+rider; a look without a mounted pattern (pattern Z 1) rides standing, lifted onto the mount (base patch `0084`,
+`client/BASE.md`). A shader the client has not registered is left off with a note (the engine would draw nothing). No pictures
 stand in for an effect: spell and kill effects are the client's own effect sprites ("Cosmetics effect previews").
 
 **API** (`modules.game_lookpreview`): `create(placeholder)` fills a fixed column the window keeps for it and returns
