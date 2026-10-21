@@ -10,10 +10,10 @@ local V = CraftingRecipeView
 
 local sv = { installed = true, shards = 60, shardName = 'rune shards', maxCombine = 10 }
 local rune = { key = 'chaos', name = 'Orb of Upheaval', cost = 25, count = 2, back = 10 }
-local ember = { key = 'embershard', name = 'Ember Orb', cost = 1500, count = 0, back = 0, input = 29852,
-  inputName = 'Ember Shards', inputSingular = 'Ember Shard', have = 3200 }
-local crown = { key = 'crownshard', name = 'Crown Orb', cost = 1750, count = 0, back = 0, input = 29853,
-  inputName = 'Crown Shards', inputSingular = 'Crown Shard', have = 1749 }
+local ember = { key = 'embershard', name = 'Ember Orb', cost = 1000, count = 0, back = 0, input = 29852,
+  inputName = 'Ember Shards', inputSingular = 'Ember Shard', have = 2200 }
+local crown = { key = 'crownshard', name = 'Crown Orb', cost = 1000, count = 0, back = 0, input = 29853,
+  inputName = 'Crown Shards', inputSingular = 'Crown Shard', have = 999 }
 
 -- numbers
 eq(V.thousands(1500), '1,500', 'thousands')
@@ -25,19 +25,19 @@ eq(V.thousands(1000000), '1,000,000', 'millions')
 eq(V.isShardRecipe(rune), false, 'a rune shard recipe')
 eq(V.isShardRecipe(ember), true, 'a shard recipe')
 eq(V.have(rune, sv), 60, 'rune shards from the view')
-eq(V.have(ember, sv), 3200, 'Ember Shards from the row')
+eq(V.have(ember, sv), 2200, 'Ember Shards from the row')
 eq(V.currency(rune, sv), 'rune shards', 'rune shard plural')
 eq(V.currency(ember, sv), 'Ember Shards', 'the server item name')
 eq(V.costText(rune, sv), '25 shards', 'rune cost')
-eq(V.costText(ember, sv), '1,500 Ember Shards', 'shard cost')
+eq(V.costText(ember, sv), '1,000 Ember Shards', 'shard cost')
 
 -- one click 1, Ctrl as many as paid for, at most maxCombine
 eq(V.combineCount(V.have(ember, sv), ember.cost, sv.maxCombine, false), 1, 'a click makes one')
-eq(V.combineCount(V.have(ember, sv), ember.cost, sv.maxCombine, true), 2, 'Ctrl: 3,200 pay for two')
+eq(V.combineCount(V.have(ember, sv), ember.cost, sv.maxCombine, true), 2, 'Ctrl: 2,200 pay for two')
 eq(V.combineCount(V.have(crown, sv), crown.cost, sv.maxCombine, false), 0, 'one short: none')
 eq(V.combineCount(V.have(crown, sv), crown.cost, sv.maxCombine, true), 0, 'one short, Ctrl: none')
-eq(V.combineCount(100000, 1500, 10, true), 10, 'Ctrl stops at 10')
-eq(V.combineCount(1500, 1500, 10, true), 1, 'exactly one')
+eq(V.combineCount(100000, 1000, 10, true), 10, 'Ctrl stops at 10')
+eq(V.combineCount(1000, 1000, 10, true), 1, 'exactly one')
 eq(V.combineCount(100, 0, 10, true), 0, 'a broken recipe makes nothing')
 
 -- the button
@@ -55,8 +55,8 @@ eq(V.recycleBack({ key = 'x', cost = 1, input = 29852, back = 5 }), 0, 'a shard 
 
 -- the tooltip
 local tip = V.tip(ember, sv)
-eq(tip:find('1500 Ember Shards -> 1 Ember Orb', 1, true) ~= nil, true, 'tip names the shards: ' .. tip)
-eq(tip:find('Your Ember Shards: 3,200.', 1, true) ~= nil, true, 'tip has the count')
+eq(tip:find('1000 Ember Shards -> 1 Ember Orb', 1, true) ~= nil, true, 'tip names the shards: ' .. tip)
+eq(tip:find('Your Ember Shards: 2,200.', 1, true) ~= nil, true, 'tip has the count')
 eq(tip:find('Shift', 1, true), nil, 'no recycle line')
 tip = V.tip(rune, sv)
 eq(tip:find('25 rune shards -> 1 Orb of Upheaval', 1, true) ~= nil, true, 'rune tip')

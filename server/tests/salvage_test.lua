@@ -68,11 +68,10 @@ for _, r in ipairs(cfg.shardRecipes) do
 	assert(r.cost >= 1000 and r.cost <= 3000, "an orb takes hours of waystone shards: " .. r.cost)
 end
 local emberR, crownR = K.shardRecipe("embershard", cfg), K.shardRecipe("crownshard", cfg)
-eq(emberR.orb .. "/" .. emberR.input .. "/" .. emberR.cost, "ember/29852/1500", "Ember Shards -> Ember Orb")
-eq(crownR.orb .. "/" .. crownR.input .. "/" .. crownR.cost, "crown/29853/1750", "Crown Shards -> Crown Orb")
--- the Crown Orb is worth twice the Ember Orb (reference 40 / 20) and Crown Shards drop at about 0.55 x the Ember Shards'
-local r = (crownR.cost / emberR.cost) / ((store.crown / store.ember) * 0.55)
-assert(r > 0.95 and r < 1.2, "the same coins per hour of shards for both orbs: " .. r)
+eq(emberR.orb .. "/" .. emberR.input .. "/" .. emberR.cost, "ember/29852/1000", "Ember Shards -> Ember Orb")
+eq(crownR.orb .. "/" .. crownR.input .. "/" .. crownR.cost, "crown/29853/1000", "Crown Shards -> Crown Orb")
+-- owner, 2026-10-21: "pode deixar 1000 shards por orb" (both orbs, the same count)
+eq(emberR.cost, crownR.cost, "the same shard count for both orbs")
 assert(cfg.batchCap == 50, "hard cap of 50 items per batch")
 assert(not cfg.allowUniques, "uniques are not salvaged")
 
@@ -250,21 +249,21 @@ eq(select(2, K.combineCheck(1000, "chaos", 11, cfg)), "count", "more than maxCom
 eq(select(2, K.combineCheck(1000, "chaos", 0, cfg)), "count", "zero")
 eq(select(2, K.combineCheck(1000, "mirror", 1, cfg)), "unknownRecipe", "unknown orb")
 -- the shard recipes: the owned count is the recipe's own input
-ok, cost = K.combineCheck(1500, "embershard", 1, cfg)
-eq(ok, true, "1,500 Ember Shards make an Ember Orb")
-eq(cost, 1500, "and cost 1,500")
-eq(select(2, K.combineCheck(1499, "embershard", 1, cfg)), "input", "one Ember Shard short")
+ok, cost = K.combineCheck(1000, "embershard", 1, cfg)
+eq(ok, true, "1,000 Ember Shards make an Ember Orb")
+eq(cost, 1000, "and cost 1,000")
+eq(select(2, K.combineCheck(999, "embershard", 1, cfg)), "input", "one Ember Shard short")
 eq(K.reasonText("input", emberR), "You do not have enough Ember Shards.", "the reason names the shards")
 eq(K.reasonText("shards", nil), K.reasons.shards, "a plain reason")
-ok, cost = K.combineCheck(17500, "crownshard", 10, cfg)
-eq(cost, 17500, "ten Crown Orbs")
+ok, cost = K.combineCheck(10000, "crownshard", 10, cfg)
+eq(cost, 10000, "ten Crown Orbs")
 eq(select(2, K.combineCheck(1e6, "crownshard", 11, cfg)), "count", "more than maxCombine")
 eq(K.anyRecipe("chaos", cfg).cost, 25, "anyRecipe finds a rune shard recipe")
 eq(K.anyRecipe("embershard", cfg), emberR, "and a shard recipe")
 eq(K.inputRecipe(29853, cfg), crownR, "the recipe that eats Crown Shards")
 eq(K.inputRecipe(cfg.shard.id, cfg), nil, "rune shards are no shard recipe input")
-eq(K.shardHint(emberR, "Ember Orb"), "Combine 1,500 at the Crafting Bench (Salvage tab) into an Ember Orb.", "the Ember hint")
-eq(K.shardHint(crownR, "Crown Orb"), "Combine 1,750 at the Crafting Bench (Salvage tab) into a Crown Orb.", "the Crown hint")
+eq(K.shardHint(emberR, "Ember Orb"), "Combine 1,000 at the Crafting Bench (Salvage tab) into an Ember Orb.", "the Ember hint")
+eq(K.shardHint(crownR, "Crown Orb"), "Combine 1,000 at the Crafting Bench (Salvage tab) into a Crown Orb.", "the Crown hint")
 eq(K.thousands(17500), "17,500", "thousands")
 eq(select(2, K.recycleCheck(5, "embershard", 1, cfg)), "unknownRecipe", "no recycling into Ember Shards")
 
@@ -597,34 +596,34 @@ eq(player:getItemCount(29852), 1600, "1,600 Ember Shards in two places")
 queries = {}
 act("combine", {key = "embershard", count = 1})
 eq(lastResult().ok, true, "Ember Shards combined: " .. tostring(lastResult().text))
-eq(player:getItemCount(29852), 100, "1,500 taken from both places")
+eq(player:getItemCount(29852), 600, "1,000 taken from both places")
 eq(player:getItemCount(32258), 1, "an Ember Orb")
-eq(lastResult().text, "1,500 Ember Shards -> 1x Ember Orb.", "the message")
+eq(lastResult().text, "1,000 Ember Shards -> 1x Ember Orb.", "the message")
 eq(#queries, 1, "one log row")
 assert(queries[1]:find("chaos_crafting_log", 1, true) and queries[1]:find("'Shards'", 1, true)
-	and queries[1]:find("1,500 Ember Shards -> 1x Ember Orb", 1, true), "logged: " .. queries[1])
+	and queries[1]:find("1,000 Ember Shards -> 1x Ember Orb", 1, true), "logged: " .. queries[1])
 -- not enough: refused, nothing taken
 act("combine", {key = "embershard", count = 1})
-eq(lastResult().ok, false, "100 Ember Shards are not enough")
+eq(lastResult().ok, false, "600 Ember Shards are not enough")
 eq(lastResult().text, "You do not have enough Ember Shards.", "the reason names them")
-eq(player:getItemCount(29852), 100, "nothing taken")
+eq(player:getItemCount(29852), 600, "nothing taken")
 eq(player:getItemCount(32258), 1, "no second orb")
 -- Ctrl+click: ten at once, eleven refused
-for _ = 1, 150 do
+for _ = 1, 100 do
 	put(bag, newItem(29852, {count = 100}))
 end
 act("combine", {key = "embershard", count = 11})
 eq(lastResult().ok, false, "more than ten refused")
-eq(player:getItemCount(29852), 15100, "nothing taken")
+eq(player:getItemCount(29852), 10600, "nothing taken")
 act("combine", {key = "embershard", count = 10})
 eq(lastResult().ok, true, "ten Ember Orbs")
-eq(player:getItemCount(29852), 100, "15,000 taken")
+eq(player:getItemCount(29852), 600, "10,000 taken")
 eq(player:getItemCount(32258), 11, "eleven Ember Orbs")
 -- the rate limit: a second combine in the same moment only refreshes the state
-put(bag, newItem(29853, {count = 1749}))
+put(bag, newItem(29853, {count = 999}))
 act("combine", {key = "crownshard", count = 1})
 eq(lastResult().text, "You do not have enough Crown Shards.", "one Crown Shard short")
-put(backpack, newItem(29853, {count = 2001}))
+put(backpack, newItem(29853, {count = 2751}))
 n = #results
 clock = clock + 5000
 S.onAction(player, "combine", {key = "crownshard", count = 1})
@@ -632,14 +631,14 @@ eq(#results, n + 1, "the first answers")
 clock = clock + 200 -- past the action limit of 150 ms, inside combineIntervalMs
 S.onAction(player, "combine", {key = "crownshard", count = 1})
 eq(#results, n + 1, "the second, within 300 ms, only refreshes the state")
-eq(player:getItemCount(29853), 3750 - 1750, "one Crown Orb's worth taken")
+eq(player:getItemCount(29853), 3750 - 1000, "one Crown Orb's worth taken")
 eq(player:getItemCount(32259), 1, "a Crown Orb")
 -- a full backpack: the orb goes to the inbox
 full = true
 act("combine", {key = "crownshard", count = 1})
 eq(lastResult().ok, true, "combined with a full backpack")
 eq(countIn(inbox, 32259), 1, "the Crown Orb is in the inbox")
-eq(player:getItemCount(29853), 250, "its shards taken")
+eq(player:getItemCount(29853), 1750, "its shards taken")
 full = false
 -- the other uses stay: recycling never turns an orb into Ember Shards, the shards are plain items
 act("recycle", {key = "embershard", count = 1})
@@ -648,8 +647,8 @@ eq(player:getItemCount(32258), 11, "the Ember Orbs stay")
 -- the look text says where the shards go; other items say nothing
 local emberStack = newItem(29852, {count = 5})
 eq(lookFn(nil, emberStack, nil, 1, "You see 5 Ember Shards."),
-	"You see 5 Ember Shards.\nCombine 1,500 at the Crafting Bench (Salvage tab) into an Ember Orb.", "the Ember Shard look text")
-eq(S.shardHint(29853), "Combine 1,750 at the Crafting Bench (Salvage tab) into a Crown Orb.", "the Crown Shard hint")
+	"You see 5 Ember Shards.\nCombine 1,000 at the Crafting Bench (Salvage tab) into an Ember Orb.", "the Ember Shard look text")
+eq(S.shardHint(29853), "Combine 1,000 at the Crafting Bench (Salvage tab) into a Crown Orb.", "the Crown Shard hint")
 eq(S.shardHint(cfg.shard.id), nil, "rune shards have no hint")
 eq(S.shardHint(2400), nil, "nor has gear")
 

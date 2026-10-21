@@ -8265,8 +8265,8 @@ waystone upgrade window, which has no client window, and their sprites have no m
 the wiki explained nothing. They are now the **Ember Shard** and **Crown Shard** (still dropped, still shop currency), and
 Ember Orb and Crown Orb are real crafting orbs, items 32258 and 32259 (`ChaosOrbsConfig.crown` = max rank 5 and modifiers
 added). A server installed before keeps working: `install_orbs.py` renames by id and rewrites the old names in base data.
-Since 2026-10-21 the shards also combine into their orb at the crafting bench's Salvage tab: 1,500 Ember Shards make an
-Ember Orb, 1,750 Crown Shards a Crown Orb (see "Salvage", "Ember and Crown Shards into orbs", for the numbers).
+Since 2026-10-21 the shards also combine into their orb at the crafting bench's Salvage tab: 1,000 Ember Shards make an
+Ember Orb, 1,000 Crown Shards a Crown Orb (see "Salvage", "Ember and Crown Shards into orbs", for the numbers).
 
 **The Orb of Ruin.** Odds in `ChaosOrbsConfig.ruin`, shown on the bench and in the orb's text: 40% the item **improves**,
 60% nothing happens (since 2026-10-15, "Conquest Tokens": it never ruins an item any more; before, 45% nothing and 15% the
@@ -9430,18 +9430,18 @@ Excision and Binding, with weekly limits; the other prices are reference values.
 
 **Ember and Crown Shards into orbs (2026-10-21).** Beta: "How do I combine the shards into 1 orb? I looked in the crafting
 bench but didn't find it." The same grid has two more rows, paid with the shards themselves (not rune shards):
-**1,500 Ember Shards (29852) -> 1 Ember Orb (32258)** and **1,750 Crown Shards (29853) -> 1 Crown Orb (32259)**
+**1,000 Ember Shards (29852) -> 1 Ember Orb (32258)** and **1,000 Crown Shards (29853) -> 1 Crown Orb (32259)**
 (`salvage_config.lua` `shardRecipes`, keys `embershard` / `crownshard`, action `combine {key, count}`). Same rules as the
 rune shard rows: one click 1, Ctrl+click up to 10 (`maxCombine`), 300 ms between combines, the shards are taken from every
 stack in the backpack and its bags at once (`player:removeItem` counts first and removes only when there are enough)
 before the orb is given, the orb goes to the backpack, else the inbox, else the floor, a `Shards` row in
-`chaos_crafting_log` ("1,500 Ember Shards -> 1x Ember Orb"). No recycling back into shards (Shift+click does nothing on
-these rows). The shards stay currency of the character upgrades. The look text and the rich tooltip add "Combine 1,500 at
+`chaos_crafting_log` ("1,000 Ember Shards -> 1x Ember Orb"). No recycling back into shards (Shift+click does nothing on
+these rows). The shards stay currency of the character upgrades. The look text and the rich tooltip add "Combine 1,000 at
 the Crafting Bench (Salvage tab) into an Ember Orb." (`ChaosSalvage.shardHint`, `item_tooltip_core.lua`); the Codex and
 the wiki say it on the shard and in the orb's Sources. Client: `game_crafting/recipeview.lua` (the grid's logic, tested by
-`recipeview_test.lua`): the row shows "1,500 Ember Shards" in amber and the tooltip "Your Ember Shards: 3,200.".
+`recipeview_test.lua`): the row shows "1,000 Ember Shards" in amber and the tooltip "Your Ember Shards: 3,200.".
 
-*Why 1,500 and 1,750* (computed from the base server's monster files, not measured in game). The shards drop only from
+*The counts.* The owner set 1,000 for both (2026-10-21, "pode deixar 1000 shards por orb"). The model first proposed 1,500 and 1,750 (computed from the base server's monster files, not measured in game); its reasoning, kept for reference: The shards drop only from
 the 30 monsters of the waystone maps (estimated level 470-610): per map tier the five monsters' loot entries give Ember
 Shards at 10-46% (1-5 a drop) and Crown Shards at 8-40% (1-4). With the stock count multiplier by monster level (x2.25 up
 to level 500, x2.70 above) and the pace loot thinning of those monsters (`pace_config.lua` base `loot` 0.20 x scale 1.2 =

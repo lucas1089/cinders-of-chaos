@@ -32,7 +32,7 @@ function V.currency(r, sv)
   return (sv and sv.shardName) or 'shards'
 end
 
--- the cost line of the cell: '25 shards' (rune shards), '1,500 Ember Shards' (the server's item name)
+-- the cost line of the cell: '25 shards' (rune shards), '1,000 Ember Shards' (the server's item name)
 function V.costText(r, sv)
   local cost = tonumber(r.cost) or 0
   if V.isShardRecipe(r) then return V.thousands(cost) .. ' ' .. V.currency(r, sv) end
