@@ -27,11 +27,31 @@ float valueNoise(vec2 p)
     return mix(mix(a, b, s.x), mix(c, d, s.x), s.y);
 }
 
+// The noise grid is turned off the screen axes (value noise on an upright grid read as square blocks in the liquid,
+// owner screenshot 2026-10-21); the second layer turns further, so the two grids never line up.
 float swirl(vec2 p, float t)
 {
-    float n = valueNoise(p * 4.0 + vec2(0.0, t * 0.35));
-    n += 0.5 * valueNoise(p * 9.0 - vec2(t * 0.22, t * 0.5));
+    mat2 turn = mat2(0.8, -0.6, 0.6, 0.8);
+    float n = valueNoise(turn * (p * 4.0) + vec2(0.0, t * 0.35));
+    n += 0.5 * valueNoise(turn * (turn * (p * 9.0)) - vec2(t * 0.22, t * 0.5) + vec2(5.2, 1.3));
     return n / 1.5;
+}
+
+// Round bubbles rising: a square grid of cells moving up, about one cell in three holds a bubble at its own place and
+// size, kept inside its cell, with a soft edge and a lighter rim. (The first bubbles were the peaks of a 22 x 14 value
+// noise: upright rectangles that looked like enlarged pixels.)
+float bubbles(vec2 uv, float t)
+{
+    vec2 p = vec2(uv.x * 11.0, uv.y * 11.0 + t * 1.3);
+    vec2 cell = floor(p);
+    vec2 f = fract(p);
+    float on = step(0.66, cellHash(cell + vec2(3.0, 5.0)));
+    vec2 centre = vec2(0.3, 0.3) + 0.4 * vec2(cellHash(cell + vec2(7.0, 3.0)), cellHash(cell + vec2(1.0, 9.0)));
+    float radius = 0.1 + 0.12 * cellHash(cell + vec2(4.0, 11.0));
+    float d = length(f - centre);
+    float body = 1.0 - smoothstep(radius - 0.1, radius, d);
+    float rim = body * smoothstep(radius * 0.3, radius, d);
+    return on * (0.45 * body + 0.55 * rim);
 }
 
 void main()
@@ -60,9 +80,8 @@ void main()
     float depth = clamp((uv.y - level) / max(0.05, 1.0 - level), 0.0, 1.0);
     float sw = swirl(uv + vec2(0.0, -t * 0.03), t);
     vec3 liquid = tint * (0.55 + 0.6 * sw) * (1.05 - 0.45 * depth);
-    // small bubbles rising: bright cells that drift up and pop
-    float bub = valueNoise(vec2(uv.x * 22.0, uv.y * 14.0 + t * 1.6));
-    liquid += tint * smoothstep(0.86, 0.95, bub) * 0.45 * (1.0 - depth);
+    // small bubbles rising, lighter the nearer the surface
+    liquid += mix(tint, vec3(1.0), 0.25) * bubbles(uv, t) * 0.5 * (1.0 - depth);
     // the surface line: a thin light band right under the level
     float foam = smoothstep(0.03, 0.0, abs(uv.y - level - 0.012));
     liquid = mix(liquid, mix(tint, vec3(1.0), 0.55), foam * (0.35 + 0.5 * u_Params.w) * below);

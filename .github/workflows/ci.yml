@@ -125,8 +125,14 @@ jobs:
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 
-      - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
-        run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
+      - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
+        run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
+
+      - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model), text fit of fixed-width labels
+        run: |
+          python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
+          python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
+          python3 client/tools/check_text_fit_test.py
 
       - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
         run: python3 -I client/tools/gen_field_timers_test.py

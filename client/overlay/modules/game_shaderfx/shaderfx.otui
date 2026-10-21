@@ -8,14 +8,15 @@ ChaosOrb < UIWidget
     size: 64 64
     anchors.centerIn: parent
     phantom: true
-    image-source: /modules/game_shaderfx/images/orb_mask
+    image-source: /modules/game_shaderfx/images/orb_mask_64
     image-smooth: true
 
   UIWidget
     id: ring
     anchors.fill: parent
     phantom: true
-    image-source: /modules/game_shaderfx/images/orb_ring
+    image-source: /modules/game_shaderfx/images/orb_ring_76
+    image-smooth: true
 
   Label
     id: value

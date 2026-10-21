@@ -673,6 +673,14 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     it. `game_minimapsync` also puts the minimap back (`MANIFEST.md` "Minimap after a death"). Applies after
     `0001`-`0095` and before `0100` (full chain on the base archive, `patch` clean); Lua only, parses in LuaJIT and
     Lua 5.3. Not run in a client.
+69b. `0104` (OTUI `mods/client_settings/settings.otui`): **the Options menu's sub-entries fit.** `0056` drew every
+    menu name in `$var-cip-font`; the sub-entries (`NOptionButton`, 115 px, no icon) could not hold "General
+    Hotkeys", "Action Bar Hotkeys" and "Custom Hotkeys", clipped at both edges (owner screenshot 2026-10-21). They
+    use `verdana-9px-bold` now (the overlay's PT Sans bold sheet, pt-BR letters included); the four top entries keep
+    the cip font. `tools/check_text_fit.py` (CI) measures every sub-entry of `0056`'s `OPTION_LABELS` and its pt-BR
+    text in that sheet (widest "Action Bar Hotkeys", 91 of 107 px) and that the patches leave that font. Applies
+    after `0001`-`0102` (`0056` set the line). Checked with `patch` on a copy of the hunk's context only (the base
+    archive was not unpacked here); not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
