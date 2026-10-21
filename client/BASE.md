@@ -818,10 +818,10 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     `onItemChange` handler of the tree already takes a nil item. Model test `tools/slot_clear_test.py` (CI): the helper
     from the patch, the real `game_itemrarity` and the grey rule of `game_shaderfx` on a 40-slot bag and on the last page
     of a paged window, under LuaJIT and Lua 5.3; the stock setItem leaves 35 framed empty slots, `0115` none on either
-    engine, with one signal per emptied slot. Applies after `0001`-`0112` (`0113` and `0114` belong to other branches and
-    touch none of these files; `patch` clean on the base archive with the whole chain); `uiitem.cpp` and
+    engine, with one signal per emptied slot. Applies after `0001`-`0113` (`0114` is unused; `0113` touches
+    none of these files; `patch` clean on the base archive with the whole chain); `uiitem.cpp` and
     `luafunctions_client.cpp` pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
-69l. `0116` (C++ `src/client/tile.cpp`): **a busy tile draws its newest effects, and combat feedback always draws.**
+69m. `0116` (C++ `src/client/tile.cpp`): **a busy tile draws its newest effects, and combat feedback always draws.**
     Owner beta: the crit, dodge and reflect animations stopped appearing. The server sent them (`crit_burst` 415,
     `dodge_whoosh` 416, `reflect_aegis` 417, `reflect_bubble` 628; checked with a load-all simulation of the scripts).
     Cause: `Tile::drawTop` and `drawGroundEffects` drew `m_effects` from index `min(size - 1, effetsLimit())` down to 0,
