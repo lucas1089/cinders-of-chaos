@@ -746,6 +746,23 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     keeps bursts cheap with any server. Applies after `0001`-`0108` (no earlier patch touches the file; `patch` clean on
     the base archive). A mocked run of 255 removals under LuaJIT and Lua 5.3: 510 redraws with the base file, 1 with
     `0109`. Not seen in a client.
+69h. `0110` (C++ `src/framework/ui/uiwidget.*`, `uitextedit.*`): **a console line is drawn where its label is.** Beta
+    report 2026-10-21, with a screenshot: "com a janela do chat em tamanho padrão, o texto fica em cima do outro"; the
+    newest line sat over the top line of the console. Cause: `UITextEdit::update()` stores its glyphs in screen
+    coordinates. Only `onGeometryChange` places them again, and `UIWidget::setRect` sends it one event later, skipped
+    when the rect is back where it was when that event was scheduled. The console reuses 200 hidden `ConsoleLabel`s,
+    and a hidden label keeps its last slot. For a new line, `Message:updateLabel` sets the text and calls `show()`,
+    which lays the label out at the top of `consoleBuffer` (event scheduled, old rect = its slot). `game_cosmetics`
+    (name colours) or `game_chatlinks` (links) then set the coloured text there, so the glyphs go to the top.
+    `moveChildToIndex` lays it out at the bottom, often its old slot. The event saw no change: the text stayed at the
+    top and the bottom line looked empty. At the default height the top of the stack is inside the view, so it showed
+    as two lines on top of each other; with more lines the newest line was simply missing. Fix: the event calls the new
+    virtual `onGeometryRestored()` when the rect is unchanged; `UITextEdit` remembers the rect its glyphs were placed
+    for (`m_glyphsRect`) and runs `update(true)` when it differs, as `onGeometryChange` does. Other widgets are
+    unchanged. Model test `tools/console_glyphs_test.py` (CI): the setRect / layout / label sequence of `game_console`
+    after `0056` with the overlay recolour; the stock rule leaves the newest line's glyphs at the top, `0110` none in
+    150 random sessions. Applies after `0001`-`0109` (no earlier patch touches these files; `patch` clean on the base
+    archive); both `.cpp` files pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
