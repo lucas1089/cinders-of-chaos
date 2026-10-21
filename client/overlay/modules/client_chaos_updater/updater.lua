@@ -388,6 +388,19 @@ local function onManifest(r)
   end
   local m, perr = core.jsonDecode(payload)
   if type(m) ~= 'table' then return fallback(tr('Update refused'), 'payload is not valid JSON (' .. tostring(perr) .. ')') end
+  -- an update older than this package's own files is skipped before any other check: a package newer than the live
+  -- update (a new client before the next publish) says it is up to date, never "refused"
+  if core.olderThanPackage(m, cfg.baseline) then
+    -- a package built after this update was published: its own files are newer, never put the older ones over them
+    phase = 'uptodate'
+    result.upToDate = cfg.baseline
+    result.skipped = m.version
+    g_logger.info(('updater: update %d is older than this client package (%d): not applied'):format(m.version, cfg.baseline))
+    setText('status', tr('Your client is up to date'))
+    progress(100, ('update %d, package %d'):format(m.version, cfg.baseline), '')
+    later(2500, function() if phase == 'uptodate' then U.dismiss() end end)
+    return
+  end
   local st = loadState()
   local valid, reason = core.validateManifest(m, st.version > 0 and st.version or nil)
   if not valid then
@@ -405,17 +418,6 @@ local function onManifest(r)
     progress(0, cfg.download ~= '' and cfg.download or tr('Download the new client from the website.'),
       tr('The game files of this client are too old for the server.'))
     buttons(true, false, false)
-    return
-  end
-  if core.olderThanPackage(m, cfg.baseline) then
-    -- a package built after this update was published: its own files are newer, never put the older ones over them
-    phase = 'uptodate'
-    result.upToDate = cfg.baseline
-    result.skipped = m.version
-    g_logger.info(('updater: update %d is older than this client package (%d): not applied'):format(m.version, cfg.baseline))
-    setText('status', tr('Your client is up to date'))
-    progress(100, ('update %d, package %d'):format(m.version, cfg.baseline), '')
-    later(2500, function() if phase == 'uptodate' then U.dismiss() end end)
     return
   end
   if core.plainTreeLeft(st, g_resources.directoryExists('/' .. core.TREE)) or boot.mountFailed then

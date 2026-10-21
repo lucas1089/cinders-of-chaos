@@ -8,7 +8,7 @@ ChaosUpdateBlocker < UIWidget
 ChaosUpdatePanel < ChaosWindow
   id: chaosUpdatePanel
   !text: tr('CLIENT UPDATE')
-  size: 440 186
+  size: 440 202
   anchors.centerIn: parent
   draggable: false
   &chaosOrnate: false
@@ -38,7 +38,8 @@ ChaosUpdatePanel < ChaosWindow
     anchors.right: parent.right
     margin-top: 8
     text-align: center
-    height: 16
+    text-wrap: true
+    height: 32
 
   ChaosLabelDim
     id: note
