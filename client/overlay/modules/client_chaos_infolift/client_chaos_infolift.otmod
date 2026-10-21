@@ -1,0 +1,10 @@
+Module
+  name: client_chaos_infolift
+  description: Names and bars over the head of tall looks (players and NPCs): hands the per-look lifts of info_lifts.lua (from the pair) to the engine (base patch 0111)
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ info_lifts, infolift_core, infolift ]
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

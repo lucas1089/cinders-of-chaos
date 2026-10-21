@@ -514,6 +514,8 @@ jobs:
           python3 -I client/tools/sprites/compose_outfit_test.py
           # the character select's anchors: centre, ground row, floating looks (synthetic figures)
           python3 -I client/tools/sprites/gen_outfit_anchors_test.py
+          # names over tall looks: body top, gap and lift (synthetic figures)
+          python3 -I client/tools/sprites/gen_info_lift_test.py
           # class effect strips and spec match the generator; Pillow's polygon fill differs between versions, so the
           # check runs on the versions the strips were made with (gen_class_fx.py docstring)
           python3 -m venv /tmp/fxenv
@@ -677,6 +679,11 @@ jobs:
       - name: Character select feet table matches the pair (gen_outfit_anchors.py --check)
         run: |
           /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_outfit_anchors.py --check \
+              "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
+
+      - name: Name lifts of tall looks match the pair (gen_info_lift.py --check)
+        run: |
+          /tmp/fxenv/bin/python -I chaos/client/tools/sprites/gen_info_lift.py --check \
               "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Dungeon banners render from the live pair (gen_dungeon_banners.py --check with the pair)
