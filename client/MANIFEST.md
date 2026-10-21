@@ -2619,7 +2619,7 @@ download is required" (with `Services.update.download`) and cannot log in.
    signature and the payload, hashes the files the client sees (time-sliced, 12 ms per frame, with a cache of
    real dir + path, mtime and size in `chaos_update/hashcache.txt`), and decides per file: keep, download, or drop a stale
    tree copy that hides a right install file.
-3. Download pool (`updater_core.lua` `M.download`): N requests at once (`parallel` in the manifest, default 4, the client
+3. Download pool (`updater_core.lua` `M.download`): N requests at once (`parallel` in the manifest, default 8 since 2026-10-21, before 4; the client
    setting `chaos-update-parallel` wins, 1..8); one blob per distinct hash, largest first; a blob over 8 MB goes in
    8 MB `Range` parts that run in parallel too (the 570 MB `Tibia.spr` does not sit on one connection), each part a
    file `<sha>.c<i>`, so an interrupted run resumes with the parts it has; a server ignoring `Range` answers 200 with
