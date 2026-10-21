@@ -260,6 +260,7 @@
 		"class.openCount": 4,
 		"class.openNames": "Warrior, Ranger, Mystic and Thief",
 		"class.unlockCost": 0,
+		"class.unlockLevel": 200,
 		"daily.days": 7,
 		"descent.maxPlayers": 4,
 		"descent.minLevel": 100,

@@ -1,8 +1,8 @@
 # Classes (design, agreed; phase 1, the Thief line, and phase 2a, the other three lines, implemented; the Necromancer, Monk and Templar built, phase A)
 
-Seven class lines: four base classes plus the Necromancer, Monk and Templar (store unlock). At promotion each picks one of two ascended classes, like Path of Exile ascendancies.
+Seven class lines: four base classes plus the Necromancer, Monk and Templar (unlocked per account at level 200). At promotion each picks one of two ascended classes, like Path of Exile ascendancies.
 The Necromancer, the Monk and the Templar are classes five to seven (tested in game, phase B: level 300 measured); they are
-locked behind a store unlock for now (see "Class lock").
+unlocked for the account once one of its characters reaches level 200 (see "Class lock").
 
 | Base class | Plays as | Ascended choice A | Ascended choice B |
 |---|---|---|---|
@@ -557,7 +557,7 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
 - **Vocations** (`server/data/XML/chaos_vocations_necro.xml`, installed with the other classes by
   `server/tools/add_vocations.py DATA_DIR`): 20 Necromancer (client byte 7; hp 8 / mana 26 / cap 13), 21 Lich (17; 7 / 28 / 12),
   22 Bone Lord (27; 9 / 24 / 15, defense / armor 1.05). Skills and magic level like the Mystic; the casters' wands, rods,
-  gear, stock heals and mana potions (`add_vocations.py`). Locked behind the store's class unlock (`class_unlocks.lua`,
+  gear, stock heals and mana potions (`add_vocations.py`). Locked behind the account's class unlock at level 200 (`class_unlocks.lua`,
   key "necromancer").
 - **Ascension**: the Ascendant Oracle (`Chaos.classes.ascension.choices[20]`).
 - **Kit**: 13 spells (ids 180-188, the Necromancer's Bone Shrapnel 197 of 2026-10-15 and the three summon spells Raise Bone Warrior 192 / Archer 193 / Mage 176 of 2026-10-18, `_packtools.lua`; `server/data/spells/chaos/necromancer|lich|bonelord`, helpers `_necro.lua`);
@@ -709,7 +709,7 @@ registered with `registerMethod`), without touching the gate code.
 - Gates: the store's Character > Services and the Ascendant Oracle refuse a locked class (the vocation change token is kept);
   the login check covers everything else (characters made on the website, staff tools): a character on a locked vocation
   logs in, goes to its temple, cannot attack and gains no experience or skills, and a window says how to unlock; the store
-  works in that state, so buying the unlock ends the restriction at once. (`login.mode = "kick"` logs it out instead.)
+  works in that state; the unlock ends the restriction at once. (`login.mode = "kick"` logs it out instead.)
   Staff (group 4+, or account type 5+) is never locked.
 - Characters are created on the website: the base server has no account manager and no in-game character creation (the
   engine never inserts into `players`; its login only reads the character list). The website should offer the three classes

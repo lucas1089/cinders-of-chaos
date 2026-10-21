@@ -1724,11 +1724,12 @@ function W.facts(D, vocs, spells, T, typeCount)
 	local C0 = D.C0
 	f["class.ascensionLevel"] = C0.classes.ascension.minLevel
 	f["class.lines"] = #LINE_ORDER
-	local locked, free, cost = {}, {}, nil
+	local locked, free, cost, level = {}, {}, nil, nil
 	for key, c in sortedPairs(D.unlocks.classes) do
 		if c.locked then
 			locked[#locked + 1] = c.name
 			cost = c.unlock.store and c.unlock.store.cost or cost
+			level = c.unlock.level and c.unlock.level.min or level
 		end
 	end
 	f["class.lockedCount"] = #locked
@@ -1745,6 +1746,7 @@ function W.facts(D, vocs, spells, T, typeCount)
 	end
 	f["class.openNames"] = sentence(open)
 	f["class.unlockCost"] = cost or 0
+	f["class.unlockLevel"] = level or 0
 	f["class.openCount"] = #LINE_ORDER - #locked
 	f["class.count"] = #LINE_ORDER * 3
 	f["spell.count"] = #spells

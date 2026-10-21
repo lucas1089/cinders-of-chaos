@@ -11,7 +11,7 @@ Há {{class.lines}} linhas de classe. Cada uma começa com uma classe base e asc
 
 ## As classes desbloqueáveis
 
-{{class.lockedNames}} são desbloqueados por conta, na loja do jogo, por {{class.unlockCost}} Chaos Coins cada. O desbloqueio vale para todos os personagens da conta.
+{{class.lockedNames}} são desbloqueados para a conta inteira quando qualquer personagem dela chega ao nível {{class.unlockLevel}}, jogando. Eles nunca são vendidos.
 
 - **[Monk](wiki:class:monk)**: luta de mãos vazias com chi. Shadowfist ou Iron Sage.
 - **[Necromancer](wiki:class:necromancer)**: mortos-vivos e maldições. Lich ou Bone Lord.

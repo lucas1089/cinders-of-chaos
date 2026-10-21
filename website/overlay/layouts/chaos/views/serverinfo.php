@@ -59,7 +59,7 @@ $sections = array(
 	<table class="chaos-table">
 		<tbody>
 			<tr><th>Client</th><td>Our own client (protocol 10.98) with a custom skin, a top menu and a window for every system</td></tr>
-			<tr><th>Classes</th><td>7 class lines, each with 2 ascensions (14 ascended classes); the Necromancer, Monk and Templar unlock per account in the store</td></tr>
+			<tr><th>Classes</th><td>7 class lines, each with 2 ascensions (14 ascended classes); the Necromancer, Monk and Templar unlock for the whole account once any of its characters reaches level 200</td></tr>
 			<tr><th>Level cap</th><td>1000, then Paragon levels. Reaching 1000 takes roughly 100 hours of hunting</td></tr>
 			<tr><th>Items</th><td>7 rarities, item levels, random modifiers, about 50 uniques</td></tr>
 			<tr><th>Endgame</th><td>World bosses, bounties, rifts, the Infinity Tower, dungeons, arena, guild siege, weekly leaderboards</td></tr>
@@ -74,7 +74,7 @@ $sections = array(
 
 <div class="chaos-box" id="classes">
 	<h2 class="chaos-heading">Classes</h2>
-	<p class="chaos-lead">You start as one of seven classes (four free, three unlocked per account in the store). At level 100 you <strong>ascend</strong> into one of two specialisations at the Ascendant Oracle. Every class has its own Chaos spells with custom names, icons and effects; the spellbook (Character > Spellbook) lists them all. Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.</p>
+	<p class="chaos-lead">You start as one of seven classes (four free, three unlocked for your account when any of your characters reaches level 200). At level 100 you <strong>ascend</strong> into one of two specialisations at the Ascendant Oracle. Every class has its own Chaos spells with custom names, icons and effects; the spellbook (Character > Spellbook) lists them all. Balance is measured on test dummies at levels 300 and 1000, so every class keeps a clear role in a group.</p>
 	<?php if (function_exists('chaos_class_lines')): ?>
 	<table class="chaos-table">
 		<thead><tr><th>Base class</th><th>Plays as</th><th>Ascensions</th></tr></thead>

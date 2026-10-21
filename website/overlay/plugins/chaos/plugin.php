@@ -16,7 +16,7 @@
  *    character.created hook (website form and client, chaos_client_api.php).
  *  - Optional starter depot boxes for new characters (the base server's
  *    ADD_DEPOT_BOXES_NEW_PLAYERS snippet), on the character.created hook. Off by
- *    default ($config['chaos']['depot_boxes']): !season join needs an empty depot.
+ *    default ($config['chaos']['depot_boxes']): joining a season needs an empty depot.
  *  - Mail and account recovery: mail_lib.php (one sender, off without SMTP settings) and recovery_lib.php (a
  *    one-time reset link; recovery.php hands over to recovery_page.php).
  *  - Legal texts (legal_lib.php, pages/legal.php): Terms of Use, Privacy Policy, Donation Terms; account creation
