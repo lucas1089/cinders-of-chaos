@@ -1,0 +1,516 @@
+client_id,server_id,key,kind,mode,name,size,otb_group,otb_flags,top_order,speed,light_level,light_color,extra
+38093,41093,tilled_soil_1,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38094,41094,tilled_soil_2,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38095,41095,tilled_soil_3,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38096,41096,tilled_soil_4,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38097,41097,tilled_soil_5,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38098,41098,tilled_soil_6,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38099,41099,tilled_soil_7,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38100,41100,tilled_soil_8,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38101,41101,tilled_soil_9,ground,new,tilled soil,1x1,1,0,0,100,0,0,family=tiles
+38102,41102,autumn_grass_1,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38103,41103,autumn_grass_2,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38104,41104,autumn_grass_3,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38105,41105,autumn_grass_4,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38106,41106,autumn_grass_5,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38107,41107,autumn_grass_6,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38108,41108,autumn_grass_7,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38109,41109,autumn_grass_8,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38110,41110,autumn_grass_9,ground,new,autumn grass,1x1,1,0,0,100,0,0,family=tiles
+38111,41111,mud_road_1,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38112,41112,mud_road_2,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38113,41113,mud_road_3,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38114,41114,mud_road_4,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38115,41115,mud_road_5,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38116,41116,mud_road_6,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38117,41117,mud_road_7,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38118,41118,mud_road_8,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38119,41119,mud_road_9,ground,new,mud road,1x1,1,0,0,100,0,0,family=tiles
+38120,41120,grave_grass_1,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38121,41121,grave_grass_2,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38122,41122,grave_grass_3,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38123,41123,grave_grass_4,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38124,41124,grave_grass_5,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38125,41125,grave_grass_6,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38126,41126,grave_grass_7,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38127,41127,grave_grass_8,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38128,41128,grave_grass_9,ground,new,grave grass,1x1,1,0,0,100,0,0,family=tiles
+38129,41129,corn_stubble_1,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38130,41130,corn_stubble_2,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38131,41131,corn_stubble_3,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38132,41132,corn_stubble_4,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38133,41133,corn_stubble_5,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38134,41134,corn_stubble_6,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38135,41135,corn_stubble_7,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38136,41136,corn_stubble_8,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38137,41137,corn_stubble_9,ground,new,corn stubble,1x1,1,0,0,100,0,0,family=tiles
+38138,41138,autumn_grass_on_mud_road_n,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38139,41139,autumn_grass_on_mud_road_s,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38140,41140,autumn_grass_on_mud_road_e,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38141,41141,autumn_grass_on_mud_road_w,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38142,41142,autumn_grass_on_mud_road_ne,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38143,41143,autumn_grass_on_mud_road_nw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38144,41144,autumn_grass_on_mud_road_se,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38145,41145,autumn_grass_on_mud_road_sw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38146,41146,autumn_grass_on_mud_road_in_ne,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38147,41147,autumn_grass_on_mud_road_in_nw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38148,41148,autumn_grass_on_mud_road_in_se,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38149,41149,autumn_grass_on_mud_road_in_sw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38150,41150,autumn_grass_on_mud_road_in_ns,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38151,41151,autumn_grass_on_mud_road_in_ew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38152,41152,autumn_grass_on_mud_road_in_new,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38153,41153,autumn_grass_on_mud_road_in_sew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38154,41154,autumn_grass_on_mud_road_in_nse,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38155,41155,autumn_grass_on_mud_road_in_nsw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38156,41156,autumn_grass_on_mud_road_in_nsew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38157,41157,autumn_grass_on_tilled_soil_n,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38158,41158,autumn_grass_on_tilled_soil_s,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38159,41159,autumn_grass_on_tilled_soil_e,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38160,41160,autumn_grass_on_tilled_soil_w,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38161,41161,autumn_grass_on_tilled_soil_ne,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38162,41162,autumn_grass_on_tilled_soil_nw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38163,41163,autumn_grass_on_tilled_soil_se,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38164,41164,autumn_grass_on_tilled_soil_sw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38165,41165,autumn_grass_on_tilled_soil_in_ne,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38166,41166,autumn_grass_on_tilled_soil_in_nw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38167,41167,autumn_grass_on_tilled_soil_in_se,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38168,41168,autumn_grass_on_tilled_soil_in_sw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38169,41169,autumn_grass_on_tilled_soil_in_ns,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38170,41170,autumn_grass_on_tilled_soil_in_ew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38171,41171,autumn_grass_on_tilled_soil_in_new,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38172,41172,autumn_grass_on_tilled_soil_in_sew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38173,41173,autumn_grass_on_tilled_soil_in_nse,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38174,41174,autumn_grass_on_tilled_soil_in_nsw,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38175,41175,autumn_grass_on_tilled_soil_in_nsew,border,new,autumn grass edge,1x1,0,8192,1,0,0,0,family=borders
+38176,41176,grave_grass_on_mud_road_n,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38177,41177,grave_grass_on_mud_road_s,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38178,41178,grave_grass_on_mud_road_e,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38179,41179,grave_grass_on_mud_road_w,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38180,41180,grave_grass_on_mud_road_ne,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38181,41181,grave_grass_on_mud_road_nw,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38182,41182,grave_grass_on_mud_road_se,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38183,41183,grave_grass_on_mud_road_sw,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38184,41184,grave_grass_on_mud_road_in_ne,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38185,41185,grave_grass_on_mud_road_in_nw,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38186,41186,grave_grass_on_mud_road_in_se,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38187,41187,grave_grass_on_mud_road_in_sw,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38188,41188,grave_grass_on_mud_road_in_ns,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38189,41189,grave_grass_on_mud_road_in_ew,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38190,41190,grave_grass_on_mud_road_in_new,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38191,41191,grave_grass_on_mud_road_in_sew,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38192,41192,grave_grass_on_mud_road_in_nse,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38193,41193,grave_grass_on_mud_road_in_nsw,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38194,41194,grave_grass_on_mud_road_in_nsew,border,new,grave grass edge,1x1,0,8192,1,0,0,0,family=borders
+38195,41195,leaves_orange,border,new,fallen leaves,1x1,0,8192,1,0,0,0,family=decals
+38196,41196,leaves_red,border,new,fallen leaves,1x1,0,8192,1,0,0,0,family=decals
+38197,41197,straw_scatter,border,new,straw scatter,1x1,0,8192,1,0,0,0,family=decals
+38198,41198,puddle_moon,border,new,puddle,1x1,0,8192,1,0,0,0,family=decals
+38199,41199,bones_small,border,new,small bones,1x1,0,8192,1,0,0,0,family=decals
+38200,41200,candle_wax,border,new,candle wax,1x1,0,8192,1,0,0,0,family=decals
+38201,41201,corn_single,stump,new,corn stalk,1x1,0,8193,2,0,0,0,family=fields
+38202,41202,pumpkin_small,decor,new,small pumpkin,1x1,0,0,0,0,0,0,family=fields
+38203,41203,jack_lantern_grin,stump,new,jack-o'-lantern,1x1,0,16785409,2,0,3,206,family=fields|ms=120
+38204,41204,corn_wall_h,stump,new,corn wall,1x1,0,8193,2,0,0,0,family=maze
+38205,41205,corn_clump,stump,new,corn clump,1x1,0,8193,2,0,0,0,family=fields
+38206,41206,corn_tall,stump,new,corn tall,1x1,0,8193,2,0,0,0,family=fields
+38207,41207,corn_broken,stump,new,corn broken,1x1,0,8193,2,0,0,0,family=fields
+38208,41208,pumpkin_big,stump,new,big pumpkin,1x1,0,8193,2,0,0,0,family=fields
+38209,41209,pumpkin_giant,stump,new,giant pumpkin,2x2,0,8193,2,0,0,0,family=fields
+38210,41210,pumpkin_rotten,stump,new,rotten pumpkin,1x1,0,8193,2,0,0,0,family=fields
+38211,41211,pumpkin_stack,stump,new,pumpkin stack,1x1,0,8193,2,0,0,0,family=fields
+38212,41212,jack_lantern_scary,stump,new,jack-o'-lantern,1x1,0,16785409,2,0,3,206,family=fields|ms=120
+38213,41213,jack_lantern_cute,stump,new,jack-o'-lantern,1x1,0,16785409,2,0,3,206,family=fields|ms=120
+38214,41214,pumpkin_cart,stump,new,pumpkin cart,2x1,0,8193,2,0,0,0,family=fields
+38215,41215,corn_wall_v,stump,new,corn wall,1x1,0,8193,2,0,0,0,family=maze
+38216,41216,corn_wall_post,stump,new,corn wall post,1x1,0,8193,2,0,0,0,family=maze
+38217,41217,corn_wall_corner,stump,new,corn wall corner,1x1,0,8193,2,0,0,0,family=maze
+38218,41218,corn_wall_end_h,stump,new,corn wall end,1x1,0,8193,2,0,0,0,family=maze
+38219,41219,corn_wall_end_v,stump,new,corn wall end,1x1,0,8193,2,0,0,0,family=maze
+38220,41220,corn_wall_end_h_w,stump,new,corn wall end,1x1,0,8193,2,0,0,0,family=maze
+38221,41221,corn_wall_end_v_n,stump,new,corn wall end,1x1,0,8193,2,0,0,0,family=maze
+38222,41222,corn_wall_gap_h,decor,new,gap in the corn,1x1,0,0,0,0,0,0,family=maze
+38223,41223,corn_wall_gap_v,decor,new,gap in the corn,1x1,0,0,0,0,0,0,family=maze
+38224,41224,vine_decal_1,border,new,vine decal,1x1,0,8192,1,0,0,0,family=decals
+38225,41225,vine_decal_2,border,new,vine decal,1x1,0,8192,1,0,0,0,family=decals
+38226,41226,barn_planks_post,stump,new,barn planks wall post,1x1,0,8193,2,0,0,0,family=walls
+38227,41227,barn_planks_h,stump,new,barn planks wall,1x1,0,8193,2,0,0,0,family=walls
+38228,41228,barn_planks_v,stump,new,barn planks wall,1x1,0,8193,2,0,0,0,family=walls
+38229,41229,barn_planks_corner,stump,new,barn planks wall corner,1x1,0,8193,2,0,0,0,family=walls
+38230,41230,barn_planks_end_h,stump,new,barn planks wall end,1x1,0,8193,2,0,0,0,family=walls
+38231,41231,barn_planks_end_v,stump,new,barn planks wall end,1x1,0,8193,2,0,0,0,family=walls
+38232,41232,barn_planks_door_h,stump,new,barn planks door,1x1,0,8193,2,0,0,0,family=walls
+38233,41233,barn_planks_door_v,stump,new,barn planks door,1x1,0,8193,2,0,0,0,family=walls
+38234,41234,barn_planks_door_open_h,decor,new,barn planks door open,1x1,0,0,0,0,0,0,family=walls
+38235,41235,barn_planks_door_open_v,decor,new,barn planks door open,1x1,0,0,0,0,0,0,family=walls
+38236,41236,barn_planks_window_h,stump,new,barn planks window,1x1,0,8193,2,0,0,0,family=walls
+38237,41237,barn_planks_window_v,stump,new,barn planks window,1x1,0,8193,2,0,0,0,family=walls
+38238,41238,barn_planks_broken_h,stump,new,barn planks wall broken,1x1,0,8193,2,0,0,0,family=walls
+38239,41239,barn_planks_broken_v,stump,new,barn planks wall broken,1x1,0,8193,2,0,0,0,family=walls
+38240,41240,barn_planks_hayloft_h,stump,new,barn planks wall hayloft,1x1,0,8193,2,0,0,0,family=walls
+38241,41241,barn_planks_hayloft_v,stump,new,barn planks wall hayloft,1x1,0,8193,2,0,0,0,family=walls
+38242,41242,clapboard_post,stump,new,clapboard wall post,1x1,0,8193,2,0,0,0,family=walls
+38243,41243,clapboard_h,stump,new,clapboard wall,1x1,0,8193,2,0,0,0,family=walls
+38244,41244,clapboard_v,stump,new,clapboard wall,1x1,0,8193,2,0,0,0,family=walls
+38245,41245,clapboard_corner,stump,new,clapboard wall corner,1x1,0,8193,2,0,0,0,family=walls
+38246,41246,clapboard_end_h,stump,new,clapboard wall end,1x1,0,8193,2,0,0,0,family=walls
+38247,41247,clapboard_end_v,stump,new,clapboard wall end,1x1,0,8193,2,0,0,0,family=walls
+38248,41248,clapboard_door_h,stump,new,clapboard door,1x1,0,8193,2,0,3,206,family=walls
+38249,41249,clapboard_door_v,stump,new,clapboard door,1x1,0,8193,2,0,3,206,family=walls
+38250,41250,clapboard_door_open_h,decor,new,clapboard door open,1x1,0,0,0,0,0,0,family=walls
+38251,41251,clapboard_door_open_v,decor,new,clapboard door open,1x1,0,0,0,0,0,0,family=walls
+38252,41252,clapboard_window_h,stump,new,clapboard window,1x1,0,8193,2,0,3,206,family=walls
+38253,41253,clapboard_window_v,stump,new,clapboard window,1x1,0,8193,2,0,3,206,family=walls
+38254,41254,clapboard_broken_h,stump,new,clapboard wall broken,1x1,0,8193,2,0,0,0,family=walls
+38255,41255,clapboard_broken_v,stump,new,clapboard wall broken,1x1,0,8193,2,0,0,0,family=walls
+38256,41256,crypt_stone_post,stump,new,crypt stone wall post,1x1,0,8193,2,0,0,0,family=walls
+38257,41257,crypt_stone_h,stump,new,crypt stone wall,1x1,0,8193,2,0,0,0,family=walls
+38258,41258,crypt_stone_v,stump,new,crypt stone wall,1x1,0,8193,2,0,0,0,family=walls
+38259,41259,crypt_stone_corner,stump,new,crypt stone wall corner,1x1,0,8193,2,0,0,0,family=walls
+38260,41260,crypt_stone_end_h,stump,new,crypt stone wall end,1x1,0,8193,2,0,0,0,family=walls
+38261,41261,crypt_stone_end_v,stump,new,crypt stone wall end,1x1,0,8193,2,0,0,0,family=walls
+38262,41262,crypt_stone_door_h,stump,new,crypt stone door,1x1,0,8193,2,0,0,0,family=walls
+38263,41263,crypt_stone_door_v,stump,new,crypt stone door,1x1,0,8193,2,0,0,0,family=walls
+38264,41264,crypt_stone_door_open_h,decor,new,crypt stone door open,1x1,0,0,0,0,0,0,family=walls
+38265,41265,crypt_stone_door_open_v,decor,new,crypt stone door open,1x1,0,0,0,0,0,0,family=walls
+38266,41266,crypt_stone_window_h,stump,new,crypt stone window,1x1,0,8193,2,0,3,206,family=walls
+38267,41267,crypt_stone_window_v,stump,new,crypt stone window,1x1,0,8193,2,0,3,206,family=walls
+38268,41268,crypt_stone_broken_h,stump,new,crypt stone wall broken,1x1,0,8193,2,0,0,0,family=walls
+38269,41269,crypt_stone_broken_v,stump,new,crypt stone wall broken,1x1,0,8193,2,0,0,0,family=walls
+38270,41270,horseshoe_h,wall,new,horseshoe,1x1,0,65536,0,0,0,0,family=decor
+38271,41271,horseshoe_v,wall,new,horseshoe,1x1,0,65536,0,0,0,0,family=decor
+38272,41272,hanging_lantern_h_strip,wall,new,hanging lantern,1x1,0,16842752,0,0,3,206,family=decor|ms=125
+38273,41273,hanging_lantern_v_strip,wall,new,hanging lantern,1x1,0,16842752,0,0,3,206,family=decor|ms=125
+38274,41274,corn_wreath_h,wall,new,corn wreath,1x1,0,65536,0,0,0,0,family=decor
+38275,41275,corn_wreath_v,wall,new,corn wreath,1x1,0,65536,0,0,0,0,family=decor
+38276,41276,bat_cutouts_h,wall,new,bat cutouts,1x1,0,65536,0,0,0,0,family=decor
+38277,41277,bat_cutouts_v,wall,new,bat cutouts,1x1,0,65536,0,0,0,0,family=decor
+38278,41278,spider_web_corner_h,wall,new,spider web corner,1x1,0,65536,0,0,0,0,family=decor
+38279,41279,spider_web_corner_v,wall,new,spider web corner,1x1,0,65536,0,0,0,0,family=decor
+38280,41280,wanted_poster_h,wall,new,wanted poster,1x1,0,65536,0,0,0,0,family=decor
+38281,41281,wanted_poster_v,wall,new,wanted poster,1x1,0,65536,0,0,0,0,family=decor
+38282,41282,picket_fence_post,stump,new,picket fence post,1x1,0,8193,2,0,0,0,family=fences
+38283,41283,picket_fence_h,stump,new,picket fence,1x1,0,8193,2,0,0,0,family=fences
+38284,41284,picket_fence_v,stump,new,picket fence,1x1,0,8193,2,0,0,0,family=fences
+38285,41285,picket_fence_corner,stump,new,picket fence corner,1x1,0,8193,2,0,0,0,family=fences
+38286,41286,picket_fence_end_h,stump,new,picket fence end,1x1,0,8193,2,0,0,0,family=fences
+38287,41287,picket_fence_end_v,stump,new,picket fence end,1x1,0,8193,2,0,0,0,family=fences
+38288,41288,split_rail_post,stump,new,split rail post,1x1,0,8193,2,0,0,0,family=fences
+38289,41289,split_rail_h,stump,new,split rail,1x1,0,8193,2,0,0,0,family=fences
+38290,41290,split_rail_v,stump,new,split rail,1x1,0,8193,2,0,0,0,family=fences
+38291,41291,split_rail_corner,stump,new,split rail corner,1x1,0,8193,2,0,0,0,family=fences
+38292,41292,split_rail_end_h,stump,new,split rail end,1x1,0,8193,2,0,0,0,family=fences
+38293,41293,split_rail_end_v,stump,new,split rail end,1x1,0,8193,2,0,0,0,family=fences
+38294,41294,iron_cemetery_post,stump,new,iron cemetery fence post,1x1,0,8193,2,0,0,0,family=fences
+38295,41295,iron_cemetery_h,stump,new,iron cemetery fence,1x1,0,8193,2,0,0,0,family=fences
+38296,41296,iron_cemetery_v,stump,new,iron cemetery fence,1x1,0,8193,2,0,0,0,family=fences
+38297,41297,iron_cemetery_corner,stump,new,iron cemetery fence corner,1x1,0,8193,2,0,0,0,family=fences
+38298,41298,iron_cemetery_end_h,stump,new,iron cemetery fence end,1x1,0,8193,2,0,0,0,family=fences
+38299,41299,iron_cemetery_end_v,stump,new,iron cemetery fence end,1x1,0,8193,2,0,0,0,family=fences
+38300,41300,iron_cemetery_gate_h,stump,new,iron cemetery gate,1x1,0,8193,2,0,0,0,family=fences
+38301,41301,iron_cemetery_gate_v,stump,new,iron cemetery gate,1x1,0,8193,2,0,0,0,family=fences
+38302,41302,iron_cemetery_gate_open_h,decor,new,iron cemetery gate open,1x1,0,0,0,0,0,0,family=fences
+38303,41303,iron_cemetery_gate_open_v,decor,new,iron cemetery gate open,1x1,0,0,0,0,0,0,family=fences
+38304,41304,crypt_flagstones_1,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38305,41305,crypt_flagstones_2,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38306,41306,crypt_flagstones_3,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38307,41307,crypt_flagstones_4,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38308,41308,crypt_flagstones_5,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38309,41309,crypt_flagstones_6,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38310,41310,crypt_flagstones_7,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38311,41311,crypt_flagstones_8,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38312,41312,crypt_flagstones_9,ground,new,crypt flagstones,1x1,1,0,0,100,0,0,family=cata_ground
+38313,41313,bone_dust_1,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38314,41314,bone_dust_2,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38315,41315,bone_dust_3,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38316,41316,bone_dust_4,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38317,41317,bone_dust_5,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38318,41318,bone_dust_6,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38319,41319,bone_dust_7,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38320,41320,bone_dust_8,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38321,41321,bone_dust_9,ground,new,bone dust,1x1,1,0,0,100,0,0,family=cata_ground
+38322,41322,bone_dust_on_crypt_flagstones_n,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38323,41323,bone_dust_on_crypt_flagstones_s,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38324,41324,bone_dust_on_crypt_flagstones_e,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38325,41325,bone_dust_on_crypt_flagstones_w,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38326,41326,bone_dust_on_crypt_flagstones_ne,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38327,41327,bone_dust_on_crypt_flagstones_nw,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38328,41328,bone_dust_on_crypt_flagstones_se,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38329,41329,bone_dust_on_crypt_flagstones_sw,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38330,41330,bone_dust_on_crypt_flagstones_in_ne,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38331,41331,bone_dust_on_crypt_flagstones_in_nw,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38332,41332,bone_dust_on_crypt_flagstones_in_se,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38333,41333,bone_dust_on_crypt_flagstones_in_sw,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38334,41334,bone_dust_on_crypt_flagstones_in_ns,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38335,41335,bone_dust_on_crypt_flagstones_in_ew,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38336,41336,bone_dust_on_crypt_flagstones_in_new,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38337,41337,bone_dust_on_crypt_flagstones_in_sew,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38338,41338,bone_dust_on_crypt_flagstones_in_nse,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38339,41339,bone_dust_on_crypt_flagstones_in_nsw,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38340,41340,bone_dust_on_crypt_flagstones_in_nsew,border,new,bone dust edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38341,41341,crypt_flagstones_on_bone_dust_n,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38342,41342,crypt_flagstones_on_bone_dust_s,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38343,41343,crypt_flagstones_on_bone_dust_e,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38344,41344,crypt_flagstones_on_bone_dust_w,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38345,41345,crypt_flagstones_on_bone_dust_ne,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38346,41346,crypt_flagstones_on_bone_dust_nw,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38347,41347,crypt_flagstones_on_bone_dust_se,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38348,41348,crypt_flagstones_on_bone_dust_sw,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38349,41349,crypt_flagstones_on_bone_dust_in_ne,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38350,41350,crypt_flagstones_on_bone_dust_in_nw,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38351,41351,crypt_flagstones_on_bone_dust_in_se,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38352,41352,crypt_flagstones_on_bone_dust_in_sw,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38353,41353,crypt_flagstones_on_bone_dust_in_ns,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38354,41354,crypt_flagstones_on_bone_dust_in_ew,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38355,41355,crypt_flagstones_on_bone_dust_in_new,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38356,41356,crypt_flagstones_on_bone_dust_in_sew,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38357,41357,crypt_flagstones_on_bone_dust_in_nse,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38358,41358,crypt_flagstones_on_bone_dust_in_nsw,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38359,41359,crypt_flagstones_on_bone_dust_in_nsew,border,new,crypt flagstones edge,1x1,0,8192,1,0,0,0,family=cata_ground
+38360,41360,bone_fragments,border,new,bone fragments,1x1,0,8192,1,0,0,0,family=cata_ground
+38361,41361,skull_rubble,border,new,skull rubble,1x1,0,8192,1,0,0,0,family=cata_ground
+38362,41362,puddle_crypt,border,new,puddle,1x1,0,8192,1,0,0,0,family=cata_ground
+38363,41363,candle_drips,border,new,candle drips,1x1,0,8192,1,0,0,0,family=cata_ground
+38364,41364,rat_droppings,border,new,rat droppings,1x1,0,8192,1,0,0,0,family=cata_ground
+38365,41365,dead_tree_small,stump,new,small dead tree,1x1,0,8193,2,0,0,0,family=nature
+38366,41366,autumn_oak,stump,new,autumn oak,2x2,0,8193,2,0,0,0,family=nature
+38367,41367,birch_bare,stump,new,bare birch,1x1,0,8193,2,0,0,0,family=nature
+38368,41368,haystack,stump,new,haystack,2x2,0,8193,2,0,0,0,family=props
+38369,41369,hay_bale,stump,new,hay bale,1x1,0,8193,2,0,0,0,family=props
+38370,41370,hay_bale_stack,stump,new,hay bale stack,1x1,0,8193,2,0,0,0,family=props
+38371,41371,scarecrow,stump,new,scarecrow,1x1,0,8193,2,0,0,0,family=props
+38372,41372,scarecrow_pumpkin,stump,new,scarecrow pumpkin,1x1,0,16785409,2,0,0,0,family=props|ms=125
+38373,41373,tombstone_round,stump,new,tombstone round,1x1,0,8193,2,0,0,0,family=props
+38374,41374,tombstone_cross,stump,new,tombstone cross,1x1,0,8193,2,0,0,0,family=props
+38375,41375,tombstone_cracked,stump,new,tombstone cracked,1x1,0,8193,2,0,0,0,family=props
+38376,41376,tombstone_angel,stump,new,tombstone angel,1x1,0,8193,2,0,0,0,family=props
+38377,41377,open_grave,decor,new,open grave,1x2,0,0,0,0,0,0,family=props
+38378,41378,coffin,stump,new,coffin,1x2,0,8193,2,0,0,0,family=props
+38379,41379,coffin_open,stump,new,open coffin,2x2,0,8193,2,0,0,0,family=props|review=decor
+38380,41380,cauldron,stump,new,cauldron,1x1,0,16785409,2,0,0,0,family=props|ms=125
+38381,41381,broom_leaning,stump,new,leaning broom,1x1,0,8193,2,0,0,0,family=props
+38382,41382,witch_hat,decor,new,witch hat,1x1,0,0,0,0,0,0,family=props
+38383,41383,candles_cluster,decor,new,candles,1x1,0,16777216,0,0,3,206,family=props|ms=125
+38384,41384,lantern_post,stump,new,lantern post,1x1,0,16785409,2,0,3,206,family=props|ms=125
+38385,41385,candle_skull,decor,new,candle skull,1x1,0,0,0,0,3,206,family=props
+38386,41386,well_old,stump,new,old well,2x2,0,8193,2,0,0,0,family=props
+38387,41387,apple_barrel,stump,new,apple barrel,1x1,0,8193,2,0,0,0,family=props
+38388,41388,bats_flock,decor,new,bats flock,2x2,0,16777216,0,0,0,0,family=props|ms=125
+38389,41389,fog_patch_1,border,new,fog patch,1x1,0,8192,1,0,0,0,family=decals
+38390,41390,fog_patch_2,border,new,fog patch,1x1,0,8192,1,0,0,0,family=decals
+38391,41391,crypt_brick_post,stump,new,crypt brick wall post,1x1,0,8193,2,0,0,0,family=cata_walls
+38392,41392,crypt_brick_h,stump,new,crypt brick wall,1x1,0,8193,2,0,0,0,family=cata_walls
+38393,41393,crypt_brick_v,stump,new,crypt brick wall,1x1,0,8193,2,0,0,0,family=cata_walls
+38394,41394,crypt_brick_corner,stump,new,crypt brick wall corner,1x1,0,8193,2,0,0,0,family=cata_walls
+38395,41395,crypt_brick_end_h,stump,new,crypt brick wall end,1x1,0,8193,2,0,0,0,family=cata_walls
+38396,41396,crypt_brick_end_v,stump,new,crypt brick wall end,1x1,0,8193,2,0,0,0,family=cata_walls
+38397,41397,crypt_brick_door_h,stump,new,crypt brick door,1x1,0,8193,2,0,0,0,family=cata_walls
+38398,41398,crypt_brick_door_v,stump,new,crypt brick door,1x1,0,8193,2,0,0,0,family=cata_walls
+38399,41399,crypt_brick_door_open_h,decor,new,crypt brick door open,1x1,0,0,0,0,0,0,family=cata_walls
+38400,41400,crypt_brick_door_open_v,decor,new,crypt brick door open,1x1,0,0,0,0,0,0,family=cata_walls
+38401,41401,crypt_brick_window_h,stump,new,crypt brick window,1x1,0,8193,2,0,0,0,family=cata_walls
+38402,41402,crypt_brick_window_v,stump,new,crypt brick window,1x1,0,8193,2,0,0,0,family=cata_walls
+38403,41403,crypt_brick_broken_h,stump,new,crypt brick wall broken,1x1,0,8193,2,0,0,0,family=cata_walls
+38404,41404,crypt_brick_broken_v,stump,new,crypt brick wall broken,1x1,0,8193,2,0,0,0,family=cata_walls
+38405,41405,ossuary_post,stump,new,ossuary wall post,1x1,0,8193,2,0,0,0,family=cata_walls
+38406,41406,ossuary_h,stump,new,ossuary wall,1x1,0,8193,2,0,0,0,family=cata_walls
+38407,41407,ossuary_v,stump,new,ossuary wall,1x1,0,8193,2,0,0,0,family=cata_walls
+38408,41408,ossuary_corner,stump,new,ossuary wall corner,1x1,0,8193,2,0,0,0,family=cata_walls
+38409,41409,ossuary_end_h,stump,new,ossuary wall end,1x1,0,8193,2,0,0,0,family=cata_walls
+38410,41410,ossuary_end_v,stump,new,ossuary wall end,1x1,0,8193,2,0,0,0,family=cata_walls
+38411,41411,ossuary_door_h,stump,new,ossuary door,1x1,0,8193,2,0,0,0,family=cata_walls
+38412,41412,ossuary_door_v,stump,new,ossuary door,1x1,0,8193,2,0,0,0,family=cata_walls
+38413,41413,ossuary_door_open_h,decor,new,ossuary door open,1x1,0,0,0,0,0,0,family=cata_walls
+38414,41414,ossuary_door_open_v,decor,new,ossuary door open,1x1,0,0,0,0,0,0,family=cata_walls
+38415,41415,ossuary_window_h,stump,new,ossuary window,1x1,0,8193,2,0,3,206,family=cata_walls
+38416,41416,ossuary_window_v,stump,new,ossuary window,1x1,0,8193,2,0,3,206,family=cata_walls
+38417,41417,ossuary_broken_h,stump,new,ossuary wall broken,1x1,0,8193,2,0,0,0,family=cata_walls
+38418,41418,ossuary_broken_v,stump,new,ossuary wall broken,1x1,0,8193,2,0,0,0,family=cata_walls
+38419,41419,bone_pile_large,stump,new,large bone pile,2x2,0,8193,2,0,0,0,family=cata_props
+38420,41420,necromancer_altar,stump,new,necromancer altar,2x1,0,16785409,2,0,0,0,family=cata_props|ms=125
+38421,41421,coffin_stack,stump,new,coffin stack,1x2,0,8193,2,0,0,0,family=cata_props
+38422,41422,portcullis_closed_h,stump,new,portcullis,1x1,0,8193,2,0,0,0,family=cata_walls
+38423,41423,portcullis_closed_v,stump,new,portcullis,1x1,0,8193,2,0,0,0,family=cata_walls
+38424,41424,portcullis_rising_h,stump,new,portcullis,1x1,0,16785409,2,0,0,0,family=cata_walls|ms=140|once=1|decay=portcullis_open_h:2
+38425,41425,portcullis_rising_v,stump,new,portcullis,1x1,0,16785409,2,0,0,0,family=cata_walls|ms=140|once=1|decay=portcullis_open_v:2
+38426,41426,portcullis_open_h,decor,new,open portcullis,1x1,0,0,0,0,0,0,family=cata_walls|decay=portcullis_closed_h:60
+38427,41427,portcullis_open_v,decor,new,open portcullis,1x1,0,0,0,0,0,0,family=cata_walls|decay=portcullis_closed_v:60
+38428,41428,dark_shingle_dome_2,decor,new,dark shingle roof,3x3,0,0,0,0,0,0,family=roofs
+38429,41429,dark_shingle_dome_3,decor,new,dark shingle roof,4x4,0,0,0,0,0,0,family=roofs
+38430,41430,rusty_tin_dome_2,decor,new,rusty tin roof,3x3,0,0,0,0,0,0,family=roofs
+38431,41431,rusty_tin_dome_3,decor,new,rusty tin roof,4x4,0,0,0,0,0,0,family=roofs
+38432,41432,dark_shingle_interior_1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38433,41433,dark_shingle_interior_2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38434,41434,dark_shingle_interior_3,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38435,41435,dark_shingle_n,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38436,41436,dark_shingle_s,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38437,41437,dark_shingle_e,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38438,41438,dark_shingle_w,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38439,41439,dark_shingle_nw,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38440,41440,dark_shingle_ne,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38441,41441,dark_shingle_sw,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38442,41442,dark_shingle_se,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38443,41443,dark_shingle_interior_back_1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38444,41444,dark_shingle_interior_back_2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38445,41445,dark_shingle_interior_back_3,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38446,41446,dark_shingle_n_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38447,41447,dark_shingle_s_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38448,41448,dark_shingle_e_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38449,41449,dark_shingle_w_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38450,41450,dark_shingle_nw_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38451,41451,dark_shingle_ne_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38452,41452,dark_shingle_sw_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38453,41453,dark_shingle_ridge_h1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38454,41454,dark_shingle_ridge_h1_w,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38455,41455,dark_shingle_ridge_h1_e,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38456,41456,dark_shingle_ridge_h2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38457,41457,dark_shingle_ridge_h2_w,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38458,41458,dark_shingle_ridge_h2_e,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38459,41459,dark_shingle_ridge_v1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38460,41460,dark_shingle_ridge_v1_n,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38461,41461,dark_shingle_ridge_v1_s,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38462,41462,dark_shingle_ridge_v2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38463,41463,dark_shingle_ridge_v2_n,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38464,41464,dark_shingle_ridge_v2_s,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38465,41465,dark_shingle_chimney,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38466,41466,dark_shingle_chimney_back,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38467,41467,dark_shingle_chimney_ridge_h1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38468,41468,dark_shingle_chimney_ridge_h2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38469,41469,dark_shingle_chimney_ridge_v1,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38470,41470,dark_shingle_chimney_ridge_v2,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38471,41471,dark_shingle_dormer,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38472,41472,dark_shingle_dormer_e,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38473,41473,dark_shingle_dormer_eave,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38474,41474,dark_shingle_dormer_e_eave,decor,new,dark shingle roof,1x1,0,0,0,0,0,0,family=roofs
+38475,41475,dark_shingle_cone_2,decor,new,dark shingle roof,3x3,0,0,0,0,0,0,family=roofs
+38476,41476,dark_shingle_cone_3,decor,new,dark shingle roof,4x4,0,0,0,0,0,0,family=roofs
+38477,41477,rusty_tin_interior_1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38478,41478,rusty_tin_interior_2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38479,41479,rusty_tin_interior_3,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38480,41480,rusty_tin_n,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38481,41481,rusty_tin_s,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38482,41482,rusty_tin_e,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38483,41483,rusty_tin_w,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38484,41484,rusty_tin_nw,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38485,41485,rusty_tin_ne,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38486,41486,rusty_tin_sw,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38487,41487,rusty_tin_se,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38488,41488,rusty_tin_interior_back_1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38489,41489,rusty_tin_interior_back_2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38490,41490,rusty_tin_interior_back_3,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38491,41491,rusty_tin_n_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38492,41492,rusty_tin_s_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38493,41493,rusty_tin_e_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38494,41494,rusty_tin_w_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38495,41495,rusty_tin_nw_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38496,41496,rusty_tin_ne_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38497,41497,rusty_tin_sw_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38498,41498,rusty_tin_ridge_h1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38499,41499,rusty_tin_ridge_h1_w,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38500,41500,rusty_tin_ridge_h1_e,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38501,41501,rusty_tin_ridge_h2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38502,41502,rusty_tin_ridge_h2_w,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38503,41503,rusty_tin_ridge_h2_e,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38504,41504,rusty_tin_ridge_v1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38505,41505,rusty_tin_ridge_v1_n,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38506,41506,rusty_tin_ridge_v1_s,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38507,41507,rusty_tin_ridge_v2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38508,41508,rusty_tin_ridge_v2_n,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38509,41509,rusty_tin_ridge_v2_s,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38510,41510,rusty_tin_chimney,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38511,41511,rusty_tin_chimney_back,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38512,41512,rusty_tin_chimney_ridge_h1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38513,41513,rusty_tin_chimney_ridge_h2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38514,41514,rusty_tin_chimney_ridge_v1,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38515,41515,rusty_tin_chimney_ridge_v2,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38516,41516,rusty_tin_dormer,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38517,41517,rusty_tin_dormer_e,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38518,41518,rusty_tin_dormer_eave,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38519,41519,rusty_tin_dormer_e_eave,decor,new,rusty tin roof,1x1,0,0,0,0,0,0,family=roofs
+38520,41520,rusty_tin_cone_2,decor,new,rusty tin roof,3x3,0,0,0,0,0,0,family=roofs
+38521,41521,rusty_tin_cone_3,decor,new,rusty tin roof,4x4,0,0,0,0,0,0,family=roofs
+38522,41522,skull_candle_niche,stump,new,skull candle niche,1x1,0,16785409,2,0,3,206,family=cata_props|ms=125
+38523,41523,rat_skeleton_b,stump,new,rat skeleton,1x1,0,8193,2,0,0,0,family=cata_props
+38524,41524,pumpkin_stage_1_mound,decor,new,pumpkin mound,1x1,0,0,0,0,0,0,family=mechanics|mechanic=pumpkin_growth|stage=1|decay=pumpkin_stage_2_sprout:90
+38525,41525,pumpkin_stage_2_sprout,decor,new,pumpkin sprout,1x1,0,0,0,0,0,0,family=mechanics|mechanic=pumpkin_growth|stage=2|decay=pumpkin_stage_3_vine:90
+38526,41526,pumpkin_stage_3_vine,decor,new,pumpkin vine,1x1,0,0,0,0,0,0,family=mechanics|mechanic=pumpkin_growth|stage=3|decay=pumpkin_stage_4_green:120
+38527,41527,pumpkin_stage_4_green,stump,new,green pumpkin,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=pumpkin_growth|stage=4|decay=pumpkin_stage_5_ripe:120
+38528,41528,pumpkin_stage_5_ripe,stump,new,ripe pumpkin,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=pumpkin_growth|stage=5
+38529,41529,pumpkin_stage_6_lit,stump,new,waking pumpkin,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=pumpkin_growth|stage=6|decay=pumpkin_stage_1_mound:8
+38530,41530,circle_dormant,decor,new,ritual circle,3x3,0,0,0,0,0,0,family=mechanics|mechanic=ritual_circle|state=dormant
+38531,41531,circle_candles_lighting,decor,new,kindling ritual circle,3x3,0,16777216,0,0,3,206,family=mechanics|ms=125|mechanic=ritual_circle|state=lighting|decay=circle_flare:2
+38532,41532,seal_sealed,stump,new,crypt seal,2x2,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=crypt_seal|state=sealed
+38533,41533,seal_breaking,stump,new,breaking crypt seal,2x2,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=crypt_seal|state=breaking|decay=seal_open:1
+38534,41534,seal_open,decor,new,open crypt seal,2x2,0,0,0,0,0,0,family=mechanics|mechanic=crypt_seal|state=open|floor_change=down|decay=seal_sealed:240
+38535,41535,grave_mound,decor,new,fresh grave,1x2,0,0,0,0,0,0,family=mechanics|mechanic=grave|state=mound
+38536,41536,grave_dug,stump,new,dug grave,1x2,0,8193,2,0,0,0,family=mechanics|mechanic=grave|state=dug|decay=grave_coffin_closed:2|review=decor
+38537,41537,grave_coffin_closed,stump,new,buried coffin,1x2,0,8193,2,0,0,0,family=mechanics|mechanic=grave|state=coffin_closed
+38538,41538,grave_coffin_bursting,stump,new,bursting coffin,1x2,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=grave|state=coffin_bursting|decay=grave_coffin_open_empty:1
+38539,41539,grave_coffin_open_empty,stump,new,empty grave,1x2,0,8193,2,0,0,0,family=mechanics|mechanic=grave|state=coffin_open_empty|decay=grave_mound:180|review=decor
+38540,41540,candy_cauldron_full,stump,new,candy cauldron,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=cauldron|state=treat
+38541,41541,cauldron_mimic,stump,new,cauldron mimic,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=cauldron|state=mimic
+38542,41542,gibbet_empty,stump,new,gibbet,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=gibbet|state=empty
+38543,41543,gibbet_bones,stump,new,gibbet,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=gibbet|state=bones
+38544,41544,gibbet_swing,stump,new,creaking gibbet,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=gibbet|state=swing
+38545,41545,cursed_bell_still,stump,new,cursed bell,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=cursed_bell|state=still
+38546,41546,cursed_bell_tolling,stump,new,tolling cursed bell,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=cursed_bell|state=tolling|decay=cursed_bell_still:4
+38547,41547,altar_bare,stump,new,offering altar,2x1,0,8193,2,0,0,0,family=mechanics|mechanic=altar|state=bare
+38548,41548,altar_offerings,stump,new,offering altar,2x1,0,8193,2,0,0,0,family=mechanics|mechanic=altar|state=offerings
+38549,41549,altar_burning,stump,new,burning offering altar,2x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=altar|state=burning
+38550,41550,skull_pile,stump,new,skull pile,1x1,0,8193,2,0,0,0,family=event_decor|mechanic=event_decor
+38551,41551,spellbook_lectern,stump,new,spellbook lectern,1x1,0,8193,2,0,0,0,family=event_decor|mechanic=event_decor
+38552,41552,brew_table,stump,new,brew table,2x1,0,16785409,2,0,3,206,family=event_decor|ms=125|mechanic=event_decor
+38553,41553,candy_pile,stump,new,candy pile,1x1,0,8193,2,0,0,0,family=event_decor|mechanic=event_decor
+38554,41554,black_candles,stump,new,black candles,1x1,0,16785409,2,0,3,206,family=event_decor|ms=125|mechanic=event_decor
+38555,41555,pumpkin_lamp_string_h,wall,new,pumpkin lamp string,1x1,0,16842752,0,0,3,206,family=event_decor|ms=125
+38556,41556,pumpkin_lamp_string_v,wall,new,pumpkin lamp string,1x1,0,16842752,0,0,3,206,family=event_decor|ms=125
+38557,41557,tattered_banner_h,wall,new,tattered banner,1x1,0,65536,0,0,0,0,family=event_decor
+38558,41558,tattered_banner_v,wall,new,tattered banner,1x1,0,65536,0,0,0,0,family=event_decor
+38559,41559,sarcophagus_closed,stump,new,sarcophagus,1x2,0,8193,2,0,0,0,family=cata_props
+38560,41560,lantern_post_unlit,stump,new,unlit lantern post,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=lantern_post|state=unlit
+38561,41561,lantern_post_lighting,stump,new,lantern post,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=lantern_post|state=lighting|decay=lantern_post_lit:1
+38562,41562,lantern_post_lit,stump,new,lantern post,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=lantern_post|state=lit
+38563,41563,hanging_chains,stump,new,hanging chains,1x1,0,8193,2,0,0,0,family=event_decor|mechanic=event_decor
+38564,41564,haunted_mirror,stump,new,haunted mirror,1x1,0,16785409,2,0,3,206,family=event_decor|ms=125|mechanic=event_decor
+38565,41565,bone_chimes,stump,new,bone chimes,1x1,0,16785409,2,0,3,206,family=event_decor|ms=125|mechanic=event_decor
+38566,41566,rat_skeleton_a,stump,new,rat skeleton,1x1,0,8193,2,0,0,0,family=cata_props
+38567,41567,sarcophagus_open,stump,new,open sarcophagus,1x2,0,8193,2,0,0,0,family=cata_props|review=decor
+38568,41568,sarcophagus_lid_slide,stump,new,sarcophagus,1x2,0,16785409,2,0,0,0,family=cata_props|ms=125|decay=sarcophagus_open:1
+38569,41569,cobweb_sheet,decor,new,cobweb sheet,1x1,0,0,0,0,0,0,family=cata_props
+38570,41570,urn_large,stump,new,large urn,1x1,0,8193,2,0,0,0,family=cata_props
+38571,41571,urn_cluster,stump,new,urn cluster,1x1,0,8193,2,0,0,0,family=cata_props
+38572,41572,dead_tree_gnarled,stump,new,gnarled dead tree,2x2,0,8193,2,0,0,0,family=nature
+38573,41573,crypt_small,stump,new,small crypt,2x2,0,8193,2,0,0,0,family=props
+38574,41574,signpost_crooked,stump,new,crooked signpost,1x1,0,8193,2,0,0,0,family=props
+38575,41575,crows_ground,decor,new,crows,2x1,0,16777216,0,0,0,0,family=props|ms=125
+38576,41576,wheelbarrow,stump,new,wheelbarrow,1x1,0,8193,2,0,0,0,family=props
+38577,41577,coffin_up_closed,stump,new,upright coffin,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=coffin_up|state=closed
+38578,41578,coffin_up_opening,stump,new,creaking coffin,1x1,0,16785409,2,0,3,206,family=mechanics|ms=125|mechanic=coffin_up|state=opening|decay=coffin_up_open_skeleton:1
+38579,41579,coffin_up_open_skeleton,stump,new,open upright coffin,1x1,0,8193,2,0,0,0,family=mechanics|mechanic=coffin_up|state=open_skeleton|decay=coffin_up_closed:180|review=decor
+38580,41580,circle_flare,decor,new,flaring ritual circle,3x3,0,16777216,0,0,3,206,family=mechanics|ms=125|mechanic=ritual_circle|state=flare|decay=portal_open:1
+38581,41581,portal_open,decor,new,ritual portal,3x3,0,16777216,0,0,3,206,family=mechanics|ms=125|mechanic=ritual_circle|state=portal_open|decay=portal_closing:120
+38582,41582,portal_closing,decor,new,fading ritual portal,3x3,0,16777216,0,0,3,206,family=mechanics|ms=125|mechanic=ritual_circle|state=closing|decay=circle_dormant:1
+38583,41583,catacomb_stairs_up_n_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38584,41584,catacomb_stairs_up_n_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38585,41585,catacomb_stairs_up_n_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38586,41586,catacomb_stairs_up_w_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38587,41587,catacomb_stairs_up_w_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38588,41588,catacomb_stairs_up_w_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38589,41589,catacomb_stairs_down_n_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38590,41590,catacomb_stairs_down_n_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38591,41591,catacomb_stairs_down_n_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38592,41592,catacomb_stairs_down_w_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38593,41593,catacomb_stairs_down_w_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38594,41594,catacomb_stairs_down_w_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38595,41595,catacomb_stairs_down_s_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38596,41596,catacomb_stairs_down_s_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38597,41597,catacomb_stairs_down_s_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38598,41598,catacomb_stairs_down_e_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38599,41599,catacomb_stairs_down_e_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38600,41600,catacomb_stairs_down_e_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38601,41601,catacomb_stairs_up_s_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38602,41602,catacomb_stairs_up_s_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38603,41603,catacomb_stairs_up_s_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38604,41604,catacomb_stairs_up_e_l,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38605,41605,catacomb_stairs_up_e_mid,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38606,41606,catacomb_stairs_up_e_r,decor,new,catacomb stairs,1x1,0,0,0,0,0,0,family=cata_stairs
+38607,41607,corpse_hollow_king,corpse,new,dead hollow king,5x5,2,67108864,0,0,0,0,race=blood

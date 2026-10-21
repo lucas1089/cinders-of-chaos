@@ -237,8 +237,10 @@ _base = json.load(open(_D.KITS_PATH, encoding='utf-8'))
 _m = _D.merge_owner(_base, json.load(open(_D.OWNER_PATH, encoding='utf-8')))
 # the catacomb kit of pair 27 (on since pair 27 went live) is merged after the owner's
 _m = _D.merge_owner(_m, json.load(open(_D.ASSETS_PATH, encoding='utf-8'))) if _D.assets_on() else _m
+# the harvest kit of pair 33 (on since pair 33 went live) is merged last
+_m = _D.merge_owner(_m, json.load(open(_D.HARVEST_PATH, encoding='utf-8'))) if _D.harvest_on() else _m
 ok(_D.owner_on() and kit == _m and kit['biome_kit']['waste'] == 'waste' and 'waste' in kit['kits'],
-   'owner decoration: switch on, the kits are decor_kits.json merged with the owner\'s (and the catacomb kit\'s)')
+   'owner decoration: switch on, the kits are decor_kits.json merged with the owner\'s (and the catacomb and harvest kits\')')
 ok('waste' not in _base['kits'] and _base['biome_kit']['waste'] == 'lava', 'owner decoration: off, the waste biome uses the lava kit')
 ok(_m['biome_kit']['waste'] == 'waste' and ['cacti_potted', 3] in _m['kits']['waste']['centre']
    and _m['kits']['waste']['floor'][:len(_base['kits']['lava']['floor'])] == _base['kits']['lava']['floor']

@@ -12,7 +12,10 @@ Fixed areas: every plan of server/tools/areaplan/chronicle/ (the Ashen Chronicle
 Memorial's plaza) and of server/tools/areaplan/rooms/ (the Idle Hall) is placed the same way at its own `origin`, with
 its spawns and chest script, but gets no teleport and no line in the places file: its way in is a runtime portal of its
 own (chronicle_config.lua `areas` gate, memorial_config.lua `plaza.portal`; tools/chronicle_areas_test.py checks that
-their `at` is the plan's origin) or, for the Idle Hall, idlehall.lua's move (tools/idle_hall_test.py).
+their `at` is the plan's origin) or, for the Idle Hall, idlehall.lua's move (tools/idle_hall_test.py). The plans of
+server/tools/areaplan/events/ (the Haunted Harvest, server/README.md "Haunted Harvest") are fixed areas too, but only
+while ChaosHarvestArt.PAIR33 (data/lib/chaos_harvest_art.lua) is on: their tiles are the pair 33 kit's; their ways in
+are the event's Harvest Portals and the crypt seal (harvest_event.lua).
 --no-fixed leaves them out.
 
 Steps (server/README.md "Hunt teleports"; docs/MAP_GUIDE.md "Content plans"):
@@ -59,7 +62,20 @@ sys.path.insert(0, HERE)
 sys.path.insert(0, os.path.join(ROOT, 'tools', 'map'))
 
 PLANS_DIR = os.path.join(HERE, 'areaplan', 'plans')
-FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'), os.path.join(HERE, 'areaplan', 'rooms'))
+EVENTS_DIR = os.path.join(HERE, 'areaplan', 'events')
+HARVEST_SWITCH = os.path.join(SERVER, 'data', 'lib', 'chaos_harvest_art.lua')
+
+
+def harvest_on(path=HARVEST_SWITCH):
+    """ChaosHarvestArt.PAIR33: the event areas of areaplan/events/ use the pair 33 kit and are placed only while on"""
+    try:
+        return re.search(r'^M\.PAIR33\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
+    except OSError:
+        return False
+
+
+FIXED_DIRS = (os.path.join(HERE, 'areaplan', 'chronicle'), os.path.join(HERE, 'areaplan', 'rooms')) + (
+    (EVENTS_DIR,) if harvest_on() else ())
 CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'hunt_teleports_config.lua')
 PLACES_REL = os.path.join('lib', 'chaos_hunt_places.lua')
 

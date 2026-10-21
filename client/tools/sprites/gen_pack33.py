@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Pair 33 (planned, not built): four purchased packs of one vendor cut into importer sheets. Internal labels
-`set33 heads` (100 head accessories), `set33 capes` (100 capes), `set33 wings` (100 wings) and `set33 kit` (a harvest
-farmland and catacomb tile kit: 514 items, 10 creature looks, a boss corpse). Pack names, vendor and licence:
+"""Pair 33: four purchased packs of one vendor cut into importer sheets. Internal labels `set33 heads` (100 head
+accessories, 92 kept), `set33 capes` (100 capes, 89 kept), `set33 wings` (100 wings, 92 kept) and `set33 kit` (a
+harvest farmland and catacomb tile kit: 514 items, 10 creature looks, a boss corpse). DROP: the sci-fi and plainly
+modern pieces the owner left out on 2026-10-21. Pack names, vendor and licence:
 docs/CREDITS.md (internal part). The owner's Drive folder "ots", uploaded 2026-10-21 (`PACKS`: Drive id, zip size,
 zip sha256).
 
@@ -15,6 +16,9 @@ zip sha256).
     python3 -I gen_pack33.py preview --dat T/Tibia.dat --spr T/Tibia.spr --out DIR
                                                           # owner review from a TEST pair: wings, heads and capes on
                                                           #   look 128 as the client draws them, kit looks and items
+    python3 -I gen_pack33.py wingx --src SRC --dat P/Tibia.dat --spr P/Tibia.spr [--verbose]
+                                                          # the wings' centre minus body 128's per direction (any
+                                                          #   pair with look 128); exit 1 when WING_X_FIX disagrees
 
 SRC holds one folder per pack slug (heads, capes, wings, kit), each the unpacked zip (untrusted: unpack with a
 path-checking extractor into empty folders; every file is md5-checked against pack33_<slug>.files before decoding).
@@ -44,8 +48,10 @@ Wings, heads and capes (pack sheets: one row per direction E, SE, S, SW, W, NW, 
 - displacement: the wearer's tile is where the pack's anchor tile is, with the body as our player looks draw it
   (BODY_REF = 8, 8 like the stock player look); content right of / below the anchor tile (r, b px) is reached with a
   negative share: D = BODY_REF - (r, b); an aura is also moved back by the client's centring of big auras,
-  (w - 1) * 16, (h - 1) * 16 (GameBigAurasCenter). To check on a test pair with `fix_pair_warnings.py
-  --scan-wings-displacement` / `--scan-aura-displacement` and the owner's preview on look 128 (not verified yet).
+  (w - 1) * 16, (h - 1) * 16 (GameBigAurasCenter); wings use WING_REF_X for x, plus their WING_X_FIX (measured by
+  `wingx`, see WING_REF_X), so that facing south each sits within WING_TOL px of the body's centre. Checked on the
+  built pair with `fix_pair_warnings.py --scan-wings-displacement` / `--scan-aura-displacement` and the owner's
+  preview on look 128.
 
 Kit (catalog.json: one PNG per sprite, `footprint_bottom_right` anchor = the dat's bottom-right anchor):
 - items: every sprite but the figures, the per-floor parts (`part_of`: the dat draws a tall thing whole, up and left)
@@ -79,6 +85,39 @@ FIRST_OUTFIT = 2385
 FIRST_ITEM = 38093
 SERVER_OFFSET = 3000
 BODY_REF = 8
+WING_LIFT = 6                                     # GameWingOffset: the body draws 6 px up-left of its wings
+# Wings x (owner 2026-10-21: "facing south the median is 4 px left of the body"; `wingx` measures it). Stock look 128
+# facing south has its art centre 8.8 px left of / 8.9 px above the tile centre, as its 8,8 displacement says, so the
+# body reference 8 holds for the body. The pack's wings sit 11.0 px left of their anchor tile's centre (median, the
+# vendor's figure with its own lift of about 2.7 px), and our client lifts the body 6 px (GameWingOffset): with 8 the
+# wings' south centre was x -10.0..+3.4 from the body (median -4.2), 41 of 100 outside |x| <= 5. WING_REF_X = 4 moves
+# every wing 4 px right; WING_X_FIX then moves the wings still more than WING_TOL px off back to the body's centre
+# (px added to the displacement x: + moves the art left). After both: every kept wing within |x| <= WING_TOL.
+WING_REF_X = 4
+WING_TOL = 3
+WING_X_FIX = {
+    'tornado_funnel_wings': -6, 'obsidian_blade_wings': -5, 'petal_bloom_wings': -5, 'shackle_chain_wings': -5,
+    'brass_fan_wings': -5, 'zephyr_ribbon_wings': -5, 'icarus_wax_wings': -4, 'cloud_puff_wings': -4,
+    'grasping_hand_wings': -4, 'storm_gull_wings': -4, 'lace_fan_wings': -4, 'bark_owl_wings': -4,
+    'mirror_pane_wings': -4, 'dandelion_seed_wings': -4, 'slate_plate_wings': -4, 'briar_rose_wings': -3,
+    'gale_streak_wings': -3, 'pinwheel_wings': -3, 'rib_bone_wings': -3, 'terracotta_tile_wings': -3,
+    'grave_bone_wings': -3, 'samara_spin_wings': -3, 'soot_moth_wings': -3,
+    'arc_bolt_wings': 3, 'flame_luna_wings': 3, 'deep_ray_wings': 3, 'ophanim_eye_wings': 3, 'fern_frond_wings': 3,
+    'ink_splash_wings': 4, 'foam_crest_wings': 4, 'pearl_scallop_wings': 4, 'lava_rock_wings': 4,
+    'dawn_seraph_wings': 5, 'aurora_veil_wings': 5, 'icicle_harp_wings': 6, 'halo_ray_wings': 6, 'sun_disc_wings': 6,
+    'rose_window_wings': 7,
+}
+# Not imported (owner 2026-10-21: sci-fi or plainly modern themes clash with the dark fantasy world). The first names
+# of each list are the owner's; the rest were picked by name on the same rule (client/MANIFEST.md "Pair 33 build").
+DROP = {
+    'wings': ('circuit_wings', 'hologram_wings', 'neon_butterfly_wings', 'pixel_block_wings', 'thruster_jet_wings',
+              'gyro_ring_wings', 'magnet_field_wings', 'plasma_fly_wings'),
+    'heads': ('atom_orbit', 'circuit_visor', 'neon_ear_headset', 'robot_antennae', 'propeller_beanie',
+              'ringed_planet_float', 'mouse_ears', 'tesla_crown'),
+    'capes': ('academic_gown_cape', 'circuit_cape', 'fiber_optic_train', 'glitch_pixel_cape', 'neon_tatter_cape',
+              'aviator_scarf_cape', 'knit_pompom_capelet', 'plasma_train', 'ion_hood', 'hex_shield_cape',
+              'magnet_plate_cape'),
+}
 ALPHA_MIN = 12
 DIRS = ('N', 'E', 'S', 'W')                       # dat order
 ROW_OF = {'E': 0, 'SE': 1, 'S': 2, 'SW': 3, 'W': 4, 'NW': 5, 'N': 6, 'NE': 7}
@@ -100,7 +139,7 @@ PACKS = {
 }
 ORDER = ('wings', 'heads', 'capes', 'kit')
 # things per pack: (outfits, items); the build stops when a pack has another count (every later id would move)
-COUNTS = {'wings': (100, 0), 'heads': (100, 0), 'capes': (100, 0), 'kit': (10, 515)}
+COUNTS = {'wings': (92, 0), 'heads': (92, 0), 'capes': (89, 0), 'kit': (10, 515)}
 
 HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
           'server_id', 'extra']
@@ -216,8 +255,10 @@ def place(cell, tw, th, R, B):
     return out
 
 
-def displacement(kind, tw, th, r, b):
+def displacement(kind, tw, th, r, b, fix_x=0):
     dx, dy = BODY_REF - r, BODY_REF - b
+    if kind == 'wings':
+        dx = WING_REF_X - r + fix_x
     if kind == 'aura':
         dx += (tw - 1) * 16 if tw > 1 else 0
         dy += (th - 1) * 16 if th > 1 else 0
@@ -256,10 +297,16 @@ def build_vfx(slug, S):
     meta = S.json('metadata.json')
     elem = elements(S.text('README.md'))
     rows, sheets, sources = [], [], []
+    ids = {e['id'] for e in meta['effects']}
+    gone = [d for d in DROP.get(slug, ()) if d not in ids]
+    if gone:
+        raise BuildError('%s: DROP names %s, not in the pack' % (slug, ', '.join(gone)))
     for e in sorted(meta['effects'], key=lambda e: e['id']):
         eid = e['id']
         if not re.match(r'^[a-z0-9_]+$', eid):
             raise BuildError('%s: odd id %r' % (slug, eid))
+        if eid in DROP.get(slug, ()):
+            continue
         v = e['variants']['oblique/32']
         fw, fh, n = int(v['frame_w']), int(v['frame_h']), int(v['columns'])
         ax, ay = (int(t) for t in v['anchor_tile'])
@@ -289,8 +336,8 @@ def build_vfx(slug, S):
         for (li, d, f), c in cells.items():
             col = li * 4 + d
             sheet[f * H:(f + 1) * H, col * W:(col + 1) * W] = place(c, tw, th, R, B)
-        dx, dy = displacement(kind, tw, th, r, b)
-        ms = L.fps_to_ms(e.get('fps') or 12)
+        dx, dy = displacement(kind, tw, th, r, b, WING_X_FIX.get(eid, 0) if kind == 'wings' else 0)
+        ms =L.fps_to_ms(e.get('fps') or 12)
         key = '%s__%s' % (slug, eid)
         atlas = 'pack33_%s/%s' % (slug, eid)
         extra = '|'.join(['gtypes=1', 'layers=%d' % len(layers), 'exact=%d' % (32 * max(tw, th)),
@@ -599,6 +646,76 @@ def cmd_stats(a):
     return 0
 
 
+def body_centre(dat, spr, look, d=2):
+    """alpha-weighted mean (x, y) of a body look's art facing d (phase 0, layer 0, no addon), px from its tile's top
+    left with its own displacement (fix_pair_warnings.py mean_px, the wings premise's body)."""
+    from datspr import sprite_index
+    t = dat.outfit(look)
+    dx, dy = ((v - 65536 if v > 32767 else v) for v in (t.flags.get('displacement') or (0, 0)))
+    x = d if t.px >= 4 else 0
+    al = np.zeros((t.h * 32, t.w * 32))
+    for hh in range(t.h):
+        for ww in range(t.w):
+            a = spr.sprite(t.sprites[sprite_index(t, x, 0, 0, 0, 0, ww, hh)])
+            if a is not None:
+                al[(t.h - 1 - hh) * 32:(t.h - hh) * 32, (t.w - 1 - ww) * 32:(t.w - ww) * 32] = a[..., 3]
+    ys, xs = np.mgrid[0:al.shape[0], 0:al.shape[1]]
+    n = al.sum()
+    return (al * xs).sum() / n - (t.w - 1) * 32 - dx, (al * ys).sum() / n - (t.h - 1) * 32 - dy
+
+
+def wing_centre(row, sheet, d=2):
+    """alpha-weighted mean (x, y) of a wings row's art facing d (every phase), px from the tile's top left, drawn by
+    the wings rule with the row's displacement (a pixel lands at x - dx - (w - 1) * 32)."""
+    tw, th, n = int(row[7]), int(row[8]), int(row[10])
+    W, H = tw * 32, th * 32
+    dx, dy = (int(v) for v in re.search(r'displacement:(-?\d+):(-?\d+)', row[11]).groups())
+    al = np.zeros((H, W))
+    for f in range(n):
+        al += sheet[f * H:(f + 1) * H, d * W:(d + 1) * W, 3]
+    ys, xs = np.mgrid[0:H, 0:W]
+    s = al.sum()
+    return (al * xs).sum() / s - (tw - 1) * 32 - dx, (al * ys).sum() / s - (th - 1) * 32 - dy
+
+
+def cmd_wingx(a):
+    """the wings' centre minus the body's, per direction (the body lifted WING_LIFT px up-left, GameWingOffset), with
+    the current WING_REF_X / WING_X_FIX; and the WING_X_FIX the tolerance asks for."""
+    from datspr import Dat, Spr
+    dat, spr = Dat(a.dat), Spr(a.spr)
+    per_pack, sheets, sources, files = outputs(a.src)
+    arr = dict(sheets['wings'])
+    body = [body_centre(dat, spr, a.body, d) for d in range(4)]
+    print('body %d: south centre %.1f, %.1f px from its tile top left (tile centre 16, 16)' % (a.body, body[2][0],
+                                                                                            body[2][1]))
+    res, want = [], {}
+    for r in per_pack['wings']:
+        eid = r[0].split('__', 1)[1]
+        sh = arr[r[4] + '.png'].astype(np.float64)
+        c = [wing_centre(r, sh, d) for d in range(4)]
+        off = [(c[d][0] - body[d][0] + WING_LIFT, c[d][1] - body[d][1] + WING_LIFT) for d in range(4)]
+        res.append((eid, off))
+        base = off[2][0] + WING_X_FIX.get(eid, 0)          # without its own fix (+ fix moves the art left)
+        if abs(base) > WING_TOL:
+            want[eid] = int(round(base))
+        if a.verbose:
+            print('  %-24s S %+5.1f,%+5.1f  N %+5.1f,%+5.1f  fix %d' % (eid, off[2][0], off[2][1], off[0][0], off[0][1],
+                                                                      WING_X_FIX.get(eid, 0)))
+    xs = sorted(o[2][0] for _, o in res)
+    ns = sorted(o[0][0] for _, o in res)
+    ys = sorted(o[2][1] for _, o in res)
+    med = lambda v: (v[len(v) // 2] + v[(len(v) - 1) // 2]) / 2.0
+    print('wings %d: south x %+.1f..%+.1f (median %+.1f), y %+.1f..%+.1f (median %+.1f); north x median %+.1f; '
+          'outside |x| <= 5: %d, outside |x| <= %d: %d' % (len(xs), xs[0], xs[-1], med(xs), ys[0], ys[-1], med(ys),
+                                                           med(ns), sum(1 for x in xs if abs(x) > 5), WING_TOL,
+                                                           sum(1 for x in xs if abs(x) > WING_TOL)))
+    if want != WING_X_FIX:
+        print('WING_X_FIX for WING_REF_X %d and WING_TOL %d: %r' % (WING_REF_X, WING_TOL, want))
+        return 1
+    print('WING_X_FIX matches the measure')
+    return 0
+
+
 def _label(draw, xy, text):
     draw.text(xy, text, fill=(235, 225, 200, 255))
 
@@ -760,10 +877,13 @@ def main(argv=None):
     p = sub.add_parser('contact'); p.add_argument('--src', required=True); p.add_argument('--out', required=True)
     p = sub.add_parser('preview'); p.add_argument('--dat', required=True); p.add_argument('--spr', required=True)
     p.add_argument('--out', required=True)
+    p = sub.add_parser('wingx'); p.add_argument('--src', required=True); p.add_argument('--dat', required=True)
+    p.add_argument('--spr', required=True); p.add_argument('--body', type=int, default=128)
+    p.add_argument('--verbose', action='store_true')
     a = ap.parse_args(argv)
     try:
         return {'scan': cmd_scan, 'build': cmd_build, 'stats': cmd_stats, 'contact': cmd_contact,
-                'preview': cmd_preview}[a.cmd](a) or 0
+                'preview': cmd_preview, 'wingx': cmd_wingx}[a.cmd](a) or 0
     except (BuildError, L.PackError) as e:
         print('gen_pack33: %s' % e, file=sys.stderr)
         return 2

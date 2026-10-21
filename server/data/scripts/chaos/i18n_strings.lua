@@ -3008,5 +3008,57 @@ return {
 			"Suas molduras de placa estão na janela. Escolha uma, ou desligue.",
 		["Your stash is open. Drag items onto it, or take them out. Taking out works in town only, mind you."] =
 			"Seu estoque está aberto. Arraste itens para ele, ou retire-os. Retirar só funciona na cidade, atenção.",
+		-- the Haunted Harvest (harvest_event.lua, harvest_event_config.lua messages, Widow Hessa, the Harvest Portal)
+		["Harvest Portal"] = "Portal da Colheita",
+		["Open while the Haunted Harvest lasts: step in to reach the cursed village (levels 450-650). Its exit portal leads to your temple."] =
+			"Aberto enquanto durar a Haunted Harvest: entre para chegar à vila amaldiçoada (níveis 450-650). O portal de saída leva ao seu templo.",
+		["Haunted Harvest"] = "Haunted Harvest",
+		["A cursed harvest village opens its gates: Harvest Portals next to the temples."] =
+			"Uma vila de colheita amaldiçoada abre seus portões: Portais da Colheita ao lado dos templos.",
+		["The Haunted Harvest has begun! Harvest Portals stand next to the temples."] =
+			"A Haunted Harvest começou! Os Portais da Colheita estão ao lado dos templos.",
+		["The Haunted Harvest is over. The village sleeps until next year."] =
+			"A Haunted Harvest acabou. A vila dorme até o ano que vem.",
+		["The Haunted Harvest is not open now."] = "A Haunted Harvest não está aberta agora.",
+		["The pumpkin is not ripe yet."] = "A abóbora ainda não está madura.",
+		["You harvest the pumpkin: %d hollow candy."] = "Você colhe a abóbora: %d hollow candy.",
+		["You harvested enough pumpkins today; the field gives you nothing more."] =
+			"Você já colheu abóboras demais hoje; o campo não lhe dá mais nada.",
+		["The pumpkin wakes up!"] = "A abóbora acorda!",
+		["You dig into the fresh grave..."] = "Você cava a cova recente...",
+		["The coffin is empty but for some candy (%d)."] = "O caixão está vazio, exceto por alguns doces (%d).",
+		["Among the bones lies a sexton's key."] = "Entre os ossos está uma sexton's key.",
+		["The dead climb out!"] = "Os mortos saem da terra!",
+		["Treat! The cauldron gives you %d hollow candy."] = "Gostosura! O caldeirão lhe dá %d hollow candy.",
+		["Trick!"] = "Travessura!",
+		["The cauldron is empty. It fills again soon."] = "O caldeirão está vazio. Logo ele se enche de novo.",
+		["The cursed bell tolls... wings beat in the dark."] = "O sino amaldiçoado dobra... asas batem no escuro.",
+		["The bell is still ringing in the dark."] = "O sino ainda ressoa no escuro.",
+		["The crypt seal is shut. A sexton's key would break it."] =
+			"O selo da cripta está fechado. Uma sexton's key o quebraria.",
+		["The seal cracks open. The crypt stair lies below."] = "O selo se parte. A escada da cripta está abaixo.",
+		["You set a ritual candle on the circle (%d of %d)."] = "Você põe uma ritual candle no círculo (%d de %d).",
+		["The circle flares: the ritual portal is open!"] = "O círculo se acende: o portal do ritual está aberto!",
+		["The circle is already burning."] = "O círculo já está queimando.",
+		["The ritual portal is not open."] = "O portal do ritual não está aberto.",
+		["The hollow charm crumbles: %s is yours (for the account)."] =
+			"O hollow charm se desfaz: %s é seu (para a conta).",
+		["Your account owns every haunted cosmetic: the charm turns into %d hollow candy."] =
+			"Sua conta já tem todos os cosméticos assombrados: o charm vira %d hollow candy.",
+		["%s calls his court from the graves!"] = "%s chama sua corte das covas!",
+		["%s has fallen! The harvest is safe... for now."] = "%s caiu! A colheita está a salvo... por enquanto.",
+		["First Hollow King of the day: %d hollow candy."] = "Primeiro Hollow King do dia: %d hollow candy.",
+		["Shh, |PLAYERNAME|. The dead are listening. Bring me hollow candy and I will {trade}; ask me about the {harvest} if you dare."] =
+			"Psiu, |PLAYERNAME|. Os mortos estão ouvindo. Traga hollow candy e eu faço {trade}; pergunte sobre a {harvest} se tiver coragem.",
+		["Keep a lantern lit, |PLAYERNAME|."] = "Mantenha uma lanterna acesa, |PLAYERNAME|.",
+		["The corn whispers your name..."] = "O milharal sussurra seu nome...",
+		["Hollow candy buys: %s. Say {buy} and the number."] = "Hollow candy compra: %s. Diga {buy} e o número.",
+		["That costs %d hollow candy; you carry %d."] = "Isso custa %d hollow candy; você carrega %d.",
+		["I have no such thing. Ask me to {trade}."] = "Não tenho isso. Peça para eu fazer {trade}.",
+		["A fair trade: %s for %d hollow candy."] = "Uma troca justa: %s por %d hollow candy.",
+		["The harvest moon woke the dead of this village. Pick the pumpkins, dig the graves, and find the sexton's key: the crypt under the chapel leads to the Hollow King."] =
+			"A lua da colheita acordou os mortos desta vila. Colha as abóboras, cave as covas e encontre a sexton's key: a cripta sob a capela leva ao Hollow King.",
+		["Hessa. I buried my husband in that graveyard. Twice. Bring me hollow candy and I will {trade}."] =
+			"Hessa. Enterrei meu marido naquele cemitério. Duas vezes. Traga hollow candy e eu faço {trade}.",
 	},
 }

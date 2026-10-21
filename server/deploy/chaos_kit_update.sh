@@ -32,7 +32,8 @@
 #            8 downloads  the release's Windows zip and Linux tar.gz into CHAOS_DL_DIR: temporary name, size and
 #                         SHA-256 checked, the old file kept as NAME.prev, then renamed; NAME.sha256 and downloads.json
 #                         (the downloads page shows release, date, size, checksum) (--no-downloads skips it)
-#            9 site       website/install_site.sh when website/ changed in this update and CHAOS_SITE_ENV exists
+#            9 site       website/install_site.sh when website/ changed since the site was last installed (state
+#                         site_commit; else since this update's start) and CHAOS_SITE_ENV exists
 #                         (--no-site skips it)
 #           Steps 7-9 never undo the server update: a failure there ends with RESULT warn.
 # rollback  back to the state before the last apply: engine, config.lua and data/, the previous commit, the download
@@ -241,7 +242,9 @@ cmd_check() {
   n=$(dl_release)
   say "downloads_release=$n"
   [ -n "$LATEST" ] && [ "$n" -lt "$LATEST" ] && [ -d "$DL" ] && say "needs_downloads=yes" || say "needs_downloads=no"
-  if g diff --quiet "$cur" "$remote" -- website/ 2>/dev/null; then say "website_changed=no"; else say "website_changed=yes"; fi
+  # the site counts from the commit it was last installed from (a checkout moved by hand skips no site change)
+  n=$(state_get site_commit); [ -n "$n" ] && g cat-file -e "$n^{commit}" 2>/dev/null || n=$cur
+  if g diff --quiet "$n" "$remote" -- website/ 2>/dev/null; then say "website_changed=no"; else say "website_changed=yes"; fi
   if [ "$cur" != "$remote" ] || [ "$(state_get installed_release)" != "$LATEST" ]; then
     say "update_available=yes"
   else
@@ -544,15 +547,18 @@ cmd_apply() {
   fi
 
   say "STEP 9/9 site"
+  local sitebase
+  sitebase=$(state_get site_commit); [ -n "$sitebase" ] && g cat-file -e "$sitebase^{commit}" 2>/dev/null || sitebase=$cur
   if [ "$site" = 0 ]; then
     log "skipped (--no-site)"
-  elif g diff --quiet "$cur" HEAD -- website/; then
+  elif g diff --quiet "$sitebase" HEAD -- website/; then
     log "website/ did not change"
   elif [ ! -r "$SITE_ENV" ]; then
     log "website/ changed, but there is no $SITE_ENV (CHAOS_SITE_ENV): run website/install_site.sh by hand"
     warn="$warn site"
   elif "$REPO/website/install_site.sh" "$ENVFILE" "$SITE_ENV" 2>&1 | tail -n 25; [ "${PIPESTATUS[0]}" = 0 ]; then
     log "site installed again"
+    state_set "site_commit=$(g rev-parse HEAD)"
   else
     warn="$warn site"; log "WARN: install_site.sh failed (above)"
   fi

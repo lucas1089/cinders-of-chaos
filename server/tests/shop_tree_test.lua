@@ -158,6 +158,14 @@ local owner = dofile("data/lib/chaos_owner_art.lua")
 if owner.PAIR26 then
 	for _, w in ipairs(owner.storeWings) do WINGS[w.id] = true end
 end
+local pack33 = dofile("data/lib/chaos_pack33.lua")
+if pack33.PAIR33 then
+	for _, w in ipairs(pack33.data.wings) do WINGS[w.id] = true end
+	for line in readFile("data/XML/chaos_auras_pack33.csv"):gmatch("[^\n]+") do
+		local id = tonumber(line:match("^(%d+),"))
+		if id then AURAS[id] = true end
+	end
+end
 local COS = dofile("data/scripts/chaos/shop_cosmetics.lua")
 local LOOKS, MOUNTS = {}, {}
 for _, e in ipairs(COS.outfits) do LOOKS[e.looktype] = true end

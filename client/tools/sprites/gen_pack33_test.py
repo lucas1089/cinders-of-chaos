@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Tests of gen_pack33.py on synthetic packs (no pack file is read): the trim and placement geometry, the
-displacement rule, the element table, the kit kind rules, a two-layer aura and a wings thing cut from a synthetic
+displacement rule (the wings' x reference and per-wing fix), the DROP list, the element table, the kit kind rules, a two-layer aura and a wings thing cut from a synthetic
 sheet, a kit item strip, a kit look and its corpse, the md5 guard, and the committed tables (build --check without
 sources).
 
@@ -47,7 +47,9 @@ def test_geometry():
     check(out.shape == (64, 64, 4) and tuple(out[50 + 12, 51 + 12]) == (1, 2, 3, 255), 'place moves to bottom-right')
     out = G.place(cell, 1, 1, 64, 64)
     check(out[..., 3].sum() == 255 and tuple(out[50 - 32, 51 - 32]) == (1, 2, 3, 255), 'place crops left / top')
-    check(G.displacement('wings', 4, 4, 32, 32) == (G.BODY_REF - 32, G.BODY_REF - 32), 'wings displacement')
+    check(G.displacement('wings', 4, 4, 32, 32) == (G.WING_REF_X - 32, G.BODY_REF - 32), 'wings displacement')
+    check(G.displacement('wings', 4, 4, 32, 32, -6) == (G.WING_REF_X - 38, G.BODY_REF - 32), 'wings x fix')
+    check(G.displacement('aura', 2, 2, 0, 0, -6) == (G.BODY_REF + 16, G.BODY_REF + 16), 'no x fix on auras')
     check(G.displacement('aura', 2, 2, 0, 0) == (G.BODY_REF + 16, G.BODY_REF + 16), 'aura centring 2x2')
     check(G.displacement('aura', 1, 3, 0, 4) == (G.BODY_REF, G.BODY_REF - 4 + 32), 'aura centring per axis')
 
@@ -90,7 +92,38 @@ def vfx_pack(root, slug, kind):
     open(os.path.join(root, slug, 'README.md'), 'w').write('## Fire (1)\n| T | `thing_one` | 3 |\n')
 
 
+def test_drop():
+    keep = G.DROP
+    try:
+        with tempfile.TemporaryDirectory() as root:
+            vfx_pack(root, 'wings', 'wings')
+            G.DROP = {'wings': ('thing_one',)}
+            rows = G.build_pack('wings', root, scanning=True)[0]
+            check(rows == [], 'a DROP entry is not cut: %r' % [r[0] for r in rows])
+            G.DROP = {'wings': ('not_there',)}
+            try:
+                G.build_pack('wings', root, scanning=True)
+                check(False, 'a DROP name missing from the pack is refused')
+            except G.BuildError as e:
+                check('not_there' in str(e), 'DROP refusal names it: %s' % e)
+    finally:
+        G.DROP = keep
+    check(len(G.DROP['wings']) == 100 - G.COUNTS['wings'][0] and len(G.DROP['heads']) == 100 - G.COUNTS['heads'][0]
+          and len(G.DROP['capes']) == 100 - G.COUNTS['capes'][0], 'DROP and COUNTS agree')
+    check(all(abs(v) <= 8 for v in G.WING_X_FIX.values()) and not set(G.WING_X_FIX) & set(G.DROP['wings']),
+          'WING_X_FIX: small, kept wings only')
+
+
 def test_vfx_build():
+    keep = G.DROP
+    G.DROP = {}
+    try:
+        _test_vfx_build()
+    finally:
+        G.DROP = keep
+
+
+def _test_vfx_build():
     with tempfile.TemporaryDirectory() as root:
         vfx_pack(root, 'heads', 'aura')
         vfx_pack(root, 'wings', 'wings')
@@ -111,7 +144,7 @@ def test_vfx_build():
                                  'oblique/32px/heads/thing_one_front.png'], 'heads files used %r' % sorted(S.used))
         rows, sheets, sources, S = G.build_pack('wings', root, scanning=True)
         r = rows[0]
-        check(r[2] == 'wings' and 'layers=1' in r[14] and 'displacement:%d:%d' % (G.BODY_REF, G.BODY_REF) in r[11],
+        check(r[2] == 'wings' and 'layers=1' in r[14] and 'displacement:%d:%d' % (G.WING_REF_X, G.BODY_REF) in r[11],
               'wings row %r' % r[11])
         check(sources[0][2] == 'set33 wings' and sources[0][4] == G.LICENCE, 'wings source row')
         # the md5 guard: a file that differs from the list is refused before decoding
@@ -184,6 +217,7 @@ if __name__ == '__main__':
     test_geometry()
     test_tables()
     test_vfx_build()
+    test_drop()
     test_kit_build()
     test_committed()
     if FAILS:

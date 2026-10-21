@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A black cat of the cursed hamlet, eyes like two candle flames; it hexes what it cannot scratch. look 276 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Hexwhisker Cat" nameDescription="a hexwhisker cat" race="blood" experience="1900" speed="60" manacost="0">
+	<health now="7800" max="7800"/>
+	<look type="2658" corpse="7637"/>
+	<level min="470" max="490"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1600" min="-300" max="-440"/>
+		<attack name="death" interval="2000" chance="18" range="5" min="-320" max="-520">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="purpleenergy"/>
+		</attack>
+		<attack name="speed" interval="3000" chance="12" range="5" duration="5000" speedchange="-350">
+			<attribute key="areaEffect" value="blackspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="55" defense="60">
+		<defense name="speed" interval="3000" chance="10" speedchange="320" duration="3000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element holyPercent="-15"/>
+		<element deathPercent="25"/>
+		<element firePercent="-5"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Hsssss!"/>
+		<voice sentence="Mrrrow..."/>
+		<voice sentence="Nine lives. You have one."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="30" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="2" chance="30000"/><!-- hollow candy -->
+		<item id="2688" chance="3000"/><!-- candy cane -->
+		<item id="41623" chance="120"/><!-- hollow charm -->
+	</loot>
+</monster>

@@ -164,8 +164,11 @@ end
 -- wings: one look in the pair that no XML line had (1486), a boss drop, and the Runic Wings of things_custom24 (look 2187,
 -- a boss drop added by ChaosThemeArt.addExclusives, switch on since 2026-10-13); three achievement wings of
 -- things_custom17 (donor-library looks 2140..2142, picks.csv family "exclusive"), ids after the store's 1..15; and the
--- three boss-drop wings of pair 26 (looks 2231..2233, ChaosOwnerArt.addExclusives, switch on since 2026-10-15)
-eq(boss.wings, 5, "wings: five boss exclusives") eq(ach.wings, 3, "wings: three achievement exclusives")
+-- three boss-drop wings of pair 26 (looks 2231..2233, ChaosOwnerArt.addExclusives, switch on since 2026-10-15); with
+-- the pair 33 switch on (ChaosPack33.addExclusives) three more boss-drop wings
+local P33 = dofile("data/lib/chaos_pack33.lua")
+eq(boss.wings, P33.PAIR33 and 8 or 5, "wings: five boss exclusives (eight with pair 33)")
+eq(ach.wings, 3, "wings: three achievement exclusives")
 local picks = readFile("../client/tools/sprites/monster_looks/picks.csv")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "wings" then
@@ -190,12 +193,14 @@ for _, e in ipairs(cfg.exclusives) do
 	end
 end
 -- the faction auras (25..28) and the store auras (1..24) stay theirs; the exclusive auras' manifest matches
--- (the auras of things_custom24, ChaosThemeArt.PAIR24 on since 2026-10-13, are in chaos_auras_theme.csv)
-local csv = readFile("data/XML/chaos_auras_exclusive.csv") .. (readFile("data/XML/chaos_auras_theme.csv") or "")
+-- (the auras of things_custom24, ChaosThemeArt.PAIR24 on since 2026-10-13, are in chaos_auras_theme.csv; the pair 33
+-- head accessories and capes, ChaosPack33.PAIR33, in chaos_auras_pack33.csv)
+local csv = readFile("data/XML/chaos_auras_exclusive.csv") .. (readFile("data/XML/chaos_auras_theme.csv") or "") ..
+	(readFile("data/XML/chaos_auras_pack33.csv") or "")
 for _, e in ipairs(cfg.exclusives) do
 	if e.kind == "aura" then
 		eq(e.id > 28, true, e.key .. ": not a store or faction aura")
-		eq(csv:find("\n" .. e.id .. "," .. e.look .. "," .. e.name .. "\n", 1, true) ~= nil, true, e.key .. " in chaos_auras_exclusive.csv or chaos_auras_theme.csv")
+		eq(csv:find("\n" .. e.id .. "," .. e.look .. "," .. e.name .. "\n", 1, true) ~= nil, true, e.key .. " in chaos_auras_exclusive.csv, chaos_auras_theme.csv or chaos_auras_pack33.csv")
 	end
 end
 -- the store sees them as exclusives (shop.lua refuses to sell them)

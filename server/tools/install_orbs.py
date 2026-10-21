@@ -21,7 +21,9 @@ Everything is read from server/data/lib/chaos_orbs_config.lua (`items`, `renames
    monsters, `<item name="chaos orb" .../>` in monster XML), NPC shop lists and any other script or XML of the base server
    (not data/scripts/chaos and not data/lib/chaos_*.lua, which come from this repository) have the old names replaced,
    case-insensitively and whole words only ("Vaal Orb" -> "Void Orb", "Chaos Orb" -> "Orb of Upheaval", ...). Without
-   this step the monsters' loot entries would name items that no longer exist.
+   this step the monsters' loot entries would name items that no longer exist. A base item name that holds an old name
+   ("blazing ember orb" holds "Ember Orb") is kept, and the form an older run made of it ("blazing ember shard", no
+   item of that name) is put back.
 
 Idempotent: a second run changes nothing. --dry-run changes nothing at all.
 """
@@ -234,8 +236,57 @@ def name_patterns(renames):
     return out
 
 
-def patch_references(data_dir, renames, dry):
+def item_names(xml_text):
+    """the lower-case item names of an items.xml"""
+    return {m.group(1).lower() for m in re.finditer(r'<item\b[^>]*?\bname="([^"]+)"', xml_text)}
+
+
+def guarded_names(renames, names):
+    """[(compiled regex, base name)]: the base item names that hold an old name as a whole word ("blazing ember orb"
+    holds "Ember Orb"), longest first, each matching both the name and the form a rename made of it before this guard
+    ("blazing ember shard", when no item has that name). Those names are kept, and the made forms are put back."""
+    out, olds = [], {r['old'].lower() for r in renames}
+    for r in renames:
+        old, new = r['old'].lower(), r['name'].lower()
+        word = re.compile(r'(?<![A-Za-z])%s(?![A-Za-z])' % re.escape(old))
+        for name in names:
+            if name in olds or not word.search(name):  # another rename's old name is renamed, not kept
+                continue
+            forms = [name]
+            made = word.sub(new, name)
+            if made not in names:
+                forms.append(made)
+            out.append((re.compile(r'(?<![A-Za-z])(?:%s)(?![A-Za-z])' % '|'.join(re.escape(f) for f in forms), re.I),
+                        name))
+    out.sort(key=lambda g: -len(g[1]))
+    return out
+
+
+def rename_text(text, pats, guards):
+    """the old names replaced; the guarded base names (and forms a rename made of them) kept as the base name"""
+    kept = []
+
+    def hold(name):
+        def put(m):
+            got = m.group(0)
+            if got == got.lower():
+                kept.append(name.lower())
+            elif all(w[:1].isupper() for w in got.split()):
+                kept.append(' '.join(w[:1].upper() + w[1:] for w in name.split()))
+            else:
+                kept.append(name[:1].upper() + name[1:] if got[:1].isupper() else name)
+            return '\x00%d\x00' % (len(kept) - 1)
+        return put
+    for rx, name in guards:
+        text = rx.sub(hold(name), text)
+    for rx, fn in pats:
+        text = rx.sub(fn, text)
+    return re.sub('\x00(\\d+)\x00', lambda m: kept[int(m.group(1))], text)
+
+
+def patch_references(data_dir, renames, dry, names=()):
     pats = name_patterns(renames)
+    guards = guarded_names(renames, set(names))
     changed, total = [], 0
     for sub in ('monster', 'npc', 'scripts', 'talkactions', 'actions', 'creaturescripts', 'globalevents', 'movements', 'lib',
                 'events', 'raids', 'weapons', 'XML'):
@@ -255,11 +306,11 @@ def patch_references(data_dir, renames, dry):
                     text = open(path, encoding='utf-8', errors='surrogateescape').read()
                 except OSError:
                     continue
-                new = text
-                for rx, fn in pats:
-                    new = rx.sub(fn, new)
+                if '\x00' in text:
+                    continue
+                new = rename_text(text, pats, guards)
                 if new != text:
-                    n = sum(1 for _ in re.finditer('|'.join(rx.pattern for rx, _f in pats), text, re.I))
+                    n = sum(1 for a, b in zip(new.splitlines(), text.splitlines()) if a != b) or 1
                     changed.append((os.path.relpath(path, data_dir), n))
                     total += n
                     if not dry:
@@ -291,7 +342,7 @@ def main():
     new_text, xnotes = patch_xml(text, cfg['items'], cfg['renames'])
     for note in xnotes:
         print(note)
-    changed, total = patch_references(data_dir, cfg['renames'], dry)
+    changed, total = patch_references(data_dir, cfg['renames'], dry, item_names(new_text))
     for rel, count in changed[:20]:
         print('names: %s (%d)' % (rel, count))
     if len(changed) > 20:

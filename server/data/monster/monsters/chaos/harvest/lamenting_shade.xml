@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): The ghost of a widow of the village, wailing over the graves; her keening drains the mind. look 78 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Lamenting Shade" nameDescription="a lamenting shade" race="undead" experience="3300" speed="55" manacost="0">
+	<health now="9800" max="9800"/>
+	<look type="2667" corpse="6019"/>
+	<level min="560" max="580"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-300" max="-460"/>
+		<attack name="death" interval="2000" chance="22" radius="3" target="0" min="-460" max="-740">
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="manadrain" interval="2200" chance="18" range="6" min="-320" max="-520">
+			<attribute key="areaEffect" value="purpleenergy"/>
+		</attack>
+		<attack name="ice" interval="2400" chance="12" range="6" min="-420" max="-660">
+			<attribute key="shootEffect" value="ice"/>
+			<attribute key="areaEffect" value="iceattack"/>
+		</attack>
+	</attacks>
+	<defenses armor="55" defense="55">
+		<defense name="healing" interval="3000" chance="10" min="350" max="600">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="40"/>
+		<element holyPercent="-25"/>
+		<element firePercent="-10"/>
+		<element icePercent="30"/>
+	</elements>
+	<immunities>
+		<immunity death="1"/>
+		<immunity lifedrain="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Ooooh... where is he?"/>
+		<voice sentence="The bell... the bell tolls for the harvest..."/>
+		<voice sentence="*weeps*"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="48" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="3" chance="36000"/><!-- hollow candy -->
+		<item id="41621" chance="2000"/><!-- sexton's key -->
+		<item id="10607" chance="5000"/><!-- ghostly tissue -->
+		<item id="41623" chance="170"/><!-- hollow charm -->
+	</loot>
+</monster>

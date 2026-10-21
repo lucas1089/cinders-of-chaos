@@ -387,7 +387,11 @@ waste (cinderfall), swamp (emberdeep with wide mud, swamp trees and glowing mush
 pair 24 swamp ground and water and acid pools), crypt (ossuary), vault, catacomb, hall, abyss, sanctum (the rift
 themes), forest (16 stock grass ids, dirt patches, the grass border set, stock trees) and ice (27 stock snow ids, ice
 sheets and grey rock with the snow and ice border sets, snowy trees). `forest_pack` and `ice_pack` use the pack
-grounds and need the packitems step. Every id comes from our tables: `areagen_config.lua`, `chaos_dark_tiles.lua`,
+grounds and need the packitems step. `harvest` (a farmland at night: autumn grass, tilled soil, corn stubble, mud
+road and grave grass of the pair 33 kit with its three border sets, corn, pumpkins, scarecrows, tombstones and
+jack-o'-lanterns) and `harvest_crypt` (crypt flagstones and bone dust in crypt brick walls, urns, skull niches, black
+candles) use the pair 33 kit and need the pack33items step and the client pair 33 ("Haunted Harvest" below). Every
+id comes from our tables: `areagen_config.lua`, `chaos_dark_tiles.lua`, `chaos_pack33_kit.lua`,
 `chaos_theme_items.lua`, `data/items/art_items.csv`, `rift_config.lua` (the chest), the stock grounds and borders
 listed in `server/tools/areaplan_build.lua`, and the decoration kits in `server/tools/areaplan/decor_kits.json`.
 
@@ -579,3 +583,40 @@ python3 -I server/tools/area_planner.py install OUT SERVER_DIR      # the chest 
   (server/data/monster/CUSTOM_MONSTERS.md).
 - After placing, rerun `gen_bounty_pool.py`, `gen_bestiary_spawns.py` and `gen_poi.py`, so the bounty board, the
   bestiary and the map markers know the new spawns, and `content_audit.py` to see the bands again.
+
+### Haunted Harvest (event areas of the pair 33 kit)
+The seasonal haunted village (server/README.md "Haunted Harvest"; owner 2026-10-21: a Halloween / haunted map) is two
+fixed plans in `server/tools/areaplan/events/`, at the column x 15305 below the Hollow Crypt (the base map has no tile
+in x 15295-15510, y 14330-15120 on any floor, checked with `tools/map/otbm.py`; `gen_harvest_places_test.py` holds both
+10+ tiles from every other plan and generated area):
+
+| Plan | Biome | Band | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|---|
+| haunted_harvest | harvest | 450-650 | 156 x 132 | 15305, 14700, 7 | 15382, 14804, 7 |
+| harvest_catacombs | harvest_crypt | 500-650 | 112 x 96 | 15305, 14880, 8 | 15326, 14898, 8 |
+
+- **The village** (decoration normal, light dark): the **crossroads** (south, camp, PZ: the arrival from the Harvest
+  Portals, Widow Hessa, the exit portal) between the **pumpkin fields** (southwest) and the **hamlet** of the hedge
+  witches (southeast: a barn and three huts, candy cauldrons); the **corn maze** in the middle; the **west furrows**,
+  the **gibbet hill** (northwest, the cursed bell) and the **dead orchard** (east) around it; the **graveyard**
+  (north, behind an iron fence, twelve graves) and the **ruined chapel** (northeast, crypt stone walls, the crypt
+  seal) at the far end, about 100 steps from the arrival. Loops: fields - furrows - gibbet hill - graveyard, maze -
+  graveyard, hamlet - orchard - chapel - graveyard.
+- **The catacombs** (decoration dense, light dark): the **seal stair** (northwest, camp, PZ: the arrival from the seal,
+  the exit portal), the **coffin gallery** (upright coffins) and the **candle vault** leading to the **ossuary hall**
+  and the **bone pits**, the **ritual chamber** (south: the ritual circle) and the **King's Crypt** (southeast, the
+  boss room, four graves), reached only by the circle's portal; its own teleport leads back to the stair.
+- The plans hold no item id, like every plan. The kit's art comes in three ways: the biomes' grounds, borders, walls,
+  scatter and lights (`server/tools/areaplan_build.lua`, "kit:" rows), the decoration overlay
+  `areaplan/decor_pack33_kit.json` (kits `haunted_harvest` and `harvest_crypt`, merged only while
+  `ChaosHarvestArt.PAIR33` is on), and the set pieces and mechanics of `data/scripts/chaos/harvest_places.lua`, which
+  `server/tools/gen_harvest_places.py` chooses on the compiled tiles and `harvest_event.lua` places at startup (the
+  corn maze, the chapel walls, the fence, the huts, haystacks, scarecrows, trees, gibbets, pumpkin patches, graves,
+  coffins, cauldrons, the bell, the seal and the circle).
+- Change a plan, the kit or the overlay, then run `python3 -I server/tools/gen_harvest_places.py` (CI `--check`) and
+  `python3 -I server/tools/gen_harvest_places_test.py`. The places are chosen as with the switch on.
+- Placed by `install_all.py --only contentareas` only while the switch is on (on since 2026-10-21, with pair 33). A plan
+  that changed after it was placed is refused there: restore `<map>.otbm.bak` and install again.
+- Review pictures: `area_planner.py render` needs a client pair with the kit (pair 33, not built yet); until then a
+  schematic of the compiled tiles (ground families, blocking pieces, set pieces, mechanics and spawns in flat colours)
+  is what can be drawn. The kit's own art is never given to an AI tool (docs/SPRITE_STYLE.md, import-only).

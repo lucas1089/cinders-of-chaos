@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A scarecrow that climbed off its post; it stalks the corn rows and pins its prey with straw. look 194 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Strawhusk Stalker" nameDescription="a strawhusk stalker" race="blood" experience="3200" speed="60" manacost="0">
+	<health now="10800" max="10800"/>
+	<look type="2664" corpse="6080"/>
+	<level min="540" max="560"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1800" min="-480" max="-720"/>
+		<attack name="physical" interval="2000" chance="18" range="5" min="-460" max="-700">
+			<attribute key="shootEffect" value="spear"/>
+			<attribute key="areaEffect" value="poff"/>
+		</attack>
+		<attack name="speed" interval="3000" chance="14" range="6" duration="5000" speedchange="-450">
+			<attribute key="areaEffect" value="smallclouds"/>
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70">
+		<defense name="invisible" interval="4000" chance="8" duration="3000">
+			<attribute key="areaEffect" value="poff"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element firePercent="-30"/>
+		<element physicalPercent="15"/>
+		<element earthPercent="25"/>
+		<element deathPercent="10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*rustle*"/>
+		<voice sentence="Shhh... the crows are watching."/>
+		<voice sentence="Stay in the corn. Stay forever."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="46" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="3" chance="34000"/><!-- hollow candy -->
+		<item id="10605" chance="6000"/><!-- bundle of cursed straw -->
+		<item id="41623" chance="160"/><!-- hollow charm -->
+	</loot>
+</monster>

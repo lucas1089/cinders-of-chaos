@@ -45,7 +45,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
   outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
   auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
-               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects")
+               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects"; the pair 33 head
+               accessories and capes and, in outfits, the pair 33 wings only while ChaosPack33.PAIR33 is on; README
+               "Pair 33 cosmetics")
   donoritems   tools/install_donor_items.py      the items imported from donor B art in items.otb / items.xml (server ids
                40000..; nothing to do while data/items/donor_items.csv is absent or empty)
   packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature
@@ -69,6 +71,13 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                grounds, decoration, buildings, animated objects; server ids 37443..39999, overflow 40113..) from
                data/items/pack30_*.csv in items.otb / items.xml (nothing while no manifest exists; used only once
                ChaosPack30Art.PAIR30 is on; README "Pack art (pair 30)")
+  pack33items  tools/install_pack33_items.py     the harvest kit items of client pair 33 (514 grounds, borders, walls, props,
+               event-mechanic states and the boss corpse; server ids 41093..41607, decay of the timed states) from
+               data/items/pack33_kit.csv in items.otb / items.xml (used only once ChaosHarvestArt.PAIR33 is on; README
+               "Haunted Harvest")
+  harvestevent tools/install_harvest_event.py    the Haunted Harvest's items (hollow candy, sexton's key, ritual candle,
+               hollow charm: copies of stock items, server ids 41620..41623) in items.otb / items.xml and Widow Hessa
+               in data/npc (README "Haunted Harvest")
   gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
@@ -195,7 +204,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                teleports and the ground floor's wings get ground under every tile (README "Hall order"; re-run over
                an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes);
                also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
-               areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
+               areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") and, only while
+               ChaosHarvestArt.PAIR33 is on, tools/areaplan/events/ (the Haunted Harvest's two areas) at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
@@ -546,6 +556,20 @@ def step_pack30items(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('gearsets') + 1, 'pack30items')  # after the equipment sets (client ids of pair 30 after 29's)
+
+
+def step_pack33items(server, data, ctx):
+    return tool_result(run_tool([tool('install_pack33_items.py'), data], 'install_pack33_items.py'))
+
+
+STEPS.insert(STEPS.index('pack30items') + 1, 'pack33items')  # after pair 30's items (the kit's client ids after pair 32's)
+
+
+def step_harvestevent(server, data, ctx):
+    return tool_result(run_tool([tool('install_harvest_event.py'), data], 'install_harvest_event.py'))
+
+
+STEPS.insert(STEPS.index('pack33items') + 1, 'harvestevent')  # the event's items (stock looks) and its NPC
 
 
 def step_gems(server, data, ctx):

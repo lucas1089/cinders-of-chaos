@@ -1,0 +1,11 @@
+key,look,lib,lib_id,recolour,family,rank,monsters,description,edit
+harvest_cat,2658,set33,kit,,harvest,critter,Hexwhisker Cat,"Hexwhisker Cat: the kit's black cat, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_lycan,2659,set33,kit,,harvest,monster,Reapmoon Lycan,"Reapmoon Lycan: harvest werewolf, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_crone,2660,set33,kit,,harvest,monster,Thornhex Crone,"Thornhex Crone: hedge witch, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_king,2661,set33,kit,,harvest,boss,Malvorn the Hollow King,"Malvorn the Hollow King: the kit's boss, 5x5 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_brute,2662,set33,kit,,harvest,monster,Gourdmaw Brute,"Gourdmaw Brute: pumpkin brute, 4x4 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_raven,2663,set33,kit,,harvest,critter,Gallows Raven,"Gallows Raven: raven (hop as walk), 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_stalker,2664,set33,kit,,harvest,monster,Strawhusk Stalker,"Strawhusk Stalker: scarecrow stalker, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_archer,2665,set33,kit,,harvest,critter,Barrowbone Archer,"Barrowbone Archer: skeleton archer, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_reaver,2666,set33,kit,,harvest,critter,Barrowbone Reaver,"Barrowbone Reaver: skeleton warrior, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+harvest_shade,2667,set33,kit,,harvest,monster,Lamenting Shade,"Lamenting Shade: wailing ghost, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames

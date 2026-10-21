@@ -125,11 +125,11 @@ local offExcl = dofile("data/scripts/chaos/exclusives_config.lua")
 local offShop = dofile("data/scripts/chaos/shop_config.lua")
 dofile = realDofile
 for _, e in ipairs(offExcl.exclusives) do
-	eq(e.look == nil or e.look < 2213, true, "no exclusive names a pair 26 look while off")
+	eq(e.look == nil or e.look < 2213 or e.look > 2233, true, "no exclusive names a pair 26 look while off")
 end
 for _, c in ipairs(offShop.categories) do
 	for _, o in ipairs(c.offers or {}) do
-		eq(o.kind ~= "wings" or o.id < 21, true, "no store offer of the pair 26 wings while off")
+		eq(o.kind ~= "wings" or o.id < 21 or o.id > 29, true, "no store offer of the pair 26 wings while off")
 	end
 end
 eq(#M.storeOffers(), 0, "no store offers while off")

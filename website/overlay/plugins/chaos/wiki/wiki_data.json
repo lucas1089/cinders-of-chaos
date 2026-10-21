@@ -367,9 +367,9 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 110,
-		"store.categories": 33,
-		"store.cosmetic": 350,
-		"store.offers": 463,
+		"store.categories": 35,
+		"store.cosmetic": 617,
+		"store.offers": 730,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -36917,8 +36917,10 @@
 								["Outfits", "56", "300-750", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
-								["Wings", "21", "200-350", "Cosmetic"],
+								["Wings", "110", "200-350", "Cosmetic"],
 								["Auras", "24", "150-300", "Cosmetic"],
+								["Head Accessories", "90", "150-200", "Cosmetic"],
+								["Capes", "88", "200-250", "Cosmetic"],
 								["Outfit Shaders", "22", "120-300", "Cosmetic"],
 								["Footprints", "9", "200", "Cosmetic"],
 								["Outlines", "9", "250", "Cosmetic"],
@@ -36967,7 +36969,9 @@
 								"store:30",
 								"store:31",
 								"store:32",
-								"store:33"
+								"store:33",
+								"store:34",
+								"store:35"
 							]
 						},
 						{
@@ -36975,7 +36979,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "350"],
+								["Cosmetic", "617"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "6"],
@@ -38919,11 +38923,11 @@
 				{
 					"id": "store:18",
 					"name": "Wings",
-					"sub": "21 offers, 200-350 coins. Cosmetic.",
+					"sub": "110 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["21 offers, 200-350 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["110 offers, 200-350 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -38950,6 +38954,36 @@
 				},
 				{
 					"id": "store:20",
+					"name": "Head Accessories",
+					"sub": "90 offers, 150-200 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["90 offers, 150-200 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"p": ["Each one is shown with a preview in the store window (Store > Head Accessories)."]
+						}
+					],
+					"icon": "wiki/i/k-holy-burst.png"
+				},
+				{
+					"id": "store:21",
+					"name": "Capes",
+					"sub": "88 offers, 200-250 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["88 offers, 200-250 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"p": ["Each one is shown with a preview in the store window (Store > Capes)."]
+						}
+					],
+					"icon": "wiki/i/k-arcane-hood.png"
+				},
+				{
+					"id": "store:22",
 					"name": "Outfit Shaders",
 					"sub": "22 offers, 120-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39043,7 +39077,7 @@
 					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
-					"id": "store:21",
+					"id": "store:23",
 					"name": "Footprints",
 					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39126,7 +39160,7 @@
 					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
-					"id": "store:22",
+					"id": "store:24",
 					"name": "Outlines",
 					"sub": "9 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39209,7 +39243,7 @@
 					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
-					"id": "store:23",
+					"id": "store:25",
 					"name": "Kill Effects",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39258,7 +39292,7 @@
 					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
-					"id": "store:24",
+					"id": "store:26",
 					"name": "Spell Effects",
 					"sub": "12 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39362,7 +39396,7 @@
 					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
-					"id": "store:25",
+					"id": "store:27",
 					"name": "Loot Labels",
 					"sub": "4 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39405,7 +39439,7 @@
 					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
-					"id": "store:26",
+					"id": "store:28",
 					"name": "Chat Colours",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39454,7 +39488,7 @@
 					"icon": "wiki/i/top-console.png"
 				},
 				{
-					"id": "store:27",
+					"id": "store:29",
 					"name": "Name Plates",
 					"sub": "13 offers, 300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39565,7 +39599,7 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "store:28",
+					"id": "store:30",
 					"name": "Pets",
 					"sub": "7 offers, 400 coins. Pet (small abilities).",
 					"color": "#ff70c0",
@@ -39634,7 +39668,7 @@
 					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
-					"id": "store:29",
+					"id": "store:31",
 					"name": "Appearances",
 					"sub": "9 offers, 300-400 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39717,7 +39751,7 @@
 					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
-					"id": "store:30",
+					"id": "store:32",
 					"name": "Portal Styles",
 					"sub": "6 offers, 250-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39779,7 +39813,7 @@
 					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
-					"id": "store:31",
+					"id": "store:33",
 					"name": "Hideout Decorations",
 					"sub": "9 offers, 80-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39862,7 +39896,7 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "store:32",
+					"id": "store:34",
 					"name": "Themed Sets",
 					"sub": "12 offers, 250-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39966,7 +40000,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:33",
+					"id": "store:35",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",

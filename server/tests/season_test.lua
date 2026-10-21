@@ -303,6 +303,10 @@ local CATEGORY = {
 	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed",
 	["Runes"] = false -- the rune packs: items
 }
+-- the pair 33 head accessories and capes (chaos_pack33.lua auras): looks only, sold while ChaosPack33.PAIR33 is on
+if dofile("data/lib/chaos_pack33.lua").PAIR33 then
+	CATEGORY["Head Accessories"], CATEGORY["Capes"] = true, true
+end
 local SERVICES = {["service:nameToken"] = true, ["service:sexChange"] = true, ["service:vocationToken"] = false,
 	["service:skullRemover"] = false, ["service:passiveReset"] = false}
 local seen = {}

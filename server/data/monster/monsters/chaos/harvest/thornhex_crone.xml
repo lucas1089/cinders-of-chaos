@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A hedge witch of the hamlet who brews the harvest curse; her ritual candles open the way to the king. look 54 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Thornhex Crone" nameDescription="a thornhex crone" race="blood" experience="3300" speed="50" manacost="0">
+	<health now="10200" max="10200"/>
+	<look type="2660" corpse="20535"/>
+	<level min="560" max="580"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="4"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-200" max="-320"/>
+		<attack name="earth" interval="2000" chance="30" range="7" radius="2" target="1" min="-460" max="-760">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="carniphila"/>
+		</attack>
+		<attack name="death" interval="2200" chance="20" range="7" min="-480" max="-780">
+			<attribute key="shootEffect" value="suddendeath"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="speed" interval="3000" chance="12" range="7" duration="6000" speedchange="-400">
+			<attribute key="areaEffect" value="smallplants"/>
+		</attack>
+	</attacks>
+	<defenses armor="60" defense="60">
+		<defense name="healing" interval="2500" chance="15" min="450" max="750">
+			<attribute key="areaEffect" value="greenshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element earthPercent="40"/>
+		<element deathPercent="20"/>
+		<element firePercent="-20"/>
+		<element holyPercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Thorn and hex, bone and wax!"/>
+		<voice sentence="Light my candles, dearie... with your soul."/>
+		<voice sentence="Hehehehe!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="48" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="3" chance="36000"/><!-- hollow candy -->
+		<item id="41622" chance="9000"/><!-- ritual candle -->
+		<item id="10570" chance="1800"/><!-- witch hat -->
+		<item id="41623" chance="170"/><!-- hollow charm -->
+	</loot>
+</monster>

@@ -654,4 +654,13 @@ if not (okStash and type(STASH) == "table" and type(STASH.depot) == "table" and 
 	end
 end
 
+-- the wings, head accessories and capes of client pair 33 (data/lib/chaos_pack33.lua; nothing while its switch
+-- ChaosPack33.PAIR33 is off): the wings go at the end of the Wings category, the heads and capes (auras) into two
+-- subcategories of Cosmetics right after Auras, "Head Accessories" and "Capes"; six pieces are boss exclusives, never
+-- sold
+local okPack33, PACK33 = pcall(dofile, "data/lib/chaos_pack33.lua")
+if okPack33 and type(PACK33) == "table" and PACK33.addStore then
+	PACK33.addStore(cfg, preview, P_COSMETICS)
+end
+
 return cfg

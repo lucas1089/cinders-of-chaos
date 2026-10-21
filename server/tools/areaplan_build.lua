@@ -177,6 +177,70 @@ local function addStock()
 end
 addStock()
 
+-- the harvest kit of pair 33 (data/lib/chaos_pack33_kit.lua, server/tools/install_pack33_items.py): five farmland
+-- grounds and two crypt grounds of 9 variants, their border sets (the kit's N, E, S, W sides, its NE.. corner nubs as
+-- c.. and its IN_NE.. pieces as d..: two sides and the corner) and the crypt brick walls. Used by the biomes harvest
+-- and harvest_crypt (the Haunted Harvest, server/README.md "Haunted Harvest"); the ids exist in the game only while
+-- ChaosHarvestArt.PAIR33 is on, so install_content_areas.py places those plans only then.
+local kit = {}
+do
+	local ok, t = pcall(dofile, "data/lib/chaos_pack33_kit.lua")
+	kit = ok and type(t) == "table" and t.items or {}
+end
+local function kitId(key)
+	local e = kit[key]
+	return e and e.id
+end
+local KIT_GROUNDS = {k_grass = {"autumn_grass", 3700}, k_grave = {"grave_grass", 3750}, k_soil = {"tilled_soil", 3420},
+	k_stubble = {"corn_stubble", 3440}, k_mud = {"mud_road", 3400}, k_flag = {"crypt_flagstones", 1500},
+	k_bone = {"bone_dust", 1550}}
+local KIT_SETS = {k_grass_mud = "autumn_grass_on_mud_road", k_grass_soil = "autumn_grass_on_tilled_soil",
+	k_grave_mud = "grave_grass_on_mud_road", k_bone_flag = "bone_dust_on_crypt_flagstones"}
+local kitPiece = {outer_nw = "nw", outer_ne = "ne", outer_sw = "sw", outer_se = "se", inner_nw = "in_nw",
+	inner_ne = "in_ne", inner_sw = "in_sw", inner_se = "in_se"}
+local function addKit()
+	for fam, d in pairs(KIT_GROUNDS) do
+		local rows = {}
+		for n = 1, 9 do
+			local id = kitId(d[1] .. "_" .. n)
+			if id then
+				rows[#rows + 1] = {id, n == 1 and 6 or 1}
+			end
+		end
+		if #rows > 0 then
+			cfg.families[fam] = {z = d[2], grounds = rows, indoor = (fam == "k_flag" or fam == "k_bone") or nil}
+		end
+	end
+	for set, prefix in pairs(KIT_SETS) do
+		cfg.pieces[set] = piecesFrom(function(p)
+			return kitId(prefix .. "_" .. (kitPiece[p] or p))
+		end)
+	end
+	cfg.borders.k_grass = {k_mud = "k_grass_mud", ["*"] = "k_grass_soil"}
+	cfg.borders.k_grave = {["*"] = "k_grave_mud"}
+	cfg.borders.k_bone = {["*"] = "k_bone_flag"}
+	local function w(h, broken)
+		return {{kitId(h), 6}, {kitId(broken), 1}}
+	end
+	cfg.walls.k_brick = {horizontal = w("crypt_brick_h", "crypt_brick_broken_h"),
+		vertical = w("crypt_brick_v", "crypt_brick_broken_v"), corner = {{kitId("crypt_brick_corner"), 1}},
+		pole = {{kitId("crypt_brick_post"), 1}}}
+end
+if kitId("autumn_grass_1") then
+	addKit()
+end
+-- "kit:a,b:3,c" stands for kit keys with weights (default 1)
+local function kitRows(spec)
+	local out = {}
+	for part in spec:gmatch("[^,]+") do
+		local key, wt = part:match("^([%w_]+):?(%d*)$")
+		local id = kitId(key)
+		assert(id, "unknown kit key " .. tostring(key))
+		out[#out + 1] = {id, tonumber(wt) or 1}
+	end
+	return out
+end
+
 local function ids(list)
 	local rows = {}
 	for _, id in ipairs(list) do
@@ -289,6 +353,31 @@ local BIOMES = {
 				radius = {2, 4}}, {family = "pk_loam", share = 0.04, radius = {2, 3}}},
 			pools = {}, obstacles = {share = 0.05, items = "trees:broadleaf,conifer,fruit"},
 			lights = {per100 = 0.3, spacing = 10, items = "theme:cinderfall:lights"}}},
+	-- the Haunted Harvest (pair 33 kit, server/README.md "Haunted Harvest"): a cursed farmland at night and its crypts
+	harvest = {kind = "waste", theme = "cinderfall", z = 7, light = "dim",
+		needs = "the pair 33 kit (install step pack33items; ChaosHarvestArt.PAIR33)",
+		desc = "haunted farmland at night: autumn grass, tilled fields, corn stubble, mud roads and grave grass, corn, pumpkins, dead trees, scarecrows, tombstones, jack-o'-lanterns",
+		override = {floor = "k_grass", rock = "mountain",
+			patches = {{family = "k_soil", share = 0.10, radius = {3, 6}}, {family = "k_stubble", share = 0.07,
+				radius = {3, 5}}, {family = "k_mud", share = 0.04, radius = {2, 3}}, {family = "k_grave", share = 0.04,
+				radius = {2, 4}}},
+			pools = {},
+			obstacles = {share = 0.025, items = "kit:corn_tall:4,corn_clump:3,corn_single:2,corn_broken:2,dead_tree_small:2,birch_bare:2,hay_bale:2,hay_bale_stack:1,scarecrow:1,pumpkin_big:2,pumpkin_rotten:2,pumpkin_stack:1,tombstone_round:1,tombstone_cross:1,tombstone_cracked:1,wheelbarrow:1,apple_barrel:1,signpost_crooked:1"},
+			decor = {share = 0.13, scatter = "kit:leaves_orange:4,leaves_red:4,straw_scatter:3,puddle_moon:1,bones_small:1,fog_patch_1:2,fog_patch_2:2,vine_decal_1:1,vine_decal_2:1,pumpkin_small:2",
+				clusters = {{per1000 = 6, size = {3, 5}, radius = 2, items = "kit:leaves_orange:2,leaves_red:2,straw_scatter:2,pumpkin_small:1"},
+					{per1000 = 3, size = {2, 4}, radius = 2, items = "kit:fog_patch_1:1,fog_patch_2:1,bones_small:1"}}},
+			lights = {per100 = 1.4, spacing = 7, items = "kit:jack_lantern_grin:2,jack_lantern_scary:2,jack_lantern_cute:1,lantern_post:2"}}},
+	harvest_crypt = {kind = "dungeon", theme = "rift_crypt", z = 8, light = "dark",
+		needs = "the pair 33 kit (install step pack33items; ChaosHarvestArt.PAIR33)",
+		desc = "the harvest catacombs: crypt flagstone halls with bone dust in crypt brick walls, urns, bones, skull niches",
+		override = {floor = "k_flag", wall = "k_brick", roomFloors = {"k_flag", "k_flag", "k_bone"}, bossFloor = "k_bone",
+			mixedFloors = {"k_flag", "k_bone"},
+			patches = {{family = "k_bone", share = 0.06, radius = {2, 3}}}, pools = {},
+			decor = {share = 0.12, scatter = "kit:bone_fragments:3,skull_rubble:2,puddle_crypt:1,candle_drips:2,rat_droppings:2,bones_small:2,cobweb_sheet:1",
+				clusters = {{per1000 = 6, size = {3, 5}, radius = 1, items = "kit:bone_fragments:2,skull_rubble:2,bones_small:1"}}},
+			obstacles = {share = 0.008, items = "kit:urn_large:2,urn_cluster:2,skull_pile:1,rat_skeleton_a:1,rat_skeleton_b:1"},
+			lights = {per100 = 3.5, spacing = 5, items = "kit:skull_candle_niche:2,black_candles:2"},
+			props = {per100 = 2, spacing = 3, items = "kit:urn_large:2,urn_cluster:2,skull_pile:1,hanging_chains:1,rat_skeleton_a:1"}}},
 	ice_pack = {kind = "waste", theme = "cinderfall", z = 7, light = "normal", needs = "pack items (install step packitems)",
 		desc = "snow field of the pack grounds: fresh snow with grey rock patches, frost trees and stones, cliffs",
 		override = {floor = "pk_fresh_snow", rock = "mountain",
@@ -320,6 +409,10 @@ local function rows(v)
 			out[#out + 1] = tonumber(id)
 		end
 		return ids(out)
+	end
+	local spec = v:match("^kit:(.+)$")
+	if spec then
+		return kitRows(spec)
 	end
 	local th, key = v:match("^theme:([%w_]+):([%w_]+)$")
 	if th then
