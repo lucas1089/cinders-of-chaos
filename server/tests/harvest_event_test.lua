@@ -28,7 +28,7 @@ dofile("data/scripts/chaos/harvest_event_core.lua")
 local K = ChaosHarvestCore
 
 -- ---------------------------------------------------------------- the switch and the kit
-eq(art.PAIR33, false, "the pair 33 switch is off until the pair ships")
+eq(art.PAIR33, true, "the pair 33 switch is on (pair 33 on windows-assets since 2026-10-21)")
 eq(kit.first, 41093, "kit ids from 41093") eq(kit.last, 41607, "to 41607 (the boss corpse)")
 local nItems = 0
 for _ in pairs(kit.items) do nItems = nItems + 1 end
@@ -82,9 +82,12 @@ local nMon = 0
 for name, m in pairs(art.monsters) do
 	nMon = nMon + 1
 	check(files[name] ~= nil, name .. ": a monster file")
-	eq(files[name] and files[name].look, m.stock, name .. ": the stock look while the switch is off")
+	eq(files[name] and files[name].look, m.look, name .. ": the monster file carries the kit look")
 	check(m.look >= 2658 and m.look <= 2667, name .. ": a kit look")
+	eq(art.lookOf(name, 1), m.look, name .. ": lookOf gives the kit look while on")
+	art.PAIR33 = false
 	eq(art.lookOf(name, 1), m.stock, name .. ": lookOf gives the stock look while off")
+	art.PAIR33 = true
 end
 eq(nMon, 10, "five monsters, four critters and the boss")
 eq(art.lookOf("Someone Else", 77), 77, "other monsters keep their look")
@@ -341,6 +344,7 @@ check(findMove(cfg.aid.portal) and findMove(cfg.aid.seal) and findMove(cfg.aid.c
 check(findEvent("HarvestKingHealth") and findEvent("HarvestKingDeath"), "the boss's two creature events")
 
 -- the switch off: nothing happens
+ChaosHarvestArt.PAIR33 = false
 local startup
 for _, g in ipairs(registered.globals) do
 	if g.name == "ChaosHarvestStartup" then startup = g end

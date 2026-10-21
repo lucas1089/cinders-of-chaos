@@ -8684,7 +8684,7 @@ grounds, decoration, buildings, animated objects). Installer part:
 - Tests: `tools/install_pack30_items_test.py` (synthetic manifests, items.otb and items.xml; no base server needed).
   Not run against a real manifest or base server yet.
 
-## Pair 33 cosmetics (`data/lib/chaos_pack33.lua`, `data/lib/chaos_pack33_cosmetics.lua`, `data/XML/chaos_auras_pack33.csv`, `tools/gen_pack33_cosmetics.py`, switch `ChaosPack33.PAIR33`, off)
+## Pair 33 cosmetics (`data/lib/chaos_pack33.lua`, `data/lib/chaos_pack33_cosmetics.lua`, `data/XML/chaos_auras_pack33.csv`, `tools/gen_pack33_cosmetics.py`, switch `ChaosPack33.PAIR33`, on)
 Wings, head accessories and capes of the client pair 33 (four purchased packs, import-only; client/MANIFEST.md
 "Pair 33 packs", "Pair 33 build"). Owner decisions of 2026-10-21: pair 33 approved; head accessories and capes become
 **auras** (no engine change) with a store category each; the sci-fi and plainly modern pieces are not imported (the
@@ -8719,8 +8719,8 @@ list: `gen_pack33.py` DROP); the wings' x placement fixed against the body.
 - **Install.** With the switch on, `install_outfits.py` (step `outfits`) writes the 92 wings into its wings.xml block
   (`pack33_wings`, every `wings_*` line of the generated file) and `install_auras.py` (step `auras`) reads
   `chaos_auras_pack33.csv` after the other manifests. Off: neither does. Idempotent like the rest.
-- **Switch.** `M.PAIR33 = false` until pair 33 is on windows-assets (prepared locally, not pushed; the owner's go). A
-  client on pair 32 has no outfits past 2384. Switch-on: push the windows-assets commit, regenerate
+- **Switch.** `M.PAIR33 = true` since 2026-10-21 (pair 33 on windows-assets 1c7c58df, the owner's go). A client on
+  pair 32 has no outfits past 2384, so a client build on pair 33 goes out with it. Switch-on (done): push the windows-assets commit, regenerate
   `client_chaos_charselect/outfit_anchors.lua` from pair 33 (prepared in the same branch as its own commit), set
   `M.PAIR33 = true`, run `install_all.py --only outfits,auras`, restart. Rollback: the switch off and the two steps again
   (the blocks are rewritten without the pair 33 lines; accounts keep their unlocks in the tables, unused).
@@ -8730,12 +8730,14 @@ list: `gen_pack33.py` DROP); the wings' x placement fixed against the body.
   look; forced on: the categories, offers, exclusives and boss groups, `ChaosShopCore.validate` and
   `ChaosExclusivesCore.validate` pass), `exclusives_test.lua` and `season_test.lua` follow the switch. Not run in a game.
 
-## Haunted Harvest (pair 33 kit) (`harvest_event.lua`, `harvest_event_core.lua`, `harvest_event_config.lua`, `harvest_places.lua`, `data/lib/chaos_harvest_art.lua`, `data/lib/chaos_pack33_kit.lua`, switch `ChaosHarvestArt.PAIR33`, off)
+## Haunted Harvest (pair 33 kit) (`harvest_event.lua`, `harvest_event_core.lua`, `harvest_event_config.lua`, `harvest_places.lua`, `data/lib/chaos_harvest_art.lua`, `data/lib/chaos_pack33_kit.lua`, switch `ChaosHarvestArt.PAIR33`, on)
 A seasonal haunted event zone built from the harvest kit of the client pair 33 (`set33 kit`, docs/CREDITS.md; owner
 2026-10-21: "Seria um mapa de Halloween/mal assombrado"): a cursed harvest village at night with a corn maze, a
 ruined chapel, a graveyard and catacombs under the chapel that lead to the boss crypt, for levels 450-650. **Behind the
-switch** `ChaosHarvestArt.PAIR33 = false` (the kit's items and looks exist only in pair 33, not built yet; the
-cosmetics of the same pair have their own switch, flip both when the pair ships). Off: nothing is placed, the event
+switch** `ChaosHarvestArt.PAIR33`, on since 2026-10-21 with pair 33 (windows-assets 1c7c58df; the cosmetics of the
+same pair have their own switch, `ChaosPack33.PAIR33`, on too). Switch-on: the harvest rows of `harvest_picks.csv`
+appended to `picks.csv` and `apply_monster_looks.py` run (the monster files carry the kit looks), then
+`install_all.py --only pack33items,harvestevent,contentareas` and a restart. Off: nothing is placed, the event
 never opens, the monsters keep stock looks.
 - **Items.** `tools/install_pack33_items.py` (install_all step `pack33items`, after `pack30items`): the kit's 514 items
   and the boss corpse, server ids **41093-41607** (= client id + 3000), from `data/items/pack33_kit.csv`, which

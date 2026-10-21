@@ -19,7 +19,7 @@ local function eq(a, b, m)
 end
 
 local M = dofile("data/lib/chaos_pack33.lua")
-eq(M.PAIR33, false, "the pair 33 switch is off until pair 33 is on windows-assets")
+eq(M.PAIR33, true, "the pair 33 switch is on (pair 33 on windows-assets since 2026-10-21)")
 
 -- ---------------------------------------------------------------- the generated data
 local D = M.data
@@ -70,9 +70,18 @@ for _, e in ipairs(M.exclusives) do
 	eq(M.piece(e.key) ~= nil, true, e.key .. ": an exclusive names a kept piece")
 end
 
--- ---------------------------------------------------------------- off: no config names pair 33
+-- ---------------------------------------------------------------- forced off: no config names pair 33
+M.PAIR33 = false
+local offDofile = dofile
+dofile = function(path, ...)
+	if path == "data/lib/chaos_pack33.lua" then
+		return M
+	end
+	return offDofile(path, ...)
+end
 local shopOff = dofile("data/scripts/chaos/shop_config.lua")
 local exclOff = dofile("data/scripts/chaos/exclusives_config.lua")
+dofile = offDofile
 for _, c in ipairs(shopOff.categories) do
 	eq(c.name ~= "Head Accessories" and c.name ~= "Capes", true, "no pair 33 category while off")
 	for _, o in ipairs(c.offers or {}) do
@@ -174,6 +183,5 @@ eq(#problems, 0, "the store with pair 33 validates: " .. table.concat(problems, 
 -- the store resolves the preview of an aura offer through auras.xml (client look); the category icon is the look itself
 eq(ChaosShopCore.lookOf({kind = "aura", id = 33}, {aura = function(id) return id == 33 and 2477 or 0 end}).look, 2477,
 	"an aura offer previews its client look")
-M.PAIR33 = false
 
 print("pack33_test: " .. n .. " checks passed")

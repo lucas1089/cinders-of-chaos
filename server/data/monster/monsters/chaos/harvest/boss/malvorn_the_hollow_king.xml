@@ -2,7 +2,7 @@
 <!-- Boss of the Haunted Harvest (server/README.md "Haunted Harvest"): Boss of the Haunted Harvest (server/tools/areaplan/events/harvest_catacombs.json, levels 450-650): the crowned scarecrow lord of the cursed harvest, in the King's Crypt under the chapel; the ritual portal in the ritual chamber is the only way in. Mechanics (harvest_event.lua, harvest_event_core.lua K.bossPhase): at 75, 50 and 25 percent the graves of the crypt burst and raise his court (the ritual phase: a ward that halves the damage he takes while it stands); the corpse is the kit's (41607). look 287 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Malvorn the Hollow King" nameDescription="Malvorn the Hollow King" race="undead" experience="60000" speed="90" manacost="0">
 	<health now="150000" max="150000"/>
-	<look type="287" corpse="41607"/>
+	<look type="2661" corpse="41607"/>
 	<level min="640" max="660"/>
 	<targetchange interval="4000" chance="12"/>
 	<flags>

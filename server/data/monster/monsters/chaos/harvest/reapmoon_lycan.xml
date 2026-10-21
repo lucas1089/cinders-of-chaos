@@ -2,7 +2,7 @@
 <!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A farmhand the harvest moon took; it hunts the dead orchard in long leaps. look 308 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Reapmoon Lycan" nameDescription="a reapmoon lycan" race="blood" experience="3500" speed="75" manacost="0">
 	<health now="12000" max="12000"/>
-	<look type="308" corpse="20380"/>
+	<look type="2659" corpse="20380"/>
 	<level min="580" max="600"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

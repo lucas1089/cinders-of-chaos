@@ -2,7 +2,7 @@
 <!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A skeleton with a rusted scythe, risen to reap the fields it once worked. look 298 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Barrowbone Reaver" nameDescription="a barrowbone reaver" race="undead" experience="3100" speed="50" manacost="0">
 	<health now="11200" max="11200"/>
-	<look type="298" corpse="5972"/>
+	<look type="2666" corpse="5972"/>
 	<level min="540" max="560"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

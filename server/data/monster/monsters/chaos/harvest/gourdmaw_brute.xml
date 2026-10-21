@@ -2,7 +2,7 @@
 <!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A hulk of vine and rind grown in the cursed field; its head burns like a lantern. look 292 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Gourdmaw Brute" nameDescription="a gourdmaw brute" race="venom" experience="3900" speed="40" manacost="0">
 	<health now="14500" max="14500"/>
-	<look type="292" corpse="8960"/>
+	<look type="2662" corpse="8960"/>
 	<level min="600" max="620"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

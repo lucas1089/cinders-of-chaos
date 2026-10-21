@@ -2,7 +2,7 @@
 <!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A raven that nests in the gibbets and pecks at what the harvest left hanging. look 122 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Gallows Raven" nameDescription="a gallows raven" race="blood" experience="1800" speed="70" manacost="0">
 	<health now="7200" max="7200"/>
-	<look type="122" corpse="6053"/>
+	<look type="2663" corpse="6053"/>
 	<level min="460" max="480"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

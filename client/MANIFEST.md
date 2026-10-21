@@ -2096,7 +2096,7 @@ importer verified 576 sprite slots pixel-identical to the sheets and every other
 - Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
   client by us.
 
-## Pair 33 packs (outfits 2385-2667, items 38093-38607, `tools/sprites/gen_pack33.py`, `art_import/pack33_*`; built as pair 33 on 2026-10-21, NOT pushed to windows-assets: "Pair 33 build")
+## Pair 33 packs (outfits 2385-2667, items 38093-38607, `tools/sprites/gen_pack33.py`, `art_import/pack33_*`; built as pair 33 on 2026-10-21, on windows-assets 1c7c58df: "Pair 33 build")
 Four purchased packs of one vendor, uploaded by the owner to the Drive folder "ots" on 2026-10-21 (internal labels
 `set33 wings`, `set33 heads`, `set33 capes`, `set33 kit`; names and licence in docs/CREDITS.md). None of the four was
 imported before: no earlier pair, csv or tool names their files (the wings zip is labelled v2 but its own readme says
@@ -2172,7 +2172,7 @@ head of a 2x2 look); capes -1..-13 px.
   draw outfits already), `check_content.py --pair`, `outfit_anchors.lua` regenerated, `ChaosPack33.PAIR33` switch.
 - The spr grows by about 110 MB (+11.7% sprites); the size of the packed `things-1098.tar.xz` was not measured.
 
-## Pair 33 build (2026-10-21; pair 32 + the kept pack33 pieces; built twice, NOT pushed: local branch `windows-assets-pair33` 1c7c58df, the owner's go)
+## Pair 33 build (2026-10-21; pair 32 + the kept pack33 pieces; built twice, on windows-assets 1c7c58df since 2026-10-21, the owner's go)
 Owner decisions of 2026-10-21: (1) pair 33 approved; (2) head accessories and capes become auras (no engine change),
 two store categories "Head Accessories" and "Capes"; (3) the sci-fi themed pieces are dropped; (4) the wings' x
 placement is fixed against the body.
@@ -2219,10 +2219,10 @@ pixel-identical to the sheets and every old thing byte-identical. Built twice: i
 - `things-1098.tar.xz` (the pair 30 / 31 / 32 recipe, mtime 2026-10-21 00:00Z, `xz -9 -T0`, xz 5.4.5): 94,844,592
   bytes (under GitHub's 100 MB), sha256 01230938d712ab14a24ebfefd5194f875f36140078cfa2a7d36ec9cdf6cb9c3e, packed twice
   with the same sha256; unpacks to the md5s above. Committed on the local branch `windows-assets-pair33` (1c7c58df, on
-  1f109dc0: the archive and SHA256SUMS.parts, like pairs 31 / 32); **not pushed** (the owner's final go).
-- `outfit_anchors.lua` from pair 33 (1,974 things, +283) is its own commit on this branch, to land with the push (the
-  live-pair CI job checks the table against windows-assets). The server switch `ChaosPack33.PAIR33` stays off until
-  then (server/README.md "Pair 33 cosmetics").
+  1f109dc0: the archive and SHA256SUMS.parts, like pairs 31 / 32); pushed to windows-assets on 2026-10-21 (the owner's go).
+- `outfit_anchors.lua` from pair 33 (1,974 things, +283) landed with the push (the live-pair CI job checks the table
+  against windows-assets). The server switches `ChaosPack33.PAIR33` and `ChaosHarvestArt.PAIR33` are on since then
+  (server/README.md "Pair 33 cosmetics", "Haunted Harvest").
 - The kit items' server side (items.otb / items.xml manifest to server ids 41093-41607, monsters, an event map) is not
   done: the importer's manifests are in the build folder only.
 - Checked offline: the wings scan above, owner previews of every wings, head and cape on look 128 in four directions

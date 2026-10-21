@@ -2,7 +2,7 @@
 <!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A skeleton bowman of the old village guard, raised from the graves with its bow still strung. look 33 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Barrowbone Archer" nameDescription="a barrowbone archer" race="undead" experience="2700" speed="55" manacost="0">
 	<health now="9600" max="9600"/>
-	<look type="33" corpse="5972"/>
+	<look type="2665" corpse="5972"/>
 	<level min="520" max="540"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

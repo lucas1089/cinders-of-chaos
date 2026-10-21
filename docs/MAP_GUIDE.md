@@ -615,7 +615,7 @@ in x 15295-15510, y 14330-15120 on any floor, checked with `tools/map/otbm.py`; 
   coffins, cauldrons, the bell, the seal and the circle).
 - Change a plan, the kit or the overlay, then run `python3 -I server/tools/gen_harvest_places.py` (CI `--check`) and
   `python3 -I server/tools/gen_harvest_places_test.py`. The places are chosen as with the switch on.
-- Placed by `install_all.py --only contentareas` only while the switch is on (it is off until pair 33 ships). A plan
+- Placed by `install_all.py --only contentareas` only while the switch is on (on since 2026-10-21, with pair 33). A plan
   that changed after it was placed is refused there: restore `<map>.otbm.bak` and install again.
 - Review pictures: `area_planner.py render` needs a client pair with the kit (pair 33, not built yet); until then a
   schematic of the compiled tiles (ground families, blocking pieces, set pieces, mechanics and spawns in flat colours)

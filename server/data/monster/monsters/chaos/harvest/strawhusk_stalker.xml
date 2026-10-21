@@ -2,7 +2,7 @@
 <!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A scarecrow that climbed off its post; it stalks the corn rows and pins its prey with straw. look 194 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Strawhusk Stalker" nameDescription="a strawhusk stalker" race="blood" experience="3200" speed="60" manacost="0">
 	<health now="10800" max="10800"/>
-	<look type="194" corpse="6080"/>
+	<look type="2664" corpse="6080"/>
 	<level min="540" max="560"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

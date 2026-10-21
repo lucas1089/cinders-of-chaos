@@ -25,7 +25,7 @@
 
 local M = {}
 
-M.PAIR33 = false
+M.PAIR33 = true
 
 local ok, kit = pcall(dofile, "data/lib/chaos_pack33_kit.lua")
 M.kit = ok and kit or {first = 41093, last = 41607, items = {}, states = {}, decay = {}}

@@ -101,8 +101,8 @@ for kit_name, spec in over['kits'].items():
 check(over['biome_kit'] == {'harvest': 'haunted_harvest', 'harvest_crypt': 'harvest_crypt'}, 'the two biomes')
 
 # ---------------------------------------------------------------- the switch decides the install
-check(ICA.harvest_on() is False, 'the switch is off')
-check(ICA.EVENTS_DIR not in ICA.FIXED_DIRS, 'install_content_areas.py leaves the event areas out while it is off')
+check(ICA.harvest_on() is True, 'the switch is on (pair 33 on windows-assets since 2026-10-21)')
+check(ICA.EVENTS_DIR in ICA.FIXED_DIRS, 'install_content_areas.py places the event areas while it is on')
 check(os.path.isfile(os.path.join(G.SERVER, 'data', 'lib', 'chaos_harvest_art.lua')), 'the switch file')
 
 print('gen_harvest_places_test: %s' % ('ok' if not failed else '%d failure(s)' % failed))

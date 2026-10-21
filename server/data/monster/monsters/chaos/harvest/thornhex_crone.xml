@@ -2,7 +2,7 @@
 <!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A hedge witch of the hamlet who brews the harvest curse; her ritual candles open the way to the king. look 54 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
 <monster name="Thornhex Crone" nameDescription="a thornhex crone" race="blood" experience="3300" speed="50" manacost="0">
 	<health now="10200" max="10200"/>
-	<look type="54" corpse="20535"/>
+	<look type="2660" corpse="20535"/>
 	<level min="560" max="580"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

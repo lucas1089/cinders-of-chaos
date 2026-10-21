@@ -20,7 +20,7 @@
 
 local M = {}
 
-M.PAIR33 = false
+M.PAIR33 = true
 
 local ok, data = pcall(dofile, "data/lib/chaos_pack33_cosmetics.lua")
 M.data = ok and type(data) == "table" and data or {wings = {}, heads = {}, capes = {}}
