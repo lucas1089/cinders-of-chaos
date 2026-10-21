@@ -787,6 +787,24 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     archive; both files load in LuaJIT and Lua 5.3). The server halves: engine patches 0055-0057 (server/README.md
     "Summons: targets, walk-through, levels"). Walking through the own summons needs no client patch: the client's
     `Tile::isWalkable` already honours the creature packet's passable byte. Not seen in a client.
+69k. `0115` (C++ `src/client/uiitem.cpp`, `luafunctions_client.cpp`; Lua `modules/game_containers/containers.lua`): **a
+    slot that loses its item loses the marks of that item.** Owner beta, 2026-10-22, with a screenshot of the Loot Bag:
+    "itens deixam uma marca depois do auto sell vender"; dozens of empty slots kept a pale frame. Cause:
+    `UIItem::setItem(nil)` did not call `onItemChange` (`setItemId(0)` did). The rarity frame of `game_itemrarity`
+    (`irFrame`, `widget.irColor`), the locked grey of `game_shaderfx`, the slot tooltip and the `game_itemtooltip` plate
+    all follow `onItemChange`, so when a removal moved the items down, the slots at the end became empty with the marks
+    of their last item. `0109` did not cause it: the stock per-item refresh left the same marks. The batched sale of
+    server patch 0054 sends a full container packet, which builds new slot widgets, so only the per-item path (an older
+    server, a manual move, the pouches without a batch) shows it. Fix: `setItem` calls `onItemChange` when a slot that had
+    an item gets none, and binds `UIItem.notifiesItemRemoval()`. `game_containers` fills its slots through
+    `chaosSetSlotItem`, which signals the change itself on an engine without that function, because native code reaches
+    players only with a new Windows package. `onContainerUpdateItem` checks its widget before it uses it. Every
+    `onItemChange` handler of the tree already takes a nil item. Model test `tools/slot_clear_test.py` (CI): the helper
+    from the patch, the real `game_itemrarity` and the grey rule of `game_shaderfx` on a 40-slot bag and on the last page
+    of a paged window, under LuaJIT and Lua 5.3; the stock setItem leaves 35 framed empty slots, `0115` none on either
+    engine, with one signal per emptied slot. Applies after `0001`-`0112` (`0113` and `0114` belong to other branches and
+    touch none of these files; `patch` clean on the base archive with the whole chain); `uiitem.cpp` and
+    `luafunctions_client.cpp` pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
