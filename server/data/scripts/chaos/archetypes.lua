@@ -853,8 +853,9 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	if m2 ~= 1 then
 		sd = A.scale(sd, m2)
 	end
-	-- Executioner's Verdict: a melee hit that would leave a monster at 15% of its health or less kills it
-	if flags.arExecutioner and oname == "melee" and not source and isMonsterTarget and validTarget(player, creature) then
+	-- Executioner's Verdict: a melee hit or a spell hit that would leave a monster at 15% of its health or less kills it
+	-- (spells too since 2026-10-21, player report "so funciona com attack normal, nao com magias")
+	if flags.arExecutioner and (oname == "melee" or oname == "spell") and not source and isMonsterTarget and validTarget(player, creature) then
 		local executed
 		pd, sd, executed = A.executeHit(creature:getHealth(), creature:getMaxHealth(), pd, sd, isBoss(creature))
 		if executed then

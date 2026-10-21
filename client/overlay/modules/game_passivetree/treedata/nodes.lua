@@ -8251,10 +8251,10 @@ function getTreeNodes()
 				arExecutioner = 1
 			},
 			stats = {
-				"Warrior line: a melee hit that would leave a monster",
-				"(not a boss) at 15% of its health or less kills it.",
-				"Your melee hits on monsters above 60% health deal",
-				"10% less."
+				"Warrior line: a melee or spell hit that would leave",
+				"a monster (not a boss) at 15% of its health or less",
+				"kills it. Your melee and spell hits on monsters above",
+				"60% health deal 10% less."
 			},
 			classes = {"warrior", "juggernaut", "berserker"},
 			inputs = {

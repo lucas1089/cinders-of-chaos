@@ -131,7 +131,7 @@ function A.hitFactor(flags, ctx)
 			m = m * c.arEffigy.ownSpell
 		end
 		-- the third round: Warrior line
-		if flags.arExecutioner and ctx.origin == "melee" and (ctx.targetFraction or 0) > c.arExecutioner.priceAbove then
+		if flags.arExecutioner and (ctx.origin == "melee" or ctx.origin == "spell") and (ctx.targetFraction or 0) > c.arExecutioner.priceAbove then
 			m = m * c.arExecutioner.price
 		end
 		if flags.arRampage then
@@ -663,7 +663,7 @@ function A.percentBase(maxHealth, maxShield, keystone)
 end
 
 -- ------------------------------------------------------------------------------------------------ Executioner's Verdict
--- A melee weapon hit on a monster: the hit (pd, sd, both <= 0) that kills it when it would leave the monster at or below
+-- A melee weapon hit or an own spell hit on a monster: the hit (pd, sd, both <= 0) that kills it when it would leave the monster at or below
 -- the threshold of its maximum health. Bosses are never executed. Returns pd, sd, executed.
 function A.executeHit(health, maxHealth, pd, sd, boss)
 	local e = cfg().arExecutioner

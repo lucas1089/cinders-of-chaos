@@ -203,9 +203,9 @@ ChaosArchetypesConfig = {
 	-- version 4, build codes format 6) and has a price. Computed, not measured in game: server/data/spells/README.md
 	-- "Warrior and Ranger line keystones".
 
-	-- Executioner's Verdict (Warrior line): a weapon hit in melee that would leave a monster (not a boss, not a summon) at
-	-- or below `threshold` of its maximum health kills it. Price: your melee hits on a monster above `priceAbove` of its
-	-- maximum health x price.
+	-- Executioner's Verdict (Warrior line): a weapon hit in melee or an own spell hit that would leave a monster (not a
+	-- boss, not a summon) at or below `threshold` of its maximum health kills it. Price: your melee and spell hits on a
+	-- monster above `priceAbove` of its maximum health x price.
 	arExecutioner = {threshold = 0.15, priceAbove = 0.60, price = 0.90},
 
 	-- Earthbreaker (Warrior line): every `every`th melee weapon hit (the count starts over after windowMs without one)
