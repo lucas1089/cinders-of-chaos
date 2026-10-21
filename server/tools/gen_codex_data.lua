@@ -1082,7 +1082,8 @@ function Gen.gemEntries(D)
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},
 				{h = "Caps (all gems together)", p = {capText(t.weapon) .. ".", capText(t.armour) .. ".", capText(t.jewel) .. "."}},
 				{h = "Combining", p = {string.format("Three gems of one type and tier make one of the next tier (%s).",
-					table.concat(cfg.tiers, " > "))}},
+					table.concat(cfg.tiers, " > ")),
+					"Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 					{"Monster drops", "Per kill by monster tier: " .. table.concat(dropParts, ", ") .. "; the gem type is random, the tier by monster level."},
 					{"Bounty board", string.format("Finished contracts: hunt %d%%, elite %d%%, boss %d%% chance of a gem; %d in the weekly chest.",

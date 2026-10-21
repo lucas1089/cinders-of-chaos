@@ -207,18 +207,73 @@ local function changed(player, item)
 	end
 end
 
+-- count of id into the backpack; what does not fit goes to the depot inbox, and without one to the player's feet (never
+-- lost). Returns false (all in the backpack), "inbox" or "ground"
 local function give(player, id, count)
-	local rest = count - Chaos.giveItem(player, id, count)
-	if rest > 0 then
-		local inbox = player:getInbox()
-		if inbox then
-			inbox:addItem(id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-			return true
-		end
+	local rest = count - (tonumber(Chaos.giveItem(player, id, count)) or 0)
+	if rest <= 0 then
+		return false
 	end
-	return false
+	local inbox = player:getInbox()
+	if inbox then
+		inbox:addItem(id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		return "inbox"
+	end
+	Game.createItem(id, rest, player:getPosition())
+	return "ground"
 end
 G.give = give
+
+local function whereText(where)
+	if where == "inbox" then
+		return " It is in your inbox (no room)."
+	elseif where == "ground" then
+		return " It is at your feet (no room)."
+	end
+	return ""
+end
+
+-- Where a gem stack is for this player: "carried" (equipment, backpack and the bags in it: what the engine's
+-- player:getItemCount / removeItem see), "box" (the player's own, but outside that walk: the purse = store inbox, the
+-- depot inbox and the depot chest; only their owner can open them) or nil (the ground, someone else's).
+local BOX = {[26052] = "purse", [14404] = "inbox", [2589] = "locker"} -- ITEM_STORE_INBOX, ITEM_INBOX, ITEM_LOCKER1
+local function idOf(thing)
+	if not thing or not thing.isItem then
+		return nil
+	end
+	local ok, id = pcall(function() return thing:isItem() and thing:getId() end)
+	return ok and id or nil
+end
+local function placeOf(player, item)
+	local inBox = false
+	local p = item
+	for _ = 1, 32 do
+		local ok, parent = pcall(function() return p:getParent() end)
+		if not ok or not parent then
+			break
+		end
+		local kind = BOX[idOf(parent)]
+		if kind == "inbox" or kind == "locker" then
+			return "box"
+		elseif kind == "purse" then
+			inBox = true
+		end
+		p = parent
+	end
+	if owns(player, item) then
+		return inBox and "box" or "carried"
+	end
+	return nil
+end
+
+local function isLocked(item)
+	return ChaosCrafting.customNumber(item, "chaos_locked") ~= 0
+end
+
+local function same(a, b)
+	local ok, r = pcall(function() return a == b end)
+	return ok and r or rawequal(a, b)
+end
 
 local function log(player, what, itemName, text)
 	if ChaosCraftingLog then
@@ -256,21 +311,61 @@ function G.socket(player, gemItem, target)
 	return true, text
 end
 
--- three gems of this id -> one of the next tier. Returns ok, text
-function G.combine(player, id)
+-- three gems of this id -> one of the next tier. used / target: the stacks of the use with (the same stack when the
+-- player used a stack on itself), optional. The engine's player:getItemCount / removeItem only see what the player
+-- carries (equipment, backpack, bags), so the stacks clicked in the purse or the depot are counted and taken here
+-- first, the rest from what is carried. Everything is counted before anything is taken; a removal that fails gives
+-- back what was taken. Returns ok, text
+function G.combine(player, id, used, target)
 	local newId, why = G.combineResult(id)
 	if not newId then
 		return false, G.reasons[why] or why
 	end
-	if player:getItemCount(id) < 3 then
+	local boxed, extra = {}, 0
+	local picked = {}
+	for _, s in ipairs({used, target}) do
+		if s and s.getId and s:getId() == id and not (picked[1] and same(picked[1], s)) then
+			picked[#picked + 1] = s
+			local place = placeOf(player, s)
+			if not place then
+				return false, G.reasons.notYours
+			end
+			if isLocked(s) then
+				return false, G.reasons.locked
+			end
+			if place == "box" then
+				local n = tonumber(s:getCount()) or 0
+				boxed[#boxed + 1] = {item = s, count = n}
+				extra = extra + n
+			end
+		end
+	end
+	local carried = tonumber(player:getItemCount(id)) or 0
+	if carried + extra < 3 then
 		return false, G.reasons.needThree
 	end
-	if not player:removeItem(id, 3) then
+	local need, taken = 3, 0
+	for _, b in ipairs(boxed) do
+		local n = math.min(need, b.count)
+		if n > 0 then
+			if b.item:remove(n) == false then
+				if taken > 0 then
+					give(player, id, taken)
+				end
+				return false, G.reasons.needThree
+			end
+			need, taken = need - n, taken + n
+		end
+	end
+	if need > 0 and not player:removeItem(id, need) then
+		if taken > 0 then
+			give(player, id, taken)
+		end
 		return false, G.reasons.needThree
 	end
-	local inbox = give(player, newId, 1)
+	local where = give(player, newId, 1)
 	local text = string.format("Three %s became a %s.%s", (G.listText({{id = id, count = 3}}):gsub("^3 ", "")),
-		G.gemName(newId), inbox and " It is in your inbox (no room)." or "")
+		G.gemName(newId), whereText(where))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
 	log(player, "Gem", G.gemName(id), text)
 	return true, text
@@ -295,9 +390,8 @@ function G.unsocket(player, item, index, keep)
 	local name = ChaosCrafting.itemName(item)
 	local text
 	if keep then
-		local inbox = give(player, id, 1)
 		text = string.format("%s taken out of %s for %d gold.%s", G.gemName(id), name, cost,
-			inbox and " It is in your inbox (no room)." or "")
+			whereText(give(player, id, 1)))
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	else
 		text = string.format("%s shattered (taken out of %s).", G.gemName(id), name)
@@ -323,7 +417,7 @@ local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey
 	end
 	local ok, text
 	if target:getId() == id then
-		ok, text = G.combine(player, id)
+		ok, text = G.combine(player, id, item, target)
 	elseif G.isGem(target:getId()) then
 		ok, text = false, "Only gems of the same kind and quality combine."
 	elseif G.maxSockets(target) > 0 then
@@ -335,7 +429,7 @@ local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey
 	if ok then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 	else
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.t(player, text))
 	end
 	return true
 end

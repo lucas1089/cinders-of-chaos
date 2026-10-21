@@ -564,7 +564,9 @@ G.reasons = {
 	full = "This item has no free socket. Take a gem out at the crafting bench (Economy > Crafting Bench) first.",
 	notGem = "That is not a gem.",
 	perfect = "Perfect gems are the best there are; they cannot be combined.",
-	needThree = "You need three gems of the same kind and quality to combine them."
+	needThree = "You need three gems of the same kind and quality to combine them.",
+	notYours = "Combine gems you own: in your backpack, your purse or your depot.",
+	locked = "This gem is locked. Unlock it at the crafting bench to combine it."
 }
 
 function G.orbRange(item)

@@ -1946,6 +1946,15 @@ return {
 		["a gem"] = "uma gema",
 		["nothing (Perfect is the best quality)"] = "nada (Perfect é a melhor qualidade)",
 		["That cannot hold gems. "] = "Isso não pode ter gemas. ",
+		["You need three gems of the same kind and quality to combine them."] =
+			"Você precisa de três gemas do mesmo tipo e qualidade para juntá-las.",
+		["Combine gems you own: in your backpack, your purse or your depot."] =
+			"Junte gemas que são suas: na mochila, na bolsa ou no depot.",
+		["This gem is locked. Unlock it at the crafting bench to combine it."] =
+			"Esta gema está trancada. Destranque na bancada de criação para juntá-la.",
+		["Only gems of the same kind and quality combine."] = "Só gemas do mesmo tipo e qualidade se juntam.",
+		["Perfect gems are the best there are; they cannot be combined."] =
+			"Gemas Perfect são as melhores que existem; não podem ser juntadas.",
 		["Salvaged %s: %s.%s"] = "Salvage de %s: %s.%s",
 		[" Your backpack is full: some went to your inbox."] =
 			" Sua mochila está cheia: parte foi para a sua caixa de entrada.",

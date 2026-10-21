@@ -5625,7 +5625,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5668,7 +5668,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5711,7 +5711,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5754,7 +5754,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5797,7 +5797,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5840,7 +5840,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5883,7 +5883,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",

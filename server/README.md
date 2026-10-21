@@ -9770,7 +9770,17 @@ Nothing is stored; the totals live in memory (`ChaosGemsCache`).
   for equipped gear, the totals are updated at once. An item without sockets says that an Orb of Sockets gives some;
   a full item points at the bench.
 - on a gem of the same kind and quality: three become one of the next quality (Perfect does not combine). Different
-  gems are refused.
+  gems are refused. The target may be the used stack itself (right-click the stack, then click it again). The gems
+  may be carried (equipment, backpack, bags, pouches) or sit in the purse (store inbox), the depot inbox or the depot
+  chest: the engine's `player:getItemCount` / `removeItem` walk only inventory slots 1-10 and their containers, so
+  `G.combine(player, id, used, target)` counts the clicked stacks outside that walk itself, takes them first and the
+  rest from what is carried. Everything is counted before anything is taken; a removal that fails gives back what
+  was taken. Refused: gems on the ground or someone else's ("Combine gems you own ..."), a locked stack (the item
+  lock), fewer than three. The new gem goes to the backpack, else the depot inbox, else the player's feet (never
+  lost; `G.give`, also used by Remove). **Fixed 2026-10-21** (player report: "gem combine does not work", a stack
+  used on itself): a stack in the purse or the depot was refused with "You need three gems" whatever its count,
+  since the engine's count never sees those boxes. Tests: `tests/gems_test.lua` "combining against the engine's
+  item walk".
 - plain use: the gem's three effects and how to use it.
 
 Every action is logged in `chaos_crafting_log` (the bench's "Recent crafts").
