@@ -56,8 +56,8 @@ local function load()
   local name = charName()
   if not name then return false end
   if cfgFor == name then return true end
-  local node = g_settings.getNode(SETTINGS_NODE) or {}
-  cfg = S.sanitize(node[name])
+  local node = g_settings.getNode(SETTINGS_NODE)
+  cfg = S.sanitize(type(node) == 'table' and node[name] or nil) -- checked: config.otml can be edited by hand
   cfgFor = name
   state = S.newState()
   return true
@@ -66,7 +66,8 @@ end
 local function save()
   local name = charName()
   if not name or cfgFor ~= name then return end
-  local node = g_settings.getNode(SETTINGS_NODE) or {}
+  local node = g_settings.getNode(SETTINGS_NODE)
+  if type(node) ~= 'table' then node = {} end
   local slots = {}
   for i, s in ipairs(cfg.slots) do slots[i] = { id = s.id, enabled = s.enabled } end
   node[name] = { enabled = cfg.enabled, reserve = cfg.reserve, slots = slots }

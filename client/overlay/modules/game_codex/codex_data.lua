@@ -13628,7 +13628,7 @@ CodexData = {
 					sections = {
 						{
 							h = "What they are",
-							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold and Mirewake in the Hall of Services).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
+							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
 						},
 						{
 							h = "Experience bonus with all four at a level",

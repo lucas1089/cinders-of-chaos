@@ -65,9 +65,27 @@ do
 	for _, b in ipairs(K.booths(cfg, h2)) do
 		names[b.name] = true
 	end
-	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Loot Buyer", "Material Broker",
-			"Mordecai Ashwager", "Iselde Varrow", "Osric the Chandler"}) do
+	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Warden Ysolde"}) do
 		check(names[n], n .. " has a booth in the main city")
+	end
+	-- owner 2026-10-21: the economy and service NPCs stand in the arcade at the main city's temple
+	-- (temple_npcs_config.lua); their booths are Mirewake's only, and Cinderhold builds no economy row
+	local h1names = {}
+	for _, b in ipairs(K.booths(cfg, h1)) do
+		h1names[b.name] = true
+	end
+	local stands = dofile("data/scripts/chaos/temple_npcs_config.lua")
+	for _, t in ipairs(stands.towns) do
+		for _, s in ipairs(t.stands) do
+			check(not names[s.name], s.name .. " has no booth in the town of its temple stand")
+			check(h1names[s.name], s.name .. " keeps its booth in Mirewake")
+		end
+	end
+	for _, row in ipairs(cfg.rows) do
+		if row.room == "economy" then
+			eq(#K.rowTiles(row, 2, cfg.items), 0, row.key .. ": not built in Cinderhold")
+			check(#K.rowTiles(row, 1, cfg.items) > 0, row.key .. ": built in Mirewake")
+		end
 	end
 	local p = K.portal(cfg, h2, "descent")
 	check(p and p.x == h2.at.x + cfg.portals.descent[1], "the Descent portal tile")
@@ -226,10 +244,10 @@ check(player.pos.x == 1000 and player.pos.y == 1000, "the exit leads to the hall
 
 -- ChaosNpcPlace.place uses the booth
 dofile("data/scripts/chaos/npc_place.lua")
-local npc = ChaosNpcPlace.place("Iselde Varrow", temples[2], {{1, 1}})
-local want = X.spot("Iselde Varrow", 2)
+local npc = ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}})
+local want = X.spot("Archivist Maelis", 2)
 check(npc and npc.pos.x == want.x and npc.pos.y == want.y, "ChaosNpcPlace.place puts the NPC in its booth")
-eq(ChaosNpcPlace.place("Iselde Varrow", temples[2], {{1, 1}}), npc, "found again in its booth (no second NPC)")
+eq(ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}}), npc, "found again in its booth (no second NPC)")
 eq(#npcs, 1, "one NPC")
 check(#logs >= 2, "a hall not on the map is logged")
 print = realPrint

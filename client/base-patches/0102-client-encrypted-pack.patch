@@ -1,0 +1,536 @@
+# Cinders of Chaos encrypted client pack (client/BASE.md "Client packs"). The client ships one file beside the exe,
+# chaos.pack: a deterministic store-only ZIP of the whole client tree (init.lua, data/, modules/, mods/, layouts/),
+# compressed as one zlib stream (level 9) and encrypted as one blob with AES-256-GCM (OpenSSL and zlib, which the client
+# links already). Pack format version 2: compressing before encrypting keeps the download near the size of a plain zip.
+# The engine streams the pack from disk, decrypting and inflating each 4 MB chunk straight into one buffer of the ZIP's
+# size (no ciphertext buffer, no second copy), and mounts it through the existing PhysFS memory-archive path, so every
+# module keeps reading files through g_resources unchanged and the shipped folder is just the exe and this one file.
+#   * src/framework/util/chaospack.h (new, header only; vectors in client/tools/chaospack_test.cpp): AES-256-GCM,
+#     HKDF-SHA256 key derivation and the zlib layer, byte-identical to the packing tool client/tools/pack_client.py.
+#     The pack header (magic, version 2, flags, 12-byte nonce, uncompressed ZIP length) is the GCM AAD, so any tamper
+#     fails. decryptStream() keeps the output only when the tag verifies and inflate ends exactly at the declared size.
+#   * src/framework/core/resourcemanager.{h,cpp}: mountEncryptedPack(key) finds chaos.pack beside the exe, streams it
+#     through decryptStream() with the key and mounts the result from memory (mountMemoryData); setup() and
+#     getCompactName() use the mounted pack. A wrong key or a corrupt pack is fatal; no pack present (a dev tree of
+#     loose files) returns false and loads as before.
+#   * src/main.cpp: before init.lua is read, derive the pack key from the client guard key (chaosguard::builtInKey(),
+#     base patch 0035 - no new secret) and mount the pack, then wipe the key. The app name is "CindersOfChaos", so the
+#     per-user write dir (config.otml, logs, the updater tree) is named after it, never next to the exe.
+#   * init.lua: APP_NAME "CindersOfChaos" (the compact name, config dir and <name>.log file).
+# This deters copying; it does not stop a determined reverse engineer, since the key is in the binary (obfuscated the
+# way chaosguard_key.h is). Apply after 0001-0101: tools/assemble_client.sh applies every patch in order.
+--- a/init.lua
++++ b/init.lua
+@@ -1,5 +1,5 @@
+ -- CONFIG
+-APP_NAME = "otclientv8" -- important, change it, it's name for config dir and files in appdata
++APP_NAME = "CindersOfChaos" -- Cinders of Chaos (base patch 0102): the compact name, config dir and <name>.log file
+ APP_VERSION = 1341       -- client version for updater and login to identify outdated client
+ DEFAULT_LAYOUT = "" -- on android it's forced to "mobile", check code bellow
+ ENABLE_NATIVE_SPLASH = false -- Windows startup splash: true = enabled, false = disabled
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -29,6 +29,7 @@
+ #include <framework/platform/platform.h>
+ #include <framework/util/crypt.h>
+ #include <framework/util/chaosupdate.h>
++#include <framework/util/chaospack.h>
+ #include <framework/http/http.h>
+ #include <queue>
+ #include <regex>
+@@ -307,6 +308,11 @@ bool ResourceManager::setupWriteDir(cons
+ 
+ bool ResourceManager::setup()
+ {
++    // Cinders of Chaos (base patch 0102): the encrypted pack, when present, is mounted in main() before this runs.
++    if (m_packMounted) {
++        m_workDir.clear();
++        return true;
++    }
+     m_workDir.clear();
+ #ifdef ANDROID
+     PHYSFS_File* file = PHYSFS_openRead("data.zip");
+@@ -363,7 +369,16 @@ bool ResourceManager::setup()
+ 
+ std::string ResourceManager::getCompactName() {
+     std::string fileData;
+-    if (loadDataFromSelf()) {
++    // Cinders of Chaos (base patch 0102): when the encrypted pack is mounted, init.lua lives inside it; read it
++    // directly so APP_NAME (the compact name, config dir and log file) comes from the real init.lua.
++    if (m_packMounted) {
++        try {
++            fileData = readFileContents(INIT_FILENAME);
++        } catch (...) {
++            fileData = "";
++        }
++    }
++    if (fileData.empty() && loadDataFromSelf()) {
+         try {
+             fileData = readFileContents(INIT_FILENAME);
+         } catch (...) {
+@@ -1868,6 +1883,72 @@ void ResourceManager::unmountDiskData()
+ }
+ #endif
+ 
++// Cinders of Chaos encrypted client pack (base patch 0102, client/BASE.md "Client packs"). Looks for chaos.pack
++// beside the exe (and in the current / base dir), streams it from disk through AES-256-GCM and inflate
++// (util/chaospack.h) into one buffer of the ZIP's size and mounts that buffer, so the shipped folder is just the exe and
++// this one file and modules keep reading through g_resources. Called from main() before getCompactName(), so init.lua
++// is read from the pack. A wrong key or a corrupt pack is fatal (the client cannot run without its files). Returns
++// false when no pack is present (dev tree).
++bool ResourceManager::mountEncryptedPack(const std::string& key)
++{
++#if defined(ANDROID) || defined(__EMSCRIPTEN__)
++    (void)key;
++    return false;
++#else
++    if (key.size() != 32)
++        return false;
++
++    std::vector<std::filesystem::path> dirs;
++    if (!m_binaryPath.empty())
++        dirs.push_back(m_binaryPath.parent_path());
++    dirs.push_back(std::filesystem::u8path(g_platform.getCurrentDir()));
++    const char* baseDir = PHYSFS_getBaseDir();
++    if (baseDir)
++        dirs.push_back(std::filesystem::u8path(baseDir));
++
++    for (const auto& dir : dirs) {
++        const auto packPath = dir / "chaos.pack";
++        std::error_code ec;
++        if (!std::filesystem::is_regular_file(packPath, ec) || ec)
++            continue;
++
++        // streamed: 4 MB of ciphertext at a time is decrypted and inflated straight into one buffer of the ZIP's size
++        // (the header's plaintext length), which is then mounted as it is. Peak memory ~ the ZIP + 4 MB.
++        auto data = std::make_shared<std::vector<uint8_t>>();
++        const auto size = std::filesystem::file_size(packPath, ec);
++        std::ifstream stream(packPath, std::ios::binary);
++        if (ec || !stream) {
++            g_logger.warning(stdext::format("Unable to read client pack '%s'", packPath.string()));
++            continue;
++        }
++        auto read = [&stream](unsigned char* dst, size_t n) {
++            return static_cast<bool>(stream.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(n)));
++        };
++        stdext::timer timer;
++        if (!chaospack::decryptStream(key, static_cast<uint64_t>(size), read, *data)) {
++            g_logger.fatal(stdext::format("Unable to decrypt client pack '%s' (wrong build key, corrupt file or not "
++                                          "enough memory)", packPath.string()));
++            return false;
++        }
++        stream.close();
++
++        const size_t plainSize = data->size();
++        if (mountMemoryData(data)) {
++            m_packMounted = true;
++            g_logger.info(stdext::format("Mounted encrypted client pack '%s' (%u MB, %u MB unpacked, %u ms)",
++                                         packPath.string(), static_cast<unsigned>(size >> 20),
++                                         static_cast<unsigned>(plainSize >> 20),
++                                         static_cast<unsigned>(timer.elapsed_millis())));
++            return true;
++        }
++        g_logger.fatal(stdext::format("The client pack '%s' decrypted but has no init.lua or could not be mounted",
++                                      packPath.string()));
++        return false;
++    }
++    return false;
++#endif
++}
++
+ bool ResourceManager::mountMemoryData(const std::shared_ptr<std::vector<uint8_t>>& data)
+ {
+     if (!data || data->size() < 1024)
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -86,6 +86,10 @@ public:
+ 
+     std::string fileChecksum(const std::string& path);
+ 
++    // Cinders of Chaos encrypted client pack (src/framework/util/chaospack.h, base patch 0102, client/BASE.md
++    // "Client packs"): decrypt chaos.pack beside the exe with the client guard key and mount it from memory.
++    bool mountEncryptedPack(const std::string& key);
++
+     // Cinders of Chaos signed updater (modules/client_chaos_updater, util/chaosupdate.h)
+     std::string fileSha256(const std::string& path);
+     int64_t fileSize(const std::string& path);
+@@ -134,6 +138,7 @@ private:
+     std::string m_workDir;
+     bool m_loadedFromMemory = false;
+     bool m_loadedFromArchive = false;
++    bool m_packMounted = false; // Cinders of Chaos: chaos.pack was decrypted and mounted (base patch 0102)
+     std::shared_ptr<std::vector<uint8_t>> m_memoryData;
+     uint64 m_generation = 0;
+     uint32_t m_customEncryption = 0;
+--- a/src/framework/util/chaospack.h
++++ b/src/framework/util/chaospack.h
+@@ -0,0 +1,334 @@
++// Cinders of Chaos encrypted client pack (client/base-patches/0102-client-encrypted-pack.patch, client/BASE.md
++// "Client packs"). The client ships one file beside the exe, chaos.pack: a store-only ZIP of the whole client tree
++// (init.lua, data/, modules/, mods/, layouts/), compressed as one zlib stream and encrypted as one blob with
++// AES-256-GCM. The engine streams it from disk, decrypting and inflating each chunk straight into one buffer of the
++// ZIP's size, and mounts that buffer (src/framework/core/resourcemanager.cpp), so modules keep reading through
++// g_resources.
++//
++// Format (version 2; byte-identical to client/tools/pack_client.py, vectors in client/tools/chaospack_test.cpp):
++//   header (28 bytes) = magic "CHPK" | version 2 | flags (bit 0: development key) | 2 reserved | 12-byte nonce |
++//                       plaintext length = the UNCOMPRESSED ZIP length (u64 little endian)
++//   pack              = header | AES-256-GCM(zlib stream of the ZIP, additional data = header) | 16-byte tag
++//   zlib stream       = RFC 1950 (zlib header, deflate, Adler-32), level 9, default window and memory level
++//   nonce             = HMAC-SHA256(nonce key, the zlib stream)[:12] (the bytes GCM encrypts, so two different
++//                       ciphertexts under one key never share a nonce, whatever zlib build compressed them)
++// Version 1 (the store-only ZIP encrypted as it is) was never released and is refused.
++//
++// The key is derived with HKDF-SHA256 from the client guard build secret (chaosguard::builtInKey(), base patch 0035):
++// no new secret. This deters copying; it does not stop a determined reverse engineer, since the key is in the binary
++// (obfuscated the way chaosguard_key.h is).
++//
++// Header only, so chaospack_test.cpp builds it on its own against OpenSSL and zlib (both linked by the client).
++#pragma once
++
++#include <algorithm>
++#include <climits>
++#include <cstdint>
++#include <cstring>
++#include <limits>
++#include <string>
++#include <vector>
++
++#include <openssl/evp.h>
++#include <openssl/hmac.h>
++#include <zlib.h>
++
++namespace chaospack
++{
++
++constexpr char MAGIC[4] = { 'C', 'H', 'P', 'K' };
++constexpr uint8_t VERSION = 2;
++constexpr size_t HEADER_LEN = 28; // magic(4) ver(1) flags(1) reserved(2) nonce(12) plaintextLen(8)
++constexpr size_t NONCE_LEN = 12;
++constexpr size_t TAG_LEN = 16;
++constexpr uint8_t FLAG_DEV = 0x01;
++constexpr int ZLIB_LEVEL = 9;
++// Refuse a header that asks for more than this before allocating (the tag is only checked at the end).
++constexpr uint64_t MAX_PLAINTEXT = 16ull * 1024 * 1024 * 1024;
++// deflate never expands more than ~1032:1; a header claiming more than this per stream byte is not a pack.
++constexpr uint64_t MAX_RATIO = 1032;
++constexpr size_t READ_CHUNK = 4u * 1024u * 1024u; // read, decrypt and inflate in 4 MB steps
++
++// HKDF context, byte-identical to client/tools/pack_client.py.
++inline const std::string& hkdfSalt() { static const std::string s = "CindersOfChaos/pack/v1"; return s; }
++inline const std::string& infoEnc() { static const std::string s = "chaos-pack-aes-256-gcm"; return s; }
++inline const std::string& infoNonce() { static const std::string s = "chaos-pack-nonce"; return s; }
++
++inline std::string hmacSha256(const std::string& key, const std::string& data)
++{
++    unsigned char out[EVP_MAX_MD_SIZE];
++    unsigned int outLen = 0;
++    if (!HMAC(EVP_sha256(), key.data(), static_cast<int>(key.size()),
++              reinterpret_cast<const unsigned char*>(data.data()), data.size(), out, &outLen) || outLen != 32)
++        return std::string();
++    return std::string(reinterpret_cast<const char*>(out), outLen);
++}
++
++// RFC 5869 HKDF-SHA256 (extract + expand). Matches pack_client.py's _hkdf_sha256.
++inline std::string hkdfSha256(const std::string& ikm, const std::string& salt, const std::string& info, size_t length)
++{
++    const std::string prk = hmacSha256(salt, ikm);
++    if (prk.empty())
++        return std::string();
++    std::string okm;
++    std::string t;
++    uint8_t counter = 1;
++    while (okm.size() < length) {
++        std::string input = t + info;
++        input.push_back(static_cast<char>(counter));
++        t = hmacSha256(prk, input);
++        if (t.empty())
++            return std::string();
++        okm += t;
++        ++counter;
++    }
++    okm.resize(length);
++    return okm;
++}
++
++// clientKey: 32 raw bytes (chaosguard::builtInKey()). Returns false on any OpenSSL failure.
++inline bool deriveKeys(const std::string& clientKey, std::string& encKey, std::string& nonceKey)
++{
++    if (clientKey.size() != 32)
++        return false;
++    encKey = hkdfSha256(clientKey, hkdfSalt(), infoEnc(), 32);
++    nonceKey = hkdfSha256(clientKey, hkdfSalt(), infoNonce(), 32);
++    return encKey.size() == 32 && nonceKey.size() == 32;
++}
++
++inline void writeU64LE(std::string& s, uint64_t v)
++{
++    for (int i = 0; i < 8; ++i)
++        s.push_back(static_cast<char>((v >> (8 * i)) & 0xFF));
++}
++
++inline uint64_t readU64LE(const unsigned char* p)
++{
++    uint64_t v = 0;
++    for (int i = 0; i < 8; ++i)
++        v |= static_cast<uint64_t>(p[i]) << (8 * i);
++    return v;
++}
++
++// AES-256-GCM. aad covers the header so version/flags/nonce/length cannot be tampered with.
++inline bool aesGcmEncrypt(const std::string& key, const std::string& nonce, const std::string& aad,
++                          const std::string& plaintext, std::string& ciphertext, std::string& tag)
++{
++    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
++    if (!ctx)
++        return false;
++    bool ok = false;
++    do {
++        int len = 0;
++        if (EVP_EncryptInit_ex(ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) != 1)
++            break;
++        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, static_cast<int>(nonce.size()), nullptr) != 1)
++            break;
++        if (EVP_EncryptInit_ex(ctx, nullptr, nullptr,
++                               reinterpret_cast<const unsigned char*>(key.data()),
++                               reinterpret_cast<const unsigned char*>(nonce.data())) != 1)
++            break;
++        if (!aad.empty() &&
++            EVP_EncryptUpdate(ctx, nullptr, &len, reinterpret_cast<const unsigned char*>(aad.data()),
++                              static_cast<int>(aad.size())) != 1)
++            break;
++        ciphertext.resize(plaintext.size());
++        int outLen = 0;
++        if (!plaintext.empty() &&
++            EVP_EncryptUpdate(ctx, reinterpret_cast<unsigned char*>(&ciphertext[0]), &outLen,
++                              reinterpret_cast<const unsigned char*>(plaintext.data()),
++                              static_cast<int>(plaintext.size())) != 1)
++            break;
++        int finalLen = 0;
++        unsigned char dummy[16];
++        if (EVP_EncryptFinal_ex(ctx, dummy, &finalLen) != 1)
++            break;
++        tag.resize(TAG_LEN);
++        if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_GET_TAG, static_cast<int>(TAG_LEN),
++                                reinterpret_cast<unsigned char*>(&tag[0])) != 1)
++            break;
++        ok = true;
++    } while (false);
++    EVP_CIPHER_CTX_free(ctx);
++    return ok;
++}
++
++// Build a chaos.pack from a plaintext (the ZIP): zlib level 9, then AES-256-GCM. Deterministic for one zlib build.
++// Used by the test; the shipped pack is built by pack_client.py.
++inline bool encrypt(const std::string& clientKey, const std::string& plaintext, bool devKey, std::string& out)
++{
++    std::string encKey, nonceKey;
++    if (!deriveKeys(clientKey, encKey, nonceKey))
++        return false;
++    if (plaintext.size() > 0xFFFFFFFFull) // compress2 takes uLong, 32 bits on Windows
++        return false;
++    uLongf zlen = compressBound(static_cast<uLong>(plaintext.size()));
++    std::string body(zlen, '\0');
++    if (compress2(reinterpret_cast<Bytef*>(&body[0]), &zlen, reinterpret_cast<const Bytef*>(plaintext.data()),
++                  static_cast<uLong>(plaintext.size()), ZLIB_LEVEL) != Z_OK)
++        return false;
++    body.resize(zlen);
++    const std::string nonce = hmacSha256(nonceKey, body).substr(0, NONCE_LEN);
++    if (nonce.size() != NONCE_LEN)
++        return false;
++    std::string header;
++    header.append(MAGIC, 4);
++    header.push_back(static_cast<char>(VERSION));
++    header.push_back(static_cast<char>(devKey ? FLAG_DEV : 0));
++    header.push_back('\0');
++    header.push_back('\0');
++    header += nonce;
++    writeU64LE(header, plaintext.size());
++    std::string ciphertext, tag;
++    if (!aesGcmEncrypt(encKey, nonce, header, body, ciphertext, tag))
++        return false;
++    out = header + ciphertext + tag;
++    return true;
++}
++
++// Decrypt a chaos.pack streamed from its file, the engine's path. `read(dst, n)` must fill exactly n bytes, in order,
++// and return false on an I/O error; `fileSize` is the pack's size on disk (the tag is its last 16 bytes).
++//
++// One output buffer of the header's plaintext length (the ZIP) is allocated up front; the file is read in 4 MB
++// chunks, each chunk is GCM-decrypted in place and fed straight to inflate, which writes into that buffer. Peak memory
++// is the ZIP size + one 4 MB chunk + the inflate window: no ciphertext copy, no second plaintext copy.
++//
++// inflate runs on bytes the tag has not authenticated yet (zlib is hardened for any input; the output buffer is fixed
++// so it cannot overrun). Only when the whole body is read, the tag verifies, inflate ended exactly at the end of the
++// body and produced exactly the declared length is `out` kept. On any failure `out` is wiped and emptied.
++template <typename Read>
++inline bool decryptStream(const std::string& clientKey, uint64_t fileSize, Read&& read, std::vector<uint8_t>& out)
++{
++    bool ok = false;
++    EVP_CIPHER_CTX* ctx = nullptr;
++    z_stream zs;
++    std::memset(&zs, 0, sizeof(zs));
++    bool zInit = false;
++    std::vector<uint8_t> chunk;
++    out.clear();
++    try {
++        do {
++            if (fileSize < HEADER_LEN + TAG_LEN)
++                break;
++            unsigned char header[HEADER_LEN];
++            if (!read(header, HEADER_LEN))
++                break;
++            if (std::memcmp(header, MAGIC, 4) != 0 || header[4] != VERSION)
++                break;
++            const uint64_t plainLen = readU64LE(header + 20);
++            const uint64_t bodyLen = fileSize - HEADER_LEN - TAG_LEN;
++            if (bodyLen == 0 || bodyLen > MAX_PLAINTEXT || plainLen > MAX_PLAINTEXT ||
++                plainLen > bodyLen * MAX_RATIO + 1024 ||
++                plainLen > static_cast<uint64_t>(std::numeric_limits<size_t>::max()))
++                break;
++
++            std::string encKey, nonceKey;
++            if (!deriveKeys(clientKey, encKey, nonceKey))
++                break;
++            ctx = EVP_CIPHER_CTX_new();
++            if (!ctx)
++                break;
++            int len = 0;
++            if (EVP_DecryptInit_ex(ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) != 1 ||
++                EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_IVLEN, static_cast<int>(NONCE_LEN), nullptr) != 1 ||
++                EVP_DecryptInit_ex(ctx, nullptr, nullptr, reinterpret_cast<const unsigned char*>(encKey.data()),
++                                   header + 8) != 1 ||
++                EVP_DecryptUpdate(ctx, nullptr, &len, header, static_cast<int>(HEADER_LEN)) != 1)
++                break;
++            if (inflateInit(&zs) != Z_OK)
++                break;
++            zInit = true;
++
++            out.resize(static_cast<size_t>(plainLen));
++            chunk.resize(static_cast<size_t>(std::min<uint64_t>(READ_CHUNK, bodyLen)));
++            unsigned char spare = 0; // next_out must not be null even when there is no room left
++            uint64_t produced = 0;
++            uint64_t left = bodyLen;
++            bool ended = false;
++            bool bad = false;
++            while (left > 0 && !bad) {
++                const size_t n = static_cast<size_t>(std::min<uint64_t>(chunk.size(), left));
++                int outLen = 0;
++                if (!read(chunk.data(), n) ||
++                    EVP_DecryptUpdate(ctx, chunk.data(), &outLen, chunk.data(), static_cast<int>(n)) != 1 ||
++                    outLen != static_cast<int>(n)) {
++                    bad = true;
++                    break;
++                }
++                left -= n;
++                if (ended) { // bytes after the end of the zlib stream
++                    bad = true;
++                    break;
++                }
++                zs.next_in = chunk.data();
++                zs.avail_in = static_cast<uInt>(n);
++                while (zs.avail_in > 0) {
++                    const uint64_t room = plainLen - produced;
++                    const uInt avail = static_cast<uInt>(std::min<uint64_t>(room, UINT_MAX));
++                    zs.next_out = avail ? out.data() + produced : &spare;
++                    zs.avail_out = avail;
++                    const int r = inflate(&zs, Z_NO_FLUSH);
++                    produced += avail - zs.avail_out;
++                    if (r == Z_STREAM_END) {
++                        ended = true;
++                        if (zs.avail_in > 0)
++                            bad = true; // trailing bytes inside this chunk
++                        break;
++                    }
++                    if (r != Z_OK) { // corrupt stream, or more output than the header declared (Z_BUF_ERROR)
++                        bad = true;
++                        break;
++                    }
++                }
++            }
++            if (bad || !ended || produced != plainLen)
++                break;
++
++            unsigned char tag[TAG_LEN];
++            if (!read(tag, TAG_LEN))
++                break;
++            if (EVP_CIPHER_CTX_ctrl(ctx, EVP_CTRL_GCM_SET_TAG, static_cast<int>(TAG_LEN), tag) != 1)
++                break;
++            unsigned char dummy[16];
++            int finalLen = 0;
++            if (EVP_DecryptFinal_ex(ctx, dummy, &finalLen) != 1) // authentication failed
++                break;
++            ok = true;
++        } while (false);
++    } catch (...) { // bad_alloc for the output buffer
++        ok = false;
++    }
++    if (zInit)
++        inflateEnd(&zs);
++    if (ctx)
++        EVP_CIPHER_CTX_free(ctx);
++    std::fill(chunk.begin(), chunk.end(), 0);
++    if (!ok) {
++        std::fill(out.begin(), out.end(), 0);
++        out.clear();
++        out.shrink_to_fit();
++    }
++    return ok;
++}
++
++// Decrypt a whole chaos.pack held in memory (tests, tools). Same checks as decryptStream.
++inline bool decrypt(const std::string& clientKey, const std::string& pack, std::string& out)
++{
++    size_t at = 0;
++    auto read = [&](unsigned char* dst, size_t n) {
++        if (n > pack.size() - at)
++            return false;
++        std::memcpy(dst, pack.data() + at, n);
++        at += n;
++        return true;
++    };
++    std::vector<uint8_t> buf;
++    if (!decryptStream(clientKey, pack.size(), read, buf)) {
++        out.clear();
++        return false;
++    }
++    out.assign(buf.begin(), buf.end());
++    return true;
++}
++
++} // namespace chaospack
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -34,6 +34,7 @@
+ #include <framework/platform/platformwindow.h>
+ #include <framework/platform/nativesplash.h>
+ #include <client/client.h>
++#include <client/chaosguard_builtin.h> // Cinders of Chaos: the client guard key, reused to decrypt chaos.pack (patch 0102)
+ 
+ #include <algorithm>
+ #include <array>
+@@ -139,11 +140,23 @@ int main(int argc, const char* argv[]) {
+ #else
+     g_resources.init(argv[0]);
+ #endif
++
++#if !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++    // Cinders of Chaos (base patch 0102, client/BASE.md "Client packs"): decrypt chaos.pack beside the exe with the
++    // client guard key and mount it from memory, before anything reads init.lua. Dev trees (loose files, no pack)
++    // fall through and load as before.
++    {
++        std::string packKey = chaosguard::builtInKey();
++        g_resources.mountEncryptedPack(packKey);
++        chaosguard::wipe(packKey);
++    }
++#endif
++
+     std::string compactName = g_resources.getCompactName();
+     g_logger.setLogFile(compactName + ".log");
+ 
+     // setup application name and version
+-    g_app.setName("AstraClient");
++    g_app.setName("CindersOfChaos"); // Cinders of Chaos (base patch 0102): the per-user write dir is named after this
+     g_app.setCompactName(compactName);
+     g_app.setVersion("3.1");
+ 

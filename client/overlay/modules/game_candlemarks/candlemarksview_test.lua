@@ -68,10 +68,10 @@ local far = { balance = 500, level = 200, near = false, offers = {
   { k = 'cos_tallow', n = 'Tallow Labels', p = 100, w = 1, u = 0, l = 1, kind = 'cosmetic', own = true },
 } }
 local fr = V.offers(far)
-eq(P(fr[1].why), 'Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple).', 'far from Osric: Buy off with the reason')
+eq(P(fr[1].why), 'Visit Osric the Chandler to buy (at the temple).', 'far from Osric: Buy off with the reason')
 eq(fr[1].canBuy, false, 'far: cannot buy')
 eq(P(fr[2].why), 'Owned', 'an owned cosmetic says so first')
-eq(P(V.header(far, 0).shop), 'Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple).', 'header: where to buy')
+eq(P(V.header(far, 0).shop), 'Visit Osric the Chandler to buy (at the temple).', 'header: where to buy')
 far.near = true
 eq(V.offers(far)[1].canBuy, true, 'near Osric: Buy on')
 eq(P(V.header(far, 0).shop), 'Osric the Chandler is here: you can buy.', 'header: near')

@@ -7,9 +7,14 @@
 --   { "format": "chaos-update-1", "key": <public key hex>, "signature": <Ed25519 signature hex>, "payload": <string> }
 -- where payload is the signed JSON text itself (the signature covers its exact bytes):
 --   { "format": 1, "product": "cinders-of-chaos", "channel": "live", "version": N, "min_version": N, "min_package": N,
---     "parallel": N, "files_url": "files/", "created": "...", "files": [ { "path", "sha256", "size" }, ... ] }
--- Each file is fetched from <files_url>/<first two hex digits>/<sha256>, so the server only holds content-addressed
--- blobs and the manifest is the one file that changes.
+--     "parallel": N, "files_url": "files/", "created": "...", "encryption": "chaos-blob-1",
+--     "files": [ { "path", "sha256", "size", "blob", "blob_size" }, ... ] }
+-- Every file is served ENCRYPTED (client/tools/update_crypt.py, base patch 0103): "blob" is the SHA-256 of the
+-- encrypted bytes and the file is fetched from <files_url>/<first two hex digits of blob>/<blob>; "sha256" and "size"
+-- are the plaintext's. The signature covers both: a download is kept only when its bytes hash to "blob" and they
+-- decrypt (GCM tag, in the engine: g_resources.updateBlobSha256) to "sha256". The blobs stay encrypted in the write dir
+-- (chaos_update/files/); the engine decrypts them into memory at start (g_resources.mountUpdateOverlay). The server
+-- only holds content-addressed ciphertext and the manifest is the one file that changes.
 
 local M = {}
 ChaosUpdateCore = M
@@ -35,6 +40,9 @@ M.DEFAULT_PARALLEL = 8
 M.MAX_PARALLEL = 8
 M.CHUNK = 8 * 1024 * 1024
 M.MAX_ATTEMPTS = 5
+-- encrypted update files (base patch 0103): the manifest's marker and the bytes a blob adds (header 28 + tag 16)
+M.ENCRYPTION = 'chaos-blob-1'
+M.BLOB_OVERHEAD = 44
 
 -- ---------------------------------------------------------------- paths
 
@@ -235,6 +243,7 @@ function M.validateManifest(m, lastVersion)
   if type(m.files_url) ~= 'string' or m.files_url == '' then return nil, 'no files_url' end
   if m.files_url:find('%.%.') or m.files_url:find('[%s\\]') then return nil, 'bad files_url' end
   if m.files_url:find('^%a[%w+.-]*:') and not m.files_url:find('^https?://') then return nil, 'bad files_url' end
+  if m.encryption ~= M.ENCRYPTION then return nil, 'manifest is not encrypted (publish it again with the current tools)' end
   if type(m.files) ~= 'table' then return nil, 'no file list' end
   if #m.files > M.MAX_FILES then return nil, 'too many files' end
   local seen = {}
@@ -247,6 +256,8 @@ function M.validateManifest(m, lastVersion)
     seen[key] = true
     if not M.isHex(f.sha256, 64) then return nil, 'bad sha256 for ' .. f.path end
     if not isInt(f.size, 0, M.MAX_FILE_SIZE) then return nil, 'bad size for ' .. f.path end
+    if not M.isHex(f.blob, 64) then return nil, 'bad blob for ' .. f.path end
+    if f.blob_size ~= f.size + M.BLOB_OVERHEAD then return nil, 'bad blob_size for ' .. f.path end
   end
   return true
 end
@@ -264,11 +275,12 @@ function M.blobUrl(manifestUrl, filesUrl, sha)
   return base .. sha:sub(1, 2) .. '/' .. sha
 end
 
--- workers: the client setting wins, then the manifest, then the default; always 1..MAX_PARALLEL
+-- workers: the client setting wins, then the manifest, then the default; always 1..MAX_PARALLEL (config.otml can be
+-- edited by hand: text, NaN or a huge number fall back or are capped)
 function M.workerCount(setting, manifestValue)
   local n = tonumber(setting)
-  if not n or n < 1 then n = tonumber(manifestValue) end
-  if not n or n < 1 then n = M.DEFAULT_PARALLEL end
+  if not n or n ~= n or n < 1 then n = tonumber(manifestValue) end
+  if not n or n ~= n or n < 1 then n = M.DEFAULT_PARALLEL end
   return math.max(1, math.min(M.MAX_PARALLEL, math.floor(n)))
 end
 
@@ -297,9 +309,47 @@ function M.formatState(st)
   return table.concat(out, '\n') .. '\n'
 end
 
--- the bootstrap mounts the tree only when the last apply finished, for this client package
+-- the bootstrap mounts the tree only when the last apply finished, for this client package, with encrypted files
 function M.shouldMount(st, packageId)
-  return st.status == 'ok' and st.package == packageId
+  return st.status == 'ok' and st.package == packageId and st.enc == M.ENCRYPTION
+end
+
+-- a tree written before the update files were encrypted (plain files) is thrown away, never mounted or compared
+function M.plainTreeLeft(st, treeExists)
+  return treeExists == true and (type(st) ~= 'table' or st.enc ~= M.ENCRYPTION)
+end
+
+-- ---------------------------------------------------------------- hash cache (chaos_update/hashcache.txt)
+-- "<realdir>|<path>\t<mtime>\t<size>\t<sha256>" lines after a "#stamp\t<stamp>" line. The pack's files all carry the
+-- same ZIP date, so a hash is trusted only for the same stamp (this client package and update): a new exe or a new
+-- update hashes everything once again.
+function M.cacheStamp(packageId, st)
+  st = type(st) == 'table' and st or {}
+  return ('%s:%s:%s'):format(tostring(packageId or ''), tostring(st.version or 0), tostring(st.applied or ''))
+end
+
+function M.parseCache(text, stamp)
+  local cache, first = {}, true
+  for line in tostring(text or ''):gmatch('[^\n]+') do
+    if first then
+      first = false
+      if line ~= '#stamp\t' .. stamp then return {} end
+    else
+      local key, mtime, size, hash = line:match('^(.-)\t(%d+)\t(%d+)\t(%x+)$')
+      if key then cache[key] = { mtime = tonumber(mtime), size = tonumber(size), hash = hash } end
+    end
+  end
+  return cache
+end
+
+function M.formatCache(cache, stamp)
+  local out = {}
+  for key, c in pairs(cache) do
+    out[#out + 1] = ('%s\t%d\t%d\t%s'):format(key, c.mtime, c.size, c.hash)
+  end
+  table.sort(out)
+  table.insert(out, 1, '#stamp\t' .. stamp)
+  return table.concat(out, '\n') .. '\n'
 end
 
 -- may the player go on with the files they have? (offline, or the update failed)
@@ -352,15 +402,16 @@ end
 
 -- ---------------------------------------------------------------- diff
 
--- what to do with one manifest file. treeHash: sha256 of chaos_update/files/<path> (nil when missing);
--- visibleHash: sha256 of "/<path>" as the client sees it (the install file, or the tree file when mounted);
--- treeMounted: whether the tree is mounted now.
+-- what to do with one manifest file. treeHash: sha256 of chaos_update/files/<path> as it is on disk, i.e. of the
+-- ENCRYPTED blob, compared with entry.blob (nil when missing); visibleHash: sha256 of "/<path>" as the client sees it
+-- (the pack's file, or the decrypted tree file when mounted), compared with entry.sha256; treeMounted: whether the
+-- tree is mounted now.
 --   "keep"     the client already sees the right file
 --   "drop"     the install file is right but a stale tree file would cover it: remove the tree file
 --   "download" fetch the blob
 function M.decide(entry, treeHash, visibleHash, treeMounted)
   if treeHash then
-    if treeHash == entry.sha256 then return 'keep' end
+    if treeHash == (entry.blob or entry.sha256) then return 'keep' end
     if not treeMounted and visibleHash == entry.sha256 then return 'drop' end
     return 'download'
   end
@@ -368,14 +419,17 @@ function M.decide(entry, treeHash, visibleHash, treeMounted)
   return 'download'
 end
 
--- blobs to fetch: one per sha256 (two paths with the same content download once), largest first
+-- blobs to fetch: one per encrypted blob (two paths with the same content download once), largest first.
+-- b.sha / b.size: the encrypted bytes (what is fetched, hashed and stored); b.plain: the plaintext SHA-256 they must
+-- decrypt to (entries without "blob" are the tests' plain stand-ins)
 function M.blobsFor(entries)
   local by, list = {}, {}
   for _, e in ipairs(entries) do
-    local b = by[e.sha256]
+    local sha = e.blob or e.sha256
+    local b = by[sha]
     if not b then
-      b = { sha = e.sha256, size = e.size, paths = {} }
-      by[e.sha256] = b
+      b = { sha = sha, size = e.blob_size or e.size, plain = e.blob and e.sha256 or nil, paths = {} }
+      by[sha] = b
       list[#list + 1] = b
     end
     b.paths[#b.paths + 1] = e.path
@@ -420,11 +474,12 @@ end
 --                  that ignores Range answers 200 with the whole file, which is taken as it is.
 --   opts.io        get(url, headers, onProgress(percent), onDone(result)) -> id; cancel(id); size(path) -> bytes
 --                  or -1; read(path); write(path, data); append(path, data); remove(path); sha256(path);
---                  rename(from, to); later(ms, fn)
+--                  plainSha256(path) (the SHA-256 the encrypted file decrypts to, "" when it does not decrypt:
+--                  g_resources.updateBlobSha256); rename(from, to); later(ms, fn)
 --   opts.onProgress(stats)  stats = { filesDone, filesTotal, bytesDone, bytesTotal, active }
 --   opts.onDone(ok, err)
--- A blob's SHA-256 is checked as soon as its last byte is on disk; a mismatch throws it away and counts as a failed
--- attempt. A request or a blob failing opts.maxAttempts times stops the whole download; nothing is applied then.
+-- A blob's SHA-256 is checked as soon as its last byte is on disk, then what it decrypts to (b.plain); a mismatch
+-- throws it away and counts as a failed attempt. A request or a blob failing opts.maxAttempts times stops the whole download; nothing is applied then.
 function M.download(opts)
   local io = opts.io
   local chunk = opts.chunk or M.CHUNK
@@ -514,10 +569,20 @@ function M.download(opts)
     end)
   end
 
+  -- the signed plaintext hash of an encrypted blob (decrypted by the engine, GCM tag checked)
+  local function plainOk(path, b)
+    if not b.plain then return true end
+    return type(io.plainSha256) == 'function' and io.plainSha256(path) == b.plain
+  end
+
   local function verify(bs)
     if io.sha256(bs.part) ~= bs.blob.sha then
       io.remove(bs.part)
       return retryBlob(bs, 'hash mismatch (file refused)')
+    end
+    if not plainOk(bs.part, bs.blob) then
+      io.remove(bs.part)
+      return retryBlob(bs, 'does not decrypt to the signed file (refused)')
     end
     if not io.rename(bs.part, bs.final) then return finish(false, 'cannot write ' .. bs.final) end
     blobDone(bs)
@@ -648,7 +713,7 @@ function M.download(opts)
     bs.final = M.STAGING .. b.sha
     bs.part = bs.final .. '.part'
     b.state = bs
-    if io.size(bs.final) == b.size and io.sha256(bs.final) == b.sha then
+    if io.size(bs.final) == b.size and io.sha256(bs.final) == b.sha and plainOk(bs.final, b) then
       blobDone(bs)
     else
       io.remove(bs.part)

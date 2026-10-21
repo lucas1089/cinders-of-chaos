@@ -125,14 +125,26 @@ jobs:
       - name: Painted icons are up to date with their source sheet (gen_painted_icons.py)
         run: python3 client/tools/gen_painted_icons.py --check  # not -I: Pillow from the user site (installed above)
 
-      - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model)
-        run: python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
+      - name: Liquid orb art is up to date (gen_orb_art.py, one ring and mask per orb size at 2x)
+        run: python3 client/tools/gen_orb_art.py --check  # not -I: Pillow from the user site (installed above)
+
+      - name: Bitmap font tool (make_fonts.py pure parts and the font atlas model), text fit of fixed-width labels
+        run: |
+          python3 client/tools/make_fonts_test.py  # not -I: Pillow from the user site (installed above)
+          python3 client/tools/check_text_fit.py  # options menu sub-entries, English and pt-BR (base patch 0104)
+          python3 client/tools/check_text_fit_test.py
 
       - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
         run: python3 -I client/tools/gen_field_timers_test.py
 
-      - name: Client updater tools (manifest builder, signer, path rules)
+      - name: Client updater tools (manifest builder, signer, path rules, blob encryption round trip / wrong key / determinism / tamper)
         run: python3 -I client/tools/make_update_manifest_test.py
+
+      - name: 'Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)'
+        run: python3 -I client/tools/pack_client_test.py
+
+      - name: Slim client tool (prune rules, reference check; no overlay file pruned but tests and notes)
+        run: python3 -I client/tools/slim_client_test.py
 
       - name: Sprite shard tool (split, verify, join on small synthetic .spr files)
         run: python3 -I client/tools/sprites/spr_shards_test.py
@@ -173,6 +185,7 @@ jobs:
           python3 -I server/tools/check_hunt_returns_test.py  # every hunt of the hall has a way back (tile rule, map check)
           python3 -I server/tools/patch_reward_chests_test.py
           python3 -I server/tools/patch_spawn_fields_test.py  # small fire under the base spawns in fire lairs
+          python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple NPC arcade
 
       - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
         run: python3 -I server/tools/idle_hall_test.py
@@ -363,6 +376,34 @@ jobs:
           patch -p1 -d "$d" < "$d/h.patch"
           g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
           "$d/chaosguard_test"
+
+      - name: Client pack vectors (C++, OpenSSL, zlib; header from base patch 0102, same bytes as pack_client.py)
+        run: |
+          sudo apt-get install -y -qq zlib1g-dev
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -lz -o "$d/chaospack_test"
+          "$d/chaospack_test"
+
+      - name: Encrypted update blobs (C++, OpenSSL, PhysFS; header from base patch 0103, same bytes as update_crypt.py)
+        run: |
+          sudo apt-get install -y -qq libphysfs-dev zlib1g-dev
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          awk '/^--- a\/src\/framework\/util\/chaosblob\.h/{p=1} p&&/^--- a\//&&!/chaosblob\.h/{p=0} p' \
+            client/base-patches/0103-encrypted-updates.patch >> "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_test.cpp -lcrypto -lz -o "$d/chaosblob_test"
+          "$d/chaosblob_test" "$d/overlay.zip"
+          python3 -I -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; assert z.read("modules/game_x/x.lua") == b"print(1)\n"; print("store zip ok:", z.namelist())' "$d/overlay.zip"
+          mkdir -p "$d/pack/modules/game_x"
+          printf 'print("pack")\n' > "$d/pack/modules/game_x/x.lua"
+          printf 'print("other")\n' > "$d/pack/modules/game_x/other.lua"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_mount_test.cpp -lcrypto -lphysfs -lz -o "$d/chaosblob_mount_test"
+          "$d/chaosblob_mount_test" "$d/pack"
 
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |

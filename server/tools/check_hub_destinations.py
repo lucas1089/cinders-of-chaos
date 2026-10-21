@@ -6,7 +6,9 @@ usage: python3 -I server/tools/check_hub_destinations.py DATA_DIR [--config guil
 DATA_DIR is a server data folder with world/<map>.otbm (the map named in --map, default: the only .otbm in world/) and items/items.otb.
 guild_hall.lua lands a player on the nearest free tile within 3 tiles of a destination (a ground, nothing that blocks
 walking or pathing, no house); a destination without one answers "This portal leads nowhere right now." Run it after
-the content areas are installed into the map. Exit 1 when a destination has no landing tile.
+the content areas are installed into the map. Each destination's way back (`back`, owner 2026-10-21) must be a free
+tile too (guild_hall.lua puts its forcefield there at startup). Exit 1 when a destination has no landing tile or its
+way back is not free.
 The map is read with tools/map/otbm.py (numpy; about 90 s for the base map). The blocking flags are the items.otb
 ones (bit 0 block solid, bit 2 block path), as the engine reads them.
 """
@@ -25,9 +27,11 @@ def read_hub(config_path):
     i = text.index('hub = {')
     block = text[i:text.index('},\n\n', i)]
     out = []
-    for m in re.finditer(r'name = "([^"]+)", pos = \{x = (\d+), y = (\d+), z = (\d+)\}(?:, level = (\d+))?', block):
+    for m in re.finditer(r'name = "([^"]+)", pos = \{x = (\d+), y = (\d+), z = (\d+)\}(?:, level = (\d+))?'
+                         r'(?:, back = \{x = (\d+), y = (\d+), z = (\d+)\})?', block):
         out.append({'name': m.group(1), 'x': int(m.group(2)), 'y': int(m.group(3)), 'z': int(m.group(4)),
-                    'level': int(m.group(5) or 0)})
+                    'level': int(m.group(5) or 0),
+                    'back': (int(m.group(6)), int(m.group(7)), int(m.group(8))) if m.group(6) else None})
     return out
 
 
@@ -43,6 +47,11 @@ def landing(dest, free):
 
 def dead_ends(hub, free):
     return [d for d in hub if landing(d, free) is None]
+
+
+def bad_backs(hub, free):
+    """the destinations without a way back or whose way back is not a free tile"""
+    return [d for d in hub if not d.get('back') or not free(*d['back'])]
 
 
 def map_free(data_dir, map_name):
@@ -88,11 +97,13 @@ def main(argv):
             return 2
         map_name = maps[0]
     free = map_free(args[0], map_name)
-    bad = dead_ends(hub, free)
+    bad = dead_ends(hub, free) + bad_backs(hub, free)
     for d in hub:
         at = landing(d, free)
-        print('%-16s (%d,%d,%d) level %d: %s' % (d['name'], d['x'], d['y'], d['z'], d['level'],
-              'lands at %d,%d' % at if at else 'LEADS NOWHERE'))
+        back = d.get('back')
+        print('%-16s (%d,%d,%d) level %d: %s; %s' % (d['name'], d['x'], d['y'], d['z'], d['level'],
+              'lands at %d,%d' % at if at else 'LEADS NOWHERE',
+              ('way back at %d,%d,%d' % back + ('' if free(*back) else ' NOT FREE')) if back else 'NO WAY BACK'))
     return 1 if bad else 0
 
 

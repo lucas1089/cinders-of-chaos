@@ -103,6 +103,20 @@ return {
 		-- teleport row (`wall`) on its teleport tile, the ring and the sparkle (`decor`) off; a hunt that takes it later
 		-- opens it again (beta 2026-10-20: "many unused spawns")
 		closed = {wall = 29306, decor = {8047, 1421}},
+		-- The black squares round the hall (owner, 2026-10-21): the island of the hall lies in a sea with no tile
+		-- beyond it, and the ground floor's wings reach past the sea's edge, so their ends and the plaza looked out on
+		-- black. tools/patch_map_fixes.py (install step mapfixes) gives every tile of `box` on floor `z` that the map
+		-- does not have the deep water of the base map around the island (`water`, picked by position), puts the
+		-- base map's water border pieces (`borders`, the side where the water lies; d = two sides and the corner,
+		-- c = a corner only) on the shore tiles (grounds `shore`) next to the new water, and gives a tile of the box
+		-- with no ground (walls standing on nothing) the ground most of its four neighbours have.
+		fill = {
+			z = 7, x = {31578, 31724}, y = {32216, 32312},
+			water = {28915, 28916, 28917, 28918},
+			shore = {29238, 4526, 4527, 4528, 4529, 4530, 4531, 4532, 4533, 4534, 4535, 4536, 4537},
+			borders = {n = 29166, e = 29167, w = 29168, s = 29177, dnw = 29169, dne = 29170, dsw = 29171, dse = 29172,
+				cnw = 29173, cne = 29174, csw = 29175, cse = 29176}
+		},
 		x = {31590, 31712},
 		endRow = 32256,
 		temple = {32369, 32241, 7},

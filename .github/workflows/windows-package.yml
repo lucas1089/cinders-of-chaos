@@ -66,9 +66,9 @@ on:
         required: false
         default: ""
       client_build:
-        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe"
+        description: "Client build number 1-65535 (CHAOS_CLIENT_BUILD; also Services.update.package). Raise it for every new exe. 13+ ships the encrypted chaos.pack (client/BASE.md 'Client packs')"
         required: false
-        default: "1"
+        default: "13"
       server_host:
         description: "Server address of the separate client and server downloads (DNS name or IPv4; the full Windows zip keeps 127.0.0.1)"
         required: false
@@ -307,7 +307,11 @@ jobs:
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
-          echo "chaos commit: $GITHUB_SHA" | tee game/BUILD_INFO.txt
+          # (it also prunes the unused files of client/tools/slim_prune.txt and fails when a file reference of the tree
+          #  no longer resolves: client/tools/slim_client.py check, client/BASE.md "Slim client")
+          # No BUILD_INFO.txt in the client tree: the shipped client folder is just the exe and chaos.pack (client/BASE.md
+          # "Client packs"). The build number is in the exe (CHAOS_CLIENT_BUILD) and Services.update.package; the commit
+          # is in this run's release notes.
 
       - name: Client guard inputs (build number, key secret)
         shell: bash
@@ -443,6 +447,8 @@ jobs:
             -p server.tar -p server-exe.tar -p client.tar --clobber
 
       - name: Put the package together
+        env:
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
           set -euo pipefail
           P=CindersOfChaos
@@ -497,6 +503,19 @@ jobs:
             echo "mariadb: $MARIADB_VERSION"
             echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID"
           } | sed 's/$/\r/' > "$P/BUILD_INFO.txt"
+
+          # ---- Cinders of Chaos client packs (client/BASE.md "Client packs") ----
+          # The shipped client folder is just the exe and one encrypted pack. The map editor keeps its own sprite copy,
+          # since the client no longer ships data/things loose.
+          cp "$P/client/data/things/1098/"Tibia.* "$P/mapeditor/data/1098/" 2>/dev/null || true
+          # keep the configured, unpacked tree (updater settings already written) for the separate client download,
+          # which sets the server host and RSA key into init.lua before packing
+          cp -a "$P/client" clienttree
+          # pack with the same key the exe was built with (pack_client.py falls back to the dev key when the secret is
+          # absent, matching an allow_dev_key exe); then strip the loose tree, leaving the exe, its DLLs and chaos.pack
+          python3 -I chaos/client/tools/pack_client.py build "$P/client" chaos.pack
+          rm -rf "$P/client/init.lua" "$P/client/data" "$P/client/modules" "$P/client/mods" "$P/client/layouts"
+          mv chaos.pack "$P/client/chaos.pack"
           du -sh "$P" "$P"/*
 
       # the separate downloads, made from the same folders: the client pointed at server_host, the server without the
@@ -504,6 +523,7 @@ jobs:
       - name: Client and server downloads (Windows)
         env:
           CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
           set -euo pipefail
           P=CindersOfChaos
@@ -517,14 +537,19 @@ jobs:
             } | sed 's/$/\r/'
           }
 
+          # The separate client download is the exe and one encrypted pack (client/BASE.md "Client packs"): configure
+          # the unpacked tree (server host, RSA key) kept by the package step, then pack it and strip the loose files.
+          # No README.txt / BUILD_INFO.txt in the client folder.
           C=CindersOfChaos-Client
-          cp -a "$P/client" "$C"
+          cp -a clienttree "$C"
           python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST" --site-url "$SITE_URL"
           python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
             $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
           python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run
-          crlf chaos/tools/windows/client-README.txt "$C/README.txt"
-          info "server host: $SERVER_HOST" "client build: $CLIENT_BUILD" > "$C/BUILD_INFO.txt"
+          python3 -I chaos/client/tools/pack_client.py build "$C" "$C.pack"
+          rm -rf "$C/init.lua" "$C/data" "$C/modules" "$C/mods" "$C/layouts"
+          mv "$C.pack" "$C/chaos.pack"
+          ls -la "$C"
 
           S=CindersOfChaos-Server
           mkdir "$S"
@@ -709,6 +734,8 @@ jobs:
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          # (it also prunes the unused files of client/tools/slim_prune.txt and fails when a file reference of the tree
+          #  no longer resolves: client/tools/slim_client.py check, client/BASE.md "Slim client")
           rm -rf base base-client
 
       - name: No other server or client names in the assembled client (check_names.py --client, client/BASE.md)
@@ -754,6 +781,7 @@ jobs:
       - name: Put the Linux client together
         env:
           CHAOS_RSA_PUBLIC: ${{ secrets.CHAOS_RSA_PUBLIC || vars.CHAOS_RSA_PUBLIC }}
+          CHAOS_CLIENT_KEY: ${{ secrets.CHAOS_CLIENT_KEY }}
         run: |
           set -euo pipefail
           P=CindersOfChaos-Client-Linux
@@ -771,13 +799,14 @@ jobs:
           python3 -I chaos/client/tools/set_rsa_key.py "$P" --from-env CHAOS_RSA_PUBLIC \
             $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
           python3 -I chaos/client/tools/make_update_manifest.py build "$P" --dry-run
-          {
-            echo "chaos commit: $GITHUB_SHA"
-            echo "assets: $ASSETS_REF @ $(git -C assets rev-parse HEAD)"
-            echo "server host: $SERVER_HOST"
-            echo "client build: $CLIENT_BUILD"
-            echo "built: $(date -u +%Y-%m-%dT%H:%MZ) by run $GITHUB_RUN_ID on $(lsb_release -ds)"
-          } > "$P/BUILD_INFO.txt"
+          # exe + one encrypted pack (client/BASE.md "Client packs"): pack the configured tree with the same key the
+          # binary was built with, then strip the loose files. The Linux client keeps run-client.sh and lib/ beside the
+          # binary (the launcher sets ALSOFT_DRIVERS / software GL and lib/ holds the bundled libraries, RUNPATH
+          # $ORIGIN/lib); no BUILD_INFO.txt or README.txt in the folder.
+          python3 -I chaos/client/tools/pack_client.py build "$P" "$P-chaos.pack"
+          rm -rf "$P/init.lua" "$P/data" "$P/modules" "$P/mods" "$P/layouts" "$P/README.txt"
+          mv "$P-chaos.pack" "$P/chaos.pack"
+          ls -la "$P"
           tar -czf "$P.tar.gz" "$P"
           ls -la "$P.tar.gz"
           rm -rf "$P" game build

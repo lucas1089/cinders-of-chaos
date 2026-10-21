@@ -20,6 +20,7 @@
 #            3 backup     server/tools/backup.sh with the server up (save first, database dump, config.lua + data/)
 #            4 install    the XP rates saved (chaos_config_rates.py), git checkout of the branch, the server stopped, the
 #                         engine replaced (the old one kept as tfs.antes-N), install_all.py --no-sql, the rates put back,
+#                         the kit's helper files (clientservices.py, helpai, start / stop scripts) brought up to date,
 #                         the server folder owned by the unit's user
 #            5 database   the server started (the kit's MariaDB runs inside the unit), the database waited for,
 #                         install_all.py --only sql, then a restart so the engine starts on the new tables
@@ -166,6 +167,29 @@ fetch_asset() {
 # the engine out of the server package: every entry checked; CindersOfChaos-Server-Linux/server/tfs and its libraries
 # (server/lib/: the engine's RUNPATH is $ORIGIN/lib) written under DEST (DEST/tfs, DEST/lib/); a link in lib/ may only
 # name a file of lib/ itself
+# the kit's helper files beside the engine, from this checkout (the same list as tools/linux/package_server.sh): a kit
+# made from an older package lacks the newer ones (clientservices.py: the login-screen services; live log 2026-10-21)
+# and keeps old start / stop scripts. Copied when missing or different; a source missing in the checkout is skipped.
+sync_sidecars() {
+  local pair src dst n=0
+  for pair in \
+    "server/tools/clientservices.py:$SERVER/tools/clientservices.py:0644" \
+    "server/tools/helpai.py:$SERVER/tools/helpai.py:0644" \
+    "server/tools/helpai_config.json:$SERVER/tools/helpai_config.json:0644" \
+    "server/tools/rsa_key.py:$SERVER/tools/rsa_key.py:0644" \
+    "website/overlay/plugins/chaos/wiki/wiki_data.json:$SERVER/tools/wiki_data.json:0644" \
+    "tools/linux/server/start-server.sh:$KIT/start-server.sh:0755" \
+    "tools/linux/server/stop-server.sh:$KIT/stop-server.sh:0755" \
+    "tools/linux/server/add-account.sh:$KIT/add-account.sh:0755"; do
+    src="$REPO/${pair%%:*}"; dst=${pair#*:}; dst=${dst%:*}
+    [ -f "$src" ] || continue
+    if ! cmp -s "$src" "$dst"; then
+      mkdir -p "$(dirname "$dst")" && install -m "${pair##*:}" "$src" "$dst" && n=$((n + 1))
+    fi
+  done
+  log "kit helper files: $n updated"
+}
+
 extract_tfs() {
   python3 -I - "$1" "$2" <<'PY'
 import os, sys, tarfile
@@ -482,6 +506,7 @@ cmd_apply() {
     fi
     if [ "$ok" = 1 ]; then
       python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$SERVER/config.lua" "$rates" || ok=0
+      sync_sidecars
       own_server
     fi
     if [ "$ok" = 1 ]; then

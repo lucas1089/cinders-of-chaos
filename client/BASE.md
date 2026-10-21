@@ -673,6 +673,14 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     it. `game_minimapsync` also puts the minimap back (`MANIFEST.md` "Minimap after a death"). Applies after
     `0001`-`0095` and before `0100` (full chain on the base archive, `patch` clean); Lua only, parses in LuaJIT and
     Lua 5.3. Not run in a client.
+69b. `0104` (OTUI `mods/client_settings/settings.otui`): **the Options menu's sub-entries fit.** `0056` drew every
+    menu name in `$var-cip-font`; the sub-entries (`NOptionButton`, 115 px, no icon) could not hold "General
+    Hotkeys", "Action Bar Hotkeys" and "Custom Hotkeys", clipped at both edges (owner screenshot 2026-10-21). They
+    use `verdana-9px-bold` now (the overlay's PT Sans bold sheet, pt-BR letters included); the four top entries keep
+    the cip font. `tools/check_text_fit.py` (CI) measures every sub-entry of `0056`'s `OPTION_LABELS` and its pt-BR
+    text in that sheet (widest "Action Bar Hotkeys", 91 of 107 px) and that the patches leave that font. Applies
+    after `0001`-`0102` (`0056` set the line). Checked with `patch` on a copy of the hunk's context only (the base
+    archive was not unpacked here); not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
@@ -710,6 +718,148 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     the base archive, `patch` clean, no fuzz in the changed files); the three changed C++ files pass
     `g++ -std=c++17 -fsyntax-only` against the patched tree (the Linux side; the Windows branch was not compiled here,
     its argument quoting was checked on its own). Not built or run in a client.
+72. `0102` (C++ `src/framework/util/chaospack.h` (new), `src/framework/core/resourcemanager.{h,cpp}`, `src/main.cpp`;
+    `init.lua`): **the encrypted client pack** (see "Client packs" below). `mountEncryptedPack(key)` finds `chaos.pack`
+    beside the exe and streams it (pack format 2: a zlib stream of the ZIP under AES-256-GCM, key from
+    `chaosguard::builtInKey()` through HKDF-SHA256, no new secret) through `chaospack::decryptStream()`, which decrypts
+    and inflates 4 MB at a time straight into one buffer of the ZIP's size, then mounts that buffer through the existing
+    PhysFS memory-archive path, so every module keeps reading through `g_resources`. `main()` derives the key and mounts the pack before `getCompactName()` (which then reads `init.lua`
+    from the pack), wipes the key, and names the app `CindersOfChaos` so the per-user write dir (config, logs, the
+    updater tree) is named after it. `setup()` and `getCompactName()` use the mounted pack; a dev tree of loose files
+    (no `chaos.pack`) loads as before. `init.lua` `APP_NAME = "CindersOfChaos"`. A wrong key or a corrupt pack is
+    fatal. The format and HKDF context are byte-identical to `tools/pack_client.py`; `tools/chaospack_test.cpp`
+    (OpenSSL, zlib) checks a fixed vector, round trips (also a 12 MB pack read in odd pieces), wrong key, tamper,
+    truncation and the inflate length checks, run in CI. Needs a new client build (exe):
+    build 13, `min_package` 13. Applies after `0001`-`0101` (full chain on the base archive, `patch` clean, no fuzz
+    in the changed files; `chaospack.h` + `chaospack_test.cpp` compile and pass with `g++ -std=c++17 -lcrypto -lz`;
+    the format-2 rewrite of 2026-10-21 applies the same way, `0103` and `0104` still apply on top with
+    `patch --fuzz=0`, and `resourcemanager.cpp` passes `g++ -std=c++17 -fsyntax-only` against the patched tree). The
+    full client was **not** built or run here (no base tree / dat-spr and too little disk in the agent); the
+    `resourcemanager.cpp` / `main.cpp` edits were checked by inspection against the patched tree only.
+73. `0103` (C++ `src/framework/util/chaosblob.h` (new), `src/framework/core/resourcemanager.{h,cpp}`,
+    `src/framework/luafunctions.cpp`, `src/main.cpp`): **encrypted updates** (see "Encrypted updates" below). The
+    updater's files stay encrypted on the website and in the write dir. `setUpdateKey(clientKey)` (from `main()`, next
+    to the pack mount, before the key is wiped) keeps only the derived blob key (HKDF-SHA256 with its own labels).
+    Lua: `g_resources.updateBlobSha256(path)` (the plaintext SHA-256 of a blob in `chaos_update/`, streamed in 1 MB
+    blocks, `""` unless the GCM tag authenticates), `g_resources.mountUpdateOverlay(path)` (decrypts every file of
+    `chaos_update/files/` straight into its slot of one in-memory store-only ZIP and PhysFS-mounts it at `/` in front
+    of the pack; one file that does not decrypt refuses the whole overlay) and `unmountUpdateOverlay()`.
+    `mountUpdateDir` no longer mounts a plain folder. Same client build as 0102: build 13, `min_package` 13. Applies
+    after `0001`-`0102` (full chain of 93 patches on the base archive, `patch` clean, no fuzz); `resourcemanager.cpp`,
+    `luafunctions.cpp` and `main.cpp` pass `g++ -std=c++17 -fsyntax-only` against the patched tree (Linux headers;
+    `luafunctions.cpp` only with the base's own unrelated `Atlas` errors of a build without the graphics defines);
+    `tools/chaosblob_test.cpp` (format, vector shared with `update_crypt.py`, tamper, streaming, ZIP writer) and
+    `tools/chaosblob_mount_test.cpp` (the overlay ZIP mounted from memory by PhysFS in front of a folder) run in CI.
+    Not built or run in a client.
+
+### Client packs (base patch 0102, `tools/pack_client.py`, 2026-10-21)
+The shipped client folder is just the exe and one encrypted pack, `chaos.pack`, with the per-user write directory for
+everything writable. Nothing in the folder opens in a text or sprite editor.
+
+- **`chaos.pack`** is a deterministic, store-only ZIP of the whole client tree (`init.lua`, `data/` including the
+  10.98 `Tibia.dat`/`Tibia.spr`, `layouts/`, `modules/`, `mods/`), compressed as **one zlib stream** (level 9) and
+  encrypted as one blob with **AES-256-GCM** (OpenSSL and zlib, both already linked). Header (28 bytes): magic `CHPK`,
+  version **2**, flags (dev-key bit), 2 reserved, a 12-byte nonce and the **uncompressed** ZIP length (u64); the
+  header is the GCM additional data, so any tamper fails the tag. Why compressed: encrypted bytes do not compress, so
+  the first packed packages (format 1, the ZIP encrypted as it is) made the release download grow from 427 MB
+  (winpkg-51, plain zip) to 1.15 GB (winpkg-54). Format 1 was never released and is refused everywhere. The 32-byte key is **HKDF-SHA256** of the client
+  guard build secret (`CHAOS_CLIENT_KEY`, base patch 0035) with a fixed salt and `info` label, so there is no new
+  secret and no new GitHub secret; a build without the secret uses the public development key and the pack is marked
+  dev (a production server refuses such a client anyway). The nonce is `HMAC-SHA256(nonce-key, zlib stream)[:12]`,
+  the HMAC of the bytes GCM encrypts, so the same tree and key always give the same bytes with one zlib build, and two
+  different ciphertexts never share a nonce even if another zlib build compresses the same ZIP differently (a nonce
+  over the uncompressed ZIP would repeat in that case). The updater does not depend on the pack's bytes (its manifest
+  is built from the files). **Honest note:** this deters
+  casual copying; it does not stop a determined reverse engineer, because the key is in the binary (obfuscated the way
+  `chaosguard_key.h` is, base patch 0035).
+- **The engine** reads the pack through the existing resource layer (base patch 0102): `chaospack::decryptStream()`
+  allocates one buffer of the header's ZIP length, reads the file in 4 MB chunks, GCM-decrypts each chunk in place and
+  feeds it straight to `inflate`, which writes into that buffer; the buffer is then PhysFS-mounted as it is, so modules
+  keep calling `g_resources` unchanged. Peak memory is the ZIP size plus one 4 MB chunk and the inflate window: no
+  ciphertext buffer and no second plaintext copy. The output is kept only when the GCM tag verifies at the end,
+  `inflate` ends exactly at the end of the body and produced exactly the declared length; otherwise it is wiped and the
+  start is fatal, as before. `inflate` runs on bytes the tag has not checked yet (zlib is hardened for any input and
+  writes only into the fixed buffer); a header asking for more than 16 GB or more than deflate's 1032:1 ratio is
+  refused before anything is allocated. The start log line gives the pack size, the ZIP size and the time taken. Lua is **not** precompiled to bytecode: the whole
+  pack is encrypted, so the source inside it is not readable without the key, and keeping source avoids the LuaJIT /
+  Lua 5.3 bytecode-format split (the engine loads source; bytecode would have to match the build's interpreter).
+- **Writable files stay outside the pack**, in the per-user write dir (`%APPDATA%/CindersOfChaos/CindersOfChaos` on
+  Windows, `~/.local/share/CindersOfChaos` on Linux): `config.otml`, `CindersOfChaos.log`, screenshots, and the
+  updater's `chaos_update/` tree (state, hash cache, downloaded files). `pack_client.py` never packs `config.otml`,
+  `chaos_update/`, `*.log`, `*.bak` or the other writable suffixes.
+- **Updater.** The signed updater is unchanged in shape (`MANIFEST.md` "Signed updater"): the manifest lists the same
+  logical files (built from the assembled tree, before packing), the client hashes the files it sees **through the
+  pack**, downloads only the changed ones into `chaos_update/files/` in the write dir, and that folder is mounted in
+  front of the pack. So an update never re-downloads the whole 900 MB pack; a new full pack ships only with a new exe.
+  The update files are encrypted too, on the website and in the write dir (base patch 0103, "Encrypted updates"
+  below). `min_package` 13 keeps build-12 and older (loose-file) clients from applying a build-13 manifest: they are
+  told a new download is required.
+- **Removed from the client folder** (proved safe before removal):
+  - `BUILD_INFO.txt`: build metadata. The build number is already in the exe (`CHAOS_CLIENT_BUILD`) and
+    `Services.update.package`; the commit is in the run's release notes. `grep -rn BUILD_INFO client/overlay` and the
+    module Lua find no reader. Dropped in `windows-package.yml` for all three client folders.
+  - `README.txt` (the Windows `client-README.txt` / Linux `tools/linux/client/README.txt`): player text, not loaded
+    by any module. Dropped from the client folders (kept in the full "whole game" zip's top level, which is a local
+    dev bundle).
+  - `otclientv8.log` and other logs never shipped once the client runs from the pack: logs go to the write dir.
+  - The base client's dev trees were **already** cherry-picked out of the package (the client folder only ever took
+    `init.lua`, `data/`, `modules/`, `mods/`, `layouts/`), and `pack_client.py`'s pack roots keep it that way:
+    `android/`, `android_libs.7z`, `browser/`, `create_android_assets.ps1`, `run_android.bat`, `old_prof.lua`,
+    `old_prof_5c.lua`, the base `readme.md` / `CREDITS.md`, `vc23/`, the base `.github/` and `tools/` never reach the
+    pack. `assemble_client.sh` still removes the unused imported modules (`game_stash`, `game_battlepass`,
+    `game_task_hunt`, `game_bot`, the native splash and client emblems).
+  - **Linux necessities kept beside the binary** (not everything can be one pack there): `run-client.sh` (sets
+    `ALSOFT_DRIVERS`/software GL and launches) and `lib/` (the bundled non-system libraries, RUNPATH `$ORIGIN/lib`).
+    Windows keeps only the exe's own DLLs beside `Chaos.exe`.
+- **Tools.** `pack_client.py build` writes format 2 (and prints the ZIP size beside the pack size); `unpack` /
+  `verify` read it. `update_crypt.py` (`PACK`: version 2, compressed) streams and inflates a pack block by block for
+  `make_update_manifest.py unpack` on the VPS (`publish_client_update.sh`), never holding the pack in memory. Update
+  blobs (`CHUB`, base patch 0103) stay format 1, not compressed.
+- **Owner steps for build 13** (the first packed exe): run `windows-package.yml` with `client_build = 13` and the
+  usual secrets (`CHAOS_CLIENT_KEY` rotated now matches the live server; the pack is keyed from it). Publish its client zip
+  as an update with `make_update_manifest.py build ... --min-package 13` so build-12 and older clients are told to
+  download build 13 (`docs/LAUNCH.md` "Client updates"). A dev build (`allow_dev_key`) produces a working, clearly-dev
+  pack keyed from the public development key.
+
+### Encrypted updates (base patch 0103, `tools/update_crypt.py`, 2026-10-21)
+Before this, every file the signed updater served sat plain on the website (`updates/live/files/`, listed by path in
+the public manifest) and plain in the per-user write dir (`chaos_update/files/`), mounted over the pack: anyone could
+read every updated module and image. Now nothing of an update is plain outside the client's memory.
+
+- **Format.** Each distinct file is one blob, the per-file variant of the `chaos.pack` format: header (magic `CHUB`,
+  version 1, flags with the development-key bit, a 12-byte nonce, the plaintext length; it is the GCM additional
+  data) + AES-256-GCM body + 16-byte tag, 44 bytes more than the file. Key: HKDF-SHA256 of the client guard secret
+  `CHAOS_CLIENT_KEY` with its own salt and labels (`CindersOfChaos/update/v1`, `chaos-update-blob-aes-256-gcm`), so
+  it is not the pack key and needs no new secret. Nonce: `HMAC-SHA256(nonce key, content)[:12]`, so the same file
+  always gives the same blob (content addressing, resumed downloads, no re-upload of unchanged files) and two
+  different files never share a nonce. `tools/update_crypt.py` (publisher, streamed in 8 MB blocks) and
+  `src/framework/util/chaosblob.h` (engine) are byte-identical; a fixed vector is checked on both sides.
+- **Publish side** (`tools/make_update_manifest.py build`, run by `server/deploy/publish_client_update.sh` on the
+  VPS): encrypts every blob with the key from the environment variable `CHAOS_CLIENT_KEY` (the script reads it from
+  `/etc/chaos/chaos.env`, where the game server has it; during a rotation "old,new" the key that opens the package's
+  `chaos.pack` is used). It is never printed. Without it nothing is published: there is no plain fallback; `--dev`
+  (tests) uses the public development key and marks every blob. Blobs live at `files/<c[:2]>/<c>`, `c` = SHA-256 of
+  the encrypted bytes; after the new manifest is written every other file of `files/` is removed (older blobs and the
+  plain blobs of a publish before build 13), so the web folder holds only ciphertext. A packed package (the exe and
+  `chaos.pack`) is decrypted on the VPS into the work folder to build the manifest (`make_update_manifest.py unpack`;
+  a development pack is refused). Encrypted publishes need `--min-package` 13 or more.
+- **Signature.** The signed payload has `"encryption": "chaos-blob-1"` and, per file, the plaintext `sha256` / `size`
+  and the blob's `blob` (SHA-256) / `blob_size`. The client keeps a download only when its bytes hash to `blob`
+  (transit) **and** the engine decrypts it (GCM tag) to `sha256` (content), both values under the Ed25519 signature;
+  a manifest without the encryption marker is refused. `make_update_manifest.py verify` checks the same, decrypting
+  every blob when the key is set.
+- **Client side.** Downloads are staged and moved into `chaos_update/files/<path>` as they came (ciphertext). At start
+  `bootstrap.lua` calls `g_resources.mountUpdateOverlay`: the engine decrypts them into one in-memory store-only ZIP
+  (one buffer the size of the update files, each file read into its slot and decrypted in place) and mounts it in front
+  of the pack. A file that does not decrypt (changed on disk, another build) refuses the overlay; the client starts on
+  the pack's files and the updater fetches the update again. A small update still downloads only the changed files,
+  never the pack. The tree's files are compared with the manifest by their encrypted hash, the pack's by the plain
+  one. Plain trees of older clients are never mounted and are deleted at the next check.
+- **Honest limits.** Same as the pack: the key is in the binary (obfuscated), so this stops reading the files off the
+  website or out of the user folder, not a determined reverse engineer. File names stay visible (they are in the
+  public manifest). The decrypted overlay costs RAM equal to the update files' size (small for module and image
+  updates; a whole new single `Tibia.spr` in an update would add its ~900 MB on top of the pack, which is why sprite
+  changes should ship as shards, base patch 0048).
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
@@ -727,6 +877,40 @@ moves any of these ids (only `0015` touches the tab bar, before the module exist
 not open" was not an id: the module imported its styles at load (autoload priority 100), before `client_styles`
 defines `Panel`, so only the tab style existed and the panel was never made (`MANIFEST.md` "Helper Support spells").
 
+### Slim client: unused files pruned at assembly (`tools/slim_client.py`, 2026-10-21)
+
+The base tree carries art and data of features this client does not have. `assemble_client.sh` runs
+`tools/slim_client.py prune` after the overlay is copied: the rules in `tools/slim_prune.txt` (`- GLOB` removes,
+`+ GLOB` keeps, a reason per group) delete the files, never the base tree itself. Measured on the assembled tree
+(base + patches 0001-0104 + overlay, without the sprite pair): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
+went from **258.0 MB (6746 files) to 84.6 MB (6344 files)**, so chaos.pack is about 173 MB smaller.
+
+| Removed | Size | Why it is unused |
+|---|---|---|
+| `data/images/game/battlepass/` (all but `battlepass-hourglass`, `mainIcon1`, `bright`) | 76.4 MB | art of the base battle pass window, deleted above; `game_interface` and `game_sidebuttons` name the three kept pictures |
+| `data/images/game/ranked-queue/` (all but `game-hud`, `cast/icon-close`, `cast/arrow-left`, `cast/arrow-right`, `ranks/rank-1`) | 71.3 MB | ranked queue backgrounds, maps and banners: no module has a ranked queue; `game_interface.otui` names the five kept |
+| `data/default.otmm`, `data/minimap/minimap.otmm` | 13.8 MB | the base world's minimaps: `game_minimap` loads `/minimap.otmm` from the write dir (built while walking or downloaded from `Services.minimap`); no file names these two. `data/minimap/regions/` stays (`gamelib/core/regions.lua`) |
+| `data/images/game/game_boss_health_bar/` | 4.2 MB | no file names it; `game_boss_health` uses `/images/bars/` |
+| modules `game_tutorial`, `dev_otui`, `game_realcreaturebutton`; mods `game_healthbars`, `game_item_action`, `game_prey_hunting` | 3.3 MB | never loaded: no `autoload`, and no otmod list, load-later, `ensureModuleLoaded` or `getModule` names them (`game_tutorial` also needs client version 1520) |
+| `data/images/shaders/` `brazil`, `sweden`, `sand_fog`, `stars`, `gold`, `red`, `red-monochrome` | 2.3 MB | `game_shaders/shaders.lua` registers every shader texture by name; these are not among them |
+| `modules/**/*_test.lua`, `mods/**/*_test.lua`, `*.md` in modules and mods | 1.1 MB | unit tests and notes run by CI from the repo, never by the client |
+| `data/json/hunting_places.json` | 1.0 MB | no module reads it |
+
+**The check.** `tools/slim_client.py check <game>` (also run by `assemble_client.sh`, so both client jobs of
+`windows-package.yml` fail on it) collects every static file reference of the tree: OTUI/OTML/otfont `image-source`,
+`icon`, `source`, `texture` values, Lua string literals that are a whole resource path, otmod `scripts` and
+`dofile`/`importStyle`/`loadUI`/`displayUI` names. Each resolves as `ResourceManager::resolvePath` does (relative to
+the file, then `/mods`, `/data`, `/modules`, the usual extensions). It fails on a reference that resolves to nothing
+unless it is listed in `tools/slim_known_missing.txt` (39 lines: computed prefixes the parser reads as a path, and files
+the tree never had, among them our `game_passivetree` class portraits `/images/passivetree/classes/*` and
+`dropdown_menu`, and `game_nameshaders` `/images/ui/lock` and `/images/ui/check`), and on a reference to a path a prune
+rule removes. Computed paths (`'/images/x/' .. name`) are not checked, so a folder addressed that way is never pruned.
+`slim_client_test.py` (CI) tests the tool and that no overlay file is pruned but tests and notes.
+
+Not pruned on purpose (small, or reached by computed names): about 8 MB of scattered pictures no file names
+literally (`data/images/game/tutorial/` hints read by `game_hints`, `game_proficiency/images/icons-N`, healthcircle and
+arc variants, cyclopedia icons). Fonts stay: `client_styles` imports every font of `data/fonts/`.
+
 ### Names check of the assembled client
 
 `check_names.py` skips `base-patches/` and the base tree is not in git, so names from the base client reach the game
@@ -739,7 +923,7 @@ It reads what the player sees in `init.lua`, `modules/`, `mods/`, `data/` and `l
 space, a URL or given to `tr()`; OTUI/OTML text, tooltip, placeholder, title and description values and URLs; `.otmod`
 name and description; JSON keys and values) against the same name list as the repo check. Names added from
 2026-10-16 on are stored only as hashes (`DENY_HASHES`, see the script's docstring). Skipped on purpose:
-`data/json/hunting_places.json` (no module reads it) and one creature name of the helper's `spelldata.json`
+`data/json/hunting_places.json` (no module reads it; pruned at assembly since 2026-10-21, "Slim client") and one creature name of the helper's `spelldata.json`
 (`CLIENT_ALLOW`). `windows-package.yml` runs it on the Linux client job's assembled tree, so a package with such a
 name fails. `assemble_client.sh` also deletes the base native splash picture and the browser emblem: both show the
 base client's name. Images are not read for baked-in text; check new base pictures by eye.
@@ -777,10 +961,23 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   `client_terminal` is a stand-in with the same name and the functions its callers use (corelib `keybinds.lua`
   `bindHotkey`, `client_autoreloadmodule`), all empty; no `toggle`, so the top bar entry hides itself. Copied over the
   base files, so an installed client gets it through the updater too. Logs still go to the log file. Test
-  `terminal_test.lua`. The module files themselves are still plain text (the encrypted pack is the next step).
+  `terminal_test.lua`. The module files ship inside the encrypted pack (base patch 0102, "Client packs").
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 
 ## Still open
 - Whether the client's engine parses the 10.98 `Tibia.dat` and the server login packet. Its own profiles are 8.60 and 15.24, so 10.98 is untested ground. The login sends OTClient version 310, which the server accepts (it needs at least 254).
 - Native modules built for another protocol may expect packets the server does not send; read the terminal log on first run.
 - You supply `Tibia.spr`/`Tibia.dat` for 10.98 (not in the repo).
+- **Client pack, build 13 not built or run** (base patch 0102, "Client packs"): the crypto and zlib core is verified
+  cross-language (`chaospack_test.cpp` vs `pack_client.py`, both in CI), the streamed decrypt + inflate was timed on a
+  real-sized pack, and the patch applies clean after `0001`-`0101`, but the full client was not compiled or started
+  here (little disk in the agent). Before the
+  real build-13 release, build the patched client on Linux (`LINUX.md`) and run the `windows-package.yml` start test to
+  confirm it mounts `chaos.pack` and reaches the login screen.
+- **Encrypted updates, build 13 not built or run** (base patch 0103, "Encrypted updates"): the format is checked
+  cross-language (`chaosblob_test.cpp` vs `update_crypt.py`), the overlay ZIP is mounted by PhysFS in a test, the
+  publisher end to end on a synthetic packed package (`publish_client_update_test.py`), and the chain applies; the
+  engine functions were compiled only with `-fsyntax-only`. In the `windows-package.yml` build-13 run and a first
+  publish, confirm: the client mounts the overlay after an update (`updater: N encrypted update files mounted` in
+  the log), the updated module is used, `chaos_update/files/` holds only `CHUB` files, and a hand-changed file there
+  makes the client fetch the update again instead of loading it.

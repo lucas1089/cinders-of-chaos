@@ -96,6 +96,29 @@ do
   eq(L.orbSize(1), 76, 'small')
   eq(L.orbSize(3), 190, 'large')
   eq(L.orbSize(9), 150, 'unknown size is the default')
+  -- each size has its own ring and mask, made at twice the drawn size (tools/gen_orb_art.py): a 76 px ring and a
+  -- 64 px mask stretched to the medium and large orbs looked blurred and stepped (owner screenshot 2026-10-21)
+  local function pngSize(path)
+    local f = io.open(path, 'rb')
+    if not f then return nil end
+    local h = f:read(24)
+    f:close()
+    if not h or #h < 24 or h:sub(2, 4) ~= 'PNG' then return nil end
+    local function u32(i) local a, b, c, d = h:byte(i, i + 3) return ((a * 256 + b) * 256 + c) * 256 + d end
+    return u32(17), u32(21)
+  end
+  local here = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
+  for opt = 1, 3 do
+    local size, liquid = L.orbSize(opt)
+    local ring, mask = L.orbArt(opt)
+    eq(ring, '/modules/game_shaderfx/images/orb_ring_' .. size, 'ring image of size ' .. opt)
+    eq(mask, '/modules/game_shaderfx/images/orb_mask_' .. liquid, 'mask image of size ' .. opt)
+    local rw, rh = pngSize(here .. 'images/orb_ring_' .. size .. '.png')
+    eq(rw, 2 * size, 'ring of size ' .. opt .. ' is 2x its drawn width') eq(rh, 2 * size, 'ring height')
+    local mw, mh = pngSize(here .. 'images/orb_mask_' .. liquid .. '.png')
+    eq(mw, 2 * liquid, 'mask of size ' .. opt .. ' is 2x its drawn width') eq(mh, 2 * liquid, 'mask height')
+  end
+  eq(select(1, L.orbArt(nil)), select(1, L.orbArt(L.ORB_DEFAULT_SIZE)), 'no option: the default size art')
   -- every orb size beside the chat (game_chatpanel's layout): inside the window, clear of the grips and the chat
   local C = rawget(_G, 'ChaosChatLogic')
   if not C then

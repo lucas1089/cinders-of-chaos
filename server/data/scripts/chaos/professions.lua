@@ -763,7 +763,7 @@ end
 
 function P.sell(player, id, n)
 	if not brokerNear(player) then
-		return result(player, false, "Sell to a Material Broker: one stands next to every temple, in Cinderhold and Mirewake in the Hall of Services.")
+		return result(player, false, "Sell to a Material Broker: one stands next to every temple (in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).")
 	end
 	local mat = idx.mat[tonumber(id) or 0]
 	if not mat then
@@ -779,7 +779,7 @@ end
 
 function P.sellAll(player)
 	if not brokerNear(player) then
-		return result(player, false, "Sell to a Material Broker: one stands next to every temple, in Cinderhold and Mirewake in the Hall of Services.")
+		return result(player, false, "Sell to a Material Broker: one stands next to every temple (in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).")
 	end
 	local S = stateOf(player)
 	local units, gold = 0, 0

@@ -45,6 +45,9 @@ return {
 	-- npc: a name, {[town id] = name} for a booth that differs per town, or false for a free slot (nothing is built
 	-- until a name is set). A row with no NPC set is not built. An NPC listed here is placed in the booth by
 	-- ChaosNpcPlace.place / the Keeper of Trials' own placement instead of next to the temple, in both towns.
+	-- Owner 2026-10-21: the NPCs of the economy and service rows stand in the arcade at Cinderhold's temple
+	-- (temple_npcs_config.lua): their booths are Mirewake's only ({[1] = name}); Cinderhold's economy rooms stay empty
+	-- (a row with no NPC in a town is not built there). The progression row keeps both towns.
 	rows = {
 		-- progression: ascension, the trials, tales and the town's faction
 		{key = "progression", room = "progression", npcRow = 27, counterRow = 26, from = 3, to = 22, booths = {
@@ -55,26 +58,26 @@ return {
 		}},
 		-- economy: selling loot, materials, the Gambler, Conquest Tokens, Candlemarks
 		{key = "economy", room = "economy", npcRow = 27, counterRow = 26, from = 39, to = 62, booths = {
-			{x = 41, npc = "Loot Buyer"},
-			{x = 46, npc = "Material Broker"},
-			{x = 51, npc = "Mordecai Ashwager"},
-			{x = 56, npc = "Iselde Varrow"},
-			{x = 61, npc = "Osric the Chandler"}
+			{x = 41, npc = {[1] = "Loot Buyer"}},
+			{x = 46, npc = {[1] = "Material Broker"}},
+			{x = 51, npc = {[1] = "Mordecai Ashwager"}},
+			{x = 56, npc = {[1] = "Iselde Varrow"}},
+			{x = 61, npc = {[1] = "Osric the Chandler"}}
 		}},
 		-- the north walls: the services that stand in for menu entries (service_npcs_config.lua, README "Service NPCs";
 		-- owner 2026-10-20). The stash keeper and the pocket boss NPC fill the two free slots west of the economy room's
 		-- way in (x 49-51: the path from the lobby), the banker and the house broker stand east of it, the services
 		-- clerk on the progression room's north wall (west of its way in, x 11-13). A free slot (npc = false) builds nothing.
 		{key = "economy_north", room = "economy", npcRow = 17, counterRow = 18, from = 39, to = 48, booths = {
-			{x = 41, npc = "Tavish Coldhand", slot = "stash keeper"},
-			{x = 46, npc = "Vessa Hollowmark", slot = "pocket boss NPC"}
+			{x = 41, npc = {[1] = "Tavish Coldhand"}, slot = "stash keeper"},
+			{x = 46, npc = {[1] = "Vessa Hollowmark"}, slot = "pocket boss NPC"}
 		}},
 		{key = "economy_north_east", room = "economy", npcRow = 17, counterRow = 18, from = 53, to = 62, booths = {
-			{x = 56, npc = "Cassian Auric"},
-			{x = 61, npc = "Halvard Deedkeeper"}
+			{x = 56, npc = {[1] = "Cassian Auric"}},
+			{x = 61, npc = {[1] = "Halvard Deedkeeper"}}
 		}},
 		{key = "progression_north", room = "progression", npcRow = 17, counterRow = 18, from = 3, to = 8, booths = {
-			{x = 5, npc = "Pell Ashmere"}
+			{x = 5, npc = {[1] = "Pell Ashmere"}}
 		}}
 	},
 

@@ -9,6 +9,10 @@ accepts, with the tag's number as version and the package's client build as min_
 same version again, a package of another key, a wrong public key setting, a zip with "..", an absolute path or a link,
 a too small download and a zip with no client folder are refused and publish nothing; the web server check against a
 local HTTP server (right headers and Range: ok; a plain static server: warnings, exit still 0).
+Encrypted blobs (build 13): the client guard key comes from the environment or the CHAOS_CLIENT_KEY= line of
+CHAOS_ENV; without it nothing is published; every published blob is ciphertext that decrypts to the signed content; a
+packed package (the exe and chaos.pack) is opened with the key of a rotation pair that fits; a development pack, a
+pack of another key and a min_package below 13 are refused; the old plain blobs are removed.
 
 usage: python3 -I server/deploy/publish_client_update_test.py
 """
@@ -26,6 +30,12 @@ import zipfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, 'publish_client_update.sh')
 TOOL = os.path.join(HERE, '..', '..', 'client', 'tools', 'make_update_manifest.py')
+sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools'))
+import pack_client  # noqa: E402
+import update_crypt  # noqa: E402
+
+CLIENT_KEY = '7e' * 32   # throwaway client guard keys (never real ones)
+OLD_KEY = '19' * 32
 
 failures = 0
 
@@ -49,7 +59,7 @@ INIT = '''Services = {
 '''
 
 
-def make_zip(path, public, url, package=11, build=11, extra=None, links=False, baseline=None):
+def make_zip(path, public, url, package=13, build=13, extra=None, links=False, baseline=None):
     with zipfile.ZipFile(path, 'w') as z:
         root = 'CindersOfChaos-Client/'
         line = '' if baseline is None else '    baseline = %d,\n' % baseline
@@ -66,6 +76,24 @@ def make_zip(path, public, url, package=11, build=11, extra=None, links=False, b
             info = zipfile.ZipInfo(root + 'modules/evil')
             info.external_attr = (stat.S_IFLNK | 0o777) << 16
             z.writestr(info, '/etc/passwd')
+
+
+def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, package=13, baseline=None):
+    """the layout of a build-13 package: CindersOfChaos-Client/ with Chaos.exe and chaos.pack only"""
+    tree = tempfile.mkdtemp(dir=tmp)
+    line = '' if baseline is None else '    baseline = %d,\n' % baseline
+    files = {'init.lua': (INIT % (url, public, package, line)).encode(), 'modules/client_x/x.lua': b'print(1)\n',
+             'mods/readme.txt': b'mods\n', 'data/things/1098/Tibia.dat': os.urandom(4000),
+             'data/things/1098/Tibia.spr': os.urandom(70000)}
+    for rel, data in files.items():
+        full = os.path.join(tree, rel)
+        os.makedirs(os.path.dirname(full), exist_ok=True)
+        open(full, 'wb').write(data)
+    pack = pack_client.encrypt_pack(pack_client.build_zip(tree), bytes.fromhex(key_hex), is_dev=dev)
+    with zipfile.ZipFile(path, 'w') as z:
+        z.writestr('CindersOfChaos-Client/Chaos.exe', b'MZ' + b'\0' * 100)
+        z.writestr('CindersOfChaos-Client/chaos.pack', pack)
+    shutil.rmtree(tree)
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -157,14 +185,34 @@ exec %s "$@"
 ''' % real_curl)
         os.chmod(os.path.join(stub, 'curl'), 0o755)
 
-        def run(*args, extra=None):
+        def run(*args, extra=None, drop=()):
             e = dict(os.environ, CHAOS_SITE_DIR=site, CHAOS_UPDATE_KEY=key, CHAOS_UPDATE_MIN_MB='0',
                      CHAOS_WORK_DIR=work, CHAOS_UPDATE_PUBLIC_FILE=os.path.join(keys, 'none.pub'),
+                     CHAOS_CLIENT_KEY=CLIENT_KEY, CHAOS_ENV=os.path.join(keys, 'none.env'),
                      STUB_DIR=stub, PATH=stub + os.pathsep + os.environ.get('PATH', ''))
             e.pop('CHAOS_UPDATE_PUBLIC', None)
             e.pop('CHAOS_UPDATE_URL', None)
             e.update(extra or {})
-            return subprocess.run(['bash', SCRIPT] + list(args), env=e, capture_output=True, text=True)
+            for k in drop:
+                e.pop(k, None)
+            r = subprocess.run(['bash', SCRIPT] + list(args), env=e, capture_output=True, text=True)
+            check(CLIENT_KEY not in r.stdout + r.stderr and OLD_KEY not in r.stdout + r.stderr,
+                  'the client key is never printed')
+            return r
+
+        def blobs_ok(key_hex=CLIENT_KEY):
+            """every file of files/ is a blob of the manifest, ciphertext that decrypts to its signed content"""
+            names = {f for _, _, fs in os.walk(os.path.join(live, 'files')) for f in fs}
+            m = payload()
+            if names != {f['blob'] for f in m['files']}:
+                return False
+            for f in m['files']:
+                blob = os.path.join(live, 'files', f['blob'][:2], f['blob'])
+                if open(blob, 'rb').read(4) != b'CHUB':
+                    return False
+                if update_crypt.decrypt_file(blob, bytes.fromhex(key_hex))[1] != f['sha256']:
+                    return False
+            return True
 
         def payload():
             return json.loads(json.load(open(os.path.join(live, 'manifest.json')))['payload'])
@@ -178,7 +226,8 @@ exec %s "$@"
         check(r.returncode == 0, 'local zip publishes: ' + r.stdout + r.stderr)
         check(verify(), 'the published manifest verifies')
         m = payload()
-        check(m['version'] == 3 and m['min_package'] == 11, 'version 3, min_package = client build 11')
+        check(m['version'] == 3 and m['min_package'] == 13, 'version 3, min_package = client build 13')
+        check(m['encryption'] == 'chaos-blob-1' and blobs_ok(), 'encrypted blobs only, they decrypt to the content')
         paths = {f['path'] for f in m['files']}
         check('modules/client_x/x.lua' in paths and 'data/things/1098/Tibia.spr' in paths, 'modules and the pair')
         check(not any(p.endswith('.exe') or p in ('init.lua', 'BUILD_INFO.txt') for p in paths), 'no exe, no init.lua')
@@ -216,11 +265,20 @@ exec %s "$@"
         r = run('--version', '60', other)
         check(r.returncode != 0 and 'would refuse' in r.stderr, 'a package of another key refused')
         mismatch = os.path.join(zips, 'mismatch.zip')
-        make_zip(mismatch, public, url, package=12, build=11)
+        make_zip(mismatch, public, url, package=14, build=13)
         r = run('--version', '60', mismatch)
         check(r.returncode != 0 and '--min-package' in r.stderr, 'build and package disagree: refused')
-        r = run('--version', '60', '--min-package', '13', good)
+        r = run('--version', '60', '--min-package', '14', good)
         check(r.returncode != 0, 'min_package above the package refused')
+        old12 = os.path.join(zips, 'old12.zip')
+        make_zip(old12, public, url, package=12, build=12)
+        r = run('--version', '60', old12)
+        check(r.returncode != 0 and 'only client build 13 or newer' in r.stderr, 'a build-12 package refused')
+        r = run('--version', '60', '--min-package', '0', good)
+        check(r.returncode != 0 and 'only client build 13 or newer' in r.stderr, 'min_package 0 refused')
+        # no client guard key anywhere: nothing published (never a plain fallback)
+        r = run('--version', '60', good, drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode != 0 and 'no CHAOS_CLIENT_KEY' in r.stderr, 'no client key: refused')
         for name, data in (('../evil.txt', 'x'), ('/abs.txt', 'x'), ('CindersOfChaos-Client/../../e.txt', 'x')):
             bad = os.path.join(zips, 'bad.zip')
             make_zip(bad, public, url, extra={name: data})
@@ -250,6 +308,41 @@ exec %s "$@"
         check('WARN Cache-Control' in r.stdout and 'WARN a blob Range' in r.stdout, 'plain server warnings')
         r = run('--check-only', extra={'CHAOS_UPDATE_URL': purl})
         check(r.returncode == 1, '--check-only fails on warnings')
+
+        # build 13: the packed package (exe + chaos.pack), the key read from CHAOS_ENV like the game server's
+        envfile = os.path.join(keys, 'chaos.env')
+        with open(envfile, 'w') as f:
+            f.write('CHAOS_DB_PASS=x\n# the client guard\nCHAOS_CLIENT_KEY="%s,%s"\nOTHER=1\n' % (OLD_KEY, CLIENT_KEY))
+        packed = os.path.join(zips, 'packed.zip')
+        make_packed_zip(packed, tmp, public, url)
+        # a plain blob left by a publish before build 13
+        old_plain = os.path.join(live, 'files', 'ab', 'ab' * 32)
+        os.makedirs(os.path.dirname(old_plain), exist_ok=True)
+        open(old_plain, 'w').write('print("plain module")')
+        r = run('--version', '62', packed, extra={'CHAOS_UPDATE_URL': purl, 'CHAOS_ENV': envfile},
+                drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode == 0, 'a packed package publishes: ' + r.stdout + r.stderr)
+        check('opened with key 2 of CHAOS_CLIENT_KEY' in r.stdout, 'the rotation key that opens the pack is used')
+        m = payload()
+        check(m['version'] == 62 and m['min_package'] == 13, 'packed: version 62, min_package 13 from init.lua')
+        paths = {f['path'] for f in m['files']}
+        check('modules/client_x/x.lua' in paths and 'data/things/1098/Tibia.spr' in paths
+              and not any(p.endswith(('.exe', '.pack')) for p in paths), 'packed: the tree inside the pack')
+        check(blobs_ok() and not os.path.exists(old_plain), 'packed: ciphertext only, the plain blob removed')
+        check(os.listdir(work) == [], 'the decrypted tree is removed with the work folder')
+        before = open(os.path.join(live, 'manifest.json')).read()
+        other_key = os.path.join(zips, 'otherkey.zip')
+        make_packed_zip(other_key, tmp, public, url, key_hex='44' * 32)
+        r = run('--version', '63', other_key)
+        check(r.returncode != 0 and 'no key of CHAOS_CLIENT_KEY opens it' in r.stderr, 'a pack of another key refused')
+        devzip = os.path.join(zips, 'dev.zip')
+        make_packed_zip(devzip, tmp, public, url, key_hex=update_crypt.DEV_KEY_HEX, dev=True)
+        r = run('--version', '63', devzip)
+        check(r.returncode != 0 and 'DEVELOPMENT pack' in r.stderr, 'a development pack refused')
+        r = run('--version', '63', '--key-index', '1', packed, extra={'CHAOS_ENV': envfile}, drop=('CHAOS_CLIENT_KEY',))
+        check(r.returncode != 0 and 'is the one that opens this package' in r.stderr, 'a wrong --key-index refused')
+        check(unchanged(), 'refused packed runs publish nothing')
+        check(os.listdir(work) == [], 'refused packed runs leave no work folder')
 
         # base patch 0101: a package's baseline (its release number) is the version of its update, nothing else
         pkg70 = os.path.join(zips, 'pkg70.zip')

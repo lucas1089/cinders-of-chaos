@@ -1,7 +1,8 @@
 -- luajit updater_core_test.lua && lua5.3 updater_core_test.lua (from the repo root or this folder)
 -- The signed updater without the client: path rules, envelope and manifest checks, the diff, the download pool
 -- (bounded workers, largest first, ranged parts with resume, retries, hash check per file, nothing applied on
--- failure) and the apply step, against a fake HTTP server and an in-memory disk.
+-- failure), the encrypted files (manifest fields, the plaintext check of every download, plain trees thrown away, the
+-- hash cache stamp) and the apply step, against a fake HTTP server and an in-memory disk.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 local C = dofile(dir .. 'updater_core.lua')
 local fails, checks = 0, 0
@@ -75,8 +76,12 @@ eq(select(2, C.checkEnvelope('x', KEY, fakeVerify)), 'manifest is not a JSON obj
 
 local function sha(c) return (c):rep(64):sub(1, 64) end
 local function manifest(files, version)
+  for _, f in ipairs(files) do
+    if f.blob == nil then f.blob = sha('f') end
+    if f.blob_size == nil and type(f.size) == 'number' then f.blob_size = f.size + 44 end
+  end
   return { format = 1, product = 'cinders-of-chaos', version = version or 5, min_version = 0, min_package = 0,
-           parallel = 4, files_url = 'files/', files = files }
+           parallel = 4, files_url = 'files/', encryption = 'chaos-blob-1', files = files }
 end
 local good = manifest({ { path = 'modules/a/a.lua', sha256 = sha('a'), size = 10 } })
 eq(C.validateManifest(good), true, 'valid manifest')
@@ -91,6 +96,13 @@ eq(select(2, C.validateManifest(manifest({ { path = 'modules/a/a.lua', sha256 = 
 eq(select(2, C.validateManifest(manifest({ { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1 },
                                           { path = 'modules/a/A.lua', sha256 = sha('b'), size = 1 } }))),
    'duplicate path modules/a/A.lua', 'case-insensitive duplicate')
+local plainM = manifest({}); plainM.encryption = nil
+eq(select(2, C.validateManifest(plainM)), 'manifest is not encrypted (publish it again with the current tools)',
+   'a manifest of plain files refused')
+eq(select(2, C.validateManifest(manifest({ { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1, blob = 'x' } }))),
+   'bad blob for modules/a/a.lua', 'blob hash checked')
+eq(select(2, C.validateManifest(manifest({ { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1, blob_size = 1 } }))),
+   'bad blob_size for modules/a/a.lua', 'blob size = size + 44')
 local other = manifest({}); other.product = 'x'
 eq(select(2, C.validateManifest(other)), 'manifest of another product', 'product')
 local fu = manifest({}); fu.files_url = 'file:///etc/'
@@ -104,12 +116,31 @@ eq(C.blobUrl('https://a/m.json', 'https://cdn.example/f', sha('1')), 'https://cd
 eq(C.workerCount(nil, 6), 6, 'manifest parallel'); eq(C.workerCount(2, 6), 2, 'setting wins')
 eq(C.workerCount(nil, nil), 8, 'default parallel'); eq(C.workerCount(99, nil), 8, 'parallel capped')
 eq(C.workerCount(0, 0), 8, 'zero means default')
+eq(C.workerCount('abc', 3), 3, 'text setting: manifest'); eq(C.workerCount(0 / 0, nil), 8, 'NaN setting: default')
+eq(C.workerCount(1e300, nil), 8, 'huge setting capped'); eq(C.workerCount(-4, 0 / 0), 8, 'negative setting, NaN manifest')
+eq(C.workerCount(2.7, nil), 2, 'whole workers')
 
 -- ---------------------------------------------------------------- state, verdicts, diff
-local st = C.parseState(C.formatState({ version = 7, min_version = 3, package = 'p1', status = 'ok' }))
+local st = C.parseState(C.formatState({ version = 7, min_version = 3, package = 'p1', status = 'ok', enc = C.ENCRYPTION }))
 eq(st.version, 7, 'state version'); eq(st.package, 'p1', 'state package'); eq(C.shouldMount(st, 'p1'), true, 'mount ok')
 eq(C.shouldMount(st, 'p2'), false, 'other package not mounted')
+st.enc = nil; eq(C.shouldMount(st, 'p1'), false, 'a plain tree (before build 13) is never mounted')
+eq(C.plainTreeLeft(st, true), true, 'plain tree thrown away'); eq(C.plainTreeLeft(st, false), false, 'no tree, nothing to do')
+eq(C.plainTreeLeft({}, true), true, 'tree without state thrown away'); eq(C.plainTreeLeft(nil, true), true, 'no state')
+st.enc = C.ENCRYPTION; eq(C.plainTreeLeft(st, true), false, 'encrypted tree kept')
 st.status = 'applying'; eq(C.shouldMount(st, 'p1'), false, 'half applied not mounted')
+
+-- hash cache: trusted only for the same package and update
+do
+  local stamp = C.cacheStamp('pkg', { version = 3, applied = 't' })
+  eq(stamp, 'pkg:3:t', 'stamp')
+  local text = C.formatCache({ ['pack|/modules/a.lua'] = { mtime = 315532800, size = 5, hash = sha('a') } }, stamp)
+  eq(C.parseCache(text, stamp)['pack|/modules/a.lua'].hash, sha('a'), 'cache read back')
+  eq(next(C.parseCache(text, C.cacheStamp('pkg2', { version = 3, applied = 't' }))), nil, 'new exe: cache dropped')
+  eq(next(C.parseCache(text, C.cacheStamp('pkg', { version = 4, applied = 'u' }))), nil, 'new update: cache dropped')
+  eq(next(C.parseCache('pack|/x\t1\t1\t' .. sha('a') .. '\n', stamp)), nil, 'an old cache without a stamp is dropped')
+  eq(next(C.parseCache('', stamp)), nil, 'empty cache')
+end
 eq(C.parseState('').version, 0, 'empty state')
 eq(C.offlineVerdict(false, { version = 7, min_version = 3, min_package = 0 }, 1), true, 'offline playable')
 eq(C.offlineVerdict(true, { version = 7, min_version = 0, min_package = 0 }, 1), false, 'required server')
@@ -139,6 +170,14 @@ eq(C.restartMode({ canRestart = function() return false end }), 'manual', 'engin
 eq(C.restartMode({ canRestart = function() error('x') end }), 'manual', 'canRestart error')
 eq(C.restartMode(nil), 'manual', 'no g_app')
 
+local ee = { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1, blob = sha('e'), blob_size = 45 }
+eq(C.decide(ee, sha('e'), nil, true), 'keep', 'encrypted tree file: compared with the blob hash')
+eq(C.decide(ee, sha('a'), nil, true), 'download', 'a plain tree file is never right')
+eq(C.decide(ee, nil, sha('a'), false), 'keep', 'the pack file: compared with the plaintext hash')
+eq(C.decide(ee, sha('b'), sha('a'), false), 'drop', 'stale encrypted tree file over the right pack file')
+local eb = C.blobsFor({ ee, { path = 'modules/a/b.lua', sha256 = sha('a'), size = 1, blob = sha('e'), blob_size = 45 } })
+eq(#eb, 1, 'one encrypted blob for the same content'); eq(eb[1].sha, sha('e'), 'fetched by its blob hash')
+eq(eb[1].size, 45, 'blob size'); eq(eb[1].plain, sha('a'), 'checked against the plaintext hash')
 local e = { path = 'modules/a/a.lua', sha256 = sha('a'), size = 1 }
 eq(C.decide(e, nil, sha('a'), false), 'keep', 'install file right')
 eq(C.decide(e, nil, sha('b'), false), 'download', 'install file old')
@@ -392,6 +431,63 @@ do -- canceled: pending requests are canceled
   local job = C.download({ blobs = bl, workers = 4, chunk = 10, io = W.io, onDone = function(ok, err) done = { ok, err } end })
   job.cancel()
   eq(done[1], false, 'cancel ends the pool'); eq(done[2], 'canceled', 'cancel reason'); eq(W.canceled, 4, 'requests canceled')
+end
+
+do -- encrypted blobs: kept only when the bytes hash right AND they decrypt to the signed plaintext
+  -- the fake cipher: a blob is "E:" .. plaintext; plainSha256 "decrypts" it, "" for anything else
+  local plainA, plainB = 'module a', 'image b'
+  local function blobOf(p) return 'E:' .. p end
+  local list, server = {}, {}
+  for name, p in pairs({ ['modules/a.lua'] = plainA, ['data/b.png'] = plainB }) do
+    local c = blobOf(p)
+    list[#list + 1] = { path = name, sha256 = fhash(p), size = #p, blob = fhash(c), blob_size = #c }
+    server['https://u/files/' .. fhash(c):sub(1, 2) .. '/' .. fhash(c)] = c
+  end
+  local function decryptingWorld(srv)
+    local W = newWorld(srv)
+    W.io.plainSha256 = function(path)
+      local d = W.disk[path]
+      return (d and d:sub(1, 2) == 'E:') and fhash(d:sub(3)) or ''
+    end
+    return W
+  end
+  local bl = C.blobsFor(list)
+  for _, x in ipairs(bl) do x.url = C.blobUrl('https://u/manifest.json', 'files/', x.sha) end
+  local W = decryptingWorld(server)
+  local done
+  C.download({ blobs = bl, workers = 2, io = W.io, onDone = function(ok, err) done = { ok, err } end })
+  W.drain()
+  eq(done[1], true, 'encrypted blobs pass both checks')
+  eq(W.disk[C.STAGING .. fhash(blobOf(plainA))], blobOf(plainA), 'staged as ciphertext (never decrypted to disk)')
+
+  -- the right ciphertext hash but another plaintext (a publisher error or a forged pair): refused every time
+  local wrong = {}
+  for k, v in pairs(list[1]) do wrong[k] = v end
+  wrong.sha256 = fhash('something else')
+  local bl2 = C.blobsFor({ wrong })
+  bl2[1].url = C.blobUrl('https://u/manifest.json', 'files/', bl2[1].sha)
+  local W2 = decryptingWorld(server)
+  local done2
+  C.download({ blobs = bl2, workers = 1, io = W2.io, onDone = function(ok, err) done2 = { ok, err } end })
+  W2.drain()
+  eq(done2[1], false, 'a blob that decrypts to another file fails')
+  eq(done2[2], wrong.path .. ': does not decrypt to the signed file (refused)', 'decrypt reason')
+  eq(W2.disk[C.STAGING .. bl2[1].sha], nil, 'not staged')
+
+  -- an engine without the decrypt check refuses encrypted blobs (never accepted unchecked)
+  local W3 = newWorld(server)
+  local done3
+  C.download({ blobs = C.blobsFor({ list[1] }), workers = 1, io = W3.io, onDone = function(ok, err) done3 = { ok, err } end })
+  W3.drain()
+  eq(done3[1], false, 'no plainSha256: refused')
+
+  -- a staged blob from an earlier run is checked again (ciphertext and plaintext) before it counts
+  local W4 = decryptingWorld(server)
+  W4.disk[C.STAGING .. list[1].blob] = server['https://u/files/' .. list[1].blob:sub(1, 2) .. '/' .. list[1].blob]
+  local bl4 = C.blobsFor({ list[1] })
+  local done4
+  C.download({ blobs = bl4, workers = 1, io = W4.io, onDone = function(ok) done4 = ok end })
+  eq(done4, true, 'staged encrypted blob reused'); eq(#W4.requests, 0, 'no request for it')
 end
 
 -- ---------------------------------------------------------------- apply

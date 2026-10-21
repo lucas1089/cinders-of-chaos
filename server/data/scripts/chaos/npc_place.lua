@@ -6,8 +6,9 @@
 -- opts: radius, spacing, minFromTemple, minOpen (npc_place_core.lua K.DEFAULTS); depotFallback = true: no spot near
 -- the temple -> the same search around the town's nearest depot (ChaosNpcPlaceCore.depotAnchors). Used by item_prices.lua (Loot Buyer),
 -- gamble.lua (the Gambler), ascension_quest.lua (Ascendant Oracle), tales.lua (Archivist Maelis), professions.lua
--- (Material Broker) and factions.lua. An NPC with a booth in its town's Hall of Services (npc_booths_config.lua) is
--- placed in the booth instead (ChaosNpcBooths.spotForTemple). Lua 5.1 / LuaJIT compatible.
+-- (Material Broker) and factions.lua. An NPC with a stand in the arcade at its town's temple (temple_npcs_config.lua,
+-- ChaosNpcPlaceCore.templeStand) is placed there; else an NPC with a booth in its town's Hall of Services
+-- (npc_booths_config.lua) is placed in the booth (ChaosNpcBooths.spotForTemple). Lua 5.1 / LuaJIT compatible.
 
 if not ChaosNpcPlaceCore then
 	dofile("data/scripts/chaos/npc_place_core.lua")
@@ -112,8 +113,14 @@ local function booth(name, temple)
 	return ok and pos or nil
 end
 
+-- the NPC's stand in the arcade at its town's temple (temple_npcs_config.lua), first of all
+local function stand(name, temple)
+	local ok, s = pcall(K.templeStand, K.templeConfig(), name, temple)
+	return ok and s and Position(s.x, s.y, s.z) or nil
+end
+
 function NP.place(name, temple, offsets, opts)
-	local b = booth(name, temple)
+	local b = stand(name, temple) or booth(name, temple)
 	if b then
 		for _, e in ipairs(near(b, 1)) do
 			if e.npc:getName():lower() == name:lower() then

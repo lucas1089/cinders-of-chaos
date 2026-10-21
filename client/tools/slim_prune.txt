@@ -1,0 +1,53 @@
+# Files of the assembled client that nothing uses. client/tools/slim_client.py prune applies these rules at assembly
+# (client/tools/assemble_client.sh), so the files never reach chaos.pack. `- GLOB` removes, `+ GLOB` keeps a file an
+# earlier `-` matched; `*` also crosses `/`. A `#` line is the reason of the rules below it (printed by prune).
+# Before adding a rule: grep the whole assembled tree (Lua, otui, otmod, otml, src/) for the path, the file name
+# without extension and any computed prefix ('/images/x/' .. name); a folder addressed by a computed name stays whole.
+# client/BASE.md "Slim client" lists the groups with the sizes measured.
+
+# base battle pass art: its window (game_battlepass of the base) is removed above; game_interface and game_sidebuttons use three pictures
+- data/images/game/battlepass/*
++ data/images/game/battlepass/battlepass-hourglass.png
++ data/images/game/battlepass/mainIcon1.png
++ data/images/game/battlepass/bright.png
+
+# base ranked queue art (backgrounds, maps, banners): no module of the client has a ranked queue; game_interface uses five pictures
+- data/images/game/ranked-queue/*
++ data/images/game/ranked-queue/game-hud.png
++ data/images/game/ranked-queue/cast/icon-close.png
++ data/images/game/ranked-queue/cast/arrow-left.png
++ data/images/game/ranked-queue/cast/arrow-right.png
++ data/images/game/ranked-queue/ranks/rank-1.png
+
+# base world minimaps: game_minimap loads /minimap.otmm from the write dir (it builds its own map while walking), never these
+- data/default.otmm
+- data/minimap/minimap.otmm
+
+# base boss bar art no module names (game_boss_health uses /images/bars/)
+- data/images/game/game_boss_health_bar/*
+
+# base hunting places list: no module reads it
+- data/json/hunting_places.json
+
+# base shader textures game_shaders never registers (shaders.lua addTexture names every texture used)
+- data/images/shaders/brazil.png
+- data/images/shaders/sweden.png
+- data/images/shaders/sand_fog.png
+- data/images/shaders/stars.png
+- data/images/shaders/gold.png
+- data/images/shaders/red.png
+- data/images/shaders/red-monochrome.png
+
+# base modules never loaded: autoload off and no otmod list, load-later or ensureModuleLoaded names them (game_tutorial also needs client version 1520)
+- modules/game_tutorial/*
+- modules/dev_otui/*
+- modules/game_realcreaturebutton/*
+- mods/game_healthbars/*
+- mods/game_item_action/*
+- mods/game_prey_hunting/*
+
+# unit tests and notes: run from the repo by CI, never by the client
+- modules/*_test.lua
+- mods/*_test.lua
+- modules/*.md
+- mods/*.md

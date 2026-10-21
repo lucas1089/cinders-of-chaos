@@ -186,9 +186,10 @@ end
 local function prefs()
   local player = g_game.getLocalPlayer()
   local name = player and player:getName()
-  local node = g_settings.getNode(SETTINGS_NODE) or {}
-  local p = name and node[name] or {}
-  return { autoUpdate = p.autoUpdate == true, ignored = type(p.ignored) == 'table' and p.ignored or {} }, name, node
+  local node = g_settings.getNode(SETTINGS_NODE)
+  if type(node) ~= 'table' then node = {} end
+  -- config.otml can be edited by hand: only a boolean and spell ids (ChaosHelperConfig.spellPrefs)
+  return ChaosHelperConfig.spellPrefs(name and node[name] or nil), name, node
 end
 
 local function savePrefs(p)

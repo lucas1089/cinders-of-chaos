@@ -52,7 +52,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_pouches | extended opcode 226 (JSON: `open` / `sync` / `set {rules}`, Auto Seller `as_open` / `as_sync` / `sell` / `asrar {tier, on}` / `asevery {minutes}` (sell the Loot Bag every 5/10/15/30/60 minutes, off by default) / `aslist {op, item}` / `aspause {on}` out; `settings {rules, ids, titles, owned, rarities, open}` and `autoseller {unlocked, needs, paused, tiers, list, slots, cooldown, cooldownMax, last, notice, open}` back) | none (uses `game_interface.addMenuHook`) | The Loot Bag rules window (Chaos skin) of the store pouches (server `data/scripts/chaos/pouches.lua`): items on the autoloot list, coins, uniques, gear from a rarity (combo), supplies, gems, everything else; saved on the character at once (the server's defaults: everything, gear of any rarity); an "Auto Seller" button that opens the Auto Seller window; status line and Open Store when the character has no Loot Bag. Opened by right-clicking the Loot Bag > "Pouch settings" (shown only for the Loot Bag's look with the item lock flag the server sets on every pouch) or by the Loot Filter's "Loot Bag" button (`game_lootfilter/lootfilter.otui`). The pouches are ordinary containers (use = open); their tooltip lines "Store item: cannot be traded" and what it collects come from the server (`tip.store`, `tip.collects` in `game_itemtooltip/tooltiplogic.lua`). Logic `pouchesview.lua` (tested by `pouchesview_test.lua`); tested in game (server/README.md "Store pouches"). **Auto Seller window** (`autoseller.otui`, logic `autosellerview.lua` tested by `autosellerview_test.lua`; owner 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): top menu Economy > Auto Seller (`client_chaos_topbar`, `toggleAutoSeller`, icon `topbutton_autoseller` from `tools/gen_theme_art.py icons=autoseller`: a loot sack, an arrow, a coin stack); Sell all (the Loot Bag) with the server's 30 s cooldown counted down on the button, the last sale's total, five rarity checkboxes in the loot filter's colours (Common, Uncommon, Rare, Epic, Legendary+; default Common and Uncommon), the corpse selling on / off, the list (item name, Add / Remove / Clear). Greyed out with the reason as tooltip without the Auto Seller or an active Pact. The client only sends choices; the server checks them (server/README.md "Store services", Auto Seller window). Run in a client (live test 2026-10-14): Sell all, the 30 s countdown, the rarity checkboxes saved on the server; fixed there: the item row's buttons were anchored to the edit box that was anchored to them (an anchor cycle, "layout update aborted" in the log; `tools/ci/check_layouts.py` now reports anchor cycles), and the rarity checkboxes are as wide as their text (`AutoSellerView.checkWidth`; a fixed 72 px clipped the names; window 460 px wide). |
 | game_transmog | extended opcode 212 (JSON: `open` / `looks {kind}` / `apply {slot, look}` / `remove {slot}` out; `state {money, fee, slots, kinds, total, sets}`, `looks {kind, rows}`, `result {ok, text}` back, long ones joined by `registerExtendedJSONOpcode`) | base patch 0030 (`item:setAppearanceId`) | The Transmog window (Chaos skin): the six equipment slots with their current look, own look and preview side by side, the account wardrobe of the selected item's kind as a searchable grid, Apply (gold fee) and Remove look; Collection tab with progress bars per kind and the appearance sets (owned, or how to get them: store, achievement, season, exclusive). Character > Transmog, or right-click an equipped item > "Transmog". The look itself is drawn everywhere by base patch 0030 (item custom attribute 8); tooltips add "Appearance: <look>" (`game_itemtooltip/tooltiplogic.lua`, `tip.look`); `game_market` rows and the sell picker and `game_playerinspect` slots draw the look from server data. Logic `transmogview.lua` (tested by `transmogview_test.lua`); tested in game (server/README.md "Transmog") |
 | game_cosmetics | extended opcode 225 (JSON: `open` / `select {kind, id, line}` / `preview {id}` / `hello` out; `state {line, lineName, rows, collection}`, `style {accent}`, `colors {names, full}`, `looks {names, full}`, `tryfx {kind, art, pulse}`, `result {ok, text}` back, joined by `registerExtendedJSONOpcode`), server `cosmetics.lua`, `exclusives.lua` | none | The Cosmetics window (Character > Cosmetics, Chaos skin, 720 x 480): tabs Spell Effects (the skins of the character's class line first, other lines dimmed), Kill Effects, Loot Labels, Chat Colours, Footprints, Outlines, Collection; a Default row per tab, Use, Preview (effects only the player sees, sent by the server; footprints and outlines drawn here by `game_cosmeticfx`), Open the Store; a sample per colour (the player's own chat line, rarity labels on the accent) and per footprint (its prints); the outline and the Collection's looks on the character in the shared look preview (`game_lookpreview`, "Look preview"; window 930 x 480); a "Show other players' footprints / outlines" box on those two tabs. Since 2026-10-16 the list icons of spell skins and kill effects are a picture of the row's main effect (`images/fx/`, `tools/sprites/gen_cosmetic_fx_icons.py`; the sprites themselves when a picture is missing) and a footprint's print; the detail shows it at 64 px; the preview panel plays the row's effects (`play` of the state rows); every tab follows `game_unlocks` (locked rows greyed with their source, "Only mine"), and the server's `wardrobe` answer is handed to `game_unlocks` ("Cosmetics effect previews", "Owned and locked lists"). Collection: the exclusives of every visual kind (server `exclusives.lua`), owned first, kind, "Achievement: X" or "Boss: Y, rare drop", where it is chosen, the look on the own character (outfit, mount, wings, aura, shader). Once in the game it asks the server for the full style, colours and looks (`hello`: a send from the server's login event can arrive before the client is in the game, and a reconnect runs no login event). Colours the speaker's name in chat for player lines only (wraps the stock `game_console` `Message:updateLabel` after `game_chatlinks`; loads at priority 1003), hands the label accent to `game_groundlabels` and `looks` / `tryfx` to `game_cosmeticfx`. Logic `cosmeticslogic.lua` (tested by `cosmeticslogic_test.lua`); tested in game with two clients (server/README.md "Cosmetics", "Footprints and outlines", "Exclusives") |
-| game_shaderfx | none | base patch 0044 (`UIWidget:setUiShader` / `setUiShaderParams`, `u_Params` in the shader); without it every call is skipped and the images stay plain | UI widget shaders, all GLSL written for this client (`data/shaders/chaos_ui_*.frag`, compile-checked by `tools/check_shaders.py`). Liquid health and mana orbs (`chaos_ui_orb`: layered sine surface, own value noise for the swirl and the bubbles, a fake sphere normal for the shading, a foam line; the value change makes it slosh, eased back in about 2 s) at the bottom corners of the game window, option `liquidOrbs` (off by default); a light sweep across the rarity frame of Legendary-and-up and unique items in inventory and container slots (`chaos_ui_shine`, a slanted band every 3.5 s, each slot at its own phase; option `rarityFrameShine`); greyscale for items their player locked (custom attribute 3 = 1; `chaos_ui_grey` as the slot's item shader, and only our grey is taken back; a bound item such as the Everfull potions carries 2 and keeps its colours: with 1 the red and purple flasks showed as dark, empty-looking ones, live screenshot 2026-10-16) and `setGreyed(widget, on)` for any widget. Art `images/orb_mask.png` and `images/orb_ring.png` from `tools/gen_orb_art.py`. Pure helpers `shaderfxlogic.lua` (fill, slosh, phase, shine rule, locked rule, `applyItemGrey`), tested by `shaderfx_test.lua`. Live test 2026-10-14: a container holding a locked item (the Loot Bag, the Everfull Ration) overflowed the Lua stack at every open: `setItemShader` calls the slot's onItemChange, `game_itemrarity` answers with `onSlotItem` and the slot was marked grey only after the call, so each re-entry greyed again; `L.applyItemGrey` marks it first (a re-entrant mock slot in the test). |
+| game_shaderfx | none | base patch 0044 (`UIWidget:setUiShader` / `setUiShaderParams`, `u_Params` in the shader); without it every call is skipped and the images stay plain | UI widget shaders, all GLSL written for this client (`data/shaders/chaos_ui_*.frag`, compile-checked by `tools/check_shaders.py`). Liquid health and mana orbs (`chaos_ui_orb`: layered sine surface, own value noise for the swirl, round bubbles in a cell grid, a fake sphere normal for the shading, a foam line; the value change makes it slosh, eased back in about 2 s) at the bottom corners of the game window, option `liquidOrbs` (off by default); a light sweep across the rarity frame of Legendary-and-up and unique items in inventory and container slots (`chaos_ui_shine`, a slanted band every 3.5 s, each slot at its own phase; option `rarityFrameShine`); greyscale for items their player locked (custom attribute 3 = 1; `chaos_ui_grey` as the slot's item shader, and only our grey is taken back; a bound item such as the Everfull potions carries 2 and keeps its colours: with 1 the red and purple flasks showed as dark, empty-looking ones, live screenshot 2026-10-16) and `setGreyed(widget, on)` for any widget. Art from `tools/gen_orb_art.py` (`--check` in CI): per orb size a ring `images/orb_ring_<size>.png` and a mask `images/orb_mask_<liquid>.png` at twice the drawn size (`L.orbArt`, set by `applyOrbSize`). Owner screenshot 2026-10-21: the one 76 px ring and 64 px mask stretched to the 150 / 190 px orbs drew a blurred, stepped ring with square rivets, and the bubbles (the peaks of a 22 x 14 value noise) read as upright pixel blocks; now 2x art (round, soft-edged rivets), round bubbles in a square cell grid and the swirl's noise grid turned off the screen axes (before / after rendered with a numpy port of the shader, not seen in a client). Pure helpers `shaderfxlogic.lua` (fill, slosh, phase, shine rule, locked rule, `applyItemGrey`), tested by `shaderfx_test.lua`. Live test 2026-10-14: a container holding a locked item (the Loot Bag, the Everfull Ration) overflowed the Lua stack at every open: `setItemShader` calls the slot's onItemChange, `game_itemrarity` answers with `onSlotItem` and the slot was marked grey only after the call, so each re-entry greyed again; `L.applyItemGrey` marks it first (a re-entrant mock slot in the test). |
 | game_helperhud | none | base patch 0056 (the helper calls `ChaosBotHud` when its cavebot file is left out) | The helper's bot HUD (Tools > Bot HUD), see "Helper bot HUD" |
 | game_helpersupport | none | none (overlay only: it uses the helper's `_Helper` functions and `game_buffbar`'s `activeBuffs`) | The helper's Support spells tab: a list of support spells the helper casts by itself whenever they are off cooldown, see "Helper Support spells" |
 | game_chatpanel | none | base patches 0056 (`game_console` reads `ChaosChatLogic.enterAction`; splitter minimum 96), 0065 (splitter drag, left margin) | Chat panel size and place (with the orbs) and the chat's Enter rule, see "Chat panel" |
@@ -124,7 +124,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768. The living scene behind it (see "Login scene"): `loginscene_core.lua` (tested by `loginscene_core_test.lua` in CI), `loginscene.lua`; tested in the Linux client at 1280x720 and 1920x1080 |
 | client_chaos_credits | none | none | Credits window (Chaos skin, 620 x 560, scrollable): every third-party source of `docs/CREDITS.md` (engine and libraries, fonts, art packs with the credit lines their licence asks for, free assets, tools), headings through `tr()` (pt-BR in `pt_br.lua`). Opened by the login screen's CREDITS button and by System > Credits (also on the login screen). Data `credits_data.lua` is generated by `tools/gen_credits.py` (cp1252 escapes; `--check`); `tools/ci/check_credits.py` checks the pt-BR headings and that every pack of the art `*sources.csv` files is listed. Pure logic `creditsview.lua` (`creditsview_test.lua` in CI). Not run in a client |
 | client_chaos_charselect | none (HTTPS to the website's account API) | base patch 0050 (`Services.account`); base patch 0025 (the 10.98 list's outfits) | The character select and Create character (see "Character select" below); `charselect_core_test.lua` runs in CI; art from `tools/gen_charselect_art.py`; tested in the Linux client at 1280x720 and 1920x1080. A locked class now says "Reach level 200 with any character of your account to unlock it." (classes are not sold since 2026-10-15) |
-| client_chaos_updater | none (HTTPS from the website) | base patches 0031, 0101 | Signed updater on the login screen (see "Signed updater" below); `updater_core_test.lua` runs in CI; tested in the Linux client |
+| client_chaos_updater | none (HTTPS from the website) | base patches 0031, 0101, 0103 | Signed updater on the login screen (see "Signed updater" below), encrypted update files (base patch 0103); `updater_core_test.lua` runs in CI; tested in the Linux client (before the encryption) |
 | game_chaosguard | extended opcode 190 (JSON `hello {build, modules}`, client -> server, once per login) | base patch 0035 (`g_game.getChaosClientBuild`; the HMAC answer on opcode 189 is C++ only) | The client guard's Lua hello (server/README.md "Client guard"): the build and how many of our modules (`game_*`, `client_chaos_*`) are loaded; the server expects it within 30 s and at least 20 modules. `guardhello_test.lua` runs in CI; tested in the Linux client. Also holds `opcode_fuzz_test.lua`, the client half of the protocol fuzz test (every module's opcode handlers through base patch 0043's dispatcher, server/README.md "Protocol fuzz test") |
 
 Opcode numbers above do not collide with the ones the base server already uses (106, 91, 181, 107, 202, 1, 136, 99, 201, 92, 89). The stash uses 110 and the season pass (game_battlepass) 227.
@@ -2570,7 +2570,31 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   (a client built before 0048 ignores the shards and would draw a new dat with its old spr). It warns when it publishes
   a single `Tibia.spr` with no shard set: a client whose install has an index keeps loading its shards.
 
-## Signed updater (new, `client_chaos_updater`, base patches 0031 and 0101)
+## Client pack (new, base patch 0102, `tools/pack_client.py`)
+
+From build 13 the client ships the whole tree (`init.lua`, `data/` with the dat/spr, `layouts/`, `modules/`, `mods/`)
+in one encrypted file, `chaos.pack`, beside the exe; nothing in the shipped folder opens in a text or sprite editor.
+`tools/pack_client.py build GAME_DIR OUT.pack` makes it (pack format 2: deterministic store-only ZIP, compressed as
+one zlib stream, then AES-256-GCM, key from the client guard secret via HKDF-SHA256; `unpack` / `verify` too), the
+engine streams it through decrypt + inflate into one buffer of the ZIP's size and mounts it (base patch 0102), and
+`tools/pack_client_test.py` + `tools/chaospack_test.cpp` check the format both ways in CI. Compressing before
+encrypting keeps the download near the size of a plain zip. Full description,
+removed-files list and owner steps: `client/BASE.md` "Client packs". The signed updater below is unchanged in shape:
+it still lists and downloads individual logical files into the write-dir overlay, so an update never re-downloads the
+whole pack.
+
+## Slim client (new, `tools/slim_client.py`, `tools/slim_prune.txt`, 2026-10-21)
+
+`assemble_client.sh` prunes the files of the assembled tree that nothing uses before the pack is built: the base
+battle pass and ranked queue art, the base world minimaps (`data/default.otmm`, `data/minimap/minimap.otmm`), unused
+boss bar and shader pictures, `hunting_places.json`, six base modules that are never loaded (`game_tutorial`,
+`dev_otui`, `game_realcreaturebutton`, `game_healthbars`, `game_item_action`, `game_prey_hunting`) and the unit tests
+and notes. 258.0 MB -> 84.6 MB without the sprite pair (173.4 MB, 402 files). Then `slim_client.py check` makes
+every static file reference of the tree resolve (or be one of `tools/slim_known_missing.txt`), so the assembly, and
+with it both client jobs of `windows-package.yml`, fails when a prune rule breaks a picture. Test:
+`tools/slim_client_test.py` (CI). Groups, sizes, reasons: `client/BASE.md` "Slim client".
+
+## Signed updater (new, `client_chaos_updater`, base patches 0031, 0101 and 0103)
 
 Before login the client fetches a signed manifest from the website, compares SHA-256 hashes, downloads what changed
 in parallel, checks every file and applies the whole update at once. Operator side: docs/LAUNCH.md "Client updates";
@@ -2583,8 +2607,24 @@ inside a git work tree). The client refuses: a missing or bad signature, another
 version it applied (no replay of an old signed manifest), another product, and any path that is absolute, has `..`,
 `.` or an empty segment, a backslash, a colon, a Windows device name, a character outside `[A-Za-z0-9 ._()+,-]` or
 lies outside `modules/ mods/ data/ layouts/`, or names native code (`.exe .dll .so .dylib .bat .cmd .ps1 .sh ...`).
-Files are fetched by hash (`files/<xx>/<sha256>`) and each one's SHA-256 must match before it counts. The C++ helpers
-write only inside `chaos_update/` of the write dir (`chaosupdate::isSafeUpdatePath`).
+Files are fetched by hash (`files/<xx>/<blob sha256>`) and each one's SHA-256 must match before it counts. The C++
+helpers write only inside `chaos_update/` of the write dir (`chaosupdate::isSafeUpdatePath`).
+
+**Encrypted files (build 13, base patch 0103; client/BASE.md "Encrypted updates").** Every file is published as one
+AES-256-GCM blob (`tools/update_crypt.py`: magic `CHUB`, key = HKDF of the client guard secret `CHAOS_CLIENT_KEY` with
+its own labels, nonce = HMAC of the content, so one file always gives one blob). The payload carries
+`"encryption": "chaos-blob-1"` and per file `sha256` / `size` (plaintext) and `blob` / `blob_size` (the encrypted
+bytes, 44 more); the client refuses a manifest without the marker. The Ed25519 signature covers both hashes: a download
+counts only when its bytes hash to `blob` (transit) and `g_resources.updateBlobSha256` (the engine decrypts in 1 MB
+blocks and checks the GCM tag) gives `sha256` (content). Downloads stay encrypted: staging and `chaos_update/files/`
+hold only `CHUB` files; `bootstrap.lua` has the engine decrypt them into one in-memory ZIP mounted in front of the pack
+(`g_resources.mountUpdateOverlay`). A tree file is compared with the manifest by its encrypted hash, a pack file by
+its plain one. A file that does not decrypt at start (changed by hand) refuses the overlay: the client starts on the
+pack and the updater removes the tree and fetches the update again. A plain tree of an older client (state without
+`enc=chaos-blob-1`) is never mounted and is removed at the next check. The publisher refuses to run without
+`CHAOS_CLIENT_KEY` (no plain fallback; `--dev` for tests uses the public development key) and needs `--min-package`
+13 or more. The hash cache (`hashcache.txt`) now starts with a stamp of the client package and the applied update, so
+a hash is never reused across packages (the pack's files all carry the same ZIP date).
 
 **Never older than the package (baseline).** `Services.update.baseline` in `init.lua` (base patch 0101) is the update
 version of the package's own files: the release number it was built as (`windows-package.yml` writes
@@ -2611,8 +2651,9 @@ download is required" (with `Services.update.download`) and cannot log in.
 
 **Flow.**
 1. `init.lua` (patch 0031) runs `bootstrap.lua` before `g_modules.discoverModules()`: when `chaos_update/state.txt` says
-   `status=ok` for this client package (hash of `init.lua` and the build date/commit), `chaos_update/files` is mounted
-   in front of the client's own folder. A half-applied update (`status=applying`) or a tree made for another package
+   `status=ok` for this client package (hash of `init.lua` and the build date/commit) with `enc=chaos-blob-1`, the
+   encrypted `chaos_update/files` is decrypted into memory and mounted in front of the client's own files (base patch
+   0103). A half-applied update (`status=applying`) or a tree made for another package
    is not mounted: the client starts with its own, consistent install files.
 2. On the login screen (`autoload-priority` 1110, after `client_chaos_login`) a Chaos-styled panel over a dimmed screen
    blocks the login (`EnterGame.doLogin` is guarded) while it: fetches the manifest (`?t=` against caches), checks the
@@ -2624,8 +2665,8 @@ download is required" (with `Services.update.download`) and cannot log in.
    8 MB `Range` parts that run in parallel too (the 570 MB `Tibia.spr` does not sit on one connection), each part a
    file `<sha>.c<i>`, so an interrupted run resumes with the parts it has; a server ignoring `Range` answers 200 with
    the whole file (up to 512 MB, the engine's body limit). Each request retries 5 times with backoff 0.5, 1, 2, 4,
-   8 s; a blob's SHA-256 is checked as soon as its last part is on disk, a mismatch deletes it and refetches it (5
-   tries), then the update is refused. Progress: files done / total, bytes done / total across all requests (parts
+   8 s; a blob's SHA-256 is checked as soon as its last part is on disk, then the SHA-256 of what it decrypts to; a
+   mismatch deletes it and refetches it (5 tries), then the update is refused. Progress: files done / total, bytes done / total across all requests (parts
    in flight counted by their percent), speed, parallel count.
 4. Apply only when every blob is in and verified: `state.txt` `status=applying`, stale and dropped tree files removed,
    staged blobs renamed into `chaos_update/files/<path>` (copied for a second path with the same content), then
@@ -2642,11 +2683,16 @@ download is required" (with `Services.update.download`) and cannot log in.
 
 **Files.** `updater_core.lua` (no client API: a linear JSON decoder (corelib's `json.decode` builds strings by
 repeated concatenation and took minutes and gigabytes on the 0.8 MB manifest), paths, envelope, manifest, diff,
-pool, apply, baseline, the `CHAOS_UPDATE_OFF` switch, the restart mode; `updater_core_test.lua`, 216 checks, LuaJIT and Lua 5.3, fake HTTP server and disk), `bootstrap.lua`, `updater.lua` + `updater.otui` (panel),
+pool, apply, baseline, the `CHAOS_UPDATE_OFF` switch, the restart mode, the encryption fields, the plaintext check,
+the hash cache stamp; `updater_core_test.lua`, 252 checks, LuaJIT and Lua 5.3, fake HTTP server, fake cipher and disk),
+`bootstrap.lua`, `updater.lua` + `updater.otui` (panel),
 `signature_vectors.lua` (`ChaosUpdater.selfTest()` runs them through `g_crypt` in the client).
-Tools: `tools/make_update_manifest.py` (keygen / pubkey / build / verify; `cryptography` when installed, else
-`tools/ed25519_ref.py`, the RFC 8032 reference code), `tools/make_update_manifest_test.py`, `tools/chaosupdate_test.cpp`
-(native vectors), `tools/set_update_config.py` (writes `Services.update` into an assembled `init.lua`, `--baseline`
+Tools: `tools/make_update_manifest.py` (keygen / pubkey / build / verify / unpack; Ed25519 with `cryptography` when
+installed, else `tools/ed25519_ref.py`, the RFC 8032 reference code; the blob encryption needs `cryptography`),
+`tools/update_crypt.py` (the blob format), `tools/make_update_manifest_test.py` (also round trip, wrong key, determinism,
+tamper, the fixed vector, key rotation, old plain blobs removed, unpacking a packed client), `tools/chaosupdate_test.cpp`
+(native vectors), `tools/chaosblob_test.cpp` and `tools/chaosblob_mount_test.cpp` (the engine's blob format and the
+overlay mounted by PhysFS), `tools/set_update_config.py` (writes `Services.update` into an assembled `init.lua`, `--baseline`
 included; tested in `make_update_manifest_test.py`),
 `tools/serve_updates.py` (local test server: ranges, per-connection rate, latency, dropped connections; tests only).
 On the VPS: `server/deploy/publish_client_update.sh` / `chaos-ctl.sh publish-update winpkg-N` publishes a release's
@@ -2654,7 +2700,7 @@ client zip (docs/LAUNCH.md "Publishing a client update").
 CI (`ci.yml`): the Python tests, an unsigned dry run over the overlay, the C++ vectors, the Lua tests;
 `windows-package.yml` dry-runs the real package folder (dat/spr included).
 
-**Tested in the Linux client** (base patches 0001-0029 + 0031, 1280x720, `tools/serve_updates.py` over plain HTTP on
+**Tested in the Linux client before the encryption** (base patches 0001-0029 + 0031, 1280x720, `tools/serve_updates.py` over plain HTTP on
 127.0.0.1; production is HTTPS). Manifest of the whole client: 5741 files, 802 MB, Tibia.spr 563-570 MB.
 - Up to date: the first check (no hash cache, Tibia.spr hashed) answered in about 8 s after start; later checks in
   about 1 s. A module file changed by hand was found, fetched again, applied, and the client restarted itself
@@ -3074,6 +3120,26 @@ Now (`ChaosHelperSave`, tested with a death and relogin in `helpersave_test.lua`
 - Auto-update and Auto setup state (client settings nodes) are written to disk at once (`g_settings.save`).
 - Auto rotation no longer treats the login's first level packet (old level 0) as a level-up.
 
+### Helper settings checked on load (`game_helperrotation/helperconfig.lua`, 2026-10-21)
+Players can edit the files the helper reads: the per-character `helper.json` and `config.otml` (`g_settings`). A
+hand-edited value could drive the automation out of range (a 0 s timer rule casting every tick, a 1000 % heal
+threshold, 500 rows, a text where a number belongs). `ChaosHelperConfig` (pure, `helperconfig_test.lua`, 109 checks,
+LuaJIT and Lua 5.3) checks what is read, before the helper uses it:
+- `helper.json`: `ChaosHelperSave.read` (the helper's reader since base patch 0067) runs `ChaosHelperConfig.sanitizeHelper`
+  on what it decoded (a failing check never loses the file). Every number that drives the automation is a whole
+  number clamped to the range of the helper's own control: heal / potion / training / food / vocation-heal / named sio
+  percents (0..100, 1..100 or 1..99), potion priority 0..2, vocation priority 1..5, food priority 1..4, stamina
+  minutes 0..2520, target mode 1..8, magic shooter mana percent 0..100 and creatures 1..10, equip conditions 0..100 (%)
+  or 0..10,000,000 (points) with their resource / operator / logic / action from the dropdowns' lists, timer rule
+  cooldown 1..86400 in `sec` / `min` / `hr`; ids 0..1,000,000. Wrong types fall back to the helper's defaults; rows are
+  capped at 10, rules at 100, profiles at 50; rules of an unknown type are dropped; fields it does not know stay. The
+  helper's own fill-in of missing fields still runs after it.
+- `config.otml` nodes of the overlay: Auto rotation's `chaos_helper_spells` (`ChaosHelperConfig.spellPrefs`: a boolean
+  and up to 500 whole spell ids), Auto setup's `chaos_helper_autosetup` (`autosetupWords`: up to 64 non-empty words of
+  at most 128 characters), Support spells' `chaos_helper_support` (`supportspells.lua` `sanitize`, now also whole ids
+  only); a node that is not a table is treated as empty. The updater's `chaos-update-parallel` (1..8) also refuses
+  NaN.
+
 ### Helper potions in closed backpacks (`game_helperrotation/potiongate.lua`, base patch `0070`)
 The Everfull potions (server 32085 / 32086) have the client look of the Health / Mana Potion (266 / 268), so the
 helper's potion slots, the item picker and the use by id treat them as those; the bound lock (custom attribute 3 = 2)
@@ -3174,7 +3240,10 @@ on/off and the sections are in the helper's character save (`botHud`), so it com
 - Candlemarks: the "week" label was anchored to `next.bottom`, its next sibling, not the label with id "next"
   (anchor cycle logged about 50 times); `tools/ci/check_layouts.py` now follows prev / next.
 - Options menu labels are `tr()` text over tab images whose baked words are erased (`tools/gen_ui_reskin.py`
-  TEXT_FREE, regenerated for `optionstab/`).
+  TEXT_FREE, regenerated for `optionstab/`). The sub-entries (115 px, no icon) use `verdana-9px-bold` (base patch
+  0104): in `$var-cip-font` "General / Action Bar / Custom Hotkeys" were clipped at both edges (owner screenshot
+  2026-10-21). `tools/check_text_fit.py` (CI) measures every sub-entry name, English and pt-BR, in that sheet:
+  widest "Action Bar Hotkeys" 91 of 107 px.
 - Fixed widths that cut pt-BR labels sized to their text: hideout, market (3), shop, party finder (2), player inspect,
   map overlay, guild war, achievements.
 

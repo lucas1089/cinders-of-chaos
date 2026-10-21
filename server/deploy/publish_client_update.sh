@@ -15,22 +15,34 @@
 #                     It must be above the published one: clients refuse an older manifest.
 #   --min-package N   clients whose package (Services.update.package = the workflow input client_build) is below N
 #                     must download the new package and cannot log in. Default: this package's own client build
-#                     (BUILD_INFO.txt "client build: N", the same as Services.update.package in its init.lua).
-#                     --min-package 0 blocks nobody.
+#                     (Services.update.package in its init.lua; BUILD_INFO.txt "client build: N" of older packages).
+#                     At least 13: the update blobs are encrypted and only build 13 and newer decrypt them.
+#   --key-index N     which key of CHAOS_CLIENT_KEY ("old,new" during a rotation) encrypts the blobs, 1-based. A
+#                     packed package (chaos.pack) needs none: the key that opens its pack is the one.
 #   --check-only      no publish: only the web server check of the published manifest (below)
 #   --no-check        skip the web server check
 #   --keep            keep the work folder (the download and the extracted client) for a look afterwards
 #
 # Steps: download (curl -fL, https only) into a new empty work folder, size check, SHA-256 printed; extract with
 # python3 -I zipfile (absolute paths, "..", links and odd names refused, at most 8 GB unpacked); find the client
-# folder (init.lua, modules/, data/things/1098/); check that the package's public key (init.lua) is the one of the
-# private key; client/tools/make_update_manifest.py build (blobs first, manifest.json last) and verify; then the web
-# server check: GET the manifest URL (the package's Services.update.manifest, or CHAOS_UPDATE_URL) and compare it
-# with the file just written, its Content-Type and Cache-Control, and a Range request on one blob (206 expected).
+# folder: a packed client (build 13+: the exe and chaos.pack) is decrypted with CHAOS_CLIENT_KEY into the work folder
+# (make_update_manifest.py unpack; a development pack is refused), an older loose one is used as it is (init.lua,
+# modules/, data/things/1098/); check that the package's public key (init.lua) is the one of the private key;
+# client/tools/make_update_manifest.py build (every blob ENCRYPTED with a key derived from CHAOS_CLIENT_KEY, blobs
+# first, manifest.json last, then the old blobs and any plain ones removed) and verify (decrypts every blob and checks
+# the signed plaintext SHA-256); then the web server check: GET the manifest URL (the package's
+# Services.update.manifest, or CHAOS_UPDATE_URL) and compare it with the file just written, its Content-Type and
+# Cache-Control, and a Range request on one blob (206 expected).
 #
 # Settings (environment; chaos-ctl.sh passes its /etc/chaos/ctl.conf keys of the same names):
 #   CHAOS_SITE_DIR        /var/www/chaos      the site folder; the update goes to $CHAOS_SITE_DIR/updates/live
 #   CHAOS_UPDATE_KEY      /etc/chaos/update-key.hex   the private key (a path, never the key itself)
+#   CHAOS_CLIENT_KEY      (from CHAOS_ENV)    the client guard secret (64 hex digits; "old,new" in a rotation), the
+#                                             same value the game server reads. The update blobs are encrypted with a
+#                                             key derived from it (client/MANIFEST.md "Signed updater"). Unset: read
+#                                             from the CHAOS_CLIENT_KEY= line of CHAOS_ENV. Never printed. Without it
+#                                             nothing is published (updates are never served plain).
+#   CHAOS_ENV             /etc/chaos/chaos.env  the game server's environment file (only CHAOS_CLIENT_KEY is read)
 #   CHAOS_UPDATE_PUBLIC   (empty)             the public key, 64 hex digits; else /etc/chaos/update-key.pub when it
 #                                             exists; else derived from the private key. All that are given must agree.
 #   CHAOS_UPDATE_REPO     lucas1089/cinders-of-chaos      the GitHub repository of the releases
@@ -61,10 +73,14 @@ die() { printf 'publish: %s\n' "$*" >&2; exit 1; }
 usage() { sed -n '2,/^set -euo/p' "$SELF" | sed '$d' | sed 's/^# \{0,1\}//'; }
 isnum() { [[ ${1:-} =~ ^[0-9]{1,9}$ ]]; }
 
-VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC=""
+ENVFILE=${CHAOS_ENV:-/etc/chaos/chaos.env}
+ENCRYPTED_MIN_PACKAGE=13
+
+VERSION="" MINPKG="" CHECK=1 PUBLISH=1 KEEP=0 SRC="" KEYIDX=""
 while [ $# -gt 0 ]; do
   case $1 in
     --version) isnum "${2:-}" || die "--version N"; VERSION=$((10#$2)); shift 2 ;;
+    --key-index) { isnum "${2:-}" && [ "$((10#$2))" -ge 1 ]; } || die "--key-index N (1, 2...)"; KEYIDX=$((10#$2)); shift 2 ;;
     --min-package) isnum "${2:-}" || die "--min-package N"; MINPKG=$((10#$2)); shift 2 ;;
     --check-only) PUBLISH=0; shift ;;
     --no-check) CHECK=0; shift ;;
@@ -112,7 +128,7 @@ web_check() {
 import json, sys
 m = json.loads(json.load(open(sys.argv[1]))['payload'])
 big = max(m['files'], key=lambda f: f['size'])
-print(big['sha256'])
+print(big['blob'])
 PY
 )
   if [ -n "$blob" ]; then
@@ -137,6 +153,14 @@ fi
 
 [ -n "$SRC" ] || die "TAG or ZIP (--help)"
 [ -r "$KEY" ] || die "cannot read the private key $KEY (CHAOS_UPDATE_KEY; run as root)"
+
+# the blob key: the client guard secret of the game server (never printed, only passed on in the environment)
+if [ -z "${CHAOS_CLIENT_KEY:-}" ] && [ -r "$ENVFILE" ]; then
+  CHAOS_CLIENT_KEY=$(sed -n 's/^[[:space:]]*\(export[[:space:]]\{1,\}\)\{0,1\}CHAOS_CLIENT_KEY=//p' "$ENVFILE" | tail -n 1 \
+    | tr -d " \"'\r")
+fi
+[ -n "${CHAOS_CLIENT_KEY:-}" ] || die "no CHAOS_CLIENT_KEY (the environment, or a CHAOS_CLIENT_KEY= line in $ENVFILE): the update blobs are encrypted with it and are never published plain"
+export CHAOS_CLIENT_KEY
 
 TAG="" ZIP=""
 if [ -f "$SRC" ]; then
@@ -210,12 +234,32 @@ with zipfile.ZipFile(src) as z:
 print(f'extracted {len(infos)} entries, {total} bytes')
 PY
 
-# the client folder: init.lua, modules/ and data/things/1098/ (the package's CindersOfChaos-Client/)
+# the client folder: a packed client (build 13+: the exe and chaos.pack, decrypted here with the key that opens it),
+# else a loose one: init.lua, modules/ and data/things/1098/ (the package's CindersOfChaos-Client/)
+mapfile -t packs < <(find "$WORK/x" -maxdepth 3 -type f -name chaos.pack)
 mapfile -t found < <(find "$WORK/x" -maxdepth 3 -type f -name init.lua -printf '%h\n' | while read -r d; do
   [ -d "$d/modules" ] && [ -d "$d/data/things/1098" ] && printf '%s\n' "$d"; done)
-[ "${#found[@]}" -eq 1 ] || die "expected one client folder (init.lua, modules/, data/things/1098/), found ${#found[@]}"
-CLIENT=${found[0]}
-say "client: ${CLIENT#"$WORK/x/"}"
+if [ "${#packs[@]}" -gt 0 ]; then
+  [ "${#packs[@]}" -eq 1 ] || die "expected one client pack (chaos.pack), found ${#packs[@]}"
+  [ "${#found[@]}" -eq 0 ] || die "the zip has both a chaos.pack and a loose client folder; which one is the client?"
+  say "client: ${packs[0]#"$WORK/x/"} (packed; decrypted with CHAOS_CLIENT_KEY)"
+  out=$(python3 -I "$TOOL" unpack "${packs[0]}" "$WORK/tree") || die "cannot open the client pack (see above)"
+  idx=$(printf '%s\n' "$out" | sed -n 's/^key-index=//p')
+  isnum "$idx" || die "unpack gave no key index"
+  if [ -n "$KEYIDX" ] && [ "$KEYIDX" != "$idx" ]; then
+    die "--key-index $KEYIDX, but key $idx of CHAOS_CLIENT_KEY is the one that opens this package"
+  fi
+  KEYIDX=$idx
+  say "pack: opened with key $KEYIDX of CHAOS_CLIENT_KEY"
+  rm -f "${packs[0]}"
+  CLIENT="$WORK/tree"
+  { [ -f "$CLIENT/init.lua" ] && [ -d "$CLIENT/modules" ] && [ -d "$CLIENT/data/things/1098" ]; } \
+    || die "the client pack holds no client tree (init.lua, modules/, data/things/1098/)"
+else
+  [ "${#found[@]}" -eq 1 ] || die "expected one client folder (init.lua, modules/, data/things/1098/) or one chaos.pack, found ${#found[@]}"
+  CLIENT=${found[0]}
+  say "client: ${CLIENT#"$WORK/x/"}"
+fi
 [ -d "$CLIENT/mods" ] || say "note: the client has no mods/ folder"
 
 # the package's own settings: Services.update in init.lua, the build in BUILD_INFO.txt
@@ -276,6 +320,9 @@ fi
 if [ -n "$PKG_PACKAGE" ] && [ "$MINPKG" -gt "$((10#$PKG_PACKAGE))" ]; then
   die "--min-package $MINPKG is above this package's own $PKG_PACKAGE: its own players would be told to download it again"
 fi
+if [ "$MINPKG" -lt "$ENCRYPTED_MIN_PACKAGE" ]; then
+  die "min_package $MINPKG: the update blobs are encrypted and only client build $ENCRYPTED_MIN_PACKAGE or newer decrypts them (publish a build $ENCRYPTED_MIN_PACKAGE+ package, min_package $ENCRYPTED_MIN_PACKAGE or more)"
+fi
 
 # the version: the package's baseline is the version of its files (base patch 0101); clients skip a manifest below
 # their own baseline, so these files under another number would be skipped (lower) or downgrade newer packages (higher)
@@ -303,10 +350,12 @@ if [ -n "$VERSION" ] && [ "$VERSION" -le "$PREV" ]; then
 fi
 
 args=(build "$CLIENT" --out "$LIVE" --key "$KEY" --min-package "$MINPKG")
+vargs=(verify "$LIVE" --public "$PUBLIC")
 [ -n "$VERSION" ] && args+=(--version "$VERSION")
-say "build: version ${VERSION:-$((PREV + 1))}, min_package $MINPKG -> $LIVE"
+if [ -n "$KEYIDX" ]; then args+=(--key-index "$KEYIDX"); vargs+=(--key-index "$KEYIDX"); fi
+say "build: version ${VERSION:-$((PREV + 1))}, min_package $MINPKG, encrypted -> $LIVE"
 python3 -I "$TOOL" "${args[@]}" || die "make_update_manifest.py build failed; nothing new was published"
-python3 -I "$TOOL" verify "$LIVE" --public "$PUBLIC" || die "verify failed: check $LIVE/manifest.json before players fetch it"
+python3 -I "$TOOL" "${vargs[@]}" || die "verify failed: check $LIVE/manifest.json before players fetch it"
 NEWV=$(python3 -I -c 'import json,sys; print(json.loads(json.load(open(sys.argv[1]))["payload"])["version"])' "$LIVE/manifest.json")
 
 chk="skipped"

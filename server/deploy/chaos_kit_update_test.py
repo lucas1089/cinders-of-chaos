@@ -324,7 +324,9 @@ def test_flow():
     w = World()
     try:
         w.release(47, 'engine 47\n')
-        w.push('Fix the bank NPC\n\nlonger text', {'server/tools/version.txt': 'v2\n', 'website/page.txt': 'v2\n'})
+        w.push('Fix the bank NPC\n\nlonger text', {'server/tools/version.txt': 'v2\n', 'website/page.txt': 'v2\n',
+                                                    'server/tools/clientservices.py': '# services v2\n',
+                                                    'tools/linux/server/start-server.sh': '#!/bin/sh\n# start v2\n'})
         rc = w.run('check')
         d = w.kv()
         check(rc == 0, 'check runs', w.out)
@@ -396,6 +398,11 @@ def test_flow():
         check(not [n for n in os.listdir(w.dl) if n.startswith('.')], 'downloads: no temporary files left')
         check(any(c.startswith('site ') for c in w.calls), 'apply: the site installed (website/ changed)')
         check(w.state_value('installed_release') == '47' and w.state_value('status') == 'ok', 'state: release 47, ok')
+        check(read(os.path.join(w.server, 'tools', 'clientservices.py')) == '# services v2\n',
+              'apply: the kit gets clientservices.py it lacked (an older kit)')
+        check(read(os.path.join(w.kit, 'start-server.sh')) == '#!/bin/sh\n# start v2\n'
+              and os.access(os.path.join(w.kit, 'start-server.sh'), os.X_OK), 'apply: start-server.sh brought up to date')
+        check('kit helper files: 2 updated' in w.out, 'apply: says how many helper files changed', w.out)
         check(not [n for n in os.listdir(w.root) if n.startswith('chaos-kit-update.')], 'apply: work folder removed')
 
         rc = w.run('check')

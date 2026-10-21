@@ -1,0 +1,16 @@
+# Chaos: the Options menu's sub-entries fit their buttons (client/BASE.md 0104; after 0001-0102).
+# 0056 drew every menu name in $var-cip-font (Verdana Bold 11). The sub-entries are 115 px wide with no icon, and
+# "General Hotkeys", "Action Bar Hotkeys" and "Custom Hotkeys" were wider: clipped at both edges (owner screenshot
+# 2026-10-21). The sub-entries now use verdana-9px-bold (the PT Sans bold sheet of the overlay, with the pt-BR letters).
+# client/tools/check_text_fit.py measures every sub-entry name, English and pt-BR, against the button in that sheet.
+--- a/mods/client_settings/settings.otui
++++ b/mods/client_settings/settings.otui
+@@ -50,7 +50,7 @@ NOptionButton < UIWidget
+     anchors.right: parent.right
+     anchors.left: parent.left
+     image-clip: 0 0 115 20
+-    font: $var-cip-font
++    font: verdana-9px-bold
+     color: $var-text-cip-color
+     text-offset: 0 1
+     $on:

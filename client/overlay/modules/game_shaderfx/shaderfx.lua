@@ -159,12 +159,18 @@ end
 -- size of the orbs (option liquidOrbSize) and of their number
 local function applyOrbSize()
   local size, liquidSize, font = L.orbSize(options.orbSize)
+  local ringImage, maskImage = L.orbArt(options.orbSize)
   for _, kind in ipairs({ 'health', 'mana' }) do
     local w = orbWidget(kind)
     if w then
       w:setSize({ width = size, height = size })
       local liquid = w:getChildById('liquid')
-      if liquid then liquid:setSize({ width = liquidSize, height = liquidSize }) end
+      if liquid then
+        liquid:setSize({ width = liquidSize, height = liquidSize })
+        liquid:setImageSource(maskImage)
+      end
+      local ring = w:getChildById('ring')
+      if ring then ring:setImageSource(ringImage) end
       local label = w:getChildById('value')
       if label then pcall(label.setFont, label, font) end
     end

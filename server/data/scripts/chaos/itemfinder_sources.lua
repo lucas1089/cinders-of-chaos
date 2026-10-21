@@ -386,12 +386,12 @@ function S.professions(P, emit)
 		emit("gather", m.id, {n = p.name or cap(m.prof), d = d, o = m.tier})
 		local b = P.broker or {}
 		if t.price then
-			emit("sellto", m.id, {n = b.npc or "Material Broker", d = "every town, next to the temple (Cinderhold and Mirewake: the Hall of Services); the week's demand changes it",
+			emit("sellto", m.id, {n = b.npc or "Material Broker", d = "every town, next to the temple (Cinderhold: the arcade at the temple; Mirewake: the Hall of Services); the week's demand changes it",
 				v = K.gold(t.price), o = -t.price})
 		end
 	end
 	for _, tool in ipairs(P.broker and P.broker.tools or {}) do
-		emit("shop", tool.id, {n = P.broker.npc or "Material Broker", d = "every town, next to the temple (Cinderhold and Mirewake: the Hall of Services)", v = K.gold(tool.price),
+		emit("shop", tool.id, {n = P.broker.npc or "Material Broker", d = "every town, next to the temple (Cinderhold: the arcade at the temple; Mirewake: the Hall of Services)", v = K.gold(tool.price),
 			o = tool.price})
 	end
 end

@@ -169,7 +169,9 @@ def main():
         fixes = [f for f in cfg['fix'] if f[0] == pid]
         booths = [b for b in cfg['booth'] if b[0] == pid]
         portals = [p for p in cfg['portal'] if p[0] == pid]
-        check(len(booths) >= 9, '%s: the booths are set (%d)' % (pid, len(booths)))
+        # Cinderhold's economy and service NPCs stand at its temple since 2026-10-21 (temple_npcs_config.lua): its
+        # hall keeps the progression row only
+        check(len(booths) >= (4 if pid == 'services_cinderhold' else 9), '%s: the booths are set (%d)' % (pid, len(booths)))
         for _, k, iid, kind in fixes:
             check(k not in used, '%s: fixture tile %s used once' % (pid, k))
             used.add(k)

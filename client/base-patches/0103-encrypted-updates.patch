@@ -1,0 +1,605 @@
+# Cinders of Chaos encrypted updates (client/BASE.md "Encrypted updates", client/MANIFEST.md "Signed updater"). The
+# signed updater's files were plain on the website and plain in the per-user write dir (chaos_update/files/), mounted
+# over the encrypted pack, so every updated module and image could be read. Now each file is published as one
+# encrypted blob (client/tools/update_crypt.py: the per-file variant of the chaos.pack format, magic CHUB, AES-256-GCM,
+# key = HKDF-SHA256 of the client guard key with its own labels, nonce = HMAC of the content) and stays encrypted on
+# disk; the engine decrypts the update files only into memory.
+#   * src/framework/util/chaosblob.h (new, header only, on top of chaospack.h of 0102; vectors in
+#     client/tools/chaosblob_test.cpp): key derivation, a streaming GCM Decryptor (in place), whole-blob encrypt /
+#     decrypt, CRC-32 and a store-only ZIP writer into one buffer.
+#   * src/framework/core/resourcemanager.{h,cpp}:
+#     - setUpdateKey(clientKey): keeps only the derived blob key (never the client guard key).
+#     - updateBlobSha256(path): SHA-256 of the plaintext of a blob inside chaos_update/, streamed in 1 MB blocks; ""
+#       unless the GCM tag authenticates. The updater checks it against the signed manifest before applying.
+#     - mountUpdateOverlay(path) / unmountUpdateOverlay(): decrypts every file of chaos_update/files/ straight into its
+#       slot of one in-memory store-only ZIP (one buffer of the files' size) and PhysFS-mounts it at "/" in front of
+#       the pack. A file that does not decrypt refuses the whole overlay (the client starts on the pack's files and the
+#       updater fetches the update again); names outside modules/ mods/ data/ layouts/ are left out.
+#     - mountUpdateDir no longer mounts a plain folder (it would put plain files in front of the pack).
+#   * src/framework/luafunctions.cpp: g_resources.updateBlobSha256 / mountUpdateOverlay / unmountUpdateOverlay.
+#   * src/main.cpp: setUpdateKey(builtInKey()) next to the pack mount, before the key is wiped.
+# Same honest limit as 0102: this deters copying; the key is in the binary. Ships with client build 13 (min_package
+# 13). Apply after 0001-0102: tools/assemble_client.sh applies every patch in order.
+--- a/src/framework/core/resourcemanager.cpp
++++ b/src/framework/core/resourcemanager.cpp
+@@ -30,6 +30,7 @@
+ #include <framework/util/crypt.h>
+ #include <framework/util/chaosupdate.h>
+ #include <framework/util/chaospack.h>
++#include <framework/util/chaosblob.h>
+ #include <framework/http/http.h>
+ #include <queue>
+ #include <regex>
+@@ -1260,28 +1261,209 @@
+     return !ec;
+ }
+ 
+-// mounts a folder of chaos_update/ at "/" in front of every other search path (its files override the client's)
++// Cinders of Chaos (base patch 0103): the update files are encrypted on disk, so a plain folder is never mounted any
++// more (it would let anyone put plain files in front of the pack); mountUpdateOverlay() decrypts and mounts them.
+ bool ResourceManager::mountUpdateDir(const std::string& path)
+ {
++    g_logger.warning(stdext::format("updater: plain update folders are not mounted ('%s'); use mountUpdateOverlay", path));
++    return false;
++}
++
++bool ResourceManager::unmountUpdateDir(const std::string& path)
++{
+     if (!isChaosUpdatePath(path))
+         return false;
+     const auto real = chaosUpdateRealPath(path);
++    return !real.empty() && PHYSFS_unmount(real.u8string().c_str()) != 0;
++}
++
++// ---- Cinders of Chaos encrypted updates (base patch 0103, util/chaosblob.h, client/BASE.md "Encrypted updates") ----
++namespace {
++const char* const CHAOS_UPDATE_OVERLAY = "chaos_update_overlay.zip";
++
++bool isUpdateRoot(const std::string& name)
++{
++    const auto slash = name.find('/');
++    if (slash == std::string::npos)
++        return false;
++    const std::string top = name.substr(0, slash);
++    return top == "modules" || top == "mods" || top == "data" || top == "layouts";
++}
++
++void wipeBuffer(std::vector<uint8_t>& buf)
++{
++    std::fill(buf.begin(), buf.end(), 0);
++    buf.clear();
++    buf.shrink_to_fit();
++}
++}
++
++// keeps only the derived update key (HKDF, its own label), never the client guard key itself
++void ResourceManager::setUpdateKey(const std::string& clientKey)
++{
++    m_updateKey = chaosblob::deriveEncKey(clientKey);
++}
++
++// SHA-256 (lowercase hex) of the PLAINTEXT of an encrypted update blob inside chaos_update/ of the write dir, read and
++// decrypted in 1 MB blocks; "" when it is not a blob, does not decrypt with this client's key or any byte changed (the
++// GCM tag is checked before the hash is returned). The updater compares it with the signed manifest.
++std::string ResourceManager::updateBlobSha256(const std::string& path)
++{
++#if defined(ANDROID) || defined(__EMSCRIPTEN__)
++    (void)path;
++    return "";
++#else
++    if (!isChaosUpdatePath(path) || m_updateKey.size() != 32)
++        return "";
++    const auto real = chaosUpdateRealPath(path);
++    std::error_code ec;
++    const auto size = real.empty() ? 0 : std::filesystem::file_size(real, ec);
++    if (real.empty() || ec || size < chaosblob::OVERHEAD)
++        return "";
++    std::ifstream f(real, std::ios::binary);
++    unsigned char header[chaosblob::HEADER_LEN];
++    if (!f || !f.read(reinterpret_cast<char*>(header), sizeof(header)))
++        return "";
++    chaosblob::Header h;
++    chaosblob::Decryptor d;
++    if (!d.begin(m_updateKey, header, h) || h.plainLen != size - chaosblob::OVERHEAD)
++        return "";
++    chaosupdate::Sha256Stream sha;
++    std::vector<unsigned char> buffer(1024 * 1024);
++    uint64_t left = h.plainLen;
++    while (left > 0) {
++        const size_t n = static_cast<size_t>(std::min<uint64_t>(left, buffer.size()));
++        if (!f.read(reinterpret_cast<char*>(buffer.data()), static_cast<std::streamsize>(n)) ||
++            !d.update(buffer.data(), buffer.data(), n))
++            return "";
++        sha.update(buffer.data(), n);
++        left -= n;
++    }
++    unsigned char tag[chaosblob::TAG_LEN];
++    if (!f.read(reinterpret_cast<char*>(tag), sizeof(tag)) || !d.finish(tag))
++        return "";
++    std::fill(buffer.begin(), buffer.end(), 0);
++    return sha.finishHex();
++#endif
++}
++
++// Decrypts every update file of a folder in chaos_update/ (the verified, still encrypted tree) into one in-memory
++// store-only ZIP and mounts it at "/" in front of every other search path, so its files override the pack's. Each file
++// is read straight into its slot of the ZIP and decrypted in place: one buffer of the files' size. Any file that does
++// not decrypt (another key, a changed byte, a plain file put there by hand) refuses the whole overlay: the client then
++// starts with the pack's own files and the updater fetches the update again. Files outside modules/ mods/ data/
++// layouts/ or with odd names are left out.
++bool ResourceManager::mountUpdateOverlay(const std::string& path)
++{
++#if defined(ANDROID) || defined(__EMSCRIPTEN__)
++    (void)path;
++    return false;
++#else
++    if (!isChaosUpdatePath(path))
++        return false;
++    if (m_updateKey.size() != 32) {
++        g_logger.warning("updater: this client has no update key; the update folder is not mounted");
++        return false;
++    }
++    unmountUpdateOverlay();
++    const auto root = chaosUpdateRealPath(path);
+     std::error_code ec;
+-    if (real.empty() || !std::filesystem::is_directory(real, ec))
++    if (root.empty() || !std::filesystem::is_directory(root, ec))
++        return false;
++
++    struct Item
++    {
++        std::string name;
++        std::filesystem::path real;
++        uint64_t plainLen = 0;
++    };
++    std::vector<Item> items;
++    for (auto it = std::filesystem::recursive_directory_iterator(root, ec);
++         !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
++        std::error_code fec;
++        if (!it->is_regular_file(fec))
++            continue;
++        const std::string name = it->path().lexically_relative(root).generic_u8string();
++        if (!isUpdateRoot(name) || !chaosupdate::isSafeUpdatePath(name)) {
++            g_logger.warning(stdext::format("updater: '%s' in the update folder left out", name));
++            continue;
++        }
++        const auto size = std::filesystem::file_size(it->path(), fec);
++        if (fec || size < chaosblob::OVERHEAD) {
++            g_logger.warning(stdext::format("updater: '%s' is not an encrypted update file; update folder not mounted", name));
++            return false;
++        }
++        items.push_back({ name, it->path(), size - chaosblob::OVERHEAD });
++    }
++    if (ec) {
++        g_logger.warning(stdext::format("updater: cannot list the update folder: %s", ec.message()));
+         return false;
+-    if (!PHYSFS_mount(real.u8string().c_str(), nullptr, 0)) {
+-        g_logger.warning(stdext::format("updater: unable to mount '%s': %s", path, PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++    }
++    if (items.empty())
++        return false;
++    std::sort(items.begin(), items.end(), [](const Item& a, const Item& b) { return a.name < b.name; });
++
++    std::vector<std::pair<std::string, uint64_t>> sizes;
++    for (const auto& i : items)
++        sizes.emplace_back(i.name, i.plainLen);
++    const uint64_t total = chaosblob::StoreZip::sizeFor(sizes);
++    if (!chaosblob::StoreZip::fits(total, items.size())) {
++        g_logger.warning("updater: the update folder is too large to mount (over 4 GB or 65535 files)");
++        return false;
++    }
++
++    auto data = std::make_shared<std::vector<uint8_t>>();
++    data->reserve(static_cast<size_t>(total));
++    chaosblob::StoreZip zip;
++    for (const auto& item : items) {
++        std::ifstream f(item.real, std::ios::binary);
++        unsigned char header[chaosblob::HEADER_LEN];
++        unsigned char tag[chaosblob::TAG_LEN];
++        chaosblob::Header h;
++        chaosblob::Decryptor d;
++        bool ok = f && f.read(reinterpret_cast<char*>(header), sizeof(header)) && d.begin(m_updateKey, header, h) &&
++            h.plainLen == item.plainLen;
++        if (ok) {
++            const size_t at = zip.beginEntry(*data, item.name, item.plainLen);
++            unsigned char* p = data->data() + at;
++            const size_t n = static_cast<size_t>(item.plainLen);
++            ok = (n == 0 || f.read(reinterpret_cast<char*>(p), static_cast<std::streamsize>(n))) &&
++                f.read(reinterpret_cast<char*>(tag), sizeof(tag)) && d.update(p, p, n) && d.finish(tag);
++            if (ok)
++                zip.endEntry(*data, chaosblob::crc32Update(p, n));
++        }
++        if (!ok) {
++            wipeBuffer(*data);
++            g_logger.warning(stdext::format("updater: '%s' does not decrypt with this client's key (changed, or another "
++                                            "build); update folder not mounted", item.name));
++            return false;
++        }
++    }
++    zip.finish(*data);
++    if (!PHYSFS_mountMemory(data->data(), data->size(), nullptr, CHAOS_UPDATE_OVERLAY, "/", 0)) {
++        g_logger.warning(stdext::format("updater: unable to mount the update files: %s",
++                                        PHYSFS_getErrorByCode(PHYSFS_getLastErrorCode())));
++        wipeBuffer(*data);
+         return false;
+     }
++    m_updateOverlay = data;
++    ++m_generation;
++    g_logger.info(stdext::format("updater: %d encrypted update files mounted (%u bytes)", static_cast<int>(items.size()),
++                                 static_cast<unsigned>(data->size())));
+     return true;
++#endif
+ }
+ 
+-bool ResourceManager::unmountUpdateDir(const std::string& path)
++bool ResourceManager::unmountUpdateOverlay()
+ {
+-    if (!isChaosUpdatePath(path))
++    if (!m_updateOverlay)
+         return false;
+-    const auto real = chaosUpdateRealPath(path);
+-    return !real.empty() && PHYSFS_unmount(real.u8string().c_str()) != 0;
++    if (!PHYSFS_unmount(CHAOS_UPDATE_OVERLAY))
++        return false;
++    wipeBuffer(*m_updateOverlay);
++    m_updateOverlay = nullptr;
++    ++m_generation;
++    return true;
+ }
+ 
+ std::map<std::string, std::string> ResourceManager::filesChecksums()
+--- a/src/framework/core/resourcemanager.h
++++ b/src/framework/core/resourcemanager.h
+@@ -98,6 +98,13 @@
+     bool removeUpdateTree(const std::string& path);
+     bool mountUpdateDir(const std::string& path);
+     bool unmountUpdateDir(const std::string& path);
++
++    // Cinders of Chaos encrypted updates (util/chaosblob.h, base patch 0103, client/BASE.md "Encrypted updates"):
++    // the update files stay encrypted in chaos_update/; the key is derived from the client guard key in main().
++    void setUpdateKey(const std::string& clientKey);
++    std::string updateBlobSha256(const std::string& path);
++    bool mountUpdateOverlay(const std::string& path);
++    bool unmountUpdateOverlay();
+     
+     std::map<std::string, std::string> filesChecksums();
+     std::string selfChecksum();
+@@ -139,6 +146,8 @@
+     bool m_loadedFromMemory = false;
+     bool m_loadedFromArchive = false;
+     bool m_packMounted = false; // Cinders of Chaos: chaos.pack was decrypted and mounted (base patch 0102)
++    std::string m_updateKey; // Cinders of Chaos: the update blob key (HKDF of the client guard key, base patch 0103)
++    std::shared_ptr<std::vector<uint8_t>> m_updateOverlay; // the decrypted update files, mounted (base patch 0103)
+     std::shared_ptr<std::vector<uint8_t>> m_memoryData;
+     uint64 m_generation = 0;
+     uint32_t m_customEncryption = 0;
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -281,6 +281,10 @@
+     g_lua.bindSingletonFunction("g_resources", "removeUpdateTree", &ResourceManager::removeUpdateTree, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "mountUpdateDir", &ResourceManager::mountUpdateDir, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "unmountUpdateDir", &ResourceManager::unmountUpdateDir, &g_resources);
++    // Cinders of Chaos encrypted updates (base patch 0103)
++    g_lua.bindSingletonFunction("g_resources", "updateBlobSha256", &ResourceManager::updateBlobSha256, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "mountUpdateOverlay", &ResourceManager::mountUpdateOverlay, &g_resources);
++    g_lua.bindSingletonFunction("g_resources", "unmountUpdateOverlay", &ResourceManager::unmountUpdateOverlay, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateData", &ResourceManager::updateData, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "updateExecutable", &ResourceManager::updateExecutable, &g_resources);
+     g_lua.bindSingletonFunction("g_resources", "createArchive", &ResourceManager::createArchive, &g_resources);
+--- a/src/framework/util/chaosblob.h
++++ b/src/framework/util/chaosblob.h
+@@ -0,0 +1,303 @@
++// Cinders of Chaos encrypted update blobs (client/base-patches/0103-encrypted-updates.patch, client/BASE.md
++// "Encrypted updates", client/MANIFEST.md "Signed updater"). Every file the signed updater downloads is one blob in the
++// per-file variant of the chaos.pack format (util/chaospack.h, base patch 0102) with its own magic and HKDF labels:
++//
++//   header (28) = "CHUB" | version 1 | flags (bit 0: development key) | 2 reserved | 12-byte nonce | plaintext length
++//                 (u64 LE);  blob = header | AES-256-GCM(plaintext, AAD = header) | 16-byte tag
++//   enc key     = HKDF-SHA256(client guard key, "CindersOfChaos/update/v1", "chaos-update-blob-aes-256-gcm")
++//   nonce       = HMAC-SHA256(HKDF(..., "chaos-update-blob-nonce"), plaintext)[:12]  (deterministic per content)
++//
++// The blobs stay encrypted on disk (chaos_update/files/ in the write dir). At start the engine decrypts them into one
++// in-memory store-only ZIP (StoreZip below, each file read straight into its slot and decrypted in place) and mounts
++// it in front of the pack. Byte-identical to the publisher client/tools/update_crypt.py; client/tools/chaosblob_test.cpp
++// checks a fixed vector, round trip, wrong key, tamper, the streaming decryptor and the ZIP writer.
++//
++// Header only, so chaosblob_test.cpp builds it on its own against OpenSSL (with chaospack.h from base patch 0102).
++#pragma once
++
++#include "chaospack.h"
++
++#include <algorithm>
++#include <cstdint>
++#include <cstring>
++#include <string>
++#include <vector>
++
++#include <openssl/evp.h>
++
++namespace chaosblob
++{
++
++constexpr char MAGIC[4] = { 'C', 'H', 'U', 'B' };
++constexpr uint8_t VERSION = 1;
++constexpr size_t HEADER_LEN = 28;
++constexpr size_t NONCE_LEN = 12;
++constexpr size_t TAG_LEN = 16;
++constexpr size_t OVERHEAD = HEADER_LEN + TAG_LEN;
++constexpr uint8_t FLAG_DEV = 0x01;
++
++inline const std::string& hkdfSalt() { static const std::string s = "CindersOfChaos/update/v1"; return s; }
++inline const std::string& infoEnc() { static const std::string s = "chaos-update-blob-aes-256-gcm"; return s; }
++inline const std::string& infoNonce() { static const std::string s = "chaos-update-blob-nonce"; return s; }
++
++// the decryption key the engine keeps (never the client guard key itself): 32 bytes, "" on failure
++inline std::string deriveEncKey(const std::string& clientKey)
++{
++    if (clientKey.size() != 32)
++        return std::string();
++    std::string k = chaospack::hkdfSha256(clientKey, hkdfSalt(), infoEnc(), 32);
++    return k.size() == 32 ? k : std::string();
++}
++
++struct Header
++{
++    uint8_t flags = 0;
++    uint64_t plainLen = 0;
++};
++
++inline bool parseHeader(const unsigned char* p, size_t n, Header& h)
++{
++    if (n < HEADER_LEN || std::memcmp(p, MAGIC, 4) != 0 || p[4] != VERSION)
++        return false;
++    h.flags = p[5];
++    h.plainLen = chaospack::readU64LE(p + 20);
++    return true;
++}
++
++// Encrypts one file into a blob (tests; the publisher is update_crypt.py). Deterministic.
++inline bool encrypt(const std::string& clientKey, const std::string& plaintext, bool devKey, std::string& out)
++{
++    if (clientKey.size() != 32)
++        return false;
++    const std::string encKey = deriveEncKey(clientKey);
++    const std::string nonceKey = chaospack::hkdfSha256(clientKey, hkdfSalt(), infoNonce(), 32);
++    const std::string nonce = chaospack::hmacSha256(nonceKey, plaintext).substr(0, NONCE_LEN);
++    if (encKey.empty() || nonce.size() != NONCE_LEN)
++        return false;
++    std::string header(MAGIC, 4);
++    header.push_back(static_cast<char>(VERSION));
++    header.push_back(static_cast<char>(devKey ? FLAG_DEV : 0));
++    header.push_back('\0');
++    header.push_back('\0');
++    header += nonce;
++    chaospack::writeU64LE(header, plaintext.size());
++    std::string ciphertext, tag;
++    if (!chaospack::aesGcmEncrypt(encKey, nonce, header, plaintext, ciphertext, tag))
++        return false;
++    out = header + ciphertext + tag;
++    return true;
++}
++
++// Streaming AES-256-GCM decryption of one blob: begin(header), update(...) over the body in any pieces (in place is
++// fine), finish(tag). Nothing it returned may be used unless finish() is true.
++class Decryptor
++{
++public:
++    Decryptor() = default;
++    ~Decryptor()
++    {
++        if (m_ctx)
++            EVP_CIPHER_CTX_free(m_ctx);
++    }
++    Decryptor(const Decryptor&) = delete;
++    Decryptor& operator=(const Decryptor&) = delete;
++
++    // encKey: deriveEncKey(); header: the blob's first HEADER_LEN bytes
++    bool begin(const std::string& encKey, const unsigned char* header, Header& h)
++    {
++        if (encKey.size() != 32 || !parseHeader(header, HEADER_LEN, h))
++            return false;
++        m_ctx = EVP_CIPHER_CTX_new();
++        int len = 0;
++        m_ok = m_ctx && EVP_DecryptInit_ex(m_ctx, EVP_aes_256_gcm(), nullptr, nullptr, nullptr) == 1 &&
++            EVP_CIPHER_CTX_ctrl(m_ctx, EVP_CTRL_GCM_SET_IVLEN, static_cast<int>(NONCE_LEN), nullptr) == 1 &&
++            EVP_DecryptInit_ex(m_ctx, nullptr, nullptr, reinterpret_cast<const unsigned char*>(encKey.data()),
++                               header + 8) == 1 &&
++            EVP_DecryptUpdate(m_ctx, nullptr, &len, header, static_cast<int>(HEADER_LEN)) == 1;
++        m_left = h.plainLen;
++        return m_ok;
++    }
++
++    bool update(const unsigned char* in, unsigned char* out, size_t n)
++    {
++        constexpr size_t CHUNK = 64u * 1024u * 1024u; // EVP lengths are int
++        if (!m_ok || n > m_left)
++            return m_ok = false;
++        for (size_t at = 0; at < n; at += CHUNK) {
++            const int k = static_cast<int>(std::min(CHUNK, n - at));
++            int outLen = 0;
++            if (EVP_DecryptUpdate(m_ctx, out + at, &outLen, in + at, k) != 1 || outLen != k)
++                return m_ok = false;
++        }
++        m_left -= n;
++        return true;
++    }
++
++    // true only when the whole body went through update() and the tag authenticates header and body
++    bool finish(const unsigned char* tag)
++    {
++        if (!m_ok || m_left != 0)
++            return false;
++        unsigned char t[TAG_LEN];
++        std::memcpy(t, tag, TAG_LEN);
++        unsigned char dummy[16];
++        int finalLen = 0;
++        m_ok = EVP_CIPHER_CTX_ctrl(m_ctx, EVP_CTRL_GCM_SET_TAG, static_cast<int>(TAG_LEN), t) == 1 &&
++            EVP_DecryptFinal_ex(m_ctx, dummy, &finalLen) == 1;
++        return m_ok;
++    }
++
++private:
++    EVP_CIPHER_CTX* m_ctx = nullptr;
++    bool m_ok = false;
++    uint64_t m_left = 0;
++};
++
++// Whole-blob decryption (tests and small files). encKey: deriveEncKey(). False on a bad format, a wrong key or any
++// changed byte.
++inline bool decrypt(const std::string& encKey, const std::string& blob, std::string& out)
++{
++    out.clear();
++    if (blob.size() < OVERHEAD)
++        return false;
++    const auto* p = reinterpret_cast<const unsigned char*>(blob.data());
++    Header h;
++    Decryptor d;
++    if (!d.begin(encKey, p, h) || h.plainLen != blob.size() - OVERHEAD)
++        return false;
++    std::string plain(static_cast<size_t>(h.plainLen), '\0');
++    if (!d.update(p + HEADER_LEN, reinterpret_cast<unsigned char*>(&plain[0]), plain.size()) ||
++        !d.finish(p + blob.size() - TAG_LEN))
++        return false;
++    out.swap(plain);
++    return true;
++}
++
++// ---- store-only ZIP in one buffer (what PhysFS mounts from memory) ----
++
++inline uint32_t crc32Update(const unsigned char* p, size_t n, uint32_t crc = 0)
++{
++    static uint32_t table[256];
++    static bool ready = false;
++    if (!ready) {
++        for (uint32_t i = 0; i < 256; ++i) {
++            uint32_t c = i;
++            for (int k = 0; k < 8; ++k)
++                c = (c & 1) ? 0xEDB88320u ^ (c >> 1) : c >> 1;
++            table[i] = c;
++        }
++        ready = true;
++    }
++    crc = ~crc;
++    for (size_t i = 0; i < n; ++i)
++        crc = table[(crc ^ p[i]) & 0xFF] ^ (crc >> 8);
++    return ~crc;
++}
++
++class StoreZip
++{
++public:
++    // the exact size of the archive of these entries (reserve it once, so the buffer never moves)
++    static uint64_t sizeFor(const std::vector<std::pair<std::string, uint64_t>>& entries)
++    {
++        uint64_t total = 22;
++        for (const auto& e : entries)
++            total += 30 + 46 + 2 * static_cast<uint64_t>(e.first.size()) + e.second;
++        return total;
++    }
++
++    // appends a local header and room for `size` bytes; returns where the data goes (fill it, then endEntry)
++    size_t beginEntry(std::vector<uint8_t>& buf, const std::string& name, uint64_t size)
++    {
++        Entry e;
++        e.name = name;
++        e.size = static_cast<uint32_t>(size);
++        e.offset = static_cast<uint32_t>(buf.size());
++        put32(buf, 0x04034b50);
++        put16(buf, 10); // version needed: stored
++        put16(buf, 0);  // flags
++        put16(buf, 0);  // method: stored
++        put16(buf, 0);  // time
++        put16(buf, 0x21); // date 1980-01-01
++        put32(buf, 0);  // crc, set by endEntry
++        put32(buf, e.size);
++        put32(buf, e.size);
++        put16(buf, static_cast<uint16_t>(name.size()));
++        put16(buf, 0);
++        buf.insert(buf.end(), name.begin(), name.end());
++        const size_t at = buf.size();
++        buf.resize(at + static_cast<size_t>(size));
++        m_entries.push_back(e);
++        return at;
++    }
++
++    void endEntry(std::vector<uint8_t>& buf, uint32_t crc)
++    {
++        Entry& e = m_entries.back();
++        e.crc = crc;
++        set32(buf, e.offset + 14, crc);
++    }
++
++    void finish(std::vector<uint8_t>& buf)
++    {
++        const uint32_t cdStart = static_cast<uint32_t>(buf.size());
++        for (const Entry& e : m_entries) {
++            put32(buf, 0x02014b50);
++            put16(buf, 20);
++            put16(buf, 10);
++            put16(buf, 0);
++            put16(buf, 0);
++            put16(buf, 0);
++            put16(buf, 0x21);
++            put32(buf, e.crc);
++            put32(buf, e.size);
++            put32(buf, e.size);
++            put16(buf, static_cast<uint16_t>(e.name.size()));
++            put16(buf, 0);
++            put16(buf, 0);
++            put16(buf, 0);
++            put16(buf, 0);
++            put32(buf, 0);
++            put32(buf, e.offset);
++            buf.insert(buf.end(), e.name.begin(), e.name.end());
++        }
++        const uint32_t cdSize = static_cast<uint32_t>(buf.size()) - cdStart;
++        put32(buf, 0x06054b50);
++        put16(buf, 0);
++        put16(buf, 0);
++        put16(buf, static_cast<uint16_t>(m_entries.size()));
++        put16(buf, static_cast<uint16_t>(m_entries.size()));
++        put32(buf, cdSize);
++        put32(buf, cdStart);
++        put16(buf, 0);
++    }
++
++    // a ZIP without ZIP64: below 4 GB and 65535 entries
++    static bool fits(uint64_t total, size_t count) { return total < 0xFFFFFFF0ull && count < 0xFFFF; }
++
++private:
++    struct Entry
++    {
++        std::string name;
++        uint32_t size = 0, offset = 0, crc = 0;
++    };
++    std::vector<Entry> m_entries;
++
++    static void put16(std::vector<uint8_t>& b, uint16_t v)
++    {
++        b.push_back(static_cast<uint8_t>(v & 0xFF));
++        b.push_back(static_cast<uint8_t>(v >> 8));
++    }
++    static void put32(std::vector<uint8_t>& b, uint32_t v)
++    {
++        for (int i = 0; i < 4; ++i)
++            b.push_back(static_cast<uint8_t>((v >> (8 * i)) & 0xFF));
++    }
++    static void set32(std::vector<uint8_t>& b, size_t at, uint32_t v)
++    {
++        for (int i = 0; i < 4; ++i)
++            b[at + i] = static_cast<uint8_t>((v >> (8 * i)) & 0xFF);
++    }
++};
++
++} // namespace chaosblob
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -148,6 +148,8 @@
+     {
+         std::string packKey = chaosguard::builtInKey();
+         g_resources.mountEncryptedPack(packKey);
++        // base patch 0103: the update blob key (its own HKDF label); the updater's files stay encrypted on disk
++        g_resources.setUpdateKey(packKey);
+         chaosguard::wipe(packKey);
+     }
+ #endif

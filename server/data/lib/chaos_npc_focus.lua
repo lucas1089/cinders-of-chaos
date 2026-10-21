@@ -1,7 +1,9 @@
 -- Only the nearest NPC answers a greeting (live test 2026-10-14: the Loot Buyer stood next to the Gambler, and "hi" /
 -- "trade" opened both their windows). Every NPC within its talk radius hears a player; our NPC scripts
 -- (data/npc/scripts/*.lua) now pass a line on to their handler only when the player is already talking to them, or
--- when no other NPC within the talk radius stands nearer the player (same distance: the lower creature id answers).
+-- when no other NPC within the talk radius stands nearer the player (same distance: the one in the straighter line, the
+-- smaller sum of squares, answers; then the lower creature id). The straighter line (2026-10-21): the temple arcade's
+-- booths stand 2 apart (temple_npcs_config.lua), so in front of a booth its neighbour is as near by squares (2).
 -- The startup placement keeps our NPCs apart as well (data/scripts/chaos/npc_place_core.lua).
 --   ChaosNpcFocus.answers(me, others, player, radius) -> bool   pure: me / others = {id, x, y}, player = {x, y}
 --   ChaosNpcFocus.hears(cid, npcHandler) -> bool                in an NPC script's onCreatureSay
@@ -17,13 +19,18 @@ local function dist(a, p)
 	return max(abs(a.x - p.x), abs(a.y - p.y))
 end
 
+local function sq(a, p)
+	return (a.x - p.x) * (a.x - p.x) + (a.y - p.y) * (a.y - p.y)
+end
+
 function F.answers(me, others, player, radius)
 	radius = radius or F.RADIUS
-	local mine = dist(me, player)
+	local mine, mineSq = dist(me, player), sq(me, player)
 	for _, o in ipairs(others or {}) do
 		if o.id ~= me.id then
 			local d = dist(o, player)
-			if d <= radius and (d < mine or (d == mine and o.id < me.id)) then
+			local e = d == mine and sq(o, player) or 0
+			if d <= radius and (d < mine or (d == mine and (e < mineSq or (e == mineSq and o.id < me.id)))) then
 				return false
 			end
 		end

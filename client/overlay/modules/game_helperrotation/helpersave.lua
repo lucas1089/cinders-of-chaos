@@ -9,7 +9,9 @@
 --   and when none can be read the broken file is kept aside as .broken before the defaults may be saved;
 -- * a write goes to .tmp first and is read back; the previous good file becomes .bak; then the file is written and
 --   checked (a cut write leaves .tmp and .bak);
--- * a change saves after DEBOUNCE_MS (the last change wins); death and logout save at once.
+-- * a change saves after DEBOUNCE_MS (the last change wins); death and logout save at once;
+-- * what was read is checked (HS.clean = ChaosHelperConfig.sanitizeHelper, helperconfig.lua): numbers clamped to the
+--   helper's ranges, wrong types back to defaults, so a hand-edited file cannot drive the automation out of range.
 ChaosHelperSave = ChaosHelperSave or {}
 local HS = ChaosHelperSave
 
@@ -31,6 +33,10 @@ function HS.read(fs, path, decode)
     local p = source == 'main' and path or (path .. '.' .. source)
     local value = decodes(fs, p, decode)
     if value then
+      if type(HS.clean) == 'function' then
+        local okClean, cleaned = pcall(HS.clean, value)
+        if okClean and type(cleaned) == 'table' then value = cleaned end
+      end
       if source ~= 'main' then
         -- put the good copy back in place (the main file is broken or missing)
         if fs.exists(path) and not fs.exists(path .. '.broken') then pcall(fs.copy, path, path .. '.broken') end

@@ -1,0 +1,44 @@
+# References of the assembled client that resolve to no file; slim_client.py check tolerates exactly these lines.
+# Most are computed prefixes the parser reads as a whole path (ICON_DIR = '/images/chaos/small/topbutton_'); the rest
+# are files the base client never shipped (and a few overlay ones: game_passivetree class portraits, nameshaders).
+# Regenerate: python3 -I client/tools/slim_client.py refs GAME_DIR | sort -u, then read every new line: a line here
+# hides a broken picture.
+data/styles/10-buttons.otui /images/ui/miniStoreIcon
+data/styles/10-progressbars.otui /images/ui/progressbar_thick
+mods/client_autoreloadmodule/autoreloadmodule.lua /data/game.otml
+mods/game_cyclopedia/styles/house.otui /game_cyclopedia/images/monsters/demon
+mods/game_cyclopedia/styles/house.otui /images/ui/progressbarbestiary
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-death-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-drowning-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-earth-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-energy-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-fire-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-healing-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-holy-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-ice-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-lifedrain-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-manadrain-resist
+mods/game_cyclopedia/utils.lua /game_cyclopedia/images/bestiary/icons/monster-icon-physical-resist
+mods/game_helper/spelldata.lua /modules/game_helper/spelldata.json
+mods/game_trade/trade.lua new
+modules/client/client.lua /sounds/startup
+modules/client_chaos_topbar/chaos_topbar.lua /images/chaos/small/topbutton_
+modules/client_entergame/logpass.otui /images/ui/continue_with_logpass.png
+modules/corelib/corelib.otmod classes
+modules/game_loadouts/loadoutsview.lua /images/chaos/small/topbutton_
+modules/game_nameshaders/nameshaders.otui /images/ui/check
+modules/game_nameshaders/nameshaders.otui /images/ui/lock
+modules/game_passivetree/passivetree.otui /images/passivetree/dropdown_menu
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/bowman_female
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/bowman_male
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/druid_female
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/druid_male
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/female_illusionist
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/illusionist_male
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/mage_female
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/mage_male
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/warrior_female
+modules/game_passivetree/treedata/static.lua /images/passivetree/classes/warrior_male
+modules/game_shop/shopicon.lua /modules/game_nameplate/images/plate_
+modules/game_soulseal/game_soulseal.otui /game_cyclopedia/images/indicator_beast
+modules/gamelib/items.lua /images/ui/rarity_

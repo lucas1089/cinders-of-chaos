@@ -39,6 +39,15 @@ function L.orbSize(option)
   return entry.size, math.floor(entry.size * 64 / 76 + 0.5), entry.font
 end
 
+-- the ring and mask images of an orb size: one pair per size, each at twice the size it is drawn
+-- (tools/gen_orb_art.py). One 76 px ring and 64 px mask stretched to the medium and large orbs looked blurred and
+-- stepped (owner screenshot 2026-10-21).
+L.ORB_IMAGES = '/modules/game_shaderfx/images/'
+function L.orbArt(option)
+  local size, liquid = L.orbSize(option)
+  return L.ORB_IMAGES .. 'orb_ring_' .. size, L.ORB_IMAGES .. 'orb_mask_' .. liquid
+end
+
 -- 0..1 fill of an orb (0 without a maximum)
 function L.fill(value, max)
   value, max = tonumber(value) or 0, tonumber(max) or 0

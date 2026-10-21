@@ -2367,7 +2367,7 @@ return {
 		["Your account already has that."] = "Sua conta já tem isso.",
 		["That offer is not available right now."] = "Essa oferta não está disponível agora.",
 		["One purchase at a time."] = "Uma compra de cada vez.",
-		["Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple)."] = "Visite Osric the Chandler para comprar (no Salão de Serviços, ou ao lado do templo).",
+		["Visit Osric the Chandler to buy (at the temple)."] = "Visite Osric the Chandler para comprar (no templo).",
 		["The purchase could not be written down. Nothing was taken; try again."] =
 			"Não foi possível registrar a compra. Nada foi cobrado; tente de novo.",
 		["Bought %s for %d Candlemarks."] = "Comprou %s por %d Candlemarks.",

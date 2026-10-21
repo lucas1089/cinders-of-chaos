@@ -34,17 +34,19 @@ end
 
 -- the timer rules Auto setup wrote are remembered by their words (the helper's save keeps only its own fields)
 local function ownWords()
-  local node = g_settings.getNode(SETTINGS_NODE) or {}
-  local e = charName() and node[charName()] or nil
+  local node = g_settings.getNode(SETTINGS_NODE)
+  local e = type(node) == 'table' and charName() and node[charName()] or nil
   local set = {}
-  for _, w in ipairs(e and e.timerWords or {}) do set[tostring(w):lower()] = true end
+  -- config.otml can be edited by hand: strings only, a capped list (ChaosHelperConfig.autosetupWords)
+  for _, w in ipairs(ChaosHelperConfig.autosetupWords(e)) do set[w:lower()] = true end
   return set
 end
 
 local function rememberWords(rules)
   local name = charName()
   if not name then return end
-  local node = g_settings.getNode(SETTINGS_NODE) or {}
+  local node = g_settings.getNode(SETTINGS_NODE)
+  if type(node) ~= 'table' then node = {} end
   local words = {}
   for _, r in ipairs(rules) do if r.chaosAutoSetup then words[#words + 1] = r.value end end
   node[name] = { timerWords = words }

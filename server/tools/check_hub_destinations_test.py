@@ -17,4 +17,12 @@ assert H.landing(d, lambda x, y, z: x == d['x'] + 4) is None, 'radius is 3'
 assert H.landing(d, lambda x, y, z: z != d['z']) is None, 'same floor only'
 only = hub[1]
 assert H.dead_ends(hub, lambda x, y, z: (x, y, z) == (only['x'], only['y'], only['z'])) == [hub[0], hub[2], hub[3]]
+# every destination has a way back (owner 2026-10-21) within 4 tiles of it, on its floor
+for d in hub:
+    b = d['back']
+    assert b and b[2] == d['z'] and max(abs(b[0] - d['x']), abs(b[1] - d['y'])) <= 4, d
+    assert b != (d['x'], d['y'], d['z']), 'not on the landing tile itself'
+assert H.bad_backs(hub, lambda x, y, z: True) == []
+assert H.bad_backs(hub, lambda x, y, z: (x, y, z) != hub[2]['back']) == [hub[2]]
+assert H.bad_backs([dict(hub[0], back=None)], lambda x, y, z: True) != [], 'a destination without a way back'
 print('check_hub_destinations_test: ok')

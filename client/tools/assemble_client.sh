@@ -47,8 +47,12 @@ fi
 # since the client would stop at start with "[Atlas] Out of space for new fonts".
 if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
   python3 -I "$HERE/tools/make_fonts.py" --atlas-check "$OUT/data/fonts" | tail -1
+  # slim client: the files nothing uses go (tools/slim_prune.txt, a reason per group; client/BASE.md "Slim client"),
+  # then every static file reference of the tree must still resolve (tools/slim_client.py check)
+  python3 -I "$HERE/tools/slim_client.py" prune "$OUT"
+  python3 -I "$HERE/tools/slim_client.py" check "$OUT"
 else
-  echo "python3 not found: font atlas check skipped"
+  echo "python3 not found: font atlas check and slim prune skipped (the client ships ~170 MB of unused files)"
 fi
 mkdir -p "$OUT/data/things/1098"
 if [ -n "$THINGS" ]; then

@@ -67,7 +67,8 @@
 # CHAOS_DB_SOCKET (empty: TCP host/port of the env file), CHAOS_MYSQL (the client: mysql, mariadb or the kit's own),
 # CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos). For publish-update: CHAOS_PUBLISH_LOG
 # /var/log/chaos/publish-update.log and, passed on to publish_client_update.sh (its defaults when unset), CHAOS_SITE_DIR,
-# CHAOS_UPDATE_KEY, CHAOS_UPDATE_PUBLIC, CHAOS_UPDATE_REPO, CHAOS_UPDATE_URL, CHAOS_WORK_DIR. For the kit's update-*:
+# CHAOS_UPDATE_KEY, CHAOS_UPDATE_PUBLIC, CHAOS_UPDATE_REPO, CHAOS_UPDATE_URL, CHAOS_WORK_DIR, and CHAOS_ENV (the update blobs are
+# encrypted with its CHAOS_CLIENT_KEY, which publish_client_update.sh reads from there). For the kit's update-*:
 # CHAOS_KIT_DIR (else CHAOS_ROOT when it holds start-server.sh), CHAOS_UPDATE_BRANCH main, CHAOS_RELEASE_REPO
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log.
@@ -456,6 +457,7 @@ case $cmd in
       v=$(setting "$k" "")
       [ -z "$v" ] || penv+=("$k=$v")
     done
+    penv+=("CHAOS_ENV=$ENVFILE")  # publish_client_update.sh reads CHAOS_CLIENT_KEY from it (the blob key)
     mkdir -p "$(dirname "$PLOG")"
     : > "$PLOG"
     setsid env "${penv[@]}" "$pub" "${args[@]}" -- "$tag" >> "$PLOG" 2>&1 < /dev/null &
