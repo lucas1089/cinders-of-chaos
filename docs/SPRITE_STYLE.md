@@ -41,6 +41,11 @@ Third-party packs (licence audit of 2026-10-15, owner's confirmation the same da
   potions). Their art may be imported into a pair (`gen_pack29_fx.py`, `gen_pack29_vfx.py`, `gen_pack30_*.py`: cut,
   scaled, turned, placed), but they are never a reference: not viewed for style, measured, sampled for a palette or
   given to an AI tool. `style_check.py` is never run on them and no palette is sampled from them.
+- **Import-only, pair 33 (planned):** the four `set33` packs (wings, heads, capes, kit; docs/CREDITS.md). Their
+  licences forbid machine-learning use and sharing the assets even modified. Same rules as `set30`:
+  `gen_pack33.py` only cuts and places them, `style_check.py` is never run on them, no palette is sampled. Their
+  geometry (frame size, anchor tile, footprint, 8-direction rows, back / front layers) is listed in client/MANIFEST.md
+  "Pair 33 packs".
 
 ## Grid, size and anchors
 

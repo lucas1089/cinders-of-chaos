@@ -901,6 +901,75 @@ do
 	ok(C1.shaders[11], "ownership back at login")
 end
 
+-- ------------------------------------------------------------------ the category tree (2026-10-21) and the search
+do
+	local T = newPlayer("Treewalker", {level = 400})
+	DB.coins[T.account] = 5000
+	-- init: the parents first, then the flat list in tree order (an old client reads only "categories")
+	request(T, "init")
+	eq(sent[1] and sent[1].action, "category_groups", "the parents come first")
+	eq(sent[2] and sent[2].action, "categories", "then the categories")
+	local groups, cats = sent[1].data, sent[2].data
+	local gname = {}
+	for i, g in ipairs(groups) do gname[i] = g.name end
+	eq(table.concat(gname, "|"), "Premium & Services|Consumables|Cosmetics", "the three parents, in tree order")
+	for _, g in ipairs(groups) do
+		ok(g.type == "item" or g.type == "outfit", "a parent icon: " .. g.name)
+		ok(g.size > 0 and g.children > 0, "a parent's offers and subcategories: " .. g.name)
+	end
+	eq(cats[1].name, "This week", "a level 400 character: the rotation first")
+	eq(cats[1].parent, nil, "the rotation is a top category")
+	local seenParent, closed = {}, {}
+	local prev
+	for i, c in ipairs(cats) do
+		ok(c.size and c.size > 0, "a category's offer count: " .. c.name)
+		ok(c.pages == math.max(1, math.ceil(c.size / cfg.perPage)), "pages from the count: " .. c.name)
+		-- a parent's subcategories stand together
+		if c.parent ~= prev and prev then closed[prev] = true end
+		ok(not (c.parent and closed[c.parent]), "subcategories of " .. tostring(c.parent) .. " together (" .. c.name .. ")")
+		if c.parent then seenParent[c.parent] = (seenParent[c.parent] or 0) + 1 end
+		prev = c.parent
+		ok(c.name ~= "Depot Tabs" and c.name ~= "Chaos Shaders" and c.name ~= "Supplies" and c.name ~= "Boosts",
+			"a category of before the clean-up: " .. c.name)
+	end
+	for _, g in ipairs(groups) do
+		eq(seenParent[g.name], g.children, "the parent's subcategory count: " .. g.name)
+	end
+	-- a sale on a parent covers its subcategories
+	local wings = Shop.byKey["wings:1"]
+	local c0 = K.price(wings, "Wings", {now = os.time(), sales = {{categories = {"Cosmetics"}, pct = 30}}}, "Cosmetics")
+	eq(c0, math.floor(wings.cost * 0.7), "a sale on Cosmetics lowers the wings")
+	local c1 = K.price(Shop.byKey["item:7590x100"], "Potions", {now = os.time(), sales = {{categories = {"Cosmetics"}, pct = 30}}}, "Consumables")
+	eq(c1, Shop.byKey["item:7590x100"].cost, "not the potions")
+
+	-- search: every word in the title, category or parent; results say where they are (at) and their path
+	request(T, "search", {text = "  PLATE frost "})
+	local res = last("search_results")
+	ok(res and res.data.text == "  PLATE frost ", "the results name their search")
+	eq(#res.data.offers, 1, "one offer is a frost plate (every frame is in Name Plates, one is frost)")
+	local hit = res.data.offers[1]
+	eq(hit.title, "Frost Plate Frame", "the frame found")
+	eq(table.concat(hit.path, ">"), "Cosmetics>Name Plates", "its path")
+	request(T, "search", {text = "potions"})
+	res = last("search_results")
+	ok(#res.data.offers >= 4, "the category name matches too: " .. #res.data.offers)
+	request(T, "search", {text = "cosmetics"})
+	eq(#last("search_results").data.offers, 30, "at most 30 results")
+	request(T, "search", {text = ""})
+	eq(#last("search_results").data.offers, 0, "an empty search finds nothing")
+	request(T, "search", {text = "this week"})
+	for _, o in ipairs(last("search_results").data.offers) do
+		ok(o.path[1] ~= "This week", "the rotation is not searched (its offers are in their categories)")
+	end
+	-- buy from the results: buy sends the result's `at`, the server finds the same offer
+	request(T, "search", {text = "Strength Wings"})
+	hit = last("search_results").data.offers[1]
+	ok(hit and hit.title == "Strength Wings", "wings 15 under their own name, not the base typo")
+	request(T, "buy", {category = hit.at.category, page = hit.at.page, offer = hit.at.offer, title = hit.title, cost = hit.cost})
+	eq(last("message").data.title, "Purchase complete", "bought from the search results")
+	ok(T.storage[Chaos.storage.shopWingsBase + 15] == 1, "the wings 15 delivered")
+end
+
 -- a reload builds the same store and keeps what was bought
 local keysBefore = #Shop.view(A)
 loadShop()

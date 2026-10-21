@@ -2028,7 +2028,8 @@ local STORE = {["Starter"] = top("daily"), ["Bundles"] = top("stash"), ["Outfits
 	["Loot Labels"] = kit("light", "eye"), ["Chat Colours"] = top("console"), ["Footprints"] = kit("ember", "kick"),
 	["Outlines"] = kit("light", "shield"), ["Hideout Decorations"] = kit("ember", "banner"),
 	["Appearances"] = kit("arcane", "twin"), ["Pets"] = kit("nature", "fang"), ["Crafting"] = kit("steel", "hammer"),
-	["Supplies"] = kit("blood", "drop"), ["Boosts"] = kit("light", "arrowup"), ["World Buffs"] = kit("holy", "burst"),
+	["Potions"] = kit("blood", "drop"), ["XP Boosts"] = kit("light", "arrowup"), ["Blessings"] = kit("holy", "shield"),
+	["Runes"] = kit("arcane", "burst"), ["World Buffs"] = kit("holy", "burst"),
 	["Services"] = top("options"), ["Convenience"] = top("autoloot"), ["Classes"] = kit("holy", "sword"),
 	["Training"] = kit("steel", "sword"), ["Chaos Pact"] = top("battlepass"), ["Storage & Slots"] = top("stash"),
 	["Depot Tabs"] = top("stash"), ["Season Pass"] = top("battlepass"), ["Premium Time"] = top("vip")}

@@ -295,10 +295,11 @@ local CATEGORY = {
 	["Spell Effects"] = true, ["Kill Effects"] = true, ["Loot Labels"] = true, ["Chat Colours"] = true, ["Appearances"] = true,
 	["Footprints"] = true, ["Outlines"] = true, -- cosmetics.lua: looks only
 	["Hideout Decorations"] = true, -- hideout_store.lua: looks only
-	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots)
-	["Chaos Shaders"] = true, -- cosmetics_store.lua("outfitshader"): looks only
+	["Depot Tabs"] = true, -- depot_config.lua: account room (service pactExtra, as Storage & Slots), while sold
 	["Themed Sets"] = true, -- chaos_theme_art.lua appearance sets (weekly rotation only): looks only
-	["Starter"] = false, ["Crafting"] = false, ["Supplies"] = false, ["Boosts"] = false, ["World Buffs"] = false,
+	-- the Chaos shaders are in Outfit Shaders since 2026-10-21; Supplies is Potions, Boosts is XP Boosts and Blessings
+	["Starter"] = false, ["Crafting"] = false, ["Potions"] = false, ["XP Boosts"] = false, ["Blessings"] = false,
+	["World Buffs"] = false,
 	["Convenience"] = false, ["Training"] = false, ["Pets"] = false, ["Services"] = "mixed",
 	["Runes"] = false -- the rune packs: items
 }
@@ -322,7 +323,9 @@ for _, o in ipairs(offers) do
 	end
 end
 for name, want in pairs(CATEGORY) do
-	if name ~= "Season Pass" then -- built from seasonpass_config.lua: may be empty between passes
+	-- Season Pass: built from seasonpass_config.lua, may be empty between passes; Depot Tabs: only while the depot
+	-- takes items (shop_config.lua, stash_config.lua depot.withdrawOnly)
+	if name ~= "Season Pass" and name ~= "Depot Tabs" then
 		eq(seen[name], true, "category still sold: " .. name)
 	end
 end

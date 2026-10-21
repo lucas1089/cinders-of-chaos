@@ -11,7 +11,13 @@
 --   C.weekKey(t, hour)                    week number; weeks start on Monday at `hour` (server time)
 --   C.featured(pool, week, count)         `count` keys of `pool`, a different choice every week (deterministic)
 --   C.weekEnds(t, hour)                   when the week of t ends (the weekly rotation's countdown)
---   C.price(offer, categoryName, ctx)     cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"}
+--   C.price(offer, categoryName, ctx, parentName)  cost, oldCost (nil when not reduced), tags {"Sale", "New", "Featured"};
+--                                         a sale or "New" naming the parent category covers its subcategories
+--   C.arrange(list)                       the category tree's order: the subcategories of one parent next to each other,
+--                                         where the parent's first subcategory stands; config order otherwise
+--   C.groupsOf(list, groups)              the parents with at least one subcategory in list: {{name, icon, size, children}}
+--   C.addSubcategory(cfg, parent, category, after?)  puts a category under a parent of cfg.groups (after a sibling)
+--   C.search(list, query, titleOf, limit) offers whose title, category or parent hold every word of query: {{c, i}}
 --   C.bundleCost(bundle, listSum)         a bundle's price: its own cost, or listSum minus its pct
 --   C.giftProblem(t)                      why a gift to this target is refused, or nil
 --   C.coinGiftProblem(rules, f, lang?)    why a Chaos Coin gift is refused (hold after a donation, daily cap, ban), or nil
@@ -422,15 +428,18 @@ end
 
 -- ctx = {now, sales = {{offers?, categories?, kinds?, pct, from?, to?, tag?}}, featured = {key = pct},
 --        new = {{offers?, categories?, until}}}; discounts do not stack (the biggest wins); bundles and starter packs keep their price
-function C.price(offer, categoryName, ctx)
+function C.price(offer, categoryName, ctx, parentName)
 	ctx = ctx or {}
 	local now = ctx.now or os.time()
 	local key = C.offerKey(offer)
 	local cost, best, tags = offer.cost, 0, {}
 	local saleTag
+	local function inCategory(list)
+		return inList(list, categoryName) or (parentName ~= nil and inList(list, parentName))
+	end
 	if offer.kind ~= "bundle" and not offer.noSale then
 		for _, s in ipairs(ctx.sales or {}) do
-			if active(s, now) and (inList(s.offers, key) or inList(s.categories, categoryName) or inList(s.kinds, offer.kind)) then
+			if active(s, now) and (inList(s.offers, key) or inCategory(s.categories) or inList(s.kinds, offer.kind)) then
 				local pct = tonumber(s.pct) or 0
 				if pct > best then
 					best, saleTag = pct, s.tag or "Sale"
@@ -447,7 +456,7 @@ function C.price(offer, categoryName, ctx)
 	end
 	for _, n in ipairs(ctx.new or {}) do
 		local untilT = C.parseTime(n["until"])
-		if (inList(n.offers, key) or inList(n.categories, categoryName)) and (not untilT or now < untilT) then
+		if (inList(n.offers, key) or inCategory(n.categories)) and (not untilT or now < untilT) then
 			tags[#tags + 1] = "New"
 			break
 		end
@@ -469,6 +478,117 @@ function C.bundleCost(bundle, listSum)
 	end
 	local pct = math.max(0, math.min(90, tonumber(bundle.pct) or 0))
 	return math.max(1, math.floor(listSum * (100 - pct) / 100))
+end
+
+-- ------------------------------------------------------------------ category tree
+-- The store is a tree of one level, the layout of the base server's store window: top categories, some of them a
+-- parent with subcategories (Cosmetics > Wings, Auras ...). A parent sells nothing itself; it is cfg.groups {name,
+-- icon}, and a category names it in `parent`. The client gets the subcategories as the flat list it always had (an old
+-- client shows that list), each with `parent`, and the parents in the "category_groups" message.
+
+-- list: categories {name, parent?, ...} in config order -> a new list in tree order: a parent's subcategories together,
+-- at the place of its first one; the order inside a parent and of the top categories stays
+function C.arrange(list)
+	local out, placed = {}, {}
+	for i, cat in ipairs(list or {}) do
+		if not placed[i] then
+			placed[i] = true
+			out[#out + 1] = cat
+			if cat.parent then
+				for j = i + 1, #list do
+					if not placed[j] and list[j].parent == cat.parent then
+						placed[j] = true
+						out[#out + 1] = list[j]
+					end
+				end
+			end
+		end
+	end
+	return out
+end
+
+-- the parents that have a subcategory in list (tree order), with the icon of cfg.groups (nil when the parent is not
+-- there: the client then shows its first subcategory's icon), how many offers and subcategories they hold
+function C.groupsOf(list, groups)
+	local icons, out, at = {}, {}, {}
+	for _, g in ipairs(groups or {}) do
+		icons[g.name] = g.icon
+	end
+	for _, cat in ipairs(list or {}) do
+		local p = cat.parent
+		if p then
+			local g = at[p]
+			if not g then
+				g = {name = p, icon = icons[p], size = 0, children = 0}
+				at[p] = g
+				out[#out + 1] = g
+			end
+			g.size = g.size + #(cat.offers or {})
+			g.children = g.children + 1
+		end
+	end
+	return out
+end
+
+-- The simple way to add a subcategory: C.addSubcategory(cfg, "Cosmetics", {name = "Capes", icon = ..., offers = ...},
+-- "Auras") puts it right after Auras (or after the parent's last subcategory without `after`, or at the end when the
+-- parent has none yet). The parent must be one of cfg.groups. Returns the category.
+function C.addSubcategory(cfg, parent, category, after)
+	local known = false
+	for _, g in ipairs(cfg.groups or {}) do
+		known = known or g.name == parent
+	end
+	if not known then
+		error("shop: no parent category " .. tostring(parent) .. " in cfg.groups")
+	end
+	category.parent = parent
+	cfg.categories = cfg.categories or {}
+	local at
+	for i, c in ipairs(cfg.categories) do
+		if c.parent == parent and (after == nil or c.name == after) then
+			at = i
+		end
+	end
+	table.insert(cfg.categories, (at or #cfg.categories) + 1, category)
+	return category
+end
+
+-- Search the store: list = the player's categories (shop.lua Shop.view: {name, parent?, endsIn?, offers = {entry}});
+-- titleOf(entry) = the title the client shows. Every word of the query (case-insensitive, plain text) must be in the
+-- title, the category or the parent. The weekly rotation (endsIn) is skipped: its offers are in their own categories
+-- too, at the same price. Returns {{c = category index, i = offer index}} in store order, at most `limit`.
+function C.search(list, query, titleOf, limit)
+	local words = {}
+	for w in tostring(query or ""):lower():gmatch("%S+") do
+		words[#words + 1] = w
+	end
+	local out = {}
+	if #words == 0 then
+		return out
+	end
+	limit = limit or 30
+	for c, cat in ipairs(list or {}) do
+		if not cat.endsIn then
+			local where = (tostring(cat.name or "") .. " " .. tostring(cat.parent or "")):lower()
+			for i, e in ipairs(cat.offers or {}) do
+				local text = tostring(titleOf and titleOf(e) or ""):lower() .. " " .. where
+				local all = true
+				for _, w in ipairs(words) do
+					if not text:find(w, 1, true) then
+						all = false
+						break
+					end
+				end
+				if all then
+					out[#out + 1] = {c = c, i = i}
+					if #out >= limit then
+						return out
+					end
+				end
+			end
+		end
+	end
+	return out
 end
 
 -- ------------------------------------------------------------------ gifts
@@ -564,6 +684,38 @@ function C.validate(cfg, ex)
 	local function bad(s)
 		problems[#problems + 1] = s
 	end
+	-- the tree: unique names, a known parent, no parent without a subcategory, no parent named like a category
+	local groups, catNames, used = {}, {}, {}
+	for _, g in ipairs(cfg.groups or {}) do
+		if type(g.name) ~= "string" or g.name == "" then
+			bad("a parent category without a name")
+		elseif groups[g.name] then
+			bad("parent category " .. g.name .. " twice")
+		else
+			groups[g.name] = true
+		end
+	end
+	for _, cat in ipairs(cfg.categories or {}) do
+		if type(cat.name) ~= "string" or cat.name == "" then
+			bad("a category without a name")
+		elseif catNames[cat.name] then
+			bad("category " .. cat.name .. " twice")
+		elseif groups[cat.name] then
+			bad("category " .. cat.name .. " has the name of a parent category")
+		end
+		catNames[cat.name or ""] = true
+		if cat.parent ~= nil then
+			if not groups[cat.parent] then
+				bad("category " .. tostring(cat.name) .. ": unknown parent " .. tostring(cat.parent))
+			end
+			used[cat.parent] = true
+		end
+	end
+	for _, g in ipairs(cfg.groups or {}) do
+		if g.name and not used[g.name] then
+			bad("parent category " .. g.name .. " has no subcategory")
+		end
+	end
 	for _, cat in ipairs(cfg.categories or {}) do
 		for _, o in ipairs(cat.offers or {}) do
 			local key = C.offerKey(o)
@@ -592,6 +744,24 @@ function C.validate(cfg, ex)
 						bad("bundle " .. C.offerKey(o) .. ": a bundle in a bundle")
 					end
 				end
+			end
+		end
+	end
+	-- sales and "New" name categories or parents that exist
+	local function knownCategory(name)
+		return catNames[name] or groups[name]
+	end
+	for i, s in ipairs(sf.sales or {}) do
+		for _, name in ipairs(s.categories or {}) do
+			if not knownCategory(name) then
+				bad("sale " .. i .. ": unknown category " .. tostring(name))
+			end
+		end
+	end
+	for i, n in ipairs(sf.new or {}) do
+		for _, name in ipairs(n.categories or {}) do
+			if not knownCategory(name) then
+				bad("new " .. i .. ": unknown category " .. tostring(name))
 			end
 		end
 	end

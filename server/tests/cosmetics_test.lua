@@ -284,11 +284,20 @@ do
 	for _, o in ipairs(sold.offers) do
 		eq(o.kind .. ":" .. tostring(o.gift), "unlock:false", o.name .. ": an account unlock, not giftable")
 	end
-	local inShop = false
+	-- sold in the Outfit Shaders subcategory (Cosmetics), after the base shaders (a category of their own before
+	-- the store clean-up of 2026-10-21)
+	local inShop = 0
 	for _, c in ipairs(shop.categories) do
-		inShop = inShop or (c.name == sold.name and #c.offers == 6)
+		for _, o in ipairs(c.offers) do
+			for _, s in ipairs(sold.offers) do
+				if o.unlock == s.unlock then
+					inShop = inShop + 1
+					eq(c.name .. "/" .. tostring(c.parent), "Outfit Shaders/Cosmetics", o.name .. ": under Cosmetics > Outfit Shaders")
+				end
+			end
+		end
 	end
-	eq(inShop, true, "the Chaos Shaders category is in shop_config.lua")
+	eq(inShop, 6, "the six Chaos shaders are in shop_config.lua")
 	eq(readFile("data/scripts/chaos/cosmetics_config.lua"):find("PLACEHOLDER PRICES", 1, true) ~= nil, true, "prices flagged")
 	-- off (a copy with the switch off): nothing listed, granted, sold or added
 	local off = {cosmetics = cfg.cosmetics, outfitShaders = {enabled = false, list = os_.list}}
