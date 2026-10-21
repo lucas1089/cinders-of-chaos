@@ -41,7 +41,7 @@ end
 local SLOTS = {
 	head = CONST_SLOT_HEAD, necklace = CONST_SLOT_NECKLACE, backpack = CONST_SLOT_BACKPACK, armor = CONST_SLOT_ARMOR,
 	right = CONST_SLOT_RIGHT, left = CONST_SLOT_LEFT, legs = CONST_SLOT_LEGS, feet = CONST_SLOT_FEET,
-	ring = CONST_SLOT_RING, ammo = CONST_SLOT_AMMO
+	ring = CONST_SLOT_RING, badge = CONST_SLOT_BADGE
 }
 
 local function getS(player, name)

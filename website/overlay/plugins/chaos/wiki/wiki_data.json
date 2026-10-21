@@ -287,7 +287,7 @@
 		"invasion.minLevel": 30,
 		"invasion.on": true,
 		"item.maxItemLevel": 150,
-		"item.modifiers": 77,
+		"item.modifiers": 75,
 		"item.powers": 12,
 		"item.powersFrom": "Legendary",
 		"item.qualityCap": 20,
@@ -4883,7 +4883,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"Warrior line: a melee hit that would leave a monster (not a boss) at 15% of its health or less kills it. Your melee hits on monsters above 60% health deal 10% less."
+								"Warrior line: a melee or spell hit that would leave a monster (not a boss) at 15% of its health or less kills it. Your melee and spell hits on monsters above 60% health deal 10% less."
 							]
 						},
 						{"h": "Who", "p": ["Classes: Warrior, Juggernaut, Berserker."]}
@@ -7317,7 +7317,7 @@
 						{
 							"h": "By hunting level",
 							"p": [
-								"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."
+								"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set, on top of the health and experience their level already gives them."
 							],
 							"cols": ["Level", "Health", "Experience", "Loot", "Damage"],
 							"w": [28, 18, 18, 18, 18],
@@ -7329,10 +7329,10 @@
 								["300", "21%", "22%", "24%", "65%"],
 								["600", "21%", "21%", "23%", "55%"],
 								["1000", "21%", "22%", "24%", "40%"],
-								["650 (own level)", "35%", "91%", "100%", "53%"],
-								["1000 (own level)", "40%", "68%", "74%", "40%"],
-								["1300 (own level)", "42%", "65%", "71%", "40%"],
-								["2000 (own level)", "42%", "60%", "66%", "40%"]
+								["650 (own level)", "35%", "11%", "100%", "53%"],
+								["1000 (own level)", "40%", "11%", "74%", "40%"],
+								["1300 (own level)", "42%", "11%", "71%", "40%"],
+								["2000 (own level)", "42%", "11%", "66%", "40%"]
 							]
 						},
 						{
@@ -7471,14 +7471,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -7586,14 +7586,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -7702,14 +7702,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -7820,7 +7820,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "8 of 171", "4.7%"]]
+							"rows": [["Weapon", "8 of 165", "4.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -8005,118 +8005,6 @@
 					"side": "suffix"
 				},
 				{
-					"id": "mod:rarity_axeskill",
-					"name": "Axe Skill",
-					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					"color": "#9fdc7f",
-					"group": "skill",
-					"sections": [
-						{"h": "Overview", "p": ["Skill, prefix.", "Raises your axe skill while the item is worn."]},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+1-2", "100"],
-								["T2", "15+", "+2-3", "90"],
-								["T3", "30+", "+2-4", "80"],
-								["T4", "50+", "+3-5", "65"],
-								["T5", "70+", "+4-6", "50"],
-								["T6", "95+", "+5-8", "35"],
-								["T7", "120+", "+6-9", "22"],
-								["T8", "140+", "+7-10", "12"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open prefix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-sword.png",
-					"side": "prefix"
-				},
-				{
 					"id": "mod:chaos_mod_block",
 					"name": "Block Chance",
 					"sub": "Prefix, Shield. +2-3% (T1) to +11-14% (T8)",
@@ -8153,7 +8041,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Shield", "8 of 134", "6%"]]
+							"rows": [["Shield", "8 of 128", "6.3%"]]
 						},
 						{
 							"h": "Rules",
@@ -8267,8 +8155,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 171", "2.3%"],
-								["Other", "4 of 127", "3.1%"],
+								["Weapon", "4 of 165", "2.4%"],
+								["Other", "4 of 121", "3.3%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -8381,7 +8269,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 171", "2.3%"], ["Other", "4 of 127", "3.1%"]]
+							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
 						},
 						{
 							"h": "Rules",
@@ -8492,7 +8380,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 171", "2.3%"], ["Other", "4 of 127", "3.1%"]]
+							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
 						},
 						{
 							"h": "Rules",
@@ -8607,8 +8495,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 171", "2.3%"],
-								["Other", "4 of 127", "3.1%"],
+								["Weapon", "4 of 165", "2.4%"],
+								["Other", "4 of 121", "3.3%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -8721,7 +8609,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "4 of 171", "2.3%"], ["Other", "4 of 127", "3.1%"]]
+							"rows": [["Weapon", "4 of 165", "2.4%"], ["Other", "4 of 121", "3.3%"]]
 						},
 						{
 							"h": "Rules",
@@ -8796,118 +8684,6 @@
 					"side": "prefix"
 				},
 				{
-					"id": "mod:rarity_clubskill",
-					"name": "Club Skill",
-					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					"color": "#9fdc7f",
-					"group": "skill",
-					"sections": [
-						{"h": "Overview", "p": ["Skill, prefix.", "Raises your club skill while the item is worn."]},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+1-2", "100"],
-								["T2", "15+", "+2-3", "90"],
-								["T3", "30+", "+2-4", "80"],
-								["T4", "50+", "+3-5", "65"],
-								["T5", "70+", "+4-6", "50"],
-								["T6", "95+", "+5-8", "35"],
-								["T7", "120+", "+6-9", "22"],
-								["T8", "140+", "+7-10", "12"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open prefix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-sword.png",
-					"side": "prefix"
-				},
-				{
 					"id": "mod:chaos_mod_cdr",
 					"name": "Cooldown Reduction",
 					"sub": "Suffix, Helmet, Jewel, Other. +2-3% (T1) to +13-16% (T8)",
@@ -8948,9 +8724,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "4 of 145", "2.8%"],
-								["Jewel", "4 of 172", "2.3%"],
-								["Other", "4 of 127", "3.1%"]
+								["Helmet", "4 of 139", "2.9%"],
+								["Jewel", "4 of 166", "2.4%"],
+								["Other", "4 of 121", "3.3%"]
 							]
 						},
 						{
@@ -9058,14 +8834,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -9176,14 +8952,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "8 of 171", "4.7%"],
-								["Shield", "8 of 134", "6%"],
-								["Helmet", "8 of 145", "5.5%"],
-								["Armour", "8 of 125", "6.4%"],
-								["Legs", "8 of 107", "7.5%"],
-								["Boots", "8 of 94", "8.5%"],
-								["Jewel", "8 of 172", "4.7%"],
-								["Other", "8 of 127", "6.3%"]
+								["Weapon", "8 of 165", "4.8%"],
+								["Shield", "8 of 128", "6.3%"],
+								["Helmet", "8 of 139", "5.8%"],
+								["Armour", "8 of 119", "6.7%"],
+								["Legs", "8 of 101", "7.9%"],
+								["Boots", "8 of 88", "9.1%"],
+								["Jewel", "8 of 166", "4.8%"],
+								["Other", "8 of 121", "6.6%"]
 							]
 						},
 						{
@@ -9406,10 +9182,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 134", "4.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Legs", "6 of 107", "5.6%"]
+								["Shield", "6 of 128", "4.7%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Armour", "6 of 119", "5%"],
+								["Legs", "6 of 101", "5.9%"]
 							]
 						},
 						{
@@ -9524,9 +9300,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 171", "2.3%"],
-								["Jewel", "4 of 172", "2.3%"],
-								["Other", "4 of 127", "3.1%"]
+								["Weapon", "4 of 165", "2.4%"],
+								["Jewel", "4 of 166", "2.4%"],
+								["Other", "4 of 121", "3.3%"]
 							]
 						},
 						{
@@ -9641,8 +9417,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 171", "3.5%"],
-								["Jewel", "6 of 172", "3.5%"],
+								["Weapon", "6 of 165", "3.6%"],
+								["Jewel", "6 of 166", "3.6%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -9754,14 +9530,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -9869,14 +9645,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -10062,121 +9838,6 @@
 					"side": "prefix"
 				},
 				{
-					"id": "mod:rarity_distanceskill",
-					"name": "Distance Skill",
-					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					"color": "#9fdc7f",
-					"group": "skill",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": ["Skill, prefix.", "Raises your distance skill while the item is worn."]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+1-2", "100"],
-								["T2", "15+", "+2-3", "90"],
-								["T3", "30+", "+2-4", "80"],
-								["T4", "50+", "+3-5", "65"],
-								["T5", "70+", "+4-6", "50"],
-								["T6", "95+", "+5-8", "35"],
-								["T7", "120+", "+6-9", "22"],
-								["T8", "140+", "+7-10", "12"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open prefix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-sword.png",
-					"side": "prefix"
-				},
-				{
 					"id": "mod:chaos_mod_dodge",
 					"name": "Dodge",
 					"sub": "Prefix, Shield, Armour, Legs, Boots, Other. +1-2% (T1) to +5-7% (T8)",
@@ -10217,11 +9878,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "5 of 134", "3.7%"],
-								["Armour", "5 of 125", "4%"],
-								["Legs", "5 of 107", "4.7%"],
-								["Boots", "5 of 94", "5.3%"],
-								["Other", "5 of 127", "3.9%"]
+								["Shield", "5 of 128", "3.9%"],
+								["Armour", "5 of 119", "4.2%"],
+								["Legs", "5 of 101", "5%"],
+								["Boots", "5 of 88", "5.7%"],
+								["Other", "5 of 121", "4.1%"]
 							]
 						},
 						{
@@ -10332,14 +9993,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -10450,14 +10111,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -10675,14 +10336,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -10798,8 +10459,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 171", "2.3%"],
-								["Jewel", "4 of 172", "2.3%"],
+								["Weapon", "4 of 165", "2.4%"],
+								["Jewel", "4 of 166", "2.4%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -10911,14 +10572,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -11136,14 +10797,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -11255,7 +10916,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 171", "1.8%"]]
+							"rows": [["Weapon", "3 of 165", "1.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -11365,7 +11026,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 145", "2.8%"], ["Jewel", "4 of 172", "2.3%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -11586,10 +11247,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "4 of 134", "3%"],
-								["Helmet", "4 of 145", "2.8%"],
-								["Armour", "4 of 125", "3.2%"],
-								["Jewel", "4 of 172", "2.3%"]
+								["Shield", "4 of 128", "3.1%"],
+								["Helmet", "4 of 139", "2.9%"],
+								["Armour", "4 of 119", "3.4%"],
+								["Jewel", "4 of 166", "2.4%"]
 							]
 						},
 						{
@@ -11700,14 +11361,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -11925,14 +11586,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -12041,14 +11702,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -12153,14 +11814,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -12275,10 +11936,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "5 of 145", "3.4%"],
-								["Legs", "5 of 107", "4.7%"],
-								["Jewel", "5 of 172", "2.9%"],
-								["Other", "5 of 127", "3.9%"]
+								["Helmet", "5 of 139", "3.6%"],
+								["Legs", "5 of 101", "5%"],
+								["Jewel", "5 of 166", "3%"],
+								["Other", "5 of 121", "4.1%"]
 							]
 						},
 						{
@@ -12390,9 +12051,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 171", "2.9%"],
-								["Shield", "5 of 134", "3.7%"],
-								["Jewel", "5 of 172", "2.9%"]
+								["Weapon", "5 of 165", "3%"],
+								["Shield", "5 of 128", "3.9%"],
+								["Jewel", "5 of 166", "3%"]
 							]
 						},
 						{
@@ -12507,11 +12168,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 134", "4.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Legs", "6 of 107", "5.6%"],
-								["Jewel", "6 of 172", "3.5%"]
+								["Shield", "6 of 128", "4.7%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Armour", "6 of 119", "5%"],
+								["Legs", "6 of 101", "5.9%"],
+								["Jewel", "6 of 166", "3.6%"]
 							]
 						},
 						{
@@ -12629,9 +12290,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 171", "2.9%"],
-								["Jewel", "5 of 172", "2.9%"],
-								["Other", "5 of 127", "3.9%"],
+								["Weapon", "5 of 165", "3%"],
+								["Jewel", "5 of 166", "3%"],
+								["Other", "5 of 121", "4.1%"],
 								["Quiver", "5 of 85", "5.9%"]
 							]
 						},
@@ -12740,14 +12401,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -12858,14 +12519,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -12973,14 +12634,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -13092,14 +12753,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -13317,14 +12978,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -13436,7 +13097,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 145", "2.8%"], ["Jewel", "4 of 172", "2.3%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -13543,14 +13204,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -13661,14 +13322,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 171", "3.5%"],
-								["Shield", "6 of 134", "4.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Legs", "6 of 107", "5.6%"],
-								["Boots", "6 of 94", "6.4%"],
-								["Jewel", "6 of 172", "3.5%"],
-								["Other", "6 of 127", "4.7%"]
+								["Weapon", "6 of 165", "3.6%"],
+								["Shield", "6 of 128", "4.7%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Armour", "6 of 119", "5%"],
+								["Legs", "6 of 101", "5.9%"],
+								["Boots", "6 of 88", "6.8%"],
+								["Jewel", "6 of 166", "3.6%"],
+								["Other", "6 of 121", "5%"]
 							]
 						},
 						{
@@ -13784,9 +13445,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 171", "3.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Jewel", "6 of 172", "3.5%"],
+								["Weapon", "6 of 165", "3.6%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Jewel", "6 of 166", "3.6%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -13895,14 +13556,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -14014,9 +13675,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "4 of 145", "2.8%"],
-								["Armour", "4 of 125", "3.2%"],
-								["Jewel", "4 of 172", "2.3%"]
+								["Helmet", "4 of 139", "2.9%"],
+								["Armour", "4 of 119", "3.4%"],
+								["Jewel", "4 of 166", "2.4%"]
 							]
 						},
 						{
@@ -14127,14 +13788,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 171", "3.5%"],
-								["Shield", "6 of 134", "4.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Legs", "6 of 107", "5.6%"],
-								["Boots", "6 of 94", "6.4%"],
-								["Jewel", "6 of 172", "3.5%"],
-								["Other", "6 of 127", "4.7%"]
+								["Weapon", "6 of 165", "3.6%"],
+								["Shield", "6 of 128", "4.7%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Armour", "6 of 119", "5%"],
+								["Legs", "6 of 101", "5.9%"],
+								["Boots", "6 of 88", "6.8%"],
+								["Jewel", "6 of 166", "3.6%"],
+								["Other", "6 of 121", "5%"]
 							]
 						},
 						{
@@ -14252,9 +13913,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "5 of 171", "2.9%"],
-								["Jewel", "5 of 172", "2.9%"],
-								["Other", "5 of 127", "3.9%"],
+								["Weapon", "5 of 165", "3%"],
+								["Jewel", "5 of 166", "3%"],
+								["Other", "5 of 121", "4.1%"],
 								["Quiver", "5 of 85", "5.9%"]
 							]
 						},
@@ -14370,9 +14031,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "6 of 171", "3.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Jewel", "6 of 172", "3.5%"],
+								["Weapon", "6 of 165", "3.6%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Jewel", "6 of 166", "3.6%"],
 								["Quiver", "6 of 85", "7.1%"]
 							]
 						},
@@ -14485,10 +14146,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 134", "4.5%"],
-								["Helmet", "6 of 145", "4.1%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Jewel", "6 of 172", "3.5%"]
+								["Shield", "6 of 128", "4.7%"],
+								["Helmet", "6 of 139", "4.3%"],
+								["Armour", "6 of 119", "5%"],
+								["Jewel", "6 of 166", "3.6%"]
 							]
 						},
 						{
@@ -14600,10 +14261,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "4 of 134", "3%"],
-								["Helmet", "4 of 145", "2.8%"],
-								["Armour", "4 of 125", "3.2%"],
-								["Jewel", "4 of 172", "2.3%"]
+								["Shield", "4 of 128", "3.1%"],
+								["Helmet", "4 of 139", "2.9%"],
+								["Armour", "4 of 119", "3.4%"],
+								["Jewel", "4 of 166", "2.4%"]
 							]
 						},
 						{
@@ -14678,6 +14339,121 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:rarity_swordskill",
+					"name": "Melee Skill",
+					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
+					"color": "#9fdc7f",
+					"group": "skill",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Skill, prefix.", "Raises your melee skill while the item is worn."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+1-2", "100"],
+								["T2", "15+", "+2-3", "90"],
+								["T3", "30+", "+2-4", "80"],
+								["T4", "50+", "+3-5", "65"],
+								["T5", "70+", "+4-6", "50"],
+								["T6", "95+", "+5-8", "35"],
+								["T7", "120+", "+6-9", "22"],
+								["T8", "140+", "+7-10", "12"]
+							],
+							"tiers": true
+						},
+						{"h": "Rolls on", "p": ["Any gear."]},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open prefix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-sword.png",
+					"side": "prefix"
+				},
+				{
 					"id": "mod:rarity_miningskill",
 					"name": "Mining Skill",
 					"sub": "Suffix, any gear. +1-2 (T1) to +7-10 (T8)",
@@ -14711,14 +14487,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -14829,7 +14605,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Boots", "10 of 94", "10.6%"]]
+							"rows": [["Boots", "10 of 88", "11.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -14940,14 +14716,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -15062,8 +14838,8 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "4 of 171", "2.3%"],
-								["Jewel", "4 of 172", "2.3%"],
+								["Weapon", "4 of 165", "2.4%"],
+								["Jewel", "4 of 166", "2.4%"],
 								["Quiver", "4 of 85", "4.7%"]
 							]
 						},
@@ -15139,6 +14915,121 @@
 					"side": "prefix"
 				},
 				{
+					"id": "mod:rarity_distanceskill",
+					"name": "Ranged Skill",
+					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
+					"color": "#9fdc7f",
+					"group": "skill",
+					"sections": [
+						{
+							"h": "Overview",
+							"p": ["Skill, prefix.", "Raises your ranged skill while the item is worn."]
+						},
+						{
+							"h": "Tiers",
+							"cols": ["Tier", "Item level", "Value", "Tier weight"],
+							"w": [14, 22, 40, 24],
+							"rows": [
+								["T1", "1+", "+1-2", "100"],
+								["T2", "15+", "+2-3", "90"],
+								["T3", "30+", "+2-4", "80"],
+								["T4", "50+", "+3-5", "65"],
+								["T5", "70+", "+4-6", "50"],
+								["T6", "95+", "+5-8", "35"],
+								["T7", "120+", "+6-9", "22"],
+								["T8", "140+", "+7-10", "12"]
+							],
+							"tiers": true
+						},
+						{"h": "Rolls on", "p": ["Any gear."]},
+						{
+							"h": "Chance per roll on a fresh item",
+							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
+							"cols": ["Kind", "Weight", "Chance"],
+							"w": [30, 40, 30],
+							"rows": [
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
+								"An item carries each modifier once at most."
+							]
+						},
+						{
+							"h": "Orbs",
+							"cols": ["Orb", "What it does to this modifier"],
+							"w": [30, 70],
+							"rows": [
+								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
+								[
+									"Orb of Gilding",
+									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
+								],
+								[
+									"Orb of Grafting",
+									"Adds it at random when the item has an open prefix and suits it."
+								],
+								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
+								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
+								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
+								["Orb of Excision", "Removes it when you pick it on the bench."],
+								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
+								["Orb of Tempering", "New value inside its tier (unless bound)."],
+								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
+								[
+									"Ember Orb",
+									"One tier up when you pick it (never past the top tier), new value inside the new tier."
+								],
+								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
+									"Orb of Binding",
+									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
+								],
+								[
+									"Orb of Ruin",
+									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
+								],
+								[
+									"Whetstone",
+									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
+								]
+							],
+							"links": [
+								"orb:transmutation",
+								"orb:alchemy",
+								"orb:exalted",
+								"orb:chaos",
+								"orb:divine",
+								"orb:annulment",
+								"orb:excision",
+								"orb:scouring",
+								"orb:tempering",
+								"orb:reforging",
+								"orb:ember",
+								"orb:void",
+								"orb:binding",
+								"orb:ruin",
+								"orb:whetstone"
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-sword.png",
+					"side": "prefix"
+				},
+				{
 					"id": "mod:chaos_mod_rarityfind",
 					"name": "Rarity Find",
 					"sub": "Suffix, Helmet, Jewel. +2-5% (T1) to +24-34% (T8)",
@@ -15175,7 +15066,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "4 of 145", "2.8%"], ["Jewel", "4 of 172", "2.3%"]]
+							"rows": [["Helmet", "4 of 139", "2.9%"], ["Jewel", "4 of 166", "2.4%"]]
 						},
 						{
 							"h": "Rules",
@@ -15285,7 +15176,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Shield", "5 of 134", "3.7%"], ["Armour", "5 of 125", "4%"]]
+							"rows": [["Shield", "5 of 128", "3.9%"], ["Armour", "5 of 119", "4.2%"]]
 						},
 						{
 							"h": "Rules",
@@ -15392,129 +15283,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
-							]
-						},
-						{
-							"h": "Rules",
-							"p": [
-								"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).",
-								"An item carries each modifier once at most."
-							]
-						},
-						{
-							"h": "Orbs",
-							"cols": ["Orb", "What it does to this modifier"],
-							"w": [30, 70],
-							"rows": [
-								["Orb of Awakening", "Can roll it on a normal item (Common 65%, Uncommon 35%)."],
-								[
-									"Orb of Gilding",
-									"Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."
-								],
-								[
-									"Orb of Grafting",
-									"Adds it at random when the item has an open prefix and suits it."
-								],
-								["Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."],
-								["Orb of Fate", "New rarity (often none): every modifier rolled again."],
-								["Orb of Unmaking", "May remove it (one random unbound modifier)."],
-								["Orb of Excision", "Removes it when you pick it on the bench."],
-								["Orb of Erasure", "Removes it with the rarity and every other modifier."],
-								["Orb of Tempering", "New value inside its tier (unless bound)."],
-								["Orb of Reforging", "New tier (by item level) and value when you pick it."],
-								[
-									"Ember Orb",
-									"One tier up when you pick it (never past the top tier), new value inside the new tier."
-								],
-								[
-									"Void Orb",
-									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
-								],
-								[
-									"Orb of Binding",
-									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
-								],
-								[
-									"Orb of Ruin",
-									"40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."
-								],
-								[
-									"Whetstone",
-									"Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."
-								]
-							],
-							"links": [
-								"orb:transmutation",
-								"orb:alchemy",
-								"orb:exalted",
-								"orb:chaos",
-								"orb:divine",
-								"orb:annulment",
-								"orb:excision",
-								"orb:scouring",
-								"orb:tempering",
-								"orb:reforging",
-								"orb:ember",
-								"orb:void",
-								"orb:binding",
-								"orb:ruin",
-								"orb:whetstone"
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-sword.png",
-					"side": "prefix"
-				},
-				{
-					"id": "mod:rarity_swordskill",
-					"name": "Sword Skill",
-					"sub": "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					"color": "#9fdc7f",
-					"group": "skill",
-					"sections": [
-						{
-							"h": "Overview",
-							"p": ["Skill, prefix.", "Raises your sword skill while the item is worn."]
-						},
-						{
-							"h": "Tiers",
-							"cols": ["Tier", "Item level", "Value", "Tier weight"],
-							"w": [14, 22, 40, 24],
-							"rows": [
-								["T1", "1+", "+1-2", "100"],
-								["T2", "15+", "+2-3", "90"],
-								["T3", "30+", "+2-4", "80"],
-								["T4", "50+", "+3-5", "65"],
-								["T5", "70+", "+4-6", "50"],
-								["T6", "95+", "+5-8", "35"],
-								["T7", "120+", "+6-9", "22"],
-								["T8", "140+", "+7-10", "12"]
-							],
-							"tiers": true
-						},
-						{"h": "Rolls on", "p": ["Any gear."]},
-						{
-							"h": "Chance per roll on a fresh item",
-							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
-							"cols": ["Kind", "Weight", "Chance"],
-							"w": [30, 40, 30],
-							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -15626,9 +15402,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "6 of 134", "4.5%"],
-								["Armour", "6 of 125", "4.8%"],
-								["Legs", "6 of 107", "5.6%"]
+								["Shield", "6 of 128", "4.7%"],
+								["Armour", "6 of 119", "5%"],
+								["Legs", "6 of 101", "5.9%"]
 							]
 						},
 						{
@@ -15739,7 +15515,7 @@
 							"p": ["Among every modifier an item of that kind may roll, powers not counted (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Helmet", "3 of 145", "2.1%"], ["Jewel", "3 of 172", "1.7%"]]
+							"rows": [["Helmet", "3 of 139", "2.2%"], ["Jewel", "3 of 166", "1.8%"]]
 						},
 						{
 							"h": "Rules",
@@ -15849,14 +15625,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 171", "1.8%"],
-								["Shield", "3 of 134", "2.2%"],
-								["Helmet", "3 of 145", "2.1%"],
-								["Armour", "3 of 125", "2.4%"],
-								["Legs", "3 of 107", "2.8%"],
-								["Boots", "3 of 94", "3.2%"],
-								["Jewel", "3 of 172", "1.7%"],
-								["Other", "3 of 127", "2.4%"]
+								["Weapon", "3 of 165", "1.8%"],
+								["Shield", "3 of 128", "2.3%"],
+								["Helmet", "3 of 139", "2.2%"],
+								["Armour", "3 of 119", "2.5%"],
+								["Legs", "3 of 101", "3%"],
+								["Boots", "3 of 88", "3.4%"],
+								["Jewel", "3 of 166", "1.8%"],
+								["Other", "3 of 121", "2.5%"]
 							]
 						},
 						{
@@ -15964,14 +15740,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "2 of 171", "1.2%"],
-								["Shield", "2 of 134", "1.5%"],
-								["Helmet", "2 of 145", "1.4%"],
-								["Armour", "2 of 125", "1.6%"],
-								["Legs", "2 of 107", "1.9%"],
-								["Boots", "2 of 94", "2.1%"],
-								["Jewel", "2 of 172", "1.2%"],
-								["Other", "2 of 127", "1.6%"]
+								["Weapon", "2 of 165", "1.2%"],
+								["Shield", "2 of 128", "1.6%"],
+								["Helmet", "2 of 139", "1.4%"],
+								["Armour", "2 of 119", "1.7%"],
+								["Legs", "2 of 101", "2%"],
+								["Boots", "2 of 88", "2.3%"],
+								["Jewel", "2 of 166", "1.2%"],
+								["Other", "2 of 121", "1.7%"]
 							]
 						},
 						{
@@ -16080,14 +15856,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -16195,14 +15971,14 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "1 of 171", "0.6%"],
-								["Shield", "1 of 134", "0.7%"],
-								["Helmet", "1 of 145", "0.7%"],
-								["Armour", "1 of 125", "0.8%"],
-								["Legs", "1 of 107", "0.9%"],
-								["Boots", "1 of 94", "1.1%"],
-								["Jewel", "1 of 172", "0.6%"],
-								["Other", "1 of 127", "0.8%"]
+								["Weapon", "1 of 165", "0.6%"],
+								["Shield", "1 of 128", "0.8%"],
+								["Helmet", "1 of 139", "0.7%"],
+								["Armour", "1 of 119", "0.8%"],
+								["Legs", "1 of 101", "1%"],
+								["Boots", "1 of 88", "1.1%"],
+								["Jewel", "1 of 166", "0.6%"],
+								["Other", "1 of 121", "0.8%"]
 							]
 						},
 						{
@@ -16324,7 +16100,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 191", "1.6%"], ["Jewel", "3 of 198", "1.5%"]]
+							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
 						},
 						{
 							"h": "Rules",
@@ -16441,9 +16217,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 191", "1.6%"],
-								["Jewel", "3 of 198", "1.5%"],
-								["Other", "3 of 139", "2.2%"]
+								["Weapon", "3 of 185", "1.6%"],
+								["Jewel", "3 of 192", "1.6%"],
+								["Other", "3 of 133", "2.3%"]
 							]
 						},
 						{
@@ -16558,9 +16334,9 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Weapon", "3 of 191", "1.6%"],
-								["Helmet", "3 of 156", "1.9%"],
-								["Jewel", "3 of 198", "1.5%"]
+								["Weapon", "3 of 185", "1.6%"],
+								["Helmet", "3 of 150", "2%"],
+								["Jewel", "3 of 192", "1.6%"]
 							]
 						},
 						{
@@ -16674,7 +16450,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 191", "1.6%"], ["Jewel", "3 of 198", "1.5%"]]
+							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
 						},
 						{
 							"h": "Rules",
@@ -16787,7 +16563,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 191", "1.6%"], ["Jewel", "3 of 198", "1.5%"]]
+							"rows": [["Weapon", "3 of 185", "1.6%"], ["Jewel", "3 of 192", "1.6%"]]
 						},
 						{
 							"h": "Rules",
@@ -16900,7 +16676,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "2 of 191", "1%"]]
+							"rows": [["Weapon", "2 of 185", "1.1%"]]
 						},
 						{
 							"h": "Rules",
@@ -17014,10 +16790,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Armour", "3 of 136", "2.2%"],
-								["Legs", "3 of 118", "2.5%"],
-								["Boots", "3 of 103", "2.9%"],
-								["Jewel", "3 of 198", "1.5%"]
+								["Armour", "3 of 130", "2.3%"],
+								["Legs", "3 of 112", "2.7%"],
+								["Boots", "3 of 97", "3.1%"],
+								["Jewel", "3 of 192", "1.6%"]
 							]
 						},
 						{
@@ -17135,11 +16911,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "3 of 139", "2.2%"],
-								["Armour", "3 of 136", "2.2%"],
-								["Legs", "3 of 118", "2.5%"],
-								["Boots", "3 of 103", "2.9%"],
-								["Other", "3 of 139", "2.2%"]
+								["Shield", "3 of 133", "2.3%"],
+								["Armour", "3 of 130", "2.3%"],
+								["Legs", "3 of 112", "2.7%"],
+								["Boots", "3 of 97", "3.1%"],
+								["Other", "3 of 133", "2.3%"]
 							]
 						},
 						{
@@ -17257,10 +17033,10 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "3 of 156", "1.9%"],
-								["Boots", "3 of 103", "2.9%"],
-								["Jewel", "3 of 198", "1.5%"],
-								["Other", "3 of 139", "2.2%"]
+								["Helmet", "3 of 150", "2%"],
+								["Boots", "3 of 97", "3.1%"],
+								["Jewel", "3 of 192", "1.6%"],
+								["Other", "3 of 133", "2.3%"]
 							]
 						},
 						{
@@ -17378,11 +17154,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Shield", "2 of 139", "1.4%"],
-								["Helmet", "2 of 156", "1.3%"],
-								["Armour", "2 of 136", "1.5%"],
-								["Legs", "2 of 118", "1.7%"],
-								["Jewel", "2 of 198", "1%"]
+								["Shield", "2 of 133", "1.5%"],
+								["Helmet", "2 of 150", "1.3%"],
+								["Armour", "2 of 130", "1.5%"],
+								["Legs", "2 of 112", "1.8%"],
+								["Jewel", "2 of 192", "1%"]
 							]
 						},
 						{
@@ -17496,7 +17272,7 @@
 							"p": ["Among every modifier a Legendary item of that kind may roll (weights):"],
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
-							"rows": [["Weapon", "3 of 191", "1.6%"]]
+							"rows": [["Weapon", "3 of 185", "1.6%"]]
 						},
 						{
 							"h": "Rules",
@@ -17615,11 +17391,11 @@
 							"cols": ["Kind", "Weight", "Chance"],
 							"w": [30, 40, 30],
 							"rows": [
-								["Helmet", "3 of 156", "1.9%"],
-								["Armour", "3 of 136", "2.2%"],
-								["Legs", "3 of 118", "2.5%"],
-								["Jewel", "3 of 198", "1.5%"],
-								["Other", "3 of 139", "2.2%"]
+								["Helmet", "3 of 150", "2%"],
+								["Armour", "3 of 130", "2.3%"],
+								["Legs", "3 of 112", "2.7%"],
+								["Jewel", "3 of 192", "1.6%"],
+								["Other", "3 of 133", "2.3%"]
 							]
 						},
 						{
@@ -17775,7 +17551,7 @@
 				{
 					"id": "unique:11395",
 					"name": "Bloodmoon Edge",
-					"sub": "Sword, level 90. Attack 44, Defense 22, Critical Hit: chance +5%, damage +25%, Sword +3",
+					"sub": "Sword, level 90. Attack 44, Defense 22, Critical Hit: chance +5%, damage +25%, Melee +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -17784,7 +17560,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 44", "Defense 22", "Critical Hit: chance +5%, damage +25%", "Sword +3"]
+							"p": ["Attack 44", "Defense 22", "Critical Hit: chance +5%, damage +25%", "Melee +3"]
 						},
 						{
 							"h": "Item",
@@ -17915,7 +17691,7 @@
 				{
 					"id": "unique:27658",
 					"name": "Bloodsworn Greataxe",
-					"sub": "weapon, level 300. Attack 58, Defense 30, Axe +3, Critical Hit: chance +5%, damage +25%",
+					"sub": "weapon, level 300. Attack 58, Defense 30, Melee +3, Critical Hit: chance +5%, damage +25%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -17926,7 +17702,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 58", "Defense 30", "Axe +3", "Critical Hit: chance +5%, damage +25%"]
+							"p": ["Attack 58", "Defense 30", "Melee +3", "Critical Hit: chance +5%, damage +25%"]
 						},
 						{
 							"h": "Item",
@@ -18165,7 +17941,7 @@
 				{
 					"id": "unique:25410",
 					"name": "Bloodsworn Visage",
-					"sub": "Helmet, level 300. Armor 11, Axe +2, Life Leech: chance +4%, amount +4%",
+					"sub": "Helmet, level 300. Armor 11, Melee +2, Life Leech: chance +4%, amount +4%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -18174,7 +17950,7 @@
 								"A face of hammered iron that smiles only when the wearer bleeds. (Requires level 300.)"
 							]
 						},
-						{"h": "Stats", "p": ["Armor 11", "Axe +2", "Life Leech: chance +4%, amount +4%"]},
+						{"h": "Stats", "p": ["Armor 11", "Melee +2", "Life Leech: chance +4%, amount +4%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -18228,7 +18004,7 @@
 				{
 					"id": "unique:7379",
 					"name": "Bonegrinder",
-					"sub": "Club, level 90. Attack 58, Defense 18, Club +5, Critical Hit: chance +5%, damage +25%",
+					"sub": "Club, level 90. Attack 58, Defense 18, Melee +5, Critical Hit: chance +5%, damage +25%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -18237,7 +18013,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 58", "Defense 18", "Club +5", "Critical Hit: chance +5%, damage +25%"]
+							"p": ["Attack 58", "Defense 18", "Melee +5", "Critical Hit: chance +5%, damage +25%"]
 						},
 						{
 							"h": "Item",
@@ -18571,7 +18347,7 @@
 				{
 					"id": "unique:8925",
 					"name": "Cinderbrand Axe",
-					"sub": "Axe, level 130. Attack 58, Defense 30, Extra Defense +3, Axe +5, Fire Absorb +10%",
+					"sub": "Axe, level 130. Attack 58, Defense 30, Extra Defense +3, Melee +5, Fire Absorb +10%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -18580,7 +18356,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 58", "Defense 30", "Extra Defense +3", "Axe +5", "Fire Absorb +10%"]
+							"p": ["Attack 58", "Defense 30", "Extra Defense +3", "Melee +5", "Fire Absorb +10%"]
 						},
 						{
 							"h": "Item",
@@ -18638,7 +18414,7 @@
 				{
 					"id": "unique:10314",
 					"name": "Cinderclaw Band",
-					"sub": "Ring, level 80. Axe +3, Club +3, Fire Absorb +8%, Magic Level +1, Sword +3",
+					"sub": "Ring, level 80. Melee +3, Melee +3, Fire Absorb +8%, Magic Level +1, Melee +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -18647,7 +18423,10 @@
 								"A claw of fire clamped around the finger. (Requires level 80.) Part of the Embers of Aranoth set."
 							]
 						},
-						{"h": "Stats", "p": ["Axe +3", "Club +3", "Fire Absorb +8%", "Magic Level +1", "Sword +3"]},
+						{
+							"h": "Stats",
+							"p": ["Melee +3", "Melee +3", "Fire Absorb +8%", "Magic Level +1", "Melee +3"]
+						},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -18708,7 +18487,7 @@
 				{
 					"id": "unique:2123",
 					"name": "Cinderheart Signet",
-					"sub": "Ring, level 1000. Axe +3, Club +3, Critical Hit: chance +6%, damage +25%, Distance +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Sword +3",
+					"sub": "Ring, level 1000. Melee +3, Melee +3, Critical Hit: chance +6%, damage +25%, Ranged +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Melee +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -18720,16 +18499,16 @@
 						{
 							"h": "Stats",
 							"p": [
-								"Axe +3",
-								"Club +3",
+								"Melee +3",
+								"Melee +3",
 								"Critical Hit: chance +6%, damage +25%",
-								"Distance +3",
+								"Ranged +3",
 								"Fire Absorb +12%",
 								"Fist +3",
 								"Life Leech: chance +6%, amount +6%",
 								"Magic Level +3",
 								"Physical Absorb +5%",
-								"Sword +3"
+								"Melee +3"
 							]
 						},
 						{
@@ -19222,11 +19001,11 @@
 				{
 					"id": "unique:7462",
 					"name": "Crown of Cinders",
-					"sub": "Helmet, level 100. Armor 14, Axe +2, Fire Absorb +8%",
+					"sub": "Helmet, level 100. Armor 14, Melee +2, Fire Absorb +8%",
 					"color": "#ff9c3a",
 					"sections": [
 						{"h": "Description", "p": ["The king died, the crown kept burning. (Requires level 100.)"]},
-						{"h": "Stats", "p": ["Armor 14", "Axe +2", "Fire Absorb +8%"]},
+						{"h": "Stats", "p": ["Armor 14", "Melee +2", "Fire Absorb +8%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -19286,7 +19065,7 @@
 				{
 					"id": "unique:27230",
 					"name": "Doomtide Longbow",
-					"sub": "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Distance +6",
+					"sub": "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Ranged +6",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -19295,7 +19074,7 @@
 								"Strung with something that was once alive; it hums at the dead. (Requires level 110.)"
 							]
 						},
-						{"h": "Stats", "p": ["Attack 75", "Range 6", "Death Absorb +6%", "Distance +6"]},
+						{"h": "Stats", "p": ["Attack 75", "Range 6", "Death Absorb +6%", "Ranged +6"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -19416,14 +19195,14 @@
 				{
 					"id": "unique:28112",
 					"name": "Duskstalker Cowl",
-					"sub": "Helmet, level 300. Armor 12, Fist +2, Sword +1",
+					"sub": "Helmet, level 300. Armor 12, Fist +2, Melee +1",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["A hood that swallows the light around the face. (Requires level 300.)"]
 						},
-						{"h": "Stats", "p": ["Armor 12", "Fist +2", "Sword +1"]},
+						{"h": "Stats", "p": ["Armor 12", "Fist +2", "Melee +1"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -19477,7 +19256,7 @@
 				{
 					"id": "unique:7404",
 					"name": "Duskstalker Fang",
-					"sub": "weapon, level 300. Attack 42, Defense 12, Critical Hit: chance +3%, damage +15%, Sword +2",
+					"sub": "weapon, level 300. Attack 42, Defense 12, Critical Hit: chance +3%, damage +15%, Melee +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -19486,7 +19265,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 42", "Defense 12", "Critical Hit: chance +3%, damage +15%", "Sword +2"]
+							"p": ["Attack 42", "Defense 12", "Critical Hit: chance +3%, damage +15%", "Melee +2"]
 						},
 						{
 							"h": "Item",
@@ -19606,7 +19385,7 @@
 				{
 					"id": "unique:7418",
 					"name": "Duskstalker Sting",
-					"sub": "weapon, level 300. Attack 44, Defense 20, Life Leech: chance +3%, amount +4%, Sword +2",
+					"sub": "weapon, level 300. Attack 44, Defense 20, Life Leech: chance +3%, amount +4%, Melee +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -19615,7 +19394,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 44", "Defense 20", "Life Leech: chance +3%, amount +4%", "Sword +2"]
+							"p": ["Attack 44", "Defense 20", "Life Leech: chance +3%, amount +4%", "Melee +2"]
 						},
 						{
 							"h": "Item",
@@ -20020,7 +19799,7 @@
 				{
 					"id": "unique:2440",
 					"name": "Executioner's Reckoning",
-					"sub": "Axe, level 80. Attack 50, Defense 18, Axe +3, Critical Hit: chance +7%, damage +30%",
+					"sub": "Axe, level 80. Attack 50, Defense 18, Melee +3, Critical Hit: chance +7%, damage +30%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -20029,7 +19808,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 50", "Defense 18", "Axe +3", "Critical Hit: chance +7%, damage +30%"]
+							"p": ["Attack 50", "Defense 18", "Melee +3", "Critical Hit: chance +7%, damage +30%"]
 						},
 						{
 							"h": "Item",
@@ -20090,7 +19869,7 @@
 				{
 					"id": "unique:2171",
 					"name": "Eye of the Unbroken Storm",
-					"sub": "Amulet, level 1000. Armor 4, Critical Hit: chance +4%, damage +15%, Distance +5, Energy Absorb +12%, Magic Level +4",
+					"sub": "Amulet, level 1000. Armor 4, Critical Hit: chance +4%, damage +15%, Ranged +5, Energy Absorb +12%, Magic Level +4",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -20104,7 +19883,7 @@
 							"p": [
 								"Armor 4",
 								"Critical Hit: chance +4%, damage +15%",
-								"Distance +5",
+								"Ranged +5",
 								"Energy Absorb +12%",
 								"Magic Level +4"
 							]
@@ -20290,7 +20069,7 @@
 				{
 					"id": "unique:27474",
 					"name": "Gallows Arbalest",
-					"sub": "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Distance +3",
+					"sub": "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Ranged +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -20301,7 +20080,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Distance +3"]
+							"p": ["Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Ranged +3"]
 						},
 						{
 							"h": "Item",
@@ -20356,14 +20135,14 @@
 				{
 					"id": "unique:15407",
 					"name": "Gallows Coat",
-					"sub": "Body armour, level 600. Armor 16, Distance +2, Physical Absorb +3%",
+					"sub": "Body armour, level 600. Armor 16, Ranged +2, Physical Absorb +3%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["Long, dark and quiet; the pockets hold one bolt each. (Requires level 600.)"]
 						},
-						{"h": "Stats", "p": ["Armor 16", "Distance +2", "Physical Absorb +3%"]},
+						{"h": "Stats", "p": ["Armor 16", "Ranged +2", "Physical Absorb +3%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -20421,7 +20200,7 @@
 				{
 					"id": "unique:29470",
 					"name": "Gallows Hood",
-					"sub": "Helmet, level 600. Armor 13, Distance +2",
+					"sub": "Helmet, level 600. Armor 13, Ranged +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -20430,7 +20209,7 @@
 								"The hood the hangman wore so the condemned would not see his face. (Requires level 600.)"
 							]
 						},
-						{"h": "Stats", "p": ["Armor 13", "Distance +2"]},
+						{"h": "Stats", "p": ["Armor 13", "Ranged +2"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -20545,14 +20324,14 @@
 				{
 					"id": "unique:8849",
 					"name": "Gallowsbolt Crossbow",
-					"sub": "Distance weapon, level 60. Range 5, Distance +3",
+					"sub": "Distance weapon, level 60. Range 5, Ranged +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["A hangman's design: it only needs one shot. (Requires level 60.)"]
 						},
-						{"h": "Stats", "p": ["Range 5", "Distance +3"]},
+						{"h": "Stats", "p": ["Range 5", "Ranged +3"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -20824,7 +20603,7 @@
 				{
 					"id": "unique:10301",
 					"name": "Harvester of Sorrows",
-					"sub": "Axe, level 100. Attack 50, Defense 14, Axe +4, Mana Leech: chance +7%, amount +6%",
+					"sub": "Axe, level 100. Attack 50, Defense 14, Melee +4, Mana Leech: chance +7%, amount +6%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -20833,7 +20612,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 50", "Defense 14", "Axe +4", "Mana Leech: chance +7%, amount +6%"]
+							"p": ["Attack 50", "Defense 14", "Melee +4", "Mana Leech: chance +7%, amount +6%"]
 						},
 						{
 							"h": "Item",
@@ -20892,7 +20671,7 @@
 					"sprite": {"item": 10301}
 				},
 				{
-					"id": "unique:10218",
+					"id": "unique:41641",
 					"name": "Heart of Cinders",
 					"sub": "Amulet, level 80. Fire Absorb +18%, Physical Absorb +6%",
 					"color": "#ff9c3a",
@@ -20955,11 +20734,11 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-amulet.png",
-					"sprite": {"item": 10218}
+					"icon": "wiki/i/it-voidmourn-amulet.png",
+					"sprite": {"item": 41641}
 				},
 				{
-					"id": "unique:10221",
+					"id": "unique:41642",
 					"name": "Heartbleed Pendant",
 					"sub": "Amulet, level 90. Critical Hit: chance +4%, damage +20%, Life Leech: chance +5%, amount +6%",
 					"color": "#ff9c3a",
@@ -21025,20 +20804,20 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-amulet.png",
-					"sprite": {"item": 10221}
+					"icon": "wiki/i/it-wildroot-amulet.png",
+					"sprite": {"item": 41642}
 				},
 				{
 					"id": "unique:19390",
 					"name": "Hellspear of the Damned",
-					"sub": "Distance weapon, level 50. Attack 28, Range 4, Distance +2",
+					"sub": "Distance weapon, level 50. Attack 28, Range 4, Ranged +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["Hurled by the damned at those who would leave. (Requires level 50.)"]
 						},
-						{"h": "Stats", "p": ["Attack 28", "Range 4", "Distance +2"]},
+						{"h": "Stats", "p": ["Attack 28", "Range 4", "Ranged +2"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -21098,13 +20877,13 @@
 				{
 					"id": "unique:16111",
 					"name": "Hellspite Arbalest",
-					"sub": "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Distance +4",
+					"sub": "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Ranged +4",
 					"color": "#ff9c3a",
 					"sections": [
 						{"h": "Description", "p": ["Its bolts scream on the way down. (Requires level 100.)"]},
 						{
 							"h": "Stats",
-							"p": ["Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Distance +4"]
+							"p": ["Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Ranged +4"]
 						},
 						{
 							"h": "Item",
@@ -21484,14 +21263,14 @@
 				{
 					"id": "unique:24718",
 					"name": "Hollowpack Mask",
-					"sub": "Helmet, level 250. Armor 9, Death Absorb +3%, Distance +1",
+					"sub": "Helmet, level 250. Armor 9, Death Absorb +3%, Ranged +1",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["A wolf's skull for a helm. The pack smells you as kin. (Requires level 250.)"]
 						},
-						{"h": "Stats", "p": ["Armor 9", "Death Absorb +3%", "Distance +1"]},
+						{"h": "Stats", "p": ["Armor 9", "Death Absorb +3%", "Ranged +1"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -21545,14 +21324,14 @@
 				{
 					"id": "unique:21693",
 					"name": "Hornbinder Ring",
-					"sub": "Ring, level 60. Armor 2, Club +3",
+					"sub": "Ring, level 60. Armor 2, Melee +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["A horn-ring from something that did not want to give it up. (Requires level 60.)"]
 						},
-						{"h": "Stats", "p": ["Armor 2", "Club +3"]},
+						{"h": "Stats", "p": ["Armor 2", "Melee +3"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -21612,7 +21391,7 @@
 				{
 					"id": "unique:2496",
 					"name": "Hornsworn Helm",
-					"sub": "Helmet, level 70. Armor 14, Axe +2, Club +2, Fire Absorb +8%, Sword +2",
+					"sub": "Helmet, level 70. Armor 14, Melee +2, Melee +2, Fire Absorb +8%, Melee +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -21621,7 +21400,7 @@
 								"Sworn to a master who answers to no one above. (Requires level 70.) Part of the Embers of Aranoth set."
 							]
 						},
-						{"h": "Stats", "p": ["Armor 14", "Axe +2", "Club +2", "Fire Absorb +8%", "Sword +2"]},
+						{"h": "Stats", "p": ["Armor 14", "Melee +2", "Melee +2", "Fire Absorb +8%", "Melee +2"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -21751,7 +21530,7 @@
 				{
 					"id": "unique:3961",
 					"name": "Lichfang Staff",
-					"sub": "Club, level 70. Attack 36, Defense 30, Extra Defense +2, Club +2, Magic Level +2",
+					"sub": "Club, level 70. Attack 36, Defense 30, Extra Defense +2, Melee +2, Magic Level +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -21760,7 +21539,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Attack 36", "Defense 30", "Extra Defense +2", "Club +2", "Magic Level +2"]
+							"p": ["Attack 36", "Defense 30", "Extra Defense +2", "Melee +2", "Magic Level +2"]
 						},
 						{
 							"h": "Item",
@@ -21888,13 +21667,13 @@
 				{
 					"id": "unique:25418",
 					"name": "Mawmaker",
-					"sub": "Club, level 110. Attack 62, Defense 30, Club +4, Life Leech: chance +7%, amount +6%",
+					"sub": "Club, level 110. Attack 62, Defense 30, Melee +4, Life Leech: chance +7%, amount +6%",
 					"color": "#ff9c3a",
 					"sections": [
 						{"h": "Description", "p": ["Wherever it lands, a new mouth opens. (Requires level 110.)"]},
 						{
 							"h": "Stats",
-							"p": ["Attack 62", "Defense 30", "Club +4", "Life Leech: chance +7%, amount +6%"]
+							"p": ["Attack 62", "Defense 30", "Melee +4", "Life Leech: chance +7%, amount +6%"]
 						},
 						{
 							"h": "Item",
@@ -22454,7 +22233,7 @@
 				{
 					"id": "unique:2412",
 					"name": "Nightfang Katana",
-					"sub": "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Critical Hit: chance +4%, damage +20%, Sword +2",
+					"sub": "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Critical Hit: chance +4%, damage +20%, Melee +2",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -22468,7 +22247,7 @@
 								"Defense 16",
 								"Extra Defense +2",
 								"Critical Hit: chance +4%, damage +20%",
-								"Sword +2"
+								"Melee +2"
 							]
 						},
 						{
@@ -23008,7 +22787,7 @@
 					"sprite": {"item": 13760}
 				},
 				{
-					"id": "unique:2206",
+					"id": "unique:41640",
 					"name": "Ring of the Last Ember",
 					"sub": "Ring, level 70.",
 					"color": "#ff9c3a",
@@ -23069,7 +22848,7 @@
 						}
 					],
 					"icon": "wiki/i/it-sunsworn-ring.png",
-					"sprite": {"item": 2206}
+					"sprite": {"item": 41640}
 				},
 				{
 					"id": "unique:21691",
@@ -23143,7 +22922,7 @@
 				{
 					"id": "unique:2408",
 					"name": "Sanguine Crescent",
-					"sub": "Sword, level 1000. Attack 78, Defense 38, Critical Hit: chance +8%, damage +30%, Life Leech: chance +10%, amount +8%, Sword +8",
+					"sub": "Sword, level 1000. Attack 78, Defense 38, Critical Hit: chance +8%, damage +30%, Life Leech: chance +10%, amount +8%, Melee +8",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -23159,7 +22938,7 @@
 								"Defense 38",
 								"Critical Hit: chance +8%, damage +30%",
 								"Life Leech: chance +10%, amount +8%",
-								"Sword +8"
+								"Melee +8"
 							]
 						},
 						{
@@ -23279,7 +23058,7 @@
 				{
 					"id": "unique:27228",
 					"name": "Shroud of the Hollow Wood",
-					"sub": "Body armour, level 90. Armor 18, Distance +4, Energy Absorb -3%, Ice Absorb +14%",
+					"sub": "Body armour, level 90. Armor 18, Ranged +4, Energy Absorb -3%, Ice Absorb +14%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -23288,7 +23067,7 @@
 								"Cut from a tree that grew in a graveyard and never once bloomed. (Requires level 90.)"
 							]
 						},
-						{"h": "Stats", "p": ["Armor 18", "Distance +4", "Energy Absorb -3%", "Ice Absorb +14%"]},
+						{"h": "Stats", "p": ["Armor 18", "Ranged +4", "Energy Absorb -3%", "Ice Absorb +14%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -23348,7 +23127,7 @@
 				{
 					"id": "unique:28115",
 					"name": "Snarewalker Greaves",
-					"sub": "Boots, level 120. Armor 3, Distance +2, Earth Absorb +4%",
+					"sub": "Boots, level 120. Armor 3, Ranged +2, Earth Absorb +4%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -23357,7 +23136,7 @@
 								"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120. Ranger and Thief lines.)"
 							]
 						},
-						{"h": "Stats", "p": ["Armor 3", "Distance +2", "Earth Absorb +4%"]},
+						{"h": "Stats", "p": ["Armor 3", "Ranged +2", "Earth Absorb +4%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -23418,7 +23197,7 @@
 				{
 					"id": "unique:8209",
 					"name": "Soulreaper",
-					"sub": "Sword, level 120. Attack 52, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Sword +4",
+					"sub": "Sword, level 120. Attack 52, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Melee +4",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -23432,7 +23211,7 @@
 								"Defense 28",
 								"Extra Defense +2",
 								"Life Leech: chance +10%, amount +8%",
-								"Sword +4"
+								"Melee +4"
 							]
 						},
 						{
@@ -23778,7 +23557,7 @@
 				{
 					"id": "unique:8858",
 					"name": "Stormcaller Recurve",
-					"sub": "Distance weapon, level 70. Hit Chance 5, Distance +4, Energy Absorb +4%",
+					"sub": "Distance weapon, level 70. Hit Chance 5, Ranged +4, Energy Absorb +4%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -23787,7 +23566,7 @@
 								"The string hums before the storm does. Your bow hits arc to one more enemy for 25% as energy (with Stormstring: one more arc). (Requires level 70.)"
 							]
 						},
-						{"h": "Stats", "p": ["Hit Chance 5", "Distance +4", "Energy Absorb +4%"]},
+						{"h": "Stats", "p": ["Hit Chance 5", "Ranged +4", "Energy Absorb +4%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -23917,14 +23696,14 @@
 				{
 					"id": "unique:2500",
 					"name": "Thornwake Jerkin",
-					"sub": "Body armour, level 150. Armor 13, Distance +1, Earth Absorb +4%",
+					"sub": "Body armour, level 150. Armor 13, Ranged +1, Earth Absorb +4%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["Bark and leather, stitched with living vine. (Requires level 150.)"]
 						},
-						{"h": "Stats", "p": ["Armor 13", "Distance +1", "Earth Absorb +4%"]},
+						{"h": "Stats", "p": ["Armor 13", "Ranged +1", "Earth Absorb +4%"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -23985,14 +23764,14 @@
 				{
 					"id": "unique:27646",
 					"name": "Thornwake Longbow",
-					"sub": "weapon, level 150. Attack 73, Range 6, Distance +3",
+					"sub": "weapon, level 150. Attack 73, Range 6, Ranged +3",
 					"color": "#ff9c3a",
 					"sections": [
 						{
 							"h": "Description",
 							"p": ["Briar wood that still grows a thorn after every shot. (Requires level 150.)"]
 						},
-						{"h": "Stats", "p": ["Attack 73", "Range 6", "Distance +3"]},
+						{"h": "Stats", "p": ["Attack 73", "Range 6", "Ranged +3"]},
 						{
 							"h": "Item",
 							"cols": ["", ""],
@@ -24386,7 +24165,7 @@
 				{
 					"id": "unique:27675",
 					"name": "Visage of the Pale King",
-					"sub": "Helmet, level 120. Armor 15, Death Absorb +8%, Distance +3, Magic Level +2, Physical Absorb +6%",
+					"sub": "Helmet, level 120. Armor 15, Death Absorb +8%, Ranged +3, Magic Level +2, Physical Absorb +6%",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -24395,7 +24174,7 @@
 						},
 						{
 							"h": "Stats",
-							"p": ["Armor 15", "Death Absorb +8%", "Distance +3", "Magic Level +2", "Physical Absorb +6%"]
+							"p": ["Armor 15", "Death Absorb +8%", "Ranged +3", "Magic Level +2", "Physical Absorb +6%"]
 						},
 						{
 							"h": "Item",
@@ -24453,7 +24232,7 @@
 				{
 					"id": "unique:28020",
 					"name": "Voidscale Legguards",
-					"sub": "Legs, level 130. Armor 18, Axe +4, Club +4, Mana Leech: chance +4%, amount +6%, Physical Absorb +6%, Sword +4",
+					"sub": "Legs, level 130. Armor 18, Melee +4, Melee +4, Mana Leech: chance +4%, amount +6%, Physical Absorb +6%, Melee +4",
 					"color": "#ff9c3a",
 					"sections": [
 						{
@@ -24464,11 +24243,11 @@
 							"h": "Stats",
 							"p": [
 								"Armor 18",
-								"Axe +4",
-								"Club +4",
+								"Melee +4",
+								"Melee +4",
 								"Mana Leech: chance +4%, amount +6%",
 								"Physical Absorb +6%",
-								"Sword +4"
+								"Melee +4"
 							]
 						},
 						{
@@ -25391,7 +25170,7 @@
 								],
 								[
 									"6 pieces",
-									"Axe Fighting +3, Red Harvest: your critical hits open a fresh bleed on the target"
+									"Melee +3, Red Harvest: your critical hits open a fresh bleed on the target"
 								]
 							]
 						},
@@ -25888,7 +25667,7 @@
 							"cols": ["Worn", "Bonus"],
 							"w": [18, 82],
 							"rows": [
-								["2 pieces", "Distance Fighting +2, Physical Penetration +6%"],
+								["2 pieces", "Ranged +2, Physical Penetration +6%"],
 								[
 									"4 pieces",
 									"Damage to Elites and Bosses +8%, Hanging Verdict: your ranged hits deal 20% more to monsters below 35% health"
@@ -28040,7 +27819,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28091,7 +27871,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28170,7 +27951,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28255,7 +28037,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28334,7 +28117,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28419,7 +28203,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28504,7 +28289,8 @@
 						{
 							"h": "Combining",
 							"p": [
-								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."
+								"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).",
+								"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28648,6 +28434,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -28711,6 +28504,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -28757,6 +28557,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28820,6 +28627,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28887,6 +28701,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -28933,6 +28754,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -28984,6 +28812,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29030,6 +28865,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -29097,6 +28939,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29146,6 +28995,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29188,6 +29044,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -29237,6 +29100,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -29303,6 +29173,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29352,6 +29229,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29397,6 +29281,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -29464,6 +29355,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29510,6 +29408,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -29577,6 +29482,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29640,6 +29552,13 @@
 							]
 						},
 						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
+							]
+						},
+						{
 							"h": "Sources",
 							"cols": ["Source", "How"],
 							"w": [28, 72],
@@ -29686,6 +29605,13 @@
 							"h": "Sockets",
 							"p": [
 								"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."
+							]
+						},
+						{
+							"h": "Combining",
+							"p": [
+								"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).",
+								"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."
 							]
 						},
 						{
@@ -33090,7 +33016,7 @@
 								["Level", "860-900"],
 								[
 									"In hunts (pack combat)",
-									"health x0.376, experience and loot per kill x0.723 / x0.794, damage x0.43 at level 880 (Basics: Pack combat)"
+									"health x0.376, experience and loot per kill x0.112 / x0.794, damage x0.43 at level 880 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33140,7 +33066,7 @@
 								["Level", "700-740"],
 								[
 									"In hunts (pack combat)",
-									"health x0.355, experience and loot per kill x0.837 / x0.918, damage x0.49 at level 720 (Basics: Pack combat)"
+									"health x0.355, experience and loot per kill x0.111 / x0.918, damage x0.49 at level 720 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33238,7 +33164,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.396, experience and loot per kill x0.684 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.396, experience and loot per kill x0.113 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33320,7 +33246,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.359, experience and loot per kill x0.775 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.359, experience and loot per kill x0.111 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33450,7 +33376,7 @@
 								["Level", "800-840"],
 								[
 									"In hunts (pack combat)",
-									"health x0.364, experience and loot per kill x0.746 / x0.820, damage x0.45 at level 820 (Basics: Pack combat)"
+									"health x0.364, experience and loot per kill x0.111 / x0.820, damage x0.45 at level 820 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -33501,7 +33427,7 @@
 								["Level", "710-750"],
 								[
 									"In hunts (pack combat)",
-									"health x0.355, experience and loot per kill x0.827 / x0.906, damage x0.49 at level 730 (Basics: Pack combat)"
+									"health x0.355, experience and loot per kill x0.111 / x0.906, damage x0.49 at level 730 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34105,7 +34031,7 @@
 								["Level", "880-920"],
 								[
 									"In hunts (pack combat)",
-									"health x0.380, experience and loot per kill x0.715 / x0.786, damage x0.43 at level 900 (Basics: Pack combat)"
+									"health x0.380, experience and loot per kill x0.112 / x0.786, damage x0.43 at level 900 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34194,7 +34120,7 @@
 								["Level", "960-1000"],
 								[
 									"In hunts (pack combat)",
-									"health x0.396, experience and loot per kill x0.684 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
+									"health x0.396, experience and loot per kill x0.113 / x0.752, damage x0.41 at level 980 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34274,7 +34200,7 @@
 								["Level", "680-720"],
 								[
 									"In hunts (pack combat)",
-									"health x0.353, experience and loot per kill x0.858 / x0.940, damage x0.50 at level 700 (Basics: Pack combat)"
+									"health x0.353, experience and loot per kill x0.111 / x0.940, damage x0.50 at level 700 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34385,7 +34311,7 @@
 								["Level", "920-960"],
 								[
 									"In hunts (pack combat)",
-									"health x0.388, experience and loot per kill x0.699 / x0.769, damage x0.42 at level 940 (Basics: Pack combat)"
+									"health x0.388, experience and loot per kill x0.112 / x0.769, damage x0.42 at level 940 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34468,7 +34394,7 @@
 								["Level", "900-940"],
 								[
 									"In hunts (pack combat)",
-									"health x0.384, experience and loot per kill x0.707 / x0.778, damage x0.42 at level 920 (Basics: Pack combat)"
+									"health x0.384, experience and loot per kill x0.112 / x0.778, damage x0.42 at level 920 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34519,7 +34445,7 @@
 								["Level", "940-980"],
 								[
 									"In hunts (pack combat)",
-									"health x0.392, experience and loot per kill x0.692 / x0.761, damage x0.41 at level 960 (Basics: Pack combat)"
+									"health x0.392, experience and loot per kill x0.113 / x0.761, damage x0.41 at level 960 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34570,7 +34496,7 @@
 								["Level", "790-830"],
 								[
 									"In hunts (pack combat)",
-									"health x0.362, experience and loot per kill x0.750 / x0.824, damage x0.45 at level 810 (Basics: Pack combat)"
+									"health x0.362, experience and loot per kill x0.111 / x0.824, damage x0.45 at level 810 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34839,7 +34765,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.351, experience and loot per kill x0.889 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.351, experience and loot per kill x0.112 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -34951,7 +34877,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.366, experience and loot per kill x0.742 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.366, experience and loot per kill x0.111 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -35039,7 +34965,7 @@
 								["Level", "650-690"],
 								[
 									"In hunts (pack combat)",
-									"health x0.351, experience and loot per kill x0.889 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
+									"health x0.351, experience and loot per kill x0.112 / x0.974, damage x0.52 at level 670 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -35173,7 +35099,7 @@
 								["Level", "760-800"],
 								[
 									"In hunts (pack combat)",
-									"health x0.359, experience and loot per kill x0.775 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
+									"health x0.359, experience and loot per kill x0.111 / x0.850, damage x0.46 at level 780 (Basics: Pack combat)"
 								]
 							]
 						},
@@ -35339,7 +35265,7 @@
 								["Level", "810-850"],
 								[
 									"In hunts (pack combat)",
-									"health x0.366, experience and loot per kill x0.742 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
+									"health x0.366, experience and loot per kill x0.111 / x0.815, damage x0.44 at level 830 (Basics: Pack combat)"
 								]
 							]
 						},

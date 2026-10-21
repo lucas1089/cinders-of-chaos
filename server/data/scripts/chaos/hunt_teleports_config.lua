@@ -170,7 +170,8 @@ return {
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",
 	-- "Ways back from the added hunts"). The base hunts have their way back on the map beside the arrival (checked on
 	-- the base map: 35 of 35) and the planned hunts their camp portal (areagen exit, ChaosHuntTeleports.backFor). The
-	-- hunts added to the hall without a base teleport (hall_hunts.csv rows without a place, `low_*`) had none. At
+	-- hunts added to the hall without a base teleport (hall_hunts.csv rows without a place, `low_*`) had none, nor the
+	-- base hunts whose destination hall_hunts.csv moved away from the base arrival (note "destination moved"). At
 	-- startup each one listed here gets a magic forcefield (items.portal, action id `aid`) on `at` that leads in front
 	-- of the hunt's own teleport of the hall, wherever the hall order put it, and the label "Back to the teleport room"
 	-- floats over it like the hall's labels. `at`: chosen on the base map with ChaosHuntTeleportsCore.pickReturnTile
@@ -190,7 +191,14 @@ return {
 			{id = "low_tomb_vaults", at = {x = 33151, y = 32973, z = 14}},
 			{id = "low_dwarf_mines", at = {x = 32503, y = 31952, z = 14}},
 			{id = "low_quara_grotto", at = {x = 32073, y = 32769, z = 12}},
-			{id = "low_clay_hollow", at = {x = 32219, y = 32578, z = 12}}
+			{id = "low_clay_hollow", at = {x = 32219, y = 32578, z = 12}},
+			-- base hunts whose destination moved to their monsters (beta report 2026-10-22: a dead end with no
+			-- monster, or a room the named monster cannot reach); the base way back stays at the old arrival
+			{id = "base_5_31630_32254", at = {x = 34148, y = 31339, z = 8}}, -- Freakish Lost Soul
+			{id = "base_5_31642_32254", at = {x = 33897, y = 31155, z = 9}}, -- Skeleton Elite Warrior
+			{id = "base_5_31658_32254", at = {x = 32188, y = 31428, z = 7}}, -- Frost Dragon
+			{id = "base_6_31654_32258", at = {x = 33193, y = 31776, z = 12}}, -- Blightwalker
+			{id = "base_6_31662_32258", at = {x = 33634, y = 31689, z = 13}} -- Rustheap Golem
 		}
 	},
 

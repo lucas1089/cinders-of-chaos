@@ -5,10 +5,11 @@ ChaosStoreFoodConfig = {
 	-- the item: a new items.otb node (install_store_food.py), a copy of the stock dragon ham node `sourceId` (flags,
 	-- attributes, stackable like it: the client reads a count for a stackable look), with the server id `id`. Its look:
 	-- ownLook = true (on since 2026-10-14: things_custom25 with our art is on windows-assets at ebe1b2b2) gives it
-	-- `clientId` (client/tools/sprites/gen_store_food_art.py, appended by import_art_things.py with
-	-- art_import/store_food.csv; client MANIFEST.md "Everfull Ration look"); ownLook = false gives the dragon ham's.
-	item = {id = 32084, sourceId = 2672, clientId = 33904, ownLook = true, weight = 300, article = "an",
-		name = "everfull ration", plural = "everfull rations",
+	-- `clientId`: our art in the cinderwrought palette (client/tools/sprites/gen_store_items_art.py, appended to pair 34
+	-- by import_art_things.py with art_import/store_items.csv; client MANIFEST.md "Store item looks"; `oldClientId` is
+	-- the earlier look 33904 of things_custom25, replaced in place); ownLook = false gives the dragon ham's.
+	item = {id = 32084, sourceId = 2672, clientId = 38611, oldClientId = 33904, ownLook = true, weight = 300,
+		article = "an", name = "everfull ration", plural = "everfull rations",
 		description = "Store item: never runs out, cannot be traded, sold or dropped. Eat from it like the best food: " ..
 			"12 minutes of regeneration a bite, until you are full."},
 
@@ -26,6 +27,10 @@ ChaosStoreFoodConfig = {
 
 	-- custom attributes (the same keys as the store pouches: pouches.lua refuses ground, mail, trade, the player market
 	-- and other players' containers for any item with chaos_storebound)
-	attr = {owner = "chaos_food_owner", storebound = "chaos_storebound", lock = "chaos_locked"}
+	attr = {owner = "chaos_food_owner", storebound = "chaos_storebound", lock = "chaos_locked"},
+	-- the value of chaos_locked on the ration: 2 = bound (locked for every server and engine check, but drawn in its
+	-- colours; the client greys only 1, a player's own lock). Like pouches_config.lua bindLock; older rations get it at
+	-- login (F.rebind). Owner report 2026-10-22: with 1 the ration showed grey.
+	bindLock = 2
 }
 return ChaosStoreFoodConfig

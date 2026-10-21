@@ -377,7 +377,9 @@ local function layout()
   local dispY = 8
   local okType, thingType = pcall(g_things.getThingType, outfit.type or 0, ThingCategoryCreature)
   if okType and thingType and thingType.getDisplacementY then dispY = thingType:getDisplacementY() end
-  local top = center.y - math.floor((spriteSize / 2 + dispY + 2) * stretch) - 16
+  -- a tall look's name goes up by its lift (client_chaos_infolift, base patch 0111)
+  local lift = c.getInformationLift and c:getInformationLift() or 0
+  local top = center.y - math.floor((spriteSize / 2 + dispY + 2 + lift) * stretch) - 16
   local bottom = center.y + math.floor((spriteSize / 2 - dispY) * stretch) + 2
   local place = L.place(bubble:getWidth(), bubble:getHeight(), { x = center.x, y = top }, { x = center.x, y = bottom },
     area, TAIL_W, TAIL_H, 4)

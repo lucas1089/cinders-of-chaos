@@ -359,12 +359,14 @@ ClearSearch < UIWidget
 // The helper's rule rows (and every other list using them): Move up / Move down / Remove as small Chaos buttons, the
 // skin's button frame with the arrow or the cross in the middle (beta 2026-10-20: bare green and red arrows). Every property a state changes is set in
 // the base block too (a state style is not undone when the state ends).
+// No icon-size: the engine takes icon-size as an icon rect at 0 0, which drew the arrow in the top-left corner of the
+// frame (owner 2026-10-22: "os botoes nao estao centralizados"). Without it the 9 x 6 arrow is centred. All three are
+// 18 x 18; the helper's row templates no longer shrink the Remove button to 17 (base patch 0107).
 MoveUpButton < UIButton
   size: 18 18
   image-source: /images/chaos/button_normal
   image-border: 4
   icon-source: /images/chaos/rule_arrow_up
-  icon-size: 9 6
   icon-color: #d6c9ae
   change-cursor-image: true
   cursor: pointer

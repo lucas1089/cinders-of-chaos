@@ -123,6 +123,9 @@ return {
 	chunkBytes = 6000, -- and its entries' JSON at most this long: a packet over 8192 bytes is lost to this window (stash.lua sendItems)
 	maxDistance = 1, -- Chebyshev distance to a floor item deposited from the map
 	rate = {list = 300, withdraw = 250, stow = 1500, block = 100, open = 300, deposit = 100}, -- ms between requests
+	-- a second deposit of the same position within this many ms is the same drop sent twice (an old client): ignored
+	-- (stash_core.lua K.repeatDeposit)
+	repeatDepositMs = 400,
 
 	messages = {
 		cannot = "You cannot put that item into the stash.",
@@ -131,6 +134,7 @@ return {
 		full = "Your stash is full (%d entries). Withdraw something, or get another tab.",
 		locked = "Your stash is full: the tabs beyond your %d general tabs and the tabs you no longer own are withdraw-only.",
 		busy = "The stash is busy. Try again in a moment.",
+		moved = "That item moved before it reached the stash. Drag it again.",
 		taken = "Could not take the item.",
 		container = "Empty the container first.",
 		stashed = "Stashed %dx %s.",

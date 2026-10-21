@@ -16,7 +16,7 @@
 -- Blessings: TalkAction cfg.bless.words; the store service cfg.eternal.service, put into ChaosShopServices.services at
 -- startup (shop_config.lua offer "Eternal Blessing"); a login gives an Eternal Blessing owner the missing blessings.
 -- Assumed engine API (TFS 1.4): Player:getLevel/getSkull/getStorageValue/setStorageValue/sendTextMessage, hasBlessing,
--- addBlessing, isPzLocked, hasCondition(CONDITION_INFIGHT), getMoney, getBankBalance, removeTotalMoney, TalkAction.
+-- addBlessing, isPzLocked, hasCondition(CONDITION_INFIGHT), getMoney, getBankBalance, removeMoney, setBankBalance (Chaos.pay), TalkAction.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 if not Chaos then
@@ -131,17 +131,14 @@ local function inCombat(player)
 end
 
 local function moneyOf(player)
-	return (tonumber(player.getMoney and player:getMoney()) or 0) + (tonumber(player.getBankBalance and player:getBankBalance()) or 0)
+	return Chaos.totalMoney(player)
 end
 
 local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(gold) and true or false
-	end
-	return player:removeMoney(gold) and true or false
+	return Chaos.pay(player, gold) and true or false
 end
 
 local function blessAll(player, list)

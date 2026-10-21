@@ -283,7 +283,7 @@ eq(G.strip("Level: 5 Sockets (1/2): Flawless Ruby (Fire Damage +9%), empty. [Att
 sword:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Level: 42 [Attack+1]")
 sword:setCustomAttribute("rarity_swordSkill", 1)
 G.writeDescription(sword)
-eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Sword +1 (T1) [Attack+1]. Sockets (2/2): Flawless Ruby (Fire Damage +9%), Polished Amethyst (Critical Chance +2%, Critical Hit +15%).", "rarity description")
+eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Melee +1 (T1) [Attack+1]. Sockets (2/2): Flawless Ruby (Fire Damage +9%), Polished Amethyst (Critical Chance +2%, Critical Hit +15%).", "rarity description")
 C.rewriteDescription(sword)
 local _, n = sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):gsub("Sockets", "")
 eq(n, 1, "one section after a second rewrite")
@@ -396,7 +396,8 @@ COMBAT_PHYSICALDAMAGE, COMBAT_FIREDAMAGE, COMBAT_ICEDAMAGE, COMBAT_EARTHDAMAGE =
 COMBAT_ENERGYDAMAGE, COMBAT_DEATHDAMAGE, COMBAT_HOLYDAMAGE, COMBAT_HEALING, COMBAT_NONE = 4, 32, 64, 128, 0
 MESSAGE_INFO_DESCR = 1
 CONST_ME_MAGIC_BLUE, CONST_ME_MAGIC_GREEN, CONST_ME_BLOCKHIT = 1, 2, 3
-Chaos = {giveItem = nil}
+dofile("data/lib/chaos_pay.lua")
+Chaos = {giveItem = nil, pay = function(player, n, quiet) return ChaosPay.pay(player, n, quiet) end}
 local events, actions = {}, {}
 function CreatureEvent(name)
 	local o = {name = name}
@@ -436,6 +437,7 @@ end
 function Player:addItem(id, n) self.inv[id] = (self.inv[id] or 0) + n end
 function Player:getInbox() return nil end
 function Player:getBankBalance() return self.bank end
+function Player:getMoney() return self.money end
 function Player:setBankBalance(v) self.bank = v end
 function Player:removeMoney(n)
 	if self.money < n then return false end
@@ -503,20 +505,176 @@ actions[32005].onUse(p, perfect, nil, perfect)
 eq(p.cancels[#p.cancels], G.reasons.perfect, "perfect does not combine"); eq(p.inv[32005], 3, "kept")
 actions[32001].onUse(p, chipped, nil, nil)
 assert(p.msgs[#p.msgs]:find("Use it with a piece of gear"), "plain use explains")
--- taking a gem out: for gold (bank first, then the backpack) or shattered
+assert(p.msgs[#p.msgs]:find("use the stack, then left%-click the same stack"), "plain use says how to combine")
+actions[32005].onUse(p, perfect, nil, nil)
+assert(p.msgs[#p.msgs]:find("does not combine") and not p.msgs[#p.msgs]:find("left%-click"), "a Perfect gem does not combine")
+-- taking a gem out: for gold (carried coins first, then the bank: Chaos.pay) or shattered
 local cost = G.removeCost(32004)
 local okR, why = G.unsocket(p, helm, 1, true)
 eq(okR, false, "no gold"); assert(why:find(tostring(cost)), why)
 p.money = cost
 okR = G.unsocket(p, helm, 1, true)
 eq(okR, true, "paid from the backpack"); eq(p.money, 0, "money taken"); eq(p.inv[32004], 1, "gem back")
-G.insert(helm, 32004); p.bank = cost + 5
+G.insert(helm, 32004); p.money, p.bank = 3, cost + 5
 G.unsocket(p, helm, 1, true)
-eq(p.bank, 5, "bank first"); eq(p.inv[32004], 2, "second gem back")
+eq(p.money, 0, "carried coins first"); eq(p.bank, 8, "the rest from the bank"); eq(p.inv[32004], 2, "second gem back")
 G.insert(helm, 32004)
 okR = G.unsocket(p, helm, 1, false)
 eq(okR, true, "shattered"); eq(p.inv[32004], 2, "nothing back"); eq(G.gemAt(helm, 1), 0, "socket empty")
 eq((G.unsocket(p, helm, 1, false)), false, "empty socket")
 eq((G.unsocket(p, helm, "x", false)), false, "bad index")
+
+-- ---------------------------------------------------------------- combining against the engine's item walk
+-- The engine's player:getItemCount / removeItem (TFS Player::getItemTypeCount / removeItemOfType, src-patch 0009) walk
+-- the inventory slots 1-10 and the containers in them, and skip locked items. They never see the purse (the store
+-- inbox, slot 11, item 26052), the depot inbox (14404) or the depot (locker 2589). A gem stack the player opened and
+-- used there ("use with" on the stack itself) used to be refused with "You need three gems" (bug report 2026-10-21).
+local Q = setmetatable({id = 9, msgs = {}, cancels = {}, full = false}, Player)
+local function box(id, parent)
+	local b = newItem(id)
+	b.items, b.parent = {}, parent
+	return b
+end
+local function topOf(c) -- Item:getTopParent: the player, or the tile
+	while type(c) == "table" and c.parent do c = c.parent end
+	return c
+end
+local function gemIn(where, id, count, locked)
+	local g = newItem(id, count)
+	g.parent, g.holder = where, topOf(where)
+	if locked then g.custom.chaos_locked = 1 end
+	where.items[#where.items + 1] = g
+	return g
+end
+local tile = {} -- a map tile: no getParent, no getId
+local backpack, purse, locker, inbox, pouch
+local function walk(c, fn)
+	for _, it in ipairs(c.items) do
+		fn(it)
+		if it.items then walk(it, fn) end
+	end
+end
+local function resetQ()
+	backpack = box(1988, Q); purse = box(26052, Q); locker = box(2589, tile); inbox = box(14404, locker)
+	pouch = box(31000, backpack); backpack.items[1] = pouch
+	pouch.custom.chaos_locked = 2 -- the store pouches carry the item lock; the gems inside do not
+	Q.full, Q.msgs, Q.cancels, Q.ground = false, {}, {}, {}
+	locker.items[1] = inbox
+end
+function Q:getItemCount(id)
+	local n = 0
+	walk(backpack, function(it) if it.id == id and not it.custom.chaos_locked then n = n + it.count end end)
+	return n
+end
+function Q:removeItem(id, n)
+	if self:getItemCount(id) < n then return false end
+	walk(backpack, function(it)
+		if n > 0 and it.id == id and not it.custom.chaos_locked then
+			local k = math.min(n, it.count)
+			it:remove(k); n = n - k
+		end
+	end)
+	return true
+end
+function Q:addItem(id, n)
+	if self.full then return nil end
+	gemIn(backpack, id, n)
+	return true
+end
+function Q:getInbox() return inbox end
+function Q:getStoreInbox() return purse end
+function Q:getPosition()
+	return {sendMagicEffect = function() end, x = 100, y = 100, z = 7}
+end
+function inboxAdd(self, id, n) gemIn(self, id, n) return true end
+local realGive = Chaos.giveItem
+Chaos.giveItem = function(player, itemId, count) -- chaos_constants.lua: what really arrived
+	local before = player:getItemCount(itemId)
+	player:addItem(itemId, count, false)
+	return player:getItemCount(itemId) - before
+end
+local function total(c, id)
+	local n = 0
+	walk(c, function(it) if it.id == id then n = n + it.count end end)
+	return n
+end
+local use = actions[32006].onUse -- Chipped Sapphire
+
+-- the backpack (and a pouch in it): unchanged, three of a stack become one
+resetQ()
+local s = gemIn(pouch, 32006, 4)
+use(Q, s, nil, s)
+eq(total(backpack, 32006), 1, "backpack: three used"); eq(total(backpack, 32007), 1, "backpack: one Flawed Sapphire")
+-- the purse: the stack used on itself
+resetQ()
+s = gemIn(purse, 32006, 3)
+use(Q, s, nil, s)
+eq(Q.cancels[#Q.cancels], nil, "purse: no refusal")
+eq(total(purse, 32006), 0, "purse: three used"); eq(total(backpack, 32007), 1, "purse: one Flawed Sapphire")
+assert(Q.msgs[#Q.msgs]:find("Three Chipped Sapphires became a Flawed Sapphire"), tostring(Q.msgs[#Q.msgs]))
+-- the depot inbox (open at a depot), also with the rest coming from the backpack
+resetQ()
+s = gemIn(inbox, 32006, 2); gemIn(backpack, 32006, 5)
+use(Q, s, nil, s)
+eq(total(inbox, 32006), 0, "inbox: the used stack goes first"); eq(total(backpack, 32006), 4, "inbox: one more carried")
+eq(total(backpack, 32007), 1, "inbox: one Flawed Sapphire")
+-- a stack in the depot chest (inside the locker)
+resetQ()
+local chest = box(2594, locker); locker.items[2] = chest
+s = gemIn(chest, 32006, 3)
+use(Q, s, nil, s)
+eq(total(chest, 32006), 0, "depot chest: three used"); eq(total(backpack, 32007), 1, "depot chest: combined")
+-- two different stacks: the used one in the purse, the target in the backpack (counted once each)
+resetQ()
+s = gemIn(purse, 32006, 1)
+local t = gemIn(backpack, 32006, 2)
+use(Q, s, nil, t)
+eq(total(purse, 32006) + total(backpack, 32006), 0, "two stacks: three used"); eq(total(backpack, 32007), 1, "two stacks")
+-- not enough: nothing taken
+resetQ()
+s = gemIn(purse, 32006, 2)
+use(Q, s, nil, s)
+eq(Q.cancels[#Q.cancels], G.reasons.needThree, "two are not enough"); eq(total(purse, 32006), 2, "nothing taken")
+-- gems on the ground are not the player's
+resetQ()
+s = gemIn(box(0, tile), 32006, 3); s.parent, s.holder = tile, tile
+use(Q, s, nil, s)
+eq(Q.cancels[#Q.cancels], G.reasons.notYours, "ground refused"); eq(s.count, 3, "ground: nothing taken")
+-- a locked stack stays (the item lock: never taken by id)
+resetQ()
+s = gemIn(backpack, 32006, 3, true)
+use(Q, s, nil, s)
+eq(Q.cancels[#Q.cancels], G.reasons.locked, "locked refused"); eq(s.count, 3, "locked: nothing taken")
+-- a stack over 100 split in two (the engine keeps stacks at 100): three from the pair
+resetQ()
+gemIn(backpack, 32006, 100); s = gemIn(backpack, 32006, 50)
+use(Q, s, nil, s)
+eq(total(backpack, 32006), 147, "150 -> 147"); eq(total(backpack, 32007), 1, "one made")
+-- full backpack: the new gem goes to the depot inbox; no inbox: it is put at the player's feet, never lost
+resetQ()
+s = gemIn(purse, 32006, 3); Q.full = true
+inbox.addItem = inboxAdd
+use(Q, s, nil, s)
+eq(total(inbox, 32007), 1, "full: in the inbox"); assert(Q.msgs[#Q.msgs]:find("inbox"), Q.msgs[#Q.msgs])
+resetQ()
+s = gemIn(purse, 32006, 3); Q.full = true
+local onGround = {}
+local createItem = Game.createItem
+Game.createItem = function(id, count, pos) onGround[#onGround + 1] = {id = id, count = count, pos = pos} return newItem(id, count) end
+function Q:getInbox() return nil end
+use(Q, s, nil, s)
+Game.createItem = createItem
+function Q:getInbox() return inbox end
+eq(onGround[1] and onGround[1].id, 32007, "no inbox: on the ground"); eq(onGround[1] and onGround[1].pos.x, 100, "at the feet")
+eq(total(purse, 32006), 0, "no inbox: three used once")
+-- a removal that fails half way gives back what it took (no gem lost, none made)
+resetQ()
+s = gemIn(purse, 32006, 1); gemIn(backpack, 32006, 2)
+local removeItem = Q.removeItem
+Q.removeItem = function() return false end
+use(Q, s, nil, s)
+Q.removeItem = removeItem
+eq(total(purse, 32006) + total(backpack, 32006), 3, "failed removal: given back"); eq(total(backpack, 32007), 0, "none made")
+Chaos.giveItem = realGive
 
 print("gems_test: " .. checks .. " checks OK")

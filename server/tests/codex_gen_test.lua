@@ -106,7 +106,9 @@ end
 local C, M = D.C, D.M
 local nAffix, nPower = 0, 0
 for _, a in ipairs(C.affixes()) do
-	if a.def and M.isPower(a.def) then
+	if a.noRoll then
+		-- club and axe: shown as the one Melee modifier (sword), no entry of their own
+	elseif a.def and M.isPower(a.def) then
 		nPower = nPower + 1
 	else
 		nAffix = nAffix + 1

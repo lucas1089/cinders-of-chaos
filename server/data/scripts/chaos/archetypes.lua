@@ -126,7 +126,7 @@ end
 
 local SLOTS = {}
 for _, s in ipairs({"CONST_SLOT_HEAD", "CONST_SLOT_NECKLACE", "CONST_SLOT_ARMOR", "CONST_SLOT_RIGHT", "CONST_SLOT_LEFT",
-		"CONST_SLOT_LEGS", "CONST_SLOT_FEET", "CONST_SLOT_RING", "CONST_SLOT_AMMO"}) do
+		"CONST_SLOT_LEGS", "CONST_SLOT_FEET", "CONST_SLOT_RING", "CONST_SLOT_BADGE"}) do
 	if _G[s] then
 		SLOTS[#SLOTS + 1] = _G[s]
 	end
@@ -675,12 +675,13 @@ end
 local reflecting = false
 
 -- Rampage's extra damage taken and Last Stand: the hit (pd, sd <= 0) on a player holding either keystone. Last Stand is
--- not used against players (PvP).
+-- not used against players (PvP). A hit a mana shield took got Rampage's multiplier in the mana event already
+-- (manashield.lua): the rest is left as it is.
 function M.warriorDefence(player, flags, attacker, pd, sd)
 	local pid = player:getId()
 	local t = now()
 	local s = stateOf(pid)
-	if flags.arRampage then
+	if flags.arRampage and not (attacker and ChaosManaShield and ChaosManaShield.scaled(player, attacker, "rampage")) then
 		local stacks = A.rampageStacks(s.rampage, t)
 		if stacks > 0 then
 			local m = A.rampageTaken(stacks)
@@ -853,8 +854,9 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	if m2 ~= 1 then
 		sd = A.scale(sd, m2)
 	end
-	-- Executioner's Verdict: a melee hit that would leave a monster at 15% of its health or less kills it
-	if flags.arExecutioner and oname == "melee" and not source and isMonsterTarget and validTarget(player, creature) then
+	-- Executioner's Verdict: a melee hit or a spell hit that would leave a monster at 15% of its health or less kills it
+	-- (spells too since 2026-10-21, player report "so funciona com attack normal, nao com magias")
+	if flags.arExecutioner and (oname == "melee" or oname == "spell") and not source and isMonsterTarget and validTarget(player, creature) then
 		local executed
 		pd, sd, executed = A.executeHit(creature:getHealth(), creature:getMaxHealth(), pd, sd, isBoss(creature))
 		if executed then
@@ -1019,6 +1021,24 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	end
 	return pd, sd
 end
+
+-- the mana shield part of a hit (manashield.lua): Rampage's extra damage taken
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("rampage", {
+	hit = function(player, attacker, amount)
+		if ChaosKeystones.depth > 0 then
+			return nil
+		end
+		local flags = flagsOf(player:getId())
+		if not flags or not flags.arRampage then
+			return nil
+		end
+		local stacks = A.rampageStacks(stateOf(player:getId()).rampage, now())
+		return stacks > 0 and A.scale(amount, A.rampageTaken(stacks)) or amount
+	end
+})
 
 local hit = CreatureEvent("ChaosArchetypesHit")
 function hit.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critical)

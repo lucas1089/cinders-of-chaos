@@ -71,7 +71,8 @@ end
 -- (server/tools/add_vocations.py): druid spells -> Mystic (1) and Illusionist (10), elder druid spells -> Illusionist,
 -- knight spells also the Berserker (14), paladin spells also the Beastmaster (15), and the casters' stock healing and
 -- support instants also the Necromancer line (20-22; no rune conjuring, no stock summon), the stock utility spells
--- also the Thief, Monk and Templar lines (ChaosStockSpellLines). The spell list filters by these lists.
+-- also the Thief, Monk and Templar lines and Ward of the Mind the Necromancer and Ranger lines
+-- (ChaosStockSpellLines). The spell list filters by these lists.
 local oldVocations = {} -- spell entry -> its own list, restored at terminate
 
 local function remapStockVocations()
@@ -98,7 +99,8 @@ local function remapStockVocations()
           and spell.words ~= 'utevo res' and spell.words ~= 'vael kal' then
         add(20); add(21); add(22)
       end
-      -- the stock utility spells of the Thief, Monk and Templar lines (ChaosStockSpellLines, spelldata.lua)
+      -- the stock spells class lines get on the server: the Thief, Monk and Templar lines' utility spells, Ward of the
+      -- Mind of the Mystic, Necromancer and Ranger lines (ChaosStockSpellLines, spelldata.lua)
       for _, v in ipairs(ChaosStockSpellLines and spell.words and ChaosStockSpellLines[spell.words:lower()] or {}) do
         add(v)
       end

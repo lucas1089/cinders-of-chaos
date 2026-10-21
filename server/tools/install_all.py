@@ -6,7 +6,9 @@ usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] 
                                               [--mysql PATH] [--quiet | --verbose]
 
 SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns and worldtexts steps read and
-change the map .otbm: the names of its towns, the texts of its signs and books).
+change the map .otbm: the names of its towns, the texts of its signs and books). Its map may also be a map master (the
+owner's edited installed map, tools/map_master.py install, README "Map master"): every map step then finds its work in
+place, and contentareas keeps a placed area the owner edited by hand.
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,
@@ -145,7 +147,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  (a warning per unknown name; README "Monster spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
-               0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
+               0023), the base slot tables know the second ring slot (moot since 0058), the might rings are marked, the base
                rarity script keeps both rings of a ring slot swap and clears a hand the base two-handed swap emptied,
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
@@ -167,6 +169,21 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
+  badges       tools/patch_badges.py             the badge slot (engine 0058, client 0113): the badges get slot type "badge";
+               the deck, ship, belt and gloves slots are retired: Player:onMoveItem refuses them, a carried deck
+               holds the cards, a carried ship sails, the items.xml descriptions say so; the boss loot's Fury
+               catalyst [3] typo is fixed; the death loss takes the badge slot; the armorsmith no longer crafts belts
+               and gloves (README "Badge slot"; after itemnames)
+  prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
+               the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
+               task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and
+               basecrafting)
+  jewelry      tools/patch_base_jewelry.py       rings and necklaces are permanent equipment: the worn id's stats on the
+               unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
+               (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
+               show their own looks of pair 35, client 38612-38640 (items.otb; run the tool by hand with
+               --stock-looks for a client on pair 34); three uniques get own bases 41640-41642 (items.otb,
+               items.xml, movements.xml) (README "Rings and necklaces as gear"; after archery, badges and prizes)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")
@@ -175,6 +192,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
                sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
                names (README "Base NPC names"; after towns, monsternames and itemnames)
+  tasknpc      tools/patch_task_npc.py           the task NPC (Mermod) takes a bare task name or "normal / daily <name>"
+                                                 in any case; task kills count by type name, any case, and each party
+                                                 member counts their own task (README "Task NPC names")
   runes        tools/install_rune_supply.py      no conjuring: the conjure spells of spells.xml commented out (runes, blank
                rune, food, enchanted spear and staff), every NPC sells each rune at the price of
                data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
@@ -254,6 +274,15 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                works in the owner's own hideout as well as in a house, and the texts say so (the refusal, the "no space"
                message, the six Waystone Tier descriptions in items.xml); the hideout has the device built in (README
                "Hideouts", "Waystone device")
+  meleeskill   tools/patch_melee_skill.py        one melee skill on equipment: items.xml items with a sword, axe or club
+                                                 number get all three at the highest, a rolled melee modifier raises all
+                                                 three skills (base_rarity.lua; README "Melee and Ranged on equipment";
+                                                 runs right before sql, after every step that adds items)
+  bankpayments tools/patch_bank_payments.py      every gold price is paid from the carried coins and then the bank:
+               lib.lua and npc/lib/npc.lua load data/lib/chaos_pay.lua (Player.getTotalMoney / removeTotalMoney), the
+               scripts that checked and took the carried coins only (NPC travel, horses, outfits, blessings, table shops,
+               the crafting table, ...) use them (README "Gold payments: carried coins, then the bank"; late: after
+               every step that writes a removeMoney into a script)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -798,6 +827,30 @@ def step_absorbceiling(server, data, ctx):
 STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'absorbceiling')  # the absorb ceiling (75 percent) in the base event
 
 
+def step_badges(server, data, ctx):
+    args = [tool('patch_badges.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_badges.py'))
+
+
+STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # the badge slot: after itemnames (loot by name)
+
+
+def step_prizes(server, data, ctx):
+    args = [tool('patch_prizes.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_prizes.py'))
+
+
+STEPS.insert(STEPS.index('badges') + 1, 'prizes')  # after badges (its retired ids) and basecrafting (CraftGuard)
+
+
+def step_jewelry(server, data, ctx):
+    args = [tool('patch_base_jewelry.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_jewelry.py'))
+
+
+STEPS.insert(STEPS.index('prizes') + 1, 'jewelry')  # rings and necklaces as gear: after archery (might ring key)
+
+
 def step_migrations(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_migrations.py'), data], 'patch_base_migrations.py'))
 
@@ -822,6 +875,22 @@ def step_runes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
+
+
+def step_tasknpc(server, data, ctx):
+    args = [tool('patch_task_npc.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_task_npc.py'))
+
+
+STEPS.insert(STEPS.index('npcnames') + 1, 'tasknpc')  # the task NPC and its kills (found by their stock lines)
+
+
+def step_meleeskill(server, data, ctx):
+    args = [tool('patch_melee_skill.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_melee_skill.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'meleeskill')  # late: after every step that adds items with skills to items.xml
 
 
 def step_itemprices(server, data, ctx):
@@ -964,6 +1033,13 @@ def step_waystonehideout(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('eventrooms') + 1, 'waystonehideout')  # after eventrooms, before dungeonentry and sql
+
+
+def step_bankpayments(server, data, ctx):
+    return tool_result(run_tool([tool('patch_bank_payments.py'), data], 'patch_bank_payments.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'bankpayments')  # late, right before sql: after every step that writes a removeMoney
 
 
 def step_autoloot(server, data, ctx):

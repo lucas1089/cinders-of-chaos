@@ -220,6 +220,7 @@ eq(S.levelsText("quickening"), "Cooldown -6/9/12/15/18%", "levels text")
 eq(S.levelColor(S.runeId(1, 5)), cfg.levelColors[5], "mythic colour")
 ok(S.description(fork.index, 5):find("Fits single target spells%.") ~= nil, "description fits")
 ok(S.description(fork.index, 5):find("combine") == nil, "mythic does not combine")
+ok(S.description(fork.index, 4):find("use the stack, then left%-click the same stack") ~= nil, "the text says how to combine")
 ok(S.description(1, 1):find("^A support rune for a spell socket: 20%% of") ~= nil, "description starts lower case")
 -- every support: values rise, fits are known kinds, sprite exists, a group-mate never fits nothing
 local kinds = {single = true, area = true, heal = true, buff = true}
@@ -676,6 +677,52 @@ me.items[S.runeId(4, 2)] = 3
 ok(S.combine(me, S.runeId(4, 2)), "three combine")
 eq(me.items[S.runeId(4, 3)], 1, "one of the next level")
 eq(select(2, S.combine(me, S.runeId(4, 2))), S.reasons.needThree, "needs three")
+-- combining a stack used on itself (right-click, then left-click the same stack) wherever the player keeps it.
+-- me.items is what the engine's getItemCount / removeItem see (equipment, backpack, bags: slots 1-10); the purse
+-- (store inbox 26052, slot 11), the depot inbox (14404) and the depot chest (in the locker 2589) are outside it, so a
+-- stack there was refused with "You need three runes" (combine_core.lua, the same fix as the gems)
+local rid, rnext = S.runeId(5, 1), S.runeId(5, 2)
+local function rstack(parent, count, holder, locked)
+	local st = {id = rid, count = count, parent = parent, holder = holder, custom = {chaos_locked = locked}}
+	function st:getId() return self.id end
+	function st:getCount() return self.count end
+	function st:isItem() return true end
+	function st:getParent() return self.parent end
+	function st:getTopParent() return self.holder end
+	function st:getCustomAttribute(k) return self.custom[k] end
+	function st:remove(n) self.count = self.count - n return true end
+	return st
+end
+local function rbox(id, parent)
+	return {id = id, parent = parent, isItem = function() return true end, getId = function(b) return b.id end,
+		getParent = function(b) return b.parent end}
+end
+local rpurse, rlocker = rbox(26052, me), rbox(2589, {})
+local rinbox = rbox(14404, rlocker)
+local rs = rstack(rpurse, 3, me)
+me.items[rid], me.items[rnext] = 0, 0
+ok(S.combine(me, rid, rs, rs), "purse: a stack used on itself combines")
+eq(rs.count, 0, "purse: three used"); eq(me.items[rnext], 1, "purse: one of the next level")
+rs = rstack(rinbox, 2, nil); me.items[rid] = 4
+ok(S.combine(me, rid, rs, rs), "depot inbox: combines")
+eq(rs.count, 0, "depot inbox: the clicked stack first"); eq(me.items[rid], 3, "one carried"); eq(me.items[rnext], 2, "two now")
+rs = rstack(rbox(2594, rlocker), 3, nil)
+ok(S.combine(me, rid, rs, rs), "depot chest: combines"); eq(rs.count, 0, "depot chest: three used")
+me.items[rid] = 3
+local carriedStack = rstack(rbox(1988, me), 3, me)
+ok(S.combine(me, rid, carriedStack, carriedStack), "backpack: combines"); eq(me.items[rid], 0, "backpack: taken once")
+rs = rstack(rpurse, 2, me)
+eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.needThree, "two are not enough"); eq(rs.count, 2, "nothing taken")
+rs = rstack({}, 3, {})
+eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.notYours, "ground refused"); eq(rs.count, 3, "ground: untouched")
+rs = rstack(rpurse, 3, me, 1)
+eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.runeLocked, "locked refused"); eq(rs.count, 3, "locked: untouched")
+rs = rstack(rpurse, 1, me); me.items[rid] = 2
+local rmItem = me.removeItem
+me.removeItem = function() return false end
+eq(select(2, S.combine(me, rid, rs, rs)), S.reasons.needThree, "failed removal refused")
+me.removeItem = rmItem
+eq(rs.count + me.items[rid], 3, "failed removal: the taken rune given back"); me.items[rid] = 0
 -- the window answer lists the class kit and the runes
 me.sent = {}
 local sentState = false

@@ -13,12 +13,12 @@ reg{id = "give_gold", name = "Give gold", description = "Add gold coins to the p
 		return true, string.format("Gave %d gold to %s.", p.amount, t:getName())
 	end}
 
-reg{id = "remove_gold", name = "Remove gold", description = "Remove gold from inventory/bank (removeMoney).", confirm = true,
+reg{id = "remove_gold", name = "Remove gold", description = "Remove gold: carried coins first, then the bank (Chaos.pay).", confirm = true,
 	params = {{name = "player", label = "Player", type = "player"}, {name = "amount", label = "Amount", type = "int", min = 1, max = 2000000000}},
 	handler = function(actor, p)
 		local t, err = ChaosAdmin.targetOnline(actor, p.player)
 		if not t then return false, err end
-		if not t:removeMoney(p.amount) then return false, "Player does not have that much." end
+		if not Chaos.pay(t, p.amount, true) then return false, "Player does not have that much (carried and bank)." end
 		return true, string.format("Removed %d gold from %s.", p.amount, t:getName())
 	end}
 

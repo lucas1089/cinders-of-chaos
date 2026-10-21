@@ -159,7 +159,7 @@ local sent = {}
 local Cls = {current = nil} -- the engine's Player class table: every method lives here, as in the engine
 local Methods = {}
 local function newPlayer(o)
-	local p = setmetatable({id = o.id or 1, guid = o.guid or 100, premium = o.premium ~= false, money = o.money or 0,
+	local p = setmetatable({id = o.id or 1, guid = o.guid or 100, premium = o.premium ~= false, money = o.money or 0, bank = o.bank or 0,
 		storage = o.storage or {}, house = o.house, lines = {}}, {__index = Methods})
 	return p
 end
@@ -169,7 +169,10 @@ function Cls:isPremium() return self.premium end
 function Cls:getHouse() return self.house end
 function Cls:getTotalMoney() return self.money end
 function Cls:removeTotalMoney(g) if self.money < g then return false end self.money = self.money - g return true end
-function Cls:getBankBalance() return 12345 end
+function Cls:getBankBalance() return self.bank end
+function Cls:setBankBalance(v) self.bank = v return true end
+function Cls:getMoney() return self.money end
+function Cls:removeMoney(g) if self.money < g then return false end self.money = self.money - g return true end
 function Cls:getStorageValue(k) return self.storage[k] or -1 end
 function Cls:sendExtendedOpcode(op, json) sent[#sent + 1] = {op = op, json = json} return true end
 function Cls:sendTextMessage(t, text) self.lines[#self.lines + 1] = text end
@@ -288,7 +291,7 @@ local function talk(key, player, msg)
 	return handled, said[1]
 end
 
-local q = newPlayer({money = 50000, storage = {[Chaos.storage.nameChangeTokens] = 2}})
+local q = newPlayer({money = 50000, bank = 12345, storage = {[Chaos.storage.nameChangeTokens] = 2}})
 local handled, text = talk("stash", q, "open my stash")
 eq(handled, true, "stash: handled")
 check(text and text:find("stash is open", 1, true), "stash: the answer")

@@ -1,6 +1,7 @@
 -- The helper's "Auto setup" button, beside Helper Status at the bottom of the helper window (the choice is
 -- autosetup.lua; client/MANIFEST.md "Helper Auto setup"). One click: healing (class heals, the best potions), tools
--- (eat food, haste kept up), the shooter (the class rotation, as Auto rotation), the timers (the class's fight buffs,
+-- (eat food, haste kept up), the shooter (the class rotation, as Auto rotation, and the targeting: every monster, Auto
+-- Target and the shooter on, chase and Follow Friend off, paused in protection zones), the timers (the class's fight buffs,
 -- staggered so their first casts do not collide) and the Support spells tab (game_helpersupport: shields, summons, a
 -- vigil), for the character's class and level, only with spells it can cast and potions it may drink. Where the player has set
 -- something of their own, one question for the whole setup: Replace / Add / Cancel. Undo (in the result box and on
@@ -113,6 +114,24 @@ local function refresh(H, M, cfg)
   U.save()
 end
 
+-- the Shooter tab after its targeting changed (Auto setup or Undo). The loader in refresh redraws the Auto Target,
+-- shooter, chase, protection zone and Follow Friend boxes from the config (their callbacks follow the change: a
+-- follow the helper started stops); the target list input and the shortcut buttons are redrawn here.
+local function syncTargeting(H, M, cfg)
+  if cfg.autoTargetEnabled and H.setAutoTargetOnHold then pcall(H.setAutoTargetOnHold, false) end
+  if H.AutoTarget and H.AutoTarget.loadToUI then pcall(H.AutoTarget.loadToUI) end
+  if H.FollowFriend and H.FollowFriend.loadToUI then pcall(H.FollowFriend.loadToUI) end
+  local ms = M.magicShooter
+  if ms and ms.loadTargetMonsterList then pcall(ms.loadTargetMonsterList) end
+  local sc = H.Shortcut
+  if sc and sc.syncButton then
+    pcall(sc.syncButton, 'shortcutAutoTarget', cfg.autoTargetEnabled == true)
+    pcall(sc.syncButton, 'shortcutShooter', cfg.magicShooterEnabled == true)
+    pcall(sc.syncButton, 'shortcutAlwaysChase', cfg.alwaysChaseOpponent == true)
+  end
+  U.save()
+end
+
 -- the first casts of the rules Auto setup wrote go out STAGGER ms apart (the first at once): the support spells share
 -- one group cooldown on the server and a timer rule does not wait for an answer, so rules that fell due together would
 -- lose all but one cast for a whole cooldown. The loader drops lastExecuted, so this runs after the refresh.
@@ -141,6 +160,7 @@ local function snapshot(H, cfg, profile)
     spells = copySlots(cfg.spells), potions = copySlots(cfg.potions), haste = copySlots(cfg.haste),
     autoEatFood = cfg.autoEatFood, rules = profile and A.copyRules(profile.rules), marker = profile and profile[A.MARKER],
     profile = profile, timers = timerRules(H), timerOn = H.Timer and H.Timer.isEnabled and H.Timer.isEnabled(),
+    targeting = S.targetingOf(cfg),
   }
 end
 
@@ -161,8 +181,10 @@ function W.undoSetup()
   rememberWords(u.timers)
   if u.support and support() then support().setSlots(u.support, u.supportOn) end
   if H.Timer and H.Timer.isEnabled and H.Timer.isEnabled() ~= u.timerOn then H.Timer.toggle() end
+  S.applyTargeting(cfg, u.targeting)
   W.undo = nil
   refresh(H, M, cfg)
+  syncTargeting(H, M, cfg)
   return true
 end
 
@@ -183,12 +205,15 @@ local function apply(ctx, mode)
     U.applyRotation(profile, plan.rotation, (mode == 'add' and A.isCustom(profile.rules, profile[A.MARKER])) and 'add'
       or 'replace')
   end
+  -- the shooter's targeting (Auto Target, Magic Shooter, every monster)
+  S.applyTargeting(cfg, plan.targeting)
   -- timers
   local rules = S.mergeTimers(timerRules(H), plan.timers, mode)
   setTimers(H, rules)
   rememberWords(rules)
   if #rules > 0 and H.Timer and H.Timer.isEnabled and not H.Timer.isEnabled() then H.Timer.toggle() end
   refresh(H, M, cfg)
+  syncTargeting(H, M, cfg)
   stagger(H, rules)
   -- support spells
   local sup = support()
@@ -202,6 +227,7 @@ local function apply(ctx, mode)
     or tr('Tools: eat food.')
   lines[#lines + 1] = plan.rotation and tr('Shooter: %d attack spells.'):format(#plan.rotation.ids)
     or tr('Shooter: no attack spell at this level yet.')
+  lines[#lines + 1] = tr('Targeting: every monster, Auto Target and Magic Shooter on.')
   lines[#lines + 1] = tr('Timers: %d buffs.'):format(#plan.timers)
   if support() then lines[#lines + 1] = tr('Support spells: %d.'):format(#plan.support) end
   closeBox()

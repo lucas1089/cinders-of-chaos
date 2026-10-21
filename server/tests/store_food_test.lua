@@ -159,7 +159,9 @@ do
 	check(ann.msgs[#ann.msgs]:find("purse", 1, true), "told: purse")
 	eq(ration.attrs.chaos_food_owner, 7, "owner guid")
 	eq(ration.attrs.chaos_storebound, 1, "store-bound")
-	eq(ration.attrs.chaos_locked, 1, "locked")
+	eq(ration.attrs.chaos_locked, 2, "locked, bound: the client greys only 1 (a player's own lock)")
+	eq(K.bindLock(cfg), 2, "bindLock 2")
+	eq(K.needsRebind(cfg, 1), true, "an old ration with 1 is rebound") eq(K.needsRebind(cfg, 2), false, "2 stays")
 	check(svc.check(ann):find("One per character", 1, true), "a second one is refused")
 	-- eating: never used up
 	local use = actions[cfg.item.id].onUse
@@ -198,6 +200,17 @@ do
 	registered.ChaosStoreFoodLogin.onLogin(back)
 	eq(#back.bag, 1, "given back at login")
 	eq(back.storage[cfg.storage.regrant], 0, "owed flag cleared")
+	-- a ration given before bindLock (chaos_locked 1, drawn grey) is rebound at login, here in the purse
+	local eve = mkPlayer(11)
+	local oldRation = mkItem(cfg.item.id, {chaos_food_owner = 11, chaos_locked = 1})
+	local food = mkItem(2671, {chaos_locked = 1})
+	eve.purse[1], eve.bag[1] = oldRation, food
+	local sent = 0
+	function oldRation:sendUpdate() sent = sent + 1 end
+	registered.ChaosStoreFoodLogin.onLogin(eve)
+	eq(oldRation.attrs.chaos_locked, 2, "rebound at login") eq(sent, 1, "sent again to the client")
+	eq(food.attrs.chaos_locked, 1, "a player's own lock on other food is left alone")
+	eq(F.rebind(eve), 0, "a second pass changes nothing")
 	eq(F.afterDeath(8, {x = 1, y = 2, z = 7}), 0, "another character's corpse: nothing")
 end
 

@@ -19,6 +19,16 @@ if not ChaosRarity then
 	end
 end
 
+-- gold payments from carried coins, then the bank (data/lib/chaos_pay.lua; Chaos.pay below)
+if not ChaosPay then
+	if not pcall(dofile, "data/lib/chaos_pay.lua") then
+		pcall(dofile, "server/data/lib/chaos_pay.lua")
+	end
+	if not ChaosPay then
+		dofile("data/lib/chaos_pay.lua") -- fails with the real error
+	end
+end
+
 if Chaos then
 	-- the first load can come from a spell (classes.lua), outside the Scripts interface: the opcode dispatch's engine
 	-- events are made on the load that can make them (Chaos.opcodeDispatch.install)
@@ -1230,6 +1240,27 @@ function Chaos.registerOnce(creature, name)
 	return true
 end
 
+-- Chaos.containerBatch(player, fn, ...): runs fn(...) with the player's container updates held (engine patch 0054,
+-- player:beginContainerBatch / endContainerBatch): every open window that changed gets one full container packet at the
+-- end, and the stats one packet, instead of one packet and one client window refresh per item moved or removed (a Loot
+-- Bag sale of 255 items: 510 packets before). The end runs even when fn fails; the error is raised again after it.
+-- Without the patch (no such methods) fn just runs. Returns what fn returns.
+local function batchDone(player, ok, ...)
+	pcall(player.endContainerBatch, player)
+	if not ok then
+		error((...), 0)
+	end
+	return ...
+end
+
+function Chaos.containerBatch(player, fn, ...)
+	if not player or type(player.beginContainerBatch) ~= "function" or type(player.endContainerBatch) ~= "function" then
+		return fn(...)
+	end
+	player:beginContainerBatch()
+	return batchDone(player, pcall(fn, ...))
+end
+
 -- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
 -- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
 -- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next
@@ -1548,6 +1579,25 @@ function Chaos.sweepIntruders(inArea, isMember, text)
 		end
 	end
 	return n
+end
+
+-- ---------------------------------------------------------------------------
+-- Gold payments (server/README.md "Gold payments: carried coins, then the bank")
+-- ---------------------------------------------------------------------------
+-- Every price in gold is paid with Chaos.pay: carried coins first, then the bank, all or nothing (data/lib/chaos_pay.lua).
+--   Chaos.totalMoney(player)          carried + bank
+--   Chaos.canPay(player, amount)      true when carried + bank >= amount
+--   Chaos.pay(player, amount[, quiet]) true, fromCoins, fromBank; false and nothing taken when short
+function Chaos.totalMoney(player)
+	return (ChaosPay.total(player))
+end
+
+function Chaos.canPay(player, amount)
+	return ChaosPay.canPay(player, amount)
+end
+
+function Chaos.pay(player, amount, quiet)
+	return ChaosPay.pay(player, amount, quiet)
 end
 
 -- ---------------------------------------------------------------------------

@@ -1,0 +1,98 @@
+# Chaos: the helper's rule rows keep their three buttons the same size, and the last plain labels go through tr()
+# (client/BASE.md 0107; after 0001-0106). The Remove button of the rule and timer rows was shrunk to 17 x 17 next to
+# the 18 x 18 Move up / Move down buttons; it now keeps the style's 18 x 18 (the arrows are centred by the overlay's
+# data/styles/10-buttons.otui, which no longer sets icon-size). "When:", "Action:", "Conditions:", "Ranged Monster
+# Names:", "Rules:" and "Parameter:" were plain text; When and Action are a little wider (the English was clipped by
+# a pixel or two).
+--- a/mods/game_helper/styles/equip_panel.otui
++++ b/mods/game_helper/styles/equip_panel.otui
+@@ -68,10 +68,10 @@
+         anchors.top: itemButton.bottom
+         anchors.left: parent.left
+         margin-top: 8
+-        text: When:
++        !text: tr('When:')
+         font: $var-main-font
+         color: #aaaaaa
+-        width: 40
++        width: 60
+ 
+       // Row 3: cond1Resource + cond1Operator + cond1Value
+       ComboBox
+@@ -198,10 +198,10 @@
+         anchors.top: cond1Resource.bottom
+         anchors.left: parent.left
+         margin-top: 8
+-        text: Action:
++        !text: tr('Action:')
+         font: $var-main-font
+         color: #aaaaaa
+-        width: 45
++        width: 52
+ 
+       CheckBox
+         id: actionEquip
+@@ -286,7 +286,7 @@
+         anchors.top: skipIfEquippedCheck.top
+         anchors.left: condSeparator.right
+         margin-left: 8
+-        text: Conditions:
++        !text: tr('Conditions:')
+         font: $var-main-font
+         color: #aaaaaa
+ 
+--- a/mods/game_helper/styles/magic_shooter_panel.otui
++++ b/mods/game_helper/styles/magic_shooter_panel.otui
+@@ -505,7 +505,7 @@
+           id: rangedMonstersLabel
+           anchors.left: parent.left
+           anchors.verticalCenter: parent.verticalCenter
+-          text: Ranged Monster Names:
++          !text: tr('Ranged Monster Names:')
+           font: $var-main-font
+           color: #aaaaaa
+ 
+--- a/mods/game_helper/styles/rule_list.otui
++++ b/mods/game_helper/styles/rule_list.otui
+@@ -70,8 +70,8 @@
+     checked: true
+     !tooltip: tr('Enable/Disable rule')
+ 
++  // Chaos 0107: the style's 18 x 18, like Move up / Move down (17 sat a pixel off their row)
+   RemoveButton
+-    size: 17 17
+     id: removeButton
+     anchors.right: parent.right
+     anchors.verticalCenter: parent.verticalCenter
+@@ -87,7 +87,7 @@
+     anchors.top: parent.top
+     anchors.left: parent.left
+     anchors.verticalCenter: addButton.verticalCenter
+-    text: Rules:
++    !text: tr('Rules:')
+     font: $var-main-font
+     color: #aaaaaa
+ 
+--- a/mods/game_helper/styles/spell.otui
++++ b/mods/game_helper/styles/spell.otui
+@@ -172,7 +172,7 @@
+       anchors.top: prev.bottom
+       margin-top: 7
+       anchors.left: parent.left
+-      text: Parameter:
++      !text: tr('Parameter:')
+       font: $var-main-font
+       color: $var-text-color
+       text-auto-resize: true
+--- a/mods/game_helper/styles/timer_panel.otui
++++ b/mods/game_helper/styles/timer_panel.otui
+@@ -38,8 +38,8 @@
+     anchors.verticalCenter: parent.verticalCenter
+     margin-right: 2
+ 
++  // Chaos 0107: the style's 18 x 18, like Move up / Move down (17 sat a pixel off their row)
+   RemoveButton
+-    size: 17 17
+     id: removeButton
+     anchors.right: parent.right
+     anchors.verticalCenter: parent.verticalCenter

@@ -1509,6 +1509,9 @@ function S.openWindow(player)
 	send(player, {make = "Toggle", remote = isRemote(player), open = true})
 end
 
+-- player id -> the last deposit that went in {x, y, z, stackpos, at}: a repeated drop is not a second deposit
+local lastDeposit = {}
+
 local ExtendedEvent = CreatureEvent("ChaosStashExtended")
 
 function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
@@ -1536,8 +1539,20 @@ function ExtendedEvent.onExtendedOpcode(player, opcode, buffer)
 	elseif data.make == "Stash" then
 		local item = S.resolveItem(player, data.Pos)
 		local backpack = player.getSlotItem and player:getSlotItem(CONST_SLOT_BACKPACK)
+		local now = os.mtime and os.mtime() or os.time() * 1000
+		local pid = player:getId()
 		if item and item ~= backpack then
-			S.deposit(player, item)
+			if Core.repeatDeposit(lastDeposit[pid], data.Pos, now, cfg.repeatDepositMs) then
+				item = nil -- the same drop again: the slot now holds the next item, which stays
+			elseif not Core.sameItem(item:getType():getClientId(), item:getCount(), data.ItemId,
+				item:getType():isStackable() and data.Count or nil) then -- the count of a stack only
+				item = nil -- the slot holds another item than the one dragged: nothing moves
+				player:sendCancelMessage(Chaos.t(player, M.moved))
+			end
+		end
+		if item and item ~= backpack and S.deposit(player, item) then
+			local p = data.Pos
+			lastDeposit[pid] = {x = p.x, y = p.y, z = p.z, stackpos = p.stackpos, at = now}
 		end
 		-- echo the list, even when rejected (the client relies on this), at most every 100 ms: the list is a database
 		-- read, and naming the same item again and again would otherwise read it on every packet
@@ -1563,6 +1578,7 @@ ExtendedEvent:register()
 local LogoutEvent = CreatureEvent("ChaosStashLogout")
 function LogoutEvent.onLogout(player)
 	blockCache[player:getGuid()] = nil
+	lastDeposit[player:getId()] = nil
 	return true
 end
 LogoutEvent:type("logout")

@@ -31,8 +31,8 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    ({id, n} pairs with n < 1000, addItem(id, n), itemId = id, count = n); a trade of something for ammunition in an
    NPC script gives gold coins; removeItem(id, n) asks for gold instead, and the NPC's texts that asked for
    "<n> arrows" / "<n> bolts" ask for that gold (also on a script an earlier version of this tool patched).
-9. The second ring slot (engine src-patch 0023 makes the ammunition slot take rings only and run the ring events
-   there): base Lua tables that map an inventory slot to its slot position bit (`[CONST_SLOT_AMMO] = SLOTP_AMMO`, in
+9. The second ring slot (engine src-patch 0023 made the ammunition slot take rings only and run the ring events
+   there; src-patch 0058 makes it take nothing, so this mapping no longer matters and is kept as harmless): base Lua tables that map an inventory slot to its slot position bit (`[CONST_SLOT_AMMO] = SLOTP_AMMO`, in
    data/scripts/customs/rarity/base_rarity.lua and data/lib/core/itemtype.lua) map it to SLOTP_RING, so the base
    rarity conditions and ItemType.usesSlot treat a ring there as in the ring slot.
 10. data/scripts/eventcallbacks/player/default_onMoveItem.lua: the base's convenience swap (a two-handed weapon taken
@@ -382,8 +382,12 @@ def verify_otb(data, ids):
 # ------------------------------------------------------------------------------------------------ movements.xml
 def patch_movements(text, cfg, weapons_text, launchers):
     nl = '\r\n' if '\r\n' in text else '\n'
-    # drop the earlier Chaos block and every stock quiver entry
-    text2 = re.sub(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', '', text, flags=re.S)
+    # drop every stock quiver entry; the earlier Chaos block is rebuilt where it stands (a block moved to the end on
+    # each run would trade places with the unique equip block after it: a second install run was not a no-op)
+    mark = '\x00chaos quivers\x00'
+    text2, had = re.subn(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', mark, text, count=1,
+                         flags=re.S)
+    text2 = re.sub(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', '', text2, flags=re.S)
     ids = set(cfg['quivers'])
 
     def drop(m):
@@ -409,9 +413,12 @@ def patch_movements(text, cfg, weapons_text, launchers):
         lines.append('\t<movevent event="DeEquip" itemid="%d" slot="shield" function="onDeEquipItem" />' % qid)
     lines.append(MOVE_END)
     block = nl.join(lines) + nl
-    if '</movements>' not in text2:
+    if had:
+        out = text2.replace(mark, block, 1)
+    elif '</movements>' not in text2:
         raise SystemExit('movements.xml: </movements> not found; nothing written')
-    out = text2.replace('</movements>', block + '</movements>', 1)
+    else:
+        out = text2.replace('</movements>', block + '</movements>', 1)
     note = 'movements.xml: %d quiver entries (%s)' % (len(ids), ', '.join(
         re.search(r'name="([^"]+)"', v).group(1) for v in vocs) or 'every vocation')
     return out, ('movements.xml: quiver entries present' if out == text else note)
@@ -554,10 +561,11 @@ def patch_rewards(text, cfg, ammo, npc_script=False):
 
 
 def patch_ammo_dialogue(text, cfg):
-    """an NPC script that asks for gold instead of ammunition (removeMoney(M), written by patch_rewards) no longer says
+    """an NPC script that asks for gold instead of ammunition (removeMoney(M), written by patch_rewards; removeTotalMoney(M)
+    after patch_bank_payments.py) no longer says
     "<N> arrows" / "<N> bolts" in its texts when M is the price of N pieces: the text says "<M> gold". Works on a script
     patched by an earlier version of this tool too. -> new text, changes"""
-    monies = {int(m) for m in re.findall(r'removeMoney\(\s*(\d+)\s*\)', text)}
+    monies = {int(m) for m in re.findall(r'remove(?:Total)?Money\(\s*(\d+)\s*\)', text)}  # patch_bank_payments.py
     if not monies:
         return text, 0
     rates = set(cfg['ammo'].values()) | {cfg['defaultRefund']}

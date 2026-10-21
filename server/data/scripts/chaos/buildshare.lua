@@ -170,7 +170,7 @@ function B.apply(player, code, seenCost)
 		return nil, invalid
 	end
 	local R = ChaosRespec
-	if p.cost > 0 and not (R and R.pay(player, p.cost) or (not R and player:removeMoney(p.cost))) then
+	if p.cost > 0 and not (R and R.pay(player, p.cost) or (not R and Chaos.pay(player, p.cost))) then
 		return nil, string.format("You need %s gold coins (carried or in the bank) to take points back for this build.",
 			ChaosRespecCore and ChaosRespecCore.formatGold(p.cost) or tostring(p.cost))
 	end

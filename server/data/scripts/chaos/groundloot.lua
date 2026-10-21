@@ -184,7 +184,7 @@ local function tip(player, data)
 	end
 	local T = ChaosItemTooltip
 	local equipped = {}
-	for slot = T.SLOT_FIRST or 1, T.SLOT_LAST or 10 do
+	for _, slot in ipairs(T.SLOTS or {1, 2, 3, 4, 5, 6, 7, 8, 9, 13}) do
 		local worn = player:getSlotItem(slot)
 		if worn then
 			equipped[worn:getId()] = true

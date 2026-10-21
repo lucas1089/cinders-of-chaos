@@ -309,19 +309,13 @@ end
 -- ---------------------------------------------------------------- money and the NPC
 local function money(player)
 	local ok, v = pcall(function()
-		if player.getTotalMoney then
-			return player:getTotalMoney()
-		end
-		return player:getMoney() + player:getBankBalance()
+		return Chaos.totalMoney(player)
 	end)
 	return ok and tonumber(v) or 0
 end
 
 local function takeMoney(player, amount)
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(amount) and true or false
-	end
-	return player:removeMoney(amount) and true or false
+	return Chaos.pay(player, amount) and true or false
 end
 
 local function refund(player, amount)

@@ -15,7 +15,9 @@
 --   .matches(task, entry)                            whether a kill of `entry` counts for `task`
 --   .canAccept(task, st, cfg, lang?)                 the accept rules (active, daily and weekly limits, repeats); the
 --                                                    reasons (also canTakeHunt's, lang last) in `lang`, English without
---   .taskReward(task, playerLevel, cfg, bountyCfg)   {gold, chaos, divine, exp, points}
+--   .taskReward(task, playerLevel, cfg, bountyCfg, stage, perKill)  {gold, chaos, divine, exp, points}
+--   .taskKillBase(task, catalogue, killBase)         one kill's base experience of a task (perKill)
+--   .partyCountsTask(task, level, cfg)               whether a party member's kill credit counts for a task
 --   .elements(list) / .immunities(mask) / .depthText(z) / .nearestTown(pos, towns) / .loot(...)  views for the window
 --   .chunk(list, budget, encode)                     splits a list into packets under `budget` bytes
 --   .day(t, cfg) / .week(t, cfg) / .nextRoll(t, cfg) the task day, week and the next day start (bounty board's)
@@ -475,7 +477,43 @@ function C.canAccept(task, st, cfg, lang)
 end
 
 -- ---------------------------------------------------------------- rewards
-function C.taskReward(task, playerLevel, cfg, bountyCfg)
+-- one kill's base experience (before the stage) of a task: killBase(entry) of the hunt's monster; for a family the
+-- median over the category's spawning, non-boss monsters of the task's level window. 0 when unknown.
+-- killBase: ChaosBounty.monsterKillBase with the pace config (bestiary.lua cfg.killBase); without it the file experience.
+function C.taskKillBase(task, catalogue, killBase)
+	if not task or not catalogue then
+		return 0
+	end
+	local function base(e)
+		return killBase and killBase(e) or tonumber(e.exp) or 0
+	end
+	if task.kind == "hunt" then
+		local e = catalogue.byKey and catalogue.byKey[task.target]
+		return e and base(e) or 0
+	end
+	local list = {}
+	for _, e in ipairs(catalogue.list or {}) do
+		if e.cat == task.target and not e.boss and (e.spawns or 0) > 0 and e.level >= (task.lo or 0)
+				and e.level <= (task.hi or 0) then
+			list[#list + 1] = base(e)
+		end
+	end
+	table.sort(list)
+	return #list > 0 and list[math.floor((#list + 1) / 2)] or 0
+end
+
+-- a party member's kill credit counts for a task (not for the bestiary) only when the task's level is within what the
+-- board offers the member (C.window(level, cfg.boardWindow).hi): a low character cannot finish a task of strong
+-- monsters by standing next to a strong one. Own kills always count.
+function C.partyCountsTask(task, level, cfg)
+	return task ~= nil and (tonumber(task.level) or 0) <= C.window(level, cfg.boardWindow).hi
+end
+
+-- the reward of a task for a character of playerLevel with experience stage `stage` (Game.getExperienceStage):
+-- gold and orbs a share of the bounty board's hunt reward of the band; experience expShare percent of the base
+-- experience of the task's kills (required x perKill x stage; perKill from C.taskKillBase), at least expPercent and at
+-- most expCap percent of the experience from level L to L + 1 (L = the character's level capped at the band's top)
+function C.taskReward(task, playerLevel, cfg, bountyCfg, stage, perKill)
 	local r = cfg.reward[task.kind] or cfg.reward.hunt
 	local bandIndex = math.min(B.bandOf(task.level or 1, bountyCfg), B.bandOf(playerLevel or 1, bountyCfg))
 	local band = bountyCfg.bands[bandIndex]
@@ -483,11 +521,17 @@ function C.taskReward(task, playerLevel, cfg, bountyCfg)
 	local level = math.max(1, math.min(playerLevel or band.min, band.max))
 	local diff = C.difficultyOf(task.level or 1, false, cfg)
 	local divine = (base.divine or 0) * (r.divineMult or 0)
+	local lvlExp = C.expForLevel(level)
+	local exp = (tonumber(task.required) or 0) * (tonumber(perKill) or 0) * (tonumber(stage) or 1) * (r.expShare or 0) / 100
+	exp = math.max(exp, lvlExp * (r.expPercent or 0) / 100)
+	if r.expCap then
+		exp = math.min(exp, lvlExp * r.expCap / 100)
+	end
 	return {
 		gold = math.floor((base.gold or 0) * r.goldMult),
 		chaos = math.floor((base.chaos or 0) * r.chaosMult),
 		divine = math.floor(divine),
-		exp = math.floor(C.expForLevel(level) * r.expPercent / 100),
+		exp = math.floor(exp),
 		points = r.points * diff.points[1]
 	}
 end

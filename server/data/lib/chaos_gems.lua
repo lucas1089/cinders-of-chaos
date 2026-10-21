@@ -554,6 +554,10 @@ function G.rollDropSockets(item, rand)
 end
 
 -- the Orb of Sockets: can it be used, and the range of the new count
+-- how to combine with the mouse: "use" is a right-click in the classic controls (the crosshair comes up), then a
+-- left-click on the same stack (gems.lua hint, items.xml text by install_gems.py, the Codex)
+G.COMBINE_HOW = "To combine three into one of the next quality: use the stack, then left-click the same stack."
+
 G.reasons = {
 	notGear = "This item cannot have sockets.",
 	unique = "A unique item has a fixed socket; orbs cannot change it.",
@@ -564,7 +568,9 @@ G.reasons = {
 	full = "This item has no free socket. Take a gem out at the crafting bench (Economy > Crafting Bench) first.",
 	notGem = "That is not a gem.",
 	perfect = "Perfect gems are the best there are; they cannot be combined.",
-	needThree = "You need three gems of the same kind and quality to combine them."
+	needThree = "You need three gems of the same kind and quality to combine them.",
+	notYours = "Combine gems you own: in your backpack, your purse or your depot.",
+	locked = "This gem is locked. Unlock it at the crafting bench to combine it."
 }
 
 function G.orbRange(item)

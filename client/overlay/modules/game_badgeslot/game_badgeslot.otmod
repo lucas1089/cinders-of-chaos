@@ -1,0 +1,13 @@
+Module
+  name: game_badgeslot
+  description: The badge slot (13), drawn where the ammunition slot was (client base patch 0113, server src-patch 0058): its tooltip and texts
+  author: Cinders of Chaos
+  sandboxed: true
+  scripts: [ badgeslotlogic, badgeslot ]
+  dependencies:
+    - game_interface
+    - game_inventory
+  autoload: true
+  autoload-priority: 1000
+  @onLoad: init()
+  @onUnload: terminate()

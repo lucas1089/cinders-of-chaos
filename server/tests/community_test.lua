@@ -418,6 +418,8 @@ local function mkPlayer(name, guid, group, pos)
 	function p:getMoney() return self.money end
 	function p:getBankBalance() return self.bank end
 	function p:removeTotalMoney(g) if self.money < g then return false end self.money = self.money - g return true end
+	function p:removeMoney(g) if self.money < g then return false end self.money = self.money - g return true end
+	function p:setBankBalance(v) self.bank = v return true end
 	function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 	function p:sendExtendedOpcode(op, data) self.ops[#self.ops + 1] = {op, data} return true end
 	function p:registerEvent(ev) self.events[ev] = true end

@@ -18,7 +18,7 @@ local cfg = {
 		sets = "chaos_transmog_sets" -- one row per account and owned appearance set
 	},
 
-	-- gold, taken from the backpack first, then the bank (Player.removeTotalMoney when the server has it)
+	-- gold, taken from the backpack first, then the bank (Chaos.pay)
 	fee = {
 		apply = 2000, -- base fee to put a look on an item
 		perItemLevel = 10, -- + this much per item level (custom attribute "combatPowerLevel"), so endgame gear costs more

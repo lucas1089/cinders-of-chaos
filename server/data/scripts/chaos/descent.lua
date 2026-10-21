@@ -279,15 +279,11 @@ function X.craft(player)
 	if player:getItemCount(cr.shardId) < cr.shards then
 		return false, string.format("You need %d %s.", cr.shards, itemName(cr.shardId, cr.shards))
 	end
-	if (player:getMoney() + player:getBankBalance()) < cr.gold then
+	if not Chaos.canPay(player, cr.gold) then
 		return false, string.format("You need %d gold (carried or in the bank).", cr.gold)
 	end
 	local paid
-	if player.removeTotalMoney then
-		paid = player:removeTotalMoney(cr.gold)
-	else
-		paid = player:removeMoney(cr.gold)
-	end
+	paid = Chaos.pay(player, cr.gold)
 	if not paid then
 		return false, string.format("You need %d gold (carried or in the bank).", cr.gold)
 	end
@@ -1751,7 +1747,7 @@ function X.sendInfo(player)
 		rooms = {cfg.rooms.min, cfg.rooms.max}, freeDaily = fs.daily, freeDailyCount = fs.dailyCount, freeWeekly = fs.weekly,
 		nextDaily = math.max(0, fs.nextDaily - now), sigils = #X.sigils(player),
 		craft = {shards = cr.shards, gold = cr.gold, haveShards = player:getItemCount(cr.shardId),
-			haveGold = player:getMoney() + player:getBankBalance(), name = cfg.sigil.name},
+			haveGold = Chaos.totalMoney(player), name = cfg.sigil.name},
 		best = row.best, bestClear = row.bestClear == 1, runs = row.runs, clears = row.clears,
 		weekBest = row.week == week and row.weekBest or 0, week = week, weekSeed = DC.weekSeed(week),
 		titles = titles, inRun = X.runOf[player:getId()] ~= nil, timeLimit = cfg.timeLimit})

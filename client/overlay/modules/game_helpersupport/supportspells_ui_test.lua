@@ -52,7 +52,9 @@ function W:isChecked() return self.checked end
 function W:raise() end
 function W:addAnchor() end
 function W:setWidth(v) self.width = v end
-for _, m in ipairs({ 'setMarginLeft', 'setMarginTop', 'setMarginBottom', 'setTooltip', 'setEnabled' }) do W[m] = function() end end
+for _, m in ipairs({ 'setMarginLeft', 'setMarginTop', 'setMarginBottom', 'setTooltip' }) do W[m] = function() end end
+function W:setEnabled(e) self.disabled = not e end
+function W:isEnabled() return not self.disabled end
 function W:setText(t) self.text = t end
 function W:destroy()
   local p = self.parent
@@ -211,6 +213,24 @@ bar:getChildById(U.TAB_ID):click()
 ok(root:recursiveGetChildById(U.PANEL_ID):isVisible(), 'and it opens')
 bar:getChildById('healingMenu'):click()
 ok(not root:recursiveGetChildById(U.PANEL_ID):isVisible(), 'the wrapped tabs still hide it (wrapped once)')
+
+-- the rows: an empty row's box is unticked and greyed; a spell picked in an empty row starts ticked
+U.setSlots({ { id = 9101, enabled = true }, { id = 9102, enabled = false } }, true)
+local pp = root:recursiveGetChildById(U.PANEL_ID)
+local function rowBox(i) return pp:recursiveGetChildById('row' .. i):getChildById('enable') end
+local slots = U.slots()
+if #slots == 2 then
+  ok(rowBox(1):isChecked() and rowBox(1):isEnabled(), 'a ticked spell row: ticked and clickable')
+  ok(not rowBox(2):isChecked() and rowBox(2):isEnabled(), 'an unticked spell row: unticked and clickable')
+  ok(not rowBox(3):isChecked() and not rowBox(3):isEnabled(), 'an empty row: unticked and greyed')
+  -- the player picks the second spell again in a greyed (empty) row: it is read as ticked
+  local r2 = pp:recursiveGetChildById('row2')
+  r2:getChildById('enable'):setEnabled(false)
+  r2:getChildById('spell').onOptionChange()
+  eq(U.slots()[2] and U.slots()[2].enabled, true, 'a spell picked in an empty row starts ticked')
+else
+  print('supportspells_ui_test: sanitize dropped the test spells, row checks skipped')
+end
 
 if fails > 0 then error(fails .. ' failure(s)') end
 print('supportspells_ui_test: OK')

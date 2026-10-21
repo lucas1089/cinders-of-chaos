@@ -145,14 +145,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -200,14 +200,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -259,14 +259,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -313,7 +313,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "8 of 171", "4.7%"}}
+							rows = {{"Weapon", "8 of 165", "4.8%"}}
 						},
 						{
 							h = "Rules",
@@ -369,62 +369,6 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:rarity_axeskill",
-					name = "Axe Skill",
-					color = "#9fdc7f",
-					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "prefix",
-					f = {
-						group = "skill",
-						side = "prefix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{h = "Overview", p = {"Skill, prefix.", "Raises your axe skill while the item is worn."}},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:prefix"}
-					}
-				},
-				{
 					id = "mod:chaos_mod_block",
 					name = "Block Chance",
 					color = "#ff70c0",
@@ -461,7 +405,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Shield", "8 of 134", "6%"}}
+							rows = {{"Shield", "8 of 128", "6.3%"}}
 						},
 						{
 							h = "Rules",
@@ -511,8 +455,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 171", "2.3%"},
-								{"Other", "4 of 127", "3.1%"},
+								{"Weapon", "4 of 165", "2.4%"},
+								{"Other", "4 of 121", "3.3%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -560,7 +504,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Other", "4 of 127", "3.1%"}}
+							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
 						},
 						{
 							h = "Rules",
@@ -606,7 +550,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Other", "4 of 127", "3.1%"}}
+							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
 						},
 						{
 							h = "Rules",
@@ -656,8 +600,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 171", "2.3%"},
-								{"Other", "4 of 127", "3.1%"},
+								{"Weapon", "4 of 165", "2.4%"},
+								{"Other", "4 of 121", "3.3%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -705,67 +649,11 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "4 of 171", "2.3%"}, {"Other", "4 of 127", "3.1%"}}
+							rows = {{"Weapon", "4 of 165", "2.4%"}, {"Other", "4 of 121", "3.3%"}}
 						},
 						{
 							h = "Rules",
 							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most.", "A shocked monster takes 15% more damage from everyone for 4 s."}
-						},
-						{ref = "orbs:prefix"}
-					}
-				},
-				{
-					id = "mod:rarity_clubskill",
-					name = "Club Skill",
-					color = "#9fdc7f",
-					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "prefix",
-					f = {
-						group = "skill",
-						side = "prefix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{h = "Overview", p = {"Skill, prefix.", "Raises your club skill while the item is worn."}},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
 						},
 						{ref = "orbs:prefix"}
 					}
@@ -811,9 +699,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "4 of 145", "2.8%"},
-								{"Jewel", "4 of 172", "2.3%"},
-								{"Other", "4 of 127", "3.1%"}
+								{"Helmet", "4 of 139", "2.9%"},
+								{"Jewel", "4 of 166", "2.4%"},
+								{"Other", "4 of 121", "3.3%"}
 							}
 						},
 						{
@@ -865,14 +753,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -924,14 +812,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "8 of 171", "4.7%"},
-								{"Shield", "8 of 134", "6%"},
-								{"Helmet", "8 of 145", "5.5%"},
-								{"Armour", "8 of 125", "6.4%"},
-								{"Legs", "8 of 107", "7.5%"},
-								{"Boots", "8 of 94", "8.5%"},
-								{"Jewel", "8 of 172", "4.7%"},
-								{"Other", "8 of 127", "6.3%"}
+								{"Weapon", "8 of 165", "4.8%"},
+								{"Shield", "8 of 128", "6.3%"},
+								{"Helmet", "8 of 139", "5.8%"},
+								{"Armour", "8 of 119", "6.7%"},
+								{"Legs", "8 of 101", "7.9%"},
+								{"Boots", "8 of 88", "9.1%"},
+								{"Jewel", "8 of 166", "4.8%"},
+								{"Other", "8 of 121", "6.6%"}
 							}
 						},
 						{
@@ -1025,10 +913,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 134", "4.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Legs", "6 of 107", "5.6%"}
+								{"Shield", "6 of 128", "4.7%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Legs", "6 of 101", "5.9%"}
 							}
 						},
 						{
@@ -1079,9 +967,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 171", "2.3%"},
-								{"Jewel", "4 of 172", "2.3%"},
-								{"Other", "4 of 127", "3.1%"}
+								{"Weapon", "4 of 165", "2.4%"},
+								{"Jewel", "4 of 166", "2.4%"},
+								{"Other", "4 of 121", "3.3%"}
 							}
 						},
 						{
@@ -1132,8 +1020,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 171", "3.5%"},
-								{"Jewel", "6 of 172", "3.5%"},
+								{"Weapon", "6 of 165", "3.6%"},
+								{"Jewel", "6 of 166", "3.6%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -1186,14 +1074,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -1241,14 +1129,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -1305,65 +1193,6 @@ CodexData = {
 					}
 				},
 				{
-					id = "mod:rarity_distanceskill",
-					name = "Distance Skill",
-					color = "#9fdc7f",
-					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "prefix",
-					f = {
-						group = "skill",
-						side = "prefix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{
-							h = "Overview",
-							p = {"Skill, prefix.", "Raises your distance skill while the item is worn."}
-						},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:prefix"}
-					}
-				},
-				{
 					id = "mod:chaos_mod_dodge",
 					name = "Dodge",
 					color = "#ff70c0",
@@ -1404,11 +1233,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "5 of 134", "3.7%"},
-								{"Armour", "5 of 125", "4%"},
-								{"Legs", "5 of 107", "4.7%"},
-								{"Boots", "5 of 94", "5.3%"},
-								{"Other", "5 of 127", "3.9%"}
+								{"Shield", "5 of 128", "3.9%"},
+								{"Armour", "5 of 119", "4.2%"},
+								{"Legs", "5 of 101", "5%"},
+								{"Boots", "5 of 88", "5.7%"},
+								{"Other", "5 of 121", "4.1%"}
 							}
 						},
 						{
@@ -1460,14 +1289,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -1519,14 +1348,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -1620,14 +1449,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -1678,8 +1507,8 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 171", "2.3%"},
-								{"Jewel", "4 of 172", "2.3%"},
+								{"Weapon", "4 of 165", "2.4%"},
+								{"Jewel", "4 of 166", "2.4%"},
 								{"Quiver", "4 of 85", "4.7%"}
 							}
 						},
@@ -1732,14 +1561,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -1833,14 +1662,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -1887,7 +1716,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 171", "1.8%"}}
+							rows = {{"Weapon", "3 of 165", "1.8%"}}
 						},
 						{
 							h = "Rules",
@@ -1933,7 +1762,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 145", "2.8%"}, {"Jewel", "4 of 172", "2.3%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
 						},
 						{
 							h = "Rules",
@@ -2026,10 +1855,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "4 of 134", "3%"},
-								{"Helmet", "4 of 145", "2.8%"},
-								{"Armour", "4 of 125", "3.2%"},
-								{"Jewel", "4 of 172", "2.3%"}
+								{"Shield", "4 of 128", "3.1%"},
+								{"Helmet", "4 of 139", "2.9%"},
+								{"Armour", "4 of 119", "3.4%"},
+								{"Jewel", "4 of 166", "2.4%"}
 							}
 						},
 						{
@@ -2081,14 +1910,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -2182,14 +2011,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -2241,14 +2070,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -2297,14 +2126,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -2355,10 +2184,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "5 of 145", "3.4%"},
-								{"Legs", "5 of 107", "4.7%"},
-								{"Jewel", "5 of 172", "2.9%"},
-								{"Other", "5 of 127", "3.9%"}
+								{"Helmet", "5 of 139", "3.6%"},
+								{"Legs", "5 of 101", "5%"},
+								{"Jewel", "5 of 166", "3%"},
+								{"Other", "5 of 121", "4.1%"}
 							}
 						},
 						{
@@ -2406,9 +2235,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 171", "2.9%"},
-								{"Shield", "5 of 134", "3.7%"},
-								{"Jewel", "5 of 172", "2.9%"}
+								{"Weapon", "5 of 165", "3%"},
+								{"Shield", "5 of 128", "3.9%"},
+								{"Jewel", "5 of 166", "3%"}
 							}
 						},
 						{
@@ -2459,11 +2288,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 134", "4.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Legs", "6 of 107", "5.6%"},
-								{"Jewel", "6 of 172", "3.5%"}
+								{"Shield", "6 of 128", "4.7%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Legs", "6 of 101", "5.9%"},
+								{"Jewel", "6 of 166", "3.6%"}
 							}
 						},
 						{
@@ -2514,9 +2343,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 171", "2.9%"},
-								{"Jewel", "5 of 172", "2.9%"},
-								{"Other", "5 of 127", "3.9%"},
+								{"Weapon", "5 of 165", "3%"},
+								{"Jewel", "5 of 166", "3%"},
+								{"Other", "5 of 121", "4.1%"},
 								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
@@ -2569,14 +2398,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -2628,14 +2457,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -2683,14 +2512,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -2742,14 +2571,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -2843,14 +2672,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -2897,7 +2726,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 145", "2.8%"}, {"Jewel", "4 of 172", "2.3%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
 						},
 						{
 							h = "Rules",
@@ -2948,14 +2777,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -3007,14 +2836,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 171", "3.5%"},
-								{"Shield", "6 of 134", "4.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Legs", "6 of 107", "5.6%"},
-								{"Boots", "6 of 94", "6.4%"},
-								{"Jewel", "6 of 172", "3.5%"},
-								{"Other", "6 of 127", "4.7%"}
+								{"Weapon", "6 of 165", "3.6%"},
+								{"Shield", "6 of 128", "4.7%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Legs", "6 of 101", "5.9%"},
+								{"Boots", "6 of 88", "6.8%"},
+								{"Jewel", "6 of 166", "3.6%"},
+								{"Other", "6 of 121", "5%"}
 							}
 						},
 						{
@@ -3065,9 +2894,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 171", "3.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Jewel", "6 of 172", "3.5%"},
+								{"Weapon", "6 of 165", "3.6%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Jewel", "6 of 166", "3.6%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -3117,14 +2946,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -3172,9 +3001,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "4 of 145", "2.8%"},
-								{"Armour", "4 of 125", "3.2%"},
-								{"Jewel", "4 of 172", "2.3%"}
+								{"Helmet", "4 of 139", "2.9%"},
+								{"Armour", "4 of 119", "3.4%"},
+								{"Jewel", "4 of 166", "2.4%"}
 							}
 						},
 						{
@@ -3226,14 +3055,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 171", "3.5%"},
-								{"Shield", "6 of 134", "4.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Legs", "6 of 107", "5.6%"},
-								{"Boots", "6 of 94", "6.4%"},
-								{"Jewel", "6 of 172", "3.5%"},
-								{"Other", "6 of 127", "4.7%"}
+								{"Weapon", "6 of 165", "3.6%"},
+								{"Shield", "6 of 128", "4.7%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Legs", "6 of 101", "5.9%"},
+								{"Boots", "6 of 88", "6.8%"},
+								{"Jewel", "6 of 166", "3.6%"},
+								{"Other", "6 of 121", "5%"}
 							}
 						},
 						{
@@ -3284,9 +3113,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "5 of 171", "2.9%"},
-								{"Jewel", "5 of 172", "2.9%"},
-								{"Other", "5 of 127", "3.9%"},
+								{"Weapon", "5 of 165", "3%"},
+								{"Jewel", "5 of 166", "3%"},
+								{"Other", "5 of 121", "4.1%"},
 								{"Quiver", "5 of 85", "5.9%"}
 							}
 						},
@@ -3338,9 +3167,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "6 of 171", "3.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Jewel", "6 of 172", "3.5%"},
+								{"Weapon", "6 of 165", "3.6%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Jewel", "6 of 166", "3.6%"},
 								{"Quiver", "6 of 85", "7.1%"}
 							}
 						},
@@ -3389,10 +3218,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 134", "4.5%"},
-								{"Helmet", "6 of 145", "4.1%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Jewel", "6 of 172", "3.5%"}
+								{"Shield", "6 of 128", "4.7%"},
+								{"Helmet", "6 of 139", "4.3%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Jewel", "6 of 166", "3.6%"}
 							}
 						},
 						{
@@ -3440,10 +3269,66 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "4 of 134", "3%"},
-								{"Helmet", "4 of 145", "2.8%"},
-								{"Armour", "4 of 125", "3.2%"},
-								{"Jewel", "4 of 172", "2.3%"}
+								{"Shield", "4 of 128", "3.1%"},
+								{"Helmet", "4 of 139", "2.9%"},
+								{"Armour", "4 of 119", "3.4%"},
+								{"Jewel", "4 of 166", "2.4%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:rarity_swordskill",
+					name = "Melee Skill",
+					color = "#9fdc7f",
+					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
+					group = "skill",
+					side = "prefix",
+					f = {
+						group = "skill",
+						side = "prefix",
+						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
+					},
+					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
+					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
+					sections = {
+						{h = "Overview", p = {"Skill, prefix.", "Raises your melee skill while the item is worn."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1-2", "100"},
+								{"T2", "15+", "+2-3", "90"},
+								{"T3", "30+", "+2-4", "80"},
+								{"T4", "50+", "+3-5", "65"},
+								{"T5", "70+", "+4-6", "50"},
+								{"T6", "95+", "+5-8", "35"},
+								{"T7", "120+", "+6-9", "22"},
+								{"T8", "140+", "+7-10", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Any gear."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -3495,14 +3380,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -3549,7 +3434,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Boots", "10 of 94", "10.6%"}}
+							rows = {{"Boots", "10 of 88", "11.4%"}}
 						},
 						{
 							h = "Rules",
@@ -3600,14 +3485,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -3658,9 +3543,65 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "4 of 171", "2.3%"},
-								{"Jewel", "4 of 172", "2.3%"},
+								{"Weapon", "4 of 165", "2.4%"},
+								{"Jewel", "4 of 166", "2.4%"},
 								{"Quiver", "4 of 85", "4.7%"}
+							}
+						},
+						{
+							h = "Rules",
+							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
+						},
+						{ref = "orbs:prefix"}
+					}
+				},
+				{
+					id = "mod:rarity_distanceskill",
+					name = "Ranged Skill",
+					color = "#9fdc7f",
+					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
+					group = "skill",
+					side = "prefix",
+					f = {
+						group = "skill",
+						side = "prefix",
+						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
+					},
+					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
+					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
+					sections = {
+						{h = "Overview", p = {"Skill, prefix.", "Raises your ranged skill while the item is worn."}},
+						{
+							h = "Tiers",
+							cols = {"Tier", "Item level", "Value", "Tier weight"},
+							w = {14, 22, 40, 24},
+							rows = {
+								{"T1", "1+", "+1-2", "100"},
+								{"T2", "15+", "+2-3", "90"},
+								{"T3", "30+", "+2-4", "80"},
+								{"T4", "50+", "+3-5", "65"},
+								{"T5", "70+", "+4-6", "50"},
+								{"T6", "95+", "+5-8", "35"},
+								{"T7", "120+", "+6-9", "22"},
+								{"T8", "140+", "+7-10", "12"}
+							},
+							tiers = true
+						},
+						{h = "Rolls on", p = {"Any gear."}},
+						{
+							h = "Chance per roll on a fresh item",
+							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
+							cols = {"Kind", "Weight", "Chance"},
+							w = {30, 40, 30},
+							rows = {
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -3707,7 +3648,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "4 of 145", "2.8%"}, {"Jewel", "4 of 172", "2.3%"}}
+							rows = {{"Helmet", "4 of 139", "2.9%"}, {"Jewel", "4 of 166", "2.4%"}}
 						},
 						{
 							h = "Rules",
@@ -3753,7 +3694,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Shield", "5 of 134", "3.7%"}, {"Armour", "5 of 125", "4%"}}
+							rows = {{"Shield", "5 of 128", "3.9%"}, {"Armour", "5 of 119", "4.2%"}}
 						},
 						{
 							h = "Rules",
@@ -3804,70 +3745,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
-							}
-						},
-						{
-							h = "Rules",
-							p = {"A prefix: a rarity allows only so many prefixes and suffixes (see Basics > Rarity).", "An item carries each modifier once at most."}
-						},
-						{ref = "orbs:prefix"}
-					}
-				},
-				{
-					id = "mod:rarity_swordskill",
-					name = "Sword Skill",
-					color = "#9fdc7f",
-					sub = "Prefix, any gear. +1-2 (T1) to +7-10 (T8)",
-					group = "skill",
-					side = "prefix",
-					f = {
-						group = "skill",
-						side = "prefix",
-						kind = {"weapon", "shield", "helmet", "armor", "legs", "boots", "jewel", "other"}
-					},
-					tiers = {{1, 2}, {2, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 8}, {6, 9}, {7, 10}},
-					tv = {"+1-2", "+2-3", "+2-4", "+3-5", "+4-6", "+5-8", "+6-9", "+7-10"},
-					sections = {
-						{h = "Overview", p = {"Skill, prefix.", "Raises your sword skill while the item is worn."}},
-						{
-							h = "Tiers",
-							cols = {"Tier", "Item level", "Value", "Tier weight"},
-							w = {14, 22, 40, 24},
-							rows = {
-								{"T1", "1+", "+1-2", "100"},
-								{"T2", "15+", "+2-3", "90"},
-								{"T3", "30+", "+2-4", "80"},
-								{"T4", "50+", "+3-5", "65"},
-								{"T5", "70+", "+4-6", "50"},
-								{"T6", "95+", "+5-8", "35"},
-								{"T7", "120+", "+6-9", "22"},
-								{"T8", "140+", "+7-10", "12"}
-							},
-							tiers = true
-						},
-						{h = "Rolls on", p = {"Any gear."}},
-						{
-							h = "Chance per roll on a fresh item",
-							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
-							cols = {"Kind", "Weight", "Chance"},
-							w = {30, 40, 30},
-							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -3915,9 +3800,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "6 of 134", "4.5%"},
-								{"Armour", "6 of 125", "4.8%"},
-								{"Legs", "6 of 107", "5.6%"}
+								{"Shield", "6 of 128", "4.7%"},
+								{"Armour", "6 of 119", "5%"},
+								{"Legs", "6 of 101", "5.9%"}
 							}
 						},
 						{
@@ -3964,7 +3849,7 @@ CodexData = {
 							p = {"Among every modifier an item of that kind may roll, powers not counted (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Helmet", "3 of 145", "2.1%"}, {"Jewel", "3 of 172", "1.7%"}}
+							rows = {{"Helmet", "3 of 139", "2.2%"}, {"Jewel", "3 of 166", "1.8%"}}
 						},
 						{
 							h = "Rules",
@@ -4015,14 +3900,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 171", "1.8%"},
-								{"Shield", "3 of 134", "2.2%"},
-								{"Helmet", "3 of 145", "2.1%"},
-								{"Armour", "3 of 125", "2.4%"},
-								{"Legs", "3 of 107", "2.8%"},
-								{"Boots", "3 of 94", "3.2%"},
-								{"Jewel", "3 of 172", "1.7%"},
-								{"Other", "3 of 127", "2.4%"}
+								{"Weapon", "3 of 165", "1.8%"},
+								{"Shield", "3 of 128", "2.3%"},
+								{"Helmet", "3 of 139", "2.2%"},
+								{"Armour", "3 of 119", "2.5%"},
+								{"Legs", "3 of 101", "3%"},
+								{"Boots", "3 of 88", "3.4%"},
+								{"Jewel", "3 of 166", "1.8%"},
+								{"Other", "3 of 121", "2.5%"}
 							}
 						},
 						{
@@ -4070,14 +3955,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "2 of 171", "1.2%"},
-								{"Shield", "2 of 134", "1.5%"},
-								{"Helmet", "2 of 145", "1.4%"},
-								{"Armour", "2 of 125", "1.6%"},
-								{"Legs", "2 of 107", "1.9%"},
-								{"Boots", "2 of 94", "2.1%"},
-								{"Jewel", "2 of 172", "1.2%"},
-								{"Other", "2 of 127", "1.6%"}
+								{"Weapon", "2 of 165", "1.2%"},
+								{"Shield", "2 of 128", "1.6%"},
+								{"Helmet", "2 of 139", "1.4%"},
+								{"Armour", "2 of 119", "1.7%"},
+								{"Legs", "2 of 101", "2%"},
+								{"Boots", "2 of 88", "2.3%"},
+								{"Jewel", "2 of 166", "1.2%"},
+								{"Other", "2 of 121", "1.7%"}
 							}
 						},
 						{
@@ -4129,14 +4014,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -4188,14 +4073,14 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "1 of 171", "0.6%"},
-								{"Shield", "1 of 134", "0.7%"},
-								{"Helmet", "1 of 145", "0.7%"},
-								{"Armour", "1 of 125", "0.8%"},
-								{"Legs", "1 of 107", "0.9%"},
-								{"Boots", "1 of 94", "1.1%"},
-								{"Jewel", "1 of 172", "0.6%"},
-								{"Other", "1 of 127", "0.8%"}
+								{"Weapon", "1 of 165", "0.6%"},
+								{"Shield", "1 of 128", "0.8%"},
+								{"Helmet", "1 of 139", "0.7%"},
+								{"Armour", "1 of 119", "0.8%"},
+								{"Legs", "1 of 101", "1%"},
+								{"Boots", "1 of 88", "1.1%"},
+								{"Jewel", "1 of 166", "0.6%"},
+								{"Other", "1 of 121", "0.8%"}
 							}
 						},
 						{
@@ -4303,7 +4188,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 191", "1.6%"}, {"Jewel", "3 of 198", "1.5%"}}
+							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4353,9 +4238,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 191", "1.6%"},
-								{"Jewel", "3 of 198", "1.5%"},
-								{"Other", "3 of 139", "2.2%"}
+								{"Weapon", "3 of 185", "1.6%"},
+								{"Jewel", "3 of 192", "1.6%"},
+								{"Other", "3 of 133", "2.3%"}
 							}
 						},
 						{
@@ -4403,9 +4288,9 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Weapon", "3 of 191", "1.6%"},
-								{"Helmet", "3 of 156", "1.9%"},
-								{"Jewel", "3 of 198", "1.5%"}
+								{"Weapon", "3 of 185", "1.6%"},
+								{"Helmet", "3 of 150", "2%"},
+								{"Jewel", "3 of 192", "1.6%"}
 							}
 						},
 						{
@@ -4452,7 +4337,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 191", "1.6%"}, {"Jewel", "3 of 198", "1.5%"}}
+							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4498,7 +4383,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 191", "1.6%"}, {"Jewel", "3 of 198", "1.5%"}}
+							rows = {{"Weapon", "3 of 185", "1.6%"}, {"Jewel", "3 of 192", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4544,7 +4429,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "2 of 191", "1%"}}
+							rows = {{"Weapon", "2 of 185", "1.1%"}}
 						},
 						{
 							h = "Rules",
@@ -4591,10 +4476,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Armour", "3 of 136", "2.2%"},
-								{"Legs", "3 of 118", "2.5%"},
-								{"Boots", "3 of 103", "2.9%"},
-								{"Jewel", "3 of 198", "1.5%"}
+								{"Armour", "3 of 130", "2.3%"},
+								{"Legs", "3 of 112", "2.7%"},
+								{"Boots", "3 of 97", "3.1%"},
+								{"Jewel", "3 of 192", "1.6%"}
 							}
 						},
 						{
@@ -4645,11 +4530,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "3 of 139", "2.2%"},
-								{"Armour", "3 of 136", "2.2%"},
-								{"Legs", "3 of 118", "2.5%"},
-								{"Boots", "3 of 103", "2.9%"},
-								{"Other", "3 of 139", "2.2%"}
+								{"Shield", "3 of 133", "2.3%"},
+								{"Armour", "3 of 130", "2.3%"},
+								{"Legs", "3 of 112", "2.7%"},
+								{"Boots", "3 of 97", "3.1%"},
+								{"Other", "3 of 133", "2.3%"}
 							}
 						},
 						{
@@ -4700,10 +4585,10 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "3 of 156", "1.9%"},
-								{"Boots", "3 of 103", "2.9%"},
-								{"Jewel", "3 of 198", "1.5%"},
-								{"Other", "3 of 139", "2.2%"}
+								{"Helmet", "3 of 150", "2%"},
+								{"Boots", "3 of 97", "3.1%"},
+								{"Jewel", "3 of 192", "1.6%"},
+								{"Other", "3 of 133", "2.3%"}
 							}
 						},
 						{
@@ -4754,11 +4639,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Shield", "2 of 139", "1.4%"},
-								{"Helmet", "2 of 156", "1.3%"},
-								{"Armour", "2 of 136", "1.5%"},
-								{"Legs", "2 of 118", "1.7%"},
-								{"Jewel", "2 of 198", "1%"}
+								{"Shield", "2 of 133", "1.5%"},
+								{"Helmet", "2 of 150", "1.3%"},
+								{"Armour", "2 of 130", "1.5%"},
+								{"Legs", "2 of 112", "1.8%"},
+								{"Jewel", "2 of 192", "1%"}
 							}
 						},
 						{
@@ -4805,7 +4690,7 @@ CodexData = {
 							p = {"Among every modifier a Legendary item of that kind may roll (weights):"},
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
-							rows = {{"Weapon", "3 of 191", "1.6%"}}
+							rows = {{"Weapon", "3 of 185", "1.6%"}}
 						},
 						{
 							h = "Rules",
@@ -4855,11 +4740,11 @@ CodexData = {
 							cols = {"Kind", "Weight", "Chance"},
 							w = {30, 40, 30},
 							rows = {
-								{"Helmet", "3 of 156", "1.9%"},
-								{"Armour", "3 of 136", "2.2%"},
-								{"Legs", "3 of 118", "2.5%"},
-								{"Jewel", "3 of 198", "1.5%"},
-								{"Other", "3 of 139", "2.2%"}
+								{"Helmet", "3 of 150", "2%"},
+								{"Armour", "3 of 130", "2.3%"},
+								{"Legs", "3 of 112", "2.7%"},
+								{"Jewel", "3 of 192", "1.6%"},
+								{"Other", "3 of 133", "2.3%"}
 							}
 						},
 						{
@@ -5740,7 +5625,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5783,7 +5668,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5826,7 +5711,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5869,7 +5754,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5912,7 +5797,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5955,7 +5840,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5998,7 +5883,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect)."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -6129,7 +6014,7 @@ CodexData = {
 					id = "unique:11395",
 					name = "Bloodmoon Edge",
 					color = "#ff9c3a",
-					sub = "Sword, level 90. Attack 44, Defense 22, Critical Hit: chance +5%, damage +25%, Sword +3",
+					sub = "Sword, level 90. Attack 44, Defense 22, Critical Hit: chance +5%, damage +25%, Melee +3",
 					f = {kind = {"weapon"}, level = 90, source = "monster"},
 					sections = {
 						{
@@ -6138,7 +6023,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 44", "Defense 22", "Critical Hit: chance +5%, damage +25%", "Sword +3"}
+							p = {"Attack 44", "Defense 22", "Critical Hit: chance +5%, damage +25%", "Melee +3"}
 						},
 						{
 							h = "Item",
@@ -6216,7 +6101,7 @@ CodexData = {
 					id = "unique:27658",
 					name = "Bloodsworn Greataxe",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 58, Defense 30, Axe +3, Critical Hit: chance +5%, damage +25%",
+					sub = "weapon, level 300. Attack 58, Defense 30, Melee +3, Critical Hit: chance +5%, damage +25%",
 					f = {kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
@@ -6225,7 +6110,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 58", "Defense 30", "Axe +3", "Critical Hit: chance +5%, damage +25%"}
+							p = {"Attack 58", "Defense 30", "Melee +3", "Critical Hit: chance +5%, damage +25%"}
 						},
 						{
 							h = "Item",
@@ -6372,14 +6257,14 @@ CodexData = {
 					id = "unique:25410",
 					name = "Bloodsworn Visage",
 					color = "#ff9c3a",
-					sub = "Helmet, level 300. Armor 11, Axe +2, Life Leech: chance +4%, amount +4%",
+					sub = "Helmet, level 300. Armor 11, Melee +2, Life Leech: chance +4%, amount +4%",
 					f = {kind = {"helmet"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A face of hammered iron that smiles only when the wearer bleeds. (Requires level 300.)"}
 						},
-						{h = "Stats", p = {"Armor 11", "Axe +2", "Life Leech: chance +4%, amount +4%"}},
+						{h = "Stats", p = {"Armor 11", "Melee +2", "Life Leech: chance +4%, amount +4%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6410,7 +6295,7 @@ CodexData = {
 					id = "unique:7379",
 					name = "Bonegrinder",
 					color = "#ff9c3a",
-					sub = "Club, level 90. Attack 58, Defense 18, Club +5, Critical Hit: chance +5%, damage +25%",
+					sub = "Club, level 90. Attack 58, Defense 18, Melee +5, Critical Hit: chance +5%, damage +25%",
 					f = {kind = {"weapon"}, level = 90, source = "monster"},
 					sections = {
 						{
@@ -6419,7 +6304,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 58", "Defense 18", "Club +5", "Critical Hit: chance +5%, damage +25%"}
+							p = {"Attack 58", "Defense 18", "Melee +5", "Critical Hit: chance +5%, damage +25%"}
 						},
 						{
 							h = "Item",
@@ -6624,7 +6509,7 @@ CodexData = {
 					id = "unique:8925",
 					name = "Cinderbrand Axe",
 					color = "#ff9c3a",
-					sub = "Axe, level 130. Attack 58, Defense 30, Extra Defense +3, Axe +5, Fire Absorb +10%",
+					sub = "Axe, level 130. Attack 58, Defense 30, Extra Defense +3, Melee +5, Fire Absorb +10%",
 					f = {kind = {"weapon"}, level = 130, source = "boss"},
 					sections = {
 						{
@@ -6633,7 +6518,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 58", "Defense 30", "Extra Defense +3", "Axe +5", "Fire Absorb +10%"}
+							p = {"Attack 58", "Defense 30", "Extra Defense +3", "Melee +5", "Fire Absorb +10%"}
 						},
 						{
 							h = "Item",
@@ -6666,14 +6551,14 @@ CodexData = {
 					id = "unique:10314",
 					name = "Cinderclaw Band",
 					color = "#ff9c3a",
-					sub = "Ring, level 80. Axe +3, Club +3, Fire Absorb +8%, Magic Level +1, Sword +3",
+					sub = "Ring, level 80. Melee +3, Melee +3, Fire Absorb +8%, Magic Level +1, Melee +3",
 					f = {kind = {"jewel"}, level = 80, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A claw of fire clamped around the finger. (Requires level 80.) Part of the Embers of Aranoth set."}
 						},
-						{h = "Stats", p = {"Axe +3", "Club +3", "Fire Absorb +8%", "Magic Level +1", "Sword +3"}},
+						{h = "Stats", p = {"Melee +3", "Melee +3", "Fire Absorb +8%", "Magic Level +1", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -6708,7 +6593,7 @@ CodexData = {
 					id = "unique:2123",
 					name = "Cinderheart Signet",
 					color = "#ff9c3a",
-					sub = "Ring, level 1000. Axe +3, Club +3, Critical Hit: chance +6%, damage +25%, Distance +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Sword +3",
+					sub = "Ring, level 1000. Melee +3, Melee +3, Critical Hit: chance +6%, damage +25%, Ranged +3, Fire Absorb +12%, Fist +3, Life Leech: chance +6%, amount +6%, Magic Level +3, Physical Absorb +5%, Melee +3",
 					f = {kind = {"jewel"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -6717,7 +6602,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Axe +3", "Club +3", "Critical Hit: chance +6%, damage +25%", "Distance +3", "Fire Absorb +12%", "Fist +3", "Life Leech: chance +6%, amount +6%", "Magic Level +3", "Physical Absorb +5%", "Sword +3"}
+							p = {"Melee +3", "Melee +3", "Critical Hit: chance +6%, damage +25%", "Ranged +3", "Fire Absorb +12%", "Fist +3", "Life Leech: chance +6%, amount +6%", "Magic Level +3", "Physical Absorb +5%", "Melee +3"}
 						},
 						{
 							h = "Item",
@@ -7022,11 +6907,11 @@ CodexData = {
 					id = "unique:7462",
 					name = "Crown of Cinders",
 					color = "#ff9c3a",
-					sub = "Helmet, level 100. Armor 14, Axe +2, Fire Absorb +8%",
+					sub = "Helmet, level 100. Armor 14, Melee +2, Fire Absorb +8%",
 					f = {kind = {"helmet"}, level = 100, source = "monster"},
 					sections = {
 						{h = "Description", p = {"The king died, the crown kept burning. (Requires level 100.)"}},
-						{h = "Stats", p = {"Armor 14", "Axe +2", "Fire Absorb +8%"}},
+						{h = "Stats", p = {"Armor 14", "Melee +2", "Fire Absorb +8%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7061,14 +6946,14 @@ CodexData = {
 					id = "unique:27230",
 					name = "Doomtide Longbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Distance +6",
+					sub = "Distance weapon, level 110. Attack 75, Range 6, Death Absorb +6%, Ranged +6",
 					f = {kind = {"weapon"}, level = 110, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Strung with something that was once alive; it hums at the dead. (Requires level 110.)"}
 						},
-						{h = "Stats", p = {"Attack 75", "Range 6", "Death Absorb +6%", "Distance +6"}},
+						{h = "Stats", p = {"Attack 75", "Range 6", "Death Absorb +6%", "Ranged +6"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7141,14 +7026,14 @@ CodexData = {
 					id = "unique:28112",
 					name = "Duskstalker Cowl",
 					color = "#ff9c3a",
-					sub = "Helmet, level 300. Armor 12, Fist +2, Sword +1",
+					sub = "Helmet, level 300. Armor 12, Fist +2, Melee +1",
 					f = {kind = {"helmet"}, level = 300, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A hood that swallows the light around the face. (Requires level 300.)"}
 						},
-						{h = "Stats", p = {"Armor 12", "Fist +2", "Sword +1"}},
+						{h = "Stats", p = {"Armor 12", "Fist +2", "Melee +1"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7179,7 +7064,7 @@ CodexData = {
 					id = "unique:7404",
 					name = "Duskstalker Fang",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 42, Defense 12, Critical Hit: chance +3%, damage +15%, Sword +2",
+					sub = "weapon, level 300. Attack 42, Defense 12, Critical Hit: chance +3%, damage +15%, Melee +2",
 					f = {kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
@@ -7188,7 +7073,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 42", "Defense 12", "Critical Hit: chance +3%, damage +15%", "Sword +2"}
+							p = {"Attack 42", "Defense 12", "Critical Hit: chance +3%, damage +15%", "Melee +2"}
 						},
 						{
 							h = "Item",
@@ -7262,7 +7147,7 @@ CodexData = {
 					id = "unique:7418",
 					name = "Duskstalker Sting",
 					color = "#ff9c3a",
-					sub = "weapon, level 300. Attack 44, Defense 20, Life Leech: chance +3%, amount +4%, Sword +2",
+					sub = "weapon, level 300. Attack 44, Defense 20, Life Leech: chance +3%, amount +4%, Melee +2",
 					f = {kind = {"other"}, level = 300, source = "boss"},
 					sections = {
 						{
@@ -7271,7 +7156,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 44", "Defense 20", "Life Leech: chance +3%, amount +4%", "Sword +2"}
+							p = {"Attack 44", "Defense 20", "Life Leech: chance +3%, amount +4%", "Melee +2"}
 						},
 						{
 							h = "Item",
@@ -7513,7 +7398,7 @@ CodexData = {
 					id = "unique:2440",
 					name = "Executioner's Reckoning",
 					color = "#ff9c3a",
-					sub = "Axe, level 80. Attack 50, Defense 18, Axe +3, Critical Hit: chance +7%, damage +30%",
+					sub = "Axe, level 80. Attack 50, Defense 18, Melee +3, Critical Hit: chance +7%, damage +30%",
 					f = {kind = {"weapon"}, level = 80, source = "monster"},
 					sections = {
 						{
@@ -7522,7 +7407,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 50", "Defense 18", "Axe +3", "Critical Hit: chance +7%, damage +30%"}
+							p = {"Attack 50", "Defense 18", "Melee +3", "Critical Hit: chance +7%, damage +30%"}
 						},
 						{
 							h = "Item",
@@ -7558,7 +7443,7 @@ CodexData = {
 					id = "unique:2171",
 					name = "Eye of the Unbroken Storm",
 					color = "#ff9c3a",
-					sub = "Amulet, level 1000. Armor 4, Critical Hit: chance +4%, damage +15%, Distance +5, Energy Absorb +12%, Magic Level +4",
+					sub = "Amulet, level 1000. Armor 4, Critical Hit: chance +4%, damage +15%, Ranged +5, Energy Absorb +12%, Magic Level +4",
 					f = {kind = {"jewel"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -7567,7 +7452,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Armor 4", "Critical Hit: chance +4%, damage +15%", "Distance +5", "Energy Absorb +12%", "Magic Level +4"}
+							p = {"Armor 4", "Critical Hit: chance +4%, damage +15%", "Ranged +5", "Energy Absorb +12%", "Magic Level +4"}
 						},
 						{
 							h = "Item",
@@ -7680,7 +7565,7 @@ CodexData = {
 					id = "unique:27474",
 					name = "Gallows Arbalest",
 					color = "#ff9c3a",
-					sub = "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Distance +3",
+					sub = "weapon, level 600. Attack 78, Range 6, Critical Hit: chance +4%, damage +15%, Ranged +3",
 					f = {kind = {"other"}, level = 600, source = "boss"},
 					sections = {
 						{
@@ -7689,7 +7574,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Distance +3"}
+							p = {"Attack 78", "Range 6", "Critical Hit: chance +4%, damage +15%", "Ranged +3"}
 						},
 						{
 							h = "Item",
@@ -7721,14 +7606,14 @@ CodexData = {
 					id = "unique:15407",
 					name = "Gallows Coat",
 					color = "#ff9c3a",
-					sub = "Body armour, level 600. Armor 16, Distance +2, Physical Absorb +3%",
+					sub = "Body armour, level 600. Armor 16, Ranged +2, Physical Absorb +3%",
 					f = {kind = {"armor"}, level = 600, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Long, dark and quiet; the pockets hold one bolt each. (Requires level 600.)"}
 						},
-						{h = "Stats", p = {"Armor 16", "Distance +2", "Physical Absorb +3%"}},
+						{h = "Stats", p = {"Armor 16", "Ranged +2", "Physical Absorb +3%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7763,14 +7648,14 @@ CodexData = {
 					id = "unique:29470",
 					name = "Gallows Hood",
 					color = "#ff9c3a",
-					sub = "Helmet, level 600. Armor 13, Distance +2",
+					sub = "Helmet, level 600. Armor 13, Ranged +2",
 					f = {kind = {"helmet"}, level = 600, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The hood the hangman wore so the condemned would not see his face. (Requires level 600.)"}
 						},
-						{h = "Stats", p = {"Armor 13", "Distance +2"}},
+						{h = "Stats", p = {"Armor 13", "Ranged +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -7839,14 +7724,14 @@ CodexData = {
 					id = "unique:8849",
 					name = "Gallowsbolt Crossbow",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 60. Range 5, Distance +3",
+					sub = "Distance weapon, level 60. Range 5, Ranged +3",
 					f = {kind = {"weapon"}, level = 60, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A hangman's design: it only needs one shot. (Requires level 60.)"}
 						},
-						{h = "Stats", p = {"Range 5", "Distance +3"}},
+						{h = "Stats", p = {"Range 5", "Ranged +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8010,7 +7895,7 @@ CodexData = {
 					id = "unique:10301",
 					name = "Harvester of Sorrows",
 					color = "#ff9c3a",
-					sub = "Axe, level 100. Attack 50, Defense 14, Axe +4, Mana Leech: chance +7%, amount +6%",
+					sub = "Axe, level 100. Attack 50, Defense 14, Melee +4, Mana Leech: chance +7%, amount +6%",
 					f = {kind = {"weapon"}, level = 100, source = "monster"},
 					sections = {
 						{
@@ -8019,7 +7904,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 50", "Defense 14", "Axe +4", "Mana Leech: chance +7%, amount +6%"}
+							p = {"Attack 50", "Defense 14", "Melee +4", "Mana Leech: chance +7%, amount +6%"}
 						},
 						{
 							h = "Item",
@@ -8052,7 +7937,7 @@ CodexData = {
 					items = {10301}
 				},
 				{
-					id = "unique:10218",
+					id = "unique:41641",
 					name = "Heart of Cinders",
 					color = "#ff9c3a",
 					sub = "Amulet, level 80. Fire Absorb +18%, Physical Absorb +6%",
@@ -8091,10 +7976,10 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 72 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {10218}
+					items = {41641}
 				},
 				{
-					id = "unique:10221",
+					id = "unique:41642",
 					name = "Heartbleed Pendant",
 					color = "#ff9c3a",
 					sub = "Amulet, level 90. Critical Hit: chance +4%, damage +20%, Life Leech: chance +5%, amount +6%",
@@ -8136,20 +8021,20 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {10221}
+					items = {41642}
 				},
 				{
 					id = "unique:19390",
 					name = "Hellspear of the Damned",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 50. Attack 28, Range 4, Distance +2",
+					sub = "Distance weapon, level 50. Attack 28, Range 4, Ranged +2",
 					f = {kind = {"weapon"}, level = 50, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Hurled by the damned at those who would leave. (Requires level 50.)"}
 						},
-						{h = "Stats", p = {"Attack 28", "Range 4", "Distance +2"}},
+						{h = "Stats", p = {"Attack 28", "Range 4", "Ranged +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8184,13 +8069,13 @@ CodexData = {
 					id = "unique:16111",
 					name = "Hellspite Arbalest",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Distance +4",
+					sub = "Distance weapon, level 100. Attack 80, Range 6, Critical Hit: chance +4%, damage +20%, Ranged +4",
 					f = {kind = {"weapon"}, level = 100, season = "season", source = "monster"},
 					sections = {
 						{h = "Description", p = {"Its bolts scream on the way down. (Requires level 100.)"}},
 						{
 							h = "Stats",
-							p = {"Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Distance +4"}
+							p = {"Attack 80", "Range 6", "Critical Hit: chance +4%, damage +20%", "Ranged +4"}
 						},
 						{
 							h = "Item",
@@ -8424,14 +8309,14 @@ CodexData = {
 					id = "unique:24718",
 					name = "Hollowpack Mask",
 					color = "#ff9c3a",
-					sub = "Helmet, level 250. Armor 9, Death Absorb +3%, Distance +1",
+					sub = "Helmet, level 250. Armor 9, Death Absorb +3%, Ranged +1",
 					f = {kind = {"helmet"}, level = 250, source = "boss"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A wolf's skull for a helm. The pack smells you as kin. (Requires level 250.)"}
 						},
-						{h = "Stats", p = {"Armor 9", "Death Absorb +3%", "Distance +1"}},
+						{h = "Stats", p = {"Armor 9", "Death Absorb +3%", "Ranged +1"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8462,14 +8347,14 @@ CodexData = {
 					id = "unique:21693",
 					name = "Hornbinder Ring",
 					color = "#ff9c3a",
-					sub = "Ring, level 60. Armor 2, Club +3",
+					sub = "Ring, level 60. Armor 2, Melee +3",
 					f = {kind = {"jewel"}, level = 60, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"A horn-ring from something that did not want to give it up. (Requires level 60.)"}
 						},
-						{h = "Stats", p = {"Armor 2", "Club +3"}},
+						{h = "Stats", p = {"Armor 2", "Melee +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8504,14 +8389,14 @@ CodexData = {
 					id = "unique:2496",
 					name = "Hornsworn Helm",
 					color = "#ff9c3a",
-					sub = "Helmet, level 70. Armor 14, Axe +2, Club +2, Fire Absorb +8%, Sword +2",
+					sub = "Helmet, level 70. Armor 14, Melee +2, Melee +2, Fire Absorb +8%, Melee +2",
 					f = {kind = {"helmet"}, level = 70, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Sworn to a master who answers to no one above. (Requires level 70.) Part of the Embers of Aranoth set."}
 						},
-						{h = "Stats", p = {"Armor 14", "Axe +2", "Club +2", "Fire Absorb +8%", "Sword +2"}},
+						{h = "Stats", p = {"Armor 14", "Melee +2", "Melee +2", "Fire Absorb +8%", "Melee +2"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -8588,7 +8473,7 @@ CodexData = {
 					id = "unique:3961",
 					name = "Lichfang Staff",
 					color = "#ff9c3a",
-					sub = "Club, level 70. Attack 36, Defense 30, Extra Defense +2, Club +2, Magic Level +2",
+					sub = "Club, level 70. Attack 36, Defense 30, Extra Defense +2, Melee +2, Magic Level +2",
 					f = {kind = {"weapon"}, level = 70, source = "monster"},
 					sections = {
 						{
@@ -8597,7 +8482,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 36", "Defense 30", "Extra Defense +2", "Club +2", "Magic Level +2"}
+							p = {"Attack 36", "Defense 30", "Extra Defense +2", "Melee +2", "Magic Level +2"}
 						},
 						{
 							h = "Item",
@@ -8675,13 +8560,13 @@ CodexData = {
 					id = "unique:25418",
 					name = "Mawmaker",
 					color = "#ff9c3a",
-					sub = "Club, level 110. Attack 62, Defense 30, Club +4, Life Leech: chance +7%, amount +6%",
+					sub = "Club, level 110. Attack 62, Defense 30, Melee +4, Life Leech: chance +7%, amount +6%",
 					f = {kind = {"weapon"}, level = 110, source = "monster"},
 					sections = {
 						{h = "Description", p = {"Wherever it lands, a new mouth opens. (Requires level 110.)"}},
 						{
 							h = "Stats",
-							p = {"Attack 62", "Defense 30", "Club +4", "Life Leech: chance +7%, amount +6%"}
+							p = {"Attack 62", "Defense 30", "Melee +4", "Life Leech: chance +7%, amount +6%"}
 						},
 						{
 							h = "Item",
@@ -9024,7 +8909,7 @@ CodexData = {
 					id = "unique:2412",
 					name = "Nightfang Katana",
 					color = "#ff9c3a",
-					sub = "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Critical Hit: chance +4%, damage +20%, Sword +2",
+					sub = "Sword, level 60. Attack 32, Defense 16, Extra Defense +2, Critical Hit: chance +4%, damage +20%, Melee +2",
 					f = {kind = {"weapon"}, level = 60, source = "monster"},
 					sections = {
 						{
@@ -9033,7 +8918,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 32", "Defense 16", "Extra Defense +2", "Critical Hit: chance +4%, damage +20%", "Sword +2"}
+							p = {"Attack 32", "Defense 16", "Extra Defense +2", "Critical Hit: chance +4%, damage +20%", "Melee +2"}
 						},
 						{
 							h = "Item",
@@ -9361,7 +9246,7 @@ CodexData = {
 					items = {13760}
 				},
 				{
-					id = "unique:2206",
+					id = "unique:41640",
 					name = "Ring of the Last Ember",
 					color = "#ff9c3a",
 					sub = "Ring, level 70.",
@@ -9397,7 +9282,7 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {2206}
+					items = {41640}
 				},
 				{
 					id = "unique:21691",
@@ -9445,7 +9330,7 @@ CodexData = {
 					id = "unique:2408",
 					name = "Sanguine Crescent",
 					color = "#ff9c3a",
-					sub = "Sword, level 1000. Attack 78, Defense 38, Critical Hit: chance +8%, damage +30%, Life Leech: chance +10%, amount +8%, Sword +8",
+					sub = "Sword, level 1000. Attack 78, Defense 38, Critical Hit: chance +8%, damage +30%, Life Leech: chance +10%, amount +8%, Melee +8",
 					f = {kind = {"weapon"}, level = 1000, source = "boss"},
 					sections = {
 						{
@@ -9454,7 +9339,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 78", "Defense 38", "Critical Hit: chance +8%, damage +30%", "Life Leech: chance +10%, amount +8%", "Sword +8"}
+							p = {"Attack 78", "Defense 38", "Critical Hit: chance +8%, damage +30%", "Life Leech: chance +10%, amount +8%", "Melee +8"}
 						},
 						{
 							h = "Item",
@@ -9530,14 +9415,14 @@ CodexData = {
 					id = "unique:27228",
 					name = "Shroud of the Hollow Wood",
 					color = "#ff9c3a",
-					sub = "Body armour, level 90. Armor 18, Distance +4, Energy Absorb -3%, Ice Absorb +14%",
+					sub = "Body armour, level 90. Armor 18, Ranged +4, Energy Absorb -3%, Ice Absorb +14%",
 					f = {kind = {"armor"}, level = 90, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Cut from a tree that grew in a graveyard and never once bloomed. (Requires level 90.)"}
 						},
-						{h = "Stats", p = {"Armor 18", "Distance +4", "Energy Absorb -3%", "Ice Absorb +14%"}},
+						{h = "Stats", p = {"Armor 18", "Ranged +4", "Energy Absorb -3%", "Ice Absorb +14%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9572,14 +9457,14 @@ CodexData = {
 					id = "unique:28115",
 					name = "Snarewalker Greaves",
 					color = "#ff9c3a",
-					sub = "Boots, level 120. Armor 3, Distance +2, Earth Absorb +4%",
+					sub = "Boots, level 120. Armor 3, Ranged +2, Earth Absorb +4%",
 					f = {kind = {"boots"}, level = 120, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Every step leaves something behind. Snares: one more trap may be out, traps arm 0.3 s sooner and hit 10% harder. (Requires level 120. Ranger and Thief lines.)"}
 						},
-						{h = "Stats", p = {"Armor 3", "Distance +2", "Earth Absorb +4%"}},
+						{h = "Stats", p = {"Armor 3", "Ranged +2", "Earth Absorb +4%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9615,7 +9500,7 @@ CodexData = {
 					id = "unique:8209",
 					name = "Soulreaper",
 					color = "#ff9c3a",
-					sub = "Sword, level 120. Attack 52, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Sword +4",
+					sub = "Sword, level 120. Attack 52, Defense 28, Extra Defense +2, Life Leech: chance +10%, amount +8%, Melee +4",
 					f = {kind = {"weapon"}, level = 120, source = "monster"},
 					sections = {
 						{
@@ -9624,7 +9509,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Attack 52", "Defense 28", "Extra Defense +2", "Life Leech: chance +10%, amount +8%", "Sword +4"}
+							p = {"Attack 52", "Defense 28", "Extra Defense +2", "Life Leech: chance +10%, amount +8%", "Melee +4"}
 						},
 						{
 							h = "Item",
@@ -9832,14 +9717,14 @@ CodexData = {
 					id = "unique:8858",
 					name = "Stormcaller Recurve",
 					color = "#ff9c3a",
-					sub = "Distance weapon, level 70. Hit Chance 5, Distance +4, Energy Absorb +4%",
+					sub = "Distance weapon, level 70. Hit Chance 5, Ranged +4, Energy Absorb +4%",
 					f = {kind = {"weapon"}, level = 70, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"The string hums before the storm does. Your bow hits arc to one more enemy for 25% as energy (with Stormstring: one more arc). (Requires level 70.)"}
 						},
-						{h = "Stats", p = {"Hit Chance 5", "Distance +4", "Energy Absorb +4%"}},
+						{h = "Stats", p = {"Hit Chance 5", "Ranged +4", "Energy Absorb +4%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9916,14 +9801,14 @@ CodexData = {
 					id = "unique:2500",
 					name = "Thornwake Jerkin",
 					color = "#ff9c3a",
-					sub = "Body armour, level 150. Armor 13, Distance +1, Earth Absorb +4%",
+					sub = "Body armour, level 150. Armor 13, Ranged +1, Earth Absorb +4%",
 					f = {kind = {"armor"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Bark and leather, stitched with living vine. (Requires level 150.)"}
 						},
-						{h = "Stats", p = {"Armor 13", "Distance +1", "Earth Absorb +4%"}},
+						{h = "Stats", p = {"Armor 13", "Ranged +1", "Earth Absorb +4%"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -9958,14 +9843,14 @@ CodexData = {
 					id = "unique:27646",
 					name = "Thornwake Longbow",
 					color = "#ff9c3a",
-					sub = "weapon, level 150. Attack 73, Range 6, Distance +3",
+					sub = "weapon, level 150. Attack 73, Range 6, Ranged +3",
 					f = {kind = {"other"}, level = 150, source = "monster"},
 					sections = {
 						{
 							h = "Description",
 							p = {"Briar wood that still grows a thorn after every shot. (Requires level 150.)"}
 						},
-						{h = "Stats", p = {"Attack 73", "Range 6", "Distance +3"}},
+						{h = "Stats", p = {"Attack 73", "Range 6", "Ranged +3"}},
 						{
 							h = "Item",
 							cols = {"", ""},
@@ -10204,7 +10089,7 @@ CodexData = {
 					id = "unique:27675",
 					name = "Visage of the Pale King",
 					color = "#ff9c3a",
-					sub = "Helmet, level 120. Armor 15, Death Absorb +8%, Distance +3, Magic Level +2, Physical Absorb +6%",
+					sub = "Helmet, level 120. Armor 15, Death Absorb +8%, Ranged +3, Magic Level +2, Physical Absorb +6%",
 					f = {kind = {"helmet"}, level = 120, source = "boss"},
 					sections = {
 						{
@@ -10213,7 +10098,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Armor 15", "Death Absorb +8%", "Distance +3", "Magic Level +2", "Physical Absorb +6%"}
+							p = {"Armor 15", "Death Absorb +8%", "Ranged +3", "Magic Level +2", "Physical Absorb +6%"}
 						},
 						{
 							h = "Item",
@@ -10246,7 +10131,7 @@ CodexData = {
 					id = "unique:28020",
 					name = "Voidscale Legguards",
 					color = "#ff9c3a",
-					sub = "Legs, level 130. Armor 18, Axe +4, Club +4, Mana Leech: chance +4%, amount +6%, Physical Absorb +6%, Sword +4",
+					sub = "Legs, level 130. Armor 18, Melee +4, Melee +4, Mana Leech: chance +4%, amount +6%, Physical Absorb +6%, Melee +4",
 					f = {kind = {"legs"}, level = 130, source = "monster"},
 					sections = {
 						{
@@ -10255,7 +10140,7 @@ CodexData = {
 						},
 						{
 							h = "Stats",
-							p = {"Armor 18", "Axe +4", "Club +4", "Mana Leech: chance +4%, amount +6%", "Physical Absorb +6%", "Sword +4"}
+							p = {"Armor 18", "Melee +4", "Melee +4", "Mana Leech: chance +4%, amount +6%", "Physical Absorb +6%", "Melee +4"}
 						},
 						{
 							h = "Item",
@@ -10851,7 +10736,7 @@ CodexData = {
 							rows = {
 								{"2 pieces", "Chance to Bleed +10%, Damage over Time +15%"},
 								{"4 pieces", "Hemorrhage: a monster that dies bleeding from you passes the bleed to 3 monsters within 2 sqm"},
-								{"6 pieces", "Axe Fighting +3, Red Harvest: your critical hits open a fresh bleed on the target"}
+								{"6 pieces", "Melee +3, Red Harvest: your critical hits open a fresh bleed on the target"}
 							}
 						},
 						{
@@ -11163,7 +11048,7 @@ CodexData = {
 							cols = {"Worn", "Bonus"},
 							w = {18, 82},
 							rows = {
-								{"2 pieces", "Distance Fighting +2, Physical Penetration +6%"},
+								{"2 pieces", "Ranged +2, Physical Penetration +6%"},
 								{"4 pieces", "Damage to Elites and Bosses +8%, Hanging Verdict: your ranged hits deal 20% more to monsters below 35% health"}
 							}
 						},
@@ -12827,6 +12712,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12865,6 +12754,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12907,6 +12800,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12945,6 +12842,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12987,6 +12888,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13025,6 +12930,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13067,6 +12976,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13105,6 +13018,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13147,6 +13064,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13185,6 +13106,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13227,6 +13152,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13265,6 +13194,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13307,6 +13240,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13345,6 +13282,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13387,6 +13328,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13425,6 +13370,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13467,6 +13416,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13505,6 +13458,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13547,6 +13504,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13585,6 +13546,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -14346,7 +14311,7 @@ CodexData = {
 						},
 						{
 							h = "By hunting level",
-							p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+							p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set, on top of the health and experience their level already gives them."},
 							cols = {"Level", "Health", "Experience", "Loot", "Damage"},
 							w = {28, 18, 18, 18, 18},
 							rows = {
@@ -14357,10 +14322,10 @@ CodexData = {
 								{"300", "21%", "22%", "24%", "65%"},
 								{"600", "21%", "21%", "23%", "55%"},
 								{"1000", "21%", "22%", "24%", "40%"},
-								{"650 (own level)", "35%", "91%", "100%", "53%"},
-								{"1000 (own level)", "40%", "68%", "74%", "40%"},
-								{"1300 (own level)", "42%", "65%", "71%", "40%"},
-								{"2000 (own level)", "42%", "60%", "66%", "40%"}
+								{"650 (own level)", "35%", "11%", "100%", "53%"},
+								{"1000 (own level)", "40%", "11%", "74%", "40%"},
+								{"1300 (own level)", "42%", "11%", "71%", "40%"},
+								{"2000 (own level)", "42%", "11%", "66%", "40%"}
 							}
 						},
 						{

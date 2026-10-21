@@ -324,18 +324,14 @@ end
 
 -- ---------------------------------------------------------------- the window
 local function money(player)
-	local bank = player.getBankBalance and player:getBankBalance() or 0
-	return player:getMoney() + bank
+	return Chaos.totalMoney(player)
 end
 
 local function pay(player, amount)
 	if amount <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(amount)
-	end
-	return player:removeMoney(amount)
+	return Chaos.pay(player, amount) and true or false
 end
 
 local function itemLevel(item)

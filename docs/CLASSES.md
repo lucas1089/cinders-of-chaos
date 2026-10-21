@@ -54,7 +54,7 @@ Protector (the spell named Bulwark) it replaced was retired on 2026-10-20 becaus
 bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
 the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
-may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot"). The line's fight buff is
+wears one ring and one badge: the badge slot took the place of the second ring slot (server/README.md "Badge slot"). The line's fight buff is
 Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
 because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
 (level 55, +50% speed for 12 s on top of Haste) in place of the stock Swift Foot / Windrunner, retired the same day: it
@@ -250,24 +250,28 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Warrior | 27 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Vaulting Cleave 170, Colossus Fall 260, Headsman's Hurl 300 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Ironhold 55, Bloodlust 60, Red Frenzy 100, Iron Bellow 120 |
 | Juggernaut | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Colossus Fall 260, Headsman's Hurl 300, Anvil Fall 460 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Taunt of Iron 20, Ironhold 55, Iron Bellow 120, Bastion Cry 340 |
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 100, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
-| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
-| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140 |
-| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Blessed Earth 100, Feral Command 110, Pack Frenzy 380 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
-| Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 20, Blightswarm 25, Witchfire Bolt 30, Arcane Ripple 40, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 40 | Galeborne Stride 20, Ironbark Hide 60 |
-| Elementalist | 45 | 15 | Kindling Spark 8, Rime Bloom 20, Witchfire Bolt 30, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14, Galeborne Stride 20, Crimson Covenant 90 |
-| Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 40, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 40, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
+| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
+| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Blessed Earth 100, Feral Command 110, Pack Frenzy 380 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 20, Blightswarm 25, Witchfire Bolt 30, Arcane Ripple 40, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 40 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
+| Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 20, Witchfire Bolt 30, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
+| Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 40, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 40, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Ward of the Mind 14*, Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
 | Thief | 10 | 10 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Fan of Knives 80 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60 |
 | Ninja | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Shadow Step 100, Shuriken Barrage 180, Shuriken Tempest 360 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Smoke Bomb 130 |
 | Samurai | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Iaijutsu 120, Iaido Sweep 200 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Counter Stance 100, Bushido Focus 150 |
 | Monk | 7 | 7 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Shadowfist | 10 | 10 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Pressure Points 100, Shadow Ricochet 150, Shadowfist Flurry 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Iron Sage | 11 | 11 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Iron Palm 120, Iron Chain 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35, Chi Ward 100, Mantra of Stone 150 |
-| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
-| Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
-| Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
+| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
 | Templar | 4 | 4 | Radiant Smite 8, Consecration 40, Sanctified Ground 60 | Vow of Mending 30 |  |
 | Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 40, Judgement 100, Purging Nova 120 | Vow of Mending 30 | Zealotry 150 |
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 40, Shield Wave 150 | Vow of Mending 30, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
+
+* Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
+  outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers", the
+  Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s) stays every class's short mana shield.
 
 Dropped, per line (each spell left the classes named; "retired" = no class keeps it):
 - Warrior line: Minor Mending, Warhorse Rush, Cyclone Hurl, Martial Communion, Earthrend, Reaver's Spin, Rending Mark,
@@ -283,12 +287,14 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
   Shatterfrost), the marks and hexes (Smoulder Brand, Galvanic Mark, Blackroot Venom, Hex of Withering, Skyfang, Crossfire
   Hex, Dread, Fading Step, Gravity Snare, Sunder Guard), Arcane Stitch, Deep Mending, Kindred Mend, Circle of Mending,
   Heartwood Embrace, Skinchanger's Guise, Call Thrall, Shroud of Shadows and the communions (all retired); Rebirth of
-  Flesh (the Necromancer line keeps it); Ward of the Mind (the Elementalist keeps it: Soulward is everyone's mana shield).
+  Flesh (the Necromancer line keeps it). Ward of the Mind left the Mystic and the Illusionist on 2026-10-20 and
+  came back outside the cap on 2026-10-21 (*).
   Between the three classes: the Mystic left Forked Storm, Crimson Covenant, Pyre Torrent, Tempest Fan (Elementalist),
   Hall of Mirrors, Wraithshroud (Illusionist); the Illusionist left Grand Mending, Galeborne Stride, Blightswarm, Ironbark
   Hide, Umbral Stride, Briar Prison (Mystic).
-- Necromancer line: Arcane Stitch, Ward of the Mind, Kindred Mend, Deep Mending, Circle of Mending, Heartwood Embrace,
-  Skinchanger's Guise, Shroud of Shadows, Arcane Communion, Mending Communion.
+- Necromancer line: Arcane Stitch, Kindred Mend, Deep Mending, Circle of Mending, Heartwood Embrace,
+  Skinchanger's Guise, Shroud of Shadows, Arcane Communion, Mending Communion. Ward of the Mind left on 2026-10-20 and
+  came back outside the cap on 2026-10-21 (*).
 - Thief, Monk and Templar lines: nothing (10-13, 7-11 and 4-7 spells).
 
 ## Skills and weapons (owner debug items 46 and 47, 2026-10-17)
@@ -567,7 +573,12 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   Mystic's (`newplayer_config.lua`).
 - **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
 - **Summons**: capped per class and level, scale with the owner's level and magic level, follow (brought back past
-  7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. Their hits are
+  7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. They show
+  their owner's level after the name and follow a level up while out (the level shown and the maximum health, the
+  same share of it kept; hits always use the owner's current numbers). The owner walks through its own minions
+  (engine patch 0055; other players and the party are still blocked). The owner and its party never target them:
+  the helper drops such a lock and attack next skips them (client base patch 0112). No experience, no loot.
+  (server/README.md "Summons: targets, walk-through, levels", 2026-10-21.) Their hits are
   dealt as the owner (full experience, the Chaos loot layer, bounty / leaderboard / hunt credit through the owner);
   the engine alone would credit a summon's share at half experience and skip the rarity loot when a summon lands the
   last hit (`Creature::onGainExperience`, `Monster::dropLoot`).
@@ -819,8 +830,9 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   "Passive tree planner and mastery nodes". Measured 2026-10-12 (`server/data/spells/README.md` "Line keystones,
   masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
   +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),
-  a build 1-3%, below the spread of a rotation run. Light Step's dexterity is over the cap of a typical Thief build at
-  level 300 (only its speed counts there).
+  a build 1-3%, below the spread of a rotation run. Light Step's dexterity was over the cap of a typical Thief build at
+  level 300 (only its speed counted there); since the attribute caps went up (2026-10-22: dexterity cap 80, the points past
+  20 at 1/15 of an old point) it adds about 0.2% to weapon hits there.
 - **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
   section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
   another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21

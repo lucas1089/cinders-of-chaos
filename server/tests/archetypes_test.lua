@@ -263,7 +263,8 @@ do
 	check(ex and pd == -1200 and sd == -300, "executioner: the second half counts, the first takes the rest")
 	near(A.hitFactor({arExecutioner = true}, {origin = "melee", targetFraction = 0.9}), 0.9, "executioner: a healthy monster")
 	near(A.hitFactor({arExecutioner = true}, {origin = "melee", targetFraction = 0.6}), 1, "executioner: 60% is not above 60%")
-	near(A.hitFactor({arExecutioner = true}, {origin = "ranged", targetFraction = 0.9}), 1, "executioner: melee only")
+	near(A.hitFactor({arExecutioner = true}, {origin = "ranged", targetFraction = 0.9}), 1, "executioner: not ranged")
+	near(A.hitFactor({arExecutioner = true}, {origin = "spell", targetFraction = 0.9}), 0.9, "executioner: spells pay the price too")
 	near(A.hitFactor({arExecutioner = true}, {origin = "melee"}), 1, "executioner: a player target has no price")
 end
 -- Earthbreaker
@@ -1064,6 +1065,10 @@ summon.c.master = exe
 eq(hitBy(exe, summon, 1400), 1400, "executioner: a summon is not executed")
 local ally = mk("player", {hp = 1500, maxHp = 10000, pos = P(2003, 2000)})
 eq(hitBy(exe, ally, 1400), 1400, "executioner: no execution without the PvP rules")
+local spellMob = mk("monster", {hp = 1500, maxHp = 10000, pos = P(2004, 2000)})
+eq(hitBy(exe, spellMob, 1400, COMBAT_FIREDAMAGE, ORIGIN_SPELL), 1500, "executioner: a spell hit executes too")
+local dotMob = mk("monster", {hp = 1500, maxHp = 10000, pos = P(2004, 2001)})
+eq(hitBy(exe, dotMob, 1400, COMBAT_FIREDAMAGE, ORIGIN_CONDITION), 1400, "executioner: a damage over time tick does not")
 
 -- Earthbreaker: the fourth hit
 creatures, dealt = {}, {}
@@ -1100,6 +1105,11 @@ eq(hitBy(ram, target, 1000), 1180, "rampage: 3 kills, 18% more damage")
 ram.c.events.ChaosArchetypesHit = true
 eq(math.abs(hitEv.onHealthChange(ram, target, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 1120,
 	"rampage: 12% more damage taken")
+-- the mana shield part (manashield.lua): the same 12%; the rest of a hit the mana event scaled is not scaled again
+eq(ChaosManaShield.providers.rampage.hit(ram, target, 1000), 1120, "rampage: the mana shield part takes 12% more too")
+ChaosManaShield.mark(ram:getId(), target:getId(), ChaosManaShield.now(), {"rampage"})
+eq(math.abs(hitEv.onHealthChange(ram, target, -500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 500,
+	"rampage: the rest of a mana shield hit")
 local pet = mk("monster", {hp = 100, pos = P(2202, 2200)})
 pet.c.master = ram
 pet.c.events.ChaosArchetypesHit = true

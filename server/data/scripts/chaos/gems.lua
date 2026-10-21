@@ -23,6 +23,9 @@ end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua and chaos_gems.lua
 end
+if not ChaosCombine or not ChaosCombine.take then
+	dofile("data/scripts/chaos/combine_core.lua") -- the combine shared with the support runes
+end
 
 local G = ChaosGems
 local cfg = G.config
@@ -178,18 +181,7 @@ end
 taken:register()
 
 -- ---------------------------------------------------------------- owning an item
-local function holderOf(item)
-	local ok, top = pcall(function() return item:getTopParent() end)
-	if ok and top and top.isPlayer and top:isPlayer() then
-		return top
-	end
-	return nil
-end
-
-local function owns(player, item)
-	local h = holderOf(item)
-	return h ~= nil and h:getId() == player:getId()
-end
+local owns = ChaosCombine.owns
 
 local function isEquipped(player, item)
 	local ok, parent = pcall(function() return item:getParent() end)
@@ -207,18 +199,9 @@ local function changed(player, item)
 	end
 end
 
-local function give(player, id, count)
-	local rest = count - Chaos.giveItem(player, id, count)
-	if rest > 0 then
-		local inbox = player:getInbox()
-		if inbox then
-			inbox:addItem(id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-			return true
-		end
-	end
-	return false
-end
+local give = ChaosCombine.give
 G.give = give
+local whereText = ChaosCombine.whereText
 
 local function log(player, what, itemName, text)
 	if ChaosCraftingLog then
@@ -256,21 +239,20 @@ function G.socket(player, gemItem, target)
 	return true, text
 end
 
--- three gems of this id -> one of the next tier. Returns ok, text
-function G.combine(player, id)
+
+-- three gems of this id -> one of the next tier (used / target: ChaosCombine.take, combine_core.lua). Returns ok, text
+function G.combine(player, id, used, target)
 	local newId, why = G.combineResult(id)
 	if not newId then
 		return false, G.reasons[why] or why
 	end
-	if player:getItemCount(id) < 3 then
-		return false, G.reasons.needThree
+	local ok, reason = ChaosCombine.take(player, id, 3, used, target)
+	if not ok then
+		return false, G.reasons[reason] or reason
 	end
-	if not player:removeItem(id, 3) then
-		return false, G.reasons.needThree
-	end
-	local inbox = give(player, newId, 1)
+	local where = give(player, newId, 1)
 	local text = string.format("Three %s became a %s.%s", (G.listText({{id = id, count = 3}}):gsub("^3 ", "")),
-		G.gemName(newId), inbox and " It is in your inbox (no room)." or "")
+		G.gemName(newId), whereText(where))
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
 	log(player, "Gem", G.gemName(id), text)
 	return true, text
@@ -286,10 +268,7 @@ function G.unsocket(player, item, index, keep)
 	end
 	local cost = keep and G.removeCost(id) or 0
 	if cost > 0 then
-		local bank = player:getBankBalance()
-		if bank >= cost then
-			player:setBankBalance(bank - cost)
-		elseif not player:removeMoney(cost) then
+		if not Chaos.pay(player, cost) then
 			return false, string.format("Taking the %s out unharmed costs %d gold (bank or backpack).", G.gemName(id), cost)
 		end
 	end
@@ -298,9 +277,8 @@ function G.unsocket(player, item, index, keep)
 	local name = ChaosCrafting.itemName(item)
 	local text
 	if keep then
-		local inbox = give(player, id, 1)
 		text = string.format("%s taken out of %s for %d gold.%s", G.gemName(id), name, cost,
-			inbox and " It is in your inbox (no room)." or "")
+			whereText(give(player, id, 1)))
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	else
 		text = string.format("%s shattered (taken out of %s).", G.gemName(id), name)
@@ -313,8 +291,8 @@ end
 -- ---------------------------------------------------------------- use-with on every gem
 local function hint(player, id, prefix)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
-		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality.", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
-		Chaos.t(player, G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)")))
+		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
+		Chaos.t(player, G.gemOf(id).tier < G.TIERS and G.COMBINE_HOW or "Perfect is the best quality; it does not combine.")))
 end
 
 local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey)
@@ -326,7 +304,7 @@ local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey
 	end
 	local ok, text
 	if target:getId() == id then
-		ok, text = G.combine(player, id)
+		ok, text = G.combine(player, id, item, target)
 	elseif G.isGem(target:getId()) then
 		ok, text = false, "Only gems of the same kind and quality combine."
 	elseif G.maxSockets(target) > 0 then
@@ -338,7 +316,7 @@ local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey
 	if ok then
 		player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 	else
-		player:sendCancelMessage(text)
+		player:sendCancelMessage(Chaos.t(player, text))
 	end
 	return true
 end

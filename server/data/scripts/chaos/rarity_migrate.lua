@@ -25,7 +25,7 @@ M.stepMs = 50 -- between two containers
 
 local function slotItems(player)
 	local out = {}
-	for slot = CONST_SLOT_HEAD or 1, CONST_SLOT_AMMO or 10 do
+	for _, slot in ipairs({1, 2, 3, 4, 5, 6, 7, 8, 9, 13}) do -- worn: head .. ring and the badge slot (engine patch 0058)
 		local ok, item = pcall(function() return player:getSlotItem(slot) end)
 		if ok and item then
 			out[#out + 1] = item

@@ -24,6 +24,7 @@ local timers = nil           -- the support channel's rate guard (ChaosHelperTim
 local cycle, pollEvent = nil, nil
 local building = false       -- the rows are being filled: no change events
 local overall = ''           -- why nothing is cast now (the status line)
+local userOffNote = false    -- the player switched a vigil off: the status line says its row was unticked
 
 -- the status words of the rows and the panel (tr keys; pt-BR in client_chaos_locale/pt_br.lua)
 local ROW_TEXT = {
@@ -31,11 +32,12 @@ local ROW_TEXT = {
   mana = 'Not enough mana', reserve = 'Keeping the mana reserve', nofight = 'Waits for a fight',
   noparty = 'Needs a party', level = 'Cannot cast it yet', backoff = 'Refused, waiting', pending = 'Waiting for the answer',
   group = 'Waiting for another spell', rate = 'Rate limit', casting = 'An attack spell is charging', off = 'Off',
-  unknown = 'Spell not found', nobar = 'Needs the Buff Bar',
+  unknown = 'Spell not found', nobar = 'Needs the Buff Bar', useroff = 'You switched it off',
   full = 'Summons at the limit', have = 'Already out', nocount = 'Cannot count summons',
 }
 local OVERALL_TEXT = {
   pz = 'Paused: protection zone', helperoff = 'The helper is off', disabled = 'Support spells are off',
+  useroff = 'You switched a vigil off: its row is unticked. Tick it to let the helper keep it on.',
   offline = '',
 }
 
@@ -60,6 +62,7 @@ local function load()
   cfg = S.sanitize(type(node) == 'table' and node[name] or nil) -- checked: config.otml can be edited by hand
   cfgFor = name
   state = S.newState()
+  userOffNote = false
   return true
 end
 
@@ -221,6 +224,13 @@ local function tick()
   local ctx, rotation = castChecks()
   local spell, why = S.pick(state, cfg, ctx)
   overall = spell and '' or (why ~= 'idle' and why or '')
+  -- a vigil the player switched off by hand: its row is unticked and saved (no recast now or after a relog)
+  if #S.takeUserOff(state, cfg) > 0 then
+    save()
+    U.rebuild()
+    userOffNote = true
+  end
+  if userOffNote and overall == '' then overall = 'useroff' end
   if not spell then return end
   local H = helper()
   if H and H.safeDoThing then H.safeDoThing(false) end
@@ -251,7 +261,9 @@ local function readRows()
     local id = opt and tonumber(opt.data) or 0
     if id and id > 0 and not seen[id] then
       seen[id] = true
-      slots[#slots + 1] = { id = id, enabled = row:getChildById('enable'):isChecked() }
+      -- a spell just picked in an empty row (its box is greyed) starts ticked
+      local box = row:getChildById('enable')
+      slots[#slots + 1] = { id = id, enabled = (not box:isEnabled()) or box:isChecked() }
     end
   end
   cfg.slots = slots
@@ -261,6 +273,7 @@ local function changed()
   if building then return end
   readRows()
   state = S.newState()
+  userOffNote = false
   save()
   U.rebuild()
 end
@@ -308,7 +321,9 @@ function U.rebuild()
     for _, o in ipairs(opts) do combo:addOption(o.name, o.id, true) end
     local slot = cfg.slots[i]
     combo:setCurrentOptionByData(slot and slot.id or 0, true)
-    row:getChildById('enable'):setChecked(slot == nil or slot.enabled)
+    -- an empty row's box is unticked and greyed (a ticked box that ignores clicks read as broken, owner 2026-10-21);
+    -- picking a spell in the row ticks it
+    row:getChildById('enable'):setChecked(slot ~= nil and slot.enabled)
     row:getChildById('enable'):setEnabled(slot ~= nil)
   end
   p:recursiveGetChildById('enableAll'):setChecked(cfg.enabled)

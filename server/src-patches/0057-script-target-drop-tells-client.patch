@@ -1,0 +1,28 @@
+# A script that drops a player's attack target tells the client (server/README.md "Summons: targets, walk-through, levels"). Owner report
+# 2026-10-21: "the Necromancer's risen warriors get targeted and do not attack". summons.lua drops a player's own (or
+# party) summon as attack target every 0.5 s with player:setTarget(nil), but creature:setTarget only changed the
+# server's state: the client kept the red square on the minion and believed it was attacking it, so neither the player
+# nor the helper picked a new target, and the minions (they go for their owner's target) stood idle. Now
+# creature:setTarget(nil) on a player that had a target also sends the cancel target packet, like the engine's own
+# drops (Game::playerSetAttackedCreature). Other calls are unchanged.
+# Applies after 0001-0056.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -7997,7 +7997,16 @@
+ 	// creature:setTarget(target)
+ 	Creature* creature = getUserdata<Creature>(L, 1);
+ 	if (creature) {
+-		pushBoolean(L, creature->setAttackedCreature(getCreature(L, 2)));
++		Creature* target = getCreature(L, 2);
++		const bool hadTarget = creature->getAttackedCreature() != nullptr;
++		pushBoolean(L, creature->setAttackedCreature(target));
++		// Chaos: a script that drops a player's target tells its client, as the engine's own drops do; else the client
++		// kept the red square and believed it was attacking (summons.lua dropping an own summon as target)
++		if (!target && hadTarget) {
++			if (Player* player = creature->getPlayer()) {
++				player->sendCancelTarget();
++			}
++		}
+ 	} else {
+ 		lua_pushnil(L);
+ 	}

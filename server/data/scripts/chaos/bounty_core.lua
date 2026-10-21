@@ -6,8 +6,10 @@
 --   ChaosBounty.bandOf(level, cfg)     band index of a level; visibleBands(level, cfg) -> {indexes}
 --   ChaosBounty.matches(c, name, tier) whether a kill counts for contract c
 --   ChaosBounty.credit(killers, membersOf, posOf, range, idOf) players a kill counts for (own + party in range)
+--   ChaosBounty.partyCounts(c, cfg, level) whether a party member's (not a killer's) kill credit counts for c
 --   ChaosBounty.addKill(entry)         progress +1, returns crossed milestone percents and completion
---   ChaosBounty.reward(c, cfg, level)  {gold, chaos, divine, exp}
+--   ChaosBounty.reward(c, cfg, level, stage, huntMean)  {gold, chaos, divine, exp}; exp: B.expReward (a share of the
+--                                      kills' experience; elite and boss at least huntMean, B.huntMean)
 --   ChaosBounty.canAccept(...)         the accept rules (limit, visibility, duplicates)
 -- The roll uses its own generator (MINSTD), so the board is the same on every restart, on LuaJIT and Lua 5.3:
 -- it depends only on the day, the config and the pool.
@@ -128,6 +130,8 @@ local function contractOf(bandIndex, slot, kind, mon)
 		type = kind,
 		name = mon.name,
 		level = mon.level,
+		exp = mon.exp,
+		health = mon.health,
 		look = mon.look or 0
 	}
 	if mon.head then
@@ -350,16 +354,152 @@ function B.expForLevel(level)
 	return 50 * level * level - 50 * level + 100
 end
 
-function B.reward(c, cfg, playerLevel)
+-- the base experience of one kill of contract c's monster before the stage and the tier, as the engine gives it: the
+-- monster's experience x the engine's monster level factor (x0.03 L when that is above 1, level-scaled monsters only:
+-- base data/events/scripts/player.lua, checked on the test server, server/README.md "Late game"; xpcap_core.lua
+-- X.levelFactor) x the pace experience curve of its hunting level (pace_core.lua; bosses are never paced).
+-- P = ChaosPaceCore, pc = the pace config (nil: no pace and no level information). bounty.lua uses it as cfg.killBase,
+-- bestiary.lua for kill tasks (an entry {exp, health, level, minLevel, maxLevel, boss}).
+function B.monsterKillBase(c, P, pc)
+	local exp = tonumber(c and c.exp) or 0
+	if exp <= 0 then
+		return 0
+	end
+	if not P or not pc then
+		return exp
+	end
+	local level, scaled = P.entryLevel(pc, c)
+	if scaled and level * 0.03 > 1 then
+		exp = exp * level * 0.03
+	end
+	if c.type == "boss" or c.boss then
+		return exp
+	end
+	return exp * P.factors(pc, level, scaled).xp
+end
+
+-- the base experience of the kills a player makes for contract c, with experience stage `stage` (Game.getExperienceStage
+-- of the player's level): one kill's base (cfg.killBase(c), else the pool experience) x stage x the kills. A hunt or boss
+-- contract: its count. An elite contract: each counted kill gives its tier's experience (cfg.tierXp, the lowest tier that
+-- counts) and comes after cfg.eliteSearch[tier] - 1 kills of the type that do not count (the tier's spawn chance).
+-- No bonus (potion, stamina, world, multikill ...) is counted.
+function B.contractKillExp(c, cfg, stage)
+	local per = cfg.killBase and cfg.killBase(c) or tonumber(c.exp) or 0
+	local kills = c.count or 0
+	if c.type == "elite" then
+		local tier = c.tier or "magic"
+		local tierXp = cfg.tierXp and cfg.tierXp[tier] or 1
+		local search = cfg.eliteSearch and cfg.eliteSearch[tier] or 1
+		kills = kills * (tierXp + math.max(0, search - 1))
+	end
+	return kills * per * (tonumber(stage) or 1)
+end
+
+-- party credit (B.credit): a kill counts for a party member who did not make it only when the member's level is at
+-- least the contract band's min level, so a low character cannot finish a higher band's contract by standing next to a
+-- strong one (own kills always count)
+function B.partyCounts(c, cfg, level)
+	local band = c and cfg.bands[c.band]
+	return band ~= nil and (tonumber(level) or 0) >= band.min
+end
+
+-- `exp` between expFloor and expCap percent of the experience from level L to L + 1, L = min(player level, band max)
+local function clampExp(exp, c, cfg, playerLevel)
+	local band = cfg.bands[c.band]
+	local level = math.max(1, math.min(playerLevel or band.min, band.max))
+	local lvlExp = B.expForLevel(level)
+	local floorPct = cfg.expFloor and cfg.expFloor[c.type]
+	if floorPct then
+		exp = math.max(exp, lvlExp * floorPct / 100)
+	end
+	local cap = cfg.expCap and cfg.expCap[c.type]
+	if cap then
+		exp = math.min(exp, lvlExp * cap / 100)
+	end
+	return math.floor(exp)
+end
+
+-- experience of a finished contract for a player of playerLevel with experience stage `stage`: expShare percent of
+-- the base experience of its kills (B.contractKillExp), at least expFloor and at most expCap percent of the experience
+-- from level L to L + 1, L = min(player level, band max level). An elite or boss contract pays at least `huntMean`
+-- (B.huntMean: the mean hunt reward of its band for this player), still at most the cap.
+function B.expReward(c, cfg, playerLevel, stage, huntMean)
+	local exp = B.contractKillExp(c, cfg, stage) * (cfg.expShare[c.type] or 0) / 100
+	if c.type ~= "hunt" and huntMean then
+		exp = math.max(exp, huntMean)
+	end
+	return clampExp(exp, c, cfg, playerLevel)
+end
+
+-- the median base experience (stage 1) of a hunt contract of a band, over the pool's hunt monsters of the band's pick
+-- window at the middle of the band's kill range (x the pace goal, fewer for few spawns, as rollBand). Cached per band.
+local medianCache = setmetatable({}, {__mode = "k"}) -- [cfg][pool][band]
+
+function B.huntPoolMedian(bandIndex, cfg, pool)
+	medianCache[cfg] = medianCache[cfg] or setmetatable({}, {__mode = "k"})
+	local byPool = medianCache[cfg]
+	byPool[pool] = byPool[pool] or {}
+	local cache = byPool[pool]
+	if cache[bandIndex] then
+		return cache[bandIndex]
+	end
+	local band = cfg.bands[bandIndex]
+	local list = {}
+	for _, mon in ipairs(pool and pool.hunt or {}) do
+		if band and mon.level >= band.pick[1] and mon.level <= band.pick[2] then
+			local c = contractOf(bandIndex, 0, "hunt", mon)
+			local n = (band.kills[1] + band.kills[2]) / 2
+			local g = cfg.goalMult and cfg.goalMult(mon) or 1
+			if g > 1 then
+				n = n * g
+			end
+			if (mon.spawns or 0) < cfg.fewSpawns then
+				n = n * cfg.fewSpawnsMult
+			end
+			c.count = n
+			list[#list + 1] = B.contractKillExp(c, cfg, 1)
+		end
+	end
+	table.sort(list)
+	local m = #list > 0 and list[math.floor((#list + 1) / 2)] or 0
+	cache[bandIndex] = m
+	return m
+end
+
+-- the mean experience reward of the hunt contracts of c's band for a player (level, stage): the board's hunts of that
+-- band (`hunts`, a list of contracts; the board is the same for everyone), else the band's pool median (B.huntPoolMedian).
+-- nil for a hunt contract.
+function B.huntMean(c, cfg, playerLevel, stage, hunts, pool)
+	if not c or c.type == "hunt" then
+		return nil
+	end
+	local sum, n = 0, 0
+	for _, h in ipairs(hunts or {}) do
+		if h.type == "hunt" and h.band == c.band then
+			sum = sum + B.expReward(h, cfg, playerLevel, stage)
+			n = n + 1
+		end
+	end
+	if n > 0 then
+		return sum / n
+	end
+	if not pool then
+		return nil
+	end
+	local h = {band = c.band, type = "hunt"}
+	return clampExp(B.huntPoolMedian(c.band, cfg, pool) * (tonumber(stage) or 1) * (cfg.expShare.hunt or 0) / 100, h,
+		cfg, playerLevel)
+end
+
+function B.reward(c, cfg, playerLevel, stage, huntMean)
 	local band = cfg.bands[c.band]
 	local mult = cfg.typeMult[c.type] or 1
 	local r = band.reward
-	local level = math.max(1, math.min(playerLevel or band.min, band.max))
 	return {
 		gold = math.floor((r.gold or 0) * mult),
 		chaos = math.floor((r.chaos or 0) * mult),
 		divine = (r.divine or 0) > 0 and math.ceil(r.divine * mult) or 0,
-		exp = math.floor(B.expForLevel(level) * (cfg.expPercent[c.type] or 0) / 100)
+		exp = B.expReward(c, cfg, playerLevel, stage, huntMean)
 	}
 end
 

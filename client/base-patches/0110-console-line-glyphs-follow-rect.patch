@@ -1,0 +1,76 @@
+# Chaos: a console line is drawn where its label is (src/framework/ui; after 0001-0109). Beta report 2026-10-21: "com a
+# janela do chat em tamanho padrão, o texto fica em cima do outro" (the newest line drawn over the top line).
+# UITextEdit::update() stores its glyphs in screen coordinates; they are placed again only by onGeometryChange, which
+# UIWidget::setRect sends one event later and skips when the rect is back where it was when the event was scheduled.
+# The console reuses 200 hidden labels; a hidden one keeps its last slot. A new line: its text is set, show() lays it
+# out at the top of the buffer (event scheduled, old rect = its slot), game_cosmetics / game_chatlinks set the coloured
+# text there (glyphs at the top), moveChildToIndex lays it out at the bottom, in its old slot. The event saw no change,
+# so the text stayed at the top, over the first visible line, and the bottom line looked empty.
+# Now the event calls onGeometryRestored() in that case; UITextEdit places its glyphs again when the rect they were
+# placed for is not its rect. Model: client/tools/console_glyphs_test.py.
+--- a/src/framework/ui/uitextedit.cpp
++++ b/src/framework/ui/uitextedit.cpp
+@@ -264,6 +264,7 @@
+         fireAreaUpdate = true;
+ 
+     Rect textScreenCoords = m_rect;
++    m_glyphsRect = m_rect;
+     textScreenCoords.expandLeft(-m_padding.left);
+     textScreenCoords.expandRight(-m_padding.right);
+     textScreenCoords.expandBottom(-m_padding.bottom);
+@@ -740,6 +741,14 @@
+     UIWidget::onGeometryChange(oldRect, newRect);
+ }
+ 
++void UITextEdit::onGeometryRestored()
++{
++    // e.g. a console line: text set at the top of the buffer, then moved back to its old slot in the same frame;
++    // the glyphs stayed where the text was set and were drawn over another line
++    if(m_glyphsRect != m_rect)
++        update(true);
++}
++
+ void UITextEdit::onFocusChange(bool focused, Fw::FocusReason reason)
+ {
+     if(focused) {
+--- a/src/framework/ui/uitextedit.h
++++ b/src/framework/ui/uitextedit.h
+@@ -99,6 +99,7 @@
+ 
+     virtual void onStyleApply(const std::string& styleName, const OTMLNodePtr& styleNode);
+     virtual void onGeometryChange(const Rect& oldRect, const Rect& newRect);
++    virtual void onGeometryRestored();
+     virtual void onFocusChange(bool focused, Fw::FocusReason reason);
+     virtual bool onKeyText(const std::string& keyText);
+     virtual bool onKeyPress(uchar keyCode, int keyboardModifiers, int autoRepeatTicks);
+@@ -114,6 +115,7 @@
+     void recacheGlyphs() { m_glyphsMustRecache = true; }
+ 
+     Rect m_drawArea;
++    Rect m_glyphsRect; // m_rect when update() placed the glyphs (screen coordinates)
+     int m_cursorPos;
+     Point m_textVirtualOffset;
+     Size m_textVirtualSize;
+--- a/src/framework/ui/uiwidget.cpp
++++ b/src/framework/ui/uiwidget.cpp
+@@ -1012,6 +1012,8 @@
+             self->m_updateEventScheduled = false;
+             if(oldRect != self->getRect())
+                 self->onGeometryChange(oldRect, self->getRect());
++            else
++                self->onGeometryRestored();
+         });
+         m_updateEventScheduled = true;
+     }
+--- a/src/framework/ui/uiwidget.h
++++ b/src/framework/ui/uiwidget.h
+@@ -216,6 +216,9 @@
+ protected:
+     virtual void onStyleApply(const std::string& styleName, const OTMLNodePtr& styleNode);
+     virtual void onGeometryChange(const Rect& oldRect, const Rect& newRect);
++    // the rect moved this frame and came back to where it was: no onGeometryChange, but a widget that cached
++    // screen positions in between (UITextEdit) must place them again
++    virtual void onGeometryRestored() { }
+     virtual void onLayoutUpdate();
+     virtual void onFocusChange(bool focused, Fw::FocusReason reason);
+     virtual void onChildFocusChange(const UIWidgetPtr& focusedChild, const UIWidgetPtr& unfocusedChild, Fw::FocusReason reason);

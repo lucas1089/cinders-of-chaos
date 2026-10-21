@@ -131,7 +131,7 @@ function A.hitFactor(flags, ctx)
 			m = m * c.arEffigy.ownSpell
 		end
 		-- the third round: Warrior line
-		if flags.arExecutioner and ctx.origin == "melee" and (ctx.targetFraction or 0) > c.arExecutioner.priceAbove then
+		if flags.arExecutioner and (ctx.origin == "melee" or ctx.origin == "spell") and (ctx.targetFraction or 0) > c.arExecutioner.priceAbove then
 			m = m * c.arExecutioner.price
 		end
 		if flags.arRampage then
@@ -334,7 +334,7 @@ function A.spellOpenHandAttack(player)
 	local unique = false
 	for id, key in pairs(cfg().uniques) do
 		if key == "openHand" then
-			for _, slot in ipairs({CONST_SLOT_RING, CONST_SLOT_AMMO}) do
+			for _, slot in ipairs({CONST_SLOT_RING}) do
 				local item = slot and player:getSlotItem(slot)
 				if item and item:getId() == id then
 					local ok, mark = pcall(item.getCustomAttribute, item, "chaos_unique")
@@ -360,7 +360,7 @@ end
 -- the archetype uniques a player wears: {key = true} (copies that carry chaos_unique; for the spells' Lua state, which
 -- has no archetypes.lua)
 local WORN_SLOTS = {"CONST_SLOT_HEAD", "CONST_SLOT_NECKLACE", "CONST_SLOT_ARMOR", "CONST_SLOT_RIGHT", "CONST_SLOT_LEFT",
-	"CONST_SLOT_LEGS", "CONST_SLOT_FEET", "CONST_SLOT_RING", "CONST_SLOT_AMMO"}
+	"CONST_SLOT_LEGS", "CONST_SLOT_FEET", "CONST_SLOT_RING", "CONST_SLOT_BADGE"}
 function A.wornUniques(player)
 	local out = {}
 	if not player or not player.getSlotItem then
@@ -663,7 +663,7 @@ function A.percentBase(maxHealth, maxShield, keystone)
 end
 
 -- ------------------------------------------------------------------------------------------------ Executioner's Verdict
--- A melee weapon hit on a monster: the hit (pd, sd, both <= 0) that kills it when it would leave the monster at or below
+-- A melee weapon hit or an own spell hit on a monster: the hit (pd, sd, both <= 0) that kills it when it would leave the monster at or below
 -- the threshold of its maximum health. Bosses are never executed. Returns pd, sd, executed.
 function A.executeHit(health, maxHealth, pd, sd, boss)
 	local e = cfg().arExecutioner

@@ -86,6 +86,8 @@ local mkPlayer = function()
 	function p:getPosition() return {x = 1, y = 1, z = 7} end
 	function p:getMoney() return self.money end
 	function p:getBankBalance() return self.bankGold end
+	function p:setBankBalance(v) self.bankGold = v return true end
+	function p:removeMoney(g) if self.money < g then return false end self.money = self.money - g return true end
 	function p:removeTotalMoney(g)
 		if self.money + self.bankGold < g then return false end
 		local fromHand = math.min(self.money, g)

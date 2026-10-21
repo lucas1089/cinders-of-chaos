@@ -15,6 +15,15 @@ engine house, so the device would never work there. Patched in tier_maps.lua:
   * the "wrap" answer refuses the device that is a fixture of a hideout (ChaosHideout.isFixture);
   * the texts: "You may only use the Waystone Portal in your hideout or inside a house." and "There is no space in your
     hideout or house to spawn portals."
+Part 2 (player report 2026-10-22: "the device's Use does nothing, clicking a waystone does nothing"; its own marker,
+so a server patched by part 1 only gets it on the next run):
+  * the "show" message to the client window (client module game_waystone, opcode 202) carries the tiers the player
+    holds ({clientId, tier, count}, counted by the server in every backpack) and the tier to pick first;
+  * "teleport" refuses a tier the player does not hold before any pad is made (the base made the pads first and
+    took the waystone after, so a pick without one still opened the pads);
+  * a Waystone Tier item gets its own action (the base had none, so using one did nothing): used on the device, or
+    used anywhere in the player's own hideout (ChaosHideout.waystoneDevice), it opens the device's window with that
+    tier picked; elsewhere it says where to use it.
 and in data/items/items.xml the descriptions of the six Waystone Tier items ("... on waystone device at house ...")
 say "... on the waystone device in your hideout or house ...". The portal kit (29628) stays "in your house": building a
 device from a kit needs a house, the hideout has its own device built in. Every change is made once (a second run changes
@@ -50,6 +59,68 @@ HELPER = [
     'end',
 ]
 
+MARK2 = '-- Chaos: waystone window data and the tier items (patch_waystone_hideout.py part 2)'
+SHOW_OLD = 'player:sendExtendedOpcode(OPCODE, json.encode{ action = "show" })'
+SHOW_NEW = ('player:sendExtendedOpcode(OPCODE, json.encode{ action = "show", tiers = chaosWaystoneTiers(player), '
+            'pick = chaosWaystonePick(player) })')
+SHOW_ANCHOR = re.compile(r'^local showTabletUI = Action\(\)[ \t]*\r?$', re.M)
+REGISTER_ANCHOR = re.compile(r'^showTabletUI:register\(\)[ \t]*\r?$', re.M)
+CENTER_ANCHOR = re.compile(r'^([ \t]*)local center = pendingCenter\[guid\][ \t]*\r?$', re.M)
+TIER_IDS = (29845, 29846, 29847, 29848, 29849, 29850)
+
+HELPER2 = [
+    MARK2,
+    '-- the tiers the player holds, for the window: {clientId, look, tier, count} by tier (look: the item\'s client id',
+    '-- in this server\'s items.otb, for the icon); and the tier to pick first',
+    'local chaosPickFor = {}',
+    'local function chaosWaystoneTiers(player)',
+    '  local out = {}',
+    '  for clientId, serverId in pairs(clientToServer) do',
+    '    local itemType = ItemType and ItemType(serverId)',
+    '    local look = itemType and itemType:getClientId() or clientId',
+    '    out[#out + 1] = { clientId = clientId, look = look, serverId = serverId, count = player:getItemCount(serverId) }',
+    '  end',
+    '  table.sort(out, function(a, b) return a.serverId < b.serverId end)',
+    '  for i, t in ipairs(out) do',
+    '    t.tier, t.serverId = i, nil',
+    '  end',
+    '  return out',
+    'end',
+    'local function chaosWaystonePick(player)',
+    '  local pick = chaosPickFor[player:getGuid()]',
+    '  chaosPickFor[player:getGuid()] = nil',
+    '  return pick',
+    'end',
+]
+
+TIER_USE = [
+    '-- Chaos (part 2): a Waystone Tier used on the device, or anywhere in the own hideout, opens the device\'s window',
+    'local chaosTierUse = Action()',
+    'function chaosTierUse.onUse(player, item, fromPosition, target, toPosition, isHotkey)',
+    '  local device = nil',
+    '  if target and type(target) == "userdata" and target.isItem and target:isItem() and target:getActionId() == 42707 then',
+    '    device = target',
+    '  elseif ChaosHideout and ChaosHideout.waystoneDevice then',
+    '    device = ChaosHideout.waystoneDevice(player)',
+    '  end',
+    '  if not device then',
+    '    player:sendTextMessage(MESSAGE_INFO_DESCR, "Use this waystone on the waystone device in your hideout or house.")',
+    '    return true',
+    '  end',
+    '  for clientId, serverId in pairs(clientToServer) do',
+    '    if serverId == item:getId() then',
+    '      chaosPickFor[player:getGuid()] = clientId',
+    '    end',
+    '  end',
+    '  local pos = device:getPosition()',
+    '  showTabletUI.onUse(player, device, pos, nil, pos, isHotkey)',
+    '  chaosPickFor[player:getGuid()] = nil',
+    '  return true',
+    'end',
+    'chaosTierUse:id(%s)' % ', '.join(str(i) for i in TIER_IDS),
+    'chaosTierUse:register()',
+]
+
 DESC_OLD = re.compile(r'Use This waystone on waystone device at house to teleport to a random tier (\d+) map\.')
 DESC_NEW = 'Use this waystone on the waystone device in your hideout or house to teleport to a random tier %s map.'
 DESC_DONE = re.compile(r'Use this waystone on the waystone device in your hideout or house to teleport to a random tier (\d+) map\.')
@@ -60,6 +131,51 @@ def nl_of(text):
 
 
 def patch_lua(text):
+    """-> (new text, changes, error): part 1, then part 2"""
+    new, changes, err = patch_lua_part1(text)
+    if err:
+        return text, [], err
+    new, changes2, err = patch_lua_part2(new)
+    if err:
+        return text, [], err
+    return new, changes + changes2, None
+
+
+def patch_lua_part2(text):
+    """-> (new text, changes, error): the window data, the item check before the pads, the tier items' action"""
+    if MARK2 in text:
+        for need in (SHOW_NEW, 'chaosTierUse:register()', 'You have no waystone of that tier.'):
+            if need not in text:
+                return text, [], 'part 2 marker present but "%s" is missing' % need
+        return text, [], None
+    nl = nl_of(text)
+    if text.count(SHOW_OLD) != 1:
+        return text, [], 'the "show" message of the device is not as expected'
+    if 'local clientToServer = {' not in text or text.index('local clientToServer = {') > text.find('local showTabletUI'):
+        return text, [], 'the clientToServer table is not before the device action'
+    if len(SHOW_ANCHOR.findall(text)) != 1 or len(REGISTER_ANCHOR.findall(text)) != 1:
+        return text, [], 'the device action (showTabletUI) is not as expected'
+    if len(CENTER_ANCHOR.findall(text)) != 1:
+        return text, [], 'the teleport answer (local center = pendingCenter[guid]) is not as expected'
+
+    def cr(m):
+        return '\r' if m.group(0).endswith('\r') else ''
+    new = text.replace(SHOW_OLD, SHOW_NEW, 1)
+    new = SHOW_ANCHOR.sub(lambda m: nl.join(HELPER2) + nl + nl + m.group(0), new, count=1)
+    new = REGISTER_ANCHOR.sub(lambda m: m.group(0).rstrip('\r') + nl + nl + nl.join(TIER_USE) + cr(m), new, count=1)
+    new = CENTER_ANCHOR.sub(lambda m: nl.join([
+        '%sif player:getItemCount(serverTypeId) < 1 then' % m.group(1),
+        '%s  player:sendExtendedOpcode(OPCODE, json.encode{' % m.group(1),
+        '%s    action = "teleport_error",' % m.group(1),
+        '%s    text   = "You have no waystone of that tier."' % m.group(1),
+        '%s  })' % m.group(1),
+        '%s  return true' % m.group(1),
+        '%send' % m.group(1),
+        m.group(0).rstrip('\r')]) + cr(m), new, count=1)
+    return new, ['window data (tiers held, tier to pick)', 'item check before the pads', 'tier items\' action'], None
+
+
+def patch_lua_part1(text):
     """-> (new text, changes, error)"""
     if MARK in text:
         # patched before: all the pieces must be there

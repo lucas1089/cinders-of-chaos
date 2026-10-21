@@ -13,9 +13,10 @@ weight, article, name, plural, description), the file the Lua side (store_food.l
    client reading past the message, "ProtocolGame parse message exception ... opcode 0x6e" at every container that
    showed the ration, found in a live test 2026-10-14; one ration a character, count 1, never used up). Its client
    id: the dragon ham's while
-   `ownLook = false`, `clientId` (our art, client id 33904: client/tools/sprites/gen_store_food_art.py, appended by
-   import_art_things.py with art_import/store_food.csv; in things_custom25) while ownLook = true (on since 2026-10-14). A node already there with the same bytes is left alone, one
-   with other bytes (a changed config or look) is replaced; a server id that belongs to any other client id stops the
+   `ownLook = false`, `clientId` (our art, client id 38611 of pair 34: client/tools/sprites/gen_store_items_art.py,
+   appended by import_art_things.py with art_import/store_items.csv) while ownLook = true (on since 2026-10-14). A node
+   already there with the same bytes is left alone, one with other bytes (a changed config or look, or the
+   `oldClientId` look 33904 of things_custom25) is replaced; a server id that belongs to any other client id stops the
    script (nothing is written). items.otb.bak keeps the original the first time; the written file is parsed again and
    the node checked. Range: 32084 (after the store pouches 32081..32083).
 2. data/items/items.xml: the entry (article, name, plural, description, weight) between two marker comments before
@@ -48,7 +49,9 @@ def read_config(path=CONFIG):
         return ''.join(re.findall(r'"([^"]*)"', m.group(1)))
 
     own = re.search(r'\bownLook\s*=\s*(true|false)', block)
+    old = re.search(r'\boldClientId\s*=\s*(\d+)', block)
     cfg = {'id': num('id'), 'sourceId': num('sourceId'), 'clientId': num('clientId'), 'weight': num('weight'),
+           'oldClientId': int(old.group(1)) if old else None,
            'ownLook': bool(own and own.group(1) == 'true'), 'name': string('name'), 'plural': string('plural'),
            'article': string('article'), 'description': string('description')}
     assert cfg['id'] > 0 and cfg['sourceId'] > 0 and cfg['name'], 'store_food_config.lua: item incomplete'
@@ -88,9 +91,9 @@ def patch_otb(data, cfg):
     if k is None:
         buf[root_end:root_end] = want
         note = 'items.otb: Everfull Ration node added (server id %d, client id %d)' % (cfg['id'], cid)
-    elif k[3] not in (stock[3], cfg['clientId']):
-        raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d or %d; nothing written'
-                         % (cfg['id'], k[3], stock[3], cfg['clientId']))
+    elif k[3] not in (stock[3], cfg['clientId'], cfg.get('oldClientId')):
+        raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d, %d or %s; nothing written'
+                         % (cfg['id'], k[3], stock[3], cfg['clientId'], cfg.get('oldClientId')))
     elif data[k[0]:k[1]] != want:
         buf[k[0]:k[1]] = want
         note = 'items.otb: Everfull Ration node updated (client id %s -> %d)' % (k[3], cid)

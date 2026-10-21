@@ -6,6 +6,13 @@
 
 return {
 	["pt-BR"] = {
+		-- Gold payments from carried coins and the bank (data/lib/chaos_pay.lua)
+		["Paid %d gold: %d carried and %d from your bank. Bank balance: %d gold."] =
+			"Pago %d de ouro: %d da mochila e %d do seu banco. Saldo no banco: %d de ouro.",
+		["Paid %d gold from your bank. Bank balance: %d gold."] =
+			"Pago %d de ouro do seu banco. Saldo no banco: %d de ouro.",
+		["You do not have enough gold (carried and in the bank)."] =
+			"Você não tem ouro suficiente (na mochila e no banco).",
 		-- Idle Hall (idlehall.lua, idlehall_core.lua)
 		["You are idle in town: you will be moved to the Idle Hall in 1 minute. Take a step to stay."] =
 			"Você está parado na cidade: em 1 minuto será levado ao Idle Hall. Dê um passo para ficar.",
@@ -1271,6 +1278,7 @@ return {
 			"Seu stash está cheio: as abas além das suas %d abas gerais e as abas que você não tem mais só permitem retirar.",
 		["Could not take the item."] = "Não foi possível pegar o item.",
 		["The stash is busy. Try again in a moment."] = "O stash está ocupado. Tente de novo daqui a pouco.",
+		["That item moved before it reached the stash. Drag it again."] = "Esse item mudou de lugar antes de chegar ao stash. Arraste de novo.",
 		["Empty the container first."] = "Esvazie o recipiente primeiro.",
 		["Stashed %dx %s."] = "Guardou %dx %s no stash.",
 		["Stashed %dx %s (%s tab)."] = "Guardou %dx %s no stash (aba %s).",
@@ -1457,6 +1465,8 @@ return {
 		["You found a charm: %s%s."] = "Você achou um charm: %s%s.",
 		[" (in your inbox)"] = " (na sua caixa de entrada)",
 		["Last Ember: the Gravewarden's Seal kept you alive."] = "Last Ember: o Gravewarden's Seal te manteve vivo.",
+		["Your unique ring or amulet was renewed and put in your backpack. Put it on again."] =
+			"Seu anel ou amuleto único foi renovado e colocado na sua mochila. Equipe-o de novo.",
 		["Another %s! Yours gains %d pet experience."] = "Outro %s! O seu ganha %d de experiência de pet.",
 		["New pet: %s! Open Character > Pets to call it."] = "Pet novo: %s! Abra Character > Pets para chamá-lo.",
 		["Your pet mends you (+%.0f)."] = "Seu pet te cura (+%.0f).",
@@ -1530,8 +1540,18 @@ return {
 			"Nenhum evento está ativo hoje. Veja o calendário na tela de login.",
 		["Your position: %d, %d, %d."] = "Sua posição: %d, %d, %d.",
 		["The spellbook is already opening."] = "O spellbook já está abrindo.",
-		["%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports)."] =
-			"%s - %s. Serve em magias de %s. Encaixe na janela de spell supports (Character > Spell Supports).",
+		["%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s"] =
+			"%s - %s. Serve em magias de %s. Encaixe na janela de spell supports (Character > Spell Supports).%s",
+		[" To combine three into one of the next level: use the stack, then left-click the same stack."] =
+			" Para juntar três em uma do nível seguinte: use a pilha e depois clique com o botão esquerdo na mesma pilha.",
+		["You need three runes of the same support and level to combine them."] =
+			"Você precisa de três runas do mesmo suporte e nível para juntá-las.",
+		["Combine runes you own: in your backpack, your purse or your depot."] =
+			"Junte runas que são suas: na mochila, na bolsa ou no depot.",
+		["This rune is locked. Unlock it at the crafting bench to combine it."] =
+			"Esta runa está trancada. Destranque na bancada de criação para juntá-la.",
+		["Mythic runes are the best there are; they cannot be combined."] =
+			"Runas Mythic são as melhores que existem; não podem ser juntadas.",
 		["Switching loadout... stand still."] = "Trocando de loadout... fique parado.",
 		["Your last loadout switch was interrupted by a server restart and was undone."] =
 			"Sua última troca de loadout foi interrompida por um reinício do servidor e foi desfeita.",
@@ -1933,21 +1953,31 @@ return {
 		["First kill of %s: +1 passive point! %s."] = "Primeira morte de %s: +1 ponto passivo! %s.",
 		["Boss passive points: +%d for bosses you had already slain (%s). %s."] =
 			"Pontos passivos de boss: +%d por bosses que você já tinha matado (%s). %s.",
-		["%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality."] =
-			"%s%s - %s. Use num equipamento com um encaixe livre para encaixar, ou com %s do mesmo tipo para juntar três em uma da qualidade seguinte.",
-		["a gem"] = "uma gema",
-		["nothing (Perfect is the best quality)"] = "nada (Perfect é a melhor qualidade)",
+		["%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s"] =
+			"%s%s - %s. Use num equipamento com um encaixe livre para encaixar. %s",
+		["To combine three into one of the next quality: use the stack, then left-click the same stack."] =
+			"Para juntar três em uma da qualidade seguinte: use a pilha e depois clique com o botão esquerdo na mesma pilha.",
+		["Perfect is the best quality; it does not combine."] = "Perfect é a melhor qualidade; não se junta.",
 		["That cannot hold gems. "] = "Isso não pode ter gemas. ",
+		["You need three gems of the same kind and quality to combine them."] =
+			"Você precisa de três gemas do mesmo tipo e qualidade para juntá-las.",
+		["Combine gems you own: in your backpack, your purse or your depot."] =
+			"Junte gemas que são suas: na mochila, na bolsa ou no depot.",
+		["This gem is locked. Unlock it at the crafting bench to combine it."] =
+			"Esta gema está trancada. Destranque na bancada de criação para juntá-la.",
+		["Only gems of the same kind and quality combine."] = "Só gemas do mesmo tipo e qualidade se juntam.",
+		["Perfect gems are the best there are; they cannot be combined."] =
+			"Gemas Perfect são as melhores que existem; não podem ser juntadas.",
 		["Salvaged %s: %s.%s"] = "Salvage de %s: %s.%s",
 		[" Your backpack is full: some went to your inbox."] =
 			" Sua mochila está cheia: parte foi para a sua caixa de entrada.",
 		["Salvaged %d items: %d %s%s.%s"] = "Salvage de %d itens: %d %s%s.%s",
 		[" Your backpack is full: it went to your inbox."] =
 			" Sua mochila está cheia: foi para a sua caixa de entrada.",
-		["The ammunition slot is a second ring slot now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s."] =
-			"O slot de munição agora é um segundo slot de anel e as aljavas vão na mão secundária junto de um arco ou besta. Movidos: %s.",
-		["You can only wear one might ring at a time. Moved: %s."] =
-			"Você só pode usar um might ring por vez. Movidos: %s.",
+		["The ammunition slot holds nothing now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s."] =
+			"O slot de munição não guarda mais nada e as aljavas vão na mão secundária junto de um arco ou besta. Movidos: %s.",
+		["The second ring slot is gone: the badge slot took its place. Moved: %s."] =
+			"O segundo slot de anel saiu: o slot de badge ficou no lugar dele. Movidos: %s.",
 		["Your Ember Blessings fade: no blessings in the %s."] = "Suas Ember Blessings somem: sem bênçãos em %s.",
 		-- Factions: reputation, contracts, the quartermasters (factions.lua, factions_core.lua contracts and offer states)
 		["+%d reputation with %s%s."] = "+%d de reputação com %s%s.",
@@ -2559,16 +2589,16 @@ return {
 			"Skill de lenhador",
 		["Herbalist skill"] =
 			"Skill de herbalista",
-		["Physical damage x (1 + points / 230), at most 60 points (+26%)."] =
-			"Dano físico x (1 + pontos / 230), no máximo 60 pontos (+26%).",
-		["Damage of every type but physical, and healing, x (1 + points / 230), at most 60 points (+26%)."] =
-			"Dano de todo tipo menos físico, e cura, x (1 + pontos / 230), no máximo 60 pontos (+26%).",
-		["Weapon hits (melee, distance, wand) deal 1 / (1 - points%) times the damage, like attacking faster: at most 20 points (+25%)."] =
-			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - pontos%) vezes o dano, como atacar mais rápido: no máximo 20 pontos (+25%).",
-		["+1 percent maximum health per point, at most +50%."] =
-			"+1 percent de vida máxima por ponto, no máximo +50%.",
-		["+1 percent maximum mana per point, at most +50%."] =
-			"+1 percent de mana máxima por ponto, no máximo +50%.",
+		["Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
+			"Dano físico x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
+		["Damage of every type but physical, and healing, x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
+			"Dano de todo tipo menos físico, e cura, x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
+		["Weapon hits (melee, distance, wand) deal 1 / (1 - value%) times the damage, like attacking faster. Value: 0.8 per point up to 20 points (+19%), then 1 per 15 points up to 80 points (+25%)."] =
+			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - valor%) vezes o dano, como atacar mais rápido. Valor: 0,8 por ponto até 20 pontos (+19%), depois 1 a cada 15 pontos até 80 pontos (+25%).",
+		["+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
+			"+0,8 percent de vida máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
+		["+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
+			"+0,8 percent de mana máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
 		["No effect yet: the game gives wisdom no use."] =
 			"Sem efeito por enquanto: o jogo ainda não dá uso à sabedoria.",
 		["Walking speed. The tooltip shows the speed you gain; at most +80."] =
@@ -3060,5 +3090,17 @@ return {
 			"A lua da colheita acordou os mortos desta vila. Colha as abóboras, cave as covas e encontre a sexton's key: a cripta sob a capela leva ao Hollow King.",
 		["Hessa. I buried my husband in that graveyard. Twice. Bring me hollow candy and I will {trade}."] =
 			"Hessa. Enterrei meu marido naquele cemitério. Duas vezes. Traga hollow candy e eu faço {trade}.",
+		-- Badge slot, retired slots (badges_core.lua)
+		["This slot is retired: nothing can be worn there."] = "Este slot foi aposentado: nada pode ser equipado nele.",
+		["This item can't be worn. The Loot Buyer buys it."] = "Este item não pode ser equipado. O Loot Buyer compra ele.",
+		["These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."] =
+			"Estes slots foram aposentados: decks, navios, cintos e luvas não podem ser equipados. Movidos: %s.",
+		-- Prizes into the backpack (prizes_core.lua)
+		["Your prize %s is in your Purse (the store inbox): your backpack had no room."] =
+			"Seu prêmio %s está na sua Purse (a caixa da loja): sua mochila não tinha espaço.",
+		["Your prize %s is on the ground under you: your backpack and your Purse had no room."] =
+			"Seu prêmio %s está no chão embaixo de você: sua mochila e sua Purse não tinham espaço.",
+		["The roulette could not find your prize. Your next spin is free."] =
+			"A roleta não encontrou seu prêmio. Seu próximo giro é grátis.",
 	},
 }

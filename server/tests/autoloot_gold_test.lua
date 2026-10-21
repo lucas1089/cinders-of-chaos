@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/autoloot_gold_test.lua (and lua5.3; CI runs both)
--- Coins of a corpse go to the bank when a coin is on the owner's autoloot list (autoloot.lua, onDropLoot 2.6).
+-- Coins of every corpse the character owns go to the bank (autoloot.lua, onDropLoot 2.6).
 local count, failures = 0, 0
 local function check(cond, label)
 	count = count + 1
@@ -56,8 +56,20 @@ check(#o.msgs == 1, "one message")
 
 local o2 = owner({2400})
 local c2 = coin(2148, 10)
-check(G.toBank(o2, corpse({c2})) == 0 and not c2.gone and o2.bank == 0, "no coin on the list: the coins stay")
-local o3 = owner({2148})
+check(G.toBank(o2, corpse({c2})) == 10 and c2.gone and o2.bank == 10, "no coin on the list: the coins still go to the bank (default)")
+local o3 = owner({})
 check(G.toBank(o3, corpse({coin(2400, 1)})) == 0 and o3.bank == 0, "no coins in the corpse: nothing paid")
+
+-- coins inside a bag of the corpse are taken too
+local function bag(items)
+	local b = {items = items}
+	function b:getItems() return self.items end
+	function b:getId() return 1987 end
+	function b:getType() return {isContainer = function() return true end} end
+	return b
+end
+local o7 = owner({2148})
+local inner = coin(2160, 1)
+check(G.toBank(o7, corpse({coin(2148, 5), bag({inner})})) == 10005 and inner.gone, "coins in a bag of the corpse")
 print(string.format("autoloot_gold_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

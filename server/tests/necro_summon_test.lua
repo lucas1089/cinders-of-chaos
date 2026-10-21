@@ -45,6 +45,9 @@ local function makeMonster(name)
 	function m:getBaseSpeed() return 200 end
 	function m:changeSpeed() end
 	function m:getMaster() return self.owner end
+	-- engine patches 0040 / 0044 / 0056; `sent` counts the level changes the spectators were told about
+	function m:setDisplayLevel(v) self.shown = v self.sent = (self.sent or 0) + 1 end
+	function m:getDisplayLevel() return self.shown or 0 end
 	return m
 end
 function Game_createMonster(name, pos)
@@ -165,6 +168,77 @@ for _, kind in ipairs({"warrior", "archer", "mage"}) do
 	local x = player(4)
 	eq(cast("data/spells/chaos/necromancer/raise_" .. kind .. ".lua", x), false, kind .. " spell: not another class")
 end
+
+-- ------------------------------------------------------------------ levels follow the owner
+-- owner report 2026-10-21: "the risen skeletons' level does not follow the player's"
+eq(N.minionLevel(312), 312, "the shown level is the owner's")
+eq(N.minionLevel(0), 1, "at least 1")
+eq(N.minionLevel(nil), 1, "no level: 1")
+eq(N.rescaleHealth(1000, 500, 2000), 1000, "half health stays half")
+eq(N.rescaleHealth(1000, 1000, 1200), 1200, "full stays full")
+eq(N.rescaleHealth(1000, 1, 500), 1, "never below 1 while alive")
+eq(N.rescaleHealth(1000, 0, 2000), 0, "a dead minion stays dead")
+eq(N.rescaleHealth(1000, 900, 500), 450, "a smaller maximum keeps the share")
+local lv = player(cfg.ids.necromancer, 120)
+for _, kind in ipairs({"warrior", "skeleton"}) do
+	local m = L.raise(lv, kind, {x = 10, y = 10, z = 7})
+	eq(m.shown, 120, kind .. ": shows the owner's level when raised")
+	eq(m.maxHealth, L.healthFor(lv, "necromancer", kind), kind .. ": health from the owner's level")
+end
+local w = lv:getSummons()[1]
+local oldMax = w.maxHealth
+w.health = math.floor(oldMax / 2)
+lv.level = 150 -- a level up while the minion is out
+eq(L.refresh(lv, "necromancer", w, "warrior"), true, "a level up refreshes the minion")
+eq(w.shown, 150, "the shown level follows the level up")
+ok(w.maxHealth > oldMax, "the maximum health grows with the level")
+eq(w.maxHealth, N.minionHealth(cfg, "necromancer", "warrior", 150, 40, 1), "the new maximum is the formula's")
+ok(math.abs(w.health - w.maxHealth / 2) <= 1, "and the minion keeps half of it")
+local sent = w.sent
+eq(L.refresh(lv, "necromancer", w, "warrior"), false, "nothing changed: nothing sent")
+eq(w.sent, sent, "no packet without a change")
+-- an engine without setDisplayLevel: the stats still follow, nothing breaks
+local bare = makeMonster("Risen Warrior")
+bare.setDisplayLevel = nil
+eq(L.showLevel(lv, bare), false, "no engine method: no level shown")
+
+-- ------------------------------------------------------------------ no farming
+-- every minion type: no experience and no loot of its own (killing one, the owner's or another player's, gives nothing);
+-- the spell turns the loot drop off too (checked above); the owner cannot hurt its minions (necro_minions.lua guard,
+-- summons.lua refuses the attack)
+for kind, k in pairs(cfg.minions) do
+	if type(k) == "table" and k.monster then
+		local file = "data/monster/monsters/chaos/necro_" .. k.monster:lower():gsub("^risen ", "risen_"):gsub(" ", "_") .. ".xml"
+		local f = io.open(file, "r")
+		ok(f ~= nil, kind .. ": " .. file .. " exists")
+		if f then
+			local xml = f:read("*a")
+			f:close()
+			eq(xml:match('experience="(%d+)"'), "0", kind .. ": no experience (" .. file .. ")")
+			eq(xml:find("<loot", 1, true), nil, kind .. ": no loot table")
+		end
+	end
+end
+local guardSrc = io.open("data/scripts/chaos/necro_minions.lua"):read("*a")
+ok(guardSrc:find("attacker == owner or attacker:getMaster() == owner", 1, true) ~= nil, "the owner's hits do not hurt its minions")
+
+-- ------------------------------------------------------------------ the engine halves (src-patches)
+local function readPatch(name)
+	local f = io.open("src-patches/" .. name, "r")
+	ok(f ~= nil, name .. " exists")
+	if not f then return "" end
+	local t = f:read("*a")
+	f:close()
+	return t
+end
+local p55 = readPatch("0055-own-summons-walk-through.patch")
+local _, walk = p55:gsub("%+[^\n]*creature%->getMaster%(%) == this", "")
+eq(walk, 2, "0055: canWalkthrough and canWalkthroughEx let the owner through its own summons")
+ok(p55:find("+\tupdateCreatureWalkthrough(creature);", 1, true) ~= nil, "0055: setMaster sends the walk-through state")
+ok(readPatch("0056-summon-display-level-refresh.patch"):find("sendUpdateTileCreature(monster)", 1, true) ~= nil,
+	"0056: a changed display level reaches the spectators")
+ok(readPatch("0057-script-target-drop-tells-client.patch"):find("player->sendCancelTarget()", 1, true) ~= nil,
+	"0057: setTarget(nil) on a player tells its client")
 
 print(string.format("necro_summon_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

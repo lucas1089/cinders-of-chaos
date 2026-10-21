@@ -249,6 +249,23 @@ def hall_order_checks(root):
     go()
     stacks, tele, _f = map_state(srv)
     check(tele.get(hall['base_6_12_15']) == (710, 700, 7) and PORTAL not in stacks[(12, 15, Z)], 'order again after a remove')
+    # the order changes on a later install (beta report 2026-10-22: a hunt's level changed; seven ways back led in
+    # front of another hunt's teleport): each way back follows its own hunt, by the arrival beside it
+    rows[0] = dict(rows[0], lo=900, hi=950)
+    H.write_csv(rows, csvp)
+    res = go()
+    hall = res['hall']['assign']
+    seq = sorted(hall, key=lambda k: (hall[k][0], hall[k][1]))
+    check(seq[-1] == 'base_6_12_11', 'reorder: the Rat hunt last now: %s' % seq)
+    stacks, tele, _f = map_state(srv)
+    check(tele.get((701, 700, 7)) == H.front_of(cfg['room'], hall['base_6_12_11'])
+          and tele.get((711, 701, 7)) == H.front_of(cfg['room'], hall['base_6_12_15']),
+          'reorder: each way back leads in front of its own hunt\'s teleport: %s' % tele)
+    once = digest(srv)
+    go()
+    check(digest(srv) == once, 'reorder: a second run changes nothing')
+    rows[0] = dict(rows[0], lo=10, hi=40)
+    H.write_csv(rows, csvp)
     # too few slots: refused
     rows.append(dict(rows[0], id='base_6_99_11', x=99))
     H.write_csv(rows, csvp)
@@ -635,6 +652,30 @@ def main():
         except T.InstallError as e:
             check('changed' in str(e), 'changed plan: %s' % e)
         check(digest(srv) == once, 'refusal writes nothing')
+        # the same map as a map master (tools/map_master.py's marker): the area differs from its plan as if the owner
+        # had edited it by hand; it is kept, nothing written
+        mark = os.path.join(srv, 'data', 'world', 'w.otbm.master.json')
+        open(mark, 'w').write('{"version": 1}\n')
+        try:
+            run(srv, plans, comp)
+            check(False, 'map master: an area most of whose tiles differ is still refused')
+        except T.InstallError as e:
+            check('changed' in str(e), 'map master, all tiles changed: %s' % e)
+        one = {(1000 + i, 1000, 7): dict(ground=G, items=[], flags=0) for i in range(3)}
+        one[(1001, 1000, 7)]['items'] = [(PORTAL, {'aid': 47951})]
+        one[(1000, 1000, 7)]['ground'] = 101
+        open(os.path.join(comp['tiny_hunt'], 'tiny_hunt.otbm'), 'wb').write(otbm_file(one))
+        os.remove(mark)
+        try:
+            run(srv, plans, comp)
+            check(False, 'one tile changed, no master: refused')
+        except T.InstallError as e:
+            check('changed' in str(e), 'one tile changed, no master: %s' % e)
+        open(mark, 'w').write('{"version": 1}\n')
+        res, log = run(srv, plans, comp)
+        check(res['areas'].get('tiny_hunt') == 'done' and digest(srv) == once, 'map master: an edited area is kept')
+        check(any('tiny_hunt: placed already' in l and 'edited by hand' in l for l in log), 'map master: logged')
+        os.remove(mark)
         # a reorder (tiny_hunt's band now above other_hunt's) moves the display monsters; the config order is not used
         cfg2 = dict(CFG, plans=[CFG['plans'][1], CFG['plans'][0]])
         tj = os.path.join(plans, 'tiny_hunt.json')

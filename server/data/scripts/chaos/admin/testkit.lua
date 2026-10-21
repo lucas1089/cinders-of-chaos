@@ -37,7 +37,7 @@ K.kits = {
 			[CONST_SLOT_FEET] = 26133, -- Voidwalker Boots (unique)
 			[CONST_SLOT_LEFT] = 27665, -- eldritch wand (druids get the rod below)
 			[CONST_SLOT_RIGHT] = 8918, -- spellbook of dark mysteries
-			[CONST_SLOT_NECKLACE] = 10218, -- Heart of Cinders (unique)
+			[CONST_SLOT_NECKLACE] = 41641, -- Heart of Cinders (unique)
 			[CONST_SLOT_RING] = 10314 -- Cinderclaw Band (unique)
 		},
 		druidWeapon = 27671 -- eldritch rod
@@ -51,7 +51,7 @@ K.kits = {
 			[CONST_SLOT_FEET] = 27647, -- Bloodstep Boots (unique)
 			[CONST_SLOT_LEFT] = 8209, -- Soulreaper (unique)
 			[CONST_SLOT_RIGHT] = 10318, -- Obsidian Aegis (unique)
-			[CONST_SLOT_NECKLACE] = 10221, -- Heartbleed Pendant (unique)
+			[CONST_SLOT_NECKLACE] = 41642, -- Heartbleed Pendant (unique)
 			[CONST_SLOT_RING] = 21693 -- Hornbinder Ring (unique)
 		}
 	},
@@ -64,7 +64,7 @@ K.kits = {
 			[CONST_SLOT_FEET] = 27288, -- Maw Treads (unique)
 			[CONST_SLOT_LEFT] = 8849, -- Gallowsbolt Crossbow (unique)
 			[CONST_SLOT_NECKLACE] = 24851, -- Tear of the Void (unique)
-			[CONST_SLOT_RING] = 2206 -- Ring of the Last Ember (unique)
+			[CONST_SLOT_RING] = 41640 -- Ring of the Last Ember (unique)
 		},
 		-- bows and crossbows fire without ammunition: a Legendary Haloed Quiver in the off-hand (chaos_archery_config.lua)
 		quiver = {id = 29566, rarity = 5}

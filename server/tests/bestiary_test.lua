@@ -361,6 +361,36 @@ eq(top.exp, math.floor(C.expForLevel(1000) * 2 / 100))
 local capped = C.taskReward({kind = "hunt", level = 20}, 1000, cfg, bountyCfg)
 eq(capped.gold, 4000, "a low task pays the low band even for a high character")
 eq(capped.exp, math.floor(C.expForLevel(49) * 1.5 / 100), "experience capped at the band top")
+-- experience (2026-10-22): expShare percent of the task's kills at the character's stage, floor expPercent, cap expCap
+local hr = cfg.reward.hunt
+local dragonTask = {kind = "hunt", target = "dragon", level = dragon.level, required = 150}
+eq(C.taskKillBase(dragonTask, cat), 700, "hunt: the monster's experience without a hook")
+eq(C.taskKillBase(dragonTask, cat, function(e) return e.exp / 2 end), 350, "hunt: the hook")
+eq(C.taskKillBase({kind = "hunt", target = "nobody"}, cat), 0, "unknown monster")
+eq(C.taskKillBase(dragonTask, nil), 0, "no catalogue")
+local fam = {kind = "family", target = dragon.cat, lo = 1, hi = 2000, level = 100, required = 200}
+local famList = {}
+for _, e in ipairs(cat.list) do
+	if e.cat == dragon.cat and not e.boss and (e.spawns or 0) > 0 then famList[#famList + 1] = e.exp end
+end
+table.sort(famList)
+eq(C.taskKillBase(fam, cat), famList[math.floor((#famList + 1) / 2)], "family: the median of the window")
+eq(C.taskKillBase({kind = "family", target = dragon.cat, lo = 1, hi = 1}, cat), 0, "family: none in the window")
+local lvl = 60
+local want = math.floor(150 * 700 * 45 * hr.expShare / 100)
+want = math.min(want, math.floor(C.expForLevel(lvl) * hr.expCap / 100))
+eq(C.taskReward(dragonTask, lvl, cfg, bountyCfg, 45, 700).exp, want, "share of the kills at the stage")
+eq(C.taskReward(dragonTask, 20, cfg, bountyCfg, 1, 1).exp, math.floor(C.expForLevel(20) * hr.expPercent / 100), "floor")
+eq(C.taskReward(dragonTask, 20, cfg, bountyCfg, 50, 1e6).exp, math.floor(C.expForLevel(20) * hr.expCap / 100), "cap")
+local topOf = bountyCfg.bands[ChaosBounty.bandOf(dragon.level, bountyCfg)].max
+eq(C.taskReward(dragonTask, 1000, cfg, bountyCfg, 13, 1e9).exp, math.floor(C.expForLevel(topOf) * hr.expCap / 100),
+	"cap at the task band's top for a high character")
+assert(hr.expShare < bountyCfg.expShare.hunt, "a task pays a smaller share than a bounty hunt")
+-- party credit for tasks: only within the member's board window
+assert(C.partyCountsTask({level = 20}, 8, cfg), "within the board window of level 8")
+assert(not C.partyCountsTask({level = C.window(8, cfg.boardWindow).hi + 1}, 8, cfg), "above it")
+assert(C.partyCountsTask({level = 100}, 400, cfg), "a strong member on a weak task")
+
 -- the most a day of tasks pays stays well below a day of bounty contracts at the same band
 local dayTasks = cfg.dailyLimit * top.gold
 local dayBounty = 12 * bountyCfg.bands[6].reward.gold

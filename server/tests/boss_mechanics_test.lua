@@ -726,6 +726,16 @@ local taken = registered.ChaosBossMechTaken
 local d1 = taken.onHealthChange(stay, b, -1000, COMBAT_PHYSICALDAMAGE, 0, 0)
 local d2 = taken.onHealthChange(stay, b, -1000, COMBAT_PHYSICALDAMAGE, 0, 0)
 check(d2 < d1, "the second hit is stronger with a stack (" .. d1 .. ", " .. d2 .. ")")
+-- the mana shield part (manashield.lua): the stacks so far scale it, a hit the mana takes whole still adds a stack, and
+-- the rest of a hit the mana event scaled is not scaled again
+local bossShield = ChaosManaShield.providers.bossmech
+local m3 = bossShield.hit(stay, b, 1000)
+check(m3 == -d2 + 100, "mana shield part: the two stacks so far (" .. tostring(m3) .. ")")
+bossShield.absorbed(stay, b, m3, {})
+check(bossShield.hit(stay, b, 1000) == m3 + 100, "a hit the mana took whole added a stack")
+ChaosManaShield.mark(stay:getId(), b:getId(), ChaosManaShield.now(), {"bossmech"})
+check(taken.onHealthChange(stay, b, -500, COMBAT_PHYSICALDAMAGE, 0, 0) == -500, "the rest of a mana shield hit is left")
+check(taken.onHealthChange(stay, b, -500, COMBAT_PHYSICALDAMAGE, 0, 0) < -500, "the next hit is scaled")
 -- the boss dies: the fight is cleaned up
 creatures[b.id] = nil
 runTo(T + 500)

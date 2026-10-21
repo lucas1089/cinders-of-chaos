@@ -3,7 +3,7 @@
 
 usage: python3 client/tools/gen_skin.py [--base <base-client-dir>] [group ...]
 
-Groups (default: all): frames, controls, stock, hud, ornaments.
+Groups (default: all): frames, controls, stock, badge, hud, ornaments. (stock also draws badge; badge needs no base.)
 
 Everything here is drawn by code: tileable value noise for iron, leather and stone, a height
 map + light model for bevels, rivets, gold filigree and gems, all deterministic (fixed seeds).
@@ -971,8 +971,37 @@ RELIGHT = [
 SLOTS = ['ammo', 'back', 'body', 'feet', 'finger', 'head', 'left-hand', 'legs', 'neck', 'right-hand']
 
 
-def slot_with_silhouette(src, blessed, seed):
-    """Our slot well with the stock slot's silhouette (the part brighter than its background) in dim bronze."""
+def badge_mask(n=34):
+    """The badge slot's silhouette, drawn by code (no stock image has one): a heraldic shield with a four-pointed star
+    cut out of it, 0..1 coverage, 4x supersampled."""
+    s = 4
+    N = n * s
+    img = Image.new('L', (N, N), 0)
+    g = ImageDraw.Draw(img)
+    c = N / 2
+    top, mid, bot, hw = 8 * s, 19 * s, 27 * s, 8.5 * s
+    curve = [(hw * (1 - i / 12) ** 0.6, mid + (bot - mid) * i / 12) for i in range(13)]  # mid -> the point
+    pts = [(c - hw, top), (c + hw, top)] + [(c + x, y) for x, y in curve] + [(c - x, y) for x, y in curve[::-1]]
+    g.polygon(pts, fill=255)
+    cy, r1, r2 = 16.5 * s, 5.5 * s, 1.6 * s
+    star = []
+    for k in range(8):
+        a = math.pi / 4 * k - math.pi / 2
+        r = r1 if k % 2 == 0 else r2
+        star.append((c + r * math.cos(a), cy + r * math.sin(a)))
+    g.polygon(star, fill=70)
+    img = img.resize((n, n), Image.LANCZOS)
+    return np.asarray(img, np.float32) / 255.0
+
+
+def slot_with_silhouette(src, blessed, seed, mask=None):
+    """Our slot well with the stock slot's silhouette (the part brighter than its background) in dim bronze; or with
+    mask (0..1, n x n) as the silhouette when the stock has none (src None)."""
+    if mask is not None:
+        n = mask.shape[0]
+        d = dist_rect(n, n)
+        m = mask * (d >= 4)
+        return _slot_with_mask(n, m, d, blessed, seed)
     a = from_img(src)
     n = a.shape[0]
     lum = a[..., :3] @ np.array([0.299, 0.587, 0.114], np.float32)
@@ -980,6 +1009,10 @@ def slot_with_silhouette(src, blessed, seed):
     inner = d >= 4
     bg = np.median(lum[inner]) if inner.any() else 0.2
     m = np.clip((lum - bg - 0.04) * 6.0, 0, 1) * inner
+    return _slot_with_mask(n, m, d, blessed, seed)
+
+
+def _slot_with_mask(n, m, d, blessed, seed):
     o = slot(n, seed=seed, rim=GOLD_L if blessed else GOLD)
     sil = np.zeros_like(o)
     sil[..., :3] = (GOLD_L if blessed else hexc('#7a6040'))
@@ -1052,10 +1085,17 @@ def gen_stock():
     save(slot(44, seed=82), 'game/actionbar/slot-actionbar_')
     save(slot(66, seed=83), 'ui/item66')
     for nm in SLOTS:
-        # the ammunition slot is the second ring slot (server src-patch 0023): it shows the ring's silhouette
-        src = 'game/slots/' + ('finger' if nm == 'ammo' else nm)
+        src = 'game/slots/' + nm
         save(slot_with_silhouette(stock(src), False, 90), 'game/slots/' + nm)
         save(slot_with_silhouette(stock(src), True, 90), 'game/slots/' + nm + '-blessed')
+    gen_badge_slot()
+
+
+def gen_badge_slot():
+    """The badge slot (13; client base patch 0113 draws it where the ammunition slot was): a placeholder with a badge
+    silhouette drawn here. Needs no base client."""
+    save(slot_with_silhouette(None, False, 90, mask=badge_mask(34)), 'game/slots/badge')
+    save(slot_with_silhouette(None, True, 90, mask=badge_mask(34)), 'game/slots/badge-blessed')
 
 
 def map_frame(n):
@@ -1170,6 +1210,7 @@ GROUPS = {
     'frames': gen_frames,
     'controls': gen_controls,
     'stock': gen_stock,
+    'badge': gen_badge_slot,
     'hud': gen_hud,
     'ornaments': gen_ornaments,
 }

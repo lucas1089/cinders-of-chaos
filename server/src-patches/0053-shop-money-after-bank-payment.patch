@@ -1,0 +1,23 @@
+# The NPC trade window learns of a bank payment (server/README.md "Gold payments: carried coins, then the bank"; owner
+# 2026-10-22: "todas as lojas que usam gold aceitam o dinheiro diretamente do banco").
+# ProtocolGame::sendSaleItemList already sends carried + bank as the player's money, and the client greys the offers by
+# that number. The engine sends the list again only when an item moves (Player::updateSaleShopList), so a purchase paid
+# from the bank alone (data/lib/chaos_pay.lua, Player.removeTotalMoney) left the window with the old money: offers stayed
+# bright that the player could no longer afford. Lua player:setBankBalance now sends the sale list again while the
+# player has an NPC shop open (Player::getShopOwner). Nothing else changes.
+# Apply after 0001-0052: patch -p1 < 0053-shop-money-after-bank-payment.patch (in the server folder, next to src/).
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -10064,6 +10064,12 @@
+ 	}
+ 
+ 	player->setBankBalance(balance);
++	// Chaos: an open NPC trade window shows carried + bank money and greys the offers by it (sendSaleItemList); a
++	// payment from the bank alone changes no item, so the window is told here (data/lib/chaos_pay.lua)
++	int32_t onBuy, onSell;
++	if (player->getShopOwner(onBuy, onSell)) {
++		player->sendSaleItemList();
++	}
+ 	pushBoolean(L, true);
+ 	return 1;
+ }

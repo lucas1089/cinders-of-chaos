@@ -24,6 +24,9 @@ Map editor
   The server's map is the .otbm file in server\data\world. Stop the game server before saving over it, keep a copy
   of the old file, and restart the server to load the change. docs/MAP_GUIDE.md in the repository has the building
   rules (sizes, borders, detail) for new areas.
+  To keep a change for good (next packages and the live server): send the saved .otbm to the team. It becomes the
+  map master (docs/MAP_GUIDE.md "Editing the live map"). Start each edit from the newest package. Monster spawns
+  and houses placed in the editor are not kept.
 
 Folders
   server\     the game server (ChaosServer.exe, config.lua, data\, the map)

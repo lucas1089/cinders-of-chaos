@@ -1,0 +1,1619 @@
+# Chaos: every text of the Helper's other tabs and sub-windows goes through tr() (client/BASE.md 0106; after 0001-0105).
+# Healing, Shooter, Equipment and Timers, the presets, hotkeys, spell picker, rule lists, low supply settings and the
+# helper's messages and tooltips. The pt-BR text is in client_chaos_locale/pt_br.lua. Hotkey names and preset kinds
+# stay English keys and are translated where shown. The HUD size, timer unit and equipment And / Or lists show
+# translated entries and keep their English value as the option's data (saved settings unchanged); the old
+# setCurrentOption("AND") never matched "And", so an Or rule opened for editing as And: it now shows its own logic.
+# A few fixed-width widgets are wider so the pt-BR text fits (Clear, Advanced +, Words, Enable Equipment).
+--- a/mods/game_helper/classes/alarms/low_supply_alarm.lua
++++ b/mods/game_helper/classes/alarms/low_supply_alarm.lua
+@@ -163,7 +163,7 @@
+     notifierMod.Notifier.show({
+       type = "item",
+       itemId = triggerRule.itemId,
+-      title = "Low Supply",
++      title = tr("Low Supply"),
+       description = itemName,
+       duration = 3000,
+       source = "alert"
+@@ -267,9 +267,9 @@
+   local profile = getActiveProfile()
+   if not profile or not profile.rules then return end
+ 
+-  local ruleName = "this rule"
++  local ruleName = tr("this rule")
+   if profile.rules[index] then
+-    ruleName = profile.rules[index].name or "this rule"
++    ruleName = profile.rules[index].name or tr("this rule")
+   end
+ 
+   _RuleList.confirmRemove(ruleName, function()
+@@ -400,7 +400,7 @@
+     -- Change button to "Update" and show clear
+     local addButton = settingsWindow:recursiveGetChildById('addButton')
+     if addButton then
+-      addButton:setText("Update")
++      addButton:setText(tr("Update"))
+     end
+     local clearButton = settingsWindow:recursiveGetChildById('clearButton')
+     if clearButton then
+@@ -505,7 +505,7 @@
+     -- Set summary
+     local ruleSummary = widget:getChildById('ruleSummary')
+     if ruleSummary then
+-      ruleSummary:setText("Count < " .. (rule.threshold or 0))
++      ruleSummary:setText(tr('Count < %s', tostring(rule.threshold or 0)))
+     end
+ 
+     -- Helper to get the current index of this widget in the list
+@@ -597,7 +597,7 @@
+ 
+   local itemNameLabel = settingsWindow:recursiveGetChildById('itemNameLabel')
+   if itemNameLabel then
+-    itemNameLabel:setText('Click to select item')
++    itemNameLabel:setText(tr('Click to select item'))
+     itemNameLabel:setColor('#888888')
+   end
+ 
+@@ -609,7 +609,7 @@
+   -- Reset button to "Add" and hide clear
+   local addButton = settingsWindow:recursiveGetChildById('addButton')
+   if addButton then
+-    addButton:setText("Add")
++    addButton:setText(tr("Add"))
+   end
+   local clearButton = settingsWindow:recursiveGetChildById('clearButton')
+   if clearButton then
+--- a/mods/game_helper/classes/alarms/private_message_alarm.lua
++++ b/mods/game_helper/classes/alarms/private_message_alarm.lua
+@@ -71,7 +71,7 @@
+   end
+ 
+   if modules.game_textmessage and modules.game_textmessage.displayGameMessage then
+-    modules.game_textmessage.displayGameMessage("Private message alarm: " .. tostring(name))
++    modules.game_textmessage.displayGameMessage(tr('Private message alarm: %s', tostring(name)))
+   end
+ 
+   if g_logger and g_logger.info then
+--- a/mods/game_helper/classes/auto_haste.lua
++++ b/mods/game_helper/classes/auto_haste.lua
+@@ -329,7 +329,7 @@
+         button:setBorderColorRight("#757575")
+         button:setBorderColorBottom("#757575")
+         button:setBorderWidth(1)
+-        button:setTooltip("Spell: " .. spellName .. "\nWords: " .. spell.words)
++        button:setTooltip(tr('Spell: %s\nWords: %s', spellName, spell.words))
+       end
+     end
+     -- Sempre atualizar checkboxes, mesmo se id == 0
+@@ -403,7 +403,7 @@
+     widget:setBorderColorRight("#757575")
+     widget:setBorderColorBottom("#757575")
+     widget:setBorderWidth(1)
+-    widget:setTooltip("Spell: " .. spellData.name .. "\nWords: " .. spellData.words)
++    widget:setTooltip(tr('Spell: %s\nWords: %s', spellData.name, spellData.words))
+ 
+     helperConfig.haste[1].id = tonumber(spellData.id)
+ 
+--- a/mods/game_helper/classes/auto_stamina.lua
++++ b/mods/game_helper/classes/auto_stamina.lua
+@@ -39,7 +39,7 @@
+     button:setImageSource('/images/game/actionbar/actionbarslot')
+     button:setImageClip('0 0 34 34')
+   end
+-  button:setTooltip(itemId ~= 0 and ('Stamina item ID: ' .. itemId .. '\nRight-click to remove') or
++  button:setTooltip(itemId ~= 0 and tr('Stamina item ID: %d\nRight-click to remove', itemId) or
+       tr('Click, then select the stamina item in game'))
+ end
+ 
+--- a/mods/game_helper/classes/auto_target.lua
++++ b/mods/game_helper/classes/auto_target.lua
+@@ -95,7 +95,7 @@
+ 
+   if not _Helper._suppressMessages then
+     modules.game_textmessage.displayGameMessage(
+-      string.format("Auto Target is %s.", (helperConfig and helperConfig.autoTargetEnabled and "enabled" or "disabled"))
++      helperConfig and helperConfig.autoTargetEnabled and tr("Auto Target is enabled.") or tr("Auto Target is disabled.")
+     )
+   end
+ 
+@@ -615,7 +615,7 @@
+   -- Update the input field with sanitized text (without numbers)
+   if sanitizedText ~= text then
+     priorityMonsterInput:setText(sanitizedText)
+-    modules.game_textmessage.displayGameMessage("Numbers removed from priority list.")
++    modules.game_textmessage.displayGameMessage(tr("Numbers removed from priority list."))
+   end
+ 
+   -- Save the sanitized list
+@@ -630,7 +630,7 @@
+     modules.game_helper.magicShooter.loadPriorityMonsterList()
+   end
+ 
+-  modules.game_textmessage.displayGameMessage("Priority monster list applied.")
++  modules.game_textmessage.displayGameMessage(tr("Priority monster list applied."))
+ end
+ 
+ -- Parse priority monster list into ordered array (first = highest priority)
+--- a/mods/game_helper/classes/equipment.lua
++++ b/mods/game_helper/classes/equipment.lua
+@@ -142,7 +142,7 @@
+   end
+   local itemNameLabel = formPanel:getChildById('itemNameLabel')
+   if itemNameLabel then
+-    itemNameLabel:setText("(click to select an item)")
++    itemNameLabel:setText(tr("(click to select an item)"))
+     itemNameLabel:setColor("#888888")
+   end
+ 
+@@ -162,7 +162,7 @@
+ 
+   -- Reset logic
+   local condLogic = formPanel:getChildById('condLogic')
+-  if condLogic then condLogic:setCurrentOption("AND") end
++  if condLogic then condLogic:setCurrentOptionByData("and") end
+ 
+   -- Reset condition 2
+   local cond2Enable = formPanel:getChildById('cond2Enable')
+@@ -208,7 +208,7 @@
+   local rulesListPanel = rulesList and rulesList:getParent()
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Add") end
++    if addButton then addButton:setText(tr("Add")) end
+   end
+ 
+   -- Clear visual selection in the list
+@@ -254,7 +254,7 @@
+     cond1Operator = cond1Operator and cond1Operator:getCurrentOption().text or "<=",
+     cond1Value = tonumber(cond1Value and cond1Value:getText() or "50") or 50,
+ 
+-    condLogic = condLogic and condLogic:getCurrentOption().text:lower() or "and",
++    condLogic = condLogic and condLogic:getCurrentOption() and condLogic:getCurrentOption().data or "and",
+ 
+     cond2Enabled = cond2Enable and cond2Enable:isChecked() or false,
+     cond2Resource = equip.resourceToInternal(cond2Resource and cond2Resource:getCurrentOption().text or "MP%"),
+@@ -345,7 +345,7 @@
+ 
+   -- Set logic
+   local condLogic = formPanel:getChildById('condLogic')
+-  if condLogic then condLogic:setCurrentOption(rule.condLogic:upper()) end
++  if condLogic then condLogic:setCurrentOptionByData(rule.condLogic:lower()) end
+ 
+   -- Set condition 2
+   local cond2Enable = formPanel:getChildById('cond2Enable')
+@@ -431,7 +431,7 @@
+   local rulesListPanel = rulesList and rulesList:getParent()
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Update") end
++    if addButton then addButton:setText(tr("Update")) end
+   end
+ 
+   -- Update visual selection
+@@ -701,10 +701,10 @@
+ end
+ 
+ function equip.removeRule(ruleId)
+-  local ruleName = "this rule"
++  local ruleName = tr("this rule")
+   for _, r in ipairs(equipConfig.rules) do
+     if r.id == ruleId then
+-      ruleName = r.name or "this rule"
++      ruleName = r.name or tr("this rule")
+       break
+     end
+   end
+@@ -780,8 +780,8 @@
+ 
+ -- Generate line 1 text: item name + action
+ function equip.getRuleNameLine(rule)
+-  local action = (rule.action == "equip") and "Equip" or "Unequip"
+-  local name = rule.name or "Unknown"
++  local action = (rule.action == "equip") and tr("Equip") or tr("Unequip")
++  local name = rule.name or tr("Unknown")
+   return name .. " - " .. action
+ end
+ 
+@@ -795,16 +795,16 @@
+   -- Condition 2
+   if rule.cond2Enabled then
+     table.insert(parts,
+-      rule.condLogic:upper() ..
++      tr(rule.condLogic:upper()) ..
+       " " .. equip.resourceToDisplay(rule.cond2Resource) .. rule.cond2Operator .. rule.cond2Value)
+   end
+ 
+   -- Player conditions
+   if rule.conditions then
+-    if rule.conditions.rooted then table.insert(parts, "Rooted") end
+-    if rule.conditions.feared then table.insert(parts, "Feared") end
++    if rule.conditions.rooted then table.insert(parts, tr("Rooted")) end
++    if rule.conditions.feared then table.insert(parts, tr("Feared")) end
+     if rule.conditions.pz then table.insert(parts, "PZ") end
+-    if rule.conditions.nonPz then table.insert(parts, "non-PZ") end
++    if rule.conditions.nonPz then table.insert(parts, tr("non-PZ")) end
+     if rule.conditions.utamoVita then table.insert(parts, "Utamo") end
+   end
+ 
+@@ -817,7 +817,7 @@
+       skipCount = 1
+     end
+     if skipCount > 0 then
+-      table.insert(parts, "Skip:" .. skipCount)
++      table.insert(parts, tr('Skip:%d', skipCount))
+     end
+   end
+ 
+--- a/mods/game_helper/classes/exercise_training.lua
++++ b/mods/game_helper/classes/exercise_training.lua
+@@ -229,7 +229,7 @@
+     local exerciseId = findAvailableExercise()
+     if not exerciseId then
+       -- No exercise items available
+-      modules.game_textmessage.displayGameMessage("No exercise items available.")
++      modules.game_textmessage.displayGameMessage(tr("No exercise items available."))
+       setState(State.NO_DUMMY)
+       lastSearchPosition = copyPosition(currentPos)
+       return
+--- a/mods/game_helper/classes/hotkey_manager.lua
++++ b/mods/game_helper/classes/hotkey_manager.lua
+@@ -497,7 +497,7 @@
+     return
+   end
+ 
+-  assignWindow:setText(tostring(typo))
++  assignWindow:setText(tr(tostring(typo)))
+ 
+   local displayLabel = assignWindow:recursiveGetChildById('display')
+   local descLabel = assignWindow:recursiveGetChildById('desc')
+@@ -541,13 +541,13 @@
+       buttonClear:setEnabled(true)
+     end
+   else
+-    displayLabel:setText("(press a key)")
++    displayLabel:setText(tr("(press a key)"))
+     if buttonClear then
+       buttonClear:setEnabled(false)
+     end
+   end
+ 
+-  descLabel:setText("Assign hotkey to: " .. tostring(typo))
++  descLabel:setText(tr('Assign hotkey to: %s', tr(tostring(typo))))
+ 
+   assignWindow.onKeyDown = function(widget, keyCode, keyboardModifiers, keyText)
+     if keyCode == KeyUp or keyCode == KeyDown or keyCode == KeyLeft or keyCode == KeyRight then
+@@ -565,14 +565,14 @@
+ 
+     if containsHotkey(getAssignBlockedKeys(), keyCombo) then
+       assignWindow.warning:setVisible(true)
+-      assignWindow.warning:setText("This hotkey is already in use and cannot be overwritten.")
++      assignWindow.warning:setText(tr("This hotkey is already in use and cannot be overwritten."))
+       assignWindow.buttonOk:setEnabled(false)
+     else
+       local conflictWith = hotkeyManager.isInUse(displayText, typo)
+       if conflictWith then
+         assignWindow.warning:setVisible(true)
+-        local formattedTypo = conflictWith:gsub("Enable/Disable ", "")
+-        assignWindow.warning:setText(string.format(
++        local formattedTypo = tr(conflictWith)
++        assignWindow.warning:setText(tr(
+           "This hotkey is already in use by: %s.\nIf you want to proceed, the previous assignment\nwill be cleared.",
+           formattedTypo))
+         assignWindow.buttonOk:setEnabled(true)
+@@ -626,13 +626,13 @@
+     buttonClear.onClick = function()
+       local hotkeyToRemove = helperConfig[def.codeKey]
+ 
+-      displayLabel:setText("(press a key)")
++      displayLabel:setText(tr("(press a key)"))
+       capturedKeyCode = nil
+       capturedKeyChar = ""
+ 
+       if hotkeyToRemove and hotkeyToRemove ~= "" then
+         assignWindow.warning:setVisible(true)
+-        assignWindow.warning:setText("Hotkey '" .. hotkeyToRemove .. "' will be removed if you confirm.")
++        assignWindow.warning:setText(tr("Hotkey '%s' will be removed if you confirm.", hotkeyToRemove))
+       else
+         assignWindow.warning:setVisible(false)
+       end
+--- a/mods/game_helper/classes/magic_shooter.lua
++++ b/mods/game_helper/classes/magic_shooter.lua
+@@ -167,8 +167,7 @@
+ 
+   if not _Helper._suppressMessages then
+     modules.game_textmessage.displayGameMessage(message and message or
+-      string.format("Magic Shooter is %s.",
+-        (helperConfig and helperConfig.magicShooterEnabled and "enabled" or "disabled")))
++      helperConfig and helperConfig.magicShooterEnabled and tr("Magic Shooter is enabled.") or tr("Magic Shooter is disabled."))
+   end
+ 
+   -- Sincronizar com shortcut panel
+@@ -1335,7 +1334,7 @@
+         button:setBorderColorRight("#757575")
+         button:setBorderColorBottom("#757575")
+         button:setBorderWidth(1)
+-        button:setTooltip("Spell: " .. Spells.getSpellNameByWords(spell.words) .. "\nWords: " .. spell.words)
++        button:setTooltip(tr('Spell: %s\nWords: %s', Spells.getSpellNameByWords(spell.words), spell.words))
+ 
+         local bothCastTypeSpells = _Helper.MagicShooter.getBothCastTypeSpells()
+         if table.contains(bothCastTypeSpells, spell.id) then
+@@ -1351,7 +1350,7 @@
+               }
+               selfCast:mergeStyle(style)
+               selfCast:setId('selfCast' .. k - 1)
+-              selfCast:setTooltip('Cast On Foot')
++              selfCast:setTooltip(tr('Cast On Foot'))
+               selfCast:setVisible(true)
+               selfCast:setChecked(v.selfCast)
+               selfCast.onCheckChange = function()
+@@ -1411,7 +1410,7 @@
+           creaturesMin:setEnabled(true)
+           creaturesMin:setCurrentOption(tostring(v.creatures) .. "+")
+         end
+-        button:setTooltip(string.format(rune.name .. " %s", rune.area and "(Area Damage)" or "(Single Damage)"))
++        button:setTooltip(rune.name .. " " .. (rune.area and tr("(Area Damage)") or tr("(Single Damage)")))
+       end
+       local priorityOption = runePanel:recursiveGetChildById("runePriority" .. k - 1)
+       priorityOption:setCurrentOption(numberToOrdinal and numberToOrdinal(v.priority) or tostring(v.priority))
+--- a/mods/game_helper/classes/mana_training.lua
++++ b/mods/game_helper/classes/mana_training.lua
+@@ -215,7 +215,7 @@
+         button:setBorderColorRight("#757575")
+         button:setBorderColorBottom("#757575")
+         button:setBorderWidth(1)
+-        button:setTooltip("Spell: " .. spellName .. "\nWords: " .. spell.words)
++        button:setTooltip(tr('Spell: %s\nWords: %s', spellName, spell.words))
+       end
+     end
+     -- Sempre atualizar checkboxes e percent, mesmo se id == 0
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -1635,7 +1635,7 @@
+   pathLabel:setMarginLeft(6)
+   pathLabel:setMarginRight(146)
+   pathLabel:setMarginTop(1)
+-  pathLabel:setText(string.format("%d settings file(s)  -  Open to view", entry.jsonCount or 1))
++  pathLabel:setText(tr('%d settings file(s)  -  Open to view', entry.jsonCount or 1))
+   row:setTooltip(entry.path)
+   pathLabel:setTooltip(entry.path)
+   pathLabel:setColor("#aaaaaa")
+@@ -1647,7 +1647,7 @@
+   openButton:setMarginRight(84)
+   openButton:setMarginTop(6)
+   openButton:setSize({ width = 52, height = 22 })
+-  openButton:setText("Open")
++  openButton:setText(tr("Open"))
+   openButton.onClick = function() openHelperSettingsEntry(entry) end
+ 
+   local deleteButton = g_ui.createWidget("Button", row)
+@@ -1657,8 +1657,8 @@
+   deleteButton:setMarginRight(18)
+   deleteButton:setMarginTop(6)
+   deleteButton:setSize({ width = 60, height = 22 })
+-  deleteButton:setText("Delete")
+-  deleteButton:setTooltip("Delete this character save")
++  deleteButton:setText(tr("Delete"))
++  deleteButton:setTooltip(tr("Delete this character save"))
+   deleteButton.onClick = function() deleteHelperSettingsEntry(entry) end
+ end
+ 
+@@ -1724,12 +1724,12 @@
+   for _, entry in ipairs(entries) do
+     jsonCount = jsonCount + (entry.jsonCount or 1)
+   end
+-  stats:setText(string.format("%d characters   /   %d settings files", #entries, jsonCount))
++  stats:setText(tr('%d characters   /   %d settings files', #entries, jsonCount))
+ 
+   if #entries == 0 then
+     local empty = g_ui.createWidget("Label", list)
+     empty:setHeight(24)
+-    empty:setText("No saved character settings found.")
++    empty:setText(tr("No saved character settings found."))
+     empty:setColor("#aaaaaa")
+     return
+   end
+@@ -2329,7 +2329,7 @@
+         g_game.cancelAttack()
+       end
+       if showMessage then
+-        modules.game_textmessage.displayGameMessage("Auto Target disabled (Protection Zone).")
++        modules.game_textmessage.displayGameMessage(tr("Auto Target disabled (Protection Zone)."))
+       end
+       if _Helper.Shortcut and _Helper.Shortcut.syncButton then
+         _Helper.Shortcut.syncButton('shortcutAutoTarget', false)
+@@ -2343,7 +2343,7 @@
+         helperConfig.magicShooterEnabled = false
+       end
+       if showMessage then
+-        modules.game_textmessage.displayGameMessage("Magic Shooter disabled (Protection Zone).")
++        modules.game_textmessage.displayGameMessage(tr("Magic Shooter disabled (Protection Zone)."))
+       end
+       if _Helper.Shortcut and _Helper.Shortcut.syncButton then
+         _Helper.Shortcut.syncButton('shortcutMagicShooter', false)
+@@ -2694,11 +2694,11 @@
+       addPotionPercentButton2:setVisible(true)
+       priority2:setVisible(true)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+       priorityButton3:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+     elseif currentPlayer:isPaladin() then
+       if healingTargetModePanel then healingTargetModePanel:setVisible(false) end
+       friendHealingPanel:setVisible(false)
+@@ -2714,11 +2714,11 @@
+       addPotionPercentButton2:setVisible(true)
+       priority2:setVisible(true)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+       priorityButton3:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+     elseif currentPlayer:isSorcerer() then
+       if healingTargetModePanel then healingTargetModePanel:setVisible(false) end
+       friendHealingPanel:setVisible(false)
+@@ -2734,9 +2734,9 @@
+       addPotionPercentButton2:setVisible(false)
+       priority2:setVisible(false)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+     elseif currentPlayer:isDruid() then
+       if healingTargetModePanel then healingTargetModePanel:setVisible(false) end
+       if namedSioPanel then namedSioPanel:setVisible(true) end
+@@ -2753,9 +2753,9 @@
+       addPotionPercentButton2:setVisible(false)
+       priority2:setVisible(false)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+     elseif currentPlayer:isMonk() then
+       if healingTargetModePanel then healingTargetModePanel:setVisible(false) end
+       friendHealingPanel:setVisible(false)
+@@ -2771,11 +2771,11 @@
+       addPotionPercentButton2:setVisible(true)
+       priority2:setVisible(true)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+       priorityButton3:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nClick on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+     else
+       if healingTargetModePanel then healingTargetModePanel:setVisible(false) end
+       friendHealingPanel:setVisible(false)
+@@ -2791,9 +2791,9 @@
+       addPotionPercentButton2:setVisible(false)
+       priority2:setVisible(false)
+       priorityButton1:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+       priorityButton2:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage."))
+     end
+     local thirdSpellHelp = healingPanel:recursiveGetChildById('thirdSpellHelp')
+     if thirdSpellHelp then thirdSpellHelp:setVisible(spellButton2 and spellButton2:isVisible() or false) end
+@@ -2893,7 +2893,7 @@
+   end
+   helper:hide()
+ 
+-  local windowHeader = isHaste and "Assign Haste Spell" or "Assign Training Spell"
++  local windowHeader = isHaste and tr("Assign Haste Spell") or tr("Assign Training Spell")
+   window:setText(windowHeader)
+ 
+   local localPlayer = g_game.getLocalPlayer()
+@@ -2960,7 +2960,7 @@
+ 
+     if spellData.level then
+       widget.levelLabel:setVisible(true)
+-      widget.levelLabel:setText(string.format("Level: %d", spellData.level))
++      widget.levelLabel:setText(tr('Level: %d', spellData.level))
+       if localPlayer:getLevel() < spellData.level then
+         widget.image.gray:setVisible(true)
+       end
+@@ -3029,7 +3029,7 @@
+     button:setBorderColorRight("#757575")
+     button:setBorderColorBottom("#757575")
+     button:setBorderWidth(1)
+-    button:setTooltip("Spell: " .. spellName .. "\nWords: " .. spellWords)
++    button:setTooltip(tr('Spell: %s\nWords: %s', spellName, spellWords))
+     saveSettings()
+ 
+     if destroy then
+@@ -3086,7 +3086,7 @@
+   end
+   helper:hide()
+ 
+-  window:setText("Assign " .. groupName .. " Spell")
++  window:setText(tr('Assign ' .. groupName .. ' Spell'))
+ 
+   local profile = getShooterProfile()
+   local playerVocation = translateVocation(player:getVocation())
+@@ -3157,7 +3157,7 @@
+ 
+     if spellData.level then
+       widget.levelLabel:setVisible(true)
+-      widget.levelLabel:setText(string.format("Level: %d", spellData.level))
++      widget.levelLabel:setText(tr('Level: %d', spellData.level))
+       if player:getLevel() < spellData.level then
+         widget.image.gray:setVisible(true)
+       end
+@@ -3221,7 +3221,7 @@
+ 
+   local okFunc = function(destroy, profile)
+     if not selectedWidget then
+-      modules.game_textmessage.displayGameMessage("Please select a spell first!")
++      modules.game_textmessage.displayGameMessage(tr("Please select a spell first!"))
+       return
+     end
+ 
+@@ -3251,7 +3251,7 @@
+     button:setBorderColorRight("#757575")
+     button:setBorderColorBottom("#757575")
+     button:setBorderWidth(1)
+-    button:setTooltip("Spell: " .. spellName .. "\nWords: " .. spellWords)
++    button:setTooltip(tr('Spell: %s\nWords: %s', spellName, spellWords))
+ 
+     if button:getId():find("attackSpellButton") then
+       local creaturesMin = shooterPanel:recursiveGetChildById("countMinCreature" .. slotID)
+@@ -3271,7 +3271,7 @@
+             }
+             selfCast:mergeStyle(style)
+             selfCast:setId('selfCast' .. slotID)
+-            selfCast:setTooltip('Cast On Foot')
++            selfCast:setTooltip(tr('Cast On Foot'))
+             selfCast:setVisible(true)
+             selfCast.onCheckChange = function() toggleSelfCast(selfCast:getId():match("%d+"), selfCast:isChecked()) end
+           end
+@@ -3420,7 +3420,7 @@
+   end
+   helper:hide()
+ 
+-  window:setText("Select Attack Spell")
++  window:setText(tr("Select Attack Spell"))
+ 
+   local profile = getShooterProfile()
+   local playerVocation = translateVocation(player:getVocation())
+@@ -3464,7 +3464,7 @@
+ 
+     if spellData.level then
+       widget.levelLabel:setVisible(true)
+-      widget.levelLabel:setText(string.format("Level: %d", spellData.level))
++      widget.levelLabel:setText(tr('Level: %d', spellData.level))
+       if player:getLevel() < spellData.level then
+         widget.image.gray:setVisible(true)
+       end
+@@ -3520,7 +3520,7 @@
+ 
+   local okFunc = function(destroy)
+     if not selectedWidget then
+-      modules.game_textmessage.displayGameMessage("Please select a spell first!")
++      modules.game_textmessage.displayGameMessage(tr("Please select a spell first!"))
+       return
+     end
+ 
+@@ -3714,17 +3714,17 @@
+     helperConfig.potions[slotID + 1].priority = 2
+     priorityButton:setImageSource("/images/ui/checkboxcircle")
+     priorityButton:setImageColor("#0066ff")
+-    priorityButton:setTooltip("This potion is healing mana...")
++    priorityButton:setTooltip(tr("This potion is healing mana..."))
+   elseif isHealthPotion(potionId) then
+     helperConfig.potions[slotID + 1].priority = 1
+     priorityButton:setImageSource("/images/ui/checkboxcircle")
+     priorityButton:setImageColor("#d94a3a")
+-    priorityButton:setTooltip("This potion is healing health...")
++    priorityButton:setTooltip(tr("This potion is healing health..."))
+   else
+     helperConfig.potions[slotID + 1].priority = 0
+     priorityButton:setImageSource("/images/ui/checkbox")
+     priorityButton:setImageColor("$var-text-cip-color-white")
+-    priorityButton:setTooltip("No potion selected")
++    priorityButton:setTooltip(tr("No potion selected"))
+   end
+   rebuildHealingCache()
+   -- Persist immediately: the Enable/Disable button reloads helper.json, so an
+@@ -5457,7 +5457,7 @@
+       local priorityButton = healingPanel:recursiveGetChildById("priority" .. slotIndex)
+       priorityButton:setImageSource("/images/skin/show-gui-help-grey")
+       priorityButton:setTooltip(
+-        "Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nPaladins can click on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)")
++        tr("Uses a healing or mana potion when your health or\nmana reaches the defined percentage.\nPaladins can click on this button to change the potion priority:\n  - Icon: Blue (Mana Priority)\n  - Icon: Red  (Health Priority)"))
+     end
+ 
+     helperConfig.potions[slotIndex + 1].id = 0
+@@ -5605,7 +5605,7 @@
+         button:setBorderColorRight("#757575")
+         button:setBorderColorBottom("#757575")
+         button:setBorderWidth(1)
+-        button:setTooltip("Spell: " .. spellName .. "\nWords: " .. spell.words)
++        button:setTooltip(tr('Spell: %s\nWords: %s', spellName, spell.words))
+       end
+     end
+     local percentOption = healingPanel:recursiveGetChildById("spellPercentLabel" .. k - 1)
+@@ -5664,10 +5664,10 @@
+       priorityButton:setImageSource("/images/ui/checkboxcircle")
+       if priority == 1 then
+         priorityButton:setImageColor("#d94a3a")
+-        priorityButton:setTooltip("This potion is healing health...")
++        priorityButton:setTooltip(tr("This potion is healing health..."))
+       elseif priority == 2 then
+         priorityButton:setImageColor("#3a8ad9")
+-        priorityButton:setTooltip("This potion is healing mana...")
++        priorityButton:setTooltip(tr("This potion is healing mana..."))
+       else
+         priorityButton:setImageColor("#808080")
+         priorityButton:setTooltip("")
+@@ -6094,9 +6094,9 @@
+ 
+ function saveHelperSettings()
+   if flushSettings() then
+-    modules.game_textmessage.displayGameMessage("Helper configuration saved successfully!")
++    modules.game_textmessage.displayGameMessage(tr("Helper configuration saved successfully!"))
+   else
+-    modules.game_textmessage.displayFailureMessage("Could not save Helper configuration.")
++    modules.game_textmessage.displayFailureMessage(tr("Could not save Helper configuration."))
+   end
+ end
+ 
+@@ -6608,10 +6608,10 @@
+   button:setImageSource("/images/ui/checkboxcircle")
+   if newPriority == 1 then
+     button:setImageColor("#d94a3a")
+-    button:setTooltip("This potion is healing health...")
++    button:setTooltip(tr("This potion is healing health..."))
+   else
+     button:setImageColor("#3a8ad9")
+-    button:setTooltip("This potion is healing mana...")
++    button:setTooltip(tr("This potion is healing mana..."))
+   end
+   rebuildHealingCache()
+ end
+@@ -6624,10 +6624,10 @@
+   self:setImageSource("/images/ui/checkboxcircle")
+   if newPriority == 1 then
+     self:setImageColor("#d94a3a")
+-    self:setTooltip("This potion is healing health...")
++    self:setTooltip(tr("This potion is healing health..."))
+   else
+     self:setImageColor("#3a8ad9")
+-    self:setTooltip("This potion is healing mana...")
++    self:setTooltip(tr("This potion is healing mana..."))
+   end
+   rebuildHealingCache()
+ end
+@@ -6748,7 +6748,7 @@
+       end
+       existing:setItemId(food.id)
+       slot:setImageSource('/images/ui/item')
+-      slot:setTooltip(getSpecialFoodItemName(food.id) .. "\nRight click to change or remove")
++      slot:setTooltip(tr('%s\nRight click to change or remove', getSpecialFoodItemName(food.id)))
+     else
+       if existing then existing:destroy() end
+       slot:setImageSource('/images/game/actionbar/actionbarslot')
+@@ -7049,7 +7049,7 @@
+   helperDebug("helper status button clicked current=" .. tostring(helperAutomaticFunctionsEnabled))
+   setHelperEnabled(not helperAutomaticFunctionsEnabled, "button", true)
+   if modules.game_textmessage and modules.game_textmessage.displayGameMessage then
+-    modules.game_textmessage.displayGameMessage("Helper toggled + Config LOADED!")
++    modules.game_textmessage.displayGameMessage(tr("Helper toggled + Config LOADED!"))
+   end
+ end
+ 
+@@ -7090,23 +7090,23 @@
+   if helperAutomaticFunctionsEnabled then
+     if helperStatus then
+       helperStatus:setImageSource("/images/ui/icon-yes")
+-      helperStatus:setTooltip("Enabled - Click to DISABLE auto functions OR LOAD config")
++      helperStatus:setTooltip(tr("Enabled - Click to DISABLE auto functions OR LOAD config"))
+     end
+-    helperStatusLabel:setText("Enabled")
++    helperStatusLabel:setText(tr("Enabled"))
+     helperStatusLabel:setColor("#3acb3a")
+     if setKeyButton then
+-      setKeyButton:setText("On")
++      setKeyButton:setText(tr("On"))
+       setKeyButton:setColor("#3acb3a")
+     end
+   else
+     if helperStatus then
+       helperStatus:setImageSource("/images/ui/icon-no")
+-      helperStatus:setTooltip("Disabled - Click to ENABLE auto functions OR LOAD config")
++      helperStatus:setTooltip(tr("Disabled - Click to ENABLE auto functions OR LOAD config"))
+     end
+-    helperStatusLabel:setText("Disabled")
++    helperStatusLabel:setText(tr("Disabled"))
+     helperStatusLabel:setColor("#d94a3a")
+     if setKeyButton then
+-      setKeyButton:setText("Off")
++      setKeyButton:setText(tr("Off"))
+       setKeyButton:setColor("#d94a3a")
+     end
+   end
+@@ -7189,7 +7189,7 @@
+     button:setBorderColorRight("#757575")
+     button:setBorderColorBottom("#757575")
+     button:setBorderWidth(1)
+-    button:setTooltip("Spell: " .. spellData.name .. "\nWords: " .. spellData.words)
++    button:setTooltip(tr('Spell: %s\nWords: %s', spellData.name, spellData.words))
+ 
+     local slotID = tonumber(button:getId():match("%d+"))
+     if button:getId():find("attackSpellButton") then
+@@ -7214,7 +7214,7 @@
+           }
+           selfCast:mergeStyle(style)
+           selfCast:setId('selfCast' .. slotID)
+-          selfCast:setTooltip('Cast On Foot')
++          selfCast:setTooltip(tr('Cast On Foot'))
+           selfCast:setVisible(true)
+           selfCast.onCheckChange = function() toggleSelfCast(selfCast:getId():match("%d+"), selfCast:isChecked()) end
+         end
+@@ -7269,7 +7269,7 @@
+     widget:setBorderColorRight("#757575")
+     widget:setBorderColorBottom("#757575")
+     widget:setBorderWidth(1)
+-    widget:setTooltip("Spell: " .. spellData.name .. "\nWords: " .. spellData.words)
++    widget:setTooltip(tr('Spell: %s\nWords: %s', spellData.name, spellData.words))
+ 
+     local slotID = tonumber(widget:getId():match("%d+"))
+     if hasteSpell then
+--- a/mods/game_helper/magic_shooter_panel.lua
++++ b/mods/game_helper/magic_shooter_panel.lua
+@@ -338,7 +338,7 @@
+   -- Reset name label
+   local nameLabel = formPanel:recursiveGetChildById('itemNameLabel')
+   if nameLabel then
+-    nameLabel:setText("(select spell or rune)")
++    nameLabel:setText(tr("(select spell or rune)"))
+     nameLabel:setColor("#888888")
+   end
+ 
+@@ -419,7 +419,7 @@
+   local rulesListPanel = rulesList and rulesList:getParent()
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Add") end
++    if addButton then addButton:setText(tr("Add")) end
+   end
+ 
+   -- Disable buttons when no spell/rune selected
+@@ -517,7 +517,7 @@
+         spellButton:setBorderColorRight("#757575")
+         spellButton:setBorderColorBottom("#757575")
+         spellButton:setBorderWidth(1)
+-        spellButton:setTooltip("Spell: " .. rule.name)
++        spellButton:setTooltip(tr('Spell: %s', rule.name))
+       end
+     end
+ 
+@@ -569,7 +569,7 @@
+         runeItem:setVirtual(true)
+       end
+       runeItem:setItemId(rule.itemId)
+-      runeButton:setTooltip("Rune: " .. rule.name)
++      runeButton:setTooltip(tr('Rune: %s', rule.name))
+     end
+ 
+     -- Clear spell button
+@@ -688,7 +688,7 @@
+   local rulesListPanel = rulesList and rulesList:getParent()
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Update") end
++    if addButton then addButton:setText(tr("Update")) end
+   end
+ 
+   -- Set castIfTrapped, countLowerThan, extendedArea and forceOnTarget condition states
+@@ -776,7 +776,7 @@
+     spellButton:setBorderColorRight("#757575")
+     spellButton:setBorderColorBottom("#757575")
+     spellButton:setBorderWidth(1)
+-    spellButton:setTooltip("Spell: " .. currentFormData.name .. "\nWords: " .. spell.words)
++    spellButton:setTooltip(tr('Spell: %s\nWords: %s', currentFormData.name, spell.words))
+   end
+ 
+   -- Clear rune button
+@@ -943,7 +943,7 @@
+       runeItem:setVirtual(true)
+     end
+     runeItem:setItemId(itemId)
+-    runeButton:setTooltip(string.format("%s %s", currentFormData.name, runeSpell.area and "(Area)" or "(Single)"))
++    runeButton:setTooltip(string.format("%s %s", currentFormData.name, runeSpell.area and tr("(Area)") or tr("(Single)")))
+   end
+ 
+   -- Clear spell button
+@@ -1116,10 +1116,10 @@
+   local profile = getShooterProfile()
+   if not profile or not profile.rules then return end
+ 
+-  local ruleName = "this rule"
++  local ruleName = tr("this rule")
+   for _, r in ipairs(profile.rules) do
+     if getRuleKey(r) == ruleKey then
+-      ruleName = r.name or "this rule"
++      ruleName = r.name or tr("this rule")
+       break
+     end
+   end
+@@ -1612,7 +1612,7 @@
+   -- Sync button text with Add/Update mode
+   local saveBtn = conditionSettingsWindow:getChildById('saveConditionButton')
+   if saveBtn then
+-    saveBtn:setText(editingRuleKey and "Update" or "Save")
++    saveBtn:setText(editingRuleKey and tr("Update") or tr("Save"))
+   end
+ end
+ 
+@@ -1888,7 +1888,7 @@
+   -- Update the input field with sanitized text (without numbers)
+   if sanitizedText ~= text then
+     ignoreMonsterInput:setText(sanitizedText)
+-    modules.game_textmessage.displayGameMessage("Numbers removed from ignore list.")
++    modules.game_textmessage.displayGameMessage(tr("Numbers removed from ignore list."))
+   end
+ 
+   -- Save the sanitized list
+@@ -1915,14 +1915,13 @@
+         if helperConfig then
+           helperConfig.currentLockedTargetId = 0
+         end
+-        modules.game_textmessage.displayGameMessage("Ignore monster list applied. Stopped attacking " ..
+-          targetName .. ".")
++        modules.game_textmessage.displayGameMessage(tr('Ignore monster list applied. Stopped attacking %s.', targetName))
+         return
+       end
+     end
+   end
+ 
+-  modules.game_textmessage.displayGameMessage("Ignore monster list applied.")
++  modules.game_textmessage.displayGameMessage(tr("Ignore monster list applied."))
+ end
+ 
+ -- Save the ignore monster list to helperConfig (global, not per-profile)
+@@ -2075,7 +2074,7 @@
+ 
+   local button = magicShooterPanel:recursiveGetChildById('toggleAdvancedTargetButton')
+   if button then
+-    button:setText(advancedTargetingShown and 'Advanced -' or 'Advanced +')
++    button:setText(advancedTargetingShown and tr('Advanced -') or tr('Advanced +'))
+   end
+ 
+   magicShooter.applyTargetingLayout()
+@@ -2191,9 +2190,9 @@
+   end
+ 
+   if targetTable then
+-    modules.game_textmessage.displayGameMessage("Target list applied.")
++    modules.game_textmessage.displayGameMessage(tr("Target list applied."))
+   else
+-    modules.game_textmessage.displayGameMessage("Now attacking all monsters.")
++    modules.game_textmessage.displayGameMessage(tr("Now attacking all monsters."))
+   end
+ end
+ 
+--- a/mods/game_helper/preset_manager.lua
++++ b/mods/game_helper/preset_manager.lua
+@@ -29,14 +29,14 @@
+ 
+ -- Generic validation: receives profiles table instead of hardcoded shooterProfiles
+ local function invalidPresetName(name, profiles, excludeName)
+-  if not profiles then return true, "Config not available." end
++  if not profiles then return true, tr("Config not available.") end
+ 
+   if profiles[name] and name ~= excludeName then
+-    return true, "There is already a preset with this name."
++    return true, tr("There is already a preset with this name.")
+   elseif name:len() == 0 then
+-    return true, "The name cannot be empty."
++    return true, tr("The name cannot be empty.")
+   elseif name:len() > 20 then
+-    return true, "The name cannot be longer than 20 characters."
++    return true, tr("The name cannot be longer than 20 characters.")
+   end
+   return false
+ end
+@@ -251,9 +251,10 @@
+   end
+ 
+   if not hideMessage then
+-    local capLabel = ctx.label:sub(1, 1):upper() .. ctx.label:sub(2)
++    local shownLabel = tr(ctx.label)
++    local capLabel = shownLabel:sub(1, 1):upper() .. shownLabel:sub(2)
+     modules.game_textmessage.displayGameMessage(
+-      string.format("%s profile changed to %s.", capLabel, option))
++      tr('%s profile changed to %s.', capLabel, option))
+   end
+ 
+   if ctx.onAfterToggle then ctx.onAfterToggle() end
+@@ -278,7 +279,7 @@
+   local confirm = function()
+     if confirmWindow then confirmWindow:destroy() end
+     if ctx.getProfileCount and ctx.getProfileCount() <= 1 then
+-      modules.game_textmessage.displayGameMessage("You can't delete your only preset.")
++      modules.game_textmessage.displayGameMessage(tr("You can't delete your only preset."))
+       return
+     end
+     local currentProfileName = helperConfig[ctx.selectedKey]
+@@ -289,11 +290,11 @@
+     local newDisplay = presetManager.truncateName(helperConfig[ctx.selectedKey])
+     presets:setCurrentOption(newDisplay, true)
+     modules.game_textmessage.displayGameMessage(
+-      string.format("Preset %s deleted.", currentProfileName))
++      tr('Preset %s deleted.', currentProfileName))
+   end
+ 
+-  confirmWindow = displayGeneralBox('Delete Preset',
+-    string.format("Are you sure you want to delete preset %s?", helperConfig[ctx.selectedKey]),
++  confirmWindow = displayGeneralBox(tr('Delete Preset'),
++    tr('Are you sure you want to delete preset %s?', helperConfig[ctx.selectedKey]),
+     { { text = tr('Yes'), callback = confirm }, { text = tr('No'), callback = cancel } },
+     confirm, cancel)
+ end
+@@ -316,10 +317,10 @@
+   end
+ 
+   if isRename then
+-    window:setText("Rename " .. label .. " preset")
++    window:setText(tr('Rename %s preset', tr(label)))
+     window.contentPanel.target:setText(helperConfig[selectedKey])
+   else
+-    window:setText("Add " .. label .. " preset")
++    window:setText(tr('Add %s preset', tr(label)))
+     window.contentPanel.target:setText("")
+   end
+ 
+@@ -429,7 +430,7 @@
+     return true
+   end
+ 
+-  window:setText("Duplicate " .. label .. " preset")
++  window:setText(tr('Duplicate %s preset', tr(label)))
+   window.contentPanel.target:setText("")
+ 
+   local options = ctx.presetsPanel:recursiveGetChildById('presets')
+--- a/mods/game_helper/styles/equip_panel.otui
++++ b/mods/game_helper/styles/equip_panel.otui
+@@ -48,18 +48,18 @@
+         anchors.left: itemButton.right
+         anchors.verticalCenter: itemButton.verticalCenter
+         margin-left: 8
+-        text: (click to select an item)
++        !text: tr('(click to select an item)')
+         font: $var-main-font
+         color: #888888
+         text-auto-resize: true
+ 
+       Button
+         id: clearButton
+-        size: 45 17
++        size: 52 17
+         anchors.left: itemNameLabel.right
+         anchors.verticalCenter: itemButton.verticalCenter
+         margin-left: 8
+-        text: Clear
++        !text: tr('Clear')
+         visible: false
+ 
+       // Row 2: When label + 2nd condition enable
+@@ -129,9 +129,9 @@
+         color: $var-text-color
+         enabled: false
+         @onSetup: |
+-          self:addOption("And")
+-          self:addOption("Or")
+-          self:setCurrentOption("And")
++          self:addOption(tr('And'), 'and')
++          self:addOption(tr('Or'), 'or')
++          self:setCurrentOptionByData('and')
+ 
+       ComboBox
+         id: cond2Resource
+@@ -210,7 +210,7 @@
+         anchors.left: actionLabel.right
+         margin-top: 8
+         margin-left: 10
+-        text: Equip
++        !text: tr('Equip')
+         font: $var-main-font
+         color: $var-text-color
+         checked: true
+@@ -221,7 +221,7 @@
+         anchors.top: actionEquip.top
+         anchors.left: actionEquip.right
+         margin-left: 10
+-        text: Unequip
++        !text: tr('Unequip')
+         font: $var-main-font
+         color: $var-text-color
+         checked: false
+@@ -296,7 +296,7 @@
+         anchors.top: conditionsLabel.bottom
+         anchors.left: conditionsLabel.left
+         margin-top: 5
+-        text: Rooted
++        !text: tr('Rooted')
+         font: $var-main-font
+         color: $var-text-color
+ 
+@@ -306,7 +306,7 @@
+         anchors.top: condRooted.top
+         anchors.left: condRooted.right
+         margin-left: 8
+-        text: Feared
++        !text: tr('Feared')
+         font: $var-main-font
+         color: $var-text-color
+ 
+@@ -316,7 +316,7 @@
+         anchors.top: condRooted.top
+         anchors.left: condFeared.right
+         margin-left: 8
+-        text: PZ
++        !text: tr('PZ')
+         font: $var-main-font
+         color: $var-text-color
+ 
+@@ -326,7 +326,7 @@
+         anchors.top: condRooted.bottom
+         anchors.left: conditionsLabel.left
+         margin-top: 5
+-        text: non-PZ
++        !text: tr('non-PZ')
+         font: $var-main-font
+         color: $var-text-color
+ 
+@@ -361,7 +361,7 @@
+ 
+       CheckBox
+         id: enableEquipment
+-        width: 140
++        width: 160
+         anchors.verticalCenter: parent.verticalCenter
+         anchors.left: parent.left
+         !text: tr('Enable Equipment')
+--- a/mods/game_helper/styles/helper.otui
++++ b/mods/game_helper/styles/helper.otui
+@@ -256,7 +256,7 @@
+     anchors.bottom: parent.bottom
+     anchors.horizontalCenter: parent.horizontalCenter
+     margin-bottom: 2
+-    text: Close
++    !text: tr('Close')
+     @onClick: modules.game_helper.specialFoodsClose()
+ 
+ HealingPanel < Panel
+--- a/mods/game_helper/styles/low_supply_alarm_settings.otui
++++ b/mods/game_helper/styles/low_supply_alarm_settings.otui
+@@ -27,17 +27,17 @@
+     margin-left: 6
+     font: $var-main-font
+     color: #888888
+-    text: Click to select item
++    !text: tr('Click to select item')
+     text-auto-resize: true
+     text-wrap: false
+ 
+   Button
+     id: clearButton
+-    size: 45 17
++    size: 52 17
+     anchors.left: itemNameLabel.right
+     anchors.verticalCenter: itemButton.verticalCenter
+     margin-left: 5
+-    text: Clear
++    !text: tr('Clear')
+     visible: false
+ 
+   Label
+@@ -88,5 +88,5 @@
+     anchors.bottom: parent.bottom
+     anchors.right: parent.right
+     margin-bottom: 2
+-    text: Close
++    !text: tr('Close')
+     @onClick: modules.game_helper.lowSupplyAlarm.closeSettings()
+--- a/mods/game_helper/styles/magic_shooter_panel.otui
++++ b/mods/game_helper/styles/magic_shooter_panel.otui
+@@ -27,7 +27,7 @@
+ 
+       CheckBox
+         id: castIfTrappedCheck
+-        text: Cast If Trapped
++        !text: tr('Cast If Trapped')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -48,7 +48,7 @@
+ 
+       CheckBox
+         id: countLowerThanCheck
+-        text: Cast If Count Lower Than
++        !text: tr('Cast If Count Lower Than')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -69,7 +69,7 @@
+ 
+       CheckBox
+         id: selfCastCheck
+-        text: Cast On Foot
++        !text: tr('Cast On Foot')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -90,7 +90,7 @@
+ 
+       CheckBox
+         id: extendedAreaCheck
+-        text: Extended Area
++        !text: tr('Extended Area')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -111,7 +111,7 @@
+ 
+       CheckBox
+         id: extendedArea2Check
+-        text: Extended Area 2
++        !text: tr('Extended Area 2')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -132,7 +132,7 @@
+ 
+       CheckBox
+         id: forceOnTargetCheck
+-        text: Force Spell On Target
++        !text: tr('Force Spell On Target')
+         font: $var-main-font
+         color: $var-text-color
+         text-offset: 13 0
+@@ -153,7 +153,7 @@
+     anchors.bottom: parent.bottom
+     anchors.horizontalCenter: parent.horizontalCenter
+     margin-bottom: 5
+-    text: Save
++    !text: tr('Save')
+     @onClick: modules.game_helper.magicShooter.saveConditionSettings()
+ 
+ MagicShooterPanel < Panel
+@@ -201,7 +201,7 @@
+         anchors.top: parent.top
+         anchors.left: parent.left
+         margin-top: 3
+-        text: ACTION
++        !text: tr('ACTION')
+         font: $var-main-font
+         color: #c8c8c8
+ 
+@@ -219,7 +219,7 @@
+         anchors.top: spellButton.bottom
+         anchors.horizontalCenter: spellButton.horizontalCenter
+         margin-top: 1
+-        text: Spell
++        !text: tr('Spell')
+         font: $var-main-font
+         color: #666666
+         text-auto-resize: true
+@@ -238,7 +238,7 @@
+         anchors.top: runeButton.bottom
+         anchors.horizontalCenter: runeButton.horizontalCenter
+         margin-top: 1
+-        text: Rune
++        !text: tr('Rune')
+         font: $var-main-font
+         color: #666666
+         text-auto-resize: true
+@@ -248,18 +248,18 @@
+         anchors.left: runeButton.right
+         anchors.verticalCenter: spellButton.verticalCenter
+         margin-left: 10
+-        text: (select spell or rune)
++        !text: tr('(select spell or rune)')
+         font: $var-main-font
+         color: #888888
+         text-auto-resize: true
+ 
+       Button
+         id: clearButton
+-        size: 45 17
++        size: 52 17
+         anchors.left: itemNameLabel.right
+         anchors.verticalCenter: spellButton.verticalCenter
+         margin-left: 8
+-        text: Clear
++        !text: tr('Clear')
+         visible: false
+ 
+       // Row 2+3: Labels + Controls
+@@ -420,7 +420,7 @@
+           anchors.left: manaPercentInput.left
+           anchors.bottom: manaPercentInput.top
+           margin-bottom: 2
+-          text: MANA MIN
++          !text: tr('MANA MIN')
+           font: $var-main-font
+           color: #d0d0d0
+ 
+@@ -442,7 +442,7 @@
+           anchors.left: healthPercentInput.left
+           anchors.bottom: healthPercentInput.top
+           margin-bottom: 2
+-          text: HP MIN
++          !text: tr('HP MIN')
+           font: $var-main-font
+           color: #d0d0d0
+ 
+@@ -464,7 +464,7 @@
+           anchors.left: harmonyInput.left
+           anchors.bottom: harmonyInput.top
+           margin-bottom: 2
+-          text: HARMONY
++          !text: tr('HARMONY')
+           font: $var-main-font
+           color: #aaaaaa
+           visible: false
+@@ -486,7 +486,7 @@
+           anchors.left: delayInput.left
+           anchors.bottom: delayInput.top
+           margin-bottom: 2
+-          text: DELAY MS
++          !text: tr('DELAY MS')
+           font: $var-main-font
+           color: #d0d0d0
+           !tooltip: tr('Additional delay after using this rule, in milliseconds.')
+@@ -552,7 +552,7 @@
+         anchors.top: parent.top
+         anchors.left: parent.left
+         margin-top: 3
+-        text: TARGET MONSTERS
++        !text: tr('TARGET MONSTERS')
+         font: $var-main-font
+         color: #d0d0d0
+ 
+@@ -562,7 +562,7 @@
+         anchors.top: targetMonsterLabel.bottom
+         anchors.right: parent.right
+         margin-top: 2
+-        text: Apply
++        !text: tr('Apply')
+         @onClick: modules.game_helper.magicShooter.applyTargetMonsterList()
+ 
+       TextEdit
+@@ -574,18 +574,18 @@
+         margin-top: 2
+         margin-right: 5
+         text: *
+-        placeholder: * (all monsters)
++        !placeholder: tr('* (all monsters)')
+         placeholder-color: #666666
+         color: $var-text-color
+         !tooltip: tr('Which monsters to attack.\n*  = every monster\nOr a list of names separated by comma: dragon, dragon lord\nThe bot sticks to one monster until it dies, then picks the next.')
+ 
+       Button
+         id: toggleAdvancedTargetButton
+-        size: 70 17
++        size: 90 17
+         anchors.top: targetMonsterInput.bottom
+         anchors.left: parent.left
+         margin-top: 4
+-        text: Advanced +
++        !text: tr('Advanced +')
+         !tooltip: tr('Show the advanced targeting options (mode, ignore list, priority list).')
+         @onClick: modules.game_helper.magicShooter.toggleAdvancedTargeting()
+ 
+@@ -595,7 +595,7 @@
+         anchors.top: toggleAdvancedTargetButton.bottom
+         anchors.left: parent.left
+         margin-top: 5
+-        text: Ignore Monster List
++        !text: tr('Ignore Monster List')
+         font: $var-main-font
+         color: #aaaaaa
+         visible: false
+@@ -606,7 +606,7 @@
+         anchors.top: ignoreMonsterLabel.bottom
+         anchors.right: parent.right
+         margin-top: 2
+-        text: Apply
++        !text: tr('Apply')
+         visible: false
+ 
+       TextEdit
+@@ -629,7 +629,7 @@
+         anchors.top: ignoreMonsterInput.bottom
+         anchors.left: parent.left
+         margin-top: 5
+-        text: My Priority List In Order (Only in Mode "J")
++        !text: tr('My Priority List In Order (Only in Mode "J")')
+         font: $var-main-font
+         color: #aaaaaa
+         visible: false
+@@ -640,7 +640,7 @@
+         anchors.top: priorityMonsterLabel.bottom
+         anchors.right: parent.right
+         margin-top: 2
+-        text: Apply
++        !text: tr('Apply')
+         visible: false
+         @onClick: applyPriorityMonsterList()
+ 
+@@ -760,7 +760,7 @@
+         anchors.left: enableFollowFriend.right
+         anchors.right: parent.right
+         margin-left: 5
+-        placeholder: character name
++        !placeholder: tr('character name')
+         placeholder-color: #666666
+         color: $var-text-color
+         !tooltip: tr('Exact name of the player to follow.')
+--- a/mods/game_helper/styles/rule_list.otui
++++ b/mods/game_helper/styles/rule_list.otui
+@@ -68,7 +68,7 @@
+     anchors.verticalCenter: parent.verticalCenter
+     margin-right: 4
+     checked: true
+-    tooltip: Enable/Disable rule
++    !tooltip: tr('Enable/Disable rule')
+ 
+   RemoveButton
+     size: 17 17
+--- a/mods/game_helper/styles/spell.otui
++++ b/mods/game_helper/styles/spell.otui
+@@ -159,7 +159,7 @@
+         anchors.verticalCenter: parent.verticalCenter
+         anchors.right: parent.right
+         margin-left: 5
+-        text: Only show learnt spells
++        !text: tr('Only show learnt spells')
+         font: $var-main-font
+         color: $var-text-color
+         checked: true
+@@ -206,7 +206,7 @@
+       anchors.bottom: parent.bottom
+       size: 43 20
+       font: cipsoftFont
+-      text: Cancel
++      !text: tr('Cancel')
+ 
+     Button
+       id: buttonApply
+@@ -215,7 +215,7 @@
+       anchors.bottom: parent.bottom
+       size: 43 20
+       font: cipsoftFont
+-      text: Apply
++      !text: tr('Apply')
+ 
+     Button
+       id: buttonOk
+@@ -224,4 +224,4 @@
+       anchors.bottom: parent.bottom
+       size: 43 20
+       font: cipsoftFont
+-      text: Ok
+\ No newline at end of file
++      !text: tr('Ok')
+\ No newline at end of file
+--- a/mods/game_helper/styles/timer_panel.otui
++++ b/mods/game_helper/styles/timer_panel.otui
+@@ -83,7 +83,7 @@
+ 
+         CheckBoxCircle
+           id: wordsRadio
+-          width: 65
++          width: 80
+           height: 15
+           anchors.left: parent.left
+           anchors.verticalCenter: parent.verticalCenter
+@@ -209,9 +209,9 @@
+           margin-left: 10
+           color: $var-text-color
+           @onSetup: |
+-            self:addOption("sec")
+-            self:addOption("min")
+-            self:addOption("hr")
++            self:addOption(tr('sec'), 'sec')
++            self:addOption(tr('min'), 'min')
++            self:addOption(tr('hr'), 'hr')
+             self:setCurrentOption("min")
+ 
+       // Force Item Count Decrease
+--- a/mods/game_helper/styles/tools_panel.otui
++++ b/mods/game_helper/styles/tools_panel.otui
+@@ -296,10 +296,10 @@
+       margin-left: 5
+       @onOptionChange: modules.game_helper.tools.updateBotHudSettings(self)
+       @onSetup: |
+-        self:addOption('Compact')
+-        self:addOption('Normal')
+-        self:addOption('Wide')
+-        self:setCurrentOption('Normal')
++        self:addOption(tr('Compact'), 'Compact')
++        self:addOption(tr('Normal'), 'Normal')
++        self:addOption(tr('Wide'), 'Wide')
++        self:setCurrentOptionByData('Normal')
+     CheckBox
+       id: hudShowTargeting
+       anchors.top: enableBotHud.bottom
+--- a/mods/game_helper/timer_panel.lua
++++ b/mods/game_helper/timer_panel.lua
+@@ -320,7 +320,7 @@
+       itemNameLabel:setText(selectedItemName)
+       itemNameLabel:setColor('$var-text-color')
+     else
+-      itemNameLabel:setText('(select item)')
++      itemNameLabel:setText(tr('(select item)'))
+       itemNameLabel:setColor('#888888')
+     end
+   end
+@@ -333,7 +333,7 @@
+   -- Update button text
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Add") end
++    if addButton then addButton:setText(tr("Add")) end
+   end
+ 
+   timerPanel.resetForm()
+@@ -366,7 +366,7 @@
+       if itemWidget then itemWidget:destroy() end
+     end
+     if itemNameLabel then
+-      itemNameLabel:setText('(select item)')
++      itemNameLabel:setText(tr('(select item)'))
+       itemNameLabel:setColor('#888888')
+     end
+   end
+@@ -375,7 +375,7 @@
+     local cooldownInput = cooldownRow:getChildById('cooldownInput')
+     local cooldownUnit = cooldownRow:getChildById('cooldownUnit')
+     if cooldownInput then cooldownInput:setText('1') end
+-    if cooldownUnit then cooldownUnit:setCurrentOption('min') end
++    if cooldownUnit then cooldownUnit:setCurrentOptionByData('min') end
+   end
+ 
+   if forceItemRow then
+@@ -410,7 +410,7 @@
+   -- Update button text
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Update") end
++    if addButton then addButton:setText(tr("Update")) end
+   end
+ 
+   -- Populate form with rule data
+@@ -459,7 +459,7 @@
+         if itemWidget then itemWidget:destroy() end
+       end
+       if itemNameLabel then
+-        itemNameLabel:setText('(select item)')
++        itemNameLabel:setText(tr('(select item)'))
+         itemNameLabel:setColor('#888888')
+       end
+     end
+@@ -469,7 +469,7 @@
+     local cooldownInput = cooldownRow:getChildById('cooldownInput')
+     local cooldownUnit = cooldownRow:getChildById('cooldownUnit')
+     if cooldownInput then cooldownInput:setText(tostring(rule.cooldown or 1)) end
+-    if cooldownUnit then cooldownUnit:setCurrentOption(rule.unit or 'min') end
++    if cooldownUnit then cooldownUnit:setCurrentOptionByData(rule.unit or 'min') end
+   end
+ 
+   if forceItemRow then
+@@ -549,7 +549,8 @@
+     return
+   end
+ 
+-  local unit = cooldownUnit:getCurrentOption().text
++  local unitOption = cooldownUnit:getCurrentOption()
++  local unit = unitOption and (unitOption.data or unitOption.text) or 'min'
+   local forceDecrease = forceItemCheck:isChecked()
+   local inPz = pzCheck:isChecked()
+   local inNonPz = nonPzCheck:isChecked()
+@@ -603,17 +604,17 @@
+   if ruleData.inPz and not ruleData.inNonPz then
+     table.insert(conditions, 'PZ')
+   elseif ruleData.inNonPz and not ruleData.inPz then
+-    table.insert(conditions, 'non-PZ')
++    table.insert(conditions, tr('non-PZ'))
+   end
+ 
+   -- Add targeting monster condition indicator
+   if ruleData.targetingMonster then
+-    table.insert(conditions, 'targeting')
++    table.insert(conditions, tr('targeting'))
+   end
+ 
+   -- Add force decrease indicator (only for items)
+   if ruleData.type == 'item' and ruleData.forceDecrease then
+-    table.insert(conditions, 'force')
++    table.insert(conditions, tr('force'))
+   end
+ 
+   local conditionSuffix = ''
+@@ -621,7 +622,7 @@
+     conditionSuffix = ' (' .. table.concat(conditions, ', ') .. ')'
+   end
+ 
+-  return typePrefix .. ruleData.value .. ' - ' .. ruleData.cooldown .. ' ' .. ruleData.unit .. conditionSuffix
++  return typePrefix .. ruleData.value .. ' - ' .. ruleData.cooldown .. ' ' .. tr(tostring(ruleData.unit)) .. conditionSuffix
+ end
+ 
+ function timerPanel.updateRuleWidget(ruleKey, ruleData)
+@@ -784,7 +785,7 @@
+ 
+ function timerPanel.removeRule(ruleKey)
+   local rule = _Helper.Timer and _Helper.Timer.getRule(ruleKey)
+-  local ruleName = rule and rule.value or "this rule"
++  local ruleName = rule and rule.value or tr("this rule")
+ 
+   _RuleList.confirmRemove(ruleName, function()
+     if _Helper.Timer and _Helper.Timer.removeRule then
+@@ -868,7 +869,7 @@
+   -- Update button text
+   if rulesListPanel then
+     local addButton = rulesListPanel:getChildById('addButton')
+-    if addButton then addButton:setText("Add") end
++    if addButton then addButton:setText(tr("Add")) end
+   end
+ end
+ 
+--- a/mods/game_helper/tools_panel.lua
++++ b/mods/game_helper/tools_panel.lua
+@@ -37,7 +37,7 @@
+   if not itemId or itemId <= 0 then return end
+   scheduleEvent(function()
+     if modules.game_console and modules.game_console.addText then
+-      modules.game_console.addText(string.format('[Item ID: %d]', itemId), MessageModes.Look, 'Server Log')
++      modules.game_console.addText(tr('[Item ID: %d]', itemId), MessageModes.Look, 'Server Log')
+     end
+   end, 1)
+ end
+@@ -784,7 +784,7 @@
+   local isSizeChange = widget and widget:getId() == 'botHudSize'
+   if isSizeChange then
+     local option = widget:getCurrentOption()
+-    hud.size = option and option.text or 'Normal'
++    hud.size = option and (option.data or option.text) or 'Normal'
+   else
+     local panel = getToolsContainer()
+     if not panel then return end
+@@ -800,7 +800,8 @@
+     hud.showPlayer = checked('hudShowPlayer')
+     hud.showAutomation = checked('hudShowAutomation')
+     local size = panel:recursiveGetChildById('botHudSize')
+-    hud.size = size and size:getCurrentOption().text or 'Normal'
++    local current = size and size:getCurrentOption()
++    hud.size = current and (current.data or current.text) or 'Normal'
+   end
+ 
+   if pendingBotHudEvent then
+@@ -835,7 +836,7 @@
+     if widget then widget:setChecked(value == true) end
+   end
+   local size = panel:recursiveGetChildById('botHudSize')
+-  if size then size:setCurrentOption(hud.size or 'Normal') end
++  if size then size:setCurrentOptionByData(hud.size or 'Normal', true) end
+   applyingAutomationConfig = false
+   -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
+   local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')

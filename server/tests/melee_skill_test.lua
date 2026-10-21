@@ -325,6 +325,19 @@ for _, file in ipairs({"chaos_vocations.xml", "chaos_vocations_monk.xml", "chaos
 	end
 end
 
+-- the look text of equipment (beta report 2026-10-22): one melee number, "ranged" for distance
+do
+	local L = M.lookText
+	local function same(a, b, what) ok(a == b, what .. ": " .. tostring(a)) end
+	same(L("You see a ring (club fighting +4, sword fighting +4, axe fighting +4)."), "You see a ring (melee +4).",
+		"look: the three melee skills of a stock item are one")
+	same(L("a helmet (sword fighting +2, distance fighting +1, shielding +3)"), "a helmet (melee +2, ranged +1, shielding +3)",
+		"look: a lone sword number is melee, distance is ranged, shielding stays")
+	same(L("gloves (fist fighting +2)"), "gloves (fist fighting +2)", "look: fist stays (the Monk line)")
+	same(L("a club (Atk:30, Def:10 club fighting -1)"), "a club (Atk:30, Def:10 melee -1)", "look: a malus too")
+	same(L("a stone"), "a stone", "look: other texts unchanged")
+end
+
 if fails > 0 then
 	print(fails .. " of " .. checks .. " checks failed")
 	os.exit(1)

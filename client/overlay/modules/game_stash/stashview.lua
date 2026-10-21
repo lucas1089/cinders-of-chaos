@@ -170,4 +170,25 @@ function V.reportText(rep)
   return table.concat(lines, '\n')
 end
 
+-- The deposit request of one dragged item (server stash.lua "Stash"): where it lies, and which item it is (its client
+-- id and count), so the server takes nothing else when that slot holds another item by then. pos = the item's
+-- position (a container slot: x 65535, y 64 + container, z slot).
+function V.depositData(pos, stackpos, clientId, count, visible, typed)
+  if type(pos) ~= 'table' then return nil end
+  return {
+    make = 'Stash',
+    UpdateList = visible == true,
+    Typed = typed,
+    Pos = { x = n(pos.x), y = n(pos.y), z = n(pos.z), stackpos = n(stackpos) },
+    ItemId = clientId and n(clientId) or nil,
+    Count = count and n(count) or nil,
+  }
+end
+
+-- What a drop handler returns once it sent the deposit: true. The base client offers a drop to every widget under the
+-- mouse, deepest first, until one returns true; the stash list and its window both had the handler and returned false,
+-- so one drag sent two deposits of the same slot, and the second took the item to the right of the dragged one
+-- (player report 2026-10-22).
+V.DROP_HANDLED = true
+
 return V

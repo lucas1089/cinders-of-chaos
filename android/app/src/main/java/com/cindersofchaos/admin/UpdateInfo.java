@@ -51,7 +51,7 @@ final class UpdateInfo {
         return get("running").equals("yes");
     }
 
-    /** The summary card text: code, engine, client update, downloads, site. */
+    /** The summary card text: code, engine, map master, client update, downloads, site. */
     String summary() {
         StringBuilder b = new StringBuilder();
         int behind = num(get("behind"));
@@ -81,6 +81,16 @@ final class UpdateInfo {
             b.append("Servidor (engine): não consegui ler as releases do GitHub\n");
         } else {
             b.append("Servidor (engine): em dia (winpkg-").append(inst).append(")\n");
+        }
+        String master = get("map_master");
+        if (get("needs_map").equals("yes")) {
+            String im = get("installed_map");
+            b.append("Mapa: ").append(im.isEmpty() || im.equals("0") ? "mapa da base" : "versão " + im)
+                    .append(" → versão ").append(master).append(" do mapa mestre (troca o mapa, com backup)\n");
+        } else if (get("needs_map").equals("unknown")) {
+            b.append("Mapa: não consegui ler o mapa mestre no GitHub\n");
+        } else if (!master.isEmpty() && !master.equals("none")) {
+            b.append("Mapa: em dia (versão ").append(get("installed_map")).append(" do mapa mestre)\n");
         }
         b.append("Update do client: publicado ").append(get("published_client"))
                 .append(get("needs_client").equals("yes") ? " → publica " + latest : " (em dia)").append('\n');
@@ -138,6 +148,8 @@ final class UpdateInfo {
                 return "Verificando o GitHub";
             case "download":
                 return "Baixando o servidor novo";
+            case "map":
+                return "Conferindo o mapa mestre";
             case "backup":
                 return "Backup (banco e arquivos)";
             case "install":

@@ -1,0 +1,5 @@
+key,cat,kind,name,atlas,x,y,w,h,patterns,phases,flags,mode,server_id,extra
+store_loot,item,look,loot bag,store_items,0,0,1,1,1,1,copy:10325,replace,32081,
+store_orbs,item,look,orbs pouch,store_items,32,0,1,1,1,1,copy:8861,replace,32082,
+store_keys,item,look,rift key pouch,store_items,64,0,1,1,1,1,copy:7343,replace,32083,
+store_ration,item,look,everfull ration,store_items,96,0,1,1,1,1,copy:3583,replace,32084,

@@ -45,11 +45,11 @@ ChaosPassiveStatsConfig = {
 	neutral = {"@crafting", "experience", "loot", "rarityLoot", "wisdom", "speed"},
 
 	stats = {
-		strength = {"Strength", "Physical damage x (1 + points / 230), at most 60 points (+26%)."},
-		intelligence = {"Intelligence", "Damage of every type but physical, and healing, x (1 + points / 230), at most 60 points (+26%)."},
-		dexterity = {"Dexterity", "Weapon hits (melee, distance, wand) deal 1 / (1 - points%) times the damage, like attacking faster: at most 20 points (+25%)."},
-		vitality = {"Vitality", "+1 percent maximum health per point, at most +50%."},
-		spirit = {"Spirit", "+1 percent maximum mana per point, at most +50%."},
+		strength = {"Strength", "Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."},
+		intelligence = {"Intelligence", "Damage of every type but physical, and healing, x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."},
+		dexterity = {"Dexterity", "Weapon hits (melee, distance, wand) deal 1 / (1 - value%) times the damage, like attacking faster. Value: 0.8 per point up to 20 points (+19%), then 1 per 15 points up to 80 points (+25%)."},
+		vitality = {"Vitality", "+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."},
+		spirit = {"Spirit", "+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."},
 		wisdom = {"Wisdom", "No effect yet: the game gives wisdom no use."},
 		speed = {"Speed", "Walking speed. The tooltip shows the speed you gain; at most +80."},
 		experience = {"Experience", "Experience from monsters, in the percent shown."},
@@ -156,12 +156,12 @@ ChaosPassiveStatsConfig = {
 		-- Thief line: fast light weapons, shurikens, evasion
 		thief = {
 			primary = {"dexterity", "swordSkill", "distanceSkill", "@crit", "speed"},
-			secondary = {"incrementPhysical", "incrementEarth", "@leech", "absorbPhysical"},
+			secondary = {"incrementPhysical", "incrementEarth", "@leech", "absorbPhysical", "absorbAllElements"},
 			irrelevant = {"axeSkill", "clubSkill", "magicSkill", "@shield"}
 		},
 		ninja = {
 			primary = {"dexterity", "swordSkill", "@crit", "speed", "incrementPhysical"},
-			secondary = {"distanceSkill", "strength", "incrementEarth", "@leech"},
+			secondary = {"distanceSkill", "strength", "incrementEarth", "@leech", "absorbAllElements"},
 			irrelevant = {"axeSkill", "clubSkill", "magicSkill", "@shield"}
 		},
 		samurai = {

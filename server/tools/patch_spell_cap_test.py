@@ -5,7 +5,7 @@
     Chaos block and comments stay, a second run changes nothing, --dry-run writes nothing;
   * the repo data: every class and ascension has at most 15 spells of its own, counted from
     data/spells/chaos/spells_chaos.xml, data/spells/stock_spells.csv (stock attack and healing spells as installed)
-    and CAP (the stock support spells the classes keep), without UNIVERSAL; the counts are pinned (docs/CLASSES.md
+    and CAP (the stock support spells the classes keep), without UNIVERSAL and OUTSIDE_CAP; the counts are pinned (docs/CLASSES.md
     "Spell cap": update both when a kit changes).
 Run: python3 -I server/tools/patch_spell_cap_test.py"""
 import csv
@@ -77,7 +77,7 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
          'Bone Lord', 'Templar', 'Inquisitor', 'Sentinel']
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
 PINNED = {'Warrior': 15, 'Juggernaut': 15, 'Berserker': 15, 'Ranger': 15, 'Deadeye': 15, 'Beastmaster': 14,
-          'Mystic': 15, 'Elementalist': 15, 'Illusionist': 15, 'Thief': 10, 'Ninja': 13, 'Samurai': 13, 'Monk': 7,
+          'Mystic': 15, 'Elementalist': 14, 'Illusionist': 15, 'Thief': 10, 'Ninja': 13, 'Samurai': 13, 'Monk': 7,
           'Shadowfist': 10, 'Iron Sage': 11, 'Necromancer': 11, 'Lich': 13, 'Bone Lord': 13, 'Templar': 4,
           'Inquisitor': 6, 'Sentinel': 7}
 kit = {v: set() for v in ORDER}
@@ -97,7 +97,7 @@ for script, (sid, name, keep) in C.CAP.items():
     if not keep:
         check(name not in stock_names, name + ': retired, not in stock_spells.csv')
 for v in ORDER:
-    own = kit[v] - set(C.UNIVERSAL)
+    own = kit[v] - set(C.UNIVERSAL) - set(C.OUTSIDE_CAP)
     check(len(own) <= C.MAX_SPELLS, '%s: %d spells (at most %d)' % (v, len(own), C.MAX_SPELLS))
     check(len(own) == PINNED[v], '%s: %d spells, pinned %d' % (v, len(own), PINNED[v]))
 # the Chaos spells of UNIVERSAL are every class's (the stock ones are not in the repo data: the light, rope, find
@@ -106,6 +106,38 @@ for name in C.UNIVERSAL:
     if any(name in kit[v] for v in ORDER):
         check(all(name in kit[v] for v in ORDER), name + ': every class has it')
 check(len(C.RETIRED_IDS) == 68, 'retired: %d' % len(C.RETIRED_IDS))
+# Ward of the Mind, the classic mana shield (owner 2026-10-21): the Mystic, Necromancer and Ranger lines only, outside
+# the 15; add_vocations.py gives those nine the spell (the Necromancer through LINE_STOCK_SPELLS, not its conversion)
+import add_vocations as AV  # noqa: E402
+SHIELD = ['Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord', 'Ranger', 'Deadeye', 'Beastmaster']
+check(sorted(C.CAP['support/magic_shield.lua'][2]) == sorted(SHIELD), 'Ward of the Mind: the Mystic, Necromancer and Ranger lines')
+check(sorted(v for v in ORDER if 'Ward of the Mind' in kit[v]) == sorted(SHIELD), 'Ward of the Mind: no other class')
+lines = [ls for script, _, ls in AV.LINE_STOCK_SPELLS if script == 'support/magic_shield.lua']
+check(len(lines) == 1 and sorted(v for line in lines[0] for v in line) == sorted(SHIELD), 'add_vocations gives it the nine')
+check(any('magic_shield' in k for k in AV.NECRO_SPELL_SKIP), 'the Necromancer conversion leaves it to LINE_STOCK_SPELLS')
+
+
+def install(xml):
+    # the order of install_all.py: add_vocations.py (Necromancer line, then the stock spell lines), then the cap
+    xml = AV.patch_spells_necro(xml)[0]
+    xml = AV.patch_spells_lines(xml)[0]
+    return C.patch(xml)[0]
+
+
+def shield_classes(xml):
+    tag = re.search(r'<instant[^>]*script="support/magic_shield.lua".*?</instant>', xml, re.S).group(0)
+    return re.findall(r'<vocation name="([^"]+)"', tag)
+
+
+# a fresh install (the converted stock list of the casters) and one the old cap cut to the Elementalist
+for start in (['Mystic', 'Elementalist', 'Illusionist'], ['Elementalist'],
+              ['Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord']):
+    xml = '<spells>\n' + spell('Magic Shield', 'support/magic_shield.lua', 44, start) + '</spells>\n'
+    xml = xml.replace('group="attack"', 'group="support"')
+    once = install(xml)
+    check(sorted(shield_classes(once)) == sorted(SHIELD), 'install from %s: %s' % (start, shield_classes(once)))
+    check(len(shield_classes(once)) == len(set(shield_classes(once))), 'no class twice: %s' % shield_classes(once))
+    check(install(once) == once, 'install from %s: a second run changes nothing' % start)
 
 if fails:
     print('%d failure(s)' % len(fails))

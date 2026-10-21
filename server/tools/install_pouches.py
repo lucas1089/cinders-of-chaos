@@ -9,14 +9,14 @@ weight, article, name, plural, description), the same file the Lua side uses.
 
 1. data/items/items.otb: per pouch a copy of the stock container node `sourceId` (loot 32081: the expedition bag,
    orbs 32082: the brocade bag, keys 32083: the fur bag; group, flags, every attribute; containers, not stackable)
-   with the server id `id` and the client id `clientId`: our own pouch looks (orbs 33651, keys 33652, loot 33653),
-   appended to the client pair by client/tools/sprites/import_art_things.py with art_import/pouches.csv (client
-   MANIFEST.md "Store pouch looks"). --stock-looks keeps the stock bags' client ids instead (for clients whose pair
-   does not have the pouch looks yet). The nodes are appended at the end of the root; a node already there with the
-   same bytes is left alone, one with other bytes (a changed config, or the stock look of an earlier install: only
-   its client id changes, so existing pouches show the new look at once) is replaced, and a server id that belongs to
-   any other client id stops the script (nothing is written). items.otb.bak keeps the original the first time; the
-   written file is parsed again and the nodes checked.
+   with the server id `id` and the client id `clientId`: our own pouch looks (loot 38608, orbs 38609, keys 38610 of
+   pair 34), appended to the client pair by client/tools/sprites/import_art_things.py with art_import/store_items.csv
+   (client MANIFEST.md "Store item looks"). --stock-looks keeps the stock bags' client ids instead (for clients whose
+   pair does not have the pouch looks yet). The nodes are appended at the end of the root; a node already there with
+   the same bytes is left alone, one with other bytes (a changed config, or the stock look or the `oldClientId` look
+   33651-33653 of an earlier install: only its client id changes, so existing pouches show the new look at once) is
+   replaced, and a server id that belongs to any other client id stops the script (nothing is written).
+   items.otb.bak keeps the original the first time; the written file is parsed again and the nodes checked.
    Ranges in use: gems 32001..32035, salvage 32051, omens 32071..32072, pouches 32081..32083, supports 32101..32200,
    orbs v2 32251..32256, dark tiles 30484..30557, art 33000.., pack items 36000.., donor items 40000...
 2. data/items/items.xml: the entries (name, plural, description, weight, containerSize = capacity) between two marker
@@ -68,7 +68,9 @@ def read_config(path=CONFIG):
             m = re.search(r'\b%s\s*=\s*((?:"[^"]*"\s*(?:\.\.\s*)?)+)' % key, block, re.S)
             return ''.join(re.findall(r'"([^"]*)"', m.group(1)))
 
+        old = re.search(r'\boldClientId\s*=\s*(\d+)', block)
         cfg = {'id': num('id'), 'sourceId': num('sourceId'), 'clientId': num('clientId'), 'capacity': num('capacity'), 'weight': num('weight'),
+               'oldClientId': int(old.group(1)) if old else None,
                'name': string('name'), 'plural': string('plural'), 'article': string('article'),
                'description': string('description')}
         assert cfg['id'] > 0 and cfg['sourceId'] > 0 and cfg['name'], 'pouches_config.lua: kinds.%s incomplete' % name
@@ -124,9 +126,9 @@ def patch_otb(data, items, stock_looks=False):
         if k is None:
             buf[root_end:root_end] = want
             notes.append('items.otb: %s pouch node added (server id %d, client id %d)' % (name, cfg['id'], cid))
-        elif k[3] not in (stock[3], cfg['clientId']):
-            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d or %d; nothing written'
-                             % (cfg['id'], k[3], stock[3], cfg['clientId']))
+        elif k[3] not in (stock[3], cfg['clientId'], cfg.get('oldClientId')):
+            raise SystemExit('items.otb: server id %d already belongs to client id %s, not %d, %d or %s; nothing written'
+                             % (cfg['id'], k[3], stock[3], cfg['clientId'], cfg.get('oldClientId')))
         elif out[k[0]:k[1]] != want:
             buf[k[0]:k[1]] = want
             notes.append('items.otb: %s pouch node updated (client id %s -> %d)' % (name, k[3], cid))

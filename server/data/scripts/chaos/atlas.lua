@@ -162,11 +162,7 @@ local function charge(player, price, pay)
 		return true
 	end
 	local paid
-	if player.removeTotalMoney then
-		paid = player:removeTotalMoney(price.gold)
-	else
-		paid = player:removeMoney(price.gold)
-	end
+	paid = Chaos.pay(player, price.gold)
 	if not paid then
 		return false, string.format("You need %d gold (carried or in the bank).", price.gold)
 	end

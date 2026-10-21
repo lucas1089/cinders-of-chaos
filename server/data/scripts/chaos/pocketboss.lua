@@ -753,6 +753,34 @@ local function clearForeignExits(run)
 end
 PB.clearForeignExits = clearForeignExits
 
+-- the boss's corpse once the engine dropped its loot (onDeath runs before the loot goes in, so the size read there is 0
+-- for every corpse): a container's real item count goes to bossDrop.corpseItems; a corpse that is no container (beta
+-- 2026-10-22, Weakened Slurgoth: its corpse is a ramp item that holds nothing and looks like a way down) is taken away,
+-- and the run gets the personal roll (K.needsFallbackLoot: no corpse). Returns "container", "removed" or nil.
+local function settleCorpse(run)
+	local d = run.bossDrop
+	if not d or not d.corpsePos or not d.corpseId then
+		return nil
+	end
+	local tile = Tile(P(d.corpsePos))
+	local item = tile and tile.getItemById and tile:getItemById(d.corpseId)
+	if not item then
+		return nil
+	end
+	if item:isContainer() then
+		local okS, size = pcall(function() return item:getSize() end)
+		if okS and tonumber(size) then
+			d.corpseItems = tonumber(size)
+		end
+		return "container"
+	end
+	item:remove()
+	d.corpseItems = nil
+	log(string.format("%s: its corpse (item %d) holds no loot: taken away", run.boss.key, d.corpseId))
+	return "removed"
+end
+PB.settleCorpse = settleCorpse
+
 local function success(run)
 	run.state = "success"
 	run.bossState = "dead"
@@ -770,6 +798,7 @@ local function success(run)
 			end
 		end
 	end
+	try("corpse", settleCorpse, run)
 	if run.boss.category ~= "world" then
 		try("fallback loot", fallbackLoot, run)
 	end
@@ -1135,8 +1164,9 @@ local bossDeath = CreatureEvent("ChaosPocketBossDeath")
 function bossDeath.onDeath(creature, corpse)
 	local run = PB.monsterRun[creature:getId()]
 	if run and run.bossId == creature:getId() and run.state == "running" and not run.ended then
-		-- what the corpse holds now (the loot callbacks ran when it was made): an empty one or a reward boss gets the
-		-- personal roll in success() (K.needsFallbackLoot)
+		-- the corpse: the engine drops the loot into it after this event, so success() (one tick later) reads its size
+		-- again by its position and id (settleCorpse). An empty one, no container or a reward boss gets the personal
+		-- roll in success() (K.needsFallbackLoot)
 		local mt = creature:getType()
 		local okR, reward = pcall(function() return mt and mt.isRewardBoss and mt:isRewardBoss() end)
 		local okL, loot = pcall(function() return mt and mt:getLoot() end)
@@ -1145,6 +1175,12 @@ function bossDeath.onDeath(creature, corpse)
 		run.bossDrop = {rewardBoss = okR and reward == true, corpseItems = okC and size or nil,
 			loot = okL and type(loot) == "table" and loot or {}, level = okV and tonumber(level) or nil}
 		run.bossDrop.lootEntries = #run.bossDrop.loot
+		local okP, cpos = pcall(function() return corpse and corpse:getPosition() end)
+		local okI, cid = pcall(function() return corpse and corpse:getId() end)
+		if okP and cpos and cpos.x then
+			run.bossDrop.corpsePos = {x = cpos.x, y = cpos.y, z = cpos.z}
+		end
+		run.bossDrop.corpseId = okI and tonumber(cid) or nil
 		local slot, rid = run.slot, run.id
 		addEvent(function()
 			local r = PB.runs[slot]
@@ -1158,16 +1194,26 @@ function bossDeath.onDeath(creature, corpse)
 end
 bossDeath:register()
 
--- the hits of the pocket's monsters x the damage curve; a lethal hit is caught (catchLethal)
+-- the damage curve of a pocket monster's hit on a player of its run; nil for any other hit
+local function pocketHitMult(creature, attacker)
+	local run = PB.runOf[creature:getId()]
+	if not run or run.state ~= "running" or not attacker or not attacker:isMonster()
+		or PB.isPocketMonster(attacker) ~= run then
+		return nil
+	end
+	return K.scale(run.settings.damage, run.size)
+end
+
+-- the hits of the pocket's monsters x the damage curve; a lethal hit is caught (catchLethal). A hit a mana shield took
+-- was scaled by the mana event already (manashield.lua): the rest is left as it is.
 local playerHit = CreatureEvent("ChaosPocketBossPlayerHit")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local run = PB.runOf[creature:getId()]
 	if not run or run.state ~= "running" or primaryType == COMBAT_HEALING then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local fromRun = attacker and attacker:isMonster() and PB.isPocketMonster(attacker) == run
-	if fromRun then
-		local mult = K.scale(run.settings.damage, run.size)
+	local mult = pocketHitMult(creature, attacker)
+	if mult and not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "pocketboss")) then
 		primaryDamage = math.floor(primaryDamage * mult)
 		if secondaryType ~= COMBAT_HEALING then
 			secondaryDamage = math.floor(secondaryDamage * mult)
@@ -1192,6 +1238,17 @@ function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 playerHit:register()
+
+-- the mana shield part of the hit (manashield.lua): the same damage curve
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("pocketboss", {
+	hit = function(player, attacker, amount)
+		local mult = pocketHitMult(player, attacker)
+		return mult and math.floor(amount * mult) or nil
+	end
+})
 
 local prepare = CreatureEvent("ChaosPocketBossPrepareDeath")
 function prepare.onPrepareDeath(creature, killer)

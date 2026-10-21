@@ -118,7 +118,7 @@ end
 
 local function clearAll()
   refreshTreeButton()
-  for slot = 1, 10 do clearSlot(slot) end
+  for slot in pairs(L.SLOTS) do clearSlot(slot) end
   window.infoPanel.lines:destroyChildren()
   window.infoPanel.charName:setText('')
   window.infoPanel.creature:setOutfit({ type = 0 })
@@ -127,7 +127,7 @@ end
 -- ---------------------------------------------------------------- showing a result
 local function showResult(d)
   L.onResult(state, d)
-  for slot = 1, 10 do clearSlot(slot) end
+  for slot in pairs(L.SLOTS) do clearSlot(slot) end
   window.infoPanel.charName:setText(d.name or '')
   window.nameEdit:setText(d.name or '')
   local o = d.outfit or {}

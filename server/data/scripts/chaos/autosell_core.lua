@@ -7,6 +7,11 @@
 --                nested ones too); prices: id -> NPC gold each (sell_prices.lua); opts.tiers (the player's rarity
 --                choice, below), opts.coins (id -> gold each: gold, platinum and crystal coins go to the bank as they are)
 --       -> {sell = {{ref, id, count, gold}}, gold, kept = {locked, unique, rarity, custom, noPrice, protected}}
+--       storeBound (custom attribute chaos_storebound or a store item: the Everfull Ration, the pouches, Nemesis items)
+--       is kept as protected, like orbs, gems and keys
+--   ChaosAutoSellCore.opensContents(entry)             false for a container whose contents are never sold: a locked
+--                                                      one (the item lock covers what is inside), a store-bound one or a
+--                                                      store pouch (entry.pouch). Others are walked (autosell.lua bagEntries)
 --   Rarities the Auto Seller sells (owner 2026-10-13: "Deixe o jogador configurar o autosell por raridade"): one choice
 --   per tier, per character, in one storage value (Chaos.storage.autosellRarity, 7100103):
 --   ChaosAutoSellCore.TIERS                            {{key, name, rank, bit}}: Common, Uncommon, Magic, Rare, Legendary, Divine
@@ -203,7 +208,7 @@ function K.bagPlan(entries, prices, opts)
 			-- a container is never sold: its contents are (they are entries of their own)
 		elseif e.locked then
 			out.kept.locked = out.kept.locked + 1 -- the item lock: never sold
-		elseif e.neverSell then
+		elseif e.neverSell or e.storeBound then
 			out.kept.protected = out.kept.protected + 1 -- orbs, gems, keys (what the other pouches collect)
 		elseif coins[e.id] then
 			local gold = coins[e.id] * count
@@ -227,6 +232,10 @@ function K.bagPlan(entries, prices, opts)
 		end
 	end
 	return out
+end
+
+function K.opensContents(e)
+	return type(e) == "table" and e.container == true and not e.locked and not e.storeBound and not e.pouch
 end
 
 -- the chat line of a sale, in `lang` (Chaos.t keys, i18n_strings.lua; English without ChaosI18n)

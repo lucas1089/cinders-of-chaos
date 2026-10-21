@@ -1,0 +1,89 @@
+# Chaos: a slot that loses its item clears what was drawn for that item (src/client/uiitem.cpp,
+# luafunctions_client.cpp, modules/game_containers/containers.lua; after 0001-0112; 0113 and 0114 are taken by other
+# branches and touch none of these files). Owner beta 2026-10-22, with a screenshot of the Loot Bag: "itens deixam uma
+# marca depois do auto sell vender": after a sale dozens of empty slots kept a pale rarity frame. UIItem::setItem(nil)
+# did not call onItemChange (setItemId(0) did), and game_itemrarity's frame (irFrame), game_shaderfx's locked grey,
+# the slot tooltip and game_itemtooltip's plate are all driven by onItemChange, so a slot that became empty kept the
+# decoration of its last item. The engine now calls onItemChange when a slot loses its item and says so to Lua
+# (UIItem.notifiesItemRemoval); game_containers puts items in slots through chaosSetSlotItem, which signals the change
+# itself on an engine without it (native code only reaches players with a new Windows package). onContainerUpdateItem
+# checks its widget before it uses it. Model test: tools/slot_clear_test.py.
+--- a/modules/game_containers/containers.lua
++++ b/modules/game_containers/containers.lua
+@@ -60,11 +60,25 @@ function destroy(container)
+   end
+ end
+ 
++-- Chaos (base patch 0115): put an item (or none) in a slot so every module that decorates slots hears of it. The engine
++-- of older clients calls onItemChange only when the slot gets an item, so after a sale the slots that became empty kept
++-- what was drawn for their old item (the rarity frame of game_itemrarity, the locked grey of game_shaderfx, the
++-- tooltip). With such an engine (no UIItem.notifiesItemRemoval) the change is signalled here, once.
++function chaosSetSlotItem(itemWidget, item)
++  if not itemWidget then return end
++  local had = itemWidget:getItem() ~= nil
++  itemWidget:setItem(item)
++  if had and not item and not (UIItem.notifiesItemRemoval and UIItem.notifiesItemRemoval()) then
++    local onItemChange = itemWidget.onItemChange
++    if onItemChange then signalcall(onItemChange, itemWidget) end
++  end
++end
++
+ function refreshContainerItems(container)
+   for slot=0,container:getCapacity()-1 do
+     local itemWidget = container.itemsPanel:getChildById('item' .. slot)
+     local item = container:getItem(slot)
+-    itemWidget:setItem(item)
++    chaosSetSlotItem(itemWidget, item)
+     ItemsDatabase.setRarityItem(itemWidget, item)
+     ItemsDatabase.setTier(itemWidget, item)
+     updateFlags(item, itemWidget)
+@@ -353,12 +367,11 @@ end
+ function onContainerUpdateItem(container, slot, item, oldItem)
+   if not container.window then return end
+   local itemWidget = container.itemsPanel:getChildById('item' .. slot)
+-  itemWidget:setItem(item)
++  if not itemWidget then return end
++  chaosSetSlotItem(itemWidget, item)
+   ItemsDatabase.setRarityItem(itemWidget, item)
+   ItemsDatabase.setTier(itemWidget, item)
+-  if itemWidget then
+-    updateFlags(item, itemWidget)
+-  end
++  updateFlags(item, itemWidget)
+ end
+ 
+ local function callOnRemoveItem(container, slot, item)
+--- a/src/client/luafunctions_client.cpp
++++ b/src/client/luafunctions_client.cpp
+@@ -1109,6 +1109,8 @@ void Client::registerLuaFunctions()
+     g_lua.bindClassMemberFunction<UIItem>("setVirtualCount", &UIItem::setVirtualCount);
+     g_lua.bindClassMemberFunction<UIItem>("setItemVisible", &UIItem::setItemVisible);
+     g_lua.bindClassMemberFunction<UIItem>("setItem", &UIItem::setItem);
++    // Chaos (0115): setItem(nil) calls onItemChange; Lua that also runs on an older client checks this before it does
++    g_lua.bindClassStaticFunction<UIItem>("notifiesItemRemoval", []{ return true; });
+     g_lua.bindClassMemberFunction<UIItem>("setVirtual", &UIItem::setVirtual);
+     g_lua.bindClassMemberFunction<UIItem>("setShowCount", &UIItem::setShowCount);
+     g_lua.bindClassMemberFunction<UIItem>("setShowCountAlways", &UIItem::setShowCountAlways);
+--- a/src/client/uiitem.cpp
++++ b/src/client/uiitem.cpp
+@@ -182,6 +182,10 @@ void UIItem::setItemSubType(int subType)
+ 
+ void UIItem::setItem(const ItemPtr& item)
+ {
++    // Chaos (base patch 0115): a slot that loses its item says so too. Before, setItem(nil) changed nothing for Lua, so
++    // every decoration a module put on the slot for its item (the rarity frame, the locked grey, the tooltip) stayed on
++    // the empty slot: dozens of framed empty slots after an Auto Seller sale. setItemId(0) always said so.
++    const bool removed = m_item && !item;
+     m_item = item;
+     if (m_item) {
+         m_item->setShader(m_shader);
+@@ -190,6 +194,9 @@ void UIItem::setItem(const ItemPtr& item)
+ 
+         cacheCountText();
+         callLuaField("onItemChange");
++    } else if (removed) {
++        m_lastDecayUpdate = 0;
++        callLuaField("onItemChange");
+     }
+ }
+ 

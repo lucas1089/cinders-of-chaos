@@ -402,8 +402,8 @@ local gdec = C.decodeGear(genc)
 eq(gdec[6].iid, "1790000000001", "gear iid round trip"); eq(gdec[5].empty, true, "empty round trip")
 eq(gdec[9].id, 3051, "plain id round trip"); eq(gdec[1].name, "abcd", "separators stripped from names")
 eq(next(C.decodeGear("junk|7=0::x")), nil, "malformed gear ignored")
--- a set saved with a quiver in slot 10 (before engine patch 0023 made it the second ring slot): the quiver is the
--- set's off-hand item; slot 10 is left out of the set (a ring worn there now stays on)
+-- a set saved with a quiver in slot 10 (before engine patch 0023): the quiver is the set's off-hand item; slot 10 is
+-- left out of every set (it takes nothing since 0058; a ring saved there while it was the second ring slot is dropped)
 local isQ = function(id) return id == 29566 end
 local legacy = C.decodeGear("6=8849::Gallowsbolt Crossbow|5=empty|10=29566:55:Haloed Quiver", isQ)
 eq(legacy[5] and legacy[5].id, 29566, "legacy loadout: the quiver goes to the off-hand")
@@ -413,8 +413,10 @@ local shielded = C.decodeGear("6=2400::sword|5=2520::shield|10=29566::quiver", i
 eq(shielded[5].id, 2520, "a set with a shield keeps it; its old quiver is dropped from the set")
 eq(shielded[10], nil, "and slot 10 is left alone")
 local ringSet = C.decodeGear("9=2357::ring|10=2165::stealth ring", isQ)
-eq(ringSet[10] and ringSet[10].id, 2165, "a ring in slot 10 (the second ring slot) stays in the set")
-eq(C.decodeGear("10=29566::quiver")[10].id, 29566, "without a quiver test (no archery loaded) nothing changes")
+eq(ringSet[10], nil, "a ring saved in slot 10 (the second ring slot until engine patch 0058) is dropped from the set")
+eq(ringSet[9] and ringSet[9].id, 2357, "the ring slot's ring stays")
+eq(C.decodeGear("10=29566::quiver")[10], nil, "without a quiver test (no archery loaded) slot 10 is dropped too")
+eq(C.decodeGear("13=27811::Raging Moon Badge")[13].id, 27811, "a badge in slot 13 is part of a set")
 
 -- ================================================================== engine (loadouts.lua) against a mocked engine
 local fakeNow = 1000000

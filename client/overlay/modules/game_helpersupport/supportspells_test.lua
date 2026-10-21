@@ -313,6 +313,51 @@ H.noteCast(st, byId[162], now)
 now = now + 10000
 eq(H.pick(st, cfg, w.ctx()), nil, 'vigil cast, the bar never showed it: no toggling on and off')
 
+-- the player switches the vigil off by hand (player report 2026-10-22: Vigil of Clarity came back right away)
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+cfg = cfgOf({ 162 })
+eq(H.pick(st, cfg, w.ctx()), nil, 'vigil on: left alone')
+now = now + 20000
+w.bar = {}
+eq(H.pick(st, cfg, w.ctx()), nil, 'switched off by the player: not cast again')
+eq(st.status[162], 'useroff', 'status: you switched it off')
+local unticked = H.takeUserOff(st, cfg)
+eq(#unticked, 1, 'the row is unticked')
+eq(cfg.slots[1].enabled, false, 'the saved row is off (no recast after a relog)')
+eq(#H.takeUserOff(st, cfg), 0, 'unticked once')
+now = now + 60000
+eq(H.pick(st, cfg, w.ctx()), nil, 'still off a minute later')
+eq(st.status[162], 'off', 'status: off')
+-- the player switches it on again by hand: the helper keeps it up once more (a ticked row)
+cfg.slots[1].enabled = true
+w.bar = { ['vigil of clarity'] = true }
+eq(H.pick(st, cfg, w.ctx()), nil, 'on again: left alone')
+ok(not st.userOff[162], 'switched on by the player: no longer marked')
+-- our own cast that the bar shows late is not the player's: on, then the bar lags off within the settle time
+st, w = H.newState(), world({ bar = {} })
+cfg = cfgOf({ 162 })
+s = H.pick(st, cfg, w.ctx())
+eq(s and s.id, 162, 'off: cast')
+H.noteCast(st, s, now)
+w.bar = { ['vigil of clarity'] = true }
+now = now + 1000
+H.pick(st, cfg, w.ctx())
+w.bar = {}
+now = now + 1000
+H.pick(st, cfg, w.ctx())
+ok(not st.userOff[162], 'a flicker within our settle time is not a hand switch')
+eq(#H.takeUserOff(st, cfg), 0, 'nothing unticked')
+-- the bar is gone (no data) and back: no hand switch read from a missing bar
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+cfg = cfgOf({ 162 })
+H.pick(st, cfg, w.ctx())
+w.bar = nil
+now = now + 20000
+H.pick(st, cfg, w.ctx())
+ok(not st.userOff[162], 'no bar data: nothing read')
+H.reset(st)
+ok(st.userOff and next(st.userOff) == nil, 'reset clears the marks')
+
 -- the safeguards
 st, w = H.newState(), world({ bar = {}, inPz = true })
 cfg = cfgOf({ 234 })

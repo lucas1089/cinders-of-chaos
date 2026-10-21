@@ -10,7 +10,7 @@
 --   ChaosServiceNpcsRun.runBase(player, id, param)        the text of a base command (K.BASE id), or nil when it is
 --                                                         not on this server
 -- Assumed engine API (TFS 1.4): Game.getHouses, House:getId/getName/getTown/getOwnerGuid/setOwnerGuid/getTileCount,
--- Town:getId/getName, Player:isPremium/getHouse/getTotalMoney/removeTotalMoney (the base lib; else getMoney + getBankBalance/removeMoney)/sendExtendedOpcode,
+-- Town:getId/getName, Player:isPremium/getHouse/getMoney/removeMoney/getBankBalance/setBankBalance (Chaos.pay)/sendExtendedOpcode,
 -- configManager.getNumber(configKeys.HOUSE_PRICE). Lua 5.1 / LuaJIT and 5.3.
 
 if not Chaos then
@@ -92,18 +92,14 @@ function R.buyHouse(player, row)
 		owner = live:getOwnerGuid(),
 		owns = R.ownsHouse(player),
 		price = price,
-		money = player.getTotalMoney and player:getTotalMoney() or (player:getMoney() + player:getBankBalance())
+		money = Chaos.totalMoney(player)
 	})
 	if not ok then
 		return false, reason, price
 	end
 	local paid = price == 0
 	if not paid then
-		if player.removeTotalMoney then
-			paid = player:removeTotalMoney(price)
-		else
-			paid = player:removeMoney(price)
-		end
+		paid = Chaos.pay(player, price)
 	end
 	if not paid then
 		return false, "money", price

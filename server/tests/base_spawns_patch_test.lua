@@ -231,6 +231,18 @@ eq(readFile(spawnPath), first, "second run: same bytes")
 eq(readFile(regPath), reg1, "second run: monsters.xml the same")
 ok(out:find("| Band | Spawn blocks | Monsters |", 1, true) ~= nil, "report table")
 ok(out:find("| 300-600 | 5 | 10 |", 1, true) ~= nil, "report: the mid band (the stock block, two added, one filled, a block of 3)")
+-- blocks another tool appended after ours (install_content_areas.py: chaoscontent / chaoshunt) stay after them
+local later = '\t<spawn centerx="3000" centery="3000" centerz="7" radius="1" chaoscontent="P1">\n' ..
+	'\t\t<monster name="Test Mid" x="0" y="0" z="7" spawntime="60" />\n\t</spawn>\n' ..
+	-- a display monster keeps its own spawntime (120 s would be the band's 90 s otherwise)
+	'\t<spawn centerx="3002" centery="3000" centerz="7" radius="1" chaoshunt="P1">\n' ..
+	'\t\t<monster name="Test Mid" x="0" y="0" z="7" spawntime="120" />\n\t</spawn>\n'
+local withLater = first:gsub("</spawns>", function() return later .. "</spawns>" end)
+writeFile(spawnPath, withLater)
+out, rc = run("")
+ok(out:find("unchanged", 1, true) ~= nil, "a content block after ours: unchanged (" .. out .. ")")
+eq(readFile(spawnPath), withLater, "a content block after ours keeps its place, a display monster its spawntime")
+writeFile(spawnPath, first)
 out, rc = run("--dry-run --remove")
 eq(readFile(spawnPath), first, "dry run writes nothing")
 out, rc = run("--remove")

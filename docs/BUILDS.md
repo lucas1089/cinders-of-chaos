@@ -208,7 +208,7 @@ and Hollow Palm; Templar Choir Herald, Tithebound and Hollow Vessel.
 
 ## Third round: Warrior and Ranger lines (2026-10-20)
 
-Warrior, Juggernaut, Berserker: Executioner's Verdict (melee finishes monsters under 15%), Earthbreaker (every 4th hit
+Warrior, Juggernaut, Berserker: Executioner's Verdict (melee and spells finish monsters under 15%), Earthbreaker (every 4th hit
 slams), Rampage (kill stacks, 5 at most), Last Stand (survive one lethal hit per 90 s). Ranger, Deadeye, Beastmaster:
 Longshot (distance bonus), Barbed Quiver (bleed), Opening Shot (first hit on a full monster), Hobbling Shot (slow). Each
 has a price on the other hits. Numbers: `server/data/spells/README.md` "Warrior and Ranger line keystones".

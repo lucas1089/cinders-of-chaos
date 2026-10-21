@@ -5,7 +5,9 @@
 -- per character (Auto rotation's spell choices, Auto setup's timer words). Every number that drives the automation
 -- (thresholds, delays, counts, ids, priorities) is clamped to the range the helper's own controls allow, every value
 -- of the wrong type falls back to its default, lists are capped, so a hand-edited file can make the helper neither
--- cast in a loop (a 0 s timer, a 1000 % threshold) nor fail. Fields this file does not know are left as they are.
+-- cast in a loop (a 0 s timer, a 1000 % threshold) nor fail. Fields this file does not know are left as they are,
+-- except the settings of the options the compact helper window dropped (base patch 0105, HC.DROPPED): an old file
+-- still loads, without them.
 -- The base helper still runs its own fill-in of missing fields after this (helper.lua loadSettings).
 ChaosHelperConfig = ChaosHelperConfig or {}
 local HC = ChaosHelperConfig
@@ -23,6 +25,11 @@ HC.ABSOLUTE_MAX = 10000000    -- an equip rule on HP / MP points
 HC.WORDS_MAX = 64             -- Auto setup's remembered timer words
 HC.TEXT_MAX = 128
 HC.VOCATIONS = { knight = 5, paladin = 4, sorcerer = 3, druid = 2, monk = 1 } -- the default priority of each
+-- settings of helper options base patch 0105 removed, dropped on load: Cure Paralyze, Auto Sell Loot (a Summon Quill
+-- or a summoned sell NPC, neither on this server), Quiver Refill (no quiver slot in 10.98, hidden since the start)
+HC.DROPPED = { 'paralyzeCure', 'autoQuillSell', 'autoQuillSellBelowCap', 'autoQuillSellCapacity', 'quiverRefill' }
+-- fields inside a kept table: Exana Vita (no spell ends the ward here) and the bot HUD's cavebot rows (no cavebot)
+HC.DROPPED_FIELDS = { magicShield = { 'exanaEnabled', 'exanaHpPercent' }, botHud = { 'showCavebot', 'showWaypoints' } }
 
 -- ---------------------------------------------------------------- value checks
 
@@ -217,12 +224,11 @@ function HC.sanitizeHelper(c)
       return e
     end)
   end
-  if c.paralyzeCure ~= nil then
-    c.paralyzeCure = list(c.paralyzeCure, HC.ROWS_MAX, function(e)
-      e.id = id(e.id)
-      e.enabled = HC.bool(e.enabled, false)
-      return e
-    end)
+  for _, key in ipairs(HC.DROPPED) do c[key] = nil end
+  for key, fields in pairs(HC.DROPPED_FIELDS) do
+    if type(c[key]) == 'table' then
+      for _, f in ipairs(fields) do c[key][f] = nil end
+    end
   end
   if type(c.staminaFood) == 'table' then
     local s = c.staminaFood
@@ -257,7 +263,6 @@ function HC.sanitizeHelper(c)
   elseif c.namedSio ~= nil then
     c.namedSio = nil
   end
-  if c.autoQuillSellCapacity ~= nil then c.autoQuillSellCapacity = HC.int(c.autoQuillSellCapacity, 0, HC.ABSOLUTE_MAX, 100) end
   if c.autoTargetMode ~= nil then c.autoTargetMode = HC.int(c.autoTargetMode, 1, HC.TARGET_MODES, 6) end
   if c.currentLockedTargetId ~= nil then c.currentLockedTargetId = HC.int(c.currentLockedTargetId, 0, 2 ^ 31 - 1, 0) end
   if c.shooterProfiles ~= nil then c.shooterProfiles = profiles(c.shooterProfiles, shooterProfile) end

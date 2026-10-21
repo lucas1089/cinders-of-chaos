@@ -23,12 +23,19 @@ ChaosPouchesConfig = {
 		owner = "chaos_pouch_owner", -- guid of the character it belongs to (only the owner's pouch collects)
 		kind = "chaos_pouch", -- "loot" | "orbs" | "keys"
 		storebound = "chaos_storebound", -- 1: a store item (trade, mail, ground, player market refuse it)
-		lock = "chaos_locked" -- 1: the item lock (engine patch 0009): NPCs do not buy it, trash refuses it, stock market too
+		lock = "chaos_locked" -- not 0: the item lock (engine patch 0009): NPCs do not buy it, trash refuses it, stock market too
 	},
+	-- the value of chaos_locked on a pouch. Every lock check of the server and the engine treats any value but 0 as
+	-- locked, but the client draws only a player's own lock (1, the crafting bench's Lock button) grey (game_shaderfx
+	-- shaderfxlogic.lua isLocked). 2 = bound like the Everfull potions: locked, drawn in its colours. Owner report
+	-- 2026-10-22: with 1 the pouches showed grey in the backpack and the purse. Older pouches get it at login (PO.rebind).
+	bindLock = 2,
 
 	-- the items: new items.otb nodes (install_pouches.py), copies of the stock bag `sourceId` (group, flags) with their
-	-- own look `clientId`: our pouch art (client/tools/sprites/gen_pouch_art.py, appended to the client pair by
-	-- import_art_things.py with art_import/pouches.csv). install_pouches.py --stock-looks keeps the stock bag looks.
+	-- own look `clientId`: our pouch art in its theme palette (client/tools/sprites/gen_store_items_art.py, appended to
+	-- pair 34 by import_art_things.py with art_import/store_items.csv; client MANIFEST.md "Store item looks").
+	-- `oldClientId`: the earlier look (gen_pouch_art.py, art_import/pouches.csv, 33651-33653), replaced in place by
+	-- install_pouches.py. install_pouches.py --stock-looks keeps the stock bag looks.
 	-- capacity = containerSize in items.xml (slots, at most 255); weight in 1/100 oz (the contents weigh as usual, except
 	-- in a `weightless` one: engine src-patch 0038)
 	kinds = {
@@ -36,19 +43,19 @@ ChaosPouchesConfig = {
 		-- automaticamente"): every rule on by default (lootDefaults), the most slots a container can have (255: one byte
 		-- in the protocol) and weightless (Game.setWeightlessContainer, pouches.lua at startup), so its contents never
 		-- count against the character's capacity. The Auto Seller sells what is in it (autosell.lua, every 30 s).
-		loot = {id = 32081, sourceId = 11242, clientId = 33653,
+		loot = {id = 32081, sourceId = 11242, clientId = 38608, oldClientId = 33653,
 			capacity = 255, weight = 100, title = "Loot Bag", article = "a",
 			name = "loot bag", plural = "loot bags", weightless = true,
 			collects = "all the loot of your kills, as its rules pick (Loot Filter > Loot Bag)",
 			description = "Store item: cannot be traded, sold or dropped. A bottomless bag: the loot of your kills goes " ..
 				"into it while you carry it, its contents weigh nothing, and the Auto Seller sells what is in it."},
-		orbs = {id = 32082, sourceId = 9775, clientId = 33651,
+		orbs = {id = 32082, sourceId = 9775, clientId = 38609, oldClientId = 33651,
 			capacity = 40, weight = 100, title = "Orbs Pouch", article = "an",
 			name = "orbs pouch", plural = "orbs pouches",
 			collects = "orbs, whetstones, rune shards and gems",
 			description = "Store item: cannot be traded, sold or dropped. Collects orbs, whetstones, rune shards and " ..
 				"gems from your kills while you carry it."},
-		keys = {id = 32083, sourceId = 7343, clientId = 33652,
+		keys = {id = 32083, sourceId = 7343, clientId = 38610, oldClientId = 33652,
 			capacity = 30, weight = 100, title = "Rift Key Pouch", article = "a",
 			name = "rift key pouch", plural = "rift key pouches",
 			collects = "Rift Keys, Omen Keys and omen fragments",

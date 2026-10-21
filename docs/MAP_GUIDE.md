@@ -271,8 +271,46 @@ first. Many of its town streets are bare: the median is 0.09 deco per street til
 map that are not a content plan: the broken teleports of `server/tools/teleport_fixes.csv`, the sea round the
 teleport hall (`hunt_teleports_config.lua` `hall.fill`: void -> deep water 28915-28918 with the water border pieces
 29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the NPC
-arcade at Cinderhold's temple (`temple_npcs_config.lua`). Add a row or a config entry and run the install again; never
-edit the map by hand.
+arcade at Cinderhold's temple (`temple_npcs_config.lua`). Add a row or a config entry and run the install again. The
+team never edits the map by hand; the owner's hand edits go through the map master below.
+
+## Editing the live map (map master)
+
+The owner can change the live map by hand in the map editor. The edited map becomes the "map master": every later
+build starts from it, and the server update puts it on the VPS (server/README.md "Map master").
+
+For the owner:
+
+1. Download the newest `CindersOfChaos-Windows.zip` from the GitHub releases (the newest `winpkg-N`). Always start
+   from the newest one: it holds the current map with every install step and every earlier master in it. An edit
+   made on an older zip would bring old content back.
+2. Extract it, run `open-map-editor.bat` and open the `.otbm` in `server\data\world` (the only `.otbm` there).
+3. Edit and save. Keep the file name. Test it locally if you like: `start-server.bat` loads the saved map.
+4. Send us that one `.otbm` file (zip it if the channel limits the size), with a line on what you changed.
+
+What stays and what does not:
+
+- Ground, walls, decoration, doors, stairs, teleports and their destinations, signs and books: kept.
+- Monster and NPC spawns: not kept. The spawn file comes from the install steps, so a spawn placed in the editor is
+  gone after the next build. Ask for those changes in words (where, which monster, how many).
+- Houses: do not add, remove or resize houses, and do not move their doors or entries. The house file comes from the
+  install steps too and would no longer match the house tiles of the map.
+- Places the install steps build keep their design: the hunt teleport hall (its teleports, signs and floors), the sea
+  round it, the NPC arcade at Cinderhold's temple and the teleports of `teleport_fixes.csv` are written again by each
+  install. A change there needs a change in the config; ask us.
+- Content areas (the planned hunts, the Chronicle areas, the Idle Hall): small hand edits inside them stay. An area
+  rebuilt to more than half of its tiles is left as the owner made it, and a later change of its plan does not reach
+  it any more.
+
+For the team (publishing a master, server/README.md "Map master"):
+
+```
+python3 -I server/tools/map_master.py pack edited.otbm <windows-assets checkout>/world --note "owner: market square"
+# commit world/MAP_MASTER.json, world/SHA256SUMS and every world/map-master.otbm.xz.part* on windows-assets; push
+```
+
+Then run the `Windows package` workflow (the new zip has the map with the install steps on top) and "Atualizar
+servidor" in the admin app (the VPS gets it at the restart; the old map is kept in `map-backups`).
 
 ## Checklist for a new area
 

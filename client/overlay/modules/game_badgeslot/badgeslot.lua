@@ -1,7 +1,7 @@
--- The second ring slot in the inventory window (logic: ringslotlogic.lua). game_inventory (a base module) builds the
--- slot; this module only gives it the "Ring" tooltip while it is empty and drops "ammunition" from the soul label's
--- tooltip. The item tooltips (game_itemtooltip) are untouched.
-local L = RingSlotLogic
+-- The badge slot in the inventory window (logic: badgeslotlogic.lua). game_inventory (a base module, patch 0113)
+-- builds the slot; this module only gives it the "Badge" tooltip while it is empty and drops "ammunition" from the
+-- soul label's tooltip. The item tooltips (game_itemtooltip) are untouched.
+local L = BadgeSlotLogic
 local reported = {}
 
 local function safe(name, fn)
@@ -9,7 +9,7 @@ local function safe(name, fn)
     local ok, res = pcall(fn, ...)
     if not ok and not reported[name] then
       reported[name] = true
-      g_logger.warning('[ringslot] ' .. name .. ': ' .. tostring(res))
+      g_logger.warning('[badgeslot] ' .. name .. ': ' .. tostring(res))
     end
   end
 end

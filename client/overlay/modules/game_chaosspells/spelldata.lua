@@ -311,7 +311,7 @@ ChaosRetiredSpells = {
   ["utamo tempo san"] = true, -- Swift Foot
 }
 
--- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids (server/tools/add_vocations.py, LINE_STOCK_SPELLS)
+-- stock spells class lines get on the server: Chaos words -> class ids (server/tools/add_vocations.py, LINE_STOCK_SPELLS)
 ChaosStockSpellLines = {
   ["vael lyss"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
   ["vael gal lyss"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
@@ -320,6 +320,7 @@ ChaosStockSpellLines = {
   ["ash ul"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
   ["ash gor"] = { 11, 12, 13, 17, 18, 19, 23, 24, 25 },
   ["ruan gal ul"] = { 11, 12, 13, 17, 18, 19 },
+  ["tor ael"] = { 1, 5, 10, 20, 21, 22, 3, 7, 15 },
 }
 
 -- the 15-spell cap: stock spell (Chaos words) -> the classes that keep it, {} = retired (server/tools/patch_spell_cap.py CAP)
@@ -340,7 +341,7 @@ ChaosCappedSpells = {
   ["drai orr hyr"] = {}, -- Shatterfrost (40)
   ["drai orr gor"] = {}, -- Quakeburst (41)
   ["drai gal hyr ul"] = {}, -- Greater Glacier Fan (43)
-  ["tor ael"] = { 5 }, -- Ward of the Mind (44)
+  ["tor ael"] = { 1, 5, 10, 20, 21, 22, 3, 7, 15 }, -- Ward of the Mind (44)
   ["fen ves"] = {}, -- Shroud of Shadows (45)
   ["vael mur sol"] = { 3 }, -- Hallowed Ground (46)
   ["drai gal vas ylth"] = {}, -- Fading Step (47)

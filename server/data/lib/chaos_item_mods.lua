@@ -927,9 +927,9 @@ function M.slotBits()
 	add(CONST_SLOT_HEAD, SLOTP_HEAD); add(CONST_SLOT_NECKLACE, SLOTP_NECKLACE); add(CONST_SLOT_ARMOR, SLOTP_ARMOR)
 	add(CONST_SLOT_LEGS, SLOTP_LEGS); add(CONST_SLOT_FEET, SLOTP_FEET); add(CONST_SLOT_RING, SLOTP_RING)
 	add(CONST_SLOT_RIGHT, SLOTP_RIGHT); add(CONST_SLOT_LEFT, SLOTP_LEFT)
-	add(CONST_SLOT_BADGE, SLOTP_BADGE); add(CONST_SLOT_GLOVES, SLOTP_GLOVES); add(CONST_SLOT_BELT, SLOTP_BELT)
-	-- the second ring slot (the old ammunition slot, engine patch 0023): a ring counts there as in the ring slot
-	add(CONST_SLOT_AMMO, SLOTP_RING)
+	-- the badge slot (engine patch 0058); the ammunition slot (0023's second ring slot until 0058) and the deck, ship,
+	-- belt and gloves slots take nothing
+	add(CONST_SLOT_BADGE, SLOTP_BADGE)
 	return bits
 end
 

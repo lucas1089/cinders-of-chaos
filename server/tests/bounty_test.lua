@@ -147,7 +147,7 @@ do
 	local g1 = ChaosPaceCore.goalOfEntry(pc, {level = 6, exp = 12, health = 30})
 	eq(g1, 1, "pace: a level 12 hunt keeps its goals")
 	local g2 = ChaosPaceCore.goalOfEntry(pc, {level = 980, exp = 13900, health = 22000})
-	assert(g2 > 20, "pace: a level-scaled late-game monster needs 20x+ the kills")
+	assert(g2 > 8 and g2 < 12, "pace: a level-scaled late-game monster needs about 10x the kills (O108)")
 end
 eq(#sb.bands[2].contracts, 0, "nothing fits band 2")
 
@@ -213,18 +213,130 @@ local crossed, done = B.addKill(one, cfg.progressNotices)
 eq(#crossed, 0, "a single kill contract has no milestones"); eq(done, true)
 
 -- ---------------------------------------------------------------- rewards
-local r = B.reward({band = 1, type = "hunt"}, cfg, 30)
+local r = B.reward({band = 1, type = "hunt", count = 0}, cfg, 30)
 eq(r.gold, cfg.bands[1].reward.gold); eq(r.chaos, 1); eq(r.divine, 0)
-eq(r.exp, math.floor(B.expForLevel(30) * cfg.expPercent.hunt / 100), "exp from the player's level")
-r = B.reward({band = 1, type = "hunt"}, cfg, 1000)
-eq(r.exp, math.floor(B.expForLevel(49) * cfg.expPercent.hunt / 100), "exp capped at the band's max level")
-r = B.reward({band = 6, type = "elite"}, cfg, 1000)
+r = B.reward({band = 6, type = "elite", count = 0}, cfg, 1000)
 eq(r.gold, math.floor(cfg.bands[6].reward.gold * cfg.typeMult.elite)); eq(r.chaos, 9); eq(r.divine, 3)
-r = B.reward({band = 5, type = "boss"}, cfg, 600)
+r = B.reward({band = 5, type = "boss", count = 1}, cfg, 600)
 eq(r.divine, 2, "divine rounded up")
-eq(B.expForLevel(1), 100); eq(B.expForLevel(100), 495100)
--- experience stays small next to a level: 12 contracts a day (3 bands x 4) at the highest percent
-assert(12 * math.max(cfg.expPercent.hunt, cfg.expPercent.elite, cfg.expPercent.boss) <= 60, "under ~half a level a day")
+eq(B.expForLevel(1), 100); eq(B.expForLevel(100), 495100); eq(B.expForLevel(8), 2900)
+
+-- experience (2026-10-22): expShare percent of the base experience of the contract's kills at the player's stage,
+-- between expFloor and expCap percent of a level (L = min(player level, band max))
+local kc = {}
+for k, v in pairs(cfg) do kc[k] = v end
+kc.killBase = nil -- the pool experience, no pace
+kc.expShare = {hunt = 40, elite = 50, boss = 100}
+kc.expFloor = {hunt = 10, elite = 10, boss = 50}
+kc.expCap = {hunt = 2000, elite = 2000, boss = 2000}
+kc.tierXp = {magic = 2, rare = 4}
+kc.eliteSearch = {magic = 12, rare = 50}
+local gazer = {band = 1, type = "hunt", name = "Gazer", count = 90, exp = 90}
+eq(B.contractKillExp(gazer, kc, 10), 81000, "count x exp x stage")
+eq(B.reward(gazer, kc, 8, 10).exp, 32400, "40% of the kills at level 8, stage 10 (was 87)")
+eq(B.reward(gazer, kc, 8, 1).exp, 3240, "the stage counts")
+eq(B.reward(gazer, kc, 8).exp, 3240, "no stage: 1")
+-- elite: each counted kill x its tier, plus the kills of the type made while looking for the tier
+local el = {band = 1, type = "elite", tier = "magic", name = "Gazer", count = 5, exp = 90}
+eq(B.contractKillExp(el, kc, 10), 5 * (2 + 11) * 90 * 10, "elite kills")
+el.tier = "rare"
+eq(B.contractKillExp(el, kc, 10), 5 * (4 + 49) * 90 * 10, "rare elite kills")
+eq(B.reward(el, kc, 30, 50).exp, math.floor(5 * 53 * 90 * 50 * 50 / 100), "elite share")
+-- floor: a monster with little experience still pays expFloor percent of a level
+local tiny = {band = 1, type = "hunt", name = "Rat", count = 10, exp = 5}
+eq(B.reward(tiny, kc, 30, 50).exp, math.floor(B.expForLevel(30) * 10 / 100), "floor")
+local boss = {band = 1, type = "boss", name = "Grimebeard", count = 1, exp = 375}
+eq(B.reward(boss, kc, 8, 10).exp, 3750, "boss: its kill")
+eq(B.reward(boss, kc, 40, 50).exp, math.floor(B.expForLevel(40) / 2), "boss floor half a level")
+-- cap: a low character finishing a contract of the band above pays at most expCap percent of its own level
+local big = {band = 2, type = "hunt", name = "Behemoth", count = 400, exp = 2500}
+eq(B.reward(big, kc, 30, 50).exp, B.expForLevel(30) * 20, "capped at 20 levels of level 30")
+-- a high character on a lower band: floor and cap at the band's max level, the kills at the player's own stage
+eq(B.reward(tiny, kc, 400, 33).exp, math.floor(B.expForLevel(49) * 10 / 100), "floor at the band max")
+eq(B.reward(big, kc, 1000, 13).exp, math.floor(400 * 2500 * 13 * 40 / 100), "kills at the player's stage")
+-- no experience in the entry (a rerolled contract whose monster left the pool): the floor
+eq(B.reward({band = 3, type = "hunt", name = "?", count = 100}, kc, 200, 41).exp, math.floor(B.expForLevel(200) / 10))
+-- the hook: the pace curve x the pool experience; bosses are never paced
+local fakeP = {entryLevel = function(_, e) return e.level * 2, false end,
+	factors = function(_, lvl) return {xp = lvl >= 100 and 0.5 or 1} end}
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 60}, fakeP, {}), 500, "paced")
+eq(B.monsterKillBase({type = "boss", exp = 1000, level = 60}, fakeP, {}), 1000, "boss unpaced")
+eq(B.monsterKillBase({type = "hunt", level = 60}, fakeP, {}), 0, "no experience")
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 60}), 1000, "no pace")
+-- a level-scaled monster: x the engine's 0.03 L (above 1 only), then the pace curve; a boss only the level factor
+local scaledP = {entryLevel = function(_, e) return e.level, true end, factors = function() return {xp = 0.5} end}
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 700}, scaledP, {}), 1000 * 21 * 0.5, "level factor x pace")
+eq(B.monsterKillBase({type = "boss", exp = 1000, level = 700}, scaledP, {}), 1000 * 21, "boss: level factor only")
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 20}, scaledP, {}), 500, "factor below 1 is not applied")
+-- elite and boss contracts pay at least the mean hunt reward of their band (B.huntMean), still at most the cap
+local h1 = {band = 1, type = "hunt", count = 100, exp = 100}
+local h2 = {band = 1, type = "hunt", count = 100, exp = 300}
+local hm = B.huntMean(boss, kc, 30, 50, {h1, h2, boss})
+eq(hm, (B.expReward(h1, kc, 30, 50) + B.expReward(h2, kc, 30, 50)) / 2, "mean of the band's hunts")
+eq(B.huntMean(h1, kc, 30, 50, {h1, h2}), nil, "a hunt has none")
+eq(B.reward(boss, kc, 30, 50, hm).exp, math.floor(hm), "boss lifted to the hunt mean")
+eq(B.reward(el, kc, 30, 50, hm).exp, B.reward(el, kc, 30, 50).exp, "an elite above the mean keeps its own")
+eq(B.reward(boss, kc, 8, 10, 1e12).exp, B.expForLevel(8) * 20, "the cap still holds")
+-- no hunt on the board for the band: the band's pool median at the middle kill count
+local hp = B.huntMean(boss, kc, 30, 50, {}, pool)
+assert(hp and hp > 0, "pool median")
+eq(B.huntPoolMedian(1, kc, pool), B.huntPoolMedian(1, kc, pool), "cached")
+eq(B.huntMean(boss, kc, 30, 50, {}), nil, "no board and no pool")
+-- with the real config and pace: every board contract of 30 days pays between the floor and the cap, at every level
+ChaosPaceCore = nil
+local P = dofile("data/scripts/chaos/pace_core.lua") or ChaosPaceCore
+local pcfg = dofile("data/scripts/chaos/pace_config.lua")
+local rc = {}
+for k, v in pairs(cfg) do rc[k] = v end
+rc.goalMult = function(m) return P.goalOfEntry(pcfg, m) end
+rc.killBase = function(c) return B.monsterKillBase(c, P, pcfg) end
+-- the real curves (O108): a level-scaled kill is file experience x 0.03 L x the scaled curve, and it pays a few times a
+-- base monster of the same hunting level (bulkier, fewer per hour), not the 20-30x of the 2026-10-20 curve
+do
+	local function entry(name)
+		for _, e in ipairs(pool.hunt) do
+			if e.name == name then
+				local c = {type = "hunt"}
+				for k, v in pairs(e) do c[k] = v end
+				return c
+			end
+		end
+	end
+	local troll, swamp = entry("Tundra Troll"), entry("Swamp Monster")
+	assert(troll and swamp, "pool entries")
+	local lvl, scaled = P.entryLevel(pcfg, troll)
+	assert(scaled and lvl == 830, "Tundra Troll: level-scaled, level 830")
+	eq(B.monsterKillBase(troll, P, pcfg), troll.exp * lvl * 0.03 * P.factors(pcfg, lvl, true).xp,
+		"level-scaled: x0.03 L x the scaled curve")
+	local blvl, bscaled = P.entryLevel(pcfg, swamp)
+	assert(not bscaled and blvl == 846, "Swamp Monster: a base monster of hunting level 846")
+	local ratio = B.monsterKillBase(troll, P, pcfg) / B.monsterKillBase(swamp, P, pcfg)
+	assert(ratio > 1.5 and ratio < 8, "a level-scaled kill pays 1.5-8x a base kill of the same hunting level: " .. ratio)
+end
+for d = 1, 30 do
+	local bd = B.roll(20261000 + d, rc, pool)
+	for _, lvl in ipairs({8, 30, 100, 250, 400, 650, 900}) do
+		for _, bi in ipairs(B.visibleBands(lvl, rc)) do
+			local band = rc.bands[bi]
+			local L = math.max(1, math.min(lvl, band.max))
+			local cs = bd.bands[bi].contracts
+			for _, c in ipairs(cs) do
+				assert(c.exp and c.exp > 0, "contracts carry the pool experience")
+				local mean = B.huntMean(c, rc, lvl, 20, cs, pool)
+				local e = B.reward(c, rc, lvl, 20, mean).exp
+				if mean then
+					assert(e >= math.floor(mean), "elite and boss never below the band's hunt mean " .. c.name)
+				end
+				assert(e >= math.floor(B.expForLevel(L) * rc.expFloor[c.type] / 100), "floor " .. c.name)
+				assert(e <= B.expForLevel(L) * rc.expCap[c.type] / 100, "cap " .. c.name)
+			end
+		end
+	end
+end
+-- party credit: a member below the contract band's min level gets no credit for others' kills
+assert(B.partyCounts({band = 2}, cfg, cfg.bands[2].min), "at the band min")
+assert(not B.partyCounts({band = 2}, cfg, cfg.bands[2].min - 1), "below the band min")
+assert(B.partyCounts({band = 1}, cfg, 8))
 local w = B.weeklyReward(6, cfg)
 eq(w.chaos, cfg.bands[6].weekly.chaos); eq(w.divine, cfg.bands[6].weekly.divine)
 eq(B.weeklyReward(99, cfg).chaos, cfg.bands[6].weekly.chaos, "clamped")

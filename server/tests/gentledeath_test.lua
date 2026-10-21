@@ -140,6 +140,8 @@ local function blessable(id, level, money, bank)
 	function p:hasCondition() return false end
 	function p:getMoney() return self.money end
 	function p:getBankBalance() return self.bankGold end
+	function p:setBankBalance(v) self.bankGold = v return true end
+	function p:removeMoney(g) if self.money < g then return false end self.money = self.money - g return true end
 	function p:removeTotalMoney(g)
 		if self.money + self.bankGold < g then return false end
 		local hand = math.min(self.money, g)

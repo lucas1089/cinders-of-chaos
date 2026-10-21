@@ -17,8 +17,8 @@
 --
 -- Store-bound: one of each kind per character (the store refuses a second while one is in the inventory, the inbox
 -- or a depot); only the owner's pouch collects (custom attribute chaos_pouch_owner). Every pouch has the custom
--- attributes chaos_storebound = 1 and chaos_locked = 1 (the item lock, engine patch 0009: NPCs do not buy it, trash
--- refuses it, the stock market does not list it). The trade window refuses it (onTradeRequest / onTradeAccept), and
+-- attributes chaos_storebound = 1 and chaos_locked = cfg.bindLock (2: the item lock, engine patch 0009: NPCs do not
+-- buy it, trash refuses it, the stock market does not list it; not 1, which the client draws grey; PO.rebind). The trade window refuses it (onTradeRequest / onTradeAccept), and
 -- Player:onMoveItem (hook written by install_pouches.py) keeps it, and any container holding it, in the character's
 -- inventory or depot: no ground, no mailbox, no house, no other player's container. Player market: ChaosPouches.isPouch.
 -- Death: death_keep.lua (hook in the base droploot.lua) takes the pouch out of a dropping backpack before it drops (its
@@ -150,7 +150,7 @@ function PO.create(player, kind)
 	item:setCustomAttribute(c.attr.owner, player:getGuid())
 	item:setCustomAttribute(c.attr.kind, kind)
 	item:setCustomAttribute(c.attr.storebound, 1)
-	item:setCustomAttribute(c.attr.lock, 1)
+	item:setCustomAttribute(c.attr.lock, P.bindLock(c)) -- locked, but drawn in its colours (pouches_config.lua bindLock)
 	return item
 end
 
@@ -268,6 +268,23 @@ function PO.owned(player)
 		return false
 	end)
 	return found
+end
+
+-- every pouch of the character with another lock value gets cfg.bindLock (sent again to the client, which stops
+-- drawing it grey). Returns how many changed.
+function PO.rebind(player)
+	local c, n = cfg(), 0
+	walk(storageRoots(player), function(item)
+		if PO.kindOfId(item:getId()) and P.needsRebind(c, customAttr(item, c.attr.lock)) then
+			item:setCustomAttribute(c.attr.lock, P.bindLock(c))
+			if item.sendUpdate then
+				pcall(item.sendUpdate, item)
+			end
+			n = n + 1
+		end
+		return false
+	end)
+	return n
 end
 
 -- ---------------------------------------------------------------- loot rules
@@ -444,7 +461,8 @@ function PO.stow(player, item)
 	local info = infoOf(item, autolootSet(player))
 	local kinds = P.plan(info, PO.rulesOf(player), sets(), cfg(), pouches)
 	local parent = item:getParent()
-	local where = stowInto(pouches, kinds, item, parent, {full = {}})
+	-- the sort after it may move up to cfg.sort.maxMoves items: one container update for the client (engine patch 0054)
+	local where = Chaos.containerBatch(player, stowInto, pouches, kinds, item, parent, {full = {}})
 	return where == "pouch"
 end
 
@@ -486,32 +504,36 @@ local function collect(monster, corpse)
 	local rules, list, s = PO.rulesOf(owner), autolootSet(owner), sets()
 	local looted, backpack, left, overflow = {}, 0, 0, 0
 	local notes = {full = {}, sortLater = {}}
-	for _, item in ipairs(corpse:getItems() or {}) do
-		local info = infoOf(item, list)
-		local kinds, spilled = P.plan(info, rules, s, c, pouches)
-		if #kinds > 0 then
-			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
-			if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
-				item = ChaosLoot.finalizeRarity(item)
-			end
-			local entry = lootEntry(item, info)
-			local where, kind = stowInto(pouches, kinds, item, corpse, notes)
-			if where == "pouch" then
-				looted[#looted + 1] = entry
-				if spilled and kind == "loot" then
-					overflow = overflow + info.count
+	-- the stow and the sort of one kill are one container update for the client (Chaos.containerBatch, engine patch
+	-- 0054): before, every item moved into an open Loot Bag and every sort move was its own packet and window refresh
+	Chaos.containerBatch(owner, function()
+		for _, item in ipairs(corpse:getItems() or {}) do
+			local info = infoOf(item, list)
+			local kinds, spilled = P.plan(info, rules, s, c, pouches)
+			if #kinds > 0 then
+				-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
+				if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
+					item = ChaosLoot.finalizeRarity(item)
 				end
-			elseif intoBags(owner, item) and not stillIn(item, corpse) then
-				looted[#looted + 1] = entry
-				backpack = backpack + 1
-			else
-				left = left + 1
+				local entry = lootEntry(item, info)
+				local where, kind = stowInto(pouches, kinds, item, corpse, notes)
+				if where == "pouch" then
+					looted[#looted + 1] = entry
+					if spilled and kind == "loot" then
+						overflow = overflow + info.count
+					end
+				elseif intoBags(owner, item) and not stillIn(item, corpse) then
+					looted[#looted + 1] = entry
+					backpack = backpack + 1
+				else
+					left = left + 1
+				end
 			end
 		end
-	end
-	for bag in pairs(notes.sortLater) do -- once per kill, not once per item
-		PO.sortBag(bag)
-	end
+		for bag in pairs(notes.sortLater) do -- once per kill, not once per item
+			PO.sortBag(bag)
+		end
+	end)
 	local now, guid = os.time(), owner:getGuid()
 	for kind in pairs(notes.full) do
 		local key = guid .. kind
@@ -670,7 +692,7 @@ accept:register(1)
 if Action and cfg().kinds.loot then
 	local openBag = Action()
 	function openBag.onUse(player, item)
-		pcall(PO.sortBag, item)
+		pcall(Chaos.containerBatch, player, PO.sortBag, item)
 		return false
 	end
 	openBag:id(cfg().kinds.loot.id)
@@ -852,6 +874,10 @@ function login.onLogin(player)
 	pcall(PO.registerWeightless)
 	player:registerEvent("ChaosPouchesExtended")
 	local c = cfg()
+	local okR, errR = pcall(PO.rebind, player)
+	if not okR then
+		print("[Chaos pouches] rebind failed: " .. tostring(errR))
+	end
 	local ok, err = pcall(function()
 		-- former owners of the retired Bottomless Loot Pouch unlock: a Loot Bag, once
 		if player:getStorageValue(c.legacyUnlock) > 0 and player:getStorageValue(c.storage.legacyGrant) < 1

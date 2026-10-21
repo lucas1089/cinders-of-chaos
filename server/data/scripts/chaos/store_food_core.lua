@@ -1,6 +1,7 @@
 -- Everfull Ration: pure rules (no engine calls), shared by store_food.lua and server/tests/store_food_test.lua.
 --   ChaosStoreFoodCore.bite(cfg, s)   s = {ticksMs, nowMs, lastMs, owner, guid} -> {ok, seconds} | {ok = false, why, text}
 --   ChaosStoreFoodCore.storeCheck(cfg, s)   s = {installed, owned, owed} -> nil (can buy) | refusal text
+--   ChaosStoreFoodCore.bindLock(cfg) / needsRebind(cfg, value)   the chaos_locked value of the ration; must it change?
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 ChaosStoreFoodCore = ChaosStoreFoodCore or {}
 local K = ChaosStoreFoodCore
@@ -37,4 +38,14 @@ function K.storeCheck(cfg, s)
 		return "Your Everfull Ration comes back at your next login."
 	end
 	return nil
+end
+
+-- the chaos_locked value the ration carries (cfg.bindLock: locked, drawn in its colours), and whether an item's
+-- current value must change to it (a ration given before 2026-10-22 carries 1, the grey player lock)
+function K.bindLock(cfg)
+	return cfg.bindLock or 1
+end
+
+function K.needsRebind(cfg, value)
+	return tonumber(value) ~= K.bindLock(cfg)
 end

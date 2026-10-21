@@ -203,6 +203,8 @@ local function think(player, t)
 				cpos = spot
 			end
 		end
+		-- the shown level and the maximum health follow the owner (level up, magic level, passive tree)
+		L.refresh(player, classKey, c, kind)
 		if regen then
 			Chaos.heal(c, math.floor(c:getMaxHealth() * cfg().bannerOfBones.regen))
 		end

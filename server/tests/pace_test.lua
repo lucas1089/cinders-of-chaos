@@ -73,10 +73,40 @@ for _, L in ipairs({35, 60, 100, 175, 250, 450, 800, 1000, 1500}) do
 	-- gold per kill a little above xp per kill (the multikill bonus is experience only)
 	ok(f.loot >= f.xp, "loot >= xp at " .. L)
 end
+-- level-scaled and generated monsters: the engine adds x0.03 L experience and x(1 + 0.0074 L) health on top of the
+-- curves (base player.lua; server/README.md "Late game", O108). With both counted, a scaled monster's experience per
+-- health point is cut like a base monster's (0.6-1.0); a generated point keeps the 2026-10-14 model (1.3-1.8)
+local function engineRatio(f, L)
+	return f.xp * math.max(1, 0.03 * L) / (f.health * (1 + 0.0074 * L))
+end
 for _, L in ipairs({650, 800, 1000, 1300, 1600, 2000}) do
 	local f = P.factors(cfg, L, true)
-	ok(f.xp / f.health >= 1.0 and f.xp / f.health <= 2.8, "scaled xp per health at " .. L)
+	local r = engineRatio(f, L)
+	ok(r >= 0.6 and r <= 1.0, "scaled xp per health with the engine factors at " .. L .. ": " .. r)
 	ok(f.loot >= f.xp, "scaled loot >= xp at " .. L)
+	local g = P.factors(cfg, L, true, true)
+	local rg = engineRatio(g, L)
+	ok(rg >= 1.3 and rg <= 1.8, "generated xp per health with the engine factors at " .. L .. ": " .. rg)
+	-- the 2026-10-20 points paid 5-10x the model per hour: never again above 0.2 per kill (x the level factor)
+	ok(f.xp <= 0.2 and g.xp <= 0.2, "scaled and generated xp stay under 0.2 at " .. L)
+end
+-- kill goals of the late sets (O108): a goal is sized on the kill rate, so goal / kills per hour stays what the
+-- 2026-10-14 model had (goals 20-37 at 990-800 kills an hour), with the kills per hour of today's health curve
+-- (tools/spawn_tuning.json model.paceKillsPerHour, tools/pack_model.py)
+do
+	ChaosLootModelLib = true
+	local LM = dofile("tools/loot_model.lua")
+	ChaosLootModelLib = nil
+	local kph = LM.killsTable()
+	local oldGoal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
+	local oldKph = {{650, 990}, {1000, 940}, {1300, 850}, {2000, 800}}
+	for _, L in ipairs({650, 800, 1000, 1300, 1600, 2000}) do
+		local f = P.factors(cfg, L, true)
+		local now = f.goal / P.lin(kph.scaled, L, 1)
+		local model = P.lin(oldGoal, L, 1) / P.lin(oldKph, L, 1)
+		ok(math.abs(now / model - 1) <= 0.05, "late set contract time on the model at " .. L .. ": " .. now / model)
+		ok(P.lin(kph.scaled, L, 1) < P.lin(kph.base, L, 1), "late sets: fewer kills an hour than base hunts at " .. L)
+	end
 end
 -- multikill steps
 local last = 0
@@ -120,8 +150,8 @@ near(f.xp, 0.17, 1e-9, "flat xp past 1000")
 near(f.damage, 0.40, 1e-9, "flat damage past 1000")
 f = P.factors(cfg, 1000, true)
 near(f.health, 0.40, 1e-9, "scaled 1000 health")
-near(f.xp, 0.52, 1e-9, "scaled 1000 xp")
-near(f.goal, 28, 1e-9, "scaled 1000 goal")
+near(f.xp, 0.087, 1e-9, "scaled 1000 xp (x0.03 L on top: O108)")
+near(f.goal, 9.6, 1e-9, "scaled 1000 goal (O108: sized on the kill rate of today's health)")
 near(f.damage, 0.40, 1e-9, "scaled monsters share the damage curve")
 f = P.factors(cfg, 50, true)
 near(f.health, 0.10, 1e-9, "scaled flat below 100")

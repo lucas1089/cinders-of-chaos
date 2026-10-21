@@ -1,0 +1,46 @@
+# Own summons walk-through (server/README.md "Summons: targets, walk-through, levels"). Owner report 2026-10-21: "the Necromancer's risen
+# warriors block the way": a melee minion stands next to its owner in a corridor and the owner could only push it
+# (pushable monsters move one tile per push). A player now walks through its OWN summons: Player::canWalkthrough (the
+# server's step and path check, Tile::queryAdd) and Player::canWalkthroughEx (the creature packets' "unpassable" byte,
+# so the client predicts the step through, Tile::isWalkable honours Creature::isPassable; no client patch). Nobody
+# else does: another player's or a party member's summons still block (body blocks in PvP are unchanged), the summon
+# itself still needs a free tile to move to, and every other blocking rule of the tile (walls, items, other creatures,
+# protection zones, floor changes) stays. Lua's setMaster runs after Game.createMonster placed the monster, so
+# Game::updateCreatureType (called by setMaster) now also sends the walk-through state (Game::updateCreatureWalkthrough).
+# Applies after 0001-0054.
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -5461,6 +5461,10 @@
+ 			spectator->getPlayer()->sendCreatureType(creatureId, creatureType);
+ 		}
+ 	}
++
++	// Chaos: a new (or lost) master changes who may walk through the creature (Player::canWalkthroughEx: the owner
++	// walks through its summons); Lua's setMaster runs after the creature was placed, so tell the spectators now
++	updateCreatureWalkthrough(creature);
+ }
+ 
+ void Game::loadMotdNum()
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -845,6 +845,11 @@
+ 		return true;
+ 	}
+ 
++	// Chaos: a player's own summons never block it (it walks through them; client prediction: canWalkthroughEx)
++	if (creature->getMaster() == this) {
++		return true;
++	}
++
+ 	const Player* player = creature->getPlayer();
+ 	if (!player || !g_config.getBoolean(ConfigManager::ALLOW_WALKTHROUGH)) {
+ 		return false;
+@@ -877,7 +882,7 @@
+ 
+ bool Player::canWalkthroughEx(const Creature* creature) const
+ {
+-	if (group->access || creature->isPassable()) {
++	if (group->access || creature->isPassable() || creature->getMaster() == this) {
+ 		return true;
+ 	}
+ 

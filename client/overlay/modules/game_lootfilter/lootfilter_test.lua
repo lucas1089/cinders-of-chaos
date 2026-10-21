@@ -122,5 +122,32 @@ for _, s in ipairs(L.SOUNDS) do
   if f then eq(f:read(4), 'OggS', 'Ogg ' .. s.key) f:close() end
 end
 
+-- the container redraw coalescer: a sale of 255 items is 510 engine calls (onSizeChange + onRemoveItem per item);
+-- they become one scheduled redraw per container, and the redraw sees the last state
+do
+  local queue = {}
+  local request = L.coalescer(function(fn) queue[#queue + 1] = fn end)
+  local runs, seen, state = 0, nil, 0
+  local function redraw() runs = runs + 1 seen = state end
+  local scheduled = 0
+  for i = 1, 255 do
+    state = i
+    if request(5, redraw) then scheduled = scheduled + 1 end -- onSizeChange
+    if request(5, redraw) then scheduled = scheduled + 1 end -- onRemoveItem
+  end
+  eq(scheduled, 1, 'coalescer: 510 calls schedule one run')
+  eq(#queue, 1, 'coalescer: one event queued')
+  eq(request(6, redraw), true, 'coalescer: another container has its own run')
+  for _, fn in ipairs(queue) do fn() end
+  queue = {}
+  eq(runs, 2, 'coalescer: one run per container')
+  eq(seen, 255, 'coalescer: the run sees the last state')
+  eq(request(5, redraw), true, 'coalescer: after the run a new change schedules again')
+  eq(#queue, 1, 'coalescer: queued again')
+  local boom = L.coalescer(function(fn) pcall(fn) end)
+  boom(1, function() error('x') end)
+  eq(boom(1, function() end), true, 'coalescer: a run that failed does not block the key')
+end
+
 if fails > 0 then os.exit(1) end
 print('lootfilter client tests OK')

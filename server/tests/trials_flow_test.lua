@@ -69,6 +69,8 @@ local function newPlayer(voc, level, gold)
 	p.getStorageValue = function(_, k) return p.storage[k] or -1 end
 	p.setStorageValue = function(_, k, v) p.storage[k] = v end
 	p.removeTotalMoney = function(_, amount) if p.gold >= amount then p.gold = p.gold - amount return true end return false end
+	p.getMoney = function() return p.gold end
+	p.removeMoney = p.removeTotalMoney
 	p.isPzLocked = function() return false end
 	p.hasCondition = function() return false end
 	p.sendExtendedOpcode = function() end
@@ -227,6 +229,27 @@ do
 	T.monsterRun[9001] = other:getId()
 	eq(T.hooks.preHit(other, add, -50, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), -500,
 		"trials monster hit: 10% of 5000 health")
+	-- the mana shield part (manashield.lua): the run's scaling too, so a mana shield never meets the monster's raw hit;
+	-- 0 while the fallen player is shielded; the health event leaves the rest of a scaled hit alone
+	local trialShield = ChaosManaShield.providers.trials
+	local ctx = {primaryType = COMBAT_PHYSICALDAMAGE, secondaryType = COMBAT_NONE, origin = ORIGIN_MELEE}
+	eq(trialShield.hit(other, add, 50, ctx), 500, "mana shield part: 10% of 5000 health")
+	T.runs[502].shieldUntil = math.huge
+	eq(trialShield.hit(other, add, 50, ctx), 0, "mana shield part: nothing while shielded after a fall")
+	T.runs[502].shieldUntil = nil
+	local outside = {getId = function() return 503 end}
+	eq(trialShield.hit(outside, add, 50, ctx), nil, "outside a Trial, no nodes: does not apply")
+	local nodeEvent
+	for _, e in ipairs(registered) do
+		if e.name == "ChaosTrialNodes" then nodeEvent = e end
+	end
+	other.isPlayer, other.getHealth = function() return true end, function() return 100000 end
+	add.isPlayer, add.getMaster = function() return false end, function() return nil end
+	ChaosManaShield.mark(502, 9001, ChaosManaShield.now(), {"trials"})
+	eq(nodeEvent.onHealthChange(other, add, -40, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), -40,
+		"the rest of a mana shield hit is not replaced again")
+	eq(nodeEvent.onHealthChange(other, add, -40, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), -500,
+		"the next hit is")
 	T.runs[501], T.runs[502], T.monsterRun[9001] = nil, nil, nil
 	ChaosArchetypes, math.random = savedA, savedRandom
 end

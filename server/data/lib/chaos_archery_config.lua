@@ -148,8 +148,9 @@ return {
 		"conjure_explosive_arrow.lua", "conjure_piercing_bolt.lua", "conjure_poisoned_arrow.lua",
 		"conjure_power_bolt.lua", "conjure_sniper_arrow.lua", "spectral_bolt.lua"},
 
-	-- ------------------------------------------------------------------ the second ring slot
-	-- one might ring at a time over both ring slots (server/README.md "Second ring slot"). The might ring ids: the
+	-- ------------------------------------------------------------------ the might rings
+	-- one might ring at a time (0023, when the ammunition slot was a second ring slot; since src-patch 0058 there is
+	-- one ring slot and the rule holds by itself; server/README.md "Badge slot"). The might ring ids: the
 	-- install tool writes the items.xml key "chaosMightRing" on each, and on the worn or unworn id each one turns into
 	-- (transformEquipTo / transformDeEquipTo). The engine (src-patch 0023) and the login check read that key
 	-- (itemType:isMightRing()), not this list. The base has one: 2164, which does not transform.

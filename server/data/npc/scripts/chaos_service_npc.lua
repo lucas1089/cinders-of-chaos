@@ -152,7 +152,7 @@ ANSWERS.broker = {
 		local price = K.price(row.tiles, perSqm or 0)
 		local ok, reason = K.buyCheck({priceOn = perSqm ~= nil, premium = player:isPremium(), owner = row.owner,
 			owns = R.ownsHouse(player), price = price,
-			money = player.getTotalMoney and player:getTotalMoney() or (player:getMoney() + player:getBankBalance())})
+			money = Chaos.totalMoney(player)})
 		if not ok then
 			return houseText(cid, reason, price)
 		end

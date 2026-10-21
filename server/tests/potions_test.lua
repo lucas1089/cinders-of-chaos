@@ -136,6 +136,12 @@ local function mkPlayer(id, lastLogin)
 	function p:addItemEx(item) return self.bp:addItemEx(item) end
 	function p:getMoney() return self.money end
 	function p:getBankBalance() return self.bank end
+	function p:removeMoney(n)
+		if n > self.money then return false end
+		self.money = self.money - n
+		return true
+	end
+	function p:setBankBalance(n) self.bank = n return true end
 	function p:removeTotalMoney(n)
 		local fromHand = math.min(n, self.money)
 		self.money, self.bank = self.money - fromHand, self.bank - (n - fromHand)

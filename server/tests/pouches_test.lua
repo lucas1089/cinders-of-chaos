@@ -357,7 +357,10 @@ local orbsPouch = hero.purse.items[1]
 eq(orbsPouch.id, 32082, "orbs pouch in the purse")
 eq(#bp.items, 0, "not in the backpack")
 eq(orbsPouch.custom.chaos_pouch_owner, 7, "owner") eq(orbsPouch.custom.chaos_storebound, 1, "store-bound kept in the purse")
-eq(orbsPouch.custom.chaos_locked, 1, "item lock (never sold to NPCs, no stock market, no trash)")
+eq(orbsPouch.custom.chaos_locked, 2, "item lock (never sold to NPCs, no stock market, no trash), bound: not drawn grey")
+eq(P.bindLock(cfg), 2, "bindLock 2: the client greys only 1 (a player's own lock)")
+eq(P.needsRebind(cfg, 1), true, "an old pouch with 1 is rebound") eq(P.needsRebind(cfg, nil), true, "no lock: rebound")
+eq(P.needsRebind(cfg, 2), false, "2 stays") eq(P.needsRebind(cfg, "2"), false, "a string 2 stays")
 ok(hero.msgs[#hero.msgs]:find("purse") and hero.msgs[#hero.msgs]:find("from now on, there or in your backpack"),
 	"player told it is in the purse and collects there")
 eq(PO.carried(hero).orbs, orbsPouch, "a pouch in the purse counts as carried (collects without moving it)")
@@ -434,6 +437,21 @@ local cAll = corpse(hero.id, {junk2, rare2, plain2})
 drop(nil, cAll)
 eq(junk2.parent, lootPouch, "defaults: other loot -> Loot Bag") eq(rare2.parent, lootPouch, "defaults: rare gear -> Loot Bag")
 eq(plain2.parent, lootPouch, "defaults: plain gear -> Loot Bag")
+-- the stow and the sort of one kill are one held batch of container updates (engine patch 0054, Chaos.containerBatch)
+do
+	local begins, ends, depth, maxDepth = 0, 0, 0, 0
+	hero.beginContainerBatch = function() begins = begins + 1 depth = depth + 1 maxDepth = math.max(maxDepth, depth) return true end
+	hero.endContainerBatch = function() ends = ends + 1 depth = depth - 1 return true end
+	local a, b = item(2401), item(2403, {cat = "equipment"})
+	drop(nil, corpse(hero.id, {a, b}))
+	eq(a.parent, lootPouch, "batched kill: still stowed")
+	eq(begins, 1, "one batch per kill") eq(ends, 1, "the batch is closed") eq(depth, 0, "balanced")
+	for _, it in ipairs({a, b}) do
+		for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
+		it.parent = nil
+	end
+	hero.beginContainerBatch, hero.endContainerBatch = nil, nil
+end
 for _, it in ipairs({junk2, rare2, plain2}) do
 	for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
 	it.parent = nil
@@ -782,6 +800,23 @@ eq(#old.purse.items, 1, "only once")
 local fresh = newPlayer(21)
 registry.ChaosPouchesLogin.onLogin(fresh)
 eq(fresh.storage[ST.legacyGrant], nil, "nothing for characters without the old unlock")
+
+-- a pouch given before bindLock (chaos_locked 1, drawn grey by the client) is rebound at login, wherever it is
+local grey = newPlayer(23)
+local greyBp = item(1988); greyBp.parent = grey; grey.slots[CONST_SLOT_BACKPACK] = greyBp
+local oldLoot = item(32081); oldLoot.custom.chaos_locked = 1; oldLoot.custom.chaos_pouch_owner = 23
+oldLoot.parent = greyBp; greyBp.items[1] = oldLoot
+local oldKeys = item(32083); oldKeys.custom.chaos_locked = 1
+oldKeys.parent = grey.inbox; grey.inbox.items[1] = oldKeys
+local plain = item(2160); plain.custom.chaos_locked = 1
+plain.parent = greyBp; greyBp.items[2] = plain
+local updates = 0
+function oldLoot:sendUpdate() updates = updates + 1 end
+registry.ChaosPouchesLogin.onLogin(grey)
+eq(oldLoot.custom.chaos_locked, 2, "the Loot Bag in the backpack rebound") eq(updates, 1, "and sent again to the client")
+eq(oldKeys.custom.chaos_locked, 2, "the Rift Key Pouch in the inbox rebound")
+eq(plain.custom.chaos_locked, 1, "a player's own lock on another item is left alone")
+eq(PO.rebind(grey), 0, "a second pass changes nothing")
 
 -- the store while a pouch is owed
 local owed = newPlayer(22)

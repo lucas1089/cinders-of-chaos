@@ -12,8 +12,10 @@
 --   ChaosPouches.neverSell, pouches.lua), even when such an item is on the list.
 --   Selling the Loot Bag: everything in the carried Loot Bag at the NPC prices, gold to the bank, at most every 30 s
 --   (owner 2026-10-13: "vende tudo dentro da loot bag e pode ser usado a cada 30s"; rules in autosell_core.lua).
---   Never: locked items (the item lock), uniques, orbs / gems / keys, containers (their contents are sold), items no NPC
---   buys, rarities the player keeps. Gold, platinum and crystal coins in the bag go to the bank as they are.
+--   Never: locked items (the item lock), uniques, orbs / gems / keys, store-bound items (chaos_storebound, store items),
+--   containers (their contents are sold, except inside a locked or store-bound container or a store pouch), items no NPC
+--   buys, rarities the player keeps. One sale is one container update for the client (Chaos.containerBatch, engine
+--   patch 0054), not one per item. Gold, platinum and crystal coins in the bag go to the bank as they are.
 -- No chat or Info & Services command (owner 2026-10-13: "Tire os comandos do autosell e coloque no topmenu"): the
 -- client's Auto Seller window (Economy > Auto Seller, module game_pouches) talks to A.handleAction through the pouches
 -- opcode 226 (pouches.lua): as_open | as_sync | sell | asrar {tier, on} | aslist {op = add|remove|clear, item} |
@@ -107,9 +109,20 @@ local function ownCustom(item)
 	return false
 end
 
+-- store-bound: the custom attribute chaos_storebound (store pouches, Everfull Ration, Nemesis items) or an engine store
+-- item. Never sold: the NPC price would turn a store item into gold, and the item would be gone for good.
+local function storeBound(item)
+	if customAttr(item, "chaos_storebound") ~= nil then
+		return true
+	end
+	local ok, v = pcall(function() return item:isStoreItem() end)
+	return ok and v == true
+end
+
 local function itemInfo(item)
 	return {
 		unique = customAttr(item, "chaos_unique") ~= nil,
+		storeBound = storeBound(item),
 		rarity = ChaosRarity.canon(customAttr(item, "rarity")),
 		locked = (tonumber(customAttr(item, "chaos_locked")) or 0) ~= 0, -- the item lock (salvage.lua): never sold
 		attributes = item:hasAttribute(ITEM_ATTRIBUTE_NAME) or item:hasAttribute(ITEM_ATTRIBUTE_DESCRIPTION)
@@ -136,7 +149,7 @@ local function autoSell(monster, corpse)
 	for _, item in ipairs(corpse:getItems()) do
 		local id = item:getId()
 		local protected = ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id, item)
-		if set[id] and not protected and not item:getType():isContainer() then
+		if set[id] and not protected and not item:getType():isContainer() and not storeBound(item) then
 			local count = item:getCount()
 			-- a rolled copy's own price (rarity, item level: chaos_item_prices.lua), else the plain table
 			local gold = ChaosItemPrices and ChaosItemPrices.sellPrice(item, count) or services().sellPrice(id, count, PRICES)
@@ -200,6 +213,8 @@ end
 A.lastBagSale = A.lastBagSale or {} -- guid -> os.time of the last sale (kept over a relog while the server runs)
 A.lastSale = A.lastSale or {} -- guid -> {gold, count, at} of the last Loot Bag sale (the window shows it)
 
+-- every item in the bag, nested ones too; the contents of a locked or store-bound container or of a store pouch are not
+-- walked (AK.opensContents): the item lock and the store binding cover what is inside
 local function bagEntries(bag)
 	local entries, queue, i = {}, {bag}, 1
 	while i <= #queue and i < 400 do
@@ -209,16 +224,37 @@ local function bagEntries(bag)
 			local isContainer = item:isContainer()
 			local info = itemInfo(item)
 			local id = item:getId()
-			entries[#entries + 1] = {ref = item, id = id, count = item:getCount(), container = isContainer,
+			local e = {ref = item, id = id, count = item:getCount(), container = isContainer,
 				unique = info.unique, rarity = info.rarity, locked = info.locked, attributes = info.attributes,
+				storeBound = info.storeBound,
+				pouch = ChaosPouches and ChaosPouches.kindOfId and ChaosPouches.kindOfId(id) ~= nil or false,
 				neverSell = ChaosPouches and ChaosPouches.neverSell and ChaosPouches.neverSell(id, item) or false,
 				price = ChaosItemPrices and ChaosItemPrices.sellPrice(item, 1) or nil}
-			if isContainer then
+			entries[#entries + 1] = e
+			if AK.opensContents(e) then
 				queue[#queue + 1] = item
 			end
 		end
 	end
 	return entries
+end
+
+-- removes the planned items and returns the gold paid and the items counted. One container update for the client per
+-- sale (engine patch 0054, Chaos.containerBatch): before, every removed item was a container packet and a stats packet,
+-- and the client redrew the whole Loot Bag window two or three times per packet (the stutter of a big sale).
+-- Gold is paid only for what was really removed; an item already gone (moved, used) earns nothing.
+local function removePlanned(sell)
+	local total, n = 0, 0
+	for _, s in ipairs(sell) do
+		local ok, removed = pcall(function() return s.ref:remove() end) -- one bad item never leaves the rest unpaid
+		if ok and removed then
+			total = total + s.gold
+			if not s.coin then
+				n = n + s.count
+			end
+		end
+	end
+	return total, n
 end
 
 -- sells the carried Loot Bag's contents; returns the plan or nil, the reason
@@ -238,13 +274,8 @@ function A.sellBag(player)
 	local plan = AK.bagPlan(bagEntries(bag), PRICES, {tiers = AK.unpackTiers(player:getStorageValue(ST.autosellRarity))})
 	A.lastBagSale[guid] = os.time()
 	local total, n = 0, 0
-	for _, s in ipairs(plan.sell) do
-		if s.ref:remove() then
-			total = total + s.gold
-			if not s.coin then
-				n = n + s.count
-			end
-		end
+	if #plan.sell > 0 then
+		total, n = Chaos.containerBatch(player, removePlanned, plan.sell)
 	end
 	plan.gold = total
 	A.lastSale[guid] = {gold = total, count = n, at = os.time()}

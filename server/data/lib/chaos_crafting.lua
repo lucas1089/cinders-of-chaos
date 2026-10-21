@@ -47,6 +47,10 @@ if not ChaosItemMods then
 	dofile("data/lib/chaos_item_mods.lua")
 end
 local M = ChaosItemMods
+if not ChaosJewelry then
+	-- rings and necklaces as gear: the consumables that never are (server/README.md "Rings and necklaces as gear")
+	ChaosJewelry = dofile("data/lib/chaos_jewelry.lua")
+end
 if not ChaosGems then
 	dofile("data/lib/chaos_gems.lua") -- sockets and gems (server/README.md "Gems and sockets")
 end
@@ -130,12 +134,17 @@ C.absorbs = {
 	{key = "rarity_waterAbsorb", label = "Water"},
 	{key = "rarity_arcaneAbsorb", label = "Arcane"}
 }
+-- one melee skill (server/README.md "One melee skill"; beta report 2026-10-22): sword, axe and club modifiers are one
+-- "Melee" modifier, distance is "Ranged". The base rarity script gives a melee modifier to all three engine skills
+-- (tools/patch_melee_skill.py), so it raises the best of them, the player's Melee. New rolls use the sword key only
+-- (noRoll: club and axe, kept to read older items); an item gets one melee modifier at most (C.candidates).
+C.MELEE_KEYS = {rarity_swordskill = true, rarity_axeskill = true, rarity_clubskill = true}
 C.skills = {
 	{key = "rarity_fistSkill", label = "Fist", kind = "combat"},
-	{key = "rarity_clubSkill", label = "Club", kind = "combat"},
-	{key = "rarity_swordSkill", label = "Sword", kind = "combat"},
-	{key = "rarity_axeSkill", label = "Axe", kind = "combat"},
-	{key = "rarity_distanceSkill", label = "Distance", kind = "combat"},
+	{key = "rarity_clubSkill", label = "Melee", kind = "combat", noRoll = true},
+	{key = "rarity_swordSkill", label = "Melee", kind = "combat"},
+	{key = "rarity_axeSkill", label = "Melee", kind = "combat", noRoll = true},
+	{key = "rarity_distanceSkill", label = "Ranged", kind = "combat"},
 	{key = "rarity_shieldSkill", label = "Shielding", kind = "combat"},
 	{key = "rarity_fishingSkill", label = "Fishing", kind = "profession"},
 	{key = "rarity_craftingSkill", label = "Crafting", kind = "profession"},
@@ -214,7 +223,7 @@ function C.affixes()
 	end
 	for _, s in ipairs(C.skills) do
 		local name = s.kind == "profession" and "profession" or "skill"
-		add({key = s.key, group = "skill", label = s.label}, E[name], name)
+		add({key = s.key, group = "skill", label = s.label, noRoll = s.noRoll}, E[name], name)
 	end
 	for _, s in ipairs(C.specials) do
 		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind], s.kind)
@@ -449,6 +458,29 @@ local function typeNumber(it, method)
 end
 
 -- gear that can carry a rarity: same test as the stock reroll script (isRerollable) plus an equipment slot
+-- true when a slot position names a retired slot (deck 4096, ship 16384, belt 32768; the badge bit 8192 next to the
+-- deck bit is the base's "deckbadge" of the decks) and nothing but the hands besides
+function C.retiredOnly(slot)
+	slot = tonumber(slot) or 0
+	local function bit(b)
+		return math.floor(slot / b) % 2 == 1
+	end
+	local retired = 0
+	for _, b in ipairs({4096, 16384, 32768}) do
+		if bit(b) then
+			retired = retired + b
+		end
+	end
+	if retired == 0 then
+		return false
+	end
+	if bit(4096) and bit(8192) then
+		retired = retired + 8192
+	end
+	local rest = slot - retired
+	return rest % 16 == 0 and rest < 64
+end
+
 function C.isGear(item)
 	local it = itemType(item)
 	if not it then
@@ -457,11 +489,21 @@ function C.isGear(item)
 	if C.config.excludedItems[item:getId()] then
 		return false
 	end
+	-- a consumable ring or amulet (stealth ring, stone skin amulet ...) keeps its charges or duration: no modifiers
+	if ChaosJewelry and ChaosJewelry.isConsumable(item:getId()) then
+		return false
+	end
 	local ok, flag = pcall(function() return it:isContainer() or it:isStackable() end)
 	if not ok or flag then
 		return false
 	end
 	if typeNumber(it, "getSlotPosition") == 0 and typeNumber(it, "getWeaponType") == 0 then
+		return false
+	end
+	-- the retired slots (engine patch 0058: deck, ship, belt, gloves; server/README.md "Badge slot"): an item worn
+	-- nowhere else is no gear (no item level, rarity or orbs). A badge (slotType "badge": the badge bit without the
+	-- deck bit) is gear.
+	if C.retiredOnly(typeNumber(it, "getSlotPosition")) then
 		return false
 	end
 	-- a quiver has no stats of its type: its implicit modifiers live in chaos_archery_config.lua
@@ -476,9 +518,25 @@ function C.isGear(item)
 			return true
 		end
 	end
-	local okAb, ab = pcall(function() return it:getAbilities() end)
-	if okAb and type(ab) == "table" and (ab.skills or ab.absorbPercent or ab.specialSkills) then
+	-- a slot other than the hands (head .. ring, ammo, the base's extra slots): equipment, as before
+	local slot = typeNumber(it, "getSlotPosition")
+	if slot % 16 ~= 0 or slot >= 64 then
 		return true
+	end
+	-- the hands only: every item type's default slot (SLOTP_HAND = 48). The engine's getAbilities() always has the
+	-- tables below, zeros included, so only a value above 0 counts. Before 2026-10-22 the tables alone did: every
+	-- non-stackable item (a catalyst, a quest item, a trophy) was gear, and a drop of one got an item level.
+	local okAb, ab = pcall(function() return it:getAbilities() end)
+	if okAb and type(ab) == "table" then
+		for _, key in ipairs({"skills", "absorbPercent", "specialSkills"}) do
+			if type(ab[key]) == "table" then
+				for _, v in pairs(ab[key]) do
+					if (tonumber(v) or 0) > 0 then
+						return true
+					end
+				end
+			end
+		end
 	end
 	return false
 end
@@ -526,9 +584,10 @@ end
 function C.candidates(item, rarity, mods, opts)
 	mods = mods or C.readMods(item)
 	rarity = rarity or C.rarityOf(item)
-	local have, elements, powers = {}, 0, 0
+	local have, elements, powers, melee = {}, 0, 0, false
 	for _, m in ipairs(mods) do
 		have[m.key:lower()] = true
+		melee = melee or C.MELEE_KEYS[m.key:lower()] == true
 		if m.group == "element" then
 			elements = elements + 1
 		end
@@ -547,7 +606,7 @@ function C.candidates(item, rarity, mods, opts)
 	for _, a in ipairs(C.affixes()) do
 		local isPower = a.def and M.isPower(a.def)
 		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk)
-				and (not isPower or powerOk) then
+				and (not isPower or powerOk) and not a.noRoll and not (melee and C.MELEE_KEYS[a.key:lower()]) then
 			out[#out + 1] = {entry = a, weight = a.weight}
 		end
 	end

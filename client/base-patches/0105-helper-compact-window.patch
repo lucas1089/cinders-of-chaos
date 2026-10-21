@@ -1,0 +1,2343 @@
+# Chaos: a compact Helper window without the options this server does not use (client/BASE.md 0105; after 0001-0104).
+# The window is 936x540 (was 960x580): a 196 px sidebar, a 34 px tab bar, a smaller profile and tighter boxes.
+# Removed: Cure Paralyze, Auto Sell Loot (Summon Quill), Quiver Refill, Exana Vita, the Full Dust alarm and the bot
+# HUD's Cavebot and Waypoint rows. Auto Stamina and Magic Shield share one box; Magic Shield shows only for a class
+# whose spells include Ward of the Mind. Old saves still load: the dropped keys are cleared on load (here and in
+# game_helperrotation/helperconfig.lua). Every text of the touched windows goes through tr() and has pt-BR.
+--- a/mods/game_helper/classes/alarms/alarm_settings.lua
++++ b/mods/game_helper/classes/alarms/alarm_settings.lua
+@@ -23,9 +23,6 @@
+     enabled = false,
+     min_cap = 50
+   },
+-  dust = {
+-    enabled = false
+-  },
+   supply = {
+     enabled = false,
+     alertInProtectZone = false
+@@ -120,6 +117,8 @@
+ _Helper.AlarmSettings.getConfig = function()
+   if not cachedConfig then
+     cachedConfig = loadFromFile() or {}
++    -- Chaos 0105: the Full Dust alarm is gone (no forge in this client); an old file's section is dropped
++    cachedConfig.dust = nil
+   end
+   -- Garantir que todas as secoes existem
+   for key, defaults in pairs(DEFAULT_CONFIG) do
+@@ -159,7 +158,6 @@
+   -- Carregar estado de cada tipo de alarme no modal
+   _Helper.LowCapacityAlarm.loadToModal(alarmSettingsWindow)
+   _Helper.LowCapacityAlarm.setupModalThresholdInput(alarmSettingsWindow)
+-  _Helper.FullDustAlarm.loadToModal(alarmSettingsWindow)
+   _Helper.PrivateMessageAlarm.loadToModal(alarmSettingsWindow)
+   _Helper.LowHealthAlarm.loadToModal(alarmSettingsWindow)
+   _Helper.LowHealthAlarm.setupModalThresholdInput(alarmSettingsWindow)
+--- a/mods/game_helper/classes/auto_stamina.lua
++++ b/mods/game_helper/classes/auto_stamina.lua
+@@ -67,7 +67,7 @@
+   cfg.thresholdMinutes = math.max(0, math.min(2520, tonumber(value) or 30))
+   local root = panel()
+   local label = root and root:recursiveGetChildById('staminaThresholdLabel')
+-  if label then label:setText('Use at: ' .. formatMinutes(cfg.thresholdMinutes)) end
++  if label then label:setText(tr('Use at: %s', formatMinutes(cfg.thresholdMinutes))) end
+   if _Helper.saveSettings then _Helper.saveSettings() end
+ end
+ 
+@@ -140,7 +140,7 @@
+   local scroll = root:recursiveGetChildById('staminaThresholdScroll')
+   local label = root:recursiveGetChildById('staminaThresholdLabel')
+   if scroll then scroll:setValue(tonumber(cfg.thresholdMinutes) or 30); scroll.onValueChange = function(_, value) api.updateThreshold(value) end end
+-  if label then label:setText('Use at: ' .. formatMinutes(cfg.thresholdMinutes)) end
++  if label then label:setText(tr('Use at: %s', formatMinutes(cfg.thresholdMinutes))) end
+   local button = root:recursiveGetChildById('staminaFoodButton0')
+   if button then button.onMouseRelease = function(_, _, mouseButton) if mouseButton == MouseRightButton then api.removeAction(); return true end end end
+   loadingUI = false
+--- a/mods/game_helper/helper.lua
++++ b/mods/game_helper/helper.lua
+@@ -501,7 +501,6 @@
+   checkExerciseEvent = 0,
+   updatePartyHealth = 0,
+   checkEquipItems = 0,
+-  checkQuiverRefill = 0,
+   checkMagicShield = 0,
+   refreshBotHud = 0
+ }
+@@ -526,7 +525,6 @@
+   checkExerciseEvent = { interval = 10000, action = nil },
+   updatePartyHealth = { interval = 50, action = nil },
+   checkEquipItems = { interval = 50, action = nil },    -- Check and equip rings/amulets based on health
+-  checkQuiverRefill = { interval = 500, action = nil }, -- Check and refill quiver for paladins
+   checkMagicShield = { interval = 50, action = nil },   -- Check and manage magic shield for mages
+   -- The bot HUD used to be redrawn only from cavebot.walkerTick, which exists
+   -- solely while the cavebot walker is running. With the cavebot off the HUD
+@@ -838,9 +836,6 @@
+ 
+   autoEatFood = false,
+   showLookItemId = false,
+-  autoQuillSell = false,
+-  autoQuillSellBelowCap = false,
+-  autoQuillSellCapacity = 100,
+   antiIdle = false,
+   autoParty = {
+     enabled = false,
+@@ -1008,7 +1003,8 @@
+   if not helper then return end
+   local root = helper:getParent()
+   if root:getWidth() <= 0 or root:getHeight() <= 0 then return end
+-  helper:setSize({ width = math.min(960, root:getWidth() - 16), height = math.min(580, root:getHeight() - 48) })
++  -- Chaos 0105: the compact window (helper_window.otui 936 x 540)
++  helper:setSize({ width = math.min(936, root:getWidth() - 16), height = math.min(540, root:getHeight() - 48) })
+   helper:setPosition({ x = math.floor((root:getWidth() - helper:getWidth()) / 2),
+     y = math.max(34, math.floor((root:getHeight() - helper:getHeight()) / 2)) })
+   local bar = helper:recursiveGetChildById('optionsTabBar')
+@@ -1203,12 +1199,7 @@
+ 
+   -- Deliberately outside the helperContentPanel/healingPanel block above: unlike
+   -- the other panels, tools.init() also starts the automation cycle (anti-idle,
+-  -- auto-party, Auto Sell Loot), and none of those need a panel to exist.
+-  --
+-  -- This call was missing entirely. Without it startAutomationCycle() never ran,
+-  -- so nothing ever polled the Summon Quill state -- Auto Sell Loot only fired
+-  -- on the state pushes the server happens to send, which is why it looked like
+-  -- it "only works if you open and close the Quill window".
++  -- auto-party), and none of those need a panel to exist.
+   if modules.game_helper and modules.game_helper.tools and modules.game_helper.tools.init then
+     modules.game_helper.tools.init(helper)
+   end
+@@ -1339,10 +1330,6 @@
+     _Helper.AutoStaminaFood.terminate()
+   end
+ 
+-  if _Helper.ParalyzeCure and _Helper.ParalyzeCure.terminate then
+-    _Helper.ParalyzeCure.terminate()
+-  end
+-
+   if _Helper.FollowFriend and _Helper.FollowFriend.reset then
+     _Helper.FollowFriend.reset()
+   end
+@@ -1431,11 +1418,6 @@
+ end
+ 
+ function hide()
+-  -- Commit any pending quiver refill inputs before hiding so typed values
+-  -- that haven't lost focus yet still get clamped + saved.
+-  if modules.game_helper.tools and modules.game_helper.tools.commitQuiverInputs then
+-    modules.game_helper.tools.commitQuiverInputs()
+-  end
+   saveSettings()
+   if helper then
+     g_keyboard.unbindKeyPress('Tab', toggleNextWindow, helper)
+@@ -2159,9 +2141,6 @@
+     _Helper.resetPZState()
+   end
+ 
+-  -- Reset full dust alarm on logout
+-  _Helper.FullDustAlarm.resetCheckbox()
+-
+   -- Reset low supply alarm on logout
+   _Helper.LowSupplyAlarm.resetCheckbox()
+ 
+@@ -2900,7 +2879,7 @@
+ end
+ 
+ --[[ Events ]] --
+-function assignTrainingSpell(button, isHaste, isParalyzeCure)
++function assignTrainingSpell(button, isHaste)
+   local window = g_ui.loadUI('styles/spell', g_ui.getRootWidget())
+   if not window then
+     return true
+@@ -2914,8 +2893,7 @@
+   end
+   helper:hide()
+ 
+-  local windowHeader = isParalyzeCure and "Assign Cure Paralyze Spell" or
+-      (isHaste and "Assign Haste Spell" or "Assign Training Spell")
++  local windowHeader = isHaste and "Assign Haste Spell" or "Assign Training Spell"
+   window:setText(windowHeader)
+ 
+   local localPlayer = g_game.getLocalPlayer()
+@@ -2944,11 +2922,7 @@
+     local groups = (Spells.getGroupIds and Spells.getGroupIds(spellData)) or {}
+     local vocs = (spellData and spellData.vocations) or {}
+ 
+-    if isParalyzeCure then
+-      if not spellData.words or spellData.words == '' or not table.contains(vocs, localPlayer:getVocation()) then
+-        goto continue
+-      end
+-    elseif isHaste then
++    if isHaste then
+       -- Haste: show ID 6 or whitelist for vocation
+       if not (spellId == 6 or table.contains(allowedHasteForVoc, spellId)) then
+         goto continue
+@@ -3033,9 +3007,7 @@
+     local spellWords = selectedWidget:getText():match("\n(.+)")
+ 
+     local slotID = tonumber(button:getId():match("%d+"))
+-    if isParalyzeCure then
+-      helperConfig.paralyzeCure[1].id = tonumber(spellId)
+-    elseif isHaste then
++    if isHaste then
+       -- Usa o modulo AutoHaste para configurar
+       local helperConfigLocal = _Helper.getHelperConfig and _Helper.getHelperConfig() or helperConfig
+       helperConfigLocal.haste[slotID + 1].id = tonumber(spellId)
+@@ -4359,12 +4331,6 @@
+       _Helper.AutoHaste.onHasteLost()
+     end
+   end
+-
+-  local hadParalyze = oldStates and bit.band(oldStates, PlayerStates.Paralyze) ~= 0
+-  local hasParalyze = states and bit.band(states, PlayerStates.Paralyze) ~= 0
+-  if hasParalyze and not hadParalyze and _Helper.ParalyzeCure and _Helper.ParalyzeCure.check then
+-    _Helper.ParalyzeCure.check()
+-  end
+ end
+ 
+ -- The helper happily shouts a spell the character cannot actually cast, the
+@@ -4658,10 +4624,6 @@
+   if _Helper.AutoStaminaFood then _Helper.AutoStaminaFood.toggle(checked) end
+ end
+ 
+-function toggleParalyzeCure(checked)
+-  if _Helper.ParalyzeCure then _Helper.ParalyzeCure.toggle(checked) end
+-end
+-
+ -- Wrapper function for Gold Change (OTUI compatibility)
+ function toogleChangeGold(checked)
+   if modules.game_helper and modules.game_helper.tools then
+@@ -5512,8 +5474,6 @@
+     _Helper.ManaTraining.removeAction(button)
+   elseif type == "haste" then
+     _Helper.AutoHaste.removeAction(button)
+-  elseif type == "paralyzeCure" then
+-    _Helper.ParalyzeCure.removeAction(button)
+   elseif type == "exercise" then
+     local box = toolsPanel:recursiveGetChildById("autoTrainingItem")
+     box:setImageSource("/images/game/actionbar/actionbarslot")
+@@ -5579,9 +5539,6 @@
+   -- Reset stamina food button
+   if _Helper.AutoStaminaFood then _Helper.AutoStaminaFood.resetButton() end
+ 
+-  -- Reset paralyze cure button
+-  if _Helper.ParalyzeCure then _Helper.ParalyzeCure.resetButton() end
+-
+   -- Reset auto food checkbox
+   _Helper.AutoFood.resetCheckbox()
+ 
+@@ -5621,8 +5578,6 @@
+   local savedAutoTargetEnabled = helperConfig.autoTargetEnabled
+   local savedMagicShooterEnabled = helperConfig.magicShooterEnabled
+   local savedStaminaFoodEnabled = helperConfig.staminaFood and helperConfig.staminaFood.enabled
+-  local savedParalyzeCureEnabled = helperConfig.paralyzeCure and helperConfig.paralyzeCure[1] and
+-      helperConfig.paralyzeCure[1].enabled
+ 
+   -- Limpar UI antes de carregar novos dados
+   resetHelperUI()
+@@ -5637,9 +5592,6 @@
+   if helperConfig.staminaFood then
+     helperConfig.staminaFood.enabled = savedStaminaFoodEnabled
+   end
+-  if helperConfig.paralyzeCure and helperConfig.paralyzeCure[1] then
+-    helperConfig.paralyzeCure[1].enabled = savedParalyzeCureEnabled
+-  end
+ 
+   for k, v in pairs(helperConfig.spells) do
+     if v.id ~= 0 then
+@@ -5785,9 +5737,6 @@
+   -- Carregar auto stamina food para UI
+   if _Helper.AutoStaminaFood then _Helper.AutoStaminaFood.loadToUI() end
+ 
+-  -- Carregar paralyze cure para UI
+-  if _Helper.ParalyzeCure then _Helper.ParalyzeCure.loadToUI() end
+-
+   -- Carregar auto food para UI
+   _Helper.AutoFood.loadToUI()
+ 
+@@ -5795,9 +5744,6 @@
+   _Helper.LowCapacityAlarm.loadToUI()
+   _Helper.LowCapacityAlarm.setupThresholdInput()
+ 
+-  -- Carregar full dust alarm para UI
+-  _Helper.FullDustAlarm.loadToUI()
+-
+   -- Carregar low health alarm para UI
+   _Helper.LowHealthAlarm.loadToUI()
+ 
+@@ -5823,11 +5769,10 @@
+   local changeGold = toolsPanel:recursiveGetChildById("changeGold")
+   if changeGold then changeGold:setChecked(helperConfig.autoChangeGold) end
+ 
+-  -- Carregar paineis de vocação (Exercise Training, Quiver Refill e Magic Shield)
++  -- Carregar paineis de vocação (Exercise Training e Magic Shield)
+   if modules.game_helper and modules.game_helper.tools then
+     modules.game_helper.tools.loadAutomationToUI()
+     modules.game_helper.tools.loadExerciseTrainingToUI()
+-    modules.game_helper.tools.loadQuiverRefillToUI()
+     modules.game_helper.tools.loadMagicShieldToUI()
+     modules.game_helper.tools.updateVocationPanels()
+   end
+@@ -6192,7 +6137,6 @@
+       training               = { { id = 0, percent = 0, enabled = false } },
+       haste                  = { { id = 0, enabled = false, safecast = false, onlyWalking = false } },
+       staminaFood            = { id = 0, enabled = false, thresholdMinutes = 30 },
+-      paralyzeCure           = { { id = 0, enabled = false } },
+       friendhealing          = {
+         knight   = { enabled = false, percent = 90, priority = 5 },
+         paladin  = { enabled = false, percent = 90, priority = 4 },
+@@ -6224,9 +6168,6 @@
+       selectedSupplyProfile  = "Default",
+       autoEatFood            = false,
+       showLookItemId         = false,
+-      autoQuillSell          = false,
+-      autoQuillSellBelowCap  = false,
+-      autoQuillSellCapacity  = 100,
+       antiIdle               = false,
+       autoParty              = {
+         enabled = false,
+@@ -6401,12 +6342,16 @@
+   local staminaThreshold = tonumber(helperConfig.staminaFood.thresholdMinutes)
+   helperConfig.staminaFood.thresholdMinutes = (staminaThreshold and staminaThreshold >= 0) and staminaThreshold or 30
+ 
+-  -- paralyzeCure: single free-assign spell slot, same shape as haste
+-  if type(helperConfig.paralyzeCure) ~= "table" or not helperConfig.paralyzeCure[1] then
+-    helperConfig.paralyzeCure = { { id = 0, enabled = false } }
++  -- Chaos 0105: settings of the options the compact window dropped (Cure Paralyze, Auto Sell Loot, Quiver Refill,
++  -- Exana Vita, the cavebot rows of the bot HUD) are left out of an old file; the overlay's ChaosHelperConfig drops
++  -- them first, this covers a client without it
++  helperConfig.paralyzeCure = nil
++  helperConfig.autoQuillSell, helperConfig.autoQuillSellBelowCap, helperConfig.autoQuillSellCapacity = nil, nil, nil
++  helperConfig.quiverRefill = nil
++  if type(helperConfig.botHud) == "table" then
++    helperConfig.botHud.showCavebot, helperConfig.botHud.showWaypoints = nil, nil
+   end
+-  helperConfig.paralyzeCure[1].id = tonumber(helperConfig.paralyzeCure[1].id) or 0
+-  helperConfig.paralyzeCure[1].enabled = helperConfig.paralyzeCure[1].enabled == true
++
+   -- Migração de formato antigo (array com name) para novo formato (vocation-based)
+   local defaultVocHealing = {
+     knight   = { enabled = false, percent = 90, priority = 5 },
+@@ -6569,53 +6514,23 @@
+     helperConfig.priorityMonsterList = ""
+   end
+ 
+-  -- Initialize quiverRefill defaults if not present
+-  if not helperConfig.quiverRefill then
+-    helperConfig.quiverRefill = {
+-      enabled = false,
+-      itemId = 0,
+-      minValue = 50,
+-      refillValue = 100
+-    }
+-  else
+-    -- Ensure all fields have defaults
+-    if helperConfig.quiverRefill.enabled == nil then
+-      helperConfig.quiverRefill.enabled = false
+-    end
+-    if not helperConfig.quiverRefill.itemId then
+-      helperConfig.quiverRefill.itemId = 0
+-    end
+-    if not helperConfig.quiverRefill.minValue then
+-      helperConfig.quiverRefill.minValue = 50
+-    end
+-    if not helperConfig.quiverRefill.refillValue then
+-      helperConfig.quiverRefill.refillValue = 100
+-    end
+-  end
+-
+   -- Initialize magicShield defaults if not present
+   if not helperConfig.magicShield then
+     helperConfig.magicShield = {
+       utamoEnabled = false,
+-      exanaEnabled = false,
+-      utamoHpPercent = 80,
+-      exanaHpPercent = 90
++      utamoHpPercent = 80
+     }
+   else
+     -- Ensure all fields have defaults
+     if helperConfig.magicShield.utamoEnabled == nil then
+       helperConfig.magicShield.utamoEnabled = false
+     end
+-    if helperConfig.magicShield.exanaEnabled == nil then
+-      helperConfig.magicShield.exanaEnabled = false
+-    end
++    helperConfig.magicShield.exanaEnabled = nil
++    helperConfig.magicShield.exanaHpPercent = nil
+     helperConfig.magicShield.potionEnabled = nil
+     if not helperConfig.magicShield.utamoHpPercent then
+       helperConfig.magicShield.utamoHpPercent = 80
+     end
+-    if not helperConfig.magicShield.exanaHpPercent then
+-      helperConfig.magicShield.exanaHpPercent = 90
+-    end
+   end
+ 
+   return true
+@@ -6652,18 +6567,6 @@
+ 
+ eventTable.checkEquipItems.action = checkEquipItems
+ 
+--- Check and refill quiver for paladins
+-function checkQuiverRefill()
+-  if not g_game.isOnline() or not helperAutomaticFunctionsEnabled then return end
+-
+-  -- Call the tools module's check function
+-  if modules.game_helper and modules.game_helper.tools and modules.game_helper.tools.checkQuiverRefill then
+-    modules.game_helper.tools.checkQuiverRefill()
+-  end
+-end
+-
+-eventTable.checkQuiverRefill.action = checkQuiverRefill
+-
+ -- Check and manage magic shield for mages
+ function checkMagicShield()
+   if not g_game.isOnline() or not helperAutomaticFunctionsEnabled then return end
+--- a/mods/game_helper/helper.otmod
++++ b/mods/game_helper/helper.otmod
+@@ -3,6 +3,6 @@
+   description: RTC Helper
+   author: R!ck && ZLukSrT#8740 && Christianlb && worthdavi bjos
+   sandboxed: true
+-  scripts: [ spelldata, classes/rule_list, classes/equipment, tools_panel, magic_shooter_panel, classes/timer, timer_panel, classes/shortcut_panel, classes/auto_haste, classes/auto_stamina, classes/paralyze_cure, classes/mana_training, classes/auto_food, classes/alarms/low_capacity_alarm, classes/alarms/low_health_alarm, classes/alarms/low_mana_alarm, classes/alarms/full_dust_alarm, classes/alarms/private_message_alarm, classes/alarms/low_supply_alarm, classes/alarms/alarm_settings, classes/auto_target, classes/follow_friend, classes/magic_shooter, classes/exercise_training, classes/hotkey_manager, helper, preset_manager ]
++  scripts: [ spelldata, classes/rule_list, classes/equipment, tools_panel, magic_shooter_panel, classes/timer, timer_panel, classes/shortcut_panel, classes/auto_haste, classes/auto_stamina, classes/mana_training, classes/auto_food, classes/alarms/low_capacity_alarm, classes/alarms/low_health_alarm, classes/alarms/low_mana_alarm, classes/alarms/private_message_alarm, classes/alarms/low_supply_alarm, classes/alarms/alarm_settings, classes/auto_target, classes/follow_friend, classes/magic_shooter, classes/exercise_training, classes/hotkey_manager, helper, preset_manager ]
+   @onLoad: init()
+   @onUnload: terminate()
+--- a/mods/game_helper/helper_window.otui
++++ b/mods/game_helper/helper_window.otui
+@@ -1,7 +1,8 @@
+ NewHeadlessWindow
+   id: helperWindow
+   anchors.horizontalCenter: parent.horizontalCenter
+-  size: 960 580
++  // Chaos 0105: compact helper window (sidebar 196 px, tab bar 34 px)
++  size: 936 540
+   @onEscape: hide()
+   UIWidget
+     size: 145 56
+@@ -17,7 +18,7 @@
+     margin: 15 13 17 13
+     Panel
+       id: optionsTabBar
+-      height: 40
++      height: 34
+       image-source: /images/game/destiny_wheel/menuBg
+       image-border: 1
+       anchors.top: parent.top
+@@ -26,7 +27,7 @@
+       margin-top: 12
+       UIButton
+         id: healingMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: parent.left
+@@ -34,7 +35,7 @@
+         margin-top: 1
+         image-source: /images/ui/helper
+         image-clip: 0 204 34 34
+-        image-size: 34 34
++        image-size: 28 28
+         image-offset: 3 2
+         !tooltip: tr('Healing')
+         @onClick: loadMenu('healingMenu')
+@@ -47,7 +48,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Healing')
+           font: $var-main-font
+@@ -55,7 +56,7 @@
+           phantom: true
+       UIButton
+         id: toolsMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: prev.right
+@@ -63,7 +64,7 @@
+         margin-top: 1
+         image-source: /images/ui/helper
+         image-clip: 34 204 34 34
+-        image-size: 34 34
++        image-size: 28 28
+         image-offset: 3 2
+         !tooltip: tr('Tools')
+         @onClick: loadMenu('toolsMenu')
+@@ -76,7 +77,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Tools')
+           font: $var-main-font
+@@ -84,7 +85,7 @@
+           phantom: true
+       UIButton
+         id: shooterMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: prev.right
+@@ -92,7 +93,7 @@
+         margin-top: 1
+         image-source: /images/ui/helper
+         image-clip: 68 204 34 34
+-        image-size: 34 34
++        image-size: 28 28
+         image-offset: 3 2
+         !tooltip: tr('Shooter')
+         @onClick: loadMenu('shooterMenu')
+@@ -105,7 +106,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Shooter')
+           font: $var-main-font
+@@ -113,7 +114,7 @@
+           phantom: true
+       UIButton
+         id: equipMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: prev.right
+@@ -121,7 +122,7 @@
+         margin-top: 1
+         image-source: /images/ui/helper
+         image-clip: 102 204 34 34
+-        image-size: 34 34
++        image-size: 28 28
+         image-offset: 3 2
+         !tooltip: tr('Equipment')
+         @onClick: loadMenu('equipMenu')
+@@ -134,7 +135,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Equipment')
+           font: $var-main-font
+@@ -142,7 +143,7 @@
+           phantom: true
+       UIButton
+         id: timerMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: prev.right
+@@ -150,7 +151,7 @@
+         margin-top: 1
+         image-source: /images/ui/helper
+         image-clip: 34 272 34 34
+-        image-size: 34 34
++        image-size: 28 28
+         image-offset: 3 2
+         !tooltip: tr('Timers')
+         @onClick: loadMenu('timerMenu')
+@@ -163,7 +164,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Timers')
+           font: $var-main-font
+@@ -171,7 +172,7 @@
+           phantom: true
+       UIButton
+         id: settingsFolderMenu
+-        size: 114 38
++        size: 114 32
+         border-width: 0
+         anchors.top: parent.top
+         anchors.left: prev.right
+@@ -180,7 +181,7 @@
+         image-source: /images/topbuttons/options
+         image-clip: 0 0 20 20
+         image-size: 20 20
+-        image-offset: 10 9
++        image-offset: 7 6
+         !tooltip: tr('Settings')
+         @onClick: loadMenu('settingsFolderMenu')
+         $checked:
+@@ -192,7 +193,7 @@
+           anchors.left: parent.left
+           anchors.right: parent.right
+           anchors.verticalCenter: parent.verticalCenter
+-          margin-left: 38
++          margin-left: 34
+           margin-right: 3
+           !text: tr('Settings')
+           font: $var-main-font
+@@ -201,7 +202,7 @@
+ 
+     Panel
+       id: helperSidebar
+-      width: 220
++      width: 196
+       anchors.top: optionsTabBar.bottom
+       anchors.bottom: separator.top
+       anchors.left: parent.left
+@@ -212,7 +213,7 @@
+ 
+       Panel
+         id: helperProfile
+-        height: 175
++        height: 144
+         anchors.top: parent.top
+         anchors.left: parent.left
+         anchors.right: parent.right
+@@ -232,15 +233,15 @@
+ 
+         FlatPanel
+           id: profilePortrait
+-          size: 86 86
++          size: 64 64
+           anchors.top: profileName.bottom
+           anchors.horizontalCenter: parent.horizontalCenter
+-          margin-top: 4
++          margin-top: 2
+ 
+           UICreature
+             id: profileCreature
+             anchors.fill: parent
+-            margin: 5
++            margin: 3
+             outfit-center: true
+             fixed-creature-size: true
+             virtual: true
+@@ -253,7 +254,7 @@
+           anchors.top: profilePortrait.bottom
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          margin-top: 7
++          margin-top: 3
+           text-align: center
+           font: $var-main-font
+ 
+@@ -262,7 +263,7 @@
+           anchors.top: profileVocation.bottom
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          margin-top: 4
++          margin-top: 1
+           text-align: center
+           font: $var-main-font
+ 
+@@ -271,7 +272,7 @@
+           anchors.top: profileLevel.bottom
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          margin-top: 8
++          margin-top: 3
+           text-align: center
+           font: $var-main-font
+           !text: tr('Helper Status')
+@@ -296,13 +297,13 @@
+           anchors.top: parent.top
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          margin: 8
++          margin: 6 8 0 8
+           Label
+             anchors.top: parent.top
+             anchors.left: parent.left
+             !text: tr('Auto Haste')
+             font: $var-main-font
+-            color: $var-text-color
++            color: #d7b46a
+             text-auto-resize: true
+             margin-top: 0
+           UIButton
+@@ -370,23 +371,23 @@
+           anchors.top: firstPanel.bottom
+           anchors.left: parent.left
+           anchors.right: parent.right
+-          height: 180
+-          margin: 5 8 5 8
++          height: 112
++          margin: 4 8 0 8
+ 
+           Label
+             id: toolsLabel2
+             anchors.top: parent.top
+             anchors.left: parent.left
+-            !text: tr('Others Tools')
++            !text: tr('Other tools')
+             font: $var-main-font
+-            color: $var-text-color
++            color: #d7b46a
+             text-auto-resize: true
+-            margin-top: 5
++            margin-top: 2
+           UITooltipGrey
+             anchors.top: prev.top
+             anchors.left: prev.right
+             margin-left: 5
+-            margin-top: 2
++            margin-top: 1
+             !tooltip: tr('Some other useful tools to make your gameplay easier.')
+ 
+           CheckBox
+@@ -395,7 +396,7 @@
+             anchors.top: toolsLabel2.bottom
+             anchors.left: parent.left
+             !text: tr('Exercise Training')
+-            margin-top: 7
++            margin-top: 6
+             margin-left: 2
+             font: $var-main-font
+             color: $var-text-color
+@@ -411,7 +412,7 @@
+             anchors.top: prev.bottom
+             anchors.left: parent.left
+             !text: tr('Change Gold')
+-            margin-top: 7
++            margin-top: 6
+             margin-left: 2
+             font: $var-main-font
+             color: $var-text-color
+@@ -428,7 +429,7 @@
+             anchors.top: prev.bottom
+             anchors.left: parent.left
+             !text: tr('Auto Eat Food')
+-            margin-top: 7
++            margin-top: 6
+             margin-left: 2
+             font: $var-main-font
+             color: $var-text-color
+@@ -438,68 +439,15 @@
+             $hover !disabled:
+               color: $var-text-cip-color
+ 
+-          CheckBox
+-            id: autoQuillSell
+-            width: 135
+-            anchors.top: eatFood.bottom
+-            anchors.left: parent.left
+-            !text: tr('Auto Sell Loot')
+-            margin-top: 7
+-            margin-left: 2
+-            font: $var-main-font
+-            color: $var-text-color
+-            text-offset: 13 0
+-            change-cursor-image: false
+-            @onCheckChange: modules.game_helper.tools.toggleAutoQuillSell(self:isChecked())
+-            $hover !disabled:
+-              color: $var-text-cip-color
+-
+-          UITooltipGrey
+-            id: autoQuillSellHelp
+-            anchors.verticalCenter: autoQuillSell.verticalCenter
+-            anchors.left: autoQuillSell.right
+-            margin-left: 3
+-            !tooltip: tr('Automatically sells eligible loot through the Summon Quill API or a nearby summoned Rashid.\nWith Rashid visible, the Helper opens trade and uses the same Sell All flow as game_bot.')
+-
+-          CheckBox
+-            id: autoQuillSellBelowCap
+-            width: 90
+-            anchors.top: autoQuillSell.bottom
+-            anchors.left: parent.left
+-            !text: tr('Below Cap')
+-            margin-top: 5
+-            margin-left: 2
+-            font: $var-main-font
+-            color: $var-text-color
+-            text-offset: 13 0
+-            change-cursor-image: false
+-            enabled: false
+-            @onCheckChange: modules.game_helper.tools.toggleAutoQuillSellBelowCap(self:isChecked())
+-            !tooltip: tr('Only use Auto Sell Loot when your free capacity is below this value.')
+-            $hover !disabled:
+-              color: $var-text-cip-color
+-
+-          TextEdit
+-            id: autoQuillSellCapacity
+-            size: 43 18
+-            anchors.verticalCenter: autoQuillSellBelowCap.verticalCenter
+-            anchors.left: autoQuillSellBelowCap.right
+-            margin-left: 2
+-            text: 100
+-            text-align: center
+-            enabled: false
+-            @onTextChange: modules.game_helper.tools.updateAutoQuillSellCapacity(self, self:getText())
+-            !tooltip: tr('Free capacity threshold for Auto Sell Loot.')
+-
+           Label
+             id: alarmsLabel
+-            anchors.top: autoQuillSellBelowCap.bottom
++            anchors.top: eatFood.bottom
+             anchors.left: parent.left
+             !text: tr('Alarms')
+-            margin-top: 10
++            margin-top: 8
+             margin-left: 2
+             font: $var-main-font
+-            color: $var-text-color
++            color: #d7b46a
+             text-auto-resize: true
+           UIButton
+             id: alarmSettingsButton
+@@ -625,7 +573,7 @@
+         anchors.left: parent.left
+         anchors.right: parent.right
+         margin: 8 10 0 10
+-        height: 192
++        height: 156
+         vertical-scrollbar: settingsLocationsScrollBar
+         padding-right: 14
+         focusable: false
+@@ -762,7 +710,8 @@
+ 
+     Button
+       id: setKeyHelperButton
+-      size: 41 15
++      height: 15
++      text-horizontal-auto-resize: true
+       anchors.bottom: prev.bottom
+       anchors.left: prev.right
+       margin-left: 5
+--- a/mods/game_helper/styles/alarm_settings.otui
++++ b/mods/game_helper/styles/alarm_settings.otui
+@@ -1,12 +1,14 @@
+ AlarmSettingsWindow < MainWindow
+   id: alarmSettingsWindow
+-  size: 220 250
++  // Chaos 0105: no Full Dust row (no forge in this client: the alarm could never sound); the checkboxes are
++  // wide enough for their pt-BR text
++  size: 230 224
+   !text: tr('Alarm Settings')
+   @onEscape: modules.game_helper.alarmSettings.close()
+ 
+   CheckBox
+     id: lowCapacityAlarm
+-    width: 80
++    width: 100
+     anchors.top: parent.top
+     anchors.left: parent.left
+     margin-top: 5
+@@ -33,7 +35,7 @@
+ 
+   CheckBox
+     id: lowHealthAlarm
+-    width: 80
++    width: 100
+     anchors.top: lowCapacityAlarm.bottom
+     anchors.left: parent.left
+     margin-top: 8
+@@ -69,7 +71,7 @@
+ 
+   CheckBox
+     id: lowManaAlarm
+-    width: 80
++    width: 100
+     anchors.top: lowHealthAlarm.bottom
+     anchors.left: parent.left
+     margin-top: 8
+@@ -104,28 +106,9 @@
+     !tooltip: tr('Plays an alarm sound every 3 seconds when\nmana percent is below the defined value.')
+ 
+   CheckBox
+-    id: fullDustAlarm
+-    width: 80
+-    anchors.top: lowManaAlarm.bottom
+-    anchors.left: parent.left
+-    margin-top: 8
+-    !text: tr('Full Dust')
+-    font: $var-main-font
+-    color: $var-text-color
+-    text-offset: 13 0
+-    change-cursor-image: false
+-    $hover !disabled:
+-      color: $var-text-cip-color
+-  UITooltipGrey
+-    id: fullDustHelp
+-    anchors.verticalCenter: fullDustAlarm.verticalCenter
+-    anchors.right: parent.right
+-    !tooltip: tr('Plays an alarm sound once when your Forge dust reaches the maximum.\nIt will not play again until dust drops below max and becomes full again.')
+-
+-  CheckBox
+     id: privateMessageAlarm
+-    width: 110
+-    anchors.top: fullDustAlarm.bottom
++    width: 140
++    anchors.top: lowManaAlarm.bottom
+     anchors.left: parent.left
+     margin-top: 8
+     !text: tr('Private Message')
+@@ -143,7 +126,7 @@
+ 
+   CheckBox
+     id: lowSupplyAlarm
+-    width: 80
++    width: 100
+     anchors.top: privateMessageAlarm.bottom
+     anchors.left: parent.left
+     margin-top: 8
+@@ -182,5 +165,5 @@
+     anchors.bottom: parent.bottom
+     anchors.horizontalCenter: parent.horizontalCenter
+     margin-bottom: 2
+-    text: Close
++    !text: tr('Close')
+     @onClick: modules.game_helper.alarmSettings.close()
+--- a/mods/game_helper/styles/tools_panel.otui
++++ b/mods/game_helper/styles/tools_panel.otui
+@@ -1,29 +1,23 @@
+ ToolsPanel < Panel
+   anchors.fill: parent
++  // Chaos 0105: one row for Auto Stamina and, for a class that can cast Ward of the Mind, Magic Shield (the old
++  // Cure Paralyze half and the Quiver Refill and Exana Vita controls are gone: nothing on this server uses them)
+   Panel
+     id: staminaToolsPanel
+-    height: 140
++    height: 92
+     anchors.top: parent.top
+     anchors.left: parent.left
+     anchors.right: parent.right
+     image-source: /images/ui/t2pixel-up-frame-borderimage
+     image-border: 18
+     Label
+-      anchors.top: parent.top
+-      anchors.horizontalCenter: parent.horizontalCenter
+-      margin-top: 1
+-      !text: tr('Stamina & Conditions')
+-      font: $var-main-font
+-      color: #AAAAAA
+-      text-auto-resize: true
+-    Label
+       id: autoStaminaTitle
+-      anchors.top: prev.bottom
++      anchors.top: parent.top
+       anchors.left: parent.left
+       margin-top: 6
+       margin-left: 10
+       !text: tr('Auto Stamina')
+-      color: $var-text-color
++      color: #AAAAAA
+       font: $var-main-font
+       text-auto-resize: true
+     UIButton
+@@ -41,7 +35,7 @@
+       anchors.top: staminaFoodButton0.top
+       anchors.left: staminaFoodButton0.right
+       margin-left: 5
+-      width: 60
++      width: 80
+       !text: tr('Enable')
+       color: $var-text-color
+       font: $var-main-font
+@@ -53,7 +47,7 @@
+       anchors.left: staminaFoodButton0.right
+       margin-top: 5
+       margin-left: 5
+-      text: 'Use at: 00:30'
++      !text: tr('Use at: %s', '00:30')
+       color: $var-text-color
+       font: $var-main-font
+       text-auto-resize: true
+@@ -64,49 +58,76 @@
+       anchors.right: parent.horizontalCenter
+       margin-top: 5
+       margin-left: 10
+-      margin-right: 5
++      margin-right: 10
+       minimum: 0
+       maximum: 2520
+       step: 10
+-    VerticalSeparator
+-      anchors.top: autoStaminaTitle.top
++
++    Panel
++      id: magePanel
++      anchors.top: parent.top
+       anchors.bottom: parent.bottom
+-      anchors.horizontalCenter: parent.horizontalCenter
+-      margin-bottom: 8
+-    Label
+-      id: paralyzeCureTitle
+-      anchors.top: autoStaminaTitle.top
+       anchors.left: parent.horizontalCenter
+-      margin-left: 10
+-      !text: tr('Cure Paralyze')
+-      color: $var-text-color
+-      font: $var-main-font
+-      text-auto-resize: true
+-    UIButton
+-      id: paralyzeCureButton0
+-      size: 34 34
+-      anchors.top: paralyzeCureTitle.bottom
+-      anchors.left: parent.horizontalCenter
+-      margin-top: 5
+-      margin-left: 10
+-      image-source: /images/game/actionbar/actionbarslot
+-      !tooltip: tr('Click to select a spell')
+-      @onClick: assignTrainingSpell(self, false, true)
+-    CheckBox
+-      id: enableParalyzeCure0
+-      anchors.top: paralyzeCureButton0.top
+-      anchors.left: paralyzeCureButton0.right
+-      margin-left: 5
+-      width: 60
+-      !text: tr('Enable')
+-      color: $var-text-color
+-      font: $var-main-font
+-      text-offset: 13 0
+-      @onCheckChange: toggleParalyzeCure(self:isChecked())
++      anchors.right: parent.right
++      visible: false
++      VerticalSeparator
++        anchors.top: parent.top
++        anchors.bottom: parent.bottom
++        anchors.left: parent.left
++        margin-top: 8
++        margin-bottom: 8
++      Label
++        id: mageTitle
++        anchors.top: parent.top
++        anchors.left: parent.left
++        margin-top: 6
++        margin-left: 10
++        !text: tr('Magic Shield')
++        font: $var-main-font
++        color: #AAAAAA
++        text-auto-resize: true
++      UITooltipGrey
++        id: mageHelpIcon
++        anchors.verticalCenter: mageTitle.verticalCenter
++        anchors.left: mageTitle.right
++        margin-left: 5
++        !tooltip: tr('Casts Ward of the Mind when your health falls to this share or lower and the ward is not up.')
++      CheckBox
++        id: enableUtamoVita
++        anchors.top: mageTitle.bottom
++        anchors.left: parent.left
++        margin-top: 12
++        margin-left: 10
++        text-horizontal-auto-resize: true
++        !text: tr('Ward of the Mind at HP')
++        font: $var-main-font
++        color: $var-text-color
++        text-offset: 13 0
++        @onCheckChange: modules.game_helper.tools.toggleUtamoVita(self:isChecked())
++        change-cursor-image: false
++        $hover !disabled:
++          color: $var-text-cip-color
++      TextEdit
++        id: utamoHpPercent
++        size: 40 18
++        anchors.verticalCenter: enableUtamoVita.verticalCenter
++        anchors.left: enableUtamoVita.right
++        margin-left: 6
++        text: 80
++        text-align: center
++      Label
++        id: utamoPercentLabel
++        anchors.verticalCenter: utamoHpPercent.verticalCenter
++        anchors.left: utamoHpPercent.right
++        margin-left: 3
++        !text: tr('% or less')
++        font: $var-main-font
++        color: $var-text-color
++        text-auto-resize: true
+ 
+   Panel
+     id: automationPanel
+-    height: 165
++    height: 152
+     anchors.top: staminaToolsPanel.bottom
+     anchors.left: parent.left
+     anchors.right: parent.horizontalCenter
+@@ -235,7 +256,7 @@
+ 
+   Panel
+     id: botHudPanel
+-    height: 165
++    height: 152
+     anchors.top: staminaToolsPanel.bottom
+     anchors.left: automationPanel.right
+     anchors.right: parent.right
+@@ -280,18 +301,6 @@
+         self:addOption('Wide')
+         self:setCurrentOption('Normal')
+     CheckBox
+-      id: hudShowCavebot
+-      // no cavebot in this client
+-      visible: false
+-      anchors.top: enableBotHud.bottom
+-      anchors.left: parent.left
+-      margin-top: 8
+-      margin-left: 10
+-      width: 120
+-      !text: tr('Cavebot')
+-      text-offset: 13 0
+-      @onCheckChange: modules.game_helper.tools.updateBotHudSettings()
+-    CheckBox
+       id: hudShowTargeting
+       anchors.top: enableBotHud.bottom
+       anchors.left: parent.horizontalCenter
+@@ -348,211 +357,3 @@
+       !text: tr('Automation')
+       text-offset: 13 0
+       @onCheckChange: modules.game_helper.tools.updateBotHudSettings()
+-    CheckBox
+-      id: hudShowWaypoints
+-      visible: false
+-      anchors.top: hudShowPlayer.bottom
+-      anchors.left: parent.horizontalCenter
+-      margin-top: 6
+-      width: 130
+-      !text: tr('Waypoint Markers')
+-      text-offset: 13 0
+-      @onCheckChange: modules.game_helper.tools.updateBotHudSettings()
+-
+-  // Third Panel - Paladin Only (Quiver Refill)
+-  Panel
+-    id: paladinPanel
+-    height: 95
+-    anchors.top: automationPanel.bottom
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    margin-top: 5
+-    margin-left: 5
+-    image-source: /images/ui/t2pixel-up-frame-borderimage
+-    image-border: 18
+-    visible: false
+-    Label
+-      id: paladinTitle
+-      anchors.top: parent.top
+-      anchors.horizontalCenter: parent.horizontalCenter
+-      margin-top: 1
+-      !text: tr('Quiver Refill')
+-      font: $var-main-font
+-      color: #AAAAAA
+-      text-auto-resize: true
+-    UITooltipGrey
+-      id: quiverHelpIcon
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-top: 3
+-      margin-right: 8
+-      !tooltip: tr('Automatically equip ammunition when quiver count\nis below minimum until refill value is reached.')
+-    Panel
+-      id: paladinContent
+-      anchors.top: paladinTitle.bottom
+-      anchors.left: parent.left
+-      anchors.right: parent.right
+-      anchors.bottom: parent.bottom
+-      margin: 8 8 8 8
+-      UIButton
+-        id: quiverAmmoItem
+-        size: 34 34
+-        anchors.top: parent.top
+-        anchors.left: parent.left
+-        margin-top: 2
+-        image-source: /images/game/actionbar/actionbarslot
+-        @onClick: modules.game_helper.tools.assignQuiverAmmo(self)
+-        !tooltip: tr('Click to select ammunition item')
+-      Label
+-        id: minLabel
+-        anchors.top: parent.top
+-        anchors.left: quiverAmmoItem.right
+-        margin-left: 8
+-        margin-top: 2
+-        !text: tr('Min:')
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-auto-resize: true
+-      TextEdit
+-        id: quiverMinValue
+-        size: 45 20
+-        anchors.top: parent.top
+-        anchors.left: minLabel.right
+-        margin-left: 5
+-        margin-top: 0
+-        text: 50
+-        text-align: center
+-      Label
+-        id: refillLabel
+-        anchors.top: parent.top
+-        anchors.left: quiverMinValue.right
+-        margin-left: 10
+-        margin-top: 2
+-        !text: tr('Refill:')
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-auto-resize: true
+-      TextEdit
+-        id: quiverRefillValue
+-        size: 45 20
+-        anchors.top: parent.top
+-        anchors.left: refillLabel.right
+-        margin-left: 5
+-        margin-top: 0
+-        text: 100
+-        text-align: center
+-      CheckBox
+-        id: enableQuiverRefill
+-        width: 100
+-        anchors.top: quiverAmmoItem.bottom
+-        anchors.left: parent.left
+-        !text: tr('Enable')
+-        margin-top: 8
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-offset: 13 0
+-        @onCheckChange: modules.game_helper.tools.toggleQuiverRefill(self:isChecked())
+-        change-cursor-image: false
+-        $hover !disabled:
+-          color: $var-text-cip-color
+-
+-  // Fourth Panel - Sorcerer/Druid Only (Magic Shield)
+-  Panel
+-    id: magePanel
+-    height: 95
+-    anchors.top: automationPanel.bottom
+-    anchors.left: parent.left
+-    anchors.right: parent.right
+-    margin-top: 5
+-    margin-left: 5
+-    image-source: /images/ui/t2pixel-up-frame-borderimage
+-    image-border: 18
+-    visible: false
+-    Label
+-      id: mageTitle
+-      anchors.top: parent.top
+-      anchors.horizontalCenter: parent.horizontalCenter
+-      margin-top: 1
+-      !text: tr('Magic Shield')
+-      font: $var-main-font
+-      color: #AAAAAA
+-      text-auto-resize: true
+-    UITooltipGrey
+-      id: mageHelpIcon
+-      anchors.top: parent.top
+-      anchors.right: parent.right
+-      margin-top: 3
+-      margin-right: 8
+-      !tooltip: tr('Automatically cast utamo vita when HP is low.\nExana vita when HP is high.')
+-    Panel
+-      id: mageContent
+-      anchors.top: mageTitle.bottom
+-      anchors.left: parent.left
+-      anchors.right: parent.right
+-      anchors.bottom: parent.bottom
+-      margin: 8 8 8 8
+-
+-      // Utamo Vita Row
+-      CheckBox
+-        id: enableUtamoVita
+-        width: 140
+-        anchors.top: parent.top
+-        anchors.left: parent.left
+-        margin-top: 3
+-        !text: tr('Utamo Vita HP <')
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-offset: 13 0
+-        @onCheckChange: modules.game_helper.tools.toggleUtamoVita(self:isChecked())
+-        change-cursor-image: false
+-        $hover !disabled:
+-          color: $var-text-cip-color
+-      TextEdit
+-        id: utamoHpPercent
+-        size: 40 18
+-        anchors.verticalCenter: enableUtamoVita.verticalCenter
+-        anchors.left: enableUtamoVita.right
+-        margin-left: 5
+-        text: 80
+-        text-align: center
+-      Label
+-        id: utamoPercentLabel
+-        anchors.verticalCenter: utamoHpPercent.verticalCenter
+-        anchors.left: utamoHpPercent.right
+-        margin-left: 3
+-        text: %
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-auto-resize: true
+-      // Exana Vita Row
+-      CheckBox
+-        id: enableExanaVita
+-        width: 140
+-        anchors.top: enableUtamoVita.bottom
+-        anchors.left: parent.left
+-        margin-top: 8
+-        !text: tr('Exana Vita HP >')
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-offset: 13 0
+-        @onCheckChange: modules.game_helper.tools.toggleExanaVita(self:isChecked())
+-        change-cursor-image: false
+-        $hover !disabled:
+-          color: $var-text-cip-color
+-      TextEdit
+-        id: exanaHpPercent
+-        size: 40 18
+-        anchors.verticalCenter: enableExanaVita.verticalCenter
+-        anchors.left: enableExanaVita.right
+-        margin-left: 5
+-        text: 90
+-        text-align: center
+-      Label
+-        id: exanaPercentLabel
+-        anchors.verticalCenter: exanaHpPercent.verticalCenter
+-        anchors.left: exanaHpPercent.right
+-        margin-left: 3
+-        text: %
+-        font: $var-main-font
+-        color: $var-text-color
+-        text-auto-resize: true
+--- a/mods/game_helper/tools_panel.lua
++++ b/mods/game_helper/tools_panel.lua
+@@ -1,6 +1,8 @@
+ -- Tools Panel Module
+--- Manages all tools functionality: Gold Change, Exercise Training,
+--- Quiver Refill (Paladin), Magic Shield (Sorcerer/Druid)
++-- Manages all tools functionality: Gold Change, Exercise Training, Magic Shield (Ward of the Mind)
++-- Chaos (base patch 0105): Auto Sell Loot (a Summon Quill or a summoned sell NPC: neither exists on this server),
++-- Quiver Refill (hidden since the start: 10.98 has no quiver slot) and Exana Vita (no spell ends the ward on this
++-- server, 0052 had made it inert) are gone with their settings (autoQuillSell*, quiverRefill, magicShield.exana*).
+ -- Based on the same pattern as equip_panel.lua
+ 
+ local tools = {}
+@@ -11,7 +13,6 @@
+ 
+ -- Local references
+ local toolsPanel = nil
+-local paladinPanel = nil
+ local magePanel = nil
+ local helper = nil
+ local automationEvent = nil
+@@ -25,18 +26,6 @@
+ local ANTI_IDLE_THRESHOLD_MS = 300000
+ local ANTI_IDLE_TURN_INTERVAL_MS = 15000
+ local lastAntiIdleTurnAt = 0
+-local lastQuillStateQueryAt = 0
+-local lastQuillSaleAttemptAt = 0
+-local lastQuillCapacityCheckAt = 0
+-local quillCapacityAllowsSale = false
+-local quillNpcTradeEvent = nil
+-local lastQuillNpcTalkAt = 0
+-local QUILL_QUERY_INTERVAL_MS = 5000
+-local QUILL_ATTEMPT_INTERVAL_MS = 10000
+-local QUILL_CAPACITY_CHECK_INTERVAL_MS = 60000
+-local QUILL_NPC_TALK_INTERVAL_MS = 5000
+-local QUILL_NPC_TRADE_DELAY_MS = 1000
+-local QUILL_SELL_NPC_NAME = 'rashid'
+ 
+ function tools.displayLookItemId(thing)
+   local config = _Helper.getHelperConfig and _Helper.getHelperConfig()
+@@ -57,17 +46,11 @@
+ 
+ 
+ -- Magic Shield constants
+-local MAGIC_SHIELD_SPELL_ID = 44         -- utamo vita
+-local CANCEL_MAGIC_SHIELD_SPELL_ID = 245 -- exana vita
+-local MAGIC_SHIELD_POTION_ID = 35563     -- magic shield potion
++local MAGIC_SHIELD_SPELL_ID = 44         -- Ward of the Mind (stock utamo vita)
+ 
+ -- Local references for mouse grabber
+ local mouseGrabberWidget = nil
+ 
+--- Quiver refill state
+-local isRefillingQuiver = false
+-local lastQuiverRefillTime = 0   -- Cooldown to prevent spam (in milliseconds)
+-
+ -- ============================================================
+ -- HELPER FUNCTIONS
+ -- ============================================================
+@@ -112,20 +95,15 @@
+   config.autoParty.sendList = config.autoParty.sendList or { '', '', '', '' }
+   if config.antiIdle == nil then config.antiIdle = false end
+   if config.showLookItemId == nil then config.showLookItemId = false end
+-  if config.autoQuillSell == nil then config.autoQuillSell = false end
+-  if config.autoQuillSellBelowCap == nil then config.autoQuillSellBelowCap = false end
+-  config.autoQuillSellCapacity = math.max(0, tonumber(config.autoQuillSellCapacity) or 100)
+   config.botHud = config.botHud or {
+     enabled = false,
+     size = 'Normal',
+-    showCavebot = true,
+     showTargeting = true,
+     showEquipment = true,
+     showTimers = true,
+     showHaste = true,
+     showPlayer = true,
+-    showAutomation = false,
+-    showWaypoints = true
++    showAutomation = false
+   }
+   return config
+ end
+@@ -189,128 +167,6 @@
+   lastActivityDirection = nextDirection
+ end
+ 
+-local function capacityAllowsAutomaticQuillSale(config, now)
+-  if not config.autoQuillSellBelowCap then return true end
+-  if lastQuillCapacityCheckAt > 0 and
+-      now - lastQuillCapacityCheckAt < QUILL_CAPACITY_CHECK_INTERVAL_MS then
+-    return quillCapacityAllowsSale
+-  end
+-
+-  local player = getPlayer()
+-  quillCapacityAllowsSale = player ~= nil and
+-      player:getFreeCapacity() < config.autoQuillSellCapacity
+-  lastQuillCapacityCheckAt = now
+-  return quillCapacityAllowsSale
+-end
+-
+-local function isNpcTradeOpen()
+-  local npcTrade = modules.game_npctrade
+-  return npcTrade and npcTrade.npcWindow and npcTrade.npcWindow:isVisible()
+-end
+-
+-local function findNearbySellNpc(player)
+-  if not player then return nil end
+-  local playerPos = player:getPosition()
+-  if not playerPos then return nil end
+-
+-  for _, creature in ipairs(g_map.getSpectators(playerPos, false) or {}) do
+-    if creature and creature.isNpc and creature:isNpc() and creature.getName and
+-        creature:getName():lower() == QUILL_SELL_NPC_NAME then
+-      local npcPos = creature:getPosition()
+-      if npcPos and npcPos.z == playerPos.z and
+-          math.max(math.abs(npcPos.x - playerPos.x), math.abs(npcPos.y - playerPos.y)) <= 3 then
+-        return creature
+-      end
+-    end
+-  end
+-  return nil
+-end
+-
+-local function talkToNpc(text)
+-  if g_game.getClientVersion() >= 810 and g_game.talkChannel then
+-    g_game.talkChannel(11, 0, text)
+-  elseif g_game.talk then
+-    g_game.talk(text)
+-  end
+-end
+-
+-local function cancelPendingNpcTrade()
+-  if quillNpcTradeEvent then
+-    removeEvent(quillNpcTradeEvent)
+-    quillNpcTradeEvent = nil
+-  end
+-end
+-
+--- Use the same proven flow as game_bot's SellAll action: interact with a nearby
+--- summoned Rashid, open his trade window, then delegate the actual item queue to
+--- game_npctrade.sellAll(). This also works when the summon belongs to a separate
+--- module and no Summon Quill state API is installed in game_inventory.
+-local function tryNearbyNpcSale(player, now)
+-  local npcTrade = modules.game_npctrade
+-  if not npcTrade or not npcTrade.sellAll or not findNearbySellNpc(player) then return false end
+-
+-  if isNpcTradeOpen() then
+-    cancelPendingNpcTrade()
+-    if lastQuillSaleAttemptAt > 0 and
+-        now - lastQuillSaleAttemptAt < QUILL_ATTEMPT_INTERVAL_MS then return true end
+-    local ok, err = pcall(function() npcTrade.sellAll(false) end)
+-    if not ok then
+-      if g_logger then g_logger.error('[game_helper] Auto Sell Loot: ' .. tostring(err)) end
+-      return false
+-    end
+-    lastQuillSaleAttemptAt = now
+-    return true
+-  end
+-
+-  if quillNpcTradeEvent or (lastQuillNpcTalkAt > 0 and
+-      now - lastQuillNpcTalkAt < QUILL_NPC_TALK_INTERVAL_MS) then return true end
+-
+-  lastQuillNpcTalkAt = now
+-  talkToNpc('hi')
+-  quillNpcTradeEvent = scheduleEvent(function()
+-    quillNpcTradeEvent = nil
+-    local currentConfig = getAutomationConfig()
+-    local currentPlayer = getPlayer()
+-    if g_game.isOnline() and currentConfig and currentConfig.autoQuillSell and
+-        helperFunctionsEnabled() and capacityAllowsAutomaticQuillSale(currentConfig, g_clock.millis()) and
+-        currentPlayer and findNearbySellNpc(currentPlayer) and not isNpcTradeOpen() then
+-      talkToNpc('trade')
+-    end
+-  end, QUILL_NPC_TRADE_DELAY_MS)
+-  return true
+-end
+-
+-local function tryAutomaticQuillSale(config, state, now)
+-  if not config.autoQuillSell or not helperFunctionsEnabled() then return false end
+-  local player = getPlayer()
+-  if not player then return false end
+-  if not capacityAllowsAutomaticQuillSale(config, now) then return false end
+-
+-  -- A summoned Rashid may come from another module. Prefer completing that
+-  -- already-active NPC flow before requesting another summon/server-side sale.
+-  if tryNearbyNpcSale(player, now) then return true end
+-
+-  local inventory = modules.game_inventory
+-  if not inventory or not inventory.requestAutomaticQuillSale then return false end
+-  state = state or (inventory.getSummonQuillState and inventory.getSummonQuillState() or nil)
+-  if not state or not state.unlocked or not state.hasLootPouch or (state.cooldown or 0) > 0 then return false end
+-  if player:isInProtectionZone() then return false end
+-  if lastQuillSaleAttemptAt > 0 and now - lastQuillSaleAttemptAt < QUILL_ATTEMPT_INTERVAL_MS then return false end
+-
+-  -- Arm the throttle only when a request actually went out. Arming it up front
+-  -- meant a rejected attempt -- a cooldown reading that was stale by a moment,
+-  -- or a sale still pending -- blocked every retry for the full interval.
+-  local sent = inventory.requestAutomaticQuillSale()
+-  if sent then lastQuillSaleAttemptAt = now end
+-  return sent
+-end
+-
+-function tools.onSummonQuillStateChanged(state)
+-  local config = getAutomationConfig()
+-  if not config then return end
+-  tryAutomaticQuillSale(config, state, g_clock.millis())
+-end
+-
+ local function runAutomationCycle()
+   if not g_game.isOnline() then return end
+   local config = getAutomationConfig()
+@@ -318,18 +174,6 @@
+   local now = g_clock.millis()
+   runAntiIdle(config, now)
+   runAutoParty(config)
+-  if config.autoQuillSell and helperFunctionsEnabled() and
+-      capacityAllowsAutomaticQuillSale(config, now) then
+-    local inventory = modules.game_inventory
+-    if inventory then
+-      if now - lastQuillStateQueryAt >= QUILL_QUERY_INTERVAL_MS and inventory.querySummonQuillState then
+-        inventory.querySummonQuillState()
+-        lastQuillStateQueryAt = now
+-      end
+-    end
+-    local state = inventory and inventory.getSummonQuillState and inventory.getSummonQuillState() or nil
+-    tryAutomaticQuillSale(config, state, now)
+-  end
+   -- no cavebot in this client (tools/assemble_client.sh): the bot HUD is ChaosBotHud (game_helperhud)
+   local cavebot = modules.game_helper and modules.game_helper.cavebot or rawget(_G, 'ChaosBotHud')
+   if cavebot and cavebot.refreshBotHud then cavebot.refreshBotHud() end
+@@ -380,22 +224,6 @@
+   return toolsPanel
+ end
+ 
+--- Helper function to get paladinPanel
+-local function getPaladinPanel()
+-  if paladinPanel then return paladinPanel end
+-  local rootWidget = g_ui.getRootWidget()
+-  if rootWidget then
+-    local helperWindow = rootWidget:recursiveGetChildById('helperWindow')
+-    if helperWindow then
+-      local container = helperWindow:recursiveGetChildById('toolsPanelContainer')
+-      if container then
+-        paladinPanel = container:recursiveGetChildById('paladinPanel')
+-      end
+-    end
+-  end
+-  return paladinPanel
+-end
+-
+ -- Helper function to get magePanel
+ local function getMagePanel()
+   if magePanel then return magePanel end
+@@ -728,335 +556,7 @@
+ -- The _Helper.ExerciseTraining class handles automatic selection.
+ 
+ -- ============================================================
+--- QUIVER REFILL FUNCTIONS (Paladin Only)
+--- ============================================================
+-
+--- Assign ammunition item to button
+-function tools.assignQuiverAmmo(button)
+-  local grabber = getMouseGrabber()
+-  local helperWindow = getHelperWindow()
+-
+-  if g_mouse and g_mouse.updateGrabber then
+-    g_mouse.updateGrabber(grabber, 'target')
+-  end
+-  grabber:grabMouse()
+-  if helperWindow then helperWindow:hide() end
+-  if not ChaosItemPicker then g_mouse.pushCursor('target') end
+-  grabber.onMouseRelease = function(self, mousePosition, mouseButton)
+-    tools.onAssignQuiverAmmo(self, mousePosition, mouseButton, button)
+-  end
+-  if ChaosItemPicker then ChaosItemPicker.begin(grabber) end -- the target cursor like "Use with"; right-click / Escape cancel
+-end
+-
+--- Handle ammunition item assignment
+-function tools.onAssignQuiverAmmo(self, mousePosition, mouseButton, button)
+-  local grabber = getMouseGrabber()
+-  local helperWindow = getHelperWindow()
+-
+-  if g_mouse and g_mouse.updateGrabber then
+-    g_mouse.updateGrabber(grabber, 'target')
+-  end
+-  grabber:ungrabMouse()
+-  if ChaosItemPicker then ChaosItemPicker.finish() else g_mouse.popCursor('target') end
+-  grabber.onMouseRelease = nil
+-  if helperWindow then helperWindow:show() end
+-
+-  local rootWidget = g_ui.getRootWidget()
+-  if not rootWidget then
+-    return true
+-  end
+-
+-  local clickedWidget = rootWidget:recursiveGetChildByPos(mousePosition, false)
+-  if not clickedWidget then
+-    return true
+-  end
+-
+-  local ammoId = 0
+-  if clickedWidget:getClassName() == 'UIItem' and not clickedWidget:isVirtual() then
+-    local item = clickedWidget:getItem()
+-    if item then
+-      if item:isAmmo() then
+-        ammoId = item:getId()
+-      end
+-    end
+-  end
+-
+-  if ammoId > 0 then
+-    button:setImageSource('/images/ui/item')
+-    if not button:getChildById('ammoItem') then
+-      local itemWidget = g_ui.createWidget('PotionItem', button)
+-      if itemWidget then
+-        itemWidget:setId('ammoItem')
+-      end
+-    end
+-    local itemWidget = button:getChildById('ammoItem')
+-    if itemWidget then
+-      itemWidget:setItemId(ammoId)
+-    end
+-    -- Save to config
+-    local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-    if helperConfig then
+-      helperConfig.quiverRefill = helperConfig.quiverRefill or {}
+-      helperConfig.quiverRefill.itemId = ammoId
+-      if _Helper.saveSettings then
+-        _Helper.saveSettings()
+-      end
+-    end
+-  else
+-    modules.game_textmessage.displayFailureMessage(tr('Invalid ammunition item! Select an arrow, bolt or throwing item.'))
+-  end
+-end
+-
+--- Toggle quiver refill
+-function tools.toggleQuiverRefill(checked)
+-  local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-  if helperConfig then
+-    helperConfig.quiverRefill = helperConfig.quiverRefill or {}
+-    helperConfig.quiverRefill.enabled = checked
+-  end
+-  if _Helper.saveSettings then
+-    _Helper.saveSettings()
+-  end
+-end
+-
+--- Shared commit logic for the quiver inputs. Reads the current widget text,
+--- applies the clamp rule against the companion field, writes back to widget
+--- + config, and triggers save. Called when the input loses focus (and when
+--- the helper window is hidden via tools.commitQuiverInputs).
+-local function commitQuiverInput(widget, clampFn, otherValueGetter, configFieldName, isUpdatingRef)
+-  if not widget then return end
+-  local value = tonumber(widget:getText())
+-  if not value or value <= 0 then return end
+-
+-  local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-  if not helperConfig then return end
+-  helperConfig.quiverRefill = helperConfig.quiverRefill or {}
+-
+-  local clamped = clampFn(value, otherValueGetter(helperConfig))
+-  helperConfig.quiverRefill[configFieldName] = clamped
+-  if clamped ~= value then
+-    isUpdatingRef.value = true
+-    widget:setText(tostring(clamped))
+-    isUpdatingRef.value = false
+-  end
+-  if _Helper.saveSettings then
+-    _Helper.saveSettings()
+-  end
+-end
+-
+--- References kept so we can commit on helper close, not just on focus loss.
+-local quiverMinInputWidget = nil
+-local quiverRefillInputWidget = nil
+-local quiverMinIsUpdating = { value = false }
+-local quiverRefillIsUpdating = { value = false }
+-
+-local function getRefillFromConfig(cfg) return cfg.quiverRefill.refillValue end
+-local function getMinFromConfig(cfg)    return cfg.quiverRefill.minValue end
+-
+--- Setup numeric input for quiver MIN value.
+--- Digit filtering is immediate; clamp + save happen on focus loss.
+-function tools.setupQuiverMinInput()
+-  local panel = getPaladinPanel()
+-  if not panel then return end
+-
+-  local input = panel:recursiveGetChildById('quiverMinValue')
+-  if not input then return end
+-  quiverMinInputWidget = input
+-
+-  input.onTextChange = function(widget, text)
+-    if quiverMinIsUpdating.value then return end
+-    -- Filter non-digits immediately — UX blocks invalid chars without
+-    -- touching the config/clamp. The clamp only happens on focus loss.
+-    local numericText = text:gsub("[^%d]", "")
+-    if numericText ~= text then
+-      quiverMinIsUpdating.value = true
+-      widget:setText(numericText)
+-      quiverMinIsUpdating.value = false
+-    end
+-  end
+-
+-  input.onFocusChange = function(widget, focused)
+-    if not focused then
+-      commitQuiverInput(widget, tools.clampQuiverMin, getRefillFromConfig, 'minValue', quiverMinIsUpdating)
+-    end
+-  end
+-end
+-
+--- Setup numeric input for quiver REFILL (max) value. Same pattern as min.
+-function tools.setupQuiverRefillInput()
+-  local panel = getPaladinPanel()
+-  if not panel then return end
+-
+-  local input = panel:recursiveGetChildById('quiverRefillValue')
+-  if not input then return end
+-  quiverRefillInputWidget = input
+-
+-  input.onTextChange = function(widget, text)
+-    if quiverRefillIsUpdating.value then return end
+-    local numericText = text:gsub("[^%d]", "")
+-    if numericText ~= text then
+-      quiverRefillIsUpdating.value = true
+-      widget:setText(numericText)
+-      quiverRefillIsUpdating.value = false
+-    end
+-  end
+-
+-  input.onFocusChange = function(widget, focused)
+-    if not focused then
+-      commitQuiverInput(widget, tools.clampQuiverRefill, getMinFromConfig, 'refillValue', quiverRefillIsUpdating)
+-    end
+-  end
+-end
+-
+--- Commit both quiver inputs unconditionally. Call this when the helper window
+--- closes so any pending edit gets saved even if focus wasn't lost first.
+-function tools.commitQuiverInputs()
+-  if quiverMinInputWidget then
+-    commitQuiverInput(quiverMinInputWidget, tools.clampQuiverMin, getRefillFromConfig, 'minValue', quiverMinIsUpdating)
+-  end
+-  if quiverRefillInputWidget then
+-    commitQuiverInput(quiverRefillInputWidget, tools.clampQuiverRefill, getMinFromConfig, 'refillValue', quiverRefillIsUpdating)
+-  end
+-end
+-
+--- Pure predicates for quiver refill state-machine transitions.
+--- Extracted so the rules are testable without mocking the full orchestrator.
+-local QUIVER_REFILL_COOLDOWN_MS = 500
+-
+--- ============================================================
+--- INVARIANT: refillValue MUST be strictly greater than minValue.
+--- Otherwise the state machine starts (count < min) but never stops
+--- (count >= refillValue is impossible while count == min - 1).
+---
+--- The two clamp functions below enforce this on the field the user is
+--- editing — the OTHER field stays put, the edited one snaps to the
+--- nearest valid value. Use sanitizeRefillRange at read-time as a
+--- belt-and-suspenders defense against legacy configs.
+--- ============================================================
+-
+--- Clamp a newly-typed minValue against the current refillValue.
+--- Snaps to currentRefillValue - 1 if the user typed something >= refill.
+-function tools.clampQuiverMin(newMin, currentRefillValue)
+-  if not newMin or newMin < 1 then return 1 end
+-  if currentRefillValue and newMin >= currentRefillValue then
+-    return math.max(1, currentRefillValue - 1)
+-  end
+-  return newMin
+-end
+-
+--- Clamp a newly-typed refillValue against the current minValue.
+--- Snaps to currentMin + 1 if the user typed something <= min.
+-function tools.clampQuiverRefill(newRefill, currentMin)
+-  if not newRefill or newRefill < 1 then return 1 end
+-  if currentMin and newRefill <= currentMin then
+-    return currentMin + 1
+-  end
+-  return newRefill
+-end
+-
+--- Defensive read-time sanitizer. If a stored config violates the invariant
+--- (legacy data), bump refillValue to minValue + 1 so the machine works.
+-function tools.sanitizeRefillRange(minValue, refillValue)
+-  minValue    = (minValue    and minValue    > 0) and minValue    or 50
+-  refillValue = (refillValue and refillValue > 0) and refillValue or 100
+-  if refillValue <= minValue then
+-    refillValue = minValue + 1
+-  end
+-  return minValue, refillValue
+-end
+-
+-function tools.shouldStartRefill(quiverCount, minValue, isRefilling)
+-  return quiverCount < minValue and not isRefilling
+-end
+-
+-function tools.shouldStopRefill(quiverCount, refillValue, isRefilling)
+-  return isRefilling and quiverCount >= refillValue
+-end
+-
+--- Returns (canEquip, reason). Reasons: 'ok', 'no-ammo', 'all-inside', 'cooldown'.
+--- 'no-ammo' and 'all-inside' are terminal — caller should clear isRefilling.
+--- 'cooldown' is transient — caller should just skip this tick.
+-function tools.canEquipNow(availableAmmo, quiverCount, now, lastAttempt, cooldown)
+-  cooldown = cooldown or QUIVER_REFILL_COOLDOWN_MS
+-  if availableAmmo == 0 then return false, 'no-ammo' end
+-  if availableAmmo <= quiverCount then return false, 'all-inside' end
+-  if (now - lastAttempt) < cooldown then return false, 'cooldown' end
+-  return true, 'ok'
+-end
+-
+--- Quiver Refill is hidden from the Tools tab. Keep its background automation
+--- disabled with the panel so a stale saved checkbox cannot run invisibly.
+-local SHOW_QUIVER_REFILL_PANEL = false
+-
+--- Check and refill quiver
+-function tools.checkQuiverRefill()
+-  local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-
+-  if not SHOW_QUIVER_REFILL_PANEL or not helperConfig or not helperConfig.quiverRefill or
+-      not helperConfig.quiverRefill.enabled then
+-    isRefillingQuiver = false
+-    return
+-  end
+-
+-  local player = getPlayer()
+-  if not player then return end
+-
+-  local itemId = helperConfig.quiverRefill.itemId or 0
+-  if itemId == 0 then return end
+-
+-  local minValue, refillValue = tools.sanitizeRefillRange(
+-    helperConfig.quiverRefill.minValue,
+-    helperConfig.quiverRefill.refillValue
+-  )
+-
+-  -- Get quiver item count from right slot (InventorySlotRight = 5)
+-  local rightItem = player:getInventoryItem(InventorySlotRight)
+-  if not rightItem then
+-    isRefillingQuiver = false
+-    return
+-  end
+-
+-  -- Use getSubType for stackable items count or getContainerItemCount for containers
+-  local quiverCount = 0
+-  if rightItem:isContainer() then
+-    quiverCount = rightItem:getContainerItemCount()
+-  else
+-    quiverCount = rightItem:getCount()
+-  end
+-
+-  -- Get available ammo count in inventory (excluding quiver)
+-  local availableAmmo = player:getInventoryCount(itemId, 0)
+-
+-  -- State transitions via pure predicates.
+-  if tools.shouldStartRefill(quiverCount, minValue, isRefillingQuiver) then
+-    isRefillingQuiver = true
+-  end
+-
+-  if tools.shouldStopRefill(quiverCount, refillValue, isRefillingQuiver) then
+-    isRefillingQuiver = false
+-    return
+-  end
+-
+-  if isRefillingQuiver then
+-    local now = g_clock.millis()
+-    local canEquip, reason = tools.canEquipNow(availableAmmo, quiverCount, now, lastQuiverRefillTime)
+-
+-    if not canEquip then
+-      if reason == 'no-ammo' or reason == 'all-inside' then
+-        isRefillingQuiver = false
+-      end
+-      return
+-    end
+-
+-    lastQuiverRefillTime = now
+-    safeDoThing(false)
+-    g_game.equipItemId(itemId, 0)
+-    safeDoThing(true)
+-  end
+-end
+-
+--- ============================================================
+--- MAGIC SHIELD FUNCTIONS (Sorcerer/Druid Only)
++-- MAGIC SHIELD FUNCTIONS (a class that can cast Ward of the Mind)
+ -- ============================================================
+ 
+ -- Chaos: spell words come from the client's spell table (the server's words, renamed by game_chaosspells)
+@@ -1065,17 +565,6 @@
+   return spell and spell.words or fallback
+ end
+ 
+--- Chaos (base-patch 0052): the server has no spell that ends the magic shield. The entry of the stock one is marked
+--- notOnServer (game_chaosspells/spellfix.lua) and its id 245 is Bushido Focus now: without this the helper shouted
+--- "exana vita" every 50 ms and held every support spell of the shooter back while the shield was up.
+-local function cancelShieldWords()
+-  local spell = SpellInfo and SpellInfo.Default and SpellInfo.Default["Cancel Magic Shield"]
+-  if spell and not spell.notOnServer then
+-    return spell.words
+-  end
+-  return nil
+-end
+-
+ -- Toggle utamo vita auto-cast
+ function tools.toggleUtamoVita(checked)
+   local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+@@ -1088,18 +577,6 @@
+   end
+ end
+ 
+--- Toggle exana vita auto-cast
+-function tools.toggleExanaVita(checked)
+-  local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-  if helperConfig then
+-    helperConfig.magicShield = helperConfig.magicShield or {}
+-    helperConfig.magicShield.exanaEnabled = checked
+-  end
+-  if _Helper.saveSettings then
+-    _Helper.saveSettings()
+-  end
+-end
+-
+ -- Setup numeric input validation for utamo HP percent (0-100)
+ function tools.setupUtamoHpInput()
+   local panel = getMagePanel()
+@@ -1139,45 +616,6 @@
+   end
+ end
+ 
+--- Setup numeric input validation for exana HP percent (0-100)
+-function tools.setupExanaHpInput()
+-  local panel = getMagePanel()
+-  if not panel then return end
+-
+-  local input = panel:recursiveGetChildById('exanaHpPercent')
+-  if input then
+-    local isUpdating = false
+-    input.onTextChange = function(widget, text)
+-      if isUpdating then return end
+-      isUpdating = true
+-
+-      -- Allow only digits and clamp to max 100
+-      local numericText = text:gsub("[^%d]", "")
+-      local value = tonumber(numericText) or 0
+-      if value > 100 then
+-        numericText = "100"
+-      end
+-      if numericText ~= text then
+-        widget:setText(numericText)
+-      end
+-
+-      -- Save value if valid
+-      if value > 0 and value <= 100 then
+-        local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-        if helperConfig then
+-          helperConfig.magicShield = helperConfig.magicShield or {}
+-          helperConfig.magicShield.exanaHpPercent = value
+-          if _Helper.saveSettings then
+-            _Helper.saveSettings()
+-          end
+-        end
+-      end
+-
+-      isUpdating = false
+-    end
+-  end
+-end
+-
+ -- Check and manage magic shield
+ -- Support group ID is 3
+ local SUPPORT_GROUP_ID = 3
+@@ -1199,21 +637,7 @@
+   local hasMShield = hasMagicShield()
+ 
+   local utamoEnabled = helperConfig.magicShield.utamoEnabled
+-  local exanaEnabled = helperConfig.magicShield.exanaEnabled
+   local utamoHpPercent = helperConfig.magicShield.utamoHpPercent or 80
+-  local exanaHpPercent = helperConfig.magicShield.exanaHpPercent or 90
+-
+-  -- Check if we should cast exana vita (cancel magic shield)
+-  -- HP is ABOVE threshold AND has magic shield active
+-  local cancelWords = cancelShieldWords()
+-  if exanaEnabled and cancelWords and healthPercent > exanaHpPercent and hasMShield then
+-    if not isGroupOnCooldown(SUPPORT_GROUP_ID) and (not helperCastAllowed or helperCastAllowed(cancelWords)) then
+-      safeDoThing(false)
+-      g_game.talk(cancelWords)
+-      safeDoThing(true)
+-      return
+-    end
+-  end
+ 
+   -- Check if we should cast utamo vita (enable magic shield)
+   -- HP is AT OR BELOW threshold AND does NOT have magic shield active.
+@@ -1247,10 +671,6 @@
+   local hasMShield = hasMagicShield()
+   local cfg = helperConfig.magicShield
+ 
+-  if cfg.exanaEnabled and cancelShieldWords() and healthPercent > (cfg.exanaHpPercent or 90) and hasMShield then
+-    return true
+-  end
+-
+   if cfg.utamoEnabled and healthPercent <= (cfg.utamoHpPercent or 80) and not hasMShield then
+     return true
+   end
+@@ -1262,27 +682,25 @@
+ -- VOCATION PANEL VISIBILITY
+ -- ============================================================
+ 
+--- Pure predicates for vocation-gated panel visibility. Testable in isolation.
+-function tools.shouldShowPaladinPanel(vocationId)
+-  return SHOW_QUIVER_REFILL_PANEL and vocationId == 2
+-end
+-
+-function tools.shouldShowMagePanel(vocationId)
++-- Chaos 0105: the Magic Shield box shows for a class whose spell list has Ward of the Mind (spell 44, the server's
++-- vocation ids: base patch 0052); the old rule (helper classes 3 and 4) also showed it to the Mystic and the
++-- Illusionist, who cannot cast it. Without the spell table the old rule stays.
++function tools.shouldShowMagePanel(vocationId, serverVocationId)
++  local spell = Spells and Spells.getSpellDataById and Spells.getSpellDataById(MAGIC_SHIELD_SPELL_ID)
++  if serverVocationId and spell and type(spell.vocations) == 'table' then
++    return table.contains(spell.vocations, serverVocationId)
++  end
+   return vocationId == 3 or vocationId == 4
+ end
+ 
+ -- Update panel visibility based on vocation
+ function tools.updateVocationPanels()
+   local vocationId = getPlayerVocationId()
+-  local palPanel = getPaladinPanel()
++  local player = getPlayer()
+   local magPanel = getMagePanel()
+ 
+-  if palPanel then
+-    palPanel:setVisible(tools.shouldShowPaladinPanel(vocationId))
+-  end
+-
+   if magPanel then
+-    magPanel:setVisible(tools.shouldShowMagePanel(vocationId))
++    magPanel:setVisible(tools.shouldShowMagePanel(vocationId, player and player:getVocation() or nil))
+   end
+ end
+ 
+@@ -1358,61 +776,6 @@
+   end
+ end
+ 
+-function tools.toggleAutoQuillSell(checked)
+-  local config = getAutomationConfig()
+-  if not config then return end
+-  config.autoQuillSell = checked == true
+-  local panel = getToolsPanel()
+-  if panel then
+-    local belowCap = panel:recursiveGetChildById('autoQuillSellBelowCap')
+-    local capacity = panel:recursiveGetChildById('autoQuillSellCapacity')
+-    if belowCap then belowCap:setEnabled(config.autoQuillSell) end
+-    if capacity then capacity:setEnabled(config.autoQuillSell) end
+-  end
+-  lastQuillStateQueryAt = 0
+-  lastQuillSaleAttemptAt = 0
+-  lastQuillCapacityCheckAt = 0
+-  quillCapacityAllowsSale = false
+-  lastQuillNpcTalkAt = 0
+-  if not config.autoQuillSell then cancelPendingNpcTrade() end
+-  if config.autoQuillSell and capacityAllowsAutomaticQuillSale(config, g_clock.millis()) and
+-      modules.game_inventory and modules.game_inventory.querySummonQuillState then
+-    modules.game_inventory.querySummonQuillState()
+-  end
+-  if _Helper.saveSettings then _Helper.saveSettings() end
+-end
+-
+-function tools.toggleAutoQuillSellBelowCap(checked)
+-  if applyingAutomationConfig then return end
+-  local config = getAutomationConfig()
+-  if not config then return end
+-  config.autoQuillSellBelowCap = checked == true
+-  lastQuillStateQueryAt = 0
+-  lastQuillSaleAttemptAt = 0
+-  lastQuillCapacityCheckAt = 0
+-  quillCapacityAllowsSale = false
+-  if _Helper.saveSettings then _Helper.saveSettings() end
+-end
+-
+-function tools.updateAutoQuillSellCapacity(widget, text)
+-  if applyingAutomationConfig then return end
+-  local numericText = tostring(text or ''):gsub('[^%d]', '')
+-  if widget and numericText ~= text then
+-    widget:setText(numericText)
+-    return
+-  end
+-  local value = tonumber(numericText)
+-  if not value then return end
+-  local config = getAutomationConfig()
+-  if not config then return end
+-  config.autoQuillSellCapacity = math.max(0, value)
+-  lastQuillStateQueryAt = 0
+-  lastQuillSaleAttemptAt = 0
+-  lastQuillCapacityCheckAt = 0
+-  quillCapacityAllowsSale = false
+-  if _Helper.saveSettings then _Helper.saveSettings() end
+-end
+-
+ function tools.updateBotHudSettings(widget)
+   if applyingAutomationConfig then return end
+   local config = getAutomationConfig()
+@@ -1430,14 +793,12 @@
+       return checkbox and checkbox:isChecked() or false
+     end
+     hud.enabled = checked('enableBotHud')
+-    hud.showCavebot = checked('hudShowCavebot')
+     hud.showTargeting = checked('hudShowTargeting')
+     hud.showEquipment = checked('hudShowEquipment')
+     hud.showTimers = checked('hudShowTimers')
+     hud.showHaste = checked('hudShowHaste')
+     hud.showPlayer = checked('hudShowPlayer')
+     hud.showAutomation = checked('hudShowAutomation')
+-    hud.showWaypoints = checked('hudShowWaypoints')
+     local size = panel:recursiveGetChildById('botHudSize')
+     hud.size = size and size:getCurrentOption().text or 'Normal'
+   end
+@@ -1462,14 +823,12 @@
+   applyingAutomationConfig = true
+   local values = {
+     enableBotHud = hud.enabled,
+-    hudShowCavebot = hud.showCavebot,
+     hudShowTargeting = hud.showTargeting,
+     hudShowEquipment = hud.showEquipment,
+     hudShowTimers = hud.showTimers,
+     hudShowHaste = hud.showHaste,
+     hudShowPlayer = hud.showPlayer,
+-    hudShowAutomation = hud.showAutomation,
+-    hudShowWaypoints = hud.showWaypoints
++    hudShowAutomation = hud.showAutomation
+   }
+   for id, value in pairs(values) do
+     local widget = panel:recursiveGetChildById(id)
+@@ -1492,18 +851,10 @@
+   local accept = panel:recursiveGetChildById('autoPartyAccept')
+   local antiIdle = panel:recursiveGetChildById('antiIdle')
+   local showLookItemId = panel:recursiveGetChildById('showLookItemId')
+-  local autoQuillSell = panel:recursiveGetChildById('autoQuillSell')
+-  local autoQuillSellBelowCap = panel:recursiveGetChildById('autoQuillSellBelowCap')
+-  local autoQuillSellCapacity = panel:recursiveGetChildById('autoQuillSellCapacity')
+   if invite then invite:setChecked(config.autoParty.enabled == true) end
+   if accept then accept:setChecked(config.autoParty.acceptEnabled == true) end
+   if antiIdle then antiIdle:setChecked(config.antiIdle == true) end
+   if showLookItemId then showLookItemId:setChecked(config.showLookItemId == true) end
+-  if autoQuillSell then autoQuillSell:setChecked(config.autoQuillSell == true) end
+-  if autoQuillSellBelowCap then autoQuillSellBelowCap:setChecked(config.autoQuillSellBelowCap == true) end
+-  if autoQuillSellCapacity then autoQuillSellCapacity:setText(tostring(config.autoQuillSellCapacity)) end
+-  if autoQuillSellBelowCap then autoQuillSellBelowCap:setEnabled(config.autoQuillSell == true) end
+-  if autoQuillSellCapacity then autoQuillSellCapacity:setEnabled(config.autoQuillSell == true) end
+   for i = 1, 4 do
+     local edit = panel:recursiveGetChildById('autoPartyPlayer' .. i)
+     if edit then edit:setText(config.autoParty.sendList[i] or '') end
+@@ -1534,58 +885,6 @@
+   end
+ end
+ 
+--- Load quiver refill UI state
+-function tools.loadQuiverRefillToUI()
+-  local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+-  local panel = getPaladinPanel()
+-  if not helperConfig or not panel then return end
+-
+-  -- Reset quiver refill state variables on load (important for relog)
+-  isRefillingQuiver = false
+-  lastQuiverRefillTime = 0
+-
+-  local config = helperConfig.quiverRefill or {}
+-
+-  -- Load item
+-  if config.itemId and config.itemId > 0 then
+-    local button = panel:recursiveGetChildById("quiverAmmoItem")
+-    if button then
+-      button:setImageSource('/images/ui/item')
+-      if not button:getChildById('ammoItem') then
+-        local itemWidget = g_ui.createWidget('PotionItem', button)
+-        if itemWidget then
+-          itemWidget:setId('ammoItem')
+-        end
+-      end
+-      local itemWidget = button:getChildById('ammoItem')
+-      if itemWidget then
+-        itemWidget:setItemId(config.itemId)
+-      end
+-    end
+-  end
+-
+-  -- Load values
+-  local minEdit = panel:recursiveGetChildById("quiverMinValue")
+-  if minEdit then
+-    minEdit:setText(tostring(config.minValue or 50))
+-  end
+-
+-  local refillEdit = panel:recursiveGetChildById("quiverRefillValue")
+-  if refillEdit then
+-    refillEdit:setText(tostring(config.refillValue or 100))
+-  end
+-
+-  -- Load enabled state
+-  local enableCheck = panel:recursiveGetChildById("enableQuiverRefill")
+-  if enableCheck then
+-    enableCheck:setChecked(config.enabled or false)
+-  end
+-
+-  -- Setup numeric input validation
+-  tools.setupQuiverMinInput()
+-  tools.setupQuiverRefillInput()
+-end
+-
+ -- Load magic shield UI state
+ function tools.loadMagicShieldToUI()
+   local helperConfig = _Helper.getHelperConfig and _Helper.getHelperConfig()
+@@ -1605,20 +904,8 @@
+     utamoHp:setText(tostring(config.utamoHpPercent or 80))
+   end
+ 
+-  -- Load exana vita settings
+-  local exanaCheck = panel:recursiveGetChildById("enableExanaVita")
+-  if exanaCheck then
+-    exanaCheck:setChecked(config.exanaEnabled or false)
+-  end
+-
+-  local exanaHp = panel:recursiveGetChildById("exanaHpPercent")
+-  if exanaHp then
+-    exanaHp:setText(tostring(config.exanaHpPercent or 90))
+-  end
+-
+   -- Setup numeric input validation
+   tools.setupUtamoHpInput()
+-  tools.setupExanaHpInput()
+ end
+ 
+ -- Reset all tools UI elements
+@@ -1638,47 +925,17 @@
+     autoTrainingCheck:setChecked(false)
+   end
+ 
+-  local autoQuillSell = panel:recursiveGetChildById("autoQuillSell")
+-  if autoQuillSell then
+-    autoQuillSell:setChecked(false)
+-  end
+-  local autoQuillSellBelowCap = panel:recursiveGetChildById('autoQuillSellBelowCap')
+-  if autoQuillSellBelowCap then autoQuillSellBelowCap:setChecked(false) end
+-
+   -- Stop exercise training cycle if running
+   if _Helper.ExerciseTraining and _Helper.ExerciseTraining.toggle then
+     _Helper.ExerciseTraining.toggle(false)
+   end
+ 
+-  -- Reset paladin panel
+-  local palPanel = getPaladinPanel()
+-  if palPanel then
+-    local enableQuiver = palPanel:recursiveGetChildById("enableQuiverRefill")
+-    if enableQuiver then
+-      enableQuiver:setChecked(false)
+-    end
+-    local ammoButton = palPanel:recursiveGetChildById("quiverAmmoItem")
+-    if ammoButton then
+-      ammoButton:setImageSource('/images/game/actionbar/actionbarslot')
+-      local ammoItem = ammoButton:getChildById('ammoItem')
+-      if ammoItem then
+-        ammoItem:destroy()
+-      end
+-    end
+-  end
+-
+   -- Reset mage panel
+   local magPanel = getMagePanel()
+   if magPanel then
+     local utamoCheck = magPanel:recursiveGetChildById("enableUtamoVita")
+     if utamoCheck then utamoCheck:setChecked(false) end
+-    local exanaCheck = magPanel:recursiveGetChildById("enableExanaVita")
+-    if exanaCheck then exanaCheck:setChecked(false) end
+   end
+-
+-  -- Reset refilling state
+-  isRefillingQuiver = false
+-  lastQuiverRefillTime = 0
+ end
+ 
+ -- Load all tools states to UI
+@@ -1686,7 +943,6 @@
+   tools.loadChangeGoldToUI()
+   tools.loadAutomationToUI()
+   tools.loadExerciseTrainingToUI()
+-  tools.loadQuiverRefillToUI()
+   tools.loadMagicShieldToUI()
+   tools.updateVocationPanels()
+ 
+@@ -1721,11 +977,6 @@
+   return getToolsPanel()
+ end
+ 
+--- Getter for paladinPanel
+-function tools.getPaladinPanel()
+-  return getPaladinPanel()
+-end
+-
+ -- Getter for magePanel
+ function tools.getMagePanel()
+   return getMagePanel()
+@@ -1741,7 +992,6 @@
+     local container = helper.contentPanel:getChildById('toolsPanelContainer')
+     if container then
+       toolsPanel = helper
+-      paladinPanel = container:recursiveGetChildById('paladinPanel')
+       magePanel = container:recursiveGetChildById('magePanel')
+     end
+   end
+@@ -1749,7 +999,6 @@
+ end
+ function tools.terminate()
+   stopAutomationCycle()
+-  cancelPendingNpcTrade()
+   if pendingBotHudEvent then
+     -- The HUD controls update the shared settings table immediately, while
+     -- applying and persisting it is deferred. Flush the mutated settings
+@@ -1758,17 +1007,9 @@
+     removeEvent(pendingBotHudEvent)
+     pendingBotHudEvent = nil
+   end
+-  lastQuillStateQueryAt = 0
+-  lastQuillSaleAttemptAt = 0
+-  lastQuillCapacityCheckAt = 0
+-  quillCapacityAllowsSale = false
+-  lastQuillNpcTalkAt = 0
+   toolsPanel = nil
+-  paladinPanel = nil
+   magePanel = nil
+   helper = nil
+-  isRefillingQuiver = false
+-  lastQuiverRefillTime = 0
+   if pendingGoldChangeEvent then
+     removeEvent(pendingGoldChangeEvent)
+     pendingGoldChangeEvent = nil

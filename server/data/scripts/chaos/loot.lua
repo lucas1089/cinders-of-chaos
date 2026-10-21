@@ -28,6 +28,10 @@ if not ChaosThrowables then
 	dofile("data/lib/chaos_throwables.lua")
 end
 
+if not ChaosJewelry then
+	ChaosJewelry = dofile("data/lib/chaos_jewelry.lua") -- the consumable rings and amulets (never gear)
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -235,6 +239,15 @@ local function relevantType(itType)
 				end
 			end
 		end
+		-- a ring or necklace whose stat is regeneration or speed (life ring, ring of healing, beetle necklace): gear like
+		-- any other jewelry (server/README.md "Rings and necklaces as gear")
+		if ChaosJewelry and ChaosJewelry.isJewelType(itType) then
+			for _, key in ipairs({"healthGain", "manaGain", "speed"}) do
+				if (tonumber(abilities[key]) or 0) > 0 then
+					return true
+				end
+			end
+		end
 	end
 	return false
 end
@@ -246,6 +259,9 @@ function L.isGearId(id)
 		return false
 	end
 	if L.protectedIds and L.protectedIds[id] then
+		return false
+	end
+	if ChaosJewelry and ChaosJewelry.isConsumable(id) then
 		return false
 	end
 	if type(ItemType) ~= "function" and type(ItemType) ~= "table" then
@@ -280,11 +296,13 @@ end
 -- stack one (a royal spear passed its gear test), and the engine would roll stats on the stack: the attribute goes
 -- before that pass. Returns how many items lost it. Every Chaos gear gate (isGearId, ChaosCrafting.isGear) already
 -- refuses a stackable, so nothing forges it afterwards: that is why such a drop was always without a rarity.
+-- A consumable ring or amulet (data/lib/chaos_jewelry.lua: stealth ring, stone skin amulet ...) loses it the same way:
+-- the stock roll gives one to any item with stats, and the gear gates refuse it too (2026-10-22).
 function L.stripStackableRarity(items)
 	local n = 0
 	for _, item in ipairs(items) do
 		local okR, r = pcall(function() return item:getCustomAttribute("rarity") end)
-		if okR and r ~= nil and L.isStackableId(item:getId()) then
+		if okR and r ~= nil and (L.isStackableId(item:getId()) or (ChaosJewelry and ChaosJewelry.isConsumable(item:getId()))) then
 			pcall(function() item:removeCustomAttribute("rarity") end)
 			n = n + 1
 		end
@@ -1096,7 +1114,7 @@ local function processKill(monster, corpse)
 	local lootTable = mType and mType:getLoot()
 	local corpseF = L.corpseFactors(monster, pocket)
 	if corpseF then
-		L.thinCorpseByLevel(corpse, corpseF, lootTable)
+		L.thinCorpseByLevel(corpse, corpseF, lootTable, monster)
 	else
 		local goldMult = ChaosPace and ChaosPace.goldMultOf and ChaosPace.goldMultOf(monster) or 1
 		if pace < 1 or goldMult < 1 then
@@ -1347,8 +1365,9 @@ end
 
 -- loot by monster level: thin the top-level items of a corpse with pace_core.lua P.levelPlan (f = L.corpseFactors;
 -- lootTable = MonsterType:getLoot(), for the rare-drop chances) and put the pay back as coins (L.addToCorpse). Returns
--- the number of items removed or reduced.
-function L.thinCorpseByLevel(corpse, f, lootTable)
+-- the number of items removed or reduced. monster (optional): a monster on lootLevel.crystalOnly gets crystal coins only
+-- (P.payStacks).
+function L.thinCorpseByLevel(corpse, f, lootTable, monster)
 	local P = ChaosPaceCore
 	if not P or not P.levelPlan or not corpse or not f then
 		return 0
@@ -1395,7 +1414,13 @@ function L.thinCorpseByLevel(corpse, f, lootTable)
 			changed = changed + 1
 		end
 	end
-	for _, c in ipairs(P.coinStacks(pay)) do
+	local stacks
+	if monster and P.payStacks then
+		stacks = P.payStacks(ChaosPaceConfig.lootLevel, typeNameOf(monster), pay, rand)
+	else
+		stacks = P.coinStacks(pay)
+	end
+	for _, c in ipairs(stacks) do
 		L.addToCorpse(corpse, c[1], c[2])
 	end
 	return changed

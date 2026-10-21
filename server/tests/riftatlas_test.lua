@@ -624,6 +624,8 @@ do
 			self.gold = self.gold - n
 			return true
 		end
+		function p:getMoney() return self.gold end
+		p.removeMoney = p.removeTotalMoney
 		function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 		function p:registerEvent() end
 		function p:getGroup() return {getAccess = function() return true end, getId = function() return self.group or 5 end} end
@@ -651,7 +653,9 @@ do
 		events[name] = ev
 		return ev
 	end
+	dofile("data/lib/chaos_pay.lua")
 	_G.Chaos = {
+		pay = function(player, n, quiet) return ChaosPay.pay(player, n, quiet) end, -- chaos_constants.lua Chaos.pay
 		-- chaos_constants.lua Chaos.staffCommand: value needs group 5
 		staffCommand = function(player, words, param, economy)
 			local g = player:getGroup()

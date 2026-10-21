@@ -643,7 +643,7 @@ local function onInventoryChange(player, slot, item)
 end
 
 local function refreshInventory()
-	for slot = 1, 10 do
+	for _, slot in ipairs({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13}) do -- 13: the badge slot (base patch 0113)
 		local widget = inventoryWidget(slot)
 		if widget then
 			updateRarityFrame(widget)

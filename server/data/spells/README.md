@@ -99,7 +99,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | **shared** | | | | | | | |
 | 232 | Flickerdash | `ash flik` | every class | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
 | 233 | Banner Call | `tor vas vant` | every class | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
-| 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). |
+| 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). Ward of the Mind, the stock Magic Shield (level 14, 50 mana, 200 s), is the Mystic, Necromancer and Ranger lines' only (server/README.md "Magic Shield"). |
 | 235 | Hunter's Instinct | `ash senn` | every class | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
 | **thief** (T Thief, N Ninja, Sa Samurai) | | | | | | | |
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 8 | 16 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x a default shuriken attack of 50 (a one-handed distance weapon in hand raises it; no stars, stackable throwing weapons left the game 2026-10-20). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |
@@ -717,7 +717,12 @@ different methods per line and must not be compared with this one):
   paladin bolts / arrows; the Thief line Dawnforged Blades, Monks unarmed in the paladin armour);
 - **a tree build for every class**: all its points (73 / 248), grown greedily from the start by the best damage per point for
   the class (strength / intelligence / dexterity up to their caps, its damage types, skills, crit), the keystones it can reach
-  valued, and the class's own section path first for the four new lines (the build script is test-only: `zz_c4.lua`);
+  valued, and the class's own section path first for the four new lines (the build script is test-only: `zz_c4.lua`).
+  These runs used the old attribute caps (strength / intelligence 60, dexterity 20, vitality / spirit 50 points, 1 a point).
+  From 2026-10-22 a two-tier curve (server/README.md "Passive tree effects"): 80% of the old maximum at the old cap, the
+  rest up to 120 / 80 / 100 points. The same effect at the new cap, a little less below it (median level 300 build: a
+  Juggernaut's physical x1.21 -> x1.16, a Ninja's weapon hits x1.25 -> x1.23; computed from the Auto builds, not
+  measured). Not re-measured yet;
 - the rotation harness: the client casts the class's attack spells by their words on cooldown (group cooldowns from the server,
   buffs kept up, minions raised in a 12-24 s warm-up, cast-time spells waited for), auto attack on the main dummy, 60 s, damage =
   health the dummies lost. 1 target: one dummy; 5 targets: the main dummy and four around it, the same rotation.
@@ -985,7 +990,9 @@ by 1-3%, below the spread of a rotation run (no choice is out of line):
 | | Oath of the Wall | no damage | 874 / 2171 |
 | | Oath of Mercy | no damage | 910 / 2240 |
 
-Light Step's dexterity does nothing for a C4 Thief build (already at the cap); its speed is the whole effect.
+Light Step's dexterity does nothing for a C4 Thief build (already at the cap); its speed is the whole effect. (Old cap 20.
+Since 2026-10-22 the cap is 80 points and a level 300 Thief build has about 75, past the knee of 20, so Light Step's +3 counts
+again at 1/15 of an old point each: weapon hits about +0.2%.)
 
 **Weapon (auto attack) re-measured** (ROADMAP: the old harness set the target with `setTarget`, which skips
 `onTargetCombat`, so the tree and the weapon styles never reached the dummies). Auto attack only, no spells, C4 tree and
@@ -1654,6 +1661,36 @@ equal):
   fighting, attack speed), capped like every item modifier; a quiver works only while a bow or crossbow is held.
 - Quiver in the off-hand (2026-10-11, engine src-patch 0023): bows and crossbows stay two-handed, so the two-handed
   factor of "Weapon styles", the keystones and the kits are unchanged and the table above stands. No number changed.
+
+### Badge slot (replaces the second ring, 2026-10-21; computed, not measured in game)
+
+The badge slot (server/README.md "Badge slot") took the second ring slot's place: one ring and one badge. What a
+character loses: the second ring's rolls and its stock ring (a second skill ring +4, a second time ring +60 speed). What
+it gains: the badge's base stats, plus its own rarity rolls. A badge is gear of kind "other": it rolls the engine
+modifier types (absorb, skill, critical, leech; T8 absorb 10-14, leech 7-10, critical 8-10, as a ring) and the Chaos
+modifiers open to every kind, not the jewel-only ones. Those reach their cap at tier 8 with one ring anyway
+(`tests/archery_test.lua`, the jewel budget), so at tier 8 no ceiling falls.
+
+The strongest badge of each line (base items.xml; critical and leech chances at two thirds, `patch_base_events.py`):
+
+| Badge | Armour | Absorb | Other |
+|---|---|---|---|
+| Blazing Exiled Spirit | 5 | death 8% | magic level +4, mana +150, mana leech 5% chance / 5% |
+| Blazing Fury | 5 | energy 8% | sword, axe, club +4, health +150, life leech 5% / 5% |
+| Eternal Moon | 5 | - | mining, woodcutting, herbalist, crafting +5 (engine skills; our professions do not read them); a container of 10 |
+| Eternal Night Seeker | 5 | every element, life and mana drain 4% | health and mana +300, critical 10% chance / 15% |
+| Blazing Earthshade | 5 | fire, energy, ice, holy 12% | - |
+| Eternal Reborn | 5 | physical 18% | health and mana +300 |
+| Blazing Chaosfiend | 5 | - | health +2800, mana +400 |
+| Blazing Veins | 5 | fire 10% | distance +4, life leech 5% / 5% |
+| Eternal Daybreak | 5 | - | life and mana leech 10% chance / 10%, critical 7% / 8% |
+
+Against a second ring: the strongest absorb (Reborn, 18% physical) is below the might ring's 20% physical and magic
+(one at a time). The Daybreak's leech and critical match one T8 roll of each. The Chaosfiend's 2800 health is the
+largest single number; it weighs most at low level. Absorbs from the badge count
+toward the 75 percent ceiling per type (src-patch 0049, `Player::blockHit` loops slots 1-13); leech and critical add to
+the engine sums like any item. The base allows one badge (its storage 249578; one slot anyway). Decision: no change to
+the base numbers; a badge is about one ring's rolls plus a tier's base stats, and the line choice is a build choice.
 
 ### Second ring (the ammunition slot as a second ring slot, 2026-10-11)
 

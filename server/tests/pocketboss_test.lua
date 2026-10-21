@@ -597,6 +597,13 @@ local dmg = hit(a, bossM, -1000, 1, 0, 1, 0)
 eq(dmg, -500, "a solo pocket: the boss hits for half")
 local norm = hit(a, newMonster("Rat", pos(50, 50, 7)), -100, 1, 0, 1, 0)
 eq(norm, -100, "other monsters untouched")
+-- the mana shield part (manashield.lua): the same curve; the rest of a hit the mana event scaled is not scaled again
+local msp = ChaosManaShield.providers.pocketboss
+eq(msp.hit(a, bossM, 1000), 500, "mana shield part: the boss's curve")
+eq(msp.hit(a, newMonster("Rat", pos(50, 50, 7)), 100), nil, "mana shield part: other monsters do not apply")
+ChaosManaShield.mark(a:getId(), bossM:getId(), ChaosManaShield.now(), {"pocketboss"})
+eq(hit(a, bossM, -300, 1, 0, 1, 0), -300, "the rest of a mana shield hit is left as it is")
+eq(hit(a, bossM, -300, 1, 0, 1, 0), -150, "the next hit is scaled")
 -- experience of a pocket monster x0.6
 local xp = callbacks.onGainExperience[1].fn
 math.randomseed(1)
@@ -758,6 +765,70 @@ do
 	ok(not PB.isInside(a), "out after the exit delay")
 	stairs.getItems, stairs.hasFlag = function() return {} end, function() return false end
 	gt.getItems, gt.hasFlag = function() return {} end, function() return false end
+end
+
+-- beta 2026-10-22, Weakened Slurgoth: its corpse is a ramp item, no container, so nothing dropped and a way down
+-- that leads nowhere lay in the arena. And the engine fills a corpse after onDeath: a corpse read as empty there may hold
+-- the loot one tick later (no personal roll on top of it).
+local function pocketKill(key, corpseOf)
+	NOW = NOW + pcfg.enterCooldown + 1
+	a.pos = pos(100, 100, 7)
+	local okP, whyP = PB.enter(a, key)
+	eq(okP, true, key .. " pocket: " .. tostring(whyP))
+	local r = PB.runOf[a:getId()]
+	advance(pcfg.startDelay + 1)
+	local boss = Monster(r.bossId)
+	function boss:getType()
+		return {isRewardBoss = function() return false end,
+			getLoot = function() return {{itemId = 2152, chance = 100000, maxCount = 8}, {itemId = 7778, chance = 100000}} end}
+	end
+	local cp = r.L.floorList[40]
+	local tile = tiles[cp.x .. "," .. cp.y .. "," .. cp.z]
+	local corpse = corpseOf(cp)
+	tile.getItemById = function(_, id) return id == corpse.id and not corpse.gone and corpse or nil end
+	local before = a.items[7778] or 0
+	registry.ChaosPocketBossDeath.onDeath(boss, corpse)
+	advance(0)
+	eq(r.state, "success", key .. ": the kill")
+	advance(pcfg.exitDelay + 1)
+	tile.getItemById = nil
+	return r, corpse, (a.items[7778] or 0) - before
+end
+do
+	local function ramp(cp)
+		local c = {id = 18982, at = {x = cp.x, y = cp.y, z = cp.z}}
+		function c:getId() return self.id end
+		function c:getPosition() return self.at end
+		function c:isContainer() return false end
+		function c:getSize() error("no container") end
+		function c:remove() self.gone = true return true end
+		return c
+	end
+	local r, corpse, got = pocketKill("raid_slurgoth", ramp)
+	ok(corpse.gone, "Weakened Slurgoth: the ramp corpse is taken away")
+	eq(r.bossDrop.corpseItems, nil, "no corpse to loot")
+	eq(got, 1, "Weakened Slurgoth: the personal roll of its loot table instead")
+
+	local function lateFilled(cp)
+		local c = {id = 6080, at = {x = cp.x, y = cp.y, z = cp.z}, size = 0}
+		function c:getId() return self.id end
+		function c:getPosition() return self.at end
+		function c:isContainer() return true end
+		function c:getSize() return self.size end
+		function c:remove() self.gone = true return true end
+		-- the engine drops the loot right after the death event, before the next tick
+		local real = addEvent
+		addEvent = function(fn, ms, ...)
+			c.size = 3
+			addEvent = real
+			return real(fn, ms, ...)
+		end
+		return c
+	end
+	local r2, corpse2, got2 = pocketKill("raid_slurgoth", lateFilled)
+	ok(not corpse2.gone, "a container corpse stays")
+	eq(r2.bossDrop.corpseItems, 3, "its size read after the loot went in")
+	eq(got2, 0, "a corpse with loot: no personal roll on top")
 end
 
 -- the contested fight: an island boss spawned by the base server; every helper above 2% gets a personal roll

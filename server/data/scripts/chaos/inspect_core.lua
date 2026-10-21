@@ -24,7 +24,9 @@ I.config = {
 	nameLength = 29
 }
 
-I.SLOT_FIRST, I.SLOT_LAST = 1, 10 -- head .. the second ring slot (10, the old ammunition slot)
+-- the worn slots shown: head .. ring (1-9) and the badge slot (13, engine patch 0058); 10 takes nothing since 0058,
+-- 11 is the store inbox, 12 and 14-16 are retired
+I.SLOTS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 13}
 
 -- refusals: code -> text for the window. "notfound" is also the answer for a hidden staff member or a player in ghost mode,
 -- so the window cannot be used to tell whether one is online.

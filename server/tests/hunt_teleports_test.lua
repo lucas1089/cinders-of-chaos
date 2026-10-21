@@ -160,7 +160,8 @@ do
 				end
 				if f[8] == "hunt" then
 					csvHunts[f[1]] = {arrival = {x = tonumber(f[5]), y = tonumber(f[6]), z = tonumber(f[7])}}
-					if f[3] == "" then
+					-- a base hunt whose destination moved (beta report 2026-10-22) left the base way back behind
+					if f[3] == "" or line:find("destination moved", 1, true) then
 						csvAdded[#csvAdded + 1] = f[1]
 					end
 				end

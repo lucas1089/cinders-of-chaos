@@ -1,0 +1,44 @@
+# Chaos: a container window redraws once per frame, not once per item (modules/game_containers/containers.lua; after
+# 0001-0108). Owner beta 2026-10-22: "o client ainda dá umas travadas quando o auto seller vende muitas coisas ao mesmo
+# tempo". The engine calls onSizeChange and onRemoveItem for each removed item, and each handler redrew every slot of
+# the window (refreshContainerItems: setItem, rarity, tier and flags on all 255 slots of the Loot Bag). A sale of 255
+# items was about 510 full redraws in one frame, more with the slot hooks of other modules. Both handlers now mark the
+# container and one event redraws it after the packets of that frame. The server sends one container packet per sale
+# with engine patch 0054; this keeps the client cheap with an older server and for other bursts (loot sort, stacks).
+--- a/modules/game_containers/containers.lua
++++ b/modules/game_containers/containers.lua
+@@ -330,9 +330,24 @@ function onContainerClose(container)
+   destroy(container)
+ end
+ 
++-- Chaos: one refresh per container per frame. The engine calls onSizeChange and onRemoveItem for every removed item
++-- (and onSizeChange again for the item that slides in on a paged window), and each call redrew every slot of the
++-- window: a big Loot Bag sale or sort was hundreds of full redraws in one frame. The changes now only mark the
++-- container; one event redraws it once, after every packet of that frame is read.
++function refreshContainerItemsLater(container)
++  if container.chaosRefreshPending then return end
++  container.chaosRefreshPending = true
++  addEvent(function()
++    container.chaosRefreshPending = nil
++    if container.window and container.itemsPanel and not container.itemsPanel:isDestroyed() then
++      refreshContainerItems(container)
++    end
++  end)
++end
++
+ function onContainerChangeSize(container, size)
+   if not container.window then return end
+-  refreshContainerItems(container)
++  refreshContainerItemsLater(container)
+ end
+ 
+ function onContainerUpdateItem(container, slot, item, oldItem)
+@@ -353,7 +368,7 @@ local function callOnRemoveItem(container, slot, item)
+     itemWidget.quicklootflags:setVisible(false)
+   end
+ 
+-  refreshContainerItems(container)
++  refreshContainerItemsLater(container)
+ end
+ 
+ function onRemoveItem(container, slot, item)

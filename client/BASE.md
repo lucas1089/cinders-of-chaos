@@ -681,6 +681,164 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     text in that sheet (widest "Action Bar Hotkeys", 91 of 107 px) and that the patches leave that font. Applies
     after `0001`-`0102` (`0056` set the line). Checked with `patch` on a copy of the hunk's context only (the base
     archive was not unpacked here); not seen in a client.
+69c. `0105` (Lua and OTUI `mods/game_helper/`): **a compact Helper window without the options this server does not
+    use** (owner request 2026-10-22). The window is 936x540 (was 960x580): sidebar 196 px (was 220), tab bar 34 px
+    with 28 px icons, a smaller profile box (64 px portrait), tighter margins; the sidebar headings are gold.
+    Removed, with their config keys: Cure Paralyze (`paralyzeCure`; Lightward cleanses paralyze on this server),
+    Auto Sell Loot (`autoQuillSell*`; it needs a Summon Quill or a summoned trader, neither exists here), Quiver
+    Refill (`quiverRefill`; no quiver in 10.98, already hidden), Exana Vita (`magicShield.exanaEnabled` /
+    `exanaHpPercent`; no spell here ends the shield, `0052` had made it inert), the Full Dust alarm (`dust`; no forge
+    in this client) and the bot HUD's Cavebot and Waypoint rows (`botHud.showCavebot` / `showWaypoints`, already
+    hidden). `classes/paralyze_cure.lua` and `classes/alarms/full_dust_alarm.lua` stay on disk, out of
+    `helper.otmod`. Regrouped: Auto Stamina and Magic Shield share the top box of the Tools tab; Magic Shield shows
+    only for a class whose spells include Ward of the Mind (`tools.shouldShowMagePanel`, from the spell's vocations).
+    Old saves load: `helper.lua` clears the dropped keys on load and `game_helperrotation/helperconfig.lua`
+    (`HC.DROPPED`, `HC.DROPPED_FIELDS`) does the same in `sanitizeHelper`. Every text of the sidebar, the Tools tab,
+    the Settings tab and the Alarm Settings window goes through `tr()` with pt-BR (`client_chaos_locale/pt_br.lua`),
+    measured in `verdana-11px-antialised` against its widget (the alarm checkboxes are wider, "Set Key" sizes to its
+    text like `0056`'s). The other tabs' base texts (Healing, Shooter, Equipment, Timers) still have no pt-BR.
+    Applies after `0001`-`0104` (the `mods/game_helper/` hunks of the chain applied to the base archive, then
+    `patch` clean, result identical to the edited tree); both Lua files parse in LuaJIT and Lua 5.3. Not seen in a
+    client (no render here).
+69d. `0106` (Lua and OTUI `mods/game_helper/`): **the rest of the Helper in pt-BR** (owner request 2026-10-22). Every
+    text of the Healing, Shooter, Equipment and Timers tabs and of the presets, hotkey, spell picker, rule list, low
+    supply and condition windows goes through `tr()`: plain OTUI `text:` / `tooltip:` / `placeholder:`, Lua
+    `setText` / `setTooltip` / game messages, rule list summaries and confirm boxes. 264 new pt-BR entries in
+    `client_chaos_locale/pt_br.lua`. Hotkey names ("Enable/Disable Timer") and preset kinds ("shooter") stay the
+    English keys the code compares and are translated where shown. The HUD size, timer unit and equipment And / Or
+    lists show translated entries and keep the English value as the option's data, so saved settings do not change;
+    the old `setCurrentOption("AND")` never matched "And", so an Or rule opened for editing as And and now shows its
+    own logic. Measured in `verdana-11px-antialised`, every fixed-width text fits in English and pt-BR: Clear (52 px),
+    Advanced + (90 px, already clipped in English), Words (80 px) and Enable Equipment (160 px) are wider; some pt-BR
+    words are short ("Tirar", "Preso", "Medo", "sem PZ", "Alertar em PZ"). Left in English: the vocation names of the
+    never-shown vocation heal panels, spell names (Utamo Vita, Exura Sio), the monster and spell placeholders (names
+    typed as they are), HP / MP / symbols and the one-letter rule codes of the Shooter list (C:, MP:, COF, A+), debug
+    log lines. Applies after `0001`-`0105` (the `mods/game_helper/` hunks of the chain on the base archive, `patch`
+    clean, result identical to the edited tree); every changed Lua file parses in LuaJIT and Lua 5.3. Not seen in a
+    client.
+69e. `0107` (OTUI `mods/game_helper/styles/`): **the rule rows' buttons line up** (owner screenshot 2026-10-22). The
+    Remove button of `RuleListItem` (Equipment, Shooter, low supply) and `TimerRuleItem` was set to 17 x 17 beside the
+    18 x 18 Move up / Move down buttons; it keeps the style's 18 x 18 now. The arrows themselves sat in the top-left
+    corner of their frame because the overlay's `MoveUpButton` set `icon-size` (in this engine an icon rect at 0 0);
+    `data/styles/10-buttons.otui` no longer sets it, so the 9 x 6 arrow is centred. Also through `tr()` with pt-BR:
+    "When:", "Action:", "Conditions:", "Ranged Monster Names:", "Rules:", "Parameter:" (missed by 0106: plain text
+    ending in a colon); When and Action are 60 and 52 px wide (the English was clipped by a pixel or two). Applies
+    after `0001`-`0106` (the `mods/game_helper/` hunks of the chain on the base archive, `patch` clean, result identical
+    to the edited tree). Not seen in a client.
+69f. `0108` (Lua `modules/game_playerdeath/playerdeath.lua`): **the death window keeps Auto Target and Magic Shooter
+    on.** Owner beta, 2026-10-21: "Auto Target and Enable Shooter still turn off when the player dies", after `0086`.
+    Cause: the death window's `openWindow` had its own "reset helper" block. It called `toggleMagicShooter()` and
+    `toggleAutoTarget()` without a widget, which flips the checkboxes, writes false to the helper config and saves it,
+    so both came back off after the relog. The block is removed. The helper's `onHelperDeath` still drops the locked
+    target and the attack (`0086`), and the respawn protection zone pauses both through `handlePZState`. Ruled out: the
+    AFK guard of `classes/auto_target.lua` reads `g_ui.getActionTimer`, which the engine does not have, so it never
+    fires. Applies after `0001`-`0107` (no earlier patch touches the file; `patch` clean on the base archive). A mocked
+    run of `display()` under LuaJIT and Lua 5.3 turns both flags off with the base file and keeps them with `0108`.
+    Not seen in a client.
+69g. `0109` (Lua `modules/game_containers/containers.lua`): **a container window redraws once per frame.** Owner beta,
+    2026-10-21: "o client ainda dá umas travadas quando o auto seller vende muitas coisas ao mesmo tempo". Cause: the
+    engine calls `onSizeChange` and `onRemoveItem` for every removed item, and both handlers ran `refreshContainerItems`
+    (setItem, rarity, tier and flags on every slot; 255 for the Loot Bag). A sale of 255 items was 510 full redraws in
+    one frame, plus the slot hooks of `game_itemrarity`, `game_lootfilter` and `game_depottabs`. Both handlers now call
+    `refreshContainerItemsLater`: it marks the container (`chaosRefreshPending`) and one `addEvent` redraws it after the
+    packets of that frame, if the window is still there. `onUpdateItem` (one slot) stays immediate. The server side sends
+    one container packet per sale with engine patch 0054 (server/README.md "Auto Seller: one update per sale"); this
+    keeps bursts cheap with any server. Applies after `0001`-`0108` (no earlier patch touches the file; `patch` clean on
+    the base archive). A mocked run of 255 removals under LuaJIT and Lua 5.3: 510 redraws with the base file, 1 with
+    `0109`. Not seen in a client.
+69h. `0110` (C++ `src/framework/ui/uiwidget.*`, `uitextedit.*`): **a console line is drawn where its label is.** Beta
+    report 2026-10-21, with a screenshot: "com a janela do chat em tamanho padrão, o texto fica em cima do outro"; the
+    newest line sat over the top line of the console. Cause: `UITextEdit::update()` stores its glyphs in screen
+    coordinates. Only `onGeometryChange` places them again, and `UIWidget::setRect` sends it one event later, skipped
+    when the rect is back where it was when that event was scheduled. The console reuses 200 hidden `ConsoleLabel`s,
+    and a hidden label keeps its last slot. For a new line, `Message:updateLabel` sets the text and calls `show()`,
+    which lays the label out at the top of `consoleBuffer` (event scheduled, old rect = its slot). `game_cosmetics`
+    (name colours) or `game_chatlinks` (links) then set the coloured text there, so the glyphs go to the top.
+    `moveChildToIndex` lays it out at the bottom, often its old slot. The event saw no change: the text stayed at the
+    top and the bottom line looked empty. At the default height the top of the stack is inside the view, so it showed
+    as two lines on top of each other; with more lines the newest line was simply missing. Fix: the event calls the new
+    virtual `onGeometryRestored()` when the rect is unchanged; `UITextEdit` remembers the rect its glyphs were placed
+    for (`m_glyphsRect`) and runs `update(true)` when it differs, as `onGeometryChange` does. Other widgets are
+    unchanged. Model test `tools/console_glyphs_test.py` (CI): the setRect / layout / label sequence of `game_console`
+    after `0056` with the overlay recolour; the stock rule leaves the newest line's glyphs at the top, `0110` none in
+    150 random sessions. Applies after `0001`-`0109` (no earlier patch touches these files; `patch` clean on the base
+    archive); both `.cpp` files pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
+69i. `0111` (C++ `src/client/creature.h`, `creature.cpp`, `mapview.cpp`, `luafunctions_client.cpp`): **a player's or an
+    NPC's name and bars over the head of a tall look.** Owner report, 2026-10-22: "alguns outfits ficam com o nome no
+    meio dele, não em cima" (a Necromancer, look 2183). Cause: `drawMapForeground` anchors the bar 2 px over the top of
+    the creature's cell, up by the displacement, from the dat alone; many imported 64x64 looks draw the head 10-20 px
+    higher in their canvas (MANIFEST.md "Name over tall looks"). `Creature.setInformationLift(look, px)` keeps a lift
+    per look type (sprite pixels at 1x, capped at 96; `clearInformationLifts`, `getLookInformationLift`,
+    `creature:getInformationLift()`); `drawMapForeground` moves the anchor up by it times the offset factor, before the
+    map's stretch. Monsters get 0 (classic place). The table comes from `client_chaos_infolift` (`info_lifts.lua`,
+    generated by `tools/sprites/gen_info_lift.py` from the pair). Applies
+    after `0001`-`0110` (`patch` clean on the base archive with the whole chain; the four files of the assembled tree
+    pass `g++ -std=c++20 -fsyntax-only`). Not seen in a client.
+69j. `0112` (Lua `mods/game_helper/classes/auto_target.lua`, `modules/game_battle/battle.lua`): **the helper and attack
+    next leave the player's own summons alone.** Owner report, 2026-10-21: "the Necromancer's risen warriors do not
+    attack, they get targeted". The 10.98 creature packet has no master id, so `getMasterId()` is always 0; `0076`
+    made the Auto Target's own pick skip the summon creature types, but a click on the minion and the battle list's
+    attack next / previous (the minion stands closest) set the helper's locked target, and the lock path sent the
+    attack again every tick while the server refused it: no real target, idle minions. Now the lock on an own summon
+    (creature type 3) is dropped, a lock the server refuses 3 times within 3 s is dropped (a party member's summon, a
+    protection zone), and attack next / previous skip own summons. Decisions in the overlay module `game_targetguard`
+    (`ChaosTargetGuard`, `targetguard_test.lua`: a mock of the targeting choice); without it the files behave as before.
+    Applies after `0001`-`0111` (`patch` clean on the base
+    archive; both files load in LuaJIT and Lua 5.3). The server halves: engine patches 0055-0057 (server/README.md
+    "Summons: targets, walk-through, levels"). Walking through the own summons needs no client patch: the client's
+    `Tile::isWalkable` already honours the creature packet's passable byte. Not seen in a client.
+69k. `0113` (Lua and otui: `modules/gamelib/player.lua`, `const.lua`, `modules/game_inventory/inventory.lua`,
+    `inventory.otui`, `data/styles/40-inventory.otui`, `modules/game_interface/game.lua`, the action bar, the NPC
+    trade, the equipment preset window): **the badge slot where the ammunition slot was.** Owner decision 2026-10-21:
+    "tire o slot extra de ring e coloque o badge" (take out the extra ring slot and put the badge there). Server
+    src-patch 0058 takes the second ring out of slot 10 (it takes nothing now) and lets the badges into slot 13. The
+    10.98 protocol already carries slot 13 both ways (`0012` sends slots up to 16; a drag uses the widget's position
+    `{65535, 13, 0}`). The patch adds `InventorySlotBadge` / `CONST_SLOT_BADGE` = 13 and `InventorySlotsWorn` (1-10
+    and 13); the inventory window's AmmoSlot (`slot10`) becomes BadgeSlot (`slot13`, image
+    `/images/game/slots/badge(-blessed)`) in both layouts, and its change, refresh and blessed-style loops take slot 13;
+    the action bar's equipped look, the hotkeys' item lookup and the NPC trade's "ignore equipped" count look at slot
+    13 too; the equipment preset window's slot 10 is the badge slot (a preset saved with slot 10 loads without it;
+    presets send nothing on this client, `sendEquipmentPreset` is a stub). The art is generated
+    (`tools/gen_skin.py` group `badge`, also in `stock`): a shield with a four-point star, 34 px, plain and blessed.
+    Overlay module `game_badgeslot` (the tooltip "Badge", `badgeslotlogic_test.lua`, which also checks this patch's
+    text and the art). Applies after `0001`-`0112` (`git apply --check` clean on the assembled tree). Not seen in a
+    client.
+69l. `0115` (C++ `src/client/uiitem.cpp`, `luafunctions_client.cpp`; Lua `modules/game_containers/containers.lua`): **a
+    slot that loses its item loses the marks of that item.** Owner beta, 2026-10-22, with a screenshot of the Loot Bag:
+    "itens deixam uma marca depois do auto sell vender"; dozens of empty slots kept a pale frame. Cause:
+    `UIItem::setItem(nil)` did not call `onItemChange` (`setItemId(0)` did). The rarity frame of `game_itemrarity`
+    (`irFrame`, `widget.irColor`), the locked grey of `game_shaderfx`, the slot tooltip and the `game_itemtooltip` plate
+    all follow `onItemChange`, so when a removal moved the items down, the slots at the end became empty with the marks
+    of their last item. `0109` did not cause it: the stock per-item refresh left the same marks. The batched sale of
+    server patch 0054 sends a full container packet, which builds new slot widgets, so only the per-item path (an older
+    server, a manual move, the pouches without a batch) shows it. Fix: `setItem` calls `onItemChange` when a slot that had
+    an item gets none, and binds `UIItem.notifiesItemRemoval()`. `game_containers` fills its slots through
+    `chaosSetSlotItem`, which signals the change itself on an engine without that function, because native code reaches
+    players only with a new Windows package. `onContainerUpdateItem` checks its widget before it uses it. Every
+    `onItemChange` handler of the tree already takes a nil item. Model test `tools/slot_clear_test.py` (CI): the helper
+    from the patch, the real `game_itemrarity` and the grey rule of `game_shaderfx` on a 40-slot bag and on the last page
+    of a paged window, under LuaJIT and Lua 5.3; the stock setItem leaves 35 framed empty slots, `0115` none on either
+    engine, with one signal per emptied slot. Applies after `0001`-`0113` (`0114` is unused; `0113` touches
+    none of these files; `patch` clean on the base archive with the whole chain); `uiitem.cpp` and
+    `luafunctions_client.cpp` pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
+69m. `0116` (C++ `src/client/tile.cpp`): **a busy tile draws its newest effects, and combat feedback always draws.**
+    Owner beta: the crit, dodge and reflect animations stopped appearing. The server sent them (`crit_burst` 415,
+    `dodge_whoosh` 416, `reflect_aegis` 417, `reflect_bubble` 628; checked with a load-all simulation of the scripts).
+    Cause: `Tile::drawTop` and `drawGroundEffects` drew `m_effects` from index `min(size - 1, effetsLimit())` down to 0,
+    and `addThing` appends a new effect at the back, so over the limit the oldest effects drew and the newest were
+    dropped. `effetsLimit()` is 10 or less in auto mode, and pair 29 keeps a condition aura (1079 ms) on a fighting
+    creature with the blasts and splashes of every hit beside it. Fix: the `effetsLimit() + 1` newest effects draw, the
+    same count as before; an older one draws only when it is combat feedback (415-417, the imbues 418-423 of
+    `chaos_fx.lua`, 628; all short) or a top effect, which `addThing` puts at the front. The draw order is unchanged.
+    `addThing` also drops a running copy of the same effect id, so a re-sent aura replaces itself; the old copy's
+    scheduled `g_map.removeThing` then finds nothing. Server side: every Lua aura send goes through
+    `ChaosPack29Vfx.allow`, throttled to the aura's own length, so no Lua change; only the engine's condition tick
+    (server patch 0045, kind 2) sends outside it, at the condition's tick interval. Model test
+    `tools/effect_limit_test.py` (CI): the forced ids match `chaos_fx.lua` and `chaos_pack_fx_ids.lua`, both loops and
+    the same-id drop are in the patch, and on a party fight tile the stock rules drop all four feedback effects at the
+    limit 10 and below while `0116` draws them at every limit, draws the newest, and holds one copy of each aura.
+    Applies after `0001`-`0115` (`patch` clean on the base archive with the whole chain); `tile.cpp` passes
+    `g++ -std=c++20 -fsyntax-only`. Not seen in a client. Native code: players need a new Windows package.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
@@ -882,7 +1040,7 @@ defines `Panel`, so only the tab style existed and the panel was never made (`MA
 The base tree carries art and data of features this client does not have. `assemble_client.sh` runs
 `tools/slim_client.py prune` after the overlay is copied: the rules in `tools/slim_prune.txt` (`- GLOB` removes,
 `+ GLOB` keeps, a reason per group) delete the files, never the base tree itself. Measured on the assembled tree
-(base + patches 0001-0104 + overlay, without the sprite pair): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
+(base + patches 0001-0104 + overlay, without the sprite pair; before 0105): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
 went from **258.0 MB (6746 files) to 84.6 MB (6344 files)**, so chaos.pack is about 173 MB smaller.
 
 | Removed | Size | Why it is unused |

@@ -494,6 +494,15 @@ ok(out3:find("2 file(s) written", 1, true) ~= nil, "earlier layout: items.xml an
 eq(readFile(data .. "/items/items.xml"), before["/items/items.xml"], "earlier layout: items.xml as a fresh install")
 eq(readFile(data .. "/movements/movements.xml"), before["/movements/movements.xml"], "earlier layout: movements.xml as a fresh install")
 
+-- a block written after the quivers (the unique equip step's) stays after them: the quiver block is rebuilt in place,
+-- not moved to the end, so a second install run over an installed server is a no-op
+local later = "\t<!-- later block -->\n\t<movevent event=\"Equip\" itemid=\"7890\" slot=\"necklace\" function=\"onEquipItem\" />\n"
+local withLater = readFile(data .. "/movements/movements.xml"):gsub("</movements>", function() return later .. "</movements>" end)
+writeFile(data .. "/movements/movements.xml", withLater)
+local out4 = run()
+ok(out4:find("0 file(s) written", 1, true) ~= nil, "a block after the quivers: nothing written (" .. out4 .. ")")
+eq(readFile(data .. "/movements/movements.xml"), withLater, "a block after the quivers keeps its place")
+
 os.execute("rm -rf '" .. root .. "'")
 print(string.format("base_archery_patch_test: %d checks, %d failures", checks, fails))
 if fails > 0 then

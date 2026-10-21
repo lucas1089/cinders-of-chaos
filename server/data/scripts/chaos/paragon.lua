@@ -251,8 +251,8 @@ P.actions = {
 			return
 		end
 		local cost = player:getLevel() * Chaos.passive.resetCostPerLevel
-		if not player:removeMoney(cost) then
-			message(player, "Paragon", string.format("You need %d gold coins to reset your Paragon points.", cost))
+		if not Chaos.pay(player, cost) then
+			message(player, "Paragon", string.format("You need %d gold coins (carried or in the bank) to reset your Paragon points.", cost))
 			return
 		end
 		P.resetAll(player)

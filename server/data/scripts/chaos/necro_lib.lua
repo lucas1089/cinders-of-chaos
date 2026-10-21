@@ -154,9 +154,9 @@ function M.raise(player, kind, pos, ratio)
 	ChaosSpell.bindSummon(player, m) -- an ally of its owner: no target of its own from the start
 	m:setDropLoot(false)
 	m:registerEvent("ChaosNecroMinionGuard")
-	local level, ml = player:getLevel(), player:getMagicLevel()
-	local hp = N.minionHealth(cfg(), classKey, kind, level, ml, M.minionFactor(player, kind, "health"))
+	local hp = M.healthFor(player, classKey, kind)
 	m:setMaxHealth(hp)
+	M.showLevel(player, m)
 	local want = math.max(1, math.floor(hp * math.min(1, ratio or 1)))
 	if want > m:getHealth() then
 		M.heal(m, want - m:getHealth())
@@ -167,6 +167,45 @@ function M.raise(player, kind, pos, ratio)
 	end
 	ChaosSpell.fx(spot, "necro_skull", CONST_ME_MORTAREA)
 	return m
+end
+
+-- the maximum health of a minion of `kind` for this owner now (level, magic level, class, passive tree)
+function M.healthFor(player, classKey, kind)
+	return N.minionHealth(cfg(), classKey, kind, player:getLevel(), player:getMagicLevel(), M.minionFactor(player, kind, "health"))
+end
+
+-- the owner's level after the minion's name (N.minionLevel; engine patches 0040 / 0044 setDisplayLevel, and 0056 sends
+-- a change to the spectators at once). The spawn callback (monster_levels.lua) runs before setMaster, so it gave the
+-- minion the level estimate of a wild 10 hp monster; this replaces it. Without the engine method: nothing.
+function M.showLevel(player, minion)
+	if not minion.setDisplayLevel then
+		return false
+	end
+	local want = N.minionLevel(player:getLevel())
+	local shown = minion.getDisplayLevel and minion:getDisplayLevel() or nil
+	if shown == want then
+		return false
+	end
+	pcall(minion.setDisplayLevel, minion, want)
+	return true
+end
+
+-- Keep a living minion in step with its owner (necro_minions.lua, every think): the shown level, and the maximum health
+-- when the owner's level, magic level or passive tree changed (the same share of it is kept). Its hits need nothing:
+-- each one is computed from the owner's current numbers. Returns true when something changed.
+function M.refresh(player, classKey, minion, kind)
+	local changed = M.showLevel(player, minion)
+	local want = M.healthFor(player, classKey, kind)
+	local oldMax = minion:getMaxHealth()
+	if want ~= oldMax then
+		local health = N.rescaleHealth(oldMax, minion:getHealth(), want)
+		minion:setMaxHealth(want) -- the engine caps the health at the new maximum
+		if health > minion:getHealth() then
+			M.heal(minion, health - minion:getHealth())
+		end
+		changed = true
+	end
+	return changed
 end
 
 -- remove a minion with a puff (no corpse: minions drop nothing)

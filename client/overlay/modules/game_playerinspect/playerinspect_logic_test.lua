@@ -20,9 +20,11 @@ eq(L.numberText(120), '120', 'small')
 eq(L.numberText(nil), '0', 'nil')
 
 local n = 0
-for slot = 1, 10 do if L.SLOTS[slot] then n = n + 1 end end
-eq(n, 10, 'all ten inventory slots have a place')
-eq(L.SLOTS[10].name, 'Ring', 'slot 10 is the second ring slot (server src-patch 0023)')
+for slot = 1, 16 do if L.SLOTS[slot] then n = n + 1 end end
+eq(n, 10, 'nine inventory slots and the badge slot have a place')
+eq(L.SLOTS[10], nil, 'the ammunition slot is not shown (it takes nothing, server src-patch 0058)')
+eq(L.SLOTS[13].name, 'Badge', 'slot 13 is the badge slot, where the ammunition slot was')
+eq(L.SLOTS[13].col .. ',' .. L.SLOTS[13].row, '2,2', 'the badge slot sits where the second ring sat')
 local seen = {}
 for slot, p in pairs(L.SLOTS) do
   local k = p.col .. ',' .. p.row

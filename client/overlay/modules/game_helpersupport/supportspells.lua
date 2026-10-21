@@ -20,7 +20,8 @@
 --     (ChaosHelperTimers), no cast in a protection zone, a mana reserve, and nothing while the attack rotation charges
 --     a cast-time spell.
 -- A vigil is a switch (a second cast turns it off): it is cast only when the buff bar shows it is off, and one cast
--- is not repeated for SWITCH_SETTLE_MS while the bar catches up.
+-- is not repeated for SWITCH_SETTLE_MS while the bar catches up. A vigil the player switches off by hand stays off:
+-- its row is unticked (H.takeUserOff) until the player ticks it again.
 --
 -- Auto setup placement (H.autoPlan): fight buffs (Red Frenzy, Poison Blades, Banner Call ...) go to the Timer section,
 -- up to H.TIMER_MAX, cast only while attacking a monster outside protection zones; everything else (shields, summons,
@@ -297,7 +298,7 @@ end
 
 -- ---------------------------------------------------------------- the cycle
 function H.newState()
-  return { castAt = {}, settleUntil = {}, status = {}, seen = {}, casts = 0 }
+  return { castAt = {}, settleUntil = {}, status = {}, seen = {}, barOn = {}, userOff = {}, casts = 0 }
 end
 
 -- how many of an uncapped summon the character keeps out at this level (info.keep: { {level, count}, ... })
@@ -326,6 +327,20 @@ local function active(st, info, spell, ctx, now)
   st.seen = seen
   local fromBar = nil
   if ctx.buffActive then fromBar = ctx.buffActive(info.bar) end
+  if info.kind == 'switch' then
+    -- a vigil the bar showed on goes off without a cast of ours settling: the player switched it off (a cast of
+    -- its words, or the spellbook / hotbar). The helper leaves it off (H.takeUserOff unticks the row) instead of
+    -- casting it again at once (player report 2026-10-22: "it comes back right away").
+    st.barOn = st.barOn or {}
+    st.userOff = st.userOff or {}
+    local was = st.barOn[spell.id]
+    if fromBar ~= nil then st.barOn[spell.id] = fromBar end
+    if fromBar == false and was == true and (st.settleUntil[spell.id] or 0) <= now then
+      st.userOff[spell.id] = true
+    elseif fromBar == true then
+      st.userOff[spell.id] = nil -- on again (the player's cast): the helper may keep it up once its row is ticked
+    end
+  end
   if fromBar == true then
     seen[spell.id] = true
     return true
@@ -378,6 +393,7 @@ function H.why(st, cfg, slot, ctx)
   if not counted then
     local isActive = active(st, info, spell, ctx, now)
     if isActive == true then return 'active' end
+    if info.kind == 'switch' and st.userOff and st.userOff[spell.id] then return 'useroff' end
     if info.kind == 'switch' and isActive == nil then return 'nobar' end
   end
   -- refused again and again (no cooldown answer from the server): rest after the last try
@@ -427,6 +443,20 @@ function H.pick(st, cfg, ctx)
   return winner, winner and 'cast' or 'idle'
 end
 
+-- the vigils the player switched off by hand (st.userOff): their rows are unticked in cfg, so the helper does not
+-- switch them on again, now or after a relog, until the player ticks the row again. Returns the ids it unticked.
+function H.takeUserOff(st, cfg)
+  local out = {}
+  if not (st and st.userOff and cfg and cfg.slots) then return out end
+  for _, slot in ipairs(cfg.slots) do
+    if st.userOff[slot.id] and slot.enabled then
+      slot.enabled = false
+      out[#out + 1] = slot.id
+    end
+  end
+  return out
+end
+
 -- the cast went out
 function H.noteCast(st, spell, now)
   local info = H.info(spell)
@@ -437,6 +467,7 @@ end
 
 function H.reset(st)
   st.castAt, st.settleUntil, st.status, st.seen, st.casts = {}, {}, {}, {}, 0
+  st.barOn, st.userOff = {}, {}
 end
 
 return ChaosHelperSupport

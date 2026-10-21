@@ -20,8 +20,20 @@ local TYPES = {
 	[2160] = {name = "crystal coin", stackable = true},                   -- not gear
 	[1988] = {name = "backpack", container = true, slot = 4},
 	[8925] = {name = "solar axe", weaponType = 3, attack = 52, slot = 48, element = 12}, -- own element
-	[27797] = {name = "boat", armor = 1, slot = 8}                         -- excluded id
+	[27797] = {name = "boat", armor = 1, slot = 8},                        -- excluded id
+	-- the engine's getAbilities(): the tables are always there, zeros included
+	[27849] = {name = "moon amplifier catalyst [1]", slot = 48, abilities = "zero"}, -- hands only, no stats: not gear
+	[29001] = {name = "lucky charm", slot = 48, abilities = {skills = {0, 0, 0, 2}}}, -- hands only, a skill: gear
+	[2214] = {name = "ring of healing", slot = 256 + 48, abilities = "zero"},          -- a ring slot: gear
+	[27811] = {name = "raging moon badge", slot = 8192 + 48, abilities = "zero"}, -- slotType "badge" (patch 0058): gear
+	[29577] = {name = "shadowwoven gloves", slot = 32768 + 48, armor = 2, abilities = "zero"}, -- retired belt / gloves
+	[27632] = {name = "bronze deck", slot = 4096 + 8192 + 48, abilities = "zero"}, -- retired deck (not a container here)
+	-- rings and necklaces as gear (data/lib/chaos_jewelry.lua): the consumables are not
+	[2197] = {name = "stone skin amulet", slot = 2 + 48, abilities = "zero"},
+	[2165] = {name = "stealth ring", slot = 256 + 48, abilities = "zero"},
+	[2198] = {name = "elven amulet", slot = 2 + 48, abilities = "zero"}
 }
+local ZERO = {skills = {0, 0, 0, 0}, absorbPercent = {0, 0}, specialSkills = {0, 0}, stats = {0}}
 
 function ItemType(id)
 	local t = TYPES[id] or {}
@@ -36,7 +48,7 @@ function ItemType(id)
 		getDefense = function() return 0 end,
 		getHitChance = function() return 0 end,
 		getElementDamage = function() return t.element or 0 end,
-		getAbilities = function() return {} end
+		getAbilities = function() return t.abilities == "zero" and ZERO or t.abilities or {} end
 	}
 end
 
@@ -96,6 +108,23 @@ Game = {
 
 dofile("data/lib/chaos_crafting.lua")
 local C = ChaosCrafting
+
+-- gear: an equipment slot, a weapon, a stat; an item for the hands alone needs a stat above 0 (2026-10-22: a catalyst
+-- dropped by a boss got the kill's item level because the engine's empty ability tables counted)
+eq(C.isGear(newItem(27849)), false, "a catalyst is not gear")
+eq(C.isGear(newItem(29001)), true, "a hand item with a skill is gear")
+eq(C.isGear(newItem(2214)), true, "a ring is gear")
+eq(C.isGear(newItem(2198)), true, "an amulet is gear")
+eq(C.isGear(newItem(2197)), false, "a consumable amulet (stone skin) is not gear")
+eq(C.isGear(newItem(2165)), false, "a consumable ring (stealth) is not gear")
+eq(C.isGear(newItem(27811)), true, "a badge is gear")
+eq(C.isGear(newItem(29577)), false, "gloves (a retired slot) are no gear, armour or not")
+eq(C.isGear(newItem(27632)), false, "a deck (a retired slot) is no gear")
+eq(C.retiredOnly(16384 + 48), true, "a ship's slot is retired")
+eq(C.retiredOnly(8192 + 48), false, "the badge slot is not")
+eq(C.retiredOnly(4096 + 8192 + 256), false, "a ring with a deck bit still has the ring")
+eq(C.isGear(newItem(2400)), true, "a weapon is gear")
+eq(C.isGear(newItem(2160)), false, "a stack is not")
 local M = ChaosItemMods
 -- drops roll with M.random (forgeDrop's default); tests pass their own dice
 M.random = function(a, b) return a end
@@ -138,7 +167,7 @@ eq(mods[3].tier, 2, "the pair's tier from its amount (2: T2)")
 eq(mods[4].tier, 3, "Fire +7% dmg: T3 (5-9)")
 eq(mods[4].lo, 5); eq(mods[4].hi, 9)
 eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
-	"Item Level: 42. Prefixes: Sword +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
+	"Item Level: 42. Prefixes: Melee +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
 	"Suffixes: Physical +2% (T2)", "item level, prefixes and suffixes with their tiers")
 eq(C.rarityOf(sword), 4)
 eq(C.rarityName(4), "Rare")
@@ -299,7 +328,7 @@ eq(ann:getCustomAttribute("rarity_lifeLeechAmount"), nil, "both keys of the pair
 eq(ann:getCustomAttribute("ct_rarity_lifeleechchance"), nil, "and its tier")
 eq(ann:getCustomAttribute("rarity_swordSkill"), 2, "the other stays")
 eq(C.rarityOf(ann), 5, "rarity stays")
-eq(ann:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Sword +2 (T2)")
+eq(ann:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Melee +2 (T2)")
 dice = {1}
 C.apply("annulment", ann)
 eq(#C.readMods(ann), 0)

@@ -83,11 +83,12 @@ def main():
     for old, name in RETIRED_STOCK:
         out.append('  ["%s"] = true, -- %s' % (old, name))
     out.append('}')
-    # stock utility spells the Thief, Monk and Templar lines get on the server (server/tools/add_vocations.py,
-    # LINE_STOCK_SPELLS); chaosspells.lua adds the ids to the client's stock entries, keyed by the Chaos words
+    # stock spells class lines get on the server (server/tools/add_vocations.py, LINE_STOCK_SPELLS: the utility spells
+    # of the Thief, Monk and Templar lines, Ward of the Mind of the Mystic, Necromancer and Ranger lines); chaosspells.lua adds the
+    # ids to the client's stock entries, keyed by the Chaos words
     sys.path.insert(0, os.path.join('server', 'tools'))
     from add_vocations import LINE_STOCK_SPELLS
-    out += ['', '-- stock spells the Thief, Monk and Templar lines get: Chaos words -> class ids '
+    out += ['', '-- stock spells class lines get on the server: Chaos words -> class ids '
             '(server/tools/add_vocations.py, LINE_STOCK_SPELLS)', 'ChaosStockSpellLines = {']
     for _, stock, lines in LINE_STOCK_SPELLS:
         words = ' '.join(parts[t] for t in stock.split())

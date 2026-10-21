@@ -952,8 +952,14 @@ end
 
 local OP = ChaosOpcodes.stash
 local ev = events.ChaosStashExtended
+-- the engine's millisecond clock: a second passes between two requests unless a test sends a burst (burst = true)
+local clockMs, burst = 1000000, false
+os.mtime = function() return clockMs end
 local function req(p, d)
 	sent = {}
+	if not burst then
+		clockMs = clockMs + 1000
+	end
 	ev.onExtendedOpcode(p, OP, {action = "Stash", data = d})
 end
 local function last(make)
@@ -1018,6 +1024,72 @@ req(hero, {make = "Stash", Pos = {x = 65535, y = 64, z = slotOf(gold2)}})
 eq(DB.plain["1:2148"] and DB.plain["1:2148"].count, 130, "two gold stacks: one merged entry of 130")
 eq(activeRows(1), 1, "and no row for them")
 eq(openRows(), 0, "no journal row left")
+-- the core rules of a repeated drop and of the named item
+do
+	local last = {x = 65535, y = 64, z = 3, stackpos = 3, at = 5000}
+	check(K.repeatDeposit(last, {x = 65535, y = 64, z = 3, stackpos = 3}, 5100, 400), "the same slot at once: a repeat")
+	check(not K.repeatDeposit(last, {x = 65535, y = 64, z = 3, stackpos = 3}, 5500, 400), "later: a new deposit")
+	check(not K.repeatDeposit(last, {x = 65535, y = 64, z = 4, stackpos = 4}, 5100, 400), "another slot: a new deposit")
+	check(not K.repeatDeposit(last, {x = 65535, y = 65, z = 3, stackpos = 3}, 5100, 400), "another container")
+	check(not K.repeatDeposit(nil, {x = 1}, 5100, 400), "no last deposit")
+	check(not K.repeatDeposit(last, "x", 5100, 400), "no position")
+	check(not K.repeatDeposit(last, {x = 65535, y = 64, z = 3, stackpos = 3}, 4000, 400), "a clock that went back")
+	check(K.sameItem(100, 1, nil, nil), "an old client names nothing: passes")
+	check(K.sameItem(100, 5, 100, 5), "the same id and count")
+	check(not K.sameItem(100, 5, 101, 5), "another id")
+	check(not K.sameItem(100, 5, 100, 4), "another count")
+	check(K.sameItem(100, 5, "100", nil), "an id as text")
+end
+
+-- one drop sent twice (player report 2026-10-22: an old client fired the drop for the list and for the window; the
+-- second request named the same slot, which then held the item to the right): the neighbour stays in the bag
+do
+	local dup = newPlayer(77)
+	local dbp = dup.bp()
+	local function dslot(item)
+		for i, c in ipairs(dbp.children) do
+			if c == item then return i - 1 end
+		end
+	end
+	local first, right = newItem(2472), newItem(2463)
+	for _, it in ipairs({first, right}) do
+		dbp.children[#dbp.children + 1] = it
+		it.parent = dbp
+	end
+	local z = dslot(first)
+	local before = activeRows(77)
+	clockMs = clockMs + 1000
+	burst = true
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = z}, UpdateList = true})
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = z}, UpdateList = true})
+	burst = false
+	eq(first.removed, true, "the dragged item went in")
+	eq(right.removed, nil, "the item to its right stays in the bag")
+	eq(dslot(right), z, "and now sits in the freed slot")
+	eq(activeRows(77), before + 1, "one row, not two")
+	-- a later drag of that slot is a new deposit
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = z}, ItemId = 2463 + 100000, Count = 1})
+	eq(right.removed, true, "a new drag of the same slot later goes in")
+	-- a current client names the item: another item in that slot is not taken
+	local a, b = newItem(2472), newItem(2463)
+	for _, it in ipairs({a, b}) do
+		dbp.children[#dbp.children + 1] = it
+		it.parent = dbp
+	end
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = dslot(a)}, ItemId = 2463 + 100000, Count = 1})
+	eq(a.removed, nil, "the slot holds another item than the one named: it stays")
+	has(lastCancel(dup), "moved", "and the player is told")
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = dslot(a)}, ItemId = 2472 + 100000, Count = 2})
+	eq(a.removed, true, "the named item goes in (a single item: its count is not compared)")
+	detach(b)
+	local g = newItem(2148, 50)
+	dbp.children[#dbp.children + 1] = g
+	g.parent = dbp
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = dslot(g)}, ItemId = 2148 + 100000, Count = 40})
+	eq(g.removed, nil, "a stack of another count: it stays")
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = dslot(g)}, ItemId = 2148 + 100000, Count = 50})
+	eq(g.removed, true, "the named stack goes in")
+end
 -- the equipped backpack itself is never taken
 req(hero, {make = "Stash", Pos = {x = 65535, y = CONST_SLOT_BACKPACK, z = 0}})
 check(hero.slots[CONST_SLOT_BACKPACK] == bp, "the backpack stays equipped")

@@ -343,6 +343,33 @@ function P.coinStacks(gold)
 	return out
 end
 
+-- whole gold as crystal coins only (beta report 2026-10-22: the widows filled the loot bag with gold, platinum and
+-- crystal coins): gold / 10000 crystal coins, the rest rounded at random to one more crystal coin, so the expected
+-- value stays the gold. List of {2160, count}, empty when it rounds to none.
+function P.crystalStacks(gold, rnd)
+	rnd = rnd or math.random
+	gold = math.max(0, num(gold, 0))
+	local n = floor(gold / 10000)
+	if rnd() < (gold - n * 10000) / 10000 then
+		n = n + 1
+	end
+	return n > 0 and {{2160, n}} or {}
+end
+
+-- the coin stacks of a corpse's pay: crystal coins only for a monster on ll.crystalOnly (names, any case), else
+-- P.coinStacks
+function P.payStacks(ll, name, gold, rnd)
+	if ll and ll.crystalOnly and type(name) == "string" then
+		local key = name:lower()
+		for _, n in ipairs(ll.crystalOnly) do
+			if tostring(n):lower() == key then
+				return P.crystalStacks(gold, rnd)
+			end
+		end
+	end
+	return P.coinStacks(gold)
+end
+
 -- a chance (any unit) x f, for the per-kill rolls (ambush, goblin): f >= 1 or off leaves it
 function P.scaleChance(chance, f)
 	f = num(f, 1)

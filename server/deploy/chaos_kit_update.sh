@@ -5,40 +5,49 @@
 # Run as root. The routine it automates: docs/LAUNCH.md "Updating the kit server (admin app)".
 #
 # usage: chaos_kit_update.sh check
-#        chaos_kit_update.sh apply [--no-client] [--no-downloads] [--no-site]
+#        chaos_kit_update.sh apply [--no-client] [--no-downloads] [--no-site] [--no-map]
 #        chaos_kit_update.sh rollback
 #
 # check     key=value lines: branch, local_commit, remote_commit, behind, ahead, commit (one per new commit, newest
-#           first, at most 15: short hash and subject), installed_release, latest_release, needs_engine, published_client,
-#           needs_client, downloads_release, needs_downloads, website_changed, update_available, running, last_status,
-#           last_result. Fetches the branch; changes nothing else.
-# apply     the update, in steps (each starts with a "STEP n/9 name" line; the last line is "RESULT status: text"):
+#           first, at most 15: short hash and subject), installed_release, latest_release, needs_engine, map_master,
+#           installed_map, needs_map, published_client, needs_client, downloads_release, needs_downloads,
+#           website_changed, update_available, running, last_status, last_result. Fetches the branch and the map
+#           master's metadata (CHAOS_MAP_BRANCH); changes nothing else.
+# apply     the update, in steps (each starts with a "STEP n/10 name" line; the last line is "RESULT status: text"):
 #            1 check      lock, clean checkout not ahead of the branch, the newest winpkg-N release of CHAOS_RELEASE_REPO
 #            2 download   when the release is newer than the installed one: CindersOfChaos-Server-Linux.tar.gz (https
 #                         only, size against GitHub's, SHA-256 printed and compared with GitHub's digest), the engine
 #                         taken out of it with a checked tar reader, ldd finds every library
-#            3 backup     server/tools/backup.sh with the server up (save first, database dump, config.lua + data/)
-#            4 install    the XP rates saved (chaos_config_rates.py), git checkout of the branch, the server stopped, the
-#                         engine replaced (the old one kept as tfs.antes-N), install_all.py --no-sql, the rates put back,
-#                         the kit's helper files (clientservices.py, helpai, start / stop scripts) brought up to date,
-#                         the server folder owned by the unit's user
-#            5 database   the server started (the kit's MariaDB runs inside the unit), the database waited for,
-#                         install_all.py --only sql, then a restart so the engine starts on the new tables
-#            6 verify     the unit active and "Server Online" in the log within CHAOS_BOOT_TIMEOUT seconds
-#                         A failure in steps 4-6 rolls the server back: engine, config.lua and data/ from the backup,
-#                         the previous commit, started and verified again (RESULT rolled-back). The database keeps the
-#                         new tables (the SQL files only add; a full restore is the runbook's).
-#            7 client     publish_client_update.sh winpkg-N when the release is newer than the live client update
+#            3 map        the map master (server/README.md "Map master": the owner's edited map, world/ of the branch
+#                         CHAOS_MAP_BRANCH, default windows-assets): when its version is newer than the installed map's
+#                         (the marker data/world/<map>.otbm.master.json), its files are fetched (a shallow fetch without
+#                         blobs; git takes only world/), every part checked against SHA256SUMS and the whole map
+#                         decompressed and checked against MAP_MASTER.json. No branch or no master: skipped
+#                         (--no-map skips it)
+#            4 backup     server/tools/backup.sh with the server up (save first, database dump, config.lua + data/)
+#            5 install    the XP rates saved (chaos_config_rates.py), git checkout of the branch, the server stopped, the
+#                         engine replaced (the old one kept as tfs.antes-N), the new map master in place of the map
+#                         (map_master.py install: the old map kept as CHAOS_MAP_BACKUP_DIR/<map>.otbm.<timestamp>, the
+#                         newest 3 stay), install_all.py --no-sql (its map steps find their work in place), the rates put
+#                         back, the kit's helper files (clientservices.py, helpai, start / stop scripts) brought up to
+#                         date, the server folder owned by the unit's user
+#            6 database   the server started (the kit's MariaDB runs inside the unit), the database waited for,
+#                         install_all.py --only sql, then a restart so the engine starts on the new tables (and map)
+#            7 verify     the unit active and "Server Online" in the log within CHAOS_BOOT_TIMEOUT seconds
+#                         A failure in steps 5-7 rolls the server back: engine, config.lua and data/ from the backup,
+#                         the map from its backup, the previous commit, started and verified again (RESULT rolled-back).
+#                         The database keeps the new tables (the SQL files only add; a full restore is the runbook's).
+#            8 client     publish_client_update.sh winpkg-N when the release is newer than the live client update
 #                         (--no-client skips it)
-#            8 downloads  the release's Windows zip and Linux tar.gz into CHAOS_DL_DIR: temporary name, size and
+#            9 downloads  the release's Windows zip and Linux tar.gz into CHAOS_DL_DIR: temporary name, size and
 #                         SHA-256 checked, the old file kept as NAME.prev, then renamed; NAME.sha256 and downloads.json
 #                         (the downloads page shows release, date, size, checksum) (--no-downloads skips it)
-#            9 site       website/install_site.sh when website/ changed since the site was last installed (state
+#           10 site       website/install_site.sh when website/ changed since the site was last installed (state
 #                         site_commit; else since this update's start) and CHAOS_SITE_ENV exists
 #                         (--no-site skips it)
-#           Steps 7-9 never undo the server update: a failure there ends with RESULT warn.
-# rollback  back to the state before the last apply: engine, config.lua and data/, the previous commit, the download
-#           files (NAME.prev); started and verified.
+#           Steps 8-10 never undo the server update: a failure there ends with RESULT warn.
+# rollback  back to the state before the last apply: engine, config.lua and data/, the map (when that apply replaced
+#           it), the previous commit, the download files (NAME.prev); started and verified.
 #
 # Settings (environment; chaos-ctl.sh passes its /etc/chaos/ctl.conf keys of the same names):
 #   CHAOS_REPO /opt/chaos/repo         CHAOS_UPDATE_BRANCH main         CHAOS_RELEASE_REPO lucas1089/cinders-of-chaos
@@ -46,6 +55,7 @@
 #   CHAOS_UNIT chaos-server            CHAOS_LOG $KIT/logs/server.log   CHAOS_MYSQL $KIT/mariadb/bin/mariadb
 #   CHAOS_KIT_STATE /var/lib/chaos/kit-update   CHAOS_WORK_DIR /var/tmp   CHAOS_BOOT_TIMEOUT 900
 #   CHAOS_SITE_DIR /var/www/chaos      CHAOS_DL_DIR $SITE/dl            CHAOS_SITE_ENV /etc/chaos/site.env
+#   CHAOS_MAP_BRANCH windows-assets    CHAOS_MAP_BACKUP_DIR $KIT/map-backups
 #   CHAOS_BACKUP_DIR (else the env file's, else /var/backups/chaos); publish_client_update.sh reads its own
 #   (CHAOS_UPDATE_KEY, ...). Exit: 0 ok, 1 failed, 2 rolled back, 3 ok with warnings.
 set -uo pipefail
@@ -74,6 +84,8 @@ BOOT_TIMEOUT=${CHAOS_BOOT_TIMEOUT:-900}
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
 DL=${CHAOS_DL_DIR:-$SITE/dl}
 SITE_ENV=${CHAOS_SITE_ENV:-/etc/chaos/site.env}
+MAP_BRANCH=${CHAOS_MAP_BRANCH:-windows-assets}
+MAP_BACKUPS=${CHAOS_MAP_BACKUP_DIR:-$KIT/map-backups}
 SERVER_ASSET=CindersOfChaos-Server-Linux.tar.gz
 CLIENT_ASSETS="CindersOfChaos-Client-Windows.zip CindersOfChaos-Client-Linux.tar.gz"
 STATE="$STATE_DIR/state"
@@ -84,6 +96,7 @@ die() { printf 'chaos_kit_update: %s\n' "$*" >&2; exit 1; }
 
 [[ $GHREPO =~ ^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$ ]] || die "CHAOS_RELEASE_REPO must be OWNER/REPO"
 [[ $BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $BRANCH != *..* ]] || die "bad CHAOS_UPDATE_BRANCH"
+[[ $MAP_BRANCH =~ ^[A-Za-z0-9][A-Za-z0-9._/-]{0,99}$ ]] && [[ $MAP_BRANCH != *..* ]] || die "bad CHAOS_MAP_BRANCH"
 [[ $BOOT_TIMEOUT =~ ^[0-9]+$ ]] || die "CHAOS_BOOT_TIMEOUT must be a number of seconds"
 g() { git -C "$REPO" -c safe.directory="$REPO" "$@"; }
 
@@ -237,6 +250,56 @@ print('engine: %stfs, %d librar%s' % (base, libs, 'y' if libs == 1 else 'ies'))
 PY
 }
 
+# ------------------------------------------------------------------------------------------------ the map master
+# MAP_STATE: "none" (no branch, or no world/MAP_MASTER.json on it), "error" (the fetch failed) or the master's version.
+# The fetch is shallow and without blobs (git fetches a file's blob when it is read), so the large parts of the other
+# files of the branch never come down; the checkout of CHAOS_UPDATE_BRANCH is not touched.
+map_master_version() {
+  local rc
+  g ls-remote --exit-code --heads origin "refs/heads/$MAP_BRANCH" >/dev/null 2>&1; rc=$?
+  if [ "$rc" = 2 ]; then MAP_STATE=none; return 0; fi
+  [ "$rc" = 0 ] || { MAP_STATE=error; return 1; }
+  g fetch --quiet --depth=1 --filter=blob:none origin "+refs/heads/$MAP_BRANCH:refs/remotes/origin/$MAP_BRANCH" 2>/dev/null \
+    || { MAP_STATE=error; return 1; }
+  if ! g cat-file -e "origin/$MAP_BRANCH:world/MAP_MASTER.json" 2>/dev/null; then MAP_STATE=none; return 0; fi
+  MAP_STATE=$(g show "origin/$MAP_BRANCH:world/MAP_MASTER.json" 2>/dev/null | python3 -I -c \
+    'import json, sys; v = json.load(sys.stdin)["version"]; assert isinstance(v, int) and v > 0; print(v)' 2>/dev/null) \
+    || { MAP_STATE=error; return 1; }
+}
+# the version of the map master installed in the server folder (its marker next to the map of config.lua's mapName), 0
+installed_map() {
+  python3 -I - "$SERVER" <<'PY' 2>/dev/null || echo 0
+import json, os, re, sys
+cfg = open(os.path.join(sys.argv[1], 'config.lua'), encoding='latin-1').read()
+name = re.search(r'^\s*mapName\s*=\s*"([A-Za-z0-9_.-]+)"', cfg, re.M).group(1)
+v = json.load(open(os.path.join(sys.argv[1], 'data', 'world', name + '.otbm.master.json')))['version']
+print(int(v))
+PY
+}
+# the map path of config.lua's mapName
+map_path() {
+  python3 -I - "$SERVER" <<'PY'
+import os, re, sys
+cfg = open(os.path.join(sys.argv[1], 'config.lua'), encoding='latin-1').read()
+name = re.search(r'^\s*mapName\s*=\s*"([A-Za-z0-9_.-]+)"', cfg, re.M).group(1)
+print(os.path.join(sys.argv[1], 'data', 'world', name + '.otbm'))
+PY
+}
+# world/ of the map branch into DEST (only plain file names), and the branch's map_master.py as DEST/../map_master.py
+map_fetch_files() {
+  local dest=$1 name base n=0
+  mkdir -p "$dest" || return 1
+  while IFS= read -r name; do
+    base=${name#world/}
+    [[ $base =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]] || continue
+    g cat-file blob "origin/$MAP_BRANCH:$name" > "$dest/$base" || return 1
+    n=$((n + 1))
+  done < <(g ls-tree --name-only "origin/$MAP_BRANCH" world/)
+  log "map master: $n file(s) of $MAP_BRANCH:world/"
+  g show "origin/$BRANCH:server/tools/map_master.py" > "$(dirname "$dest")/map_master.py" \
+    || { log "origin/$BRANCH has no server/tools/map_master.py"; return 1; }
+}
+
 # ------------------------------------------------------------------------------------------------ check
 cmd_check() {
   local cur remote work n
@@ -259,6 +322,16 @@ cmd_check() {
   if [ -z "$LATEST" ]; then say "needs_engine=unknown"
   elif [ -z "$n" ] || [ "$n" -lt "$LATEST" ]; then say "needs_engine=yes"
   else say "needs_engine=no"; fi
+  local needs_map=no imap
+  map_master_version || true
+  imap=$(installed_map)
+  case $MAP_STATE in
+    none) say "map_master=none" ;;
+    error) say "map_master=unknown"; needs_map=unknown ;;
+    *) say "map_master=$MAP_STATE"; [ "$imap" -lt "$MAP_STATE" ] && needs_map=yes ;;
+  esac
+  say "installed_map=$imap"
+  say "needs_map=$needs_map"
   n=$(published_client)
   say "published_client=$n"
   [ -n "$LATEST" ] && [ "$n" -lt "$LATEST" ] && [ -n "$(asset_info CindersOfChaos-Client-Windows.zip)" ] \
@@ -269,7 +342,7 @@ cmd_check() {
   # the site counts from the commit it was last installed from (a checkout moved by hand skips no site change)
   n=$(state_get site_commit); [ -n "$n" ] && g cat-file -e "$n^{commit}" 2>/dev/null || n=$cur
   if g diff --quiet "$n" "$remote" -- website/ 2>/dev/null; then say "website_changed=no"; else say "website_changed=yes"; fi
-  if [ "$cur" != "$remote" ] || [ "$(state_get installed_release)" != "$LATEST" ]; then
+  if [ "$cur" != "$remote" ] || [ "$(state_get installed_release)" != "$LATEST" ] || [ "$needs_map" = yes ]; then
     say "update_available=yes"
   else
     say "update_available=no"
@@ -374,6 +447,15 @@ restore_server() {
   else
     log "no data archive recorded: config.lua and data/ stay"
   fi
+  local map_bk target
+  map_bk=$(state_get map_backup)
+  if [ -n "$map_bk" ] && [ -f "$map_bk" ] && target=$(map_path); then
+    if cp -p "$map_bk" "$target.rollback-new" && mv -f "$target.rollback-new" "$target"; then
+      log "map put back from $map_bk"
+    else
+      rm -f "$target.rollback-new"; log "FAIL: could not put the map back from $map_bk"
+    fi
+  fi
   if [ -n "$prev" ]; then
     g checkout --quiet --detach "$prev" && log "checkout back at $(g rev-parse --short "$prev")"
   fi
@@ -403,18 +485,18 @@ lock() {
 
 # ------------------------------------------------------------------------------------------------ apply
 cmd_apply() {
-  local client=1 downloads=1 site=1 a
+  local client=1 downloads=1 site=1 map=1 a
   for a in "$@"; do
     case $a in
-      --no-client) client=0 ;; --no-downloads) downloads=0 ;; --no-site) site=0 ;;
-      *) die "apply [--no-client] [--no-downloads] [--no-site]" ;;
+      --no-client) client=0 ;; --no-downloads) downloads=0 ;; --no-site) site=0 ;; --no-map) map=0 ;;
+      *) die "apply [--no-client] [--no-downloads] [--no-site] [--no-map]" ;;
     esac
   done
   lock
-  local work warn="" cur remote installed prev_release engine_new="" stamp from dirty rates
+  local work warn="" cur remote installed prev_release engine_new="" map_new="" stamp from dirty rates
   stamp=$(date '+%Y%m%d-%H%M%S')
   state_set "status=running" "result=" "time=$(date '+%F %T')"
-  say "STEP 1/9 check"
+  say "STEP 1/10 check"
   for tool in git python3 curl systemctl tar sha256sum ldd; do
     command -v "$tool" >/dev/null || finish failed "$tool is missing" 1
   done
@@ -437,7 +519,7 @@ cmd_apply() {
     log "the server is up to date"
   fi
 
-  say "STEP 2/9 download"
+  say "STEP 2/10 download"
   if [ -z "$installed" ] || [ "$installed" -lt "$LATEST" ]; then
     fetch_asset "$SERVER_ASSET" "$work/server.tar.gz" || finish failed "the server package of winpkg-$LATEST was refused: nothing changed" 1
     extract_tfs "$work/server.tar.gz" "$work/engine" || finish failed "no engine in the package: nothing changed" 1
@@ -455,12 +537,31 @@ cmd_apply() {
     log "the engine is current (winpkg-$installed)"
   fi
 
-  if [ "$cur" = "$remote" ] && [ -z "$engine_new" ]; then
-    log "no new code and no new engine: the server is not restarted"
+  say "STEP 3/10 map"
+  local imap
+  imap=$(installed_map)
+  if [ "$map" = 0 ]; then
+    log "skipped (--no-map)"
+  elif ! map_master_version; then
+    finish failed "cannot read the map master of $MAP_BRANCH: nothing changed" 1
+  elif [ "$MAP_STATE" = none ]; then
+    log "no map master ($MAP_BRANCH:world/MAP_MASTER.json): the map stays"
+  elif [ "$imap" -ge "$MAP_STATE" ]; then
+    log "the map is the map master's version $imap already"
+  else
+    log "map master: version $MAP_STATE (installed: ${imap/#0/none})"
+    map_fetch_files "$work/map/world" || finish failed "could not fetch the map master: nothing changed" 1
+    python3 -I "$work/map/map_master.py" verify "$work/map/world" --deep 2>&1 | tail -n 5
+    [ "${PIPESTATUS[0]}" = 0 ] || finish failed "the map master was refused (above): nothing changed" 1
+    map_new=$MAP_STATE
+  fi
+
+  if [ "$cur" = "$remote" ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
+    log "no new code, no new engine and no new map: the server is not restarted"
     state_set "installed_release=$LATEST"
     prev_release=$installed
   else
-    say "STEP 3/9 backup"
+    say "STEP 4/10 backup"
     [ -x "$REPO/server/tools/backup.sh" ] || finish failed "no $REPO/server/tools/backup.sh: nothing changed" 1
     local save=() bdir pid
     pid=$(head -c 20 "$KIT/run/server.pid" 2>/dev/null | tr -dc 0-9)
@@ -475,13 +576,13 @@ cmd_apply() {
     [ -n "$archive" ] || finish failed "no data archive in $bdir/data after the backup: nothing changed" 1
     log "backup: $archive"
 
-    say "STEP 4/9 install"
+    say "STEP 5/10 install"
     rates="$STATE_DIR/rates-$stamp.json"
     python3 -I "$REPO/server/deploy/chaos_config_rates.py" save "$SERVER/config.lua" "$rates" \
       || finish failed "cannot read the rates of config.lua: nothing changed" 1
     prev_release=$installed
     state_set "prev_commit=$cur" "prev_release=$installed" "data_archive=$archive" "engine_backup=" "target_commit=$remote" \
-      "target_release=$LATEST"
+      "target_release=$LATEST" "map_backup="
     g checkout --quiet -B "$BRANCH" "origin/$BRANCH" || finish failed "git checkout $BRANCH failed: nothing changed" 1
     log "checkout at $(g rev-parse --short HEAD) ($BRANCH)"
     log "stopping $UNIT (the game saves everyone; players are disconnected)"
@@ -499,6 +600,16 @@ cmd_apply() {
         ok=0; log "FAIL: could not replace the engine"
       fi
     fi
+    if [ "$ok" = 1 ] && [ -n "$map_new" ]; then
+      local mout map_bk
+      log "map master version $map_new in place of the map:"
+      mout=$(python3 -I "$work/map/map_master.py" install "$work/map/world" "$SERVER" --backup-dir "$MAP_BACKUPS" \
+        --stamp "$stamp" 2>&1); a=$?
+      say "$mout" | tail -n 12
+      map_bk=$(sed -n 's/^backup=//p' <<< "$mout" | tail -n 1)
+      [ -n "$map_bk" ] && state_set "map_backup=$map_bk"
+      [ "$a" = 0 ] || { ok=0; log "FAIL: the map master was not installed"; }
+    fi
     if [ "$ok" = 1 ]; then
       log "install_all.py (every step but sql; the database is down with the server):"
       install_all --no-sql 2>&1 | tail -n 60
@@ -510,7 +621,7 @@ cmd_apply() {
       own_server
     fi
     if [ "$ok" = 1 ]; then
-      say "STEP 5/9 database"
+      say "STEP 6/10 database"
       systemctl start "$UNIT" || true
       if wait_db; then
         log "install_all.py --only sql:"
@@ -524,21 +635,22 @@ cmd_apply() {
       from=$(log_size)
       log "restart: the engine starts on the new tables"
       systemctl restart "$UNIT" || true
-      say "STEP 6/9 verify"
+      say "STEP 7/10 verify"
       wait_online "$from" || ok=0
     fi
     if [ "$ok" = 0 ]; then
-      say "STEP 6/9 rollback"
+      say "STEP 7/10 rollback"
       if restore_server; then
         finish rolled-back "the update failed; the server is back on the previous version and online (the database keeps the new tables)" 2
       fi
       finish failed "the update failed and the rollback did not bring the server up: docs/LAUNCH.md \"Incident runbook\"" 1
     fi
     state_set "installed_release=$LATEST" "deployed_commit=$remote"
-    log "server updated: $(g rev-parse --short HEAD), winpkg-$LATEST"
+    [ -n "$map_new" ] && state_set "map_version=$map_new"
+    log "server updated: $(g rev-parse --short HEAD), winpkg-$LATEST${map_new:+, map master $map_new}"
   fi
 
-  say "STEP 7/9 client"
+  say "STEP 8/10 client"
   local pub
   pub=$(published_client)
   if [ "$client" = 0 ]; then
@@ -556,7 +668,7 @@ cmd_apply() {
     fi
   fi
 
-  say "STEP 8/9 downloads"
+  say "STEP 9/10 downloads"
   local have
   have=$(dl_release)
   if [ "$downloads" = 0 ]; then
@@ -571,7 +683,7 @@ cmd_apply() {
     warn="$warn downloads"; log "WARN: the downloads were not replaced (the old files stay)"
   fi
 
-  say "STEP 9/9 site"
+  say "STEP 10/10 site"
   local sitebase
   sitebase=$(state_get site_commit); [ -n "$sitebase" ] && g cat-file -e "$sitebase^{commit}" 2>/dev/null || sitebase=$cur
   if [ "$site" = 0 ]; then
@@ -591,7 +703,7 @@ cmd_apply() {
   if [ -n "$warn" ]; then
     finish warn "server on $(g rev-parse --short HEAD), winpkg-$LATEST; not done:$warn (see above)" 3
   fi
-  finish ok "server on $(g rev-parse --short HEAD), winpkg-$LATEST${prev_release:+ (was $prev_release)}" 0
+  finish ok "server on $(g rev-parse --short HEAD), winpkg-$LATEST${prev_release:+ (was $prev_release)}${map_new:+, map master $map_new}" 0
 }
 
 # the release's client packages into the download folder, one at a time: temp name, checked, NAME.prev, rename
@@ -637,7 +749,7 @@ cmd_rollback() {
   if ! restore_server; then
     finish failed "the rollback did not bring the server up: docs/LAUNCH.md \"Incident runbook\"" 1
   fi
-  state_set "prev_commit=" "engine_backup="
+  state_set "prev_commit=" "engine_backup=" "map_backup="
   say "STEP 2/2 downloads"
   real=$(readlink -f "$DL" 2>/dev/null || true)
   if [ -n "$real" ] && [ -f "$real/downloads.json.prev" ]; then

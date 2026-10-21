@@ -486,7 +486,7 @@ local function rollShares(D, a, isPower)
 		local total = 0
 		for _, b in ipairs(D.C.affixes()) do
 			local bPower = b.def and D.M.isPower(b.def)
-			if D.M.allowed(b, k) and (b.group ~= "element" or k == "weapon") and (not bPower or isPower) then
+			if not b.noRoll and D.M.allowed(b, k) and (b.group ~= "element" or k == "weapon") and (not bPower or isPower) then
 				total = total + b.weight
 			end
 		end
@@ -1082,7 +1082,8 @@ function Gen.gemEntries(D)
 					cols = {"Tier", "Weapon", "Armour", "Jewellery", "Remove"}, w = {14, 24, 24, 24, 14}, rows = rows},
 				{h = "Caps (all gems together)", p = {capText(t.weapon) .. ".", capText(t.armour) .. ".", capText(t.jewel) .. "."}},
 				{h = "Combining", p = {string.format("Three gems of one type and tier make one of the next tier (%s).",
-					table.concat(cfg.tiers, " > "))}},
+					table.concat(cfg.tiers, " > ")),
+					"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 					{"Monster drops", "Per kill by monster tier: " .. table.concat(dropParts, ", ") .. "; the gem type is random, the tier by monster level."},
 					{"Bounty board", string.format("Finished contracts: hunt %d%%, elite %d%%, boss %d%% chance of a gem; %d in the weekly chest.",
@@ -1604,6 +1605,9 @@ function Gen.supportEntries(D)
 				{h = "Levels", cols = {"Level", "Effect"}, w = {22, 78}, rows = rows},
 				{h = "Sockets", p = {string.format("Every spell with an id has up to %d support sockets: the first once you may cast it, the second at a character level of the spell's level + %d (at least %d), the third at the spell's level + %d (at least %d), opened once per spell with %d Orbs of Sockets.",
 					cfg.maxSockets, cfg.second.add, cfg.second.min, cfg.third.add, cfg.third.min, cfg.third.orbs)}},
+				{h = "Combining", p = {string.format("Three runes of one support and level make one of the next level (%s).",
+					table.concat(cfg.levelNames, " > ")),
+					"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 					{"Monster drops", "Per kill: " .. table.concat(dropParts, ", ") .. "; the level by monster level."},
 					{"Bounty board", string.format("Hunt %d%%, elite %d%%, boss %d%% per finished contract.", cfg.rewards.bounty.chance.hunt,
@@ -1777,7 +1781,7 @@ function Gen.basicsEntries(D)
 				string.format("Multikill: kills each within %s of the one before form a chain; the whole chain's experience gets %s.",
 					Gen.seconds(pc.multikill.windowMs), table.concat(steps, ", ")),
 				"Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."}},
-			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set, on top of the health and experience their level already gives them."},
 				cols = {"Level", "Health", "Experience", "Loot", "Damage"}, w = {28, 18, 18, 18, 18}, rows = prow}})
 		local crow = {}
 		local names = {[4] = "Warrior", [8] = "Juggernaut", [14] = "Berserker", [3] = "Ranger", [7] = "Deadeye",
@@ -1993,7 +1997,8 @@ function Gen.build(D)
 	D.shared = {}
 	local mods, powers = {}, {}
 	for _, a in ipairs(C.affixes()) do
-		if a.def and M.isPower(a.def) then
+		if a.noRoll then -- read on older items only (club and axe: one melee modifier, the sword key)
+		elseif a.def and M.isPower(a.def) then
 			powers[#powers + 1] = Gen.powerEntry(D, a)
 		else
 			mods[#mods + 1] = Gen.modifierEntry(D, a)

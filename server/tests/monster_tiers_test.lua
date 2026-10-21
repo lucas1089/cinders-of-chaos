@@ -261,6 +261,15 @@ ChaosLoot, ChaosRift = nil, nil
 -- the tier damages: a hit from the legendary is doubled (or more)
 local dmg = creatureEvents.ChaosTierHit.onHealthChange({isPlayer = function() return false end}, legend, -100, 1, 0, 1, 0)
 check(dmg <= -200, "natural roll: damage multiplier")
+-- the mana shield part (manashield.lua): the same multiplier; the rest of a hit the mana event scaled stays as it is
+local tierShield = ChaosManaShield.providers.tiers
+local manaPart = tierShield.hit(player, legend, 100)
+check(manaPart and manaPart >= 200 and manaPart == -dmg, "mana shield part: the same multiplier")
+local shieldTarget = {isPlayer = function() return false end, getId = function() return 8 end}
+ChaosManaShield.mark(8, legend:getId(), ChaosManaShield.now(), {"tiers"})
+eq(creatureEvents.ChaosTierHit.onHealthChange(shieldTarget, legend, -40, 1, 0, 1, 0), -40,
+	"the rest of a mana shield hit is not scaled again")
+check(creatureEvents.ChaosTierHit.onHealthChange(shieldTarget, legend, -40, 1, 0, 1, 0) <= -80, "the next hit is")
 
 -- ---------------------------------------------------------------- normal kills still bring ambushes after a roll
 setChance(0, 0, 0)
