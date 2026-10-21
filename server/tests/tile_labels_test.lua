@@ -22,8 +22,12 @@ local lcfg = dofile("data/scripts/chaos/tile_labels_config.lua")
 
 check(lcfg.enabled and lcfg.color == 198, "enabled, orange palette byte")
 
--- the real config: every booth of every hall
-local list = K.collect(lcfg, bcfg, B)
+-- the real config: every booth of every hall and every stand of the temple arcade
+dofile("data/scripts/chaos/npc_place_core.lua")
+local P = ChaosNpcPlaceCore
+local stands = P.templeStands(P.templeConfig())
+check(#stands > 0, "the temple arcade has stands")
+local list = K.collect(lcfg, bcfg, B, stands)
 local at = {}
 for _, l in ipairs(list) do
 	at[l.x .. ":" .. l.y .. ":" .. l.z .. ":" .. l.text] = true
@@ -41,6 +45,19 @@ for _, hall in ipairs(bcfg.halls) do
 	end
 end
 check(npcLabels > 0, "booths exist")
+for _, st in ipairs(stands) do
+	check(at[st.x .. ":" .. st.y .. ":" .. st.z .. ":" .. st.name], "stand " .. st.name .. " at the temple")
+end
+-- a row not built in a hall's town (Cinderhold's economy rows, 2026-10-21) shows no title there
+for _, hall in ipairs(bcfg.halls) do
+	for _, row in ipairs(bcfg.rows) do
+		if row.key == "economy" then
+			local w = B.offset(hall, row.from, row.npcRow)
+			eq(at[w.x .. ":" .. w.y .. ":" .. w.z .. ":Economy"] == true, #B.rowTiles(row, hall.town) > 0,
+				"the Economy title only where the row is built (" .. hall.name .. ")")
+		end
+	end
+end
 -- a booth that differs per town is labelled per town
 check(at[B.offset(bcfg.halls[1], 20, 27).x .. ":" .. B.offset(bcfg.halls[1], 20, 27).y .. ":7:Forgemaster Brannoc"]
 	or at[B.offset(bcfg.halls[2], 20, 27).x .. ":" .. B.offset(bcfg.halls[2], 20, 27).y .. ":7:Forgemaster Brannoc"],

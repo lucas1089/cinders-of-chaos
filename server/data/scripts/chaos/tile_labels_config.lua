@@ -9,6 +9,8 @@ return {
 	-- Every NPC booth of every hall of npc_booths_config.lua shows its NPC's name over the NPC's tile (derived: a
 	-- booth or hall added there is labelled without an edit here).
 	booths = true,
+	-- Every NPC of the arcade at the main town's temple (temple_npcs_config.lua) shows its name over its tile.
+	stands = true,
 	-- The section title of each booth row of the halls, shown at both ends of the row (its corners): [row key] = text.
 	-- A row not listed (or false) has none.
 	rowTitles = {progression = "Progression", economy = "Economy", economy_north = false},

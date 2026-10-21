@@ -6280,6 +6280,8 @@ folder) where the map has no tile. A lobby with the arrival and the exit, three 
 Ascendant Oracle, Keeper of Trials, Archivist Maelis, the town's faction NPC: Warden Ysolde in Cinderhold, Forgemaster
 Brannoc in Mirewake), **portals** (middle: the Ember Descent and the raid portals), **economy** (east: Loot Buyer,
 Material Broker, Mordecai Ashwager, Iselde Varrow, Osric the Chandler; its north wall has two free slots).
+**Since 2026-10-21 the economy and service NPCs of Cinderhold stand in the arcade at its temple** ("Temple NPC
+arcade"); their booths there are free and Cinderhold's economy rooms stay empty; Mirewake's hall is unchanged.
 
 **The booths** (runtime fixtures, stock items, placed at startup by `npc_booths.lua` only where missing, action id
 47882): along the south wall of a room each NPC stands between two stone partitions (1644), a stone counter (1642 /
@@ -11153,7 +11155,7 @@ is not a member of the hall's guild (left the guild, logged in inside) is sent t
 
 | Upgrade | Guild level | Gold | Needs | What it does |
 |---|---|---|---|---|
-| Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3). A portal's look text announces "level N+" and the step-in enforces it (`ChaosGuildCore.hubGate`: below the destination's `level` the player is pushed back with "<name> needs level N."); `tools/check_hub_destinations.py DATA_DIR` reads the map and lists the destinations with no landing tile (they would answer "This portal leads nowhere right now."); run it after the content areas are installed |
+| Teleport Hub | 6 | 2,000,000 | | 4 forcefields along the north wall to the hunting areas of `hall.hub` (lands on the nearest free walkable tile within 3; each area has a way back at its `back` tile, action id 47616, into the guild's hall, 2026-10-21). A portal's look text announces "level N+" and the step-in enforces it (`ChaosGuildCore.hubGate`: below the destination's `level` the player is pushed back with "<name> needs level N."); `tools/check_hub_destinations.py DATA_DIR` reads the map and lists the destinations with no landing tile (they would answer "This portal leads nowhere right now."); run it after the content areas are installed |
 | Training Room | 7 | 1,500,000 | | 3 exercise dummies of the base server (27751/27752; the store's exercise weapons work on them) and a damage dummy monster (the first of `dummyMonsters` the server knows) |
 | Crafting Bench | 8 | 1,000,000 | | an anvil that opens the crafting window (`crafting.lua`) |
 | Guild Depot | 9 | 2,500,000 | | a large trunk shared by the members, see below |
@@ -15203,6 +15205,82 @@ ground and an old end tile without a copy: ground everywhere, the teleport after
 floor, second run unchanged), `tests/hunt_teleports_test.lua` (base signs and labels, the floor labels in both
 languages, the top floor "levels 1000+", the quest hall's labels, an exit back in front of its own teleport from the
 places file's `front` or computed for both rows and the end row).
+
+## Map fixes (`tools/patch_map_fixes.py`, `tools/teleport_fixes.csv`, install step `mapfixes`)
+Owner report of 2026-10-21 (live server): "many teleports lead nowhere", "hunts whose teleport has no teleport back",
+"teleports in the hub with no monsters behind them", "black spots in the teleport hub", "the new NPCs are scattered".
+Found on a copy of the base map with every install step (the live map is that), 2026-10-21; one tool fixes the map
+parts in one pass after `contentareas` (before `poi`), idempotent like the other map steps (`<map>.otbm.bak` first,
+`.tmp`, tile count checked; `--dry-run`, `--out`, `--only teleports,hub,temples`; test `tools/patch_map_fixes_test.py`).
+- **Teleports** (`teleport_fixes.csv`, one row per item: `dest`, `remove`, `nodest`). The scan read every item that
+  items.xml or items.otb calls a teleport (2,014 on the installed map) and its destination attribute:
+  - 16 "draws you nearer" forcefields (25417) of an octagonal arena at 31917-31957, 32453-32486, z 8: their
+    destinations were in another map's coordinates (828-868, 510-543, z 9: no tile). The offset (+31089, +31943, one
+    floor up) makes each pair a one-way gate through the arena wall (outer one in, inner one out); every new
+    destination is a free tile (checked by the tool).
+  - 2 with a partner portal that shows where they lead: 34172,31295,10 (to 1788,689,4) now beside its partner at
+    33773,31370,4; the mystic flame 33602,31888,6 (to 32473,32470,6) beside its partner at 33532,31820,9.
+  - 6 whose destination is no tile and nothing leads to them, removed: 31717,32571,8; 31800,31804,13; 33082,31045,6
+    (inside a mountain); 33123,31692,11; 33279,33489,5; 33771,31399,8.
+  - 2 small boats (32004/32005,33120,9) with the placeholder destination 8000,8000,0: the destination is taken off.
+  - 174 portals (magic forcefields, mystic flames, energy gates, crystal teleporters, gates of deathstruction) with
+    no destination, no action id and no unique id at a tile no script names (the base and Chaos scripts were searched
+    for the position): stepping in did nothing; removed. 19 such portals whose tile a script names are kept.
+  - Left as they are: 3 teleports that land on another teleport (32415,31593,8 and two more to 32511,31719,14: the
+    chain works), 2 that land on a poison gas tile of a quest room (32176/32177,31864,15), 3 that land on stairs (the
+    stairs take the player on), every portal with an action id (all but one of 302 have a script; uid 60015 at
+    34143,32188,5 has none, left for a review). Before/after on the copy: 26 destinations without a tile -> 0.
+  - The runtime portals (hunt teleports and ways back, camp portals, Hall of Services, Memorial, Chronicle, Idle
+    Hall, Haunted Harvest, guild hub): all 89 destinations are free tiles.
+- **Hub ways back.** Every hunt of the hall has its way back (`tools/check_hunt_returns.py`: 45 of 45 CSV hunts, 17 of
+  17 camp portals). The guild hall's Teleport Hub (guild_config.lua `hall.hub`) led to four hunting areas without
+  any way back within 40 tiles: each entry has a `back` tile now, where guild_hall.lua puts a magic forcefield
+  (action id 47616) at startup that leads into the guild's hall (else the temple); `tools/check_hub_destinations.py`
+  checks the tiles.
+- **Display monsters** (README "Hunt teleports"). Four low-level rooms (Skullkin, Rimekin, Howler Ape, Saltkin
+  grottoes) showed nothing: their rows of `tools/hall_hunts.csv` named the monsters by their old names, which the
+  `monsternames` step renames before `contentareas` runs. The rows use the Chaos names now (8 display spawns more);
+  `install_content_areas_test.py` fails on an old monster name in the CSV. Still without: Wyrmspine Hollows (every
+  monster 4x4 or 5x5, `display = false`) and Rimecrown Depths (its slot is the corridor's end teleport of floor 5,
+  which has no cells).
+- **Hub water** (`hunt_teleports_config.lua` `hall.fill`). The hall's island lies in a sea with nothing beyond it; the
+  ground floor's wings reach past the sea and the plaza looked out on black. Every missing tile of x 31578-31724,
+  y 32216-32312, z 7 (5,171) is deep water now (the base map's 28915-28918), the 33 shore tiles beside it got the
+  base map's water border pieces of their sides, and 6 walls of the plaza that stood on no ground got their
+  neighbours' ground. The tiles of the earlier quest hall over the pond (`hall.quests.previous`) stay
+  `contentareas`'s: a missing one gets its plain `fill` water, none gets a border (else each install would undo the
+  other's tiles).
+- **Temple NPC arcade**: see "Temple NPC arcade" below.
+Checked on the copy (not on a live server, not in a client): the scan again (no destination without a tile), both
+checkers, the display cells of all 62 rooms, renders of the hub and the temple before and after.
+
+## Temple NPC arcade (`temple_npcs_config.lua`, `npc_place.lua` / `npc_place_core.lua`, `tools/patch_map_fixes.py`)
+Owner 2026-10-21: "the new NPCs are scattered: put them at the temple of the main town, tidy, with nice decoration".
+Every character starts and lives in Cinderhold (newplayer_config.lua `homeTown`), so its temple gets them. The temple
+has no free floor inside, so the arcade takes the lawn along its south wall, both sides of the entrance (the
+vestibule stays): per wing a closed booth row against the wall (an NPC, a counter partition between two NPCs, a coal
+basin at the outer end), a stone counter in front, and a two-row red carpet walk, all white marble and protection
+zone; a street lamp mirrors the west wing's. The wings mirror each other around the entrance; the two lawn columns
+past each end stay free (the footpaths along the temple's sides). Built on the map by `patch_map_fixes.py` (80 tiles
+rewritten, a tile with an action or unique id or a house tile refuses the run).
+| West wing (economy), from the entrance | East wing (services), from the entrance |
+|---|---|
+| Loot Buyer, Material Broker, Osric the Chandler, Mordecai Ashwager, Iselde Varrow | Cassian Auric, Tavish Coldhand, Halvard Deedkeeper, Vessa Hollowmark, Pell Ashmere |
+- **Placement.** `ChaosNpcPlace.place` asks `ChaosNpcPlaceCore.templeStand` first (the stand of that NPC at that
+  temple), then the Hall of Services booth, then the search next to the temple; every system's own startup code
+  (item_prices, professions, candlemarks, gamble, conquest, service_npcs) is unchanged. Their Cinderhold booths are
+  free (`npc_booths_config.lua` `{[1] = name}`: Mirewake keeps them), so Cinderhold's economy rooms are not built.
+- **Talking.** NPCs stand 2 apart; `chaos_npc_focus.lua` answers the nearest NPC and, at the same distance, the one in
+  the straighter line (smaller sum of squares) before the lower id: on the carpet in front of a booth its own NPC
+  answers (tests/npc_place_test.lua checks every stand). The names float in orange over the stands (tile_labels, `stands`).
+- **Left where they are, and why:** Widow Hessa (the Haunted Harvest's village by design), the Wandering Merchant
+  (a world event that wanders), Cantor Velith and Elder Bramwyn (their factions' towns), the progression NPCs of the
+  Hall of Services (Ascendant Oracle, Keeper of Trials, Archivist Maelis, Warden Ysolde: the hall's progression room,
+  next to its portal room), Mirewake's NPCs (its Hall of Services: no character starts there), and the Loot Buyer,
+  Material Broker and Osric of the other towns (each town keeps its own; they stand next to their temples as before).
+- Texts that named the Hall of Services for these NPCs say "at the temple" now (goals, first hour, item finder, the
+  Gambler, the Material Broker, Candlemarks; client Gamble, Professions and Candlemarks windows with pt-BR).
+Not seen in a client or on a live server: the arcade's look in game (rendered from the map), the NPCs at their stands.
 
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a

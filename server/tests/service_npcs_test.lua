@@ -62,8 +62,11 @@ local B = dofile("data/scripts/chaos/npc_booths_config.lua")
 local booth = {}
 for _, row in ipairs(B.rows) do
 	for _, b in ipairs(row.booths) do
-		if type(b.npc) == "string" then
-			booth[b.npc] = row.key
+		-- a name, or {[town] = name} (owner 2026-10-21: in Cinderhold they stand at the temple, the booth is Mirewake's)
+		for _, n in pairs(type(b.npc) == "table" and b.npc or {b.npc}) do
+			if type(n) == "string" then
+				booth[n] = row.key
+			end
 		end
 	end
 end
@@ -73,9 +76,9 @@ end
 for _, row in ipairs(B.rows) do
 	if row.key == "economy_north" then
 		eq(row.booths[1].slot, "stash keeper", "the stash keeper takes the first slot")
-		eq(row.booths[1].npc, cfg.npcs.stash.name, "the slot holds the stash keeper")
+		eq(row.booths[1].npc[1], cfg.npcs.stash.name, "the slot holds the stash keeper (Mirewake)")
 		eq(row.booths[2].slot, "pocket boss NPC", "the pocket boss NPC takes the second slot")
-		eq(row.booths[2].npc, cfg.npcs.pocketboss.name, "the slot holds the pocket boss NPC")
+		eq(row.booths[2].npc[1], cfg.npcs.pocketboss.name, "the slot holds the pocket boss NPC (Mirewake)")
 	end
 end
 -- the way in of the economy room (x 49-51) and of the progression room (x 11-13) stays open

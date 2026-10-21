@@ -265,6 +265,15 @@ Weak spots (checked with `score_area.py` on 48 x 48 areas):
 Over the whole live map: 24 % of natural 16x16 blocks are flat and 7 % are barren. These are the areas to touch up
 first. Many of its town streets are bare: the median is 0.09 deco per street tile, while the densest town has 0.32.
 
+### Fixes of the installed map (2026-10-21)
+
+`server/tools/patch_map_fixes.py` (install step `mapfixes`, README "Map fixes") is the place for changes to the base
+map that are not a content plan: the broken teleports of `server/tools/teleport_fixes.csv`, the sea round the
+teleport hall (`hunt_teleports_config.lua` `hall.fill`: void -> deep water 28915-28918 with the water border pieces
+29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the NPC
+arcade at Cinderhold's temple (`temple_npcs_config.lua`). Add a row or a config entry and run the install again; never
+edit the map by hand.
+
 ## Checklist for a new area
 
 1. Every ground transition has a border or a wall. `score_area.py` border_or_wall is 0.97 or more, and the water

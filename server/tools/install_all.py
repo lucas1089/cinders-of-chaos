@@ -212,6 +212,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                ChaosHarvestArt.PAIR33 is on, tools/areaplan/events/ (the Haunted Harvest's two areas) at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
+  mapfixes     tools/patch_map_fixes.py          the owner's map report of 2026-10-21 (README "Map fixes"): the broken
+               teleports of tools/teleport_fixes.csv get their destination or go, the black void round the teleport
+               hall becomes deep water with its shore borders and ground under its walls, and the NPC arcade at
+               Cinderhold's temple is built (temple_npcs_config.lua; after contentareas, before poi; with --dry-run it
+               reads the real map and writes nothing)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
                service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
                data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)
@@ -899,6 +904,20 @@ def step_contentareas(server, data, ctx):
 
 STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
 STEPS.insert(STEPS.index('contentareas'), 'rewardchests')  # right before contentareas (same map, its placed check)
+
+
+def step_mapfixes(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        return tool_result(run_tool([tool('patch_map_fixes.py'), real, '--dry-run', '--map', mp], 'patch_map_fixes.py'))
+    return tool_result(run_tool([tool('patch_map_fixes.py'), data], 'patch_map_fixes.py'))
+
+
+STEPS.insert(STEPS.index('contentareas') + 1, 'mapfixes')  # after contentareas (the hall's map), before poi
 
 
 def tool_map_path(data_dir):

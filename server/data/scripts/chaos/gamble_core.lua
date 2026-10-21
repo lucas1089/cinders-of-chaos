@@ -467,7 +467,7 @@ function K.checkBuy(cfg, s)
 		return false, "One crate at a time."
 	end
 	if not s.near then
-		return false, "Buy from the Gambler in person: he waits in the Hall of Services (the portal beside the temple)."
+		return false, "Buy from the Gambler in person: he waits at the temple (the arcade beside its entrance)."
 	end
 	local i = floor(tonumber(s.slot) or 0)
 	local e = s.stock and s.stock[i]

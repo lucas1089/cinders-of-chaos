@@ -1897,7 +1897,7 @@ function Gen.materialEntries(D)
 		sections = {
 			{h = "What they are", p = {"Four gathering professions, each with its own level 1-" .. P.maxLevel .. ": " ..
 				"Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). " ..
-				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold and Mirewake in the Hall of Services).",
+				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).",
 				"Every profession level above 1 adds " .. Gen.num(P.bonus.perLevel) .. "% experience from monsters, all four " ..
 				"together at most +" .. Gen.num(P.bonus.cap) .. "% (every profession at " .. P.maxLevel .. ")."}},
 			{h = "Experience bonus with all four at a level", cols = {"Level", "Bonus"}, w = {50, 50}, rows = bonusRows},

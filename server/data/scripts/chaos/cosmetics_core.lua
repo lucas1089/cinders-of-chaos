@@ -363,7 +363,7 @@ function C.how(c, achievementName, categoryName)
 	elseif c.source == "pact" then
 		return "Chaos Pact: " .. tostring(c.pact or "while subscribed")
 	elseif c.source == "candlemarks" then
-		return "Candlemarks: Osric the Chandler, in the Hall of Services"
+		return "Candlemarks: Osric the Chandler, at the temple"
 	elseif c.points then
 		return "Achievements: " .. tostring(c.points) .. " account points"
 	elseif c.category then

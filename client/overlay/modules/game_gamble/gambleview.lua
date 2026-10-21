@@ -92,7 +92,7 @@ function V.cells(s)
     if it.sold then
       why = 'Sold. New crates come with the next stock.'
     elseif not s.near then
-      why = tr('Buy from %s in person (in the Hall of Services).', (s.npc or tr('the Gambler')))
+      why = tr('Buy from %s in person (at the temple).', (s.npc or tr('the Gambler')))
     elseif not afford then
       why = tr('You need %s gold (backpack and bank).', V.fmtNum(it.p))
     else
@@ -129,7 +129,7 @@ function V.nearText(s)
   if s.near then
     return tr('You stand before %s: pick a crate.', (s.npc or tr('the Gambler'))), V.COLORS.good
   end
-  return tr('Look from anywhere; buy from %s in the Hall of Services.', (s.npc or tr('the Gambler'))), V.COLORS.warn
+  return tr('Look from anywhere; buy from %s at the temple.', (s.npc or tr('the Gambler'))), V.COLORS.warn
 end
 
 -- the early refresh button: text, enabled, tooltip

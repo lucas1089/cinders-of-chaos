@@ -482,6 +482,49 @@ hub:type("stepin")
 hub:aid(H.aid.hub)
 hub:register()
 
+-- the way back from each hub destination (hall.hub[i].back): into the guild's hall, else to the temple
+local hubBack = MoveEvent()
+function hubBack.onStepIn(creature, item, position, fromPosition)
+	local player = creature:getPlayer()
+	if not player then
+		return true
+	end
+	local gid = G.guildOf(player)
+	if gid and G.hallOf(gid) and G.enterHall(player) then
+		return true
+	end
+	local temple = templeOf(player)
+	player:teleportTo(temple)
+	temple:sendMagicEffect(CONST_ME_TELEPORT)
+	return true
+end
+hubBack:type("stepin")
+hubBack:aid(H.aid.hubBack)
+hubBack:register()
+
+-- the forcefields of the ways back (runtime items, made at startup where missing)
+function G.placeHubReturns()
+	local made = 0
+	for _, d in ipairs(H.hub or {}) do
+		if d.back and H.aid.hubBack then
+			local pos = P(d.back)
+			local tile = Tile(pos)
+			local it = tile and tile:getItemById(H.ids.portal)
+			if not tile or not tile:getGround() then
+				log(string.format("no tile for the way back from %s at %d,%d,%d", d.name, d.back.x, d.back.y, d.back.z))
+			elseif not (it and it:getActionId() == H.aid.hubBack) then
+				it = Game.createItem(H.ids.portal, 1, pos)
+				if it then
+					it:setActionId(H.aid.hubBack)
+					pcall(function() it:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, "Back to the guild hall (or your temple).") end)
+					made = made + 1
+				end
+			end
+		end
+	end
+	return made
+end
+
 -- the Guild Hall Portal of every town (runtime items; created at startup and checked once a minute): cityportals.lua
 -- puts it in the Hall of Services' portal room in Cinderhold and Mirewake and on a fixed spot next to every other
 -- temple (cityportals_config.lua), labelled and marked by cityportals_fx.lua. `portalPositions` (fixed tiles) still
@@ -1045,6 +1088,10 @@ local startup = GlobalEvent("ChaosGuildHallStartup")
 function startup.onStartup()
 	G.loadHalls()
 	local n = G.placePortals(true)
+	local backs = G.placeHubReturns()
+	if backs > 0 then
+		log(string.format("%d way(s) back from the teleport hub's hunting areas placed", backs))
+	end
 	log(string.format("%d guild hall(s), %d entry portal(s) placed", (function()
 		local c = 0
 		for _ in pairs(G.halls) do

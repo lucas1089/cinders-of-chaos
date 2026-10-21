@@ -164,3 +164,47 @@ function K.depotAnchors(temple, marks, maxDist)
 	end)
 	return out
 end
+
+-- The NPC arcade at the main town's temple (temple_npcs_config.lua, server/README.md "Temple NPC arcade"):
+--   ChaosNpcPlaceCore.templeConfig() -> the config (dofile once) or nil
+--   ChaosNpcPlaceCore.templeStand(cfg, name, temple) -> {x, y, z} | nil   the arcade tile of that NPC when `temple` is
+--           the temple of a town of the config (its `temple`), else nil (then its booth or the search next to the temple)
+--   ChaosNpcPlaceCore.templeStands(cfg) -> {{name, x, y, z, town}, ...}   every stand of every town (labels, tests)
+function K.templeConfig()
+	if K.templeCfg == nil then
+		local ok, t = pcall(dofile, K.TEMPLE_FILE or "data/scripts/chaos/temple_npcs_config.lua")
+		K.templeCfg = ok and type(t) == "table" and t or false
+	end
+	return K.templeCfg or nil
+end
+
+function K.templeStands(cfg)
+	local out = {}
+	if not (cfg and cfg.enabled) then
+		return out
+	end
+	for _, t in ipairs(cfg.towns or {}) do
+		for _, s in ipairs(t.stands or {}) do
+			out[#out + 1] = {name = s.name, x = s.x, y = s.y or t.npcRow, z = s.z or t.z, town = t.town}
+		end
+	end
+	return out
+end
+
+function K.templeStand(cfg, name, temple)
+	if not (cfg and cfg.enabled and name and temple) then
+		return nil
+	end
+	local want = name:lower()
+	for _, t in ipairs(cfg.towns or {}) do
+		local tp = t.temple
+		if tp and tp.x == temple.x and tp.y == temple.y and tp.z == temple.z then
+			for _, s in ipairs(t.stands or {}) do
+				if s.name:lower() == want then
+					return {x = s.x, y = s.y or t.npcRow, z = s.z or t.z}
+				end
+			end
+		end
+	end
+	return nil
+end

@@ -12,7 +12,7 @@ local V = CandlemarksView
 V.MAX_TEXT = 96
 V.MAX_OFFERS = 80
 -- the server's own refusal text too (candlemarks_config.lua messages.npc)
-V.VISIT = 'Visit Osric the Chandler to buy (in the Hall of Services, or next to the temple).'
+V.VISIT = 'Visit Osric the Chandler to buy (at the temple).'
 V.COLORS = { gold = '#e8b84a', text = '#d6c9ae', dim = '#8c8070', bad = '#e05040', good = '#70d070' }
 
 local function int(v)

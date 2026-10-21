@@ -99,16 +99,21 @@ return {
 			trophies = {1444, 1445, 1444, 1445} -- hero statue, monument: their look text is the trophy
 		},
 		dummyMonsters = {"Chaos Dummy", "Training Dummy"}, -- the first one this server knows stands in the training room
-		aid = {enter = 47602, exit = 47603, hub = 47604, bench = 47605, depot = 47606, trophy = 47607},
+		aid = {enter = 47602, exit = 47603, hub = 47604, bench = 47605, depot = 47606, trophy = 47607, hubBack = 47616},
 
 		-- teleport hub destinations (hunting areas). The positions are spawn centres of the late-game areas
 		-- (tools/late_game_spawns.csv); the player lands on the nearest free walkable tile within 3 tiles, and a
 		-- destination without one is refused. Put the areas' real entrances here before going live.
+		-- `back`: the way back (owner, 2026-10-21: "every hunt reachable by a hub teleport needs a way back"). At startup
+		-- guild_hall.lua puts a magic forcefield (ids.portal, action id aid.hubBack) there: a member of a guild with a
+		-- hall steps into the hall's arrival, anyone else into the temple. Chosen on the installed map with the hunt
+		-- hall's rule (tools/check_hunt_returns.py pick_return_tile, radius 4: reached on foot from the landing tile,
+		-- free, not splitting a corridor); tools/check_hub_destinations.py checks them.
 		hub = {
-			{name = "Nightglass Core", pos = {x = 34206, y = 31047, z = 11}, level = 650},
-			{name = "Putrefactory", pos = {x = 34058, y = 31145, z = 11}, level = 700},
-			{name = "Jaded Roots", pos = {x = 34334, y = 31208, z = 9}, level = 800},
-			{name = "Gloom Pillars", pos = {x = 34494, y = 31257, z = 9}, level = 900}
+			{name = "Nightglass Core", pos = {x = 34206, y = 31047, z = 11}, level = 650, back = {x = 34206, y = 31046, z = 11}},
+			{name = "Putrefactory", pos = {x = 34058, y = 31145, z = 11}, level = 700, back = {x = 34059, y = 31144, z = 11}},
+			{name = "Jaded Roots", pos = {x = 34334, y = 31208, z = 9}, level = 800, back = {x = 34333, y = 31207, z = 9}},
+			{name = "Gloom Pillars", pos = {x = 34494, y = 31257, z = 9}, level = 900, back = {x = 34493, y = 31258, z = 9}}
 		},
 
 		-- upgrades: key -> tiers (most have one). level = guild level needed, requires = other upgrades first

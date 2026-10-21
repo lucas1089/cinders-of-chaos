@@ -569,6 +569,22 @@ def quest_hall_checks(root):
         check('unique id' in str(e), 'refused: %s' % e)
 
 
+def csv_name_checks():
+    """the monsters of tools/hall_hunts.csv (name, display, monsters) are named as the installed server names them:
+    install step monsternames renames the base monsters before contentareas runs, so an old name has no monster and
+    its room no display (owner 2026-10-21: four low-level rooms stood empty: their CSV rows had the old names)"""
+    import csv as _csv
+    import hashlib
+    import hall_order as H
+    names = os.path.join(HERE, '..', 'data', 'monster', 'base_monster_names.csv')
+    old = {r['sha256'] for r in _csv.DictReader(open(names, encoding='utf-8')) if r['kind'] == 'monster'}
+    for r in H.read_csv():
+        for n in [r['name'], r.get('display') or ''] + (r.get('monsters') or '').split('|'):
+            if n:
+                check(hashlib.sha256(n.lower().encode('utf-8')).hexdigest() not in old,
+                      '%s: %r is an old monster name (use its Chaos name)' % (r['id'], n))
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -745,6 +761,7 @@ def main():
               'an off-centre monster on a display cell is seen (no second monster on it): %s' % notes)
     finally:
         shutil.rmtree(root, ignore_errors=True)
+    csv_name_checks()
     print('install_content_areas_test: %s' % ('ok' if not failed else '%d failed' % failed))
     return 1 if failed else 0
 

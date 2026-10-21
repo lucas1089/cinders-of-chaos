@@ -37,10 +37,10 @@ return {
 			pt = "Primeiras caçadas: %s. Elas estão no seu mapa agora. Monstros soltam equipamentos com raridade; seu kit leva você até o nível 20. "
 				.. "Em Cinderhold, a cidade principal, os dois grandes teleportes ao norte do templo levam à sala de teleportes: um portal para uma caçada de cada nível."},
 		{key = "gear", level = 4,
-			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer in the Hall of Services (the portal beside the temple) buys what you find. "
+			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer at the temple (the arcade beside its entrance) buys what you find. "
 				.. "Economy > Item Finder tells where any item drops or who sells it.",
-			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no Salão de Serviços "
-				.. "(o portal ao lado do templo) compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
+			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no templo "
+				.. "(a galeria ao lado da entrada) compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
 		{key = "bounty", level = 8,
 			en = "The Bounty Board is open to you (Adventure > Bounty Board): daily contracts at your level for gold and orbs. New hunts: %s.",
 			pt = "O Quadro de Recompensas está aberto (Aventura > Quadro de Recompensas): contratos diários do seu nível por ouro e orbes. "
