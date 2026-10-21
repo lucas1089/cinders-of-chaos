@@ -16,9 +16,11 @@
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
 #
 # Inputs come from the private branch windows-assets (its README.md): the base server download, the base client and
-# the merged Chaos Tibia.dat / Tibia.spr (one archive, things/things-1098.tar.xz); large files are cut into parts under
-# GitHub's 100 MB file limit.
-#   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, install_all.py, sql-setup/)
+# the merged Chaos Tibia.dat / Tibia.spr (one archive, things/things-1098.tar.xz) and, when present, the map master
+# (world/: the owner's edited map, server/README.md "Map master"); large files are cut into parts under GitHub's 100 MB
+# file limit.
+#   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, the map master over the base
+#                 map, install_all.py, sql-setup/)
 #   engine        Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
 #                 checked with: Boost 1.83, fmt 9.1) -> ChaosServer.exe + DLLs
 #   client        Windows job: base client + client/base-patches + client/overlay (client/tools/assemble_client.sh), built
@@ -125,6 +127,7 @@ jobs:
           path: assets
           sparse-checkout: |
             server
+            world
             SHA256SUMS.parts
           sparse-checkout-cone-mode: true
 
@@ -137,7 +140,9 @@ jobs:
           mkdir -p base work
           tar -xJf assets/server/base-server.tar.xz -C base
           mv base/*/ work/server  # the archive holds one folder: the base server
-          bash chaos/tools/windows/prepare_server.sh work/server
+          # the map master (assets world/, the owner's edited map; server/README.md "Map master") replaces the base map
+          # when the branch has one; prepare_server.sh checks its parts and runs the install steps on top of it
+          bash chaos/tools/windows/prepare_server.sh work/server assets/world
           tar -cf server.tar -C work server
 
       - name: Release of this run (created by whichever job gets here first)

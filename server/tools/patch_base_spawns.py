@@ -99,8 +99,17 @@ def num(v, default=0):
 
 
 # ------------------------------------------------------------------------------------------------ restore
-def restore(text):
-    """the spawn file without anything this tool did"""
+ADD_MARK = '\x00chaos added spawns\x00'
+
+
+def restore(text, keep_place=False):
+    """the spawn file without anything this tool did; keep_place: ADD_MARK where the first added block was, so a re-run
+    puts the added blocks back in their place (blocks other tools appended after them, the content areas' and the
+    display monsters', stay after them: a second install run changes nothing)"""
+    if keep_place:
+        first = ADDED_RE.search(text)
+        if first:
+            text = text[:first.start()] + ADD_MARK + ADDED_RE.sub('', text[first.end():])
     text = ADDED_RE.sub('', text)
     text = EMPTIED_RE.sub(lambda m: m.group(1), text)
     text = REMOVED_RE.sub(lambda m: m.group(1), text)
@@ -190,8 +199,8 @@ def median(values):
 
 
 # ------------------------------------------------------------------------------------------------ apply
-def plan_spawntimes(blocks, tuning, monsters):
-    """{(block, index in block): new spawntime} and counts"""
+def plan_spawntimes(blocks, tuning, monsters, skip=()):
+    """{(block, index in block): new spawntime} and counts; skip: block indexes left as they are"""
     counts = {'glitch': 0, 'band': 0}
     out = {}
     glitch = tuning.get('glitchSpawntime') or {}
@@ -205,6 +214,8 @@ def plan_spawntimes(blocks, tuning, monsters):
     factor = float(tuning.get('huntLevelFactor', 2.0))
     bands = tuning.get('bandRespawn') or []
     for b, center, tags in blocks:
+        if b in skip:
+            continue
         for j, tag in enumerate(tags):
             name = (attr(tag, 'name') or '').lower()
             st = num(attr(tag, 'spawntime'))
@@ -228,7 +239,10 @@ def plan_spawntimes(blocks, tuning, monsters):
 def apply(text, tuning, monsters):
     """returns (new text, counts, problems); text must be a restored file"""
     blocks = parse(text)
-    times, counts = plan_spawntimes(blocks, tuning, monsters)
+    # the content areas' display monsters keep their own spawntime (install_content_areas.py writes it again and
+    # would put the block back at the end of the file: two install runs would swap it back and forth)
+    shown = set(i for i, m in enumerate(SPAWN_RE.finditer(text)) if attr(m.group(1), 'chaoshunt') is not None)
+    times, counts = plan_spawntimes(blocks, tuning, monsters, skip=shown)
     counts.update({'moved': 0, 'removed': 0, 'emptied': 0, 'added': 0, 'filled': 0})
     problems = []
     by_pos = {}
@@ -344,13 +358,15 @@ def apply(text, tuning, monsters):
             added.append('\t<spawn centerx="%d" centery="%d" centerz="%d" radius="2" chaosadd="%s">%s%s\t</spawn>%s'
                          % (x, y, z, area['id'], eol, mons, eol))
             counts['filled'] += len(offs)
-    if added:
+    if added and ADD_MARK in out:
+        out = out.replace(ADD_MARK, ''.join(added), 1)
+    elif added:
         k = out.rfind('</spawns>')
         if k < 0:
             problems.append('no </spawns> in the file')
         else:
             out = out[:k] + ''.join(added) + out[k:]
-    return out, counts, problems
+    return out.replace(ADD_MARK, ''), counts, problems
 
 
 def in_boxes(boxes, x, y, z):
@@ -501,9 +517,9 @@ def main(argv):
             'unchanged' if new_reg == reg else ('would change' if dry else 'written')))
     monsters = pool.load_monsters(data)
     text = read(spawn_path)
-    base = restore(text)
+    base = restore(text, keep_place=True)
     if opts.get('--remove'):
-        out, counts, problems = base, {}, []
+        out, counts, problems = base.replace(ADD_MARK, ''), {}, []
     else:
         out, counts, problems = apply(base, tuning, monsters)
     if out != text and not dry:

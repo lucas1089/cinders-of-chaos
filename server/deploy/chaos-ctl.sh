@@ -26,10 +26,11 @@
 #   update-log [N]              the last N lines of the update log
 #   update-check                the Linux kit (CHAOS_KIT_DIR): what an update would bring, key=value lines (commits behind
 #                               with their subjects, installed and newest winpkg-N release, client update, downloads, site)
-#   update-apply [--no-client] [--no-downloads] [--no-site]
+#   update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]
 #                               the kit: chaos_kit_update.sh apply in the background (update-log): the branch
-#                               CHAOS_UPDATE_BRANCH, the newest release's engine, install_all.py, restart, checks, rollback
-#                               on failure; then the client update, the site's download files and the site itself
+#                               CHAOS_UPDATE_BRANCH, the newest release's engine, the newest map master (CHAOS_MAP_BRANCH,
+#                               server/README.md "Map master"), install_all.py, restart, checks, rollback on failure; then
+#                               the client update, the site's download files and the site itself
 #   update-status               the kit: running, status, result and time of the last update-apply / update-rollback
 #   update-rollback             the kit: chaos_kit_update.sh rollback in the background (update-log)
 #   xp-rate [show | set N | reset] [restart]
@@ -474,8 +475,8 @@ case $cmd in
     if [ "$cmd" = update-apply ]; then
       for a in "$@"; do
         case $a in
-          --no-client|--no-downloads|--no-site) kargs+=("$a") ;;
-          *) die "update-apply [--no-client] [--no-downloads] [--no-site]" ;;
+          --no-client|--no-downloads|--no-site|--no-map) kargs+=("$a") ;;
+          *) die "update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]" ;;
         esac
       done
     else
@@ -484,6 +485,7 @@ case $cmd in
     kenv=("CHAOS_REPO=$REPO" "CHAOS_KIT_DIR=$KIT" "CHAOS_SERVER_DIR=$SERVER" "CHAOS_ENV=$ENVFILE" "CHAOS_UNIT=$UNIT"
       "CHAOS_LOG=$LOG" "CHAOS_MYSQL=$MYSQL" "CHAOS_KIT_STATE=$KSTATE" "CHAOS_WORK_DIR=$WORKDIR")
     for k in CHAOS_UPDATE_BRANCH CHAOS_RELEASE_REPO CHAOS_BOOT_TIMEOUT CHAOS_SITE_DIR CHAOS_DL_DIR CHAOS_SITE_ENV \
+      CHAOS_MAP_BRANCH CHAOS_MAP_BACKUP_DIR \
       CHAOS_UPDATE_KEY CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL; do
       v=$(setting "$k" "")
       [ -z "$v" ] || kenv+=("$k=$v")

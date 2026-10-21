@@ -14501,7 +14501,7 @@ the monster of an existing entry.
 |---|---|---|
 | Dead registrations | 10 lines (913 entries) | the dead first line of a monster in `monsters.xml` is commented out when another line of the name has a file |
 | Glitched spawntimes | 111 | an entry with 30,000 s or more gets the median spawntime of the same monster elsewhere (10+ other entries) |
-| Band respawn | 2,539 (9,051 since pack combat) | entries of a monster with a hunting level of 300-599 and a spawntime of 91-300 s respawn after 90 s (was 120); since pack combat 300-599 after 45 s and 600+ after 75 s |
+| Band respawn | 2,539 (9,051 since pack combat) | entries of a monster with a hunting level of 300-599 and a spawntime of 91-300 s respawn after 90 s (was 120); since pack combat 300-599 after 45 s and 600+ after 75 s; not the display monsters of the content areas (`chaoshunt`, their own spawntime) |
 | Blocking tiles | 99 moved | to the nearest free walkable tile within 3 sqm (no protection zone, house, floor change or teleport) |
 | Thin 300-600 areas | 93 added in 12 areas (`H4-01`..`H4-12`) | raised to 3.0 monsters per 100 walkable tiles, at most +50% |
 | Thin level 900+ areas | 91 added in 9 areas (`H5-01`..`H5-09`) | outdoors at 0.8-1.1 per 100; raised to 1.5, at most +60% |
@@ -15307,6 +15307,65 @@ rewritten, a tile with an action or unique id or a house tile refuses the run).
 - Texts that named the Hall of Services for these NPCs say "at the temple" now (goals, first hour, item finder, the
   Gambler, the Material Broker, Candlemarks; client Gamble, Professions and Candlemarks windows with pt-BR).
 Not seen in a client or on a live server: the arcade's look in game (rendered from the map), the NPCs at their stands.
+
+## Map master (`tools/map_master.py`, `deploy/chaos_kit_update.sh` step `map`, branch `windows-assets` `world/`)
+Owner request 2026-10-21: hand edits made in the map editor must survive the next build and reach the VPS. Before,
+every build started from the base map and the install steps, so an edit lived only in one folder.
+- **What it is.** The `.otbm` the owner edited (taken from the newest `CindersOfChaos-Windows.zip`, which holds the
+  installed map; docs/MAP_GUIDE.md "Editing the live map"), kept on the private branch `windows-assets` under `world/`:
+  `map-master.otbm.xz.partNN` (xz, cut at 95 MiB like `base-client.tar.xz.partNN`), `SHA256SUMS` (one line per part,
+  `sha256sum -c` reads it) and `MAP_MASTER.json` (format, version 1, 2, ..., date, SHA-256 and size of the `.otbm` and
+  of the `.xz`, the parts in order, the map header, the previous version, a note). Never on `main`: it is large and it
+  is the live map.
+- **The tool.** `pack OTBM OUT_DIR` checks the header (OTBM identifier, root node, map data), compresses, cuts, writes
+  the sums and the metadata, bumps the version (the same map as the current version is refused, `--force`), removes
+  parts an earlier version had and decompresses the result once to check it. `unpack DIR OUT` checks every part, the
+  joined `.xz` and the map against the metadata and writes through `OUT.tmp`. `verify DIR [--deep]`. `install DIR
+  SERVER_DIR`: the map of config.lua's `mapName` is replaced, the old one moved to `--backup-dir` (default
+  `SERVER_DIR/map-backups`) as `<map>.otbm.<YYYYmmdd-HHMMSS>`, the newest 3 kept; the marker
+  `data/world/<map>.otbm.master.json` records the version; the same version again is skipped (`--force`). The header
+  names the spawn and house files the engine loads: a map saved under another name gets `<map>-spawn.xml` /
+  `<map>-house.xml` back, else the server would start without monsters and houses. `<map>.otbm.bak` (the base map the
+  install steps keep) is left alone. `installed SERVER_DIR` prints the version. Test: `tools/map_master_test.py`
+  (synthetic maps with escaped header bytes).
+- **Only the `.otbm`.** The spawn file and the house file stay the install steps'. The map editor writes a spawn file
+  without the steps' markers (`chaosadd`, `chaoscontent`, `chaoshunt`, `chaosst`), so the next install would add every
+  spawn twice. Monster and NPC spawns and house changes go in as a request (docs/MAP_GUIDE.md says so).
+- **Builds.** `windows-package.yml` checks out `world` with the other assets and passes it to
+  `tools/windows/prepare_server.sh BASE_SERVER_DIR [MAP_MASTER_DIR]`, which installs the master over the base map
+  (the base map is not kept in the package) before `install_all.py`. No `world/MAP_MASTER.json` on the branch: the base
+  map, as before. The Windows zip, the Linux server package and so the VPS's kit carry the marker.
+- **Install steps over the master.** The master is an installed map, so every map step must find its work in place:
+  `towns`, `worldtexts`, `servername`, `houses`, `spawnfields`, `rewardchests`, `contentareas` (each placed area
+  checked tile by tile; a tile the owner changed inside a placed area refuses that area with the reason), `mapfixes`,
+  `poi`, the `ownerdecor` / `assetsdecor` items. Three steps were not stable on a second run and are fixed (2026-10-22):
+  `archery` moved its quiver block in `movements.xml` to the end on each run, so it traded places with the unique equip
+  block (`tools/patch_base_archery.py` rebuilds the block where it stands; `tests/base_archery_patch_test.lua`);
+  `spawns` took its added blocks out and appended them at the end, behind the blocks `contentareas` adds, so the two
+  reordered the spawn file on every run (`tools/patch_base_spawns.py` puts them back where the first one was;
+  `tests/base_spawns_patch_test.lua`); `spawns` also gave the display monsters of `contentareas` (`chaoshunt`) the
+  band respawn, and `contentareas` put their own spawntime back at the end of the file (now `spawns` leaves those blocks
+  alone). Several steps still rewrite each other's files during a run (`weapons`, `packitems`, `themeitems`,
+  `pack30items`, `pack33items`, `archery`, `corpses` in `items.xml`: attack speed, corpse durations, launcher
+  attributes; `outfits`, `auras`, `worldtexts`); the files at the end of a run are the same, so the report lists them
+  but nothing changes.
+- **Measured (2026-10-21, the real map after a full install).** `pack`: the 200 MB `.otbm` gives 28 MB of xz in one
+  part, in about 2 minutes. `install`: 3 seconds. A full `install_all.py --no-sql` over the installed master: about
+  5 minutes, no file different at the end (git status of the server folder clean, the `.otbm` byte for byte the
+  master).
+- **The VPS.** `chaos_kit_update.sh` step 3 `map` (`--no-map` skips it): `git ls-remote` for `CHAOS_MAP_BRANCH`
+  (default `windows-assets`), a shallow fetch without blobs (`--depth=1 --filter=blob:none`: git fetches only the
+  blobs it reads, so the base client and the other large files never come down; the checkout's `origin` becomes a
+  promisor remote), the version of `world/MAP_MASTER.json` against the marker. Newer: `world/` and the branch's
+  `map_master.py` into the work folder, `verify --deep`; a refusal ends the update before anything stops. Step 5
+  (`install`, server stopped) runs `map_master.py install` before `install_all.py`, the old map going to
+  `CHAOS_MAP_BACKUP_DIR` (default `$KIT/map-backups`, state `map_backup`); the restart of step 6 loads it. A failed
+  start, or `update-rollback`, copies that backup back (the marker comes back with `data/` from the backup archive).
+  `check` prints `map_master`, `installed_map`, `needs_map`; the admin app shows a "Mapa" line and the step "Conferindo
+  o mapa mestre". Test: `deploy/chaos_kit_update_test.py` (a `windows-assets` branch packed by the real tool).
+- **Publishing a master.** `python3 -I server/tools/map_master.py pack <the owner's .otbm> <windows-assets>/world
+  --note "..."`, then commit `world/MAP_MASTER.json`, `world/SHA256SUMS` and every `world/map-master.otbm.xz.part*`
+  on `windows-assets` (removed parts too) and push. The next package build and the next "Atualizar servidor" take it.
 
 ## Monster levels in the name (`monster_levels.lua`, `monster_levels_core.lua`, engine patch 0040)
 Owner, 2026-10-16: "Black Stag [777]" showed its level, Hellflayer and Ashfang Wyrm did not. Cause: the engine rolls a

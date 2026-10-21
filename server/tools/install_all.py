@@ -6,7 +6,9 @@ usage: python3 -I server/tools/install_all.py SERVER_DIR [--dry-run] [--no-sql] 
                                               [--mysql PATH] [--quiet | --verbose]
 
 SERVER_DIR is the base server folder: the one with config.lua and data/ (only the towns and worldtexts steps read and
-change the map .otbm: the names of its towns, the texts of its signs and books).
+change the map .otbm: the names of its towns, the texts of its signs and books). Its map may also be a map master (the
+owner's edited installed map, tools/map_master.py install, README "Map master"): every map step then finds its work in
+place, and contentareas keeps a placed area the owner edited by hand.
 
 Steps, in this order (each one is idempotent on its own; a second run of the whole script changes nothing):
   files        copy server/data from this repo into SERVER_DIR/data: scripts/chaos/**, lib/chaos_*.lua,

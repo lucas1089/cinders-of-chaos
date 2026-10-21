@@ -37,7 +37,8 @@ five ready-to-use downloads, listed in the release notes:
   test accounts. The client guard is on once `chaos.env` has `CHAOS_CLIENT_KEY`. Good for a small server; a public one
   follows this checklist (its `deploy/` folder holds the systemd units used below).
 The inputs live on the private branch `windows-assets` (its README.md). `tools/windows/prepare_server.sh` turns the
-base server into the server folder that all three servers share. `tools/linux/package_server.sh` and
+base server into the server folder that all three servers share; the map master of `world/` (the owner's edited map,
+server/README.md "Map master") replaces the base map first when the branch has one. `tools/linux/package_server.sh` and
 `tools/linux/package_client.sh` put the Linux downloads together.
 
 ## 1. Engine
@@ -1223,14 +1224,16 @@ hand, as root:
 
 ```
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-check            # what is new: commits, releases, client, downloads
-/opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site
-/opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/9 lines, the last line RESULT ...
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site --no-map
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/10 lines, the last line RESULT ...
 /opt/chaos/repo/server/deploy/chaos-ctl.sh update-rollback         # back to before the last apply
 ```
 
 It does what was done by hand before: fetch and check out the branch; when a newer release exists, download
 `CindersOfChaos-Server-Linux.tar.gz` (https, size and SHA-256 against GitHub's), take out `server/tfs`, `ldd` it, back
-up the old one as `tfs.antes-N`; a backup first (`backup.sh`, server up); `install_all.py --no-sql` with the server
+up the old one as `tfs.antes-N`; when the map master (the owner's edited map on `windows-assets`, server/README.md
+"Map master") is newer than the installed map, fetch and check it and put it in place of the map with the server
+stopped (the old map kept in `map-backups`); a backup first (`backup.sh`, server up); `install_all.py --no-sql` with the server
 stopped; then the server started (that starts the kit's database), `install_all.py --only sql`, a restart, and the
 wait for `Server Online`. A failed start rolls back the engine, `config.lua`, `data/` and the commit by itself. The
 XP rates of `config.lua` (the `experienceStages` table and the `rate*` lines) are kept across `install_all.py`, whose

@@ -635,6 +635,30 @@ def main():
         except T.InstallError as e:
             check('changed' in str(e), 'changed plan: %s' % e)
         check(digest(srv) == once, 'refusal writes nothing')
+        # the same map as a map master (tools/map_master.py's marker): the area differs from its plan as if the owner
+        # had edited it by hand; it is kept, nothing written
+        mark = os.path.join(srv, 'data', 'world', 'w.otbm.master.json')
+        open(mark, 'w').write('{"version": 1}\n')
+        try:
+            run(srv, plans, comp)
+            check(False, 'map master: an area most of whose tiles differ is still refused')
+        except T.InstallError as e:
+            check('changed' in str(e), 'map master, all tiles changed: %s' % e)
+        one = {(1000 + i, 1000, 7): dict(ground=G, items=[], flags=0) for i in range(3)}
+        one[(1001, 1000, 7)]['items'] = [(PORTAL, {'aid': 47951})]
+        one[(1000, 1000, 7)]['ground'] = 101
+        open(os.path.join(comp['tiny_hunt'], 'tiny_hunt.otbm'), 'wb').write(otbm_file(one))
+        os.remove(mark)
+        try:
+            run(srv, plans, comp)
+            check(False, 'one tile changed, no master: refused')
+        except T.InstallError as e:
+            check('changed' in str(e), 'one tile changed, no master: %s' % e)
+        open(mark, 'w').write('{"version": 1}\n')
+        res, log = run(srv, plans, comp)
+        check(res['areas'].get('tiny_hunt') == 'done' and digest(srv) == once, 'map master: an edited area is kept')
+        check(any('tiny_hunt: placed already' in l and 'edited by hand' in l for l in log), 'map master: logged')
+        os.remove(mark)
         # a reorder (tiny_hunt's band now above other_hunt's) moves the display monsters; the config order is not used
         cfg2 = dict(CFG, plans=[CFG['plans'][1], CFG['plans'][0]])
         tj = os.path.join(plans, 'tiny_hunt.json')

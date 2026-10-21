@@ -298,10 +298,11 @@ def closed_ids(cfg):
     return ({c['wall']} if c.get('wall') else set()) | set(c.get('decor') or ())
 
 
-def room_state(world, lay, portal=None, grounds=None):
+def room_state(world, lay, portal=None, grounds=None, keep_edited=False):
     """'done' (grown already), 'todo' (can grow), or raises with the reason. A teleport on a copied tile (the hall
     order puts base hunts in the wings) does not count, nor a ground (grounds: their ids; the hall order puts ground
-    under the ground floor's wings)."""
+    under the ground floor's wings). keep_edited (the map is a map master, server/README.md "Map master"): a room whose
+    copies mostly stand (at least half of the module's tiles as grown) is grown, the owner's hand edits stay."""
     if not lay['tiles']:
         return 'done'
     skip = {portal} | set(grounds or ())
@@ -311,6 +312,8 @@ def room_state(world, lay, portal=None, grounds=None):
     same = [p for p in lay['module'] if bare(world.stack(p)) == bare(stack_of(lay['tiles'][p]))]
     if len(same) == len(lay['module']):
         return 'done'  # the copies stand where the old ends were: grown (the ends were moved then)
+    if keep_edited and 2 * len(same) >= len(lay['module']):
+        return 'done'
     taken = [p for p in lay['tiles'] if world.has(p) and p not in lay['old'] and p not in lay.get('swept', ())]
     if taken:
         raise InstallError('room: %d target tile(s) are taken (first %d,%d,%d) and the room is not the one this '
@@ -373,10 +376,19 @@ def assign_slots(order, slots, placed):
 
 
 # ------------------------------------------------------------------------------------------------ the areas
-def area_state(world, pid, tiles):
+def area_state(world, pid, tiles, keep_edited=False):
+    """'todo', 'done', or raises with the reason. keep_edited (the map is a map master): an area placed before whose
+    tiles the owner changed by hand in the map editor (at least half of them still as the plan has them) is 'edited'
+    and left as it is, so a second install over the master keeps the edits instead of refusing"""
     have = [p for p in tiles if world.has(p)]
     if not have:
         return 'todo'
+    if keep_edited:
+        same = sum(1 for p in have if world.stack(p) == stack_of(tiles[p]))
+        if same == len(tiles):
+            return 'done'
+        if 2 * same >= len(tiles):
+            return 'edited'
     if len(have) == len(tiles):
         diff = [p for p in tiles if world.stack(p) != stack_of(tiles[p])]
         if not diff:
@@ -1036,6 +1048,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         map_path = patch_base_towns.map_path(data_dir)
     if not map_path or not os.path.isfile(map_path):
         raise InstallError('no world map in %s/world' % data_dir)
+    # a map master (tools/map_master.py install writes this marker): the owner's hand edits in placed areas stay
+    keep_edited = os.path.isfile(map_path + '.master.json')
     plans = plan_files(plans_dir)
     fixed = fixed_plans(fixed_dirs, plans, log)
     unknown = [p['id'] for p in cfg.get('plans', []) if p['id'] not in plans]
@@ -1079,7 +1093,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 wing_lays.append(room_layout(world, cfg['room'], portal, base_at, wing=w))
                 lays.append(wing_lays[-1])
         for l in lays:
-            rstates.append(room_state(world, l, portal, set(grounds or ()) | closed_ids(cfg)))
+            rstates.append(room_state(world, l, portal, set(grounds or ()) | closed_ids(cfg), keep_edited))
         todo_lays = [l for l, st in zip(lays, rstates) if st == 'todo']
         rstate = 'todo' if todo_lays else 'done'
         lay = dict(tiles={}, module=set(), caps=set(), old=set(), swept=set(), slots=[])
@@ -1105,16 +1119,20 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         # the areas
         state = {}
         for pid, a in areas.items():
-            st = area_state(world, pid, a['tiles'])
+            st = area_state(world, pid, a['tiles'], keep_edited)
+            edited = st == 'edited'
+            if edited:
+                st = 'done'
             clash = set(a['tiles']) & set(lay['tiles'])
             if clash:
                 raise InstallError('%s overlaps the room (%d tiles)' % (pid, len(clash)))
             if st == 'todo' and only and pid not in only:
                 st = 'skipped'
             state[pid] = st
-            log('%s: %s (%d tiles at %s)%s' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)'}[st],
-                                               len(a['tiles']), tuple(a['man']['origin']),
-                                               ', fixed area: no teleport' if pid in fixed else ''))
+            log('%s: %s (%d tiles at %s)%s%s' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)'}[st],
+                                                 len(a['tiles']), tuple(a['man']['origin']),
+                                                 ', fixed area: no teleport' if pid in fixed else '',
+                                                 ', edited by hand in the map master: kept' if edited else ''))
         # tiles of two areas on one spot: refused
         owner = {}
         for pid, a in areas.items():

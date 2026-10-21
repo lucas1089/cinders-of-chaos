@@ -41,12 +41,14 @@ servidor; também o client e os downloads do site". Para o kit Linux (`/opt/chao
 
 1. **Verificar** (`chaos-ctl.sh update-check`): busca o ramo `CHAOS_UPDATE_BRANCH` (padrão `main`) e mostra os commits
    novos (a primeira linha de cada), a release instalada e a mais nova (`winpkg-N` de `CHAOS_RELEASE_REPO`), o update
-   do client publicado, a release dos downloads do site e se o site mudou.
+   do client publicado, a release dos downloads do site, se o site mudou e a linha **Mapa**: a versão do mapa mestre
+   (o mapa editado pelo dono, `server/README.md` "Map master") contra a instalada.
 2. **Aplicar e reiniciar** (confirmação: os jogadores são desconectados). Caixas, todas marcadas: publicar o update do
-   client, trocar os downloads do site, reinstalar o site se o código dele mudou. O app mostra o passo (1 a 9) com uma
+   client, trocar os downloads do site, reinstalar o site se o código dele mudou. O app mostra o passo (1 a 10) com uma
    barra e as últimas linhas do log, lendo `update-log` a cada 4 s, e no fim um cartão: concluída, concluída com avisos,
    falhou, ou falhou e voltou à versão anterior. Se o app fechar, o Painel retoma o acompanhamento ao abrir.
-3. **Voltar à versão anterior** (`update-rollback`): engine, `config.lua`, `data/`, o commit e os downloads de antes.
+3. **Voltar à versão anterior** (`update-rollback`): engine, `config.lua`, `data/`, o mapa (se a última atualização o
+   trocou), o commit e os downloads de antes.
 
 O que roda na VPS (`server/deploy/chaos_kit_update.sh`, em segundo plano, com trava: um por vez):
 
@@ -54,15 +56,16 @@ O que roda na VPS (`server/deploy/chaos_kit_update.sh`, em segundo plano, com tr
 |---|---|
 | 1 verificar | checkout sem mudanças locais e sem commits fora do GitHub; a release `winpkg-N` mais nova com o `CindersOfChaos-Server-Linux.tar.gz` |
 | 2 baixar | só quando a release é mais nova que a instalada: download https, tamanho igual ao do GitHub, SHA-256 mostrado e comparado com o do GitHub, só o `server/tfs` sai do tar (caminhos conferidos), `ldd` sem biblioteca faltando. Qualquer falha aqui: nada mudou |
-| 3 backup | `backup.sh` com o servidor no ar (salva antes): dump do banco e `config.lua` + `data/` |
-| 4 instalar | guarda as taxas de XP, checkout do ramo, para o servidor, troca o `tfs` (o antigo fica `tfs.antes-N`), `install_all.py --no-sql`, devolve as taxas, dono da pasta = usuário da unidade |
-| 5 banco | liga o servidor (o MariaDB do kit roda dentro da unidade), espera o banco, `install_all.py --only sql`, reinicia (o motor sobe com as tabelas novas) |
-| 6 conferir | unidade ativa e "Server Online" no log em até 15 min. Falhou nos passos 4 a 6: volta sozinho (engine, `config.lua` e `data/` do backup, commit anterior), liga e confere de novo |
-| 7 client | `publish_client_update.sh winpkg-N` se a release é mais nova que o update publicado |
-| 8 downloads | `CindersOfChaos-Client-Windows.zip` e `CindersOfChaos-Client-Linux.tar.gz` em `CHAOS_DL_DIR` (padrão `/var/www/chaos/dl`): nome temporário, tamanho e SHA-256 conferidos, o antigo fica como `NOME.prev`, troca atômica; `NOME.sha256` e `downloads.json` (a página de downloads mostra release, data, tamanho e SHA-256) |
-| 9 site | `website/install_site.sh CHAOS_ENV CHAOS_SITE_ENV` se `website/` mudou e `/etc/chaos/site.env` existe |
+| 3 mapa | o mapa mestre (`world/` do ramo `CHAOS_MAP_BRANCH`, padrão `windows-assets`): se a versão é mais nova que a do mapa instalado, baixa só `world/` (fetch raso sem blobs), confere cada parte com o `SHA256SUMS` e o mapa inteiro com o `MAP_MASTER.json`. Sem mapa mestre: nada. Falhou: nada mudou (`--no-map` pula) |
+| 4 backup | `backup.sh` com o servidor no ar (salva antes): dump do banco e `config.lua` + `data/` |
+| 5 instalar | guarda as taxas de XP, checkout do ramo, para o servidor, troca o `tfs` (o antigo fica `tfs.antes-N`), troca o mapa pelo mapa mestre novo (o antigo fica em `$KIT/map-backups/<mapa>.otbm.<data-hora>`, os 3 mais novos), `install_all.py --no-sql`, devolve as taxas, dono da pasta = usuário da unidade |
+| 6 banco | liga o servidor (o MariaDB do kit roda dentro da unidade), espera o banco, `install_all.py --only sql`, reinicia (o motor sobe com as tabelas novas) |
+| 7 conferir | unidade ativa e "Server Online" no log em até 15 min. Falhou nos passos 5 a 7: volta sozinho (engine, `config.lua` e `data/` do backup, o mapa do `map-backups`, commit anterior), liga e confere de novo |
+| 8 client | `publish_client_update.sh winpkg-N` se a release é mais nova que o update publicado |
+| 9 downloads | `CindersOfChaos-Client-Windows.zip` e `CindersOfChaos-Client-Linux.tar.gz` em `CHAOS_DL_DIR` (padrão `/var/www/chaos/dl`): nome temporário, tamanho e SHA-256 conferidos, o antigo fica como `NOME.prev`, troca atômica; `NOME.sha256` e `downloads.json` (a página de downloads mostra release, data, tamanho e SHA-256) |
+| 10 site | `website/install_site.sh CHAOS_ENV CHAOS_SITE_ENV` se `website/` mudou e `/etc/chaos/site.env` existe |
 
-Passos 7 a 9 nunca desfazem o servidor: uma falha neles termina com "concluída com avisos".
+Passos 8 a 10 nunca desfazem o servidor: uma falha neles termina com "concluída com avisos".
 
 **Taxas de XP.** O passo `lategame` do `install_all.py` reescreve a tabela `experienceStages` do `config.lua` com a da
 release, o que apagava um x10 posto à mão. Agora a atualização guarda a tabela e as linhas `rateExp`, `rateSkill`,
@@ -133,7 +136,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `backups`, `logs [n]`, `errors [n]`,
 `gm-logs [n] [NOME]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
-`update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site]`, `update-status`,
+`update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client
 update"), `publish-log`, `site-install`, `site-log`, `xp-rate`, `health`, `cleanup [--yes]`, `account-create NOME`,
 `account-password NOME`, `install-admin`. Todos com argumentos conferidos (números, nomes, tags de release), nada de

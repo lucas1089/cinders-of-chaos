@@ -187,6 +187,9 @@ jobs:
           python3 -I server/tools/patch_spawn_fields_test.py  # small fire under the base spawns in fire lairs
           python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple NPC arcade
 
+      - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
+        run: python3 -I server/tools/map_master_test.py
+
       - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
         run: python3 -I server/tools/idle_hall_test.py
 

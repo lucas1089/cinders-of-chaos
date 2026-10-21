@@ -382,8 +382,12 @@ def verify_otb(data, ids):
 # ------------------------------------------------------------------------------------------------ movements.xml
 def patch_movements(text, cfg, weapons_text, launchers):
     nl = '\r\n' if '\r\n' in text else '\n'
-    # drop the earlier Chaos block and every stock quiver entry
-    text2 = re.sub(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', '', text, flags=re.S)
+    # drop every stock quiver entry; the earlier Chaos block is rebuilt where it stands (a block moved to the end on
+    # each run would trade places with the unique equip block after it: a second install run was not a no-op)
+    mark = '\x00chaos quivers\x00'
+    text2, had = re.subn(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', mark, text, count=1,
+                         flags=re.S)
+    text2 = re.sub(re.escape(MOVE_BEGIN) + r'.*?' + re.escape(MOVE_END) + r'\r?\n?', '', text2, flags=re.S)
     ids = set(cfg['quivers'])
 
     def drop(m):
@@ -409,9 +413,12 @@ def patch_movements(text, cfg, weapons_text, launchers):
         lines.append('\t<movevent event="DeEquip" itemid="%d" slot="shield" function="onDeEquipItem" />' % qid)
     lines.append(MOVE_END)
     block = nl.join(lines) + nl
-    if '</movements>' not in text2:
+    if had:
+        out = text2.replace(mark, block, 1)
+    elif '</movements>' not in text2:
         raise SystemExit('movements.xml: </movements> not found; nothing written')
-    out = text2.replace('</movements>', block + '</movements>', 1)
+    else:
+        out = text2.replace('</movements>', block + '</movements>', 1)
     note = 'movements.xml: %d quiver entries (%s)' % (len(ids), ', '.join(
         re.search(r'name="([^"]+)"', v).group(1) for v in vocs) or 'every vocation')
     return out, ('movements.xml: quiver entries present' if out == text else note)

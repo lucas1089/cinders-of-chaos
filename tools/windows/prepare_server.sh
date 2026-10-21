@@ -2,11 +2,14 @@
 # Turn the base server download into the server folder of the Windows package (run on Linux; used by
 # .github/workflows/windows-package.yml, and by hand for a local check).
 #
-# usage: tools/windows/prepare_server.sh BASE_SERVER_DIR
+# usage: tools/windows/prepare_server.sh BASE_SERVER_DIR [MAP_MASTER_DIR]
 #
 # BASE_SERVER_DIR (the extracted base server download: config.lua, data/, src/, SQL_Server/) is changed in place:
 #  - server/src-patches/*.patch applied to src/ (the engine is built from it afterwards, on Windows)
 #  - config.lua: the package's own MariaDB (127.0.0.1:3307, user root without password, database chaos)
+#  - MAP_MASTER_DIR (windows-assets' world/: the owner's edited map, server/README.md "Map master"), when given and
+#    it holds MAP_MASTER.json: the map master replaces the base map (server/tools/map_master.py install; the base map
+#    is not kept in the folder), so the install steps below run on top of it and find their own work in place
 #  - every Chaos install step (server/tools/install_all.py); the SQL it would run is captured, not run
 #  - sql-setup/: the SQL a fresh database needs, in order (base schema, Chaos tables, test accounts);
 #    start-server.bat loads it at the first start
@@ -43,6 +46,17 @@ for key, value in want.items():
     print('  %s = %s' % (key, value))
 open(path, 'w', encoding='latin-1', newline='').write(text)
 PY
+
+echo "== map master"
+MASTER=${2:-}
+if [ -n "$MASTER" ] && [ -f "$MASTER/MAP_MASTER.json" ]; then
+  MAPBAK=$(mktemp -d)
+  python3 -I "$REPO/server/tools/map_master.py" install "$MASTER" "$SERVER" --backup-dir "$MAPBAK" | sed 's/^/  /'
+  [ "${PIPESTATUS[0]}" = 0 ] || { echo "the map master did not install" >&2; rm -rf "$MAPBAK"; exit 1; }
+  rm -rf "$MAPBAK"
+else
+  echo "  none (${MASTER:-no folder given}): the base map"
+fi
 
 echo "== Chaos content (install_all.py)"
 CAPTURE=$(mktemp -d)

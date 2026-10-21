@@ -11,7 +11,11 @@ install_site.sh. Checks: check's key=value lines; apply's order (backup, stop, e
 --only sql, restart, Server Online); the XP rates kept; the old engine kept as tfs.antes-N; the client update
 published; the download files replaced with NAME.prev, NAME.sha256 and downloads.json; the site installed when
 website/ changed; the lock; the refusals (missing library, size, an unsafe tar entry, a dirty checkout); the automatic
-rollback when the new engine does not come up; the manual rollback (engine, commit, downloads).
+rollback when the new engine does not come up; the manual rollback (engine, commit, downloads). The map master (a
+windows-assets branch with world/ packed by the real tools/map_master.py from a tiny synthetic map): check's map lines,
+the map replaced while the server is stopped and before install_all, the old map kept with a timestamp, the same
+version skipped without a restart, a damaged part refused before anything stops, --no-map, the map put back by the
+automatic and the manual rollback.
 
 usage: python3 -I server/deploy/chaos_kit_update_test.py
 """
@@ -32,8 +36,10 @@ SCRIPT = os.path.join(HERE, 'chaos_kit_update.sh')
 CTL = os.path.join(HERE, 'chaos-ctl.sh')
 RATES = os.path.join(HERE, 'chaos_config_rates.py')
 LATE_GAME = os.path.join(REPO_ROOT, 'server', 'tools', 'late_game.py')
+MAP_MASTER = os.path.join(REPO_ROOT, 'server', 'tools', 'map_master.py')
 sys.path.insert(0, os.path.join(REPO_ROOT, 'server', 'tools'))
 import late_game  # noqa: E402
+import map_master_test  # noqa: E402  (fake_map: a tiny synthetic OTBM)
 
 CURL = r'''#!/usr/bin/env bash
 # test stand-in: https only; the API answers $STUB/releases.json, downloads come from $STUB/assets/NAME
@@ -164,6 +170,7 @@ class World:
         write(os.path.join(o, 'server/tools/backup.sh'), BACKUP, 0o755)
         write(os.path.join(o, 'server/tools/install_all.py'), INSTALL)
         shutil.copy(LATE_GAME, os.path.join(o, 'server/tools/late_game.py'))
+        shutil.copy(MAP_MASTER, os.path.join(o, 'server/tools/map_master.py'))
         os.makedirs(os.path.join(o, 'server/deploy'))
         shutil.copy(RATES, os.path.join(o, 'server/deploy/chaos_config_rates.py'))
         shutil.copy(SCRIPT, os.path.join(o, 'server/deploy/chaos_kit_update.sh'))
@@ -172,6 +179,7 @@ class World:
         write(os.path.join(o, 'website/page.txt'), 'v1\n')
         write(os.path.join(o, 'server/tools/version.txt'), 'v1\n')
         self.commit('v1')
+        self.git('-C', o, 'config', 'uploadpack.allowFilter', 'true')
         self.repo = os.path.join(r, 'repo')
         self.git('clone', '-q', o, self.repo)
         # the kit
@@ -212,6 +220,28 @@ class World:
         for path, text in files.items():
             write(os.path.join(self.origin, path), text)
         self.commit(msg)
+
+    def map_master(self, otbm, damage=False):
+        """packs OTBM (bytes) with tools/map_master.py into world/ of the branch windows-assets of the upstream (a
+        branch of its own, as the real one); damage: one part changed after its checksum was written"""
+        a = os.path.join(self.root, 'assets')
+        if not os.path.isdir(a):
+            self.git('init', '-q', '-b', 'windows-assets', a)
+            write(os.path.join(a, 'things/big.bin'), os.urandom(200000))  # never fetched by the kit
+        src = os.path.join(self.root, 'sent.otbm')
+        write(src, otbm)
+        r = subprocess.run([sys.executable, '-I', MAP_MASTER, 'pack', src, os.path.join(a, 'world'), '--part-size',
+                            '3000'], capture_output=True, text=True)
+        if r.returncode != 0:
+            raise AssertionError('map_master.py pack: ' + r.stdout + r.stderr)
+        if damage:
+            p = os.path.join(a, 'world', 'map-master.otbm.xz.part00')
+            b = bytearray(open(p, 'rb').read())
+            b[50] ^= 0x77
+            write(p, bytes(b))
+        self.git('-C', a, 'add', '-A')
+        self.git('-C', a, 'commit', '-q', '-m', 'map master')
+        self.git('-C', a, 'push', '-q', '--force', self.origin, 'HEAD:refs/heads/windows-assets')
 
     def release(self, n, engine, entries=None, size_lie=False):
         """a winpkg-N release with the server package (engine text) and both client packages"""
@@ -338,6 +368,8 @@ def test_flow():
               'check: engine and client needed', w.out)
         check(d.get('needs_downloads') == 'yes' and d.get('website_changed') == 'yes', 'check: downloads, site', w.out)
         check(d.get('update_available') == 'yes' and d.get('running') == 'no', 'check: update available', w.out)
+        check(d.get('map_master') == 'none' and d.get('installed_map') == '0' and d.get('needs_map') == 'no',
+              'check: no map master branch', w.out)
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') != w.git('-C', w.origin, 'rev-parse', 'HEAD'),
               'check changes no checkout')
 
@@ -363,7 +395,8 @@ def test_flow():
         out = w.out
         check(rc == 0 and 'RESULT ok' in out, 'apply: ok', out)
         steps = [l.split()[1] for l in out.splitlines() if l.startswith('STEP ')]
-        check(steps == ['1/9', '2/9', '3/9', '4/9', '5/9', '6/9', '7/9', '8/9', '9/9'], 'apply: nine steps %r' % steps, out)
+        check(steps == ['%d/10' % i for i in range(1, 11)], 'apply: ten steps %r' % steps, out)
+        check('no map master' in out, 'apply: no map master, the map stays', out)
         order = [w.pos('backup'), w.pos('systemctl stop chaos-server'), w.pos('install --no-sql'),
                  w.pos('systemctl start chaos-server'), w.pos('install --only sql'), w.pos('systemctl restart chaos-server'),
                  w.pos('publish'), w.pos('site')]
@@ -483,9 +516,87 @@ def test_flow():
         shutil.rmtree(w.root, ignore_errors=True)
 
 
+def test_map():
+    w = World()
+    try:
+        target = os.path.join(w.server, 'data/world/map.otbm')
+        old_map = read(target)
+        w.release(47, 'engine 47\n')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0, 'map: a first apply without a map master', w.out)
+
+        m1 = map_master_test.fake_map('edited', 11, size=7000)
+        w.map_master(m1)
+        rc = w.run('check')
+        d = w.kv()
+        check(rc == 0 and d.get('map_master') == '1' and d.get('installed_map') == '0' and d.get('needs_map') == 'yes'
+              and d.get('update_available') == 'yes', 'map: check sees version 1', w.out)
+        big = w.git('-C', w.origin, 'rev-parse', 'windows-assets:things/big.bin')
+        missing = w.git('-C', w.repo, 'rev-list', '--objects', '--missing=print', 'origin/windows-assets')
+        check('?' + big in missing.split(), 'map: the other files of the branch are not fetched', missing)
+
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        out = w.out
+        check(rc == 0 and 'RESULT ok' in out and 'map master 1' in out, 'map: apply installs version 1', out)
+        missing = w.git('-C', w.repo, 'rev-list', '--objects', '--missing=print', 'origin/windows-assets')
+        check('?' + big in missing.split(), 'map: apply fetches only world/', missing)
+        new = open(target, 'rb').read()
+        check(new.endswith(m1[-2000:]), 'map: the map is the master', out)
+        hdr = map_master_test.M.read_header(new)
+        check(map_master_test.M.file_names(hdr).get('spawn') == 'map-spawn.xml', 'map: the header names map-spawn.xml')
+        backups = os.listdir(os.path.join(w.kit, 'map-backups'))
+        check(len(backups) == 1 and backups[0].startswith('map.otbm.')
+              and read(os.path.join(w.kit, 'map-backups', backups[0])) == old_map, 'map: the old map kept %r' % backups)
+        order = [w.pos('backup'), w.pos('systemctl stop chaos-server'), w.pos('install --no-sql'),
+                 w.pos('systemctl restart chaos-server')]
+        check(all(i >= 0 for i in order) and order == sorted(order), 'map: backup, stop, install, restart %r' % order)
+        i_map = out.find('map master version 1 in place')
+        check(0 <= out.find('stopping chaos-server') < i_map < out.find('install_all.py (every step'),
+              'map: replaced after the stop and before install_all', out)
+        check(w.state_value('map_version') == '1', 'map: state map_version')
+        rc = w.run('check')
+        check(w.kv().get('needs_map') == 'no' and w.kv().get('installed_map') == '1', 'map: check after apply', w.out)
+
+        # the same version: nothing restarted
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and 'version 1 already' in w.out and not any(c.startswith('systemctl stop') for c in w.calls),
+              'map: the same version is skipped, no restart', w.out)
+
+        # a damaged part: refused before anything stops
+        w.map_master(map_master_test.fake_map('edited', 12, size=7000), damage=True)
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 1 and 'map master was refused' in w.out and not any(c.startswith('systemctl stop') for c in w.calls),
+              'map: a damaged master refused, the server keeps running', w.out)
+        check(open(target, 'rb').read() == new, 'map: the map stays after a refusal')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site', '--no-map')
+        check(rc == 0 and 'skipped (--no-map)' in w.out, 'map: --no-map', w.out)
+
+        # version 3 with a broken engine: the automatic rollback puts version 1 back
+        m3 = map_master_test.fake_map('edited', 13, size=7000)
+        w.map_master(m3)
+        w.release(48, 'BROKEN engine 48\n')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 2 and 'map put back' in w.out, 'map: rolled back with the engine', w.out)
+        check(open(target, 'rb').read() == new, 'map: version 1 back after the rollback')
+        check(json.load(open(target + '.master.json'))['version'] == 1, 'map: the marker of version 1 back')
+
+        # a good engine: version 3 in; the manual rollback puts version 1 back
+        w.release(49, 'engine 49\n')
+        rc = w.run('apply', '--no-client', '--no-downloads', '--no-site')
+        check(rc == 0 and open(target, 'rb').read().endswith(m3[-2000:]), 'map: version 3 installed', w.out)
+        rc = w.run('rollback')
+        check(rc == 0 and open(target, 'rb').read() == new, 'map: the manual rollback puts version 1 back', w.out)
+        rc = w.run('check')
+        check(w.kv().get('installed_map') == '1' and w.kv().get('needs_map') == 'yes', 'map: check after the rollback',
+              w.out)
+    finally:
+        shutil.rmtree(w.root, ignore_errors=True)
+
+
 def main():
     test_rates_tool()
     test_flow()
+    test_map()
     print('chaos_kit_update_test: %d failures' % len(FAILS))
     return 1 if FAILS else 0
 

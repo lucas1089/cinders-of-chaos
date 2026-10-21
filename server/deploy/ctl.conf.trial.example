@@ -27,6 +27,10 @@ CHAOS_KIT_DIR=/opt/chaos-trial
 # the branch the checkout CHAOS_REPO follows, and the GitHub repository of the winpkg-N releases (the engine)
 CHAOS_UPDATE_BRANCH=main
 CHAOS_RELEASE_REPO=lucas1089/cinders-of-chaos
+# the map master (the owner's edited map, server/README.md "Map master"): world/ of this branch of the same repository;
+# the replaced maps are kept in CHAOS_MAP_BACKUP_DIR (the newest 3, each as large as the map)
+#CHAOS_MAP_BRANCH=windows-assets
+#CHAOS_MAP_BACKUP_DIR=/opt/chaos-trial/map-backups
 # the website: the signed client update goes to CHAOS_SITE_DIR/updates/live, the client downloads to CHAOS_DL_DIR
 # (a symlink is fine: the files are written next to its target), install_site.sh reads CHAOS_SITE_ENV
 CHAOS_SITE_DIR=/var/www/chaos
