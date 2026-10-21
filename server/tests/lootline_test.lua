@@ -83,12 +83,16 @@ EventCallback = setmetatable({}, {
 
 dofile("data/scripts/chaos/lootline.lua")
 local X = ChaosLootLine
-eq(#callbacks, 2, "two callbacks")
-check(callbacks[1].index < 0 and callbacks[2].index >= 99, "before the stock callback (0), after the empty corpse check (99)")
+eq(#callbacks, 3, "three callbacks: open, settle (the corpse after the loot layer, tests/lootline_corpse_test.lua), flush")
+check(callbacks[1].index < 0 and callbacks[3].index >= 99, "before the stock callback (0), after the empty corpse check (99)")
+check(callbacks[2].index > 1 and callbacks[2].index < 2, "settle after the loot layer (1), before the auto seller (2)")
 
 -- a kill's chain: stock (0), the Chaos layer (1), the pouches (2.7)
 local function kill(monster, corpse, owner, steps)
-	local chain = {{index = callbacks[1].index, fn = callbacks[1].fn}, {index = callbacks[2].index, fn = callbacks[2].fn}}
+	local chain = {}
+	for _, c in ipairs(callbacks) do -- these corpses are no containers: the settle step leaves the stock list
+		chain[#chain + 1] = {index = c.index, fn = c.fn}
+	end
 	for _, s in ipairs(steps) do
 		chain[#chain + 1] = s
 	end

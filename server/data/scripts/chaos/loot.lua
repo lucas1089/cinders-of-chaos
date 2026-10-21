@@ -292,6 +292,32 @@ function L.stripStackableRarity(items)
 	return n
 end
 
+-- Adds `count` of item `id` to a corpse and returns the first item made and how many arrived (beta 2026-10-21: the loot
+-- line said more than arrived). The engine's Container:addItem makes at most one stack of 100 (a stackable count above
+-- it is cut to 100: an extra roll of 2.7 x 100 gold said "270x gold coin" and put 100 in), so a larger count goes in
+-- stacks of at most L.STACK. A corpse that is full refuses an item; it then goes in past the corpse's size
+-- (FLAG_NOLIMIT, as the rift's Echoing Spoils and the dungeon loot do), so it is in the corpse, in the loot channel and
+-- in reach of the autoloot instead of being dropped without a word.
+L.STACK = 100
+function L.addToCorpse(corpse, id, count)
+	count = math.max(1, math.floor(tonumber(count) or 1))
+	local stackable = L.isStackableId(id)
+	local first, added = nil, 0
+	while added < count do
+		local n = stackable and math.min(L.STACK, count - added) or 1
+		local item = corpse:addItem(id, n)
+		if not item and FLAG_NOLIMIT then
+			item = corpse:addItem(id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+		if not item then
+			break
+		end
+		first = first or item
+		added = added + n -- a non-stackable count is that many items (addItem would read it as charges)
+	end
+	return first, added
+end
+
 -- ids that leave every corpse: the stackable throwing weapons (data/lib/chaos_throwables.lua)
 function L.isRemovedId(id)
 	return ChaosThrowables.isThrowable(id)
@@ -1077,7 +1103,10 @@ local function processKill(monster, corpse)
 		rollTable = okW and w or lootTable
 	end
 	for _, drop in ipairs(L.rollExtraLoot(rollTable, tier, ctx)) do
-		local item = not isAmmo(drop.itemId) and corpse:addItem(drop.itemId, drop.count) or nil
+		local item, added = nil, 0
+		if not isAmmo(drop.itemId) then
+			item, added = L.addToCorpse(corpse, drop.itemId, drop.count)
+		end
 		if item then
 			if L.isGearId(drop.itemId) then
 				local r = L.stockRarity()
@@ -1085,7 +1114,7 @@ local function processKill(monster, corpse)
 					item:setCustomAttribute("rarity", r)
 				end
 			end
-			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. itemName(drop.itemId)
+			bonus[#bonus + 1] = (added > 1 and (added .. "x ") or "") .. itemName(drop.itemId)
 		end
 	end
 
@@ -1176,9 +1205,9 @@ local function processKill(monster, corpse)
 
 	-- 3. currency
 	for _, drop in ipairs(L.rollCurrency(tier, ctx)) do
-		local item = corpse:addItem(drop.id, drop.count)
+		local item, added = L.addToCorpse(corpse, drop.id, drop.count)
 		if item then
-			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. drop.name
+			bonus[#bonus + 1] = (added > 1 and (added .. "x ") or "") .. drop.name
 		end
 	end
 
@@ -1187,7 +1216,7 @@ local function processKill(monster, corpse)
 	if ChaosGems then
 		local gemLevel = level > 0 and level or owner:getLevel()
 		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind * pace, rnd)) do
-			local item = corpse:addItem(id, 1)
+			local item = (L.addToCorpse(corpse, id, 1))
 			if item then
 				bonus[#bonus + 1] = ChaosGems.gemName(id)
 			end
@@ -1204,7 +1233,7 @@ local function processKill(monster, corpse)
 	-- 4. uniques
 	local u = c.unique
 	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind * pace, nil, owner)) do
-		local item = corpse:addItem(e.id, 1)
+		local item = (L.addToCorpse(corpse, e.id, 1))
 		if item then
 			if ChaosMakeUnique then
 				ChaosMakeUnique(item)

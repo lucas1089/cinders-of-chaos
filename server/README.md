@@ -11645,7 +11645,7 @@ not changed.
   mirrors them (pushed after login and asked for with `sync` at game start).
 
 **onDropLoot order** (lower index first): -1 the kill's loot line opens (`lootline.lua`), 0 stock loot + "Loot of" text
-(held back), 1 Chaos loot layer, 2 auto seller,
+(held back), 1 Chaos loot layer, **1.9 settle** (the loot line reads the corpse, "One loot line per kill"), 2 auto seller,
 **2.5 snapshot** (the corpse contents for the loot channel; list items below the Rarity Autoloot minimum are moved into a
 bag on the corpse tile for the rest of the chain), 2.7 store pouches ("Store pouches"), 3 base autoloot, **3.5 rarity
 pickup**, **4.5 finish** (the held items go back into the corpse, the bag is removed, the loot row, rare-drop lines and rays start),
@@ -11673,6 +11673,29 @@ to the final rarity (no second "[Rare] fire sword" entry) and wraps every stock 
 Magic; `pouches_config.lua`) on in `{}`, as the bonus items and the pouch part are: "Loot of a dragon: 120 gold coins,
 {[Rare] fire sword}, [Uncommon] plate armor." A raise with no matching entry is listed as a bonus item. Without
 `lootline.lua` the bonus line lists the raise with the same `{}` rule.
+**The list is the corpse** (beta report 2026-10-21, Nightfang Widow and Shadowcrystal Widow: "it says it drops X items, but
+neither the Loot tab nor the bag gets even half"; `tests/lootline_corpse_test.lua`). The stock line is written at index 0,
+from the corpse the stock pass filled, and the Chaos loot layer (index 1) then took items out again: the pack thinning of
+"Pack combat (pace)" (`L.thinCorpse`; for these two base monsters, bounty pool levels 509 and 480, hunting level 1018 and 960:
+about 24% of the items stay and about 7% of the coins and NPC-sellable items), arrows and throwing weapons, the waystones of
+low monsters; smart loot swaps a gear item for another. The held stock list still named every item, so the line said about
+four times what the corpse, the loot channel row (snapshot at 2.5) and the autoloot got. The display scale ("inflação de
+números") is not involved: the engine scales only the damage and heal message types (src-patch 0037) and no Lua site
+scales a loot field (checked by the same test). Now `lootline.lua` reads the corpse at **index 1.9** (`settleIndex`: after
+the loot layer, Echoing Spoils 1.5 and the dungeon difficulty loot 1.7, before the auto seller 2) and the line lists exactly
+those items (`K.describe`: "100 gold coins", "a great mana potion", "[Uncommon] knight armor", `{}` from Magic on, a unique
+`{Ashbringer}`, "Veiled" on a veiled item; one id with the same rarity is one entry with its counts added; the items of a bag
+in the corpse too). The stock list, the bonus items and the rarity raises are not added again (they are in the corpse); an
+empty corpse says "nothing" (low stamina keeps "nothing (due to low stamina)"). What leaves the corpse after 1.9 says so
+itself: the auto seller ("Auto seller: sold ..."), the autoloot gold to the bank, the pet's fetch, the pouches and the Loot
+Bag (the "Looted: ..." part, with "N left in the corpse, no room"), the Rarity Autoloot ("no room or capacity, left in the
+corpse"). The gold finds (item modifiers, paragon, pet, blessing, index 2) add coins after the line. Without the settle step
+(a corpse that is not a container) the line is built as before.
+The loot layer's own adds (`L.addToCorpse`): the engine's `Container:addItem` cuts a stackable count to 100, so an extra
+roll of 270 gold said "270x gold coin" and put 100 in; a larger count now goes in stacks of 100 and the text says what
+arrived. A corpse that is full refused the item (an extra roll, an orb, a gem or a unique was gone without a word); it now
+goes in past the corpse's size (`FLAG_NOLIMIT`, as Echoing Spoils and the dungeon loot do), so the line, the loot channel
+and the autoloot see it.
 Every step is in `pcall` and returns nothing, so the chain never stops. `autoloot.lua` and `autosell.lua` are unchanged; the
 auto seller still sells first (sold items never show in the row; checked in game: "Auto seller: sold ..."). The rarity pickup
 puts what it takes into the backpack; with no room it stays in the corpse (the retired Bottomless Loot Pouch used to send it to
@@ -13776,7 +13799,9 @@ ambush and goblin chances, kill goals, multikill, cleave); the spawn side (fill,
   curve is already divided by 1.30, the median pack's bonus.
 - **Loot** (`loot.lua`): the stock corpse is thinned by the loot curve (a stack keeps count x factor rounded at random,
   gold included; any other item stays with that chance: `L.thinCorpse`), and the Chaos extra rolls, currency, gems,
-  supports and uniques roll x the factor, outside the `maxRate` / `maxScale` caps. An empty paced corpse decays after
+  supports and uniques roll x the factor, outside the `maxRate` / `maxScale` caps. The thinning runs after the stock
+  "Loot of ..." list was written; the kill's loot line lists the corpse as it is after it (index 1.9, "One loot line per
+  kill", beta 2026-10-21: the line used to name the whole stock list). An empty paced corpse decays after
   30 s (`emptyCorpseSeconds`). The check runs at the end of the drop (`loot_config.lua` `emptyCorpseIndex` 99), after
   the Loot Bag, the base autoloot and the Rarity Autoloot, so a corpse the autoloot emptied decays fast too. A corpse
   with anything left in it decays after 120 s (`corpseSeconds`, owner 2026-10-18; every monster, never longer than the stock
