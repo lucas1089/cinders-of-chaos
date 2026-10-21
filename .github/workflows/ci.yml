@@ -159,10 +159,13 @@ jobs:
           python3 -I server/tools/area_planner_test.py
           python3 -I server/tools/gen_spawn_density_test.py   # the hunt fill (tools/spawn_density.json); same numpy
           d=$(mktemp -d)
-          for p in server/tools/areaplan/examples/*.json server/tools/areaplan/plans/*.json; do
+          for p in server/tools/areaplan/examples/*.json server/tools/areaplan/plans/*.json server/tools/areaplan/events/*.json; do
             python3 -I server/tools/area_planner.py validate "$p"
             python3 -I server/tools/area_planner.py compile "$p" "$d"
           done
+          # the Haunted Harvest (pair 33 kit): its places file is up to date, its areas keep their distance and route
+          python3 -I server/tools/gen_harvest_places.py --check
+          python3 -I server/tools/gen_harvest_places_test.py
 
       - name: Content areas install and the teleport room (install_content_areas.py on a synthetic map); reward chests on the map
         run: |
@@ -530,6 +533,11 @@ jobs:
           python3 -I server/tools/install_pack30_items.py --lua --check
           python3 -I server/tools/install_pack30_items.py --hideout-lua --check
           python3 -I server/tools/install_pack30_items_test.py
+          # harvest kit of pair 33 (import-only) and the Haunted Harvest's items: the server manifest and the kit Lua
+          # follow the things file; installer and event items on a synthetic items.otb
+          python3 -I server/tools/install_pack33_items.py --manifest --check
+          python3 -I server/tools/install_pack33_items.py --lua --check
+          python3 -I server/tools/install_pack33_items_test.py
           # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
           # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check

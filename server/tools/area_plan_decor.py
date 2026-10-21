@@ -29,6 +29,10 @@ OWNER_SWITCH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__fi
 # overlay only while ChaosAssetsArt.PAIR27 is on (server/data/lib/chaos_assets_art.lua; off while pair 27 is a trial)
 ASSETS_PATH = os.path.join(C.PLANDIR, 'decor_assets_art.json')
 ASSETS_SWITCH = os.path.join(os.path.dirname(OWNER_SWITCH), 'chaos_assets_art.lua')
+# the harvest kit of client pair 33 (corn, pumpkins, tombstones, urns, coffins, ...; kits for the biomes harvest and
+# harvest_crypt): merged last, only while ChaosHarvestArt.PAIR33 is on (server/data/lib/chaos_harvest_art.lua)
+HARVEST_PATH = os.path.join(C.PLANDIR, 'decor_pack33_kit.json')
+HARVEST_SWITCH = os.path.join(os.path.dirname(OWNER_SWITCH), 'chaos_harvest_art.lua')
 DECOR = {'sparse': 0.55, 'normal': 1.0, 'dense': 1.5}
 LIGHT = {'dark': 0.5, 'dim': 0.75, 'normal': 1.0, 'bright': 1.5}
 # rates at "normal" (per candidate tile unless noted)
@@ -49,9 +53,16 @@ def assets_on(path=ASSETS_SWITCH):
     return re.search(r'^M\.PAIR27\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
 
 
+def harvest_on(path=HARVEST_SWITCH):
+    if not os.path.isfile(path):
+        return False
+    return re.search(r'^M\.PAIR33\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
+
+
 def merge_owner(k, extra):
     """decor_kits.json plus the owner's overlay: its groups, its kits (a `base` kit's rows plus `add` rows per
-    category) and its biome mapping; the input is not changed"""
+    category; with `replace`, the `add` rows replace the base kit's rows of those categories) and its biome mapping;
+    the input is not changed"""
     out = json.loads(json.dumps(k))
     for name, g in extra['groups'].items():
         assert name not in out['groups'], 'group %s twice' % name
@@ -59,7 +70,7 @@ def merge_owner(k, extra):
     for name, spec in extra['kits'].items():
         kit = json.loads(json.dumps(out['kits'][spec['base']]))
         for cat, rows in spec['add'].items():
-            kit[cat] = kit.get(cat, []) + rows
+            kit[cat] = list(rows) if spec.get('replace') else kit.get(cat, []) + rows
         out['kits'][name] = kit
     out['biome_kit'].update(extra['biome_kit'])
     return out
@@ -73,6 +84,8 @@ def kits():
             _kits = merge_owner(_kits, json.load(open(OWNER_PATH, encoding='utf-8')))
         if assets_on():
             _kits = merge_owner(_kits, json.load(open(ASSETS_PATH, encoding='utf-8')))
+        if harvest_on():
+            _kits = merge_owner(_kits, json.load(open(HARVEST_PATH, encoding='utf-8')))
     return _kits
 
 

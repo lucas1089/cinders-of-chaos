@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A raven that nests in the gibbets and pecks at what the harvest left hanging. look 122 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Gallows Raven" nameDescription="a gallows raven" race="blood" experience="1800" speed="70" manacost="0">
+	<health now="7200" max="7200"/>
+	<look type="122" corpse="6053"/>
+	<level min="460" max="480"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="3"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-250" max="-380"/>
+		<attack name="physical" interval="2000" chance="25" range="6" min="-300" max="-480">
+			<attribute key="shootEffect" value="spear"/>
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="physical" interval="2400" chance="12" radius="2" target="0" min="-260" max="-420">
+			<attribute key="areaEffect" value="bats"/>
+		</attack>
+	</attacks>
+	<defenses armor="45" defense="50">
+	</defenses>
+	<elements>
+		<element earthPercent="-10"/>
+		<element energyPercent="-10"/>
+		<element deathPercent="15"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Kraa! Kraa!"/>
+		<voice sentence="Kraaa... harvest..."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="28" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="2" chance="28000"/><!-- hollow candy -->
+		<item id="5894" countmax="2" chance="9000"/><!-- bat wing -->
+		<item id="41623" chance="100"/><!-- hollow charm -->
+	</loot>
+</monster>

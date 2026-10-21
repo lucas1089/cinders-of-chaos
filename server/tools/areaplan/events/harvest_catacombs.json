@@ -1,0 +1,51 @@
+{
+ "schema": "chaos-area-plan/1",
+ "id": "harvest_catacombs",
+ "name": "Harvest Catacombs",
+ "biome": "harvest_crypt",
+ "size": [112, 96],
+ "floors": 1,
+ "level": [500, 650],
+ "seed": 33102,
+ "origin": {"x": 15305, "y": 14880, "z": 8},
+ "decoration": "dense",
+ "light": "dark",
+ "zones": [
+  {"id": "seal_stair", "floor": 1, "size": "small", "place": "northwest", "role": "camp", "pz": true},
+  {"id": "ossuary_hall", "floor": 1, "size": "huge", "place": "center"},
+  {"id": "coffin_gallery", "floor": 1, "size": [22, 14], "place": "west"},
+  {"id": "bone_pits", "floor": 1, "size": "huge", "place": "east"},
+  {"id": "candle_vault", "floor": 1, "size": "large", "place": "north"},
+  {"id": "ritual_chamber", "floor": 1, "size": [15, 13], "place": "south", "role": "passage"},
+  {"id": "kings_crypt", "floor": 1, "size": [24, 20], "place": "southeast", "role": "boss"}
+ ],
+ "paths": [
+  {"from": "seal_stair", "to": "coffin_gallery", "width": 3},
+  {"from": "seal_stair", "to": "candle_vault", "width": 3},
+  {"from": "coffin_gallery", "to": "ossuary_hall", "width": 3},
+  {"from": "candle_vault", "to": "ossuary_hall", "width": 3},
+  {"from": "candle_vault", "to": "bone_pits", "width": 3},
+  {"from": "ossuary_hall", "to": "bone_pits", "width": 3},
+  {"from": "ossuary_hall", "to": "ritual_chamber", "width": 3}
+ ],
+ "connections": [
+  {"type": "teleport", "from": "ritual_chamber", "to": "kings_crypt", "two_way": false},
+  {"type": "teleport", "from": "kings_crypt", "to": "seal_stair", "two_way": false}
+ ],
+ "entry": {"zone": "seal_stair"},
+ "exit": {"zone": "seal_stair"},
+ "spawns": [
+  {"zone": "coffin_gallery", "monster": "Barrowbone Reaver", "count": 6, "pack": 3, "respawn": 60},
+  {"zone": "coffin_gallery", "monster": "Barrowbone Archer", "count": 6, "pack": 3, "respawn": 60},
+  {"zone": "candle_vault", "monster": "Thornhex Crone", "count": 6, "pack": 3, "respawn": 60},
+  {"zone": "candle_vault", "monster": "Lamenting Shade", "count": 3, "pack": 3, "respawn": 60},
+  {"zone": "ossuary_hall", "monster": "Barrowbone Reaver", "count": 6, "pack": 3, "respawn": 60},
+  {"zone": "ossuary_hall", "monster": "Lamenting Shade", "count": 3, "pack": 3, "respawn": 60},
+  {"zone": "ossuary_hall", "monster": "Barrowbone Archer", "count": 3, "pack": 3, "respawn": 60},
+  {"zone": "bone_pits", "monster": "Barrowbone Reaver", "count": 12, "pack": 3, "respawn": 60},
+  {"zone": "bone_pits", "monster": "Gourdmaw Brute", "count": 3, "pack": 3, "respawn": 60},
+  {"zone": "ritual_chamber", "monster": "Thornhex Crone", "count": 3, "pack": 3, "respawn": 60}
+ ],
+ "boss": {"zone": "kings_crypt", "monster": "Malvorn the Hollow King", "respawn": 3600, "title": "the Hollow King"},
+ "notes": "The crypts under the Haunted Harvest's ruined chapel (server/README.md \"Haunted Harvest\"; pair 33 kit, ChaosHarvestArt.PAIR33), levels 500-650. The way in is the crypt seal in the chapel (a sexton's key from the graves breaks it; harvest_event.lua leads the step on the open seal to the arrival here). Upright coffins in the coffin gallery wake skeletons; in the ritual chamber three ritual candles on the circle light the ritual portal (the planned teleport there is replaced by the circle at startup), the only way into the King's Crypt; the crypt's own teleport leads back to the stair. The exit portal leads to the temple."
+}

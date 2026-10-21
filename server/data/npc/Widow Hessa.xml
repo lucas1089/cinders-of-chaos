@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Widow Hessa: the candy trader of the Haunted Harvest (server/data/scripts/chaos/harvest_event.lua,
+     harvest_event_config.lua `shop`; server/README.md "Haunted Harvest"). Stands at the crossroads of the event area
+     (server/tools/areaplan/events/haunted_harvest.json `npcs`); installed by server/tools/install_harvest_event.py. -->
+<npc name="Widow Hessa" script="widow_hessa.lua" walkinterval="0" floorchange="0">
+	<health now="100" max="100" />
+	<look type="54" />
+	<parameters>
+		<parameter key="message_greet" value="Shh, |PLAYERNAME|. The dead are listening. Bring me hollow candy and I will {trade}; ask me about the {harvest} if you dare." />
+		<parameter key="message_farewell" value="Keep a lantern lit, |PLAYERNAME|." />
+		<parameter key="message_walkaway" value="The corn whispers your name..." />
+	</parameters>
+</npc>

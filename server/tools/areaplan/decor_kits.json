@@ -7,6 +7,8 @@
   "forest": "forest",
   "forest_pack": "forest",
   "hall": "vault",
+  "harvest": "forest",
+  "harvest_crypt": "crypt",
   "ice": "ice",
   "ice_pack": "ice",
   "lava": "lava",

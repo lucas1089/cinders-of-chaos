@@ -1,0 +1,615 @@
+{
+ "about": "the harvest kit of the client pair 33 (server/data/items/pack33_kit.csv, install_pack33_items.py). area_plan_decor.kits() merges it after the other overlays only while ChaosHarvestArt.PAIR33 (server/data/lib/chaos_harvest_art.lua) is on: the groups below, a kit 'haunted_harvest' (the forest kit with its categories replaced by the kit's corn, pumpkins, hay, scarecrows, tombstones, trees, leaves, fog and jack-o'-lanterns) for the biome harvest and a kit 'harvest_crypt' (the crypt kit's halls with the kit's urns, coffins, bone piles, skull niches, black candles, webs, banners and lanterns) for the biome harvest_crypt. Off, the two biomes take the stock forest and crypt kits (decor_kits.json). The mechanic states (pumpkin growth, graves, seal, circle, coffins) are never decoration: harvest_event.lua places them.",
+ "biome_kit": {
+  "harvest": "haunted_harvest",
+  "harvest_crypt": "harvest_crypt"
+ },
+ "groups": {
+  "hc_altar": {
+   "block": true,
+   "ids": [
+    41420
+   ],
+   "light": 0,
+   "name": "necromancer altar",
+   "size": 2
+  },
+  "hc_banner_h": {
+   "block": false,
+   "ids": [
+    41557
+   ],
+   "light": 0,
+   "name": "tattered banner",
+   "size": 2
+  },
+  "hc_banner_v": {
+   "block": false,
+   "ids": [
+    41558
+   ],
+   "light": 0,
+   "name": "tattered banner",
+   "size": 2
+  },
+  "hc_black_candles": {
+   "block": true,
+   "ids": [
+    41554
+   ],
+   "light": 3,
+   "name": "black candles",
+   "size": 1
+  },
+  "hc_bonepile": {
+   "block": true,
+   "ids": [
+    41419
+   ],
+   "light": 0,
+   "name": "large bone pile",
+   "size": 2
+  },
+  "hc_chains": {
+   "block": true,
+   "ids": [
+    41563
+   ],
+   "light": 0,
+   "name": "hanging chains",
+   "size": 1
+  },
+  "hc_cobweb": {
+   "block": false,
+   "ids": [
+    41569
+   ],
+   "light": 0,
+   "name": "cobweb",
+   "size": 1
+  },
+  "hc_coffins": {
+   "block": true,
+   "ids": [
+    41421,
+    41559
+   ],
+   "light": 0,
+   "name": "coffins",
+   "size": 2
+  },
+  "hc_floor": {
+   "block": false,
+   "ids": [
+    41360,
+    41361,
+    41363,
+    41364,
+    41362
+   ],
+   "light": 0,
+   "name": "crypt floor detail",
+   "size": 1
+  },
+  "hc_lantern_h": {
+   "block": false,
+   "ids": [
+    41272
+   ],
+   "light": 3,
+   "name": "hanging lantern",
+   "size": 2
+  },
+  "hc_lantern_v": {
+   "block": false,
+   "ids": [
+    41273
+   ],
+   "light": 3,
+   "name": "hanging lantern",
+   "size": 2
+  },
+  "hc_niche": {
+   "block": true,
+   "ids": [
+    41522
+   ],
+   "light": 3,
+   "name": "skull candle niche",
+   "size": 1
+  },
+  "hc_rats": {
+   "block": true,
+   "ids": [
+    41566,
+    41523
+   ],
+   "light": 0,
+   "name": "rat skeleton",
+   "size": 1
+  },
+  "hc_skulls": {
+   "block": true,
+   "ids": [
+    41550
+   ],
+   "light": 0,
+   "name": "skull pile",
+   "size": 1
+  },
+  "hc_urns": {
+   "block": true,
+   "ids": [
+    41570,
+    41571
+   ],
+   "light": 0,
+   "name": "urns",
+   "size": 1
+  },
+  "hc_web_h": {
+   "block": false,
+   "ids": [
+    41278
+   ],
+   "light": 0,
+   "name": "spider web",
+   "size": 2
+  },
+  "hc_web_v": {
+   "block": false,
+   "ids": [
+    41279
+   ],
+   "light": 0,
+   "name": "spider web",
+   "size": 2
+  },
+  "hk_big_trees": {
+   "block": true,
+   "ids": [
+    41366,
+    41572
+   ],
+   "light": 0,
+   "name": "autumn tree",
+   "size": 2
+  },
+  "hk_bones": {
+   "block": false,
+   "ids": [
+    41199
+   ],
+   "light": 0,
+   "name": "small bones",
+   "size": 1
+  },
+  "hk_candles": {
+   "block": false,
+   "ids": [
+    41383
+   ],
+   "light": 3,
+   "name": "candles",
+   "size": 1
+  },
+  "hk_corn": {
+   "block": true,
+   "ids": [
+    41206,
+    41205,
+    41201,
+    41207
+   ],
+   "light": 0,
+   "name": "corn",
+   "size": 1
+  },
+  "hk_crows": {
+   "block": false,
+   "ids": [
+    41575
+   ],
+   "light": 0,
+   "name": "crows",
+   "size": 2
+  },
+  "hk_dead_trees": {
+   "block": true,
+   "ids": [
+    41365,
+    41367
+   ],
+   "light": 0,
+   "name": "dead tree",
+   "size": 1
+  },
+  "hk_fog": {
+   "block": false,
+   "ids": [
+    41389,
+    41390
+   ],
+   "light": 0,
+   "name": "fog",
+   "size": 1
+  },
+  "hk_hay": {
+   "block": true,
+   "ids": [
+    41369,
+    41370
+   ],
+   "light": 0,
+   "name": "hay bales",
+   "size": 1
+  },
+  "hk_haystack": {
+   "block": true,
+   "ids": [
+    41368
+   ],
+   "light": 0,
+   "name": "haystack",
+   "size": 2
+  },
+  "hk_jack": {
+   "block": true,
+   "ids": [
+    41203,
+    41212,
+    41213
+   ],
+   "light": 3,
+   "name": "jack-o'-lantern",
+   "size": 1
+  },
+  "hk_lantern_post": {
+   "block": true,
+   "ids": [
+    41384
+   ],
+   "light": 3,
+   "name": "lantern post",
+   "size": 1
+  },
+  "hk_leaves": {
+   "block": false,
+   "ids": [
+    41195,
+    41196,
+    41197
+   ],
+   "light": 0,
+   "name": "fallen leaves",
+   "size": 1
+  },
+  "hk_props": {
+   "block": true,
+   "ids": [
+    41576,
+    41387,
+    41574
+   ],
+   "light": 0,
+   "name": "farm props",
+   "size": 1
+  },
+  "hk_pumpkin_small": {
+   "block": false,
+   "ids": [
+    41202
+   ],
+   "light": 0,
+   "name": "small pumpkin",
+   "size": 1
+  },
+  "hk_pumpkins": {
+   "block": true,
+   "ids": [
+    41208,
+    41210,
+    41211
+   ],
+   "light": 0,
+   "name": "pumpkins",
+   "size": 1
+  },
+  "hk_scarecrows": {
+   "block": true,
+   "ids": [
+    41371,
+    41372
+   ],
+   "light": 0,
+   "name": "scarecrow",
+   "size": 1
+  },
+  "hk_tombstones": {
+   "block": true,
+   "ids": [
+    41373,
+    41374,
+    41375,
+    41376
+   ],
+   "light": 0,
+   "name": "tombstone",
+   "size": 1
+  }
+ },
+ "kits": {
+  "harvest_crypt": {
+   "add": {
+    "around": [
+     [
+      "hc_floor",
+      3
+     ],
+     [
+      "hc_cobweb",
+      1
+     ]
+    ],
+    "centre": [
+     [
+      "hc_coffins",
+      2
+     ],
+     [
+      "hc_bonepile",
+      2
+     ],
+     [
+      "hc_altar",
+      1
+     ],
+     [
+      "hc_urns",
+      2
+     ]
+    ],
+    "corner": [
+     [
+      "hc_cobweb",
+      2
+     ],
+     [
+      "hc_skulls",
+      1
+     ],
+     [
+      "hc_rats",
+      1
+     ]
+    ],
+    "floor": [
+     [
+      "hc_floor",
+      5
+     ],
+     [
+      "hc_cobweb",
+      1
+     ]
+    ],
+    "light_floor": [
+     [
+      "hc_black_candles",
+      2
+     ],
+     [
+      "hc_niche",
+      1
+     ]
+    ],
+    "light_small": [
+     [
+      "hk_candles",
+      1
+     ]
+    ],
+    "light_wall_h": [
+     [
+      "hc_lantern_h",
+      1
+     ]
+    ],
+    "light_wall_v": [
+     [
+      "hc_lantern_v",
+      1
+     ]
+    ],
+    "path_edge": [
+     [
+      "hc_floor",
+      3
+     ]
+    ],
+    "wall_h": [
+     [
+      "hc_web_h",
+      2
+     ],
+     [
+      "hc_banner_h",
+      2
+     ]
+    ],
+    "wall_side": [
+     [
+      "hc_urns",
+      3
+     ],
+     [
+      "hc_coffins",
+      2
+     ],
+     [
+      "hc_skulls",
+      1
+     ],
+     [
+      "hc_chains",
+      1
+     ],
+     [
+      "hc_rats",
+      1
+     ]
+    ],
+    "wall_v": [
+     [
+      "hc_web_v",
+      2
+     ],
+     [
+      "hc_banner_v",
+      2
+     ]
+    ]
+   },
+   "base": "crypt",
+   "replace": true
+  },
+  "haunted_harvest": {
+   "add": {
+    "around": [
+     [
+      "hk_leaves",
+      3
+     ],
+     [
+      "hk_pumpkin_small",
+      2
+     ],
+     [
+      "hk_bones",
+      1
+     ],
+     [
+      "hk_fog",
+      1
+     ]
+    ],
+    "centre": [
+     [
+      "hk_haystack",
+      1
+     ],
+     [
+      "hk_big_trees",
+      2
+     ],
+     [
+      "hk_scarecrows",
+      2
+     ],
+     [
+      "hk_hay",
+      2
+     ],
+     [
+      "hk_pumpkins",
+      2
+     ],
+     [
+      "hk_props",
+      1
+     ],
+     [
+      "hk_tombstones",
+      1
+     ],
+     [
+      "hk_crows",
+      1
+     ]
+    ],
+    "corner": [
+     [
+      "hk_corn",
+      3
+     ],
+     [
+      "hk_dead_trees",
+      1
+     ]
+    ],
+    "floor": [
+     [
+      "hk_leaves",
+      5
+     ],
+     [
+      "hk_fog",
+      2
+     ],
+     [
+      "hk_pumpkin_small",
+      1
+     ],
+     [
+      "hk_bones",
+      1
+     ]
+    ],
+    "light_floor": [
+     [
+      "hk_jack",
+      3
+     ],
+     [
+      "hk_lantern_post",
+      2
+     ]
+    ],
+    "light_small": [
+     [
+      "hk_candles",
+      1
+     ]
+    ],
+    "path_edge": [
+     [
+      "hk_leaves",
+      3
+     ],
+     [
+      "hk_fog",
+      1
+     ],
+     [
+      "hk_pumpkin_small",
+      1
+     ]
+    ],
+    "wall_side": [
+     [
+      "hk_corn",
+      4
+     ],
+     [
+      "hk_hay",
+      2
+     ],
+     [
+      "hk_pumpkins",
+      2
+     ],
+     [
+      "hk_tombstones",
+      1
+     ],
+     [
+      "hk_dead_trees",
+      2
+     ]
+    ]
+   },
+   "base": "forest",
+   "replace": true
+  }
+ }
+}

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Critter of the Haunted Harvest (server/README.md "Haunted Harvest"): A skeleton bowman of the old village guard, raised from the graves with its bow still strung. look 33 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Barrowbone Archer" nameDescription="a barrowbone archer" race="undead" experience="2700" speed="55" manacost="0">
+	<health now="9600" max="9600"/>
+	<look type="33" corpse="5972"/>
+	<level min="520" max="540"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="4"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-220" max="-340"/>
+		<attack name="physical" interval="2000" chance="40" range="7" min="-420" max="-700">
+			<attribute key="shootEffect" value="arrow"/>
+		</attack>
+		<attack name="death" interval="2200" chance="18" range="7" radius="2" target="1" min="-380" max="-620">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="70" defense="70">
+	</defenses>
+	<elements>
+		<element holyPercent="-25"/>
+		<element deathPercent="50"/>
+		<element physicalPercent="10"/>
+		<element firePercent="-10"/>
+	</elements>
+	<immunities>
+		<immunity lifedrain="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*clatter*"/>
+		<voice sentence="Another arrow for the barrow."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="40" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="3" chance="32000"/><!-- hollow candy -->
+		<item id="41621" chance="1200"/><!-- sexton's key -->
+		<item id="41623" chance="140"/><!-- hollow charm -->
+	</loot>
+</monster>

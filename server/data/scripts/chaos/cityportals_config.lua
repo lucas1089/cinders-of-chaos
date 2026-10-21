@@ -41,6 +41,8 @@ return {
 			text = "Step in to go back to the temple of this town."},
 		idlehall = {name = "Idle Hall Exit", effect = "CONST_ME_MAGIC_BLUE",
 			text = "Step in to go back to your temple. Characters who stand idle in town are moved to this hall."},
+		harvest = {name = "Harvest Portal", effect = "CONST_ME_MORTAREA",
+			text = "Open while the Haunted Harvest lasts: step in to reach the cursed village (levels 450-650). Its exit portal leads to your temple."},
 		siege = {name = "Guild Siege Portal", effect = "CONST_ME_YELLOW_RINGS",
 			text = "Open while a guild siege runs: members of a signed-up guild step in to reach their base. The base's exit portal leads to your temple."},
 	},

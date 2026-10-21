@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Monster of the Haunted Harvest (server/README.md "Haunted Harvest"): A hulk of vine and rind grown in the cursed field; its head burns like a lantern. look 292 is the stock look until ChaosHarvestArt.PAIR33 is on; then the kit look (data/lib/chaos_harvest_art.lua, client/tools/sprites/monster_looks/harvest_picks.csv). -->
+<monster name="Gourdmaw Brute" nameDescription="a gourdmaw brute" race="venom" experience="3900" speed="40" manacost="0">
+	<health now="14500" max="14500"/>
+	<look type="292" corpse="8960"/>
+	<level min="600" max="620"/>
+	<targetchange interval="4000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-640" max="-960"/>
+		<attack name="fire" interval="2000" chance="20" radius="3" target="0" min="-560" max="-880">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="fire" interval="2200" chance="15" range="6" radius="2" target="1" min="-520" max="-820">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="95" defense="90">
+	</defenses>
+	<elements>
+		<element firePercent="30"/>
+		<element earthPercent="40"/>
+		<element icePercent="-20"/>
+		<element physicalPercent="10"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="*crunch*"/>
+		<voice sentence="PLANT... YOU..."/>
+		<voice sentence="The field is hungry."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2148" countmax="90" chance="45000"/><!-- gold coin -->
+		<item id="2152" countmax="56" chance="65000"/><!-- platinum coin -->
+		<item id="41620" countmax="5" chance="42000"/><!-- hollow candy -->
+		<item id="2096" chance="2500"/><!-- pumpkinhead -->
+		<item id="41623" chance="200"/><!-- hollow charm -->
+	</loot>
+</monster>

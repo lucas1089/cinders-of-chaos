@@ -223,7 +223,7 @@ local SITES = {
 	["bestiary_core.lua"] = CORE_T, ["seasonpass.lua"] = {"notice%(player,%s*"}, ["seasonpass_core.lua"] = CORE_T,
 	["community.lua"] = {}, ["community_core.lua"] = CORE_T, ["dungeons.lua"] = {},
 	["treasure_goblin.lua"] = {}, ["loot.lua"] = {}, ["rift_core.lua"] = CORE_T, ["infinitytower_run.lua"] = {},
-	["conquest.lua"] = {"result%(player,%s*%a+,%s*"}
+	["conquest.lua"] = {"result%(player,%s*%a+,%s*"}, ["harvest_event.lua"] = {"tell%(player,%s*"}
 }
 local used = 0
 for f, extra in pairs(SITES) do
@@ -369,7 +369,7 @@ end
 -- the NPCs: their XML greet / farewell / walk away / trade lines (ChaosI18n.npcMessages) and their scripts' lines
 local NPC_XML = {"Ascendant Oracle", "Loot Buyer", "Material Broker", "Mordecai Ashwager", "Keeper of Trials",
 	"Wandering Merchant", "Warden Ysolde", "Forgemaster Brannoc", "Cantor Velith", "Elder Bramwyn",
-	"Osric the Chandler", "Iselde Varrow"}
+	"Osric the Chandler", "Iselde Varrow", "Widow Hessa"}
 for _, name in ipairs(NPC_XML) do
 	local fh = io.open("data/npc/" .. name .. ".xml", "r")
 	check(fh ~= nil, "npc xml " .. name)
@@ -382,7 +382,7 @@ for _, name in ipairs(NPC_XML) do
 	end
 end
 for _, f in ipairs({"loot_buyer.lua", "ascendant_oracle.lua", "material_broker.lua", "mordecai_ashwager.lua",
-		"chaos_faction_npc.lua", "keeper_of_trials.lua", "wandering_merchant.lua", "osric_the_chandler.lua", "iselde_varrow.lua"}) do
+		"chaos_faction_npc.lua", "keeper_of_trials.lua", "wandering_merchant.lua", "osric_the_chandler.lua", "iselde_varrow.lua", "widow_hessa.lua"}) do
 	local fh = io.open("data/npc/scripts/" .. f, "r")
 	check(fh ~= nil, "npc script " .. f)
 	if fh then

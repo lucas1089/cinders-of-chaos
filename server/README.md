@@ -752,6 +752,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
 | 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1..9 free |
+| 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
 | 7112000 - 7127999 | loadouts: support runes parked per loadout (`loadouts_config.lua` `runeMirrorBase`) |
@@ -8728,6 +8729,98 @@ list: `gen_pack33.py` DROP); the wings' x placement fixed against the body.
 - Tests: `tests/pack33_test.lua` (the generated data against the manifest, ids after ours, off: no config names a pair 33
   look; forced on: the categories, offers, exclusives and boss groups, `ChaosShopCore.validate` and
   `ChaosExclusivesCore.validate` pass), `exclusives_test.lua` and `season_test.lua` follow the switch. Not run in a game.
+
+## Haunted Harvest (pair 33 kit) (`harvest_event.lua`, `harvest_event_core.lua`, `harvest_event_config.lua`, `harvest_places.lua`, `data/lib/chaos_harvest_art.lua`, `data/lib/chaos_pack33_kit.lua`, switch `ChaosHarvestArt.PAIR33`, off)
+A seasonal haunted event zone built from the harvest kit of the client pair 33 (`set33 kit`, docs/CREDITS.md; owner
+2026-10-21: "Seria um mapa de Halloween/mal assombrado"): a cursed harvest village at night with a corn maze, a
+ruined chapel, a graveyard and catacombs under the chapel that lead to the boss crypt, for levels 450-650. **Behind the
+switch** `ChaosHarvestArt.PAIR33 = false` (the kit's items and looks exist only in pair 33, not built yet; the
+cosmetics of the same pair have their own switch, flip both when the pair ships). Off: nothing is placed, the event
+never opens, the monsters keep stock looks.
+- **Items.** `tools/install_pack33_items.py` (install_all step `pack33items`, after `pack30items`): the kit's 514 items
+  and the boss corpse, server ids **41093-41607** (= client id + 3000), from `data/items/pack33_kit.csv`, which
+  `--manifest` builds from the things file `client/tools/sprites/art_import/pack33_kit.csv` (CI `--check`), so no pair
+  is needed on the server side. Flags reviewed from the draft: walls, fences, corn, big props and closed states block;
+  decals, roofs, stairs, open doors and gates, seedlings, circles and the portal are walkable; the open coffin and
+  sarcophagus, the dug grave and the emptied coffins block too (`REVIEW`). Light 3 / colour 206 on the 38 glowing
+  items, the 37 strips animated. **Decay** (`DECAY`, items.xml decayTo + duration) drives the timed states: pumpkin
+  stages 1 -> 5 (90, 90, 120, 120 s) and a woken pumpkin back to a mound (8 s), the seal (breaking 1 s -> open 240 s ->
+  sealed), the grave (dug 2 s -> buried coffin; bursting 1 s -> empty 180 s -> mound), the upright coffin (opening 1 s
+  -> open 180 s -> closed), the ritual circle (lighting 2 s -> flare 1 s -> portal 120 s -> closing 1 s -> dormant),
+  the portcullis, the lantern post, the sarcophagus lid and the tolling bell. `--lua` writes `data/lib/chaos_pack33_kit.lua`
+  (key -> id, size, kind, blocking, light, animation; the mechanics' states; the decay chains). A footprint over one
+  tile blocks only its anchor (bottom-right) tile.
+  `tools/install_harvest_event.py` (step `harvestevent`): **hollow candy** 41620 (the currency; a copy of the stock
+  candy, stackable), **sexton's key** 41621 (bone key), **ritual candle** 41622 (candlestick), **hollow charm** 41623
+  (ghost charm) from `data/items/harvest_items.csv` (copies of stock nodes: stock looks, no pair needed), and Widow
+  Hessa in `data/npc`.
+- **Map.** Two fixed plans in `tools/areaplan/events/` (docs/MAP_GUIDE.md "Haunted Harvest"), placed by step
+  `contentareas` **only while the switch is on** (`install_content_areas.py` adds the folder then):
+  `haunted_harvest` (156 x 132 at 15305, 14700, 7; biome `harvest`) and `harvest_catacombs` (112 x 96 at 15305,
+  14880, 8; biome `harvest_crypt`), new biomes of the area planner on the kit's grounds, borders and crypt brick walls
+  (`tools/areaplan_build.lua`), dressed by the kit's decoration overlay `areaplan/decor_pack33_kit.json` (merged by
+  `area_plan_decor.py` only while the switch is on; off, the two biomes take the stock forest and crypt kits).
+  The set pieces and the mechanics are not in the map: `tools/gen_harvest_places.py` compiles both plans (as with the
+  switch on) and chooses their tiles into `data/scripts/chaos/harvest_places.lua` (CI `--check`), and
+  `harvest_event.lua` puts them there at startup: the corn maze (corn walls on a 3-tile grid, a perfect maze opened
+  wherever it cut a tile off), the ruined chapel's crypt stone walls, the graveyard's iron fence, a barn and three huts
+  in the hamlet, haystacks, carts, scarecrows, giant pumpkins, autumn oaks and dead trees, gibbets, crypts, altars,
+  black candles, jack-o'-lanterns and lantern posts (the lights), plus the mechanics below. Never on a spawn, the NPC,
+  the arrival or a portal, no blocking piece on the walk to a zone (but the maze's own walls), and every tile the
+  arrival reached stays reached (`tools/gen_harvest_places_test.py`).
+- **Way in and out.** While open, a **Harvest Portal** stands next to the temples of Cinderhold and Mirewake
+  (`cityportals.lua` kind `harvest`, action id 47720) and leads to the crossroads (camp, PZ, Widow Hessa); the exit
+  portals of both areas lead to the temple. The crypt seal in the ruined chapel leads down to the catacombs; the
+  King's Crypt's own teleport leads back to the crypt stair.
+- **Mechanics** (actions on the kit's item ids; `harvest_event_core.lua`):
+  | what | where | how |
+  |---|---|---|
+  | pumpkin patches | pumpkin fields, west furrows (36) | a ripe pumpkin (use): 2-4 hollow candy (250 a day from pumpkins), 12 % it wakes (a Gourdmaw Brute or Strawhusk Stalker climbs out), 0.25 % a hollow charm; it becomes a mound and grows again (about 7 minutes) |
+  | graves | graveyard (12) | use a fresh grave to dig it, then the buried coffin: 1-3 candy, 20 % a **sexton's key**, 55 % the dead rise (1-2 Barrowbone Reavers / Archers or Lamenting Shades); refilled after 3 minutes |
+  | candy cauldrons | hamlet (4) | trick or treat: 70 % 3-6 candy, 30 % a Hexwhisker Cat or Gallows Raven; refills after 5 minutes |
+  | cursed bell | gibbet hill | rings 3 Gallows Ravens out of the dark (3 minutes per bell) |
+  | crypt seal | ruined chapel (2x2) | a sexton's key on the seal breaks it; open for 4 minutes: the step on it leads to the catacombs (action id 47721 on its ground) |
+  | upright coffins | coffin gallery (8) | 1-3 candy, 60 % a skeleton steps out; close again after 3 minutes |
+  | ritual circle | ritual chamber (3x3, over the planned teleport, which the event removes) | 3 ritual candles (Thornhex Crones drop them, Widow Hessa sells them) light it; the ritual portal stays open 2 minutes and is the only way into the King's Crypt (action id 47722) |
+  | the boss | King's Crypt | Malvorn the Hollow King: at 75, 50 and 25 % the crypt's 4 graves burst and raise his court, and a ward halves the damage he takes for 20 s (the ritual phase); the first kill of the day gives every character in his damage map 30 candy |
+- **Monsters** (`data/monster/monsters/chaos/harvest/`; stock looks while the switch is off, the kit looks 2658-2667 by
+  `client/tools/sprites/monster_looks/harvest_picks.csv` + `apply_monster_looks.py` once it is on):
+  | monster | kit look | level | health | experience | role |
+  |---|---|---|---|---|---|
+  | Hexwhisker Cat | 2658 black cat | 470-490 | 7,800 | 1,900 | critter, death hex, slow |
+  | Gallows Raven | 2663 raven | 460-480 | 7,200 | 1,800 | critter, ranged pecks |
+  | Barrowbone Archer | 2665 skeleton archer | 520-540 | 9,600 | 2,700 | critter, arrows, death |
+  | Barrowbone Reaver | 2666 skeleton warrior | 540-560 | 11,200 | 3,100 | critter, scythe wave |
+  | Strawhusk Stalker | 2664 scarecrow stalker | 540-560 | 10,800 | 3,200 | melee, straw spears, slow, weak to fire |
+  | Thornhex Crone | 2660 hedge witch | 560-580 | 10,200 | 3,300 | caster, earth and death, drops ritual candles |
+  | Lamenting Shade | 2667 wailing ghost | 560-580 | 9,800 | 3,300 | death wail, mana drain, immune to death |
+  | Reapmoon Lycan | 2659 harvest werewolf | 580-600 | 12,000 | 3,500 | fast melee, life drain |
+  | Gourdmaw Brute | 2662 pumpkin brute | 600-620 | 14,500 | 3,900 | slow tank, fire bursts |
+  | Malvorn the Hollow King (boss) | 2661 (5x5) | 640-660 | 150,000 | 60,000 | the ritual phases above; corpse 41607 |
+  Loot: gold and platinum like the pack30 monsters of the band, hollow candy on every one, sexton's keys (skeletons,
+  shades), ritual candles (crones), hollow charms (0.1-0.2 %; the boss 15 %), stock pumpkinheads, witch hats, cursed
+  straw and ghostly tissue; the boss the gear table of the Hollow Rider.
+- **Schedule.** Open from **October 25 to November 5** (server time, both days; `window`, may wrap over the new year),
+  checked every minute: the Harvest Portals appear and go, a broadcast, and the runtime event of `events_schedule.lua`
+  (login lines and `!events`). Staff: `/harvest [status | on | off | auto]` (status group 4; on / off / auto group 5,
+  stored in global storage 7102810, survives restarts), the admin panel's **Events > Haunted Harvest** (group 5; the
+  admin app runs it through the remote `panel` command, so it is in the app's catalog) and the event hook
+  `haunted_harvest` (Events > Start / Stop event).
+- **Rewards.** Widow Hessa (crossroads) trades hollow candy (`shop`): hollow charm 60, ritual candle 20, sexton's key
+  15, pumpkinhead 25, 25 great health + 25 great mana potions 10, 3 Orbs of Awakening 8, Orb of Tempering 15,
+  2 Whetstones 12, 10 Rune Shards 6. The **hollow charm** unlocks one cosmetic the account does not own from
+  `charmPool` (now: the Soul Spark and Blood Bloom kill effects, Amethyst Name, Blood Trail footprints, Royal Labels;
+  `ChaosCosmetics.grant`, source "harvest"); owning them all it gives 40 candy. **Hook:** pool entries of kind
+  `exclusive` go through `ChaosExclusives.grant`, so the pair 33 wings, head pieces and capes join by a line each once
+  they exist.
+- **Storages.** Player 7102800-7102809 (+0 the day, +1 candy from pumpkins that day, +2 the day of the boss bonus);
+  global 7102810 (the forced state). Action ids 47720-47729 (47720 portal, 47721 seal, 47722 circle).
+- **Tests.** `tests/harvest_event_test.lua` (338 checks: the switch, the kit's decay chains, the config, the window, the
+  mechanics, the places, the engine file on a mocked engine), `tools/install_pack33_items_test.py`,
+  `tools/gen_harvest_places_test.py`. Installed twice on a copy of the base server (2026-10-21): the switch off places
+  nothing; on (`--only contentareas`) both areas placed, the second run changes nothing. **Not verified:** a client
+  on pair 33 (the art, the wall and border piece mapping of the kit, the 2x2 / 3x3 anchors), a live server run (the
+  dressing, the decays, the boss events), the balance numbers in play.
 
 ## Item rarities (`data/lib/chaos_rarity.lua`, `rarity_migrate*.lua`, `sql/chaos_zz_rarity_migrate.sql`)
 
