@@ -3077,5 +3077,11 @@ return {
 			"A lua da colheita acordou os mortos desta vila. Colha as abóboras, cave as covas e encontre a sexton's key: a cripta sob a capela leva ao Hollow King.",
 		["Hessa. I buried my husband in that graveyard. Twice. Bring me hollow candy and I will {trade}."] =
 			"Hessa. Enterrei meu marido naquele cemitério. Duas vezes. Traga hollow candy e eu faço {trade}.",
+		-- Retired badges (badges_core.lua)
+		["Badges are retired: no character can wear one, so this catalyst upgrades nothing and was not used up."] =
+			"Os badges foram aposentados: nenhum personagem pode equipá-los, então este catalisador não melhora nada e não foi gasto.",
+		["The Loot Buyer pays %d gold for it."] = "O Loot Buyer paga %d de ouro por ele.",
+		["Badges are retired: no character can wear one. The Loot Buyer buys it."] =
+			"Os badges foram aposentados: nenhum personagem pode equipá-los. O Loot Buyer compra este.",
 	},
 }

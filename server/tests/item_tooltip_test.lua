@@ -31,7 +31,9 @@ local TYPES = {
 	[3975] = {name = "dragon shield", weaponType = WEAPON_SHIELD, defense = 31, slot = 48}, -- Emberwarden
 	[2206] = {name = "strange ring", slot = 256},
 	[2160] = {name = "crystal coin", stackable = true, description = ""},
-	[27749] = {name = "lasting exercise wand", charges = 14400}
+	[27749] = {name = "lasting exercise wand", charges = 14400},
+	[27849] = {name = "Moon Amplifier Catalyst [1]", slot = 48, description = "An amplifier of the old badge rite.",
+		abilities = {skills = {0, 0}, absorbPercent = {0}, specialSkills = {0}}} -- the engine's tables: zeros
 }
 
 function ItemType(id)
@@ -222,6 +224,14 @@ local tip = T.build(sword, {attrs = {[1] = 4, [2] = 37, [5] = 2, [6] = 187300000
 eq(tip.key, "1873000000123:3054", "cache key from the client attributes")
 eq(tip.name, "magic sword") eq(tip.id, 3400, "client id") eq(tip.kind, "weapon") eq(tip.slot, "Weapon")
 eq(tip.rarity, 4) eq(tip.rarityName, "Rare") eq(tip.level, 37) eq(tip.maxTier, 3, "item level 37: up to T3")
+-- a catalyst a boss dropped before 2026-10-22 carries the kill's item level: no gear, so the tooltip shows none
+do
+	local cat = newItem(27849)
+	cat:setCustomAttribute(M.ILVL, 135)
+	local ct = T.build(cat)
+	eq(ct.level, nil, "no item level on a catalyst") eq(ct.maxTier, nil, "no tier line")
+	eq(ct.desc, "An amplifier of the old badge rite.", "its description")
+end
 eq(tip.tier, nil, "no rarity tier any more")
 eq(tip.sides.p, 3) eq(tip.sides.s, 2) eq(tip.sides.max, 2, "Rare: two of each (an old item may carry more)")
 eq(tip.cmp[1], 6) eq(tip.cmp[2], 5)

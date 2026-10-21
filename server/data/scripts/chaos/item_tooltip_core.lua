@@ -445,6 +445,10 @@ function T.build(item, opts)
 
 	local rarity = C and C.rarityOf(item) or 0
 	local level = M and M.itemLevelOf(item) or 0
+	-- a plain item that is no gear has no item level: drops before 2026-10-22 stamped one on catalysts and trophies
+	if level > 0 and rarity == 0 and C and C.isGear and not C.isGear(item) then
+		level = 0
+	end
 	tip.rarity = rarity
 	tip.rarityName = rarity > 0 and C.rarityName(rarity) or nil
 	tip.level = level > 0 and level or nil

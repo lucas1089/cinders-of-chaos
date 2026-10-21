@@ -481,9 +481,25 @@ function C.isGear(item)
 			return true
 		end
 	end
-	local okAb, ab = pcall(function() return it:getAbilities() end)
-	if okAb and type(ab) == "table" and (ab.skills or ab.absorbPercent or ab.specialSkills) then
+	-- a slot other than the hands (head .. ring, ammo, the base's extra slots): equipment, as before
+	local slot = typeNumber(it, "getSlotPosition")
+	if slot % 16 ~= 0 or slot >= 64 then
 		return true
+	end
+	-- the hands only: every item type's default slot (SLOTP_HAND = 48). The engine's getAbilities() always has the
+	-- tables below, zeros included, so only a value above 0 counts. Before 2026-10-22 the tables alone did: every
+	-- non-stackable item (a catalyst, a quest item, a trophy) was gear, and a drop of one got an item level.
+	local okAb, ab = pcall(function() return it:getAbilities() end)
+	if okAb and type(ab) == "table" then
+		for _, key in ipairs({"skills", "absorbPercent", "specialSkills"}) do
+			if type(ab[key]) == "table" then
+				for _, v in pairs(ab[key]) do
+					if (tonumber(v) or 0) > 0 then
+						return true
+					end
+				end
+			end
+		end
 	end
 	return false
 end

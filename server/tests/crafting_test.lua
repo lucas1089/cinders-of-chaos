@@ -20,8 +20,14 @@ local TYPES = {
 	[2160] = {name = "crystal coin", stackable = true},                   -- not gear
 	[1988] = {name = "backpack", container = true, slot = 4},
 	[8925] = {name = "solar axe", weaponType = 3, attack = 52, slot = 48, element = 12}, -- own element
-	[27797] = {name = "boat", armor = 1, slot = 8}                         -- excluded id
+	[27797] = {name = "boat", armor = 1, slot = 8},                        -- excluded id
+	-- the engine's getAbilities(): the tables are always there, zeros included
+	[27849] = {name = "moon amplifier catalyst [1]", slot = 48, abilities = "zero"}, -- hands only, no stats: not gear
+	[29001] = {name = "lucky charm", slot = 48, abilities = {skills = {0, 0, 0, 2}}}, -- hands only, a skill: gear
+	[2214] = {name = "ring of healing", slot = 256 + 48, abilities = "zero"},          -- a ring slot: gear
+	[27811] = {name = "raging moon badge", slot = 4096 + 8192 + 48, abilities = "zero"} -- the base's badge slot: gear
 }
+local ZERO = {skills = {0, 0, 0, 0}, absorbPercent = {0, 0}, specialSkills = {0, 0}, stats = {0}}
 
 function ItemType(id)
 	local t = TYPES[id] or {}
@@ -36,7 +42,7 @@ function ItemType(id)
 		getDefense = function() return 0 end,
 		getHitChance = function() return 0 end,
 		getElementDamage = function() return t.element or 0 end,
-		getAbilities = function() return {} end
+		getAbilities = function() return t.abilities == "zero" and ZERO or t.abilities or {} end
 	}
 end
 
@@ -96,6 +102,15 @@ Game = {
 
 dofile("data/lib/chaos_crafting.lua")
 local C = ChaosCrafting
+
+-- gear: an equipment slot, a weapon, a stat; an item for the hands alone needs a stat above 0 (2026-10-22: a catalyst
+-- dropped by a boss got the kill's item level because the engine's empty ability tables counted)
+eq(C.isGear(newItem(27849)), false, "a catalyst is not gear")
+eq(C.isGear(newItem(29001)), true, "a hand item with a skill is gear")
+eq(C.isGear(newItem(2214)), true, "a ring is gear")
+eq(C.isGear(newItem(27811)), true, "a badge is gear")
+eq(C.isGear(newItem(2400)), true, "a weapon is gear")
+eq(C.isGear(newItem(2160)), false, "a stack is not")
 local M = ChaosItemMods
 -- drops roll with M.random (forgeDrop's default); tests pass their own dice
 M.random = function(a, b) return a end

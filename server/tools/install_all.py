@@ -169,6 +169,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
+  badges       tools/patch_badges.py             the base badges and amplifier catalysts are retired (no client slot shows the
+               deck or badge slot): out of every boss loot, task reward and roulette prize; the catalyst action
+               explains and keeps the item, Player:onMoveItem refuses a badge into slot 12 or 13, the items.xml
+               descriptions say the Loot Buyer buys them (README "Retired badges"; after itemnames)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")
@@ -810,6 +814,14 @@ def step_absorbceiling(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('annihilatorsolo') + 1, 'absorbceiling')  # the absorb ceiling (75 percent) in the base event
+
+
+def step_badges(server, data, ctx):
+    args = [tool('patch_badges.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_badges.py'))
+
+
+STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # retired badges: after itemnames (loot by id or name)
 
 
 def step_migrations(server, data, ctx):

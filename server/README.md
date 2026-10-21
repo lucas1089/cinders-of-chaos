@@ -70,6 +70,7 @@ server/
   scripts/chaos/item_prices.lua  item_prices_config.lua   the Loot Buyer NPCs (Halls of Services, else next to the temple)
   data/npc/Loot Buyer.xml, data/npc/scripts/loot_buyer.lua   the Loot Buyer (tools/install_item_prices.py)
   data/items/base_item_values.csv, base_recipes.csv, item_price_rules.csv   the price table's inputs
+  scripts/chaos/badges.lua  badges_core.lua, tools/patch_badges.py   the base badges retired (see "Retired badges")
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
   src-patches/0002-dual-wield-and-vocation-attack-speed.patch   engine: a Ninja may hold a sword in the shield hand;
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
@@ -11013,6 +11014,71 @@ monsters' loot. 52 are removed. **Six stay in their loot** (owner decision 2026-
   `sell_prices.lua` hold the same 3393 prices as before.
 - Income: the junk was about 1% of the expected sell value of the loot; watch the hunting income
   (`gen_item_prices.py income BASE_DATA`) and adjust gold if the hour of hunting drops.
+
+## Retired badges (`badges.lua`, `badges_core.lua`, `tools/patch_badges.py`, `tests/badges_test.lua`)
+
+Beta question 2026-10-22: a player found a Moon Amplifier Catalyst [1] ("Use this Amplifier on Moon Badge to upgrade it
+to the next tier", from Emberlord Zanarth and Aquatic Overlord Thalassa, "Item Level 135") and asked what a Moon Badge
+is. The audit:
+
+- **What badges are.** A base system: 40 badges (server ids 27803-27842), nine lines of four or five tiers (Raging,
+  Furious, Tempest, Blazing, Eternal) of Exiled Spirit, Fury, Moon, Night Seeker, Earthshade, Reborn, Chaosfiend, Veins
+  and Daybreak. Slot type `deckbadge`: the base engine's deck and badge inventory slots (`CONST_SLOT_DECK` 12,
+  `CONST_SLOT_BADGE` 13; our engine keeps them, src-patch 0023). Stats: armour 2-5, an absorb 5-8%, skills (magic level,
+  melee, the gathering and crafting skills of the Moon line), life or mana leech, the Eternal tier a 10-slot container.
+  31 amplifier catalysts (27843-27873) upgrade a badge one tier at 35 / 25 / 15 / 10%; a failure takes the catalyst
+  only (the base action `scripts/customs/badges/badges_upgrade.lua`; its success keeps the item's attributes but
+  overwrites its description with "Upgraded by <name>").
+- **Where they came from.** 16 base bosses (the ten island world bosses, the six expedition bosses) dropped all nine
+  Raging badges (25-35%) and 31 catalyst lines each (the Fury [3] line names the Exiled [3] twice, so 27848 never
+  dropped); three Mermod tasks gave a Raging badge and its catalyst; the roulette lever gave Furious badges. No Chaos loot
+  table, shop or quest has them.
+- **Why they were dead.** Our client draws inventory slots 1-10 only (base client `game_inventory`: `if slot >
+  InventorySlotPurse then return end`; client base patch 0012 only lets the protocol carry slots up to 16), and the
+  right-click equip of src-patch 0024 skips the base's extra slots. No player could put a badge on, so every badge and
+  catalyst was loot nobody could use. The same holds for the base's decks (slot 12), ships (14), belts and gloves
+  (15, 16): not covered here.
+- **The gathering skills** of the Moon line are engine skills (mining, woodcutting, herbalist, crafting). Our
+  professions (Delving, Wortcunning, Flaying, Angling, "Professions") keep their own levels, so they would never have
+  counted there; only the base crafting table's mastery reads engine skills.
+- **"Item Level 135"** on a catalyst: `ChaosCrafting.isGear` counted the tables of `ItemType:getAbilities()`, which the
+  engine always fills (zeros included), and every item type's default slot is the hands, so every non-stackable item
+  was gear and the loot layer stamped the kill's item level on it (`forgeDrop`). Now an item for the hands alone needs a
+  stat above 0 (an attack, armour, a skill, an absorb, a special skill); an item with another slot is gear as before.
+  The tooltip (`item_tooltip_core.lua`) no longer shows an item level on a plain item that is no gear, so older copies
+  look right too.
+
+**Decision: retire, not a new slot.** A badge slot in the client means a new inventory widget in a full window, its art,
+the inspect and compare views, our modifier kinds for a new slot, the absorb ceiling and the balance of a twelfth power
+slot (armour, absorbs, skills, leech on top of every class's gear). That is a new system for the owner to decide, out of
+proportion for loot nobody could use. So the badges leave the game's sources and the copies in the players' hands sell:
+
+1. `tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
+   every badge and catalyst loot line of `data/monster/**` goes (by id, or by its items.xml name in any case), the
+   roulette prizes (`{itemId = ...}`) and task rewards (`{Type = RewardType.Item, Id = ...}`) of `data/scripts/**`
+   (not `scripts/chaos`) go, the catalyst action asks `ChaosBadges.onCatalystUse` first, `Player:onMoveItem` asks
+   `ChaosBadges.onMoveItem` first (marker `Chaos: badges are retired (patch_badges.py)`), and the items.xml descriptions
+   say "A badge of the old orders. Badges cannot be worn any more; the Loot Buyer buys it." / "An amplifier of the old
+   badge rite. Badges cannot be worn any more, so it upgrades nothing; the Loot Buyer buys it." On the base server: 16
+   boss files (40 lines each), the roulette (9 prizes), the tasks (6 rewards), the two hooks and 71 descriptions.
+2. Using a catalyst on anything now sends "Badges are retired: no character can wear one, so this catalyst upgrades
+   nothing and was not used up. The Loot Buyer pays N gold for it." (pt-BR in `i18n_strings.lua`); both items stay as
+   they are. A badge moved into slot 12 or 13 (a packet our client cannot send) is refused with "Badges are retired: no
+   character can wear one. The Loot Buyer buys it."
+3. Prices (`item_price_rules.csv`, `gen_item_prices.py`): Raging badges keep 8200 and the catalysts 16000 / 33000 (the
+   snapshot of their old drops); the upgraded tiers, which only a catalyst made, get a fixed price (Furious 12000,
+   Tempest 16000, Blazing 24000, Eternal 33000) and Fury [3] 33000. A badge with a rarity and item level sells for more,
+   as any gear.
+
+The item names and descriptions stay English, like every base item text (the tooltip does not translate them); the
+messages are translated. No wiki or codex entry: nothing in the game gives these items any more.
+
+**Tests.** `tests/badges_test.lua` (luajit and lua5.3): the ids against the base's upgrade table, the texts and their
+pt-BR, the move rule, the glue on a mocked engine. `tools/patch_badges_test.py`: a small data folder (loot by name and
+id in Lua and XML, prizes, rewards, both hooks with CRLF kept, descriptions replaced and added, a second run and
+`--check`). `tests/crafting_test.lua`: `isGear` with the engine's zero tables. `tests/item_tooltip_test.lua`: no item
+level on a catalyst. Run on a copy of the base data: 21 files changed, every patched Lua file parses, a second run
+changes nothing. Not run on a live server.
 
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 
