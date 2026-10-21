@@ -571,7 +571,7 @@ function G.buyHall(player, from)
 		return false, blocked
 	end
 	local r = gid and G.row(gid) or {}
-	local money = (player.getTotalMoney and player:getTotalMoney()) or player:getMoney()
+	local money = Chaos.totalMoney(player)
 	local err = C.hallBuyError({guildId = gid, rank = rank, level = gid and G.levelOf(gid) or 0, hasHall = gid and G.hallOf(gid) ~= nil,
 		from = from, bank = r.bank or 0, money = money}, cfg)
 	if err then
@@ -1043,7 +1043,7 @@ function G.hallView(player, gid, rank, level)
 		canManage = rank >= H.upgradeRank}
 	if not h then
 		local errBank = C.hallBuyError({guildId = gid, rank = rank, level = level, hasHall = false, from = "bank", bank = r.bank}, cfg)
-		local money = (player.getTotalMoney and player:getTotalMoney()) or player:getMoney()
+		local money = Chaos.totalMoney(player)
 		local errSelf = C.hallBuyError({guildId = gid, rank = rank, level = level, hasHall = false, from = "self", money = money}, cfg)
 		hall.canBuyBank, hall.canBuySelf = errBank == nil, errSelf == nil
 		hall.reason = errBank or ""

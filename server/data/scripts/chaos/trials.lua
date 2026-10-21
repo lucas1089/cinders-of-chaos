@@ -193,10 +193,7 @@ local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(gold)
-	end
-	return player:removeMoney(gold)
+	return Chaos.pay(player, gold) and true or false
 end
 
 -- ok, text

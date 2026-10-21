@@ -263,6 +263,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  number get all three at the highest, a rolled melee modifier raises all
                                                  three skills (base_rarity.lua; README "Melee and Ranged on equipment";
                                                  runs right before sql, after every step that adds items)
+  bankpayments tools/patch_bank_payments.py      every gold price is paid from the carried coins and then the bank:
+               lib.lua and npc/lib/npc.lua load data/lib/chaos_pay.lua (Player.getTotalMoney / removeTotalMoney), the
+               scripts that checked and took the carried coins only (NPC travel, horses, outfits, blessings, table shops,
+               the crafting table, ...) use them (README "Gold payments: carried coins, then the bank"; late: after
+               every step that writes a removeMoney into a script)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -989,6 +994,13 @@ def step_waystonehideout(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('eventrooms') + 1, 'waystonehideout')  # after eventrooms, before dungeonentry and sql
+
+
+def step_bankpayments(server, data, ctx):
+    return tool_result(run_tool([tool('patch_bank_payments.py'), data], 'patch_bank_payments.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'bankpayments')  # late, right before sql: after every step that writes a removeMoney
 
 
 def step_autoloot(server, data, ctx):

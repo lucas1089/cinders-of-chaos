@@ -396,7 +396,8 @@ COMBAT_PHYSICALDAMAGE, COMBAT_FIREDAMAGE, COMBAT_ICEDAMAGE, COMBAT_EARTHDAMAGE =
 COMBAT_ENERGYDAMAGE, COMBAT_DEATHDAMAGE, COMBAT_HOLYDAMAGE, COMBAT_HEALING, COMBAT_NONE = 4, 32, 64, 128, 0
 MESSAGE_INFO_DESCR = 1
 CONST_ME_MAGIC_BLUE, CONST_ME_MAGIC_GREEN, CONST_ME_BLOCKHIT = 1, 2, 3
-Chaos = {giveItem = nil}
+dofile("data/lib/chaos_pay.lua")
+Chaos = {giveItem = nil, pay = function(player, n, quiet) return ChaosPay.pay(player, n, quiet) end}
 local events, actions = {}, {}
 function CreatureEvent(name)
 	local o = {name = name}
@@ -436,6 +437,7 @@ end
 function Player:addItem(id, n) self.inv[id] = (self.inv[id] or 0) + n end
 function Player:getInbox() return nil end
 function Player:getBankBalance() return self.bank end
+function Player:getMoney() return self.money end
 function Player:setBankBalance(v) self.bank = v end
 function Player:removeMoney(n)
 	if self.money < n then return false end
@@ -503,16 +505,16 @@ actions[32005].onUse(p, perfect, nil, perfect)
 eq(p.cancels[#p.cancels], G.reasons.perfect, "perfect does not combine"); eq(p.inv[32005], 3, "kept")
 actions[32001].onUse(p, chipped, nil, nil)
 assert(p.msgs[#p.msgs]:find("Use it with a piece of gear"), "plain use explains")
--- taking a gem out: for gold (bank first, then the backpack) or shattered
+-- taking a gem out: for gold (carried coins first, then the bank: Chaos.pay) or shattered
 local cost = G.removeCost(32004)
 local okR, why = G.unsocket(p, helm, 1, true)
 eq(okR, false, "no gold"); assert(why:find(tostring(cost)), why)
 p.money = cost
 okR = G.unsocket(p, helm, 1, true)
 eq(okR, true, "paid from the backpack"); eq(p.money, 0, "money taken"); eq(p.inv[32004], 1, "gem back")
-G.insert(helm, 32004); p.bank = cost + 5
+G.insert(helm, 32004); p.money, p.bank = 3, cost + 5
 G.unsocket(p, helm, 1, true)
-eq(p.bank, 5, "bank first"); eq(p.inv[32004], 2, "second gem back")
+eq(p.money, 0, "carried coins first"); eq(p.bank, 8, "the rest from the bank"); eq(p.inv[32004], 2, "second gem back")
 G.insert(helm, 32004)
 okR = G.unsocket(p, helm, 1, false)
 eq(okR, true, "shattered"); eq(p.inv[32004], 2, "nothing back"); eq(G.gemAt(helm, 1), 0, "socket empty")

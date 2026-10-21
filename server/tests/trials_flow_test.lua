@@ -69,6 +69,8 @@ local function newPlayer(voc, level, gold)
 	p.getStorageValue = function(_, k) return p.storage[k] or -1 end
 	p.setStorageValue = function(_, k, v) p.storage[k] = v end
 	p.removeTotalMoney = function(_, amount) if p.gold >= amount then p.gold = p.gold - amount return true end return false end
+	p.getMoney = function() return p.gold end
+	p.removeMoney = p.removeTotalMoney
 	p.isPzLocked = function() return false end
 	p.hasCondition = function() return false end
 	p.sendExtendedOpcode = function() end

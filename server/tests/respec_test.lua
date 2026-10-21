@@ -82,6 +82,8 @@ local function newPlayer(level, voc, gold)
 	function p:getGuid() return self.guid end
 	function p:getId() return 100 end
 	function p:removeTotalMoney(amount) if amount > self.gold then return false end; self.gold = self.gold - amount; return true end
+	function p:getMoney() return self.gold end
+	function p:removeMoney(amount) if amount > self.gold then return false end; self.gold = self.gold - amount; return true end
 	function p:sendTextMessage(_, text) texts[#texts + 1] = text end
 	return p
 end

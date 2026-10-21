@@ -636,7 +636,7 @@ function X.payload(player)
 	local w = X.currentWeek()
 	return K.payload(cfg, {now = now(), period = g.period, finish = g.finish, progress = g.progress, buffs = buffsOf(realm),
 		mods = w.mods, modSource = w.source, weekEnd = w.finish, entry = e, day = today(), rank = rank, top = top,
-		near = nearBrazier(player), gold = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0),
+		near = nearBrazier(player), gold = Chaos.totalMoney(player),
 		realm = realm, realmName = realmName(realm) and Chaos.t(player, realmName(realm)) or nil})
 end
 
@@ -660,12 +660,12 @@ function X.donate(player, gold)
 	end
 	local realm = realmOf(player)
 	local e = entryOf(player, realm)
-	local carried = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0)
+	local carried = Chaos.totalMoney(player)
 	local take, why = K.donation(cfg, e, gold, today(), carried, Chaos.lang(player))
 	if take <= 0 then
 		return msg(player, why)
 	end
-	local paid = player.removeTotalMoney and player:removeTotalMoney(take) or player:removeMoney(take)
+	local paid = Chaos.pay(player, take)
 	if not paid then
 		return msg(player, Chaos.t(player, "You do not have that much gold (backpack and bank)."))
 	end

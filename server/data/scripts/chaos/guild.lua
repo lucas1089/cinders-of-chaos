@@ -551,10 +551,7 @@ function G.credit(gid, amount)
 end
 
 local function payFromPlayer(player, amount)
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(amount)
-	end
-	return player:removeMoney(amount)
+	return Chaos.pay(player, amount) and true or false
 end
 G.payFromPlayer = payFromPlayer
 

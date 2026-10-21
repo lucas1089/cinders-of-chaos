@@ -770,17 +770,12 @@ local function give(player, id, count)
 	return false
 end
 
--- gold for a removal: bank first, then the backpack (as the gems)
+-- gold for a removal: carried coins, then the bank (Chaos.pay)
 local function pay(player, cost)
 	if cost <= 0 then
 		return true
 	end
-	local bank = player:getBankBalance()
-	if bank >= cost then
-		player:setBankBalance(bank - cost)
-		return true
-	end
-	return player:removeMoney(cost)
+	return Chaos.pay(player, cost)
 end
 
 -- the spell a player may change: in the catalog, and in the class kit or holding a rune

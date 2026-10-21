@@ -340,7 +340,7 @@ function F.payload(player, sel)
 			local ok, c = pcall(function() return ItemType(id):getClientId() end)
 			return ok and tonumber(c) and c > 0 and c or id
 		end})
-	data.gold = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0)
+	data.gold = Chaos.totalMoney(player)
 	data.sel = sel
 	return data
 end
@@ -803,14 +803,11 @@ local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(gold)
-	end
-	return player:removeMoney(gold)
+	return Chaos.pay(player, gold) and true or false
 end
 
 local function money(player)
-	return player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0)
+	return Chaos.totalMoney(player)
 end
 
 function F.turnIn(player, fkey, n)

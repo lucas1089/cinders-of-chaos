@@ -11,8 +11,8 @@
 --                     why: "" (can buy), "pz", "instance", "none", "money"
 -- Only in a protection zone outside every instance. What was bought back is noted on the hunt session, so a second
 -- click buys nothing until more is used; a reset of the session starts over.
--- Assumed engine API (TFS 1.4): Player:getMoney/getBankBalance/removeTotalMoney (data/lib/core/player.lua) or
--- removeMoney, addItem, getInbox, Tile:hasFlag(TILESTATE_PROTECTIONZONE), ItemType. Lua 5.1 / LuaJIT and Lua 5.3.
+-- Assumed engine API (TFS 1.4): Player:getMoney/getBankBalance/setBankBalance/removeMoney (Chaos.pay,
+-- data/lib/chaos_pay.lua), addItem, getInbox, Tile:hasFlag(TILESTATE_PROTECTIONZONE), ItemType. Lua 5.1 / LuaJIT and Lua 5.3.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -54,19 +54,14 @@ function RS.info(id)
 end
 
 local function money(player)
-	local carried = player.getMoney and player:getMoney() or 0
-	local bank = player.getBankBalance and player:getBankBalance() or 0
-	return (tonumber(carried) or 0) + (tonumber(bank) or 0)
+	return Chaos.totalMoney(player)
 end
 
 local function pay(player, gold)
 	if gold <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(gold) and true or false
-	end
-	return player:removeMoney(gold) and true or false
+	return Chaos.pay(player, gold) and true or false
 end
 
 local function inPz(player)

@@ -6,7 +6,7 @@
 --   * one free full reset after the vocation changed (ascension, class migration). The store's vocation change resets
 --     the tree for free itself and the store's Passive Tree Reset service resets tree and Paragon for free; both use
 --     ChaosPassiveTree.resetAll, which also uses up a pending free reset
---   * gold: carried gold first, then the bank (Player.removeTotalMoney when the server has it)
+--   * gold: carried gold first, then the bank (Chaos.pay)
 -- Build sharing (buildshare.lua) charges the same full reset price when an import takes nodes back.
 --
 -- Protocol (opcode 65, dispatched through ChaosPassiveTree.extraActions, passivetree.lua):
@@ -66,10 +66,7 @@ function R.pay(player, cost)
 	if cost <= 0 then
 		return true
 	end
-	if player.removeTotalMoney then
-		return player:removeTotalMoney(cost)
-	end
-	return player:removeMoney(cost)
+	return Chaos.pay(player, cost) and true or false
 end
 
 function R.info(player)

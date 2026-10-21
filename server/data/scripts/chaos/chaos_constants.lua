@@ -19,6 +19,16 @@ if not ChaosRarity then
 	end
 end
 
+-- gold payments from carried coins, then the bank (data/lib/chaos_pay.lua; Chaos.pay below)
+if not ChaosPay then
+	if not pcall(dofile, "data/lib/chaos_pay.lua") then
+		pcall(dofile, "server/data/lib/chaos_pay.lua")
+	end
+	if not ChaosPay then
+		dofile("data/lib/chaos_pay.lua") -- fails with the real error
+	end
+end
+
 if Chaos then
 	-- the first load can come from a spell (classes.lua), outside the Scripts interface: the opcode dispatch's engine
 	-- events are made on the load that can make them (Chaos.opcodeDispatch.install)
@@ -1548,6 +1558,25 @@ function Chaos.sweepIntruders(inArea, isMember, text)
 		end
 	end
 	return n
+end
+
+-- ---------------------------------------------------------------------------
+-- Gold payments (server/README.md "Gold payments: carried coins, then the bank")
+-- ---------------------------------------------------------------------------
+-- Every price in gold is paid with Chaos.pay: carried coins first, then the bank, all or nothing (data/lib/chaos_pay.lua).
+--   Chaos.totalMoney(player)          carried + bank
+--   Chaos.canPay(player, amount)      true when carried + bank >= amount
+--   Chaos.pay(player, amount[, quiet]) true, fromCoins, fromBank; false and nothing taken when short
+function Chaos.totalMoney(player)
+	return (ChaosPay.total(player))
+end
+
+function Chaos.canPay(player, amount)
+	return ChaosPay.canPay(player, amount)
+end
+
+function Chaos.pay(player, amount, quiet)
+	return ChaosPay.pay(player, amount, quiet)
 end
 
 -- ---------------------------------------------------------------------------

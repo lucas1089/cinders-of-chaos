@@ -561,10 +561,11 @@ def patch_rewards(text, cfg, ammo, npc_script=False):
 
 
 def patch_ammo_dialogue(text, cfg):
-    """an NPC script that asks for gold instead of ammunition (removeMoney(M), written by patch_rewards) no longer says
+    """an NPC script that asks for gold instead of ammunition (removeMoney(M), written by patch_rewards; removeTotalMoney(M)
+    after patch_bank_payments.py) no longer says
     "<N> arrows" / "<N> bolts" in its texts when M is the price of N pieces: the text says "<M> gold". Works on a script
     patched by an earlier version of this tool too. -> new text, changes"""
-    monies = {int(m) for m in re.findall(r'removeMoney\(\s*(\d+)\s*\)', text)}
+    monies = {int(m) for m in re.findall(r'remove(?:Total)?Money\(\s*(\d+)\s*\)', text)}  # patch_bank_payments.py
     if not monies:
         return text, 0
     rates = set(cfg['ammo'].values()) | {cfg['defaultRefund']}

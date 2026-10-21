@@ -171,7 +171,10 @@ function PT.npcBuy(cid, id)
 	if not player then
 		return false
 	end
-	local money = player:getMoney() + (player.getBankBalance and player:getBankBalance() or 0)
+	if not ChaosPay then
+		dofile("data/lib/chaos_pay.lua")
+	end
+	local money = ChaosPay.total(player)
 	local r = K.npcBuy(PT.cfg(), {id = id, owned = PT.owned(player, id), money = money})
 	if not r.ok then
 		if r.text then
@@ -179,12 +182,19 @@ function PT.npcBuy(cid, id)
 		end
 		return false
 	end
+	-- paid first (carried coins, then the bank); a potion that finds no room gives the gold back to the bank
+	if not ChaosPay.pay(player, r.price) then
+		say(player, "You do not have enough gold (carried and in the bank).")
+		return false
+	end
 	local where = PT.give(player, id)
 	if not where then
+		if r.price > 0 then
+			player:setBankBalance(player:getBankBalance() + r.price)
+		end
 		say(player, "You have no room for it.")
 		return false
 	end
-	player:removeTotalMoney(r.price)
 	say(player, "It never runs out: drink it as often as the potion exhaust allows.")
 	return true
 end

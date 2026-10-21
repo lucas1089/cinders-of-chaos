@@ -286,10 +286,7 @@ function G.unsocket(player, item, index, keep)
 	end
 	local cost = keep and G.removeCost(id) or 0
 	if cost > 0 then
-		local bank = player:getBankBalance()
-		if bank >= cost then
-			player:setBankBalance(bank - cost)
-		elseif not player:removeMoney(cost) then
+		if not Chaos.pay(player, cost) then
 			return false, string.format("Taking the %s out unharmed costs %d gold (bank or backpack).", G.gemName(id), cost)
 		end
 	end

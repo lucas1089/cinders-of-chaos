@@ -241,7 +241,7 @@ function P.apply(player, buildId, mode, seenCost)
 		if R then
 			paid = R.pay(player, cost)
 		else
-			paid = cost <= 0 or player:removeMoney(cost)
+			paid = cost <= 0 or Chaos.pay(player, cost)
 		end
 		if not paid then
 			return nil, Chaos.t(player, "You need %s gold coins (carried or in the bank) to reset your tree first.",

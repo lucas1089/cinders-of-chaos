@@ -439,8 +439,8 @@ local function handleReset(player, data)
 	end
 
 	local cost = player:getLevel() * cfg.resetCostPerLevel
-	if not player:removeMoney(cost) then
-		sendMessageBox(player, "Reset", string.format("You need %d gold coins to reset your passive tree.", cost))
+	if not Chaos.pay(player, cost) then
+		sendMessageBox(player, "Reset", string.format("You need %d gold coins (carried or in the bank) to reset your passive tree.", cost))
 		return
 	end
 	savePreset(guid, preset, target.name, {})

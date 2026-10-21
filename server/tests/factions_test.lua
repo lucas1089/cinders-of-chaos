@@ -431,6 +431,7 @@ local function mkPlayer(name, guid, level, pos)
 	function pl2:getMoney() return self.money end
 	function pl2:getBankBalance() return 0 end
 	function pl2:removeTotalMoney(g) if self.money < g then return false end self.money = self.money - g return true end
+	function pl2:removeMoney(g) if self.money < g then return false end self.money = self.money - g return true end
 	function pl2:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 	function pl2:sendExtendedOpcode(op, data) self.ops[#self.ops + 1] = {op, data} return true end
 	function pl2:registerEvent(e) self.events[e] = true end

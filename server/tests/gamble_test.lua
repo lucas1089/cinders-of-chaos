@@ -503,6 +503,8 @@ local function newPlayer(guid, level, vocId)
 	end
 	function p:getBankBalance() return self.bank end
 	function p:setBankBalance(v) self.bank = v end
+	function p:getMoney() return self.money end
+	function p:removeMoney(n) if self.money < n then return false end self.money = self.money - n return true end
 	function p:addItemEx(item)
 		if self.full then
 			return 1

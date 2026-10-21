@@ -6,6 +6,13 @@
 
 return {
 	["pt-BR"] = {
+		-- Gold payments from carried coins and the bank (data/lib/chaos_pay.lua)
+		["Paid %d gold: %d carried and %d from your bank. Bank balance: %d gold."] =
+			"Pago %d de ouro: %d da mochila e %d do seu banco. Saldo no banco: %d de ouro.",
+		["Paid %d gold from your bank. Bank balance: %d gold."] =
+			"Pago %d de ouro do seu banco. Saldo no banco: %d de ouro.",
+		["You do not have enough gold (carried and in the bank)."] =
+			"Você não tem ouro suficiente (na mochila e no banco).",
 		-- Idle Hall (idlehall.lua, idlehall_core.lua)
 		["You are idle in town: you will be moved to the Idle Hall in 1 minute. Take a step to stay."] =
 			"Você está parado na cidade: em 1 minuto será levado ao Idle Hall. Dê um passo para ficar.",

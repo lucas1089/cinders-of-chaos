@@ -47,6 +47,7 @@ local function mkPlayer(level, money)
   function p:getBaseSpeed() return 220 + 2 * (level - 1) end
   function p:getMaxHealth() return 10000 end
   function p:getMaxMana() return 4000 end
+  function p:getMoney() return self.money end
   function p:removeMoney(c) if self.money >= c then self.money = self.money - c; return true end return false end
   function p:removeCondition(a, b, sub) added[sub] = nil end
   function p:addCondition(c) added[c.p[CONDITION_PARAM_SUBID]] = c end
