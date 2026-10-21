@@ -256,7 +256,7 @@
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />
 	</instant>
-	<instant group="healing" spellid="98" name="Shadow Mend" words="saen umh" level="25" manapercent="2" premium="0" aggressive="0" selftarget="1" cooldown="1500" groupcooldown="1000" needlearn="0" script="chaos/thief/shadow_mend.lua">
+	<instant group="healing" spellid="98" name="Shadow Mend" words="saen umh" level="25" mana="40" premium="0" aggressive="0" selftarget="1" cooldown="1500" groupcooldown="1000" needlearn="0" script="chaos/thief/shadow_mend.lua">
 		<vocation name="Thief" />
 		<vocation name="Ninja" />
 		<vocation name="Samurai" />

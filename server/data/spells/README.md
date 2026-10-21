@@ -385,7 +385,7 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | 1000 | Thief line (Shadow Mend) | 0 | 10.0 | 0 | 0 | 1201 | 0 |
 | 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
 
-**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 2% of the maximum mana, cooldown 1.5 s (2 s until 2026-10-20), healing group 1 s; Thief,
+**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 40 mana (2% of the maximum mana until 2026-10-21), cooldown 1.5 s (2 s until 2026-10-20), healing group 1 s; Thief,
 Ninja, Samurai): level x 0.5 + magic level x 20 + 5% of the maximum health (+-10%; it was level + magic level x 10 + 4%), x1.3 while Shadow Veil is up; healing does not
 end the veil (`Chaos.classes.shadowMend`, `ChaosClasses.shadowMendRange`, script `chaos/thief/shadow_mend.lua`). Id 98 is free in
 the base server's spells.xml, the client's stock spell list and the Chaos block. Measured on the test server by its words in the
@@ -397,6 +397,9 @@ the Royal Paladin's. The cost is `manapercent="2"` (2% of the maximum mana; it w
 far above every other class at level 1000): measured 72 mana at level 300 (3612 mana) and 240 at level 1000 (12012 mana), so
 12.9 / 10.0 healed per mana, about the Mystic's stock heals (10.2 / 14.1). The client shows the current cost
 (`game_chaosspells` keeps the entry's mana at 2% of the player's maximum mana; the spellbook shows "2%").
+**Since 2026-10-21 the cost is a flat 40 mana** at every level ("Fixed spell costs" below: no spell costs a share of
+the maximum mana any more): 28.1 / 57.2 healed per mana at level 300 / 1000 (`rotation_sim.py --heal`), 1600 mana a
+minute on every cooldown, 14% of a level-25 Thief's pool of 285.
 
 **Shadow Mend rebalance (C5, 2026-10-20).** Report: "the Thief's healing is too low". Measured with
 `python3 -I server/tools/rotation_sim.py --heal` (the new mode: the formula of `chaos_constants.lua`, the cooldown and
@@ -417,7 +420,8 @@ After: +67% at level 300, +35% at level 1000; level 300 within 6% of the Ranger 
 1000 above it (+29%) and still 34% under the Illusionist (who also heals the party). The mana cost stays 2% of the pool: the
 mana per minute rises with the faster cooldown, 2428 of a 3035 pool at level 300 (a Thief that only heals runs out after ~75 s,
 and the attack rotation of `--mana` still runs 83 s). Test: `server/tests/class_kit_test.lua` (Ranger line floor, Illusionist
-ceiling, cooldown 1500). Not re-measured in the game client after the change.
+ceiling, cooldown 1500). Not re-measured in the game client after the change. (The cost columns above are the 2% of
+that pass; since 2026-10-21 a cast costs 40 mana: "Fixed spell costs".)
 
 Before -> after for the Illusionist: on another player +14% / +23% (level 300 / 1000), the party +12% / +18%, heal per mana up,
 self heal unchanged. Lead after: on another player +22% / +33% over the next class (the Mystic and the Necromancer line share the
@@ -2582,6 +2586,278 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
   ("Cooldown ladder" above).
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
+
+### Fixed spell costs (2026-10-21; owner: "Mas o custo de mana das skills ainda tá escalando com o level do char"; computed with rotation_sim.py, not measured in game)
+
+Reports: the owner (2026-10-21) and a beta tester (2026-10-20: "the mana cost scales too, it's not fixed per skill. One
+of my skills is costing 400k mana"). **What scaled, and where:**
+- **The shown cost (the 400k).** The display scale (server/README.md "Display scale") showed the own mana and max mana
+  x the factor of the level (1 up to 100, 215 at 800, 1000 at 1000), so the spellbook (`spellbook.lua` through
+  `DS.spellList`) and the client's action bar and spell list (`game_chaosscale` `applySpells` on `SpellInfo`) showed
+  every flat cost x the same factor. Reproduced: **Colossus Fall** (Warrior, Juggernaut, Berserker; 400 mana) shows
+  **400,000** at level 1000 (factor 1000) against a shown pool of 5.03M; at the tester's level 800 the Juggernaut's
+  dearest spell (Bastion Cry, 500) showed 107,500. The engine took the flat 400 every time.
+- **Shadow Mend** (Thief line) really scaled: `manapercent="2"`, 2% of the maximum mana (6 mana at level 25, 61 at 300,
+  201 at 1000).
+- **The cost cap** of `mana_flow` (2026-10-20): from level 100 no cast cost more than 25% of the maximum mana, so a few
+  costs depended on the pool (Colossus Fall 332 at level 260, Bastion Cry, Banner Call, Red Frenzy, Lay on Hands ...).
+- Not scaling, unchanged: every other Chaos spell (`spells_chaos.xml` `mana=`), the stock spells the classes keep
+  (`stock_spells.csv`, `spell_timings.csv`, patched by `patch_spell_timings.py`), Raise Dead's extra cost from nothing
+  (the spell's own 60 again), the runes (their own numbers, untouched). Percentages of the cost stay percentages: Thrift
+  runes, Mana Cost Reduction on items and sets (cap 25-30%), the trial nodes Thrifty Weave and Lucid Mind. The vigils
+  reserve a share of the maximum mana while they are up (an aura, not a cast cost; their cast costs 0): unchanged.
+
+**The rule now: a spell costs one fixed number at every level, for every class** (the `mana` of its spells.xml entry),
+and the client shows that number. Changes:
+- Mana is out of the display scale: engine `src-patches/0052-mana-outside-display-scale.patch` (the own mana and max
+  mana in the stats packet, and every mana drain / gain message, as they are), `display_scale_core.lua` (no spell list
+  site; party frames keep the members' mana; item tooltips keep max mana, mana on hit / kill and mana gems),
+  `spellbook.lua` (one list for every viewer), client `game_chaosscale` (no `SpellInfo` scaling). Health, damage,
+  heals and the energy shield keep the scale.
+- Shadow Mend: **40 mana** (`spells_chaos.xml`; "Healing" above). Its heal per mana is 28.1 at level 300 and 57.2 at
+  1000 (`rotation_sim.py --heal`), 1600 mana a minute when cast on every cooldown; at level 25 (a Thief pool of
+  285) a cast is 14% of the pool.
+- The cost cap is gone (`mana_flow_config.lua` `cap`, `ChaosManaFlow.capCost` and its "cost" handler; a reloaded
+  server drops the old handler). No cost is above any of its classes' whole pool at the spell's level
+  (`rotation_sim.py --mana --check`, `cost_fits`); the dearest against its pool: Banner Call 250 at level 60 (Warrior
+  330), Ironhold 200 at 55 (305), Vow of Mending 150 at 30 (Sentinel 243).
+- The level regeneration of `mana_flow` stays the way mana keeps up at the high levels (100 -> 4, 300 -> 24, 600 -> 45,
+  1000 -> 60 mana a second on top of the vocation's).
+
+**How the numbers are set** (no change to any cost but Shadow Mend's): the costs are the ones of "Mana runway" above
+(2026-10-17), set against the cooldown ladder. In practice an attack spell's cost follows its rung and its power: the 2 s
+level 8 fillers 6-30, the 4-8 s spells 30-250, the 10-18 s finishers 100-1500 (the Mystic line's high spells 900-2200
+against the largest pools); heals 10-600 by level; supports by duration (Hunter's Instinct 40, Banner Call 250, Bastion
+Cry 500). Because the pool grows every level (5 a level for the Warrior, 30 for the Mystic) and the level regeneration
+comes on top from level 100, a fixed cost is a shrinking share of the pool: the runway only grows past level 300.
+
+**Mana runway** (`python3 -I server/tools/rotation_sim.py --mana --check`, now checked at every band and preset level
+up to **1000**; the check is the vocation's own regeneration only, the last two columns add the level regeneration of
+`mana_flow_config.lua`; seconds the best set of 5 runs from a full pool, "inf" = paid as it goes): **no row under 15 s**,
+no cost above a pool.
+
+| Class | Worst, levels 8-300 (level) | 600 | 1000 | 600 with level regen | 1000 with level regen |
+|---|---|---|---|---|---|
+| Warrior | 16 s (8) | 60 | 99 | 568 | inf |
+| Juggernaut | 20 s (70) | 37 | 62 | 85 | 245 |
+| Berserker | 22 s (100) | 47 | 78 | 114 | 360 |
+| Ranger | 18 s (8) | 88 | 146 | 157 | 354 |
+| Deadeye | 23 s (60) | 53 | 89 | 73 | 138 |
+| Beastmaster | 23 s (8) | 73 | 122 | 121 | 257 |
+| Mystic | 19 s (40) | 149 | 248 | 238 | 494 |
+| Elementalist | 20 s (38) | 67 | 112 | 81 | 145 |
+| Illusionist | 22 s (280) | 47 | 78 | 54 | 95 |
+| Thief | 17 s (8) | 197 | 328 | inf | inf |
+| Ninja | 24 s (8) | 56 | 93 | 96 | 212 |
+| Samurai | 22 s (200) | 65 | 108 | 141 | 384 |
+| Necromancer | 19 s (8) | 293 | 488 | 1878 | inf |
+| Lich | 27 s (8) | 198 | 330 | 421 | 1122 |
+| Bone Lord | 24 s (8) | 240 | 400 | 963 | inf |
+| Monk | 18 s (50) | 203 | 337 | inf | inf |
+| Shadowfist | 19 s (50) | 74 | 124 | 168 | 481 |
+| Iron Sage | 17 s (50) | 75 | 126 | 203 | 774 |
+| Templar | 15 s (100) | 88 | 147 | 504 | inf |
+| Inquisitor | 15 s (40) | 49 | 81 | 77 | 159 |
+| Sentinel | 15 s (60) | 61 | 102 | 181 | 844 |
+
+The levels 8-300 are the same as before the change (the attack costs did not move). The tightest rows past 300 are the
+Juggernaut (37 s at 600 on the vocation alone) and the Illusionist (47 s); with the level regeneration every class runs
+at least 54 s at 600 and 95 s at 1000. Not in the numbers: potions, the passive tree, gear and Mana Cost Reduction (all
+help), Shadow Mend and the other heals (a Thief that heals on every cooldown spends 1600 a minute on top).
+
+**The cost of every spell** (Chaos spells and the stock attack and healing spells the classes keep; the stock support
+spells keep their base numbers, all flat). "all" = the whole line; the mana is the same at every level:
+
+| Line | Spell | Group | Level | Cooldown | Mana | Classes |
+|---|---|---|---|---|---|---|
+| Warrior line | Salve of Scars | healing | 1 | 1 s | 10 | all |
+|  | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Battle Salve | healing | 8 | 1 s | 40 | all |
+|  | Bonebreaker | attack | 8 | 2 s | 10 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Reaping Gyre | attack | 30 | 6 s | 30 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Ironhold | support | 55 | 30 s | 200 | Warrior, Juggernaut |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Earthbreaker | attack | 60 | 8 s | 50 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Scything Arc | attack | 70 | 4 s | 55 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Butcher's Gyre | attack | 90 | 12 s | 100 | all |
+|  | Red Frenzy | support | 100 | 40 s | 300 | Warrior, Berserker |
+|  | Skyfall Cleave | attack | 100 | 10 s | 100 | Berserker |
+|  | Bloodrage | support | 120 | 30 s | 200 | Berserker |
+|  | Iron Bellow | support | 120 | 20 s | 200 | Warrior, Juggernaut |
+|  | Vaulting Cleave | attack | 170 | 8 s | 250 | Warrior |
+|  | Colossus Fall | attack | 260 | 14 s | 400 | all |
+|  | Headsman's Hurl | attack | 300 | 16 s | 100 | all |
+|  | Iron Salve | healing | 300 | 1 s | 90 | all |
+|  | Bastion Cry | support | 340 | 40 s | 500 | Juggernaut |
+|  | Rampage Leap | attack | 380 | 14 s | 400 | Berserker |
+|  | Anvil Fall | attack | 460 | 12 s | 450 | Juggernaut |
+| Ranger line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Phantom Javelin | attack | 8 | 2 s | 20 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Dawnpiercer | attack | 30 | 6 s | 50 | all |
+|  | Dawn's Mending | healing | 35 | 1 s | 160 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Snare Trap | attack | 40 | 4 s | 90 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Sanctum Burst | attack | 50 | 8 s | 160 | all |
+|  | Wildstride | support | 55 | 30 s | 150 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Lightbearer's Grace | healing | 60 | 1 s | 210 | all |
+|  | Skewering Line | attack | 60 | 10 s | 150 | Ranger, Deadeye |
+|  | Tautstring | support | 60 | 30 s | 300 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Blessed Earth | attack | 100 | 14 s | 350 | all |
+|  | Wild Bond | support | 100 | 10 s | 300 | Beastmaster |
+|  | Feral Command | attack | 110 | 4 s | 200 | Beastmaster |
+|  | Lightward | support | 140 | 30 s | 300 | all |
+|  | Final Verdict | attack | 200 | 14 s | 450 | Deadeye |
+|  | Hail of Dawn | attack | 280 | 16 s | 800 | Ranger, Deadeye |
+|  | Radiant Shard | attack | 300 | 12 s | 160 | Ranger |
+|  | Pack Frenzy | attack | 380 | 6 s | 450 | Beastmaster |
+|  | Twin Verdict | attack | 400 | 16 s | 900 | Deadeye |
+| Mystic line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Kindling Spark | attack | 8 | 2 s | 6 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Rime Bloom | attack | 20 | 4 s | 120 | Mystic, Elementalist |
+|  | Blightswarm | attack | 25 | 6 s | 110 | Mystic |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Grand Mending | healing | 30 | 1 s | 160 | Mystic, Elementalist |
+|  | Witchfire Bolt | attack | 30 | 8 s | 70 | Mystic, Elementalist |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Pyre Torrent | attack | 38 | 4 s | 120 | Elementalist |
+|  | Tempest Fan | attack | 38 | 12 s | 170 | Elementalist |
+|  | Arcane Ripple | attack | 40 | 4 s | 175 | Mystic, Illusionist |
+|  | Hall of Mirrors | support | 40 | 30 s | 250 | Illusionist |
+|  | Purifying Wellspring | healing | 40 | 6 s | 160 | Mystic, Illusionist |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Forked Storm | attack | 50 | 8 s | 200 | Elementalist |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Bewitching Hex | attack | 60 | 6 s | 75 | Mystic, Illusionist |
+|  | Ironbark Hide | support | 60 | 25 s | 140 | Mystic |
+|  | Mirror Mend | healing | 60 | 2 s | 180 | Illusionist |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Briar Prison | attack | 70 | 10 s | 240 | Mystic |
+|  | Umbral Stride | attack | 70 | 14 s | 120 | Mystic |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Crimson Covenant | support | 90 | 30 s | 50 | Elementalist |
+|  | Shattered Psyche | attack | 110 | 12 s | 200 | Mystic, Illusionist |
+|  | Lucid Reverie | healing | 120 | 20 s | 300 | Illusionist |
+|  | Moonfang Pack | support | 120 | 30 s | 450 | Illusionist |
+|  | Falling Pyre | attack | 150 | 14 s | 700 | Mystic, Elementalist |
+|  | Wraithshroud | support | 150 | 35 s | 350 | Illusionist |
+|  | Verdant Sanctuary | healing | 180 | 30 s | 600 | Illusionist |
+|  | Nightburst | attack | 210 | 10 s | 900 | Illusionist |
+|  | Frozen Crypt | attack | 220 | 16 s | 900 | Elementalist |
+|  | Primordial Squall | attack | 250 | 8 s | 1200 | Illusionist |
+|  | Tear in the Weave | attack | 280 | 14 s | 1300 | Illusionist |
+|  | Doomtide | attack | 300 | 18 s | 1500 | Elementalist |
+|  | Glacial Doom | attack | 420 | 20 s | 2200 | Elementalist |
+| Thief line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Shuriken Toss | attack | 8 | 2 s | 16 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Shadow Mend | healing | 25 | 1.5 s | 40 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Shadow Veil | support | 40 | 20 s | 120 | all |
+|  | Snare Trap | attack | 40 | 4 s | 90 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Blade Flurry | attack | 50 | 10 s | 120 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Detonate Mines | support | 60 | 1 s | 20 | all |
+|  | Poison Blades | support | 60 | 30 s | 150 | all |
+|  | Seeker Mine | attack | 60 | 6 s | 110 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Fan of Knives | attack | 80 | 10 s | 150 | Thief |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Counter Stance | support | 100 | 8 s | 100 | Samurai |
+|  | Shadow Step | attack | 100 | 12 s | 150 | Ninja |
+|  | Iaijutsu | attack | 120 | 12 s | 350 | Samurai |
+|  | Smoke Bomb | support | 130 | 20 s | 300 | Ninja |
+|  | Bushido Focus | support | 150 | 30 s | 200 | Samurai |
+|  | Shuriken Barrage | attack | 180 | 8 s | 400 | Ninja |
+|  | Iaido Sweep | attack | 200 | 8 s | 450 | Samurai |
+|  | Shuriken Tempest | attack | 360 | 14 s | 600 | Ninja |
+| Necromancer line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Bone Spear | attack | 8 | 2 s | 30 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Raise Bone Warrior | support | 8 | 4 s | 50 | all |
+|  | Raise Bone Archer | support | 12 | 4 s | 60 | all |
+|  | Raise Bone Mage | support | 16 | 4 s | 70 | all |
+|  | Raise Dead | support | 20 | 2 s | 60 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Grand Mending | healing | 30 | 1 s | 160 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Withering Curse | attack | 40 | 4 s | 120 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Bone Shrapnel | attack | 60 | 4 s | 100 | Necromancer |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Bone Golem | support | 100 | 30 s | 500 | Bone Lord |
+|  | Soul Rot | attack | 100 | 8 s | 220 | Lich |
+|  | Banner of Bones | support | 120 | 30 s | 300 | Bone Lord |
+|  | Life Siphon | attack | 130 | 6 s | 260 | Lich |
+|  | Bone Offering | attack | 150 | 6 s | 250 | Bone Lord |
+|  | Corpse Explosion | attack | 160 | 4 s | 400 | Lich |
+|  | Rebirth of Flesh | healing | 300 | 6 s | 260 | all |
+| Monk line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Ashen Fist | attack | 8 | 2 s | 15 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Sundering Palm | attack | 30 | 12 s | 50 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Mistborne Step | support | 35 | 10 s | 60 | all |
+|  | Kindled Breath | healing | 40 | 8 s | 100 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Palm Shockwave | attack | 50 | 4 s | 70 | all |
+|  | Whirling Heel | attack | 50 | 6 s | 80 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Chi Ward | support | 100 | 12 s | 200 | Iron Sage |
+|  | Pressure Points | attack | 100 | 8 s | 120 | Shadowfist |
+|  | Iron Palm | attack | 120 | 10 s | 200 | Iron Sage |
+|  | Iron Chain | attack | 150 | 6 s | 300 | Iron Sage |
+|  | Mantra of Stone | support | 150 | 30 s | 400 | Iron Sage |
+|  | Shadow Ricochet | attack | 150 | 6 s | 300 | Shadowfist |
+|  | Shadowfist Flurry | attack | 150 | 14 s | 300 | Shadowfist |
+| Templar line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Radiant Smite | attack | 8 | 2 s | 15 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Vow of Mending | healing | 30 | 8 s | 150 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Consecration | attack | 40 | 6 s | 160 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Sanctified Ground | attack | 60 | 4 s | 160 | Templar |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Judgement | attack | 100 | 4 s | 250 | Inquisitor |
+|  | Rebuke | support | 100 | 12 s | 150 | Sentinel |
+|  | Aegis of Faith | support | 120 | 25 s | 150 | Sentinel |
+|  | Purging Nova | attack | 120 | 6 s | 350 | Inquisitor |
+|  | Lay on Hands | healing | 150 | 60 s | 400 | Sentinel |
+|  | Shield Wave | attack | 150 | 4 s | 250 | Sentinel |
+|  | Zealotry | support | 150 | 30 s | 200 | Inquisitor |
 
 ## Honest notes / limitations
 

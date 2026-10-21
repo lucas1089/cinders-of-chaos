@@ -1,6 +1,6 @@
--- mana_flow_core.lua: the pure rules of the mana flow (ChaosManaFlow): the regeneration by level and the cap of a
--- spell's cost. No engine calls; mana_flow.lua is the glue. Numbers: mana_flow_config.lua. Test:
--- server/tests/mana_flow_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+-- mana_flow_core.lua: the pure rules of the mana flow (ChaosManaFlow): the regeneration by level. Spell costs are fixed
+-- (no rule here changes them; mana_flow_config.lua). No engine calls; mana_flow.lua is the glue. Numbers:
+-- mana_flow_config.lua. Test: server/tests/mana_flow_test.lua. Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 
 ChaosManaFlowConfig = ChaosManaFlowConfig or dofile("data/scripts/chaos/mana_flow_config.lua")
 
@@ -41,20 +41,6 @@ function F.regenAmount(level, mana, maxMana, noMana, dead, cfg)
 	end
 	local give = floor(F.regenPerSecond(level, cfg) + 0.5)
 	return math.max(0, math.min(give, maxMana - mana))
-end
-
--- the cost of a cast after the cap: at most cap.share of the maximum mana (reserved mana included), from cap.fromLevel
-function F.capCost(mana, level, maxMana, reserved, cfg)
-	cfg = cfg or F.cfg
-	mana = tonumber(mana) or 0
-	if mana <= 0 or (tonumber(level) or 1) < cfg.cap.fromLevel then
-		return mana
-	end
-	local pool = (tonumber(maxMana) or 0) + (tonumber(reserved) or 0)
-	if pool <= 0 then
-		return mana
-	end
-	return math.min(mana, math.max(1, floor(pool * cfg.cap.share)))
 end
 
 return F

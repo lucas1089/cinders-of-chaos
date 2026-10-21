@@ -1,20 +1,20 @@
 -- mana_flow_config.lua: the numbers of the mana flow (server/README.md "Mana flow", server/data/spells/README.md
--- "Mana flow"). Pure data. Rules: mana_flow_core.lua (tested by server/tests/mana_flow_test.lua), engine glue:
+-- "Fixed spell costs"). Pure data. Rules: mana_flow_core.lua (tested by server/tests/mana_flow_test.lua), engine glue:
 -- mana_flow.lua. Beta report (Juggernaut, level 800): every skill only ran on infinite mana potions.
 --
--- What the report saw: a spell's mana cost is FLAT (200-700 for the Juggernaut's kit), the pool grows 5 a level and
--- the vocation regenerates 2.5 a second, so the best rotation (44 mana a second at level 300) was never paid by the
--- regeneration. The "cost that scales" is the display scale (display_scale_core.lua): the spellbook and the mana bar
--- show a flat cost x the viewer's factor (215 at level 800, 1000 at level 1000), the pool shown is scaled the same,
--- so the cost against the pool never changed. Nothing in the engine scaled a cost.
+-- Spell costs are FIXED (owner 2026-10-21: "Mas o custo de mana das skills ainda tá escalando com o level do char";
+-- server/README.md "Fixed spell costs"): every player spell costs the one number of its spells.xml entry at every
+-- level, for every class. Only percentages of that number change it (Thrift runes, Mana Cost Reduction, trial nodes).
+-- The pool grows with the level, so the same cost is a smaller share of it as the character levels; the regeneration
+-- below is how mana keeps up with the faster rotations of the higher levels.
 --
--- Two rules:
+-- One rule:
 --   * regen: from `regen.fromLevel` the player gets `regen` mana a second on top of the vocation's (a flat number by
 --     level, the same for every class: spells cost the same flat mana for every class). Linear between
 --     the points; the last value holds. Not under the rift's Parched Veins (fx.noMana).
---   * cost cap: from `cap.fromLevel` no cast costs more than `cap.share` of the maximum mana (the mana reserved by
---     vigils counts as part of it, or reserving would make casts free). Runs in ChaosSpellEvents "cost", after the
---     other discounts, so Thrift and Mana Cost Reduction still work.
+-- The cost cap of 2026-10-20 (from level 100 no cast cost more than 25% of the maximum mana) is gone: it made a cost
+-- depend on the pool (Colossus Fall 332 at level 260, 400 from level 320). Every spell's fixed cost is under its
+-- cheapest class's pool at the spell's own level (mana_flow_test.lua checks it).
 
 ChaosManaFlowConfig = {
 	regen = {
@@ -22,8 +22,7 @@ ChaosManaFlowConfig = {
 		thinkMs = 1000,
 		-- {level, mana a second}
 		curve = {{100, 4}, {300, 24}, {600, 45}, {1000, 60}}
-	},
-	cap = {fromLevel = 100, share = 0.25}
+	}
 }
 
 return ChaosManaFlowConfig

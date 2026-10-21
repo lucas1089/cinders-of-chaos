@@ -35,10 +35,14 @@ its gap and damage against the measured kit (the C4 harness: every Chaos attack 
 --class / --level also list the class's spells with their numbers.
 --mana [--check] [--class NAME]: the mana runway (owner, 2026-10-17: "Magias com custo de mana muito alto, difíceis de
 manter"): per class and checked level, how long the best set runs from a full pool with the vocation's own regeneration
-(mana_runway); a row under MANA_RUNWAY (15 s) is SHORT, and --check exits 1 on any.
+(mana_runway); a row under MANA_RUNWAY (15 s) is SHORT, and --check exits 1 on any. Checked up to MANA_MAX_LEVEL (1000):
+every spell costs one fixed number at every level (owner 2026-10-21, server/README.md "Fixed spell costs"), so the
+high bands are checked too; each row also shows the runway with the level regeneration of mana_flow_config.lua on top
+(not part of the check). --check also fails when a spell's fixed cost is above a class's whole pool at the spell's
+level (cost_fits).
 --heal: Shadow Mend (the Thief line's self heal) at level 300 and 1000 against the measured self heal per second of the Ranger
-line and the Illusionist (server/data/spells/README.md "Healing"): the formula of chaos_constants.lua, the cooldown and manapercent
-of spells_chaos.xml, the base health and the mana pool of the data.
+line and the Illusionist (server/data/spells/README.md "Healing"): the formula of chaos_constants.lua, the cooldown and the
+fixed mana cost of spells_chaos.xml, the base health of the data.
 --ladder [--check]: the cooldown ladder per class (owner, 2026-10-20: the attack spells at 2, 4, 6 s ... from the
 first to the strongest; ladder() below, server/data/spells/README.md "Cooldown ladder"); --check exits 1 when a spell's
 cooldown or group cooldown is off it.
@@ -68,7 +72,7 @@ HORIZON = 120.0               # seconds simulated from a fresh start
 MAX_SPELLS = 5
 BANDS = (15, 30, 60, 100, 300, 600, 1000)
 MANA_RUNWAY = 15.0                # a class's best set must run this many seconds on a full mana pool (see mana_runway)
-MANA_MAX_LEVEL = 300              # checked at the bands and preset levels up to here (the owner's review: 8 to 100; 200 and 300 too)
+MANA_MAX_LEVEL = 1000             # checked at the bands and preset levels up to here (fixed costs, 2026-10-21: up to 1000)
 NO_PRESET = ('skip', 'utility')  # flags that keep a spell out of every rotation the simulator builds
 MIN_PLAYER_ATTACK_INTERVAL = 1.0  # config.lua minPlayerAttackInterval (src-patch 0011), seconds
 CHI_HIT_INTERVAL = 2.0            # one chi per melee hit, at most one per 2 s (ChaosMonk.cfg.chi)
@@ -633,6 +637,44 @@ def mana_runway(spells, model, cls, level):
     return (pool / net if net > 0 else float('inf'), pool, regen, spent, [(s.name, cost[s.words]) for s in best['spells']])
 
 
+MANA_FLOW = os.path.join(REPO, 'server', 'data', 'scripts', 'chaos', 'mana_flow_config.lua')
+
+
+@functools.lru_cache(maxsize=None)
+def flow_curve():
+    """(fromLevel, [(level, mana a second)]) of mana_flow_config.lua: the regeneration every class gets by level"""
+    text = open(MANA_FLOW, encoding='utf-8').read()
+    start = int(re.search(r'fromLevel = (\d+)', text).group(1))
+    curve = re.search(r'curve = \{(.*?)\}\s*\n', text, re.S).group(1)
+    return start, [(int(l), float(v)) for l, v in re.findall(r'\{(\d+), ([\d.]+)\}', curve)]
+
+
+def flow_regen(level):
+    """mana a second of the mana flow at a level (mana_flow_core.lua regenPerSecond)"""
+    start, curve = flow_curve()
+    return 0.0 if level < start else interp(curve, level)
+
+
+def all_spells():
+    """every Chaos instant (attack, healing, support) and the stock attack and healing spells, with their fixed costs"""
+    return [spell_row(a, vocs, True) for a, vocs in instants(open(CHAOS_XML, encoding='utf-8').read())] + load_stock()
+
+
+def cost_fits(spells=None):
+    """[(spell, class, level, cost, pool)] of every spell whose fixed cost is above a class's whole pool at the spell's
+    own level (no class could ever cast it there); empty when every cost fits"""
+    bad = []
+    for s in (all_spells() if spells is None else spells):
+        for cls in s['vocations']:
+            if cls not in VOC:
+                continue
+            lv = max(s['level'], 8)
+            pool = mana_pool(cls, lv)
+            if s['mana'] > pool:
+                bad.append((s['name'], cls, lv, s['mana'], pool))
+    return bad
+
+
 def mana_levels(spells, model, cls):
     """the levels a class is checked at: the bands and the preset levels from 8 (the start level) to MANA_MAX_LEVEL"""
     return sorted(l for l in set(BANDS) | set(breakpoints(spells, model, cls)) | {8} if l <= MANA_MAX_LEVEL)
@@ -651,8 +693,10 @@ def mana_report(spells, model, only_cls=None):
             flag = r[0] < MANA_RUNWAY
             if flag:
                 short.append((cls, lv, r))
-            print('%-12s %4d  pool %6d  regen %5.2f/s  spent %7.2f/s  runway %7.1f s%s  %s' % (
-                cls, lv, r[1], r[2], r[3], r[0], '  SHORT' if flag else '',
+            net = r[3] - r[2] - flow_regen(lv)
+            flow = '%7.1f s' % (r[1] / net) if net > 0 else '    inf  '
+            print('%-12s %4d  pool %6d  regen %5.2f/s  spent %7.2f/s  runway %7.1f s%s  with level regen %s  %s' % (
+                cls, lv, r[1], r[2], r[3], r[0], '  SHORT' if flag else '', flow,
                 ' > '.join('%s %d' % c for c in r[4])))
     return short
 
@@ -666,14 +710,14 @@ HEAL_REF = {300: {'Ranger line': 798, 'Illusionist': 1538}, 1000: {'Ranger line'
 
 def shadow_mend_cfg():
     """{perLevel, perMagicLevel, maxHealthShare, spread} of Chaos.classes.shadowMend, and the spell's cooldown (ms) and
-    manapercent from spells_chaos.xml"""
+    fixed mana cost from spells_chaos.xml"""
     text = open(CONSTANTS, encoding='utf-8').read()
     m = re.search(r'shadowMend = \{([^}]*)\}', text)
     cfg = {k: float(v) for k, v in re.findall(r'(\w+) = ([\d.]+)', m.group(1))}
     xml = open(CHAOS_XML, encoding='utf-8').read()
     a = attrs(re.search(r'<instant\b[^>]*name="Shadow Mend"[^>]*>', xml).group(0))
     cfg['cooldown'] = int(a['cooldown'])
-    cfg['manapercent'] = float(a['manapercent'])
+    cfg['mana'] = float(a['mana'])
     return cfg
 
 
@@ -691,7 +735,7 @@ def shadow_mend_rate(level, ml, health=None):
     c = shadow_mend_cfg()
     health = heal_health('Thief', level) if health is None else health
     avg = (level * c['perLevel'] + ml * c['perMagicLevel'] + health * c['maxHealthShare']) * HEAL_INT
-    cost = mana_pool('Thief', level) * c['manapercent'] / 100.0
+    cost = c['mana']
     per_s = avg / (c['cooldown'] / 1000.0)
     return avg, per_s, cost, avg / cost, cost * 60000.0 / c['cooldown']
 
@@ -806,7 +850,11 @@ def main(argv):
     if '--mana' in argv:
         short = mana_report(spells, model, cls)
         print('%d class/level rows under %.0f s of mana' % (len(short), MANA_RUNWAY))
-        return 1 if short and '--check' in argv else 0
+        over = cost_fits()
+        for name, c, lv, cost, pool in over:
+            print('COST ABOVE THE POOL %s (%s, level %d): %d mana, pool %d' % (name, c, lv, cost, pool))
+        print('%d spell costs above a class pool at the spell\'s level' % len(over))
+        return 1 if (short or over) and '--check' in argv else 0
     if '--heal' in argv:
         heal_report()
         return 0

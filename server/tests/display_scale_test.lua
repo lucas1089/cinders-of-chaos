@@ -213,7 +213,8 @@ local byId = {}
 for _, m in ipairs(spst.members) do byId[m.i] = m end
 eq(byId[1].h, 15000 * 1000, "own health in own scale")
 eq(byId[2].H, 4565 * 1000, "a member's max health in the VIEWER's scale")
-eq(byId[2].m, 100 * 1000, "a member's mana")
+eq(byId[2].m, 100, "a member's mana stays (mana is never scaled)")
+eq(byId[2].M, 900, "its max mana stays")
 eq(byId[2].p, pst.members[2].p or byId[2].p, "the percent stays")
 eq(byId[2].lv, 300, "levels stay")
 eq(byId[3].h, nil, "a member out of range has no numbers")
@@ -294,15 +295,9 @@ eq(be.health, 400000, "monster health in the viewer's scale")
 eq(be.exp, 3000, "experience stays")
 eq(be.kills, 10, "kills stay")
 
--- spellbook: flat mana costs; a percent cost stays
-local spells = {{name = "Bolt", mana = 70, level = 20, cooldown = 2000}, {name = "Surge", mana = 0, manaPercent = 5}}
-local ss = DS.spellList(spells, 22)
-eq(ss[1].mana, 1540, "flat mana cost")
-eq(ss[1].level, 20, "level stays")
-eq(ss[1].cooldown, 2000, "cooldown stays")
-eq(ss[2].mana, 0, "a percent cost stays")
-eq(ss[2].manaPercent, 5, "the percent stays")
-eq(spells[1].mana, 70, "the cached list untouched")
+-- spellbook: a spell's mana cost is one fixed number at every level (owner 2026-10-21): no site scales it
+eq(DS.spellList, nil, "no spell list site: mana costs are never scaled")
+eq(DS.apply("spellList", {getLevel = function() return 1000 end}, {{mana = 70}})[1].mana, 70, "an unknown site: as it is")
 
 -- item tooltips: the factor of the item's level requirement, the flat rows only
 local tip = {name = "Ashen Helm", kind = "helmet", req = {level = 700},
@@ -343,11 +338,20 @@ eq(low.stats[1].sc, 1, "but marked, so a worn high item compares right")
 eq(DS.itemTip({stats = {}}).ds, 1, "no requirement: x1")
 -- a tooltip's factor does not depend on who looks
 eq(DS.itemTip(tip).base[2].v, DS.itemTip(tip).base[2].v, "the same for every viewer")
-ok(DS.isItemFlatKey("chaos_mod_manaonhit") and DS.isItemFlatKey("gem_maxmana") and not DS.isItemFlatKey("chaos_mod_attackspeed"),
+ok(DS.isItemFlatKey("chaos_mod_lifeonhit") and DS.isItemFlatKey("gem_maxhealth") and not DS.isItemFlatKey("chaos_mod_attackspeed"),
 	"flat keys")
+for _, k in ipairs({"maxmana", "chaos_mod_manaonhit", "chaos_mod_manaonkill", "gem_maxmana"}) do
+	ok(not DS.isItemFlatKey(k), "a mana row is never scaled: " .. k)
+end
+local mtip = DS.itemTip({req = {level = 1000}, base = {{k = "maxmana", v = 300}},
+	mods = {{k = "chaos_mod_manaonhit", t = "Mana on Hit +4", v = 4, lo = 2, hi = 6}},
+	sockets = {count = 1, list = {{name = "Sapphire", text = "+150 Max Mana"}}}})
+eq(mtip.base[1].v, 300, "item max mana stays")
+eq(mtip.mods[1].t, "Mana on Hit +4", "mana on hit stays")
+eq(mtip.sockets.list[1].text, "+150 Max Mana", "a mana gem stays")
 -- every flat key names a real modifier / stat (a renamed modifier would silently stop being scaled)
 dofile("data/lib/chaos_item_mods.lua")
-local known = {maxhealth = true, maxmana = true, gem_maxhealth = true, gem_maxmana = true}
+local known = {maxhealth = true, gem_maxhealth = true}
 for key in pairs(ChaosItemMods.byKey or {}) do
 	known[key] = true
 end
@@ -446,7 +450,6 @@ local hooks = {
 	{"battleground.lua", 'ChaosDisplayScale.apply("battleground", player, data)', "Chaos.sendChunked(player, OPCODE, json.encode({action = action, data = data or {}}))"},
 	{"guildwar.lua", 'ChaosDisplayScale.apply("guildState", player, data)', 'Chaos.sendChunked(player, OPCODE, json.encode({action = "state", data = data}))'},
 	{"bestiary.lua", 'ChaosDisplayScale.apply("bestiaryEntry", player, data)', 'Chaos.send(player, OPCODE, "entry", data)'},
-	{"spellbook.lua", 'ChaosDisplayScale.apply("spellList", player, list)', "local chunks = Book.chunk(list, Book.chunkBytes, json.encode)"},
 	{"item_tooltip.lua", "ChaosDisplayScale.itemTip(tip)", 'Chaos.send(player, OPCODE, "tips", {items = out})'},
 	{"inspect.lua", "ChaosDisplayScale.itemTip(tip)", "return rows"}, -- the rows go to I.equipPackets (equip packets)
 	{"itemlink.lua", "ChaosDisplayScale.itemTip(tip)", 'reply(player, "link", {id = entry.id, tip = '},
@@ -462,5 +465,8 @@ for _, h in ipairs(hooks) do
 	ok(at, h[1] .. ": the display scale hook is there")
 	ok(sendAt and sendAt - at < 600, h[1] .. ": the hook comes right before the send")
 end
+-- fixed spell costs (owner 2026-10-21): the spellbook sends the costs as they are, one packed list for every viewer
+local book = source("data/scripts/chaos/spellbook.lua")
+ok(not book:find("ChaosDisplayScale", 1, true), "spellbook.lua: no display scale on the mana costs")
 
 print("display_scale_test: OK (" .. checks .. " checks)")

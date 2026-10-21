@@ -13,7 +13,8 @@ usage: python3 -I server/tools/rotation_sim_test.py
   spell_timings.csv (patch_spell_timings.py) and patch_spell_timings.py does what the csv says (synthetic spells.xml);
 - Radiant Smite's class scale is read from templar_aura_core.lua, Shuriken Toss's from shuriken_toss.lua;
 - the mana runway: every class has an attack spell at level 8 and its best set runs 15 s on a full mana pool (vocation
-  regeneration only) at every band and preset level up to 300 (rotation_sim.py --mana);
+  regeneration only) at every band and preset level up to 1000 (rotation_sim.py --mana; fixed spell costs, 2026-10-21),
+  and no spell's fixed cost is above a class's pool at the spell's level (cost_fits); the mana flow curve is read;
 - the client's autorotation_data.lua is up to date (--check).
 """
 import os, sys
@@ -108,6 +109,14 @@ for cls, _, _ in R.CLASSES:
 check(R.mana_pool('Warrior', 8) == 70 and R.mana_pool('Mystic', 8) == 300, 'mana pool at level 8 = start_stats.lua')
 check(abs(R.mana_stats()['Warrior'][2] - 5 / 6.0) < 1e-9 and R.mana_stats()['Elementalist'][2] == 5.0,
       'regeneration = gainmanaamount / gainmanaticks')
+check(R.MANA_MAX_LEVEL >= 1000 and 1000 in R.mana_levels(spells, model, 'Warrior'), 'the runway is checked up to 1000')
+check(not R.cost_fits(), 'every fixed cost fits its classes\' pools: %s' % R.cost_fits()[:3])
+check(R.cost_fits([{'name': 'X', 'vocations': ['Warrior'], 'level': 8, 'mana': 71}]) == [('X', 'Warrior', 8, 71, 70)],
+      'cost_fits: a cost above the pool is caught')
+check(R.flow_regen(99) == 0 and R.flow_regen(100) == 4 and R.flow_regen(1000) == 60 and R.flow_regen(200) == 14,
+      'the level regeneration of mana_flow_config.lua')
+check(R.shadow_mend_cfg()['mana'] > 0 and R.shadow_mend_rate(300, 30)[2] == R.shadow_mend_rate(1000, 40)[2],
+      'Shadow Mend costs the same fixed mana at every level')
 
 # every class and ascension at every band and every preset level: at most 5 spells, never a snare
 for cls, _, _ in R.CLASSES:

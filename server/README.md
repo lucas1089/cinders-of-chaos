@@ -150,7 +150,7 @@ server/
   src-patches/0036-outfit-shader-storage.patch   engine: Player::addStorageValue accepts the outfit shaders' reserved
                                       keys, so Player:addShader keeps a shader (it stored nothing: no shader was ever owned,
                                       listed or wearable; see "Chaos outfit shaders"; tools/outfit_shader_patch_test.py)
-  src-patches/0037-display-scale.patch   engine: damage / heal text messages, the own health and mana and the energy
+  src-patches/0037-display-scale.patch   engine: damage / heal text messages, the own health and mana (mana: undone by 0052) and the energy
                                       shield in the receiving player's display scale (Game.setDisplayScale, header
                                       src/chaosdisplay.h; see "Display scale"; tools/display_scale_patch_test.py,
                                       tools/chaosdisplay_test.cpp)
@@ -188,6 +188,10 @@ server/
                                       percent, type (normal, critical, condition tick, mana ...) and creature id, for
                                       a client that asks at login (client base patch 0100); NEEDS THE NEW CLIENT FOR THE
                                       NEW LOOK, old clients keep working (see "Typed impact numbers"; tests/impact_text_test.lua)
+  src-patches/0052-mana-outside-display-scale.patch   engine: the own mana and max mana in the stats packet and every
+                                      mana drain / gain message as they are, never in the display scale, so a spell's
+                                      fixed cost reads the same at every level (see "Fixed spell costs";
+                                      tools/display_scale_patch_test.py)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
@@ -2534,18 +2538,49 @@ shown on the spellbook and the mana bar, and the pool is shown scaled the same, 
 at level 300 (`rotation_sim.py --mana`, which only checks up to level 300 and without regeneration from the tree).
 
 - **Regeneration**: from level 100 every player gets mana a second on top of the vocation's, flat for every class, linear
-  between 100 -> 4, 300 -> 24, 600 -> 45, 1000 -> 60 (level 800: 52.5, shown x the display factor). A think every second
+  between 100 -> 4, 300 -> 24, 600 -> 45, 1000 -> 60 (level 800: 52.5; mana is shown as it is since 2026-10-21, "Fixed
+  spell costs"). A think every second
   (`GlobalEvent`), none at a full pool, dead, or under the rift's Parched Veins (`fx.noMana`). Juggernaut: level 300 pool
   1530 against 44 a second: runway 37 s -> 87 s; level 600 and up the Juggernaut rotation is paid by the regeneration alone.
   Casters (Elementalist rotation about 183 a second at level 1000, pool ~30000) still drain: runway about 4 minutes.
-- **Cost cap**: from level 100 a cast costs at most 25% of the maximum mana (the mana reserved by vigils is added back,
-  `ChaosVigils.applied`), through `ChaosSpellEvents` "cost" (engine patch 0008). Thrift and Mana Cost Reduction apply as
-  before. Binds only the Juggernaut's Colossus Fall (400) at levels 100-319 and the like: 400 -> 332 at level 260.
+- **Cost cap: removed 2026-10-21** ("Fixed spell costs" below). It capped a cast at 25% of the maximum mana from level
+  100, so a cost depended on the pool (Colossus Fall 332 at level 260). `mana_flow.lua` registers no "cost" handler and
+  drops the old one (`ChaosSpellEvents.remove("cost", "manaflow")`: handlers survive a /reload).
 - Numbers: `mana_flow_config.lua`. Test: `tests/mana_flow_test.lua`. No storage, no DB.
 - **Righteous Fire style skill**: that is Pyre Oath (keystone `arPyreOath`, `archetypes.lua`), not a spell: it burns and
   heals every second and costs no mana. Support runes are keyed by spell id and wrap a spell's `onCastSpell`; a keystone
   has neither, so it cannot take runes without a new socket kind (storage, window, client). Not done. The mana the
   report mentions is the Juggernaut's other spells (and mana-on-hit gear), which the regeneration above now pays.
+
+## Fixed spell costs (owner 2026-10-21: "Mas o custo de mana das skills ainda tá escalando com o level do char")
+
+Every player spell costs **one fixed number at every level, for every class**: the `mana` of its spells.xml entry
+(`data/spells/chaos/spells_chaos.xml` for the Chaos spells; the stock spells through `tools/patch_spell_timings.py`,
+`data/spells/spell_timings.csv`, as before). The client shows that number. Only percentages of it change a cast: Thrift
+runes, Mana Cost Reduction (items, sets), the trial nodes. The cost table, the reasons of the numbers and the mana runway
+up to level 1000: `data/spells/README.md` "Fixed spell costs".
+
+What scaled before, and the change:
+- **The shown cost** (the beta tester's "one of my skills costs 400k"): the display scale showed the own mana x the factor
+  of the level, so the spellbook and the client's action bar showed every flat cost x that factor: Colossus Fall (400)
+  read 400,000 at level 1000. Now mana is out of the display scale: engine `src-patches/0052` (stats packet mana and
+  max mana, the mana drain / gain messages of patch 0051's types 3 and 4), `display_scale_core.lua` (no spell list site;
+  party frames keep the mana `m`, `M`; item tooltips keep max mana, mana on hit / kill and mana gems), `spellbook.lua`
+  (one packed list for every viewer), client `game_chaosscale` (no `SpellInfo` scaling). Health, damage, heals and the
+  energy shield keep the scale ("Display scale").
+- **Shadow Mend** cost 2% of the maximum mana (`manapercent="2"`): now 40 mana.
+- **The cost cap** of "Mana flow": removed.
+- Kept: the vigils reserve a share of the maximum mana while they are up (an aura; their cast costs 0); Raise Dead from
+  nothing costs its own 60 once more (flat); runes unchanged.
+- Guards: `tests/mana_flow_test.lua` (no `manapercent`, a number in every mana field of `spells_chaos.xml`,
+  `stock_spells.csv` and `spell_timings.csv`, no cap, no cost handler), `tests/display_scale_test.lua` (no spell list
+  site, mana rows and party mana unscaled, the spellbook has no display scale), `tools/display_scale_patch_test.py`
+  (0052), `tools/rotation_sim.py --mana --check` (runway up to 1000, no cost above a class's pool at the spell's level).
+- Install on a running server: `python3 -I tools/install_all.py SERVER_DIR --only files,spells` (scripts and the Chaos
+  spell block of spells.xml; idempotent), apply `src-patches/0052-mana-outside-display-scale.patch` to the engine source
+  (after 0001-0051), rebuild and restart. The client needs its update too (`game_chaosscale`, `spelldata.lua`): an old
+  client with the new engine still multiplies the costs on the action bar by the factor while the mana bar no longer
+  is, so from level 153 it greys out spells it can cast (casting by words works). Ship the two together.
 
 ## Vigils (`vigils.lua`, `vigils_core.lua`, `vigils_config.lua`, `data/spells/chaos/_vigils.lua`, docs/BUILDS.md "Vigils")
 Auras that reserve mana (2026-10-12), every class: Vigil of Wrath (spell 179, `vigh vyr`, level 60, reserves 35%,
@@ -17958,14 +17993,18 @@ the shown total, the shown hits of a fight are the meter's shown total, and a sh
 next shown health (no rounding drift; `tests/display_scale_test.lua` checks it at x1 to x10000). The price is the first
 steps (x1 -> x2 at level 153); from level 400 on they are small.
 
+**Mana is never scaled** (since 2026-10-21, "Fixed spell costs"; engine `src-patches/0052`): the own mana and max
+mana, the mana drain and mana gain messages, spell costs, party members' mana and the mana rows of item tooltips show
+the numbers the engine counts, so a spell costs the same shown number at every level.
+
 **Whose level.** The viewer's own level, for everything that viewer sees: its damage dealt and taken, heals, its own
-health and mana, monster and boss health numbers, the DPS meter and combat log, the death recap, party frames, damage
-boards, the bestiary's monster health, the spellbook's mana costs. Percentages stay percentages (monster bars, boss
+health, monster and boss health numbers, the DPS meter and combat log, the death recap, party frames (health), damage
+boards, the bestiary's monster health. Percentages stay percentages (monster bars, boss
 HUDs, party frame bars and every percent stat send percents anyway). Edge cases:
 - **PvP:** each side sees its own scale. A level-1000 hit on a level-300 player reads x1000 to the attacker, x5 to the
   victim and x(own) to every bystander; the engine scales each spectator's message on its own (`sendTextMessage` runs
   once per receiving player).
-- **Party members and party frames:** a member's health and mana in the frames are in the VIEWER's scale (the same as
+- **Party members and party frames:** a member's health in the frames is in the VIEWER's scale (its mana as it is) (the same as
   that member's damage numbers the viewer sees), so two members of different levels see each other's bars with
   different numbers but the same percents. The combat log's party view and the battleground scoreboard likewise.
 - **Spectators:** a bystander sees a fight in its own scale, like the PvP case.
@@ -17976,9 +18015,10 @@ HUDs, party frame bars and every percent stat send percents anyway). Edge cases:
   players of every level (the market, chat links, Inspect, trade, ground labels) and has to read the same for the
   seller and the buyer, and chat links and market offers keep one snapshot for every reader. `tip.ds` carries that
   factor and the client's compare view brings a worn item's flat rows to the hovered item's scale (`L.toScale`), so
-  two items of different levels compare by their real numbers. Only flat health / mana / damage / heal rows are scaled
-  (`itemFlatKeys`: max health, max mana, thorns, life / mana on kill and on hit, health regeneration, the Smoldering
-  Aura power, flat gems); attack, defence, armour, skills, speeds and every percent stay. The price: such a row is not
+  two items of different levels compare by their real numbers. Only flat health / damage / heal rows are scaled
+  (`itemFlatKeys`: max health, thorns, life on kill and on hit, health regeneration, the Smoldering Aura power, flat
+  health gems); attack, defence, armour, skills, speeds, every percent and every mana row (max mana, mana on kill and on
+  hit, mana gems; since 2026-10-21) stay. The price: such a row is not
   in the wearer's scale (a level-500 wearer of a level-1000 helmet's "+200,000 Max Health" gains x22 on its bar, not
   x1000).
 - **Consistency on one screen:** everything the viewer sees about combat uses one factor, its own (the boss bar's
@@ -17987,9 +18027,10 @@ HUDs, party frame bars and every percent stat send percents anyway). Edge cases:
 **Where the numbers come from, scaled at the last step before sending.**
 - Engine (`src-patches/0037`, `src/chaosdisplay.h`): the damage and heal text messages (MESSAGE_DAMAGE_DEALT /
   _RECEIVED / _OTHERS, MESSAGE_HEALED / _OTHERS: both values, uint32 clamped, and the numbers of the text that count
-  hitpoints, mana, energy shield or health; "1 hitpoint" shown as more becomes "hitpoints"), the player's own health,
-  max health, mana and max mana in the stats packet (uint32, clamped), and the energy shield's "es:" message (patch
-  0015). A C++ patch because TFS 1.4.2 has no Lua event per spectator message: the text is built once per hit and sent
+  hitpoints, mana, energy shield or health; "1 hitpoint" shown as more becomes "hitpoints"), the player's own health
+  and max health in the stats packet (uint32, clamped), and the energy shield's "es:" message (patch 0015). Patch 0052
+  takes mana out again: mana and max mana in the stats packet as they are, and a message of type mana drain / mana gain
+  (patch 0051) at factor 1. A C++ patch because TFS 1.4.2 has no Lua event per spectator message: the text is built once per hit and sent
   to every spectator. The factors come from Lua once at load (`Game.setDisplayScale(table)`, levels 1..1500, a higher
   level uses the last entry; `player:getDisplayScale()`); without the table every factor is 1.
 - Lua, right before each json.encode (`ChaosDisplayScale.apply(site, viewer, payload)`, a scaled copy: shared and cached
@@ -17997,14 +18038,14 @@ HUDs, party frame bars and every percent stat send percents anyway). Edge cases:
   push signature, so a level up re-sends), `deathrecap.lua`, `partyframes.lua`, `hunt.lua` (damage, DPS, healing),
   `leaderboard.lua`, `season.lua`, `season_modes.lua` (the World Boss, Boss Healer and Boss Tank boards only:
   `leaderboardBoards`), `battleground.lua` (scoreboard damage and healing), `guildwar.lua` (the guild boss damage
-  board), `bestiary.lua` (monster health), `spellbook.lua` (flat mana costs; a percent cost stays), the item tooltips of
+  board), `bestiary.lua` (monster health), the item tooltips of
   `item_tooltip.lua`, `inspect.lua`, `itemlink.lua`, `groundloot.lua` and `market.lua` (`DS.itemTip`), and the text
   "Your pet mends you (+N)" of `pets.lua`.
 - Client (`game_chaosscale`, opcode 157): the server sends `scale {level, f}` at login, at a level up that changes the
   factor, and as the answer to the client's `hello` (sent at every game start, when the module loads in game and when
   the own level differs from the last factor's: a reattach to a lingering character runs no onLogin, and a lost level
-  runs no onAdvance). The client scales what it works out itself: the flat mana cost of every spell in `SpellInfo`
-  (action bar, spell list; a cost in percent of max mana already follows the scaled max mana). The short numbers
+  runs no onAdvance). The client keeps the factor (`chaosDisplayFactor()`, `chaosDisplayValue(n)`); it no longer
+  scales the mana costs in `SpellInfo` (2026-10-21, "Fixed spell costs"). The short numbers
   (`client_chaos_numbers`, base patch 0018 above the map) already write k / M / B / T with three significant digits;
   the DPS meter and the hunt tracker wrote "kk" / "kkk" and now use M / B / T too.
 - Opcode 157 is free in the base server, the base client and every Chaos module ("Opcode collision check").

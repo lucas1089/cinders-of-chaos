@@ -878,33 +878,25 @@ function Book.checksum(text)
 	return string.format("%d-%04x%04x", n, b, a)
 end
 
--- the packed list for one viewer: the display scale changes flat mana costs, so the cache is per scale factor and
--- starts over when Book.spells is parsed again (`/spells reload`)
+-- the packed list, the same for every viewer: a spell's mana cost is one fixed number at every level (owner 2026-10-21;
+-- the display scale never touches mana, server/README.md "Fixed spell costs"); the cache starts over when Book.spells
+-- is parsed again (`/spells reload`)
 local packCache = {}
 
 local function packedFor(player)
 	local base = Book.get()
-	local factor = 1
-	if ChaosDisplayScale and ChaosDisplayScale.forPlayer then
-		local ok, f = pcall(ChaosDisplayScale.forPlayer, player)
-		factor = ok and f or 1
-	end
-	local key = tostring(factor)
-	local hit = packCache[key]
+	local hit = packCache.all
 	if hit and hit.source == base then
 		return hit
 	end
 	local list = clean(base)
-	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: flat mana costs
-		list = ChaosDisplayScale.apply("spellList", player, list)
-	end
 	local chunks = Book.chunk(list, Book.chunkBytes, json.encode)
 	local parts = {}
 	for i, chunk in ipairs(chunks) do
 		parts[i] = json.encode(chunk)
 	end
 	hit = {source = base, total = #list, chunks = chunks, sig = Book.checksum(table.concat(parts, "\n"))}
-	packCache[key] = hit
+	packCache.all = hit
 	return hit
 end
 

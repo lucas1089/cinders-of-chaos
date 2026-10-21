@@ -1,5 +1,5 @@
 -- luajit scalelogic_test.lua && lua5.3 scalelogic_test.lua (from anywhere; CI runs it from the repo root)
--- The client half of the display scale: the message, the value rule and the spell mana costs.
+-- The client half of the display scale: the message and the value rule (spell mana costs are never scaled).
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'scalelogic.lua')
 local S = ChaosScale
@@ -42,25 +42,8 @@ eq(chaosDisplayFactor(), 22, 'global factor')
 eq(chaosDisplayValue(10), 220, 'global value')
 S.factor = 1
 
--- spell mana costs: flat ones follow the factor from their raw cost, percent ones stay
-local info = {
-  Default = {
-    ['Witchfire Bolt'] = { mana = 70 },
-    ['Mana Surge'] = { mana = 300, manaPercent = 5 },
-    ['Free'] = { mana = 0 },
-  },
-  Other = { ['Heal'] = { mana = 20 } },
-}
-eq(S.applySpells(info, 1000), 2, 'two flat costs changed (0 stays 0)')
-eq(info.Default['Witchfire Bolt'].mana, 70000, 'flat cost x1000')
-eq(info.Other['Heal'].mana, 20000, 'every profile')
-eq(info.Default['Mana Surge'].mana, 300, 'a percent cost stays')
-eq(info.Default['Witchfire Bolt'].chaosRawMana, 70, 'raw kept')
-S.applySpells(info, 5)
-eq(info.Default['Witchfire Bolt'].mana, 350, 'a new factor starts from the raw cost, not the scaled one')
-S.applySpells(info, 1)
-eq(info.Default['Witchfire Bolt'].mana, 70, 'back to the raw cost')
-eq(S.applySpells(nil, 5), 0, 'no SpellInfo')
+-- spell mana costs are fixed numbers (owner 2026-10-21): no SpellInfo scaling at all
+eq(S.applySpells, nil, 'no spell cost scaling')
 
 if fails > 0 then
   print(fails .. ' of ' .. checks .. ' checks failed')

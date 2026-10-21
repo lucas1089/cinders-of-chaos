@@ -924,7 +924,7 @@
 							"rows": [
 								["Town Portal", "ash domh", "1", "0", "1 s", "whole line"],
 								["Shuriken Toss", "kah shur", "8", "16", "2 s", "whole line"],
-								["Shadow Mend", "saen umh", "25", "2% max mana", "1.5 s", "whole line"],
+								["Shadow Mend", "saen umh", "25", "40", "1.5 s", "whole line"],
 								["Hunter's Instinct", "ash senn", "25", "40", "10 s", "whole line"],
 								["Flickerdash", "ash flik", "35", "80", "6 s", "whole line"],
 								["Snare Trap", "drai snar", "40", "90", "4 s", "whole line"],
@@ -1731,7 +1731,7 @@
 				{
 					"id": "spell:98",
 					"name": "Shadow Mend",
-					"sub": "\"saen umh\", level 25, 2% max mana mana, cooldown 1.5 s",
+					"sub": "\"saen umh\", level 25, 40 mana, cooldown 1.5 s",
 					"color": "#9fdc7f",
 					"sections": [
 						{
@@ -1747,7 +1747,7 @@
 							"rows": [
 								["Words", "saen umh"],
 								["Level", "25"],
-								["Mana", "2% max mana"],
+								["Mana", "40"],
 								["Cooldown", "1.5 s"],
 								["Kind", "Healing"],
 								["Classes", "Thief, Ninja, Samurai"]

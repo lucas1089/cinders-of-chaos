@@ -334,6 +334,9 @@ Bone Spear (was 15); Monk, Shadowfist, Iron Sage: Ashen Fist (was 15); Templar, 
 20); Mystic, Elementalist, Illusionist: Kindling Spark (already). Their mana costs were lowered to what the level 8 pool
 sustains: a mana runway of at least 15 s for every class at levels 8-300 (`server/tools/rotation_sim.py --mana`;
 server/data/spells/README.md "Mana runway"). Raise Dead, the Necromancer's signature, stays at level 20.
+Every spell of every class costs one fixed number of mana at every level (owner 2026-10-21; the client shows the same
+number, mana is not in the display scale): the cost table per line and the runway up to level 1000 are in
+server/data/spells/README.md "Fixed spell costs".
 
 Level 1 rows:
 
@@ -465,8 +468,9 @@ Limits of phase 1:
   (and end it). A monster that sees invisible creatures is handled the same way.
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
-- The line had no healing spell of its own until Shadow Mend (phase 2b; since 2026-10 it costs 2% of the maximum mana, not a
-  flat 80: about 18 / 11 healed per mana at level 300 / 1000; since 2026-10-20 level x 0.5 + magic level x 20 + 5% every 1.5 s, 751 / 1527 per second, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+- The line had no healing spell of its own until Shadow Mend (phase 2b; 2026-10 to 2026-10-21 it cost 2% of the maximum
+  mana; since 2026-10-21 a flat 40 mana at every level like every spell, server/README.md "Fixed spell costs": about 28 / 57
+  healed per mana at level 300 / 1000; since 2026-10-20 level x 0.5 + magic level x 20 + 5% every 1.5 s, 751 / 1527 per second, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
   the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells did not list the line either in phase 1; both do now (stock utility spells: see "Item, spell and
