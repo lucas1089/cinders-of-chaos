@@ -2096,7 +2096,7 @@ importer verified 576 sprite slots pixel-identical to the sheets and every other
 - Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
   client by us.
 
-## Pair 33 packs (planned: outfits 2385-2694, items 38093-38607, `tools/sprites/gen_pack33.py`, `art_import/pack33_*`; NOT built for windows-assets, owner approval needed)
+## Pair 33 packs (outfits 2385-2667, items 38093-38607, `tools/sprites/gen_pack33.py`, `art_import/pack33_*`; built as pair 33 on 2026-10-21, NOT pushed to windows-assets: "Pair 33 build")
 Four purchased packs of one vendor, uploaded by the owner to the Drive folder "ots" on 2026-10-21 (internal labels
 `set33 wings`, `set33 heads`, `set33 capes`, `set33 kit`; names and licence in docs/CREDITS.md). None of the four was
 imported before: no earlier pair, csv or tool names their files (the wings zip is labelled v2 but its own readme says
@@ -2120,6 +2120,9 @@ the cut sheets (`art_import/pack33_<slug>/`) and the contact sheets are never co
   offering altar), event decorations, catacomb stairs, 5 monsters, 4 critters and a 3x3 boss (idle, walk, attack /
   death strips in 4 directions), render maps (`_albedo`, `_light`, `_normal`, `_height`, `_fx`) and floor parts.
 **Cut** (`gen_pack33.py` docstring has the rules; `build --src SRC`, CI `build --check` and `gen_pack33_test.py`):
+- Ids as built (after the owner's drop list of 2026-10-21, "Pair 33 build"): wings 2385-2476 (92), heads 2477-2568
+  (92), capes 2569-2657 (89), kit looks 2658-2667; kit items unchanged. The ids and counts below are those of the first
+  cut (all 100 of each).
 - Wings 2385-2484: one layer (the combined sheet), dat directions N, E, S, W from the pack rows 6, 0, 2, 4 (diagonals
   dropped), one group, animateAlways, 83 ms; 44 3x3, 30 4x3, 26 4x4. The pack's lift is not used (the client lifts the
   body 6 px, GameWingOffset).
@@ -2127,7 +2130,7 @@ the cut sheets (`art_import/pack33_<slug>/`) and the contact sheets are never co
   (GameAuraFrontAndBack), 16 / 24 phases at 83 ms; heads 93 2x2, capes 90 2x2, the rest 1x1 to 3x3.
 - Every frame trimmed to the union alpha box (alpha < 12 cleared); displacement = BODY_REF 8 minus the art right of /
   below the wearer's tile, plus the big-aura centring for heads and capes (wings -29..+6, heads +12..+40, capes
-  -4..+26).
+  -4..+26). Wings x since the build: WING_REF_X 4 and WING_X_FIX ("Pair 33 build").
 - Kit looks 2685-2694 (idle 4 + walk 4, one layer, no mask): black cat, harvest werewolf, hedge witch, the boss (5x5),
   pumpkin brute (4x4), raven (hop as walk), scarecrow stalker, skeleton archer, skeleton warrior, wailing ghost.
   Attack / cast / death strips unused; the boss's last death frame is a corpse item (38607).
@@ -2148,7 +2151,7 @@ heads and capes as `--aura-looks`: 0 errors, 0 warnings; full check 0 errors, 32
 -10.8) from body 128; 41 of 100 lie outside the premise box |x| <= 5 (all by x, leaning left), so the owner's preview
 decides whether BODY_REF x needs a pack-wide shift. Heads: art centre about 21 px up-left of the tile centre (on the
 head of a 2x2 look); capes -1..-13 px.
-**Proposed use** (owner decides; nothing on the server yet):
+**Proposed use** (before the owner's decisions; what was done: "Pair 33 build", server/README.md "Pair 33 cosmetics"):
 - Wings: 100 new wings.xml looks (ids 30-129, after our 16-29) sold in the store's Wings category per element, a few as
   exclusives (boss drops / achievements); `install_outfits.py` writes the lines behind a `PAIR33` switch like
   `chaos_owner_art.lua`. Theme review by name: circuit, hologram, neon butterfly, pixel block, thruster jet and gyro
@@ -2168,6 +2171,63 @@ head of a 2x2 look); capes -1..-13 px.
   `install_auras.py`), store offers and prices (`shop_config.lua`), exclusives, Store and Cosmetics previews (they
   draw outfits already), `check_content.py --pair`, `outfit_anchors.lua` regenerated, `ChaosPack33.PAIR33` switch.
 - The spr grows by about 110 MB (+11.7% sprites); the size of the packed `things-1098.tar.xz` was not measured.
+
+## Pair 33 build (2026-10-21; pair 32 + the kept pack33 pieces; built twice, NOT pushed: local branch `windows-assets-pair33` 1c7c58df, the owner's go)
+Owner decisions of 2026-10-21: (1) pair 33 approved; (2) head accessories and capes become auras (no engine change),
+two store categories "Head Accessories" and "Capes"; (3) the sci-fi themed pieces are dropped; (4) the wings' x
+placement is fixed against the body.
+- **Dropped** (`gen_pack33.py` DROP, by name; the build refuses a DROP name the pack does not have). The owner's list:
+  wings circuit, hologram, neon butterfly, pixel block, thruster jet, gyro ring; heads atom orbit, circuit visor, neon
+  ear headset, robot antennae, propeller beanie, ringed planet float, mouse ears; capes academic gown, circuit, fiber
+  optic train, glitch pixel, neon tatter, aviator scarf, knit pompom capelet. Added on the same rule after reading the
+  full lists: magnet field and plasma fly wings, the tesla crown (a modern name), the plasma train, ion hood, hex shield
+  and magnet plate capes. Kept though borderline: clockwork wings and gear cape, brass fan, nebula, galaxy cloak, coil
+  capelet, officer cape, pinwheel wings and hairpin. Kept: 92 wings, 92 heads, 89 capes (27 dropped); the kit whole.
+- **Wings x.** Measured (`gen_pack33.py wingx`, the rule of `fix_pair_warnings.py` `wing_offset`: the wings' alpha
+  mean, every phase, minus the body's, the body 6 px up-left, GameWingOffset). The body reference: stock look 128
+  facing south has its art centre 7.2, 7.1 px from its tile's top left (8.8 / 8.9 px up-left of the tile centre), as
+  its 8,8 displacement says, so 8 is right for the body itself (our class looks sit 2.5 px from the tile's left, median
+  of 67, 4.7 px further left). The pack's wings sit 11.0 px left of their anchor tile's centre (median, -16.8..-3.4):
+  the vendor's figure stands further left in its 64 px cell and lifts itself only about 2.7 px (its `lift_px`), our
+  client 6. With BODY_REF 8 the wings' south centre was x -10.0..+3.4 from the body (median -4.2; 41 of 100 outside
+  |x| <= 5). Fix: the wings' x reference WING_REF_X = 4 (every wing 4 px right), then WING_X_FIX for the 38 wings still
+  more than WING_TOL 3 px off (-6..+7 px each, to the body's centre). After (on pair 33, `fix_pair_warnings.py
+  --scan-wings-displacement --looks 2385-2476`): south x -2.9..+2.9 (median 0.0), y -18.3..-0.3 (median -11.1; the
+  premise box -23..0), north x median -2.7; 0 outside the premise box. Heads and capes keep BODY_REF 8 (measured for
+  the record: the heads' south centre 4.5 px left of body 128 at the head's height, the capes' 4.2 px right at theirs;
+  no change asked).
+
+```
+python3 -I client/tools/sprites/gen_pack33.py build --src SRC          # tables + sheets (sheets ignored by git)
+python3 -I client/tools/sprites/gen_pack33.py wingx --src SRC --dat pair32/Tibia.dat --spr pair32/Tibia.spr
+(head -1 art_import/pack33_wings.csv; tail -q -n +2 art_import/pack33_{wings,heads,capes,kit}.csv) > art_import/pack33_all.csv
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair32/Tibia.dat --ours-spr pair32/Tibia.spr --out-dir pair33 \
+    --things client/tools/sprites/art_import/pack33_all.csv --first-item 38093 --first-outfit 2385 --expect-items 38092 \
+    --manifest-out pack33_items_manifest.csv --outfits-out pack33_outfits_manifest.csv
+python3 -I client/tools/sprites/check_pair.py pair33/Tibia.dat pair33/Tibia.spr --old pair32/Tibia.dat pair32/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair33/Tibia.dat pair33/Tibia.spr
+```
+(`pack33_all.csv` is the four things files joined in id order, header once; temporary, not committed.)
+Input pair 32 (windows-assets 1f109dc0, archive sha256 54405b25..., dat 23c7265b887dfc61ac80e516490a390a, spr
+8b4af2e6cf8dbcf886df1d67f349a980). Output **pair 33**: dat bd8bb6781f274c392a3332e7a043bdba (6,646,976 bytes), spr
+05803c7851fe25b5d8dd3021c43a1fc4 (867,445,763 bytes, 933,382 sprites: 90,790 appended, 293 reused), 38,607 items,
+2,667 outfits, 854 effects, 188 missiles. The importer verified 515 items and 283 outfits, 215,156 sprite slots
+pixel-identical to the sheets and every old thing byte-identical. Built twice: identical md5s and manifests.
+- `check_pair.py --old`: append-only, `--new-only` 0 errors, 0 warnings; full check 0 errors, 124 warnings, the
+  categories and counts of pair 32 (the 181 aura looks are `--aura-looks` by default through
+  `server/data/XML/chaos_auras_pack33.csv`; without it 181 `mask-not-mask`).
+- `things-1098.tar.xz` (the pair 30 / 31 / 32 recipe, mtime 2026-10-21 00:00Z, `xz -9 -T0`, xz 5.4.5): 94,844,592
+  bytes (under GitHub's 100 MB), sha256 01230938d712ab14a24ebfefd5194f875f36140078cfa2a7d36ec9cdf6cb9c3e, packed twice
+  with the same sha256; unpacks to the md5s above. Committed on the local branch `windows-assets-pair33` (1c7c58df, on
+  1f109dc0: the archive and SHA256SUMS.parts, like pairs 31 / 32); **not pushed** (the owner's final go).
+- `outfit_anchors.lua` from pair 33 (1,974 things, +283) is its own commit on this branch, to land with the push (the
+  live-pair CI job checks the table against windows-assets). The server switch `ChaosPack33.PAIR33` stays off until
+  then (server/README.md "Pair 33 cosmetics").
+- The kit items' server side (items.otb / items.xml manifest to server ids 41093-41607, monsters, an event map) is not
+  done: the importer's manifests are in the build folder only.
+- Checked offline: the wings scan above, owner previews of every wings, head and cape on look 128 in four directions
+  (`gen_pack33.py preview`) and contact sheets (`contact`), scratchpad only (never committed, never given to an AI
+  tool). Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
@@ -2699,8 +2759,9 @@ Prince of Lands (1221) is a low, wide look whose feet (x 17) are 11 sprite px ri
 of `Outfit::draw` (1098 profile, facing south): the pixel bounds of `CharSelectAnchors` (left, top, right; the bottom
 5 px under its ground row) cut down to the tiles of the frame that hold a sprite for the addons worn (`ThingType:
 getSprites`, displacement applied); a thing the table lacks by those tiles alone; the body, mount and aura 6 px up and
-left of the wings (`GameWingOffset`); a positive mount's extra shift and the rider seated on it; a big aura's centring.
-Checked offline against the pixel bounds drawn by those rules from the pair 30 dat and spr (1221, 1213, 128, 2161 with
+left of the wings (`GameWingOffset`); a positive mount's extra shift and the rider seated on it; a big aura's centring;
+an aura with two layers (`GameAuraFrontAndBack`: the pair 33 head accessories and capes) by the tiles of both layers,
+not the anchors (they measure layer 0 only; 2026-10-21, `lookpreview_core_test.lua`). Checked offline against the pixel bounds drawn by those rules from the pair 30 dat and spr (1221, 1213, 128, 2161 with
 addons, mounts 1338 / 1236 / 901, wings 937 / 941 / 1185 / 1179): within 2 sprite px. The shadow is centred under
 the feet, wider for a mount (60% of the body, 22 to 60 px), also under a mounted look.
 

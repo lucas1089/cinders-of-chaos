@@ -172,6 +172,19 @@ eq(tb.top, -40, 'with addon 1 the tile above counts') eq(tb.left, -8, 'not the e
 tb = P.thingBox({ w = 2, h = 2, dx = 8, dy = 8 }, 0, 0)
 eq(tb.left .. ',' .. tb.top, '-40,-40', 'no sprites: the whole frame')
 eq(P.thingBox(nil), nil, 'no info')
+-- a two-layer aura (a pair 33 head accessory: layer 0 behind, layer 1 in front): the front layer's tiles count too
+local head = { w = 2, h = 2, dx = 24, dy = 24, layers = 2, px = 4, py = 1, pz = 1, phases = 1, sprites = {} }
+for i = 1, 32 do head.sprites[i] = 0 end
+-- south (x 2): layer 0 only in the bottom-right tile, layer 1 in the top-left tile
+head.sprites[17] = 11 -- ((x 2 * 2 layers + 0) * 2 + hh 0) * 2 + ww 0, 1-based
+head.sprites[24] = 12 -- ((x 2 * 2 layers + 1) * 2 + hh 1) * 2 + ww 1, 1-based
+tb = P.thingBox(head, 0, 0)
+eq(tb.left .. ',' .. tb.top, '-24,-24', 'layer 0 only: the bottom-right tile')
+tb = P.thingBox(head, 0, 0, true)
+eq(tb.left .. ',' .. tb.top .. ',' .. tb.right .. ',' .. tb.bottom, '-56,-56,8,8', 'every layer: the front tile too')
+local hb = P.lookBox({ type = 128, aura = 2477 }, function(id) return id == 2477 and { fx = 0, fy = 0, top = -20,
+  left = -20, right = -10 } or anchors(id) end, function(id) return id == 2477 and head or info(id) end, 0)
+eq(hb.left <= -56 + 16 and hb.top <= -56 + 16, true, 'a two-layer aura: its tiles (both layers), centred (w-1)*16')
 local nb = P.lookBox({ type = 3000 }, function() return nil end, function() return tiles end, 0)
 eq(nb.left .. ',' .. nb.right, '-8,24', 'no anchor: the tiles') eq(nb.fy, 19, 'feet a little above the bottom')
 eq(P.lookBox({ type = 3000 }, nil, nil, 0).left, P.FALLBACK_BOX.left, 'nothing known: the stock look')

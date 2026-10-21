@@ -8683,6 +8683,52 @@ grounds, decoration, buildings, animated objects). Installer part:
 - Tests: `tools/install_pack30_items_test.py` (synthetic manifests, items.otb and items.xml; no base server needed).
   Not run against a real manifest or base server yet.
 
+## Pair 33 cosmetics (`data/lib/chaos_pack33.lua`, `data/lib/chaos_pack33_cosmetics.lua`, `data/XML/chaos_auras_pack33.csv`, `tools/gen_pack33_cosmetics.py`, switch `ChaosPack33.PAIR33`, off)
+Wings, head accessories and capes of the client pair 33 (four purchased packs, import-only; client/MANIFEST.md
+"Pair 33 packs", "Pair 33 build"). Owner decisions of 2026-10-21: pair 33 approved; head accessories and capes become
+**auras** (no engine change) with a store category each; the sci-fi and plainly modern pieces are not imported (the
+list: `gen_pack33.py` DROP); the wings' x placement fixed against the body.
+- **What.** 92 wings (client looks 2385..2476, wings.xml ids 30..121), 92 head accessories (looks 2477..2568, auras.xml
+  ids 33..124) and 89 capes (looks 2569..2657, auras.xml ids 125..213). Heads and capes are two-layer aura things (back
+  layer behind the body, front layer over it, client base patch 0006 GameAuraFrontAndBack), so a player wears **one aura,
+  head accessory or cape at a time**; the store text says so. A step 2 (two outfit fields of their own, so they stack
+  with wings and an aura) needs a server src-patch and a client base patch and is not planned yet. The kit of the same
+  pair (looks 2658..2667, items 38093..38607) has no server use yet.
+- **Generated.** `python3 -I server/tools/gen_pack33_cosmetics.py [--check]` reads the client things files
+  (`client/tools/sprites/art_import/pack33_{wings,heads,capes}.csv`) and writes `data/lib/chaos_pack33_cosmetics.lua`
+  (one line per piece: key, id, look, name, element, cost) and `data/XML/chaos_auras_pack33.csv` (aura_id, client_id,
+  name); CI runs `--check`. Names are the packs' piece names; ids follow ours in the client's look order.
+- **Store** (`shop_config.lua` `withPack33`, `ChaosPack33.addStore`; nothing while off). Prices by the drawn size, in
+  line with the store's other cosmetics (Wings 200-350, Auras 150-300; placeholder until the owner sets them,
+  docs/PRICES.md):
+
+  | list | category | price | count sold |
+  |---|---|---|---|
+  | wings 3x3 / larger (4x3, 4x4) | Wings (appended after the pair 26 wings) | 250 / 300 | 89 (42 / 47) |
+  | head accessories 2x2 or smaller / larger | Head Accessories (new, under Cosmetics after Auras) | 150 / 200 | 90 (83 / 7) |
+  | capes 2x2 or smaller / larger | Capes (new, after Head Accessories) | 200 / 250 | 88 (80 / 8) |
+
+  The running "Launch sale" (20% off the Wings category until 2026-10-24) covers the new wings too while it lasts. In
+  the store tree both new categories are subcategories of Cosmetics, right after Auras (`ChaosShopCore.addSubcategory`);
+  their names have pt-BR entries in the client's game_shop run-time keys.
+- **Exclusives** (`ChaosPack33.addExclusives`, called by `exclusives_config.lua`; boss drops, never sold): Void Raven
+  Wings (Nyxareth), Demon Rend Wings (Kaelgor), Frost Crystal Wings (Skaldra), Eclipse Halo (the Ascended Omens),
+  Spider Crown (the Ashen Sepulchre's wardens), Vampire Collar Cape (Vharok). Each is appended to its boss group's
+  rewards.
+- **Install.** With the switch on, `install_outfits.py` (step `outfits`) writes the 92 wings into its wings.xml block
+  (`pack33_wings`, every `wings_*` line of the generated file) and `install_auras.py` (step `auras`) reads
+  `chaos_auras_pack33.csv` after the other manifests. Off: neither does. Idempotent like the rest.
+- **Switch.** `M.PAIR33 = false` until pair 33 is on windows-assets (prepared locally, not pushed; the owner's go). A
+  client on pair 32 has no outfits past 2384. Switch-on: push the windows-assets commit, regenerate
+  `client_chaos_charselect/outfit_anchors.lua` from pair 33 (prepared in the same branch as its own commit), set
+  `M.PAIR33 = true`, run `install_all.py --only outfits,auras`, restart. Rollback: the switch off and the two steps again
+  (the blocks are rewritten without the pair 33 lines; accounts keep their unlocks in the tables, unused).
+- **Previews.** Store and Cosmetics previews draw the aura's client look through auras.xml (`ChaosShopCore.lookOf`);
+  client `game_lookpreview` counts both layers of a two-layer aura in the drawn box.
+- Tests: `tests/pack33_test.lua` (the generated data against the manifest, ids after ours, off: no config names a pair 33
+  look; forced on: the categories, offers, exclusives and boss groups, `ChaosShopCore.validate` and
+  `ChaosExclusivesCore.validate` pass), `exclusives_test.lua` and `season_test.lua` follow the switch. Not run in a game.
+
 ## Item rarities (`data/lib/chaos_rarity.lua`, `rarity_migrate*.lua`, `sql/chaos_zz_rarity_migrate.sql`)
 
 Owner item 87 (2026-10-18): exactly **seven rarities**, in this order: **Common, Uncommon, Magic, Rare, Legendary, Divine,

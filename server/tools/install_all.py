@@ -45,7 +45,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   darktiles    tools/install_dark_tiles.py       the dark tile set in items.otb / items.xml (README "Dark tile set")
   outfits      tools/install_outfits.py          the Ninja / Samurai class outfits in outfits.xml (docs/CLASSES.md)
   auras        tools/install_auras.py            the Chaos auras in auras.xml (data/XML/chaos_auras.csv, written by
-               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects")
+               client/tools/sprites/import_vfx.py; spells/README_FX.md "Animated pack effects"; the pair 33 head
+               accessories and capes and, in outfits, the pair 33 wings only while ChaosPack33.PAIR33 is on; README
+               "Pair 33 cosmetics")
   donoritems   tools/install_donor_items.py      the items imported from donor B art in items.otb / items.xml (server ids
                40000..; nothing to do while data/items/donor_items.csv is absent or empty)
   packitems    tools/install_pack_items.py       the pack items (new looks of the rune-stone orbs and ore pieces, creature

@@ -183,4 +183,11 @@ if okOwner and type(owner) == "table" then
 	owner.addExclusives(cfg)
 end
 
+-- the wings, head accessories and capes of client pair 33 (data/lib/chaos_pack33.lua, switch ChaosPack33.PAIR33, off
+-- until pair 33 is published): six boss exclusives appended with their boss groups only when the switch is on
+local okPack33, pack33 = pcall(dofile, "data/lib/chaos_pack33.lua")
+if okPack33 and type(pack33) == "table" then
+	pack33.addExclusives(cfg)
+end
+
 return cfg

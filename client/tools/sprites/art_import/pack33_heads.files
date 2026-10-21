@@ -5,8 +5,6 @@ heads,oblique/32px/heads/acorn_cap_back.png,7546,73562dacaed5d07901727f736a76507
 heads,oblique/32px/heads/acorn_cap_front.png,27384,cc8ffdbeaff744767f5456debc1d7624,1024,512
 heads,oblique/32px/heads/antelope_horns_back.png,13407,9dd70d463f1394f97167ad9558d017ee,1024,512
 heads,oblique/32px/heads/antelope_horns_front.png,16093,d29ce00ef429c59ce528886ce5497cf3,1024,512
-heads,oblique/32px/heads/atom_orbit_back.png,26398,ff19ba3ab0d1b5aee629f6315ac9b1d3,1536,768
-heads,oblique/32px/heads/atom_orbit_front.png,43016,fe44f07f3ab7a7bc37c18bbc982e2384,1536,768
 heads,oblique/32px/heads/axolotl_gills_back.png,16768,76678a51c4978f2b53fad19dbb986306,1024,512
 heads,oblique/32px/heads/axolotl_gills_front.png,23516,bdd2e5786533816ab547ea684dfc9590,1024,512
 heads,oblique/32px/heads/bat_ears_back.png,14371,d7e3e1398727521c21a53e4f26f0267e,1024,512
@@ -29,8 +27,6 @@ heads,oblique/32px/heads/cat_ears_back.png,12081,eca0e3edbe80c62f7229261e91fc9a2
 heads,oblique/32px/heads/cat_ears_front.png,18626,10d282e950b1ff7fe0f33069fe7d1c90,1024,512
 heads,oblique/32px/heads/cinder_fox_ears_back.png,10575,c148e0c3151efcb129199e38289352f5,1024,512
 heads,oblique/32px/heads/cinder_fox_ears_front.png,22092,5f1ad17c22301e94a3acfbae3a96e851,1024,512
-heads,oblique/32px/heads/circuit_visor_back.png,10946,71730bdb4632c39ad0fc39701d6f9e03,1024,512
-heads,oblique/32px/heads/circuit_visor_front.png,14805,2a8776d286dead4f052aeb98c882adc0,1024,512
 heads,oblique/32px/heads/cloud_cap_back.png,7360,98a16647db502c6042ac3df4b0661804,1024,512
 heads,oblique/32px/heads/cloud_cap_front.png,24016,49f7727671cb527c7b3fff6c450c8cfc,1024,512
 heads,oblique/32px/heads/coral_antlers_back.png,15862,9993eebf8215e422ce97b2383fa8560e,1024,512
@@ -109,12 +105,8 @@ heads,oblique/32px/heads/moon_orbit_back.png,29053,77524a37a01243a12fac8da7b2f6c
 heads,oblique/32px/heads/moon_orbit_front.png,30425,b6c2ee2f610ddbdf742c270ec6276c5f,1024,512
 heads,oblique/32px/heads/moss_antlers_back.png,20179,d5d5de36b0b35b26a17e1ea7984ba9aa,1024,512
 heads,oblique/32px/heads/moss_antlers_front.png,37583,133e33a243886ddcc26355342ccb5f93,1024,512
-heads,oblique/32px/heads/mouse_ears_back.png,9514,169b412e269b51e1ca37da6751fd4355,1024,512
-heads,oblique/32px/heads/mouse_ears_front.png,20061,6d20cfc68add8d0229f860c75ddefac3,1024,512
 heads,oblique/32px/heads/mushroom_cap_back.png,27073,1dc39b993744000916035d094ab02d48,1024,512
 heads,oblique/32px/heads/mushroom_cap_front.png,46771,e91402b6e6b8993e6cfc4196a6976e95,1024,512
-heads,oblique/32px/heads/neon_ear_headset_back.png,13466,16c6b906162a94791d0d6f5e0d3cde44,1024,512
-heads,oblique/32px/heads/neon_ear_headset_front.png,24169,b251722b8886808b525579ae7b205026,1024,512
 heads,oblique/32px/heads/olive_wreath_back.png,9096,f63bc0508f8af2a8feb0b7cca22a88cf,1024,512
 heads,oblique/32px/heads/olive_wreath_front.png,13762,10b815072cd75ba1b3777cff48ac5eb2,1024,512
 heads,oblique/32px/heads/oni_horns_back.png,12024,a84a103e708c692c6f97571f5e0a768c,1024,512
@@ -133,8 +125,6 @@ heads,oblique/32px/heads/plain_halo_back.png,25453,abbdf7f93978ad9f2b605cb0333fd
 heads,oblique/32px/heads/plain_halo_front.png,25579,065bc50e69d5bfcf309ef2a33512b3da,1536,768
 heads,oblique/32px/heads/plume_antennae_back.png,8973,6da75f7f0487db26ec5d3cc58f8f54e4,1024,512
 heads,oblique/32px/heads/plume_antennae_front.png,25371,c039ec7555464f20fe31aed4c8413e5a,1024,512
-heads,oblique/32px/heads/propeller_beanie_back.png,7735,59fda843910a6fda6e70309638464689,1024,512
-heads,oblique/32px/heads/propeller_beanie_front.png,13658,7e860453c325b201929374a4a538d914,1024,512
 heads,oblique/32px/heads/pumpkin_cap_back.png,6892,4c856120654882a5a98a63b16601813e,1024,512
 heads,oblique/32px/heads/pumpkin_cap_front.png,13249,45dfabb699702668a5f263f55acb6345,1024,512
 heads,oblique/32px/heads/rabbit_ears_back.png,11663,ffd2c090ceb3dc120757a340f917382b,1024,512
@@ -145,10 +135,6 @@ heads,oblique/32px/heads/ram_horns_back.png,11304,81eb234d8bf672984cd161dcc16fe1
 heads,oblique/32px/heads/ram_horns_front.png,21170,40a8337a06b8b3dc8c3c9128ed2892cb,1024,512
 heads,oblique/32px/heads/red_fox_ears_back.png,10497,066ab194d8511131ddda69dab89cd32a,1024,512
 heads,oblique/32px/heads/red_fox_ears_front.png,18562,80397a2996e135b8f2d23d4cd7762a7a,1024,512
-heads,oblique/32px/heads/ringed_planet_float_back.png,8134,61bbd555a93c46fcb30a8d9971e8715b,1024,512
-heads,oblique/32px/heads/ringed_planet_float_front.png,36002,64e7131fde5ec570a177c0ad9f4a1a55,1024,512
-heads,oblique/32px/heads/robot_antennae_back.png,12049,dc19d453cbfc812336fd9e1dd37b3c1e,1024,512
-heads,oblique/32px/heads/robot_antennae_front.png,28806,9f498a554593bceb2d1dbc6c4e97cfd5,1024,512
 heads,oblique/32px/heads/rotating_sigil_back.png,27517,a10b64c65e2b4715b5de5ccf6efe1fef,1536,768
 heads,oblique/32px/heads/rotating_sigil_front.png,49686,699f03eb8248bfe200f208fed387ab30,1536,768
 heads,oblique/32px/heads/royal_coronet_back.png,7846,ce59b55d4365e6934ad2161e850df508,1024,512
@@ -181,8 +167,6 @@ heads,oblique/32px/heads/swift_ears_back.png,13510,8303274139ce327ca38ac49925c82
 heads,oblique/32px/heads/swift_ears_front.png,25862,c4bbd2d7502080adff5923ba3f633e28,1024,512
 heads,oblique/32px/heads/tentacle_crest_back.png,23472,875a7929cd2d29fcc98208c90adc64dd,1536,768
 heads,oblique/32px/heads/tentacle_crest_front.png,36877,967814ab335941205b98739beb4751bc,1536,768
-heads,oblique/32px/heads/tesla_crown_back.png,20540,9d3615c079e252d6f889c0b4014003c5,1024,512
-heads,oblique/32px/heads/tesla_crown_front.png,38707,9e59c7d34ee53b9ae7cabc8860d1bec7,1024,512
 heads,oblique/32px/heads/thorn_crown_back.png,17368,381f1b6d130e8f17a4c69e04860fc88e,1024,512
 heads,oblique/32px/heads/thorn_crown_front.png,19793,a3987a751c0b4d7f09ec4d9034f8dd31,1024,512
 heads,oblique/32px/heads/thorn_halo_back.png,21186,2bc2287ddc2515986bf0e2313c9d1903,1024,512

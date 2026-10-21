@@ -329,6 +329,8 @@ end
 --     than it stands. A mount with a negative displacement is drawn by its own displacement only.
 --   * wings of a mounted rider facing south 6 px up; a big aura (w - 1) * 16, (h - 1) * 16 right and down
 --     (GameBigAurasCenter).
+--   * an aura with two layers (GameAuraFrontAndBack: layer 0 behind the body, layer 1 over it; the head accessories
+--     and capes of pair 33) counts the tiles of both layers, not the anchors (they measure layer 0 only).
 -- anchorOf(id) -> {fx, fy, top, left, right} or nil; infoOf(id) -> {w, h, dx, dy, layers, px, py, pz, phases,
 -- sprites} or nil (any field may be missing). Returns {left, top, right, bottom, fx, fy} (fx, fy: the feet).
 P.SCALE = 2
@@ -346,9 +348,9 @@ P.signed = signed
 
 local function max1(v) return math.max(1, num(v)) end
 
--- the box of the tiles of a thing's south frame (phase 0, layer 0, the given addons and pattern z) that hold a
--- sprite, displacement applied; the whole frame without sprites; nil without info
-function P.thingBox(info, z, addons)
+-- the box of the tiles of a thing's south frame (phase 0, layer 0 or with allLayers every layer, the given addons and
+-- pattern z) that hold a sprite, displacement applied; the whole frame without sprites; nil without info
+function P.thingBox(info, z, addons, allLayers)
   if type(info) ~= 'table' then return nil end
   local w, h = max1(info.w), max1(info.h)
   local dx, dy = signed(info.dx or info.dispX), signed(info.dy or info.dispY)
@@ -358,14 +360,16 @@ function P.thingBox(info, z, addons)
     local pz = math.min(num(z), max1(info.pz) - 1)
     for yp = 0, max1(info.py) - 1 do
       if yp == 0 or (math.floor(num(addons) / 2 ^ (yp - 1)) % 2 == 1) then
-        for hh = 0, h - 1 do
-          for ww = 0, w - 1 do
-            if P.spriteAt(info, ww, hh, 0, px, yp, pz, 0) > 0 then
-              local c, r = w - 1 - ww, h - 1 - hh
-              c0 = c0 and math.min(c0, c) or c
-              r0 = r0 and math.min(r0, r) or r
-              c1 = c1 and math.max(c1, c) or c
-              r1 = r1 and math.max(r1, r) or r
+        for layer = 0, allLayers and max1(info.layers) - 1 or 0 do
+          for hh = 0, h - 1 do
+            for ww = 0, w - 1 do
+              if P.spriteAt(info, ww, hh, layer, px, yp, pz, 0) > 0 then
+                local c, r = w - 1 - ww, h - 1 - hh
+                c0 = c0 and math.min(c0, c) or c
+                r0 = r0 and math.min(r0, r) or r
+                c1 = c1 and math.max(c1, c) or c
+                r1 = r1 and math.max(r1, r) or r
+              end
             end
           end
         end
@@ -384,8 +388,8 @@ function P.anchorFrom(row)
 end
 
 -- one part's box (and feet) drawn at (ox, oy)
-local function partBox(anchor, info, z, addons, ox, oy)
-  local tb = P.thingBox(info, z, addons)
+local function partBox(anchor, info, z, addons, ox, oy, allLayers)
+  local tb = P.thingBox(info, z, addons, allLayers)
   local b
   if type(anchor) == 'table' then
     -- the table has no bottom row: its ground row (the lowest band of the solid mass) plus P.BELOW_GROUND, within
@@ -446,7 +450,9 @@ function P.lookBox(outfit, anchorOf, infoOf, lift)
   if num(outfit.aura) > 0 then
     local ai = I(outfit.aura)
     local aw, ah = max1(ai and ai.w), max1(ai and ai.h)
-    add(partBox(A(outfit.aura), ai, mounted and 1 or 0, 0, -l + (aw - 1) * 16, -l + (ah - 1) * 16))
+    local front = ai ~= nil and num(ai.layers) >= 2
+    add(partBox(not front and A(outfit.aura) or nil, ai, mounted and 1 or 0, 0, -l + (aw - 1) * 16,
+      -l + (ah - 1) * 16, front))
   end
   if not box then return copy(P.FALLBACK_BOX) end
   box.fx = feet and feet.fx or (box.left + box.right) / 2

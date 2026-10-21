@@ -65,6 +65,10 @@ THEME_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_theme_art.
 # the wings of client pair 26 (the owner's art): the boss-drop wings in exclusives_config.lua's line format and the
 # store wings (M.storeWings); read only while ChaosOwnerArt.PAIR26 is on
 OWNER_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_owner_art.lua')
+# the wings of client pair 33 (data/lib/chaos_pack33_cosmetics.lua M.wings, generated: store wings and boss exclusives
+# alike); read only while ChaosPack33.PAIR33 (data/lib/chaos_pack33.lua) is on
+PACK33 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack33.lua')
+PACK33_DATA = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack33_cosmetics.lua')
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
@@ -130,7 +134,26 @@ def exclusives(path=EXCLUSIVES):
         # the store wings of pair 26 (one line each: key, id, look, name, cost)
         for m in re.finditer(r'\{key = "[\w]+", id = (\d+), look = (\d+), name = "([^"]+)", cost = \d+\}', text):
             out['wings'].append((int(m.group(1)), int(m.group(2)), m.group(3)))
+    if path == EXCLUSIVES and pair33_on():
+        out['wings'] += pack33_wings()
     return out
+
+
+def pair33_on(path=None):
+    """the pair 33 server switch, read from the Lua module"""
+    path = path or PACK33
+    if not os.path.isfile(path):
+        return False
+    return re.search(r'^M\.PAIR33\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
+
+
+def pack33_wings(path=None):
+    """[(wings.xml id, look, name)] of every pair 33 wings (lines {key = "wings_..", id, look, name, ...})"""
+    path = path or PACK33_DATA
+    if not os.path.isfile(path):
+        return []
+    return [(int(i), int(lk), n) for i, lk, n in re.findall(
+        r'\{key = "wings_\w+", id = (\d+), look = (\d+), name = "([^"]+)"', open(path, encoding='utf-8').read())]
 
 
 def install_block(path, begin, end, close, lines, taken_re, dry, label):
