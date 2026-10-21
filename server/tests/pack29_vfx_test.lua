@@ -212,11 +212,15 @@ os.mtime = function() return t end
 V.resetThrottle()
 eq(V.hold(alive[7], "stunned", 3000), true, "hold: started")
 eq(#events, 1, "hold: one event")
+eq(events[1][2], ChaosVfx.cond_stunned.ms, "hold: the next copy only when this one ends (no faster than its length)")
 eq(V.hold(alive[7], "stunned", 4000), true, "hold: a running chain")
 eq(#events, 1, "hold: no second chain")
 t = t + ChaosVfx.cond_stunned.ms
 events[1][1]()
 eq(vfxSent[#vfxSent], "cond_stunned", "hold: sent again")
+local sentNow = #vfxSent
+eq(V.show(alive[7], "stunned"), false, "hold: another call site does not add a copy while it plays")
+eq(#vfxSent, sentNow, "hold: one copy at a time")
 eq(#events, 2, "hold: the next step")
 alive[7] = nil
 events[2][1]()

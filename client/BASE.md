@@ -821,6 +821,24 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     engine, with one signal per emptied slot. Applies after `0001`-`0112` (`0113` and `0114` belong to other branches and
     touch none of these files; `patch` clean on the base archive with the whole chain); `uiitem.cpp` and
     `luafunctions_client.cpp` pass `g++ -std=c++20 -fsyntax-only`. Not seen in a client.
+69l. `0116` (C++ `src/client/tile.cpp`): **a busy tile draws its newest effects, and combat feedback always draws.**
+    Owner beta: the crit, dodge and reflect animations stopped appearing. The server sent them (`crit_burst` 415,
+    `dodge_whoosh` 416, `reflect_aegis` 417, `reflect_bubble` 628; checked with a load-all simulation of the scripts).
+    Cause: `Tile::drawTop` and `drawGroundEffects` drew `m_effects` from index `min(size - 1, effetsLimit())` down to 0,
+    and `addThing` appends a new effect at the back, so over the limit the oldest effects drew and the newest were
+    dropped. `effetsLimit()` is 10 or less in auto mode, and pair 29 keeps a condition aura (1079 ms) on a fighting
+    creature with the blasts and splashes of every hit beside it. Fix: the `effetsLimit() + 1` newest effects draw, the
+    same count as before; an older one draws only when it is combat feedback (415-417, the imbues 418-423 of
+    `chaos_fx.lua`, 628; all short) or a top effect, which `addThing` puts at the front. The draw order is unchanged.
+    `addThing` also drops a running copy of the same effect id, so a re-sent aura replaces itself; the old copy's
+    scheduled `g_map.removeThing` then finds nothing. Server side: every Lua aura send goes through
+    `ChaosPack29Vfx.allow`, throttled to the aura's own length, so no Lua change; only the engine's condition tick
+    (server patch 0045, kind 2) sends outside it, at the condition's tick interval. Model test
+    `tools/effect_limit_test.py` (CI): the forced ids match `chaos_fx.lua` and `chaos_pack_fx_ids.lua`, both loops and
+    the same-id drop are in the patch, and on a party fight tile the stock rules drop all four feedback effects at the
+    limit 10 and below while `0116` draws them at every limit, draws the newest, and holds one copy of each aura.
+    Applies after `0001`-`0115` (`patch` clean on the base archive with the whole chain); `tile.cpp` passes
+    `g++ -std=c++20 -fsyntax-only`. Not seen in a client. Native code: players need a new Windows package.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

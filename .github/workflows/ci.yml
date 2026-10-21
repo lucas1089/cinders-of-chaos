@@ -144,6 +144,9 @@ jobs:
       - name: An emptied slot loses the marks of its item (model of base patch 0115, LuaJIT and Lua 5.3)
         run: python3 -I client/tools/slot_clear_test.py
 
+      - name: A busy tile draws its newest effects and the combat feedback (model of base patch 0116)
+        run: python3 -I client/tools/effect_limit_test.py
+
       - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
         run: python3 -I client/tools/gen_field_timers_test.py
 

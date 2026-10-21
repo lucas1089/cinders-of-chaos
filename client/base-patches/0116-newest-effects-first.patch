@@ -1,0 +1,73 @@
+# Chaos: a tile with more effects than the adaptive limit draws the newest ones, and combat feedback always draws
+# (src/client/tile.cpp; after 0001-0115; 0113 and 0114 are taken by other branches and touch none of this). Owner beta:
+# the crit, dodge and reflect animations stopped appearing. The server sent them (crit_burst 415, dodge_whoosh 416,
+# reflect_aegis 417, reflect_bubble 628). Tile::drawTop and drawGroundEffects drew m_effects from index
+# min(size - 1, effetsLimit()) down to 0, and addThing appends new effects at the back, so on a busy tile the oldest
+# effects drew and the newest were dropped. effetsLimit() is 10 or less in auto mode, and pair 29 keeps a condition
+# aura (1079 ms) on a fighting creature, re-sent as each copy ends, with the blasts and hit splashes beside it. Now the
+# effetsLimit() + 1 newest effects draw; an older one draws only when it is combat feedback (415-417, the elemental
+# imbues 418-423 of chaos_fx.lua, 628: all short) or a top effect. The draw order is the old one. An effect sent again
+# on a tile replaces its running copy, so a re-sent aura no longer stacks; the old copy's scheduled removal then finds
+# nothing. Model test: tools/effect_limit_test.py.
+--- a/src/client/tile.cpp
++++ b/src/client/tile.cpp
+@@ -284,6 +284,20 @@ void Tile::drawCreatures(const Point& dest, LightView* lightView, const bool glo
+     }
+ }
+ 
++// Chaos (base patch 0116): which effects of a tile draw. m_effects is oldest first (addThing push_back), so the
++// effetsLimit() + 1 newest are at the back; an older one draws only when it is combat feedback (crit 415, dodge 416,
++// reflect 417, the elemental imbues 418-423 and reflect 628 of chaos_fx.lua, all short) or a top effect.
++static bool chaosAlwaysDrawEffect(const EffectPtr& effect)
++{
++    int id = effect->getId();
++    return (id >= 415 && id <= 423) || id == 628 || effect->isTopEffect();
++}
++
++static int chaosFirstDrawnEffect(const std::vector<EffectPtr>& effects)
++{
++    return std::max<int>(0, (int)effects.size() - (g_adaptiveRenderer.effetsLimit() + 1));
++}
++
+ void Tile::drawTop(const Point& dest, LightView* lightView, const bool globalLayerPass)
+ {
+     if (m_fill != Color::alpha)
+@@ -319,8 +333,10 @@ void Tile::drawTop(const Point& dest, LightView* lightView, const bool globalLay
+     }
+ 
+     // effects
+-    int limit = std::min<int>((int)m_effects.size() - 1, g_adaptiveRenderer.effetsLimit());
+-    for (int i = limit; i >= 0; --i) {
++    int first = chaosFirstDrawnEffect(m_effects); // Chaos 0116: the newest, not the oldest
++    for (int i = (int)m_effects.size() - 1; i >= 0; --i) {
++        if (i < first && !chaosAlwaysDrawEffect(m_effects[i]))
++            continue;
+         if (m_effects[i]->isHidden())
+             continue;
+         if (m_effects[i]->getId() == Otc::LootHighlightEffectId && g_game.getFeature(Otc::GameContainerTypes))
+@@ -354,8 +370,10 @@ void Tile::drawGroundEffects(const Point& dest, LightView* lightView)
+ {
+     if (m_fill != Color::alpha)
+         return;
+-    int limit = std::min<int>((int)m_effects.size() - 1, g_adaptiveRenderer.effetsLimit());
+-    for (int i = limit; i >= 0; --i) {
++    int first = chaosFirstDrawnEffect(m_effects); // Chaos 0116: the newest, not the oldest
++    for (int i = (int)m_effects.size() - 1; i >= 0; --i) {
++        if (i < first && !chaosAlwaysDrawEffect(m_effects[i]))
++            continue;
+         if (m_effects[i]->isHidden() || !g_map.isGroundEffect(m_effects[i]->getId()))
+             continue;
+         m_effects[i]->draw(dest - m_drawElevation * g_sprites.getOffsetFactor(), m_position.x - g_map.getCentralPosition().x, m_position.y - g_map.getCentralPosition().y, true, lightView);
+@@ -551,6 +569,12 @@ void Tile::addThing(const ThingPtr& thing, int stackPos)
+         return;
+ 
+     if(thing->isEffect()) {
++        // Chaos (base patch 0116): an effect sent again on this tile replaces its running copy (a condition aura
++        // re-sent while it plays). The old copy's scheduled removal then finds nothing and does nothing.
++        const uint32 effectId = thing->getId();
++        m_effects.erase(std::remove_if(m_effects.begin(), m_effects.end(),
++                                       [effectId](const EffectPtr& e) { return e->getId() == effectId; }),
++                        m_effects.end());
+         if(thing->isTopEffect())
+             m_effects.insert(m_effects.begin(), thing->static_self_cast<Effect>());
+         else
