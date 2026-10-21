@@ -6,6 +6,7 @@
 
 #include <cstdio>
 #include <string>
+#include <vector>
 
 static int failures = 0;
 
@@ -89,6 +90,22 @@ int main()
     std::string tampered2 = pack;
     tampered2[5] ^= 0x01;
     check(!chaospack::decrypt(key, tampered2, bad), "tampered header fails");
+
+    // in place (the engine's path): one buffer, the Python vector, a large blob, wrong key, tampering
+    auto vec = [](const std::string& s) { return std::vector<uint8_t>(s.begin(), s.end()); };
+    auto str = [](const std::vector<uint8_t>& v) { return std::string(v.begin(), v.end()); };
+    std::vector<uint8_t> buf = vec(fromHex(expectPack));
+    check(chaospack::decryptInPlace(key, buf) && str(buf) == plaintext, "in place: the Python vector");
+    buf = vec(bigPack);
+    check(chaospack::decryptInPlace(key, buf) && str(buf) == big, "in place: big round trip");
+    buf = vec(pack);
+    check(!chaospack::decryptInPlace(otherKey, buf) && buf.empty(), "in place: wrong key fails and clears");
+    buf = vec(tampered);
+    check(!chaospack::decryptInPlace(key, buf) && buf.empty(), "in place: tampered ciphertext fails");
+    buf = vec(tampered2);
+    check(!chaospack::decryptInPlace(key, buf), "in place: tampered header fails");
+    buf = vec(pack.substr(0, pack.size() - 1));
+    check(!chaospack::decryptInPlace(key, buf), "in place: truncated pack fails");
 
     if (failures) {
         std::printf("%d check(s) failed\n", failures);
