@@ -17,7 +17,7 @@
 --   K.visible(cfg, offer, ctx)               -> true | false, reason (ctx: level, seen[id], killed[lower name])
 --   K.canBuy(cfg, offer, ctx)                -> true | nil, reason key (ctx: balance, visible, pz, blocked)
 --   K.refinePrice(cfg, rarity)               -> tokens to raise `rarity` by one, nil when it may not go up
---   K.refineCheck(cfg, info)                 -> true | nil, reason key (info: gear, rarity, unique, ruined)
+--   K.refineCheck(cfg, info)                 -> true | nil, reason key (info: gear, rarity, unique, ruined, corrupted)
 --   K.convertCheck(cfg, what, from, to, have, kinds) -> true, cost | nil, reason key
 --   K.salvageTokens(cfg, price)              -> tokens a salvaged unique gives
 --   K.payload(cfg, offers, ctx)              -> the window's rows {k, id, n, g, l, p, s, set, ok, why}
@@ -41,6 +41,7 @@ K.reasons = {
 	notGear = "Wear an item with a rarity in that slot first.",
 	unique = "Uniques keep their stats: they cannot be refined.",
 	ruined = "A ruined item cannot be refined.",
+	corrupted = "A corrupted item cannot be refined.",
 	maxRarity = "This item is already at the highest rarity a refinement reaches.",
 	sameKind = "Choose two different kinds.",
 	badKind = "There is no such kind.",
@@ -376,6 +377,9 @@ function K.refineCheck(cfg, info)
 	end
 	if info.ruined then
 		return nil, "ruined"
+	end
+	if info.corrupted then
+		return nil, "corrupted"
 	end
 	if not K.refinePrice(cfg, info.rarity) then
 		return nil, "maxRarity"

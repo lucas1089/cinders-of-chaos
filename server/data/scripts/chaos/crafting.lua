@@ -17,7 +17,7 @@
 --                            changes is sent once)
 --                     state {open, counts = {orb key -> how many the player has}, item = {path, clientId,
 --                            name, kind ("riftkey" for a key), rarity, rarityName, level, mods = [{group, key, text, tier, side,
---                            lo, hi, bound, power}], maxMods, quality, qualityCap, ruined, binds = {n, max}, pick = {orb key
+--                            lo, hi, bound, power, implicit}], maxMods, quality, qualityCap, ruined, corrupted, binds = {n, max}, pick = {orb key
 --                            -> [modifier keys it may be aimed at]}, rewards (keys), unique, orbs = {key -> ""|reason code},
 --                            preview = {key -> text},
 --                            sockets = {count, max, list = [{index, id, clientId, name, text, color, cost}]}, sig} | nil,
@@ -296,7 +296,13 @@ local function craft(player, orbKey, item, orbItem, opts)
 	logCraft(player, orb, name, res.text)
 	local pos = player:getPosition()
 	local red = orbKey == "annulment" or orbKey == "scouring" or orbKey == "excision" or res.outcome == "ruin"
-	pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+		or res.outcome == "decay"
+	if res.corrupted and not red then
+		-- a Void Orb: the dark corruption cloud (the downside stays red)
+		pos:sendMagicEffect(CONST_ME_MORTAREA or CONST_ME_MAGIC_RED)
+	else
+		pos:sendMagicEffect(red and CONST_ME_MAGIC_RED or CONST_ME_MAGIC_GREEN)
+	end
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s: %s", orb.name, res.text))
 	return true, res.text, res.item
 end

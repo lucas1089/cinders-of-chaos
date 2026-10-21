@@ -6,8 +6,9 @@ usage: python3 -I install_orbs.py DATA_DIR [--dry-run]
 Everything is read from server/data/lib/chaos_orbs_config.lua (`items`, `renames`), the same file the Lua side uses.
 
 1. data/items/items.otb: one node per new item (the Orbs of Tempering, Binding, Excision, Reforging and Ruin, the
-   Whetstone and the Orb of Unveiling of the veiled modifiers, server ids 32251..32257), each a copy of the stock node of its client sprite (the inlay stones, the essence
-   crystals, the moonlight crystals) with the new server id and the "useable" flag (needed for "use with"). Those sprites
+   Whetstone, the Orb of Unveiling of the veiled modifiers, the Ember, Crown and Void Orbs, server ids 32251..32260), each a
+   copy of the stock node of its client sprite (the inlay stones, the essence crystals, the moonlight crystals, the
+   crowned gems, the small enchanted amethyst) with the new server id and the "useable" flag (needed for "use with"). Those sprites
    have the multi-use flag in Tibia.dat already, so the client needs nothing (client/tools/sprites/set_multiuse.py is NOT
    needed for these). Nodes are appended at the end of the root; a node already there with the same bytes is left alone,
    one with other bytes is replaced, a server id that belongs to another client id stops the script (nothing is

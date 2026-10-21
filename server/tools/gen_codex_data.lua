@@ -543,6 +543,7 @@ local function affixOrbs(D, a, isPower)
 	add("tempering", "New value inside its tier (unless bound).")
 	add("reforging", "New tier (by item level) and value when you pick it.")
 	add("ember", "One tier up when you pick it (never past the top tier), new value inside the new tier.")
+	add("void", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way.")
 	add("binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone.")
 	add("ruin", ruin.ruin > 0 and string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing, %d%% ruined.",
 		ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("%d%% improve (%d%% of those: one tier more on every unbound modifier), %d%% nothing; it never ruins the item.",
@@ -846,6 +847,42 @@ function Gen.veiledSections(V)
 		c.tiers.window)}}
 end
 
+-- the Void Orb's outcomes (chaos_orbs_config.lua void): what each does and its chance
+function Gen.voidSection(D)
+	local O, M = D.O, D.M
+	local V = O.config.void
+	local how = {
+		sealed = "Nothing else: the item is only locked against every orb.",
+		tier = "One random unbound modifier rises one tier (never past T" .. M.config.maxTier .. ").",
+		implicit = string.format("A corrupted implicit modifier of the item's kind at T%d or better; it takes no prefix or suffix slot.",
+			V.implicitTier),
+		quality = string.format("Quality becomes %d%%, above the %d%% cap of Rare and Legendary.", V.quality, M.config.quality.cap),
+		socket = string.format("One socket more, up to %d, past the limit of the item's kind and rarity.", V.sockets),
+		reroll = "Every unbound modifier rolls a new tier (by item level) and value: better or worse.",
+		rarity = string.format("One rarity up (Rare to Legendary, Legendary to Divine) and %d modifier more.", V.add),
+		decay = string.format("The downside: one random unbound modifier falls %d tiers (not below T1).", V.decay)
+	}
+	local rows = {}
+	for _, row in ipairs(V.outcomes) do
+		local fb = V.fallback[row[1]]
+		rows[#rows + 1] = {O.voidWords(row[1], true):gsub("^%l", string.upper), row[2] .. "%",
+			how[row[1]] .. (fb and (" If it cannot happen: " .. O.voidWords(fb, true) .. ".") or "")}
+	end
+	local pools = {}
+	for _, kind in ipairs({"weapon", "shield", "armor", "helmet", "legs", "boots", "jewel", "other", "quiver"}) do
+		local names = {}
+		for _, key in ipairs(V.implicits[kind] or {}) do
+			local def = M.byKey and M.byKey[key]
+			names[#names + 1] = def and def.label or key
+		end
+		if #names > 0 then
+			pools[#pools + 1] = (KIND_SHORT[kind] or kind) .. ": " .. table.concat(names, ", ")
+		end
+	end
+	return {h = "Outcomes", p = {"The item is corrupted first, then one outcome is rolled. Corrupted implicits by kind: " ..
+		table.concat(pools, "; ") .. "."}, cols = {"Outcome", "Chance", "What happens"}, w = {18, 12, 70}, rows = rows}
+end
+
 local KEY_ORBS = {transmutation = true, alchemy = true, exalted = true, annulment = true, scouring = true, chaos = true,
 	divine = true, tempering = true, excision = true}
 
@@ -870,13 +907,15 @@ function Gen.orbEntries(D)
 		crown = string.format("Only an item with a rarity below %s. It never makes Divine; unique items are refused.",
 			C.rarityName(ChaosRarity.idOfRank(O.config.crown.maxRank))),
 		ruin = "Only an item with a rarity and a modifier; a ruined item can never be changed again.",
+		void = string.format("Only a %s or better item that is not locked, not a store item and not corrupted yet. A corrupted item can never be changed by an orb again (it can still be worn, sold, stashed and salvaged).",
+			C.rarityName(ChaosRarity.idOfRank(O.config.void.minRank))),
 		whetstone = string.format("Only an item with a rarity and a modifier, below its quality cap (%d%%, %d%% from %s).",
 			M.config.quality.cap, M.config.quality.capHigh, C.rarityName(M.config.quality.highFrom)),
 		unveiling = "Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens."
 	}
 	for _, orb in ipairs(C.config.orbs) do
 		local p = {orb.text}
-		local rules = {"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+		local rules = {"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 			"Used directly: Use with on the orb, then click the item."}
 		if reasons[orb.key] then
 			table.insert(rules, 1, reasons[orb.key])
@@ -895,6 +934,9 @@ function Gen.orbEntries(D)
 		local sections = {{h = "What it does", p = p}, {h = "Rules", p = rules}}
 		if orb.keyText then
 			sections[#sections + 1] = {h = "On a Rift Key", p = {orb.keyText}}
+		end
+		if orb.key == "void" then
+			sections[#sections + 1] = Gen.voidSection(D)
 		end
 		local srcRows = sourcesOf(D, orb.id, orb.key)
 		if orb.key == "unveiling" and ChaosVeiled then
@@ -1685,6 +1727,8 @@ function Gen.basicsEntries(D)
 		{h = "Quality", p = {string.format("Each Whetstone adds %d%% quality, up to %d%% (%d%% from %s). Every modifier value is multiplied by (100 + quality) / 100, rounded.",
 			q.perStone, q.cap, q.capHigh, C.rarityName(q.highFrom))}, links = {"orb:whetstone"}},
 		{h = "Binding", p = {"A bound modifier is left alone by Tempering, Unmaking, Excision, Reforging and Upheaval. Only an Orb of Erasure frees it (and wipes the item). An item with a bound modifier refuses the Orb of Fate."}, links = {"orb:binding"}},
+		{h = "Corruption", p = {string.format("The Void Orb corrupts a %s or better item for good: no orb changes it afterwards, and the tooltip shows Corrupted. Then: %s. A locked or store item is refused.",
+			C.rarityName(ChaosRarity.idOfRank(D.O.config.void.minRank)), D.O.voidOdds())}, links = {"orb:void"}},
 		{h = "Ruin", p = {ruin.ruin > 0 and string.format("The Orb of Ruin: %d%% the item improves (%d%% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), %d%% nothing, %d%% it is ruined: no orb changes it any more.",
 			ruin.improve, ruin.tiers, ruin.nothing, ruin.ruin) or string.format("The Orb of Ruin: %d%% the item improves (%d%% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), %d%% nothing happens. It never ruins an item (items ruined before stay ruined). For a sure step up, the Conquest vendor's refinement raises a worn item one rarity (up to %s), keeps its modifiers and adds one.",
 			ruin.improve, ruin.tiers, ruin.nothing, D.C.rarityName(D.conquest.refine.maxRarity))}, links = {"orb:ruin"}}})

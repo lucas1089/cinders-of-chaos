@@ -312,7 +312,7 @@
 		"newplayer.giftLevels": "20, 50, 100, 200, 300, 500, 800, 1000, 1500 and 2000",
 		"newplayer.giftLevelsPt": "20, 50, 100, 200, 300, 500, 800, 1000, 1500 e 2000",
 		"newplayer.tutorial": true,
-		"orb.count": 17,
+		"orb.count": 18,
 		"orbx.durations": "1/3/7/14",
 		"orbx.goldFee": "2",
 		"orbx.minLevel": 8,
@@ -7282,6 +7282,13 @@
 							"links": ["orb:binding"]
 						},
 						{
+							"h": "Corruption",
+							"p": [
+								"The Void Orb corrupts a Rare or better item for good: no orb changes it afterwards, and the tooltip shows Corrupted. Then: 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers. A locked or store item is refused."
+							],
+							"links": ["orb:void"]
+						},
+						{
 							"h": "Ruin",
 							"p": [
 								"The Orb of Ruin: 40% the item improves (60% of those one tier more on every unbound modifier, else an extra modifier above the side limit, once per item), 60% nothing happens. It never ruins an item (items ruined before stay ruined). For a sure step up, the Conquest vendor's refinement raises a worn item one rarity (up to Legendary), keeps its modifiers and adds one."
@@ -7506,6 +7513,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7530,6 +7541,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7617,6 +7629,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7641,6 +7657,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7727,6 +7744,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7751,6 +7772,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7833,6 +7855,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7857,6 +7883,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -7938,6 +7965,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -7962,6 +7993,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8045,6 +8077,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8069,6 +8105,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8150,6 +8187,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8174,6 +8215,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8263,6 +8305,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8287,6 +8333,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8369,6 +8416,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8393,6 +8444,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8475,6 +8527,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8499,6 +8555,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8588,6 +8645,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8612,6 +8673,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8694,6 +8756,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8718,6 +8784,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8801,6 +8868,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8825,6 +8896,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -8913,6 +8985,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -8937,6 +9013,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9023,6 +9100,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9047,6 +9128,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9137,6 +9219,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9161,6 +9247,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9242,6 +9329,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9266,6 +9357,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9352,6 +9444,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9376,6 +9472,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9464,6 +9561,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9488,6 +9589,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9576,6 +9678,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9600,6 +9706,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9689,6 +9796,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9713,6 +9824,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9800,6 +9912,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9824,6 +9940,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -9905,6 +10022,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -9929,6 +10050,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10015,6 +10137,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10039,6 +10165,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10129,6 +10256,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10153,6 +10284,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10242,6 +10374,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10266,6 +10402,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10355,6 +10492,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10379,6 +10520,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10460,6 +10602,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10484,6 +10630,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10571,6 +10718,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10595,6 +10746,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10683,6 +10835,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10707,6 +10863,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10796,6 +10953,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10820,6 +10981,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -10901,6 +11063,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -10925,6 +11091,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11012,6 +11179,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11036,6 +11207,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11117,6 +11289,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11141,6 +11317,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11222,6 +11399,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11246,6 +11427,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11327,6 +11509,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11351,6 +11537,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11437,6 +11624,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11461,6 +11652,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11550,6 +11742,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11574,6 +11770,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11655,6 +11852,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11679,6 +11880,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11766,6 +11968,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11790,6 +11996,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11876,6 +12083,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -11900,6 +12111,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -11983,6 +12195,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12007,6 +12223,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12096,6 +12313,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12120,6 +12341,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12205,6 +12427,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12229,6 +12455,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12320,6 +12547,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12344,6 +12575,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12435,6 +12667,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12459,6 +12695,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12545,6 +12782,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12569,6 +12810,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12658,6 +12900,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12682,6 +12928,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12769,6 +13016,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12793,6 +13044,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12882,6 +13134,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -12906,6 +13162,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -12987,6 +13244,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13011,6 +13272,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13098,6 +13360,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13122,6 +13388,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13203,6 +13470,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13227,6 +13498,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13313,6 +13585,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13337,6 +13613,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13427,6 +13704,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13451,6 +13732,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13540,6 +13822,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13564,6 +13850,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13650,6 +13937,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13674,6 +13965,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13759,6 +14051,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13783,6 +14079,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13873,6 +14170,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -13897,6 +14198,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -13988,6 +14290,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14012,6 +14318,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14101,6 +14408,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14125,6 +14436,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14211,6 +14523,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14235,6 +14551,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14321,6 +14638,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14345,6 +14666,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14431,6 +14753,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14455,6 +14781,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14537,6 +14864,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14561,6 +14892,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14650,6 +14982,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14674,6 +15010,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14762,6 +15099,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14786,6 +15127,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14867,6 +15209,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14891,6 +15237,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -14972,6 +15319,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -14996,6 +15347,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15082,6 +15434,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15106,6 +15462,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15192,6 +15549,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15216,6 +15577,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15301,6 +15663,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15325,6 +15691,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15406,6 +15773,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15430,6 +15801,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15519,6 +15891,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15543,6 +15919,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15630,6 +16007,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15654,6 +16035,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15740,6 +16122,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15764,6 +16150,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15850,6 +16237,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15874,6 +16265,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -15967,6 +16359,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -15991,6 +16387,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16082,6 +16479,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16106,6 +16507,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16194,6 +16596,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16218,6 +16624,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16302,6 +16709,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16326,6 +16737,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16410,6 +16822,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16434,6 +16850,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16518,6 +16935,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16542,6 +16963,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16631,6 +17053,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16655,6 +17081,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16748,6 +17175,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16772,6 +17203,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16864,6 +17296,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -16888,6 +17324,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -16981,6 +17418,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -17005,6 +17446,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -17089,6 +17531,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -17113,6 +17559,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -17208,6 +17655,10 @@
 									"One tier up when you pick it (never past the top tier), new value inside the new tier."
 								],
 								[
+									"Void Orb",
+									"May rise a tier, fall a tier or roll again; the item is corrupted for good either way."
+								],
+								[
 									"Orb of Binding",
 									"Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."
 								],
@@ -17232,6 +17683,7 @@
 								"orb:tempering",
 								"orb:reforging",
 								"orb:ember",
+								"orb:void",
 								"orb:binding",
 								"orb:ruin",
 								"orb:whetstone"
@@ -26432,7 +26884,7 @@
 							"h": "Rules",
 							"p": [
 								"Only a normal item (no rarity, no modifiers).",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26444,12 +26896,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.1% of the time."
+									"Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9% of the time."
 								],
 								["Salvage", "Combine 12 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.5% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.3% of those are this one."
 								],
 								["Bounty chest", "3 in every weekly bounty chest (4 contracts in a week)."]
 							]
@@ -26473,7 +26925,7 @@
 							"h": "Rules",
 							"p": [
 								"Only a normal item (no rarity, no modifiers).",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26485,12 +26937,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
+									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."
 								],
 								["Salvage", "Combine 40 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 6.9% of those are this one."
 								]
 							]
 						}
@@ -26511,7 +26963,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and an open prefix or suffix.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26546,7 +26998,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier that is not bound.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26558,7 +27010,7 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
+									"Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."
 								],
 								["Salvage", "Combine 50 rune shards into one at the crafting bench."],
 								[
@@ -26587,7 +27039,7 @@
 							"h": "Rules",
 							"p": [
 								"Any item with a rarity.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26599,12 +27051,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."
+									"Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."
 								],
 								["Salvage", "Combine 30 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.3% of those are this one."
 								]
 							]
 						}
@@ -26625,7 +27077,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity; bound modifiers stay.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26640,12 +27092,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 32% of the time."
+									"Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 31.7% of the time."
 								],
 								["Salvage", "Combine 25 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.5% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.4% of those are this one."
 								],
 								[
 									"Bounty board",
@@ -26682,7 +27134,7 @@
 							"h": "Rules",
 							"p": [
 								"Not on an item with a bound modifier.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26697,7 +27149,7 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.7% of the time."
+									"Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.6% of the time."
 								],
 								["Salvage", "Combine 60 rune shards into one at the crafting bench."],
 								[
@@ -26749,7 +27201,7 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.7% of the time."
+									"Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.6% of the time."
 								],
 								["Salvage", "Combine 60 rune shards into one at the crafting bench."],
 								[
@@ -26777,7 +27229,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier that is not bound.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26792,12 +27244,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.4% of the time."
+									"Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.3% of the time."
 								],
 								["Salvage", "Combine 20 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.3% of those are this one."
 								],
 								["Bounty chest", "2 in every weekly bounty chest (4 contracts in a week)."]
 							]
@@ -26821,7 +27273,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity; bound modifiers per item: 1 up to Rare, 2 from Legendary.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26861,7 +27313,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier that is not bound.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26902,7 +27354,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier that is not bound.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26941,7 +27393,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier; a ruined item can never be changed again.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26980,7 +27432,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier, below its quality cap (20%, 30% from Divine).",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -26991,12 +27443,12 @@
 							"rows": [
 								[
 									"Monster drops",
-									"Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.2% of the time."
+									"Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.1% of the time."
 								],
 								["Salvage", "Combine 5 rune shards into one at the crafting bench."],
 								[
 									"Salvage bonus",
-									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.8% of those are this one."
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.7% of those are this one."
 								],
 								["Store", "10 for 20 Chaos Coins, 5 a week per account."],
 								["Bounty chest", "5 in every weekly bounty chest (4 contracts in a week)."]
@@ -27021,7 +27473,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity and a modifier that is not bound and below the top tier (T8).",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -27064,7 +27516,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a rarity below Legendary. It never makes Divine; unique items are refused.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -27092,6 +27544,91 @@
 					"icon": "wiki/i/orb-holy-banner.png"
 				},
 				{
+					"id": "orb:void",
+					"name": "Void Orb",
+					"sub": "Corrupts a Rare or better item for good: no orb can change it afterwards. Then 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers.",
+					"color": "#e8b84a",
+					"sections": [
+						{
+							"h": "What it does",
+							"p": [
+								"Corrupts a Rare or better item for good: no orb can change it afterwards. Then 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers."
+							]
+						},
+						{
+							"h": "Rules",
+							"p": [
+								"Only a Rare or better item that is not locked, not a store item and not corrupted yet. A corrupted item can never be changed by an orb again (it can still be worn, sold, stashed and salvaged).",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Used directly: Use with on the orb, then click the item."
+							]
+						},
+						{
+							"h": "Outcomes",
+							"p": [
+								"The item is corrupted first, then one outcome is rolled. Corrupted implicits by kind: Weapon: Damage to Elites and Bosses, Attack Speed, Execute, Physical Penetration, Elemental Penetration; Shield: Block Chance, Reflect Damage, Damage Taken from Monsters; Armour: Damage Taken from Monsters, Reflect Damage, Health Regeneration, Thorns; Helmet: Damage Taken from Monsters, Cooldown Reduction, Mana Cost Reduction; Legs: Damage Taken from Monsters, Thorns, Dodge; Boots: Movement Speed, Dodge; Jewel: Damage to Elites and Bosses, Cooldown Reduction, Mana Cost Reduction, Experience; Other: Damage over Time, Dodge, Cooldown Reduction; Quiver: Damage to Elites and Bosses, Physical Penetration, Elemental Penetration."
+							],
+							"cols": ["Outcome", "Chance", "What happens"],
+							"w": [18, 12, 70],
+							"rows": [
+								["Nothing else", "28%", "Nothing else: the item is only locked against every orb."],
+								[
+									"A tier up",
+									"20%",
+									"One random unbound modifier rises one tier (never past T8). If it cannot happen: an implicit."
+								],
+								[
+									"An implicit",
+									"20%",
+									"A corrupted implicit modifier of the item's kind at T7 or better; it takes no prefix or suffix slot. If it cannot happen: a tier up."
+								],
+								[
+									"Quality 30%",
+									"8%",
+									"Quality becomes 30%, above the 20% cap of Rare and Legendary. If it cannot happen: an implicit."
+								],
+								[
+									"A socket",
+									"7%",
+									"One socket more, up to 3, past the limit of the item's kind and rarity. If it cannot happen: an implicit."
+								],
+								[
+									"A reroll",
+									"8%",
+									"Every unbound modifier rolls a new tier (by item level) and value: better or worse. If it cannot happen: nothing else."
+								],
+								[
+									"A rarity up",
+									"4%",
+									"One rarity up (Rare to Legendary, Legendary to Divine) and 1 modifier more. If it cannot happen: an implicit."
+								],
+								[
+									"A tier loss",
+									"5%",
+									"The downside: one random unbound modifier falls 2 tiers (not below T1). If it cannot happen: nothing else."
+								]
+							]
+						},
+						{
+							"h": "Sources",
+							"cols": ["Source", "How"],
+							"w": [28, 72],
+							"rows": [
+								[
+									"Monster drops",
+									"Per kill by monster tier: Normal 0.01%, Magic 0.03%, Rare 0.08%, Legendary 1.6%, Boss 3.2%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 0.9% of the time."
+								],
+								["Salvage", "Combine 125 rune shards into one at the crafting bench."],
+								[
+									"Salvage bonus",
+									"Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 0.7% of those are this one."
+								]
+							]
+						}
+					],
+					"icon": "wiki/i/orb-shadow-rift.png"
+				},
+				{
 					"id": "orb:unveiling",
 					"name": "Orb of Unveiling",
 					"sub": "Reveals the veiled modifier of an item: choose one of three modifiers of the veiled pool (tier by the item level). The choice is final.",
@@ -27107,7 +27644,7 @@
 							"h": "Rules",
 							"p": [
 								"Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens.",
-								"Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
+								"Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.",
 								"Used directly: Use with on the orb, then click the item."
 							]
 						},
@@ -27413,6 +27950,7 @@
 								["Orb of Excision", "60"],
 								["Crown Orb", "100"],
 								["Orb of Binding", "75"],
+								["Void Orb", "125"],
 								["Orb of Ruin", "150"]
 							],
 							"links": [
@@ -27431,6 +27969,7 @@
 								"orb:excision",
 								"orb:crown",
 								"orb:binding",
+								"orb:void",
 								"orb:ruin"
 							]
 						}
@@ -27439,7 +27978,7 @@
 				},
 				{
 					"id": "cur:29854",
-					"name": "Void Orb",
+					"name": "Void Shard",
 					"sub": "Currency of the character upgrades; no crafting use.",
 					"color": "#c0a0ff",
 					"sections": [

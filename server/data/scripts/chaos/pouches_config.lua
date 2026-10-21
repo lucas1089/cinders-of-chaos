@@ -64,7 +64,7 @@ ChaosPouchesConfig = {
 	-- Orbs Pouch: these ids, plus every currency entry of loot_config.lua and the loot filter's orbIds
 	orbIds = {29851, 29852, 29853, 29854, 29855, 29856, 29857, 29858, 29859, -- the currency orbs
 		24688, 24691, 24692, 24697, -- Erasure, Gilding, Sockets, Unmaking
-		32251, 32252, 32253, 32254, 32255, 32256, 32258, 32259, -- orbs v2, the Whetstone, Ember and Crown
+		32251, 32252, 32253, 32254, 32255, 32256, 32258, 32259, 32260, -- orbs v2, the Whetstone, Ember, Crown and Void
 		32051}, -- the rune shard (salvage)
 	orbGems = true, -- gems (data/lib/chaos_gems.lua, 32001..32035) go to the Orbs Pouch too
 

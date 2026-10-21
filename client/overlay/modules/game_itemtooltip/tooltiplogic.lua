@@ -4,9 +4,9 @@
 --   {key, id, name, count, kind, slot, rarity, rarityName, level, maxTier, sides = {p, s, max},
 --    unique = {name, set = {key, name, have, total, pieces = [{n, eq, low, lv, h}], bonuses = [{n, t, on}]}},
 --    base = [{k, l, v, fmt}],
---    quality = {q, cap} (item quality in percent), ruined (an Orb of Ruin ruined it),
---    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (prefixes first; tr = tier 1..8, sd = 'p' / 's', bd = bound,
---    pw = a legendary power),
+--    quality = {q, cap} (item quality in percent), ruined (an Orb of Ruin ruined it), corrupted (a Void Orb corrupted it),
+--    mods = [{k, l, t, v, g, lo, hi, tr, sd, bd, pw}] (a corrupted implicit first, then prefixes; tr = tier 1..8,
+--    sd = 'i' (the Void Orb's implicit) / 'p' / 's', bd = bound, pw = a legendary power),
 --    sockets = {count, max, list = [{name, text, color}]},
 --    veil = {s = 'veiled'} | {s = 'open', n, t, tr, tn, lo, hi, h} (the veiled slot: name, text, veiled tier, range, hook),
 --    req = {level, magic, voc}, weight, desc, note, locked, store, collects (a store pouch), stats = [{k, l, v, fmt, low, sc}], cmp = [slot, ...],
@@ -25,6 +25,7 @@ L.WRAP = 44 -- characters per line of the flavour text
 L.COLORS = {
   text = '#d6c9ae', dim = '#8c8070', gold = '#e8b84a', mod = '#9ab8ff', chaos = '#e080d0', element = '#ffa060',
   gem = '#c8e8ff', empty = '#6b6258', power = '#ff9a3c', bound = '#e8b84a', quality = '#7fe0a0', better = '#5ccf5c', worse = '#e03a1e', unique = '#e07b24', red = '#e03a1e',
+  corrupted = '#d04040',
   normal = '#e4d8c0',
   -- item sets: the title of a piece, the pieces worn and the bonuses active (dim when not)
   set = '#58c878', setOn = '#7fe0a0', setLow = '#c0805a'
@@ -232,6 +233,9 @@ function L.lines(tip, ctx)
   if tip.ruined then
     add(tr('Ruined: no orb can change this item'), C.red)
   end
+  if tip.corrupted then
+    add(tr('Corrupted: no orb can change this item'), C.corrupted)
+  end
 
   local first = true
   for _, b in ipairs(tip.base or {}) do
@@ -248,14 +252,17 @@ function L.lines(tip, ctx)
       side = m.sd
       local sides = tip.sides
       local head = side == 'p' and 'Prefixes' or 'Suffixes'
-      if sides and sides.max then
+      if side == 'i' then
+        head = tr('Corrupted implicit')
+      elseif sides and sides.max then
         local limit = (side == 'p' and sides.mp or sides.ms) or sides.max
         head = string.format('%s %d/%d', head, side == 'p' and (sides.p or 0) or (sides.s or 0), limit)
       end
       add(head, C.dim, first)
       first = false
     end
-    local color = (m.pw and C.power) or (m.g == 'chaos' and C.chaos) or (m.g == 'element' and C.element) or C.mod
+    local color = (m.sd == 'i' and C.corrupted) or (m.pw and C.power) or (m.g == 'chaos' and C.chaos)
+      or (m.g == 'element' and C.element) or C.mod
     local range = ''
     if m.lo and m.hi then
       range = m.lo == m.hi and string.format(' [%d]', m.lo) or string.format(' [%d-%d]', m.lo, m.hi)

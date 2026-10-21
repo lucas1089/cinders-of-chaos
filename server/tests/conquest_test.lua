@@ -240,6 +240,7 @@ eq(K.refinePrice(cfg, 0), nil, "a normal item has no rarity to raise")
 eq(K.refineCheck(cfg, {gear = true, rarity = 3}), true, "a Magic item")
 eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 3, unique = true})), "unique", "no uniques")
 eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 3, ruined = true})), "ruined", "no ruined items")
+eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 3, corrupted = true})), "corrupted", "no corrupted items (Void Orb)")
 eq(select(2, K.refineCheck(cfg, {gear = true, rarity = 12})), "maxRarity", "the top stays luck (an old Celestial is Divine)")
 eq(select(2, K.refineCheck(cfg, {gear = false, rarity = 0})), "notGear", "not gear")
 local kinds = {"bloodmoon", "hollow", "storm"}

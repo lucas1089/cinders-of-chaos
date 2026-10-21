@@ -119,6 +119,21 @@ eq(v2all:find('Suffixes', 1, true), nil, 'no suffix rows, no suffix heading')
 eq(powerLine.color, L.COLORS.power, 'a legendary power in its own colour')
 eq(boundLine.text:find(' [bound]', 1, true) ~= nil, true, 'a bound modifier says so')
 eq(boundLine.parts[#boundLine.parts], L.COLORS.bound, 'in the bound colour')
+-- a Void Orb's corruption: the Corrupted line, the implicit under its own heading, before the prefixes
+local cor = L.lines({ rarity = 4, rarityName = 'Rare', level = 100, corrupted = true,
+  sides = { p = 1, s = 0, max = 2 },
+  mods = { { t = 'Block Chance +12%', g = 'chaos', tr = 8, sd = 'i' }, { t = 'Sword +2', g = 'skill', tr = 3, sd = 'p' } } })
+local corAll, implicitLine = {}, nil
+for i, l in ipairs(cor) do
+  corAll[i] = l.text
+  if l.text:find('Block Chance', 1, true) then implicitLine = l end
+end
+corAll = table.concat(corAll, '|')
+eq(corAll:find('Corrupted: no orb can change this item', 1, true) ~= nil, true, 'corrupted line')
+eq(corAll:find('Corrupted implicit|T8 Block Chance +12%|Prefixes 1/2|T3 Sword +2', 1, true) ~= nil, true,
+  'the implicit first, under its heading, the prefixes after')
+eq(implicitLine.color, L.COLORS.corrupted, 'the implicit in the corrupted colour')
+eq(v2all:find('Corrupted', 1, true), nil, 'no corrupted line on an item that is not')
 local legacy = L.lines({ rarity = 2, level = 12, mods = { { t = 'Fire +5% dmg', g = 'element', lo = 3, hi = 6 } } })
 local legacyAll = {}
 for i, l in ipairs(legacy) do legacyAll[i] = l.text end

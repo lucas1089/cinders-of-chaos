@@ -28,7 +28,8 @@ end
 eq(#cfg.baseShards, 6, "a yield per rarity (Common .. Divine)")
 eq(#cfg.orbChance, 6, "an orb chance per rarity")
 local known = {transmutation = 1, alchemy = 1, exalted = 1, annulment = 1, scouring = 1, chaos = 1, divine = 1, sockets = 1,
-	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1, ember = 1, crown = 1}
+	tempering = 1, binding = 1, excision = 1, reforging = 1, ruin = 1, whetstone = 1, ember = 1, crown = 1,
+	void = 1}
 for i = 2, 6 do
 	assert(cfg.baseShards[i] >= cfg.baseShards[i - 1], "yield never falls with the rarity")
 	assert(cfg.orbChance[i] >= cfg.orbChance[i - 1], "orb chance never falls with the rarity")
@@ -46,7 +47,7 @@ end
 -- recipe costs follow reference coin prices (about 2.5 shards per coin): the cheap orbs cheap, the Grafting dearest. The
 -- store sells only Whetstones, Excision and Binding; the other values are reference prices, not store offers
 local store = {transmutation = 5, chaos = 10, scouring = 12, alchemy = 15, annulment = 20, divine = 25, sockets = 25, exalted = 40,
-	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60, ember = 20, crown = 40}
+	whetstone = 2, tempering = 8, reforging = 20, excision = 25, binding = 30, ruin = 60, ember = 20, crown = 40, void = 50}
 for _, r in ipairs(cfg.recipes) do
 	local ratio = r.cost / store[r.key]
 	assert(ratio >= 2.3 and ratio <= 2.7, "shards per coin for " .. r.key .. ": " .. ratio)
@@ -406,7 +407,8 @@ ChaosCrafting = {
 		tempering = {id = 32251, name = "Orb of Tempering"}, binding = {id = 32252, name = "Orb of Binding"},
 		excision = {id = 32253, name = "Orb of Excision"}, reforging = {id = 32254, name = "Orb of Reforging"},
 		ruin = {id = 32255, name = "Orb of Ruin"}, whetstone = {id = 32256, name = "Whetstone"},
-		ember = {id = 32258, name = "Ember Orb"}, crown = {id = 32259, name = "Crown Orb"}},
+		ember = {id = 32258, name = "Ember Orb"}, crown = {id = 32259, name = "Crown Orb"},
+		void = {id = 32260, name = "Void Orb"}},
 	isGear = function(item) return item.id >= 2000 and item.id < 3000 end,
 	isRiftKey = function(item) return item.id == 10155 end,
 	rarityOf = function(item) return tonumber(item.custom.rarity) or 0 end,

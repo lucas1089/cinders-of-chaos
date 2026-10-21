@@ -21,11 +21,12 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
+				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:prefix:power"] = {
 			h = "Orbs",
@@ -43,11 +44,12 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
+				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:suffix"] = {
 			h = "Orbs",
@@ -65,11 +67,12 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
+				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		},
 		["orbs:suffix:power"] = {
 			h = "Orbs",
@@ -87,11 +90,12 @@ CodexData = {
 				{"Orb of Tempering", "New value inside its tier (unless bound)."},
 				{"Orb of Reforging", "New tier (by item level) and value when you pick it."},
 				{"Ember Orb", "One tier up when you pick it (never past the top tier), new value inside the new tier."},
+				{"Void Orb", "May rise a tier, fall a tier or roll again; the item is corrupted for good either way."},
 				{"Orb of Binding", "Binds it: Tempering, Unmaking, Excision, Reforging and Upheaval leave it alone."},
 				{"Orb of Ruin", "40% improve (60% of those: one tier more on every unbound modifier), 60% nothing; it never ruins the item."},
 				{"Whetstone", "Quality multiplies its value: +1% per stone, up to 20% (30% from Divine)."}
 			},
-			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:binding", "orb:ruin", "orb:whetstone"}
+			links = {"orb:transmutation", "orb:alchemy", "orb:exalted", "orb:chaos", "orb:divine", "orb:annulment", "orb:excision", "orb:scouring", "orb:tempering", "orb:reforging", "orb:ember", "orb:void", "orb:binding", "orb:ruin", "orb:whetstone"}
 		}
 	},
 	tabs = {
@@ -4925,7 +4929,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only a normal item (no rarity, no modifiers).", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only a normal item (no rarity, no modifiers).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Gives a Rift Key without modifiers one modifier."}},
 						{
@@ -4933,9 +4937,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9.1% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.3%, Magic 0.9%, Rare 1.8%, Legendary 25%, Boss 35%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 9% of the time."},
 								{"Salvage", "Combine 12 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.5% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 24.3% of those are this one."},
 								{"Bounty chest", "3 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
@@ -4955,7 +4959,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only a normal item (no rarity, no modifiers).", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only a normal item (no rarity, no modifiers).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Gives a Rift Key without modifiers two or three modifiers."}},
 						{
@@ -4963,9 +4967,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."},
 								{"Salvage", "Combine 40 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 7% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 6.9% of those are this one."}
 							}
 						}
 					},
@@ -4984,7 +4988,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and an open prefix or suffix.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and an open prefix or suffix.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Adds one modifier to a Rift Key (three at most)."}},
 						{
@@ -5010,7 +5014,7 @@ CodexData = {
 						{h = "What it does", p = {"Removes one random modifier that is not bound."}},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Removes one random modifier of a Rift Key."}},
 						{
@@ -5018,7 +5022,7 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.1%, Magic 0.3%, Rare 0.6%, Legendary 12%, Boss 20%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 5.6% of those are this one."},
 								{"Bounty chest", "1 in every weekly bounty chest (4 contracts in a week)."}
@@ -5040,7 +5044,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Any item with a rarity.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Any item with a rarity.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Removes every modifier of a Rift Key."}},
 						{
@@ -5048,9 +5052,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.6% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.15%, Magic 0.45%, Rare 0.9%, Legendary 15%, Boss 25%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 4.5% of the time."},
 								{"Salvage", "Combine 30 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."}
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.3% of those are this one."}
 							}
 						}
 					},
@@ -5069,7 +5073,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity; bound modifiers stay.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity; bound modifiers stay.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Rerolls the modifiers of a Rift Key (one to three new ones)."}},
 						{
@@ -5077,9 +5081,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 32% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.4%, Magic 1.2%, Rare 2.4%, Legendary 40%, Boss 50%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 31.7% of the time."},
 								{"Salvage", "Combine 25 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.5% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 17.4% of those are this one."},
 								{"Bounty board", "Per contract by level band: 1/2/3/4/5/6 (x1.5 for elite and boss contracts); weekly chest: 5/6/8/10/12/15."},
 								{"Rift chest", "0.5 + 0.085 per rift tier (fractions are a chance of one more), x the key's quantity bonus."},
 								{"Sealed Coffer", "0.25 + 0.05 per rift tier."},
@@ -5103,7 +5107,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Not on an item with a bound modifier.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Not on an item with a bound modifier.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "On a Rift Key",
@@ -5114,7 +5118,7 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.7% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.2%, Magic 0.6%, Rare 1.2%, Legendary 25%, Boss 40%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 13.6% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 3.5% of those are this one."},
 								{"Bounty board", "Per contract by level band: 0/0/0/0/1/2 (x1.5 for elite and boss contracts); weekly chest: 1/1/2/2/3/4."},
@@ -5148,7 +5152,7 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.7% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.08%, Magic 0.24%, Rare 0.48%, Legendary 10%, Boss 15%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 3.6% of the time."},
 								{"Salvage", "Combine 60 rune shards into one at the crafting bench."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."}
 							}
@@ -5169,7 +5173,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "On a Rift Key",
@@ -5180,9 +5184,9 @@ CodexData = {
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.4% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.12%, Magic 0.36%, Rare 0.72%, Legendary 14%, Boss 22%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 6.3% of the time."},
 								{"Salvage", "Combine 20 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.4% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 8.3% of those are this one."},
 								{"Bounty chest", "2 in every weekly bounty chest (4 contracts in a week)."}
 							}
 						}
@@ -5202,7 +5206,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity; bound modifiers per item: 1 up to Rare, 2 from Legendary.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity; bound modifiers per item: 1 up to Rare, 2 from Legendary.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5231,7 +5235,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{h = "On a Rift Key", p = {"Removes one modifier of a Rift Key."}},
 						{
@@ -5261,7 +5265,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier that is not bound.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5289,7 +5293,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier; a ruined item can never be changed again.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier; a ruined item can never be changed again.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5317,16 +5321,16 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier, below its quality cap (20%, 30% from Divine).", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier, below its quality cap (20%, 30% from Divine).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
 							rows = {
-								{"Monster drops", "Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.2% of the time."},
+								{"Monster drops", "Per kill by monster tier: Normal 0.25%, Magic 0.75%, Rare 1.5%, Legendary 20%, Boss 30%; 1-2 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 8.1% of the time."},
 								{"Salvage", "Combine 5 rune shards into one at the crafting bench."},
-								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.8% of those are this one."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 9.7% of those are this one."},
 								{"Store", "10 for 20 Chaos Coins, 5 a week per account."},
 								{"Bounty chest", "5 in every weekly bounty chest (4 contracts in a week)."}
 							}
@@ -5347,7 +5351,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity and a modifier that is not bound and below the top tier (T8).", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity and a modifier that is not bound and below the top tier (T8).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5376,7 +5380,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a rarity below Legendary. It never makes Divine; unique items are refused.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a rarity below Legendary. It never makes Divine; unique items are refused.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "Sources",
@@ -5393,6 +5397,50 @@ CodexData = {
 					items = {32259}
 				},
 				{
+					id = "orb:void",
+					name = "Void Orb",
+					color = "#e8b84a",
+					sub = "Corrupts a Rare or better item for good: no orb can change it afterwards. Then 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers.",
+					f = {group = "orb"},
+					sections = {
+						{
+							h = "What it does",
+							p = {"Corrupts a Rare or better item for good: no orb can change it afterwards. Then 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers."}
+						},
+						{
+							h = "Rules",
+							p = {"Only a Rare or better item that is not locked, not a store item and not corrupted yet. A corrupted item can never be changed by an orb again (it can still be worn, sold, stashed and salvaged).", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+						},
+						{
+							h = "Outcomes",
+							p = {"The item is corrupted first, then one outcome is rolled. Corrupted implicits by kind: Weapon: Damage to Elites and Bosses, Attack Speed, Execute, Physical Penetration, Elemental Penetration; Shield: Block Chance, Reflect Damage, Damage Taken from Monsters; Armour: Damage Taken from Monsters, Reflect Damage, Health Regeneration, Thorns; Helmet: Damage Taken from Monsters, Cooldown Reduction, Mana Cost Reduction; Legs: Damage Taken from Monsters, Thorns, Dodge; Boots: Movement Speed, Dodge; Jewel: Damage to Elites and Bosses, Cooldown Reduction, Mana Cost Reduction, Experience; Other: Damage over Time, Dodge, Cooldown Reduction; Quiver: Damage to Elites and Bosses, Physical Penetration, Elemental Penetration."},
+							cols = {"Outcome", "Chance", "What happens"},
+							w = {18, 12, 70},
+							rows = {
+								{"Nothing else", "28%", "Nothing else: the item is only locked against every orb."},
+								{"A tier up", "20%", "One random unbound modifier rises one tier (never past T8). If it cannot happen: an implicit."},
+								{"An implicit", "20%", "A corrupted implicit modifier of the item's kind at T7 or better; it takes no prefix or suffix slot. If it cannot happen: a tier up."},
+								{"Quality 30%", "8%", "Quality becomes 30%, above the 20% cap of Rare and Legendary. If it cannot happen: an implicit."},
+								{"A socket", "7%", "One socket more, up to 3, past the limit of the item's kind and rarity. If it cannot happen: an implicit."},
+								{"A reroll", "8%", "Every unbound modifier rolls a new tier (by item level) and value: better or worse. If it cannot happen: nothing else."},
+								{"A rarity up", "4%", "One rarity up (Rare to Legendary, Legendary to Divine) and 1 modifier more. If it cannot happen: an implicit."},
+								{"A tier loss", "5%", "The downside: one random unbound modifier falls 2 tiers (not below T1). If it cannot happen: nothing else."}
+							}
+						},
+						{
+							h = "Sources",
+							cols = {"Source", "How"},
+							w = {28, 72},
+							rows = {
+								{"Monster drops", "Per kill by monster tier: Normal 0.01%, Magic 0.03%, Rare 0.08%, Legendary 1.6%, Boss 3.2%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 0.9% of the time."},
+								{"Salvage", "Combine 125 rune shards into one at the crafting bench."},
+								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 0.7% of those are this one."}
+							}
+						}
+					},
+					items = {32260}
+				},
+				{
 					id = "orb:unveiling",
 					name = "Orb of Unveiling",
 					color = "#e8b84a",
@@ -5405,7 +5453,7 @@ CodexData = {
 						},
 						{
 							h = "Rules",
-							p = {"Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens.", "Uniques, ruined items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
+							p = {"Only an item with a veiled modifier that is not revealed yet. The three choices are rolled once and stay the same every time the window opens.", "Uniques, ruined and corrupted items and stacks are refused; the crafting bench shows what an orb would do before you use it.", "Used directly: Use with on the orb, then click the item."}
 						},
 						{
 							h = "The veiled pool",
@@ -5620,16 +5668,17 @@ CodexData = {
 								{"Orb of Excision", "60"},
 								{"Crown Orb", "100"},
 								{"Orb of Binding", "75"},
+								{"Void Orb", "125"},
 								{"Orb of Ruin", "150"}
 							},
-							links = {"orb:transmutation", "orb:chaos", "orb:scouring", "orb:alchemy", "orb:annulment", "orb:divine", "orb:sockets", "orb:exalted", "orb:whetstone", "orb:tempering", "orb:reforging", "orb:ember", "orb:excision", "orb:crown", "orb:binding", "orb:ruin"}
+							links = {"orb:transmutation", "orb:chaos", "orb:scouring", "orb:alchemy", "orb:annulment", "orb:divine", "orb:sockets", "orb:exalted", "orb:whetstone", "orb:tempering", "orb:reforging", "orb:ember", "orb:excision", "orb:crown", "orb:binding", "orb:void", "orb:ruin"}
 						}
 					},
 					items = {32051}
 				},
 				{
 					id = "cur:29854",
-					name = "Void Orb",
+					name = "Void Shard",
 					color = "#c0a0ff",
 					sub = "Currency of the character upgrades; no crafting use.",
 					f = {group = "currency"},
@@ -14268,6 +14317,11 @@ CodexData = {
 							h = "Binding",
 							p = {"A bound modifier is left alone by Tempering, Unmaking, Excision, Reforging and Upheaval. Only an Orb of Erasure frees it (and wipes the item). An item with a bound modifier refuses the Orb of Fate."},
 							links = {"orb:binding"}
+						},
+						{
+							h = "Corruption",
+							p = {"The Void Orb corrupts a Rare or better item for good: no orb changes it afterwards, and the tooltip shows Corrupted. Then: 28% nothing else happens, 20% a modifier rises one tier, 20% a corrupted implicit modifier, 8% quality 30%, 7% one more socket (up to 3), 8% every modifier rolls again, 4% one rarity up (up to Divine), 5% a modifier falls 2 tiers. A locked or store item is refused."},
+							links = {"orb:void"}
 						},
 						{
 							h = "Ruin",

@@ -54,9 +54,9 @@ C.npc = {
 }
 
 -- ------------------------------------------------------------------ the shop
--- Item ids the shop may never sell: the chase orbs (Orb of Echoes, Orb of Fate, Dawn Orb) and the Orb of Ruin.
+-- Item ids the shop may never sell: the chase orbs (Orb of Echoes, Orb of Fate, Dawn Orb), the Orb of Ruin and the Void Orb.
 -- candlemarks_core.lua K.validate refuses them; tests/candlemarks_test.lua checks the list.
-C.forbiddenIds = {29859, 29857, 29858, 32255}
+C.forbiddenIds = {29859, 29857, 29858, 32255, 32260}
 
 -- Offers, in window order. Every offer has a weekly limit per account (purchases of the offer, or of every offer
 -- sharing its `limit` key) and a minimum character level. price = Candlemarks. Kinds:

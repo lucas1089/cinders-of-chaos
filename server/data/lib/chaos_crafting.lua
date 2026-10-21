@@ -237,7 +237,7 @@ end
 -- every custom attribute key a rolled item may carry (rarity, item level, each modifier and its tier mark): what a
 -- script that copies an item by hand (the guild depot) must copy
 function C.attributeKeys()
-	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA}
+	local out = {"rarity", M.ILVL, "combatPowerLevel", M.QUALITY, M.RUINED, M.EXTRA, M.CORRUPTED, M.IMPLICIT}
 	for _, a in ipairs(C.affixes()) do
 		out[#out + 1] = a.key
 		if a.key2 then
@@ -323,12 +323,17 @@ local function tierOf(item, affix, value)
 end
 
 -- list of modifiers in description order:
--- {group, key, key2, label, label2, value, value2, tier, side, lo, hi, chaosKey, affix}
+-- {group, key, key2, label, label2, value, value2, tier, side, lo, hi, chaosKey, affix, implicit}. The corrupted implicit
+-- of a Void Orb (chaos_orbs.lua) has side "implicit" and implicit = true: it takes no prefix or suffix slot.
 function C.readMods(item)
 	local mods = {}
+	local implicitKey = M.implicitKey(item)
 	local function push(m, affix, tierValue)
 		m.affix = affix
 		m.side = affix and affix.side or "suffix"
+		if implicitKey and m.key:lower() == implicitKey then
+			m.side, m.implicit = "implicit", true
+		end
 		m.tier = affix and tierOf(item, affix, tierValue) or 1
 		m.bound = M.isBound(item, m.key)
 		m.power = affix and affix.def and M.isPower(affix.def) or false
@@ -377,13 +382,13 @@ function C.readMods(item)
 	return mods
 end
 
--- prefixes and suffixes on the item: p, s
+-- prefixes and suffixes on the item: p, s (a corrupted implicit is neither)
 function C.sideCounts(mods)
 	local p, s = 0, 0
 	for _, m in ipairs(mods) do
 		if m.side == "prefix" then
 			p = p + 1
-		else
+		elseif m.side ~= "implicit" then
 			s = s + 1
 		end
 	end
@@ -410,13 +415,17 @@ function C.modTierText(m)
 end
 
 -- the modifier part of the description: "Prefixes: Sword +2 (T3); Fire +5% dmg (T2). Suffixes: Earth +2% (T4)"
+-- (a corrupted implicit first: "Corrupted implicit: Block Chance +12% (T8)")
 function C.modsText(mods)
-	local pre, suf = {}, {}
+	local pre, suf, imp = {}, {}, {}
 	for _, m in ipairs(mods) do
-		local list = m.side == "prefix" and pre or suf
+		local list = m.side == "prefix" and pre or (m.side == "implicit" and imp or suf)
 		list[#list + 1] = C.modTierText(m)
 	end
 	local parts = {}
+	if #imp > 0 then
+		parts[#parts + 1] = "Corrupted implicit: " .. table.concat(imp, "; ")
+	end
 	if #pre > 0 then
 		parts[#parts + 1] = "Prefixes: " .. table.concat(pre, "; ")
 	end
@@ -557,6 +566,10 @@ C.reasons = {
 	nothingToAdd = "There is no modifier left that this item could get.",
 	unknownOrb = "Unknown orb.",
 	ruined = "This item is ruined: no orb can change it any more.",
+	corrupted = "This item is corrupted: no orb can change it any more.",
+	locked = "The item is locked. Unlock it first.",
+	storeItem = "Store items cannot be corrupted.",
+	voidRarity = "A Void Orb works only on Rare or better gear.",
 	allBound = "Every modifier of this item is bound.",
 	noneBound = "This item has no bound modifier.",
 	tooManyBinds = "This item has all the bound modifiers its rarity allows.",
@@ -609,6 +622,9 @@ function C.check(orbKey, item, opts)
 	end
 	if M.isRuined(item) then
 		return false, "ruined"
+	end
+	if M.isCorrupted(item) then
+		return false, "corrupted"
 	end
 	if orbKey == "sockets" then
 		local okS, why = G.orbCheck(item)
@@ -814,6 +830,7 @@ function C.clearMods(item)
 		removeCustom(item, M.bindAttr(a.key))
 	end
 	removeCustom(item, M.EXTRA)
+	removeCustom(item, M.IMPLICIT)
 end
 
 -- the modifier of an item under this attribute key (as C.readMods returns it) or nil
@@ -864,6 +881,14 @@ function C.addQuality(item, stones)
 	local old = M.qualityOf(item)
 	local rarity = C.rarityOf(item)
 	local q = math.min(M.qualityCap(rarity), old + (tonumber(stones) or 1) * M.config.quality.perStone)
+	return C.setQuality(item, q)
+end
+
+-- set the item quality to q (0 .. the highest cap; the caller checks the cap of the rarity: a Void Orb goes past it)
+-- and work every value out again from the value it was rolled at. Returns the new quality, the old one.
+function C.setQuality(item, q)
+	local old = M.qualityOf(item)
+	q = math.max(0, math.min(M.config.quality.capHigh, math.floor(tonumber(q) or 0)))
 	if q == old then
 		return q, old
 	end
@@ -1023,6 +1048,9 @@ function C.rewriteDescription(item)
 	end
 	if M.isRuined(item) then
 		body = body .. ". Ruined"
+	end
+	if M.isCorrupted(item) then
+		body = body .. ". Corrupted"
 	end
 	local modsText = C.modsText(C.readMods(item))
 	if modsText ~= "" then
@@ -1472,7 +1500,8 @@ function C.signature(item)
 		return string.format("%d;key;%s;%s", item:getId(), tostring(custom(item, "rift_tier")), tostring(custom(item, "rift_mods")))
 	end
 	local parts = {tostring(item:getId()), tostring(C.rarityOf(item)), tostring(C.levelOf(item)),
-		"q" .. M.qualityOf(item) .. (M.isRuined(item) and "r" or "") .. tostring(M.extraSide(item) or "")}
+		"q" .. M.qualityOf(item) .. (M.isRuined(item) and "r" or "") .. (M.isCorrupted(item) and "c" or "")
+			.. tostring(M.extraSide(item) or "")}
 	for _, m in ipairs(C.readMods(item)) do
 		parts[#parts + 1] = m.key .. "=" .. tostring(m.value) .. "t" .. tostring(m.tier) .. (m.bound and "b" or "")
 	end
@@ -1493,11 +1522,11 @@ function C.describe(item, opts)
 	local rarity = C.rarityOf(item)
 	local mods = C.readMods(item)
 	local list = {}
-	for _, side in ipairs({"prefix", "suffix"}) do
+	for _, side in ipairs({"implicit", "prefix", "suffix"}) do
 		for _, m in ipairs(mods) do
 			if m.side == side then
 				list[#list + 1] = {group = m.group, key = m.key, text = C.modText(m), tier = m.tier, side = m.side, lo = m.lo,
-					hi = m.hi, bound = m.bound or nil, power = m.power or nil,
+					hi = m.hi, bound = m.bound or nil, power = m.power or nil, implicit = m.implicit or nil,
 					short = m.power and string.format("%s %d%s", m.label, m.value, (m.affix and m.affix.def and m.affix.def.fmt == "flat") and "/s" or "%") or nil}
 			end
 		end
@@ -1531,6 +1560,7 @@ function C.describe(item, opts)
 		quality = M.qualityOf(item),
 		qualityCap = rarity > 0 and M.qualityCap(rarity) or 0,
 		ruined = M.isRuined(item) or nil,
+		corrupted = M.isCorrupted(item) or nil,
 		binds = rarity > 0 and {C.bindCount(mods), M.maxBinds(rarity)} or nil,
 		pick = picks, -- orb key -> the attribute keys of the modifiers it may be aimed at (the bench's picker)
 		unique = C.isUnique(item),

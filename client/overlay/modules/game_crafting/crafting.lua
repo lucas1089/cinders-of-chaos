@@ -15,7 +15,7 @@
 --                     gem {op = "remove"|"shatter", socket, path, id, sig} | clear
 -- Modifier rows (item.mods[i] = {key, text, tier, side, lo, hi, bound, power, group}) are clickable: the orbs that are aimed
 -- at one modifier (item.pick = {orb key -> [modifier keys]}: Binding, Excision, Reforging) are enabled once you picked
--- one of those, and send it as `mod`. A right-click on a modifier row opens its page in the Codex (game_codex). item.quality / qualityCap fill the quality bar, item.ruined and item.binds show in
+-- one of those, and send it as `mod`. A right-click on a modifier row opens its page in the Codex (game_codex). item.quality / qualityCap fill the quality bar, item.ruined, item.corrupted and item.binds show in
 -- the header.
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
@@ -306,8 +306,8 @@ local function showItem(item)
   elseif rarity > 0 then
     window.itemRarity:setText(tr('%s, item level %d', item.rarityName or '?', tonumber(item.level) or 0)
       .. (item.maxTier and tr(' (up to T%d)', tonumber(item.maxTier) or 0) or '')
-      .. (item.ruined and tr('  RUINED') or ''))
-    window.itemRarity:setColor(item.ruined and '#e03a1e' or rarityColor(rarity))
+      .. (item.ruined and tr('  RUINED') or '') .. (item.corrupted and tr('  CORRUPTED') or ''))
+    window.itemRarity:setColor((item.ruined or item.corrupted) and '#e03a1e' or rarityColor(rarity))
   else
     window.itemRarity:setText(tr('Normal item'))
     window.itemRarity:setColor('#d6c9ae')
@@ -332,8 +332,8 @@ local function showItem(item)
     if m.side and m.side ~= side then
       side = m.side
       local head = g_ui.createWidget('CraftModLabel', window.modList)
-      head:setText(side == 'prefix' and tr('Prefixes') or tr('Suffixes'))
-      head:setColor('#8c8070')
+      head:setText(side == 'implicit' and tr('Corrupted implicit') or (side == 'prefix' and tr('Prefixes') or tr('Suffixes')))
+      head:setColor(side == 'implicit' and '#d04040' or '#8c8070')
     end
     local row = g_ui.createWidget('CraftModRow', window.modList)
     local text = m.short or m.text or ''
@@ -344,7 +344,7 @@ local function showItem(item)
       end
     end
     row.text:setText(text)
-    row.text:setColor(m.power and POWER_COLOR or GROUP_COLOR[m.group] or '#d6c9ae')
+    row.text:setColor(m.implicit and '#d04040' or (m.power and POWER_COLOR or GROUP_COLOR[m.group] or '#d6c9ae'))
     row.mark:setText(m.bound and tr('bound') or '')
     row.modKey = m.key
     local codexTip = (modules.game_codex and modules.game_codex.openModifier) and tr('Right-click: its page in the Codex.') or nil

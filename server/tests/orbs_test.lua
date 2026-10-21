@@ -2,7 +2,8 @@
 -- Crafting orbs v2 (data/lib/chaos_orbs.lua, chaos_orbs_config.lua) and the item state they use (data/lib/chaos_crafting.lua,
 -- chaos_item_mods.lua): Tempering, Binding (bound modifiers), Excision, Reforging, Ruin (every outcome, ruined items),
 -- the Whetstone (item quality), the legendary powers as modifiers (rarity gate, one per item, the side limits), the old
--- orbs with bound modifiers (Unmaking, Upheaval, Fate, Erasure), Rift Keys, the bench's view of an item.
+-- orbs with bound modifiers (Unmaking, Upheaval, Fate, Erasure), Rift Keys, the Ember, Crown and Void Orbs (every Void
+-- outcome, its fallbacks and refusals, the corrupted flag through the item codec), the bench's view of an item.
 
 local checks = 0
 local function eq(a, b, m)
@@ -61,6 +62,7 @@ function Item:setCustomAttribute(k, v) self.custom[k:lower()] = v end
 function Item:removeCustomAttribute(k) self.custom[k:lower()] = nil return true end
 function Item:getAttribute(k) return self.attrs[k] or (k == ITEM_ATTRIBUTE_DESCRIPTION and "" or nil) end
 function Item:setAttribute(k, v) self.attrs[k] = v end
+function Item:hasAttribute(k) return self.attrs[k] ~= nil end
 function Item:getParent() return self.parent end
 function Item:getActionId() return self.aid or 0 end
 function Item:setActionId(a) self.aid = a end
@@ -111,7 +113,7 @@ end
 
 -- ---------------------------------------------------------------- registration
 local cfg = ChaosOrbsConfig
-eq(#cfg.items, 9, "six new items, the Orb of Unveiling (chaos_veiled.lua), the Ember Orb and the Crown Orb")
+eq(#cfg.items, 10, "six new items, the Orb of Unveiling (chaos_veiled.lua), the Ember, Crown and Void Orbs")
 local ids = {}
 for _, orb in ipairs(C.config.orbs) do
 	ok(not ids[orb.id], "unique id " .. orb.id)
@@ -610,6 +612,288 @@ isOk = C.apply("crown", cc)
 eq(C.rarityOf(cc), 2)
 ok(C.describe(cw).preview.crown ~= nil, "bench preview")
 ok(cfg.crown.maxRank <= 5, "the Crown Orb never makes Divine")
+
+-- ---------------------------------------------------------------- Void Orb (corruption)
+local V = cfg.void
+eq(C.orbByKey.void.name, "Void Orb")
+eq(C.orbByKey.void.id, 32260)
+local voidTotal, voidKeys = 0, {}
+for _, row in ipairs(V.outcomes) do
+	ok(row[2] > 0, "a weight above 0: " .. row[1])
+	voidTotal = voidTotal + row[2]
+	voidKeys[row[1]] = true
+	ok(O.VOID[row[1]] ~= nil, "an outcome function for " .. row[1])
+end
+eq(voidTotal, 100, "the Void Orb's weights add up to 100")
+for _, k in ipairs({"sealed", "tier", "implicit", "quality", "socket", "reroll", "rarity", "decay"}) do
+	ok(voidKeys[k], "outcome " .. k .. " in the table")
+end
+for from, to in pairs(V.fallback) do
+	ok(voidKeys[from] and (voidKeys[to] or to == "sealed"), "a fallback between outcomes: " .. from .. " -> " .. to)
+end
+-- risk and reward: most outcomes help, a few hurt, the weights say so
+local good = 0
+for _, row in ipairs(V.outcomes) do
+	if row[1] == "tier" or row[1] == "implicit" or row[1] == "quality" or row[1] == "socket" or row[1] == "rarity" then
+		good = good + row[2]
+	end
+end
+local weightOf = {}
+for _, row in ipairs(V.outcomes) do weightOf[row[1]] = row[2] end
+ok(good > 50, "most corruptions improve the item")
+ok(weightOf.decay > 0 and weightOf.decay < 10, "a small chance of a downside")
+ok(weightOf.sealed >= 20, "often nothing but the lock")
+ok(V.quality <= M.config.quality.capHigh and V.quality > M.config.quality.cap, "quality past the normal cap, within capHigh")
+ok(V.sockets <= ChaosGems.MAX_SOCKETS, "sockets within the engine's limit")
+-- every pool entry is a modifier its kind may roll (the item's kind)
+for kind, list in pairs(V.implicits) do
+	ok(#list > 0, "an implicit pool for " .. kind)
+	for _, key in ipairs(list) do
+		local a = C.affixOf(M.attr(key))
+		ok(a and a.def and M.allowed(a.def, kind), "implicit " .. key .. " fits " .. kind)
+	end
+end
+ok(C.orbByKey.void.text:find("28% nothing else happens", 1, true), C.orbByKey.void.text)
+
+-- refusals
+local function rareSword() return forged(2400, 4, 100) end
+eq(select(2, C.check("void", put(newItem(2400)))), "voidRarity", "a normal item")
+eq(select(2, C.check("void", forged(2400, 3, 100))), "voidRarity", "Magic is below Rare")
+eq(C.check("void", rareSword()), true, "Rare is enough")
+eq(C.check("void", forged(2400, 10, 100)), true, "Divine too")
+local lockedSw = rareSword()
+lockedSw:setCustomAttribute("chaos_locked", 1)
+eq(select(2, C.check("void", lockedSw)), "locked", "a locked item")
+local storeSw = rareSword()
+storeSw:setCustomAttribute("chaos_storebound", 1)
+eq(select(2, C.check("void", storeSw)), "storeItem", "a store item")
+local engineStore = rareSword()
+engineStore.isStoreItem = function() return true end
+eq(select(2, C.check("void", engineStore)), "storeItem", "an engine store item")
+local ruinedSw = rareSword()
+ruinedSw:setCustomAttribute(M.RUINED, 1)
+eq(select(2, C.check("void", ruinedSw)), "ruined", "a ruined item")
+local uniqueSw = rareSword()
+uniqueSw:setCustomAttribute("chaos_unique", 1)
+eq(select(2, C.check("void", uniqueSw)), "unique", "a unique")
+eq(select(2, C.check("void", put(newItem(2160, 5)))), "notGear", "no gear")
+eq(select(2, C.check("void", newKey(4, "pack:2"))), "keyOrb", "Rift Keys")
+local failed, why = C.apply("void", lockedSw)
+eq(failed, false, "a refused orb is not applied (crafting.lua keeps the orb)")
+eq(why, C.reasons.locked)
+eq(M.isCorrupted(lockedSw), false, "a refusal changes nothing")
+for _, code in ipairs({"corrupted", "locked", "storeItem", "voidRarity"}) do
+	ok(C.reasons[code], "a reason text for " .. code)
+end
+
+-- corrupted: every orb refuses the item, Void included
+local function corrupt(item, outcome, roll)
+	dice = roll or {}
+	local good2, r = C.apply("void", item)
+	return good2, r
+end
+O.forceVoid = "sealed"
+local sealedSw = rareSword()
+local sealedSig = {}
+for _, m in ipairs(C.readMods(sealedSw)) do sealedSig[m.key] = m.value .. "/" .. m.tier end
+local okV, rV = corrupt(sealedSw)
+eq(okV, true)
+eq(rV.outcome, "sealed")
+eq(rV.corrupted, true)
+eq(M.isCorrupted(sealedSw), true, "the flag is set")
+ok(rV.text:find("is corrupted: nothing else happened", 1, true), rV.text)
+for _, m in ipairs(C.readMods(sealedSw)) do
+	eq(m.value .. "/" .. m.tier, sealedSig[m.key], "sealed: the modifier is unchanged " .. m.key)
+end
+for _, orb in ipairs(C.config.orbs) do
+	eq(select(2, C.check(orb.key, sealedSw)), "corrupted", orb.key .. " refuses a corrupted item")
+end
+ok(sealedSw:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION):find("Corrupted", 1, true), "the description says Corrupted")
+local sv = C.describe(sealedSw)
+eq(sv.corrupted, true, "the bench knows")
+eq(sv.orbs.void, C.reasons.corrupted, "the bench shows why")
+ok(C.signature(sealedSw):find("c", 1, true), "the signature changes with the corruption")
+
+-- tier: one unbound modifier one tier up
+O.forceVoid = "tier"
+local tierSw = rareSword()
+local tierBefore = {}
+for _, m in ipairs(C.readMods(tierSw)) do tierBefore[m.key] = m.tier end
+okV, rV = corrupt(tierSw)
+eq(rV.outcome, "tier")
+local rose = 0
+for _, m in ipairs(C.readMods(tierSw)) do
+	if m.tier == tierBefore[m.key] + 1 then rose = rose + 1 else eq(m.tier, tierBefore[m.key], "others stay") end
+	ok(m.value >= m.lo and m.value <= m.hi, "values in their tiers")
+end
+eq(rose, 1, "exactly one modifier rose")
+ok(rV.text:find("rose from T", 1, true), rV.text)
+-- every modifier at the top: falls back to an implicit
+local topSw = rareSword()
+for _, m in ipairs(C.readMods(topSw)) do C.writeAffix(topSw, m.affix, M.config.maxTier, nil, function(a) return a end) end
+okV, rV = corrupt(topSw)
+eq(rV.rolled, "tier")
+eq(rV.outcome, "implicit", "nothing to raise: an implicit instead")
+
+-- implicit: a strong modifier of the item's kind that takes no slot
+O.forceVoid = "implicit"
+local impSw = rareSword()
+local impBefore = #C.readMods(impSw)
+local p0, s0 = C.sideCounts(C.readMods(impSw))
+okV, rV = corrupt(impSw)
+eq(rV.outcome, "implicit")
+local impMods = C.readMods(impSw)
+eq(#impMods, impBefore + 1, "one modifier more")
+local imp
+for _, m in ipairs(impMods) do if m.implicit then imp = m end end
+ok(imp ~= nil, "it is marked implicit")
+eq(imp.side, "implicit")
+ok(imp.tier >= V.implicitTier, "a high tier")
+local inPool = false
+for _, key in ipairs(V.implicits.weapon) do inPool = inPool or M.attr(key) == imp.key end
+ok(inPool, "from the weapon pool: " .. imp.key)
+local p1, s1 = C.sideCounts(impMods)
+eq(p1, p0, "no prefix slot taken")
+eq(s1, s0, "no suffix slot taken")
+eq(M.implicitKey(impSw), imp.key:lower())
+ok(C.modsText(impMods):find("^Corrupted implicit: "), C.modsText(impMods))
+eq(C.describe(impSw).mods[1].implicit, true, "the bench lists the implicit first")
+-- the effect works like any modifier: M.read has it
+local seenRead = false
+for _, m in ipairs(M.read(impSw)) do seenRead = seenRead or M.attr(m.key) == imp.key end
+ok(seenRead, "the implicit acts (ChaosItemMods.read)")
+-- boots and jewels draw from their pools
+local bootsImp = forged(2195, 4, 100)
+corrupt(bootsImp)
+local bootsKey = M.implicitKey(bootsImp)
+ok(bootsKey == M.attr("movespeed") or bootsKey == M.attr("dodge"), "boots implicit " .. tostring(bootsKey))
+-- an empty pool (every pool modifier already there) falls back to a tier
+local fullPool = rareSword()
+for _, key in ipairs(V.implicits.weapon) do
+	C.writeAffix(fullPool, C.affixOf(M.attr(key)), 2, nil, function(a) return a end)
+end
+eq(#O.implicitPool(fullPool), 0)
+okV, rV = corrupt(fullPool)
+eq(rV.outcome, "tier", "no implicit left: a tier instead")
+-- empty pool and nothing to raise: only the lock
+local stuck = rareSword()
+for _, key in ipairs(V.implicits.weapon) do
+	C.writeAffix(stuck, C.affixOf(M.attr(key)), 2, nil, function(a) return a end)
+end
+for _, m in ipairs(C.readMods(stuck)) do C.writeAffix(stuck, m.affix, M.config.maxTier, nil, function(a) return a end) end
+okV, rV = corrupt(stuck)
+eq(rV.outcome, "sealed", "the fallback ends in the lock")
+eq(M.isCorrupted(stuck), true)
+
+-- quality: past the cap of Rare
+O.forceVoid = "quality"
+local qSw = rareSword()
+local qMods = C.readMods(qSw)
+okV, rV = corrupt(qSw)
+eq(rV.outcome, "quality")
+eq(M.qualityOf(qSw), V.quality, "quality " .. V.quality)
+ok(M.qualityOf(qSw) > M.qualityCap(C.rarityOf(qSw)), "above the Rare cap")
+for i, m in ipairs(C.readMods(qSw)) do
+	ok(m.value >= qMods[i].value, "every value scaled up: " .. m.key)
+end
+local qFull = forged(2400, 10, 100)
+C.setQuality(qFull, V.quality)
+okV, rV = corrupt(qFull)
+eq(rV.outcome, "implicit", "full quality: an implicit instead")
+
+-- socket: one more, past the rarity's limit
+O.forceVoid = "socket"
+local soSw = rareSword()
+ChaosGems.setCount(soSw, ChaosGems.maxSockets(soSw))
+local soBefore = ChaosGems.count(soSw)
+okV, rV = corrupt(soSw)
+if soBefore < V.sockets then
+	eq(rV.outcome, "socket")
+	eq(ChaosGems.count(soSw), soBefore + 1, "one socket more")
+else
+	eq(rV.outcome, "implicit")
+end
+local soFull = rareSword()
+ChaosGems.setCount(soFull, V.sockets)
+okV, rV = corrupt(soFull)
+eq(rV.outcome, "implicit", "every socket there: an implicit instead")
+eq(ChaosGems.count(soFull), V.sockets)
+
+-- reroll: new tiers and values, bound ones stay
+O.forceVoid = "reroll"
+local rrSw = rareSword()
+local rrMods = C.readMods(rrSw)
+C.setBound(rrSw, rrMods[1], true)
+local rrBound = rrMods[1].value
+okV, rV = corrupt(rrSw, nil, {})
+eq(rV.outcome, "reroll")
+eq(C.modByKey(rrSw, rrMods[1].key).value, rrBound, "the bound modifier stays")
+eq(#C.readMods(rrSw), #rrMods, "the same modifiers")
+local allBound = rareSword()
+for _, m in ipairs(C.readMods(allBound)) do C.setBound(allBound, m, true) end
+okV, rV = corrupt(allBound)
+eq(rV.outcome, "sealed", "every modifier bound: only the lock")
+
+-- rarity: one up, Divine included
+O.forceVoid = "rarity"
+local raSw = rareSword()
+local raN = #C.readMods(raSw)
+okV, rV = corrupt(raSw)
+eq(rV.outcome, "rarity")
+eq(C.rarityOf(raSw), 5, "Rare -> Legendary")
+eq(#C.readMods(raSw), raN + V.add, "and a modifier more")
+local legSw = forged(2400, 5, 100)
+corrupt(legSw)
+eq(C.rarityOf(legSw), 10, "Legendary -> Divine: the only orb that makes Divine")
+local divSw = forged(2400, 10, 100)
+okV, rV = corrupt(divSw)
+eq(rV.outcome, "implicit", "Divine cannot rise: an implicit instead")
+eq(C.rarityOf(divSw), 10)
+
+-- decay: the downside
+O.forceVoid = "decay"
+local deSw = rareSword()
+for _, m in ipairs(C.readMods(deSw)) do C.writeAffix(deSw, m.affix, 5, nil, function(a) return a end) end
+okV, rV = corrupt(deSw)
+eq(rV.outcome, "decay")
+local fell = 0
+for _, m in ipairs(C.readMods(deSw)) do
+	if m.tier == 5 - V.decay then fell = fell + 1 else eq(m.tier, 5) end
+end
+eq(fell, 1, "one modifier fell " .. V.decay .. " tiers")
+ok(rV.text:find("fell from T5", 1, true), rV.text)
+local lowSw = rareSword()
+for _, m in ipairs(C.readMods(lowSw)) do C.writeAffix(lowSw, m.affix, 1, nil, function(a) return a end) end
+okV, rV = corrupt(lowSw)
+eq(rV.outcome, "sealed", "nothing to lose: only the lock")
+O.forceVoid = nil
+
+-- the roll follows the weights (the dice pick the row)
+local acc = 0
+for _, row in ipairs(V.outcomes) do
+	dice = {acc + 1}
+	eq(O.rollVoid(), row[1], "roll " .. (acc + 1))
+	acc = acc + row[2]
+	dice = {acc}
+	eq(O.rollVoid(), row[1], "roll " .. acc)
+end
+ok(C.describe(rareSword()).preview.void:find("corrupted for good", 1, true), "bench preview")
+
+-- the corrupted flag and the implicit go with the item: the copy keys (guild depot, key-list codec) and the codec
+local keys = {}
+for _, k in ipairs(C.attributeKeys()) do keys[k] = true end
+ok(keys[M.CORRUPTED] and keys[M.IMPLICIT], "attributeKeys lists the corruption")
+dofile("data/scripts/chaos/item_codec.lua")
+local IC = ChaosItemCodec
+eq(IC.hasBlob(), false, "the key-list codec (no engine patch in this mock)")
+local codecKind, codecData = IC.encode(impSw)
+eq(codecKind, "attrs")
+local back = IC.decode(2400, 1, codecKind, codecData)
+eq(M.isCorrupted(back), true, "corrupted after the codec (market escrow, stash)")
+eq(M.implicitKey(back), M.implicitKey(impSw), "the implicit after the codec")
+eq(#C.readMods(back), #C.readMods(impSw), "every modifier after the codec")
+eq(select(2, C.check("tempering", back)), "corrupted", "still locked against orbs")
+eq(IC.isPlain(back), false)
 
 -- ---------------------------------------------------------------- the bench view
 local view2 = C.describe(forged(2400, 5, 100))

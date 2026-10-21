@@ -2318,6 +2318,7 @@ return {
 		["Wear an item with a rarity in that slot first."] = "Primeiro equipe um item com raridade nesse slot.",
 		["Uniques keep their stats: they cannot be refined."] = "Únicos mantêm seus atributos: não podem ser refinados.",
 		["A ruined item cannot be refined."] = "Um item arruinado não pode ser refinado.",
+		["A corrupted item cannot be refined."] = "Um item corrompido não pode ser refinado.",
 		["This item is already at the highest rarity a refinement reaches."] =
 			"Este item já está na maior raridade que um refinamento alcança.",
 		["Choose two different kinds."] = "Escolha dois tipos diferentes.",
