@@ -538,6 +538,7 @@ jobs:
           python3 -I server/tools/install_pack33_items.py --manifest --check
           python3 -I server/tools/install_pack33_items.py --lua --check
           python3 -I server/tools/install_pack33_items_test.py
+          python3 -I server/tools/install_orbs_test.py  # renamed orb names; base names that hold one are kept
           # sprite style checker (docs/SPRITE_STYLE.md): palettes and thresholds match the owner's gear sheets,
           # synthetic sprites pass or fail for the right reason, the seven sheets pass their own themes
           /tmp/fxenv/bin/python -I client/tools/sprites/style_check.py build-palettes --check

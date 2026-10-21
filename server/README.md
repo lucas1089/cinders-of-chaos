@@ -8285,7 +8285,11 @@ ids, keys (`transmutation`, `exalted`, ...), storages and the character-upgrade 
 
 `install_orbs.py` writes the names (and plurals) into `items.xml` and replaces the old names in every base-server file that
 lists items by name: the loot lists of the waystone monsters (`id = "vaal orb"` ...), monster XML, NPC lists, any script
-outside `data/scripts/chaos` (case-insensitive, whole words; 220 references in 36 files of the test server's base data). The
+outside `data/scripts/chaos` (case-insensitive, whole words; 220 references in 36 files of the test server's base data).
+A base item name that holds an old name is kept: "blazing ember orb" (29520) holds "Ember Orb", and an older run wrote
+"blazing ember shard" (no such item: Ashseer Dravok's loot failed to load, the general crafting recipes and the shops of
+Khadin and Vazallia named it; live log 2026-10-21). The names come from items.xml; a form a rename made of one is put
+back on the next run (`tools/install_orbs_test.py`). The
 repository's own files carry the new names (a sweep over scripts, configs, tests, docs, the website). `check_names.py` has no
 list of these names; the old ones are gone from the player-facing text.
 
