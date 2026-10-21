@@ -1781,7 +1781,7 @@ function Gen.basicsEntries(D)
 				string.format("Multikill: kills each within %s of the one before form a chain; the whole chain's experience gets %s.",
 					Gen.seconds(pc.multikill.windowMs), table.concat(steps, ", ")),
 				"Bosses, rifts, the Ember Descent, the tower, invasions, arena, battleground and PvP are not changed."}},
-			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+			{h = "By hunting level", p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set, on top of the health and experience their level already gives them."},
 				cols = {"Level", "Health", "Experience", "Loot", "Damage"}, w = {28, 18, 18, 18, 18}, rows = prow}})
 		local crow = {}
 		local names = {[4] = "Warrior", [8] = "Juggernaut", [14] = "Berserker", [3] = "Ranger", [7] = "Deadeye",

@@ -7732,9 +7732,10 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
 
   The band above, for comparison: level 8 and 30 on band 2 hit the cap (58k, 872k: 20 levels, own kills only); 100 on
   band 3 9.9M (cap); 650 on band 6 422M (cap). A band below: 100 on band 1 200k (0.4 level), 400 on band 3 17.5M (2.2
-  levels), 900 on band 5 31.8M (0.8 level). The 800+ band's level-scaled monsters give about 20x the experience of a base
-  monster of the same hunting level once the engine's x0.03 L is counted (see "Pack combat (pace)", the scaled curve), so
-  its contracts pay the cap.
+  levels), 900 on band 5 31.8M (0.8 level). Until O108 the 800+ band's level-scaled monsters gave about 20x the experience of a
+  base monster of the same hunting level once the engine's x0.03 L was counted, so its contracts paid the cap (the 900
+  row above). With the re-fitted `scaled` curve (see "Pack combat (pace)", Scaled experience re-fit) level 900 gets
+  303M (7.5 levels) for a hunt, 292M elite, 265M boss, and no contract of 30 boards at the cap.
   **Weekly chest:** 4 completed contracts in one bounty week (Monday 06:00 to Monday 06:00) give a "bounty chest"
   (present box) with the orbs of the player's band, once per week (`weeklyNeed`, 7 until 2026-10-15: two short sessions
   a week earn it now).
@@ -14424,6 +14425,10 @@ Experience buff that was active), i.e. exactly 1.875 x the model for all 17. Not
 efficiency and the 3-target assumption), the one-handed knight (~14% less damage than two-handed), druids and
 illusionists (earth/ice/death are resisted too).
 
+Pack combat (2026-10-14) multiplies these kills by its `scaled` experience curve on top. Its points must count the
+x0.03 L: the 2026-10-20 points did not and paid 5-10x this model per hour until O108 ("Pack combat (pace)", Scaled
+experience re-fit: 500 -> 1000 in 112 h for the median class again, the model's 111 h; it was 40 h).
+
 ## Pack combat (pace) (`pace.lua`, `pace_core.lua`, `pace_config.lua`, 2026-10-14)
 
 Owner request (pt-BR, paraphrased): players must feel strong and kill several monsters at once, not one by one, with
@@ -14433,14 +14438,11 @@ some danger left; more monsters, experience compensated; dungeons at most 10-15 
 **Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
   1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800
   monsters. New points follow the base monsters (`luajit tools/pace_scan.lua` prints the median experience and health by
-  hunting level: now rising with the level in every band). **Correction 2026-10-22:** `pace_scan.lua` and the numbers in
-  `pace_config.lua` leave out the engine's x0.03 L experience factor of level-scaled monsters ("Late game", checked on the
-  test server). With it a level-scaled kill pays about 20-30x a base monster of the same hunting level (median per kill
-  before the stage: 81k vs 4.0k at hunting level 600-700, 155k vs 6.0k at 750-850, 279k vs 9.5k at 950-1050), so the
-  "1/15" above was measured without the factor too. Open: re-tune the `scaled` xp curve (or divide it by 0.03 L)
-  against the hunt tracker. Generated area / dungeon points keep their old points as the new
-  `generated` set (the queue dungeons' 10-minute model is calibrated on them; their experience is the generator's own
-  and was not re-measured). (2) New `gold` factor (`pace_config.lua`, base and scaled,
+  hunting level: now rising with the level in every band). That comparison (and `pace_scan.lua` then) left out both
+  engine factors of a level-scaled monster, x0.03 L experience and x(1 + 0.0074 L) health ("Late game", checked on the
+  test server), so the "1/15" and "1/4.6" were artefacts; the experience points paid 5-10x the model per hour, see
+  "Scaled experience re-fit" below (O108). Generated area / dungeon points keep their old points as the new
+  `generated` set (the queue dungeons' 10-minute model is calibrated on them). (2) New `gold` factor (`pace_config.lua`, base and scaled,
   0.30 from hunting level 450): a second thinning of coins and NPC-sellable items that are not gear (`L.isGoldLike`,
   `L.thinCorpse(corpse, f, g)`); orbs, gems, keys and gear keep only `loot`. Reason: gold per hour at level 500-600 was
   about 16M against the income model's 5.5-6.3M. Check it with the hunt tracker in the beta. Replaced 2026-10-21 by
@@ -14518,10 +14520,71 @@ Basics page "Pack combat"):
 
 | Own level (scaled) | 650 | 800 | 1000 | 1300 | 1600 | 2000 |
 |---|---|---|---|---|---|---|
-| Health x | 0.095 | 0.080 | 0.066 | 0.062 | 0.059 | 0.056 |
-| Experience per kill x | 0.042 | 0.036 | 0.030 | 0.026 | 0.024 | 0.023 |
-| Loot per kill x | 0.050 | 0.042 | 0.035 | 0.031 | 0.029 | 0.027 |
+| Health x (level-scaled, since 2026-10-20) | 0.35 | 0.36 | 0.40 | 0.42 | 0.42 | 0.42 |
+| Experience per kill x (level-scaled, O108) | 0.086 | 0.085 | 0.087 | 0.087 | 0.086 | 0.087 |
+| Health x (generated points) | 0.095 | 0.080 | 0.066 | 0.062 | 0.059 | 0.056 |
+| Experience per kill x (generated points) | 0.042 | 0.036 | 0.030 | 0.026 | 0.024 | 0.023 |
 | Kill goals x | 20 | 24 | 28 | 32 | 35 | 37 |
+
+These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
+Loot: `pace_config.lua` (and "Loot by monster level").
+
+**Scaled experience re-fit (2026-10-22, O108; owner: "pode fazer").** The `scaled` xp points of 2026-10-20 (0.70 at 650,
+0.58 at 800, 0.52 at 1000, 0.46 at 2000) were fitted on the file experience. The base `player.lua` also gives a
+level-scaled kill x0.03 L (a level 900 knight on the test server: XML exp x 0.03 x level x stage x stamina x buff), so a
+kill paid 81k at hunting level 670, 157k at 800 and 296k at 1000 before the stage, 17-40x a base monster there
+(4.8k-7.6k), and the 800+ bounty band always hit its 20-level cap. Two ways to make the curve and the factor agree: a
+`patch_*.py` that takes the factor out of the base `player.lua` for paced monsters, or new curve points with the factor
+counted. The points were chosen: one config line (and the `generated` one), no base file and no install step change,
+and the factor stays for everything that already counts on it: the late sets' XML experience was tuned with it ("Late
+game"), and rifts (`rift.lua` cap), invasions, the Ember Descent, the tower, world, guild and pocket bosses, `xpcap.lua`
+and the bounty and kill task rewards (`B.monsterKillBase`) read the same factor and are not paced, or follow the curve.
+
+The model: the leveling model of "The leveling model and the hours" as the pack model carried it on 2026-10-14/15 (the
+median class about 130 h from 1 to 1000; the old `scaled` points held a late set's experience per hour on it). Experience
+per hour at a level = the pace model's kills per hour (`spawn_tuning.json` `paceKillsPerHour`; for the late sets x the
+median class's kills per hour with the health curve of 2026-10-20 / with the old one, `tools/pack_model.py`, since the
+monsters became bulkier) x the median kill (base: the bounty pool's monsters of that hunting level; late sets: their
+level-scaled health and experience, with the engine factors) x `scale.xp` 1.3 x the stage; the hunt is the better of
+the base hunt and the late set from 650 (tiers and the multikill bonus of the model; boosts and Chaos bonuses left
+out). Each new point is the old one x the old / new kills per hour: about 0.086 at every level.
+
+| Level | XP/h model | XP/h before | XP/h after | Hours per level model / before / after |
+|---|---|---|---|---|
+| 500 (base hunt) | 96.5M | 96.5M | 96.5M | 0.13 / 0.13 / 0.13 |
+| 650 | 104M (base hunt; late set 87M) | 709M (late set) | 104M (base hunt; late set 89M) | 0.20 / 0.03 / 0.20 |
+| 800 | 142M | 973M | 143M | 0.23 / 0.03 / 0.22 |
+| 900 | 188M | 1,170M | 183M | 0.22 / 0.03 / 0.22 |
+| 1000 | 208M | 1,240M | 208M | 0.24 / 0.04 / 0.24 |
+| **500 -> 1000** | **111 h** | **40 h** | **112 h** | |
+
+Per band after: 500-650 27.4 h (unchanged), 650-800 37.6 h (was 5.5), 800-900 22.9 h (3.5), 900-1000 24.4 h (3.9). A
+late-set kill now pays about 10k (level 670), 24k (810) and 47k (980) before the stage, 2-6x a base monster of the
+same hunting level for 7-12x its health (`luajit tools/pace_scan.lua` prints both with the engine factors; it left them
+out until now). With both engine factors a level-scaled monster's experience per health point is cut like a base
+monster's (0.78-0.83 of its file ratio; base 0.6-1.0; `tests/pace_test.lua`).
+
+- **Generated areas and queue dungeons** (`generated` set): their monsters are the late sets, so the same factor applies
+  (`areagen.lua` scales it to the point's level). Their xp points had been raised on 2026-10-20 the same way (0.19 at
+  650, 0.15 at 800, 0.075 at 1000: 2.5-4.5x); they are the 2026-10-14 points again, which the run model and their
+  unchanged health were made with. The dungeon difficulty experience (index 90) is unchanged.
+- **Not touched:** base monsters, bosses (never paced), rifts, the Ember Descent, the tower, invasions, arena,
+  battleground, raid, world, guild and pocket bosses (script-made, not paced; the rift cap reads the factor as before),
+  the stage table, `scale`, the health and loot curves.
+- **Exploits.** Summons and pets: never paced (`pace.lua` skips every summon); a kill a player's summon makes credits
+  its master like any kill, at the killed monster's curve, so nothing changes for them. A low character in a late zone: the stage of its own level applies (a level 300 character's stage
+  36 against 14 at 900), as for any monster, and party share needs 2/3 of the top level ("Party shared experience");
+  what such a kill can pay fell with the curve (155k x stage before, 23k x stage now, the pool median at 800+). The experience cap
+  (`xpcap.lua`, 4x the paced base: rawExp x factor x stage x tier x the curve) follows the curve by itself and still
+  holds every bonus to 4x; the bounty floor and cap (`B.reward`) and the kill task share (`bestiary_core.lua`) read the
+  same `B.monsterKillBase`.
+- **Bounty 800+ band** (30 boards, own band, the model of "Bounty board"): the median hunt reward at level 800 / 900 /
+  1000 is 325M / 303M / 281M (10.2 / 7.5 / 5.6 levels), elite 313M / 292M / 271M, boss 284M / 265M / 246M; at the
+  20-level cap: 1 of 120 contracts at 800, none at 900 and 1000 (was 639M / 809M / 999M, 20 levels for every type, 110,
+  94 and 83 of 120 at the cap). The 500-799 band (level 650: hunt 40.9M, 1.9 levels) does not change. Open: the late sets' kill
+  goals (`scaled.goal` 24 at 800) were set when such a hunter killed 990 an hour; with the 2026-10-20 health about 400,
+  so an 800+ hunt contract (about 2,000 kills) takes several hours.
+- Measured in a model, not in game. Recheck with the hunt tracker in the beta.
 
 | Hunting level | 20 | 50 | 150 | 300 | 600 | 800 | 1000+ |
 |---|---|---|---|---|---|---|---|

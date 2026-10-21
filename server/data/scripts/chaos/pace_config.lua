@@ -11,7 +11,8 @@
 -- level for a generated area or dungeon monster (areagen.lua), else baseLevelMult x ChaosLoot.monsterLevel (the
 -- bounty pool's "fair hunt" estimate; README "Level bands and capacity": the hunting level is twice it).
 -- Curves are linear between the points and flat beyond the ends. A monster with a level of its own (level-scaled, or a
--- generated area's point) uses the "scaled" curves: those monsters carry the engine's x(1 + 0.0074 L) health.
+-- generated area's point) uses the "scaled" curves: those monsters carry the engine's x(1 + 0.0074 L) health and
+-- x0.03 L experience.
 --
 -- What it touches: natural map spawns, generated areas and dungeons, base dungeon monsters (dungeons.lua) and the ambush
 -- copies of those. Never: bosses (isboss / rewardboss / the tier list's bosses / a generated area's boss), summons,
@@ -51,20 +52,20 @@ return {
 		notable = {{650, 0}, {700, 1}}
 	},
 
-	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level. Re-measured 2026-10-20 against the base
-	-- curves (tester: spiders at level 500 gave more experience than monsters at level 800): the old points left a
-	-- level-scaled monster with 1/15 of the experience and 1/4.6 of the health of a base monster of the same hunting
-	-- level. Now the experience per kill follows the base monsters' (about 4000 at 650, 6300 at 800, 10000 at 1000,
-	-- 16500 at 1300, then +13.5 a level) and the health the same ratio as there (experience about 1 x health).
+	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level. The engine gives a level-scaled monster
+	-- x(1 + 0.0074 L) health and its kill x0.03 L experience (base player.lua, checked on the test server, server/README.md
+	-- "Late game"); both are on top of these curves. health: re-measured 2026-10-20 (it was 0.095 at 650 to 0.056 at 2000).
+	-- xp: re-fitted 2026-10-22 (O108) with the x0.03 L counted, so a scaled hunt's experience per hour is the leveling
+	-- model's again (the 2026-10-14 pack model: median class about 130 h from 1 to 1000). The 2026-10-20 points (0.70 at
+	-- 650, 0.58 at 800, 0.52 at 1000) were fitted on the file experience without that factor and paid 5-10x the model per
+	-- hour (a kill 81k at 650, 157k at 800, 296k at 1000 before the stage; base monsters there 4.8k-7.6k). The new point at
+	-- L is the old 0.042 / 0.036 / 0.030 / 0.026 / 0.024 / 0.023 x the median class's kills per hour with the old health
+	-- curve / with this one (tools/pack_model.py): about 0.086 at every level. A kill now pays about 10k at 670, 24k at 810
+	-- and 47k at 980 before the stage, for 28k-73k health (pace_scan.lua prints both with the engine factors).
 	-- Check with: luajit tools/pace_scan.lua
-	-- Correction 2026-10-22: those experience numbers (and pace_scan.lua) are the file experience x the curve. The engine
-	-- also multiplies a level-scaled monster's kill by 0.03 x its level (base player.lua, checked on the test server,
-	-- server/README.md "Late game"), so a live kill pays about 20-30x a base monster of the same hunting level (median
-	-- per kill before the stage, bounty_core.lua B.monsterKillBase: 81k vs 4.0k at 600-700, 155k vs 6.0k at 750-850,
-	-- 279k vs 9.5k at 950-1050). Not re-tuned here: an owner decision, see server/README.md "Pack combat (pace)".
 	scaled = {
 		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
-		xp = {{100, 0.115}, {650, 0.70}, {800, 0.58}, {1000, 0.52}, {1300, 0.50}, {1600, 0.48}, {2000, 0.46}},
+		xp = {{100, 0.044}, {650, 0.086}, {800, 0.085}, {1000, 0.087}, {1300, 0.087}, {1600, 0.086}, {2000, 0.087}},
 		loot = {{100, 0.137}, {650, 0.83}, {800, 0.69}, {1000, 0.62}, {1300, 0.595}, {1600, 0.57}, {2000, 0.55}},
 		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}},
 		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
@@ -76,11 +77,14 @@ return {
 	},
 
 	-- generated area / dungeon points (areagen: the point's level): the points the run-time model of the queue dungeons
-	-- (dungeons_difficulty.lua, tests/areagen_test.lua: about 10 minutes at difficulty 1) was calibrated on. Kept as they
-	-- were; their health stays; the experience points were raised 2026-10-20 so that experience per health point matches the base monsters (about 0.8-1.2, it was 0.2-0.8: a generated area paid 4-6% of a base monster's experience per kill). The generator's own levelScale experience applies first.
+	-- (dungeons_difficulty.lua, tests/areagen_test.lua: about 10 minutes at difficulty 1) was calibrated on. Their
+	-- monsters are the level-scaled late sets, so the engine's x0.03 L applies (areagen.lua scales it to the point's
+	-- level). The xp points are the 2026-10-14 ones again (O108): the raise of 2026-10-20 (0.19 at 650, 0.15 at 800, 0.075
+	-- at 1000) was measured without the x0.03 L and the x(1 + 0.0074 L) health and paid 2.5-4.5x the model; the health
+	-- never changed.
 	generated = {
 		health = {{650, 0.095}, {800, 0.080}, {1000, 0.066}, {1300, 0.062}, {1600, 0.059}, {2000, 0.056}},
-		xp = {{650, 0.19}, {800, 0.15}, {1000, 0.075}, {1300, 0.045}, {1600, 0.032}, {2000, 0.026}},
+		xp = {{650, 0.042}, {800, 0.036}, {1000, 0.030}, {1300, 0.026}, {1600, 0.024}, {2000, 0.023}},
 		loot = {{650, 0.050}, {800, 0.042}, {1000, 0.035}, {1300, 0.031}, {1600, 0.029}, {2000, 0.027}},
 		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
 	},

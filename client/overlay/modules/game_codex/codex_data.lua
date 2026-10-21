@@ -14311,7 +14311,7 @@ CodexData = {
 						},
 						{
 							h = "By hunting level",
-							p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set."},
+							p = {"Health, experience per kill, loot per kill and the monster's damage to you, in percent of the monster's own numbers. Monsters with a level of their own (late game, generated areas and dungeons) use the second set, on top of the health and experience their level already gives them."},
 							cols = {"Level", "Health", "Experience", "Loot", "Damage"},
 							w = {28, 18, 18, 18, 18},
 							rows = {
@@ -14322,10 +14322,10 @@ CodexData = {
 								{"300", "21%", "22%", "24%", "65%"},
 								{"600", "21%", "21%", "23%", "55%"},
 								{"1000", "21%", "22%", "24%", "40%"},
-								{"650 (own level)", "35%", "91%", "100%", "53%"},
-								{"1000 (own level)", "40%", "68%", "74%", "40%"},
-								{"1300 (own level)", "42%", "65%", "71%", "40%"},
-								{"2000 (own level)", "42%", "60%", "66%", "40%"}
+								{"650 (own level)", "35%", "11%", "100%", "53%"},
+								{"1000 (own level)", "40%", "11%", "74%", "40%"},
+								{"1300 (own level)", "42%", "11%", "71%", "40%"},
+								{"2000 (own level)", "42%", "11%", "66%", "40%"}
 							}
 						},
 						{

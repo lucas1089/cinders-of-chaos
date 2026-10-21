@@ -290,6 +290,29 @@ local rc = {}
 for k, v in pairs(cfg) do rc[k] = v end
 rc.goalMult = function(m) return P.goalOfEntry(pcfg, m) end
 rc.killBase = function(c) return B.monsterKillBase(c, P, pcfg) end
+-- the real curves (O108): a level-scaled kill is file experience x 0.03 L x the scaled curve, and it pays a few times a
+-- base monster of the same hunting level (bulkier, fewer per hour), not the 20-30x of the 2026-10-20 curve
+do
+	local function entry(name)
+		for _, e in ipairs(pool.hunt) do
+			if e.name == name then
+				local c = {type = "hunt"}
+				for k, v in pairs(e) do c[k] = v end
+				return c
+			end
+		end
+	end
+	local troll, swamp = entry("Tundra Troll"), entry("Swamp Monster")
+	assert(troll and swamp, "pool entries")
+	local lvl, scaled = P.entryLevel(pcfg, troll)
+	assert(scaled and lvl == 830, "Tundra Troll: level-scaled, level 830")
+	eq(B.monsterKillBase(troll, P, pcfg), troll.exp * lvl * 0.03 * P.factors(pcfg, lvl, true).xp,
+		"level-scaled: x0.03 L x the scaled curve")
+	local blvl, bscaled = P.entryLevel(pcfg, swamp)
+	assert(not bscaled and blvl == 846, "Swamp Monster: a base monster of hunting level 846")
+	local ratio = B.monsterKillBase(troll, P, pcfg) / B.monsterKillBase(swamp, P, pcfg)
+	assert(ratio > 1.5 and ratio < 8, "a level-scaled kill pays 1.5-8x a base kill of the same hunting level: " .. ratio)
+end
 for d = 1, 30 do
 	local bd = B.roll(20261000 + d, rc, pool)
 	for _, lvl in ipairs({8, 30, 100, 250, 400, 650, 900}) do
