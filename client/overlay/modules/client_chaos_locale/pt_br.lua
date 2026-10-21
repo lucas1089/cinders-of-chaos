@@ -105,6 +105,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["The community link is not available yet."] = "O link da comunidade ainda não está disponível.",
   -- client_chaos_updater/updater.lua
   ["Close the client and start it again to load the update."] = "Feche o cliente e abra de novo para carregar a atualização.",
+  ["Close and start again"] = "Fechar e abrir de novo",
   ["Exit"] = "Sair",
   ["You can play with the current files."] = "Você pode jogar com os arquivos atuais.",
   ["Checking files"] = "Verificando arquivos",

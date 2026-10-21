@@ -16,6 +16,10 @@
           --key or the environment variable CHAOS_UPDATE_KEY (a path, never the key itself). The manifest is
           written last, so a client never sees a manifest whose files are not there yet.
           --dry-run: no key needed, nothing written; checks the folder and prints what would be published (CI).
+          Version: a package with Services.update.baseline = B in its init.lua (base patch 0101, the release number
+          winpkg-B written by set_update_config.py --baseline) is published as version B, and --version must be B:
+          clients never apply a manifest below their own baseline. Without a baseline: --version, else the
+          published version + 1.
           Sprite shards (tools/sprites/spr_shards.py, base patch 0048): a <name>.sprshards index in data/things/
           is checked against its shard files (sizes, headers, SHA-256) and each shard is its own manifest file, so
           a sprite change downloads only the shards that hold it. Refused: a shard set next to its single .spr
@@ -27,6 +31,7 @@
 The client refuses: a bad or missing signature, a manifest of another key, an older version than the one it applied,
 paths outside modules/ mods/ data/ layouts/, "..", absolute paths, odd characters, and native code
 (.exe .dll .so ...). The same rules are applied here, so a manifest the client would refuse is never published.
+It also skips (never applies) a manifest whose version is below its package's baseline.
 Uses the `cryptography` package when installed, else ed25519_ref.py (RFC 8032 reference code).
 """
 import argparse, datetime, hashlib, json, os, re, shutil, subprocess, sys, tempfile
@@ -291,6 +296,18 @@ def check_sprite_shards(client_dir, entries, min_package, with_single_spr=False)
     return out
 
 
+def package_baseline(client_dir):
+    """Services.update.baseline of the client's init.lua (base patch 0101): the update version the package's own files
+    are (its release number). 0 when the field is missing (a package built before 0101) or not a number."""
+    try:
+        text = open(os.path.join(client_dir, 'init.lua'), encoding='utf-8', errors='replace').read()
+    except OSError:
+        return 0
+    block = re.search(r'\n  update = \{\n(.*?)\n  \}', text, re.S)
+    m = re.search(r'(?m)^\s*baseline = (\d{1,9})\s*,?\s*$', block.group(1)) if block else None
+    return int(m.group(1)) if m else 0
+
+
 def previous_version(out_dir):
     try:
         env = json.load(open(os.path.join(out_dir, 'manifest.json'), encoding='utf-8'))
@@ -330,11 +347,19 @@ def build(args):
             sys.exit(problem)
 
     prev = previous_version(args.out) if args.out else 0
-    version = args.version if args.version is not None else prev + 1
+    # the package's baseline (its release number, Services.update.baseline) IS the version of its files: clients never
+    # apply a manifest below their own baseline, so a manifest of these files under another number would either be
+    # skipped by this package's own players (lower) or put these older files over a newer package's (higher)
+    baseline = package_baseline(client_dir)
+    if baseline and args.version is not None and args.version != baseline:
+        sys.exit(f'--version {args.version} is not this package\'s baseline {baseline} (Services.update.baseline, its release '
+                 f'number); the manifest of these files must be version {baseline}')
+    version = args.version if args.version is not None else (baseline or prev + 1)
     if version < 1:
         sys.exit('--version must be 1 or more')
     if version <= prev and not args.dry_run:
-        sys.exit(f'version {version} is not newer than the published {prev}; clients refuse older manifests')
+        sys.exit(f'version {version} is not newer than the published {prev}; clients refuse older manifests'
+                 + (' (this package is older than the published one: publish a newer package)' if baseline else ''))
     min_version = args.min_version if args.min_version is not None else 0
     if min_version > version:
         sys.exit('--min-version cannot be above --version')
@@ -344,7 +369,9 @@ def build(args):
     if err:
         sys.exit('internal: ' + err)
 
-    summary = (f'{len(entries)} files, {len(blobs)} distinct, {total / 1024 / 1024:.1f} MB, version {version}, '
+    summary = (f'{len(entries)} files, {len(blobs)} distinct, {total / 1024 / 1024:.1f} MB, version {version}'
+               + (f' (package baseline {baseline})' if baseline else '') + ', '
+               
                f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}')
     if args.dry_run:
         print('dry run (unsigned, nothing written):', summary)

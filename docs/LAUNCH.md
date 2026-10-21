@@ -948,9 +948,12 @@ python3 -I client/tools/make_update_manifest.py keygen --private ~/chaos-keys/up
 2. Dry run: `python3 -I client/tools/make_update_manifest.py build <client> --dry-run` (no key, writes nothing).
 3. Publish: `CHAOS_UPDATE_KEY=~/chaos-keys/update.key python3 -I client/tools/make_update_manifest.py build <client>
    --out <CHAOS_SITE_DIR>/updates/live` (or `--out` to a local folder and rsync it up: blobs first, `manifest.json`
-   last). The version goes up by one each time; clients refuse an older manifest.
+   last). The version goes up by one each time; clients refuse an older manifest. A package built with a baseline
+   (`Services.update.baseline`, base patch 0101; `windows-package.yml` writes its run number) is published as exactly
+   that version (`--version` must match).
 4. Check: `python3 -I client/tools/make_update_manifest.py verify <CHAOS_SITE_DIR>/updates/live --public <hex>`.
-5. Start a client: it says "Update applied" and restarts, or "Your client is up to date".
+5. Start a client: it says "Update applied" and restarts, or "Your client is up to date". An exe without base patch
+   0101 (client build 11 and older) does not restart itself: it asks the player to close it and start it again.
 
 Options: `--min-version N` (clients below update N may not play offline), `--min-package N` (clients whose
 package number, `Services.update.package`, is below N are told to download the new package and cannot log in),
@@ -1026,10 +1029,15 @@ package's manifest URL must give HTTP 200, the same bytes as the file just writt
 published); `publish_client_update.sh --check-only` with `CHAOS_UPDATE_URL` repeats it. The work folder is removed.
 
 Numbers, and why a client of build N accepts the update:
-- **version** = the tag's number (`winpkg-46` -> 46), `--version N` to choose. The client compares it only with the
-  update it applied last (none at first) and refuses a lower one; it has nothing to do with the build number. Each
-  publish must be above the last one (the script stops before signing otherwise). A second publish of the same tag
-  needs `--version` above it; a later tag then needs a higher number too.
+- **version** = the package's baseline (`Services.update.baseline` in its `init.lua`, base patch 0101: the run
+  number `windows-package.yml` built it as, `winpkg-47` -> 47), so the files of release N are always update N. A tag or
+  `--version` of another number is refused for such a package. A package without a baseline (built before 0101): the
+  tag's number (`winpkg-46` -> 46), `--version N` to choose. The client refuses a version below the update it applied
+  last, and skips (never applies) one below its own package's baseline: a package built after an update went live
+  has newer files than that update (2026-10-21: the winpkg-47 start test applied the live winpkg-46 files). The
+  version has nothing to do with the build number. Each publish must be above the last one (the script stops before
+  signing otherwise): an older package than the live update cannot be published; build a new one. Republishing the
+  same package (to change min_package) is not possible with a baseline; build a new package.
 - **min_package** = the package's own client build (`BUILD_INFO.txt` "client build: N", the same as
   `Services.update.package` in its `init.lua`; the script refuses when they differ), `--min-package N` to choose,
   `--min-package 0` for none. A client accepts the update when its package (build) is at least min_package; an older
@@ -1051,6 +1059,18 @@ Settings: `/etc/chaos/ctl.conf` keys `CHAOS_SITE_DIR` (`/var/www/chaos`), `CHAOS
 root only: `chaos-ctl.sh` takes release tags only, so the admin user can never sign a file of its own.
 The web server: Apache reads `updates/.htaccess` (`install_site.sh` copies it); nginx needs the `location` block of
 website/README.md "Client updates". The site's `dl` folder is not involved.
+
+**Packaging never uses the live update.** The `windows-package.yml` start test runs the client with
+`CHAOS_UPDATE_OFF=1` (no manifest request, no update folder mounted) and fails when the log lacks
+`updater: off (CHAOS_UPDATE_OFF is set)`. The same switch works for any local test run of a package.
+
+**Client build 11 and the restart.** Build 11's `g_app.restart()` aborted the client after starting the new one
+(base patch 0101, client/BASE.md). Build 12 (an exe with 0101) restarts cleanly. A build-11 client applying the next
+update still runs its old `updater.lua` at that moment: it may close with a crash report, but the update is in place
+and loads when the player starts the game again; from then on its updater asks the player to close and start the
+game instead. Build 12 is a new exe: build it with `client_build` 12 and list 11 and 12 in `clientGuardBuilds`. Its
+update defaults to `--min-package 12`, which sends build-11 players to the download page; give `--min-package 11` to
+let build 11 keep updating (its updater copes without 0101).
 
 
 ## Updating the live server

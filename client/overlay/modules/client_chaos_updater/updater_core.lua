@@ -303,12 +303,51 @@ function M.shouldMount(st, packageId)
 end
 
 -- may the player go on with the files they have? (offline, or the update failed)
--- required: Services.update.required; st: the saved state; package: this client's package number
-function M.offlineVerdict(required, st, package)
+-- required: Services.update.required; st: the saved state; package: this client's package number;
+-- baseline: the update version of the package's own files (Services.update.baseline), counts as applied
+function M.offlineVerdict(required, st, package, baseline)
   if required then return false, 'The update server is required to play.' end
   if (st.min_package or 0) > (package or 0) then return false, 'A new client download is required.' end
-  if (st.min_version or 0) > (st.version or 0) then return false, 'An update is required to play.' end
+  if (st.min_version or 0) > math.max(st.version or 0, M.baseline(baseline)) then
+    return false, 'An update is required to play.'
+  end
   return true
+end
+
+-- ---------------------------------------------------------------- package baseline, switches, restart
+
+-- Services.update.baseline: the update version this package's own files are (the release number the package was
+-- built as, winpkg-N -> N; client/tools/set_update_config.py --baseline). 0 or missing: unknown (older packages).
+function M.baseline(value)
+  local n = tonumber(value)
+  if not n or n ~= n or n < 0 or n ~= math.floor(n) then return 0 end
+  return n
+end
+
+-- a manifest older than the package's own files is never applied: it would put older files over newer ones
+-- (a package built after the live update was published). Equal is fine: the same content, nothing to download.
+function M.olderThanPackage(m, baseline)
+  local b = M.baseline(baseline)
+  return b > 0 and type(m) == 'table' and type(m.version) == 'number' and m.version < b
+end
+
+-- the environment switch for test runs (CI start tests): CHAOS_UPDATE_OFF set to anything but "" / "0" turns the
+-- updater off: no request to the update server, no update folder mounted, the package's own files only
+M.OFF_ENV = 'CHAOS_UPDATE_OFF'
+function M.offByEnv(getenv)
+  if type(getenv) ~= 'function' then return false end
+  local ok, v = pcall(getenv, M.OFF_ENV)
+  return ok and type(v) == 'string' and v ~= '' and v ~= '0'
+end
+
+-- "restart": the engine restarts safely (base patch 0101 binds g_app.canRestart); "manual": an older exe, whose
+-- g_app.restart left from inside the Lua call and could abort, so the player closes and starts the client
+function M.restartMode(app)
+  if type(app) ~= 'table' and type(app) ~= 'userdata' then return 'manual' end
+  local okGet, fn = pcall(function() return app.canRestart end)
+  if not okGet or type(fn) ~= 'function' then return 'manual' end
+  local ok, yes = pcall(fn)
+  return (ok and yes == true) and 'restart' or 'manual'
 end
 
 -- ---------------------------------------------------------------- diff

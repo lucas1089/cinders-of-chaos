@@ -42,7 +42,11 @@
 # it the run fails unless allow_dev_key is ticked (then the public default key, a warning). The full Windows zip keeps
 # the default key: its own server folder has the stock key.pem.
 # Signed updater (client/MANIFEST.md "Signed updater"): it updates only modules/ mods/ data/ layouts/, which both clients
-# share, so update_manifest / update_public_key go into the Windows and the Linux client alike.
+# share, so update_manifest / update_public_key go into the Windows and the Linux client alike, with the baseline
+# Services.update.baseline = this run's number (winpkg-N -> N, the version publish_client_update.sh gives the update made
+# from this package): the client never applies a manifest below it, so it never goes back to an older live update.
+# The start test runs with CHAOS_UPDATE_OFF=1: no request to the live update server, so a package never depends on
+# what is published (winpkg-47 applied the older live winpkg-46 files and restarted, base patch 0101).
 # The first run builds the vcpkg ports of both exes (about an hour); later runs reuse the vcpkg binary caches.
 name: Windows package
 
@@ -457,7 +461,8 @@ jobs:
           # make_update_manifest.py accepts this exact client folder, dat/spr included (unsigned dry run)
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P/client" \
-              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"
+              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD" \
+              --baseline "${PKG_TAG#winpkg-}"
           fi
           python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run
 
@@ -759,7 +764,8 @@ jobs:
           # the same updater settings as the Windows client (client/MANIFEST.md "Signed updater")
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P" \
-              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD"
+              --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD" \
+              --baseline "${PKG_TAG#winpkg-}"
           fi
           python3 -I chaos/client/tools/set_server_host.py "$P" "$SERVER_HOST" --site-url "$SITE_URL"
           python3 -I chaos/client/tools/set_rsa_key.py "$P" --from-env CHAOS_RSA_PUBLIC \
@@ -777,7 +783,9 @@ jobs:
           rm -rf "$P" game build
 
       # the archive as a player gets it, on a virtual display with software OpenGL and no sound card: the client must
-      # still be running after 30 seconds (it waits at the login screen)
+      # still be running after 30 seconds (it waits at the login screen). CHAOS_UPDATE_OFF=1: the updater makes no
+      # request and mounts nothing (updater_core.lua offByEnv), so the test runs this package's own files whatever the
+      # live update server publishes.
       - name: Start test
         run: |
           set -euo pipefail
@@ -785,11 +793,15 @@ jobs:
           tar -xzf CindersOfChaos-Client-Linux.tar.gz -C "$RUNNER_TEMP/smoke"
           cd "$RUNNER_TEMP/smoke/CindersOfChaos-Client-Linux"
           code=0
-          HOME="$RUNNER_TEMP/smoke/home" LIBGL_ALWAYS_SOFTWARE=1 ALSOFT_DRIVERS=null \
+          HOME="$RUNNER_TEMP/smoke/home" LIBGL_ALWAYS_SOFTWARE=1 ALSOFT_DRIVERS=null CHAOS_UPDATE_OFF=1 \
             xvfb-run -a -s "-screen 0 1280x720x24" timeout 30 ./run-client.sh > "$RUNNER_TEMP/client.log" 2>&1 || code=$?
           tail -n 40 "$RUNNER_TEMP/client.log"
           if [ $code -ne 124 ]; then
             echo "::error::The Linux client stopped within 30 seconds (exit code $code)"
+            exit 1
+          fi
+          if ! grep -q 'updater: off (CHAOS_UPDATE_OFF is set)' "$RUNNER_TEMP/client.log"; then
+            echo "::error::The start test did not turn the updater off (CHAOS_UPDATE_OFF): it may have used the live update server"
             exit 1
           fi
           cd / && rm -rf "$RUNNER_TEMP/smoke"

@@ -1,0 +1,262 @@
+--- a/init.lua
++++ b/init.lua
+@@ -29,11 +29,14 @@
+   -- manifest: HTTPS URL of the signed manifest on the website ("" turns the updater off);
+   -- publicKey: the operator's Ed25519 public key, 64 hex digits (client/tools/make_update_manifest.py keygen);
+   -- package: this client package's build number (a manifest with a higher min_package asks for a new download);
++  -- baseline: the update version this package's own files are (the release number, winpkg-N -> N; written by
++  -- client/tools/set_update_config.py --baseline): a manifest with a lower version is never applied (base patch 0101);
+   -- required: true refuses to play when the update server cannot be reached.
+   update = {
+     manifest = "",
+     publicKey = "",
+     package = 1,
++    baseline = 0,
+     required = false,
+     download = ""
+   },
+--- a/src/framework/core/application.h
++++ b/src/framework/core/application.h
+@@ -42,6 +42,11 @@
+     virtual void close();
+     void restart();
+     void restartArgs(const std::vector<std::string>& args);
++    // Cinders of Chaos (base patch 0101): restart() / restartArgs() only ask for a relaunch and close the client the
++    // normal way; main() starts the new process after the whole runtime is shut down (relaunchIfRequested).
++    bool canRestart() { return true; }
++    bool isRestartRequested() { return m_restartRequested; }
++    bool relaunchIfRequested();
+ 
+     void setName(const std::string& name) { m_appName = name; }
+     void setCompactName(const std::string& compactName) { m_appCompactName = compactName; }
+@@ -84,6 +89,10 @@
+     stdext::boolean<false> m_stopping;
+     stdext::boolean<false> m_terminated;
+     stdext::boolean<false> m_mobile;
++    stdext::boolean<false> m_restartRequested;
++    std::string m_restartBinary;
++    std::string m_startupBinary;
++    std::vector<std::string> m_restartArgs;
+ };
+ 
+ #ifdef FW_GRAPHICS
+--- a/src/framework/core/application.cpp
++++ b/src/framework/core/application.cpp
+@@ -37,13 +37,26 @@
+ #include <emscripten/emscripten.h>
+ #endif
+ 
+-#if !defined(ANDROID) && !defined(__EMSCRIPTEN__)
+-#include <boost/process.hpp>
+-#endif
+-
+ #include <algorithm>
++#include <cstdio>
+ #include <locale>
+ 
++// Cinders of Chaos (base patch 0101): the relaunch after a restart request, see relaunchIfRequested
++#if !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++#include <filesystem>
++#ifdef WIN32
++#ifndef NOMINMAX
++#define NOMINMAX
++#endif
++#include <windows.h>
++#else
++#include <spawn.h>
++#include <sys/types.h>
++#include <unistd.h>
++extern char** environ;
++#endif
++#endif
++
+ #include <framework/net/connection.h>
+ #include <framework/proxy/proxy.h>
+ 
+@@ -85,6 +98,13 @@
+     // Keep arguments injected before platform normalization, such as the
+     // renderer selected from config.otml.
+     m_startupArguments = args;
++#if !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++    if (!args.empty()) {
++        std::error_code ec;
++        auto binary = std::filesystem::absolute(std::filesystem::u8path(args[0]), ec);
++        m_startupBinary = ec ? args[0] : binary.u8string();
++    }
++#endif
+ 
+     // process args encoding
+     g_platform.processArgs(args);
+@@ -200,36 +220,128 @@
+ 
+ void Application::restart()
+ {
++    restartArgs(std::vector<std::string>());
++}
++
++// Cinders of Chaos (base patch 0101): a restart only asks for a relaunch and closes the client the normal way.
++// It used to start the new process here and leave with ::exit(0) (quick_exit on MSVC). This runs inside a Lua call
++// (a scheduled event, a button) while the HTTP worker, the async dispatcher and the graphics threads still run, so
++// on Linux ::exit ran the static destructors over joinable std::threads: std::terminate, abort (exit code 134). On
++// Windows quick_exit skipped onTerminate, the module unloads and the config save. Now exit() ends the main loop,
++// main() shuts everything down in order and then calls relaunchIfRequested(), which starts the new process.
++void Application::restartArgs(const std::vector<std::string>& args)
++{
+ #if defined(__EMSCRIPTEN__)
++    (void)args;
+     MAIN_THREAD_ASYNC_EM_ASM({ Module.astraReload(); });
+-#elif !defined(ANDROID)
+-    boost::process::child c(g_resources.getBinaryName());
+-    std::error_code ec2;
+-    if (c.wait_for(std::chrono::seconds(1), ec2)) {
+-        g_logger.fatal("Updater restart error. Please restart application");
+-    }
+-    c.detach();
+-    quick_exit();
++#elif defined(ANDROID)
++    (void)args;
++    exit();
+ #else
++    if (m_restartRequested)
++        return;
++    m_restartRequested = true;
++    m_restartArgs = args;
++#if defined(WIN32)
++    m_restartBinary.clear();
++#elif defined(__linux__)
++    std::error_code ec;
++    auto self = std::filesystem::read_symlink("/proc/self/exe", ec);
++    m_restartBinary = ec ? std::string() : self.string();
++#endif
++    if (m_restartBinary.empty() && !m_startupArguments.empty())
++        m_restartBinary = m_startupBinary;
++    g_logger.info("Restart requested: the client closes and starts again");
+     exit();
+ #endif
+ }
+ 
+-void Application::restartArgs(const std::vector<std::string>& args)
++#if defined(WIN32) && !defined(ANDROID) && !defined(__EMSCRIPTEN__)
++// one argument quoted the way CommandLineToArgvW reads it back
++static std::wstring quoteWindowsArg(const std::wstring& arg)
++{
++    if (!arg.empty() && arg.find_first_of(L" \t\n\v\"") == std::wstring::npos)
++        return arg;
++    std::wstring out = L"\"";
++    size_t slashes = 0;
++    for (wchar_t c : arg) {
++        if (c == L'\\') {
++            ++slashes;
++            continue;
++        }
++        if (c == L'"')
++            out.append(slashes * 2 + 1, L'\\');
++        else
++            out.append(slashes, L'\\');
++        slashes = 0;
++        out.push_back(c);
++    }
++    out.append(slashes * 2, L'\\');
++    out.push_back(L'"');
++    return out;
++}
++#endif
++
++// Called by main() after the whole runtime is shut down (every thread joined, Lua closed, configs saved), so no Lua
++// and no logger callback may run here. Starts the client again with the restart arguments; true when it started.
++bool Application::relaunchIfRequested()
+ {
+-#if defined(__EMSCRIPTEN__)
+-    (void)args;
+-    MAIN_THREAD_ASYNC_EM_ASM({ Module.astraReload(); });
+-#elif !defined(ANDROID)
+-    boost::process::child c(g_resources.getBinaryName(), boost::process::args(args));
+-    std::error_code ec2;
+-    if (c.wait_for(std::chrono::seconds(1), ec2)) {
+-        g_logger.fatal("Updater restart error. Please restart application");
++#if defined(__EMSCRIPTEN__) || defined(ANDROID)
++    return false;
++#else
++    if (!m_restartRequested)
++        return false;
++    m_restartRequested = false;
++#if defined(WIN32)
++    std::vector<wchar_t> self(32768);
++    DWORD len = GetModuleFileNameW(NULL, self.data(), static_cast<DWORD>(self.size()));
++    if (len == 0 || len >= self.size()) {
++        std::fprintf(stderr, "restart: cannot find the client executable; start it again\n");
++        return false;
++    }
++    std::wstring exe(self.data(), len);
++    std::wstring cmd = quoteWindowsArg(exe);
++    for (const auto& arg : m_restartArgs) {
++        cmd.push_back(L' ');
++        cmd += quoteWindowsArg(stdext::utf8_to_utf16(arg));
++    }
++    std::vector<wchar_t> cmdLine(cmd.begin(), cmd.end());
++    cmdLine.push_back(L'\0');
++    std::wstring dir = std::filesystem::path(exe).parent_path().wstring();
++    STARTUPINFOW si;
++    ZeroMemory(&si, sizeof(si));
++    si.cb = sizeof(si);
++    PROCESS_INFORMATION pi;
++    ZeroMemory(&pi, sizeof(pi));
++    if (!CreateProcessW(exe.c_str(), cmdLine.data(), NULL, NULL, FALSE, 0, NULL, dir.empty() ? NULL : dir.c_str(),
++                        &si, &pi)) {
++        std::fprintf(stderr, "restart: CreateProcess failed (%lu); start the client again\n",
++                     static_cast<unsigned long>(GetLastError()));
++        return false;
+     }
+-    c.detach();
+-    quick_exit();
++    CloseHandle(pi.hThread);
++    CloseHandle(pi.hProcess);
++    return true;
+ #else
+-    exit();
++    if (m_restartBinary.empty()) {
++        std::fprintf(stderr, "restart: cannot find the client executable; start it again\n");
++        return false;
++    }
++    std::vector<std::string> argvStore;
++    argvStore.push_back(m_restartBinary);
++    argvStore.insert(argvStore.end(), m_restartArgs.begin(), m_restartArgs.end());
++    std::vector<char*> argv;
++    for (auto& arg : argvStore)
++        argv.push_back(&arg[0]);
++    argv.push_back(nullptr);
++    pid_t pid = 0;
++    int rc = posix_spawn(&pid, m_restartBinary.c_str(), nullptr, nullptr, argv.data(), environ);
++    if (rc != 0) {
++        std::fprintf(stderr, "restart: cannot start %s (error %d); start the client again\n", m_restartBinary.c_str(), rc);
++        return false;
++    }
++    return true;
++#endif
+ #endif
+ }
+ 
+--- a/src/framework/luafunctions.cpp
++++ b/src/framework/luafunctions.cpp
+@@ -152,6 +152,8 @@
+     g_lua.bindSingletonFunction("g_app", "isMobile", &Application::isMobile, static_cast<Application*>(&g_app));
+     g_lua.bindSingletonFunction("g_app", "restart", &Application::restart, static_cast<Application*>(&g_app));
+     g_lua.bindSingletonFunction("g_app", "restartArgs", &Application::restartArgs, static_cast<Application*>(&g_app));
++    g_lua.bindSingletonFunction("g_app", "canRestart", &Application::canRestart, static_cast<Application*>(&g_app));
++    g_lua.bindSingletonFunction("g_app", "isRestartRequested", &Application::isRestartRequested, static_cast<Application*>(&g_app));
+ 
+     // Crypt
+     g_lua.registerSingletonClass("g_crypt");
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -233,6 +233,10 @@
+ 
+     // unload modules and terminate everything in dependency order
+     shutdownApplicationRuntime();
++
++    // Cinders of Chaos (base patch 0101): a restart asked during the run starts the client again only now, after
++    // every thread is joined and the settings are saved
++    g_app.relaunchIfRequested();
+     return 0;
+ }
+ 

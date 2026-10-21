@@ -7,6 +7,9 @@
 -- chaos_update/files in one step and restart. bootstrap.lua mounts that folder at the next start.
 -- Unreachable server: play with the current files, unless Services.update.required or a minimum the server set.
 -- Never downloads native code: the exe and its DLLs come only with the client package (core.DENIED_EXT).
+-- Never applies a manifest older than the package's own files (Services.update.baseline, the release number the package
+-- was built as). Restarts by itself only on an exe with base patch 0101 (g_app.canRestart); an older exe's restart could
+-- abort, so there the player closes and starts the client. CHAOS_UPDATE_OFF=1 in the environment turns it off (CI).
 
 ChaosUpdater = ChaosUpdater or {}
 local U = ChaosUpdater
@@ -140,19 +143,29 @@ function U.dismiss()
   hidePanel()
 end
 
+-- the update is in place and loads at the next start: the player closes the client and starts it again
+local function manualRestart()
+  setText('note', tr('Close the client and start it again to load the update.'))
+  if alive(panel) then
+    local b = panel:getChildById('restartButton')
+    b:setText(tr('Close and start again'))
+    b.onClick = function() g_app.exit() end
+  end
+end
+
 function U.restart()
   phase = 'restart'
+  result.restart = core.restartMode(g_app)
+  if result.restart ~= 'restart' then
+    -- an exe without base patch 0101: its g_app.restart left from inside this Lua call and aborted the client
+    g_logger.info('updater: this client cannot restart itself safely; close it and start it again')
+    return manualRestart()
+  end
   g_logger.info('updater: restarting the client to load the update')
   local ok, err = pcall(function() g_app.restart() end)
   if not ok then
-    -- the client could not start itself again: the update is in place, it loads at the next start
     g_logger.warning('updater: restart failed: ' .. tostring(err))
-    setText('note', tr('Close the client and start it again to load the update.'))
-    if alive(panel) then
-      local b = panel:getChildById('restartButton')
-      b:setText(tr('Exit'))
-      b.onClick = function() g_app.exit() end
-    end
+    manualRestart()
   end
 end
 
@@ -163,7 +176,7 @@ local function fallback(title, why)
     st.min_version = math.max(st.min_version or 0, manifestState.min_version or 0)
     st.min_package = math.max(st.min_package or 0, manifestState.min_package or 0)
   end
-  local ok, verdict = core.offlineVerdict(cfg.required, st, cfg.package)
+  local ok, verdict = core.offlineVerdict(cfg.required, st, cfg.package, cfg.baseline)
   result.fallback = ok and 'play' or 'blocked'
   g_logger.warning(('updater: %s (%s); %s'):format(title, tostring(why), ok and 'playing with the current files' or verdict))
   showPanel()
@@ -302,6 +315,10 @@ local function finishApplied(count, bytes, seconds, workers)
   progress(100, ('%d files, %s in %.1f s (%d parallel)'):format(count, core.formatBytes(bytes), seconds, workers),
     tr('Restarting the client...'))
   buttons(false, false, true)
+  if core.restartMode(g_app) ~= 'restart' then
+    result.restart = 'manual'
+    return manualRestart()
+  end
   later(2500, U.restart)
 end
 
@@ -392,6 +409,17 @@ local function onManifest(r)
     buttons(true, false, false)
     return
   end
+  if core.olderThanPackage(m, cfg.baseline) then
+    -- a package built after this update was published: its own files are newer, never put the older ones over them
+    phase = 'uptodate'
+    result.upToDate = cfg.baseline
+    result.skipped = m.version
+    g_logger.info(('updater: update %d is older than this client package (%d): not applied'):format(m.version, cfg.baseline))
+    setText('status', tr('Your client is up to date'))
+    progress(100, ('update %d, package %d'):format(m.version, cfg.baseline), '')
+    later(2500, function() if phase == 'uptodate' then U.dismiss() end end)
+    return
+  end
   compareFiles(m, function(plan)
     if phase ~= 'hashing' then return end
     if #plan.download == 0 and #plan.drop == 0 and #plan.stale == 0 then
@@ -450,7 +478,8 @@ end
 
 -- for the tests (devexec) and the terminal
 function U.status()
-  return { phase = phase, result = result, mounted = boot and boot.mounted, version = loadState().version }
+  return { phase = phase, result = result, mounted = boot and boot.mounted, version = loadState().version,
+           baseline = cfg and cfg.baseline or 0, restart = core.restartMode(g_app) }
 end
 
 -- ---------------------------------------------------------------- module
@@ -465,11 +494,16 @@ function U.init()
   cfg = Services and Services.update
   boot = CHAOS_UPDATE_BOOT or { packageId = '', mounted = false }
   if not enabled(cfg) then return end
+  if core.offByEnv(os.getenv) then
+    g_logger.info('updater: off (' .. core.OFF_ENV .. ' is set): no update check')
+    return
+  end
   if not (g_crypt.ed25519Verify and g_resources.fileSha256 and g_resources.moveUpdateFile) then
     g_logger.warning('updater: this client build has no update support (base patch 0031)')
     return
   end
   cfg.package = tonumber(cfg.package) or 0
+  cfg.baseline = core.baseline(cfg.baseline)
   cfg.download = cfg.download or ''
   if not cfg.manifest:find('^https://') then
     g_logger.warning('updater: the manifest URL is not HTTPS (tests only)')

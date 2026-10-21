@@ -7,8 +7,12 @@
 #   TAG   a release of the repository (winpkg-46): downloads its CindersOfChaos-Client-Windows.zip
 #   ZIP   a local client zip instead (not offered by chaos-ctl.sh, which publishes release tags only)
 #
-#   --version N       the manifest version. Default: the number at the end of the tag (winpkg-46 -> 46); for a ZIP,
-#                     the published version + 1. It must be above the published one: clients refuse an older manifest.
+#   --version N       the manifest version. Default: the package's baseline (Services.update.baseline in its init.lua,
+#                     base patch 0101: the release number the package was built as), else the number at the end of the
+#                     tag (winpkg-46 -> 46), else (a ZIP of an older package) the published version + 1. With a
+#                     baseline the version must be that baseline: its clients never apply a manifest below their own
+#                     baseline, so the files of release N are always update N (a tag of another number is refused).
+#                     It must be above the published one: clients refuse an older manifest.
 #   --min-package N   clients whose package (Services.update.package = the workflow input client_build) is below N
 #                     must download the new package and cannot log in. Default: this package's own client build
 #                     (BUILD_INFO.txt "client build: N", the same as Services.update.package in its init.lua).
@@ -233,7 +237,7 @@ try:
 except OSError:
     pass
 for k, v in (('block', 'yes' if block else ''), ('manifest', field('manifest')), ('key', field('publicKey')),
-             ('package', field('package')), ('build', build)):
+             ('package', field('package')), ('baseline', field('baseline')), ('build', build)):
     if not re.fullmatch(r'[A-Za-z0-9:/._~-]*', v):
         v = '?'
     print(f'{k}={v}')
@@ -241,8 +245,11 @@ PY
 ) || die "cannot read the client's init.lua"
 get() { printf '%s\n' "$info" | sed -n "s/^$1=//p"; }
 PKG_URL=$(get manifest) PKG_KEY=$(get key) PKG_PACKAGE=$(get package) PKG_BUILD=$(get build)
+PKG_BASELINE=$(get baseline)
+isnum "$PKG_BASELINE" || PKG_BASELINE=0
+PKG_BASELINE=$((10#$PKG_BASELINE))
 [ -n "$(get block)" ] || say "WARN: init.lua has no Services.update block: this exe has no updater (base patch 0031)"
-say "package: client build ${PKG_BUILD:-unknown}, Services.update.package ${PKG_PACKAGE:-unset}, manifest ${PKG_URL:-none}"
+say "package: client build ${PKG_BUILD:-unknown}, Services.update.package ${PKG_PACKAGE:-unset}, baseline ${PKG_BASELINE}, manifest ${PKG_URL:-none}"
 
 # the keys: the derived one, the configured one, the package's own must all be the same
 DERIVED=$(python3 -I "$TOOL" pubkey --private "$KEY") || die "cannot read the private key $KEY"
@@ -270,6 +277,16 @@ if [ -n "$PKG_PACKAGE" ] && [ "$MINPKG" -gt "$((10#$PKG_PACKAGE))" ]; then
   die "--min-package $MINPKG is above this package's own $PKG_PACKAGE: its own players would be told to download it again"
 fi
 
+# the version: the package's baseline is the version of its files (base patch 0101); clients skip a manifest below
+# their own baseline, so these files under another number would be skipped (lower) or downgrade newer packages (higher)
+if [ "$PKG_BASELINE" -gt 0 ]; then
+  if [ -z "$VERSION" ]; then
+    VERSION=$PKG_BASELINE
+  elif [ "$VERSION" -ne "$PKG_BASELINE" ]; then
+    die "version $VERSION is not this package's baseline $PKG_BASELINE (Services.update.baseline, the release it was built as); its update is version $PKG_BASELINE (give no --version, or the release tag winpkg-$PKG_BASELINE)"
+  fi
+fi
+
 PREV=$(python3 -I - "$LIVE/manifest.json" <<'PY'
 import json, sys
 try:
@@ -279,6 +296,9 @@ except Exception:
 PY
 )
 if [ -n "$VERSION" ] && [ "$VERSION" -le "$PREV" ]; then
+  if [ "$PKG_BASELINE" -gt 0 ]; then
+    die "version $VERSION is not above the published $PREV: this package is older than the live update (publish a newer package)"
+  fi
   die "version $VERSION is not above the published $PREV (clients refuse an older manifest); give --version $((PREV + 1)) or more"
 fi
 

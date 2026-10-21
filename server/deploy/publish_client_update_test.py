@@ -42,17 +42,18 @@ INIT = '''Services = {
     manifest = "%s",
     publicKey = "%s",
     package = %d,
-    required = false,
+%s    required = false,
     download = ""
   }
 }
 '''
 
 
-def make_zip(path, public, url, package=11, build=11, extra=None, links=False):
+def make_zip(path, public, url, package=11, build=11, extra=None, links=False, baseline=None):
     with zipfile.ZipFile(path, 'w') as z:
         root = 'CindersOfChaos-Client/'
-        z.writestr(root + 'init.lua', INIT % (url, public, package))
+        line = '' if baseline is None else '    baseline = %d,\n' % baseline
+        z.writestr(root + 'init.lua', INIT % (url, public, package, line))
         z.writestr(root + 'BUILD_INFO.txt', 'chaos commit: abc\r\nserver host: 127.0.0.1\r\nclient build: %d\r\n' % build)
         z.writestr(root + 'Chaos.exe', b'MZ' + b'\0' * 100)
         z.writestr(root + 'modules/client_x/x.lua', 'print(1)\n')
@@ -249,6 +250,27 @@ exec %s "$@"
         check('WARN Cache-Control' in r.stdout and 'WARN a blob Range' in r.stdout, 'plain server warnings')
         r = run('--check-only', extra={'CHAOS_UPDATE_URL': purl})
         check(r.returncode == 1, '--check-only fails on warnings')
+
+        # base patch 0101: a package's baseline (its release number) is the version of its update, nothing else
+        pkg70 = os.path.join(zips, 'pkg70.zip')
+        make_zip(pkg70, public, url, baseline=70)
+        r = run('winpkg-71', extra={'STUB_ZIP': pkg70, 'CHAOS_UPDATE_URL': purl})
+        check(r.returncode != 0 and 'baseline 70' in r.stderr, 'a tag of another number than the baseline refused')
+        r = run('--version', '69', pkg70, extra={'CHAOS_UPDATE_URL': purl})
+        check(r.returncode != 0 and 'baseline 70' in r.stderr, '--version below the baseline refused')
+        r = run('winpkg-70', extra={'STUB_ZIP': pkg70, 'CHAOS_UPDATE_URL': purl})
+        check(r.returncode == 0 and payload()['version'] == 70 and verify(), 'tag winpkg-70 of baseline 70 -> version 70')
+        check('baseline 70' in r.stdout, 'the baseline is printed')
+        pkg72 = os.path.join(zips, 'pkg72.zip')
+        make_zip(pkg72, public, url, baseline=72)
+        r = run(pkg72, extra={'CHAOS_UPDATE_URL': purl})
+        check(r.returncode == 0 and payload()['version'] == 72, 'a local zip takes its baseline as the version')
+        # the incident the other way round: an older package (baseline 71) after 72 is live
+        pkg71 = os.path.join(zips, 'pkg71.zip')
+        make_zip(pkg71, public, url, baseline=71)
+        r = run('winpkg-71', extra={'STUB_ZIP': pkg71, 'CHAOS_UPDATE_URL': purl})
+        check(r.returncode != 0 and 'older than the live update' in r.stderr and payload()['version'] == 72,
+              'an older package than the live update refused')
         plain.shutdown()
 
     print('publish_client_update_test: %d failures' % failures)

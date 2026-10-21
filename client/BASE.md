@@ -685,6 +685,31 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     factor). The legs stay straight and hang over the mount's side. Wings and the top aura take their mounted shifts
     (`riding`). A look with pattern Z 2 draws exactly as before. Applies after `0001`-`0087` (numbered 0084 on main, renumbered 0088 when merged with the branch that already had a 0084); the assembled
     `outfit.cpp` passes `g++ -std=c++17 -fsyntax-only`. Not tried in a client run.
+71. `0101` (C++ `src/framework/core/application.h/.cpp`, `src/framework/luafunctions.cpp`, `src/main.cpp`; `init.lua`):
+    **a safe restart, and the update baseline field.** The base `Application::restart()` / `restartArgs()` started a
+    new process with `boost::process`, waited a second, then left with `::exit(0)` (`::quick_exit` on MSVC) from
+    inside the Lua call that asked for it (the updater's scheduled event). The HTTP worker (`g_http`, a
+    `std::thread`), the async dispatcher and the graphics threads still ran, so on Linux `::exit` ran the static
+    destructors over joinable `std::thread`s: `std::terminate`, abort (exit 134). The new client had already started,
+    so it "worked" in a manual run, but the old one dumped core: the `windows-package.yml` winpkg-47 start test died
+    that way after its updater applied the live winpkg-46 files (`Application::restart()` from Lua via
+    `ScheduledEvent`, `__cxxabiv1::__terminate`, `on_exit`). On Windows `quick_exit` skipped the abort but also
+    `onTerminate`, the module unloads and the config save. A child that died within the second hit
+    `g_logger.fatal`, which also calls `::exit`. Now: `restart()` / `restartArgs(args)` only record the request (the
+    exe: `/proc/self/exe` on Linux, the absolute `argv[0]` of the start elsewhere; the arguments: none / `args`) and
+    call `exit()`, the Exit button's path: the main loop ends, `main()` runs `shutdownApplicationRuntime()` (modules
+    unloaded, every thread joined, configs saved, Lua closed) and then `g_app.relaunchIfRequested()` starts the new
+    process (`posix_spawn` with the environment on Linux/macOS; `CreateProcessW` of `GetModuleFileNameW`, its folder
+    as working dir and arguments quoted for `CommandLineToArgvW` on Windows) and returns; `main()` returns 0. A
+    failed relaunch prints to stderr only (no Lua or logger callbacks are left) and the client stays closed. Browser
+    and Android unchanged. Lua: `g_app.canRestart()` (true) for feature detection (the updater restarts only on an exe
+    that has it, `MANIFEST.md` "Signed updater") and `g_app.isRestartRequested()`. `boost/process.hpp` is no longer
+    included in `application.cpp`. `init.lua`: `Services.update.baseline = 0`, the update version of the package's
+    own files, written by `tools/set_update_config.py --baseline` (the workflow's run number); the updater never
+    applies a manifest below it. Needs a new client build (exe): build 12. Applies after `0001`-`0100` (full chain on
+    the base archive, `patch` clean, no fuzz in the changed files); the three changed C++ files pass
+    `g++ -std=c++17 -fsyntax-only` against the patched tree (the Linux side; the Windows branch was not compiled here,
+    its argument quoting was checked on its own). Not built or run in a client.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
