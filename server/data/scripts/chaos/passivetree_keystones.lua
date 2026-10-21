@@ -726,7 +726,8 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 		local m = K.immovableFactor(player:getHealth(), player:getMaxHealth())
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
 	end
-	if b.ksShadowTwin then -- Shadow Twin's price: every hit taken
+	-- Shadow Twin's price: every hit taken (a hit a mana shield took paid it in the mana event, manashield.lua)
+	if b.ksShadowTwin and not ChaosManaShield.scaled(player, attacker, "shadowtwin") then
 		local m = CK.shadowTwinTaken()
 		pd, sd = K.scale(pd, m), K.scale(sd, m)
 	end
@@ -909,6 +910,17 @@ local function attack(player, b, creature, pd, pt, sd, st, origin)
 	end
 	return pd, sd
 end
+
+-- the mana shield part of a hit (manashield.lua): Shadow Twin's price
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("shadowtwin", {
+	hit = function(player, attacker, amount)
+		local b = K.depth == 0 and ChaosPassiveCache[player:getId()]
+		return (b and b.ksShadowTwin) and K.scale(amount, CK.shadowTwinTaken()) or nil
+	end
+})
 
 local event = CreatureEvent("ChaosKeystones")
 function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)

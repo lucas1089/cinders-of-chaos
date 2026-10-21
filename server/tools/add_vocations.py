@@ -37,14 +37,15 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    clubs, the Templar line one-handed swords and clubs.)
    The Necromancer line (Necromancer, Lich, Bone Lord) wields and wears what the Mystic does: every <wand> and every
    equip event whose list names a caster (Mystic, Elementalist, Illusionist). The stock healing and support instants
-   of the Mystic in spells.xml get it too (healing, haste, magic shield, light, cures, party spells; not rune
-   conjuring, not the stock summon, which would bypass the minion caps, not other classes' custom spells).
+   of the Mystic in spells.xml get it too (healing, haste, light, cures, party spells; not rune conjuring, not the
+   stock summon, which would bypass the minion caps, not the magic shield, not other classes' custom spells).
    A list that already names the line's base class is left as it is, so every run after the first changes nothing.
    The quiver block of movements.xml (patch_base_archery.py) is left alone: only the launcher classes wear a quiver.
    So is the unique equip block (install_unique_equip.py): its lists come from the uniques' own rules.
    The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
    light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
    strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
+   The magic shield (Ward of the Mind) gets the Mystic and Ranger lines (owner 2026-10-21) and never the Necromancer.
 4. data/actions/scripts/other/potions.lua: every class drinks the potions of its role (docs/CLASSES.md, POTION_RULES):
    a list that names the Elite Knight (8) also gets the Berserker (14), one that names the Royal Paladin (7) the
    Beastmaster (15), the Thief line (11, 12, 13) and the Monk line (17, 18, 19), one that names either the Templar line
@@ -78,10 +79,12 @@ LINE = ['Thief', 'Ninja', 'Samurai']
 MONK_LINE = ['Monk', 'Shadowfist', 'Iron Sage']
 NECRO_LINE = ['Necromancer', 'Lich', 'Bone Lord']
 TEMPLAR_LINE = ['Templar', 'Inquisitor', 'Sentinel']
+MYSTIC_LINE = ['Mystic', 'Elementalist', 'Illusionist']
+RANGER_LINE = ['Ranger', 'Deadeye', 'Beastmaster']
 CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer', 'Druid', 'Elder Druid')
 # the Necromancer's stock spells: the Mystic's healing / support instants, never these scripts
 NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
-NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/')
+NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/', 'magic_shield')  # magic shield: Mystic and Ranger lines only
 # the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
 # the first six; the cure spells were retired, retire_cure_spells.py): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
 # the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
@@ -94,6 +97,10 @@ LINE_STOCK_SPELLS = [
     ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),
     ('support/magic_rope.lua', 'exani tera', THIEF_MONK_TEMPLAR),
     ('support/strong_haste.lua', 'utani gran hur', (LINE, MONK_LINE)),       # the mobile lines
+    # Ward of the Mind, the classic mana shield (owner 2026-10-21: "somente pra mages e rangers"): the Mystic line keeps
+    # it (an install the 15-spell cap already cut gets it back) and the Ranger line gets it; patch_spell_cap.py CAP
+    # keeps exactly these six, the Necromancer line never gets it (NECRO_SPELL_SKIP). server/README.md "Magic Shield".
+    ('support/magic_shield.lua', 'utamo vita', (MYSTIC_LINE, RANGER_LINE)),
 ]
 
 # old name -> new names; 'B' / 'BM' mark the Berserker / Beastmaster, added only where the item allows it
@@ -312,7 +319,8 @@ def convert_file(text, kind, info):
 def add_lines(element, line=None):
     """append a class line (default the Thief line) to the <vocation> list of one XML element (text), keeping its
     indentation; the base class is shown in descriptions, the ascended classes are not. A list that names the base
-    class already is left as it is."""
+    class already is left as it is; a list that names some of its ascended classes but not the base class (the 15-spell
+    cap left the Elementalist alone) gets the missing ones only."""
     line = line or LINE
     if re.search(r'<vocation\s+name="%s"' % re.escape(line[0]), element):
         return element
@@ -321,8 +329,9 @@ def add_lines(element, line=None):
         return element
     indent = last[-1].group(1)
     at = last[-1].end()
+    have = set(names_in(element))
     lines = ''.join('\n%s<vocation name="%s"%s />' % (indent, v, '' if v == line[0] else ' showInDescription="0"')
-                    for v in line)
+                    for v in line if v not in have)
     return element[:at] + lines + element[at:]
 
 

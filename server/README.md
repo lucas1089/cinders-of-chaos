@@ -1656,7 +1656,8 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   `Chaos: spell cap`, the tag kept in the comment). The Chaos block is never touched: the Chaos spells' class lists are
   in `data/spells/chaos/spells_chaos.xml` (14 lists changed, no Chaos spell lost its last class). It must run after
   `add_vocations.py` (vocations step), which writes the class lists it cuts; on a re-run the vocations step adds nothing
-  back (its conversion runs once).
+  back (its conversion runs once). `OUTSIDE_CAP` names the stock spells kept outside the 15: Ward of the Mind (stock
+  Magic Shield, see "Magic Shield" below) for the Mystic and Ranger lines.
 * `patch_spell_ids.py` skips the retired scripts of its table (Lance of the Grave, Shatterfrost, Quakeburst, Fading Step,
   Crossfire Hex, Dread, Gravity Snare, Riftbolt, Sunder Guard); `spell_timings.csv` lost the rows of Sunder Guard,
   Earthrend, Reaver's Spin and Bramble Fan (patch_spell_timings.py refuses a script it cannot find). `spell_names.csv`
@@ -1683,6 +1684,45 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   `ironhold_wildstride_test.lua`, `class_fx_test.lua`, `start_stats_test.lua`, `newplayer_test.lua`. Checked with an
   install on a copy of the base server (the counts per class read back from the installed `spells.xml`). Not run on a
   live server.
+
+### Magic Shield (owner 2026-10-21: "quero aquele antigo, que o usuário toma dano primeiro da mana e depois da hp. somente pra mages e rangers")
+
+Ward of the Mind (spell 44, stock Magic Shield, words "tor ael") is the classic one again: the stock
+`CONDITION_MANASHIELD` of the base server, 200 s, level 14, 50 mana. Every hit goes to the mana first; only what the
+mana cannot take goes to the health (then the energy shield, before the health). No pool, no cap. The engine does the
+split (`Game::combatChangeHealth`); no Chaos patch changes it.
+
+* Who: the Mystic line (Mystic 1, Elementalist 5, Illusionist 10) and the Ranger line (Ranger 3, Deadeye 7,
+  Beastmaster 15). Before, the spell cap kept it for the Elementalist only; Rangers never had it.
+  `tools/add_vocations.py` `LINE_STOCK_SPELLS` adds the six classes (the Necromancer line is skipped,
+  `NECRO_SPELL_SKIP`); `tools/patch_spell_cap.py` `CAP` keeps them and `OUTSIDE_CAP` leaves the spell out of the 15.
+  The vocations step adds only the classes a list lacks, so an install the cap already cut is repaired with no
+  duplicate. Client: `ChaosCappedSpells["tor ael"]` and `ChaosStockSpellLines["tor ael"]` (`gen_spell_data.py`); the
+  helper's Magic Shield panel follows the spell's classes.
+* Soulward (spell 234) still gives every class 15 s of the same condition (docs/CLASSES.md).
+* Parity (`manashield_core.lua`, `manashield_config.lua`, glue `manashield.lua`): the engine runs the onManaChange events
+  on the whole hit and the onHealthChange events only on what the mana could not take. The Chaos systems that scale a
+  monster's hit on a player do it in onHealthChange, so a mana shield skipped all of them. Each now registers a provider
+  (`ChaosManaShield.provide`): monster tiers (`tiers`), boss mechanics stacks and enrage (`bossmech`), the raid sunder and
+  enrage (`raid`), the pocket boss curve (`pocketboss`), the invasion scale (`invasion`), the Vocation Trials run scale
+  and take multiplier (`trials`), Rampage (`rampage`) and Shadow Twin (`shadowtwin`). The event
+  `ChaosManaShieldMana` runs them in key order on a monster's hit on a shielded player (not healing, mana drain, a
+  self hit or a player without the condition), and the mana pays the scaled hit.
+  * The mana takes it all: the providers' side effects run (boss stacks, raid sunder, tier on-hit effects).
+  * It cannot: the hit is marked (player, attacker, time, keys; `markMs` 10 ms) and each system's health event of the
+    same hit asks `ChaosManaShield.scaled(creature, attacker, key)` and leaves the rest unscaled. A mark is consumed per
+    key, a stale one dropped, a logout clears it.
+  * Login `Chaos1ManaShieldLogin` sorts after `Chaos0MonsterDamageLogin` and before every other Chaos login event, so
+    the combat log, the arena and the death recap see the scaled hit.
+  * Not changed: reductions that live in onHealthChange (resistances, Vigil of Iron, Hollow Vessel) do not reduce the
+    mana part, as before. The Trials Mana Ward reaches only a hit with no mana left. Soulward and Ward of the Mind are
+    the same condition and do not stack.
+* **Live server (install step):** run the `vocations` and `spells` steps (or the whole `install_all.py`) and restart.
+  No database change.
+* Tests: `tests/manashield_test.lua` (split, classes against the tools and the client data, providers, marks, the glue
+  on a mocked engine flow), the mana shield checks of `monster_tiers_test`, `boss_mechanics_test`, `raid_test`,
+  `pocketboss_test`, `invasion_test`, `trials_flow_test`, `archetypes_test`, `class_keystones_test`,
+  `tools/patch_spell_cap_test.py`. Not run on a live server.
 
 ### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
 

@@ -1105,6 +1105,11 @@ eq(hitBy(ram, target, 1000), 1180, "rampage: 3 kills, 18% more damage")
 ram.c.events.ChaosArchetypesHit = true
 eq(math.abs(hitEv.onHealthChange(ram, target, -1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 1120,
 	"rampage: 12% more damage taken")
+-- the mana shield part (manashield.lua): the same 12%; the rest of a hit the mana event scaled is not scaled again
+eq(ChaosManaShield.providers.rampage.hit(ram, target, 1000), 1120, "rampage: the mana shield part takes 12% more too")
+ChaosManaShield.mark(ram:getId(), target:getId(), ChaosManaShield.now(), {"rampage"})
+eq(math.abs(hitEv.onHealthChange(ram, target, -500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)), 500,
+	"rampage: the rest of a mana shield hit")
 local pet = mk("monster", {hp = 100, pos = P(2202, 2200)})
 pet.c.master = ram
 pet.c.events.ChaosArchetypesHit = true

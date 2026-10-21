@@ -1194,16 +1194,26 @@ function bossDeath.onDeath(creature, corpse)
 end
 bossDeath:register()
 
--- the hits of the pocket's monsters x the damage curve; a lethal hit is caught (catchLethal)
+-- the damage curve of a pocket monster's hit on a player of its run; nil for any other hit
+local function pocketHitMult(creature, attacker)
+	local run = PB.runOf[creature:getId()]
+	if not run or run.state ~= "running" or not attacker or not attacker:isMonster()
+		or PB.isPocketMonster(attacker) ~= run then
+		return nil
+	end
+	return K.scale(run.settings.damage, run.size)
+end
+
+-- the hits of the pocket's monsters x the damage curve; a lethal hit is caught (catchLethal). A hit a mana shield took
+-- was scaled by the mana event already (manashield.lua): the rest is left as it is.
 local playerHit = CreatureEvent("ChaosPocketBossPlayerHit")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	local run = PB.runOf[creature:getId()]
 	if not run or run.state ~= "running" or primaryType == COMBAT_HEALING then
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local fromRun = attacker and attacker:isMonster() and PB.isPocketMonster(attacker) == run
-	if fromRun then
-		local mult = K.scale(run.settings.damage, run.size)
+	local mult = pocketHitMult(creature, attacker)
+	if mult and not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "pocketboss")) then
 		primaryDamage = math.floor(primaryDamage * mult)
 		if secondaryType ~= COMBAT_HEALING then
 			secondaryDamage = math.floor(secondaryDamage * mult)
@@ -1228,6 +1238,17 @@ function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 playerHit:register()
+
+-- the mana shield part of the hit (manashield.lua): the same damage curve
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("pocketboss", {
+	hit = function(player, attacker, amount)
+		local mult = pocketHitMult(player, attacker)
+		return mult and math.floor(amount * mult) or nil
+	end
+})
 
 local prepare = CreatureEvent("ChaosPocketBossPrepareDeath")
 function prepare.onPrepareDeath(creature, killer)

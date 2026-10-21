@@ -548,6 +548,15 @@ do
 		areaName = "Cinderhold", bossName = "Orc Leader"})
 	eq(asked[1], "Orc Leader", "no type recorded (an older reward): the boss name")
 	ChaosLoot = nil
+	-- the mana shield part (manashield.lua): an invader's damage scale, nothing while no invasion runs
+	local invShield = ChaosManaShield.providers.invasion
+	local invader = {isMonster = function() return true end, getId = function() return 4242 end}
+	ChaosInvasion.invaders[4242] = {scale = {dmg = 1.5}}
+	ChaosInvasion.state.phase = "running"
+	eq(invShield.hit(player, invader, 100), 150, "mana shield part: the invader's scale")
+	ChaosInvasion.state.phase = "idle"
+	eq(invShield.hit(player, invader, 100), nil, "no invasion: does not apply")
+	ChaosInvasion.invaders[4242] = nil
 	setmetatable(_G, nil)
 end
 

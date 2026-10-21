@@ -201,6 +201,11 @@ pd = ev.onHealthChange(mob, thief, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, 
 eq(pd, 850, "not poisoned: x0.85"); eq(#dealt, 0, "no shadow on a failed roll")
 local taken = ev.onHealthChange(thief, mob, 1000, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE)
 eq(taken, 1060, "Shadow Twin: 6% more damage taken")
+-- the mana shield part (manashield.lua): the same 6%; the rest of a hit the mana event scaled is not scaled again
+eq(ChaosManaShield.providers.shadowtwin.hit(thief, mob, 1000), 1060, "Shadow Twin: the mana shield part takes 6% more")
+ChaosManaShield.mark(thief:getId(), mob:getId(), ChaosManaShield.now(), {"shadowtwin"})
+eq(ev.onHealthChange(thief, mob, 500, COMBAT_PHYSICALDAMAGE, 0, COMBAT_NONE, ORIGIN_MELEE), 500,
+  "Shadow Twin: the rest of a mana shield hit")
 thief.slots[CONST_SLOT_LEFT] = item(501, WEAPON_WAND); dealt = {}
 math.random = function() return 1 end
 pd = ev.onHealthChange(mob, thief, 1000, COMBAT_ENERGYDAMAGE, 0, COMBAT_NONE, ORIGIN_RANGED); runEvents()

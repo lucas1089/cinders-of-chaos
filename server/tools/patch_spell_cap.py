@@ -8,7 +8,8 @@ Owner decision (2026-10-20, "mysthic tem magias demais. abaixe pra 15. faça iss
 and ascension (docs/CLASSES.md vocation ids) can learn and cast at most 15 spells: attack, healing and support, the
 stock spells it kept and the Chaos spells. Not counted (UNIVERSAL below): the 15 spells every character shares (light,
 great light, find person, rope, levitate, haste, Town Portal, Flickerdash, Hunter's Instinct, the four vigils, Banner
-Call, Soulward) and Radiant Lantern (a light spell like the other two). An ascension's 15 include the base spells it keeps. The kits per class are in
+Call, Soulward) and Radiant Lantern (a light spell like the other two), nor Ward of the Mind (OUTSIDE_CAP: the classic
+mana shield of the Mystic and Ranger lines, owner 2026-10-21). An ascension's 15 include the base spells it keeps. The kits per class are in
 docs/CLASSES.md "Spell cap"; tests/spell_cap_test.lua counts them from the repo data.
 
 CAP names each stock instant of DATA_DIR/spells/spells.xml the cap changes, by script (rename_spells.py never changes a
@@ -35,6 +36,9 @@ UNIVERSAL = ("Town Portal", "Bloodtrail", "Lantern", "Greater Lantern", "Ghost R
              "Hunter's Instinct", "Flickerdash", "Vigil of Clarity", "Vigil of Haste", "Vigil of Iron", "Vigil of Wrath",
              "Banner Call", "Soulward", "Radiant Lantern")
 MAX_SPELLS = 15
+# kept by some classes but not counted in their 15 (owner 2026-10-21: the classic Magic Shield back "somente pra mages e
+# rangers"; add_vocations.py LINE_STOCK_SPELLS gives it to the Mystic and Ranger lines, CAP keeps exactly those six)
+OUTSIDE_CAP = ("Ward of the Mind",)
 # script (relative to data/spells/scripts) -> (spell id, Chaos name, the classes that keep it; () = retired)
 CAP = {
     'healing/light_healing.lua': (1, 'Minor Mending', ('Ranger', 'Deadeye', 'Beastmaster', 'Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord')),
@@ -53,7 +57,7 @@ CAP = {
     'attack/ice_burst.lua': (40, 'Shatterfrost', ()),
     'attack/terra_burst.lua': (41, 'Quakeburst', ()),
     'attack/strong_ice_wave.lua': (43, 'Greater Glacier Fan', ()),
-    'support/magic_shield.lua': (44, 'Ward of the Mind', ('Elementalist',)),
+    'support/magic_shield.lua': (44, 'Ward of the Mind', ('Mystic', 'Elementalist', 'Illusionist', 'Ranger', 'Deadeye', 'Beastmaster')),
     'support/invisible.lua': (45, 'Shroud of Shadows', ()),
     'support/divine_empowerment.lua': (46, 'Hallowed Ground', ('Ranger',)),
     'custom/illusionist_class/evasion.lua': (47, 'Fading Step', ()),

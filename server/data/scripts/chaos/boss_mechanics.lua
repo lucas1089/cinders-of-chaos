@@ -704,37 +704,77 @@ function bossHealth.onHealthChange(creature, attacker, primaryDamage, primaryTyp
 end
 bossHealth:register()
 
--- a player hit by a boss with a fight: the soft enrage, the empower of living adds and the debuff's stacks
-local taken = CreatureEvent("ChaosBossMechTaken")
-function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+-- the multiplier of a boss's hit on a player (the soft enrage, the empower of living adds, the debuff's stacks so far)
+-- and the fight; nil when the hit is not one of a fight's
+local function playerHitMult(creature, attacker, now)
 	local f = attacker and M.fights[attacker:getId()]
-	if not f or f.scripted or primaryType == COMBAT_HEALING or not creature:isPlayer() then
-		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	if not f or f.scripted or not creature:isPlayer() then
+		return nil
 	end
-	local now = mnow()
 	local m = G.damageDealtMult(f.st, now, liveAdds(f))
 	local d = f.profile.debuff
 	if d then
-		local guid = creature:getGuid()
-		local e = f.st.stacks[guid]
-		local stacks = G.stackDecay(e, d, now)
-		m = m * G.stackMult(d, stacks)
-		if not e or now - (e.at or 0) >= (d.everyMs or 2000) then
-			e = G.stackAdd(e, d, now)
-			f.st.stacks[guid] = e
-			if e.stacks >= 3 and e.stacks % 3 == 0 then
-				creature:sendTextMessage(orange(), Chaos.t(creature, "%s: %d stacks (+%d%% damage taken from %s).", d.label,
-					e.stacks, math.floor(d.perStack * e.stacks * 100 + 0.5), f.profile.label or f.name))
-			end
+		m = m * G.stackMult(d, G.stackDecay(f.st.stacks[creature:getGuid()], d, now))
+	end
+	return m, f
+end
+
+-- the debuff's stack of this hit (at most one per everyMs), with a message every third stack
+local function addStack(f, creature, now)
+	local d = f.profile.debuff
+	if not d then
+		return
+	end
+	local guid = creature:getGuid()
+	local e = f.st.stacks[guid]
+	if not e or now - (e.at or 0) >= (d.everyMs or 2000) then
+		e = G.stackAdd(e, d, now)
+		f.st.stacks[guid] = e
+		if e.stacks >= 3 and e.stacks % 3 == 0 then
+			creature:sendTextMessage(orange(), Chaos.t(creature, "%s: %d stacks (+%d%% damage taken from %s).", d.label,
+				e.stacks, math.floor(d.perStack * e.stacks * 100 + 0.5), f.profile.label or f.name))
 		end
 	end
-	if m ~= 1 then
+end
+
+-- a player hit by a boss with a fight: the soft enrage, the empower of living adds and the debuff's stacks. A hit a
+-- mana shield took was scaled by the mana event already (manashield.lua): the rest is left as it is.
+local taken = CreatureEvent("ChaosBossMechTaken")
+function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType == COMBAT_HEALING then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	local now = mnow()
+	local m, f = playerHitMult(creature, attacker, now)
+	if not m then
+		return primaryDamage, primaryType, secondaryDamage, secondaryType
+	end
+	addStack(f, creature, now)
+	if m ~= 1 and not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "bossmech")) then
 		primaryDamage = math.floor(primaryDamage * m)
 		secondaryDamage = math.floor(secondaryDamage * m)
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 taken:register()
+
+-- the mana shield part of the hit (manashield.lua): the same multiplier, the stack when the mana took it all
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("bossmech", {
+	hit = function(player, attacker, amount)
+		local m = playerHitMult(player, attacker, mnow())
+		return m and math.floor(amount * m) or nil
+	end,
+	absorbed = function(player, attacker)
+		local now = mnow()
+		local _, f = playerHitMult(player, attacker, now)
+		if f then
+			addStack(f, player, now)
+		end
+	end
+})
 
 -- auto attach: a monster whose shown name has a profile, at its first think (it has its id then)
 local attachEv = CreatureEvent("ChaosBossMechAttach")

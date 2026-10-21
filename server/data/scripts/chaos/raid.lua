@@ -2004,7 +2004,47 @@ function bdeath.onDeath(creature)
 end
 bdeath:register()
 
--- a raider is hit: the boss's sunder stacks and enrage, and the lethal catch (the entry hall instead of a death)
+-- the multiplier of a boss's or an add's hit on a raider (enrage, the sunder stacks so far), with the run, the fight and
+-- the monster's entry; nil when the hit is not one of the fight's
+local function raidHitMult(creature, attacker)
+	local run = X.runOf[creature:getId()]
+	local f = run and run.players[creature:getId()] and run.fight
+	if not f or not attacker or run.scripted then
+		return nil
+	end
+	local x = run.mons[attacker:getId()]
+	if not x or (x.kind ~= "boss" and x.kind ~= "add") then
+		return nil
+	end
+	local cfg = C()
+	local mult = K.damageMult(cfg, f.enraged)
+	local sunder = x.kind == "boss" and K.mechSet(cfg.bosses[f.idx], f.phase).sunder
+	if sunder then
+		mult = mult * K.sunderMult(cfg, K.sunderStacks(f.sunder, creature:getId()))
+	end
+	return mult, run, f, sunder
+end
+
+-- a boss's melee hit on its target adds a sunder stack
+local function sunderStep(run, f, creature, attacker, origin)
+	if origin ~= ORIGIN_MELEE then
+		return
+	end
+	local target = attacker:getTarget()
+	if target and target:getId() == creature:getId() then
+		K.sunderHit(f.sunder, C(), creature:getId(), mnow())
+		local cid = creature:getId()
+		addEvent(function()
+			local r, c = X.runOf[cid], Player(cid)
+			if r == run and c and r.fight == f then
+				sunderAfterHit(r, c)
+			end
+		end, 0)
+	end
+end
+
+-- a raider is hit: the boss's sunder stacks and enrage, and the lethal catch (the entry hall instead of a death). A hit
+-- a mana shield took was scaled by the mana event already (manashield.lua): the rest is left as it is.
 local phit = CreatureEvent("ChaosRaidPlayerHit")
 function phit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	local run = X.runOf[creature:getId()]
@@ -2012,30 +2052,13 @@ function phit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	if not e or pt == COMBAT_HEALING then
 		return pd, pt, sd, st
 	end
-	local cfg = C()
 	local p, s = math.abs(pd), (st == COMBAT_HEALING) and 0 or math.abs(sd)
-	local f = run.fight
-	if f and attacker and not run.scripted then
-		local x = run.mons[attacker:getId()]
-		if x and (x.kind == "boss" or x.kind == "add") then
-			local mult = K.damageMult(cfg, f.enraged)
-			if x.kind == "boss" and K.mechSet(cfg.bosses[f.idx], f.phase).sunder then
-				local stacks = K.sunderStacks(f.sunder, creature:getId())
-				mult = mult * K.sunderMult(cfg, stacks)
-				if origin == ORIGIN_MELEE then
-					local target = attacker:getTarget()
-					if target and target:getId() == creature:getId() then
-						K.sunderHit(f.sunder, cfg, creature:getId(), mnow())
-						local cid = creature:getId()
-						addEvent(function()
-							local r, c = X.runOf[cid], Player(cid)
-							if r == run and c and r.fight == f then
-								sunderAfterHit(r, c)
-							end
-						end, 0)
-					end
-				end
-			end
+	local mult, _, f, sunder = raidHitMult(creature, attacker)
+	if mult then
+		if sunder then
+			sunderStep(run, f, creature, attacker, origin)
+		end
+		if not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "raid")) then
 			p, s = math.floor(p * mult), math.floor(s * mult)
 		end
 	end
@@ -2050,6 +2073,23 @@ function phit.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	return signed(p, pd), pt, (st == COMBAT_HEALING) and sd or signed(s, sd ~= 0 and sd or pd), st
 end
 phit:register()
+
+-- the mana shield part of the hit (manashield.lua): the same multiplier, the sunder stack when the mana took it all
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("raid", {
+	hit = function(player, attacker, amount)
+		local mult = raidHitMult(player, attacker)
+		return mult and math.floor(amount * mult) or nil
+	end,
+	absorbed = function(player, attacker, amount, ctx)
+		local mult, run, f, sunder = raidHitMult(player, attacker)
+		if mult and sunder then
+			sunderStep(run, f, player, attacker, ctx.origin)
+		end
+	end
+})
 
 -- the lethal catch: the entry hall, healed; out of the fight until it ends
 function X.fall(pid)

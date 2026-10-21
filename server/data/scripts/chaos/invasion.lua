@@ -1212,6 +1212,13 @@ end
 death:register()
 
 -- on players: the invaders' damage scaling, and healing done to other players inside the area
+-- an invader's damage scale (nil: not an invader, or no scale)
+local function invaderHitMult(attacker)
+	local info = attacker and attacker:isMonster() and V.invaders[attacker:getId()]
+	local m = info and info.scale and info.scale.dmg
+	return (m and m ~= 1) and m or nil
+end
+
 local playerHit = CreatureEvent("ChaosInvasionPlayer")
 function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if state.phase == "idle" or not attacker then
@@ -1228,14 +1235,26 @@ function playerHit.onHealthChange(creature, attacker, primaryDamage, primaryType
 		end
 		return primaryDamage, primaryType, secondaryDamage, secondaryType
 	end
-	local info = attacker:isMonster() and V.invaders[attacker:getId()]
-	if info and info.scale and info.scale.dmg and info.scale.dmg ~= 1 then
-		primaryDamage = math.floor(primaryDamage * info.scale.dmg)
-		secondaryDamage = math.floor(secondaryDamage * info.scale.dmg)
+	-- a hit a mana shield took was scaled by the mana event already (manashield.lua): the rest is left as it is
+	local mult = invaderHitMult(attacker)
+	if mult and not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "invasion")) then
+		primaryDamage = math.floor(primaryDamage * mult)
+		secondaryDamage = math.floor(secondaryDamage * mult)
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 playerHit:register()
+
+-- the mana shield part of the hit (manashield.lua): the same scale
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("invasion", {
+	hit = function(player, attacker, amount)
+		local mult = state.phase ~= "idle" and invaderHitMult(attacker)
+		return mult and math.floor(amount * mult) or nil
+	end
+})
 
 local login = CreatureEvent("ChaosInvasionLogin")
 function login.onLogin(player)

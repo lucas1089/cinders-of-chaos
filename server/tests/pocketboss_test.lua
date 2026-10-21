@@ -597,6 +597,13 @@ local dmg = hit(a, bossM, -1000, 1, 0, 1, 0)
 eq(dmg, -500, "a solo pocket: the boss hits for half")
 local norm = hit(a, newMonster("Rat", pos(50, 50, 7)), -100, 1, 0, 1, 0)
 eq(norm, -100, "other monsters untouched")
+-- the mana shield part (manashield.lua): the same curve; the rest of a hit the mana event scaled is not scaled again
+local msp = ChaosManaShield.providers.pocketboss
+eq(msp.hit(a, bossM, 1000), 500, "mana shield part: the boss's curve")
+eq(msp.hit(a, newMonster("Rat", pos(50, 50, 7)), 100), nil, "mana shield part: other monsters do not apply")
+ChaosManaShield.mark(a:getId(), bossM:getId(), ChaosManaShield.now(), {"pocketboss"})
+eq(hit(a, bossM, -300, 1, 0, 1, 0), -300, "the rest of a mana shield hit is left as it is")
+eq(hit(a, bossM, -300, 1, 0, 1, 0), -150, "the next hit is scaled")
 -- experience of a pocket monster x0.6
 local xp = callbacks.onGainExperience[1].fn
 math.randomseed(1)

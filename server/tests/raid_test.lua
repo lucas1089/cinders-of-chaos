@@ -993,6 +993,17 @@ for k = 1, 4 do
 end
 eq(K.sunderStacks(run.fight.sunder, tank.id), 4, "four stacks of Sundered")
 eq(boss.target, off, "the boss turns to the fresh tank")
+-- the mana shield part (manashield.lua): the sunder stacks scale it; the rest of a hit the mana event scaled is not
+-- scaled again
+eq(ChaosManaShield.providers.raid.hit(tank, boss, 1000), math.floor(1000 * K.sunderMult(cfg, 4)),
+	"mana shield part: the four stacks")
+tank.hp = tank.maxhp
+ChaosManaShield.mark(tank:getId(), boss.id, ChaosManaShield.now(), {"raid"})
+melee(boss, tank, 300)
+eq(tank.lastHit, 300, "the rest of a mana shield hit is not scaled again")
+melee(boss, tank, 300)
+eq(tank.lastHit, math.floor(300 * K.sunderMult(cfg, 4)), "the next hit is")
+tank.hp = tank.maxhp
 local items = X.buffItems(tank, "debuff")
 check(items and items[1].key == "raid_sunder" and items[1].stacks == 4, "the buff bar shows the stacks")
 -- the off tank takes four too, the first tank walks away: the verdict

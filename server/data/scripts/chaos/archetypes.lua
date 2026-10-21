@@ -675,12 +675,13 @@ end
 local reflecting = false
 
 -- Rampage's extra damage taken and Last Stand: the hit (pd, sd <= 0) on a player holding either keystone. Last Stand is
--- not used against players (PvP).
+-- not used against players (PvP). A hit a mana shield took got Rampage's multiplier in the mana event already
+-- (manashield.lua): the rest is left as it is.
 function M.warriorDefence(player, flags, attacker, pd, sd)
 	local pid = player:getId()
 	local t = now()
 	local s = stateOf(pid)
-	if flags.arRampage then
+	if flags.arRampage and not (attacker and ChaosManaShield and ChaosManaShield.scaled(player, attacker, "rampage")) then
 		local stacks = A.rampageStacks(s.rampage, t)
 		if stacks > 0 then
 			local m = A.rampageTaken(stacks)
@@ -1020,6 +1021,24 @@ local function attack(player, flags, creature, pd, pt, sd, st, origin, critical)
 	end
 	return pd, sd
 end
+
+-- the mana shield part of a hit (manashield.lua): Rampage's extra damage taken
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("rampage", {
+	hit = function(player, attacker, amount)
+		if ChaosKeystones.depth > 0 then
+			return nil
+		end
+		local flags = flagsOf(player:getId())
+		if not flags or not flags.arRampage then
+			return nil
+		end
+		local stacks = A.rampageStacks(stateOf(player:getId()).rampage, now())
+		return stacks > 0 and A.scale(amount, A.rampageTaken(stacks)) or amount
+	end
+})
 
 local hit = CreatureEvent("ChaosArchetypesHit")
 function hit.onHealthChange(creature, attacker, pd, pt, sd, st, origin, critical)

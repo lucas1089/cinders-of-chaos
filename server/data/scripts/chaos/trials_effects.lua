@@ -169,7 +169,8 @@ local function bonusesOf(player)
 end
 
 -- ---------------------------------------------------------------- the player is hit
-local function defend(player, b, attacker, pd, pt, sd, st, origin)
+-- scaled: the mana shield's event applied the take multiplier to this hit already (manashield.lua)
+local function defend(player, b, attacker, pd, pt, sd, st, origin, scaled)
 	local kind = originKind(origin)
 	local total = math.abs(pd) + math.abs(sd)
 	if kind == "melee" or kind == "ranged" then
@@ -178,7 +179,7 @@ local function defend(player, b, attacker, pd, pt, sd, st, origin)
 			return 0, 0
 		end
 	end
-	local m = M.takeMultiplier(b, {origin = kind, ctype = TYPE_NAME[pt], hpRatio = ratio(player)})
+	local m = scaled and 1 or M.takeMultiplier(b, {origin = kind, ctype = TYPE_NAME[pt], hpRatio = ratio(player)})
 	if m ~= 1 then
 		pd, sd = M.scaleDamage(pd, m), M.scaleDamage(sd, m)
 		total = math.abs(pd) + math.abs(sd)
@@ -280,12 +281,14 @@ function event.onHealthChange(creature, attacker, pd, pt, sd, st, origin)
 	if creature:isPlayer() then
 		-- the Trial's own scaling first (its monsters hit for a share of the maximum health)
 		local hooks = T.hooks
-		if hooks.preHit and attacker then
+		-- a hit a mana shield took was scaled by the mana event already (manashield.lua): the rest is left as it is
+		local scaled = attacker and ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "trials")
+		if hooks.preHit and attacker and not scaled then
 			pd, sd = hooks.preHit(creature, attacker, pd, pt, sd, st, origin)
 		end
 		local b = bonusesOf(creature)
 		if b and (not attacker or attacker:getId() ~= creature:getId()) then
-			pd, sd = defend(creature, b, attacker, pd, pt, sd, st, origin)
+			pd, sd = defend(creature, b, attacker, pd, pt, sd, st, origin, scaled)
 		end
 		-- the lethal-hit catch of a Trial comes last
 		if hooks.catch then
@@ -336,6 +339,34 @@ end
 targetCb:register(1)
 
 -- ---------------------------------------------------------------- kills
+-- the mana shield part of a hit (manashield.lua): inside a Trial the run's own scaling (a share of the maximum health,
+-- 0 while the fallen player is shielded), then the nodes' take multiplier; the evade, the Mana Ward, reflect and last
+-- stand stay with the health part (the engine's mana shield already pays from the mana)
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("trials", {
+	hit = function(player, attacker, amount, ctx)
+		local inRun = T.runs and T.runs[player:getId()]
+		local b = bonusesOf(player)
+		if not inRun and not b then
+			return nil
+		end
+		local pd, sd = -amount, 0
+		if inRun and T.hooks.preHit then
+			pd, sd = T.hooks.preHit(player, attacker, pd, ctx.primaryType, sd, ctx.secondaryType, ctx.origin)
+		end
+		if b then
+			local m = M.takeMultiplier(b, {origin = originKind(ctx.origin), ctype = TYPE_NAME[ctx.primaryType],
+				hpRatio = ratio(player)})
+			if m ~= 1 then
+				pd, sd = M.scaleDamage(pd, m), M.scaleDamage(sd, m)
+			end
+		end
+		return math.abs(pd) + math.abs(sd)
+	end
+})
+
 local kill = CreatureEvent("ChaosTrialKill")
 function kill.onKill(player, target)
 	local b = bonusesOf(player)

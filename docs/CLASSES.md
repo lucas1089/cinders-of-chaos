@@ -250,12 +250,12 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Warrior | 27 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Vaulting Cleave 170, Colossus Fall 260, Headsman's Hurl 300 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Ironhold 55, Bloodlust 60, Red Frenzy 100, Iron Bellow 120 |
 | Juggernaut | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Colossus Fall 260, Headsman's Hurl 300, Anvil Fall 460 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Taunt of Iron 20, Ironhold 55, Iron Bellow 120, Bastion Cry 340 |
 | Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 100, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
-| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
-| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140 |
-| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Blessed Earth 100, Feral Command 110, Pack Frenzy 380 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
-| Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 20, Blightswarm 25, Witchfire Bolt 30, Arcane Ripple 40, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 40 | Galeborne Stride 20, Ironbark Hide 60 |
-| Elementalist | 45 | 15 | Kindling Spark 8, Rime Bloom 20, Witchfire Bolt 30, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14, Galeborne Stride 20, Crimson Covenant 90 |
-| Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 40, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 40, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
+| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
+| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Blessed Earth 100, Feral Command 110, Pack Frenzy 380 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Ward of the Mind 14*, Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 20, Blightswarm 25, Witchfire Bolt 30, Arcane Ripple 40, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 40 | Ward of the Mind 14*, Galeborne Stride 20, Ironbark Hide 60 |
+| Elementalist | 45 | 14 | Kindling Spark 8, Rime Bloom 20, Witchfire Bolt 30, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14*, Galeborne Stride 20, Crimson Covenant 90 |
+| Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 40, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 40, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Ward of the Mind 14*, Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
 | Thief | 10 | 10 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Fan of Knives 80 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60 |
 | Ninja | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Shadow Step 100, Shuriken Barrage 180, Shuriken Tempest 360 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Smoke Bomb 130 |
 | Samurai | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Iaijutsu 120, Iaido Sweep 200 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Counter Stance 100, Bushido Focus 150 |
@@ -268,6 +268,10 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Templar | 4 | 4 | Radiant Smite 8, Consecration 40, Sanctified Ground 60 | Vow of Mending 30 |  |
 | Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 40, Judgement 100, Purging Nova 120 | Vow of Mending 30 | Zealotry 150 |
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 40, Shield Wave 150 | Vow of Mending 30, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
+
+* Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
+  outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers"): the Mystic
+  and Ranger lines have it, no other class. Soulward (level 80, 15 s) stays every class's short mana shield.
 
 Dropped, per line (each spell left the classes named; "retired" = no class keeps it):
 - Warrior line: Minor Mending, Warhorse Rush, Cyclone Hurl, Martial Communion, Earthrend, Reaver's Spin, Rending Mark,
@@ -283,7 +287,8 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
   Shatterfrost), the marks and hexes (Smoulder Brand, Galvanic Mark, Blackroot Venom, Hex of Withering, Skyfang, Crossfire
   Hex, Dread, Fading Step, Gravity Snare, Sunder Guard), Arcane Stitch, Deep Mending, Kindred Mend, Circle of Mending,
   Heartwood Embrace, Skinchanger's Guise, Call Thrall, Shroud of Shadows and the communions (all retired); Rebirth of
-  Flesh (the Necromancer line keeps it); Ward of the Mind (the Elementalist keeps it: Soulward is everyone's mana shield).
+  Flesh (the Necromancer line keeps it). Ward of the Mind left the Mystic and the Illusionist on 2026-10-20 and
+  came back outside the cap on 2026-10-21 (*).
   Between the three classes: the Mystic left Forked Storm, Crimson Covenant, Pyre Torrent, Tempest Fan (Elementalist),
   Hall of Mirrors, Wraithshroud (Illusionist); the Illusionist left Grand Mending, Galeborne Stride, Blightswarm, Ironbark
   Hide, Umbral Stride, Briar Prison (Mystic).

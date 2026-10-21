@@ -547,36 +547,69 @@ function taken.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 end
 taken:register()
 
--- damage dealt TO players by a tiered monster (tier and modifier multipliers, on-hit effects)
+-- the damage multiplier of a tiered monster's hits (tier x modifiers); nil for a monster without a tier
+local function tierHitMult(attacker)
+	local s = state[attacker:getId()]
+	if not s then
+		return nil
+	end
+	local mult = ChaosTiers[s.tier].damage
+	for _, key in ipairs(s.mods or {}) do
+		local d = ChaosMods[key].damage
+		if type(d) == "function" then
+			d = d(attacker)
+		end
+		mult = mult * (d or 1.0)
+	end
+	return mult, s
+end
+
+-- the modifiers' on-hit effects of a hit that landed on a player
+local function tierOnHit(s, attacker, creature, total)
+	for _, key in ipairs(s.mods or {}) do
+		local mod = ChaosMods[key]
+		if mod.onHit then
+			mod.onHit(attacker, creature, total)
+		end
+	end
+end
+
+-- damage dealt TO players by a tiered monster (tier and modifier multipliers, on-hit effects). A hit a mana shield took
+-- was scaled by the mana event already (manashield.lua): the rest is left as it is.
 local hit = CreatureEvent("ChaosTierHit")
 function hit.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
 	if attacker and attacker:isMonster() then
-		local s = state[attacker:getId()]
-		if s then
-			local mult = ChaosTiers[s.tier].damage
-			for _, key in ipairs(s.mods or {}) do
-				local d = ChaosMods[key].damage
-				if type(d) == "function" then
-					d = d(attacker)
-				end
-				mult = mult * (d or 1.0)
+		local mult, s = tierHitMult(attacker)
+		if mult then
+			if not (ChaosManaShield and ChaosManaShield.scaled(creature, attacker, "tiers")) then
+				primaryDamage = math.floor(primaryDamage * mult)
+				secondaryDamage = math.floor(secondaryDamage * mult)
 			end
-			primaryDamage = math.floor(primaryDamage * mult)
-			secondaryDamage = math.floor(secondaryDamage * mult)
 			if creature:isPlayer() then
-				local total = math.abs(primaryDamage) + math.abs(secondaryDamage)
-				for _, key in ipairs(s.mods or {}) do
-					local mod = ChaosMods[key]
-					if mod.onHit then
-						mod.onHit(attacker, creature, total)
-					end
-				end
+				tierOnHit(s, attacker, creature, math.abs(primaryDamage) + math.abs(secondaryDamage))
 			end
 		end
 	end
 	return primaryDamage, primaryType, secondaryDamage, secondaryType
 end
 hit:register()
+
+-- the mana shield part of the hit (manashield.lua): the same multiplier, the on-hit effects when the mana took it all
+if not ChaosManaShield or not ChaosManaShield.provide then
+	dofile("data/scripts/chaos/manashield_core.lua")
+end
+ChaosManaShield.provide("tiers", {
+	hit = function(player, attacker, amount)
+		local mult = attacker:isMonster() and tierHitMult(attacker)
+		return mult and math.floor(amount * mult) or nil
+	end,
+	absorbed = function(player, attacker, amount)
+		local _, s = tierHitMult(attacker)
+		if s then
+			tierOnHit(s, attacker, player, amount)
+		end
+	end
+})
 
 local login = CreatureEvent("ChaosTierLogin")
 function login.onLogin(player)
