@@ -6,14 +6,21 @@
   python3 -I client/tools/pack_client.py verify OUT.pack  GAME_DIR [--key-env ... | --key ...]
 
 The pack is a deterministic store-only ZIP of the assembled client tree (init.lua, data/, modules/, mods/, layouts/),
-encrypted as one blob with AES-256-GCM. The key is derived with HKDF-SHA256 from the client guard build secret
-CHAOS_CLIENT_KEY (client/BASE.md "Client guard"); without the secret the public DEVELOPMENT key is used and the pack
-is marked dev. The engine decrypts it with the same key (src/framework/util/chaospack.h, base patch 0102) and mounts
-it from memory, so modules keep reading files through g_resources unchanged. This deters copying; it does not stop a
-determined reverse engineer (the key is in the binary, obfuscated the way chaosguard_key.h is).
+compressed as one zlib stream (level 9) and encrypted as one blob with AES-256-GCM (format version 2; compressing first
+keeps the download near the size of a plain zip, encrypted bytes do not compress). The key is derived with HKDF-SHA256
+from the client guard build secret CHAOS_CLIENT_KEY (client/BASE.md "Client guard"); without the secret the public
+DEVELOPMENT key is used and the pack is marked dev. The engine streams it through AES-256-GCM and inflate with the same
+key into one buffer of the ZIP's size (src/framework/util/chaospack.h, base patch 0102) and mounts it from memory, so
+modules keep reading files through g_resources unchanged. This deters copying; it does not stop a determined reverse
+engineer (the key is in the binary, obfuscated the way chaosguard_key.h is).
 
-Determinism: the ZIP entries are sorted, stored (not deflated) with a fixed timestamp, and the GCM nonce is derived
-from the plaintext (HMAC-SHA256), so the same tree and key always give the same bytes. Writable per-user files
+Format: header (28 bytes: magic "CHPK", version 2, flags with the development-key bit, 2 reserved, 12-byte nonce, the
+UNCOMPRESSED ZIP length as u64 little endian; it is the GCM additional data) | AES-256-GCM(zlib stream) | 16-byte tag.
+
+Determinism: the ZIP entries are sorted, stored (not deflated) with a fixed timestamp, the zlib level is fixed and the
+GCM nonce is HMAC-SHA256 of the zlib stream (the bytes GCM encrypts, so two different ciphertexts never share a nonce
+even if another zlib build compresses differently), so the same tree and key always give the same bytes with one zlib
+build. The members stay stored so PhysFS reads them straight from the mounted buffer. Writable per-user files
 (config.otml, the updater tree, logs, screenshots) are never packed; they live in the user write directory.
 """
 import argparse
@@ -24,15 +31,18 @@ import os
 import struct
 import sys
 import zipfile
+import zlib
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 MAGIC = b"CHPK"
-VERSION = 1
-HEADER_LEN = 28  # magic(4) ver(1) flags(1) reserved(2) nonce(12) plaintext_len(8)
+VERSION = 2  # 2: zlib stream of the ZIP, then AES-256-GCM. Version 1 (store-only, never released) is refused.
+HEADER_LEN = 28  # magic(4) ver(1) flags(1) reserved(2) nonce(12) plaintext_len(8) (the uncompressed ZIP length)
 TAG_LEN = 16
 NONCE_LEN = 12
 FLAG_DEV = 0x01
+ZLIB_LEVEL = 9
+MAX_RATIO = 1032  # deflate never expands more than this; the engine refuses a header that claims more
 
 # The public development key, byte-for-byte the CMake default (src/client/CMakeLists.txt, base patch 0035): the bytes
 # of "DEV-KEY-cinders-of-chaos-UNSAFE!". A build with no CHAOS_CLIENT_KEY uses it, and so does the pack; a production
@@ -124,14 +134,29 @@ def build_zip(game_dir, extra=()):
 
 
 def encrypt_pack(plaintext, client_key, is_dev=False):
+    """plaintext (the ZIP) -> pack: zlib level 9, nonce = HMAC(nonce key, the zlib stream), AES-256-GCM."""
     enc_key, nonce_key = derive_keys(client_key)
-    nonce = hmac.new(nonce_key, plaintext, hashlib.sha256).digest()[:NONCE_LEN]
+    body = zlib.compress(plaintext, ZLIB_LEVEL)
+    nonce = hmac.new(nonce_key, body, hashlib.sha256).digest()[:NONCE_LEN]
     flags = FLAG_DEV if is_dev else 0
     header = (MAGIC + bytes([VERSION, flags]) + b"\x00\x00" + nonce +
               struct.pack("<Q", len(plaintext)))
     assert len(header) == HEADER_LEN
-    ct_and_tag = AESGCM(enc_key).encrypt(nonce, plaintext, header)
+    ct_and_tag = AESGCM(enc_key).encrypt(nonce, body, header)
     return header + ct_and_tag
+
+
+def inflate_exact(body, length):
+    """The zlib stream body -> exactly `length` bytes; ValueError when it is longer, shorter, has trailing bytes or is
+    not one complete zlib stream (the engine's checks)."""
+    d = zlib.decompressobj()
+    try:
+        out = d.decompress(body, length + 1)
+    except zlib.error as e:
+        raise ValueError("bad zlib stream: %s" % e) from None
+    if not d.eof or d.unconsumed_tail or d.unused_data or len(out) != length:
+        raise ValueError("zlib stream does not end at the declared length")
+    return out
 
 
 def decrypt_pack(pack, client_key):
@@ -146,10 +171,10 @@ def decrypt_pack(pack, client_key):
     header = pack[0:HEADER_LEN]
     ct_and_tag = pack[HEADER_LEN:]
     enc_key, _ = derive_keys(client_key)
-    plaintext = AESGCM(enc_key).decrypt(nonce, ct_and_tag, header)
-    if len(plaintext) != plaintext_len:
+    if plaintext_len > (len(ct_and_tag) - TAG_LEN) * MAX_RATIO + 1024:
         raise ValueError("length mismatch")
-    return plaintext
+    body = AESGCM(enc_key).decrypt(nonce, ct_and_tag, header)  # authenticated before it is inflated
+    return inflate_exact(body, plaintext_len)
 
 
 def _cmd_build(args):
@@ -161,8 +186,8 @@ def _cmd_build(args):
         fh.write(pack)
     os.replace(tmp, args.out)
     digest = hashlib.sha256(pack).hexdigest()
-    print("%s: %d bytes, %s key, sha256 %s" %
-          (args.out, len(pack), "DEVELOPMENT" if is_dev else "build", digest))
+    print("%s: %d bytes (ZIP %d bytes), %s key, sha256 %s" %
+          (args.out, len(pack), len(zip_bytes), "DEVELOPMENT" if is_dev else "build", digest))
 
 
 def _cmd_unpack(args):

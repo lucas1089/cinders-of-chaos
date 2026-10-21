@@ -2574,9 +2574,11 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
 
 From build 13 the client ships the whole tree (`init.lua`, `data/` with the dat/spr, `layouts/`, `modules/`, `mods/`)
 in one encrypted file, `chaos.pack`, beside the exe; nothing in the shipped folder opens in a text or sprite editor.
-`tools/pack_client.py build GAME_DIR OUT.pack` makes it (deterministic store-only ZIP, AES-256-GCM, key from the
-client guard secret via HKDF-SHA256; `unpack` / `verify` too), the engine decrypts and mounts it (base patch 0102),
-and `tools/pack_client_test.py` + `tools/chaospack_test.cpp` check the format both ways in CI. Full description,
+`tools/pack_client.py build GAME_DIR OUT.pack` makes it (pack format 2: deterministic store-only ZIP, compressed as
+one zlib stream, then AES-256-GCM, key from the client guard secret via HKDF-SHA256; `unpack` / `verify` too), the
+engine streams it through decrypt + inflate into one buffer of the ZIP's size and mounts it (base patch 0102), and
+`tools/pack_client_test.py` + `tools/chaospack_test.cpp` check the format both ways in CI. Compressing before
+encrypting keeps the download near the size of a plain zip. Full description,
 removed-files list and owner steps: `client/BASE.md` "Client packs". The signed updater below is unchanged in shape:
 it still lists and downloads individual logical files into the write-dir overlay, so an update never re-downloads the
 whole pack.

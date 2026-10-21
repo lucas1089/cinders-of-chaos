@@ -18,12 +18,16 @@ and two different files never share a nonce. The engine reads the same bytes (sr
 patch 0103; vectors in tools/chaosblob_test.cpp). Large files are handled in 8 MB blocks, never read whole.
 
 Also streams chaos.pack itself (decrypt_file with PACK), so the publisher can unpack a packed client package without
-holding the ~900 MB pack in memory twice.
+holding the pack in memory. chaos.pack is format version 2 (base patch 0102, pack_client.py): the same header with
+version 2 and the UNCOMPRESSED length, and GCM encrypts a zlib stream (level 9) of the ZIP, the nonce being the HMAC of
+that zlib stream. decrypt_file inflates it block by block and refuses a stream that is not exactly the declared length.
+Update blobs stay version 1, not compressed.
 """
 import hashlib
 import hmac
 import os
 import struct
+import zlib
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -33,8 +37,10 @@ TAG_LEN = 16
 NONCE_LEN = 12
 OVERHEAD = HEADER_LEN + TAG_LEN
 FLAG_DEV = 0x01
-VERSION = 1
+VERSION = 1  # update blobs (CHUB)
 BLOCK = 8 * 1024 * 1024
+ZLIB_LEVEL = 9
+MAX_RATIO = 1032  # deflate never expands more; a compressed header claiming more is refused before inflating
 
 # The public development key (the bytes of "DEV-KEY-cinders-of-chaos-UNSAFE!"), the same as pack_client.py and the
 # CMake default of base patch 0035. Used only with --dev (tests); a production publish refuses to run without the key.
@@ -42,14 +48,16 @@ DEV_KEY_HEX = "4445562d4b45592d63696e646572732d6f662d6368616f732d554e5341464521"
 
 
 class Format:
-    def __init__(self, magic, salt, info_enc, info_nonce):
+    def __init__(self, magic, salt, info_enc, info_nonce, version=VERSION, compressed=False):
         self.magic, self.salt, self.info_enc, self.info_nonce = magic, salt, info_enc, info_nonce
+        self.version, self.compressed = version, compressed
 
 
 # update blobs (this file's own format)
 BLOB = Format(b"CHUB", b"CindersOfChaos/update/v1", b"chaos-update-blob-aes-256-gcm", b"chaos-update-blob-nonce")
-# chaos.pack (base patch 0102), byte-identical to pack_client.py
-PACK = Format(b"CHPK", b"CindersOfChaos/pack/v1", b"chaos-pack-aes-256-gcm", b"chaos-pack-nonce")
+# chaos.pack (base patch 0102) format 2: zlib, then GCM; byte-identical to pack_client.py
+PACK = Format(b"CHPK", b"CindersOfChaos/pack/v1", b"chaos-pack-aes-256-gcm", b"chaos-pack-nonce",
+              version=2, compressed=True)
 
 
 class BlobError(ValueError):
@@ -89,39 +97,82 @@ def parse_client_keys(text):
 
 
 def _header(fmt, nonce, length, dev):
-    return fmt.magic + bytes([VERSION, FLAG_DEV if dev else 0]) + b"\x00\x00" + nonce + struct.pack("<Q", length)
+    return fmt.magic + bytes([fmt.version, FLAG_DEV if dev else 0]) + b"\x00\x00" + nonce + struct.pack("<Q", length)
 
 
 def parse_header(header, fmt=BLOB):
     """(flags, nonce, plaintext length) of a blob header; BlobError when it is not one."""
     if len(header) < HEADER_LEN or header[:4] != fmt.magic:
         raise BlobError("not an encrypted %s file" % fmt.magic.decode())
-    if header[4] != VERSION:
+    if header[4] != fmt.version:
         raise BlobError("unsupported version %d" % header[4])
     return header[5], header[8:20], struct.unpack("<Q", header[20:28])[0]
 
 
 def encrypt(plaintext, client_key, dev=False, fmt=BLOB):
+    """A compressed format (PACK) encrypts zlib(plaintext) and its nonce is the HMAC of that zlib stream; the header
+    keeps the plaintext length either way."""
     enc_key, nonce_key = derive_keys(client_key, fmt)
-    nonce = hmac.new(nonce_key, plaintext, hashlib.sha256).digest()[:NONCE_LEN]
+    inner = zlib.compress(plaintext, ZLIB_LEVEL) if fmt.compressed else plaintext
+    nonce = hmac.new(nonce_key, inner, hashlib.sha256).digest()[:NONCE_LEN]
     header = _header(fmt, nonce, len(plaintext), dev)
     e = Cipher(algorithms.AES(enc_key), modes.GCM(nonce)).encryptor()
     e.authenticate_additional_data(header)
-    body = e.update(plaintext) + e.finalize()
+    body = e.update(inner) + e.finalize()
     return header + body + e.tag
+
+
+def _check_size(fmt, size, length):
+    """the blob size the header allows: exact for a plain blob, a sane deflate ratio for a compressed one"""
+    if fmt.compressed:
+        if size <= OVERHEAD or length > (size - OVERHEAD) * MAX_RATIO + 1024:
+            raise BlobError("length mismatch")
+    elif size != HEADER_LEN + length + TAG_LEN:
+        raise BlobError("length mismatch")
+
+
+class _Inflater:
+    """zlib stream -> exactly `length` bytes, fed block by block (the engine's checks: no more and no less than the
+    header says, nothing after the end of the stream)"""
+
+    def __init__(self, length):
+        self.d, self.left = zlib.decompressobj(), length
+
+    def feed(self, data):
+        if not data:
+            return b""
+        if self.d.eof:
+            raise BlobError("wrong key or changed file")  # bytes after the end of the stream
+        try:
+            out = self.d.decompress(data, self.left + 1)
+        except zlib.error:
+            raise BlobError("wrong key or changed file") from None
+        if len(out) > self.left or self.d.unconsumed_tail or self.d.unused_data:
+            raise BlobError("wrong key or changed file")
+        self.left -= len(out)
+        return out
+
+    def finish(self):
+        if not self.d.eof or self.left:
+            raise BlobError("wrong key or changed file")
 
 
 def decrypt(blob, client_key, fmt=BLOB):
     _, nonce, length = parse_header(blob, fmt)
-    if len(blob) != HEADER_LEN + length + TAG_LEN:
-        raise BlobError("length mismatch")
+    _check_size(fmt, len(blob), length)
     enc_key, _ = derive_keys(client_key, fmt)
     d = Cipher(algorithms.AES(enc_key), modes.GCM(nonce, blob[-TAG_LEN:])).decryptor()
     d.authenticate_additional_data(blob[:HEADER_LEN])
     try:
-        return d.update(blob[HEADER_LEN:-TAG_LEN]) + d.finalize()
+        inner = d.update(blob[HEADER_LEN:-TAG_LEN]) + d.finalize()
     except InvalidTag:
         raise BlobError("wrong key or changed file") from None
+    if not fmt.compressed:
+        return inner
+    inf = _Inflater(length)
+    out = inf.feed(inner)
+    inf.finish()
+    return out
 
 
 def _blocks(f, n):
@@ -135,7 +186,10 @@ def _blocks(f, n):
 
 def encrypt_file(src, out, client_key, dev=False, fmt=BLOB):
     """Encrypts the file at src into the open binary file out, in blocks (two passes: the nonce is an HMAC of the
-    content). Returns (sha256 hex of the written blob, its size)."""
+    content). Returns (sha256 hex of the written blob, its size). Plain formats only: a pack is built by
+    pack_client.py."""
+    if fmt.compressed:
+        raise BlobError("encrypt_file writes plain blobs; build a chaos.pack with pack_client.py")
     enc_key, nonce_key = derive_keys(client_key, fmt)
     size = os.path.getsize(src)
     mac = hmac.new(nonce_key, digestmod=hashlib.sha256)
@@ -162,33 +216,41 @@ def encrypt_file(src, out, client_key, dev=False, fmt=BLOB):
 
 
 def decrypt_file(path, client_key, out=None, fmt=BLOB):
-    """Decrypts the blob at path in blocks; writes the plaintext to the open binary file out (when given). Returns
-    (flags, sha256 hex of the plaintext). BlobError on a wrong key, a changed file or a bad header; out then holds
-    unauthenticated bytes and must be thrown away."""
+    """Decrypts the blob at path in blocks (and inflates a compressed format block by block); writes the plaintext to
+    the open binary file out (when given). Returns (flags, sha256 hex of the plaintext). BlobError on a wrong key, a
+    changed file, a bad header or a zlib stream of another length; out then holds unauthenticated bytes and must be
+    thrown away."""
+    size = os.path.getsize(path)
     with open(path, "rb") as f:
         header = f.read(HEADER_LEN)
         flags, nonce, length = parse_header(header, fmt)
-        if os.path.getsize(path) != HEADER_LEN + length + TAG_LEN:
-            raise BlobError("length mismatch")
-        f.seek(HEADER_LEN + length)
+        _check_size(fmt, size, length)
+        body_len = size - OVERHEAD
+        f.seek(HEADER_LEN + body_len)
         tag = f.read(TAG_LEN)
         f.seek(HEADER_LEN)
         enc_key, _ = derive_keys(client_key, fmt)
         d = Cipher(algorithms.AES(enc_key), modes.GCM(nonce, tag)).decryptor()
         d.authenticate_additional_data(header)
+        inf = _Inflater(length) if fmt.compressed else None
         h = hashlib.sha256()
-        for b in _blocks(f, length):
-            p = d.update(b)
+
+        def emit(p):
+            if inf is not None:
+                p = inf.feed(p)
             h.update(p)
             if out is not None:
                 out.write(p)
+
+        for b in _blocks(f, body_len):
+            emit(d.update(b))
         try:
             p = d.finalize()
         except InvalidTag:
             raise BlobError("wrong key or changed file") from None
-        h.update(p)
-        if out is not None:
-            out.write(p)
+        emit(p)
+        if inf is not None:
+            inf.finish()
     return flags, h.hexdigest()
 
 

@@ -720,16 +720,20 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     its argument quoting was checked on its own). Not built or run in a client.
 72. `0102` (C++ `src/framework/util/chaospack.h` (new), `src/framework/core/resourcemanager.{h,cpp}`, `src/main.cpp`;
     `init.lua`): **the encrypted client pack** (see "Client packs" below). `mountEncryptedPack(key)` finds `chaos.pack`
-    beside the exe, decrypts it (AES-256-GCM, key from `chaosguard::builtInKey()` through HKDF-SHA256, no new secret)
-    into memory and mounts it through the existing PhysFS memory-archive path, so every module keeps reading through
-    `g_resources`. `main()` derives the key and mounts the pack before `getCompactName()` (which then reads `init.lua`
+    beside the exe and streams it (pack format 2: a zlib stream of the ZIP under AES-256-GCM, key from
+    `chaosguard::builtInKey()` through HKDF-SHA256, no new secret) through `chaospack::decryptStream()`, which decrypts
+    and inflates 4 MB at a time straight into one buffer of the ZIP's size, then mounts that buffer through the existing
+    PhysFS memory-archive path, so every module keeps reading through `g_resources`. `main()` derives the key and mounts the pack before `getCompactName()` (which then reads `init.lua`
     from the pack), wipes the key, and names the app `CindersOfChaos` so the per-user write dir (config, logs, the
     updater tree) is named after it. `setup()` and `getCompactName()` use the mounted pack; a dev tree of loose files
     (no `chaos.pack`) loads as before. `init.lua` `APP_NAME = "CindersOfChaos"`. A wrong key or a corrupt pack is
     fatal. The format and HKDF context are byte-identical to `tools/pack_client.py`; `tools/chaospack_test.cpp`
-    (OpenSSL) checks a fixed vector, a round trip, wrong-key and tamper, run in CI. Needs a new client build (exe):
+    (OpenSSL, zlib) checks a fixed vector, round trips (also a 12 MB pack read in odd pieces), wrong key, tamper,
+    truncation and the inflate length checks, run in CI. Needs a new client build (exe):
     build 13, `min_package` 13. Applies after `0001`-`0101` (full chain on the base archive, `patch` clean, no fuzz
-    in the changed files; `chaospack.h` + `chaospack_test.cpp` compile and pass with `g++ -std=c++17 -lcrypto`). The
+    in the changed files; `chaospack.h` + `chaospack_test.cpp` compile and pass with `g++ -std=c++17 -lcrypto -lz`;
+    the format-2 rewrite of 2026-10-21 applies the same way, `0103` and `0104` still apply on top with
+    `patch --fuzz=0`, and `resourcemanager.cpp` passes `g++ -std=c++17 -fsyntax-only` against the patched tree). The
     full client was **not** built or run here (no base tree / dat-spr and too little disk in the agent); the
     `resourcemanager.cpp` / `main.cpp` edits were checked by inspection against the patched tree only.
 73. `0103` (C++ `src/framework/util/chaosblob.h` (new), `src/framework/core/resourcemanager.{h,cpp}`,
@@ -753,17 +757,30 @@ The shipped client folder is just the exe and one encrypted pack, `chaos.pack`, 
 everything writable. Nothing in the folder opens in a text or sprite editor.
 
 - **`chaos.pack`** is a deterministic, store-only ZIP of the whole client tree (`init.lua`, `data/` including the
-  10.98 `Tibia.dat`/`Tibia.spr`, `layouts/`, `modules/`, `mods/`) encrypted as one blob with **AES-256-GCM** (OpenSSL,
-  already linked). Header: magic `CHPK`, version, flags (dev-key bit), a 12-byte nonce and the plaintext length; the
-  header is the GCM additional data, so any tamper fails the tag. The 32-byte key is **HKDF-SHA256** of the client
+  10.98 `Tibia.dat`/`Tibia.spr`, `layouts/`, `modules/`, `mods/`), compressed as **one zlib stream** (level 9) and
+  encrypted as one blob with **AES-256-GCM** (OpenSSL and zlib, both already linked). Header (28 bytes): magic `CHPK`,
+  version **2**, flags (dev-key bit), 2 reserved, a 12-byte nonce and the **uncompressed** ZIP length (u64); the
+  header is the GCM additional data, so any tamper fails the tag. Why compressed: encrypted bytes do not compress, so
+  the first packed packages (format 1, the ZIP encrypted as it is) made the release download grow from 427 MB
+  (winpkg-51, plain zip) to 1.15 GB (winpkg-54). Format 1 was never released and is refused everywhere. The 32-byte key is **HKDF-SHA256** of the client
   guard build secret (`CHAOS_CLIENT_KEY`, base patch 0035) with a fixed salt and `info` label, so there is no new
   secret and no new GitHub secret; a build without the secret uses the public development key and the pack is marked
-  dev (a production server refuses such a client anyway). The nonce is `HMAC-SHA256(nonce-key, plaintext)`, so the
-  same tree and key always give the same bytes (the updater sees no spurious change). **Honest note:** this deters
+  dev (a production server refuses such a client anyway). The nonce is `HMAC-SHA256(nonce-key, zlib stream)[:12]`,
+  the HMAC of the bytes GCM encrypts, so the same tree and key always give the same bytes with one zlib build, and two
+  different ciphertexts never share a nonce even if another zlib build compresses the same ZIP differently (a nonce
+  over the uncompressed ZIP would repeat in that case). The updater does not depend on the pack's bytes (its manifest
+  is built from the files). **Honest note:** this deters
   casual copying; it does not stop a determined reverse engineer, because the key is in the binary (obfuscated the way
   `chaosguard_key.h` is, base patch 0035).
-- **The engine** reads the pack through the existing resource layer (base patch 0102): it decrypts to memory and
-  PhysFS-mounts it, so modules keep calling `g_resources` unchanged. Lua is **not** precompiled to bytecode: the whole
+- **The engine** reads the pack through the existing resource layer (base patch 0102): `chaospack::decryptStream()`
+  allocates one buffer of the header's ZIP length, reads the file in 4 MB chunks, GCM-decrypts each chunk in place and
+  feeds it straight to `inflate`, which writes into that buffer; the buffer is then PhysFS-mounted as it is, so modules
+  keep calling `g_resources` unchanged. Peak memory is the ZIP size plus one 4 MB chunk and the inflate window: no
+  ciphertext buffer and no second plaintext copy. The output is kept only when the GCM tag verifies at the end,
+  `inflate` ends exactly at the end of the body and produced exactly the declared length; otherwise it is wiped and the
+  start is fatal, as before. `inflate` runs on bytes the tag has not checked yet (zlib is hardened for any input and
+  writes only into the fixed buffer); a header asking for more than 16 GB or more than deflate's 1032:1 ratio is
+  refused before anything is allocated. The start log line gives the pack size, the ZIP size and the time taken. Lua is **not** precompiled to bytecode: the whole
   pack is encrypted, so the source inside it is not readable without the key, and keeping source avoids the LuaJIT /
   Lua 5.3 bytecode-format split (the engine loads source; bytecode would have to match the build's interpreter).
 - **Writable files stay outside the pack**, in the per-user write dir (`%APPDATA%/CindersOfChaos/CindersOfChaos` on
@@ -794,6 +811,10 @@ everything writable. Nothing in the folder opens in a text or sprite editor.
   - **Linux necessities kept beside the binary** (not everything can be one pack there): `run-client.sh` (sets
     `ALSOFT_DRIVERS`/software GL and launches) and `lib/` (the bundled non-system libraries, RUNPATH `$ORIGIN/lib`).
     Windows keeps only the exe's own DLLs beside `Chaos.exe`.
+- **Tools.** `pack_client.py build` writes format 2 (and prints the ZIP size beside the pack size); `unpack` /
+  `verify` read it. `update_crypt.py` (`PACK`: version 2, compressed) streams and inflates a pack block by block for
+  `make_update_manifest.py unpack` on the VPS (`publish_client_update.sh`), never holding the pack in memory. Update
+  blobs (`CHUB`, base patch 0103) stay format 1, not compressed.
 - **Owner steps for build 13** (the first packed exe): run `windows-package.yml` with `client_build = 13` and the
   usual secrets (`CHAOS_CLIENT_KEY` rotated now matches the live server; the pack is keyed from it). Publish its client zip
   as an update with `make_update_manifest.py build ... --min-package 13` so build-12 and older clients are told to
@@ -913,9 +934,10 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
 - Whether the client's engine parses the 10.98 `Tibia.dat` and the server login packet. Its own profiles are 8.60 and 15.24, so 10.98 is untested ground. The login sends OTClient version 310, which the server accepts (it needs at least 254).
 - Native modules built for another protocol may expect packets the server does not send; read the terminal log on first run.
 - You supply `Tibia.spr`/`Tibia.dat` for 10.98 (not in the repo).
-- **Client pack, build 13 not built or run** (base patch 0102, "Client packs"): the crypto core is verified
-  cross-language (`chaospack_test.cpp` vs `pack_client.py`, both in CI) and the patch applies clean after `0001`-`0101`,
-  but the full client was not compiled or started here (no base tree / dat-spr, little disk in the agent). Before the
+- **Client pack, build 13 not built or run** (base patch 0102, "Client packs"): the crypto and zlib core is verified
+  cross-language (`chaospack_test.cpp` vs `pack_client.py`, both in CI), the streamed decrypt + inflate was timed on a
+  real-sized pack, and the patch applies clean after `0001`-`0101`, but the full client was not compiled or started
+  here (little disk in the agent). Before the
   real build-13 release, build the patched client on Linux (`LINUX.md`) and run the `windows-package.yml` start test to
   confirm it mounts `chaos.pack` and reaches the login screen.
 - **Encrypted updates, build 13 not built or run** (base patch 0103, "Encrypted updates"): the format is checked

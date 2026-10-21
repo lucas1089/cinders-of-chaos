@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
-"""Tests for the client pack (client/tools/pack_client.py): a synthetic tree pack/unpack round trip, determinism,
-wrong-key failure and tamper detection, plus the fixed cross-language vector that client/tools/chaospack_test.cpp
-(the engine's chaospack.h) checks against. Run with python3 -I; CI (.github/workflows/ci.yml)."""
+"""Tests for the client pack (client/tools/pack_client.py, format version 2: zlib then AES-256-GCM): a synthetic tree
+pack/unpack round trip, compression, determinism, wrong-key failure, tamper and truncation detection, the zlib length
+checks, plus the fixed cross-language vector that client/tools/chaospack_test.cpp (the engine's chaospack.h) checks
+byte for byte. Run with python3 -I; CI (.github/workflows/ci.yml)."""
+import hashlib
+import hmac
 import io
 import os
 import shutil
+import struct
 import sys
 import tempfile
 import zipfile
+import zlib
+
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pack_client as P  # noqa: E402
@@ -53,6 +60,9 @@ def test_roundtrip_and_exclusions():
         check(not any(n.endswith(".log") for n in names), ".log excluded")
 
         pack = P.encrypt_pack(zip_bytes, key)
+        check(pack[4] == 2, "format version 2")
+        check(struct.unpack("<Q", pack[20:28])[0] == len(zip_bytes), "header length is the uncompressed ZIP length")
+        check(len(pack) < len(zip_bytes), "compressed: the pack is smaller than the store-only ZIP")
         back = P.decrypt_pack(pack, key)
         check(back == zip_bytes, "decrypt round trip")
 
@@ -91,36 +101,67 @@ def test_wrong_key():
         check(True, "wrong key fails")
 
 
-def test_tamper():
-    data = b"hello cinders" * 50
-    key = bytes(range(32))
-    pack = bytearray(P.encrypt_pack(data, key))
-    pack[P.HEADER_LEN + 5] ^= 0x01  # flip a ciphertext byte
+def fails(pack, key, msg):
     try:
         P.decrypt_pack(bytes(pack), key)
-        check(False, "tampered ciphertext should fail")
+        check(False, msg + " should fail")
     except Exception:
-        check(True, "tampered ciphertext fails")
-    pack2 = bytearray(P.encrypt_pack(data, key))
-    pack2[5] ^= 0x01  # flip the flags byte (part of the AAD header)
-    try:
-        P.decrypt_pack(bytes(pack2), key)
-        check(False, "tampered header should fail")
-    except Exception:
-        check(True, "tampered header fails")
+        pass
+
+
+def test_tamper():
+    data = b"hello cinders" * 50 + os.urandom(300)
+    key = bytes(range(32))
+    pack = P.encrypt_pack(data, key)
+    # every header field (magic, version, flags, reserved, nonce, length), the body and the tag
+    for at in (0, 4, 5, 6, 9, 20, 21, 27, P.HEADER_LEN, P.HEADER_LEN + 5, len(pack) - P.TAG_LEN - 1, len(pack) - 1):
+        bad = bytearray(pack)
+        bad[at] ^= 0x01
+        fails(bad, key, "flipped byte %d" % at)
+    for cut in (1, P.TAG_LEN, P.TAG_LEN + 1, len(pack) - P.HEADER_LEN):
+        fails(pack[:-cut], key, "truncated by %d" % cut)
+    fails(pack + b"\0", key, "a trailing byte")
+
+
+def seal(header_len_value, body, key, version=P.VERSION):
+    """an authentic pack around any body (so only the zlib / length checks can refuse it)"""
+    enc_key, nonce_key = P.derive_keys(key)
+    nonce = hmac.new(nonce_key, body, hashlib.sha256).digest()[:P.NONCE_LEN]
+    header = P.MAGIC + bytes([version, 0]) + b"\x00\x00" + nonce + struct.pack("<Q", header_len_value)
+    return header + AESGCM(enc_key).encrypt(nonce, body, header)
+
+
+def test_length_checks():
+    key = bytes(range(32))
+    data = b"cinders " * 1000
+    z = zlib.compress(data, 9)
+    check(P.decrypt_pack(seal(len(data), z, key), key) == data, "sealed helper round trip")
+    fails(seal(len(data) - 1, z, key), key, "longer than the header says")
+    fails(seal(len(data) + 1, z, key), key, "shorter than the header says")
+    fails(seal(len(data), z + b"x", key), key, "bytes after the zlib stream")
+    fails(seal(len(data), z[:-1], key), key, "zlib stream cut short")
+    fails(seal(len(data), data, key), key, "not a zlib stream")
+    fails(seal(len(data), z, key, version=1), key, "version 1 (store-only) is refused")
+    fails(seal(1 << 40, z, key), key, "a length beyond the deflate ratio")
+
+
+# The cross-language vector: key = 00..1f, plaintext "cinders-of-chaos " * 8 (136 bytes, 56 compressed).
+# chaospack_test.cpp asserts the same hex strings and builds the same pack with zlib's compress2 at level 9.
+VECTOR_ENC_KEY = "8664f864be53d89bd9681ba75531422d12fb7458f0e1daca98980079154470ab"
+VECTOR_NONCE = "a4f05f4f646c80674642f216"
+VECTOR_PACK = ("4348504b02000000a4f05f4f646c80674642f2168800000000000000"
+               "2adfd565c2ccbec47d45ae8bed629eb494db35d0f392e139d1ea224a73a1abe379728e73d0750f8aa8a6c21e")
 
 
 def test_fixed_vector():
-    # The cross-language vector: key = 00..1f, plaintext "cinders-of-chaos". chaospack_test.cpp asserts the same.
     key = bytes(range(32))
-    plaintext = b"cinders-of-chaos"
+    plaintext = b"cinders-of-chaos " * 8
     pack = P.encrypt_pack(plaintext, key)
     enc_key, nonce_key = P.derive_keys(key)
-    # these hex strings are also hard-coded in chaospack_test.cpp
-    print("VECTOR enc_key   =", enc_key.hex())
-    print("VECTOR nonce     =", pack[8:20].hex())
-    print("VECTOR pack      =", pack.hex())
-    check(P.decrypt_pack(pack, key) == plaintext, "fixed vector round trip")
+    check(enc_key.hex() == VECTOR_ENC_KEY, "fixed vector: enc key")
+    check(pack[8:20].hex() == VECTOR_NONCE, "fixed vector: nonce (HMAC of the zlib stream)")
+    check(pack.hex() == VECTOR_PACK, "fixed vector: pack bytes (zlib %s)" % zlib.ZLIB_RUNTIME_VERSION)
+    check(P.decrypt_pack(bytes.fromhex(VECTOR_PACK), key) == plaintext, "fixed vector decrypts")
 
 
 def main():
@@ -128,6 +169,7 @@ def main():
     test_determinism()
     test_wrong_key()
     test_tamper()
+    test_length_checks()
     test_fixed_vector()
     if FAIL:
         print("%d check(s) failed" % FAIL)

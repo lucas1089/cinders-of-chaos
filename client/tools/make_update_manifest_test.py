@@ -2,7 +2,7 @@
 """Tests of make_update_manifest.py, update_crypt.py and ed25519_ref.py:
 python3 -I client/tools/make_update_manifest_test.py
 Publishing encrypts every blob (update_crypt.py), which needs the `cryptography` package (CI has it)."""
-import io, json, os, shutil, subprocess, sys, tempfile, unittest
+import hashlib, io, json, os, shutil, subprocess, sys, tempfile, unittest
 from contextlib import redirect_stdout, redirect_stderr
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -549,6 +549,37 @@ class Crypt(unittest.TestCase):
                 f.write(bytes([b[0] ^ 0x80]))
             with self.assertRaises(uc.BlobError):
                 uc.decrypt_file(dst, self.key)
+        finally:
+            shutil.rmtree(tmp)
+
+    def test_pack_v2_streaming(self):
+        # chaos.pack format 2 (zlib, then GCM) read block by block: what `make_update_manifest.py unpack` does
+        tmp = tempfile.mkdtemp(prefix='chaos-pack-')
+        try:
+            plain = (b'modules/game_x/x.lua print(1)\n' * 400000) + os.urandom(uc.BLOCK + 777)  # > 2 blocks packed
+            pack = pack_client.encrypt_pack(plain, self.key, is_dev=True)
+            self.assertLess(len(pack), len(plain))
+            self.assertEqual(pack, uc.encrypt(plain, self.key, dev=True, fmt=uc.PACK))
+            self.assertEqual(uc.decrypt(pack, self.key, fmt=uc.PACK), plain)
+            path = os.path.join(tmp, 'chaos.pack')
+            open(path, 'wb').write(pack)
+            out = io.BytesIO()
+            flags, sha = uc.decrypt_file(path, self.key, out, uc.PACK)
+            self.assertEqual(flags, uc.FLAG_DEV)
+            self.assertEqual(out.getvalue(), plain)
+            self.assertEqual(sha, hashlib.sha256(plain).hexdigest())
+            for at in (4, 20, 28, len(pack) // 2, len(pack) - 20, len(pack) - 1):  # version, length, body, tag
+                bad = bytearray(pack)
+                bad[at] ^= 1
+                open(path, 'wb').write(bytes(bad))
+                with self.assertRaises(uc.BlobError, msg='byte %d' % at):
+                    uc.decrypt_file(path, self.key, io.BytesIO(), uc.PACK)
+            for cut in (pack[:-1], pack + b'\0', pack[:40]):
+                open(path, 'wb').write(cut)
+                with self.assertRaises(uc.BlobError):
+                    uc.decrypt_file(path, self.key, None, uc.PACK)
+            with self.assertRaises(uc.BlobError):
+                uc.encrypt_file(path, io.BytesIO(), self.key, fmt=uc.PACK)
         finally:
             shutil.rmtree(tmp)
 
