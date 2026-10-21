@@ -5084,6 +5084,28 @@ Order: after 0047. The Lua rescale and the training callback then become no-ops 
 A full rename (a fourth stored `SKILL_MELEE`, a new column, a client protocol change) is not worth it: the three stored
 skills cost nothing and the saves, the highscores and the exercise weapons keep working.
 
+### Melee and Ranged on equipment (`tools/patch_melee_skill.py`, `melee_skill_look.lua`, `tests/melee_skill_patch_test.lua`)
+
+Beta report 2026-10-22: equipment still said and gave "+2 Club", "+2 Axe", "+2 Sword" or "Distance". The engine keeps
+three melee skills and a bonus raised only its own, so a club bonus helped only a player whose best skill was club.
+Now a melee bonus raises all three, so it raises the best one, the player's Melee:
+- **Stock items** (`items.xml`, step `meleeskill`, right before `sql`): an item with any of skillSword, skillAxe,
+  skillClub gets all three at the highest of them (181 items on the beta base copy). Fist and distance stay.
+- **Rolled modifiers** (the base `base_rarity.lua` onEquip, same step): a rarity_swordSkill, rarity_axeSkill or
+  rarity_clubSkill modifier sets all three skill parameters of its condition. Two melee modifiers add up. This covers
+  the stock roll, the orbs and the uniques (their `skillSword` / `skillAxe` / `skillClub` keys are these attributes).
+- **New rolls**: `C.candidates` rolls the sword key only (club and axe are `noRoll`, kept to read older items) and never
+  a second melee modifier on one item. The Codex lists one "Melee Skill" modifier.
+- **Item sets**: `skill_melee` (and the older `skill_sword`, `skill_axe`, `skill_club`) raises all three
+  (`S.MELEE`); Bloodsworn's 6-piece bonus is `skill_melee = 3`.
+- **Labels**: the modifier labels (`C.skills`), the tooltip's base stats (`T.SKILL_LABELS`: one "Melee" row with the
+  highest of the three) and the set texts say "Melee" and "Ranged". The engine's look text is rewritten by
+  `melee_skill_look.lua` (`M.lookText`): "club fighting +2, sword fighting +2, axe fighting +2" is "melee +2",
+  "distance fighting" is "ranged". Fist fighting and shielding stay.
+
+Not changed: the passive tree's single-skill nodes (`passivetree_data.lua`, sword or club nodes) still raise their own
+skill; the market's modifier filter still names the sword, axe and club keys apart.
+
 ## Attack delay after changing floor (owner debug item 50: "Demora para começar a atacar depois de subir ou descer escada"; analysed, not fixed)
 
 What happens, from the repository's own engine notes (`src-patches/0028`, `0042`; the stock source is not here): taking a

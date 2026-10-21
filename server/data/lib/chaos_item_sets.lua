@@ -167,10 +167,15 @@ function S.active(set, count)
 end
 
 -- stat key groups
-S.COND = {magic = true, skill_sword = true, skill_axe = true, skill_club = true, skill_dist = true, skill_shield = true,
-	skill_fist = true, maxhealth = true, maxmana = true, maxhealthpct = true, maxmanapct = true}
+S.COND = {magic = true, skill_sword = true, skill_axe = true, skill_club = true, skill_melee = true, skill_dist = true,
+	skill_shield = true, skill_fist = true, maxhealth = true, maxmana = true, maxhealthpct = true, maxmanapct = true}
 S.RES = {res_fire = "fire", res_ice = "ice", res_earth = "earth", res_energy = "energy", res_death = "death",
 	res_holy = "holy", res_physical = "physical"}
+
+-- one melee skill (server/README.md "One melee skill"): a melee skill bonus (skill_melee, or the older skill_sword,
+-- skill_axe, skill_club) raises all three engine skills, so it raises the best of them, the player's Melee
+S.MELEE = {skill_melee = true, skill_sword = true, skill_axe = true, skill_club = true}
+S.MELEE_ENGINE = {"skill_sword", "skill_axe", "skill_club"}
 
 -- what the active bonuses of a state add up to:
 --   {mods = {modifier key -> n}, cond = {key -> n}, res = {element -> percent}, resPvp = {element -> percent},
@@ -183,7 +188,11 @@ function S.totals(state)
 		if st and st.count > 0 then
 			for _, b in ipairs(S.active(set, st.count)) do
 				for k, v in pairs(b.stats or {}) do
-					if S.COND[k] then
+					if S.MELEE[k] then
+						for _, e in ipairs(S.MELEE_ENGINE) do
+							t.cond[e] = (t.cond[e] or 0) + v
+						end
+					elseif S.COND[k] then
 						t.cond[k] = (t.cond[k] or 0) + v
 					elseif S.RES[k] then
 						local el = S.RES[k]
@@ -218,8 +227,8 @@ end
 -- texts
 -- ---------------------------------------------------------------------------------------------------------------
 S.LABELS = {
-	magic = "Magic Level +%d", skill_sword = "Sword Fighting +%d", skill_axe = "Axe Fighting +%d",
-	skill_club = "Club Fighting +%d", skill_dist = "Distance Fighting +%d", skill_shield = "Shielding +%d",
+	magic = "Magic Level +%d", skill_melee = "Melee +%d", skill_sword = "Melee +%d", skill_axe = "Melee +%d",
+	skill_club = "Melee +%d", skill_dist = "Ranged +%d", skill_shield = "Shielding +%d",
 	skill_fist = "Fist Fighting +%d", maxhealth = "Maximum Health +%d", maxmana = "Maximum Mana +%d",
 	maxhealthpct = "Maximum Health +%d%%", maxmanapct = "Maximum Mana +%d%%",
 	res_fire = "Fire Resistance +%d%%", res_ice = "Ice Resistance +%d%%", res_earth = "Earth Resistance +%d%%",
@@ -229,7 +238,7 @@ S.LABELS = {
 
 -- the order stats are written in: the condition and resistance keys first (as in S.LABELS), then the modifiers in the
 -- catalogue's order, unknown keys by name (no pairs() order: the Codex output must not change between runs)
-local LABEL_ORDER = {"magic", "skill_sword", "skill_axe", "skill_club", "skill_dist", "skill_shield", "skill_fist",
+local LABEL_ORDER = {"magic", "skill_melee", "skill_sword", "skill_axe", "skill_club", "skill_dist", "skill_shield", "skill_fist",
 	"maxhealth", "maxhealthpct", "maxmana", "maxmanapct", "res_physical", "res_fire", "res_ice", "res_earth", "res_energy",
 	"res_death", "res_holy"}
 

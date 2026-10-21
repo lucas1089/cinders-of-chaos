@@ -15,8 +15,9 @@
 --   any modifier key of chaos_item_mods.lua (bleedchance, dot, block, dodge, thorns, monsterreduction, physpen, elepen,
 --     bossdamage, movespeed, lifeonkill, regen, healing, cdr, manacost, ...) and of the legendary powers (deathblast, ...):
 --     added to the equipped items' totals BEFORE the caps, so a set never lifts a cap
---   magic, skill_sword, skill_axe, skill_club, skill_dist, skill_shield, skill_fist, maxhealth, maxmana,
---     maxhealthpct, maxmanapct: one CONDITION_ATTRIBUTES (sub id conditionSubId)
+--   magic, skill_melee, skill_dist, skill_shield, skill_fist, maxhealth, maxmana, maxhealthpct, maxmanapct: one
+--     CONDITION_ATTRIBUTES (sub id conditionSubId). skill_melee (and the older skill_sword, skill_axe, skill_club)
+--     raises all three melee skills: the player's Melee (server/README.md "One melee skill")
 --   res_fire, res_ice, res_earth, res_energy, res_death, res_holy, res_physical: percent less damage of that type taken
 --
 -- family: melee, ranged, caster, support, hybrid (the Codex filter); classes: who it is built for (text only).
@@ -106,7 +107,7 @@ return {
 			bonuses = {
 				{n = 2, stats = {bleedchance = 10, dot = 15}},
 				{n = 4, stats = {}, effect = "hemorrhage"},
-				{n = 6, stats = {skill_axe = 3}, effect = "redharvest"}
+				{n = 6, stats = {skill_melee = 3}, effect = "redharvest"}
 			},
 			sources = {
 				uniques = {minTier = "boss", chance = 8, bossOnly = true, monsters = {WORLD.vharok}},

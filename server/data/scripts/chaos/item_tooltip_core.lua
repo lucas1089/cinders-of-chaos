@@ -230,7 +230,10 @@ end
 -- engine combat index (bit number of the combat type) -> label; arrays from ItemType:getAbilities() are 1-based
 T.COMBAT_LABELS = {[1] = "Physical", [2] = "Energy", [3] = "Earth", [4] = "Fire", [6] = "Life Drain", [7] = "Mana Drain",
 	[9] = "Drown", [10] = "Ice", [11] = "Holy", [12] = "Death", [13] = "Water", [14] = "Arcane"}
-T.SKILL_LABELS = {"Fist", "Club", "Sword", "Axe", "Distance", "Shielding", "Fishing", "Crafting", "Woodcutting", "Mining",
+-- one melee skill (server/README.md "One melee skill"): club, sword and axe (2-4) are one "Melee" row with the highest of
+-- the three (tools/patch_melee_skill.py gives a stock item all three at that number); distance is "Ranged"
+T.MELEE_SKILLS = {[2] = true, [3] = true, [4] = true}
+T.SKILL_LABELS = {"Fist", "Melee", "Melee", "Melee", "Ranged", "Shielding", "Fishing", "Crafting", "Woodcutting", "Mining",
 	"Herbalism", "Armorsmithing", "Weaponsmithing", "Jewelsmithing"}
 -- element bit -> label (ItemType:getElementType returns the combat type value)
 T.ELEMENT_LABELS = {[2] = "Energy", [4] = "Earth", [8] = "Fire", [512] = "Ice", [1024] = "Holy", [2048] = "Death",
@@ -272,8 +275,16 @@ function T.baseStats(item, it)
 	local ab = call(it, "getAbilities")
 	if type(ab) == "table" then
 		if type(ab.skills) == "table" then
+			local melee = 0
+			for i in pairs(T.MELEE_SKILLS) do
+				melee = math.max(melee, int(ab.skills[i]))
+			end
 			for i, label in ipairs(T.SKILL_LABELS) do
-				add("skill" .. i, label, int(ab.skills[i]))
+				if not T.MELEE_SKILLS[i] then
+					add("skill" .. i, label, int(ab.skills[i]))
+				elseif i == 2 then
+					add("skill" .. i, label, melee)
+				end
 			end
 		end
 		if type(ab.stats) == "table" then

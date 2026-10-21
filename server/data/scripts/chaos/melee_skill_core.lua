@@ -85,4 +85,30 @@ end
 -- the weapon types (items.xml weaponType) that hit with the melee skill
 M.weaponTypes = {sword = "sword", club = "club", axe = "axe"}
 
+-- the engine's look text of an item's skills, one melee skill (beta report 2026-10-22: equipment still said "club
+-- fighting +2"): "club fighting +2, sword fighting +2, axe fighting +2" (tools/patch_melee_skill.py gives a stock item
+-- all three) becomes "melee +2"; a lone sword, axe or club fighting number becomes "melee"; "distance fighting" becomes
+-- "ranged". Fist fighting and shielding stay. melee_skill_look.lua runs it on every look.
+function M.lookText(text)
+	if type(text) ~= "string" or not text:find("fighting", 1, true) then
+		return text
+	end
+	text = text:gsub("club fighting ([%+%-]%d+), sword fighting ([%+%-]%d+), axe fighting ([%+%-]%d+)",
+		function(c, s, a)
+			if c == s and s == a then
+				return "melee " .. s
+			end
+			return nil
+		end)
+	text = text:gsub("(%a+) fighting ([%+%-]%d+)", function(name, v)
+		if M.weaponTypes[name] then
+			return "melee " .. v
+		elseif name == "distance" then
+			return "ranged " .. v
+		end
+		return nil
+	end)
+	return text
+end
+
 return M

@@ -130,12 +130,17 @@ C.absorbs = {
 	{key = "rarity_waterAbsorb", label = "Water"},
 	{key = "rarity_arcaneAbsorb", label = "Arcane"}
 }
+-- one melee skill (server/README.md "One melee skill"; beta report 2026-10-22): sword, axe and club modifiers are one
+-- "Melee" modifier, distance is "Ranged". The base rarity script gives a melee modifier to all three engine skills
+-- (tools/patch_melee_skill.py), so it raises the best of them, the player's Melee. New rolls use the sword key only
+-- (noRoll: club and axe, kept to read older items); an item gets one melee modifier at most (C.candidates).
+C.MELEE_KEYS = {rarity_swordskill = true, rarity_axeskill = true, rarity_clubskill = true}
 C.skills = {
 	{key = "rarity_fistSkill", label = "Fist", kind = "combat"},
-	{key = "rarity_clubSkill", label = "Club", kind = "combat"},
-	{key = "rarity_swordSkill", label = "Sword", kind = "combat"},
-	{key = "rarity_axeSkill", label = "Axe", kind = "combat"},
-	{key = "rarity_distanceSkill", label = "Distance", kind = "combat"},
+	{key = "rarity_clubSkill", label = "Melee", kind = "combat", noRoll = true},
+	{key = "rarity_swordSkill", label = "Melee", kind = "combat"},
+	{key = "rarity_axeSkill", label = "Melee", kind = "combat", noRoll = true},
+	{key = "rarity_distanceSkill", label = "Ranged", kind = "combat"},
 	{key = "rarity_shieldSkill", label = "Shielding", kind = "combat"},
 	{key = "rarity_fishingSkill", label = "Fishing", kind = "profession"},
 	{key = "rarity_craftingSkill", label = "Crafting", kind = "profession"},
@@ -214,7 +219,7 @@ function C.affixes()
 	end
 	for _, s in ipairs(C.skills) do
 		local name = s.kind == "profession" and "profession" or "skill"
-		add({key = s.key, group = "skill", label = s.label}, E[name], name)
+		add({key = s.key, group = "skill", label = s.label, noRoll = s.noRoll}, E[name], name)
 	end
 	for _, s in ipairs(C.specials) do
 		add({key = s.key, key2 = s.key2, group = "special", label = s.label, label2 = s.label2}, E[s.kind], s.kind)
@@ -526,9 +531,10 @@ end
 function C.candidates(item, rarity, mods, opts)
 	mods = mods or C.readMods(item)
 	rarity = rarity or C.rarityOf(item)
-	local have, elements, powers = {}, 0, 0
+	local have, elements, powers, melee = {}, 0, 0, false
 	for _, m in ipairs(mods) do
 		have[m.key:lower()] = true
+		melee = melee or C.MELEE_KEYS[m.key:lower()] == true
 		if m.group == "element" then
 			elements = elements + 1
 		end
@@ -547,7 +553,7 @@ function C.candidates(item, rarity, mods, opts)
 	for _, a in ipairs(C.affixes()) do
 		local isPower = a.def and M.isPower(a.def)
 		if not have[a.key:lower()] and open[a.side] and M.allowed(a, kind) and (a.group ~= "element" or elementOk)
-				and (not isPower or powerOk) then
+				and (not isPower or powerOk) and not a.noRoll and not (melee and C.MELEE_KEYS[a.key:lower()]) then
 			out[#out + 1] = {entry = a, weight = a.weight}
 		end
 	end

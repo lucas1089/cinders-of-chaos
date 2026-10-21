@@ -138,7 +138,7 @@ eq(mods[3].tier, 2, "the pair's tier from its amount (2: T2)")
 eq(mods[4].tier, 3, "Fire +7% dmg: T3 (5-9)")
 eq(mods[4].lo, 5); eq(mods[4].hi, 9)
 eq(sword:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION),
-	"Item Level: 42. Prefixes: Sword +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
+	"Item Level: 42. Prefixes: Melee +1 (T1); Critical Chance +2%, Critical Hit +2% (T2); Fire +7% dmg (T3). " ..
 	"Suffixes: Physical +2% (T2)", "item level, prefixes and suffixes with their tiers")
 eq(C.rarityOf(sword), 4)
 eq(C.rarityName(4), "Rare")
@@ -299,7 +299,7 @@ eq(ann:getCustomAttribute("rarity_lifeLeechAmount"), nil, "both keys of the pair
 eq(ann:getCustomAttribute("ct_rarity_lifeleechchance"), nil, "and its tier")
 eq(ann:getCustomAttribute("rarity_swordSkill"), 2, "the other stays")
 eq(C.rarityOf(ann), 5, "rarity stays")
-eq(ann:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Sword +2 (T2)")
+eq(ann:getAttribute(ITEM_ATTRIBUTE_DESCRIPTION), "Item Level: 42. Prefixes: Melee +2 (T2)")
 dice = {1}
 C.apply("annulment", ann)
 eq(#C.readMods(ann), 0)

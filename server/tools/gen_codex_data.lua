@@ -486,7 +486,7 @@ local function rollShares(D, a, isPower)
 		local total = 0
 		for _, b in ipairs(D.C.affixes()) do
 			local bPower = b.def and D.M.isPower(b.def)
-			if D.M.allowed(b, k) and (b.group ~= "element" or k == "weapon") and (not bPower or isPower) then
+			if not b.noRoll and D.M.allowed(b, k) and (b.group ~= "element" or k == "weapon") and (not bPower or isPower) then
 				total = total + b.weight
 			end
 		end
@@ -1993,7 +1993,8 @@ function Gen.build(D)
 	D.shared = {}
 	local mods, powers = {}, {}
 	for _, a in ipairs(C.affixes()) do
-		if a.def and M.isPower(a.def) then
+		if a.noRoll then -- read on older items only (club and axe: one melee modifier, the sword key)
+		elseif a.def and M.isPower(a.def) then
 			powers[#powers + 1] = Gen.powerEntry(D, a)
 		else
 			mods[#mods + 1] = Gen.modifierEntry(D, a)

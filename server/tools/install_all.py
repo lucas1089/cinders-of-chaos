@@ -259,6 +259,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                works in the owner's own hideout as well as in a house, and the texts say so (the refusal, the "no space"
                message, the six Waystone Tier descriptions in items.xml); the hideout has the device built in (README
                "Hideouts", "Waystone device")
+  meleeskill   tools/patch_melee_skill.py        one melee skill on equipment: items.xml items with a sword, axe or club
+                                                 number get all three at the highest, a rolled melee modifier raises all
+                                                 three skills (base_rarity.lua; README "Melee and Ranged on equipment";
+                                                 runs right before sql, after every step that adds items)
   sql          server/sql/chaos.sql, then every other server/sql/*.sql (sorted), then the rename_spells UPDATEs, against
                the game database (CREATE TABLE IF NOT EXISTS / plain UPDATEs, safe to repeat)
 
@@ -835,6 +839,14 @@ def step_tasknpc(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('npcnames') + 1, 'tasknpc')  # the task NPC and its kills (found by their stock lines)
+
+
+def step_meleeskill(server, data, ctx):
+    args = [tool('patch_melee_skill.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_melee_skill.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'meleeskill')  # late: after every step that adds items with skills to items.xml
 
 
 def step_itemprices(server, data, ctx):
