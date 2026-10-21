@@ -16367,6 +16367,14 @@ The kill message says the way out is the forcefield by the arrival. Which boss "
 the name is the base server's (the renamed raid and island bosses, `base_monster_names.csv` holds only hashes); the
 fix is for every pocket boss.
 
+**The corpse after the loot** (beta 2026-10-22, Weakened Slurgoth: no drop and a stair that cannot be entered). Its
+monster type's corpse is item 18982, a ramp: no container, so the engine drops no loot into it, and it looks like a way
+down. The engine also runs the death event before it drops the loot, so the item count `bossDeath` read there was 0 for
+every corpse (every island and raid pocket got the personal roll on top of a full corpse). `bossDeath` now records the
+corpse's position and id; `settleCorpse` reads it again in `success()`, one tick later: a container's real item count
+decides `K.needsFallbackLoot`, and a corpse that is no container is taken away and the run gets the personal roll
+(`tests/pocketboss_test.lua`: the ramp corpse, and a corpse filled after the death event).
+
 **API.** `ChaosPocketBoss.bosses()` -> `{{key, name, minLevel}}` (every pocket boss);
 `ChaosPocketBoss.addCharges(player, bossKey, n)` -> added, reason (bonus charges, capped as above; the online-time shop);
 `ChaosPocketBoss.charges(player, key)`, `.view(player)`, `.isInside(player)`, `.lootMultOf(monster)`,
