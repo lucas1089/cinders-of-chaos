@@ -408,6 +408,19 @@ def test_flow():
         check(rc == 0 and not any(c.startswith('systemctl stop') or c.startswith('systemctl restart') for c in w.calls),
               'apply with nothing new: no restart', w.out)
         check(w.run('apply', '--bogus') != 0, 'apply: unknown option refused')
+        check(w.state_value('site_commit') == w.git('-C', w.repo, 'rev-parse', 'HEAD'), 'state: the site commit')
+
+        # the checkout moved by hand (git reset): the site still counts from its own commit
+        w.push('Site text', {'website/page.txt': 'v3\n'})
+        w.git('-C', w.repo, 'fetch', '--quiet', 'origin', '+refs/heads/main:refs/remotes/origin/main')
+        w.git('-C', w.repo, 'reset', '--quiet', '--hard', 'origin/main')
+        w.run('check')
+        check(w.kv().get('website_changed') == 'yes', 'check: a site change behind a hand reset', w.out)
+        rc = w.run('apply', '--no-client', '--no-downloads')
+        check(rc == 0 and any(c.startswith('site ') for c in w.calls), 'apply: the site installed after a hand reset', w.out)
+        check(w.state_value('site_commit') == w.git('-C', w.repo, 'rev-parse', 'HEAD'), 'state: the site commit moves')
+        w.run('check')
+        check(w.kv().get('website_changed') == 'no', 'check: the site current', w.out)
 
         # a broken engine: rolled back automatically
         good_commit = w.git('-C', w.repo, 'rev-parse', 'HEAD')
