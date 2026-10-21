@@ -8,6 +8,23 @@ local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) 
 LootFilterLogic = {}
 local L = LootFilterLogic
 
+-- One run per key while one is pending: a burst of calls (one container packet per item of a big Auto Seller sale or
+-- Loot Bag sort, each calling onSizeChange and onRemoveItem) becomes one scheduled run. schedule(fn) puts fn on the
+-- event queue (addEvent in the client). Returns request(key, fn): true when it scheduled a run, false when one for
+-- that key was already pending (that run reads the state when it runs, so it sees every change).
+function L.coalescer(schedule)
+  local pending = {}
+  return function(key, fn)
+    if pending[key] then return false end
+    pending[key] = true
+    schedule(function()
+      pending[key] = nil
+      fn()
+    end)
+    return true
+  end
+end
+
 -- The seven rarities (server/data/lib/chaos_rarity.lua): an item carries the id 1 Common, 2 Uncommon, 3 Magic, 4 Rare,
 -- 5 Legendary or 10 Divine (Unique is the unique flag). An item saved before the seven rarities may carry 6 .. 9 (they
 -- became Legendary) or 11 .. 15 (Divine), so L.RARITY has a row for every id 1 .. 15; L.RARITY_IDS are the ids of today, in

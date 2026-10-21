@@ -329,6 +329,136 @@ do
 	eq(A.auto[1], nil, "no unlock: not registered at login")
 	st = A.handleAction(pl, "asevery", {minutes = 5})
 	eq(st.unlocked, false, "locked window") eq(pl.st[Chaos.storage.autosellInterval], 15, "locked: nothing stored")
+
+	-- ------------------------------------------------------------ packets per sale (the client stutter, 2026-10-22)
+	-- A model of the engine's updates for the open Loot Bag: without engine patch 0054 each removed item is a container
+	-- packet and a stats packet (Player::postRemoveNotification -> sendStats), and the client redraws the whole window
+	-- per packet. With the patch, player:beginContainerBatch / endContainerBatch hold them: one container packet per
+	-- changed window and one stats packet per sale.
+	local function engineModel(p, patched)
+		p.packets, p.depth, p.dirty, p.statsDirty = {container = 0, stats = 0}, 0, false, false
+		if patched then
+			function p:beginContainerBatch() self.depth = self.depth + 1 return true end
+			function p:endContainerBatch()
+				if self.depth == 0 then return true end
+				self.depth = self.depth - 1
+				if self.depth == 0 then
+					if self.dirty then self.packets.container = self.packets.container + 1 end
+					if self.statsDirty then self.packets.stats = self.packets.stats + 1 end
+					self.dirty, self.statsDirty = false, false
+				end
+				return true
+			end
+		else
+			p.beginContainerBatch, p.endContainerBatch = nil, nil
+		end
+	end
+	local function openBagItem(p, id, opts)
+		local it = item(id, opts)
+		function it:remove()
+			self.removed = true
+			if p.depth > 0 then
+				p.dirty, p.statsDirty = true, true
+			else
+				p.packets.container = p.packets.container + 1
+				p.packets.stats = p.packets.stats + 1
+			end
+			return true
+		end
+		return it
+	end
+	local function fullBag(p, n)
+		local items = {}
+		for k = 1, n do
+			items[k] = openBagItem(p, 2401, {count = 1})
+		end
+		return item(32081, {items = items})
+	end
+	pl.st[Chaos.storage.shopAutoSeller] = 1
+	pl.st[Chaos.storage.autosellRarity] = nil
+	-- unpatched engine: Chaos.containerBatch just runs the sale; 2 packets per item
+	engineModel(pl, false)
+	local big = fullBag(pl, 255)
+	carry = {loot = big}
+	now = now + 31
+	local sold = A.sellBag(pl)
+	check(sold ~= nil and sold.gold > 0, "a full bag sells on an unpatched engine")
+	eq(pl.packets.container, 255, "unpatched: one container packet per sold item (the stutter)")
+	eq(pl.packets.stats, 255, "unpatched: one stats packet per sold item")
+	-- patched engine: one container packet and one stats packet for the whole sale
+	engineModel(pl, true)
+	local big2 = fullBag(pl, 255)
+	carry = {loot = big2}
+	now = now + 31
+	pl.msgs = {}
+	local bankBefore = pl.bank
+	st = A.handleAction(pl, "sell", {})
+	eq(pl.packets.container, 1, "patched: one container packet per sale of 255 items")
+	eq(pl.packets.stats, 1, "patched: one stats packet per sale")
+	eq(pl.depth, 0, "the batch is closed after the sale")
+	eq(#pl.msgs, 1, "one chat line per sale")
+	check(st.notice and st.notice:find("from your Loot Bag", 1, true) ~= nil, "one window state with the notice")
+	local removedAll = true
+	for _, it in ipairs(big2.items) do removedAll = removedAll and it.removed end
+	check(removedAll, "every item of the bag sold")
+	check((P[2401] or 0) > 0, "the rope has an NPC price") eq(pl.bank - bankBefore, 255 * P[2401], "gold identical to the per-item sum")
+	-- the timed sale goes through the same path
+	A.auto[1] = {minutes = 5, nextAt = now + 31}
+	online[1] = pl
+	carry = {loot = fullBag(pl, 40)}
+	now = now + 31
+	engineModel(pl, true)
+	eq(A.tick(), 1, "timed sale made")
+	eq(pl.packets.container, 1, "timed sale: one container packet") eq(pl.packets.stats, 1, "timed sale: one stats packet")
+	A.auto = {}
+	-- an item that fails to remove is not paid, the others are; the batch still ends
+	engineModel(pl, true)
+	local stuck = openBagItem(pl, 2401)
+	function stuck:remove() error("engine refused") end
+	local okOne = openBagItem(pl, 2401, {count = 4})
+	carry = {loot = item(32081, {items = {stuck, okOne}})}
+	now = now + 31
+	bankBefore = pl.bank
+	local partial = A.sellBag(pl)
+	eq(partial.gold, 4 * P[2401], "only what was removed is paid")
+	eq(pl.bank - bankBefore, partial.gold, "bank matches the paid gold") eq(pl.depth, 0, "batch closed after a failed item")
+	-- Chaos.containerBatch: nested pairs, the end runs on an error and the error comes back
+	engineModel(pl, true)
+	local r1, r2 = Chaos.containerBatch(pl, function(a, b) return a + b, "x" end, 2, 3)
+	eq(r1, 5, "returns what fn returns") eq(r2, "x", "every value") eq(pl.depth, 0, "closed")
+	local okE, errE = pcall(Chaos.containerBatch, pl, function() error("boom", 0) end)
+	eq(okE, false, "the error comes back") eq(errE, "boom", "the same message") eq(pl.depth, 0, "closed after the error")
+	Chaos.containerBatch(pl, function() Chaos.containerBatch(pl, function() eq(pl.depth, 2, "nested") end) eq(pl.depth, 1, "outer still held") end)
+	eq(pl.depth, 0, "nested pairs balance")
+	eq(Chaos.containerBatch(nil, function() return 7 end), 7, "no player: fn just runs")
+
+	-- ------------------------------------------------------------ protected items and containers
+	engineModel(pl, false)
+	local ration = item(2401, {attrs = {chaos_storebound = 1}})
+	local storeItem = item(2401)
+	function storeItem:isStoreItem() return true end
+	local lockedBox = item(1988, {attrs = {chaos_locked = 1}, items = {item(2401), item(2401, {count = 3})}})
+	local boundBox = item(1988, {attrs = {chaos_storebound = 1}, items = {item(2401)}})
+	local orbPouch = item(32082, {items = {item(2401)}})
+	local plainBox = item(1988, {items = {item(2401)}})
+	ChaosPouches.kindOfId = function(id) return id == 32082 and "orbs" or nil end
+	carry = {loot = item(32081, {items = {ration, storeItem, lockedBox, boundBox, orbPouch, plainBox}})}
+	now = now + 31
+	local guarded = A.sellBag(pl)
+	eq(ration.removed, false, "a store-bound item is never sold")
+	eq(storeItem.removed, false, "a store item is never sold")
+	eq(lockedBox.items[1].removed or lockedBox.items[2].removed, false, "the contents of a locked container stay")
+	eq(boundBox.items[1].removed, false, "the contents of a store-bound container stay")
+	eq(orbPouch.items[1].removed, false, "the contents of a store pouch are not walked")
+	eq(plainBox.items[1].removed, true, "a plain container's contents are still sold")
+	eq(guarded.kept.protected, 2, "store-bound items counted as protected")
+	ChaosPouches.kindOfId = nil
+	eq(K.opensContents({container = true}), true, "a plain container is walked")
+	eq(K.opensContents({container = true, locked = true}), false, "a locked one is not")
+	eq(K.opensContents({container = true, storeBound = true}), false, "a store-bound one is not")
+	eq(K.opensContents({container = true, pouch = true}), false, "a store pouch is not")
+	eq(K.opensContents({container = false}), false, "not a container")
+	eq(K.bagPlan({{ref = "s", id = 2401, count = 1, storeBound = true}}, {[2401] = 50}).gold, 0, "core: store-bound kept")
 	os.time = realTime
 end
 

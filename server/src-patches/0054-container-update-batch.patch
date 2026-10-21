@@ -1,0 +1,231 @@
+# Held container updates for scripts that move many items (server/README.md "Auto Seller: one update per sale"). Each
+# item a script removes from, adds to or moves inside an open container sent its own packet (remove / add / update
+# container item) and, for a carried container, a full stats packet (Player::postRemoveNotification -> sendStats). The
+# client then redraws the whole container window two or three times per packet (onSizeChange, onRemoveItem): a Loot Bag
+# sale of 255 items was 510 packets and about 1500 window refreshes in one frame, the stutter players saw.
+# Lua player:beginContainerBatch() / player:endContainerBatch() (nested pairs count) hold those packets: while held,
+# Player::sendAdd/Update/RemoveContainerItem only mark the open window ids of the container and sendStats only marks
+# the stats; the last end sends one full container packet per marked window that is still open (its page moved back
+# when the items it showed are gone) and one stats packet. A batch left open (a script error between the two calls)
+# ends by itself at the next update after 2 s. Chaos.containerBatch (chaos_constants.lua) calls the pair with pcall.
+# Apply after 0001-0053: patch -p1 < 0054-container-update-batch.patch (in the server folder, next to src/).
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -2693,6 +2693,8 @@ void LuaScriptInterface::registerFunctions()
+ 	registerMethod("Player", "getContainerId", LuaScriptInterface::luaPlayerGetContainerId);
+ 	registerMethod("Player", "getContainerById", LuaScriptInterface::luaPlayerGetContainerById);
+ 	registerMethod("Player", "getContainerIndex", LuaScriptInterface::luaPlayerGetContainerIndex);
++	registerMethod("Player", "beginContainerBatch", LuaScriptInterface::luaPlayerBeginContainerBatch); // Chaos (patch 0054)
++	registerMethod("Player", "endContainerBatch", LuaScriptInterface::luaPlayerEndContainerBatch);
+ 
+ 	registerMethod("Player", "getInstantSpells", LuaScriptInterface::luaPlayerGetInstantSpells);
+ 	registerMethod("Player", "canCast", LuaScriptInterface::luaPlayerCanCast);
+@@ -11170,6 +11172,33 @@ int LuaScriptInterface::luaPlayerGetContainerIndex(lua_State* L)
+ 	return 1;
+ }
+ 
++// Chaos (patch 0054): container updates held while a script moves many items (Player.h beginContainerBatch)
++int LuaScriptInterface::luaPlayerBeginContainerBatch(lua_State* L)
++{
++	// player:beginContainerBatch()
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->beginContainerBatch();
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
++int LuaScriptInterface::luaPlayerEndContainerBatch(lua_State* L)
++{
++	// player:endContainerBatch()
++	Player* player = getUserdata<Player>(L, 1);
++	if (player) {
++		player->endContainerBatch();
++		pushBoolean(L, true);
++	} else {
++		lua_pushnil(L);
++	}
++	return 1;
++}
++
+ int LuaScriptInterface::luaPlayerGetInstantSpells(lua_State* L)
+ {
+ 	// player:getInstantSpells()
+--- a/src/luascript.h
++++ b/src/luascript.h
+@@ -1066,6 +1066,8 @@ class LuaScriptInterface
+ 		static int luaPlayerGetContainerId(lua_State* L);
+ 		static int luaPlayerGetContainerById(lua_State* L);
+ 		static int luaPlayerGetContainerIndex(lua_State* L);
++		static int luaPlayerBeginContainerBatch(lua_State* L);
++		static int luaPlayerEndContainerBatch(lua_State* L);
+ 
+ 		static int luaPlayerGetInstantSpells(lua_State* L);
+ 		static int luaPlayerCanCast(lua_State* L);
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -954,6 +954,9 @@ void Player::sendCancelMessage(ReturnValue message) const
+ 
+ void Player::sendStats()
+ {
++	if (holdStats()) {
++		return;
++	}
+ 	if (client) {
+ 		client->sendStats();
+ 		lastStatsTrainingTime = getOfflineTrainingTime() / 60 / 1000;
+@@ -1052,6 +1055,88 @@ void Player::sendHouseWindow(House* house, uint32_t listId) const
+ 	}
+ }
+ 
++// Chaos (patch 0054): held container updates. A batch that a script left open (an error between begin and end) ends
++// by itself at the next update after CONTAINER_BATCH_MAX_MS, so the windows never stay frozen.
++static constexpr int64_t CONTAINER_BATCH_MAX_MS = 2000;
++
++void Player::beginContainerBatch()
++{
++	if (containerBatchDepth == 0) {
++		containerBatchSince = OTSYS_TIME();
++	}
++	if (containerBatchDepth < std::numeric_limits<uint16_t>::max()) {
++		++containerBatchDepth;
++	}
++}
++
++void Player::endContainerBatch()
++{
++	if (containerBatchDepth == 0) {
++		return;
++	}
++	if (--containerBatchDepth == 0) {
++		flushContainerBatch();
++	}
++}
++
++void Player::flushContainerBatch()
++{
++	containerBatchDepth = 0;
++	std::bitset<256> dirty = containerBatchDirty;
++	containerBatchDirty.reset();
++	bool stats = containerBatchStats;
++	containerBatchStats = false;
++	if (client && dirty.any()) {
++		for (auto& it : openContainers) {
++			if (!dirty.test(it.first)) {
++				continue;
++			}
++			OpenContainer& openContainer = it.second;
++			const Container* container = openContainer.container;
++			uint32_t capacity = std::max<uint32_t>(1, container->capacity());
++			uint32_t size = container->size();
++			if (openContainer.index > 0 && openContainer.index >= size) {
++				// the page the window showed is gone: the last page that has items
++				openContainer.index = size == 0 ? 0 : static_cast<uint16_t>(((size - 1) / capacity) * capacity);
++			}
++			client->sendContainer(it.first, container, container->hasParent(), openContainer.index);
++		}
++	}
++	if (stats) {
++		sendStats();
++	}
++}
++
++bool Player::holdContainerUpdate(const Container* container)
++{
++	if (containerBatchDepth == 0) {
++		return false;
++	}
++	if (OTSYS_TIME() - containerBatchSince > CONTAINER_BATCH_MAX_MS) {
++		flushContainerBatch();
++		return false;
++	}
++	for (const auto& it : openContainers) {
++		if (it.second.container == container) {
++			containerBatchDirty.set(it.first);
++		}
++	}
++	return true;
++}
++
++bool Player::holdStats()
++{
++	if (containerBatchDepth == 0) {
++		return false;
++	}
++	if (OTSYS_TIME() - containerBatchSince > CONTAINER_BATCH_MAX_MS) {
++		flushContainerBatch();
++		return false;
++	}
++	containerBatchStats = true;
++	return true;
++}
++
+ //container
+ void Player::sendAddContainerItem(const Container* container, const Item* item)
+ {
+@@ -1059,6 +1144,10 @@ void Player::sendAddContainerItem(const Container* container, const Item* item)
+ 		return;
+ 	}
+ 
++	if (holdContainerUpdate(container)) {
++		return;
++	}
++
+ 	for (const auto& it : openContainers) {
+ 		const OpenContainer& openContainer = it.second;
+ 		if (openContainer.container != container) {
+@@ -1091,6 +1180,10 @@ void Player::sendUpdateContainerItem(const Container* container, uint16_t slot,
+ 		return;
+ 	}
+ 
++	if (holdContainerUpdate(container)) {
++		return;
++	}
++
+ 	for (const auto& it : openContainers) {
+ 		const OpenContainer& openContainer = it.second;
+ 		if (openContainer.container != container) {
+@@ -1116,6 +1209,10 @@ void Player::sendRemoveContainerItem(const Container* container, uint16_t slot)
+ 		return;
+ 	}
+ 
++	if (holdContainerUpdate(container)) {
++		return;
++	}
++
+ 	for (auto& it : openContainers) {
+ 		OpenContainer& openContainer = it.second;
+ 		if (openContainer.container != container) {
+--- a/src/player.h
++++ b/src/player.h
+@@ -1028,6 +1028,12 @@ class Player final : public Creature, public Cylinder
+ 			}
+ 		}
+ 		void sendStats();
++		// Chaos (patch 0054): a script that moves many items of an open container (the Auto Seller's Loot Bag sale, the
++		// Loot Bag sort) holds the container updates: Player:beginContainerBatch() / Player:endContainerBatch(). Each
++		// window that changed gets one full container packet at the end, and the stats one packet, instead of one packet
++		// (and one client window refresh) per item.
++		void beginContainerBatch();
++		void endContainerBatch();
+ 		void sendBasicData() const {
+ 			if (client) {
+ 				client->sendBasicData();
+@@ -1297,6 +1303,14 @@ class Player final : public Creature, public Cylinder
+ 		std::unordered_set<uint32_t> VIPList;
+ 
+ 		std::map<uint8_t, OpenContainer> openContainers;
++		// Chaos (patch 0054): the held container updates (beginContainerBatch)
++		std::bitset<256> containerBatchDirty;
++		int64_t containerBatchSince = 0;
++		uint16_t containerBatchDepth = 0;
++		bool containerBatchStats = false;
++		bool holdContainerUpdate(const Container* container);
++		bool holdStats();
++		void flushContainerBatch();
+ 		std::map<uint32_t, DepotLocker_ptr> depotLockerMap;
+ 		std::map<uint32_t, DepotChest*> depotChests;
+ 		std::map<uint32_t, int32_t> storageMap;

@@ -437,6 +437,21 @@ local cAll = corpse(hero.id, {junk2, rare2, plain2})
 drop(nil, cAll)
 eq(junk2.parent, lootPouch, "defaults: other loot -> Loot Bag") eq(rare2.parent, lootPouch, "defaults: rare gear -> Loot Bag")
 eq(plain2.parent, lootPouch, "defaults: plain gear -> Loot Bag")
+-- the stow and the sort of one kill are one held batch of container updates (engine patch 0054, Chaos.containerBatch)
+do
+	local begins, ends, depth, maxDepth = 0, 0, 0, 0
+	hero.beginContainerBatch = function() begins = begins + 1 depth = depth + 1 maxDepth = math.max(maxDepth, depth) return true end
+	hero.endContainerBatch = function() ends = ends + 1 depth = depth - 1 return true end
+	local a, b = item(2401), item(2403, {cat = "equipment"})
+	drop(nil, corpse(hero.id, {a, b}))
+	eq(a.parent, lootPouch, "batched kill: still stowed")
+	eq(begins, 1, "one batch per kill") eq(ends, 1, "the batch is closed") eq(depth, 0, "balanced")
+	for _, it in ipairs({a, b}) do
+		for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
+		it.parent = nil
+	end
+	hero.beginContainerBatch, hero.endContainerBatch = nil, nil
+end
 for _, it in ipairs({junk2, rare2, plain2}) do
 	for i = #lootPouch.items, 1, -1 do if lootPouch.items[i] == it then table.remove(lootPouch.items, i) end end
 	it.parent = nil

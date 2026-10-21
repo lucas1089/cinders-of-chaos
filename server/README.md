@@ -200,6 +200,10 @@ server/
   src-patches/0053-shop-money-after-bank-payment.patch   engine: Lua setBankBalance sends the NPC trade window's
                                       money (carried + bank) again while a shop is open, so a purchase paid from the
                                       bank greys the offers at once (see "Gold payments: carried coins, then the bank")
+  src-patches/0054-container-update-batch.patch   engine: Lua player:beginContainerBatch() / endContainerBatch() hold
+                                      the container item and stats packets of a script that moves many items: one full
+                                      container packet per changed window and one stats packet at the end (see "Auto
+                                      Seller: one update per sale"; Chaos.containerBatch)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
@@ -3478,6 +3482,23 @@ Prices: each copy's own price, `ChaosItemPrices.sellPrice(item, count)` (`data/l
 prices": a rolled copy of a higher rarity or item level sells for more), for the list and for the Loot Bag; without that
 library the plain table `sell_prices.lua`, written by `python3 -I server/tools/gen_item_prices.py` (`gen_sell_prices.py`
 is only a shim for it now). The list is managed in the Auto Seller window (above).
+Store-bound items (custom attribute `chaos_storebound`: the Everfull Ration, Nemesis items; engine store items) are never
+sold, from the bag or a corpse (counted as "orbs / gems / keys"). The contents of a locked or store-bound container and
+of a store pouch inside the bag are not walked: the item lock and the binding cover what is inside. Gold is paid only for
+what was really removed (each removal is guarded, so one failing item never leaves the rest unpaid).
+
+**Auto Seller: one update per sale** (owner beta 2026-10-21: "o client ainda dá umas travadas quando o auto seller vende
+muitas coisas ao mesmo tempo"). The earlier fix (2026-10-20) sorted the Loot Bag once per kill instead of once per item,
+but each sold item was still removed on its own: per item one container packet for the open Loot Bag and, as the bag is
+carried, one full stats packet (`Player::postRemoveNotification` -> `sendStats`). The client redraws every slot of the
+window on `onSizeChange` and again on `onRemoveItem`, and the loot filter and depot tabs walked the window per call too:
+a sale of 255 items was 510 packets and about 1500 full window passes in one frame. Now `A.sellBag` removes the items
+inside `Chaos.containerBatch(player, fn)` (`chaos_constants.lua`): with engine patch 0054 the engine holds the packets
+and sends one container packet per changed window and one stats packet at the end; without the patch fn just runs. The
+same batch wraps the stow and sort of one kill (`pouches.lua` `collect`), click-to-loot (`PO.stow`) and the sort when the
+bag opens. A sale stays one chat line and one window state. Measured on the mocked engine (`tests/autosell_test.lua`): a
+sale of 255 items, unpatched 255 container + 255 stats packets, patched 1 + 1; gold identical. The client side is cheap
+on its own too (client base patch 0109, `game_lootfilter`, `game_depottabs`: one redraw per container per frame).
 
 **Sell every X minutes** (owner 2026-10-17: "Auto seller: opção de vender a cada X minutos"; `autosell.lua`, `autosell_core.lua`
 `INTERVALS`, window dropdown "Sell the Loot Bag automatically every" in `autoseller.otui`). Off by default; choices 5, 10,

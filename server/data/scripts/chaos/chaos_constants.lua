@@ -1240,6 +1240,27 @@ function Chaos.registerOnce(creature, name)
 	return true
 end
 
+-- Chaos.containerBatch(player, fn, ...): runs fn(...) with the player's container updates held (engine patch 0054,
+-- player:beginContainerBatch / endContainerBatch): every open window that changed gets one full container packet at the
+-- end, and the stats one packet, instead of one packet and one client window refresh per item moved or removed (a Loot
+-- Bag sale of 255 items: 510 packets before). The end runs even when fn fails; the error is raised again after it.
+-- Without the patch (no such methods) fn just runs. Returns what fn returns.
+local function batchDone(player, ok, ...)
+	pcall(player.endContainerBatch, player)
+	if not ok then
+		error((...), 0)
+	end
+	return ...
+end
+
+function Chaos.containerBatch(player, fn, ...)
+	if not player or type(player.beginContainerBatch) ~= "function" or type(player.endContainerBatch) ~= "function" then
+		return fn(...)
+	end
+	player:beginContainerBatch()
+	return batchDone(player, pcall(fn, ...))
+end
+
 -- An extended opcode message (0x32, u8 opcode, u16 length, bytes) carries its payload as one string, and the engine's
 -- NetworkMessage::addString silently refuses strings over 8192 bytes. The base Player.sendExtendedOpcode writes 0x32 and
 -- the opcode before the string, so a longer payload left those two bytes alone in the packet: the client read the next

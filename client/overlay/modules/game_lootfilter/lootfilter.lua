@@ -197,8 +197,16 @@ local function requestPeek(container)
   end, PEEK_DELAY)
 end
 
+-- one redraw per container per frame (L.coalescer): a big Auto Seller sale or Loot Bag sort is one engine call per item
+-- (onSizeChange and onRemoveItem each), and every call walked every slot of the window. The run looks the container up
+-- by id, so a window opened in its place in between is the one drawn; stale rows are cleared then.
+local decorateLater = L.coalescer(function(fn) addEvent(fn) end)
 local function onContainerChange(container)
-  decorateContainer(container) -- stale rows whose item id no longer matches are cleared at once
+  local cid = container:getId()
+  decorateLater(cid, safe('decorate', function()
+    local c = g_game.getContainer(cid)
+    if c then decorateContainer(c) end
+  end))
   requestPeek(container)
 end
 

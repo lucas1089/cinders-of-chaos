@@ -104,8 +104,15 @@ local function decorateAll()
   for _, c in pairs(open) do decorate(c) end
 end
 
+-- one pending decoration per container: every item of a big sale or sort calls onChange (size, remove, add) and each
+-- call scheduled its own pass over the window
 local function later(container)
-  scheduleEvent(safe('decorate', function() decorate(container) end), 30)
+  if container.chaosDecoratePending then return end
+  container.chaosDecoratePending = true
+  scheduleEvent(safe('decorate', function()
+    container.chaosDecoratePending = nil
+    decorate(container)
+  end), 30)
 end
 
 -- ---------------------------------------------------------------- the window

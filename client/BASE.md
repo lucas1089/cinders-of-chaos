@@ -735,6 +735,17 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     fires. Applies after `0001`-`0107` (no earlier patch touches the file; `patch` clean on the base archive). A mocked
     run of `display()` under LuaJIT and Lua 5.3 turns both flags off with the base file and keeps them with `0108`.
     Not seen in a client.
+69g. `0109` (Lua `modules/game_containers/containers.lua`): **a container window redraws once per frame.** Owner beta,
+    2026-10-21: "o client ainda dá umas travadas quando o auto seller vende muitas coisas ao mesmo tempo". Cause: the
+    engine calls `onSizeChange` and `onRemoveItem` for every removed item, and both handlers ran `refreshContainerItems`
+    (setItem, rarity, tier and flags on every slot; 255 for the Loot Bag). A sale of 255 items was 510 full redraws in
+    one frame, plus the slot hooks of `game_itemrarity`, `game_lootfilter` and `game_depottabs`. Both handlers now call
+    `refreshContainerItemsLater`: it marks the container (`chaosRefreshPending`) and one `addEvent` redraws it after the
+    packets of that frame, if the window is still there. `onUpdateItem` (one slot) stays immediate. The server side sends
+    one container packet per sale with engine patch 0054 (server/README.md "Auto Seller: one update per sale"); this
+    keeps bursts cheap with any server. Applies after `0001`-`0108` (no earlier patch touches the file; `patch` clean on
+    the base archive). A mocked run of 255 removals under LuaJIT and Lua 5.3: 510 redraws with the base file, 1 with
+    `0109`. Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

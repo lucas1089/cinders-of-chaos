@@ -461,7 +461,8 @@ function PO.stow(player, item)
 	local info = infoOf(item, autolootSet(player))
 	local kinds = P.plan(info, PO.rulesOf(player), sets(), cfg(), pouches)
 	local parent = item:getParent()
-	local where = stowInto(pouches, kinds, item, parent, {full = {}})
+	-- the sort after it may move up to cfg.sort.maxMoves items: one container update for the client (engine patch 0054)
+	local where = Chaos.containerBatch(player, stowInto, pouches, kinds, item, parent, {full = {}})
 	return where == "pouch"
 end
 
@@ -503,32 +504,36 @@ local function collect(monster, corpse)
 	local rules, list, s = PO.rulesOf(owner), autolootSet(owner), sets()
 	local looted, backpack, left, overflow = {}, 0, 0, 0
 	local notes = {full = {}, sortLater = {}}
-	for _, item in ipairs(corpse:getItems() or {}) do
-		local info = infoOf(item, list)
-		local kinds, spilled = P.plan(info, rules, s, c, pouches)
-		if #kinds > 0 then
-			-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
-			if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
-				item = ChaosLoot.finalizeRarity(item)
-			end
-			local entry = lootEntry(item, info)
-			local where, kind = stowInto(pouches, kinds, item, corpse, notes)
-			if where == "pouch" then
-				looted[#looted + 1] = entry
-				if spilled and kind == "loot" then
-					overflow = overflow + info.count
+	-- the stow and the sort of one kill are one container update for the client (Chaos.containerBatch, engine patch
+	-- 0054): before, every item moved into an open Loot Bag and every sort move was its own packet and window refresh
+	Chaos.containerBatch(owner, function()
+		for _, item in ipairs(corpse:getItems() or {}) do
+			local info = infoOf(item, list)
+			local kinds, spilled = P.plan(info, rules, s, c, pouches)
+			if #kinds > 0 then
+				-- rolled now: the engine's rarity pass only reaches items still in the corpse (loot.lua finalizeRarity)
+				if info.category == "equipment" and ChaosLoot and ChaosLoot.finalizeRarity then
+					item = ChaosLoot.finalizeRarity(item)
 				end
-			elseif intoBags(owner, item) and not stillIn(item, corpse) then
-				looted[#looted + 1] = entry
-				backpack = backpack + 1
-			else
-				left = left + 1
+				local entry = lootEntry(item, info)
+				local where, kind = stowInto(pouches, kinds, item, corpse, notes)
+				if where == "pouch" then
+					looted[#looted + 1] = entry
+					if spilled and kind == "loot" then
+						overflow = overflow + info.count
+					end
+				elseif intoBags(owner, item) and not stillIn(item, corpse) then
+					looted[#looted + 1] = entry
+					backpack = backpack + 1
+				else
+					left = left + 1
+				end
 			end
 		end
-	end
-	for bag in pairs(notes.sortLater) do -- once per kill, not once per item
-		PO.sortBag(bag)
-	end
+		for bag in pairs(notes.sortLater) do -- once per kill, not once per item
+			PO.sortBag(bag)
+		end
+	end)
 	local now, guid = os.time(), owner:getGuid()
 	for kind in pairs(notes.full) do
 		local key = guid .. kind
@@ -687,7 +692,7 @@ accept:register(1)
 if Action and cfg().kinds.loot then
 	local openBag = Action()
 	function openBag.onUse(player, item)
-		pcall(PO.sortBag, item)
+		pcall(Chaos.containerBatch, player, PO.sortBag, item)
 		return false
 	end
 	openBag:id(cfg().kinds.loot.id)
