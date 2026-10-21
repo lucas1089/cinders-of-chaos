@@ -3720,6 +3720,12 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Assign Aggressive Spell"] = "Escolher magia de ataque",
   ["AND"] = "E",
   ["OR"] = "OU",
+  ["When:"] = "Quando:",
+  ["Action:"] = "Ação:",
+  ["Ranged Monster Names:"] = "Nomes de monstros à distância:",
+  ["Rules:"] = "Regras:",
+  ["Parameter:"] = "Parâmetro:",
+  ["Targeting: every monster, Auto Target and Magic Shooter on."] = "Alvo: todos os monstros, Auto Target e Magic Shooter ligados.",
   -- game_helpersupport: the helper's Support spells tab (owner 2026-10-18)
   ["(empty)"] = "(vazio)",
   ["A support spell is only cast when this share of your maximum mana is left after it,\nso healing and attack spells keep their mana."] = "Uma magia de suporte só é usada se sobrar esta parte da sua mana máxima depois dela,\npara que as magias de cura e de ataque tenham mana.",

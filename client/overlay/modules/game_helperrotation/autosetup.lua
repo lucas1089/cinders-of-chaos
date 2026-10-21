@@ -9,6 +9,8 @@
 -- spell data: game_helpersupport/supportspells.lua; the hand-written S.BUFFS only when that module is missing).
 -- Support spells: the rest of the class's support spells (shields, summons, a vigil ...) for the helper's Support spells
 -- section, cast whenever they are off cooldown (ChaosHelperSupport.autoPlan, the same module).
+-- Targeting (owner 2026-10-22): every monster ("*"), Auto Target and the shooter on, Always Chase Opponent and Follow
+-- Friend off, both paused in protection zones (S.TARGETING; the fields of the helper's own config).
 -- Spells always pass the caller's canCast (class, level, learned: autorotation_ui.lua's canCastFor).
 ChaosAutoSetup = ChaosAutoSetup or {}
 local S = ChaosAutoSetup
@@ -135,6 +137,35 @@ function S.timerRules(vocId, canCast, support)
   return out
 end
 
+-- the Shooter tab's targeting, as the helper's config fields (helper.lua's defaults have both systems off)
+S.TARGETING = {
+  targetMonsterList = '*', autoTargetEnabled = true, alwaysChaseOpponent = false,
+  followFriendEnabled = false, followFriendName = '', magicShooterEnabled = true, disableInProtectZone = true,
+}
+S.TARGETING_KEYS = { 'targetMonsterList', 'autoTargetEnabled', 'alwaysChaseOpponent', 'followFriendEnabled',
+  'followFriendName', 'magicShooterEnabled', 'disableInProtectZone' }
+
+function S.targeting()
+  local out = {}
+  for k, v in pairs(S.TARGETING) do out[k] = v end
+  return out
+end
+
+-- writes a targeting (S.targeting() or a snapshot from S.targetingOf) into the helper's config
+function S.applyTargeting(cfg, t)
+  if type(cfg) ~= 'table' or type(t) ~= 'table' then return cfg end
+  for _, k in ipairs(S.TARGETING_KEYS) do cfg[k] = t[k] end
+  return cfg
+end
+
+-- the config's current targeting (for Undo)
+function S.targetingOf(cfg)
+  local out = {}
+  if type(cfg) ~= 'table' then return out end
+  for _, k in ipairs(S.TARGETING_KEYS) do out[k] = cfg[k] end
+  return out
+end
+
 -- the whole plan. p: vocId, level, canCast(id), has(clientId), heals (ChaosAutoRotation.heals), rotation
 -- (ChaosAutoRotation.select's result or nil), support (ChaosHelperSupport.autoPlan's result or nil)
 function S.plan(p)
@@ -151,6 +182,7 @@ function S.plan(p)
     },
     tools = { autoEatFood = true, haste = S.haste(p.canCast) },
     rotation = p.rotation,
+    targeting = S.targeting(),
     timers = S.timerRules(p.vocId, p.canCast, p.support),
     support = p.support and p.support.support or {},
   }

@@ -168,5 +168,15 @@ local w = HC.autosetupWords({ timerWords = { 'utani hur', 5, '', { 'x' }, ('a'):
 eq(#w, 2, 'only non-empty words'); eq(#w[2], HC.TEXT_MAX, 'long word capped')
 eq(#HC.autosetupWords({ timerWords = 'x' }), 0, 'not a list'); eq(#HC.autosetupWords(nil), 0, 'no entry')
 
+-- Auto setup's targeting (autosetup.lua S.TARGETING) survives the check on load, so it is back after a relog
+local tcfg = HC.sanitizeHelper({ targetMonsterList = '*', autoTargetEnabled = true, alwaysChaseOpponent = false,
+  followFriendEnabled = false, followFriendName = '', magicShooterEnabled = true, disableInProtectZone = true })
+eq(tcfg.targetMonsterList, '*', 'targeting kept: every monster')
+eq(tcfg.autoTargetEnabled, true, 'targeting kept: Auto Target on')
+eq(tcfg.magicShooterEnabled, true, 'targeting kept: shooter on')
+eq(tcfg.disableInProtectZone, true, 'targeting kept: paused in protection zones')
+eq(tcfg.alwaysChaseOpponent, false, 'targeting kept: chase off')
+eq(tcfg.followFriendEnabled, false, 'targeting kept: Follow Friend off')
+
 print(('helperconfig_test: %d checks, %s'):format(checks, fails == 0 and 'OK' or (fails .. ' FAILED')))
 if fails > 0 then os.exit(1) end

@@ -716,6 +716,15 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     log lines. Applies after `0001`-`0105` (the `mods/game_helper/` hunks of the chain on the base archive, `patch`
     clean, result identical to the edited tree); every changed Lua file parses in LuaJIT and Lua 5.3. Not seen in a
     client.
+69e. `0107` (OTUI `mods/game_helper/styles/`): **the rule rows' buttons line up** (owner screenshot 2026-10-22). The
+    Remove button of `RuleListItem` (Equipment, Shooter, low supply) and `TimerRuleItem` was set to 17 x 17 beside the
+    18 x 18 Move up / Move down buttons; it keeps the style's 18 x 18 now. The arrows themselves sat in the top-left
+    corner of their frame because the overlay's `MoveUpButton` set `icon-size` (in this engine an icon rect at 0 0);
+    `data/styles/10-buttons.otui` no longer sets it, so the 9 x 6 arrow is centred. Also through `tr()` with pt-BR:
+    "When:", "Action:", "Conditions:", "Ranged Monster Names:", "Rules:", "Parameter:" (missed by 0106: plain text
+    ending in a colon); When and Action are 60 and 52 px wide (the English was clipped by a pixel or two). Applies
+    after `0001`-`0106` (the `mods/game_helper/` hunks of the chain on the base archive, `patch` clean, result identical
+    to the edited tree). Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
