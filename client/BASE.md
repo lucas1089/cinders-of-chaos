@@ -681,6 +681,25 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     text in that sheet (widest "Action Bar Hotkeys", 91 of 107 px) and that the patches leave that font. Applies
     after `0001`-`0102` (`0056` set the line). Checked with `patch` on a copy of the hunk's context only (the base
     archive was not unpacked here); not seen in a client.
+69c. `0105` (Lua and OTUI `mods/game_helper/`): **a compact Helper window without the options this server does not
+    use** (owner request 2026-10-22). The window is 936x540 (was 960x580): sidebar 196 px (was 220), tab bar 34 px
+    with 28 px icons, a smaller profile box (64 px portrait), tighter margins; the sidebar headings are gold.
+    Removed, with their config keys: Cure Paralyze (`paralyzeCure`; Lightward cleanses paralyze on this server),
+    Auto Sell Loot (`autoQuillSell*`; it needs a Summon Quill or a summoned trader, neither exists here), Quiver
+    Refill (`quiverRefill`; no quiver in 10.98, already hidden), Exana Vita (`magicShield.exanaEnabled` /
+    `exanaHpPercent`; no spell here ends the shield, `0052` had made it inert), the Full Dust alarm (`dust`; no forge
+    in this client) and the bot HUD's Cavebot and Waypoint rows (`botHud.showCavebot` / `showWaypoints`, already
+    hidden). `classes/paralyze_cure.lua` and `classes/alarms/full_dust_alarm.lua` stay on disk, out of
+    `helper.otmod`. Regrouped: Auto Stamina and Magic Shield share the top box of the Tools tab; Magic Shield shows
+    only for a class whose spells include Ward of the Mind (`tools.shouldShowMagePanel`, from the spell's vocations).
+    Old saves load: `helper.lua` clears the dropped keys on load and `game_helperrotation/helperconfig.lua`
+    (`HC.DROPPED`, `HC.DROPPED_FIELDS`) does the same in `sanitizeHelper`. Every text of the sidebar, the Tools tab,
+    the Settings tab and the Alarm Settings window goes through `tr()` with pt-BR (`client_chaos_locale/pt_br.lua`),
+    measured in `verdana-11px-antialised` against its widget (the alarm checkboxes are wider, "Set Key" sizes to its
+    text like `0056`'s). The other tabs' base texts (Healing, Shooter, Equipment, Timers) still have no pt-BR.
+    Applies after `0001`-`0104` (the `mods/game_helper/` hunks of the chain applied to the base archive, then
+    `patch` clean, result identical to the edited tree); both Lua files parse in LuaJIT and Lua 5.3. Not seen in a
+    client (no render here).
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
@@ -882,7 +901,7 @@ defines `Panel`, so only the tab style existed and the panel was never made (`MA
 The base tree carries art and data of features this client does not have. `assemble_client.sh` runs
 `tools/slim_client.py prune` after the overlay is copied: the rules in `tools/slim_prune.txt` (`- GLOB` removes,
 `+ GLOB` keeps, a reason per group) delete the files, never the base tree itself. Measured on the assembled tree
-(base + patches 0001-0104 + overlay, without the sprite pair): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
+(base + patches 0001-0104 + overlay, without the sprite pair; before 0105): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
 went from **258.0 MB (6746 files) to 84.6 MB (6344 files)**, so chaos.pack is about 173 MB smaller.
 
 | Removed | Size | Why it is unused |

@@ -3133,7 +3133,7 @@ Now (`ChaosHelperSave`, tested with a death and relogin in `helpersave_test.lua`
 ### Helper settings checked on load (`game_helperrotation/helperconfig.lua`, 2026-10-21)
 Players can edit the files the helper reads: the per-character `helper.json` and `config.otml` (`g_settings`). A
 hand-edited value could drive the automation out of range (a 0 s timer rule casting every tick, a 1000 % heal
-threshold, 500 rows, a text where a number belongs). `ChaosHelperConfig` (pure, `helperconfig_test.lua`, 109 checks,
+threshold, 500 rows, a text where a number belongs). `ChaosHelperConfig` (pure, `helperconfig_test.lua`, 121 checks,
 LuaJIT and Lua 5.3) checks what is read, before the helper uses it:
 - `helper.json`: `ChaosHelperSave.read` (the helper's reader since base patch 0067) runs `ChaosHelperConfig.sanitizeHelper`
   on what it decoded (a failing check never loses the file). Every number that drives the automation is a whole
@@ -3149,6 +3149,18 @@ LuaJIT and Lua 5.3) checks what is read, before the helper uses it:
   at most 128 characters), Support spells' `chaos_helper_support` (`supportspells.lua` `sanitize`, now also whole ids
   only); a node that is not a table is treated as empty. The updater's `chaos-update-parallel` (1..8) also refuses
   NaN.
+- Settings of options the compact Helper window (base patch `0105`) dropped are cleared from an old `helper.json`
+  (`HC.DROPPED`: `paralyzeCure`, `autoQuillSell`, `autoQuillSellBelowCap`, `autoQuillSellCapacity`, `quiverRefill`;
+  `HC.DROPPED_FIELDS`: `magicShield.exanaEnabled` / `exanaHpPercent`, `botHud.showCavebot` / `showWaypoints`), so
+  an old save still loads and nothing acts on them.
+
+### Compact Helper window (base patch `0105`, owner request 2026-10-22)
+The Helper window is 936x540 (was 960x580): narrower sidebar, lower tab bar with smaller icons (the Support tab of
+`game_helpersupport` matches: 114x32, 28 px icon), a smaller profile box, gold sidebar headings. Removed because
+nothing on this server uses them: Cure Paralyze, Auto Sell Loot (Summon Quill), Quiver Refill, Exana Vita, the Full
+Dust alarm, the bot HUD's Cavebot and Waypoint rows (the HUD's "Sell loot" text went with them). Auto Stamina and
+Magic Shield share the Tools tab's top box; Magic Shield shows only for a class with Ward of the Mind. The sidebar,
+Tools, Settings and Alarm Settings texts have pt-BR and fit their widgets in both languages. `client/BASE.md` 69c.
 
 ### Helper potions in closed backpacks (`game_helperrotation/potiongate.lua`, base patch `0070`)
 The Everfull potions (server 32085 / 32086) have the client look of the Health / Mana Potion (266 / 268), so the

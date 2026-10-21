@@ -37,7 +37,11 @@ local function hand()
     gransiohealing = { { name = 'old format' } },
     masreshealing = { extended = 'yes', sorcerer = { enabled = true, percent = 50, priority = 3 } },
     namedSio = { enabled = true, name = 'Friend', percent = 100 },
-    autoQuillSellCapacity = -3,
+    -- settings of options the compact helper window removed (base patch 0105): an old file still loads without them
+    autoQuillSell = true, autoQuillSellBelowCap = true, autoQuillSellCapacity = -3,
+    quiverRefill = { enabled = true, itemId = 3447, minValue = 50, refillValue = 100 },
+    magicShield = { utamoEnabled = true, utamoHpPercent = 70, exanaEnabled = true, exanaHpPercent = 90 },
+    botHud = { enabled = true, showCavebot = true, showWaypoints = true, showTimers = true },
     autoTargetMode = 99,
     currentLockedTargetId = 'x',
     shooterProfiles = {
@@ -83,7 +87,15 @@ eq(c.friendhealing.paladin.percent, 1, 'friend heal percent >= 1'); eq(c.friendh
 eq(c.gransiohealing[1].name, 'old format', 'old list format left for the helper to reset')
 eq(c.masreshealing.extended, false, 'masres extended text -> false'); eq(c.masreshealing.sorcerer.percent, 50, 'good value kept')
 eq(c.namedSio.percent, 99, 'named sio 1..99')
-eq(c.autoQuillSellCapacity, 0, 'quill capacity >= 0'); eq(c.autoTargetMode, 8, 'target mode 1..8')
+eq(c.autoTargetMode, 8, 'target mode 1..8')
+eq(c.paralyzeCure, nil, '0105: Cure Paralyze dropped'); eq(c.quiverRefill, nil, '0105: Quiver Refill dropped')
+eq(c.autoQuillSell, nil, '0105: Auto Sell Loot dropped'); eq(c.autoQuillSellBelowCap, nil, '0105: its below-cap switch')
+eq(c.autoQuillSellCapacity, nil, '0105: its capacity')
+eq(c.magicShield.exanaEnabled, nil, '0105: Exana Vita dropped'); eq(c.magicShield.exanaHpPercent, nil, '0105: its threshold')
+eq(c.magicShield.utamoEnabled, true, 'Ward of the Mind kept'); eq(c.magicShield.utamoHpPercent, 70, 'its threshold kept')
+eq(c.botHud.showCavebot, nil, '0105: HUD cavebot row dropped'); eq(c.botHud.showWaypoints, nil, '0105: HUD waypoints dropped')
+eq(c.botHud.showTimers, true, 'other HUD rows kept')
+eq(HC.sanitizeHelper({ magicShield = 'x', botHud = 5 }).magicShield, 'x', 'a dropped field of a non-table: no error')
 eq(c.currentLockedTargetId, 0, 'locked target text -> 0')
 local d = c.shooterProfiles.Default
 eq(d.autoTargetMode, 1, 'profile target mode'); eq(#d.rules, 2, 'unknown rule type dropped')

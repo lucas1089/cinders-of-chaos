@@ -91,7 +91,6 @@ function L.entries(helperConfig, state, tr)
   if cfg.antiIdle then auto[#auto + 1] = tr('Anti idle') end
   if party.enabled then auto[#auto + 1] = tr('Invite') end
   if party.acceptEnabled then auto[#auto + 1] = tr('Accept') end
-  if cfg.autoQuillSell then auto[#auto + 1] = tr('Sell loot') end
   add(hud.showAutomation, #auto > 0, 'tools', tr('Auto'), #auto > 0 and table.concat(auto, '  ') or off)
 
   if #rows == 0 then

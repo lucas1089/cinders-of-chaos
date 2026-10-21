@@ -3,14 +3,15 @@
 // Built beside the helper's own panels in the helper window; supportspells_ui.lua fills it.
 
 ChaosSupportTab < UIButton
-  size: 114 38
+  // the compact tab bar of base patch 0105: 32 px tabs, 28 px icons
+  size: 114 32
   border-width: 0
   anchors.top: parent.top
   margin-left: 1
   margin-top: 1
   image-source: /images/ui/helper
   image-clip: 34 272 34 34
-  image-size: 34 34
+  image-size: 28 28
   image-offset: 3 2
   // the state block's border-color is restored on state exit only when the base block sets it too
   border-color: #d7b46a00
@@ -24,7 +25,7 @@ ChaosSupportTab < UIButton
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.verticalCenter: parent.verticalCenter
-    margin-left: 38
+    margin-left: 34
     margin-right: 3
     !text: tr('Support')
     font: $var-main-font
