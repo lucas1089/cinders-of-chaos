@@ -2096,6 +2096,79 @@ importer verified 576 sprite slots pixel-identical to the sheets and every other
 - Checked offline: a before / after sheet on look 128, four directions; the owner approved it. Not run in a live
   client by us.
 
+## Pair 33 packs (planned: outfits 2385-2694, items 38093-38607, `tools/sprites/gen_pack33.py`, `art_import/pack33_*`; NOT built for windows-assets, owner approval needed)
+Four purchased packs of one vendor, uploaded by the owner to the Drive folder "ots" on 2026-10-21 (internal labels
+`set33 wings`, `set33 heads`, `set33 capes`, `set33 kit`; names and licence in docs/CREDITS.md). None of the four was
+imported before: no earlier pair, csv or tool names their files (the wings zip is labelled v2 but its own readme says
+v1.0; the kit is v2.0, its changelog says refined monster and boss sprites over v1.0, which we never had). The
+"hollow" rider of the catacomb kit (`assets_art.csv`) is another pack.
+**Licence** (each pack's LICENSE.txt, same text): personal and commercial games, modified or not, no attribution
+(credit appreciated); no resale, redistribution, sublicensing or sharing of the assets, alone or in another pack, even
+modified; never machine-learning training. So: in-game use is allowed, the art ships only inside the compiled
+`Tibia.spr`; import-only like set30 (docs/SPRITE_STYLE.md): `style_check.py` is not run on it, no palette is sampled,
+the cut sheets (`art_import/pack33_<slug>/`) and the contact sheets are never committed.
+**What they are** (the packs' metadata and catalogue; 32 px oblique, light from the upper left):
+- `set33 wings`: 100 wings in 8 elements (12 each, 16 neutral), 8 directions, 16 / 20 / 24 frame loops at 12 fps,
+  frames 96-160 px with an anchor tile; a per-frame body lift and a ground shadow in the back layer.
+- `set33 heads`: 100 head accessories (horns, ears, halos, crowns, orbiting charms; 8 elements), 8 directions, a back
+  and a front layer, 16 frames at 12 fps, frames 64-128 px.
+- `set33 capes`: 100 capes and cloaks (8 elements), 8 directions, back and front layers, 24 frames at 12 fps, 64-96 px.
+- `set33 kit`: 664 sprites of a harvest farmland and its catacombs: 5 x 9 grounds + 2 x 9 crypt grounds, 95 borders,
+  15 decals, corn and pumpkins, a corn maze, 3 wall sets + 2 crypt wall sets and a portcullis, 3 fences, wall
+  decorations, 2 roof styles (86 pieces + 8 tower roofs), trees, props, 35 event-mechanic states (pumpkin growth,
+  ritual circle and portal, crypt seal, grave, upright coffin, candy cauldron and mimic, lantern post, gibbet, bell,
+  offering altar), event decorations, catacomb stairs, 5 monsters, 4 critters and a 3x3 boss (idle, walk, attack /
+  death strips in 4 directions), render maps (`_albedo`, `_light`, `_normal`, `_height`, `_fx`) and floor parts.
+**Cut** (`gen_pack33.py` docstring has the rules; `build --src SRC`, CI `build --check` and `gen_pack33_test.py`):
+- Wings 2385-2484: one layer (the combined sheet), dat directions N, E, S, W from the pack rows 6, 0, 2, 4 (diagonals
+  dropped), one group, animateAlways, 83 ms; 44 3x3, 30 4x3, 26 4x4. The pack's lift is not used (the client lifts the
+  body 6 px, GameWingOffset).
+- Heads 2485-2584 and capes 2585-2684: aura things, layer 0 = the pack's back sheet, layer 1 = its front sheet
+  (GameAuraFrontAndBack), 16 / 24 phases at 83 ms; heads 93 2x2, capes 90 2x2, the rest 1x1 to 3x3.
+- Every frame trimmed to the union alpha box (alpha < 12 cleared); displacement = BODY_REF 8 minus the art right of /
+  below the wearer's tile, plus the big-aura centring for heads and capes (wings -29..+6, heads +12..+40, capes
+  -4..+26).
+- Kit looks 2685-2694 (idle 4 + walk 4, one layer, no mask): black cat, harvest werewolf, hedge witch, the boss (5x5),
+  pumpkin brute (4x4), raven (hop as walk), scarecrow stalker, skeleton archer, skeleton warrior, wailing ghost.
+  Attack / cast / death strips unused; the boss's last death frame is a corpse item (38607).
+- Kit items 38093-38606 (514): 63 grounds (minimap colour from the mean), 110 borders and decals, 168 blocking props and
+  walls (`bottom notwalkable notmoveable`), 157 walkable decor (open doors and gates, roofs, stairs, portal, circles,
+  small decals), 16 wall hangings; 37 animated (strip phases, frame ms), 38 with light 3 / colour 206; 43 have a
+  footprint over one tile (kept whole, anchored bottom-right: block the other tiles on the map or split them later).
+  Not imported: the 28 floor parts (the dat draws a tall item whole), the static first frame of the 2 lantern strips,
+  the render maps.
+**Test pair** (local, scratchpad only, deleted): pair 32 (windows-assets 1f109dc0, dat 23c7265b..., spr 8b4af2e6...)
++ the four things files in id order, `import_art_things.py --first-item 38093 --first-outfit 2385 --expect-items
+38092`: dat 61fa5ecf2e11431e409291d09be2704e (6,734,349 bytes), spr aaade8d5ea95b8b1930163646baaab11 (875,850,722
+bytes, +109.8 MB; 98,349 sprites appended, 303 reused; 940,941), 38,607 items, 2,694 outfits; 235,780 sprite slots
+pixel-identical to the sheets; built twice, identical md5s and manifests. `check_pair.py --old --new-only` with the
+heads and capes as `--aura-looks`: 0 errors, 0 warnings; full check 0 errors, 324 warnings = pair 32's 124 + 200
+`mask-not-mask` (the 200 aura looks until they are in `chaos_auras*.csv`). `fix_pair_warnings.py
+--scan-wings-displacement`: facing south the wings' centre is x -10.0..+3.4 (median -4.2), y -18.3..-0.3 (median
+-10.8) from body 128; 41 of 100 lie outside the premise box |x| <= 5 (all by x, leaning left), so the owner's preview
+decides whether BODY_REF x needs a pack-wide shift. Heads: art centre about 21 px up-left of the tile centre (on the
+head of a 2x2 look); capes -1..-13 px.
+**Proposed use** (owner decides; nothing on the server yet):
+- Wings: 100 new wings.xml looks (ids 30-129, after our 16-29) sold in the store's Wings category per element, a few as
+  exclusives (boss drops / achievements); `install_outfits.py` writes the lines behind a `PAIR33` switch like
+  `chaos_owner_art.lua`. Theme review by name: circuit, hologram, neon butterfly, pixel block, thruster jet and gyro
+  ring wings read as sci-fi.
+- Heads and capes, step 1 (no engine change): auras (`chaos_auras_*.csv` ids 33-232), a store category each ("Head
+  Accessories", "Capes") that sells auras; a player wears one aura, head piece or cape at a time. Step 2 (engine):
+  two new outfit fields `head` and `cape` (server src-patch: Outfit_t, the outfit packet, the outfit window, a player
+  column; client base patch: Outfit fields, drawn like the aura's back / front layers, rows in the Outfit window and
+  `game_outfitextras`), so they stack with wings and auras. Theme review: atom orbit, circuit visor, neon headset,
+  robot antennae, propeller beanie, ringed planet, mouse ears; academic gown, circuit, fiber optic, glitch pixel, neon
+  tatter, aviator scarf and pompom capes.
+- Kit: a harvest event map (farmland, corn maze, chapel, catacombs) with the event mechanics as item transforms
+  (pumpkin growth, crypt seal stairs, graves and coffins that spawn monsters, the ritual circle portal), the five
+  monsters, four critters and the boss in monster XML (`apply_monster_looks.py` picks), and the kit for the area
+  planner and map makers (`install_pack_items.py` manifest to server ids 41093-41607).
+- Server work per use: items.otb / items.xml (`install_pack_items.py`), wings.xml / auras (`install_outfits.py`,
+  `install_auras.py`), store offers and prices (`shop_config.lua`), exclusives, Store and Cosmetics previews (they
+  draw outfits already), `check_content.py --pair`, `outfit_anchors.lua` regenerated, `ChaosPack33.PAIR33` switch.
+- The spr grows by about 110 MB (+11.7% sprites); the size of the packed `things-1098.tar.xz` was not measured.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

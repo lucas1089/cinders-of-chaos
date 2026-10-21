@@ -54,7 +54,8 @@ Purchased packs. Their licence: use in personal and commercial games, modified o
 assets themselves are never resold or shared. Mega VFX 500 is never used to train machine learning or as a style
 reference; its effects are only imported into the game. The owner confirmed (2026-10-15) that the other WsT packs
 here (spell, aura, tile and Meadow Monsters packs) have no such clause. The WsT monster packs bought later do: they
-are never used for machine-learning training. The MutterPixel Studio packs (bought 2026-10-16 and later) and the
+are never used for machine-learning training, and neither are the four WsT packs bought in October 2026 (wings, head
+accessories, capes and cloaks, the Hollow Harvest Kit), which may not be shared even modified. The MutterPixel Studio packs (bought 2026-10-16 and later) and the
 Pocket Cozy Pixels packs may be modified and recoloured, are never used as AI training data or a style reference, and
 ask for credit (appreciated, not required). Listed here as thanks.
 
@@ -118,6 +119,22 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; modified or not, no attribution needed; no resale or sharing of the raw files; never machine-learning training data or a style reference
   - Used for: monsters
+- **WsT Wings Pack**
+  - Author: WsT
+  - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
+  - Used for: wings cosmetics (planned)
+- **WsT Head Accessories Pack**
+  - Author: WsT
+  - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
+  - Used for: head accessory cosmetics (planned)
+- **WsT Capes & Cloaks Pack**
+  - Author: WsT
+  - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
+  - Used for: cape cosmetics (planned)
+- **WsT Hollow Harvest Kit**
+  - Author: WsT
+  - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
+  - Used for: harvest farmland and catacomb tiles, decoration, event props and monsters (planned)
 - **A freely shared potion-throwing pack**
   - Licence: shared freely by its maker; no licence text
   - Used for: throwable potion flasks, projectiles and bursts
@@ -278,3 +295,6 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
 - **set30 potions**: the freely shared potion-throwing pack.
   `client/tools/sprites/art_import/pack30_*_sources.csv` name each pick's pack by these four labels; the vendor and
   pack names stay in this file (tools/ci/check_names.py).
+- **set33 wings**, **set33 heads**, **set33 capes**, **set33 kit**: the four WsT packs of 2026-10-21 above, in this
+  order: WsT Wings Pack, WsT Head Accessories Pack, WsT Capes & Cloaks Pack, WsT Hollow Harvest Kit (planned pair 33,
+  `client/tools/sprites/gen_pack33.py`). Import-only: no machine-learning use, no style reference, never shared.

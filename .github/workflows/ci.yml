@@ -498,6 +498,9 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_items_test.py
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack30_fx_test.py
+          # the planned pair 33 packs (import-only, sheets not in git): the committed tables agree with each other
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33_test.py
           # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)
