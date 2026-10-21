@@ -1,0 +1,57 @@
+# Chaos: the helper's locked target and the battle list's attack next / previous leave the player's own summons
+# alone (after 0001-0109; numbered 0112 because other branches use 0110 and 0111; it touches no file of theirs that
+# this branch knows of). Owner report 2026-10-21: "the Necromancer's risen warriors do not attack, they get targeted".
+# A click on an own summon (map or battle list) or attack next (the minion stands closest, so it is first) set the
+# helper's locked target, and the lock path re-sent the attack whenever the player was not attacking it; the server
+# refuses the own summon with a cancel, so the attack went out again every tick, the player never held a real target
+# and the minions (they go for their owner's target) stood idle. Decisions in the overlay module game_targetguard
+# (ChaosTargetGuard, tested); without the module everything works as before.
+--- a/modules/game_battle/battle.lua
++++ b/modules/game_battle/battle.lua
+@@ -864,6 +864,8 @@
+   end
+ 
+   local creatures = getMainBattle().panel:getVisibleCreatures()
++  -- Chaos: attack next never picks the player's own summons (ChaosTargetGuard, base patch 0112)
++  if ChaosTargetGuard then creatures = ChaosTargetGuard.attackCycle(creatures) end
+   local attackedCreature = g_game.getAttackingCreature()
+   local nextChild = nil
+   local breakNext = false
+@@ -916,6 +918,8 @@
+     return
+   end
+   local creatures = getMainBattle().panel:getVisibleCreatures()
++  -- Chaos: attack previous never picks the player's own summons (ChaosTargetGuard, base patch 0112)
++  if ChaosTargetGuard then creatures = ChaosTargetGuard.attackCycle(creatures) end
+   local attackedCreature = g_game.getAttackingCreature()
+   local prevChild = nil
+ 
+--- a/mods/game_helper/classes/auto_target.lua
++++ b/mods/game_helper/classes/auto_target.lua
+@@ -346,6 +346,12 @@
+   local isTargetedCreature = _Helper.AutoTarget.isTargetedCreature
+ 
+   local isWithinReach = _Helper.isWithinReach
++  -- Chaos: never stay locked on the player's own summon (ChaosTargetGuard, overlay game_targetguard; base patch 0112).
++  -- The server refuses it, and the lock below sent the refused attack again on every tick.
++  local targetGuard = ChaosTargetGuard
++  if currentLockedTarget and targetGuard and not targetGuard.keepLock(currentLockedTarget) then
++    currentLockedTarget = nil
++  end
+   -- Validate current locked target: alive, in reach, not ignored, still on the
+   -- target list (the list can change while we are already attacking something)
+   if currentLockedTarget and not currentLockedTarget:isDead()
+@@ -359,6 +365,13 @@
+     -- while the character just stood there, and the bot never attacked again.
+     local attacking = g_game.getAttackingCreature()
+     if not attacking or attacking:getId() ~= currentLockedTarget:getId() then
++      -- Chaos: a lock the server keeps cancelling (a party member's summon, a protection zone) goes after a few
++      -- re-sends instead of one refused attack per tick (ChaosTargetGuard.lockAction)
++      if targetGuard and targetGuard.lockAction(nil, currentLockedTarget:getId(), attacking and attacking:getId() or 0,
++          g_clock.millis()) == 'drop' then
++        helperConfig.currentLockedTargetId = 0
++        return
++      end
+       local safeDoThing = _Helper.safeDoThing
+       if safeDoThing then safeDoThing(false) end
+       g_game.attack(currentLockedTarget)

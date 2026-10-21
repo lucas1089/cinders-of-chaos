@@ -1,0 +1,8 @@
+Module
+  name: game_targetguard
+  description: Which creatures the helper's Auto Target lock and the battle list's attack next / previous may pick (ChaosTargetGuard; called by mods/game_helper and game_battle through base patch 0112)
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 900
+  scripts: [ targetguard ]

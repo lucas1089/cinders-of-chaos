@@ -1,0 +1,30 @@
+# Summon levels follow the owner (server/README.md "Summons: targets, walk-through, levels"). Owner report
+# 2026-10-21: "the risen skeletons' level does not follow the player's". Lua sets a player summon's display level after
+# it was placed (setMaster comes after Game.createMonster) and again when its owner levels up, but patch 0040's
+# monster:setDisplayLevel only stored the value: the name with "[level]" had gone out with the first creature packet.
+# Now a display level that changes on a monster already on the map is sent to its spectators again in full
+# (sendUpdateTileCreature, the way Monster::setName refreshes a renamed monster). Before the placement nothing is sent
+# (the first packet carries it, as before). Display only, like 0040 / 0044.
+# Applies after 0001-0055.
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -14519,7 +14519,19 @@
+ 	// monster:setDisplayLevel(level) (Chaos: the level after the name of a monster without one; display only)
+ 	Monster* monster = getUserdata<Monster>(L, 1);
+ 	if (monster) {
++		const int32_t before = monster->getDisplayLevel();
+ 		monster->setDisplayLevel(getNumber<int32_t>(L, 2));
++		// Chaos: a monster already on the map (a player's summon whose level follows its owner) shows the new level at
++		// once: the spectators get it again in full, as Monster::setName does (before the placement nothing is sent)
++		if (!monster->isRemoved() && monster->getTile() && monster->getDisplayLevel() != before) {
++			SpectatorVec spectators;
++			g_game.map.getSpectators(spectators, monster->getPosition(), true, true);
++			for (Creature* spectator : spectators) {
++				if (Player* tmpPlayer = spectator->getPlayer()) {
++					tmpPlayer->sendUpdateTileCreature(monster);
++				}
++			}
++		}
+ 		pushBoolean(L, true);
+ 	} else {
+ 		lua_pushnil(L);

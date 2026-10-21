@@ -573,7 +573,12 @@ Wild Bond by its words, and the level 1000 sanity measurement in `server/data/sp
   Mystic's (`newplayer_config.lua`).
 - **Summon spells** (2026-10-18, support group, all three classes, 4 s cooldown): Raise Bone Warrior (192, `vael oss brak`, level 8, 50 mana; a sturdy melee minion, range 1, physical), Raise Bone Archer (193, `vael oss sag`, level 12, 60 mana; range 5, physical arrows, fragile) and Raise Bone Mage (176, `vael oss mynd`, level 16, 70 mana; range 4, energy, fragile). Each creates ONE minion next to the caster. **Total cap** (all kinds together: skeletons, shades, the golem and these three): Necromancer 3, Lich 1, Bone Lord 6 (7 from level 400), the passive tree's Legion adds to it. At the cap the next summon of any spell dismisses the OLDEST minion first (a puff, no corpse, no loot), then the new one appears. Raise Dead's own per-kind caps stay; the total wins. Numbers: `necro_config.lua` `minions`.
 - **Summons**: capped per class and level, scale with the owner's level and magic level, follow (brought back past
-  7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. Their hits are
+  7 sqm or across floors), rest in protection zones and rise outside, go at logout and death, pushable. They show
+  their owner's level after the name and follow a level up while out (the level shown and the maximum health, the
+  same share of it kept; hits always use the owner's current numbers). The owner walks through its own minions
+  (engine patch 0055; other players and the party are still blocked). The owner and its party never target them:
+  the helper drops such a lock and attack next skips them (client base patch 0112). No experience, no loot.
+  (server/README.md "Summons: targets, walk-through, levels", 2026-10-21.) Their hits are
   dealt as the owner (full experience, the Chaos loot layer, bounty / leaderboard / hunt credit through the owner);
   the engine alone would credit a summon's share at half experience and skip the rarity loot when a summon lands the
   last hit (`Creature::onGainExperience`, `Monster::dropLoot`).

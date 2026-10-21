@@ -117,6 +117,23 @@ function N.minionHealth(cfg, classKey, kind, level, ml, extra)
 	return max(1, floor((h.base + (level or 0) * h.perLevel + (ml or 0) * h.perMl) * f * (k.mult and k.mult.health or 1) * (extra or 1)))
 end
 
+-- The level a minion shows after its name ("Risen Warrior [312]"): its owner's level (owner report 2026-10-21: "the
+-- risen skeletons' level does not follow the player's"; it showed the monster level estimate of a 10 hp monster).
+-- Display only: the minion's hits and health already come from the owner's level and magic level.
+function N.minionLevel(ownerLevel)
+	return max(1, floor(tonumber(ownerLevel) or 1))
+end
+
+-- A minion's health when its maximum goes from oldMax to newMax (the owner levelled, or its magic level or passive
+-- tree changed): the same share of the maximum, at least 1, at most newMax. Returns the new health.
+function N.rescaleHealth(oldMax, health, newMax)
+	oldMax, health, newMax = max(1, oldMax or 1), max(0, health or 0), max(1, newMax or 1)
+	if health <= 0 then
+		return 0
+	end
+	return math.min(newMax, max(1, floor(newMax * health / oldMax + 0.5)))
+end
+
 -- positive min, max of one minion hit; `aura` = Banner of Bones is up on the owner (true: the banner's bonus; a number:
 -- that bonus, the passive tree's Banner Bearer included); extra: a factor on top (Bone Colossus for the golem)
 function N.minionHit(cfg, classKey, kind, level, ml, aura, extra)

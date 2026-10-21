@@ -204,6 +204,13 @@ server/
                                       the container item and stats packets of a script that moves many items: one full
                                       container packet per changed window and one stats packet at the end (see "Auto
                                       Seller: one update per sale"; Chaos.containerBatch)
+  src-patches/0055-own-summons-walk-through.patch   engine: a player walks through its OWN summons (canWalkthrough,
+                                      canWalkthroughEx for the client's prediction); setMaster sends the walk-through
+                                      state (see "Summons: targets, walk-through, levels")
+  src-patches/0056-summon-display-level-refresh.patch   engine: a display level changed on a monster already on the
+                                      map is sent to its spectators again (a summon's level follows its owner)
+  src-patches/0057-script-target-drop-tells-client.patch   engine: creature:setTarget(nil) on a player sends the
+                                      cancel target packet (the client no longer keeps a dropped target)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
@@ -697,7 +704,8 @@ left open, now closed (`summons_core.lua`, `summons.lua`, `tests/summons_test.lu
   caster's own or its party's summons (its comment always said so; the code did not); Feral Command picks the nearest enemy
   within 7 sqm when its target is an ally (or says "No enemy in range."); the companion's bite skips an ally target;
 - the Moonfang wolves now carry the companion guard too (the owner's area spells do not hurt them).
-Client side the Auto Target already skips summons and effigies (base patch 0076). **To check live**: summon the wolf, stand
+Client side the Auto Target already skips summons and effigies (base patch 0076); its locked target and attack next
+followed in 2026-10-21 (base patch 0112, see "Summons: targets, walk-through, levels"). **To check live**: summon the wolf, stand
 next to it with Auto Target on, hunt, press Feral Command with the wolf clicked (it should hit the nearest monster), and watch
 whether the wolf ever walks at the owner. If it still does, read `Monster::selectTarget` / `isOpponent` in the engine and
 tell me what the fork changed.
@@ -1821,6 +1829,50 @@ net (vocation change, level loss) and gives the new kinds their animation (arrow
 Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line". Needs a live check: the three casts and the
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
+
+## Summons: targets, walk-through, levels (2026-10-21)
+
+Owner report: "the Necromancer's risen warriors do not attack, they get targeted and they block the way", and "the risen
+skeletons' level does not follow the player's". Causes found in the code (the engine sources of the chain and the client
+base read, not reproduced live):
+- **Targeted, then idle.** The 10.98 creature packet carries no master id, so the client knows a summon only by its
+  creature type (3 own, 4 another player's). The helper's own pick skips both (client base patch 0076), but a click on
+  the minion (map or battle list) and the battle list's attack next (the minion stands closest, so it comes first) set
+  the helper's locked target, and the lock path sent the attack again whenever the player was not attacking it. The
+  server refuses an own summon (`summons.lua`, "You may not attack this creature." and a cancel), so the attack went out
+  again on every helper tick: the player never held a real target, and the minions, which take their owner's target
+  (the engine's `Creature::setAttackedCreature` passes it to the summons; `necro_minions.lua` hits the owner's target),
+  stood idle. When `summons.lua` dropped such a target itself (`player:setTarget(nil)` every 0.5 s), the client was not
+  told and kept the red square on the minion. Fixes: client base patch 0112 with the overlay module `game_targetguard`
+  (a lock on an own summon is dropped; a lock the server refuses 3 times within 3 s is dropped; attack next / previous
+  skip own summons; client/BASE.md, client/MANIFEST.md "Target guard"); engine patch 0057 (`creature:setTarget(nil)` on a
+  player sends the cancel target packet). The server's refusals stay as they were.
+- **Blocking.** A melee minion stands next to its owner and only moved one tile per push. Engine patch 0055: a player
+  walks through its own summons (`Player::canWalkthrough`, the server's step and path check) and the creature packets
+  tell its client so (`canWalkthroughEx`, the "unpassable" byte; the client's `Tile::isWalkable` honours it, no client
+  patch). `setMaster` runs after `Game.createMonster` placed the monster, so `Game::updateCreatureType` now also sends the
+  walk-through state. Only the owner: another player's or a party member's summons still block (party changes would need
+  every summon re-sent), the summon still needs a free tile of its own, and every other rule of the tile stays (walls,
+  items, other creatures, protection zones, floor changes). Exploits checked: no step into a blocked tile (only the
+  summon itself is skipped), body blocks in PvP unchanged for everyone but the owner, summons still never push creatures
+  (`canpushcreatures` 0, and the engine never lets a summon push), a player is never pushed onto another's summon.
+- **Levels.** The spawn callback (`monster_levels.lua`, `onSpawn`) runs inside `Game.createMonster`, before `setMaster`,
+  so a minion got the display level a wild 10 hp, 0 experience monster is estimated at, and nothing changed it after.
+  Its hits and health already came from the owner's level and magic level. Now `ChaosNecro.raise` shows the owner's level
+  (`ChaosNecroCore.minionLevel`) after setting the master, and `necro_minions.lua` keeps every living minion in step on
+  each think (`ChaosNecro.refresh`): a level up (or a new magic level or passive tree) re-shows the level and rescales
+  the maximum health, keeping the same share (`ChaosNecroCore.rescaleHealth`); hits are computed from the owner's numbers
+  at each hit. Engine patch 0056 sends a changed display level to the spectators at once (`monster:setDisplayLevel` only
+  stored it; the name had gone out with the first packet). Without 0056 the look text is right and the name updates when
+  the minion comes into view again.
+- **No farming.** Every minion type has `experience="0"` and no loot table, `ChaosNecro.raise` turns its loot drop off,
+  the owner's and its other summons' hits do not hurt it (`ChaosNecroMinionGuard`), the owner and its party cannot target
+  it (`summons.lua`), and the kill counters (bestiary, bounties, hunt, achievements, season pass, item mods) skip
+  summons. The shown level is display only (`getMonsterLevel` stays 0; loot, pace and monster damage read that).
+Tests: `tests/necro_summon_test.lua` (levels, rescale, the XML experience and loot of every minion type),
+`client/overlay/modules/game_targetguard/targetguard_test.lua` (the targeting choice). Needs a live check: a click and
+attack next on an own minion with Auto Target on, walking through a warrior in a corridor (and a second player who
+cannot), a level up with minions out.
 
 ## Monster debuff durations (`tools/patch_debuff_durations.py`, install step `debuffs`)
 
@@ -15650,7 +15702,8 @@ damage and a skull colour. So patch 0040 adds a display level instead (`monster:
 `getDisplayLevel`), shown after the name and in the look text only. At every spawn (`onSpawn`, before the
 placement) `monster_levels.lua` gives a monster without a level of its own `ChaosLoot.monsterLevel`: the bounty pool's
 hunting level of its type, else the experience / health estimate; the same level item level, monster damage and pace
-use. Not for a player's summon. Display monsters of the teleport room get it like any monster. Without patch 0040
+use. Not for a player's summon (a Necromancer minion shows its owner's level, see "Summons: targets, walk-through,
+levels"). Display monsters of the teleport room get it like any monster. Without patch 0040
 nothing changes.
 
 **Scaled monsters** show the level their system scaled them to, not their type's. The system passes it to
