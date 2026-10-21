@@ -249,6 +249,23 @@ def hall_order_checks(root):
     go()
     stacks, tele, _f = map_state(srv)
     check(tele.get(hall['base_6_12_15']) == (710, 700, 7) and PORTAL not in stacks[(12, 15, Z)], 'order again after a remove')
+    # the order changes on a later install (beta report 2026-10-22: a hunt's level changed; seven ways back led in
+    # front of another hunt's teleport): each way back follows its own hunt, by the arrival beside it
+    rows[0] = dict(rows[0], lo=900, hi=950)
+    H.write_csv(rows, csvp)
+    res = go()
+    hall = res['hall']['assign']
+    seq = sorted(hall, key=lambda k: (hall[k][0], hall[k][1]))
+    check(seq[-1] == 'base_6_12_11', 'reorder: the Rat hunt last now: %s' % seq)
+    stacks, tele, _f = map_state(srv)
+    check(tele.get((701, 700, 7)) == H.front_of(cfg['room'], hall['base_6_12_11'])
+          and tele.get((711, 701, 7)) == H.front_of(cfg['room'], hall['base_6_12_15']),
+          'reorder: each way back leads in front of its own hunt\'s teleport: %s' % tele)
+    once = digest(srv)
+    go()
+    check(digest(srv) == once, 'reorder: a second run changes nothing')
+    rows[0] = dict(rows[0], lo=10, hi=40)
+    H.write_csv(rows, csvp)
     # too few slots: refused
     rows.append(dict(rows[0], id='base_6_99_11', x=99))
     H.write_csv(rows, csvp)

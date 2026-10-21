@@ -15256,6 +15256,26 @@ west to east (north before south in a column). A floor with too few slots is gro
     teleport now) or a `returns` entry whose tile is free there, and every placed plan its `exit`; exit 1 otherwise
     (`tools/check_hunt_returns_test.py`). Run on a copy of the base map after `install_content_areas.py`: 45 of 45
     CSV hunts (35 on the map in front of their teleport, 10 at startup on their `at`) and 17 of 17 camp portals.
+  - *Hunts that led past their monsters* (beta report 2026-10-22: "wrong names and display monsters, dead-end
+    destinations"). `hall_order.py derive` named each base hunt after the monsters spawned within 40 tiles of its
+    destination on the same floor, as the crow flies. Walked from the arrival on a copy of the live map (stairs,
+    ladders and holes followed, 150 steps), five of them never reach their monster: Frost Dragon (32240,31303,7: no
+    monster at all), Freakish Lost Soul (34180,31289,10: a closed room of 291 tiles), Skeleton Elite Warrior (spectres
+    only), Blightwalker (Vexclaw, Grimeleech, Demon) and Rustheap Golem (sea serpents). Their CSV rows now lead to
+    their own monsters (a tile 8 to 16 steps from the spawn, no spawn within 5 tiles, no protection zone), with the
+    band of the new place (`hall_order.py band`; the note "destination moved"): Frost Dragon 32189,31429,7 (40-75),
+    Freakish Lost Soul 34149,31340,8 (115-135), Skeleton Elite Warrior 33898,31156,9 (130-135), Blightwalker
+    33194,31777,12 (95-150) and Rustheap Golem 33635,31690,13 (60-80). Their base way back stays at the old arrival,
+    so each has a `returns` entry one tile from the new arrival; `tests/hunt_teleports_test.lua` requires one for a
+    row whose note says "destination moved". Every other hunt of the hall reaches its named monster within 150
+    steps.
+  - *Ways back after a new order.* A new level (above) changes the hall order, and the live server is installed over
+    its own installed map. `hall_quests.ways_back` found a way back only by the slot it leads to: where the base server
+    had the hunt or where it stands now. A way back the previous install had pointed at a third slot was taken by
+    that slot's new hunt or by none (on the copy: 9 of 45 hunts without their way back). Now a teleport that leads in
+    front of any slot of the hall and stands within 4 tiles of a hunt's arrival (`WAY_BACK_NEAR`) belongs to that
+    hunt. `tools/install_content_areas_test.py` changes the order on a second install. Checked on the copy:
+    `check_hunt_returns.py` 45 of 45, a second run leaves the map unchanged.
   - *Where the quests are.* The owner: "the quests should be further down, where the daily and weekly rewards are",
     then, on the minimap, the hall over the pond "looks ugly; you can overwrite this green region". The quests now
     stand in the plaza itself (above); the hall over the pond is taken away (`previous`).

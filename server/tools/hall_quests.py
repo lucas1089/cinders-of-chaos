@@ -23,7 +23,8 @@ This module is the part that knows about the quests (the rows of hall_hunts.csv 
            rewards stayed and the quests are gone")
   ways     the way back from every hunt and quest (ways_back): a teleport outside the hall that leads in front of one
            of its teleports belongs to the hunt or quest whose arrival is nearest among those it leads in front of
-           (where the base server had it or where it stands now), and leads in front of the teleport it has now
+           (where the base server had it or where it stands now), or, leading in front of any slot, to the hunt whose
+           arrival is within WAY_BACK_NEAR tiles; it leads in front of the teleport it has now
   chests   the daily and weekly reward chests of the base plaza (royal chest, unique ids 34801-34804, their booths)
            are taken away (owner, 2026-10-18) where the config lists them, after checking the chest is there
 and TileEditor, which reads map tiles once (tile_ranges), lets the steps change them in turn and reports only what
@@ -508,23 +509,38 @@ def distance(a, b):
     return max(abs(a[0] - b[0]), abs(a[1] - b[1])) + 30 * abs(a[2] - b[2])
 
 
-def ways_back(tele, owners, skip=lambda p: False):
+WAY_BACK_NEAR = 4  # the base server's ways back stand one to three tiles from the arrival
+
+
+def ways_back(tele, owners, skip=lambda p: False, slot_fronts=(), near=WAY_BACK_NEAR):
     """[(pos, dest, owner)]: the teleports of the map (tele {pos: dest}, outside the hall: skip) that lead in front of
     one of the hall's teleports - the way back from a hunt or a quest. owners: [{id, dest, fronts, want}], the tile in
     front of the owner's teleport where the base server had it and where it stands now (fronts), and where its way
     back should lead (want). A way back belongs to the owner whose arrival (dest) is nearest among those it leads in
     front of: a way back that already leads in front of a hunt's new slot (the old slot of another hunt) stays with its
-    own hunt, so a second run changes nothing."""
+    own hunt, so a second run changes nothing.
+    slot_fronts: the tiles in front of every hunt slot of the hall. A teleport that leads in front of one of them and
+    stands within `near` tiles of an owner's arrival (same floor) is that owner's way back, whatever slot it leads to:
+    an earlier install with another order (a hunt's level or a new hunt changed it) left it in front of a slot that is
+    neither where the base server had its hunt nor where it stands now (beta report 2026-10-22: the order changed and
+    seven ways back led in front of another hunt's teleport)."""
     by_front = {}
     for o in owners:
         for f in o['fronts']:
             by_front.setdefault(tuple(f), []).append(o)
+    slots = {tuple(f) for f in slot_fronts}
     out = []
     for pos, d in sorted(tele.items()):
         claim = by_front.get(tuple(d))
-        if not claim or skip(pos):
+        if (not claim and tuple(d) not in slots) or skip(pos):
             continue
-        o = min(claim, key=lambda o: (distance(pos, o['dest']), o['id']))
+        close = [o for o in owners if o['dest'][2] == pos[2] and distance(pos, o['dest']) <= near]
+        if close:
+            o = min(close, key=lambda o: (distance(pos, o['dest']), o['id']))
+        elif claim:
+            o = min(claim, key=lambda o: (distance(pos, o['dest']), o['id']))
+        else:
+            continue
         out.append((tuple(pos), tuple(d), o))
     return out
 

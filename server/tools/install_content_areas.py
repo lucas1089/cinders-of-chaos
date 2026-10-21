@@ -950,7 +950,8 @@ def hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log, wing_lays
 
     def in_hall(p):
         return (p[2] in hall['floors'] and hall['x'][0] <= p[0] <= hall['x'][1] and r0 <= p[1] <= r1) or p in quest_spots
-    found = Q.ways_back(world.tele, owners, in_hall)
+    found = Q.ways_back(world.tele, owners, in_hall,
+                        slot_fronts=[H.front_of(room, s['teleport']) for s in hl['slots'] if s.get('teleport')])
     ed.need(*[p for p, _d, _o in found], optional=True)
     # ground under the ground floor's wings
     box = set()
