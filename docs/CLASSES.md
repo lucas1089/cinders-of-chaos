@@ -262,16 +262,16 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Monk | 7 | 7 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Shadowfist | 10 | 10 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Pressure Points 100, Shadow Ricochet 150, Shadowfist Flurry 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Iron Sage | 11 | 11 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Iron Palm 120, Iron Chain 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35, Chi Ward 100, Mantra of Stone 150 |
-| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
-| Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
-| Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
+| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
 | Templar | 4 | 4 | Radiant Smite 8, Consecration 40, Sanctified Ground 60 | Vow of Mending 30 |  |
 | Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 40, Judgement 100, Purging Nova 120 | Vow of Mending 30 | Zealotry 150 |
 | Sentinel | 7 | 7 | Radiant Smite 8, Consecration 40, Shield Wave 150 | Vow of Mending 30, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
 
 * Ward of the Mind (stock Magic Shield, the classic one: the mana takes a hit first, the health only the rest) is
-  outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers"): the Mystic
-  and Ranger lines have it, no other class. Soulward (level 80, 15 s) stays every class's short mana shield.
+  outside the 15 (`patch_spell_cap.py` `OUTSIDE_CAP`, owner 2026-10-21: "somente pra mages e rangers", the
+  Necromancer counted as a mage): the Mystic, Necromancer and Ranger lines have it, no other class. Soulward (level 80, 15 s) stays every class's short mana shield.
 
 Dropped, per line (each spell left the classes named; "retired" = no class keeps it):
 - Warrior line: Minor Mending, Warhorse Rush, Cyclone Hurl, Martial Communion, Earthrend, Reaver's Spin, Rending Mark,
@@ -292,8 +292,9 @@ Dropped, per line (each spell left the classes named; "retired" = no class keeps
   Between the three classes: the Mystic left Forked Storm, Crimson Covenant, Pyre Torrent, Tempest Fan (Elementalist),
   Hall of Mirrors, Wraithshroud (Illusionist); the Illusionist left Grand Mending, Galeborne Stride, Blightswarm, Ironbark
   Hide, Umbral Stride, Briar Prison (Mystic).
-- Necromancer line: Arcane Stitch, Ward of the Mind, Kindred Mend, Deep Mending, Circle of Mending, Heartwood Embrace,
-  Skinchanger's Guise, Shroud of Shadows, Arcane Communion, Mending Communion.
+- Necromancer line: Arcane Stitch, Kindred Mend, Deep Mending, Circle of Mending, Heartwood Embrace,
+  Skinchanger's Guise, Shroud of Shadows, Arcane Communion, Mending Communion. Ward of the Mind left on 2026-10-20 and
+  came back outside the cap on 2026-10-21 (*).
 - Thief, Monk and Templar lines: nothing (10-13, 7-11 and 4-7 spells).
 
 ## Skills and weapons (owner debug items 46 and 47, 2026-10-17)

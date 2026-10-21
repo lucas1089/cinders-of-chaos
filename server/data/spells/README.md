@@ -99,7 +99,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | **shared** | | | | | | | |
 | 232 | Flickerdash | `ash flik` | every class | 35 | 80 | 6s | Dash up to 4 sqm in your facing direction, stops at obstacles; 2.5s speed boost. |
 | 233 | Banner Call | `tor vas vant` | every class | 60 | 250 | 35s | You and party members within 5 sqm: +10% melee/distance/magic and speed for 12s. |
-| 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). Ward of the Mind, the stock Magic Shield (level 14, 50 mana, 200 s), is the Mystic and Ranger lines' only (server/README.md "Magic Shield"). |
+| 234 | Soulward | `tor anh` | every class | 80 | 150 | 40s | Mana shield for 15s with mana regeneration (stock Magic Shield has none). Ward of the Mind, the stock Magic Shield (level 14, 50 mana, 200 s), is the Mystic, Necromancer and Ranger lines' only (server/README.md "Magic Shield"). |
 | 235 | Hunter's Instinct | `ash senn` | every class | 25 | 40 | 10s | Marks monsters within 12 sqm (max 15) and tells the nearest one's direction. |
 | **thief** (T Thief, N Ninja, Sa Samurai) | | | | | | | |
 | 236 | Shuriken Toss | `kah shur` | T, N, Sa | 8 | 16 | 2s | Throws a shuriken (range 5): ranged weapon strike, the better of sword and distance skill x a default shuriken attack of 50 (a one-handed distance weapon in hand raises it; no stars, stackable throwing weapons left the game 2026-10-20). The Thief's filler. Cooldown 2 s since the second rotation pass (was 3 s at x2.0): damage x a class scale, Thief 1.33, Ninja 1.33 (1.62 from level 180), Samurai 1.33 (1.5 from level 120) ("Rotations"). |

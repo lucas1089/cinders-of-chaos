@@ -45,7 +45,8 @@ usage: python3 -I add_vocations.py DATA_DIR [--dry-run]
    The Thief, Monk and Templar lines get the stock utility spells every other class has (LINE_STOCK_SPELLS: light, great
    light, haste, find person, levitate, magic rope, the poison / splash / bewitched cures); the Thief and Monk lines also
    strong haste, the Monk and Templar lines cure bleeding (as the Warrior), the Templar line cure curse (as the Ranger).
-   The magic shield (Ward of the Mind) gets the Mystic and Ranger lines (owner 2026-10-21) and never the Necromancer.
+   The magic shield (Ward of the Mind) gets the Mystic, Necromancer and Ranger lines (owner 2026-10-21; the
+   Necromancer counts as a mage), through LINE_STOCK_SPELLS only.
 4. data/actions/scripts/other/potions.lua: every class drinks the potions of its role (docs/CLASSES.md, POTION_RULES):
    a list that names the Elite Knight (8) also gets the Berserker (14), one that names the Royal Paladin (7) the
    Beastmaster (15), the Thief line (11, 12, 13) and the Monk line (17, 18, 19), one that names either the Templar line
@@ -84,7 +85,7 @@ RANGER_LINE = ['Ranger', 'Deadeye', 'Beastmaster']
 CASTERS = ('Mystic', 'Elementalist', 'Illusionist', 'Sorcerer', 'Master Sorcerer', 'Druid', 'Elder Druid')
 # the Necromancer's stock spells: the Mystic's healing / support instants, never these scripts
 NECRO_SPELL_FROM = ('Mystic', 'Sorcerer')
-NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/', 'magic_shield')  # magic shield: Mystic and Ranger lines only
+NECRO_SPELL_SKIP = ('conjuring/', 'summon_creature', 'custom/', 'magic_shield')  # magic shield: LINE_STOCK_SPELLS
 # the stock utility spells of the Thief, Monk and Templar lines (the Warrior, Ranger, Mystic and Necromancer all have
 # the first six; the cure spells were retired, retire_cure_spells.py): (spells.xml script, stock words, lines). client/tools/gen_spell_data.py writes the same table into
 # the client's spelldata.lua (ChaosStockSpellLines), so the client's spell list shows them for the three lines.
@@ -97,10 +98,11 @@ LINE_STOCK_SPELLS = [
     ('support/levitate.lua', 'exani hur', THIEF_MONK_TEMPLAR),
     ('support/magic_rope.lua', 'exani tera', THIEF_MONK_TEMPLAR),
     ('support/strong_haste.lua', 'utani gran hur', (LINE, MONK_LINE)),       # the mobile lines
-    # Ward of the Mind, the classic mana shield (owner 2026-10-21: "somente pra mages e rangers"): the Mystic line keeps
-    # it (an install the 15-spell cap already cut gets it back) and the Ranger line gets it; patch_spell_cap.py CAP
-    # keeps exactly these six, the Necromancer line never gets it (NECRO_SPELL_SKIP). server/README.md "Magic Shield".
-    ('support/magic_shield.lua', 'utamo vita', (MYSTIC_LINE, RANGER_LINE)),
+    # Ward of the Mind, the classic mana shield (owner 2026-10-21: "somente pra mages e rangers"; the Necromancer counts
+    # as a mage): the Mystic and Necromancer lines keep it (an install the 15-spell cap already cut gets it back) and
+    # the Ranger line gets it; patch_spell_cap.py CAP keeps exactly these nine. The Necromancer conversion skips it
+    # (NECRO_SPELL_SKIP), this entry adds the line. server/README.md "Magic Shield".
+    ('support/magic_shield.lua', 'utamo vita', (MYSTIC_LINE, NECRO_LINE, RANGER_LINE)),
 ]
 
 # old name -> new names; 'B' / 'BM' mark the Berserker / Beastmaster, added only where the item allows it

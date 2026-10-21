@@ -1,6 +1,6 @@
 -- Run from the server/ folder: luajit tests/manashield_test.lua (and lua5.3; CI runs both)
 -- The classic Magic Shield (server/README.md "Magic Shield"; owner 2026-10-21): Ward of the Mind takes a hit from the
--- mana first and only the rest from the health, for the Mystic and Ranger lines only. Tests:
+-- mana first and only the rest from the health, for the Mystic, Necromancer and Ranger lines only. Tests:
 --   * the core (manashield_core.lua): the split, the classes, the providers, the rescale, the marks;
 --   * the glue (manashield.lua) against a mocked engine that runs a hit the way combatChangeHealth does (the mana events
 --     on the whole hit, the mana drained, the health events on the rest): a scaling system pays the same whether the
@@ -34,10 +34,10 @@ m, h = S.split(0, 50)
 eq(m + h, 0, "no hit")
 
 -- ------------------------------------------------------------------ the classes (docs/CLASSES.md ids)
-for _, v in ipairs({1, 5, 10, 3, 7, 15}) do
-	eq(S.allowed(v), true, "Mystic and Ranger lines: " .. v)
+for _, v in ipairs({1, 5, 10, 20, 21, 22, 3, 7, 15}) do
+	eq(S.allowed(v), true, "Mystic, Necromancer and Ranger lines: " .. v)
 end
-for _, v in ipairs({4, 8, 14, 11, 12, 13, 17, 18, 19, 20, 21, 22, 23, 24, 25, 0}) do
+for _, v in ipairs({4, 8, 14, 11, 12, 13, 17, 18, 19, 23, 24, 25, 0}) do
 	eq(S.allowed(v), false, "no other class: " .. v)
 end
 
@@ -219,7 +219,8 @@ local function read(path)
 	f:close()
 	return t
 end
-local NAME = {Mystic = 1, Elementalist = 5, Illusionist = 10, Ranger = 3, Deadeye = 7, Beastmaster = 15}
+local NAME = {Mystic = 1, Elementalist = 5, Illusionist = 10, Necromancer = 20, Lich = 21, ["Bone Lord"] = 22, Ranger = 3,
+	Deadeye = 7, Beastmaster = 15}
 local function idsOf(list)
 	local ids = {}
 	for name in list:gmatch("'([^']+)'") do
@@ -235,9 +236,10 @@ want = table.concat(want, ",")
 local cap = read("tools/patch_spell_cap.py"):match("'support/magic_shield.lua': %(44, 'Ward of the Mind', (%b())%)")
 eq(cap and idsOf(cap), want, "patch_spell_cap.py CAP keeps the config's classes")
 local av = read("tools/add_vocations.py")
-eq(av:find("('support/magic_shield.lua', 'utamo vita', (MYSTIC_LINE, RANGER_LINE))", 1, true) ~= nil, true,
-	"add_vocations.py gives it the Mystic and Ranger lines")
-eq(idsOf(av:match("MYSTIC_LINE = (%b[])") .. av:match("RANGER_LINE = (%b[])")), want, "the two lines are the six")
+eq(av:find("('support/magic_shield.lua', 'utamo vita', (MYSTIC_LINE, NECRO_LINE, RANGER_LINE))", 1, true) ~= nil, true,
+	"add_vocations.py gives it the Mystic, Necromancer and Ranger lines")
+eq(idsOf(av:match("MYSTIC_LINE = (%b[])") .. av:match("NECRO_LINE = (%b[])") .. av:match("RANGER_LINE = (%b[])")), want,
+	"the three lines are the nine")
 local spelldata = read("../client/overlay/modules/game_chaosspells/spelldata.lua")
 local function luaIds(text)
 	local ids = {}
@@ -247,8 +249,8 @@ local function luaIds(text)
 end
 local capped = spelldata:match('ChaosCappedSpells = {.-%["tor ael"%] = (%b{})')
 local lines = spelldata:match('ChaosStockSpellLines = {.-%["tor ael"%] = (%b{})')
-eq(capped and luaIds(capped), want, "client: the cap keeps the six (spelldata.lua)")
-eq(lines and luaIds(lines), want, "client: the six get it (spelldata.lua)")
+eq(capped and luaIds(capped), want, "client: the cap keeps the nine (spelldata.lua)")
+eq(lines and luaIds(lines), want, "client: the nine get it (spelldata.lua)")
 
 if failures > 0 then
 	print(string.format("manashield_test: %d of %d checks FAILED", failures, count))

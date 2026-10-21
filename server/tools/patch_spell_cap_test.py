@@ -106,15 +106,15 @@ for name in C.UNIVERSAL:
     if any(name in kit[v] for v in ORDER):
         check(all(name in kit[v] for v in ORDER), name + ': every class has it')
 check(len(C.RETIRED_IDS) == 68, 'retired: %d' % len(C.RETIRED_IDS))
-# Ward of the Mind, the classic mana shield (owner 2026-10-21): the Mystic and Ranger lines only, outside the 15;
-# add_vocations.py gives those six the spell, the Necromancer line never gets it
+# Ward of the Mind, the classic mana shield (owner 2026-10-21): the Mystic, Necromancer and Ranger lines only, outside
+# the 15; add_vocations.py gives those nine the spell (the Necromancer through LINE_STOCK_SPELLS, not its conversion)
 import add_vocations as AV  # noqa: E402
-SHIELD = ['Mystic', 'Elementalist', 'Illusionist', 'Ranger', 'Deadeye', 'Beastmaster']
-check(sorted(C.CAP['support/magic_shield.lua'][2]) == sorted(SHIELD), 'Ward of the Mind: the Mystic and Ranger lines')
+SHIELD = ['Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord', 'Ranger', 'Deadeye', 'Beastmaster']
+check(sorted(C.CAP['support/magic_shield.lua'][2]) == sorted(SHIELD), 'Ward of the Mind: the Mystic, Necromancer and Ranger lines')
 check(sorted(v for v in ORDER if 'Ward of the Mind' in kit[v]) == sorted(SHIELD), 'Ward of the Mind: no other class')
 lines = [ls for script, _, ls in AV.LINE_STOCK_SPELLS if script == 'support/magic_shield.lua']
-check(len(lines) == 1 and sorted(v for line in lines[0] for v in line) == sorted(SHIELD), 'add_vocations gives it the six')
-check(any('magic_shield' in k for k in AV.NECRO_SPELL_SKIP), 'the Necromancer line never gets it')
+check(len(lines) == 1 and sorted(v for line in lines[0] for v in line) == sorted(SHIELD), 'add_vocations gives it the nine')
+check(any('magic_shield' in k for k in AV.NECRO_SPELL_SKIP), 'the Necromancer conversion leaves it to LINE_STOCK_SPELLS')
 
 
 def install(xml):
@@ -130,7 +130,8 @@ def shield_classes(xml):
 
 
 # a fresh install (the converted stock list of the casters) and one the old cap cut to the Elementalist
-for start in (['Mystic', 'Elementalist', 'Illusionist'], ['Elementalist']):
+for start in (['Mystic', 'Elementalist', 'Illusionist'], ['Elementalist'],
+              ['Mystic', 'Elementalist', 'Illusionist', 'Necromancer', 'Lich', 'Bone Lord']):
     xml = '<spells>\n' + spell('Magic Shield', 'support/magic_shield.lua', 44, start) + '</spells>\n'
     xml = xml.replace('group="attack"', 'group="support"')
     once = install(xml)

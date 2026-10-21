@@ -84,7 +84,7 @@ def main():
         out.append('  ["%s"] = true, -- %s' % (old, name))
     out.append('}')
     # stock spells class lines get on the server (server/tools/add_vocations.py, LINE_STOCK_SPELLS: the utility spells
-    # of the Thief, Monk and Templar lines, Ward of the Mind of the Mystic and Ranger lines); chaosspells.lua adds the
+    # of the Thief, Monk and Templar lines, Ward of the Mind of the Mystic, Necromancer and Ranger lines); chaosspells.lua adds the
     # ids to the client's stock entries, keyed by the Chaos words
     sys.path.insert(0, os.path.join('server', 'tools'))
     from add_vocations import LINE_STOCK_SPELLS
