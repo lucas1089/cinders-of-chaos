@@ -19077,6 +19077,9 @@ instead of being looted into the backpack. No coin stacks to convert, no weight.
 bank." (pt-BR in `i18n_strings.lua`); the economy telemetry counts it as faucet `autoloot_gold`. Without a coin on the list the
 coins stay in the corpse as before.
 
+Player report 2026-10-21: a carried Loot Bag whose "gold" rule is on (the default) counts as auto looting gold too, so its
+coins go to the bank instead of filling the bag. Coins inside a bag of the corpse (two levels deep) are paid in as well.
+
 ## Gnome city teleports open to everyone (`tools/patch_gnome_teleports.py`, install_all step `gnometeleports`)
 
 Owner 2026-10-18: the gnome city teleports answered "Sorry, you don't have access to use this teleport!". The base scripts

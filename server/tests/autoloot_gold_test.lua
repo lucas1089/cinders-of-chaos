@@ -59,5 +59,32 @@ local c2 = coin(2148, 10)
 check(G.toBank(o2, corpse({c2})) == 0 and not c2.gone and o2.bank == 0, "no coin on the list: the coins stay")
 local o3 = owner({2148})
 check(G.toBank(o3, corpse({coin(2400, 1)})) == 0 and o3.bank == 0, "no coins in the corpse: nothing paid")
+
+-- a carried Loot Bag with its gold rule on: coins go to the bank with no coin on the list
+local bagRules = {gold = true}
+ChaosPouches = {carried = function() return {loot = {}} end, rulesOf = function() return bagRules end}
+local o4 = owner({2400})
+local c4 = coin(2152, 5)
+check(G.toBank(o4, corpse({c4})) == 500 and c4.gone and o4.bank == 500, "Loot Bag gold rule: coins to the bank")
+bagRules = {gold = false}
+local o5 = owner({2400})
+local c5 = coin(2148, 7)
+check(G.toBank(o5, corpse({c5})) == 0 and not c5.gone, "Loot Bag gold rule off: the coins stay")
+ChaosPouches = {carried = function() return {} end, rulesOf = function() return {gold = true} end}
+local o6 = owner({2400})
+check(G.toBank(o6, corpse({coin(2148, 7)})) == 0, "no Loot Bag carried and no coin listed: nothing paid")
+ChaosPouches = nil
+
+-- coins inside a bag of the corpse are taken too
+local function bag(items)
+	local b = {items = items}
+	function b:getItems() return self.items end
+	function b:getId() return 1987 end
+	function b:getType() return {isContainer = function() return true end} end
+	return b
+end
+local o7 = owner({2148})
+local inner = coin(2160, 1)
+check(G.toBank(o7, corpse({coin(2148, 5), bag({inner})})) == 10005 and inner.gone, "coins in a bag of the corpse")
 print(string.format("autoloot_gold_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

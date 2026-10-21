@@ -215,8 +215,8 @@ ExtendedEvent:register()
 
 
 -- ---------------------------------------------------------------- gold goes to the bank (owner 2026-10-18)
--- "Mande todo o gold que for auto looted pro banco": when a coin (gold, platinum or crystal) is on the owner's autoloot
--- list, the coins of a kill's corpse are paid into the bank account instead of being looted into the backpack (no coin
+-- "Mande todo o gold que for auto looted pro banco": when the owner auto loots gold (a coin on the autoloot list, or a
+-- carried Loot Bag with its gold rule on, see G.wanted), the coins of a kill's corpse are paid into the bank account instead of being looted into the backpack (no coin
 -- stacks to convert, no weight). onDropLoot index 2.6: after the auto seller (2), before the store pouches (2.7) and the
 -- base autoloot (3), which then find no coins. The corpse owner is the one who gets it.
 local COIN_VALUE = {[2148] = 1, [2152] = 100, [2160] = 10000}
@@ -235,11 +235,21 @@ function G.total(coins)
 	return sum
 end
 
--- true when a coin is on the owner's list
+-- true when the owner auto loots gold: a coin on the autoloot list, or a carried Loot Bag whose "gold" rule is on
+-- (pouches.lua, default on). Player report 2026-10-21 "as coins nao estao indo direto pro banco": with no coin on the
+-- list the Loot Bag (2.7) collected the coins, so they never reached the bank.
 function G.wanted(owner)
 	for _, id in ipairs(readList(owner)) do
 		if COIN_VALUE[id] then
 			return true
+		end
+	end
+	local PO = ChaosPouches
+	if PO and PO.carried and PO.rulesOf then
+		local ok, bag = pcall(function() return PO.carried(owner).loot end)
+		if ok and bag then
+			local okR, rules = pcall(PO.rulesOf, owner)
+			return okR and type(rules) == "table" and rules.gold == true
 		end
 	end
 	return false
@@ -249,14 +259,22 @@ function G.toBank(owner, corpse)
 	if not G.wanted(owner) then
 		return 0
 	end
+	-- the corpse and the bags inside it (stock loot can put coins in a bag), two levels deep
 	local total, taken = 0, {}
-	for _, item in ipairs(corpse:getItems()) do
-		local v = COIN_VALUE[item:getId()]
-		if v and not item:getType():isContainer() then
-			taken[#taken + 1] = item
-			total = total + v * item:getCount()
+	local function scan(container, depth)
+		for _, item in ipairs(container:getItems()) do
+			local v = COIN_VALUE[item:getId()]
+			if item:getType():isContainer() then
+				if depth < 2 then
+					scan(item, depth + 1)
+				end
+			elseif v then
+				taken[#taken + 1] = item
+				total = total + v * item:getCount()
+			end
 		end
 	end
+	scan(corpse, 0)
 	if total <= 0 then
 		return 0
 	end
