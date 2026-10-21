@@ -11063,8 +11063,10 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
 - **The retired slots keep their items' other uses.** A deck the player carries holds the cards (`ChaosBadges.deckOf`
   in the base deck system). A carried ship sails from the docks and opens its trainer portal (`ChaosBadges.boardShip`
   in the base sea tiles). Belts and gloves (24 items, slot type `beltgloves`) have no other use: they can't be worn,
-  the Loot Buyer buys them, the base armorsmith still crafts them (owner decision open: take them out of its list, or
-  leave them as sellable crafts). The items.xml descriptions say so. `Player:onMoveItem` refuses a move into a retired
+  and since 2026-10-22 the base armorsmith no longer crafts them (its only source; coordinator decision); the Loot
+  Buyer buys the copies players hold. Decks and ships keep their sources (the monster loot, the task deck, the first
+  ship), as they work when carried; only the roulette lost them ("Prizes into the backpack"). The items.xml
+  descriptions say so. `Player:onMoveItem` refuses a move into a retired
   slot with a message (the engine refuses it too).
 - **Migration at login**, idempotent, never deletes: every item in a slot no client draws (12, 14, 15, 16, a deck in
   13; `ChaosBadges.checkSlots`) and anything in slot 10 (a ring of the second ring slot included;
@@ -11094,14 +11096,16 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
 5. the base sea tiles: a carried ship sails.
 6. the ship NPC says to carry the ship.
 7. `droploot.lua`: the death loss takes slot 13.
+8. the base crafting lists (`Crafting.<table> = {`): the 24 belt and gloves recipes of the armorsmith go into block
+   comments (marked), the other 67 recipes keep their order.
 
 **Tests.** `tests/badges_test.lua` (ids, texts and pt-BR, the move rule, the login moves into the store inbox, the
 depot inbox, nowhere, once; the stale storage; the glue on a mocked engine), `tools/patch_badges_test.py` (a small
-data folder, CRLF kept, a second run, `--check`), `tests/archery_test.lua` (slot 10: the ring and anything else to the
+data folder, CRLF kept, the armorsmith list still loads without the gloves, a second run, `--check`), `tests/archery_test.lua` (slot 10: the ring and anything else to the
 Purse; the jewel budget), `tests/item_tooltip_test.lua`, `tests/inspect_test.lua`, `tests/loadouts_test.lua`,
 `tests/crafting_test.lua`; client `badgeslotlogic_test.lua`, `playerinspect_logic_test.lua`,
 `rightclickequiplogic_test.lua`. The server chain 0001-0058 and the client chain 0001-0113 apply in order;
-`g++ -fsyntax-only` of the changed engine files has no errors. The install on a copy of the base data: 22 files, a
+`g++ -fsyntax-only` of the changed engine files has no errors. The install on a copy of the base data: 23 files, a
 second run changes nothing, the patched Lua parses in Lua 5.3 and LuaJIT. Not run on a live server or seen in a client.
 
 ## Prizes into the backpack (`prizes.lua`, `prizes_core.lua`, `tools/patch_prizes.py`, `tests/prizes_test.lua`)

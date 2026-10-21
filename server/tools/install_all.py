@@ -172,7 +172,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   badges       tools/patch_badges.py             the badge slot (engine 0058, client 0113): the badges get slot type "badge";
                the deck, ship, belt and gloves slots are retired: Player:onMoveItem refuses them, a carried deck
                holds the cards, a carried ship sails, the items.xml descriptions say so; the boss loot's Fury
-               catalyst [3] typo is fixed; the death loss takes the badge slot (README "Badge slot"; after itemnames)
+               catalyst [3] typo is fixed; the death loss takes the badge slot; the armorsmith no longer crafts belts
+               and gloves (README "Badge slot"; after itemnames)
   prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
                the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
                task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and

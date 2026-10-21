@@ -3,10 +3,12 @@
 slot type, the retired items' descriptions (replaced or added; badges and other items untouched), the Fury catalyst
 typo of the boss loot (only the line after "fury amplifier catalyst [2]"; nothing else of the loot changes), the
 Player:onMoveItem, deck system and sea tile hooks (CRLF kept), the first ship NPC's texts, the death loss over the badge
-slot, a second run that changes nothing, --check, and the ids against data/scripts/chaos/badges_core.lua."""
+slot, the belt and gloves recipes out of the armorsmith (the list still loads), a second run that changes nothing,
+--check, and the ids against data/scripts/chaos/badges_core.lua."""
 import os
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -85,6 +87,22 @@ DROP = '''	else
 	end
 '''
 
+RECIPES = ('Crafting.armorsmith = {\r\n'
+           '    {\r\n        id = 2457,\r\n        name = "Steel Helmet",\r\n        materials = {\r\n'
+           '            {id = 12435, count = 5},\r\n        }\r\n    },\r\n'
+           '    {\r\n        id = 29577,\r\n        name = "Shadowwoven Gloves",\r\n        materials = {\r\n'
+           '            {id = 29541, count = 125},\r\n        }\r\n    },\r\n'
+           '    {\r\n        id = 29576,\r\n        name = "Soulbinder Sandals",\r\n        materials = {\r\n'
+           '            {id = 29541, count = 50},\r\n        }\r\n    },\r\n'
+           '    {\r\n        id = 29919,\r\n        name = "Dawnforged Gloves",\r\n        materials = {\r\n'
+           '            {id = 29902, count = 20},\r\n        }\r\n    },\r\n'
+           '}\r\n')
+RECIPE_RUN = """
+local n, names = 0, {}
+for _, r in ipairs(Crafting.armorsmith) do n = n + 1 names[#names + 1] = r.name end
+print(n .. ":" .. table.concat(names, ","))
+"""
+
 checks = failures = 0
 
 
@@ -125,11 +143,12 @@ def main():
         put(data, 'scripts/chaos/mine.lua', DECK)  # our own scripts are never touched
         put(data, 'npc/scripts/builder.lua', NPC)
         put(data, 'creaturescripts/scripts/droploot.lua', DROP)
+        put(data, 'scripts/customs/crafting/armorsmith.lua', RECIPES)
 
         ok(P.main([data, '--check']) == 1, '--check before: work to do')
         ok(get(data, 'items/items.xml') == ITEMS, '--check changes nothing')
         report, changed = P.run(data)
-        ok(changed == 7, 'seven files change (%d): %s' % (changed, report))
+        ok(changed == 8, 'eight files change (%d): %s' % (changed, report))
 
         xml = get(data, 'items/items.xml')
         ok('value="badge"' in item_block(xml, 27811), 'a badge gets slot type "badge"')
@@ -167,7 +186,22 @@ def main():
         ok(not any(n in names for n in ('CONST_SLOT_STORE_INBOX', 'CONST_SLOT_DECK')), 'never the inbox or a retired slot')
         ok(drop.startswith('\telse\n\t\tfor _, i in ipairs(') and '\t\t\tlocal item = player:getSlotItem(i)' in drop,
            'indent and body kept')
+        smith = get(data, 'scripts/customs/crafting/armorsmith.lua')
+        ok('\n' not in smith.replace('\r\n', ''), 'armorsmith.lua keeps CRLF')
+        ok(smith.count('--[==[ ' + P.MARK) == 2 and smith.count(']==]') == 2, 'two recipes in block comments')
+        live = re.sub(r'--\[==\[.*?\]==\]', '', smith, flags=re.S)
+        ok('Shadowwoven Gloves' not in live and 'Dawnforged Gloves' not in live, 'no gloves recipe is live')
+        ok('Steel Helmet' in live and 'Soulbinder Sandals' in live, 'the other recipes stay, in order')
+        lua = shutil.which('luajit') or shutil.which('lua5.3')
+        if lua:
+            script = os.path.join(tmp, 'run.lua')
+            with open(script, 'w') as f:
+                f.write('Crafting = {}\n' + smith.replace('\r\n', '\n') + RECIPE_RUN)
+            res = subprocess.run([lua, script], capture_output=True, text=True)
+            ok(res.stdout.strip() == '2:Steel Helmet,Soulbinder Sandals', 'the patched list loads: %r %r'
+               % (res.stdout, res.stderr))
         before = {rel: get(data, rel) for rel in ('items/items.xml', 'monster/lua/bosses/boss.lua',
+                                                    'scripts/customs/crafting/armorsmith.lua',
                                                     'creaturescripts/scripts/droploot.lua',
                                                     'events/scripts/player.lua', 'npc/scripts/builder.lua',
                                                     'scripts/customs/deck_system/deck_system.lua',

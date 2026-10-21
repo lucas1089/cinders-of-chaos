@@ -24,9 +24,12 @@ four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool c
 7. data/creaturescripts/scripts/droploot.lua: the death loss runs over slots 1-10 only, so a badge (and the Eternal
    Moon Badge, a container of 10, with everything in it) would never drop. The loop takes the badge slot too (never
    11, the store inbox, nor the retired slots).
+8. the base crafting recipe lists (`Crafting.<table> = {` in data/scripts; the armorsmith): the belt and gloves recipes
+   are wrapped in a block comment, so nobody crafts an item no slot takes. The Loot Buyer still buys the copies players
+   hold. The other recipes keep their order.
 
-Nothing is taken out of a drop: the decks and ships keep their uses, the belts and gloves drop nowhere (the base's
-armorsmith crafts them). A second run changes nothing. --check changes nothing and exits 1 when something is still to
+Nothing is taken out of a drop: the decks and ships keep their uses (the monster loot, the task reward and the first
+ship stay); the belts and gloves drop nowhere and step 8 takes them out of the armorsmith. A second run changes nothing. --check changes nothing and exits 1 when something is still to
 do.
 """
 import os
@@ -76,6 +79,9 @@ DROP_LINE = re.compile(r'^([ \t]*)for i = CONST_SLOT_HEAD, CONST_SLOT_AMMO do[ \
 DROP_NEW = r'\1for _, i in ipairs({CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_BACKPACK, CONST_SLOT_ARMOR, ' \
     r'CONST_SLOT_RIGHT, CONST_SLOT_LEFT, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_AMMO, ' \
     r'CONST_SLOT_BADGE}) do -- ' + MARK.replace('\\', '\\\\')
+RECIPE_TABLE = re.compile(r'^Crafting\.\w+[ \t]*=[ \t]*\{', re.M)
+RECIPE_HEAD = re.compile(r'^([ \t]*)\{[ \t]*\n[ \t]*id[ \t]*=[ \t]*(\d+)[ \t]*,', re.M)
+RECIPE_OPEN = '--[==[ ' + MARK + ': belts and gloves can\'t be worn, so they are not crafted'
 FURY = re.compile(r'(\{[ \t]*(?:id|name)[ \t]*=[ \t]*"fury amplifier catalyst \[2\]"[^\n]*\n[ \t]*\{[ \t]*(?:id|name)'
                   r'[ \t]*=[ \t]*")exiled( amplifier catalyst \[3\]")', re.I)
 
@@ -115,6 +121,27 @@ def droploot(text):
     if MARK in text:
         return text, 0
     return DROP_LINE.subn(DROP_NEW, text, count=1)
+
+
+def recipes(text):
+    """the belt and gloves recipes of a base crafting list inside a block comment"""
+    out, pos, n = [], 0, 0
+    for m in RECIPE_HEAD.finditer(text):
+        if int(m.group(2)) not in BELTGLOVES or m.start() < pos:
+            continue
+        before = text[:m.start()].rstrip('\n').rsplit('\n', 1)[-1]
+        if RECIPE_OPEN in before:
+            continue
+        indent = m.group(1)
+        close = re.compile(r'^' + re.escape(indent) + r'\},?[ \t]*$', re.M).search(text, m.end())
+        if not close:
+            continue
+        out.append(text[pos:m.start()])
+        out.append(indent + RECIPE_OPEN + '\n' + text[m.start():close.end()] + '\n' + indent + ']==]')
+        pos = close.end()
+        n += 1
+    out.append(text[pos:])
+    return ''.join(out), n
 
 
 def npc_texts(text):
@@ -196,6 +223,8 @@ def run(data, dry=False):
             apply(path, deck_system, 'deck')
         if SEA_LINE.search(text.replace('\r\n', '\n')):
             apply(path, lambda t: hook(t, SEA_LINE, SEA_HOOK), 'sea')
+        if RECIPE_TABLE.search(text.replace('\r\n', '\n')):
+            apply(path, recipes, 'recipes')
     npc_dir = os.path.join(data, 'npc', 'scripts')
     if os.path.isdir(npc_dir):
         for path in files(npc_dir, ('.lua',)):
@@ -213,7 +242,7 @@ def run(data, dry=False):
         apply(xml_path, items_xml)
     if not dry:
         for what, where in (('move', 'Player:onMoveItem'), ('deck', 'the deck system'), ('sea', 'the sea tiles'),
-                            ('drop', 'the death loss (droploot.lua)')):
+                            ('drop', 'the death loss (droploot.lua)'), ('recipes', 'the belt and gloves recipes')):
             if what not in found:
                 report.append('%s not found (skipped)' % where)
     return report, changed
