@@ -31,10 +31,12 @@ return {
 	typeMult = {hunt = 1.0, elite = 1.5, boss = 1.5},
 	-- experience (2026-10-22, "as bounties dão muito pouca xp": 3-4% of one level was 87 exp at level 8, less than one
 	-- kill gives with the stage). expShare percent of the base experience the contract's kills give the player: the
-	-- monster's experience x its pace curve x the experience stage of the player's level (bounty_core.lua B.expReward),
-	-- for an elite also the kills of the type made while looking for the tier (eliteSearch). At least expFloor and at
-	-- most expCap percent of the experience from level L to L + 1, L = min(player level, band max level). The board
-	-- shows the exact amount for the player's level; it is paid without any bonus (Player:addExperience).
+	-- monster's experience x the engine's level factor (x0.03 L, level-scaled monsters) x its pace curve x the
+	-- experience stage of the player's level (bounty_core.lua B.expReward), for an elite also the kills of the type made
+	-- while looking for the tier (eliteSearch). An elite or boss contract pays at least the mean hunt reward of its band
+	-- for the player (B.huntMean). At least expFloor and at most expCap percent of the experience from level L to L + 1,
+	-- L = min(player level, band max level). The board shows the exact amount for the player's level; it is paid
+	-- without any bonus (Player:addExperience).
 	expShare = {hunt = 40, elite = 40, boss = 100},
 	expFloor = {hunt = 10, elite = 15, boss = 50},
 	expCap = {hunt = 2000, elite = 2000, boss = 2000},

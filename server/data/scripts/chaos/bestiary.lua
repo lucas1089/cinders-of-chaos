@@ -68,6 +68,16 @@ cfg.familyGoalOf = function(level)
 end
 local bountyCfg = Chaos.bountyConfig or dofile("data/scripts/chaos/bounty_config.lua")
 local C = ChaosBestiaryCore
+-- task experience: one kill's base experience of a catalogue entry (bounty_core.lua ChaosBounty.monsterKillBase)
+cfg.killBase = function(e)
+	return ChaosBounty.monsterKillBase(e, ChaosPaceCore, paceCfg())
+end
+-- the experience stage of a level (config.lua experienceStages); 1 when unknown
+local function stageOf(level)
+	local ok, v = pcall(function() return Game.getExperienceStage(level) end)
+	v = ok and tonumber(v) or nil
+	return (v and v > 0) and v or 1
+end
 local OPCODE = ChaosOpcodes.bestiary or 253
 local SPAWNS = dofile("data/scripts/chaos/bestiary_spawns.lua")
 local ITEMS = bountyCfg.items -- Orb of Upheaval and Orb of Fate server ids
@@ -178,6 +188,12 @@ function X.build()
 	end
 	print(string.format("[ChaosBestiary] %d bestiary entries", #entries))
 	return X.catalogue
+end
+
+-- the reward of task t for a player now (the experience the window shows and payTask pays)
+local function rewardOf(t, player)
+	local level = player:getLevel()
+	return C.taskReward(t, level, cfg, bountyCfg, stageOf(level), C.taskKillBase(t, X.cat(), cfg.killBase))
 end
 
 function X.cat()
@@ -461,7 +477,7 @@ local function sendEntry(player, id)
 	data.task = {can = can, text = not can and task or nil, required = can and task.required or nil,
 		active = st.tasks["h:" .. e.key] and true or false}
 	if can then
-		data.task.reward = C.taskReward(task, player:getLevel(), cfg, bountyCfg)
+		data.task.reward = rewardOf(task, player)
 	end
 	if ChaosDisplayScale and ChaosDisplayScale.apply then -- the viewer's display scale: the monster's health
 		data = ChaosDisplayScale.apply("bestiaryEntry", player, data)
@@ -575,7 +591,7 @@ local function taskView(t, player)
 	return {key = t.key, kind = t.kind, label = t.label, target = t.target, lo = t.lo, hi = t.hi, level = t.level,
 		required = t.required, progress = t.progress or 0, monsters = t.monsters,
 		look = e and lookOf(e) or 0, outfit = e and entryOutfit(e) or nil,
-		reward = C.taskReward(t, player:getLevel(), cfg, bountyCfg)}
+		reward = rewardOf(t, player)}
 end
 
 -- the board is rolled for the character's level at its first look of the task day (storages taskPointsStorage + 1 and
@@ -758,7 +774,7 @@ local function payTask(player, st, t)
 			"Kill task completed: %s. Another character from your connection was online during the hunt: no reward.", t.label))
 		return
 	end
-	local r = C.taskReward(t, player:getLevel(), cfg, bountyCfg)
+	local r = rewardOf(t, player)
 	if r.gold > 0 then
 		player:setBankBalance(player:getBankBalance() + r.gold)
 	end
@@ -793,7 +809,8 @@ local function payTask(player, st, t)
 end
 
 -- ---------------------------------------------------------------- kills
-local function creditKill(player, e)
+-- direct: the player made the kill (a party member's credit counts for tasks only by C.partyCountsTask)
+local function creditKill(player, e, direct)
 	local st = stateOf(player)
 	local kills, before, after = C.addKill(st.kills[e.key] or 0, e.th)
 	st.kills[e.key] = kills
@@ -833,7 +850,7 @@ local function creditKill(player, e)
 	-- tasks
 	local mc = nil
 	for _, t in ipairs(taskList(st)) do
-		if C.matches(t, e) then
+		if C.matches(t, e) and (direct or C.partyCountsTask(t, player:getLevel(), cfg)) then
 			if mc == nil then
 				mc = Chaos.isMultiClient(player)
 			end
@@ -905,7 +922,7 @@ function X.onKill(creature, killer, mostDamageKiller)
 		return members
 	end, function(p) return p:getPosition() end, cfg.partyRange, function(p) return p:getId() end)
 	for _, p in ipairs(credited) do
-		creditKill(p, e)
+		creditKill(p, e, seen[p:getId()] == true)
 	end
 end
 

@@ -70,10 +70,14 @@ local function syncTierXp()
 end
 
 -- the reward of contract c for a player now (the exact experience the board shows and payContract pays)
+-- (an elite or boss contract pays at least the mean of its band's hunts on today's board, B.huntMean)
 function B.rewardFor(player, c)
 	syncTierXp()
 	local level = player:getLevel()
-	return B.reward(c, cfg, level, stageOf(level))
+	local stage = stageOf(level)
+	local board = B.board()
+	local band = board and board.bands[c.band]
+	return B.reward(c, cfg, level, stage, B.huntMean(c, cfg, level, stage, band and band.contracts, B.pool))
 end
 local OPCODE = ChaosOpcodes.bounty
 local TABLE = cfg.table

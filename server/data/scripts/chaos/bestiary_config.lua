@@ -168,11 +168,16 @@ return {
 	fewSpawnsTaskMult = 0.5,
 	familyKillsMult = 1.8, -- a family task needs this times the hunt kills of the window's middle level
 	-- rewards: a share of the bounty board's hunt reward of the task level's band (bounty_config.lua bands; gold to the
-	-- bank, orbs to the backpack or the inbox), experience in percent of level L to L + 1 (L = the character's level
-	-- capped at the band's top), and bestiary points (x the difficulty's stage-1 points; family uses the window's middle)
+	-- bank, orbs to the backpack or the inbox), and bestiary points (x the difficulty's stage-1 points; family uses the
+	-- window's middle). Experience (2026-10-22, as the bounty board's): expShare percent of the base experience of the
+	-- task's kills at the character's stage (bestiary_core.lua C.taskReward; the monster's experience x level factor x
+	-- pace curve, ChaosBounty.monsterKillBase), at least expPercent and at most expCap percent of level L to L + 1 (L = the
+	-- character's level capped at the band's top). Half the bounty hunt's 40%: up to 4 tasks a day of a monster the
+	-- character picks itself, on top of a hunt it makes anyway.
 	reward = {
-		hunt = {goldMult = 0.4, chaosMult = 0.5, divineMult = 0, expPercent = 1.5, points = 5},
-		family = {goldMult = 0.6, chaosMult = 0.75, divineMult = 0.5, expPercent = 2, points = 8}
+		hunt = {goldMult = 0.4, chaosMult = 0.5, divineMult = 0, expShare = 20, expPercent = 1.5, expCap = 1000, points = 5},
+		family = {goldMult = 0.6, chaosMult = 0.75, divineMult = 0.5, expShare = 20, expPercent = 2, expCap = 1000,
+			points = 8}
 	},
 
 	-- ------------------------------------------------------------------ protocol

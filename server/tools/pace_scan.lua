@@ -1,3 +1,5 @@
+-- Median experience and health per kill by hunting level, file experience x the pace curve. It leaves out the engine's x0.03 L
+-- experience factor of level-scaled monsters (server/README.md "Pack combat (pace)", correction 2026-10-22).
 ChaosPaceCore = nil
 local P = dofile("data/scripts/chaos/pace_core.lua") or ChaosPaceCore
 local cfg = dofile("data/scripts/chaos/pace_config.lua")

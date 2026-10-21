@@ -263,6 +263,25 @@ eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 60}, fakeP, {}), 500, "
 eq(B.monsterKillBase({type = "boss", exp = 1000, level = 60}, fakeP, {}), 1000, "boss unpaced")
 eq(B.monsterKillBase({type = "hunt", level = 60}, fakeP, {}), 0, "no experience")
 eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 60}), 1000, "no pace")
+-- a level-scaled monster: x the engine's 0.03 L (above 1 only), then the pace curve; a boss only the level factor
+local scaledP = {entryLevel = function(_, e) return e.level, true end, factors = function() return {xp = 0.5} end}
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 700}, scaledP, {}), 1000 * 21 * 0.5, "level factor x pace")
+eq(B.monsterKillBase({type = "boss", exp = 1000, level = 700}, scaledP, {}), 1000 * 21, "boss: level factor only")
+eq(B.monsterKillBase({type = "hunt", exp = 1000, level = 20}, scaledP, {}), 500, "factor below 1 is not applied")
+-- elite and boss contracts pay at least the mean hunt reward of their band (B.huntMean), still at most the cap
+local h1 = {band = 1, type = "hunt", count = 100, exp = 100}
+local h2 = {band = 1, type = "hunt", count = 100, exp = 300}
+local hm = B.huntMean(boss, kc, 30, 50, {h1, h2, boss})
+eq(hm, (B.expReward(h1, kc, 30, 50) + B.expReward(h2, kc, 30, 50)) / 2, "mean of the band's hunts")
+eq(B.huntMean(h1, kc, 30, 50, {h1, h2}), nil, "a hunt has none")
+eq(B.reward(boss, kc, 30, 50, hm).exp, math.floor(hm), "boss lifted to the hunt mean")
+eq(B.reward(el, kc, 30, 50, hm).exp, B.reward(el, kc, 30, 50).exp, "an elite above the mean keeps its own")
+eq(B.reward(boss, kc, 8, 10, 1e12).exp, B.expForLevel(8) * 20, "the cap still holds")
+-- no hunt on the board for the band: the band's pool median at the middle kill count
+local hp = B.huntMean(boss, kc, 30, 50, {}, pool)
+assert(hp and hp > 0, "pool median")
+eq(B.huntPoolMedian(1, kc, pool), B.huntPoolMedian(1, kc, pool), "cached")
+eq(B.huntMean(boss, kc, 30, 50, {}), nil, "no board and no pool")
 -- with the real config and pace: every board contract of 30 days pays between the floor and the cap, at every level
 ChaosPaceCore = nil
 local P = dofile("data/scripts/chaos/pace_core.lua") or ChaosPaceCore
@@ -277,9 +296,14 @@ for d = 1, 30 do
 		for _, bi in ipairs(B.visibleBands(lvl, rc)) do
 			local band = rc.bands[bi]
 			local L = math.max(1, math.min(lvl, band.max))
-			for _, c in ipairs(bd.bands[bi].contracts) do
+			local cs = bd.bands[bi].contracts
+			for _, c in ipairs(cs) do
 				assert(c.exp and c.exp > 0, "contracts carry the pool experience")
-				local e = B.reward(c, rc, lvl, 20).exp
+				local mean = B.huntMean(c, rc, lvl, 20, cs, pool)
+				local e = B.reward(c, rc, lvl, 20, mean).exp
+				if mean then
+					assert(e >= math.floor(mean), "elite and boss never below the band's hunt mean " .. c.name)
+				end
 				assert(e >= math.floor(B.expForLevel(L) * rc.expFloor[c.type] / 100), "floor " .. c.name)
 				assert(e <= B.expForLevel(L) * rc.expCap[c.type] / 100, "cap " .. c.name)
 			end

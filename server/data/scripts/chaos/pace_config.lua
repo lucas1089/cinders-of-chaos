@@ -57,6 +57,11 @@ return {
 	-- level. Now the experience per kill follows the base monsters' (about 4000 at 650, 6300 at 800, 10000 at 1000,
 	-- 16500 at 1300, then +13.5 a level) and the health the same ratio as there (experience about 1 x health).
 	-- Check with: luajit tools/pace_scan.lua
+	-- Correction 2026-10-22: those experience numbers (and pace_scan.lua) are the file experience x the curve. The engine
+	-- also multiplies a level-scaled monster's kill by 0.03 x its level (base player.lua, checked on the test server,
+	-- server/README.md "Late game"), so a live kill pays about 20-30x a base monster of the same hunting level (median
+	-- per kill before the stage, bounty_core.lua B.monsterKillBase: 81k vs 4.0k at 600-700, 155k vs 6.0k at 750-850,
+	-- 279k vs 9.5k at 950-1050). Not re-tuned here: an owner decision, see server/README.md "Pack combat (pace)".
 	scaled = {
 		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
 		xp = {{100, 0.115}, {650, 0.70}, {800, 0.58}, {1000, 0.52}, {1300, 0.50}, {1600, 0.48}, {2000, 0.46}},

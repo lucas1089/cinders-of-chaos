@@ -7643,20 +7643,22 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   (x10 to x50 below level 100) that was 0.01-1.2% of what the contract's own kills gave (level 8, 90 Gazers: 87
   experience, the kills 111k). Now (`bounty_core.lua` `B.expReward`, `bounty_config.lua` `expShare` / `expFloor` /
   `expCap` / `tierXp` / `eliteSearch`):
-  - kills = count x one kill's base experience (the pool experience x the monster's pace experience curve,
-    `B.monsterKillBase`; bosses are never paced) x the stage of the player's level (`Game.getExperienceStage`, so an
-    admin `xp-rate` x N scales it too). Elite: each counted kill x its tier's experience (magic 2, rare 4, read from
-    `ChaosTiers`) plus `eliteSearch - 1` kills of the type made while looking for the tier (12 magic, 50 rare, from the
-    spawn chances). No bonus is counted (potion, stamina, world, multikill, passive tree ...);
+  - kills = count x one kill's base experience x the stage of the player's level (`Game.getExperienceStage`, so an
+    admin `xp-rate` x N scales it too). One kill's base is what the engine gives (`B.monsterKillBase`): the pool
+    experience x the monster level factor x0.03 L of level-scaled monsters (when above 1; base `player.lua`, checked on
+    the test server, "Late game") x the monster's pace experience curve (bosses are never paced). Elite: each counted
+    kill x its tier's experience (magic 2, rare 4, read from `ChaosTiers`) plus `eliteSearch - 1` kills of the type made
+    while looking for the tier (12 magic, 50 rare, from the spawn chances). No bonus is counted (potion, stamina, world,
+    multikill, passive tree ...);
   - reward = `expShare` percent of it (hunt 40, elite 40, boss 100), at least `expFloor` (hunt 10, elite 15, boss 50)
     and at most `expCap` (2000 = 20 levels) percent of the experience from level L to L+1, L = the player's level capped
     at the band's top;
+  - an elite or boss contract pays at least the mean hunt reward of its band for the same player (`B.huntMean`: the
+    hunts of today's board in that band, else the band's pool median at the middle kill count, `B.huntPoolMedian`),
+    still at most the cap: a boss is one kill and never pays less than a hunt;
   - the board shows the exact amount for the player's current level and stage (`B.rewardFor`); completion pays what
     the board shows at that moment (a level gained during the contract counts), with `addExperience`, so the stage is
     already in the number and no bonus is added on top.
-  The engine's monster level factor of level-scaled monsters (x0.03 L, see "Experience cap") is left out of the kill's
-  base: `pace_config.lua`'s scaled curve is fitted on the file experience (about 4000 a kill at 650). If live kills of
-  those monsters give 20x that, the band 800+ hunts pay less than 40% of their kills; the cap bounds it either way.
   Exploits: a low character on the band above gets only its own kills (party rule above) and at most 20 of its own
   levels; a high character on a band below gets a share of the weak kills at its own stage, floor and cap at the
   band's top; rerolls keep the band and type (a rerolled monster missing from the pool pays the floor); multi-client
@@ -7667,17 +7669,19 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
 
   | Level | Type | Old | Old / kills | Kills' experience | New (min-max) | New, levels | Min |
   |---|---|---|---|---|---|---|---|
-  | 8 | hunt / elite / boss | 87 / 116 / 116 | 0.08% / 0.1% / 3.9% | 111k / 112k / 3000 | 44k (2.6k-58k) / 45k / 3000 | 15.3 / 15.5 / 1.0 | 2 / 1 / 0 |
-  | 30 | hunt / elite / boss | 1308 / 1744 / 1744 | 0.24% / 0.31% / 11.6% | 556k / 561k / 15k | 222k (13k-872k) / 224k / 22k | 5.1 / 5.2 / 0.5 | 2 / 2 / 0 |
-  | 100 | hunt / elite / boss | 15k / 20k / 20k | 0.09% / 0.22% / 33% | 16.3M / 9.1M / 61k | 6.5M (1.2M-9.9M) / 3.6M / 248k | 13.2 / 7.4 / 0.5 | 7 / 5 / 0 |
-  | 250 | hunt / elite / boss | 93k / 125k / 125k | 0.18% / 0.54% / 32% | 51.7M / 22.9M / 390k | 20.7M (8.4M-55.4M) / 9.1M / 1.6M | 6.7 / 2.9 / 0.5 | 15 / 6 / 0 |
-  | 400 | hunt / elite / boss | 239k / 319k / 319k | 0.19% / 0.53% / 51% | 126M / 60M / 627k | 50.6M (18M-113M) / 24.1M / 4.0M | 6.3 / 3.0 / 0.5 | 15 / 6 / 0 |
-  | 650 | hunt / elite / boss | 633k / 844k / 844k | 0.63% / 1.65% / 47% | 101M / 51M / 1.8M | 40.4M (15.5M-187M) / 20.4M / 10.5M | 1.9 / 1.0 / 0.5 | 13 / 6 / 0 |
-  | 900 | hunt / elite / boss | 1.21M / 1.62M / 1.62M | 0.65% / 1.2% / 116% | 187M / 135M / 1.4M | 74.9M (21M-129M) / 54.1M / 20.2M | 1.9 / 1.3 / 0.5 | 35 / 30 / 1 |
+  | 8 | hunt / elite / boss | 87 / 116 / 116 | 0.08% / 0.1% / 3.9% | 111k / 112k / 3000 | 44k (2.6k-58k) / 52k / 38k | 15.3 / 17.8 / 13.0 | 2 / 2 / 0 |
+  | 30 | hunt / elite / boss | 1308 / 1744 / 1744 | 0.24% / 0.31% / 11.6% | 556k / 561k / 15k | 222k (13k-872k) / 447k / 345k | 5.1 / 10.3 / 7.9 | 2 / 2 / 1 |
+  | 100 | hunt / elite / boss | 15k / 20k / 20k | 0.09% / 0.22% / 33% | 16.3M / 9.1M / 61k | 6.5M (1.2M-9.9M) / 6.8M / 6.1M | 13.2 / 13.8 / 12.3 | 7 / 8 / 4 |
+  | 250 | hunt / elite / boss | 93k / 125k / 125k | 0.18% / 0.54% / 32% | 51.7M / 22.9M / 390k | 20.7M (8.4M-55.4M) / 23.4M / 22.9M | 6.7 / 7.5 / 7.4 | 15 / 15 / 3 |
+  | 400 | hunt / elite / boss | 239k / 319k / 319k | 0.19% / 0.53% / 51% | 126M / 60M / 627k | 50.6M (18M-113M) / 54.7M / 53.7M | 6.3 / 6.9 / 6.7 | 15 / 14 / 4 |
+  | 650 | hunt / elite / boss | 633k / 844k / 844k | 0.62% / 1.65% / 47% | 102M / 51M / 1.8M | 40.9M (15.5M-422M) / 43.1M / 43.1M | 1.9 / 2.0 / 2.0 | 13 / 13 / 1 |
+  | 900 | hunt / elite / boss | 1.21M / 1.62M / 1.62M | 0.03% / 0.05% / 116% | 4.78B / 3.17B / 1.4M | 809M (24.6M-809M) / 809M / 809M | 20 (cap) / 20 / 20 | 17 / 18 / 29 |
 
-  The band above, for comparison: level 8 on band 2 and 30 on band 2 hit the cap (58k, 872k: 20 levels, own kills
-  only); 100 on band 3 9.9M (cap); 650 on band 6 96M (4.6 levels). A band below: 100 on band 1 200k (0.4 level),
-  400 on band 3 17.5M (2.2 levels), 900 on band 5 31.4M (0.8 level).
+  The band above, for comparison: level 8 and 30 on band 2 hit the cap (58k, 872k: 20 levels, own kills only); 100 on
+  band 3 9.9M (cap); 650 on band 6 422M (cap). A band below: 100 on band 1 200k (0.4 level), 400 on band 3 17.5M (2.2
+  levels), 900 on band 5 31.8M (0.8 level). The 800+ band's level-scaled monsters give about 20x the experience of a base
+  monster of the same hunting level once the engine's x0.03 L is counted (see "Pack combat (pace)", the scaled curve), so
+  its contracts pay the cap.
   **Weekly chest:** 4 completed contracts in one bounty week (Monday 06:00 to Monday 06:00) give a "bounty chest"
   (present box) with the orbs of the player's band, once per week (`weeklyNeed`, 7 until 2026-10-15: two short sessions
   a week earn it now).
@@ -7685,8 +7689,9 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   but a contract that got a kill (or was accepted) while multi-clienting is marked (`mc = 1`) and pays nothing
   (`mcReward = false`); it does not count for the weekly chest. The player is told at accept and at completion.
 - **Tests:** `tests/bounty_test.lua` (seeded roll, bands, kill matching, party credit and its band rule, milestones,
-  rewards: the experience share, stage, elite tiers and search, floor, cap and the pace hook, every contract of 30 real
-  boards between floor and cap; the accept rules and expiry).
+  rewards: the experience share, stage, elite tiers and search, floor, cap, the level factor and the pace hook, the
+  elite / boss hunt mean (board and pool median), every contract of 30 real boards between floor and cap and no elite
+  or boss below its band's hunt mean; the accept rules and expiry).
 
 Verified on the test server (level 1000 knight): open from the menu (Adventure > Bounty Board); accept; 50 hunt kills -> 2M gold
 in the bank, 6 Orbs of Upheaval + 2 Orbs of Fate (to the inbox, backpack full), 1.52M experience (the old 3% rule); elite: normal kills do not count,
@@ -14306,7 +14311,12 @@ some danger left; more monsters, experience compensated; dungeons at most 10-15 
 **Rebalance 2026-10-20 (beta feedback).** (1) `scaled` curves: a level-scaled monster gave 1/15 of the experience and had
   1/4.6 of the health of a base monster of the same hunting level, so lvl 500 spiders (base) paid more than lvl 800
   monsters. New points follow the base monsters (`luajit tools/pace_scan.lua` prints the median experience and health by
-  hunting level: now rising with the level in every band). Generated area / dungeon points keep their old points as the new
+  hunting level: now rising with the level in every band). **Correction 2026-10-22:** `pace_scan.lua` and the numbers in
+  `pace_config.lua` leave out the engine's x0.03 L experience factor of level-scaled monsters ("Late game", checked on the
+  test server). With it a level-scaled kill pays about 20-30x a base monster of the same hunting level (median per kill
+  before the stage: 81k vs 4.0k at hunting level 600-700, 155k vs 6.0k at 750-850, 279k vs 9.5k at 950-1050), so the
+  "1/15" above was measured without the factor too. Open: re-tune the `scaled` xp curve (or divide it by 0.03 L)
+  against the hunt tracker. Generated area / dungeon points keep their old points as the new
   `generated` set (the queue dungeons' 10-minute model is calibrated on them; their experience is the generator's own
   and was not re-measured). (2) New `gold` factor (`pace_config.lua`, base and scaled,
   0.30 from hunting level 450): a second thinning of coins and NPC-sellable items that are not gear (`L.isGoldLike`,
@@ -16151,7 +16161,10 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   (+0.5%), Hunter 300 (+1%), Slayer 750 (+1.5%), Lorekeeper 1500 (+2%), Bestiarch 3000 (+2.5%), Monster Sage 6000 (+3%).
 - **Kills.** A death event on every monster without a master (EventCallback `onSpawn`); the last hit and the most damage
   (summons count for their master) and their party members within 30 tiles on the same floor (`ChaosBounty.credit`) each
-  get the kill once. Kills are kept in memory and written every 120 s, at a new stage and at logout.
+  get the kill once. Kills are kept in memory and written every 120 s, at a new stage and at logout. A party member's
+  credit counts for its kill tasks only when the task's level is within the member's board window (`C.partyCountsTask`,
+  2026-10-22): a low character cannot finish a task of strong monsters next to a strong one; the bestiary stages still
+  count it.
 - **Kill tasks.** A hunt task (kill N of one monster) comes from the daily board or from a discovered entry whose level is
   in the character's take window (0.4 x level to 1.5 x level + 20; up to level 30 anything below that). A family task
   (kill N of a category within a level window) only from the board. The board: 3 hunts and 3 families from monsters that
@@ -16162,10 +16175,30 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   the bounty board, the week on Monday). No expiry: a task stays until done or abandoned; progress is written every
   10 kills, at the milestones (25/50/75%) and at logout.
 - **Rewards** (paid at once; gold to the bank, orbs to the backpack or the inbox): a share of the bounty board's hunt
-  reward of the band of min(task level, character level) (`bounty_config.lua` bands): hunt 40% gold, 50% Orbs of Upheaval, 1.5%
-  of a level's experience, 5 x the difficulty's stage-1 points; family 60% gold, 75% Chaos, 50% Divine, 2% experience,
-  8 x points. So: level 120, hunt 20k gold, 1 Orb of Upheaval, 10.7k experience, 10 points; family 30k, 1 Chaos, 14.3k, 16
-  points; band 800+: hunt 800k, 3 Chaos; family 1.2M, 4 Chaos, 1 Divine. Four a day pay at most 4.8M gold at 800+,
+  reward of the band of min(task level, character level) (`bounty_config.lua` bands): hunt 40% gold, 50% Orbs of Upheaval,
+  5 x the difficulty's stage-1 points; family 60% gold, 75% Chaos, 50% Divine, 8 x points. So: level 120, hunt 20k gold,
+  1 Orb of Upheaval, 10 points; family 30k, 1 Chaos, 16 points; band 800+: hunt 800k, 3 Chaos; family 1.2M, 4 Chaos,
+  1 Divine. **Experience** (2026-10-22, as the bounty board; it was 1.5% / 2% of a level, 10.7k at level 120 while the
+  task's kills gave millions): `expShare` 20% (half a bounty hunt's: up to 4 a day, on a monster the character picks) of
+  the base experience of the task's kills at the character's stage, required x one kill's base
+  (`C.taskKillBase`: `ChaosBounty.monsterKillBase` of the hunt's monster, for a family the median of the category's
+  spawning monsters in the window) x `Game.getExperienceStage`; at least the old `expPercent` (1.5 / 2) and at most
+  `expCap` 1000 (10 levels) percent of level L to L + 1 (L = the character's level capped at the band's top). The window
+  and the tracker show the amount for the current level. Model (30 boards per level from the bounty pool as the
+  catalogue, median, min-max):
+
+  | Level | Hunt old -> new (min-max) | Hunt kills' experience | Family old -> new | Family kills' experience | New, levels (hunt / family) |
+  |---|---|---|---|---|---|
+  | 8 | 43 -> 18k (2.4k-29k) | 91k | 58 -> 15k | 76k | 6.3 / 5.2 |
+  | 30 | 654 -> 342k (121k-436k) | 1.7M | 872 -> 436k (cap) | 4.0M | 7.9 / 10 |
+  | 100 | 7.4k -> 4.3M (2.1M-5.0M) | 21.3M | 9.9k -> 5.0M (cap) | 42.7M | 8.6 / 10 |
+  | 250 | 47k -> 9.7M (4.7M-18.5M) | 48.7M | 62k -> 18.4M | 91.8M | 3.1 / 5.9 |
+  | 400 | 120k -> 17.0M (5.2M-32.8M) | 84.8M | 160k -> 43.0M | 215M | 2.1 / 5.4 |
+  | 650 | 186k -> 13.5M (5.4M-211M) | 67.5M | 422k -> 25.9M | 130M | 0.6 / 1.2 |
+  | 900 | 478k -> 261M (8.5M-405M) | 1.30B | 809k -> 25.8M | 129M | 6.4 / 0.6 |
+
+  Repeat farming: 4 tasks a day and 20 a week, each a share of kills the character makes anyway; the cap bounds a task
+  of a monster with outsized experience. Four a day pay at most 4.8M gold at 800+,
   against 24M for the twelve bounty contracts of a day. Multi-client: as the bounty board, a task that got a kill while
   multi-clienting pays nothing (`mcReward = false`).
 - **Bounty board split.** The bounty board (`bounty.lua`) stays the shared daily board per level band with the big
@@ -16191,12 +16224,13 @@ is in `bestiary_config.lua`; the pure rules in `bestiary_core.lua`.
   `BESTIARY`, action `bestiary`), `docs/tools/gen_readme_art.py` (the README card).
 - **Tests:** `tests/bestiary_test.lua` (config sanity, levels, difficulties, thresholds with few spawns, stages and points,
   ranks, categories, the catalogue and summary, task windows, the seeded board, matching, party credit, milestones, the
-  accept limits, rewards against the bounty bands, views, packets, the spawn data) and the client's
+  accept limits, rewards against the bounty bands, the task experience (kill base of a hunt and a family, share, floor,
+  cap, the party rule for tasks), views, packets, the spawn data) and the client's
   `game_bestiary/bestiaryview_test.lua`.
 - **Tested in game** (test server with the scripts of this repo, cropped map, monsters created next to the character,
   one client): discovery and stage messages and toasts, the window (categories, search, pages, an undiscovered, a studied
   and a completed entry with elements, areas and loot icons), the board, accepting hunt and family tasks, progress on the
-  tracker with every kill, completion (20,000 gold to the bank, 1 Orb of Upheaval, 10,711 experience = 1.5% at level 120, 10
+  tracker with every kill, completion (20,000 gold to the bank, 1 Orb of Upheaval, 10,711 experience = 1.5% at level 120 by the old rule, 10
   points), the active cap and the daily limit (Accept greyed with the reason; a forced accept refused), progress kept
   over relog and restart, bounty contracts on the tracker and gone when completed, the completion bonus (a dragon: 45,601
   experience with the bonus, 45,150 without, x1.01; 360 holy damage -> 363) and the damage event registered by real melee,
