@@ -2966,6 +2966,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["An attack spell is charging"] = "Uma magia de ataque está carregando",
   ["Spell not found"] = "Magia não encontrada",
   ["Needs the Buff Bar"] = "Precisa da Barra de Buffs",
+  ["You switched it off"] = "Você desligou",
+  ["You switched a vigil off: its row is unticked. Tick it to let the helper keep it on."] = "Você desligou uma vigília: a linha dela foi desmarcada. Marque-a para o helper mantê-la ligada.",
   ["Summons at the limit"] = "Invocações no limite",
   ["Already out"] = "Já invocado",
   ["Cannot count summons"] = "Não consegue contar invocações",
@@ -3491,5 +3493,19 @@ ChaosLocaleStrings['pt-BR'] = {
   ["The build uses %d points. You own %d and %d are free."] = "A build usa %d pontos. Você tem %d e %d estão livres.",
   ["What every stat of the tree does. Gold marks a Primary stat of your class, silver a Secondary one."] = "O que cada atributo da árvore faz. Dourado marca um atributo Principal da sua classe, prata um Secundário.",
   ["free (a free reset is used)"] = "grátis (um reset grátis é usado)",
+  -- game_waystone: the waystone device window
+  ["%d held"] = "%d na bolsa",
+  ["Only the default look is unlocked."] = "Só o visual padrão está liberado.",
+  ["Open portals"] = "Abrir portais",
+  ["Opening the portals..."] = "Abrindo os portais...",
+  ["Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map of that tier."] = "Escolha uma Waystone que você carrega. Quatro portais abrem em volta do dispositivo por 60 segundos e levam a um mapa aleatório desse nível.",
+  ["Pick a portal look."] = "Escolha o visual do portal.",
+  ["Portal look"] = "Visual do portal",
+  ["Portal look saved."] = "Visual do portal salvo.",
+  ["The device refused."] = "O dispositivo recusou.",
+  ["The portals are open around the device for 60 seconds."] = "Os portais estão abertos em volta do dispositivo por 60 segundos.",
+  ["Waystone Device"] = "Dispositivo de Waystone",
+  ["Waystone Tier %s"] = "Waystone Nível %s",
+  ["You carry no waystone of this tier."] = "Você não carrega nenhuma waystone desse nível.",
 }
 return ChaosLocaleStrings['pt-BR']

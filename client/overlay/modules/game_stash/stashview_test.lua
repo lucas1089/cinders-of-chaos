@@ -72,4 +72,22 @@ has(V.infoText({ tabs = {}, limit = 1, tabSize = 100, closed = true }, 0, true, 
 has(V.stowTooltip(true, { remote = 'pact' }), 'lent by your Chaos Pact', 'Stow Everything: the unlock source')
 has(V.infoText(d, 0, false, false), 'remote deposit', 'the line under the list when locked')
 
+-- a deposit names the dragged item, and the drop is handled once (player report 2026-10-22: one drag took the item
+-- to the right too)
+local dd = V.depositData({ x = 65535, y = 64, z = 3 }, 3, 3031, 25, true, 1)
+eq(dd.make, 'Stash', 'deposit request')
+eq(dd.Pos.x, 65535, 'container position x') eq(dd.Pos.y, 64, 'container id') eq(dd.Pos.z, 3, 'slot')
+eq(dd.Pos.stackpos, 3, 'stack position')
+eq(dd.ItemId, 3031, 'the client id goes along')
+eq(dd.Count, 25, 'and the count')
+eq(dd.UpdateList, true, 'the list is echoed when the window is open')
+eq(V.depositData(nil, 0, 1, 1), nil, 'no position: no request')
+eq(V.DROP_HANDLED, true, 'the drop handler stops the drop at the stash (no second deposit from the window below)')
+-- the handler in stash.lua returns it on every path that sent something
+local src = io.open((arg and arg[0] and arg[0]:match('^(.*[/\\])') or '') .. 'stash.lua'):read('*a')
+local body = src:match('Stash%.OnDrop = function%(.-\nend\n')
+eq(body ~= nil, true, 'Stash.OnDrop found')
+eq(select(2, body:gsub('return StashView%.DROP_HANDLED', '')), 2, 'deposit and refusal both end the drop')
+eq(body:find('Stash.StashItem(item, 1)', 1, true) ~= nil, true, 'the deposit is sent')
+
 print('stashview_test: ' .. n .. ' checks OK')

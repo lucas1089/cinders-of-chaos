@@ -144,11 +144,13 @@ Stash.OnDrop = function(self, widget, mousePos, forced)
 	-- deposit in town only, unless the remote deposit unlock is on (the server checks again)
 	if not Stash.CanDeposit() then
 		Stash.ShowLocked()
-		return false
+		return StashView.DROP_HANDLED
 	end
 	-- any item (a weapon, a rift key, a stack): the server stores it whole and says when it cannot
 	Stash.StashItem(item, 1)
-	return false
+	-- handled: the base client stops offering this drop to the widgets below (the window under the list), which
+	-- otherwise sent a second deposit of the same slot (StashView.DROP_HANDLED)
+	return StashView.DROP_HANDLED
 end
 
 
@@ -669,14 +671,10 @@ Stash.StashItem = function(item, typed)
 	-- the deposit was rejected, forcing the player to reopen the window.
 	local visible = Stash.UI and Stash.UI:isVisible() and true or false
 
+	-- the item's client id and count go along: the server refuses when the slot holds another item by then
 	Stash.Communicate(json.encode({
 		action = "Stash",
-		data = {
-			make       = "Stash",
-			UpdateList = visible,
-			Typed      = typed,
-			Pos        = {x = pos.x, y = pos.y, z = pos.z, stackpos = item:getStackPos()},
-		},
+		data = StashView.depositData(pos, item:getStackPos(), item:getId(), item:getCount(), visible, typed),
 	}))
 end
 

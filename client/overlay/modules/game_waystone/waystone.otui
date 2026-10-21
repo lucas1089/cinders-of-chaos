@@ -1,0 +1,113 @@
+// The waystone device window (game_waystone). Styles from client_chaos_theme.
+
+WaystoneTierRow < ChaosPanelDark
+  height: 40
+  margin-bottom: 3
+  phantom: false
+  focusable: true
+
+  $focus:
+    background-color: #3a2410
+
+  UIItem
+    id: item
+    anchors.left: parent.left
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 4
+    size: 32 32
+    virtual: true
+    phantom: true
+
+  UILabel
+    id: name
+    anchors.left: item.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-left: 8
+    width: 140
+    text-align: left
+    font: verdana-11px-rounded
+    color: #f6cf72
+    phantom: true
+
+  UILabel
+    id: count
+    anchors.left: name.right
+    anchors.right: parent.right
+    anchors.verticalCenter: parent.verticalCenter
+    margin-right: 8
+    text-align: right
+    font: verdana-11px-antialised
+    color: #a89c86
+    phantom: true
+
+ChaosMainWindow
+  id: waystoneWindow
+  size: 380 432
+  !text: tr('Waystone Device')
+  @onEscape: modules.game_waystone.hide()
+
+  ChaosLabel
+    id: helpLabel
+    anchors.top: parent.top
+    anchors.left: parent.left
+    anchors.right: parent.right
+    height: 44
+    text-wrap: true
+    text-align: left
+    !text: tr('Pick a Waystone Tier you carry. Four portals open around the device for 60 seconds and lead to a random map of that tier.')
+
+  UIScrollArea
+    id: tierList
+    anchors.top: helpLabel.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 6
+    height: 258
+    layout:
+      type: verticalBox
+    auto-focus: none
+
+  ChaosComboBox
+    id: lookBox
+    anchors.top: tierList.bottom
+    anchors.left: parent.left
+    anchors.right: lookButton.left
+    margin-top: 6
+    margin-right: 6
+    visible: false
+
+  ChaosButton
+    id: lookButton
+    anchors.top: tierList.bottom
+    anchors.right: parent.right
+    margin-top: 6
+    width: 120
+    !text: tr('Portal look')
+    @onClick: modules.game_waystone.askLooks()
+
+  ChaosLabelDim
+    id: statusLabel
+    anchors.left: parent.left
+    anchors.right: openButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    height: 20
+    text-align: left
+    text-wrap: true
+
+  ChaosButton
+    id: openButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 8
+    width: 110
+    !text: tr('Open portals')
+    @onClick: modules.game_waystone.openPortals()
+
+  ChaosButton
+    id: closeButton
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    width: 70
+    !text: tr('Close')
+    @onClick: modules.game_waystone.hide()

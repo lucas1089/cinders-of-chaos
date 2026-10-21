@@ -609,6 +609,7 @@ collision check") and be added here.
 | 198 | `charms` | `charms.lua` | `game_charms` | |
 | 199 | `gamble` | `gamble.lua`, the Gambler's NPC script | `game_gamble` | |
 | 200 | `battleground` | `battleground.lua` | `game_battleground` | |
+| 202 | none (base server) | the base waystone script (`tools/patch_waystone_hideout.py`) | `game_waystone` | the base server's own waystone opcode, its own JSON without `{action, data}`: `show {tiers, pick}` (tiers and pick: the patch's part 2), `teleport {clientId}`, `choice`, `choice_apply {choiceId}` and their answers; see "Hideouts", Waystone device |
 | 203 | `community` | `community.lua` | `game_community` | |
 | 204 | `combatLog` | `combatlog.lua` | `game_dpsmeter` | |
 | 205 | `descent` | `descent.lua` | `game_descent` | |
@@ -3802,7 +3803,19 @@ built with the device as a fixture at the middle of the floor (`fixtures.wayston
 counts it), never removable or movable (`onItemMoved` puts it back, wrap refused), and the four diagonal tiles around it (7,5 9,5
 7,7 9,7, where the base script puts the portal pads for 60 s) stay free of decorations. A visitor who uses it gets the refusal
 (only the owner's own hideout counts). The pads lead to the waystone maps and the 30-minute timer of the base script; the exit
-leads out of the hideout, like the Town Portal. **Install:** `install_all.py` step `waystonehideout` (after `files`, so
+leads out of the hideout, like the Town Portal. **Part 2 (2026-10-22, player report: "clicking the device and Use does
+nothing, clicking waystones does nothing either").** The base script answers a use with `show` on extended opcode 202 and
+waits for the client to send `teleport {clientId}`; this client had no window for it, so nothing happened, and a Waystone
+Tier item had no action at all. Client module `game_waystone` is that window now (client/MANIFEST.md). The patch's part 2
+(own marker, so a server patched before gets it on the next run): `show` carries `tiers` (`{clientId, look, tier, count}`
+for the six tiers, counted by `player:getItemCount` through every backpack; `look` is the item's client id in this
+server's items.otb, for the icon) and `pick`; `teleport` refuses a tier the player does not hold ("You have no waystone of
+that tier.") before any pad is made (the base made the four pads first and took the waystone after, so a pick without one
+still opened them for 60 s); and the six Waystone Tier items (29845-29850) get an action: used on the device, or used
+anywhere in the player's own hideout (`ChaosHideout.waystoneDevice(player)`), it runs the device's own use with that tier
+as `pick`; elsewhere it says "Use this waystone on the waystone device in your hideout or house." Tests:
+`tools/patch_waystone_hideout_test.py` (part 2 on a mocked engine, a part-1 install upgraded once; `WAYSTONE_BASE_DATA`
+checks the real files), `tests/hideout_test.lua` (`waystoneDevice`). **Install:** `install_all.py` step `waystonehideout` (after `files`, so
 `hideout.lua` has the API; the patch itself needs only the base files). **Needs a live check:** the device opens its window in a
 hideout, the pads appear and lead to a tier map, a visitor is refused, the wrap button is refused, the pads are not blocked by
 decorations on the other tiles.
@@ -4158,6 +4171,19 @@ tier, sockets and gems, quality, powers, uniques, charges, durations, names, tex
 a new per-item id. The codec is shared with the market escrow (`item_codec.lua`, `item_codec_core.lua`; `market.lua`'s
 `MK.encode` / `MK.decode` call it, same behaviour). The charms grid keeps its own fallback form for its rows of before.
 A row also keeps the item's name, look text and rarity, so the list never re-creates items.
+
+**One drag, one deposit (2026-10-22,** player report: "dragging an item into the stash also takes the item to its right,
+and that one does not show in the stash"). The base client offers a drop to every widget under the mouse until one
+answers true; the client's list and window both answered false, so one drag sent two `Stash {Pos}` requests for the same
+container slot. The first took the item; the bag closed the gap, and the second took the item that moved into the slot.
+It went into the stash, but the list echo of the second request was inside the 100 ms echo limit, so the list did not show
+it. Fixed on both sides: the client's drop answers true and names the item (`ItemId` = its client id, `Count`); the
+server ignores a deposit of the same position within `repeatDepositMs` (400 ms) of the last one that went in (old
+clients, `stash_core.lua` `K.repeatDeposit`) and refuses when the slot holds another item than the one named
+(`K.sameItem`; the count of a stack only; "That item moved before it reached the stash. Drag it again."). Nothing is
+lost or doubled: an ignored or refused request moves nothing. Tests: `tests/stash_test.lua` (one drop sent twice keeps
+the neighbour in the bag, a later drag of that slot goes in, a named item that is not in the slot stays, a stack of
+another count stays) and client `stashview_test.lua`.
 
 **Access** (owner decision 2026-10-15: remote deposit is a paid unlock). Everybody uses the stash in town: deposit and
 withdraw in a protection zone or inside a hideout (`withdrawInHideout`; the hideout's supply stash). **Remote deposit**

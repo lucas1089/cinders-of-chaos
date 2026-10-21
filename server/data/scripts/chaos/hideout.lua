@@ -31,7 +31,7 @@
 --                     remove {id} | clear | theme {key} | perm {level} | kick | visits | like {owner}
 --   server -> client  state {open, me, hideout, inside, layout, themes, catalogue, placed, permissions, categories}
 --                     visits {friends, showcase = {likes, visits}, recent}   result {ok, text}
--- API: ChaosHideout.isInside(pos), .isOwnRoomTile(player, pos), .isFixture(item), .enter(player, ownerGuid), .leave(player),
+-- API: ChaosHideout.isInside(pos), .isOwnRoomTile(player, pos), .isFixture(item), .waystoneDevice(player), .enter(player, ownerGuid), .leave(player),
 --      .storeUnlock(name),
 --      .sourceProbes.journey = fn(player) -> chapters done (the season journey sets it; else probed by name)
 -- Staff: /hideout <character> (enter that character's hideout)
@@ -853,6 +853,26 @@ local function inOwnRoom(player)
 	local slot, room = M.roomAt(player:getPosition())
 	if room and room.owner == player:getGuid() then
 		return slot, room
+	end
+	return nil
+end
+
+-- the waystone device of the hideout the player stands in, when it is the player's own (nil elsewhere, or while the
+-- device is busy: the base script swaps it for its lit look for a minute). A Waystone Tier used there opens the
+-- device's window (patch_waystone_hideout.py part 2: the tier item's own action).
+function M.waystoneDevice(player)
+	local f = cfg.fixtures.waystone
+	if not player or not f or not cfg.ids.waystone then
+		return nil
+	end
+	local slot = inOwnRoom(player)
+	if not slot then
+		return nil
+	end
+	local tile = Tile(P(K.toWorld(cfg, slot, f[1], f[2])))
+	local it = tile and tile:getItemById(cfg.ids.waystone)
+	if it and it:getActionId() == A.waystone then
+		return it
 	end
 	return nil
 end

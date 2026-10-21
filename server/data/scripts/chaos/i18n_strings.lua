@@ -1271,6 +1271,7 @@ return {
 			"Seu stash está cheio: as abas além das suas %d abas gerais e as abas que você não tem mais só permitem retirar.",
 		["Could not take the item."] = "Não foi possível pegar o item.",
 		["The stash is busy. Try again in a moment."] = "O stash está ocupado. Tente de novo daqui a pouco.",
+		["That item moved before it reached the stash. Drag it again."] = "Esse item mudou de lugar antes de chegar ao stash. Arraste de novo.",
 		["Empty the container first."] = "Esvazie o recipiente primeiro.",
 		["Stashed %dx %s."] = "Guardou %dx %s no stash.",
 		["Stashed %dx %s (%s tab)."] = "Guardou %dx %s no stash (aba %s).",

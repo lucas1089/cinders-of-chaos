@@ -461,6 +461,34 @@ function K.tabsView(cfg, view, entries)
 end
 
 -- ---------------------------------------------------------------- rules
+-- A deposit request that repeats the last deposit (the same position, within windowMs): an old client's drop
+-- handler fired once for the list and once for the window under it, and the second request named the slot again, now
+-- holding the item to the right of the first (player report 2026-10-22: "dragging an item also takes the item to its
+-- right"). last = {x, y, z, stackpos, at} of the last deposit that went in; pos = the request's Pos; now in ms.
+function K.repeatDeposit(last, pos, now, windowMs)
+	if type(last) ~= "table" or type(pos) ~= "table" then
+		return false
+	end
+	now, windowMs = tonumber(now) or 0, tonumber(windowMs) or 0
+	if not last.at or now - last.at > windowMs or now < last.at then
+		return false
+	end
+	return int(last.x) == int(pos.x) and int(last.y) == int(pos.y) and int(last.z) == int(pos.z) and
+		int(last.stackpos) == int(pos.stackpos)
+end
+
+-- the item at the request's position is the one the client dragged: its client id and count as the client named
+-- them (ItemId, Count; a client before 2026-10-22 names neither and passes)
+function K.sameItem(clientId, count, wantId, wantCount)
+	if wantId ~= nil and tonumber(wantId) ~= tonumber(clientId) then
+		return false
+	end
+	if wantCount ~= nil and tonumber(wantCount) ~= tonumber(count) then
+		return false
+	end
+	return true
+end
+
 function K.depositRefusal(cfg, f)
 	if not f or not f.id then
 		return "taken"
