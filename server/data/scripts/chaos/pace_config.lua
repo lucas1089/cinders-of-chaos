@@ -95,7 +95,10 @@ return {
 	lootLevel = {
 		enabled = true,
 		notableRarity = 4,
-		notableChance = 1000
+		notableChance = 1000,
+		-- these monsters pay their coins as crystal coins only, a random whole number with the same expected value
+		-- (pace_core.lua P.crystalStacks; beta report 2026-10-22: their pay filled the bag with three coin kinds)
+		crystalOnly = {"Nightfang Widow", "Shadowcrystal Widow"}
 	},
 
 	-- damage to players by a paced monster (all elements, conditions and mana shield hits included), by its hunting

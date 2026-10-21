@@ -14386,7 +14386,14 @@ six orb entries; no gear and no drop under 7%, so nothing notable):
 | Shadowcrystal Widow | 960 | 3,141 / 3,102 | 0.48 / 0.46 | 17% / 78% | 51% / 6% |
 
 A Monte Carlo of the core plan on the Nightfang Widow's table matches the model (gold within 4%, items within 0.03 a
-kill, empty corpses within 2 points: `tests/loot_by_level_test.lua`). The loot line (index 1.9, "One loot line per kill")
+kill, empty corpses within 2 points: `tests/loot_by_level_test.lua`).
+
+**Crystal coins only** (beta report 2026-10-22: the widows filled the loot bag with gold, platinum and crystal coins).
+A monster on `lootLevel.crystalOnly` (the two widows) gets its coin pay as crystal coins only: pay / 10000, the rest
+rounded at random to one more coin (`P.crystalStacks`, picked by `P.payStacks` on the monster's type name). The expected
+gold per kill is the same (the Monte Carlo in `tests/loot_by_level_test.lua`: within 4%), but most kills pay no coin and
+some pay one: at about 3,100 gold a kill that is one crystal coin in about three kills. Other monsters keep
+`P.coinStacks`. The loot line (index 1.9, "One loot line per kill")
 lists the corpse after this, coins included.
 
 Not measured: no live server ran it; the band tables come from one installed base copy (`loot_bands.py` on another base

@@ -284,6 +284,54 @@ do
 	near(empty / n, w.new.empty, 0.02, "Nightfang Widow: core empty corpses = model")
 end
 
+-- ---------------------------------------------------------------- crystal coins only (beta report 2026-10-22)
+do
+	for _, name in ipairs(M.WIDOWS) do
+		local listed = false
+		for _, n in ipairs(ll.crystalOnly or {}) do
+			if n == name then listed = true end
+		end
+		check(listed, name .. ": on lootLevel.crystalOnly")
+	end
+	eq(#P.crystalStacks(0, function() return 0 end), 0, "crystal: no gold, no coins")
+	eq(P.crystalStacks(25000, function() return 0.99 end)[1][2], 2, "crystal: 25000 rounds down on a high roll")
+	eq(P.crystalStacks(25000, function() return 0.1 end)[1][2], 3, "crystal: 25000 rounds up on a low roll")
+	eq(P.payStacks(ll, "nightfang widow", 12345, function() return 0.99 end)[1][1], 2160, "pay: a listed name, any case")
+	eq(#P.payStacks(ll, "Some Other Monster", 12345), 3, "pay: other monsters keep the three coin kinds")
+	-- Monte Carlo: the widow's pay as crystal coins keeps the gold per kill, and the bag gets one coin kind only
+	local mon
+	for _, m in ipairs(ctx.data) do
+		if m.name == "Nightfang Widow" then mon = m end
+	end
+	local f = P.factors(cfg, mon.level, mon.scaled)
+	math.randomseed(4242)
+	local n, plain, crystal, other, maxCount = 30000, 0, 0, 0, 0
+	for _ = 1, n do
+		local corpse = {}
+		for _, e in ipairs(mon.loot) do
+			if math.random() * 100000 < e[2] then
+				local stack = e[3] > 1 or e[4] == "coin"
+				corpse[#corpse + 1] = {class = e[4], value = e[5], count = stack and math.random(1, e[3]) or 1,
+					stackable = stack, chance = e[2]}
+			end
+		end
+		local _, pay = P.levelPlan(ll, f, corpse, math.random)
+		plain = plain + pay
+		for _, c in ipairs(P.payStacks(ll, "Nightfang Widow", pay, math.random)) do
+			if c[1] == 2160 then
+				crystal = crystal + c[2] * 10000
+				maxCount = math.max(maxCount, c[2])
+			else
+				other = other + 1
+			end
+		end
+	end
+	eq(other, 0, "Nightfang Widow: crystal coins only")
+	near(crystal / plain, 1, 0.04, "Nightfang Widow: crystal pay keeps the coin gold per kill (" .. crystal / n ..
+		" vs " .. plain / n .. ")")
+	check(maxCount <= 10, "Nightfang Widow: a small number of crystal coins (max " .. maxCount .. ")")
+end
+
 print(string.format("loot_by_level_test: %d checks, %d failures", checks, failures))
 if failures > 0 then
 	os.exit(1)

@@ -62,6 +62,7 @@ local unpackFn = table.unpack or unpack
 local TYPES = {
 	[2148] = {"gold coin", "gold coins", "a", true, false, 1},
 	[2152] = {"platinum coin", "platinum coins", "a", true, false, 100},
+	[2160] = {"crystal coin", "crystal coins", "a", true, false, 10000},
 	[7590] = {"great mana potion", "great mana potions", "a", true, false, 120},
 	[8473] = {"ultimate health potion", "ultimate health potions", "an", true, false, 310},
 	[36026] = {"tuft of spider silk", "tufts of spider silk", "a", true, false, 40},
@@ -317,7 +318,7 @@ end
 local seeds = {7, 11, 23, 42, 99}
 for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
 	local stockTotal, lineTotal, corpseTotal = 0, 0, 0
-	local stockGold, corpseGold, stockItems, corpseItems = 0, 0, 0, 0
+	local stockGold, corpseGold, stockItems, corpseItems, smallCoins = 0, 0, 0, 0, 0
 	for k, seed in ipairs(seeds) do
 		math.randomseed(seed)
 		local corpse = newCorpse(1, 20)
@@ -347,9 +348,14 @@ for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
 				stockItems = stockItems + 1
 			end
 		end
-		for _, n in pairs(listed) do lineTotal = lineTotal + n end
+		if #corpse.items > 0 then -- "nothing." lists no item
+			for _, n in pairs(listed) do lineTotal = lineTotal + n end
+		end
 		for _, n in pairs(inCorpse) do corpseTotal = corpseTotal + n end
 		for _, it in ipairs(corpse.items) do
+			if it.id == 2148 or it.id == 2152 then
+				smallCoins = smallCoins + it.count
+			end
 			if it.id == 2148 or it.id == 2152 or it.id == 2160 then
 				corpseGold = corpseGold + it.count * (it.id == 2148 and 1 or it.id == 2152 and 100 or 10000)
 			else
@@ -363,9 +369,9 @@ for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
 		" of " .. stockGold .. ")")
 	check(corpseItems < stockItems / 2, name .. ": and less than half the stock items (" .. corpseItems .. " of " ..
 		stockItems .. ")")
-	-- loot by monster level: the coins of every kill come back as coins (no kill without them here: every stock coin
-	-- entry hit)
-	check(corpseGold > 0, name .. ": coins in the corpses")
+	-- loot by monster level: the widows' coins come back as crystal coins only (pace_config.lua lootLevel.crystalOnly,
+	-- beta report 2026-10-22); a small pay often rounds to no coin at all
+	eq(smallCoins, 0, name .. ": no gold or platinum coins in the corpses")
 end
 
 -- loot by monster level (owner 2026-10-21): the corpse depends on the monster only. The same kill with the same rolls
