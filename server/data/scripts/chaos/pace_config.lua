@@ -62,12 +62,17 @@ return {
 	-- L is the old 0.042 / 0.036 / 0.030 / 0.026 / 0.024 / 0.023 x the median class's kills per hour with the old health
 	-- curve / with this one (tools/pack_model.py): about 0.086 at every level. A kill now pays about 10k at 670, 24k at 810
 	-- and 47k at 980 before the stage, for 28k-73k health (pace_scan.lua prints both with the engine factors).
+	-- goal: kill goals x, sized on the kill rate like the base set's. The 2026-10-14 points (20 at 650 to 37 at 2000) were
+	-- for 990-800 kills an hour; with the 2026-10-20 health a hunter kills about 485 (650) to 211 (2000) an hour
+	-- (tools/spawn_tuning.json model.paceKillsPerHour, from tools/pack_model.py), so the goals are the old ones x that
+	-- ratio (O108): an 800+ contract or kill task takes the model's time again, and its reward (a share of its kills'
+	-- experience) is the model's too.
 	-- Check with: luajit tools/pace_scan.lua
 	scaled = {
 		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
 		xp = {{100, 0.044}, {650, 0.086}, {800, 0.085}, {1000, 0.087}, {1300, 0.087}, {1600, 0.086}, {2000, 0.087}},
 		loot = {{100, 0.137}, {650, 0.83}, {800, 0.69}, {1000, 0.62}, {1300, 0.595}, {1600, 0.57}, {2000, 0.55}},
-		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}},
+		goal = {{650, 9.8}, {800, 10.2}, {1000, 9.6}, {1300, 9.6}, {1600, 9.8}, {2000, 9.8}},
 		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
 		-- the old ramp from 100 x the 0.963 the base curve carries there (the empty-corpse floor)
 		coins = {{100, 0.963}, {275, 0.626}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179}, {800, 0.133},

@@ -147,7 +147,7 @@ do
 	local g1 = ChaosPaceCore.goalOfEntry(pc, {level = 6, exp = 12, health = 30})
 	eq(g1, 1, "pace: a level 12 hunt keeps its goals")
 	local g2 = ChaosPaceCore.goalOfEntry(pc, {level = 980, exp = 13900, health = 22000})
-	assert(g2 > 20, "pace: a level-scaled late-game monster needs 20x+ the kills")
+	assert(g2 > 8 and g2 < 12, "pace: a level-scaled late-game monster needs about 10x the kills (O108)")
 end
 eq(#sb.bands[2].contracts, 0, "nothing fits band 2")
 

@@ -7735,7 +7735,8 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   levels), 900 on band 5 31.8M (0.8 level). Until O108 the 800+ band's level-scaled monsters gave about 20x the experience of a
   base monster of the same hunting level once the engine's x0.03 L was counted, so its contracts paid the cap (the 900
   row above). With the re-fitted `scaled` curve (see "Pack combat (pace)", Scaled experience re-fit) level 900 gets
-  303M (7.5 levels) for a hunt, 292M elite, 265M boss, and no contract of 30 boards at the cap.
+  116M (2.9 levels) for a hunt, 113M elite, 111M boss (with the re-sized kill goals of O108; 303M, 292M,
+  265M with the old goals), and no contract of 30 boards at the cap.
   **Weekly chest:** 4 completed contracts in one bounty week (Monday 06:00 to Monday 06:00) give a "bounty chest"
   (present box) with the orbs of the player's band, once per week (`weeklyNeed`, 7 until 2026-10-15: two short sessions
   a week earn it now).
@@ -14524,7 +14525,8 @@ Basics page "Pack combat"):
 | Experience per kill x (level-scaled, O108) | 0.086 | 0.085 | 0.087 | 0.087 | 0.086 | 0.087 |
 | Health x (generated points) | 0.095 | 0.080 | 0.066 | 0.062 | 0.059 | 0.056 |
 | Experience per kill x (generated points) | 0.042 | 0.036 | 0.030 | 0.026 | 0.024 | 0.023 |
-| Kill goals x | 20 | 24 | 28 | 32 | 35 | 37 |
+| Kill goals x (level-scaled, O108) | 9.8 | 10.2 | 9.6 | 9.6 | 9.8 | 9.8 |
+| Kill goals x (generated points) | 20 | 24 | 28 | 32 | 35 | 37 |
 
 These come on top of the engine's x(1 + 0.0074 L) health and x0.03 L experience of a monster with a level of its own.
 Loot: `pace_config.lua` (and "Loot by monster level").
@@ -14578,12 +14580,31 @@ monster's (0.78-0.83 of its file ratio; base 0.6-1.0; `tests/pace_test.lua`).
   (`xpcap.lua`, 4x the paced base: rawExp x factor x stage x tier x the curve) follows the curve by itself and still
   holds every bonus to 4x; the bounty floor and cap (`B.reward`) and the kill task share (`bestiary_core.lua`) read the
   same `B.monsterKillBase`.
-- **Bounty 800+ band** (30 boards, own band, the model of "Bounty board"): the median hunt reward at level 800 / 900 /
-  1000 is 325M / 303M / 281M (10.2 / 7.5 / 5.6 levels), elite 313M / 292M / 271M, boss 284M / 265M / 246M; at the
-  20-level cap: 1 of 120 contracts at 800, none at 900 and 1000 (was 639M / 809M / 999M, 20 levels for every type, 110,
-  94 and 83 of 120 at the cap). The 500-799 band (level 650: hunt 40.9M, 1.9 levels) does not change. Open: the late sets' kill
-  goals (`scaled.goal` 24 at 800) were set when such a hunter killed 990 an hour; with the 2026-10-20 health about 400,
-  so an 800+ hunt contract (about 2,000 kills) takes several hours.
+- **Bounty 800+ band** (30 boards, own band, the model of "Bounty board"; with the kill goals below): the median hunt
+  reward at level 800 / 900 / 1000 is 124M / 116M / 108M (3.9 / 2.9 / 2.2 levels), elite 121M / 113M / 105M, boss
+  119M / 111M / 103M, none at the 20-level cap. Before O108 639M / 809M / 999M (20 levels, 110, 94 and 83 of 120 at
+  the cap); the model (the 2026-10-14 curves, goals and kills per hour) 125M / 117M / 109M. The 500-799 band (level 650:
+  hunt 40.9M, 1.9 levels) does not change.
+- **Kill goals** (`scaled.goal`, second step of O108). The goals of 2026-10-14 (20 at 650 to 37 at 2000) were sized on
+  990-800 kills an hour; with the 2026-10-20 health the median class kills 485 (650), 412 (800), 323 (1000), 254 (1300),
+  232 (1600), 211 (2000) an hour (`tools/pack_model.py`: the 2026-10-14 numbers x its kills per hour with the new / old
+  health curve; now `spawn_tuning.json` `paceKillsPerHour.scaled`, which `loot_model.lua`, the capacity report and the
+  bounty minutes read). The goals are the old ones x that ratio: 9.8 / 10.2 / 9.6 / 9.6 / 9.8 / 9.8. Times on the model
+  (median of 30 boards, band 800+, the same at 800, 900 and 1000):
+
+  | | Model | Before | After |
+  |---|---|---|---|
+  | Hunt contract | 112 min | 284 min | 111 min |
+  | Elite contract (with the search kills) | 73 min | 175 min | 73 min |
+  | Bestiary hunt task, 100 kills base, Tundra Troll (830) | 2,460 kills, 153 min | 2,460 kills, 358 min | 1,011 kills, 152 min |
+
+  The rewards stay on the model by themselves: a contract or task pays a share of its kills' experience, and those
+  kills now take the model's time at the model's experience per hour. The bestiary stages, kill tasks, achievements,
+  the season pass, community and faction counts read the same goal (`ChaosPace.killCredit` counts a late-set kill as
+  1 / goal). The `generated` goals stay (their health did not change). `tests/pace_test.lua` checks goal / kills per
+  hour against the 2026-10-14 model at every point (within 5%). The capacity table above ("Capacity") was made with the
+  old 990; with today's late-set kills per hour the late-set zones hold about 2-2.5x the hunters (not re-run: it needs
+  a base install).
 - Measured in a model, not in game. Recheck with the hunt tracker in the beta.
 
 | Hunting level | 20 | 50 | 150 | 300 | 600 | 800 | 1000+ |
@@ -14805,8 +14826,8 @@ gold per hour 5%, items (non-coin corpse entries) per hour 7%, at the six bands 
 | 100 | 41 | 1,576 | 137,941 | 137,933 (-0.0%) | 553 | 539 (-2.5%) | 88, 0.35 / 88, 0.34 | 17% / 12% | 358,839 |
 | 300 | 45 | 1,290 | 468,681 | 468,756 (+0.0%) | 718 | 692 (-3.6%) | 363, 0.56 / 363, 0.54 | 16% / 5% | 881,866 |
 | 500 | 32 | 1,211 | 393,565 | 392,093 (-0.4%) | 396 | 380 (-4.0%) | 325, 0.33 / 324, 0.31 | 23% / 7% | 5,548,330 |
-| 800 | 62 | 1,194 | 2,509,403 | 2,527,997 (+0.7%) | 702 | 706 (+0.5%) | 2,102, 0.59 / 2,118, 0.59 | 26% / 5% | 7,931,159 |
-| 1000 | 50 | 1,195 | 3,386,552 | 3,399,180 (+0.4%) | 708 | 699 (-1.3%) | 2,833, 0.59 / 2,844, 0.58 | 38% / 6% | 9,519,711 |
+| 800 | 62 | 1,157 | 2,461,771 | 2,483,009 (+0.9%) | 700 | 703 (+0.5%) | 2,128, 0.60 / 2,146, 0.61 | 26% / 5% | 7,931,159 |
+| 1000 | 50 | 1,170 | 3,347,910 | 3,358,953 (+0.3%) | 706 | 697 (-1.3%) | 2,863, 0.60 / 2,872, 0.60 | 38% / 6% | 9,519,711 |
 | 1500 | 7 | 1,201 | 6,504,843 | 6,493,444 (-0.2%) | 1,249 | 1,238 (-0.9%) | 5,416, 1.04 / 5,407, 1.03 | 26% / 4% | 9,519,711 |
 
 The widows per kill (their real loot tables: crystal coins 60% x 1-7, potions, pearls, a ring, 1950-75,000 gold junk,
