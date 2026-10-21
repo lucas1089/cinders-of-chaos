@@ -5434,6 +5434,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.01%, Magic 0.03%, Rare 0.08%, Legendary 1.6%, Boss 3.2%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 0.9% of the time."},
 								{"Salvage", "Combine 125 rune shards into one at the crafting bench."},
+								{"Void Shards", "Combine 1,000 Void Shards into one at the crafting bench (Salvage tab; Ctrl+click: up to 10)."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 0.7% of those are this one."}
 							}
 						}
@@ -5680,14 +5681,17 @@ CodexData = {
 					id = "cur:29854",
 					name = "Void Shard",
 					color = "#c0a0ff",
-					sub = "Currency of the character upgrades; no crafting use.",
+					sub = "Currency of the character upgrades; 1,000 of them make one Void Orb.",
 					f = {group = "currency"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
+							p = {"Spent on character upgrades of the base world. It does nothing when used on an item.", "Combine 1,000 at the Crafting Bench (Salvage tab) into a Void Orb. One click makes one orb, Ctrl+click up to 10."}
 						},
-						{h = "Sources", p = {"Monster loot lists of the base world."}}
+						{
+							h = "Sources",
+							p = {"Monster loot lists of the base world: the monsters of the waystone maps, more in the higher tiers."}
+						}
 					},
 					items = {29854}
 				}

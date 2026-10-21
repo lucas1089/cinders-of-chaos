@@ -85,7 +85,8 @@ return {
 	-- Crown Orb every ~4.8 h of shard hunting there.
 	shardRecipes = {
 		{key = "embershard", orb = "ember", input = 29852, cost = 1000, name = "Ember Shard", plural = "Ember Shards"},
-		{key = "crownshard", orb = "crown", input = 29853, cost = 1000, name = "Crown Shard", plural = "Crown Shards"}
+		{key = "crownshard", orb = "crown", input = 29853, cost = 1000, name = "Crown Shard", plural = "Crown Shards"},
+		{key = "voidshard", orb = "void", input = 29854, cost = 1000, name = "Void Shard", plural = "Void Shards"}
 	},
 
 	-- uniques are not salvaged for their rarity (they have none) ...

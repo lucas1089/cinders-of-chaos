@@ -58,7 +58,7 @@ local renames = {}
 for _, r in ipairs(dofile("data/lib/chaos_orbs_config.lua").renames) do
 	renames[r.id] = r
 end
-eq(#cfg.shardRecipes, 2, "Ember and Crown Shards")
+eq(#cfg.shardRecipes, 3, "Ember, Crown and Void Shards")
 for _, r in ipairs(cfg.shardRecipes) do
 	assert(not seen[r.key] and not known[r.key], "a shard recipe key of its own: " .. r.key)
 	seen[r.key] = true
@@ -73,6 +73,8 @@ eq(emberR.orb .. "/" .. emberR.input .. "/" .. emberR.cost, "ember/29852/1000", 
 eq(crownR.orb .. "/" .. crownR.input .. "/" .. crownR.cost, "crown/29853/1000", "Crown Shards -> Crown Orb")
 -- owner, 2026-10-21: "pode deixar 1000 shards por orb" (both orbs, the same count)
 eq(emberR.cost, crownR.cost, "the same shard count for both orbs")
+local voidR = K.shardRecipe("voidshard", cfg)
+eq(voidR.orb .. "/" .. voidR.input .. "/" .. voidR.cost, "void/29854/1000", "Void Shards -> Void Orb (the same count)")
 assert(cfg.batchCap == 50, "hard cap of 50 items per batch")
 assert(not cfg.allowUniques, "uniques are not salvaged")
 

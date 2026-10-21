@@ -9473,7 +9473,7 @@ Excision and Binding, with weekly limits; the other prices are reference values.
 
 **Ember and Crown Shards into orbs (2026-10-21).** Beta: "How do I combine the shards into 1 orb? I looked in the crafting
 bench but didn't find it." The same grid has two more rows, paid with the shards themselves (not rune shards):
-**1,000 Ember Shards (29852) -> 1 Ember Orb (32258)** and **1,000 Crown Shards (29853) -> 1 Crown Orb (32259)**
+**1,000 Ember Shards (29852) -> 1 Ember Orb (32258)**, **1,000 Crown Shards (29853) -> 1 Crown Orb (32259)** and (since the Void Orb rework) **1,000 Void Shards (29854) -> 1 Void Orb (32260)**
 (`salvage_config.lua` `shardRecipes`, keys `embershard` / `crownshard`, action `combine {key, count}`). Same rules as the
 rune shard rows: one click 1, Ctrl+click up to 10 (`maxCombine`), 300 ms between combines, the shards are taken from every
 stack in the backpack and its bags at once (`player:removeItem` counts first and removes only when there are enough)
