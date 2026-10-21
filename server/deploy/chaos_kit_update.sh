@@ -162,35 +162,53 @@ fetch_asset() {
   return 0
 }
 
-# the engine out of the server package: every entry checked, only CindersOfChaos-Server-Linux/server/tfs written
+# the engine out of the server package: every entry checked; CindersOfChaos-Server-Linux/server/tfs and its libraries
+# (server/lib/: the engine's RUNPATH is $ORIGIN/lib) written under DEST (DEST/tfs, DEST/lib/); a link in lib/ may only
+# name a file of lib/ itself
 extract_tfs() {
   python3 -I - "$1" "$2" <<'PY'
 import os, sys, tarfile
 src, dest = sys.argv[1], sys.argv[2]
-want = 'CindersOfChaos-Server-Linux/server/tfs'
+base = 'CindersOfChaos-Server-Linux/server/'
 found = False
+libs = 0
+os.makedirs(os.path.join(dest, 'lib'))
 with tarfile.open(src, 'r:gz') as t:
     for m in t:
         n = m.name
         if n.startswith('/') or '\0' in n or '..' in n.split('/'):
             sys.exit('refused entry %r: unsafe path' % n)
-        if n.lstrip('./') != want:
+        n = n.lstrip('./')
+        if n == base + 'tfs':
+            target = os.path.join(dest, 'tfs')
+        elif n.startswith(base + 'lib/') and '/' not in n[len(base) + 4:] and n != base + 'lib/':
+            target = os.path.join(dest, 'lib', n[len(base) + 4:])
+        else:
+            continue
+        if m.issym():
+            if not n.startswith(base + 'lib/') or '/' in m.linkname or m.linkname in ('', '.', '..'):
+                sys.exit('refused link %r -> %r' % (n, m.linkname))
+            os.symlink(m.linkname, target)
+            libs += 1
             continue
         if not m.isfile() or m.size > 512 * 1024 * 1024:
             sys.exit('%s is not a regular file of at most 512 MB' % n)
         f = t.extractfile(m)
-        with open(dest, 'xb') as out:
+        with open(target, 'xb') as out:
             while True:
                 b = f.read(1 << 20)
                 if not b:
                     break
                 out.write(b)
-        os.chmod(dest, 0o755)
-        found = True
-        break
+        if target.endswith('/tfs'):
+            os.chmod(target, 0o755)
+            found = True
+        else:
+            os.chmod(target, 0o644)
+            libs += 1
 if not found:
-    sys.exit('no %s in the package' % want)
-print('engine: %s' % want)
+    sys.exit('no %stfs in the package' % base)
+print('engine: %stfs, %d librar%s' % (base, libs, 'y' if libs == 1 else 'ies'))
 PY
 }
 
@@ -303,6 +321,9 @@ restore_server() {
   systemctl stop "$UNIT" || true
   if [ -n "$engine_bk" ] && [ -f "$engine_bk" ]; then
     install -m 0755 "$engine_bk" "$SERVER/tfs" && log "engine put back from $engine_bk"
+    if [ -d "$engine_bk.lib" ]; then
+      rm -rf "${SERVER:?}/lib" && cp -a "$engine_bk.lib" "$SERVER/lib" && log "engine libraries put back from $engine_bk.lib"
+    fi
   fi
   if [ -n "$archive" ] && [ -f "$archive" ]; then
     aside="$SERVER/data.before-rollback-$stamp"
@@ -392,16 +413,16 @@ cmd_apply() {
   say "STEP 2/9 download"
   if [ -z "$installed" ] || [ "$installed" -lt "$LATEST" ]; then
     fetch_asset "$SERVER_ASSET" "$work/server.tar.gz" || finish failed "the server package of winpkg-$LATEST was refused: nothing changed" 1
-    extract_tfs "$work/server.tar.gz" "$work/tfs" || finish failed "no engine in the package: nothing changed" 1
+    extract_tfs "$work/server.tar.gz" "$work/engine" || finish failed "no engine in the package: nothing changed" 1
     rm -f "$work/server.tar.gz"
-    if ldd "$work/tfs" 2>&1 | grep 'not found'; then
+    if ldd "$work/engine/tfs" 2>&1 | grep 'not found'; then
       finish failed "the new engine needs libraries this machine lacks (above; apt install them): nothing changed" 1
     fi
-    if [ -f "$SERVER/tfs" ] && cmp -s "$work/tfs" "$SERVER/tfs"; then
+    if [ -f "$SERVER/tfs" ] && cmp -s "$work/engine/tfs" "$SERVER/tfs" && diff -rq "$work/engine/lib" "$SERVER/lib" >/dev/null 2>&1; then
       log "the installed engine is already the one of winpkg-$LATEST"
     else
-      engine_new="$work/tfs"
-      log "new engine: sha256 $(sha256sum "$work/tfs" | cut -d' ' -f1)"
+      engine_new="$work/engine"
+      log "new engine: sha256 $(sha256sum "$work/engine/tfs" | cut -d' ' -f1)"
     fi
   else
     log "the engine is current (winpkg-$installed)"
@@ -442,7 +463,9 @@ cmd_apply() {
     if [ -n "$engine_new" ]; then
       local bk="$SERVER/tfs.antes-$LATEST"
       [ -e "$bk" ] && bk="$bk.$stamp"
-      if cp -p "$SERVER/tfs" "$bk" && install -m 0755 "$engine_new" "$SERVER/tfs"; then
+      if cp -p "$SERVER/tfs" "$bk" && { [ ! -d "$SERVER/lib" ] || cp -a "$SERVER/lib" "$bk.lib"; } \
+        && install -m 0755 "$engine_new/tfs" "$SERVER/tfs" && rm -rf "$SERVER/lib.new" \
+        && cp -a "$engine_new/lib" "$SERVER/lib.new" && rm -rf "${SERVER:?}/lib" && mv "$SERVER/lib.new" "$SERVER/lib"; then
         state_set "engine_backup=$bk"
         log "engine of winpkg-$LATEST installed (the old one: $bk)"
       else

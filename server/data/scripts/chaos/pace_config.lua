@@ -35,10 +35,20 @@ return {
 			{800, 0.16}, {1000, 0.17}},
 		loot = {{20, 1.00}, {35, 0.59}, {60, 0.54}, {100, 0.37}, {175, 0.27}, {250, 0.20}, {450, 0.20}, {600, 0.19},
 			{800, 0.19}, {1000, 0.20}},
-		-- on top of `loot`, for coins and NPC-sellable items that are not gear (orbs, gems and keys keep `loot`): the gold
-		-- per hour at hunting level 450-600 was 16M against the income model's 5.5-6.3M (beta 2026-10-20)
-		gold = {{250, 1.0}, {450, 0.30}, {1000, 0.30}},
-		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}}
+		goal = {{20, 1.0}, {35, 1.7}, {60, 1.8}, {100, 2.7}, {175, 3.8}, {250, 5.0}},
+		-- Loot by monster level (owner 2026-10-21; `lootLevel` below, pace_core.lua P.levelPlan, server/README.md "Loot
+		-- by monster level"). Smooth curves (monotone cubic through the points, flat beyond the ends) by the monster's
+		-- level only. coins: the share of the value of coins and NPC-sellable non-gear items, on top of `loot` (it
+		-- replaces the linear `gold` of 2026-10-20: 1.0 to 250, 0.30 from 450; gold per hour at 450-600 had been 16M
+		-- against the income model's 5.5-6.3M); the coins come back as coins. junkKeep: the share (on top of `loot`) of
+		-- those items that stay in kind; the rest of their value is paid as coins. notable: the share of the notable
+		-- drops kept (Rare+ gear, rare drops), never below `loot`. From 700 every notable drop stays, and coins and junk
+		-- pay for it; below 650 nothing changes but the coins. The points from 650 on are tools/loot_model.lua --derive:
+		-- the same gold and items per hour as the 2026-10-20 rule at the pack model's kills per hour.
+		coins = {{35, 1.00}, {100, 0.963}, {300, 0.828}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179},
+			{800, 0.133}, {900, 0.252}, {1000, 0.271}, {1250, 0.290}},
+		junkKeep = {{650, 3.67}, {700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
+		notable = {{650, 0}, {700, 1}}
 	},
 
 	-- level-scaled Chaos monsters and generated area / dungeon monsters, by level. Re-measured 2026-10-20 against the base
@@ -51,8 +61,13 @@ return {
 		health = {{100, 0.10}, {650, 0.35}, {800, 0.36}, {1000, 0.40}, {1300, 0.42}, {1600, 0.42}, {2000, 0.42}},
 		xp = {{100, 0.115}, {650, 0.70}, {800, 0.58}, {1000, 0.52}, {1300, 0.50}, {1600, 0.48}, {2000, 0.46}},
 		loot = {{100, 0.137}, {650, 0.83}, {800, 0.69}, {1000, 0.62}, {1300, 0.595}, {1600, 0.57}, {2000, 0.55}},
-		gold = {{100, 1.0}, {450, 0.30}, {2000, 0.30}},
-		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}}
+		goal = {{650, 20}, {800, 24}, {1000, 28}, {1300, 32}, {1600, 35}, {2000, 37}},
+		-- loot by monster level: the base points from 450 on (the old `gold` reached 0.30 at 450 in both sets); below,
+		-- the old ramp from 100 x the 0.963 the base curve carries there (the empty-corpse floor)
+		coins = {{100, 0.963}, {275, 0.626}, {450, 0.291}, {550, 0.280}, {650, 0.176}, {700, 0.179}, {800, 0.133},
+			{900, 0.252}, {1000, 0.271}, {1250, 0.290}},
+		junkKeep = {{650, 3.67}, {700, 0.312}, {800, 0.114}, {900, 0.613}, {1000, 3.45}},
+		notable = {{650, 0}, {700, 1}}
 	},
 
 	-- generated area / dungeon points (areagen: the point's level): the points the run-time model of the queue dungeons
@@ -70,6 +85,18 @@ return {
 	-- experience per hour at 0.61-0.85 of the unpaced hunt. Set from the hunt tracker in the beta (1.3 brings the
 	-- measured Elementalist to about 0.8-0.85, the Thief to 1.1).
 	scale = {xp = 1.3, loot = 1.2}, -- calibrated on the live check of 2026-10-14 (XP/h 0.61-0.85, gold/h 0.49-1.22 of unpaced at 1.0); recheck with the beta hunt tracker
+
+	-- loot by monster level (owner 2026-10-21, "Ajuste o loot de acordo com o lvl só monstro"): a paced corpse is thinned
+	-- by pace_core.lua P.levelPlan with the curves of its monster's set (`coins`, `junkKeep`, `notable` above) at the
+	-- monster's level; never by the killer's level, party or place. Notable drops: gear with a stock rarity of at least
+	-- notableRarity (4 = Rare; Legendary and Divine too) and items of the loot table with a chance per 100000 of at most
+	-- notableChance (1%). false: the 2026-10-20 method (loot.lua L.thinCorpse: each item at random with loot, coins and
+	-- sellables x coins on top).
+	lootLevel = {
+		enabled = true,
+		notableRarity = 4,
+		notableChance = 1000
+	},
 
 	-- damage to players by a paced monster (all elements, conditions and mana shield hits included), by its hunting
 	-- level; the late-game physical boost (monster_damage_config.lua) stays on top. Bosses and player summons: never.

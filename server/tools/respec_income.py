@@ -3,6 +3,10 @@
 
     python3 -I server/tools/respec_income.py <server>/data [--sell-prices PATH]
 
+This is the unpaced model. Pack combat keeps its gold per hour (README "Pack combat (pace)"); the corpse rule by monster
+level is checked against the pace rule of 2026-10-20 band by band by tools/loot_model.lua (its input written by
+tools/loot_bands.py, which reuses the parsers below).
+
 For each level the hunt is a set of monsters that are spawned in the loaded map (counted in <mapName>-spawn.xml) and
 that the leveling model of the README ("The leveling model and the hours") puts there; level 1000 is the tier 3 set of
 tools/late_game_spawns.csv (Nightglass Core). Per monster, from its loot table (XML or Lua monster file):

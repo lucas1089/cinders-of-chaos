@@ -6,6 +6,8 @@
 -- NPC-sellable items. The line kept the full stock list. Now lootline.lua reads the corpse at index 1.9 and the line lists
 -- exactly what is in it (lootline_core.lua K.describe). Also: loot.lua L.addToCorpse (a stack above 100 is split, a full
 -- corpse takes the item past its size), the line's entry format, the display scale never touching loot texts.
+-- Since 2026-10-21 the thinning is by the monster's level only (server/README.md "Loot by monster level", tests/
+-- loot_by_level_test.lua): the coins come back as coins, and the same kill leaves the same corpse for any killer.
 --
 -- The widows are base server monsters: their loot files are not in this repository (the base tree is not committed),
 -- so the loot list below is a representative high-level spider list (coins, potions, creature products, gear). Their
@@ -42,7 +44,10 @@ for name, e in pairs(widows) do
 	local f = PCore.factors(paceCfg, level, scaled)
 	factors[name] = f
 	check(f.loot > 0.2 and f.loot < 0.26, name .. ": about a quarter of the stock items stay (" .. f.loot .. ")")
-	near(f.gold, 0.30, 1e-9, name .. ": coins and sellables x0.30 on top")
+	-- loot by monster level (2026-10-21, server/README.md "Loot by monster level"): the coins curve replaced the flat
+	-- 0.30 of `gold`; notable drops stay whole at these levels
+	check(f.coins > 0.2 and f.coins < 0.3, name .. ": coins and sellables worth x" .. f.coins .. " on top")
+	eq(f.notable, 1, name .. ": every notable drop stays")
 end
 eq(PCore.entryLevel(paceCfg, widows["Nightfang Widow"]), 1018, "Nightfang Widow: hunting level")
 eq(PCore.entryLevel(paceCfg, widows["Shadowcrystal Widow"]), 960, "Shadowcrystal Widow: hunting level")
@@ -267,8 +272,10 @@ end
 -- the pack thinning of pace.lua for these monsters (pace.lua marks a spawned monster; here by name)
 ChaosPace = {
 	lootMultOf = function(m) return factors[m.name] and factors[m.name].loot or 1 end,
-	goldMultOf = function(m) return factors[m.name] and factors[m.name].gold or 1 end
+	goldMultOf = function(m) return factors[m.name] and factors[m.name].gold or 1 end,
+	factorsOf = function(m) return factors[m.name] end
 }
+ChaosPaceConfig = paceCfg -- lootLevel on: the corpse is thinned by the monster's level (L.thinCorpseByLevel)
 ChaosItemPrices = {unsellable = function(id) return id == 5021 end,
 	basePrice = function(id) return TYPES[id] and TYPES[id][6] or 0 end}
 
@@ -310,6 +317,7 @@ end
 local seeds = {7, 11, 23, 42, 99}
 for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
 	local stockTotal, lineTotal, corpseTotal = 0, 0, 0
+	local stockGold, corpseGold, stockItems, corpseItems = 0, 0, 0, 0
 	for k, seed in ipairs(seeds) do
 		math.randomseed(seed)
 		local corpse = newCorpse(1, 20)
@@ -333,14 +341,67 @@ for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
 		sameCounts(corpseCounts(snapshot), inCorpse, name .. " #" .. k .. ": the loot channel row")
 		for _, e in ipairs(WIDOW_LOOT) do
 			stockTotal = stockTotal + e.maxCount
+			if e.itemId == 2148 or e.itemId == 2152 then
+				stockGold = stockGold + e.maxCount * TYPES[e.itemId][6]
+			else
+				stockItems = stockItems + 1
+			end
 		end
 		for _, n in pairs(listed) do lineTotal = lineTotal + n end
 		for _, n in pairs(inCorpse) do corpseTotal = corpseTotal + n end
+		for _, it in ipairs(corpse.items) do
+			if it.id == 2148 or it.id == 2152 or it.id == 2160 then
+				corpseGold = corpseGold + it.count * (it.id == 2148 and 1 or it.id == 2152 and 100 or 10000)
+			else
+				corpseItems = corpseItems + 1
+			end
+		end
 	end
 	eq(lineTotal, corpseTotal, name .. ": over the kills the line said exactly what arrived")
-	-- the old line: the stock list as written at index 0 said every stock item; the corpse got about a tenth of the count
-	check(corpseTotal < stockTotal / 2, name .. ": the thinning keeps less than half the stock count (" .. corpseTotal ..
-		" of " .. stockTotal .. "): the old line said " .. stockTotal)
+	-- the old line: the stock list as written at index 0 said every stock item and coin; the corpse got far less
+	check(corpseGold < stockGold / 2, name .. ": the thinning keeps less than half the stock gold (" .. corpseGold ..
+		" of " .. stockGold .. ")")
+	check(corpseItems < stockItems / 2, name .. ": and less than half the stock items (" .. corpseItems .. " of " ..
+		stockItems .. ")")
+	-- loot by monster level: the coins of every kill come back as coins (no kill without them here: every stock coin
+	-- entry hit)
+	check(corpseGold > 0, name .. ": coins in the corpses")
+end
+
+-- loot by monster level (owner 2026-10-21): the corpse depends on the monster only. The same kill with the same rolls
+-- for a level 100 hunter alone and a level 1500 hunter in a party leaves the same corpse.
+do
+	local low = setmetatable({id = 5, name = "Low", getLevel = function() return 100 end}, Pmeta)
+	local partyObj = {getLeader = function() return nil end, getMembers = function() return {} end,
+		broadcastPartyLoot = function() end, isSharedExperienceActive = function() return true end}
+	local high = setmetatable({id = 6, name = "High", getLevel = function() return 1500 end,
+		getParty = function() return partyObj end}, Pmeta)
+	players[5], players[6] = low, high
+	for _, name in ipairs({"Nightfang Widow", "Shadowcrystal Widow"}) do
+		for _, seed in ipairs({3, 17, 31}) do
+			local got = {}
+			for _, who in ipairs({5, 6}) do
+				math.randomseed(seed)
+				local corpse = newCorpse(who, 20)
+				sent = {}
+				kill(monsterOf(name, 3000 + seed), corpse)
+				local parts = {}
+				for _, it in ipairs(corpse.items) do
+					parts[#parts + 1] = it.id .. "x" .. it.count
+				end
+				got[who] = table.concat(parts, ",")
+			end
+			eq(got[5], got[6], name .. " seed " .. seed .. ": the same corpse for a level 100 hunter and a level 1500 party")
+			check(got[5] ~= "", name .. " seed " .. seed .. ": the corpse is not empty (" .. got[5] .. ")")
+		end
+	end
+	-- the shares come from the monster alone
+	local f = L.corpseFactors(monsterOf("Nightfang Widow", 3100), 1)
+	near(f.coins, factors["Nightfang Widow"].coins, 1e-12, "corpseFactors: the monster's coins share")
+	eq(f.notable, 1, "corpseFactors: notable 1 at level 1018")
+	local fp = L.corpseFactors(monsterOf("Nightfang Widow", 3101), 0.5)
+	near(fp.loot, factors["Nightfang Widow"].loot * 0.5, 1e-12, "corpseFactors: a pocket's factor on loot")
+	near(fp.notable, 0.5, 1e-12, "corpseFactors: and on the notable drops")
 end
 
 -- the report reproduced: without the settle step (the chain before the fix) the line is the stock list of index 0
@@ -361,11 +422,12 @@ do
 	if os.getenv("LOOTLINE_SHOW") then print("before the fix: " .. line) end
 	eq(listed["gold coin"], 100, "before the fix: the line said 100 gold coins")
 	local inCorpse = corpseCounts(corpse.items)
-	check((inCorpse["gold coin"] or 0) < 20, "before the fix: the corpse held " .. tostring(inCorpse["gold coin"]))
+	check((inCorpse["gold coin"] or 0) < 100 and (inCorpse["platinum coin"] or 0) < 8,
+		"before the fix: the corpse held " .. tostring(inCorpse["gold coin"]) .. " gold coins")
 	local said, got = 0, 0
-	for _, n in pairs(listed) do said = said + n end
-	for _, n in pairs(inCorpse) do got = got + n end
-	check(got * 2 < said, "before the fix: not even half arrived (" .. got .. " of " .. said .. ")")
+	for k, n in pairs(listed) do said = said + ((k == "gold coin" or k == "platinum coin") and 0 or n) end
+	for k, n in pairs(inCorpse) do got = got + ((k == "gold coin" or k == "platinum coin") and 0 or n) end
+	check(got * 2 < said, "before the fix: not even half of the items arrived (" .. got .. " of " .. said .. ")")
 	callbacks[#callbacks + 1] = saved[1]
 end
 

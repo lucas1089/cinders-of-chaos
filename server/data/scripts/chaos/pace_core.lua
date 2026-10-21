@@ -35,7 +35,54 @@ function P.lin(points, x, default)
 	return points[#points][2]
 end
 
-local ONE = {health = 1, xp = 1, loot = 1, gold = 1, goal = 1, damage = 1}
+-- monotone cubic between points {{x, y}, ...} (sorted by x; Fritsch-Carlson slopes: no overshoot, so falling points
+-- give a falling curve), flat beyond the ends; default for an empty list. Through every point, smooth between them.
+function P.smooth(points, x, default)
+	if type(points) ~= "table" or #points == 0 then
+		return default
+	end
+	x = num(x, 0)
+	local n = #points
+	if n == 1 or x <= points[1][1] then
+		return points[1][2]
+	end
+	if x >= points[n][1] then
+		return points[n][2]
+	end
+	local d, m = {}, {}
+	for i = 1, n - 1 do
+		d[i] = (points[i + 1][2] - points[i][2]) / (points[i + 1][1] - points[i][1])
+	end
+	m[1], m[n] = d[1], d[n - 1]
+	for i = 2, n - 1 do
+		m[i] = (d[i - 1] * d[i] <= 0) and 0 or (d[i - 1] + d[i]) / 2
+	end
+	for i = 1, n - 1 do
+		if d[i] == 0 then
+			m[i], m[i + 1] = 0, 0
+		else
+			local a, b = m[i] / d[i], m[i + 1] / d[i]
+			local h = a * a + b * b
+			if h > 9 then
+				local t = 3 / math.sqrt(h)
+				m[i], m[i + 1] = t * a * d[i], t * b * d[i]
+			end
+		end
+	end
+	for i = 1, n - 1 do
+		local x0, x1 = points[i][1], points[i + 1][1]
+		if x <= x1 then
+			local h = x1 - x0
+			local t = (x - x0) / h
+			local t2, t3 = t * t, t * t * t
+			return (2 * t3 - 3 * t2 + 1) * points[i][2] + (t3 - 2 * t2 + t) * h * m[i]
+				+ (-2 * t3 + 3 * t2) * points[i + 1][2] + (t3 - t2) * h * m[i + 1]
+		end
+	end
+	return points[n][2]
+end
+
+local ONE = {health = 1, xp = 1, loot = 1, gold = 1, coins = 1, notable = 1, goal = 1, damage = 1}
 
 -- the factors of a monster of hunting level `level` (scaled: a level of its own). All 1 when the layer is off.
 function P.factors(cfg, level, scaled, generated)
@@ -51,11 +98,26 @@ function P.factors(cfg, level, scaled, generated)
 	local function scaled(v, k)
 		return math.min(1, v * (tonumber(sc[k]) or 1))
 	end
+	local loot = scaled(P.lin(set.loot, level, 1), "loot")
+	-- loot by monster level (P.levelPlan): the value of coins and junk on top of `loot` (the smooth `coins` curve; a
+	-- config without it: the linear `gold` of before), junk kept in kind (`junkKeep`, at most `coins`), notable drops
+	-- (`notable`: a share of their own; nil = `loot`)
+	local coins = set.coins and P.smooth(set.coins, level, 1) or P.lin(set.gold, level, 1)
+	local junkKeep = set.junkKeep and P.smooth(set.junkKeep, level, 1) or nil
+	local notable = loot
+	if type(set.notable) == "table" then
+		notable = math.max(loot, P.smooth(set.notable, level, loot))
+	elseif tonumber(set.notable) then
+		notable = math.max(loot, tonumber(set.notable))
+	end
 	return {
 		health = P.lin(set.health, level, 1),
 		xp = scaled(P.lin(set.xp, level, 1), "xp"),
-		loot = scaled(P.lin(set.loot, level, 1), "loot"),
-		gold = P.lin(set.gold, level, 1),
+		loot = loot,
+		gold = coins,
+		coins = coins,
+		junkKeep = junkKeep,
+		notable = notable,
 		goal = P.lin(set.goal, level, 1),
 		damage = P.lin(cfg.damage, level, 1)
 	}
@@ -174,6 +236,108 @@ function P.thinPlan(items, f, rnd)
 			out[i] = P.roundRandom(count * f, rnd)
 		else
 			out[i] = rnd() < f and count or 0
+		end
+	end
+	return out
+end
+
+-- ------------------------------------------------------------------ loot by monster level
+-- Owner 2026-10-21 ("Ajuste o loot de acordo com o lvl só monstro"): what a corpse keeps depends on the monster's level
+-- only (P.levelOf: its own level, a generated point's, else 2 x the pool estimate; the curve set is the monster's kind),
+-- never on who killed it. server/README.md "Loot by monster level"; numbers: pace_config.lua `lootLevel` and the sets'
+-- `coins` / `junkKeep` / `notable`; the economy model: tools/loot_model.lua.
+
+-- is a corpse item notable (kept whole, x f.notable only): a gear piece with a stock rarity of Rare or better (a stored
+-- rarity >= notableRarity: the old ids 4-15 all map to Rare, Legendary or Divine), or a rare drop of the monster's loot
+-- table (chance per 100000 at most notableChance). Coins never are.
+function P.isNotable(ll, it)
+	if not it or it.class == "coin" then
+		return false
+	end
+	ll = ll or {}
+	if it.class == "gear" and num(it.rarity, 0) >= num(ll.notableRarity, 4) then
+		return true
+	end
+	local ch = tonumber(it.chance)
+	return ch ~= nil and ch > 0 and ch <= num(ll.notableChance, 1000)
+end
+
+-- the corpse plan. ll = pace_config.lua `lootLevel`; f = factors (P.factors: loot, coins, junkKeep, notable; the
+-- caller may multiply loot and notable by a pocket's factor). items = list of {count, stackable, class = "coin" | "junk"
+-- | "gear" | "other", value = gold per unit (coins 1 / 100 / 10000, junk its NPC price), rarity = stored rarity, chance =
+-- the loot table's chance}. Returns keep (the count to keep per item, same order; a coin item is always 0) and pay (whole
+-- gold to put back as coins, P.coinStacks).
+--   coins    their value x loot x coins comes back as coins: a corpse that had coins shows coins
+--   junk     (NPC-sellable, not gear) is worth sv = loot x coins of its value. It stays in kind with chance sk = loot x
+--            junkKeep (a single item: at most sv); a stack that stays keeps count x min(1, sv / sk), rounded at random.
+--            Taken out, it pays its value x (sv - sk) / (1 - sk) as coins when sk < sv. The expected value is sv either way.
+--   notable  stays whole with chance f.notable
+--   gear, other (orbs, gems, keys, unsellables): P.thinPlan with loot, as before
+--   floor    a corpse that would show nothing (no item kept, no coin) although junk dropped is paid sv x the value of
+--            that junk as coins: an emptied corpse shows what its junk was worth (the coins curve pays for it)
+-- pay is rounded at random to whole gold. Shares of 1 or more keep everything (pay = the coins' value).
+function P.levelPlan(ll, f, items, rnd)
+	rnd = rnd or math.random
+	f = f or ONE
+	local loot = num(f.loot, 1)
+	local sv = math.min(1, loot * num(f.coins, 1))
+	-- no junkKeep (a set without the curve): a stack always stays with count x sv, a single item with chance sv (the old
+	-- thinning)
+	local skStack = f.junkKeep and math.min(1, loot * num(f.junkKeep, 1)) or 1
+	local notable = num(f.notable, loot)
+	local keep, pay, removed = {}, 0, 0
+	for i, it in ipairs(items or {}) do
+		local count = num(it.count, 1)
+		local value = num(it.value, 0)
+		if it.class == "coin" then
+			keep[i] = 0
+			pay = pay + count * value * sv
+		elseif P.isNotable(ll, it) then
+			keep[i] = (notable >= 1 or rnd() < notable) and count or 0
+		elseif it.class == "junk" then
+			local sk = it.stackable and skStack or math.min(sv, skStack)
+			if sv >= 1 then
+				keep[i] = count
+			elseif sk > 0 and rnd() < sk then
+				keep[i] = sk > sv and P.roundRandom(count * sv / sk, rnd) or count
+			else
+				keep[i] = 0
+				if sv > sk then
+					pay = pay + count * value * (sv - sk) / (1 - sk)
+				end
+			end
+			if keep[i] <= 0 then
+				removed = removed + count * value * sv
+			end
+		else
+			keep[i] = P.thinPlan({it}, loot, rnd)[1]
+		end
+	end
+	pay = P.roundRandom(pay, rnd)
+	if pay <= 0 and removed > 0 then
+		local shows = false
+		for i = 1, #keep do
+			if keep[i] > 0 then
+				shows = true
+				break
+			end
+		end
+		if not shows then
+			pay = math.max(1, P.roundRandom(removed, rnd))
+		end
+	end
+	return keep, pay
+end
+
+-- whole gold as coin stacks, largest first: list of {id, count} (crystal 10000, platinum 100, gold 1)
+function P.coinStacks(gold)
+	gold = floor(num(gold, 0))
+	local out = {}
+	for _, c in ipairs({{2160, 10000}, {2152, 100}, {2148, 1}}) do
+		local n = floor(gold / c[2])
+		if n > 0 then
+			out[#out + 1] = {c[1], n}
+			gold = gold - n * c[2]
 		end
 	end
 	return out
