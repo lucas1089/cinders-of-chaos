@@ -217,7 +217,7 @@ cmd_check() {
   local cur remote work n
   [ -d "$REPO/.git" ] || g rev-parse --git-dir >/dev/null 2>&1 || die "no git checkout at $REPO (CHAOS_REPO)"
   say "branch=$BRANCH"
-  g fetch --quiet origin "$BRANCH" 2>/dev/null || die "git fetch origin $BRANCH failed"
+  g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" 2>/dev/null || die "git fetch origin $BRANCH failed"
   cur=$(g rev-parse HEAD) remote=$(g rev-parse "origin/$BRANCH")
   say "local_commit=$(g rev-parse --short HEAD)"
   say "remote_commit=$(g rev-parse --short "origin/$BRANCH")"
@@ -395,7 +395,7 @@ cmd_apply() {
   [ -r "$ENVFILE" ] || finish failed "cannot read $ENVFILE (CHAOS_ENV)" 1
   dirty=$(g status --porcelain --untracked-files=no 2>&1) || finish failed "$REPO is not a git checkout" 1
   [ -z "$dirty" ] || { say "$dirty" | head -n 10; finish failed "the checkout $REPO has changed files (above): nothing done" 1; }
-  g fetch --quiet origin "$BRANCH" || finish failed "git fetch origin $BRANCH failed" 1
+  g fetch --quiet origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" || finish failed "git fetch origin $BRANCH failed" 1
   cur=$(g rev-parse HEAD) remote=$(g rev-parse "origin/$BRANCH")
   [ "$(g rev-list --count "origin/$BRANCH..HEAD")" = 0 ] \
     || finish failed "the checkout has commits that are not on origin/$BRANCH: nothing done" 1

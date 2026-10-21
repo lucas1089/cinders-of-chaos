@@ -399,7 +399,8 @@ local function refineInfo(item)
 		return nil
 	end
 	return {gear = C.isGear(item), rarity = C.rarityOf(item), unique = C.isUnique(item),
-		ruined = M and M.isRuined and M.isRuined(item) or false}
+		ruined = M and M.isRuined and M.isRuined(item) or false,
+		corrupted = M and M.isCorrupted and M.isCorrupted(item) or false}
 end
 
 local function refineRows(player)

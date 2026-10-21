@@ -26,6 +26,9 @@
 --   "chaos_quality" = 0..30                    item quality in percent: every modifier value is multiplied by it
 --   "chaos_ruined" = 1                         the item is ruined (Orb of Ruin): no orb changes it any more
 --   "chaos_ext" = 1 | 2                        the one extra prefix (1) or suffix (2) slot an Orb of Ruin gave
+--   "chaos_corrupted" = 1                      the item is corrupted (Void Orb): no orb changes it any more
+--   "chaos_cimp" = attribute key               the corrupted implicit modifier a Void Orb added (a modifier of this
+--                                              file, stored like any other; it takes no prefix or suffix slot)
 -- Attack speed is local to the weapon: the weapon's own attack interval (item attribute ITEM_ATTRIBUTE_ATTACK_SPEED,
 -- which the engine uses for whoever wields it and the look text shows as "Atk Spd") is set from its base interval.
 
@@ -42,6 +45,8 @@ M.ILVL = "chaos_ilvl"
 M.QUALITY = "chaos_quality"
 M.RUINED = "chaos_ruined"
 M.EXTRA = "chaos_ext"
+M.CORRUPTED = "chaos_corrupted"
+M.IMPLICIT = "chaos_cimp"
 M.RAW_PREFIX = "cv_"
 M.BIND_PREFIX = "cb_"
 M.QUIVER_SPEED = "chaos_qspd" -- on a launcher: the Attack Speed with Bows of the quiver worn with it (archery.lua)
@@ -563,6 +568,17 @@ end
 
 function M.isRuined(item)
 	return (custom(item, M.RUINED) or 0) ~= 0
+end
+
+-- corrupted by a Void Orb (chaos_orbs.lua): every orb refuses the item
+function M.isCorrupted(item)
+	return (custom(item, M.CORRUPTED) or 0) ~= 0
+end
+
+-- the attribute key (lower case) of the corrupted implicit modifier, or nil
+function M.implicitKey(item)
+	local ok, v = pcall(getCustom, item, M.IMPLICIT)
+	return ok and type(v) == "string" and v ~= "" and v:lower() or nil
 end
 
 function M.isBound(item, attrKey)

@@ -12,6 +12,9 @@
 --   Crown Orb          lifts the item one rarity (up to Legendary): every modifier stays, the base bonus is the new rarity's
 --                      and the item gets one more modifier
 --   Whetstone          +1% quality up to 20% (30% from Divine rarity): every modifier value is multiplied
+--   Void Orb           corrupts a Rare or better item for good (no orb changes it after), then one weighted outcome:
+--                      nothing else, a tier up, a corrupted implicit, quality 30%, a socket, a reroll, a rarity up or a
+--                      tier loss (ChaosOrbsConfig.void; O.corrupt)
 -- The orbs that take a modifier (`pick`) are aimed with opts.mod = the modifier's attribute key (the bench's picker);
 -- without one they pick at random among the modifiers they may act on. Tested by server/tests/crafting_test.lua.
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
@@ -26,9 +29,10 @@ end
 O.config = ChaosOrbsConfig
 
 -- test hook: a string makes the Orb of Ruin roll that outcome ("improve", "nothing", "ruin"), O.forceImprove = "tiers" or
--- "slot" the kind of improvement. nil in the game.
+-- "slot" the kind of improvement, O.forceVoid an outcome of the Void Orb ("sealed", "tier", ...). nil in the game.
 O.forceRuin = nil
 O.forceImprove = nil
+O.forceVoid = nil
 
 local function itemOf(key)
 	for _, it in ipairs(O.config.items) do
@@ -375,6 +379,21 @@ local function register()
 			return string.format("%s -> %s, +%d modifier", C.rarityName(C.rarityOf(item)),
 				C.rarityName(ChaosRarity.idOfRank(rank + 1)), O.config.crown.add)
 		end})
+
+	-- Void Orb: corruption
+	it = itemOf("void")
+	C.addOrb({key = "void", id = it.id, name = it.name,
+		text = "Corrupts a " .. C.rarityName(ChaosRarity.idOfRank(O.config.void.minRank)) ..
+			" or better item for good: no orb can change it afterwards. Then " .. O.voidOdds() .. ".",
+		check = function(item)
+			return O.voidCheck(item)
+		end,
+		apply = function(item)
+			return O.corrupt(item)
+		end,
+		preview = function()
+			return "corrupted for good: " .. O.voidOdds(true)
+		end})
 end
 
 -- the modifiers an Ember Orb may raise: not bound, below the top tier
@@ -404,6 +423,212 @@ function O.crown(item)
 		text = text .. ", and gained " .. C.modsText(added)
 	end
 	return true, {item = item, text = text .. ".", rarity = to, added = added}
+end
+
+-- ---------------------------------------------------------------------------------------------------------------
+-- the Void Orb: corruption
+-- ---------------------------------------------------------------------------------------------------------------
+-- what each outcome does, in words (the orb's text, the bench preview, the codex)
+O.VOID_TEXT = {sealed = "nothing else happens", tier = "a modifier rises one tier",
+	implicit = "a corrupted implicit modifier", quality = "quality %d%%", socket = "one more socket (up to %d)",
+	reroll = "every modifier rolls again", rarity = "one rarity up (up to Divine)", decay = "a modifier falls %d tiers"}
+O.VOID_SHORT = {sealed = "nothing else", tier = "a tier up", implicit = "an implicit", quality = "quality %d%%",
+	socket = "a socket", reroll = "a reroll", rarity = "a rarity up", decay = "a tier loss"}
+
+local function voidWords(key, short)
+	local V = O.config.void
+	local f = (short and O.VOID_SHORT or O.VOID_TEXT)[key] or key
+	if key == "quality" then
+		return string.format(f, V.quality)
+	elseif key == "socket" and not short then
+		return string.format(f, V.sockets)
+	elseif key == "decay" and not short then
+		return string.format(f, V.decay)
+	end
+	return f
+end
+O.voidWords = voidWords
+
+-- "28% nothing else happens, 20% a modifier rises one tier, ..." in the config's order
+function O.voidOdds(short)
+	local parts = {}
+	for _, row in ipairs(O.config.void.outcomes) do
+		parts[#parts + 1] = string.format("%d%% %s", row[2], voidWords(row[1], short))
+	end
+	return table.concat(parts, ", ")
+end
+
+local function rawCustom(item, key)
+	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	return ok and v or nil
+end
+
+-- can a Void Orb corrupt this item? (ChaosCrafting.check refuses before it: no gear, ruined, corrupted, unique, a stack).
+-- The item lock (the bench's Lock button) and store items refuse it too: corruption cannot be undone.
+function O.voidCheck(item)
+	if C.customNumber(item, "chaos_locked") ~= 0 then
+		return false, "locked"
+	end
+	local okS, store = pcall(function() return item.isStoreItem ~= nil and item:isStoreItem() end)
+	if rawCustom(item, "chaos_storebound") ~= nil or (okS and store == true) then
+		return false, "storeItem"
+	end
+	if ChaosRarity.rank(C.rarityOf(item)) < O.config.void.minRank then
+		return false, "voidRarity"
+	end
+	return true
+end
+
+-- the outcome of a Void Orb (the config's weights)
+function O.rollVoid()
+	if O.forceVoid then
+		return O.forceVoid
+	end
+	local rows = {}
+	for _, row in ipairs(O.config.void.outcomes) do
+		rows[#rows + 1] = {row[1], row[2]}
+	end
+	return C.weighted(rows)
+end
+
+local function pickOne(list)
+	return list[C.random(1, #list)]
+end
+
+-- the outcomes: each changes the item and returns a text, or nil when it cannot happen on this item (the fallback runs)
+local VOID = {}
+O.VOID = VOID
+
+function VOID.sealed()
+	return "nothing else happened"
+end
+
+function VOID.tier(item)
+	local list = O.raisable(item)
+	if #list == 0 then
+		return nil
+	end
+	local m = pickOne(list)
+	local before = m.tier
+	C.writeAffix(item, m.affix, before + 1, nil, C.random)
+	local now = C.modByKey(item, m.key)
+	return string.format("%s rose from T%d to %s", now.label, before, C.modTierText(now))
+end
+
+-- the implicit pool of an item: the affixes of its kind's list (config.void.implicits) it may roll and does not have
+function O.implicitPool(item)
+	local kind = M.kindOf(item)
+	local mods = C.readMods(item)
+	local out = {}
+	for _, key in ipairs(O.config.void.implicits[kind or ""] or {}) do
+		local a = C.affixOf(M.attr(key))
+		if a and a.def and M.allowed(a.def, kind) and not C.modByKey(item, a.key, mods) then
+			out[#out + 1] = a
+		end
+	end
+	return out
+end
+
+function VOID.implicit(item)
+	local pool = O.implicitPool(item)
+	if #pool == 0 then
+		return nil
+	end
+	local a = pickOne(pool)
+	local top = M.config.maxTier
+	local tier = C.random(math.min(O.config.void.implicitTier, top), top)
+	item:setCustomAttribute(M.IMPLICIT, a.key:lower())
+	C.writeAffix(item, a, tier, nil, C.random)
+	return "a corrupted implicit " .. C.modTierText(C.modByKey(item, a.key))
+end
+
+function VOID.quality(item)
+	local old = M.qualityOf(item)
+	if old >= O.config.void.quality then
+		return nil
+	end
+	local q = C.setQuality(item, O.config.void.quality)
+	return string.format("quality %d%% -> %d%%", old, q)
+end
+
+function VOID.socket(item)
+	local G = ChaosGems
+	local n = G.count(item)
+	if n >= math.min(O.config.void.sockets, G.MAX_SOCKETS) then
+		return nil
+	end
+	G.setCount(item, n + 1)
+	return string.format("%d -> %d sockets", n, n + 1)
+end
+
+function VOID.reroll(item)
+	if #freeMods(item) == 0 then
+		return nil
+	end
+	C.rerollTiers(item, C.random)
+	return "every unbound modifier rolled again (" .. C.modsText(C.readMods(item)) .. ")"
+end
+
+function VOID.rarity(item)
+	local from = C.rarityOf(item)
+	local rank = ChaosRarity.rank(from)
+	if rank < 1 or rank >= ChaosRarity.STORED then
+		return nil
+	end
+	local to = ChaosRarity.idOfRank(rank + 1)
+	local level = C.orbLevel(item)
+	item:setCustomAttribute("rarity", to)
+	C.applyBaseBonus(item, to, level)
+	local added = C.rollAffixes(item, to, level, O.config.void.add, C.random)
+	local text = string.format("%s -> %s", C.rarityName(from), C.rarityName(to))
+	if #added > 0 then
+		text = text .. ", gained " .. C.modsText(added)
+	end
+	return text
+end
+
+function VOID.decay(item)
+	local list = {}
+	for _, m in ipairs(freeMods(item)) do
+		if m.affix and m.tier > 1 then
+			list[#list + 1] = m
+		end
+	end
+	if #list == 0 then
+		return nil
+	end
+	local m = pickOne(list)
+	local before = m.tier
+	C.writeAffix(item, m.affix, math.max(1, before - O.config.void.decay), nil, C.random)
+	local now = C.modByKey(item, m.key)
+	return string.format("%s fell from T%d to %s", now.label, before, C.modTierText(now))
+end
+
+-- the Void Orb on an item (O.voidCheck passed): corrupted for good, then one outcome (`outcome`, else rolled); one that
+-- cannot happen on the item falls back along config.void.fallback ("sealed" at the end). Returns ok, {item, text,
+-- outcome (what happened), rolled (what was rolled), corrupted = true}
+function O.corrupt(item, outcome)
+	local V = O.config.void
+	local rolled = outcome or O.rollVoid()
+	outcome = rolled
+	local name = C.itemName(item)
+	item:setCustomAttribute(M.CORRUPTED, 1)
+	local tried, text = {}, nil
+	while true do
+		tried[outcome] = true
+		text = (VOID[outcome] or VOID.sealed)(item)
+		if text then
+			break
+		end
+		local nextOutcome = V.fallback[outcome] or "sealed"
+		if tried[nextOutcome] then
+			nextOutcome = "sealed"
+		end
+		outcome = nextOutcome
+	end
+	C.rewriteDescription(item)
+	return true, {item = item, outcome = outcome, rolled = rolled, corrupted = true,
+		text = string.format("%s is corrupted: %s.", name, text)}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------

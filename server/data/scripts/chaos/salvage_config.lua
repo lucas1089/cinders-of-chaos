@@ -40,12 +40,13 @@ return {
 		{"transmutation", 35}, {"chaos", 25}, {"scouring", 12}, {"alchemy", 10}, {"annulment", 8}, {"divine", 5},
 		{"sockets", 3}, {"exalted", 2},
 		-- orbs v2: the cheap ones often, the gamble almost never
-		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"ember", 4}, {"excision", 3}, {"crown", 3}, {"binding", 2}, {"ruin", 1}
+		{"whetstone", 14}, {"tempering", 12}, {"reforging", 4}, {"ember", 4}, {"excision", 3}, {"crown", 3}, {"binding", 2}, {"void", 1}, {"ruin", 1}
 	},
 
 	-- shards -> one orb, about 2.5 shards per Chaos Coin of a reference price: Awakening (transmutation) 5, Upheaval
 	-- (chaos) 10, Erasure (scouring) 12, Gilding (alchemy) 15, Unmaking (annulment) 20, Fate (divine) 25, Sockets 25,
-	-- Grafting (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Ember 20, Excision 25, Crown 40, Binding 30, Ruin 60. The store
+	-- Grafting (exalted) 40, Whetstone 2, Tempering 8, Reforging 20, Ember 20, Excision 25, Crown 40, Binding 30, Void 50,
+	-- Ruin 60. The store
 	-- (shop_config.lua) sells only Whetstones, the Orb of Excision and the Orb of Binding, with weekly limits; the
 	-- other prices are reference values for the shard costs, not store offers.
 	recipes = {
@@ -64,6 +65,7 @@ return {
 		{key = "excision", cost = 60},
 		{key = "crown", cost = 100},
 		{key = "binding", cost = 75},
+		{key = "void", cost = 125},
 		{key = "ruin", cost = 150}
 	},
 	maxCombine = 10, -- orbs made by one click
@@ -71,6 +73,21 @@ return {
 	-- (rounded down, at least 1); the loss keeps shards -> orb -> shards from being a free loop. Up to maxRecycle per click.
 	recycleShare = 0.4,
 	maxRecycle = 100,
+
+	-- the base world's character-upgrade shards -> the crafting orb of the same name (beta 2026-10-21: "how do I combine
+	-- the shards into an orb?"). Same action and limits as the rune shard recipes (combine {key, count}, maxCombine,
+	-- combineIntervalMs), but the input is the shard item itself; no recycling back. The shards stay character-upgrade
+	-- currency. input = the item id the recipe eats, orb = ChaosCrafting orb key, name / plural = the item's names after
+	-- install_orbs.py (tests/salvage_test.lua checks them against chaos_orbs_config.lua renames).
+	-- 1,000 of either shard for its orb: owner, 2026-10-21 ("pode deixar 1000 shards por orb"), down from the computed
+	-- 1,500 / 1,750 (server/README.md "Salvage", "Ember and Crown Shards into orbs"): the shards drop only from the 30
+	-- waystone monsters, ~400 Ember and ~210 Crown Shards an hour in tier 3-4 maps, so an Ember Orb every ~2.5 h and a
+	-- Crown Orb every ~4.8 h of shard hunting there.
+	shardRecipes = {
+		{key = "embershard", orb = "ember", input = 29852, cost = 1000, name = "Ember Shard", plural = "Ember Shards"},
+		{key = "crownshard", orb = "crown", input = 29853, cost = 1000, name = "Crown Shard", plural = "Crown Shards"},
+		{key = "voidshard", orb = "void", input = 29854, cost = 1000, name = "Void Shard", plural = "Void Shards"}
+	},
 
 	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,

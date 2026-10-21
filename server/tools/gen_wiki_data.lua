@@ -1981,7 +1981,7 @@ local ORBS = {transmutation = {"light", "arrowup"}, alchemy = {"holy", "crystal"
 	annulment = {"shadow", "smoke"}, scouring = {"water", "wave"}, chaos = {"arcane", "swirl"}, divine = {"holy", "cross"},
 	sockets = {"steel", "ring"}, tempering = {"ember", "hammer"}, binding = {"steel", "shield"},
 	excision = {"blood", "daggers"}, reforging = {"fire", "hammer"}, ruin = {"blood", "burst"},
-	ember = {"fire", "flame"}, crown = {"holy", "banner"},
+	ember = {"fire", "flame"}, crown = {"holy", "banner"}, void = {"shadow", "rift"},
 	whetstone = {"steel", "sword"}, unveiling = {"arcane", "eye"}}
 -- the other currency: by a word of the name
 local CURRENCY = {{"crown", orb("holy", "banner")}, {"dawn", orb("light", "burst")}, {"ember", orb("fire", "flame")},

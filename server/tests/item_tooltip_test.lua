@@ -279,6 +279,23 @@ end
 sword:removeCustomAttribute(M.RUINED); sword:removeCustomAttribute(M.EXTRA); sword:removeCustomAttribute(M.QUALITY)
 tip = T.build(sword)
 eq(tip.quality, nil, "no quality") eq(tip.ruined, nil)
+eq(tip.corrupted, nil, "not corrupted")
+
+-- a Void Orb's corruption: the flag and the corrupted implicit (side "i", listed first, no slot taken)
+local pBefore = tip.sides.p
+sword:setCustomAttribute(M.CORRUPTED, 1)
+sword:setCustomAttribute(M.IMPLICIT, "chaos_mod_bossdamage")
+C.writeAffix(sword, C.affixOf("chaos_mod_bossdamage"), 8, 20)
+tip = T.build(sword)
+eq(tip.corrupted, true, "corrupted")
+eq(tip.mods[1].k, "chaos_mod_bossdamage", "the implicit comes first")
+eq(tip.mods[1].sd, "i", "side implicit")
+eq(tip.mods[1].tr, 8)
+eq(tip.sides.p, pBefore, "the implicit takes no prefix slot")
+sword:removeCustomAttribute(M.CORRUPTED); sword:removeCustomAttribute(M.IMPLICIT)
+C.removeMod(sword, C.modByKey(sword, "chaos_mod_bossdamage"))
+tip = T.build(sword)
+eq(tip.corrupted, nil)
 
 -- the attack interval of a two-handed weapon (lower is better)
 local axe = newItem(2431)

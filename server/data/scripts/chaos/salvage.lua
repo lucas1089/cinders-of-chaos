@@ -10,10 +10,14 @@
 --                     salvageScope {bag, maxRarity, mode}      the "salvage all" container and rarity, the bench mode
 --                                                              ("orbs" | "salvage"); answered with the state
 --                     salvageBatch {bag, maxRarity, sig}       salvage what the last preview listed (sig must match)
---                     combine {key, count}                     shards -> orbs
+--                     combine {key, count}                     shards -> orbs (key: a rune shard recipe, an orb key, or a
+--                                                              cfg.shardRecipes key: Ember / Crown Shards -> their orb)
 --                     recycle {key, count}                     orbs -> shards (cfg.recycleShare of the recipe cost)
 --   server -> client  state.salvage = {installed, shardId, shardClientId, shardName, shardSingular, shards, rarityNames, rarityIds,
---                                      recipes = [{key, name, id, clientId, cost, count}], bags = [{path, name, clientId}],
+--                                      recipes = [{key, name, id, clientId, cost, count, back,
+--                                                  input, inputName, inputSingular, have}] (input.. / have only on a
+--                                                  shard recipe: the item it eats and how many the player has),
+--                                      bags = [{path, name, clientId}],
 --                                      batch = {bag, maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths},
 --                                      mode}
 --                     state.items[i].locked, state.item.locked, state.item.salvage = {ok, why, shards, orbChance}
@@ -195,6 +199,22 @@ local function logRows(player, rows)
 		C.config.historyTable, table.concat(values, ", ")))
 end
 
+-- the shard recipe's input item exists on this server (the base item, renamed by install_orbs.py)
+local function itemExists(id)
+	local ok, got = pcall(function() return ItemType(id):getId() end)
+	return ok and got == id
+end
+
+-- the line under an Ember / Crown Shard's look text and tooltip (item_tooltip_core.lua asks for it); nil for other items
+function S.shardHint(id)
+	local r = K.inputRecipe(id, cfg)
+	local orb = r and C.orbByKey[r.orb]
+	if not orb then
+		return nil
+	end
+	return K.shardHint(r, orb.name)
+end
+
 local function orbName(key)
 	local orb = C.orbByKey[key]
 	return orb and orb.name or key
@@ -330,6 +350,15 @@ function S.benchState(player, data)
 		if orb then
 			recipes[#recipes + 1] = {key = r.key, name = orb.name, id = orb.id, clientId = clientIdOf(orb.id), cost = r.cost, back = K.recycleShards(r.key, cfg),
 				count = player:getItemCount(orb.id)}
+		end
+	end
+	-- Ember / Crown Shards -> their orb: the shards themselves pay (no recycling back)
+	for _, r in ipairs(cfg.shardRecipes or {}) do
+		local orb = C.orbByKey[r.orb]
+		if orb and itemExists(r.input) then
+			recipes[#recipes + 1] = {key = r.key, name = orb.name, id = orb.id, clientId = clientIdOf(orb.id), cost = r.cost, back = 0,
+				count = player:getItemCount(orb.id), input = r.input, inputClientId = clientIdOf(r.input), inputName = r.plural,
+				inputSingular = r.name, have = player:getItemCount(r.input)}
 		end
 	end
 	local view = {
@@ -522,17 +551,22 @@ local function combine(player, data)
 	end
 	local key = type(data.key) == "string" and data.key or ""
 	local count = Chaos.toInt(data.count, 1, cfg.maxCombine) or 0
-	local owned = player:getItemCount(cfg.shard.id)
+	local r = K.anyRecipe(key, cfg)
+	-- what the recipe eats: rune shards, or the shard item of a shard recipe (Ember / Crown Shards)
+	local input = r and r.input or cfg.shard.id
+	local owned = player:getItemCount(input)
 	local ok, cost = K.combineCheck(owned, key, count, cfg)
-	local orb = C.orbByKey[key]
+	local orb = r and C.orbByKey[r.orb or r.key]
 	if not ok or not orb then
-		return refuse(player, K.reasons[cost] or "That cannot be made.")
+		return refuse(player, K.reasonText(cost, r) or "That cannot be made.")
 	end
-	if not player:removeItem(cfg.shard.id, cost) then
-		return refuse(player, K.reasons.shards)
+	-- removeItem counts every stack in the backpack and its bags first and removes only when there are enough: all or
+	-- nothing, before the orb is given
+	if not player:removeItem(input, cost) then
+		return refuse(player, K.reasonText(r.input and "input" or "shards", r))
 	end
 	local _, inbox = give(player, orb.id, count)
-	local text = string.format("%d %s -> %dx %s", cost, cfg.shard.plural, count, orb.name)
+	local text = string.format("%s %s -> %dx %s", K.thousands(cost), r.input and r.plural or cfg.shard.plural, count, orb.name)
 	logRows(player, {{orb = "Shards", item = orb.name, text = text}})
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN or 13)
 	local msg = text .. "." .. ((inbox or 0) > 0 and Chaos.t(player, " Your backpack is full: it went to your inbox.") or "")
@@ -614,6 +648,11 @@ local look = EventCallback
 look.onLook = function(self, thing, position, distance, description)
 	if thing and thing.isItem and thing:isItem() and S.isLocked(thing) then
 		description = (description or "") .. "\nIt is locked: it cannot be sold, salvaged or thrown away."
+	end
+	-- an Ember / Crown Shard: where it becomes an orb
+	local hint = thing and thing.isItem and thing:isItem() and S.shardHint(thing:getId())
+	if hint then
+		description = (description or "") .. "\n" .. hint
 	end
 	return description
 end

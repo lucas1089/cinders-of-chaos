@@ -211,7 +211,7 @@ C.clampInt = clampInt
 -- the searchable facts of an offer from its tooltip snapshot (ChaosItemTooltip.build): every modifier with its value and
 -- tier ({key, value, tier}; a critical / leech pair by its amount, the number its tiers are made of; a unique's
 -- modifiers have tier 0), sockets, quality, the free prefix / suffix slots (the rarity's limit, plus the Orb of Ruin's
--- extra slot, minus what is there; none on a unique or a ruined item: no orb changes those), whether it has a
+-- extra slot, minus what is there; none on a unique, a ruined or a corrupted item: no orb changes those), whether it has a
 -- legendary power and how many bound modifiers
 function C.offerIndex(tip)
 	tip = type(tip) == "table" and tip or {}
@@ -239,7 +239,7 @@ function C.offerIndex(tip)
 		out.quality = clampInt(tip.quality.q, 0, 999)
 	end
 	local sd = tip.sides
-	if type(sd) == "table" and not tip.unique and not tip.ruined then
+	if type(sd) == "table" and not tip.unique and not tip.ruined and not tip.corrupted then
 		out.freePrefix = clampInt((int(sd.mp) or int(sd.max) or 0) - (int(sd.p) or 0), 0, 9)
 		out.freeSuffix = clampInt((int(sd.ms) or int(sd.max) or 0) - (int(sd.s) or 0), 0, 9)
 	end

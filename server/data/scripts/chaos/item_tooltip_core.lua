@@ -16,13 +16,15 @@
 --                                                  the limit of that side when an Orb of Ruin gave it an extra slot)
 --   quality = {q, cap}                             item quality in percent (every modifier value is multiplied by it)
 --   ruined                                         true on an item an Orb of Ruin ruined: no orb changes it any more
+--   corrupted                                      true on an item a Void Orb corrupted: no orb changes it any more
 --   unique = {name, set = {key, name, have, total, pieces, bonuses}}  uniques only; set: a set piece (T.setInfo)
 --   set = {..., tier, tiers}  a plain item that is a piece of an open set (pair 28): the same block, the active tier
 --   base = [{k, l, v, fmt}]                        attack, defense, armour, hit chance, range, attack speed, element,
 --                                                  the item type's own bonuses (skills, protections, speed, ...)
---   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, prefixes first: attribute key, label,
---                                                  text, value, group, the value range of its tier, tier (1..8), side "p" /
---                                                  "s", bd = bound (Orb of Binding), pw = a legendary power
+--   mods = [{k, l, t, v, g, lo, hi, l2, v2, tr, sd, bd, pw}]  every modifier, the corrupted implicit first, then the
+--                                                  prefixes: attribute key, label, text, value, group, the value range of
+--                                                  its tier, tier (1..8), side "i" (a Void Orb's implicit) / "p" / "s",
+--                                                  bd = bound (Orb of Binding), pw = a legendary power
 --   sockets = {count, max, list = [{name, text, color}]}   empty sockets have no name
 --   veil = {s = "veiled"} | {s = "open", n, t, tr, tn, lo, hi, h}   the veiled slot (chaos_veiled.lua V.tooltip): name,
 --                                                  text, veiled tier 1..4 and its name, its range, h = an effect of its own
@@ -489,7 +491,7 @@ function T.build(item, opts)
 	if C then
 		local mods = C.readMods(item)
 		local ordered = {}
-		for _, side in ipairs({"prefix", "suffix"}) do
+		for _, side in ipairs({"implicit", "prefix", "suffix"}) do
 			for _, m in ipairs(mods) do
 				if m.side == side then
 					ordered[#ordered + 1] = m
@@ -507,13 +509,16 @@ function T.build(item, opts)
 			if M.isRuined(item) then
 				tip.ruined = true
 			end
+			if M.isCorrupted(item) then
+				tip.corrupted = true
+			end
 		end
 		for _, m in ipairs(ordered) do
 			local row = {k = m.key, l = m.label, t = C.modText(m), v = m.value, g = m.group, l2 = m.label2, v2 = m.value2}
 			row.lo, row.hi = T.modRange(m, unique and 0 or rarity)
 			if not unique then
 				row.tr = m.tier
-				row.sd = m.side == "prefix" and "p" or "s"
+				row.sd = m.side == "prefix" and "p" or (m.side == "implicit" and "i" or "s")
 				row.bd = m.bound or nil
 				row.pw = m.power or nil
 			end
@@ -609,6 +614,14 @@ function T.build(item, opts)
 		end
 	elseif rarity == 0 and kind ~= "quiver" then -- a quiver's type text repeats its implicits and the note above
 		desc = call(it, "getDescription")
+	end
+	-- an Ember / Crown Shard: where it becomes an orb (salvage.lua S.shardHint)
+	local SV = rawget(_G, "ChaosSalvage")
+	if SV and SV.shardHint then
+		local okH, hint = pcall(SV.shardHint, id)
+		if okH and hint then
+			desc = (type(desc) == "string" and desc ~= "") and (desc .. " " .. hint) or hint
+		end
 	end
 	if type(desc) == "string" and desc ~= "" then
 		tip.desc = clip(desc, 300)

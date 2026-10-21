@@ -143,6 +143,9 @@ return {
 				chance = {normal = 4, magic = 12, rare = 24, legendary = 600, boss = 1000}},
 			{id = 32259, name = "Crown Orb", weight = 3, count = {1, 1},
 				chance = {normal = 2, magic = 6, rare = 12, legendary = 300, boss = 600}},
+			-- Void Orb (corruption, a chase orb): between Binding and Ruin, mostly from legendary monsters and bosses
+			{id = 32260, name = "Void Orb", weight = 2, count = {1, 1},
+				chance = {normal = 1, magic = 3, rare = 8, legendary = 160, boss = 320}},
 			{id = 32255, name = "Orb of Ruin", weight = 1, count = {1, 1},
 				chance = {normal = 0, magic = 1, rare = 4, legendary = 80, boss = 160}},
 			-- gems and sockets (data/lib/chaos_gems_config.lua socketOrb; the gems drop through chaos_gems_config.lua)

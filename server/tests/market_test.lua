@@ -1042,6 +1042,10 @@ eq(ix.sockets .. "/" .. ix.quality .. "/" .. ix.freePrefix .. "/" .. ix.freeSuff
 	"sockets, quality, free slots (the extra suffix of the Orb of Ruin counted), power, bound")
 ix = MC.offerIndex({rarity = 5, ruined = true, sides = {p = 0, s = 0, max = 3, mp = 3, ms = 3}})
 eq(ix.freePrefix .. "/" .. ix.freeSuffix, "0/0", "a ruined item has no free slot")
+ix = MC.offerIndex({rarity = 5, corrupted = true, sides = {p = 0, s = 0, max = 3, mp = 3, ms = 3},
+	mods = {{k = "chaos_mod_bossdamage", v = 20, tr = 8, sd = "i"}}})
+eq(ix.freePrefix .. "/" .. ix.freeSuffix, "0/0", "a corrupted item has no free slot (no orb changes it)")
+eq(ix.mods[1].key .. "/" .. ix.mods[1].tier, "chaos_mod_bossdamage/8", "its implicit is searchable like any modifier")
 ix = MC.offerIndex({unique = {name = "x"}, mods = {{k = "rarity_firedamage", v = 5}}, sides = {p = 0, s = 0, mp = 3, ms = 3}})
 eq(ix.freePrefix .. "/" .. ix.mods[1].tier, "0/0", "a unique: no free slot, its modifiers have no tier")
 eq(#MC.offerIndex(nil).mods, 0, "no tooltip: nothing")
