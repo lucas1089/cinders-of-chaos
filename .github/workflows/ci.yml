@@ -140,7 +140,7 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules, blob encryption round trip / wrong key / determinism / tamper)
         run: python3 -I client/tools/make_update_manifest_test.py
 
-      - name: Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)
+      - name: 'Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)'
         run: python3 -I client/tools/pack_client_test.py
 
       - name: Slim client tool (prune rules, reference check; no overlay file pruned but tests and notes)
