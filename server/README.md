@@ -6607,6 +6607,30 @@ Grimgan of `install_pack_items.py` and `install_fist_weapons.py`) find him by hi
 sha256 of his old file name. Fresh install: 827 files renamed, 826 shown names, 798 spawn entries, 30 Lua references;
 the server loads every NPC (960 spawn entries, no new warning).
 
+## Task NPC names (`tools/patch_task_npc.py`, `data/lib/chaos_task_names.lua`, `tests/task_names_test.lua`)
+
+Beta report 2026-10-22: at the base task NPC Mermod, saying most task names did nothing, so no task started and no
+kill counted. Causes in the base scripts:
+- The NPC took a name only after "normal" or "daily" said in a line of its own. A bare name got no answer at all.
+- The name had to match letter for letter. Brackets as the list shows them, a hyphen or a missing apostrophe failed.
+- The kill script compared the shown name, case sensitive. A list entry with a capital letter never counted.
+- A party member got progress on the killer's task, not on their own.
+
+The `tasknpc` step (after `npcnames`) finds the two scripts by their stock lines and patches them:
+- After `local msg = msg:lower()`: a bare task name, or "normal <name>" / "daily <name>" in one line, starts that task
+  the stock way (`ChaosTaskNames.route`, the normal list first). A daily name on the daily cooldown gets the stock
+  cooldown reply.
+- Both name loops also accept `ChaosTaskNames.same`: any case, brackets, quotes and apostrophes ignored, hyphens read
+  as spaces, a plural "s" and a trailing word "task" tolerated.
+- A kill also counts by `ChaosTaskNames.killCounts`: the shown name or the type name (`Chaos.monsterTypeName`), the same
+  rules. Each party member counts their own normal and daily task.
+
+Marker `Chaos: task names (patch_task_npc.py)`; a second run changes nothing. The test runs the tool on a reduced
+copy of the stock lines with made-up names and says every listed name four ways. `TASK_NPC_DATA=<data dir>` runs the
+same checks on a real installed server's scripts and task lists. On the beta base copy all 15 normal and 11 daily
+names register and every normal task counts its first monster. Left as they are: two normal tasks share one name (the
+first one starts), and one listed monster of the base lists does not exist on the server.
+
 ## Base world texts (`tools/patch_base_texts.py`, `tools/base_rename_lib.py`, `data/npc/base_world_names.csv`)
 
 Every text of the base data that names the old world gets the new names: NPC dialogue and keywords, travel

@@ -177,6 +177,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   npcnames     tools/patch_base_npc_names.py     Chaos names of the base NPCs (data/npc/base_npc_names.csv, keyed by the
                sha256 of the old name): the NPC files and their shown names, the NPC spawn entries, Game.createNpc
                names (README "Base NPC names"; after towns, monsternames and itemnames)
+  tasknpc      tools/patch_task_npc.py           the task NPC (Mermod) takes a bare task name or "normal / daily <name>"
+                                                 in any case; task kills count by type name, any case, and each party
+                                                 member counts their own task (README "Task NPC names")
   runes        tools/install_rune_supply.py      no conjuring: the conjure spells of spells.xml commented out (runes, blank
                rune, food, enchanted spear and staff), every NPC sells each rune at the price of
                data/lib/chaos_rune_supply.lua, the vendors (Raloth, Isora) sell every rune, the rune recipe loader in the
@@ -824,6 +827,14 @@ def step_runes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('npcnames') + 1, 'runes')  # after npcnames: the vendors by their Chaos names (hash before it)
+
+
+def step_tasknpc(server, data, ctx):
+    args = [tool('patch_task_npc.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_task_npc.py'))
+
+
+STEPS.insert(STEPS.index('npcnames') + 1, 'tasknpc')  # the task NPC and its kills (found by their stock lines)
 
 
 def step_itemprices(server, data, ctx):
