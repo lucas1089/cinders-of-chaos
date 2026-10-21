@@ -4,8 +4,8 @@
 -- Use it like food: one bite gives the regeneration of the best stock food (60 x 12 s = 12 minutes) and is refused with
 -- "You are full." at the cap every food has (1200 s), so it eats exactly as often as normal food. The item is never
 -- used up. Store-bound like the store pouches: one per character, the owner's guid and the attributes chaos_storebound
--- and chaos_locked; pouches.lua refuses the ground, mail, trash, other players' containers, the trade window and the
--- player market for any chaos_storebound item. Only the owner can eat from it. Death: death_keep.lua keeps it out of the
+-- and chaos_locked (cfg.bindLock 2: locked, drawn in its colours; F.rebind at login); pouches.lua refuses the ground,
+-- mail, trash, other players' containers, the trade window and the player market for any chaos_storebound item. Only the owner can eat from it. Death: death_keep.lua keeps it out of the
 -- drop (inbox, back in the backpack at the next login; also with no corpse, on water). Fallback without that hook: a
 -- ration dropped with the backpack leaves the corpse and comes back at the next login (storage `regrant`).
 -- Store offer: {kind = "service", service = "storeFood"} (registered into ChaosShopServices.services here; no edit of
@@ -114,8 +114,25 @@ function F.create(player)
 	end
 	item:setCustomAttribute(c.attr.owner, player:getGuid())
 	item:setCustomAttribute(c.attr.storebound, 1)
-	item:setCustomAttribute(c.attr.lock, 1)
+	item:setCustomAttribute(c.attr.lock, K.bindLock(c)) -- locked, but drawn in its colours (store_food_config.lua bindLock)
 	return item
+end
+
+-- every ration of the character with another lock value gets cfg.bindLock (sent again to the client, which stops
+-- drawing it grey). Returns how many changed.
+function F.rebind(player)
+	local c, n = cfg(), 0
+	walk(roots(player), function(item)
+		if F.isRation(item) and K.needsRebind(c, customAttr(item, c.attr.lock)) then
+			item:setCustomAttribute(c.attr.lock, K.bindLock(c))
+			if item.sendUpdate then
+				pcall(item.sendUpdate, item)
+			end
+			n = n + 1
+		end
+		return false
+	end)
+	return n
 end
 
 -- backpack, else inbox: "backpack" | "inbox" | nil
@@ -236,6 +253,10 @@ death:register()
 local login = CreatureEvent("ChaosStoreFoodLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosStoreFoodDeath")
+	local okR, errR = pcall(F.rebind, player)
+	if not okR then
+		print("[store food] rebind failed: " .. tostring(errR))
+	end
 	if owed(player) and F.installed() and F.give(player) then
 		player:setStorageValue(cfg().storage.regrant, 0)
 		player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "Back after your death: your Everfull Ration."))

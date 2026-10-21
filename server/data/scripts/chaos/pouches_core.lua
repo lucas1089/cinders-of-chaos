@@ -13,6 +13,7 @@
 --   ChaosPouchesCore.moveRefusal(m)                 nil (allowed) or the reason a pouch move is refused
 --   ChaosPouchesCore.summary(cfg, looted, backpack, left, full, overflow, t)   the per-kill loot line, or nil
 --   ChaosPouchesCore.lootList(looted, opts, t)   "10 gold coins, {[Rare] wyrmscale helmet} and 2 more"
+--   ChaosPouchesCore.bindLock(cfg) / needsRebind(cfg, value)   the chaos_locked value of a pouch; must it change to it?
 --   (t(pattern, ...): the player's language, e.g. Chaos.t bound to the owner; default English, P.english)
 -- info = {id, actionId, count, category = "equipment"|"currency"|"supplies"|"other", rarity = 0..15, unique = bool,
 --         gem = bool, container = bool, pouch = bool (a pouch itself), onList = bool (on the base autoloot list)}
@@ -373,6 +374,16 @@ function P.summary(cfg, looted, backpack, left, full, overflow, t)
 		text = text .. " (" .. table.concat(notes, "; ") .. ")"
 	end
 	return text .. "."
+end
+
+-- the chaos_locked value a pouch carries (cfg.bindLock: locked, drawn in its colours), and whether an item's current
+-- value must change to it (a pouch given before 2026-10-22 carries 1, the grey player lock)
+function P.bindLock(cfg)
+	return cfg.bindLock or 1
+end
+
+function P.needsRebind(cfg, value)
+	return tonumber(value) ~= P.bindLock(cfg)
 end
 
 return P

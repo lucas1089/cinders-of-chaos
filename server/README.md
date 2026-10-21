@@ -3967,16 +3967,17 @@ autoloot list is needed.
 
 | Pouch | Item id (look) | Slots | Coins | Collects |
 |---|---|---|---|---|
-| Loot Bag | 32081 (client 33653: a leather sack, gold coins spilling) | 255, weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
-| Orbs Pouch | 32082 (client 33651: a violet pouch with a glowing orb) | 40 | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
-| Rift Key Pouch | 32083 (client 33652: an iron strongbox, gold key, key ring) | 30 | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
+| Loot Bag | 32081 (client 38608: a leather sack, gold coins spilling) | 255, weightless | 250 | all the loot of your kills by default (its rules, below, can narrow it); the Auto Seller sells what is in it |
+| Orbs Pouch | 32082 (client 38609: a violet pouch with a glowing orb) | 40 | 200 | every orb (the currency orbs 29851-29859, Erasure, Gilding, Sockets, Unmaking, orbs v2, the Whetstone, every `loot_config.lua` currency entry), rune shards (32051) and gems (32001-32035) |
+| Rift Key Pouch | 32083 (client 38610: an iron strongbox, gold key, key ring) | 30 | 150 | Rift Keys (item 10155 with action id 47401; tier and modifiers kept), Omen Keys (32072) and omen fragments (32071) |
 
 - **Items.** New items.otb nodes, copies of stock bags (group and flags of the expedition bag, the brocade bag and the fur bag)
-  with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py` and appended to the
-  client pair as client ids 33651-33653 (client MANIFEST.md "Store pouch looks"; `clientId` in `pouches_config.lua`). Only the
+  with their own looks: three item things of our own art, drawn by `client/tools/sprites/gen_pouch_art.py`, snapped to theme
+  palettes by `gen_store_items_art.py` and appended to pair 34 as client ids 38608-38610 (client MANIFEST.md "Store item
+  looks"; `clientId` in `pouches_config.lua`; the earlier looks 33651-33653, `oldClientId`, are replaced in place). Only the
   client id of the node changes, the server ids stay 32081-32083, so pouches already owned show the new look after the install;
   the store icons and the container window icons follow (`ItemType:getClientId()`). **The client pair must have the three things
-  first** (a client without them shows nothing for a pouch); the Windows package pair has had them since 2026-10-10;
+  first** (a client without them shows nothing for a pouch); the Windows package pair has had them since pair 34;
   `install_pouches.py --stock-looks` keeps the stock bag looks only for clients on an older pair. And
   items.xml entries with `containerSize` (the protocol sends a container's size as one byte, so up to 255 would work). Installed by
   `tools/install_pouches.py` (step `pouches` of `install_all.py`, after `omens`; idempotent; `items.otb.bak` keeps the original).
@@ -4046,8 +4047,10 @@ autoloot list is needed.
   Loot Bag stays weightless). A pouch in the depot inbox does not collect. One of each kind per character: the store refuses a second while one is in the inventory, the purse, the inbox or a depot
   chest (and while a lost one is owed back); a copy made by a GM collects only when it carries the character's guid
   (`chaos_pouch_owner`) and only the first one found is used. Every pouch has the custom attributes `chaos_storebound = 1` and
-  `chaos_locked = 1` (the item lock, engine patch 0009: no NPC buys it, trash holders refuse it, the stock market does not list it;
-  no NPC lists the new ids anyway). `Player:onMoveItem` (a hook `install_pouches.py` writes at its top, because only the last
+  `chaos_locked = 2` (`bindLock`; the item lock, engine patch 0009: no NPC buys it, trash holders refuse it, the stock market
+  does not list it; no NPC lists the new ids anyway). Not 1: the client draws 1, a player's own lock, grey (`game_shaderfx`),
+  and the pouches showed grey in the backpack and the purse (owner report 2026-10-22). Pouches of before get 2 at login
+  (`ChaosPouches.rebind`: inventory, purse, inbox, depots; tested in `pouches_test.lua`). `Player:onMoveItem` (a hook `install_pouches.py` writes at its top, because only the last
   `onMoveItem` callback's value counts) keeps a pouch, or any container holding one, in the character's own inventory or depot
   (lockers, depot chest, depot boxes): the ground, a mailbox, trash, a house or corpse container and another player's container are
   refused ("Store items stay with you ..."); a pouch never goes into another pouch. The trade window refuses it
@@ -4112,10 +4115,11 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
   `tools/install_store_food.py` (step `storefood` of `install_all.py`, after `pouches`; idempotent; `items.otb.bak` keeps
   the original; `tools/install_store_food_test.py` on a synthetic items.otb). Look: `ownLook = true` in
   `store_food_config.lua` (on since 2026-10-14: things_custom25 is on windows-assets at ebe1b2b2; run
-  `install_store_food.py` again; false gives back the dragon ham's look) gives it client id 33904: a glazed bowl with a roast haunch
-  and gold sparks, drawn by `client/tools/sprites/gen_store_food_art.py` (the store pouches' helpers; 32 px,
-  deterministic) into `art_import/store_food.png`, appended with `art_import/store_food.csv` by `import_art_things.py`
-  (client MANIFEST.md "Everfull Ration look"). The store icon is the item, so it follows the look.
+  `install_store_food.py` again; false gives back the dragon ham's look) gives it client id 38611 of pair 34: a glazed bowl
+  with a roast haunch and gold sparks, drawn by `client/tools/sprites/gen_store_food_art.py` (the store pouches' helpers;
+  32 px, deterministic) into `art_import/store_food.png`, snapped to the cinderwrought palette by `gen_store_items_art.py`
+  and appended with `art_import/store_items.csv` by `import_art_things.py` (client MANIFEST.md "Store item looks"; the
+  earlier look 33904, `oldClientId`, is replaced in place). The store icon is the item, so it follows the look.
 - **Eating.** Use it like food: one bite is the best stock food (60 x 12 s = 720 s of regeneration, the dragon ham, marlin
   and roasted meat of the base `food.lua`), "You are full." at the cap every food has (1200 s of regeneration), so it is
   eaten exactly as often as normal food; one bite a second at most (`exhaustMs`). Never used up. Only its owner can eat
@@ -4123,7 +4127,7 @@ The store's infinite food (Convenience, "Everfull Ration", 100 coins, decided 20
 - **Delivered to the purse** ("Store", Delivery to the purse; depot inbox without a purse or the capacity).
 - **Store-bound** like the pouches (the store's convention for a permanent item): one per character (the store refuses a
   second while one is in the inventory, the inbox or a depot), the custom attributes `chaos_food_owner`, `chaos_storebound`
-  and `chaos_locked`. The pouches' move hook, trade callbacks and the player market refuse any `chaos_storebound` item, so
+  and `chaos_locked = 2` (`bindLock`: locked, but not drawn grey; a ration of before gets 2 at login, `ChaosStoreFood.rebind`). The pouches' move hook, trade callbacks and the player market refuse any `chaos_storebound` item, so
   it cannot be dropped, mailed, traded or sold (the refusal text now says "Store items ..."). A service offer, so never
   giftable. Not for season characters (the Convenience category is refused there).
 - **Death.** Kept out of the drop like the pouches (`death_keep.lua`, see "Store pouches", Death). Fallback without that

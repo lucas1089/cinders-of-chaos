@@ -17,8 +17,8 @@
 --
 -- Store-bound: one of each kind per character (the store refuses a second while one is in the inventory, the inbox
 -- or a depot); only the owner's pouch collects (custom attribute chaos_pouch_owner). Every pouch has the custom
--- attributes chaos_storebound = 1 and chaos_locked = 1 (the item lock, engine patch 0009: NPCs do not buy it, trash
--- refuses it, the stock market does not list it). The trade window refuses it (onTradeRequest / onTradeAccept), and
+-- attributes chaos_storebound = 1 and chaos_locked = cfg.bindLock (2: the item lock, engine patch 0009: NPCs do not
+-- buy it, trash refuses it, the stock market does not list it; not 1, which the client draws grey; PO.rebind). The trade window refuses it (onTradeRequest / onTradeAccept), and
 -- Player:onMoveItem (hook written by install_pouches.py) keeps it, and any container holding it, in the character's
 -- inventory or depot: no ground, no mailbox, no house, no other player's container. Player market: ChaosPouches.isPouch.
 -- Death: death_keep.lua (hook in the base droploot.lua) takes the pouch out of a dropping backpack before it drops (its
@@ -150,7 +150,7 @@ function PO.create(player, kind)
 	item:setCustomAttribute(c.attr.owner, player:getGuid())
 	item:setCustomAttribute(c.attr.kind, kind)
 	item:setCustomAttribute(c.attr.storebound, 1)
-	item:setCustomAttribute(c.attr.lock, 1)
+	item:setCustomAttribute(c.attr.lock, P.bindLock(c)) -- locked, but drawn in its colours (pouches_config.lua bindLock)
 	return item
 end
 
@@ -268,6 +268,23 @@ function PO.owned(player)
 		return false
 	end)
 	return found
+end
+
+-- every pouch of the character with another lock value gets cfg.bindLock (sent again to the client, which stops
+-- drawing it grey). Returns how many changed.
+function PO.rebind(player)
+	local c, n = cfg(), 0
+	walk(storageRoots(player), function(item)
+		if PO.kindOfId(item:getId()) and P.needsRebind(c, customAttr(item, c.attr.lock)) then
+			item:setCustomAttribute(c.attr.lock, P.bindLock(c))
+			if item.sendUpdate then
+				pcall(item.sendUpdate, item)
+			end
+			n = n + 1
+		end
+		return false
+	end)
+	return n
 end
 
 -- ---------------------------------------------------------------- loot rules
@@ -852,6 +869,10 @@ function login.onLogin(player)
 	pcall(PO.registerWeightless)
 	player:registerEvent("ChaosPouchesExtended")
 	local c = cfg()
+	local okR, errR = pcall(PO.rebind, player)
+	if not okR then
+		print("[Chaos pouches] rebind failed: " .. tostring(errR))
+	end
 	local ok, err = pcall(function()
 		-- former owners of the retired Bottomless Loot Pouch unlock: a Loot Bag, once
 		if player:getStorageValue(c.legacyUnlock) > 0 and player:getStorageValue(c.storage.legacyGrant) < 1

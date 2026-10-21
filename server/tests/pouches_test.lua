@@ -357,7 +357,10 @@ local orbsPouch = hero.purse.items[1]
 eq(orbsPouch.id, 32082, "orbs pouch in the purse")
 eq(#bp.items, 0, "not in the backpack")
 eq(orbsPouch.custom.chaos_pouch_owner, 7, "owner") eq(orbsPouch.custom.chaos_storebound, 1, "store-bound kept in the purse")
-eq(orbsPouch.custom.chaos_locked, 1, "item lock (never sold to NPCs, no stock market, no trash)")
+eq(orbsPouch.custom.chaos_locked, 2, "item lock (never sold to NPCs, no stock market, no trash), bound: not drawn grey")
+eq(P.bindLock(cfg), 2, "bindLock 2: the client greys only 1 (a player's own lock)")
+eq(P.needsRebind(cfg, 1), true, "an old pouch with 1 is rebound") eq(P.needsRebind(cfg, nil), true, "no lock: rebound")
+eq(P.needsRebind(cfg, 2), false, "2 stays") eq(P.needsRebind(cfg, "2"), false, "a string 2 stays")
 ok(hero.msgs[#hero.msgs]:find("purse") and hero.msgs[#hero.msgs]:find("from now on, there or in your backpack"),
 	"player told it is in the purse and collects there")
 eq(PO.carried(hero).orbs, orbsPouch, "a pouch in the purse counts as carried (collects without moving it)")
@@ -782,6 +785,23 @@ eq(#old.purse.items, 1, "only once")
 local fresh = newPlayer(21)
 registry.ChaosPouchesLogin.onLogin(fresh)
 eq(fresh.storage[ST.legacyGrant], nil, "nothing for characters without the old unlock")
+
+-- a pouch given before bindLock (chaos_locked 1, drawn grey by the client) is rebound at login, wherever it is
+local grey = newPlayer(23)
+local greyBp = item(1988); greyBp.parent = grey; grey.slots[CONST_SLOT_BACKPACK] = greyBp
+local oldLoot = item(32081); oldLoot.custom.chaos_locked = 1; oldLoot.custom.chaos_pouch_owner = 23
+oldLoot.parent = greyBp; greyBp.items[1] = oldLoot
+local oldKeys = item(32083); oldKeys.custom.chaos_locked = 1
+oldKeys.parent = grey.inbox; grey.inbox.items[1] = oldKeys
+local plain = item(2160); plain.custom.chaos_locked = 1
+plain.parent = greyBp; greyBp.items[2] = plain
+local updates = 0
+function oldLoot:sendUpdate() updates = updates + 1 end
+registry.ChaosPouchesLogin.onLogin(grey)
+eq(oldLoot.custom.chaos_locked, 2, "the Loot Bag in the backpack rebound") eq(updates, 1, "and sent again to the client")
+eq(oldKeys.custom.chaos_locked, 2, "the Rift Key Pouch in the inbox rebound")
+eq(plain.custom.chaos_locked, 1, "a player's own lock on another item is left alone")
+eq(PO.rebind(grey), 0, "a second pass changes nothing")
 
 -- the store while a pouch is owed
 local owed = newPlayer(22)

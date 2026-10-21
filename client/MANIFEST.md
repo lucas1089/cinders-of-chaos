@@ -737,6 +737,7 @@ patterns with 8 synchronised frames, shore pieces 8 frames (straight pieces with
 - Server side: server/README.md "Pack items and monsters". Checked in the Linux client at normal size.
 
 ## Store pouch looks (new, `tools/sprites/gen_pouch_art.py`, `tools/sprites/art_import/pouches.csv`)
+**Replaced by "Store item looks (pair 34)"** (the same art snapped to theme palettes, client 38608-38610).
 Three item things of our own art for the store pouches, so they cannot be mixed up in a backpack (they were the stock expedition,
 brocade and fur bags): client 33651 Orbs Pouch (a round violet velvet pouch, gold drawstring, a glowing cyan orb), 33652 Rift Key
 Pouch (a dark iron strongbox with riveted bands, a gold key and a key ring), 33653 Loot Bag (was Loot Pouch; a tall leather sack, gold trim,
@@ -1683,6 +1684,7 @@ items, 33903), appended with
 --things client/tools/sprites/art_import/store_food.csv --first-item 33904 --expect-items 33903` (flags copied from the
 dragon ham, client 3583; mode replace keeps server id 32084). `ownLook = true` in `store_food_config.lua` since
 2026-10-14; run `install_store_food.py` again. A client on an older pair draws nothing for 33904.
+**Replaced by "Store item looks (pair 34)"** (client 38611, the same art in the cinderwrought palette).
 
 ## Gem looks (things_custom25, items 33905-33939, `tools/sprites/gen_gem_art.py`, `tools/sprites/art_import/gems.csv`; on windows-assets ebe1b2b2, switch on since 2026-10-14)
 **Source and licence.** The owner's gem set (Google Drive folder "ots", `gems.zip`, 609 KB, 2026-10-14; the owner:
@@ -2230,6 +2232,49 @@ pixel-identical to the sheets and every old thing byte-identical. Built twice: i
 - Checked offline: the wings scan above, owner previews of every wings, head and cape on look 128 in four directions
   (`gen_pack33.py preview`) and contact sheets (`contact`), scratchpad only (never committed, never given to an AI
   tool). Not run in a client.
+
+## Store item looks (pair 34: items 38608-38611, `tools/sprites/gen_store_items_art.py`, `art_import/store_items.*`; on windows-assets 584dab51 since 2026-10-21)
+Owner report 2026-10-22 with screenshots: the Loot Bag, Orbs Pouch, Rift Key Pouch and Everfull Ration showed grey in the
+backpack and the purse ("ícones ainda estão cinzas"), while the store window drew them in colour.
+- **Cause.** Not the art and not the client ids: the store window draws the same sprites (33651-33653, 33904). The
+  server gave every pouch and the ration `chaos_locked = 1`, and `game_shaderfx` draws value 1 (a player's own lock, the
+  crafting bench) with the grey shader (`shaderfxlogic.lua` `isLocked`). The Everfull potions had the same bug and got
+  value 2 on 2026-10-16. Fix on the server: `bindLock = 2` in `pouches_config.lua` and `store_food_config.lua`; new
+  items get 2, older ones are rebound at login (`ChaosPouches.rebind`, `ChaosStoreFood.rebind`; server/README.md
+  "Store pouches"). Value 2 is still locked for every server and engine check (any value but 0).
+- **New looks.** The old tiles failed `style_check.py` (362 to 425 colours a tile: the 4:1 downsample kept every
+  in-between colour). `gen_store_items_art.py build` reads our own tiles `art_import/pouches.png` and
+  `art_import/store_food.png` and snaps each to one theme palette (`style_check.snap`, CIE76 nearest colour): Loot Bag
+  gildcrown, Orbs Pouch rimewraith (the violet and the cyan orb stay; the drawstring turns silver), Rift Key Pouch
+  azurevigil, Everfull Ration cinderwrought. All four pass `style_check.py check` against their theme; `build` refuses
+  a failing tile, `build --check` (CI, fx venv) compares the committed atlas and things file. Silhouettes unchanged.
+- Things file `art_import/store_items.csv`: client 38608 Loot Bag, 38609 Orbs Pouch, 38610 Rift Key Pouch, 38611
+  Everfull Ration; flags copied as before (`copy:10325`, `copy:8861`, `copy:7343` containers, `copy:3583` the
+  stackable dragon ham); mode replace with server ids 32081-32084. The server points the items at them (`clientId`;
+  `oldClientId` 33651-33653 / 33904 is replaced in place by `install_pouches.py` / `install_store_food.py`). The old
+  sprites stay in the pair (append-only).
+
+```
+python3 -I client/tools/sprites/gen_store_items_art.py build [--preview DIR]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair33/Tibia.dat --ours-spr pair33/Tibia.spr --out-dir pair34 \
+    --things client/tools/sprites/art_import/store_items.csv --first-item 38608 --expect-items 38607
+python3 -I client/tools/sprites/check_pair.py pair34/Tibia.dat pair34/Tibia.spr --old pair33/Tibia.dat pair33/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair34/Tibia.dat pair34/Tibia.spr
+```
+Input pair 33 (windows-assets 1c7c58df, dat bd8bb6781f274c392a3332e7a043bdba, spr 05803c7851fe25b5d8dd3021c43a1fc4).
+Output **pair 34**: dat 11babc2e0f6d93fe1c1cc40c75787f18 (6,647,045 bytes), spr c0bfd875474ccc6816ee6cecb13ef469
+(867,454,211 bytes, 933,386 sprites: 4 appended), 38,611 items, 2,667 outfits, 854 effects, 188 missiles. The importer
+verified the 4 sprite slots pixel-identical to the atlas and every old thing byte-identical. Built twice: identical
+md5s and manifests.
+- `check_pair.py --old`: append-only, `--new-only` 0 errors, 0 warnings; full check 0 errors, 124 warnings (those of
+  pair 33). On pair 34 also: `gen_theme_art.py recolour --check` and `gen_dungeon_banners.py --check` pass.
+- `outfit_anchors.lua` regenerated (only the dat md5 changes; no new outfit).
+- `things-1098.tar.xz` (the pair 30-33 recipe: `tar --owner=0 --group=0 --numeric-owner --mtime='2026-10-21 00:00:00Z'
+  --format=gnu`, `xz -9 -T0`, xz 5.4.5): 94,842,748 bytes, sha256
+  8337f0877f164208cc938409beb6b8ea4e3d6acea8efc38e40502f6242ee82b5, packed twice with the same sha256; unpacks to the
+  md5s above. Pushed to windows-assets at 584dab51 on 2026-10-21 (on 1c7c58df; the owner allowed new pairs without asking).
+- A client on pair 33 or older draws nothing for 38608-38611: ship the new pair with the server change.
+- Previews (before, after, before as the grey shader drew it): scratchpad only. Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
