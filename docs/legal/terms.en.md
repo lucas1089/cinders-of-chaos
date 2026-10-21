@@ -61,6 +61,8 @@ give the penalty reviews it. There is one appeal per penalty, and that answer is
 
 - Using bots, macros, cheat programs, or modified or third-party clients. The official client's helper is allowed while
   you play; leaving it running for hours with nobody at the keyboard counts as using a bot.
+- Decompiling, decrypting, extracting or modifying the official client or its files (sprites, images, sounds, code and
+  packs), or getting around its protections.
 - Using bugs or glitches for an advantage, or spreading them, instead of telling the staff. A bug you report yourself
   is never punished.
 - Duplicating items or coins, attacking the server, trying to break into accounts or overloading the service.
@@ -125,6 +127,10 @@ the Brazilian Consumer Protection Code where it applies.
 The name Cinders of Chaos, the world, the art, the texts and the game's own content belong to [NOME DO RESPONSÁVEL] or to
 their authors. Parts of the server and the client use open source software, under the licenses of those projects. You
 may not copy, sell or distribute the game's content without permission.
+
+Some of the game's art is licensed from third parties for use inside the game only. Extracting the client's files to
+use them in another game, server or website infringes their authors' rights. We will ask for copies we find to be
+taken down, including by notice to the provider that hosts them.
 
 ## 14. Governing law
 

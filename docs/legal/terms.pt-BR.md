@@ -62,6 +62,8 @@ administrador que não aplicou a punição. Há um recurso por punição, e a re
 
 - Usar bots, macros, programas de trapaça ou clientes modificados ou de terceiros. O helper do cliente oficial é
   permitido enquanto você joga; deixá-lo rodando por horas sem ninguém no teclado conta como uso de bot.
+- Descompilar, decifrar, extrair ou modificar o cliente oficial ou os seus arquivos (sprites, imagens, sons, código e
+  pacotes), ou contornar as proteções dele.
 - Usar bugs ou falhas para ganhar vantagem, ou divulgá-los, em vez de avisar a equipe. Um bug que você mesmo informa
   nunca é punido.
 - Duplicar itens ou moedas, atacar o servidor, tentar invadir contas ou sobrecarregar o serviço.
@@ -126,6 +128,10 @@ Código de Defesa do Consumidor quando ele se aplicar.
 O nome Cinders of Chaos, o mundo, as artes, os textos e o conteúdo próprio do jogo pertencem a [NOME DO RESPONSÁVEL] ou
 aos seus autores. Partes do servidor e do cliente usam software de código aberto, sob as licenças desses projetos. Você
 não pode copiar, vender ou distribuir o conteúdo do jogo sem autorização.
+
+Algumas artes do jogo são licenciadas de terceiros só para uso dentro do jogo. Extrair os arquivos do cliente para
+usar em outro jogo, servidor ou site viola os direitos dos autores. Pediremos a remoção de cópias encontradas,
+inclusive por notificação ao provedor que as hospeda.
 
 ## 14. Lei e foro
 
