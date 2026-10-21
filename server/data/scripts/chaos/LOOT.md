@@ -29,6 +29,15 @@ The tier comes from `ChaosTierDead[monster:getId()].tier` (set by monster_tiers.
 
 ## What it does per kill
 
+0. **Pack thinning by monster level** (step 0b in `processKill`; server/README.md "Loot by monster level"). Before the
+   extra rolls, the stock corpse of a paced monster is thinned by `L.thinCorpseByLevel(corpse, L.corpseFactors(monster,
+   pocket), mType:getLoot())`, the plan of `pace_core.lua` `P.levelPlan`: the shares are the monster's own (`ChaosPace.
+   factorsOf`: its level and curve set; a pocket boss's factor on top), never the owner's level, party or stamina.
+   Notable drops (stock rarity Rare or better, loot chance 1% or less) stay with the `notable` share (1 from monster
+   level 700); coins come back as coins worth `loot` x `coins` of their value (`P.coinStacks`, `L.addToCorpse`); junk
+   (`L.isGoldLike`) stays in kind with `loot` x `junkKeep` and pays the rest of its value share as coins; an emptied
+   corpse gets its junk's worth as coins; plain gear, orbs, gems and keys keep `loot`. `pace_config.lua` `lootLevel.enabled
+   = false` falls back to the 2026-10-20 method, `L.thinCorpse(corpse, loot, coins)` (each item at random). The loot line (index 1.9) lists the result.
 1. **Extra rolls** (`extraRolls`): magic 1 (chance x0.5), rare 1, legendary 2, boss 2 additional passes (lowered 2026-10-17, README "Chaos loot rate caps") over `MonsterType:getLoot()`
    using the stock chance test `getLootRandom() <= lootData.chance`. Counts: `random(min,max) * levelCountMult(stock
    table, by Monster:getMonsterLevel()) * extraCountMult[tier]`, floor, min 1; non-stackables always 1. The rate

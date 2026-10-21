@@ -1039,7 +1039,8 @@ local function processKill(monster, corpse)
 	local pace = ChaosPace and ChaosPace.lootMultOf and ChaosPace.lootMultOf(monster) or 1
 	-- pocket bosses (pocketboss.lua): the corpse of a pocket boss and its adds x the pocket's lootMult, through the same
 	-- thinning as the pack factor (so even the always-dropped items are not guaranteed there)
-	pace = pace * (ChaosPocketBoss and ChaosPocketBoss.lootMultOf and ChaosPocketBoss.lootMultOf(monster) or 1)
+	local pocket = ChaosPocketBoss and ChaosPocketBoss.lootMultOf and ChaosPocketBoss.lootMultOf(monster) or 1
+	pace = pace * pocket
 	local ctx = {tier = tier, monster = monster, player = owner, level = level, itemFind = L.itemFindMult(owner),
 		pace = pace, catchup = catchup}
 	-- the level the orb and waystone gates read (monsterLevel falls back to the bounty pool / exp estimate)
@@ -1087,15 +1088,23 @@ local function processKill(monster, corpse)
 	-- list) already put them in the corpse; the ones of a monster below waystone.minMonsterLevel are taken out again
 	L.gateWaystones(corpse, ctx.orbLevel, tier)
 
-	-- 0b. pack combat (pace.lua): the stock loot thinned by the loot factor. A stack keeps count x factor rounded at
-	-- random (gold included); any other item stays with chance = factor. The expected value per hour stays.
-	local goldMult = ChaosPace and ChaosPace.goldMultOf and ChaosPace.goldMultOf(monster) or 1
-	if pace < 1 or goldMult < 1 then
-		L.thinCorpse(corpse, pace, goldMult)
+	-- 0b. pack combat (pace.lua): the stock loot thinned by the monster's level only (owner 2026-10-21; server/README.md
+	-- "Loot by monster level"; pace_core.lua P.levelPlan): notable drops stay, coins and junk pay for them, coins come
+	-- back as coins, an emptied corpse gets its junk's worth. The killer (level, party, stamina) is never read here.
+	-- The expected gold and items per hour stay (tools/loot_model.lua). With lootLevel off: the 2026-10-20 method
+	-- (L.thinCorpse).
+	local lootTable = mType and mType:getLoot()
+	local corpseF = L.corpseFactors(monster, pocket)
+	if corpseF then
+		L.thinCorpseByLevel(corpse, corpseF, lootTable)
+	else
+		local goldMult = ChaosPace and ChaosPace.goldMultOf and ChaosPace.goldMultOf(monster) or 1
+		if pace < 1 or goldMult < 1 then
+			L.thinCorpse(corpse, pace, goldMult)
+		end
 	end
 
 	-- 1. extra rolls
-	local lootTable = mType and mType:getLoot()
 	-- smart loot (smartloot.lua): the extra rolls favour gear made for the owner's class (the gear chance sum stays)
 	local rollTable = lootTable
 	if ChaosSmartLoot and ChaosSmartLoot.reweight then
@@ -1307,6 +1316,87 @@ function L.thinCorpse(corpse, f, g)
 			item:remove(items[i].count - keep)
 			changed = changed + 1
 		end
+	end
+	return changed
+end
+
+local COIN_VALUE = {[2148] = 1, [2152] = 100, [2160] = 10000}
+
+-- loot by monster level: the shares of this corpse (pace_core.lua P.factors of the monster's own level and set, read
+-- from ChaosPace.factorsOf: a property of the monster, set at its first think), loot and notable x a pocket's factor.
+-- nil when ChaosPaceConfig.lootLevel is off (the 2026-10-20 method, L.thinCorpse) or nothing is to be thinned.
+function L.corpseFactors(monster, pocket)
+	local pc = ChaosPaceConfig
+	if not ChaosPaceCore or not ChaosPaceCore.levelPlan or not pc or pc.enabled == false or not pc.lootLevel
+		or pc.lootLevel.enabled == false then
+		return nil
+	end
+	pocket = tonumber(pocket) or 1
+	local f = ChaosPace and ChaosPace.factorsOf and ChaosPace.factorsOf(monster)
+	if not f and pocket >= 1 then
+		return nil
+	end
+	f = f or {}
+	local out = {loot = (tonumber(f.loot) or 1) * pocket, coins = tonumber(f.coins) or 1, junkKeep = f.junkKeep,
+		notable = (tonumber(f.notable) or tonumber(f.loot) or 1) * pocket}
+	if out.loot >= 1 and out.coins >= 1 and out.notable >= 1 then
+		return nil
+	end
+	return out
+end
+
+-- loot by monster level: thin the top-level items of a corpse with pace_core.lua P.levelPlan (f = L.corpseFactors;
+-- lootTable = MonsterType:getLoot(), for the rare-drop chances) and put the pay back as coins (L.addToCorpse). Returns
+-- the number of items removed or reduced.
+function L.thinCorpseByLevel(corpse, f, lootTable)
+	local P = ChaosPaceCore
+	if not P or not P.levelPlan or not corpse or not f then
+		return 0
+	end
+	local chances = {}
+	for _, e in ipairs(lootTable or {}) do
+		local id = tonumber(e.itemId)
+		if id then
+			chances[id] = math.max(chances[id] or 0, tonumber(e.chance) or 0)
+		end
+	end
+	local IP = ChaosItemPrices
+	local list, items = {}, {}
+	for slot = 0, corpse:getSize() - 1 do
+		local item = corpse:getItem(slot)
+		if item then
+			local id = item:getId()
+			local it = {count = item:getCount(), stackable = L.isStackableId(id), chance = chances[id]}
+			if COIN_VALUE[id] then
+				it.class, it.value = "coin", COIN_VALUE[id]
+			elseif L.isGearId(id) then
+				it.class = "gear"
+				local okR, r = pcall(function() return item:getCustomAttribute("rarity") end)
+				it.rarity = okR and tonumber(r) or 0
+			elseif L.isGoldLike(id) then
+				it.class, it.value = "junk", IP and IP.basePrice(id) or 0
+			else
+				it.class = "other"
+			end
+			list[#list + 1] = item
+			items[#items + 1] = it
+		end
+	end
+	local function rand() return rnd(0, 999999) / 1000000 end
+	local keep, pay = P.levelPlan(ChaosPaceConfig.lootLevel, f, items, rand)
+	local changed = 0
+	for i, item in ipairs(list) do
+		local k = keep[i]
+		if k <= 0 then
+			item:remove()
+			changed = changed + 1
+		elseif k < items[i].count then
+			item:remove(items[i].count - k)
+			changed = changed + 1
+		end
+	end
+	for _, c in ipairs(P.coinStacks(pay)) do
+		L.addToCorpse(corpse, c[1], c[2])
 	end
 	return changed
 end
