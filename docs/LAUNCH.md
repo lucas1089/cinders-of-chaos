@@ -1194,7 +1194,10 @@ server stays down after the next daily save:
 The beta VPS runs the Linux kit (`/opt/chaos-trial`, unit `chaos-server`, its own MariaDB inside the unit) with the
 checkout `/opt/chaos/repo` following a branch (`main`), and its engine comes from the `winpkg-N` releases, not from a
 local build. For that layout the admin app's Painel > Atualizar servidor runs `server/deploy/chaos_kit_update.sh`
-through `chaos-ctl.sh update-check`, `update-apply`, `update-rollback` (docs/ADMIN_APP.md, "Atualizar servidor"). By
+through `chaos-ctl.sh update-check`, `update-apply`, `update-rollback` (docs/ADMIN_APP.md, "Atualizar servidor"). The
+install step also brings the kit's helper files up to date from the checkout (`clientservices.py`, the Help channel
+assistant, `start-server.sh` / `stop-server.sh` / `add-account.sh`), so a kit made from an older package gets the
+login-screen services too (the web server still has to forward `/clientservices`, tools/linux/server/README.txt). By
 hand, as root:
 
 ```
