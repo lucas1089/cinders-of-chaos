@@ -261,7 +261,9 @@ local function readRows()
     local id = opt and tonumber(opt.data) or 0
     if id and id > 0 and not seen[id] then
       seen[id] = true
-      slots[#slots + 1] = { id = id, enabled = row:getChildById('enable'):isChecked() }
+      -- a spell just picked in an empty row (its box is greyed) starts ticked
+      local box = row:getChildById('enable')
+      slots[#slots + 1] = { id = id, enabled = (not box:isEnabled()) or box:isChecked() }
     end
   end
   cfg.slots = slots
@@ -319,7 +321,9 @@ function U.rebuild()
     for _, o in ipairs(opts) do combo:addOption(o.name, o.id, true) end
     local slot = cfg.slots[i]
     combo:setCurrentOptionByData(slot and slot.id or 0, true)
-    row:getChildById('enable'):setChecked(slot == nil or slot.enabled)
+    -- an empty row's box is unticked and greyed (a ticked box that ignores clicks read as broken, owner 2026-10-21);
+    -- picking a spell in the row ticks it
+    row:getChildById('enable'):setChecked(slot ~= nil and slot.enabled)
     row:getChildById('enable'):setEnabled(slot ~= nil)
   end
   p:recursiveGetChildById('enableAll'):setChecked(cfg.enabled)

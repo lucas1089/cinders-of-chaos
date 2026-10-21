@@ -159,6 +159,7 @@ ChaosSupportPanel < Panel
 
     Label
       id: statusLine
+      phantom: true
       anchors.bottom: buttons.top
       anchors.left: parent.left
       anchors.right: parent.right
