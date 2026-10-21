@@ -710,6 +710,72 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     the base archive, `patch` clean, no fuzz in the changed files); the three changed C++ files pass
     `g++ -std=c++17 -fsyntax-only` against the patched tree (the Linux side; the Windows branch was not compiled here,
     its argument quoting was checked on its own). Not built or run in a client.
+72. `0102` (C++ `src/framework/util/chaospack.h` (new), `src/framework/core/resourcemanager.{h,cpp}`, `src/main.cpp`;
+    `init.lua`): **the encrypted client pack** (see "Client packs" below). `mountEncryptedPack(key)` finds `chaos.pack`
+    beside the exe, decrypts it (AES-256-GCM, key from `chaosguard::builtInKey()` through HKDF-SHA256, no new secret)
+    into memory and mounts it through the existing PhysFS memory-archive path, so every module keeps reading through
+    `g_resources`. `main()` derives the key and mounts the pack before `getCompactName()` (which then reads `init.lua`
+    from the pack), wipes the key, and names the app `CindersOfChaos` so the per-user write dir (config, logs, the
+    updater tree) is named after it. `setup()` and `getCompactName()` use the mounted pack; a dev tree of loose files
+    (no `chaos.pack`) loads as before. `init.lua` `APP_NAME = "CindersOfChaos"`. A wrong key or a corrupt pack is
+    fatal. The format and HKDF context are byte-identical to `tools/pack_client.py`; `tools/chaospack_test.cpp`
+    (OpenSSL) checks a fixed vector, a round trip, wrong-key and tamper, run in CI. Needs a new client build (exe):
+    build 13, `min_package` 13. Applies after `0001`-`0101` (full chain on the base archive, `patch` clean, no fuzz
+    in the changed files; `chaospack.h` + `chaospack_test.cpp` compile and pass with `g++ -std=c++17 -lcrypto`). The
+    full client was **not** built or run here (no base tree / dat-spr and too little disk in the agent); the
+    `resourcemanager.cpp` / `main.cpp` edits were checked by inspection against the patched tree only.
+
+### Client packs (base patch 0102, `tools/pack_client.py`, 2026-10-21)
+The shipped client folder is just the exe and one encrypted pack, `chaos.pack`, with the per-user write directory for
+everything writable. Nothing in the folder opens in a text or sprite editor.
+
+- **`chaos.pack`** is a deterministic, store-only ZIP of the whole client tree (`init.lua`, `data/` including the
+  10.98 `Tibia.dat`/`Tibia.spr`, `layouts/`, `modules/`, `mods/`) encrypted as one blob with **AES-256-GCM** (OpenSSL,
+  already linked). Header: magic `CHPK`, version, flags (dev-key bit), a 12-byte nonce and the plaintext length; the
+  header is the GCM additional data, so any tamper fails the tag. The 32-byte key is **HKDF-SHA256** of the client
+  guard build secret (`CHAOS_CLIENT_KEY`, base patch 0035) with a fixed salt and `info` label, so there is no new
+  secret and no new GitHub secret; a build without the secret uses the public development key and the pack is marked
+  dev (a production server refuses such a client anyway). The nonce is `HMAC-SHA256(nonce-key, plaintext)`, so the
+  same tree and key always give the same bytes (the updater sees no spurious change). **Honest note:** this deters
+  casual copying; it does not stop a determined reverse engineer, because the key is in the binary (obfuscated the way
+  `chaosguard_key.h` is, base patch 0035).
+- **The engine** reads the pack through the existing resource layer (base patch 0102): it decrypts to memory and
+  PhysFS-mounts it, so modules keep calling `g_resources` unchanged. Lua is **not** precompiled to bytecode: the whole
+  pack is encrypted, so the source inside it is not readable without the key, and keeping source avoids the LuaJIT /
+  Lua 5.3 bytecode-format split (the engine loads source; bytecode would have to match the build's interpreter).
+- **Writable files stay outside the pack**, in the per-user write dir (`%APPDATA%/CindersOfChaos/CindersOfChaos` on
+  Windows, `~/.local/share/CindersOfChaos` on Linux): `config.otml`, `CindersOfChaos.log`, screenshots, and the
+  updater's `chaos_update/` tree (state, hash cache, downloaded files). `pack_client.py` never packs `config.otml`,
+  `chaos_update/`, `*.log`, `*.bak` or the other writable suffixes.
+- **Updater.** The signed updater is unchanged in shape (`MANIFEST.md` "Signed updater"): the manifest lists the same
+  logical files (built from the assembled tree, before packing), the client hashes the files it sees **through the
+  pack**, downloads only the changed ones into `chaos_update/files/` in the write dir, and that folder is mounted in
+  front of the pack. So an update never re-downloads the whole 900 MB pack; a new full pack ships only with a new exe.
+  Changed files land in the write-dir overlay as the updater writes them today (plaintext there); encrypting the
+  overlay entries at rest is a possible follow-up (see "Still open"). `min_package` 13 keeps build-12 and older
+  (loose-file) clients from applying a build-13 manifest: they are told a new download is required.
+- **Removed from the client folder** (proved safe before removal):
+  - `BUILD_INFO.txt`: build metadata. The build number is already in the exe (`CHAOS_CLIENT_BUILD`) and
+    `Services.update.package`; the commit is in the run's release notes. `grep -rn BUILD_INFO client/overlay` and the
+    module Lua find no reader. Dropped in `windows-package.yml` for all three client folders.
+  - `README.txt` (the Windows `client-README.txt` / Linux `tools/linux/client/README.txt`): player text, not loaded
+    by any module. Dropped from the client folders (kept in the full "whole game" zip's top level, which is a local
+    dev bundle).
+  - `otclientv8.log` and other logs never shipped once the client runs from the pack: logs go to the write dir.
+  - The base client's dev trees were **already** cherry-picked out of the package (the client folder only ever took
+    `init.lua`, `data/`, `modules/`, `mods/`, `layouts/`), and `pack_client.py`'s pack roots keep it that way:
+    `android/`, `android_libs.7z`, `browser/`, `create_android_assets.ps1`, `run_android.bat`, `old_prof.lua`,
+    `old_prof_5c.lua`, the base `readme.md` / `CREDITS.md`, `vc23/`, the base `.github/` and `tools/` never reach the
+    pack. `assemble_client.sh` still removes the unused imported modules (`game_stash`, `game_battlepass`,
+    `game_task_hunt`, `game_bot`, the native splash and client emblems).
+  - **Linux necessities kept beside the binary** (not everything can be one pack there): `run-client.sh` (sets
+    `ALSOFT_DRIVERS`/software GL and launches) and `lib/` (the bundled non-system libraries, RUNPATH `$ORIGIN/lib`).
+    Windows keeps only the exe's own DLLs beside `Chaos.exe`.
+- **Owner steps for build 13** (the first packed exe): run `windows-package.yml` with `client_build = 13` and the
+  usual secrets (`CHAOS_CLIENT_KEY` rotated now matches the live server; the pack is keyed from it). Publish its client zip
+  as an update with `make_update_manifest.py build ... --min-package 13` so build-12 and older clients are told to
+  download build 13 (`docs/LAUNCH.md` "Client updates"). A dev build (`allow_dev_key`) produces a working, clearly-dev
+  pack keyed from the public development key.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
@@ -777,10 +843,21 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   `client_terminal` is a stand-in with the same name and the functions its callers use (corelib `keybinds.lua`
   `bindHotkey`, `client_autoreloadmodule`), all empty; no `toggle`, so the top bar entry hides itself. Copied over the
   base files, so an installed client gets it through the updater too. Logs still go to the log file. Test
-  `terminal_test.lua`. The module files themselves are still plain text (the encrypted pack is the next step).
+  `terminal_test.lua`. The module files ship inside the encrypted pack (base patch 0102, "Client packs").
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 
 ## Still open
 - Whether the client's engine parses the 10.98 `Tibia.dat` and the server login packet. Its own profiles are 8.60 and 15.24, so 10.98 is untested ground. The login sends OTClient version 310, which the server accepts (it needs at least 254).
 - Native modules built for another protocol may expect packets the server does not send; read the terminal log on first run.
 - You supply `Tibia.spr`/`Tibia.dat` for 10.98 (not in the repo).
+- **Client pack, build 13 not built or run** (base patch 0102, "Client packs"): the crypto core is verified
+  cross-language (`chaospack_test.cpp` vs `pack_client.py`, both in CI) and the patch applies clean after `0001`-`0101`,
+  but the full client was not compiled or started here (no base tree / dat-spr, little disk in the agent). Before the
+  real build-13 release, build the patched client on Linux (`LINUX.md`) and run the `windows-package.yml` start test to
+  confirm it mounts `chaos.pack` and reaches the login screen.
+- **Encrypted updater overlay (follow-up).** The updater downloads changed files into `chaos_update/files/` in the write
+  dir as plaintext today; the main pack is encrypted but the overlay is not. Encrypting the overlay entries at rest (the
+  engine already decrypts ENC-prefixed files transparently in `readFileContents`, so `updater_core.lua` would hash the
+  plaintext and encrypt on write) is a clean next step; left out of build 13 to keep the critical-path change small.
+- **Writable-value clamping (follow-up).** Validating/clamping out-of-range `config.otml` and per-character helper
+  values on load was not added; it is independent of the pack and can land separately.

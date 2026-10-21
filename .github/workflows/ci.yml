@@ -134,6 +134,9 @@ jobs:
       - name: Client updater tools (manifest builder, signer, path rules)
         run: python3 -I client/tools/make_update_manifest_test.py
 
+      - name: Client pack tool (round trip, exclusions, determinism, wrong key, tamper)
+        run: python3 -I client/tools/pack_client_test.py
+
       - name: Sprite shard tool (split, verify, join on small synthetic .spr files)
         run: python3 -I client/tools/sprites/spr_shards_test.py
 
@@ -363,6 +366,15 @@ jobs:
           patch -p1 -d "$d" < "$d/h.patch"
           g++ -std=c++17 -I "$d/src/client" client/tools/chaosguard_test.cpp -lcrypto -o "$d/chaosguard_test"
           "$d/chaosguard_test"
+
+      - name: Client pack vectors (C++, OpenSSL; header from base patch 0102, same bytes as pack_client.py)
+        run: |
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -o "$d/chaospack_test"
+          "$d/chaospack_test"
 
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |

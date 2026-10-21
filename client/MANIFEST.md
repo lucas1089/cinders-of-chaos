@@ -2570,6 +2570,17 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   (a client built before 0048 ignores the shards and would draw a new dat with its old spr). It warns when it publishes
   a single `Tibia.spr` with no shard set: a client whose install has an index keeps loading its shards.
 
+## Client pack (new, base patch 0102, `tools/pack_client.py`)
+
+From build 13 the client ships the whole tree (`init.lua`, `data/` with the dat/spr, `layouts/`, `modules/`, `mods/`)
+in one encrypted file, `chaos.pack`, beside the exe; nothing in the shipped folder opens in a text or sprite editor.
+`tools/pack_client.py build GAME_DIR OUT.pack` makes it (deterministic store-only ZIP, AES-256-GCM, key from the
+client guard secret via HKDF-SHA256; `unpack` / `verify` too), the engine decrypts and mounts it (base patch 0102),
+and `tools/pack_client_test.py` + `tools/chaospack_test.cpp` check the format both ways in CI. Full description,
+removed-files list and owner steps: `client/BASE.md` "Client packs". The signed updater below is unchanged in shape:
+it still lists and downloads individual logical files into the write-dir overlay, so an update never re-downloads the
+whole pack.
+
 ## Signed updater (new, `client_chaos_updater`, base patches 0031 and 0101)
 
 Before login the client fetches a signed manifest from the website, compares SHA-256 hashes, downloads what changed
