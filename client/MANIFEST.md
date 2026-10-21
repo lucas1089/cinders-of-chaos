@@ -2305,6 +2305,50 @@ md5s and manifests.
 - A client on pair 33 or older draws nothing for 38608-38611: ship the new pair with the server change.
 - Previews (before, after, before as the grey shader drew it): scratchpad only. Not run in a client.
 
+## Jewelry looks (pair 35: items 38612-38640, `tools/sprites/gen_jewelry_art.py`, `art_import/jewelry.*`; built 2026-10-22, NOT on windows-assets yet)
+Owner request 2026-10-22: "use sprites de rings e necklaces dos nossos assets". The 29 loot bases of rings and
+necklaces (server `data/lib/chaos_jewelry.lua` `J.bases`; server/README.md "Rings and necklaces as gear") get their
+own icons.
+- **Source.** The free fantasy icon set of docs/CREDITS.md (internal label `set35 icons`): its 32 x 32 full sheet
+  (512 x 4384, 16 x 137 cells), Drive file id and md5 in `gen_jewelry_art.py` `SOURCE`. The sheet is its 16 px art
+  doubled pixel for pixel; `build` checks that for each pick, takes the 16 px cell and doubles it with Scale2x
+  (`pack30lib.scale2x`, as the importer does for 16 px art). No colour changed, nothing redrawn. Imported art stays as
+  it is (docs/SPRITE_STYLE.md), so `style_check.py` is not run on it (4 to 9 colours a tile). Each pick is named by
+  sheet row and column in `PICKS` and in `art_import/jewelry_sources.csv`.
+- Things file `art_import/jewelry.csv`: client 38612-38621 the ten rings (life, power, sword, axe, club, healing,
+  death, prismatic, temptation, butterfly), 38622-38640 the 19 necklaces (bronze to cobra), in `J.bases` order. Flags
+  `copy:<stock client id>` of each base (pickupable, moveable and the rest as before; one phase, so not animated);
+  mode replace with the server id. `gen_jewelry_art.py build --check` (CI) checks the things file, the atlas size and
+  the order, server ids, looks and stock ids against `chaos_jewelry.lua`; with `--src SHEET` it also rebuilds the
+  atlas and compares it pixel for pixel.
+- The server points the 29 items.otb nodes at 38612-38640 (`server/tools/patch_base_jewelry.py`, install step
+  `jewelry`; FLAG_ANIMATION cleared on the lightning pendant 7889). `--stock-looks` puts the stock client ids back.
+
+```
+python3 -I client/tools/sprites/gen_jewelry_art.py build --src SHEET [--preview DIR]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair34/Tibia.dat --ours-spr pair34/Tibia.spr --out-dir pair35 \
+    --things client/tools/sprites/art_import/jewelry.csv --first-item 38612 --expect-items 38611 --manifest-out jewelry_manifest.csv
+python3 -I client/tools/sprites/check_pair.py pair35/Tibia.dat pair35/Tibia.spr --old pair34/Tibia.dat pair34/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair35/Tibia.dat pair35/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair35/Tibia.dat pair35/Tibia.spr
+```
+Input pair 34 (windows-assets 584dab51, archive sha256 8337f0877f164208cc938409beb6b8ea4e3d6acea8efc38e40502f6242ee82b5,
+dat 11babc2e0f6d93fe1c1cc40c75787f18, spr c0bfd875474ccc6816ee6cecb13ef469).
+Output **pair 35**: dat 58a5433bb0eabd77034e99de50274390 (6,647,514 bytes), spr b0bf4694dfa3e9cea99c7ca4a98582e2
+(867,504,488 bytes, 933,415 sprites: 29 appended), 38,640 items, 2,667 outfits, 854 effects, 188 missiles. Built twice:
+identical md5s and manifests.
+- `check_pair.py --old`: append-only, `--new-only` 0 errors, 0 warnings; full check 0 errors, 124 warnings (those of
+  pair 34).
+- `outfit_anchors.lua` and `info_lifts.lua`: on pair 35 only their dat md5 changes (no new creature; both `--check`
+  pass on pair 35 after the two commands above). They stay on the pair 34 md5 in git for now, because CI checks them
+  against the pair on windows-assets. Regenerate both in the change that publishes pair 35.
+- `things-1098.tar.xz` (the pair 34 recipe, xz 5.4.5): 94,843,556 bytes, sha256
+  a879b8bb852fe0f92efe524a4bf262aec8bea3ad501c647e4a2bc3743a263b11; unpacks to the md5s above. **Not pushed to
+  windows-assets**: publishing waits for the owner's go-ahead. Until then windows-package.yml still builds pair 34.
+- A client on pair 34 or older draws nothing for 38612-38640: ship pair 35 with the server step, or install the server
+  with `patch_base_jewelry.py DATA_DIR --stock-looks`.
+- Preview: scratchpad only. Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map

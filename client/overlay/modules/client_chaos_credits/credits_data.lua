@@ -57,7 +57,7 @@ ChaosCreditsData = {
       { name = "32x32 Shades Effect", author = "free asset pack", licence = "free to use" },
       { name = "Shader Cylinder 64x96", author = "free asset pack", licence = "free to use" },
       { name = "Free Part 1-36", author = "free asset pack", licence = "free to use" },
-      { name = "Raven Fantasy Icons", author = "free asset pack", licence = "free to use" },
+      { name = "Raven Fantasy Icons", author = "free asset pack", licence = "free to use", use = "ring and necklace looks" },
       { name = "Future Millennium font", author = "free asset pack", licence = "free to use" },
       { name = "Gem set", author = "free asset pack", licence = "free to use", use = "gem looks in five tiers" },
       { name = "Text effects set", author = "free asset pack", licence = "free to use", use = "status words over creatures" },

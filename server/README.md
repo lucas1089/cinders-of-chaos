@@ -11086,6 +11086,93 @@ id in Lua and XML, prizes, rewards, both hooks with CRLF kept, descriptions repl
 level on a catalyst. Run on a copy of the base data: 21 files changed, every patched Lua file parses, a second run
 changes nothing. Not run on a live server.
 
+## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
+
+Owner request 2026-10-22: "faça rings e necklaces iguais a equips normais. pra equipar, com affixo e suffixo" and
+"distribua esses rings e necklaces na loot pool também".
+
+**What the base had.** Most rings change id when worn (`transformEquipTo`: sword ring 2207 -> 2210 "sword fighting +4")
+and the worn id runs out (`duration`, `decayTo` 0); most amulets have `charges` and vanish at 0. The engine keeps the
+same item object through a transform (custom attributes survive), but a rolled copy still vanished when its time or
+charges ran out, and the unworn id had no stats, so `L.isGearId` never rolled a rarity on it. Several unworn rings had
+an Equip movement and no DeEquip (the worn id took the stats off).
+
+**Install step `jewelry`** (`tools/patch_base_jewelry.py DATA_DIR [--dry-run] [--check] [--stock-looks]`, install_all.py after
+`badges`, idempotent). For every `slotType` ring or necklace of `data/items/items.xml` that is not a consumable:
+
+1. an unworn id whose worn id has stats gets those stats (the worn values win), loses `transformEquipTo`,
+   `stopduration` and `showduration`, and gets `showattributes` 1;
+2. a worn id (`duration`, `decayTo` 0, `transformDeEquipTo`) loses `duration`, `decayTo` and `showduration`, so a copy
+   worn before the install keeps working and turns back when taken off;
+3. `charges` and `showcharges` go.
+
+`data/movements/movements.xml`: each unworn id of step 1 gets a DeEquip entry right after its Equip entry (fromid/toid
+ranges count; both entries are added when it had none). On the base: 15 unworn ids merged, 15 worn ids without
+duration, 15 without charges, 9 entries added (2166, 2168, 2207, 2208, 2209, 2214, 6300, 18408; Equip and DeEquip for
+24717, whose 3% physical absorb never applied). No engine patch.
+
+**Consumables** (`J.consumable`) keep the base rules and never carry a rarity: might ring, stealth, energy, time and
+dwarven rings (both ids), amulet of loss, stone skin amulet and the four 5-charge elemental amulets (10218-10221). Worn
+for ever they would break the game (invisibility, magic shield, haste, 80% absorbs, death protection).
+`ChaosCrafting.isGear` and `L.isGearId` refuse them; `L.stripStackableRarity` takes off a rarity the stock roll gave.
+
+**Gear gates.** `L.isGearId` (loot.lua `relevantType`) also counts a ring or necklace whose only stat is regeneration
+or speed (life ring, ring of healing). The rest already treated the ring and necklace slots as kind `jewel`
+(`chaos_item_mods.lua` `M.kindOfType`): the tooltip, crafting, gems, the market category, the stash, the gamble, the
+loot filter and autoloot, the item codec and the Auto Seller.
+
+**Old copies.** A ring or necklace made before the install may still carry `charges` or `duration` as item
+attributes. `ChaosJewelry.normalize` removes them when the item type has none: on every move (EventCallback
+`onItemMoved`, index 9, before `base_rarity.lua` and `item_mods.lua`) and at login (`ChaosJewelryLogin`, every slot).
+
+**Affix pool.** Kind `jewel` of `chaos_item_mods.lua`, unchanged. Prefixes: boss damage, physical and elemental
+penetration, damage over time, engine skills, critical, energy shield (flat and %). Suffixes: life and mana on kill and
+on hit, regeneration, experience, gold, item and rarity find, healing, goblin chance, cooldown reduction, mana cost,
+absorbs, leech, profession, energy shield recharge. Weapon-only mods (attack speed, execute, added element, ailment
+chances) are not in it. The count per rarity (1-6), the prefix and suffix sides, the tiers by item level and the caps
+are the same as every other slot, so a ring or necklace has one slot's power: two jewel slots out of ten, as in the
+base.
+
+**Loot** (`chaos/jewelry.lua`, startup GlobalEvent `ChaosJewelryLoot`). Every hunt monster and boss of
+`bounty_pool.lua` gets loot rows by its hunting level (`ChaosPaceCore.entryLevel`, else 2x the pool level), added with
+`MonsterType:addLoot` like `gear_sets.lua`; no monster file changes. The loot layer rolls rarity, item level, prefixes
+and suffixes as for any gear drop. Numbers in `J.config`:
+
+| | per kill (of 100000), each kind | split |
+|---|---|---|
+| hunt monster | 75 (0.075%) | over the eligible bases, at least 5 a row |
+| bounty boss | 1900 (1.9%) | same |
+
+75 is one slot's share of the equipment sets' 600 (eight slots); 1900 is 15000 / 8. A base is eligible when its level is
+within the monster's level -200 / +50; above every window the three highest bases drop. On the real pool: 709 hunt
+monsters, 30 bosses, 11549 rows. The stock loot tables keep their own rings and amulets (band 100: 2.5% ring, 1% amulet
+per kill; band 800: 13.5% / 13.7%).
+
+| hunting level | rings | necklaces |
+|---|---|---|
+| 1 | life, power, sword, axe, club, ring of healing | bronze, protection, strange talisman, silver, dragon, elven, garlic |
+| 100 | the above, death, prismatic, temptation | the above, terra, glacier, lightning, magma, onyx, deep, gill, prismatic |
+| 300 | prismatic, temptation, butterfly | deep, gill, prismatic, exotic, foxtail, rainbow, cobra |
+| 500+ | prismatic, temptation, butterfly | foxtail, rainbow, cobra |
+
+Bases stop at level 250; item level and rarity carry the power beyond.
+
+**Looks** (`items.otb`, same step). Owner request 2026-10-22: "use sprites de rings e necklaces dos nossos assets". The
+29 loot bases show their own icons of pair 35, client ids 38612-38640 in `J.bases` order (`look`; cut from a free icon
+set of docs/CREDITS.md by `client/tools/sprites/gen_jewelry_art.py`; client/MANIFEST.md "Jewelry looks (pair 35)").
+The step sets each base node's client id to its `look` and clears `FLAG_ANIMATION` (the stock lightning pendant is
+animated; the own looks have one phase). Server ids, flags and the other attributes stay. It refuses, writing nothing,
+when a base node is missing, has a client id other than `look` or `stock`, or when another node already uses the look.
+`items.otb.bak` keeps the original once. A client still on pair 34 has no thing 38612+ and draws nothing there: ship
+pair 35 with the server, or run `python3 -I tools/patch_base_jewelry.py DATA_DIR --stock-looks`, which puts the stock
+client ids (`stock`) and the animation flag back (byte for byte the base file; checked on the real items.otb). Worn
+ids of old copies (2210 and the like) keep the stock look until taken off.
+
+**Side effects and open points.** NPC-sold life rings and the other merged rings are permanent plain gear now. Fangs of
+the Ninth Circle (24790) is permanent. Open: the unique Ring of the Last Ember uses the worn time ring 2206 (a
+consumable, `duration` 600), so it decays when worn; Heart of Cinders (10218) and Heartbleed Pendant (10221) use
+5-charge amulets, vanish after five absorbs and inherit the 60% / 40% absorbs. They need new bases (`chaos_uniques`).
+
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 
 Our own player market (auction house) for **gold** and **Chaos Coins**; the stock 10.98 market is switched off for

@@ -25,7 +25,11 @@ local TYPES = {
 	[27849] = {name = "moon amplifier catalyst [1]", slot = 48, abilities = "zero"}, -- hands only, no stats: not gear
 	[29001] = {name = "lucky charm", slot = 48, abilities = {skills = {0, 0, 0, 2}}}, -- hands only, a skill: gear
 	[2214] = {name = "ring of healing", slot = 256 + 48, abilities = "zero"},          -- a ring slot: gear
-	[27811] = {name = "raging moon badge", slot = 4096 + 8192 + 48, abilities = "zero"} -- the base's badge slot: gear
+	[27811] = {name = "raging moon badge", slot = 4096 + 8192 + 48, abilities = "zero"}, -- the base's badge slot: gear
+	-- rings and necklaces as gear (data/lib/chaos_jewelry.lua): the consumables are not
+	[2197] = {name = "stone skin amulet", slot = 2 + 48, abilities = "zero"},
+	[2165] = {name = "stealth ring", slot = 256 + 48, abilities = "zero"},
+	[2198] = {name = "elven amulet", slot = 2 + 48, abilities = "zero"}
 }
 local ZERO = {skills = {0, 0, 0, 0}, absorbPercent = {0, 0}, specialSkills = {0, 0}, stats = {0}}
 
@@ -108,6 +112,9 @@ local C = ChaosCrafting
 eq(C.isGear(newItem(27849)), false, "a catalyst is not gear")
 eq(C.isGear(newItem(29001)), true, "a hand item with a skill is gear")
 eq(C.isGear(newItem(2214)), true, "a ring is gear")
+eq(C.isGear(newItem(2198)), true, "an amulet is gear")
+eq(C.isGear(newItem(2197)), false, "a consumable amulet (stone skin) is not gear")
+eq(C.isGear(newItem(2165)), false, "a consumable ring (stealth) is not gear")
 eq(C.isGear(newItem(27811)), true, "a badge is gear")
 eq(C.isGear(newItem(2400)), true, "a weapon is gear")
 eq(C.isGear(newItem(2160)), false, "a stack is not")

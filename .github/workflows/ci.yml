@@ -99,6 +99,7 @@ jobs:
           python3 -I server/tools/monster_spells_test.py  # retired spells a monster names stay, monster-only
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # retired badges: out of loot, rewards and prizes; hooks; descriptions
+          python3 -I server/tools/patch_base_jewelry_test.py  # rings and necklaces: permanent, stats on the unworn id, DeEquip
 
       - name: Client spell data is up to date with the server spells
         run: |
@@ -569,6 +570,8 @@ jobs:
           # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
           # match the generator, and each look passes style_check against its theme
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
+          # the jewelry looks of pair 35 (icon set picks): things file, atlas size and chaos_jewelry.lua bases agree
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_jewelry_art.py build --check
           # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_owner_art.py build --check
           python3 -I client/tools/sprites/gen_owner_art_test.py

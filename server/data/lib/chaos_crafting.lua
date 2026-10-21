@@ -47,6 +47,10 @@ if not ChaosItemMods then
 	dofile("data/lib/chaos_item_mods.lua")
 end
 local M = ChaosItemMods
+if not ChaosJewelry then
+	-- rings and necklaces as gear: the consumables that never are (server/README.md "Rings and necklaces as gear")
+	ChaosJewelry = dofile("data/lib/chaos_jewelry.lua")
+end
 if not ChaosGems then
 	dofile("data/lib/chaos_gems.lua") -- sockets and gems (server/README.md "Gems and sockets")
 end
@@ -460,6 +464,10 @@ function C.isGear(item)
 		return false
 	end
 	if C.config.excludedItems[item:getId()] then
+		return false
+	end
+	-- a consumable ring or amulet (stealth ring, stone skin amulet ...) keeps its charges or duration: no modifiers
+	if ChaosJewelry and ChaosJewelry.isConsumable(item:getId()) then
 		return false
 	end
 	local ok, flag = pcall(function() return it:isContainer() or it:isStackable() end)

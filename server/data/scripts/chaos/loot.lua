@@ -28,6 +28,10 @@ if not ChaosThrowables then
 	dofile("data/lib/chaos_throwables.lua")
 end
 
+if not ChaosJewelry then
+	ChaosJewelry = dofile("data/lib/chaos_jewelry.lua") -- the consumable rings and amulets (never gear)
+end
+
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
@@ -235,6 +239,15 @@ local function relevantType(itType)
 				end
 			end
 		end
+		-- a ring or necklace whose stat is regeneration or speed (life ring, ring of healing, beetle necklace): gear like
+		-- any other jewelry (server/README.md "Rings and necklaces as gear")
+		if ChaosJewelry and ChaosJewelry.isJewelType(itType) then
+			for _, key in ipairs({"healthGain", "manaGain", "speed"}) do
+				if (tonumber(abilities[key]) or 0) > 0 then
+					return true
+				end
+			end
+		end
 	end
 	return false
 end
@@ -246,6 +259,9 @@ function L.isGearId(id)
 		return false
 	end
 	if L.protectedIds and L.protectedIds[id] then
+		return false
+	end
+	if ChaosJewelry and ChaosJewelry.isConsumable(id) then
 		return false
 	end
 	if type(ItemType) ~= "function" and type(ItemType) ~= "table" then
@@ -280,11 +296,13 @@ end
 -- stack one (a royal spear passed its gear test), and the engine would roll stats on the stack: the attribute goes
 -- before that pass. Returns how many items lost it. Every Chaos gear gate (isGearId, ChaosCrafting.isGear) already
 -- refuses a stackable, so nothing forges it afterwards: that is why such a drop was always without a rarity.
+-- A consumable ring or amulet (data/lib/chaos_jewelry.lua: stealth ring, stone skin amulet ...) loses it the same way:
+-- the stock roll gives one to any item with stats, and the gear gates refuse it too (2026-10-22).
 function L.stripStackableRarity(items)
 	local n = 0
 	for _, item in ipairs(items) do
 		local okR, r = pcall(function() return item:getCustomAttribute("rarity") end)
-		if okR and r ~= nil and L.isStackableId(item:getId()) then
+		if okR and r ~= nil and (L.isStackableId(item:getId()) or (ChaosJewelry and ChaosJewelry.isConsumable(item:getId()))) then
 			pcall(function() item:removeCustomAttribute("rarity") end)
 			n = n + 1
 		end

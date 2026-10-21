@@ -173,6 +173,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                deck or badge slot): out of every boss loot, task reward and roulette prize; the catalyst action
                explains and keeps the item, Player:onMoveItem refuses a badge into slot 12 or 13, the items.xml
                descriptions say the Loot Buyer buys them (README "Retired badges"; after itemnames)
+  jewelry      tools/patch_base_jewelry.py       rings and necklaces are permanent equipment: the worn id's stats on the
+               unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
+               (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
+               show their own looks of pair 35, client 38612-38640 (items.otb; run the tool by hand with
+               --stock-looks for a client on pair 34) (README "Rings and necklaces as gear"; after archery and
+               badges)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")
@@ -822,6 +828,14 @@ def step_badges(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # retired badges: after itemnames (loot by id or name)
+
+
+def step_jewelry(server, data, ctx):
+    args = [tool('patch_base_jewelry.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_jewelry.py'))
+
+
+STEPS.insert(STEPS.index('badges') + 1, 'jewelry')  # rings and necklaces as gear: after archery (might ring key)
 
 
 def step_migrations(server, data, ctx):
