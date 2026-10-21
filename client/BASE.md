@@ -772,6 +772,12 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   223). Its callers (`game_sidebuttons`, `game_trackers`) check that the module exists.
 - Prey: no Chaos equivalent and no top menu entry; base patch `0058` drops its hotkey (`game_prey` stays loaded, inert).
 - Login background: the client's own `client_background` module stays (other modules call its functions); the overlay replaces only its images `data/images/title.png` (the login background) and `data/images/ui/logo.png` (the Cinders of Chaos logo). The overlay module `client_chaos_login` lays the login screen out on top of both stock modules (see `MANIFEST.md`, "Login screen"); `title.png` and the logo are made by `tools/gen_login_art.py` from the login artwork in `tools/art_src/`.
+- **Lua console removed** (`client_terminal`, 2026-10-21): the base console (Ctrl+T, top bar Developer > Console) ran any
+  Lua a player typed, so one line was a bot (walk, attack, cast, loot in a loop) past the removed vBot. The overlay's
+  `client_terminal` is a stand-in with the same name and the functions its callers use (corelib `keybinds.lua`
+  `bindHotkey`, `client_autoreloadmodule`), all empty; no `toggle`, so the top bar entry hides itself. Copied over the
+  base files, so an installed client gets it through the updater too. Logs still go to the log file. Test
+  `terminal_test.lua`. The module files themselves are still plain text (the encrypted pack is the next step).
 - `game_mainpanel`, `game_healthcircle`, `game_realminimap` and `game_sidebars` stay the client's own (the first two have alternates in `alternates/`).
 
 ## Still open
