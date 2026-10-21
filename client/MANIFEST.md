@@ -2583,6 +2583,17 @@ removed-files list and owner steps: `client/BASE.md` "Client packs". The signed 
 it still lists and downloads individual logical files into the write-dir overlay, so an update never re-downloads the
 whole pack.
 
+## Slim client (new, `tools/slim_client.py`, `tools/slim_prune.txt`, 2026-10-21)
+
+`assemble_client.sh` prunes the files of the assembled tree that nothing uses before the pack is built: the base
+battle pass and ranked queue art, the base world minimaps (`data/default.otmm`, `data/minimap/minimap.otmm`), unused
+boss bar and shader pictures, `hunting_places.json`, six base modules that are never loaded (`game_tutorial`,
+`dev_otui`, `game_realcreaturebutton`, `game_healthbars`, `game_item_action`, `game_prey_hunting`) and the unit tests
+and notes. 258.0 MB -> 84.6 MB without the sprite pair (173.4 MB, 402 files). Then `slim_client.py check` makes
+every static file reference of the tree resolve (or be one of `tools/slim_known_missing.txt`), so the assembly, and
+with it both client jobs of `windows-package.yml`, fails when a prune rule breaks a picture. Test:
+`tools/slim_client_test.py` (CI). Groups, sizes, reasons: `client/BASE.md` "Slim client".
+
 ## Signed updater (new, `client_chaos_updater`, base patches 0031, 0101 and 0103)
 
 Before login the client fetches a signed manifest from the website, compares SHA-256 hashes, downloads what changed

@@ -877,6 +877,40 @@ moves any of these ids (only `0015` touches the tab bar, before the module exist
 not open" was not an id: the module imported its styles at load (autoload priority 100), before `client_styles`
 defines `Panel`, so only the tab style existed and the panel was never made (`MANIFEST.md` "Helper Support spells").
 
+### Slim client: unused files pruned at assembly (`tools/slim_client.py`, 2026-10-21)
+
+The base tree carries art and data of features this client does not have. `assemble_client.sh` runs
+`tools/slim_client.py prune` after the overlay is copied: the rules in `tools/slim_prune.txt` (`- GLOB` removes,
+`+ GLOB` keeps, a reason per group) delete the files, never the base tree itself. Measured on the assembled tree
+(base + patches 0001-0104 + overlay, without the sprite pair): `init.lua`, `data/`, `layouts/`, `modules/`, `mods/`
+went from **258.0 MB (6746 files) to 84.6 MB (6344 files)**, so chaos.pack is about 173 MB smaller.
+
+| Removed | Size | Why it is unused |
+|---|---|---|
+| `data/images/game/battlepass/` (all but `battlepass-hourglass`, `mainIcon1`, `bright`) | 76.4 MB | art of the base battle pass window, deleted above; `game_interface` and `game_sidebuttons` name the three kept pictures |
+| `data/images/game/ranked-queue/` (all but `game-hud`, `cast/icon-close`, `cast/arrow-left`, `cast/arrow-right`, `ranks/rank-1`) | 71.3 MB | ranked queue backgrounds, maps and banners: no module has a ranked queue; `game_interface.otui` names the five kept |
+| `data/default.otmm`, `data/minimap/minimap.otmm` | 13.8 MB | the base world's minimaps: `game_minimap` loads `/minimap.otmm` from the write dir (built while walking or downloaded from `Services.minimap`); no file names these two. `data/minimap/regions/` stays (`gamelib/core/regions.lua`) |
+| `data/images/game/game_boss_health_bar/` | 4.2 MB | no file names it; `game_boss_health` uses `/images/bars/` |
+| modules `game_tutorial`, `dev_otui`, `game_realcreaturebutton`; mods `game_healthbars`, `game_item_action`, `game_prey_hunting` | 3.3 MB | never loaded: no `autoload`, and no otmod list, load-later, `ensureModuleLoaded` or `getModule` names them (`game_tutorial` also needs client version 1520) |
+| `data/images/shaders/` `brazil`, `sweden`, `sand_fog`, `stars`, `gold`, `red`, `red-monochrome` | 2.3 MB | `game_shaders/shaders.lua` registers every shader texture by name; these are not among them |
+| `modules/**/*_test.lua`, `mods/**/*_test.lua`, `*.md` in modules and mods | 1.1 MB | unit tests and notes run by CI from the repo, never by the client |
+| `data/json/hunting_places.json` | 1.0 MB | no module reads it |
+
+**The check.** `tools/slim_client.py check <game>` (also run by `assemble_client.sh`, so both client jobs of
+`windows-package.yml` fail on it) collects every static file reference of the tree: OTUI/OTML/otfont `image-source`,
+`icon`, `source`, `texture` values, Lua string literals that are a whole resource path, otmod `scripts` and
+`dofile`/`importStyle`/`loadUI`/`displayUI` names. Each resolves as `ResourceManager::resolvePath` does (relative to
+the file, then `/mods`, `/data`, `/modules`, the usual extensions). It fails on a reference that resolves to nothing
+unless it is listed in `tools/slim_known_missing.txt` (39 lines: computed prefixes the parser reads as a path, and files
+the tree never had, among them our `game_passivetree` class portraits `/images/passivetree/classes/*` and
+`dropdown_menu`, and `game_nameshaders` `/images/ui/lock` and `/images/ui/check`), and on a reference to a path a prune
+rule removes. Computed paths (`'/images/x/' .. name`) are not checked, so a folder addressed that way is never pruned.
+`slim_client_test.py` (CI) tests the tool and that no overlay file is pruned but tests and notes.
+
+Not pruned on purpose (small, or reached by computed names): about 8 MB of scattered pictures no file names
+literally (`data/images/game/tutorial/` hints read by `game_hints`, `game_proficiency/images/icons-N`, healthcircle and
+arc variants, cyclopedia icons). Fonts stay: `client_styles` imports every font of `data/fonts/`.
+
 ### Names check of the assembled client
 
 `check_names.py` skips `base-patches/` and the base tree is not in git, so names from the base client reach the game
@@ -889,7 +923,7 @@ It reads what the player sees in `init.lua`, `modules/`, `mods/`, `data/` and `l
 space, a URL or given to `tr()`; OTUI/OTML text, tooltip, placeholder, title and description values and URLs; `.otmod`
 name and description; JSON keys and values) against the same name list as the repo check. Names added from
 2026-10-16 on are stored only as hashes (`DENY_HASHES`, see the script's docstring). Skipped on purpose:
-`data/json/hunting_places.json` (no module reads it) and one creature name of the helper's `spelldata.json`
+`data/json/hunting_places.json` (no module reads it; pruned at assembly since 2026-10-21, "Slim client") and one creature name of the helper's `spelldata.json`
 (`CLIENT_ALLOW`). `windows-package.yml` runs it on the Linux client job's assembled tree, so a package with such a
 name fails. `assemble_client.sh` also deletes the base native splash picture and the browser emblem: both show the
 base client's name. Images are not read for baked-in text; check new base pictures by eye.

@@ -307,6 +307,8 @@ jobs:
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          # (it also prunes the unused files of client/tools/slim_prune.txt and fails when a file reference of the tree
+          #  no longer resolves: client/tools/slim_client.py check, client/BASE.md "Slim client")
           # No BUILD_INFO.txt in the client tree: the shipped client folder is just the exe and chaos.pack (client/BASE.md
           # "Client packs"). The build number is in the exe (CHAOS_CLIENT_BUILD) and Services.update.package; the commit
           # is in this run's release notes.
@@ -732,6 +734,8 @@ jobs:
           mv base/*/ base-client  # the archive holds one folder: the base client
           patch --version | head -n 1
           bash chaos/client/tools/assemble_client.sh "$GITHUB_WORKSPACE/base-client" "$GITHUB_WORKSPACE/game"
+          # (it also prunes the unused files of client/tools/slim_prune.txt and fails when a file reference of the tree
+          #  no longer resolves: client/tools/slim_client.py check, client/BASE.md "Slim client")
           rm -rf base base-client
 
       - name: No other server or client names in the assembled client (check_names.py --client, client/BASE.md)

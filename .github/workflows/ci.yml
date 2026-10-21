@@ -143,6 +143,9 @@ jobs:
       - name: Client pack tool (format 2: round trip, exclusions, compression, determinism, wrong key, tamper, zlib length checks)
         run: python3 -I client/tools/pack_client_test.py
 
+      - name: Slim client tool (prune rules, reference check; no overlay file pruned but tests and notes)
+        run: python3 -I client/tools/slim_client_test.py
+
       - name: Sprite shard tool (split, verify, join on small synthetic .spr files)
         run: python3 -I client/tools/sprites/spr_shards_test.py
 
