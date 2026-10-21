@@ -3161,6 +3161,7 @@ nothing on this server uses them: Cure Paralyze, Auto Sell Loot (Summon Quill), 
 Dust alarm, the bot HUD's Cavebot and Waypoint rows (the HUD's "Sell loot" text went with them). Auto Stamina and
 Magic Shield share the Tools tab's top box; Magic Shield shows only for a class with Ward of the Mind. The sidebar,
 Tools, Settings and Alarm Settings texts have pt-BR and fit their widgets in both languages. `client/BASE.md` 69c.
+Base patch `0106` puts the other tabs and sub-windows through `tr()` as well (264 pt-BR entries; `client/BASE.md` 69d).
 
 ### Helper potions in closed backpacks (`game_helperrotation/potiongate.lua`, base patch `0070`)
 The Everfull potions (server 32085 / 32086) have the client look of the Health / Mana Potion (266 / 268), so the

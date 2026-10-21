@@ -700,6 +700,22 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Applies after `0001`-`0104` (the `mods/game_helper/` hunks of the chain applied to the base archive, then
     `patch` clean, result identical to the edited tree); both Lua files parse in LuaJIT and Lua 5.3. Not seen in a
     client (no render here).
+69d. `0106` (Lua and OTUI `mods/game_helper/`): **the rest of the Helper in pt-BR** (owner request 2026-10-22). Every
+    text of the Healing, Shooter, Equipment and Timers tabs and of the presets, hotkey, spell picker, rule list, low
+    supply and condition windows goes through `tr()`: plain OTUI `text:` / `tooltip:` / `placeholder:`, Lua
+    `setText` / `setTooltip` / game messages, rule list summaries and confirm boxes. 264 new pt-BR entries in
+    `client_chaos_locale/pt_br.lua`. Hotkey names ("Enable/Disable Timer") and preset kinds ("shooter") stay the
+    English keys the code compares and are translated where shown. The HUD size, timer unit and equipment And / Or
+    lists show translated entries and keep the English value as the option's data, so saved settings do not change;
+    the old `setCurrentOption("AND")` never matched "And", so an Or rule opened for editing as And and now shows its
+    own logic. Measured in `verdana-11px-antialised`, every fixed-width text fits in English and pt-BR: Clear (52 px),
+    Advanced + (90 px, already clipped in English), Words (80 px) and Enable Equipment (160 px) are wider; some pt-BR
+    words are short ("Tirar", "Preso", "Medo", "sem PZ", "Alertar em PZ"). Left in English: the vocation names of the
+    never-shown vocation heal panels, spell names (Utamo Vita, Exura Sio), the monster and spell placeholders (names
+    typed as they are), HP / MP / symbols and the one-letter rule codes of the Shooter list (C:, MP:, COF, A+), debug
+    log lines. Applies after `0001`-`0105` (the `mods/game_helper/` hunks of the chain on the base archive, `patch`
+    clean, result identical to the edited tree); every changed Lua file parses in LuaJIT and Lua 5.3. Not seen in a
+    client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
