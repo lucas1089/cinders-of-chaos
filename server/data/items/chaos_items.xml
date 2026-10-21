@@ -461,8 +461,8 @@
 		<attribute key="description" value="Do not read it aloud. It will answer. (Requires level 100.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 10218: stock "bonfire amulet", client id 9301 -->
-	<item id="10218" article="a" name="Heart of Cinders">
+	<!-- 41641: own base "cinder heart amulet" (patch_base_jewelry.py: a copy of the stock bonfire amulet 10218, client id 9301, without its charges and absorbs) -->
+	<item id="41641" article="a" name="Heart of Cinders">
 		<attribute key="weight" value="700" />
 		<attribute key="slotType" value="necklace" />
 		<attribute key="absorbPercentFire" value="18" />
@@ -471,8 +471,8 @@
 		<attribute key="description" value="A coal that never cools, hung where a heart should be. (Requires level 80.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 10221: stock "shockwave amulet", client id 9304 -->
-	<item id="10221" article="a" name="Heartbleed Pendant">
+	<!-- 41642: own base "heartbleed pendant" (patch_base_jewelry.py: a copy of the stock shockwave amulet 10221, client id 9304, without its charges and absorbs) -->
+	<item id="41642" article="a" name="Heartbleed Pendant">
 		<attribute key="weight" value="700" />
 		<attribute key="slotType" value="necklace" />
 		<attribute key="lifeLeechChance" value="5" />
@@ -550,8 +550,8 @@
 		<attribute key="description" value="Put it on and the living stop being able to find you. (Requires level 120.)" />
 		<attribute key="showattributes" value="1" />
 	</item>
-	<!-- 2206: stock "time ring", client id 3090 -->
-	<item id="2206" article="a" name="Ring of the Last Ember">
+	<!-- 41640: own base "ember ring" (patch_base_jewelry.py: a copy of the stock worn time ring 2206, client id 3090, without its duration and haste) -->
+	<item id="41640" article="a" name="Ring of the Last Ember">
 		<attribute key="weight" value="90" />
 		<attribute key="slotType" value="ring" />
 		<attribute key="speed" value="20" />

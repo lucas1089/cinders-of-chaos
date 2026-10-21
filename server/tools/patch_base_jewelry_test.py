@@ -230,6 +230,8 @@ def base_nodes(skip=(), cid_of=None):
     # other nodes: a sword with an escaped client id (0x0BFD) and a group-2 container
     out.append(item_node(2400, 0x0BFD, 0x60))
     out.append(item_node(1987, 2853, 0x24, group=2))
+    # the stock nodes the unique bases copy (worn time ring, bonfire and shockwave amulets)
+    out += [item_node(2206, 3090, 0x60 | ANIM), item_node(10218, 9301, 0x60), item_node(10221, 9304, 0x60)]
     return out
 
 
@@ -259,6 +261,23 @@ try:
     ok(kids[2400][3] == 0x0BFD and kids[1987][3] == 2853 and kids[1987][4] == 2, 'other nodes unchanged')
     ok(item_node(2400, 0x0BFD, 0x60) in new, 'the escaped node byte for byte')
     ok(item_node(1987, 2853, 0x24, group=2) in new, 'the container node byte for byte')
+    # the unique bases: copies of the stock nodes with new server ids, appended
+    ok(kids[41640][3] == 3090 and kids[41640][5] == 0x60 | ANIM and kids[41640][6][2] == (0x2A, b'\x01\x02'),
+       'ember ring: the worn time ring node with server id 41640')
+    ok(kids[41641][3] == 9301 and kids[41642][3] == 9304, 'the two amulet bases')
+    ok(kids[2206][3] == 3090 and kids[10218][3] == 9301, 'the stock nodes stay')
+    ok(len(kids) == len(old) + 3, 'three nodes added')
+    text = open(ipath, encoding='latin-1').read()
+    b = block(text, 41640)
+    ok('name="ember ring"' in b and 'slotType" value="ring"' in b and 'speed" value="20"' in b
+       and 'healthGain" value="4"' in b and 'manaTicks" value="4000"' in b, 'ember ring type: the skipped stats')
+    ok('duration' not in b and 'decayTo' not in b and 'transform' not in b, 'ember ring: no duration, no transform')
+    b = block(text, 41641)
+    ok('maxHitPoints" value="200"' in b and 'absorb' not in b and 'charges' not in b,
+       'cinder heart: max health only (the absorbs are item attributes), no charges')
+    b = block(text, 41642)
+    ok('slotType" value="necklace"' in b and 'critical' not in b and 'Leech' not in b, 'heartbleed: no type stats')
+    ok(text.count(P.XML_BEGIN) == 1 and text.index(P.XML_END) < text.index('</items>'), 'one block before </items>')
 
     # idempotent
     ok(P.run(tmp, check=True, out=quiet) == 0, 'otb --check after the run: nothing to do')
@@ -266,7 +285,10 @@ try:
 
     # --stock-looks: back to the stock bytes (animation flag again), .bak not overwritten
     ok(P.run(tmp, check=True, stock_looks=True, out=quiet) == 1, '--stock-looks --check: work to do')
-    ok(P.run(tmp, stock_looks=True, out=quiet) == 0 and open(opath, 'rb').read() == ORIG, '--stock-looks: the stock bytes')
+    STOCK = ORIG[:-1] + b''.join(item_node(s, c, f) for s, c, f in (
+        (41640, 3090, 0x60 | ANIM), (41641, 9301, 0x60), (41642, 9304, 0x60))) + bytes([END])
+    ok(P.run(tmp, stock_looks=True, out=quiet) == 0 and open(opath, 'rb').read() == STOCK,
+       '--stock-looks: the stock bytes, the unique bases appended')
     ok(P.run(tmp, check=True, stock_looks=True, out=quiet) == 0, '--stock-looks twice: nothing to do')
     ok(P.run(tmp, out=quiet) == 0 and open(opath, 'rb').read() == new, 'own looks again')
     ok(open(opath + '.bak', 'rb').read() == ORIG, '.bak written once')
@@ -288,6 +310,17 @@ try:
     msg = refused(otb(base_nodes() + [item_node(30000, 38620, 0x60)]), 'a look already in use')
     ok('client id 38620' in msg, 'the refusal names the client id')
     ok(P.run(tmp, stock_looks=True, out=quiet) == 0, '--stock-looks needs no free look')
+    msg = refused(otb(base_nodes() + [item_node(41641, 5000, 0x60)]), 'a unique base id with another look')
+    ok('server id 41641 already belongs to client id 5000' in msg, 'the refusal names the server id')
+    msg = refused(otb([n for n in base_nodes() if n != item_node(10221, 9304, 0x60)]), 'no stock node to copy')
+    ok('no stock node 10221' in msg, 'the refusal names the stock node')
+    ok(P.run(tmp, stock_looks=True, out=quiet) == 1, 'and with --stock-looks too')
+    open(opath, 'wb').write(ORIG)
+    clash = ITEMS.replace('</items>', '\t<item id="41642" name="something" />\n</items>')
+    open(ipath, 'w', encoding='latin-1', newline='').write(clash)
+    log[:] = []
+    ok(P.run(tmp, out=quiet) == 1 and 'server id 41642 is already used' in ' '.join(log), 'items.xml id in use: refused')
+    ok(open(opath, 'rb').read() == ORIG and open(ipath, encoding='latin-1').read() == clash, 'nothing written')
 finally:
     shutil.rmtree(tmp)
 

@@ -203,6 +203,99 @@ TYPES[2198] = {slot = 2 + 48, abilities = {}}
 eq(ChaosJewelryLoot.normalize(old), 1, "the game normalize reads the item type")
 eq(ChaosJewelryLoot.normalize(nil), 0, "nil item")
 
+-- uniques on consumable bases: their own bases, old copies turn
+eq(#J.uniqueBases, 3, "three unique bases")
+for i, b in ipairs(J.uniqueBases) do
+	eq(b.id, 41639 + i, "unique base id " .. i)
+	ok(not J.isConsumable(b.id), "unique base " .. b.id .. " is no consumable")
+	for _, f in ipairs(b.from) do
+		ok(J.isConsumable(f), "old base " .. f .. " is a consumable")
+	end
+end
+eq(J.uniqueTarget(2206, true), 41640, "worn time ring with the marker")
+eq(J.uniqueTarget(2169, false, "Ring of the Last Ember"), 41640, "time ring by its name (before the marker)")
+eq(J.uniqueTarget("10218", true), 41641, "Heart of Cinders")
+eq(J.uniqueTarget(10221, false, "Heartbleed Pendant"), 41642, "Heartbleed Pendant by name")
+eq(J.uniqueTarget(2169, false, nil), nil, "a plain time ring stays")
+eq(J.uniqueTarget(10218, false, "Heartbleed Pendant"), nil, "another unique's name: no")
+eq(J.uniqueTarget(41641, true), nil, "already moved")
+eq(J.uniqueTarget(2207, true), nil, "another unique base")
+-- the specs and the drop list name the new ids
+ITEM_ATTRIBUTE_ATTACK, ITEM_ATTRIBUTE_DEFENSE, ITEM_ATTRIBUTE_EXTRADEFENSE = 11, 12, 13
+ITEM_ATTRIBUTE_ARMOR, ITEM_ATTRIBUTE_HITCHANCE, ITEM_ATTRIBUTE_SHOOTRANGE = 14, 15, 16
+dofile("data/lib/chaos_unique_specs.lua")
+for _, b in ipairs(J.uniqueBases) do
+	ok(ChaosUniqueSpecs[b.id] and ChaosUniqueSpecs[b.id].name == b.unique, "spec of " .. b.unique .. " at " .. b.id)
+	for _, f in ipairs(b.from) do
+		eq(ChaosUniqueSpecs[f], nil, "no spec left on " .. f)
+	end
+end
+
+ITEM_ATTRIBUTE_NAME = 99
+MESSAGE_EVENT_ADVANCE = 19
+CONST_SLOT_BACKPACK, CONST_SLOT_NECKLACE, CONST_SLOT_RING, CONST_SLOT_FIRST, CONST_SLOT_LAST = 3, 2, 9, 1, 10
+Chaos = Chaos or {}
+Chaos.t = function(_, text) return text end
+TYPES[41640] = {slot = 256 + 48, abilities = {speed = 20}}
+TYPES[41641] = {slot = 2 + 48, abilities = {}}
+local function uitem(id, attrs, custom)
+	local it = itemOf(id, attrs or {})
+	it.c = custom or {}
+	function it:getCustomAttribute(k) return self.c[k] end
+	local getA = it.getAttribute
+	function it:getAttribute(k)
+		if k == ITEM_ATTRIBUTE_NAME then return self.name end
+		return getA(self, k)
+	end
+	function it:transform(id2) self.id = id2 return true end
+	function it:moveTo(bag)
+		if bag.full then return false end
+		if self.id == 2206 then self.id = 2169 end -- the worn time ring's DeEquip
+		bag.list[#bag.list + 1] = self
+		self.slot = nil
+		return true
+	end
+	return it
+end
+local heart = uitem(10218, {[1] = 3}, {chaos_unique = 1})
+ok(ChaosJewelryLoot.migrateUnique(heart), "a Heart of Cinders turns")
+eq(heart.id, 41641, "into 41641")
+eq(heart.a[1], nil, "its charges go (the new type has none)")
+ok(not ChaosJewelryLoot.migrateUnique(heart), "only once")
+ok(not ChaosJewelryLoot.migrateUnique(uitem(10218, {[1] = 5})), "a plain bonfire amulet stays")
+-- the move callback: not into a slot
+local pend = uitem(10221, {}, {chaos_unique = 1})
+EventCallback.onItemMoved(nil, pend, 1, {}, {x = 65535, y = CONST_SLOT_NECKLACE, z = 0})
+eq(pend.id, 10221, "moved into the necklace slot: left for the next login")
+EventCallback.onItemMoved(nil, pend, 1, {}, {x = 65535, y = 64, z = 0})
+eq(pend.id, 41642, "moved into a container: turns")
+-- login: the worn ring goes to the backpack, then turns; the backpack's copies turn
+local bag = {list = {}}
+local legacyRing = uitem(2206, {[2] = 300000})
+legacyRing.name = "Ring of the Last Ember"
+local inBag = uitem(10221, {}, {chaos_unique = 1})
+bag.list[1] = inBag
+local backpack = {isContainer = function() return true end, getItems = function() return bag.list end,
+	moveTarget = bag}
+local slots = {[CONST_SLOT_RING] = legacyRing, [CONST_SLOT_BACKPACK] = backpack}
+local said = {}
+local player = {getSlotItem = function(_, s) return slots[s] end,
+	sendTextMessage = function(_, _, text) said[#said + 1] = text end}
+local mv = legacyRing.moveTo
+function legacyRing:moveTo(target) local r = mv(self, bag) if r then slots[CONST_SLOT_RING] = nil end return r end
+eq(ChaosJewelryLoot.migratePlayer(player), 2, "login: two copies turn")
+eq(legacyRing.id, 41640, "the worn ring is an ember ring now")
+eq(legacyRing.a[2], nil, "its time left goes")
+eq(slots[CONST_SLOT_RING], nil, "taken off")
+eq(inBag.id, 41642, "the copy in the backpack turns")
+eq(#said, 1, "one message for the worn copy")
+eq(ChaosJewelryLoot.migratePlayer(player), 0, "a second login: nothing")
+bag.full = true
+local worn = uitem(10218, {[1] = 2}, {chaos_unique = 1})
+slots[CONST_SLOT_NECKLACE] = worn
+eq(ChaosJewelryLoot.migratePlayer(player), 0, "a full backpack: the worn copy stays")
+eq(worn.id, 10218, "still the old id, for the next login")
+
 if fails > 0 then
 	print(string.format("jewelry_test: %d of %d checks failed", fails, checks))
 	os.exit(1)

@@ -177,8 +177,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
                (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
                show their own looks of pair 35, client 38612-38640 (items.otb; run the tool by hand with
-               --stock-looks for a client on pair 34) (README "Rings and necklaces as gear"; after archery and
-               badges)
+               --stock-looks for a client on pair 34); three uniques get own bases 41640-41642 (items.otb,
+               items.xml, movements.xml) (README "Rings and necklaces as gear"; after archery and badges)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")

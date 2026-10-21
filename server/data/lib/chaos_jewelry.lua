@@ -79,6 +79,34 @@ J.bases = {
 	}
 }
 
+-- uniques that sat on consumable bases (the worn time ring decayed and turned back into a time ring when taken off;
+-- the 5-charge amulets vanished and gave 60% physical absorb) have bases of their own: new server ids 41640-41642
+-- (reserved 41640-41659), copies of the stock node `copy` in items.otb (same client id and flags), with the unique's
+-- stats that no item attribute can hold (chaos_unique_specs.lua `skipped`) as item type stats in items.xml and
+-- Equip / DeEquip entries (patch_base_jewelry.py). `from`: the ids old copies have; `unique`: the unique's name.
+-- chaos_items.xml and chaos_unique_items.lua name the new ids.
+J.uniqueBases = {
+	{id = 41640, copy = 2206, from = {2206, 2169}, slot = "ring", name = "ember ring", unique = "Ring of the Last Ember"},
+	{id = 41641, copy = 10218, from = {10218}, slot = "necklace", name = "cinder heart amulet",
+		unique = "Heart of Cinders"},
+	{id = 41642, copy = 10221, from = {10221}, slot = "necklace", name = "heartbleed pendant",
+		unique = "Heartbleed Pendant"}
+}
+
+-- the new id of an old unique copy on a consumable base, or nil. isUnique: the copy carries the chaos_unique marker;
+-- name: its name attribute (a copy made before the marker existed)
+function J.uniqueTarget(id, isUnique, name)
+	id = tonumber(id) or 0
+	for _, b in ipairs(J.uniqueBases) do
+		for _, from in ipairs(b.from) do
+			if from == id and (isUnique or name == b.unique) then
+				return b.id
+			end
+		end
+	end
+	return nil
+end
+
 J.config = {
 	-- chance per kill (per 100000, the loot unit) that one piece of the kind drops, shared by the eligible bases. 75 is
 	-- the share of one slot in the equipment sets of pair 28 (600 per kill over about eight slots, chaos_gear_sets.lua):

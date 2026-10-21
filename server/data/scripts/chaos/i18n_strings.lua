@@ -1465,6 +1465,8 @@ return {
 		["You found a charm: %s%s."] = "Você achou um charm: %s%s.",
 		[" (in your inbox)"] = " (na sua caixa de entrada)",
 		["Last Ember: the Gravewarden's Seal kept you alive."] = "Last Ember: o Gravewarden's Seal te manteve vivo.",
+		["Your unique ring or amulet was renewed and put in your backpack. Put it on again."] =
+			"Seu anel ou amuleto único foi renovado e colocado na sua mochila. Equipe-o de novo.",
 		["Another %s! Yours gains %d pet experience."] = "Outro %s! O seu ganha %d de experiência de pet.",
 		["New pet: %s! Open Character > Pets to call it."] = "Pet novo: %s! Abra Character > Pets para chamá-lo.",
 		["Your pet mends you (+%.0f)."] = "Seu pet te cura (+%.0f).",

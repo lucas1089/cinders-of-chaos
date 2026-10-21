@@ -31,6 +31,12 @@ client id than `look` or `stock`, a base missing from items.otb, or a `look` ano
 before anything is written. items.otb.bak keeps the original the first time; the written file is parsed again and
 checked. Without items.otb (a test folder) this part is skipped.
 
+Uniques on consumable bases (chaos_jewelry.lua `J.uniqueBases`: Ring of the Last Ember, Heart of Cinders, Heartbleed
+Pendant) get bases of their own, server ids 41640-41642: items.otb copies of the stock nodes (same client id and
+flags) with the new ids, one marked items.xml block with weight, slotType and the unique's stats no item attribute holds
+(the `skipped` of gen_unique_specs.py, read from chaos_items.xml), and Equip / DeEquip entries in movements.xml. An id
+already used elsewhere stops the step before anything is written.
+
 Nothing else of the files is rewritten. A second run changes nothing. --check changes nothing and exits 1 when
 something is still to do.
 """
@@ -44,7 +50,12 @@ sys.dont_write_bytecode = True
 HERE = os.path.dirname(os.path.abspath(__file__))
 LIB = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_jewelry.lua')
 sys.path.insert(0, HERE)
-from install_gems import scan, escape, attr, START, END, A_CLIENTID, FLAG_ANIMATION  # noqa: E402
+from install_gems import scan, escape, attr, START, END, A_SERVERID, A_CLIENTID, FLAG_ANIMATION  # noqa: E402
+from gen_unique_specs import ITEM_ATTR, CUSTOM, STRUCTURAL  # noqa: E402
+
+CHAOS_ITEMS = os.path.join(os.path.dirname(HERE), 'data', 'items', 'chaos_items.xml')
+XML_BEGIN = '\t<!-- Chaos unique bases (server/tools/patch_base_jewelry.py, do not edit by hand) -->\n'
+XML_END = '\t<!-- end of the Chaos unique bases -->\n'
 
 # loot bases whose stock look is animated in the base (items.otb flag): --stock-looks sets the flag again
 STOCK_ANIMATED = {7889}
@@ -139,6 +150,112 @@ def verify_otb(data, wanted):
     if len(sids) != len(set(sids)):
         raise OtbError('items.otb: duplicate server ids')
     return len(kids)
+
+
+# ------------------------------------------------------------------ own bases of the uniques (J.uniqueBases)
+def unique_bases(path=LIB):
+    """[{id, copy, from, slot, name, unique}] of chaos_jewelry.lua `J.uniqueBases`"""
+    text = open(path, encoding='utf-8').read()
+    block = text.partition('J.uniqueBases = {')[2].partition('\n}\n')[0]
+    out = []
+    for m in re.finditer(r'\{id = (\d+), copy = (\d+), from = \{([\d, ]+)\}, slot = "(\w+)", name = "([^"]+)",\s*'
+                         r'unique = "([^"]+)"\}', block):
+        out.append({'id': int(m.group(1)), 'copy': int(m.group(2)),
+                    'from': [int(x) for x in m.group(3).split(',')], 'slot': m.group(4), 'name': m.group(5),
+                    'unique': m.group(6)})
+    return out
+
+
+def unique_type_stats(rows, path=CHAOS_ITEMS):
+    """id -> [(key, value)] of the items.xml entry: weight, slotType, the unique's stats no item attribute holds (the
+    `skipped` of gen_unique_specs.py), showattributes"""
+    xml = open(path, encoding='utf-8').read()
+    out = {}
+    for r in rows:
+        m = re.search(r'<item id="%d"[^>]*name="([^"]+)"[^>]*>(.*?)</item>' % r['id'], xml, re.S)
+        if not m or m.group(1) != r['unique']:
+            raise OtbError('chaos_items.xml: no unique "%s" with id %d' % (r['unique'], r['id']))
+        attrs = re.findall(r'<attribute key="(\w+)" value="([^"]*)"', m.group(2))
+        keys = dict(attrs)
+        if keys.get('slotType') != r['slot']:
+            raise OtbError('chaos_items.xml: %d is no %s' % (r['id'], r['slot']))
+        rows_ = [('weight', keys.get('weight', '100')), ('slotType', r['slot'])]
+        rows_ += [(k, v) for k, v in attrs if k not in ITEM_ATTR and k not in CUSTOM and k not in STRUCTURAL]
+        out[r['id']] = rows_ + [('showattributes', '1')]
+    return out
+
+
+def unique_xml_block(rows, stats):
+    body = ''
+    for r in rows:
+        body += '\t<item id="%d" article="a" name="%s">\n' % (r['id'], r['name'])
+        body += ''.join('\t\t<attribute key="%s" value="%s" />\n' % kv for kv in stats[r['id']])
+        body += '\t</item>\n'
+    return XML_BEGIN + body + XML_END
+
+
+def patch_unique_xml(text, rows, block):
+    """items.xml with the block of the unique bases (replaced in place, or before </items>)"""
+    if XML_BEGIN in text:
+        start = text.index(XML_BEGIN)
+        end = text.index(XML_END, start) + len(XML_END)
+        outside = text[:start] + text[end:]
+    else:
+        start = end = text.rfind('</items>')
+        if start < 0:
+            raise OtbError('items.xml: no </items>')
+        outside = text
+    ranges = [(int(a), int(b)) for a, b in re.findall(r'<item\b[^>]*\bfromid="(\d+)"[^>]*\btoid="(\d+)"', outside)]
+    for r in rows:
+        if re.search(r'<item\b[^>]*\bid="%d"' % r['id'], outside) or any(a <= r['id'] <= b for a, b in ranges):
+            raise OtbError('items.xml: server id %d is already used; nothing written' % r['id'])
+    return text[:start] + block + text[end:]
+
+
+def copy_node(source, sid):
+    """the stock node `source` of scan() with another server id (group, flags, client id and the rest as they are)"""
+    _s, _e, _sid, _cid, group, flags, attrs = source
+    body = struct.pack('<I', flags)
+    for kind, v in attrs:
+        if kind == A_SERVERID:
+            v = struct.pack('<H', sid)
+        body += attr(kind, v)
+    return bytes([START]) + escape(bytes([group])) + escape(body) + bytes([END])
+
+
+def add_unique_nodes(data, rows):
+    """(new data, added or updated ids, wanted {id: node bytes})"""
+    out, notes, wanted = bytes(data), [], {}
+    for r in rows:
+        kids, root_end = scan(out)
+        by_sid = {k[2]: k for k in kids}
+        source = by_sid.get(r['copy'])
+        if source is None:
+            raise OtbError('items.otb: no stock node %d (the base of %s); nothing written' % (r['copy'], r['unique']))
+        want = copy_node(source, r['id'])
+        k = by_sid.get(r['id'])
+        buf = bytearray(out)
+        if k is None:
+            buf[root_end:root_end] = want
+            notes.append(r['id'])
+        elif k[3] != source[3]:
+            raise OtbError('items.otb: server id %d already belongs to client id %s, not %d; nothing written'
+                           % (r['id'], k[3], source[3]))
+        elif out[k[0]:k[1]] != want:
+            buf[k[0]:k[1]] = want
+            notes.append(r['id'])
+        out = bytes(buf)
+        wanted[r['id']] = want
+    return out, notes, wanted
+
+
+def verify_unique_nodes(data, wanted):
+    kids, _ = scan(data)
+    for k in kids:
+        if k[2] in wanted and data[k[0]:k[1]] != wanted[k[2]]:
+            raise OtbError('items.otb: node %d not as written' % k[2])
+    if not set(wanted) <= {k[2] for k in kids}:
+        raise OtbError('items.otb: a unique base node is missing after the write')
 
 
 def parse_items(text):
@@ -280,12 +397,21 @@ def run(data, dry=False, check=False, out=print, stock_looks=False):
     if not os.path.isfile(items_path):
         out('no items.xml: %s' % items_path)
         return 1
+    try:
+        ubases = unique_bases()
+        ublock = unique_xml_block(ubases, unique_type_stats(ubases))
+    except OtbError as e:
+        out(str(e))
+        return 1
     otb_raw = otb_new = None
     if os.path.isfile(otb_path):
         otb_raw = open(otb_path, 'rb').read()
         try:
             otb_new, changed, wanted = patch_otb(otb_raw, bases(), stock_looks)
             n = verify_otb(otb_new, wanted)
+            otb_new, unotes, uwanted = add_unique_nodes(otb_new, ubases)
+            verify_unique_nodes(otb_new, uwanted)
+            verify_otb(otb_new, wanted)
         except (OtbError, AssertionError, IndexError, struct.error) as e:
             out(str(e))
             return 1
@@ -293,15 +419,23 @@ def run(data, dry=False, check=False, out=print, stock_looks=False):
             % (len(changed), len(wanted), 'set to the' if changed else 'already on the',
                'stock client ids' if stock_looks else 'own looks 38612+ (pair 35)', n,
                ''.join('; %d: %s -> %d' % c for c in changed[:3]) + ('; ...' if len(changed) > 3 else '')))
+        out('unique bases: %s' % (', '.join('%d (copy of %d)' % (r['id'], r['copy']) for r in ubases)
+                                  + (' added or updated' if unotes else ' present')))
     else:
         out('no items.otb: %s (jewelry looks not checked)' % otb_path)
     skip = consumables()
     text = open(items_path, encoding='latin-1').read()
     edits, merged, counts = plan(text, skip)
     new = apply(text, edits)
+    try:
+        new = patch_unique_xml(new, ubases, ublock)
+    except OtbError as e:
+        out(str(e))
+        return 1
     ids = unworn_ids(new, skip)
     ids.update(merged)
-    todo = bool(edits)
+    ids.update({r['id']: r['slot'] for r in ubases})
+    todo = new != text
     added = 0
     if os.path.isfile(moves_path):
         mtext = open(moves_path, encoding='latin-1').read()
@@ -311,7 +445,7 @@ def run(data, dry=False, check=False, out=print, stock_looks=False):
             open(moves_path, 'w', encoding='latin-1', newline='').write(mnew)
     else:
         out('no movements.xml: %s (DeEquip entries not checked)' % moves_path)
-    if edits and not dry and not check:
+    if new != text and not dry and not check:
         open(items_path, 'w', encoding='latin-1', newline='').write(new)
     if otb_new is not None and otb_new != otb_raw:
         todo = True

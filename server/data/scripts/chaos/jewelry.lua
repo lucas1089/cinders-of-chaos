@@ -8,6 +8,11 @@
 --      gear drop; extra rolls, smart loot, the Item Finder and the bestiary read MonsterType:getLoot() and see them.
 --   2. old copies: a ring or necklace made before the install step may still carry charges or a time left; they come
 --      off when the item is moved and at login (ChaosJewelry.normalize), so the engine never counts them down.
+--   3. old uniques on consumable bases (Ring of the Last Ember on the worn time ring 2206 or, taken off, the time ring
+--      2169; Heart of Cinders 10218; Heartbleed Pendant 10221) turn into their own bases 41640-41642
+--      (ChaosJewelry.uniqueBases): name, stats, rarity and sockets stay (they are item attributes). A copy in a
+--      container turns when moved and at login; a worn copy is taken off into the backpack at login first (so the
+--      engine removes the old type's stats), then turns; the player puts it on again.
 ChaosJewelry = ChaosJewelry or dofile("data/lib/chaos_jewelry.lua")
 
 ChaosJewelryLoot = ChaosJewelryLoot or {}
@@ -89,14 +94,78 @@ function ChaosJewelryLoot.normalize(item)
 	return ok and n or 0
 end
 
+-- the new id of an old unique copy on a consumable base, or nil
+function ChaosJewelryLoot.uniqueTarget(item)
+	if not item then
+		return nil
+	end
+	local ok, target = pcall(function()
+		local marker = item:getCustomAttribute("chaos_unique")
+		local name = ITEM_ATTRIBUTE_NAME and item:getAttribute(ITEM_ATTRIBUTE_NAME) or nil
+		return ChaosJewelry.uniqueTarget(item:getId(), marker ~= nil and marker ~= 0 and marker ~= false, name)
+	end)
+	return ok and target or nil
+end
+
+-- turns an old unique copy (not worn) into its own base; true when it did
+function ChaosJewelryLoot.migrateUnique(item)
+	local target = ChaosJewelryLoot.uniqueTarget(item)
+	if not target then
+		return false
+	end
+	local ok, done = pcall(function() return item:transform(target) end)
+	if not ok or not done then
+		return false
+	end
+	ChaosJewelryLoot.normalize(item)
+	return true
+end
+
+local function inSlot(position)
+	-- an inventory slot: x 0xFFFF, y the slot (a container is y 0x40 + its index)
+	return position and position.x == 65535 and position.y < 64
+end
+
 local moved = EventCallback
 moved.onItemMoved = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+	if not inSlot(toPosition) then
+		ChaosJewelryLoot.migrateUnique(item)
+	end
 	ChaosJewelryLoot.normalize(item)
 end
 moved:register(9) -- before base_rarity.lua (10) and item_mods.lua (11) read the worn item
 
+-- at login: worn old uniques go to the backpack and turn; the backpack's old uniques turn. Returns how many turned.
+function ChaosJewelryLoot.migratePlayer(player)
+	local n = 0
+	local backpack = player:getSlotItem(CONST_SLOT_BACKPACK)
+	local bag = backpack and backpack:isContainer() and backpack or nil
+	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
+		local item = player:getSlotItem(slot)
+		if item and slot ~= CONST_SLOT_BACKPACK and ChaosJewelryLoot.uniqueTarget(item) and bag then
+			-- the move runs the old type's DeEquip (the time ring turns back into 2169 on the way)
+			local ok, moved = pcall(function() return item:moveTo(bag) end)
+			if ok and moved and ChaosJewelryLoot.migrateUnique(item) then
+				n = n + 1
+				player:sendTextMessage(MESSAGE_EVENT_ADVANCE,
+					Chaos.t(player, "Your unique ring or amulet was renewed and put in your backpack. Put it on again."))
+			end
+		end
+	end
+	if bag then
+		local ok, items = pcall(function() return bag:getItems(true) end)
+		for _, item in ipairs(ok and items or {}) do
+			if ChaosJewelryLoot.migrateUnique(item) then
+				n = n + 1
+			end
+		end
+	end
+	return n
+end
+
 local login = CreatureEvent("ChaosJewelryLogin")
 function login.onLogin(player)
+	ChaosJewelryLoot.migratePlayer(player)
 	for slot = CONST_SLOT_FIRST or 1, CONST_SLOT_LAST or 10 do
 		local item = player:getSlotItem(slot)
 		if item then

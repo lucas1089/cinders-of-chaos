@@ -11169,9 +11169,26 @@ client ids (`stock`) and the animation flag back (byte for byte the base file; c
 ids of old copies (2210 and the like) keep the stock look until taken off.
 
 **Side effects and open points.** NPC-sold life rings and the other merged rings are permanent plain gear now. Fangs of
-the Ninth Circle (24790) is permanent. Open: the unique Ring of the Last Ember uses the worn time ring 2206 (a
-consumable, `duration` 600), so it decays when worn; Heart of Cinders (10218) and Heartbleed Pendant (10221) use
-5-charge amulets, vanish after five absorbs and inherit the 60% / 40% absorbs. They need new bases (`chaos_uniques`).
+the Ninth Circle (24790) is permanent.
+
+**Uniques on consumable bases** (`J.uniqueBases`, same step). Ring of the Last Ember sat on the worn time ring 2206
+(it decayed when worn, turned into a time ring 2169 when taken off and got the time ring's haste); Heart of Cinders
+(10218) and Heartbleed Pendant (10221) sat on 5-charge amulets (gone after five absorbs, with 60% physical and 40%
+element absorb from the type). They have bases of their own now, server ids **41640-41642** (reserved block
+41640-41659): ember ring, cinder heart amulet, heartbleed pendant.
+- items.otb: copies of the stock nodes 2206, 10218 and 10221 with the new server ids (same client ids 3090, 9301,
+  9304 and flags), appended. A node with that id and another client id stops the step.
+- items.xml: one marked block before `</items>` with weight, slotType and the unique's stats that no item attribute
+  holds (`skipped` of `chaos_unique_specs.lua`: the ring's speed 20 and regeneration, the heart's max health 200);
+  no duration, transform or charges. An item id 41640-41642 outside the block stops the step. movements.xml: Equip
+  and DeEquip entries.
+- `chaos_items.xml`, `chaos_unique_items.lua`, the test kit and the specs name 41640-41642.
+- Old copies (`chaos/jewelry.lua`): a copy of the old base with the `chaos_unique` marker (or the unique's name) turns
+  into the new id; name, stats, rarity and sockets are item attributes and stay, charges and time left go. In a
+  container: when moved (not into a slot) and at login (the backpack, recursively). Worn: at login it is moved to the
+  backpack first, so the engine removes the old type's stats (the worn time ring turns into 2169 on the way), then
+  turns; a message asks to put it on again. A full backpack leaves it worn until a later login. Copies in a depot turn
+  when moved out.
 
 ## Market (`market.lua`, `market_core.lua`, `market_config.lua`, `sql/chaos_market.sql`, `tools/patch_market.py`, engine patch 0017, client `game_market`)
 

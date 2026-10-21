@@ -20671,7 +20671,7 @@
 					"sprite": {"item": 10301}
 				},
 				{
-					"id": "unique:10218",
+					"id": "unique:41641",
 					"name": "Heart of Cinders",
 					"sub": "Amulet, level 80. Fire Absorb +18%, Physical Absorb +6%",
 					"color": "#ff9c3a",
@@ -20734,11 +20734,11 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-cryptbone-amulet.png",
-					"sprite": {"item": 10218}
+					"icon": "wiki/i/it-voidmourn-amulet.png",
+					"sprite": {"item": 41641}
 				},
 				{
-					"id": "unique:10221",
+					"id": "unique:41642",
 					"name": "Heartbleed Pendant",
 					"sub": "Amulet, level 90. Critical Hit: chance +4%, damage +20%, Life Leech: chance +5%, amount +6%",
 					"color": "#ff9c3a",
@@ -20804,8 +20804,8 @@
 							]
 						}
 					],
-					"icon": "wiki/i/it-moonsilver-amulet.png",
-					"sprite": {"item": 10221}
+					"icon": "wiki/i/it-wildroot-amulet.png",
+					"sprite": {"item": 41642}
 				},
 				{
 					"id": "unique:19390",
@@ -22787,7 +22787,7 @@
 					"sprite": {"item": 13760}
 				},
 				{
-					"id": "unique:2206",
+					"id": "unique:41640",
 					"name": "Ring of the Last Ember",
 					"sub": "Ring, level 70.",
 					"color": "#ff9c3a",
@@ -22848,7 +22848,7 @@
 						}
 					],
 					"icon": "wiki/i/it-sunsworn-ring.png",
-					"sprite": {"item": 2206}
+					"sprite": {"item": 41640}
 				},
 				{
 					"id": "unique:21691",

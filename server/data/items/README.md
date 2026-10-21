@@ -88,8 +88,8 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Mortis Cowl | head | 27231 / 24575 | galea mortis | 100 | rare | Arm 11, absorbPercentDeath 10, magicPoints 3, absorbPercentHoly -5 |
 | Visage of the Pale King | head | 27675 / 25019 | alicorn headguard | 120 | boss | Arm 15, absorbPercentDeath 8, absorbPercentPhysical 6, magicPoints 2, skillDist 3 |
 | Carrion Scarab Amulet | necklace | 11374 / 10457 | beetle necklace | 50 | magic | speed 10, absorbPercentPoison 10, maxHitPoints 100 |
-| Heart of Cinders | necklace | 10218 / 9301 | bonfire amulet | 80 | rare | absorbPercentFire 18, absorbPercentPhysical 6, maxHitPoints 200 |
-| Heartbleed Pendant | necklace | 10221 / 9304 | shockwave amulet | 90 | rare | lifeLeechChance 5, lifeLeechAmount 6, criticalHitChance 4, criticalHitAmount 20 |
+| Heart of Cinders | necklace | 41641 / 9301 | own base (copy of the bonfire amulet 10218) | 80 | rare | absorbPercentFire 18, absorbPercentPhysical 6, maxHitPoints 200 |
+| Heartbleed Pendant | necklace | 41642 / 9304 | own base (copy of the shockwave amulet 10221) | 90 | rare | lifeLeechChance 5, lifeLeechAmount 6, criticalHitChance 4, criticalHitAmount 20 |
 | Tear of the Void | necklace | 24851 / 22195 | onyx pendant | 100 | legendary | Arm 2, absorbPercentDeath 10, absorbPercentPhysical 5, maxManaPoints 200, magicPoints 2 |
 | Fangs of the Ninth Circle | necklace | 24790 / 22134 | enchanted werewolf amulet | 120 | boss | Arm 2, magicPoints 3, absorbPercentDeath 8, absorbPercentHoly -6, maxManaPoints 250 |
 | Pall of Skulls | body | 10296 / 9379 | heavy metal t-shirt | 60 | magic | Arm 14, absorbPercentDeath 8, absorbPercentPhysical 4, maxHitPoints 100 |
@@ -107,7 +107,7 @@ Columns: server id / client id, the stock item that was overridden, required lev
 | Bloodstep Boots | feet | 27647 / 24991 | makeshift boots | 80 | rare (set) | Arm 4, absorbPercentFire 8, magicPoints 1, speed 20 |
 | Voidwalker Boots | feet | 26133 / 23477 | void boots | 100 | legendary | Arm 4, speed 30, absorbPercentDeath 6 |
 | Hornbinder Ring | ring | 21693 / 19359 | horn | 60 | magic | Arm 2, skillClub 3, maxHitPoints 120 |
-| Ring of the Last Ember | ring | 2206 / 3090 | time ring | 70 | rare | speed 20, healthGain 4, healthTicks 4000, manaGain 6, manaTicks 4000 |
+| Ring of the Last Ember | ring | 41640 / 3090 | own base (copy of the worn time ring 2206) | 70 | rare | speed 20, healthGain 4, healthTicks 4000, manaGain 6, manaTicks 4000 |
 | Cinderclaw Band | ring | 10314 / 9397 | claw of 'The Bilespawn' | 80 | rare (set) | skillSword 3, skillAxe 3, skillClub 3, absorbPercentFire 8, magicPoints 1 |
 | Widow's Last Vow | ring | 10510 / 9593 | broken wedding ring | 90 | rare | lifeLeechChance 4, lifeLeechAmount 5, manaLeechChance 4, manaLeechAmount 5, maxHitPoints 100 |
 | Veil of the Wraith | ring | 29868 / 27212 | Myst Regalia Ring | 120 | boss | Arm 4, skillShield 5, magicPoints 2, absorbPercentPhysical 5 |

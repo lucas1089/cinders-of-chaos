@@ -7937,7 +7937,7 @@ CodexData = {
 					items = {10301}
 				},
 				{
-					id = "unique:10218",
+					id = "unique:41641",
 					name = "Heart of Cinders",
 					color = "#ff9c3a",
 					sub = "Amulet, level 80. Fire Absorb +18%, Physical Absorb +6%",
@@ -7976,10 +7976,10 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 72 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {10218}
+					items = {41641}
 				},
 				{
-					id = "unique:10221",
+					id = "unique:41642",
 					name = "Heartbleed Pendant",
 					color = "#ff9c3a",
 					sub = "Amulet, level 90. Critical Hit: chance +4%, damage +20%, Life Leech: chance +5%, amount +6%",
@@ -8021,7 +8021,7 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 74 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {10221}
+					items = {41642}
 				},
 				{
 					id = "unique:19390",
@@ -9246,7 +9246,7 @@ CodexData = {
 					items = {13760}
 				},
 				{
-					id = "unique:2206",
+					id = "unique:41640",
 					name = "Ring of the Last Ember",
 					color = "#ff9c3a",
 					sub = "Ring, level 70.",
@@ -9282,7 +9282,7 @@ CodexData = {
 							p = {"A unique keeps its stats: no orb changes it. Salvage gives 4 rune shards and 71 Conquest Tokens.", "1 socket, fixed (gems may be socketed and taken out)."}
 						}
 					},
-					items = {2206}
+					items = {41640}
 				},
 				{
 					id = "unique:21691",
