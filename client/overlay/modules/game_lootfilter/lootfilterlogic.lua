@@ -96,6 +96,16 @@ function L.color(info)
   return nil
 end
 
+-- How a highlighted slot glows. 'soft' for orbs: a thin, faint ring on the slot edge only
+-- (images/lf_glow_soft.png), no extra frame, so the orb sprite stays clear (owner request
+-- 2026-10-21: the bright teal glow hid the orb). 'glow' for gear and uniques: the soft wide
+-- glow (images/lf_glow.png) as before.
+function L.glowStyle(info)
+  if flag(info.u) or L.RARITY[tonumber(info.r) or 0] then return 'glow' end
+  if flag(info.o) then return 'soft' end
+  return 'glow'
+end
+
 function L.rarityName(r)
   local e = L.RARITY[tonumber(r) or 0]
   return e and tr(e.name) or nil

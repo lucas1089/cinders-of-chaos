@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Art of game_lootfilter (white, tinted per rarity in the client with image-color):
   lf_glow.png   34x34 soft glow hugging the slot edge, transparent centre (highlighted items)
+  lf_glow_soft.png 34x34 thin faint ring on the slot edge only (highlighted orbs: the orb sprite stays clear)
   lf_frame.png  34x34 crisp 1 px border with brighter corner ticks (items with a rarity that do not glow)
   lf_taken.png  34x34 check mark with a dark outline (loot channel: the item left the corpse; drawn untinted)
   lf_empty.png  34x34 dark veil with a small slashed ring in the lower right (loot feed: the monster's corpse was empty; untinted)
@@ -31,6 +32,21 @@ def glow():
                 a = 0
             if a:
                 px[x, y] = (255, 255, 255, a)
+    return im
+
+
+# alpha by distance from the slot edge: edge pixel, one fading pixel, nothing over the sprite
+SOFT_RING = (110, 40)
+
+
+def glow_soft():
+    im = Image.new('RGBA', (S, S), (0, 0, 0, 0))
+    px = im.load()
+    for y in range(S):
+        for x in range(S):
+            d = edge_dist(x, y)
+            if d < len(SOFT_RING):
+                px[x, y] = (255, 255, 255, SOFT_RING[d])
     return im
 
 
@@ -73,6 +89,7 @@ def empty():
 if __name__ == '__main__':
     os.makedirs(OUT, exist_ok=True)
     glow().save(os.path.join(OUT, 'lf_glow.png'))
+    glow_soft().save(os.path.join(OUT, 'lf_glow_soft.png'))
     frame().save(os.path.join(OUT, 'lf_frame.png'))
     taken().save(os.path.join(OUT, 'lf_taken.png'))
     empty().save(os.path.join(OUT, 'lf_empty.png'))

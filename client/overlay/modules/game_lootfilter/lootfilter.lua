@@ -96,6 +96,8 @@ local function child(widget, id, style)
     c:fill('parent')
     if style == 'glow' then
       setImage(c, '/modules/game_lootfilter/images/lf_glow')
+    elseif style == 'soft' then
+      setImage(c, '/modules/game_lootfilter/images/lf_glow_soft')
     elseif style == 'frame' then
       setImage(c, '/modules/game_lootfilter/images/lf_frame')
     elseif style == 'empty' then
@@ -110,7 +112,7 @@ end
 
 local function clearDecoration(widget)
   if not widget or widget:isDestroyed() then return end
-  for _, id in ipairs({ 'lfGlow', 'lfFrame', 'lfGone' }) do
+  for _, id in ipairs({ 'lfGlow', 'lfGlowSoft', 'lfFrame', 'lfGone' }) do
     local c = widget:getChildById(id)
     if c then c:hide() end
   end
@@ -125,16 +127,26 @@ local function decorate(widget, info, allowDim, gone)
   if not widget or widget:isDestroyed() then return end
   local state = L.classify(info, settings)
   local color = L.color(info)
+  -- orbs: a thin faint ring instead of the wide glow, and no frame on top (L.glowStyle)
+  local soft = L.glowStyle(info) == 'soft'
   local glow = child(widget, 'lfGlow', 'glow')
+  local softGlow = child(widget, 'lfGlowSoft', 'soft')
   local frame = child(widget, 'lfFrame', 'frame')
-  if color and state == 'highlight' and not gone then
+  local lit = color and state == 'highlight' and not gone
+  if lit and not soft then
     glow:setImageColor(color)
     glow:show()
   else
     glow:hide()
   end
+  if lit and soft then
+    softGlow:setImageColor(color)
+    softGlow:show()
+  else
+    softGlow:hide()
+  end
   -- one frame per slot: game_itemrarity draws one from the item's custom attributes (widget.irColor)
-  if color and not gone and not widget.irColor then
+  if color and not gone and not widget.irColor and not (lit and soft) then
     frame:setImageColor(color)
     frame:show()
   else
