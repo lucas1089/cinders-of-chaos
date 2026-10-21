@@ -8,13 +8,21 @@
   pubkey  --private PATH
           Prints only the public key (64 hex digits) of a private key file (server/deploy/publish_client_update.sh).
   build   CLIENT_DIR --out PUBLISH_DIR [--key PATH] [--version N] [--min-version N] [--min-package N]
-          [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--hardlink]
+          [--parallel N] [--channel NAME] [--roots modules,mods,data,layouts] [--dry-run] [--dev] [--key-index N]
           [--with-single-spr]
           Hashes every file under the roots of an assembled client folder (client/tools/assemble_client.sh, with
-          the Tibia.dat/.spr pair in data/things/1098/), copies each distinct file once to
-          PUBLISH_DIR/files/<sha[:2]>/<sha> and writes PUBLISH_DIR/manifest.json, signed with the private key from
-          --key or the environment variable CHAOS_UPDATE_KEY (a path, never the key itself). The manifest is
-          written last, so a client never sees a manifest whose files are not there yet.
+          the Tibia.dat/.spr pair in data/things/1098/; or a packed package unpacked with `unpack`), ENCRYPTS each
+          distinct file once (update_crypt.py: AES-256-GCM, key = HKDF of the client guard secret CHAOS_CLIENT_KEY,
+          deterministic nonce) to PUBLISH_DIR/files/<c[:2]>/<c> where c is the SHA-256 of the encrypted blob, and
+          writes PUBLISH_DIR/manifest.json, signed with the private key from --key or the environment variable
+          CHAOS_UPDATE_KEY (a path, never the key itself). The manifest is written last, so a client never sees a
+          manifest whose files are not there yet; then every other file of PUBLISH_DIR/files/ (older blobs, the
+          plain blobs of a publish before build 13) is removed, so the web folder holds only ciphertext.
+          The blob key: CHAOS_CLIENT_KEY in the environment (64 hex digits; "old,new" during a rotation, then
+          --key-index picks one, 1-based; `unpack` prints the index that opens the package). It is never printed.
+          No key: refused (no plain fallback). --dev: the public development key instead (tests and allow_dev_key
+          packages only; a production client cannot open such blobs). Without --dev, --min-package must be 13 or
+          more (the first client build that can decrypt updates, base patch 0103).
           --dry-run: no key needed, nothing written; checks the folder and prints what would be published (CI).
           Version: a package with Services.update.baseline = B in its init.lua (base patch 0101, the release number
           winpkg-B written by set_update_config.py --baseline) is published as version B, and --version must be B:
@@ -25,9 +33,18 @@
           a sprite change downloads only the shards that hold it. Refused: a shard set next to its single .spr
           (both would be downloaded; --with-single-spr ships both on purpose) and a shard set without --min-package
           (a client built before patch 0048 ignores shards and would draw the new dat with its old .spr).
-  verify  PUBLISH_DIR --public HEX
-          Checks the signature, the payload and every blob's size and SHA-256.
+  verify  PUBLISH_DIR --public HEX [--dev] [--key-index N]
+          Checks the signature, the payload and every blob's size and SHA-256; with the blob key (CHAOS_CLIENT_KEY or
+          --dev) also decrypts every blob and checks the plaintext SHA-256 the manifest signs.
+  unpack  PACK DEST [--dev]
+          Decrypts a packed client (chaos.pack, base patch 0102) with the key of CHAOS_CLIENT_KEY that opens it and
+          extracts it into the new folder DEST (safe names only). Prints "key-index=N" for build --key-index.
+          A development pack is refused unless --dev.
 
+Signing: the payload lists, for each file, the plaintext SHA-256 and size and the encrypted blob's SHA-256 ("blob")
+and size ("blob_size"), plus "encryption": "chaos-blob-1"; the Ed25519 signature covers all of them. The client checks
+the downloaded bytes against "blob" (transit), decrypts them (the GCM tag) and checks the plaintext against "sha256"
+(content), so a blob is accepted only when both hashes the operator signed match.
 The client refuses: a bad or missing signature, a manifest of another key, an older version than the one it applied,
 paths outside modules/ mods/ data/ layouts/, "..", absolute paths, odd characters, and native code
 (.exe .dll .so ...). The same rules are applied here, so a manifest the client would refuse is never published.
@@ -50,6 +67,11 @@ WINDOWS_RESERVED = {'con', 'prn', 'aux', 'nul'} | {f'com{i}' for i in range(1, 1
 SEGMENT = re.compile(r'^[A-Za-z0-9 ._()+,-]+$')
 MAX_FILE_SIZE = 1024 ** 3
 MAX_FILES = 50000
+# encrypted update blobs (update_crypt.py, base patch 0103): the client refuses a manifest without them
+ENCRYPTION = 'chaos-blob-1'
+BLOB_OVERHEAD = 44  # header 28 + GCM tag 16
+ENCRYPTED_MIN_PACKAGE = 13  # the first client build that decrypts updates
+KEY_ENV = 'CHAOS_CLIENT_KEY'
 
 
 # ---------------------------------------------------------------- Ed25519
@@ -215,13 +237,60 @@ def read_seed(key_path):
     return bytes.fromhex(text)
 
 
+def crypt():
+    """update_crypt.py (needs the `cryptography` package; only publishing, verifying with a key and unpacking do)"""
+    sys.path.insert(0, HERE)
+    try:
+        import update_crypt
+    except ImportError as e:
+        sys.exit(f'the blob encryption needs the python3 `cryptography` package (apt install python3-cryptography): {e}')
+    return update_crypt
+
+
+def client_keys(dev):
+    """[(index, 32-byte key)] from CHAOS_CLIENT_KEY, or the development key with --dev. [] when none is set."""
+    uc = crypt()
+    if dev:
+        return [(0, bytes.fromhex(uc.DEV_KEY_HEX))]
+    try:
+        keys = uc.parse_client_keys(os.environ.get(KEY_ENV, ''))
+    except uc.BlobError as e:
+        sys.exit(str(e))
+    return list(enumerate(keys, 1))
+
+
+def blob_key(args, need):
+    """The one key the blobs are encrypted with: (key, dev), or None when there is none and need is False."""
+    if not args.dev and not need and not os.environ.get(KEY_ENV, '').strip():
+        return None
+    keys = client_keys(args.dev)
+    if args.dev:
+        return keys[0][1], True
+    if not keys:
+        if need:
+            sys.exit(f'no blob key: set {KEY_ENV} (64 hex digits, the client guard secret the package was built with; '
+                     f'on the VPS it is in /etc/chaos/chaos.env). Updates are never published unencrypted; '
+                     f'--dev uses the public development key (tests only)')
+        return None
+    if args.key_index is not None:
+        if not 1 <= args.key_index <= len(keys):
+            sys.exit(f'--key-index {args.key_index}: {KEY_ENV} holds {len(keys)} key(s)')
+        return keys[args.key_index - 1][1], False
+    if len(keys) > 1:
+        sys.exit(f'{KEY_ENV} holds {len(keys)} keys (a rotation): give --key-index (unpack prints the one that opens '
+                 f'the package)')
+    return keys[0][1], False
+
+
 # ---------------------------------------------------------------- manifest
 
 def make_payload(entries, version, min_version, min_package, parallel, channel, created):
+    """entries: (path, plaintext sha256, plaintext size, blob sha256, blob size)"""
     payload = {
         'format': 1, 'product': PRODUCT, 'channel': channel, 'version': version, 'created': created,
         'min_version': min_version, 'min_package': min_package, 'parallel': parallel, 'files_url': 'files/',
-        'files': [{'path': p, 'sha256': h, 'size': s} for p, h, s in entries],
+        'encryption': ENCRYPTION,
+        'files': [{'path': p, 'sha256': h, 'size': s, 'blob': b, 'blob_size': bs} for p, h, s, b, bs in entries],
     }
     return json.dumps(payload, sort_keys=True, separators=(',', ':'), ensure_ascii=True)
 
@@ -239,6 +308,8 @@ def check_payload(m, last_version=None):
         return 'unknown payload format'
     if m.get('product') != PRODUCT:
         return 'manifest of another product'
+    if m.get('encryption') != ENCRYPTION:
+        return 'manifest is not encrypted'
     v = m.get('version')
     if not isinstance(v, int) or v < 1:
         return 'bad version'
@@ -259,6 +330,10 @@ def check_payload(m, last_version=None):
             return 'bad sha256 for ' + f['path']
         if not isinstance(f.get('size'), int) or not 0 <= f['size'] <= MAX_FILE_SIZE:
             return 'bad size for ' + f['path']
+        if not re.fullmatch(r'[0-9a-f]{64}', str(f.get('blob'))):
+            return 'bad blob for ' + f['path']
+        if f.get('blob_size') != f['size'] + BLOB_OVERHEAD:
+            return 'bad blob_size for ' + f['path']
     return None
 
 
@@ -364,54 +439,86 @@ def build(args):
     if min_version > version:
         sys.exit('--min-version cannot be above --version')
     created = datetime.datetime.now(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
-    payload = make_payload(entries, version, min_version, args.min_package, args.parallel, args.channel, created)
-    err = check_payload(json.loads(payload))
-    if err:
-        sys.exit('internal: ' + err)
-
     summary = (f'{len(entries)} files, {len(blobs)} distinct, {total / 1024 / 1024:.1f} MB, version {version}'
                + (f' (package baseline {baseline})' if baseline else '') + ', '
-               
                f'min_version {min_version}, min_package {args.min_package}, parallel {args.parallel}')
     if args.dry_run:
-        print('dry run (unsigned, nothing written):', summary)
+        # the blob hashes need the key: the payload rules are checked with stand-ins
+        stand_in = [(p, h, s, h, s + BLOB_OVERHEAD) for p, h, s in entries]
+        err = check_payload(json.loads(make_payload(stand_in, version, min_version, args.min_package, args.parallel,
+                                                    args.channel, created)))
+        if err:
+            sys.exit('internal: ' + err)
+        print('dry run (unsigned, unencrypted, nothing written):', summary)
         return 0
 
+    if not args.dev and args.min_package < ENCRYPTED_MIN_PACKAGE:
+        sys.exit(f'--min-package {args.min_package}: encrypted updates need --min-package {ENCRYPTED_MIN_PACKAGE} or '
+                 f'more (older clients cannot decrypt them and must download the new client)')
     key_path = args.key or os.environ.get('CHAOS_UPDATE_KEY')
     if not key_path:
         sys.exit('no private key: give --key PATH or set CHAOS_UPDATE_KEY to its path (or use --dry-run)')
     seed = read_seed(key_path)
     public = public_from_seed(seed)
-    signature = sign(seed, payload.encode('ascii'))
-    if not verify_sig(public, payload.encode('ascii'), signature):
-        sys.exit('internal: the new signature does not verify')
+    ckey, dev = blob_key(args, need=True)
+    uc = crypt()
 
     out = os.path.abspath(args.out)
     if inside_this_repo(out):
         sys.exit(f'refused: {out} is inside the repository; publish to the website folder')
-    os.makedirs(os.path.join(out, 'files'), exist_ok=True)
-    new = 0
+    files_dir = os.path.join(out, 'files')
+    os.makedirs(files_dir, exist_ok=True)
+    # encrypt each distinct file once; the blob is addressed by its own SHA-256 (the bytes the web server holds)
+    enc, new = {}, 0
     for h, (src, size) in sorted(blobs.items()):
-        dst = os.path.join(out, 'files', h[:2], h)
-        if os.path.isfile(dst) and os.path.getsize(dst) == size:
-            continue
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
-        tmp = dst + '.tmp'
-        if os.path.exists(tmp):
-            os.remove(tmp)
-        if args.hardlink:
-            os.link(src, tmp)
-        else:
-            shutil.copyfile(src, tmp)
-        os.replace(tmp, dst)
-        new += 1
+        fd, tmp = tempfile.mkstemp(dir=files_dir, prefix='.blob.')
+        try:
+            with os.fdopen(fd, 'wb') as f:
+                c, csize = uc.encrypt_file(src, f, ckey, dev=dev)
+            dst = os.path.join(files_dir, c[:2], c)
+            if os.path.isfile(dst) and os.path.getsize(dst) == csize:
+                os.remove(tmp)
+            else:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                os.chmod(tmp, 0o644)
+                os.replace(tmp, dst)
+                new += 1
+        except BaseException:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            raise
+        enc[h] = (c, csize)
+    full = [(p, h, s) + enc[h] for p, h, s in entries]
+    payload = make_payload(full, version, min_version, args.min_package, args.parallel, args.channel, created)
+    err = check_payload(json.loads(payload))
+    if err:
+        sys.exit('internal: ' + err)
+    signature = sign(seed, payload.encode('ascii'))
+    if not verify_sig(public, payload.encode('ascii'), signature):
+        sys.exit('internal: the new signature does not verify')
     fd, tmp = tempfile.mkstemp(dir=out, prefix='.manifest.')
     with os.fdopen(fd, 'w', encoding='ascii') as f:
         f.write(make_envelope(payload, public.hex(), signature.hex()))
     os.chmod(tmp, 0o644)
     os.replace(tmp, os.path.join(out, 'manifest.json'))
-    print(f'published {summary}; {new} new blob(s); public key {public.hex()}')
+    removed = prune_blobs(files_dir, {c for c, _ in enc.values()})
+    print(f'published {summary}; encrypted ({"DEVELOPMENT key" if dev else KEY_ENV}); {new} new blob(s), '
+          f'{removed} old file(s) removed; public key {public.hex()}')
     return 0
+
+
+def prune_blobs(files_dir, keep):
+    """removes every file of PUBLISH_DIR/files/ the new manifest does not name (older blobs, the plain blobs of a
+    publish before build 13, leftovers) and the folders left empty. Returns how many files went."""
+    removed = 0
+    for dirpath, dirnames, filenames in os.walk(files_dir, topdown=False):
+        for name in filenames:
+            if name not in keep or os.path.basename(dirpath) != name[:2]:
+                os.remove(os.path.join(dirpath, name))
+                removed += 1
+        if dirpath != files_dir and not os.listdir(dirpath):
+            os.rmdir(dirpath)
+    return removed
 
 
 def verify(args):
@@ -432,15 +539,90 @@ def verify(args):
     err = check_payload(m)
     if err:
         sys.exit('refused: ' + err)
-    bad = 0
+    found = blob_key(args, need=False)
+    uc = crypt() if found else None
+    bad, plain = 0, {}
     for f in m['files']:
-        blob = os.path.join(out, 'files', f['sha256'][:2], f['sha256'])
-        if not os.path.isfile(blob) or os.path.getsize(blob) != f['size'] or sha256_file(blob) != f['sha256']:
+        blob = os.path.join(out, 'files', f['blob'][:2], f['blob'])
+        if not os.path.isfile(blob) or os.path.getsize(blob) != f['blob_size'] or sha256_file(blob) != f['blob']:
             print('bad blob for', f['path'], file=sys.stderr)
             bad += 1
+            continue
+        if found:
+            if f['blob'] not in plain:
+                try:
+                    plain[f['blob']] = uc.decrypt_file(blob, found[0])[1]
+                except uc.BlobError as e:
+                    plain[f['blob']] = 'error: ' + str(e)
+            if plain[f['blob']] != f['sha256']:
+                why = plain[f['blob']] if plain[f['blob']].startswith('error') else 'another SHA-256'
+                print('bad blob for', f['path'], f'(does not decrypt to the signed content: {why})', file=sys.stderr)
+                bad += 1
     if bad:
         sys.exit(f'{bad} blob(s) missing or changed')
-    print(f'ok: version {m["version"]}, {len(m["files"])} files, signature good')
+    print(f'ok: version {m["version"]}, {len(m["files"])} files, signature good, '
+          + ('every blob decrypts to its signed content' if found else
+             f'blobs checked as ciphertext only (no {KEY_ENV}: plaintext not checked)'))
+    return 0
+
+
+def check_pack_name(n):
+    """None for a safe relative file name inside a pack, else the reason"""
+    if not n or n.startswith('/') or '\\' in n or ':' in n or '\0' in n:
+        return 'unsafe path'
+    if any(p in ('', '.', '..') for p in n.split('/')):
+        return 'unsafe path'
+    return None
+
+
+def unpack(args):
+    """chaos.pack -> DEST with the key of CHAOS_CLIENT_KEY that opens it (streamed: the ZIP goes through a temporary
+    file beside DEST, the ~900 MB pack is never held in memory)"""
+    uc = crypt()
+    import zipfile
+    dest = os.path.abspath(args.dest)
+    if os.path.exists(dest) and os.listdir(dest):
+        sys.exit(f'{dest}: not empty')
+    try:
+        flags = uc.header_flags(args.pack, uc.PACK)
+    except (OSError, uc.BlobError) as e:
+        sys.exit(f'{args.pack}: {e}')
+    if flags & uc.FLAG_DEV and not args.dev:
+        sys.exit(f'{args.pack} is a DEVELOPMENT pack (public key, an allow_dev_key build): refused without --dev')
+    keys = client_keys(args.dev)
+    if not keys:
+        sys.exit(f'no {KEY_ENV}: a packed client (chaos.pack) opens only with the client guard secret it was built '
+                 f'with (on the VPS: /etc/chaos/chaos.env)')
+    os.makedirs(dest, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(dest), prefix='.pack-')
+    os.close(fd)
+    index = None
+    try:
+        for i, key in keys:
+            try:
+                with open(tmp, 'wb') as f:
+                    uc.decrypt_file(args.pack, key, f, uc.PACK)
+                index = i
+                break
+            except uc.BlobError:
+                continue
+        if index is None:
+            sys.exit(f'{args.pack}: no key of {KEY_ENV} opens it (another build key, or a damaged file)')
+        with zipfile.ZipFile(tmp) as z:
+            for info in z.infolist():
+                n = info.filename
+                if n.endswith('/'):
+                    continue
+                if check_pack_name(n):
+                    sys.exit(f'{args.pack}: refused entry {n!r}')
+                target = os.path.join(dest, *n.split('/'))
+                os.makedirs(os.path.dirname(target), exist_ok=True)
+                with z.open(info) as src, open(target, 'xb') as dst:
+                    shutil.copyfileobj(src, dst, 1 << 20)
+    finally:
+        os.remove(tmp)
+    print(f'unpacked {args.pack} -> {dest}' + (' (development key)' if args.dev else ''))
+    print(f'key-index={index}')
     return 0
 
 
@@ -490,17 +672,24 @@ def main(argv=None):
     b.add_argument('--dry-run', action='store_true')
     b.add_argument('--with-single-spr', action='store_true',
                    help='ship a single .spr next to its shard set (for clients built before base patch 0048)')
-    b.add_argument('--hardlink', action='store_true',
-                   help='hard-link blobs instead of copying (same disk; only if the client folder is never edited after)')
+    b.add_argument('--dev', action='store_true',
+                   help='encrypt with the public development key (tests, allow_dev_key packages; never for players)')
+    b.add_argument('--key-index', type=int, help=f'which key of {KEY_ENV} ("old,new"), 1-based')
     v = sub.add_parser('verify')
     v.add_argument('publish_dir')
     v.add_argument('--public', required=True)
+    v.add_argument('--dev', action='store_true')
+    v.add_argument('--key-index', type=int)
+    u = sub.add_parser('unpack')
+    u.add_argument('pack')
+    u.add_argument('dest')
+    u.add_argument('--dev', action='store_true')
     args = ap.parse_args(argv)
     if args.cmd == 'build' and not args.dry_run and not args.out:
         ap.error('build needs --out (or --dry-run)')
     if args.cmd == 'build' and not re.fullmatch(r'[a-z0-9-]{1,32}', args.channel):
         ap.error('--channel: lowercase letters, digits and dashes')
-    return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify}[args.cmd](args)
+    return {'keygen': keygen, 'pubkey': pubkey, 'build': build, 'verify': verify, 'unpack': unpack}[args.cmd](args)
 
 
 if __name__ == '__main__':

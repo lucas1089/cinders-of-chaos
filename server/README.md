@@ -15404,10 +15404,16 @@ script re-runs itself with `sudo -n`, which drops the environment.
   client update in `CHAOS_SITE_DIR/updates/live` with the key `CHAOS_UPDATE_KEY` (docs/LAUNCH.md "Publishing a client
   update": the owner's commands, the version and min_package rules). More ctl.conf keys, passed on to that script:
   `CHAOS_SITE_DIR`, `CHAOS_UPDATE_KEY`, `CHAOS_UPDATE_PUBLIC`, `CHAOS_UPDATE_REPO`, `CHAOS_UPDATE_URL`,
-  `CHAOS_WORK_DIR`, plus `CHAOS_PUBLISH_LOG`. Release tags only: the admin user cannot hand the script a file of its
-  own to sign. Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and
-  `publish_client_update_test.py` (the real script on a synthetic package with a throwaway key: the manifest verifies,
-  version and min_package, unsafe zips and key mismatches refused, the web server check against a local HTTP server).
+  `CHAOS_WORK_DIR`, plus `CHAOS_PUBLISH_LOG`; `CHAOS_ENV` (the env file) is passed too. Release tags only: the admin
+  user cannot hand the script a file of its own to sign. **Since client build 13 the update files are encrypted**
+  (client/BASE.md "Encrypted updates"): the script needs the client guard key `CHAOS_CLIENT_KEY`, read from the
+  `CHAOS_CLIENT_KEY=` line of `/etc/chaos/chaos.env` (the game server's own; never printed), opens a packed package's
+  `chaos.pack` with it and encrypts every blob; without it nothing is published, and min_package must be 13 or more.
+  Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and `publish_client_update_test.py`
+  (the real script on synthetic loose and packed packages with throwaway keys: the manifest verifies, every blob is
+  ciphertext that decrypts to its signed content, version and min_package, unsafe zips, key mismatches, a missing or
+  wrong client key, a development pack and a build-12 package refused, old plain blobs removed, the rotation key
+  picked, the web server check against a local HTTP server).
 - Kit update from GitHub (owner, 2026-10-21: "fetch GitHub and, if newer, apply the update and restart; also the client
   and the site's downloads"): `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site]`,
   `update-status`, `update-rollback` run `server/deploy/chaos_kit_update.sh` (check / apply / rollback; apply and

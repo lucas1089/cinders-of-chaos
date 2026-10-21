@@ -3,8 +3,9 @@
 -- On start, before anyone logs in: fetch the manifest (Services.update.manifest), check its Ed25519 signature with
 -- the key in init.lua, compare SHA-256 hashes of the files the client sees with the manifest, download what differs
 -- with a pool of parallel requests (largest first, ranged parts with resume, retries with backoff, each file's hash
--- checked as soon as it is on disk), and only when every file is in and verified move them into
--- chaos_update/files in one step and restart. bootstrap.lua mounts that folder at the next start.
+-- checked as soon as it is on disk, then the plaintext it decrypts to), and only when every file is in and verified
+-- move them into chaos_update/files in one step and restart. The files are encrypted on the website and stay encrypted
+-- there (base patch 0103); bootstrap.lua has the engine decrypt them into memory at the next start.
 -- Unreachable server: play with the current files, unless Services.update.required or a minimum the server set.
 -- Never downloads native code: the exe and its DLLs come only with the client package (core.DENIED_EXT).
 -- Never applies a manifest older than the package's own files (Services.update.baseline, the release number the package
@@ -193,22 +194,17 @@ end
 
 -- ---------------------------------------------------------------- hashing (time-sliced, with a cache)
 
+-- hashes are trusted only for this client package and update (the pack's files all carry the same ZIP date)
+local function cacheStamp()
+  return core.cacheStamp(boot.packageId, boot.state)
+end
+
 local function loadCache()
-  local cache = {}
-  for line in readText(CACHE):gmatch('[^\n]+') do
-    local key, mtime, size, hash = line:match('^(.-)\t(%d+)\t(%d+)\t(%x+)$')
-    if key then cache[key] = { mtime = tonumber(mtime), size = tonumber(size), hash = hash } end
-  end
-  return cache
+  return core.parseCache(readText(CACHE), cacheStamp())
 end
 
 local function saveCache(cache)
-  local out = {}
-  for key, c in pairs(cache) do
-    out[#out + 1] = ('%s\t%d\t%d\t%s'):format(key, c.mtime, c.size, c.hash)
-  end
-  table.sort(out)
-  writeText(CACHE, table.concat(out, '\n') .. '\n')
+  writeText(CACHE, core.formatCache(cache, cacheStamp()))
 end
 
 -- sha256 of a virtual path, from the cache when the real file has the same time and size
@@ -289,6 +285,8 @@ local downloadIo = {
   append = function(path, data) return g_resources.appendFileContents('/' .. path, data) end,
   remove = function(path) return g_resources.removeUpdateTree(path) end,
   sha256 = function(path) return g_resources.fileSha256('/' .. path) end,
+  -- the plaintext SHA-256 of an encrypted download ("" unless it decrypts with this client's key)
+  plainSha256 = function(path) return g_resources.updateBlobSha256('/' .. path) end,
   rename = function(from, to) return g_resources.moveUpdateFile(from, to) end,
   later = later,
 }
@@ -304,7 +302,7 @@ local applyIo = {
 local function newState(m)
   return {
     version = m.version, min_version = m.min_version or 0, min_package = m.min_package or 0,
-    package = boot.packageId, applied = os.date('!%Y-%m-%dT%H:%M:%SZ'),
+    package = boot.packageId, applied = os.date('!%Y-%m-%dT%H:%M:%SZ'), enc = core.ENCRYPTION,
   }
 end
 
@@ -420,6 +418,14 @@ local function onManifest(r)
     later(2500, function() if phase == 'uptodate' then U.dismiss() end end)
     return
   end
+  if core.plainTreeLeft(st, g_resources.directoryExists('/' .. core.TREE)) or boot.mountFailed then
+    -- plain files of a client before build 13 (never mounted again), or files that did not decrypt at start: the
+    -- update is fetched again, encrypted
+    g_logger.info('updater: removing the update folder (' .. (boot.mountFailed and 'it did not decrypt' or 'unencrypted') .. ')')
+    boot.mountFailed = false
+    g_resources.removeUpdateTree(core.TREE)
+    g_resources.removeUpdateTree(CACHE)
+  end
   compareFiles(m, function(plan)
     if phase ~= 'hashing' then return end
     if #plan.download == 0 and #plan.drop == 0 and #plan.stale == 0 then
@@ -500,6 +506,10 @@ function U.init()
   end
   if not (g_crypt.ed25519Verify and g_resources.fileSha256 and g_resources.moveUpdateFile) then
     g_logger.warning('updater: this client build has no update support (base patch 0031)')
+    return
+  end
+  if not (g_resources.updateBlobSha256 and g_resources.mountUpdateOverlay) then
+    g_logger.warning('updater: this client build cannot decrypt updates (base patch 0103); download the new client')
     return
   end
   cfg.package = tonumber(cfg.package) or 0

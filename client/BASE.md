@@ -732,6 +732,21 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     in the changed files; `chaospack.h` + `chaospack_test.cpp` compile and pass with `g++ -std=c++17 -lcrypto`). The
     full client was **not** built or run here (no base tree / dat-spr and too little disk in the agent); the
     `resourcemanager.cpp` / `main.cpp` edits were checked by inspection against the patched tree only.
+73. `0103` (C++ `src/framework/util/chaosblob.h` (new), `src/framework/core/resourcemanager.{h,cpp}`,
+    `src/framework/luafunctions.cpp`, `src/main.cpp`): **encrypted updates** (see "Encrypted updates" below). The
+    updater's files stay encrypted on the website and in the write dir. `setUpdateKey(clientKey)` (from `main()`, next
+    to the pack mount, before the key is wiped) keeps only the derived blob key (HKDF-SHA256 with its own labels).
+    Lua: `g_resources.updateBlobSha256(path)` (the plaintext SHA-256 of a blob in `chaos_update/`, streamed in 1 MB
+    blocks, `""` unless the GCM tag authenticates), `g_resources.mountUpdateOverlay(path)` (decrypts every file of
+    `chaos_update/files/` straight into its slot of one in-memory store-only ZIP and PhysFS-mounts it at `/` in front
+    of the pack; one file that does not decrypt refuses the whole overlay) and `unmountUpdateOverlay()`.
+    `mountUpdateDir` no longer mounts a plain folder. Same client build as 0102: build 13, `min_package` 13. Applies
+    after `0001`-`0102` (full chain of 93 patches on the base archive, `patch` clean, no fuzz); `resourcemanager.cpp`,
+    `luafunctions.cpp` and `main.cpp` pass `g++ -std=c++17 -fsyntax-only` against the patched tree (Linux headers;
+    `luafunctions.cpp` only with the base's own unrelated `Atlas` errors of a build without the graphics defines);
+    `tools/chaosblob_test.cpp` (format, vector shared with `update_crypt.py`, tamper, streaming, ZIP writer) and
+    `tools/chaosblob_mount_test.cpp` (the overlay ZIP mounted from memory by PhysFS in front of a folder) run in CI.
+    Not built or run in a client.
 
 ### Client packs (base patch 0102, `tools/pack_client.py`, 2026-10-21)
 The shipped client folder is just the exe and one encrypted pack, `chaos.pack`, with the per-user write directory for
@@ -759,9 +774,9 @@ everything writable. Nothing in the folder opens in a text or sprite editor.
   logical files (built from the assembled tree, before packing), the client hashes the files it sees **through the
   pack**, downloads only the changed ones into `chaos_update/files/` in the write dir, and that folder is mounted in
   front of the pack. So an update never re-downloads the whole 900 MB pack; a new full pack ships only with a new exe.
-  Changed files land in the write-dir overlay as the updater writes them today (plaintext there); encrypting the
-  overlay entries at rest is a possible follow-up (see "Still open"). `min_package` 13 keeps build-12 and older
-  (loose-file) clients from applying a build-13 manifest: they are told a new download is required.
+  The update files are encrypted too, on the website and in the write dir (base patch 0103, "Encrypted updates"
+  below). `min_package` 13 keeps build-12 and older (loose-file) clients from applying a build-13 manifest: they are
+  told a new download is required.
 - **Removed from the client folder** (proved safe before removal):
   - `BUILD_INFO.txt`: build metadata. The build number is already in the exe (`CHAOS_CLIENT_BUILD`) and
     `Services.update.package`; the commit is in the run's release notes. `grep -rn BUILD_INFO client/overlay` and the
@@ -784,6 +799,46 @@ everything writable. Nothing in the folder opens in a text or sprite editor.
   as an update with `make_update_manifest.py build ... --min-package 13` so build-12 and older clients are told to
   download build 13 (`docs/LAUNCH.md` "Client updates"). A dev build (`allow_dev_key`) produces a working, clearly-dev
   pack keyed from the public development key.
+
+### Encrypted updates (base patch 0103, `tools/update_crypt.py`, 2026-10-21)
+Before this, every file the signed updater served sat plain on the website (`updates/live/files/`, listed by path in
+the public manifest) and plain in the per-user write dir (`chaos_update/files/`), mounted over the pack: anyone could
+read every updated module and image. Now nothing of an update is plain outside the client's memory.
+
+- **Format.** Each distinct file is one blob, the per-file variant of the `chaos.pack` format: header (magic `CHUB`,
+  version 1, flags with the development-key bit, a 12-byte nonce, the plaintext length; it is the GCM additional
+  data) + AES-256-GCM body + 16-byte tag, 44 bytes more than the file. Key: HKDF-SHA256 of the client guard secret
+  `CHAOS_CLIENT_KEY` with its own salt and labels (`CindersOfChaos/update/v1`, `chaos-update-blob-aes-256-gcm`), so
+  it is not the pack key and needs no new secret. Nonce: `HMAC-SHA256(nonce key, content)[:12]`, so the same file
+  always gives the same blob (content addressing, resumed downloads, no re-upload of unchanged files) and two
+  different files never share a nonce. `tools/update_crypt.py` (publisher, streamed in 8 MB blocks) and
+  `src/framework/util/chaosblob.h` (engine) are byte-identical; a fixed vector is checked on both sides.
+- **Publish side** (`tools/make_update_manifest.py build`, run by `server/deploy/publish_client_update.sh` on the
+  VPS): encrypts every blob with the key from the environment variable `CHAOS_CLIENT_KEY` (the script reads it from
+  `/etc/chaos/chaos.env`, where the game server has it; during a rotation "old,new" the key that opens the package's
+  `chaos.pack` is used). It is never printed. Without it nothing is published: there is no plain fallback; `--dev`
+  (tests) uses the public development key and marks every blob. Blobs live at `files/<c[:2]>/<c>`, `c` = SHA-256 of
+  the encrypted bytes; after the new manifest is written every other file of `files/` is removed (older blobs and the
+  plain blobs of a publish before build 13), so the web folder holds only ciphertext. A packed package (the exe and
+  `chaos.pack`) is decrypted on the VPS into the work folder to build the manifest (`make_update_manifest.py unpack`;
+  a development pack is refused). Encrypted publishes need `--min-package` 13 or more.
+- **Signature.** The signed payload has `"encryption": "chaos-blob-1"` and, per file, the plaintext `sha256` / `size`
+  and the blob's `blob` (SHA-256) / `blob_size`. The client keeps a download only when its bytes hash to `blob`
+  (transit) **and** the engine decrypts it (GCM tag) to `sha256` (content), both values under the Ed25519 signature;
+  a manifest without the encryption marker is refused. `make_update_manifest.py verify` checks the same, decrypting
+  every blob when the key is set.
+- **Client side.** Downloads are staged and moved into `chaos_update/files/<path>` as they came (ciphertext). At start
+  `bootstrap.lua` calls `g_resources.mountUpdateOverlay`: the engine decrypts them into one in-memory store-only ZIP
+  (one buffer the size of the update files, each file read into its slot and decrypted in place) and mounts it in front
+  of the pack. A file that does not decrypt (changed on disk, another build) refuses the overlay; the client starts on
+  the pack's files and the updater fetches the update again. A small update still downloads only the changed files,
+  never the pack. The tree's files are compared with the manifest by their encrypted hash, the pack's by the plain
+  one. Plain trees of older clients are never mounted and are deleted at the next check.
+- **Honest limits.** Same as the pack: the key is in the binary (obfuscated), so this stops reading the files off the
+  website or out of the user folder, not a determined reverse engineer. File names stay visible (they are in the
+  public manifest). The decrypted overlay costs RAM equal to the update files' size (small for module and image
+  updates; a whole new single `Tibia.spr` in an update would add its ~900 MB on top of the pack, which is why sprite
+  changes should ship as shards, base patch 0048).
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
@@ -863,9 +918,10 @@ obfuscation, not protection: whoever has the binary can recover the key with a d
   but the full client was not compiled or started here (no base tree / dat-spr, little disk in the agent). Before the
   real build-13 release, build the patched client on Linux (`LINUX.md`) and run the `windows-package.yml` start test to
   confirm it mounts `chaos.pack` and reaches the login screen.
-- **Encrypted updater overlay (follow-up).** The updater downloads changed files into `chaos_update/files/` in the write
-  dir as plaintext today; the main pack is encrypted but the overlay is not. Encrypting the overlay entries at rest (the
-  engine already decrypts ENC-prefixed files transparently in `readFileContents`, so `updater_core.lua` would hash the
-  plaintext and encrypt on write) is a clean next step; left out of build 13 to keep the critical-path change small.
-- **Writable-value clamping (follow-up).** Validating/clamping out-of-range `config.otml` and per-character helper
-  values on load was not added; it is independent of the pack and can land separately.
+- **Encrypted updates, build 13 not built or run** (base patch 0103, "Encrypted updates"): the format is checked
+  cross-language (`chaosblob_test.cpp` vs `update_crypt.py`), the overlay ZIP is mounted by PhysFS in a test, the
+  publisher end to end on a synthetic packed package (`publish_client_update_test.py`), and the chain applies; the
+  engine functions were compiled only with `-fsyntax-only`. In the `windows-package.yml` build-13 run and a first
+  publish, confirm: the client mounts the overlay after an update (`updater: N encrypted update files mounted` in
+  the log), the updated module is used, `chaos_update/files/` holds only `CHUB` files, and a hand-changed file there
+  makes the client fetch the update again instead of loading it.

@@ -262,7 +262,9 @@ function H.sanitize(node)
   if type(node.slots) == 'table' then
     for _, s in ipairs(node.slots) do
       local id = type(s) == 'table' and tonumber(s.id) or nil
-      if id and id > 0 and not seen[id] and #c.slots < H.SUPPORT_MAX then
+      -- config.otml can be edited by hand: whole spell ids only
+      if id and id ~= math.floor(id) then id = nil end
+      if id and id > 0 and id <= 1000000 and not seen[id] and #c.slots < H.SUPPORT_MAX then
         seen[id] = true
         c.slots[#c.slots + 1] = { id = id, enabled = s.enabled ~= false }
       end

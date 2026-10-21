@@ -1024,14 +1024,17 @@ plain static folder of the site. Nothing in it runs on the server: no PHP, no da
 ```
 <CHAOS_SITE_DIR>/updates/.htaccess                 (from overlay/, Apache: static only, cache headers)
 <CHAOS_SITE_DIR>/updates/live/manifest.json         the signed manifest, the only file that changes per update
-<CHAOS_SITE_DIR>/updates/live/files/ab/ab12...ef    one file per distinct content, named by its SHA-256
+<CHAOS_SITE_DIR>/updates/live/files/ab/ab12...ef    one ENCRYPTED file per distinct content, named by its SHA-256
 ```
 
 The client's `init.lua` points at `https://<site>/updates/live/manifest.json` (`Services.update.manifest`,
 `client/tools/set_update_config.py`). Publish with `client/tools/make_update_manifest.py build <client> --out
-<CHAOS_SITE_DIR>/updates/live --key <private key outside the site and the repository>`: it copies new blobs first and
-writes `manifest.json` last, so a client never sees a manifest whose files are not there yet. Old blobs can stay
-(clients in the middle of an update still find them); delete blobs no manifest names any more after a day or two.
+<CHAOS_SITE_DIR>/updates/live --key <private key outside the site and the repository>` with `CHAOS_CLIENT_KEY` in the
+environment (or `server/deploy/publish_client_update.sh` on the VPS): it encrypts every file (AES-256-GCM, client
+build 13 on; client/BASE.md "Encrypted updates"), writes new blobs first and `manifest.json` last, so a client never
+sees a manifest whose files are not there yet, and then removes every blob the new manifest does not name (older
+ones and the plain blobs of publishes before build 13), so the folder holds only ciphertext. A client in the middle of
+an older update then fails its download and retries with the new manifest.
 
 - **HTTPS only in production.** The manifest is signed and every file is hash-checked, so a changed file is refused
   anyway, but HTTPS keeps the update private and stops a network from cutting it off. The client warns in its log when

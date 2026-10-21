@@ -1,10 +1,11 @@
 -- Cinders of Chaos signed updater: start-up step, run by init.lua before any module is discovered
 -- (client/base-patches/0031-signed-updater.patch). Only client API: g_resources, g_crypt, g_app, g_logger.
 --
--- Mounts chaos_update/files (verified update files in the write dir) in front of the client's own files when the
--- last apply finished ("status=ok") and was made for this client package. Otherwise the client starts with its own
--- install files and the updater module checks again on the login screen. CHAOS_UPDATE_OFF=1 (CI start tests): never
--- mounted.
+-- Mounts chaos_update/files (verified update files in the write dir, still encrypted) in front of the client's own
+-- files when the last apply finished ("status=ok"), was made for this client package and holds encrypted files: the
+-- engine decrypts them into memory (g_resources.mountUpdateOverlay, base patch 0103); nothing plain is ever mounted.
+-- Otherwise the client starts with its own install files and the updater module checks again on the login screen.
+-- CHAOS_UPDATE_OFF=1 (CI start tests): never mounted.
 
 local core = dofile('/modules/client_chaos_updater/updater_core.lua')
 
@@ -28,12 +29,17 @@ if core.offByEnv(os.getenv) then
   -- test runs (CI start tests): the package's own files only (updater.lua makes no request either)
   g_logger.info('updater: off (' .. core.OFF_ENV .. ' is set): update folder not mounted')
 elseif core.shouldMount(st, id) then
-  if g_resources.mountUpdateDir(core.TREE) then
+  if not g_resources.mountUpdateOverlay then
+    g_logger.warning('updater: this client cannot decrypt updates (base patch 0103); update folder not mounted')
+  elseif g_resources.mountUpdateOverlay(core.TREE) then
     CHAOS_UPDATE_BOOT.mounted = true
     g_logger.info(('updater: update %d mounted'):format(st.version))
   else
+    -- a file that does not decrypt (changed on disk): the updater fetches the update again
+    CHAOS_UPDATE_BOOT.mountFailed = true
     g_logger.warning('updater: the update folder could not be mounted')
   end
 elseif st.status and st.status ~= '' then
-  g_logger.info(('updater: update folder not used (%s)'):format(st.package ~= id and 'other client package' or st.status))
+  g_logger.info(('updater: update folder not used (%s)'):format(st.package ~= id and 'other client package'
+    or (st.enc ~= core.ENCRYPTION and 'unencrypted files of an older client') or st.status))
 end

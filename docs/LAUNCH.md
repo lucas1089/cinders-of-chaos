@@ -924,6 +924,15 @@ The client checks the website for a signed manifest before login and downloads c
 the dat/spr pair (client/MANIFEST.md "Signed updater"; files on the site: website/README.md "Client updates").
 The exe and its DLLs are never updated this way: a new exe is a new Windows package (below).
 
+**The update files are encrypted (client build 13 on, base patch 0103).** Every file is published as an AES-256-GCM
+blob keyed from the client guard secret `CHAOS_CLIENT_KEY` (the same 64 hex digits as the GitHub secret and the game
+server's `/etc/chaos/chaos.env`), so the website and the players' user folders hold only ciphertext
+(client/BASE.md "Encrypted updates"). The machine that publishes needs that key: `make_update_manifest.py build` reads
+it from the environment variable `CHAOS_CLIENT_KEY` (never from an argument, never printed) and refuses to publish
+without it (there is no plain fallback); `publish_client_update.sh` reads it from `/etc/chaos/chaos.env` when the
+variable is not set. Encrypted updates need `--min-package 13` or more: older clients cannot decrypt them and are sent
+to the download page. The Python package `cryptography` must be installed (`apt install python3-cryptography`).
+
 **Keys (once).** Never in the repository. Two places, the owner picks one (owner, 2026-10-20: the VPS, below
 "Publishing a client update"): the operator's own machine (offline, the safest), or the web server as root
 (`/etc/chaos/update-key.hex`, so `chaos-ctl.sh publish-update` can sign there). On the server, anyone who becomes root
@@ -946,12 +955,15 @@ python3 -I client/tools/make_update_manifest.py keygen --private ~/chaos-keys/up
 
 1. Assemble the client as for a package (`client/tools/assemble_client.sh`, the dat/spr pair in `data/things/1098/`).
 2. Dry run: `python3 -I client/tools/make_update_manifest.py build <client> --dry-run` (no key, writes nothing).
-3. Publish: `CHAOS_UPDATE_KEY=~/chaos-keys/update.key python3 -I client/tools/make_update_manifest.py build <client>
-   --out <CHAOS_SITE_DIR>/updates/live` (or `--out` to a local folder and rsync it up: blobs first, `manifest.json`
-   last). The version goes up by one each time; clients refuse an older manifest. A package built with a baseline
+3. Publish: `CHAOS_UPDATE_KEY=~/chaos-keys/update.key CHAOS_CLIENT_KEY=<64 hex> python3 -I
+   client/tools/make_update_manifest.py build <client> --out <CHAOS_SITE_DIR>/updates/live --min-package 13` (set
+   `CHAOS_CLIENT_KEY` from a file, e.g. `CHAOS_CLIENT_KEY=$(cat ~/chaos-keys/client.key)`, so it stays out of the shell
+   history; or `--out` to a local folder and rsync it up with `--delete`: blobs first, `manifest.json` last). A packed
+   build-13 package is opened first with `make_update_manifest.py unpack <client>/chaos.pack <tree>`. The version goes up by one each time; clients refuse an older manifest. A package built with a baseline
    (`Services.update.baseline`, base patch 0101; `windows-package.yml` writes its run number) is published as exactly
    that version (`--version` must match).
-4. Check: `python3 -I client/tools/make_update_manifest.py verify <CHAOS_SITE_DIR>/updates/live --public <hex>`.
+4. Check: `python3 -I client/tools/make_update_manifest.py verify <CHAOS_SITE_DIR>/updates/live --public <hex>` (with
+   `CHAOS_CLIENT_KEY` set it also decrypts every blob and checks the signed content).
 5. Start a client: it says "Update applied" and restarts, or "Your client is up to date". An exe without base patch
    0101 (client build 11 and older) does not restart itself: it asks the player to close it and start it again.
 
@@ -993,6 +1005,12 @@ re-sends the index, the dat and the last shard or two, not 600 MB. Rules the bui
 signed update, on the VPS that holds the site (`/var/www/chaos`, `install_site.sh`). `chaos-ctl.sh publish-update` runs
 it in the background (so the admin app can start it too) and `chaos-ctl.sh publish-log` shows its log.
 
+**The blob key (client build 13 on).** `/etc/chaos/chaos.env` must hold `CHAOS_CLIENT_KEY` (it does for the game
+server's client guard; "old,new" during a rotation is fine: the key that opens the package's `chaos.pack` is used).
+`publish_client_update.sh` reads only that line (`CHAOS_ENV`, default `/etc/chaos/chaos.env`; `chaos-ctl.sh` passes
+its own `CHAOS_ENV`) and exports it to the Python tools; it is never printed. Without it the script stops before
+anything is published.
+
 **Once, as root on the VPS** (owner, 2026-10-20: done; the public key is
 `7f4ae1b812e3ca86ac4551683b987b8bf68d2256b36b1785c07cb4f3ffb72224`):
 
@@ -1020,10 +1038,13 @@ sudo /opt/chaos/repo/server/deploy/publish_client_update.sh winpkg-46
 
 What it does: downloads `CindersOfChaos-Client-Windows.zip` of the release (`curl -fL`, https only) into a new folder
 under `/var/tmp`, refuses a download under 50 MB, prints its size and SHA-256; extracts it with `python3 -I zipfile`,
-refusing absolute paths, `..`, links and more than 8 GB; finds the client folder (`init.lua`, `modules/`,
+refusing absolute paths, `..`, links and more than 8 GB; finds the client: a packed build-13 package (the exe and
+`chaos.pack`) is decrypted with `CHAOS_CLIENT_KEY` into the work folder (`make_update_manifest.py unpack`; a
+development pack, `allow_dev_key`, is refused), an older loose one is used as it is (`init.lua`, `modules/`,
 `data/things/1098/`); checks that the public key in the package's `init.lua` is the one of `/etc/chaos/update-key.hex`
 (and of `CHAOS_UPDATE_PUBLIC` or `/etc/chaos/update-key.pub` when set); runs `make_update_manifest.py build` into
-`/var/www/chaos/updates/live` (blobs first, `manifest.json` last) and `verify`; then checks the web server: a GET of the
+`/var/www/chaos/updates/live` (every blob encrypted, blobs first, `manifest.json` last, then every older or plain blob
+removed from `files/`) and `verify` (decrypts every blob); then checks the web server: a GET of the
 package's manifest URL must give HTTP 200, the same bytes as the file just written, `application/json` and
 `no-cache`, and a `Range` request on the largest blob must give 206. A failed web check only warns (the update is
 published); `publish_client_update.sh --check-only` with `CHAOS_UPDATE_URL` repeats it. The work folder is removed.
@@ -1038,9 +1059,9 @@ Numbers, and why a client of build N accepts the update:
   version has nothing to do with the build number. Each publish must be above the last one (the script stops before
   signing otherwise): an older package than the live update cannot be published; build a new one. Republishing the
   same package (to change min_package) is not possible with a baseline; build a new package.
-- **min_package** = the package's own client build (`BUILD_INFO.txt` "client build: N", the same as
-  `Services.update.package` in its `init.lua`; the script refuses when they differ), `--min-package N` to choose,
-  `--min-package 0` for none. A client accepts the update when its package (build) is at least min_package; an older
+- **min_package** = the package's own client build (`Services.update.package` in its `init.lua`; `BUILD_INFO.txt`
+  "client build: N" of a package before build 13, the script refuses when they differ), `--min-package N` to choose,
+  at least 13 (the update files are encrypted; builds 12 and older cannot decrypt them). A client accepts the update when its package (build) is at least min_package; an older
   updater client is told "A new client download is required" and cannot log in, and the game server refuses its exe
   too when `clientGuardManifest` names this manifest (server/README.md "Client guard"). Publishing the files of a
   newer package to an older exe is what min_package prevents: the modules may need the newer exe.

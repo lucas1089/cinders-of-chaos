@@ -137,7 +137,7 @@ jobs:
       - name: Field timers generator (gen_field_timers.py on a small items.xml / items.otb)
         run: python3 -I client/tools/gen_field_timers_test.py
 
-      - name: Client updater tools (manifest builder, signer, path rules)
+      - name: Client updater tools (manifest builder, signer, path rules, blob encryption round trip / wrong key / determinism / tamper)
         run: python3 -I client/tools/make_update_manifest_test.py
 
       - name: Client pack tool (round trip, exclusions, determinism, wrong key, tamper)
@@ -381,6 +381,24 @@ jobs:
           patch -p1 -d "$d" < "$d/h.patch"
           g++ -std=c++17 -I "$d/src" client/tools/chaospack_test.cpp -lcrypto -o "$d/chaospack_test"
           "$d/chaospack_test"
+
+      - name: Encrypted update blobs (C++, OpenSSL, PhysFS; header from base patch 0103, same bytes as update_crypt.py)
+        run: |
+          sudo apt-get install -y -qq libphysfs-dev
+          d=$(mktemp -d)
+          awk '/^--- a\/src\/framework\/util\/chaospack\.h/{p=1} p&&/^--- a\//&&!/chaospack\.h/{p=0} p' \
+            client/base-patches/0102-client-encrypted-pack.patch > "$d/h.patch"
+          awk '/^--- a\/src\/framework\/util\/chaosblob\.h/{p=1} p&&/^--- a\//&&!/chaosblob\.h/{p=0} p' \
+            client/base-patches/0103-encrypted-updates.patch >> "$d/h.patch"
+          patch -p1 -d "$d" < "$d/h.patch"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_test.cpp -lcrypto -o "$d/chaosblob_test"
+          "$d/chaosblob_test" "$d/overlay.zip"
+          python3 -I -c 'import sys, zipfile; z = zipfile.ZipFile(sys.argv[1]); assert z.testzip() is None; assert z.read("modules/game_x/x.lua") == b"print(1)\n"; print("store zip ok:", z.namelist())' "$d/overlay.zip"
+          mkdir -p "$d/pack/modules/game_x"
+          printf 'print("pack")\n' > "$d/pack/modules/game_x/x.lua"
+          printf 'print("other")\n' > "$d/pack/modules/game_x/other.lua"
+          g++ -std=c++17 -Wall -Wextra -I "$d/src" client/tools/chaosblob_mount_test.cpp -lcrypto -lphysfs -o "$d/chaosblob_mount_test"
+          "$d/chaosblob_mount_test" "$d/pack"
 
       - name: Big creature click maths (C++; header from base patch 0051)
         run: |
