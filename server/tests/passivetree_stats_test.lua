@@ -77,17 +77,42 @@ end
 local function has(stat, text)
 	return cfg.stats[stat][2]:find(text, 1, true) ~= nil
 end
-check(E.charStatCap.strength == 60 and has("strength", "60 points") and has("intelligence", "60 points"), "strength / intelligence cap")
-check(E.charStatCap.dexterity == 20 and has("dexterity", "20 points"), "dexterity cap")
-check(E.charStatCap.vitality == 50 and has("vitality", "+50") and E.charStatCap.spirit == 50 and has("spirit", "+50"), "vitality / spirit cap")
+check(E.charStatCap.strength == 120 and has("strength", "120 points") and has("intelligence", "120 points"), "strength / intelligence cap")
+check(E.charStatScale.strength == 0.5 and has("strength", "0.5 x points") and E.charStatScale.intelligence == 0.5
+	and has("intelligence", "0.5 x points"), "strength / intelligence worth of a point")
+check(E.charStatCap.dexterity == 80 and has("dexterity", "80 points") and E.charStatScale.dexterity == 0.25
+	and has("dexterity", "0.25 x points"), "dexterity cap and worth of a point")
+check(E.charStatCap.vitality == 100 and has("vitality", "100 points") and E.charStatCap.spirit == 100 and has("spirit", "100 points"),
+	"vitality / spirit cap")
+check(E.charStatScale.vitality == 0.5 and has("vitality", "+0.5 percent") and E.charStatScale.spirit == 0.5
+	and has("spirit", "+0.5 percent"), "vitality / spirit worth of a point")
+-- the maximum effect the texts name, from the real functions at the cap
+check(has("vitality", "(+50%)") and ChaosPassiveMaxPercent({vitality = E.charStatCap.vitality}, "vitality") == 50, "vitality: +50% at the cap")
+check(has("spirit", "(+50%)") and ChaosPassiveMaxPercent({spirit = E.charStatCap.spirit}, "spirit") == 50, "spirit: +50% at the cap")
+check(has("dexterity", "(+25%)") and math.abs(mult({dexterity = E.charStatCap.dexterity}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) - 1.25) < 1e-9,
+	"dexterity: x1.25 at the cap")
+-- the Auto build generator scores with the same caps and point worth (passive_builds_config.lua)
+local B = dofile("data/scripts/chaos/passive_builds_config.lua")
+for _, stat in ipairs({"strength", "intelligence", "dexterity", "vitality", "spirit"}) do
+	check(B.caps[stat] == E.charStatCap[stat] and B.statScale[stat] == E.charStatScale[stat], "builds config " .. stat .. " = effects")
+end
+-- 2026-10-22: the Thief's and Ninja's most taken 10-point Attribute lanes give all-element resistance, not dexterity
+for vk, ids in pairs({thief = {130, 132, 157, 173, 238}, ninja = {130, 132, 238}}) do
+	for _, id in ipairs(ids) do
+		local v = tree.nodes[id].v and tree.nodes[id].v[vk]
+		check(v and v.absorbAllElements == 2 and v.dexterity == nil, vk .. " node " .. id .. ": absorbAllElements 2")
+	end
+	check(C.classInfo(cfg, vk).tag.absorbAllElements == "secondary", vk .. ": absorbAllElements is secondary")
+end
 check(E.maxAbsorb == 75 and has("absorbFire", "75 percent") and has("absorbAllElements", "75 percent"), "absorb cap")
 check(E.maxDamagePercent == 150 and has("incrementFire", "+150 percent"), "damage cap")
 check(E.maxSpeed == 80 and has("speed", "+80"), "speed cap")
 check(E.lootPerPoint == 0.2 and has("loot", "+0.2") and E.rarityLootPerPoint == 1.0 and has("rarityLoot", "+1 per"), "item find rates")
 -- the divisor 230 and the dexterity formula, from the real function
 local m = mult({strength = 23}, COMBAT_PHYSICALDAMAGE, nil)
-check(math.abs(m - 1.1) < 1e-9 and has("strength", "/ 230") and has("intelligence", "/ 230"), "strength: x (1 + points / 230)")
-check(math.abs(mult({strength = 60}, COMBAT_PHYSICALDAMAGE, nil) - (1 + 60 / 230)) < 1e-9, "26% at the cap")
+check(math.abs(m - (1 + 0.5 * 23 / 230)) < 1e-9 and has("strength", "/ 230") and has("intelligence", "/ 230"),
+	"strength: x (1 + 0.5 x points / 230)")
+check(math.abs(mult({strength = 120}, COMBAT_PHYSICALDAMAGE, nil) - (1 + 60 / 230)) < 1e-9 and has("strength", "(+26%)"), "26% at the cap")
 
 -- ------------------------------------------------------------------------------------------------ the class lists
 local classes = Chaos.classes.ids

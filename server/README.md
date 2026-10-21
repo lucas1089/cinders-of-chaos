@@ -2167,13 +2167,27 @@ or a random raid.
 
 ## Passive tree effects (`passivetree_effects.lua`)
 The tree now has an effect: after every save, reset and login the summed node stats are applied.
-- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`), get the
-  engine's effect without being written into the character's stats (those are the stat window's points and are saved with the
-  player; writing them made the bonus stack on every login and let the stat window refund it as free points): strength /
-  intelligence multiply damage dealt by `1 + value/230` (physical / other types, the engine formula), dexterity multiplies weapon
-  hits by `1 / (1 - value/100)` (the damage equal of the engine's faster attacks, which a script cannot set), vitality / spirit
-  are +value% max health / mana conditions, wisdom has no effect in the engine. Characters whose stats an older version
-  inflated are clamped once to the stat window maximum on login (`passiveStatsFixed` storage).
+- **Character stats** (strength, intelligence, dexterity, vitality, spirit, wisdom), capped per stat (`charStatCap`) and scaled
+  (`charStatScale`: value = capped points x scale, `ChaosPassiveCharStat`), get the engine's effect without being written into
+  the character's stats (those are the stat window's points and are saved with the player; writing them made the bonus stack on
+  every login and let the stat window refund it as free points): strength / intelligence multiply damage dealt by
+  `1 + value/230` (physical / other types, the engine formula), dexterity multiplies weapon hits by `1 / (1 - value/100)` (the
+  damage equal of the engine's faster attacks, which a script cannot set), vitality / spirit are +value% max health / mana
+  conditions, wisdom has no effect in the engine. Characters whose stats an older version inflated are clamped once to the
+  stat window maximum on login (`passiveStatsFixed` storage).
+- **Attribute caps x2 (2026-10-22, owner feedback):** the path nodes alone filled the old caps (strength / intelligence 60,
+  dexterity 20, vitality / spirit 50) after 50-100 points, so later attribute nodes were wasted. Measured on the Auto builds
+  (`passive_builds_data.lua`, the most of each class's builds): at 100 points strength reached 86-100 (Berserker, Inquisitor,
+  Juggernaut, Ninja, Shadowfist), intelligence 71-104 (casters), dexterity 97-138 (Deadeye, Monk, Ninja, Thief), vitality
+  80-93, spirit 82-95; at 248 points (level 1000) 100-350 of a class's main stats. New caps: strength / intelligence 120
+  (x 0.5 a point), dexterity 80 (x 0.25), vitality / spirit 100 (x 0.5); the effect at the cap is the old maximum (+26%,
+  weapon hits x1.25, +50%). The Vocation Trial and Paragon shares of max health / mana stay outside the cap and unscaled.
+  Nothing is stored: the values are summed from the nodes at every login and save, and the conditions (sub ids 7220 / 7221)
+  are replaced. The price: below the cap a point is worth half (dexterity a quarter), so a level 300 build (73 points) gets
+  about half the attribute effect it had (median Juggernaut strength 48 -> 24, x1.21 -> x1.10 physical; Ninja dexterity
+  20 -> 14, weapon hits x1.25 -> x1.16); at level 1000 most classes are at the cap of their main stats again (median of the
+  builds: Deadeye, Juggernaut, Ninja, Shadowfist strength 60; Lich, Illusionist intelligence 60; the Necromancer and Bone Lord
+  47-49). The rotation numbers in `data/spells/README.md` were measured with the old caps.
 - **Skills, magic level, critical hit, leech:** a permanent attribute condition (sub ids 7200 to 7219).
 - **Absorbs:** the second absorb storage per damage type (977562 to 977575) that the stock absorb event already reads; `absorbAllElements` adds to the nine elements; capped at 75% from the tree.
 - **Damage dealt:** `incrementX` for the type, `multiIncrement` for all elements, `incrementHealth` for healing; the event is registered on the target when a tree player attacks it.
@@ -2830,6 +2844,14 @@ generator `tools/gen_class_lanes.lua` (+ `tools/passivetree_lanes_lib.lua`, clie
   `tests/passivetree_paths_test.lua` checks, for every class, that the shortest route to every keystone and notable it can
   reach has no irrelevant node and at least `paths.minShare` (70%) primary / secondary nodes. `reworked` version 5
   (`lanes = true`) refunds once the lane nodes (and what hangs on them) of each character at login.
+- **Hand-set lanes** (`gen_class_lanes.lua` `Gen.OVERRIDES`, 2026-10-22): even under the new dexterity cap (80) the Thief and
+  the Ninja collected far more dexterity from their lanes (Thief 137 / 199 at 100 / 150 points, Ninja 138 / 213), so their
+  most taken 10-point Attribute nodes give all-element resistance (`absorbAllElements` 2, now a secondary stat of both)
+  instead of dexterity 10: Thief 130, 132, 157, 173, 238; Ninja 130, 132, 238. Same ids and cost, no refund (a held node
+  just gives the resistance). `classlanes.lua` carries them by hand too (the generator's output already differs, see above).
+- **Attribute worth in the Auto builds:** `caps` and `statScale` are the effect file's `charStatCap` / `charStatScale`
+  (`passivetree_stats_test` checks), and an attribute point scores x its worth. Scores are rounded to 1e-9 so LuaJIT and Lua
+  5.3 (different `pairs()` order, different float sums) write the same bytes.
 - **Lane names** (client only, 2026-10-20): a lane re-skinned a named node's stats but the tooltip, search and refund box
   kept its old name ("Pyre Litany", holy, gave a Beastmaster physical damage; "Speed" gave a Berserker strength). The
   client's `treelanes.lua` now names every re-skinned named node after the stats the class gets ("Physical Damage and

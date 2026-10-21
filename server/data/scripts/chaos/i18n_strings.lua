@@ -2567,16 +2567,16 @@ return {
 			"Skill de lenhador",
 		["Herbalist skill"] =
 			"Skill de herbalista",
-		["Physical damage x (1 + points / 230), at most 60 points (+26%)."] =
-			"Dano físico x (1 + pontos / 230), no máximo 60 pontos (+26%).",
-		["Damage of every type but physical, and healing, x (1 + points / 230), at most 60 points (+26%)."] =
-			"Dano de todo tipo menos físico, e cura, x (1 + pontos / 230), no máximo 60 pontos (+26%).",
-		["Weapon hits (melee, distance, wand) deal 1 / (1 - points%) times the damage, like attacking faster: at most 20 points (+25%)."] =
-			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - pontos%) vezes o dano, como atacar mais rápido: no máximo 20 pontos (+25%).",
-		["+1 percent maximum health per point, at most +50%."] =
-			"+1 percent de vida máxima por ponto, no máximo +50%.",
-		["+1 percent maximum mana per point, at most +50%."] =
-			"+1 percent de mana máxima por ponto, no máximo +50%.",
+		["Physical damage x (1 + 0.5 x points / 230), at most 120 points (+26%)."] =
+			"Dano físico x (1 + 0,5 x pontos / 230), no máximo 120 pontos (+26%).",
+		["Damage of every type but physical, and healing, x (1 + 0.5 x points / 230), at most 120 points (+26%)."] =
+			"Dano de todo tipo menos físico, e cura, x (1 + 0,5 x pontos / 230), no máximo 120 pontos (+26%).",
+		["Weapon hits (melee, distance, wand) deal 1 / (1 - 0.25 x points%) times the damage, like attacking faster: at most 80 points (+25%)."] =
+			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - 0,25 x pontos%) vezes o dano, como atacar mais rápido: no máximo 80 pontos (+25%).",
+		["+0.5 percent maximum health per point, at most 100 points (+50%)."] =
+			"+0,5 percent de vida máxima por ponto, no máximo 100 pontos (+50%).",
+		["+0.5 percent maximum mana per point, at most 100 points (+50%)."] =
+			"+0,5 percent de mana máxima por ponto, no máximo 100 pontos (+50%).",
 		["No effect yet: the game gives wisdom no use."] =
 			"Sem efeito por enquanto: o jogo ainda não dá uso à sabedoria.",
 		["Walking speed. The tooltip shows the speed you gain; at most +80."] =

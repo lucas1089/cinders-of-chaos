@@ -1,9 +1,10 @@
 -- Passive tree effects: turns the summed node stats (ChaosPassiveTree.getBonuses) into real bonuses.
 --
 -- Registered as a listener of passivetree.lua, so it runs after every save, reset and login:
---   * character stats (strength ... spirit), capped (charStatCap), with the same effect the engine gives the stat window's
---     points but WITHOUT writing the character stats (those are saved with the player and are the stat window's points:
---     writing them made the bonus stack on every login and let the stat window refund it as free points):
+--   * character stats (strength ... spirit), capped (charStatCap) and scaled (charStatScale: value = points x scale),
+--     with the same effect the engine gives the stat window's points but WITHOUT writing the character stats (those
+--     are saved with the player and are the stat window's points: writing them made the bonus stack on every login
+--     and let the stat window refund it as free points). `value` below is the scaled one:
 --       strength / intelligence: damage dealt x (1 + value/230) for physical / every other type (engine formula)
 --       dexterity: weapon hits (melee, distance, wand) x 1 / (1 - value/100), the damage equal of the engine's
 --         "attack time - value%" (a script cannot change the attack speed)
@@ -39,8 +40,14 @@ local cfg = {
 	maxSpeed = 80,
 	maxAbsorb = 75,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
-	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less):
-	charStatCap = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40} -- dexterity 20: weapon hits x1.25 (at 40 knights out-damaged everyone at level 1000)
+	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less).
+	-- charStatCap: the most tree points of a stat that count. charStatScale: what one tree point is worth in those
+	-- formulas. 2026-10-22 the caps went up (x2, dexterity x4) and the worth of a point down by the same factor, so the
+	-- effect at the cap is unchanged (strength / intelligence +26%, dexterity weapon hits x1.25, vitality / spirit +50%):
+	-- the path nodes alone had filled the old caps (60 / 60 / 20 / 50 / 50) after 50-100 points. Dexterity's old cap
+	-- was 20 (at 40 knights out-damaged everyone at level 1000), now 80 x 0.25. Wisdom has no effect (scale 1, unused).
+	charStatCap = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 40},
+	charStatScale = {strength = 0.5, intelligence = 0.5, dexterity = 0.25, vitality = 0.5, spirit = 0.5, wisdom = 1}
 }
 ChaosPassiveEffectsConfig = cfg
 
@@ -164,7 +171,14 @@ function ChaosParagonSpeed(bonuses, baseSpeed)
 	return math.floor((baseSpeed or 0) * (bonuses.paragonSpeed or 0) / 100 + 1e-6)
 end
 
--- max health / mana percent: tree vitality / spirit (capped) + Paragon health / mana
+-- the effect value of a character stat: the tree points, capped (charStatCap), times the worth of a point
+-- (charStatScale). Rounded to 1e-6 so a sum like 0.1 x 3 cannot miss a whole percent.
+function ChaosPassiveCharStat(points, stat)
+	local v = clamp(points or 0, 0, cfg.charStatCap[stat]) * cfg.charStatScale[stat]
+	return math.floor(v * 1e6 + 0.5) / 1e6
+end
+
+-- max health / mana percent: tree vitality / spirit (capped, scaled) + Paragon health / mana
 local PARAGON_PERCENT = {vitality = "paragonHealth", spirit = "paragonMana"}
 -- the share of the stat that comes from a held Vocation Trial node (trials.lua addBonuses writes it next to the summed
 -- stat): outside the tree's cap, like the Paragon share. A character at the tree's +50% got nothing from Steelblood (+8%)
@@ -172,7 +186,7 @@ local PARAGON_PERCENT = {vitality = "paragonHealth", spirit = "paragonMana"}
 local TRIAL_PERCENT = {vitality = "trialVitality", spirit = "trialSpirit"}
 function ChaosPassiveMaxPercent(bonuses, stat)
 	local trial = math.max(0, bonuses[TRIAL_PERCENT[stat] or ""] or 0)
-	return clamp((bonuses[stat] or 0) - trial, 0, cfg.charStatCap[stat]) + trial + (bonuses[PARAGON_PERCENT[stat]] or 0)
+	return ChaosPassiveCharStat((bonuses[stat] or 0) - trial, stat) + trial + (bonuses[PARAGON_PERCENT[stat]] or 0)
 end
 
 -- condition stats that Paragon adds to (one condition for both, so neither overwrites the other)
@@ -251,12 +265,12 @@ end
 function ChaosPassiveStatMultiplier(bonuses, combatType, origin)
 	local m
 	if combatType == COMBAT_PHYSICALDAMAGE then
-		m = 1 + clamp(bonuses.strength or 0, 0, cfg.charStatCap.strength) / 230
+		m = 1 + ChaosPassiveCharStat(bonuses.strength, "strength") / 230
 	else
-		m = 1 + clamp(bonuses.intelligence or 0, 0, cfg.charStatCap.intelligence) / 230
+		m = 1 + ChaosPassiveCharStat(bonuses.intelligence, "intelligence") / 230
 	end
 	if WEAPON_ORIGIN[origin] then
-		m = m / (1 - clamp(bonuses.dexterity or 0, 0, cfg.charStatCap.dexterity) / 100)
+		m = m / (1 - ChaosPassiveCharStat(bonuses.dexterity, "dexterity") / 100)
 	end
 	return m
 end

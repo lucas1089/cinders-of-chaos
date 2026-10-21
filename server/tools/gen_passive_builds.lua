@@ -158,7 +158,7 @@ local function score(ctx, node, id, w, nodeScores, acc, variant, choice)
 				-- a stat under its cap scores in full (the last node may overshoot, as in the game); at the cap it scores 0
 				local gain = (acc[stat] or 0) >= capOf(cfg, stat) and 0 or v
 				if gain > 0 then
-					s = s + weight * gain / (ctx.norm[stat] or 1)
+					s = s + weight * gain * ((cfg.statScale or {})[stat] or 1) / (ctx.norm[stat] or 1)
 					relevant = true
 				end
 			end
@@ -167,7 +167,9 @@ local function score(ctx, node, id, w, nodeScores, acc, variant, choice)
 	if plain and not node.m then
 		s = s + cfg.baseScore
 	end
-	return s, relevant
+	-- rounded: the stats are summed in pairs() order, which differs between LuaJIT and Lua 5.3, and the last bits of
+	-- a float sum with the statScale factors broke ties differently (the output must be the same bytes under both)
+	return math.floor(s * 1e9 + 0.5) / 1e9, relevant
 end
 
 -- ------------------------------------------------------------------------------------------------ growth
