@@ -2567,16 +2567,16 @@ return {
 			"Skill de lenhador",
 		["Herbalist skill"] =
 			"Skill de herbalista",
-		["Physical damage x (1 + 0.5 x points / 230), at most 120 points (+26%)."] =
-			"Dano físico x (1 + 0,5 x pontos / 230), no máximo 120 pontos (+26%).",
-		["Damage of every type but physical, and healing, x (1 + 0.5 x points / 230), at most 120 points (+26%)."] =
-			"Dano de todo tipo menos físico, e cura, x (1 + 0,5 x pontos / 230), no máximo 120 pontos (+26%).",
-		["Weapon hits (melee, distance, wand) deal 1 / (1 - 0.25 x points%) times the damage, like attacking faster: at most 80 points (+25%)."] =
-			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - 0,25 x pontos%) vezes o dano, como atacar mais rápido: no máximo 80 pontos (+25%).",
-		["+0.5 percent maximum health per point, at most 100 points (+50%)."] =
-			"+0,5 percent de vida máxima por ponto, no máximo 100 pontos (+50%).",
-		["+0.5 percent maximum mana per point, at most 100 points (+50%)."] =
-			"+0,5 percent de mana máxima por ponto, no máximo 100 pontos (+50%).",
+		["Physical damage x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
+			"Dano físico x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
+		["Damage of every type but physical, and healing, x (1 + value / 230). Value: 0.8 per point up to 60 points (+21%), then 0.2 per point up to 120 points (+26%)."] =
+			"Dano de todo tipo menos físico, e cura, x (1 + valor / 230). Valor: 0,8 por ponto até 60 pontos (+21%), depois 0,2 por ponto até 120 pontos (+26%).",
+		["Weapon hits (melee, distance, wand) deal 1 / (1 - value%) times the damage, like attacking faster. Value: 0.8 per point up to 20 points (+19%), then 1 per 15 points up to 80 points (+25%)."] =
+			"Golpes de arma (corpo a corpo, distância, varinha) causam 1 / (1 - valor%) vezes o dano, como atacar mais rápido. Valor: 0,8 por ponto até 20 pontos (+19%), depois 1 a cada 15 pontos até 80 pontos (+25%).",
+		["+0.8 percent maximum health per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
+			"+0,8 percent de vida máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
+		["+0.8 percent maximum mana per point up to 50 points (+40%), then +0.2 per point up to 100 points (+50%)."] =
+			"+0,8 percent de mana máxima por ponto até 50 pontos (+40%), depois +0,2 por ponto até 100 pontos (+50%).",
 		["No effect yet: the game gives wisdom no use."] =
 			"Sem efeito por enquanto: o jogo ainda não dá uso à sabedoria.",
 		["Walking speed. The tooltip shows the speed you gain; at most +80."] =

@@ -719,9 +719,10 @@ different methods per line and must not be compared with this one):
   the class (strength / intelligence / dexterity up to their caps, its damage types, skills, crit), the keystones it can reach
   valued, and the class's own section path first for the four new lines (the build script is test-only: `zz_c4.lua`).
   These runs used the old attribute caps (strength / intelligence 60, dexterity 20, vitality / spirit 50 points, 1 a point).
-  From 2026-10-22 the caps are 120 / 80 / 100 points at 0.5 / 0.25 / 0.5 a point (server/README.md "Passive tree effects"):
-  the same effect at the cap, about half of it at level 300 (a Juggernaut's strength x1.21 -> x1.10 physical, a Ninja's
-  dexterity x1.25 -> x1.16 weapon hits; computed from the Auto builds, not measured). Not re-measured yet;
+  From 2026-10-22 a two-tier curve (server/README.md "Passive tree effects"): 80% of the old maximum at the old cap, the
+  rest up to 120 / 80 / 100 points. The same effect at the new cap, a little less below it (median level 300 build: a
+  Juggernaut's physical x1.21 -> x1.16, a Ninja's weapon hits x1.25 -> x1.23; computed from the Auto builds, not
+  measured). Not re-measured yet;
 - the rotation harness: the client casts the class's attack spells by their words on cooldown (group cooldowns from the server,
   buffs kept up, minions raised in a 12-24 s warm-up, cast-time spells waited for), auto attack on the main dummy, 60 s, damage =
   health the dummies lost. 1 target: one dummy; 5 targets: the main dummy and four around it, the same rotation.
@@ -990,8 +991,8 @@ by 1-3%, below the spread of a rotation run (no choice is out of line):
 | | Oath of Mercy | no damage | 910 / 2240 |
 
 Light Step's dexterity does nothing for a C4 Thief build (already at the cap); its speed is the whole effect. (Old cap 20.
-Since 2026-10-22 the cap is 80 points at 0.25 each and a level 300 Thief build has about 75, so Light Step's +3 counts again:
-+0.75 of the old points, weapon hits about +1%.)
+Since 2026-10-22 the cap is 80 points and a level 300 Thief build has about 75, past the knee of 20, so Light Step's +3 counts
+again at 1/15 of an old point each: weapon hits about +0.2%.)
 
 **Weapon (auto attack) re-measured** (ROADMAP: the old harness set the target with `setTarget`, which skips
 `onTargetCombat`, so the tree and the weapon styles never reached the dummies). Auto attack only, no spells, C4 tree and

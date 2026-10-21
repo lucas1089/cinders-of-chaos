@@ -1,10 +1,10 @@
 -- Passive tree effects: turns the summed node stats (ChaosPassiveTree.getBonuses) into real bonuses.
 --
 -- Registered as a listener of passivetree.lua, so it runs after every save, reset and login:
---   * character stats (strength ... spirit), capped (charStatCap) and scaled (charStatScale: value = points x scale),
+--   * character stats (strength ... spirit), turned into a value by a two-tier curve up to a cap (ChaosPassiveCharStat),
 --     with the same effect the engine gives the stat window's points but WITHOUT writing the character stats (those
 --     are saved with the player and are the stat window's points: writing them made the bonus stack on every login
---     and let the stat window refund it as free points). `value` below is the scaled one:
+--     and let the stat window refund it as free points). `value` below is the curve's:
 --       strength / intelligence: damage dealt x (1 + value/230) for physical / every other type (engine formula)
 --       dexterity: weapon hits (melee, distance, wand) x 1 / (1 - value/100), the damage equal of the engine's
 --         "attack time - value%" (a script cannot change the attack speed)
@@ -41,13 +41,18 @@ local cfg = {
 	maxAbsorb = 75,           -- percent, passive absorbs only (equipment adds on top)
 	maxDamagePercent = 150,
 	-- the stat window formulas are percentages (vitality = % health, dexterity = % damage taken less).
-	-- charStatCap: the most tree points of a stat that count. charStatScale: what one tree point is worth in those
-	-- formulas. 2026-10-22 the caps went up (x2, dexterity x4) and the worth of a point down by the same factor, so the
-	-- effect at the cap is unchanged (strength / intelligence +26%, dexterity weapon hits x1.25, vitality / spirit +50%):
-	-- the path nodes alone had filled the old caps (60 / 60 / 20 / 50 / 50) after 50-100 points. Dexterity's old cap
-	-- was 20 (at 40 knights out-damaged everyone at level 1000), now 80 x 0.25. Wisdom has no effect (scale 1, unused).
+	-- A character stat's value (what those formulas take) follows two straight lines (ChaosPassiveCharStat):
+	--   up to charStatKnee points: charStatKneeShare (80%) of charStatMax, the same share per point;
+	--   from the knee to charStatCap points: the other 20%; nothing above the cap.
+	-- charStatMax is the old maximum, so the effect at the cap is unchanged (strength / intelligence 60 = +26%,
+	-- dexterity 20 = weapon hits x1.25, vitality / spirit 50 = +50%). 2026-10-22: the path nodes alone had filled the old
+	-- caps (60 / 60 / 20 / 50 / 50, now the knees) after 50-100 points; the caps doubled (dexterity x4) and the points
+	-- past the knee give the last 20%. Dexterity's maximum stays 20 (at 40 knights out-damaged everyone at level 1000).
+	-- Wisdom has no effect (its numbers are unused).
+	charStatKnee = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40},
 	charStatCap = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 40},
-	charStatScale = {strength = 0.5, intelligence = 0.5, dexterity = 0.25, vitality = 0.5, spirit = 0.5, wisdom = 1}
+	charStatMax = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50, wisdom = 40},
+	charStatKneeShare = 0.8
 }
 ChaosPassiveEffectsConfig = cfg
 
@@ -171,10 +176,19 @@ function ChaosParagonSpeed(bonuses, baseSpeed)
 	return math.floor((baseSpeed or 0) * (bonuses.paragonSpeed or 0) / 100 + 1e-6)
 end
 
--- the effect value of a character stat: the tree points, capped (charStatCap), times the worth of a point
--- (charStatScale). Rounded to 1e-6 so a sum like 0.1 x 3 cannot miss a whole percent.
+-- the effect value of a character stat from its tree points: charStatKneeShare of charStatMax spread evenly over the
+-- points up to the knee, the rest over the points from the knee to the cap, nothing above (see cfg). Rounded to 1e-6
+-- so the knee and the cap give exact numbers (60 x 0.8 = 48, not 47.99999999999999).
 function ChaosPassiveCharStat(points, stat)
-	local v = clamp(points or 0, 0, cfg.charStatCap[stat]) * cfg.charStatScale[stat]
+	local knee, cap, max = cfg.charStatKnee[stat], cfg.charStatCap[stat], cfg.charStatMax[stat]
+	local share = cfg.charStatKneeShare
+	local p = clamp(points or 0, 0, cap)
+	local v
+	if p <= knee then
+		v = max * share * p / knee
+	else
+		v = max * share + max * (1 - share) * (p - knee) / (cap - knee)
+	end
 	return math.floor(v * 1e6 + 0.5) / 1e6
 end
 

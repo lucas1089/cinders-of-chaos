@@ -78,23 +78,34 @@ local function has(stat, text)
 	return cfg.stats[stat][2]:find(text, 1, true) ~= nil
 end
 check(E.charStatCap.strength == 120 and has("strength", "120 points") and has("intelligence", "120 points"), "strength / intelligence cap")
-check(E.charStatScale.strength == 0.5 and has("strength", "0.5 x points") and E.charStatScale.intelligence == 0.5
-	and has("intelligence", "0.5 x points"), "strength / intelligence worth of a point")
-check(E.charStatCap.dexterity == 80 and has("dexterity", "80 points") and E.charStatScale.dexterity == 0.25
-	and has("dexterity", "0.25 x points"), "dexterity cap and worth of a point")
-check(E.charStatCap.vitality == 100 and has("vitality", "100 points") and E.charStatCap.spirit == 100 and has("spirit", "100 points"),
-	"vitality / spirit cap")
-check(E.charStatScale.vitality == 0.5 and has("vitality", "+0.5 percent") and E.charStatScale.spirit == 0.5
-	and has("spirit", "+0.5 percent"), "vitality / spirit worth of a point")
+check(E.charStatKnee.strength == 60 and has("strength", "0.8 per point up to 60 points (+21%)") and has("strength", "0.2 per point")
+	and E.charStatKnee.intelligence == 60 and has("intelligence", "0.8 per point up to 60 points (+21%)"), "strength / intelligence knee")
+check(math.abs(mult({strength = 60}, COMBAT_PHYSICALDAMAGE, nil) - (1 + 48 / 230)) < 1e-9, "+21% at the knee")
+check(E.charStatCap.dexterity == 80 and has("dexterity", "up to 80 points (+25%)") and E.charStatKnee.dexterity == 20
+	and has("dexterity", "0.8 per point up to 20 points (+19%)") and has("dexterity", "1 per 15 points"), "dexterity knee and cap")
+check(math.abs(mult({dexterity = 20}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) - 1 / 0.84) < 1e-9, "dexterity: x1.19 at the knee")
+check(math.abs(ChaosPassiveCharStat(21, "dexterity") - ChaosPassiveCharStat(20, "dexterity") - 1 / 15) < 1e-6, "dexterity: 1 per 15 points past the knee")
+check(E.charStatCap.vitality == 100 and has("vitality", "up to 100 points (+50%)") and E.charStatCap.spirit == 100
+	and has("spirit", "up to 100 points (+50%)"), "vitality / spirit cap")
+check(E.charStatKnee.vitality == 50 and has("vitality", "+0.8 percent maximum health per point up to 50 points (+40%)")
+	and ChaosPassiveMaxPercent({vitality = 50}, "vitality") == 40 and has("spirit", "up to 50 points (+40%)")
+	and ChaosPassiveMaxPercent({spirit = 50}, "spirit") == 40, "vitality / spirit knee")
 -- the maximum effect the texts name, from the real functions at the cap
 check(has("vitality", "(+50%)") and ChaosPassiveMaxPercent({vitality = E.charStatCap.vitality}, "vitality") == 50, "vitality: +50% at the cap")
 check(has("spirit", "(+50%)") and ChaosPassiveMaxPercent({spirit = E.charStatCap.spirit}, "spirit") == 50, "spirit: +50% at the cap")
 check(has("dexterity", "(+25%)") and math.abs(mult({dexterity = E.charStatCap.dexterity}, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE) - 1.25) < 1e-9,
 	"dexterity: x1.25 at the cap")
--- the Auto build generator scores with the same caps and point worth (passive_builds_config.lua)
+-- the Auto build generator scores with the same curve (passive_builds_config.lua, gen_passive_builds.lua)
 local B = dofile("data/scripts/chaos/passive_builds_config.lua")
+PASSIVE_BUILDS_GEN_NO_MAIN = true
+local Gen = dofile("tools/gen_passive_builds.lua")
+check(B.statCurve.kneeShare == E.charStatKneeShare, "builds curve knee share = effects")
 for _, stat in ipairs({"strength", "intelligence", "dexterity", "vitality", "spirit"}) do
-	check(B.caps[stat] == E.charStatCap[stat] and B.statScale[stat] == E.charStatScale[stat], "builds config " .. stat .. " = effects")
+	check(B.caps[stat] == E.charStatCap[stat] and B.statCurve.knee[stat] == E.charStatKnee[stat]
+		and B.statCurve.max[stat] == E.charStatMax[stat], "builds config " .. stat .. " = effects")
+	for _, p in ipairs({0, 7, E.charStatKnee[stat], E.charStatKnee[stat] + 13, E.charStatCap[stat], E.charStatCap[stat] + 9}) do
+		check(math.abs(Gen.curveValue(B, stat, p) - ChaosPassiveCharStat(p, stat)) < 1e-6, "builds curve " .. stat .. " " .. p)
+	end
 end
 -- 2026-10-22: the Thief's and Ninja's most taken 10-point Attribute lanes give all-element resistance, not dexterity
 for vk, ids in pairs({thief = {130, 132, 157, 173, 238}, ninja = {130, 132, 238}}) do
@@ -110,8 +121,8 @@ check(E.maxSpeed == 80 and has("speed", "+80"), "speed cap")
 check(E.lootPerPoint == 0.2 and has("loot", "+0.2") and E.rarityLootPerPoint == 1.0 and has("rarityLoot", "+1 per"), "item find rates")
 -- the divisor 230 and the dexterity formula, from the real function
 local m = mult({strength = 23}, COMBAT_PHYSICALDAMAGE, nil)
-check(math.abs(m - (1 + 0.5 * 23 / 230)) < 1e-9 and has("strength", "/ 230") and has("intelligence", "/ 230"),
-	"strength: x (1 + 0.5 x points / 230)")
+check(math.abs(m - (1 + 0.8 * 23 / 230)) < 1e-9 and has("strength", "/ 230") and has("intelligence", "/ 230"),
+	"strength: x (1 + value / 230), 0.8 a point below the knee")
 check(math.abs(mult({strength = 120}, COMBAT_PHYSICALDAMAGE, nil) - (1 + 60 / 230)) < 1e-9 and has("strength", "(+26%)"), "26% at the cap")
 
 -- ------------------------------------------------------------------------------------------------ the class lists

@@ -9,9 +9,10 @@
 --     score taken inside the budget). Greedy growth from the start: every step takes the path (through nodes the class
 --     may hold) with the best score per point, so each prefix of a build is a legal build too.
 --
--- Scoring (the generator): a node's score is sum(weight[stat] * gain * statScale / median), where gain is the node's
--- value of the stat capped by what is left under the stat's cap (`caps`, the same numbers as passivetree_effects.lua),
--- statScale the worth of a point (character stats only) and median the median value of that stat over the tree. Nodes with a flag stat (keystones `ks...`, `ct...`, `ar...`, the variants
+-- Scoring (the generator): a node's score is sum(weight[stat] * gain / median), where gain is the node's value of the
+-- stat capped by what is left under the stat's cap (`caps`, the same numbers as passivetree_effects.lua) and median
+-- the median value of that stat over the tree. For a character stat gain is what the node adds on the value curve
+-- (`statCurve`) from what the build already has. Nodes with a flag stat (keystones `ks...`, `ct...`, `ar...`, the variants
 -- of 621 / 624) and mastery nodes carry a price or a choice: a theme build never takes them, a role build only the ones
 -- it names. Plain stat nodes get a tiny base score so a build always spends all its points.
 --
@@ -35,9 +36,11 @@ ChaosPassiveBuildsConfig = {
 	-- the caps of the stats the effects apply (passivetree_effects.lua charStatCap / maxSpeed / maxAbsorb, in node units)
 	caps = {strength = 120, intelligence = 120, dexterity = 80, vitality = 100, spirit = 100, wisdom = 0,
 		speed = 800, absorb = 75},
-	-- what one node point of a character stat is worth (passivetree_effects.lua charStatScale): its score is scaled the
-	-- same way, so a build values an attribute point as the game does
-	statScale = {strength = 0.5, intelligence = 0.5, dexterity = 0.25, vitality = 0.5, spirit = 0.5},
+	-- the two-tier value curve of the character stats (passivetree_effects.lua charStatKnee / charStatMax /
+	-- charStatKneeShare; the caps above): a node scores the value it adds where the build stands on the curve, so a point
+	-- past the knee scores what it is worth there (strength 0.2 of a point before the knee's 0.8)
+	statCurve = {knee = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50},
+		max = {strength = 60, intelligence = 60, dexterity = 20, vitality = 50, spirit = 50}, kneeShare = 0.8},
 	-- stats that never score (crafting, and the stat the engine gives nothing for)
 	ignored = {"craftingSkill", "herbalistSkill", "woodcuttingSkill", "miningSkill", "armorsmithSkill", "jewelsmithSkill",
 		"weaponsmithSkill", "wisdom"},

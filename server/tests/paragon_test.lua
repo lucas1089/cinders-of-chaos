@@ -118,19 +118,19 @@ P.cache[7] = nil
 eq(P.allocation(p).reduction, 8, "persisted")
 
 -- stacking with the tree: the tree's own bonuses + Paragon in one table, applied by passivetree_effects.lua
-local tree = {vitality = 40, spirit = 20, criticalHitAmount = 5, absorbFire = 10, loot = 50, speed = 200, incrementFire = 10}
+local tree = {vitality = 25, spirit = 10, criticalHitAmount = 5, absorbFire = 10, loot = 50, speed = 200, incrementFire = 10}
 local bonuses = P.addBonuses(p, tree)
 near(bonuses.paragonDamage, 5, "damage 10 pts"); near(bonuses.paragonHealth, 10, "health 20 pts")
 local applyAll = ChaosPassiveTree.listeners[1]
 applyAll(p, bonuses)
-eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 130, "one health condition: vitality 40 (x 0.5 = 20%) + Paragon 10")
-eq(added[7221].p[CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT], 110, "mana: spirit 20 (x 0.5 = 10%) only")
+eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], 130, "one health condition: vitality 25 (x 0.8 = 20%) + Paragon 10")
+eq(added[7221].p[CONDITION_PARAM_STAT_MAXMANAPOINTSPERCENT], 108, "mana: spirit 10 (x 0.8 = 8%) only")
 eq(added[7215].p[CONDITION_PARAM_SPECIALSKILL_CRITICALHITAMOUNT], 8, "crit 5 + 3")
 eq(st[977562], 12, "fire absorb 10 + reduction 2"); eq(st[977563], 2, "physical gets the reduction too")
 eq(st[7100040], 15, "item find 10 + 5")
 eq(speed(), 20 + math.floor(2418 * 0.05), "speed: tree 20 flat + 5% of base 2418")
 -- a fractional health sum uses the flat parameter (engine formula, max x percent / 100)
-applyAll(p, {vitality = 40, paragonHealth = 0.5})
+applyAll(p, {vitality = 25, paragonHealth = 0.5})
 eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTSPERCENT], nil, "no percent param for 20.5%")
 eq(added[7220].p[CONDITION_PARAM_STAT_MAXHITPOINTS], 2050, "20.5% of 10000")
 -- the tree's own caps still apply to the tree share only

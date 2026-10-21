@@ -91,6 +91,18 @@ function Gen.context(tree, cfg)
 	return {tree = tree, cfg = cfg, norm = norm, ignored = ignored}
 end
 
+-- the value of `points` of a character stat on the two-tier curve (passivetree_effects.lua ChaosPassiveCharStat)
+local function curveValue(cfg, stat, points)
+	local c = cfg.statCurve
+	local knee, cap, max = c.knee[stat], cfg.caps[stat], c.max[stat]
+	local p = math.max(0, math.min(points, cap))
+	if p <= knee then
+		return max * c.kneeShare * p / knee
+	end
+	return max * c.kneeShare + max * (1 - c.kneeShare) * (p - knee) / (cap - knee)
+end
+Gen.curveValue = curveValue
+
 local function capOf(cfg, stat)
 	if cfg.caps[stat] ~= nil then
 		return cfg.caps[stat]
@@ -156,9 +168,15 @@ local function score(ctx, node, id, w, nodeScores, acc, variant, choice)
 			local weight = w[stat]
 			if weight then
 				-- a stat under its cap scores in full (the last node may overshoot, as in the game); at the cap it scores 0
-				local gain = (acc[stat] or 0) >= capOf(cfg, stat) and 0 or v
+				local gain
+				if cfg.statCurve and cfg.statCurve.knee[stat] then
+					local have = acc[stat] or 0
+					gain = curveValue(cfg, stat, have + v) - curveValue(cfg, stat, have)
+				else
+					gain = (acc[stat] or 0) >= capOf(cfg, stat) and 0 or v
+				end
 				if gain > 0 then
-					s = s + weight * gain * ((cfg.statScale or {})[stat] or 1) / (ctx.norm[stat] or 1)
+					s = s + weight * gain / (ctx.norm[stat] or 1)
 					relevant = true
 				end
 			end
@@ -168,7 +186,7 @@ local function score(ctx, node, id, w, nodeScores, acc, variant, choice)
 		s = s + cfg.baseScore
 	end
 	-- rounded: the stats are summed in pairs() order, which differs between LuaJIT and Lua 5.3, and the last bits of
-	-- a float sum with the statScale factors broke ties differently (the output must be the same bytes under both)
+	-- a float sum with the curve's fractions broke ties differently (the output must be the same bytes under both)
 	return math.floor(s * 1e9 + 0.5) / 1e9, relevant
 end
 

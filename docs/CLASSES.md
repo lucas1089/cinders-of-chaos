@@ -820,8 +820,8 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   masteries and weapons measured in game"): each damage choice adds 2-4% to its own damage type (Venom Glands earth
   +5.3%, Withering Touch death +3.9%, Iron Knuckles physical +3.9%, Oath of Flame holy +3.8%; the crit choices about +1%),
   a build 1-3%, below the spread of a rotation run. Light Step's dexterity was over the cap of a typical Thief build at
-  level 300 (only its speed counted there); since the attribute caps went up (2026-10-22: dexterity 80 points at 0.25 each)
-  it adds about 1% to weapon hits there.
+  level 300 (only its speed counted there); since the attribute caps went up (2026-10-22: dexterity cap 80, the points past
+  20 at 1/15 of an old point) it adds about 0.2% to weapon hits there.
 - **Line keystones** (2026-10): the Thief, Necromancer, Monk and Templar lines had one keystone per ascended class (in the
   section) and none for the base class, the other three lines two. Each of these lines now has a second keystone for
   another play style, for the base class and both ascended classes, on a converted mythic leaf of the main tree (18-21
