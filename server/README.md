@@ -24,6 +24,7 @@ server/
   tools/content_audit.py              hunts, spawns and story per level band (docs/CONTENT.md, "Tales")
   tools/late_game.py, late_game_spawns.csv   late game stages and spawns (see "Late game")
   tools/patch_base_spawns.py, spawn_tuning.json   spawn density and respawn (see "Spawn density and respawn")
+  tools/patch_spawn_fields.py         small fire under nine base spawn entries in fire lairs (see "Spawns on fire fields")
   tools/patch_base_monster_names.py   Chaos names of the base monsters (see "Base monster names")
   tools/patch_base_bossrooms.py       the base lever and step-in boss rooms: lock, time limit, exit, clean-up (see "Instance limits")
   tools/patch_base_dungeon.py         the base dungeon entry tile opens the Chaos dungeon window (see "Instance limits")
@@ -444,6 +445,8 @@ server/
    `install_all.py` step `spawns`, after `monsters`) fixes the dead monster registrations, the glitched spawntimes and the
    spawns on blocking tiles, shortens the 300-600 band's respawn and adds spawns in thin areas, all from
    `tools/spawn_tuning.json`. Engine patch 0022 is needed for the dynamic respawn. See "Spawn density and respawn".
+   Then `python3 -I server/tools/patch_spawn_fields.py <server>/data [--dry-run]` (idempotent; step `spawnfields`)
+   puts the small fire without damage under nine spawn entries in fire lairs. See "Spawns on fire fields".
 6. Restart the server (or `/reload scripts`). Check the console for Lua errors.
 7. Player commands: `python3 -I server/tools/install_commands.py <server>/data` takes the base server's spoken player
    commands out (talkactions.xml lines with "!" words, the "!" words of base revscripts, the "!commands" login lines);
@@ -6727,6 +6730,7 @@ Lua `COMBAT_FIREDAMAGE` percent 100+; a monster with its own higher fire row kee
 The 14 pets (`monsters/chaos/pets`) are allies and never a target of the aura: they keep the immunity. The base server's
 monsters (not in this repository): `patch_base_monsters.py` (step `basemonsters`) does the same, so the count there is printed at
 install ("N file(s) changed"). Tests: `tests/monster_fire_resist_test.lua`, `tools/monster_fire_resist_test.py`.
+Eight base spawn entries in fire lairs could not be placed at start any more: see "Spawns on fire fields".
 
 ## Monster lint (`tools/ci/check_content.py`, `tools/fix_monster_xml.py`, `tools/hash_base_monsters.py`)
 
@@ -14482,6 +14486,26 @@ connected to it. Each copies the nearest ordinary entry: no boss, no rare spawn,
 
 `prod_config.py` sets `rateSpawn = 3`: most packs come back in one or two spawntimes instead of one monster per
 spawntime. That is the biggest change below level 300 (+20-55% respawn there).
+
+### Spawns on fire fields (`tools/patch_spawn_fields.py`, 2026-10-21)
+
+The start log printed "Couldn't spawn monster" for eight base spawn entries, each line twice: three monster types of
+the fire lairs (floors 4, 5 and 12) that the base server made immune to fire. Not the base server: with its fire
+immunity none of them fails. Since C7 ("Monsters are not immune to fire") they are not immune, and at start the
+engine places a monster unforced (`Map::placeCreature`, `extendedPos`): `Tile::queryAdd` refuses a tile with a magic
+field that does damage of an element the monster is not immune to, then tries the 12 tiles around. For these eight the
+spot and all 12 tiles hold a burning fire field (items 1487, 1488) or block (wall, lava, hole). The line comes twice
+because `Spawn::spawnMonster(spawnBlock_t)` tries a one-monster block again after the first try fails; there is one
+entry per position, no duplicate in the spawn file. The respawn places monsters forced, so they came 60 s later anyway.
+
+Install step `spawnfields` (after `spawns`): on the map, a burning fire field on one of nine spots becomes the small
+fire 1489 (field fire, no damage: every monster may stand on it). The ninth spot, (32078, 32605, 5), is a neighbour
+whose own tile burns: once the eight were free, its start search took (32078, 32603) first and pushed another entry
+out. Only the item id changes; the rest of each lair keeps its fire. The ids are checked in `items.xml` first.
+`<map>.otbm.bak` is written first when missing; a second run finds nothing. `--dry-run` lists, `--out FILE` writes a
+copy. Measured on the base map with the engine's placement rules (damaging fields only): with fire immunity no entry
+fails, without it exactly the eight of the log, after the step none (a simulation of the start order, 3000 runs).
+Test: `tools/patch_spawn_fields_test.py` (synthetic map).
 
 ### Fill: every hunt full (`tools/gen_spawn_density.py`, `tools/spawn_density.json`, 2026-10-14)
 

@@ -484,7 +484,7 @@ def main(argv=None):
     b.add_argument('--version', type=int)
     b.add_argument('--min-version', type=int)
     b.add_argument('--min-package', type=int, default=0)
-    b.add_argument('--parallel', type=int, default=4, choices=range(1, 9), metavar='1..8')
+    b.add_argument('--parallel', type=int, default=8, choices=range(1, 9), metavar='1..8')
     b.add_argument('--channel', default='live')
     b.add_argument('--roots', default=','.join(DEFAULT_ROOTS))
     b.add_argument('--dry-run', action='store_true')

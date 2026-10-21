@@ -31,7 +31,7 @@ M.WINDOWS_RESERVED = { con = true, prn = true, aux = true, nul = true }
 for i = 1, 9 do M.WINDOWS_RESERVED['com' .. i] = true; M.WINDOWS_RESERVED['lpt' .. i] = true end
 M.MAX_FILE_SIZE = 1024 * 1024 * 1024
 M.MAX_FILES = 50000
-M.DEFAULT_PARALLEL = 4
+M.DEFAULT_PARALLEL = 8
 M.MAX_PARALLEL = 8
 M.CHUNK = 8 * 1024 * 1024
 M.MAX_ATTEMPTS = 5

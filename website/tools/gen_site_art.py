@@ -616,7 +616,7 @@ def gen_showcase():
             y += 190
         x += colw + gap
     plain_text(img, (W // 2, 850), "Warrior, Ranger, Mystic and Thief from the start  |  Necromancer, Monk and Templar "
-               "unlocked in the store", font(24, "heading"), fill=GOLD_3, anchor="mm")
+               "unlocked at level 200", font(24, "heading"), fill=GOLD_3, anchor="mm")
     save(img.convert("RGB"), OUT_ART, "class-showcase-1400x900.png", colors=128)
 
 

@@ -27,7 +27,8 @@ client/fonts-src/*/README.md, website/README.md.
 
 ## Cinders of Chaos {pt-BR: Cinders of Chaos}
 
-Game design, world, server systems, client interface, website and original art: the Cinders of Chaos team.
+Game design, world, server systems, client interface, website and original art: the Cinders of Chaos team. The game's
+files may not be extracted, decrypted or reused elsewhere: some art is licensed for this game only (Terms of Use).
 
 - **Owner art**
   - Author: the Cinders of Chaos owner (own or commissioned art)

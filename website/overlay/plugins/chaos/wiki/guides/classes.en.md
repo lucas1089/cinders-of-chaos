@@ -11,7 +11,7 @@ There are {{class.lines}} class lines. Each starts with a base class and ascends
 
 ## The unlockable classes
 
-{{class.lockedNames}} are unlocked per account in the game store, for {{class.unlockCost}} Chaos Coins each. The unlock is for every character of the account.
+{{class.lockedNames}} unlock for your whole account once any of its characters reaches level {{class.unlockLevel}}, by playing. They are never sold.
 
 - **[Monk](wiki:class:monk)**: bare-handed fighting with chi. Shadowfist or Iron Sage.
 - **[Necromancer](wiki:class:necromancer)**: the undead and curses. Lich or Bone Lord.

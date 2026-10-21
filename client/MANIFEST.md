@@ -118,6 +118,7 @@ Protocol target is 10.98 on the base server (TFS 1.4.2). The sources are mostly 
 | game_infinitytower | extended opcode 214 | none | Needs server script. It is classic-style, so no conversion was needed. The "Top Rank Rewards" podium shows the chests the server sends in `topRewards` (look = the chest's client id, tooltip = its contents; server/README.md "Infinity Tower season rewards"); before the first update the stock chest looks 2478, 2472, 2469 (the old ids 63194-63196 did not exist in the 10.98 items) |
 | game_event | none seen in the module | none | Client-only UI; wiring to a server event system is open |
 | game_creatureinformation | none | engine APIs this client lacks | Not included |
+| client_terminal | none | none | Stand-in for the base Lua console: runs nothing, no Ctrl+T, no top bar entry (client/BASE.md "Lua console removed"); `terminal_test.lua` in CI; not run in a client |
 | client_chaos_numbers | none | none | Short-number formatter for every module (`formatShortNumber`, `shortNumbersIn`); self test `numbers_test.lua` runs in CI; not run in a client |
 | client_chaos_locale | sends `hello {lang}` on 157 (server `i18n.lua`) | none | Client language, English or Portuguese (Brazil); see "Localization". Self test `locale_core_test.lua` in CI; not run in a client |
 | client_chaos_login | none | none | Login screen layout (see "Login screen" below); art from `tools/gen_login_art.py` (from the login artwork in `tools/art_src/`); tested in the Linux client at 1280x720, 1366x768, 1920x1080 and 1024x768. The living scene behind it (see "Login scene"): `loginscene_core.lua` (tested by `loginscene_core_test.lua` in CI), `loginscene.lua`; tested in the Linux client at 1280x720 and 1920x1080 |
@@ -2618,7 +2619,7 @@ download is required" (with `Services.update.download`) and cannot log in.
    signature and the payload, hashes the files the client sees (time-sliced, 12 ms per frame, with a cache of
    real dir + path, mtime and size in `chaos_update/hashcache.txt`), and decides per file: keep, download, or drop a stale
    tree copy that hides a right install file.
-3. Download pool (`updater_core.lua` `M.download`): N requests at once (`parallel` in the manifest, default 4, the client
+3. Download pool (`updater_core.lua` `M.download`): N requests at once (`parallel` in the manifest, default 8 since 2026-10-21, before 4; the client
    setting `chaos-update-parallel` wins, 1..8); one blob per distinct hash, largest first; a blob over 8 MB goes in
    8 MB `Range` parts that run in parallel too (the 570 MB `Tibia.spr` does not sit on one connection), each part a
    file `<sha>.c<i>`, so an interrupted run resumes with the parts it has; a server ignoring `Range` answers 200 with

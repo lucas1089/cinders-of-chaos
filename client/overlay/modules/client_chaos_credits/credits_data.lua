@@ -4,7 +4,7 @@ ChaosCreditsData = {
   {
     title = "Cinders of Chaos",
     pt = "Cinders of Chaos",
-    note = "Game design, world, server systems, client interface, website and original art: the Cinders of Chaos team.",
+    note = "Game design, world, server systems, client interface, website and original art: the Cinders of Chaos team. The game's files may not be extracted, decrypted or reused elsewhere: some art is licensed for this game only (Terms of Use).",
     entries = {
       { name = "Owner art", author = "the Cinders of Chaos owner (own or commissioned art)", use = "monster looks, wings, decoration and equipment sets", source = "the equipment set sheets are the owner's own art, made for us" },
       { name = "Login artwork", author = "the Cinders of Chaos team", use = "the login screen" },

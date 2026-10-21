@@ -102,8 +102,8 @@ eq(C.blobUrl('https://site.example/updates/live/manifest.json?t=1', 'files/', sh
    'https://site.example/updates/live/files/ee/' .. sha('e'), 'blob url relative')
 eq(C.blobUrl('https://a/m.json', 'https://cdn.example/f', sha('1')), 'https://cdn.example/f/11/' .. sha('1'), 'blob url absolute')
 eq(C.workerCount(nil, 6), 6, 'manifest parallel'); eq(C.workerCount(2, 6), 2, 'setting wins')
-eq(C.workerCount(nil, nil), 4, 'default parallel'); eq(C.workerCount(99, nil), 8, 'parallel capped')
-eq(C.workerCount(0, 0), 4, 'zero means default')
+eq(C.workerCount(nil, nil), 8, 'default parallel'); eq(C.workerCount(99, nil), 8, 'parallel capped')
+eq(C.workerCount(0, 0), 8, 'zero means default')
 
 -- ---------------------------------------------------------------- state, verdicts, diff
 local st = C.parseState(C.formatState({ version = 7, min_version = 3, package = 'p1', status = 'ok' }))

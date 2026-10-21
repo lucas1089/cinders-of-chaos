@@ -64,7 +64,7 @@ foreach ($lines as $base => $line) {
 						</label>
 					<?php endforeach; ?>
 				</div>
-				<p class="chaos-note">You ascend at level 100, in the game (<code>!ascend</code>).<?php if ($hidden > 0): ?> More classes (the Monk, the Necromancer and the Templar) are unlocked for your whole account in the game store.<?php endif; ?></p>
+				<p class="chaos-note">You ascend at level 100 with the Ascendant Oracle in the temple, in the game.<?php if ($hidden > 0): ?> More classes (the Monk, the Necromancer and the Templar) unlock for your whole account once any of its characters reaches level 200.<?php endif; ?></p>
 			</div>
 
 			<div class="chaos-field">

@@ -111,6 +111,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
+  spawnfields  tools/patch_spawn_fields.py       the burning fire fields under nine base spawn entries in fire lairs become
+               the small fire without damage, on the map: no monster is immune to fire since C7, so the start could not
+               place them ("Couldn't spawn monster", README "Spawns on fire fields"; with --dry-run it reads the real
+               map and writes nothing)
   spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
                                                  Windrunner go; their ids are free (C6, 2026-10-20)
                tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
@@ -683,6 +687,17 @@ STEPS.insert(STEPS.index('sql'), 'corpses')  # late: after every step that adds 
 def step_spawns(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_spawns.py'), data, '--config', os.path.join(server, 'config.lua')],
                                 'patch_base_spawns.py'))
+
+
+def step_spawnfields(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one, write nothing
+        real = os.path.join(ctx['server'], 'data')
+        return tool_result(run_tool([tool('patch_spawn_fields.py'), real, '--dry-run'], 'patch_spawn_fields.py'))
+    return tool_result(run_tool([tool('patch_spawn_fields.py'), data], 'patch_spawn_fields.py'))
+
+
+STEPS.insert(STEPS.index('spawns') + 1, 'spawnfields')  # next to the spawns step (map only: no order needs)
 
 
 def step_spells(server, data, ctx):
