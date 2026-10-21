@@ -219,8 +219,16 @@ class World:
         buf = io.BytesIO()
         with tarfile.open(fileobj=buf, mode='w:gz') as t:
             for name, data in (entries or [('CindersOfChaos-Server-Linux/server/tfs', engine.encode()),
+                                           ('CindersOfChaos-Server-Linux/server/lib/libfmt.so.8.1.1',
+                                            ('fmt of %s\n' % engine.strip()).encode()),
+                                           ('CindersOfChaos-Server-Linux/server/lib/libfmt.so.8', '->libfmt.so.8.1.1'),
                                            ('CindersOfChaos-Server-Linux/server/pad.bin', os.urandom(1100000))]):
                 info = tarfile.TarInfo(name)
+                if isinstance(data, str) and data.startswith('->'):
+                    info.type = tarfile.SYMTYPE
+                    info.linkname = data[2:]
+                    t.addfile(info)
+                    continue
                 info.size = len(data)
                 info.mode = 0o755
                 t.addfile(info, io.BytesIO(data))
@@ -363,6 +371,11 @@ def test_flow():
         check(all('--proto =https' in c for c in w.calls if c.startswith('curl')), 'curl: https only')
         check(read(os.path.join(w.server, 'tfs')) == 'engine 47\n', 'apply: new engine installed')
         check(read(os.path.join(w.server, 'tfs.antes-47')) == old_engine, 'apply: old engine kept as tfs.antes-47')
+        check(os.path.islink(os.path.join(w.server, 'lib', 'libfmt.so.8'))
+              and os.readlink(os.path.join(w.server, 'lib', 'libfmt.so.8')) == 'libfmt.so.8.1.1',
+              'apply: the engine libraries (server/lib, links kept) installed with the engine')
+        check(read(os.path.join(w.server, 'lib', 'libfmt.so.8.1.1')).startswith('fmt of'),
+              'apply: the library files come from the package')
         cfg = read(os.path.join(w.server, 'config.lua'))
         check('rateExp = 10' in cfg and 'multiplier = %d' % (late_game.STAGES[0][2] * 10) in cfg
               and 'Chaos XP rate x10' in cfg, 'apply: the x10 rates survive install_all', cfg)
