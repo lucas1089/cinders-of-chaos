@@ -13,7 +13,10 @@ return {
 	-- many modifiers an Orb of Gilding gives a key without any, {count, weight} (data/lib/chaos_crafting.lua)
 	key = {itemId = 10155, actionId = 47401, nameFormat = "Rift Key (Tier %d)", maxMods = 3,
 		alchemyCount = {{2, 60}, {3, 40}}},
-	chest = {itemId = 1740, actionId = 47402}, -- the reward chest that appears where the rift boss died
+	-- the reward chest that appears where the rift boss died: 21584 "reward chest" (big, gold on a stone plinth, not
+	-- moveable; was the plain chest 1740). It also is the quest chest of the planned areas (tools/areaplan_build.lua)
+	-- and the Descent's (descent_config.lua objects.chest); server/README.md "Reward chests"
+	chest = {itemId = 21584, actionId = 47402},
 	maxTier = 15,
 
 	-- ------------------------------------------------------------------ opening
@@ -255,12 +258,13 @@ return {
 	-- Gilded Trail: the goblin (treasure_goblin.lua, ChaosTreasureGoblin.spawn) appears in a random open room once
 	-- this percent range of the rift's kills is done (rolled per run), at the level of the rift's strongest type
 	gilded = {atKills = {25, 60}},
-	-- Sealed Coffer: a treasure chest in a random open side room. Using it wakes a wave of rift monsters around it
+	-- Sealed Coffer: a big treasure chest (12664: blue and silver, a container of 20, not moveable; was 1746, which could
+	-- be picked up) in a random open side room. Using it wakes a wave of rift monsters around it
 	-- (wave.base + wave.perExtraPlayer x (players - 1), at least `waveTier`); once they are dead it opens with: gold
 	-- coins goldPerTier2 x tier^2, Orbs of Upheaval and Fate and item rolls (as the reward chest, base + perTier x tier), all x
 	-- (1 + quantity bonus). Wave kills do not count towards the guardian. A coffer nobody woke crumbles when the rift is
 	-- sealed; a woken one opens then.
-	coffer = {itemId = 1746, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
+	coffer = {itemId = 12664, actionId = 47403, wave = {base = 5, perExtraPlayer = 1, spread = 2}, waveTier = "magic",
 		goldPerTier2 = 2000, chaos = {base = 0.25, perTier = 0.05}, divine = {base = 0, perTier = 0.03},
 		rolls = {base = 2, perTier = 0.25}},
 	-- Cinderdeath: delayMs after a (non-guardian) monster dies, every player within `radius` sqm of it takes fire damage:

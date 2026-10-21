@@ -10,8 +10,9 @@ android {
         applicationId 'com.cindersofchaos.admin'
         minSdk 26
         targetSdk 34
-        versionCode = (System.getenv('ADMIN_APP_VERSION_CODE') ?: '1').toInteger()
-        versionName = System.getenv('ADMIN_APP_VERSION_NAME') ?: '1.0'
+        // the workflow passes its run number; a local build is 2.1 (server update, accounts, XP rate, GM logs)
+        versionCode = (System.getenv('ADMIN_APP_VERSION_CODE') ?: '3').toInteger()
+        versionName = System.getenv('ADMIN_APP_VERSION_NAME') ?: '2.1'
     }
 
     // The release is signed with the keystore of the workflow (.github/workflows/admin-app.yml): CHAOS_KS_FILE,
@@ -54,4 +55,9 @@ android {
 dependencies {
     // SSH client (JSch fork with rsa-sha2 and modern ciphers; pure Java, no native code)
     implementation 'com.github.mwiede:jsch:0.2.19'
+    // the screens: Material 3 components (cards, bottom navigation, buttons, dialogs, snackbars) on AndroidX AppCompat,
+    // and pull to refresh. All Apache 2.0, credited in docs/CREDITS.md.
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 }

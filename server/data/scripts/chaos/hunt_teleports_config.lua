@@ -42,7 +42,9 @@ return {
 		signRows = {32252, 32260}, -- the counter with the sign behind each teleport
 		east = {module = {31664, 31667}, cap = {31668, 31670}, modules = 5},
 		west = {module = {31629, 31632}, cap = {31626, 31628}, modules = 5},
-		-- where a plan's exit portal sends players: the middle of the corridor
+		-- the middle of the corridor (the stairs' column): where a plan's exit portal sends players when its places
+		-- entry has no `front` (the tile in front of its own teleport) and the room has no teleport rows; the end
+		-- teleports' fronts face this column
 		back = {x = 31648, y = 32256, z = 6},
 		-- The other floors grow the same way (owner, 2026-10-18: the ground floor z 7 holds the hunts of levels 1-500,
 		-- more than its 16 alcoves): `from` is the floor whose alcoves are copied (bare of rewards and signs), the
@@ -63,22 +65,33 @@ return {
 	-- the hunt's level being the weighted median of its monsters (a plan: the middle of its `level`). The ground floor
 	-- z 7 holds levels 1-500, z 6 501-1000, z 5 the rest; `max` is the highest level of a floor. Same order as `floors`.
 	-- `quests`: the quest hall (tools/hall_quests.py): the base quests' alcoves move, with their rewards on show and
-	-- their quest signs, to a hall of the same shape (two rows of alcoves round a 3-row corridor, 9 rows from
-	-- `origin`.y, the first alcove's teleport column `origin`.x, 33 columns for 8 alcoves a row) at the east end of the
-	-- plaza's aisle south of the corridor, joined to it by a corridor from `connector`.x; `returnRadius`: how far from a
-	-- quest's destination its way back is looked for; `chests`: the base server's daily and weekly reward chests of the
-	-- plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests) taken away with their
-	-- booth (the rows `rows`), owner 2026-10-18.
+	-- their quest signs, to the plaza south of the hall, where the daily and weekly reward booths stood (owner,
+	-- 2026-10-20: "you can overwrite this green region"): `north` the row of the base room's north alcoves (`y` its sign
+	-- row, the teleports on y + 2, `x` the teleport columns: the hall's own, the gap in the middle the way from the
+	-- hall's south door), `south` the row of the south alcoves (`y` its teleport row, the signs on y + 2; the west
+	-- columns two tiles off the hall's so that no front is a tile of the plaza's two event teleports), `corridor` the
+	-- floor between them in the hall's carpet (the plaza's aisle; its own teleports stay). `previous`: the quest hall of
+	-- 2026-10-18 over the pond east of the plaza (origin, connector, step; `fill`: deep water for a tile the map's
+	-- backup does not have), taken away once its quests have moved on. `chests`: the base server's daily and weekly
+	-- reward chests of the plaza (royal chest 29327, unique ids 34801-34804; scripts data/scripts/customs/daily_chests)
+	-- taken away with their booth (the rows `rows`), owner 2026-10-18.
 	hall = {
 		enabled = true,
 		floors = {7, 6, 5},
 		levels = {{z = 7, max = 500}, {z = 6, max = 1000}, {z = 5}},
 		quests = {
 			z = 7,
-			origin = {x = 31676, y = 32263},
-			connector = {x = 31665}, -- the aisle's last column; the corridor runs from there to the hall
-			step = 4,
-			returnRadius = 4,
+			north = {y = 32263, x = {31630, 31634, 31638, 31642, 31654, 31658, 31662, 31666}},
+			south = {y = 32270, x = {31628, 31632, 31636, 31640, 31654, 31658, 31662, 31666}},
+			corridor = {x = {31628, 31668}, y = {32266, 32269}},
+			previous = {origin = {x = 31676, y = 32263}, connector = {x = 31665}, step = 4, fill = 28915},
+			-- the cell row an old quest alcove gets once its quest has moved (the rewards stood on all three tiles:
+			-- both cells and the counter between): the hunt alcove of this teleport column on floor `z` is the model
+			-- (bare cells without protection zone, so the display monsters can stand there, and the counter)
+			model = {x = 31666, z = 6},
+			-- the teleport item of a quest whose teleport an earlier install lost (a hunt's took its alcove): the
+			-- quest hall makes it again to the CSV's destination with this item (default items.portal)
+			portalItems = {base_7_31654_32254 = 5023},
 			chests = {
 				{x = 31639, y = 32265, item = 29327, uid = 34801, rows = {32263, 32265}}, -- daily reward
 				{x = 31633, y = 32265, item = 29327, uid = 34802, rows = {32263, 32265}}, -- weekly: Nightmare Coin
@@ -86,6 +99,10 @@ return {
 				{x = 31663, y = 32265, item = 29327, uid = 34804, rows = {32263, 32265}} -- weekly: Star Inlay Stone
 			}
 		},
+		-- a room no hunt takes (the floors have more rooms than hunts) is closed: the room's own wall piece of the
+		-- teleport row (`wall`) on its teleport tile, the ring and the sparkle (`decor`) off; a hunt that takes it later
+		-- opens it again (beta 2026-10-20: "many unused spawns")
+		closed = {wall = 29306, decor = {8047, 1421}},
 		x = {31590, 31712},
 		endRow = 32256,
 		temple = {32369, 32241, 7},
@@ -136,6 +153,33 @@ return {
 		{id = "hollow_crypt", monster = "Sopping Carcass"}
 	},
 
+	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",
+	-- "Ways back from the added hunts"). The base hunts have their way back on the map beside the arrival (checked on
+	-- the base map: 35 of 35) and the planned hunts their camp portal (areagen exit, ChaosHuntTeleports.backFor). The
+	-- hunts added to the hall without a base teleport (hall_hunts.csv rows without a place, `low_*`) had none. At
+	-- startup each one listed here gets a magic forcefield (items.portal, action id `aid`) on `at` that leads in front
+	-- of the hunt's own teleport of the hall, wherever the hall order put it, and the label "Back to the teleport room"
+	-- floats over it like the hall's labels. `at`: chosen on the base map with ChaosHuntTeleportsCore.pickReturnTile
+	-- (reached on foot from the arrival, a free tile: no stairs, no protection zone, no house, nothing on it, not
+	-- splitting a corridor). When `at` cannot take it on the live map, startup picks the nearest such tile within
+	-- `radius` of the arrival. tests/hunt_teleports_test.lua fails when a hunt of the CSV without a base teleport is
+	-- missing here; tools/check_hunt_returns.py checks the map.
+	returns = {
+		radius = 4,
+		list = {
+			{id = "low_rat_warren", at = {x = 32367, y = 32213, z = 8}},
+			{id = "low_dworc_burrow", at = {x = 32700, y = 32932, z = 9}},
+			{id = "low_orc_stronghold", at = {x = 32310, y = 32124, z = 10}},
+			{id = "low_chakoya_caves", at = {x = 32461, y = 31089, z = 10}},
+			{id = "low_minotaur_hold", at = {x = 32415, y = 32168, z = 15}},
+			{id = "low_jungle_camp", at = {x = 32769, y = 32503, z = 9}},
+			{id = "low_tomb_vaults", at = {x = 33151, y = 32973, z = 14}},
+			{id = "low_dwarf_mines", at = {x = 32503, y = 31952, z = 14}},
+			{id = "low_quara_grotto", at = {x = 32073, y = 32769, z = 12}},
+			{id = "low_clay_hollow", at = {x = 32219, y = 32578, z = 12}}
+		}
+	},
+
 	-- texts: the English one is the key; pt-BR beside it
 	texts = {
 		["pt-BR"] = {
@@ -145,6 +189,7 @@ return {
 			["Floor %d: levels %d+"] = "Andar %d: níveis %d+",
 			["Up: floor %d, levels %d+"] = "Acima: andar %d, níveis %d+",
 			["Quests"] = "Missões",
+			["Back to the teleport room"] = "Voltar à sala de teleportes",
 			["%s is for level %d and above."] = "%s é para nível %d ou mais.",
 			["%s: monsters of level %d-%d. The portal at the camp leads back to the teleport room."] =
 				"%s: monstros de nível %d-%d. O portal do acampamento leva de volta à sala de teleportes."

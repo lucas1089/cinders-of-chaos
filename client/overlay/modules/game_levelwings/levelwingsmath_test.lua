@@ -41,11 +41,38 @@ eq(M.TOTAL_MS >= 1500 and M.TOTAL_MS <= 2000, true, 'about 1.5 - 2 s')
 eq(M.framePath(1), '/modules/game_levelwings/images/wings_01', 'path 1')
 eq(M.framePath(12), '/modules/game_levelwings/images/wings_12', 'path 12')
 eq(M.framePath(40), '/modules/game_levelwings/images/wings_12', 'path clamped')
+-- a frame set per view: the front pair facing south or north, the side pair facing east or west
+eq(M.framePath(1, 'south'), '/modules/game_levelwings/images/wings_01', 'south: front pair')
+eq(M.framePath(7, 'north'), '/modules/game_levelwings/images/wings_07', 'north: front pair')
+eq(M.framePath(3, 'east'), '/modules/game_levelwings/images/wings_east_03', 'east: side pair')
+eq(M.framePath(12, 'west'), '/modules/game_levelwings/images/wings_west_12', 'west: mirrored side pair')
+eq(M.framePath(0, 'east'), '/modules/game_levelwings/images/wings_east_01', 'side path clamped low')
+eq(M.framePath(99, 'west'), '/modules/game_levelwings/images/wings_west_12', 'side path clamped high')
+eq(M.framePath(5, 'up'), '/modules/game_levelwings/images/wings_05', 'unknown view: front pair')
 
--- layer: in front only with the back to the viewer
+-- view of a direction (0 N, 1 E, 2 S, 3 W, 4 NE, 5 SE, 6 SW, 7 NW)
+eq(M.viewFor(0), 'north', 'view north'); eq(M.viewFor(1), 'east', 'view east')
+eq(M.viewFor(2), 'south', 'view south'); eq(M.viewFor(3), 'west', 'view west')
+eq(M.viewFor(4), 'north', 'north-east: the back'); eq(M.viewFor(7), 'north', 'north-west: the back')
+eq(M.viewFor(5), 'south', 'south-east: the front'); eq(M.viewFor(6), 'south', 'south-west: the front')
+eq(M.viewFor(nil), 'south', 'unknown: south'); eq(M.viewFor(8), 'south', 'out of range: south')
+eq(M.viewFor('1'), 'south', 'not a number: south')
+
+-- layer: in front only with the back to the viewer; the side pair is behind
 eq(M.layerFor(0), 'top', 'north'); eq(M.layerFor(4), 'top', 'north-east'); eq(M.layerFor(7), 'top', 'north-west')
 eq(M.layerFor(1), 'bottom', 'east'); eq(M.layerFor(2), 'bottom', 'south'); eq(M.layerFor(3), 'bottom', 'west')
 eq(M.layerFor(5), 'bottom', 'south-east'); eq(M.layerFor(nil), 'bottom', 'unknown')
+
+-- a turn during the animation: the frame index comes from the elapsed time only, the set from the direction, so a
+-- turn changes the set and keeps the frame (no restart)
+do
+  local t = 4 * M.FRAME_MS + 10
+  local fr = M.at(t)
+  local before = M.framePath(fr, M.viewFor(2))
+  local after = M.framePath(M.at(t), M.viewFor(1))
+  eq(before, '/modules/game_levelwings/images/wings_05', 'south at 230 ms: front frame 5')
+  eq(after, '/modules/game_levelwings/images/wings_east_05', 'turned east at 230 ms: side frame 5')
+end
 
 -- size
 local w, h = M.sizeFor(32, 1); eq(w, 96, '1x w'); eq(h, 80, '1x h')
@@ -92,6 +119,34 @@ ox, oy = M.offsetFor(nil, 8, 8, 1)
 eq(ox, -2, 'unknown look: the default body x'); eq(oy, -13, 'unknown look: the default body y')
 ox, oy = M.offsetFor({16, 21, -8}, 0, 0, 0)           -- a 1x1 look without box: its centre x
 eq(ox, 0, '1x1 x'); eq(oy, -9, '1x1: roots on its shoulders')
+
+-- place facing east or west: the same height, moved onto the back (left facing east, right facing west)
+local a130 = {15, 17, -23, -12, 22}
+local sx, sy = M.offsetFor(a130, 8, 8, 1, 'south')
+eq(sx, -3, 'south view: as before'); eq(sy, -13, 'south view y')
+local nx, ny = M.offsetFor(a130, 8, 8, 1, 'north')
+eq(nx, sx, 'north: the front place x'); eq(ny, sy, 'north: the front place y')
+local ex, ey = M.offsetFor(a130, 8, 8, 1, 'east')
+eq(ex, sx + M.SIDE_X.east, 'east: moved by SIDE_X.east'); eq(ey, sy, 'east: same height')
+local wx2, wy2 = M.offsetFor(a130, 8, 8, 1, 'west')
+eq(wx2, sx + M.SIDE_X.west, 'west: moved by SIDE_X.west'); eq(wy2, sy, 'west: same height')
+eq(ex < sx, true, 'east: the back is left of the front place')
+eq(wx2 > ex, true, 'west: right of the east place (the back on the other side)')
+eq(ex, -9, 'east: 2x2 look 130, 9 px left'); eq(wx2, -1, 'west: 2x2 look 130, 1 px left')
+-- scaled with the sprite size and draw scale like the front place
+ex, ey = M.offsetFor({16, 18, -25, -3, 33}, -32, 0, 2, 'east')
+eq(ex, -14, 'HD east x: twice (-1 - 6)'); eq(ey, -44, 'HD east y')
+ex, ey = M.offsetFor(nil, 8, 8, 1, 'west')
+eq(ex, -2 + M.SIDE_X.west, 'unknown look, west: the default body moved'); eq(ey, -13, 'unknown look, west y')
+-- an unknown view counts as the front
+ex, ey = M.offsetFor(a130, 8, 8, 1, 'sideways')
+eq(ex, sx, 'unknown view x'); eq(ey, sy, 'unknown view y')
+-- the sides mirror each other around the body: west sits right of the front place, east left
+eq(M.SIDE_X.east < 0 and M.SIDE_X.west > 0, true, 'east left, west right of the front place')
+-- every view has a frame set
+for _, v in ipairs({ 'south', 'north', 'east', 'west' }) do
+  eq(type(M.SETS[v]), 'string', 'set of ' .. v)
+end
 
 if fails > 0 then os.exit(1) end
 print('level-up wings tests OK')

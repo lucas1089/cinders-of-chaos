@@ -329,6 +329,78 @@ res = call("autobuildPreview", {build = 5})
 check(res.autobuildError, "preview: a bad id")
 res = call("autobuildPreview", {})
 check(res.autobuildError, "preview: no id")
+check(call("autobuildPreview", {build = "warrior_slayer"}).autobuildError.build == "warrior_slayer", "preview: the error names the asked build")
+
+-- every preview request is answered (the client waited for good when one was dropped): a second preview inside the
+-- preview limit gets autobuildError {retry}; a preview right after an Apply is not refused by the Apply's limit
+clock = clock + 2000
+sent = {}
+ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_twin_fangs"}})
+clock = clock + 300 -- past the generic 200 ms per-action limit, inside the preview limit
+ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_phantom"}})
+check(#sent == 2 and sent[1].action == "autobuildPreview" and sent[2].action == "autobuildError" and sent[2].data.retry == true
+	and sent[2].data.build == "ninja_phantom", "preview: too fast is answered with retry")
+clock = clock + 2000
+sent = {}
+ext.onExtendedOpcode(p, OP, {action = "autobuildApply", data = {build = "ninja_twin_fangs", mode = "bogus"}})
+clock = clock + 300
+ext.onExtendedOpcode(p, OP, {action = "autobuildPreview", data = {build = "ninja_twin_fangs"}})
+check(sent[#sent].action == "autobuildPreview", "preview: answered right after an Apply")
+-- a Lua error while making the preview is answered too
+local realPlan = Core.plan
+Core.plan = function() error("boom") end
+local realPrint = print
+print = function() end
+res = call("autobuildPreview", {build = "ninja_twin_fangs"})
+print = realPrint
+Core.plan = realPlan
+check(res.autobuildError and res.autobuildError.build == "ninja_twin_fangs" and not res.autobuildPreview, "preview: an error is answered")
+
+-- the owner's case: a Ranger with 32 points, all spent on the start of Sharpshooter (248 points); the preview answers
+local ranger = {}
+for i = 1, 32 do ranger[i] = Core.find(data, "ranger", "ranger_sharpshooter").order[i] end
+rows = {{preset = 1, name = "Preset 1", nodes = table.concat(ranger, ",")}}
+p.voc, p.level = Chaos.classes.ids.ranger, 8 + 32 * 4
+res = call("autobuildPreview", {build = "ranger_sharpshooter"})
+pv = res.autobuildPreview
+check(pv and pv.owned == 32 and pv.held == 32 and pv.add.added == 0 and pv.add.skipped == 216 and pv.add.other == 0 and #pv.add.nodes == 32,
+	"preview: Sharpshooter with 32 points, none free")
+check(pv and pv.wanted == 248 and pv.reset.removed == 0, "preview: Sharpshooter's reset side")
+-- with another build held, Reset and apply takes it back
+local other = Core.find(data, "ranger", "focus_mana").order
+local held2 = {}
+for i = 1, 32 do held2[i] = other[i] end
+rows = {{preset = 1, name = "Preset 1", nodes = table.concat(held2, ",")}}
+res = call("autobuildPreview", {build = "ranger_sharpshooter"})
+check(res.autobuildPreview and res.autobuildPreview.reset.removed > 0, "preview: another build held, reset takes it back")
+
+-- every preview of every class fits one extended opcode message (8192 bytes; the tree's listener does not join parts)
+local function enc(v)
+	if type(v) == "table" then
+		local parts = {}
+		if #v > 0 or next(v) == nil then
+			for _, x in ipairs(v) do parts[#parts + 1] = enc(x) end
+			return "[" .. table.concat(parts, ",") .. "]"
+		end
+		for k, x in pairs(v) do parts[#parts + 1] = string.format("%q:%s", tostring(k), enc(x)) end
+		return "{" .. table.concat(parts, ",") .. "}"
+	elseif type(v) == "string" then
+		return string.format("%q", v)
+	end
+	return tostring(v)
+end
+rows = {}
+local biggest = 0
+for classKey, vocId in pairs(Chaos.classes.ids) do
+	p.voc, p.level = vocId, 1000
+	for _, b in ipairs(data.classes[classKey] or {}) do
+		res = call("autobuildPreview", {build = b.id})
+		local size = res.autobuildPreview and #enc({action = "autobuildPreview", data = res.autobuildPreview}) or math.huge
+		biggest = math.max(biggest, size)
+	end
+end
+check(biggest < Chaos.extendedOpcodeMax, "every preview fits one message: biggest " .. biggest .. " bytes")
+p.voc, p.level = 12, 500
 
 -- apply on an empty tree
 res = call("autobuildApply", {build = "ninja_twin_fangs", mode = "add", cost = 0})

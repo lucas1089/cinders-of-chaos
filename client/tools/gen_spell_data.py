@@ -15,6 +15,10 @@ GROUP = {'attack': 1, 'healing': 2, 'support': 3}
 # stale stock entries of the client that no server spell has: hidden from the spell list with the removed spells
 # (old words, client name). "Conjure Wand of Darkness" carries spell id 92, the server's Enchant Staff id; no rune shares it.
 CLIENT_ONLY_REMOVED = [('exevo gran mort', 'Conjure Wand of Darkness')]
+# stock spells the server retired (server/tools/retire_cure_spells.py OTHERS; old words, client name). Unlike the removed
+# ones they keep no id: spellfix.lua moves them off the server's ids like every stock entry the server does not know
+# (Tautstring has Hawkeye's id 135 now, Ironhold Bulwark's 132, Wildstride Windrunner's 134). The spell list leaves them out (chaosspells.lua hideRemovedSpells).
+RETIRED_STOCK = [('utito tempo san', 'Sharpshooter'), ('utamo tempo', 'Protector'), ('utamo tempo san', 'Swift Foot')]
 
 def main():
     xml = open('server/data/spells/chaos/spells_chaos.xml', encoding='utf-8').read()
@@ -74,6 +78,11 @@ def main():
     for old, name in CLIENT_ONLY_REMOVED:
         out.append('  ["%s"] = "%s", -- %s (client only, no server spell)' % (old, old, name))
     out.append('}')
+    out += ['', '-- stock spells the server retired: old words, out of the spell list, off the server ids (gen_spell_data.py '
+            'RETIRED_STOCK)', 'ChaosRetiredSpells = {']
+    for old, name in RETIRED_STOCK:
+        out.append('  ["%s"] = true, -- %s' % (old, name))
+    out.append('}')
     # stock utility spells the Thief, Monk and Templar lines get on the server (server/tools/add_vocations.py,
     # LINE_STOCK_SPELLS); chaosspells.lua adds the ids to the client's stock entries, keyed by the Chaos words
     sys.path.insert(0, os.path.join('server', 'tools'))
@@ -83,6 +92,20 @@ def main():
     for _, stock, lines in LINE_STOCK_SPELLS:
         words = ' '.join(parts[t] for t in stock.split())
         out.append('  ["%s"] = { %s },' % (words, ', '.join(str(VOC[v]) for line in lines for v in line)))
+    out.append('}')
+    # the 15-spell cap (server/tools/patch_spell_cap.py CAP): Chaos words -> the class ids that keep the stock spell;
+    # an empty list: the server retired it. chaosspells.lua cuts the stock entries' class lists to these and hides the
+    # retired ones like the removed spells (no id of the server any more)
+    from patch_spell_cap import CAP
+    out += ['', '-- the 15-spell cap: stock spell (Chaos words) -> the classes that keep it, {} = retired '
+            '(server/tools/patch_spell_cap.py CAP)', 'ChaosCappedSpells = {']
+    by_words = {}
+    for r in rows:
+        if r['words'] and not r.get('removed'):
+            by_words[r['new_name']] = ' '.join(parts[t] for t in r['words'].split())
+    for script, (sid, name, keep) in sorted(CAP.items(), key=lambda kv: kv[1][0]):
+        ids = '{ %s }' % ', '.join(str(VOC[v]) for v in keep) if keep else '{}'
+        out.append('  ["%s"] = %s, -- %s (%d)' % (by_words[name], ids, name.replace('"', '\\"'), sid))
     out.append('}')
     path = 'client/overlay/modules/game_chaosspells/spelldata.lua'
     os.makedirs(os.path.dirname(path), exist_ok=True)

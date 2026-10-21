@@ -7,7 +7,9 @@
 --     Juggernaut Bastion Cry 340 and Anvil Fall 460, Deadeye Twin Verdict 400, Berserker Rampage Leap 380, Beastmaster Pack
 --     Frenzy 380, Elementalist Glacial Doom 420, Ninja Shuriken Tempest 360;
 --   * not done (no free spell id left): Illusionist, Samurai, Lich, Bone Lord, Shadowfist, Iron Sage, Inquisitor, Sentinel have
---     nothing above 300 (Samurai 200, Shadowfist / Iron Sage / Inquisitor / Sentinel 150).
+--     nothing above 300 (Illusionist 280 since the 15-spell cap, Samurai 200, Shadowfist / Iron Sage / Inquisitor /
+--     Sentinel 150). The 15-spell cap (2026-10-20, tools/patch_spell_cap.py) moved Elementalist and Illusionist rows:
+--     the base Mystic kept fewer of their spells.
 -- When a spell is added for a class, this test fails on the pinned row: update the row and server/README.md "Spell
 -- progression audit".
 local BASE_OF = {
@@ -18,8 +20,8 @@ local BASE_OF = {
 }
 -- ascended class -> {spells of its own over its base class, highest level of any of its spells}
 local PINNED = {
-	Juggernaut = {2, 460}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {3, 380}, Elementalist = {3, 420},
-	Illusionist = {8, 300}, Ninja = {4, 360}, Samurai = {4, 200}, Lich = {3, 300}, ["Bone Lord"] = {3, 300},
+	Juggernaut = {2, 460}, Berserker = {3, 380}, Deadeye = {2, 400}, Beastmaster = {3, 380}, Elementalist = {7, 420},
+	Illusionist = {9, 280}, Ninja = {4, 360}, Samurai = {4, 200}, Lich = {3, 300}, ["Bone Lord"] = {3, 300},
 	Shadowfist = {3, 150}, ["Iron Sage"] = {4, 150}, Inquisitor = {3, 150}, Sentinel = {4, 150},
 }
 local MAX_OWN = 15 -- owner 2026-10-20: an ascended class has at most 15 spells of its own

@@ -2,21 +2,34 @@
 """Frames of the level-up wings (client module game_levelwings): a pair of golden feathered wings unfolding behind a
 character, with a warm glow and a few embers. Drawn from scratch here (no reference pixels).
 
-  wings_01.png .. wings_12.png   192 x 160 RGBA, 2x the 32 px tile scale (96 x 80 at 1x: three tiles wide)
-                                 frame 1 folded behind the back, frame 12 fully open; frames 9-10 overshoot a little
-                                 and 11-12 settle, so the opening has some weight.
+  wings_01.png .. wings_12.png       192 x 160 RGBA, 2x the 32 px tile scale (96 x 80 at 1x: three tiles wide): the
+                                     front pair, seen from the south or the north, spread wide
+  wings_east_01.png .. _12.png       the same size: the side pair of a character facing east (2026-10-20, owner: "the
+                                     level-up wings don't turn sideways"): both wings swept back from the shoulder
+                                     blades, the near wing in profile, the far wing above and behind it, darker, mostly
+                                     hidden by the body
+  wings_west_01.png .. _12.png       the east frames mirrored (a character facing west)
 
-The image centre is the creature's centre on the map (the engine centres a creature's widgets there); the wing roots
-sit a few pixels above it, at the shoulders. The client (levelwingsmath.lua) shows the frames over ~0.65 s, holds the
-last one and fades it out by ~1.8 s.
+Every set: frame 1 folded behind the back, frame 12 fully open; frames 9-10 overshoot a little and 11-12 settle, so the
+opening has some weight. The same 12-frame timing, palette, outline, glow and embers in every set.
 
-python3 -I client/tools/gen_levelwings_art.py   (writes into client/overlay/modules/game_levelwings/images/)"""
+The image centre is the creature's widget centre on the map; the client (levelwingsmath.lua) moves the image so the
+wing roots sit on the body's shoulders. The front roots sit symmetric about the centre column, the side roots (near
+wing) on it; both the same height above the centre (LevelWingsMath.ROOT_Y). The client shows the frames over
+~0.65 s, holds the last one and fades it out by ~1.8 s, and switches set when the character turns.
+
+python3 -I client/tools/gen_levelwings_art.py           writes into client/overlay/modules/game_levelwings/images/
+python3 -I client/tools/gen_levelwings_art.py --check   exit 1 when a file there differs from a fresh build (CI, on
+                                                        the pinned Pillow of the other art checks: polygon fill and
+                                                        PNG bytes differ between Pillow versions)
+python3 -I client/tools/gen_levelwings_art.py OUT_DIR   writes into OUT_DIR instead"""
+import io
 import math
 import os
 import random
 import sys
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageOps
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, '..', 'overlay', 'modules', 'game_levelwings', 'images')
@@ -26,6 +39,8 @@ W, H = 96, 80          # 1x size (32 px tiles); the files are OUT_SCALE x this
 OUT_SCALE = 2
 SS = 4                 # supersampling on top of OUT_SCALE
 K = OUT_SCALE * SS     # drawing units -> canvas pixels
+SETS = ('front', 'east', 'west')
+PREFIX = {'front': 'wings_', 'east': 'wings_east_', 'west': 'wings_west_'}
 
 # palette: ember gold of the Chaos skin, bronze edges, a dark ember outline so the wings read on grass and on stone
 OUTLINE = (46, 20, 8, 255)
@@ -36,9 +51,19 @@ PALE = (255, 246, 192)
 RIM = (255, 230, 150)
 GLOW = (255, 176, 48)
 EMBER = (255, 120, 30)
+SHADE = (88, 48, 14)   # the far side wing is lerped this way (in the body's shadow)
 
 # the right wing's root, in 1x units relative to the image centre (the creature's centre); x grows outwards
 ROOT = (4.0, -6.0)
+
+# the side view (east; west is its mirror). A wing is drawn in its own front frame (skeleton, feathers: x outwards,
+# y down) and turned into a profile: x outwards becomes "backwards" shortened by FORE (the wing reaches out from the
+# body towards and away from the viewer), then the whole wing is swept back by SWEEP degrees (the hanging feathers
+# trail behind, the tip rises), and it is moved so its root is at SIDE_ROOT. The far wing's root is a little forward
+# and up (the far shoulder of an oblique sprite), shorter, swept more and shaded.
+SIDE_ROOT = (0.0, ROOT[1])
+NEAR = {'root': (0.0, 0.0), 'fore': 0.95, 'sweep': 8.0, 'shade': 0.0}
+FAR = {'root': (3.0, -3.0), 'fore': 0.8, 'sweep': 16.0, 'shade': 0.38}
 
 
 def lerp(a, b, t):
@@ -155,80 +180,156 @@ def coverts(s):
 ZOOM = 0.8             # the wing geometry below is drawn at this size
 
 
-def to_px(p, cx, cy, mirror):
-    x = (-p[0] if mirror else p[0]) * ZOOM
-    return ((cx + x) * K, (cy + p[1] * ZOOM) * K)
-
-
-def draw_wing(img, s, mirror):
-    dr = ImageDraw.Draw(img)
+def front_tf(mirror):
+    """wing frame -> canvas pixels for the front pair: the right wing, or the left one (mirrored)"""
     cx, cy = W / 2.0, H / 2.0
+
+    def tf(p):
+        x = (-p[0] if mirror else p[0]) * ZOOM
+        return ((cx + x) * K, (cy + p[1] * ZOOM) * K)
+    return tf
+
+
+def side_tf(wing):
+    """wing frame -> canvas pixels for one wing of the east-facing side pair (NEAR or FAR): its root at SIDE_ROOT
+    (moved by wing['root']), outwards turned backwards (screen left) and shortened, then swept back"""
+    cx, cy = W / 2.0, H / 2.0
+    fore, sweep = wing['fore'], math.radians(wing['sweep'])
+    c, s = math.cos(sweep), math.sin(sweep)
+    rx, ry = SIDE_ROOT[0] + wing['root'][0], SIDE_ROOT[1] + wing['root'][1]
+
+    def tf(p):
+        # u: backwards, v: down, both from the root, before the sweep
+        u, v = (p[0] - ROOT[0]) * fore, p[1] - ROOT[1]
+        u, v = u * c + v * s, -u * s + v * c
+        return ((cx + (rx - u) * ZOOM) * K, (cy + ry * ZOOM + v * ZOOM) * K)
+    return tf
+
+
+def colour(c, shade):
+    return lerp_col(c, SHADE, shade) if shade > 0 else c
+
+
+def draw_wing(img, s, tf, shade=0.0):
+    dr = ImageDraw.Draw(img)
     ow = max(1, int(round(0.55 * K)))
+    outline = colour(OUTLINE[:3], shade * 0.5) + (255,)
     for group in (feathers(s), coverts(s)):
-        for base, ang, length, width, shade in group:
+        for base, ang, length, width, fshade in group:
             poly, end = feather_poly(base, ang, length, width)
-            pts = [to_px(p, cx, cy, mirror) for p in poly]
+            pts = [tf(p) for p in poly]
             # outline: the polygon drawn a little larger in the dark ember colour first
-            dr.polygon(pts, fill=OUTLINE)
+            dr.polygon(pts, fill=outline)
             inner, _ = feather_poly(base, ang, length * 0.95, max(0.4, width - 0.75))
-            ipts = [to_px(p, cx, cy, mirror) for p in inner]
-            base_col = lerp_col(AMBER, GOLD, shade)
+            ipts = [tf(p) for p in inner]
+            base_col = colour(lerp_col(AMBER, GOLD, fshade), shade)
             dr.polygon(ipts, fill=base_col + (255,))
             # lighter vane towards the tip, darker near the quill
             tip_part, _ = feather_poly((lerp(base[0], end[0], 0.45), lerp(base[1], end[1], 0.45)), ang,
                                        length * 0.5, max(0.3, width - 0.9))
-            dr.polygon([to_px(p, cx, cy, mirror) for p in tip_part], fill=lerp_col(GOLD, PALE, shade) + (255,))
+            dr.polygon([tf(p) for p in tip_part], fill=colour(lerp_col(GOLD, PALE, fshade), shade) + (255,))
             # the quill
-            q0 = to_px(base, cx, cy, mirror)
-            q1 = to_px((lerp(base[0], end[0], 0.8), lerp(base[1], end[1], 0.8)), cx, cy, mirror)
-            dr.line([q0, q1], fill=lerp_col(BRONZE, AMBER, shade) + (255,), width=ow)
+            q0 = tf(base)
+            q1 = tf((lerp(base[0], end[0], 0.8), lerp(base[1], end[1], 0.8)))
+            dr.line([q0, q1], fill=colour(lerp_col(BRONZE, AMBER, fshade), shade) + (255,), width=ow)
     # the arm bone as a bright leading edge
     sh, el, wr, tip = skeleton(s)
-    line = [to_px(p, cx, cy, mirror) for p in (sh, el, wr, tip)]
-    dr.line(line, fill=OUTLINE, width=int(1.9 * K), joint='curve')
-    dr.line(line, fill=RIM + (255,), width=int(0.9 * K), joint='curve')
+    line = [tf(p) for p in (sh, el, wr, tip)]
+    dr.line(line, fill=outline, width=int(1.9 * K), joint='curve')
+    dr.line(line, fill=colour(RIM, shade) + (255,), width=int(0.9 * K), joint='curve')
 
 
-def embers(img, frame, s):
+def embers(img, frame, s, tfs, seed=1000):
     if frame < 4:
         return
-    rnd = random.Random(1000 + frame)
+    rnd = random.Random(seed + frame)
     dr = ImageDraw.Draw(img)
-    cx, cy = W / 2.0, H / 2.0
-    for mirror in (False, True):
+    for tf in tfs:
         sh, el, wr, tip = skeleton(s)
         for _ in range(4 + frame // 3):
             t = rnd.random()
             p = (lerp(el[0], tip[0], t) + rnd.uniform(-3, 5), lerp(el[1], tip[1], t) + rnd.uniform(-2, 14))
             p = (p[0], p[1] - (frame - 4) * rnd.uniform(0.3, 0.9))
-            x, y = to_px(p, cx, cy, mirror)
+            x, y = tf(p)
             r = rnd.uniform(0.35, 0.8) * K
             col = (PALE if rnd.random() < 0.4 else EMBER) + (int(rnd.uniform(150, 255)),)
             dr.ellipse([x - r, y - r, x + r, y + r], fill=col)
 
 
-def frame_image(frame):
-    s = spread_of(frame)
-    big = Image.new('RGBA', (W * K, H * K), (0, 0, 0, 0))
-    draw_wing(big, s, mirror=True)
-    draw_wing(big, s, mirror=False)
-    # glow: the wings' shape, blurred, in warm gold, under the wings
+def glow_under(big, s):
+    """the wings' shape, blurred, in warm gold, under the wings"""
     alpha = big.split()[3]
     glow_a = alpha.filter(ImageFilter.GaussianBlur(2.4 * K)).point(lambda v: int(v * (0.3 + 0.3 * min(s, 1.0))))
     glow = Image.new('RGBA', big.size, GLOW + (0,))
     glow.putalpha(glow_a)
-    out = Image.alpha_composite(glow, big)
-    embers(out, frame, s)
+    return Image.alpha_composite(glow, big)
+
+
+def frame_image(frame):
+    """the front pair (south and north)"""
+    s = spread_of(frame)
+    big = Image.new('RGBA', (W * K, H * K), (0, 0, 0, 0))
+    draw_wing(big, s, front_tf(True))
+    draw_wing(big, s, front_tf(False))
+    out = glow_under(big, s)
+    embers(out, frame, s, (front_tf(False), front_tf(True)))
     return out.resize((W * OUT_SCALE, H * OUT_SCALE), Image.LANCZOS)
 
 
-def main(argv):
-    out = argv[1] if len(argv) > 1 else OUT
-    os.makedirs(out, exist_ok=True)
+def side_frame_image(frame):
+    """the side pair of a character facing east: the far wing first (shaded), the near wing over it"""
+    s = spread_of(frame)
+    big = Image.new('RGBA', (W * K, H * K), (0, 0, 0, 0))
+    draw_wing(big, s, side_tf(FAR), FAR['shade'])
+    draw_wing(big, s, side_tf(NEAR), NEAR['shade'])
+    out = glow_under(big, s)
+    embers(out, frame, s, (side_tf(NEAR),), seed=2000)
+    return out.resize((W * OUT_SCALE, H * OUT_SCALE), Image.LANCZOS)
+
+
+def build():
+    """{file name: PNG bytes} of every frame of every set"""
+    files = {}
     for f in range(FRAMES):
-        frame_image(f).save(os.path.join(out, 'wings_%02d.png' % (f + 1)), optimize=True)
-    print('wrote %d frames to %s' % (FRAMES, os.path.normpath(out)))
+        front = frame_image(f)
+        east = side_frame_image(f)
+        for name, im in (('front', front), ('east', east), ('west', ImageOps.mirror(east))):
+            buf = io.BytesIO()
+            im.save(buf, 'PNG', optimize=True)
+            files['%s%02d.png' % (PREFIX[name], f + 1)] = buf.getvalue()
+    return files
+
+
+def main(argv):
+    args = argv[1:]
+    check = '--check' in args
+    args = [a for a in args if a != '--check']
+    out = args[0] if args else OUT
+    files = build()
+    if check:
+        bad = []
+        for name, blob in sorted(files.items()):
+            path = os.path.join(out, name)
+            if not os.path.isfile(path):
+                bad.append('missing ' + name)
+            elif open(path, 'rb').read() != blob:
+                bad.append('stale ' + name)
+        for name in sorted(os.listdir(out)):
+            if name.startswith('wings_') and name.endswith('.png') and name not in files:
+                bad.append('not made by the generator: ' + name)
+        if bad:
+            print('\n'.join(bad))
+            print('level-up wings frames are stale: run  python3 -I client/tools/gen_levelwings_art.py')
+            return 1
+        print('level-up wings frames up to date (%d files)' % len(files))
+        return 0
+    os.makedirs(out, exist_ok=True)
+    for name, blob in sorted(files.items()):
+        with open(os.path.join(out, name), 'wb') as fh:
+            fh.write(blob)
+    print('wrote %d frames to %s' % (len(files), os.path.normpath(out)))
+    return 0
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(main(sys.argv))

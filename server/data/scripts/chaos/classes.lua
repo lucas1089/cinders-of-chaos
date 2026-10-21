@@ -125,8 +125,10 @@ end
 -- Undying Rage; the Ranger the paladin's (Ricochet, Deadeye), the Deadeye Hunter's Focus + Deadeye, the Beastmaster
 -- Ricochet + Pack Alpha; Mystic and Elementalist the sorcerer's (Arcane Echo, Overload), the Illusionist its support
 -- keystones (Shared Phantasm, Inspiring Illusion). The Thief, Necromancer, Monk and Templar lines have their keystones
--- in their class sections (class_tree.lua); their key is the class key. Two of them also have a variant there under
--- that key (since 2026-10-12): the Iron Sage Overgrowth on 621, the Sentinel Thorns on 624 (the old druid pair).
+-- in their class sections (class_tree.lua); their key is the class key. Since 2026-10-20 every one of them has its own
+-- pair there too under that key (class_keystones_config.lua: Shadow Twin / Viper's Verdict, Corpse Detonation /
+-- Reaper's Toll, Seventh Palm / Piercing Palm, Radiant Rebuke / Dawnchain); the Iron Sage keeps Overgrowth on 621
+-- (since 2026-10-12) with Piercing Palm on 624, the Sentinel Thorns on 624 with Radiant Rebuke on 621.
 local KEYSTONE_KEY = {[4] = "knight", [8] = "juggernaut", [14] = "berserker", [3] = "paladin", [7] = "deadeye",
 	[15] = "beastmaster", [1] = "sorcerer", [5] = "sorcerer", [10] = "illusionist"}
 function M.keystoneKey(vocId)

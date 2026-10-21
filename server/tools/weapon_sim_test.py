@@ -103,6 +103,25 @@ with tempfile.TemporaryDirectory() as tmp:
     check(not any(k == 'throwing' for k, _ in got), 'throwing weapons are left out')
     check('sword1' in W.audit_report(tmp), 'the report names the kinds')
 
+# --skills (weapon_skill_config.lua, weapon_skill_core.lua): the typical skills are the C4 stats of rotation_sim.py, a
+# typical stat deals what it dealt before (no balance jump), and every weapon type hits harder with more skill
+import rotation_sim as R  # noqa: E402
+cfg = W.skill_config()
+check(cfg['skill'] == [(float(a), float(b)) for a, b in R.ANCHORS['skill']], 'typical skill = rotation_sim skill anchors')
+check([p for p in cfg['magic'] if p[0] >= 100] == [(float(a), float(b)) for a, b in R.ANCHORS['ml_caster'] if a >= 100],
+      'typical magic level = rotation_sim caster anchors from level 100')
+check(abs(W.wand_factor(cfg, 8, 0) - 1) < 1e-9, 'a new character (level 8, magic level 0) hits with its wand as before')
+check(W.wand_factor(cfg, 1000, 0) == cfg['min'] and W.wand_factor(cfg, 8, 999) == cfg['max'], 'the wand factor is clamped')
+for name, _, lv, stat, before, after, lo, hi, blo, bhi in W.skills_rows(cfg):
+    check(abs(after - before) < 1e-6, '%s level %d: the typical stat deals what it did (%.1f -> %.1f)' % (name, lv, before, after))
+    check(lo < after * 0.92 and hi > after * 1.08, '%s level %d: 0.8x / 1.2x the stat is clearly less / more (%.0f %.0f %.0f)'
+          % (name, lv, lo, after, hi))
+    if name != 'wand / rod':
+        check((blo, bhi) == (lo, hi), '%s: the engine scales it by the skill already (unchanged)' % name)
+    else:
+        check(blo == bhi == before, 'wand before: flat whatever the magic level')
+check('wand / rod' in W.skills_report(), 'the skills report lists the wands')
+
 if fails:
     for f in fails:
         print('FAIL ' + f)

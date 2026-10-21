@@ -4,7 +4,7 @@
 --
 --   schedule      I.scheduledStarts, I.randomStart, I.upcoming, I.resolve
 --   waves         I.roster, I.scale, I.playerFactor, I.tierChances, I.planWave, I.planBoss, I.edgePoints, I.nextWaveDue
---   the fight     I.breachStep, I.outcome
+--   the fight     I.breachStep, I.outcome, I.sweep
 --   rewards       I.credit, I.shares, I.rewards, I.defenderPoints
 --   after         I.occupationOver, I.buffActive
 --   world events  I.pickWorldEvent, I.nextWorldEventAt
@@ -474,18 +474,68 @@ function I.breachStep(breach, atTarget, bossAt, dt, b)
 	return clamp(breach, 0, 100)
 end
 
--- nil while running, else "win", "breach" or "time"
-function I.outcome(st, now)
+-- nil while running, else "win", "breach" or "time". rout = cfg.rout ({seconds}): once the warlord is down
+-- (st.bossDownAt), the invaders still alive `seconds` later flee and it is a win; a time-up with the warlord down is a
+-- win too. Without rout only a full clear wins (the old rule).
+function I.outcome(st, now, rout)
 	if st.breach >= 100 then
 		return "breach"
 	end
-	if st.wave >= st.waves and (st.alive or 0) == 0 and st.bossSpawned and not st.bossAlive then
+	local bossDown = st.wave >= st.waves and st.bossSpawned and not st.bossAlive
+	if bossDown and (st.alive or 0) == 0 then
+		return "win"
+	end
+	if bossDown and rout and st.bossDownAt and now - st.bossDownAt >= (rout.seconds or 90) then
 		return "win"
 	end
 	if now >= st.endsAt then
-		return "time"
+		return (bossDown and rout) and "win" or "time"
 	end
 	return nil
+end
+
+-- the invaders that still count, once a second. invaders = {[id] = info} (info.wave, info.boss, info.stuckSince,
+-- info.lastHitAt); look(id) -> nil when the monster no longer exists, else {pos = {x, y, z}, master = bool,
+-- target = bool}. ctx = {now, wave (the current one), target = {x, y, z}, area (I.inArea's rectangle)}; s =
+-- cfg.stragglers. Returns {alive, waveAlive, gone = {ids}, strays = {ids}, bossGone = bool}. Nothing is changed: the
+-- engine removes the gone ones and calls the strays back.
+function I.sweep(invaders, look, ctx, s)
+	s = s or {}
+	local out = {alive = 0, waveAlive = 0, gone = {}, strays = {}, bossGone = false}
+	local ids = {}
+	for id in pairs(invaders or {}) do
+		ids[#ids + 1] = id
+	end
+	table.sort(ids)
+	for _, id in ipairs(ids) do
+		local info = invaders[id]
+		local m = look(id)
+		if not m or m.master then
+			out.gone[#out.gone + 1] = id
+			if info.boss then
+				out.bossGone = true
+			end
+		else
+			local stray = false
+			local p, t = m.pos, ctx.target
+			if p and t and p.z ~= t.z then
+				stray = true
+			elseif p and ctx.area and not I.inArea(p, ctx.area, s.margin or 8) then
+				stray = true
+			elseif not m.target and info.stuckSince and ctx.now - info.stuckSince >= (s.stuckSeconds or 30)
+				and ctx.now - (info.lastHitAt or 0) >= (s.idleSeconds or 30) then
+				stray = true
+			end
+			if stray then
+				out.strays[#out.strays + 1] = id
+			end
+			out.alive = out.alive + 1
+			if info.wave and info.wave == ctx.wave then
+				out.waveAlive = out.waveAlive + 1
+			end
+		end
+	end
+	return out
 end
 
 -- ============================================================================ contribution and rewards
@@ -666,7 +716,7 @@ function I.clock(seconds)
 end
 
 -- the HUD message. st = the runtime state; list = I.shares(...) of this tick (sorted); mine = the player's entry of
--- that list (or nil). progress = invaders slain of all planned (the boss counts as one)
+-- that list (or nil). progress = invaders slain or gone (I.sweep) of all planned (the boss counts as one)
 function I.hud(st, now, list, mine, cfg)
 	cfg = cfg or {}
 	local d = {
@@ -678,7 +728,7 @@ function I.hud(st, now, list, mine, cfg)
 		wave = st.wave or 0,
 		waves = st.waves or 0,
 		left = st.alive or 0,
-		progress = st.planned and st.planned > 0 and min(100, floor((st.slain or 0) * 100 / st.planned)) or 0,
+		progress = st.planned and st.planned > 0 and min(100, floor(((st.slain or 0) + (st.gone or 0)) * 100 / st.planned)) or 0,
 		breach = floor((st.breach or 0) + 0.5),
 		time = max(0, (st.endsAt or now) - now),
 		top = {}

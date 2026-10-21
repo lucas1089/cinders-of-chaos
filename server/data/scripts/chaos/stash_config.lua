@@ -100,7 +100,10 @@ return {
 	depot = {
 		migrate = true, -- at a locker opening, once per character: every item of the depot boxes and chests moves into the stash
 		version = 1, -- raise to run the migration again (only what is still in a depot moves)
-		withdrawOnly = true -- the depot boxes and chests take no new items; the inbox and the market work as before
+		withdrawOnly = true, -- the depot boxes and chests take no new items; the inbox and the market work as before
+		-- Owner report 2026-10-20: a depot chest opened the depot and the stash together. A locker opens the depot window
+		-- only; the stash opens from the top bar, its keybind and the stash keeper NPC. true: the locker opens both again.
+		openStash = false
 	},
 	-- the stash -> depot migration (stash.lua S.migrateToDepot, run by depot.lua when a locker is opened: the engine
 	-- saves the depot only then). Every stash entry (a merged stack becomes stacks of `stackSize`, a stored item is made

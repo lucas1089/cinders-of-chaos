@@ -59,6 +59,24 @@ final class Store {
         return get("actor", "");
     }
 
+    /** Seconds between the dashboard's automatic refreshes; 0 is off. */
+    int refreshSec() {
+        try {
+            return Math.max(0, Integer.parseInt(get("refresh", "30")));
+        } catch (NumberFormatException e) {
+            return 30;
+        }
+    }
+
+    /** Lines the Logs tab asks for. */
+    int logLines() {
+        try {
+            return Math.min(500, Math.max(10, Integer.parseInt(get("loglines", "100"))));
+        } catch (NumberFormatException e) {
+            return 100;
+        }
+    }
+
     String hostFingerprint() {
         return get("hostfp", "");
     }

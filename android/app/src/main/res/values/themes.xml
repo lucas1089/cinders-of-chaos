@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CindersAdmin" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/gold</item>
+        <item name="colorOnPrimary">@color/iron0</item>
+        <item name="colorPrimaryContainer">@color/gold_dark</item>
+        <item name="colorOnPrimaryContainer">@color/gold_light</item>
+        <item name="colorSecondary">@color/ember</item>
+        <item name="colorOnSecondary">@color/text_bright</item>
+        <item name="colorSecondaryContainer">@color/blood_dark</item>
+        <item name="colorOnSecondaryContainer">@color/gold_light</item>
+        <item name="colorTertiary">@color/gold_light</item>
+        <item name="colorError">@color/ember</item>
+        <item name="colorOnError">@color/text_bright</item>
+        <item name="android:colorBackground">@color/iron1</item>
+        <item name="colorSurface">@color/iron1</item>
+        <item name="colorOnSurface">@color/text</item>
+        <item name="colorSurfaceVariant">@color/iron3</item>
+        <item name="colorOnSurfaceVariant">@color/muted</item>
+        <item name="colorSurfaceContainerLowest">@color/iron0</item>
+        <item name="colorSurfaceContainerLow">@color/iron2</item>
+        <item name="colorSurfaceContainer">@color/iron2</item>
+        <item name="colorSurfaceContainerHigh">@color/iron3</item>
+        <item name="colorSurfaceContainerHighest">@color/iron3</item>
+        <item name="colorOutline">@color/iron5</item>
+        <item name="colorOutlineVariant">@color/iron4</item>
+        <item name="android:windowBackground">@color/iron1</item>
+        <item name="android:statusBarColor">@color/iron0</item>
+        <item name="android:navigationBarColor">@color/iron2</item>
+    </style>
+</resources>

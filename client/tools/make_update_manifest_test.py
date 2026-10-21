@@ -118,6 +118,12 @@ class Build(unittest.TestCase):
         self.assertEqual(oct(os.stat(self.key).st_mode & 0o777), '0o600')
         return open(self.key + '.pub').read().strip()
 
+    def test_pubkey(self):
+        pub = self.keygen()
+        code, out, err = run(['pubkey', '--private', self.key])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(out.strip(), pub)
+
     def test_dry_run_needs_no_key(self):
         code, out, err = run(['build', self.client, '--dry-run'])
         self.assertEqual(code, 0, err)
@@ -152,6 +158,35 @@ class Build(unittest.TestCase):
         code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--version', '2'])
         self.assertNotEqual(code, 0)
         self.assertIn('not newer', err)
+
+    def set_baseline(self, n):
+        open(os.path.join(self.client, 'init.lua'), 'w').write(
+            'Services = {\n  update = {\n    manifest = "",\n    package = 11,\n    baseline = %d,\n'
+            '    required = false\n  }\n}\n' % n)
+
+    def test_package_baseline(self):
+        # base patch 0101: the package's release number is the version of its files
+        self.assertEqual(mum.package_baseline(self.client), 0, 'no update block: no baseline')
+        self.set_baseline(47)
+        self.assertEqual(mum.package_baseline(self.client), 47)
+        self.keygen()
+        code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key])
+        self.assertEqual(code, 0, err)
+        self.assertEqual(json.loads(json.load(open(os.path.join(self.out, 'manifest.json')))['payload'])['version'], 47)
+        # another number for these files is refused (lower: own players skip it; higher: newer packages downgrade)
+        for v in ('46', '48'):
+            code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--version', v])
+            self.assertNotEqual(code, 0)
+            self.assertIn('baseline 47', err)
+        # an older package (baseline 46) after 47 is live: refused, nothing changes
+        self.set_baseline(46)
+        code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key])
+        self.assertNotEqual(code, 0)
+        self.assertIn('publish a newer package', err)
+        self.assertEqual(json.loads(json.load(open(os.path.join(self.out, 'manifest.json')))['payload'])['version'], 47)
+        code, out, err = run(['build', self.client, '--dry-run'])
+        self.assertEqual(code, 0, err)
+        self.assertIn('version 46 (package baseline 46)', out)
 
     def test_verify_refuses_tampering(self):
         pub = self.keygen()
@@ -267,6 +302,40 @@ class Build(unittest.TestCase):
         self.assertIn('root not allowed', mum.check_payload(m))
         m['files'][-1]['path'] = 'modules/a/A.lua'
         self.assertIn('duplicate', mum.check_payload(m))
+
+
+class SetUpdateConfig(unittest.TestCase):
+    """set_update_config.py writes the package's settings; make_update_manifest.py reads the baseline back."""
+    INIT = ('Services = {\n  update = {\n    manifest = "",\n    publicKey = "",\n    package = 1,\n%s'
+            '    required = false,\n    download = ""\n  },\n  other = 1\n}\n')
+
+    def setUp(self):
+        self.tmp = tempfile.mkdtemp(prefix='chaos-update-cfg-')
+
+    def tearDown(self):
+        shutil.rmtree(self.tmp)
+
+    def run_tool(self, *args):
+        return subprocess.run([sys.executable, '-I', os.path.join(HERE, 'set_update_config.py'), self.tmp,
+                               '--manifest', 'https://site.example/updates/live/manifest.json',
+                               '--public-key', 'ab' * 32] + list(args), capture_output=True, text=True)
+
+    def test_baseline(self):
+        path = os.path.join(self.tmp, 'init.lua')
+        open(path, 'w').write(self.INIT % '    baseline = 0,\n')
+        r = self.run_tool('--package', '12', '--baseline', '47')
+        self.assertEqual(r.returncode, 0, r.stderr)
+        text = open(path).read()
+        self.assertIn('    package = 12,\n', text)
+        self.assertIn('    baseline = 47,\n', text)
+        self.assertEqual(mum.package_baseline(self.tmp), 47)
+        # an init.lua without the field (a base without patch 0101) is refused when a baseline is asked for
+        open(path, 'w').write(self.INIT % '')
+        r = self.run_tool('--baseline', '47')
+        self.assertNotEqual(r.returncode, 0)
+        self.assertIn('0101', r.stderr)
+        self.assertEqual(self.run_tool().returncode, 0, 'no --baseline: works on an old init.lua')
+        self.assertNotEqual(self.run_tool('--baseline', '-1').returncode, 0)
 
 
 if __name__ == '__main__':

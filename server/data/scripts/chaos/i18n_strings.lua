@@ -43,6 +43,12 @@ return {
 		["Ember Cache milestone %d of %d: %s"] = "Marco %d de %d do Ember Cache: %s",
 		["Your last day of play (%s): %s experience, %d kills, %s gold of loot, %d Ember points."] =
 			"Seu último dia de jogo (%s): %s de experiência, %d abates, %s de ouro em loot, %d pontos Ember.",
+		["You have offered all the junk orbs the Ember Cache takes today. More tomorrow."] =
+			"Você já ofereceu todos os orbes comuns que o Ember Cache aceita hoje. Mais amanhã.",
+		["You need at least %d junk orbs in your backpack (locked orbs do not count)."] =
+			"Você precisa de pelo menos %d orbes comuns na mochila (orbes travados não contam).",
+		["You offered %d junk orbs to the Ember Cache: %d Ember points (%d more points today)."] =
+			"Você ofereceu %d orbes comuns ao Ember Cache: %d pontos Ember (mais %d pontos hoje).",
 		["Daily Spark"] = "Daily Spark",
 		["Ember Cache"] = "Ember Cache",
 		["Day book"] = "Diário",
@@ -296,6 +302,9 @@ return {
 		["Wave %d of %d: %d %s reach %s!"] = "Onda %d de %d: %d %s chegam a %s!",
 		["The defences of %s are crumbling: the breach is at 50%%!"] = "As defesas de %s estão desmoronando: a brecha está em 50%%!",
 		["%s is about to fall: the breach is at 80%%!"] = "%s está prestes a cair: a brecha está em 80%%!",
+		["The horde of %s breaks: the last %d invaders flee in %d seconds."] =
+			"A horda de %s se desfaz: os últimos %d invasores fogem em %d segundos.",
+		["The last %d invaders flee from %s."] = "Os últimos %d invasores fogem de %s.",
 		["INVASION! The %s attacks %s! Defend %s: %d waves in %d minutes, the last one led by their warlord."] =
 			"INVASÃO! %s ataca %s! Defenda %s: %d ondas em %d minutos, a última liderada pelo senhor da guerra deles.",
 		["VICTORY! %s held: the %s is broken in %s. Top defenders: %s."] =
@@ -2264,8 +2273,9 @@ return {
 		["Personal loot of %s (%.1f%% of its health in damage and healing): %s.%s"] =
 			"Loot pessoal de %s (%.1f%% da vida dele em dano e cura): %s.%s",
 		["nothing this time"] = "nada desta vez",
-		["%s falls in %s. The pocket closes in %d seconds: loot the corpse."] =
-			"%s cai em %s. O pocket fecha em %d segundos: pegue o loot do corpo.",
+		["%s falls in %s. The pocket closes in %d seconds: loot the corpse, or leave now through the forcefield by the arrival."] =
+			"%s cai em %s. O pocket fecha em %d segundos: pegue o loot do corpo, ou saia agora pelo campo de força junto à chegada.",
+		["Pocket loot of %s: %s.%s"] = "Loot do pocket de %s: %s.%s",
 		["%s appears. You have %d minutes."] = "%s aparece. Você tem %d minutos.",
 		["Pocket of %s: it comes in %d seconds. %d%% experience and loot; the way out is in the room to the south."] =
 			"Pocket de %s: ele chega em %d segundos. %d%% de experiência e loot; a saída fica na sala ao sul.",
@@ -2898,6 +2908,10 @@ return {
 			"Mais %d nós da build precisam de mais pontos.",
 		["Too fast: wait a moment and apply again."] =
 			"Rápido demais: espere um momento e aplique de novo.",
+		["Too fast: wait a moment and pick the build again."] =
+			"Rápido demais: espere um momento e escolha a build de novo.",
+		["The preview could not be made. Try another build or try again later."] =
+			"Não foi possível montar a prévia. Tente outra build ou tente mais tarde.",
 		-- Service NPCs (service_npcs*.lua, data/npc/scripts/chaos_service_npc.lua and the five NPC XMLs)
 		["%s has %d free houses, the cheapest: %s. Say {buy} and a name."] =
 			"%s tem %d casas livres, as mais baratas: %s. Diga {buy} e um nome.",

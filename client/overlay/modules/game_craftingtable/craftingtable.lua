@@ -8,7 +8,7 @@
 -- previous one succeeded and the 1 s cooldown passed, and stops at the first refusal.
 -- A recipe's `bonus` (server patch_base_crafting_bonus.py, at the player's skill) is shown under the gold line: the
 -- rarity odds and item level of equipment, the extra-piece odds of potions and runes.
--- Skills: g_game.onCraftingSkill (base patch 0012), also read from game_craftskills. Menu: Economy > Crafting Tables
+-- Skills: g_game.onCraftingSkill (base patch 0012), also read from game_craftskills. No menu entry (removed 2026-10-20); the tables open it
 -- only explains where the tables are.
 
 local V = CraftingTableView
@@ -590,7 +590,7 @@ local function onGameStart()
   asked = {}
   tips, tipAsked, selected, skills = {}, {}, {}, {}
   atTable, tableAt, tablePos = nil, nil, nil
-  addMenu()
+  -- no Economy > Crafting Tables entry (owner 2026-10-20: it only said where the tables are): addMenu() is not called
 end
 
 local function onGameEnd()
@@ -638,7 +638,7 @@ function init()
   ProtocolGame.registerExtendedJSONOpcode(OPCODE, safe('opcode', onMessage))
   connect(g_game, handlers.game)
   connect(LocalPlayer, handlers.player)
-  addMenu()
+  -- no Economy > Crafting Tables entry (owner 2026-10-20: it only said where the tables are): addMenu() is not called
   if g_game.isOnline() then onGameStart() end
 end
 

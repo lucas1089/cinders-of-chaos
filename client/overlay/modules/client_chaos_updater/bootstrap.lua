@@ -3,7 +3,8 @@
 --
 -- Mounts chaos_update/files (verified update files in the write dir) in front of the client's own files when the
 -- last apply finished ("status=ok") and was made for this client package. Otherwise the client starts with its own
--- install files and the updater module checks again on the login screen.
+-- install files and the updater module checks again on the login screen. CHAOS_UPDATE_OFF=1 (CI start tests): never
+-- mounted.
 
 local core = dofile('/modules/client_chaos_updater/updater_core.lua')
 
@@ -23,7 +24,10 @@ local st = core.parseState(text)
 local id = packageId()
 CHAOS_UPDATE_BOOT = { packageId = id, mounted = false, state = st }
 
-if core.shouldMount(st, id) then
+if core.offByEnv(os.getenv) then
+  -- test runs (CI start tests): the package's own files only (updater.lua makes no request either)
+  g_logger.info('updater: off (' .. core.OFF_ENV .. ' is set): update folder not mounted')
+elseif core.shouldMount(st, id) then
   if g_resources.mountUpdateDir(core.TREE) then
     CHAOS_UPDATE_BOOT.mounted = true
     g_logger.info(('updater: update %d mounted'):format(st.version))

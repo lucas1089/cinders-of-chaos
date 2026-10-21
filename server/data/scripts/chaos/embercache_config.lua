@@ -36,7 +36,7 @@ return {
 	},
 
 	-- sources with a daily cap, in storage order (storage.capBase + index - 1)
-	capped = {"kill", "elite", "craft"},
+	capped = {"kill", "elite", "craft", "offering"},
 
 	-- what one unit of each source is worth. `per`: units per point (kills); `cap`: points a day at most.
 	sources = {
@@ -55,11 +55,12 @@ return {
 		invasion = {points = 6}, -- an invasion fought
 		pvp = {points = 6}, -- a battleground match or a siege
 		goblin = {points = 5}, -- a treasure goblin
-		craft = {points = 1, cap = 15} -- a crafting orb used
+		craft = {points = 1, cap = 15}, -- a crafting orb used
+		offering = {points = 1, cap = 60} -- junk orbs offered in the window (`offering` below: 10 orbs a point)
 	},
 	-- the order the client lists the sources in
 	order = {"kill", "elite", "dungeon", "rift", "descent", "tower", "bounty", "task", "worldboss", "raid", "omen",
-		"trial", "invasion", "pvp", "goblin", "craft"},
+		"trial", "invasion", "pvp", "goblin", "craft", "offering"},
 
 	-- achievement counters (ChaosAchievements.progress, wrapped) -> {source, units per count}
 	stats = {
@@ -110,5 +111,15 @@ return {
 	recapMinSeconds = 300,
 
 	-- an open window gets a fresh state at most this often (ms)
-	pushMs = 2000
+	pushMs = 2000,
+
+	-- the junk orb offering (beta 2026-10-20: a player held about 2,000 low-value orbs with nothing to do with them).
+	-- The window's "Offer junk orbs" button: the server counts the orbs of `orbs` in the backpack (locked and store orbs
+	-- never count), takes `perPoint` of them for every Ember point, at most the source's daily cap (sources.offering.cap,
+	-- 60 points = 600 orbs a day), and credits the points like any activity (the day's double points and the Spark
+	-- included). Whole points only: a rest below perPoint stays in the backpack. The four most common drops
+	-- (loot_config.lua currency: Upheaval 40, Awakening 30, Whetstone 25, Erasure 15 per 10000 kills of a normal
+	-- monster), in the order they are taken. It is a sink: 10 orbs (about 20 minutes of hunting income by the value of
+	-- the rewards above) buy one point. requestMs: per player, between two quotes or offers.
+	offering = {orbs = {29856, 29851, 32256, 24688}, perPoint = 10, requestMs = 1500}
 }

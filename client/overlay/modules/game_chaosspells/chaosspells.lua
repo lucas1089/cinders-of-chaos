@@ -102,7 +102,10 @@ local function remapStockVocations()
       for _, v in ipairs(ChaosStockSpellLines and spell.words and ChaosStockSpellLines[spell.words:lower()] or {}) do
         add(v)
       end
-      if #list ~= #spell.vocations then
+      -- the 15-spell cap (ChaosCappedSpells, spelldata.lua; server/tools/patch_spell_cap.py): only the classes that
+      -- keep the spell
+      list = ChaosSpellFix.capVocations(spell.words, list, ChaosCappedSpells) or list
+      if #list ~= #spell.vocations or ChaosCappedSpells and spell.words and ChaosCappedSpells[spell.words:lower()] then
         oldVocations[spell] = spell.vocations
         spell.vocations = list
       end
@@ -131,12 +134,18 @@ local fixUndo, fixIdMap, fixRemovedIds = {}, {}, {} -- ChaosSpellFix.apply (spel
 -- server id, ids of the spells the server removed (ChaosRemovedSpells)
 
 -- the spells the server removed (ChaosRemovedSpells, the conjure spells) leave the spell list; their SpellInfo entries
--- stay (the rune cooldown icons need their ids)
+-- stay (the rune cooldown icons need their ids). The stock spells it retired (ChaosRetiredSpells: Sharpshooter, Protector
+-- and Swift Foot, whose ids 135, 132 and 134 are Tautstring's, Ironhold's and Wildstride's now) leave it too.
 local hiddenOrder = {}
 local function hideRemovedSpells(order)
   if not order or type(ChaosRemovedSpells) ~= 'table' then return end
   local gone = {}
   for old, new in pairs(ChaosRemovedSpells) do gone[old] = true; gone[new] = true end
+  for old in pairs(type(ChaosRetiredSpells) == 'table' and ChaosRetiredSpells or {}) do gone[old] = true end
+  -- the stock spells the 15-spell cap retired (no class keeps them: ChaosCappedSpells, server/tools/patch_spell_cap.py)
+  for words, keep in pairs(type(ChaosCappedSpells) == 'table' and ChaosCappedSpells or {}) do
+    if #keep == 0 then gone[words] = true end
+  end
   for i = #order, 1, -1 do
     local spell = SpellInfo.Default[order[i]]
     if spell and spell.words and gone[spell.words:lower()] then
@@ -209,7 +218,7 @@ function init()
   remapStockVocations()
   -- ids, numbers and groups of the stock entries as the server has them (spellfix.lua), before the Chaos entries come in
   fixUndo, fixIdMap, fixRemovedIds = ChaosSpellFix.apply(SpellInfo.Default, SpellIcons, SpellRunesData,
-    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells))
+    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells, ChaosCappedSpells))
   connect(g_game, { onGameStart = onGameStartExtend })
   connect(g_game, { onGameStart = onGameStartMana })
   connect(LocalPlayer, { onManaChange = updatePercentMana })

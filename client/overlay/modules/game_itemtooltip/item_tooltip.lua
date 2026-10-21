@@ -7,7 +7,9 @@
 -- Tooltips are cached by the item's per-item id and version (item custom attributes, game_itemrarity ChaosItemAttr):
 -- the version changes whenever the server changes the item (orbs, gems), so a changed item is asked for again.
 -- Items without those attributes (plain items, or a server without engine patch 0003) are cached for a short time
--- under their position, id and count. The view logic is in tooltiplogic.lua (tested by tooltiplogic_test.lua).
+-- under their position, id and count. A tooltip with counted charges is asked for again whenever its slot gets the
+-- item again (the server sends an exercise weapon after every training hit): the shown charges follow the training.
+-- The view logic is in tooltiplogic.lua (tested by tooltiplogic_test.lua).
 --   client -> server  get {items = [{pos = {x, y, z}, iid, cid, n}]}   (iid as a decimal string; cid = the client id,
 --                     n = the count of a stackable: the server answers for that item, tooltiplogic.lua L.tipMatches)
 --   server -> client  tips {items = [{pos, iid, tip} | {pos, iid, gone}]}
@@ -356,10 +358,25 @@ local function onHoverChange(widget, isHovered)
   if not pollEvent then pollEvent = scheduleEvent(poll, CTRL_POLL) end
 end
 
--- the hovered slot got a new item or the same item with a new version: ask again
+-- a slot got its item again with the same key: a cached tooltip with counted charges is stale (L.liveTip; an exercise
+-- weapon in training). Dropped, so the next hover asks; returns true when the hovered one was dropped.
+local function dropLive(widget, d)
+  if not L.liveTip(L.cacheGet(cache, d.key, now())) then return false end
+  L.cacheDrop(cache, d.key)
+  return hovered ~= nil and hovered.widget == widget and not hovered.external
+end
+
+-- the hovered slot got a new item or the same item with a new version: ask again. The same item with counted charges
+-- is asked for again too; the shown plate stays until the answer comes (no flicker on every training hit).
 local function onItemChange(widget)
-  if not hovered or hovered.widget ~= widget then return end
   local item = widget:getItem()
+  if not hovered or hovered.widget ~= widget then
+    if item and not widget:isVirtual() then
+      local d = describe(item)
+      if L.askable(d.pos) then dropLive(widget, d) end
+    end
+    return
+  end
   if not item then
     hovered = nil
     clearPanels()
@@ -374,6 +391,9 @@ local function onItemChange(widget)
       if askEvent then removeEvent(askEvent) end
       askEvent = scheduleEvent(ask, ASK_DELAY)
     end
+  elseif dropLive(widget, d) then
+    if askEvent then removeEvent(askEvent) end
+    askEvent = scheduleEvent(ask, ASK_DELAY)
   end
 end
 

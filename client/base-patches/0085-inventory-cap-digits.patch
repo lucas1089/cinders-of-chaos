@@ -1,0 +1,16 @@
+# Chaos: the capacity plate shows digits only (after 0001-0084). Its font, verdana-cap-bold, has glyphs for the digits only, so the short number
+# of 0073 ("14.2k") drew as "14 2". The plate shows the free capacity as plain digits (7 fit); the tooltip keeps the grouped number.
+--- a/modules/game_inventory/inventory.lua
++++ b/modules/game_inventory/inventory.lua
+@@ -793,8 +793,9 @@
+ function onFreeCapacityChange(player, freeCapacity)
+   if not freeCapacity then return end
+   freeCapacity = math.floor(freeCapacity)
+-  -- Chaos: short number (15.3k); the exact free capacity is in the tooltip
+-  capLabel.label:setText(formatShortNumber(freeCapacity))
++  -- Chaos: digits only: the plate's font (verdana-cap-bold) has no '.', ',' or letters, so a short number like
++  -- 14.2k drew as "14 2"; the plate fits 7 digits and the tooltip keeps the grouped number
++  capLabel.label:setText(tostring(math.max(0, freeCapacity)))
+   capLabel:setTooltip(tr("Capacity: The amount of weight you are able to carry.") .. '\n' .. tr('Free capacity') .. ': ' .. formatExactNumber(freeCapacity))
+   if freeCapacity == 0 then
+     capLabel.label:setColor('$var-text-cip-store-red')

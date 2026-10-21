@@ -9,6 +9,9 @@ ItemFinderText < UILabel
 
 // one search result: the icon, the name and what the item has
 ItemFinderResult < UIWidget
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  image-color: #ffffff
   height: 40
   margin-bottom: 2
   image-source: /images/chaos/panel_dark

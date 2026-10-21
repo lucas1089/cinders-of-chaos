@@ -12,8 +12,9 @@
 --   modules.game_lookpreview.fitCard(creatureWidget, outfit, w, h)   a list card's look facing south, filling the card
 -- The look is drawn by the engine on a UICreature, the same way the map draws it: outfit, addons, colours, mount,
 -- wings and aura are outfit fields, the outfit shader is the outfit's shader name (game_chaosshaders registers them),
--- the outline is game_cosmeticfx.applyOutline on the preview's creature (base patch 0038). Zoom and feet from
--- LookPreviewCore with the sprite anchors of the character select (CharSelectCore.figure, CharSelectAnchors).
+-- the outline is game_cosmeticfx.applyOutline on the preview's creature (base patch 0038). Always 2x, the box of
+-- everything drawn centred (LookPreviewCore.lookBox: the pixel bounds of CharSelectAnchors, else the thing's tiles
+-- and displacement). Spell skins play on a scene of the player and a troll, kill effects on a troll that dies.
 -- The controls (turn, slow turn, walk, simple figure) are one setting for every panel (g_settings node below).
 -- The base Outfit window gets a panel too: see "the Outfit window" at the end.
 
@@ -51,12 +52,30 @@ local function charselect()
   return m.CharSelectCore, m.CharSelectAnchors
 end
 
--- the client's size and displacement of a creature thing (for a look the anchors do not know)
+-- the client's thing data of a creature thing: size, displacement, patterns and sprite ids (LookPreviewCore.lookBox
+-- measures a look the anchors do not know from its tiles). Read once per id.
+local creatureThings = {}
 local function thingInfo(id)
+  id = num(id)
+  if id <= 0 then return nil end
+  local cached = creatureThings[id]
+  if cached ~= nil then return cached or nil end
+  local info = false
   local ok, t = pcall(function() return g_things.getThingType(id, ThingCategoryCreature) end)
-  if not ok or not t then return nil end
-  local function get(m) local okm, v = pcall(t[m], t) return okm and v or nil end
-  return { w = get('getWidth'), h = get('getHeight'), dx = get('getDisplacementX'), dy = get('getDisplacementY') }
+  if ok and t then
+    local function get(m) local okm, v = pcall(t[m], t) return okm and v or nil end
+    local sprites = get('getSprites')
+    info = { w = get('getWidth'), h = get('getHeight'), dx = get('getDisplacementX'), dy = get('getDisplacementY'),
+      layers = get('getLayers'), px = get('getNumPatternX'), py = get('getNumPatternY'), pz = get('getNumPatternZ'),
+      phases = get('getAnimationPhases'), sprites = type(sprites) == 'table' and sprites or nil }
+  end
+  creatureThings[id] = info
+  return info or nil
+end
+
+local function anchorOf(id)
+  local _, anchors = charselect()
+  return anchors and P.anchorFrom(anchors[id]) or nil
 end
 
 -- the lift of a winged character (Outfit::draw with the feature GameWingOffset)
@@ -75,6 +94,12 @@ local function figureOf(outfit)
     if ok then fig = f end
   end
   return P.fitFigure(fig, mounted)
+end
+
+-- the box of everything the engine draws of an outfit (LookPreviewCore.lookBox), for the panel's centring
+local function boxOf(outfit)
+  local ok, b = pcall(P.lookBox, outfit, anchorOf, thingInfo, wingLift())
+  return ok and b or P.copy(P.FALLBACK_BOX)
 end
 
 -- is an outfit shader registered (the engine draws nothing for an unknown name)
@@ -211,6 +236,11 @@ function effectIcon(widget, spec, size, imageDir)
   return true
 end
 
+-- the troll of a scene (LookPreviewCore "the scene"): the stage's second creature
+local function targetWidget(self)
+  return alive(self.widget) and self.widget.stage.target or nil
+end
+
 function Preview:stopFx()
   self.fx = nil
   if not alive(self.widget) then return end
@@ -218,6 +248,10 @@ function Preview:stopFx()
   st.fxUnder:destroyChildren()
   st.fxOver:destroyChildren()
   st.fxLabel:setVisible(false)
+  local tw = targetWidget(self)
+  if tw then tw:setVisible(false) end
+  st.creature:setVisible(true)
+  st.creature:setOpacity(1)
 end
 
 function Preview:startFx(opt)
@@ -229,16 +263,34 @@ function Preview:startFx(opt)
   end
   local function sizeOf(spec)
     local info = specInfo(spec)
-    return info and info.w or 1, info and info.h or 1
+    return info and info.w or 1, info and info.h or 1, info and info.dispX or 0, info and info.dispY or 0
   end
   local hasStock = false
   for _, step in ipairs(play) do
     if type(step) == 'table' and type(step.a) == 'table' then hasStock = true end
   end
   local side = (settings.compare and hasStock) and 'both' or 'b'
-  self.fx = { timeline = P.timeline(play, side, phasesOf), holders = {}, started = g_clock.millis(),
-    hasStock = hasStock }
-  self.fx.x0, self.fx.y0, self.fx.x1, self.fx.y1 = P.fxExtent(play, sizeOf)
+  local scene = P.sceneOf(opt)
+  self.fx = { timeline = P.timeline(play, side, phasesOf, scene), holders = {}, started = g_clock.millis(),
+    hasStock = hasStock, scene = scene, play = play, sizeOf = sizeOf }
+  -- the troll: alone in a kill scene, facing the player in a spell scene
+  local tw = targetWidget(self)
+  if tw then
+    pcall(tw.setOutfit, tw, { type = P.TROLL })
+    tw:setDirection(scene.kill and P.SOUTH or P.WEST)
+    tw:setAnimate(false)
+    pcall(tw.setIdleAnimate, tw, true)
+    tw:setOpacity(1)
+    tw:setVisible(true)
+  end
+end
+
+-- the scene's extent (in tiles) with the boxes of its creatures
+function Preview:fxExtent()
+  local fx = self.fx
+  local boxes = { target = boxOf({ type = P.TROLL }) }
+  if fx.scene.caster then boxes.caster = self.box end
+  return P.fxExtent(fx.play, fx.sizeOf, fx.scene, boxes)
 end
 
 -- the prints of a footprint option, under the creature (game_cosmeticfx's own pictures)
@@ -299,7 +351,7 @@ function Preview:fxTick()
     if h then
       playing[idx] = true
       label = a.item.side
-      local ox, oy, pxp, pyp = P.itemPlace(a)
+      local ox, oy, pxp, pyp = P.itemPlace(a, self.fx.scene)
       local info = h.info
       local phase = a.item.spec.m and 0 or P.phaseAt(a.ms, a.item.dur, info.phases)
       if a.item.spec.m then phase = math.floor(a.ms / 75) % math.max(1, num(info.phases)) end
@@ -325,6 +377,9 @@ function Preview:fxTick()
   for idx, h in pairs(self.fx.holders) do
     if not playing[idx] and alive(h.widget) then h.widget:setVisible(false) end
   end
+  -- the troll of a kill scene dies with the effect and stands again when the loop starts over
+  local tw = targetWidget(self)
+  if tw and self.fx.scene.kill then tw:setOpacity(P.targetAlpha(self.fx.timeline, now)) end
   local cap = self.widget.stage.fxLabel
   local showCap = settings.compare and self.fx.hasStock and label ~= nil
   cap:setVisible(showCap)
@@ -373,43 +428,60 @@ function Preview:animate()
   pcall(cw.setStaticWalking, cw, walk)
 end
 
+local function place(widget, x, y, size)
+  widget:setMarginLeft(x)
+  widget:setMarginTop(y)
+  widget:setSize({ width = size, height = size })
+end
+
 function Preview:relayout()
-  if not alive(self.widget) or not self.figure then return end
+  if not alive(self.widget) or not self.box then return end
   local stage = self.widget.stage
   local W, H = stage:getWidth(), stage:getHeight()
   if W < 20 or H < 20 then return end
   local L
-  if self.fx or self.steps then
-    -- effects and prints: the creature on a tile, at the scale where the effects fit (as the map draws them)
-    local x0, y0, x1, y1 = -1, -1, 0, 0
-    if self.fx then x0, y0, x1, y1 = self.fx.x0, self.fx.y0, self.fx.x1, self.fx.y1 end
-    if self.steps then x0 = math.min(x0, -3) end
-    L = P.fxLayout(self.figure, W, H, x0, y0, x1, y1)
-  else
-    L = P.layout(self.figure, W, H)
-  end
-  self.layout = L
   local cw = stage.creature
-  cw:setMarginLeft(L.x)
-  cw:setMarginTop(L.y)
-  cw:setSize({ width = L.size, height = L.size })
-  self.widget.controls.zoomLabel:setText(L.scale .. 'x')
-  if self.steps then self:drawSteps(self.steps) end
-  -- a soft shadow on the ground under the feet (the character select's art, drawn at the same scale)
   local floor = stage.floor
-  local Core = charselect()
-  if Core and type(Core.shadowRect) == 'function' then
-    local s = L.size / 64
-    local cx = L.T and math.floor(L.x + (self.figure.fx + 32) * s + 0.5) or math.floor(W / 2)
-    local x, y, w, h = Core.shadowRect(32 * L.scale, cx, L.feetY)
+  if self.fx or self.steps then
+    -- effects and prints: every creature on its tile, at the scale where the scene fits (as the map draws them),
+    -- the scene centred in the stage
+    local x0, y0, x1, y1
+    if self.fx then
+      x0, y0, x1, y1 = self:fxExtent()
+    else
+      local b = self.box
+      x0, y0, x1, y1 = b.left / 32, b.top / 32, b.right / 32, b.bottom / 32
+    end
+    if self.steps then x0 = math.min(x0, -3) end
+    L = P.fxLayout(W, H, x0, y0, x1, y1)
+    local scene = self.fx and self.fx.scene
+    if scene and scene.kill then
+      cw:setVisible(false)
+    else
+      cw:setVisible(true)
+      place(cw, P.creatureRect(L, scene and scene.caster))
+    end
+    local tw = targetWidget(self)
+    if tw and scene then place(tw, P.creatureRect(L, scene.target)) end
+    floor:setVisible(false)
+  else
+    -- the look alone: always 2x, the box of everything drawn centred in the stage
+    L = P.layout(self.box, W, H)
+    cw:setVisible(true)
+    place(cw, L.x, L.y, L.size)
+    -- a soft shadow on the ground under the feet (the character select's art, drawn at the same scale)
+    local x, y, w, h = P.shadowRect(L, self.box)
     floor:breakAnchors()
     floor:addAnchor(AnchorLeft, 'parent', AnchorLeft)
     floor:addAnchor(AnchorTop, 'parent', AnchorTop)
     floor:setMarginLeft(x)
     floor:setMarginTop(y)
     floor:setSize({ width = w, height = h })
-    floor:setVisible(num(self.outfit and self.outfit.mount) == 0)
+    floor:setVisible(true)
   end
+  self.layout = L
+  self.widget.controls.zoomLabel:setText(L.scale .. 'x')
+  if self.steps then self:drawSteps(self.steps) end
 end
 
 function Preview:refresh()
@@ -418,7 +490,10 @@ function Preview:refresh()
   local outfit, outline, note = P.compose(self:mode(), self.own or localOutfit(), opt, shaderKnown)
   local cw = self.widget.stage.creature
   local ok = pcall(cw.setOutfit, cw, outfit)
-  if not ok then pcall(cw.setOutfit, cw, { type = outfit.type }) end
+  if not ok then
+    g_logger.warning('[lookpreview] setOutfit refused the look ' .. tostring(outfit.type))
+    pcall(cw.setOutfit, cw, { type = outfit.type, mount = outfit.mount })
+  end
   cw:setDirection(self.dir)
   self:animate()
   -- the outline: on the preview's own creature (an engine without 0038 has none: say so, no picture in its place)
@@ -441,9 +516,13 @@ function Preview:refresh()
     if fxKey then
       self:startFx(fxOpt)
       self.fx.compare = settings.compare
+      -- a spell scene: the player faces the troll
+      if not self.fx.scene.kill then self.dir = P.EAST end
     else
+      if self.fx and not self.fx.scene.kill then self.dir = P.SOUTH end -- back from a spell scene
       self:stopFx()
     end
+    cw:setDirection(self.dir)
   end
   local steps = P.footprintArt(opt)
   if steps ~= self.steps then
@@ -454,7 +533,7 @@ function Preview:refresh()
     self:animate()
   end
   self.outfit = outfit
-  self.figure = figureOf(outfit)
+  self.box = boxOf(outfit)
   self:syncControls()
   self:relayout()
 end
@@ -699,6 +778,7 @@ function terminate()
   if fxEvent then removeEvent(fxEvent) end
   fxEvent = nil
   things = {}
+  creatureThings = {}
   stopOutfitWindow()
   for h in pairs(live) do h:destroy() end
   live = {}

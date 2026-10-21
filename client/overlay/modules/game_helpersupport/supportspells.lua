@@ -10,11 +10,13 @@
 --   * eligible = a support spell (spell group 3 without the attack group 1) that needs no target and no typed name,
 --     is on the server and is not a utility (light, rope, teleport home, a dash ...). What counts comes from the
 --     spell data (groups, parameter, needTarget), not from a class list: a support spell added later shows up by itself;
---   * the buff is "active" when the buff bar (game_buffbar, the server's list) shows a buff of the spell's name, else
---     (no bar data) when the spell's own duration since our last cast has not run out, else the spell is cast again
---     as soon as the server says it is off cooldown;
+--   * the buff is "active" when the buff bar (game_buffbar, the server's list) shows a buff of the spell's name; when the
+--     bar cannot tell (no bar data, or it never showed this spell's buff) while the spell's own duration since our
+--     last cast has not run out, else for H.RECAST_MIN_MS (or its cooldown, if longer) after our last cast;
+--   * a summon whose creatures are known (capped ones, H.KINDS minions) is cast by the count of those out;
 --   * the safeguards of the attack rotation apply: the server's cooldowns (spell and group), the cast bookkeeping with
---     pending / back-off of a refused cast (ChaosHelperRotation), the rate guard of the support channel
+--     pending / back-off of a refused cast (ChaosHelperRotation, base patch 0052; after H.REFUSE_LIMIT refusals in a
+--     row a longer rest), the rate guard of the support channel
 --     (ChaosHelperTimers), no cast in a protection zone, a mana reserve, and nothing while the attack rotation charges
 --     a cast-time spell.
 -- A vigil is a switch (a second cast turns it off): it is cast only when the buff bar shows it is off, and one cast
@@ -36,6 +38,16 @@ H.MAX_AUTO_COOLDOWN_MS = 1800000        -- Auto setup leaves out spells that com
 H.SETTLE_MS = 2500           -- after a cast: wait for the server's answer and the buff bar
 H.SWITCH_SETTLE_MS = 6000    -- the same for a switch (a vigil): a second cast would turn it off
 H.SUMMON_GAP_MS = 10000      -- a summon is not cast again sooner than this (a refused one backs off on top)
+-- Owner beta, 2026-10-20: "Support keeps casting the spells nonstop, the character has the cloud all the time". A spell
+-- whose effect the buff bar never lists (a summon, Hunter's Instinct, Smoke Bomb, a stock buff the bar calls "Spell
+-- Buff") counted as "not active" whenever the bar had data, and one with no bar data and no duration was cast every
+-- time it came off cooldown: Wild Bond every 10 s, Bone Golem every 30 s, each with its effect. Now the bar decides only
+-- for a buff it has shown (st.seen); otherwise the spell's duration, else at least RECAST_MIN_MS (or its cooldown) since
+-- our last cast. A spell the server refused REFUSE_LIMIT times in a row (no cooldown answer: ChaosHelperRotation's
+-- back-off) rests REFUSED_HOLD_MS after the last try instead of a poof every 16 s.
+H.RECAST_MIN_MS = 60000
+H.REFUSE_LIMIT = 3
+H.REFUSED_HOLD_MS = 30000
 H.SUMMON_CAP = 3             -- the most summons of a capped kind of spell (below) the helper keeps out when the class is unknown
 -- The Necromancer line's summons are capped: at the limit the next summon kills the OLDEST one (server/data/scripts/chaos/
 -- necro_config.lua minions.classes[].total). A summon spell marked `capped` below is therefore cast only while the character
@@ -68,6 +80,8 @@ end
 --   capped true: a summon that is cast only below the summon cap (H.summonCap; the next one would kill the oldest)
 --   minion the creature name of that summon: a capped summon with a minion is cast only while none of that name is out
 --          (one of each kind: Auto setup builds a mixed army)
+--   minions, keep  an uncapped summon's creature names and how many the character keeps out ({ {level, count}, ... }):
+--          cast only while fewer of those are out
 --   fight  true: only while attacking a monster
 --   dur    seconds the effect lasts (the timer cools down at least that long; the fallback when no buff bar data)
 --   bar    names the buff bar shows for it, when they are not the spell's name
@@ -87,11 +101,12 @@ H.KINDS = {
   [243] = { auto = 'timer', dur = 3 },   -- Counter Stance
   [251] = { auto = 'timer', dur = 6 },   -- Rebuke
   [133] = { auto = 'timer', dur = 10 },  -- Blood Rage (stock)
-  [132] = { auto = 'timer', dur = 10 },  -- Protector (stock)
-  [135] = { auto = 'timer', dur = 10 },  -- Sharpshooter / Hawkeye (stock)
+  [132] = { auto = 'timer', dur = 12 },  -- Ironhold (the Chaos id 132 of the retired stock Bulwark, 2026-10-20)
+  [135] = { auto = 'timer', dur = 12 },  -- Tautstring (the Chaos id 135 of the retired stock Hawkeye, 2026-10-20)
   -- the hastes: offered, but the Tools tab keeps them up (Auto setup sets that), so Auto setup leaves them out here
   [6] = { auto = false, kind = 'buff', dur = 33, bar = { 'haste' } },
   [39] = { auto = false, kind = 'buff', dur = 22, bar = { 'haste' } },
+  [134] = { auto = false, kind = 'buff', dur = 12 },  -- Wildstride (the Chaos id 134 of the retired stock Windrunner)
   -- the support section
   [234] = { auto = 'support', kind = 'shield', dur = 15, rank = 2 },        -- Soulward
   [44] = { auto = 'support', kind = 'shield', dur = 200, bar = { 'magic shield' }, rank = 2 }, -- Ward of the Mind
@@ -104,9 +119,11 @@ H.KINDS = {
   [192] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Warrior' }, -- Raise Bone Warrior
   [193] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Archer' },  -- Raise Bone Archer
   [176] = { auto = 'support', kind = 'summon', fight = true, rank = 4, capped = true, minion = 'Risen Mage' },    -- Raise Bone Mage
-  [186] = { auto = 'support', kind = 'summon', fight = true, rank = 4 },    -- Bone Golem
+  -- (a recast with the golem / the companions out only calls them back and heals them: cast while fewer than `keep` are out)
+  [186] = { auto = 'support', kind = 'summon', fight = true, rank = 4, minions = { 'Bone Golem' }, keep = { { 0, 1 } } }, -- Bone Golem
   [187] = { auto = 'support', kind = 'buff', fight = true, dur = 20, rank = 5 }, -- Banner of Bones
-  [248] = { auto = 'support', kind = 'summon', fight = true, rank = 4 },    -- Wild Bond
+  [248] = { auto = 'support', kind = 'summon', fight = true, rank = 4, minions = { 'War Wolf', 'Wolf' },
+    keep = { { 0, 1 }, { 400, 2 } } },                                      -- Wild Bond (server Chaos.classes.companion.caps)
   [194] = { auto = 'support', kind = 'summon', rank = 3 },                  -- the familiars (stock; 30 min)
   [195] = { auto = 'support', kind = 'summon', rank = 3 },
   [196] = { auto = 'support', kind = 'summon', rank = 3 },
@@ -165,7 +182,7 @@ function H.info(spell)
   bar[#bar + 1] = lower(spell.name)
   return {
     kind = kind, auto = k.auto, fight = k.fight == true, dur = k.dur, bar = bar,
-    capped = k.capped == true, minion = k.minion,
+    capped = k.capped == true, minion = k.minion, minions = k.minions, keep = k.keep,
     rank = k.rank or DEFAULT_RANK[kind] or 5, known = H.KINDS[spell.id] ~= nil,
   }
 end
@@ -278,7 +295,16 @@ end
 
 -- ---------------------------------------------------------------- the cycle
 function H.newState()
-  return { castAt = {}, settleUntil = {}, status = {}, casts = 0 }
+  return { castAt = {}, settleUntil = {}, status = {}, seen = {}, casts = 0 }
+end
+
+-- how many of an uncapped summon the character keeps out at this level (info.keep: { {level, count}, ... })
+function H.keepCount(info, level)
+  local n = 0
+  for _, step in ipairs(info.keep or {}) do
+    if (tonumber(level) or 0) >= step[1] then n = step[2] end
+  end
+  return n
 end
 
 local function manaOk(ctx, spell, reserve)
@@ -290,13 +316,25 @@ local function manaOk(ctx, spell, reserve)
   return true
 end
 
--- is the effect of this spell on us now? true / false, or nil when nothing tells (no buff bar data and no duration)
+-- is the effect of this spell on us now? true / false, or nil when nothing tells (no buff bar data, never cast).
+-- The bar's "not shown" counts only for a buff the bar has shown before (st.seen): the server lists the class buffs,
+-- the vigils and the engine conditions, not a summon or an instant effect, and a stock buff under its own name.
 local function active(st, info, spell, ctx, now)
-  local fromBar = ctx.buffActive and ctx.buffActive(info.bar)
-  if fromBar ~= nil then return fromBar end
+  local seen = st.seen or {}
+  st.seen = seen
+  local fromBar = nil
+  if ctx.buffActive then fromBar = ctx.buffActive(info.bar) end
+  if fromBar == true then
+    seen[spell.id] = true
+    return true
+  end
+  if info.kind == 'switch' and fromBar == nil then return nil end -- a vigil is never cast blind
   local at = st.castAt[spell.id]
-  if info.dur and at then return now < at + info.dur * 1000 end
-  return nil
+  if fromBar == false and (seen[spell.id] or not at) then return false end
+  if not at then return nil end
+  -- the bar cannot tell: the spell's duration, else a long enough gap since our last cast
+  if info.dur then return now < at + info.dur * 1000 end
+  return now < at + math.max(H.RECAST_MIN_MS, H.cooldownMs(spell))
 end
 
 -- why this spell may not be cast now (nil: it may). Does not consume anything.
@@ -326,9 +364,25 @@ function H.why(st, cfg, slot, ctx)
     if total >= cap then return 'full' end
     if info.minion and (own or 0) > 0 then return 'have' end
   end
-  local isActive = active(st, info, spell, ctx, now)
-  if isActive == true then return 'active' end
-  if info.kind == 'switch' and isActive == nil then return 'nobar' end
+  local counted = info.capped
+  if not info.capped and info.minions and ctx.summonCount then
+    -- an uncapped summon with known creatures: the count decides (nil: the client cannot tell, the gap below does)
+    local _, own = ctx.summonCount(info.minions)
+    if own ~= nil then
+      counted = true
+      if own >= H.keepCount(info, ctx.level) then return 'have' end
+    end
+  end
+  if not counted then
+    local isActive = active(st, info, spell, ctx, now)
+    if isActive == true then return 'active' end
+    if info.kind == 'switch' and isActive == nil then return 'nobar' end
+  end
+  -- refused again and again (no cooldown answer from the server): rest after the last try
+  local refused = ctx.refusals and ctx.refusals(spell) or 0
+  if refused >= H.REFUSE_LIMIT and st.castAt[spell.id] and now - st.castAt[spell.id] < H.REFUSED_HOLD_MS then
+    return 'backoff'
+  end
   if ctx.blocked then
     local b = ctx.blocked(spell)
     if b then return b end
@@ -338,7 +392,9 @@ end
 
 -- the next spell to cast: the first row (in order) that may go out. ctx: now, online, helperOn, inPz, mana, maxMana,
 -- attacking, channeling (the attack rotation charges a cast-time spell), spellOf(id), castable(spell), onCooldown(spell),
--- buffActive(names) -> true / false / nil, blocked(spell) -> reason or nil, inParty(), allowed(spell, now) -> bool
+-- buffActive(names) -> true / false / nil, blocked(spell) -> reason or nil, inParty(), level, refusals(spell) -> the
+-- server's refusals of it in a row, summonCount(name or list of names) -> all own summons, those of the name(s) (nil:
+-- unknown), summonCap(), allowed(spell, now) -> bool
 -- (the rate guard; records the cast when it says yes). Returns the spell, or nil and the overall reason. Every row's
 -- reason lands in st.status[id] (the rows show it).
 function H.pick(st, cfg, ctx)
@@ -378,7 +434,7 @@ function H.noteCast(st, spell, now)
 end
 
 function H.reset(st)
-  st.castAt, st.settleUntil, st.status, st.casts = {}, {}, {}, 0
+  st.castAt, st.settleUntil, st.status, st.seen, st.casts = {}, {}, {}, {}, 0
 end
 
 return ChaosHelperSupport

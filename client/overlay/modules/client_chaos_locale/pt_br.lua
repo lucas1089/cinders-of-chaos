@@ -105,6 +105,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["The community link is not available yet."] = "O link da comunidade ainda não está disponível.",
   -- client_chaos_updater/updater.lua
   ["Close the client and start it again to load the update."] = "Feche o cliente e abra de novo para carregar a atualização.",
+  ["Close and start again"] = "Fechar e abrir de novo",
   ["Exit"] = "Sair",
   ["You can play with the current files."] = "Você pode jogar com os arquivos atuais.",
   ["Checking files"] = "Verificando arquivos",
@@ -404,7 +405,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["New board in %s"] = "Quadro novo em %s",
   ["Tasks (%d) +"] = "Tasks (%d) +",
   ["Tasks"] = "Tasks",
-  ["Task tracker on: it shows up while you hold a kill task or a bounty contract."] = "Rastreador de tasks ligado: aparece enquanto você tem uma kill task ou um contrato de bounty.",
+  ["No task yet: Hunt > Kill Tasks or Adventure > Bounty Board."] = "Nenhuma task ainda: Hunt > Kill Tasks ou Adventure > Bounty Board.",
+  ["Task tracker off."] = "Rastreador de tasks desligado.",
   ["Bestiary"] = "Bestiário",
   ["Kill Tasks"] = "Kill Tasks",
   -- game_bestiary/bestiary.otui
@@ -498,6 +500,9 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Subtle"] = "Sutil",
   ["The numbers above the map spread out a little, each hit with its own shift and speed, so an area hit or a group hunt stays readable. Saved for this character."] = "Os números acima do mapa se espalham um pouco, cada golpe com seu próprio deslocamento e velocidade, para que dano em área ou caçada em grupo continue legível. Salvo para este personagem.",
   ["Wide"] = "Ampla",
+  -- base patch 0100: Options > Interface (game_damagescatter applies it)
+  ["Damage numbers follow the creature"] = "Números de dano seguem a criatura",
+  ["When checked, a damage, healing or experience number moves with\nthe creature it belongs to while it floats up. Unchecked, it stays\nover the square where the hit landed."] = "Marcado, um número de dano, cura ou experiência acompanha a\ncriatura a que pertence enquanto sobe. Desmarcado, ele fica\nsobre o quadrado onde o golpe acertou.",
   ["Buff Bar"] = "Barra de buffs",
   ["The bar sits under the character plate and moves with it."] = "A barra fica embaixo da placa do personagem e se move com ela.",
   ["Show the buff bar"] = "Mostrar a barra de buffs",
@@ -1538,6 +1543,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Item looks show on the item, not on the character."] = "A aparência de item aparece no item, não no personagem.",
   ["This shader is not in your client yet."] = "Este shader ainda não está no seu cliente.",
   ["Your client cannot draw outlines yet."] = "Seu cliente ainda não consegue desenhar contornos.",
+  ["Your look cannot ride: the mount is shown with the plain figure."] = "Sua aparência não pode montar: a montaria é mostrada com o boneco simples.",
   -- game_lootbeams/lootbeams.lua, lootbeams.otui (and the button in game_lootfilter/lootfilter.otui)
   ["Loot Beams"] = "Feixes de saque",
   ["Light pillars over corpses with loot these rules make glow: on or off, height, intensity"] = "Colunas de luz sobre os corpos com saque que estas regras fazem brilhar: ligar ou desligar, altura, intensidade",
@@ -2125,6 +2131,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_passivetree/buildshare.lua
   ["Paste a build code into the box first."] = "Cole um código de build na caixa primeiro.",
   ["Asking the server for a preview..."] = "Pedindo uma prévia ao servidor...",
+  ["The server did not answer the preview. Close and reopen Auto build to try again."] = "O servidor não respondeu a prévia. Feche e reabra a Build automática para tentar de novo.",
   ["%s gold coins"] = "%s gold coins",
   ["Apply this build (%d nodes%s)?\nPrice: %s."] = "Aplicar esta build (%d nós%s)?\nPreço: %s.",
   [", %d of your nodes taken back"] = ", %d dos seus nós devolvidos",
@@ -2880,6 +2887,19 @@ ChaosLocaleStrings['pt-BR'] = {
   ["%d Viewer"] = "%d espectador",
   ["%d Viewers"] = "%d espectadores",
   ["Watch"] = "Assistir",
+  -- base game_compendium (the window's labels; its pages through tr() by base patch 0055)
+  ["Compendium"] = "Compêndio",
+  ["Previous Page"] = "Página anterior",
+  ["Next Page"] = "Próxima página",
+  ["Kill Tasks\nOpen Hunt > Kill Tasks. Take up to 3 personal tasks at once: kill a number of one monster, or of a monster family. A task does not expire. It pays gold, orbs, experience and bestiary points."] = "Kill Tasks\nAbra Hunt > Kill Tasks. Pegue até 3 tarefas pessoais ao mesmo tempo: matar um número de um monstro ou de uma família de monstros. A tarefa não expira. Ela paga ouro, orbes, experiência e pontos de bestiário.",
+  ["Bounty Board\nOpen Adventure > Bounty Board. Every day at 06:00 the board rolls new contracts for each level band. Take up to 3 at once. Contracts pay gold and orbs, and the finished ones fill a weekly chest."] = "Bounty Board\nAbra Adventure > Bounty Board. Todo dia às 06:00 o quadro sorteia novos contratos para cada faixa de nível. Pegue até 3 ao mesmo tempo. Os contratos pagam ouro e orbes, e os concluídos enchem um baú semanal.",
+  ["Task Tracker\nHunt > Task Tracker shows your kill tasks and bounty contracts on the screen. A kill counts for both, and for your party members nearby."] = "Task Tracker\nHunt > Task Tracker mostra na tela suas kill tasks e seus contratos de bounty. Um abate conta para os dois, e para os membros da sua party por perto.",
+  ["Helper\nSystem > Helper sets up healing and spell rotations. Every cast waits for the server's answer, so a refused spell backs off and the rest of the rotation goes on."] = "Helper\nSystem > Helper configura a cura e as rotações de magias. Cada conjuração espera a resposta do servidor, então uma magia recusada espera mais e o resto da rotação continua.",
+  ["Codex\nEconomy > Codex explains item modifiers, orbs, uniques, item sets and the lore. Economy > Item Finder shows where an item drops and who sells it."] = "Codex\nEconomy > Codex explica os modificadores de itens, orbes, únicos, sets de itens e a história. Economy > Item Finder mostra onde um item cai e quem o vende.",
+  ["Use the top menu to open every window: Character, Hunt, Adventure, Economy, Social and System. An entry with a hotkey shows it beside its name."] = "Use o menu do topo para abrir todas as janelas: Character, Hunt, Adventure, Economy, Social e System. Uma entrada com atalho mostra o atalho ao lado do nome.",
+  ["Bestiary\nHunt > Bestiary fills in as you kill. A completed entry gives more damage and experience against that monster, and bestiary points raise your rank."] = "Bestiary\nHunt > Bestiary se completa conforme você mata. Uma entrada completa dá mais dano e experiência contra aquele monstro, e os pontos de bestiário sobem seu rank.",
+  ["Patch Notes\nOpen Social > Patch Notes to see what changed in each update."] = "Patch Notes\nAbra Social > Patch Notes para ver o que mudou em cada atualização.",
+  ["To report a problem, use System > Report a Bug. Include screenshots and the exact error message. The community is reached through System > Join Discord."] = "Para relatar um problema, use System > Report a Bug. Inclua capturas de tela e a mensagem de erro exata. A comunidade fica em System > Join Discord.",
   -- client_chaos_credits/creditsview.lua
   ["Cinders of Chaos is made with the work of these people and projects. Thank you!"] = "Cinders of Chaos é feito com o trabalho destas pessoas e projetos. Obrigado!",
   ["Author: %s"] = "Autor: %s",
@@ -2949,6 +2969,16 @@ ChaosLocaleStrings['pt-BR'] = {
   ["A battleground or a siege"] = "Um battleground ou um siege",
   ["A treasure goblin"] = "Um treasure goblin",
   ["A crafting orb used"] = "Um orbe de crafting usado",
+  ["Junk orbs offered (the button below)"] = "Orbes comuns oferecidos (o botão abaixo)",
+  ["Offer junk orbs"] = "Oferecer orbes comuns",
+  ["Trade the common orbs you do not need (Upheaval, Awakening, Whetstone, Erasure) for Ember points: 10 orbs a point, at most 60 points a day."] =
+    "Troque os orbes comuns que você não usa (Upheaval, Awakening, Whetstone, Erasure) por pontos Ember: 10 orbes por ponto, no máximo 60 pontos por dia.",
+  ["Offer %d junk orbs for %d Ember points? They are destroyed. (%d orbs a point, %d points left today)"] =
+    "Oferecer %d orbes comuns por %d pontos Ember? Eles são destruídos. (%d orbes por ponto, restam %d pontos hoje)",
+  ["You carry %d junk orbs: at least %d make an Ember point (locked orbs do not count)."] =
+    "Você carrega %d orbes comuns: pelo menos %d fazem um ponto Ember (orbes travados não contam).",
+  ["The Ember Cache takes no more junk orbs today. More tomorrow."] =
+    "O Ember Cache não aceita mais orbes comuns hoje. Mais amanhã.",
   ["%d for 1 point"] = "%d por 1 ponto",
   ["%d point"] = "%d ponto",
   ["%d points"] = "%d pontos",
@@ -3219,6 +3249,7 @@ ChaosLocaleStrings['pt-BR'] = {
   -- game_conquest tabs (run-time keys: tr(t.text))
   ["Set Pieces"] = "Peças de conjunto",
   ["Raid and Ascended"] = "Raid e Ascended",
+  ["Raid & Ascended"] = "Raid e Ascended",
   ["Cinderheart"] = "Cinderheart",
   ["Refine"] = "Refinar",
   ["Progress"] = "Progresso",

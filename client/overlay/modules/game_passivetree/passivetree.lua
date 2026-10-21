@@ -41,6 +41,9 @@ local serverClass, serverLine = nil, nil
 local viewing = nil
 -- the chosen effect of each saved mastery node ([id] = choice), from sendNodes
 local savedMasteries = {}
+-- the node ids the server saved for this character ([id] = true), from the last sendNodes: the planner counts them as
+-- owned even when the window could not show one allocated, so a plan never prices a node the server already has
+local savedIds = {}
 
 -- fallback before the server named them: the client reports server vocation ids (base patch 0016)
 local CLASS_OF = { [4] = "warrior", [8] = "juggernaut", [14] = "berserker", [3] = "ranger", [7] = "deadeye",
@@ -216,9 +219,96 @@ function paintedTreeIcon(node, vocationNode)
 	return key and treeData.painted[key] or nil
 end
 
+-- ------------------------------------------------------------------------------------------------ the toolbar
+-- passivetree.otui "toolbar": row 1 the free points, the boss points (bosspoints.lua) and the Primary / Secondary line
+-- (statinfo.lua); row 2 the action buttons, one width each (toolbarview.lua), with game_loadouts' Loadouts button last
+local TOOLBAR_BUTTONS = {"applyPoints", "resetPresetButton", "paragonButton", "buildShareButton", "autoBuildButton",
+	"statInfoButton", "trialsButton", "loadoutsButton"}
+local TOOLBAR_GAP, TOOLBAR_SIDE, TOOLBAR_MAX = 4, 12, 150
+local toolbarBusy = false
+local headerText, headerFit = "", nil -- the whole Primary / Secondary line; the {text, width} it was last fitted for
+
+local function layoutToolbar(bar)
+	local buttons = {}
+	for _, id in ipairs(TOOLBAR_BUTTONS) do
+		local button = window:getChildById(id)
+		if button then
+			buttons[#buttons + 1] = button
+		end
+	end
+	local row = TreeToolbar.row(bar:getWidth(), #buttons, TOOLBAR_GAP, TOOLBAR_SIDE, TOOLBAR_MAX)
+	for i, button in ipairs(buttons) do
+		if button:getWidth() ~= row.width then
+			button:setWidth(row.width)
+		end
+		local margin = i == 1 and row.left or TOOLBAR_GAP
+		if button:getMarginLeft() ~= margin then
+			button:setMarginLeft(margin)
+		end
+		if button:getId() == "loadoutsButton" and button:getHeight() ~= buttons[1]:getHeight() then
+			-- made at runtime by game_loadouts as a plain TreeButton: same height and label wrapping as the others
+			button:setHeight(buttons[1]:getHeight())
+			button:setTextWrap(true)
+		end
+	end
+	-- the Primary / Secondary line starts after the counters
+	local points, boss, header = bar:getChildById("points"), bar:getChildById("bossPoints"), bar:getChildById("statHeader")
+	if header and points then
+		local margin = 24
+		if boss and boss:isExplicitlyVisible() then
+			margin = margin + 16 + boss:getWidth()
+		end
+		if header:getMarginLeft() ~= margin then
+			header:setMarginLeft(margin)
+		end
+		local width = bar:getWidth() - points:getMarginLeft() - points:getWidth() - margin - header:getMarginRight()
+		if not headerFit or headerFit.text ~= headerText or headerFit.width ~= width then
+			headerFit = {text = headerText, width = width}
+			local text, cut = TreeToolbar.fit(headerText, math.max(0, width), function(s)
+				header:setText(s)
+				return header:getTextSize().width
+			end)
+			header:setText(text)
+			if cut then
+				header:setTooltip(headerText)
+			else
+				header:removeTooltip()
+			end
+		end
+	end
+end
+
+-- called on every layout update of the window and the toolbar: changes only what differs, so it settles at once
+function layoutTreeToolbar()
+	local bar = window and window:getChildById("toolbar")
+	if not bar or toolbarBusy then
+		return
+	end
+	toolbarBusy = true
+	local ok, err = pcall(layoutToolbar, bar)
+	toolbarBusy = false
+	if not ok then
+		g_logger.error("[Passive tree] toolbar layout failed: " .. tostring(err))
+	end
+end
+
+-- statinfo.lua: the Primary / Secondary line of the class
+function setTreeHeaderText(text)
+	headerText = tostring(text or "")
+	layoutTreeToolbar()
+end
+
+local function setTreePointsText()
+	local label = window and window:recursiveGetChildById("points")
+	if label then
+		label:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	end
+	layoutTreeToolbar()
+end
+
 function create()
 	if window then
-		return 
+		return
 	end
 
 	local treeX = getTreeData()
@@ -238,7 +328,11 @@ function create()
 		return 
 	end
 
-	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	-- the toolbar follows the window's size and the Loadouts button game_loadouts adds later
+	headerFit = nil
+	connect(window, {onGeometryChange = layoutTreeToolbar, onLayoutUpdate = layoutTreeToolbar})
+	connect(window.toolbar, {onLayoutUpdate = layoutTreeToolbar})
+	setTreePointsText()
 
 	view = window:recursiveGetChildById("view")
 	background = window:recursiveGetChildById("background")
@@ -484,6 +578,40 @@ function setNodeTooltip(widget, node)
 	end
 	if markStatNode and not node.isMastery then
 		markStatNode(widget, customStats) -- statinfo.lua: gold / silver border for Primary / Secondary
+	end
+end
+
+-- The border of a node widget: a search match (search.lua, widget.searchFrame = {width, color}) wins; else the gold /
+-- silver Primary / Secondary mark (statinfo.lua, widget.statColor), only while the Stats panel is open. Shown always,
+-- the marks framed almost every node of the tree (most nodes carry a Primary or Secondary stat), so a tree with no
+-- point spent looked lit up.
+local statMarksShown = false
+
+function applyTreeNodeBorder(widget)
+	if not widget or widget:isDestroyed() then
+		return
+	end
+	local frame = widget.searchFrame
+	if frame then
+		widget:setBorderWidth(frame.width)
+		widget:setBorderColor(frame.color)
+	elseif statMarksShown and widget.statColor then
+		widget:setBorderWidth(2)
+		widget:setBorderColor(widget.statColor)
+	else
+		widget:setBorderWidth(0)
+	end
+end
+
+-- statinfo.lua: the Stats panel opened (true) or closed
+function setTreeStatMarksShown(shown)
+	shown = shown == true
+	if statMarksShown == shown then
+		return
+	end
+	statMarksShown = shown
+	for _, widget in pairs(nodeWidgets or {}) do
+		applyTreeNodeBorder(widget)
 	end
 end
 
@@ -840,51 +968,32 @@ local function refreshConnectors(node)
 	end
 end
 
-local function hasNeighbourIn(node, set)
-	for _, list in ipairs({node.out or {}, node.inputs or {}}) do
-		for _, otherId in pairs(list) do
-			if set[otherId] then
-				return true
-			end
-		end
+-- the undirected links of the shown nodes (TreePlan.graph), built once per nodeMap
+local shownGraph, shownGraphFor = nil, nil
+local function treeGraph()
+	if shownGraphFor ~= nodeMap then
+		shownGraph, shownGraphFor = TreePlan.graph(nodeMap), nodeMap
 	end
-	return false
+	return shownGraph
 end
 
--- Shows an allocation on the built widgets: the given ids that connect to the start node (as clicking them in order
--- would), the rest unallocated. Only the nodes whose state changes are touched: their widgets
--- and connectors are updated by jobs a slice per frame (a few hundred style changes cost ~0.25 s), the bonus list is
--- recalculated once. blocked: the shown nodes cannot be taken back (saved on the server).
+-- Shows an allocation on the built widgets: the given ids that connect to a start node through each other over the
+-- undirected links (the server's check, passivetree_core reach), the rest unallocated. Only the nodes whose state
+-- changes are touched: their widgets and connectors are updated by jobs a slice per frame (a few hundred style changes
+-- cost ~0.25 s), the bonus list is recalculated once. blocked: the shown nodes cannot be taken back (saved on the server).
 local function applyAllocation(ids, blocked)
-	local wanted = {}
-	for _, raw in pairs(ids or {}) do
-		local id = tonumber(raw)
-		if id and nodeMap[id] and not nodeMap[id].isStartNode then
-			wanted[id] = true
-		end
-	end
-
-	local target = {}
+	local starts = {}
 	for id, node in pairs(nodeMap) do
 		if node.isStartNode then
-			target[id] = true
+			starts[id] = true
 		end
 	end
-
-	-- a node joins once one of its own links (out or inputs, like canAllocate) is in; the links are not always
-	-- listed on both ends, so repeat until nothing more joins (a pass per ring, cheap for a few hundred ids)
-	local progress = true
-	while progress do
-		progress = false
-		for id in pairs(wanted) do
-			local node = nodeMap[id]
-			if hasNeighbourIn(node, target) and not (node.exclude and target[node.exclude]) then
-				target[id] = true
-				wanted[id] = nil
-				progress = true
-			end
-		end
-	end
+	local target = TreePlan.connected(treeGraph(), ids, starts, function(id)
+		return nodeMap[id] ~= nil
+	end, function(id, set)
+		local exclude = nodeMap[id].exclude
+		return exclude ~= nil and set[exclude] == true
+	end)
 
 	local changed = {}
 	allocNodes = {}
@@ -1036,6 +1145,7 @@ local function syncLayer()
 			if node.isMastery then
 				setNodeTooltip(widget, node)
 			end
+			applyTreeNodeBorder(widget) -- the Stats panel may have opened or closed while this layer was hidden
 		end
 	end
 	for _, node in pairs(nodeMap) do
@@ -1188,6 +1298,14 @@ end
 
 function getTreeAllocated()
 	return allocNodes
+end
+
+-- the ids the server saved (a set; see savedIds); empty while another character's tree is shown
+function getTreeSaved()
+	if viewing then
+		return {}
+	end
+	return savedIds
 end
 
 function getTreeFreePoints()
@@ -1358,6 +1476,13 @@ function updateNodes(data)
 	end
 	previewShown = false
 	savedMasteries = masteryMap(data.masteries)
+	savedIds = {}
+	for _, raw in pairs(type(data.nodes) == "table" and data.nodes or {}) do
+		local id = tonumber(raw)
+		if id then
+			savedIds[id] = true
+		end
+	end
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end
@@ -1719,18 +1844,18 @@ local vocationSpecials = {
 	mystic = special("Mystic", "#00FFFF", {"Spells, wands and rods. Keystones:", "Arcane Echo, Elemental Overload.", "Ascends: Elementalist or Illusionist."}),
 	elementalist = special("Elementalist", "#00FFFF", {"The top area damage. Keystones:", "Arcane Echo, Elemental Overload."}),
 	illusionist = special("Illusionist", "#B070FF", {"The best healer, party attack buffs.", "Keystones: Shared Phantasm,", "Inspiring Illusion."}),
-	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed."}),
-	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed."}),
-	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed."}),
-	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension.", "Line keystone: Covenant of the Grave."}),
-	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls; Covenant of the Grave."}),
-	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave."}),
-	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline."}),
-	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline."}),
-	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy; Scarred", "Discipline; Overgrowth (Wrath)."}),
-	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath."}),
-	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath."}),
-	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath; Thorns", "(Resolve)."})
+	thief = special("Thief", "#C0C0C0", {"Light blades, shurikens, stealth.", "Class section (top left): Ninja", "and Samurai paths after ascension.", "Line keystone: Blackblood Creed.", "Wrath / Resolve: Shadow Twin,", "Viper's Verdict."}),
+	ninja = special("Ninja", "#C0C0C0", {"Dual daggers, evasion, shadow.", "Class section (top left), keystone", "Living Shadow; Blackblood Creed;", "Shadow Twin, Viper's Verdict."}),
+	samurai = special("Samurai", "#C0C0C0", {"Duelist off-tank: parries, counters,", "taunts. Class section (top left),", "keystone Way of the Blade;", "Blackblood Creed; Shadow Twin,", "Viper's Verdict."}),
+	necromancer = special("Necromancer", "#7FFF9F", {"Skeletons, curses and corpses.", "Class section (top left): Lich and", "Bone Lord paths after ascension.", "Line keystone: Covenant of the Grave.", "Wrath / Resolve: Corpse Detonation,", "Reaper's Toll."}),
+	lich = special("Lich", "#7FFF9F", {"Curses, rot, life drain, one shade.", "Class section (top left), keystone", "Hoarded Souls; Covenant of the Grave;", "Corpse Detonation, Reaper's Toll."}),
+	bonelord = special("Bone Lord", "#7FFF9F", {"The army, the Bone Golem, a banner.", "Class section (top left), keystone", "Bone Colossus; Covenant of the Grave;", "Corpse Detonation, Reaper's Toll."}),
+	monk = special("Monk", "#FFD27F", {"Unarmed strikes build chi, finishers", "spend it. Class section (top left):", "Shadowfist and Iron Sage paths.", "Line keystone: Scarred Discipline.", "Wrath / Resolve: Seventh Palm,", "Piercing Palm."}),
+	shadowfist = special("Shadowfist", "#FFD27F", {"Single-target burst, focus crits.", "Class section (top left), keystone", "Hundred Hands; Scarred Discipline;", "Seventh Palm, Piercing Palm."}),
+	ironsage = special("Iron Sage", "#FFD27F", {"Chi healer: Kindled Breath, Mantra,", "Chi Ward. Class section (top left),", "keystone Flowing Mercy; Scarred", "Discipline; Overgrowth (Wrath);", "Piercing Palm (Resolve)."}),
+	templar = special("Templar", "#FFF4B0", {"Holy melee, shield, a defence aura.", "Class section (top left): Inquisitor", "and Sentinel paths after ascension.", "Line keystone: Penitent's Wrath.", "Wrath / Resolve: Radiant Rebuke,", "Dawnchain."}),
+	inquisitor = special("Inquisitor", "#FFF4B0", {"Holy area damage, Judgement, Zealotry.", "Class section (top left), keystone", "Divine Verdict; Penitent's Wrath;", "Radiant Rebuke, Dawnchain."}),
+	sentinel = special("Sentinel", "#FFF4B0", {"Tank-support, the strongest aura.", "Class section (top left), keystone", "Bastion; Penitent's Wrath; Radiant", "Rebuke (Wrath); Thorns (Resolve)."})
 }
 
 function calculateStats()
@@ -1803,7 +1928,7 @@ function destroy()
 	builtFor = nil
 	pendingAlloc = nil
 	layers, spare = {}, {} -- the panels go with the window
-	viewing, savedMasteries = nil, {}
+	viewing, savedMasteries, savedIds = nil, {}, {}
 	if destroyPlanner then
 		destroyPlanner() -- planner.lua
 	end
@@ -1848,6 +1973,7 @@ function show()
 	window:show()
 	window:raise()
 	window:focus()
+	layoutTreeToolbar()
 	-- The widgets are kept between openings: the tree shows the allocation it had (rebuilt only when the zoom went back
 	-- to the default) until the server's sendNodes, which then changes only the nodes that differ. Before the first
 	-- sendNodes the vocation (keystone icons) is not known, so the first build waits for it instead of building twice.
@@ -1947,7 +2073,7 @@ end
 function updatePoints(value)
 	pointsOwned = pointsOwned + value
 
-	window.pWindow.points:setText(tr('%s points', formatShortNumber(pointsOwned)))
+	setTreePointsText()
 	if plannerUpdateBar then
 		plannerUpdateBar() -- planner.lua: the plan's cost against the free points
 	end
@@ -2072,8 +2198,8 @@ function sendMessageBox(title, message)
 	return 
 end
 
--- keystone stats (nodes 621 and 624, one per class of the Warrior, Ranger and Mystic lines, the Iron Sage on 621 and the
--- Sentinel on 624, and the keystones of the class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
+-- keystone stats (nodes 621 and 624, one pair per class since 2026-10-20: the Iron Sage Overgrowth and Piercing Palm,
+-- the Sentinel Radiant Rebuke and Thorns; and the keystones of the class sections); effects on the server in passivetree_keystones.lua and the class scripts (class_tree.lua)
 KEYSTONE_NAMES = {
 	ksCleavingArc = "Cleaving Arc", ksBulwark = "Bulwark", ksRicochet = "Ricochet", ksDeadeye = "Deadeye",
 	ksArcaneEcho = "Arcane Echo", ksOverload = "Elemental Overload", ksOvergrowth = "Overgrowth", ksThorns = "Thorns",
@@ -2094,7 +2220,11 @@ KEYSTONE_NAMES = {
 	-- the third round: the Warrior and Ranger lines
 	arExecutioner = "Executioner's Verdict", arEarthbreaker = "Earthbreaker", arRampage = "Rampage",
 	arLastStand = "Last Stand", arLongshot = "Longshot", arBarbed = "Barbed Quiver", arOpeningShot = "Opening Shot",
-	arHobble = "Hobbling Shot"
+	arHobble = "Hobbling Shot",
+	-- 621 / 624 of the Thief, Necromancer, Monk and Templar lines (server class_keystones_config.lua)
+	ksShadowTwin = "Shadow Twin", ksViperVerdict = "Viper's Verdict", ksCorpseBlast = "Corpse Detonation",
+	ksReapersToll = "Reaper's Toll", ksSeventhPalm = "Seventh Palm", ksPiercingPalm = "Piercing Palm",
+	ksRadiantRebuke = "Radiant Rebuke", ksDawnchain = "Dawnchain"
 }
 -- class notables of the class sections (their effect is in the node's own tooltip lines)
 CLASS_NOTABLE_NAMES = {

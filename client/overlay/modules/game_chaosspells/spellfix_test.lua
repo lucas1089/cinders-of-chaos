@@ -170,6 +170,72 @@ eq(table.concat(rd.getSpellFilterByVocation()[1], ','), '61', 'removed spell out
 F.restore(rundo)
 eq(rinfo['Hexdart Rune'].notOnServer, nil, 'restore removed flag')
 
+-- a stock spell the server retired (ChaosRetiredSpells: Sharpshooter, 2026-10-20): no rename, so its stock words are not
+-- the server's; it leaves id 135 to the Chaos Tautstring and is never cast, and the helper's lists drop the stock 135
+eq(ChaosRetiredSpells and ChaosRetiredSpells['utito tempo san'], true, 'Sharpshooter is a retired stock spell')
+local taut
+for _, s in ipairs(ChaosSpellData) do if s.name == 'Tautstring' then taut = s end end
+eq(taut and taut.id, 135, 'Tautstring has the retired id 135')
+eq(taut and taut.group, 3, 'Tautstring is a support spell')
+for _, e in pairs(ChaosSpellNames) do
+  eq(e.words == 'vyr ira sol', false, 'no rename to the retired Hawkeye words')
+end
+eq(F.STOCK['vyr ira sol'], nil, 'no fix entry for the retired Hawkeye')
+local tinfo = { ['Sharpshooter'] = entry(135, 'Sharpshooter', 'utito tempo san', { group = { [3] = 2000, [2] = 10000 } }) }
+local tserver = F.serverWords(ChaosSpellData, ChaosSpellNames)
+local tundo, tmap = F.apply(tinfo, {}, {}, tserver, F.removedWords(ChaosRemovedSpells))
+eq(tinfo['Sharpshooter'].notOnServer, true, 'Sharpshooter is never cast')
+eq(tinfo['Sharpshooter'].id, 135 + F.OFF_SERVER, 'Sharpshooter moved off the server ids')
+eq(tmap[135], false, 'the stock 135 leaves the helper lists')
+F.restore(tundo)
+
+-- the same for Protector (Bulwark, 132 -> Ironhold) and Swift Foot (Windrunner, 134 -> Wildstride), 2026-10-20: both
+-- pacified the caster for 10 s
+for _, r in ipairs({ { 'utamo tempo', 'Protector', 132, 'Ironhold', 'tor ira' },
+    { 'utamo tempo san', 'Swift Foot', 134, 'Wildstride', 'tor ira sol' } }) do
+  local old, stock, id, chaos, oldWords = r[1], r[2], r[3], r[4], r[5]
+  eq(ChaosRetiredSpells[old], true, stock .. ' is a retired stock spell')
+  local new
+  for _, s in ipairs(ChaosSpellData) do if s.name == chaos then new = s end end
+  eq(new and new.id, id, chaos .. ' has the retired id ' .. id)
+  eq(new and new.group, 3, chaos .. ' is a support spell')
+  eq(ChaosSpellNames[old], nil, 'no Chaos name for the retired ' .. stock)
+  eq(F.STOCK[oldWords], nil, 'no fix entry for the retired ' .. stock)
+  local info = { [stock] = entry(id, stock, old, { group = { [3] = 2000 } }) }
+  local undo, map = F.apply(info, {}, {}, tserver, F.removedWords(ChaosRemovedSpells))
+  eq(info[stock].notOnServer, true, stock .. ' is never cast')
+  eq(info[stock].id, id + F.OFF_SERVER, stock .. ' moved off the server ids')
+  eq(map[id], false, 'the stock ' .. id .. ' leaves the helper lists')
+  F.restore(undo)
+end
+
+-- the 15-spell cap (ChaosCappedSpells, server/tools/patch_spell_cap.py, 2026-10-20)
+do
+  eq(type(ChaosCappedSpells), 'table', 'ChaosCappedSpells generated')
+  eq(#ChaosCappedSpells['drai zar nyx'], 0, 'Lance of the Grave retired')
+  local removedSet = F.removedWords(ChaosRemovedSpells, ChaosCappedSpells)
+  eq(removedSet['drai zar nyx'], true, 'a retired spell is a removed word')
+  eq(removedSet['saen'], nil, 'Minor Mending stays')
+  eq(table.concat(F.capVocations('saen', { 1, 2, 4, 8, 14, 3, 10 }, ChaosCappedSpells), ','), '1,3,10',
+    'Minor Mending: the Warrior line (4, 8, 14) and the old druid 2 cut')
+  eq(F.capVocations('kah brak', { 4, 8, 14 }, ChaosCappedSpells), nil, 'Bonebreaker: not capped')
+  eq(F.capVocations('saen', { 1, 3 }, ChaosCappedSpells), nil, 'nothing to cut: nil')
+  -- a fix entry never gives a class back that the cap took away
+  for words, fix in pairs(F.STOCK) do
+    local keep = ChaosCappedSpells[words]
+    if fix.vocations and keep and #keep > 0 then
+      eq(F.capVocations(words, fix.vocations, ChaosCappedSpells), nil, words .. ': fix vocations within the cap')
+    end
+  end
+  for _, e in ipairs(F.EXTRA) do
+    eq(ChaosCappedSpells[e.words] == nil or #ChaosCappedSpells[e.words] > 0, true, e.name .. ' is not retired')
+  end
+  local cinfo = { ['Lance of the Grave'] = entry(260, 'Lance of the Grave', 'drai zar nyx') }
+  local cundo = F.apply(cinfo, {}, {}, server, removedSet)
+  eq(cinfo['Lance of the Grave'].notOnServer, true, 'a retired spell is never cast')
+  F.restore(cundo)
+end
+
 -- the base spells the client had no entry for (F.EXTRA) carry the installed server's numbers
 -- (server/data/spells/stock_spells.csv, written from an installed server by server/tools/rotation_sim.py)
 local VOC = { Mystic = 1, Elementalist = 5, Illusionist = 10 }
@@ -184,6 +250,13 @@ if fh then
     rows[tonumber(f[1]) or -1] = f
   end
   fh:close()
+  -- a cooldown a fix entry gives is the server's (the cooldown ladder, 2026-10-20)
+  for id, r in pairs(rows) do
+    local fix = r[3] and F.STOCK[r[3]]
+    if id > 0 and fix and fix.exhaustion then
+      eq(fix.exhaustion, tonumber(r[7]), r[2] .. ': fix cooldown = the server cooldown')
+    end
+  end
   for _, e in ipairs(F.EXTRA) do
     local r = rows[e.id]
     eq(r ~= nil, true, e.name .. ' is a server spell')

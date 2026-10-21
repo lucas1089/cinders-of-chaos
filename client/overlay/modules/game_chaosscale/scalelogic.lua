@@ -1,14 +1,12 @@
 -- Display scale, the pure part (no client API; scalelogic_test.lua runs it with plain luajit and lua5.3).
 --
 -- The server shows every combat number x the factor of the viewer's own level (server/README.md "Display scale";
--- server display_scale_core.lua): damage and heal numbers, the own health and mana (stats packet), the DPS meter, the
--- combat log, the death recap, party frames, boards, tooltips. Those arrive scaled. This module keeps the factor for
--- the few numbers the client works out by itself:
---   * the flat mana cost of every spell in SpellInfo (the action bar and the spell list grey a spell out when the shown
---     mana is below its cost, and show the cost): raw cost x factor; a cost in percent of max mana (manaPercent,
---     game_chaosspells) already follows the scaled max mana and is left alone;
---   * other modules: the globals ChaosScale, chaosDisplayFactor() and chaosDisplayValue(n) (chaosscale.lua puts them in
---     _G: the module is sandboxed).
+-- server display_scale_core.lua): damage and heal numbers, the own health (stats packet), the DPS meter, the combat
+-- log, the death recap, party frames, boards, tooltips. Those arrive scaled. Mana is never scaled (owner 2026-10-21,
+-- server src-patch 0052): the own mana arrives as it is and a spell's mana cost in SpellInfo is its one fixed number at
+-- every level, so nothing here touches SpellInfo. This module keeps the factor for the numbers other modules work out
+-- by themselves: the globals ChaosScale, chaosDisplayFactor() and chaosDisplayValue(n) (chaosscale.lua puts them in
+-- _G: the module is sandboxed).
 -- Messages (JSON on opcode 157): server -> client {action = 'scale', data = {level, f}}; client -> server
 -- {action = 'hello'} at a game start (the server answers with the factor).
 
@@ -52,31 +50,6 @@ function S.value(n, f)
     r = math.floor(r + 0.5)
   end
   return r
-end
-
--- the mana costs of a SpellInfo table ({profile = {name = spell}}): every flat cost = its raw cost x f. The raw cost is
--- kept in spell.chaosRawMana, so a new factor (a level up) or f = 1 (logout) starts from it. Returns how many changed.
-function S.applySpells(spellInfo, f)
-  local n = 0
-  if type(spellInfo) ~= 'table' then
-    return n
-  end
-  for _, profile in pairs(spellInfo) do
-    if type(profile) == 'table' then
-      for _, spell in pairs(profile) do
-        if type(spell) == 'table' and not spell.manaPercent and type(spell.mana) == 'number' then
-          local raw = spell.chaosRawMana or spell.mana
-          spell.chaosRawMana = raw
-          local want = S.value(raw, f)
-          if spell.mana ~= want then
-            spell.mana = want
-            n = n + 1
-          end
-        end
-      end
-    end
-  end
-  return n
 end
 
 function chaosDisplayFactor()

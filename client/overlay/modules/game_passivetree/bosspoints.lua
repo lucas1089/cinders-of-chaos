@@ -40,6 +40,7 @@ local function refreshBossPoints()
   label:setColor(got >= total and total > 0 and '#7fd06a' or '#d8a03a')
   label:setTooltip(tooltipOf(bossPointsState))
   label:setVisible(total > 0)
+  layoutTreeToolbar() -- passivetree.lua: the Primary / Secondary line starts after this label
 end
 
 ChaosTreeHandlers.bossPoints = function(data)

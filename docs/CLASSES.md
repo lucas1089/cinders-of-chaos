@@ -44,7 +44,9 @@ the line's area strike, 2026-10-15).
   Bushido focus (crit stacks while not taking damage); Iaido Sweep (a wide draw cut: the target and every monster in
   the 3 x 2 tiles in front, 2026-10-15).
 
-**Warrior** (base): today's Knight kit.
+**Warrior** (base): today's Knight kit. The line's guard buff is Ironhold (level 55, +40% shielding for 12 s); the stock
+Protector (the spell named Bulwark) it replaced was retired on 2026-10-20 because it pacified the caster for 10 s
+(server/README.md "Bulwark and Windrunner retired, Ironhold and Wildstride").
 - **Juggernaut**: Iron Will, Bulwark (block/reflect), taunts.
 - **Berserker**: Cleaving Arc (two-handed hits strike everything adjacent), rage.
 
@@ -52,7 +54,11 @@ the line's area strike, 2026-10-15).
 bow or crossbow (engine src-patch 0023; bows stay two-handed, so no shield; gear with implicit and rolled modifiers that work only while a bow or crossbow is held: distance fighting, attack speed,
 critical strike, extra projectiles, elemental shares; server/README.md "Infinite arrows and quivers"). The new-player kit has
 the bow and no arrows. Only the Ranger, Deadeye and Beastmaster may wear quivers (the launchers' vocations). Every class
-may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot").
+may wear two rings: the ammunition slot is a second ring slot (server/README.md "Second ring slot"). The line's fight buff is
+Tautstring (level 60, +25% distance skill for 12 s); the stock Sharpshooter / Hawkeye it replaced was retired on 2026-10-20
+because its slow kept the bow from firing (server/README.md "Hawkeye retired, Tautstring"). Its run buff is Wildstride
+(level 55, +50% speed for 12 s on top of Haste) in place of the stock Swift Foot / Windrunner, retired the same day: it
+pacified the caster for 10 s.
 - **Deadeye**: crossbow, Final Verdict, marks.
 - **Beastmaster**: a wolf/bear companion that scales with level, arrow splash, Ricochet.
   The companion (Wild Bond) and every other player summon is an ally of its owner and party: it never hits them, they never
@@ -111,42 +117,179 @@ Bonebreaker went from 6 s to 2 s (the Warrior line's only attack spell at levels
 The helper's Auto rotation button sets these (client/MANIFEST.md "Helper auto rotation"); a band left out has the set
 of the band before. Early (since 2026-10-17 every line starts at level 8, "Level 8 spells" below): Warrior line 8: Bonebreaker, 30:
 Reaping Gyre > Bonebreaker; Thief line 8: Shuriken Toss; Ranger line 8: Phantom Javelin, 30: Dawnpiercer > Phantom Javelin. At levels 100 / 300 / 1000:
-- **Warrior**: 100: Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin; 300: Headsman's Hurl > Colossus Fall >
-  Butcher's Gyre > Scything Arc > Reaping Gyre; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything Arc >
-  Reaping Gyre.
-- **Juggernaut**: 100: Butcher's Gyre > Scything Arc > Earthbreaker > Reaver's Spin; 300: Headsman's Hurl > Colossus
-  Fall > Butcher's Gyre > Scything Arc > Reaping Gyre; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything
-  Arc > Reaping Gyre.
-- **Berserker**: 100: Butcher's Gyre > Skyfall Cleave > Scything Arc > Earthbreaker; 300: Headsman's Hurl > Butcher's
-  Gyre > Skyfall Cleave > Scything Arc > Earthbreaker; 1000: Colossus Fall > Headsman's Hurl > Butcher's Gyre > Scything
-  Arc > Reaping Gyre.
-- **Ranger**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst; 300: Hail of Dawn > Blessed Earth > Dawnpiercer >
-  Sanctum Burst.
-- **Deadeye**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst; 300: Hail of Dawn > Final Verdict > Blessed Earth >
-  Dawnpiercer > Sanctum Burst.
-- **Beastmaster**: 100: Blessed Earth > Dawnpiercer > Sanctum Burst.
-- **Mystic**: 100: Bewitching Hex > Arcane Ripple; 300: Falling Pyre > Shattered Psyche > Bewitching Hex > Arcane
-  Ripple; 1000: Falling Pyre > Shattered Psyche > Arcane Ripple > Bramble Fan.
-- **Elementalist**: 100: Tempest Fan > Forked Storm > Pyre Torrent > Witchfire Bolt; 300: Doomtide > Frozen Crypt >
-  Falling Pyre > Pyre Torrent > Witchfire Bolt.
-- **Illusionist**: 100: Bewitching Hex > Arcane Ripple; 300: Tear in the Weave > Nightburst > Primordial Squall >
-  Bewitching Hex > Arcane Ripple; 1000: Nightburst > Primordial Squall > Shattered Psyche > Arcane Ripple > Bramble Fan.
+- **Warrior**: 100: Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Earthbreaker > Scything Arc > Headsman's Hurl > Vaulting Cleave; 1000: Colossus Fall > Earthbreaker > Reaping Gyre >
+  Scything Arc > Headsman's Hurl.
+- **Juggernaut**: 100: Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Anvil Fall > Earthbreaker >
+  Scything Arc > Headsman's Hurl.
+- **Berserker**: 100: Butcher's Gyre > Skyfall Cleave > Earthbreaker > Scything Arc > Bonebreaker; 300: Colossus Fall >
+  Skyfall Cleave > Earthbreaker > Scything Arc > Headsman's Hurl; 1000: Colossus Fall > Rampage Leap > Earthbreaker >
+  Scything Arc > Headsman's Hurl.
+- **Ranger**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin; 300: Radiant Shard >
+  Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer.
+- **Deadeye**: 100: Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin; 300: Blessed Earth >
+  Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer; 1000: Blessed Earth > Hail of Dawn > Twin Verdict > Final
+  Verdict > Dawnpiercer.
+- **Beastmaster**: 100: Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin; 1000: Blessed Earth > Sanctum
+  Burst > Pack Frenzy > Dawnpiercer > Feral Command.
+- **Mystic**: 100: Blightswarm > Arcane Ripple > Bewitching Hex; 300: Falling Pyre > Briar Prison > Blightswarm > Arcane
+  Ripple > Bewitching Hex; 1000: Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche.
+- **Elementalist**: 100: Tempest Fan > Forked Storm > Rime Bloom > Pyre Torrent; 300: Doomtide > Frozen Crypt > Falling
+  Pyre > Rime Bloom > Pyre Torrent; 1000: Glacial Doom > Doomtide > Frozen Crypt > Rime Bloom > Pyre Torrent.
+- **Illusionist**: 100: Arcane Ripple > Bewitching Hex > Kindling Spark; 300: Tear in the Weave > Nightburst >
+  Primordial Squall > Arcane Ripple > Shattered Psyche.
 - **Thief**: 100: Blade Flurry > Fan of Knives > Shuriken Toss.
-- **Ninja**: 100: Blade Flurry > Shadow Step > Shuriken Toss; 300: Blade Flurry > Shadow Step > Shuriken Barrage >
-  Shuriken Toss.
-- **Samurai**: 100: Blade Flurry > Shuriken Toss; 300: Iaijutsu > Iaido Sweep > Blade Flurry > Shuriken Toss.
-- **Necromancer**: 100: Withering Curse > Bone Shrapnel > Bone Spear.
-- **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Soul Rot > Life Siphon > Bone Spear.
+- **Ninja**: 100: Blade Flurry > Shadow Step > Shuriken Toss; 300: Blade Flurry > Shuriken Barrage > Shadow Step >
+  Shuriken Toss; 1000: Shuriken Tempest > Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss.
+- **Samurai**: 100: Blade Flurry > Shuriken Toss; 300: Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss.
+- **Necromancer**: 100: Withering Curse > Bone Shrapnel.
+- **Lich**: 100: Withering Curse > Soul Rot > Bone Spear; 300: Withering Curse > Soul Rot > Life Siphon.
 - **Bone Lord**: 100: Withering Curse > Bone Spear; 300: Withering Curse > Bone Offering > Bone Spear.
-- **Monk**: 100: Sundering Palm > Whirling Heel > Palm Shockwave > Ashen Fist.
-- **Shadowfist**: 100: Pressure Points > Sundering Palm > Palm Shockwave; 300: Pressure Points > Shadowfist Flurry >
-  Sundering Palm > Shadow Ricochet.
-- **Iron Sage**: 100: Sundering Palm > Whirling Heel > Palm Shockwave > Ashen Fist; 300: Sundering Palm > Palm Shockwave >
-  Iron Chain > Iron Palm.
+- **Monk**: 100: Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist.
+- **Shadowfist**: 100: Pressure Points > Whirling Heel > Palm Shockwave > Sundering Palm; 300: Pressure Points > Shadow
+  Ricochet > Whirling Heel > Palm Shockwave; 1000: Pressure Points > Shadow Ricochet > Palm Shockwave > Shadowfist
+  Flurry > Sundering Palm.
+- **Iron Sage**: 100: Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist; 300: Whirling Heel > Iron Chain >
+  Palm Shockwave.
 - **Templar**: 100: Consecration > Sanctified Ground > Radiant Smite.
-- **Inquisitor**: 100: Judgement > Consecration > Radiant Smite; 300: Judgement > Consecration > Purging Nova > Radiant
-  Smite.
+- **Inquisitor**: 100: Judgement > Consecration > Radiant Smite; 300: Judgement > Consecration > Purging Nova.
 - **Sentinel**: 100: Consecration > Radiant Smite; 300: Consecration > Shield Wave > Radiant Smite.
+
+**Cooldown ladder (2026-10-20, owner: "faça todas as magias de ataque terem 2s de diferença, começando pela primeira
+delas. assim elas ficam com 2s, 4s, 6s de cooldown, da mais fraca pra mais forte")**: every class's attack spells have
+the cooldowns 2, 4, 6 s ... in a ladder: the first spell (the lowest level, the class's level 8 spell, so a 2 s spell is
+there from the start) is 2 s, then the others from the weakest to the strongest by the damage of one cast on one target
+at level 300 (`server/data/spells/rotation_model.csv` with the class's stats; an area spell by its main-target hit, a
+damage over time by its total). Group cooldown 2 s on every attack spell. A spell several classes share has one
+cooldown: the rung most of them give it, a tie the lower (listed below). The snares, Feral Command and Corpse Explosion
+are attack spells and take their rung too; the cast-time spells (Colossus Fall, Doomtide, Glacial Doom, Primordial
+Squall, Tear in the Weave, Hail of Dawn) as well. `server/tools/rotation_sim.py --ladder [--check]` computes it and CI
+checks it. Damage per cast unchanged; what it does to the damage per second: server/data/spells/README.md "Cooldown
+ladder". The ladders ("rung n": the class's own rung when a shared spell took another):
+- **Warrior**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Vaulting Cleave 8 s < Earthbreaker 8 s (rung 5) <
+  Butcher's Gyre 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
+- **Juggernaut**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Butcher's Gyre 12 s (rung
+  5) < Anvil Fall 12 s < Colossus Fall 14 s < Headsman's Hurl 16 s.
+- **Berserker**: Bonebreaker 2 s < Scything Arc 4 s < Reaping Gyre 6 s < Earthbreaker 8 s < Skyfall Cleave 10 s <
+  Butcher's Gyre 12 s < Rampage Leap 14 s < Colossus Fall 14 s (rung 8) < Headsman's Hurl 16 s (rung 9).
+- **Ranger**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s < Radiant
+  Shard 12 s < Blessed Earth 14 s < Hail of Dawn 16 s.
+- **Deadeye**: Phantom Javelin 2 s < Snare Trap 4 s < Dawnpiercer 6 s < Sanctum Burst 8 s < Skewering Line 10 s <
+  Blessed Earth 14 s (rung 6) < Final Verdict 14 s < Twin Verdict 16 s < Hail of Dawn 16 s (rung 9).
+- **Beastmaster**: Phantom Javelin 2 s < Feral Command 4 s < Pack Frenzy 6 s < Snare Trap 4 s (rung 4) < Dawnpiercer 6 s
+  (rung 5) < Sanctum Burst 8 s (rung 6) < Blessed Earth 14 s.
+- **Mystic**: Kindling Spark 2 s < Rime Bloom 4 s < Blightswarm 6 s < Witchfire Bolt 8 s < Briar Prison 10 s < Arcane
+  Ripple 4 s (rung 6) < Umbral Stride 14 s < Bewitching Hex 6 s (rung 8) < Shattered Psyche 12 s (rung 9) < Falling Pyre
+  14 s (rung 10).
+- **Elementalist**: Kindling Spark 2 s < Pyre Torrent 4 s < Rime Bloom 4 s (rung 3) < Forked Storm 8 s < Witchfire Bolt
+  8 s (rung 5) < Tempest Fan 12 s < Falling Pyre 14 s < Frozen Crypt 16 s < Doomtide 18 s < Glacial Doom 20 s.
+- **Illusionist**: Kindling Spark 2 s < Arcane Ripple 4 s < Bewitching Hex 6 s < Primordial Squall 8 s < Nightburst 10 s
+  < Shattered Psyche 12 s < Tear in the Weave 14 s.
+- **Thief**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Blade Flurry 10 s (rung 4) < Fan of Knives 10 s.
+- **Ninja**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Shuriken Barrage 8 s < Blade Flurry 10 s < Shadow
+  Step 12 s < Shuriken Tempest 14 s.
+- **Samurai**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Iaido Sweep 8 s < Blade Flurry 10 s < Iaijutsu 12
+  s.
+- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Withering Curse 4 s (rung 3).
+- **Lich**: Bone Spear 2 s < Corpse Explosion 4 s < Life Siphon 6 s < Soul Rot 8 s < Withering Curse 4 s (rung 5).
+- **Bone Lord**: Bone Spear 2 s < Withering Curse 4 s < Bone Offering 6 s.
+- **Monk**: Ashen Fist 2 s < Palm Shockwave 4 s < Whirling Heel 6 s < Sundering Palm 12 s (rung 4).
+- **Shadowfist**: Ashen Fist 2 s < Palm Shockwave 4 s < Shadow Ricochet 6 s < Pressure Points 8 s < Whirling Heel 6 s
+  (rung 5) < Sundering Palm 12 s < Shadowfist Flurry 14 s.
+- **Iron Sage**: Ashen Fist 2 s < Palm Shockwave 4 s < Iron Chain 6 s < Whirling Heel 6 s (rung 4) < Iron Palm 10 s <
+  Sundering Palm 12 s.
+- **Templar**: Radiant Smite 2 s < Sanctified Ground 4 s < Consecration 6 s.
+- **Inquisitor**: Radiant Smite 2 s < Judgement 4 s < Purging Nova 6 s < Consecration 6 s (rung 4).
+- **Sentinel**: Radiant Smite 2 s < Shield Wave 4 s < Consecration 6 s.
+
+**Class spell factor (2026-10-20, the owner's decision on the ladder's proposals)**: the ladder raised the damage per
+second of the classes built on long-cooldown spells; one factor on all of a class's spell damage brings them back
+without changing the ladder's order: Templar and Sentinel x0.6, Inquisitor, Elementalist, Illusionist, Lich, Bone Lord
+and Shadowfist x0.7, Necromancer x0.8, Beastmaster x1.25 (it lost most to the ladder). Table:
+`server/data/scripts/chaos/spell_factor_config.lua`; spell hits only (not weapon hits, healing, minions, the Templar
+line's holy strike on a weapon hit, conditions); numbers: server/data/spells/README.md "Class spell factor". The
+balance targets hold: the Deadeye has the best single target, the Elementalist the best area damage.
+
+Shared spells, one cooldown (the rung per class -> the rung taken):
+Arcane Ripple Illusionist 2, Mystic 6 -> rung 2 (4 s); Bewitching Hex Illusionist 3, Mystic 8 -> rung 3 (6 s); Blade
+Flurry Ninja 5, Samurai 5, Thief 4 -> rung 5 (10 s); Blessed Earth Beastmaster 7, Deadeye 6, Ranger 7 -> rung 7 (14 s);
+Butcher's Gyre Berserker 6, Juggernaut 5, Warrior 6 -> rung 6 (12 s); Colossus Fall Berserker 8, Juggernaut 7, Warrior 7
+-> rung 7 (14 s); Consecration Inquisitor 4, Sentinel 3, Templar 3 -> rung 3 (6 s); Dawnpiercer Beastmaster 5, Deadeye
+3, Ranger 3 -> rung 3 (6 s); Earthbreaker Berserker 4, Juggernaut 4, Warrior 5 -> rung 4 (8 s); Falling Pyre
+Elementalist 7, Mystic 10 -> rung 7 (14 s); Hail of Dawn Deadeye 9, Ranger 8 -> rung 8 (16 s); Headsman's Hurl Berserker
+9, Juggernaut 8, Warrior 8 -> rung 8 (16 s); Rime Bloom Elementalist 3, Mystic 2 -> rung 2 (4 s); Sanctum Burst
+Beastmaster 6, Deadeye 4, Ranger 4 -> rung 4 (8 s); Shattered Psyche Illusionist 6, Mystic 9 -> rung 6 (12 s); Snare
+Trap Beastmaster 4, Deadeye 2, Ninja 2, Ranger 2, Samurai 2, Thief 2 -> rung 2 (4 s); Sundering Palm Iron Sage 6, Monk
+4, Shadowfist 6 -> rung 6 (12 s); Whirling Heel Iron Sage 4, Monk 3, Shadowfist 5 -> rung 3 (6 s); Witchfire Bolt
+Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, Necromancer 3 -> rung 2 (4 s).
+
+## Spell cap
+
+**15 spells per class (2026-10-20, owner: "mysthic tem magias demais. abaixe pra 15. faça isso pra todas as classes")**:
+every class and ascension can learn and cast at most 15 spells of its own: attack, healing and support, the stock spells
+it kept and the Chaos spells. An ascension's 15 include the base spells it keeps (an ascension may drop a base spell).
+Not counted: the 15 spells every character shares (Lantern, Greater Lantern, Bloodtrail, Ghost Rope, Wraith Step,
+Fleetfoot, Town Portal, Flickerdash, Hunter's Instinct, Vigil of Clarity / Haste / Iron / Wrath, Banner Call, Soulward)
+and Radiant Lantern (a light spell of the casters). They are the same for everyone, so they say nothing about a kit.
+Runes are items, not spells. How the kits were cut: a filler single-target spell, one or two area spells, the big
+cooldowns, the heals, the class's signature spells, a haste where the class had one, and every spell the helper's Auto
+rotation presets used; out went the near-duplicate elemental variants (the stock strike, wave, beam and supreme
+families), overlapping buffs and the weak stock spells. A spell other classes keep only loses this class's line. Every
+Chaos spell still has a class; 68 stock spells no class keeps are retired. Server: `server/tools/patch_spell_cap.py`
+(install step `spells`, after the cure retirement), counted by `server/tools/patch_spell_cap_test.py`; the Chaos spells'
+lists are in `spells_chaos.xml` (Briar Prison moved from the Illusionist to the Mystic, so no Chaos spell lost its
+last class). Client: `ChaosCappedSpells` (spelldata.lua) cuts the stock entries' class lists and hides the retired
+ones. A character that learned a dropped spell keeps the learned row; the server refuses the cast and the spellbook no
+longer lists it.
+
+Counts before (stock and Chaos spells the class could learn, without the shared ones) and after; levels after the names:
+
+| Class | Before | After | Attack | Healing | Support |
+|---|---|---|---|---|---|
+| Warrior | 27 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Vaulting Cleave 170, Colossus Fall 260, Headsman's Hurl 300 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Ironhold 55, Bloodlust 60, Red Frenzy 100, Iron Bellow 120 |
+| Juggernaut | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Colossus Fall 260, Headsman's Hurl 300, Anvil Fall 460 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Taunt of Iron 20, Ironhold 55, Iron Bellow 120, Bastion Cry 340 |
+| Berserker | 30 | 15 | Bonebreaker 8, Reaping Gyre 30, Earthbreaker 60, Scything Arc 70, Butcher's Gyre 90, Skyfall Cleave 100, Colossus Fall 260, Headsman's Hurl 300, Rampage Leap 380 | Salve of Scars 1, Battle Salve 8, Iron Salve 300 | Bloodlust 60, Red Frenzy 100, Bloodrage 120 |
+| Ranger | 26 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Hail of Dawn 280, Radiant Shard 300 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140, Hallowed Ground 300 |
+| Deadeye | 28 | 15 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Skewering Line 60, Blessed Earth 100, Final Verdict 200, Hail of Dawn 280, Twin Verdict 400 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Lightward 140 |
+| Beastmaster | 28 | 14 | Phantom Javelin 8, Dawnpiercer 30, Snare Trap 40, Sanctum Burst 50, Blessed Earth 100, Feral Command 110, Pack Frenzy 380 | Minor Mending 8, Dawn's Mending 35, Lightbearer's Grace 60 | Wildstride 55, Tautstring 60, Wild Bond 100, Lightward 140 |
+| Mystic | 74 | 15 | Kindling Spark 8, Rime Bloom 20, Blightswarm 25, Witchfire Bolt 30, Arcane Ripple 40, Bewitching Hex 60, Briar Prison 70, Umbral Stride 70, Shattered Psyche 110, Falling Pyre 150 | Minor Mending 8, Grand Mending 30, Purifying Wellspring 40 | Galeborne Stride 20, Ironbark Hide 60 |
+| Elementalist | 45 | 15 | Kindling Spark 8, Rime Bloom 20, Witchfire Bolt 30, Pyre Torrent 38, Tempest Fan 38, Forked Storm 50, Falling Pyre 150, Frozen Crypt 220, Doomtide 300, Glacial Doom 420 | Minor Mending 8, Grand Mending 30 | Ward of the Mind 14, Galeborne Stride 20, Crimson Covenant 90 |
+| Illusionist | 57 | 15 | Kindling Spark 8, Arcane Ripple 40, Bewitching Hex 60, Shattered Psyche 110, Nightburst 210, Primordial Squall 250, Tear in the Weave 280 | Minor Mending 8, Purifying Wellspring 40, Mirror Mend 60, Lucid Reverie 120, Verdant Sanctuary 180 | Hall of Mirrors 40, Moonfang Pack 120, Wraithshroud 150 |
+| Thief | 10 | 10 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Fan of Knives 80 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60 |
+| Ninja | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Shadow Step 100, Shuriken Barrage 180, Shuriken Tempest 360 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Smoke Bomb 130 |
+| Samurai | 13 | 13 | Shuriken Toss 8, Snare Trap 40, Blade Flurry 50, Seeker Mine 60, Iaijutsu 120, Iaido Sweep 200 | Shadow Mend 25 | Galeborne Stride 20, Shadow Veil 40, Detonate Mines 60, Poison Blades 60, Counter Stance 100, Bushido Focus 150 |
+| Monk | 7 | 7 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
+| Shadowfist | 10 | 10 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Pressure Points 100, Shadow Ricochet 150, Shadowfist Flurry 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
+| Iron Sage | 11 | 11 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Iron Palm 120, Iron Chain 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35, Chi Ward 100, Mantra of Stone 150 |
+| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
+| Templar | 4 | 4 | Radiant Smite 8, Consecration 40, Sanctified Ground 60 | Vow of Mending 30 |  |
+| Inquisitor | 6 | 6 | Radiant Smite 8, Consecration 40, Judgement 100, Purging Nova 120 | Vow of Mending 30 | Zealotry 150 |
+| Sentinel | 7 | 7 | Radiant Smite 8, Consecration 40, Shield Wave 150 | Vow of Mending 30, Lay on Hands 150 | Rebuke 100, Aegis of Faith 120 |
+
+Dropped, per line (each spell left the classes named; "retired" = no class keeps it):
+- Warrior line: Minor Mending, Warhorse Rush, Cyclone Hurl, Martial Communion, Earthrend, Reaver's Spin, Rending Mark,
+  Second Wind, Warlord's Resolve, Greater Second Wind, Ruinous Cleave, Duelist's Oath (all retired but Minor Mending);
+  the Juggernaut also Bloodlust, Red Frenzy, Vaulting Cleave; the Berserker also Taunt of Iron, Ironhold, Vaulting Cleave.
+- Ranger line: Arcane Stitch, Deep Mending, Unveil, Shielding Communion, Dawnbolt, Second Wind, Greater Second Wind,
+  Glare of Dawn, Greater Phantom Javelin (retired), Seeker Mine and Detonate Mines (the Thief line keeps them); the
+  Deadeye and Beastmaster also Radiant Shard and Hallowed Ground, the Beastmaster also Skewering Line.
+- Mystic line: the level 1 spells (Bog Splatter, Rime Breath, Searing Gust, Static Sting), the strike families (Arc
+  Bolt, Riftbolt, Thornlash, Ember Lash, Frostbite, Gravetouch, Hammerfall Palm and their Greater and Supreme ranks),
+  the waves and beams (Cinder Fan, Glacier Fan, Greater Glacier Fan, Bramble Fan, Stormlance, Thunder Lance, Lance of the
+  Grave), the old area ultimates (Storm Crown's Wrath, Wildwood Ruin, Endless Rime, Infernal Heart, Quakeburst,
+  Shatterfrost), the marks and hexes (Smoulder Brand, Galvanic Mark, Blackroot Venom, Hex of Withering, Skyfang, Crossfire
+  Hex, Dread, Fading Step, Gravity Snare, Sunder Guard), Arcane Stitch, Deep Mending, Kindred Mend, Circle of Mending,
+  Heartwood Embrace, Skinchanger's Guise, Call Thrall, Shroud of Shadows and the communions (all retired); Rebirth of
+  Flesh (the Necromancer line keeps it); Ward of the Mind (the Elementalist keeps it: Soulward is everyone's mana shield).
+  Between the three classes: the Mystic left Forked Storm, Crimson Covenant, Pyre Torrent, Tempest Fan (Elementalist),
+  Hall of Mirrors, Wraithshroud (Illusionist); the Illusionist left Grand Mending, Galeborne Stride, Blightswarm, Ironbark
+  Hide, Umbral Stride, Briar Prison (Mystic).
+- Necromancer line: Arcane Stitch, Ward of the Mind, Kindred Mend, Deep Mending, Circle of Mending, Heartwood Embrace,
+  Skinchanger's Guise, Shroud of Shadows, Arcane Communion, Mending Communion.
+- Thief, Monk and Templar lines: nothing (10-13, 7-11 and 4-7 spells).
 
 ## Skills and weapons (owner debug items 46 and 47, 2026-10-17)
 
@@ -158,6 +301,10 @@ one- or two-handed, is open to the Warrior, Thief, Monk and Templar lines (the B
 class rule); armour, shields, launchers, wands and rods keep their lists. Of the same tier, a two-handed melee weapon deals 1.07x the
 damage per second of one hand + shield at every level (it was +28% at level 8 and +13% from level 75); launchers and the Monk's
 early fists are still ahead (server/data/spells/README.md "Weapon damage per second": owner decision).
+Every auto attack scales with its skill (owner, 2026-10-20): swords, axes, clubs, distance weapons and fists by the engine's
+formula (the skill is 79-94% of the hit), wands and rods by the magic level since 2026-10-20 (before: a flat roll whatever the
+magic level; at the typical magic level of a level the hit is the same as before). server/README.md "Weapon damage scales
+with skills".
 
 ## Starting stats
 
@@ -187,6 +334,9 @@ Bone Spear (was 15); Monk, Shadowfist, Iron Sage: Ashen Fist (was 15); Templar, 
 20); Mystic, Elementalist, Illusionist: Kindling Spark (already). Their mana costs were lowered to what the level 8 pool
 sustains: a mana runway of at least 15 s for every class at levels 8-300 (`server/tools/rotation_sim.py --mana`;
 server/data/spells/README.md "Mana runway"). Raise Dead, the Necromancer's signature, stays at level 20.
+Every spell of every class costs one fixed number of mana at every level (owner 2026-10-21; the client shows the same
+number, mana is not in the display scale): the cost table per line and the runway up to level 1000 are in
+server/data/spells/README.md "Fixed spell costs".
 
 Level 1 rows:
 
@@ -318,8 +468,9 @@ Limits of phase 1:
   (and end it). A monster that sees invisible creatures is handled the same way.
 - Dual wield needs the engine patch; without it a Ninja fights with one blade and gets no off-hand strike. Both blades' item bonuses
   count. A character that stops being a Ninja keeps a sword already in the shield hand until it moves it (it then cannot put it back).
-- The line had no healing spell of its own until Shadow Mend (phase 2b; since 2026-10 it costs 2% of the maximum mana, not a
-  flat 80: about 18 / 11 healed per mana at level 300 / 1000; since 2026-10-20 level x 0.5 + magic level x 20 + 5% every 1.5 s, 751 / 1527 per second, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
+- The line had no healing spell of its own until Shadow Mend (phase 2b; 2026-10 to 2026-10-21 it cost 2% of the maximum
+  mana; since 2026-10-21 a flat 40 mana at every level like every spell, server/README.md "Fixed spell costs": about 28 / 57
+  healed per mana at level 300 / 1000; since 2026-10-20 level x 0.5 + magic level x 20 + 5% every 1.5 s, 751 / 1527 per second, server/data/spells/README.md "Healing"). Potions: since the class pass of 2026-10 `add_vocations.py` adds the line (11-13) to
   the Royal Paladin's potion lists (the line wears what the Paladin wears; see "Item, spell and potion lists"); before, the
   strongest potions refused it. The shared Chaos spells (Flickerdash, Banner Call, Soulward, Hunter's
   Instinct) and the stock spells did not list the line either in phase 1; both do now (stock utility spells: see "Item, spell and
@@ -618,10 +769,17 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
   | Beastmaster | Ricochet | **Pack Alpha**: companion bites and Feral Command +35%, companions take 20% less |
   | Mystic, Elementalist | Arcane Echo | Elemental Overload |
   | Illusionist | Shared Phantasm | Inspiring Illusion |
-  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | (not its node) |
-  | Sentinel (since 2026-10-12) | (not its node) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+  | Iron Sage (since 2026-10-12) | **Overgrowth**: heals on others heal 10% more over 6 s (3 pulses) | **Piercing Palm** (since 2026-10-20) |
+  | Sentinel (since 2026-10-12) | **Radiant Rebuke** (since 2026-10-20) | **Thorns**: melee and ranged attackers take 30% of their hit + 2 x magic level as earth damage |
+  | Thief, Ninja, Samurai (2026-10-20) | **Shadow Twin**: weapon hits, 30% for the shadow to strike again 0.3 s later for 60%; you take 6% more damage | **Viper's Verdict**: weapon hits on a poisoned target, 20% for x2; on a target that is not poisoned x0.85 |
+  | Necromancer, Lich, Bone Lord (2026-10-20) | **Corpse Detonation**: a monster you or your minions kill explodes for 12% of its maximum health (at most 15 x level) as death on up to 6 within 2 sqm; your and your minions' hits x0.92 | **Reaper's Toll**: your and your minions' hits on a monster at 40% health or less x2, above x0.92 |
+  | Monk, Shadowfist (2026-10-20) | **Seventh Palm**: every 5th melee hit (fists or weapon, 4 s) x2.2 and a 50% shockwave on up to 4 next to the target; the other melee hits x0.90 | **Piercing Palm**: melee hits pass through, 70% to the enemy behind the target, 40% to the next; the hit x0.95 |
+  | Templar, Inquisitor (2026-10-20) | **Radiant Rebuke**: with a shield, 20% to block a melee/ranged hit; a block sends a holy nova (blocked hit + 4 x magic level, 2 sqm, once a second); weapon hits x0.90 | **Dawnchain**: melee weapon hits chain holy light to 2 more enemies (3 sqm) for 55% and 30%; spells x0.90 |
 
-  Only these classes may take 621 / 624. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
+  Since 2026-10-20 every class may take 621 / 624 (owner: "excellent nodes like Ricochet and Deadeye for all classes";
+  server/README.md "Passive tree keystones", numbers `class_keystones_config.lua`, balance `server/data/spells/README.md`
+  "Signature keystones of the Thief, Necromancer, Monk and Templar lines"). Before, only the classes above the 2026-10-20
+  rows could. The old druid pair (no class's since the class rework) went to the classes it fits (the owner
   approved, 2026-10-12): Overgrowth to the Iron Sage, the second healer, and Thorns to the Sentinel, the tank-support, next to
   the Juggernaut's Bulwark. Each takes only the node of its keystone, in the existing slot: no new node, no tree layout change,
   so the build code format stays, and no character held them before (nothing to refund). Overgrowth is 10% for the Iron Sage

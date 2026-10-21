@@ -23,7 +23,9 @@ _G.ChaosSpellFix = F
 
 F.OFF_SERVER = 1000
 
--- by the entry's (Chaos) words; every field given replaces the entry's own
+-- by the entry's (Chaos) words; every field given replaces the entry's own. The 15-spell cap (2026-10-20,
+-- server/tools/patch_spell_cap.py) retired many of these spells: a retired one is a removed word (ChaosCappedSpells with
+-- no class), never cast, and its fix below is skipped; a vocations list here holds only the classes that keep the spell.
 F.STOCK = {
   ["saen gal kin"] = { id = 101, level = 300 },                     -- Heartwood Embrace (client 242)
   ["saen ama brak"] = { id = 102 },                                 -- Iron Salve (239)
@@ -34,24 +36,22 @@ F.STOCK = {
   ["kah tin gor"] = { id = 172 },                                   -- Bog Splatter (174)
   ["saen tin"] = { id = 174 },                                      -- Arcane Stitch (172)
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
-  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, 7, 15 } }, -- Radiant Shard (258)
+  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3 }, exhaustion = 12000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 } }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 }, exhaustion = 16000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
-  ["vael mur sol"] = { id = 46, level = 300, vocations = { 3, 7, 15 } },         -- Hallowed Ground (268)
+  ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)
   ["vok rek kal"] = { range = 7, needTarget = true },               -- Duelist's Oath: the server needs a target
   ["saen kin"] = { mana = 140 },                                    -- Kindred Mend
   ["drai gor ul"] = { mana = 180 },                                 -- Bramble Fan (server patch_spell_timings.py)
-  ["saen"] = { vocations = { 1, 3, 4, 5, 7, 8, 10, 14, 15, 20, 21, 22 } }, -- Minor Mending: the Warrior line too
+  ["saen"] = { vocations = { 1, 3, 5, 7, 10, 15, 20, 21, 22 } }, -- Minor Mending: the Warrior line left it (the 15-spell cap)
   ["kah tin zhul"] = { vocations = { 1, 5, 10 } },                  -- Static Sting: the Illusionist too
   ["kah gal brak"] = { group = { [1] = 4000 } },                    -- Ruinous Cleave
   ["kah zar pyr"] = { group = { [1] = 4000 } },                     -- the Supreme strikes: attack group 4 s, no
   ["kah zar zhul"] = { group = { [1] = 4000 } },                    -- ultimate strikes group on the server
   ["kah zar hyr"] = { group = { [1] = 4000 } },
   ["kah zar gor"] = { group = { [1] = 4000 } },
-  ["vyr ira sol"] = { group = { [3] = 10000, [2] = 10000 }, exhaustion = 2000 }, -- Hawkeye: also the healing group
-  ["tor ira sol"] = { group = { [3] = 2000 }, exhaustion = 2000 },  -- Windrunner
   ["vyr vas kin"] = { mana = 0 },                                   -- the communions cost no mana on the server
   ["tor vas kin"] = { mana = 0 },
   ["reth vas kin"] = { mana = 0 },
@@ -61,8 +61,10 @@ F.STOCK = {
   ["kah sag"] = { level = 8, mana = 20 },                           -- Phantom Javelin: level 8, 20 mana (server patch_spell_timings.py)
   ["kah vas"] = { mana = 60 },                                      -- Earthrend: the Warrior line's mana runway
   ["kah"] = { mana = 40 },                                          -- Reaver's Spin
-  ["kah ti"] = { mana = 55 },                                       -- Scything Arc
-  ["kah gal"] = { mana = 100 },                                     -- Butcher's Gyre
+  ["kah ti"] = { mana = 55, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
+  ["kah gal"] = { mana = 100, exhaustion = 12000 },                 -- Butcher's Gyre (cooldown ladder)
+  ["drai vas sol"] = { exhaustion = 8000 },                         -- Sanctum Burst (cooldown ladder)
+  ["drai zhul ul"] = { exhaustion = 12000 },                        -- Tempest Fan (cooldown ladder)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
   ["drai pyr ul"] = { exhaustion = 4000 },                          -- Cinder Fan
@@ -76,19 +78,12 @@ F.STOCK = {
 -- the Chaos spells; the numbers are the installed server's (server/data/spells/stock_spells.csv, checked by
 -- spellfix_test.lua), the icon a stock spell's cell (icon = client icon cell). Found by the rotation live check
 -- (2026-10-14): the Auto rotation of a Mystic picked Bewitching Hex and Arcane Ripple and the helper had no entry.
+-- Riftbolt, Crossfire Hex, Fading Step and Gravity Snare left with the 15-spell cap (2026-10-20: no class keeps them).
 F.EXTRA = {
-  { id = 168, name = "Riftbolt", words = "kah ath", level = 12, mana = 20, cooldown = 2000, groupCooldown = 2000,
-    needTarget = false, range = 3, vocations = { 1, 5, 10 }, icon = 29 },
-  { id = 52, name = "Crossfire Hex", words = "drai xir", level = 38, mana = 140, cooldown = 4000, groupCooldown = 2000,
-    needTarget = false, range = 0, vocations = { 1, 10 }, icon = 54 },
   { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 40, mana = 175, cooldown = 4000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
-  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 4000, groupCooldown = 2000,
+  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 6000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },
-  { id = 47, name = "Fading Step", words = "drai gal vas ylth", level = 100, mana = 1350, cooldown = 40000,
-    groupCooldown = 4000, needTarget = false, range = 0, vocations = { 1, 10 }, icon = 50 },
-  { id = 165, name = "Gravity Snare", words = "rhut mur", level = 150, mana = 370, cooldown = 8000, groupCooldown = 2000,
-    needTarget = false, range = 0, vocations = { 1, 10 }, icon = 41 },
 }
 
 -- rune item (client id) -> the server's group (1 attack, 2 healing, 3 support)
@@ -169,14 +164,42 @@ function F.apply(info, icons, runes, serverWords, removedWords)
   return undo, idMap, removedIds
 end
 
--- the words of ChaosRemovedSpells (old -> new words) as a set
-function F.removedWords(removed)
+-- the words of ChaosRemovedSpells (old -> new words) as a set, plus the stock spells the 15-spell cap retired
+-- (ChaosCappedSpells entries with no class left: server/tools/patch_spell_cap.py)
+function F.removedWords(removed, capped)
   local s = {}
   for old, new in pairs(removed or {}) do
     s[old:lower()] = true
     s[new:lower()] = true
   end
+  for words, keep in pairs(capped or {}) do
+    if #keep == 0 then
+      s[words:lower()] = true
+    end
+  end
   return s
+end
+
+-- the 15-spell cap: a stock entry's class list cut to the classes that keep the spell (ChaosCappedSpells[words]);
+-- returns the new list, or nil when the cap does not name the spell or nothing changes
+function F.capVocations(words, vocations, capped)
+  local keep = capped and words and capped[words:lower()]
+  if not keep or type(vocations) ~= "table" then
+    return nil
+  end
+  local allowed, list = {}, {}
+  for _, v in ipairs(keep) do
+    allowed[v] = true
+  end
+  for _, v in ipairs(vocations) do
+    if allowed[v] then
+      list[#list + 1] = v
+    end
+  end
+  if #list == #vocations then
+    return nil
+  end
+  return list
 end
 
 function F.restore(undo)

@@ -141,8 +141,16 @@ local function radiantStrike(attackerId, targetId, amount)
 		fx(target:getPosition(), "holy_spiral", CONST_ME_HOLYAREA)
 	end
 	scripted = true
+	-- a weapon hit's strike, not a spell: the class spell factor stays off (spell_factor_core.lua)
+	local SF = ChaosSpellFactor
+	if SF then
+		SF.depth = (SF.depth or 0) + 1
+	end
 	local ok, err = pcall(doTargetCombat, attacker, target, COMBAT_HOLYDAMAGE, -amount, -amount,
 		CONST_ME_HOLYDAMAGE, ORIGIN_SPELL)
+	if SF then
+		SF.depth = SF.depth - 1
+	end
 	scripted = false
 	if not ok then
 		print("[ChaosTemplar] " .. tostring(err))

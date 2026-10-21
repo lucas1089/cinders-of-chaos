@@ -12,23 +12,32 @@ local function child(id)
   return window and window:recursiveGetChildById(id)
 end
 
--- the searchable text of a node: its name (its class variant's), the stat lines, the description lines and the effects
+-- the searchable text of a node: its name and stat lines as the class sees them (its class variant's: a keystone of
+-- 621 / 624 or a class lane, treelanes.lua, so a re-skinned "Pyre Litany" is found by its new name and stats, not by
+-- "holy"), the description lines and the effects
 local function nodeText(node)
-  local parts = {node.name or ''}
+  local parts = {}
   local function add(list)
     for _, line in ipairs(list or {}) do
       parts[#parts + 1] = line
     end
   end
   local variant = getTreeVariant()
+  local own = variant and node[variant]
+  -- a class lane replaces the node's own name and stats for that class; a keystone keeps its base name ("... Keystone")
+  local lane = type(own) == 'table' and own.customStats ~= nil and not node.isKeystone
+  if not lane then
+    parts[#parts + 1] = node.name or ''
+  end
   for key, value in pairs(node) do
-    if type(value) == 'table' and value.customStats and value.name and key ~= 'masteries' and (variant == nil or key == variant) then
-      parts[#parts + 1] = value.name
+    if type(value) == 'table' and value.customStats and key ~= 'masteries' and
+      (key == variant or (variant == nil and node.isKeystone and value.name)) then
+      parts[#parts + 1] = TreeLanes.displayName(node, key) or ''
       add(getCustomStatString(value.customStats))
       add(value.stats)
     end
   end
-  if node.customStats then
+  if node.customStats and not lane then
     add(getCustomStatString(node.customStats, true))
   end
   add(node.stats)
@@ -62,7 +71,8 @@ end
 local function unmarkAll()
   for widget in pairs(marked) do
     if not widget:isDestroyed() then
-      widget:setBorderWidth(0)
+      widget.searchFrame = nil
+      applyTreeNodeBorder(widget) -- passivetree.lua: back to the Stats mark or none
     end
   end
   marked = {}
@@ -73,8 +83,8 @@ local function mark()
   for i, id in ipairs(matches) do
     local widget = getTreeNodeWidget(id)
     if widget then
-      widget:setBorderWidth(i == index and 3 or 2)
-      widget:setBorderColor(i == index and CURRENT or MATCH)
+      widget.searchFrame = {width = i == index and 3 or 2, color = i == index and CURRENT or MATCH}
+      applyTreeNodeBorder(widget)
       marked[widget] = true
     end
   end

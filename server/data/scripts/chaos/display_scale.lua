@@ -3,17 +3,19 @@
 --
 -- 1. The engine: Game.setDisplayScale(table) (src-patch 0037) gets the factor of every level once at load. The engine
 --    then scales, for each receiving player at its own level, the damage / heal text messages (values and the numbers
---    in the text), its own health and mana in the stats packet and the energy shield ("es:" on its opcode). Without
---    the patch (an engine built without it) nothing of that is scaled and the Lua sites below still are.
+--    in the text), its own health in the stats packet and the energy shield ("es:" on its opcode). Mana is never
+--    scaled (src-patch 0052: the own mana and max mana and every mana message stay as they are, so a spell's fixed
+--    cost reads the same at every level). Without the patches (an engine built without them) nothing of that is
+--    scaled and the Lua sites below still are.
 -- 2. The client (game_chaosscale, extended opcode cfg.opcode = 157):
 --      server -> client  scale {level, f}   at login, at a level change (gain or loss) that changes the factor, and as
 --                                           the answer to the client's hello
 --      client -> server  hello {}           at a game start and when the module loads in game (a reattach to a
 --                                           lingering character runs no onLogin)
---    The client scales the numbers it works out itself (the flat mana cost of the spells on the action bar).
+--    The client keeps the factor for the modules that work numbers out themselves; spell mana costs are not scaled.
 -- 3. The Lua sites call ChaosDisplayScale.forPlayer(viewer) and a site function of the core right before they encode
 --    (combat log, death recap, party frames, hunt tracker, leaderboards, battleground, guild boss board, bestiary,
---    spellbook, item tooltips, pet heal text).
+--    item tooltips, pet heal text). The spellbook sends the spells' mana costs as they are.
 -- Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then

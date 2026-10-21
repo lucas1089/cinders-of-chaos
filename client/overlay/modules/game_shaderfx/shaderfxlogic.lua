@@ -24,11 +24,11 @@ L.SLOSH_MIN = 0.01
 
 -- orb sizes (Options > Graphics > Orb size, option liquidOrbSize): 1 small (the first size, 76 px), 2 medium (the
 -- default, about 2x), 3 large (about 2.5x). The liquid keeps the ring's proportion (64 of 76) and the number a
--- font that reads at that size.
+-- font that reads at that size (the beta found the 11 px number of the medium orb too small).
 L.ORB_SIZES = {
-  { size = 76, font = 'verdana-11px-rounded' },
-  { size = 150, font = 'chaos-outline-11px' },
-  { size = 190, font = 'chaos-display-16px' },
+  { size = 76, font = 'chaos-outline-11px' },
+  { size = 150, font = 'chaos-display-16px' },
+  { size = 190, font = 'chaos-splash-20px' },
 }
 L.ORB_DEFAULT_SIZE = 2
 L.ORB_EDGE = 6    -- from the window's corner when there is no chat panel to sit beside (mobile)

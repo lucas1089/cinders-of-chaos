@@ -696,6 +696,70 @@ PB.actions.pocketEnter(a, {k = string.rep("x", 200)})
 PB.actions.pocketEnter(a, nil)
 ok(not PB.isInside(a), "bad keys open nothing")
 
+-- beta 2026-10-20: a raid boss whose corpse holds nothing (a reward boss: its loot goes to the reward chest of its home
+-- room) and whose death script opens its home room's stairs inside the pocket, where they lead nowhere
+do
+	ok(K.needsFallbackLoot({rewardBoss = true, corpseItems = 3, lootEntries = 2}), "a reward boss: personal loot")
+	ok(K.needsFallbackLoot({corpseItems = 0, lootEntries = 2}), "an empty corpse: personal loot")
+	ok(K.needsFallbackLoot({lootEntries = 2}), "no corpse: personal loot")
+	ok(not K.needsFallbackLoot({corpseItems = 4, lootEntries = 2}), "a corpse with loot: nothing more")
+	ok(not K.needsFallbackLoot({rewardBoss = true, corpseItems = 0, lootEntries = 0}), "nothing to roll")
+	local ex = K.foreignExits({{x = 1, y = 1, exit = true}, {x = 2, y = 2, exit = true}, {x = 3, y = 3}}, {["1,1"] = true})
+	eq(#ex, 1, "one foreign exit"); eq(ex[1].x, 2, "the gate stays, the stairs go")
+	local Lg = U.layout(pcfg, 3)
+	local gateAt = K.arenaGate(Lg.floorList, Lg.starts[1], {[Lg.starts[2].x .. "," .. Lg.starts[2].y] = true})
+	ok(gateAt and math.max(math.abs(gateAt.x - Lg.starts[1].x), math.abs(gateAt.y - Lg.starts[1].y)) == 2,
+		"the arena gate two tiles from the arrival")
+	ok(U.inArena(Lg, gateAt), "inside the arena")
+
+	NOW = NOW + pcfg.enterCooldown + 1
+	a.pos = pos(100, 100, 7)
+	local okV, why = PB.enter(a, "raid_vargra")
+	eq(okV, true, "Vargra's pocket: " .. tostring(why))
+	local rv = PB.runOf[a:getId()]
+	ok(rv.L.arenaGate ~= nil, "the run knows its arena gate")
+	advance(pcfg.startDelay + 1)
+	local boss = Monster(rv.bossId)
+	function boss:getType()
+		return {isRewardBoss = function() return true end,
+			getLoot = function() return {{itemId = 2160, chance = 100000, maxCount = 10}, {itemId = 7777, chance = 100000}} end}
+	end
+	-- the stairs its death script puts on the arena floor
+	local sp = rv.L.floorList[30]
+	local stairs = tiles[sp.x .. "," .. sp.y .. "," .. sp.z]
+	local removed = 0
+	local stairItem = {getId = function() return 1386 end, isContainer = function() return false end,
+		remove = function() removed = removed + 1 end}
+	local corpseItem = {getId = function() return 6080 end, isContainer = function() return true end,
+		remove = function() removed = removed + 100 end}
+	stairs.getItems = function() return {stairItem, corpseItem} end
+	stairs.hasFlag = function(_, f) return f == TILESTATE_FLOORCHANGE end
+	-- and the pocket's own gate tile is a teleport too: it stays
+	local gt = tiles[rv.L.arenaGate.x .. "," .. rv.L.arenaGate.y .. "," .. rv.L.z]
+	local gateRemoved = false
+	gt.getItems = function() return {{getId = function() return pcfg.portalId end, isContainer = function() return false end,
+		remove = function() gateRemoved = true end}} end
+	gt.hasFlag = function(_, f) return f == TILESTATE_TELEPORT end
+	local before = a.items[2160] or 0
+	math.randomseed(3)
+	local emptyCorpse = {isContainer = function() return true end, getSize = function() return 0 end}
+	registry.ChaosPocketBossDeath.onDeath(boss, emptyCorpse)
+	advance(0)
+	eq(rv.state, "success", "the kill")
+	ok((a.items[2160] or 0) > before or (a.items[7777] or 0) > 0, "personal loot instead of the empty corpse")
+	local said = false
+	for _, m in ipairs(a.msgs) do
+		said = said or m:find("Pocket loot of Vargra", 1, true) ~= nil
+	end
+	ok(said, "told what the pocket gave")
+	eq(removed, 1, "the stairs of its home room are taken away, the corpse stays")
+	ok(not gateRemoved, "the pocket's own forcefield stays")
+	advance(pcfg.exitDelay + 1)
+	ok(not PB.isInside(a), "out after the exit delay")
+	stairs.getItems, stairs.hasFlag = function() return {} end, function() return false end
+	gt.getItems, gt.hasFlag = function() return {} end, function() return false end
+end
+
 -- the contested fight: an island boss spawned by the base server; every helper above 2% gets a personal roll
 local owner, helper, healer, leech = newPlayer(11, 500), newPlayer(12, 500), newPlayer(13, 500), newPlayer(14, 500)
 local isle = newMonster("Dreadscale The Ancient", pos(32314, 31524, 9))

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Test of retire_cure_spells.py: the seven stock cure instants are commented out (found by script, any name), the Chaos
+"""Test of retire_cure_spells.py: the seven stock cure instants, Hawkeye (stock Sharpshooter), Bulwark (Protector) and
+Windrunner (Swift Foot) are commented out (found by script, any name; a spell a monster names gets the monster-only
+form instead, monster_spells_test.py), the Chaos
 block, Lightward and every other spell stay, a second run changes nothing, --dry-run writes nothing.
 Run: python3 -I server/tools/retire_cure_spells_test.py"""
 import os
@@ -28,18 +30,29 @@ def spell(name, script, sid):
 XML = '<spells>\n'
 for script, (sid, name) in R.CURES.items():
     XML += spell('Renamed ' + name, script, sid)
+XML += spell('Hawkeye', 'support/sharpshooter.lua', 135)
+XML += spell('Bulwark', 'support/protector.lua', 132)
+XML += spell('Windrunner', 'support/swift_foot.lua', 134)
 XML += spell('Light', 'support/light.lua', 10)
 XML += '\t<instant group="healing" spellid="29" name="Short" words="y" script="healing/cure_poison.lua" />\n'
 XML += '\t<!-- BEGIN chaos spells (x) -->\n' + spell('Lightward', 'chaos/paladin/divine_ward.lua', 217)
 XML += spell('Chaos Cure', 'healing/cure_poison.lua', 250) + '\t<!-- END chaos spells -->\n</spells>\n'
 
-new, n = R.patch(XML)
-check(n == 8, 'seven cures plus the self-closing one: %d' % n)
-check(new.count(R.MARK) == 8, 'each in a marked comment')
+new, n, kept = R.patch(XML)
+check(n == 11, 'seven cures, Hawkeye, Bulwark, Windrunner and the self-closing one: %d' % n)
+check(new.count(R.MARK) == 8, 'each cure in a marked comment')
+check(new.count(R.OTHER_MARK) == 3 and new.count('name="Hawkeye"') == 1
+      and '<!-- ' + R.OTHER_MARK + '<instant group="healing" spellid="135" name="Hawkeye"' in new, 'Hawkeye retired')
+for sid, name in ((132, 'Bulwark'), (134, 'Windrunner')):
+    check('<!-- ' + R.OTHER_MARK + '<instant group="healing" spellid="%d" name="%s"' % (sid, name) in new, name + ' retired')
 check('<instant group="healing" spellid="10" name="Light"' in new, 'Light stays a tag')
 check('name="Lightward"' in new and '<!-- Chaos: cure' not in new[new.index('BEGIN chaos'):], 'the Chaos block is untouched')
-check(R.patch(new) == (new, 0), 'a second run changes nothing')
-check(sorted(R.FREED_IDS) == [29, 58, 144, 145, 146, 147, 164], 'the freed ids')
+check(R.patch(new) == (new, 0, 0), 'a second run changes nothing')
+# a monster names Hawkeye: monster-only form instead of the comment, also from the comment of an earlier run
+kept_new, n2, k2 = R.patch(XML, {'hawkeye'})
+check(n2 == 10 and k2 == 1 and 'name="Hawkeye" words="###chaos sharpshooter"' in kept_new, 'Hawkeye kept for monsters')
+check(R.patch(new, {'hawkeye'})[0] == kept_new, 'the comment of an earlier run comes back in the monster-only form')
+check(sorted(R.FREED_IDS) == [29, 58, 132, 134, 135, 144, 145, 146, 147, 164], 'the freed ids')
 
 with tempfile.TemporaryDirectory() as tmp:
     p = os.path.join(tmp, 'spells')
@@ -49,7 +62,7 @@ with tempfile.TemporaryDirectory() as tmp:
     r = subprocess.run([sys.executable, '-I', tool, tmp, '--dry-run'], capture_output=True, text=True)
     check(r.returncode == 0 and open(os.path.join(p, 'spells.xml')).read() == XML, 'dry run writes nothing')
     r = subprocess.run([sys.executable, '-I', tool, tmp], capture_output=True, text=True)
-    check('8 retired' in r.stdout and open(os.path.join(p, 'spells.xml')).read() == new, 'run: ' + r.stdout)
+    check('11 retired' in r.stdout and open(os.path.join(p, 'spells.xml')).read() == new, 'run: ' + r.stdout)
     r = subprocess.run([sys.executable, '-I', tool, tmp], capture_output=True, text=True)
     check('nothing to retire' in r.stdout, 'second run: ' + r.stdout)
     check(subprocess.run([sys.executable, '-I', tool], capture_output=True).returncode == 1, 'no args: usage')

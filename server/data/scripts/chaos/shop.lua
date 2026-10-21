@@ -552,13 +552,14 @@ local function categoriesView(player, list)
 		if category.icon.item then
 			local it = ItemType(category.icon.item)
 			entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(category.icon, stackable(it))
-			-- a category of cosmetics (plate frames, outlines, effects ...) shows its first cosmetic, not a stand-in item
+			-- a category of cosmetics (outlines, kill effects, creatures ...) shows its first cosmetic, not a stand-in item,
+			-- when that reads as a small icon (K.categoryShowsLook)
 			local first = category.offers[1] and category.offers[1].offer
 			local look, iconOutfit
 			if first then
 				look, iconOutfit = appearanceOf(first, player)
 			end
-			if look and look.kind ~= "bundle" then
+			if look and K.categoryShowsLook(look) then
 				entry.look = look
 				if iconOutfit then
 					entry.type, entry.outfit, entry.item, entry.count = "outfit", iconOutfit, nil, nil

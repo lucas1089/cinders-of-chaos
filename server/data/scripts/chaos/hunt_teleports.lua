@@ -10,11 +10,16 @@
 --   step in  below the band's floor: back where the player came from, a poff and the reason in the player's
 --            language; else to the plan's arrival tile with the teleport effect at both ends
 --   exits    areagen.lua's exit portal (action id 47951) asks ChaosHuntTeleports.backFor: a placed plan's exit sends
---            players back to the room instead of the temple
+--            players back in front of the plan's own teleport (its floor and slot) instead of the temple
+--   ways back the hunts of cfg.returns (added to the hall without a base teleport, so without a way back on the
+--            map) get a forcefield with the same action id beside their arrival at startup (`at`, else the nearest
+--            free tile, ChaosHuntTeleportsCore.pickReturnTile); it sends players in front of the hunt's own teleport
+--            and the label "Back to the teleport room" floats over it
 --   display  the display monsters in the closed cells are harmless: HT.isDisplay / isDisplaySpot for the other
 --            systems (boss mechanics, monster tiers, treasure goblin skip them), onTargetCombat refuses their hits
--- Assumed engine API (TFS 1.4): Tile, Game.createItem, Item:setActionId/setAttribute, MoveEvent stepin by aid,
--- GlobalEvent startup, EventCallback onTargetCombat, Player:teleportTo/sendCancelMessage/sendTextMessage.
+-- Assumed engine API (TFS 1.4): Tile (getGround, getItemById, hasFlag, getHouse, getDownItemCount), Game.createItem,
+-- Item:setActionId/setAttribute, MoveEvent stepin by aid, GlobalEvent startup, EventCallback onTargetCombat,
+-- Player:teleportTo/sendCancelMessage/sendTextMessage.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -60,6 +65,9 @@ end
 function HT.reload()
 	local places = loadPlaces()
 	local problems = H.validate(cfg, places)
+	for _, p in ipairs(H.validateReturns(cfg)) do
+		problems[#problems + 1] = p
+	end
 	for _, p in ipairs(problems) do
 		print("[hunt teleports] " .. p)
 	end
@@ -130,6 +138,60 @@ local function placePortal(entry)
 	return true
 end
 
+-- what a tile is for a way back (ChaosHuntTeleportsCore.pickReturnTile): walk (ground, nothing blocking, no stairs
+-- or hole) and spot (also no protection zone, no house, no teleport or field, nothing lying on it); nil: no tile
+local function returnInfo(p)
+	local tile = Tile(P(p))
+	if not tile or not tile:getGround() then
+		return nil
+	end
+	local walk = not tile:hasFlag(TILESTATE_BLOCKSOLID) and not tile:hasFlag(TILESTATE_BLOCKPATH)
+		and not tile:hasFlag(TILESTATE_FLOORCHANGE)
+	local spot = walk and not tile:hasFlag(TILESTATE_PROTECTIONZONE) and not tile:hasFlag(TILESTATE_TELEPORT)
+		and not tile:hasFlag(TILESTATE_MAGICFIELD) and not tile:getHouse() and (tile:getDownItemCount() or 0) == 0
+	return {walk = walk, spot = spot}
+end
+
+-- our forcefield within the radius of the arrival (an earlier startup's, kept)
+local function placedReturn(r, radius)
+	local a = r.arrival
+	for dy = -radius, radius do
+		for dx = -radius, radius do
+			local p = {x = a.x + dx, y = a.y + dy, z = a.z}
+			local tile = Tile(P(p))
+			local item = tile and tile:getItemById(cfg.items.portal)
+			if item and item:getActionId() == cfg.aid then
+				return p, item
+			end
+		end
+	end
+	return nil
+end
+
+local function placeReturn(r)
+	local radius = cfg.returns and cfg.returns.radius or 4
+	local at, item = placedReturn(r, radius)
+	if not at then
+		at = H.pickReturnTile(r.arrival, radius, returnInfo, r.at)
+		if not at then
+			return false, string.format("%s: no free tile within %d of the arrival %d,%d,%d for the way back", r.id, radius,
+				r.arrival.x, r.arrival.y, r.arrival.z)
+		end
+		item = Game.createItem(cfg.items.portal, 1, P(at))
+		if not item then
+			return false, r.id .. ": the way back could not be created"
+		end
+		item:setActionId(cfg.aid)
+	end
+	item:setAttribute(ITEM_ATTRIBUTE_DESCRIPTION, H.returnLabel(cfg, "en") .. " / " .. H.returnLabel(cfg, "pt-BR") .. ".")
+	r.pos = at
+	HT.idx.byReturn[H.key(at)] = r
+	if r.at and H.key(at) ~= H.key(r.at) then
+		print(string.format("[hunt teleports] %s: the way back stands at %d,%d,%d (its `at` is not free)", r.id, at.x, at.y, at.z))
+	end
+	return true
+end
+
 local startup = GlobalEvent("ChaosHuntTeleports")
 function startup.onStartup()
 	if not cfg.enabled then
@@ -152,6 +214,19 @@ function startup.onStartup()
 		if sign then
 			sign:setAttribute(ITEM_ATTRIBUTE_TEXT, H.signText(cfg, entry))
 		end
+	end
+	-- the ways back of the hunts without one on the map (cfg.returns)
+	local backs = 0
+	for _, r in ipairs(idx.returns or {}) do
+		local ok, err = placeReturn(r)
+		if ok then
+			backs = backs + 1
+		else
+			print("[hunt teleports] " .. err)
+		end
+	end
+	if #(idx.returns or {}) > 0 then
+		print(string.format("[hunt teleports] %d of %d ways back ready", backs, #idx.returns))
 	end
 	if #idx.list == 0 then
 		print("[hunt teleports] no placed hunts (" .. PLACES .. " missing: run server/tools/install_content_areas.py)")
@@ -176,6 +251,15 @@ function float.onThink()
 			end
 		end
 	end
+	-- the ways back: "Back to the teleport room" over each
+	for _, ret in ipairs(HT.idx.returns or {}) do
+		if ret.pos then
+			local pos = P(ret.pos)
+			for _, spec in ipairs(Game.getSpectators(pos, false, true, r, r, r, r) or {}) do
+				spec:say(H.returnLabel(cfg, langOf(spec)), TALKTYPE_MONSTER_SAY, false, spec, pos)
+			end
+		end
+	end
 	-- the floors: "Floor 7: levels 1-80" in the corridor, the next floor's band over the stairs up
 	if cfg.hall and HT.idx.floors and next(HT.idx.floors) then
 		local seen = {}
@@ -194,13 +278,19 @@ function float.onThink()
 			end
 		end
 	end
-	-- the quest hall: "Quests" over its corridor, for the players in it (the hall is 33 columns wide)
+	-- the quest hall: "Quests" over its corridor, for the players in it (the hall is 33 columns wide), and where the
+	-- plaza's aisle meets the corridor to it, for the players near
 	if cfg.hall and HT.idx.quests then
-		local pos = P(HT.idx.quests.label)
-		for _, spec in ipairs(Game.getSpectators(pos, false, true, 17, 17, 4, 4) or {}) do
-			local l = H.questLabel(cfg, HT.idx, langOf(spec))
-			if l then
-				spec:say(l.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
+		local areas = {{HT.idx.quests.label, 17, 4}, {HT.idx.quests.entrance, r, r}}
+		for i, a in ipairs(areas) do
+			if a[1] then
+				local pos = P(a[1])
+				for _, spec in ipairs(Game.getSpectators(pos, false, true, a[2], a[2], a[3], a[3]) or {}) do
+					local l = H.questLabels(cfg, HT.idx, langOf(spec))[i]
+					if l then
+						spec:say(l.text, TALKTYPE_MONSTER_SAY, false, spec, pos)
+					end
+				end
 			end
 		end
 	end
@@ -216,6 +306,14 @@ step:type("stepin")
 function step.onStepIn(creature, item, position, fromPosition)
 	local player = creature and creature:getPlayer()
 	if not player then
+		return true
+	end
+	-- a way back (cfg.returns): in front of the hunt's own teleport of the hall
+	local back = cfg.enabled and H.returnFor(HT.idx, position)
+	if back then
+		position:sendMagicEffect(cfg.effects.go)
+		player:teleportTo(P(back))
+		player:getPosition():sendMagicEffect(cfg.effects.go)
 		return true
 	end
 	local entry = HT.idx and HT.idx.byTeleport[H.key(position)]

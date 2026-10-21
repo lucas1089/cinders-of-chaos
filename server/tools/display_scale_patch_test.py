@@ -8,7 +8,9 @@ reads the patch chain in order and checks:
     unified diff (the line counts of each hunk match its header, so `patch` takes it);
   * the last patch that writes ProtocolGame::sendTextMessage scales both damage values, the heal value and the text,
     and only for the damage and heal types (experience stays);
-  * the last patch that writes ProtocolGame::AddPlayerStats scales health, max health, mana and max mana;
+  * 0037 scales health and max health in ProtocolGame::AddPlayerStats; the last patch that writes it is 0052, which
+    sends mana and max mana as they are (fixed spell costs, owner 2026-10-21), and 0052 keeps a mana message (typeId
+    CHAOS_IMPACT_MANA_DRAIN / _MANA_GAIN of patch 0051) at factor 1;
   * Player::sendEnergyShield scales "es:" and Lua gets Game.setDisplayScale and Player.getDisplayScale;
   * the Lua side calls Game.setDisplayScale with the core's table, and the client opcode (157) is the one of
     chaos_constants.lua, the config and the client module, and no other Chaos opcode uses it.
@@ -25,6 +27,8 @@ PATCHES = os.path.join(HERE, '..', 'src-patches')
 CHAOS = os.path.join(HERE, '..', 'data', 'scripts', 'chaos')
 CLIENT = os.path.join(ROOT, 'client', 'overlay', 'modules', 'game_chaosscale')
 NAME = '0037-display-scale.patch'
+MANA = '0052-mana-outside-display-scale.patch'   # mana leaves the display scale (fixed spell costs)
+IMPACT = '0051-typed-impact-numbers.patch'       # defines the impact types 0052 reads
 
 
 def read(path):
@@ -129,6 +133,36 @@ def check_text_message(body):
     return probs
 
 
+def check_mana_patch(names, text=None):
+    """problems of 0052: mana and max mana unscaled in the stats packet, a mana message at factor 1"""
+    if text is None:
+        if MANA not in names:
+            return ['missing']
+        text = read(os.path.join(PATCHES, MANA))
+    probs = ['hunk line counts do not match: %s' % b for b in hunks_ok(text)]
+    if 'Applies after 0001-0051.' not in text:
+        probs.append('does not say it applies after 0001-0051')
+    stats = function_body(text, 'src/protocolgame.cpp', 'void ProtocolGame::AddPlayerStats(')
+    added = [l[1:] for l in text.splitlines() if l.startswith('+') and not l.startswith('+++')]
+    removed = '\n'.join(l[1:] for l in text.splitlines() if l.startswith('-') and not l.startswith('---'))
+    for what in ('getMana()', 'getMaxMana()'):
+        if 'ChaosDisplay::scaleU32(player->%s, displayFactor)' % what not in removed:
+            probs.append('AddPlayerStats: the scaled %s of 0037 is not replaced' % what)
+        if 'ChaosDisplay::scaleU32(player->%s, 1)' % what not in stats:
+            probs.append('AddPlayerStats does not send %s as it is' % what)
+    if any('getHealth()' in l or 'getMaxHealth()' in l for l in added) or 'getHealth()' in removed:
+        probs.append('touches the health of the stats packet (it stays scaled)')
+    send = function_body(text, 'src/protocolgame.cpp', 'void ProtocolGame::sendTextMessage(')
+    if not re.search(r'message\.typeId == CHAOS_IMPACT_MANA_DRAIN \|\| message\.typeId == CHAOS_IMPACT_MANA_GAIN\)'
+                     r'\s*\{\s*displayFactor = 1;', send):
+        probs.append('sendTextMessage does not keep a mana message at factor 1')
+    impact = read(os.path.join(PATCHES, IMPACT)) if IMPACT in names else ''
+    for t in ('CHAOS_IMPACT_MANA_DRAIN = 3', 'CHAOS_IMPACT_MANA_GAIN = 4'):
+        if t not in impact:
+            probs.append('%s does not define %s' % (IMPACT, t))
+    return probs
+
+
 def main():
     bad = 0
 
@@ -167,17 +201,19 @@ def main():
         es = function_body(ptext, 'src/player.cpp', 'void Player::sendEnergyShield(')
         if es:
             last['es'] = (n, es)
-    n, body = last.get('void ProtocolGame::sendTextMessage(', (None, ''))
-    if n != NAME:
-        fail('the last patch writing ProtocolGame::sendTextMessage is %s, not %s' % (n, NAME))
-    for p in check_text_message(body):
-        fail('%s: %s' % (n, p))
-    n, body = last.get('void ProtocolGame::AddPlayerStats(', (None, ''))
-    if n != NAME:
-        fail('the last patch writing ProtocolGame::AddPlayerStats is %s, not %s' % (n, NAME))
-    for what in ('getHealth()', 'getMaxHealth()', 'getMana()', 'getMaxMana()'):
+    # 0037 scales; 0052 (the last writer of both) takes mana out again
+    for sig in ('void ProtocolGame::sendTextMessage(', 'void ProtocolGame::AddPlayerStats('):
+        n, _ = last.get(sig, (None, ''))
+        if n != MANA:
+            fail('the last patch writing %s is %s, not %s' % (sig, n, MANA))
+    for p in check_text_message(function_body(text, 'src/protocolgame.cpp', 'void ProtocolGame::sendTextMessage(')):
+        fail('%s: %s' % (NAME, p))
+    body = function_body(text, 'src/protocolgame.cpp', 'void ProtocolGame::AddPlayerStats(')
+    for what in ('getHealth()', 'getMaxHealth()'):
         if 'ChaosDisplay::scaleU32(player->%s, displayFactor)' % what not in body:
-            fail('%s: AddPlayerStats does not scale %s' % (n, what))
+            fail('%s: AddPlayerStats does not scale %s' % (NAME, what))
+    for p in check_mana_patch(names):
+        fail('%s: %s' % (MANA, p))
     n, body = last.get('es', (None, ''))
     if n != NAME:
         fail('the last patch writing Player::sendEnergyShield is %s, not %s' % (n, NAME))
@@ -194,6 +230,12 @@ def main():
         fail('self-test: an unscaled sendTextMessage passed')
     if not hunks_ok('@@ -1,2 +1,2 @@\n context\n-old\n'):
         fail('self-test: a short hunk passed')
+    fake = ('Applies after 0001-0051.\n--- a/src/protocolgame.cpp\n+++ b/src/protocolgame.cpp\n'
+            '@@ -1,2 +1,2 @@ void ProtocolGame::AddPlayerStats(Networ\n'
+            '-\tmsg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMana(), displayFactor));\n'
+            '+\tmsg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMana(), displayFactor * 2));\n x\n')
+    if not check_mana_patch(names, fake):
+        fail('self-test: a 0052 that still scales mana passed')
 
     # the Lua side
     glue = read(os.path.join(CHAOS, 'display_scale.lua'))

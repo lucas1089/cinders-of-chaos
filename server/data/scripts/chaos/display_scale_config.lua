@@ -1,10 +1,12 @@
 -- Display scale (display_scale.lua, display_scale_core.lua, engine src-patch 0037, client game_chaosscale). Returned as a
 -- table, loaded as Chaos.displayScaleConfig. See server/README.md "Display scale".
 --
--- Every combat number a player SEES (damage and heal numbers, own health and mana, monster and boss health, the DPS
--- meter, the combat log, the death recap, damage boards, the flat damage / heal values of spell and item tooltips) is
--- the internal number x factor(level), the factor of the VIEWER's own level (item tooltips: of the item's level
--- requirement). The internal numbers (health, damage, balance, the database) are never changed.
+-- Every combat number a player SEES (damage and heal numbers, own health, monster and boss health, the DPS meter, the
+-- combat log, the death recap, damage boards, the flat damage / heal values of spell and item tooltips) is the internal
+-- number x factor(level), the factor of the VIEWER's own level (item tooltips: of the item's level requirement). The
+-- internal numbers (health, damage, balance, the database) are never changed. Mana is never scaled (owner 2026-10-21:
+-- a spell's mana cost is one fixed number at every level; engine src-patch 0052, server/README.md "Fixed spell
+-- costs"): the own mana, spell costs, party members' mana and the mana rows of item tooltips stay as they are.
 -- Lua 5.1 / LuaJIT compatible.
 return {
 	-- the curve: {level, factor} points; the factor is 1 up to the first point's level, between two points it grows
@@ -34,13 +36,14 @@ return {
 	-- times, points, reputation) are never scaled
 	leaderboardBoards = {worldboss = true, bosshealer = true, bosstank = true},
 
-	-- item tooltip rows with a flat health / mana / damage / heal value (item_tooltip_core.lua keys; a modifier's key
-	-- is its attribute "chaos_mod_<key>"): scaled by the factor of the item's level requirement (req.level), never by
-	-- the viewer's level. Attack, defence, armour, skills, speeds and every percent stay as they are.
+	-- item tooltip rows with a flat health / damage / heal value (item_tooltip_core.lua keys; a modifier's key is its
+	-- attribute "chaos_mod_<key>"): scaled by the factor of the item's level requirement (req.level), never by the
+	-- viewer's level. Attack, defence, armour, skills, speeds, every percent and every mana row (max mana, mana on hit /
+	-- kill, mana gems: mana is never scaled) stay as they are.
 	itemFlatKeys = {
-		maxhealth = true, maxmana = true, -- the item type's own stats
-		thorns = true, lifeonkill = true, manaonkill = true, lifeonhit = true, manaonhit = true, regen = true, -- modifiers
+		maxhealth = true, -- the item type's own stat
+		thorns = true, lifeonkill = true, lifeonhit = true, regen = true, -- modifiers
 		smolderaura = true, -- legendary power (chaos_powers.lua): fire damage per second
-		gem_maxhealth = true, gem_maxmana = true -- gem effects in sockets
+		gem_maxhealth = true -- gem effects in sockets
 	}
 }

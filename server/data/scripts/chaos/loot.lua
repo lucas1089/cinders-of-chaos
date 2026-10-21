@@ -292,6 +292,32 @@ function L.stripStackableRarity(items)
 	return n
 end
 
+-- Adds `count` of item `id` to a corpse and returns the first item made and how many arrived (beta 2026-10-21: the loot
+-- line said more than arrived). The engine's Container:addItem makes at most one stack of 100 (a stackable count above
+-- it is cut to 100: an extra roll of 2.7 x 100 gold said "270x gold coin" and put 100 in), so a larger count goes in
+-- stacks of at most L.STACK. A corpse that is full refuses an item; it then goes in past the corpse's size
+-- (FLAG_NOLIMIT, as the rift's Echoing Spoils and the dungeon loot do), so it is in the corpse, in the loot channel and
+-- in reach of the autoloot instead of being dropped without a word.
+L.STACK = 100
+function L.addToCorpse(corpse, id, count)
+	count = math.max(1, math.floor(tonumber(count) or 1))
+	local stackable = L.isStackableId(id)
+	local first, added = nil, 0
+	while added < count do
+		local n = stackable and math.min(L.STACK, count - added) or 1
+		local item = corpse:addItem(id, n)
+		if not item and FLAG_NOLIMIT then
+			item = corpse:addItem(id, n, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
+		end
+		if not item then
+			break
+		end
+		first = first or item
+		added = added + n -- a non-stackable count is that many items (addItem would read it as charges)
+	end
+	return first, added
+end
+
 -- ids that leave every corpse: the stackable throwing weapons (data/lib/chaos_throwables.lua)
 function L.isRemovedId(id)
 	return ChaosThrowables.isThrowable(id)
@@ -333,9 +359,28 @@ local function weightedPick(rows) -- rows = {{value, weight}, ...}
 	return rows[#rows][1]
 end
 
+-- the hunting level's rarity roll (loot_config.lua gear.levelRarity): percent per gear drop of at least Rare at this
+-- hunting level (0 below the first point), linear between the points, flat beyond
+function L.levelRarityChance(huntLevel)
+	local lr = cfg().gear.levelRarity
+	local pts = lr and lr.points
+	huntLevel = tonumber(huntLevel) or 0
+	if type(pts) ~= "table" or #pts == 0 or huntLevel < pts[1][1] then
+		return 0
+	end
+	for i = 2, #pts do
+		local a, b = pts[i - 1], pts[i]
+		if huntLevel <= b[1] then
+			return a[2] + (b[2] - a[2]) * (huntLevel - a[1]) / (b[1] - a[1])
+		end
+	end
+	return pts[#pts][2]
+end
+
 -- returns the new rarity as a stored id (never below the current one; 0 = none). The floor, the bonus steps (places up the
--- order Common .. Legendary, stopping at maxRarity) and the Divine chance work on ranks; itemFind scales the chances.
-function L.upgradeRarity(tier, current, itemFind)
+-- order Common .. Legendary, stopping at maxRarity), the hunting level's roll (huntLevel, gear.levelRarity) and the
+-- Divine chance work on ranks; itemFind scales the chances.
+function L.upgradeRarity(tier, current, itemFind, huntLevel)
 	local g = cfg().gear
 	local R = ChaosRarity
 	tier = L.normTier(tier)
@@ -352,6 +397,15 @@ function L.upgradeRarity(tier, current, itemFind)
 	local top = R.rank(g.maxRarity)
 	if target > top then
 		target = math.max(top, cur)
+	end
+	local lc = L.levelRarityChance(huntLevel) * (itemFind or 1)
+	if lc > 0 and pct(lc) then
+		local share = tonumber((g.levelRarity or {}).legendaryShare) or 0
+		local want = R.rank(4) -- Rare
+		if share > 0 and pct(share) then
+			want = R.rank(5) -- Legendary
+		end
+		target = math.max(target, math.min(want, top))
 	end
 	local divine = tierValue(g.divineChance, tier, 0) * (itemFind or 1)
 	if divine > 0 and target < R.STORED and pct(divine) then
@@ -729,7 +783,7 @@ function L.simulate(monsterName, tier, kills, opts)
 			end
 			for _, d in ipairs(drops) do
 				if L.isGearId(d.id) then
-					local nr = L.upgradeRarity(tier, d.rarity, ctx.itemFind)
+					local nr = L.upgradeRarity(tier, d.rarity, ctx.itemFind, opts.huntLevel or ctx.level)
 					if ChaosRarity.rank(nr) > ChaosRarity.rank(d.rarity) then
 						res.upgraded = res.upgraded + 1
 					end
@@ -896,6 +950,17 @@ function L.monsterLevel(monster)
 	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
 end
 
+-- the hunting level of a monster (pace.lua PC.levelOf: the level players hunt it at); `fallback` without pace.lua
+function L.huntLevel(monster, fallback)
+	if ChaosPace and ChaosPace.levelOf then
+		local ok, lv = pcall(ChaosPace.levelOf, monster)
+		if ok and tonumber(lv) and tonumber(lv) > 0 then
+			return tonumber(lv)
+		end
+	end
+	return tonumber(fallback) or 0
+end
+
 -- the item level of this kill's drops (owner = the corpse owner; inside a rift / Omen arena its run counts)
 function L.dropLevel(monster, owner, tier)
 	local M = ChaosItemMods
@@ -979,6 +1044,9 @@ local function processKill(monster, corpse)
 		pace = pace, catchup = catchup}
 	-- the level the orb and waystone gates read (monsterLevel falls back to the bounty pool / exp estimate)
 	ctx.orbLevel = L.monsterLevel(monster)
+	-- the hunting level the rarity roll reads (gear.levelRarity): pace.lua's (its own level, a generated point's, else
+	-- 2 x the bounty pool estimate), else the level above
+	ctx.huntLevel = L.huntLevel(monster, ctx.orbLevel)
 	-- the Orb Find of the placed charms (charms.lua): the currency chances only
 	ctx.orbFind = ChaosCharms and ChaosCharms.orbFindMult and ChaosCharms.orbFindMult(owner) or 1
 	local bonus = {} -- text pieces for the bonus-loot message
@@ -1035,7 +1103,10 @@ local function processKill(monster, corpse)
 		rollTable = okW and w or lootTable
 	end
 	for _, drop in ipairs(L.rollExtraLoot(rollTable, tier, ctx)) do
-		local item = not isAmmo(drop.itemId) and corpse:addItem(drop.itemId, drop.count) or nil
+		local item, added = nil, 0
+		if not isAmmo(drop.itemId) then
+			item, added = L.addToCorpse(corpse, drop.itemId, drop.count)
+		end
 		if item then
 			if L.isGearId(drop.itemId) then
 				local r = L.stockRarity()
@@ -1043,7 +1114,7 @@ local function processKill(monster, corpse)
 					item:setCustomAttribute("rarity", r)
 				end
 			end
-			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. itemName(drop.itemId)
+			bonus[#bonus + 1] = (added > 1 and (added .. "x ") or "") .. itemName(drop.itemId)
 		end
 	end
 
@@ -1082,7 +1153,7 @@ local function processKill(monster, corpse)
 		local id = item:getId()
 		if L.isGearId(id) and not L.isRolled(item) then
 			local current = itemRarityOf(item)
-			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100))
+			local target = L.upgradeRarity(tier, current, ctx.itemFind * (1 + rarityFind / 100), ctx.huntLevel)
 			if ChaosRarity.rank(target) > ChaosRarity.rank(current) then
 				item:setCustomAttribute("rarity", target)
 				-- one loot line (lootline.lua): the stock entry of this item ("[Common] x", written before this roll)
@@ -1134,9 +1205,9 @@ local function processKill(monster, corpse)
 
 	-- 3. currency
 	for _, drop in ipairs(L.rollCurrency(tier, ctx)) do
-		local item = corpse:addItem(drop.id, drop.count)
+		local item, added = L.addToCorpse(corpse, drop.id, drop.count)
 		if item then
-			bonus[#bonus + 1] = (drop.count > 1 and (drop.count .. "x ") or "") .. drop.name
+			bonus[#bonus + 1] = (added > 1 and (added .. "x ") or "") .. drop.name
 		end
 	end
 
@@ -1145,7 +1216,7 @@ local function processKill(monster, corpse)
 	if ChaosGems then
 		local gemLevel = level > 0 and level or owner:getLevel()
 		for _, id in ipairs(ChaosGems.rollDrop(tier, gemLevel, rateMult(ctx) * ctx.itemFind * pace, rnd)) do
-			local item = corpse:addItem(id, 1)
+			local item = (L.addToCorpse(corpse, id, 1))
 			if item then
 				bonus[#bonus + 1] = ChaosGems.gemName(id)
 			end
@@ -1162,7 +1233,7 @@ local function processKill(monster, corpse)
 	-- 4. uniques
 	local u = c.unique
 	for _, e in ipairs(L.rollUniques(tier, typeNameOf(monster), level, ctx.itemFind * pace, nil, owner)) do
-		local item = corpse:addItem(e.id, 1)
+		local item = (L.addToCorpse(corpse, e.id, 1))
 		if item then
 			if ChaosMakeUnique then
 				ChaosMakeUnique(item)

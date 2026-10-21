@@ -119,5 +119,82 @@ local f = { L.pick(grp2, on, { x = 100, y = 100, z = 8 }, 10, L.newRng(77)) }
 eq(f[1], (L.roll(3, L.newRng(77))), 'another floor is a new roll')
 eq(select('#', L.pick({}, on, nil, 0, L.newRng(1))), 3, 'a missing position still rolls')
 
+-- ---------------------------------------------------------------- typed impact numbers (base patch 0100)
+-- types: the same numbers as the server enum (server/src-patches 0051) and chaos_constants.lua
+eq(L.TYPE.NORMAL, 0, 'type normal'); eq(L.TYPE.CRITICAL, 1, 'type critical'); eq(L.TYPE.CONDITION, 2, 'type condition')
+eq(L.TYPE.MANA_DRAIN, 3, 'type mana drain'); eq(L.TYPE.MANA_GAIN, 4, 'type mana gain')
+eq(L.TYPE.ENERGY_SHIELD, 5, 'type energy shield')
+-- modes: Otc::MessageMode of this client (const.h), not the 10.98 wire numbers
+eq(L.MODE.DAMAGE_DEALT, 21, 'mode damage dealt'); eq(L.MODE.DAMAGE_RECEIVED, 22, 'mode damage received')
+eq(L.MODE.HEAL, 23, 'mode heal'); eq(L.MODE.EXP, 24, 'mode exp'); eq(L.MODE.DAMAGE_OTHERS, 25, 'mode damage others')
+eq(L.MODE.HEAL_OTHERS, 26, 'mode heal others'); eq(L.MODE.EXP_OTHERS, 27, 'mode exp others'); eq(L.MODE.MANA, 41, 'mode mana')
+
+-- fonts: crit and condition get theirs, the rest keep the stock font; a font the client lacks is not used
+local all = function() return true end
+eq(L.fontFor(1, all), 'chaos-display-16px', 'crit font')
+eq(L.fontFor(2, all), 'chaos-outline-11px', 'condition font')
+eq(L.fontFor(0, all), nil, 'normal keeps the stock font')
+eq(L.fontFor(3, all), nil, 'mana drain keeps the stock font')
+eq(L.fontFor(9, all), nil, 'a script type keeps the stock font')
+eq(L.fontFor(nil, all), nil, 'no type, stock font')
+eq(L.fontFor('1', all), 'chaos-display-16px', 'a type as text')
+eq(L.fontFor(1, function() return false end), nil, 'a missing font is not set')
+eq(L.fontFor(1, nil), 'chaos-display-16px', 'no check function: the name')
+eq(L.FONTS[1] ~= L.FONTS[2], true, 'crit and condition differ, so a tick never merges into a crit')
+
+-- drift: inside the level's bounds, always up, both sideways directions, whole pixels
+local rd = L.newRng(21)
+for level = 1, L.LEVELS do
+  local s = L.STRENGTH[level]
+  local minx, maxx, minr, maxr = 99, -99, 999, 0
+  for i = 1, 3000 do
+    local sx, sy = L.rollDrift(level, rd)
+    minx, maxx = math.min(minx, sx), math.max(maxx, sx)
+    minr, maxr = math.min(minr, -sy), math.max(maxr, -sy)
+    eq(sx == math.floor(sx) and sy == math.floor(sy), true, 'drift in whole pixels')
+  end
+  eq(minx >= -s.driftX and maxx <= s.driftX, true, 'level ' .. level .. ' drift x bounds')
+  eq(minx < 0 and maxx > 0, true, 'level ' .. level .. ' drifts both ways')
+  eq(minr == s.riseMin and maxr == s.riseMax, true, 'level ' .. level .. ' rise covers its range, always up')
+end
+eq(L.STRENGTH[1].driftX < L.STRENGTH[3].driftX, true, 'drift grows with the level')
+eq(select('#', L.rollDrift(99, L.newRng(1))), 2, 'an unknown level uses the default drift')
+
+-- pickImpact: off -> nil; one hit shares shift, speed and drift; experience rises straight; crits are slower
+eq(L.pickImpact({}, { enabled = false, level = 2 }, p1, 0, L.newRng(1), 0, L.MODE.DAMAGE_DEALT), nil, 'impact off')
+eq(L.pickImpact({}, nil, p1, 0, L.newRng(1), 0, 21), nil, 'impact without settings')
+local gi = {}
+local ri = L.newRng(31)
+local a = { L.pickImpact(gi, on, p1, 2000, ri, 0, L.MODE.DAMAGE_DEALT) }
+local b = { L.pickImpact(gi, on, p1, 2000 + L.GROUP_MS, ri, 0, L.MODE.DAMAGE_DEALT) }
+eq(#a, 5, 'five answers')
+eq(a[1] == b[1] and a[2] == b[2] and a[3] == b[3] and a[4] == b[4] and a[5] == b[5], true, 'one hit, one roll and drift')
+eq(a[5] < 0, true, 'the drift goes up')
+local drifted = 0
+for i = 1, 30 do
+  local c = { L.pickImpact(gi, on, p1, 10000 + i * 500, ri, 0, L.MODE.DAMAGE_OTHERS) }
+  if c[4] ~= a[4] or c[5] ~= a[5] then drifted = drifted + 1 end
+end
+eq(drifted > 15, true, 'later hits drift anew')
+local e = { L.pickImpact({}, on, p1, 0, L.newRng(4), 0, L.MODE.EXP) }
+eq(e[4], 0, 'experience rises straight')
+eq(({ L.pickImpact({}, on, p1, 0, L.newRng(4), 0, L.MODE.EXP_OTHERS) })[4], 0, 'experience of others rises straight')
+local n = { L.pickImpact({}, on, p1, 0, L.newRng(4), 0, L.MODE.DAMAGE_DEALT) }
+local c = { L.pickImpact({}, on, p1, 0, L.newRng(4), 1, L.MODE.DAMAGE_DEALT) }
+eq(math.abs(c[3] - n[3] * L.CRIT_SPEED) < 1e-9, true, 'a crit is slower by CRIT_SPEED')
+eq(c[1] == n[1] and c[4] == n[4], true, 'a crit keeps the same shift and drift')
+eq(n[3] * L.CRIT_SPEED >= 0.5 and (1 + L.STRENGTH[3].speed) <= 2, true, 'speeds stay inside the engine clamp')
+local m = { L.pickImpact({}, on, nil, 0, L.newRng(4), 0, 21) }
+eq(#m, 5, 'a missing position still rolls')
+-- pick (slice A) and pickImpact agree on the shift of the same roll
+local g1, g2 = {}, {}
+local pa = { L.pick(g1, on, p1, 0, L.newRng(8)) }
+local pb = { L.pickImpact(g2, on, p1, 0, L.newRng(8), 0, 21) }
+eq(pa[1] == pb[1] and pa[2] == pb[2] and pa[3] == pb[3], true, 'pickImpact shifts like pick')
+
+-- the follow option: on unless explicitly off
+eq(L.attachedWanted(true), true, 'attached on'); eq(L.attachedWanted(nil), true, 'attached by default')
+eq(L.attachedWanted(false), false, 'attached off'); eq(L.attachedWanted(0), true, 'attached: only false turns it off')
+
 print(string.format('scatterlogic_test: %d checks, %d failed', checks, fails))
 os.exit(fails == 0 and 0 or 1)

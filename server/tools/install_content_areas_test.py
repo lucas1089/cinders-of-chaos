@@ -90,13 +90,15 @@ def make_area(out, pid, origin, n=3, ground=G):
         '\t\t<monster name="Bog Rat" x="0" y="0" z="%d" spawntime="60" />\n\t</spawn>\n</spawns>\n' % (ox + 2, oy, oz, oz))
 
 
-def setup(root, extra=None):
+def setup(root, extra=None, drop=()):
     srv = os.path.join(root, 'srv')
     os.makedirs(os.path.join(srv, 'data', 'world'))
     os.makedirs(os.path.join(srv, 'data', 'scripts'))
     open(os.path.join(srv, 'config.lua'), 'w').write('mapName = "w"\n')
     world = room_tiles()
     world.update(extra or {})
+    for p in drop:
+        world.pop(p, None)
     open(os.path.join(srv, 'data', 'world', 'w.otbm'), 'wb').write(otbm_file(world))
     open(os.path.join(srv, 'data', 'world', 'w-spawn.xml'), 'w').write(
         '<?xml version="1.0"?>\n<spawns>\n\t<spawn centerx="11" centery="10" centerz="6" radius="1">\n'
@@ -180,10 +182,13 @@ def hall_order_checks(root):
     check(H.with_portal(back, PORTAL, None)['items'] == [(STONE, {})], 'teleport taken off')
     check(H.with_portal(back, PORTAL, (1, 2, 3))['items'][0] == (PORTAL, {'tele': (1, 2, 3)}), 'teleport put on')
     cfg = json.loads(json.dumps(CFG))
-    cfg['hall'] = {'enabled': True, 'floors': [Z], 'x': [0, 40], 'endRow': 13, 'temple': [500, 500, 7], 'labels': []}
+    cfg['hall'] = {'enabled': True, 'floors': [Z], 'x': [0, 40], 'endRow': 13, 'temple': [500, 500, 7], 'labels': [],
+                   'closed': {'wall': WALL, 'decor': [STONE]}}
     # two base hunts on the module's teleports (12,11) and (12,15): one low, one high; the content hunts in between
     extra = {(12, 11, Z): tile(G, PORTAL, STONE, tele=(700, 700, 7)), (12, 15, Z): tile(G, PORTAL, STONE, tele=(710, 700, 7)),
-             (30, 11, Z): tile(G, PORTAL, tele=(800, 800, 7))}
+             (30, 11, Z): tile(G, PORTAL, tele=(800, 800, 7)),
+             # the hunts' own ways back, beside their arrival: in front of the teleport where the base server had it
+             (701, 700, 7): tile(G, PORTAL, tele=(12, 12, Z)), (711, 701, 7): tile(G, PORTAL, tele=(12, 14, Z))}
     srv, plans, comp = setup(os.path.join(root, 'hallorder'), extra)
     csvp = os.path.join(root, 'hallorder', 'hall_hunts.csv')
     rows = [dict(id='base_6_12_11', z=Z, x=12, y=11, dest_x=700, dest_y=700, dest_z=7, name='Rat', lo=10, hi=40,
@@ -208,6 +213,9 @@ def hall_order_checks(root):
     check(tele.get((30, 11, Z)) == (800, 800, 7), 'a teleport that is not a hunt stays where it is')
     check(PORTAL not in stacks[(12, 15, Z)] and stacks[(12, 15, Z)] == [G, STONE], 'its old place is free for a content hunt: %s' % stacks[(12, 15, Z)])
     check(tele.get(hall['base_6_12_15']) == (710, 700, 7), 'the high base hunt moved with its destination: %s' % tele)
+    moved = hall['base_6_12_15']
+    check(tele.get((711, 701, 7)) == H.front_of(cfg['room'], moved) != (12, 14, Z) and tele.get((701, 700, 7)) == (12, 12, Z),
+          'the moved hunt\'s way back leads in front of its new teleport, the other one\'s stays: %s' % tele)
     check(all(flags[p] == 1 for p in stacks if p[2] == Z and 12 <= p[1] <= 14), 'the corridor stays PZ')
     check(flags[(11, 10, Z)] == 0 and flags[(15, 10, Z)] == 0, 'the cells stay non-PZ')
     seen = reachable(stacks, (11, 13, Z), Z)
@@ -218,6 +226,10 @@ def hall_order_checks(root):
     pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
     check('hall = true' in pl and '{id = "base_6_12_15", name = "Dragon", level = {600, 700}' in pl and 'floors = {' in pl,
           'places file: the base hunts and the floors')
+    free = [(x, y, Z) for x in (12, 16, 20) for y in (11, 15) if (x, y, Z) not in hall.values()]
+    check(len(free) == 2 and all(stacks[p] == [G, WALL] for p in free),
+          'the rooms no hunt takes are closed: a wall on the teleport tile, the ring off: %s' % [(p, stacks[p]) for p in free])
+    check(all(WALL not in stacks[tuple(p)] for p in hall.values()), 'the rooms in use stay open')
     once = digest(srv)
     go()
     check(digest(srv) == once, 'hall order: a second run changes nothing')
@@ -225,7 +237,9 @@ def hall_order_checks(root):
     res = go(hall_on=False)
     stacks, tele, flags = map_state(srv)
     check(tele.get((12, 11, Z)) == (700, 700, 7) and tele.get((12, 15, Z)) == (710, 700, 7), 'remove: base teleports back')
+    check(tele.get((711, 701, 7)) == (12, 14, Z), 'remove: the way back leads to the old place again')
     check(PORTAL not in stacks[(16, 15, Z)], 'remove: the wing slot free again')
+    check(all(WALL not in stacks[p] and STONE in stacks[p] for p in free), 'remove: the closed rooms open again: %s' % [stacks[p] for p in free])
     check(res['slots'] == {'tiny_hunt': (16, 11, Z), 'other_hunt': (16, 15, Z)}, 'remove: content hunts in the wing %s' % res['slots'])
     pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
     check('hall = false' in pl, 'remove: places file says so')
@@ -262,6 +276,57 @@ def tile_at(srv, pos):
     return H.parse_tile(data[s:e + 1], pos)
 
 
+def lay0_rect(cfg, qrows):
+    import hall_quests as HQ
+    return HQ.layout_grid(dict(cfg['hall']['quests']), cfg['room'], qrows)['rect']
+
+
+def tele_of(srv, pos):
+    return map_state(srv)[1].get(pos)
+
+
+def wing_ground_checks(root):
+    """a wing of the ground floor copied from floor 6, whose outer wall stands on no ground and whose module lacks a
+    tile where the old end stood: every tile of the wing gets a ground (no black, unmapped square), a base hunt's
+    teleport goes after the ground, its way back follows it to the new floor; a second run changes nothing"""
+    import hall_order as H
+    cfg = json.loads(json.dumps(CFG))
+    cfg['room']['wings'] = [{'z': 7, 'from': Z, 'sweep': True, 'east': {'modules': 1}}]
+    cfg['hall'] = {'enabled': True, 'floors': [7, Z], 'levels': [{'z': 7, 'max': 450}, {'z': Z}], 'x': [0, 40],
+                   'endRow': 13, 'temple': [500, 500, 7], 'labels': []}
+    extra = {(10, 9, Z): dict(ground=None, items=[(WALL, {})], flags=1),  # floor 6's outer wall on no ground
+             (12, 11, Z): tile(G, PORTAL, STONE, tele=(700, 700, 7)),
+             (701, 700, 7): tile(G, PORTAL, tele=(12, 12, Z))}
+    for y in range(ROWS[0] - 1, ROWS[1] + 2):  # the ground floor: its end (two columns) and the lawn east of it
+        for x in range(14, 22):
+            corridor = 12 <= y <= 14
+            if x in (14, 15) and ROWS[0] <= y <= ROWS[1]:
+                extra[(x, y, 7)] = tile(G) if corridor else tile(G, WALL)
+            else:
+                extra[(x, y, 7)] = tile(G, flags=0)
+    srv, plans, comp = setup(os.path.join(root, 'wing'), extra, drop=[(11, 17, Z)])  # no module tile there
+    csvp = os.path.join(root, 'wing', 'hall_hunts.csv')
+    H.write_csv([dict(id='base_6_12_11', z=Z, x=12, y=11, dest_x=700, dest_y=700, dest_z=7, name='Rat', lo=10, hi=40,
+                      level=20, display='Rat', spawntime=120, monsters='Rat')], csvp)
+
+    def go():
+        return T.run(os.path.join(srv, 'data'), plans_dir=plans, config=cfg, compiled=comp, log=lambda s: None,
+                     fixed_dirs=(), hall_csv=csvp, kinds=({G}, set()))
+    res = go()
+    stacks, tele, _f = map_state(srv)
+    box = [(x, y, 7) for x in range(14, 20) for y in range(ROWS[0], ROWS[1] + 1)]
+    bad = [p for p in box if p not in stacks or not stacks[p] or stacks[p][0] != G]
+    check(not bad, 'every tile of the ground floor\'s wing has a ground: %s' % [(p, stacks.get(p)) for p in bad])
+    check(stacks.get((14, 9, 7)) == [G, WALL], 'the outer wall copied from floor 6 stands on ground: %s' % stacks.get((14, 9, 7)))
+    check(stacks.get((15, 17, 7)) == [G], 'the old end tile without a copy over it is ground, not a hole: %s' % stacks.get((15, 17, 7)))
+    at = res['hall']['assign']['base_6_12_11']
+    check(at[2] == 7 and stacks[at][:2] == [G, PORTAL], 'the base hunt on the ground floor, its teleport after the ground: %s %s' % (at, stacks.get(at)))
+    check(tele.get((701, 700, 7)) == H.front_of(cfg['room'], at), 'its way back leads to the new floor: %s' % (tele.get((701, 700, 7)),))
+    once = digest(srv)
+    go()
+    check(digest(srv) == once, 'wing ground: a second run changes nothing')
+
+
 def floor_rule_checks():
     """the owner's floors by level: z 7 for levels 1-500, z 6 for 501-1000, z 5 for the rest (hall.levels)"""
     import hall_order as H
@@ -296,7 +361,8 @@ def quest_hall_checks(root):
     cfg = json.loads(json.dumps(CFG))
     cfg['items'] = {'portal': PORTAL, 'sign': SIGN, 'questPortals': [QP1, QP2]}
     cfg['hall'] = {'enabled': True, 'floors': [QZ, Z], 'levels': [{'z': QZ, 'max': 500}, {'z': Z}], 'x': [0, 60], 'endRow': 13, 'temple': [500, 500, 7], 'labels': [],
-                   'quests': {'z': QZ, 'origin': {'x': 30, 'y': 20}, 'connector': {'x': 26}, 'step': 4, 'returnRadius': 4,
+                   'quests': {'z': QZ, 'origin': {'x': 30, 'y': 20}, 'connector': {'x': 26}, 'step': 4,
+                              'model': {'x': 12, 'z': Z},
                               'chests': [{'x': 36, 'y': 25, 'item': CHEST, 'uid': 34801, 'rows': [23, 25]}]}}
     q1, q2 = (700, 700, 7), (710, 700, 7)
 
@@ -310,6 +376,11 @@ def quest_hall_checks(root):
         (11, 16, QZ): t((REWARD + 2, {'raw': bytes([15, 7])})),
         (13, 16, QZ): t((REWARD + 3, {})),
         (12, 9, QZ): t((COUNTER, {}), (SIGN, {'raw': text_attr('Quest A')})),
+        # the counter between the two cells holds rewards too (the base hall: the beta showed them left behind)
+        (12, 10, QZ): t((COUNTER, {}), (REWARD + 4, {}), flags=1),
+        (12, 16, QZ): t((COUNTER, {}), (REWARD + 5, {}), flags=1),
+        # the alcove's east divider: a wall (the quest hall's far end is closed with it)
+        (14, 11, QZ): t((WALL, {}), flags=1),
         (12, 17, QZ): t((COUNTER, {}), (SIGN, {'raw': text_attr('Quest B')})),
         # the quest sites' way back, and a teleport nearby that is not one
         (701, 700, 7): t((PORTAL, {'tele': (12, 12, QZ)})),
@@ -361,9 +432,21 @@ def quest_hall_checks(root):
     for old in (al['base_7_12_11']['old'], al['base_7_12_15']['old']):
         items = [i for i, _a in tile_at(srv, old)['items']]
         check(QP1 not in items and QP2 not in items, 'old quest teleport gone at %s' % (old,))
-    check(tile_at(srv, hunt_at)['items'][0] == (PORTAL, {'tele': (800, 800, 7)}), 'the new low-level hunt takes the first free slot %s' % (hunt_at,))
+    check(tile_at(srv, hunt_at)['items'][:2] == [(G, {}), (PORTAL, {'tele': (800, 800, 7)})],
+          'the new low-level hunt takes the first free slot %s, its teleport after the ground' % (hunt_at,))
     for c in ((11, 10, QZ), (13, 10, QZ), (11, 16, QZ), (13, 16, QZ)):
-        check([i for i, _a in tile_at(srv, c)['items']] == [G], 'old cell %s bare' % (c,))
+        check([i for i, _a in tile_at(srv, c)['items']] == [G] and tile_at(srv, c)['flags'] == 0,
+              'old cell %s bare and without protection zone like the model alcove\'s (a display monster can stand there)' % (c,))
+    for c in ((12, 10, QZ), (12, 16, QZ)):
+        check([i for i, _a in tile_at(srv, c)['items']] == [G, COUNTER], 'old counter %s without its rewards: %s' % (c, tile_at(srv, c)))
+    check([i for i, _a in tile_at(srv, (30, 21, QZ))['items']] == [G, COUNTER, REWARD + 4], 'the counter\'s rewards moved with it')
+    # the corridor's far end is closed with the hall's wall
+    ends = lay['endwall']
+    check(ends == [(33, 23, QZ), (33, 24, QZ), (33, 25, QZ)] and all(WALL in [i for i, _a in tile_at(srv, p)['items']] for p in ends),
+          'the quest corridor\'s far end closed by a wall: %s' % [tile_at(srv, p) for p in ends])
+    sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+    check('centerx="11" centery="10" centerz="7" radius="1" chaoshunt="low_cave">\n\t\t<monster name="Hydra"' in sp,
+          'the display monster of the hunt in the old alcove stands in its cell')
     for sg in ((12, 9, QZ), (12, 17, QZ)):
         check(all(a.get('raw', b'') == b'' for i, a in tile_at(srv, sg)['items'] if i == SIGN), 'old sign %s blank' % (sg,))
     # the way back from the quest sites
@@ -378,7 +461,8 @@ def quest_hall_checks(root):
     check((30, 23, QZ) in seen and (30, 25, QZ) in seen, 'both new fronts reachable from the connector')
     check(all(flags[(x, y, QZ)] == 1 for x in range(26, 33) for y in (23, 24, 25)), 'quest corridor and connector are protection zone')
     pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
-    check('quests = {' in pl and 'x = 31, y = 24, z = 7' in pl, 'places file: the quest label')
+    check('quests = {label = {x = 31, y = 24, z = 7}, entrance = {x = 26, y = 24, z = 7}, count = 2}' in pl,
+          'places file: the quest labels')
     once = digest(srv)
     state_once = map_state(srv)
     snap_spawn = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
@@ -418,6 +502,63 @@ def quest_hall_checks(root):
             check(False, 'a swept tile with an action id, sign or teleport refused: %s' % (pos,))
         except T.InstallError as e:
             check('nothing written' in str(e), 'swept %s refused: %s' % (pos, e))
+    # the quests move on from the quest hall over the pond to two rows round a corridor of the plaza (owner,
+    # 2026-10-20: "you can overwrite this green region"); the earlier hall is taken back to the map's backup; a
+    # teleport of the plaza on the corridor stays where it is
+    plaza = {}
+    for x in range(44, 57):
+        for y in range(39, 51):
+            plaza[(x, y, QZ)] = t(flags=1)
+    plaza[(48, 44, QZ)] = t((PORTAL, {'tele': (321, 321, 7)}), flags=1)
+    import hall_quests as HQ
+    srv5, plans5, comp5 = setup(os.path.join(root, 'quests5'), {**extra, **plaza})
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg, compiled=comp5, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    first = map_state(srv5)
+    cfg5 = json.loads(json.dumps(cfg))
+    q5 = cfg5['hall']['quests']
+    q5['previous'] = {'origin': q5.pop('origin'), 'connector': q5.pop('connector'), 'step': q5.pop('step'), 'fill': 28915}
+    q5.update({'north': {'y': 40, 'x': [50]}, 'south': {'y': 46, 'x': [50]}, 'corridor': {'x': [47, 53], 'y': [43, 45]}})
+    logs = []
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg5, compiled=comp5, log=logs.append, fixed_dirs=(),
+          hall_csv=csvp)
+    stacks, tele, flags = map_state(srv5)
+    check(tile_at(srv5, (50, 42, QZ))['items'][1] == (QP1, {'tele': q1, 'uid': 44001})
+          and tile_at(srv5, (50, 46, QZ))['items'][1] == (QP2, {'tele': q2}), 'quests moved on to the plaza rows')
+    check(not any(i in (QP1, QP2) for p in lay0_rect(cfg, qrows) for i, _a in (tile_at(srv5, p)['items'] if p in stacks else [])),
+          'no quest teleport left in the earlier quest hall')
+    check(tile_at(srv5, (49, 41, QZ))['items'][1] == (REWARD, {'uid': 44002, 'raw': bytes([15, 3])}), 'with their rewards')
+    check(tele.get((701, 700, 7)) == (50, 43, QZ) and tele.get((711, 700, 7)) == (50, 45, QZ), 'ways back to the new fronts: %s' % tele)
+    check(tele.get((48, 44, QZ)) == (321, 321, 7), 'the plaza\'s own teleport on the corridor stays')
+    lay0 = HQ.layout_grid(dict(cfg['hall']['quests']), cfg['room'], qrows)
+    check(all(stacks.get(p) == [G] for p in lay0['rect'] if p in plaza or (24 <= p[0] <= 40 and 19 <= p[1] <= 29)),
+          'the earlier quest hall back as the backup has it: %s' % [(p, stacks.get(p)) for p in lay0['rect'][:3]])
+    check(all(flags[(x, y, QZ)] == 1 for x in range(47, 54) for y in (43, 44, 45)), 'the plaza corridor is protection zone')
+    once = digest(srv5)
+    T.run(os.path.join(srv5, 'data'), plans_dir=plans5, config=cfg5, compiled=comp5, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    check(digest(srv5) == once, 'moved on: a second run changes nothing')
+    check(first != stacks, 'moved on: the map changed')
+    # an earlier install lost a quest (a hunt's teleport took its alcove, the sign blank, the rewards still there): the
+    # alcove moves to the quest hall all the same, its teleport made again from the CSV and the sign named
+    lost = dict(extra)
+    lost[(12, 11, QZ)] = t((PORTAL, {'tele': (999, 999, 7)}), (STONE, {}), flags=1)
+    lost[(12, 9, QZ)] = t((COUNTER, {}), (SIGN, {}))
+    srv4, plans4, comp4 = setup(os.path.join(root, 'quests4'), lost)
+    T.run(os.path.join(srv4, 'data'), plans_dir=plans4, config=cfg, compiled=comp4, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    got = tile_at(srv4, (30, 22, QZ))['items']
+    check(got[:2] == [(G, {}), (PORTAL, {'tele': q1})] and all(a.get('tele') in (None, q1) for _i, a in got),
+          'a lost quest\'s teleport made again in the quest hall: %s' % got)
+    sg = [a for i, a in tile_at(srv4, (30, 20, QZ))['items'] if i == SIGN]
+    check(sg and sg[0].get('raw') == text_attr('Quest A'), 'its sign named again: %s' % sg)
+    check([i for i, _a in tile_at(srv4, (29, 21, QZ))['items']] == [G, REWARD], 'its rewards on show in the quest hall')
+    check(PORTAL not in [i for i, _a in tile_at(srv4, (12, 11, QZ))['items']] or
+          tele_of(srv4, (12, 11, QZ)) != (999, 999, 7), 'the stray hunt teleport is gone from the old alcove')
+    once = digest(srv4)
+    T.run(os.path.join(srv4, 'data'), plans_dir=plans4, config=cfg, compiled=comp4, log=lambda s: None, fixed_dirs=(),
+          hall_csv=csvp)
+    check(digest(srv4) == once, 'lost quest: a second run changes nothing')
     # a chest with another unique id is not removed (not ours)
     srv3, plans3, comp3 = setup(os.path.join(root, 'quests3'), {**extra, (36, 25, QZ): t((CHEST, {'uid': 1}))})
     try:
@@ -463,7 +604,7 @@ def main():
         pl = open(os.path.join(srv, 'data', 'lib', 'chaos_hunt_places.lua')).read()
         check('{id = "tiny_hunt", name = "Tiny Hunt", level = {300, 400}, teleport = {x = 16, y = 11, z = 6}, '
               'sign = {x = 16, y = 9, z = 6}, arrival = {x = 1000, y = 1000, z = 7}, exit = {x = 1001, y = 1000, z = 7}, '
-              'monster = "Bog Rat"}' in pl,
+              'monster = "Bog Rat", front = {x = 16, y = 12, z = 6}}' in pl,
               'places entry:\n' + pl)
         check('back = {x = 11, y = 13, z = 6}' in pl, 'back tile')
         once = digest(srv)
@@ -578,6 +719,7 @@ def main():
         hall_order_checks(root)
         floor_rule_checks()
         quest_hall_checks(root)
+        wing_ground_checks(root)
 
         # the real hunts: ascending by band, every plan exactly once, and ascending along the corridor's slots
         real = T.plan_files(T.PLANS_DIR)

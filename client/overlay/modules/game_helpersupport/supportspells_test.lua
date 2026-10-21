@@ -158,8 +158,9 @@ local function world(over)
       inParty = function() return w.party end,
       summonCount = function(name)
         if w.summons == false then return nil end
-        local own = 0
-        for _, n in ipairs(w.summons) do if name and n == name then own = own + 1 end end
+        local own, want = 0, {}
+        for _, n in ipairs(type(name) == 'table' and name or { name }) do want[n] = true end
+        for _, n in ipairs(w.summons) do if want[n] then own = own + 1 end end
         return #w.summons, own
       end,
       summonCap = function() return w.cap end,
@@ -204,12 +205,86 @@ eq(st.status[234], 'active', 'no bar: active by its duration')
 now = now + 11000
 eq((H.pick(st, cfg, w.ctx()) or {}).id, 234, 'no bar: the effect ran out, cast again')
 
--- no bar and no duration: cast whenever off cooldown
+-- no bar and no duration: not again before RECAST_MIN_MS (owner beta 2026-10-20: "keeps casting nonstop"; it was cast
+-- every time it came off cooldown)
 st, w = H.newState(), world({ bar = nil })
 cfg = cfgOf({ 900 })
 H.noteCast(st, byId[900], now)
 now = now + 3000
-eq((H.pick(st, cfg, w.ctx()) or {}).id, 900, 'unknown duration: off the cooldown it is cast')
+eq(H.pick(st, cfg, w.ctx()), nil, 'unknown duration: not again as soon as it is off cooldown')
+eq(st.status[900], 'active', 'status: on (by the recast gap)')
+now = now + H.RECAST_MIN_MS
+eq((H.pick(st, cfg, w.ctx()) or {}).id, 900, 'unknown duration: again after the recast gap')
+
+-- the bar has data but never shows this spell's effect (a summon, an instant effect, a stock buff named "Spell Buff"):
+-- its "not shown" does not count; the duration or the recast gap decide
+st, w = H.newState(), world({ bar = {} })
+cfg = cfgOf({ 900 })
+eq((H.pick(st, cfg, w.ctx()) or {}).id, 900, 'never cast: the first cast goes out')
+H.noteCast(st, byId[900], now)
+now = now + 10000
+eq(H.pick(st, cfg, w.ctx()), nil, 'the bar never showed it: no recast every cooldown')
+now = now + H.RECAST_MIN_MS
+eq((H.pick(st, cfg, w.ctx()) or {}).id, 900, 'after the recast gap: again')
+-- the party buffs (dur 60, the bar calls them "Spell Buff"): their duration
+st, w = H.newState(), world({ bar = {}, party = true })
+byId[129] = byId[129] or { id = 129, name = 'Enchant Party', words = 'utori mas sio', level = 32, mana = 120, group = { [3] = 2000 }, exhaustion = 2000, vocations = { 1 } }
+cfg = cfgOf({ 129 })
+H.noteCast(st, byId[129], now)
+now = now + 30000
+eq(H.pick(st, cfg, w.ctx()), nil, 'a party buff the bar does not name: its 60 s duration')
+now = now + 31000
+eq((H.pick(st, cfg, w.ctx()) or {}).id, 129, 'after its duration: again')
+-- a buff the bar has shown: the bar decides again
+st, w = H.newState(), world({ bar = { ['soulward'] = true } })
+cfg = cfgOf({ 234 })
+eq(H.pick(st, cfg, w.ctx()), nil, 'shown: on')
+H.noteCast(st, byId[234], now - 20000)
+w.bar = {}
+eq((H.pick(st, cfg, w.ctx()) or {}).id, 234, 'shown before, gone now: cast')
+
+-- summons with known creatures (Bone Golem, Wild Bond): a recast only calls them back and heals them
+ok(H.info(byId[186]).minions ~= nil and H.info(byId[248]).minions ~= nil, 'Bone Golem and Wild Bond know their creatures')
+eq(H.keepCount(H.info(byId[248]), 100), 1, 'Wild Bond keeps 1 companion')
+eq(H.keepCount(H.info(byId[248]), 400), 2, 'and 2 from level 400')
+st, w = H.newState(), world({ bar = {}, summons = {} })
+cfg = cfgOf({ 248 })
+local function lvl(ctx, l) ctx.level = l return ctx end
+eq((H.pick(st, cfg, lvl(w.ctx(), 150)) or {}).id, 248, 'no companion out: Wild Bond')
+H.noteCast(st, byId[248], now)
+w.summons = { 'War Wolf' }
+now = now + 60000
+eq(H.pick(st, cfg, lvl(w.ctx(), 150)), nil, 'the companion is out: no recast every 10 s')
+eq(st.status[248], 'have', 'status: already out')
+eq((H.pick(st, cfg, lvl(w.ctx(), 450)) or {}).id, 248, 'level 400: room for the second one')
+w.summons = {}
+eq((H.pick(st, cfg, lvl(w.ctx(), 150)) or {}).id, 248, 'the companion died: Wild Bond again')
+st, w = H.newState(), world({ bar = {}, summons = { 'Risen Skeleton', 'Bone Golem' } })
+cfg = cfgOf({ 186 })
+eq(H.pick(st, cfg, lvl(w.ctx(), 200)), nil, 'the golem is out: no Bone Golem')
+w.summons = { 'Risen Skeleton' }
+eq((H.pick(st, cfg, lvl(w.ctx(), 200)) or {}).id, 186, 'no golem out: Bone Golem')
+w.summons = false
+H.noteCast(st, byId[186], now)
+now = now + 40000
+eq(H.pick(st, cfg, lvl(w.ctx(), 200)), nil, 'no summon count: the recast gap, not every cooldown')
+
+-- the server refuses it again and again (no cooldown answer: ChaosHelperRotation counts the refusals)
+st, w = H.newState(), world({ bar = { ['soulward'] = true } })
+cfg = cfgOf({ 234 })
+local refusals = 0
+local function withRefusals(ctx) ctx.refusals = function() return refusals end return ctx end
+H.pick(st, cfg, withRefusals(w.ctx()))      -- the bar has shown Soulward: it decides
+w.bar = {}
+H.noteCast(st, byId[234], now - 5000)
+refusals = 2
+eq((H.pick(st, cfg, withRefusals(w.ctx())) or {}).id, 234, 'two refusals: the rotation back-off alone')
+refusals = 3
+eq(H.pick(st, cfg, withRefusals(w.ctx())), nil, 'three refusals in a row: it rests')
+eq(st.status[234], 'backoff', 'status: refused, waiting')
+now = now + H.REFUSED_HOLD_MS
+eq((H.pick(st, cfg, withRefusals(w.ctx())) or {}).id, 234, 'after the rest: one more try')
+refusals = 0
 
 -- a vigil is a switch
 st, w = H.newState(), world({ bar = nil })
@@ -225,6 +300,12 @@ eq(H.pick(st, cfg, w.ctx()), nil, 'vigil: the bar is slow, no second cast within
 now = now + 3000
 w.bar = { ['vigil of clarity'] = true }
 eq(H.pick(st, cfg, w.ctx()), nil, 'vigil active: left alone')
+-- a vigil the bar has not shown after the cast (refused, or the bar is late): no second cast, which would turn it off
+st, w = H.newState(), world({ bar = {} })
+cfg = cfgOf({ 162 })
+H.noteCast(st, byId[162], now)
+now = now + 10000
+eq(H.pick(st, cfg, w.ctx()), nil, 'vigil cast, the bar never showed it: no toggling on and off')
 
 -- the safeguards
 st, w = H.newState(), world({ bar = {}, inPz = true })

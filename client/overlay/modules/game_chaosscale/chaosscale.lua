@@ -1,5 +1,5 @@
 -- game_chaosscale: keeps the display scale of the own level (scalelogic.lua; server display_scale.lua, opcode 157).
--- At a new factor the flat mana costs in SpellInfo follow it; at the end of the game they go back to the raw costs.
+-- Spell mana costs are fixed numbers and never follow the factor (server/README.md "Fixed spell costs").
 -- A hello at every game start (and when the module loads in game) asks the server for the factor: a reattach to a
 -- character that stayed in the game runs no onLogin on the server. A hello too when the own level differs from the one
 -- of the last factor: the server sends a new factor at a level up (onAdvance), but a level lost (death, a removed
@@ -9,9 +9,6 @@ local OPCODE = 157
 
 local function apply(f)
   ChaosScale.factor = f
-  if SpellInfo then
-    ChaosScale.applySpells(SpellInfo, f)
-  end
 end
 
 local function onMessage(protocol, opcode, msg)

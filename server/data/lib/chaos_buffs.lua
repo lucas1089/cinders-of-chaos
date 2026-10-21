@@ -102,6 +102,9 @@ cond("divine_ward", "CONDITION_REGENERATION", 71005, "buff", "Lightward", "buff:
 cond("soul_aegis", "CONDITION_MANASHIELD", 71006, "buff", "Soulward", "buff:soul_aegis", "Damage is taken from mana first, and mana regenerates.", 30)
 cond("phantom_veil", "CONDITION_INVISIBLE", 71007, "buff", "Wraithshroud", "buff:phantom_veil", "You are invisible and faster.", 30)
 cond("dash", "CONDITION_HASTE", 71008, "buff", "Flickerdash", "buff:dash", "A short burst of speed.", 31)
+cond("tautstring", "CONDITION_ATTRIBUTES", 71072, "buff", "Tautstring", "buff:tautstring", "Your distance skill is higher.", 30)
+cond("ironhold", "CONDITION_ATTRIBUTES", 71073, "buff", "Ironhold", "buff:ironhold", "Your shielding is higher.", 30)
+cond("wildstride", "CONDITION_HASTE", 71074, "buff", "Wildstride", "buff:wildstride", "You run faster.", 31)
 cond("iron_will", "CONDITION_ATTRIBUTES", 71009, "buff", "Iron Will", "buff:iron_will", "Less damage taken and more shielding.", 30)
 cond("stealth", "CONDITION_INVISIBLE", 71010, "buff", "Shadow Veil", "buff:stealth", "Monsters lose you. Your first weapon hit out of it is a critical hit.", 30)
 cond("poison_blades", "CONDITION_ATTRIBUTES", 71011, "buff", "Poison Blades", "buff:poison_blades", "Your weapon hits poison the target.", 30)
@@ -170,7 +173,7 @@ source("catchup", "catchup", "buff", "Catch-up", "buff:catchup", "More experienc
 source("low_stamina", "catchup", "debuff", "Low Stamina", "buff:low_stamina", "Less experience and loot until your stamina comes back.", 42, {part = "low"})
 
 -- ---- engine conditions: buffs
--- the stock support spells (Haste, Strong Haste, Charge, Swift Foot) are haste conditions; the base scripts may give them
+-- the stock support spells (Haste, Strong Haste, Charge; Swift Foot was retired 2026-10-20) are haste conditions; the base scripts may give them
 -- a small sub id, so cond.subs lists the ones to look for (the first found is shown)
 cond("haste", "CONDITION_HASTE", 0, "buff", "Haste", "buff:haste", "You move faster.", 50,
 	{cond = {type = "CONDITION_HASTE", sub = 0, subs = {0, 1, 2, 3}, ids = {"CONDITIONID_COMBAT"}}})
@@ -180,7 +183,7 @@ cond("fed", "CONDITION_REGENERATION", 0, "buff", "Well Fed", "buff:fed", "Food m
 cond("manashield", "CONDITION_MANASHIELD", 0, "buff", "Magic Shield", "buff:manashield", "Damage is taken from mana first.", 50)
 cond("invisible", "CONDITION_INVISIBLE", 0, "buff", "Invisible", "buff:invisible", "Monsters cannot see you.", 50)
 cond("light", "CONDITION_LIGHT", 0, "buff", "Light", "buff:light", "You carry a light.", 55)
--- the stock attribute buffs (Bloodlust, Bulwark, Hawkeye, the party Communions) and the potions: sub ids 0-9 of the base
+-- the stock attribute buffs (Bloodlust, the party Communions; Hawkeye and Bulwark were retired 2026-10-20) and the potions: sub ids 0-9 of the base
 cond("spellbuff", "CONDITION_ATTRIBUTES", 0, "buff", "Spell Buff", "buff:spellbuff",
 	"A support spell or potion boosts your skills for a short time.", 50,
 	{cond = {type = "CONDITION_ATTRIBUTES", sub = 0, subs = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, ids = {"CONDITIONID_COMBAT"}}})

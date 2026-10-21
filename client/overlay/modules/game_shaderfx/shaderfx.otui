@@ -22,7 +22,7 @@ ChaosOrb < UIWidget
     anchors.horizontalCenter: parent.horizontalCenter
     anchors.verticalCenter: parent.verticalCenter
     text-auto-resize: true
-    font: verdana-11px-rounded
+    font: chaos-outline-11px
     color: #f0e8dc
     phantom: true
 

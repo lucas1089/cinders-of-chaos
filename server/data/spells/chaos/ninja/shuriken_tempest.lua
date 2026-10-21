@@ -1,6 +1,6 @@
 -- Shuriken Tempest: Shuriken Barrage's late sibling. A storm of shurikens at your target and up to 8 more monsters within
 -- 4 sqm of it, two ranged weapon strikes each, 0.5 s apart (shuriken power as Shuriken Toss, 1.1 times a Barrage strike).
--- 30 s cooldown. Other players are only
+-- 14 s cooldown (the cooldown ladder, 2026-10-20; was 30 s). Other players are only
 -- hit when they are the spell's target.
 dofile('data/spells/scripts/chaos/_common.lua')
 

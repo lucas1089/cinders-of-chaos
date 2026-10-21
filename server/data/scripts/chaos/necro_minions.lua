@@ -215,7 +215,19 @@ local function think(player, t)
 			local target = N.minionTarget(cpos, k.range, ownerTarget, info(c:getTarget()))
 			if target and target.creature ~= c and not (target.creature:getMaster() == player) then
 				M.nextHit[id] = t + k.intervalMs
-				hit(player, classKey, c, kind, target.creature, aura)
+				-- a minion's hit is no spell of the class's damage model: the class spell factor stays off
+				-- (spell_factor_core.lua)
+				local SF = ChaosSpellFactor
+				if SF then
+					SF.depth = (SF.depth or 0) + 1
+				end
+				local ok, err = pcall(hit, player, classKey, c, kind, target.creature, aura)
+				if SF then
+					SF.depth = SF.depth - 1
+				end
+				if not ok then
+					print("[ChaosNecro] minion hit: " .. tostring(err))
+				end
 			end
 		end
 	end

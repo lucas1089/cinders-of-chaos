@@ -25,10 +25,10 @@
 			<attribute key="shootEffect" value="earth"/>
 			<attribute key="areaeffect" value="carniphila"/>
 		</attack>
-		<attack name="speed" interval="2000" chance="10" radius="5" target="0" duration="12000" speedchange="-700">
+		<attack name="speed" interval="2000" chance="10" radius="5" target="0" duration="10000" speedchange="-700">
 			<attribute key="areaEffect" value="poff"/>
 		</attack>
-		<attack name="speed" interval="2000" chance="30" range="7" duration="12000" speedchange="-700">
+		<attack name="speed" interval="2000" chance="30" range="7" duration="10000" speedchange="-700">
 			<attribute key="areaEffect" value="redshimmer"/>
 			<outfit type="333"/>
 		</attack>

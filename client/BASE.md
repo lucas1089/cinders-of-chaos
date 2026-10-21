@@ -485,7 +485,9 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     (the server's use by id finds it anywhere carried). `ChaosPotionGate` (`game_helperrotation/potiongate.lua`) allows
     a probe every 3 s for an uncounted potion and waits 30 s after the server's "Sorry, not possible."; a counted potion
     is used as before. The Everfull potions also need server patch `0043` (use by look, Everfull first). The chain
-    `0001`-`0070` applied; the helper parses in LuaJIT and Lua 5.3. Not tried in a client run.
+    `0001`-`0070` applied; the helper parses in LuaJIT and Lua 5.3. Not tried in a client run. 2026-10-20: the gate
+    no longer takes a spell's "You do not have enough mana." for the probe's answer, and a probe answered "Using ..."
+    makes the item usable without the 3 s wait (overlay only, `MANIFEST.md` "Helper potions in closed backpacks").
 49. `0071` (Lua `modules/client_background/background.lua`, `casts.lua`): **the login screen's bottom bar shows only
     what it has.** Owner: the event schedule / boosted / casts bar stayed on the character select (over the play hint)
     and showed empty panels when nothing served `clientServicesLink`. `background.lua` adds `hasBoostedInfo()`; the
@@ -510,7 +512,7 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     Applies on top of `0001`-`0072`. Not tried in a client run.
 52. `0074` (`mods/game_helper/helper.lua`): **dying turns Auto Target and Magic Shooter off**. `onHelperDeath` calls
     `_Helper.disableCombatOnDeath`, which uses `pzDisableSystem` (checkbox, config flag, locked target, shortcut buttons).
-    Not tried in a client run.
+    Not tried in a client run. Superseded by `0086`: the settings are no longer switched off, only the attack stops.
 53. `0076` (`mods/game_helper/classes/auto_target.lua`): **Auto Target skips summons, effigies and decoys**.
     `isValidCreature` refuses creature types summon own / other and names with "effigy" or "decoy". Not tried in a client run.
 54. `0075` (Lua `modules/game_outfit/outfit.lua`): **cosmetic dropdowns in the Customise Character window**. Four guarded
@@ -576,7 +578,102 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     "+" stayed over borders, splitters and items, and a click on the target still ran the use; without a selection the
     borders show their arrows as before. The click that "did not work" was not reproduced on its own (a click on a
     target item worked with the arrow shown); it may have been a click on the 3 px border itself.
-62. `0084` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
+62. `0084` (Lua `mods/game_compendium/compendium.lua`): the Compendium's pages for the Chaos client. The window is
+    still reachable: `game_sidebuttons` stays loaded (the top menu only hides its window) and loads `game_compendium`
+    with its load-later list, and the keybind "Open Compendium" (Dialogs, no default key) opens it. The base pages
+    described a task shop with talismans and hunting points, Soul Seal, familiars and podiums, a right-side menu and
+    the 8.60 protocol; `0063` only fixed three of those lines. They now describe Hunt > Kill Tasks and Adventure >
+    Bounty Board (`game_bestiary`, `game_bounty`), Hunt > Task Tracker, System > Helper (the `0052` server-confirmed
+    rotation), Economy > Codex and Item Finder, the top menu (`client_chaos_topbar`), Hunt > Bestiary, Social > Patch
+    Notes and System > Report a Bug / Join Discord. The section titles are the window's button images and are
+    unchanged. `renderPage` shows each page through `tr()`; the pt-BR texts, with the window's own labels (Compendium,
+    Previous Page, Next Page), are in `client_chaos_locale/pt_br.lua`. Lua only; replaces the `0063` help text, so it
+    applies after `0001`-`0083` (the whole chain applied to the base archive; the patched file parses in LuaJIT and
+    Lua 5.3). Not run in a client yet.
+63. `0085` (Lua `modules/game_inventory/inventory.lua`): **capacity plate, digits only**. The plate's font,
+    `verdana-cap-bold`, has glyphs for the digits only (no `.`, `,` or letters; checked on its texture), so the short
+    number of `0073` ("14.2k") drew as "14 2". The plate shows the free capacity as plain digits (7 fit in the 50 px
+    label of `0073`); the tooltip keeps the grouped number. Applies after `0001`-`0084`.
+64. `0095` (Lua `mods/client_settings/settings.lua`): **no "Control Buttons" options page**. It listed the base client's
+    side buttons (Wheel of Destiny, Task Hunt, Prey, Reward Wall...), which the top menu bar replaced. The page is gone
+    from Interface, and the "Manage Control Buttons" hotkey opens the options window. Its other functions stay (they
+    return early when the page is not the selected one). Applies after `0001`-`0085` (`0086`-`0094` do not touch the
+    file).
+65. `0090` (Lua `modules/game_outfit/outfit.lua`, OTUI `data/styles/40-outfitwindow.otui`): **cosmetics inside Change
+    Appearance**. Owner, 2026-10-20: the Customise Character window was bad, every option should be in Change Appearance.
+    The separate Cosmetics panel of `0075` is gone; `game_outfitextras` adds one row per cosmetic (Wings, Outline,
+    Footprints, Kill effect, Loot label, Chat colour, Spell effect, Plate frame, Pet) under Preset, a radio and a value
+    box like the Aura and Preset rows. `outfit.lua` calls `attach` after the radio group exists and hands over `addRow`
+    (the group), `prepareList` (clears the right-hand list and covers the colours) and `syncOnlyMine`; selecting a
+    cosmetic row calls `show(key)`, search and "Only mine" re-show it, a base row first calls `leave()`. The window is
+    796 x 720 (was 756 x 565, 729 tall with the old panel): preview 517 x 180, Configure and Change Appearance from
+    y 214, 456 px tall, Change Appearance 367 wide with the value boxes at x 130 so the longer row names fit, the
+    right-hand list 585 px tall. Show Familiar is hidden when the packet has no familiars and `GamePlayerFamiliars` is
+    off (10.98); Show Floor moves into its place. Aura, Shader and Show Aura stay: the server sells auras and shaders
+    (they are greyed out only while the character owns none). Protocol unchanged. Applies after `0001`-`0085` (the
+    full chain applies to the base archive). Not tried in a client run.
+66. `0086` (Lua `mods/game_helper/helper.lua`): **a death keeps the helper's target options**. Owner beta, 2026-10-20:
+    "The target options still turn off when the player dies." Cause: `0074`'s `_Helper.disableCombatOnDeath` ran
+    `pzDisableSystem` for Auto Target and Magic Shooter (checkbox, config flag, shortcut buttons; the change was saved),
+    so both were off after every death. Now it only clears the locked target and cancels the attack. `0074`'s aim (no
+    hunting by itself in the temple after the respawn) holds through the protection zone: `handlePZState` pauses both
+    systems there without touching their settings, and they resume outside it as the player set them. `0074` stays (the
+    hook in `onHelperDeath`); `0086` replaces the body. Applies after `0001`-`0085` (checked: the chain `0001`-`0083` of
+    main, and `0001`-`0085` + `0090` + `0095` of the branch that adds `0084` / `0085`, each with `0086`, apply cleanly
+    on the base tree with `patch -p1 --forward`; the patched file parses in LuaJIT). Not tried in a client run.
+67. `0087` (OTUI `mods/game_lootsplitter/lootsplitter.otui`): **loot splitter Advanced Options button**. It used the base
+    blue button sheet (`/images/ui/buttons-blue`, not part of the Chaos skin), 83 px wide, so "Advanced Options" ran out
+    of a blue block. It is a plain themed button, 120 px wide. Applies after `0001`-`0086`.
+
+68. `0100` (C++ `src/client/animatedtext.h/.cpp`, `map.cpp`, `mapview.cpp`, `protocolgameparse.cpp`, `protocolgamesend.cpp`,
+    `const.h`, `luafunctions_client.cpp`; Lua `modules/gamelib/const.lua`, `mods/client_settings/classes/dataset.lua`,
+    `options/interface.otui`): **Typed impact numbers** (slice B of the damage number work; server src-patch `0051`,
+    server/README.md "Typed impact numbers"). Numbered 0100 to leave 0085-0099 to the patches in flight; renumber at
+    merge if needed. **Protocol:** the login capability byte gets bit 7 (`CHAOS_CAPABILITY_IMPACT_TEXT`); a server that
+    knows it answers with feature `GameChaosImpactText` (155, cleared before every login like the other announced
+    features). With 155 on, every damage, heal, mana and experience text message carries u16 percent (x100), u8 type,
+    u32 creature id after its value / colour pairs and before the text (and before the custom font string, a feature
+    this server never announces); without it the old layout is read. **Compatibility:** old client + new engine, and
+    new client + old engine, both keep the old layout and work; the new look needs both new parts in the same release
+    (the beta runs the engine of the release package). **Hook:** every number (damage, heal, mana, experience; also
+    against an old server, then with type 0, percent 0, creature 0) goes through
+    `g_map.onImpactText(animatedText, text, mode, typeId, value, percent, creatureId, pos)` before `g_map.addThing`; a
+    handler answering true drops it. `mode` is the client's `Otc::MessageMode` (21 damage dealt, 22 received, 23 heal,
+    24 experience, 25 damage others, 26 heal others, 27 experience others, 41 mana), not the 10.98 wire ids (23..29).
+    The other animated texts (packet 0x84, the server's labels) still only reach `g_map.onAnimatedText`.
+    **AnimatedText (Lua):** `setText`, `setColor` (palette byte), `setFont`, `setAnimationSpeed({x, y})` (a drift that
+    replaces the stock rise: pixels over the whole life), `getAnimationSpeed`, `hasCustomSpeed`, `setFadeStart(f)` /
+    `getFadeStart` (stock 1 / 1.2), `getDuration`, `setAttachedCreature` / `getAttachedCreature` (a weak pointer: a
+    removed creature is never kept alive), `setStackWithOtherTexts(false)` / `stacksWithOtherTexts` (no merge, no
+    side-by-side layout), `getImpactType` (-1 for a text that is not an impact number), `getImpactValue`,
+    `getImpactPercent`. Patch 0081's `setScatter` stays the random shift: it is added after the stacking offset, so the
+    stacking of `Map::addThing` never erased it here and the numbers keep stacking side by side. `merge()` (already
+    comparing fonts) also needs the same type, creature and stacking, so a crit or a tick is never summed into a plain
+    hit; the removal is scheduled at the text's own life. **Follow the creature:** feature
+    `GameChaosAttachedImpactText` (156, client only, `LastGameFeature` 157 in `const.h` and `const.lua`): `MapView`
+    draws an attached number at its creature's tile plus the creature's walk, elevation and jump (`getDrawOffset`,
+    `getJumpOffset`; the predicted tile for the local player), the same anchor as a tile number otherwise, so it glides
+    with the creature. When the creature is removed, hidden or on another floor the number stays where the creature
+    was last drawn (its own tile if never followed), no jump back. Option Options > Interface "Damage numbers follow the
+    creature" (`attachedImpactText`, on), in a new row after "Field timers"; its `apply` calls
+    `game_damagescatter.setAttached`, and the module sets the feature again at every game start (the features are reset
+    on every login). The overlay module `game_damagescatter` does the feel (MANIFEST "Typed impact numbers"). Applies
+    after `0001`-`0083` (`patch` clean, no fuzz, on the base files with all of them). **Built:** the whole client with
+    `0001`-`0083` and `0100` compiled and linked on Linux (CMake Release, `-DLUAJIT=ON`, g++ 13). Not run in a client
+    against a server.
+69. `0096` (Lua `modules/game_interface/gameinterface.lua`): **the saved side panel layout is restored window by
+    window**. At every login `onPlayerLoad` (fed by `game_sidebars`) closes every side panel window that is not
+    primordial, then, in one `addEvent`, reopens the saved ones in order through each module's `move`. Those calls had
+    no error isolation: a Lua error in one window's `move` ended the event and every window after it stayed closed
+    until the next login. The minimap ("Map View") is put in the rightmost side panel (`getRightPanel()`, the last one
+    restored), so it is the most exposed. Owner beta report 2026-10-20: the minimap window gone after a death (a fast
+    relog), back after a logout and login. Each saved entry (right, left, horizontal right, horizontal left) now goes
+    through `restoreEach`: `pcall`, a warning `[game_interface] restoring window <n> (<type>) failed: <error>`, then the
+    next window. Which window's `move` failed in the owner's client is not known (no client log); the warning names
+    it. `game_minimapsync` also puts the minimap back (`MANIFEST.md` "Minimap after a death"). Applies after
+    `0001`-`0095` and before `0100` (full chain on the base archive, `patch` clean); Lua only, parses in LuaJIT and
+    Lua 5.3. Not run in a client.
+70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base
     outfits.xml plus the class looks and exclusives `install_outfits.py` adds) have pattern Z 1: the class looks
@@ -586,8 +683,33 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     the mount is drawn and the standing frame (pattern Z 0) is lifted by the median shift of the seated frames of 48
     stock looks (top-left of the figure, north -9,-7; east -17,-6; south -6,-17; west -8,-9 px, times the offset
     factor). The legs stay straight and hang over the mount's side. Wings and the top aura take their mounted shifts
-    (`riding`). A look with pattern Z 2 draws exactly as before. Applies after `0001`-`0083`; the assembled
+    (`riding`). A look with pattern Z 2 draws exactly as before. Applies after `0001`-`0087` (numbered 0084 on main, renumbered 0088 when merged with the branch that already had a 0084); the assembled
     `outfit.cpp` passes `g++ -std=c++17 -fsyntax-only`. Not tried in a client run.
+71. `0101` (C++ `src/framework/core/application.h/.cpp`, `src/framework/luafunctions.cpp`, `src/main.cpp`; `init.lua`):
+    **a safe restart, and the update baseline field.** The base `Application::restart()` / `restartArgs()` started a
+    new process with `boost::process`, waited a second, then left with `::exit(0)` (`::quick_exit` on MSVC) from
+    inside the Lua call that asked for it (the updater's scheduled event). The HTTP worker (`g_http`, a
+    `std::thread`), the async dispatcher and the graphics threads still ran, so on Linux `::exit` ran the static
+    destructors over joinable `std::thread`s: `std::terminate`, abort (exit 134). The new client had already started,
+    so it "worked" in a manual run, but the old one dumped core: the `windows-package.yml` winpkg-47 start test died
+    that way after its updater applied the live winpkg-46 files (`Application::restart()` from Lua via
+    `ScheduledEvent`, `__cxxabiv1::__terminate`, `on_exit`). On Windows `quick_exit` skipped the abort but also
+    `onTerminate`, the module unloads and the config save. A child that died within the second hit
+    `g_logger.fatal`, which also calls `::exit`. Now: `restart()` / `restartArgs(args)` only record the request (the
+    exe: `/proc/self/exe` on Linux, the absolute `argv[0]` of the start elsewhere; the arguments: none / `args`) and
+    call `exit()`, the Exit button's path: the main loop ends, `main()` runs `shutdownApplicationRuntime()` (modules
+    unloaded, every thread joined, configs saved, Lua closed) and then `g_app.relaunchIfRequested()` starts the new
+    process (`posix_spawn` with the environment on Linux/macOS; `CreateProcessW` of `GetModuleFileNameW`, its folder
+    as working dir and arguments quoted for `CommandLineToArgvW` on Windows) and returns; `main()` returns 0. A
+    failed relaunch prints to stderr only (no Lua or logger callbacks are left) and the client stays closed. Browser
+    and Android unchanged. Lua: `g_app.canRestart()` (true) for feature detection (the updater restarts only on an exe
+    that has it, `MANIFEST.md` "Signed updater") and `g_app.isRestartRequested()`. `boost/process.hpp` is no longer
+    included in `application.cpp`. `init.lua`: `Services.update.baseline = 0`, the update version of the package's
+    own files, written by `tools/set_update_config.py --baseline` (the workflow's run number); the updater never
+    applies a manifest below it. Needs a new client build (exe): build 12. Applies after `0001`-`0100` (full chain on
+    the base archive, `patch` clean, no fuzz in the changed files); the three changed C++ files pass
+    `g++ -std=c++17 -fsyntax-only` against the patched tree (the Linux side; the Windows branch was not compiled here,
+    its argument quoting was checked on its own). Not built or run in a client.
 
 ### Helper Support spells: no base patch (`game_helpersupport`, 2026-10-18)
 The helper's Support tab (a list of support spells cast whenever they are off cooldown; `MANIFEST.md`, "Helper Support
@@ -599,7 +721,11 @@ base helper, which later patches must keep: the window ids `helperWindow`, `opti
 `settingsPanel`, when its own tab is pressed), and `_Helper.isHelperAutomaticFunctionsEnabled`, `getSpellDataById`,
 `isSpellOnCooldown`, `getRotation` (base patch 0052), `safeDoThing`; Auto setup also uses `_Helper.Timer.getRules` and
 `cooldownToMs`. If the helper gets a tab or a panel id of its own with a later patch, add it to `PANEL_IDS` / `TAB_IDS`
-in `supportspells_ui.lua`.
+in `supportspells_ui.lua`. It also calls the helper's global `onHelperViewportChange` (the tab buttons are refitted to
+the bar's width once its tab is added). Checked against the chain up to `0086` (2026-10-20): no later patch renames or
+moves any of these ids (only `0015` touches the tab bar, before the module existed). The owner's "the Support tab does
+not open" was not an id: the module imported its styles at load (autoload priority 100), before `client_styles`
+defines `Panel`, so only the tab style existed and the panel was never made (`MANIFEST.md` "Helper Support spells").
 
 ### Names check of the assembled client
 

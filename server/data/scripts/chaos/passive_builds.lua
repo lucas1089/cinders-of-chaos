@@ -10,13 +10,15 @@
 --                     autobuildApply {build, mode = "add" | "reset", cost}
 --                                                       -> autobuildApplied {message, applied, skipped, removed} or
 --                                                          autobuildError {message}; sendNodes, sendPoints, respecInfo follow
+--                     a preview that cannot be made answers autobuildError {message, build, retry} (retry: too fast, ask again)
 --   server -> client  {"action":"autobuildList","data":{group, builds = [{id, name, text, summary, points, fit}], owned,
 --                      held, free, cap}}
 --                     {"action":"autobuildPreview","data":{build, name, owned, held, add = {nodes, added, skipped},
 --                      reset = {nodes, added, skipped, removed, cost, free}, masteries}}   (nodes = the whole allocation)
 -- Rules: "add" only adds the missing nodes, free; it never takes anything back. "reset" is the tree's Reset and apply: the
 -- full reset price of respec.lua (free below its level and once after a class change) when it takes nodes back; it uses
--- respec.lua's pay / useFree, never its own price. At most one request a second (ratelimit.lua).
+-- respec.lua's pay / useFree, never its own price. At most one Apply a second and one preview per previewRateMs
+-- (ratelimit.lua, separate limits); a refused preview is answered, never dropped.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -57,12 +59,19 @@ local function getData()
 	return data
 end
 
-local function fail(player, text)
-	Chaos.send(player, OPCODE, "autobuildError", {message = text})
+-- extra: for a preview {build = the asked id, retry = true when the client should simply ask again}
+local function fail(player, text, extra)
+	local out = {message = text}
+	for k, v in pairs(extra or {}) do
+		out[k] = v
+	end
+	Chaos.send(player, OPCODE, "autobuildError", out)
 end
 
-local function limited(player)
-	return ChaosRateLimit and not ChaosRateLimit.allow(player, "passivetree.autobuild", cfg.rateMs or 1000)
+-- Apply and the preview have their own limits: the client asks for a fresh preview right after an Apply (the list
+-- comes back), and a shared limit dropped that request without an answer
+local function limited(player, key, ms)
+	return ChaosRateLimit and not ChaosRateLimit.allow(player, key, ms)
 end
 
 -- the state of the character: {classKey, active row, current ids, masteries, points}
@@ -154,15 +163,19 @@ local function countWhy(plan, why)
 end
 
 -- ------------------------------------------------------------------------------------------------ preview
-ChaosPassiveTree.extraActions.autobuildPreview = function(player, data)
-	if limited(player) then
-		return true
+-- Every request gets an answer (autobuildPreview or autobuildError {message, build, retry}): the client waits for one
+-- and showed "Asking the server for a preview..." for good when a request was dropped.
+local function preview(player, data)
+	local asked = type(data) == "table" and type(data.build) == "string" and #data.build <= 60 and data.build or nil
+	if limited(player, "passivetree.autobuildPreview", cfg.previewRateMs or 500) then
+		fail(player, Chaos.t(player, "Too fast: wait a moment and pick the build again."), {build = asked, retry = true})
+		return
 	end
 	local st = state(player)
 	local build, err = pick(player, st, type(data) == "table" and data.build or nil)
 	if not build then
-		fail(player, err)
-		return true
+		fail(player, err, {build = asked})
+		return
 	end
 	local add, reset = planFor(st, build, false), planFor(st, build, true)
 	local cost, free = respecPrice(player)
@@ -185,6 +198,15 @@ ChaosPassiveTree.extraActions.autobuildPreview = function(player, data)
 		build = build.id, name = entry and Chaos.t(player, entry.name) or build.id, owned = st.points, held = #st.current,
 		wanted = #build.order, add = side(add, {masteries = masteries}), reset = resetSide
 	})
+end
+
+ChaosPassiveTree.extraActions.autobuildPreview = function(player, data)
+	local ok, err = pcall(preview, player, data)
+	if not ok then
+		print("[Chaos] autobuildPreview failed for player " .. tostring(player:getGuid()) .. ": " .. tostring(err))
+		local asked = type(data) == "table" and type(data.build) == "string" and #data.build <= 60 and data.build or nil
+		fail(player, Chaos.t(player, "The preview could not be made. Try another build or try again later."), {build = asked})
+	end
 	return true
 end
 
@@ -257,7 +279,7 @@ ChaosPassiveTree.extraActions.autobuildApply = function(player, data)
 		fail(player, Chaos.t(player, "Malformed request."))
 		return true
 	end
-	if limited(player) then
+	if limited(player, "passivetree.autobuild", cfg.rateMs or 1000) then
 		fail(player, Chaos.t(player, "Too fast: wait a moment and apply again."))
 		return true
 	end

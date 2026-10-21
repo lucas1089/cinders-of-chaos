@@ -68,11 +68,15 @@ MainWindow
     anchors.right: listLoot.right
     margin-right: -7
 
+  // the right column is 160 px wide: the prompt wraps inside it (it ran past the window's edge)
   Label
     id: lbl
     anchors.top: parent.top
     anchors.left: lootScrollBar.right
+    anchors.right: parent.right
     margin-left: 20
+    height: 30
+    text-wrap: true
     !text: tr('Write an item SID or name:')
 
   TextEdit
@@ -102,6 +106,7 @@ MainWindow
     anchors.left: lbl.left
     margin: 10 0 0 0
     color: red
+    font: verdana-11px-rounded
     !text: tr('Clear List')
 
   Label

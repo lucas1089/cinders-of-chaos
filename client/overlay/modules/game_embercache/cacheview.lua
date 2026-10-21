@@ -87,8 +87,24 @@ V.SOURCES = {
   descent = 'An Ember Descent run', tower = 'An Infinity Tower run', bounty = 'A bounty done', task = 'A kill task done',
   worldboss = 'A world boss', raid = 'An Ashen Sepulchre boss', omen = 'An Omen guardian', trial = 'A Vocation Trial run',
   invasion = 'An invasion fought', pvp = 'A battleground or a siege', goblin = 'A treasure goblin',
-  craft = 'A crafting orb used'
+  craft = 'A crafting orb used', offering = 'Junk orbs offered (the button below)'
 }
+
+-- the Offer junk orbs confirmation (server action 'offer': {orbs, points, room, per, carried}). Returns
+-- {text = {pattern, args...}, can = bool}: can is false when there is nothing to offer (the box only says why)
+function V.offer(q)
+  q = tbl(q)
+  local per = math.max(1, int(q.per))
+  if int(q.room) <= 0 then
+    return { text = { 'The Ember Cache takes no more junk orbs today. More tomorrow.' }, can = false }
+  end
+  if int(q.points) <= 0 then
+    return { text = { 'You carry %d junk orbs: at least %d make an Ember point (locked orbs do not count).', int(q.carried), per },
+      can = false }
+  end
+  return { text = { 'Offer %d junk orbs for %d Ember points? They are destroyed. (%d orbs a point, %d points left today)',
+    int(q.orbs), int(q.points), per, int(q.room) }, can = true }
+end
 
 -- one line per source: {label, points text, cap text or nil}
 function V.sources(src)

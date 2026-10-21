@@ -1,4 +1,8 @@
 GetItems < MiniPanel
+  // base values of what a state below changes: a state style is not undone when the state ends (only the base
+  // style's own values come back)
+  image-color: #ffffff
+  opacity: 1
   @onClick: modules.game_daily.selectItem(self:getId())
 
   $hover !disabled:

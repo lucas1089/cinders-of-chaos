@@ -77,10 +77,13 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 217 | Lightward | `tor sol ghar` | R, D, BM | 140 | 300 | 30s | Cleanses harmful conditions (incl. paralyze) and gives 8s of strong health/mana regeneration. |
 | 218 | Final Verdict | `kah gal sol judh` | D | 200 | 450 | 14s | Heavy holy strike (distance skill); +50% damage against targets under 25% health. |
 | 219 | Hail of Dawn | `drai gal vas sol volv` | R, D | 280 | 800 | 24s | **Cast time 1 s.** 3 volleys of 4 holy arrows, every arrow strikes the target (distance skill). |
+| 135 | Tautstring | `vyr sag` | R, D, BM | 60 | 300 | 30s | +25% distance skill for 12s; nothing else (no slow, no lock). In place of the stock Hawkeye, retired 2026-10-20 ("Tautstring" below). |
+| 134 | Wildstride | `ruan vert` | R, D, BM | 55 | 150 | 30s | +50% speed (0.5 x speed - 40, own sub id: adds to Haste) for 12s; no pacify, no lock. In place of the stock Windrunner, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | **knight** | | | | | | | |
 | 220 | Reaping Gyre | `kah spir` | W, J, B | 30 | 30 | 6s | Three spinning strikes (0/0.4/0.8s) against adjacent enemies; uses weapon attack and skill. |
 | 221 | Earthbreaker | `kah grund krak` | W, J, B | 60 | 50 | 10s | Shockwave (5x5) with physical damage; staggers enemies (60% slow, 3s). |
 | 222 | Red Frenzy | `vyr ira cruor` | W, J, B | 100 | 300 | 40s | +30% melee skill, -30% shield skill for 12s. |
+| 132 | Ironhold | `tor brak` | W, J, B | 55 | 200 | 30s | +40% shielding for 12s; no pacify, no lock. In place of the stock Bulwark, retired 2026-10-20 ("Ironhold and Wildstride" below). |
 | 223 | Iron Bellow | `vok vas rhov` | W, J | 120 | 200 | 20s | Taunts all monsters within 4 sqm and slows them 25% for 6s; Iron Will: you take 25% less damage and get +15% shielding for 8s. |
 | 224 | Vaulting Cleave | `kah brak skai` | W, J, B | 170 | 250 | 12s | Jump next to the target and strike it with weapon attack and skill. |
 | 225 | Colossus Fall | `kah gal vas tyr` | W, J, B | 260 | 400 | 30s | **Cast time 1 s** (wind-up). Two crushing blows (0/0.6s) in a 7x7 circle; enemies slowed 70% for 4s. |
@@ -382,7 +385,7 @@ Beastmaster's Wild Bond (heals companions only) and the Bone Lord's banner (mini
 | 1000 | Thief line (Shadow Mend) | 0 | 10.0 | 0 | 0 | 1201 | 0 |
 | 1000 | Warrior line | 0 | 0.0 | 0 | 0 | 733 | 0 |
 
-**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 2% of the maximum mana, cooldown 1.5 s (2 s until 2026-10-20), healing group 1 s; Thief,
+**Shadow Mend** (spell 98, `saen umh`, the Thief line's self heal; level 25, 40 mana (2% of the maximum mana until 2026-10-21), cooldown 1.5 s (2 s until 2026-10-20), healing group 1 s; Thief,
 Ninja, Samurai): level x 0.5 + magic level x 20 + 5% of the maximum health (+-10%; it was level + magic level x 10 + 4%), x1.3 while Shadow Veil is up; healing does not
 end the veil (`Chaos.classes.shadowMend`, `ChaosClasses.shadowMendRange`, script `chaos/thief/shadow_mend.lua`). Id 98 is free in
 the base server's spells.xml, the client's stock spell list and the Chaos block. Measured on the test server by its words in the
@@ -394,6 +397,9 @@ the Royal Paladin's. The cost is `manapercent="2"` (2% of the maximum mana; it w
 far above every other class at level 1000): measured 72 mana at level 300 (3612 mana) and 240 at level 1000 (12012 mana), so
 12.9 / 10.0 healed per mana, about the Mystic's stock heals (10.2 / 14.1). The client shows the current cost
 (`game_chaosspells` keeps the entry's mana at 2% of the player's maximum mana; the spellbook shows "2%").
+**Since 2026-10-21 the cost is a flat 40 mana** at every level ("Fixed spell costs" below: no spell costs a share of
+the maximum mana any more): 28.1 / 57.2 healed per mana at level 300 / 1000 (`rotation_sim.py --heal`), 1600 mana a
+minute on every cooldown, 14% of a level-25 Thief's pool of 285.
 
 **Shadow Mend rebalance (C5, 2026-10-20).** Report: "the Thief's healing is too low". Measured with
 `python3 -I server/tools/rotation_sim.py --heal` (the new mode: the formula of `chaos_constants.lua`, the cooldown and
@@ -414,7 +420,8 @@ After: +67% at level 300, +35% at level 1000; level 300 within 6% of the Ranger 
 1000 above it (+29%) and still 34% under the Illusionist (who also heals the party). The mana cost stays 2% of the pool: the
 mana per minute rises with the faster cooldown, 2428 of a 3035 pool at level 300 (a Thief that only heals runs out after ~75 s,
 and the attack rotation of `--mana` still runs 83 s). Test: `server/tests/class_kit_test.lua` (Ranger line floor, Illusionist
-ceiling, cooldown 1500). Not re-measured in the game client after the change.
+ceiling, cooldown 1500). Not re-measured in the game client after the change. (The cost columns above are the 2% of
+that pass; since 2026-10-21 a cast costs 40 mana: "Fixed spell costs".)
 
 Before -> after for the Illusionist: on another player +14% / +23% (level 300 / 1000), the party +12% / +18%, heal per mana up,
 self heal unchanged. Lead after: on another player +22% / +33% over the next class (the Mystic and the Necromancer line share the
@@ -2172,6 +2179,56 @@ game): one-handed users (Thief line, Templar line, Warrior with a shield) are un
 a little more early. The Warrior's best two-handed at 300 goes 500 / 1096 -> about 475 / 1041 (1 / 5 targets). Measure again in
 game with the next "Weapon (auto attack)" run; no keystone or spell number changed.
 
+### Weapon damage and skills (2026-10-20; owner: "faça o dano das armas/auto attack escalar com as skills dos players"; computed)
+
+**The audit** (server/README.md "Weapon damage scales with skills"): swords, axes, clubs, distance weapons and the fist already
+scaled with their skill through the engine's `Weapons::getMaxWeaponDamage` (`level / 5 + (skill / 4 + 1) x attack / 3 x
+1.03`; no src-patch changes it): at the typical skills below the skill term is 94% of the maximum hit at level 50, 89% at 300
+and 79% at 1000, and +10 skill is +19% / +8% / +5% damage there. Wands and rods did not scale at all: a flat roll over the
+weapons.xml `min .. max`. **Change:** a wand or rod hit x `(magic level + 20) / (typical magic level + 20)` (0.5 .. 2.0,
+`weapon_skill_core.lua`, `weapon_skill_config.lua`); the physical weapons are unchanged.
+
+**The table** (`python3 -I server/tools/weapon_sim.py --skills`): the mean hit of one auto attack, offensive stance, a
+monster that does not defend, no class factor (`meleeDamage` / `distDamage`, passive tree and keystones multiply before and
+after alike). Typical stats: skill 10 at level 1, 80 at 100, 110 at 300, 125 at 600, 140 at 1000; magic level 0 at level 8,
+60 at 100, 100 at 300, 120 at 600, 140 at 1000 (the C4 measurement, `rotation_sim.py` ANCHORS). Attack: the gear sets'
+tier (`install_gear_sets.py` CURVES; two-handed + 3 and the level's style factor, launchers x1.6 and their hit chance, the
+Monk's fist 40 + 0.025 per level, wands the sets' mean wand damage).
+
+| Weapon type (classes) | Level | Typical skill / magic level | Mean hit before | after | after at 0.8x the stat | after at 1.2x | before at 0.8x / 1.2x |
+|---|---|---|---|---|---|---|---|
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 50 | 45 | 88 | 88 | 73 | 104 | 73 / 104 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 150 | 88 | 202 | 202 | 166 | 237 | 166 / 237 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 300 | 110 | 280 | 280 | 232 | 328 | 232 / 328 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 500 | 120 | 339 | 339 | 283 | 395 | 283 / 395 |
+| one-handed melee (Warrior, Juggernaut, Thief line, Templar line) | 1000 | 140 | 477 | 477 | 404 | 550 | 404 / 550 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 50 | 45 | 143 | 143 | 118 | 167 | 118 / 167 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 150 | 88 | 324 | 324 | 267 | 381 | 267 / 381 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 300 | 110 | 448 | 448 | 371 | 526 | 371 / 526 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 500 | 120 | 543 | 543 | 452 | 633 | 452 / 633 |
+| two-handed melee (Berserker (and any melee class with two hands)) | 1000 | 140 | 761 | 761 | 643 | 879 | 643 / 879 |
+| bow / crossbow (Ranger line) | 50 | 45 | 133 | 133 | 112 | 155 | 112 / 155 |
+| bow / crossbow (Ranger line) | 150 | 88 | 461 | 461 | 381 | 540 | 381 / 540 |
+| bow / crossbow (Ranger line) | 300 | 110 | 630 | 630 | 526 | 733 | 526 / 733 |
+| bow / crossbow (Ranger line) | 500 | 120 | 759 | 759 | 641 | 876 | 641 / 876 |
+| bow / crossbow (Ranger line) | 1000 | 140 | 1068 | 1068 | 921 | 1215 | 921 / 1215 |
+| fist (Monk line (no weapon)) | 50 | 45 | 91 | 91 | 76 | 107 | 76 / 107 |
+| fist (Monk line (no weapon)) | 150 | 88 | 187 | 187 | 154 | 220 | 154 / 220 |
+| fist (Monk line (no weapon)) | 300 | 110 | 262 | 262 | 218 | 307 | 218 / 307 |
+| fist (Monk line (no weapon)) | 500 | 120 | 330 | 330 | 276 | 384 | 276 / 384 |
+| fist (Monk line (no weapon)) | 1000 | 140 | 471 | 471 | 398 | 543 | 398 / 543 |
+| wand / rod (Mystic line, Necromancer line) | 50 | 27 | 40 | 40 | 35 | 45 | 40 / 40 |
+| wand / rod (Mystic line, Necromancer line) | 150 | 70 | 74 | 74 | 62 | 85 | 74 / 74 |
+| wand / rod (Mystic line, Necromancer line) | 300 | 100 | 92 | 92 | 76 | 107 | 92 / 92 |
+| wand / rod (Mystic line, Necromancer line) | 500 | 113 | 101 | 101 | 84 | 119 | 101 / 101 |
+| wand / rod (Mystic line, Necromancer line) | 1000 | 140 | 118 | 118 | 97 | 139 | 118 / 118 |
+
+At the typical stat every type deals what it dealt before (no balance jump, no class total changes); a character above the
+typical skill or magic level of its level hits harder, one below it hits less, for every weapon type now. The wand rows were
+flat before (the "before at 0.8x / 1.2x" column); now 0.8x the magic level is 12-18% less and 1.2x is 12-18% more, close to
+the melee slope (15-18%). A Mystic or Necromancer at level 8 with magic level 0 (a new character) hits as before. Not
+measured in game.
+
 ### Area damage is uniform (2026-10-20; owner decision; computed with rotation_sim.py, not measured in game)
 
 Owner: "o dano de skills AoE deve ser IGUAL em toda a area e igual ao dano single-target (sem queda por alvo/distancia);
@@ -2247,6 +2304,561 @@ stronger, so the picker takes another set of 5. The "every spell" columns are th
   asserts it. Fan of Knives and Blade Flurry are already uniform.
 - Sanctified Ground, Consecration and the other pulse spells: the pulses add up to one hit; no split between targets.
 
+### Tautstring (2026-10-20; owner decision after the beta report "the auto attack stops"; computed, not measured in game)
+
+The stock Sharpshooter (Hawkeye, `utito tempo san` / `vyr ira sol`, id 135, level 60, 450 mana) is retired
+(`tools/retire_cure_spells.py`, server/README.md "Hawkeye retired, Tautstring"): +50% distance skill for 10 s, cooldown 2 s,
+support group 10 s and the healing group 10 s, and a 70% slow on the caster for the whole time. Kept up by the helper it
+was +50% at all times, paid with no healing spells and the slow; the slow is the likely reason the bow stopped.
+
+Tautstring (id 135, `vyr sag`, level 60, 300 mana, cooldown 30 s, support group 2 s): +25% distance skill
+(`SKILL_DISTANCEPERCENT` 125) for 12 s. Measured against the other fight buffs:
+
+| Buff | Class | Level | Mana | Effect | Uptime | Mean gain | Price |
+|---|---|---|---|---|---|---|---|
+| Red Frenzy | W, J, B | 100 | 300 | +30% melee skill, 12 s / 40 s | 30% | +9% melee skill | -30% shielding while it runs |
+| Banner Call | all | 60 | 250 | +10% melee / distance / magic, 12 s / 35 s | 34% | +3.4% | - |
+| Tautstring | R, D, BM | 60 | 300 | +25% distance skill, 12 s / 30 s | 40% | +10% distance skill | - |
+| Hawkeye (retired) | R, D, BM | 60 | 450 | +50% distance skill, 10 s / 10 s | 100% | +50% | no healing spells, 70% slow |
+
+Distance weapon damage grows about linearly with the skill (the level term is level / 5), so +25% skill is about +20-24%
+weapon damage while it runs (Dawnpiercer and the other distance-skill spells gain the same share of their skill part),
+about +9% over a fight: the same as Red Frenzy's mean for the Warrior line and without its shielding price. 300 mana is
+a third of a level 60 Ranger's pool (about 900), 10 mana a second over its cooldown. The Banner Call stacks with it (own
+sub ids 71003 / 71072). Not measured in game; `server/tests/tautstring_test.lua` checks the cast on a mocked player.
+
+### Ironhold and Wildstride (2026-10-20; owner: "pode trocar essas duas também"; computed, not measured in game)
+
+The stock Protector (Bulwark, `utamo tempo` / `tor ira`, id 132, Warrior line, level 55, 200 mana, cooldown 2 s) and Swift
+Foot (Windrunner, `utamo tempo san` / `tor ira sol`, id 134, Ranger line, level 55, 400 mana, cooldown 2 s) are retired
+(`tools/retire_cure_spells.py`, server/README.md "Bulwark and Windrunner retired, Ironhold and Wildstride"). Protector:
++120% shielding for 13 s; Swift Foot: haste 0.8 x speed - 64 for 10 s. Both add `CONDITION_PACIFIED` for 10 s (no auto
+attack, no attack spell) and a 10 s attack group cooldown. Kept up by the helper (Protector was an Auto setup timer), the
+Warrior had +120% shielding and no attacks at all.
+
+Ironhold (id 132, `tor brak`, W / J / B, level 55, 200 mana, cooldown 30 s, support group 2 s): +40% shielding
+(`SKILL_SHIELDPERCENT` 140) for 12 s, sub id 71073. Wildstride (id 134, `ruan vert`, R / D / BM, level 55, 150 mana,
+cooldown 30 s, support group 2 s): haste 0.5 x speed - 40 for 12 s, sub id 71074, so it adds to the Haste the helper's
+Tools tab keeps up (0.3 x speed - 24): together 0.8 x speed - 64, Swift Foot's number, for 12 s of every 30.
+
+| Buff | Class | Level | Mana | Effect | Uptime | Mean gain | Price |
+|---|---|---|---|---|---|---|---|
+| Iron Will (Iron Bellow) | W, J | 120 | 200 | -25% damage taken, +15% shielding, 8 s / 20 s | 40% | -10% damage taken, +6% shielding | a taunt with it |
+| Red Frenzy | W, J, B | 100 | 300 | +30% melee skill, -30% shielding, 12 s / 40 s | 30% | +9% melee skill | -9% shielding |
+| Ironhold | W, J, B | 55 | 200 | +40% shielding, 12 s / 30 s | 40% | +16% shielding | - |
+| Bulwark (retired) | W, J, B | 55 | 200 | +120% shielding, 13 s / 2 s | 100% | +120% shielding | no attacks while it ran |
+| Wildstride | R, D, BM | 55 | 150 | +0.5 x speed, 12 s / 30 s | 40% | +0.2 x speed | - |
+| Windrunner (retired) | R, D, BM | 55 | 400 | +0.8 x speed, 10 s / 2 s | 100% | +0.8 x speed | no attacks while it ran |
+
+Shielding: the skill counts x1.4 while Ironhold runs (block chance and defence follow the skill). Red Frenzy's -30% runs
+on top of it (own sub ids 71002 / 71073: +10% net), so the two can be cast together. Speed (engine base speed 220 + 2 per
+level, 328 at level 55): Haste alone about 400, Haste and Wildstride about 525 for 12 s, Strong Haste (which the Ranger
+line lacks) about 500, the retired Swift Foot 526 (it replaced the Haste). 150 mana is about a sixth of a level 55
+Ranger's pool, 5 mana a second over its cooldown. Neither is measured in game;
+`server/tests/ironhold_wildstride_test.lua` checks both casts on a mocked player.
+
+### Spell cap (2026-10-20; owner: "mysthic tem magias demais. abaixe pra 15"; computed with rotation_sim.py, not measured in game)
+
+Every class keeps at most 15 spells of its own (docs/CLASSES.md "Spell cap": kits, counts, what each class dropped;
+server/README.md "Spell cap": the install tool). The best attack set of at most 5 (`rotation_sim.py --report`, 1 target
+and the 5-dummy pack, damage per second of spells only) before and after, at levels 100 / 300 / 1000; every row not
+listed is unchanged (Warrior, Juggernaut, Ranger, Deadeye, the Thief, Monk, Necromancer and Templar lines):
+
+| Class | Level | 1 target before -> after | 5 targets before -> after | gap | set after |
+|---|---|---|---|---|---|
+| Berserker | 1000 | 527 -> 568 (+8%) | 1951 -> 1866 (-4%) | 2.0 -> 4.0 | Rampage Leap > Skyfall Cleave > Reaping Gyre > Butcher's Gyre > Headsman's Hurl |
+| Beastmaster | 100 | 130 -> 130 (+0%) | 469 -> 437 (-7%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer |
+| Beastmaster | 300 | 246 -> 246 (+0%) | 921 -> 833 (-9%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer |
+| Beastmaster | 1000 | 483 -> 483 (+0%) | 1690 -> 1619 (-4%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer |
+| Mystic | 300 | 516 -> 502 (-3%) | 1423 -> 1442 (+1%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Arcane Ripple > Shattered Psyche > Bewitching Hex |
+| Mystic | 1000 | 577 -> 682 (+18%) | 2413 -> 2506 (+4%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche |
+| Elementalist | 100 | 168 -> 166 (-1%) | 752 -> 734 (-2%) | 4.0 -> 2.0 | Tempest Fan > Rime Bloom > Forked Storm > Pyre Torrent |
+| Illusionist | 1000 | 722 -> 753 (+4%) | 2395 -> 2090 (-13%) | 4.0 -> 2.0 | Tear in the Weave > Nightburst > Arcane Ripple > Shattered Psyche > Bewitching Hex |
+
+- Beastmaster: Radiant Shard and Skewering Line went (its 15 are the Ranger kit plus the companion spells): -4 to -9% on
+  the pack, one target unchanged.
+- Mystic at 1000: Briar Prison (from the Illusionist) and Blightswarm replace the retired Quakeburst and Bramble Fan:
+  +18% on one target, +4% on the pack.
+- Illusionist at 1000: Briar Prison moved to the Mystic; Bewitching Hex takes its place: -13% on the pack, +4% on one
+  target, the gap 4 s -> 2 s. Its role is the healer.
+- Berserker at 1000: with the retired stock spells out of the 10 candidates the search tries, it finds Skyfall Cleave
+  and Headsman's Hurl in place of Colossus Fall and Scything Arc (score = 1 target + 0.25 x pack: 1015 -> 1034); the
+  4 s gap is Headsman's Hurl's 4 s attack group lock, as the Warrior line already had at 300.
+- Elementalist at 100: Infernal Heart (retired) left the set: -1 / -2%, the gap 4 s -> 2 s (its 4 s group lock is gone).
+- Mana runway (`rotation_sim.py --mana --check`): every class still runs 15 s or more at levels 8-300.
+
+### Cooldown ladder (2026-10-20; owner: "faça todas as magias de ataque terem 2s de diferença ... da mais fraca pra mais forte"; computed with rotation_sim.py, not measured in game)
+
+The rule and the ladder of every class: docs/CLASSES.md "Cooldown ladder" (`rotation_sim.py --ladder`). Every attack
+spell's cooldown is its rung x 2 s; the group cooldown 2 s everywhere; damage per cast unchanged. 58 spells changed
+(seconds, before -> after):
+
+Primordial Squall 35 -> 8; Pack Frenzy 20 -> 6; Consecration 20 -> 6; Glacial Doom 60 -> 20; Judgement 12 -> 4; Tear in
+the Weave 40 -> 14; Doomtide 45 -> 18; Nightburst 25 -> 10; Radiant Shard 26 -> 12; Colossus Fall 30 -> 14; Shuriken
+Tempest 30 -> 14; Feral Command 8 -> 4; Rime Bloom 8 -> 4; Withering Curse 8 -> 4; Bone Offering 12 -> 6; Sanctified
+Ground 8 -> 4; Shield Wave 8 -> 4; Frozen Crypt 30 -> 16; Blessed Earth 24 -> 14; Anvil Fall 20 -> 12; Scything Arc 6 ->
+4; Vaulting Cleave 12 -> 8; Hail of Dawn 24 -> 16; Twin Verdict 24 -> 16; Corpse Explosion 6 -> 4; Falling Pyre 20 ->
+14; Briar Prison 14 -> 10; Blightswarm 8 -> 6; Life Siphon 8 -> 6; Whirling Heel 8 -> 6; Shadow Ricochet 8 -> 6; Iron
+Chain 8 -> 6; Purging Nova 8 -> 6; Rampage Leap 18 -> 14; Earthbreaker 10 -> 8; Shuriken Barrage 10 -> 8; Headsman's
+Hurl 18 -> 16; Forked Storm 7 -> 8; Shadowfist Flurry 12 -> 14; Iaijutsu 10 -> 12; Skewering Line 8 -> 10; Blade Flurry
+8 -> 10; Iron Palm 8 -> 10; Soul Rot 6 -> 8; Bewitching Hex 4 -> 6; Tempest Fan 8 -> 12; Shadow Step 8 -> 12; Fan of
+Knives 6 -> 10; Umbral Stride 8 -> 14; Butcher's Gyre 6 -> 12; Snare Trap 2 -> 4; Dawnpiercer 3 -> 6; Sanctum Burst 4 ->
+8; Witchfire Bolt 4 -> 8; Shattered Psyche 6 -> 12; Sundering Palm 6 -> 12; Pressure Points 4 -> 8; Seeker Mine 2 -> 6.
+
+Two base scripts set their own cooldown condition after the cast (`patch_spell_timings.py` `SCRIPT_COOLDOWNS` now writes
+the csv cooldown into them): Radiant Shard had 26 s hard-coded, Headsman's Hurl `(18000 * 1000)` ms, five hours, next to
+its 18 s in `spells.xml` (the engine keeps the longer of two cooldown conditions of one spell, so the throw was most
+likely once per five hours in game; not checked live).
+
+The best set of at most 5 (`rotation_sim.py --report`: 1 target and the 5-dummy pack, spell damage per second) before
+(after the 15-spell cap) and after the ladder:
+
+| Class | Level | 1 target before -> after | 5 targets before -> after | gap | set after |
+|---|---|---|---|---|---|
+| Warrior | 100 | 144 -> 134 (-7%) | 534 -> 502 (-6%) | 2.0 -> 2.0 | Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker |
+| Warrior | 300 | 304 -> 336 (+11%) | 994 -> 1197 (+20%) | 4.0 -> 2.0 | Colossus Fall > Earthbreaker > Scything Arc > Headsman's Hurl > Vaulting Cleave |
+| Warrior | 1000 | 540 -> 576 (+7%) | 1674 -> 2066 (+23%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 100 | 144 -> 134 (-7%) | 534 -> 502 (-6%) | 2.0 -> 2.0 | Butcher's Gyre > Earthbreaker > Reaping Gyre > Scything Arc > Bonebreaker |
+| Juggernaut | 300 | 304 -> 329 (+8%) | 994 -> 1176 (+18%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 1000 | 516 -> 567 (+10%) | 1887 -> 2292 (+21%) | 2.0 -> 4.0 | Colossus Fall > Anvil Fall > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 100 | 149 -> 137 (-8%) | 605 -> 541 (-11%) | 2.0 -> 2.0 | Butcher's Gyre > Skyfall Cleave > Earthbreaker > Scything Arc > Bonebreaker |
+| Berserker | 300 | 309 -> 326 (+5%) | 1020 -> 1302 (+28%) | 4.0 -> 4.0 | Colossus Fall > Skyfall Cleave > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 1000 | 568 -> 575 (+1%) | 1866 -> 2335 (+25%) | 4.0 -> 4.0 | Colossus Fall > Rampage Leap > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Ranger | 100 | 130 -> 117 (-10%) | 469 -> 361 (-23%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin |
+| Ranger | 300 | 512 -> 640 (+25%) | 1139 -> 1076 (-6%) | 2.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Ranger | 1000 | 1167 -> 1513 (+30%) | 2374 -> 2300 (-3%) | 2.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Deadeye | 100 | 130 -> 117 (-10%) | 469 -> 361 (-23%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Skewering Line > Dawnpiercer > Phantom Javelin |
+| Deadeye | 300 | 588 -> 711 (+21%) | 1103 -> 952 (-14%) | 2.0 -> 6.0 | Blessed Earth > Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer |
+| Deadeye | 1000 | 1553 -> 2168 (+40%) | 2412 -> 2666 (+11%) | 2.0 -> 6.0 | Blessed Earth > Hail of Dawn > Twin Verdict > Final Verdict > Dawnpiercer |
+| Beastmaster | 100 | 130 -> 102 (-22%) | 437 -> 322 (-26%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin |
+| Beastmaster | 300 | 246 -> 194 (-21%) | 833 -> 633 (-24%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin |
+| Beastmaster | 1000 | 483 -> 530 (+10%) | 1619 -> 1458 (-10%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer > Feral Command |
+| Mystic | 100 | 427 -> 349 (-18%) | 750 -> 821 (+10%) | 2.0 -> 2.0 | Blightswarm > Arcane Ripple > Bewitching Hex |
+| Mystic | 300 | 502 -> 436 (-13%) | 1442 -> 1760 (+22%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Bewitching Hex |
+| Mystic | 1000 | 682 -> 657 (-4%) | 2506 -> 2735 (+9%) | 2.0 -> 4.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche |
+| Elementalist | 100 | 166 -> 161 (-3%) | 734 -> 727 (-1%) | 2.0 -> 2.0 | Tempest Fan > Forked Storm > Rime Bloom > Pyre Torrent |
+| Elementalist | 300 | 431 -> 543 (+26%) | 1719 -> 2714 (+58%) | 2.0 -> 2.0 | Doomtide > Frozen Crypt > Falling Pyre > Rime Bloom > Pyre Torrent |
+| Elementalist | 1000 | 709 -> 982 (+39%) | 2715 -> 4909 (+81%) | 2.0 -> 2.0 | Glacial Doom > Doomtide > Frozen Crypt > Rime Bloom > Pyre Torrent |
+| Illusionist | 100 | 427 -> 269 (-37%) | 750 -> 591 (-21%) | 2.0 -> 2.0 | Arcane Ripple > Bewitching Hex > Kindling Spark |
+| Illusionist | 300 | 538 -> 611 (+14%) | 1562 -> 2558 (+64%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Illusionist | 1000 | 753 -> 925 (+23%) | 2090 -> 3890 (+86%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Thief | 100 | 189 -> 189 (+0%) | 567 -> 491 (-13%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Thief | 300 | 321 -> 321 (+0%) | 964 -> 836 (-13%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Thief | 1000 | 546 -> 546 (+0%) | 1639 -> 1420 (-13%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Ninja | 100 | 220 -> 210 (-5%) | 409 -> 361 (-12%) | 2.0 -> 2.0 | Blade Flurry > Shadow Step > Shuriken Toss |
+| Ninja | 300 | 387 -> 381 (-2%) | 894 -> 887 (-1%) | 2.0 -> 2.0 | Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Ninja | 1000 | 667 -> 678 (+2%) | 2010 -> 2623 (+31%) | 2.0 -> 2.0 | Shuriken Tempest > Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Samurai | 100 | 189 -> 189 (+0%) | 378 -> 340 (-10%) | 2.0 -> 2.0 | Blade Flurry > Shuriken Toss |
+| Samurai | 300 | 439 -> 432 (-2%) | 1336 -> 1150 (-14%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Samurai | 1000 | 716 -> 707 (-1%) | 2189 -> 1885 (-14%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Necromancer | 100 | 123 -> 158 (+28%) | 574 -> 598 (+4%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Necromancer | 300 | 234 -> 319 (+36%) | 1003 -> 1069 (+7%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Necromancer | 1000 | 508 -> 755 (+48%) | 1851 -> 2065 (+12%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Lich | 100 | 262 -> 342 (+31%) | 342 -> 411 (+20%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Bone Spear |
+| Lich | 300 | 552 -> 734 (+33%) | 670 -> 833 (+24%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Lich | 1000 | 1175 -> 1671 (+42%) | 1392 -> 1855 (+33%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Bone Lord | 100 | 123 -> 158 (+28%) | 156 -> 180 (+15%) | 2.0 -> 2.0 | Withering Curse > Bone Spear |
+| Bone Lord | 300 | 323 -> 451 (+40%) | 820 -> 1150 (+40%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Bone Lord | 1000 | 706 -> 1051 (+49%) | 1748 -> 2533 (+45%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Monk | 100 | 214 -> 193 (-10%) | 802 -> 742 (-7%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Monk | 300 | 330 -> 299 (-9%) | 1259 -> 1165 (-7%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Monk | 1000 | 566 -> 518 (-8%) | 2243 -> 2075 (-7%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Shadowfist | 100 | 163 -> 193 (+19%) | 530 -> 687 (+30%) | 2.0 -> 2.0 | Pressure Points > Whirling Heel > Palm Shockwave > Sundering Palm |
+| Shadowfist | 300 | 254 -> 248 (-3%) | 926 -> 1297 (+40%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Whirling Heel > Palm Shockwave |
+| Shadowfist | 1000 | 450 -> 686 (+53%) | 1652 -> 2243 (+36%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Palm Shockwave > Shadowfist Flurry > Sundering Palm |
+| Iron Sage | 100 | 214 -> 193 (-10%) | 802 -> 742 (-7%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Iron Sage | 300 | 241 -> 259 (+7%) | 1573 -> 1532 (-3%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Iron Sage | 1000 | 428 -> 456 (+6%) | 2842 -> 2752 (-3%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Templar | 100 | 185 -> 259 (+40%) | 755 -> 1396 (+85%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Templar | 300 | 318 -> 456 (+44%) | 1305 -> 2454 (+88%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Templar | 1000 | 532 -> 807 (+52%) | 2203 -> 4309 (+96%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Inquisitor | 100 | 192 -> 257 (+34%) | 381 -> 885 (+132%) | 2.0 -> 2.0 | Consecration > Radiant Smite |
+| Inquisitor | 300 | 391 -> 489 (+25%) | 1035 -> 1720 (+66%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Inquisitor | 1000 | 654 -> 850 (+30%) | 1785 -> 3060 (+71%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Sentinel | 100 | 185 -> 259 (+40%) | 373 -> 887 (+138%) | 2.0 -> 2.0 | Consecration > Radiant Smite |
+| Sentinel | 300 | 318 -> 456 (+44%) | 1176 -> 2282 (+94%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+| Sentinel | 1000 | 532 -> 807 (+52%) | 1996 -> 4033 (+102%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+
+Score (1 target + 0.25 x the pack, what the presets are chosen by) and the factor on the class's spell damage that would
+bring it back to before the ladder:
+
+| Class | score 300 before -> after | score 1000 before -> after | factor 300 / 1000 |
+|---|---|---|---|
+| Warrior | 552 -> 635 (+15%) | 958 -> 1092 (+14%) | x0.87 / x0.88 |
+| Juggernaut | 552 -> 623 (+13%) | 988 -> 1140 (+15%) | x0.89 / x0.87 |
+| Berserker | 564 -> 652 (+16%) | 1034 -> 1159 (+12%) | x0.87 / x0.89 |
+| Ranger | 797 -> 909 (+14%) | 1760 -> 2088 (+19%) | x0.88 / x0.84 |
+| Deadeye | 864 -> 949 (+10%) | 2156 -> 2834 (+31%) | x0.91 / x0.76 |
+| Beastmaster | 454 -> 352 (-22%) | 888 -> 894 (+1%) | x1.29 / x0.99 |
+| Mystic | 862 -> 876 (+2%) | 1308 -> 1341 (+2%) | x0.98 / x0.98 |
+| Elementalist | 861 -> 1222 (+42%) | 1388 -> 2209 (+59%) | x0.70 / x0.63 |
+| Illusionist | 928 -> 1250 (+35%) | 1276 -> 1898 (+49%) | x0.74 / x0.67 |
+| Thief | 562 -> 530 (-6%) | 956 -> 901 (-6%) | x1.06 / x1.06 |
+| Ninja | 610 -> 603 (-1%) | 1170 -> 1334 (+14%) | x1.01 / x0.88 |
+| Samurai | 773 -> 720 (-7%) | 1263 -> 1178 (-7%) | x1.07 / x1.07 |
+| Necromancer | 485 -> 586 (+21%) | 971 -> 1271 (+31%) | x0.83 / x0.76 |
+| Lich | 720 -> 942 (+31%) | 1523 -> 2135 (+40%) | x0.76 / x0.71 |
+| Bone Lord | 528 -> 738 (+40%) | 1143 -> 1684 (+47%) | x0.71 / x0.68 |
+| Monk | 645 -> 590 (-8%) | 1127 -> 1037 (-8%) | x1.09 / x1.09 |
+| Shadowfist | 486 -> 572 (+18%) | 863 -> 1247 (+44%) | x0.85 / x0.69 |
+| Iron Sage | 634 -> 642 (+1%) | 1138 -> 1144 (+0%) | x0.99 / x1.00 |
+| Templar | 644 -> 1070 (+66%) | 1083 -> 1884 (+74%) | x0.60 / x0.57 |
+| Inquisitor | 650 -> 919 (+41%) | 1100 -> 1615 (+47%) | x0.71 / x0.68 |
+| Sentinel | 612 -> 1026 (+68%) | 1031 -> 1815 (+76%) | x0.60 / x0.57 |
+
+- The balance targets still hold at 1000: the Deadeye has the best single target (2168), the Elementalist the best pack
+  damage (4909; the Templar 4309 next).
+- Proposals (applied the same day by the owner's decision: "Class spell factor" below): the long ultimates got the
+  biggest cut (Primordial Squall 35 -> 8 s, Glacial Doom 60 -> 20, Tear in the Weave 40 -> 14, Doomtide 45 -> 18, Consecration 20 -> 6, Judgement 12 -> 4), so the classes
+  built on them gain most: the Templar line (+41 to +76%), the Elementalist and Illusionist (+35 to +59%), the
+  Necromancer line (+21 to +47%), the Shadowfist at 1000 (+44%). A class-wide factor on spell damage keeps the ladder
+  order (the order is by damage per cast): Templar and Sentinel x0.6, Inquisitor x0.7, Elementalist and Illusionist
+  x0.65-0.7, Lich and Bone Lord x0.7, Necromancer x0.8, Shadowfist x0.7 from level 150; the Beastmaster (-22% at 300)
+  x1.25. Scaling single spells by new / old cooldown instead would keep each spell's damage per second but turn the
+  ladder upside down (a weaker cast with a longer cooldown).
+- Gaps: the presets are not held to 2 s since 2026-10-17 (owner: "the 2 s rule is gone"); with the first spell at 2 s a
+  2 s filler is always in the kit. Sets with a 4-6 s gap at 300-1000: Warrior 1000, Juggernaut 300 / 1000, Berserker
+  300 / 1000, Ranger 300 / 1000, Deadeye 300 / 1000, Mystic 1000 (the search prefers more damage over the filler).
+- Mana runway (`rotation_sim.py --mana --check`): every class still runs 15 s or more at levels 8-300.
+
+### Class spell factor (2026-10-20; owner decision on the cooldown ladder proposals; computed with rotation_sim.py, not measured in game)
+
+A factor on every spell hit of a class (`data/scripts/chaos/spell_factor_config.lua`, by vocation id): Templar and
+Sentinel x0.6, Inquisitor, Elementalist, Illusionist, Lich, Bone Lord and Shadowfist x0.7, Necromancer x0.8, Beastmaster
+x1.25; every other class 1. The server applies it to damage with origin ORIGIN_SPELL (server/README.md "Class spell
+factor": what it leaves alone); `rotation_sim.py` multiplies every spell of the class by the same table, so the presets,
+`--report` and `--check` use it. One factor per class keeps the cooldown ladder's order. The presets did not change.
+
+The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pack) before and after the factor:
+
+| Class | Level | 1 target before -> after | 5 targets before -> after | gap | set after |
+|---|---|---|---|---|---|
+| Warrior | 300 | 336 -> 336 (+0%) | 1197 -> 1197 (+0%) | 2.0 -> 2.0 | Colossus Fall > Earthbreaker > Scything Arc > Headsman's Hurl > Vaulting Cleave |
+| Warrior | 1000 | 576 -> 576 (+0%) | 2066 -> 2066 (+0%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 300 | 329 -> 329 (+0%) | 1176 -> 1176 (+0%) | 4.0 -> 4.0 | Colossus Fall > Earthbreaker > Reaping Gyre > Scything Arc > Headsman's Hurl |
+| Juggernaut | 1000 | 567 -> 567 (+0%) | 2292 -> 2292 (+0%) | 4.0 -> 4.0 | Colossus Fall > Anvil Fall > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 300 | 326 -> 326 (+0%) | 1302 -> 1302 (+0%) | 4.0 -> 4.0 | Colossus Fall > Skyfall Cleave > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Berserker | 1000 | 575 -> 575 (+0%) | 2335 -> 2335 (+0%) | 4.0 -> 4.0 | Colossus Fall > Rampage Leap > Earthbreaker > Scything Arc > Headsman's Hurl |
+| Ranger | 300 | 640 -> 640 (+0%) | 1076 -> 1076 (+0%) | 4.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Ranger | 1000 | 1513 -> 1513 (+0%) | 2300 -> 2300 (+0%) | 4.0 -> 4.0 | Radiant Shard > Sanctum Burst > Hail of Dawn > Skewering Line > Dawnpiercer |
+| Deadeye | 300 | 711 -> 711 (+0%) | 952 -> 952 (+0%) | 6.0 -> 6.0 | Blessed Earth > Hail of Dawn > Final Verdict > Skewering Line > Dawnpiercer |
+| Deadeye | 1000 | 2168 -> 2168 (+0%) | 2666 -> 2666 (+0%) | 6.0 -> 6.0 | Blessed Earth > Hail of Dawn > Twin Verdict > Final Verdict > Dawnpiercer |
+| Beastmaster | 300 | 194 -> 242 (+25%) | 633 -> 791 (+25%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Dawnpiercer > Phantom Javelin |
+| Beastmaster | 1000 | 530 -> 663 (+25%) | 1458 -> 1823 (+25%) | 2.0 -> 2.0 | Blessed Earth > Sanctum Burst > Pack Frenzy > Dawnpiercer > Feral Command |
+| Mystic | 300 | 436 -> 436 (+0%) | 1760 -> 1760 (+0%) | 2.0 -> 2.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Bewitching Hex |
+| Mystic | 1000 | 657 -> 657 (+0%) | 2735 -> 2735 (+0%) | 4.0 -> 4.0 | Falling Pyre > Briar Prison > Blightswarm > Arcane Ripple > Shattered Psyche |
+| Elementalist | 300 | 543 -> 380 (-30%) | 2714 -> 1900 (-30%) | 2.0 -> 2.0 | Doomtide > Frozen Crypt > Falling Pyre > Rime Bloom > Pyre Torrent |
+| Elementalist | 1000 | 982 -> 687 (-30%) | 4909 -> 3436 (-30%) | 2.0 -> 2.0 | Glacial Doom > Doomtide > Frozen Crypt > Rime Bloom > Pyre Torrent |
+| Illusionist | 300 | 611 -> 428 (-30%) | 2558 -> 1791 (-30%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Illusionist | 1000 | 925 -> 648 (-30%) | 3890 -> 2723 (-30%) | 2.0 -> 2.0 | Tear in the Weave > Nightburst > Primordial Squall > Arcane Ripple > Shattered Psyche |
+| Thief | 300 | 321 -> 321 (+0%) | 836 -> 836 (+0%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Thief | 1000 | 546 -> 546 (+0%) | 1420 -> 1420 (+0%) | 2.0 -> 2.0 | Blade Flurry > Fan of Knives > Shuriken Toss |
+| Ninja | 300 | 381 -> 381 (+0%) | 887 -> 887 (+0%) | 2.0 -> 2.0 | Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Ninja | 1000 | 678 -> 678 (+0%) | 2623 -> 2623 (+0%) | 2.0 -> 2.0 | Shuriken Tempest > Blade Flurry > Shuriken Barrage > Shadow Step > Shuriken Toss |
+| Samurai | 300 | 432 -> 432 (+0%) | 1150 -> 1150 (+0%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Samurai | 1000 | 707 -> 707 (+0%) | 1885 -> 1885 (+0%) | 2.0 -> 2.0 | Blade Flurry > Iaido Sweep > Iaijutsu > Shuriken Toss |
+| Necromancer | 300 | 319 -> 255 (-20%) | 1069 -> 855 (-20%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Necromancer | 1000 | 755 -> 604 (-20%) | 2065 -> 1652 (-20%) | 2.0 -> 2.0 | Withering Curse > Bone Shrapnel |
+| Lich | 300 | 734 -> 514 (-30%) | 833 -> 583 (-30%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Lich | 1000 | 1671 -> 1170 (-30%) | 1855 -> 1298 (-30%) | 2.0 -> 2.0 | Withering Curse > Soul Rot > Life Siphon |
+| Bone Lord | 300 | 451 -> 316 (-30%) | 1150 -> 805 (-30%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Bone Lord | 1000 | 1051 -> 736 (-30%) | 2533 -> 1773 (-30%) | 2.0 -> 2.0 | Withering Curse > Bone Offering > Bone Spear |
+| Monk | 300 | 299 -> 299 (+0%) | 1165 -> 1165 (+0%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Monk | 1000 | 518 -> 518 (+0%) | 2075 -> 2075 (+0%) | 2.0 -> 2.0 | Whirling Heel > Palm Shockwave > Sundering Palm > Ashen Fist |
+| Shadowfist | 300 | 248 -> 174 (-30%) | 1297 -> 908 (-30%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Whirling Heel > Palm Shockwave |
+| Shadowfist | 1000 | 686 -> 480 (-30%) | 2243 -> 1570 (-30%) | 2.0 -> 2.0 | Pressure Points > Shadow Ricochet > Palm Shockwave > Shadowfist Flurry > Sundering Palm |
+| Iron Sage | 300 | 259 -> 259 (+0%) | 1532 -> 1532 (+0%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Iron Sage | 1000 | 456 -> 456 (+0%) | 2752 -> 2752 (+0%) | 2.0 -> 2.0 | Whirling Heel > Iron Chain > Palm Shockwave |
+| Templar | 300 | 456 -> 274 (-40%) | 2454 -> 1473 (-40%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Templar | 1000 | 807 -> 484 (-40%) | 4309 -> 2586 (-40%) | 2.0 -> 2.0 | Consecration > Sanctified Ground > Radiant Smite |
+| Inquisitor | 300 | 489 -> 342 (-30%) | 1720 -> 1204 (-30%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Inquisitor | 1000 | 850 -> 595 (-30%) | 3060 -> 2142 (-30%) | 2.0 -> 2.0 | Judgement > Consecration > Purging Nova |
+| Sentinel | 300 | 456 -> 274 (-40%) | 2282 -> 1369 (-40%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+| Sentinel | 1000 | 807 -> 484 (-40%) | 4033 -> 2420 (-40%) | 2.0 -> 2.0 | Consecration > Shield Wave > Radiant Smite |
+
+- The balance targets hold. Single target: the Deadeye leads (711 at 300, 2168 at 1000; the Ranger 640 / 1513 next).
+  Pack: the Elementalist leads (1900 at 300, 3436 at 1000; next at 1000 the Iron Sage 2752, the Illusionist 2723, the
+  Ninja 2623; at 300 the Illusionist 1791 and the Mystic 1760).
+- Against before the ladder (after the cap), the score (1 target + 0.25 x pack) of the factored classes at 300 / 1000:
+  Templar 0 / +4%, Sentinel +1 / +6%, Inquisitor -1 / +3%, Elementalist -1 / +11%, Illusionist -6 / +4%, Necromancer
+  -3 / +5%, Lich -8 / -2%, Bone Lord -2 / +3%, Shadowfist -18 / +1% (one factor for both levels: the ladder raised it
+  +18% at 300 and +44% at 1000), Beastmaster -3 / +26%. The classes without a factor keep the ladder's changes
+  ("Cooldown ladder" above).
+- Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
+  factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
+
+### Fixed spell costs (2026-10-21; owner: "Mas o custo de mana das skills ainda tá escalando com o level do char"; computed with rotation_sim.py, not measured in game)
+
+Reports: the owner (2026-10-21) and a beta tester (2026-10-20: "the mana cost scales too, it's not fixed per skill. One
+of my skills is costing 400k mana"). **What scaled, and where:**
+- **The shown cost (the 400k).** The display scale (server/README.md "Display scale") showed the own mana and max mana
+  x the factor of the level (1 up to 100, 215 at 800, 1000 at 1000), so the spellbook (`spellbook.lua` through
+  `DS.spellList`) and the client's action bar and spell list (`game_chaosscale` `applySpells` on `SpellInfo`) showed
+  every flat cost x the same factor. Reproduced: **Colossus Fall** (Warrior, Juggernaut, Berserker; 400 mana) shows
+  **400,000** at level 1000 (factor 1000) against a shown pool of 5.03M; at the tester's level 800 the Juggernaut's
+  dearest spell (Bastion Cry, 500) showed 107,500. The engine took the flat 400 every time.
+- **Shadow Mend** (Thief line) really scaled: `manapercent="2"`, 2% of the maximum mana (6 mana at level 25, 61 at 300,
+  201 at 1000).
+- **The cost cap** of `mana_flow` (2026-10-20): from level 100 no cast cost more than 25% of the maximum mana, so a few
+  costs depended on the pool (Colossus Fall 332 at level 260, Bastion Cry, Banner Call, Red Frenzy, Lay on Hands ...).
+- Not scaling, unchanged: every other Chaos spell (`spells_chaos.xml` `mana=`), the stock spells the classes keep
+  (`stock_spells.csv`, `spell_timings.csv`, patched by `patch_spell_timings.py`), Raise Dead's extra cost from nothing
+  (the spell's own 60 again), the runes (their own numbers, untouched). Percentages of the cost stay percentages: Thrift
+  runes, Mana Cost Reduction on items and sets (cap 25-30%), the trial nodes Thrifty Weave and Lucid Mind. The vigils
+  reserve a share of the maximum mana while they are up (an aura, not a cast cost; their cast costs 0): unchanged.
+
+**The rule now: a spell costs one fixed number at every level, for every class** (the `mana` of its spells.xml entry),
+and the client shows that number. Changes:
+- Mana is out of the display scale: engine `src-patches/0052-mana-outside-display-scale.patch` (the own mana and max
+  mana in the stats packet, and every mana drain / gain message, as they are), `display_scale_core.lua` (no spell list
+  site; party frames keep the members' mana; item tooltips keep max mana, mana on hit / kill and mana gems),
+  `spellbook.lua` (one list for every viewer), client `game_chaosscale` (no `SpellInfo` scaling). Health, damage,
+  heals and the energy shield keep the scale.
+- Shadow Mend: **40 mana** (`spells_chaos.xml`; "Healing" above). Its heal per mana is 28.1 at level 300 and 57.2 at
+  1000 (`rotation_sim.py --heal`), 1600 mana a minute when cast on every cooldown; at level 25 (a Thief pool of
+  285) a cast is 14% of the pool.
+- The cost cap is gone (`mana_flow_config.lua` `cap`, `ChaosManaFlow.capCost` and its "cost" handler; a reloaded
+  server drops the old handler). No cost is above any of its classes' whole pool at the spell's level
+  (`rotation_sim.py --mana --check`, `cost_fits`); the dearest against its pool: Banner Call 250 at level 60 (Warrior
+  330), Ironhold 200 at 55 (305), Vow of Mending 150 at 30 (Sentinel 243).
+- The level regeneration of `mana_flow` stays the way mana keeps up at the high levels (100 -> 4, 300 -> 24, 600 -> 45,
+  1000 -> 60 mana a second on top of the vocation's).
+
+**How the numbers are set** (no change to any cost but Shadow Mend's): the costs are the ones of "Mana runway" above
+(2026-10-17), set against the cooldown ladder. In practice an attack spell's cost follows its rung and its power: the 2 s
+level 8 fillers 6-30, the 4-8 s spells 30-250, the 10-18 s finishers 100-1500 (the Mystic line's high spells 900-2200
+against the largest pools); heals 10-600 by level; supports by duration (Hunter's Instinct 40, Banner Call 250, Bastion
+Cry 500). Because the pool grows every level (5 a level for the Warrior, 30 for the Mystic) and the level regeneration
+comes on top from level 100, a fixed cost is a shrinking share of the pool: the runway only grows past level 300.
+
+**Mana runway** (`python3 -I server/tools/rotation_sim.py --mana --check`, now checked at every band and preset level
+up to **1000**; the check is the vocation's own regeneration only, the last two columns add the level regeneration of
+`mana_flow_config.lua`; seconds the best set of 5 runs from a full pool, "inf" = paid as it goes): **no row under 15 s**,
+no cost above a pool.
+
+| Class | Worst, levels 8-300 (level) | 600 | 1000 | 600 with level regen | 1000 with level regen |
+|---|---|---|---|---|---|
+| Warrior | 16 s (8) | 60 | 99 | 568 | inf |
+| Juggernaut | 20 s (70) | 37 | 62 | 85 | 245 |
+| Berserker | 22 s (100) | 47 | 78 | 114 | 360 |
+| Ranger | 18 s (8) | 88 | 146 | 157 | 354 |
+| Deadeye | 23 s (60) | 53 | 89 | 73 | 138 |
+| Beastmaster | 23 s (8) | 73 | 122 | 121 | 257 |
+| Mystic | 19 s (40) | 149 | 248 | 238 | 494 |
+| Elementalist | 20 s (38) | 67 | 112 | 81 | 145 |
+| Illusionist | 22 s (280) | 47 | 78 | 54 | 95 |
+| Thief | 17 s (8) | 197 | 328 | inf | inf |
+| Ninja | 24 s (8) | 56 | 93 | 96 | 212 |
+| Samurai | 22 s (200) | 65 | 108 | 141 | 384 |
+| Necromancer | 19 s (8) | 293 | 488 | 1878 | inf |
+| Lich | 27 s (8) | 198 | 330 | 421 | 1122 |
+| Bone Lord | 24 s (8) | 240 | 400 | 963 | inf |
+| Monk | 18 s (50) | 203 | 337 | inf | inf |
+| Shadowfist | 19 s (50) | 74 | 124 | 168 | 481 |
+| Iron Sage | 17 s (50) | 75 | 126 | 203 | 774 |
+| Templar | 15 s (100) | 88 | 147 | 504 | inf |
+| Inquisitor | 15 s (40) | 49 | 81 | 77 | 159 |
+| Sentinel | 15 s (60) | 61 | 102 | 181 | 844 |
+
+The levels 8-300 are the same as before the change (the attack costs did not move). The tightest rows past 300 are the
+Juggernaut (37 s at 600 on the vocation alone) and the Illusionist (47 s); with the level regeneration every class runs
+at least 54 s at 600 and 95 s at 1000. Not in the numbers: potions, the passive tree, gear and Mana Cost Reduction (all
+help), Shadow Mend and the other heals (a Thief that heals on every cooldown spends 1600 a minute on top).
+
+**The cost of every spell** (Chaos spells and the stock attack and healing spells the classes keep; the stock support
+spells keep their base numbers, all flat). "all" = the whole line; the mana is the same at every level:
+
+| Line | Spell | Group | Level | Cooldown | Mana | Classes |
+|---|---|---|---|---|---|---|
+| Warrior line | Salve of Scars | healing | 1 | 1 s | 10 | all |
+|  | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Battle Salve | healing | 8 | 1 s | 40 | all |
+|  | Bonebreaker | attack | 8 | 2 s | 10 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Reaping Gyre | attack | 30 | 6 s | 30 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Ironhold | support | 55 | 30 s | 200 | Warrior, Juggernaut |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Earthbreaker | attack | 60 | 8 s | 50 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Scything Arc | attack | 70 | 4 s | 55 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Butcher's Gyre | attack | 90 | 12 s | 100 | all |
+|  | Red Frenzy | support | 100 | 40 s | 300 | Warrior, Berserker |
+|  | Skyfall Cleave | attack | 100 | 10 s | 100 | Berserker |
+|  | Bloodrage | support | 120 | 30 s | 200 | Berserker |
+|  | Iron Bellow | support | 120 | 20 s | 200 | Warrior, Juggernaut |
+|  | Vaulting Cleave | attack | 170 | 8 s | 250 | Warrior |
+|  | Colossus Fall | attack | 260 | 14 s | 400 | all |
+|  | Headsman's Hurl | attack | 300 | 16 s | 100 | all |
+|  | Iron Salve | healing | 300 | 1 s | 90 | all |
+|  | Bastion Cry | support | 340 | 40 s | 500 | Juggernaut |
+|  | Rampage Leap | attack | 380 | 14 s | 400 | Berserker |
+|  | Anvil Fall | attack | 460 | 12 s | 450 | Juggernaut |
+| Ranger line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Phantom Javelin | attack | 8 | 2 s | 20 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Dawnpiercer | attack | 30 | 6 s | 50 | all |
+|  | Dawn's Mending | healing | 35 | 1 s | 160 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Snare Trap | attack | 40 | 4 s | 90 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Sanctum Burst | attack | 50 | 8 s | 160 | all |
+|  | Wildstride | support | 55 | 30 s | 150 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Lightbearer's Grace | healing | 60 | 1 s | 210 | all |
+|  | Skewering Line | attack | 60 | 10 s | 150 | Ranger, Deadeye |
+|  | Tautstring | support | 60 | 30 s | 300 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Blessed Earth | attack | 100 | 14 s | 350 | all |
+|  | Wild Bond | support | 100 | 10 s | 300 | Beastmaster |
+|  | Feral Command | attack | 110 | 4 s | 200 | Beastmaster |
+|  | Lightward | support | 140 | 30 s | 300 | all |
+|  | Final Verdict | attack | 200 | 14 s | 450 | Deadeye |
+|  | Hail of Dawn | attack | 280 | 16 s | 800 | Ranger, Deadeye |
+|  | Radiant Shard | attack | 300 | 12 s | 160 | Ranger |
+|  | Pack Frenzy | attack | 380 | 6 s | 450 | Beastmaster |
+|  | Twin Verdict | attack | 400 | 16 s | 900 | Deadeye |
+| Mystic line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Kindling Spark | attack | 8 | 2 s | 6 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Rime Bloom | attack | 20 | 4 s | 120 | Mystic, Elementalist |
+|  | Blightswarm | attack | 25 | 6 s | 110 | Mystic |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Grand Mending | healing | 30 | 1 s | 160 | Mystic, Elementalist |
+|  | Witchfire Bolt | attack | 30 | 8 s | 70 | Mystic, Elementalist |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Pyre Torrent | attack | 38 | 4 s | 120 | Elementalist |
+|  | Tempest Fan | attack | 38 | 12 s | 170 | Elementalist |
+|  | Arcane Ripple | attack | 40 | 4 s | 175 | Mystic, Illusionist |
+|  | Hall of Mirrors | support | 40 | 30 s | 250 | Illusionist |
+|  | Purifying Wellspring | healing | 40 | 6 s | 160 | Mystic, Illusionist |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Forked Storm | attack | 50 | 8 s | 200 | Elementalist |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Bewitching Hex | attack | 60 | 6 s | 75 | Mystic, Illusionist |
+|  | Ironbark Hide | support | 60 | 25 s | 140 | Mystic |
+|  | Mirror Mend | healing | 60 | 2 s | 180 | Illusionist |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Briar Prison | attack | 70 | 10 s | 240 | Mystic |
+|  | Umbral Stride | attack | 70 | 14 s | 120 | Mystic |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Crimson Covenant | support | 90 | 30 s | 50 | Elementalist |
+|  | Shattered Psyche | attack | 110 | 12 s | 200 | Mystic, Illusionist |
+|  | Lucid Reverie | healing | 120 | 20 s | 300 | Illusionist |
+|  | Moonfang Pack | support | 120 | 30 s | 450 | Illusionist |
+|  | Falling Pyre | attack | 150 | 14 s | 700 | Mystic, Elementalist |
+|  | Wraithshroud | support | 150 | 35 s | 350 | Illusionist |
+|  | Verdant Sanctuary | healing | 180 | 30 s | 600 | Illusionist |
+|  | Nightburst | attack | 210 | 10 s | 900 | Illusionist |
+|  | Frozen Crypt | attack | 220 | 16 s | 900 | Elementalist |
+|  | Primordial Squall | attack | 250 | 8 s | 1200 | Illusionist |
+|  | Tear in the Weave | attack | 280 | 14 s | 1300 | Illusionist |
+|  | Doomtide | attack | 300 | 18 s | 1500 | Elementalist |
+|  | Glacial Doom | attack | 420 | 20 s | 2200 | Elementalist |
+| Thief line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Shuriken Toss | attack | 8 | 2 s | 16 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Shadow Mend | healing | 25 | 1.5 s | 40 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Shadow Veil | support | 40 | 20 s | 120 | all |
+|  | Snare Trap | attack | 40 | 4 s | 90 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Blade Flurry | attack | 50 | 10 s | 120 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Detonate Mines | support | 60 | 1 s | 20 | all |
+|  | Poison Blades | support | 60 | 30 s | 150 | all |
+|  | Seeker Mine | attack | 60 | 6 s | 110 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Fan of Knives | attack | 80 | 10 s | 150 | Thief |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Counter Stance | support | 100 | 8 s | 100 | Samurai |
+|  | Shadow Step | attack | 100 | 12 s | 150 | Ninja |
+|  | Iaijutsu | attack | 120 | 12 s | 350 | Samurai |
+|  | Smoke Bomb | support | 130 | 20 s | 300 | Ninja |
+|  | Bushido Focus | support | 150 | 30 s | 200 | Samurai |
+|  | Shuriken Barrage | attack | 180 | 8 s | 400 | Ninja |
+|  | Iaido Sweep | attack | 200 | 8 s | 450 | Samurai |
+|  | Shuriken Tempest | attack | 360 | 14 s | 600 | Ninja |
+| Necromancer line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Bone Spear | attack | 8 | 2 s | 30 | all |
+|  | Minor Mending | healing | 8 | 1 s | 20 | all |
+|  | Raise Bone Warrior | support | 8 | 4 s | 50 | all |
+|  | Raise Bone Archer | support | 12 | 4 s | 60 | all |
+|  | Raise Bone Mage | support | 16 | 4 s | 70 | all |
+|  | Raise Dead | support | 20 | 2 s | 60 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Grand Mending | healing | 30 | 1 s | 160 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Withering Curse | attack | 40 | 4 s | 120 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Bone Shrapnel | attack | 60 | 4 s | 100 | Necromancer |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Bone Golem | support | 100 | 30 s | 500 | Bone Lord |
+|  | Soul Rot | attack | 100 | 8 s | 220 | Lich |
+|  | Banner of Bones | support | 120 | 30 s | 300 | Bone Lord |
+|  | Life Siphon | attack | 130 | 6 s | 260 | Lich |
+|  | Bone Offering | attack | 150 | 6 s | 250 | Bone Lord |
+|  | Corpse Explosion | attack | 160 | 4 s | 400 | Lich |
+|  | Rebirth of Flesh | healing | 300 | 6 s | 260 | all |
+| Monk line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Ashen Fist | attack | 8 | 2 s | 15 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Sundering Palm | attack | 30 | 12 s | 50 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Mistborne Step | support | 35 | 10 s | 60 | all |
+|  | Kindled Breath | healing | 40 | 8 s | 100 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Palm Shockwave | attack | 50 | 4 s | 70 | all |
+|  | Whirling Heel | attack | 50 | 6 s | 80 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Chi Ward | support | 100 | 12 s | 200 | Iron Sage |
+|  | Pressure Points | attack | 100 | 8 s | 120 | Shadowfist |
+|  | Iron Palm | attack | 120 | 10 s | 200 | Iron Sage |
+|  | Iron Chain | attack | 150 | 6 s | 300 | Iron Sage |
+|  | Mantra of Stone | support | 150 | 30 s | 400 | Iron Sage |
+|  | Shadow Ricochet | attack | 150 | 6 s | 300 | Shadowfist |
+|  | Shadowfist Flurry | attack | 150 | 14 s | 300 | Shadowfist |
+| Templar line | Town Portal | support | 1 | 1 s | 0 | all |
+|  | Radiant Smite | attack | 8 | 2 s | 15 | all |
+|  | Hunter's Instinct | support | 25 | 10 s | 40 | all |
+|  | Vow of Mending | healing | 30 | 8 s | 150 | all |
+|  | Flickerdash | support | 35 | 6 s | 80 | all |
+|  | Consecration | attack | 40 | 6 s | 160 | all |
+|  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
+|  | Vigil of Haste | support | 40 | 2 s | 0 | all |
+|  | Banner Call | support | 60 | 35 s | 250 | all |
+|  | Sanctified Ground | attack | 60 | 4 s | 160 | Templar |
+|  | Vigil of Iron | support | 60 | 2 s | 0 | all |
+|  | Vigil of Wrath | support | 60 | 2 s | 0 | all |
+|  | Soulward | support | 80 | 40 s | 150 | all |
+|  | Judgement | attack | 100 | 4 s | 250 | Inquisitor |
+|  | Rebuke | support | 100 | 12 s | 150 | Sentinel |
+|  | Aegis of Faith | support | 120 | 25 s | 150 | Sentinel |
+|  | Purging Nova | attack | 120 | 6 s | 350 | Inquisitor |
+|  | Lay on Hands | healing | 150 | 60 s | 400 | Sentinel |
+|  | Shield Wave | attack | 150 | 4 s | 250 | Sentinel |
+|  | Zealotry | support | 150 | 30 s | 200 | Inquisitor |
+
 ## Honest notes / limitations
 
 - Tested on the base server (TFS 1.4 based, protocol 10.98) with the real client: every spell was cast through its script against dummies and
@@ -2291,3 +2903,36 @@ Earthbreaker: 3 hits x0.90 and the 4th x1.50, plus a 60% slam on up to 6 monster
 Rampage: 5 stacks give +30% damage and +20% damage taken. Last Stand: one lethal hit per 90 s, then 5 s of -40%.
 Longshot: +30% at 7 sqm, x0.85 at 2 sqm or less. Barbed Quiver: hit x0.90 plus 60% bleed, 1.50 of a hit over 4 s.
 Opening Shot: +80% on the first hit, x0.93 after. Hobbling Shot: 25% chance, hobbled targets take +20%, x0.92 else.
+
+### Signature keystones of the Thief, Necromancer, Monk and Templar lines (2026-10-20, computed, not measured in game)
+
+The 621 / 624 variants of those lines (`class_keystones_config.lua`; server/README.md "Passive tree keystones"). Sized
+against the two keystones the owner named, read the way "Keystones verified in game" measured them: the damage of a fight
+with the keystone over the same fight without it, on one enemy and on a pack of five standing together. The model is
+`ChaosClassKeystones.model` (`class_keystones_core.lua`); `tests/class_keystones_test.lua` asserts that every damage
+keystone's best case is at least Deadeye's +15% and at most 5% over Ricochet's pack, and that none gains more than
+Shadow Twin's +18% or loses more than its price on one enemy.
+
+| Keystone | Class line | One enemy | Pack of 5 | How |
+|---|---|---|---|---|
+| Ricochet (reference) | Ranger | 1.00 | 2.07 | 1 + 65% + 42% on the bounces |
+| Deadeye (reference) | Ranger | 1.15 | 1.15 | 15% of the bolts x2 |
+| Shadow Twin | Thief | 1.18 | 1.18 | 30% x 60%; price: 6% more damage taken |
+| Viper's Verdict | Thief | 1.165 | 1.165 | 20% x2 on a poisoned target (1.20), x0.85 without poison; 90% of the hits on a poisoned target (Blackblood Creed or the Poison Blades buff poison every hit, the first hit lands before the poison) |
+| Corpse Detonation | Necromancer | 0.92 | 1.21 | 5 monsters of one health: 4 + 3 + 2 + 1 explosions of 12% = 1.2 of a monster's health for free; 5 / (3.8 / 0.92) |
+| Reaper's Toll | Necromancer | 1.17 | 1.17 | 60% of a monster's health at x0.92, the last 40% at x2: 1 / (0.6 / 0.92 + 0.4 / 2) |
+| Seventh Palm | Monk | 1.16 | 2.04 | (4 x 0.90 + 2.2) / 5; + 2.2 x 50% x 4 neighbours / 5 |
+| Piercing Palm | Monk | 0.95 | 2.00 | 0.95 x (1 + 70% + 40%) with two enemies behind the target in a line; a ring of monsters gives about half the gain |
+| Dawnchain | Templar | 1.00 (spells x0.90) | 1.85 | 1 + 55% + 30% on melee weapon hits |
+| Radiant Rebuke | Templar | 0.90 (weapon hits) | 0.90 + nova | defensive: 20% of melee / ranged hits blocked (Bulwark 15%) |
+
+- Radiant Rebuke's nova, an estimate with the numbers of the Thorns check (server/README.md "Passive tree: class
+  sections", level 300, magic level 25, monster hits of 568 after the defences): 4 monsters hitting every 2 s give 2 hits
+  a second, 0.4 blocks a second and, with the 1 s internal cooldown, about 0.3 novas a second of 568 + 100 on up to 4 of
+  them (x1.2 stat window): about 960 a second, near 40% of the Templar's computed 5-target damage at level 300 (C4 1422 +
+  the kit's 982), while melee and ranged damage taken drops by 20%. One enemy: about a quarter of that. Weapon hits pay
+  10%, so a Templar that fights mostly with spells keeps nearly all of it; the nova scales with what the pack hits for.
+- The prices follow the existing keystones: a trade that every fight sees (Shadow Twin takes more damage, Viper's Verdict
+  needs poison, Corpse Detonation and Reaper's Toll lose 8% outside their window, Seventh Palm and Piercing Palm lose on
+  the plain hits, Dawnchain on the spells, Radiant Rebuke on the weapon hits and needs a shield).
+- Not measured on the dummies or in game. The pack numbers assume every proc finds its targets, as the Ricochet row does.

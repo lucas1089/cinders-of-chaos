@@ -85,6 +85,9 @@ ChaosCreditsData = {
       { name = "Void layout", author = "Alex (opengamescommunity.com)", use = "the website layout, re-coloured for Cinders of Chaos" },
       { name = "PHPMailer", author = "the PHPMailer contributors", licence = "LGPL-2.1", use = "website mail", source = "https://github.com/PHPMailer/PHPMailer" },
       { name = "JSch (mwiede fork)", author = "Michael Wiedenbauer and the JSch contributors", licence = "BSD-3-Clause style", use = "the ssh connection of the Cinders Admin phone app", source = "https://github.com/mwiede/jsch" },
+      { name = "Material Components for Android", author = "Google and the Material Components contributors", licence = "Apache-2.0", use = "the screens of the Cinders Admin phone app (cards, buttons, navigation, dialogs)", source = "https://github.com/material-components/material-components-android" },
+      { name = "AndroidX libraries and the Kotlin standard library", author = "the Android Open Source Project; JetBrains and the Kotlin contributors", licence = "Apache-2.0", use = "AppCompat, SwipeRefreshLayout and the other support libraries the Cinders Admin phone app ships with", source = "https://developer.android.com/jetpack/androidx and https://github.com/JetBrains/kotlin" },
+      { name = "Anthropic Python SDK and the Claude API", author = "Anthropic", licence = "MIT (the SDK); the API is a paid service under Anthropic's terms", use = "Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)", source = "https://github.com/anthropics/anthropic-sdk-python" },
     },
   },
   {

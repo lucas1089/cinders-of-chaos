@@ -13,7 +13,8 @@ usage: python3 -I server/tools/rotation_sim_test.py
   spell_timings.csv (patch_spell_timings.py) and patch_spell_timings.py does what the csv says (synthetic spells.xml);
 - Radiant Smite's class scale is read from templar_aura_core.lua, Shuriken Toss's from shuriken_toss.lua;
 - the mana runway: every class has an attack spell at level 8 and its best set runs 15 s on a full mana pool (vocation
-  regeneration only) at every band and preset level up to 300 (rotation_sim.py --mana);
+  regeneration only) at every band and preset level up to 1000 (rotation_sim.py --mana; fixed spell costs, 2026-10-21),
+  and no spell's fixed cost is above a class's pool at the spell's level (cost_fits); the mana flow curve is read;
 - the client's autorotation_data.lua is up to date (--check).
 """
 import os, sys
@@ -108,6 +109,14 @@ for cls, _, _ in R.CLASSES:
 check(R.mana_pool('Warrior', 8) == 70 and R.mana_pool('Mystic', 8) == 300, 'mana pool at level 8 = start_stats.lua')
 check(abs(R.mana_stats()['Warrior'][2] - 5 / 6.0) < 1e-9 and R.mana_stats()['Elementalist'][2] == 5.0,
       'regeneration = gainmanaamount / gainmanaticks')
+check(R.MANA_MAX_LEVEL >= 1000 and 1000 in R.mana_levels(spells, model, 'Warrior'), 'the runway is checked up to 1000')
+check(not R.cost_fits(), 'every fixed cost fits its classes\' pools: %s' % R.cost_fits()[:3])
+check(R.cost_fits([{'name': 'X', 'vocations': ['Warrior'], 'level': 8, 'mana': 71}]) == [('X', 'Warrior', 8, 71, 70)],
+      'cost_fits: a cost above the pool is caught')
+check(R.flow_regen(99) == 0 and R.flow_regen(100) == 4 and R.flow_regen(1000) == 60 and R.flow_regen(200) == 14,
+      'the level regeneration of mana_flow_config.lua')
+check(R.shadow_mend_cfg()['mana'] > 0 and R.shadow_mend_rate(300, 30)[2] == R.shadow_mend_rate(1000, 40)[2],
+      'Shadow Mend costs the same fixed mana at every level')
 
 # every class and ascension at every band and every preset level: at most 5 spells, never a snare
 for cls, _, _ in R.CLASSES:
@@ -117,6 +126,27 @@ for cls, _, _ in R.CLASSES:
         if best:
             check(len(best['spells']) <= R.MAX_SPELLS, '%s %d: at most 5 spells' % (cls, lv))
             check(not {s.words for s in best['spells']} & utility, '%s %d: no snare in the set' % (cls, lv))
+
+# the cooldown ladder (owner 2026-10-20): every attack spell's cooldown is its rung x 2 s, the group cooldown 2 s, and
+# every class's first (level 8) spell is 2 s
+final, per_class, _ = R.ladder(spells, model)
+for s in spells:
+    if s['group'] == 'attack':
+        check(s['cooldown'] == final[s['name']], '%s: cooldown %d, the ladder %d' % (s['name'], s['cooldown'],
+                                                                                    final[s['name']]))
+        check(s['groupcooldown'] == 2000, '%s: group cooldown 2 s' % s['name'])
+for cls, rows in per_class.items():
+    check(final[rows[0][0]] == 2000, '%s: the first spell %s is 2 s' % (cls, rows[0][0]))
+    check(all(rows[i][2] <= rows[i + 1][2] for i in range(1, len(rows) - 1)), '%s: weakest to strongest' % cls)
+
+# the class spell factor (spell_factor_config.lua): read from the server's table, applied to every spell of the class
+check(R.spell_factors() == {23: 0.6, 25: 0.6, 24: 0.7, 5: 0.7, 10: 0.7, 21: 0.7, 22: 0.7, 18: 0.7, 20: 0.8, 15: 1.25},
+      'the class spell factors of spell_factor_config.lua')
+check(R.spell_factor('Warrior') == 1.0 and R.spell_factor('Templar') == 0.6, 'a class not listed keeps 1')
+smite = [s for s in spells if s['name'] == 'Radiant Smite']
+t = R.prepare(smite, model, 'Templar', 300)[0].dmg
+w = R.evaluate(model[smite[0]['words']]['dmg'], R.stats('Templar', 300))
+check(abs(t - 0.6 * w) < 1e-6, 'Templar 300: Radiant Smite x0.6 in the simulation (%.1f, %.1f)' % (t, w))
 
 # the client data is up to date
 text = R.client_data(spells, model)

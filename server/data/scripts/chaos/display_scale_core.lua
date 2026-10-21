@@ -11,7 +11,10 @@
 --   * an item tooltip: the factor of the item's level requirement (the same text for every viewer: trade, chat links,
 --     the market, Inspect), tip.ds = that factor so the client's compare view can convert;
 --   * a death recap: the level the character had at that death (the numbers it saw while dying).
--- Never scaled: gold, experience, levels, skills, counts, prices, timers, percentages, durations, ids, anything stored.
+-- Never scaled: gold, experience, levels, skills, counts, prices, timers, percentages, durations, ids, anything stored,
+-- and mana (owner 2026-10-21, "Fixed spell costs" in server/README.md): the own mana and max mana, a spell's mana cost,
+-- a party member's mana, the mana rows of item tooltips (engine patch 0052 for the stats packet and the mana messages),
+-- so a spell costs the same shown number at every level.
 --
 -- Every site function returns a scaled COPY (payloads may be shared between viewers or cached) and, at factor 1, the
 -- payload itself untouched.
@@ -26,8 +29,8 @@ local DEFAULTS = {
 	opcode = 157,
 	tableLevels = 1500,
 	leaderboardBoards = {worldboss = true, bosshealer = true, bosstank = true},
-	itemFlatKeys = {maxhealth = true, maxmana = true, thorns = true, lifeonkill = true, manaonkill = true,
-		lifeonhit = true, manaonhit = true, regen = true, smolderaura = true, gem_maxhealth = true, gem_maxmana = true}
+	itemFlatKeys = {maxhealth = true, thorns = true, lifeonkill = true, lifeonhit = true, regen = true, smolderaura = true,
+		gem_maxhealth = true}
 }
 DS.U32_MAX = 4294967295
 DS.MOD_PREFIX = "chaos_mod_" -- ChaosItemMods.PREFIX: a modifier row's key is its attribute name
@@ -292,14 +295,14 @@ function DS.deathRecapData(data, viewerFactor)
 	return out
 end
 
--- party frames (partyframes_core.lua P.state): members = [{h, H, m, M}] (health and mana of the members in range;
--- p, the percent, stays)
+-- party frames (partyframes_core.lua P.state): members = [{h, H, m, M}] (health and mana of the members in range):
+-- the health; the mana (m, M) and p, the percent, stay
 function DS.partyState(state, f)
 	if f == 1 or type(state) ~= "table" then
 		return state
 	end
 	state = DS.clone(state)
-	DS.each(state.members, {"h", "H", "m", "M"}, f)
+	DS.each(state.members, {"h", "H"}, f)
 	return state
 end
 
@@ -353,20 +356,6 @@ function DS.bestiaryEntry(data, f)
 	return DS.fields(DS.clone(data), {"health"}, f)
 end
 
--- the spell list (spellbook.lua): a flat mana cost; a cost in percent of max mana (manaPercent) stays a percent
-function DS.spellList(list, f)
-	if f == 1 or type(list) ~= "table" then
-		return list
-	end
-	list = DS.clone(list)
-	for _, s in ipairs(list) do
-		if type(s) == "table" and not s.manaPercent then
-			s.mana = DS.scale(s.mana, f)
-		end
-	end
-	return list
-end
-
 -- ---------------------------------------------------------------- item tooltips
 local function flatKey(k)
 	if type(k) ~= "string" then
@@ -387,7 +376,7 @@ function DS.itemFactor(tip)
 	return req and DS.factor(req) or 1
 end
 
--- an item tooltip (item_tooltip_core.lua T.build): the flat health / mana / damage / heal rows (cfg.itemFlatKeys) of
+-- an item tooltip (item_tooltip_core.lua T.build): the flat health / damage / heal rows (cfg.itemFlatKeys; mana stays) of
 -- base, mods (value, range, text, and the second value when it has its own flat key), stats and the socket lines of
 -- flat gems, at the factor of the item's level requirement. tip.ds = that factor (always set, 1 included), so the
 -- client's compare view brings a worn item of another level to this one's scale.
@@ -424,7 +413,7 @@ function DS.itemTip(tip)
 	end
 	local sockets = type(tip.sockets) == "table" and tip.sockets.list or nil
 	for _, g in ipairs(sockets or {}) do
-		if type(g.text) == "string" and (g.text:find("Max Health", 1, true) or g.text:find("Max Mana", 1, true)) then
+		if type(g.text) == "string" and g.text:find("Max Health", 1, true) then
 			g.text = DS.scaleNumbersIn(g.text, f)
 		end
 	end

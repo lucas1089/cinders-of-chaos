@@ -172,7 +172,7 @@ ChaosMainWindow
     id: howTo
     phantom: false
     anchors.left: parent.left
-    anchors.right: closeButton.left
+    anchors.right: offerButton.left
     anchors.verticalCenter: closeButton.verticalCenter
     margin-left: 6
     margin-right: 8
@@ -180,6 +180,16 @@ ChaosMainWindow
     color: #70c8f0
     text-align: left
     !text: tr('How to earn points (hover)')
+
+  ChaosButton
+    id: offerButton
+    anchors.right: closeButton.left
+    anchors.bottom: parent.bottom
+    margin-right: 6
+    width: 120
+    !text: tr('Offer junk orbs')
+    !tooltip: tr('Trade the common orbs you do not need (Upheaval, Awakening, Whetstone, Erasure) for Ember points: 10 orbs a point, at most 60 points a day.')
+    @onClick: modules.game_embercache.offerOrbs()
 
   ChaosButton
     id: closeButton

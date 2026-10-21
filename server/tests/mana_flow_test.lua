@@ -1,5 +1,6 @@
 -- Run from the server/ folder: luajit tests/mana_flow_test.lua (and lua5.3; CI runs both)
--- The mana flow (server/README.md "Mana flow"): regeneration by level and the cap of a spell's cost. Beta report:
+-- The mana flow (server/README.md "Mana flow"): regeneration by level; fixed spell costs (no cap, no percent of the
+-- maximum mana; owner 2026-10-21, server/README.md "Fixed spell costs"). Beta report:
 -- a level 800 Juggernaut sustained nothing without infinite mana potions.
 local count, failures = 0, 0
 local function eq(a, b, what)
@@ -42,15 +43,49 @@ eq(F.regenPerSecond(800) + VOC_REGEN >= 50, true, "level 800 sustains 50 a secon
 eq(pool(300) / (44 - F.regenPerSecond(300) - VOC_REGEN) > 60, true, "level 300 runway over 60 s")
 eq(pool(100) / (31.25 - F.regenPerSecond(100) - VOC_REGEN) >= 15, true, "level 100 keeps the 15 s runway rule")
 
--- the cap
-eq(F.capCost(400, 800, 4000, 0), 400, "400 of 4000 is under 25%")
-eq(F.capCost(1800, 800, 4000, 0), 1000, "capped at 25% of the maximum")
-eq(F.capCost(400, 260, 1330, 0), 332, "Colossus Fall at level 260: 25% of 1330")
-eq(F.capCost(400, 99, 100, 0), 400, "below level 100 no cap")
-eq(F.capCost(0, 800, 4000, 0), 0, "a free cast stays free")
-eq(F.capCost(1800, 800, 1000, 3000), 1000, "reserved mana counts: 25% of 4000, not of 1000")
-eq(F.capCost(5, 800, 0, 0), 5, "no pool known: unchanged")
-eq(F.capCost(5, 800, 3, 0), 1, "at least 1 when capped")
+-- fixed spell costs (owner 2026-10-21, server/README.md "Fixed spell costs"): no cap, no rule of the level or the pool
+eq(F.capCost, nil, "no cost cap (a cost never depends on the maximum mana)")
+eq(C.cap, nil, "no cap numbers")
+local function readAll(path)
+	local f = assert(io.open(path, "r"))
+	local s = f:read("*a")
+	f:close()
+	return s
+end
+-- every Chaos spell has one flat mana number; none costs a percentage of the maximum mana
+local xml = readAll("data/spells/chaos/spells_chaos.xml"):gsub("<!%-%-.-%-%->", "")
+local spells = 0
+for tag in xml:gmatch("<instant%s[^>]*>") do
+	spells = spells + 1
+	local name = tag:match('name="([^"]*)"') or "?"
+	eq(tag:find("manapercent", 1, true), nil, name .. ": no manapercent")
+	eq(tag:match(' mana="(%d+)"') ~= nil, true, name .. ": a fixed mana number")
+end
+eq(spells > 100, true, "the Chaos spells were read")
+eq(readAll("data/spells/chaos/spells_chaos.xml"):match('name="Shadow Mend"[^>]* mana="(%d+)"'), "40",
+	"Shadow Mend: 40 mana at every level (it was 2% of the maximum mana)")
+-- the stock spells the classes keep: a number in the mana column (stock_spells.csv, spell_timings.csv)
+for _, csv in ipairs({"data/spells/stock_spells.csv", "data/spells/spell_timings.csv"}) do
+	local header, col
+	for line in readAll(csv):gmatch("[^\n]+") do
+		if not header then
+			header = true
+			local i = 0
+			for field in line:gmatch("[^,]+") do
+				i = i + 1
+				if field == "mana" then col = i end
+			end
+			eq(col ~= nil, true, csv .. ": a mana column")
+		else
+			local i, value = 0, nil
+			for field in (line .. ","):gmatch("([^,]*),") do
+				i = i + 1
+				if i == col then value = field end
+			end
+			eq(value == "" or value:match("^%d+$") ~= nil, true, csv .. ": a flat mana number in " .. line:sub(1, 40))
+		end
+	end
+end
 
 -- the engine glue against a mock
 local added = {}
@@ -66,8 +101,9 @@ local registered
 GlobalEvent = function() local e = {}; e.interval = function() end; e.register = function() registered = true end; return e end
 ChaosVigils = {applied = {[2] = {mana = 3000}}}
 ChaosRift = {runOf = {[3] = {fx = {noMana = true}}}}
-local costFn
-ChaosSpellEvents = {set = function(kind, key, fn) if kind == "cost" and key == "manaflow" then costFn = fn end end}
+local costFn, removed = nil, nil
+ChaosSpellEvents = {set = function(kind, key, fn) if kind == "cost" then costFn = fn end end,
+	remove = function(kind, key) removed = kind .. ":" .. key end}
 ChaosManaFlow = nil
 dofile("data/scripts/chaos/mana_flow.lua")
 eq(registered, true, "think registered")
@@ -80,10 +116,8 @@ eq(added[3], nil, "Parched Veins: nothing")
 eq(added[4], nil, "level 50: nothing")
 eq(added[5], nil, "full: nothing")
 eq(added[6], nil, "dead: nothing")
-local c, h = costFn(mkPlayer(2, 800, 0, 1000), "x", 1, 1, true, 1800, 7)
-eq(c, 1000, "the handler caps with the reserved mana added back")
-eq(h, 7, "health cost passes through")
-eq((costFn(mkPlayer(1, 800, 0, 4000), "x", 1, 1, true, 400, 0)), 400, "an ordinary cost passes")
+eq(costFn, nil, "no spell cost handler: a cost is the spell's fixed number")
+eq(removed, "cost:manaflow", "the old cap handler is dropped (it survives a /reload otherwise)")
 
 print(string.format("mana_flow_test: %d checks, %d failures", count, failures))
 if failures > 0 then os.exit(1) end

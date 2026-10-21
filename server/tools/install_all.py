@@ -25,6 +25,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_help_itemlinks.py     no item links in the Help channel (when the tool exists)
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_shadow_mute.py        shadow mute hook in the public channels (when the tool exists)
+               tools/patch_help_ai.py            the Help channel assistant's hook in help.lua (when the tool exists)
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
                tools/patch_base_spellbook.py     the stock spellbook item opens the Spellbook window (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
@@ -95,11 +96,21 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                vendor and bad-luck protection")
   supports     tools/install_supports.py         the spell support runes in items.otb / items.xml and the spell-library hook (scripts/chaos/SUPPORTS.md)
   monsters     tools/register_monsters.py        every folder under data/monster/monsters/chaos (world bosses, goblin, ...)
+  debuffs      tools/patch_debuff_durations.py   monster debuffs (slow, outfit, drunk, strength) last at most 10 s
+  corpses      tools/patch_corpse_decay.py       every corpse (all its decay stages) stays at most 5 min (items.xml durations)
   spawns       tools/patch_base_spawns.py        spawn density and respawn of the loaded map's spawn file from
                tools/spawn_tuning.json: dead monster lines of monsters.xml, glitched spawntimes, the 300-600 band's
                respawn, entries on blocking tiles moved, spawns added in thin areas (README "Spawn density and
                respawn"; after monsters, which it reads)
-  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells go; their ids are free (C6, 2026-10-20)
+  spells       tools/retire_cure_spells.py       the stock cure (status cleansing) spells, Hawkeye, Bulwark and
+                                                 Windrunner go; their ids are free (C6, 2026-10-20)
+               tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
+                                                 have, stock spells no class keeps are retired (docs/CLASSES.md
+                                                 "Spell cap", 2026-10-20)
+                                                 Both keep a spell a monster names (base or Chaos monster, e.g. "arc
+                                                 bolt", "dread") in a monster-only form instead (tools/monster_spells.py:
+                                                 "###chaos" words, needlearn, no vocation, no spellid) and bring back
+                                                 such a spell an earlier run commented out (README "Monster spells")
                tools/register_spells.py          the Chaos spells (README "Install" 3)
                tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
                                                  below 256 (README "Spell ids below 256")
@@ -117,6 +128,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
                                                  revscripts, no premium test in the NPC spell teachers (README
                                                  "Free spells")
+               tools/monster_spells.py           every monster spell name is a spell of spells.xml or a built-in
+                                                 (a warning per unknown name; README "Monster spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -169,13 +182,19 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                name"; after worldtexts)
   houses       tools/patch_base_houses.py        Chaos street names of the houses by house id (tools/base_house_names.csv)
                in the map's house file (README "Base houses")
+  rewardchests tools/patch_reward_chests.py     the old plain quest chests of the planned areas already on the map
+               (chest 1740 with an action id of 47960-47999) become the reward chest of rift_config.lua (21584), so the
+               contentareas step sees its placed areas unchanged (README "Reward chests"; right before contentareas)
   contentareas tools/install_content_areas.py   the planned content hunts (tools/areaplan/plans/) into the map at their
                origins, their spawns and chest scripts; the teleport room of Cinderhold grows by copies of its alcove
                modules on floor 6, the display monsters beside each new teleport go into the spawn file, and
                data/lib/chaos_hunt_places.lua tells hunt_teleports.lua where each teleport leads (README "Hunt
                teleports"); with tools/hall_hunts.csv the hall is ordered by level (z 7 levels 1-500, z 6 500-1000, z 5
                1000+), the base quests move to their own hall with their rewards, the daily/weekly reward chests of the
-               plaza go and the low-level hunts are added (README "Hall order"); also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
+               plaza go and the low-level hunts are added, the ways back from the hunts and quests follow their
+               teleports and the ground floor's wings get ground under every tile (README "Hall order"; re-run over
+               an earlier hall it repairs that one: rewards left in the old alcoves, lost quest teleports, holes);
+               also the fixed areas of tools/areaplan/chronicle/ (the Ashen Chronicle's two chapter
                areas, the Capital Memorial's plaza) and tools/areaplan/rooms/ (the Idle Hall, README "Idle Hall") at
                their origins, without a teleport (their runtime portals are in the capital; after houses, before poi, which then sees the new spawns; with --dry-run it reads the
                real map and writes nothing)
@@ -432,6 +451,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_shadow_mute.py')):
         ok8, more = run_tool([tool('patch_shadow_mute.py'), data], 'patch_shadow_mute.py')
         ok, lines = ok8, lines + more
+    if ok and os.path.isfile(tool('patch_help_ai.py')):
+        ok9, more = run_tool([tool('patch_help_ai.py'), data], 'patch_help_ai.py')
+        ok, lines = ok9, lines + more
     if ok:
         ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
         ok, lines = ok5, lines + more
@@ -620,6 +642,20 @@ def step_monsters(server, data, ctx):
     return True, lines, []
 
 
+def step_debuffs(server, data, ctx):
+    return tool_result(run_tool([tool('patch_debuff_durations.py'), data], 'patch_debuff_durations.py'))
+
+
+STEPS.insert(STEPS.index('monsters') + 1, 'debuffs')  # after the Chaos monsters are registered (base and Chaos files)
+
+
+def step_corpses(server, data, ctx):
+    return tool_result(run_tool([tool('patch_corpse_decay.py'), data], 'patch_corpse_decay.py'))
+
+
+STEPS.insert(STEPS.index('sql'), 'corpses')  # late: after every step that adds corpse items to items.xml
+
+
 def step_spawns(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_spawns.py'), data, '--config', os.path.join(server, 'config.lua')],
                                 'patch_base_spawns.py'))
@@ -628,6 +664,12 @@ def step_spawns(server, data, ctx):
 def step_spells(server, data, ctx):
     # the stock cure spells go first: their ids belong to the Chaos block now (retire_cure_spells.py)
     ok, lines = run_tool([tool('retire_cure_spells.py'), data], 'retire_cure_spells.py')
+    if not ok:
+        return False, lines, []
+    # the 15-spell cap (patch_spell_cap.py): after add_vocations.py (vocations step), before the tools that renumber,
+    # rename and tune the stock spells
+    ok, more = run_tool([tool('patch_spell_cap.py'), data], 'patch_spell_cap.py')
+    lines += more
     if not ok:
         return False, lines, []
     ok, more = run_tool([tool('register_spells.py'), data], 'register_spells.py')
@@ -661,7 +703,7 @@ def step_spells(server, data, ctx):
     if ok:
         ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')
         lines += more
-    warn = unregistered_spell_fragments(data)
+    warn = unregistered_spell_fragments(data) + unknown_monster_spells(data)
     return ok, lines, warn
 
 
@@ -787,11 +829,28 @@ def step_poi(server, data, ctx):
     return tool_result(run_tool([tool('gen_poi.py'), server], 'gen_poi.py'))
 
 
-def step_contentareas(server, data, ctx):
+def step_rewardchests(server, data, ctx):
     if ctx['dry']:
-        # the dry copy has no map: read the real one, write nothing
+        # the dry copy has no map: read the real one; a changed map goes into the copy's temp folder, where the
+        # contentareas step reads it
         real = os.path.join(ctx['server'], 'data')
         mp = tool_map_path(real)
+        if not mp:
+            return tool_result((False, ['no map in %s/world' % real]))
+        out = os.path.join(ctx['tmp'], 'reward_chests.otbm')
+        ok, lines = run_tool([tool('patch_reward_chests.py'), real, '--dry-run', '--map', mp, '--out', out],
+                             'patch_reward_chests.py')
+        if ok and os.path.isfile(out):
+            ctx['dry_map'] = out
+        return tool_result((ok, lines))
+    return tool_result(run_tool([tool('patch_reward_chests.py'), data], 'patch_reward_chests.py'))
+
+
+def step_contentareas(server, data, ctx):
+    if ctx['dry']:
+        # the dry copy has no map: read the real one (or the rewardchests step's patched copy), write nothing
+        real = os.path.join(ctx['server'], 'data')
+        mp = ctx.get('dry_map') or tool_map_path(real)
         if not mp:
             return tool_result((False, ['no map in %s/world' % real]))
         return tool_result(run_tool([tool('install_content_areas.py'), data, '--dry-run', '--map', mp],
@@ -800,6 +859,7 @@ def step_contentareas(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('houses') + 1, 'contentareas')  # after houses (map steps), before poi
+STEPS.insert(STEPS.index('contentareas'), 'rewardchests')  # right before contentareas (same map, its placed check)
 
 
 def tool_map_path(data_dir):
@@ -933,6 +993,16 @@ def unregistered_spell_fragments(data):
                         'server/tools/install_class_<name>.py, the class hook of the spells step)'
                         % (name, len(missing), len(words)))
     return warn
+
+
+def unknown_monster_spells(data):
+    """monster attacks and defenses that name a spell spells.xml no longer has (monster_spells.py; the engine prints
+    "Unknown spell name" and the monster loses the attack)"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import monster_spells
+    return ['monster spell "%s" is not an instant or rune of spells.xml (%d monster file(s), e.g. %s): '
+            'tools/monster_spells.py %s' % (n, len(set(f)), os.path.relpath(sorted(f)[0], data), data)
+            for n, f in monster_spells.unknown(data)]
 
 
 def sql_files(ctx):

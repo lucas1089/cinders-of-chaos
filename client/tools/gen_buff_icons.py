@@ -752,6 +752,34 @@ def m_vigil_tithe(c):
     c.px(['h'], 11, 9, {'h': CH})
 
 
+# Tautstring (the Ranger line's distance buff, data/spells/chaos/paladin/tautstring.lua): a bow drawn to the full, the
+# arrow nocked on the string
+def m_tautstring(c):
+    c.arc(3, 3, 19, 23, 270, 90, B, 1.6)                                          # the bow's limbs
+    c.line([(11, 4), (6, 13), (11, 22)], BL, 0.6)                                  # the string, pulled back
+    c.line([(6, 13), (21, 13)], A, 1.0)                                            # the arrow
+    c.poly([(23, 13), (19, 10), (19, 16)], AH)                                     # its head
+    c.poly([(5, 10), (8, 13), (5, 16), (4, 13)], A)                                # the fletching
+    c.px(['W'], 21, 12, {'W': W})
+
+
+# Ironhold (the Warrior line's guard buff, data/spells/chaos/knight/ironhold.lua): a riveted tower shield, iron bands
+def m_ironhold(c):
+    shield(c, 5, 3, 21, 23, A)                                                     # the shield
+    c.line([(5.5, 9), (20.5, 9)], AD, 1.0); c.line([(5.5, 15), (20.5, 15)], AD, 1.0)  # two iron bands
+    c.line([(13, 4), (13, 21)], B, 1.0)                                            # the spine
+    c.px(['h', '', '', '', '', '', 'h'], 8, 6, {'h': AH}); c.px(['h', '', '', '', '', '', 'h'], 17, 6, {'h': AH})
+
+
+# Wildstride (the Ranger line's run buff, data/spells/chaos/paladin/wildstride.lua): a leaf on the wind, speed lines
+def m_wildstride(c):
+    c.poly([(6, 18), (12, 8), (21, 4), (18, 13), (9, 20)], A)                      # the leaf
+    c.line([(7, 19), (19, 6)], AD, 0.7)                                            # its vein
+    for y, x0 in ((10, 2), (15, 3), (20, 9)):                                      # speed lines behind it
+        c.line([(x0, y + 3), (x0 + 5, y + 3)], BL, 0.8)
+    c.px(['W'], 18, 6, {'W': W})
+
+
 # time-friendly progression (server catchup.lua)
 def m_rested(c):
     c.ell(3, 4, 19, 20, A)                                                         # a crescent moon: rest
@@ -814,6 +842,8 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'vigil_wrath': (m_vigil_wrath, 'blood', 'wood', 'ember'), 'vigil_iron': (m_vigil_iron, 'steel', 'wood', 'gold'),
     'vigil_haste': (m_vigil_haste, 'nature', 'wood', 'wind'), 'vigil_clarity': (m_vigil_clarity, 'arcane', 'wood', 'water'),
     'vigil_tithe': (m_vigil_tithe, 'obsidian', 'wood', 'blood'),
+    'tautstring': (m_tautstring, 'nature', 'wood'),
+    'ironhold': (m_ironhold, 'steel', 'wood'), 'wildstride': (m_wildstride, 'nature', 'wind'),
 }
 
 # the class buffs that come from a Chaos spell show that spell's icon (key -> the spell's words)

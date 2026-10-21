@@ -4,6 +4,12 @@
 -- numbers of one hit (physical + element) share a roll, so they stay side by side. Window: Character > Damage Numbers
 -- (on / off and strength: Subtle, Normal, Wide), kept per character in g_settings node chaosDamageScatter. A client
 -- without patch 0081 has no setScatter: one warning, nothing changes.
+-- Base patch 0100 (client/MANIFEST.md "Typed impact numbers"): the damage, heal, mana and experience numbers come
+-- through g_map.onImpactText before they reach the map, with the type the server tagged (normal, critical, damage over
+-- time, mana ...), so this module also gives them a drift (direction and speed of the float), a font per type (a big
+-- one for critical hits) and turns on GameChaosAttachedImpactText (numbers follow their creature) at every game start
+-- when the option Options > Interface "Damage numbers follow the creature" is on. Other animated texts (the server's
+-- labels) still come through g_map.onAnimatedText and keep the shift and speed only.
 local L = DamageScatterLogic
 
 local window
@@ -35,9 +41,31 @@ local function levelNames()
   return { tr('Subtle'), tr('Normal'), tr('Wide') }
 end
 
--- ---------------------------------------------------------------- the hook
+local function fontExists(name)
+  return g_fonts and g_fonts.fontExists and g_fonts.fontExists(name) or false
+end
+
+-- ---------------------------------------------------------------- the hooks
+-- base patch 0100: every damage, heal, mana and experience number, before it is put on the map; never cancels
+local function onImpactText(thing, text, mode, typeId, value, percent, creatureId, pos)
+  if not thing then return false end
+  local font = L.fontFor(typeId, fontExists)
+  if font and thing.setFont then thing:setFont(font) end
+  if settings.enabled and thing.setScatter and thing.setSpeedScale then
+    local dx, dy, speed, sx, sy = L.pickImpact(group, settings, pos, g_clock.millis(), rng, typeId, mode)
+    if dx then
+      thing:setScatter({ x = dx, y = dy })
+      thing:setSpeedScale(speed)
+      if thing.setAnimationSpeed then thing:setAnimationSpeed({ x = sx, y = sy }) end
+    end
+  end
+  return false
+end
+
 local function onAnimatedText(thing)
   if not settings.enabled or not thing then return end
+  -- an impact number (base patch 0100) was handled by onImpactText before it reached the map
+  if thing.getImpactType and thing:getImpactType() >= 0 then return end
   if not thing.setScatter or not thing.setSpeedScale then
     if not warned then
       warned = true
@@ -115,8 +143,34 @@ local function addMenu()
     { text = MENU_TEXT, icon = 'skills', modules = { 'game_damagescatter' }, fns = { 'toggle' } })
 end
 
+-- ---------------------------------------------------------------- numbers follow their creature (base patch 0100)
+local function attachedOption()
+  local cs = modules.client_settings
+  if cs and cs.getOption then
+    local ok, value = pcall(cs.getOption, 'attachedImpactText')
+    if ok then return L.attachedWanted(value) end
+  end
+  return true
+end
+
+local function applyAttached(on)
+  if not GameChaosAttachedImpactText then return end -- a client without base patch 0100
+  if on then
+    g_game.enableFeature(GameChaosAttachedImpactText)
+  else
+    g_game.disableFeature(GameChaosAttachedImpactText)
+  end
+end
+
+-- from the option's apply (client_settings dataset.lua); the features are reset at every login, so onGameStart sets it
+-- again
+function setAttached(value)
+  applyAttached(L.attachedWanted(value))
+end
+
 -- ---------------------------------------------------------------- lifecycle
 local function onGameStart()
+  applyAttached(attachedOption())
   charKey = L.key(g_game.getWorldName and g_game.getWorldName() or nil, g_game.getCharacterName())
   group = {}
   loadSettings()
@@ -134,7 +188,7 @@ function init()
   rng = L.newRng((os.time() % 100000) * 1000 + g_clock.millis() % 1000)
   handlers.game = { onGameStart = onGameStart, onGameEnd = onGameEnd }
   connect(g_game, handlers.game)
-  handlers.map = { onAnimatedText = onAnimatedText }
+  handlers.map = { onAnimatedText = onAnimatedText, onImpactText = onImpactText }
   connect(g_map, handlers.map)
   if g_game.isOnline() then onGameStart() end
 end

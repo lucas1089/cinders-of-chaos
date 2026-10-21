@@ -305,6 +305,28 @@ do
   eq(rows[#rows].text, 'Weight 10 oz', 'the weight stays last')
 end
 
+-- ---------------------------------------------------------------- live charges (owner 2026-10-20: an Exercise wand
+-- in training kept "Charges: 500" in its tooltip)
+eq(L.liveTip({ charges = { n = 499, max = 500 } }), true, 'counted charges are live')
+eq(L.liveTip({ charges = { n = 500 } }), true, 'full charges are live too')
+eq(L.liveTip({ charges = { unlimited = true } }), false, 'unlimited charges never change')
+eq(L.liveTip({ name = 'sword' }), false, 'no charges')
+eq(L.liveTip(nil), false, 'no tip')
+do
+  local lc = L.newCache()
+  L.cachePut(lc, 'p:65535:64:0:3000:1', { charges = { n = 500 } }, true, 10)
+  L.cachePut(lc, 'q', { name = 'Q' }, false, 10)
+  eq(L.cacheDrop(lc, 'p:65535:64:0:3000:1'), true, 'the live entry is dropped')
+  eq(L.cacheGet(lc, 'p:65535:64:0:3000:1', 10), nil, 'and gone')
+  eq(#lc.order, 1, 'and out of the order list')
+  eq(lc.order[1], 'q', 'the other entry stays')
+  eq(L.cacheDrop(lc, 'nothing'), false, 'dropping a missing key')
+  -- a new answer for the same key after the drop is cached again with the new number
+  L.cachePut(lc, 'p:65535:64:0:3000:1', { charges = { n = 499, max = 500 } }, true, 11)
+  eq(L.chargesText(L.cacheGet(lc, 'p:65535:64:0:3000:1', 11).charges), 'Charges: 499 of 500', 'the new charges show')
+  eq(#lc.order, 2, 'no duplicate in the order list')
+end
+
 if fails > 0 then
   print(fails .. ' failure(s)')
   os.exit(1)

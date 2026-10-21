@@ -23,7 +23,7 @@ V.COLORS = { gold = '#e8b84a', text = '#d8ccb4', dim = '#8c8070', good = '#8fd16
 V.TABS = {
   { id = 'uniques', text = 'Uniques', groups = { monster = true, boss = true } },
   { id = 'sets', text = 'Set Pieces', groups = { set = true } },
-  { id = 'chase', text = 'Raid and Ascended', groups = { raid = true, ascended = true } },
+  { id = 'chase', text = 'Raid & Ascended', tip = 'Raid and Ascended', groups = { raid = true, ascended = true } },
   { id = 'cinder', text = 'Cinderheart' },
   { id = 'refine', text = 'Refine' },
   { id = 'progress', text = 'Progress' },

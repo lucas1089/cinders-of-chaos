@@ -5,7 +5,8 @@
 --   * melee_skill.lua (the training callback) against a mocked player: the tries of a weaker melee skill go to the best
 --     one, once, through the same chain; other skills, a tie and a zero are left alone
 --   * weapon_styles.lua (the hit): a sword, axe or club hit is the hit of the best melee skill; a two-handed melee hit
---     gets the level's style factor; a one-handed hit with the best skill is untouched
+--     gets the level's style factor; a one-handed hit with the best skill is untouched; a wand hit is scaled by the
+--     magic level (weapon_skill_core.lua)
 --   * the spells' helper ChaosSpell.meleeSkillLevel and the vocations' equal melee multipliers (chaos_vocations*.xml)
 dofile("data/scripts/chaos/melee_skill_core.lua")
 local M = ChaosMeleeSkill
@@ -145,7 +146,8 @@ local ITEMS = {
 	[2] = {weaponType = WEAPON_AXE, attack = 50, slot = 0},
 	[3] = {weaponType = WEAPON_AXE, attack = 53, slot = SLOTP_TWO_HAND},
 	[4] = {weaponType = WEAPON_CLUB, attack = 50, slot = 0},
-	[5] = {weaponType = WEAPON_SHIELD, attack = 0, slot = 0}
+	[5] = {weaponType = WEAPON_SHIELD, attack = 0, slot = 0},
+	[6] = {weaponType = WEAPON_WAND, attack = 0, slot = 0}
 }
 function ItemType(id)
 	local t = ITEMS[id]
@@ -234,6 +236,25 @@ ok(f > 1.3 and f < 1.6, "the two-handed factor is below the old flat 1.6 (" .. s
 -- no weapon: nothing
 local bare = attacker(100, {[SKILL_SWORD] = 100})
 eq(swing(bare, -100), -100, "no weapon in the hands")
+
+-- a wand or rod (weapon_skill_core.lua): the engine's flat hit (melee origin in this engine) x the magic level against
+-- the typical one of the level; no melee skill rule, no style factor
+local WS = ChaosWeaponSkill
+local mage = attacker(300, {})
+mage.ml = 100
+function mage:getMagicLevel() return self.ml end
+mage.slots[CONST_SLOT_LEFT] = newItem(6)
+eq(swing(mage, -100), -100, "a wand at the typical magic level of level 300: the engine's hit")
+mage.ml = 140
+eq(swing(mage, -100), -math.floor(100 * WS.wandFactor(300, 140) + 0.5), "a higher magic level hits harder")
+ok(swing(mage, -100) < -110, "(by more than 10%)")
+mage.ml = 60
+eq(swing(mage, -100), -math.floor(100 * WS.wandFactor(300, 60) + 0.5), "a lower magic level hits less")
+ok(swing(mage, -100) > -90, "(by more than 10%)")
+eq(swing(mage, -100, ORIGIN_SPELL), -100, "a spell with a wand in hand is untouched")
+mage.storage[7100028] = 1
+eq(swing(mage, -100), -100, "a scripted strike is untouched")
+mage.storage[7100028] = 0
 
 -- ------------------------------------------------------------------ the spells' helper
 ChaosSpell = {}

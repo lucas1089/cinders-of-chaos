@@ -2,7 +2,7 @@
 -- through Chaos.sendChunked and is joined by ProtocolGame.registerExtendedJSONOpcode).
 --   client -> server  open | close | buy {k}
 --   server -> client  state {...} (see conquestview.lua) | result {ok, text} | npc {} (Iselde Varrow opens the window)
--- Tabs: Uniques, Set Pieces, Raid and Ascended, Cinderheart (Omen Keys of a chosen kind, Ascended Shards, conversions),
+-- Tabs: Uniques, Set Pieces, Raid & Ascended, Cinderheart (Omen Keys of a chosen kind, Ascended Shards, conversions),
 -- Refine (a worn item one rarity up), Progress (bad-luck protection, today's tokens per source). One purchase at a time:
 -- a Buy click disables every Buy button until the answer comes (BUY_WAIT_MS at most). Menu: Economy > Conquest Vendor.
 
@@ -146,7 +146,10 @@ local function buildTabs()
   for _, t in ipairs(V.TABS) do
     local b = g_ui.createWidget('ChaosTabButton', bar)
     b:setText(tr(t.text))
-    b:setWidth(112)
+    if t.tip then b:setTooltip(tr(t.tip)) end
+    -- an even share of the bar (a fixed 112 px cut "Raid and Ascended"); 112 before the bar has its width
+    local n, w = #V.TABS, bar:getWidth()
+    b:setWidth(w > 0 and math.floor((w - 3 * (n - 1)) / n) or 112)
     local id = t.id
     b.onClick = function() selectTab(id) end
     tabButtons[id] = b

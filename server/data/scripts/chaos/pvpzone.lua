@@ -561,13 +561,40 @@ local function clearSkull(player)
 	end
 end
 
-local function returnPos(player)
+-- where the player goes out: where he entered (or the temple when that place is gone); a defeat follows
+-- death.respawn (K.defeatDestination: the temple by default)
+local function returnPos(player, why)
 	local st = ST()
 	local x, y, z = player:getStorageValue(st.retX), player:getStorageValue(st.retY), player:getStorageValue(st.retZ)
-	if x > 0 and y > 0 and z >= 0 and Tile(Position(x, y, z)) and not Z.inZone({x = x, y = y, z = z}) then
+	local entryOk = x > 0 and y > 0 and z >= 0 and Tile(Position(x, y, z)) ~= nil and not Z.inZone({x = x, y = y, z = z})
+	if why == "defeat" and K.defeatDestination(C(), entryOk) == "temple" then
+		return player:getTown():getTemplePosition()
+	end
+	if entryOk then
 		return Position(x, y, z)
 	end
 	return player:getTown():getTemplePosition()
+end
+
+-- the battle lock and its white skull off, now and again a moment later (combatLock.clearAfterMs): the engine still
+-- runs its attack bookkeeping after a cancelled lethal hit (onPrepareDeath) and would put the lock back for the
+-- server's whole pzLocked time. Only once the player is outside the zone.
+local function dropLock(player)
+	clearSkull(player)
+	player:removeCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
+end
+
+local function dropLockLater(player)
+	local cid = player:getId()
+	for _, ms in ipairs((C().combatLock or {}).clearAfterMs or {}) do
+		addEvent(function()
+			local p = Player(cid)
+			if p and not Z.state[cid] and Z.inZone(p:getPosition()) == nil then
+				dropLock(p)
+				cleanse(p)
+			end
+		end, ms)
+	end
 end
 
 local function clearMarkers(player)
@@ -585,11 +612,12 @@ local function release(player, why)
 	clearSkull(player)
 	player:removeCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
 	heal(player)
-	local dest = returnPos(player)
+	local dest = returnPos(player, why)
 	clearMarkers(player)
 	player:teleportTo(dest)
 	player:getPosition():sendMagicEffect(CONST_ME_TELEPORT)
-	player:removeCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
+	dropLock(player)
+	dropLockLater(player)
 	send(player, "hide", {why = why})
 end
 
@@ -740,7 +768,8 @@ local function lost(player, st)
 	end
 	local carried = getCarried(player)
 	setCarried(player, 0)
-	clearSkull(player)
+	dropLock(player)
+	dropLockLater(player)
 	send(player, "hide", {why = "lost"})
 	if carried > 0 then
 		msg(player, string.format("You left the Marches without a safe exit: your %d carried embers burned.", carried))
@@ -1268,6 +1297,13 @@ function Z.tick()
 					"bank your embers.", cfg.login.protectSeconds))
 			end
 			clearSkull(player)
+			-- the battle lock never runs longer than combatLock.maxSeconds in here (each player hit renews it with the
+			-- server's whole pzLocked time)
+			local cond = player:getCondition(CONDITION_INFIGHT, CONDITIONID_DEFAULT)
+			local cut = cond and K.lockTicks(cfg, cond:getTicks())
+			if cut then
+				cond:setTicks(cut)
+			end
 			local inst = Z.inst[slot]
 			if not st.moveAt and K.exitAt(cfg, inst.L, player:getPosition()) then
 				-- burning, poison and the like would keep resetting the channel (beta report 2026-10-20: a 3 minute debuff

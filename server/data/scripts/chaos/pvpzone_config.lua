@@ -70,6 +70,11 @@ return {
 	-- bracket of the target sets the reference level); healing from others is not scaled
 	pvpScale = true,
 	assistSeconds = 10, -- a player's hit in the victim's last seconds makes him the killer when a monster lands the last blow
+	-- the battle lock (the engine's CONDITION_INFIGHT: the PvP lock and the white skull ride on it, renewed with the
+	-- server's pzLocked time by every player hit). Beta 2026-10-20: it outlived the zone by 3+ minutes. Inside it is cut
+	-- to maxSeconds every tick; leaving (exit, defeat, any way out) removes it, and again `clearAfterMs` later, because a
+	-- cancelled lethal hit still runs the engine's attack bookkeeping after onPrepareDeath and puts it back.
+	combatLock = {maxSeconds = 60, clearAfterMs = {100, 1000}},
 	hudSeconds = 2, -- HUD refresh while inside
 
 	-- ------------------------------------------------------------------ embers (the zone's currency)
@@ -78,6 +83,11 @@ return {
 	-- per monster killed inside (the player with the most damage), by tier (monster_tiers.lua)
 	monsterEmbers = {normal = 2, magic = 6, rare = 15, legendary = 40, boss = 150},
 	death = {
+		-- where a defeat sends the player (decided 2026-10-20, beta report: "respawns on a safe zone" with a 3+ minute
+		-- debuff): "temple", the home town's temple, the place every other death sends a character, never inside the
+		-- zone (the entry cooldown would keep him waiting there) and never the protection zone he happened to enter from
+		-- (a depot, a hideout door). "entry" = back where he entered (the behaviour before).
+		respawn = "temple",
 		dropShare = 1.0, -- share of the carried embers that fall into the pile (the rest burns)
 		ownerSeconds = 30, -- only the killer may take the pile this long (a monster's victim: anyone at once)
 		pileSeconds = 120, -- then the pile burns out

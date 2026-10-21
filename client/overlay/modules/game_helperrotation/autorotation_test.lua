@@ -68,8 +68,9 @@ ok(table.concat(templar.spells, ','):find('189'), 'Templar 300: Radiant Smite in
 -- select: every spell castable gives the preset
 local p300 = A.presetFor(5, 300) -- Elementalist
 local sel = A.select(5, 300, function() return true end)
-eq(table.concat(sel.ids, ','), table.concat(p300.spells, ','), 'the preset as it is')
-eq(sel.gap, p300.gap, 'its gap')
+local p300ids, _, p300moved = A.areaFirst(p300.spells, p300.creatures or {})
+eq(table.concat(sel.ids, ','), table.concat(p300ids, ','), 'the preset, area spells first')
+eq(sel.gap, p300moved and A.gap(sel.ids) or p300.gap, 'its gap')
 eq(sel.changed, false, 'unchanged')
 -- a spell the character cannot cast (not learned, a lower level) is replaced from an earlier preset
 local missing = p300.spells[1]
@@ -151,7 +152,15 @@ for vocId, c in pairs(D.classes) do
         ok(sel.creatures[i] == 1 or sel.creatures[i] == 2, c.name .. ': 1+ or 2+')
       end
       local preset = A.presetFor(vocId, level)
-      for i, id in ipairs(preset.spells) do eq(sel.ids[i], id, c.name .. ': the preset leads') end
+      local inSel = {}
+      for _, id in ipairs(sel.ids) do inSel[id] = true end
+      for _, id in ipairs(preset.spells) do ok(inSel[id], c.name .. ': the preset is in it') end
+      local single = false
+      for _, id in ipairs(sel.ids) do
+        local area = D.spells[id] and D.spells[id].area
+        ok(not (area and single), c.name .. ' level ' .. level .. ': area spells above single-target ones')
+        if not area then single = true end
+      end
     end
   end
 end
@@ -159,8 +168,20 @@ do
   local m = D.classes[1]
   local at = firstLevel(m)
   local sel = A.select(1, 8, function(id) return at[id] ~= nil and at[id] <= 8 end)
-  eq(sel.ids[1], 169, 'Mystic 8: Kindling Spark first')
-  eq(#sel.ids, 3, 'Mystic 8: the level 1 spells below it')
+  local first = sel.ids[1]
+  ok(first == 169 or (D.spells[first] and D.spells[first].area), 'Mystic 8: an area spell, else Kindling Spark, first')
+  eq(#sel.ids, 1, 'Mystic 8: Kindling Spark alone (the level 1 spells left with the 15-spell cap)')
+end
+
+-- area first: the area spells keep their order, then the single-target ones keep theirs; monster counts follow
+do
+  local SP = { [1] = { area = false }, [2] = { area = true }, [3] = { area = false }, [4] = { area = true } }
+  local ids, cr, moved = A.areaFirst({ 1, 2, 3, 4 }, { 1, 2, 1, 3 }, SP)
+  eq(table.concat(ids, ','), '2,4,1,3', 'area spells first, each group in order')
+  eq(table.concat(cr, ','), '2,3,1,1', 'monster counts follow their spell')
+  eq(moved, true, 'moved')
+  local _, _, same = A.areaFirst({ 2, 1 }, { 2, 1 }, SP)
+  eq(same, false, 'already in order')
 end
 
 -- "Add to my rules" keeps the player's rules on top, in their order, and adds no spell twice
@@ -192,9 +213,9 @@ do
   local at = firstLevel(m)
   local castAt = function(level) return function(id) return at[id] ~= nil and at[id] <= level end end
   -- the level-up check keeps the preset: no top-up
-  local bare = A.select(1, 8, castAt(8), { topUp = false })
-  eq(#bare.ids, 1, 'level-up check: preset only, no top-up')
-  local clicked = A.select(1, 8, castAt(8))
+  local bare = A.select(1, 150, castAt(150), { topUp = false })
+  eq(#bare.ids, #A.presetFor(1, 150).spells, 'level-up check: preset only, no top-up')
+  local clicked = A.select(1, 150, castAt(150))
   ok(#clicked.ids > #bare.ids, 'a click tops up')
   -- a rotation the button wrote at 18, the player reaches 20 (a new spell, 200)
   local sel18 = A.select(1, 18, castAt(18), { topUp = false })

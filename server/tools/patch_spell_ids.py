@@ -11,9 +11,14 @@ Each spell below is found by its script (the names are changed by rename_spells.
 id that no other spell of the base server, the Chaos block or the client's spell table uses (client
 overlay game_chaosspells/spellfix.lua uses the same ids). Three base scripts also start their own cooldown condition
 with the old id as sub id; that number is changed with it.
-Refuses (exit 1) when a new id is already taken by another spell or a script is missing from spells.xml.
+Refuses (exit 1) when a new id is already taken by another spell or a script is missing from spells.xml. A spell the
+15-spell cap retired (patch_spell_cap.py, a comment by then) is not missing: it keeps no id.
 """
 import os, re, sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from patch_spell_cap import CAP  # noqa: E402
+CAP_RETIRED = {script for script, (_, _, keep) in CAP.items() if not keep}
 
 # script (relative to data/spells/scripts) -> new spellid; old id in the comment
 NEW_IDS = {
@@ -66,7 +71,7 @@ def main():
         else:
             taken.setdefault(int(sid.group(1)), []).append(script.group(1) if script else '?')
     for script, new in NEW_IDS.items():
-        if script not in found:
+        if script not in found and script not in CAP_RETIRED:
             errors.append(f'{script}: no spell with this script in spells.xml')
         if new in taken:
             errors.append(f'{script}: spellid {new} is already used by {", ".join(taken[new])}')

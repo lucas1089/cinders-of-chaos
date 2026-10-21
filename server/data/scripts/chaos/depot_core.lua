@@ -25,6 +25,7 @@
 --   D.styleRequest(cfg, d)                    {tab, name, color} of a client request, or nil, reason
 --   D.stylesFromRows(cfg, rows), D.styleLists(cfg, styles)  the stored tab styles; per-tab lists for the client
 --   D.openText(cfg, tabs)                     the line shown when a locker opens
+--   D.lockerOpen(cfg, transition, tabs)       {text, stash}: the locker line, and whether the stash window opens too
 --
 -- acc (engine accessors, depot.lua; tests pass tables): id(node), parent(node) (a container or nil), isContainer(node),
 -- itemAt(node, slot) (0-based), capacity(node), same(a, b).
@@ -367,6 +368,18 @@ function D.openText(cfg, tabs)
 	local M = cfg.messages
 	local max = D.maxTabs(cfg)
 	return string.format(M.open, int(tabs), max, int(cfg.tabSize), int(tabs) < max and M.hint or M.allOpen)
+end
+
+-- what a locker opening shows besides the depot window: {text, stash}. text: the locker line (withdraw-only while the
+-- stash transition runs, else the tab line). stash: true only when stash_config.lua depot.openStash asks for the stash
+-- window as well. Owner report 2026-10-20: a depot chest opened the depot and the stash together; the stash opens
+-- from its own entry points only (top bar, keybind, the stash keeper NPC).
+function D.lockerOpen(cfg, transition, tabs)
+	local tr = type(transition) == "table" and transition or {}
+	return {
+		text = tr.withdrawOnly == true and cfg.messages.closed or D.openText(cfg, tabs),
+		stash = tr.openStash == true
+	}
 end
 
 function D.sortedText(cfg, counts)

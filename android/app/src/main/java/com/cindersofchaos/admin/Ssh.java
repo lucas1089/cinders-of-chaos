@@ -85,6 +85,11 @@ final class Ssh {
     }
 
     static Result exec(Store st, String command, int timeoutSec) throws Exception {
+        return exec(st, command, timeoutSec, null);
+    }
+
+    /** As exec, with STDIN given to the command (a password: never on its command line). */
+    static Result exec(Store st, String command, int timeoutSec, String stdin) throws Exception {
         Session s;
         try {
             s = connect(st);
@@ -98,7 +103,8 @@ final class Ssh {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         try {
             ch.setCommand(command);
-            ch.setInputStream(null);
+            ch.setInputStream(stdin == null ? null
+                    : new java.io.ByteArrayInputStream(stdin.getBytes(StandardCharsets.UTF_8)));
             ch.setOutputStream(out);
             ch.setErrStream(out);
             ch.connect(10000);

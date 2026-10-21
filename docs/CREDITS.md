@@ -233,6 +233,21 @@ them are named by role, so they carry no Reserved Font Name.
   - Licence: BSD-3-Clause style
   - Used for: the ssh connection of the Cinders Admin phone app
   - Source: https://github.com/mwiede/jsch
+- **Material Components for Android**
+  - Author: Google and the Material Components contributors
+  - Licence: Apache-2.0
+  - Used for: the screens of the Cinders Admin phone app (cards, buttons, navigation, dialogs)
+  - Source: https://github.com/material-components/material-components-android
+- **AndroidX libraries and the Kotlin standard library**
+  - Author: the Android Open Source Project; JetBrains and the Kotlin contributors
+  - Licence: Apache-2.0
+  - Used for: AppCompat, SwipeRefreshLayout and the other support libraries the Cinders Admin phone app ships with
+  - Source: https://developer.android.com/jetpack/androidx and https://github.com/JetBrains/kotlin
+- **Anthropic Python SDK and the Claude API**
+  - Author: Anthropic
+  - Licence: MIT (the SDK); the API is a paid service under Anthropic's terms
+  - Used for: Ember, the Help channel assistant (installed on the server by the owner, not shipped in the packages)
+  - Source: https://github.com/anthropics/anthropic-sdk-python
 
 ## Tools {pt-BR: Ferramentas}
 

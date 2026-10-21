@@ -129,15 +129,89 @@ eq(P.key({ type = 1 }) == P.key({ type = 1, wings = 2 }), false, 'wings change t
 eq(P.turn(2, 1), 3, 'south -> west') eq(P.turn(3, 1), 0, 'west -> north') eq(P.turn(0, -1), 3, 'north <- west')
 eq(P.turn(1, -5), 0, 'many steps')
 
--- zoom: a 1x1 look at 4x in a 184 x 300 stage; a 2x2 look smaller; never under 2x
+-- the list cards' figure
+dofile('client/overlay/modules/client_chaos_charselect/outfit_anchors.lua')
 local small = C.figure(CharSelectAnchors or {}, { type = 128 })
-eq(P.zoom(P.FALLBACK, 184, 300), 4, 'small look 4x')
 local big = { fx = 0, fy = 20, top = -60, left = -32, right = 32 }
-eq(P.zoom(big, 184, 300), 2, 'tall look 2x')
-eq(P.zoom({ fx = 0, fy = 20, top = -40, left = -20, right = 20 }, 184, 300), 3, 'medium look 3x')
-eq(P.zoom(big, 50, 50), 2, 'never under 2x')
 eq(P.fitFigure(P.FALLBACK, true).top, P.FALLBACK.top - P.RIDER, 'a rider above the mount')
 eq(P.fitFigure(nil, false).fy, P.FALLBACK.fy, 'fallback figure')
+
+-- ---------------------------------------------------------------- the box of a look, always 2x and centred
+local function anchors(id) return P.anchorFrom(CharSelectAnchors[id]) end
+-- the dat of pair 30 (things-1098, dat 8156792438dabee3aa768663d57a1619): size and displacement, no sprites
+local DAT = { [128] = { w = 2, h = 2, dx = 8, dy = 8, pz = 2 }, [1221] = { w = 2, h = 2, dx = 8, dy = 8, pz = 2 },
+  [1213] = { w = 2, h = 2, dx = 3, dy = 3, pz = 2 }, [1338] = { w = 3, h = 3, pz = 1 },
+  [2163] = { w = 2, h = 2, dx = 8, dy = 8, pz = 1 }, [937] = { w = 2, h = 2, pz = 1 },
+  [1561] = { w = 3, h = 4, dx = 65504, dy = 65504, pz = 2 } }
+local function info(id) return DAT[id] end
+eq(P.signed(65504), -32, 'a negative displacement as the engine reads it') eq(P.signed(8), 8, 'positive')
+-- Prince of Lands (1221): the anchors' pixel bounds, bottom from its frame. The old layout put its feet (x 17), not
+-- its picture (x -12..24, centre 6), under the middle and drew it at 4x: 11 sprite px (44 px) left and cut.
+local pb = P.lookBox({ type = 1221, addons = 3 }, anchors, info, 6)
+eq(pb.left .. ',' .. pb.top .. ',' .. pb.right .. ',' .. pb.bottom, '-12,-12,24,24', 'Prince of Lands box')
+for _, look in ipairs({ { type = 1221, addons = 3 }, { type = 1213, addons = 3 }, { type = 128 }, { type = 128, mount = 1338 },
+    { type = 9999 }, { type = 128, wings = 937 } }) do
+  local bx = P.lookBox(look, anchors, info, 6)
+  local Lb = P.layout(bx, 200, 300)
+  eq(Lb.scale, 2, 'every look at 2x: ' .. look.type) eq(Lb.size, 128, 'creature rect 2T')
+  local cx = Lb.x + ((bx.left + bx.right) / 2 + 32) * Lb.scale
+  local cy = Lb.y + ((bx.top + bx.bottom) / 2 + 32) * Lb.scale
+  eq(math.abs(cx - 100) <= 1 and math.abs(cy - 150) <= 1, true, 'the drawn box centred: ' .. look.type .. ' ' .. cx .. ',' .. cy)
+end
+-- Astral Fire (1213): its anchors (wide: a torch held out left)
+local ab = P.lookBox({ type = 1213, addons = 3 }, anchors, info, 6)
+eq(ab.left .. ',' .. ab.right, '-35,23', 'Astral Fire box')
+-- a look the anchors do not know: from its sprite tiles. A 2x2 look with 8,8 whose art is in the bottom-right tile
+-- only (yPattern 0) and its addon 1 (yPattern 1) also in the top-right tile: sprites in ThingType order
+local tiles = { w = 2, h = 2, dx = 8, dy = 8, layers = 1, px = 1, py = 2, pz = 1, phases = 1,
+  sprites = { 5, 0, 0, 0,   6, 0, 7, 0 } }
+local tb = P.thingBox(tiles, 0, 0)
+eq(tb.left .. ',' .. tb.top .. ',' .. tb.right .. ',' .. tb.bottom, '-8,-8,24,24', 'tiles: the bottom-right tile')
+tb = P.thingBox(tiles, 0, 1)
+eq(tb.top, -40, 'with addon 1 the tile above counts') eq(tb.left, -8, 'not the empty left column')
+tb = P.thingBox({ w = 2, h = 2, dx = 8, dy = 8 }, 0, 0)
+eq(tb.left .. ',' .. tb.top, '-40,-40', 'no sprites: the whole frame')
+eq(P.thingBox(nil), nil, 'no info')
+local nb = P.lookBox({ type = 3000 }, function() return nil end, function() return tiles end, 0)
+eq(nb.left .. ',' .. nb.right, '-8,24', 'no anchor: the tiles') eq(nb.fy, 19, 'feet a little above the bottom')
+eq(P.lookBox({ type = 3000 }, nil, nil, 0).left, P.FALLBACK_BOX.left, 'nothing known: the stock look')
+-- the anchors count every addon: without addons the worn tiles cut the box down (stock 128: -13,-22 -> -8,-8)
+local cut = P.lookBox({ type = 3000, addons = 0 }, function() return anchors(128) end, function() return tiles end, 0)
+eq(cut.left .. ',' .. cut.top .. ',' .. cut.right, '-8,-8,24', 'addons not worn: cut to the tiles')
+cut = P.lookBox({ type = 3000, addons = 1 }, function() return anchors(128) end, function() return tiles end, 0)
+eq(cut.top, anchors(128).top, 'addon 1 worn: the anchors\' top')
+-- wings: the body 6 px up and left of the wings (GameWingOffset), both in the box
+local wb = P.lookBox({ type = 128, wings = 937 }, anchors, info, 6)
+local w937 = anchors(937)
+eq(wb.left, math.min(w937.left, -8 - 6), 'wings reach left') eq(wb.fx, anchors(128).fx - 6, 'feet lifted with the body')
+-- a mount: its own box and the rider seated on it
+local mb = P.lookBox({ type = 128, mount = 1338 }, anchors, info, 0)
+local m1338 = anchors(1338)
+eq(mb.left .. ',' .. mb.top, m1338.left .. ',' .. m1338.top, 'the big mount holds the rider')
+eq(mb.fy, m1338.fy, 'feet: the mount\'s')
+-- a rider without the mounted pattern: the engine draws no mount, the box is the standing look
+local rb = P.lookBox({ type = 2163, mount = 1338 }, anchors, info, 0)
+eq(rb.top > m1338.top, true, 'no mount drawn under a look without the mounted pattern')
+-- a mount with a negative displacement: drawn by its own displacement only (no extra shift)
+local nm = P.lookBox({ type = 128, mount = 1561 }, function() return nil end, info, 0)
+local t1561 = P.thingBox(DAT[1561], 0, 0)
+eq(nm.left, math.min(t1561.left, -40), 'negative mount: no extra shift')
+-- the shadow under the feet: centred on them, wider for a mount
+local Ls = P.layout(pb, 200, 300)
+local sx, sy, sw, sh = P.shadowRect(Ls, pb)
+eq(sx + sw / 2 - Ls.feetX <= 1, true, 'shadow centred on the feet') eq(sw, P.SHADOW_MIN * 2 + 0, 'a person: the small shadow')
+local _, _, mw = P.shadowRect(P.layout(mb, 200, 300), mb)
+eq(mw > sw, true, 'a mount: a wider shadow')
+
+-- a rider without the mounted pattern rides as the plain figure (the note says why)
+o, line, note = P.compose('own', { type = 2163, head = 3, addons = 3 }, { kind = 'mount', look = 1338 }, nil,
+  function(t) return t ~= 2163 end)
+eq(o.type, P.NEUTRAL.type, 'plain figure rides') eq(o.mount, 1338, 'the mount kept') eq(o.head, 3, 'own colours')
+eq(note, P.NO_RIDE, 'and the note')
+o, line, note = P.compose('own', own, { kind = 'mount', look = 1338 }, nil, function() return true end)
+eq(o.type, 2161, 'a look that can ride keeps its look') eq(note, nil, 'no note')
+o = P.compose('own', { type = 2163 }, { kind = 'wings', look = 937 }, nil, function() return false end)
+eq(o.type, 2163, 'no mount: the look is kept')
 
 -- the fallback figure stands on the same feet as the character select's fallback for a 2x2 look
 local fb = C.anchorOf(nil, 1, { w = 2, h = 2, dx = 8, dy = 8 })
@@ -150,10 +224,10 @@ for _, fig in ipairs({ P.FALLBACK, big, small }) do
   local x2, y2, s2 = C.placeRect(fig, 128, 92, 200)
   eq(x1, x2, 'x as charselect') eq(y1, y2, 'y as charselect') eq(s1, s2, 'size as charselect')
 end
-local L = P.layout(P.FALLBACK, 184, 300)
-local fx, fy = C.feetOf(P.FALLBACK, L.x, L.y, L.size)
-eq(fx, 92, 'feet under the middle') eq(fy, L.feetY, 'feet where the layout says')
-eq(L.feetY - (P.FALLBACK.fy - P.FALLBACK.top) * L.scale >= 0, true, 'the head inside the stage')
+local L = P.layout(P.FALLBACK_BOX, 184, 300)
+local fx, fy = C.feetOf(P.FALLBACK_BOX, L.x, L.y, L.size)
+eq(math.abs(fx - L.feetX) <= 1, true, 'feet x where the layout says') eq(math.abs(fy - L.feetY) <= 1, true, 'feet y')
+eq(L.y + (P.FALLBACK_BOX.top + 32) * L.scale >= 0, true, 'the head inside the stage')
 
 -- docking
 local fixes = P.dockFixes({ a = { x = 10, width = 50 }, b = { x = 300, width = 60 }, c = { x = 0, width = 400 },
@@ -241,21 +315,69 @@ ax, ay = P.itemPlace({ item = { spec = { id = 121, m = 1 } }, frac = 1 })
 eq(ax .. ',' .. ay, '0,0', 'and lands on the creature')
 ax, ay = P.itemPlace({ item = { spec = { id = 526, dx = 1, dy = 1 } }, frac = 0.5 })
 eq(ax .. ',' .. ay, '1,1', 'an effect on its offset tile')
--- extent and layout
+-- extent and layout (one creature on the tile, the stock look's box: -0.25..0.75 tiles)
 local sizes = { [406] = { 1, 1 }, [388] = { 2, 2 }, [524] = { 4, 4 }, [526] = { 4, 4 }, [121] = { 1, 1 }, [122] = { 1, 1 } }
-local ex0, ey0, ex1, ey1 = P.fxExtent(play, function(sp) return sizes[sp.id][1], sizes[sp.id][2] end)
-eq(ex0 .. ',' .. ey0 .. ',' .. ex1 .. ',' .. ey1, '-2,-2,1,1', 'a 4 x 4 effect at (1, 1) covers -2..1')
-local FL = P.fxLayout(P.FALLBACK, 200, 240, ex0, ey0, ex1, ey1)
+local function sizeOf(sp) return sizes[sp.id][1], sizes[sp.id][2] end
+local ex0, ey0, ex1, ey1 = P.fxExtent(play, sizeOf)
+eq(string.format('%g,%g,%g,%g', ex0, ey0, ex1, ey1), '-2,-2,2,2', 'a 4 x 4 effect at (1, 1) covers -2..2')
+local FL = P.fxLayout(200, 240, ex0, ey0, ex1, ey1)
 eq(FL.scale, 1.5, '4 tiles in 200 px: 1.5x')
 eq(FL.T, 48, 'tile 48 px')
-eq(FL.tileX, math.floor((200 - 4 * 48) / 2 + 0.5) + 2 * 48, 'creature tile column')
+eq(FL.tileX, math.floor((200 - 4 * 48) / 2 + 2 * 48 + 0.5), 'creature tile column')
 eq(FL.size, 96, 'creature rect 2T')
 eq(FL.x, FL.tileX - 48, 'creature rect left')
-local FL2 = P.fxLayout(P.FALLBACK, 188, 240, -1, -1, 0, 0)
-eq(FL2.scale <= P.zoom(P.FALLBACK, 188, 240), true, 'never larger than the body zoom')
+local FL2 = P.fxLayout(188, 240, -0.25, -0.25, 0.75, 0.75)
+eq(FL2.scale, P.SCALE, 'never larger than the look\'s own zoom')
+eq(FL2.tileX - 0.25 * FL2.T, (188 - FL2.T) / 2, 'one creature: centred')
 local tx, ty = P.tilePixel(FL, 1, 1, 3, 3, 8, 8)
 eq(tx, FL.tileX + (1 - 3) * 48 - 12, 'tile x with displacement')
 eq(ty, FL.tileY + (1 - 3) * 48 - 12, 'tile y with displacement')
+local rx, ry, rs = P.creatureRect(FL, { x = 2, y = 0 })
+eq(rx .. ',' .. ry .. ',' .. rs, (FL.tileX + 48) .. ',' .. (FL.tileY - 48) .. ',96', 'a creature two tiles east')
+
+-- ---------------------------------------------------------------- the scenes
+-- spell skins: the player on (0, 0) facing east, the troll two tiles east
+local sc = P.sceneOf({ kind = 'effects', play = play })
+eq(sc.kill, false, 'a spell scene') eq(sc.caster.x .. sc.target.x, '0' .. P.TARGET_AT, 'caster and target')
+eq(P.hasWearer({ kind = 'effects', play = play }), true, 'a spell skin has its player')
+eq(P.hasWearer({ kind = 'effects', play = play, killfx = true }), false, 'a kill effect is on the troll')
+eq(P.landsOn({ id = 1, m = 1 }, true, sc), 'missile', 'a missile flies')
+eq(P.landsOn({ id = 1, n = 'vfx_aura_burst_violet' }, false, sc), 'caster', 'a war cry around the player')
+eq(P.landsOn({ id = 1, n = 'fx_chain_lightning' }, false, sc), 'target', 'lightning on the troll')
+eq(P.landsOn({ id = 1, n = 'fx_summon_vortex' }, true, sc), 'target', 'with a missile: the impact on the troll')
+eq(P.landsOn({ id = 1, n = 'vfx_aura_burst_violet' }, false, P.sceneOf({ killfx = true })), 'target', 'kill: on the troll')
+local stl = P.timeline(play, 'b', function() return 10 end, sc)
+eq(stl.lead, 0, 'a spell starts at once') eq(stl.items[1].at, 'target', 'a row with a missile: its effects on the troll')
+eq(stl.items[3].at, 'missile', 'its missile')
+-- the missile flies from the player to the troll, pattern east
+local mx, my, mpx, mpy = P.itemPlace({ item = stl.items[3], frac = 0 }, sc)
+eq(mx .. ',' .. my, '0,0', 'from the player') eq(mpx .. mpy, '21', 'east pattern')
+mx, my = P.itemPlace({ item = stl.items[3], frac = 1 }, sc)
+eq(mx .. ',' .. my, P.TARGET_AT .. ',0', 'to the troll')
+mx, my = P.itemPlace({ item = { spec = { id = 526, dx = 1, dy = 1 }, at = 'target' }, frac = 0.5 }, sc)
+eq(mx .. ',' .. my, (P.TARGET_AT + 1) .. ',1', 'an impact on the troll, with its offset')
+mx, my = P.itemPlace({ item = { spec = { id = 5 }, at = 'caster' }, frac = 0.5 }, sc)
+eq(mx .. ',' .. my, '0,0', 'a war cry on the player')
+-- the extent holds both creatures; the scene is centred
+local boxes = { caster = P.FALLBACK_BOX, target = P.FALLBACK_BOX }
+local sx0, sy0, sx1, sy1 = P.fxExtent({ { b = { id = 121, m = 1 } } }, sizeOf, sc, boxes)
+eq(string.format('%g,%g', sx0, sx1), string.format('-0.25,%g', P.TARGET_AT + 1), 'from the player to the troll (the missile\'s tile on it)')
+local SL = P.fxLayout(240, 240, sx0, sy0, sx1, sy1)
+local left = SL.tileX + sx0 * SL.T
+local right = SL.tileX + sx1 * SL.T
+eq(math.abs(left - (240 - right)) <= 1, true, 'the scene centred across the stage')
+-- kill effects: the troll alone, standing, then fading with the effect, standing again on the next loop
+local ks = P.sceneOf({ kind = 'effects', play = { { b = { id = 468 } } }, killfx = true })
+eq(ks.kill, true, 'a kill scene') eq(ks.caster, nil, 'no player')
+local ktl = P.timeline({ { b = { id = 468, ms = 800 } } }, 'b', nil, ks)
+eq(ktl.lead, P.KILL_LEAD, 'the troll stands first') eq(ktl.items[1].start, P.KILL_LEAD, 'the effect after the lead')
+eq(ktl.items[1].at, 'target', 'on the troll') eq(ktl.total, P.KILL_LEAD + 800 + P.FX_PAUSE, 'loop length')
+eq(P.targetAlpha(ktl, 10), 1, 'standing') eq(P.targetAlpha(ktl, P.KILL_LEAD + P.FADE_MS / 2), 0.5, 'fading')
+eq(P.targetAlpha(ktl, P.KILL_LEAD + 700), 0, 'gone') eq(P.targetAlpha(ktl, ktl.total + 5), 1, 'back on the next loop')
+eq(P.targetAlpha(stl, 500), 1, 'a spell scene: the troll stays')
+eq(#P.activeAt(ktl, 10), 0, 'nothing plays during the lead')
+mx, my = P.itemPlace({ item = ktl.items[1], frac = 0 }, ks)
+eq(mx .. ',' .. my, '0,0', 'the kill effect on the troll\'s tile')
 -- footprints and rows
 local steps = P.footsteps(4)
 eq(#steps, 4, 'four prints')

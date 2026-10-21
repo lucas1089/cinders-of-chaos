@@ -3,8 +3,10 @@
 -- cosmetics a character owns were only reachable elsewhere: wings (the outfit packet's wings list, which the stock
 -- window has no row for), outlines, footprints, kill effects, loot label accents, chat name colours, the spell effect
 -- skin of the character's class line (all Character > Cosmetics, server cosmetics.lua), the name plate frame (Info &
--- Services > Services, server shop.lua) and the pet (Character > Pets). Each is one dropdown here.
--- Sources, all optional (a source that has not answered yet leaves its dropdown off):
+-- Services > Services, server shop.lua) and the pet (Character > Pets). Each is one row of Change Appearance here (base
+-- patch 0090): the row shows the choice, and selecting it lists the choices in the window's right-hand area, the owned
+-- ones first, then the locked ones greyed out (game_unlocks rule; "Only mine" hides them).
+-- Sources, all optional (a source that has not answered yet leaves its row off):
 --   cosmetics  the server's cosmetics state {line, lineName, rows = [{id, kind, name, owned, selected, line}]}
 --   wings      {stock = [{look, name}] (the outfit packet's owned wings), wardrobe = [{l, n, o}] (the catalogue), current}
 --   services   the Services state {frames = [name], activeFrame}
@@ -14,7 +16,7 @@ local function tr(s, ...) local g = rawget(_G, 'tr') if g then return g(s, ...) 
 OutfitExtrasCore = {}
 local E = OutfitExtrasCore
 
--- the dropdowns, in window order (two columns, left to right then down)
+-- the rows, in window order (under Preset)
 E.KEYS = { 'wings', 'outline', 'footprint', 'killfx', 'lootbeam', 'chatcolor', 'spellskin', 'frame', 'pet' }
 E.COSMETIC_KINDS = { outline = true, footprint = true, killfx = true, lootbeam = true, chatcolor = true, spellskin = true }
 
@@ -26,7 +28,7 @@ function E.label(key)
   elseif key == 'lootbeam' then return tr('Loot label')
   elseif key == 'chatcolor' then return tr('Chat colour')
   elseif key == 'spellskin' then return tr('Spell effect')
-  elseif key == 'frame' then return tr('Name plate frame')
+  elseif key == 'frame' then return tr('Plate frame') -- short: the row name sits left of the value box
   elseif key == 'pet' then return tr('Pet')
   end
   return key
@@ -39,7 +41,7 @@ local function capital(s)
   return s:sub(1, 1):upper() .. s:sub(2)
 end
 
--- ---------------------------------------------------------------- one dropdown per source
+-- ---------------------------------------------------------------- one row per source
 -- cosmetic kinds: the default, then the rows of the kind the account owns (spell skins: of the character's line only)
 function E.cosmeticRow(state, kind)
   if type(state) ~= 'table' or type(state.rows) ~= 'table' then return nil end
@@ -112,20 +114,100 @@ function E.petRow(state)
   return { key = 'pet', options = options, current = current, locked = locked }
 end
 
--- all dropdowns that have their data: a list of {key, label, options, current, locked, line?} in window order
-function E.rows(src)
+-- one row with its data, or nil when its source has not answered: {key, label, options, current, locked, line?}
+function E.row(src, key)
   src = src or {}
+  local row
+  if key == 'wings' then row = E.wingsRow(src.wings)
+  elseif key == 'frame' then row = E.frameRow(src.services)
+  elseif key == 'pet' then row = E.petRow(src.pets)
+  elseif E.COSMETIC_KINDS[key] then row = E.cosmeticRow(src.cosmetics, key) end
+  if row then row.label = E.label(key) end
+  return row
+end
+
+-- all rows that have their data, in window order
+function E.rows(src)
   local out = {}
   for _, key in ipairs(E.KEYS) do
-    local row
-    if key == 'wings' then row = E.wingsRow(src.wings)
-    elseif key == 'frame' then row = E.frameRow(src.services)
-    elseif key == 'pet' then row = E.petRow(src.pets)
-    else row = E.cosmeticRow(src.cosmetics, key) end
-    if row then
-      row.label = E.label(key)
-      out[#out + 1] = row
+    local row = E.row(src, key)
+    if row then out[#out + 1] = row end
+  end
+  return out
+end
+
+-- the key of a Change Appearance row widget id ('wingsExtrasCheck' -> 'wings'), or nil
+function E.keyOfId(id)
+  for _, key in ipairs(E.KEYS) do
+    if id == key .. 'ExtrasCheck' then return key end
+  end
+  return nil
+end
+
+-- the text of the option with this value, or nil
+function E.textOf(row, value)
+  for _, o in ipairs(type(row) == 'table' and row.options or {}) do
+    if o.value == value then return o.text end
+  end
+  return nil
+end
+
+-- what the character does not own yet, from the same sources: {{value, text, how}} (frames have no catalogue)
+function E.lockedOf(src, key)
+  src = src or {}
+  local out = {}
+  if key == 'wings' then
+    local w = type(src.wings) == 'table' and src.wings or {}
+    local have = {}
+    for _, s in ipairs(type(w.stock) == 'table' and w.stock or {}) do
+      if type(s) == 'table' then have[num(s[1])] = true end
     end
+    for _, c in ipairs(type(w.wardrobe) == 'table' and w.wardrobe or {}) do
+      if type(c) == 'table' and num(c.l) > 0 and not have[num(c.l)] then
+        have[num(c.l)] = true
+        out[#out + 1] = { value = num(c.l), text = tostring(c.n or c.l), how = c.s }
+      end
+    end
+  elseif key == 'pet' then
+    local state = type(src.pets) == 'table' and src.pets or {}
+    local known = {}
+    for _, p in ipairs(type(state.pets) == 'table' and state.pets or {}) do
+      if type(p) == 'table' and type(p.species) == 'string' then known[p.species] = true end
+    end
+    for _, c in ipairs(type(state.catalog) == 'table' and state.catalog or {}) do
+      if type(c) == 'table' and type(c.key) == 'string' and c.owned ~= true and not known[c.key] then
+        out[#out + 1] = { value = c.key, text = tostring(c.name or c.key), how = c.how }
+      end
+    end
+  elseif E.COSMETIC_KINDS[key] then
+    local state = type(src.cosmetics) == 'table' and src.cosmetics or {}
+    for _, r in ipairs(type(state.rows) == 'table' and state.rows or {}) do
+      if type(r) == 'table' and r.kind == key and r.owned ~= true and (key ~= 'spellskin' or r.line == state.line) then
+        out[#out + 1] = { value = num(r.id), text = tostring(r.name or r.key or r.id), how = r.how }
+      end
+    end
+  end
+  return out
+end
+
+-- the right-hand list of a row: its options (owned: selectable), then the locked ones unless onlyMine; a search keeps
+-- the entries whose text holds it (any case). nil when the row's source has not answered.
+--   {{value, text, locked?, how?}}
+function E.choices(src, key, onlyMine, search)
+  local row = E.row(src, key)
+  if not row then return nil end
+  local all = {}
+  for _, o in ipairs(row.options) do all[#all + 1] = { value = o.value, text = o.text } end
+  if not onlyMine then
+    for _, l in ipairs(E.lockedOf(src, key)) do
+      all[#all + 1] = { value = l.value, text = l.text, locked = true, how = l.how }
+    end
+  end
+  local q = type(search) == 'string' and search:lower() or ''
+  if q == '' then return all end
+  local out = {}
+  for _, c in ipairs(all) do
+    if tostring(c.text):lower():find(q, 1, true) then out[#out + 1] = c end
   end
   return out
 end
@@ -138,14 +220,14 @@ function E.indexOf(row, value)
   return nil
 end
 
--- tooltip of a dropdown: what is locked
+-- tooltip of a row's value box: what is locked
 function E.tooltip(row)
   if type(row) ~= 'table' or (row.locked or 0) <= 0 then return nil end
   return tr('%d more not unlocked yet. See Character > Cosmetics and the Store.', row.locked)
 end
 
 -- ---------------------------------------------------------------- Ok
--- rows = E.rows(...) as shown; chosen = {[key] = value} of the dropdowns the player changed. Returns the actions, in
+-- rows = E.rows(...) as shown; chosen = {[key] = value} of the rows the player changed. Returns the actions, in
 -- order, for the keys whose choice differs from the shown one. Wings are not here: they travel with the outfit.
 --   {act = 'cosmetic', kind, id, line}   {act = 'frame', value}   {act = 'pet', value}
 function E.plan(rows, chosen)
@@ -164,9 +246,4 @@ function E.plan(rows, chosen)
     end
   end
   return actions
-end
-
--- how many dropdown rows the window needs (two columns)
-function E.lineCount(rows)
-  return math.ceil(#(rows or {}) / 2)
 end

@@ -69,23 +69,32 @@ function P.note(opt)
   return type(opt) == 'table' and P.UNSHOWN[opt.kind] or nil
 end
 
--- does the 'simple' toggle mean anything for this option (a pet has no wearer)
+-- does the 'simple' toggle mean anything for this option (a pet has no wearer; a kill effect is shown on a troll)
 function P.hasWearer(opt)
-  return not (type(opt) == 'table' and opt.kind == 'subject')
+  if type(opt) ~= 'table' then return true end
+  return not (opt.kind == 'subject' or (opt.kind == 'effects' and opt.killfx == true))
 end
 
 P.UNKNOWN_SHADER = 'This shader is not in your client yet.'
 P.NO_OUTLINE = 'Your client cannot draw outlines yet.' -- an engine without base patch 0038
+P.NO_RIDE = 'Your look cannot ride: the mount is shown with the plain figure.'
 
 -- What to draw: outfit, outline ({art, pulse} or nil) and a note (an unshown kind). The 'simple' figure keeps only
 -- the option itself: for a whole outfit that is its extras (mount, wings, aura, shader) on the plain figure.
 -- known(name): is the outfit shader registered in the client (the engine draws nothing for an unknown name, so it is
--- left off and the note says why)
-function P.compose(mode, own, opt, known)
+-- left off and the note says why).
+-- canRide(type), optional: has that look the mounted pattern (pattern z 2). Before base patch 0088 Outfit::draw drew
+-- the mount only for such a rider, so a look without it stood on foot with no mount; given, such a rider is replaced by
+-- the plain figure in its colours and the note says why. The window passes none: with 0088 every look rides.
+function P.compose(mode, own, opt, known, canRide)
   local o, outline, note = P.composeRaw(mode, own, opt)
   if o.shader and o.shader ~= '' and known and not known(o.shader) then
     o.shader = ''
     note = note or P.UNKNOWN_SHADER
+  end
+  if num(o.mount) > 0 and canRide and canRide(num(o.type)) == false then
+    o.type, o.addons = P.NEUTRAL.type, 0
+    note = note or P.NO_RIDE
   end
   return o, outline, note
 end
@@ -282,32 +291,20 @@ P.AUTO_MS = 1600   -- one direction per 1.6 s while the slow turn is on
 
 -- ---------------------------------------------------------------- zoom and placement
 -- A UICreature of size 2T draws the creature at T / 32 px per sprite pixel, its own tile the rect's lower right
--- quarter (client_chaos_charselect/charselect_core.lua, "UICreature draws a creature ..."). The figure (fx, fy: the
--- feet; top, left, right: the reach) is CharSelectCore.figure's, from the sprite anchors of the pair: the centre of
--- the feet goes where the feet should stand (client/MANIFEST.md "Where a character stands"). P.FALLBACK, when that
+-- quarter (client_chaos_charselect/charselect_core.lua, "UICreature draws a creature ..."). The list cards place a
+-- figure (fx, fy: the feet; top, left, right: the reach), CharSelectCore.figure's, from the sprite anchors of the
+-- pair: the centre of the feet goes where the feet should stand (client/MANIFEST.md "Where a character stands"); the
+-- panel itself centres the drawn picture's box (below). P.FALLBACK, when that
 -- module is absent: a 2x2 player look with displacement 8, its feet where CharSelectCore.FEET_FALLBACK puts them
 -- (the test checks both agree), the bounds of stock look 128.
 P.FALLBACK = { fx = 12, fy = 19, top = -22, left = -13, right = 24, hover = 0 }
-P.SCALES = { 4, 3, 2 }
-P.FILL = 0.78      -- the body takes at most this share of the stage's height
-P.RIDER = 22       -- sprite pixels a rider reaches above its mount's top
+P.RIDER = 22       -- sprite pixels a rider reaches above its mount's top (the list cards' figure)
 
--- the figure to fit: a mounted look by its mount's reach plus the rider
+-- the figure of a list card: a mounted look by its mount's reach plus the rider
 function P.fitFigure(fig, mounted)
   local f = copy(type(fig) == 'table' and fig or P.FALLBACK)
   if mounted then f.top = f.top - P.RIDER end
   return f
-end
-
--- the zoom (2x to 4x) that puts the body (feet to its top, its width) inside the stage: the largest that fits, else 2x
-function P.zoom(fig, w, h)
-  fig = fig or P.FALLBACK
-  local tall = math.max(1, fig.fy - fig.top)
-  local wide = math.max(1, fig.right - fig.left)
-  for _, s in ipairs(P.SCALES) do
-    if tall * s <= h * P.FILL and wide * s <= w * 0.92 then return s end
-  end
-  return P.SCALES[#P.SCALES]
 end
 
 -- the UICreature rect (x, y, size) that puts the feet of fig at (cx, feetY) at tile size T (same maths as
@@ -317,16 +314,169 @@ function P.placeRect(fig, T, cx, feetY)
   return math.floor(cx - (fig.fx + 32) * s + 0.5), math.floor(feetY - (fig.fy + 32) * s + 0.5), 2 * T
 end
 
--- the whole layout for a stage of w x h: scale, rect. The body is centred: the feet under the middle, the space
--- between its top and the feet in the middle of the height.
-function P.layout(fig, w, h)
-  fig = fig or P.FALLBACK
-  local s = P.zoom(fig, w, h)
+-- ---------------------------------------------------------------- the drawn picture's box
+-- The panel draws every look at one zoom, P.SCALE (owner, 2026-10-20: "make them all the size of this one", a 2x
+-- look), and centres the box of everything the engine draws (body with its addons, mount, wings, aura) in the stage.
+-- The box is in sprite pixels from the top left of the creature's own tile, as Outfit::draw (1098 profile) places
+-- each part, facing south:
+--   * a part's own box: the pixel bounds of the pair (CharSelectAnchors: top, left, right; first south frame, every
+--     addon, displacement applied) when the table has the thing; else the tiles of its south frame that hold a sprite
+--     (ThingType sprites), moved by its displacement (a frame's bottom-right tile is the creature's tile, the others
+--     up and left of it); else its whole frame. The bottom is always the tiles' (the table has no bottom row).
+--   * GameWingOffset with wings: the body, mount and aura 6 px (`lift`) up and left of the wings.
+--   * a mount (only for a rider with the mounted pattern): a mount with a positive displacement is drawn that much
+--     further up and left (the positive path of Outfit::draw), the rider with it; a rider sits P.RIDER_SEAT px higher
+--     than it stands. A mount with a negative displacement is drawn by its own displacement only.
+--   * wings of a mounted rider facing south 6 px up; a big aura (w - 1) * 16, (h - 1) * 16 right and down
+--     (GameBigAurasCenter).
+-- anchorOf(id) -> {fx, fy, top, left, right} or nil; infoOf(id) -> {w, h, dx, dy, layers, px, py, pz, phases,
+-- sprites} or nil (any field may be missing). Returns {left, top, right, bottom, fx, fy} (fx, fy: the feet).
+P.SCALE = 2
+P.RIDER_SEAT = 10
+P.BELOW_GROUND = 5 -- sprite px a part's art reaches below the anchors' ground row (pair 30: 128, 1221, 1213, 1338)
+P.FALLBACK_BOX = { left = -8, top = -8, right = 24, bottom = 24, fx = 12, fy = 19 } -- stock look 128 (2x2, 8,8)
+
+-- a displacement as the engine reads it (a dat u16 above 32767 is negative: GameNegativeOffset)
+local function signed(v)
+  v = num(v)
+  if v > 32767 then v = v - 65536 end
+  return v
+end
+P.signed = signed
+
+local function max1(v) return math.max(1, num(v)) end
+
+-- the box of the tiles of a thing's south frame (phase 0, layer 0, the given addons and pattern z) that hold a
+-- sprite, displacement applied; the whole frame without sprites; nil without info
+function P.thingBox(info, z, addons)
+  if type(info) ~= 'table' then return nil end
+  local w, h = max1(info.w), max1(info.h)
+  local dx, dy = signed(info.dx or info.dispX), signed(info.dy or info.dispY)
+  local c0, r0, c1, r1
+  if type(info.sprites) == 'table' and #info.sprites > 0 then
+    local px = max1(info.px) >= 4 and 2 or 0
+    local pz = math.min(num(z), max1(info.pz) - 1)
+    for yp = 0, max1(info.py) - 1 do
+      if yp == 0 or (math.floor(num(addons) / 2 ^ (yp - 1)) % 2 == 1) then
+        for hh = 0, h - 1 do
+          for ww = 0, w - 1 do
+            if P.spriteAt(info, ww, hh, 0, px, yp, pz, 0) > 0 then
+              local c, r = w - 1 - ww, h - 1 - hh
+              c0 = c0 and math.min(c0, c) or c
+              r0 = r0 and math.min(r0, r) or r
+              c1 = c1 and math.max(c1, c) or c
+              r1 = r1 and math.max(r1, r) or r
+            end
+          end
+        end
+      end
+    end
+  end
+  if not c0 then c0, r0, c1, r1 = 0, 0, w - 1, h - 1 end
+  local ox, oy = -dx - (w - 1) * 32, -dy - (h - 1) * 32
+  return { left = ox + c0 * 32, top = oy + r0 * 32, right = ox + (c1 + 1) * 32, bottom = oy + (r1 + 1) * 32 }
+end
+
+-- a CharSelectAnchors row {fx, fy, top, left, right, ...} as a table
+function P.anchorFrom(row)
+  if type(row) ~= 'table' or type(row[1]) ~= 'number' then return nil end
+  return { fx = row[1], fy = row[2], top = row[3], left = row[4], right = row[5] }
+end
+
+-- one part's box (and feet) drawn at (ox, oy)
+local function partBox(anchor, info, z, addons, ox, oy)
+  local tb = P.thingBox(info, z, addons)
+  local b
+  if type(anchor) == 'table' then
+    -- the table has no bottom row: its ground row (the lowest band of the solid mass) plus P.BELOW_GROUND, within
+    -- the frame's tiles
+    local bottom = num(anchor.fy) + P.BELOW_GROUND
+    if tb then bottom = math.min(bottom, tb.bottom) end
+    b = { left = anchor.left, top = anchor.top, right = anchor.right, bottom = math.max(bottom, num(anchor.fy)),
+      fx = anchor.fx, fy = anchor.fy }
+    -- the table counts every addon: the tiles of the addons worn (they hold every drawn pixel) cut it down
+    if tb and tb.right > tb.left then
+      b.left, b.top, b.right = math.max(b.left, tb.left), math.max(b.top, tb.top), math.min(b.right, tb.right)
+      if b.right <= b.left then b.left, b.right = tb.left, tb.right end
+    end
+  elseif tb then
+    b = tb
+    b.fx, b.fy = (tb.left + tb.right) / 2, tb.bottom - 5
+  else
+    return nil
+  end
+  return { left = b.left + ox, top = b.top + oy, right = b.right + ox, bottom = b.bottom + oy, fx = b.fx + ox,
+    fy = b.fy + oy }
+end
+
+function P.lookBox(outfit, anchorOf, infoOf, lift)
+  if type(outfit) ~= 'table' then return copy(P.FALLBACK_BOX) end
+  local function A(id) return anchorOf and num(id) > 0 and anchorOf(num(id)) or nil end
+  local function I(id) return infoOf and num(id) > 0 and infoOf(num(id)) or nil end
+  local box
+  local function add(b)
+    if not b then return end
+    if not box then
+      box = { left = b.left, top = b.top, right = b.right, bottom = b.bottom }
+    else
+      box.left, box.top = math.min(box.left, b.left), math.min(box.top, b.top)
+      box.right, box.bottom = math.max(box.right, b.right), math.max(box.bottom, b.bottom)
+    end
+  end
+  local l = num(outfit.wings) > 0 and num(lift) or 0
+  local bodyInfo = I(outfit.type)
+  local mounted = num(outfit.mount) > 0 and (bodyInfo == nil or bodyInfo.pz == nil or num(bodyInfo.pz) >= 2)
+  local ox, oy, seat = -l, -l, 0
+  local feet
+  if mounted then
+    local mi = I(outfit.mount)
+    local mdx, mdy = signed(mi and (mi.dx or mi.dispX)), signed(mi and (mi.dy or mi.dispY))
+    if mdx >= 0 and mdy >= 0 then ox, oy = ox - mdx, oy - mdy end
+    local mb = partBox(A(outfit.mount), mi, 0, 0, ox, oy)
+    add(mb)
+    feet = mb
+    seat = P.RIDER_SEAT
+  end
+  local rb = partBox(A(outfit.type), bodyInfo, 0, outfit.addons, ox, oy - seat)
+  add(rb)
+  feet = feet or rb
+  if num(outfit.wings) > 0 then
+    add(partBox(A(outfit.wings), I(outfit.wings), mounted and 1 or 0, 0, 0, mounted and -6 or 0))
+  end
+  if num(outfit.aura) > 0 then
+    local ai = I(outfit.aura)
+    local aw, ah = max1(ai and ai.w), max1(ai and ai.h)
+    add(partBox(A(outfit.aura), ai, mounted and 1 or 0, 0, -l + (aw - 1) * 16, -l + (ah - 1) * 16))
+  end
+  if not box then return copy(P.FALLBACK_BOX) end
+  box.fx = feet and feet.fx or (box.left + box.right) / 2
+  box.fy = feet and feet.fy or box.bottom
+  return box
+end
+
+-- the whole layout for a stage of w x h: always P.SCALE, the box's centre on the stage's centre. Returns scale, T, the
+-- UICreature rect (x, y, size) and where the feet are drawn (feetX, feetY)
+function P.layout(box, w, h)
+  box = box or P.FALLBACK_BOX
+  local s = P.SCALE
   local T = 32 * s
-  local tall = (fig.fy - fig.top) * s
-  local feetY = math.floor((h + tall) / 2 + 0.5)
-  local x, y, size = P.placeRect(fig, T, math.floor(w / 2), feetY)
-  return { scale = s, x = x, y = y, size = size, feetY = feetY }
+  local cx, cy = (box.left + box.right) / 2, (box.top + box.bottom) / 2
+  local x = math.floor(w / 2 - (cx + 32) * s + 0.5)
+  local y = math.floor(h / 2 - (cy + 32) * s + 0.5)
+  local fx, fy = box.fx or cx, box.fy or box.bottom
+  return { scale = s, T = T, x = x, y = y, size = 2 * T, feetX = math.floor(x + (fx + 32) * s + 0.5),
+    feetY = math.floor(y + (fy + 32) * s + 0.5) }
+end
+
+-- the soft shadow under the feet (the character select's hover_shadow art): as wide as 60% of the body, 22 to 60
+-- sprite px, 22 x 8 in shape. Returns x, y, w, h in stage px
+P.SHADOW_MIN, P.SHADOW_MAX = 22, 60
+function P.shadowRect(L, box)
+  box = box or P.FALLBACK_BOX
+  local sw = math.max(P.SHADOW_MIN, math.min(P.SHADOW_MAX, (box.right - box.left) * 0.6))
+  local w = math.floor(sw * L.scale + 0.5)
+  local h = math.floor(sw * 8 / 22 * L.scale + 0.5)
+  return math.floor(L.feetX - w / 2 + 0.5), math.floor(L.feetY - h / 2 + 0.5), w, h
 end
 
 -- ---------------------------------------------------------------- docking into a finished window
@@ -382,8 +532,65 @@ P.FRAME_MS = 100        -- one frame of an effect whose length the server did no
 P.MISSILE_MS = 420      -- a missile's flight over the preview's short path
 P.FX_GAP = 250          -- between two steps
 P.FX_PAUSE = 900        -- after the last step, before the loop starts again
-P.MISSILE_FROM = { -2, -1 } -- tiles from the target (the server's own preview sends from -3, -2; the stage is smaller)
-P.FX_SCALES = { 4, 3, 2, 1.5, 1 }
+P.MISSILE_FROM = { -2, -1 } -- tiles from the target when there is no caster on the stage
+P.FX_SCALES = { 2, 1.5, 1 } -- never larger than the look's own zoom (P.SCALE)
+
+-- ---------------------------------------------------------------- the scene
+-- Spell skins (owner, 2026-10-20: "show the player using the spell on a monster"): the player on the stage's tile
+-- (0, 0) facing east, a troll P.TARGET_AT tiles east of it facing west; a missile flies from the player to the troll,
+-- an effect plays on the troll or around the player (P.landsOn). Kill effects ("show a monster dying, it can be a
+-- troll"): the troll alone on (0, 0), facing south; it stands P.KILL_LEAD ms, then the kill effect plays on its tile
+-- and it fades out over P.FADE_MS (P.targetAlpha), and the loop starts again with it standing.
+P.TROLL = 15        -- the stock troll's look type (server bounty_pool.lua: Troll look 15)
+P.TARGET_AT = 2
+P.KILL_LEAD = 600
+P.FADE_MS = 350
+P.EAST, P.WEST = 1, 3
+
+-- the scene of an effects option: {kill, caster = {x, y} or nil, target = {x, y}}
+function P.sceneOf(opt)
+  if type(opt) == 'table' and opt.killfx == true then
+    return { kill = true, target = { x = 0, y = 0 } }
+  end
+  return { kill = false, caster = { x = 0, y = 0 }, target = { x = P.TARGET_AT, y = 0 } }
+end
+
+-- Where a step's effect plays: 'missile' (it flies from the caster to the target), 'target' or 'caster'. The server
+-- sends no spell geometry with a skin's effects, so: a kill effect is on the target; in a spell with a missile the
+-- other effects are its impact (the target); else an effect whose name says it hits something (P.TARGET_WORDS) is on
+-- the target, the others (war cries, novas, auras, portals, vanishing) around the caster.
+P.TARGET_WORDS = { 'explosion', 'lightning', 'strike', 'impact', 'hit', 'punch', 'slash', 'bite', 'spear', 'bolt',
+  'chain', 'meteor', 'pyre', 'fall', 'pierce', 'arrow', 'shot', 'inferno' }
+function P.landsOn(spec, hasMissile, scene)
+  if type(spec) ~= 'table' then return 'target' end
+  if spec.m then return 'missile' end
+  if type(scene) == 'table' and (scene.kill or not scene.caster) then return 'target' end
+  if hasMissile then return 'target' end
+  local n = type(spec.n) == 'string' and spec.n:lower() or ''
+  for _, w in ipairs(P.TARGET_WORDS) do
+    if n:find(w, 1, true) then return 'target' end
+  end
+  return 'caster'
+end
+
+local function hasMissile(play)
+  for _, step in ipairs(type(play) == 'table' and play or {}) do
+    if type(step) == 'table' and ((type(step.a) == 'table' and step.a.m) or (type(step.b) == 'table' and step.b.m)) then
+      return true
+    end
+  end
+  return false
+end
+P.hasMissile = hasMissile
+
+-- the target's opacity `ms` into the loop: 1 standing (always outside a kill scene), fading after the lead, then 0
+function P.targetAlpha(tl, ms)
+  if type(tl) ~= 'table' or num(tl.total) <= 0 or num(tl.lead) <= 0 then return 1 end
+  local d = num(ms) % tl.total - tl.lead
+  if d < 0 then return 1 end
+  if d < P.FADE_MS then return 1 - d / P.FADE_MS end
+  return 0
+end
 
 -- the sprite of tile (w, h) of a frame (ThingType::getSpriteIndex), 0 when out of range
 function P.spriteAt(info, w, h, layer, x, y, z, phase)
@@ -478,23 +685,27 @@ function P.fxDuration(spec, phases)
 end
 
 -- the timeline of a row's steps: side 'b' (the skin) or 'a' (the stock effects); 'both': every stock effect, then
--- every skin effect (the "compare" toggle). phasesOf(spec) -> frames. Returns {items = {{spec, start, dur, side,
--- step}}, total}; empty play: no items, total 0
-function P.timeline(play, side, phasesOf)
-  local items, t = {}, 0
+-- every skin effect (the "compare" toggle). phasesOf(spec) -> frames. scene (P.sceneOf, optional): each item gets
+-- `at` (P.landsOn); a kill scene starts the effects after P.KILL_LEAD (`lead`, the troll standing). Returns
+-- {items = {{spec, start, dur, side, step, at}}, total, lead}; empty play: no items, total 0
+function P.timeline(play, side, phasesOf, scene)
+  local lead = (type(scene) == 'table' and scene.kill) and P.KILL_LEAD or 0
+  local items, t = {}, lead
+  local missile = hasMissile(play)
   local sides = side == 'both' and { 'a', 'b' } or { side or 'b' }
   for _, sd in ipairs(sides) do
     for i, step in ipairs(type(play) == 'table' and play or {}) do
       local spec = type(step) == 'table' and step[sd]
       if type(spec) == 'table' and num(spec.id) > 0 then
         local dur = P.fxDuration(spec, phasesOf and phasesOf(spec) or 1)
-        items[#items + 1] = { spec = spec, start = t, dur = dur, side = sd, step = i }
+        items[#items + 1] = { spec = spec, start = t, dur = dur, side = sd, step = i,
+          at = P.landsOn(spec, missile, scene) }
         t = t + dur + P.FX_GAP
       end
     end
   end
-  if #items == 0 then return { items = items, total = 0 } end
-  return { items = items, total = t - P.FX_GAP + P.FX_PAUSE }
+  if #items == 0 then return { items = items, total = 0, lead = 0 } end
+  return { items = items, total = t - P.FX_GAP + P.FX_PAUSE, lead = lead }
 end
 
 -- what plays at `ms` into the loop: {{item, local = ms into it, frac = 0..1}}
@@ -531,60 +742,89 @@ function P.missilePattern(dx, dy)
   return pat[sector][1], pat[sector][2]
 end
 
--- where a playing item's thing goes, in tiles from the creature's tile (its bottom-right tile's top-left): ox, oy
--- (fractions for a missile in flight) and the pattern x, y
-function P.itemPlace(active)
-  local spec = active.item.spec
+-- where a playing item's thing goes, in tiles from the stage's tile (0, 0) (the top-left of the caster's tile, or the
+-- target's in a kill scene): ox, oy (fractions for a missile in flight) and the pattern x, y. scene (P.sceneOf;
+-- nil: one creature on (0, 0)): a missile flies from the caster to the target (with no caster, from P.MISSILE_FROM
+-- tiles away), an effect plays on the tile its item's `at` names, moved by the spec's own offset (dx, dy).
+function P.itemPlace(active, scene)
+  local spec, at = active.item.spec, active.item.at
+  local t = type(scene) == 'table' and scene.target or { x = 0, y = 0 }
+  local c = type(scene) == 'table' and scene.caster or nil
   if spec.m then
-    local fx, fy = P.MISSILE_FROM[1], P.MISSILE_FROM[2]
-    local px, py = P.missilePattern(-fx, -fy)
+    local fx, fy
+    if c and (c.x ~= t.x or c.y ~= t.y) then fx, fy = c.x, c.y
+    else fx, fy = t.x + P.MISSILE_FROM[1], t.y + P.MISSILE_FROM[2] end
+    local px, py = P.missilePattern(t.x - fx, t.y - fy)
     local f = math.min(1, math.max(0, active.frac))
-    return num(spec.dx) + fx * (1 - f), num(spec.dy) + fy * (1 - f), px, py
+    return num(spec.dx) + fx + (t.x - fx) * f, num(spec.dy) + fy + (t.y - fy) * f, px, py
   end
-  return num(spec.dx), num(spec.dy), 0, 0
+  local a = (at == 'caster' and c) or t
+  return num(spec.dx) + a.x, num(spec.dy) + a.y, 0, 0
 end
 
--- the tiles every step of a row covers, from the creature's tile: minX, minY, maxX, maxY (the body's 2 x 2 included).
--- sizeOf(spec) -> w, h of its thing
-function P.fxExtent(play, sizeOf)
-  local x0, y0, x1, y1 = -1, -1, 0, 0
-  local function add(ax, ay, w, h)
-    x0, y0 = math.min(x0, ax - w + 1), math.min(y0, ay - h + 1)
-    x1, y1 = math.max(x1, ax), math.max(y1, ay)
+-- The part of the stage the scene covers, in tiles from the stage's tile (fractions; x1, y1 exclusive): each creature
+-- by its drawn box (boxes.caster / boxes.target: P.lookBox's, sprite px; default the stock look's) and every step's
+-- thing (its tiles from the tile it plays on, displacement applied; a missile at both ends of its flight).
+-- sizeOf(spec) -> w, h [, dispX, dispY] of its thing. scene nil: one creature on (0, 0), missiles from P.MISSILE_FROM.
+function P.fxExtent(play, sizeOf, scene, boxes)
+  scene = type(scene) == 'table' and scene or { target = { x = 0, y = 0 } }
+  boxes = type(boxes) == 'table' and boxes or {}
+  local x0, y0, x1, y1
+  local function add(l, t, r, b)
+    x0 = x0 and math.min(x0, l) or l
+    y0 = y0 and math.min(y0, t) or t
+    x1 = x1 and math.max(x1, r) or r
+    y1 = y1 and math.max(y1, b) or b
   end
+  for _, who in ipairs({ 'caster', 'target' }) do
+    local pos = scene[who]
+    if pos then
+      local b = boxes[who] or P.FALLBACK_BOX
+      add(pos.x + b.left / 32, pos.y + b.top / 32, pos.x + b.right / 32, pos.y + b.bottom / 32)
+    end
+  end
+  local missile = hasMissile(play)
   for _, step in ipairs(type(play) == 'table' and play or {}) do
     for _, sd in ipairs({ 'a', 'b' }) do
       local spec = type(step) == 'table' and step[sd]
       if type(spec) == 'table' then
-        local w, h = 1, 1
-        if sizeOf then w, h = sizeOf(spec) end
-        w, h = math.max(1, num(w)), math.max(1, num(h))
-        add(num(spec.dx), num(spec.dy), w, h)
-        if spec.m then add(num(spec.dx) + P.MISSILE_FROM[1], num(spec.dy) + P.MISSILE_FROM[2], w, h) end
+        local w, h, ddx, ddy = 1, 1, 0, 0
+        if sizeOf then w, h, ddx, ddy = sizeOf(spec) end
+        w, h, ddx, ddy = math.max(1, num(w)), math.max(1, num(h)), signed(ddx) / 32, signed(ddy) / 32
+        local item = { item = { spec = spec, at = P.landsOn(spec, missile, scene) }, frac = 0 }
+        local ends = spec.m and { 0, 1 } or { 0 }
+        for _, f in ipairs(ends) do
+          item.frac = f
+          local ax, ay = P.itemPlace(item, scene)
+          add(ax - (w - 1) - ddx, ay - (h - 1) - ddy, ax + 1 - ddx, ay + 1 - ddy)
+        end
       end
     end
   end
   return x0, y0, x1, y1
 end
 
--- the stage layout with effects: the largest of P.FX_SCALES at which the effects' tiles fit the stage (the body's
--- zoom at most), the box centred. Returns the same table as P.layout plus tileX, tileY (the creature tile's
--- top-left px) and T. The body keeps its feet on that tile, as the map draws it.
-function P.fxLayout(fig, w, h, x0, y0, x1, y1)
-  fig = fig or P.FALLBACK
-  local cols, rows = x1 - x0 + 1, y1 - y0 + 1
-  local bodyMax = P.zoom(fig, w, h)
+-- the stage layout with effects: the largest of P.FX_SCALES at which the scene's extent fits the stage, the extent
+-- centred. Returns scale, T, tileX, tileY (the stage tile's top-left px) and the UICreature rect of a creature on
+-- that tile (x, y, size: its own tile is the lower right quarter of a 2T square; P.creatureRect for another tile).
+-- Every creature keeps its feet on its tile, as the map draws it.
+function P.fxLayout(w, h, x0, y0, x1, y1)
+  local cols, rows = math.max(0.5, x1 - x0), math.max(0.5, y1 - y0)
   local s = P.FX_SCALES[#P.FX_SCALES]
   for _, sc in ipairs(P.FX_SCALES) do
-    if sc <= bodyMax and cols * 32 * sc <= w and rows * 32 * sc <= h then s = sc break end
+    if cols * 32 * sc <= w and rows * 32 * sc <= h then s = sc break end
   end
   local T = math.floor(32 * s + 0.5)
-  local left = math.floor((w - cols * T) / 2 + 0.5)
-  local top = math.floor((h - rows * T) / 2 + 0.5)
-  local tileX, tileY = left - x0 * T, top - y0 * T
-  -- the UICreature rect: its own tile is the lower right quarter of a 2T square
+  local tileX = math.floor((w - cols * T) / 2 - x0 * T + 0.5)
+  local tileY = math.floor((h - rows * T) / 2 - y0 * T + 0.5)
   return { scale = s, T = T, tileX = tileX, tileY = tileY, x = tileX - T, y = tileY - T, size = 2 * T,
     feetY = tileY + T }
+end
+
+-- the UICreature rect (x, y, size) of a creature standing on tile pos of the stage
+function P.creatureRect(L, pos)
+  pos = pos or { x = 0, y = 0 }
+  return L.tileX + (pos.x - 1) * L.T, L.tileY + (pos.y - 1) * L.T, 2 * L.T
 end
 
 -- the pixel place of tile (w, h) of a thing drawn on the tile at (ox, oy) tiles from the creature tile

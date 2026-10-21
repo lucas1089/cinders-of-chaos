@@ -1,0 +1,11 @@
+Module
+  name: game_minimapsync
+  description: The minimap shows the explored map around the character after a death, a respawn or a teleport
+  author: Cinders of Chaos
+  sandboxed: false
+  autoload: true
+  autoload-priority: 1000
+  dependencies: [ game_interface ]
+  scripts: [ minimapsync_logic, minimapsync ]
+  @onLoad: ChaosMinimapSync.init()
+  @onUnload: ChaosMinimapSync.terminate()

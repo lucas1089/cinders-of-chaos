@@ -1,4 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- the game's palette (website/tools/recolor_layout.py, the client skin): iron blacks, parchment text, gold, ember -->
 <resources>
     <color name="ic_launcher_bg">#1A1412</color>
+    <color name="iron0">#050405</color>
+    <color name="iron1">#0D0B0E</color>
+    <color name="iron2">#17141A</color>
+    <color name="iron3">#241F27</color>
+    <color name="iron4">#3A3339</color>
+    <color name="iron5">#574D52</color>
+    <color name="text">#D6C9AE</color>
+    <color name="text_bright">#F3EAD6</color>
+    <color name="muted">#8C8070</color>
+    <color name="gold_dark">#6B4A14</color>
+    <color name="gold">#D9A53A</color>
+    <color name="gold_light">#F6CF72</color>
+    <color name="blood_dark">#5A0A0A</color>
+    <color name="blood">#B8160F</color>
+    <color name="ember">#E03A1E</color>
+    <color name="ok">#66CC66</color>
 </resources>

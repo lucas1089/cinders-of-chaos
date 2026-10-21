@@ -469,9 +469,10 @@ function doSelection(dungeonId)
 
   isApplyingDungeon = true
 
+  -- no cooldown after a selection: picking a dungeon only redraws this window (no request), and the 2 s lock made the
+  -- list feel slow (beta 2026-10-20)
   local ok, err = xpcall(function()
     selectDungeon(dungeonId)
-    beginSelectionCooldown()
   end, debug.traceback)
 
   if not ok then
@@ -565,8 +566,19 @@ function selectDungeon(dungeonId)
         local loot = dungeon.loot[i]
         slot:setItemId(loot.clientId)
         slot:setItemCount(loot.count)
+        -- its name on hover, "Where to find" on a right click (game_itemfinder)
+        local name = type(loot.name) == 'string' and loot.name ~= '' and loot.name or nil
+        if name and (tonumber(loot.count) or 1) > 1 then name = string.format('%dx %s', loot.count, name) end
+        slot:setTooltip(name or '')
+        slot.lootClientId = loot.clientId
       else
         slot:setItem(nil)
+        slot:setTooltip('')
+        slot.lootClientId = nil
+      end
+      local finder = modules.game_itemfinder
+      if finder and finder.attach then
+        finder.attach(slot, function() return slot.lootClientId end)
       end
     end
   end

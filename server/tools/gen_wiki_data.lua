@@ -575,8 +575,31 @@ function W.tree(D, vocs)
 					end
 				end
 				if #variants > 0 then
+					-- variants with the same name and text are one keystone of several classes (the Thief, Necromancer,
+					-- Monk and Templar lines give the same pair to all their classes; Ricochet is the Ranger's and the
+					-- Beastmaster's); its id is that of the variant of the class that comes first (the base class)
+					local rank = {}
+					for i, k in ipairs(allClasses) do
+						rank[k] = i
+					end
+					local groups, order = {}, {}
 					for _, x in ipairs(variants) do
-						local keys = VARIANT_CLASSES[x.key] or {x.key}
+						local gk = x.v.name .. "\0" .. lines(x.v)
+						if not groups[gk] then
+							groups[gk] = {x = x, keys = {}, rank = math.huge}
+							order[#order + 1] = gk
+						end
+						local g = groups[gk]
+						for _, k in ipairs(VARIANT_CLASSES[x.key] or {x.key}) do
+							table.insert(g.keys, k)
+							if (rank[k] or math.huge) < g.rank then
+								g.rank, g.x = rank[k], x
+							end
+						end
+					end
+					for _, gk in ipairs(order) do
+						local g = groups[gk]
+						local x, keys = g.x, g.keys
 						local e = {id = "tree:" .. id .. ":" .. x.key, name = x.v.name, classes = classNames(keys), text = lines(x.v),
 							node = id, iconKey = x.v.icon or n.icon}
 						keystones[#keystones + 1] = e

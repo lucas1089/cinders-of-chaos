@@ -22,6 +22,9 @@ local X = ChaosLootLine
 local K = ChaosLootLineCore
 
 X.beginIndex = -1
+-- after the Chaos loot layer (1: pack thinning, ammo, waystones, smart loot, extra rolls), Echoing Spoils (1.5) and the
+-- dungeon difficulty loot (1.7); before the auto seller, the gold finds and the rift key drop (2)
+X.settleIndex = 1.9
 X.flushIndex = 100
 X.current = nil -- {id = monster id, owner = owner creature id, monster = name description, stock, bonus = {}, pouch,
 -- party = true when the stock line was broadcast}
@@ -159,6 +162,78 @@ function X.addPouch(monster, text)
 	return true
 end
 
+-- ---------------------------------------------------------------- the corpse after the loot layer (beta 2026-10-21)
+local function attr(item, key)
+	local ok, v = pcall(function() return item:getCustomAttribute(key) end)
+	return ok and v or nil
+end
+
+-- one entry of lootline_core.lua K.describe, read from the item
+function X.entryOf(item)
+	local okT, it = pcall(function() return item:getType() end)
+	it = okT and it or nil
+	local function call(obj, name)
+		if not obj or not obj[name] then
+			return nil
+		end
+		local ok, v = pcall(function() return obj[name](obj) end)
+		return ok and v or nil
+	end
+	local stackable = it and call(it, "isStackable") == true
+	local count = tonumber(call(item, "getCount")) or 1
+	local veiled = false
+	if ChaosVeiled and ChaosVeiled.stateOf then
+		local okV, st = pcall(ChaosVeiled.stateOf, item)
+		veiled = okV and (tonumber(st) or 0) ~= 0
+	end
+	return {
+		id = call(item, "getId"),
+		name = call(item, "getName"),
+		plural = call(item, "getPluralName") or (it and call(it, "getPluralName")),
+		article = call(item, "getArticle") or (it and call(it, "getArticle")),
+		count = stackable and count or 1,
+		stackable = stackable,
+		rarity = tonumber(attr(item, "rarity")) or 0, -- a forged drop keeps it as text for a tick (ChaosCrafting.shield)
+		unique = attr(item, "chaos_unique") ~= nil,
+		veiled = veiled
+	}
+end
+
+-- the items of a corpse (and of the containers in it) as K.describe entries; at most `limit` items are read
+function X.entriesOf(corpse, limit)
+	limit = limit or 250
+	local out = {}
+	local function walk(container, depth)
+		local okI, list = pcall(function() return container:getItems() end)
+		for _, item in ipairs(okI and list or {}) do
+			if #out >= limit then
+				return
+			end
+			out[#out + 1] = X.entryOf(item)
+			local okC, isC = pcall(function() return item:isContainer() end)
+			if okC and isC and depth < 4 then
+				walk(item, depth + 1)
+			end
+		end
+	end
+	walk(corpse, 0)
+	return out
+end
+
+-- index settleIndex: the line lists the corpse as it is now (lootline_core.lua K.describe)
+function X.settle(monster, corpse)
+	if not X.active(monster) then
+		return false
+	end
+	local okC, isC = pcall(function() return corpse:isContainer() end)
+	if not (okC and isC) then
+		return false
+	end
+	local rec = X.current
+	rec.items = K.describe(X.entriesOf(corpse), rec.flag)
+	return true
+end
+
 local function begin(monster, corpse)
 	if X.current then
 		X.flush()
@@ -191,6 +266,15 @@ if EventCallback then
 		end
 	end
 	openCb:register(X.beginIndex)
+
+	local settleCb = EventCallback
+	settleCb.onDropLoot = function(self, corpse)
+		local ok, err = pcall(X.settle, self, corpse)
+		if not ok then
+			print("[Chaos lootline] onDropLoot failed: " .. tostring(err))
+		end
+	end
+	settleCb:register(X.settleIndex)
 
 	local flushCb = EventCallback
 	flushCb.onDropLoot = function(self, corpse)

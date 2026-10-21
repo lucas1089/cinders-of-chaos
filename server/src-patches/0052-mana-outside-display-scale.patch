@@ -1,0 +1,37 @@
+# Mana outside the display scale (server/README.md "Display scale", "Fixed spell costs"; owner 2026-10-21: "Mas o custo
+# de mana das skills ainda tá escalando com o level do char"). Patch 0037 showed the own mana and max mana and every mana
+# number of a text message x the factor of the viewer's level, so the spellbook and the action bar had to show a spell's
+# cost x that factor too (Colossus Fall, 400 mana, read 400,000 at level 1000): every cost seemed to grow with the
+# level although the engine always took the same flat number. Now mana is never scaled: a spell costs the number of its
+# spells.xml entry at every level, and the mana bar, the potions and the mana shield show the mana the engine counts.
+#   * ProtocolGame::AddPlayerStats: mana and max mana as they are (uint32, clamped); health and max health keep 0037.
+#   * ProtocolGame::sendTextMessage: a mana message (TextMessage::typeId CHAOS_IMPACT_MANA_DRAIN or _MANA_GAIN of patch
+#     0051: the mana shield, a mana drain, a mana gain) keeps its values and its text at factor 1. Damage, heal and the
+#     energy shield keep the viewer's factor.
+# Guard: tools/display_scale_patch_test.py (CI). Applies after 0001-0051.
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -1722,6 +1722,11 @@ void ProtocolGame::sendTextMessage(const
+ 		default:
+ 			break;
+ 	}
++	// Chaos (patch 0052): mana is never in the display scale (fixed spell costs): a mana drain or gain keeps its number
++	// and its text
++	if (message.typeId == CHAOS_IMPACT_MANA_DRAIN || message.typeId == CHAOS_IMPACT_MANA_GAIN) {
++		displayFactor = 1;
++	}
+
+ 	NetworkMessage msg;
+ 	msg.addByte(0xB4);
+@@ -3425,8 +3430,9 @@ void ProtocolGame::AddPlayerStats(Networ
+ 	msg.add<uint16_t>(0); // xp boost
+ 	msg.add<uint16_t>(100); // stamina multiplier (100 = x1.0)
+
+-	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMana(), displayFactor));
+-	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMaxMana(), displayFactor));
++	// Chaos (patch 0052): mana as it is, never in the display scale (a spell's cost is the same number at every level)
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMana(), 1));
++	msg.add<uint32_t>(ChaosDisplay::scaleU32(player->getMaxMana(), 1));
+
+ 	msg.addByte(std::min<uint32_t>(player->getMagicLevel(), std::numeric_limits<uint8_t>::max()));
+ 	msg.addByte(std::min<uint32_t>(player->getBaseMagicLevel(), std::numeric_limits<uint8_t>::max()));

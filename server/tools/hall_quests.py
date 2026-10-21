@@ -2,22 +2,28 @@
 """The quest hall of Cinderhold (server/README.md "Hall order", "Quest hall").
 
 The base server's entry floor (z 7) of the teleport hall is a quest room: 16 alcoves, each with a teleport to the start
-of a base quest, the quest's name on the sign behind it and its rewards on show in the two cells beside it. The hall
-order (hall_order.py) treated them like hunts and rewrote them. With the owner's rule (2026-10-18: the ground floor is
-for the hunts of levels 1-500) the quests leave the level-ordered floors: install_content_areas.py moves each quest
-alcove, tile for tile (teleport with its destination and attributes, sign with its text, the rewards on show), to
-the quest hall east of the plaza's aisle (a little below the hall, where the daily and weekly reward chests stood),
-and the old alcoves become hunt slots.
+of a base quest, the quest's name on the sign behind it and its rewards on show on the cell row beside it (both cells
+and the counter between them). The hall order (hall_order.py) treated them like hunts and rewrote them. With the
+owner's rule (2026-10-18: the ground floor is for the hunts of levels 1-500) the quests leave the level-ordered
+floors: install_content_areas.py moves each quest alcove, tile for tile (teleport with its destination and attributes,
+sign with its text, the rewards on show), into the plaza south of the hall where the daily and weekly reward chests
+stood (two rows of alcoves round the plaza's aisle, layout_rows; owner 2026-10-20), and the old alcoves become hunt
+slots. The quest hall of 2026-10-18 over the pond (layout_grid, config `previous`) is taken away once its quests have
+moved on from it (install_content_areas.plan_prev_cleanup).
 
 This module is the part that knows about the quests (the rows of hall_hunts.csv of kind `quest`):
   layout   where each alcove goes (two rows of alcoves with a three-row corridor between, the same shape the hall has
-           them, joined to the aisle by a connector; the north alcoves of the base room in the upper row, the south
-           ones in the lower row, west to east)
+           them, joined to the aisle by a connector, the corridor's far end closed by a wall; the north alcoves of the
+           base room in the upper row, the south ones in the lower row, west to east)
   moves    the new tiles: the alcove's 4 columns x 3 rows copied with every attribute (rewards on show included), the
-           corridor, and the old alcove cleared (cells bare, the quest's teleport and the sign's text gone)
-  returns  the quest sites' own way back: the teleport at the end of each quest leads to the tile in front of the
-           old alcove; it is rewritten to lead to the tile in front of the new one (found on the map by its
-           destination, within `returnRadius` of the quest's destination)
+           corridor, and the old alcove made a hunt alcove (its cell row the model hunt alcove's: bare cells without
+           protection zone for the display monsters and the counter between, so no reward stays behind; the quest's
+           teleport and the sign's text gone). A quest whose teleport an earlier install lost (a hunt's took its
+           alcove) is moved all the same and its teleport made again from the CSV (beta 2026-10-20: "the quest
+           rewards stayed and the quests are gone")
+  ways     the way back from every hunt and quest (ways_back): a teleport outside the hall that leads in front of one
+           of its teleports belongs to the hunt or quest whose arrival is nearest among those it leads in front of
+           (where the base server had it or where it stands now), and leads in front of the teleport it has now
   chests   the daily and weekly reward chests of the base plaza (royal chest, unique ids 34801-34804, their booths)
            are taken away (owner, 2026-10-18) where the config lists them, after checking the chest is there
 and TileEditor, which reads map tiles once (tile_ranges), lets the steps change them in turn and reports only what
@@ -43,32 +49,57 @@ class TileEditor:
     def __init__(self, world, map_path, new_tiles):
         self.world, self.map_path, self.new = world, map_path, new_tiles
         self.want, self.orig, self.cur = set(), {}, {}
+        self.optional, self.bad = set(), set()
 
-    def need(self, *positions):
+    def need(self, *positions, optional=False):
+        """ask for tiles before load(); an optional one (a repair, a way back) that cannot be read (a house tile, an
+        attribute we cannot write back) is left out (bad()) instead of refusing the install"""
         for p in positions:
+            p = tuple(p)
             if p not in self.new:
-                self.want.add(tuple(p))
+                self.want.add(p)
+                if optional:
+                    self.optional.add(p)
+                else:
+                    self.optional.discard(p)
 
     def load(self):
         import install_content_areas as T
-        todo = sorted(p for p in self.want if self.world.has(p) and p not in self.orig)
+        todo = sorted(p for p in self.want if self.world.has(p) and p not in self.orig and p not in self.bad)
         if not todo:
             return
         data = open(self.map_path, 'rb').read()
-        ranges = T.tile_ranges(data, todo)
+        houses = set()
+        ranges = T.tile_ranges(data, todo, houses=houses)
+        for p in houses:
+            if p not in self.optional:
+                raise T.InstallError('the tile %d,%d,%d is a house tile; not replaced' % p)
+            self.bad.add(p)
         for p in todo:
+            if p in houses:
+                continue
             s, e = ranges[p]
             try:
                 self.orig[p] = H.parse_tile(data[s:e + 1], p)
             except H.HallError as ex:
-                raise T.InstallError(str(ex))
+                if p not in self.optional:
+                    raise T.InstallError(str(ex))
+                self.bad.add(p)
+
+    def is_bad(self, p):
+        return tuple(p) in self.bad
 
     def has(self, p):
+        p = tuple(p)
+        if p in self.bad:
+            return True
         return p in self.new or p in self.cur or p in self.orig or (p not in self.want and self.world.has(p))
 
     def get(self, p):
-        """the tile now (a dict), None when the map has none there"""
+        """the tile now (a dict), None when the map has none there or it could not be read (is_bad)"""
         p = tuple(p)
+        if p in self.bad:
+            return None
         if p in self.cur:
             return self.cur[p]
         if p in self.new:
@@ -81,6 +112,8 @@ class TileEditor:
 
     def set(self, p, tile):
         p = tuple(p)
+        if p in self.bad:
+            raise QuestError('internal: tile %d,%d,%d could not be read and is not written' % p)
         if p in self.new:
             self.new[p] = tile
         else:
@@ -151,6 +184,63 @@ def alcove_rows(room, pos):
 
 
 def layout(qcfg, room, quests):
+    """Where each quest alcove goes (layout_rows for a config with `north` and `south` rows of columns, else layout_grid,
+    the quest hall of 2026-10-18), with `previous` (an earlier placement, layout_grid's config) as each alcove's `prev`
+    and `prev_tiles` and the earlier hall's tiles as 'prev' (those the new placement does not take)."""
+    lay = layout_rows(qcfg, room, quests) if qcfg.get('north') else layout_grid(qcfg, room, quests)
+    lay['prev'] = []
+    pc = qcfg.get('previous')
+    if pc:
+        old = layout_grid(dict(pc, z=qcfg['z']), room, quests)
+        by = {a['id']: a for a in old['alcoves']}
+        for a in lay['alcoves']:
+            o = by[a['id']]
+            a['prev'], a['front_prev'], a['prev_tiles'] = o['new'], o['front_new'], o['tiles']
+        mine = set(lay['rect']) | set(lay['endwall']) | {p for r in lay['connector'].values() for p in r}
+        spots = set(old['rect']) | set(old['endwall']) | {p for r in old['connector'].values() for p in r}
+        lay['prev'] = sorted(spots - mine)
+    return lay
+
+
+def layout_rows(qcfg, room, quests):
+    """The quests in two rows of alcoves facing each other across a corridor of the plaza (owner, 2026-10-20: "you can
+    overwrite this green region"): `north` {y: its sign row (the teleport row is y + 2), x: the teleport columns, west
+    to east}, the base room's north alcoves in it; `south` {y: its teleport row (the sign row is y + 2), x: ...}, the
+    south alcoves; `corridor` {x: [x0, x1], y: [y0, y1]}: the floor between them, the hall's carpet (its top row the
+    corridor's top edge, its bottom row the bottom edge). An alcove is its 4 columns x-1 .. x+2 (cells, teleport and
+    the divider after them) and, where the column 4 to the west is not one of the row's, its west divider x-2 too.
+    Same return as layout_grid; no connector or end wall (the corridor is part of the plaza)."""
+    z = qcfg['z']
+    rows = [sorted((q for q in quests if side_of(room, q['y']) == s), key=lambda q: q['x']) for s in (0, 1)]
+    out = []
+    for s, (key, qs) in enumerate(zip(('north', 'south'), rows)):
+        r = qcfg[key]
+        cols = list(r['x'])
+        if len(cols) < len(qs):
+            raise QuestError('quests.%s has %d columns for %d quests' % (key, len(cols), len(qs)))
+        top = r['y']
+        for k, q in enumerate(qs):
+            old = (q['x'], q['y'], q['z'])
+            cx = cols[k]
+            new = (cx, top + 2 if s == 0 else top, z)
+            tiles = {}
+            for dx in list(range(-1, 3)) + ([-2] if cx - 4 not in cols else []):
+                for o_row, n_row in zip(alcove_rows(room, old), (top, top + 1, top + 2)):
+                    tiles[(old[0] + dx, o_row, old[2])] = (cx + dx, n_row, z)
+            out.append(dict(id=q['id'], old=old, new=new, front_old=front_of(room, old),
+                            front_new=(cx, new[1] + (1 if s == 0 else -1), z),
+                            dest=(q['dest_x'], q['dest_y'], q['dest_z']), tiles=tiles, side=s))
+    c = qcfg['corridor']
+    (x0, x1), (y0, y1) = c['x'], c['y']
+    corr = [(x, y, z) for y in range(y0, y1 + 1) for x in range(x0, x1 + 1)]
+    rect = sorted({p for a in out for p in a['tiles'].values()} | set(corr))
+    label = ((x0 + x1) // 2, (y0 + y1) // 2, z)
+    return dict(alcoves=sorted(out, key=lambda a: a['id']), rect=rect, corridor={0: corr, 1: [], 2: []},
+                connector={0: [], 1: [], 2: []}, label=label, endwall=[], entrance=None, x1=None, oy=None,
+                corridor_rows=(y0, y1))
+
+
+def layout_grid(qcfg, room, quests):
     """Where each quest alcove goes: a copy of the hall's own shape east of the plaza's aisle, joined to it by a corridor
     of the same three rows. Upper row: the north alcoves west to east; lower row: the south ones. quests: the CSV rows
     of kind quest (x, y, z of the old teleport, dest_*). An alcove is 4 columns wide (x-1 .. x+2: the cells and the
@@ -184,110 +274,211 @@ def layout(qcfg, room, quests):
     corridor = {r: [(x, oy + 3 + r, z) for x in range(x0, x1 + 1)] for r in range(3)}
     connector = {r: [(x, oy + 3 + r, z) for x in range(cx, x0)] for r in range(3)} if cx is not None else {r: [] for r in range(3)}
     label = (ox + step * (n - 1) // 2 + 1, oy + 4, z)
-    return dict(alcoves=sorted(out, key=lambda a: a['id']), rect=rect, corridor=corridor, connector=connector, label=label)
+    # the corridor's far end is closed by a wall (before, it ran out into the unmapped tiles east of the hall)
+    endwall = [(x1 + 1, oy + 3 + r, z) for r in range(3)]
+    # where the aisle meets the connector: a second "Quests" label shows the way in from the plaza
+    entrance = (cx, oy + 4, z) if cx is not None else None
+    return dict(alcoves=sorted(out, key=lambda a: a['id']), rect=rect, corridor=corridor, connector=connector, label=label,
+                endwall=endwall, entrance=entrance, x1=x1, oy=oy)
 
 
-def need_positions(lay):
-    """the map tiles the quest steps read: the old alcoves' tiles (cells, sign and teleport tile among them) and the
-    quest hall's rectangle"""
-    out = set(lay['rect'])
+def model_cells(qcfg, room):
+    """{side: [3 positions]}: the cell row (cell, counter, cell) of the hunt alcove `quests.model` ({x, z}: its
+    teleport column and floor) on the north (0) and south (1) side; None without a model"""
+    m = qcfg.get('model')
+    if not m:
+        return None
+    return {s: [(m['x'] + dx, room['cellRows'][s], m['z']) for dx in (-1, 0, 1)] for s in (0, 1)}
+
+
+def need_positions(lay, models=None):
+    """the map tiles the quest steps read: the old alcoves' tiles (cells, sign and teleport tile among them), the
+    quest hall's rectangle, its connector and end wall, and the model cell rows"""
+    out = set(lay['rect']) | set(lay['endwall']) | set(lay.get('prev') or ())
     for r in lay['connector'].values():
         out.update(r)
     for a in lay['alcoves']:
         out.update(a['tiles'])
+        if a.get('prev_tiles'):
+            out.update(a['prev_tiles'].values())
+    for ps in (models or {}).values():
+        out.update(ps)
     return out
 
 
 def old_parts(room, old):
-    """the old alcove's cells (x-1, x+1 on the cell row) and its sign tile (x on the sign row)"""
+    """the old alcove's cell row (x-1, x, x+1: the two cells and the counter between them, all three holding the
+    rewards on show) and its sign tile (x on the sign row)"""
     x, y, z = old
     n = side_of(room, y)
-    return [(x - 1, room['cellRows'][n], z), (x + 1, room['cellRows'][n], z)], (x, room['signRows'][n], z)
+    return [(x + dx, room['cellRows'][n], z) for dx in (-1, 0, 1)], (x, room['signRows'][n], z)
 
 
-def find_returns(tele, lay, radius):
-    """[(alcove, pos)]: teleports of the map within `radius` tiles of an alcove's destination (same floor) that lead
-    to the tile in front of its old alcove or of its new one - the way back from the quest"""
-    out = []
-    for a in lay['alcoves']:
-        dx, dy, dz = a['dest']
-        for pos, d in tele.items():
-            if pos[2] == dz and abs(pos[0] - dx) <= radius and abs(pos[1] - dy) <= radius \
-                    and tuple(d) in (a['front_old'], a['front_new']):
-                out.append((a, pos))
-    return out
-
-
-def state(ed, lay):
-    """per quest 'old' (still in its old alcove) or 'annex' (in the quest hall); raises when neither holds its teleport"""
+def state(ed, lay, log=None):
+    """per quest 'old' (still in its old alcove), 'annex' (in the quest hall) or 'lost' (neither holds its teleport:
+    an earlier install put a hunt's teleport in its alcove; the alcove is moved all the same and its teleport made
+    again from hall_hunts.csv). Raises when the old alcove's teleport tile is not on the map (another map)."""
     out = {}
     for a in lay['alcoves']:
         t_new = ed.get(a['new']) if ed.has(a['new']) else None
-        t_old = ed.get(a['old'])
+        t_old = ed.get(a['old']) if ed.has(a['old']) else None
+        t_prev = ed.get(a['prev']) if a.get('prev') and ed.has(a['prev']) else None
         if t_new and tele_item(t_new, a['dest']) is not None:
             out[a['id']] = 'annex'
+        elif t_prev and tele_item(t_prev, a['dest']) is not None:
+            out[a['id']] = 'moved'  # in the quest hall of an earlier placement (`previous`): it moves on from there
         elif t_old and tele_item(t_old, a['dest']) is not None:
             out[a['id']] = 'old'
+        elif t_old is not None:
+            out[a['id']] = 'lost'
+            if log:
+                log('%s: no teleport to %s at %s or in the quest hall at %s: made again in the quest hall'
+                    % (a['id'], a['dest'], a['old'], a['new']))
         else:
-            raise QuestError('%s: no teleport to %s at %s or in the quest hall at %s (hall_hunts.csv is for another map, '
-                             'or the tiles were changed by hand)' % (a['id'], a['dest'], a['old'], a['new']))
+            raise QuestError('%s: no tile at %s for the quest alcove (hall_hunts.csv is for another map?)'
+                             % (a['id'], a['old']))
     return out
 
 
 def floor_tile(templates, lay, p):
     """the plain floor at p of the quest hall: its corridor row's tile from the hall's own corridor (carpet edges and
     middle), a bare plank floor elsewhere"""
-    off = p[1] - (lay['rect'][0][1] if lay['rect'] else 0) - 3
+    if lay.get('corridor_rows'):
+        y0, y1 = lay['corridor_rows']
+        off = 0 if p[1] == y0 else 2 if p[1] == y1 else 1 if y0 < p[1] < y1 else -1
+    else:
+        off = p[1] - (lay['rect'][0][1] if lay['rect'] else 0) - 3
     t = templates[off] if 0 <= off < 3 else bare(templates[1])
     return dict(flags=t['flags'], ground=t['ground'], items=list(t['items']))
 
 
 def check_free(ed, lay, st):
-    """the quest hall and its corridor may only take the place of decoration: a tile with an action id, a unique id or
-    a teleport that is not one of the quests' own is refused"""
+    """the quest hall, its corridor and end wall may only take the place of decoration: a tile with an action id, a
+    unique id or a teleport that is not one of the quests' own is refused; on a corridor of the plaza (layout_rows) a
+    tile with another teleport is left as it is (lay['keep']: the plaza's own teleports stay where they are)"""
     mine = set()
     for a in lay['alcoves']:
         if st[a['id']] == 'annex':
             mine.update(a['tiles'].values())
     quest_dest = {tuple(a['dest']) for a in lay['alcoves']}
-    spots = list(lay['rect']) + [p for r in lay['connector'].values() for p in r]
+    spots = list(lay['rect']) + [p for r in lay['connector'].values() for p in r] + list(lay['endwall'])
+    corr = set(lay['corridor'][0]) if lay.get('corridor_rows') else set()
+    alc = {p for a in lay['alcoves'] for p in a['tiles'].values()}
+    lay['keep'] = set()
     for p in spots:
         if p in mine:
             continue
         t = ed.get(p)
         for _iid, at in (t['items'] if t else []):
-            if at.get('aid') or at.get('uid') or (at.get('tele') and tuple(at['tele']) not in quest_dest):
+            foreign = at.get('tele') and tuple(at['tele']) not in quest_dest
+            if foreign and p in corr and p not in alc and not at.get('uid'):
+                lay['keep'].add(p)
+                continue
+            if at.get('aid') or at.get('uid') or foreign:
                 raise QuestError('the quest hall would replace a tile with an action id, unique id or teleport at '
-                                 '%d,%d,%d; move quests.origin' % p)
+                                 '%d,%d,%d; move the quest hall (hall.quests)' % p)
 
 
-def plan_move(ed, lay, room, portal, sign_id, templates, forward=True):
+def text_of(attrs):
+    """the text (attribute 6) of an item, b'' without"""
+    raw, j = attrs.get('raw', b''), 0
+    import struct
+    while j < len(raw):
+        a = raw[j]
+        if a in H.ITEM_STRING_ATTRS:
+            n = struct.unpack_from('<H', raw, j + 1)[0]
+            if a == 6:
+                return raw[j + 3:j + 3 + n]
+            j += 3 + n
+        else:
+            j += 1 + H.ITEM_FIXED_ATTRS[a]
+    return b''
+
+
+def with_text(attrs, text):
+    import struct
+    b = text.encode('latin-1', 'replace')
+    a2 = strip_text(attrs)
+    a2['raw'] = a2.get('raw', b'') + bytes([6]) + struct.pack('<H', len(b)) + b
+    return a2
+
+
+def remade(tile, a, item, grounds=None):
+    """a lost quest's teleport tile: every teleport item off, the quest's own on (item `item` to its destination),
+    after the ground"""
+    items = [(i, at) for i, at in tile['items'] if not at.get('tele')]
+    at = 1 if (not tile['ground'] and items and (grounds is None or items[0][0] in grounds)) else 0
+    items.insert(at, (item, {'tele': tuple(a['dest'])}))
+    return dict(flags=tile['flags'], ground=tile['ground'], items=items)
+
+
+def plan_move(ed, lay, room, portal, sign_id, templates, forward=True, models=None, items=None, names=None,
+              grounds=None, log=None):
     """The quests to the quest hall (forward) or back to their old alcoves. Returns ({pos: tile} to write, notes).
     Forward: every tile of the hall's rectangle comes from the alcove that belongs there (read from the old alcove, or
-    from the hall when the quest moved before) or is the floor, with the connector corridor to the aisle; the old
-    alcoves are cleared (cells bare, a quest teleport that is not the hall's own item off, the sign blank: the hunt that
-    takes the alcove writes its own text). Back: the old alcoves get the hall's tiles and the hall is floor again."""
-    st = state(ed, lay)
+    from the hall when the quest moved before) or is the floor, with the connector corridor to the aisle and the wall
+    that closes the corridor's far end; the old alcoves become hunt alcoves: the cell row (both cells and the counter
+    between them, where the rewards stood on show) is the model hunt alcove's (`models`, model_cells: bare cells
+    without protection zone, so the display monsters can stand there, and the counter), else the cells bare; a quest
+    teleport that is not the hall's own item off and the sign blank (the hunt that takes the alcove writes its own
+    text). A 'lost' quest (state) gets its teleport made again (item `items[id]`, else `portal`) and, when the sign
+    is blank, the quest's name (`names[id]`) on it. Back: the old alcoves get the hall's tiles and the hall is floor
+    again."""
+    st = state(ed, lay, log)
     check_free(ed, lay, st)
     writes, notes = {}, []
+    items, names = items or {}, names or {}
     if forward:
         src = {}
         for a in lay['alcoves']:
             for old, new in a['tiles'].items():
-                src[new] = ed.get(new) if st[a['id']] == 'annex' else ed.get(old)
+                if st[a['id']] == 'annex':
+                    src[new] = ed.get(new)
+                elif st[a['id']] == 'moved':  # a tile the earlier hall did not take (a west divider): the old one
+                    src[new] = ed.get(a['prev_tiles'].get(old, old))
+                else:
+                    src[new] = ed.get(old)
+            if st[a['id']] == 'lost':
+                t = src.get(a['new'])
+                if t is not None:
+                    src[a['new']] = remade(t, a, items.get(a['id']) or portal, grounds)
+                _cells, sign = old_parts(room, a['old'])
+                ns = a['tiles'].get(sign)
+                t = src.get(ns) if ns else None
+                if t is not None and names.get(a['id']):
+                    its = [(i, with_text(at, names[a['id']]) if i == sign_id and not text_of(at) else at)
+                           for i, at in t['items']]
+                    src[ns] = dict(flags=t['flags'], ground=t['ground'], items=its)
         for p in lay['rect']:
+            if p in lay.get('keep', ()):
+                continue
             t = src.get(p)
             writes[p] = t if t is not None else floor_tile(templates, lay, p)
         for r in range(3):
             for p in lay['connector'][r]:
                 writes[p] = floor_tile(templates, lay, p)
+        # the far end of the corridor: the hall's divider wall on the corridor's floor
+        div = writes.get((lay['x1'], lay['oy'] + 2, lay['rect'][0][2])) if (lay['rect'] and lay['endwall']) else None
+        if div is not None:
+            walls = list(div['items'] if div['ground'] else div['items'][1:])
+            for r, p in enumerate(lay['endwall']):
+                f = floor_tile(templates, lay, (p[0], lay['oy'] + 3 + r, p[2]))
+                g, first = (f['ground'], []) if f['ground'] else (None, f['items'][:1])
+                writes[p] = dict(flags=f['flags'], ground=g, items=first + walls)
         for a in lay['alcoves']:
-            if st[a['id']] == 'old':
-                notes.append('%s: %s -> %s' % (a['id'], a['old'], a['new']))
+            if st[a['id']] in ('old', 'lost', 'moved'):
+                notes.append('%s: %s -> %s%s' % (a['id'], a['prev'] if st[a['id']] == 'moved' else a['old'], a['new'],
+                                                 ' (teleport made again)' if st[a['id']] == 'lost' else ''))
             cells, sign = old_parts(room, a['old'])
-            for c in cells:
+            model = (models or {}).get(side_of(room, a['old'][1]))
+            for k, c in enumerate(cells):
                 t = ed.get(c)
-                if t is not None:
+                if t is None:
+                    continue
+                m = ed.get(model[k]) if model else None
+                if m is not None:
+                    writes[c] = dict(flags=m['flags'], ground=m['ground'], items=list(m['items']))
+                elif k != 1:
                     writes[c] = bare(t)
             t = ed.get(a['old'])
             i = tele_item(t)
@@ -297,29 +488,61 @@ def plan_move(ed, lay, room, portal, sign_id, templates, forward=True):
             if t is not None:
                 writes[sign] = blank_sign(t, sign_id)
     else:
-        back = [a for a in lay['alcoves'] if st[a['id']] == 'annex']
+        back = [a for a in lay['alcoves'] if st[a['id']] in ('annex', 'moved')]
         for a in back:
-            notes.append('%s: %s -> %s' % (a['id'], a['new'], a['old']))
+            at = a['new'] if st[a['id']] == 'annex' else a['prev']
+            notes.append('%s: %s -> %s' % (a['id'], at, a['old']))
             for old, new in a['tiles'].items():
-                writes[old] = ed.get(new)
-        if back:
+                if st[a['id']] == 'annex' or old in a['prev_tiles']:
+                    writes[old] = ed.get(new if st[a['id']] == 'annex' else a['prev_tiles'][old])
+        if any(st[a['id']] == 'annex' for a in back):
             for p in lay['rect']:
-                writes[p] = floor_tile(templates, lay, p)
+                if p not in lay.get('keep', ()):
+                    writes[p] = floor_tile(templates, lay, p)
     return writes, notes
 
 
-def plan_returns(ed, found, forward):
-    """{pos: tile} with the way back of each quest pointing in front of its new alcove (forward) or old one"""
+# ------------------------------------------------------------------------------------------------ the ways back
+def distance(a, b):
+    """how far a tile is from a hunt's arrival: tiles on the floor, a floor counted as 30"""
+    return max(abs(a[0] - b[0]), abs(a[1] - b[1])) + 30 * abs(a[2] - b[2])
+
+
+def ways_back(tele, owners, skip=lambda p: False):
+    """[(pos, dest, owner)]: the teleports of the map (tele {pos: dest}, outside the hall: skip) that lead in front of
+    one of the hall's teleports - the way back from a hunt or a quest. owners: [{id, dest, fronts, want}], the tile in
+    front of the owner's teleport where the base server had it and where it stands now (fronts), and where its way
+    back should lead (want). A way back belongs to the owner whose arrival (dest) is nearest among those it leads in
+    front of: a way back that already leads in front of a hunt's new slot (the old slot of another hunt) stays with its
+    own hunt, so a second run changes nothing."""
+    by_front = {}
+    for o in owners:
+        for f in o['fronts']:
+            by_front.setdefault(tuple(f), []).append(o)
+    out = []
+    for pos, d in sorted(tele.items()):
+        claim = by_front.get(tuple(d))
+        if not claim or skip(pos):
+            continue
+        o = min(claim, key=lambda o: (distance(pos, o['dest']), o['id']))
+        out.append((tuple(pos), tuple(d), o))
+    return out
+
+
+def plan_ways_back(ed, found):
+    """{pos: tile}: each way back (ways_back) leading to its owner's `want`; a tile that could not be read is left"""
     writes = {}
-    for a, pos in found:
+    for pos, d, o in found:
+        if ed.is_bad(pos):
+            continue
         t = writes.get(pos) or ed.get(pos)
-        want = a['front_new'] if forward else a['front_old']
-        items = []
-        for iid, at in t['items']:
-            if at.get('tele') and tuple(at['tele']) in (a['front_old'], a['front_new']):
-                at = dict(at, tele=want)
-            items.append((iid, at))
-        writes[pos] = dict(flags=t['flags'], ground=t['ground'], items=items)
+        if t is None:
+            continue
+        items = [(iid, dict(at, tele=tuple(o['want'])) if at.get('tele') and tuple(at['tele']) == d else at)
+                 for iid, at in t['items']]
+        nt = dict(flags=t['flags'], ground=t['ground'], items=items)
+        if nt != t:
+            writes[pos] = nt
     return writes
 
 

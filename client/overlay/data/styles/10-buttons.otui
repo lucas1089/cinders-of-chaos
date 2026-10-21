@@ -356,28 +356,49 @@ ClearSearch < UIWidget
   $pressed:
     image-clip: 0 20 20 20
 
+// The helper's rule rows (and every other list using them): Move up / Move down / Remove as small Chaos buttons, the
+// skin's button frame with the arrow or the cross in the middle (beta 2026-10-20: bare green and red arrows). Every property a state changes is set in
+// the base block too (a state style is not undone when the state ends).
 MoveUpButton < UIButton
-  size: 15 15
-  image-source: /images/arrows/icon-arrow-up
-  image-clip: 0 0 15 15
-  image-color: #c0c0c0
-  $hover:
-    image-color: #ffffff
+  size: 18 18
+  image-source: /images/chaos/button_normal
+  image-border: 4
+  icon-source: /images/chaos/rule_arrow_up
+  icon-size: 9 6
+  icon-color: #d6c9ae
+  change-cursor-image: true
+  cursor: pointer
+  $hover !disabled:
+    image-source: /images/chaos/button_hover
+    icon-color: #f6cf72
+  $pressed:
+    image-source: /images/chaos/button_pressed
+    icon-color: #ffffff
+  $disabled:
+    image-source: /images/chaos/button_disabled
+    icon-color: #6b6258
 
-MoveDownButton < UIButton
-  size: 15 15
-  image-source: /images/arrows/icon-arrow-down
-  image-clip: 0 0 15 15
-  image-color: #c0c0c0
-  $hover:
-    image-color: #ffffff
+MoveDownButton < MoveUpButton
+  icon-source: /images/chaos/rule_arrow_down
 
 RemoveButton < UIButton
-  size: 17 17
-  image-color: #c0c0c0
-  font: $var-main-font
-  color: #c0c0c0
-  text: ✕
+  size: 18 18
+  image-source: /images/chaos/button_normal
+  image-border: 4
+  font: verdana-11px-rounded
+  text: X
   text-align: center
-  $hover:
-    color: #ff6666
+  text-offset: 0 1
+  color: #d94a3a
+  change-cursor-image: true
+  cursor: pointer
+  $hover !disabled:
+    image-source: /images/chaos/button_hover
+    color: #ff6a52
+  $pressed:
+    image-source: /images/chaos/button_pressed
+    color: #ffffff
+  $disabled:
+    image-source: /images/chaos/button_disabled
+    color: #6b6258
+

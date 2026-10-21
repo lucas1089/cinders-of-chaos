@@ -25,7 +25,7 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       ADMIN_APP_VERSION_CODE: ${{ github.run_number }}
-      ADMIN_APP_VERSION_NAME: "1.${{ github.run_number }}"
+      ADMIN_APP_VERSION_NAME: "2.${{ github.run_number }}"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -80,7 +80,7 @@ jobs:
         run: |
           set -euo pipefail
           TAG="adminapp-${{ github.run_number }}"
-          NOTE="Cinders Admin 1.${{ github.run_number }}, built from ${GITHUB_SHA}. Install the APK on the phone (allow installs from this source), then follow docs/ADMIN_APP.md."
+          NOTE="Cinders Admin 2.${{ github.run_number }}, built from ${GITHUB_SHA}. Install the APK on the phone (allow installs from this source), then follow docs/ADMIN_APP.md."
           if [ "${{ steps.ks.outputs.stable }}" != "yes" ]; then
             NOTE="$NOTE
           Signed with a one-off key (no ANDROID_KEYSTORE_B64 secret): uninstall the old app before installing this one."

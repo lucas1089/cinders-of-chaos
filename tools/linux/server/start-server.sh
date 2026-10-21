@@ -116,6 +116,8 @@ if [ ! -f "$DATA/chaos-setup-done.txt" ]; then
     echo "CHAOS_CLIENT_KEY="
     echo "# RSA login key: the path of our own key (server/tools/rsa_key.py gen; README.txt). Empty: the public default key."
     echo "CHAOS_RSA_KEY_FILE="
+    echo "# Ember, the Help channel assistant (README.txt): the model API key. Empty: off, the Help channel works as before."
+    echo "CHAOS_ANTHROPIC_API_KEY="
   } > "$ENVF"
   umask 022
   for f in "$ROOT"/server/sql-setup/*.sql; do
@@ -159,9 +161,33 @@ if [ "${CHAOS_CLIENTSERVICES:-1}" != 0 ] && [ -f "$ROOT/server/tools/clientservi
     echo "python3 not found: the login-screen services are off (the client hides that bar)."
   fi
 fi
+# ---- Ember, the Help channel assistant (server/tools/helpai.py, README.txt "Help channel assistant"): answers players'
+# questions in the Help channel through the model API. Only with CHAOS_ANTHROPIC_API_KEY in chaos.env and the SDK in
+# helpai-venv/ (python3 -m venv helpai-venv && helpai-venv/bin/pip install anthropic). The key goes to this process
+# only: it is taken out of the environment before the game server starts. CHAOS_HELPAI=0 in chaos.env: off.
+ai=0
+helpai_key="${CHAOS_ANTHROPIC_API_KEY:-}"
+unset CHAOS_ANTHROPIC_API_KEY
+if [ -n "$helpai_key" ] && [ "${CHAOS_HELPAI:-1}" != 0 ] && [ -f "$ROOT/server/tools/helpai.py" ]; then
+  py="$ROOT/helpai-venv/bin/python3"
+  [ -x "$py" ] || py=$(command -v python3 || true)
+  if [ -n "$py" ] && "$py" -I -c 'import anthropic' 2>/dev/null; then
+    CHAOS_ANTHROPIC_API_KEY="$helpai_key" "$py" -I "$ROOT/server/tools/helpai.py" "$ROOT/server" \
+      >> "$LOGS/helpai.log" 2>&1 &
+    ai=$!
+    echo $ai > "$RUN/helpai.pid"
+    echo "Help channel assistant on (log: logs/helpai.log)."
+  else
+    echo "Help channel assistant off: the anthropic package is missing (README.txt \"Help channel assistant\")."
+  fi
+fi
+unset helpai_key
+
 stop_svc() {
   if [ $svc -ne 0 ] && kill -0 $svc 2>/dev/null; then kill $svc 2>/dev/null || true; fi
   rm -f "$RUN/clientservices.pid"
+  if [ $ai -ne 0 ] && kill -0 $ai 2>/dev/null; then kill $ai 2>/dev/null || true; fi
+  rm -f "$RUN/helpai.pid"
 }
 
 # ---- game server, started again after a clean stop (the daily server save shuts it down) and after a crash

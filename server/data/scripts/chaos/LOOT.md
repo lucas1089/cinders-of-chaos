@@ -12,6 +12,7 @@ A second `EventCallback.onDropLoot` that post-processes the corpse after the sto
 | --- | --- | --- |
 | `default_onDropLoot.lua` | 0 (no index given) | builds the loot, rolls gear rarity, waystones, sends "Loot of ..." |
 | **chaos loot.lua** | **1** (`ChaosLootConfig.priority`) | extra rolls, gear quality, currency, uniques |
+| `lootline.lua` settle | 1.9 | reads the corpse: the kill's one "Loot of" line lists exactly these items (server/README.md "One loot line per kill") |
 | `creaturescripts/autoloot.lua` | 3 | moves items to autolooting players |
 
 Keep our index strictly between 0 and 3: above 3 the autoloot would run before us and the bonus items would never be

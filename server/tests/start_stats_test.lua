@@ -94,14 +94,15 @@ for id, r in pairs(S.stats) do
 	end
 end
 
--- level 1 spells: every class with a tutorial spell casts it 3 times or more, casters 10 times or more
+-- the tutorial spells (Minor Mending for the Ranger and Mystic lines since the 15-spell cap, 2026-10-20): every class
+-- with one casts it 3 times or more from a level 8 pool (the start level), casters 10 times or more
 for id in pairs(gains) do
 	local spell = NP.tutorialSpellFor(id)
 	local kit = NP.kitFor(id)
 	if spell then
-		ok(S.stats[id].mana >= 3 * spell.mana, "class " .. id .. " casts " .. spell.name .. " three times")
+		ok(NP.statsFor(id, 8).mana >= 3 * spell.mana, "class " .. id .. " casts " .. spell.name .. " three times")
 		if kit and kit.role == "caster" then
-			ok(S.stats[id].mana >= 10 * spell.mana, "caster " .. id .. " casts " .. spell.name .. " ten times")
+			ok(NP.statsFor(id, 8).mana >= 10 * spell.mana, "caster " .. id .. " casts " .. spell.name .. " ten times")
 		end
 	end
 	if kit and kit.role == "caster" then

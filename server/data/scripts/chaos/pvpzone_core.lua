@@ -325,6 +325,32 @@ function K.protected(untilAt, now)
 	return (tonumber(untilAt) or 0) > now
 end
 
+-- the battle lock inside the Marches (the engine's CONDITION_INFIGHT: the PvP lock and the white skull ride on it; every
+-- player hit renews it with the server's pzLocked time). ticks = what is left of it (ms). Returns the ticks to set when
+-- it runs longer than cfg.combatLock.maxSeconds, else nil (leave it).
+function K.lockTicks(cfg, ticks)
+	local cap = (cfg.combatLock or {}).maxSeconds
+	ticks = tonumber(ticks)
+	if not cap or cap <= 0 or not ticks then
+		return nil
+	end
+	cap = floor(cap * 1000)
+	if ticks > cap then
+		return cap
+	end
+	return nil
+end
+
+-- where a defeated player goes: "temple" (the home town's temple, as a death anywhere else) or "entry" (where he
+-- entered the Marches). entryOk = that place is still a valid tile outside the zone.
+function K.defeatDestination(cfg, entryOk)
+	local want = (cfg.death or {}).respawn or "temple"
+	if want == "entry" and entryOk then
+		return "entry"
+	end
+	return "temple"
+end
+
 -- the exit channel: standing in a safe exit circle since `since` (nil = not in one), last damage dealt or taken at
 -- `lastCombat`. Returns nil (not channelling), or the share done (0..1) and true once it is complete.
 function K.exitProgress(cfg, since, lastCombat, now)

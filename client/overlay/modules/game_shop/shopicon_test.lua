@@ -28,7 +28,7 @@ eq(p.mode, 'creature', 'bundle outline') eq(p.outline.art, 'frost', 'its art')
 eq(S.plan({ type = 'outfit', look = { kind = 'bundle', parts = { { kind = 'wings', look = 1 } } } }, main).mode, 'native', 'bundle without outline')
 -- pictures
 p = S.plan({ type = 'item', look = { kind = 'footprint', art = 'ash' } }, main)
-eq(p.mode, 'image', 'footprint') eq(p.image, '/modules/game_cosmeticfx/images/prints/ash', 'print') eq(p.rotation, 90, 'rotated')
+eq(p.mode, 'image', 'footprint') eq(p.image, '/modules/game_cosmeticfx/images/prints/ash', 'print') eq(p.rotation, nil, 'never rotated: a widget rotation leaks onto the rows drawn after it')
 p = S.plan({ type = 'item', look = { kind = 'nameplate', frame = 'frost' } }, main)
 eq(p.mode, 'image', 'plate') eq(p.image, '/modules/game_nameplate/images/plate_frost', 'plate art') eq(p.fixed, true, 'ratio kept')
 eq(S.plan({ type = 'item', look = { kind = 'nameplate', frame = 'a b' } }, main).mode, 'native', 'bad frame name')

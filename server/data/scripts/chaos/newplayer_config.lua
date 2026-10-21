@@ -320,9 +320,10 @@ return {
 		-- station 2: the class spell to cast (vocation id -> kit name like the kits, then the spell); a class without a
 		-- spell it can cast at level 1 only has to open the spellbook
 		spells = {
+			-- Arcane Stitch left with the 15-spell cap (2026-10-20): Minor Mending, the Ranger and Mystic lines level 8 heal
 			warrior = {name = "Salve of Scars", words = "saen tin brak", mana = 10},
-			ranger = {name = "Arcane Stitch", words = "saen tin", mana = 6},
-			mystic = {name = "Arcane Stitch", words = "saen tin", mana = 6}
+			ranger = {name = "Minor Mending", words = "saen", mana = 20},
+			mystic = {name = "Minor Mending", words = "saen", mana = 20}
 		},
 		-- station 4: the Orb of Upheaval and the item it is used on (a Common = rarity 1 leather armor)
 		orbItem = {id = 2467, rarity = 1},

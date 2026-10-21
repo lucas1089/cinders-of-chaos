@@ -61,13 +61,19 @@ function respecResetText()
     priceText(respecInfo.node, respecInfo))
 end
 
+-- the name the class sees (a class lane's or a keystone variant's, treelanes.lua), else the node's own
 local function nodeName(id)
+  local map = getTreeNodeMap and getTreeNodeMap()
+  local node = map and map[id]
+  if node then
+    return TreeLanes.displayName(node, getTreeVariant()) or tr('this keystone')
+  end
   if not nodeNames then
     nodeNames = {}
     local ok, nodes = pcall(getTreeNodes)
     if ok and type(nodes) == 'table' then
-      for i, node in pairs(nodes) do
-        nodeNames[i] = node.name or tr('this keystone')
+      for i, n in pairs(nodes) do
+        nodeNames[i] = n.name or tr('this keystone')
       end
     end
   end

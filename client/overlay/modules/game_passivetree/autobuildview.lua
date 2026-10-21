@@ -67,8 +67,10 @@ local function priceText(reset)
 end
 
 -- the text under the dropdown: what the build is, how many points it needs, and what Apply / Reset and apply would do
--- once the preview arrived. state = {owned, held, free, cap} of the list. Returns text, colour.
-function V.detail(b, state, preview)
+-- once the preview arrived. state = {owned, held, free, cap} of the list. note = {text, color} (an answer of the server:
+-- an error, the applied message) is the last line, in its colour; it stands in for "Asking..." when there is no
+-- preview. Returns text, colour.
+function V.detail(b, state, preview, note)
   if not b then
     return tr('Pick a build. The tree shows what it would take.'), V.DIM
   end
@@ -78,6 +80,10 @@ function V.detail(b, state, preview)
   local owned = num(state and state.owned)
   lines[#lines + 1] = tr('The build uses %d points. You own %d and %d are free.', num(b.points), owned, num(state and state.free))
   if not preview or preview.build ~= b.id then
+    if note and note.text then
+      lines[#lines + 1] = note.text
+      return table.concat(lines, '\n'), note.color or V.TEXT
+    end
     lines[#lines + 1] = tr('Asking the server for a preview...')
     return table.concat(lines, '\n'), V.TEXT
   end
@@ -96,7 +102,57 @@ function V.detail(b, state, preview)
   else
     lines[#lines + 1] = tr('Reset and apply: your tree already fits this build, nothing is taken back.')
   end
+  if note and note.text then
+    lines[#lines + 1] = ''
+    lines[#lines + 1] = note.text
+    return table.concat(lines, '\n'), note.color or V.TEXT
+  end
   return table.concat(lines, '\n'), V.TEXT
+end
+
+-- ------------------------------------------------------------------------------------------------ the preview request
+-- autobuild.lua asks for the preview of the picked build and waits for autobuildPreview or autobuildError. Every wait
+-- has an end: no answer within PREVIEW_TIMEOUT_MS asks again, MAX_TRIES asks in all, then an error is shown.
+V.PREVIEW_TIMEOUT_MS = 4000
+V.RETRY_DELAY_MS = 700 -- after "too fast" (autobuildError {retry}): a little over the server's preview limit
+V.MAX_TRIES = 3
+
+-- ask for the preview of `selected` now? Not when it is shown already, asked already, or failed (until a new pick)
+function V.needsPreview(selected, preview, pending, failed)
+  if selected == nil or failed == selected then
+    return false
+  end
+  if preview ~= nil and preview.build == selected then
+    return false
+  end
+  return not (pending ~= nil and pending.build == selected)
+end
+
+-- the pending request after asking for `build`: a new pick starts at try 1, asking again the same build counts on
+function V.ask(pending, build)
+  local tries = (pending ~= nil and pending.build == build) and pending.tries + 1 or 1
+  return {build = build, tries = tries}
+end
+
+-- what to do when the asked preview did not come in time: 'retry' or 'fail'
+function V.onTimeout(pending)
+  return (pending ~= nil and pending.tries < V.MAX_TRIES) and 'retry' or 'fail'
+end
+
+-- how an autobuildError answers the pending preview: 'ignore' (another build's, or nothing asked), 'retry' (too fast,
+-- tries left) or 'fail'. data.build is the asked id (servers before 2026-10-20 do not send it: then it answers the pending one)
+function V.onError(pending, data)
+  if pending == nil then
+    return 'ignore'
+  end
+  local build = type(data) == 'table' and data.build or nil
+  if build ~= nil and build ~= pending.build then
+    return 'ignore'
+  end
+  if type(data) == 'table' and data.retry and pending.tries < V.MAX_TRIES then
+    return 'retry'
+  end
+  return 'fail'
 end
 
 -- Apply does something when the build adds at least one node; Reset and apply when it adds or takes back something

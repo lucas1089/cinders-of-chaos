@@ -18,12 +18,22 @@ Each row of the csv names a base spell by its script
 (rename_spells.py changes names and words, never scripts) and the values it gets in data/spells/spells.xml: an empty
 cell keeps the attribute as it is. The Chaos block is never touched (its numbers are in chaos/spells_chaos.xml).
 Refuses (exit 1), changing nothing, when a script of the csv has no <instant> outside the Chaos block.
+The cooldown ladder (2026-10-20, owner: "faça todas as magias de ataque terem 2s de diferença"): every class's attack
+spells have the cooldowns 2, 4, 6 s ... (server/data/spells/README.md "Cooldown ladder"); the stock ones are rows here.
+Two base scripts put their own cooldown condition on the caster (SCRIPT_COOLDOWNS); its length follows the csv too.
 """
 import csv, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 CSV = os.path.join(HERE, '..', 'data', 'spells', 'spell_timings.csv')
 ATTRS = ('cooldown', 'groupcooldown', 'secondarygroup', 'secondarygroupcooldown', 'level', 'mana')
+# base scripts that put their own cooldown condition on the caster after the cast (data/spells/scripts/<script>): the
+# hard-coded length follows the csv cooldown, else it would outlast the spells.xml one (the engine keeps the longer of
+# two cooldown conditions of one spell). Headsman's Hurl set (18000 * 1000) ms, five hours, next to its 18 s.
+SCRIPT_COOLDOWNS = {
+    'attack/divine_grenade.lua': (re.compile(r'(local cooldown = )(\d+)( -- Fixed cooldown)'), 1),       # seconds
+    'attack/executioners_throw.lua': (re.compile(r'(condition:setTicks\()(\(\d+ \* 1000\)/ 1|\d+)(\))'), 1000),  # ms
+}
 CHAOS_BEGIN = '<!-- BEGIN chaos spells'
 CHAOS_END = '<!-- END chaos spells -->'
 
@@ -79,6 +89,22 @@ def main(argv):
         print('  ' + c)
     if new != text and '--dry-run' not in argv:
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
+    for r in load():
+        cd = (r.get('cooldown') or '').strip()
+        if not cd or r['script'] not in SCRIPT_COOLDOWNS:
+            continue
+        pat, unit = SCRIPT_COOLDOWNS[r['script']]
+        spath = os.path.join(args[0], 'spells', 'scripts', r['script'])
+        if not os.path.isfile(spath):
+            continue
+        s = open(spath, 'rb').read().decode('latin-1')
+        value = str(int(cd) // 1000) if unit == 1 else cd
+        t = pat.sub(lambda m: m.group(1) + value + m.group(3), s, count=1)
+        if t != s:
+            changes.append('%s: script cooldown -> %s' % (r['name'], value))
+            print('  %s: script cooldown -> %s' % (r['name'], value))
+            if '--dry-run' not in argv:
+                open(spath, 'wb').write(t.encode('latin-1'))
     print('patch_spell_timings: %d change(s)%s' % (len(changes), ' (dry run)' if '--dry-run' in argv else ''))
     return 0
 

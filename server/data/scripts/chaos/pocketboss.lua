@@ -92,6 +92,7 @@ PB.runs = PB.runs or {} -- slot -> run
 PB.runOf = PB.runOf or {} -- player id -> run
 PB.monsterRun = PB.monsterRun or {} -- monster id -> run
 PB.built = PB.built or {}
+PB.gates = PB.gates or {} -- slot -> the arena's own way out {x, y, z} (K.arenaGate)
 PB.bad = PB.bad or {}
 PB.nextId = PB.nextId or 0
 PB.rows = PB.rows or {} -- guid -> {key -> row}
@@ -292,6 +293,7 @@ local function buildSlot(slot)
 	local isDark = dark()
 	local L = U.layout(cfg, slot)
 	if PB.built[slot] then
+		L.arenaGate = PB.gates[slot]
 		return L
 	end
 	if PB.bad[slot] then
@@ -325,8 +327,20 @@ local function buildSlot(slot)
 	for _, t in ipairs(L.basins) do
 		placeItem(P(t), cfg.basinId)
 	end
+	-- a second way out inside the arena, next to where the players arrive (beta 2026-10-20: a player was stuck at the
+	-- boss with the exit in the antechamber; closed boss rooms always get a portal). Chosen before the paint and kept
+	-- free of decoration (K.arenaGate; it was placed after the paint, on whatever the paint put there).
+	local taken = {[L.bossSpawn.x .. "," .. L.bossSpawn.y] = true, [L.portal.x .. "," .. L.portal.y] = true}
+	for _, b in ipairs(L.basins) do
+		taken[b.x .. "," .. b.y] = true
+	end
+	for _, st in ipairs(L.starts or {}) do
+		taken[st.x .. "," .. st.y] = true
+	end
+	local best = K.arenaGate(L.floorList, (L.starts and L.starts[1]) or L.entry, taken)
+	L.arenaGate = best
 	if isDark then
-		local reserved = {L.entry, L.bossSpawn, L.portal, L.anteStart}
+		local reserved = {L.entry, L.bossSpawn, L.portal, L.anteStart, best}
 		for _, b in ipairs(L.basins) do
 			reserved[#reserved + 1] = b
 		end
@@ -342,23 +356,6 @@ local function buildSlot(slot)
 	if gate then
 		gate:setActionId(cfg.portalActionId)
 	end
-	-- a second way out inside the arena, next to where the players arrive (beta 2026-10-20: a player was stuck at the
-	-- boss with the exit in the antechamber; closed boss rooms always get a portal)
-	local taken = {[L.bossSpawn.x .. "," .. L.bossSpawn.y] = true, [L.portal.x .. "," .. L.portal.y] = true}
-	for _, b in ipairs(L.basins) do
-		taken[b.x .. "," .. b.y] = true
-	end
-	for _, st in ipairs(L.starts or {}) do
-		taken[st.x .. "," .. st.y] = true
-	end
-	local from = (L.starts and L.starts[1]) or L.entry
-	local best, bestD
-	for _, t in ipairs(L.floorList) do
-		local d = math.max(math.abs(t.x - from.x), math.abs(t.y - from.y))
-		if d >= 2 and not taken[t.x .. "," .. t.y] and (not bestD or d < bestD) then
-			best, bestD = t, d
-		end
-	end
 	if best then
 		local arenaGate = placeItem(P(best), cfg.portalId)
 		if arenaGate then
@@ -366,6 +363,7 @@ local function buildSlot(slot)
 		end
 	end
 	PB.built[slot] = true
+	PB.gates[slot] = best
 	return L
 end
 
@@ -674,6 +672,87 @@ local function worldRewardOf(run, player)
 	end
 end
 
+-- the boss's loot when its corpse had none (K.needsFallbackLoot: a reward boss whose loot goes to the reward chest of
+-- its home room, or an empty corpse): every player of the run gets a personal roll of its loot table x lootMult, gear
+-- with the stock rarity roll and the boss floor of the loot layer, at the kill's item level. Returns the players served.
+local function fallbackLoot(run)
+	local d = run.bossDrop
+	if not d or not K.needsFallbackLoot(d) then
+		return 0
+	end
+	local given = 0
+	for id in pairs(run.players) do
+		local p = Player(id)
+		if p then
+			local parts, inboxUsed = {}, false
+			for _, it in ipairs(K.personalRoll(d.loot, run.settings.lootMult or 1, math.random)) do
+				local isGear = ChaosLoot and ChaosLoot.isGearId and ChaosLoot.isGearId(it.id)
+				if isGear and ChaosCrafting and ChaosCrafting.createItem then
+					local rarity = ChaosLoot.stockRarity and ChaosLoot.stockRarity() or 0
+					if ChaosLoot.upgradeRarity then
+						rarity = ChaosLoot.upgradeRarity("boss", rarity, 1)
+					end
+					local item = ChaosCrafting.createItem(it.id, rarity, d.level)
+					if item then
+						inboxUsed = giveEx(p, item) or inboxUsed
+					end
+				else
+					inboxUsed = giveStack(p, it.id, it.count) or inboxUsed
+				end
+				parts[#parts + 1] = (it.count > 1 and (it.count .. "x ") or "") .. itemName(it.id)
+			end
+			p:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(p, "Pocket loot of %s: %s.%s", run.boss.name,
+				#parts > 0 and table.concat(parts, ", ") or Chaos.t(p, "nothing this time"),
+				inboxUsed and Chaos.t(p, " Your backpack was full: the rest is in your inbox.") or ""))
+			given = given + 1
+		end
+	end
+	log(string.format("%s: no corpse loot (reward boss %s, %s items), personal loot for %d player(s)", run.boss.key,
+		tostring(d.rewardBoss), tostring(d.corpseItems), given))
+	return given
+end
+
+-- a way out that the boss's own death script opened in the pocket (the stairs or teleport of its home room, which lead
+-- nowhere here): every item on such a tile goes, except the ground (a floor-change ground becomes the arena's ground)
+-- and the corpse. The pocket's two forcefields stay. Returns the tiles cleaned.
+local function clearForeignExits(run)
+	local cfg = C()
+	local L = run.L
+	local gates = {[L.portal.x .. "," .. L.portal.y] = true}
+	if L.arenaGate then
+		gates[L.arenaGate.x .. "," .. L.arenaGate.y] = true
+	end
+	local tiles = {}
+	for _, list in ipairs({L.floorList, L.anteList}) do
+		for _, t in ipairs(list) do
+			local tile = Tile(P(t))
+			if tile and ((TILESTATE_TELEPORT and tile:hasFlag(TILESTATE_TELEPORT))
+					or (TILESTATE_FLOORCHANGE and tile:hasFlag(TILESTATE_FLOORCHANGE))) then
+				tiles[#tiles + 1] = {x = t.x, y = t.y, exit = true}
+			end
+		end
+	end
+	local cleaned = 0
+	for _, t in ipairs(K.foreignExits(tiles, gates)) do
+		local pos = P({x = t.x, y = t.y, z = L.z})
+		local tile = Tile(pos)
+		for _, item in ipairs(tile and tile:getItems() or {}) do
+			if not item:isContainer() then
+				item:remove()
+			end
+		end
+		if tile and TILESTATE_FLOORCHANGE and tile:hasFlag(TILESTATE_FLOORCHANGE) then
+			Game.createItem(cfg.groundId, 1, pos)
+		end
+		cleaned = cleaned + 1
+	end
+	if cleaned > 0 then
+		log(string.format("%s: %d way(s) out of its home room taken away", run.boss.key, cleaned))
+	end
+	return cleaned
+end
+PB.clearForeignExits = clearForeignExits
+
 local function success(run)
 	run.state = "success"
 	run.bossState = "dead"
@@ -691,8 +770,22 @@ local function success(run)
 			end
 		end
 	end
-	tell(run, "%s falls in %s. The pocket closes in %d seconds: loot the corpse.", run.boss.name, K.clockText(secs),
-		C().exitDelay)
+	if run.boss.category ~= "world" then
+		try("fallback loot", fallbackLoot, run)
+	end
+	-- the boss's own death script may open its home room's way on now or a moment later: taken away at once and again
+	local slot0, rid0 = run.slot, run.id
+	try("foreign exits", clearForeignExits, run)
+	for _, ms in ipairs({1000, 5000}) do
+		addEvent(function()
+			local r = PB.runs[slot0]
+			if r and r.id == rid0 then
+				try("foreign exits", clearForeignExits, r)
+			end
+		end, ms)
+	end
+	tell(run, "%s falls in %s. The pocket closes in %d seconds: loot the corpse, or leave now through the forcefield by the arrival.",
+		run.boss.name, K.clockText(secs), C().exitDelay)
 	sendHud(run, "update")
 	local slot, rid = run.slot, run.id
 	addEvent(function()
@@ -1039,9 +1132,19 @@ gate:aid(C().portalActionId)
 gate:register()
 
 local bossDeath = CreatureEvent("ChaosPocketBossDeath")
-function bossDeath.onDeath(creature)
+function bossDeath.onDeath(creature, corpse)
 	local run = PB.monsterRun[creature:getId()]
 	if run and run.bossId == creature:getId() and run.state == "running" and not run.ended then
+		-- what the corpse holds now (the loot callbacks ran when it was made): an empty one or a reward boss gets the
+		-- personal roll in success() (K.needsFallbackLoot)
+		local mt = creature:getType()
+		local okR, reward = pcall(function() return mt and mt.isRewardBoss and mt:isRewardBoss() end)
+		local okL, loot = pcall(function() return mt and mt:getLoot() end)
+		local okC, size = pcall(function() return corpse and corpse:isContainer() and corpse:getSize() or nil end)
+		local okV, level = pcall(function() return ChaosLoot and ChaosLoot.dropLevel and ChaosLoot.dropLevel(creature, nil, "boss") end)
+		run.bossDrop = {rewardBoss = okR and reward == true, corpseItems = okC and size or nil,
+			loot = okL and type(loot) == "table" and loot or {}, level = okV and tonumber(level) or nil}
+		run.bossDrop.lootEntries = #run.bossDrop.loot
 		local slot, rid = run.slot, run.id
 		addEvent(function()
 			local r = PB.runs[slot]

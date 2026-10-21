@@ -82,7 +82,7 @@ function S.healSlots(heals)
   return out
 end
 
--- haste kept up: Strong Haste (utani gran hur), else Haste (utani hur). Swift Foot (no attacks while it lasts) and
+-- haste kept up: Strong Haste (utani gran hur), else Haste (utani hur). Wildstride (12 s of 30, on top of Haste) and
 -- Charge (a 5 s dash) are left out.
 S.HASTES = { 39, 6 }
 

@@ -1,0 +1,61 @@
+# Compendium pages for the Chaos client (client/BASE.md 0084): the base pages described systems this server does not have (a task shop, talismans, Soul Seal, familiars, podiums), a right-side menu the top menu replaced and the 8.60 protocol. They now describe Hunt > Kill Tasks, Adventure > Bounty Board, the task tracker, the helper, the codex, the top menu, the bestiary, patch notes and bug reports, and go through tr() when shown (pt-BR in client_chaos_locale/pt_br.lua). Lua only; replaces the help text of 0063, so it applies after 0001-0083.
+--- a/mods/game_compendium/compendium.lua
++++ b/mods/game_compendium/compendium.lua
+@@ -2,38 +2,40 @@
+ local currentSection = 1
+ local currentPage = 1
+ 
++-- the pages go through tr() when shown (client_chaos_locale/pt_br.lua has their pt-BR texts)
+ local sections = {
+   {
+     title = "Game Content",
+     pages = {
+-      "Tasks\nTake kill tasks under Hunt > Kill Tasks and bounties under Adventure > Bounty Board in the top menu bar.",
+-      "Soul Seal\nUse Soul Pit content to collect Soul Seal points and unlock its progression rewards."
++      "Kill Tasks\nOpen Hunt > Kill Tasks. Take up to 3 personal tasks at once: kill a number of one monster, or of a monster family. A task does not expire. It pays gold, orbs, experience and bestiary points.",
++      "Bounty Board\nOpen Adventure > Bounty Board. Every day at 06:00 the board rolls new contracts for each level band. Take up to 3 at once. Contracts pay gold and orbs, and the finished ones fill a weekly chest.",
++      "Task Tracker\nHunt > Task Tracker shows your kill tasks and bounty contracts on the screen. A kill counts for both, and for your party members nearby."
+     }
+   },
+   {
+     title = "Client Features",
+     pages = {
+-      "ATC Helper\nConfigure supported helper tools, alarms and shortcuts from the ATC Helper panel.",
+-      "Modern Windows\nInspect items, customise monster podiums and manage familiar appearance through Cinders of Chaos protocol extensions."
++      "Helper\nSystem > Helper sets up healing and spell rotations. Every cast waits for the server's answer, so a refused spell backs off and the rest of the rotation goes on.",
++      "Codex\nEconomy > Codex explains item modifiers, orbs, uniques, item sets and the lore. Economy > Item Finder shows where an item drops and who sells it."
+     }
+   },
+   {
+     title = "Useful Info",
+     pages = {
+-      "Use the top menu bar to open the game systems: Hunt > Kill Tasks for kill tasks, Adventure > Bounty Board for bounties.",
+-      "Only the Cinders of Chaos client receives the modern extension bytes. Legacy Cip and OTC clients keep their original packet layout."
++      "Use the top menu to open every window: Character, Hunt, Adventure, Economy, Social and System. An entry with a hotkey shows it beside its name.",
++      "Bestiary\nHunt > Bestiary fills in as you kill. A completed entry gives more damage and experience against that monster, and bestiary points raise your rank."
+     }
+   },
+   {
+     title = "Major Updates",
+     pages = {
+-      "Modern Systems\nKill Tasks, the Bounty Board, Soul Seal, Familiar, item inspection and monster podium support are integrated with the 10.98 protocol."
++      "Patch Notes\nOpen Social > Patch Notes to see what changed in each update."
+     }
+   },
+   {
+     title = "Support",
+     pages = {
+-      "For account or gameplay support, use the official Cinders of Chaos support channels. Include screenshots and the exact error message when reporting a problem."
++      "To report a problem, use System > Report a Bug. Include screenshots and the exact error message. The community is reached through System > Join Discord."
+     }
+   }
+ }
+@@ -51,7 +53,7 @@
+   local nextButton = compendiumWindow:recursiveGetChildById('nextPageButton')
+ 
+   if content then
+-    content:setText(section.pages[currentPage])
++    content:setText(tr(section.pages[currentPage]))
+   end
+   if pages then
+     pages:setText(string.format("%d / %d", currentPage, #section.pages))
