@@ -39,6 +39,8 @@ python3 -I tools/ci/check_locales.py   # every client tr() key has pt-BR; no har
 python3 -I tools/ci/check_credits.py   # every pack of the art *sources.csv files is in docs/CREDITS.md; pt-BR headings
 python3 -I tools/ci/check_credits_test.py && python3 -I client/tools/gen_credits_test.py
 python3 client/tools/make_fonts_test.py
+python3 -I client/tools/check_text_fit.py          # options menu entries fit their buttons (en + pt-BR)
+python3 -I client/tools/gen_orb_art.py --check     # liquid orb art, one ring and mask per orb size
 python3 -I client/tools/check_shaders.py  # GLSL compile (glslangValidator) or smoke test
 python3 -I website/tools/gen_sprite_images_test.py   # website sprite images: colour maths, synthetic pair
 for t in website/tests/*_test.php; do php "$t"; done  # website PHP tests
