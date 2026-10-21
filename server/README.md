@@ -8251,8 +8251,8 @@ list of these names; the old ones are gone from the player-facing text.
 | Orb of Excision | 32253 (red crystal) | removes the modifier you choose (a random one that is not bound by use-with); on a Rift Key: one modifier | store 25 (3 a week), drops, salvage 60 |
 | Orb of Reforging | 32254 (gold crystal) | rolls the tier (by the item level) and the value of the one modifier you choose again | drops, salvage 50 (not in the store) |
 | Orb of Ruin | 32255 (black stone) | the gamble, below | drops (very rare), salvage 150, no store |
-| Ember Orb | 32258 (red crowned gem) | raises the one modifier you choose by exactly one tier (new value in the new tier; never past T8, not on bound modifiers; a random one by use-with) | drops, salvage 50, Candlemarks 10 (5 a week) |
-| Crown Orb | 32259 (purple crowned gem) | lifts the item one rarity, Common up to Legendary (never Divine): every modifier stays, the base bonus becomes the new rarity's, the item gets one more modifier | drops (rare), salvage 100, Candlemarks 25 (2 a week) |
+| Ember Orb | 32258 (red crowned gem) | raises the one modifier you choose by exactly one tier (new value in the new tier; never past T8, not on bound modifiers; a random one by use-with) | drops, salvage 50, 1,500 Ember Shards, Candlemarks 10 (5 a week) |
+| Crown Orb | 32259 (purple crowned gem) | lifts the item one rarity, Common up to Legendary (never Divine): every modifier stays, the base bonus becomes the new rarity's, the item gets one more modifier | drops (rare), salvage 100, 1,750 Crown Shards, Candlemarks 25 (2 a week) |
 | Whetstone | 32256 (moonlight crystals) | +1% item quality, up to 20% (30% from Divine rarity) | store 10 for 20 (5 packs a week), bounty chest (5), drops, salvage 5 |
 
 The sprites are the stock multi-use inlay stones, essence crystals and moonlight crystals (clients 24483, 25047, 25049, 25048,
@@ -8265,6 +8265,8 @@ waystone upgrade window, which has no client window, and their sprites have no m
 the wiki explained nothing. They are now the **Ember Shard** and **Crown Shard** (still dropped, still shop currency), and
 Ember Orb and Crown Orb are real crafting orbs, items 32258 and 32259 (`ChaosOrbsConfig.crown` = max rank 5 and modifiers
 added). A server installed before keeps working: `install_orbs.py` renames by id and rewrites the old names in base data.
+Since 2026-10-21 the shards also combine into their orb at the crafting bench's Salvage tab: 1,500 Ember Shards make an
+Ember Orb, 1,750 Crown Shards a Crown Orb (see "Salvage", "Ember and Crown Shards into orbs", for the numbers).
 
 **The Orb of Ruin.** Odds in `ChaosOrbsConfig.ruin`, shown on the bench and in the orb's text: 40% the item **improves**,
 60% nothing happens (since 2026-10-15, "Conquest Tokens": it never ruins an item any more; before, 45% nothing and 15% the
@@ -9426,6 +9428,44 @@ Unmaking 50, Fate 60, Sockets 60, Grafting 100, Whetstone 5, Tempering 20, Refor
 15, 20, 25, 25, 40; Whetstone 2, Tempering 8, Reforging 20, Excision 25, Binding 30). The store sells only Whetstones,
 Excision and Binding, with weekly limits; the other prices are reference values.
 
+**Ember and Crown Shards into orbs (2026-10-21).** Beta: "How do I combine the shards into 1 orb? I looked in the crafting
+bench but didn't find it." The same grid has two more rows, paid with the shards themselves (not rune shards):
+**1,500 Ember Shards (29852) -> 1 Ember Orb (32258)** and **1,750 Crown Shards (29853) -> 1 Crown Orb (32259)**
+(`salvage_config.lua` `shardRecipes`, keys `embershard` / `crownshard`, action `combine {key, count}`). Same rules as the
+rune shard rows: one click 1, Ctrl+click up to 10 (`maxCombine`), 300 ms between combines, the shards are taken from every
+stack in the backpack and its bags at once (`player:removeItem` counts first and removes only when there are enough)
+before the orb is given, the orb goes to the backpack, else the inbox, else the floor, a `Shards` row in
+`chaos_crafting_log` ("1,500 Ember Shards -> 1x Ember Orb"). No recycling back into shards (Shift+click does nothing on
+these rows). The shards stay currency of the character upgrades. The look text and the rich tooltip add "Combine 1,500 at
+the Crafting Bench (Salvage tab) into an Ember Orb." (`ChaosSalvage.shardHint`, `item_tooltip_core.lua`); the Codex and
+the wiki say it on the shard and in the orb's Sources. Client: `game_crafting/recipeview.lua` (the grid's logic, tested by
+`recipeview_test.lua`): the row shows "1,500 Ember Shards" in amber and the tooltip "Your Ember Shards: 3,200.".
+
+*Why 1,500 and 1,750* (computed from the base server's monster files, not measured in game). The shards drop only from
+the 30 monsters of the waystone maps (estimated level 470-610): per map tier the five monsters' loot entries give Ember
+Shards at 10-46% (1-5 a drop) and Crown Shards at 8-40% (1-4). With the stock count multiplier by monster level (x2.25 up
+to level 500, x2.70 above) and the pace loot thinning of those monsters (`pace_config.lua` base `loot` 0.20 x scale 1.2 =
+0.24 at hunting level ~1000) a kill gives on average:
+
+| Waystone map tier | 1 | 2 | 3 | 4 | 5 | 6 |
+|---|---|---|---|---|---|---|
+| Ember Shards per kill | 0.07-0.08 | 0.11-0.13 | 0.22-0.26 | 0.29-0.35 | 0.43-0.52 | 0.66-0.78 |
+| Crown Shards per kill | 0.04 | 0.06 | 0.10-0.11 | 0.18-0.22 | 0.27-0.34 | 0.43-0.52 |
+
+At the pace model's 1,400 kills an hour (band 300-600 and 600-1000) the middle tiers (3-4) give about 400 Ember and 210
+Crown Shards an hour, tier 6 about 1,000 and 670. The loot layer drops about 0.25 Ember Orbs and 0.125 Crown Orbs an hour at
+that pace (chance per kill 4 and 2 per 10000 against the Orb of Upheaval's 40, which gives the hunting model's 2.5 an hour).
+So the costs give a shard hunter of the middle tiers about as many orbs again (Ember 400 / 1,500 = 0.27 an hour, Crown 210 /
+1,750 = 0.12), about 3x in tier 6, and nothing to anyone who never hunts there; the same coins of reference value per
+hour of shards for both (Ember 20 per 3.8 h, Crown 40 per 8.3 h; the Crown Orb is worth twice the Ember Orb and its shards
+drop at 0.55x). For comparison: the rune shard rows (50 and 100 rune shards) and the Candlemark shop (an Ember Orb for 5
+hours online, a Crown Orb for 12.5) stay the cheaper sure paths, and a stock of shards from before (they had no use) turns
+into a few orbs, not a flood. Not counted: the waystone "Loot" upgrade (chance x(1 + level / 100)), magic and rare monster
+extra rolls, the shards a character upgrade takes (5 Ember Shards a level for levels 4-6, 4 Crown Shards for 7-10).
+`tests/salvage_test.lua` checks the recipes (names against `chaos_orbs_config.lua` renames, cost 1,000-3,000, the same
+coins per hour within 20%), the mocked combine (stacks in two containers, one short, Ctrl x10 and x11, the rate limit, a full
+backpack, the log row, no recycling) and the look text.
+
 **Why these numbers.** With the stock rarity roll (70% of gear drops pass, then each rarity in order with its own chance)
 an average rolled drop gives about 2.8 shards before modifiers and sockets (about 3.3 with them) and a 0.9% orb chance:
 roughly a tenth of an Orb of Upheaval. Rolled drops come a few times more often than orbs from the loot layer (a normal monster
@@ -9471,7 +9511,7 @@ never stops crafting.
 
 **Protocol** (extended opcode 232, `ChaosOpcodes.crafting`, new actions handed from `crafting.lua` to `salvage.lua`):
 client -> server `salvage {path, id, sig}`, `lock {path, id, on}`, `salvageScope {bag, maxRarity, mode}`,
-`salvageBatch {bag, maxRarity, sig}`, `combine {key, count}`; the bench state gains `salvage` (shards, recipes, bags,
+`salvageBatch {bag, maxRarity, sig}`, `combine {key, count}` (`key` an orb key, or `embershard` / `crownshard`); the bench state gains `salvage` (shards, recipes, bags,
 rarity names, the batch preview while the tab is open, the tab) and `locked` / `salvage` (preview) on the items. Answers
 are the bench's `result` (orb `"salvage"`) and `state`.
 

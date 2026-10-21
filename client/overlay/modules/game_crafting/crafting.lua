@@ -20,7 +20,8 @@
 -- Sockets (gems, server data/lib/chaos_gems.lua) are listed under the modifiers: a gem can be taken out for gold
 -- (Remove, it comes back) or destroyed (Shatter); socketing and combining are done by Use with on the gem.
 -- Salvage tab (server data/scripts/chaos/salvage.lua, same opcode): state.salvage = {installed, shardClientId,
--- shardName, shards, rarityNames, rarityIds, recipes = [{key, name, clientId, cost, count}], bags = [{path, name}], batch = {bag,
+-- shardName, shards, rarityNames, rarityIds, recipes = [{key, name, clientId, cost, count, back, input, inputName, have}] (input,
+-- inputName, have: a shard recipe, Ember / Crown Shards -> their orb; recipeview.lua), bags = [{path, name}], batch = {bag,
 -- maxRarity, count, shards, orbs, capped, cap, skipped, sig, paths}, mode}; state.items[i].locked, state.item.locked,
 -- state.item.salvage = {ok, why, shards, orbChance}. Client -> server: salvage {path, id, sig} | lock {path, id, on} |
 -- salvageScope {bag, maxRarity, mode} | salvageBatch {bag, maxRarity, sig} | combine {key, count} | recycle {key, count}.
@@ -599,20 +600,20 @@ end
 local function updateRecipes(sv)
   local panel = window.salvagePanel.recipeList
   panel:destroyChildren()
-  local shards = tonumber(sv.shards) or 0
+  local R = CraftingRecipeView
   for _, r in ipairs(list(sv.recipes)) do
     local row = g_ui.createWidget('CraftRecipeRow', panel)
     local cost = tonumber(r.cost) or 0
+    local have = R.have(r, sv)
     row.icon:setItemId(tonumber(r.clientId) or 0)
     -- the full name is in the tooltip; a name too long for the cell is shortened at a word
     fitText(row.name, ((r.name or r.key):gsub('^Orb of ', '')))
-    fitText(row.cost, tr('%d shards', cost))
-    row.cost:setColor(shards >= cost and '#c0a0ff' or '#6b6258')
-    local back = tonumber(r.back) or 0
-    setTip(row, tr('%d %s -> 1 %s (you have %d).\nCtrl+click: as many as you can, up to %d.', cost,
-      sv.shardName or 'shards', r.name or r.key, tonumber(r.count) or 0, tonumber(sv.maxCombine) or 1) ..
-      (back > 0 and '\n' .. tr('Shift+click: recycle your %s into %d %s each.', r.name or r.key, back, sv.shardName or 'shards') or ''))
-    row.make:setEnabled(sv.installed ~= false and (shards >= cost or (tonumber(r.count) or 0) > 0))
+    -- a shard recipe (Ember / Crown Shards) names its shards in amber, a rune shard recipe in violet
+    fitText(row.cost, R.costText(r, sv))
+    row.cost:setColor(have >= cost and (R.isShardRecipe(r) and '#e8a050' or '#c0a0ff') or '#6b6258')
+    local back = R.recycleBack(r)
+    setTip(row, R.tip(r, sv))
+    row.make:setEnabled(R.enabled(r, sv))
     local key = r.key
     local owned = tonumber(r.count) or 0
     row.make.onClick = function()
@@ -623,11 +624,9 @@ local function updateRecipes(sv)
         end
         return
       end
-      if shards < cost then return end
-      local n = 1
-      if g_keyboard and g_keyboard.isCtrlPressed and g_keyboard.isCtrlPressed() and cost > 0 then
-        n = math.max(1, math.min(tonumber(sv.maxCombine) or 1, math.floor(shards / cost)))
-      end
+      local ctrl = g_keyboard and g_keyboard.isCtrlPressed and g_keyboard.isCtrlPressed() or false
+      local n = R.combineCount(have, cost, sv.maxCombine, ctrl)
+      if n < 1 then return end
       row.make:setEnabled(false)
       send('combine', { key = key, count = n })
     end

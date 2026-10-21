@@ -5356,6 +5356,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.04%, Magic 0.12%, Rare 0.24%, Legendary 6%, Boss 10%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 2.7% of the time."},
 								{"Salvage", "Combine 50 rune shards into one at the crafting bench."},
+								{"Ember Shards", "Combine 1,500 Ember Shards into one at the crafting bench (Salvage tab; Ctrl+click: up to 10)."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.8% of those are this one."}
 							}
 						}
@@ -5384,6 +5385,7 @@ CodexData = {
 							rows = {
 								{"Monster drops", "Per kill by monster tier: Normal 0.02%, Magic 0.06%, Rare 0.12%, Legendary 3%, Boss 6%; 1 at a time. Legendary monsters and bosses also drop one guaranteed currency item, this one 1.4% of the time."},
 								{"Salvage", "Combine 100 rune shards into one at the crafting bench."},
+								{"Crown Shards", "Combine 1,750 Crown Shards into one at the crafting bench (Salvage tab; Ctrl+click: up to 10)."},
 								{"Salvage bonus", "Salvaging gear with a rarity sometimes gives a whole orb (0.5%-3% per item by rarity); 2.1% of those are this one."}
 							}
 						}
@@ -5456,14 +5458,17 @@ CodexData = {
 					id = "cur:29853",
 					name = "Crown Shard",
 					color = "#c0a0ff",
-					sub = "Currency of the character upgrades; no crafting use.",
+					sub = "Currency of the character upgrades; 1,750 of them make one Crown Orb.",
 					f = {group = "currency"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
+							p = {"Spent on character upgrades of the base world. It does nothing when used on an item.", "Combine 1,750 at the Crafting Bench (Salvage tab) into a Crown Orb. One click makes one orb, Ctrl+click up to 10."}
 						},
-						{h = "Sources", p = {"Monster loot lists of the base world."}}
+						{
+							h = "Sources",
+							p = {"Monster loot lists of the base world: the monsters of the waystone maps, more in the higher tiers."}
+						}
 					},
 					items = {29853}
 				},
@@ -5486,14 +5491,17 @@ CodexData = {
 					id = "cur:29852",
 					name = "Ember Shard",
 					color = "#c0a0ff",
-					sub = "Currency of the character upgrades; no crafting use.",
+					sub = "Currency of the character upgrades; 1,500 of them make one Ember Orb.",
 					f = {group = "currency"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}
+							p = {"Spent on character upgrades of the base world. It does nothing when used on an item.", "Combine 1,500 at the Crafting Bench (Salvage tab) into an Ember Orb. One click makes one orb, Ctrl+click up to 10."}
 						},
-						{h = "Sources", p = {"Monster loot lists of the base world."}}
+						{
+							h = "Sources",
+							p = {"Monster loot lists of the base world: the monsters of the waystone maps, more in the higher tiers."}
+						}
 					},
 					items = {29852}
 				},

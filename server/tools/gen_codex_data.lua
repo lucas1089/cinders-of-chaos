@@ -271,6 +271,7 @@ function Gen.load()
 		ChaosRiftCore
 	D.loot = dofile("data/scripts/chaos/loot_config.lua")
 	D.salvage = dofile("data/scripts/chaos/salvage_config.lua")
+	dofile("data/scripts/chaos/salvage_core.lua") -- ChaosSalvageCore: the shard recipes' texts
 	D.shop = dofile("data/scripts/chaos/shop_config.lua")
 	D.bounty = dofile("data/scripts/chaos/bounty_config.lua")
 	D.rift = dofile("data/scripts/chaos/rift_config.lua")
@@ -741,6 +742,12 @@ local function sourcesOf(D, id, key)
 				rows[#rows + 1] = {"Salvage", string.format("Combine %d rune shards into one at the crafting bench.", r.cost)}
 			end
 		end
+		for _, r in ipairs(D.salvage.shardRecipes or {}) do
+			if r.orb == key then
+				rows[#rows + 1] = {r.plural, string.format("Combine %s %s into one at the crafting bench (Salvage tab; Ctrl+click: up to %d).",
+					ChaosSalvageCore.thousands(r.cost), r.plural, D.salvage.maxCombine)}
+			end
+		end
 		local total, w = 0, 0
 		for _, r in ipairs(D.salvage.orbWeights) do
 			total = total + r[2]
@@ -911,10 +918,22 @@ function Gen.orbEntries(D)
 	for _, r in ipairs(O.config.renames) do
 		if not crafting[r.id] and not seenRename[r.id] then -- one row per id in the codex (a rename may list two old names)
 			seenRename[r.id] = true
-			out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
-				sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"}, items = {r.id},
-				sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}},
-					{h = "Sources", p = {"Monster loot lists of the base world."}}}}
+			-- the Ember / Crown Shards also combine into their orb at the bench (salvage_config.lua shardRecipes)
+			local sr = ChaosSalvageCore.inputRecipe(r.id, D.salvage)
+			if sr then
+				local orb = orbName(D, sr.orb)
+				out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
+					sub = string.format("Currency of the character upgrades; %s of them make one %s.", ChaosSalvageCore.thousands(sr.cost), orb),
+					f = {group = "currency"}, items = {r.id},
+					sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. It does nothing when used on an item.",
+						ChaosSalvageCore.shardHint(sr, orb) .. string.format(" One click makes one orb, Ctrl+click up to %d.", D.salvage.maxCombine)}},
+						{h = "Sources", p = {"Monster loot lists of the base world: the monsters of the waystone maps, more in the higher tiers."}}}}
+			else
+				out[#out + 1] = {id = "cur:" .. r.id, name = r.name, color = COLORS.currency,
+					sub = "Currency of the character upgrades; no crafting use.", f = {group = "currency"}, items = {r.id},
+					sections = {{h = "What it does", p = {"Spent on character upgrades of the base world. No orb effect on items: it never changes or copies an item."}},
+						{h = "Sources", p = {"Monster loot lists of the base world."}}}}
+			end
 		end
 	end
 	-- rune shards (salvage)

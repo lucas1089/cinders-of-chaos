@@ -15,8 +15,13 @@
 --   K.preview(info, cfg)                  {ok, why, shards, orbChance (percent)} for the bench
 --   K.batch(entries, maxRarity, cfg)      which items of a container "salvage all" takes, the skips and the totals
 --   K.signature(list)                     a short hash of the picked items (the confirm must match the preview)
---   K.recipe(key, cfg)                    the recipe of an orb key
---   K.combineCheck(owned, key, count, cfg) ok, cost | nil, reason key
+--   K.recipe(key, cfg)                    the rune shard recipe of an orb key
+--   K.shardRecipe(key, cfg)               a recipe of cfg.shardRecipes (Ember / Crown Shards -> their orb), by its key
+--   K.anyRecipe(key, cfg)                 either of them (a shard recipe has `input`, the item it eats, and `orb`)
+--   K.combineCheck(owned, key, count, cfg) ok, cost | nil, reason key (owned = rune shards, or the recipe's input)
+--   K.reasonText(why, recipe)             the text of a reason key ("input" names the recipe's shards)
+--   K.inputRecipe(id, cfg)                the shard recipe that eats item `id`, nil when none does
+--   K.shardHint(recipe, orbName)          "Combine 1,500 at the Crafting Bench (Salvage tab) into an Ember Orb."
 
 if not ChaosRarity then
 	dofile("data/lib/chaos_rarity.lua")
@@ -37,6 +42,7 @@ K.reasons = {
 	stack = "Stacks cannot be salvaged.",
 	unknownRecipe = "There is no such recipe.",
 	shards = "You do not have enough rune shards.",
+	input = "You do not have enough %s.",
 	count = "Choose how many orbs to make.",
 	orbs = "You do not have that many orbs."
 }
@@ -229,8 +235,31 @@ function K.recipe(key, cfg)
 	return nil
 end
 
+function K.shardRecipe(key, cfg)
+	for _, r in ipairs(cfg.shardRecipes or {}) do
+		if r.key == key then
+			return r
+		end
+	end
+	return nil
+end
+
+function K.anyRecipe(key, cfg)
+	return K.recipe(key, cfg) or K.shardRecipe(key, cfg)
+end
+
+function K.inputRecipe(id, cfg)
+	id = tonumber(id)
+	for _, r in ipairs(cfg.shardRecipes or {}) do
+		if r.input == id then
+			return r
+		end
+	end
+	return nil
+end
+
 function K.combineCheck(owned, key, count, cfg)
-	local r = K.recipe(key, cfg)
+	local r = K.anyRecipe(key, cfg)
 	if not r then
 		return nil, "unknownRecipe"
 	end
@@ -240,9 +269,34 @@ function K.combineCheck(owned, key, count, cfg)
 	end
 	local cost = r.cost * count
 	if (tonumber(owned) or 0) < cost then
-		return nil, "shards"
+		return nil, r.input and "input" or "shards"
 	end
 	return true, cost
+end
+
+function K.reasonText(why, recipe)
+	local text = K.reasons[why]
+	if why == "input" and text then
+		return string.format(text, recipe and recipe.plural or "shards")
+	end
+	return text
+end
+
+-- 1500 -> "1,500"
+function K.thousands(n)
+	local s = string.format("%d", floor(tonumber(n) or 0))
+	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
+	return (out:gsub("^,", ""))
+end
+
+-- the line the shard's look text, tooltip and codex entry carry
+function K.shardHint(recipe, orbName)
+	if not recipe then
+		return nil
+	end
+	orbName = orbName or recipe.orb
+	local article = orbName:match("^[AEIOUaeiou]") and "an" or "a"
+	return string.format("Combine %s at the Crafting Bench (Salvage tab) into %s %s.", K.thousands(recipe.cost), article, orbName)
 end
 
 -- shards one orb gives back, and the check of recycling `count` orbs of recipe `key` when the player owns `owned` of them

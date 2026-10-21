@@ -72,6 +72,22 @@ return {
 	recycleShare = 0.4,
 	maxRecycle = 100,
 
+	-- the base world's character-upgrade shards -> the crafting orb of the same name (beta 2026-10-21: "how do I combine
+	-- the shards into an orb?"). Same action and limits as the rune shard recipes (combine {key, count}, maxCombine,
+	-- combineIntervalMs), but the input is the shard item itself; no recycling back. The shards stay character-upgrade
+	-- currency. input = the item id the recipe eats, orb = ChaosCrafting orb key, name / plural = the item's names after
+	-- install_orbs.py (tests/salvage_test.lua checks them against chaos_orbs_config.lua renames).
+	-- Why 1,500 and 1,750 (server/README.md "Salvage", "Shards into orbs"): the shards drop only from the 30 waystone
+	-- monsters (monster level ~470-610), about 0.07-0.66 Ember and 0.04-0.43 Crown Shards per kill after the stock level
+	-- count multiplier (x2.25 / x2.70) and the pace loot thinning (x0.24); in tier 3-4 maps that is ~0.28 and ~0.15 a kill,
+	-- ~400 and ~210 an hour at 1,400 kills an hour. The loot layer drops ~0.25 Ember Orbs and ~0.125 Crown Orbs an hour at
+	-- that pace, so these costs give a shard hunter of tiers 3-4 about the same orbs again (tier 6: about 3x the drops).
+	-- Coins per hour of shards match too: Ember (reference 20) 1,500 / 400 = 3.8 h, Crown (40) 1,750 / 210 = 8.3 h.
+	shardRecipes = {
+		{key = "embershard", orb = "ember", input = 29852, cost = 1500, name = "Ember Shard", plural = "Ember Shards"},
+		{key = "crownshard", orb = "crown", input = 29853, cost = 1750, name = "Crown Shard", plural = "Crown Shards"}
+	},
+
 	-- uniques are not salvaged for their rarity (they have none) ...
 	allowUniques = false,
 	-- ... but item set pieces (data/lib/chaos_item_sets.lua): duplicates are common enough, each gives this many shards

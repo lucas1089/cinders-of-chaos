@@ -725,6 +725,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["No gear or Rift Key in your backpack."] = "Nenhum equipamento nem Rift Key na sua mochila.",
   ["Orbs"] = "Orbes",
   ["Shift+click: recycle your %s into %d %s each."] = "Shift+clique: recicle seus %s em %d %s cada.",
+  ["Your %s: %s."] = "Seus %s: %s.",
   ["Break rolled gear down into rune shards and combine the shards into orbs."] = "Desmanche equipamento rolado em rune shards e junte os shards em orbes.",
   ["Salvage all in"] = "Desmanchar tudo em",
   ["up to"] = "até",

@@ -610,6 +610,14 @@ function T.build(item, opts)
 	elseif rarity == 0 and kind ~= "quiver" then -- a quiver's type text repeats its implicits and the note above
 		desc = call(it, "getDescription")
 	end
+	-- an Ember / Crown Shard: where it becomes an orb (salvage.lua S.shardHint)
+	local SV = rawget(_G, "ChaosSalvage")
+	if SV and SV.shardHint then
+		local okH, hint = pcall(SV.shardHint, id)
+		if okH and hint then
+			desc = (type(desc) == "string" and desc ~= "") and (desc .. " " .. hint) or hint
+		end
+	end
 	if type(desc) == "string" and desc ~= "" then
 		tip.desc = clip(desc, 300)
 	end
