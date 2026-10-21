@@ -1538,8 +1538,18 @@ return {
 			"Nenhum evento está ativo hoje. Veja o calendário na tela de login.",
 		["Your position: %d, %d, %d."] = "Sua posição: %d, %d, %d.",
 		["The spellbook is already opening."] = "O spellbook já está abrindo.",
-		["%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports)."] =
-			"%s - %s. Serve em magias de %s. Encaixe na janela de spell supports (Character > Spell Supports).",
+		["%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s"] =
+			"%s - %s. Serve em magias de %s. Encaixe na janela de spell supports (Character > Spell Supports).%s",
+		[" To combine three into one of the next level: use the stack, then left-click the same stack."] =
+			" Para juntar três em uma do nível seguinte: use a pilha e depois clique com o botão esquerdo na mesma pilha.",
+		["You need three runes of the same support and level to combine them."] =
+			"Você precisa de três runas do mesmo suporte e nível para juntá-las.",
+		["Combine runes you own: in your backpack, your purse or your depot."] =
+			"Junte runas que são suas: na mochila, na bolsa ou no depot.",
+		["This rune is locked. Unlock it at the crafting bench to combine it."] =
+			"Esta runa está trancada. Destranque na bancada de criação para juntá-la.",
+		["Mythic runes are the best there are; they cannot be combined."] =
+			"Runas Mythic são as melhores que existem; não podem ser juntadas.",
 		["Switching loadout... stand still."] = "Trocando de loadout... fique parado.",
 		["Your last loadout switch was interrupted by a server restart and was undone."] =
 			"Sua última troca de loadout foi interrompida por um reinício do servidor e foi desfeita.",
@@ -1941,10 +1951,11 @@ return {
 		["First kill of %s: +1 passive point! %s."] = "Primeira morte de %s: +1 ponto passivo! %s.",
 		["Boss passive points: +%d for bosses you had already slain (%s). %s."] =
 			"Pontos passivos de boss: +%d por bosses que você já tinha matado (%s). %s.",
-		["%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality."] =
-			"%s%s - %s. Use num equipamento com um encaixe livre para encaixar, ou com %s do mesmo tipo para juntar três em uma da qualidade seguinte.",
-		["a gem"] = "uma gema",
-		["nothing (Perfect is the best quality)"] = "nada (Perfect é a melhor qualidade)",
+		["%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s"] =
+			"%s%s - %s. Use num equipamento com um encaixe livre para encaixar. %s",
+		["To combine three into one of the next quality: use the stack, then left-click the same stack."] =
+			"Para juntar três em uma da qualidade seguinte: use a pilha e depois clique com o botão esquerdo na mesma pilha.",
+		["Perfect is the best quality; it does not combine."] = "Perfect é a melhor qualidade; não se junta.",
 		["That cannot hold gems. "] = "Isso não pode ter gemas. ",
 		["You need three gems of the same kind and quality to combine them."] =
 			"Você precisa de três gemas do mesmo tipo e qualidade para juntá-las.",

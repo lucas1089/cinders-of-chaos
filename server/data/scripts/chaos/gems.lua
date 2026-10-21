@@ -23,6 +23,9 @@ end
 if not ChaosCrafting then
 	dofile("data/lib/chaos_crafting.lua") -- loads chaos_item_mods.lua and chaos_gems.lua
 end
+if not ChaosCombine or not ChaosCombine.take then
+	dofile("data/scripts/chaos/combine_core.lua") -- the combine shared with the support runes
+end
 
 local G = ChaosGems
 local cfg = G.config
@@ -178,18 +181,7 @@ end
 taken:register()
 
 -- ---------------------------------------------------------------- owning an item
-local function holderOf(item)
-	local ok, top = pcall(function() return item:getTopParent() end)
-	if ok and top and top.isPlayer and top:isPlayer() then
-		return top
-	end
-	return nil
-end
-
-local function owns(player, item)
-	local h = holderOf(item)
-	return h ~= nil and h:getId() == player:getId()
-end
+local owns = ChaosCombine.owns
 
 local function isEquipped(player, item)
 	local ok, parent = pcall(function() return item:getParent() end)
@@ -207,73 +199,9 @@ local function changed(player, item)
 	end
 end
 
--- count of id into the backpack; what does not fit goes to the depot inbox, and without one to the player's feet (never
--- lost). Returns false (all in the backpack), "inbox" or "ground"
-local function give(player, id, count)
-	local rest = count - (tonumber(Chaos.giveItem(player, id, count)) or 0)
-	if rest <= 0 then
-		return false
-	end
-	local inbox = player:getInbox()
-	if inbox then
-		inbox:addItem(id, rest, INDEX_WHEREEVER or -1, FLAG_NOLIMIT)
-		return "inbox"
-	end
-	Game.createItem(id, rest, player:getPosition())
-	return "ground"
-end
+local give = ChaosCombine.give
 G.give = give
-
-local function whereText(where)
-	if where == "inbox" then
-		return " It is in your inbox (no room)."
-	elseif where == "ground" then
-		return " It is at your feet (no room)."
-	end
-	return ""
-end
-
--- Where a gem stack is for this player: "carried" (equipment, backpack and the bags in it: what the engine's
--- player:getItemCount / removeItem see), "box" (the player's own, but outside that walk: the purse = store inbox, the
--- depot inbox and the depot chest; only their owner can open them) or nil (the ground, someone else's).
-local BOX = {[26052] = "purse", [14404] = "inbox", [2589] = "locker"} -- ITEM_STORE_INBOX, ITEM_INBOX, ITEM_LOCKER1
-local function idOf(thing)
-	if not thing or not thing.isItem then
-		return nil
-	end
-	local ok, id = pcall(function() return thing:isItem() and thing:getId() end)
-	return ok and id or nil
-end
-local function placeOf(player, item)
-	local inBox = false
-	local p = item
-	for _ = 1, 32 do
-		local ok, parent = pcall(function() return p:getParent() end)
-		if not ok or not parent then
-			break
-		end
-		local kind = BOX[idOf(parent)]
-		if kind == "inbox" or kind == "locker" then
-			return "box"
-		elseif kind == "purse" then
-			inBox = true
-		end
-		p = parent
-	end
-	if owns(player, item) then
-		return inBox and "box" or "carried"
-	end
-	return nil
-end
-
-local function isLocked(item)
-	return ChaosCrafting.customNumber(item, "chaos_locked") ~= 0
-end
-
-local function same(a, b)
-	local ok, r = pcall(function() return a == b end)
-	return ok and r or rawequal(a, b)
-end
+local whereText = ChaosCombine.whereText
 
 local function log(player, what, itemName, text)
 	if ChaosCraftingLog then
@@ -311,57 +239,16 @@ function G.socket(player, gemItem, target)
 	return true, text
 end
 
--- three gems of this id -> one of the next tier. used / target: the stacks of the use with (the same stack when the
--- player used a stack on itself), optional. The engine's player:getItemCount / removeItem only see what the player
--- carries (equipment, backpack, bags), so the stacks clicked in the purse or the depot are counted and taken here
--- first, the rest from what is carried. Everything is counted before anything is taken; a removal that fails gives
--- back what was taken. Returns ok, text
+
+-- three gems of this id -> one of the next tier (used / target: ChaosCombine.take, combine_core.lua). Returns ok, text
 function G.combine(player, id, used, target)
 	local newId, why = G.combineResult(id)
 	if not newId then
 		return false, G.reasons[why] or why
 	end
-	local boxed, extra = {}, 0
-	local picked = {}
-	for _, s in ipairs({used, target}) do
-		if s and s.getId and s:getId() == id and not (picked[1] and same(picked[1], s)) then
-			picked[#picked + 1] = s
-			local place = placeOf(player, s)
-			if not place then
-				return false, G.reasons.notYours
-			end
-			if isLocked(s) then
-				return false, G.reasons.locked
-			end
-			if place == "box" then
-				local n = tonumber(s:getCount()) or 0
-				boxed[#boxed + 1] = {item = s, count = n}
-				extra = extra + n
-			end
-		end
-	end
-	local carried = tonumber(player:getItemCount(id)) or 0
-	if carried + extra < 3 then
-		return false, G.reasons.needThree
-	end
-	local need, taken = 3, 0
-	for _, b in ipairs(boxed) do
-		local n = math.min(need, b.count)
-		if n > 0 then
-			if b.item:remove(n) == false then
-				if taken > 0 then
-					give(player, id, taken)
-				end
-				return false, G.reasons.needThree
-			end
-			need, taken = need - n, taken + n
-		end
-	end
-	if need > 0 and not player:removeItem(id, need) then
-		if taken > 0 then
-			give(player, id, taken)
-		end
-		return false, G.reasons.needThree
+	local ok, reason = ChaosCombine.take(player, id, 3, used, target)
+	if not ok then
+		return false, G.reasons[reason] or reason
 	end
 	local where = give(player, newId, 1)
 	local text = string.format("Three %s became a %s.%s", (G.listText({{id = id, count = 3}}):gsub("^3 ", "")),
@@ -404,8 +291,8 @@ end
 -- ---------------------------------------------------------------- use-with on every gem
 local function hint(player, id, prefix)
 	player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player,
-		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it, or with %s of the same kind to combine three into one of the next quality.", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
-		Chaos.t(player, G.gemOf(id).tier < G.TIERS and "a gem" or "nothing (Perfect is the best quality)")))
+		"%s%s - %s. Use it with a piece of gear that has a free socket to socket it. %s", prefix and Chaos.t(player, prefix) or "", G.gemName(id), G.gemSummary(id),
+		Chaos.t(player, G.gemOf(id).tier < G.TIERS and G.COMBINE_HOW or "Perfect is the best quality; it does not combine.")))
 end
 
 local function onUseGem(player, item, fromPosition, target, toPosition, isHotkey)

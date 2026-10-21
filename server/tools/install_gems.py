@@ -135,10 +135,10 @@ def gems(cfg):
                 else:
                     txt = '%s +%d%%' % (e['label'], v)
                 parts.append('%s: %s' % (label, txt))
-            desc = ('A gem for a socket: %s. Use it with gear that has a free socket, or with a gem of its kind to '
-                    'combine three into one of the next quality.' % '; '.join(parts))
-            if tier == n:
-                desc = desc.replace(', or with a gem of its kind to combine three into one of the next quality', '')
+            desc = 'A gem for a socket: %s. Use it with gear that has a free socket.' % '; '.join(parts)
+            if tier < n:  # the same words as G.COMBINE_HOW (chaos_gems.lua)
+                desc += (' To combine three into one of the next quality: use the stack, then left-click the same '
+                         'stack.')
             out.append((sid, cid, '%s %s' % (q, t['name']), '%s %s' % (q, t['plural']), desc))
     return out
 

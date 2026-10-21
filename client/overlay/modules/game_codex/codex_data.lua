@@ -5625,7 +5625,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5668,7 +5668,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5711,7 +5711,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5754,7 +5754,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5797,7 +5797,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5840,7 +5840,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -5883,7 +5883,7 @@ CodexData = {
 						},
 						{
 							h = "Combining",
-							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}
+							p = {"Three gems of one type and tier make one of the next tier (Chipped > Flawed > Polished > Flawless > Perfect).", "Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12712,6 +12712,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12750,6 +12754,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12792,6 +12800,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12830,6 +12842,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12872,6 +12888,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12910,6 +12930,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -12952,6 +12976,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -12990,6 +13018,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13032,6 +13064,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13070,6 +13106,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13112,6 +13152,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13150,6 +13194,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13192,6 +13240,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13230,6 +13282,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13272,6 +13328,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13310,6 +13370,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13352,6 +13416,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13390,6 +13458,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",
@@ -13432,6 +13504,10 @@ CodexData = {
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
 						},
 						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
+						},
+						{
 							h = "Sources",
 							cols = {"Source", "How"},
 							w = {28, 72},
@@ -13470,6 +13546,10 @@ CodexData = {
 						{
 							h = "Sockets",
 							p = {"Every spell with an id has up to 3 support sockets: the first once you may cast it, the second at a character level of the spell's level + 60 (at least 80), the third at the spell's level + 150 (at least 200), opened once per spell with 2 Orbs of Sockets."}
+						},
+						{
+							h = "Combining",
+							p = {"Three runes of one support and level make one of the next level (Common > Rare > Epic > Legendary > Mythic).", "Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}
 						},
 						{
 							h = "Sources",

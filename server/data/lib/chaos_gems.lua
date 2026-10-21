@@ -554,6 +554,10 @@ function G.rollDropSockets(item, rand)
 end
 
 -- the Orb of Sockets: can it be used, and the range of the new count
+-- how to combine with the mouse: "use" is a right-click in the classic controls (the crosshair comes up), then a
+-- left-click on the same stack (gems.lua hint, items.xml text by install_gems.py, the Codex)
+G.COMBINE_HOW = "To combine three into one of the next quality: use the stack, then left-click the same stack."
+
 G.reasons = {
 	notGear = "This item cannot have sockets.",
 	unique = "A unique item has a fixed socket; orbs cannot change it.",

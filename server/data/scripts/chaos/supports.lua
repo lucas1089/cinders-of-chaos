@@ -35,10 +35,13 @@ local function typeNameOf(creature)
 	return Chaos.monsterTypeName and Chaos.monsterTypeName(creature) or creature:getName()
 end
 if not ChaosGems and not ChaosCrafting then
-	pcall(dofile, "data/lib/chaos_crafting.lua") -- loads chaos_gems.lua (reused: give, pickIndex, level weights)
+	pcall(dofile, "data/lib/chaos_crafting.lua") -- loads chaos_gems.lua (reused: pickIndex, level weights)
 end
 if not ChaosSupports then
 	dofile("data/lib/chaos_supports.lua")
+end
+if not ChaosCombine or not ChaosCombine.take then
+	dofile("data/scripts/chaos/combine_core.lua") -- three into one, shared with the gems
 end
 
 local S = ChaosSupports
@@ -762,12 +765,9 @@ local function changed(player)
 	sendBar(player)
 end
 
+-- count of a rune into the backpack, else the depot inbox, else the player's feet (combine_core.lua)
 local function give(player, id, count)
-	if ChaosGems and ChaosGems.give then
-		return ChaosGems.give(player, id, count)
-	end
-	player:addItem(id, count)
-	return false
+	return ChaosCombine.give(player, id, count)
 end
 
 -- gold for a removal: carried coins, then the bank (Chaos.pay)
@@ -864,9 +864,8 @@ function S.unsocket(player, spellId, slot, keep)
 	changed(player)
 	local text
 	if keep then
-		local inbox = give(player, id, 1)
 		text = string.format("%s taken out of %s for %d gold.%s", S.runeName(id), info.name, cost,
-			inbox and " It is in your inbox (no room)." or "")
+			ChaosCombine.whereText(give(player, id, 1)))
 		player:getPosition():sendMagicEffect(CONST_ME_MAGIC_BLUE)
 	else
 		text = string.format("%s shattered (taken out of %s).", S.runeName(id), info.name)
@@ -903,17 +902,21 @@ function S.unlock(player, spellId)
 	return true, text
 end
 
-function S.combine(player, id)
+-- three runes of this id -> one of the next level. used / target: the stacks of the use with (the same stack when a
+-- stack was used on itself), optional; the purse and the depot count too (combine_core.lua, shared with the gems).
+-- Returns ok, text
+local TAKE_REASON = {notYours = "notYours", locked = "runeLocked", needThree = "needThree"}
+function S.combine(player, id, used, target)
 	local newId, why = S.combineResult(id)
 	if not newId then
 		return false, S.reasons[why] or why
 	end
-	if player:getItemCount(id) < 3 or not player:removeItem(id, 3) then
-		return false, S.reasons.needThree
+	local ok, reason = ChaosCombine.take(player, id, 3, used, target)
+	if not ok then
+		return false, S.reasons[TAKE_REASON[reason] or "needThree"]
 	end
-	local inbox = give(player, newId, 1)
 	local text = string.format("Three %ss became one %s.%s", S.runeName(id), S.runeName(newId),
-		inbox and " It is in your inbox (no room)." or "")
+		ChaosCombine.whereText(give(player, newId, 1)))
 	log(player, "Support", S.runeName(id), text)
 	player:getPosition():sendMagicEffect(CONST_ME_MAGIC_GREEN)
 	return true, text
@@ -1014,14 +1017,15 @@ advance:register()
 local function onUseRune(player, item, fromPosition, target, toPosition, isHotkey)
 	local id = item:getId()
 	if target and type(target) ~= "number" and target.isItem and target:isItem() and target:getId() == id then
-		local ok, text = S.combine(player, id)
+		local ok, text = S.combine(player, id, item, target)
 		if ok then
 			player:sendTextMessage(MESSAGE_INFO_DESCR, text)
 		else
-			player:sendCancelMessage(text)
+			player:sendCancelMessage(Chaos.t(player, text))
 		end
 	else
-		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type)))
+		player:sendTextMessage(MESSAGE_INFO_DESCR, Chaos.t(player, "%s - %s. Fits %s spells. Socket it in the spell supports window (Character > Spell Supports).%s", S.runeName(id), S.effectText(id), S.fitsText(S.runeOf(id).type),
+			S.runeOf(id).level < S.LEVELS and Chaos.t(player, " To combine three into one of the next level: use the stack, then left-click the same stack.") or ""))
 	end
 	sendState(player)
 	sendBar(player)

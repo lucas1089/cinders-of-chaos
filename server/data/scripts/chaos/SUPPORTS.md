@@ -30,7 +30,12 @@ Rules at socketing (all on the server):
 Taking a rune out works like a gem at the crafting bench: **Remove** gives it back for gold by level
 (2 000 / 6 000 / 20 000 / 60 000 / 200 000, bank first, then the backpack), **Shatter** destroys it for free.
 Three runes of one support and level **combine** into one of the next level (window button, or use a rune on a rune of
-the same kind), like three gems.
+the same kind), like three gems. With the mouse: use the stack (a right-click in the classic controls brings up the
+crosshair), then left-click the same stack. The runes may be carried, in the purse or in the depot: `S.combine(player,
+id, used, target)` takes them through `combine_core.lua`, shared with the gems (server/README.md "Gems and sockets").
+**Fixed 2026-10-21:** a rune stack in the purse or the depot was refused with "You need three runes", as the gems were.
+The window button still combines carried runes only. Tests: `tests/supports_test.lua` (a stack used on itself in the
+purse, the depot inbox, the depot chest, the backpack; too few, ground, locked, a failed removal).
 
 ## The runes
 

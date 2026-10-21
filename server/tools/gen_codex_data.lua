@@ -1083,7 +1083,7 @@ function Gen.gemEntries(D)
 				{h = "Caps (all gems together)", p = {capText(t.weapon) .. ".", capText(t.armour) .. ".", capText(t.jewel) .. "."}},
 				{h = "Combining", p = {string.format("Three gems of one type and tier make one of the next tier (%s).",
 					table.concat(cfg.tiers, " > ")),
-					"Use a gem with another of the same kind and tier, or with its own stack. The gems may be in your backpack, your purse or your depot."}},
+					"Use the stack, then left-click the same stack (or another stack of the same gem). The gems may be in your backpack, your purse or your depot."}},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 					{"Monster drops", "Per kill by monster tier: " .. table.concat(dropParts, ", ") .. "; the gem type is random, the tier by monster level."},
 					{"Bounty board", string.format("Finished contracts: hunt %d%%, elite %d%%, boss %d%% chance of a gem; %d in the weekly chest.",
@@ -1605,6 +1605,9 @@ function Gen.supportEntries(D)
 				{h = "Levels", cols = {"Level", "Effect"}, w = {22, 78}, rows = rows},
 				{h = "Sockets", p = {string.format("Every spell with an id has up to %d support sockets: the first once you may cast it, the second at a character level of the spell's level + %d (at least %d), the third at the spell's level + %d (at least %d), opened once per spell with %d Orbs of Sockets.",
 					cfg.maxSockets, cfg.second.add, cfg.second.min, cfg.third.add, cfg.third.min, cfg.third.orbs)}},
+				{h = "Combining", p = {string.format("Three runes of one support and level make one of the next level (%s).",
+					table.concat(cfg.levelNames, " > ")),
+					"Use the stack, then left-click the same stack (or another stack of the same rune). The runes may be in your backpack, your purse or your depot."}},
 				{h = "Sources", cols = {"Source", "How"}, w = {28, 72}, rows = {
 					{"Monster drops", "Per kill: " .. table.concat(dropParts, ", ") .. "; the level by monster level."},
 					{"Bounty board", string.format("Hunt %d%%, elite %d%%, boss %d%% per finished contract.", cfg.rewards.bounty.chance.hunt,

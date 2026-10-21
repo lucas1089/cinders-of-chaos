@@ -285,6 +285,8 @@ S.reasons = {
 	empty = "There is no rune in that socket.",
 	mythic = "Mythic runes are the best there are; they cannot be combined.",
 	needThree = "You need three runes of the same support and level to combine them.",
+	notYours = "Combine runes you own: in your backpack, your purse or your depot.",
+	runeLocked = "This rune is locked. Unlock it at the crafting bench to combine it.",
 	opened = "The third socket of this spell is open already.",
 	level3 = "The third socket needs level %d for this spell."
 }
@@ -618,7 +620,7 @@ function S.description(typeIndex, level)
 	local text = string.format("A support rune for a spell socket: %s. Fits %s spells.", effect:sub(1, 1):lower()
 		.. effect:sub(2), S.fitsText(t))
 	if level < S.LEVELS then
-		text = text .. " Three of them combine into one of the next level."
+		text = text .. " Three of them combine into one of the next level: use the stack, then left-click the same stack."
 	end
 	return text .. " Use it to open the spell supports (Character > Spell Supports)."
 end
