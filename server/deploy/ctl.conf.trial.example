@@ -21,3 +21,16 @@ CHAOS_MYSQL=/opt/chaos-trial/mariadb/bin/mariadb
 # Set it only for a database user that may log in over the socket.
 #CHAOS_DB_SOCKET=/opt/chaos-trial/run/mariadb.sock
 #CHAOS_BACKUP_DIR=/var/backups/chaos
+
+# Painel > Atualizar servidor (chaos-ctl.sh update-check / update-apply, server/deploy/chaos_kit_update.sh)
+CHAOS_KIT_DIR=/opt/chaos-trial
+# the branch the checkout CHAOS_REPO follows, and the GitHub repository of the winpkg-N releases (the engine)
+CHAOS_UPDATE_BRANCH=main
+CHAOS_RELEASE_REPO=lucas1089/cinders-of-chaos
+# the website: the signed client update goes to CHAOS_SITE_DIR/updates/live, the client downloads to CHAOS_DL_DIR
+# (a symlink is fine: the files are written next to its target), install_site.sh reads CHAOS_SITE_ENV
+CHAOS_SITE_DIR=/var/www/chaos
+CHAOS_DL_DIR=/var/www/chaos/dl
+CHAOS_SITE_ENV=/etc/chaos/site.env
+# the private key of the client updates (docs/LAUNCH.md "Publishing a client update")
+CHAOS_UPDATE_KEY=/etc/chaos/update-key.hex

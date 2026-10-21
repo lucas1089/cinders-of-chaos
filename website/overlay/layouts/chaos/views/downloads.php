@@ -17,6 +17,24 @@ $about = array(
 	'windows_client' => array('Windows client', 'The Cinders of Chaos client for Windows 10 and 11 (64-bit).'),
 	'linux_client' => array('Linux client', 'The Cinders of Chaos client for 64-bit Linux.'),
 );
+// Release, date, size and SHA-256 of the files in the site's dl/ folder: dl/downloads.json, written by the admin app's
+// server update (server/deploy/chaos_kit_update.sh). A link whose file name is listed there shows them.
+$dlInfoFile = (string)($GLOBALS['chaos_downloads_json'] ?? (dirname(__DIR__, 3) . '/dl/downloads.json'));
+$dlInfo = is_file($dlInfoFile) ? json_decode((string)file_get_contents($dlInfoFile), true) : null;
+$dlFiles = (is_array($dlInfo) && isset($dlInfo['files']) && is_array($dlInfo['files'])) ? $dlInfo['files'] : array();
+$fileMeta = static function (string $url) use ($dlInfo, $dlFiles): ?array {
+	$name = basename((string)parse_url($url, PHP_URL_PATH));
+	$f = $dlFiles[$name] ?? null;
+	if (!is_array($f) || !isset($f['size']) || !preg_match('/^[0-9a-f]{64}$/', (string)($f['sha256'] ?? ''))) {
+		return null;
+	}
+	$mb = (int)$f['size'] / 1048576;
+	return array(
+		'line' => 'Release ' . (int)($dlInfo['release'] ?? 0) . ' · ' . (string)($dlInfo['updated'] ?? '') . ' · '
+			. number_format($mb, $mb >= 100 ? 0 : 1) . ' MB',
+		'sha' => (string)$f['sha256'],
+	);
+};
 ?>
 <div class="chaos-page">
 <div class="chaos-box">
@@ -32,7 +50,11 @@ $about = array(
 				<p><?= $h($about[$e['key']][1] ?? $e['description']) ?></p>
 				<?php if ($soon): ?>
 					<span class="chaos-btn chaos-btn--ghost" aria-disabled="true">Coming soon</span>
-				<?php else: ?>
+				<?php else: $meta = $fileMeta($url); ?>
+					<?php if ($meta !== null): ?>
+						<p class="chaos-dl__meta"><?= $h($meta['line']) ?></p>
+						<p class="chaos-dl__sum">SHA-256 <code><?= $h($meta['sha']) ?></code></p>
+					<?php endif; ?>
 					<a class="chaos-btn" href="<?= $h($url) ?>" rel="noopener">Download</a>
 				<?php endif; ?>
 			</div>

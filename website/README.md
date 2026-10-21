@@ -49,6 +49,7 @@ repository: the installer clones it at a pinned commit and lays our files over i
 | `overlay/plugins/chaos/bazaar_lib.php`, `pages/bazaar.php`, `bazaar_worker.php` | the Character Bazaar: character auctions for Chaos Coins with escrow, fee and transfer (see "Character Bazaar") |
 | `tests/chaos_bazaar_test.php` | `php website/tests/chaos_bazaar_test.php`: every blocked listing, bids and escrow, the fee and the transfer, expiry, buyout, cancel, a failed transfer, coins kept whole (php-cli with pdo_sqlite) |
 | `overlay/plugins/chaos/discord_lib.php`, `discord_worker.php` | Discord announcements: posts the game's queued events and the bazaar's new auctions and sales to channel webhooks from the environment (see "Discord announcements") |
+| `tests/chaos_downloads_page_test.php` | `php website/tests/chaos_downloads_page_test.php`: the downloads page with `dl/downloads.json` (written by the admin app's server update, `server/deploy/chaos_kit_update.sh`): release, date, size and SHA-256 under a listed file, nothing for a bad entry or a missing / broken file |
 | `tests/chaos_discord_worker_test.php` | `php website/tests/chaos_discord_worker_test.php`: the worker against a mock webhook endpoint (a local `php -S`): embeds, no pings, 429 and rate limit headers, retries, switches, the bazaar scan, cleanup; the downloads page's Discord step (php-cli with pdo_sqlite, nothing leaves the machine) |
 | `overlay/plugins/chaos/telemetry_lib.php`, `pages/telemetry.php` | staff only (admin accounts with a group 5+ character): balance telemetry charts, server-drawn SVG (see "Balance telemetry") |
 | `tests/chaos_telemetry_page_test.php` | `php website/tests/chaos_telemetry_page_test.php`: access, filters, rates and the small-group rule, every section, the SVG charts (php-cli with pdo_sqlite) |
@@ -148,6 +149,9 @@ settings; default `server/data` of this repository), `CHAOS_START_TOWNS`, `CHAOS
 **Placeholders the owner sets before launch:** the site address (`CHAOS_SITE_URL`), the game address shown on the
 downloads page (`CHAOS_GAME_HOST`), the client download links (empty = "Coming soon"), the Discord invite (empty =
 no Discord button), the admin account names. The Rules page is a first draft to edit in Admin Panel > Pages.
+With the client links pointing at the site's own `dl/` folder (`https://SITE/dl/CindersOfChaos-Client-Windows.zip`,
+`.../CindersOfChaos-Client-Linux.tar.gz`), the admin app's server update replaces those files with each new release and
+writes `dl/downloads.json`; the downloads page then shows the release, date, size and SHA-256 under each button.
 
 Local test (what was used to check it): `php -S 127.0.0.1:8095 -t "$CHAOS_SITE_DIR" website/setup/router.php`.
 The router stands in for the `.htaccess` deny rules and clean addresses; it is for local tests only.

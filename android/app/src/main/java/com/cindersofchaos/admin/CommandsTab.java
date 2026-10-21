@@ -201,7 +201,231 @@ final class CommandsTab {
                 "O servidor para, volta para a versão anterior e liga de novo.", "Voltar agora", true,
                 () -> ctl("Voltar versão", "rollback now", 30, null)));
         ub.addView(ui.evenRow(progress, rollback), ui.gap(4));
+        ub.addView(ui.hint("Por tag: o layout padrão (/opt/chaos). No kit Linux (/opt/chaos-trial) use Atualizar "
+                + "servidor no Painel."), ui.gap(6));
         quick.addView(upCard, ui.gap(10));
+
+        buildXp();
+        buildAccounts();
+        buildHealth();
+        buildSiteClient();
+    }
+
+    // XP rate: config.lua experienceStages = the release's stages x N (chaos-ctl.sh xp-rate)
+    private void buildXp() {
+        MaterialCardView c = ui.titledCard("Taxa de XP");
+        LinearLayout b = Ui.body(c);
+        TextView now = ui.text("Toque em Ver para ler o config.lua.");
+        b.addView(now);
+        TextInputLayout mult = ui.field("Multiplicador", "1 a 100. x10 = os estágios de XP da release vezes 10. "
+                + "Atualizar servidor mantém o valor.", "", InputType.TYPE_CLASS_NUMBER);
+        b.addView(mult, ui.gap(8));
+        MaterialButton see = ui.secondary("Ver", R.drawable.ic_refresh);
+        see.setOnClickListener(v -> a.ctlAction("xp-rate show", 30, f -> {
+            if (!f.ok) {
+                result.show("Taxa de XP", f);
+                return;
+            }
+            String xp = "", exp = "";
+            for (String line : f.raw.split("\n")) {
+                if (line.startsWith("xp=")) {
+                    xp = line.substring(3);
+                } else if (line.startsWith("rateExp=")) {
+                    exp = line.substring(8);
+                }
+            }
+            now.setText("Agora: " + (xp.equals("custom") ? "tabela editada à mão" : xp.equals("x1") ? "x1 (padrão)" : xp)
+                    + (exp.isEmpty() ? "" : "  ·  rateExp " + exp));
+        }));
+        MaterialButton later = ui.secondary("Gravar (próximo reinício)", 0);
+        later.setOnClickListener(v -> xpSet(mult, false));
+        MaterialButton nowB = ui.danger("Gravar e reiniciar", 0);
+        nowB.setOnClickListener(v -> xpSet(mult, true));
+        MaterialButton reset = ui.flat("Voltar ao padrão (x1)", 0);
+        reset.setOnClickListener(v -> a.confirm("Voltar a XP ao padrão?", "Os estágios da release, sem multiplicador. "
+                + "Vale no próximo reinício.", "Voltar", false, () -> ctl("Taxa de XP padrão", "xp-rate reset", 30, null)));
+        b.addView(ui.evenRow(see, reset), ui.gap(6));
+        b.addView(ui.evenRow(later, nowB), ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    private void xpSet(TextInputLayout mult, boolean restart) {
+        int n = UpdateInfo.num(Ui.value(mult));
+        if (n < 1 || n > 100) {
+            mult.setError("De 1 a 100.");
+            return;
+        }
+        mult.setError(null);
+        String args = "xp-rate set " + n + (restart ? " restart" : "");
+        if (restart) {
+            a.confirm("XP x" + n + " e reiniciar?", "O servidor reinicia agora: os jogadores são desconectados (o jogo "
+                    + "salva antes).", "Reiniciar", true, () -> ctl("XP x" + n, args, 240, null));
+        } else {
+            ctl("XP x" + n, args, 30, null);
+        }
+    }
+
+    // accounts: the password goes on stdin, never on the command line (chaos-ctl.sh account-create / account-password)
+    private void buildAccounts() {
+        MaterialCardView c = ui.titledCard("Contas");
+        LinearLayout b = Ui.body(c);
+        TextInputLayout name = ui.field("Conta", "3 a 32 letras ou números.", "", InputType.TYPE_CLASS_TEXT
+                | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        TextInputLayout pass = ui.field("Senha", "6 a 64 caracteres. Vai pelo SSH, nunca na linha de comando.", "",
+                InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        b.addView(name);
+        b.addView(pass, ui.gap(6));
+        MaterialButton create = ui.primary("Criar conta", 0);
+        create.setOnClickListener(v -> account("account-create", "Criar conta", name, pass));
+        MaterialButton change = ui.secondary("Trocar senha", 0);
+        change.setOnClickListener(v -> account("account-password", "Trocar senha", name, pass));
+        b.addView(ui.evenRow(create, change), ui.gap(8));
+        b.addView(ui.hint("Chaos Coins e grupo (GM): Painel do jogo > Store > Give Chaos Coins e Players > Set group."),
+                ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    private void account(String cmd, String label, TextInputLayout name, TextInputLayout pass) {
+        String n = Ui.value(name);
+        String p = pass.getEditText() == null ? "" : pass.getEditText().getText().toString();
+        if (!n.matches("[A-Za-z0-9]{3,32}")) {
+            name.setError("3 a 32 letras ou números.");
+            return;
+        }
+        name.setError(null);
+        if (p.length() < 6 || p.length() > 64 || p.contains("\n")) {
+            pass.setError("6 a 64 caracteres.");
+            return;
+        }
+        pass.setError(null);
+        if (!a.store.configured()) {
+            a.snack("Configure o servidor na aba Config.", false);
+            return;
+        }
+        result.running(label + " " + n);
+        a.ctlAction(cmd + " " + n, 40, p + "\n", f -> {
+            result.show(label + " " + n, f);
+            a.snack(label + ": " + (f.ok ? "feito" : f.title), f.ok);
+            if (f.ok) {
+                Ui.setValue(pass, "");
+            }
+        });
+    }
+
+    // health, disk cleanup and backups
+    private void buildHealth() {
+        MaterialCardView c = ui.titledCard("Saúde e espaço");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Servidor, banco, site (nginx / PHP), disco e as sobras de atualizações em /var/tmp e "
+                + "tfs.antes-* antigos."));
+        MaterialButton health = ui.secondary("Verificar", R.drawable.ic_refresh);
+        health.setOnClickListener(v -> a.ctlAction("health", 40, f -> {
+            if (!f.ok) {
+                result.show("Saúde", f);
+                return;
+            }
+            StringBuilder s = new StringBuilder();
+            for (String line : f.raw.split("\n")) {
+                int eq = line.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                String k = line.substring(0, eq), val = line.substring(eq + 1);
+                switch (k) {
+                    case "service": s.append("Servidor: ").append(Friendly.state(val)).append('\n'); break;
+                    case "database": s.append("Banco: ").append(val.equals("ok") ? "respondendo" : "fora do ar").append('\n'); break;
+                    case "web": s.append("Site: ").append(val.equals("none") ? "nenhum serviço web achado" : val).append('\n'); break;
+                    case "disk": s.append("Disco: ").append(val).append('\n'); break;
+                    case "disk_free": s.append("Livre em /var/tmp: ").append(val).append('\n'); break;
+                    case "mem": s.append("Memória: ").append(val).append('\n'); break;
+                    case "cleanup": s.append("Para limpar: ").append(val.replace("item(s)", "itens")).append('\n'); break;
+                    default: break;
+                }
+            }
+            result.show("Saúde", Friendly.ok("Feito", s.toString().trim(), f.raw));
+        }));
+        MaterialButton clean = ui.danger("Limpar sobras", 0);
+        clean.setOnClickListener(v -> a.ctlAction("cleanup", 40, f -> {
+            if (!f.ok) {
+                result.show("Limpar", f);
+                return;
+            }
+            if (f.raw.contains("nothing to clean up")) {
+                a.snack("Nada para limpar.", true);
+                return;
+            }
+            a.confirm("Apagar estes arquivos?", f.raw.replace("would remove ", "").replace("(cleanup --yes removes them)", ""),
+                    "Apagar", true, () -> ctl("Limpar sobras", "cleanup --yes", 120, null));
+        }));
+        b.addView(ui.evenRow(health, clean), ui.gap(8));
+        MaterialButton backups = ui.secondary("Ver backups", R.drawable.ic_backup);
+        backups.setOnClickListener(v -> a.ctlAction("backups", 30, f -> {
+            if (!f.ok) {
+                result.show("Backups", f);
+                return;
+            }
+            StringBuilder s = new StringBuilder();
+            for (String line : f.raw.split("\n")) {
+                String[] p = line.split("\t");
+                if (line.startsWith("dir=")) {
+                    s.append("Pasta: ").append(line.substring(4)).append("\n\n");
+                } else if (p.length == 4) {
+                    long bytes;
+                    try {
+                        bytes = Long.parseLong(p[2].trim());
+                    } catch (NumberFormatException e) {
+                        bytes = 0;
+                    }
+                    String size = bytes >= 1048576 ? (bytes / 1048576) + " MB" : (bytes / 1024) + " KB";
+                    s.append(p[0].equals("db") ? "Banco  " : "Arquivos  ").append(p[1]).append("  ").append(size)
+                            .append('\n');
+                }
+            }
+            result.show("Backups", Friendly.ok("Feito", s.toString().trim()
+                    + "\n\nRestaurar é pela VPS (docs/LAUNCH.md, Incident runbook): o app não restaura banco.", f.raw));
+        }));
+        b.addView(backups, ui.gap(4));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // the site and the client update on their own
+    private void buildSiteClient() {
+        MaterialCardView c = ui.titledCard("Site e update do client");
+        LinearLayout b = Ui.body(c);
+        MaterialButton site = ui.secondary("Reinstalar o site", 0);
+        site.setOnClickListener(v -> a.confirm("Reinstalar o site?", "Roda o website/install_site.sh (idempotente: "
+                + "copia o overlay, refaz a config e as tabelas). O site fica no ar.", "Reinstalar", false,
+                () -> ctl("Reinstalar o site", "site-install", 30, null)));
+        MaterialButton siteLog = ui.flat("Log do site", R.drawable.ic_nav_logs);
+        siteLog.setOnClickListener(v -> {
+            a.showTab(MainActivity.TAB_LOGS, true);
+            a.logs.openUpdate("site-log");
+        });
+        b.addView(ui.evenRow(site, siteLog));
+        TextInputLayout tag = ui.field("Release do client", "Ex.: winpkg-47. Publica o update assinado que os clients "
+                + "baixam ao abrir (precisa ser mais nova que a publicada).", "", 0);
+        b.addView(tag, ui.gap(8));
+        MaterialButton pub = ui.primary("Publicar update", R.drawable.ic_send);
+        pub.setOnClickListener(v -> {
+            String t = Ui.value(tag);
+            if (!t.matches("[A-Za-z0-9][A-Za-z0-9._-]{0,63}") || t.contains("..")) {
+                tag.setError("Uma tag de release, ex.: winpkg-47.");
+                return;
+            }
+            tag.setError(null);
+            a.confirm("Publicar o update do client " + t + "?", "Os jogadores recebem os arquivos novos na próxima vez "
+                    + "que abrirem o client.", "Publicar", false,
+                    () -> ctl("Publicar " + t, "publish-update " + Ssh.sq(t), 30, null));
+        });
+        MaterialButton pubLog = ui.flat("Log da publicação", R.drawable.ic_nav_logs);
+        pubLog.setOnClickListener(v -> {
+            a.showTab(MainActivity.TAB_LOGS, true);
+            a.logs.openUpdate("publish-log");
+        });
+        b.addView(ui.evenRow(pub, pubLog), ui.gap(6));
+        b.addView(ui.hint("A versão publicada e a release mais nova aparecem em Painel > Atualizar servidor > Verificar."),
+                ui.gap(6));
+        quick.addView(c, ui.gap(10));
     }
 
     private void update(TextInputLayout tag, String mode) {

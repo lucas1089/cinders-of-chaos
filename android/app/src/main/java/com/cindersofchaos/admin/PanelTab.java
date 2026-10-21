@@ -40,6 +40,8 @@ final class PanelTab {
     private final Tile backup;
     private final Tile errors;
     private final MainActivity.ResultCard result;
+    private final UpdateCard update;
+    private boolean updateSeen = false;
     private final List<MaterialButton> actionButtons = new ArrayList<>();
     private boolean loading = false;
 
@@ -185,6 +187,9 @@ final class PanelTab {
         result = a.new ResultCard();
         page.addView(result.card, ui.gap(10));
 
+        update = new UpdateCard(a);
+        page.addView(update.card, ui.gap(10));
+
         ScrollView sv = new ScrollView(a);
         sv.addView(page, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -228,6 +233,11 @@ final class PanelTab {
                 return;
             }
             show(s);
+            // once per app start (and on a manual refresh): an update still running is followed again
+            if (!updateSeen || manual) {
+                updateSeen = true;
+                update.shown();
+            }
         });
     }
 

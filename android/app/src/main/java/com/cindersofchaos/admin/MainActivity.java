@@ -283,12 +283,17 @@ public class MainActivity extends AppCompatActivity {
 
     /** Runs a command on the server in the background; the progress bar shows while anything runs. */
     void remote(String cmd, int timeoutSec, Done done) {
+        remote(cmd, timeoutSec, null, done);
+    }
+
+    /** remote() with text for the command's stdin (passwords go this way, never on a command line). */
+    void remote(String cmd, int timeoutSec, String stdin, Done done) {
         setBusy(+1);
         pool.execute(() -> {
             Ssh.Result r = null;
             Exception err = null;
             try {
-                r = Ssh.exec(store, cmd, timeoutSec);
+                r = Ssh.exec(store, cmd, timeoutSec, stdin);
             } catch (Exception e) {
                 err = e;
             }
@@ -316,7 +321,12 @@ public class MainActivity extends AppCompatActivity {
 
     /** remote() for a chaos-ctl.sh command whose answer is shown as a Friendly outcome. */
     void ctlAction(String args, int timeoutSec, java.util.function.Consumer<Friendly> done) {
-        remote(ctl(args), timeoutSec, (r, e) -> done.accept(e != null ? Friendly.ofException(e)
+        ctlAction(args, timeoutSec, null, done);
+    }
+
+    /** ctlAction() with text for the command's stdin. */
+    void ctlAction(String args, int timeoutSec, String stdin, java.util.function.Consumer<Friendly> done) {
+        remote(ctl(args), timeoutSec, stdin, (r, e) -> done.accept(e != null ? Friendly.ofException(e)
                 : Friendly.ofResult(r.out, r.code)));
     }
 

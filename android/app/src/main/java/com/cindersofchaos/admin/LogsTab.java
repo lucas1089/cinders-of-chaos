@@ -33,15 +33,23 @@ final class LogsTab {
     private static final int CONSOLE = 0;
     private static final int ERRORS = 1;
     private static final int UPDATE = 2;
-    private static final int TERMINAL = 3;
+    private static final int GM = 3;
+    private static final int TERMINAL = 4;
     private static final int[] LINE_CHOICES = {50, 100, 200, 500};
+    /** The logs behind "Updates": the server update, the client update publish, the site install. */
+    private static final String[] UPD_LOGS = {"update-log", "publish-log", "site-log"};
+    private static final String[] UPD_NAMES = {"Atualização do servidor", "Publicação do client", "Instalação do site"};
 
     final View root;
     private final MainActivity a;
     private final Ui ui;
     private final MaterialButtonToggleGroup modes;
-    private final int[] modeIds = new int[4];
+    private final int[] modeIds = new int[5];
     private final MaterialButton lines;
+    private final MaterialButton which;
+    private int updLog = 0;
+    private String staff = "";
+    private String[] staffNames = new String[0];
     private final MaterialSwitch follow;
     private final MaterialSwitch older;
     private final TextView info;
@@ -68,7 +76,7 @@ final class LogsTab {
         modes = new MaterialButtonToggleGroup(a);
         modes.setSingleSelection(true);
         modes.setSelectionRequired(true);
-        String[] names = {"Console", "Erros", "Atualização", "Terminal"};
+        String[] names = {"Console", "Erros", "Updates", "GM", "Terminal"};
         for (int i = 0; i < names.length; i++) {
             MaterialButton b = ui.secondary(names[i], 0);
             b.setId(View.generateViewId());
@@ -96,6 +104,11 @@ final class LogsTab {
         lines = ui.flat(a.store.logLines() + " linhas", 0);
         lines.setOnClickListener(v -> pickLines());
         tools.addView(lines);
+        // Updates: which log; GM: which staff member
+        which = ui.flat("", 0);
+        which.setOnClickListener(v -> pickWhich());
+        which.setVisibility(View.GONE);
+        tools.addView(which);
         follow = new MaterialSwitch(a);
         follow.setText("Acompanhar");
         follow.setTextColor(ui.text);
@@ -209,8 +222,44 @@ final class LogsTab {
     }
 
     void openUpdate() {
+        openUpdate("update-log");
+    }
+
+    /** Updates with one of its logs: update-log, publish-log or site-log. */
+    void openUpdate(String log) {
+        for (int i = 0; i < UPD_LOGS.length; i++) {
+            if (UPD_LOGS[i].equals(log)) {
+                updLog = i;
+            }
+        }
+        plain = "";
         modes.check(modeIds[UPDATE]);
         setMode(UPDATE, true);
+    }
+
+    private void pickWhich() {
+        if (mode == UPDATE) {
+            new MaterialAlertDialogBuilder(a).setTitle("Qual log").setItems(UPD_NAMES, (d, w) -> {
+                updLog = w;
+                setWhich();
+                load(true);
+            }).show();
+        } else if (mode == GM) {
+            String[] items = new String[staffNames.length + 1];
+            items[0] = "Todos";
+            System.arraycopy(staffNames, 0, items, 1, staffNames.length);
+            new MaterialAlertDialogBuilder(a).setTitle(staffNames.length == 0 ? "Nenhum log de staff ainda" : "Staff")
+                    .setItems(items, (d, w) -> {
+                        staff = w == 0 ? "" : items[w];
+                        setWhich();
+                        load(true);
+                    }).show();
+        }
+    }
+
+    private void setWhich() {
+        which.setVisibility(mode == UPDATE || mode == GM ? View.VISIBLE : View.GONE);
+        which.setText(mode == UPDATE ? UPD_NAMES[updLog] : "Staff: " + (staff.isEmpty() ? "todos" : staff));
     }
 
     private void setMode(int m, boolean fetch) {
@@ -220,6 +269,7 @@ final class LogsTab {
         older.setVisibility(m == ERRORS ? View.VISIBLE : View.GONE);
         lines.setVisibility(m == TERMINAL ? View.GONE : View.VISIBLE);
         follow.setVisibility(m == TERMINAL ? View.GONE : View.VISIBLE);
+        setWhich();
         if (m == TERMINAL) {
             info.setText("Como o usuário " + a.store.user() + ". Pasta: " + cwd);
             render();
@@ -262,7 +312,8 @@ final class LogsTab {
         int n = a.store.logLines();
         String args = forMode == CONSOLE ? "logs " + n
                 : forMode == ERRORS ? "errors " + n + (older.isChecked() ? " all" : "")
-                : "update-log " + n;
+                : forMode == GM ? "gm-logs " + n + (staff.isEmpty() ? "" : " " + Ssh.sq(staff))
+                : UPD_LOGS[updLog] + " " + n;
         boolean atBottom = !outScroll.canScrollVertically(1);
         a.remote(a.ctl(args), 40, (r, e) -> {
             if (mine != seq) {
@@ -285,16 +336,79 @@ final class LogsTab {
             plain = r.out;
             if (forMode == ERRORS) {
                 renderErrors(r.out);
+            } else if (forMode == GM) {
+                renderGm(r.out);
             } else {
                 out.setText(colourLog(r.out));
                 int count = r.out.isEmpty() ? 0 : r.out.split("\n").length;
                 info.setText(count == 0 ? (forMode == UPDATE ? "Nenhuma atualização registrada." : "Log vazio.")
                         : "Últimas " + count + " linhas" + (follow.isChecked() ? "  ·  acompanhando" : ""));
             }
-            if (forMode != ERRORS && (atBottom || manual || follow.isChecked())) {
+            if (forMode != ERRORS && forMode != GM && (atBottom || manual || follow.isChecked())) {
                 outScroll.post(() -> outScroll.fullScroll(View.FOCUS_DOWN));
             }
         });
+    }
+
+    /**
+     * "chaos-ctl.sh gm-logs": "@staff" names, "@files" (date, size, name), "@commands NAME" (newest first) and "@panel"
+     * (date, player, action, target, status, message; newest first).
+     */
+    private void renderGm(String text) {
+        SpannableStringBuilder b = new SpannableStringBuilder();
+        java.util.List<String> names = new java.util.ArrayList<>();
+        String section = "";
+        int rows = 0;
+        for (String line : text.split("\n")) {
+            if (line.startsWith("@")) {
+                section = line;
+                String head = line.equals("@staff") ? null
+                        : line.equals("@files") ? "Arquivos em data/logs"
+                        : line.startsWith("@commands ") ? "Comandos de " + line.substring(10) + " (mais novo primeiro)"
+                        : line.equals("@panel") ? "Painel de admin (mais novo primeiro)" : line;
+                if (head != null) {
+                    if (b.length() > 0) {
+                        b.append('\n');
+                    }
+                    int st = b.length();
+                    b.append(head).append('\n');
+                    b.setSpan(new ForegroundColorSpan(ui.goldLight), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    b.setSpan(new StyleSpan(Typeface.BOLD), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                }
+                continue;
+            }
+            if (line.trim().isEmpty()) {
+                continue;
+            }
+            if (section.equals("@staff")) {
+                names.add(line.trim());
+            } else if (section.equals("@panel")) {
+                String[] p = line.split("\t");
+                int st = b.length();
+                if (p.length >= 6) {
+                    b.append(p[0]).append("  ").append(p[1]).append("  ").append(p[2])
+                            .append(p[3].isEmpty() ? "" : " → " + p[3]).append("  [").append(p[4]).append("] ")
+                            .append(p[5]).append('\n');
+                    if (!p[4].equals("ok")) {
+                        b.setSpan(new ForegroundColorSpan(ui.ember), st, b.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+                    }
+                } else {
+                    b.append(line).append('\n');
+                }
+                rows++;
+            } else if (section.equals("@files")) {
+                String[] p = line.split("\t");
+                b.append(p.length >= 3 ? p[0] + "  " + p[2] + "  (" + (UpdateInfo.num(p[1]) / 1024) + " KB)" : line).append('\n');
+            } else {
+                b.append(line).append('\n');
+                rows++;
+            }
+        }
+        staffNames = names.toArray(new String[0]);
+        out.setText(b);
+        info.setText(rows + " linhas" + (staff.isEmpty() ? " de todo o staff" : " de " + staff)
+                + "  ·  " + staffNames.length + " com log");
+        outScroll.post(() -> outScroll.fullScroll(View.FOCUS_UP));
     }
 
     /** Error lines in ember, warnings in gold. */

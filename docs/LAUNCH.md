@@ -1188,3 +1188,30 @@ in the dry run report a change, copy the map aside before the update (`cp -p`).
 server stays down after the next daily save:
 `rm /run/systemd/system/chaos-server.service.d/50-chaos-update.conf && systemctl daemon-reload`, then put the checkout back
 (`git -C /opt/chaos/repo checkout --detach <the deployed commit in /var/lib/chaos/deploy/state>`).
+
+### Updating the kit server (admin app)
+
+The beta VPS runs the Linux kit (`/opt/chaos-trial`, unit `chaos-server`, its own MariaDB inside the unit) with the
+checkout `/opt/chaos/repo` following a branch (`main`), and its engine comes from the `winpkg-N` releases, not from a
+local build. For that layout the admin app's Painel > Atualizar servidor runs `server/deploy/chaos_kit_update.sh`
+through `chaos-ctl.sh update-check`, `update-apply`, `update-rollback` (docs/ADMIN_APP.md, "Atualizar servidor"). By
+hand, as root:
+
+```
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-check            # what is new: commits, releases, client, downloads
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-apply            # in the background; --no-client --no-downloads --no-site
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-log 100          # progress: STEP n/9 lines, the last line RESULT ...
+/opt/chaos/repo/server/deploy/chaos-ctl.sh update-rollback         # back to before the last apply
+```
+
+It does what was done by hand before: fetch and check out the branch; when a newer release exists, download
+`CindersOfChaos-Server-Linux.tar.gz` (https, size and SHA-256 against GitHub's), take out `server/tfs`, `ldd` it, back
+up the old one as `tfs.antes-N`; a backup first (`backup.sh`, server up); `install_all.py --no-sql` with the server
+stopped; then the server started (that starts the kit's database), `install_all.py --only sql`, a restart, and the
+wait for `Server Online`. A failed start rolls back the engine, `config.lua`, `data/` and the commit by itself. The
+XP rates of `config.lua` (the `experienceStages` table and the `rate*` lines) are kept across `install_all.py`, whose
+lategame step would put the release's table back. After the server: the signed client update of the release
+(`publish_client_update.sh`, when newer than the live one), the site's client downloads (`CHAOS_DL_DIR`, with
+`NAME.prev`, `NAME.sha256` and `downloads.json` for the downloads page) and `website/install_site.sh` when `website/`
+changed. Settings: `server/deploy/ctl.conf.trial.example`. Test: `server/deploy/chaos_kit_update_test.py` (stubs, not a
+real systemd or GitHub: watch the first live run).

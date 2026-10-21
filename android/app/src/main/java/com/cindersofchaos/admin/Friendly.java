@@ -159,6 +159,45 @@ final class Friendly {
         if (t.startsWith("started (update") || t.startsWith("started (rollback")) {
             return "Começou. Acompanhe em Logs, Atualização.";
         }
+        if (t.startsWith("started (site-install")) {
+            return "Começou a reinstalar o site. Acompanhe em Logs, Atualização, log do site.";
+        }
+        if (t.startsWith("started (publish-update")) {
+            return "Começou a publicar o update do client. Acompanhe em Logs, Atualização, log da publicação.";
+        }
+        if (t.startsWith("kit-not-found")) {
+            return "Essa função é do kit Linux (/opt/chaos-trial). Escreva CHAOS_KIT_DIR=/opt/chaos-trial em "
+                    + "/etc/chaos/ctl.conf.";
+        }
+        if (t.startsWith("kit-layout")) {
+            return "No kit Linux a versão vem do GitHub: use Atualizar servidor no Painel.";
+        }
+        if (t.startsWith("update-running")) {
+            return "Já tem uma atualização ou volta de versão rodando. Acompanhe em Logs, Atualização.";
+        }
+        if (t.startsWith("account-exists")) {
+            return "Essa conta já existe. Para trocar a senha, use Trocar senha.";
+        }
+        if (t.startsWith("account-not-found")) {
+            return "Não existe conta com esse nome.";
+        }
+        if (t.startsWith("database-down")) {
+            return "O banco não respondeu. O servidor está ligado? (no kit o banco liga junto com o servidor)";
+        }
+        if (t.startsWith("the password must")) {
+            return "A senha precisa ter de 6 a 64 caracteres, numa linha só.";
+        }
+        Matcher pm = Pattern.compile("^account (\\S+) created").matcher(t);
+        if (pm.find()) {
+            return "Conta " + pm.group(1) + " criada. O personagem é criado no client ou no site.";
+        }
+        pm = Pattern.compile("^password of (\\S+) changed").matcher(t);
+        if (pm.find()) {
+            return "Senha da conta " + pm.group(1) + " trocada.";
+        }
+        if (t.contains("applies at the next restart")) {
+            return "Gravado no config.lua. Vale no próximo reinício do servidor.";
+        }
         if (t.startsWith("N must be a number")) {
             return "O número de linhas precisa ser um número.";
         }

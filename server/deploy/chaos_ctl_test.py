@@ -13,6 +13,12 @@ start / stop / restart with exit 5 and "unit-not-found". With a live engine pid 
 unit's main process). CHAOS_DB_SOCKET and CHAOS_MYSQL reach the database client;
 a missing client exits 127 with "mysql-not-found".
 
+The admin commands of 2026-10-21: xp-rate (show, set with and without restart, reset, refusals), backups, health,
+cleanup (lists, then removes only old work folders, srvNN and engine backups beyond the newest 2), account-create /
+account-password (the password from stdin, a PBKDF2 hash to the database client on stdin, never on a command line),
+gm-logs (the command log of one staff member newest first, the audit rows, no link out of the folder, a quote
+escaped), and the kit's update-check / update-apply / update-status refusals and settings.
+
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import os
@@ -40,7 +46,11 @@ MYSQL = '''#!/usr/bin/env bash
 echo "$(basename "$0") $*" >> "$STUB/calls"
 # where it connects (never the password line)
 grep -E '^(socket|host|port)=' "${1#--defaults-extra-file=}" | sed 's/^/  cnf /' >> "$STUB/calls"
+case " $* " in *" -e "*) ;; *) cat > "$STUB/stdin" ;; esac
 case "$*" in
+  *"FROM accounts"*) echo "${STUB_ACCOUNTS:-0}" ;;
+  *"DISTINCT player_name"*) echo Gma; echo "Bad;Name" ;;
+  *chaos_admin_log*) printf '2026-10-21 10:00\\tGma\\tplayers.kick\\tBob\\tok\\tdone\\n' ;;
   *COUNT*) echo 7 ;;
   *players_online*) printf 'Bob\\t120\\t3\\n' ;;
 esac
@@ -354,8 +364,177 @@ def main():
             f.write('%d\n' % os.getpid())
         out, _ = status({'CHAOS_PID_FILE': pidf})
         check(out.get('pid') == '', 'a pid that is not the engine (tfs) is not used')
+    test_admin_commands()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
+
+
+def test_admin_commands():
+    """xp-rate, backups, health, cleanup, accounts and the refusals of the kit's update commands"""
+    import shutil
+    repo_root = os.path.dirname(os.path.dirname(HERE))
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        server = os.path.join(tmp, 'server')
+        repo = os.path.join(tmp, 'repo')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(repo, 'server', 'deploy'))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        shutil.copy(os.path.join(HERE, 'chaos_config_rates.py'), os.path.join(repo, 'server', 'deploy'))
+        shutil.copy(os.path.join(repo_root, 'server', 'tools', 'late_game.py'), os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        sys.path.insert(0, os.path.join(repo_root, 'server', 'tools'))
+        import late_game
+        os.makedirs(os.path.join(server, 'data'))
+        cfg = os.path.join(server, 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('rateExp = 5\npasswordHashIterations = 2000\n'
+                    + late_game.stages_lua(late_game.STAGES, late_game.STAGES_MARK) + '\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        bdir = os.path.join(tmp, 'backups')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\nCHAOS_BACKUP_DIR=%s\n' % bdir)
+        work = os.path.join(tmp, 'work')
+        os.makedirs(work)
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql',
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_WORK_DIR=work,
+                   CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'), CHAOS_LOG=os.path.join(tmp, 'no.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET', 'CHAOS_BACKUP_DIR'):
+            env.pop(k, None)
+
+        def run(*args, stdin=None, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), input=stdin,
+                                  capture_output=True, text=True)
+
+        def calls():
+            p = os.path.join(stub, 'calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        r = run('xp-rate')
+        check(r.returncode == 0 and 'xp=x1' in r.stdout and 'rateExp=5' in r.stdout,
+              'xp-rate: shows x1: ' + r.stdout + r.stderr)
+        r = run('xp-rate', 'set', '10')
+        check(r.returncode == 0 and 'next restart' in r.stdout, 'xp-rate set 10: ' + r.stdout + r.stderr)
+        check('xp=x10' in run('xp-rate', 'show').stdout, 'xp-rate: x10 after set')
+        check('systemctl restart' not in calls(), 'xp-rate set without restart does not restart')
+        r = run('xp-rate', 'reset', 'restart')
+        check(r.returncode == 0 and 'systemctl restart chaos-server' in calls(), 'xp-rate reset restart: ' + r.stderr)
+        check('xp=x1' in run('xp-rate', 'show').stdout, 'xp-rate: x1 after reset')
+        for bad in (('xp-rate', 'set', '0'), ('xp-rate', 'set', '101'), ('xp-rate', 'set', '5;x'),
+                    ('xp-rate', 'set', '5', 'now'), ('xp-rate', 'bogus'), ('xp-rate', 'reset', 'x')):
+            check(run(*bad).returncode != 0, 'xp-rate refuses %r' % (bad,))
+
+        os.makedirs(os.path.join(bdir, 'db'))
+        with open(os.path.join(bdir, 'db', 'chaos-db-chaos-1.sql.gz'), 'w') as f:
+            f.write('x')
+        r = run('backups')
+        check(r.returncode == 0 and 'dir=' + bdir in r.stdout and 'chaos-db-chaos-1.sql.gz' in r.stdout,
+              'backups lists the dumps: ' + r.stdout + r.stderr)
+
+        # cleanup: old work folders, srvNN, engine backups beyond the newest 2
+        old = os.path.join(work, 'chaos-publish.abc')
+        os.makedirs(old)
+        os.utime(old, (time.time() - 3 * 86400,) * 2)
+        fresh = os.path.join(work, 'chaos-kit-update.new')
+        os.makedirs(fresh)
+        os.makedirs(os.path.join(work, 'srv46'))
+        os.makedirs(os.path.join(work, 'keepme'))
+        for i, n in enumerate((44, 45, 46, 47)):
+            p = os.path.join(server, 'tfs.antes-%d' % n)
+            with open(p, 'w') as f:
+                f.write('e')
+            os.utime(p, (time.time() - (10 - i) * 3600,) * 2)
+        r = run('health')
+        out = dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
+        check(r.returncode == 0 and out.get('database') == 'ok' and out.get('cleanup', '').startswith('4 item'),
+              'health: database and cleanup count: ' + r.stdout + r.stderr)
+        check('web' in out and 'disk' in out, 'health: web and disk lines')
+        r = run('cleanup')
+        check(r.returncode == 0 and r.stdout.count('would remove') == 4 and os.path.exists(old),
+              'cleanup lists only: ' + r.stdout)
+        r = run('cleanup', '--yes')
+        check(r.returncode == 0 and not os.path.exists(old) and not os.path.exists(os.path.join(work, 'srv46')),
+              'cleanup --yes removes: ' + r.stdout + r.stderr)
+        check(os.path.exists(fresh) and os.path.exists(os.path.join(work, 'keepme')), 'cleanup keeps fresh and other folders')
+        left = sorted(n for n in os.listdir(server) if n.startswith('tfs.antes-'))
+        check(left == ['tfs.antes-46', 'tfs.antes-47'], 'cleanup keeps the newest two engine backups: %r' % left)
+        check(run('cleanup', 'now').returncode != 0, 'cleanup refuses other arguments')
+
+        # accounts: the password from stdin, a PBKDF2 hash to the database on stdin, never on a command line
+        r = run('account-create', 'Newbie1', stdin='hunter22secret\n')
+        check(r.returncode == 0 and 'created' in r.stdout, 'account-create: ' + r.stdout + r.stderr)
+        with open(os.path.join(stub, 'stdin')) as f:
+            sql = f.read()
+        check(sql.startswith("INSERT INTO accounts (name, password, type, creation) VALUES ('Newbie1', "
+                             "'pbkdf2-sha256$2000$"), 'account-create: a PBKDF2 hash with the configured iterations: ' + sql)
+        check('hunter22secret' not in calls() + sql, 'the password is never on a command line or in the SQL')
+        r = run('account-create', 'Newbie1', stdin='hunter22secret\n', extra={'STUB_ACCOUNTS': '1'})
+        check(r.returncode != 0 and 'account-exists' in r.stderr, 'account-create: an existing account is refused')
+        r = run('account-password', 'Newbie1', stdin='another-pass\n', extra={'STUB_ACCOUNTS': '1'})
+        with open(os.path.join(stub, 'stdin')) as f:
+            sql = f.read()
+        check(r.returncode == 0 and "UPDATE accounts SET password = 'pbkdf2-sha256$" in sql,
+              'account-password: ' + r.stdout + r.stderr)
+        check(run('account-password', 'Ghost', stdin='another-pass\n').returncode != 0, 'account-password: no such account')
+        for bad, pw in ((('account-create', "a'b"), 'hunter22'), (('account-create', 'ab'), 'hunter22'),
+                        (('account-create', 'Okname'), 'short'), (('account-create', 'Okname'), 'x' * 70),
+                        (('account-create', 'Okname', 'extra'), 'hunter22'), (('account-create', 'Okname'), '')):
+            check(run(*bad, stdin=pw + '\n').returncode != 0, 'account refuses %r / %d characters' % (bad, len(pw)))
+
+        # gm-logs: the base command logs and the admin panel's audit rows, a validated name, no other file
+        logs = os.path.join(server, 'data', 'logs')
+        os.makedirs(logs)
+        with open(os.path.join(logs, 'Gm Ana commands.log'), 'w') as f:
+            f.write(''.join('[21/10/2026 10:%02d] Gm Ana: /i %d\n' % (i, i) for i in range(10)))
+        with open(os.path.join(tmp, 'secret.txt'), 'w') as f:
+            f.write('do not show\n')
+        os.symlink(os.path.join(tmp, 'secret.txt'), os.path.join(logs, 'Evil commands.log'))
+        r = run('gm-logs', '3', 'Gm Ana')
+        out = r.stdout
+        check(r.returncode == 0 and '@staff\nGm Ana\nGma\n' in out, 'gm-logs: staff from the files and the table: ' + out + r.stderr)
+        check('Bad;Name' not in out, 'gm-logs: odd names from the table are dropped')
+        check('@commands Gm Ana\n[21/10/2026 10:09] Gm Ana: /i 9\n[21/10/2026 10:08]' in out and '10:06' not in out,
+              'gm-logs: the newest 3 lines, newest first: ' + out)
+        check("@panel\n2026-10-21 10:00\tGma\tplayers.kick" in out and "WHERE player_name = 'Gm Ana'" in calls(),
+              'gm-logs: the audit rows of that player')
+        check('Gm Ana commands.log' in out.split('@files')[1], 'gm-logs: the file list')
+        r = run('gm-logs', 'Evil')
+        check('do not show' not in r.stdout, 'gm-logs: a link out of the folder is not read')
+        r = run('gm-logs', "O'Neil")
+        check(r.returncode == 0 and "player_name = 'O''Neil'" in calls(), 'gm-logs: a quote in the name is escaped')
+        for bad in (('gm-logs', '../x'), ('gm-logs', 'a/b'), ('gm-logs', 'Gm', 'Two'), ('gm-logs', 'x;y')):
+            check(run(*bad).returncode != 0, 'gm-logs refuses %r' % (bad,))
+        r = run('gm-logs')
+        check(r.returncode == 0 and 'LIMIT 60' in calls() and '@panel' in r.stdout, 'gm-logs: all staff, 60 rows')
+
+        # the kit's update commands: only for the kit, only whitelisted options
+        r = run('update-check')
+        check(r.returncode != 0 and 'kit-not-found' in r.stderr, 'update-check without a kit says so: ' + r.stderr)
+        kit = {'CHAOS_KIT_DIR': tmp}
+        kup = os.path.join(repo, 'server', 'deploy', 'chaos_kit_update.sh')
+        with open(kup, 'w') as f:
+            f.write('#!/usr/bin/env bash\necho "kit $* branch=${CHAOS_UPDATE_BRANCH:-} server=$CHAOS_SERVER_DIR"\n')
+        os.chmod(kup, 0o755)
+        r = run('update-check', extra=dict(kit, CHAOS_UPDATE_BRANCH='beta'))
+        check(r.returncode == 0 and 'kit check branch=beta server=' + server in r.stdout,
+              'update-check runs the kit script: ' + r.stdout + r.stderr)
+        for bad in (('update-apply', '--yes'), ('update-apply', ';reboot'), ('update-check', 'x'),
+                    ('update-rollback', 'x')):
+            check(run(*bad, extra=kit).returncode != 0, 'refused: %r' % (bad,))
+        r = run('update', 'v1', 'now', extra=kit)
+        check(r.returncode != 0 and 'kit-layout' in r.stderr, 'update TAG on the kit points to update-apply')
+        r = run('rollback', 'at-save', extra=kit)
+        check(r.returncode != 0 and 'kit-layout' in r.stderr, 'rollback at-save on the kit is refused')
+        r = run('update-status', extra=dict(kit, CHAOS_KIT_STATE=os.path.join(tmp, 'kstate')))
+        check(r.returncode == 0 and 'running=no' in r.stdout and 'status=' in r.stdout,
+              'update-status: ' + r.stdout + r.stderr)
+        r = run('site-install', extra={'CHAOS_SITE_ENV': os.path.join(tmp, 'nope.env')})
+        check(r.returncode != 0, 'site-install without a site settings file is refused')
 
 
 if __name__ == '__main__':

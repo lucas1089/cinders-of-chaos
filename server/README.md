@@ -15019,6 +15019,30 @@ script re-runs itself with `sudo -n`, which drops the environment.
   own to sign. Tests: `chaos_ctl_test.py` (refusals, the arguments and settings reaching a stub) and
   `publish_client_update_test.py` (the real script on a synthetic package with a throwaway key: the manifest verifies,
   version and min_package, unsafe zips and key mismatches refused, the web server check against a local HTTP server).
+- Kit update from GitHub (owner, 2026-10-21: "fetch GitHub and, if newer, apply the update and restart; also the client
+  and the site's downloads"): `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site]`,
+  `update-status`, `update-rollback` run `server/deploy/chaos_kit_update.sh` (check / apply / rollback; apply and
+  rollback in the background into `update-log`, one at a time by a lock in `CHAOS_KIT_STATE`). On the kit
+  (`CHAOS_KIT_DIR`, or `CHAOS_ROOT` holding `start-server.sh`) the old `update TAG` is refused and `rollback now` runs
+  `update-rollback`. Order: backup with the server up, `install_all.py --no-sql` with it stopped, start (the kit's
+  MariaDB runs inside the unit), `install_all.py --only sql`, restart, `Server Online` within `CHAOS_BOOT_TIMEOUT`, else
+  an automatic rollback (engine `tfs.antes-N`, `config.lua` and `data/` from the backup's archive, previous commit). The
+  XP rates survive `install_all.py` (`server/deploy/chaos_config_rates.py save` / `restore`: the `experienceStages`
+  table and `rateExp`, `rateSkill`, `rateLoot`, `rateMagic`, `rateSpawn`). Then the client update, the client
+  downloads of the site (`CHAOS_DL_DIR`: `.prev`, `.sha256`, `downloads.json` read by the downloads page) and
+  `website/install_site.sh`. Details: docs/ADMIN_APP.md "Atualizar servidor", docs/LAUNCH.md "Updating the kit server".
+  New ctl.conf keys: `CHAOS_KIT_DIR`, `CHAOS_UPDATE_BRANCH` (main), `CHAOS_RELEASE_REPO`, `CHAOS_KIT_STATE`,
+  `CHAOS_BOOT_TIMEOUT`, `CHAOS_DL_DIR`, `CHAOS_SITE_ENV`, `CHAOS_SITE_LOG`. With `CHAOS_KIT_DIR` set, `CHAOS_ROOT`,
+  `CHAOS_ENV` and `CHAOS_LOG` default to the kit's (`KIT`, `KIT/chaos.env`, `KIT/logs/server.log`).
+- Frequent commands (2026-10-21): `xp-rate [show | set N | reset] [restart]` (the release's stages x N, 1..100, backup
+  `config.lua.before-xp-<time>`), `backups` (the newest dumps and data archives), `site-install` / `site-log`, `health`
+  (unit, engine, database, web units, disk, memory, cleanup size), `cleanup [--yes]` (a day old update and publish work
+  folders and `srvNN` folders in `CHAOS_WORK_DIR`, `tfs.antes-*` beyond the newest 2, `config.lua.before-*` beyond the
+  newest 5), `account-create NAME` / `account-password NAME` (the password on stdin, a PBKDF2 hash with config.lua's
+  `passwordHashIterations`, the SQL to the client on stdin: never on a command line), `gm-logs [N] [PLAYER]` (the base
+  server's `data/logs/<name> commands.log`, newest first, a link out of the folder is not read; the admin panel's
+  `chaos_admin_log` rows). Coins and groups stay in the in-game panel (`store.give_coins`, `players.set_group`). Tests:
+  `chaos_ctl_test.py`, `chaos_kit_update_test.py`.
 - `players` prints the class name (`VOCATIONS` in the script: every id of `docs/CLASSES.md`, 0 None; the retired 2, 6 and
   9 print `vocation N`); `vocations` lists the map. The test checks it against `docs/CLASSES.md` and
   `server/data/XML/chaos_vocations*.xml`.

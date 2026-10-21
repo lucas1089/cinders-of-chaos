@@ -404,6 +404,11 @@ jobs:
           shellcheck server/deploy/chaos-ctl.sh
           python3 -I server/deploy/chaos_ctl_test.py
 
+      - name: Kit server update (chaos_kit_update.sh with a fake repo, releases, systemctl and database; rates, rollback)
+        run: |
+          shellcheck server/deploy/chaos_kit_update.sh
+          python3 -I server/deploy/chaos_kit_update_test.py
+
       - name: Client update publisher (publish_client_update.sh on a synthetic package, throwaway key)
         run: |
           shellcheck server/deploy/publish_client_update.sh
