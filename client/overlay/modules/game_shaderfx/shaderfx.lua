@@ -90,7 +90,7 @@ local function refreshFrames()
   local inv = modules.game_inventory
   local panel = inv and inv.getInventoryPanel and inv.getInventoryPanel()
   if panel then
-    for slot = 1, 10 do
+    for _, slot in ipairs({1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13}) do -- 13: the badge slot (base patch 0113)
       local w = panel:getChildById('slot' .. slot)
       if w then pcall(refresh, w) end
     end

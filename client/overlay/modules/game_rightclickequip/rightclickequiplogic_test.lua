@@ -70,6 +70,8 @@ eq(L.inContainerOrInventory({ x = 0xFFFF, y = 6, z = 0 }), true, 'weapon hand')
 eq(L.inContainerOrInventory({ x = 0xFFFF, y = 0x40 + 2, z = 7 }), true, 'container 2, slot 7')
 eq(L.inContainerOrInventory({ x = 0xFFFF, y = 0, z = 0 }), false, 'the hotkey position')
 eq(L.inContainerOrInventory({ x = 0xFFFF, y = 11, z = 0 }), false, 'no slot 11 in this protocol')
+eq(L.inContainerOrInventory({ x = 0xFFFF, y = 13, z = 0 }), true, 'the badge slot (base patch 0113)')
+eq(L.inContainerOrInventory({ x = 0xFFFF, y = 12, z = 0 }), false, 'no deck slot')
 eq(L.inContainerOrInventory({ x = 1000, y = 1000, z = 7 }), false, 'on the map')
 eq(L.inContainerOrInventory(nil), false, 'no position')
 

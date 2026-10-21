@@ -1662,6 +1662,36 @@ equal):
 - Quiver in the off-hand (2026-10-11, engine src-patch 0023): bows and crossbows stay two-handed, so the two-handed
   factor of "Weapon styles", the keystones and the kits are unchanged and the table above stands. No number changed.
 
+### Badge slot (replaces the second ring, 2026-10-21; computed, not measured in game)
+
+The badge slot (server/README.md "Badge slot") took the second ring slot's place: one ring and one badge. What a
+character loses: the second ring's rolls and its stock ring (a second skill ring +4, a second time ring +60 speed). What
+it gains: the badge's base stats, plus its own rarity rolls. A badge is gear of kind "other": it rolls the engine
+modifier types (absorb, skill, critical, leech; T8 absorb 10-14, leech 7-10, critical 8-10, as a ring) and the Chaos
+modifiers open to every kind, not the jewel-only ones. Those reach their cap at tier 8 with one ring anyway
+(`tests/archery_test.lua`, the jewel budget), so at tier 8 no ceiling falls.
+
+The strongest badge of each line (base items.xml; critical and leech chances at two thirds, `patch_base_events.py`):
+
+| Badge | Armour | Absorb | Other |
+|---|---|---|---|
+| Blazing Exiled Spirit | 5 | death 8% | magic level +4, mana +150, mana leech 5% chance / 5% |
+| Blazing Fury | 5 | energy 8% | sword, axe, club +4, health +150, life leech 5% / 5% |
+| Eternal Moon | 5 | - | mining, woodcutting, herbalist, crafting +5 (engine skills; our professions do not read them); a container of 10 |
+| Eternal Night Seeker | 5 | every element, life and mana drain 4% | health and mana +300, critical 10% chance / 15% |
+| Blazing Earthshade | 5 | fire, energy, ice, holy 12% | - |
+| Eternal Reborn | 5 | physical 18% | health and mana +300 |
+| Blazing Chaosfiend | 5 | - | health +2800, mana +400 |
+| Blazing Veins | 5 | fire 10% | distance +4, life leech 5% / 5% |
+| Eternal Daybreak | 5 | - | life and mana leech 10% chance / 10%, critical 7% / 8% |
+
+Against a second ring: the strongest absorb (Reborn, 18% physical) is below the might ring's 20% physical and magic
+(one at a time). The Daybreak's leech and critical match one T8 roll of each. The Chaosfiend's 2800 health is the
+largest single number; it weighs most at low level. Absorbs from the badge count
+toward the 75 percent ceiling per type (src-patch 0049, `Player::blockHit` loops slots 1-13); leech and critical add to
+the engine sums like any item. The base allows one badge (its storage 249578; one slot anyway). Decision: no change to
+the base numbers; a badge is about one ring's rolls plus a tier's base stats, and the line choice is a build choice.
+
 ### Second ring (the ammunition slot as a second ring slot, 2026-10-11)
 
 Every character may wear two rings (server/README.md "Second ring slot"). The Chaos modifiers a ring may roll are summed

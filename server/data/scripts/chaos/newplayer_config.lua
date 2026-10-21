@@ -9,7 +9,7 @@
 -- rename vocations without touching this file. Other scripts extend the tables through ChaosNewPlayer.setKit /
 -- ChaosNewPlayer.kitFor (newplayer_core.lua).
 --
--- Slots: head, necklace, backpack, armor, right (the shield hand), left (the weapon hand), legs, feet, ring, ammo (the second ring slot).
+-- Slots: head, necklace, backpack, armor, right (the shield hand), left (the weapon hand), legs, feet, ring, badge (the badge slot, engine patch 0058).
 -- An equip entry whose slot is taken goes into the kit backpack instead. `minLevel` + `fallback`: below minLevel the
 -- fallback is equipped and the real weapon goes into the backpack (a wand of level 7 is no use at level 1).
 -- Checked in the base server's weapons.xml / movements.xml: every item below can be worn or wielded by its classes at

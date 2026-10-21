@@ -89,7 +89,7 @@ end
 
 local function equippedIds(player)
 	local ids = {}
-	for slot = T.SLOT_FIRST, T.SLOT_LAST do
+	for _, slot in ipairs(T.SLOTS) do
 		local item = player:getSlotItem(slot)
 		if item then
 			ids[item:getId()] = true

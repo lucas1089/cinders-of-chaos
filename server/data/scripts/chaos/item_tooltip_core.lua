@@ -82,7 +82,13 @@ end
 -- ---------------------------------------------------------------------------------------------------------------
 -- positions: what a client may ask about
 -- ---------------------------------------------------------------------------------------------------------------
-T.SLOT_FIRST, T.SLOT_LAST = 1, 10 -- head .. the second ring slot (10, the old ammunition slot): the inventory the client shows
+-- the inventory the client shows: head .. ring (1-9) and the badge slot (13, engine patch 0058). Slot 10 (the old
+-- ammunition slot, a second ring slot until 0058) takes nothing; 11 is the store inbox, 12 and 14-16 are retired.
+T.SLOTS = {1, 2, 3, 4, 5, 6, 7, 8, 9, 13}
+T.SLOT_SET = {}
+for _, s in ipairs(T.SLOTS) do
+	T.SLOT_SET[s] = true
+end
 T.QUIVER_NOTE = "Works only while you hold a bow or crossbow."
 
 -- a position from the client -> {kind = "slot", slot} | {kind = "container", cid, index} | {kind = "map", x, y, z,
@@ -102,7 +108,7 @@ function T.decodePos(p)
 			end
 			return {kind = "container", cid = y - 0x40, index = z}
 		end
-		if y >= T.SLOT_FIRST and y <= T.SLOT_LAST and z == 0 then
+		if T.SLOT_SET[y] and z == 0 then
 			return {kind = "slot", slot = y}
 		end
 		return nil
@@ -187,8 +193,8 @@ end
 -- slots
 -- ---------------------------------------------------------------------------------------------------------------
 local SLOTP = {head = 1, necklace = 2, backpack = 4, armor = 8, right = 16, left = 32, legs = 64, feet = 128, ring = 256,
-	twohand = 2048}
-local INV = {head = 1, necklace = 2, backpack = 3, armor = 4, right = 5, left = 6, legs = 7, feet = 8, ring = 9, ring2 = 10}
+	twohand = 2048, deck = 4096, badge = 8192}
+local INV = {head = 1, necklace = 2, backpack = 3, armor = 4, right = 5, left = 6, legs = 7, feet = 8, ring = 9, badge = 13}
 
 local function hasBit(value, b)
 	return floor((value or 0) / b) % 2 == 1
@@ -214,12 +220,12 @@ function T.slotsOf(slotPosition, kind)
 	}
 	for _, o in ipairs(order) do
 		if hasBit(sp, o[1]) then
-			-- a ring is worn in either ring slot (slot 10 is the second ring slot, engine patch 0023): compared with both
-			if o[2] == INV.ring then
-				return {INV.ring, INV.ring2}, o[3]
-			end
 			return {o[2]}, o[3]
 		end
+	end
+	-- a badge (slotType "badge", engine patch 0058) in the badge slot; a deck carries the deck bit and is worn nowhere
+	if hasBit(sp, SLOTP.badge) and not hasBit(sp, SLOTP.deck) then
+		return {INV.badge}, "Badge"
 	end
 	return {}, nil
 end

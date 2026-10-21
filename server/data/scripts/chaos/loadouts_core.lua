@@ -706,20 +706,21 @@ function C.encodeGear(set, slots)
 	return table.concat(parts, "|")
 end
 
--- a set saved before the quiver went to the off-hand (engine patch 0023: slot 10, the old ammunition slot, is the second
--- ring slot now): a quiver in slot 10 is the set's off-hand item (slot 5) when the set leaves that hand empty, and
--- slot 10 is no longer part of the set (a ring worn there stays). isQuiver(id): ChaosArchery.isQuiverId by default.
-C.OFF_HAND, C.SECOND_RING = 5, 10
+-- a set saved before the quiver went to the off-hand (engine patch 0023) or while slot 10, the old ammunition slot, was
+-- the second ring slot (0023 until 0058): a quiver in slot 10 is the set's off-hand item (slot 5) when the set leaves
+-- that hand empty. Slot 10 is never part of a set any more (it takes nothing since 0058): a ring saved there is
+-- dropped from the set. isQuiver(id): ChaosArchery.isQuiverId by default.
+C.OFF_HAND, C.AMMO_SLOT = 5, 10
 function C.legacyGear(set, isQuiver)
 	isQuiver = isQuiver or (ChaosArchery and ChaosArchery.isQuiverId)
-	local q = set[C.SECOND_RING]
+	local q = set[C.AMMO_SLOT]
 	if q and not q.empty and isQuiver and isQuiver(q.id) then
 		local off = set[C.OFF_HAND]
 		if off == nil or off.empty then
 			set[C.OFF_HAND] = q
 		end
-		set[C.SECOND_RING] = nil
 	end
+	set[C.AMMO_SLOT] = nil
 	return set
 end
 

@@ -187,9 +187,9 @@ function A.quiverActive(handKind, quiverId)
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
--- the hands: the quiver is worn in the off-hand (the shield hand) next to a bow or crossbow; the ammunition slot is
--- a second ring slot (rings only). The engine enforces it (src-patch 0023, Player::queryAdd); this mirrors the rule
--- for the login check (archery.lua) and the tests.
+-- the hands: the quiver is worn in the off-hand (the shield hand) next to a bow or crossbow; the ammunition slot takes
+-- nothing (src-patch 0058; 0023 had made it a second ring slot). The engine enforces it (Player::queryAdd); this
+-- mirrors the rule for the login check (archery.lua) and the tests.
 -- ---------------------------------------------------------------------------------------------------------------
 A.WEAPON_QUIVER = 8 -- items.xml weaponType "quiver" (0023 registers the Lua constant WEAPON_QUIVER with this value)
 
@@ -237,10 +237,10 @@ function A.handsAllowed(main, off)
 	return true
 end
 
--- the ammunition slot is the second ring slot: it takes a ring (kind of A.handKind) and nothing else
+-- the ammunition slot takes nothing (engine patch 0058; it was the second ring slot of 0023 before)
 function A.slotAllowed(slot, kind)
 	if num(slot) == num(CONST_SLOT_AMMO or 10) then
-		return kind == "ring"
+		return false
 	end
 	return true
 end
@@ -253,12 +253,11 @@ function A.isMightRing(it)
 end
 
 -- the login check: the engine loads a character without asking Player::queryAdd, so a quiver of before (in the
--- ammunition slot, now the second ring slot), anything else there that is no ring, a second might ring, or a pair of
--- hands the rules refuse stays until it is moved. A ring there stays, unless it is a might ring and the ring slot
--- holds one too (the one in the ring slot stays). s = {main, off, ammo, ringMight, ammoMight}: the A.handKind of what
--- the weapon hand, the shield hand and the ammunition slot hold (nil = empty); ringMight / ammoMight: the ring slot /
--- the ammunition slot holds a might ring. Returns the moves in order: {from = "main" | "off" | "ammo", to = "off"
--- (the shield hand) | "stow" (backpack, else inbox), why = "might" for the second might ring}. Nothing to do: {}.
+-- ammunition slot), a ring worn there while it was the second ring slot (0023 until 0058), anything else there, or a
+-- pair of hands the rules refuse stays until it is moved. s = {main, off, ammo}: the A.handKind of what the weapon
+-- hand, the shield hand and the ammunition slot hold (nil = empty). Returns the moves in order: {from = "main" |
+-- "off" | "ammo", to = "off" (the shield hand) | "stow" (backpack, else inbox), why = "ring" for a ring of the second
+-- ring slot}. Nothing to do: {}.
 function A.loginPlan(s)
 	local steps = {}
 	local main, off = s.main, s.off
@@ -270,14 +269,14 @@ function A.loginPlan(s)
 		steps[#steps + 1] = {from = "off", to = "stow"}
 		off = nil
 	end
-	if s.ammo ~= nil and s.ammo ~= "ring" then
+	if s.ammo == "ring" then
+		steps[#steps + 1] = {from = "ammo", to = "stow", why = "ring"}
+	elseif s.ammo ~= nil then
 		if s.ammo == "quiver" and off == nil and A.handsAllowed(main, "quiver") then
 			steps[#steps + 1] = {from = "ammo", to = "off"}
 		else
 			steps[#steps + 1] = {from = "ammo", to = "stow"}
 		end
-	elseif s.ammo == "ring" and s.ammoMight and s.ringMight then
-		steps[#steps + 1] = {from = "ammo", to = "stow", why = "might"}
 	end
 	return steps
 end

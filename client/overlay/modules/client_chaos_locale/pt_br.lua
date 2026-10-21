@@ -2532,7 +2532,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["not yet"] = "ainda não",
   ["Flawless tier %d (no death): %s (+%d)"] = "Flawless tier %d (sem morrer): %s (+%d)",
   ["Swift tier %d (sealed within %d:%02d): %s (+%d)"] = "Swift tier %d (selado em até %d:%02d): %s (+%d)",
-  -- game_ringslot/ringslotlogic.lua
+  -- game_badgeslot/badgeslotlogic.lua
   ["Soul Points: Needed to cast spells that create items such as runes\nor food. They can be regained by killing monsters,\nsleeping in a bed, or in resting areas provided you have reached\nthe needed reward streak."] = "Soul Points: necessários para lançar magias que criam itens, como runas\nou comida. Voltam matando monstros,\ndormindo em uma cama ou em áreas de descanso, desde que você tenha\nalcançado a sequência de recompensas necessária.",
   -- game_season/journey.lua
   ["A piece of the %s set"] = "Uma peça do conjunto %s",

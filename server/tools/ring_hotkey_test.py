@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Live test of the equip hotkey and the two ring slots (src-patch 0023, server/README.md "Second ring slot").
+"""Live test of the equip hotkey and the ring slot (src-patches 0023, 0024, 0058; server/README.md "Badge slot").
 
 TEST SERVER ONLY. Needs a running server and its database. Not part of CI. Standard library only.
 
@@ -10,7 +10,9 @@ TEST SERVER ONLY. Needs a running server and its database. Not part of CI. Stand
 The database is reached as loadtest.py reaches it (CHAOS_DB_HOST / _PORT / _USER / _PASS). Each case writes the
 bot's inventory while it is offline, logs it in over the 10.98 protocol (loadtest.py), sends the equip hotkey
 (0x77, u16 client id), logs out and reads player_items back: where each ring is now (slot 9, slot 10 or a container).
-The bot's inventory is overwritten. Exit status 0 when every case passed.
+Since src-patch 0058 there is one ring slot again: slot 10 takes nothing, and a ring left there from before goes to the
+backpack at login (archery.lua). The bot's inventory is overwritten. Exit status 0 when every case passed. The cases
+were rewritten for 0058 and not run live yet.
 
 Item ids are the base server's: backpack 1988, wedding ring 2121 (client id 3004), ring of wishes 2357 (client id
 3245). Both rings have no worn id and no might ring key, so only the slot rules are tested.
@@ -58,7 +60,7 @@ def set_items(args, pid, rows):
 def where(args, pid, itemtype):
     """'slot N' for an inventory slot, 'backpack' for a container, one entry per item of that type"""
     rows = query(args, "SELECT `pid` FROM `player_items` WHERE `player_id` = %d AND `itemtype` = %d;" % (pid, itemtype))
-    return sorted('slot %s' % r[0] if int(r[0]) <= 10 else 'backpack' for r in rows)
+    return sorted('slot %s' % r[0] if int(r[0]) < 100 else 'backpack' for r in rows)
 
 
 async def drain(conn):
@@ -114,16 +116,16 @@ def case(args, pid, title, rows, hotkeys, want):
 
 
 CASES = [
-    ('ring in slot 9, slot 10 empty: the hotkey takes it off',
+    ('ring in slot 9: the hotkey takes it off',
      [(3, 101, BACKPACK), (9, 102, RING)], [RING_CID], {RING: ['backpack'], OTHER: []}),
-    ('ring in slot 10, slot 9 empty: the hotkey takes it off',
-     [(3, 101, BACKPACK), (10, 102, RING)], [RING_CID], {RING: ['backpack'], OTHER: []}),
-    ('ring in the backpack, both slots empty: the hotkey puts it in slot 9',
+    ('ring in slot 10 from before 0058: the login puts it into the backpack',
+     [(3, 101, BACKPACK), (10, 102, RING)], [], {RING: ['backpack'], OTHER: []}),
+    ('ring in the backpack, slot 9 empty: the hotkey puts it in slot 9',
      [(3, 101, BACKPACK), (101, 102, RING)], [RING_CID], {RING: ['slot 9'], OTHER: []}),
-    ('another ring in slot 9: the hotkey puts the ring in slot 10',
-     [(3, 101, BACKPACK), (9, 102, OTHER), (101, 103, RING)], [RING_CID], {RING: ['slot 10'], OTHER: ['slot 9']}),
-    ('rings in both slots: the hotkey of the slot 9 ring takes it off, slot 10 stays',
-     [(3, 101, BACKPACK), (9, 102, RING), (10, 103, OTHER)], [RING_CID], {RING: ['backpack'], OTHER: ['slot 10']}),
+    ('another ring in slot 9: the hotkey swaps, never into slot 10',
+     [(3, 101, BACKPACK), (9, 102, OTHER), (101, 103, RING)], [RING_CID], {RING: ['slot 9'], OTHER: ['backpack']}),
+    ('rings in slots 9 and 10 from before: slot 10 goes to the backpack, the hotkey takes slot 9 off',
+     [(3, 101, BACKPACK), (9, 102, RING), (10, 103, OTHER)], [RING_CID], {RING: ['backpack'], OTHER: ['backpack']}),
     ('ring in slot 9, the hotkey twice: off, then on again into slot 9',
      [(3, 101, BACKPACK), (9, 102, RING)], [RING_CID, RING_CID], {RING: ['slot 9'], OTHER: []}),
 ]

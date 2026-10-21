@@ -147,7 +147,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                                                  (a warning per unknown name; README "Monster spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
-               0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
+               0023), the base slot tables know the second ring slot (moot since 0058), the might rings are marked, the base
                rarity script keeps both rings of a ring slot swap and clears a hand the base two-handed swap emptied,
                the base two-handed swap keeps a quiver, arrows and bolts leave
                loot, shops and quest rewards, the conjure spells go (README "Infinite arrows and quivers"; after
@@ -169,16 +169,20 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
                type (README "Absorb ceiling"; matches engine patch 0049)
-  badges       tools/patch_badges.py             the base badges and amplifier catalysts are retired (no client slot shows the
-               deck or badge slot): out of every boss loot, task reward and roulette prize; the catalyst action
-               explains and keeps the item, Player:onMoveItem refuses a badge into slot 12 or 13, the items.xml
-               descriptions say the Loot Buyer buys them (README "Retired badges"; after itemnames)
+  badges       tools/patch_badges.py             the badge slot (engine 0058, client 0113): the badges get slot type "badge";
+               the deck, ship, belt and gloves slots are retired: Player:onMoveItem refuses them, a carried deck
+               holds the cards, a carried ship sails, the items.xml descriptions say so; the boss loot's Fury
+               catalyst [3] typo is fixed; the death loss takes the badge slot (README "Badge slot"; after itemnames)
+  prizes       tools/patch_prizes.py             the base scripts give prizes into the backpack, else the Purse, else
+               the ground, never an inventory slot: the roulettes (no retired item in their pools, nil guards), the
+               task rewards, the crafting script, the ship NPC (README "Prizes into the backpack"; after badges and
+               basecrafting)
   jewelry      tools/patch_base_jewelry.py       rings and necklaces are permanent equipment: the worn id's stats on the
                unworn id, no transformation, duration or charges (items.xml), a DeEquip entry for each such ring
                (movements.xml); the consumables of data/lib/chaos_jewelry.lua stay as they are; the 29 loot bases
                show their own looks of pair 35, client 38612-38640 (items.otb; run the tool by hand with
                --stock-looks for a client on pair 34); three uniques get own bases 41640-41642 (items.otb,
-               items.xml, movements.xml) (README "Rings and necklaces as gear"; after archery and badges)
+               items.xml, movements.xml) (README "Rings and necklaces as gear"; after archery, badges and prizes)
   migrations   tools/patch_base_migrations.py    the engine's database migrations add a column or change a table only
                when it is not there yet (a fresh database from schema.sql already has them; README "Base server
                start warnings")
@@ -827,7 +831,15 @@ def step_badges(server, data, ctx):
     return tool_result(run_tool(args, 'patch_badges.py'))
 
 
-STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # retired badges: after itemnames (loot by id or name)
+STEPS.insert(STEPS.index('absorbceiling') + 1, 'badges')  # the badge slot: after itemnames (loot by name)
+
+
+def step_prizes(server, data, ctx):
+    args = [tool('patch_prizes.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_prizes.py'))
+
+
+STEPS.insert(STEPS.index('badges') + 1, 'prizes')  # after badges (its retired ids) and basecrafting (CraftGuard)
 
 
 def step_jewelry(server, data, ctx):
@@ -835,7 +847,7 @@ def step_jewelry(server, data, ctx):
     return tool_result(run_tool(args, 'patch_base_jewelry.py'))
 
 
-STEPS.insert(STEPS.index('badges') + 1, 'jewelry')  # rings and necklaces as gear: after archery (might ring key)
+STEPS.insert(STEPS.index('prizes') + 1, 'jewelry')  # rings and necklaces as gear: after archery (might ring key)
 
 
 def step_migrations(server, data, ctx):

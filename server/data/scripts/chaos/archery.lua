@@ -16,11 +16,10 @@
 --     a failed save takes the refund and the mark back and leaves the rows for the next login. Nothing to sweep (a
 --     character made after the update): only the marks are set, no save (they go with the next save).
 --   * the hands at login (A.checkHands): the quiver is worn in the shield hand next to a bow or crossbow and the
---     ammunition slot is a second ring slot, rings only (engine src-patch 0023); the engine loads a character without
+--     ammunition slot takes nothing (engine src-patches 0023, 0058); the engine loads a character without
 --     its slot rules, so a quiver left in the ammunition slot moves to the shield hand (else the backpack or the
---     inbox), anything else there that is no ring goes to the backpack or the inbox, as does an off-hand item the
---     rules refuse. A ring there stays. One might ring at a time (0023): with a might ring in both ring slots, the one
---     in the second ring slot goes to the backpack or the inbox. Saved at once; idempotent.
+--     inbox), anything else there goes to the backpack or the inbox (a ring of the second ring slot too, 0058), as
+--     does an off-hand item the rules refuse. Saved at once; idempotent.
 --   * later arrivals (a map chest, a trade, the market): ammunition that reaches a character's inventory is turned into
 --     its refund at once; every later login looks at the inventory again (a base script reward the install tool did
 --     not know).
@@ -263,12 +262,11 @@ function A.sweep(player)
 end
 
 -- ---------------------------------------------------------------- the hands and the ammunition slot at login
--- The engine (src-patch 0023) takes only rings in the ammunition slot (the second ring slot) and refuses every pair of
+-- The engine (src-patch 0058) takes nothing in the ammunition slot (0023's second ring slot) and refuses every pair of
 -- hands A.handsAllowed refuses, but it loads a character without asking. A quiver of before in the ammunition slot
 -- goes to the shield hand when that is free and allowed (the engine asks again: vocation and level of movements.xml),
--- else to the backpack (or a container in it), else to the inbox; so does anything else there that is no ring, and an
--- off-hand item the rules refuse. A ring in the second ring slot stays, unless it is a might ring and the ring slot
--- holds one too (one might ring at a time; the one in the ring slot stays). All of it is
+-- else to the store inbox ("Purse"), else the depot inbox; so does anything else there (a ring worn in the second ring
+-- slot included). An off-hand item the rules refuse goes to the backpack (or a container in it), else the inbox. All of it is
 -- in memory and saved with the character as one (Chaos.saveCharacter right after); a crash before the save leaves the
 -- old state and the next login moves it again. Nothing to move: nothing changes (idempotent without a mark).
 -- into the backpack or a container in it, else the inbox; never merged into a stack
@@ -313,23 +311,28 @@ function A.checkHands(player)
 			state[key] = A.handKind(ItemType(item:getId())) or "other"
 		end
 	end
-	local ring = player:getSlotItem(CONST_SLOT_RING)
-	state.ringMight = ring ~= nil and A.isMightRing(ItemType(ring:getId()))
-	state.ammoMight = items.ammo ~= nil and A.isMightRing(ItemType(items.ammo:getId()))
-	local moved, lines, mightLines = 0, {}, {}
+	local moved, lines, ringLines = 0, {}, {}
 	for _, step in ipairs(A.loginPlan(state)) do
 		local item = items[step.from]
 		local name = item and item:getName() or "?"
 		local where
 		if item and step.to == "off" and toOffHand(player, item) then
 			where = "your off-hand"
+		elseif item and step.from == "ammo" then
+			-- the ammunition slot is drawn by no client (base patch 0113 draws the badge slot there): the store inbox,
+			-- else the depot inbox (ChaosPrizes.toInbox, as the other hidden slots, badges.lua)
+			if not (ChaosPrizes and ChaosPrizes.toInbox) then
+				dofile("data/scripts/chaos/prizes.lua")
+			end
+			local s = ChaosPrizes.toInbox(player, item)
+			where = s == "store inbox" and "your Purse" or s == "inbox" and "your inbox" or nil
 		elseif item then
 			local s = A.stow(player, item)
 			where = s == "backpack" and "your backpack" or s == "inbox" and "your inbox" or nil
 		end
 		if where then
 			moved = moved + 1
-			local into = step.why == "might" and mightLines or lines
+			local into = step.why == "ring" and ringLines or lines
 			into[#into + 1] = name .. " -> " .. where
 		else
 			log(player:getName() .. ": could not move " .. name .. " out of slot " .. tostring(slots[step.from]))
@@ -341,12 +344,12 @@ function A.checkHands(player)
 		end
 		if #lines > 0 then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player,
-				"The ammunition slot is a second ring slot now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s.",
+				"The ammunition slot holds nothing now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s.",
 				table.concat(lines, ", ")))
 		end
-		if #mightLines > 0 then
+		if #ringLines > 0 then
 			player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, Chaos.t(player,
-				"You can only wear one might ring at a time. Moved: %s.", table.concat(mightLines, ", ")))
+				"The second ring slot is gone: the badge slot took its place. Moved: %s.", table.concat(ringLines, ", ")))
 		end
 		if ChaosItemMods and ChaosItemMods.refresh then
 			pcall(ChaosItemMods.refresh, player, true)

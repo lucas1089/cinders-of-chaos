@@ -787,7 +787,23 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     archive; both files load in LuaJIT and Lua 5.3). The server halves: engine patches 0055-0057 (server/README.md
     "Summons: targets, walk-through, levels"). Walking through the own summons needs no client patch: the client's
     `Tile::isWalkable` already honours the creature packet's passable byte. Not seen in a client.
-69k. `0115` (C++ `src/client/uiitem.cpp`, `luafunctions_client.cpp`; Lua `modules/game_containers/containers.lua`): **a
+69k. `0113` (Lua and otui: `modules/gamelib/player.lua`, `const.lua`, `modules/game_inventory/inventory.lua`,
+    `inventory.otui`, `data/styles/40-inventory.otui`, `modules/game_interface/game.lua`, the action bar, the NPC
+    trade, the equipment preset window): **the badge slot where the ammunition slot was.** Owner decision 2026-10-21:
+    "tire o slot extra de ring e coloque o badge" (take out the extra ring slot and put the badge there). Server
+    src-patch 0058 takes the second ring out of slot 10 (it takes nothing now) and lets the badges into slot 13. The
+    10.98 protocol already carries slot 13 both ways (`0012` sends slots up to 16; a drag uses the widget's position
+    `{65535, 13, 0}`). The patch adds `InventorySlotBadge` / `CONST_SLOT_BADGE` = 13 and `InventorySlotsWorn` (1-10
+    and 13); the inventory window's AmmoSlot (`slot10`) becomes BadgeSlot (`slot13`, image
+    `/images/game/slots/badge(-blessed)`) in both layouts, and its change, refresh and blessed-style loops take slot 13;
+    the action bar's equipped look, the hotkeys' item lookup and the NPC trade's "ignore equipped" count look at slot
+    13 too; the equipment preset window's slot 10 is the badge slot (a preset saved with slot 10 loads without it;
+    presets send nothing on this client, `sendEquipmentPreset` is a stub). The art is generated
+    (`tools/gen_skin.py` group `badge`, also in `stock`): a shield with a four-point star, 34 px, plain and blessed.
+    Overlay module `game_badgeslot` (the tooltip "Badge", `badgeslotlogic_test.lua`, which also checks this patch's
+    text and the art). Applies after `0001`-`0112` (`git apply --check` clean on the assembled tree). Not seen in a
+    client.
+69l. `0115` (C++ `src/client/uiitem.cpp`, `luafunctions_client.cpp`; Lua `modules/game_containers/containers.lua`): **a
     slot that loses its item loses the marks of that item.** Owner beta, 2026-10-22, with a screenshot of the Loot Bag:
     "itens deixam uma marca depois do auto sell vender"; dozens of empty slots kept a pale frame. Cause:
     `UIItem::setItem(nil)` did not call `onItemChange` (`setItemId(0)` did). The rarity frame of `game_itemrarity`

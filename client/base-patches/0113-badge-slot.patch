@@ -1,0 +1,270 @@
+# Chaos: the inventory window draws the badge slot (13) where the ammunition slot (10) was (after 0001-0112). Owner
+# decision 2026-10-21 "tire o slot extra de ring e coloque o badge": server src-patch 0058 takes the second ring out of
+# slot 10 (it takes nothing now) and lets badges into slot 13. The 10.98 protocol already carries slot 13 both ways
+# (0012 sends up to slot 16 into LastInventorySlot 17; a drag uses the widget's position {65535, 13, 0}). Here: the
+# constants InventorySlotBadge / CONST_SLOT_BADGE = 13 and InventorySlotsWorn (1-10 and 13); the inventory window's
+# AmmoSlot (slot10, ammo image) becomes BadgeSlot (slot13, the badge placeholder of client/tools/gen_skin.py) in both
+# layouts, and its change, refresh and blessed-style loops take slot 13; the action bar's equipped look, the item
+# lookup of hotkeys and the NPC trade's "ignore equipped" count look at slot 13 too; the equipment preset window's
+# slot 10 is the badge slot (a preset saved with slot 10 loads without it). Lua and otui only.
+--- a/data/styles/40-inventory.otui
++++ b/data/styles/40-inventory.otui
+@@ -65,12 +65,12 @@ RightSlot < InventoryItem
+   $on:
+     image-source: /images/game/slots/right-hand-blessed
+ 
+-AmmoSlot < InventoryItem
+-  id: slot10
+-  image-source: /images/game/slots/ammo
+-  &position: {x=65535, y=10, z=0}
++BadgeSlot < InventoryItem
++  id: slot13
++  image-source: /images/game/slots/badge
++  &position: {x=65535, y=13, z=0}
+   $on:
+-    image-source: /images/game/slots/ammo-blessed
++    image-source: /images/game/slots/badge-blessed
+ 
+ PurseButton < UIButton
+   id: purseButton
+@@ -188,15 +188,15 @@ InventoryWindow < MiniWindow
+         anchors.horizontalCenter: prev.horizontalCenter
+         margin-top: 3
+ 
+-      AmmoSlot
++      BadgeSlot
+         anchors.top: prev.bottom
+         anchors.horizontalCenter: prev.horizontalCenter
+         margin-top: 3
+ 
+       SoulCapLabel
+         id: soulLabel
+-        anchors.top: slot10.bottom
+-        anchors.horizontalCenter: slot10.horizontalCenter
++        anchors.top: slot13.bottom
++        anchors.horizontalCenter: slot13.horizontalCenter
+         
+       SoulCapLabel
+         id: capLabel
+--- a/modules/game_actionbar/actionbar.lua
++++ b/modules/game_actionbar/actionbar.lua
+@@ -73,7 +73,7 @@ local function getEquippedActionItem(itemId, upgradeTier)
+ 	end
+ 
+ 	upgradeTier = upgradeTier or 0
+-	for slot = InventorySlotFirst, InventorySlotLast do
++	for _, slot in ipairs(InventorySlotsWorn) do
+ 		local item = player:getInventoryItem(slot)
+ 		if item and item:getId() == itemId and (item:getTier() or 0) == upgradeTier then
+ 			return item
+--- a/modules/game_actionbar/equipmentpreset.lua
++++ b/modules/game_actionbar/equipmentpreset.lua
+@@ -14,7 +14,7 @@ PresetSlotStyles = {
+   [InventorySlotLeg] = "Slot7",
+   [InventorySlotFeet] = "Slot8",
+   [InventorySlotFinger] = "Slot9",
+-  [InventorySlotAmmo] = "Slot10"
++  [InventorySlotBadge] = "Slot13"
+ }
+ 
+ local presetDefaultStruct = {
+@@ -26,7 +26,7 @@ local presetDefaultStruct = {
+ 	["equipSlot7"] = {itemId = 0, tier = 0, identifier = "", smartMode = false},
+ 	["equipSlot8"] = {itemId = 0, tier = 0, identifier = "", smartMode = false},
+ 	["equipSlot9"] = {itemId = 0, tier = 0, identifier = "", smartMode = false},
+-	["equipSlot10"] = {itemId = 0, tier = 0, identifier = "", smartMode = false},
++	["equipSlot13"] = {itemId = 0, tier = 0, identifier = "", smartMode = false},
+ }
+ 
+ local PresetDisplayIcons = {
+@@ -102,13 +102,15 @@ function assignEquipment(button)
+ 	for k, v in pairs(button.cache.equipmentPreset) do
+ 		local widget = presetWindow:recursiveGetChildById(string.format(k))
+ 		local slot = tonumber(string.match(k, "%d+"))
+-		widget:setItemId(v.itemId)
+-		widget:setTier(v.tier)
+-		if v.itemId > 0 then
+-			widget:getItem():setHash(v.identifier)
+-		end
++		if widget then -- a preset saved with the old ammunition slot (equipSlot10) has no widget now
++			widget:setItemId(v.itemId)
++			widget:setTier(v.tier)
++			if v.itemId > 0 then
++				widget:getItem():setHash(v.identifier)
++			end
+ 
+-		widget:setStyle(v.itemId > 0 and 'PresetEmptyItem' or PresetSlotStyles[slot])
++			widget:setStyle(v.itemId > 0 and 'PresetEmptyItem' or PresetSlotStyles[slot])
++		end
+ 	end
+ 
+ 	local iconSource = presetWindow:recursiveGetChildById("imageContainer")
+--- a/modules/game_actionbar/equippreset.otui
++++ b/modules/game_actionbar/equippreset.otui
+@@ -67,9 +67,9 @@ Slot5 < PresetEmptyItem
+   draggable: false
+   virtual: true
+ 
+-Slot10 < PresetEmptyItem
+-  id: equipSlot10
+-  image-source: /images/game/slots/ammo
++Slot13 < PresetEmptyItem
++  id: equipSlot13
++  image-source: /images/game/slots/badge
+   priceable: false
+   draggable: false
+   virtual: true
+@@ -274,7 +274,7 @@ NewHeadlessWindow
+         function(self, mousePos, mouseButton)
+           modules.game_actionbar.assignItemPreset(self, mousePos, mouseButton)
+         end
+-    Slot10
++    Slot13
+       anchors.top: prev.bottom
+       anchors.horizontalCenter: prev.horizontalCenter
+       margin-top: 4
+@@ -285,8 +285,8 @@ NewHeadlessWindow
+ 
+     Button
+       id: copy
+-      anchors.top: equipSlot10.bottom
+-      anchors.left: equipSlot10.left
++      anchors.top: equipSlot13.bottom
++      anchors.left: equipSlot13.left
+       !text: tr('Copy')
+       margin-top: 4
+       size: 34 13
+--- a/modules/game_inventory/inventory.lua
++++ b/modules/game_inventory/inventory.lua
+@@ -8,7 +8,7 @@ InventorySlotStyles = {
+   [InventorySlotLeg] = "LegSlot",
+   [InventorySlotFeet] = "FeetSlot",
+   [InventorySlotFinger] = "FingerSlot",
+-  [InventorySlotAmmo] = "AmmoSlot"
++  [InventorySlotBadge] = "BadgeSlot" -- the Chaos server takes nothing in the ammunition slot
+ }
+ 
+ inventoryWindow = nil
+@@ -327,7 +327,7 @@ function getInventoryPanel()
+ end
+ 
+ function toggleAdventurerStyle(hasBlessing)
+-  for slot = InventorySlotFirst, InventorySlotLast do
++  for slot = InventorySlotFirst, InventorySlotBadge do
+     local itemWidget = inventoryPanel:getChildById('slot' .. slot)
+     if itemWidget then
+       itemWidget:setOn(hasBlessing)
+@@ -338,7 +338,7 @@ end
+ function refresh()
+   local player = g_game.getLocalPlayer()
+   resetMonkMirrorSlot(true)
+-  for i = InventorySlotFirst, InventorySlotPurse do
++  for i = InventorySlotFirst, InventorySlotBadge do
+     if g_game.isOnline() then
+       onInventoryChange(player, i, player:getInventoryItem(i))
+     else
+@@ -491,7 +491,7 @@ end
+ 
+ -- hooked events
+ function onInventoryChange(player, slot, item, oldItem)
+-  if slot > InventorySlotPurse then return end
++  if slot > InventorySlotPurse and slot ~= InventorySlotBadge then return end
+ 
+   if slot == InventorySlotPurse then
+     return
+--- a/modules/game_inventory/inventory.otui
++++ b/modules/game_inventory/inventory.otui
+@@ -85,12 +85,12 @@ RightSlot < InventoryItem
+     margin-left: -1
+     visible: false
+ 
+-AmmoSlot < InventoryItem
+-  id: slot10
+-  image-source: /images/game/slots/ammo
+-  &position: {x=65535, y=10, z=0}
++BadgeSlot < InventoryItem
++  id: slot13
++  image-source: /images/game/slots/badge
++  &position: {x=65535, y=13, z=0}
+   $on:
+-    image-source: /images/game/slots/ammo-blessed
++    image-source: /images/game/slots/badge-blessed
+ 
+ PurseButton < UIButton
+   id: purseButton
+@@ -238,7 +238,7 @@ NonClosableMiniWindow
+       anchors.horizontalCenter: prev.horizontalCenter
+       margin-top: 4
+ 
+-    AmmoSlot
++    BadgeSlot
+       anchors.top: prev.bottom
+       anchors.horizontalCenter: prev.horizontalCenter
+       margin-top: 4
+@@ -246,8 +246,8 @@ NonClosableMiniWindow
+     SoulCapLabel
+       id: capLabel
+       size: 34 20
+-      anchors.top: slot10.bottom
+-      anchors.horizontalCenter: slot10.horizontalCenter
++      anchors.top: slot13.bottom
++      anchors.horizontalCenter: slot13.horizontalCenter
+       image-source: /images/game/slots/soulcap
+       image-clip: 0 20 34 20
+       !tooltip: tr("Capacity: The amount of weight you are able to carry.")
+--- a/modules/game_npctrade/npctrade.lua
++++ b/modules/game_npctrade/npctrade.lua
+@@ -616,7 +616,7 @@ function getSellQuantity(item, excludeEquipped)
+   if excludeEquipped then
+     local localPlayer = g_game.getLocalPlayer()
+     if not localPlayer then return 0 end
+-    for i = 1, LAST_INVENTORY do
++    for _, i in ipairs(InventorySlotsWorn) do
+       local inventoryItem = localPlayer:getInventoryItem(i)
+       if inventoryItem and inventoryItem:getId() == item:getId() and
+           (not item:isFluidContainer() or inventoryItem:getCountOrSubType() == item:getCountOrSubType()) then
+--- a/modules/gamelib/const.lua
++++ b/modules/gamelib/const.lua
+@@ -153,6 +153,7 @@ CONST_SLOT_LEGS      = 7
+ CONST_SLOT_FEET      = 8
+ CONST_SLOT_RING      = 9
+ CONST_SLOT_AMMO      = 10
++CONST_SLOT_BADGE     = 13
+ 
+ ELEMENTAL_PHYSICAL  = 0
+ ELEMENTAL_FIRE      = 1
+@@ -388,7 +389,7 @@ EquipmentPresetSlots = {
+   CONST_SLOT_LEGS, 
+   CONST_SLOT_FEET,
+   CONST_SLOT_RING,
+-  CONST_SLOT_AMMO
++  CONST_SLOT_BADGE
+ }
+ 
+ MessageModes = {
+--- a/modules/gamelib/game.lua
++++ b/modules/gamelib/game.lua
+@@ -10,7 +10,7 @@ end
+ function g_game.findPlayerItem(itemId, subType)
+     local localPlayer = g_game.getLocalPlayer()
+     if localPlayer then
+-        for slot = InventorySlotFirst, InventorySlotLast do
++        for _, slot in ipairs(InventorySlotsWorn) do
+             local item = localPlayer:getInventoryItem(slot)
+             if item and item:getId() == itemId and (subType == -1 or item:getCountOrSubType() == subType) then
+                 return item
+--- a/modules/gamelib/player.lua
++++ b/modules/gamelib/player.lua
+@@ -101,9 +101,12 @@ InventorySlotFinger = 9
+ InventorySlotAmmo = 10
+ InventorySlotPurse = 11
+ InventorySlotBattlePass = 12
++InventorySlotBadge = 13 -- the Chaos server's badge slot, drawn where the ammunition slot was
+ 
+ InventorySlotFirst = 1
+ InventorySlotLast = 10
++-- the worn slots of the Chaos server: 1-10 and the badge slot
++InventorySlotsWorn = {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, InventorySlotBadge}
+ 
+ function Player:isPartyLeader()
+   local shield = self:getShield()

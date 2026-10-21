@@ -420,7 +420,7 @@ end
 ChaosItemTooltip.build = function(item) return item.tip or {name = item.name, id = item.id} end
 local loaded = newPlayer("Loaded", 6, {})
 local rowBytes, total = {}, 0
-for slot = 1, 10 do
+for _, slot in ipairs(I.SLOTS) do -- 1-9 and the badge slot (13)
 	loaded.slots[slot] = item("Gear " .. slot, 3000 + slot)
 	loaded.slots[slot].tip = bigTip(slot)
 	rowBytes[slot] = #json.encode({slot = slot, tip = loaded.slots[slot].tip})
@@ -429,7 +429,7 @@ for slot = 1, 10 do
 end
 eq(total > 40000, true, "ten rich items: " .. total .. " bytes of rows")
 -- what the old cut (rows of about 12000 bytes) would send: every such packet is over the engine's limit
-local old = I.chunk((function() local r = {} for s = 1, 10 do r[s] = {slot = s, tip = loaded.slots[s].tip} end return r end)(),
+local old = I.chunk((function() local r = {} for _, s in ipairs(I.SLOTS) do r[#r + 1] = {slot = s, tip = loaded.slots[s].tip} end return r end)(),
 	function(r) return #json.encode(r) end, 12000)
 local oldMax = 0
 for i, g in ipairs(old) do
@@ -451,7 +451,7 @@ eq(msgs[1].data.parts, #msgs - 2, "parts = the equipment packets that follow")
 eq(msgs[1].data.parts, 10, "two rich items are over 8000 bytes: one per packet")
 eq(msgs[#msgs].action, "tree", "the tree after the equipment")
 eq(L.complete(cs), true, "the client has every equipment packet")
-for slot = 1, 10 do
+for _, slot in ipairs(I.SLOTS) do
 	eq(cs.tips[slot] ~= nil and cs.tips[slot].name, loaded.slots[slot].tip.name, "slot " .. slot .. " arrives whole")
 	eq(#cs.tips[slot].mods, 7, "slot " .. slot .. ": every modifier")
 	eq(cs.tips[slot].sockets.list[3].name, "Perfect Emerald", "slot " .. slot .. ": every socket")

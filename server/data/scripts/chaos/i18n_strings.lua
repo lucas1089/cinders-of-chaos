@@ -1974,10 +1974,10 @@ return {
 		["Salvaged %d items: %d %s%s.%s"] = "Salvage de %d itens: %d %s%s.%s",
 		[" Your backpack is full: it went to your inbox."] =
 			" Sua mochila está cheia: foi para a sua caixa de entrada.",
-		["The ammunition slot is a second ring slot now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s."] =
-			"O slot de munição agora é um segundo slot de anel e as aljavas vão na mão secundária junto de um arco ou besta. Movidos: %s.",
-		["You can only wear one might ring at a time. Moved: %s."] =
-			"Você só pode usar um might ring por vez. Movidos: %s.",
+		["The ammunition slot holds nothing now and quivers are worn in the off-hand next to a bow or crossbow. Moved: %s."] =
+			"O slot de munição não guarda mais nada e as aljavas vão na mão secundária junto de um arco ou besta. Movidos: %s.",
+		["The second ring slot is gone: the badge slot took its place. Moved: %s."] =
+			"O segundo slot de anel saiu: o slot de badge ficou no lugar dele. Movidos: %s.",
 		["Your Ember Blessings fade: no blessings in the %s."] = "Suas Ember Blessings somem: sem bênçãos em %s.",
 		-- Factions: reputation, contracts, the quartermasters (factions.lua, factions_core.lua contracts and offer states)
 		["+%d reputation with %s%s."] = "+%d de reputação com %s%s.",
@@ -3090,11 +3090,17 @@ return {
 			"A lua da colheita acordou os mortos desta vila. Colha as abóboras, cave as covas e encontre a sexton's key: a cripta sob a capela leva ao Hollow King.",
 		["Hessa. I buried my husband in that graveyard. Twice. Bring me hollow candy and I will {trade}."] =
 			"Hessa. Enterrei meu marido naquele cemitério. Duas vezes. Traga hollow candy e eu faço {trade}.",
-		-- Retired badges (badges_core.lua)
-		["Badges are retired: no character can wear one, so this catalyst upgrades nothing and was not used up."] =
-			"Os badges foram aposentados: nenhum personagem pode equipá-los, então este catalisador não melhora nada e não foi gasto.",
-		["The Loot Buyer pays %d gold for it."] = "O Loot Buyer paga %d de ouro por ele.",
-		["Badges are retired: no character can wear one. The Loot Buyer buys it."] =
-			"Os badges foram aposentados: nenhum personagem pode equipá-los. O Loot Buyer compra este.",
+		-- Badge slot, retired slots (badges_core.lua)
+		["This slot is retired: nothing can be worn there."] = "Este slot foi aposentado: nada pode ser equipado nele.",
+		["This item can't be worn. The Loot Buyer buys it."] = "Este item não pode ser equipado. O Loot Buyer compra ele.",
+		["These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."] =
+			"Estes slots foram aposentados: decks, navios, cintos e luvas não podem ser equipados. Movidos: %s.",
+		-- Prizes into the backpack (prizes_core.lua)
+		["Your prize %s is in your Purse (the store inbox): your backpack had no room."] =
+			"Seu prêmio %s está na sua Purse (a caixa da loja): sua mochila não tinha espaço.",
+		["Your prize %s is on the ground under you: your backpack and your Purse had no room."] =
+			"Seu prêmio %s está no chão embaixo de você: sua mochila e sua Purse não tinham espaço.",
+		["The roulette could not find your prize. Your next spin is free."] =
+			"A roleta não encontrou seu prêmio. Seu próximo giro é grátis.",
 	},
 }

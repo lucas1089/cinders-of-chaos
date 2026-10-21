@@ -70,7 +70,9 @@ server/
   scripts/chaos/item_prices.lua  item_prices_config.lua   the Loot Buyer NPCs (Halls of Services, else next to the temple)
   data/npc/Loot Buyer.xml, data/npc/scripts/loot_buyer.lua   the Loot Buyer (tools/install_item_prices.py)
   data/items/base_item_values.csv, base_recipes.csv, item_price_rules.csv   the price table's inputs
-  scripts/chaos/badges.lua  badges_core.lua, tools/patch_badges.py   the base badges retired (see "Retired badges")
+  scripts/chaos/badges.lua  badges_core.lua, tools/patch_badges.py   the badge slot, the retired slots (see "Badge slot")
+  scripts/chaos/prizes.lua  prizes_core.lua, tools/patch_prizes.py   base prizes into the backpack (see "Prizes into
+                                      the backpack")
   src-patches/0001-critical-hit-to-lua.patch   engine: onHealthChange gets `critical` (combat_fx.lua)
   src-patches/0002-dual-wield-and-vocation-attack-speed.patch   engine: a Ninja may hold a sword in the shield hand;
                                       weapon attack speed scaled by the vocation's (thief_combat.lua)
@@ -212,6 +214,9 @@ server/
                                       map is sent to its spectators again (a summon's level follows its owner)
   src-patches/0057-script-target-drop-tells-client.patch   engine: creature:setTarget(nil) on a player sends the
                                       cancel target packet (the client no longer keeps a dropped target)
+  src-patches/0058-badge-slot-no-second-ring.patch   engine: the badge slot (13) takes the badges; the ammunition slot
+                                      (0023's second ring slot) and the deck, ship, belt and gloves slots take nothing
+                                      (see "Badge slot")
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
@@ -431,8 +436,8 @@ server/
 5j. Infinite arrows and quivers: `python3 -I server/tools/patch_base_archery.py <server>/data [--dry-run]` (idempotent;
    `install_all.py` step `archery`, after `vocations` and `spells`) gives bows and crossbows the attack, hit chance and
    missile of their ammunition, makes the quivers off-hand equipment (items.xml, items.otb, movements.xml; needs engine
-   src-patch 0023), maps the base's slot tables to the second ring slot, marks the might rings (items.xml
-   `chaosMightRing`: one at a time, "Second ring slot"), keeps both rings of a ring slot swap in the base rarity
+   src-patch 0023), maps the base's slot tables to the second ring slot (moot since src-patch 0058: slot 10 takes
+   nothing), marks the might rings (items.xml `chaosMightRing`: one at a time, "Second ring slot"), keeps both rings of a ring slot swap in the base rarity
    script and clears there a hand the base two-handed swap emptied ("Right-click equips"), keeps a quiver in the base's two-handed swap and takes arrows and bolts out of loot, shops, conjure spells and rewards; then run `server/sql/chaos_archery.sql` once, with the server stopped
    (the `sql` step does), before the first start with the patched items.otb. See "Infinite arrows and quivers".
 5j2. Unique equip rules: `python3 -I server/tools/install_unique_equip.py <server>/data [--dry-run]` (idempotent;
@@ -5329,8 +5334,9 @@ purpose (it would attack a monster the player did not pick when running away ups
 ## Infinite arrows and quivers (`data/lib/chaos_archery_core.lua`, `chaos_archery_config.lua`, `archery.lua`, `weapon_styles.lua`, `tools/patch_base_archery.py`, `sql/chaos_archery.sql`, `src-patches/0023-quiver-off-hand.patch`)
 
 Bows and crossbows fire without ammunition. A quiver is off-hand gear (the shield hand, next to a bow or crossbow) with
-modifiers for bow and crossbow users. Arrows and bolts are gone from the game. The ammunition slot is a second ring slot
-("Second ring slot" below).
+modifiers for bow and crossbow users. Arrows and bolts are gone from the game. The ammunition slot was a second ring
+slot until 2026-10-21 ("Second ring slot" below); since src-patch 0058 it takes nothing and the client draws the badge
+slot there ("Badge slot").
 
 **The off-hand quiver** (owner request "Quivers go in the off-hand now"; engine src-patch 0023). Bows and crossbows stay
 two-handed, so the two-handed speed and damage of "Weapon styles", the keystones that ask for a two-handed weapon or no
@@ -5358,9 +5364,9 @@ into the off-hand still puts the bow away, so a bow and a shield are never held 
 
 **At login** (`ChaosArchery.checkHands`, archery.lua; the engine loads a character without queryAdd): a quiver in the
 ammunition slot (from the last change) goes to the off-hand when that is free and allowed (the engine asks again, with
-the vocation and level of movements.xml), else to the backpack or a container in it, else to the inbox; anything else
-there that is no ring goes the same way, and so does a might ring in slot 10 while slot 9 holds one too (one might ring
-at a time, "Second ring slot"); an off-hand item the rules refuse goes to the backpack. A copy is placed and the
+the vocation and level of movements.xml); anything else in the ammunition slot, a ring of the old second ring slot
+included, goes to the store inbox ("Purse"), else the depot inbox (`ChaosPrizes.toInbox`: no client draws slot 10 since
+client base patch 0113; "Badge slot"); an off-hand item the rules refuse goes to the backpack, else the inbox. A copy is placed and the
 item removed (one item, its rolls and per-item id kept), then the character is saved (`Chaos.saveCharacter`); a crash
 before the save keeps the old state and the next login moves it again. Nothing to move: nothing changes (no mark
 needed). The player is told what moved. Saved loadouts (`loadouts_core.lua` `C.legacyGear`): a quiver in slot 10 becomes
@@ -5494,7 +5500,7 @@ the engine, a ring stays, idempotent; two might rings: the one in slot 10 to the
 with another ring or alone in slot 10 stays, the might ring message; two rings and two copies of one ring add up under
 the caps; the ring budget), `tests/base_archery_patch_test.lua` (the quiver entry, the movements, an earlier layout
 rewritten, the base slot maps, the base swap run as code, the might ring key and the worn ids it follows), `tests/loadouts_test.lua` (old loadouts), `tests/item_tooltip_test.lua` and the client's
-`tooltiplogic_test.lua`, `playerinspect_logic_test.lua`, `ringslotlogic_test.lua`. Tested in game (base server from
+`tooltiplogic_test.lua`, `playerinspect_logic_test.lua`, `badgeslotlogic_test.lua` (until 0058: `ringslotlogic_test.lua`). Tested in game (base server from
 windows-assets with src-patches 0001-0023 built, every install step, the full map, a private MariaDB, the client
 `game22`): a Ranger with a bow and a quiver of before in the ammunition slot logged in with the quiver in the off-hand
 (saved at once); a character with a sword and a shield had it moved to the backpack; dragged in the client: a sword
@@ -5536,6 +5542,10 @@ generator and the tests read it). Arrows and bolts went the same way earlier ("I
   `tools/patch_base_throwables_test.py`.
 
 ## Second ring slot (`src-patches/0023-quiver-off-hand.patch`, `data/lib/chaos_item_mods.lua`, `archery.lua`, `tools/patch_base_archery.py`, client `game_ringslot`)
+
+**Removed 2026-10-21** (owner: "tire o slot extra de ring e coloque o badge"; "Badge slot"). Src-patch 0058 makes slot 10
+take nothing, the ring swap between slots 9 and 10 and the hotkey's second ring go, and the client draws the badge slot
+there. A ring left in slot 10 moves to the Purse at login. What follows is the record of the slot as it was.
 
 Owner request: "Don't remove the ammo slot. Turn it into a second ring slot." Inventory slot 10 (`CONST_SLOT_AMMO`, the
 ammunition slot of the protocol) takes the item types the ring slot takes and nothing else.
@@ -5622,11 +5632,11 @@ keys, containers and every item with a use of its own work as before.
   wrong one when two rings or swords of one type carry different rarities.
 - **What counts as equipment** (`Game::chaosEquipsOnUse`): a head, necklace, armour, legs, feet or ring item, or a sword,
   club, axe, distance weapon, wand, shield or quiver. Every item may be held in a hand by default, so the hands count by
-  weapon type. Not ammunition, the base's extra slots (deck, badge, ship, belt, gloves), the backpack slot, an item that
-  cannot be moved, a container. Not a hotkey use (`isHotkey`), not an item lying on the map. The item may be in any
+  weapon type. A badge counts since src-patch 0058. Not ammunition, the base's other extra slots (deck, ship, belt,
+  gloves), the backpack slot, an item that cannot be moved, a container. Not a hotkey use (`isHotkey`), not an item lying on the map. The item may be in any
   container the player has open (the backpack, a bag, the depot, a corpse), as with drag and drop.
-- **Which slot:** the equip hotkey's (`getSlotType`). A ring goes into the free ring slot (9 first), else into the slot
-  holding a might ring when it is one (one might ring at a time, "Second ring slot"), else into slot 9 (the rings swap).
+- **Which slot:** the equip hotkey's (`getSlotType`). A ring goes into slot 9 (a worn ring swaps); a badge into slot 13
+  (src-patch 0058, "Badge slot"; until then a ring could go into slot 10, "Second ring slot").
   A worn item goes into the backpack first, then wherever the stock hotkey put it when the backpack has no room.
 - **The move** (`Game::chaosEquipMove`) runs with the player as the actor and the client positions, so it is the same
   as drag and drop: `Player:onMoveItem`, every onMoveItem and onItemMoved callback, `Player::queryAdd` (the hand rules,
@@ -11021,70 +11031,129 @@ monsters' loot. 52 are removed. **Six stay in their loot** (owner decision 2026-
 - Income: the junk was about 1% of the expected sell value of the loot; watch the hunting income
   (`gen_item_prices.py income BASE_DATA`) and adjust gold if the hour of hunting drops.
 
-## Retired badges (`badges.lua`, `badges_core.lua`, `tools/patch_badges.py`, `tests/badges_test.lua`)
+## Badge slot (`badges.lua`, `badges_core.lua`, `tools/patch_badges.py`, `src-patches/0058-badge-slot-no-second-ring.patch`, client base patch 0113, client `game_badgeslot`)
 
-Beta question 2026-10-22: a player found a Moon Amplifier Catalyst [1] ("Use this Amplifier on Moon Badge to upgrade it
-to the next tier", from Emberlord Zanarth and Aquatic Overlord Thalassa, "Item Level 135") and asked what a Moon Badge
-is. The audit:
+Beta question 2026-10-22: a player found a Moon Amplifier Catalyst [1] and asked what a Moon Badge is. The base engine
+has five extra inventory slots: deck (12), badge (13), ship (14), belt (15), gloves (16). Our client drew slots 1-10
+only, so nothing worn there could be seen or taken off. The first answer (commit bf2919f7) retired the badges. Owner
+decision 2026-10-21: "tire o slot extra de ring e coloque o badge" (take out the extra ring slot and put the badge
+there). So the badges are back in slot 13, drawn where the ammunition slot (the second ring slot) was. A server that
+installed bf2919f7's `badges` step needs a fresh base copy before this install: that step took the badges out of the
+boss loot, the task rewards and the roulette, and no tool puts them back.
 
-- **What badges are.** A base system: 40 badges (server ids 27803-27842), nine lines of four or five tiers (Raging,
-  Furious, Tempest, Blazing, Eternal) of Exiled Spirit, Fury, Moon, Night Seeker, Earthshade, Reborn, Chaosfiend, Veins
-  and Daybreak. Slot type `deckbadge`: the base engine's deck and badge inventory slots (`CONST_SLOT_DECK` 12,
-  `CONST_SLOT_BADGE` 13; our engine keeps them, src-patch 0023). Stats: armour 2-5, an absorb 5-8%, skills (magic level,
-  melee, the gathering and crafting skills of the Moon line), life or mana leech, the Eternal tier a 10-slot container.
-  31 amplifier catalysts (27843-27873) upgrade a badge one tier at 35 / 25 / 15 / 10%; a failure takes the catalyst
-  only (the base action `scripts/customs/badges/badges_upgrade.lua`; its success keeps the item's attributes but
-  overwrites its description with "Upgraded by <name>").
-- **Where they came from.** 16 base bosses (the ten island world bosses, the six expedition bosses) dropped all nine
-  Raging badges (25-35%) and 31 catalyst lines each (the Fury [3] line names the Exiled [3] twice, so 27848 never
-  dropped); three Mermod tasks gave a Raging badge and its catalyst; the roulette lever gave Furious badges. No Chaos loot
-  table, shop or quest has them.
-- **Why they were dead.** Our client draws inventory slots 1-10 only (base client `game_inventory`: `if slot >
-  InventorySlotPurse then return end`; client base patch 0012 only lets the protocol carry slots up to 16), and the
-  right-click equip of src-patch 0024 skips the base's extra slots. No player could put a badge on, so every badge and
-  catalyst was loot nobody could use. The same holds for the base's decks (slot 12), ships (14), belts and gloves
-  (15, 16): not covered here.
-- **The gathering skills** of the Moon line are engine skills (mining, woodcutting, herbalist, crafting). Our
-  professions (Delving, Wortcunning, Flaying, Angling, "Professions") keep their own levels, so they would never have
-  counted there; only the base crafting table's mastery reads engine skills.
-- **"Item Level 135"** on a catalyst: `ChaosCrafting.isGear` counted the tables of `ItemType:getAbilities()`, which the
-  engine always fills (zeros included), and every item type's default slot is the hands, so every non-stackable item
-  was gear and the loot layer stamped the kill's item level on it (`forgeDrop`). Now an item for the hands alone needs a
-  stat above 0 (an attack, armour, a skill, an absorb, a special skill); an item with another slot is gear as before.
-  The tooltip (`item_tooltip_core.lua`) no longer shows an item level on a plain item that is no gear, so older copies
-  look right too.
+- **What badges are.** A base system: 40 badges (27803-27842), nine lines of four or five tiers (Raging, Furious,
+  Tempest, Blazing, Eternal) of Exiled Spirit, Fury, Moon, Night Seeker, Earthshade, Reborn, Chaosfiend, Veins and
+  Daybreak. Armour 2-5 and the line's stats: an absorb, skills, health and mana, life or mana leech, critical hits. 31
+  amplifier catalysts (27843-27873) upgrade a badge one tier at 35 / 25 / 15 / 10% (the base action
+  `badges_upgrade.lua`). 16 base bosses drop the Raging badges and the catalysts. The Eternal Moon Badge (27815) is a
+  container of 10. A badge is gear for the Chaos systems (`ChaosCrafting.isGear`: item level, rarity, orbs; modifier
+  kind "other").
+- **Engine** (src-patch 0058, after 0001-0057): items.xml slot type `badge` is the badge bit only (`patch_badges.py`
+  writes it on the 40 badges; the decks keep `deckbadge`, deck and badge bits). `Player::queryAdd`: slot 13 takes a
+  badge and refuses an item with the deck bit; slots 10, 12, 14, 15 and 16 take nothing. `getSlotType` sends a badge
+  to slot 13 (the equip hotkey, the right-click equip of 0024). 0023's ring swap between slots 9 and 10 and the
+  hotkey's second ring go. `Player::queryDestination` asks `queryAdd` with flags 0, so `addItem` without a slot no
+  longer reaches a hidden slot.
+- **Client** (base patch 0113, client/BASE.md): `InventorySlotBadge` = 13; the inventory window's ammunition widget is
+  the badge widget (`slot13`, position `{65535, 13, 0}`; the protocol carried slot 13 already, base patch 0012); the
+  action bar, hotkeys, NPC trade and equipment presets look at slot 13. The art is generated (`client/tools/gen_skin.py`
+  group `badge`). The overlay: `game_badgeslot` (tooltip "Badge"), the inspect window, the rarity glow, the shader
+  effects and the right-click equip cover slot 13. On the server: the item tooltip compares a badge with slot 13 and a
+  ring with slot 9 only; inspect, loadouts, the new-player kit and the slot loops of the Chaos scripts take 13, not 10.
+- **The retired slots keep their items' other uses.** A deck the player carries holds the cards (`ChaosBadges.deckOf`
+  in the base deck system). A carried ship sails from the docks and opens its trainer portal (`ChaosBadges.boardShip`
+  in the base sea tiles). Belts and gloves (24 items, slot type `beltgloves`) have no other use: they can't be worn,
+  the Loot Buyer buys them, the base armorsmith still crafts them (owner decision open: take them out of its list, or
+  leave them as sellable crafts). The items.xml descriptions say so. `Player:onMoveItem` refuses a move into a retired
+  slot with a message (the engine refuses it too).
+- **Migration at login**, idempotent, never deletes: every item in a slot no client draws (12, 14, 15, 16, a deck in
+  13; `ChaosBadges.checkSlots`) and anything in slot 10 (a ring of the second ring slot included;
+  `ChaosArchery.checkHands`, "Infinite arrows and quivers") moves to the store inbox ("Purse"), else the depot inbox
+  (`ChaosPrizes.toInbox`: `moveTo` with `FLAG_NOLIMIT`, no stacking). The de-equip events run. The character is saved
+  at once and told what moved. An item that fits nowhere stays and the next login tries again. Nothing to move:
+  nothing changes. The base's "one badge at a time" storage (249578) is cleared at login when no badge with that id is
+  worn, so a badge that left the slot without its de-equip can't lock the slot. No retired item leaves the game, so
+  nothing is refunded.
+- **The Eternal Moon Badge** in slot 13: its weight counts; loot goes into it like any open container; containers in
+  it are ordinary bags. The base death loss (`droploot.lua`) looped over slots 1-10, so a badge never dropped and the
+  Eternal Moon Badge was a death-safe bag of 10: `patch_badges.py` step 7 makes the loop take slot 13 (not 11, the
+  store inbox, nor the retired slots). The right-click of src-patch 0024 opens it (a container is not equipped on use):
+  drag it to the slot.
+- **Fixes on the way:** the base boss loot named "exiled amplifier catalyst [3]" twice and the Fury catalyst [3] never
+  (`patch_badges.py` step 2); a hand-only item without stats no longer counts as gear (a catalyst got an item level).
+- **Balance** (`server/data/spells/README.md` "Badge slot"): the badge replaces the second ring. Its absorbs pass the
+  75 percent ceiling of src-patch 0049 (`Player::blockHit` loops slots 1-13); its leech and critical hit add to
+  the engine sums like any item; the stock chances were scaled to two thirds (`patch_base_events.py`). Every Chaos
+  modifier a ring may roll still reaches its cap at tier 8 with one ring (`tests/archery_test.lua`).
 
-**Decision: retire, not a new slot.** A badge slot in the client means a new inventory widget in a full window, its art,
-the inspect and compare views, our modifier kinds for a new slot, the absorb ceiling and the balance of a twelfth power
-slot (armour, absorbs, skills, leech on top of every class's gear). That is a new system for the owner to decide, out of
-proportion for loot nobody could use. So the badges leave the game's sources and the copies in the players' hands sell:
+`tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
+1. items.xml: the badges get slot type `badge`; the decks, ships, belts and gloves get their description.
+2. the boss loot's Fury catalyst [3].
+3. `Player:onMoveItem` asks `ChaosBadges.onMoveItem` first.
+4. the base deck system reads the carried deck.
+5. the base sea tiles: a carried ship sails.
+6. the ship NPC says to carry the ship.
+7. `droploot.lua`: the death loss takes slot 13.
 
-1. `tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
-   every badge and catalyst loot line of `data/monster/**` goes (by id, or by its items.xml name in any case), the
-   roulette prizes (`{itemId = ...}`) and task rewards (`{Type = RewardType.Item, Id = ...}`) of `data/scripts/**`
-   (not `scripts/chaos`) go, the catalyst action asks `ChaosBadges.onCatalystUse` first, `Player:onMoveItem` asks
-   `ChaosBadges.onMoveItem` first (marker `Chaos: badges are retired (patch_badges.py)`), and the items.xml descriptions
-   say "A badge of the old orders. Badges cannot be worn any more; the Loot Buyer buys it." / "An amplifier of the old
-   badge rite. Badges cannot be worn any more, so it upgrades nothing; the Loot Buyer buys it." On the base server: 16
-   boss files (40 lines each), the roulette (9 prizes), the tasks (6 rewards), the two hooks and 71 descriptions.
-2. Using a catalyst on anything now sends "Badges are retired: no character can wear one, so this catalyst upgrades
-   nothing and was not used up. The Loot Buyer pays N gold for it." (pt-BR in `i18n_strings.lua`); both items stay as
-   they are. A badge moved into slot 12 or 13 (a packet our client cannot send) is refused with "Badges are retired: no
-   character can wear one. The Loot Buyer buys it."
-3. Prices (`item_price_rules.csv`, `gen_item_prices.py`): Raging badges keep 8200 and the catalysts 16000 / 33000 (the
-   snapshot of their old drops); the upgraded tiers, which only a catalyst made, get a fixed price (Furious 12000,
-   Tempest 16000, Blazing 24000, Eternal 33000) and Fury [3] 33000. A badge with a rarity and item level sells for more,
-   as any gear.
+**Tests.** `tests/badges_test.lua` (ids, texts and pt-BR, the move rule, the login moves into the store inbox, the
+depot inbox, nowhere, once; the stale storage; the glue on a mocked engine), `tools/patch_badges_test.py` (a small
+data folder, CRLF kept, a second run, `--check`), `tests/archery_test.lua` (slot 10: the ring and anything else to the
+Purse; the jewel budget), `tests/item_tooltip_test.lua`, `tests/inspect_test.lua`, `tests/loadouts_test.lua`,
+`tests/crafting_test.lua`; client `badgeslotlogic_test.lua`, `playerinspect_logic_test.lua`,
+`rightclickequiplogic_test.lua`. The server chain 0001-0058 and the client chain 0001-0113 apply in order;
+`g++ -fsyntax-only` of the changed engine files has no errors. The install on a copy of the base data: 22 files, a
+second run changes nothing, the patched Lua parses in Lua 5.3 and LuaJIT. Not run on a live server or seen in a client.
 
-The item names and descriptions stay English, like every base item text (the tooltip does not translate them); the
-messages are translated. No wiki or codex entry: nothing in the game gives these items any more.
+## Prizes into the backpack (`prizes.lua`, `prizes_core.lua`, `tools/patch_prizes.py`, `tests/prizes_test.lua`)
 
-**Tests.** `tests/badges_test.lua` (luajit and lua5.3): the ids against the base's upgrade table, the texts and their
-pt-BR, the move rule, the glue on a mocked engine. `tools/patch_badges_test.py`: a small data folder (loot by name and
-id in Lua and XML, prizes, rewards, both hooks with CRLF kept, descriptions replaced and added, a second run and
-`--check`). `tests/crafting_test.lua`: `isGear` with the engine's zero tables. `tests/item_tooltip_test.lua`: no item
-level on a catalyst. Run on a copy of the base data: 21 files changed, every patched Lua file parses, a second run
-changes nothing. Not run on a live server.
+User report 2026-10-21: the Boss Roulette said "you won The Awakener" (a ship) and the ship was in no bag and not in
+the inbox. The base gives prizes with `player:addItem(id, count)` (index `INDEX_WHEREEVER`), and the engine puts a new
+item into an empty inventory slot that takes it before any container: the ship went into the ship slot (14), which no
+client draws. Any deck, ship, belt, gloves or badge prize could do it. Src-patch 0058 closes it in the engine (the
+hidden slots take nothing); the base scripts that hand out prizes now go through `ChaosPrizes`, which never uses an
+inventory slot:
+
+- `ChaosPrizes.give(player, id, count[, charges])`: new items into the backpack or a container in it, else the store
+  inbox ("Purse", `FLAG_NOLIMIT`), else the ground under the player; the player is told when it is not the backpack.
+  Stacks split at 100. Returns the last place used, nil when nothing could be given (the caller falls back).
+- `ChaosPrizes.stow(player, item)`: an item the script made, into the backpack or a container in it.
+- `ChaosPrizes.toInbox(player, item)`: a worn item of a hidden slot into the store inbox, else the depot inbox.
+- `ChaosPrizes.rouletteReward(playerId, config, position, label)`: the roulettes' reward.
+
+`tools/patch_prizes.py DATA_DIR [--dry-run] [--check]` (install_all.py step `prizes`, after `badges` and
+`basecrafting`), idempotent, CRLF kept, base scripts found by content:
+1. **The roulettes** (every script with `local function rewardPlayer(playerId, leverPosition)` and a `prizePool`; the
+   base has five: the boss, exercise and premium roulettes and the two crystal token roulettes). `rewardPlayer` asks
+   `ChaosPrizes.rouletteReward` first: the prize on the winning tile goes in as above, the free spin storage is
+   cleared, a rare prize is broadcast as before. The base looked up `chancedItems[#chancedItems - 3]` for the
+   broadcast, the chance of another spin's item, nil after fewer than four spins (a Lua error before the reward). Now
+   the pool's chance of the won item decides (`ChaosPrizesCore.isRare`). The winning tile's top thing can be nothing,
+   a creature or the ground when the tile changed: then nothing is given, the storage stays and the next spin is free,
+   with a message. `initiateReward` reads the tile the same guarded way. The base body stays as the fallback without the
+   Chaos scripts, with both nil guards. The prize pool lines of the decks and ships are commented out: the boss roulette
+   loses 27633, 27634 and 27797; the other four roulettes have no retired item.
+2. **The task rewards** (`self:addItem(reward.Id, reward.Amount)`): `ChaosPrizes.give` first. One task gives a deck.
+3. **The base crafting script** after `patch_base_crafting.py`: `ChaosPrizes.stow` first, then the base `addItemEx`
+   (crafted belts and gloves went into their slots).
+4. **The ship NPC** (`player:addItem(27799, 1)`): `ChaosPrizes.give` first.
+
+No other base script hands out a deck, ship, belt or gloves (searched by id and by name). A badge prize lands in a
+visible slot at worst.
+
+**Boss roulette odds** (`ChaosPrizesCore.odds`: every entry rolls its chance in 10000, one of the hits is picked at
+random, no hit rolls again; exact). The three retired entries were 27.8% of the spins. Their chances are left out and
+the others keep theirs, so every remaining prize is about 1.35 times as likely: the Furious badges 15.7 / 14.9 / 13.8 /
+11.0 / 10.5 / 8.8 / 7.4 / 6.3 / 5.2% (were 11.2 / 10.6 / 9.9 / 7.9 / 7.6 / 6.4 / 5.4 / 4.6 / 3.8%), each of the four
+level-6 items 1.6% (was 1.2%; together 6.4%, was 4.8%). The token price is unchanged.
+
+**Tests.** `tests/prizes_test.lua` (luajit and lua5.3): the winner rule (nothing, a creature, the ground, an ignored
+decoration, charges), the rare rule, the pool cleaning, the odds against brute force and the boss pool's numbers; the
+glue on a mocked engine whose `addItem` and `addItemEx` raise an error: the backpack, a bag in it, the Purse, the
+ground, nowhere; stacks, charges; `toInbox`; `rouletteReward` with a prize, a rare prize, an empty, creature, ground or
+decoration tile, no tile, a logged-out player, no room anywhere. `tools/patch_prizes_test.py`: a small data folder (two
+roulettes, one it can't read left alone, CRLF, the pool lines, the hook's tile and label, the guards, the task, crafting
+and NPC lines, a second run, `--check`, the patched Lua parses). On a copy of the base data: 8 files, a second run
+changes nothing, every patched file parses in Lua 5.3 and LuaJIT. Not run on a live server.
 
 ## Rings and necklaces as gear (`data/lib/chaos_jewelry.lua`, `chaos/jewelry.lua`, `tools/patch_base_jewelry.py`, `tests/jewelry_test.lua`)
 

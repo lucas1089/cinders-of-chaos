@@ -458,6 +458,29 @@ local function typeNumber(it, method)
 end
 
 -- gear that can carry a rarity: same test as the stock reroll script (isRerollable) plus an equipment slot
+-- true when a slot position names a retired slot (deck 4096, ship 16384, belt 32768; the badge bit 8192 next to the
+-- deck bit is the base's "deckbadge" of the decks) and nothing but the hands besides
+function C.retiredOnly(slot)
+	slot = tonumber(slot) or 0
+	local function bit(b)
+		return math.floor(slot / b) % 2 == 1
+	end
+	local retired = 0
+	for _, b in ipairs({4096, 16384, 32768}) do
+		if bit(b) then
+			retired = retired + b
+		end
+	end
+	if retired == 0 then
+		return false
+	end
+	if bit(4096) and bit(8192) then
+		retired = retired + 8192
+	end
+	local rest = slot - retired
+	return rest % 16 == 0 and rest < 64
+end
+
 function C.isGear(item)
 	local it = itemType(item)
 	if not it then
@@ -475,6 +498,12 @@ function C.isGear(item)
 		return false
 	end
 	if typeNumber(it, "getSlotPosition") == 0 and typeNumber(it, "getWeaponType") == 0 then
+		return false
+	end
+	-- the retired slots (engine patch 0058: deck, ship, belt, gloves; server/README.md "Badge slot"): an item worn
+	-- nowhere else is no gear (no item level, rarity or orbs). A badge (slotType "badge": the badge bit without the
+	-- deck bit) is gear.
+	if C.retiredOnly(typeNumber(it, "getSlotPosition")) then
 		return false
 	end
 	-- a quiver has no stats of its type: its implicit modifiers live in chaos_archery_config.lua

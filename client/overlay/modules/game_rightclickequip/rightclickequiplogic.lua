@@ -65,13 +65,13 @@ function L.useClick(mode, button, mods, both)
   return button == 'left' and none
 end
 
--- true when an item position is an inventory slot (1-10) or a slot of an open container, as the server takes it (an
--- item lying on the map keeps the base behaviour)
+-- true when an item position is an inventory slot (1-10, and 13: the badge slot) or a slot of an open container, as the
+-- server takes it (an item lying on the map keeps the base behaviour)
 function L.inContainerOrInventory(pos)
   if type(pos) ~= 'table' or tonumber(pos.x) ~= 0xFFFF then return false end
   local y = tonumber(pos.y) or 0
   if y >= 0x40 then return true end
-  return y >= 1 and y <= 10
+  return y >= 1 and y <= 10 or y == 13
 end
 
 -- true when the module sends a plain use (the server then equips): the option on, a multi-use look from the

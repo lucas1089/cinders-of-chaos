@@ -390,7 +390,7 @@ end
 
 -- ---------------------------------------------------------------- refinement helpers
 local SLOTS = {CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_BACKPACK, CONST_SLOT_ARMOR, CONST_SLOT_RIGHT,
-	CONST_SLOT_LEFT, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_AMMO}
+	CONST_SLOT_LEFT, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_BADGE}
 
 local function refineInfo(item)
 	local C = ChaosCrafting

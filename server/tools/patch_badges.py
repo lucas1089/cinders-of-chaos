@@ -1,26 +1,33 @@
 #!/usr/bin/env python3
-"""Retire the base server's badges and amplifier catalysts (idempotent). install_all.py step `badges`.
+"""The base server's extra inventory slots: the badge slot in use, the others retired (idempotent). install_all.py
+step `badges`.
 
 usage: python3 -I patch_badges.py DATA_DIR [--dry-run] [--check]
 
-server/README.md "Retired badges". The base has 40 badges (server ids 27803-27842, slot type "deckbadge": the base
-engine's deck and badge inventory slots 12 and 13) and 31 amplifier catalysts (27843-27873) that upgrade a badge one
-tier. Our client draws inventory slots 1-10 only, so no badge can be put on, and 16 base bosses dropped about 40 badge
-and catalyst lines each. The rules are data/scripts/chaos/badges_core.lua; this tool changes the base data:
+server/README.md "Badge slot". The base engine has five extra slots: deck (12), badge (13), ship (14), belt (15),
+gloves (16). Engine patch 0058 and client base patch 0113 put the badge slot where the second ring slot was; the other
+four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool changes the base data:
 
-1. data/monster/**: every loot line of a badge or catalyst goes (Lua `{id = ...}` / `{name = ...}` lines inside
-   monster.loot, XML `<item id=... />` / `<item name=... />` lines inside <loot>), by id or by the item's name in
-   items.xml, any case. Nothing else of a file is rewritten.
-2. data/scripts/** (not scripts/chaos): a roulette prize line `{itemId = <badge>, ...}` and a task reward line
-   `{Type = RewardType.Item, Id = <badge or catalyst>, ...}` go.
-3. the base catalyst action (the script with `upgraderType = 'amplifier'`): ChaosBadges.onCatalystUse runs first; it
-   explains and keeps the catalyst and its target as they are.
-4. data/events/scripts/player.lua: Player:onMoveItem asks ChaosBadges.onMoveItem first (a badge into slot 12 or 13 is
-   refused; a packet our client cannot send, but a bot could).
-5. data/items/items.xml: the description of every badge and catalyst says it cannot be worn and the Loot Buyer buys it.
+1. data/items/items.xml: the 40 badges (27803-27842) get slot type "badge" (0058: the badge bit only; "deckbadge" also
+   has the deck bit, and the badge slot refuses an item with it). The decks, ships, belts and gloves get a description
+   that says they can't be worn and what they still do; the Loot Buyer buys them (data/items/item_price_rules.csv).
+2. data/monster/**: the base boss loot lists "exiled amplifier catalyst [3]" twice and the Fury catalyst [3] (27848)
+   never: the second one, right after "fury amplifier catalyst [2]", becomes "fury amplifier catalyst [3]".
+3. data/events/scripts/player.lua: Player:onMoveItem asks ChaosBadges.onMoveItem first (a move into a retired slot is
+   refused with a message; the engine refuses it too).
+4. the base deck system (the script with `getSlotItem(CONST_SLOT_DECK)`): the cards are looked for in the deck the
+   player carries (ChaosBadges.deckOf), not in slot 12.
+5. the base sea tiles (the script with `function boatSystem.onStepIn`): ChaosBadges.boardShip sets the ship storages
+   from the ships the player carries first, so a carried ship sails.
+6. the NPC that builds the first ship (the script that gives 27799 and names the "Boat Slot"): it says to carry the
+   ship, not to wear it.
+7. data/creaturescripts/scripts/droploot.lua: the death loss runs over slots 1-10 only, so a badge (and the Eternal
+   Moon Badge, a container of 10, with everything in it) would never drop. The loop takes the badge slot too (never
+   11, the store inbox, nor the retired slots).
 
-Copies the players hold keep selling (the price table: data/items/item_price_rules.csv). A second run changes nothing.
---check changes nothing and exits 1 when something is still to do.
+Nothing is taken out of a drop: the decks and ships keep their uses, the belts and gloves drop nowhere (the base's
+armorsmith crafts them). A second run changes nothing. --check changes nothing and exits 1 when something is still to
+do.
 """
 import os
 import re
@@ -29,18 +36,21 @@ import sys
 sys.dont_write_bytecode = True
 
 BADGES = range(27803, 27843)
-CATALYSTS = range(27843, 27874)
-IDS = set(BADGES) | set(CATALYSTS)
-BADGE_DESC = 'A badge of the old orders. Badges cannot be worn any more; the Loot Buyer buys it.'
-CATALYST_DESC = 'An amplifier of the old badge rite. Badges cannot be worn any more, so it upgrades nothing; the Loot Buyer buys it.'
+DECKS = (27632, 27633, 27634)
+SHIPS = tuple(range(27796, 27803))
+BELTGLOVES = (29577, 29578, 29582, 29583, 29584, 29586, 29587, 29588, 29589, 29590, 29591, 29592, 29593, 29594, 29595,
+              29596, 29597, 29598, 29914, 29915, 29916, 29917, 29918, 29919)
+DECK_DESC = ("A deck for cards. It can't be worn: carry it, and use a card inside it to turn the card on or off. "
+             "The Loot Buyer buys it.")
+SHIP_DESC = "A ship. It can't be worn: carry it and walk from a dock onto the sea to sail. The Loot Buyer buys it."
+BELTGLOVES_DESC = "It can't be worn. The Loot Buyer buys it."
+DESCRIPTIONS = {}
+DESCRIPTIONS.update({i: DECK_DESC for i in DECKS})
+DESCRIPTIONS.update({i: SHIP_DESC for i in SHIPS})
+DESCRIPTIONS.update({i: BELTGLOVES_DESC for i in BELTGLOVES})
 
-MARK = 'Chaos: badges are retired (patch_badges.py)'
-USE_HOOK = ('\t-- {mark}: the catalyst explains, nothing is used up\n'
-            '\tif ChaosBadges and ChaosBadges.onCatalystUse and ChaosBadges.onCatalystUse(player, item, target) then\n'
-            '\t\treturn true\n'
-            '\tend\n').format(mark=MARK)
-USE_LINE = re.compile(r'^function action\.onUse\(player, item, fromPosition, target, toPosition, isHotkey\)[ \t]*\n', re.M)
-MOVE_HOOK = ('\t-- {mark}: no badge goes into the deck or badge slot\n'
+MARK = 'Chaos: the badge slot and the retired slots (patch_badges.py)'
+MOVE_HOOK = ('\t-- {mark}: nothing goes into a retired slot\n'
              '\tif ChaosBadges and ChaosBadges.onMoveItem then\n'
              '\t\tlocal chaosBadgeRet = ChaosBadges.onMoveItem(self, item, toPosition)\n'
              '\t\tif chaosBadgeRet then\n'
@@ -49,12 +59,25 @@ MOVE_HOOK = ('\t-- {mark}: no badge goes into the deck or badge slot\n'
              '\tend\n').format(mark=MARK)
 MOVE_LINE = re.compile(r'^function Player:onMoveItem\(item, count, fromPosition, toPosition, fromCylinder, toCylinder\)'
                        r'[ \t]*\n', re.M)
-
-LUA_LOOT = re.compile(r'^[ \t]*\{[ \t]*(?:id|name)[ \t]*=[ \t]*(?:"([^"\n]*)"|(\d+))[ \t]*[,}][^\n]*\n', re.M)
-XML_LOOT = re.compile(r'^[ \t]*<item\s+(?:id="(\d+)"|name="([^"]*)")[^>\n]*/>[^\n]*\n', re.M)
-PRIZE = re.compile(r'^[ \t]*\{[ \t]*itemId[ \t]*=[ \t]*(\d+)[ \t]*,[^\n]*\}[ \t]*,?[ \t]*(?:--[^\n]*)?\n', re.M)
-REWARD = re.compile(r'^[ \t]*\{[ \t]*Type[ \t]*=[ \t]*RewardType\.Item[ \t]*,[ \t]*Id[ \t]*=[ \t]*(\d+)[ \t]*,[^\n]*\}'
-                    r'[ \t]*,?[ \t]*(?:--[^\n]*)?\n', re.M)
+SEA_HOOK = ('\t-- {mark}: a ship carried is a ship aboard\n'
+            '\tlocal chaosSailor = creature and creature:getPlayer()\n'
+            '\tif chaosSailor and ChaosBadges and ChaosBadges.boardShip then\n'
+            '\t\tChaosBadges.boardShip(chaosSailor)\n'
+            '\tend\n').format(mark=MARK)
+SEA_LINE = re.compile(r'^function boatSystem\.onStepIn\(creature, item, position, fromPosition\)[ \t]*\n', re.M)
+DECK_CALL = 'player:getSlotItem(CONST_SLOT_DECK)'
+DECK_NEW = ('(ChaosBadges and ChaosBadges.deckOf and ChaosBadges.deckOf(player) or player:getSlotItem(CONST_SLOT_DECK))'
+            ' -- ' + MARK)
+NPC_TEXTS = (
+    (re.compile(r'place the explorer to the boat slot on your inventory and walk'), 'carry the explorer with you and walk'),
+    (re.compile(r'Equip the explorer on the Boat Slot of your inventory, and walk'), 'Carry the explorer with you and walk'),
+)
+DROP_LINE = re.compile(r'^([ \t]*)for i = CONST_SLOT_HEAD, CONST_SLOT_AMMO do[ \t]*$', re.M)
+DROP_NEW = r'\1for _, i in ipairs({CONST_SLOT_HEAD, CONST_SLOT_NECKLACE, CONST_SLOT_BACKPACK, CONST_SLOT_ARMOR, ' \
+    r'CONST_SLOT_RIGHT, CONST_SLOT_LEFT, CONST_SLOT_LEGS, CONST_SLOT_FEET, CONST_SLOT_RING, CONST_SLOT_AMMO, ' \
+    r'CONST_SLOT_BADGE}) do -- ' + MARK.replace('\\', '\\\\')
+FURY = re.compile(r'(\{[ \t]*(?:id|name)[ \t]*=[ \t]*"fury amplifier catalyst \[2\]"[^\n]*\n[ \t]*\{[ \t]*(?:id|name)'
+                  r'[ \t]*=[ \t]*")exiled( amplifier catalyst \[3\]")', re.I)
 
 
 def read(path):
@@ -67,61 +90,10 @@ def write(path, text):
         f.write(text)
 
 
-def names_of(items_xml):
-    """{lower-case name: id} of the retired ids in items.xml"""
-    out = {}
-    for m in re.finditer(r'<item\s+id="(\d+)"[^>]*?\bname="([^"]*)"', items_xml):
-        if int(m.group(1)) in IDS:
-            out[m.group(2).strip().lower()] = int(m.group(1))
-    return out
-
-
-def retired(ident, num, names):
-    if num:
-        return int(num) in IDS
-    return (ident or '').strip().lower() in names
-
-
-def lua_loot(text, names):
-    m = re.search(r'monster\.loot\s*=\s*\{[ \t]*\n(.*?)\n\}', text, re.S)
-    if not m:
-        return text, 0
-    n = [0]
-
-    def drop(x):
-        if retired(x.group(1), x.group(2), names):
-            n[0] += 1
-            return ''
-        return x.group(0)
-    body = LUA_LOOT.sub(drop, m.group(1) + '\n')[:-1]
-    return text[:m.start(1)] + body + text[m.end(1):], n[0]
-
-
-def xml_loot(text, names):
-    n = [0]
-
-    def drop(x):
-        if retired(x.group(2), x.group(1), names):
-            n[0] += 1
-            return ''
-        return x.group(0)
-
-    def block(m):
-        return XML_LOOT.sub(drop, m.group(0))
-    return re.sub(r'<loot>.*?</loot>', block, text, flags=re.S), n[0]
-
-
-def script_lines(text):
-    n = [0]
-
-    def drop(x):
-        if int(x.group(1)) in IDS:
-            n[0] += 1
-            return ''
-        return x.group(0)
-    text = PRIZE.sub(drop, text) if 'prizePool' in text else text
-    text = REWARD.sub(drop, text) if 'RewardType' in text else text
-    return text, n[0]
+def fury(text):
+    new, n = FURY.subn(lambda m: m.group(1) + ('Fury' if m.group(0)[len(m.group(1))] == 'E' else 'fury') + m.group(2),
+                       text)
+    return new, n
 
 
 def hook(text, line_re, code):
@@ -133,17 +105,42 @@ def hook(text, line_re, code):
     return text[:m.end()] + code + text[m.end():], 1
 
 
-def descriptions(xml):
-    """(new items.xml, changed count): each retired id's description attribute set to its text"""
+def deck_system(text):
+    if MARK in text or DECK_CALL not in text:
+        return text, 0
+    return text.replace(DECK_CALL, DECK_NEW, 1), 1
+
+
+def droploot(text):
+    if MARK in text:
+        return text, 0
+    return DROP_LINE.subn(DROP_NEW, text, count=1)
+
+
+def npc_texts(text):
+    n = 0
+    for pat, new in NPC_TEXTS:
+        text, k = pat.subn(new, text)
+        n += k
+    return text, n
+
+
+def items_xml(xml):
+    """(new items.xml, changed count): the badges' slot type and the retired items' descriptions"""
     n = 0
 
     def item(m):
         nonlocal n
         iid = int(m.group(2))
-        if iid not in IDS:
-            return m.group(0)
-        want = BADGE_DESC if iid in BADGES else CATALYST_DESC
         body = m.group(3)
+        if iid in BADGES:
+            new = re.sub(r'(<attribute\s+key="slotType"\s+value=")deckbadge(")', r'\1badge\2', body)
+            if new != body:
+                n += 1
+            return m.group(1) + new + m.group(4)
+        want = DESCRIPTIONS.get(iid)
+        if want is None:
+            return m.group(0)
         d = re.search(r'<attribute\s+key="description"\s+value="([^"]*)"\s*/>', body)
         if d:
             if d.group(1) == want:
@@ -168,15 +165,16 @@ def files(root, exts):
 def run(data, dry=False):
     """-> (lines of the report, how many files change)"""
     report, changed = [], 0
-    xml_path = os.path.join(data, 'items', 'items.xml')
-    names = names_of(read(xml_path)) if os.path.isfile(xml_path) else {}
+    found = set()
 
-    def apply(path, fn):
+    def apply(path, fn, what=None):
         nonlocal changed
         raw = read(path)
         crlf = '\r\n' in raw
         text = raw.replace('\r\n', '\n')
         new, n = fn(text)
+        if what and (n or MARK in text):
+            found.add(what)
         if not n:
             return
         if fn(new)[1]:
@@ -188,29 +186,36 @@ def run(data, dry=False):
         if not dry:
             write(path, new)
 
-    for path in files(os.path.join(data, 'monster'), ('.lua', '.xml')):
-        if path.endswith('.lua'):
-            apply(path, lambda t: lua_loot(t, names))
-        else:
-            apply(path, lambda t: xml_loot(t, names))
-    scripts = os.path.join(data, 'scripts')
-    chaos = os.path.join(scripts, 'chaos') + os.sep
-    for path in files(scripts, ('.lua',)):
-        if path.startswith(chaos):
+    for path in files(os.path.join(data, 'monster'), ('.lua',)):
+        apply(path, fury)
+    for path in files(os.path.join(data, 'scripts'), ('.lua',)):
+        if os.sep + 'chaos' + os.sep in path:
             continue
-        apply(path, script_lines)
         text = read(path)
-        if "upgraderType = 'amplifier'" in text:
-            apply(path, lambda t: hook(t, USE_LINE, USE_HOOK))
-            if MARK not in read(path) and not dry:
-                report.append('%s: catalyst action not found (skipped)' % os.path.relpath(path, data))
+        if DECK_CALL in text or MARK in text and 'deckOf' in text:
+            apply(path, deck_system, 'deck')
+        if SEA_LINE.search(text.replace('\r\n', '\n')):
+            apply(path, lambda t: hook(t, SEA_LINE, SEA_HOOK), 'sea')
+    npc_dir = os.path.join(data, 'npc', 'scripts')
+    if os.path.isdir(npc_dir):
+        for path in files(npc_dir, ('.lua',)):
+            text = read(path)
+            if 'addItem(27799' in text:
+                apply(path, npc_texts)
+    drop = os.path.join(data, 'creaturescripts', 'scripts', 'droploot.lua')
+    if os.path.isfile(drop):
+        apply(drop, droploot, 'drop')
     player = os.path.join(data, 'events', 'scripts', 'player.lua')
     if os.path.isfile(player):
-        apply(player, lambda t: hook(t, MOVE_LINE, MOVE_HOOK))
-        if MARK not in read(player) and not dry:
-            report.append('events/scripts/player.lua: Player:onMoveItem not found (skipped)')
+        apply(player, lambda t: hook(t, MOVE_LINE, MOVE_HOOK), 'move')
+    xml_path = os.path.join(data, 'items', 'items.xml')
     if os.path.isfile(xml_path):
-        apply(xml_path, descriptions)
+        apply(xml_path, items_xml)
+    if not dry:
+        for what, where in (('move', 'Player:onMoveItem'), ('deck', 'the deck system'), ('sea', 'the sea tiles'),
+                            ('drop', 'the death loss (droploot.lua)')):
+            if what not in found:
+                report.append('%s not found (skipped)' % where)
     return report, changed
 
 

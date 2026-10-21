@@ -1,12 +1,19 @@
--- badges_core.lua: the base server's badges are retired (server/README.md "Retired badges"). Pure Lua, no engine
+-- badges_core.lua: the base server's extra inventory slots (server/README.md "Badge slot"). Pure Lua, no engine
 -- calls; the glue is badges.lua, the base data changes are tools/patch_badges.py; tests/badges_test.lua.
 --
--- The base has 40 badges (server ids 27803-27842: nine lines of four or five tiers, Raging, Furious, Tempest, Blazing,
--- Eternal) for the base engine's deck / badge inventory slots (12, 13), and 31 amplifier catalysts (27843-27873) that
--- upgrade a badge one tier. Our client draws inventory slots 1-10 only, so no badge can be put on: the base bosses
--- dropped items nobody can use. patch_badges.py takes them out of every drop, task reward and roulette prize; copies
--- the players hold sell to the Loot Buyer. A catalyst used on anything explains that and is kept; a move of a badge
--- into slot 12 or 13 (a packet the client cannot send) is refused. Lua 5.1 / LuaJIT and 5.3.
+-- The base engine has five extra slots: deck (12), badge (13), ship (14), belt (15) and gloves (16). Owner decision
+-- 2026-10-21: the badge slot is drawn where the second ring slot was (client base patch 0113) and the second ring slot
+-- goes (engine patch 0058: the ammunition slot, 10, takes nothing). The other four stay retired: no client draws them
+-- and the engine refuses every item there (0058). What they held keeps its other uses:
+--   * the 40 badges (27803-27842: nine lines of four or five tiers, Raging, Furious, Tempest, Blazing, Eternal) are
+--     worn in slot 13; the 31 amplifier catalysts (27843-27873) upgrade a badge one tier as the base made them. The
+--     Eternal Moon Badge (27815) is a container, as in the base.
+--   * the decks (27632-27634) hold the cards: a card used inside a deck the player carries turns on or off (the base
+--     wanted the deck worn in slot 12).
+--   * the ships (27796-27802): a player who carries one sails from the docks (the base wanted it worn in slot 14);
+--     carrying one also opens its trainer portal, as wearing it did.
+--   * the belts and gloves (slot type "beltgloves") have no other use: they can't be worn; the Loot Buyer buys them.
+-- Lua 5.1 / LuaJIT and 5.3.
 
 ChaosBadgesCore = ChaosBadgesCore or {}
 local K = ChaosBadgesCore
@@ -26,9 +33,30 @@ K.LINES = {
 }
 K.FIRST_BADGE, K.LAST_BADGE = 27803, 27842
 K.FIRST_CATALYST, K.LAST_CATALYST = 27843, 27873
--- the base engine's deck and badge inventory slots (CONST_SLOT_DECK, CONST_SLOT_BADGE); a deckbadge item fits both
-K.SLOTS = {[12] = true, [13] = true}
+K.CONTAINER_BADGE = 27815 -- Eternal Moon Badge: a container of 10 (base items.xml containerSize)
+
 K.INVENTORY_X = 0xFFFF
+K.AMMO_SLOT = 10 -- the second ring slot of engine patch 0023 until 0058: takes nothing now (archery.lua moves it out)
+K.BADGE_SLOT = 13
+K.RETIRED_SLOTS = {[12] = true, [14] = true, [15] = true, [16] = true} -- deck, ship, belt, gloves
+
+-- the decks, largest first (the one a card is looked for in when a player carries several)
+K.DECKS = {27634, 27633, 27632}
+-- ship id -> the base storages its equip script set: the ship's own (base lib Ships table, read by the sea tiles'
+-- step-in) and the trainer portal it opens (set once, never cleared)
+K.SHIPS = {
+	[27796] = {storage = 37120, unlock = 110010},
+	[27797] = {storage = 37121, unlock = 110011},
+	[27798] = {storage = 37122, unlock = 110012},
+	[27799] = {storage = 37123, unlock = 110013},
+	[27800] = {storage = 37124, unlock = 110014},
+	[27801] = {storage = 37125, unlock = 110015},
+	[27802] = {storage = 37126, unlock = 110016},
+}
+K.SAILING_STORAGE = 109017 -- the base's "navigating" flag (its Player:onMoveItem keeps the ship slot while it is 1)
+-- the belts and gloves (base slot type "beltgloves")
+K.BELTGLOVES = {29577, 29578, 29582, 29583, 29584, 29586, 29587, 29588, 29589, 29590, 29591, 29592, 29593, 29594,
+	29595, 29596, 29597, 29598, 29914, 29915, 29916, 29917, 29918, 29919}
 
 -- badge id -> {line, tier}; catalyst id -> {line, tier = the tier it makes, from, to} (the base's upgrade table)
 K.badges, K.catalysts = {}, {}
@@ -45,6 +73,18 @@ do
 	end
 end
 
+-- id -> "deck" | "ship" | "beltgloves": the items of the retired slots
+K.retired = {}
+for _, id in ipairs(K.DECKS) do
+	K.retired[id] = "deck"
+end
+for id in pairs(K.SHIPS) do
+	K.retired[id] = "ship"
+end
+for _, id in ipairs(K.BELTGLOVES) do
+	K.retired[id] = "beltgloves"
+end
+
 function K.isBadge(id)
 	return K.badges[tonumber(id) or -1] ~= nil
 end
@@ -53,13 +93,9 @@ function K.isCatalyst(id)
 	return K.catalysts[tonumber(id) or -1] ~= nil
 end
 
--- every retired id (badges, then catalysts), sorted
-function K.ids()
-	local out = {}
-	for id = K.FIRST_BADGE, K.LAST_CATALYST do
-		out[#out + 1] = id
-	end
-	return out
+-- "deck" | "ship" | "beltgloves" for an item of a retired slot, nil otherwise
+function K.retiredKind(id)
+	return K.retired[tonumber(id) or -1]
 end
 
 -- the text of a key in lang (through ChaosI18n when it is loaded, English otherwise)
@@ -74,30 +110,83 @@ local function T(lang, key, ...)
 	return key
 end
 
-K.TEXT_CATALYST = "Badges are retired: no character can wear one, so this catalyst upgrades nothing and was not used up."
-K.TEXT_PRICE = "The Loot Buyer pays %d gold for it."
-K.TEXT_EQUIP = "Badges are retired: no character can wear one. The Loot Buyer buys it."
+K.TEXT_EQUIP = "This slot is retired: nothing can be worn there."
+K.TEXT_RETIRED = "This item can't be worn. The Loot Buyer buys it."
+K.TEXT_MOVED = "These slots are retired: decks, ships, belts and gloves can't be worn. Moved: %s."
 
--- what a player reads after using a catalyst; price = what the Loot Buyer pays for this copy (0 or nil: not named)
-function K.catalystText(price, lang)
-	local text = T(lang, K.TEXT_CATALYST)
-	price = math.floor(tonumber(price) or 0)
-	if price > 0 then
-		text = text .. " " .. T(lang, K.TEXT_PRICE, price)
+function K.equipText(lang, id)
+	return T(lang, K.retiredKind(id) and K.TEXT_RETIRED or K.TEXT_EQUIP)
+end
+
+function K.movedText(lang, list)
+	return T(lang, K.TEXT_MOVED, list)
+end
+
+local function slotOf(pos)
+	if type(pos) ~= "table" or tonumber(pos.x) ~= K.INVENTORY_X then
+		return nil
 	end
-	return text
+	return tonumber(pos.y)
 end
 
-function K.equipText(lang)
-	return T(lang, K.TEXT_EQUIP)
-end
-
--- true when a move of item id to pos puts a badge on (an inventory slot of the deck or the badge)
+-- true when a move of item id to pos goes into a retired slot (12, 14, 15, 16: anything), or puts a deck, ship, belt
+-- or gloves into the badge slot. The engine refuses the same (patch 0058); this is the message and the guard for an
+-- engine without it.
 function K.refusesMove(id, pos)
-	if not K.isBadge(id) or type(pos) ~= "table" then
+	local slot = slotOf(pos)
+	if not slot then
 		return false
 	end
-	return tonumber(pos.x) == K.INVENTORY_X and K.SLOTS[tonumber(pos.y) or -1] == true
+	if K.RETIRED_SLOTS[slot] then
+		return true
+	end
+	return slot == K.BADGE_SLOT and K.retiredKind(id) ~= nil
+end
+
+-- the base's "one badge at a time" storage (data/movements/scripts/equipments/badges.lua and the special skill scripts:
+-- set to the badge's id on equip, cleared on de-equip; a value above 0 refuses every other badge). A value left over
+-- with no such badge worn (a badge that left slot 13 without its de-equip event) would lock the slot for good.
+K.BASE_BADGE_STORAGE = 249578
+
+-- true when the stored value must be cleared: set, and the badge in slot 13 (wornId, nil when empty) is not that one
+function K.staleBadgeStorage(stored, wornId)
+	stored = tonumber(stored) or -1
+	return stored > 0 and stored ~= tonumber(wornId)
+end
+
+-- the login check: which worn items must move out. worn = {[slot] = id}. Every item in a retired slot, and anything in
+-- the badge slot that is no badge (a deck worn there before). Slot 10 is archery.lua's (ChaosArchery.loginPlan).
+-- Returns the slots, sorted.
+function K.loginMoves(worn)
+	local out = {}
+	for slot, id in pairs(worn or {}) do
+		if K.RETIRED_SLOTS[slot] or (slot == K.BADGE_SLOT and not K.isBadge(id)) then
+			out[#out + 1] = slot
+		end
+	end
+	table.sort(out)
+	return out
+end
+
+-- the ship storages for what a player carries: carried = {[ship id] = true}; current = {[storage] = value} (the unlock
+-- storages' values). Returns {[storage] = value} to write: every ship storage 1 when carried and 0 when not, the
+-- sailing flag 1 when any is carried, and each carried ship's trainer portal 1 when it is not set yet.
+function K.shipStorages(carried, current)
+	local out, any = {}, false
+	current = current or {}
+	for id, s in pairs(K.SHIPS) do
+		if carried and carried[id] then
+			any = true
+			out[s.storage] = 1
+			if (tonumber(current[s.unlock]) or -1) <= 0 then
+				out[s.unlock] = 1
+			end
+		else
+			out[s.storage] = 0
+		end
+	end
+	out[K.SAILING_STORAGE] = any and 1 or 0
+	return out
 end
 
 return K

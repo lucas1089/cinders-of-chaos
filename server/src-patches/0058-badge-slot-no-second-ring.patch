@@ -1,0 +1,244 @@
+# The badge slot comes back and the second ring slot goes (server/README.md "Badge slot"). Owner request 2026-10-21:
+# "tire o slot extra de ring e coloque o badge" (take out the extra ring slot and put the badge there). Applies after
+# 0001-0057, on top of 0023 (quivers and the second ring slot) and 0024 (right-click equips); 0023 stays as it is.
+#   * items.xml slotType "badge" (written by server/tools/patch_badges.py on the 40 badges): the badge bit only. The
+#     decks keep "deckbadge" (the deck and badge bits).
+#   * Player::queryAdd: the badge slot (13) takes a badge (the badge bit without the deck bit), so a deck no longer fits
+#     there. The deck (12), ship (14), belt (15) and gloves (16) slots take nothing (retired, no client draws them).
+#     The ammunition slot (10) takes nothing: 0023's second ring slot ends. 0023's quiver in the shield hand and the
+#     one-might-ring check of slot 9 stay (slot 10 is empty after the login move of archery.lua).
+#   * getSlotType (the equip hotkey 0x77, right-click equip): a badge goes to slot 13; a deck, ship, belt or gloves
+#     item no longer maps to its retired slot.
+#   * Game::internalMoveItem: 0023's swap of the rings in slots 9 and 10 goes (one ring slot).
+#   * Game::playerEquipItem and Game::chaosUseEquip: no second ring slot (a ring swaps with the worn one, as in
+#     stock); a badge is equipment for the right-click equip (chaosEquipsOnUse). The Eternal Moon Badge is a container:
+#     a use opens it, as with any container (drag it to the slot).
+#   * Unchanged on purpose: MoveEvents::getEvent still runs the ring events for slot 10 and Player::getArmor and
+#     queryDestination still name it, so a ring left there from before is de-equipped like a ring when the login
+#     moves it out.
+diff --git a/src/game.cpp b/src/game.cpp
+index 03f3e93..ac8b06f 100644
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -1359,62 +1359,6 @@ ReturnValue Game::internalMoveItem(Cylinder* fromCylinder, Cylinder* toCylinder,
+ 	//check if we can add this item
+ 	ReturnValue ret = toCylinder->queryAdd(index, *item, count, flags, actor);
+ 
+-	// Chaos 0023: a ring moved from one ring slot onto the ring in the other swaps the two rings. The exchange below
+-	// cannot: the source slot is still taken and addThing(thing) puts nothing into an inventory slot. Both rings stay
+-	// worn, so the one-might-ring rule holds; queryAdd ran the ring events' check for `item`, and `toItem` was in a ring
+-	// slot already.
+-	Player* ringOwner = nullptr;
+-	int32_t ringFrom = -1;
+-	if (ret == RETURNVALUE_NEEDEXCHANGE && toItem && fromCylinder == toCylinder && (index == CONST_SLOT_RING || index == CONST_SLOT_AMMO)) {
+-		ringOwner = dynamic_cast<Player*>(toCylinder);
+-		ringFrom = ringOwner ? ringOwner->getThingIndex(item) : -1;
+-	}
+-	if (ringOwner && ringFrom != index && (ringFrom == CONST_SLOT_RING || ringFrom == CONST_SLOT_AMMO)) {
+-		if (actorPlayer && fromPos && toPos) {
+-			ret = g_events->eventPlayerOnMoveItem(actorPlayer, toItem, toItem->getItemCount(), *toPos, *fromPos, toCylinder, fromCylinder);
+-			if (ret != RETURNVALUE_NOERROR) {
+-				return ret;
+-			}
+-		}
+-
+-		ret = ringOwner->queryRemove(*toItem, toItem->getItemCount(), flags, actor);
+-		if (ret == RETURNVALUE_NOERROR) {
+-			ret = ringOwner->queryRemove(*item, item->getItemCount(), flags, actor);
+-		}
+-		if (ret != RETURNVALUE_NOERROR) {
+-			return ret;
+-		}
+-
+-		ringOwner->removeThing(toItem, toItem->getItemCount());
+-		ringOwner->removeThing(item, item->getItemCount());
+-		ringOwner->addThing(index, item);
+-		ringOwner->addThing(ringFrom, toItem);
+-		ringOwner->postRemoveNotification(toItem, ringOwner, index);
+-		ringOwner->postRemoveNotification(item, ringOwner, ringFrom);
+-		ringOwner->postAddNotification(item, ringOwner, index);
+-		ringOwner->postAddNotification(toItem, ringOwner, ringFrom);
+-
+-		for (Item* ring : {item, toItem}) {
+-			if (!ring->isRemoved() && ring->getDuration() > 0) {
+-				startDecay(ring);
+-			}
+-		}
+-
+-		if (_moveItem) {
+-			*_moveItem = item;
+-		}
+-
+-		if (actorPlayer && fromPos && toPos) {
+-			if (!toItem->isRemoved()) {
+-				g_events->eventPlayerOnItemMoved(actorPlayer, toItem, toItem->getItemCount(), *toPos, *fromPos, toCylinder, fromCylinder);
+-			}
+-			if (!item->isRemoved()) {
+-				g_events->eventPlayerOnItemMoved(actorPlayer, item, count, *fromPos, *toPos, fromCylinder, toCylinder);
+-			}
+-		}
+-		return RETURNVALUE_NOERROR;
+-	}
+-
+ 	if (ret == RETURNVALUE_NEEDEXCHANGE) {
+ 		//check if we can add it to source cylinder
+ 		ret = fromCylinder->queryAdd(fromCylinder->getThingIndex(item), *toItem, toItem->getItemCount(), 0);
+@@ -2131,16 +2075,8 @@ slots_t getSlotType(const ItemType& it)
+ 			slot = CONST_SLOT_RING;
+ 		} else if (slotPosition & SLOTP_AMMO) {
+ 			slot = CONST_SLOT_AMMO;
+-		} else if (slotPosition & SLOTP_DECK) {
+-			slot = CONST_SLOT_DECK;
+-		} else if (slotPosition & SLOTP_BADGE) {
+-			slot = CONST_SLOT_BADGE;
+-		} else if (slotPosition & SLOTP_SHIP) {
+-			slot = CONST_SLOT_SHIP;
+-		} else if (slotPosition & SLOTP_BELT) {
+-			slot = CONST_SLOT_BELT;
+-		} else if (slotPosition & SLOTP_GLOVES) {
+-			slot = CONST_SLOT_GLOVES;
++		} else if ((slotPosition & SLOTP_BADGE) && !(slotPosition & SLOTP_DECK)) {
++			slot = CONST_SLOT_BADGE; // Chaos 0058: the badges; the deck, ship, belt and gloves slots are retired
+ 		} else if (slotPosition & SLOTP_TWO_HAND || slotPosition & SLOTP_LEFT) {
+ 			slot = CONST_SLOT_LEFT;
+ 		}
+@@ -2195,13 +2131,16 @@ ReturnValue Game::chaosTakeOff(Player* player, Item* item, const Position& fromP
+ }
+ 
+ // Chaos 0024: the item types a use puts on: a head, necklace, armour, legs, feet or ring item, a weapon, shield or
+-// quiver. Every item may be held in a hand by default (SLOTP_HAND), so the hands count by weapon type only;
+-// ammunition, the base's extra slots (deck, badge, ship, belt, gloves) and the backpack slot do not count.
++// quiver, and a badge (0058). Every item may be held in a hand by default (SLOTP_HAND), so the hands count by weapon
++// type only; ammunition, the retired extra slots (deck, ship, belt, gloves) and the backpack slot do not count.
+ bool Game::chaosEquipsOnUse(const ItemType& it)
+ {
+ 	if (it.slotPosition & (SLOTP_HEAD | SLOTP_NECKLACE | SLOTP_ARMOR | SLOTP_LEGS | SLOTP_FEET | SLOTP_RING)) {
+ 		return true;
+ 	}
++	if ((it.slotPosition & SLOTP_BADGE) && !(it.slotPosition & SLOTP_DECK)) {
++		return true; // Chaos 0058: a badge goes into the badge slot
++	}
+ 	switch (it.weaponType) {
+ 		case WEAPON_SWORD:
+ 		case WEAPON_CLUB:
+@@ -2246,21 +2185,11 @@ ReturnValue Game::chaosUseEquip(Player* player, Item* item, const Position& pos,
+ 		return chaosTakeOff(player, item, fromPos);
+ 	}
+ 
++	// Chaos 0058: one ring slot again (a worn ring swaps with the new one), and the badge slot
+ 	slots_t slot = getSlotType(it);
+-	if (slot == CONST_SLOT_RING) {
+-		// the free ring slot (9 first), else the one holding a might ring when this is one (one might ring at a
+-		// time, 0023), else slot 9 (the rings swap)
+-		const Item* first = player->getInventoryItem(CONST_SLOT_RING);
+-		const Item* second = player->getInventoryItem(CONST_SLOT_AMMO);
+-		if (it.chaosMightRing && first && Item::items[first->getID()].chaosMightRing) {
+-			slot = CONST_SLOT_RING;
+-		} else if (it.chaosMightRing && second && Item::items[second->getID()].chaosMightRing) {
+-			slot = CONST_SLOT_AMMO;
+-		} else if (first && !second) {
+-			slot = CONST_SLOT_AMMO;
+-		}
+-	} else if (slot != CONST_SLOT_HEAD && slot != CONST_SLOT_NECKLACE && slot != CONST_SLOT_ARMOR && slot != CONST_SLOT_LEGS &&
+-	           slot != CONST_SLOT_FEET && slot != CONST_SLOT_LEFT && slot != CONST_SLOT_RIGHT) {
++	if (slot != CONST_SLOT_HEAD && slot != CONST_SLOT_NECKLACE && slot != CONST_SLOT_ARMOR && slot != CONST_SLOT_LEGS &&
++	    slot != CONST_SLOT_FEET && slot != CONST_SLOT_RING && slot != CONST_SLOT_BADGE && slot != CONST_SLOT_LEFT &&
++	    slot != CONST_SLOT_RIGHT) {
+ 		return RETURNVALUE_CANNOTUSETHISOBJECT;
+ 	}
+ 
+@@ -2300,17 +2229,6 @@ void Game::playerEquipItem(uint32_t playerId, uint16_t spriteId)
+ 	const ItemType& it = Item::items.getItemIdByClientId(spriteId);
+ 	slots_t slot = getSlotType(it);
+ 
+-	// Chaos 0023: the second ring slot (the old ammunition slot). The hotkey of a ring worn in either slot takes it off
+-	// (slot 9 first); a ring not worn goes into slot 10 when slot 9 holds another ring and slot 10 is free.
+-	if (slot == CONST_SLOT_RING) {
+-		const Item* first = player->getInventoryItem(CONST_SLOT_RING);
+-		const Item* second = player->getInventoryItem(CONST_SLOT_AMMO);
+-		bool firstIsIt = first && first->getID() == it.id;
+-		if (!firstIsIt && ((second && second->getID() == it.id) || (first && !second))) {
+-			slot = CONST_SLOT_AMMO;
+-		}
+-	}
+-
+ 	// Chaos 0024: both moves run the Lua move events (chaosEquipMove), and every refusal is shown
+ 	ReturnValue ret = RETURNVALUE_NOERROR;
+ 	Item* slotItem = player->getInventoryItem(slot);
+diff --git a/src/items.cpp b/src/items.cpp
+index 8714c73..3ab2ec2 100644
+--- a/src/items.cpp
++++ b/src/items.cpp
+@@ -801,6 +801,10 @@ void Items::parseItemNode(const pugi::xml_node& itemNode, uint16_t id)
+ 						it.slotPosition |= SLOTP_HAND;
+ 					} else if (tmpStrValue == "deckbadge") {
+ 						it.slotPosition |= SLOTP_DECKBAD;
++					} else if (tmpStrValue == "badge") {
++						// Chaos (src-patch 0058): the badges only, written by server/tools/patch_badges.py; a
++						// "deckbadge" item (the decks) carries the deck bit too and the badge slot refuses it
++						it.slotPosition |= SLOTP_BADGE;
+ 					} else if (tmpStrValue == "ship") {
+ 						it.slotPosition |= SLOTP_SHIP;
+ 					} else if (tmpStrValue == "beltgloves") {
+diff --git a/src/player.cpp b/src/player.cpp
+index c121165..8d506df 100644
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -2972,46 +2972,24 @@ ReturnValue Player::queryAdd(int32_t index, const Thing& thing, uint32_t count,
+ 			break;
+ 		}
+ 
+-		case CONST_SLOT_DECK: {
+-			if (slotPosition & SLOTP_DECKBAD) {
+-				ret = RETURNVALUE_NOERROR;
+-			}
+-			break;
+-		}
+-
+ 		case CONST_SLOT_BADGE: {
+-			if (slotPosition & SLOTP_DECKBAD) {
+-				ret = RETURNVALUE_NOERROR;
+-			}
+-			break;
+-		}
+-
+-		case CONST_SLOT_SHIP: {
+-			if (slotPosition & SLOTP_SHIP) {
+-				ret = RETURNVALUE_NOERROR;
+-			}
+-			break;
+-		}
+-
+-		case CONST_SLOT_BELT: {
+-			if (slotPosition & SLOTP_BELTGLOVES) {
+-				ret = RETURNVALUE_NOERROR;
+-			}
+-			break;
+-		}
+-
+-		case CONST_SLOT_GLOVES: {
+-			if (slotPosition & SLOTP_BELTGLOVES) {
++			// Chaos (src-patch 0058): the badges (slotType "badge"); a deck (slotType "deckbadge") carries the deck bit
++			if ((slotPosition & SLOTP_BADGE) && !(slotPosition & SLOTP_DECK)) {
+ 				ret = RETURNVALUE_NOERROR;
+ 			}
+ 			break;
+ 		}
+ 
++		case CONST_SLOT_DECK:
++		case CONST_SLOT_SHIP:
++		case CONST_SLOT_BELT:
++		case CONST_SLOT_GLOVES:
+ 		case CONST_SLOT_AMMO: {
+-			// Chaos 0023: the ammunition slot is a second ring slot (bows fire without ammunition, the quiver is worn in
+-			// the shield hand): rings only, the item types the ring slot takes. Anything else left in it is moved at
+-			// login (archery.lua). One might ring at a time over both ring slots.
+-			ret = (slotPosition & SLOTP_RING) ? chaosRingSlot(item, inventory[CONST_SLOT_RING]) : RETURNVALUE_CANNOTBEDRESSED;
++			// Chaos 0058: the deck, ship, belt and gloves slots are retired (no client draws them; server/README.md
++			// "Badge slot"), and the ammunition slot takes nothing: it is no second ring slot any more (0023 made it
++			// one), bows fire without ammunition and the quiver is worn in the shield hand. What is left in one of
++			// them moves at login (badges.lua).
++			ret = RETURNVALUE_CANNOTBEDRESSED;
+ 			break;
+ 		}
+ 

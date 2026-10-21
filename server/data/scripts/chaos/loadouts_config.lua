@@ -20,8 +20,9 @@ ChaosLoadoutsConfig = {
 	pollMs = 100,
 	castSerialBase = 900000000, -- cast bar serials (client game_castbar) far above the spells' own
 
-	-- gear: the equipment slots a loadout's set covers (CONST_SLOT_*: 3, the backpack, is never part of a set)
-	gearSlots = {1, 2, 4, 5, 6, 7, 8, 9, 10},
+	-- gear: the equipment slots a loadout's set covers (CONST_SLOT_*: 3, the backpack, is never part of a set; 13 the
+	-- badge slot, engine patch 0058; 10 takes nothing since 0058)
+	gearSlots = {1, 2, 4, 5, 6, 7, 8, 9, 13},
 	inboxOnlyInPz = true, -- the store inbox is searched only while switching in a protection zone
 
 	nameMax = 20,

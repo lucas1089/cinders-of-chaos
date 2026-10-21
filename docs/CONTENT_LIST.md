@@ -121,7 +121,7 @@ Progression systems:
 - **Attack speed cap, uniform crit and leech rolls.** Engine patches. Done.
 - **Movement speed.** Players walk 15-30% faster. Done.
 - **Infinite arrows and quivers.** Bows fire without ammo; quivers in the off-hand (#87, #90). Done.
-- **Second ring slot.** The ammunition slot holds a ring (#90). Done.
+- **Badge slot.** Slot 13 shows where the ammunition slot was; it replaced the second ring slot of #90 (O107). Done.
 - **Fist weapons** for the Monk. Done.
 - **Keep attacking while moving** (#95). Done.
 - **Rotations of at most 5 spells** per class (#140). Done.

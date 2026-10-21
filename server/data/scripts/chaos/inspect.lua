@@ -104,14 +104,14 @@ end
 
 local function equipment(target)
 	local equipped = {}
-	for slot = I.SLOT_FIRST, I.SLOT_LAST do
+	for _, slot in ipairs(I.SLOTS) do
 		local item = target:getSlotItem(slot)
 		if item then
 			equipped[item:getId()] = true
 		end
 	end
 	local rows = {}
-	for slot = I.SLOT_FIRST, I.SLOT_LAST do
+	for _, slot in ipairs(I.SLOTS) do
 		local item = target:getSlotItem(slot)
 		if item then
 			local attrs

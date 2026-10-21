@@ -156,7 +156,7 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
 > *"I stopped counting arrows the day my bow stopped asking for them."*
 > (a Deadeye of the ash wastes)
 
-![A bow and a quiver in the hands, a second ring slot, and a quiver's tooltip](docs/images/feature_archery.png)
+![A bow and a quiver in the hands, and a quiver's tooltip](docs/images/feature_archery.png)
 
 - **No more arrows or bolts.** Bows and crossbows fire on their own. Each one carries the damage of the ammunition its
   level used to need, so nothing got weaker. Arrows and bolts are gone from shops and loot, and any you had were
@@ -166,9 +166,9 @@ Most of the fight is the classic one. A few rules are our own, and you will noti
   they roll modifiers of their own: *Distance Fighting*, *Critical Strike Chance with Bows*, *Extra Projectile Chance*
   (a second shot at a nearby monster), fire, ice, energy or earth damage added to your shots, and *Attack Speed with
   Bows*. Quivers drop like any gear, can be crafted with a rarity and turn up at the Gambler for bow classes.
-- **A second ring slot.** The old ammunition slot now takes a ring. Both rings count in full: modifiers, legendary
-  powers, gems, item sets. Two copies of the same ring are fine, but only one might ring at a time. Drag a ring onto
-  the other slot to swap them.
+- **The badge slot.** Where the ammunition slot was, you wear a badge now: nine lines of badges with armour,
+  absorbs, skills, health, mana, leech or critical hits, upgraded tier by tier with amplifier catalysts. It replaced
+  the second ring slot (2026-10-21): one ring again, and a ring worn in the old slot moved to your Purse.
 
 ## Passive tree, Vocation Trials and Paragon
 

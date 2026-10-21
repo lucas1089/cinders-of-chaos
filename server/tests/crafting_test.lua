@@ -25,7 +25,9 @@ local TYPES = {
 	[27849] = {name = "moon amplifier catalyst [1]", slot = 48, abilities = "zero"}, -- hands only, no stats: not gear
 	[29001] = {name = "lucky charm", slot = 48, abilities = {skills = {0, 0, 0, 2}}}, -- hands only, a skill: gear
 	[2214] = {name = "ring of healing", slot = 256 + 48, abilities = "zero"},          -- a ring slot: gear
-	[27811] = {name = "raging moon badge", slot = 4096 + 8192 + 48, abilities = "zero"}, -- the base's badge slot: gear
+	[27811] = {name = "raging moon badge", slot = 8192 + 48, abilities = "zero"}, -- slotType "badge" (patch 0058): gear
+	[29577] = {name = "shadowwoven gloves", slot = 32768 + 48, armor = 2, abilities = "zero"}, -- retired belt / gloves
+	[27632] = {name = "bronze deck", slot = 4096 + 8192 + 48, abilities = "zero"}, -- retired deck (not a container here)
 	-- rings and necklaces as gear (data/lib/chaos_jewelry.lua): the consumables are not
 	[2197] = {name = "stone skin amulet", slot = 2 + 48, abilities = "zero"},
 	[2165] = {name = "stealth ring", slot = 256 + 48, abilities = "zero"},
@@ -116,6 +118,11 @@ eq(C.isGear(newItem(2198)), true, "an amulet is gear")
 eq(C.isGear(newItem(2197)), false, "a consumable amulet (stone skin) is not gear")
 eq(C.isGear(newItem(2165)), false, "a consumable ring (stealth) is not gear")
 eq(C.isGear(newItem(27811)), true, "a badge is gear")
+eq(C.isGear(newItem(29577)), false, "gloves (a retired slot) are no gear, armour or not")
+eq(C.isGear(newItem(27632)), false, "a deck (a retired slot) is no gear")
+eq(C.retiredOnly(16384 + 48), true, "a ship's slot is retired")
+eq(C.retiredOnly(8192 + 48), false, "the badge slot is not")
+eq(C.retiredOnly(4096 + 8192 + 256), false, "a ring with a deck bit still has the ring")
 eq(C.isGear(newItem(2400)), true, "a weapon is gear")
 eq(C.isGear(newItem(2160)), false, "a stack is not")
 local M = ChaosItemMods

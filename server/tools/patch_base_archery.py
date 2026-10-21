@@ -31,8 +31,8 @@ quivers, mods, ammo, conjureScripts), the same file the Lua side (data/lib/chaos
    ({id, n} pairs with n < 1000, addItem(id, n), itemId = id, count = n); a trade of something for ammunition in an
    NPC script gives gold coins; removeItem(id, n) asks for gold instead, and the NPC's texts that asked for
    "<n> arrows" / "<n> bolts" ask for that gold (also on a script an earlier version of this tool patched).
-9. The second ring slot (engine src-patch 0023 makes the ammunition slot take rings only and run the ring events
-   there): base Lua tables that map an inventory slot to its slot position bit (`[CONST_SLOT_AMMO] = SLOTP_AMMO`, in
+9. The second ring slot (engine src-patch 0023 made the ammunition slot take rings only and run the ring events
+   there; src-patch 0058 makes it take nothing, so this mapping no longer matters and is kept as harmless): base Lua tables that map an inventory slot to its slot position bit (`[CONST_SLOT_AMMO] = SLOTP_AMMO`, in
    data/scripts/customs/rarity/base_rarity.lua and data/lib/core/itemtype.lua) map it to SLOTP_RING, so the base
    rarity conditions and ItemType.usesSlot treat a ring there as in the ring slot.
 10. data/scripts/eventcallbacks/player/default_onMoveItem.lua: the base's convenience swap (a two-handed weapon taken

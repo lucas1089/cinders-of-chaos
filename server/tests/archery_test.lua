@@ -8,8 +8,8 @@
 --   * the hands (engine src-patch 0023, mirrored in ChaosArchery.handsAllowed): bow or crossbow + quiver allowed, a
 --     shield or anything else beside a launcher refused, a quiver beside an empty weapon hand allowed and beside any
 --     other weapon refused, the ammunition slot refused; the login check (archery.lua A.checkHands) moves a quiver
---     out of the ammunition slot to the off-hand, else the backpack, else the inbox, saved, idempotent; one might ring
---     at a time (A.isMightRing): with two worn, the one in the second ring slot goes to the backpack or the inbox
+--     out of the ammunition slot to the off-hand, else the backpack, else the inbox, saved, idempotent; a ring left in
+--     the ammunition slot (0023's second ring slot, gone with src-patch 0058) goes to the backpack or the inbox
 --   * data/scripts/chaos/archery.lua: the ammunition sweep (save-safe, once, the stash), the quiver's skill and speed,
 --     old launchers; weapon_styles.lua: the no-ammunition hit (splash by kind, critical strike, element, extra shot)
 --   * loot.lua: quivers are gear drops, arrows and bolts are none; server/sql/chaos_archery.sql names the quivers
@@ -376,7 +376,8 @@ local quiver = newItem(QUIVER)
 C.forge(quiver, 5, 100, lcg(3))
 p.slots[CONST_SLOT_RIGHT] = quiver
 local bits = M.slotBits()
-eq(bits[CONST_SLOT_AMMO], SLOTP_RING, "the ammunition slot is the second ring slot (engine patch 0023)")
+eq(bits[CONST_SLOT_AMMO], nil, "the ammunition slot takes nothing (engine patch 0058; 0023 made it a second ring slot)")
+eq(bits[CONST_SLOT_BADGE], SLOTP_BADGE, "the badge slot counts (engine patch 0058)")
 ok(not M.fits(quiver, CONST_SLOT_RIGHT, bits, p), "no launcher: the quiver does not count")
 ok(not M.fits(quiver, CONST_SLOT_RIGHT, bits), "no player given: never")
 p.slots[CONST_SLOT_LEFT] = newItem(2400)
@@ -394,49 +395,37 @@ p.slots[CONST_SLOT_LEFT] = nil
 eq(M.handLauncher(p), nil, "a quiver alone: no launcher")
 local torch = newItem(2050)
 ok(not M.fits(torch, CONST_SLOT_AMMO, bits, p), "a torch never counts")
--- two rings: both count, their modifiers add up under the catalogue's caps
+-- a ring in the ammunition slot (worn there before engine patch 0058) does not count; the ring slot's does
 local pr2 = newPlayer()
 local ringA, ringB = newItem(2357), newItem(2165)
 C.forge(ringA, 5, 120, lcg(21))
 C.forge(ringB, 5, 120, lcg(22))
 pr2.slots[CONST_SLOT_RING], pr2.slots[CONST_SLOT_AMMO] = ringA, ringB
-ok(M.fits(ringA, CONST_SLOT_RING, bits, pr2) and M.fits(ringB, CONST_SLOT_AMMO, bits, pr2), "both rings count")
-eq(#M.equippedItems(pr2), 2, "two rings equipped")
-local one, two = M.totals({ringA}), M.totals(M.equippedItems(pr2))
-local onlyB = M.totals({ringB})
+ok(M.fits(ringA, CONST_SLOT_RING, bits, pr2), "the ring slot's ring counts")
+ok(not M.fits(ringB, CONST_SLOT_AMMO, bits, pr2), "a ring in the ammunition slot does not")
+eq(#M.equippedItems(pr2), 1, "one ring equipped")
+local one = M.totals({ringA})
 local keys = 0
-for k, v in pairs(two) do
-	local def = M.byKey[k]
-	local want = (one[k] or 0) + (onlyB[k] or 0)
-	if def and def.cap then
-		want = math.min(def.cap, want)
-	end
-	eq(v, want, "two rings: " .. k .. " is the sum of both under the cap")
+for k, v in pairs(M.totals(M.equippedItems(pr2))) do
+	eq(v, one[k], "one ring: " .. k .. " is the ring slot's")
 	keys = keys + 1
 end
-ok(keys >= 1, "the rings rolled modifiers")
--- the ring budget: at the top tier every modifier a ring may roll already reaches its cap from the slots a character
--- had with one ring (weapon, shield, helmet, armour, legs, boots, amulet + ring, gloves + belt), so the second ring
--- does not raise any ceiling at T8; it only makes the caps easier to reach (server/data/spells/README.md "Second ring")
-local ONE_RING = {weapon = 1, shield = 1, helmet = 1, armor = 1, legs = 1, boots = 1, jewel = 2, other = 2}
+ok(keys >= 1, "the ring rolled modifiers")
+-- the jewel budget: at the top tier every modifier a ring may roll reaches its cap from the slots a character wears
+-- (weapon, shield, helmet, armour, legs, boots, amulet + ring, the badge), without a second ring and without gloves or
+-- a belt (server/data/spells/README.md "Badge slot")
+local WORN = {weapon = 1, shield = 1, helmet = 1, armor = 1, legs = 1, boots = 1, jewel = 2, other = 1}
+local short = {}
 for _, def in ipairs(M.config.mods) do
 	if def.kinds and def.kinds.jewel and def.cap then
 		local n = 0
-		for k, c in pairs(ONE_RING) do
+		for k, c in pairs(WORN) do
 			if def.kinds[k] then n = n + c end
 		end
-		ok(n * def.tiers[#def.tiers][2] >= def.cap, def.key .. ": the cap is reached at T8 without a second ring")
+		if n * def.tiers[#def.tiers][2] < def.cap then short[#short + 1] = def.key end
 	end
 end
--- the same unique ring twice: allowed (no unique says otherwise); its modifiers add up under the caps as well
-local twin = newItem(2357)
-for k, v in pairs(ringA.custom) do twin.custom[k] = v end
-for k, v in pairs(ringA.attrs) do twin.attrs[k] = v end
-local twins = M.totals({ringA, twin})
-for k, v in pairs(one) do
-	local def = M.byKey[k]
-	eq(twins[k], def and def.cap and math.min(def.cap, 2 * v) or 2 * v, "two copies: " .. k)
-end
+eq(table.concat(short, ","), "", "every jewel modifier reaches its cap at T8 with one ring and the badge")
 -- implicits under the caps
 local imp = A.implicits(29873)
 local totals = M.totals({}, imp)
@@ -466,8 +455,8 @@ eq(tip.kind, "quiver", "tooltip kind")
 eq(tip.slot, "Off-hand: Quiver", "tooltip slot")
 eq(tip.cmp and tip.cmp[1], CONST_SLOT_RIGHT, "compared with the off-hand")
 eq(tip.cmp and #tip.cmp, 1, "and only there")
-eq(T.SLOT_LAST, 10, "the tooltip asks for slots 1-10 (10: the second ring slot)")
-eq(T.decodePos({x = CONTAINER_POSITION, y = 10, z = 0}).slot, 10, "a ring in the second ring slot has a tooltip")
+eq(T.SLOT_SET[10], nil, "the tooltip asks for no ammunition slot (it takes nothing, engine patch 0058)")
+eq(T.decodePos({x = CONTAINER_POSITION, y = 13, z = 0}).slot, 13, "a badge in the badge slot has a tooltip")
 eq(tip.note, T.QUIVER_NOTE, "the bow note")
 eq(tip.desc, nil, "no type text (it repeats the implicits)")
 local imps = 0
@@ -509,7 +498,7 @@ ok(not A.handsAllowed(nil, "launcher"), "a bow never in the shield hand")
 ok(not A.handsAllowed("twohanded", "shield"), "two-handed + shield: refused (as the engine always did)")
 ok(A.handsAllowed("weapon", "shield"), "sword + shield")
 ok(A.handsAllowed("weapon", "weapon"), "dual wield (the engine asks the storage)")
-ok(A.slotAllowed(CONST_SLOT_AMMO, "ring"), "the second ring slot takes a ring")
+ok(not A.slotAllowed(CONST_SLOT_AMMO, "ring"), "the ammunition slot takes no ring (engine patch 0058)")
 ok(not A.slotAllowed(CONST_SLOT_AMMO, "quiver"), "not a quiver")
 ok(not A.slotAllowed(CONST_SLOT_AMMO, "other"), "not a torch or anything else")
 ok(not A.slotAllowed(CONST_SLOT_AMMO, nil), "not an unknown item")
@@ -529,22 +518,19 @@ eq(plan({ammo = "quiver"}), "ammo>off", "a quiver of before, empty hands: to the
 eq(plan({main = "weapon", off = "shield", ammo = "quiver"}), "ammo>stow", "the off-hand is taken: stowed")
 eq(plan({main = "weapon", ammo = "quiver"}), "ammo>stow", "beside a sword: stowed")
 eq(plan({main = "launcher", ammo = "other"}), "ammo>stow", "anything else in the ammunition slot: stowed")
-eq(plan({main = "launcher", off = "quiver", ammo = "ring"}), "", "a ring in the second ring slot stays")
-eq(plan({main = "launcher", ammo = "ring"}), "", "a ring stays even with the off-hand free")
+eq(plan({main = "launcher", off = "quiver", ammo = "ring"}), "ammo>stow", "a ring in the old second ring slot: stowed")
+eq(plan({main = "launcher", ammo = "ring"}), "ammo>stow", "a ring is stowed even with the off-hand free")
+eq(A.loginPlan({ammo = "ring"})[1].why, "ring", "for the ring rule (its own message)")
 eq(plan({main = "launcher", off = "shield", ammo = "quiver"}), "off>stow,ammo>off",
 	"a refused pair loses its off-hand item first; then the quiver goes there")
 eq(plan({main = "weapon", off = "quiver"}), "off>stow", "a quiver beside a sword: stowed")
 eq(plan({main = "quiver", ammo = "quiver"}), "main>stow,ammo>off", "a quiver in the weapon hand: stowed")
--- one might ring at a time (0023): the one in the second ring slot goes, the one in the ring slot stays
+-- the might rings (items.xml chaosMightRing, 0023): one ring slot now, so one at a time without a rule of its own
 ok(A.isMightRing(ItemType(2164)), "a might ring")
 ok(not A.isMightRing(ItemType(2169)) and not A.isMightRing(ItemType(2357)), "a time ring or another ring is none")
 ok(not A.isMightRing(nil) and not A.isMightRing({}), "no item type, or an engine without isMightRing: none")
-eq(plan({ammo = "ring", ammoMight = true, ringMight = true}), "ammo>stow", "two might rings: the second ring slot's is stowed")
-eq(A.loginPlan({ammo = "ring", ammoMight = true, ringMight = true})[1].why, "might", "for the might rule")
-eq(plan({ammo = "ring", ammoMight = true}), "", "a might ring alone in the second ring slot stays")
-eq(plan({ammo = "ring", ringMight = true}), "", "a might ring and another ring stay")
-eq(plan({main = "launcher", off = "shield", ammo = "ring", ammoMight = true, ringMight = true}), "off>stow,ammo>stow",
-	"the hands and the rings in one check")
+eq(plan({ammo = "ring", ammoMight = true, ringMight = true}), "ammo>stow", "a might ring in the ammunition slot: stowed")
+eq(plan({main = "launcher", off = "shield", ammo = "ring"}), "off>stow,ammo>stow", "the hands and the ring in one check")
 
 -- ---------------------------------------------------------------- 4. the ammunition, refunds
 ok(A.isAmmoId(2544), "arrow")
@@ -712,6 +698,9 @@ local function handsPlayer(left, right, ammo, opts)
 	pl.slots[CONST_SLOT_BACKPACK] = bp
 	local inbox = newItem(1988)
 	pl.getInbox = function() return inbox end
+	local store = newItem(1988) -- the store inbox ("Purse")
+	store.full = opts.storeFull
+	pl.getStoreInbox = function() return store end
 	pl.addItemEx = function(self, item, _, slot)
 		if not A.slotAllowed(slot, A.handKind(ItemType(item:getId()))) or self:getSlotItem(slot) or opts.refuseOff then
 			return 1
@@ -729,7 +718,7 @@ local function handsPlayer(left, right, ammo, opts)
 		self.slots[slot] = item
 		return RETURNVALUE_NOERROR
 	end
-	return pl, bp, inbox
+	return pl, bp, inbox, store
 end
 local function rolledQuiver()
 	local q = newItem(QUIVER)
@@ -751,37 +740,44 @@ eq(saves, 1, "saved at once")
 ok(ph.msgs[1] and ph.msgs[1]:find("your off-hand", 1, true) ~= nil, "the player is told")
 eq(A.checkHands(ph), 0, "a second login: nothing to do")
 eq(saves, 1, "and no save")
--- the off-hand is taken by a shield (a sword in the hand): the quiver goes to the backpack
+-- the off-hand is taken by a shield (a sword in the hand): the quiver goes to the store inbox (the ammunition slot
+-- is drawn by no client; never the backpack: the hidden slots all empty into the Purse)
 local q2 = rolledQuiver()
-local ps, bpS = handsPlayer(newItem(2400), newItem(2520), q2)
+local ps, _, _, storeS = handsPlayer(newItem(2400), newItem(2520), q2)
 eq(A.checkHands(ps), 1, "moved")
-ok(q2.moved and bpS:getItems()[1] == q2, "into the backpack")
+ok(q2.moved and storeS:getItems()[1] == q2, "into the store inbox")
+ok(ps.msgs[1]:find("your Purse", 1, true) ~= nil, "the message names the Purse")
 eq(ps:getSlotItem(CONST_SLOT_RIGHT).id, 2520, "the shield stays")
--- the backpack is full: the inbox
+-- the store inbox refuses it: the depot inbox
 local q3 = rolledQuiver()
-local pf, _, inboxF = handsPlayer(newItem(2400), nil, q3, {bagFull = true})
+local pf, _, inboxF = handsPlayer(newItem(2400), nil, q3, {storeFull = true})
 eq(A.checkHands(pf), 1, "moved")
 ok(inboxF:getItems()[1] == q3, "into the inbox")
 ok(pf.msgs[1]:find("your inbox", 1, true) ~= nil, "the message names the inbox")
 -- the engine refuses the off-hand (a vocation or level of movements.xml): stowed instead
 local q4 = rolledQuiver()
-local pr, bpR = handsPlayer(newItem(2456), nil, q4, {refuseOff = true})
+local pr, _, _, storeR = handsPlayer(newItem(2456), nil, q4, {refuseOff = true})
 eq(A.checkHands(pr), 1, "moved")
-ok(bpR:getItems()[1] == q4 and not q4.removed, "the quiver kept, in the backpack")
+ok(storeR:getItems()[1] == q4 and not q4.removed, "the quiver kept, in the store inbox")
 eq(pr:getSlotItem(CONST_SLOT_RIGHT), nil, "the off-hand stays empty")
 -- something else left in the ammunition slot (a torch): the backpack
 local torch2 = newItem(2050)
-local pt, bpT = handsPlayer(newItem(2456), nil, torch2)
+local pt, _, _, bpT = handsPlayer(newItem(2456), nil, torch2)
 eq(A.checkHands(pt), 1, "moved")
-ok(bpT:getItems()[1] == torch2, "the torch into the backpack")
--- a ring in the second ring slot stays; no save, no message
+ok(bpT:getItems()[1] == torch2, "the torch into the store inbox")
+-- a ring in the old second ring slot (engine patch 0058): to the backpack, saved, the player told; once
 local ring2 = newItem(2357)
-local pring = handsPlayer(newItem(2456), rolledQuiver(), ring2)
+local pring, _, _, bpRing = handsPlayer(newItem(2456), rolledQuiver(), ring2)
 saves = 0
-eq(A.checkHands(pring), 0, "a ring in the second ring slot: nothing to do")
-ok(pring:getSlotItem(CONST_SLOT_AMMO) == ring2 and not ring2.moved, "the ring stays")
-eq(saves, 0, "no save")
-eq(#pring.msgs, 0, "no message")
+eq(A.checkHands(pring), 1, "a ring in the ammunition slot: moved")
+ok(bpRing:getItems()[1] == ring2 and not ring2.removed, "the ring is in the store inbox, kept")
+eq(pring:getSlotItem(CONST_SLOT_AMMO), nil, "the ammunition slot is empty")
+eq(saves, 1, "saved at once")
+eq(#pring.msgs, 1, "one message")
+ok(pring.msgs[1]:find("The second ring slot is gone: the badge slot took its place.", 1, true) == 1
+	and pring.msgs[1]:find("-> your Purse", 1, true) ~= nil, "the player is told why: " .. tostring(pring.msgs[1]))
+eq(A.checkHands(pring), 0, "a second login: nothing to do")
+eq(saves, 1, "and no save")
 -- bow + quiver already right: nothing; a quiver beside a sword: stowed
 local pk = handsPlayer(newItem(2456), rolledQuiver(), nil)
 eq(A.checkHands(pk), 0, "bow + quiver in the off-hand: nothing to do")
@@ -789,43 +785,33 @@ local qw = rolledQuiver()
 local pw, bpW = handsPlayer(newItem(2400), qw, nil)
 eq(A.checkHands(pw), 1, "a quiver beside a sword is moved")
 ok(bpW:getItems()[1] == qw, "to the backpack")
--- one might ring at a time: two worn from before, the one in the second ring slot goes to the backpack, saved
+-- two might rings worn from before: the one in the ammunition slot goes, the ring slot's stays
 local might9, might10 = newItem(2164), newItem(2164)
-local pm, bpM = handsPlayer(nil, nil, might10)
+local pm, _, _, bpM = handsPlayer(nil, nil, might10)
 pm.slots[CONST_SLOT_RING] = might9
 saves = 0
 eq(A.checkHands(pm), 1, "two might rings: one moved")
-ok(bpM:getItems()[1] == might10 and not might10.removed, "the second ring slot's might ring is in the backpack")
+ok(bpM:getItems()[1] == might10 and not might10.removed, "the ammunition slot's might ring is in the store inbox")
 ok(pm:getSlotItem(CONST_SLOT_RING) == might9 and not might9.moved, "the ring slot's might ring stays")
-eq(pm:getSlotItem(CONST_SLOT_AMMO), nil, "the second ring slot is empty")
+eq(pm:getSlotItem(CONST_SLOT_AMMO), nil, "the ammunition slot is empty")
 eq(saves, 1, "saved at once")
-eq(#pm.msgs, 1, "one message")
-ok(pm.msgs[1]:find("You can only wear one might ring at a time.", 1, true) == 1
-	and pm.msgs[1]:find("might ring -> your backpack", 1, true) ~= nil, "the player is told why: " .. tostring(pm.msgs[1]))
-eq(A.checkHands(pm), 0, "a second login: nothing to do")
-eq(saves, 1, "and no save")
 -- the backpack is full: the inbox
 local mightF = newItem(2164)
-local pmf, _, inboxMF = handsPlayer(nil, nil, mightF, {bagFull = true})
+local pmf, _, inboxMF = handsPlayer(nil, nil, mightF, {storeFull = true})
 pmf.slots[CONST_SLOT_RING] = newItem(2164)
 eq(A.checkHands(pmf), 1, "moved")
 ok(inboxMF:getItems()[1] == mightF, "into the inbox")
--- a might ring with a time ring, or a might ring alone in the second ring slot: nothing moves
-local pmt = handsPlayer(nil, nil, newItem(2164))
-pmt.slots[CONST_SLOT_RING] = newItem(2169)
-saves = 0
-eq(A.checkHands(pmt), 0, "a might ring and a time ring: nothing to do")
-local pma = handsPlayer(nil, nil, newItem(2164))
-eq(A.checkHands(pma), 0, "a might ring alone in the second ring slot: nothing to do")
-local pmr = handsPlayer(nil, nil, newItem(2169))
+-- a ring in the ring slot alone: nothing moves
+local pmr = handsPlayer(nil, nil, nil)
 pmr.slots[CONST_SLOT_RING] = newItem(2164)
-eq(A.checkHands(pmr), 0, "a might ring in the ring slot and a time ring in the second: nothing to do")
+saves = 0
+eq(A.checkHands(pmr), 0, "a ring in the ring slot: nothing to do")
 eq(saves, 0, "no save")
--- the quiver message and the might ring message in one login
+-- the quiver message alone when only a quiver moved
 local pqm = handsPlayer(newItem(2456), nil, rolledQuiver())
 eq(A.checkHands(pqm), 1, "a quiver of before moved")
 eq(#pqm.msgs, 1, "only the quiver message")
-ok(pqm.msgs[1]:find("might", 1, true) == nil, "no might ring text")
+ok(pqm.msgs[1]:find("ring", 1, true) == nil, "no ring text")
 -- the login event runs the check before the sweep
 local pe = handsPlayer(newItem(29875), nil, rolledQuiver())
 pe.getDepotChest = function() return nil end
