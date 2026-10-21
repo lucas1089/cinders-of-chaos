@@ -249,6 +249,8 @@ function W.load()
 	D.descent = cfg("descent_config")
 	D.invasion = cfg("invasion_config")
 	D.siege = cfg("siege_config")
+	D.harvest = cfg("harvest_event_config")
+	D.harvestArt = dofile("data/lib/chaos_harvest_art.lua")
 	D.guildboss = cfg("guildboss_config")
 	D.pocket = cfg("pocketboss_config")
 	D.mech = cfg("boss_mechanics_config")
@@ -1197,7 +1199,69 @@ function W.eventEntries(D)
 		sections = {{h = "Goblins", p = {"Any monster may turn into a treasure goblin when it spawns. Catch it before it escapes: goblins drop extra loot and count on the Goblin Slayer board.",
 			"Kinds: " .. sentence(kinds) .. "."}}}}
 	out[#out + 1] = dofile("tools/wiki_nemesis.lua")(cfg("nemesis_config"), COLORS.event)
+	out[#out + 1] = W.harvestEntry(D)
 	return out
+end
+
+-- the Haunted Harvest (harvest_event_config.lua): the window, the way in, the mechanics, its monsters and Widow Hessa
+local MONTH_EN = {"January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+	"November", "December"}
+function W.harvestEntry(D)
+	local H = D.harvest
+	local function day(d)
+		return MONTH_EN[d.month] .. " " .. d.day
+	end
+	local files = W.monsterFiles()
+	local mons = {}
+	for _, m in pairs(files) do
+		if m.dir == "harvest" or m.dir:match("^harvest/") then
+			mons[#mons + 1] = m
+		end
+	end
+	table.sort(mons, function(a, b)
+		if a.exp ~= b.exp then
+			return a.exp < b.exp
+		end
+		return a.name < b.name
+	end)
+	local mRows = {}
+	for _, m in ipairs(mons) do
+		mRows[#mRows + 1] = {m.name, tostring(m.level or ""), ChaosSalvageCore.thousands(m.hp),
+			ChaosSalvageCore.thousands(m.exp)}
+	end
+	local shop = {}
+	for _, o in ipairs(H.shop) do
+		shop[#shop + 1] = {o.name, num(o.price)}
+	end
+	local b = H.boss
+	local phases = {}
+	for _, p in ipairs(b.phases) do
+		phases[#phases + 1] = p .. "%"
+	end
+	return {id = "event:harvest", name = "Haunted Harvest", color = COLORS.event, group = "harvest",
+		sub = string.format("Every year from %s to %s: a cursed harvest village for levels 450-650.", day(H.window.from),
+			day(H.window.to)),
+		sections = {
+			{h = "Getting there", p = {
+				string.format("From %s to %s (server time) a Harvest Portal stands next to the temples of Cinderhold and Mirewake. It leads to the crossroads camp, where Widow Hessa trades hollow candy. The exit portals lead back to your temple.",
+					day(H.window.from), day(H.window.to)),
+				"The village: pumpkin fields, a corn maze, the hamlet of the hedge witches, the dead orchard, the gibbet hill, the graveyard and the ruined chapel. Under the chapel lie the catacombs and the King's Crypt."}},
+			{h = "Things to do", p = {
+				string.format("Pumpkins ripen on their own. Harvest a ripe one for %d-%d hollow candy (at most %d a day from pumpkins); now and then the pumpkin wakes up.",
+					H.pumpkin.candy[1], H.pumpkin.candy[2], H.pumpkin.dailyCap),
+				string.format("Dig a fresh grave in the graveyard, then open the coffin: %d-%d candy, a sexton's key (%d%%), or the dead climb out.",
+					H.grave.candy[1], H.grave.candy[2], H.grave.keyChance),
+				string.format("The candy cauldrons of the hamlet: trick or treat (%d-%d candy). The cursed bell on the gibbet hill calls a flock of ravens.",
+					H.cauldron.candy[1], H.cauldron.candy[2]),
+				"A sexton's key breaks the crypt seal in the ruined chapel for a few minutes: step on it to reach the catacombs. Upright coffins there can wake skeletons."}},
+			{h = "The Hollow King", p = {
+				string.format("%d ritual candles on the circle of the ritual chamber open a short-lived portal into the King's Crypt, the only way to %s.",
+					H.circle.candles, b.name),
+				string.format("At %s of his health the crypt's graves burst and raise his court, and a ward halves the damage he takes for %d seconds. The first kill of the day gives %d hollow candy on top of the loot.",
+					sentence(phases), b.wardSeconds, b.dailyCandy)}},
+			{h = "Monsters", cols = {"Monster", "Level", "Health", "Experience"}, w = {40, 20, 20, 20}, rows = mRows},
+			{h = "Widow Hessa", p = {"Every monster of the event drops hollow candy. Widow Hessa at the crossroads trades it (candy cannot be sold). A hollow charm unlocks a haunted cosmetic your account does not own yet."},
+				cols = {"Trade", "Hollow candy"}, w = {70, 30}, rows = shop}}}
 end
 
 -- ---------------------------------------------------------------------------------------------------------------
@@ -2404,7 +2468,8 @@ function W.switches(D)
 		{"boss:pocket", D.pocket.enabled == true},
 		{"boss:ascended", D.uberCfg.enabled == true}, {"boss:guild", D.guildboss.enabled == true},
 		{"dungeon:descent", D.descent.enabled == true}, {"event:invasion", D.invasion.enabled == true},
-		{"event:siege", D.siege.enabled == true}
+		{"event:siege", D.siege.enabled == true},
+		{"event:harvest", D.harvest.enabled == true and D.harvestArt.PAIR33 == true}
 	}
 end
 
