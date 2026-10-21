@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/autoloot_gold_test.lua (and lua5.3; CI runs both)
--- Coins of a corpse go to the bank when a coin is on the owner's autoloot list (autoloot.lua, onDropLoot 2.6).
+-- Coins of every corpse the character owns go to the bank (autoloot.lua, onDropLoot 2.6).
 local count, failures = 0, 0
 local function check(cond, label)
 	count = count + 1
@@ -56,24 +56,9 @@ check(#o.msgs == 1, "one message")
 
 local o2 = owner({2400})
 local c2 = coin(2148, 10)
-check(G.toBank(o2, corpse({c2})) == 0 and not c2.gone and o2.bank == 0, "no coin on the list: the coins stay")
-local o3 = owner({2148})
+check(G.toBank(o2, corpse({c2})) == 10 and c2.gone and o2.bank == 10, "no coin on the list: the coins still go to the bank (default)")
+local o3 = owner({})
 check(G.toBank(o3, corpse({coin(2400, 1)})) == 0 and o3.bank == 0, "no coins in the corpse: nothing paid")
-
--- a carried Loot Bag with its gold rule on: coins go to the bank with no coin on the list
-local bagRules = {gold = true}
-ChaosPouches = {carried = function() return {loot = {}} end, rulesOf = function() return bagRules end}
-local o4 = owner({2400})
-local c4 = coin(2152, 5)
-check(G.toBank(o4, corpse({c4})) == 500 and c4.gone and o4.bank == 500, "Loot Bag gold rule: coins to the bank")
-bagRules = {gold = false}
-local o5 = owner({2400})
-local c5 = coin(2148, 7)
-check(G.toBank(o5, corpse({c5})) == 0 and not c5.gone, "Loot Bag gold rule off: the coins stay")
-ChaosPouches = {carried = function() return {} end, rulesOf = function() return {gold = true} end}
-local o6 = owner({2400})
-check(G.toBank(o6, corpse({coin(2148, 7)})) == 0, "no Loot Bag carried and no coin listed: nothing paid")
-ChaosPouches = nil
 
 -- coins inside a bag of the corpse are taken too
 local function bag(items)

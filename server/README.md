@@ -19133,11 +19133,11 @@ Owner 2026-10-18 ("mande todo o gold que for auto looted pro banco"): when a coi
 the character's autoloot list, the coins of a kill's corpse are paid into the bank account (`ChaosAutolootGold.toBank`, an
 `onDropLoot` callback at index 2.6: after the auto seller at 2, before the store pouches at 2.7 and the base autoloot at 3)
 instead of being looted into the backpack. No coin stacks to convert, no weight. The chat line reads "Auto loot: N gold to your
-bank." (pt-BR in `i18n_strings.lua`); the economy telemetry counts it as faucet `autoloot_gold`. Without a coin on the list the
-coins stay in the corpse as before.
+bank." (pt-BR in `i18n_strings.lua`); the economy telemetry counts it as faucet `autoloot_gold`.
 
-Player report 2026-10-21: a carried Loot Bag whose "gold" rule is on (the default) counts as auto looting gold too, so its
-coins go to the bank instead of filling the bag. Coins inside a bag of the corpse (two levels deep) are paid in as well.
+Owner 2026-10-21 ("deixe todo o loot de coin ir direto pro banco por default"): every corpse the character owns pays its
+coins into the bank, with or without a coin on the list or a Loot Bag (`G.wanted` is always true). Coins inside a bag of
+the corpse (two levels deep) are paid in as well. The Loot Bag's "gold" rule no longer gets coins from kills.
 
 ## Gnome city teleports open to everyone (`tools/patch_gnome_teleports.py`, install_all step `gnometeleports`)
 
