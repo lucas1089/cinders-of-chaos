@@ -725,6 +725,16 @@ The client is an OTClient-family engine whose wire protocol matches the server: 
     ending in a colon); When and Action are 60 and 52 px wide (the English was clipped by a pixel or two). Applies
     after `0001`-`0106` (the `mods/game_helper/` hunks of the chain on the base archive, `patch` clean, result identical
     to the edited tree). Not seen in a client.
+69f. `0108` (Lua `modules/game_playerdeath/playerdeath.lua`): **the death window keeps Auto Target and Magic Shooter
+    on.** Owner beta, 2026-10-21: "Auto Target and Enable Shooter still turn off when the player dies", after `0086`.
+    Cause: the death window's `openWindow` had its own "reset helper" block. It called `toggleMagicShooter()` and
+    `toggleAutoTarget()` without a widget, which flips the checkboxes, writes false to the helper config and saves it,
+    so both came back off after the relog. The block is removed. The helper's `onHelperDeath` still drops the locked
+    target and the attack (`0086`), and the respawn protection zone pauses both through `handlePZState`. Ruled out: the
+    AFK guard of `classes/auto_target.lua` reads `g_ui.getActionTimer`, which the engine does not have, so it never
+    fires. Applies after `0001`-`0107` (no earlier patch touches the file; `patch` clean on the base archive). A mocked
+    run of `display()` under LuaJIT and Lua 5.3 turns both flags off with the base file and keeps them with `0108`.
+    Not seen in a client.
 70. `0088` (`src/client/outfit.cpp`): **a look without a mounted pattern still rides.** `Outfit::draw` took
     `zPattern = min(1, pattern Z - 1)` and drew the mount only when it was above 0, so a mounted character in a look
     with pattern Z 1 showed no mount. In pair 30 (dat 8156792438dabee3aa768663d57a1619) 43 wearable looks (base

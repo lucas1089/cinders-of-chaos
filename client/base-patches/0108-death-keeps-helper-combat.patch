@@ -1,0 +1,27 @@
+# Chaos: the death window keeps Auto Target and Magic Shooter on (modules/game_playerdeath/playerdeath.lua; after
+# 0001-0107). Owner beta 2026-10-21: "Auto Target and Enable Shooter still turn off when the player dies." 0086 fixed
+# the helper's own death handler, but the death window ran its own "reset helper" block: toggleMagicShooter() and
+# toggleAutoTarget() without a widget flip the checkboxes, write false to the helper config and save it, so both
+# came back off after the relog. The block is gone. The helper's onDeath handler still drops the locked target and
+# the attack, and the respawn in a protection zone pauses both systems without touching their settings.
+--- a/modules/game_playerdeath/playerdeath.lua
++++ b/modules/game_playerdeath/playerdeath.lua
+@@ -49,15 +49,9 @@
+   deathWindow:focus()
+   g_client.setInputLockWidget(deathWindow)
+ 
+-  -- reset helper
+-  local helper = modules.game_helper
+-  if helper.isMagicShooterActive() then
+-    helper.toggleMagicShooter()
+-  end
+-
+-  if helper.isAutoTargetActive() then
+-    helper.toggleAutoTarget()
+-  end
++  -- Chaos 0108: a death no longer switches Auto Target and Magic Shooter off. This toggled both
++  -- checkboxes, wrote false to the helper config and saved it, so they stayed off after the relog.
++  -- The helper's own onDeath handler drops the attack; the respawn PZ pauses both systems.
+ 
+   local messageT = {}
+   local textLabel = deathWindow:getChildById('labelText')
