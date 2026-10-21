@@ -15,9 +15,12 @@ local function applyClassLanes(nodes)
 end
 
 function getTreeData()
+	local nodes = applyClassLanes(getTreeNodes())
+	-- every link listed on both ends, as the server stores it (treeplan.lua TreePlan.linkBack)
+	TreePlan.linkBack(nodes)
 	local data = {
 		groups = getTreeGroups(),
-		nodes = applyClassLanes(getTreeNodes()),
+		nodes = nodes,
 		icons = getTreeIcons(),
 		static = getTreeStatic(),
 		painted = getPaintedTreeIcons()

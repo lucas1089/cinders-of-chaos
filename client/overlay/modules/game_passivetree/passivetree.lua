@@ -41,6 +41,9 @@ local serverClass, serverLine = nil, nil
 local viewing = nil
 -- the chosen effect of each saved mastery node ([id] = choice), from sendNodes
 local savedMasteries = {}
+-- the node ids the server saved for this character ([id] = true), from the last sendNodes: the planner counts them as
+-- owned even when the window could not show one allocated, so a plan never prices a node the server already has
+local savedIds = {}
 
 -- fallback before the server named them: the client reports server vocation ids (base patch 0016)
 local CLASS_OF = { [4] = "warrior", [8] = "juggernaut", [14] = "berserker", [3] = "ranger", [7] = "deadeye",
@@ -965,51 +968,32 @@ local function refreshConnectors(node)
 	end
 end
 
-local function hasNeighbourIn(node, set)
-	for _, list in ipairs({node.out or {}, node.inputs or {}}) do
-		for _, otherId in pairs(list) do
-			if set[otherId] then
-				return true
-			end
-		end
+-- the undirected links of the shown nodes (TreePlan.graph), built once per nodeMap
+local shownGraph, shownGraphFor = nil, nil
+local function treeGraph()
+	if shownGraphFor ~= nodeMap then
+		shownGraph, shownGraphFor = TreePlan.graph(nodeMap), nodeMap
 	end
-	return false
+	return shownGraph
 end
 
--- Shows an allocation on the built widgets: the given ids that connect to the start node (as clicking them in order
--- would), the rest unallocated. Only the nodes whose state changes are touched: their widgets
--- and connectors are updated by jobs a slice per frame (a few hundred style changes cost ~0.25 s), the bonus list is
--- recalculated once. blocked: the shown nodes cannot be taken back (saved on the server).
+-- Shows an allocation on the built widgets: the given ids that connect to a start node through each other over the
+-- undirected links (the server's check, passivetree_core reach), the rest unallocated. Only the nodes whose state
+-- changes are touched: their widgets and connectors are updated by jobs a slice per frame (a few hundred style changes
+-- cost ~0.25 s), the bonus list is recalculated once. blocked: the shown nodes cannot be taken back (saved on the server).
 local function applyAllocation(ids, blocked)
-	local wanted = {}
-	for _, raw in pairs(ids or {}) do
-		local id = tonumber(raw)
-		if id and nodeMap[id] and not nodeMap[id].isStartNode then
-			wanted[id] = true
-		end
-	end
-
-	local target = {}
+	local starts = {}
 	for id, node in pairs(nodeMap) do
 		if node.isStartNode then
-			target[id] = true
+			starts[id] = true
 		end
 	end
-
-	-- a node joins once one of its own links (out or inputs, like canAllocate) is in; the links are not always
-	-- listed on both ends, so repeat until nothing more joins (a pass per ring, cheap for a few hundred ids)
-	local progress = true
-	while progress do
-		progress = false
-		for id in pairs(wanted) do
-			local node = nodeMap[id]
-			if hasNeighbourIn(node, target) and not (node.exclude and target[node.exclude]) then
-				target[id] = true
-				wanted[id] = nil
-				progress = true
-			end
-		end
-	end
+	local target = TreePlan.connected(treeGraph(), ids, starts, function(id)
+		return nodeMap[id] ~= nil
+	end, function(id, set)
+		local exclude = nodeMap[id].exclude
+		return exclude ~= nil and set[exclude] == true
+	end)
 
 	local changed = {}
 	allocNodes = {}
@@ -1316,6 +1300,14 @@ function getTreeAllocated()
 	return allocNodes
 end
 
+-- the ids the server saved (a set; see savedIds); empty while another character's tree is shown
+function getTreeSaved()
+	if viewing then
+		return {}
+	end
+	return savedIds
+end
+
 function getTreeFreePoints()
 	return pointsOwned
 end
@@ -1484,6 +1476,13 @@ function updateNodes(data)
 	end
 	previewShown = false
 	savedMasteries = masteryMap(data.masteries)
+	savedIds = {}
+	for _, raw in pairs(type(data.nodes) == "table" and data.nodes or {}) do
+		local id = tonumber(raw)
+		if id then
+			savedIds[id] = true
+		end
+	end
 	if type(data.vocation) == "string" then
 		serverVocation = data.vocation
 	end
@@ -1929,7 +1928,7 @@ function destroy()
 	builtFor = nil
 	pendingAlloc = nil
 	layers, spare = {}, {} -- the panels go with the window
-	viewing, savedMasteries = nil, {}
+	viewing, savedMasteries, savedIds = nil, {}, {}
 	if destroyPlanner then
 		destroyPlanner() -- planner.lua
 	end

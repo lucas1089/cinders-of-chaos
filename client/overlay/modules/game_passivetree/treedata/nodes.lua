@@ -76,7 +76,9 @@ function getTreeNodes()
 			isStartNode = true,
 			group = 1,
 			icon = "startNode",
-			inputs = {},
+			inputs = {
+				3, 4, 5, 6, 7
+			},
 			out = {
 				2
 			}
@@ -2280,7 +2282,7 @@ function getTreeNodes()
 				speed = 500,
 			},
 			inputs = {
-				116
+				116, 50
 			},
 			out = {
 				117
@@ -7008,7 +7010,7 @@ function getTreeNodes()
 				clubSkill = 1,
 			},
 			inputs = {
-			   353
+			   353, 365
 			},
 			out = {
 			   363

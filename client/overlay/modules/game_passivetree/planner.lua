@@ -26,12 +26,9 @@ local function graph()
   return adjacency
 end
 
+-- the allocated ids: the ones shown and every id the server saved (getTreeSaved), so a plan never prices an owned node
 local function allocatedSet()
-  local set = {}
-  for id in pairs(getTreeAllocated() or {}) do
-    set[id] = true
-  end
-  return set
+  return TreePlan.ownedIds(getTreeAllocated(), getTreeSaved and getTreeSaved())
 end
 
 local function ownedSet()
@@ -42,13 +39,14 @@ local function ownedSet()
   return set
 end
 
--- a node the plan may step on: shown (in nodeMap), the class may take it, not a start node, no excluded twin taken
+-- a node the plan may step on: shown (in nodeMap), the class may take it, not a start node, not owned (shown allocated
+-- or saved on the server), no excluded twin taken
 local function passable(id)
   local node = nodes()[id]
-  if not node or node.locked or node.isStartNode or node.alloc then
+  if not node or node.locked or node.isStartNode or node.alloc or (getTreeSaved and getTreeSaved()[id]) then
     return false
   end
-  if node.exclude and (getTreeAllocated()[node.exclude] or plan.set[node.exclude]) then
+  if node.exclude and (allocatedSet()[node.exclude] or plan.set[node.exclude]) then
     return false
   end
   return true

@@ -45,6 +45,92 @@ function TreePlan.graph(nodes)
   return out
 end
 
+-- Makes every link of nodes.lua listed on both ends: a link a -> b (in a's `out` or `inputs`) that b does not list
+-- is added to b's `inputs`. The server stores the links undirected (tools/gen_passivetree_data.lua); the window reads
+-- a node's own lists (canAllocate, refreshConnectors, the respec checks), so a one-sided link left the node past it
+-- dim although the server had it allocated (node 115 behind 50). Returns the number of links added.
+function TreePlan.linkBack(nodes)
+  local added = 0
+  local function lists(node, id)
+    for _, list in ipairs({node.out or {}, node.inputs or {}}) do
+      for _, other in pairs(list) do
+        if other == id then
+          return true
+        end
+      end
+    end
+    return false
+  end
+  local ids = {}
+  for id in pairs(nodes) do
+    ids[#ids + 1] = id
+  end
+  table.sort(ids)
+  for _, id in ipairs(ids) do
+    local node = nodes[id]
+    for _, list in ipairs({node.out or {}, node.inputs or {}}) do
+      for _, other in pairs(list) do
+        local back = nodes[other]
+        if back and other ~= id and not lists(back, id) then
+          back.inputs = back.inputs or {}
+          back.inputs[#back.inputs + 1] = id
+          added = added + 1
+        end
+      end
+    end
+  end
+  return added
+end
+
+-- The ids of an allocation shown as allocated (a set): every id of `ids` that connects to a start node (starts: a
+-- set) through the shown ids, over the undirected graph adj (TreePlan.graph), like the server's check (passivetree_core
+-- reach). shown(id): the window has the node (nodeMap); excluded(id, set): a twin of it is in (node.exclude).
+function TreePlan.connected(adj, ids, starts, shown, excluded)
+  local wanted = {}
+  for _, raw in pairs(ids or {}) do
+    local id = tonumber(raw)
+    if id and not starts[id] and (not shown or shown(id)) then
+      wanted[id] = true
+    end
+  end
+  local reached, queue, head = {}, {}, 1
+  local sorted = {}
+  for id in pairs(starts) do
+    sorted[#sorted + 1] = id
+  end
+  table.sort(sorted)
+  for _, id in ipairs(sorted) do
+    reached[id] = true
+    queue[#queue + 1] = id
+  end
+  while head <= #queue do
+    local id = queue[head]
+    head = head + 1
+    for _, other in ipairs(adj[id] or {}) do
+      if wanted[other] and not reached[other] and not (excluded and excluded(other, reached)) then
+        reached[other] = true
+        queue[#queue + 1] = other
+      end
+    end
+  end
+  return reached
+end
+
+-- The allocated set the planner grows from: the ids shown allocated (a map of id -> node or true) and the ids the
+-- server saved (a set). A saved id the window shows dim still counts as owned, so it is never planned or priced.
+function TreePlan.ownedIds(shown, saved)
+  local set = {}
+  for id in pairs(shown or {}) do
+    set[id] = true
+  end
+  for id, on in pairs(saved or {}) do
+    if on then
+      set[id] = true
+    end
+  end
+  return set
+end
+
 -- Shortest path from the owned set (allocated and planned ids, a set) to target: a breadth-first walk from every owned
 -- node at once, only onto nodes passable(id) accepts (shown, the class may hold it, not a start node). Ties go to the
 -- lower ids (sorted sources and neighbours), so the same click always plans the same path.

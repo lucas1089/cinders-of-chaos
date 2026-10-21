@@ -1008,6 +1008,14 @@ passivetree
   per-class keystone variants included). `server/tests/passivetree_layout_test.lua` checks the whole tree: every client link is a
   server link and the other way round, every link is drawn (the client draws from `out` lists), no overlapping nodes, no line
   through a node, no node without links, and the class sections reachable only through themselves.
+  Every link is also listed on both ends in `nodes.lua` (2026-10-21): 50 -> 115 and 365 -> 364 were listed on one end only.
+  The server had them (its links are undirected), but the window let a node join only through its own lists, so a saved
+  allocation down 50 -> 115 (skipping 116) showed 115 and everything past it dim, and the planner priced those saved
+  nodes again (the server charged 0 or 1: "You already have those nodes"). Saved trees were always right; nothing to
+  repair or refund. The client now shows the allocation over undirected links (`TreePlan.connected`), lists every link
+  back at load (`TreePlan.linkBack`), and the planner counts the ids of the last `sendNodes` as owned
+  (`client/overlay/modules/game_passivetree/treelinks_test.lua`: both ends, client = server, every server path of
+  every class shown whole).
   Regenerate `passivetree_data.lua` with `tools/gen_passivetree_data.lua` whenever the client tree changes.
 - Points formula is invented: `(level - 8) * 1` plus storage `7100020`. Change `Chaos.passive`.
 - Only one preset slot exists in the client UI; presets 0 and 1 are the same slot. `refund` is just a resync.
