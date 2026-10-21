@@ -66,8 +66,50 @@ ShopCategoryImage < ShopCategory
     margin-top: 2
     margin-bottom: 2
     margin-left: 2
-    size: 32 32    
-    
+    size: 32 32
+
+// the category tree (shoptree.lua): a subcategory row, indented and lower, under its open parent
+ShopSubCategoryItem < ShopCategoryItem
+  height: 40
+  margin-left: 14
+
+ShopSubCategoryCreature < ShopCategoryCreature
+  height: 40
+  margin-left: 14
+
+ShopSubCategoryImage < ShopCategoryImage
+  height: 40
+  margin-left: 14
+
+// a parent row (Cosmetics, Consumables ...): no focus of its own, a click opens or closes it (+ / -)
+ShopGroupArrow < Label
+  id: arrow
+  anchors.right: parent.right
+  anchors.verticalCenter: parent.verticalCenter
+  margin-right: 8
+  text-auto-resize: true
+  color: #f0c050
+  font: verdana-11px-rounded
+  phantom: true
+
+ShopGroupItem < ShopCategoryItem
+  focusable: false
+  $hover:
+    background: #55555555
+  ShopGroupArrow
+
+ShopGroupCreature < ShopCategoryCreature
+  focusable: false
+  $hover:
+    background: #55555555
+  ShopGroupArrow
+
+ShopGroupImage < ShopCategoryImage
+  focusable: false
+  $hover:
+    background: #55555555
+  ShopGroupArrow
+
     
     
 ShopOffer < Panel
@@ -291,15 +333,26 @@ MainWindow
       text-align: center
       font: sans-bold-16px
   
-  TextList    
+  // the store search (the server looks through every offer: name, category, parent)
+  TextEdit
+    id: searchText
+    anchors.left: infoPanel.left
+    anchors.right: infoPanel.right
+    anchors.bottom: transactionHistory.top
+    margin-bottom: 10
+    !placeholder: tr('Search the store...')
+    placeholder-color: #808080
+    @onTextChange: modules.game_shop.onSearchChange()
+
+  TextList
     id: categories
     vertical-scrollbar: categoriesScrollBar
     anchors.top: infoPanel.bottom
     anchors.left: infoPanel.left
     anchors.right: infoPanel.right
-    anchors.bottom: transactionHistory.top
+    anchors.bottom: searchText.top
     margin-top: 10
-    margin-bottom: 10
+    margin-bottom: 6
     padding: 1
     focusable: false
 
@@ -311,10 +364,22 @@ MainWindow
     step: 50
     pixels-scroll: true
 
+  // the path of the shown category ("Cosmetics > Wings"), the search or the history
+  Label
+    id: pathLabel
+    anchors.top: adPanel.bottom
+    anchors.left: adPanel.left
+    anchors.right: adPanel.right
+    margin-top: 8
+    height: 16
+    color: #f0c050
+    font: verdana-11px-rounded
+    text-align: left
+
   TextList
     id: offers
     vertical-scrollbar: offersScrollBar
-    anchors.top: adPanel.bottom
+    anchors.top: pathLabel.bottom
     anchors.left: adPanel.left
     anchors.right: adPanel.right
     anchors.bottom: transactionHistory.top

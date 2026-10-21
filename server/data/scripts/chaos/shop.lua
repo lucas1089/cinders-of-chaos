@@ -1,14 +1,22 @@
 -- Chaos store (client module game_shop, extended opcode ChaosOpcodes.shop, JSON).
 --
 -- client -> server {"action": ..., "data": {...}}
---   init                                          -> "categories" (+ status)
+--   init                                          -> "category_groups" + "categories" (+ status)
 --   get_page {category, page}                     -> "category_page" {category, page, offers}
 --   buy {category, page, offer, title, cost, gift?} -> "message" (+ status); gift = a character name: bought for it
+--   search {text}                                 -> "search_results" {text, offers}: each offer also has
+--                                                    at = {category, page, offer} (buy, gift and preview use it) and path
 --   history                                       -> "history" [offers with a description line]
 --   gift_coins {name, amount}                     -> "message" (+ status)
 -- server -> client {"action": ..., "data": ..., "status": {points, ad, buyUrl}}
+--   a category: {name, type, item|outfit, look?, pages, size (offers), parent?, endsIn?}
+--   "category_groups": the parents [{name, type, item|outfit, look?, size, children}] (sent before "categories")
 --   an offer: {type, item|outfit, title, description, cost, oldCost?, tags?, gift?, owned?}
 --
+-- The category tree (2026-10-21, the base server store's layout): top categories and parents with subcategories
+-- (Cosmetics > Wings ...; shop_config.lua `groups` and `parent`). "categories" stays the flat list of what sells, in
+-- tree order, so an old client shows a flat list and its indexes keep working; a subcategory names its parent in
+-- `parent`, and the parents come in "category_groups", which an old client ignores.
 -- Categories are built per player (ChaosShop.view): the Starter packs first while one is for sale to the player, then
 -- this week's Featured offers, then shop_config.lua's categories; empty categories are left out. Prices are worked out
 -- here (sales, featured discount: ChaosShopCore.price) and the client echoes title and cost, so a price that changed
@@ -147,14 +155,14 @@ Shop.exclusions = exclusions()
 local byKey, CATS = {}, {}
 for _, category in ipairs(cfg.categories) do
 	local cat = {name = category.name, icon = category.icon, starter = category.starter, rotationOnly = category.rotationOnly,
-		offers = {}}
+		parent = category.parent, offers = {}}
 	for _, offer in ipairs(category.offers) do
 		offer.key = K.offerKey(offer)
 		local why = K.excluded(offer, Shop.exclusions)
 		if why then
 			log("not sold: " .. offer.key .. " (" .. why .. ")")
 		else
-			offer.category = category.name
+			offer.category, offer.parent = category.name, category.parent
 			byKey[offer.key] = byKey[offer.key] or offer
 			cat.offers[#cat.offers + 1] = offer
 		end
@@ -299,7 +307,7 @@ function Shop.context(t)
 end
 
 local function entry(offer, ctx)
-	local cost, oldCost, tags = K.price(offer, offer.category, ctx)
+	local cost, oldCost, tags = K.price(offer, offer.category, ctx, offer.parent)
 	if offer.kind == "bundle" and offer.listSum and offer.listSum > cost then
 		oldCost = offer.listSum
 		table.insert(tags, 1, (offer.oncePerAccount and "Starter" or "Bundle") .. " -" ..
@@ -340,7 +348,7 @@ function Shop.personalBundle(player, o)
 	return c
 end
 
--- the categories this player sees now: {{name, icon, offers = {entry, ...}}}
+-- the categories this player sees now, in tree order (K.arrange): {{name, icon, parent?, endsIn?, offers = {entry, ...}}}
 function Shop.view(player, t)
 	local ctx = Shop.context(t)
 	local bought = onceBought(player:getAccountId())
@@ -351,7 +359,7 @@ function Shop.view(player, t)
 	local list = {}
 	local function add(cat, offers)
 		if #offers > 0 then
-			list[#list + 1] = {name = cat.name, icon = cat.icon, offers = offers}
+			list[#list + 1] = {name = cat.name, icon = cat.icon, parent = cat.parent, offers = offers}
 		end
 	end
 	for _, cat in ipairs(CATS) do
@@ -364,6 +372,7 @@ function Shop.view(player, t)
 		end
 		add(cat, offers)
 	end
+	list = K.arrange(list)
 	local featured = {}
 	for _, k in ipairs(ctx.featuredKeys) do
 		local o = byKey[k]
@@ -544,31 +553,60 @@ local function clientOffer(e, player)
 	return view
 end
 
+-- the icon of a category or a parent into entry: icon = {item, count?} or {outfit}; first = its first offer
+local function iconInto(entry, icon, first, player)
+	icon = icon or {item = 2160}
+	if icon.item then
+		local it = ItemType(icon.item)
+		entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(icon, stackable(it))
+		-- a category of cosmetics (outlines, kill effects, creatures ...) shows its first cosmetic, not a stand-in item,
+		-- when that reads as a small icon (K.categoryShowsLook)
+		local look, iconOutfit
+		if first then
+			look, iconOutfit = appearanceOf(first, player)
+		end
+		if look and K.categoryShowsLook(look) then
+			entry.look = look
+			if iconOutfit then
+				entry.type, entry.outfit, entry.item, entry.count = "outfit", iconOutfit, nil, nil
+			end
+		end
+	else
+		entry.type, entry.outfit = "outfit", icon.outfit
+	end
+	return entry
+end
+
 local function categoriesView(player, list)
 	local out = {}
 	for c, category in ipairs(list or Shop.view(player)) do
+		-- endsIn: the weekly rotation's seconds until it changes (the client counts down); size: how many offers (not
+		-- `count`, which is the icon's item count, nor `offers`, which an old client fills with its pages)
 		local entry = {name = category.name, pages = math.max(1, math.ceil(#category.offers / cfg.perPage)),
-			endsIn = category.endsIn} -- the weekly rotation: seconds until it changes (the client counts down)
-		if category.icon.item then
-			local it = ItemType(category.icon.item)
-			entry.type, entry.item, entry.count = "item", it:getClientId(), K.iconCount(category.icon, stackable(it))
-			-- a category of cosmetics (outlines, kill effects, creatures ...) shows its first cosmetic, not a stand-in item,
-			-- when that reads as a small icon (K.categoryShowsLook)
-			local first = category.offers[1] and category.offers[1].offer
-			local look, iconOutfit
-			if first then
-				look, iconOutfit = appearanceOf(first, player)
-			end
-			if look and K.categoryShowsLook(look) then
-				entry.look = look
-				if iconOutfit then
-					entry.type, entry.outfit, entry.item, entry.count = "outfit", iconOutfit, nil, nil
-				end
-			end
-		else
-			entry.type, entry.outfit = "outfit", category.icon.outfit
+			endsIn = category.endsIn, parent = category.parent, size = #category.offers}
+		out[c] = iconInto(entry, category.icon, category.offers[1] and category.offers[1].offer, player)
+	end
+	return out
+end
+
+-- the parents of the subcategories in list (K.groupsOf), with their icons; a parent without an icon of its own in
+-- shop_config.lua `groups` shows its first subcategory's
+local function groupsView(player, list)
+	local out, firstOf = {}, {}
+	for _, category in ipairs(list) do
+		if category.parent and not firstOf[category.parent] then
+			firstOf[category.parent] = category
 		end
-		out[c] = entry
+	end
+	for i, g in ipairs(K.groupsOf(list, cfg.groups)) do
+		local first = firstOf[g.name]
+		local entry = {name = g.name, size = g.size, children = g.children}
+		if g.icon then
+			iconInto(entry, g.icon, nil, player)
+		else
+			iconInto(entry, first.icon, first.offers[1] and first.offers[1].offer, player)
+		end
+		out[i] = entry
 	end
 	return out
 end
@@ -632,12 +670,26 @@ local function send(player, action, data, withStatus)
 	if withStatus then
 		payload.status = {points = Shop.getCoins(player:getAccountId()), buyUrl = cfg.buyUrl or "", ad = {}}
 	end
-	player:sendExtendedOpcode(OPCODE, json.encode(payload))
+	local buffer = json.encode(payload)
+	-- over the engine's string limit (the category list with its icons, search results): in parts, which the client's
+	-- ProtocolGame.registerExtendedJSONOpcode joins (old clients too)
+	if Chaos.extendedOpcodeMax and Chaos.sendChunked and #buffer > Chaos.extendedOpcodeMax then
+		Chaos.sendChunked(player, OPCODE, buffer)
+		return
+	end
+	player:sendExtendedOpcode(OPCODE, buffer)
 end
 
 -- title and text in the buyer's language: a key, a deferred text (ChaosI18n.msg) or a text already translated
 local function message(player, title, text)
 	send(player, "message", {title = Chaos.t(player, title), msg = Chaos.t(player, text)}, true)
+end
+
+-- the tree: the parents first (a new client builds the tree when "categories" comes), then the categories
+local function sendCategories(player, list)
+	list = list or Shop.view(player)
+	send(player, "category_groups", groupsView(player, list))
+	send(player, "categories", categoriesView(player, list), true)
 end
 
 -- ------------------------------------------------------------------ checks before coins are taken
@@ -865,14 +917,14 @@ local function buy(player, data)
 	local page = c and p and pageOf(list, c, p)
 	local e = page and o and page[o]
 	if not e then
-		send(player, "categories", categoriesView(player, list), true)
+		sendCategories(player, list)
 		return message(player, "Error", "This offer does not exist any more.")
 	end
 	local offer = e.offer
 	local view = clientOffer(e, nil)
 	-- the client echoes title and cost: a stale window must not buy something else or at another price
 	if data.title ~= view.title or tonumber(data.cost) ~= e.cost then
-		send(player, "categories", categoriesView(player, list), true)
+		sendCategories(player, list)
 		return message(player, "Error", "The store changed. Please choose the offer again.")
 	end
 	local accountId = player:getAccountId()
@@ -957,7 +1009,7 @@ local function buy(player, data)
 	logHistory(player, view.title, e.cost)
 	player:getPosition():sendMagicEffect(cfg.purchaseEffect)
 	if offer.oncePerAccount then
-		send(player, "categories", categoriesView(player), true)
+		sendCategories(player)
 	else
 		-- the page again: the offer now reads "Owned" and its Buy button is off
 		local fresh = pageOf(Shop.view(player), c, p)
@@ -1023,6 +1075,35 @@ local function gift(player, data)
 	message(player, "Gift sent", ChaosI18n.msg("You gifted %s Chaos Coins to %s.", amount, name))
 end
 
+-- ------------------------------------------------------------------ search
+-- every offer of the player's view whose title, category or parent holds the words (K.search), at most SEARCH_LIMIT;
+-- each with where it is (at: the category, page and row that buy, gift and preview send) and its path for the client
+local SEARCH_LIMIT = 30
+
+local function searchTitle(e)
+	local o = e.offer
+	local title = nameOf(o)
+	if o.kind == "addons" then
+		title = title .. " Addons" -- as clientOffer shows it
+	end
+	return title
+end
+
+function Shop.search(player, text)
+	text = tostring(text or ""):sub(1, 40)
+	local list = Shop.view(player)
+	local offers = {}
+	for _, hit in ipairs(K.search(list, text, searchTitle, SEARCH_LIMIT)) do
+		local cat = list[hit.c]
+		local page = math.floor((hit.i - 1) / cfg.perPage) + 1
+		local view = clientOffer(cat.offers[hit.i], player)
+		view.at = {category = hit.c, page = page, offer = hit.i - (page - 1) * cfg.perPage}
+		view.path = cat.parent and {cat.parent, cat.name} or {cat.name}
+		offers[#offers + 1] = view
+	end
+	return {text = text, offers = offers}
+end
+
 local ext = CreatureEvent("ChaosShopExtended")
 function ext.onExtendedOpcode(player, opcode, buffer)
 	if opcode ~= OPCODE then
@@ -1038,8 +1119,15 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	if viewAction and ChaosRateLimit and not ChaosRateLimit.allow(player, "shop." .. msg.action, 100) then
 		return
 	end
+	-- the store search walks every offer: its own, slower limit
+	if msg.action == "search" then
+		if not ChaosRateLimit or ChaosRateLimit.allow(player, "shop.search", 300) then
+			send(player, "search_results", Shop.search(player, msg.data.text))
+		end
+		return
+	end
 	if msg.action == "init" then
-		send(player, "categories", categoriesView(player), true)
+		sendCategories(player)
 	elseif msg.action == "get_page" then
 		local c, p = Chaos.toInt(msg.data.category, 1), Chaos.toInt(msg.data.page, 1)
 		local page = c and p and pageOf(Shop.view(player), c, p)

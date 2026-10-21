@@ -40,7 +40,8 @@ function V.apply(state, d)
   if d.max ~= nil then state.max = int(d.max) end
   state.size = int(d.size) > 0 and int(d.size) or state.size
   if type(d.hint) == 'string' then state.hint = d.hint end
-  if type(d.store) == 'string' and d.store ~= '' then state.store = d.store end
+  -- '' = tabs are not sold now (the depot is withdraw-only): no store button
+  if type(d.store) == 'string' then state.store = d.store end
   if type(d.town) == 'string' then state.town = d.town end
   if int(d.nameMax) > 0 then state.nameMax = int(d.nameMax) end
   if int(d.inbox) > 0 then state.inbox = int(d.inbox) end
@@ -234,14 +235,19 @@ function V.footer(state, tab)
   return out
 end
 
+-- does the store sell depot tabs now (the server sends store = '' while the depot is withdraw-only)
+function V.storeSells(state)
+  return type(state and state.store) == 'string' and state.store ~= ''
+end
+
 -- ---------------------------------------------------------------- layout
 -- the tab buttons: {tab = n | 'store', x, y} in rows of TAB_COLUMNS; the store button follows the last tab while some
--- tab can still be bought
+-- tab can still be bought (and the store sells tabs: store ~= '')
 function V.tabCells(state)
   local cells = {}
   local count = math.max(int(state.max), #state.ids)
   for t = 1, count do cells[#cells + 1] = { tab = t } end
-  if int(state.tabs) < count then cells[#cells + 1] = { tab = 'store' } end
+  if int(state.tabs) < count and V.storeSells(state) then cells[#cells + 1] = { tab = 'store' } end
   for i, c in ipairs(cells) do
     local col = (i - 1) % V.TAB_COLUMNS
     local row = math.floor((i - 1) / V.TAB_COLUMNS)

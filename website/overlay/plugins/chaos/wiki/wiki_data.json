@@ -367,10 +367,10 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 110,
-		"store.categories": 34,
+		"store.categories": 33,
 		"store.cosmetic": 350,
-		"store.offers": 465,
-		"store.service": 28,
+		"store.offers": 463,
+		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
 		"support.sockets": 3,
@@ -36902,38 +36902,37 @@
 							"rows": [
 								["Starter", "3", "250-750", "Bundle"],
 								["Bundles", "6", "-", "Bundle"],
+								["Premium Time", "3", "250-1200", "Premium time"],
+								["Chaos Pact", "1", "300", "Chaos Pact"],
+								["Storage & Slots", "13", "100-300", "Account storage"],
+								["Season Pass", "4", "500-2500", "Season pass"],
+								["Services", "5", "60-400", "Service"],
+								["XP Boosts", "2", "50-225", "Boost"],
+								["Blessings", "2", "60-750", "Boost, Service"],
+								["World Buffs", "3", "250-300", "Boost"],
+								["Potions", "4", "15-30", "Consumable item"],
+								["Runes", "29", "3-108", "Consumable item"],
+								["Training", "21", "25-450", "Consumable item"],
+								["Convenience", "7", "50-400", "Convenience"],
 								["Outfits", "56", "300-750", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
 								["Wings", "21", "200-350", "Cosmetic"],
 								["Auras", "24", "150-300", "Cosmetic"],
-								["Outfit Shaders", "16", "120-180", "Cosmetic"],
-								["Name Plates", "13", "300", "Cosmetic"],
-								["Themed Sets", "12", "250-350", "Cosmetic"],
-								["Portal Styles", "6", "250-300", "Cosmetic"],
-								["Spell Effects", "12", "250", "Cosmetic"],
-								["Kill Effects", "5", "200", "Cosmetic"],
-								["Loot Labels", "4", "150", "Cosmetic"],
-								["Chat Colours", "5", "200", "Cosmetic"],
+								["Outfit Shaders", "22", "120-300", "Cosmetic"],
 								["Footprints", "9", "200", "Cosmetic"],
 								["Outlines", "9", "250", "Cosmetic"],
-								["Chaos Shaders", "6", "250-300", "Cosmetic"],
-								["Hideout Decorations", "9", "80-300", "Cosmetic"],
-								["Appearances", "9", "300-400", "Cosmetic"],
+								["Kill Effects", "5", "200", "Cosmetic"],
+								["Spell Effects", "12", "250", "Cosmetic"],
+								["Loot Labels", "4", "150", "Cosmetic"],
+								["Chat Colours", "5", "200", "Cosmetic"],
+								["Name Plates", "13", "300", "Cosmetic"],
 								["Pets", "7", "400", "Pet (small abilities)"],
-								["Crafting", "3", "20-30", "Crafting item"],
-								["Supplies", "5", "15-50", "Consumable item, Convenience"],
-								["Runes", "29", "3-108", "Consumable item"],
-								["Boosts", "4", "50-750", "Boost, Service"],
-								["World Buffs", "3", "250-300", "Boost"],
-								["Services", "5", "60-400", "Service"],
-								["Convenience", "6", "100-400", "Convenience"],
-								["Training", "21", "25-450", "Consumable item"],
-								["Chaos Pact", "1", "300", "Chaos Pact"],
-								["Storage & Slots", "13", "100-300", "Account storage"],
-								["Depot Tabs", "2", "150-500", "Account storage"],
-								["Season Pass", "4", "500-2500", "Season pass"],
-								["Premium Time", "3", "250-1200", "Premium time"]
+								["Appearances", "9", "300-400", "Cosmetic"],
+								["Portal Styles", "6", "250-300", "Cosmetic"],
+								["Hideout Decorations", "9", "80-300", "Cosmetic"],
+								["Themed Sets", "12", "250-350", "Cosmetic"],
+								["Crafting", "3", "20-30", "Crafting item"]
 							],
 							"links": [
 								"store:1",
@@ -36968,8 +36967,7 @@
 								"store:30",
 								"store:31",
 								"store:32",
-								"store:33",
-								"store:34"
+								"store:33"
 							]
 						},
 						{
@@ -36981,7 +36979,7 @@
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "6"],
-								["Account storage", "15"],
+								["Account storage", "13"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
 								["Boost", "6"],
@@ -37095,6 +37093,801 @@
 				},
 				{
 					"id": "store:3",
+					"name": "Premium Time",
+					"sub": "3 offers, 250-1200 coins. Premium time.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["3 offers, 250-1200 Chaos Coins. Premium time."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								["30 Days of Premium", "250", "Premium time", "Premium account for 30 days."],
+								["90 Days of Premium", "650", "Premium time", "Premium account for 90 days."],
+								["180 Days of Premium", "1200", "Premium time", "Premium account for 180 days."]
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:4",
+					"name": "Chaos Pact",
+					"sub": "1 offers, 300 coins. Chaos Pact.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["1 offers, 300 Chaos Coins. Chaos Pact."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Chaos Pact (30 days)",
+									"300",
+									"Chaos Pact",
+									"30 days, stacks: +10% XP, stamina x1.5, remote stash deposit, Auto Seller, cosmetic."
+								]
+							],
+							"sprites": [{"item": 16101}]
+						}
+					],
+					"icon": "wiki/i/top-battlepass.png"
+				},
+				{
+					"id": "store:5",
+					"name": "Storage & Slots",
+					"sub": "13 offers, 100-300 coins. Account storage.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["13 offers, 100-300 Chaos Coins. Account storage."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Extra Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: one more general stash tab (100 entries). Up to 6."
+								],
+								[
+									"Orbs Stash Tab",
+									"200",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for orbs, whetstones, rune shards."
+								],
+								[
+									"Gems Stash Tab",
+									"200",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for every gem you deposit."
+								],
+								[
+									"Keys Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for Rift Keys, omens, keys, maps."
+								],
+								[
+									"Weapons Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for weapons and quivers."
+								],
+								[
+									"Armor Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for armour pieces and shields."
+								],
+								[
+									"Jewellery Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for rings and amulets."
+								],
+								[
+									"Materials Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent, account-wide: an affinity stash tab for ores, herbs and shards."
+								],
+								[
+									"Creature Products Stash Tab",
+									"150",
+									"Account storage",
+									"Permanent: an affinity stash tab for creature products (lent by the Pact)."
+								],
+								[
+									"Collectibles Stash Tab",
+									"100",
+									"Account storage",
+									"Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."
+								],
+								[
+									"Remote Stash Deposit",
+									"300",
+									"Account storage",
+									"Permanent, account-wide: deposit into the stash from anywhere. Pact: included."
+								],
+								[
+									"Character Slot",
+									"250",
+									"Account storage",
+									"Permanent: one more character on your account, created on the website. Up to 10."
+								],
+								[
+									"Build Slot",
+									"100",
+									"Account storage",
+									"Permanent, account-wide: one more saved passive tree build. Up to 6."
+								]
+							],
+							"sprites": [
+								{"item": 2365},
+								{"item": 29856},
+								{"item": 32005},
+								{"item": 32072},
+								{"item": 2400},
+								{"item": 2472},
+								{"item": 2171},
+								{"item": 5880},
+								{"item": 36010},
+								{"item": 5929},
+								{"item": 2365},
+								{"item": 1949},
+								{"item": 18559}
+							]
+						}
+					],
+					"icon": "wiki/i/top-stash.png"
+				},
+				{
+					"id": "store:6",
+					"name": "Season Pass",
+					"sub": "4 offers, 500-2500 coins. Season pass.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["4 offers, 500-2500 Chaos Coins. Season pass."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Premium Ashen Pass",
+									"600",
+									"Season pass",
+									"Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."
+								],
+								[
+									"Ember Pack",
+									"500",
+									"Season pass",
+									"Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog. Account-wide."
+								],
+								[
+									"Blaze Pack",
+									"1500",
+									"Season pass",
+									"Ember Pack, premium Ashen Pass, Doom Knight outfit and addons, Flamesteed, Pyre Gate portal."
+								],
+								[
+									"Inferno Pack",
+									"2500",
+									"Season pass",
+									"Blaze Pack, Chaos Acolyte outfit, Wrathfire Pegasus, title Inferno-Crowned, 500 coins, 10 tier skips."
+								]
+							],
+							"sprites": [{"item": 26031}, {"item": 26031}, {"item": 26031}, {"item": 26031}]
+						}
+					],
+					"icon": "wiki/i/top-battlepass.png"
+				},
+				{
+					"id": "store:7",
+					"name": "Services",
+					"sub": "5 offers, 60-400 coins. Service.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["5 offers, 60-400 Chaos Coins. Service."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Name Change",
+									"250",
+									"Service",
+									"Then use it in Character > Services, in a protection zone. You are logged out and return renamed."
+								],
+								[
+									"Vocation Change",
+									"400",
+									"Service",
+									"Then pick the vocation in Character > Services. Skills are kept, the passive tree is reset for free."
+								],
+								[
+									"Sex Change",
+									"100",
+									"Service",
+									"Your character changes sex at once. Every outfit and addon you own comes along."
+								],
+								[
+									"Frag & Skull Remover",
+									"150",
+									"Service",
+									"Clears your unjustified kills and removes a red or black skull. Not usable in combat."
+								],
+								[
+									"Passive Tree Reset",
+									"60",
+									"Service",
+									"Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."
+								]
+							],
+							"sprites": [{"item": 25427}, {"item": 2175}, {"item": 9019}, {"item": 2229}, {"item": 18559}]
+						}
+					],
+					"icon": "wiki/i/top-options.png"
+				},
+				{
+					"id": "store:8",
+					"name": "XP Boosts",
+					"sub": "2 offers, 50-225 coins. Boost.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["2 offers, 50-225 Chaos Coins. Boost."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Double Experience Potion",
+									"50",
+									"Boost",
+									"1 hour of double experience per potion (Character > Character Info). Not for season characters. (not for season characters)"
+								],
+								[
+									"5 Double Experience Potions",
+									"225",
+									"Boost",
+									"Five hours of double experience, one potion at a time. (not for season characters)"
+								]
+							],
+							"sprites": [{"item": 28095}, {"item": 28095}]
+						}
+					],
+					"icon": "wiki/i/k-light-arrowup.png"
+				},
+				{
+					"id": "store:9",
+					"name": "Blessings",
+					"sub": "2 offers, 60-750 coins. Boost, Service.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["2 offers, 60-750 Chaos Coins. Boost, Service."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"All Blessings",
+									"60",
+									"Boost",
+									"All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)."
+								],
+								[
+									"Eternal Blessing",
+									"750",
+									"Service",
+									"This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters. (not for season characters)"
+								]
+							],
+							"sprites": [{"item": 11260}, {"item": 11260}]
+						}
+					],
+					"icon": "wiki/i/k-holy-shield.png"
+				},
+				{
+					"id": "store:10",
+					"name": "World Buffs",
+					"sub": "3 offers, 250-300 coins. Boost.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["3 offers, 250-300 Chaos Coins. Boost."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"World Experience",
+									"300",
+									"Boost",
+									"+25% experience for every standard (not season) character for 1 hour. Stacks up to 3 hours."
+								],
+								[
+									"World Loot",
+									"300",
+									"Boost",
+									"+25% Chaos loot and an extra loot roll for every standard (not season) character, 1 hour. Up to 3 hours."
+								],
+								[
+									"World Training",
+									"250",
+									"Boost",
+									"+25% skill and magic level training for every standard (not season) character for 1 hour. Up to 3 hours."
+								]
+							],
+							"sprites": [{"item": 7440}, {"item": 2148}, {"item": 7443}]
+						}
+					],
+					"icon": "wiki/i/k-holy-burst.png"
+				},
+				{
+					"id": "store:11",
+					"name": "Potions",
+					"sub": "4 offers, 15-30 coins. Consumable item.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["4 offers, 15-30 Chaos Coins. Consumable item."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"100 Great Mana Potions",
+									"15",
+									"Consumable item",
+									"Restores a large amount of mana."
+								],
+								["100 Great Spirit Potions", "15", "Consumable item", "Restores health and mana."],
+								[
+									"100 Ultimate Health Potions",
+									"20",
+									"Consumable item",
+									"Restores a large amount of health."
+								],
+								[
+									"100 Supreme Health Potions",
+									"30",
+									"Consumable item",
+									"Restores a huge amount of health."
+								]
+							],
+							"sprites": [{"item": 7590}, {"item": 8472}, {"item": 8473}, {"item": 26031}]
+						}
+					],
+					"icon": "wiki/i/k-blood-drop.png"
+				},
+				{
+					"id": "store:12",
+					"name": "Runes",
+					"sub": "29 offers, 3-108 coins. Consumable item.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["29 offers, 3-108 Chaos Coins. Consumable item."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								["100 Searing Orb Runes", "9", "Consumable item", "Fire damage in an area."],
+								[
+									"250 Searing Orb Runes",
+									"20",
+									"Consumable item",
+									"Fire damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Searing Orb Runes",
+									"38",
+									"Consumable item",
+									"Fire damage in an area. 10% off the 100 pack."
+								],
+								["100 Rockfall Runes", "7", "Consumable item", "Earth damage in an area."],
+								[
+									"250 Rockfall Runes",
+									"17",
+									"Consumable item",
+									"Earth damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Rockfall Runes",
+									"32",
+									"Consumable item",
+									"Earth damage in an area. 10% off the 100 pack."
+								],
+								["100 Stormcall Runes", "7", "Consumable item", "Energy damage in an area."],
+								[
+									"250 Stormcall Runes",
+									"17",
+									"Consumable item",
+									"Energy damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Stormcall Runes",
+									"32",
+									"Consumable item",
+									"Energy damage in an area. 10% off the 100 pack."
+								],
+								["100 Frostfall Runes", "9", "Consumable item", "Ice damage in an area."],
+								[
+									"250 Frostfall Runes",
+									"20",
+									"Consumable item",
+									"Ice damage in an area. 5% off the 100 pack."
+								],
+								[
+									"500 Frostfall Runes",
+									"38",
+									"Consumable item",
+									"Ice damage in an area. 10% off the 100 pack."
+								],
+								["100 Reaper's Runes", "22", "Consumable item", "Death damage to a single target."],
+								[
+									"250 Reaper's Runes",
+									"53",
+									"Consumable item",
+									"Death damage to a single target. 5% off the 100 pack."
+								],
+								[
+									"500 Reaper's Runes",
+									"99",
+									"Consumable item",
+									"Death damage to a single target. 10% off the 100 pack."
+								],
+								[
+									"100 Greater Hexdart Runes",
+									"3",
+									"Consumable item",
+									"Energy damage to a single target."
+								],
+								[
+									"250 Greater Hexdart Runes",
+									"6",
+									"Consumable item",
+									"Energy damage to a single target. 5% off the 100 pack."
+								],
+								[
+									"500 Greater Hexdart Runes",
+									"11",
+									"Consumable item",
+									"Energy damage to a single target. 10% off the 100 pack."
+								],
+								["100 Mending Runes", "10", "Consumable item", "Heals health."],
+								["250 Mending Runes", "23", "Consumable item", "Heals health. 5% off the 100 pack."],
+								[
+									"500 Mending Runes",
+									"43",
+									"Consumable item",
+									"Heals health. 10% off the 100 pack."
+								],
+								[
+									"100 Grand Mending Runes",
+									"24",
+									"Consumable item",
+									"Heals a large amount of health."
+								],
+								[
+									"250 Grand Mending Runes",
+									"57",
+									"Consumable item",
+									"Heals a large amount of health. 5% off the 100 pack."
+								],
+								[
+									"500 Grand Mending Runes",
+									"108",
+									"Consumable item",
+									"Heals a large amount of health. 10% off the 100 pack."
+								],
+								["25 Shackle Runes", "23", "Consumable item", "Slows a target down a lot."],
+								[
+									"50 Shackle Runes",
+									"43",
+									"Consumable item",
+									"Slows a target down a lot. 5% off the 100 pack."
+								],
+								["100 Shackle Runes", "89", "Consumable item", "Slows a target down a lot."],
+								["100 Dispel Runes", "3", "Consumable item", "Removes a magic field."],
+								[
+									"250 Dispel Runes",
+									"8",
+									"Consumable item",
+									"Removes a magic field. 5% off the 100 pack."
+								]
+							],
+							"sprites": [
+								{"item": 2304},
+								{"item": 2304},
+								{"item": 2304},
+								{"item": 2288},
+								{"item": 2288},
+								{"item": 2288},
+								{"item": 2315},
+								{"item": 2315},
+								{"item": 2315},
+								{"item": 2274},
+								{"item": 2274},
+								{"item": 2274},
+								{"item": 2268},
+								{"item": 2268},
+								{"item": 2268},
+								{"item": 2311},
+								{"item": 2311},
+								{"item": 2311},
+								{"item": 2265},
+								{"item": 2265},
+								{"item": 2265},
+								{"item": 2273},
+								{"item": 2273},
+								{"item": 2273},
+								{"item": 2278},
+								{"item": 2278},
+								{"item": 2278},
+								{"item": 2261},
+								{"item": 2261}
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-burst.png"
+				},
+				{
+					"id": "store:13",
+					"name": "Training",
+					"sub": "21 offers, 25-450 coins. Consumable item.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["21 offers, 25-450 Chaos Coins. Consumable item."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Exercise Sword (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a sword with 500 training charges."
+								],
+								[
+									"Exercise Axe (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get an axe with 500 training charges."
+								],
+								[
+									"Exercise Club (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a club with 500 training charges."
+								],
+								[
+									"Exercise Bow (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a bow with 500 training charges."
+								],
+								[
+									"Exercise Rod (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a rod with 500 training charges."
+								],
+								[
+									"Exercise Wand (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a wand with 500 training charges."
+								],
+								[
+									"Exercise Shield (500)",
+									"25",
+									"Consumable item",
+									"Use the chest to get a shield with 500 training charges."
+								],
+								[
+									"Durable Exercise Sword (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a sword with 1800 training charges."
+								],
+								[
+									"Durable Exercise Axe (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get an axe with 1800 training charges."
+								],
+								[
+									"Durable Exercise Club (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a club with 1800 training charges."
+								],
+								[
+									"Durable Exercise Bow (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a bow with 1800 training charges."
+								],
+								[
+									"Durable Exercise Rod (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a rod with 1800 training charges."
+								],
+								[
+									"Durable Exercise Wand (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a wand with 1800 training charges."
+								],
+								[
+									"Durable Exercise Shield (1800)",
+									"75",
+									"Consumable item",
+									"Use the chest to get a shield with 1800 training charges."
+								],
+								[
+									"Lasting Exercise Sword (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a sword with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Axe (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get an axe with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Club (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a club with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Bow (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a bow with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Rod (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a rod with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Wand (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a wand with 14400 training charges."
+								],
+								[
+									"Lasting Exercise Shield (14400)",
+									"450",
+									"Consumable item",
+									"Use the chest to get a shield with 14400 training charges."
+								]
+							],
+							"sprites": [
+								{"item": 27761},
+								{"item": 27762},
+								{"item": 27763},
+								{"item": 27764},
+								{"item": 27765},
+								{"item": 27766},
+								{"item": 27767},
+								{"item": 27768},
+								{"item": 27769},
+								{"item": 27770},
+								{"item": 27771},
+								{"item": 27772},
+								{"item": 27773},
+								{"item": 27774},
+								{"item": 27775},
+								{"item": 27776},
+								{"item": 27777},
+								{"item": 27778},
+								{"item": 27779},
+								{"item": 27780},
+								{"item": 27781}
+							]
+						}
+					],
+					"icon": "wiki/i/k-steel-sword.png"
+				},
+				{
+					"id": "store:14",
+					"name": "Convenience",
+					"sub": "7 offers, 50-400 coins. Convenience.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["7 offers, 50-400 Chaos Coins. Convenience."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Loot Bag",
+									"250",
+									"Convenience",
+									"Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."
+								],
+								[
+									"Orbs Pouch",
+									"200",
+									"Convenience",
+									"40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."
+								],
+								[
+									"Rift Key Pouch",
+									"150",
+									"Convenience",
+									"30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."
+								],
+								[
+									"Everfull Ration",
+									"100",
+									"Convenience",
+									"Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."
+								],
+								[
+									"Auto Seller",
+									"400",
+									"Convenience",
+									"Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."
+								],
+								[
+									"Rarity Autoloot",
+									"300",
+									"Convenience",
+									"Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."
+								],
+								[
+									"Backpack of Holding",
+									"50",
+									"Convenience",
+									"A backpack with more room than any other."
+								]
+							],
+							"sprites": [
+								{"item": 32081},
+								{"item": 32082},
+								{"item": 32083},
+								{"item": 32084},
+								{"item": 2160},
+								{"item": 2472},
+								{"item": 2365}
+							]
+						}
+					],
+					"icon": "wiki/i/top-autoloot.png"
+				},
+				{
+					"id": "store:15",
 					"name": "Outfits",
 					"sub": "56 offers, 300-750 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -37506,7 +38299,7 @@
 					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
-					"id": "store:4",
+					"id": "store:16",
 					"name": "Outfit Addons",
 					"sub": "9 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -37589,7 +38382,7 @@
 					"icon": "wiki/i/k-holy-hood.png"
 				},
 				{
-					"id": "store:5",
+					"id": "store:17",
 					"name": "Mounts",
 					"sub": "125 offers, 350-690 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38124,7 +38917,7 @@
 					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
-					"id": "store:6",
+					"id": "store:18",
 					"name": "Wings",
 					"sub": "21 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38133,13 +38926,15 @@
 						{"h": "Category", "p": ["21 offers, 200-350 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
-							"p": ["Each one is shown with a preview in the store window (Store > Wings)."]
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [["Elderleaf Wings", "200", "Cosmetic", ""], ["Strength Wings", "250", "Cosmetic", ""]]
 						}
 					],
 					"icon": "wiki/i/k-holy-arrowup.png"
 				},
 				{
-					"id": "store:7",
+					"id": "store:19",
 					"name": "Auras",
 					"sub": "24 offers, 150-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38154,13 +38949,13 @@
 					"icon": "wiki/i/k-light-ring.png"
 				},
 				{
-					"id": "store:8",
+					"id": "store:20",
 					"name": "Outfit Shaders",
-					"sub": "16 offers, 120-180 coins. Cosmetic.",
+					"sub": "22 offers, 120-300 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["16 offers, 120-180 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["22 offers, 120-300 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -38181,14 +38976,485 @@
 								["Pale Haze", "120", "Cosmetic", "A cold white haze."],
 								["Azure Waves", "150", "Cosmetic", "Blue waves rolling over your outfit."],
 								["Ivory Waves", "150", "Cosmetic", "White waves rolling over your outfit."],
-								["Golden Pulse", "150", "Cosmetic", "A pulsing golden glow."]
+								["Golden Pulse", "150", "Cosmetic", "A pulsing golden glow."],
+								[
+									"Ember Glow",
+									"250",
+									"Cosmetic",
+									"Your outfit smoulders: a flickering ember edge and sparks drifting up. Outfit window."
+								],
+								[
+									"Frost Rime",
+									"250",
+									"Cosmetic",
+									"Your outfit turns to ice, rimed at the edges, with crystals that glint. Outfit window."
+								],
+								[
+									"Void Flicker",
+									"250",
+									"Cosmetic",
+									"Your outfit sinks into violet dark; its edge flickers and slips away. Outfit window."
+								],
+								[
+									"Holy Radiance",
+									"300",
+									"Cosmetic",
+									"A golden light breathes through your outfit, rays crossing it slowly. Outfit window."
+								],
+								[
+									"Heartblood",
+									"250",
+									"Cosmetic",
+									"A heartbeat floods your outfit red and lights the veins beneath. Outfit window."
+								],
+								[
+									"Spectral Ghost",
+									"300",
+									"Cosmetic",
+									"Your outfit fades to a pale, see-through ghost with a cold glow. Outfit window."
+								]
+							],
+							"sprites": [
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								false,
+								{"item": 2187},
+								{"item": 2146},
+								{"item": 2153},
+								{"item": 2145},
+								{"item": 9020},
+								{"item": 2150}
 							]
 						}
 					],
 					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
-					"id": "store:9",
+					"id": "store:21",
+					"name": "Footprints",
+					"sub": "9 offers, 200 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["9 offers, 200 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Ember Steps",
+									"200",
+									"Cosmetic",
+									"Glowing ember prints smoulder where you walk. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Frost Steps",
+									"200",
+									"Cosmetic",
+									"Each step leaves a print of rime. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Blood Trail",
+									"200",
+									"Cosmetic",
+									"Drops of blood mark your way. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Ash Prints",
+									"200",
+									"Cosmetic",
+									"Grey ash settles in your footprints. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Petal Trail",
+									"200",
+									"Cosmetic",
+									"Pink petals fall where you step. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Venom Drips",
+									"200",
+									"Cosmetic",
+									"Green venom drips from your steps. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Shadow Wisps",
+									"200",
+									"Cosmetic",
+									"Violet wisps of shadow curl behind you. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gilded Steps",
+									"200",
+									"Cosmetic",
+									"Golden prints that sparkle a moment. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Storm Sparks",
+									"200",
+									"Cosmetic",
+									"Crackling sparks jump from every step. Seen by all. Character > Cosmetics."
+								]
+							],
+							"sprites": [
+								{"item": 2187},
+								{"item": 2274},
+								{"item": 9020},
+								{"item": 2229},
+								{"item": 18415},
+								{"item": 2149},
+								{"item": 2150},
+								{"item": 2154},
+								{"item": 7759}
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-kick.png"
+				},
+				{
+					"id": "store:22",
+					"name": "Outlines",
+					"sub": "9 offers, 250 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["9 offers, 250 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Gilded Glow",
+									"250",
+									"Cosmetic",
+									"A warm golden line traces your outline. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Crimson Glow",
+									"250",
+									"Cosmetic",
+									"A blood-red line traces your outline. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Void Glow",
+									"250",
+									"Cosmetic",
+									"A deep violet line traces your outline. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Frost Glow",
+									"250",
+									"Cosmetic",
+									"A cold blue line traces your outline. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Verdant Glow",
+									"250",
+									"Cosmetic",
+									"A living green line traces your outline. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Ember Gradient",
+									"250",
+									"Cosmetic",
+									"Your outline runs red at your feet, burning gold at your crown. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Storm Gradient",
+									"250",
+									"Cosmetic",
+									"Your outline runs deep blue below, white lightning above. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Radiant Pulse",
+									"250",
+									"Cosmetic",
+									"A golden outline that breathes in and out. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Abyssal Pulse",
+									"250",
+									"Cosmetic",
+									"A violet outline of darkness that swells and fades. Seen by all. Character > Cosmetics."
+								]
+							],
+							"sprites": [
+								{"item": 2154},
+								{"item": 2156},
+								{"item": 2153},
+								{"item": 2146},
+								{"item": 2149},
+								{"item": 2187},
+								{"item": 7759},
+								{"item": 2145},
+								{"item": 6500}
+							]
+						}
+					],
+					"icon": "wiki/i/k-light-shield.png"
+				},
+				{
+					"id": "store:23",
+					"name": "Kill Effects",
+					"sub": "5 offers, 200 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["5 offers, 200 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Soul Spark",
+									"200",
+									"Cosmetic",
+									"A violet skull rises from the monster you finish. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Sun Ring",
+									"200",
+									"Cosmetic",
+									"A ring of fire flares where your killing blow lands. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Frost Shatter",
+									"200",
+									"Cosmetic",
+									"Your kills shatter into shards of ice. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Blood Bloom",
+									"200",
+									"Cosmetic",
+									"A spiky burst of blood marks every kill. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Radiant Ring",
+									"200",
+									"Cosmetic",
+									"A white sun ring shines over your kills. Seen by all. Character > Cosmetics."
+								]
+							],
+							"sprites": [{"item": 5944}, {"item": 2304}, {"item": 2274}, {"item": 9020}, {"item": 10305}]
+						}
+					],
+					"icon": "wiki/i/k-blood-skull.png"
+				},
+				{
+					"id": "store:24",
+					"name": "Spell Effects",
+					"sub": "12 offers, 250 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["12 offers, 250 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Voidborn War Cries",
+									"250",
+									"Cosmetic",
+									"Iron Bellow, Red Frenzy and Bloodrage burst in violet; the bellow's rune turns arcane. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Stormborn War Cries",
+									"250",
+									"Cosmetic",
+									"Iron Bellow, Red Frenzy and Bloodrage burst in storm blue. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Sunfire Hunt",
+									"250",
+									"Cosmetic",
+									"Skewering Line flies golden arrows, Feral Command fiery bolts, Wild Bond a storm vortex. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Voidfire",
+									"250",
+									"Cosmetic",
+									"Doomtide, Forked Storm and Falling Pyre burn and crackle in violet. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Bloodfire",
+									"250",
+									"Cosmetic",
+									"Doomtide and Falling Pyre burn blood red. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Dawnstep",
+									"250",
+									"Cosmetic",
+									"Shadow Veil, Shadow Step and Shadow Mend vanish in a pillar of light. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Venom Smoke",
+									"250",
+									"Cosmetic",
+									"Smoke Bomb and Shadow Mend leave a green, venomous smoke. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Crimson Palms",
+									"250",
+									"Cosmetic",
+									"Ashen Fist, Sundering Palm and Pressure Points strike in red. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Void Palms",
+									"250",
+									"Cosmetic",
+									"Ashen Fist, Sundering Palm and Pressure Points strike in violet. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Gilded Palms",
+									"250",
+									"Cosmetic",
+									"Sundering Palm, Pressure Points and Shadowfist Flurry strike in gold. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Umbral Rite",
+									"250",
+									"Cosmetic",
+									"Zealotry, Purging Nova and Vow of Mending glow in violet. Seen by all. Character > Cosmetics."
+								],
+								[
+									"Pyre Rite",
+									"250",
+									"Cosmetic",
+									"Zealotry and Purging Nova burn in red and fire. Seen by all. Character > Cosmetics."
+								]
+							],
+							"sprites": [
+								{"item": 7762},
+								{"item": 7759},
+								{"item": 2187},
+								{"item": 2153},
+								{"item": 7760},
+								{"item": 2145},
+								{"item": 7761},
+								{"item": 2156},
+								{"item": 2150},
+								{"item": 2154},
+								{"item": 18414},
+								{"item": 18420}
+							]
+						}
+					],
+					"icon": "wiki/i/k-fire-burst.png"
+				},
+				{
+					"id": "store:25",
+					"name": "Loot Labels",
+					"sub": "4 offers, 150 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["4 offers, 150 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Ember Labels",
+									"150",
+									"Cosmetic",
+									"Your highlighted loot labels sit on smouldering ember. Rarity colours stay. Character > Cosmetics."
+								],
+								[
+									"Verdant Labels",
+									"150",
+									"Cosmetic",
+									"Your highlighted loot labels sit on deep green. Rarity colours stay. Character > Cosmetics."
+								],
+								[
+									"Azure Labels",
+									"150",
+									"Cosmetic",
+									"Your highlighted loot labels sit on night blue. Rarity colours stay. Character > Cosmetics."
+								],
+								[
+									"Royal Labels",
+									"150",
+									"Cosmetic",
+									"Your highlighted loot labels sit on royal violet. Rarity colours stay. Character > Cosmetics."
+								]
+							],
+							"sprites": [{"item": 18420}, {"item": 18415}, {"item": 18418}, {"item": 18414}]
+						}
+					],
+					"icon": "wiki/i/k-light-eye.png"
+				},
+				{
+					"id": "store:26",
+					"name": "Chat Colours",
+					"sub": "5 offers, 200 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["5 offers, 200 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Cinder Name",
+									"200",
+									"Cosmetic",
+									"Your name in chat glows cinder orange for everyone. Character > Cosmetics."
+								],
+								[
+									"Frost Name",
+									"200",
+									"Cosmetic",
+									"Your name in chat shows frost blue for everyone. Character > Cosmetics."
+								],
+								[
+									"Verdant Name",
+									"200",
+									"Cosmetic",
+									"Your name in chat shows leaf green for everyone. Character > Cosmetics."
+								],
+								[
+									"Amethyst Name",
+									"200",
+									"Cosmetic",
+									"Your name in chat shows amethyst for everyone. Character > Cosmetics."
+								],
+								[
+									"Rose Name",
+									"200",
+									"Cosmetic",
+									"Your name in chat shows rose for everyone. Character > Cosmetics."
+								]
+							],
+							"sprites": [{"item": 2147}, {"item": 2146}, {"item": 2149}, {"item": 2150}, {"item": 2145}]
+						}
+					],
+					"icon": "wiki/i/top-console.png"
+				},
+				{
+					"id": "store:27",
 					"name": "Name Plates",
 					"sub": "13 offers, 300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38299,7 +39565,304 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "store:10",
+					"id": "store:28",
+					"name": "Pets",
+					"sub": "7 offers, 400 coins. Pet (small abilities).",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["7 offers, 400 Chaos Coins. Pet (small abilities)."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Lantern Wisp",
+									"400",
+									"Pet (small abilities)",
+									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
+								],
+								[
+									"Hoarder Squirrel",
+									"400",
+									"Pet (small abilities)",
+									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
+								],
+								[
+									"Ember Parrot",
+									"400",
+									"Pet (small abilities)",
+									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
+								],
+								[
+									"Rime Penguin",
+									"400",
+									"Pet (small abilities)",
+									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
+								],
+								[
+									"Ashen Hare",
+									"400",
+									"Pet (small abilities)",
+									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
+								],
+								[
+									"Bog Frog",
+									"400",
+									"Pet (small abilities)",
+									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
+								],
+								[
+									"Dusk Moth",
+									"400",
+									"Pet (small abilities)",
+									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
+								]
+							],
+							"sprites": [
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050},
+								{"item": 2148},
+								{"item": 2050}
+							]
+						}
+					],
+					"icon": "wiki/i/k-nature-fang.png"
+				},
+				{
+					"id": "store:29",
+					"name": "Appearances",
+					"sub": "9 offers, 300-400 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["9 offers, 300-400 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Falconer's Regalia",
+									"300",
+									"Cosmetic",
+									"Transmog looks: a crested circlet, plate and greaves of the old falconers. Character > Transmog."
+								],
+								[
+									"Lionguard",
+									"350",
+									"Cosmetic",
+									"Transmog looks: the gilded lion helmet, plate, shield and spellbook. Character > Transmog."
+								],
+								[
+									"Gravecloak",
+									"350",
+									"Cosmetic",
+									"Transmog looks: hooded skull, bone-ribbed plate, legs and boots. Character > Transmog."
+								],
+								[
+									"Soulforged",
+									"400",
+									"Cosmetic",
+									"Transmog looks: soulshell plate, soulshanks, soulwalkers, soulbastion. Character > Transmog."
+								],
+								[
+									"Soulstalker",
+									"350",
+									"Cosmetic",
+									"Transmog looks: the soulshroud, soulstrider legs, soulstalker boots. Character > Transmog."
+								],
+								[
+									"Mothwing",
+									"350",
+									"Cosmetic",
+									"Transmog looks: a green mothwing helmet, plate, legs and boots. Character > Transmog."
+								],
+								[
+									"Cobra Regalia",
+									"300",
+									"Cosmetic",
+									"Transmog looks: the cobra hood, sword, wand and rod. Character > Transmog."
+								],
+								[
+									"Lionguard Arms",
+									"300",
+									"Cosmetic",
+									"Transmog looks: the lion longsword, axe, hammer, longbow, rod and wand. Character > Transmog."
+								],
+								[
+									"Grand Sanguine",
+									"350",
+									"Cosmetic",
+									"Transmog looks: grand sanguine blade, cudgel, hatchet, bow and coil. Character > Transmog."
+								]
+							],
+							"sprites": [
+								{"item": 27200},
+								{"item": 27402},
+								{"item": 26709},
+								{"item": 27389},
+								{"item": 27391},
+								{"item": 28383},
+								{"item": 27213},
+								{"item": 27400},
+								{"item": 27459}
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-twin.png"
+				},
+				{
+					"id": "store:30",
+					"name": "Portal Styles",
+					"sub": "6 offers, 250-300 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["6 offers, 250-300 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Emberforge Gate",
+									"250",
+									"Cosmetic",
+									"Town Portal style: a gate of molten rock that spills embers. Choose it in Character > Portal Style."
+								],
+								[
+									"Rimeglass Gate",
+									"250",
+									"Cosmetic",
+									"Town Portal style: a frame of blue ice that hums with cold. Choose it in Character > Portal Style."
+								],
+								[
+									"Verdant Gate",
+									"250",
+									"Cosmetic",
+									"Town Portal style: a gate overgrown with living green. Choose it in Character > Portal Style."
+								],
+								[
+									"Gilded Gate",
+									"300",
+									"Cosmetic",
+									"Town Portal style: a golden arch full of sunlight. Choose it in Character > Portal Style."
+								],
+								[
+									"Bloodmoon Gate",
+									"300",
+									"Cosmetic",
+									"Town Portal style: a red gate under a blood moon. Choose it in Character > Portal Style."
+								],
+								[
+									"Sanctum Gate",
+									"300",
+									"Cosmetic",
+									"Town Portal style: a white palace door with a red veil. Choose it in Character > Portal Style."
+								]
+							],
+							"sprites": [
+								{"item": 29640},
+								{"item": 29641},
+								{"item": 29632},
+								{"item": 29630},
+								{"item": 29631},
+								{"item": 29636}
+							]
+						}
+					],
+					"icon": "wiki/i/k-arcane-gate.png"
+				},
+				{
+					"id": "store:31",
+					"name": "Hideout Decorations",
+					"sub": "9 offers, 80-300 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["9 offers, 80-300 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Stone Seat",
+									"120",
+									"Cosmetic",
+									"Hideout decoration (Furniture), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Wyrmbone Throne",
+									"300",
+									"Cosmetic",
+									"Hideout decoration (Furniture), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Tall Candelabrum",
+									"150",
+									"Cosmetic",
+									"Hideout decoration (Lights), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Gargoyle",
+									"200",
+									"Cosmetic",
+									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Mourning Angel",
+									"200",
+									"Cosmetic",
+									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Black Crystal",
+									"250",
+									"Cosmetic",
+									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Wyrm Banner",
+									"150",
+									"Cosmetic",
+									"Hideout decoration (Banners), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Azure Tapestry",
+									"100",
+									"Cosmetic",
+									"Hideout decoration (Wall), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								],
+								[
+									"Woven Rug",
+									"80",
+									"Cosmetic",
+									"Hideout decoration (Rugs), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
+								]
+							],
+							"sprites": [
+								{"item": 7277},
+								{"item": 10950},
+								{"item": 9439},
+								{"item": 1452},
+								{"item": 1448},
+								{"item": 11753},
+								{"item": 10952},
+								{"item": 1870},
+								{"item": 1804}
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-banner.png"
+				},
+				{
+					"id": "store:32",
 					"name": "Themed Sets",
 					"sub": "12 offers, 250-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38403,777 +39966,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:11",
-					"name": "Portal Styles",
-					"sub": "6 offers, 250-300 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["6 offers, 250-300 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Emberforge Gate",
-									"250",
-									"Cosmetic",
-									"Town Portal style: a gate of molten rock that spills embers. Choose it in Character > Portal Style."
-								],
-								[
-									"Rimeglass Gate",
-									"250",
-									"Cosmetic",
-									"Town Portal style: a frame of blue ice that hums with cold. Choose it in Character > Portal Style."
-								],
-								[
-									"Verdant Gate",
-									"250",
-									"Cosmetic",
-									"Town Portal style: a gate overgrown with living green. Choose it in Character > Portal Style."
-								],
-								[
-									"Gilded Gate",
-									"300",
-									"Cosmetic",
-									"Town Portal style: a golden arch full of sunlight. Choose it in Character > Portal Style."
-								],
-								[
-									"Bloodmoon Gate",
-									"300",
-									"Cosmetic",
-									"Town Portal style: a red gate under a blood moon. Choose it in Character > Portal Style."
-								],
-								[
-									"Sanctum Gate",
-									"300",
-									"Cosmetic",
-									"Town Portal style: a white palace door with a red veil. Choose it in Character > Portal Style."
-								]
-							],
-							"sprites": [
-								{"item": 29640},
-								{"item": 29641},
-								{"item": 29632},
-								{"item": 29630},
-								{"item": 29631},
-								{"item": 29636}
-							]
-						}
-					],
-					"icon": "wiki/i/k-arcane-gate.png"
-				},
-				{
-					"id": "store:12",
-					"name": "Spell Effects",
-					"sub": "12 offers, 250 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["12 offers, 250 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Voidborn War Cries",
-									"250",
-									"Cosmetic",
-									"Iron Bellow, Red Frenzy and Bloodrage burst in violet; the bellow's rune turns arcane. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Stormborn War Cries",
-									"250",
-									"Cosmetic",
-									"Iron Bellow, Red Frenzy and Bloodrage burst in storm blue. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Sunfire Hunt",
-									"250",
-									"Cosmetic",
-									"Skewering Line flies golden arrows, Feral Command fiery bolts, Wild Bond a storm vortex. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Voidfire",
-									"250",
-									"Cosmetic",
-									"Doomtide, Forked Storm and Falling Pyre burn and crackle in violet. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Bloodfire",
-									"250",
-									"Cosmetic",
-									"Doomtide and Falling Pyre burn blood red. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Dawnstep",
-									"250",
-									"Cosmetic",
-									"Shadow Veil, Shadow Step and Shadow Mend vanish in a pillar of light. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Venom Smoke",
-									"250",
-									"Cosmetic",
-									"Smoke Bomb and Shadow Mend leave a green, venomous smoke. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Crimson Palms",
-									"250",
-									"Cosmetic",
-									"Ashen Fist, Sundering Palm and Pressure Points strike in red. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Void Palms",
-									"250",
-									"Cosmetic",
-									"Ashen Fist, Sundering Palm and Pressure Points strike in violet. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Gilded Palms",
-									"250",
-									"Cosmetic",
-									"Sundering Palm, Pressure Points and Shadowfist Flurry strike in gold. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Umbral Rite",
-									"250",
-									"Cosmetic",
-									"Zealotry, Purging Nova and Vow of Mending glow in violet. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Pyre Rite",
-									"250",
-									"Cosmetic",
-									"Zealotry and Purging Nova burn in red and fire. Seen by all. Character > Cosmetics."
-								]
-							],
-							"sprites": [
-								{"item": 7762},
-								{"item": 7759},
-								{"item": 2187},
-								{"item": 2153},
-								{"item": 7760},
-								{"item": 2145},
-								{"item": 7761},
-								{"item": 2156},
-								{"item": 2150},
-								{"item": 2154},
-								{"item": 18414},
-								{"item": 18420}
-							]
-						}
-					],
-					"icon": "wiki/i/k-fire-burst.png"
-				},
-				{
-					"id": "store:13",
-					"name": "Kill Effects",
-					"sub": "5 offers, 200 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["5 offers, 200 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Soul Spark",
-									"200",
-									"Cosmetic",
-									"A violet skull rises from the monster you finish. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Sun Ring",
-									"200",
-									"Cosmetic",
-									"A ring of fire flares where your killing blow lands. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Frost Shatter",
-									"200",
-									"Cosmetic",
-									"Your kills shatter into shards of ice. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Blood Bloom",
-									"200",
-									"Cosmetic",
-									"A spiky burst of blood marks every kill. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Radiant Ring",
-									"200",
-									"Cosmetic",
-									"A white sun ring shines over your kills. Seen by all. Character > Cosmetics."
-								]
-							],
-							"sprites": [{"item": 5944}, {"item": 2304}, {"item": 2274}, {"item": 9020}, {"item": 10305}]
-						}
-					],
-					"icon": "wiki/i/k-blood-skull.png"
-				},
-				{
-					"id": "store:14",
-					"name": "Loot Labels",
-					"sub": "4 offers, 150 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["4 offers, 150 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Ember Labels",
-									"150",
-									"Cosmetic",
-									"Your highlighted loot labels sit on smouldering ember. Rarity colours stay. Character > Cosmetics."
-								],
-								[
-									"Verdant Labels",
-									"150",
-									"Cosmetic",
-									"Your highlighted loot labels sit on deep green. Rarity colours stay. Character > Cosmetics."
-								],
-								[
-									"Azure Labels",
-									"150",
-									"Cosmetic",
-									"Your highlighted loot labels sit on night blue. Rarity colours stay. Character > Cosmetics."
-								],
-								[
-									"Royal Labels",
-									"150",
-									"Cosmetic",
-									"Your highlighted loot labels sit on royal violet. Rarity colours stay. Character > Cosmetics."
-								]
-							],
-							"sprites": [{"item": 18420}, {"item": 18415}, {"item": 18418}, {"item": 18414}]
-						}
-					],
-					"icon": "wiki/i/k-light-eye.png"
-				},
-				{
-					"id": "store:15",
-					"name": "Chat Colours",
-					"sub": "5 offers, 200 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["5 offers, 200 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Cinder Name",
-									"200",
-									"Cosmetic",
-									"Your name in chat glows cinder orange for everyone. Character > Cosmetics."
-								],
-								[
-									"Frost Name",
-									"200",
-									"Cosmetic",
-									"Your name in chat shows frost blue for everyone. Character > Cosmetics."
-								],
-								[
-									"Verdant Name",
-									"200",
-									"Cosmetic",
-									"Your name in chat shows leaf green for everyone. Character > Cosmetics."
-								],
-								[
-									"Amethyst Name",
-									"200",
-									"Cosmetic",
-									"Your name in chat shows amethyst for everyone. Character > Cosmetics."
-								],
-								[
-									"Rose Name",
-									"200",
-									"Cosmetic",
-									"Your name in chat shows rose for everyone. Character > Cosmetics."
-								]
-							],
-							"sprites": [{"item": 2147}, {"item": 2146}, {"item": 2149}, {"item": 2150}, {"item": 2145}]
-						}
-					],
-					"icon": "wiki/i/top-console.png"
-				},
-				{
-					"id": "store:16",
-					"name": "Footprints",
-					"sub": "9 offers, 200 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["9 offers, 200 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Ember Steps",
-									"200",
-									"Cosmetic",
-									"Glowing ember prints smoulder where you walk. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Frost Steps",
-									"200",
-									"Cosmetic",
-									"Each step leaves a print of rime. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Blood Trail",
-									"200",
-									"Cosmetic",
-									"Drops of blood mark your way. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Ash Prints",
-									"200",
-									"Cosmetic",
-									"Grey ash settles in your footprints. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Petal Trail",
-									"200",
-									"Cosmetic",
-									"Pink petals fall where you step. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Venom Drips",
-									"200",
-									"Cosmetic",
-									"Green venom drips from your steps. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Shadow Wisps",
-									"200",
-									"Cosmetic",
-									"Violet wisps of shadow curl behind you. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Gilded Steps",
-									"200",
-									"Cosmetic",
-									"Golden prints that sparkle a moment. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Storm Sparks",
-									"200",
-									"Cosmetic",
-									"Crackling sparks jump from every step. Seen by all. Character > Cosmetics."
-								]
-							],
-							"sprites": [
-								{"item": 2187},
-								{"item": 2274},
-								{"item": 9020},
-								{"item": 2229},
-								{"item": 18415},
-								{"item": 2149},
-								{"item": 2150},
-								{"item": 2154},
-								{"item": 7759}
-							]
-						}
-					],
-					"icon": "wiki/i/k-ember-kick.png"
-				},
-				{
-					"id": "store:17",
-					"name": "Outlines",
-					"sub": "9 offers, 250 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["9 offers, 250 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Gilded Glow",
-									"250",
-									"Cosmetic",
-									"A warm golden line traces your outline. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Crimson Glow",
-									"250",
-									"Cosmetic",
-									"A blood-red line traces your outline. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Void Glow",
-									"250",
-									"Cosmetic",
-									"A deep violet line traces your outline. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Frost Glow",
-									"250",
-									"Cosmetic",
-									"A cold blue line traces your outline. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Verdant Glow",
-									"250",
-									"Cosmetic",
-									"A living green line traces your outline. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Ember Gradient",
-									"250",
-									"Cosmetic",
-									"Your outline runs red at your feet, burning gold at your crown. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Storm Gradient",
-									"250",
-									"Cosmetic",
-									"Your outline runs deep blue below, white lightning above. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Radiant Pulse",
-									"250",
-									"Cosmetic",
-									"A golden outline that breathes in and out. Seen by all. Character > Cosmetics."
-								],
-								[
-									"Abyssal Pulse",
-									"250",
-									"Cosmetic",
-									"A violet outline of darkness that swells and fades. Seen by all. Character > Cosmetics."
-								]
-							],
-							"sprites": [
-								{"item": 2154},
-								{"item": 2156},
-								{"item": 2153},
-								{"item": 2146},
-								{"item": 2149},
-								{"item": 2187},
-								{"item": 7759},
-								{"item": 2145},
-								{"item": 6500}
-							]
-						}
-					],
-					"icon": "wiki/i/k-light-shield.png"
-				},
-				{
-					"id": "store:18",
-					"name": "Chaos Shaders",
-					"sub": "6 offers, 250-300 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["6 offers, 250-300 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Ember Glow",
-									"250",
-									"Cosmetic",
-									"Your outfit smoulders: a flickering ember edge and sparks drifting up. Outfit window."
-								],
-								[
-									"Frost Rime",
-									"250",
-									"Cosmetic",
-									"Your outfit turns to ice, rimed at the edges, with crystals that glint. Outfit window."
-								],
-								[
-									"Void Flicker",
-									"250",
-									"Cosmetic",
-									"Your outfit sinks into violet dark; its edge flickers and slips away. Outfit window."
-								],
-								[
-									"Holy Radiance",
-									"300",
-									"Cosmetic",
-									"A golden light breathes through your outfit, rays crossing it slowly. Outfit window."
-								],
-								[
-									"Heartblood",
-									"250",
-									"Cosmetic",
-									"A heartbeat floods your outfit red and lights the veins beneath. Outfit window."
-								],
-								[
-									"Spectral Ghost",
-									"300",
-									"Cosmetic",
-									"Your outfit fades to a pale, see-through ghost with a cold glow. Outfit window."
-								]
-							],
-							"sprites": [
-								{"item": 2187},
-								{"item": 2146},
-								{"item": 2153},
-								{"item": 2145},
-								{"item": 9020},
-								{"item": 2150}
-							]
-						}
-					],
-					"icon": "wiki/i/top-vip.png"
-				},
-				{
-					"id": "store:19",
-					"name": "Hideout Decorations",
-					"sub": "9 offers, 80-300 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["9 offers, 80-300 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Stone Seat",
-									"120",
-									"Cosmetic",
-									"Hideout decoration (Furniture), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Wyrmbone Throne",
-									"300",
-									"Cosmetic",
-									"Hideout decoration (Furniture), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Tall Candelabrum",
-									"150",
-									"Cosmetic",
-									"Hideout decoration (Lights), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Gargoyle",
-									"200",
-									"Cosmetic",
-									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Mourning Angel",
-									"200",
-									"Cosmetic",
-									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Black Crystal",
-									"250",
-									"Cosmetic",
-									"Hideout decoration (Statues), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Wyrm Banner",
-									"150",
-									"Cosmetic",
-									"Hideout decoration (Banners), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Azure Tapestry",
-									"100",
-									"Cosmetic",
-									"Hideout decoration (Wall), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								],
-								[
-									"Woven Rug",
-									"80",
-									"Cosmetic",
-									"Hideout decoration (Rugs), for every character of your account. Cosmetic only: it changes how your hideout looks and nothing else. Character > Hideout."
-								]
-							],
-							"sprites": [
-								{"item": 7277},
-								{"item": 10950},
-								{"item": 9439},
-								{"item": 1452},
-								{"item": 1448},
-								{"item": 11753},
-								{"item": 10952},
-								{"item": 1870},
-								{"item": 1804}
-							]
-						}
-					],
-					"icon": "wiki/i/k-ember-banner.png"
-				},
-				{
-					"id": "store:20",
-					"name": "Appearances",
-					"sub": "9 offers, 300-400 coins. Cosmetic.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["9 offers, 300-400 Chaos Coins. Cosmetic."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Falconer's Regalia",
-									"300",
-									"Cosmetic",
-									"Transmog looks: a crested circlet, plate and greaves of the old falconers. Character > Transmog."
-								],
-								[
-									"Lionguard",
-									"350",
-									"Cosmetic",
-									"Transmog looks: the gilded lion helmet, plate, shield and spellbook. Character > Transmog."
-								],
-								[
-									"Gravecloak",
-									"350",
-									"Cosmetic",
-									"Transmog looks: hooded skull, bone-ribbed plate, legs and boots. Character > Transmog."
-								],
-								[
-									"Soulforged",
-									"400",
-									"Cosmetic",
-									"Transmog looks: soulshell plate, soulshanks, soulwalkers, soulbastion. Character > Transmog."
-								],
-								[
-									"Soulstalker",
-									"350",
-									"Cosmetic",
-									"Transmog looks: the soulshroud, soulstrider legs, soulstalker boots. Character > Transmog."
-								],
-								[
-									"Mothwing",
-									"350",
-									"Cosmetic",
-									"Transmog looks: a green mothwing helmet, plate, legs and boots. Character > Transmog."
-								],
-								[
-									"Cobra Regalia",
-									"300",
-									"Cosmetic",
-									"Transmog looks: the cobra hood, sword, wand and rod. Character > Transmog."
-								],
-								[
-									"Lionguard Arms",
-									"300",
-									"Cosmetic",
-									"Transmog looks: the lion longsword, axe, hammer, longbow, rod and wand. Character > Transmog."
-								],
-								[
-									"Grand Sanguine",
-									"350",
-									"Cosmetic",
-									"Transmog looks: grand sanguine blade, cudgel, hatchet, bow and coil. Character > Transmog."
-								]
-							],
-							"sprites": [
-								{"item": 27200},
-								{"item": 27402},
-								{"item": 26709},
-								{"item": 27389},
-								{"item": 27391},
-								{"item": 28383},
-								{"item": 27213},
-								{"item": 27400},
-								{"item": 27459}
-							]
-						}
-					],
-					"icon": "wiki/i/k-arcane-twin.png"
-				},
-				{
-					"id": "store:21",
-					"name": "Pets",
-					"sub": "7 offers, 400 coins. Pet (small abilities).",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["7 offers, 400 Chaos Coins. Pet (small abilities)."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Lantern Wisp",
-									"400",
-									"Pet (small abilities)",
-									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
-								],
-								[
-									"Hoarder Squirrel",
-									"400",
-									"Pet (small abilities)",
-									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
-								],
-								[
-									"Ember Parrot",
-									"400",
-									"Pet (small abilities)",
-									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
-								],
-								[
-									"Rime Penguin",
-									"400",
-									"Pet (small abilities)",
-									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
-								],
-								[
-									"Ashen Hare",
-									"400",
-									"Pet (small abilities)",
-									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
-								],
-								[
-									"Bog Frog",
-									"400",
-									"Pet (small abilities)",
-									"A pet that finds more gold in your kills and later more items. Call it in Character > Pets."
-								],
-								[
-									"Dusk Moth",
-									"400",
-									"Pet (small abilities)",
-									"A pet that mends you below half health and later wards you. Call it in Character > Pets."
-								]
-							],
-							"sprites": [
-								{"item": 2050},
-								{"item": 2148},
-								{"item": 2050},
-								{"item": 2148},
-								{"item": 2050},
-								{"item": 2148},
-								{"item": 2050}
-							]
-						}
-					],
-					"icon": "wiki/i/k-nature-fang.png"
-				},
-				{
-					"id": "store:22",
+					"id": "store:33",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",
@@ -39208,812 +40001,6 @@
 						}
 					],
 					"icon": "wiki/i/k-steel-hammer.png"
-				},
-				{
-					"id": "store:23",
-					"name": "Supplies",
-					"sub": "5 offers, 15-50 coins. Consumable item, Convenience.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["5 offers, 15-50 Chaos Coins. Consumable item, Convenience."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"100 Great Mana Potions",
-									"15",
-									"Consumable item",
-									"Restores a large amount of mana."
-								],
-								["100 Great Spirit Potions", "15", "Consumable item", "Restores health and mana."],
-								[
-									"100 Ultimate Health Potions",
-									"20",
-									"Consumable item",
-									"Restores a large amount of health."
-								],
-								[
-									"100 Supreme Health Potions",
-									"30",
-									"Consumable item",
-									"Restores a huge amount of health."
-								],
-								[
-									"Backpack of Holding",
-									"50",
-									"Convenience",
-									"A backpack with more room than any other."
-								]
-							],
-							"sprites": [{"item": 7590}, {"item": 8472}, {"item": 8473}, {"item": 26031}, {"item": 2365}]
-						}
-					],
-					"icon": "wiki/i/k-blood-drop.png"
-				},
-				{
-					"id": "store:24",
-					"name": "Runes",
-					"sub": "29 offers, 3-108 coins. Consumable item.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["29 offers, 3-108 Chaos Coins. Consumable item."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								["100 Searing Orb Runes", "9", "Consumable item", "Fire damage in an area."],
-								[
-									"250 Searing Orb Runes",
-									"20",
-									"Consumable item",
-									"Fire damage in an area. 5% off the 100 pack."
-								],
-								[
-									"500 Searing Orb Runes",
-									"38",
-									"Consumable item",
-									"Fire damage in an area. 10% off the 100 pack."
-								],
-								["100 Rockfall Runes", "7", "Consumable item", "Earth damage in an area."],
-								[
-									"250 Rockfall Runes",
-									"17",
-									"Consumable item",
-									"Earth damage in an area. 5% off the 100 pack."
-								],
-								[
-									"500 Rockfall Runes",
-									"32",
-									"Consumable item",
-									"Earth damage in an area. 10% off the 100 pack."
-								],
-								["100 Stormcall Runes", "7", "Consumable item", "Energy damage in an area."],
-								[
-									"250 Stormcall Runes",
-									"17",
-									"Consumable item",
-									"Energy damage in an area. 5% off the 100 pack."
-								],
-								[
-									"500 Stormcall Runes",
-									"32",
-									"Consumable item",
-									"Energy damage in an area. 10% off the 100 pack."
-								],
-								["100 Frostfall Runes", "9", "Consumable item", "Ice damage in an area."],
-								[
-									"250 Frostfall Runes",
-									"20",
-									"Consumable item",
-									"Ice damage in an area. 5% off the 100 pack."
-								],
-								[
-									"500 Frostfall Runes",
-									"38",
-									"Consumable item",
-									"Ice damage in an area. 10% off the 100 pack."
-								],
-								["100 Reaper's Runes", "22", "Consumable item", "Death damage to a single target."],
-								[
-									"250 Reaper's Runes",
-									"53",
-									"Consumable item",
-									"Death damage to a single target. 5% off the 100 pack."
-								],
-								[
-									"500 Reaper's Runes",
-									"99",
-									"Consumable item",
-									"Death damage to a single target. 10% off the 100 pack."
-								],
-								[
-									"100 Greater Hexdart Runes",
-									"3",
-									"Consumable item",
-									"Energy damage to a single target."
-								],
-								[
-									"250 Greater Hexdart Runes",
-									"6",
-									"Consumable item",
-									"Energy damage to a single target. 5% off the 100 pack."
-								],
-								[
-									"500 Greater Hexdart Runes",
-									"11",
-									"Consumable item",
-									"Energy damage to a single target. 10% off the 100 pack."
-								],
-								["100 Mending Runes", "10", "Consumable item", "Heals health."],
-								["250 Mending Runes", "23", "Consumable item", "Heals health. 5% off the 100 pack."],
-								[
-									"500 Mending Runes",
-									"43",
-									"Consumable item",
-									"Heals health. 10% off the 100 pack."
-								],
-								[
-									"100 Grand Mending Runes",
-									"24",
-									"Consumable item",
-									"Heals a large amount of health."
-								],
-								[
-									"250 Grand Mending Runes",
-									"57",
-									"Consumable item",
-									"Heals a large amount of health. 5% off the 100 pack."
-								],
-								[
-									"500 Grand Mending Runes",
-									"108",
-									"Consumable item",
-									"Heals a large amount of health. 10% off the 100 pack."
-								],
-								["25 Shackle Runes", "23", "Consumable item", "Slows a target down a lot."],
-								[
-									"50 Shackle Runes",
-									"43",
-									"Consumable item",
-									"Slows a target down a lot. 5% off the 100 pack."
-								],
-								["100 Shackle Runes", "89", "Consumable item", "Slows a target down a lot."],
-								["100 Dispel Runes", "3", "Consumable item", "Removes a magic field."],
-								[
-									"250 Dispel Runes",
-									"8",
-									"Consumable item",
-									"Removes a magic field. 5% off the 100 pack."
-								]
-							],
-							"sprites": [
-								{"item": 2304},
-								{"item": 2304},
-								{"item": 2304},
-								{"item": 2288},
-								{"item": 2288},
-								{"item": 2288},
-								{"item": 2315},
-								{"item": 2315},
-								{"item": 2315},
-								{"item": 2274},
-								{"item": 2274},
-								{"item": 2274},
-								{"item": 2268},
-								{"item": 2268},
-								{"item": 2268},
-								{"item": 2311},
-								{"item": 2311},
-								{"item": 2311},
-								{"item": 2265},
-								{"item": 2265},
-								{"item": 2265},
-								{"item": 2273},
-								{"item": 2273},
-								{"item": 2273},
-								{"item": 2278},
-								{"item": 2278},
-								{"item": 2278},
-								{"item": 2261},
-								{"item": 2261}
-							]
-						}
-					],
-					"icon": "wiki/i/top-vip.png"
-				},
-				{
-					"id": "store:25",
-					"name": "Boosts",
-					"sub": "4 offers, 50-750 coins. Boost, Service.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["4 offers, 50-750 Chaos Coins. Boost, Service."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Double Experience Potion",
-									"50",
-									"Boost",
-									"1 hour of double experience per potion (Character > Character Info). Not for season characters. (not for season characters)"
-								],
-								[
-									"5 Double Experience Potions",
-									"225",
-									"Boost",
-									"Five hours of double experience, one potion at a time. (not for season characters)"
-								],
-								[
-									"All Blessings",
-									"60",
-									"Boost",
-									"All five blessings at once: less experience loss when you die (items are never lost without a red or black skull)."
-								],
-								[
-									"Eternal Blessing",
-									"750",
-									"Service",
-									"This character keeps all five blessings for good: they come back after every death. Once per character. Not for season characters. (not for season characters)"
-								]
-							],
-							"sprites": [{"item": 28095}, {"item": 28095}, {"item": 11260}, {"item": 11260}]
-						}
-					],
-					"icon": "wiki/i/k-light-arrowup.png"
-				},
-				{
-					"id": "store:26",
-					"name": "World Buffs",
-					"sub": "3 offers, 250-300 coins. Boost.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["3 offers, 250-300 Chaos Coins. Boost."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"World Experience",
-									"300",
-									"Boost",
-									"+25% experience for every standard (not season) character for 1 hour. Stacks up to 3 hours."
-								],
-								[
-									"World Loot",
-									"300",
-									"Boost",
-									"+25% Chaos loot and an extra loot roll for every standard (not season) character, 1 hour. Up to 3 hours."
-								],
-								[
-									"World Training",
-									"250",
-									"Boost",
-									"+25% skill and magic level training for every standard (not season) character for 1 hour. Up to 3 hours."
-								]
-							],
-							"sprites": [{"item": 7440}, {"item": 2148}, {"item": 7443}]
-						}
-					],
-					"icon": "wiki/i/k-holy-burst.png"
-				},
-				{
-					"id": "store:27",
-					"name": "Services",
-					"sub": "5 offers, 60-400 coins. Service.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["5 offers, 60-400 Chaos Coins. Service."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Name Change",
-									"250",
-									"Service",
-									"Then use it in Character > Services, in a protection zone. You are logged out and return renamed."
-								],
-								[
-									"Vocation Change",
-									"400",
-									"Service",
-									"Then pick the vocation in Character > Services. Skills are kept, the passive tree is reset for free."
-								],
-								[
-									"Sex Change",
-									"100",
-									"Service",
-									"Your character changes sex at once. Every outfit and addon you own comes along."
-								],
-								[
-									"Frag & Skull Remover",
-									"150",
-									"Service",
-									"Clears your unjustified kills and removes a red or black skull. Not usable in combat."
-								],
-								[
-									"Passive Tree Reset",
-									"60",
-									"Service",
-									"Refunds every passive tree and Paragon point at once, without the gold cost of the normal resets."
-								]
-							],
-							"sprites": [{"item": 25427}, {"item": 2175}, {"item": 9019}, {"item": 2229}, {"item": 18559}]
-						}
-					],
-					"icon": "wiki/i/top-options.png"
-				},
-				{
-					"id": "store:28",
-					"name": "Convenience",
-					"sub": "6 offers, 100-400 coins. Convenience.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["6 offers, 100-400 Chaos Coins. Convenience."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Loot Bag",
-									"250",
-									"Convenience",
-									"Bottomless, store-bound: all your loot goes in, 255 slots, no weight. The Auto Seller sells it."
-								],
-								[
-									"Orbs Pouch",
-									"200",
-									"Convenience",
-									"40 slots, store-bound. Collects orbs, whetstones, rune shards and gems while carried."
-								],
-								[
-									"Rift Key Pouch",
-									"150",
-									"Convenience",
-									"30 slots, store-bound. Collects Rift Keys, Omen Keys and omen fragments while carried."
-								],
-								[
-									"Everfull Ration",
-									"100",
-									"Convenience",
-									"Food that never runs out: 12 minutes of regeneration a bite, like the best food, until you are full. Store-bound."
-								],
-								[
-									"Auto Seller",
-									"400",
-									"Convenience",
-									"Permanent: loot on your auto-sell list (Economy > Auto Seller) is sold at NPC prices, gold to your bank."
-								],
-								[
-									"Rarity Autoloot",
-									"300",
-									"Convenience",
-									"Permanent: autoloot by rarity in the Loot Filter: take good gear, leave junk."
-								]
-							],
-							"sprites": [
-								{"item": 32081},
-								{"item": 32082},
-								{"item": 32083},
-								{"item": 32084},
-								{"item": 2160},
-								{"item": 2472}
-							]
-						}
-					],
-					"icon": "wiki/i/top-autoloot.png"
-				},
-				{
-					"id": "store:29",
-					"name": "Training",
-					"sub": "21 offers, 25-450 coins. Consumable item.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["21 offers, 25-450 Chaos Coins. Consumable item."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Exercise Sword (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a sword with 500 training charges."
-								],
-								[
-									"Exercise Axe (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get an axe with 500 training charges."
-								],
-								[
-									"Exercise Club (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a club with 500 training charges."
-								],
-								[
-									"Exercise Bow (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a bow with 500 training charges."
-								],
-								[
-									"Exercise Rod (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a rod with 500 training charges."
-								],
-								[
-									"Exercise Wand (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a wand with 500 training charges."
-								],
-								[
-									"Exercise Shield (500)",
-									"25",
-									"Consumable item",
-									"Use the chest to get a shield with 500 training charges."
-								],
-								[
-									"Durable Exercise Sword (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a sword with 1800 training charges."
-								],
-								[
-									"Durable Exercise Axe (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get an axe with 1800 training charges."
-								],
-								[
-									"Durable Exercise Club (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a club with 1800 training charges."
-								],
-								[
-									"Durable Exercise Bow (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a bow with 1800 training charges."
-								],
-								[
-									"Durable Exercise Rod (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a rod with 1800 training charges."
-								],
-								[
-									"Durable Exercise Wand (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a wand with 1800 training charges."
-								],
-								[
-									"Durable Exercise Shield (1800)",
-									"75",
-									"Consumable item",
-									"Use the chest to get a shield with 1800 training charges."
-								],
-								[
-									"Lasting Exercise Sword (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a sword with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Axe (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get an axe with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Club (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a club with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Bow (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a bow with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Rod (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a rod with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Wand (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a wand with 14400 training charges."
-								],
-								[
-									"Lasting Exercise Shield (14400)",
-									"450",
-									"Consumable item",
-									"Use the chest to get a shield with 14400 training charges."
-								]
-							],
-							"sprites": [
-								{"item": 27761},
-								{"item": 27762},
-								{"item": 27763},
-								{"item": 27764},
-								{"item": 27765},
-								{"item": 27766},
-								{"item": 27767},
-								{"item": 27768},
-								{"item": 27769},
-								{"item": 27770},
-								{"item": 27771},
-								{"item": 27772},
-								{"item": 27773},
-								{"item": 27774},
-								{"item": 27775},
-								{"item": 27776},
-								{"item": 27777},
-								{"item": 27778},
-								{"item": 27779},
-								{"item": 27780},
-								{"item": 27781}
-							]
-						}
-					],
-					"icon": "wiki/i/k-steel-sword.png"
-				},
-				{
-					"id": "store:30",
-					"name": "Chaos Pact",
-					"sub": "1 offers, 300 coins. Chaos Pact.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["1 offers, 300 Chaos Coins. Chaos Pact."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Chaos Pact (30 days)",
-									"300",
-									"Chaos Pact",
-									"30 days, stacks: +10% XP, stamina x1.5, remote stash deposit, Auto Seller, cosmetic."
-								]
-							],
-							"sprites": [{"item": 16101}]
-						}
-					],
-					"icon": "wiki/i/top-battlepass.png"
-				},
-				{
-					"id": "store:31",
-					"name": "Storage & Slots",
-					"sub": "13 offers, 100-300 coins. Account storage.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["13 offers, 100-300 Chaos Coins. Account storage."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Extra Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: one more general stash tab (100 entries). Up to 6."
-								],
-								[
-									"Orbs Stash Tab",
-									"200",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for orbs, whetstones, rune shards."
-								],
-								[
-									"Gems Stash Tab",
-									"200",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for every gem you deposit."
-								],
-								[
-									"Keys Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for Rift Keys, omens, keys, maps."
-								],
-								[
-									"Weapons Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for weapons and quivers."
-								],
-								[
-									"Armor Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for armour pieces and shields."
-								],
-								[
-									"Jewellery Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for rings and amulets."
-								],
-								[
-									"Materials Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: an affinity stash tab for ores, herbs and shards."
-								],
-								[
-									"Creature Products Stash Tab",
-									"150",
-									"Account storage",
-									"Permanent: an affinity stash tab for creature products (lent by the Pact)."
-								],
-								[
-									"Collectibles Stash Tab",
-									"100",
-									"Account storage",
-									"Permanent: an affinity stash tab for collectibles (or earn it: Reliquary)."
-								],
-								[
-									"Remote Stash Deposit",
-									"300",
-									"Account storage",
-									"Permanent, account-wide: deposit into the stash from anywhere. Pact: included."
-								],
-								[
-									"Character Slot",
-									"250",
-									"Account storage",
-									"Permanent: one more character on your account, created on the website. Up to 10."
-								],
-								[
-									"Build Slot",
-									"100",
-									"Account storage",
-									"Permanent, account-wide: one more saved passive tree build. Up to 6."
-								]
-							],
-							"sprites": [
-								{"item": 2365},
-								{"item": 29856},
-								{"item": 32005},
-								{"item": 32072},
-								{"item": 2400},
-								{"item": 2472},
-								{"item": 2171},
-								{"item": 5880},
-								{"item": 36010},
-								{"item": 5929},
-								{"item": 2365},
-								{"item": 1949},
-								{"item": 18559}
-							]
-						}
-					],
-					"icon": "wiki/i/top-stash.png"
-				},
-				{
-					"id": "store:32",
-					"name": "Depot Tabs",
-					"sub": "2 offers, 150-500 coins. Account storage.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["2 offers, 150-500 Chaos Coins. Account storage."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Extra Depot Tab",
-									"150",
-									"Account storage",
-									"Permanent, account-wide: one more depot tab of 100 items. Up to 12."
-								],
-								[
-									"4 Depot Tabs",
-									"500",
-									"Account storage",
-									"Permanent, account-wide: four more depot tabs of 100 items each."
-								]
-							],
-							"sprites": [{"item": 25453}, {"item": 25456}]
-						}
-					],
-					"icon": "wiki/i/top-stash.png"
-				},
-				{
-					"id": "store:33",
-					"name": "Season Pass",
-					"sub": "4 offers, 500-2500 coins. Season pass.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["4 offers, 500-2500 Chaos Coins. Season pass."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								[
-									"Premium Ashen Pass",
-									"600",
-									"Season pass",
-									"Premium track of the Ashen Pass for your whole account: cosmetics only (titles, shaders, a frame, Everblight), 320 coins back."
-								],
-								[
-									"Ember Pack",
-									"500",
-									"Season pass",
-									"Brotherhood outfit and addons, Cinderhoof mount, title Emberkin, Arboreal transmog. Account-wide."
-								],
-								[
-									"Blaze Pack",
-									"1500",
-									"Season pass",
-									"Ember Pack, premium Ashen Pass, Doom Knight outfit and addons, Flamesteed, Pyre Gate portal."
-								],
-								[
-									"Inferno Pack",
-									"2500",
-									"Season pass",
-									"Blaze Pack, Chaos Acolyte outfit, Wrathfire Pegasus, title Inferno-Crowned, 500 coins, 10 tier skips."
-								]
-							],
-							"sprites": [{"item": 26031}, {"item": 26031}, {"item": 26031}, {"item": 26031}]
-						}
-					],
-					"icon": "wiki/i/top-battlepass.png"
-				},
-				{
-					"id": "store:34",
-					"name": "Premium Time",
-					"sub": "3 offers, 250-1200 coins. Premium time.",
-					"color": "#ff70c0",
-					"group": "category",
-					"sections": [
-						{"h": "Category", "p": ["3 offers, 250-1200 Chaos Coins. Premium time."]},
-						{
-							"h": "Offers",
-							"cols": ["Offer", "Coins", "Type", "What it is"],
-							"w": [24, 10, 16, 50],
-							"rows": [
-								["30 Days of Premium", "250", "Premium time", "Premium account for 30 days."],
-								["90 Days of Premium", "650", "Premium time", "Premium account for 90 days."],
-								["180 Days of Premium", "1200", "Premium time", "Premium account for 180 days."]
-							]
-						}
-					],
-					"icon": "wiki/i/top-vip.png"
 				}
 			],
 			"banner": "wiki/hero/tab-store.webp",

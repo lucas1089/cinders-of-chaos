@@ -78,15 +78,18 @@ for _, o in ipairs(pc.store.storage.offers) do
 	end
 end
 eq(single.cost, stashTab.cost, "a depot tab costs what a stash tab costs")
--- the store has the category once
+-- the store has the category once, under Premium & Services, while the depot takes items; none while it is
+-- withdraw-only (stash_config.lua depot.withdrawOnly: a bought tab could hold nothing; store clean-up 2026-10-21)
 local shop = dofile("data/scripts/chaos/shop_config.lua")
+local withdrawOnly = dofile("data/scripts/chaos/stash_config.lua").depot.withdrawOnly == true
 local cats = 0
 for _, c in ipairs(shop.categories) do
 	if c == cfg.store or c.name == cfg.store.name then
 		cats = cats + 1
+		eq(c.parent, "Premium & Services", "Depot Tabs under Premium & Services")
 	end
 end
-eq(cats, 1, "store category Depot Tabs")
+eq(cats, withdrawOnly and 0 or 1, "store category Depot Tabs only while the depot takes items")
 
 -- ---------------------------------------------------------------- the account's tabs
 local NOW = 1800000000
@@ -804,7 +807,9 @@ runTimers()
 eq(last and last.action, "tabs", "tabs before")
 local tabsMsg = sent[#sent]
 eq(tabsMsg and tabsMsg.data.town, "Ashford Hollow", "the town name at a locker opening")
-eq(tabsMsg and tabsMsg.data.store, "Depot Tabs", "the store category")
+-- the store category; "" (no Buy Tabs button) while the depot is withdraw-only: tabs are not sold then
+eq(tabsMsg and tabsMsg.data.store, Chaos.stashConfig.depot.withdrawOnly and "" or "Depot Tabs", "the store category")
+eq(tabsMsg and tabsMsg.data.hint, Chaos.stashConfig.depot.withdrawOnly and "" or cfg.messages.hint, "the store hint")
 eq(tabsMsg and tabsMsg.data.inbox, 14404 - 1000, "inbox client id") eq(tabsMsg and tabsMsg.data.market, 14405 - 1000, "market client id")
 eq(tabsMsg and tabsMsg.data.lockers and tabsMsg.data.lockers[1], 2589 - 1000, "locker client ids")
 eq(tabsMsg and #tabsMsg.data.palette, 12, "the palette goes to the client")

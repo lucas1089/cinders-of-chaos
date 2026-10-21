@@ -177,6 +177,8 @@ local function renderText()
   W.window.inboxButton:setEnabled(findItem(W.locker, state.inbox) ~= nil)
   W.window.marketButton:setEnabled(findItem(W.locker, state.market) ~= nil)
   W.window.editButton:setVisible(tab ~= nil)
+  -- Buy Tabs only while the store sells them (not while the depot is withdraw-only)
+  if W.window.storeButton then W.window.storeButton:setVisible(V.storeSells(state)) end
 end
 
 local function render()
@@ -437,7 +439,12 @@ end
 -- the Store at its Depot Tabs category (game_shop: the categories come from the server after it opens)
 function openStore()
   local sm = modules.game_shop
-  if not sm or not sm.toggle then return end
+  if not sm or not sm.toggle or not V.storeSells(state) then return end
+  -- the store's category tree (game_shop 2026-10-21): it opens the parent and shows the category
+  if type(sm.openCategory) == 'function' then
+    sm.openCategory(state.store)
+    return
+  end
   if not (sm.shop and sm.shop:isVisible()) then sm.toggle() end
   local tries = 0
   local function pick()

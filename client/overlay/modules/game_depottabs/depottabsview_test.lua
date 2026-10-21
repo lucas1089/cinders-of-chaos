@@ -67,6 +67,11 @@ eq(size.tabsW, 6 * 60 + 5 * 2, 'tab block width')
 eq(size.tabsW <= size.gridW + 20, true, 'the tab block is about as wide as the grid')
 local all = V.apply(V.apply(nil, { tabs = 17, max = 17, size = 100, ids = ids }), {})
 eq(#V.tabCells(all), 17, 'every tab open: no store button')
+-- the depot withdraw-only: the store sells no tabs (store = ''), no store button
+local closedStore = V.apply(V.apply(nil, { tabs = 3, max = 17, size = 100, ids = ids, store = 'Depot Tabs' }), { store = '' })
+eq(V.storeSells(closedStore), false, 'store "" : tabs not sold')
+eq(#V.tabCells(closedStore), 17, 'tabs not sold: no store button')
+eq(V.storeSells(s), true, 'store named: tabs sold')
 
 -- names and colours
 eq(V.tabName(s, 3), 'Tab 3', 'default name')

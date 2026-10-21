@@ -2967,13 +2967,59 @@ Outlines ...). Items, services, premium time and convenience unlocks have no `lo
 `tests/shop_looks_test.lua` (every appearance offer of `shop_config.lua` has a look, none repeats within its category,
 bundle icons wear their parts), `tests/shop_test.lua` (mount, plate frame, bundle, item through `shop.lua`).
 
-**Categories (per player, in this order).** Starter (only while one of its packs is for sale to the player), This week
-(the weekly rotation, below), Bundles, Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders, Name Plates, Portal Styles, Spell
-Effects, Kill Effects, Loot Labels, Chat Colours ("Cosmetics" below), Appearances (the transmog store sets), Pets,
-Crafting, Supplies, Boosts, World Buffs, Services, Convenience, Classes, Training, then the categories other systems
-insert in their own marked hunks of `shop_config.lua` (Chaos Pact, Storage & Slots, Season pass), Premium Time. Empty
-categories are left out. Every offer has a stable key (`ChaosShopCore.offerKey`: `wings:4`, `outfit:909`,
-`item:32256x10`, `service:pouch:loot`, or its own `key`), used by sales, featured lists, bundles, limits and the log.
+**Category tree (2026-10-21, owner: "De uma limpada na store do jogo. Separe em categorias e subcategorias. Use o
+layout do server").** The layout of the base server's store window (the base client's store draws its categories as a
+tree: a parent row that opens to its subcategory buttons, one parent open at a time, a click on the parent shows its
+first subcategory; its categories carry a `parent` name). Our store, per player, in this order (empty categories and
+parents are left out):
+
+- **Starter** (only while one of its packs is for sale to the player), **This week** (the weekly rotation, below),
+  **Bundles**
+- **Premium & Services**: Premium Time, Chaos Pact, Storage & Slots, Season Pass, Services (name, vocation and sex
+  change, skull remover, passive reset), XP Boosts (the Double Experience Potions), Blessings (All Blessings, Eternal
+  Blessing), World Buffs; Depot Tabs only while the depot takes items (below)
+- **Consumables**: Potions, Runes, Training (exercise weapons), Convenience (the three pouches, the Everfull Ration,
+  Auto Seller, Rarity Autoloot, Backpack of Holding)
+- **Cosmetics**: Outfits, Outfit Addons, Mounts, Wings, Auras, Outfit Shaders (the base shaders and the six Chaos
+  shaders), Footprints, Outlines, Kill Effects, Spell Effects, Loot Labels, Chat Colours, Name Plates, Pets,
+  Appearances (the transmog store sets), Portal Styles, Hideout Decorations
+- **Crafting** (Whetstones, Excision, Binding with weekly limits)
+
+The parents are `shop_config.lua` `groups` ({name, icon}); a category names its parent in `parent` and stands under it
+in config order (`ChaosShopCore.arrange`: a parent's subcategories together, where its first one is). **Adding a
+subcategory**: a category table with `parent = P_COSMETICS` (or `P_PREMIUM`, `P_CONSUMABLES`) at the place it should
+stand in `shop_config.lua` (a category built in another file: `under(P_COSMETICS, dofile(...))`), or from another file
+`ChaosShopCore.addSubcategory(cfg, "Cosmetics", category, "Auras")` (right after Auras; without the last argument after
+the parent's last subcategory). `ChaosShopCore.validate` refuses an unknown parent, a parent without a subcategory, a
+category named like a parent, a doubled category, and a sale or "New" naming a category that is gone; a sale or "New"
+naming a parent (`categories = {"Cosmetics"}`) covers its subcategories (`ChaosShopCore.price` gets the parent).
+Every offer has a stable key (`ChaosShopCore.offerKey`: `wings:4`, `outfit:909`, `item:32256x10`,
+`service:pouch:loot`, or its own `key`), used by sales, featured lists, bundles, limits and the log; the clean-up kept
+every key and every price.
+
+**Protocol (backward compatible).** `init` (and every later list) sends `category_groups` (the parents: name, icon,
+`size` offers, `children`) and then `categories`: still the flat list of the categories that sell, now in tree order,
+each with `parent` and `size` (the offer count; not `count`, the icon's item count, nor `offers`, which an old client
+fills with its pages). An old client ignores `category_groups` and `parent` and shows the flat list; the indexes of
+`get_page`, `buy` and `preview` are unchanged. `search {text}` -> `search_results {text, offers}`: every offer whose
+title, category or parent holds every word (case-insensitive, plain text; `ChaosShopCore.search`, the rotation is
+skipped as its offers are in their own categories at the same price), at most 30, each with `at = {category, page,
+offer}` (what `buy`, `gift` and `preview` send for it) and `path` ({parent, category}); rate limit 300 ms. A payload over
+the engine's 8192 bytes goes out in parts (`Chaos.sendChunked`; the client's `registerExtendedJSONOpcode` joins them,
+old clients too).
+
+**Clean-up audit (2026-10-21).** Removed or fixed: Depot Tabs (an extra tab 150, four 500) are not sold while the depot
+is withdraw-only (`stash_config.lua` `depot.withdrawOnly`, the stash took over: a bought tab could hold nothing); the
+category comes back by itself under Premium & Services when the depot opens again (the end of `shop_config.lua`), and
+the depot window hides its Buy Tabs button meanwhile (`depot.lua` sends `store = ""`). The "Chaos Shaders" category
+(six offers) is merged into Outfit Shaders; Supplies is Potions (the Backpack of Holding moved to Convenience); Boosts is
+split into XP Boosts and Blessings. Wings 3 and 15 show own names (Elderleaf Wings; Strength Wings, the base XML has a
+typo and the other one a place name of another game). Checked and kept: no duplicate keys, no offer without a price,
+every wing, aura and shader id in the base XML or the Chaos blocks, every outfit and mount generated, every service with
+a handler, every unlock known to its system, every spell of the twelve spell skins still cast by a class after the
+15-spell cap; Themed Sets stays a hidden rotation-only category. Tests: `tests/shop_tree_test.lua` (the tree functions,
+the tree of `shop_config.lua`, every offer resolvable), `tests/shop_test.lua` (the messages, tree order, search, buying
+from the results), client `game_shop/shoptree_test.lua`.
 
 **Cosmetics: what exists and how it is got.** Counted on the installed base data with the Chaos blocks:
 
@@ -3181,7 +3227,7 @@ convenience only, never power. Every price was decided on 2026-10-14 (owner dele
   (`rift_t15`). The three boss exclusives of pair 24 (Blood Vortex, Rune Seal auras, Runic Wings) stay boss drops and
   never enter the pool (`theme_art_test.lua` checks it).
 - **Chaos outfit shaders** (`cosmetics_config.lua` `outfitShaders`): switched on, 250 coins (Ember Glow, Frost Rime, Void
-  Flicker, Heartblood) and 300 (Holy Radiance, Spectral Ghost), a "Chaos Shaders" category (`cosmetics_store.lua`
+  Flicker, Heartblood) and 300 (Holy Radiance, Spectral Ghost), sold in Cosmetics > Outfit Shaders (`cosmetics_store.lua`
   "outfitshader"); account-wide, not giftable. The stock shaders cost 120-180.
 - **Bundles.** The discount bundles (`pct`) are priced per player (`Shop.personalBundle`): the parts the player owns
   already are left out of the bundle and of its price, the description says how many; a bundle whose parts are all
@@ -3487,7 +3533,7 @@ them; they show in its Collection tab as kind `shader` rows (owned or how to get
 `outfitShaders.enabled = false` (shipped): nothing is listed, granted, sold or added. On: an owned one is added to every
 character of the account at login and to the buyer when bought (`addOwnedShaders`). **Not priced** (the owner decides): an
 entry without `price` is never sold ("Store: not on sale yet"). To sell: set `price = N` on the entries and add
-`dofile("data/scripts/chaos/cosmetics_store.lua")("outfitshader")` (category "Chaos Shaders") to the Cosmetics hunk of
+`dofile("data/scripts/chaos/cosmetics_store.lua")("outfitshader")` (its offers, appended to Outfit Shaders since 2026-10-21) to the Cosmetics hunk of
 `shop_config.lua`; `K.validate` refuses an offer while the switch is off, without a price or at another price.
 `K.validateOutfitShaders` (run by the startup check and the test): keys unique and not a cosmetic's, ids 19..255 and unused,
 names `chaos_*` registered by the client, whole prices, a swatch colour, no power fields. **Tests:** `tests/cosmetics_test.lua`
@@ -4381,7 +4427,7 @@ The tab count is the same in every town; each town's chest has its own 17 tabs.
 |---|---|
 | Free | 1 |
 | Chaos Pact (while active) | +1 |
-| Store "Depot Tabs": Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +12 |
+| Store "Depot Tabs" (Premium & Services; not sold while the depot is withdraw-only, "Store"): Extra Depot Tab, 150 coins (a stash tab costs 150 too); 4 Depot Tabs, 500 coins | up to +12 |
 | Achievements: Cabinet of Curiosities (25 unique items), Hall of Trophies (100 bestiary entries), Keeper of the Vault (50 sealed rifts) | +1 each |
 
 The store offers are service `pactExtra` with `extra = "depotTabs"` and `amount` 1 or 4 (`pact.lua` adds `amount`; a pack
@@ -4434,7 +4480,7 @@ into its locker: before that the engine treats the chest's contents as removed a
 opens one centred window, "<town> Depot", instead of the stock locker, chest and box windows: 17 tab buttons in rows of 6
 (the tab's name or number, a colour accent, a lock on locked tabs, a tooltip with the count or the store hint) and a
 "+ Tabs" button while tabs can be bought; the active tab's 100 slots in a 10x10 grid; "87/100 items", "4 of 17 tabs";
-Inbox, Market, Buy Tabs (the Store at its Depot Tabs category) and Close. The locker, its chest and one box stay real
+Inbox, Market, Buy Tabs (the Store at its Depot Tabs category; hidden while the depot is withdraw-only and tabs are not sold) and Close. The locker, its chest and one box stay real
 containers: the client opens them with the engine's own use packet and only hides the stock windows (it wraps
 `game_containers`' onOpen handler at runtime; no base file, no base patch). So container ids, the range check and every
 move rule above stay as they were: drag and drop, stacking, use and look in the grid are the stock Item widget's.
@@ -18608,7 +18654,7 @@ The base NPC price to level 120 (2000, +200 a level from 30, at most 20,000: the
 +100 a level, at most 100,000 (all five: 500,000, about 3 minutes of hunting gold at level 1000). Numbers in
 `gentledeath_config.lua` `bless`; review in docs/OWNER_TODO.md.
 
-**Eternal Blessing** (store, Boosts, next to All Blessings; service `eternalBlessing`, registered into
+**Eternal Blessing** (store, Premium & Services > Blessings, next to All Blessings; service `eternalBlessing`, registered into
 `ChaosShopServices.services` at startup). One purchase per character: the character gets all five blessings, and at
 every login after a death the missing ones come back (storage 7102741). Per character, not per account (recommended:
 the value grows with each character's level and the other blessing offers are per character too; an account-wide

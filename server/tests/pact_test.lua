@@ -146,13 +146,16 @@ for _, cat in ipairs(shop.categories) do
 	end
 end
 local depotStore = dofile("data/scripts/chaos/depot_config.lua").store
-eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers + #depotStore.offers, "every Pact and depot tab offer is in the store")
+-- the depot tabs only while the depot takes items (shop_config.lua, stash_config.lua depot.withdrawOnly)
+local depotSold = dofile("data/scripts/chaos/stash_config.lua").depot.withdrawOnly ~= true
+eq(#found, #cfg.store.pact.offers + #cfg.store.storage.offers + (depotSold and #depotStore.offers or 0),
+	"every Pact and depot tab offer is in the store")
 for key, x in pairs(cfg.extras) do
 	local sold = false
 	for _, o in ipairs(found) do
 		sold = sold or o.extra == key
 	end
-	check(sold, "extra " .. key .. " is sold")
+	check(sold or (key == "depotTabs" and not depotSold), "extra " .. key .. " is sold")
 	check(x.name ~= nil, "extra " .. key .. " has a name")
 end
 -- the affinity stash tabs (stash_config.lua): each bought one is an extra sold here, ids above the general tabs

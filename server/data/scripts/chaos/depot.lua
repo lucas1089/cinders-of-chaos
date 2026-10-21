@@ -330,9 +330,12 @@ local function sendTabs(player, tabs, used, depotId)
 	end
 	local i = ids()
 	local names, colors = Core.styleLists(cfg, Depot.stylesOf(player))
+	-- store = "": tabs are not sold (the store left Depot Tabs out on 2026-10-21 while the depot is withdraw-only), so
+	-- the window shows no Buy Tabs button
+	local sold = Depot.transition().withdrawOnly ~= true
 	Chaos.send(player, OPCODE, "tabs", {tabs = tabs, max = shown, size = cfg.tabSize, used = list, ids = i.tabs,
-		chest = i.chest, lockers = i.lockers, inbox = i.inbox, market = i.market, hint = cfg.messages.hint,
-		store = cfg.store.name, names = names, colors = colors, palette = cfg.palette, nameMax = cfg.nameMax,
+		chest = i.chest, lockers = i.lockers, inbox = i.inbox, market = i.market, hint = sold and cfg.messages.hint or "",
+		store = sold and cfg.store.name or "", names = names, colors = colors, palette = cfg.palette, nameMax = cfg.nameMax,
 		town = depotId and townName(depotId) or nil})
 end
 

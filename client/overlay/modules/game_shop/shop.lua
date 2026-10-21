@@ -3,6 +3,10 @@
 -- carries cost, oldCost (struck through), tags (Sale / New / Featured / Bundle), gift (can be bought for another
 -- character) and owned; buying echoes title and cost back, so a price that changed is refused, never charged.
 -- The Donate button opens the donation window (pay.lua: Pix / PayPal, Chaos Coins as a thank-you).
+-- The categories are a tree (2026-10-21, the layout of the base server's store window; shoptree.lua): top categories
+-- and parents (Cosmetics, Consumables, Premium & Services) that open to their subcategories, one at a time, with the
+-- number of offers; the path of the shown category sits over the offers. The search box asks the server (`search`),
+-- which answers with offers that carry where they are (`at`), so buying from the results works as from a page.
 -- private variables
 local SHOP_EXTENTED_OPCODE = 218
 local currentCategoryPage = {}
@@ -14,6 +18,14 @@ local msgWindow = nil
 local browsingHistory = false
 local transferValue = 0
 local CATEGORIES = {}
+local GROUPS = {} -- the parents of the tree ("category_groups"; none from a server without the tree)
+local TREE = {} -- ShopTree.build(CATEGORIES, GROUPS)
+local expanded = {} -- {[parent name] = true}: the open parent
+local selectedCategory = nil -- the index of the shown category
+local pendingCategory = nil -- a category to show once the list comes (openCategory)
+local searching = nil -- the search text whose results are shown
+local searchEvent = nil
+local rendering = false -- the category list is being built: focus changes are not clicks
 local HISTORY = {}
 local STATUS = {}
 local AD = {}
@@ -69,6 +81,8 @@ function terminate()
   end
   if lookPreview then lookPreview:destroy() end
   lookPreview = nil
+  if searchEvent then removeEvent(searchEvent) end
+  searchEvent = nil
   if shop then
     disconnect(shop.categories, { onChildFocusChange = changeCategory })
     shop:destroy()
@@ -222,18 +236,14 @@ function createShop()
   shop.nextPage:show()
   if shop.prevPage and shop.nextPage then
     shop.nextPage.onClick = function()
-      local cat = shop.categories:getFocusedChild()
-      if not cat then return end
-      local id   = tonumber(cat:getId():match("category_(%d+)"))
-      local next = (currentCategoryPage[id] or 1) + 1
-      requestPage(id, next)
+      local id = selectedCategory
+      if not id or searching or browsingHistory then return end
+      requestPage(id, (currentCategoryPage[id] or 1) + 1)
     end
     shop.prevPage.onClick = function()
-      local cat = shop.categories:getFocusedChild()
-      if not cat then return end
-      local id   = tonumber(cat:getId():match("category_(%d+)"))
-      local prev = math.max(1, (currentCategoryPage[id] or 1) - 1)
-      requestPage(id, prev)
+      local id = selectedCategory
+      if not id or searching or browsingHistory then return end
+      requestPage(id, math.max(1, (currentCategoryPage[id] or 1) - 1))
     end
   end
   shopButton = modules.client_topmenu.addRightGameToggleButton(
@@ -283,34 +293,43 @@ function onExtendedJSONOpcode(protocol, code, json_data)
   end
   
   otcv8shop = true
-  if action == 'categories' then
+  if action == 'category_groups' then
+    -- the parents of the tree, sent right before "categories"
+    GROUPS = type(data) == 'table' and data or {}
+  elseif action == 'categories' then
     for i, cat in ipairs(data) do
       cat.offers = {}
       currentCategoryPage[i] = 1
     end
     processCategories(data)
-    sendAction("get_page", { category = 1, page = 1 })
   elseif action == 'history' then
     processHistory(data)
   elseif action == "category_page" then
-  local catId = data.category
-  local page  = data.page
-  local total = CATEGORIES[catId].pages or 1
+    local catId = tonumber(data.category)
+    local page  = tonumber(data.page) or 1
+    local cat = catId and CATEGORIES[catId]
+    if not cat or type(data.offers) ~= 'table' then return end
+    local total = cat.pages or 1
 
-  currentCategoryPage[catId] = page
+    currentCategoryPage[catId] = page
+    cat.offers[page] = {}
+    for i, offerData in ipairs(data.offers) do
+      cat.offers[page][i] = offerData
+    end
 
-  CATEGORIES[catId].offers[page] = {}
-  for i, offerData in ipairs(data.offers) do
-    CATEGORIES[catId].offers[page][i] = offerData
-  end
-
-  clearOffers()
-  for _, offerData in ipairs(data.offers) do
-    addOffer(catId, offerData)
-  end
-
-  shop.prevPage:setEnabled(page > 1)
-  shop.nextPage:setEnabled(page < total)
+    if searching then
+      -- a page after a purchase from the search results: the results again, so "Owned" shows there
+      sendAction("search", { text = searching })
+    elseif not browsingHistory and catId == selectedCategory then
+      clearOffers()
+      for row, offerData in ipairs(data.offers) do
+        addOffer(catId, offerData, { category = catId, page = page, offer = row })
+      end
+      shop.prevPage:setEnabled(page > 1)
+      shop.nextPage:setEnabled(page < total)
+    end
+  elseif action == 'search_results' then
+    processSearch(data)
   elseif action == 'message' then
     processMessage(data)
   end
@@ -330,11 +349,14 @@ end
 
 function clearCategories()
   CATEGORIES = {}
+  TREE = {}
   clearOffers()
+  rendering = true
   while shop.categories:getChildCount() > 0 do
     local child = shop.categories:getLastChild()
     shop.categories:destroyChildren(child)
   end
+  rendering = false
 end
 
 function clearHistory()
@@ -344,21 +366,162 @@ function clearHistory()
   end
 end
 
+-- the list from the server: the tree again, the shown category kept by name (its index may have moved: a starter
+-- pack bought, a category emptied), else the first one
 function processCategories(data)
-  if table.equal(CATEGORIES,data) then
-    return
+  local keepName = pendingCategory
+  if not keepName and selectedCategory and CATEGORIES[selectedCategory] then
+    keepName = CATEGORIES[selectedCategory].name
   end
+  pendingCategory = nil
   clearCategories()
   CATEGORIES = data
-  for i, category in ipairs(data) do
-    addCategory(category)
+  TREE = ShopTree.build(CATEGORIES, GROUPS)
+  local leaf = keepName and ShopTree.find(TREE, keepName) or ShopTree.firstLeaf(TREE)
+  selectedCategory = leaf and leaf.index or nil
+  expanded = selectedCategory and ShopTree.reveal(TREE, selectedCategory) or {}
+  renderCategories()
+  if searching then
+    sendAction("search", { text = searching }) -- the results again (a purchase changed the list)
+  elseif selectedCategory and not browsingHistory then
+    selectCategory(selectedCategory)
   end
-  if not browsingHistory then
-    local firstCategory = shop.categories:getChildByIndex(1)
-    if firstCategory then
-      firstCategory:focus()
+end
+
+-- the category rows: top categories, the parents (+ / -) and the subcategories of the open one
+function renderCategories()
+  if not shop then return end
+  rendering = true
+  while shop.categories:getChildCount() > 0 do
+    shop.categories:destroyChildren(shop.categories:getLastChild())
+  end
+  local focusWidget
+  for _, row in ipairs(ShopTree.rows(TREE, expanded)) do
+    local node = row.node
+    if node.kind == 'group' then
+      local w = addCategory(node.data, 'ShopGroup', node.name, node.size)
+      if w then
+        w:setId('group_' .. node.name)
+        w.groupName = node.name
+        if w.arrow then w.arrow:setText(row.expanded and '-' or '+') end
+        -- on press (a row is a phantom panel: a click lands on its icon or label, the press reaches the row)
+        w.onMousePress = function(_, _, button)
+          if button == MouseLeftButton then onGroupClick(node.name) end
+          return true
+        end
+      end
+    else
+      local w = addCategory(node.data, row.depth > 0 and 'ShopSubCategory' or 'ShopCategory', node.name, node.size)
+      if w then
+        w:setId('category_' .. node.index)
+        if node.index == selectedCategory then focusWidget = w end
+      end
     end
   end
+  if focusWidget and not browsingHistory and not searching then
+    shop.categories:focusChild(focusWidget)
+    shop.categories:ensureChildVisible(focusWidget)
+  end
+  rendering = false
+  updateRotationLabels()
+end
+
+-- a click on a parent: open it (and show its first subcategory) or close it (ShopTree.toggle)
+function onGroupClick(name)
+  local sel
+  expanded, sel = ShopTree.toggle(TREE, expanded, name, selectedCategory)
+  -- built again after this click returns (the clicked row is replaced)
+  addEvent(function()
+    if sel then
+      selectCategory(sel)
+    end
+    renderCategories()
+  end)
+end
+
+-- show category `index`: its first page, its path over the offers; leaves a search or the history
+function selectCategory(index)
+  if not CATEGORIES[index] then return end
+  selectedCategory = index
+  browsingHistory = false
+  if searching then
+    searching = nil
+    if shop.searchText and shop.searchText:getText() ~= '' then shop.searchText:setText('') end
+  end
+  currentCategoryPage[index] = 1
+  updatePath()
+  sendAction("get_page", { category = index, page = 1 })
+end
+
+-- the path over the offers: "Cosmetics > Wings", the search, the history
+function updatePath(text)
+  if not shop or not shop.pathLabel then return end
+  if text then
+    shop.pathLabel:setText(text)
+    return
+  end
+  local parts = {}
+  for _, p in ipairs(selectedCategory and ShopTree.path(TREE, selectedCategory) or {}) do
+    parts[#parts + 1] = tr(p)
+  end
+  shop.pathLabel:setText(table.concat(parts, ' > '))
+end
+
+-- for other modules: open the store at a category (by its name, as the server sends it)
+function openCategory(name)
+  if not shop then return end
+  if not shop:isVisible() then toggle() end
+  local leaf = ShopTree.find(TREE, name)
+  if not leaf then
+    pendingCategory = name -- the list is on its way (toggle asked for it)
+    return
+  end
+  expanded = ShopTree.reveal(TREE, leaf.index)
+  selectCategory(leaf.index)
+  renderCategories()
+end
+
+-- ---------------------------------------------------------------- search (the server looks, shop.lua Shop.search)
+function onSearchChange()
+  if searchEvent then removeEvent(searchEvent) searchEvent = nil end
+  if not shop or not shop.searchText then return end
+  local text = shop.searchText:getText():gsub('^%s+', ''):gsub('%s+$', '')
+  if #text < 2 then
+    if searching then
+      searching = nil
+      if selectedCategory then selectCategory(selectedCategory) end
+      renderCategories()
+    end
+    return
+  end
+  searchEvent = scheduleEvent(function()
+    searchEvent = nil
+    searching = text
+    browsingHistory = false
+    sendAction("search", { text = text })
+  end, 400)
+end
+
+function processSearch(data)
+  if not shop or not searching or type(data) ~= 'table' or data.text ~= searching then return end
+  clearOffers()
+  shop.categories:focusChild(nil)
+  local offers = type(data.offers) == 'table' and data.offers or {}
+  for _, offerData in ipairs(offers) do
+    local at = type(offerData.at) == 'table' and offerData.at or nil
+    if at then
+      local where = {}
+      for _, p in ipairs(type(offerData.path) == 'table' and offerData.path or {}) do where[#where + 1] = tr(p) end
+      if #where > 0 then
+        offerData.description = table.concat(where, ' > ') .. ': ' .. tostring(offerData.description or '')
+      end
+      addOffer(tonumber(at.category) or 0, offerData,
+        { category = tonumber(at.category), page = tonumber(at.page), offer = tonumber(at.offer) })
+    end
+  end
+  shop.prevPage:setEnabled(false)
+  shop.nextPage:setEnabled(false)
+  updatePath(#offers > 0 and tr('Search "%s": %d offers', searching, #offers) or tr('Search "%s": nothing found', searching))
 end
 
 function processHistory(data)
@@ -445,44 +608,48 @@ function processAd(data)
   end
 end
 
-function addCategory(data)
+-- a row of the category list: style 'ShopCategory' (a top category), 'ShopSubCategory' (indented) or 'ShopGroup' (a
+-- parent, with + / -), each as Item, Creature or Image after the icon the server sends; name and count as the label
+-- (category names are run-time tr() keys, client_chaos_locale/pt_br.lua)
+function addCategory(data, style, name, size)
   local category
+  style = style or 'ShopCategory'
   if data["type"] == "item" then
-    category = g_ui.createWidget('ShopCategoryItem', shop.categories)  
+    category = g_ui.createWidget(style .. 'Item', shop.categories)
     category.item:setItemId(data["item"])
     category.item:setItemCount(data["count"])
     category.item:setShowCount(false)
     applyArt(category, data, 32)
   elseif data["type"] == "outfit" then
-    category = g_ui.createWidget('ShopCategoryCreature', shop.categories)
+    category = g_ui.createWidget(style .. 'Creature', shop.categories)
     category.creature:setOutfit(data["outfit"])
     if data["outfit"]["rotating"] then
       category.creature:setAutoRotating(true)
     end
     applyArt(category, data, 32)
   elseif data["type"] == "image" then
-    category = g_ui.createWidget('ShopCategoryImage', shop.categories)
+    category = g_ui.createWidget(style .. 'Image', shop.categories)
     if data["image"] and data["image"]:sub(1, 4):lower() == "http" then
-       HTTP.downloadImage(data['image'], function(path, err) 
+       HTTP.downloadImage(data['image'], function(path, err)
         if err then g_logger.warning("HTTP error: " .. err .. " - " .. data["image"]) return end
-        category.image:setImageSource(path)
+        if category.image then category.image:setImageSource(path) end
       end)
     else
       category.image:setImageSource(data["image"])
     end
   else
     g_logger.error("Invalid shop category type: " .. tostring(data["type"]))
-    return
+    return nil
   end
-  category:setId("category_" .. shop.categories:getChildCount())
-  category.name:setText(data["name"])
+  name = name or data["name"]
+  category.name:setText(ShopTree.label(tr(name), size))
   -- the weekly rotation ("This week"): a countdown to the Monday change (rotation.lua)
-  if tonumber(data["endsIn"]) then
-    category.rotationName = data["name"]
+  if style ~= 'ShopGroup' and tonumber(data["endsIn"]) then
+    category.rotationName = tr(name)
     category.rotationEndsAt = g_clock.seconds() + tonumber(data["endsIn"])
     category:setTooltip(tr('A new choice of offers every Monday at 06:00 server time.'))
-    updateRotationLabels()
   end
+  return category
 end
 
 -- the countdown on the rotation's category, refreshed every 30 s while the store is open
@@ -506,14 +673,25 @@ function showHistory(force)
     sendAction("history")
   end
   browsingHistory = true
+  if searching then
+    searching = nil
+    if shop.searchText then shop.searchText:setText('') end
+  end
   clearOffers()
+  rendering = true
   shop.categories:focusChild(nil)
+  rendering = false
   for i, transaction in ipairs(HISTORY) do
     addOffer(0, transaction)
   end
+  shop.prevPage:setEnabled(false)
+  shop.nextPage:setEnabled(false)
+  updatePath(tr('Transaction history'))
 end
 
-function addOffer(category, data)
+-- an offer row; sel = where the server has it ({category, page, offer}: what buy, gift and preview send), nil for a
+-- line of the history
+function addOffer(category, data, sel)
   local offer
   if data["type"] == "item" then
     offer = g_ui.createWidget('ShopOfferItem', shop.offers)  
@@ -545,6 +723,8 @@ function addOffer(category, data)
   end
   local newIndex = shop.offers:getChildCount() + 1
   offer:setId("offer_" .. category .. "_" .. newIndex)
+  offer.sel = sel
+  offer.offerData = data
   -- a look offer (outfit, addons, mount, wings, aura, shader, pet) in the look preview: on hover, and kept once picked
   local LP = lookCore()
   offer.lookOption = LP and LP.fromShopOffer(data) or nil
@@ -574,7 +754,7 @@ function addOffer(category, data)
   end
   offer.description:setText(data["description"])  
   offer.offerId = data["id"]
-  if category ~= 0 then
+  if sel then
     offer.onDoubleClick = buyOffer
     offer.buyButton.onClick = function() buyOffer(offer) end
     if data["owned"] then
@@ -592,7 +772,7 @@ function addOffer(category, data)
   -- a cosmetic's preview (server cosmetics.lua): the SHOW button plays its effects for this player only; a chat colour
   -- tints the title, a loot label accent sits behind it
   local preview = type(data["preview"]) == "table" and data["preview"] or nil
-  if preview and category ~= 0 then
+  if preview and sel then
     if preview.effect and offer.previewButton and not data["gift"] then
       offer.previewButton:setVisible(true)
       offer.previewButton.onClick = function() previewOffer(offer) end
@@ -608,34 +788,20 @@ function addOffer(category, data)
 end
 
 function previewOffer(widget)
-  local parts = widget and widget:getId():split("_") or {}
-  local category = tonumber(parts[2])
-  local row = findWidgetIndex(widget)
-  if not category or not row then return end
-  sendAction("preview", { category = category, page = currentCategoryPage[category] or 1, offer = row })
+  local sel = widget and widget.sel
+  if not sel or not sel.category or not sel.page or not sel.offer then return end
+  sendAction("preview", { category = sel.category, page = sel.page, offer = sel.offer })
 end
 
+-- a click on a category row (the list's focus moved to it); the parents are no focus rows (onGroupClick)
 function changeCategory(widget, newCategory)
-  if not newCategory then
+  if rendering or not newCategory then
     return
   end
-
-  if otcv8shop then
-    local id = tonumber(newCategory:getId():match("category_(%d+)"))
-    currentCategoryPage[id] = 1
-    sendAction("get_page", { category = id, page = 1 })
-    return
-  end
-  browsingHistory = false
-  local id = tonumber(newCategory:getId():split("_")[2])
-  clearOffers()
-  local page = currentCategoryPage[id] or 1
-  local offers = CATEGORIES[id]["offers"][page]
-  if offers then
-    for i, offer in ipairs(offers) do
-      addOffer(id, offer)
-    end
-  end
+  local id = tonumber((newCategory:getId() or ''):match("^category_(%d+)$"))
+  if not id then return end
+  if id == selectedCategory and not browsingHistory and not searching then return end
+  selectCategory(id)
 end
 
 function findWidgetIndex(widget)
@@ -649,18 +815,13 @@ function findWidgetIndex(widget)
   return nil
 end
 
--- the offer data behind a widget of the current page, or nil
+-- what buy and gift send for an offer row (a page's or a search result's), or nil: where the server has it, and the
+-- title and price shown (the server refuses when either changed)
 local function offerOf(widget)
-  local parts = widget:getId():split("_")
-  if #parts ~= 3 then return nil end
-  local category = tonumber(parts[2])
-  local row = findWidgetIndex(widget)
-  local catData = category and CATEGORIES[category]
-  if not row or not catData or type(catData.offers) ~= "table" then return nil end
-  local page = currentCategoryPage[category] or 1
-  local item = type(catData.offers[page]) == "table" and catData.offers[page][row] or nil
-  if not item then return nil end
-  return { category = category, page = page, offer = row, title = item.title, cost = item.cost, id = widget.offerId }
+  local sel, item = widget and widget.sel, widget and widget.offerData
+  if not sel or not item or not sel.category or not sel.page or not sel.offer then return nil end
+  return { category = sel.category, page = sel.page, offer = sel.offer, title = item.title, cost = item.cost,
+    id = widget.offerId }
 end
 
 -- Gift: a name, then a confirmation; the server checks the character and the price again
@@ -709,42 +870,14 @@ end
 
 function buyOffer(widget)
   if not widget then return end
-
-  local parts = widget:getId():split("_")
-  if #parts ~= 3 then return end
-  local category = tonumber(parts[2])
-  if not category then return end
-
-  local visualRow = findWidgetIndex(widget)
-  if not visualRow then
-    return
-  end
-
-  local currentPage = currentCategoryPage[category] or 1
-  local catData     = CATEGORIES[category]
-  if not catData or type(catData.offers) ~= "table" then return end
-
-  local pageTable = catData.offers[currentPage]
-  if not pageTable or type(pageTable) ~= "table" then return end
-
-  local item = pageTable[visualRow]
-  if not item then
-    return
-  end
-
-  selectedOffer = {
-    category = category,
-    page     = currentPage,
-    offer    = visualRow,
-    title    = item.title,
-    cost     = item.cost,
-    id       = widget.offerId
-  }
+  local sel = offerOf(widget)
+  if not sel then return end
+  selectedOffer = sel
 
   scheduleEvent(function()
     if msgWindow then msgWindow:destroy() end
     local title = tr("Buying from shop")
-    local msg   = tr('Do you want to buy %s for %s Chaos Coins?', item.title, item.cost)
+    local msg   = tr('Do you want to buy %s for %s Chaos Coins?', sel.title, sel.cost)
     msgWindow = displayGeneralBox(title, msg, {
       { text = tr('Yes'), callback = buyConfirmed },
       { text = tr('No'),  callback = buyCanceled },

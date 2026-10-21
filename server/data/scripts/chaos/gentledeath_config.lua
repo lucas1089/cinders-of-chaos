@@ -53,7 +53,7 @@ return {
 		rateMs = 2000
 	},
 
-	-- the store's Eternal Blessing (shop_config.lua Boosts, service "eternalBlessing"): one purchase per character keeps
+	-- the store's Eternal Blessing (shop_config.lua Blessings, service "eternalBlessing"): one purchase per character keeps
 	-- all five blessings for good (given back at every login after a death). Not for season characters (seasonBlocked).
 	eternal = {service = "eternalBlessing"}
 }
