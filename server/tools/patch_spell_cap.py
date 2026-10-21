@@ -14,7 +14,10 @@ docs/CLASSES.md "Spell cap"; tests/spell_cap_test.lua counts them from the repo 
 CAP names each stock instant of DATA_DIR/spells/spells.xml the cap changes, by script (rename_spells.py never changes a
 script), with the classes that keep it. Every other class's <vocation> line goes from that instant; an instant left
 with no class is commented out (marker "Chaos: spell cap", the original tag kept in the comment), like
-retire_cure_spells.py does, and its id is free. The Chaos block is never touched: its vocation lists are in
+retire_cure_spells.py does, and its id is free. An instant that a monster names (monster_spells.py: base and
+Chaos monsters attack with player spells by name, e.g. "arc bolt", "dread") is kept in the monster-only form instead
+(words "###chaos ...", needlearn="1", no vocation, no spellid; owner report 2026-10-21 "Unknown spell name: arc bolt"),
+and one that an earlier run commented out comes back in that form. The Chaos block is never touched: its vocation lists are in
 data/spells/chaos/spells_chaos.xml. Characters who learned a dropped spell keep the row in player_spells; the engine
 refuses the cast ("You have the wrong vocation to cast this spell.") and the spellbook no longer lists it.
 Needs to run after add_vocations.py (the class lists) and before register_spells.py, patch_spell_ids.py,
@@ -23,6 +26,9 @@ rename_spells.py, patch_spell_timings.py and patch_aoe_damage.py, which leave th
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import monster_spells as MS  # noqa: E402
 
 MARK = 'Chaos: spell cap (patch_spell_cap.py): '
 UNIVERSAL = ("Town Portal", "Bloodtrail", "Lantern", "Greater Lantern", "Ghost Rope", "Wraith Step", "Fleetfoot",
@@ -116,8 +122,11 @@ TAG = re.compile(r'<instant\b[^>]*?(?:/>|>.*?</instant>)', re.S)
 VOC = re.compile(r'[ \t]*<vocation\s+name="([^"]+)"[^>]*/>[ \t]*(?:\r?\n)?')
 
 
-def patch(text):
-    """(new text, classes taken off, spells retired); comments (earlier retirements) and the Chaos block stay"""
+def patch(text, needed=frozenset()):
+    """(new text, classes taken off, spells retired, spells kept for monsters); comments (earlier retirements) and
+    the Chaos block stay. needed: lowercased instant names a monster uses (monster_spells.needed_names): such a spell
+    is not commented out but gets the monster-only form, and an earlier retirement comment of one comes back in it."""
+    text, kept = MS.restore(text, needed)
     chaos_a = text.find('<!-- BEGIN chaos spells')
     chaos_b = text.find('<!-- END chaos spells -->')
     removed = retired = 0
@@ -130,10 +139,15 @@ def patch(text):
         if not script or script.group(1) not in CAP:
             continue
         keep = CAP[script.group(1)][2]
+        if not keep and MS.is_monster_only(tag) and MS.needs(tag, needed):
+            continue
         out.append(text[pos:m.start()])
         if not keep:
-            out.append('<!-- ' + MARK + tag.replace('--', '- -') + ' -->')
-            retired += 1
+            out.append(MS.retire(text, m, MARK, needed))
+            if MS.needs(tag, needed):
+                kept += 1
+            else:
+                retired += 1
         else:
             def drop(v):
                 return '' if v.group(1) not in keep else v.group(0)
@@ -142,7 +156,7 @@ def patch(text):
             out.append(new)
         pos = m.end()
     out.append(text[pos:])
-    return ''.join(out), removed, retired
+    return MS.tidy(''.join(out)), removed, retired, kept
 
 
 def main(argv):
@@ -159,14 +173,15 @@ def main(argv):
         print('missing file: ' + path)
         return 1
     text = open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
-    new, removed, retired = patch(text)
+    new, removed, retired, kept = patch(text, MS.needed_names(args[0]))
     dry = '--dry-run' in argv
     if new != text and not dry:
         open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
     if new == text:
         print('spell cap: nothing to change')
     else:
-        print('spell cap: %d class entries removed, %d spells retired%s' % (removed, retired, ' (dry run)' if dry else ''))
+        print('spell cap: %d class entries removed, %d spells retired, %d kept or brought back for monsters only%s'
+              % (removed, retired, kept, ' (dry run)' if dry else ''))
     return 0
 
 

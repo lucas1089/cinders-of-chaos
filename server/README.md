@@ -1615,7 +1615,8 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
 * **Live server (install step):** run the `spells` step (or the whole `install_all.py`) and restart. Characters keep the
   rows of spells they learned in `player_spells`; nothing deletes them. A dropped spell is simply unusable: the engine
   checks the vocation on every cast ("You have the wrong vocation to cast this spell."; it skips that check only for a
-  `needlearn="1"` spell, and no player spell of the installed `spells.xml` is one) and the spellbook and the client's
+  `needlearn="1"` spell, and no player spell of the installed `spells.xml` is one; the retired spells a monster uses
+  are, see "Monster spells" below) and the spellbook and the client's
   spell list leave it out. Action bar slots and helper rules a player made with a dropped spell stay until the player
   removes them; the server refuses each cast. No database change is needed.
 * Tests: `tools/patch_spell_cap_test.py` (the tool on a small `spells.xml`; every class at most 15, counts pinned),
@@ -1623,6 +1624,42 @@ Every class and ascension has at most 15 spells of its own (kits, counts and wha
   `ironhold_wildstride_test.lua`, `class_fx_test.lua`, `start_stats_test.lua`, `newplayer_test.lua`. Checked with an
   install on a copy of the base server (the counts per class read back from the installed `spells.xml`). Not run on a
   live server.
+
+### Monster spells (owner report 2026-10-21: "Unknown spell name: arc bolt" / "dread" after the spell cap)
+
+Monsters cast player spells by name: an `<attack name="arc bolt">` (XML) or `{name = "arc bolt"}` (Lua) without a
+script is looked up as a rune or instant of `spells.xml` first (`Monsters::deserializeSpell`, `getSpellByName`,
+case-insensitive), then as a built-in attack type. The spell cap commented Arc Bolt (stock Energy Strike) and Dread
+(stock Fear) out; the engine printed "Unknown spell name" and World Devourer, the Eradicators, Rupture, The Rage, The
+Hunger, Nightdweller, Phantom Shade, Plant, Black Stag, Golden Dragon and the Twisted Shapers loaded without the attack.
+On a copy of the base server eight retired spells are in use: Arc Bolt, Dread, Frostbite (stock Ice Strike: the knight
+familiar and summons), Stormlance and Reaver's Spin (Mooh'tah Master; Reaver's Spin also Mazzinor), Cinder Fan
+(Thawing Dragon Lord, Feral Sphinx), Bramble Fan (Ogre Shaman) and Dawnbolt (Mazzinor).
+
+* `tools/monster_spells.py` reads the names (XML monsters registered in `monsters.xml`, Lua monsters the engine loads
+  from `data/monster`, built-ins left out). `needed_names()` adds every `monster/**/*.xml`, the repo's Chaos monsters and
+  the stock / Chaos alias of each name (`spell_names.csv`: before `rename_spells.py` a base monster names "energy
+  strike").
+* `retire_cure_spells.py` and `patch_spell_cap.py` keep such a spell instead of commenting it out, in the **monster-only
+  form** (the base server's own monster spells look the same: `###` words, `needlearn="1"`, no vocation):
+  `words="###chaos <script name>"`, `needlearn="1"`, no `<vocation>`, no `spellid`, a comment
+  `Chaos: monster-only spell` before it. Player-proof: the old and Chaos incantations find nothing; the engine casts a
+  `needlearn` spell for a player only when `player_spells` has its name (the vocation list is not read then) and
+  `player:canLearnSpell` refuses a spell without vocations, so no NPC teaches it; `rename_spells.py --sql` (the `sql`
+  step) deletes the learned rows of the monster-only spells. An empty vocation list alone would not do: the engine
+  lets every vocation cast a spell with no vocation entries. No `spellid`: the retired ids stay free for the Chaos block
+  (`patch_spell_ids.py`, `register_spells.py` skip a spell without one). The server's Spellbook skips `#` words
+  (`spellbook.lua` `Book.isPlayerSpell`), and the client keeps them retired (`ChaosCappedSpells`, `ChaosRetiredSpells`
+  come from the repo tables, not from `spells.xml`).
+* Repair: both tools first bring back a retirement comment (`Chaos: spell cap`, `Chaos: cure retired`, `Chaos: spell
+  retired`) of a spell a monster names, in the monster-only form. A monster-only spell no monster names any more is
+  commented out again. **Live server:** `python3 -I server/tools/install_all.py SERVER_DIR --only spells,sql` (`sql`
+  runs the learned-row DELETEs that `spells` writes; or the whole `install_all.py`), restart. Idempotent.
+* Check: `python3 -I server/tools/monster_spells.py DATA_DIR` lists every monster spell name the installed server does
+  not know (exit 1); the `spells` step runs it and prints a warning per name. An install on a copy of the base server:
+  0 unknown (with the tools before the fix: the eight above).
+* Tests: `tools/monster_spells_test.py` (references, the form, both tools: kept, repaired, idempotent, the command
+  line repair, the SQL), `tools/patch_spell_cap_test.py`, `tools/retire_cure_spells_test.py`. Not run on a live server.
 
 ### Cooldown ladder (owner 2026-10-20: "faça todas as magias de ataque terem 2s de diferença, começando pela primeira delas")
 

@@ -11,6 +11,8 @@ register_spells.py ignores comments, so it may use them; the ids are listed in s
 Lightward (Ranger line, data/spells/chaos/paladin/divine_ward.lua, a cleanse plus eight seconds of regeneration) is not a
 cure spell and stays; it also takes the raid's Withering Hex off. Cure runes (Purge Rune) are runes, not spells.
 Needs to run before register_spells.py (ids) and patch_spell_ids.py (it no longer moves Wash Taint / Break Glamour).
+A spell a monster names (monster_spells.py) is kept in the monster-only form instead of the comment (no spellid, so its
+id is free all the same); a comment of an earlier run comes back in that form (owner report 2026-10-21).
 
 Owner decision (2026-10-20, beta report "the auto attack stops"): the stock Sharpshooter (Chaos name Hawkeye, stock words
 "utito tempo san", Chaos words "vyr ira sol") goes too (OTHERS, marker "Chaos: spell retired"). Its script put a 70%
@@ -28,6 +30,9 @@ Auto setup kept Protector up, so the Warrior did not attack. Their ids belong to
 import os
 import re
 import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import monster_spells as MS  # noqa: E402
 
 MARK = 'Chaos: cure retired (retire_cure_spells.py): '
 # script (relative to data/spells/scripts) -> (stock spell id after patch_spell_ids.py, Chaos name)
@@ -51,8 +56,11 @@ FREED_IDS = sorted(i for i, _ in list(CURES.values()) + list(OTHERS.values()))
 TAG = re.compile(r'<instant\b[^>]*?(?:/>|>.*?</instant>)', re.S)
 
 
-def patch(text):
-    """(new text, number of spells retired); spells inside comments (also earlier retirements) are left alone"""
+def patch(text, needed=frozenset()):
+    """(new text, spells retired, spells kept for monsters); spells inside comments (also earlier retirements) are
+    left alone, except a retirement comment of a spell a monster names (needed, monster_spells.needed_names): it
+    comes back in the monster-only form, which a spell a monster names gets instead of the comment"""
+    text, kept = MS.restore(text, needed)
     chaos_a = text.find('<!-- BEGIN chaos spells')
     chaos_b = text.find('<!-- END chaos spells -->')
     count = 0
@@ -64,13 +72,18 @@ def patch(text):
             continue
         script = re.search(r'\bscript="([^"]*)"', m.group(0))
         if script and (script.group(1) in CURES or script.group(1) in OTHERS):
+            if MS.is_monster_only(m.group(0)) and MS.needs(m.group(0), needed):
+                continue
             out.append(text[pos:m.start()])
             mark = MARK if script.group(1) in CURES else OTHER_MARK
-            out.append('<!-- ' + mark + m.group(0).replace('--', '- -') + ' -->')
+            out.append(MS.retire(text, m, mark, needed))
             pos = m.end()
-            count += 1
+            if MS.needs(m.group(0), needed):
+                kept += 1
+            else:
+                count += 1
     out.append(text[pos:])
-    return ''.join(out), count
+    return MS.tidy(''.join(out)), count, kept
 
 
 def main(argv):
@@ -87,11 +100,14 @@ def main(argv):
         print('missing file: ' + path)
         return 1
     text = open(path, encoding='utf-8', errors='surrogateescape', newline='').read()
-    new, n = patch(text)
-    if n and '--dry-run' not in argv:
+    new, n, kept = patch(text, MS.needed_names(args[0]))
+    if new != text and '--dry-run' not in argv:
         open(path, 'w', encoding='utf-8', errors='surrogateescape', newline='').write(new)
-    print('cure spells, Hawkeye, Bulwark and Windrunner: %d retired%s' % (n, ' (dry run)' if '--dry-run' in argv else '') if n else
-          'cure spells, Hawkeye, Bulwark and Windrunner: nothing to retire')
+    if new == text:
+        print('cure spells, Hawkeye, Bulwark and Windrunner: nothing to retire')
+    else:
+        print('cure spells, Hawkeye, Bulwark and Windrunner: %d retired, %d kept or brought back for monsters only%s'
+              % (n, kept, ' (dry run)' if '--dry-run' in argv else ''))
     return 0
 
 

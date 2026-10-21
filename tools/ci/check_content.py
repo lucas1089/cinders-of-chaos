@@ -5,6 +5,7 @@
  - removed spells (spell_names.csv "removed", the conjure spells of data/lib/chaos_rune_supply.lua: the runes and
    R.otherConjures): one csv row per removed script; no class kit names one (spells_chaos.xml, add_vocations.py LINE_STOCK_SPELLS, the tutorial's class
    spells in newplayer_config.lua)
+ - monster spells: a Chaos monster's stock spell that the retire tools retire is kept for monsters (monster_spells.py)
  - throwing weapons (server/data/lib/chaos_throwables.lua): no Chaos monster loot (XML or Lua), new-player kit or
    hunt supply price names a stackable throwing weapon, and the shuriken constants list no star
  - items: unique ids in chaos_items.xml
@@ -187,6 +188,25 @@ import fix_monster_xml as fmx
 import tune_monsters as tune
 KNOWN_SPELLS, KNOWN_FLAGS, KNOWN_ELEMENTS = fmx.known_spells(), fmx.known_flags(), set(fmx.ELEMENTS)
 check_removed_spells()
+
+# monster spells (server/README.md "Monster spells"): a Chaos monster that attacks with a stock spell the retire tools
+# take out (patch_spell_cap.py CAP, retire_cure_spells.py) must get the monster-only form from them, not the comment,
+# or the engine reports "Unknown spell name" and the monster loses the attack
+def check_monster_spells_kept():
+    import monster_spells as ms, patch_spell_cap as cap, retire_cure_spells as cure
+    refs = ms.references(os.devnull, extra_dirs=[d for d in ms.REPO_MONSTERS if os.path.isdir(d)])
+    needed = ms.needed_names(os.devnull)
+    retired = {name.lower(): script for script, (_, name, keep) in cap.CAP.items() if not keep}
+    retired.update({name.lower(): script for script, (_, name) in list(cure.CURES.items()) + list(cure.OTHERS.items())})
+    for name, files in sorted(refs.items()):
+        script = retired.get(name)
+        if not script:
+            continue
+        tag = '\t<instant name="%s" words="x" script="%s">\n\t\t<vocation name="Mystic" />\n\t</instant>\n' % (name, script)
+        out = cure.patch(cap.patch('<spells>\n' + tag + '</spells>\n', needed)[0], needed)[0]
+        if 'words="###chaos ' not in out or '<vocation' in out:
+            fail(f'{files[0]}: monster spell {name!r} is retired and not kept for monsters (server/tools/monster_spells.py)')
+check_monster_spells_kept()
 
 def check_monster_body(f, t):
     """what the base server cannot load: loot id lists, unknown spells/flags/element keys, stray text in

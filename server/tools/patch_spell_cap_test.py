@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test of patch_spell_cap.py (the 15-spell cap, owner 2026-10-20) and of the cap itself.
-  * patch(): classes a spell lost leave its <vocation> lines, a spell no class keeps becomes a marked comment, the
+  * patch(): classes a spell lost leave its <vocation> lines, a spell no class keeps becomes a marked comment (or the
+    monster-only form when a monster names it, monster_spells.py), the
     Chaos block and comments stay, a second run changes nothing, --dry-run writes nothing;
   * the repo data: every class and ascension has at most 15 spells of its own, counted from
     data/spells/chaos/spells_chaos.xml, data/spells/stock_spells.csv (stock attack and healing spells as installed)
@@ -43,15 +44,21 @@ XML += spell('Spark', "attack/apprentice's_strike.lua", 169, ['Mystic', 'Element
 XML += '\t<!-- an earlier comment <instant script="attack/fire_wave.lua"> -->\n'
 XML += '\t<!-- BEGIN chaos spells (x) -->\n' + spell('Chaos Lance', 'attack/grand_death_beam.lua', 250, ['Mystic'])
 XML += '\t<!-- END chaos spells -->\n</spells>\n'
-new, removed, retired = C.patch(XML)
-check(retired == 1 and new.count(C.MARK) == 1, 'Lance retired once: %d' % retired)
+new, removed, retired, kept = C.patch(XML)
+check(retired == 1 and kept == 0 and new.count(C.MARK) == 1, 'Lance retired once: %d' % retired)
 check('<!-- ' + C.MARK + '<instant group="attack" spellid="260" name="Lance"' in new, 'the retired tag kept in the comment')
 check(removed == 1, 'one class entry removed: %d' % removed)
 minor = re.search(r'<instant[^>]*name="Minor".*?</instant>', new, re.S).group(0)
 check('"Warrior"' not in minor and '"Mystic"' in minor and '"Necromancer"' in minor, 'Minor: the Warrior left')
 check(spell('Spark', "attack/apprentice's_strike.lua", 169, ['Mystic', 'Elementalist']) in new, 'a spell not in CAP stays')
 check(new[new.index('BEGIN chaos'):].count(C.MARK) == 0 and 'name="Chaos Lance"' in new, 'the Chaos block is untouched')
-check(C.patch(new) == (new, 0, 0), 'a second run changes nothing')
+check(C.patch(new) == (new, 0, 0, 0), 'a second run changes nothing')
+# a monster names Lance: monster-only form instead of the comment, also from the comment of an earlier run
+# (monster_spells_test.py tests the form and the repair in depth)
+kept_new, _, r2, k2 = C.patch(XML, {'lance'})
+check(r2 == 0 and k2 == 1 and 'name="Lance" words="###chaos grand_death_beam"' in kept_new and C.MARK not in kept_new,
+      'a spell a monster names is kept for monsters')
+check(C.patch(new, {'lance'})[0] == kept_new, 'the comment of an earlier run comes back in the monster-only form')
 with tempfile.TemporaryDirectory() as tmp:
     p = os.path.join(tmp, 'spells')
     os.makedirs(p)

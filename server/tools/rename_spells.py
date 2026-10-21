@@ -12,6 +12,8 @@ DATA_DIR is the base server's data folder. Rewrites, in place and idempotently (
   npc/scripts/**/*.lua    spellName = '...' of the spell teachers
   npc/**/*.xml            shop lists ("Old Name,itemid,price")
 --sql writes the UPDATEs for player_spells (spells players already learned); run it once against the game database.
+It also deletes the player_spells rows of the retired spells kept for monsters only (words "###chaos ...",
+monster_spells.py): learned, such a spell would stay castable.
 Anything else in DATA_DIR still quoting an old name is listed at the end, so it can be checked.
 """
 import csv, glob, os, re, sys
@@ -198,6 +200,15 @@ def main():
             for old, new in names.items():
                 f.write("UPDATE player_spells SET name = '%s' WHERE name = '%s';\n"
                         % (new.replace("'", "''"), old.replace("'", "''")))
+            # retired spells kept for the monsters only (monster_spells.py): needlearn="1" without vocations, so a
+            # learned row would be the one way a player could still cast one; nobody keeps it learned
+            sp = os.path.join(data, 'spells', 'spells.xml')
+            body = re.sub(r'<!--.*?-->', '', open(sp, encoding='utf-8', errors='surrogateescape').read(), flags=re.S) \
+                if os.path.isfile(sp) else ''
+            for m in re.finditer(r'<instant\b[^>]*>', body):
+                name = re.search(r'\bname="([^"]*)"', m.group(0))
+                if name and re.search(r'\bwords="###chaos ', m.group(0)):
+                    f.write("DELETE FROM player_spells WHERE name = '%s';\n" % name.group(1).replace("'", "''"))
 
     total = sum(changes.values())
     for path, n in sorted(changes.items()):

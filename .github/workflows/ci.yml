@@ -95,6 +95,7 @@ jobs:
           python3 -I server/tools/patch_base_throwables_test.py  # stackable throwing weapons leave loot, shops and rewards
           python3 -I server/tools/retire_cure_spells_test.py  # the stock cure spells and Hawkeye leave spells.xml
           python3 -I server/tools/patch_spell_cap_test.py  # the 15-spell cap: kits of at most 15 spells per class
+          python3 -I server/tools/monster_spells_test.py  # retired spells a monster names stay, monster-only
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
 
       - name: Client spell data is up to date with the server spells

@@ -107,6 +107,10 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_spell_cap.py          the 15-spell cap: classes leave the stock spells they no longer
                                                  have, stock spells no class keeps are retired (docs/CLASSES.md
                                                  "Spell cap", 2026-10-20)
+                                                 Both keep a spell a monster names (base or Chaos monster, e.g. "arc
+                                                 bolt", "dread") in a monster-only form instead (tools/monster_spells.py:
+                                                 "###chaos" words, needlearn, no vocation, no spellid) and bring back
+                                                 such a spell an earlier run commented out (README "Monster spells")
                tools/register_spells.py          the Chaos spells (README "Install" 3)
                tools/patch_spell_ids.py          base spells with a spellid over 255 (or used twice) get their own id
                                                  below 256 (README "Spell ids below 256")
@@ -124,6 +128,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_free_spells.py        every spell and rune free: no premium flag in spells.xml or the
                                                  revscripts, no premium test in the NPC spell teachers (README
                                                  "Free spells")
+               tools/monster_spells.py           every monster spell name is a spell of spells.xml or a built-in
+                                                 (a warning per unknown name; README "Monster spells")
   archery      tools/patch_base_archery.py       bows and crossbows fire without ammunition (attack, hit chance and missile of
                their band), quivers become off-hand equipment (items.xml, items.otb, movements.xml; engine src-patch
                0023), the base slot tables know the second ring slot, the might rings are marked (one at a time), the base
@@ -697,7 +703,7 @@ def step_spells(server, data, ctx):
     if ok:
         ok, more = run_tool([tool('patch_free_spells.py'), data], 'patch_free_spells.py')
         lines += more
-    warn = unregistered_spell_fragments(data)
+    warn = unregistered_spell_fragments(data) + unknown_monster_spells(data)
     return ok, lines, warn
 
 
@@ -987,6 +993,16 @@ def unregistered_spell_fragments(data):
                         'server/tools/install_class_<name>.py, the class hook of the spells step)'
                         % (name, len(missing), len(words)))
     return warn
+
+
+def unknown_monster_spells(data):
+    """monster attacks and defenses that name a spell spells.xml no longer has (monster_spells.py; the engine prints
+    "Unknown spell name" and the monster loses the attack)"""
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import monster_spells
+    return ['monster spell "%s" is not an instant or rune of spells.xml (%d monster file(s), e.g. %s): '
+            'tools/monster_spells.py %s' % (n, len(set(f)), os.path.relpath(sorted(f)[0], data), data)
+            for n, f in monster_spells.unknown(data)]
 
 
 def sql_files(ctx):

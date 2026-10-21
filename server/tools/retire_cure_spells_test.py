@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test of retire_cure_spells.py: the seven stock cure instants, Hawkeye (stock Sharpshooter), Bulwark (Protector) and
-Windrunner (Swift Foot) are commented out (found by script, any name), the Chaos
+Windrunner (Swift Foot) are commented out (found by script, any name; a spell a monster names gets the monster-only
+form instead, monster_spells_test.py), the Chaos
 block, Lightward and every other spell stay, a second run changes nothing, --dry-run writes nothing.
 Run: python3 -I server/tools/retire_cure_spells_test.py"""
 import os
@@ -37,7 +38,7 @@ XML += '\t<instant group="healing" spellid="29" name="Short" words="y" script="h
 XML += '\t<!-- BEGIN chaos spells (x) -->\n' + spell('Lightward', 'chaos/paladin/divine_ward.lua', 217)
 XML += spell('Chaos Cure', 'healing/cure_poison.lua', 250) + '\t<!-- END chaos spells -->\n</spells>\n'
 
-new, n = R.patch(XML)
+new, n, kept = R.patch(XML)
 check(n == 11, 'seven cures, Hawkeye, Bulwark, Windrunner and the self-closing one: %d' % n)
 check(new.count(R.MARK) == 8, 'each cure in a marked comment')
 check(new.count(R.OTHER_MARK) == 3 and new.count('name="Hawkeye"') == 1
@@ -46,7 +47,11 @@ for sid, name in ((132, 'Bulwark'), (134, 'Windrunner')):
     check('<!-- ' + R.OTHER_MARK + '<instant group="healing" spellid="%d" name="%s"' % (sid, name) in new, name + ' retired')
 check('<instant group="healing" spellid="10" name="Light"' in new, 'Light stays a tag')
 check('name="Lightward"' in new and '<!-- Chaos: cure' not in new[new.index('BEGIN chaos'):], 'the Chaos block is untouched')
-check(R.patch(new) == (new, 0), 'a second run changes nothing')
+check(R.patch(new) == (new, 0, 0), 'a second run changes nothing')
+# a monster names Hawkeye: monster-only form instead of the comment, also from the comment of an earlier run
+kept_new, n2, k2 = R.patch(XML, {'hawkeye'})
+check(n2 == 10 and k2 == 1 and 'name="Hawkeye" words="###chaos sharpshooter"' in kept_new, 'Hawkeye kept for monsters')
+check(R.patch(new, {'hawkeye'})[0] == kept_new, 'the comment of an earlier run comes back in the monster-only form')
 check(sorted(R.FREED_IDS) == [29, 58, 132, 134, 135, 144, 145, 146, 147, 164], 'the freed ids')
 
 with tempfile.TemporaryDirectory() as tmp:
