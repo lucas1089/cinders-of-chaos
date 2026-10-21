@@ -5,8 +5,10 @@
 -- come from bounty_pool.lua (tools/gen_bounty_pool.py: only monsters that spawn on the loaded map).
 -- A player sees the band of their level and the ones next to it, accepts up to maxActive contracts; kills count when
 -- the player made the kill (last hit or most damage, summons for their master) or a party member within partyRange
--- did. A finished contract pays at once: gold to the bank, Orbs of Upheaval and Fate to the backpack (inbox when full), a
--- little experience. weeklyNeed contracts in a bounty week give a chest of orbs. Contracts expire at the next roll.
+-- did. A finished contract pays at once: gold to the bank, Orbs of Upheaval and Fate to the backpack (inbox when full),
+-- experience: a share of what the contract's kills give the player (bounty_config.lua expShare, bounty_core.lua
+-- B.expReward; the board shows the amount for the player's level). weeklyNeed contracts in a bounty week give a chest
+-- of orbs. Contracts expire at the next roll.
 -- State: table chaos_bounty (server/sql/chaos.sql), one row per accepted contract; the weekly bonus week in storage
 -- Chaos.storage.bountyWeekBonus. Multi-client: see mcReward in bounty_config.lua.
 --
@@ -41,6 +43,37 @@ end
 cfg.goalMult = function(mon)
 	local pc = ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
 	return ChaosPaceCore.goalOfEntry(pc, mon)
+end
+-- experience reward: one kill's base experience (the pool experience x the pace curve, bounty_core.lua B.monsterKillBase)
+cfg.killBase = function(c)
+	local pc = ChaosPaceConfig or dofile("data/scripts/chaos/pace_config.lua")
+	return B.monsterKillBase(c, ChaosPaceCore, pc)
+end
+
+-- the experience stage of a level (config.lua experienceStages, the stage a monster kill of that player gets); 1 unknown
+local function stageOf(level)
+	local ok, v = pcall(function() return Game.getExperienceStage(level) end)
+	v = ok and tonumber(v) or nil
+	return (v and v > 0) and v or 1
+end
+
+-- the elite tiers' experience multipliers as monster_tiers.lua has them (loaded after this file, so read at use)
+local function syncTierXp()
+	if ChaosTiers then
+		for tier in pairs(cfg.tierXp) do
+			local t = ChaosTiers[tier]
+			if t and tonumber(t.xp) then
+				cfg.tierXp[tier] = t.xp
+			end
+		end
+	end
+end
+
+-- the reward of contract c for a player now (the exact experience the board shows and payContract pays)
+function B.rewardFor(player, c)
+	syncTierXp()
+	local level = player:getLevel()
+	return B.reward(c, cfg, level, stageOf(level))
 end
 local OPCODE = ChaosOpcodes.bounty
 local TABLE = cfg.table
@@ -182,7 +215,7 @@ local function stateOf(player)
 end
 
 -- ---------------------------------------------------------------- window
-local function contractView(c, st, level)
+local function contractView(player, c, st)
 	local e = st.entries[c.key]
 	if e then
 		c = B.overrideOf(c, e, B.poolEntry) -- a rerolled contract shows its own monster and count
@@ -195,7 +228,7 @@ local function contractView(c, st, level)
 	end
 	return {
 		key = c.key, type = c.type, name = c.name, count = c.count, tier = c.tier, level = c.level,
-		look = c.look, outfit = outfit, reward = B.reward(c, cfg, level),
+		look = c.look, outfit = outfit, reward = B.rewardFor(player, c),
 		state = not e and "open" or (e.status == 1 and "done" or "active"),
 		progress = e and e.progress or 0
 	}
@@ -212,7 +245,7 @@ function B.sendBoard(player, open)
 		local band = board.bands[i]
 		local list = {}
 		for _, c in ipairs(band.contracts) do
-			list[#list + 1] = contractView(c, st, level)
+			list[#list + 1] = contractView(player, c, st)
 		end
 		bands[#bands + 1] = {index = i, label = band.label, own = (i == own), contracts = list}
 	end
@@ -315,7 +348,7 @@ local function payContract(player, c, e)
 			"Bounty completed: %s. Another character from your connection was online during the hunt: no reward.", c.name))
 		return false
 	end
-	local r = B.reward(c, cfg, player:getLevel())
+	local r = B.rewardFor(player, c)
 	if r.gold > 0 then
 		player:setBankBalance(player:getBankBalance() + r.gold)
 	end
@@ -332,6 +365,7 @@ local function payContract(player, c, e)
 		inbox = giveStack(player, g.id, g.count) or inbox
 	end
 	if r.exp > 0 then
+		-- the stage is already in r.exp (B.rewardFor); addExperience adds it as it is, no bonus, as the board showed
 		player:addExperience(r.exp, true)
 	end
 	local parts = {}
@@ -444,10 +478,15 @@ local function abandon(player, key)
 end
 
 -- ---------------------------------------------------------------- kills
-local function creditKill(player, c, tierName)
+-- direct: the player made the kill (not only a party member in range)
+local function creditKill(player, c, tierName, direct)
 	local st = stateOf(player)
 	local e = st.entries[c.key]
 	if not e or e.status ~= 0 or e.day ~= B.current.day then
+		return
+	end
+	-- a party member below the contract band's min level gets no credit for others' kills (bounty_core.lua B.partyCounts)
+	if not direct and not B.partyCounts(c, cfg, player:getLevel()) then
 		return
 	end
 	-- a rerolled contract counts its own monster only (c is the board's contract or the player's override)
@@ -546,7 +585,7 @@ function B.onKill(creature, killer, mostDamageKiller)
 	for _, c in ipairs(list) do
 		if B.matches(c, typeNameOf(creature), tier) then
 			for _, p in ipairs(credited) do
-				creditKill(p, c, tier)
+				creditKill(p, c, tier, seen[p:getId()] == true)
 			end
 		end
 	end
@@ -558,7 +597,7 @@ function B.onKill(creature, killer, mostDamageKiller)
 					and c.name:lower() ~= name then
 				local own = B.overrideOf(c, e, B.poolEntry)
 				if B.matches(own, name, tier) then
-					creditKill(p, own, tier)
+					creditKill(p, own, tier, seen[p:getId()] == true)
 				end
 			end
 		end

@@ -7622,7 +7622,9 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
 - **Accepting and progress.** Up to 3 contracts at once (`maxActive`); finished ones free the slot but cannot be taken
   again that day; Abandon drops one (progress lost). A kill counts for the players who made it (last hit and most damage,
   a summon's kill for its master) and for their party members within 30 tiles on the same floor (`partyRange`); each
-  player once per kill. Progress is saved per kill; messages at 25/50/75% and a toast (game_chaosnotify, action
+  player once per kill. A party member whose level is below the contract band's min level gets no credit for the others'
+  kills, only for its own (`B.partyCounts`, 2026-10-22: a low character cannot finish a higher band's contract, and
+  take its experience, standing next to a strong one). Progress is saved per kill; messages at 25/50/75% and a toast (game_chaosnotify, action
   `bounty` on opcode 79) at 50% and on completion. Contracts expire at the next roll: unfinished rows of past days are
   deleted at login.
 - **Rewards** (paid at once on completion; gold to the bank, orbs to the backpack or the inbox when it is full):
@@ -7636,20 +7638,58 @@ opcode 92, storages 187613+): no shared storage, opcode or event; its kills coun
   | 500-799 | 1M, 5 Chaos, 1 Divine | 1.5M, 7 Chaos, 2 Divine | 12 Chaos, 3 Divine |
   | 800+ | 2M, 6 Chaos, 2 Divine | 3M, 9 Chaos, 3 Divine | 15 Chaos, 4 Divine |
 
-  Experience: 3% (hunt) or 4% (elite, boss) of the experience from level L to L+1, L = the player's level capped at the
-  band's top. At most 12 contracts a day (3 bands x 4), so at most about half a level a day: it does not move the
-  ~100 h to level 1000 target. Measured: level 1006, hunt -> 1.52M experience (expected 1.517M).
+  **Experience** (2026-10-22, beta "as bounties dão muito pouca xp"; O105). It was 3% (hunt) or 4% (elite, boss) of one
+  level, paid with `Player:addExperience`, which adds the amount as it is: no stage, no bonus. With the stages
+  (x10 to x50 below level 100) that was 0.01-1.2% of what the contract's own kills gave (level 8, 90 Gazers: 87
+  experience, the kills 111k). Now (`bounty_core.lua` `B.expReward`, `bounty_config.lua` `expShare` / `expFloor` /
+  `expCap` / `tierXp` / `eliteSearch`):
+  - kills = count x one kill's base experience (the pool experience x the monster's pace experience curve,
+    `B.monsterKillBase`; bosses are never paced) x the stage of the player's level (`Game.getExperienceStage`, so an
+    admin `xp-rate` x N scales it too). Elite: each counted kill x its tier's experience (magic 2, rare 4, read from
+    `ChaosTiers`) plus `eliteSearch - 1` kills of the type made while looking for the tier (12 magic, 50 rare, from the
+    spawn chances). No bonus is counted (potion, stamina, world, multikill, passive tree ...);
+  - reward = `expShare` percent of it (hunt 40, elite 40, boss 100), at least `expFloor` (hunt 10, elite 15, boss 50)
+    and at most `expCap` (2000 = 20 levels) percent of the experience from level L to L+1, L = the player's level capped
+    at the band's top;
+  - the board shows the exact amount for the player's current level and stage (`B.rewardFor`); completion pays what
+    the board shows at that moment (a level gained during the contract counts), with `addExperience`, so the stage is
+    already in the number and no bonus is added on top.
+  The engine's monster level factor of level-scaled monsters (x0.03 L, see "Experience cap") is left out of the kill's
+  base: `pace_config.lua`'s scaled curve is fitted on the file experience (about 4000 a kill at 650). If live kills of
+  those monsters give 20x that, the band 800+ hunts pay less than 40% of their kills; the cap bounds it either way.
+  Exploits: a low character on the band above gets only its own kills (party rule above) and at most 20 of its own
+  levels; a high character on a band below gets a share of the weak kills at its own stage, floor and cap at the
+  band's top; rerolls keep the band and type (a rerolled monster missing from the pool pays the floor); multi-client
+  contracts still pay nothing; each contract once a day, at most 12 a day.
+  Model (30 days of boards, `luajit` with the real pool and pace config, the release stages; "min" = minutes of
+  hunting that contract's monster at the pace model's kills per hour, `tools/spawn_tuning.json` `paceKillsPerHour`, to
+  earn the reward; median of the player's own band):
+
+  | Level | Type | Old | Old / kills | Kills' experience | New (min-max) | New, levels | Min |
+  |---|---|---|---|---|---|---|---|
+  | 8 | hunt / elite / boss | 87 / 116 / 116 | 0.08% / 0.1% / 3.9% | 111k / 112k / 3000 | 44k (2.6k-58k) / 45k / 3000 | 15.3 / 15.5 / 1.0 | 2 / 1 / 0 |
+  | 30 | hunt / elite / boss | 1308 / 1744 / 1744 | 0.24% / 0.31% / 11.6% | 556k / 561k / 15k | 222k (13k-872k) / 224k / 22k | 5.1 / 5.2 / 0.5 | 2 / 2 / 0 |
+  | 100 | hunt / elite / boss | 15k / 20k / 20k | 0.09% / 0.22% / 33% | 16.3M / 9.1M / 61k | 6.5M (1.2M-9.9M) / 3.6M / 248k | 13.2 / 7.4 / 0.5 | 7 / 5 / 0 |
+  | 250 | hunt / elite / boss | 93k / 125k / 125k | 0.18% / 0.54% / 32% | 51.7M / 22.9M / 390k | 20.7M (8.4M-55.4M) / 9.1M / 1.6M | 6.7 / 2.9 / 0.5 | 15 / 6 / 0 |
+  | 400 | hunt / elite / boss | 239k / 319k / 319k | 0.19% / 0.53% / 51% | 126M / 60M / 627k | 50.6M (18M-113M) / 24.1M / 4.0M | 6.3 / 3.0 / 0.5 | 15 / 6 / 0 |
+  | 650 | hunt / elite / boss | 633k / 844k / 844k | 0.63% / 1.65% / 47% | 101M / 51M / 1.8M | 40.4M (15.5M-187M) / 20.4M / 10.5M | 1.9 / 1.0 / 0.5 | 13 / 6 / 0 |
+  | 900 | hunt / elite / boss | 1.21M / 1.62M / 1.62M | 0.65% / 1.2% / 116% | 187M / 135M / 1.4M | 74.9M (21M-129M) / 54.1M / 20.2M | 1.9 / 1.3 / 0.5 | 35 / 30 / 1 |
+
+  The band above, for comparison: level 8 on band 2 and 30 on band 2 hit the cap (58k, 872k: 20 levels, own kills
+  only); 100 on band 3 9.9M (cap); 650 on band 6 96M (4.6 levels). A band below: 100 on band 1 200k (0.4 level),
+  400 on band 3 17.5M (2.2 levels), 900 on band 5 31.4M (0.8 level).
   **Weekly chest:** 4 completed contracts in one bounty week (Monday 06:00 to Monday 06:00) give a "bounty chest"
   (present box) with the orbs of the player's band, once per week (`weeklyNeed`, 7 until 2026-10-15: two short sessions
   a week earn it now).
 - **Multi-client** (`Chaos.isMultiClient`): as at the world boss event, such characters may accept contracts and hunt,
   but a contract that got a kill (or was accepted) while multi-clienting is marked (`mc = 1`) and pays nothing
   (`mcReward = false`); it does not count for the weekly chest. The player is told at accept and at completion.
-- **Tests:** `tests/bounty_test.lua` (seeded roll, bands, kill matching, party credit, milestones, rewards, the accept
-  rules and expiry).
+- **Tests:** `tests/bounty_test.lua` (seeded roll, bands, kill matching, party credit and its band rule, milestones,
+  rewards: the experience share, stage, elite tiers and search, floor, cap and the pace hook, every contract of 30 real
+  boards between floor and cap; the accept rules and expiry).
 
 Verified on the test server (level 1000 knight): open from the menu (Adventure > Bounty Board); accept; 50 hunt kills -> 2M gold
-in the bank, 6 Orbs of Upheaval + 2 Orbs of Fate (to the inbox, backpack full), 1.52M experience; elite: normal kills do not count,
+in the bank, 6 Orbs of Upheaval + 2 Orbs of Fate (to the inbox, backpack full), 1.52M experience (the old 3% rule); elite: normal kills do not count,
 magic/rare/legendary do; boss kill; weekly chest with 15 Orbs of Upheaval + 4 Orbs of Fate; the 3-contract limit (also an accept sent
 straight from the client is refused); the same board (same checksum) after a restart; progress kept across relog and
 restart; next-day expiry (simulated by shifting the day function); a multi-client contract pays nothing. Not verified in
