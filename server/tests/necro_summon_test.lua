@@ -19,7 +19,10 @@ COMBAT_PHYSICALDAMAGE, COMBAT_DEATHDAMAGE, COMBAT_ENERGYDAMAGE = 1, 2, 3
 CONST_ANI_DEATH, CONST_ANI_ARROW, CONST_ANI_ENERGY = 1, 2, 3
 CONST_ME_HITAREA, CONST_ME_ENERGYHIT, CONST_ME_MORTAREA, CONST_ME_POFF = 1, 2, 3, 4
 RETURNVALUE_NOTENOUGHROOM, SKULL_BLACK = 9, 5
-function Position(p) return {x = p.x, y = p.y, z = p.z} end
+function Position(p, y, z)
+	if type(p) == "number" then return {x = p, y = y, z = z} end
+	return {x = p.x, y = p.y, z = p.z}
+end
 
 local puffs, created, removed = 0, {}, {}
 local nextId = 100
@@ -239,6 +242,32 @@ ok(readPatch("0056-summon-display-level-refresh.patch"):find("sendUpdateTileCrea
 	"0056: a changed display level reaches the spectators")
 ok(readPatch("0057-script-target-drop-tells-client.patch"):find("player->sendCancelTarget()", 1, true) ~= nil,
 	"0057: setTarget(nil) on a player tells its client")
+
+-- ------------------------------------------------------------------ no room (beta 2026-10-22)
+-- every tile around the caster holds a creature: the minion still rises (on a tile two steps off when one is free, else
+-- on a crowded tile, created with force), never "not enough room"
+do
+	TILESTATE_BLOCKSOLID, TILESTATE_PROTECTIONZONE, TILESTATE_FLOORCHANGE, TILESTATE_TELEPORT = 1, 2, 4, 8
+	local saveFree, saveAround, saveTile = ChaosSpell.isFreeTile, ChaosSpell.freeAround, Tile
+	local freeAt
+	ChaosSpell.isFreeTile = function(p) return freeAt ~= nil and p.x == freeAt.x and p.y == freeAt.y end
+	ChaosSpell.freeAround = function() return {} end
+	Tile = function(p)
+		return {getGround = function() return true end, hasFlag = function(_, f) return p.x == 12 and f == 1 end}
+	end
+	local crowd = player(cfg.ids.necromancer)
+	freeAt = {x = 8, y = 11}
+	local m = L.raise(crowd, "warrior", {x = 10, y = 10, z = 7})
+	ok(m ~= nil and m.pos.x == 8 and m.pos.y == 11, "crowded: a free tile two steps away")
+	freeAt = nil
+	m = L.raise(crowd, "archer", {x = 10, y = 10, z = 7})
+	ok(m ~= nil and m.pos.x == 10 and m.pos.y == 10, "packed: on the crowded tile itself")
+	local s = crowd.cancelled
+	ok(NecroSpell.summon(crowd, "mage") == true and s == crowd.cancelled, "packed: the summon spell is not refused")
+	Tile = function() return {getGround = function() return true end, hasFlag = function(_, f) return f == 2 end} end
+	ok(L.raise(crowd, "mage", {x = 10, y = 10, z = 7}) == nil, "a protection zone everywhere: no minion")
+	ChaosSpell.isFreeTile, ChaosSpell.freeAround, Tile = saveFree, saveAround, saveTile
+end
 
 print(string.format("necro_summon_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

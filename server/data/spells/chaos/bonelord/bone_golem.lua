@@ -38,10 +38,10 @@ function onCastSpell(creature, variant, isHotkey)
 	if N.minionCap(cfg, classKey, "golem", player:getLevel()) <= 0 then
 		return ChaosSpell.cancel(player, "Only a Bone Lord can raise the Bone Golem.")
 	end
-	local spots = ChaosSpell.freeAround(pos, pos)
-	if not spots[1] or not L.raise(player, "golem", spots[1].pos) then
+	local golem = L.raise(player, "golem", pos)
+	if not golem then
 		return ChaosSpell.cancel(player, RETURNVALUE_NOTENOUGHROOM)
 	end
-	NecroSpell.fx(spots[1].pos, {"bonelord_golem_rise", "necro_seal"}, "ground_slam", CONST_ME_GROUNDSHAKER)
+	NecroSpell.fx(golem:getPosition(),{"bonelord_golem_rise", "necro_seal"}, "ground_slam", CONST_ME_GROUNDSHAKER)
 	return true
 end

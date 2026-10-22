@@ -117,13 +117,67 @@ function M.count(player, kind)
 	return #M.minions(player, kind)
 end
 
--- a free tile on or next to `pos` (never a protection zone), or nil
+-- a tile a minion may stand on even with a creature there (ground, nothing solid, no protection zone, no stairs,
+-- no teleport)
+local function standable(pos)
+	local tile = Tile(pos)
+	if not tile or not tile:getGround() then
+		return false
+	end
+	return not (tile:hasFlag(TILESTATE_BLOCKSOLID) or tile:hasFlag(TILESTATE_PROTECTIONZONE)
+		or tile:hasFlag(TILESTATE_FLOORCHANGE) or tile:hasFlag(TILESTATE_TELEPORT))
+end
+
+local function inSight(from, to)
+	local ok, clear = pcall(function() return Position(from):isSightClear(to, true) end)
+	return not ok or clear ~= false
+end
+
+-- where a minion of `pos` rises (never a protection zone), or nil: a free tile on or next to `pos`, else a free tile
+-- two or three steps away in sight of it, else (beta 2026-10-22: "when the necromancer has no room, the summons are
+-- blocked") a tile with a creature on it, `pos` or next to it, then `ref` (the caster's own tile). M.raise creates
+-- with force, so the minion shares that tile and walks off.
 function M.spotAt(pos, ref)
+	ref = ref or pos
 	if ChaosSpell.isFreeTile(pos) then
 		return Position(pos)
 	end
-	local spots = ChaosSpell.freeAround(pos, ref or pos)
-	return spots[1] and spots[1].pos or nil
+	local spots = ChaosSpell.freeAround(pos, ref)
+	if spots[1] then
+		return spots[1].pos
+	end
+	for r = 2, 3 do
+		local best, bestD
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local p = Position(pos.x + dx, pos.y + dy, pos.z)
+					local d = (p.x - ref.x) ^ 2 + (p.y - ref.y) ^ 2
+					if (not best or d < bestD) and ChaosSpell.isFreeTile(p) and inSight(pos, p) then
+						best, bestD = p, d
+					end
+				end
+			end
+		end
+		if best then
+			return best
+		end
+	end
+	if standable(pos) then
+		return Position(pos)
+	end
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local p = Position(pos.x + dx, pos.y + dy, pos.z)
+			if standable(p) and inSight(pos, p) then
+				return p
+			end
+		end
+	end
+	if standable(ref) then
+		return Position(ref)
+	end
+	return nil
 end
 
 -- Create a minion of `kind` for `player` at `pos` with `ratio` (0-1, default 1) of its health; returns it or nil.

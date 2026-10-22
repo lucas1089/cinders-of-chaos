@@ -1843,6 +1843,12 @@ Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
 
+**No room, beta 2026-10-22** (owner: "when the necromancer has no room, the summons are blocked"). `ChaosNecro.spotAt`
+took only a free tile on or next to the spot, so a caster in a pack of monsters got "not enough room". Now it looks two
+and three steps away (a free tile in sight), then takes a tile with a creature on it (the spot, a tile next to it, the
+caster's own); `Game.createMonster` already places with force, so the minion shares it and walks off. Never a protection
+zone, a wall, stairs or a teleport. Bone Golem goes through the same rule. Test: `tests/necro_summon_test.lua` "no room".
+
 ## Summons: targets, walk-through, levels (2026-10-21)
 
 Owner report: "the Necromancer's risen warriors do not attack, they get targeted and they block the way", and "the risen
