@@ -14789,7 +14789,7 @@ the one food costume found is a fry box. Source: the owner's .obd files, source 
 - **Pair.** A client on pair 36 or older has no outfits 2668+. Pair 37 is on windows-assets (1020d51c); ship the client
   with the server. Off: no store offers, no outfits.xml block.
 - **Moon set floating.** On pairs 37 and 38 the four moon outfits stand about 10 px above the ground. The client fix
-  (client/MANIFEST.md "Moon outfits on the ground") rewrites looks 2668-2675 in place in the next pair: same ids, no
+  (client/MANIFEST.md "Moon outfits on the ground") rewrites looks 2668-2675 in place in pair 39: same ids, no
   server change.
 - Tests: `tests/pack37_looks_test.lua` (looks in order, outfits, the store on and off), `tests/shop_tree_test.lua`
   (every offer resolvable), `tools/install_outfits_test.py` (the block). Not run in a client.
