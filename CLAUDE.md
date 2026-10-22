@@ -55,7 +55,6 @@ cd server && luajit tools/gen_wiki_data.lua                  # -> website wiki/w
 cd server && lua5.3 tools/gen_wiki_data.lua --check
 python3 -I website/tools/gen_wiki_art.py                     # -> website wiki icons, heroes (--check in CI)
 python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of pair 26 (CI uses the fx venv)
-python3 -I client/tools/gen_levelwings_art.py --check  # level-up wings frames (CI uses the fx venv)
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md
 ```
