@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
-  "id": "ashen_sepulchre",
-  "name": "Ashen Sepulchre",
+  "id": "hushbone_barrows",
+  "name": "Hushbone Barrows",
   "biome": "crypt",
   "size": [
     189,
@@ -906,7 +906,7 @@
   "chests": [
     {
       "zone": "candle_chapel",
-      "quest": "ashen_chapel",
+      "quest": "hushbone_chantry",
       "reward": {
         "gold": 2700000,
         "items": [

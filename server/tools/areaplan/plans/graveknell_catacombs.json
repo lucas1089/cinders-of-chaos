@@ -1,7 +1,7 @@
 {
   "schema": "chaos-area-plan/1",
-  "id": "ashwarden_catacombs",
-  "name": "Ashwarden Catacombs",
+  "id": "graveknell_catacombs",
+  "name": "Graveknell Catacombs",
   "biome": "catacomb",
   "size": [
     179,
@@ -446,7 +446,7 @@
   "chests": [
     {
       "zone": "hushed_cells",
-      "quest": "ashwarden_cells",
+      "quest": "graveknell_belfry",
       "reward": {
         "gold": 350000,
         "items": [
