@@ -134,7 +134,8 @@ return {
 	-- anyone (onTargetCombat). The base room's own display cells on floors 5 and 7 are covered too.
 	display = {x = {31594, 31706}, floors = {5, 7}},
 
-	-- 5 modules a side: 20 new teleports (17 plans, 3 spare).
+	-- 58 plans. With the base hunts they fill every slot of the hall since 2026-10-22 (server/README.md "Hall order":
+	-- 48 of 48 on z 7, 37 of 37 on z 6, 18 of 18 on z 5).
 	-- The order here does not count: install_content_areas.py gives the slots by level band ascending (the plan's
 	-- `level`), along the corridor from west to east, the north teleport of a column before the south one; a new
 	-- hunt lands in its place by itself. A plan of tools/areaplan/plans/ missing here still gets a teleport, with its
@@ -164,7 +165,50 @@ return {
 		{id = "gravehorn_deeps", monster = "Cinderskull Reaver"},
 		{id = "duskmarrow_crater", monster = "Mirecoil Wyrm"}, -- not the 5x5 Pyrewing Tyrant in a one-tile cell
 		-- pair 27 trial area (levels 300-400); its boss is the Hollow Rider. 2x2; the 3x3 Bonecrusher spilled
-		{id = "hollow_crypt", monster = "Sopping Carcass"}
+		{id = "hollow_crypt", monster = "Sopping Carcass"},
+		-- the hall fill (owner, 2026-10-22: "the hunts of the upper floors"): 31 hunts on z 6 (500-1050),
+		-- 10 on z 5 (1050-2000), in the east block of server/tools/areaplan/plans; every display monster is 2x2 or smaller
+		{id = "gloomtooth_caverns", monster = "Ashmaw Raider"},
+		{id = "brackwater_sloughs", monster = "Ashmaw Bonecaller"},
+		{id = "sablemourn_ossuary", monster = "Mange Hound"},
+		{id = "thornmantle_glade", monster = "Slagborer"},
+		{id = "embergut_rift", monster = "Mercenary"},
+		{id = "frostvein_reach", monster = "Mercenary"},
+		{id = "ashwarden_catacombs", monster = "Mercenary Ranger"},
+		{id = "umbral_sink", monster = "Thornveil Wraith"},
+		{id = "cinderscour_barrens", monster = "Mercenary Ranger"},
+		{id = "grimlock_vaults", monster = "Thornveil Wraith"},
+		{id = "blackmarble_halls", monster = "Mercenary Ranger"},
+		{id = "rotbloom_sanctum", monster = "Shroud Brood"},
+		{id = "hollowmaw_grotto", monster = "Shroud Brood"},
+		{id = "leechwater_fen", monster = "Ironmask Taskmaster"},
+		{id = "dreadmourn_crypt", monster = "Rootbound Pilgrim"},
+		{id = "gallowroot_wilds", monster = "Ironmask Brander"},
+		{id = "scorchpit_delve", monster = "Gashrunner"},
+		{id = "glacierfang_shelf", monster = "Rootbound Pilgrim"},
+		{id = "bonewright_galleries", monster = "Ironmask Brander"},
+		{id = "nightrend_abyss", monster = "Ironmask Bannerman"},
+		{id = "sunderstone_wastes", monster = "Lacewing Moth"},
+		{id = "ironwick_treasury", monster = "Lacewing Moth"},
+		{id = "obsidian_colonnade", monster = "Lacewing Moth"},
+		{id = "mildewveil_sanctum", monster = "Reedgrave"},
+		{id = "deepgrudge_warrens", monster = "Bloom Husk"},
+		{id = "sorrowfen_marsh", monster = "Bloom Husk"},
+		{id = "shroudhallow_tomb", monster = "Geode Seer"},
+		{id = "hagthorn_weald", monster = "Bloom Husk"},
+		{id = "pyreglass_chasm", monster = "Quicksilver Wraith"},
+		{id = "rimeblood_glacier", monster = "Rustguard"},
+		{id = "lanternless_catacombs", monster = "Quicksilver Wraith"},
+		{id = "scaldmoor_expanse", monster = "Masque Dancer"},
+		{id = "vespergloom_halls", monster = "Veiled Crawler"},
+		{id = "wormcoil_depths", monster = "Maw Grub"},
+		{id = "shiverspine_ridge", monster = "Bonepicker"},
+		{id = "ashen_sepulchre", monster = "Bonepicker"},
+		{id = "carrionwood", monster = "Bonepicker"},
+		{id = "dreadcoffer_vaults", monster = "Gnawbone Swarm"},
+		{id = "paleflame_sanctum", monster = "Gnawbone Swarm"},
+		{id = "blightmaw_bog", monster = "Gnawbone Swarm"},
+		{id = "worldscar_abyss", monster = "Gnawbone Swarm"}
 	},
 
 	-- The ways back (owner, 2026-10-20: "many teleports to hunts have no teleport back"; server/README.md "Hall order",
