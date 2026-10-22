@@ -125,6 +125,21 @@ eq(T.dev_key_allowed('-- clientGuardAllowDevKey = true\nclientGuardAllowDevKey =
 eq(T.dev_key_allowed(''), False, 'no setting')
 eq(T.binds_only_global('bindOnlyGlobalAddress = true'), True, 'bind only global')
 
+# the client build the bots announce (the engine's ClientGuard::gateReason refuses a build below min_package)
+MAN = '{"payload": "{\\"version\\": 9, \\"min_package\\": 16, \\"files\\": []}", "signature": "ab"}'
+eq(T.manifest_floor(MAN), 16, 'min_package inside the escaped payload')
+eq(T.manifest_floor('{"min_package": 3}'), 3, 'plain min_package')
+eq(T.manifest_floor('{}'), None, 'no min_package')
+reader = lambda path: {'/m.json': MAN}[path]  # noqa: E731
+eq(T.guard_build('', reader), 1, 'no guard settings: build 1')
+eq(T.guard_build('clientGuardManifest = "/m.json"\n', reader), 16, 'the manifest floor')
+eq(T.guard_build('-- clientGuardManifest = "/m.json"\n', reader), 1, 'a comment is no setting')
+eq(T.guard_build('clientGuardManifest = "/missing.json"\n', lambda p: open(p).read()), 1, 'unreadable manifest: build 1')
+eq(T.guard_build('clientGuardBuilds = "14, 15,17"\nclientGuardManifest = "/m.json"\n', reader), 17,
+   'the newest listed build at or above the floor')
+eq(T.guard_build('clientGuardBuilds = "12 13"\n', reader), 13, 'the newest listed build')
+eq(T.guard_build('clientGuardManifest = os.getenv("X") or ""\n', reader), 1, 'an expression is no path')
+
 tmp = tempfile.mkdtemp()
 key = os.path.join(tmp, 'key')
 

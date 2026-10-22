@@ -102,10 +102,49 @@ def test_delogo():
     expect(G.delogo(big)[1] == 0, 'a large yellow area stays (fries, not a mark)')
 
 
+def test_stand_shift():
+    g = {'w': 2, 'h': 2, 'layers': 1, 'px': 4, 'py': 2, 'pz': 2, 'frames': 1}
+    g['tiles'] = [np.zeros((32, 32, 4), np.uint8) for _ in range(2 * 2 * 4 * 2 * 2)]
+
+    def put(z, d, row, y=0):   # one opaque pixel in the right column of the cell, at canvas row `row` (32..63)
+        g['tiles'][G.tile_index(g, 0, z, y, d, 0, 0, 0)][row - 32, 5] = (1, 2, 3, 255)
+    put(0, 0, 53)                       # feet at 53: displacement 0 needs 2 rows down
+    put(0, 1, 53); put(0, 1, 62, 1)     # the same, but the addon reaches row 62: only 1 row of room
+    put(0, 2, 56); put(0, 2, 40)        # feet at 56: 1 row up
+    put(0, 3, 55)                       # already on the ground
+    put(1, 2, 60)                       # mounted: not counted, not moved
+    expect(G.stand_shifts([g], 0) == [2, 1, -1, 0], 'stand shifts: %r' % G.stand_shifts([g], 0))
+    expect(G.stand_shifts([g], 8) == [10, 1, 7, 8], 'with displacement 8 more is needed, clamped by the room')
+    c = G.cell(g, 0, 0, 0, 0, 0)
+    expect(G._rows(G.shift_rows(c, 2)).tolist() == [55], 'shift_rows moves the art down')
+    expect(G._rows(G.shift_rows(c, -3)).tolist() == [50], 'and up')
+    try:
+        G.shift_rows(c, 11)
+        expect(False, 'shift_rows refuses to cut the art')
+    except G.ObdError:
+        pass
+    o = {'flags': {0x19: (8, 8)}, 'groups': [g]}
+    G.STAND_SHIFT.add('synthetic_moon'); G.DISPLACEMENT['synthetic_moon'] = (0, 0)
+    try:
+        sheet, f = G.sheet_of(o, 'synthetic_moon')
+    finally:
+        G.STAND_SHIFT.discard('synthetic_moon'); del G.DISPLACEMENT['synthetic_moon']
+    expect(f['shifts'] == [2, 1, -1, 0] and f['flags'] == 'displacement:0:0', 'sheet_of applies the shifts')
+    col = lambda z, y, d: sheet[:, ((z * 2 + y) * 4 + d) * 64:((z * 2 + y) * 4 + d + 1) * 64]
+    expect(G._rows(col(0, 0, 0)).tolist() == [55], 'standing north cell moved down 2')
+    expect(G._rows(col(0, 1, 1)).tolist() == [63], 'the addon moves with the body (east, 1 row)')
+    expect(G._rows(col(0, 0, 2)).tolist() == [39, 55], 'standing south cell moved up 1')
+    expect(G._rows(col(1, 0, 2)).tolist() == [60], 'mounted cell untouched')
+    row = ['k', 'outfit', 'look', 'K', 'a/k', 0, 0, 2, 2, 4, '1', 'displacement:0:0', 'new', '', 'id=2668|sex=male']
+    expect(G.fix_row(row)[12:] == ['replace', '', 'id=2668|sex=male|look=2668'] and row[12] == 'new', 'fix_row')
+
+
 def test_tables():
     expect(G.check_tables() == [], 'committed tables agree: %r' % G.check_tables())
     expect(len({k for k, *_ in G.LOOKS}) == len(G.LOOKS), 'unique keys')
     expect(set(G.DISPLACEMENT) <= {k for k, *_ in G.LOOKS}, 'displacement overrides name looks')
+    expect(G.STAND_SHIFT <= set(G.DISPLACEMENT) and min(min(v) for v in G.DISPLACEMENT.values()) >= 0,
+           'the moon set is shifted and keeps a displacement of 0 or more (no negative-offset drawing)')
 
 
 def main():
@@ -115,6 +154,7 @@ def main():
         test_reader()
         test_sheet_matches_importer(tmp)
         test_delogo()
+        test_stand_shift()
         test_tables()
     finally:
         shutil.rmtree(tmp)
