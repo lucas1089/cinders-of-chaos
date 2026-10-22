@@ -14624,6 +14624,26 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   (no level_up use). Client: `levelwingsmath_test.lua`, `lootbeams_test.lua` (ids against the ids file).
   Not run on a live server or in a client.
 
+## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
+Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
+"Eu não coloquei uns outfits bem diferente no drive? Tipo de pizza e coisas assim?". The Drive held no pizza outfit;
+the one food costume found is a fry box. Source: the owner's .obd files, source pack unnamed (docs/CREDITS.md
+"set37 outfits").
+- **What.** 14 client looks 2668..2681 (`M.looks`) worn as 10 outfits (`M.outfits`): Starweaver 2668 / 2669, Crescent
+  Oracle 2670 / 2671, Moonblade Mystic 2672 / 2673, Moonflame Mystic 2674 / 2675 (male / female, colourable, two
+  addons, mounted frames); Plush Bear 2676, Snow Plush Bear 2677, Frost / Grave / Rose Crawling Hand 2678-2680 and the
+  Fry Box Costume 2681 (one look for both sexes, no colours, no addons; the fry box has no walk frames and glides).
+- **outfits.xml.** `tools/install_outfits.py` writes a fourth marked block "Chaos pair 37 outfits": one line per sex
+  per outfit, locked (`unlocked="no"`), only while the switch is on. Same clash rules as the other blocks.
+- **Store** (`shop_config.lua` calls `ChaosPack37.addStore`; nothing while off). The four moon outfits go at the end
+  of Outfits (750, both addons, both looks, like the store's other full outfits); the six costumes in a new category
+  **Costumes** under Cosmetics right after Outfits (300 each). Prices are placeholders (docs/OWNER_TODO.md). A purchase
+  is the store's usual outfit offer: `addOutfit` and both addons for each look.
+- **Pair.** A client on pair 36 or older has no outfits 2668+. Pair 37 is on windows-assets (1020d51c); ship the client
+  with the server. Off: no store offers, no outfits.xml block.
+- Tests: `tests/pack37_looks_test.lua` (looks in order, outfits, the store on and off), `tests/shop_tree_test.lua`
+  (every offer resolvable), `tools/install_outfits_test.py` (the block). Not run in a client.
+
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
 "Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them

@@ -2406,6 +2406,54 @@ word pop-ups on 173, 415-417 and 628; this one replaces them with animations and
   level-up and loot beams fall back (no level-up effect, the engine pillar). Ship pair 36 with the server.
 - Previews: scratchpad only. Not run in a client.
 
+## Owner outfits (pair 37: outfits 2668-2681, `tools/sprites/gen_pack37_looks.py`, `art_import/pack37_looks.csv`; built 2026-10-22, on windows-assets 1020d51c)
+Owner, 2026-10-22: "Eu não coloquei uns outfits bem diferente no drive? Tipo de pizza e coisas assim?". **Source:** the
+owner's Drive, object-builder exports (.obd, client 1098) in the folders "random" (17 files) and "obd+" (155 files);
+supplied by the owner, source pack unnamed (docs/CREDITS.md "set37 outfits"). Treated as untrusted data: each file is
+md5-checked against `LOOKS`, then parsed by the tool's own reader (LZMA with an output cap; nothing executed).
+Import-only: the sheets (`art_import/pack37_looks/`) are never committed; `style_check.py` is not run on them.
+- **Inventory.** "random": monsters and effects (2592-2600, 2641-2659, 2705-2717, 2726-2736, 852-855: no player
+  layout), two plush bears (839-840), three crawling hands (841-843) and one full player set 2718-2725 (2x2, colour
+  template, two addons, mounted frames, 16 idle and 8 walk frames). "obd+": idle-only looks (one frame per
+  direction), mostly characters of other franchises; the one food costume of the Drive is a fry box (5113). No pizza
+  outfit was found. Not opened: the folders "obd_all_in_one_folder" and "OBD_o/outfits".
+- **Picked** (ids in this order): Starweaver 2668 / 2669, Crescent Oracle 2670 / 2671, Moonblade Mystic 2672 / 2673,
+  Moonflame Mystic 2674 / 2675 (the set 2718-2725: even file = male, odd = female; one body, a different second
+  addon each), Plush Bear 2676, Snow Plush Bear 2677 (1x1, idle 1 + walk 2), Frost / Grave / Rose Crawling Hand
+  2678-2680 (1x1, idle 4 + walk 2), Fry Box Costume 2681 (2x2, one frame group of 1: it glides when walking; the
+  fast-food mark on the box is painted over by `delogo`, 41 pixels in the east and south views).
+- **Skipped:** the obd+ characters of other franchises and the arcade, robot and aura looks (idle only, not ours to
+  ship), the monsters and effects of "random", the item obds of "comidas" (food items, not outfits).
+- **Placement.** The files say displacement 8, 8. The moon set stands 9 px left and 10 px higher than look 128 but sits
+  exactly at 128's saddle height when mounted, so only x moves (`DISPLACEMENT` 0, 8): it floats about 10 px when
+  standing. Bears, hands and the fry box stand where 128 stands. Wings sit on the tile, not on the art: on the moon set
+  they look about 10 px low.
+
+```
+python3 -I client/tools/sprites/gen_pack37_looks.py build --src OBD_DIR          # sheets + tables; --check compares
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair36/Tibia.dat --ours-spr pair36/Tibia.spr --out-dir pair37 \
+    --things client/tools/sprites/art_import/pack37_looks.csv --first-outfit 2668 --expect-items 38640
+python3 -I client/tools/sprites/check_pair.py pair37/Tibia.dat pair37/Tibia.spr --old pair36/Tibia.dat pair36/Tibia.spr [--new-only]
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair37/Tibia.dat pair37/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair37/Tibia.dat pair37/Tibia.spr
+```
+Input pair 36 (windows-assets ab96c012, dat 9cca9b759ace5be6ab94d2b2ffb124a4, spr 7f27e7d968cbde505a63fe9fd84c9c31).
+Output **pair 37**: dat 774c80f15b38b1072e5e677f1611a08b (11,217,695 bytes), spr ba8022fe709d71fe543ee20d6d8858e4
+(1,520,789,575 bytes, 1,338,774 sprites: 5,821 appended, 36 reused), 38,640 items, 2,681 outfits, 4101 effects, 250
+missiles. The importer verified 14 outfits, 36,976 sprite slots pixel-identical to the sheets and every old thing
+byte-identical. Built twice: identical md5s.
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 216 warnings (pair 36's).
+- `outfit_anchors.lua` (1,988 things) and `info_lifts.lua` regenerated; `gen_theme_art.py recolour --check`,
+  `gen_dungeon_banners.py --check`, `check_content.py --pair` and `gen_sprite_images.py` pass on pair 37 (the website
+  draws 2668-2681: `website/tools/sprite_owners.csv` tier donor).
+- Archive (the pair 35 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5): 145,249,108 bytes, sha256
+  cfdf4b4e7ce8395434f5ad6766aed491dba3bf3aad27a671f633bce1afc6ecbc, packed twice with the same sha256; parts
+  `things-1098.tar.xz.part00` (f6cf3d23eaab44631a3ff301c3f3824393694dfac9e192a3b8a6f7aa1b153fd3) and `.part01`
+  (6c8bc288e7a42041782bc0e64b693373bb807250d9b00428120f175c3b6c27d8). Pushed to windows-assets at 1020d51c (on
+  ab96c012; the owner allowed new pairs without asking).
+- A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
+- Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
