@@ -146,12 +146,15 @@ return {
 	-- room's own display monsters are 2x2). `display = false`: no display monster (every monster of the plan is
 	-- bigger).
 	-- `minLevel` overrides the floor of the plan's level band.
+	-- `standIn = true`: the display monster is not one of the plan's (all of them too big for a cell).
 	plans = {
 		{id = "bonechoir_catacomb", monster = "Deathrattle"},
 		{id = "sulphur_gallery", monster = "Hellflayer"},
 		{id = "widowmere", monster = "Nightfang Widow"},
-		-- every monster of the plan is a 4x4 or 5x5 sprite: no display (it spilled over the cell walls into the corridor)
-		{id = "wyrmspine_hollows", monster = "Ashfang Wrym", display = false},
+		-- every monster of the plan is a 4x4 or 5x5 sprite (it spilled over the cell walls into the corridor): the 2x2
+		-- Elder Wyrm of the base server stands in (owner 2026-10-22: "Wyrmspine Hollows has no showcase monsters"); it
+		-- shows the hunt's level like every display (hunt_teleports_core.lua H.displayLevel)
+		{id = "wyrmspine_hollows", monster = "Elder Wyrm", standIn = true},
 		{id = "pyrarch_crucible", monster = "Hellmaw Brute"},
 		{id = "hexwood_thicket", monster = "Black Stag"},
 		{id = "corsairs_reach", monster = "Ironhook Corsair"},

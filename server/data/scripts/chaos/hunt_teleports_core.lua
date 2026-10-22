@@ -239,6 +239,59 @@ function H.isDisplaySpot(cfg, pos)
 	return false
 end
 
+-- the hunt a display monster at `pos` stands for (beta 2026-10-22: the showcase showed the monster's own level, a
+-- Dragon [42] beside a hunt of levels 665+): the teleport of its alcove, a placed plan's (idx.byTeleport) or a base
+-- hunt's (idx.base). A cell row's cell belongs to the teleport right in front of it, else to the one beside that (the
+-- install's hall_order.display_cells); a cell beside the corridor's end row (cfg.hall.endRow) to the end teleport on
+-- its inner side. nil when none.
+function H.entryForDisplay(cfg, idx, pos)
+	local r = cfg and cfg.room
+	if not isPos(pos) or type(idx) ~= "table" or type(r) ~= "table" then
+		return nil
+	end
+	if not idx.byDisplay then
+		idx.byDisplay = {}
+		for _, e in ipairs(idx.list or {}) do
+			idx.byDisplay[key(e.teleport)] = e
+		end
+		for _, e in ipairs(idx.base or {}) do
+			idx.byDisplay[key(e.teleport)] = idx.byDisplay[key(e.teleport)] or e
+		end
+	end
+	local at = idx.byDisplay
+	for i, row in ipairs(r.cellRows or {}) do
+		local ty = r.teleportRows and r.teleportRows[i]
+		if pos.y == row and ty then
+			for _, dx in ipairs({0, -1, 1}) do
+				local e = at[key({x = pos.x + dx, y = ty, z = pos.z})]
+				if e then
+					return e
+				end
+			end
+		end
+	end
+	local endRow = cfg.hall and cfg.hall.endRow
+	if endRow and (pos.y == endRow - 1 or pos.y == endRow + 1) then
+		for _, dx in ipairs({-1, 1}) do
+			local e = at[key({x = pos.x + dx, y = endRow, z = pos.z})]
+			if e then
+				return e
+			end
+		end
+	end
+	return nil
+end
+
+-- the level a display monster shows: the middle of its hunt's band
+function H.displayLevel(entry)
+	local lv = entry and entry.level
+	if type(lv) ~= "table" or type(lv[1]) ~= "number" then
+		return nil
+	end
+	local hi = (type(lv[2]) == "number" and lv[2] > 0) and lv[2] or lv[1]
+	return math.floor((lv[1] + hi) / 2 + 0.5)
+end
+
 -- the label of a teleport in one language: "Widowmere, levels 480-640"
 function H.label(cfg, entry, lang)
 	return H.text(cfg, lang, "%s, levels %d-%d", entry.name, entry.level[1], entry.level[2])

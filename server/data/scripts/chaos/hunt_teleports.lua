@@ -127,6 +127,11 @@ local displaySpawn = EventCallback
 displaySpawn.onSpawn = function(self, position, startup, artificial)
 	if not self:getMaster() and HT.isDisplaySpot(position) then
 		self:registerEvent("ChaosHallDisplayGuard")
+		-- the level of its hunt, not its own (monster_levels.lua reads Chaos.spawnLevel after this, index 50)
+		local lv = cfg.enabled and H.displayLevel(H.entryForDisplay(cfg, HT.idx, position))
+		if lv and Chaos then
+			Chaos.spawnLevel = lv
+		end
 	end
 	return true
 end

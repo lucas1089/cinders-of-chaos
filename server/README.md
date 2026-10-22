@@ -16083,8 +16083,8 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   Deathrattle 1150, Hellflayer 856, Nightfang Widow 1404, Ashfang Wrym 1418, Hellmaw Brute 1409, Black Stag 686,
   Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Black Vixen 1475) and at most 2x2 tiles (owner, 2026-10-16:
   bigger sprites spilled over the cell walls; swapped: Celestial Wyrm 3x3 -> Spirit of Purity, Scaleborn 5x4 ->
-  Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: `display =
-  false`, none). Display blocks of a slot no longer used are removed. A base display block whose monster stands off its centre (centre on the
+  Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: since
+  2026-10-22 the base server's 2x2 Elder Wyrm stands in, `standIn = true`). Display blocks of a slot no longer used are removed. A base display block whose monster stands off its centre (centre on the
   corridor, monster one tile north in the cell) is taken over too (before, only the centre counted: two monsters on one
   cell, "Couldn't spawn monster" for Hellspawn, Warlock and Fleshcarver at every start; playtest 2026-10-16;
   `tools/install_content_areas_test.py`).
@@ -16415,9 +16415,14 @@ parts in one pass after `contentareas` (before `poi`), idempotent like the other
 - **Display monsters** (README "Hunt teleports"). Four low-level rooms (Skullkin, Rimekin, Howler Ape, Saltkin
   grottoes) showed nothing: their rows of `tools/hall_hunts.csv` named the monsters by their old names, which the
   `monsternames` step renames before `contentareas` runs. The rows use the Chaos names now (8 display spawns more);
-  `install_content_areas_test.py` fails on an old monster name in the CSV. Still without: Wyrmspine Hollows (every
-  monster 4x4 or 5x5, `display = false`) and Rimecrown Depths (its slot is the corridor's end teleport of floor 5,
-  which has no cells).
+  `install_content_areas_test.py` fails on an old monster name in the CSV. Wyrmspine Hollows (every
+  monster 4x4 or 5x5) shows an Elder Wyrm since 2026-10-22, and the corridor's end teleports of floor 5 have their
+  cells (Hall order "Showcase cells").
+- **Display level** (beta 2026-10-22: Dragon [42] beside a hunt of levels 665+, Fangclaw [508] beside one of 1850-2000).
+  A display monster showed its own level. `hunt_teleports.lua` now sets `Chaos.spawnLevel` in its onSpawn to the middle
+  of its hunt's band (`H.entryForDisplay`: the teleport in front of the cell, else beside it, else the end teleport;
+  `H.displayLevel`), and `monster_levels.lua` (index 50, after it) shows that level (engine patch 0044 lets it win over
+  a level of the monster's own). Display only. Test: `tests/hunt_teleports_test.lua`.
 - **Hub water** (`hunt_teleports_config.lua` `hall.fill`). The hall's island lies in a sea with nothing beyond it; the
   ground floor's wings reach past the sea and the plaza looked out on black. Every missing tile of x 31578-31724,
   y 32216-32312, z 7 (5,171) is deep water now (the base map's 28915-28918), the 33 shore tiles beside it got the
