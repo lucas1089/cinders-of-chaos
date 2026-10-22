@@ -390,9 +390,7 @@ local advance = CreatureEvent("ChaosCatchupAdvance")
 function advance.onAdvance(player, skill, oldLevel, newLevel)
 	if skill == SKILL_LEVEL then
 		pcall(CU.onAdvance, player, newLevel)
-		if newLevel > oldLevel then
-			packFx(player, "level_up")
-		end
+		-- the level-up effect: the client's game_levelwings (pair 36), sent by levelwings.lua
 	end
 	return true
 end

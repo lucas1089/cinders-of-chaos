@@ -133,10 +133,32 @@ ChaosSpell.pack29 = pack29
 function ChaosSpell.pack29Name(kind, name)
 	return pack29(kind, name) or name
 end
+-- Pair 36 effects (data/lib/chaos_pack36_fx.lua, switch ChaosPack36Fx.PAIR36_FX): the spells pair 27 has no swap for
+-- may send an appended pack effect; it takes the place of a pair 27 swap (not first: skins, large and class effects win)
+if not ChaosPack36Fx then
+	pcall(dofile, 'data/lib/chaos_pack36_fx.lua')
+end
+local function pack36(kind, name)
+	local Q, W = ChaosPack36Fx, ChaosSupportsSpell
+	if type(name) ~= "string" or not Q or not Q.swapFor or not Q.PAIR36_FX or not W or not W.cast then
+		return nil
+	end
+	local pid, spellId = W.cast()
+	if not pid then
+		return nil
+	end
+	local ok, alt = pcall(Q.swapFor, spellId, kind, name)
+	return ok and alt or nil
+end
+ChaosSpell.pack36 = pack36
 local function pack27(kind, name)
 	local p29 = pack29(kind, name)
 	if p29 then
 		return p29, true
+	end
+	local p36 = pack36(kind, name)
+	if p36 then
+		return p36, false
 	end
 	local P, W = ChaosPack27Fx, ChaosSupportsSpell
 	if type(name) ~= "string" or not P or not P.swapFor or not P.PAIR27_FX or not W or not W.cast then

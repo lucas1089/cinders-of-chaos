@@ -108,8 +108,9 @@ local beam = C.ray("loot_ray_legendary")
 ok(beam ~= nil and beam.id == ChaosVfx.loot_beam_gold.id, "on: the gold beam for a legendary ray")
 local sent = {}
 Vfx = function(pos, name) sent[#sent + 1] = name return ChaosVfx[name] ~= nil end
-eq(C.send({x = 1, y = 1, z = 7}, "level_up"), true, "on: level up sent")
-eq(sent[1], "levelup_rise", "on: the level up effect without words")
+eq(C.send({x = 1, y = 1, z = 7}, "rested"), true, "on: a use is sent")
+eq(sent[1], "buff_rested", "on: the rested buff")
+eq(C.uses.level_up, nil, "the level up is the client's pair 36 effect (game_levelwings), not a pair 27 use")
 local sw, first = C.swapFor(204, "fx", "meteor_strike")
 eq(sw, "meteor_fall", "on: Falling Pyre meteor")
 eq(first, true, "on: the meteor comes before the large effect")
@@ -144,7 +145,7 @@ end
 
 -- the use call sites
 local sites = {
-	["data/scripts/chaos/catchup.lua"] = {'"rested"', '"returning"', '"catchup"', '"low_stamina"', '"level_up"'},
+	["data/scripts/chaos/catchup.lua"] = {'"rested"', '"returning"', '"catchup"', '"low_stamina"'},
 	["data/scripts/chaos/embercache.lua"] = {'"embercache"'},
 	["data/scripts/chaos/candlemarks.lua"] = {'"candlemarks"'},
 	["data/scripts/chaos/lootfilter.lua"] = {"ChaosPack27Fx.ray(effect)"},

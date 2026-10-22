@@ -85,7 +85,7 @@ C.uses = {
 	returning = "buff_returning",      -- the returning player boost starts (login)
 	catchup = "buff_catchup",          -- the alt catch-up bonus is active (login)
 	low_stamina = "buff_low_stamina",  -- the daily low stamina notice
-	level_up = "levelup_rise",         -- a new level (no words baked into the art)
+	-- level_up: since pair 36 the client's game_levelwings plays the pack's whole level-up effect (w_fx_level_up)
 	embercache = "embercache_coins",   -- an Ember Cache reward toast
 	candlemarks = "candlemark_glow",   -- Candlemarks earned
 	vigil_wrath = "vigil_wrath",       -- a vigil switched on (_vigils.lua)
