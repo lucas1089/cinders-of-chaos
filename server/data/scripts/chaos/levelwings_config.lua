@@ -1,4 +1,4 @@
--- Level-up wings (levelwings.lua, levelwings_core.lua; client game_levelwings; server/README.md "Level-up wings"):
+-- Level-up wings (levelwings.lua, levelwings_core.lua; client game_levelwings; server/README.md "Level-up effect"):
 -- every number. Plain table, loaded with
 --     ChaosLevelWingsConfig = dofile("data/scripts/chaos/levelwings_config.lua")
 -- Lua 5.1 / LuaJIT and Lua 5.3 compatible.

@@ -20,7 +20,9 @@ guardian looks, client/tools/sprites/monster_looks/big_boss_picks.csv) belong to
 sure rift_config.lua `looks.bigGuardians` maps a guardian look to each. Rows of family "storewings" (the store wings of
 pair 26, data/lib/chaos_owner_art.lua) belong to no monster file either, and so do the rows of family "gallery" (pair 30
 looks no monster file uses, shown by the admin gallery) and "sheetlook" (pair 30 sheet looks that keep their colour
-template, for NPCs and decoration). A look of a sheet (rows with lib "pack30", client/tools/sprites/monster_looks/
+template, for NPCs and decoration). Rows of family "base" name a base server monster: server/tools/patch_base_looks.py
+(install step baselooks) writes them into the base files; a "base" row of a sheet look (lib "pack30") belongs to no
+file here either, while a "base" row of a kit look (lib "set33") shares the look of its harvest monster. A look of a sheet (rows with lib "pack30", client/tools/sprites/monster_looks/
 pack30_picks.csv) has a colour mask: when a `hunt` row names one, head, body, legs and feet of the monster's <look>
 stay (only addons go); the other looks lose all five.
 Idempotent: a second run changes nothing. --check changes nothing and exits 1 when a file is not up to date.
@@ -62,7 +64,8 @@ def main():
     keep = {r['monsters']: SHEET_COLOURS for r in rows if r['family'] in MONSTER_FAMILIES and r['lib'] == SHEET_LIB}
     rift = {int(r['look']): r['key'] for r in rows
             if r['family'] in FAMILY_THEME or r['family'] in ('faction', 'exclusive', 'riftvariant', 'bigguardian',
-                                                              'storewings', 'gallery', 'sheetlook')}
+                                                              'storewings', 'gallery', 'sheetlook')
+            or (r['family'] == 'base' and r['lib'] == SHEET_LIB)}
     found, changed, problems = set(), 0, []
     for root, _, files in os.walk(mdir):
         for f in sorted(files):

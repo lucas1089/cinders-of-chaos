@@ -194,14 +194,28 @@
     {
       "zone": "visco_flats",
       "monster": "Mutated Visco",
-      "count": 17,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "visco_flats",
+      "monster": "Reedgrave",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "hydra_sink",
       "monster": "Acid Hydra",
-      "count": 14,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hydra_sink",
+      "monster": "Blight Bloom",
+      "count": 6,
       "respawn": 75,
       "pack": 3
     },
@@ -222,7 +236,14 @@
     {
       "zone": "shaper_mire",
       "monster": "Elite Twisted Shaper",
-      "count": 11,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaper_mire",
+      "monster": "Bloom Husk",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -271,7 +292,14 @@
     {
       "zone": "rotting_delta",
       "monster": "Acid Hydra",
-      "count": 14,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_delta",
+      "monster": "Crypt Crab",
+      "count": 6,
       "respawn": 75,
       "pack": 3
     },
@@ -299,7 +327,14 @@
     {
       "zone": "drowned_altar",
       "monster": "Nexweaver",
-      "count": 11,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_altar",
+      "monster": "Leechwing",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },

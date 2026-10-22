@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Rootbound Pilgrim" nameDescription="a rootbound pilgrim" race="blood" experience="9250" speed="51" manacost="0">
+	<health now="18200" max="18200"/>
+	<look type="2282" head="40" body="76" legs="41" feet="76" corpse="6068"/>
+	<level min="810" max="850"/>
+	<targetchange interval="3000" chance="50"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="95"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+	<attack name="melee" interval="2000" min="-370" max="-630" energy="600" />
+		<attack name="energy" interval="2000" chance="100" range="7" target="1" min="-450" max="-790" >
+			<attribute key="areaEffect" value="energyarea"/>
+			<attribute key="shootEffect" value="energy"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-450" max="-940">
+			<attribute key="areaEffect" value="energyarea"/>		
+			<attribute key="shootEffect" value="energyball"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="40" length="8" spread="0" min="-450" max="-840">
+			<attribute key="areaEffect" value="energyarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="25" defense="35">
+		<defense name="healing" interval="1000" chance="15" min="1200" max="1820">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<immunities>
+		<immunity paralyze="1"/>
+		<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The grove walks with me."/>
+		<voice sentence="Kneel and take root."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888" countmax="1" chance="333"/><!-- armors -->
+		<item id="2500" countmax="1" chance="333"/>
+		<item id="2472" countmax="1" chance="333"/>
+		<item id="8885" countmax="1" chance="333"/>
+		<item id="8884" countmax="1" chance="333"/>
+		<item id="3983" countmax="1" chance="333"/>
+		<item id="2495" countmax="1" chance="333"/>
+		<item id="2469" countmax="1" chance="333"/>
+		<item id="7894" countmax="1" chance="333"/>
+		<item id="5462" countmax="1" chance="286"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="286"/>
+		<item id="11118" countmax="1" chance="286"/>
+		<item id="11240" countmax="1" chance="286"/>
+		<item id="2537" countmax="1" chance="286"/>
+		<item id="2514" countmax="1" chance="286"/>
+		<item id="2499" countmax="1" chance="286"/>
+	</loot>
+</monster>
+

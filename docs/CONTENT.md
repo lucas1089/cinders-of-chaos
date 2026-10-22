@@ -76,17 +76,17 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 | wyrmspine_hollows | 500-640 | cave | Ashfang, Shadowvein, Stormvein, Viridscale Wrym, Flarevein Wyrm | 12 | wyrmspine_clutch |
 | pyrarch_crucible | 520-690 | lava | four Pyrarchs, Embermaw Archon, Pitlord Incarnate, Hellmaw Brute, Inferno Juggernaut, Nightflare Dreadknight | 12 | - |
 | widowmere | 480-640 | swamp | Nightfang and Shadowcrystal Widow, Mirethorn Hexer, Gloomstinger, Plague Warbringer | 12 | widowmere_silk |
-| corsairs_reach | 780-900 | cave | Captain Bloodbeard, Ironhook Corsair, Scourgejaw, Stormy Seadevil | 12 | corsairs_cache |
-| hexwood_thicket | 720-840 | forest | Elite Spider, Cursed Ape, Webbound Crawler, Black Stag, Dark Sorcerer | 12 | - |
-| mirefang_basin | 880-999 | swamp | Nexweaver, Acid Hydra, Mutated Visco, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
-| rimecrown_depths | 1000-1120 | ice | Ice Lich, Scaleborn, Spirit of Purity, Twisted Shaper, Celestial Wyrm, Vorkhaz | 12 | rimecrown_tribute |
-| cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron | 16 | - |
-| slagmourn_foundry | 1000-1150 | lava | Dawn Strayer, Scaleborn, Twisted Shaper, Celestial Wyrm, Vorkhaz, Jungle Warrior | 12 | slagmourn_ingot |
-| hollowmass_reliquary | 1150-1300 | crypt, 2 floors | Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis | 14 | hollowmass_tithe |
-| gallowfen_mire | 1300-1450 | swamp | Vyrm, Winterstride, Silicron, Thal, Facetis, Gloamfang Ravager, Rimeshroud Revenant | 13 | gallowfen_noose |
-| voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis, Rimeshroud Revenant, Cinderskull Reaver | 14 | voidscar_relic |
-| gravehorn_deeps | 1500-1750 | crypt, 2 floors | Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Rimeshroud Revenant, Wraithbone Stalker | 16 | gravehorn_antler |
-| duskmarrow_crater | 1750-2000 | lava, 2 floors | Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant, Cinderhorn Juggernaut | 16 | duskmarrow_ember |
+| corsairs_reach | 780-900 | cave | Captain Bloodbeard, Ironhook Corsair, Scourgejaw, Stormy Seadevil; since 2026-10-22 also Gashrunner, Caged Convict, Chained Runt, Ironmask Taskmaster, Ironmask Brander, Ironmask Bannerman | 12 | corsairs_cache |
+| hexwood_thicket | 720-840 | forest | Elite Spider, Cursed Ape, Webbound Crawler, Black Stag, Dark Sorcerer; since 2026-10-22 also Gallows Oak, Rootbound Pilgrim, Thornveil Wraith, Shroud Brood, Ironbound Troll, Blight Hound | 12 | - |
+| mirefang_basin | 880-999 | swamp | Nexweaver, Acid Hydra, Mutated Visco, Elite Tidecrest Serpent, Elite Twisted Shaper; since 2026-10-22 also Reedgrave, Leechwing, Bloom Husk, Blight Bloom, Crypt Crab | 12 | - |
+| rimecrown_depths | 1000-1120 | ice | Ice Lich, Scaleborn, Spirit of Purity, Twisted Shaper, Celestial Wyrm, Vorkhaz; since 2026-10-22 also Rimecairn, Quicksilver Wraith, Geode Seer | 12 | rimecrown_tribute |
+| cinderglass_sanctum | 1120-1300 | sanctum, 2 floors | Jungle Warrior, Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Facetis, Thal, Silicron; since 2026-10-22 also Bellhelm Zealot, Masque Dancer, Gildguard Revenant, Wan Sentry | 16 | - |
+| slagmourn_foundry | 1000-1150 | lava | Dawn Strayer, Scaleborn, Twisted Shaper, Celestial Wyrm, Vorkhaz, Jungle Warrior; since 2026-10-22 also Slagheart, Slagborer Reaver, Deepforge Fiend, Rustguard | 12 | slagmourn_ingot |
+| hollowmass_reliquary | 1150-1300 | crypt, 2 floors | Black Vixen, Golden Dragon, Spiky Carnivor, Vyrm, Winterstride, Silicron, Thal, Facetis; since 2026-10-22 also Reliquary Urn, Wax Penitent, Grave Lantern, Dirge Herald, Nailcrown Regent | 14 | hollowmass_tithe |
+| gallowfen_mire | 1300-1450 | swamp | Vyrm, Winterstride, Silicron, Thal, Facetis, Gloamfang Ravager, Rimeshroud Revenant; since 2026-10-22 also Gorebristle, Corpselight Lurker, Pit Delver, Carrion Drake, Pitgnawer, Blightcrown Matron | 13 | gallowfen_noose |
+| voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis, Rimeshroud Revenant, Cinderskull Reaver; since 2026-10-22 also Veiled Crawler, Maw Grub, Limb Hoarder, Ashveil Hierarch | 14 | voidscar_relic |
+| gravehorn_deeps | 1500-1750 | crypt, 2 floors | Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Rimeshroud Revenant, Wraithbone Stalker; since 2026-10-22 also Bonepicker, Hollowhorn, Gnawbone Swarm, Oathbroken Colossus | 16 | gravehorn_antler |
+| duskmarrow_crater | 1750-2000 | lava, 2 floors | Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant, Cinderhorn Juggernaut; since 2026-10-22 also Pyre Stork, Siege Behemoth, Ironmask Warbreaker, Gnarlback | 16 | duskmarrow_ember |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.

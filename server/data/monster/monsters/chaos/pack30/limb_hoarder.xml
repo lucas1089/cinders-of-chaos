@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Limb Hoarder" nameDescription="a limb hoarder" race="undead" experience="26250" speed="40" manacost="0">
+	<health now="27300" max="27300"/>
+	<look type="2275" head="21" body="76" legs="39" feet="40" corpse="6068"/>
+	<level min="1260" max="1300"/>
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	 <attacks>
+        <attack name="ice" interval="2000" chance="100" range="5" target="1" min="-780" max="-1170">
+            <attribute key="shootEffect" value="ice"/>
+            <attribute key="areaEffect" value="poff"/>
+        </attack>
+        <attack name="ice" interval="1800" chance="45" range="7" spread="3" min="-910" max="-1300">
+            <attribute key="areaEffect" value="icearea"/>
+        </attack>
+        <attack name="lifedrain" interval="2000" chance="34" length="8" spread="3" min="-910" max="-1300">
+            <attribute key="areaEffect" value="poff"/>
+        </attack>
+        <attack name="physical" interval="1500" chance="25" range="7" radius="3" target="1" min="-910" max="-1300">
+            <attribute key="shootEffect" value="snowball"/>
+        </attack>
+        <attack name="speed" interval="1000" chance="10" range="7" speedchange="-600" duration="10000">
+            <attribute key="areaEffect" value="redshimmer"/>
+        </attack>
+    </attacks>
+	<defenses armor="80" defense="87">
+		<defense name="healing" interval="1000" chance="20" min="150" max="2730">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="35" />
+		<element icePercent="35" />
+		<element earthPercent="35" />
+		<element deathPercent="35" />
+		<element physicalPercent="35" />
+		<element firePercent="35" />
+		<element holyPercent="35" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="One more for the pile."/>
+		<voice sentence="Such a nice arm."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="3983" countmax="1" chance="444"/><!-- legs -->
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>

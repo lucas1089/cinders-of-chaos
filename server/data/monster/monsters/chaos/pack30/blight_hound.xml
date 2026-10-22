@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Blight Hound" nameDescription="a blight hound" race="venom" experience="7950" speed="52">
+	<health now="17000" max="17000" />
+	<look type="2263" head="75" body="20" legs="76" feet="76" corpse="6068"/>
+	<level min="770" max="810"/>
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-360" max="-610"/>
+		<attack name="physical" interval="2000" chance="38" length="3" spread="0" min="-420" max="-730">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="dread" interval="4000" chance="40" radius="4" target="0" success="35" duration="5000">
+			<attribute key="areaEffect" value="rednote"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="30" radius="3" target="0" min="-420" max="-730">
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="25" range="7" target="1" min="-360" max="-850">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="death" interval="2000" chance="30" length="8" spread="0" min="-360" max="-790">
+			<attribute key="areaEffect" value="redspark" />
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="10" range="7" target="1" radius="4" min="-300" max="-910">
+			<attribute key="shootEffect" value="largerock"/>
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="77" defense="77">
+		<defense name="healing" interval="2000" chance="9" min="510" max="1700">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="30"/>
+		<element icePercent="30"/>
+		<element firePercent="30"/>
+		<element physicalPercent="30"/>
+		<element holyPercent="30"/>
+		<element deathPercent="30"/>
+		<element earthPercent="30"/>
+	</elements>
+	<immunities>
+		<immunity invisible="1"/>
+		<immunity paralyze="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Grrrr..."/>
+		<voice sentence="Wheeze!"/>
+	</voices>
+		<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888" countmax="1" chance="333"/><!-- armors -->
+		<item id="2500" countmax="1" chance="333"/>
+		<item id="2472" countmax="1" chance="333"/>
+		<item id="8885" countmax="1" chance="333"/>
+		<item id="8884" countmax="1" chance="333"/>
+		<item id="3983" countmax="1" chance="333"/>
+		<item id="2495" countmax="1" chance="333"/>
+		<item id="2469" countmax="1" chance="333"/>
+		<item id="7894" countmax="1" chance="333"/>
+		<item id="5462" countmax="1" chance="286"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="286"/>
+		<item id="11118" countmax="1" chance="286"/>
+		<item id="11240" countmax="1" chance="286"/>
+		<item id="2537" countmax="1" chance="286"/>
+		<item id="2514" countmax="1" chance="286"/>
+		<item id="2499" countmax="1" chance="286"/>
+		<item id="29001" countmax="1" chance="800"/><!-- colourful snail shell -->
+	</loot>
+</monster>

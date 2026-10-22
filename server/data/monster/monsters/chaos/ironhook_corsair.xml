@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Ironhook Corsair" nameDescription="an ironhook corsair" race="fire" experience="9950" speed="50">
 	<health now="18800" max="18800" />
-	<look type="1492" corpse="6068" />
+	<look type="2245" head="57" body="95" legs="95" feet="76" corpse="6068"/>
 	<level min="830" max="870"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>

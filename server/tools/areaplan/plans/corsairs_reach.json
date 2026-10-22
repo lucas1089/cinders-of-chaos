@@ -220,14 +220,28 @@
     {
       "zone": "tide_cave",
       "monster": "Ironhook Corsair",
-      "count": 15,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tide_cave",
+      "monster": "Gashrunner",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "smugglers_hold",
       "monster": "Scourgejaw",
-      "count": 12,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smugglers_hold",
+      "monster": "Caged Convict",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -276,7 +290,14 @@
     {
       "zone": "rum_cellars",
       "monster": "Ironhook Corsair",
-      "count": 12,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rum_cellars",
+      "monster": "Ironmask Brander",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -297,7 +318,14 @@
     {
       "zone": "powder_store",
       "monster": "Scourgejaw",
-      "count": 9,
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "powder_store",
+      "monster": "Ironmask Bannerman",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -332,7 +360,14 @@
     {
       "zone": "sunken_berth",
       "monster": "Stormy Seadevil",
-      "count": 12,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_berth",
+      "monster": "Chained Runt",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -367,7 +402,14 @@
     {
       "zone": "drowned_galley",
       "monster": "Captain Bloodbeard",
-      "count": 9,
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_galley",
+      "monster": "Ironmask Taskmaster",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },

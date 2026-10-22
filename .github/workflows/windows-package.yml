@@ -16,7 +16,7 @@
 # MANUAL ONLY (workflow_dispatch): it never runs on push or pull_request, so it cannot turn PR checks red.
 #
 # Inputs come from the private branch windows-assets (its README.md): the base server download, the base client and
-# the merged Chaos Tibia.dat / Tibia.spr (one archive, things/things-1098.tar.xz) and, when present, the map master
+# the merged Chaos Tibia.dat / Tibia.spr (one archive cut in parts, things/things-1098.tar.xz.partNN) and, when present, the map master
 # (world/: the owner's edited map, server/README.md "Map master"); large files are cut into parts under GitHub's 100 MB
 # file limit.
 #   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, the map master over the base
@@ -466,7 +466,8 @@ jobs:
 
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$P/client/data/things/1098"
-          tar -xJf assets/things/things-1098.tar.xz -C "$P/client/data/things/1098"
+          # the pair is one archive cut in 95 MB parts since pair 36 (GitHub refuses files over 100 MB)
+          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$P/client/data/things/1098"
 
           # signed updater (client/MANIFEST.md "Signed updater"): turn it on when both inputs are set, and check that
           # make_update_manifest.py accepts this exact client folder, dat/spr included (unsigned dry run)
@@ -793,7 +794,7 @@ jobs:
           bash chaos/tools/linux/package_client.sh game build "$P"
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$P/data/things/1098"
-          tar -xJf assets/things/things-1098.tar.xz -C "$P/data/things/1098"
+          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$P/data/things/1098"
           # the same updater settings as the Windows client (client/MANIFEST.md "Signed updater")
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P" \

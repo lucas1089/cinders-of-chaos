@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Ashveil Hierarch" nameDescription="an ashveil hierarch" race="undead" experience="35250" speed="38" manacost="0">
+	<health now="29900" max="29900"/>
+	<look type="2290" head="57" body="76" legs="40" feet="38" corpse="6068"/>
+	<level min="1480" max="1520"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-810" max="-1180"/>
+		<attack name="fire" interval="2000" chance="30" length="3" spread="2" min="-1040" max="-1480">
+			<attribute key="areaEffect" value="fireattack"/>
+		</attack>
+		<attack name="lifedrain" interval="2000" chance="20" range="1" target="1" min="-890" max="-1260">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="20" range="7" radius="2" target="1" min="-960" max="-1410">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="firecondition" interval="2000" chance="15" range="7" target="1" min="-370" max="-440" tick="2000">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="fire"/>
+		</attack>
+	</attacks>
+	<defenses armor="85" defense="85">
+		<defense name="healing" interval="1000" chance="20" min="180" max="2990">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="35"/>
+		<element firePercent="55"/>
+		<element energyPercent="35"/>
+		<element earthPercent="35"/>
+		<element deathPercent="55"/>
+		<element holyPercent="35"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="The veil of ash descends."/>
+		<voice sentence="Kneel before the void."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="65" chance="65000"/><!-- platinum coin -->
+		<item id="5741" chance="562"/><!-- skull helmet: the Cinderskull Reaver's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

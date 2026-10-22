@@ -1,6 +1,6 @@
 Module
   name: game_levelwings
-  description: Golden wings open behind a character that gains a level (extended opcode 191, server levelwings.lua)
+  description: The level-up effect of the pair (pair 36) plays on a character that gains a level (extended opcode 191, server levelwings.lua)
   author: Cinders of Chaos
   sandboxed: true
   scripts: [ levelwingsmath, levelwings ]

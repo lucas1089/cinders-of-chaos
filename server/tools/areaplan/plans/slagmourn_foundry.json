@@ -252,7 +252,14 @@
     {
       "zone": "slag_heart",
       "monster": "Celestial Wyrm",
-      "count": 12,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_heart",
+      "monster": "Slagheart",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },
@@ -294,7 +301,14 @@
     {
       "zone": "cinder_sluice",
       "monster": "Twisted Shaper",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_sluice",
+      "monster": "Rustguard",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -308,7 +322,14 @@
     {
       "zone": "molten_drift",
       "monster": "Jungle Warrior",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_drift",
+      "monster": "Slagborer Reaver",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -385,7 +406,14 @@
     {
       "zone": "smelters_rest",
       "monster": "Dawn Strayer",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smelters_rest",
+      "monster": "Deepforge Fiend",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },

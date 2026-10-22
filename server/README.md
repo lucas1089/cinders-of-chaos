@@ -556,7 +556,7 @@ working directory, as with the rest of the base server libs).
 | game_rightclickequip | `rightclick_equip.lua`, `rightclick_equip_core.lua`, `rightclick_equip_config.lua`, engine patch 0024 | **188** | Right-click equips: the client option "Right-click equips items" (client -> server) and the multi-use weapons a right-click equips (server -> client, at login); the equipping is the engine's (see "Right-click equips"). Tested in game. |
 | game_kitewalk | `kitewalk.lua`, `kitewalk_core.lua`, engine patch 0028 | **186** | Keep attacking while moving: the client option "Keep attacking while moving" (client -> server); the kiting itself is the engine's (see "Keep attacking while moving"). Tested in game. |
 | game_tileoverlays | `tilebars.lua`, `tilebars_core.lua`, `tilebars_config.lua` (users: `battleground.lua`, `professions.lua`, `invasion.lua`) | **156** (server -> client; `hello` back) | Progress bars over tiles: a labelled bar (progress or countdown) over a map position for the players near it; brazier captures, profession node respawns (gatherer only), the invasion breach. The same client module draws the field timers (client only). See "Progress bars over tiles". |
-| game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up wings: golden wings open behind a character that gains a level, seen by every player on screen (see "Level-up wings"). Tested in game. |
+| game_levelwings | `levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua` | **191** (server -> client) | Level-up effect: the pair 36 level-up effect plays on a character that gains a level, seen by every player on screen (see "Level-up effect"; golden wings until 2026-10-22). The wings were tested in game; the pair 36 effect not yet. |
 | game_bestiary | `bestiary.lua`, `bestiary_core.lua`, `bestiary_config.lua`, `bestiary_spawns.lua` | 253, Hunt > Bestiary, Hunt > Kill Tasks | Bestiary (an entry per monster, four stages by kills, completion bonus, points and ranks), personal kill tasks with daily / weekly limits, task tracker HUD with the bounty contracts; tested in game (see "Bestiary and kill tasks"). |
 | game_itemtooltip | `item_tooltip.lua`, `item_tooltip_core.lua` (client also `game_itemrarity`) | 242 | Rich item tooltips on hover (inventory, open containers): rarity, item level, base stats, every modifier with its tier and roll range, sockets and gems, unique and set (pieces worn, bonuses active: "Item sets"), requirements; Ctrl compares with the equipped item(s) of the same slot. Rarity frames from the item custom attributes of engine patch 0003; tested in game (see "Item attributes in packets and rich tooltips"). |
 | game_chatlinks | `itemlink.lua`, `itemlink_core.lua` (client also `game_itemtooltip`) | 249, Shift+click an item | Item links in chat: the server checks the player carries the item and keeps a snapshot of its tooltip for 10 minutes under a random id; the link travels as ordinary speech `[Item Name]{<r><id>}` in every channel; receivers ask for the snapshot on hover. Limits, Help channel rule (`tools/patch_help_itemlinks.py`); tested in game with two clients (see "Item links in chat"). |
@@ -9017,6 +9017,35 @@ grounds, decoration, buildings, animated objects). Installer part:
 - Tests: `tools/install_pack30_items_test.py` (synthetic manifests, items.otb and items.xml; no base server needed).
   Not run against a real manifest or base server yet.
 
+## Pack 30 monsters in the hunts (2026-10-22; `monsters/chaos/pack30/`, `tools/patch_base_looks.py`, install step `baselooks`)
+Owner, 2026-10-22: use the purchased monster art, "pode sobrescrever os nossos sprites por aqueles". The art is the
+pack30 sheet looks 2237-2311 (client/MANIFEST.md "Pair 30 build"), live since pair 31 and in every pair after it. No
+new sprite: every look was in the client already, 64 of them as gallery rows of `picks.csv` that no monster used.
+- **51 new monsters** (`monsters/chaos/pack30/<key>.xml`, the `monsters` step registers the folder). Each is a copy of a
+  peer monster of the same content plan: the peer's health, experience, level band, attacks, defences, elements,
+  immunities and loot; a name, race, voices and look of its own. Summons and scripts of the peer are removed. They are balanced by construction: `tools/ci/check_content.py` (the 3x attack
+  rule and the rest), `tools/tune_monsters.py --check` and `tools/loot_model.lua --check` pass unchanged.
+- **Spawns.** Each takes a share of its peer's zone entry in the plan (`tools/areaplan/plans/*.json`, round(count x
+  0.45), at least 2; in tithe_crypt and noose_cache the whole entry of 2). The plan's total count, zones, respawn and
+  packs stay, so the hunt's density does not move. `install_content_areas.py` writes them
+  into the map like every plan spawn. The display monster of each hunt teleport keeps spawning.
+- **New looks of our monsters** (the old look is not overwritten, only no longer used by them): Lacewing Moth 1480 ->
+  2297, Tundra Troll 257 -> 2238, Loricate Orger 403 -> 2270, Ironhook Corsair 1492 -> 2245, Mercenary 1502 -> 2251,
+  Mercenary Ranger 1503 -> 2249, Swamp Snapper 886 -> 2302, Webbound Crawler 579 -> 2257. `apply_monster_looks.py`
+  writes them (family `hunt`).
+- **New looks of base monsters** (family `base` of `picks.csv`; the base files are never edited by hand):
+  `tools/patch_base_looks.py DATA_DIR [--dry-run] [--strict]`, install_all step `baselooks` after `basemonsters`, sets
+  the look of the base monster named in the row and nothing else. Gargoyle 95 -> 2283, Werewolf 308 -> 2244, Goblin 61
+  -> 2246, War Wolf 3 -> 2260, Orc Rider 4 -> 2259, Carrion Worm 192 -> 2298 (sheet looks: head, body, legs and feet
+  of the look's first tint, `data/items/pack30_outfits.csv`) and Skeleton Warrior 298 -> 2666, Ghost 48 -> 2667, Witch
+  54 -> 2660 (Haunted Harvest kit looks, pair 33, no colours: these three share their look with Barrowbone Reaver,
+  Lamenting Shade and Thornhex Crone). Other base monsters on the same stock look keep it. Idempotent; a name without
+  a file is reported. Run on the base server copy: 9 matched, 9 updated, then 0.
+- **The rows.** `apply_monster_looks.py` treats a `base` row on a sheet look like a gallery row: no file of ours may
+  use it. The 10 earlier pack30 monsters (`pack30/*.xml` of 2026-10-20, ChaosPack30Art) still spawn nowhere.
+- Tests: `tools/patch_base_looks_test.py` (synthetic folder: tint, kit look without colours, the Chaos folder untouched,
+  idempotent, missing names), `tools/apply_monster_looks_test.py`. Not run in a game yet.
+
 ## Pair 33 cosmetics (`data/lib/chaos_pack33.lua`, `data/lib/chaos_pack33_cosmetics.lua`, `data/XML/chaos_auras_pack33.csv`, `tools/gen_pack33_cosmetics.py`, switch `ChaosPack33.PAIR33`, on)
 Wings, head accessories and capes of the client pair 33 (four purchased packs, import-only; client/MANIFEST.md
 "Pair 33 packs", "Pair 33 build"). Owner decisions of 2026-10-21: pair 33 approved; head accessories and capes become
@@ -12591,6 +12620,9 @@ stayed in the corpse; after buying (Strict) it was picked up and a Common list s
   i = [{r, u, o, pw, g, t}]}` on opcode 238, the entries still inside with `F.beamCandidate` (base rarity >=
   `beamMinRarity` (1), uniques (`beamUniques`), legendary powers, orbs (`beamOrbs`; the client shows them only with its
   orb option)). The client picks the best one its loot filter makes glow and colours the pillar by tier.
+- Since pair 36 (2026-10-22, owner: "Use as spells, level up e loot beams") the client draws the beam as the animated
+  loot beam effect of the purchased beam pack, one per colour group (effects 4090-4101, `beam_*` of
+  `data/lib/chaos_pack36_fx_ids.lua`; client/MANIFEST.md "game_lootbeams"). The server messages did not change.
 - Sent when the kill is recorded (`finish`) and again whenever that list changes (`refresh`: an item taken by hand,
   by click-to-loot, by autoloot or by a party member); `i = []` when the corpse is looted empty, decays, leaves the
   history (`historySize`) or its owner logs out (`stopTracking` / `beamOff`). Recipients: the owner and the party
@@ -14231,6 +14263,34 @@ on windows-assets).
   (the patch and a model of its rules). A local run with the switch on passed the server test set (client/MANIFEST.md
   "Pair 29 build"). Not run on a server or in a client.
 
+## Purchased effect packs (pair 36) (`data/lib/chaos_pack36_fx.lua`, `data/lib/chaos_pack36_fx_ids.lua`, switch `ChaosPack36Fx.PAIR36_FX`, on)
+Owner 2026-10-22: "Use o máximo de assets de lá por favor. São todos comprados", "Use as spells, level up e loot
+beams", use everything usable. Pair 36 (client/MANIFEST.md "Purchased effect packs (pair 36)") brings the purchased
+effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, timing, target or reward changes.
+- **Redrawn in place** (no server change needed): 141 effects and 35 missiles keep their ids and show pack art. These
+  are the stock ids our generated effects redrew (`fx_custom.csv`), the procedural 372-428, the combat feedback
+  (173 and 415 crit: a critical hit burst; 416 dodge: a smoke poof; 417 and 628 reflect: parry and block flashes; no
+  words, as the owner wants the animation, not the word), and the stock and procedural missiles. Every engine
+  `CONST_ME_*` / `CONST_ANI_*` send, every monster `areaEffect` / `shootEffect` and every `ChaosFx` name on those ids
+  now shows the new art. `combat_fx.lua` sends what it sent before. The pack's word pop-ups (`w_text_*`, English) are
+  appended but sent by nothing.
+- **Appended:** effects 855-4101 and missiles 189-250, named in `data/lib/chaos_pack36_fx_ids.lua` (generated by
+  `client/tools/sprites/import_fx_art.py`; catalog `data/spells/pack36_fx_catalog.csv`). `C.live()` loads them into
+  `ChaosVfx` / `ChaosVfxMissile`; any script may send them by name.
+- **Spells:** `_common.lua` `pack36(kind, name)` (`ChaosSpell.pack36`), asked by `pack27()` after pair 27 and pair 29
+  have no swap: 42 spells pair 27 does not touch get pack art (`C.spells`, same kinds as pair 27: fx, missile, dir,
+  fxdir). Examples: Dawnpiercer w_impact_holy_strike, Final Verdict w_impact_divine_judgment, Blightswarm
+  mega_venom_wasps, Iaijutsu cone_steel_crescent_<dir>, Mistborne Step w_impact_gale_cut (fxdir), Corpse Explosion
+  w_impact_corpse_explosion. `C.names` holds each spell's name, checked against `spells_chaos.xml`.
+- **Client:** the level-up effect (`w_fx_level_up`, "Level-up effect") and the loot beams (`beam_*`, "Loot beams")
+  are sent by the client by id; the server's level_up use of pair 27 (`catchup.lua`) is gone.
+- **Switch off** (`C.PAIR36_FX = false`): the ids file is not loaded and every spell sends what it sent before. The
+  in-place art stays, as it is in the pair. A client on pair 35 or older logs "invalid effect id" for appended ids.
+- **Tests:** `tests/pack36_fx_test.lua` (specs, ids from 855 / 189 in order, every spell and name against
+  `spells_chaos.xml`, no overlap with pair 27, the switch, the wiring in `_common.lua`); `tests/pack27_fx_test.lua`
+  (no level_up use). Client: `levelwingsmath_test.lua`, `lootbeams_test.lua` (ids against the ids file).
+  Not run on a live server or in a client.
+
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
 "Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them
@@ -14257,7 +14317,8 @@ and boss telegraph effects. Effects only: nothing else changes.
   - Monk: Shadowfist Flurry claws_shadow_<dir> (fxdir); Ashen Fist punch_fire; Iron Palm hammer_steel; Kindled Breath
     healing_burst. Shared: Soulward ward_shield.
 - Uses (`C.uses`, `ChaosPack27Fx.send(pos, use)`, on the player): `catchup.lua` rested, returning, catchup (login
-  messages), low_stamina (the daily notice), level_up (a new level: levelup_rise, no words in the art);
+  messages), low_stamina (the daily notice) (level_up, levelup_rise on a new level, removed 2026-10-22: the client
+  now plays the pair 36 level-up effect, see "Level-up effect");
   `embercache.lua` embercache (each reward toast); `candlemarks.lua` candlemarks (Candlemarks earned); `_vigils.lua`
   vigil_wrath / iron / haste / clarity (a vigil switched on); `ironsage/iron_palm.lua` stun (a monster really
   stunned). Loot beams (`C.rays`, `lootfilter.lua` emitRay): legendary gold, divine steel, cosmic amethyst, unique
@@ -16847,12 +16908,14 @@ meantime). The server is the authority: the client draws what it is told and cou
   order of arrival between two (nothing jumps about); the party frames' outfit is the character's whole outfit in a small
   square (class outfits are larger than a tile, so they are drawn small); Hex / Brand marks on the target are not done.
 
-## Level-up wings (`levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua`, client `game_levelwings`)
+## Level-up effect (`levelwings.lua`, `levelwings_core.lua`, `levelwings_config.lua`, client `game_levelwings`)
 
-When a character gains a level, a pair of golden wings opens behind it for about 1.8 s, and everyone on screen sees it
-(the client draws a front or a side pair as the character faces).
-The stock level-up text and magic effect are the engine's and stay as they were. No change to the `.dat` / `.spr` pair
-and no engine patch: the client draws PNG frames as creature widgets (client/MANIFEST.md "game_levelwings").
+When a character gains a level, everyone on screen sees the level-up effect of the purchased game feel pack (pair 36,
+`w_fx_level_up` = 4047, about 1.4 s: a ring, a rising star and the words LEVEL UP in English baked into the art). The
+client plays it with `Effect.create` + `g_map.addThing` on the character's tile + (1, 1) (client/MANIFEST.md
+"game_levelwings"). Since 2026-10-22 (owner: "Use as spells, level up e loot beams"); until then a pair of golden wings
+(our PNG frames, `gen_levelwings_art.py`, both retired). The server side did not change. The stock level-up text and
+magic effect are the engine's and stay as they were. A client on a pair older than 36 draws nothing.
 
 - **Trigger:** a `CreatureEvent` `onAdvance` (`ChaosLevelWingsAdvance`, registered at login) for `SKILL_LEVEL` with a
   higher new level. Several levels from one experience gain are one `onAdvance` call, so they play once; a level lost on
@@ -16871,9 +16934,10 @@ and no engine patch: the client draws PNG frames as creature widgets (client/MAN
 - **Tests:** `tests/levelwings_test.lua` (opcode unique and not a base one, the payload, the per-character cooldown, the
   server-wide and per-viewer budgets with their windows, prune and forget, and `levelwings.lua` against a mocked engine:
   the events, one message per spectator, cooldown, other skills and a lost level, an engine error caught); client
-  `game_levelwings/levelwingsmath_test.lua` (frame timing, view and layer of each direction, frame sets, size, place, settings rule, message check). Tested on a live
-  test server with two Linux clients: a real level-up through `addExperience` showed the wings to the character and to
-  a second player next to it; each setting turned off hid them on that client only.
+  `game_levelwings/levelwingsmath_test.lua` (the effect id and offset against `chaos_pack36_fx_ids.lua`, the tile,
+  settings rule, message check). The wings were tested on a live test server with two Linux clients (a real level-up
+  through `addExperience` showed them to the character and to a second player; each setting turned off hid them on
+  that client only). The pair 36 effect is not yet run in a client.
 
 ## Boss spawns (`bossspawns.lua`, `bossspawns_core.lua`, `bossspawns_config.lua`, `sql/chaos_boss_spawns.sql`, client `game_bossspawns`)
 

@@ -283,7 +283,14 @@
     {
       "zone": "censer_choir",
       "monster": "Spiky Carnivor",
-      "count": 18,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "censer_choir",
+      "monster": "Grave Lantern",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
@@ -311,7 +318,14 @@
     {
       "zone": "vigil_cloister",
       "monster": "Silicron",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_cloister",
+      "monster": "Reliquary Urn",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -339,7 +353,14 @@
     {
       "zone": "candle_ambulatory",
       "monster": "Black Vixen",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_ambulatory",
+      "monster": "Wax Penitent",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -409,7 +430,14 @@
     {
       "zone": "reliquary_heart",
       "monster": "Thal",
-      "count": 19,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reliquary_heart",
+      "monster": "Dirge Herald",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
@@ -464,7 +492,7 @@
     },
     {
       "zone": "tithe_crypt",
-      "monster": "Facetis",
+      "monster": "Nailcrown Regent",
       "count": 2,
       "respawn": 75,
       "pack": 2

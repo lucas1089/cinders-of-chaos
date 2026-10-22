@@ -277,7 +277,14 @@
     {
       "zone": "glass_nave",
       "monster": "Jungle Warrior",
-      "count": 21,
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glass_nave",
+      "monster": "Bellhelm Zealot",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
@@ -291,7 +298,14 @@
     {
       "zone": "dragon_apse",
       "monster": "Golden Dragon",
-      "count": 17,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dragon_apse",
+      "monster": "Gildguard Revenant",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
@@ -333,7 +347,14 @@
     {
       "zone": "silicate_crypt",
       "monster": "Silicron",
-      "count": 17,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silicate_crypt",
+      "monster": "Wan Sentry",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
@@ -354,7 +375,14 @@
     {
       "zone": "prism_walk",
       "monster": "Black Vixen",
-      "count": 20,
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "prism_walk",
+      "monster": "Masque Dancer",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },

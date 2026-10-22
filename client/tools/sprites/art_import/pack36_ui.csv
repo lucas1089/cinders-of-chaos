@@ -1,0 +1,66 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,w_fx_bow_charge,pack36_fx/w_fx_bow_charge.png,3,3,16,67,1,1,Bow Charge (from fx_bow_charge/wind)
+effect,w_fx_charge_dash_n,pack36_fx/w_fx_charge_dash_n.png,2,3,11,67,0,1,"Charge, towards n (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_ne,pack36_fx/w_fx_charge_dash_ne.png,2,3,11,67,0,1,"Charge, towards ne (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_e,pack36_fx/w_fx_charge_dash_e.png,3,3,11,67,1,1,"Charge, towards e (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_se,pack36_fx/w_fx_charge_dash_se.png,2,3,11,67,0,1,"Charge, towards se (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_s,pack36_fx/w_fx_charge_dash_s.png,2,3,11,67,0,1,"Charge, towards s (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_sw,pack36_fx/w_fx_charge_dash_sw.png,3,3,11,67,1,1,"Charge, towards sw (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_w,pack36_fx/w_fx_charge_dash_w.png,3,3,11,67,1,1,"Charge, towards w (from fx_charge_dash/earth)"
+effect,w_fx_charge_dash_nw,pack36_fx/w_fx_charge_dash_nw.png,3,3,11,67,1,1,"Charge, towards nw (from fx_charge_dash/earth)"
+effect,w_fx_coin_burst,pack36_fx/w_fx_coin_burst.png,4,3,15,67,1,1,Coin Burst (from fx_coin_burst/steel)
+effect,w_fx_dance_spin,pack36_fx/w_fx_dance_spin.png,3,3,16,67,1,1,Dance Spin (from fx_dance_spin/sakura)
+effect,w_fx_dash_dust_n,pack36_fx/w_fx_dash_dust_n.png,2,2,11,67,0,1,"Dash Dust, towards n (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_ne,pack36_fx/w_fx_dash_dust_ne.png,2,2,11,67,0,1,"Dash Dust, towards ne (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_e,pack36_fx/w_fx_dash_dust_e.png,2,1,11,67,0,0,"Dash Dust, towards e (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_se,pack36_fx/w_fx_dash_dust_se.png,2,2,11,67,0,0,"Dash Dust, towards se (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_s,pack36_fx/w_fx_dash_dust_s.png,1,2,11,67,0,0,"Dash Dust, towards s (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_sw,pack36_fx/w_fx_dash_dust_sw.png,2,2,11,67,1,0,"Dash Dust, towards sw (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_w,pack36_fx/w_fx_dash_dust_w.png,2,2,11,67,1,1,"Dash Dust, towards w (from fx_dash_dust/earth)"
+effect,w_fx_dash_dust_nw,pack36_fx/w_fx_dash_dust_nw.png,2,2,11,67,1,1,"Dash Dust, towards nw (from fx_dash_dust/earth)"
+effect,w_fx_death_mark,pack36_fx/w_fx_death_mark.png,4,4,17,67,1,1,Death Mark (from fx_death_mark/necrotic)
+effect,w_fx_debris_burst,pack36_fx/w_fx_debris_burst.png,3,3,13,67,1,1,Debris Burst (from fx_debris_burst/earth)
+effect,w_fx_dust_cloud,pack36_fx/w_fx_dust_cloud.png,3,3,13,67,1,1,Dust Cloud (from fx_dust_cloud/earth)
+effect,w_fx_level_up,pack36_fx/w_fx_level_up.png,4,3,21,67,1,1,Level Up (from fx_level_up/arcane)
+effect,w_fx_loot_beacon,pack36_fx/w_fx_loot_beacon.png,2,3,17,83,0,1,Loot Beacon (from fx_loot_beacon/arcane)
+effect,w_fx_note_burst,pack36_fx/w_fx_note_burst.png,3,2,16,67,0,0,Note Burst (from fx_note_burst/gold)
+effect,w_fx_portal,pack36_fx/w_fx_portal.png,3,3,37,67,1,1,Portal (from fx_portal/void)
+effect,w_fx_quest_marker,pack36_fx/w_fx_quest_marker.png,2,3,17,83,0,0,Quest Marker (from fx_quest_marker/gold)
+effect,w_fx_raise_dead,pack36_fx/w_fx_raise_dead.png,2,3,16,67,0,1,Raise Dead (from fx_raise_dead/necrotic)
+effect,w_fx_resurrection,pack36_fx/w_fx_resurrection.png,4,4,25,67,1,1,Resurrection (from fx_resurrection/holy)
+effect,w_fx_shadow_step,pack36_fx/w_fx_shadow_step.png,3,3,14,67,1,1,Shadow Step (from fx_shadow_step/shadow)
+effect,w_fx_smoke_bomb,pack36_fx/w_fx_smoke_bomb.png,4,3,17,67,1,1,Smoke Bomb (from fx_smoke_bomb/ink)
+effect,w_fx_smoke_poof,pack36_fx/w_fx_smoke_poof.png,3,3,13,67,1,1,Smoke Poof (from fx_smoke_poof/ink)
+effect,w_fx_soul_release,pack36_fx/w_fx_soul_release.png,2,3,15,67,0,1,Soul Release (from fx_soul_release/holy)
+effect,w_fx_spark_shower,pack36_fx/w_fx_spark_shower.png,2,3,11,67,1,1,Spark Shower (from fx_spark_shower/thunder)
+effect,w_fx_steal_gold,pack36_fx/w_fx_steal_gold.png,2,2,14,67,0,0,Steal (from fx_steal_gold/gold)
+effect,w_fx_summon_spirit,pack36_fx/w_fx_summon_spirit.png,2,3,15,67,0,1,Summon Spirit (from fx_summon_spirit/spirit)
+effect,w_fx_teleport_in,pack36_fx/w_fx_teleport_in.png,3,3,16,67,1,1,Teleport In (from fx_teleport_in/spirit)
+effect,w_fx_teleport_out,pack36_fx/w_fx_teleport_out.png,3,3,16,67,1,1,Teleport Out (from fx_teleport_out/spirit)
+effect,w_fx_treasure_glow,pack36_fx/w_fx_treasure_glow.png,3,3,16,67,1,1,Treasure Glow (from fx_treasure_glow/crystal)
+effect,w_fx_unsummon,pack36_fx/w_fx_unsummon.png,4,3,16,67,1,1,Unsummon (from fx_unsummon/arcane)
+effect,w_fx_waypoint_beacon,pack36_fx/w_fx_waypoint_beacon.png,3,3,17,83,1,1,Waypoint Beacon (from fx_waypoint_beacon/arcane)
+effect,w_marker_move_click,pack36_fx/w_marker_move_click.png,3,3,12,67,1,1,Move Click (from marker_move_click/emerald)
+effect,w_marker_npc_talk,pack36_fx/w_marker_npc_talk.png,2,2,17,83,0,0,Talk Bubble (from marker_npc_talk/steel)
+effect,w_marker_objective_arrow,pack36_fx/w_marker_objective_arrow.png,3,3,17,83,1,1,Objective Arrow (from marker_objective_arrow/gold)
+effect,w_marker_party_leader,pack36_fx/w_marker_party_leader.png,3,3,17,83,1,1,Party Leader (from marker_party_leader/gold)
+effect,w_marker_ping,pack36_fx/w_marker_ping.png,3,3,20,67,1,1,Location Ping (from marker_ping/arcane)
+effect,w_marker_ping_attack,pack36_fx/w_marker_ping_attack.png,3,3,20,67,1,1,Attack Ping (from marker_ping_attack/blood)
+effect,w_marker_ping_danger,pack36_fx/w_marker_ping_danger.png,3,3,20,67,1,1,Danger Ping (from marker_ping_danger/blood)
+effect,w_marker_ping_defend,pack36_fx/w_marker_ping_defend.png,3,3,20,67,1,1,Defend Ping (from marker_ping_defend/sapphire)
+effect,w_marker_ping_gather,pack36_fx/w_marker_ping_gather.png,3,3,19,67,1,1,Rally Ping (from marker_ping_gather/emerald)
+effect,w_marker_ping_help,pack36_fx/w_marker_ping_help.png,3,3,20,67,1,1,Help Ping (from marker_ping_help/arcane)
+effect,w_marker_skull,pack36_fx/w_marker_skull.png,3,3,17,83,1,1,Skull Mark (from marker_skull/bone)
+effect,w_marker_target_select,pack36_fx/w_marker_target_select.png,3,3,17,83,1,1,Target Selection (from marker_target_select/blood)
+effect,w_text_block,pack36_fx/w_text_block.png,3,2,22,67,0,0,Block Text (from text_block/sapphire)
+effect,w_text_combo,pack36_fx/w_text_combo.png,3,3,21,67,0,0,Combo Text (from text_combo/fire)
+effect,w_text_critical,pack36_fx/w_text_critical.png,3,3,22,67,0,0,Critical Text (from text_critical/blood)
+effect,w_text_defeat,pack36_fx/w_text_defeat.png,3,2,21,67,0,0,Defeat Text (from text_defeat/shadow)
+effect,w_text_dodge,pack36_fx/w_text_dodge.png,3,2,22,67,0,0,Dodge Text (from text_dodge/wind)
+effect,w_text_exp,pack36_fx/w_text_exp.png,3,2,21,67,0,0,EXP Text (from text_exp/emerald)
+effect,w_text_immune,pack36_fx/w_text_immune.png,3,2,22,67,0,0,Immune Text (from text_immune/holy)
+effect,w_text_level_up,pack36_fx/w_text_level_up.png,4,3,21,67,0,0,Level Up Text (from text_level_up/gold)
+effect,w_text_miss,pack36_fx/w_text_miss.png,3,2,21,67,0,0,Miss Text (from text_miss/steel)
+effect,w_text_quest_complete,pack36_fx/w_text_quest_complete.png,5,3,22,67,1,0,Quest Complete Text (from text_quest_complete/gold)
+effect,w_text_skill_up,pack36_fx/w_text_skill_up.png,4,3,21,67,0,0,Skill Up Text (from text_skill_up/arcane)
+effect,w_text_victory,pack36_fx/w_text_victory.png,3,3,21,67,0,0,Victory Text (from text_victory/gold)

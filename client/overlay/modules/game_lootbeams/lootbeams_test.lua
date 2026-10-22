@@ -175,6 +175,34 @@ calls, drawn = LB.diff(drawn, {})
 eq(#calls.remove, 1, 'all off')
 eq(count(drawn), 0, 'nothing drawn')
 
+-- ---------------------------------------------------------------- pair 36 beam effects
+-- the ids are the beam_* effects of the server ids file (same repository); one per group, all different
+local ids = {}
+local f = io.open(dir .. '../../../../server/data/lib/chaos_pack36_fx_ids.lua', 'r')
+if f then
+  for name, id in f:read('*a'):gmatch('\nChaosVfx%.([%w_]+) = {id = (%d+)') do ids[name] = tonumber(id) end
+  f:close()
+end
+local seen = {}
+for _, g in ipairs(LB.GROUP_ORDER) do
+  local id = LB.effectFor(g)
+  eq(id ~= nil, true, 'group ' .. g .. ' has a beam effect')
+  eq(id, ids[LB.EFFECT_NAMES[g]], 'group ' .. g .. ' is ' .. LB.EFFECT_NAMES[g] .. ' of chaos_pack36_fx_ids.lua')
+  eq(seen[id or -1], nil, 'group ' .. g .. ' has its own effect')
+  if id then seen[id] = true end
+end
+eq(LB.EFFECT_MS > 1000, true, 'one play of a beam lasts over a second')
+eq(LB.effectFor('nothing'), nil, 'no group, no effect')
+st = LB.newState()
+LB.onBeam(st, { k = 1, p = { 101, 100, 7 }, i = { gear(5) } })
+LB.onBeam(st, { k = 2, p = { 102, 100, 7 }, i = { gear(3) } })
+calls, drawn = LB.diff({}, LB.resolve(st, filter, d, player))
+local pulse = LB.pulse(drawn)
+eq(#pulse, 2, 'every drawn beam is added again')
+eq(pulse[1].pos.x, 101, 'in tile order')
+eq(pulse[1].id, LB.EFFECTS.orange, 'a Legendary beam')
+eq(pulse[2].id, LB.EFFECTS.blue, 'a Rare beam')
+
 -- ---------------------------------------------------------------- filter fingerprint
 eq(LB.filterKey(L.defaults()) ~= LB.filterKey(strict), true, 'a filter change is seen')
 eq(LB.filterKey(nil), '', 'no filter')
