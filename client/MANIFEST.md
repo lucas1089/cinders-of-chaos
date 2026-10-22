@@ -3304,7 +3304,9 @@ window exists (polled every second, like the Auto setup button), and any other h
   other helper additions; Auto setup fills it (Undo restores it).
 - What may stand in the list comes from the spell data, not from a class list (`ChaosHelperSupport.eligible`): a
   support spell (group 3 without the attack group 1) with no typed name and no target, on the server, and not a utility
-  (stock light, rope, food, find, challenge ... by words; the teleport home, Detonate Mines, Flickerdash and Mistborne
+  (stock light, rope, food, find, challenge ... by words, the stock words and their Chaos words from
+  `ChaosSpellNames`, e.g. Lantern "vael lyss", Ghost Rope "ash gor"; a saved list loses those rows at load,
+  `H.dropUtilities`; the teleport home, Detonate Mines, Flickerdash and Mistborne
   Step by id). A support spell added to the data later shows up in the dropdown by itself, and Auto setup takes it
   (unless its cooldown is over 30 min). `ChaosHelperSupport.KINDS` (by spell id) only says how to treat the known ones:
   `auto` (`timer`, `support` or `false`), `kind` (buff, shield, summon, switch, party), `fight` (only while attacking a
@@ -3327,6 +3329,11 @@ window exists (polled every second, like the Auto setup button), and any other h
   `RECAST_MIN_MS` (60 s) or its cooldown if longer. A vigil is a switch (a second cast turns it off) and needs bar
   data, else it is not cast; one the bar has not shown after our cast is not cast again within that gap. Only one
   vigil is set up by Auto setup (Clarity).
+- Fixes of 2026-10-22 (owner): (1) light, rope and the other stock utilities went into Support by themselves: the
+  client says them in their Chaos words, which the stock word list missed (above). (2) "after dying the list is gone":
+  every buff drops at death, which read as the player switching the vigils off, so their rows were unticked and
+  saved. While the character is dead the tab casts and tracks nothing (`S.reset`), and a switch-off unticks its row
+  only once it is `USEROFF_CONFIRM_MS` (2 s) old.
 - Fixes of 2026-10-20 (owner beta): (1) "the Support tab does not open": `U.init` imported `supportspells.otui` while
   the module loads (autoload priority 100), before `client_styles` (loaded with `client`) defines `Panel`, `Label`,
   `CheckBox`, `ComboBox`, `Button`. The import stopped at `ChaosSupportRow < Panel`, so only `ChaosSupportTab <

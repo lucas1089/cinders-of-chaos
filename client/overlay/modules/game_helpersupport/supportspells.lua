@@ -67,11 +67,31 @@ H.CYCLE_MS = 250
 -- character), and the stock utilities (by words, the same in every client table)
 H.NEVER_IDS = { [254] = true, [104] = true, [232] = true, [67] = true }
 H.NEVER_WORDS = {}
+H.NEVER_STOCK = {}
 for _, w in ipairs({ 'utevo lux', 'utevo gran lux', 'utevo vis lux', 'exani tera', 'exiva moe res', 'exevo pan',
     'exana ina', 'exeta res', 'exeta amp res', 'exani hur', 'utevo res ina', 'utevo res', 'exana vita', 'exevo con',
     'exevo con flam', 'exevo infir con', 'exeta con', 'utani tempo hur', 'utamo tempo san', 'utana vid',
     'exevo gran mort', 'exana amp res' }) do
   H.NEVER_WORDS[w] = true
+  H.NEVER_STOCK[w] = true
+end
+
+-- the client says the Chaos words of the stock spells (game_chaosspells ChaosSpellNames: "utevo lux" -> "vael lyss"),
+-- so the stock words alone missed Lantern, Ghost Rope and the rest (owner 2026-10-22: "light and magic rope go into
+-- Support by themselves"). names: that table (the global when nil); its words join NEVER_WORDS once.
+function H.addRenamedWords(names)
+  names = names or rawget(_G, 'ChaosSpellNames')
+  if type(names) ~= 'table' then return false end
+  for stock in pairs(H.NEVER_STOCK) do
+    local e = names[stock]
+    if type(e) == 'table' and type(e.words) == 'string' and e.words ~= '' then H.NEVER_WORDS[e.words:lower()] = true end
+  end
+  return true
+end
+local renamedDone = false
+local function isNeverWords(words)
+  if not renamedDone then renamedDone = H.addRenamedWords() end
+  return H.NEVER_WORDS[words] == true
 end
 
 -- what the spells are, by spell id (the server's ids; the Chaos spells in server/data/spells/chaos/spells_chaos.xml, the
@@ -195,7 +215,7 @@ function H.eligible(spell)
   if type(spell.words) ~= 'string' or spell.words == '' then return false, 'words' end
   if not H.isSupportGroup(spell.group) then return false, 'group' end
   if spell.parameter or spell.needTarget then return false, 'target' end
-  if H.NEVER_IDS[spell.id] or H.NEVER_WORDS[lower(spell.words)] then return false, 'utility' end
+  if H.NEVER_IDS[spell.id] or isNeverWords(lower(spell.words)) then return false, 'utility' end
   return true
 end
 
@@ -274,6 +294,19 @@ function H.sanitize(node)
   return c
 end
 
+-- a saved list without the utility spells (a list made before they were left out). spellOf(id) -> the spell or nil (an
+-- unknown spell stays). Returns the list and how many rows left it.
+function H.dropUtilities(slots, spellOf)
+  local out, dropped = {}, 0
+  for _, s in ipairs(slots or {}) do
+    local spell = spellOf and spellOf(s.id)
+    local ok, why = true, nil
+    if spell then ok, why = H.eligible(spell) end
+    if not ok and why == 'utility' then dropped = dropped + 1 else out[#out + 1] = s end
+  end
+  return out, dropped
+end
+
 -- the list after Auto setup. mode 'replace': the plan's ids; 'add': the player's rows stay, planned ids not there yet go
 -- below (up to SUPPORT_MAX)
 function H.mergeSlots(current, planned, mode)
@@ -336,7 +369,7 @@ local function active(st, info, spell, ctx, now)
     local was = st.barOn[spell.id]
     if fromBar ~= nil then st.barOn[spell.id] = fromBar end
     if fromBar == false and was == true and (st.settleUntil[spell.id] or 0) <= now then
-      st.userOff[spell.id] = true
+      st.userOff[spell.id] = now
     elseif fromBar == true then
       st.userOff[spell.id] = nil -- on again (the player's cast): the helper may keep it up once its row is ticked
     end
@@ -445,11 +478,16 @@ end
 
 -- the vigils the player switched off by hand (st.userOff): their rows are unticked in cfg, so the helper does not
 -- switch them on again, now or after a relog, until the player ticks the row again. Returns the ids it unticked.
-function H.takeUserOff(st, cfg)
+-- now: only a switch-off at least USEROFF_CONFIRM_MS old (a death drops every buff a moment before the health packet;
+-- the caller stops and resets on death, so a drop that close to it is never saved); nil: every mark.
+H.USEROFF_CONFIRM_MS = 2000
+function H.takeUserOff(st, cfg, now)
   local out = {}
   if not (st and st.userOff and cfg and cfg.slots) then return out end
   for _, slot in ipairs(cfg.slots) do
-    if st.userOff[slot.id] and slot.enabled then
+    local at = st.userOff[slot.id]
+    local due = at and (now == nil or type(at) ~= 'number' or now - at >= H.USEROFF_CONFIRM_MS)
+    if due and slot.enabled then
       slot.enabled = false
       out[#out + 1] = slot.id
     end

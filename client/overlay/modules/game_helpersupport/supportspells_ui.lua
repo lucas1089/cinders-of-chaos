@@ -54,6 +54,17 @@ local function charName()
 end
 
 -- ---------------------------------------------------------------- the saved list
+local function spellEntry(id)
+  local H = helper()
+  if H and H.getSpellDataById then
+    local ok, s = pcall(H.getSpellDataById, id)
+    if ok and s then return s end
+  end
+  if Spells and Spells.getSpellDataById then return Spells.getSpellDataById(id) end
+  return nil
+end
+
+local save
 local function load()
   local name = charName()
   if not name then return false end
@@ -63,10 +74,16 @@ local function load()
   cfgFor = name
   state = S.newState()
   userOffNote = false
+  -- a list made before the utility spells were left out (Lantern, Ghost Rope...): they leave it
+  local slots, dropped = S.dropUtilities(cfg.slots, spellEntry)
+  if dropped > 0 then
+    cfg.slots = slots
+    save()
+  end
   return true
 end
 
-local function save()
+save = function()
   local name = charName()
   if not name or cfgFor ~= name then return end
   local node = g_settings.getNode(SETTINGS_NODE)
@@ -102,15 +119,6 @@ local function spellList()
   return {}
 end
 
-local function spellEntry(id)
-  local H = helper()
-  if H and H.getSpellDataById then
-    local ok, s = pcall(H.getSpellDataById, id)
-    if ok and s then return s end
-  end
-  if Spells and Spells.getSpellDataById then return Spells.getSpellDataById(id) end
-  return nil
-end
 
 local function canCast()
   local player = g_game.getLocalPlayer()
@@ -216,6 +224,15 @@ end
 local function tick()
   if not g_game.isOnline() then overall = '' return end
   if not load() then return end
+  -- dead (the death screen): every buff drops at once, which read as the player switching the vigils off (their rows
+  -- were unticked and saved, owner 2026-10-22: "after dying the list is gone"). Nothing is cast or tracked until the
+  -- next login (onGameStart starts a new state).
+  local me = g_game.getLocalPlayer()
+  if not me or (me.isDead and me:isDead()) or (tonumber(me:getHealth()) or 1) <= 0 then
+    S.reset(state)
+    overall = ''
+    return
+  end
   if #cfg.slots == 0 or not cfg.enabled then
     state.status = {}
     overall = cfg.enabled and '' or 'disabled'
@@ -225,7 +242,7 @@ local function tick()
   local spell, why = S.pick(state, cfg, ctx)
   overall = spell and '' or (why ~= 'idle' and why or '')
   -- a vigil the player switched off by hand: its row is unticked and saved (no recast now or after a relog)
-  if #S.takeUserOff(state, cfg) > 0 then
+  if #S.takeUserOff(state, cfg, ctx.now) > 0 then
     save()
     U.rebuild()
     userOffNote = true
