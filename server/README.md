@@ -260,6 +260,7 @@ server/
     hunt.lua  hunt_core.lua  hunt_config.lua  hunt_supplies.lua (hunt tracker; supply prices from tools/gen_supply_prices.py)
     daily_core.lua  daily_config.lua (daily reward login streaks, milestones, grace, login window order)
     patchnotes.lua  patchnotes_core.lua (patch notes window; the notes are data/patchnotes/*.md, see "Patch notes")
+    changelog_core.lua (the window's Changelog tab: data/changelog/changelog.json, see "Changelog")
     nameplate.lua  nameplate_core.lua  titles.lua (name plates over players, title registry, the Achievements window; sql/chaos_nameplate.sql)
     guild.lua  guild_hall.lua  guild_core.lua  guild_config.lua (guild levels, perks, guild bank, guild halls; sql/chaos_guild.sql)
     cityportals.lua  cityportals_core.lua  cityportals_config.lua  cityportals_fx.lua (labelled portals near the temples, see "City portals")
@@ -543,7 +544,7 @@ working directory, as with the rest of the base server libs).
 | game_referral | `referral.lua`, `referral_core.lua`, `referral_config.lua`, `sql/chaos_referral.sql` | **220**, Character > Referral | Referral program: an account's code, a friend's code entered at account creation (website) or in game in the first 7 days, a welcome gift for the friend (potions, a title), titles and a few Chaos Coins for the referrer at the friend's levels 50 and 150; anti-abuse checks; tested in game (see "Referral program"). |
 | game_mentor | `mentor.lua`, `mentor_core.lua`, `mentor_config.lua`, `sql/chaos_mentor.sql` | **194**, Social > Mentors | Mentors: veterans mentor new characters (list with filters, invitations, the referrer as mentor), +10% experience and 5% less damage taken while hunting together without power-levelling, Mentor Marks from milestones and shared time for titles / cosmetics / supplies, graduation at 200; mock-tested, not run on a live server (see "Mentors"). |
 | game_transmog | `transmog.lua`, `transmog_core.lua`, `transmog_config.lua`, `sql/chaos_transmog.sql` | **212**, Character > Transmog | Transmog: equipped gear takes the look of an unlocked item of its kind (appearance only), account-wide wardrobe with collection progress, appearance sets (store, achievement, season, exclusive), small gold fee; engine patch 0019 + client base patch 0030 draw the look everywhere; tested in game (see "Transmog"). |
-| game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). |
+| game_patchnotes | `patchnotes.lua`, `patchnotes_core.lua`, `data/patchnotes/*.md` | 244, Social > Patch Notes / `/patchnotes` | Weekly patch notes read from Markdown files on the server, opened once per new week at login (after the Daily Reward), per-account "Don't show automatically"; tested in game (see "Patch notes"). Changelog tab: every change that shipped (`changelog_core.lua`, `data/changelog/changelog.json` written at deploy time; see "Changelog"); not yet tested in game. |
 | game_monkchi | `monk_chi_core.lua`, `monk_combat.lua` | 247 (server -> client) | The Monk's chi HUD: five pips over the map, plain text `chi:<chi>:<max>:<decaySec>`; only the Monk line (17-19) sees it. Tested in game: under the character (the bottom of the map lies under the chat in the Chaos layout), fills and empties with the server's chi, empties after 12 s. |
 | game_nameplate | `nameplate.lua`, `nameplate_core.lua`, `titles.lua` | 248, the Achievements window | Name plates over players: active title, `{guild}` and the name on a frame (client base patch 0022); title registry `ChaosTitles.register`; tested in game (see "Name plates and titles"). |
 | game_guild | `guild.lua`, `guild_hall.lua`, `guild_core.lua`, `guild_config.lua` | 252, Social > Guild | Guild levels (guild XP from the members, perks), guild bank, guild halls (runtime instance, upgrades, rent, depot), weekly top guilds; tested in game with two members (see "Guild levels and guild halls"). |
@@ -13684,6 +13685,68 @@ when the daily is already claimed, no second opening at the next login, "Don't s
 week, unticked again from the window), the seen key and setting in the database. Not verified: two characters of one
 account online at once, the Windows `dir` listing and the `index.txt` fallback, the client stepping aside for a daily window that
 appears in the first 20 s (cannot happen with the queue).
+
+## Changelog (`tools/gen_changelog.py`, `changelog_core.lua`, `patchnotes.lua`, `data/changelog/changelog.json`, client `game_patchnotes`)
+
+The weekly patch notes are written by hand and only about what players notice; the Changelog tab of the same window
+lists every change that actually shipped to the server or the client (owner 2026-10-22). Same opcode 244, action
+`changelog` (client -> server, no data; server -> client `changelog {available, server = {date}, published, entries}`).
+
+- **Source.** The git history of the deployed checkout (main). `tools/gen_changelog.py` (stdlib only) reads the
+  first-parent history: a merge "Merge pull request #N" (or "Merge PR N:") is one pull request whose own commits are its
+  entries, dated by the merge (the day it reached main, which the kit update deploys; the date in the commit's own time
+  zone); a commit pushed straight to main is an entry of its own. Each commit is tagged by the paths it touched:
+  **server** (`server/data` but `patchnotes/`, `server/src-patches`, `server/sql`, the install steps `install_*`,
+  `patch_*`, `add_*`, `adapt_*`, `apply_*`, `fix_*` of `server/tools`), **content** (monster, spell, item, NPC and XML data,
+  the `*_config.lua` numbers), **client** (`client/overlay`, `client/base-patches`, `client/MANIFEST.md` when the subject
+  names a sprite pair), **website** (`website/` but its tests, tools and README). A commit with none (docs, CI, tests,
+  tools only) is left out.
+- **What players read.** Only the subject line, never the body. Dropped: subjects that read as internal (CI, docs, tests,
+  ROADMAP, refactors, patch notes commits, kit update, admin app, map master, installs, a file or identifier first, a
+  script or file name, asset uploads to windows-assets), and any subject that could carry something private (an IPv4
+  address, an e-mail, a link, a machine path, a hex string of 16+ digits or a token-like run, words like password,
+  secret, token, key, SSH, VPS) or a name `tools/ci/check_names.py` refuses (its `name_hit` is loaded from the checkout;
+  without it nothing is written). Cut: internal clauses after a ";" ("...; docs", "...; CI check for them", a short one
+  about tests), patch numbers ("(base patch 0111)", "Client base patch 0116:" -> "Client:"), team parentheses (an upload,
+  an approval, a commit hash, "(owner)"). At most 160 characters.
+- **Client versions.** A client change reaches players with the first client update `winpkg-N` whose build commit
+  contains it (the release tags point at the commit the package was built from, a branch commit too). The releases are
+  the `winpkg-N` tags of the checkout, the lines `N COMMIT` of `--releases FILE`, and those the previous output kept
+  (GitHub keeps only the newest 3 releases and deletes their tags; the kit never prunes local tags, and a version once
+  found is kept by entry id). `--published-client N` (the live client update, `updates/live/manifest.json`): a change in a
+  newer release, or in none yet, is `pending` and shows as "Client: next update".
+- **Limits.** The last 90 days (`--days`) and at most 200 entries (`--max`); the file at most 200 KB (the oldest entries
+  go). Written atomically (temporary file, fsync, rename, mode 0644) and only when the content changed: running it again
+  is a no-op. A failure (no git, a bad ref, the names check missing) exits 1 and leaves the old file.
+- **Deploy.** `deploy/chaos_kit_update.sh` runs it (function `changelog`) in step 5 after the checkout, `install_all.py`
+  and the helper files, before the server starts; also when nothing else changed, and again after a client update was
+  published (so its entries leave "next client update"). The kit's checkout may be shallow (docs/HOST_TRIAL.md clones with
+  `--depth 1`): then one bounded fetch with `--shallow-since` of about 100 days brings the branch and the `winpkg-*` tags;
+  a full checkout only fetches the tags. It never fails the update: a problem is logged ("WARN: the changelog was not
+  written") and the old file stays. `deploy/chaos_update.sh` (the older non-kit path) does not run it; run it by hand
+  there: `python3 -I server/tools/gen_changelog.py --repo /opt/chaos/repo --out /opt/chaos/server/data/changelog/changelog.json`.
+  `--print` lists the entries without writing.
+- **Server.** `patchnotes.lua` reads the file at most every 60 s (`PN.config.rescanSeconds`; `/patchnotes reload` at
+  once), never more than 256 KB (read capped; larger is refused), decodes it in a pcall and rebuilds it from known fields
+  only (`changelog_core.lua`: dates, integers in range, known tags, printable text cut to 200 bytes without splitting a
+  UTF-8 character, at most 250 entries). A missing file gives an empty answer; a bad one keeps the last good one (logged
+  once). The encoded answer is cached; over 8192 bytes it goes out through `Chaos.sendChunked`. One answer per player
+  per 5 s (`changelogCooldown`) on top of the per-action rate limit.
+- **Client.** Tabs Patch Notes / Changelog; a line "Server updated: <date>" and "Client: update N (build B)" (the
+  updater's applied update or the package's baseline, `ChaosUpdater.status()`, `Services.update`); filters All /
+  Server / Client / Content / Website; entries by date with coloured tags; NEW marks for changes newer than the last
+  look (client setting `chaos-changelog-seen`; the first look marks nothing); the tab reads "Changelog (N new)". The
+  module listens with `ProtocolGame.registerExtendedJSONOpcode` now (needed for the chunked answer; a single message is
+  plain JSON as before).
+- **Tests:** `tools/gen_changelog_test.py` (subject rules, path classes, a throwaway repository with a pull request,
+  a release tagged on its branch, a direct commit, a pending change, dates, idempotence, a failure keeping the old file,
+  a pruned tag, `--releases`, the window, a shallow and a deepened clone, the size cap), `tests/changelog_test.lua` (the
+  validation and the serving with a mocked engine: chunking, rescan, bad and oversize files, cooldown),
+  `deploy/chaos_kit_update_test.py` (the kit writes it), the client's `patchnotesview_test.lua` (rows, tags, filter,
+  NEW, info line).
+
+Not verified in game: the tab, the chunked answer in the real client, the layout in pt-BR, the kit's shallow deepening on
+the VPS.
 
 ## Rift Atlas (`atlas.lua`, `atlas_core.lua`, `atlas_config.lua`, `sql/chaos_rift_atlas.sql`, client `game_riftatlas`)
 

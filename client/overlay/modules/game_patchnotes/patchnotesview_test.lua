@@ -1,8 +1,10 @@
 -- luajit patchnotesview_test.lua && lua5.3 patchnotesview_test.lua (CI runs it from the repo root)
--- What the patch notes window draws for a note from the server, the week list text and the login auto-open steps.
+-- What the patch notes window draws for a note from the server, the week list text and the login auto-open steps;
+-- the Changelog tab: rows by date, tags and client versions, the filter, "new since your last look", the info line.
 local dir = (arg and arg[0] or ''):match('^(.*[/\\])') or './'
 dofile(dir .. 'patchnotesview.lua')
 local V = PatchNotesView
+function tr(s, ...) if select('#', ...) > 0 then return string.format(s, ...) end return s end
 local fails = 0
 local function eq(a, b, what)
   if a ~= b then print('FAIL ' .. what .. ': ' .. tostring(a) .. ' ~= ' .. tostring(b)); fails = fails + 1 end
@@ -99,6 +101,50 @@ st = { dailyFirst = false, since = 100 }
 eq(V.autoStep(st, true, 100), 'wait', 'unexpected daily window: wait for it too')
 eq(V.autoStep(st, false, 103), 'wait', 'pause after it')
 eq(V.autoStep(st, false, 104), 'show', 'then show')
+
+-- changelog
+local cl = {
+  { id = 'a', date = '2026-10-22', ts = 300, text = 'Bank: deposits work', tags = { 'server', 'content' } },
+  { id = 'b', date = '2026-10-22', ts = 300, text = 'New bank window', tags = { 'client', 'server' }, client = 55, pending = false },
+  { id = 'c', date = '2026-10-21', ts = 200, text = 'Pending window', tags = { 'client' }, pending = true },
+  { id = 'd', date = '2026-10-20', ts = 100, text = 'Site page', tags = { 'website' } },
+  { id = 'e', date = '2026-10-20', ts = 100, text = '', tags = { 'server' } },
+  'junk', { date = '2026-10-19', ts = 50, text = 'odd tags', tags = 'server' }
+}
+local rows, shown = V.changelogRows(cl, 'all', 0)
+eq(shown, 5, 'entries shown (empty text skipped)')
+eq(#rows, 9, 'rows: four dates and five entries')
+eq(rows[1].kind, 'date', 'date first'); eq(rows[1].text, '22 October 2026', 'date text')
+eq(rows[2].kind, 'entry', 'entry'); eq(rows[2].plain, '[Server] [Content] Bank: deposits work', 'tags in order')
+eq(rows[2].color, V.TAG_COLORS.server, 'dot: first tag colour'); eq(rows[2].new, false, 'first look: nothing new')
+eq(rows[3].plain, '[Server] [Client 55] New bank window', 'client version')
+eq(rows[3].parts[4], V.TAG_COLORS.client, 'client tag colour')
+eq(rows[3].parts[#rows[3].parts], V.TEXT, 'text colour last')
+eq(rows[4].text, '21 October 2026', 'next date')
+eq(rows[5].plain, '[Client: next update] Pending window', 'pending client change')
+eq(rows[7].plain, '[Website] Site page', 'website')
+eq(rows[9].plain, 'odd tags', 'tags not a list: plain text only')
+rows, shown = V.changelogRows(cl, 'client', 0)
+eq(shown, 2, 'filter client'); eq(#rows, 4, 'filtered rows keep their dates')
+rows, shown = V.changelogRows(cl, 'content', 0)
+eq(shown, 1, 'filter content')
+rows = V.changelogRows(cl, 'all', 200)
+eq(rows[2].new, true, 'newer than the last look'); eq(rows[2].plain, 'NEW [Server] [Content] Bank: deposits work', 'NEW first')
+eq(rows[2].parts[2], V.NEW, 'NEW colour'); eq(rows[5].new, false, 'seen')
+eq(V.newCount(cl, 200), 2, 'two new'); eq(V.newCount(cl, 0), 0, 'never looked: none new')
+eq(V.newestTs(cl), 300, 'newest'); eq(V.newestTs(nil), 0, 'none')
+eq(#V.changelogRows(nil, 'all', 0), 0, 'nil list')
+eq(#V.changelogRows({ { text = 'x', tags = { 'server' }, ts = 'NaN' } }, 'all', 1), 2, 'odd ts and no date')
+local info = V.clientInfo({ version = 54, baseline = 53 }, { baseline = 55, package = 13 })
+eq(info.version, 55, 'client version: the highest'); eq(info.build, 13, 'build')
+eq(V.clientInfo(nil, nil).version, 0, 'no updater')
+eq(V.clientInfo({ version = -4 }, { package = 'x' }).build, 0, 'bad values')
+eq(V.infoText('2026-10-21', info), 'Server updated: 21 October 2026     Client: update 55 (build 13)', 'info line')
+eq(V.infoText('', { version = 0, build = 13 }), 'Server updated: unknown     Client: build 13', 'unknown server, build only')
+eq(V.infoText(nil, { version = 7 }), 'Server updated: unknown     Client: update 7', 'version only')
+eq(V.infoText('2026-10-21', nil), 'Server updated: 21 October 2026     Client: version unknown', 'nothing known')
+eq(V.tagLabel('nope'), 'All', 'unknown tag label')
+eq(V.matches({ tags = { 'server' } }, nil), true, 'no filter')
 
 if fails > 0 then
   print(fails .. ' failure(s)')

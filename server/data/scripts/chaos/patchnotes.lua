@@ -10,7 +10,12 @@
 --                     note {id, title, date, part, parts, intro = [text], sections = [{name, kind, cont,
 --                           items = [{text, level, lead}]}]}   a long note comes in several parts (PN.parts); a section
 --                           with cont = true continues the previous part's last section
---   client -> server  open {id?} | get {id} | seen {id} (the week was shown) | auto {enabled}
+--                     changelog {available, server = {date}, published, entries = [{id, date, ts, pr, text, tags,
+--                           client, pending}]}   the Changelog tab (changelog_core.lua): every change that shipped,
+--                           from data/changelog/changelog.json (server/tools/gen_changelog.py, run by the kit update);
+--                           over 8192 bytes it goes through Chaos.sendChunked (the client listens with
+--                           ProtocolGame.registerExtendedJSONOpcode)
+--   client -> server  open {id?} | get {id} | seen {id} (the week was shown) | auto {enabled} | changelog
 --                     closed (the window was closed: the next window of the login queue may open)
 --
 -- Login order: when daily.lua's login window queue (ChaosLoginWindows) exists, the auto-open is one entry of it
@@ -27,8 +32,10 @@ if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
 end
 dofile("data/scripts/chaos/patchnotes_core.lua")
+dofile("data/scripts/chaos/changelog_core.lua")
 
 local PN = ChaosPatchNotes
+local CL = ChaosChangelog
 local OPCODE = ChaosOpcodes.patchnotes
 local TABLE = "chaos_patchnotes"
 
@@ -37,7 +44,9 @@ PN.config = {
 	rescanSeconds = 60, -- the folder is listed again at most this often
 	-- login: sent after the Daily Reward's own login delay, so the client already knows whether that window is up
 	loginExtraMs = 1500,
-	loginFallbackMs = 4500 -- when Chaos.daily has no openDelayMs
+	loginFallbackMs = 4500, -- when Chaos.daily has no openDelayMs
+	changelogFile = "data/changelog/changelog.json",
+	changelogCooldown = 5 -- seconds between two changelog requests of one player (the answer is up to ~40 KB)
 }
 local cfg = PN.config
 
@@ -106,6 +115,70 @@ function PN.scan(force)
 		log(string.format("%d notes file(s), newest %s", #notes, notes[1] and notes[1].id or "-"))
 	end
 	return notes
+end
+
+-- ---------------------------------------------------------------- changelog
+-- The file is read again at most every rescanSeconds; a missing, oversize or broken file keeps what was loaded before
+-- (or none). The encoded answer is kept, so a request costs no JSON encoding.
+local changelog = {raw = nil, buffer = nil, count = 0, at = nil, warned = nil}
+
+local function readCapped(path, limit)
+	local f = io.open(path, "rb")
+	if not f then
+		return nil
+	end
+	local body = f:read(limit + 1)
+	f:close()
+	return body
+end
+
+function PN.loadChangelog(force)
+	local now = os.time()
+	if not force and changelog.at and now - changelog.at < cfg.rescanSeconds then
+		return changelog.buffer
+	end
+	changelog.at = now
+	local raw = readCapped(cfg.changelogFile, CL.limits.fileBytes)
+	if raw == changelog.raw and changelog.buffer then
+		return changelog.buffer
+	end
+	local cl, why
+	if raw then
+		cl, why = CL.decode(raw, json and json.decode)
+	end
+	if raw and not cl then
+		if changelog.warned ~= why then
+			changelog.warned = why
+			log("changelog file refused (" .. tostring(why) .. "): " .. (changelog.buffer and "the last good one stays" or "none shown"))
+		end
+		return changelog.buffer
+	end
+	changelog.raw, changelog.warned = raw, nil
+	changelog.count = cl and #cl.entries or 0
+	local ok, buffer = pcall(json.encode, {action = "changelog", data = CL.payload(cl)})
+	if ok and type(buffer) == "string" then
+		changelog.buffer = buffer
+	end
+	return changelog.buffer
+end
+
+local lastChangelog = {} -- player id -> os.time of the last answer
+
+function PN.sendChangelog(player)
+	local id, now = player:getId(), os.time()
+	if lastChangelog[id] and now - lastChangelog[id] < cfg.changelogCooldown then
+		return false
+	end
+	lastChangelog[id] = now
+	local buffer = PN.loadChangelog()
+	if not buffer then
+		return false
+	end
+	if #buffer > Chaos.extendedOpcodeMax then
+		return Chaos.sendChunked(player, OPCODE, buffer)
+	end
+	player:sendExtendedOpcode(OPCODE, buffer)
+	return true
 end
 
 -- ---------------------------------------------------------------- account state
@@ -245,6 +318,7 @@ joinLoginQueue()
 local login = CreatureEvent("ChaosPatchNotesLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosPatchNotesExtended")
+	player:registerEvent("ChaosPatchNotesLogout")
 	if loginQueue() then
 		return true -- the queue sends it in its turn
 	end
@@ -286,6 +360,8 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 		if note then
 			PN.markSeen(player, note)
 		end
+	elseif msg.action == "changelog" then
+		PN.sendChangelog(player)
 	elseif msg.action == "closed" then
 		local LW = loginQueue()
 		if LW then
@@ -304,19 +380,29 @@ function startup.onStartup()
 	joinLoginQueue()
 	ensureTable()
 	PN.scan(true)
+	PN.loadChangelog(true)
 	return true
 end
 startup:register()
 
--- !patchnotes opens the window. Staff (/patchnotes): reload (read the folder now), unseen (forget this account's
+local logout = CreatureEvent("ChaosPatchNotesLogout")
+function logout.onLogout(player)
+	lastChangelog[player:getId()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
+
+-- !patchnotes opens the window. Staff (/patchnotes): reload (read the folder and the changelog now), unseen (forget this account's
 -- last seen week, to test the login auto-open), status.
 local function onCommand(player, words, param)
 	param = (param or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
 	if words == "/patchnotes" and player:getGroup():getAccess() and param ~= "" then
 		if param == "reload" then
 			PN.scan(true)
-			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Patch notes reloaded: %d file(s), newest %s.",
-				#PN.notes, PN.notes[1] and PN.notes[1].id or "-"))
+			PN.loadChangelog(true)
+			player:sendTextMessage(MESSAGE_INFO_DESCR, string.format("Patch notes reloaded: %d file(s), newest %s; " ..
+				"changelog %d entries.", #PN.notes, PN.notes[1] and PN.notes[1].id or "-", changelog.count))
 		elseif param == "unseen" then
 			local _, autoEnabled = PN.state(player)
 			save(player, "", autoEnabled)

@@ -6,6 +6,14 @@
 --   PatchNotesView.formatDate(s)       '2026-10-08' -> '8 October 2026' (anything else as it is)
 --   PatchNotesView.autoStep(st, dailyVisible, now)   login auto-open: 'wait' or 'show' (see below)
 --   PatchNotesView.join(parts, total)  the parts of a long note (server PN.parts) -> one note, or nil if one is missing
+-- The Changelog tab (server changelog_core.lua; entries stay as written, in English):
+--   PatchNotesView.changelogRows(entries, filter, seenTs)   rows to draw: {kind = 'date', text} and {kind = 'entry',
+--                                      parts = {text, colour, ...}, color (dot), new, tooltip}; returns rows, shown
+--   PatchNotesView.newCount(entries, seenTs)   entries newer than the last look (0 before the first look)
+--   PatchNotesView.newestTs(entries)   what is stored as the last look
+--   PatchNotesView.clientInfo(status, update)   {version, build} of this client: ChaosUpdater.status() and
+--                                      Services.update (the applied update or the package's baseline; the package build)
+--   PatchNotesView.infoText(serverDate, info)   the line above the list: server update date and client version
 PatchNotesView = {}
 local V = PatchNotesView
 
@@ -148,4 +156,129 @@ function V.join(parts, total)
     end
   end
   return note
+end
+
+-- ---------------------------------------------------------------- changelog
+V.TAG_ORDER = { 'server', 'client', 'content', 'website' }
+V.TAG_COLORS = {
+  server = '#e8b84a',   -- ember gold
+  client = '#6aa8ff',   -- arcane blue
+  content = '#d07aff',  -- violet
+  website = '#7cd35a'   -- green
+}
+V.NEW = '#7cd35a'
+V.FILTERS = { 'all', 'server', 'client', 'content', 'website' }
+
+function V.tagLabel(tag)
+  if tag == 'server' then return tr('Server') end
+  if tag == 'client' then return tr('Client') end
+  if tag == 'content' then return tr('Content') end
+  if tag == 'website' then return tr('Website') end
+  return tr('All')
+end
+
+local function int(v)
+  v = tonumber(v)
+  if not v or v ~= v or v < 0 or v > 1e12 then return 0 end
+  return math.floor(v)
+end
+
+local function hasTag(e, tag)
+  for _, t in ipairs(list(e.tags)) do
+    if t == tag then return true end
+  end
+  return false
+end
+
+function V.matches(e, filter)
+  return filter == nil or filter == 'all' or hasTag(e, filter)
+end
+
+function V.isNew(e, seenTs)
+  seenTs = int(seenTs)
+  return seenTs > 0 and int(e.ts) > seenTs
+end
+
+function V.newestTs(entries)
+  local m = 0
+  for _, e in ipairs(list(entries)) do
+    if type(e) == 'table' and int(e.ts) > m then m = int(e.ts) end
+  end
+  return m
+end
+
+function V.newCount(entries, seenTs)
+  local n = 0
+  for _, e in ipairs(list(entries)) do
+    if type(e) == 'table' and V.isNew(e, seenTs) then n = n + 1 end
+  end
+  return n
+end
+
+-- the label of one tag of an entry: the client tag names the client update the change came with
+function V.tagText(e, tag)
+  if tag == 'client' then
+    local n = int(e.client)
+    if e.pending == true or n == 0 then return tr('Client: next update') end
+    return tr('Client %d', n)
+  end
+  return V.tagLabel(tag)
+end
+
+function V.changelogRows(entries, filter, seenTs)
+  local rows, shown, lastDate = {}, 0, nil
+  for _, e in ipairs(list(entries)) do
+    if type(e) == 'table' and str(e.text) ~= '' and V.matches(e, filter) then
+      local date = str(e.date)
+      if date ~= lastDate then
+        rows[#rows + 1] = { kind = 'date', text = V.formatDate(date) }
+        lastDate = date
+      end
+      local parts, first = {}, nil
+      local new = V.isNew(e, seenTs)
+      if new then
+        parts[#parts + 1] = tr('NEW') .. ' '
+        parts[#parts + 1] = V.NEW
+      end
+      for _, tag in ipairs(V.TAG_ORDER) do
+        if hasTag(e, tag) then
+          first = first or tag
+          parts[#parts + 1] = '[' .. V.tagText(e, tag) .. '] '
+          parts[#parts + 1] = V.TAG_COLORS[tag]
+        end
+      end
+      parts[#parts + 1] = str(e.text)
+      parts[#parts + 1] = V.TEXT
+      local plain = {}
+      for i = 1, #parts, 2 do plain[#plain + 1] = parts[i] end
+      rows[#rows + 1] = { kind = 'entry', parts = parts, plain = table.concat(plain), new = new,
+                          color = V.TAG_COLORS[first] or V.DIM }
+      shown = shown + 1
+    end
+  end
+  return rows, shown
+end
+
+function V.clientInfo(status, update)
+  status = type(status) == 'table' and status or {}
+  update = type(update) == 'table' and update or {}
+  return { version = math.max(int(status.version), int(status.baseline), int(update.baseline)),
+           build = int(update.package) }
+end
+
+function V.infoText(serverDate, info)
+  info = info or {}
+  local server = str(serverDate) ~= '' and tr('Server updated: %s', V.formatDate(str(serverDate)))
+    or tr('Server updated: unknown')
+  local client
+  if int(info.version) > 0 and int(info.build) > 0 then
+    client = tr('Client: update %d (build %d)', int(info.version), int(info.build))
+  elseif int(info.version) > 0 then
+    client = tr('Client: update %d', int(info.version))
+  elseif int(info.build) > 0 then
+    client = tr('Client: build %d', int(info.build))
+  else
+    client = tr('Client: version unknown')
+  end
+  return server .. '     ' .. client
 end

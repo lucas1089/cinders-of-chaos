@@ -133,16 +133,47 @@ PatchBullet < UIWidget
 PatchSubBullet < PatchBullet
   margin-top: 2
 
+// the Changelog tab: a date line, then one row per change (dot in the first tag's colour, coloured tags, the text)
+ChangelogDate < PatchSection
+  margin-top: 10
+
+ChangelogEntry < PatchBullet
+
+// a tag filter of the Changelog tab
+ChangelogFilter < ChaosTabButton
+  size: 86 22
+  margin-left: 4
+  !tooltip: tr('Show only the changes with this tag.')
+
 ChaosMainWindow
   id: patchNotesWindow
   size: 780 560
   !text: tr('Patch Notes')
   @onEscape: modules.game_patchnotes.hide()
 
-  ChaosLabelDim
-    id: weeksLabel
+  ChaosTabButton
+    id: tabNotes
     anchors.top: parent.top
     anchors.left: parent.left
+    width: 150
+    !text: tr('Patch Notes')
+    @onClick: modules.game_patchnotes.setTab('notes')
+
+  ChaosTabButton
+    id: tabChangelog
+    anchors.top: parent.top
+    anchors.left: tabNotes.right
+    margin-left: 4
+    width: 170
+    !text: tr('Changelog')
+    !tooltip: tr('Every change that reached the server or the client, newest first, from the project history. The entries are written in English.')
+    @onClick: modules.game_patchnotes.setTab('changelog')
+
+  ChaosLabelDim
+    id: weeksLabel
+    anchors.top: tabNotes.bottom
+    anchors.left: parent.left
+    margin-top: 8
     width: 210
     text-align: left
     !text: tr('Weeks')
@@ -181,7 +212,8 @@ ChaosMainWindow
 
   ChaosPanelDark
     id: noteFrame
-    anchors.top: parent.top
+    anchors.top: tabNotes.bottom
+    margin-top: 8
     anchors.left: weekFrame.right
     anchors.right: parent.right
     anchors.bottom: closeButton.top
@@ -214,6 +246,99 @@ ChaosMainWindow
   ChaosLabelDim
     id: emptyText
     anchors.centerIn: noteFrame
+    text-auto-resize: true
+    visible: false
+
+  ChaosLabel
+    id: changelogInfo
+    anchors.top: tabNotes.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    margin-top: 8
+    height: 16
+    text-align: left
+    visible: false
+
+  ChangelogFilter
+    id: filter_all
+    anchors.top: changelogInfo.bottom
+    anchors.left: parent.left
+    margin-top: 6
+    margin-left: 0
+    visible: false
+    !text: tr('All')
+    @onClick: modules.game_patchnotes.setFilter('all')
+
+  ChangelogFilter
+    id: filter_server
+    anchors.top: filter_all.top
+    anchors.left: filter_all.right
+    visible: false
+    !text: tr('Server')
+    @onClick: modules.game_patchnotes.setFilter('server')
+
+  ChangelogFilter
+    id: filter_client
+    anchors.top: filter_all.top
+    anchors.left: filter_server.right
+    visible: false
+    !text: tr('Client')
+    @onClick: modules.game_patchnotes.setFilter('client')
+
+  ChangelogFilter
+    id: filter_content
+    anchors.top: filter_all.top
+    anchors.left: filter_client.right
+    visible: false
+    !text: tr('Content')
+    @onClick: modules.game_patchnotes.setFilter('content')
+
+  ChangelogFilter
+    id: filter_website
+    anchors.top: filter_all.top
+    anchors.left: filter_content.right
+    visible: false
+    !text: tr('Website')
+    @onClick: modules.game_patchnotes.setFilter('website')
+
+  ChaosPanelDark
+    id: changelogFrame
+    anchors.top: filter_all.bottom
+    anchors.left: parent.left
+    anchors.right: parent.right
+    anchors.bottom: closeButton.top
+    margin-top: 6
+    margin-bottom: 8
+    visible: false
+
+  UIScrollArea
+    id: changelogList
+    anchors.top: changelogFrame.top
+    anchors.left: changelogFrame.left
+    anchors.right: changelogScroll.left
+    anchors.bottom: changelogFrame.bottom
+    margin: 4 8 10 14
+    layout:
+      type: verticalBox
+    vertical-scrollbar: changelogScroll
+    auto-focus: none
+    visible: false
+
+  ChaosScrollBar
+    id: changelogScroll
+    anchors.top: changelogFrame.top
+    anchors.right: changelogFrame.right
+    anchors.bottom: changelogFrame.bottom
+    margin-top: 3
+    margin-bottom: 3
+    margin-right: 3
+    step: 36
+    pixels-scroll: true
+    visible: false
+
+  ChaosLabelDim
+    id: changelogEmpty
+    anchors.centerIn: changelogFrame
     text-auto-resize: true
     visible: false
 

@@ -4,7 +4,11 @@
 --   server -> client  list {weeks = [{id, title, date, new}], selected, open, auto, autoEnabled, dailyFirst}
 --                     note {id, title, date, part, parts, intro, sections = [{name, kind, cont, items = [{text, level,
 --                           lead}]}]}   a long note comes in parts; PatchNotesView.join puts them back together
---   client -> server  open {id?} | get {id} | seen {id} | auto {enabled} | closed (window hidden)
+--                     changelog {available, server = {date}, published, entries = [{id, date, ts, pr, text, tags,
+--                           client, pending}]}   the Changelog tab: every change that shipped (server
+--                           changelog_core.lua, written at deploy time from the project history); a big answer comes in
+--                           parts (Chaos.sendChunked), so this module listens with ProtocolGame.registerExtendedJSONOpcode
+--   client -> server  open {id?} | get {id} | seen {id} | auto {enabled} | closed (window hidden) | changelog
 -- Opened from the top menu (Social > Patch Notes, toggle()). At login the server sends `auto` once
 -- per unseen week, in its turn in the server's login window queue (after the Daily Reward). The window also waits
 -- by itself while the Daily Reward window (game_daily) is visible, or expected (PatchNotesView.autoStep), so the two
@@ -26,6 +30,19 @@ local autoEvent
 local autoShownAt           -- clock when the window was opened by the auto-open (guard against a late daily window)
 local AUTO_TICK_MS = 250
 local AUTO_GUARD = 20       -- seconds after an auto-open during which a late Daily Reward window takes precedence
+
+-- the Changelog tab
+local tab = 'notes'         -- 'notes' | 'changelog'
+local changelog             -- the last answer {server, published, entries}
+local changelogAskedAt      -- clock of the last request (asked again after CHANGELOG_REFRESH seconds)
+local changelogFilter = 'all'
+local changelogSeenShown    -- the last look as it was when the tab was opened (the NEW marks stay while it is open)
+local CHANGELOG_REFRESH = 300
+local SEEN_KEY = 'chaos-changelog-seen' -- client setting: ts of the newest change at the last look
+local NOTES_WIDGETS = { 'weeksLabel', 'weekFrame', 'weekList', 'weekScroll', 'noteFrame', 'noteArea', 'noteScroll',
+  'autoCheck' }
+local CHANGELOG_WIDGETS = { 'changelogInfo', 'filter_all', 'filter_server', 'filter_client', 'filter_content',
+  'filter_website', 'changelogFrame', 'changelogList', 'changelogScroll' }
 
 -- ---------------------------------------------------------------- helpers
 local function now()
@@ -127,7 +144,7 @@ local function showEmpty(text)
   if not window then return end
   window.noteArea:destroyChildren()
   window.emptyText:setText(text)
-  window.emptyText:setVisible(true)
+  window.emptyText:setVisible(tab == 'notes')
   shownId = nil
 end
 
@@ -163,6 +180,119 @@ local function buildList()
   end
 end
 
+-- ---------------------------------------------------------------- changelog
+local function seenTs()
+  local ok, v = pcall(g_settings.getNumber, SEEN_KEY)
+  return ok and tonumber(v) or 0
+end
+
+local function saveSeen(ts)
+  if ts and ts > seenTs() then pcall(g_settings.set, SEEN_KEY, ts) end
+end
+
+-- this client's update version and build (the signed updater's state, init.lua's Services.update)
+local function clientInfo()
+  local ok, status = pcall(function()
+    local U = ChaosUpdater
+    return U and U.status and U.status() or nil
+  end)
+  local okU, update = pcall(function() return Services and Services.update end)
+  return V.clientInfo(ok and status or nil, okU and update or nil)
+end
+
+local function changelogTabText()
+  if not window then return end
+  local n = changelog and tab ~= 'changelog' and V.newCount(changelog.entries, seenTs()) or 0
+  window.tabChangelog:setText(n > 0 and tr('Changelog (%d new)', n) or tr('Changelog'))
+end
+
+local function askChangelog()
+  if changelogAskedAt and now() - changelogAskedAt < CHANGELOG_REFRESH then return end
+  changelogAskedAt = now()
+  send('changelog')
+end
+
+local function renderChangelog()
+  if not window or tab ~= 'changelog' then return end
+  local list = window.changelogList
+  list:destroyChildren()
+  window.changelogInfo:setText(V.infoText(changelog and changelog.server and changelog.server.date, clientInfo()))
+  for _, f in ipairs(V.FILTERS) do
+    local b = window['filter_' .. f]
+    if b then b:setChecked(f == changelogFilter) end
+  end
+  if not changelog then
+    window.changelogEmpty:setText(tr('Loading...'))
+    window.changelogEmpty:setVisible(true)
+    return
+  end
+  local rows, shown = V.changelogRows(changelog.entries, changelogFilter, changelogSeenShown or 0)
+  for _, r in ipairs(rows) do
+    if r.kind == 'date' then
+      local w = g_ui.createWidget('ChangelogDate', list)
+      w:setText(r.text)
+    else
+      local w = g_ui.createWidget('ChangelogEntry', list)
+      w.dot:setBackgroundColor(r.color)
+      if w.text.setColoredText then w.text:setColoredText(r.parts) else w.text:setText(r.plain) end
+      local row = w
+      w.text.onGeometryChange = function(label)
+        local h = math.max(14, label:getHeight())
+        if row:getHeight() ~= h then row:setHeight(h) end
+      end
+    end
+  end
+  local empty = #(changelog.entries or {}) == 0 and tr('No changes listed yet.')
+    or (shown == 0 and tr('No changes with this tag.')) or nil
+  window.changelogEmpty:setText(empty or '')
+  window.changelogEmpty:setVisible(empty ~= nil)
+  if window.changelogScroll then window.changelogScroll:setValue(0) end
+  if window:isVisible() then saveSeen(V.newestTs(changelog.entries)) end
+end
+
+function setFilter(f)
+  for _, known in ipairs(V.FILTERS) do
+    if known == f then
+      changelogFilter = f
+      renderChangelog()
+      return
+    end
+  end
+end
+
+function setTab(name)
+  if not window then return end
+  tab = name == 'changelog' and 'changelog' or 'notes'
+  for _, id in ipairs(NOTES_WIDGETS) do
+    local w = window[id]
+    if w then w:setVisible(tab == 'notes') end
+  end
+  for _, id in ipairs(CHANGELOG_WIDGETS) do
+    local w = window[id]
+    if w then w:setVisible(tab == 'changelog') end
+  end
+  window.emptyText:setVisible(tab == 'notes' and shownId == nil and window.emptyText:getText() ~= '')
+  window.changelogEmpty:setVisible(false)
+  window.tabNotes:setChecked(tab == 'notes')
+  window.tabChangelog:setChecked(tab == 'changelog')
+  if tab == 'changelog' then
+    changelogSeenShown = seenTs()
+    askChangelog()
+    renderChangelog()
+  end
+  changelogTabText()
+end
+
+local function onChangelog(data)
+  local entries = {}
+  for _, e in ipairs(type(data.entries) == 'table' and data.entries or {}) do
+    if type(e) == 'table' then entries[#entries + 1] = e end
+  end
+  changelog = { server = type(data.server) == 'table' and data.server or {}, entries = entries }
+  if tab == 'changelog' then renderChangelog() end
+  changelogTabText()
+end
+
 -- ---------------------------------------------------------------- window
 function show()
   if not window then return end
@@ -170,6 +300,10 @@ function show()
   window:raise()
   window:focus()
   if shownId then markSeen(shownId) end
+  if tab == 'changelog' then
+    changelogSeenShown = seenTs()
+    renderChangelog()
+  end
 end
 
 -- `closed` lets the server's login window queue (server daily.lua, ChaosLoginWindows) open the next window
@@ -255,6 +389,7 @@ local function onList(data)
     auto = nil
     stopAuto()
     show()
+    askChangelog() -- the tab shows how many changes are new
   elseif data.auto then
     startAuto(data.dailyFirst)
   end
@@ -281,17 +416,16 @@ local function onNote(data)
   if data.id == selectedId then renderNote(note) end
 end
 
-local function onExtendedOpcode(protocol, opcode, buffer)
-  local ok, msg = pcall(json.decode, buffer)
-  if not ok or type(msg) ~= 'table' then
-    g_logger.error('[patchnotes] invalid JSON: ' .. tostring(msg))
-    return
-  end
+-- msg: decoded by ProtocolGame (registerExtendedJSONOpcode, which also joins chunked answers)
+local function onExtendedOpcode(protocol, opcode, msg)
+  if type(msg) ~= 'table' or not window then return end
   local data = type(msg.data) == 'table' and msg.data or {}
   if msg.action == 'list' then
     onList(data)
   elseif msg.action == 'note' then
     onNote(data)
+  elseif msg.action == 'changelog' then
+    onChangelog(data)
   end
 end
 
@@ -301,9 +435,12 @@ local function onGameEnd()
   auto, autoShownAt = nil, nil
   weeks, entries, notes, seenSent, partial = {}, {}, {}, {}, {}
   selectedId, shownId = nil, nil
+  changelog, changelogAskedAt, changelogSeenShown = nil, nil, nil
   if window then
     window.weekList:destroyChildren()
     window.noteArea:destroyChildren()
+    window.changelogList:destroyChildren()
+    setTab('notes')
   end
 end
 
@@ -313,13 +450,14 @@ function init()
   window.autoCheck.onCheckChange = function(widget, checked)
     if not settingCheck then send('auto', { enabled = not checked }) end
   end
-  ProtocolGame.registerExtendedOpcode(OPCODE, onExtendedOpcode)
+  ProtocolGame.registerExtendedJSONOpcode(OPCODE, onExtendedOpcode)
   connect(g_game, { onGameEnd = onGameEnd })
+  setTab('notes')
 end
 
 function terminate()
   disconnect(g_game, { onGameEnd = onGameEnd })
-  ProtocolGame.unregisterExtendedOpcode(OPCODE)
+  pcall(ProtocolGame.unregisterExtendedJSONOpcode, OPCODE)
   stopAuto()
   if window then
     window:destroy()
