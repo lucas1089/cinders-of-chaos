@@ -365,6 +365,12 @@ final class CommandsTab {
         MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
         report.setOnClickListener(v -> ctl("Relatório dos testers", "testers report", 120, null));
         b.addView(ui.evenRow(status, report), ui.gap(6));
+        MaterialButton clean = ui.flat("Apagar os testers", 0);
+        clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
+                + "personagens e tudo deles. Precisa de 2 minutos desde que pararam (se rodando, para agora: toque "
+                + "de novo depois). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
+                () -> ctl("Apagar testers", "testers cleanup --yes", 120, null)));
+        b.addView(clean, ui.gap(6));
         quick.addView(c, ui.gap(10));
     }
 
