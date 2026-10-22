@@ -414,13 +414,26 @@ eq(countHits(), 0)
 
 reset()
 local splasher = newPlayer()
-equipPower(splasher, "shattersplash", 40)
-local brute = monster(100, 100)
+equipPower(splasher, "shattersplash", 16)
+M.setTier(splasher.slots[CONST_SLOT_RIGHT], M.attr("shattersplash"), 8) -- a new T8 roll
+M.refresh(splasher, true)
+eq(cache[splasher:getId()].shattersplash, 16)
+local brute = monster(1000, 1000)
 nearby = {brute, a, b}
-dealtHit(splasher, brute, 500) -- lethal: more than its health
+dealtHit(splasher, brute, 5000) -- lethal: more than its health
 events.ChaosPowersKill.onKill(splasher, brute)
 eq(countHits(COMBAT_PHYSICALDAMAGE), 2, "the killing blow bursts onto the two around")
-eq(hits[1].amount, 40, "40% of the health the killing blow took (100), not of the whole blow (500)")
+eq(hits[1].amount, 80, "16% of the health the blow took (1000, not the blow's 5000), shared by the two: 80 each")
+eq(P.splashShare(1000, 16, 1), 160); eq(P.splashShare(1000, 16, 0), 160, "no target: no division by zero")
+eq(P.splashShare(10, 5, 6), 1, "at least 1")
+-- the cut: an old roll reads as the top of its tier today, the stored value stays
+local oldSplash = newItem(2400)
+oldSplash:setCustomAttribute("rarity", 5)
+oldSplash:setCustomAttribute(M.attr("shattersplash"), 75)
+M.setTier(oldSplash, M.attr("shattersplash"), 8)
+eq(M.read(oldSplash)[1].value, 16, "an old T8 roll of 75% reads 16%")
+eq(oldSplash:getCustomAttribute(M.attr("shattersplash")), 75)
+eq(M.text("shattersplash", 16), "Shatter Splash: killing blows burst for 16%, shared by the monsters nearby")
 -- a kill without a recorded blow (a condition, another player) does not splash
 reset()
 clock = clock + 10000

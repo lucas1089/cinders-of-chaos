@@ -218,10 +218,11 @@ end
 
 local function splash(player, dead, hit, pct)
 	local c = CFG.shattersplash
-	local dmg = P.share(hit, pct)
 	local pos = dead:getPosition()
 	effect(pos, CONST_ME_EXPLOSIONHIT or CONST_ME_EXPLOSIONAREA)
-	for _, m in ipairs(monstersAround(pos, c.radius, c.targets, dead)) do
+	local around = monstersAround(pos, c.radius, c.targets, dead)
+	local dmg = P.splashShare(hit, pct, #around) -- the burst is shared by the monsters it hits
+	for _, m in ipairs(around) do
 		strike(player, m, COMBAT_PHYSICALDAMAGE, dmg, CONST_ME_HITAREA or CONST_ME_NONE)
 	end
 end

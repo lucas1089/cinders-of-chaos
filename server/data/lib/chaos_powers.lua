@@ -52,8 +52,9 @@ P.config = {
 	arclightning = {pct = 30, radius = 3, targets = 3, cooldownMs = 700},
 	-- Hunter's Rush: haste of `speed` for `ms`
 	hunterrush = {speed = 40, ms = 4000, cooldownMs = 8000},
-	-- Shatter Splash: the killing blow bursts onto up to `targets` monsters within `radius`; the power's % of the blow (of
-	-- the health it took, 2026-10-22: the overkill of a big hit on a nearly dead monster no longer counts)
+	-- Shatter Splash: the killing blow bursts onto up to `targets` monsters within `radius`: the power's % of the health
+	-- the blow took, shared by them (P.splashShare). 2026-10-22: it was 10-75% of the whole blow to each of them, in packs
+	-- 190-480% of a typical character's own damage per second; now 4-16%
 	shattersplash = {radius = 2, targets = 6, cooldownMs = 1000},
 	-- Smoldering Aura: every `tickMs` the power's damage per second x seconds burns up to `targets` monsters within `radius`
 	-- and in clear sight. The damage per second is at most `capBase` + 1 per `levelsPerPoint` character levels (P.auraCap:
@@ -84,8 +85,10 @@ P.defs = {
 	{key = "bloodrush", label = "Bloodrush", text = "Bloodrush: each kill adds %d%% damage (5 stacks, 6 s)", fmt = "pct",
 		side = "prefix", weight = 3, cap = 5, kinds = {weapon = true, jewel = true, other = true},
 		tiers = {{1, 1}, {1, 1}, {1, 2}, {2, 2}, {2, 3}, {3, 3}, {3, 4}, {4, 5}}},
-	{key = "shattersplash", label = "Shatter Splash", text = "Shatter Splash: killing blows burst for %d%% on monsters nearby",
-		fmt = "pct", side = "prefix", weight = 3, cap = 100, kinds = {weapon = true}, tiers = SPLASH},
+	-- Shatter Splash, cut 2026-10-22 (the ranges before in `cutFrom`, read like Smoldering Aura's)
+	{key = "shattersplash", label = "Shatter Splash",
+		text = "Shatter Splash: killing blows burst for %d%%, shared by the monsters nearby",
+		fmt = "pct", side = "prefix", weight = 3, cap = 25, kinds = {weapon = true}, tiers = PCT, cutFrom = SPLASH},
 	{key = "crimsonburst", label = "Crimson Burst", text = "Crimson Burst: %d%% chance on hit to heal 4%% of your health",
 		fmt = "pct", side = "suffix", weight = 3, cap = 25, kinds = {weapon = true, jewel = true, helmet = true},
 		tiers = PCT},
@@ -162,6 +165,12 @@ end
 -- the repeated hit of Echo Shot / Critical Echo / the arc of Arc Lightning / the splash of Shatter Splash, for a hit
 function P.share(hit, pct)
 	return math.max(1, floor(math.abs(tonumber(hit) or 0) * (tonumber(pct) or 0) / 100 + 1e-9))
+end
+
+-- Shatter Splash: the damage on each of `n` monsters for a killing blow that took `hit` health and a power of `pct`
+function P.splashShare(hit, pct, n)
+	n = math.max(1, tonumber(n) or 1)
+	return math.max(1, floor(math.abs(tonumber(hit) or 0) * (tonumber(pct) or 0) / 100 / n + 1e-9))
 end
 
 -- Crimson Burst: the heal for a character with this maximum health
