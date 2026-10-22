@@ -114,12 +114,41 @@ def compile_plan(path, out_dir):
 
 
 def read_area(out_dir, pid):
+    """(tiles, manifest, frame): frame is the view frame (<id>-frame.otbm, area_plan_compile.py), {} without one"""
     import area_plan_compile as PC
     man = json.load(open(os.path.join(out_dir, pid + '.json'), encoding='utf-8'))
     _h, tiles, problems = PC.read_otbm_full(open(os.path.join(out_dir, pid + '.otbm'), 'rb').read())
     if problems:
         raise InstallError('%s: the compiled area is not a planner OTBM: %s' % (pid, problems[0]))
-    return tiles, man
+    frame = {}
+    fp = os.path.join(out_dir, pid + '-frame.otbm')
+    if os.path.isfile(fp):
+        _h, frame, problems = PC.read_otbm_full(open(fp, 'rb').read())
+        if problems:
+            raise InstallError('%s: the view frame is not a planner OTBM: %s' % (pid, problems[0]))
+    return tiles, man, frame
+
+
+def frame_fill(world, areas, pids, claimed):
+    """the view frame tiles to add: of each area in pids (sorted, the first one wins a spot two frames share), only
+    where the map has no tile and no area, room or new tile (`claimed`) goes. A frame never replaces a tile"""
+    out = {}
+    for pid in sorted(pids):
+        for p, t in sorted(areas[pid].get('frame', {}).items()):
+            if p in out or p in claimed or world.has(p):
+                continue
+            out[p] = t
+    return out
+
+
+def frame_free(world, areas):
+    """free(p): the map holds p as the bare ground of another area's view frame (laid by an earlier install), so an
+    area placed there later may take it"""
+    spots = {}
+    for a in areas.values():
+        for p, t in a.get('frame', {}).items():
+            spots.setdefault(p, []).append(stack_of(t))
+    return lambda p: p in spots and world.stack(p) in spots[p]
 
 
 # ------------------------------------------------------------------------------------------------ world helpers
@@ -376,14 +405,17 @@ def assign_slots(order, slots, placed):
 
 
 # ------------------------------------------------------------------------------------------------ the areas
-def area_state(world, pid, tiles, keep_edited=False):
+def area_state(world, pid, tiles, keep_edited=False, free=None):
     """'todo', 'done', or raises with the reason. keep_edited (the map is a map master): an area placed before whose
     tiles the owner changed by hand in the map editor (at least half of them still as the plan has them) is 'edited'
     and left as it is, so a second install over the master keeps the edits instead of refusing. Otherwise an area
     placed before whose plan changed since (every tile of the plan on the map, some different now: a new spawn list
-    moves the decoration, which keeps off the spawn points) is 'update' and its tiles are written again"""
+    moves the decoration, which keeps off the spawn points) is 'update' and its tiles are written again. free
+    (frame_free): an area whose only tiles on the map are another area's view frame is 'todo' (the frame tiles go)"""
     have = [p for p in tiles if world.has(p)]
     if not have:
+        return 'todo'
+    if free and len(have) < len(tiles) and all(free(p) for p in have):
         return 'todo'
     if keep_edited:
         same = sum(1 for p in have if world.stack(p) == stack_of(tiles[p]))
@@ -559,6 +591,11 @@ def spawn_cells(block):
             re.findall(r'<(?:monster|npc)\b[^>]*?\bx="(-?\d+)" y="(-?\d+)" z="(\d+)"', block)]
 
 
+def spawned_tiles(text):
+    """every tile a spawn block of the spawn file stands a creature on"""
+    return {c for b in SPAWN_RE.findall(text) for c in spawn_cells(b)}
+
+
 def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
     """the spawn file with the plans' blocks (once each) and exactly the wanted display blocks; returns (text, notes).
     displays: {id: (monster, cells[, spawntime])}; takeover: display cells of the hall order whose unmarked blocks (the
@@ -696,12 +733,13 @@ def fixed_plans(dirs, hunts, log=print):
     return out
 
 
-def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log, monsters=None):
+def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log, monsters=None, known=()):
     """the hall order (hall_order.py): every hunt slot of the hall (the base teleports' places, the quest alcoves'
     places and the wings'), the base hunts of `rows` (hall_hunts.csv) and the placed content hunts, assigned by
     floor and band (hall_on) or as the base server had them (the content hunts in the wings as before; the quests
     stay in their alcoves). monsters: {lower name: file} of the server's monsters (hall_order.monster_files) to check
-    the display monsters against, None: not checked. Returns {'assign': {id: slot}, 'portal': {pos: dest or None},
+    the display monsters against, None: not checked. known: the tiles a spawn of the map stands a monster on (display
+    cells the stack test alone would miss: hall_order.display_cells). Returns {'assign': {id: slot}, 'portal': {pos: dest or None},
     'displays': {id: (monster, cells, spawntime)}, 'takeover': cells, 'base': [...], 'floors': [...], 'slots': [...],
     'quests': rows}"""
     import hall_order as H
@@ -709,7 +747,8 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
     all_rows = rows
     quests = H.quests_of(rows) if hall_on else []  # a quest alcove is a hunt slot once its quest has moved
     rows = H.hunts_of(rows)  # a `not a hunt` row keeps its teleport where it stands, untouched
-    slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots, quests), hall)
+    slots = H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots, quests, known,
+                                       hall.get('endRow')), hall)
     mons = {p['id']: p for p in order}
     ours = [dict(id=pid, lo=int(plans[pid][1]['level'][0]), hi=int(plans[pid][1]['level'][1]), level=None) for pid in placed]
     hunts = [dict(id=r['id'], lo=r['lo'], hi=r['hi'], level=r['level']) for r in rows] + ours
@@ -724,7 +763,8 @@ def hall_layout(world, cfg, rows, lay_slots, order, plans, placed, hall_on, log,
         # where the order puts each hunt: a way back that leads there goes back to the old place
         try:
             ordered = H.assign(hunts, H.share_cells(H.hall_slots(world, room, cfg['items']['sign'], rows, lay_slots,
-                                                                  H.quests_of(all_rows)), hall), hall)
+                                                                  H.quests_of(all_rows), known, hall.get('endRow')),
+                                                    hall), hall)
         except H.HallError:
             ordered = {}
     by_row = {r['id']: r for r in rows}
@@ -1082,8 +1122,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             if not out:
                 out = os.path.join(tmp, pid)
                 compile_plan(path, out)
-            tiles, man = read_area(out, pid)
-            areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan)
+            tiles, man, frame = read_area(out, pid)
+            areas[pid] = dict(out=out, tiles=tiles, man=man, plan=plan, frame=frame)
         grounds, tele_ids = kinds if kinds is not None else item_kinds(data_dir, log)
         if world is None:
             log('reading %s ...' % map_path)
@@ -1128,8 +1168,9 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             len(grow_cut & set(grow_tiles)) if rstate == 'todo' else 0, len(lay['slots'])))
         # the areas
         state = {}
+        free = frame_free(world, areas)
         for pid, a in areas.items():
-            st = area_state(world, pid, a['tiles'], keep_edited)
+            st = area_state(world, pid, a['tiles'], keep_edited, free)
             edited = st == 'edited'
             if edited:
                 st = 'done'
@@ -1156,8 +1197,10 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         hl = None
         if rows:
             try:
+                sp0 = spawn_path(map_path)
+                known = spawned_tiles(open(sp0, encoding='latin-1').read()) if sp0 else set()
                 hl = hall_layout(world, cfg, rows, lay['slots'], order, plans, placed, hall_on, log,
-                                 monsters=hall_order.monster_files(data_dir) or None)
+                                 monsters=hall_order.monster_files(data_dir) or None, known=known)
             except hall_order.HallError as e:
                 raise InstallError('hall order: %s' % e)
             slots = {pid: s for pid, s in hl['assign'].items() if pid in placed}
@@ -1190,6 +1233,9 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 new_tiles.update(areas[pid]['tiles'])
             if st == 'update':
                 rewrite.update(areas[pid]['tiles'])
+            if st == 'todo':
+                # an earlier install's view frame of another area under this one
+                rewrite.update(p for p in areas[pid]['tiles'] if world.has(p))
         remove = sorted((set(grow_cut) if rstate == 'todo' else set()) | rewrite)
         qlay = None
         if hl:
@@ -1200,8 +1246,13 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 log('hall: %d existing tile(s) to rewrite' % len(changed))
             new_tiles.update(changed)
             remove = sorted(set(remove) | {p for p in changed if world.has(p)})
+        # the view frames of the placed areas (area_plan_compile.py): bare rock where a player of the area would see void
+        frame_new = frame_fill(world, areas, placed_all, set(owner) | set(lay['tiles']) | set(new_tiles) | set(remove))
+        if frame_new:
+            log('view frames: %d tile(s) of bare rock around the areas' % len(frame_new))
+            new_tiles.update(frame_new)
         summary = dict(room=rstate, areas=state, slots={k: v['teleport'] for k, v in slots.items()}, new_tiles=len(new_tiles),
-                       removed=len(remove))
+                       removed=len(remove), frame=len(frame_new))
         if new_tiles and not dry:
             bak = map_path + '.bak'
             if not os.path.exists(bak):

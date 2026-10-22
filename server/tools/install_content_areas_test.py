@@ -602,6 +602,35 @@ def csv_name_checks():
                       '%s: %r is an old monster name (use its Chaos name)' % (r['id'], n))
 
 
+def display_cell_checks():
+    """beta 2026-10-22 ("wrong monster in the showcase"): two teleports sharing one counter had no free cell beside
+    them, so the base Dragons stayed in the cells behind them; the corridor's end teleports had no cells at all"""
+    import hall_order as H
+    room = {'teleportRows': [32254, 32258], 'cellRows': [32253, 32259], 'back': {'x': 31648}}
+    tiles = {(31636, 32259, 6): [1, 2], (31637, 32259, 6): [1], (31638, 32259, 6): [1, 1642],
+             (31640, 32259, 6): [1, 2], (31668, 32255, 5): [1, 5589], (31668, 32257, 5): [1, 5595]}
+
+    class W:
+        def stack(self, p):
+            return tiles.get(p)
+
+        def flags(self, p):
+            return 0
+    w = W()
+    got = H.display_cells(w, room, (31637, 32258, 6))
+    check(got == [(31637, 32259, 6)], 'no free cell beside: the cell behind the teleport: %s' % got)
+    got = H.display_cells(w, room, (31637, 32258, 6), known={(31638, 32259, 6)})
+    check(got == [(31638, 32259, 6)], 'a tile a spawn stands a monster on is a cell: %s' % got)
+    end = {(31668, 32255, 5), (31668, 32257, 5)}
+    got = H.display_cells(w, room, (31667, 32256, 5), known=end, end_row=32256)
+    check(got == [(31668, 32255, 5), (31668, 32257, 5)], 'end teleport: its outer cells: %s' % got)
+    check(H.display_cells(w, room, (31667, 32256, 5), end_row=32256) == [], 'end teleport: only known cells')
+    check(H.display_cells(w, room, (31667, 32256, 5), known=end) == [], 'no end row: no cells')
+    check(T.spawned_tiles('<spawns>\n\t<spawn centerx="11" centery="11" centerz="6" radius="1">\n'
+                          '\t\t<monster name="Warlock" x="0" y="-1" z="6" spawntime="120" />\n\t</spawn>\n</spawns>\n')
+          == {(11, 10, 6)}, 'spawned tiles: the monster\'s tile')
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -812,6 +841,7 @@ def main():
         new, notes = T.update_spawns(off, [], {'h': ('Hydra', [(11, 10, 6)])}, 120, takeover=())
         check('Warlock' in new and 'chaoshunt' not in new and any('already has a spawn' in n for n in notes),
               'an off-centre monster on a display cell is seen (no second monster on it): %s' % notes)
+        display_cell_checks()
     finally:
         shutil.rmtree(root, ignore_errors=True)
     csv_name_checks()

@@ -16221,6 +16221,15 @@ west to east (north before south in a column). A floor with too few slots is gro
   write back (a container) is refused.
   `--remove-hall` puts every base hunt back where the CSV says it stood, the quests in their old alcoves and the planned hunts in the wings again;
   the map backup `<map>.otbm.bak` is written before the first change as for every content install. Idempotent both ways.
+- **Showcase cells, beta 2026-10-22** (owner: "wrong monster in the showcase", two Dragons [42] beside Rotbloom
+  Sanctum 665; Fangclaw [508] and Lurkskin [517] beside a 1850-2000 hunt). A slot's display cells were only the
+  tiles beside its teleport holding nothing but ground. Two teleports sharing one counter (z 6, 31637 and 31639 on
+  the south row) had none, and neither had the corridor's end teleports of z 5 (their cells carry a carpet edge), so
+  the base server's own display blocks there were never taken over and our display never added. Now
+  (`hall_order.display_cells`) a teleport with no free cell beside it takes the cell right behind it, a tile a spawn
+  of the map already stands a monster on counts as a cell (`install_content_areas.spawned_tiles`), and an end
+  teleport takes the two cells on its outer side. On the base map only z 6 (31659, 32254) is left without a cell (it
+  shares its one cell with 31657). The next install replaces the old blocks.
 - **Beta fixes, 2026-10-20** (owner: "the teleports are wrong ... the quest rewards stayed and the quests are gone",
   "many black squares in the TP room", "the teleports inside the hunts take you to random places"; the cause of each
   checked on a copy of the base map with the installer of the time):
