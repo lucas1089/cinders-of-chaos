@@ -761,6 +761,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
 | 7101500 - 7101549 | tales (`tales_config.lua` `storage`): +0 language (1 en, 2 pt), +1 + slot quest state, +21 + slot kill count |
 | 7101550 - 7101559 | first hour (`firsthour_config.lua` `storage`): +0 hints given (bits), +1 hunt reveals given (bits), +2 hints known, +3 reveals known |
+| 7101560 - 7101599 | tales, slots 20-39 (`tales_config.lua` `storage.ext`): +(slot - 20) quest state, +20 + (slot - 20) kill count |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
@@ -19656,14 +19657,60 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 
 ## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
 
-Story quests for the bands with none (docs/CONTENT.md): The Bone Choir (200), The Wyrm Tithe (500), Requiem for the
-Ash-Sister (800) and The Last Ember (1000). The giver is Archivist Maelis (`data/npc/Archivist Maelis.xml`,
-`npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup; `install_class_ascension.py` copies the
-NPC folder. Steps: kill (party members within 30 squares share the kill), deliver, report. Rewards: experience, bank gold,
-orbs, faction reputation and a lore book. Every text is English and Brazilian Portuguese: a player says "portugues" or
-"english" to the Archivist, or `Chaos.t`'s language decides. The Archivist also answers lore questions from
-`lore_data.lua`. Modal windows 7170-7171. Storages 7101500 - 7101549 (a slot per tale; never reuse one). No spoken
-`!command`. Pure logic: `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
+Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4). The giver is Archivist Maelis
+(`data/npc/Archivist Maelis.xml`, `npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup;
+`install_class_ascension.py` copies the NPC folder. She gives and closes every tale.
+
+| Level | Tale | Faction | Requires |
+|---|---|---|---|
+| 8 | Teeth in the Cellars | circle | |
+| 12 | The Lantern Road | vigil | Teeth in the Cellars |
+| 15 | The Troll Toll | compact | |
+| 20 | The Deserters of Anvildeep | compact | |
+| 25 | Rime and Ruin | circle | |
+| 30 | The Stone Watchers | vigil | The Lantern Road |
+| 40 | The Grave Circle | vigil | The Stone Watchers |
+| 50 | The Dragon Census | choir | |
+| 65 | The Moon-Sick | circle | |
+| 70 | Lords of the Brood | choir | The Dragon Census |
+| 85 | The Hundred Heads | circle | The Moon-Sick |
+| 100 | Where the Lost Souls Walk | vigil | |
+| 120 | The Bone Court | vigil | Where the Lost Souls Walk |
+| 130 | Outcasts of the Pit | compact | |
+| 160 | Wings of the Unburied | choir | Lords of the Brood |
+| 200 | The Bone Choir | | |
+| 340 | The Mould Gardens | circle | |
+| 360 | Phantoms of the Furnace | compact | |
+| 470 | The Ash Widows | circle | |
+| 500 | The Wyrm Tithe | | |
+| 800 | Requiem for the Ash-Sister | | |
+| 800 | The Keeper's Key | compact | |
+| 1000 | The Last Ember | | |
+| 1000 | The Gravecage | vigil | |
+| 1300 | Kharzun's Anvil | compact | |
+| 1600 | The Fallen Seraph | choir | Kharzun's Anvil |
+| 2000 | The Chained Wyrm | vigil | The Fallen Seraph |
+
+- **Steps.** kill (party members within 30 squares share the kill), visit, talk, deliver, report. The last step is
+  always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
+- **Visit.** Stand within `radius` of a place: a hunting mark of `data/chaos_poi.lua`. Only characters with an open
+  visit step are watched (`T.watch`); the global event `ChaosTalesVisit` checks them every `visitMs` (3 s) and sweeps
+  all players every `visitSweep` ticks. The place is revealed on the map when the step opens (`ChaosPoi.seen`, opcode
+  153 `reveal`).
+- **Talk.** Ask a faction NPC for "tales" (Warden Ysolde, Forgemaster Brannoc, Cantor Velith, Elder Bramwyn).
+  `npc/scripts/chaos_faction_npc.lua` loads `tales_core.lua` and does the step in its own Lua state; with nothing
+  pending the faction dialogue runs as before.
+- **Chains.** `requires` names a tale that must be done first. A locked tale is not offered, and a forged accept is
+  refused.
+- **Rewards.** Experience, bank gold, orbs, faction reputation and a lore book. The experience is a share of the next
+  level, measured at most at the top of the tale's band (`M.xpLevel`), so a high character gets no huge reward from a
+  low tale.
+
+Every text is English and Brazilian Portuguese: a player says "portugues" or "english" to the Archivist, or `Chaos.t`'s
+language decides. The Archivist also answers lore questions from `lore_data.lua`. The list shows tales in progress
+first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 - 7101549 (slots 1-19) and 7101560 -
+7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
+`tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
 
 ## First hour (`firsthour.lua`, `firsthour_core.lua`, `firsthour_config.lua`)
 

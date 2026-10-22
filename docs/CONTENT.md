@@ -110,15 +110,15 @@ Revenant and Cinderskull Reaver in the chasm).
 
 | Band | What a player can do | Story or task |
 |---|---|---|
-| 1-20 | tutorial island, 5 stations; base quest lines; milestone gift at 20; bounty from 8 | tutorial lessons; base lines have a story |
-| 20-50 | base quest lines; invasions from 30; bounty; achievements | story in the base lines |
-| 50-100 | base quest lines; arena from 50; Seasonal Journey chapter 1 | journey chapters are task lists with one line of text |
-| 100-200 | Ascension quest at 100; Vocation Trials; rifts; Ember Descent; guild siege; journey chapter 2 at 150 | Ascension and Trials have a story |
+| 1-20 | tutorial island, 5 stations; base quest lines; milestone gift at 20; bounty from 8; 3 tales from 8 | tutorial lessons; base lines have a story; tales |
+| 20-50 | base quest lines; invasions from 30; bounty; achievements; 4 tales | story in the base lines; tales |
+| 50-100 | base quest lines; arena from 50; Seasonal Journey chapter 1; 4 tales | journey chapters are task lists with one line of text; tales |
+| 100-200 | Ascension quest at 100; Vocation Trials; rifts; Ember Descent; guild siege; journey chapter 2 at 150; 4 tales | Ascension, Trials and tales have a story |
 | 200-300 | journey chapter 3; Trials; rifts; **The Bone Choir** | tasks before; now one tale |
-| 300-500 | world bosses; Omens; journey chapters 4-5; faction contracts | tasks; world boss and faction lines |
+| 300-500 | world bosses; Omens; journey chapters 4-5; faction contracts; 3 tales | tasks; world boss and faction lines; tales |
 | 500-700 | journey chapter 6; Trials Merciless; Omens; **The Wyrm Tithe** | tasks before; now one tale |
-| 700-1000 | Ashen Sepulchre; Ascended Omens; journey chapters 7-8; **Requiem for the Ash-Sister** | boss intros before; now one tale |
-| 1000+ | the Cinderheart; generated areas; **The Last Ember** | nothing before; now one tale |
+| 700-1000 | Ashen Sepulchre; Ascended Omens; journey chapters 7-8; **Requiem for the Ash-Sister**, **The Keeper's Key** | boss intros before; now two tales |
+| 1000+ | the Cinderheart; generated areas; **The Last Ember** and 4 more tales up to 2000 | nothing before; now five tales |
 
 The base world has 35 quest lines with 310 missions in its quest log, renamed at install by `worldtexts`. They were
 written for low and mid levels. Our achievements: 173 in 10 groups, mostly counters. Bestiary kill tasks and bounty
@@ -126,11 +126,37 @@ contracts cover every band but are tasks without a story.
 
 ## Tales
 
-Short quests with a story for the bands that had none. Archivist Maelis gives them. She stands next to the first
-temple, placed at startup like the Ascendant Oracle, and shows on the map markers.
+Short quests with a story, 27 from level 8 to 2000. Archivist Maelis gives them and closes them. She stands next to
+the first temple, placed at startup like the Ascendant Oracle, and shows on the map markers. Steps: kill, visit (stand
+at a hunting mark, revealed on the map), talk (ask a faction leader about "tales"), deliver and report. A chained tale
+opens when the one before it is done. Experience is a share of the next level, measured at most at the top of the
+tale's band. "x" below is that share; gold goes to the bank.
 
 | Tale | From level | Steps | Rewards |
 |---|---|---|---|
+| Teeth in the Cellars | 8 | visit the cellars; kill 25 rats; report | 1.0x, 1,500 gold, 100 Thornbound Circle reputation, the book "The Cellars of Cinderhold" |
+| The Lantern Road | 12 | after Teeth in the Cellars; ask Warden Ysolde; kill 30 restless dead; report | 1.0x, 3,000 gold, 150 Ashen Vigil reputation, the book "The Lantern Road" |
+| The Troll Toll | 15 | kill 35 trolls; ask Forgemaster Brannoc; report | 1.0x, 4,000 gold, 150 Cinderforge Compact reputation |
+| The Deserters of Anvildeep | 20 | visit the dwarven mine; kill 40 dwarves; report | 0.8x, 6,000 gold, 2 Orbs of Awakening, 200 Compact reputation |
+| Rime and Ruin | 25 | visit the frost giants; kill 40; ask Elder Bramwyn; report | 0.8x, 7,500 gold, 2 Orbs of Awakening, 200 Circle reputation |
+| The Stone Watchers | 30 | after The Lantern Road; visit the gargoyles; kill 40; report | 0.8x, 10,000 gold, 3 Orbs of Awakening, 250 Vigil reputation |
+| The Grave Circle | 40 | after The Stone Watchers; visit; kill 40 necromancers and bonebeasts; kill 15 liches and banshees; report | 0.75x, 15,000 gold, 2 Whetstones, 1 Tempering orb, 300 Vigil reputation, the book "The Grave Circle" |
+| The Dragon Census | 50 | visit the dragon lair; kill 40 dragons; ask Cantor Velith; report | 0.75x, 22,000 gold, 2 Whetstones, 300 Veiled Choir reputation, the book "The Dragon Census" |
+| The Moon-Sick | 65 | kill 40 were-beasts; ask Elder Bramwyn; report | 0.7x, 30,000 gold, 1 Orb of Upheaval, 400 Circle reputation, the book "The Moon-Sick" |
+| Lords of the Brood | 70 | after The Dragon Census; kill 30 dragon lords and frost dragons; bring 10 rune shards | 0.7x, 35,000 gold, 2 Tempering orbs, 400 Choir reputation |
+| The Hundred Heads | 85 | after The Moon-Sick; visit the hydras; kill 40; report | 0.7x, 40,000 gold, 2 Orbs of Upheaval, 400 Circle reputation |
+| Where the Lost Souls Walk | 100 | kill 50 lost souls and wraiths; ask Warden Ysolde; report | 0.6x, 50,000 gold, 2 Orbs of Upheaval, 450 Vigil reputation |
+| The Bone Court | 120 | after Where the Lost Souls Walk; kill 50 of the bone court; bring 15 rune shards | 0.6x, 70,000 gold, 3 Orbs of Upheaval, 500 Vigil reputation, the book "The Bone Court" |
+| Outcasts of the Pit | 130 | kill 50 demon outcasts, torturers and hellspawn; ask Forgemaster Brannoc; report | 0.6x, 75,000 gold, 2 Orbs of Upheaval, 500 Compact reputation |
+| Wings of the Unburied | 160 | after Lords of the Brood; visit; kill 40 undead dragons and hellflayers; kill 15 black dragons; report | 0.6x, 100,000 gold, 3 Orbs of Upheaval, 550 Choir reputation |
+| The Mould Gardens | 340 | visit; kill 60 rotten golems, mould phantoms and crawlers; report | 0.5x, 250,000 gold, 2 Orbs of Upheaval, 1 Orb of Fate, 700 Circle reputation |
+| Phantoms of the Furnace | 360 | kill 60 infernal demons and phantoms; bring 20 rune shards | 0.5x, 280,000 gold, 1 Orb of Fate, 700 Compact reputation |
+| The Ash Widows | 470 | kill 60 widows, hexers and adepts; ask Elder Bramwyn; report | 0.5x, 350,000 gold, 2 Orbs of Fate, 800 Circle reputation |
+| The Keeper's Key | 800 | defeat Vault Keeper Ossrim; bring 30 rune shards | 0.4x, 900,000 gold, 1 Orb of Grafting, 1,100 Compact reputation, the book "The Wardens of the Deep" |
+| The Gravecage | 1000 | defeat Ossivane the Gravecage; ask Warden Ysolde; report | 0.3x, 2,200,000 gold, 2 Orbs of Grafting, 1,400 Vigil reputation, the book "The Four Deeper Doors" |
+| Kharzun's Anvil | 1300 | kill 80 of the crucible's beasts; defeat Forgewarden Kharzun; report | 0.3x, 3,000,000 gold, 2 Orbs of Grafting, 1,600 Compact reputation |
+| The Fallen Seraph | 1600 | after Kharzun's Anvil; kill 80 of the sanctum's dead; defeat Vaelith; ask Cantor Velith; report | 0.3x, 4,000,000 gold, 3 Orbs of Grafting, 1,800 Choir reputation |
+| The Chained Wyrm | 2000 | after The Fallen Seraph; defeat Azhkarrath the Chained Wyrm; report | 0.25x, 5,000,000 gold, 3 Orbs of Grafting, 2,000 Vigil reputation, the book "The Fall of the Cinders" |
 | The Bone Choir | 200 | kill 40 of the drowned chapel's dead; tell her what they sang | half a level of experience, 150,000 gold, 3 Orbs of Upheaval, 600 Ashen Vigil reputation, the book "Ashen Crypt" |
 | The Wyrm Tithe | 500 | kill 50 wrym; bring 20 rune shards | half a level, 400,000 gold, 2 Orbs of Fate, 800 Cinderforge Compact reputation, the book "Obsidian Hall" |
 | Requiem for the Ash-Sister | 800 | kill 60 of the Sovereign's lost court; defeat Morwen the Ash-Sister in the Sepulchre; return | 0.4 of a level, 1,000,000 gold, 1 Orb of Grafting, 1,200 Ashen Vigil reputation, the book "The Ashen Sepulchre" |
@@ -190,5 +216,6 @@ Now: 22 short entries in English and Brazilian Portuguese in `server/data/script
 2. Check the art of the dormant monsters in the client before a plan that uses them goes live.
 3. Add two or three signposts by the first temple in the map editor, for example "Hunting grounds: see your map" and
    "Shops and the Loot Buyer".
-4. Walk the four tales once on the test server: the Archivist's placement, the Portuguese switch, a turn-in.
+4. Walk the tales once on the test server: the Archivist's placement, the Portuguese switch, a turn-in, a visit
+   place of each low tale, a talk step at each faction leader, a chain opening.
 5. Walk the Thief line's tutorial stations 3-5.

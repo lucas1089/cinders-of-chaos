@@ -43,7 +43,7 @@ Rules for this list:
 | Charm kinds | 4 shapes + 4 uniques | server/README.md "Charms" |
 | Achievements | 173 in 10 categories | server/README.md "Achievements" |
 | World hunts per band | see section 4 | docs/CONTENT.md |
-| Tales (story quests of our own) | 4 | docs/CONTENT.md |
+| Tales (story quests of our own) | 27 | docs/CONTENT.md |
 | Base quest lines | 35 lines, 310 missions | docs/CONTENT.md |
 | Seasonal Journey chapters | 8 | docs/CONTENT.md |
 | Lore entries | 29 | Codex "Lore" |
@@ -181,19 +181,43 @@ World content:
 
 Quests:
 
-- **Tales.** Four story quests from Archivist Maelis (#142). Done, not run on a live server.
+- **Tales.** 27 story quests from Archivist Maelis (#142; 23 added 2026-10-22, #207). Five are chains. Done, not run
+  on a live server.
 
 | Tale | From level |
 |---|---|
+| Teeth in the Cellars | 8 |
+| The Lantern Road | 12 |
+| The Troll Toll | 15 |
+| The Deserters of Anvildeep | 20 |
+| Rime and Ruin | 25 |
+| The Stone Watchers | 30 |
+| The Grave Circle | 40 |
+| The Dragon Census | 50 |
+| The Moon-Sick | 65 |
+| Lords of the Brood | 70 |
+| The Hundred Heads | 85 |
+| Where the Lost Souls Walk | 100 |
+| The Bone Court | 120 |
+| Outcasts of the Pit | 130 |
+| Wings of the Unburied | 160 |
 | The Bone Choir | 200 |
+| The Mould Gardens | 340 |
+| Phantoms of the Furnace | 360 |
+| The Ash Widows | 470 |
 | The Wyrm Tithe | 500 |
 | Requiem for the Ash-Sister | 800 |
+| The Keeper's Key | 800 |
 | The Last Ember | 1000 |
+| The Gravecage | 1000 |
+| Kharzun's Anvil | 1300 |
+| The Fallen Seraph | 1600 |
+| The Chained Wyrm | 2000 |
 
 - **Ascension quest** at level 100 (C9). Done.
 - **Vocation Trials** at 100-250, 250-500, 400-1000. Done.
 - **Base quest lines.** 35 lines, 310 missions, renamed at install.
-- **Lore.** 29 entries in the Codex and wiki Lore tabs, and as books.
+- **Lore.** 35 entries in the Codex and wiki Lore tabs, and as books.
 
 ## 5. Bosses
 
