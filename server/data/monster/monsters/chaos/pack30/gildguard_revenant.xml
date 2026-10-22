@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Gildguard Revenant" nameDescription="a gildguard revenant" race="undead" experience="21500" speed="42" manacost="0">
 	<health now="25500" max="25500" />
-	<look type="2272" head="39" body="95" legs="76" feet="21" corpse="6068"/>
+	<look type="1530" corpse="6068" />
 	<level min="1140" max="1180"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

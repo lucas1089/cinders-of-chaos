@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Loricate Orger" nameDescription="a Loricate Orger" race="venom" experience="8900" speed="55" manacost="0">
 	<health now="17200" max="17200"/>
-	<look type="2270" head="40" body="95" legs="95" feet="95" corpse="6068"/>
+	<look type="403" corpse="6068" />
 	<targetchange interval="5000" chance="0" />
 	<level min="790" max="830"/>
 	<flags>

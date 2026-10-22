@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Chained Runt" nameDescription="a chained runt" race="blood" experience="11350" speed="49">
 	<health now="19900" max="19900" />
-	<look type="2267" head="57" body="95" legs="76" feet="75" corpse="6068"/>
+	<look type="1490" corpse="6068" />
 	<level min="870" max="910"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>

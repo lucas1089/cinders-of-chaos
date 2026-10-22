@@ -9250,6 +9250,11 @@ new sprite: every look was in the client already, 64 of them as gallery rows of 
   0.45), at least 2; in tithe_crypt and noose_cache the whole entry of 2). The plan's total count, zones, respawn and
   packs stay, so the hunt's density does not move. `install_content_areas.py` writes them
   into the map like every plan spawn. The display monster of each hunt teleport keeps spawning.
+- **Looks reverted (owner, 2026-10-22: "esses sprites ficaram ruins. volte aos que eram antes").** The sheet looks are
+  no longer used by any monster of the hunts. Each of the 51 new monsters carries its peer's look (own corpse kept).
+  Our 8 monsters below are back on their old looks. The 9 base monsters are back on their stock looks through
+  `base_restore_*` rows of `picks.csv` (family `base`, look < 2000), so `baselooks` also undoes an earlier install.
+  The two lists below are history.
 - **New looks of our monsters** (the old look is not overwritten, only no longer used by them): Lacewing Moth 1480 ->
   2297, Tundra Troll 257 -> 2238, Loricate Orger 403 -> 2270, Ironhook Corsair 1492 -> 2245, Mercenary 1502 -> 2251,
   Mercenary Ranger 1503 -> 2249, Swamp Snapper 886 -> 2302, Webbound Crawler 579 -> 2257. `apply_monster_looks.py`

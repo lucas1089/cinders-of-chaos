@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Ashveil Hierarch" nameDescription="an ashveil hierarch" race="undead" experience="35250" speed="38" manacost="0">
 	<health now="29900" max="29900"/>
-	<look type="2290" head="57" body="76" legs="40" feet="38" corpse="6068"/>
+	<look type="2219" corpse="6068"/>
 	<level min="1480" max="1520"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

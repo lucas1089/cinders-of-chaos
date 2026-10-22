@@ -2,7 +2,7 @@
 <monster name="Leechwing" nameDescription="a leechwing" race="blood" experience="12050" speed="48">
 	<health now="20400" max="20400" />
 	<level min="890" max="930"/>
-	<look type="2300" head="76" body="21" legs="76" feet="56" corpse="6068"/>
+	<look type="1501" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
 	<flags>
 		<flag summonable="0"/>

@@ -2,7 +2,7 @@
 <monster name="Thornveil Wraith" nameDescription="a thornveil wraith" race="undead" experience="6050" speed="54" manacost="0">
 	<!-- Death Reaper -->
 	<health now="14900" max="14900"/>
-	<look type="2261" head="38" body="95" legs="57" feet="76" corpse="6068"/>
+	<look type="1548" corpse="6068"/>
 	<level min="710" max="750"/>
 	<targetchange interval="3000" chance="20"/>
 	<flags>

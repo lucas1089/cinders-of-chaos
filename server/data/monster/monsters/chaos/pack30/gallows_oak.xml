@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Gallows Oak" nameDescription="a gallows oak" race="venom" experience="6700" speed="54">
 	<health now="15700" max="15700" />
-	<look type="2241" head="76" body="40" legs="76" feet="62" corpse="6068"/>
+	<look type="1495" corpse="6068" />
 	<level min="730" max="770"/>
 	<targetchange interval="5000" chance="8" />
 	<flags>

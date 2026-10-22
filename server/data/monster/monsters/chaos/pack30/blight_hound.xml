@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Blight Hound" nameDescription="a blight hound" race="venom" experience="7950" speed="52">
 	<health now="17000" max="17000" />
-	<look type="2263" head="75" body="20" legs="76" feet="76" corpse="6068"/>
+	<look type="686" corpse="6068" />
 	<level min="770" max="810"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

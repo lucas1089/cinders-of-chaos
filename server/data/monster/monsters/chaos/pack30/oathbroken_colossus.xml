@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Oathbroken Colossus" nameDescription="an oathbroken colossus" race="undead" experience="43600" speed="31" manacost="0">
 	<health now="31700" max="31700"/>
-	<look type="2278" head="76" body="131" legs="76" feet="41" corpse="6068"/>
+	<look type="2218" corpse="6068"/>
 	<level min="1680" max="1720"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

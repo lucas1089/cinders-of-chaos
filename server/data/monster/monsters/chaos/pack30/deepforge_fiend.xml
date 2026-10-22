@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Deepforge Fiend" nameDescription="a deepforge fiend" race="fire" experience="13900" speed="50">
 	<health now="22000" max="22000"/>
-	<look type="2239" head="76" body="95" legs="76" feet="38" corpse="6068"/>
+	<look type="2122" corpse="6068"/>
 	<level min="960" max="1000"/>
 	<targetchange interval="3000" chance="20"/>
 	<flags>

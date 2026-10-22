@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Limb Hoarder" nameDescription="a limb hoarder" race="undead" experience="26250" speed="40" manacost="0">
 	<health now="27300" max="27300"/>
-	<look type="2275" head="21" body="76" legs="39" feet="40" corpse="6068"/>
+	<look type="1467" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />
 	<level min="1260" max="1300"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

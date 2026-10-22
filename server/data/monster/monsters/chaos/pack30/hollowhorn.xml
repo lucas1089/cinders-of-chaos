@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Hollowhorn" nameDescription="a hollowhorn" race="blood" experience="39350" speed="36" manacost="0">
 	<health now="30800" max="30800"/>
-	<look type="2299" head="76" body="57" legs="20" feet="95" corpse="6068"/>
+	<look type="2223" corpse="6068"/>
 	<level min="1580" max="1620"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

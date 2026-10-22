@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Gnawbone Swarm" nameDescription="a gnawbone swarm" race="undead" experience="47900" speed="37" manacost="0">
 	<health now="32500" max="32500"/>
-	<look type="2273" head="2" body="22" legs="76" feet="37" corpse="6068"/>
+	<look type="1449" corpse="6068"/>
 	<level min="1780" max="1820"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

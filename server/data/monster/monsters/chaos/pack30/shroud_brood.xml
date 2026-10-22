@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Shroud Brood" nameDescription="a shroud brood" race="venom" experience="7300" speed="53">
 	<health now="16300" max="16300" />
-	<look type="2256" head="95" body="19" legs="38" feet="19" corpse="6068"/>
+	<look type="579" corpse="6068" />
 	<level min="750" max="790"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>

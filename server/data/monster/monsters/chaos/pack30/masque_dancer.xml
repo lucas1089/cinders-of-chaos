@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Masque Dancer" nameDescription="a masque dancer" race="blood" experience="20650" speed="43" manacost="0">
 	<health now="25100" max="25100"/>
-	<look type="2276" head="19" body="76" legs="38" feet="22" corpse="6068"/>
+	<look type="1475" corpse="6068" />
 	<level min="1120" max="1160"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>

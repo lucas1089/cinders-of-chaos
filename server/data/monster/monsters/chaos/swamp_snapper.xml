@@ -2,7 +2,7 @@
 <monster name="Swamp Snapper" nameDescription="a swamp snapper" race="blood" experience="8200" speed="55" manacost="0">
 	<health now="16200" max="16200"/>
 	<level min="760" max="800"/>
-	<look type="2302" head="76" body="57" legs="95" feet="76" corpse="6068"/>
+	<look type="886" corpse="6068"/>
 	<targetchange interval="5000" chance="8"/>
 	<flags>
 		<flag summonable="0"/>

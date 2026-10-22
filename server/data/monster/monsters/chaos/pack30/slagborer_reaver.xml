@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Slagborer Reaver" nameDescription="a slagborer reaver" race="venom" experience="19900" speed="43" manacost="0">
 	<health now="24800" max="24800"/>
-	<look type="2310" head="39" body="20" legs="37" feet="22" corpse="6068"/>
+	<look type="1499"  corpse="6068"/>
 	<level min="1100" max="1140"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>

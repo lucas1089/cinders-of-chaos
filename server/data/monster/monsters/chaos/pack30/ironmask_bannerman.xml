@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Ironmask Bannerman" nameDescription="an ironmask bannerman" race="blood" experience="10650" speed="49">
 	<health now="19400" max="19400" />
-	<look type="2248" head="57" body="76" legs="95" feet="96" corpse="6068"/>
+	<look type="1493" corpse="6068" />
 	<level min="850" max="890"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Rimecairn" nameDescription="a rimecairn" race="energy" experience="16100" speed="45" manacost="0">
 	<health now="22900" max="22900"/>
-	<look type="2306" head="30" body="11" legs="76" feet="10" corpse="6068"/>
+	<look type="1531" corpse="6068" />
 	<level min="1000" max="1040"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

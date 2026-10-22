@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Rootbound Pilgrim" nameDescription="a rootbound pilgrim" race="blood" experience="9250" speed="51" manacost="0">
 	<health now="18200" max="18200"/>
-	<look type="2282" head="40" body="76" legs="41" feet="76" corpse="6068"/>
+	<look type="1541" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068"/>
 	<level min="810" max="850"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>

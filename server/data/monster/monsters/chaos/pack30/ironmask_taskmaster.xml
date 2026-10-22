@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Ironmask Taskmaster" nameDescription="an ironmask taskmaster" race="blood" experience="8600" speed="51">
 	<health now="17600" max="17600" />
-	<look type="2252" head="57" body="76" legs="95" feet="96" corpse="6068"/>
+	<look type="1491" corpse="6068" />
 	<level min="790" max="830"/>
 	<targetchange interval="4000" chance="20" />
 	<flags>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Slagheart" nameDescription="a slagheart" race="fire" experience="18400" speed="44" manacost="0">
 	<health now="24100" max="24100"/>
-	<look type="2311" head="57" body="39" legs="57" feet="22" corpse="6068"/>
+	<look type="1500"  corpse="6068"/>
 	<level min="1060" max="1100"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>
