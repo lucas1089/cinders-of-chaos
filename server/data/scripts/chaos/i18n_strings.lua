@@ -455,6 +455,8 @@ return {
 			"+25% Chaos loot (rolagens extras de loot e drops de moeda) para todo personagem padrão",
 		["+25% skill and magic level training for every standard character"] =
 			"+25% sobre o treino de skills e magic level para todo personagem padrão",
+		["Magic and rare monsters appear 50% more often, everywhere"] =
+			"Monstros mágicos e raros aparecem 50% mais vezes, no mundo todo",
 		["You cannot use this while you are in combat."] = "Você não pode usar isto em combate.",
 		["You cannot use this inside a dungeon."] = "Você não pode usar isto dentro de uma dungeon.",
 		["You cannot use this inside the Infinity Tower."] = "Você não pode usar isto dentro da Infinity Tower.",

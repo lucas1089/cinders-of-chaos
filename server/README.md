@@ -3531,10 +3531,14 @@ refuses it (action id), so it stays an item.
 
 **World buffs.** A purchase broadcasts "<buyer> activated the World Experience ..." to everybody (and fireworks); buying
 while it runs extends it ("<buyer> extended ..."). A purchase that would leave more than 180 minutes is refused before
-coins are taken. The expiry times are global storages 7100921 (xp), 7100922 (loot), 7100923 (skill) and rows
-`chaos_worldbuff_xp|loot|skill` of the stock `server_config` table: they survive `/reload` and a **restart** (checked on
+coins are taken. The expiry times are global storages 7100921 (xp), 7100922 (loot), 7100923 (skill), 7100924 (hunt) and
+rows `chaos_worldbuff_xp|loot|skill|hunt` of the stock `server_config` table: they survive `/reload` and a **restart** (checked on
 the test server). Adventure > Events lists the active ones with the time left; players get the list at login; the end is
 broadcast (30 s check). Experience: `EventCallback.onGainExperience` (needs `patch_base_events.py`), monsters only.
+**World Hunt** (beta 2026-10-22, owner: "a world boost in the store that raises the chance of rare and magic monsters"):
+300 coins, 1 hour, up to 3; `monster_tiers.lua` multiplies the magic and rare spawn chances by 1.5 (not legendary, and
+on top of the capped event multiplier, so a Chaos Storm under it can reach 6% x 3 x 1.5 = 27% magic). Monsters are
+shared, so it also reaches season characters' hunts. Buff bar icon `buffs/world_hunt.png` (`gen_buff_icons.py`).
 Training: `EventCallback.onGainSkillTries`, which the base `player.lua` already dispatches (no patch needed); one try
 x1.25 becomes 1 or 2 tries at random, so small gains are not rounded away. Loot: `loot_config.lua` `rateMult` and the
 extra-roll rule in `loot.lua`.
@@ -3649,7 +3653,7 @@ and no work in the kill hook. `state` also sends `interval`, `intervals` and `ne
 7100102 auto seller's corpse selling off, 7100152 "sell every X minutes" (5/10/15/30/60; unset = off), 7100103 the rarities it sells (packed, see Rarities), 7100104 name change tokens, 7100105 vocation change tokens, 7100106 Rarity
 Autoloot, 7100107-7100109 store pouches, 7100111-7100150 auto-sell list, 7100151 Everfull Ration owed back after a death
 (`store_food_config.lua`; not in `chaos_constants.lua` yet, as the pouches' keys live in `pouches_config.lua`); global
-7100921-7100923 world buffs. Settings: `Chaos.shopServices`.
+7100921-7100924 world buffs. Settings: `Chaos.shopServices`.
 
 **Tests.** `server/tests/shop_services_test.lua` (LuaJIT and Lua 5.3): name rules, buff stacking and the cap, buff
 effects and the reload from `server_config`, vocation mapping and stat recomputation, sell prices and the keep rules,

@@ -872,7 +872,10 @@ Chaos.shopServices = {
 		{id = "loot", name = "World Loot", bonus = 0.25, minutes = 60, capMinutes = 180,
 			text = "+25% Chaos loot (extra loot rolls and currency drops) for every standard character"},
 		{id = "skill", name = "World Training", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% skill and magic level training for every standard character"}
+			text = "+25% skill and magic level training for every standard character"},
+		-- monster_tiers.lua: the spawn chance of magic and rare monsters x (1 + bonus), everywhere (beta 2026-10-22)
+		{id = "hunt", name = "World Hunt", bonus = 0.5, minutes = 60, capMinutes = 180,
+			text = "Magic and rare monsters appear 50% more often, everywhere"}
 	},
 	worldBuffStorage = 7100920, -- global storages 7100921.. (expiry unix time per buff, in list order)
 	worldBuffConfigKey = "chaos_worldbuff_", -- server_config rows chaos_worldbuff_<id>

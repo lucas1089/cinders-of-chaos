@@ -400,7 +400,7 @@
 		"spell.count": 110,
 		"store.categories": 36,
 		"store.cosmetic": 627,
-		"store.offers": 740,
+		"store.offers": 741,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -37326,7 +37326,7 @@
 								["Services", "5", "60-400", "Service"],
 								["XP Boosts", "2", "50-225", "Boost"],
 								["Blessings", "2", "60-750", "Boost, Service"],
-								["World Buffs", "3", "250-300", "Boost"],
+								["World Buffs", "4", "250-300", "Boost"],
 								["Potions", "4", "15-30", "Consumable item"],
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "21", "25-450", "Consumable item"],
@@ -37405,7 +37405,7 @@
 								["Account storage", "13"],
 								["Chaos Pact", "1"],
 								["Season pass", "4"],
-								["Boost", "6"],
+								["Boost", "7"],
 								["Consumable item", "54"],
 								["Crafting item", "3"],
 								["Premium time", "3"],
@@ -37828,11 +37828,11 @@
 				{
 					"id": "store:10",
 					"name": "World Buffs",
-					"sub": "3 offers, 250-300 coins. Boost.",
+					"sub": "4 offers, 250-300 coins. Boost.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["3 offers, 250-300 Chaos Coins. Boost."]},
+						{"h": "Category", "p": ["4 offers, 250-300 Chaos Coins. Boost."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -37855,9 +37855,15 @@
 									"250",
 									"Boost",
 									"+25% skill and magic level training for every standard (not season) character for 1 hour. Up to 3 hours."
+								],
+								[
+									"World Hunt",
+									"300",
+									"Boost",
+									"Magic and rare monsters appear 50% more often everywhere, for everyone, for 1 hour. Up to 3 hours."
 								]
 							],
-							"sprites": [{"item": 7440}, {"item": 2148}, {"item": 7443}]
+							"sprites": [{"item": 7440}, {"item": 2148}, {"item": 7443}, {"item": 2153}]
 						}
 					],
 					"icon": "wiki/i/k-holy-burst.png"

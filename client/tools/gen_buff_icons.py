@@ -300,6 +300,13 @@ def m_world_skill(c):
     c.px(['.W.', 'W.W', '.W.'], 5, 5, {'W': W})
 
 
+def m_world_hunt(c):
+    skull(c, 6, 10)                                                               # a monster skull
+    star(c, 7.5, 6, 3.6, 1.5, A)                                                  # a gold (rare) and a blue
+    star(c, 18.5, 6, 3.6, 1.5, B)                                                 # (magic) star over it
+    c.px(['W'], 7, 4, {'W': W})
+
+
 def m_victory(c):
     for side in (-1, 1):                                          # a laurel wreath
         for i, (dx, dy) in enumerate(((7, 18), (8.5, 14.5), (8.6, 10.5), (7.5, 7))):
@@ -813,7 +820,8 @@ MOTIFS = {  # name: (function, ramps A, B, C)
     'rested': (m_rested, 'holy', 'arcane'), 'returning': (m_returning, 'gold', 'wood'),
     'catchup': (m_catchup, 'gold', 'nature'), 'low_stamina': (m_low_stamina, 'blood', 'steel'),
     'world_xp': (m_world_xp, 'gold', 'water'), 'world_loot': (m_world_loot, 'gold', 'wood'),
-    'world_skill': (m_world_skill, 'steel', 'arcane'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
+    'world_skill': (m_world_skill, 'steel', 'arcane'),
+    'world_hunt': (m_world_hunt, 'gold', 'water'), 'victory': (m_victory, 'nature', 'steel', 'gold'),
     'golden_hour': (m_golden_hour, 'gold', 'wood'), 'chaos_storm': (m_chaos_storm, 'arcane', 'shadow'),
     'calendar_event': (m_event, 'gold', 'blood', 'wood'), 'event': (m_event, 'gold', 'blood', 'wood'),
     'double_xp': (m_double_xp, 'gold', 'ember', 'holy'),
