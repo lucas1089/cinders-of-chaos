@@ -9,7 +9,11 @@
 --   ground   the item rows game_groundlabels has for the tiles in view (getGroundItems), when "ground" is on.
 -- The rules (tier -> colour, the filter, the best per tile, the cap, the engine calls) are in lootbeamslogic.lua.
 --
--- How it is drawn: by the engine (client base patch 0069, g_map.setLootBeam(pos, color, height, intensity)): MapView
+-- How it is drawn (pair 36 and on): the animated loot beam effect of the beam's group (LootBeamsLogic.EFFECTS, effects
+-- of the client pair) is added to the tile (Effect.create + g_map.addThing) when the beam starts and again every
+-- LB.EFFECT_MS while it stands; it plays on the map like a spell effect. A pair without those effects (or a client
+-- without Effect.create): the engine pillar below.
+-- The engine pillar (client base patch 0069, g_map.setLootBeam(pos, color, height, intensity)): MapView
 -- adds the pool on the floor under the creatures and the pillar over the floor, below names, bars and windows; it
 -- follows walking and zoom like everything on the map, and pulses by itself, so this module only calls the engine when
 -- the set of beams changes (no widgets, no per-frame Lua). A client without the patch logs once and draws nothing.
@@ -24,6 +28,7 @@ local drawn = {}          -- posKey -> {sig, pos}: what the engine draws
 local dirty = true
 local lastKey = ''        -- filter + settings + ground version + player position: re-chosen when it changes
 local engineOk = nil
+local effectsOk = nil
 local window
 local updatingUi = false
 local events, handlers = {}, {}
@@ -64,6 +69,31 @@ local function hasEngine()
   return engineOk
 end
 
+-- the pair has the beam effects and the client can add an effect to a tile
+local function hasEffects()
+  if effectsOk == nil then
+    effectsOk = false
+    local id = LB.effectFor('white')
+    if id and type(Effect) == 'table' and Effect.create and g_map and g_map.addThing and g_things then
+      local ok, valid = pcall(function()
+        if g_things.isValidDatId then return g_things.isValidDatId(id, ThingCategoryEffect) end
+        return g_things.getThingType(id, ThingCategoryEffect) ~= nil
+      end)
+      effectsOk = ok and valid and true or false
+    end
+    if not effectsOk then
+      g_logger.info('[lootbeams] the client pair has no beam effects: the engine pillar is drawn')
+    end
+  end
+  return effectsOk
+end
+
+local function addEffect(pos, id)
+  local e = Effect.create()
+  e:setId(id)
+  g_map.addThing(e, pos, -1)
+end
+
 -- ---------------------------------------------------------------- settings
 local function loadSettings()
   settings = LB.normalize(g_settings.getNode('lootBeams'))
@@ -75,7 +105,7 @@ end
 
 -- ---------------------------------------------------------------- engine
 local function clearDrawn()
-  if hasEngine() then g_map.clearLootBeams() end
+  if not hasEffects() and hasEngine() then g_map.clearLootBeams() end
   drawn = {}
 end
 
@@ -85,7 +115,8 @@ local function groundVersion()
 end
 
 local function apply()
-  if not hasEngine() then return end
+  local effects = hasEffects()
+  if not effects and not hasEngine() then return end
   local player = g_game.isOnline() and g_game.getLocalPlayer()
   local ppos = player and player:getPosition()
   local L = filterLogic()
@@ -99,10 +130,23 @@ local function apply()
   local want = LB.resolve(state, filterSettings(), settings, ppos, LB.MAX_BEAMS)
   local calls
   calls, drawn = LB.diff(drawn, want)
+  if effects then -- a removed beam's effect ends by itself; a new one starts now
+    for _, b in ipairs(calls.set) do
+      local id = LB.effectFor(b.group)
+      if id then addEffect(b.pos, id) end
+    end
+    return
+  end
   for _, pos in ipairs(calls.remove) do g_map.removeLootBeam(pos) end
   for _, b in ipairs(calls.set) do
     if not g_map.setLootBeam(b.pos, b.color, b.height, b.intensity) then drawn[b.key] = nil end
   end
+end
+
+-- the beam effects again, every LB.EFFECT_MS (one play of the strip)
+local function pulse()
+  if not g_game.isOnline() or not hasEffects() then return end
+  for _, p in ipairs(LB.pulse(drawn)) do addEffect(p.pos, p.id) end
 end
 
 local function tick()
@@ -217,7 +261,7 @@ function getStats()
   local n = 0
   for _ in pairs(drawn) do n = n + 1 end
   return { corpses = corpses, drawn = n, engine = hasEngine(), engineCount = hasEngine() and g_map.getLootBeamCount() or 0,
-    enabled = settings.enabled }
+    effects = hasEffects(), enabled = settings.enabled }
 end
 
 -- ---------------------------------------------------------------- init
@@ -239,6 +283,8 @@ function init()
   end
   connect(g_game, handlers.game)
   events.tick = cycleEvent(handlers.tick, TICK_MS)
+  handlers.pulse = safe('pulse', pulse)
+  if LB.EFFECT_MS > 0 then events.pulse = cycleEvent(handlers.pulse, LB.EFFECT_MS) end
 end
 
 function terminate()

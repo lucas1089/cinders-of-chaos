@@ -1,5 +1,5 @@
 -- Level-up wings (client game_levelwings, extended opcode ChaosOpcodes.levelWings = 191; server/README.md
--- "Level-up wings"). When a character gains a level, every player who sees it is sent
+-- "Level-up effect"). When a character gains a level, every player who sees it is sent
 --   play {id = creature id, lv = new level, n = levels gained}
 -- and the client opens a pair of golden wings behind that creature for about 1.8 s. The stock level-up text and
 -- effect stay the engine's. Rules and throttles: levelwings_core.lua (tests/levelwings_test.lua); numbers:

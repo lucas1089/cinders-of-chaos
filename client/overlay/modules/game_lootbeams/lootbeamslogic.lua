@@ -40,6 +40,23 @@ LB.INTENSITIES = { soft = 0.55, normal = 0.8, bright = 1.0 }
 LB.INTENSITY_ORDER = { 'soft', 'normal', 'bright' }
 LB.MAX_BEAMS = 24 -- the engine caps at 64; a big pull of 10 corpses stays well under this
 
+-- Since pair 36 (2026-10-22) a beam is an animated pack effect of the client pair (the loot beam strips, credited in
+-- docs/CREDITS.md), one per group, added to the tile again every EFFECT_MS while the beam stands; the ids are the
+-- beam_* effects of server/data/lib/chaos_pack36_fx_ids.lua (lootbeams_test.lua checks them against that file).
+-- A pair without them: the engine pillar of base patch 0069 as before (height and intensity apply only to it).
+LB.EFFECTS = {
+  white = 4101, blue = 4098, orange = 4095, divine = 4097, unique = 4092, orb = 4090,
+}
+LB.EFFECT_NAMES = { white = 'beam_silver_metal', blue = 'beam_rare', orange = 'beam_orange_fire',
+  divine = 'beam_rainbow_prismatic', unique = 'beam_green_nature', orb = 'beam_ancient' }
+LB.EFFECT_MS = 1750 -- one play: 25 frames of 70 ms (the strip's 24 and an empty one)
+
+-- the effect id of a group's beam, or nil
+function LB.effectFor(group)
+  local id = LB.EFFECTS[group]
+  return id and id > 0 and id or nil
+end
+
 local function flag(v)
   return v == true or v == 1 or v == '1'
 end
@@ -226,10 +243,23 @@ function LB.diff(drawn, want)
   for key, b in pairs(want) do
     local sig = LB.sig(b)
     if not drawn[key] or drawn[key].sig ~= sig then set[#set + 1] = b end
-    nextDrawn[key] = { sig = sig, pos = b.pos }
+    nextDrawn[key] = { sig = sig, pos = b.pos, group = b.group }
   end
   table.sort(set, function(a, b) return a.key < b.key end)
   return { remove = remove, set = set }, nextDrawn
+end
+
+-- the effects to add again for the drawn beams: {{pos, id}, ...} in tile order (beams of a group without an id left out)
+function LB.pulse(drawn)
+  local keys = {}
+  for key in pairs(drawn) do keys[#keys + 1] = key end
+  table.sort(keys)
+  local out = {}
+  for _, key in ipairs(keys) do
+    local id = LB.effectFor(drawn[key].group)
+    if id then out[#out + 1] = { pos = drawn[key].pos, id = id } end
+  end
+  return out
 end
 
 -- the client's settings fingerprint of the loot filter (beams are re-chosen when it changes)
