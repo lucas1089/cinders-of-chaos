@@ -100,6 +100,7 @@ jobs:
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # the badge slot; retired slots: hooks, descriptions, death loss
           python3 -I server/tools/patch_prizes_test.py  # base prizes into the backpack: roulettes, task rewards, crafting, ship NPC
+          python3 -I server/tools/patch_base_recipes_test.py  # boss materials: own stones and emblems, trophy recipes, descriptions
           python3 -I server/tools/patch_base_jewelry_test.py  # rings and necklaces: permanent, stats on the unworn id, DeEquip
 
       - name: Client spell data is up to date with the server spells

@@ -40,6 +40,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basecraftingbonus tools/patch_base_crafting_bonus.py  crafted equipment rolls a Chaos rarity and item level, potions
                                                  and runes may give extra pieces, by the crafting skill (README
                                                  "Crafting bonus"; needs basecrafting and basecraftingui first)
+  baserecipes  tools/patch_base_recipes.py       the base crafting books: the Seraphic and Dawnforged sets take their own
+                                                 charged stones and emblems, the Myst amulet and ring recipes make them,
+                                                 the late boss trophies and the Runic Stone Shard make the stones and
+                                                 emblems at the crafting table, the materials say what they are for
+                                                 (items.xml) (README "Base crafting recipes")
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
@@ -520,6 +525,14 @@ def step_basecraftingui(server, data, ctx):
 
 def step_basecraftingbonus(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_crafting_bonus.py'), data], 'patch_base_crafting_bonus.py'))
+
+
+def step_baserecipes(server, data, ctx):
+    args = [tool('patch_base_recipes.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_recipes.py'))
+
+
+STEPS.insert(STEPS.index('basecraftingbonus') + 1, 'baserecipes')  # the boss material recipes of the crafting books
 
 
 def step_weapons(server, data, ctx):
