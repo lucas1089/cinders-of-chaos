@@ -208,6 +208,7 @@ final class CommandsTab {
         buildXp();
         buildAccounts();
         buildHealth();
+        buildTesters();
         buildSiteClient();
     }
 
@@ -310,6 +311,77 @@ final class CommandsTab {
                 Ui.setValue(pass, "");
             }
         });
+    }
+
+    // tester bots on the live server (chaos-ctl.sh testers, server/README.md "Tester bots")
+    private void buildTesters() {
+        MaterialCardView c = ui.titledCard("Testers");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Personagens \"Tester\" jogam de verdade e anotam bugs. Precisam da chave do client em "
+                + "/etc/chaos/tester-client-key. Param sozinhos no fim do tempo."));
+        TextInputLayout count = ui.field("Quantos", "1 a 150.", "100", InputType.TYPE_CLASS_NUMBER);
+        TextInputLayout minutes = ui.field("Minutos", "1 a 1440.", "60", InputType.TYPE_CLASS_NUMBER);
+        b.addView(ui.evenRow(count, minutes), ui.gap(8));
+        MaterialButton start = ui.primary("Iniciar", R.drawable.ic_play);
+        start.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min?", "Se o ajudante de teste ainda não carregou, o "
+                    + "servidor reinicia com 5 minutos de aviso e os testers entram 30 s depois.", "Iniciar", true,
+                    () -> ctl("Iniciar testers", "testers start " + n + " " + m + " --restart 300", 180, null));
+        });
+        MaterialButton stop = ui.danger("Parar", R.drawable.ic_stop);
+        stop.setOnClickListener(v -> a.confirm("Parar os testers?", "Eles saem do jogo e o ajudante de teste é "
+                + "removido.", "Parar", true, () -> ctl("Parar testers", "testers stop", 60, null)));
+        b.addView(ui.evenRow(start, stop), ui.gap(8));
+        MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> a.ctlAction("testers status", 30, f -> {
+            if (!f.ok) {
+                result.show("Testers", f);
+                return;
+            }
+            StringBuilder t = new StringBuilder();
+            for (String line : f.raw.split("\n")) {
+                int eq = line.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                String k = line.substring(0, eq), val = line.substring(eq + 1);
+                switch (k) {
+                    case "running": t.append("Rodando: ").append(val.equals("yes") ? "sim" : "não").append('\n'); break;
+                    case "started": if (!val.isEmpty()) t.append("Início: ").append(val).append('\n'); break;
+                    case "bots": t.append("Testers: ").append(val).append('\n'); break;
+                    case "minutes": t.append("Minutos: ").append(val).append('\n'); break;
+                    case "logins": t.append("Logins: ").append(val).append('\n'); break;
+                    case "deaths": t.append("Mortes: ").append(val).append('\n'); break;
+                    case "helper_loaded": t.append("Ajudante carregado: ").append(val.equals("yes") ? "sim" : "não").append('\n'); break;
+                    default: break;
+                }
+            }
+            result.show("Testers", Friendly.ok("Feito", t.toString().trim(), f.raw));
+        }));
+        MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
+        report.setOnClickListener(v -> ctl("Relatório dos testers", "testers report", 120, null));
+        b.addView(ui.evenRow(status, report), ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // a whole number in [lo, hi] from the field, or -1 with the field's error set
+    private static int number(TextInputLayout l, int lo, int hi) {
+        int n;
+        try {
+            n = Integer.parseInt(Ui.value(l).trim());
+        } catch (NumberFormatException e) {
+            n = -1;
+        }
+        if (n < lo || n > hi) {
+            l.setError(lo + " a " + hi + ".");
+            return -1;
+        }
+        l.setError(null);
+        return n;
     }
 
     // health, disk cleanup and backups
