@@ -22,7 +22,7 @@
 	</flags>
 	<attacks>
 		<attack name="melee" interval="2000" min="-750" max="-1130"/>
-		<attack name="arc bolt" interval="2000" chance="40" min="-8000" max="-10000"/>
+		<attack name="arc bolt" interval="2000" chance="40" min="-1130" max="-1410"/>
 		<attack name="manadrain" interval="2000" chance="25" range="7" min="-560" max="-890" />
 		<attack name="speed" interval="2000" chance="15" range="7" speedchange="-800" duration="10000">
 			<attribute key="shootEffect" value="poison" />

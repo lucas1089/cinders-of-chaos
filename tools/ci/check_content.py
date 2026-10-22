@@ -235,6 +235,14 @@ def check_monster_body(f, t):
                 fail(f'{f}: unknown element key {k!r}')
     if fmx.fix_text(t, KNOWN_FLAGS) != t:
         fail(f'{f}: run server/tools/fix_monster_xml.py on it')
+    # a level-scaled monster (engine x(1 + 0.0015 L) damage on top) with one attack far above its others: an import
+    # slip (Elite Twisted Shaper's arc bolt hit 28000 next to a 1060 melee and one-shot level 1000 characters, beta
+    # 2026-10-21). Its peers of levels 850-1150 top out about 1000-1400.
+    if doc.getElementsByTagName('level'):
+        tops = sorted(abs(int(a.getAttribute('max'))) for a in doc.getElementsByTagName('attack')
+                      if a.parentNode.nodeName == 'attacks' and re.fullmatch(r'-?\d+', a.getAttribute('max') or ''))
+        if len(tops) > 1 and tops[-1] > 3 * max(tops[-2], 1) and tops[-1] > 2000:
+            fail(f'{f}: one attack hits {tops[-1]}, over 3x its next ({tops[-2]}): a level-scaled monster one-shots')
     rel = os.path.relpath(f, 'server/data/monster/monsters/chaos').replace(os.sep, '/')
     if rel in tune.TUNING and tune.apply(t, tune.TUNING[rel]) != t:
         fail(f'{f}: run server/tools/tune_monsters.py on it')

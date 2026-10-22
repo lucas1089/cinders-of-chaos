@@ -385,6 +385,12 @@ end
 local function setupMonster(monster, rec, player)
 	local c = cfg()
 	local cid = monster:getId()
+	-- a script-made monster is never paced on its own (pace.lua onSpawn: artificial): pace it now, before the nemesis
+	-- stats, so it takes the pace health and damage of its level like the type's natural spawns. Unpaced, a level 1000
+	-- nemesis hit 2.5x harder than its own type (pace damage x0.40) and one-shot its victim (beta, 2026-10-21).
+	if ChaosPace and ChaosPace.apply then
+		pcall(ChaosPace.apply, monster, true)
+	end
 	local st = K.stats(c, rec, monster:getMaxHealth())
 	monster:setMaxHealth(st.maxHealth)
 	monster:setHealth(st.maxHealth)

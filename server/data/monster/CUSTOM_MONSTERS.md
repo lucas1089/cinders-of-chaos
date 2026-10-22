@@ -134,3 +134,8 @@ game", The 1300-2000 set; where they spawn: the plans gravehorn_deeps and duskma
 gives the four deep dungeon bosses and eight 1300-2000 hunt monsters their own looks 2213-2224 (families `dungeonboss`,
 `hunt`). Its rows are in `picks.csv` and `apply_monster_looks.py` wrote them into the 12 files (server/README.md "Owner
 art (pair 26)").
+
+**One-shot spells cut (2026-10-22, beta).** Elite Twisted Shaper and Twisted Shaper (arc bolt), Spiky Carnivor (arc
+bolt), Vyrm and Thal (Frostbite) each had one spell of 10000-45000 next to attacks of about 1000-1300, an import slip:
+with the engine's level factor it one-shot level 1000 characters. Each now tops out at 1.25x its next attack, min in
+the same ratio. `tools/ci/check_content.py` fails a level-scaled monster with one attack over 3x its next (and 2000).
