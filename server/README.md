@@ -11489,7 +11489,11 @@ boss loot, the task rewards and the roulette, and no tool puts them back.
   modifier a ring may roll still reaches its cap at tier 8 with one ring (`tests/archery_test.lua`).
 
 `tools/patch_badges.py DATA_DIR [--dry-run] [--check]` (install_all.py step `badges`, after `itemnames`), idempotent:
-1. items.xml: the badges get slot type `badge`; the decks, ships, belts and gloves get their description.
+1. items.xml: the badges get slot type `badge`; the decks, ships, belts and gloves get their description. The 76
+   cards the deck system turns on (`CARDS`: 27482-27541 and the level 6 legendaries 27547-27631 every 6th, 27640) keep
+   their description with `CARD_HINT` appended: "Put it in a Bronze, Silver or Golden Deck you carry and use it there
+   to turn it on or off." (beta question 2026-10-22: "como eu acesso o deck?"). The legendary levels 1-5 only upgrade:
+   no hint. English only: items.xml descriptions are one text for every viewer ("Server texts in pt-BR": left).
 2. the boss loot's Fury catalyst [3].
 3. `Player:onMoveItem` asks `ChaosBadges.onMoveItem` first.
 4. the base deck system reads the carried deck.
@@ -14781,6 +14785,9 @@ the one food costume found is a fry box. Source: the owner's .obd files, source 
   is the store's usual outfit offer: `addOutfit` and both addons for each look.
 - **Pair.** A client on pair 36 or older has no outfits 2668+. Pair 37 is on windows-assets (1020d51c); ship the client
   with the server. Off: no store offers, no outfits.xml block.
+- **Moon set floating.** On pairs 37 and 38 the four moon outfits stand about 10 px above the ground. The client fix
+  (client/MANIFEST.md "Moon outfits on the ground") rewrites looks 2668-2675 in place in the next pair: same ids, no
+  server change.
 - Tests: `tests/pack37_looks_test.lua` (looks in order, outfits, the store on and off), `tests/shop_tree_test.lua`
   (every offer resolvable), `tools/install_outfits_test.py` (the block). Not run in a client.
 

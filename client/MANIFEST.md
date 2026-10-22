@@ -2427,10 +2427,10 @@ Import-only: the sheets (`art_import/pack37_looks/`) are never committed; `style
   fast-food mark on the box is painted over by `delogo`, 41 pixels in the east and south views).
 - **Skipped:** the obd+ characters of other franchises and the arcade, robot and aura looks (idle only, not ours to
   ship), the monsters and effects of "random", the item obds of "comidas" (food items, not outfits).
-- **Placement.** The files say displacement 8, 8. The moon set stands 9 px left and 10 px higher than look 128 but sits
-  exactly at 128's saddle height when mounted, so only x moves (`DISPLACEMENT` 0, 8): it floats about 10 px when
-  standing. Bears, hands and the fry box stand where 128 stands. Wings sit on the tile, not on the art: on the moon set
-  they look about 10 px low.
+- **Placement.** The files say displacement 8, 8. The moon set stands 9 px left and 10 px higher than look 128. Pair
+  37 moved only x (0, 8), believing the outfit displacement also placed the rider on a mount, so the set floated
+  about 10 px when standing and walking. Fixed in the sheets and the things file since 2026-10-22 ("Moon outfits on
+  the ground" below); pair 37 and 38 still carry the floating art. Bears, hands and the fry box stand where 128 stands.
 
 ```
 python3 -I client/tools/sprites/gen_pack37_looks.py build --src OBD_DIR          # sheets + tables; --check compares
@@ -2498,6 +2498,44 @@ disk had no room for a second 1.5 GB copy).
 - A client on pair 37 or older draws nothing for the Orb of Sockets once the server has the new look: ship pair 38
   before the server step, or set `useLook = false` and run `install_gems.py` again.
 - Previews (old look and new, the orbs of the pouch in a row): scratchpad only. Not run in a client.
+
+## Moon outfits on the ground (next pair after 38: outfits 2668-2675 in place, `tools/sprites/gen_pack37_looks.py` STAND_SHIFT, `art_import/pack37_moon_fix.csv`; not built yet)
+Reported 2026-10-22 by the agent that built pair 37: "The moon set floats about 10 px when standing still."
+- **Measured** on pair 37 (lowest opaque row of the body, base layer and addon, screen rows from the tile top,
+  displacement applied, every frame): look 128 idle 23 in all four directions (walk 20..23). The moon set before:
+  idle N 14, E 14..15, S 13, W 13..15, walk 12..16. Idle and walk float alike (8-10 px), mounted frames are fine.
+- **Cause.** The art is drawn about 10 px higher than stock for the standing frames, and 9 px left; the mounted
+  frames are drawn at stock seat height. Pair 37 kept dy 8 because one displacement seemed to serve both states,
+  but on a mount the client draws the rider by the mount's displacement (outfit.cpp adds the outfit's own back
+  before the rider is drawn), so the outfit displacement places only the standing look. A negative displacement
+  is not an option: it switches the client to its negative-offset paths (tile order, light, the rider on the mount).
+- **Fix** at the import: displacement 0, 0 for the eight looks (8 px down and right on screen) and `STAND_SHIFT`:
+  every standing cell (pattern z 0: both frame groups, every frame, addon and layer) of a direction moves down by
+  whole pixels until the body's lowest idle row lands on `STOCK_FEET` 23, clamped to the free room of the 64 px cell
+  (`shift_rows` refuses to cut art). Shifts N/E/S/W: Starweaver, Crescent Oracle, Moonflame Mystic male 1/0/2/0,
+  female 1/1/2/2; Moonblade Mystic male 1/0/0/0, female 1/1/1/2 (its blade addon reaches the cell bottom facing south).
+  Mounted cells are untouched. After (rendered from the new sheets through the importer's own reader): idle 23 in
+  every direction, walk 21..25, except Moonblade Mystic facing south, idle 21 (male) and 22 (female). x stays as in
+  pair 37 (dx 0 there too): the feet 1 px left of 128 facing south, 2-7 px in the other directions, as drawn.
+- `build` writes `art_import/pack37_moon_fix.csv`: the eight rows of `pack37_looks.csv` with mode=replace and look=id
+  (the import rewrites the looks in place; ids, outfits.xml and the store stay). `build --check` compares it with
+  `pack37_looks.csv`; `gen_pack37_looks_test.py` covers the shift, the clamp, the refusal and the fix rows.
+  Pair 37's own recipe (`pack37_looks.csv` on pair 36) now gives the fixed art too, so it no longer rebuilds pair
+  37's md5s.
+
+```
+python3 -I client/tools/sprites/gen_pack37_looks.py build --src OBD_DIR          # the sheets (git-ignored)
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair38/Tibia.dat --ours-spr pair38/Tibia.spr --out-dir pair39 \
+    --things client/tools/sprites/art_import/pack37_moon_fix.csv --expect-items 38641
+python3 -I client/tools/sprites/check_pair.py pair39/Tibia.dat pair39/Tibia.spr --old pair38/Tibia.dat pair38/Tibia.spr \
+    --allow-changed 'outfit:2668,2669,2670,2671,2672,2673,2674,2675'
+python3 -I client/tools/sprites/gen_outfit_anchors.py pair39/Tibia.dat pair39/Tibia.spr
+python3 -I client/tools/sprites/gen_info_lift.py pair39/Tibia.dat pair39/Tibia.spr
+```
+Not built here (the machine had 1.9 GB free, the spr alone is 1.5 GB). To ship: build it on pair 38 as above (if
+another pair lands first, use that one as input and its item count), pack it with the pair 37 recipe, push it to
+windows-assets, then regenerate `outfit_anchors.lua` and `info_lifts.lua` and record the md5s here. No server change.
+A client on pair 38 or older keeps drawing the set floating.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is

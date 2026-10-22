@@ -11,6 +11,7 @@ four take nothing. The rules are data/scripts/chaos/badges_core.lua; this tool c
 1. data/items/items.xml: the 40 badges (27803-27842) get slot type "badge" (0058: the badge bit only; "deckbadge" also
    has the deck bit, and the badge slot refuses an item with it). The decks, ships, belts and gloves get a description
    that says they can't be worn and what they still do; the Loot Buyer buys them (data/items/item_price_rules.csv).
+   The 76 cards a deck turns on (CARDS) keep their description with CARD_HINT appended: where a card goes.
 2. data/monster/**: the base boss loot lists "exiled amplifier catalyst [3]" twice and the Fury catalyst [3] (27848)
    never: the second one, right after "fury amplifier catalyst [2]", becomes "fury amplifier catalyst [3]".
 3. data/events/scripts/player.lua: Player:onMoveItem asks ChaosBadges.onMoveItem first (a move into a retired slot is
@@ -47,6 +48,11 @@ DECK_DESC = ("A deck for cards. It can't be worn: carry it, and use a card insid
              "The Loot Buyer buys it.")
 SHIP_DESC = "A ship. It can't be worn: carry it and walk from a dock onto the sea to sail. The Loot Buyer buys it."
 BELTGLOVES_DESC = "It can't be worn. The Loot Buyer buys it."
+# the cards the base deck system turns on (its cardsAllowed): the 60 common to mythic cards and the level 6 legendaries;
+# the legendary levels 1-5 only upgrade and keep their text. Players did not find where a card goes (beta,
+# 2026-10-22: "como eu acesso o deck?"), so their description ends with where to put it.
+CARDS = tuple(range(27482, 27542)) + tuple(range(27547, 27632, 6)) + (27640,)
+CARD_HINT = "Put it in a Bronze, Silver or Golden Deck you carry and use it there to turn it on or off."
 DESCRIPTIONS = {}
 DESCRIPTIONS.update({i: DECK_DESC for i in DECKS})
 DESCRIPTIONS.update({i: SHIP_DESC for i in SHIPS})
@@ -166,9 +172,12 @@ def items_xml(xml):
                 n += 1
             return m.group(1) + new + m.group(4)
         want = DESCRIPTIONS.get(iid)
+        d = re.search(r'<attribute\s+key="description"\s+value="([^"]*)"\s*/>', body)
+        if iid in CARDS:
+            old = d.group(1).rstrip() if d else ''
+            want = old if old.endswith(CARD_HINT) else (old + ' ' + CARD_HINT).lstrip()
         if want is None:
             return m.group(0)
-        d = re.search(r'<attribute\s+key="description"\s+value="([^"]*)"\s*/>', body)
         if d:
             if d.group(1) == want:
                 return m.group(0)
