@@ -32758,7 +32758,7 @@
 							"h": "The Nemesis",
 							"p": [
 								"It gets a name and an epithet that names you (\"Varkh, Bane of Varek\" for a character called Varek), a level 10-20% above the monster that killed you, a black skull, a blood-red glow and one trait.",
-								"While you hunt its kind, or monsters near its level, each kill has a 4% chance to call it: \"You feel a familiar hatred watching you...\" It appears a few tiles away, at most every 15 min, and fades after 5 minutes if you do not finish it.",
+								"While you hunt its kind, or monsters near its level, each kill has a 4% chance to call it: \"You feel a familiar hatred watching you...\" It appears a few tiles away, at most every 30 min, and fades after 5 minutes if you do not finish it.",
 								"It only appears for you, only hurts you and your party, and only you and your party can hurt it.",
 								"If it kills you again it grows: +10% level, a second trait and a new epithet (Twice-Slayer of Varek, Thrice-Slayer of Varek, Doom of Varek), up to 4 kills. A Nemesis you have not met for 14 days loses your trail."
 							]

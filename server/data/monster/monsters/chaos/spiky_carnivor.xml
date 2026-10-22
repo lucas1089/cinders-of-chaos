@@ -23,7 +23,7 @@
 		<attack name="lifedrain" interval="2000" chance="30" length="8" spread="0" min="-780" max="-1220">
 			<attribute key="areaEffect" value="purpleenergy" />
 		</attack>
-		<attack name="arc bolt" interval="2000" chance="15" range="1" min="-15010" max="-22100">
+		<attack name="arc bolt" interval="2000" chance="15" range="1" min="-1030" max="-1520">
 		</attack>
 		<attack name="speed" interval="2000" chance="15" radius="1" target="1" speedchange="-100" duration="10000">
 			<attribute key="areaEffect" value="redshimmer" />
