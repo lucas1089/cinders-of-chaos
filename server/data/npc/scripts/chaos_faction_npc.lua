@@ -57,6 +57,49 @@ local function openWindow(player)
 	return ok
 end
 
+-- the tales (data/scripts/chaos/tales_core.lua): a "talk" step that names this NPC is done when the character asks
+-- about the tale or the Archivist here. The step's reply is said in the tale's language; the next step is named.
+if not ChaosTalesCore or not ChaosTalesCore.talkTo then
+	pcall(dofile, "data/scripts/chaos/tales_core.lua")
+end
+local function taleTalk(cid, player, msg)
+	local M = ChaosTalesCore
+	if not M or not M.talkTo or not M.cfg() or not faction.npc then
+		return false
+	end
+	local s = M.plain(msg)
+	if not M.asksTales(msg) and not s:find(" archivist ", 1, true) and not s:find(" maelis ", 1, true)
+			and not s:find(" arquivista ", 1, true) then
+		return false
+	end
+	local hooked
+	if Chaos and Chaos.lang then
+		local okL, l = pcall(Chaos.lang, player)
+		hooked = okL and l or nil
+	elseif ChaosI18n and ChaosI18n.langOf and ChaosI18n.langOf(player) == "pt-BR" then
+		hooked = "pt" -- the stored language of this state; English stays the tales' own choice
+	end
+	local lang = M.lang(player:getStorageValue(M.langKey()), hooked)
+	local done = M.talkTo(faction.npc.name, function(t) return player:getStorageValue(M.stateKey(t)) end,
+		function(t, v)
+			player:setStorageValue(M.stateKey(t), v)
+			player:setStorageValue(M.countKey(t), 0)
+		end)
+	local ui = M.cfg().ui
+	for _, d in ipairs(done) do
+		npcHandler:say(M.t(d.step.reply, lang), cid)
+		local nextStep = d.tale.steps[M.state(d.tale, d.state)]
+		local line
+		if nextStep and M.FIELD[nextStep.kind] then
+			line = string.format(M.t(ui.stepNext, lang), M.t(d.tale.name, lang), M.t(nextStep.text, lang))
+		else
+			line = string.format(M.t(ui.stepDone, lang), M.t(d.tale.name, lang))
+		end
+		player:sendTextMessage(MESSAGE_EVENT_ADVANCE or MESSAGE_INFO_DESCR, line)
+	end
+	return #done > 0
+end
+
 local function creatureSayCallback(cid, type, msg)
 	if not npcHandler:isFocused(cid) or not faction then
 		return false
@@ -65,6 +108,10 @@ local function creatureSayCallback(cid, type, msg)
 	local text = msg:lower()
 	if not player then
 		return false
+	end
+	local okT, talked = pcall(taleTalk, cid, player, msg)
+	if okT and talked then
+		return true
 	end
 	if has(text, "contract", "work", "task", "quartermaster", "trade", "offer", "buy", "reputation", "standing",
 			"token", "deliver", "recipe", "window") then
