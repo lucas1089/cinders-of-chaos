@@ -16038,8 +16038,11 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   `tools/install_content_areas_test.py`).
 - Chest scripts (`area_planner.py install`) and `data/lib/chaos_hunt_places.lua`: per plan its teleport, sign,
   arrival, exit, band and the tile in front of its teleport (`front`, where its exit sends players back).
-- Idempotent: a placed plan (same tiles) and a grown room are left alone; a plan changed after it was placed is
-  refused (restore `<map>.otbm.bak`, written before the first change when missing, and run the install again). The
+- Idempotent: a placed plan (same tiles) and a grown room are left alone. A plan changed after it was placed, on the
+  same footprint, is written again: its tiles and its `chaoscontent` spawn blocks are replaced (a new spawn list moves
+  the decoration, which keeps off the spawn points; the 11 plans of pack 30 on the live map, 2026-10-22). A changed
+  footprint is refused; a map master keeps an area edited by hand ("Map master"). `<map>.otbm.bak` is written before
+  the first change when missing. The
   map goes through `<map>.otbm.tmp` and its tile count is checked before it replaces the old one. The action id must not
   be on the map (checked). Measured on a copy of the live map: 127,827 tiles added, 34 replaced, 1,417 spawn blocks +
   20 display spawns, 87 s; a second run changes nothing.

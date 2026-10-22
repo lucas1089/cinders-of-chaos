@@ -644,14 +644,7 @@ def main():
         res, _log = run(srv, plans, comp)
         check(digest(srv) == once, 'a second run changes nothing')
         check(res['room'] == 'done' and set(res['areas'].values()) == {'done'}, 'second run: all done')
-        # a changed plan (other tiles) is refused
         make_area(comp['tiny_hunt'], 'tiny_hunt', (1000, 1000, 7), ground=101)
-        try:
-            run(srv, plans, comp)
-            check(False, 'changed plan refused')
-        except T.InstallError as e:
-            check('changed' in str(e), 'changed plan: %s' % e)
-        check(digest(srv) == once, 'refusal writes nothing')
         # the same map as a map master (tools/map_master.py's marker): the area differs from its plan as if the owner
         # had edited it by hand; it is kept, nothing written
         mark = os.path.join(srv, 'data', 'world', 'w.otbm.master.json')
@@ -665,17 +658,36 @@ def main():
         one[(1001, 1000, 7)]['items'] = [(PORTAL, {'aid': 47951})]
         one[(1000, 1000, 7)]['ground'] = 101
         open(os.path.join(comp['tiny_hunt'], 'tiny_hunt.otbm'), 'wb').write(otbm_file(one))
-        os.remove(mark)
-        try:
-            run(srv, plans, comp)
-            check(False, 'one tile changed, no master: refused')
-        except T.InstallError as e:
-            check('changed' in str(e), 'one tile changed, no master: %s' % e)
         open(mark, 'w').write('{"version": 1}\n')
         res, log = run(srv, plans, comp)
         check(res['areas'].get('tiny_hunt') == 'done' and digest(srv) == once, 'map master: an edited area is kept')
-        check(any('tiny_hunt: placed already' in l and 'edited by hand' in l for l in log), 'map master: logged')
+        check(any('tiny_hunt: placed before' not in l and 'tiny_hunt: placed already' in l and 'edited by hand' in l
+                  for l in log), 'map master: logged')
         os.remove(mark)
+        # no map master: a placed area whose plan changed (a new spawn list moves the decoration) is written again,
+        # its spawn blocks too; the tile count stays, the other area and the old spawns are kept
+        with open(os.path.join(comp['tiny_hunt'], 'tiny_hunt-spawn.xml'), 'w') as f:
+            f.write('<?xml version="1.0"?>\n<spawns>\n'
+                    '\t<spawn centerx="1002" centery="1000" centerz="7" radius="1">\n'
+                    '\t\t<monster name="Bog Rat" x="0" y="0" z="7" spawntime="60" />\n\t</spawn>\n'
+                    '\t<spawn centerx="1000" centery="1000" centerz="7" radius="1">\n'
+                    '\t\t<monster name="Mire Leech" x="0" y="0" z="7" spawntime="60" />\n\t</spawn>\n</spawns>\n')
+        res, _log = run(srv, plans, comp, dry=True)
+        check(res['areas'].get('tiny_hunt') == 'update' and digest(srv) == once, 'changed plan, dry run: nothing written')
+        res, log = run(srv, plans, comp)
+        check(res['areas'] == {'tiny_hunt': 'update', 'other_hunt': 'done'}, 'changed plan: written again %s' % res['areas'])
+        check(any('tiny_hunt: placed before, the plan changed' in l for l in log), 'changed plan: logged')
+        m = otbm.load_otbm(os.path.join(srv, 'data', 'world', 'w.otbm'))
+        i = m.find(1000, 1000, 7)
+        check([int(a) for a in m.stack(i)] == [101], 'changed plan: the new tile')
+        check([int(a) for a in m.stack(m.find(1001, 1000, 7))] == [G, PORTAL], 'changed plan: the exit kept')
+        check(len(m.tiles['x']) == len(room_tiles()) - 8 + 9 * 8 + 8 + 6, 'changed plan: the tile count stays')
+        sp = open(os.path.join(srv, 'data', 'world', 'w-spawn.xml')).read()
+        check(sp.count('chaoscontent="tiny_hunt"') == 2 and 'name="Mire Leech"' in sp and 'name="Hydra"' in sp
+              and sp.count('chaoscontent="other_hunt"') == 1, 'changed plan: its spawn blocks replaced:\n' + sp)
+        twice = digest(srv)
+        res, _log = run(srv, plans, comp)
+        check(res['areas'].get('tiny_hunt') == 'done' and digest(srv) == twice, 'changed plan: a second run changes nothing')
         # a reorder (tiny_hunt's band now above other_hunt's) moves the display monsters; the config order is not used
         cfg2 = dict(CFG, plans=[CFG['plans'][1], CFG['plans'][0]])
         tj = os.path.join(plans, 'tiny_hunt.json')
