@@ -19,9 +19,9 @@ Há {{class.lines}} linhas de classe. Cada uma começa com uma classe base e asc
 
 ## A ascensão
 
-No nível {{class.ascensionLevel}}, fale com o Ascendant Oracle no Salão de Serviços (o portal ao lado do templo de Cinderhold ou Mirewake). Primeiro vem a Proof of Strength: {{ascension.proofPoints}} pontos de monstros raros e lendários. Depois vem o Trial: você sozinho contra um guardião, em {{ascension.trialTime}}.
+No nível {{class.ascensionLevel}}, fale com o Ascendant Oracle no mercado da sala de teleportes de Cinderhold (os dois grandes teletransportes ao norte do templo levam até lá). Primeiro vem a Proof of Strength: {{ascension.proofPoints}} pontos de monstros raros e lendários. Depois vem o Trial: você sozinho contra um guardião, em {{ascension.trialTime}}.
 
-=> @level | Nível {{class.ascensionLevel}} | Fale com o Ascendant Oracle no Salão de Serviços.
+=> @level | Nível {{class.ascensionLevel}} | Fale com o Ascendant Oracle no mercado da sala de teleportes.
 => @drop | Proof of Strength | {{ascension.proofPoints}} pontos de monstros raros e lendários.
 => @guardian | O Trial | Sozinho contra um guardião, em {{ascension.trialTime}}.
 => @ascend | Ascendido | Sua nova classe, com magias próprias.

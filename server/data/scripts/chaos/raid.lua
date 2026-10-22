@@ -2458,28 +2458,32 @@ function X.placePortals()
 	for _, townId in ipairs(cfg.portal.townIds) do
 		local town = Town(townId)
 		local t = town and town:getTemplePosition()
-		-- the town's Hall of Services (npc_booths_config.lua): the portal stands in its portal room when the hall is on
-		-- the map (portal.positions, one per town); else next to the temple
-		local hallPos
+		-- the town's fixed tile (portal.positions: in Cinderhold an alcove of the temple's portal gallery,
+		-- temple_portals_config.lua); else next to the temple
+		local fixed
 		for _, p in ipairs(cfg.portal.positions or {}) do
 			if p.town == townId and Tile(Position(p.x, p.y, p.z)) then
-				hallPos = Position(p.x, p.y, p.z)
+				fixed = Position(p.x, p.y, p.z)
 			end
 		end
-		if hallPos then
-			local tile = Tile(hallPos)
+		if fixed then
+			local tile = Tile(fixed)
 			local have = tile:getItemById(cfg.portal.itemId)
-			if not (have and have:getActionId() == cfg.aid.portal) then
-				local item = spotFree(hallPos) and Game.createItem(cfg.portal.itemId, 1, hallPos)
+			local ok = have and have:getActionId() == cfg.aid.portal
+			if not ok then
+				local item = spotFree(fixed) and Game.createItem(cfg.portal.itemId, 1, fixed)
 				if item then
 					item:setActionId(cfg.aid.portal)
-					X.portals[#X.portals + 1] = {x = hallPos.x, y = hallPos.y, z = hallPos.z}
+					X.portals[#X.portals + 1] = {x = fixed.x, y = fixed.y, z = fixed.z}
 					placed = placed + 1
+					ok = true
 				else
-					log("the portal tile in the Hall of Services of town " .. townId .. " is taken")
+					log("the fixed portal tile of town " .. townId .. " is taken (portal.positions): next to the temple")
 				end
 			end
-			t = nil
+			if ok then
+				t = nil
+			end
 		end
 		if t then
 			local done = false

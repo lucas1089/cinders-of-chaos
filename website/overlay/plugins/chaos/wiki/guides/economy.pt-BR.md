@@ -30,7 +30,7 @@ Economy > Orb Exchange é um livro de ofertas para orbes: orbe por ouro ou orbe 
 
 ## Vender o loot
 
-- Um Loot Buyer fica ao lado de cada templo; em Cinderhold e Mirewake ele fica no Salão de Serviços (o portal ao lado do templo). Ele compra o que os monstros derrubam e o que o crafting faz. Ele não compra moedas, orbes, tokens, fragmentos, chaves, itens de quest nem itens da loja. Minérios, ervas, couros e peixes vão para o Material Broker.
+- Um Loot Buyer fica ao lado de cada templo; em Cinderhold ele fica no mercado da sala de teleportes (os dois grandes teletransportes ao norte do templo levam até lá). Ele compra o que os monstros derrubam e o que o crafting faz. Ele não compra moedas, orbes, tokens, fragmentos, chaves, itens de quest nem itens da loja. Minérios, ervas, couros e peixes vão para o Material Broker.
 - A janela de troca dele mostra só o que você carrega. Equipamento com raridade paga mais que a lista: Incomum x{{prices.uncommon}}, Mágica x{{prices.magic}}, Rara x{{prices.rare}}, Lendária x{{prices.legendary}}, até x{{prices.top}} na Divina.
 - Cada nível de item soma {{prices.perLevel}}% no equipamento, até x{{prices.maxLevel}} no nível de item 150.
 - Diga "appraise" para ver quanto suas bolsas valem com ele. Itens travados nunca são vendidos.

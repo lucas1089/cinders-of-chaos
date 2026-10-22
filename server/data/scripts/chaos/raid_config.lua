@@ -14,9 +14,9 @@ return {
 	-- after the world boss and Descent portals). Stepping in opens the window.
 	portal = {itemId = 1387, townIds = {2, 1}, offsets = {{4, 3}, {-4, 3}, {4, -3}, {-4, -3}, {0, 5}, {5, 0}, {-5, 0}, {2, 3},
 		{-2, 3}, {3, -2}, {-3, -2}},
-		-- positions: the portal room of each town's Hall of Services (npc_booths_config.lua `portals`;
-		-- tools/services_halls_test.py checks them); a town whose hall is not on the map uses `offsets`
-		positions = {{town = 2, x = 14594, y = 14843, z = 7}, {town = 1, x = 14594, y = 14893, z = 7}}},
+		-- positions: a fixed tile per town: Cinderhold's is an alcove of the temple's portal gallery
+		-- (temple_portals_config.lua `portals`; tests/cityportals_test.lua checks it); a town without one uses `offsets`
+		positions = {{town = 2, x = 32375, y = 32245, z = 7}}},
 	minLevel = 800,
 	minPlayers = 5, -- the raid opens for a party of 5 to 15 inside partyRange of the opener
 	maxPlayers = 15,

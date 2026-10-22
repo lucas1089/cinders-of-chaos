@@ -1,4 +1,4 @@
--- Shared dialogue of the five service NPCs of the Halls of Services (server/data/scripts/chaos/service_npcs.lua,
+-- Shared dialogue of the five service NPCs of the hub's stalls (server/data/scripts/chaos/service_npcs.lua,
 -- service_npcs_config.lua, service_npcs_core.lua, service_npcs_run.lua; server/README.md "Service NPCs"). Each NPC script
 -- sets SERVICE_KEY (stash, pocketboss, banker, broker, services) and runs this file. It runs in the NPC's own Lua state:
 -- it opens the client window of the module (that module's extended opcode, action "npc") and answers; every action in

@@ -87,9 +87,9 @@ return {
 	--         every other plan and generated area (docs/MAP_GUIDE.md "Content plans").
 	--   gate  optional {x, y, z}: one fixed world tile for the area's gate (a staff override). Unset (2026-10-16, the owner
 	--         found the temple's upper hall odd): the Chronicle Gate of each town of `gateTowns` is placed by
-	--         cityportals.lua when the area opens: the Hall of Services' portal room (npc_booths_config.lua
-	--         `portals.chronicle_<key>`), else beside the temple (cityportals_config.lua `towns`), with the area's name in
-	--         its look text and an effect.
+	--         cityportals.lua when the area opens beside the temple (cityportals_config.lua `towns`
+	--         `chronicle_<key>`: in Cinderhold an alcove of the temple's portal gallery), with the area's name in its
+	--         look text, its orange label and an effect.
 	-- arrival: the arrival tile's offset from the ORIGIN (from the compiled manifest; tools/chronicle_areas_test.py checks
 	-- it). Until `at` (and `gate` or `gateTowns`) are set the area opens in the story only (the window says so).
 	areas = {
@@ -98,7 +98,7 @@ return {
 		{key = "ossuary_stair", name = "The Ossuary Stair", plan = "chronicle_ossuary_stair",
 			arrival = {59, 82, 0}, minLevel = 380, at = {x = 15100, y = 15140, z = 9}}
 	},
-	gateTowns = {2, 1}, -- Cinderhold and Mirewake (the towns with a Hall of Services): one gate each per open area
+	gateTowns = {2, 1}, -- Cinderhold (the portal gallery at its temple) and Mirewake (beside its temple): one gate each per open area
 
 	-- the town changes: decoration placed at runtime around the anchor (the capital's temple, or `anchor`) and taken
 	-- away again. Each piece goes on the first free tile of its offsets (ground, nothing blocking, no creature, no

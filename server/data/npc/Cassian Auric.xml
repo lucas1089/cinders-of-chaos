@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Cassian Auric: the banker, who opens the bank window (server/data/scripts/chaos/service_npcs.lua, service_npcs_config.lua; server/README.md "Service NPCs").
-     Stands in a booth of the Hall of Services; installed by server/tools/install_service_npcs.py. The same window opens
+     Stands in a stall of the hub (npc_booths_config.lua); installed by server/tools/install_service_npcs.py. The same window opens
      from the game menu. -->
 <npc name="Cassian Auric" script="cassian_auric.lua" walkinterval="0" floorchange="0">
 	<health now="100" max="100" />

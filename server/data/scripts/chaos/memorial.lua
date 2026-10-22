@@ -401,8 +401,8 @@ function X.placePortal()
 		return false
 	end
 	if type(pl.portal) ~= "table" then
-		-- the Memorial Portal of each town of portalTowns (cityportals.lua: the Hall of Services' portal room, else beside
-		-- the temple; look text and effect by cityportals_fx.lua)
+		-- the Memorial Portal of each town of portalTowns (cityportals.lua: the portal gallery at Cinderhold's temple, else
+		-- beside the temple; look text and effect by cityportals_fx.lua)
 		local _, positions = ChaosCityPortals.place({kind = "memorial", aid = cfg.aid.portal, item = cfg.portalItem or 1387,
 			towns = cfg.portalTowns or {2}})
 		return #positions > 0

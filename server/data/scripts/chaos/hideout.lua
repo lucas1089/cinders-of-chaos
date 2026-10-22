@@ -1375,8 +1375,8 @@ end
 think:interval(cfg.thinkMs)
 think:register()
 
--- the Hideout Portal of every town (cityportals.lua: the Hall of Services' portal room in Cinderhold and Mirewake, a
--- fixed spot next to every other temple, labelled and marked by cityportals_fx.lua)
+-- the Hideout Portal of every town (cityportals.lua: the portal gallery at Cinderhold's temple, a fixed spot next to
+-- every other temple, labelled and marked by cityportals_fx.lua)
 function M.placePortals(say)
 	return (ChaosCityPortals.place({kind = "hideout", aid = A.enter, item = cfg.ids.portal, offsets = cfg.portalOffsets,
 		log = say and log or nil}))

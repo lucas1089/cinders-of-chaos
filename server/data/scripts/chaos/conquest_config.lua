@@ -151,7 +151,7 @@ C.salvage = {share = 0.10, min = 25}
 
 -- the vendor NPC (data/npc/Iselde Varrow.xml, installed by server/tools/install_conquest.py): next to the main temple
 C.npc = {
-	name = "Iselde Varrow", range = 4, towns = {2, 1}, delayMs = 3500, -- the main city first (README "Main city")
+	name = "Iselde Varrow", range = 4, towns = {2}, delayMs = 3500, -- the main city only: its stall in the hub
 	offsets = {{-6, -1}, {6, -1}, {-6, 1}, {6, 1}, {-2, -6}, {2, 6}, {-7, -2}, {7, -2}, {-7, 2}, {7, 2}}
 }
 

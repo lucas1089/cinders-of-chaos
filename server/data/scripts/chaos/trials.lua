@@ -1459,7 +1459,7 @@ function T.placeKeepers()
 		for _, townId in ipairs(n.townIds or {}) do
 			local town = Town(townId)
 			local temple = town and town:getTemplePosition()
-			-- the booth in the town's Hall of Services (npc_booths.lua), else next to the temple
+			-- its stall in the hub for the main city (npc_booths.lua), else next to the temple
 			local pos = (ChaosNpcBooths and ChaosNpcBooths.spot and ChaosNpcBooths.spot(n.name, townId))
 				or (temple and freeTileNear(temple, n.offsets))
 			if pos and placeKeeper(pos) then

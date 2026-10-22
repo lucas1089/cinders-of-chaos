@@ -13,7 +13,7 @@ Gifts wait for you at levels {{newplayer.giftLevels}}: potions, orbs and, later,
 
 ## Level 1-19: First steps
 
-- Your starter kit carries you to level 20. Town shops sell weapons and armour for gold; the Loot Buyer in the Hall of Services (the portal beside the temple) buys your loot.
+- Your starter kit carries you to level 20. Town shops sell weapons and armour for gold; the Loot Buyer in the market of the teleport room (north of the temple) buys your loot.
 - Magic (blue) monsters drop gear with a rarity: wear what is better.
 - Goals: reach level 8, slay a magic monster, finish a bounty contract, spend your first passive point.
 

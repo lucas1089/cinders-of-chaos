@@ -429,7 +429,7 @@ Tile = function(pos)
 	return t
 end
 Town = function(id)
-	if id ~= 1 then
+	if id ~= 2 then -- the Gambler stands in the main city only (gamble_config.lua towns)
 		return nil
 	end
 	return {getTemplePosition = function() return {x = 1000, y = 1000, z = 7} end, getName = function() return "Ember Hold" end}

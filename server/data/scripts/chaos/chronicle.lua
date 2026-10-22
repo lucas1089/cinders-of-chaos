@@ -451,7 +451,7 @@ function X.openArea(key)
 	local gate = K.gateOf(area)
 	local aid = cfg.gateAid + index - 1
 	if not gate then
-		-- the Chronicle Gate of each town of gateTowns: the Hall of Services' portal room, else beside the temple
+		-- the Chronicle Gate of each town of gateTowns: the portal gallery at Cinderhold's temple, else beside the temple
 		-- (cityportals.lua, spot "chronicle_<key>"; look text with the area's name and an effect)
 		local _, positions = ChaosCityPortals.place({kind = "chronicle", spot = "chronicle_" .. area.key, aid = aid,
 			item = cfg.gateItem, towns = cfg.gateTowns, title = area.name})

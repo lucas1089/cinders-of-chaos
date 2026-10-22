@@ -13,7 +13,7 @@ Presentes esperam por você nos níveis {{newplayer.giftLevelsPt}}: poções, or
 
 ## Nível 1-19: Primeiros passos
 
-- Seu kit inicial leva você até o nível 20. As lojas da cidade vendem armas e armaduras por ouro; o Loot Buyer no Salão de Serviços (o portal ao lado do templo) compra seu saque.
+- Seu kit inicial leva você até o nível 20. As lojas da cidade vendem armas e armaduras por ouro; o Loot Buyer no mercado da sala de teleportes (ao norte do templo) compra seu saque.
 - Monstros mágicos (azuis) soltam equipamento com raridade: use o que for melhor.
 - Objetivos: alcance o nível 8, mate um monstro mágico, conclua um contrato de recompensa, gaste seu primeiro ponto passivo.
 

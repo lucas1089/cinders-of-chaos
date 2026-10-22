@@ -18,7 +18,8 @@
 --   ChaosCombatFx.crit(pos[, sourceId])            ChaosCombatFx.dodge(creature)
 --   ChaosCombatFx.reflect(creature)                 ChaosCombatFx.element(pos, combatType[, amount[, sourceId]])
 --   ChaosCombatFx.label(pos, text, color)           ChaosCombatFx.config (on/off per visual, throttle)
---   (color: a palette byte, TEXTCOLOR_*; a "#rrggbb" string is mapped to the nearest byte, ChaosCombatFx.paletteByte)
+--   (color: a palette byte, TEXTCOLOR_*; a "#rrggbb" string is mapped to the nearest byte, ChaosCombatFx.paletteByte;
+--   text: a string, or function(player) -> string, one text per viewer)
 -- Callers outside this file: `if ChaosCombatFx then ChaosCombatFx.dodge(player) end`.
 -- Effect ids come from data/lib/chaos_fx.lua (generated, client/tools/sprites/fx_custom.csv rows 415..423).
 
@@ -199,14 +200,22 @@ function M.label(pos, text, color)
 		return false
 	end
 	for _, spectator in ipairs(Game.getSpectators(pos, false, true) or {}) do
-		local msg = NetworkMessage()
-		msg:addByte(0x84)
-		msg:addPosition(pos)
-		msg:addByte(color)
-		msg:addString(text)
-		msg:sendToPlayer(spectator)
-		if msg.delete then
-			msg:delete()
+		-- text: a string, or function(player) -> string for a label in each viewer's language (cityportals_fx.lua)
+		local s = text
+		if type(text) == "function" then
+			local ok, v = pcall(text, spectator)
+			s = ok and v or nil
+		end
+		if type(s) == "string" and s ~= "" then
+			local msg = NetworkMessage()
+			msg:addByte(0x84)
+			msg:addPosition(pos)
+			msg:addByte(color)
+			msg:addString(s)
+			msg:sendToPlayer(spectator)
+			if msg.delete then
+				msg:delete()
+			end
 		end
 	end
 	return true

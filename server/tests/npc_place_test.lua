@@ -288,8 +288,8 @@ do
 	check(not F.hears(5, handler), "a greeting near the Loot Buyer does not reach the Gambler")
 	handler.focused = true
 	check(F.hears(5, handler), "a player talking to the Gambler is heard")
-	-- the temple arcade (2026-10-21): booths 2 apart; on the carpet two rows in front of a booth both NPCs are 2
-	-- squares away, the one straight ahead answers
+	-- booths 2 apart (the temple arcade of 2026-10-21): two rows in front of a booth both NPCs are 2 squares away,
+	-- the one straight ahead answers
 	local a, b = {id = 30, x = 10, y = 5}, {id = 20, x = 12, y = 5}
 	check(F.answers(a, {a, b}, {x = 10, y = 7}) and not F.answers(b, {a, b}, {x = 10, y = 7}),
 		"same distance: the straighter line answers (not the lower id)")
@@ -297,50 +297,10 @@ do
 		"exactly between: the lower id answers")
 end
 
--- ---------------------------------------------------------------- the temple arcade (temple_npcs_config.lua)
+-- ---------------------------------------------------------------- no temple arcade any more (2026-10-22)
 do
-	local cfg = K.templeConfig()
-	check(cfg and cfg.enabled, "the temple arcade config loads")
-	local t = cfg.towns[1]
-	local s = K.templeStand(cfg, "loot buyer", t.temple)
-	check(s and s.x == 32365 and s.y == t.npcRow and s.z == t.z, "an NPC's stand at its town's temple, any case")
-	eq(K.templeStand(cfg, "Loot Buyer", {x = t.temple.x + 1, y = t.temple.y, z = t.temple.z}), nil,
-		"another temple: no stand")
-	eq(K.templeStand(cfg, "Ascendant Oracle", t.temple), nil, "an NPC without a stand")
-	local seen, names = {}, {}
-	local all = K.templeStands(cfg)
-	local others = {}
-	for i, o in ipairs(all) do
-		o.id = i
-		others[i] = {id = i, x = o.x, y = o.y}
-	end
-	for _, st in ipairs(all) do
-		local k = st.x .. ":" .. st.y
-		check(not seen[k], "one NPC per stand " .. k)
-		check(not names[st.name], "each NPC once: " .. st.name)
-		seen[k], names[st.name] = true, true
-		local inWing = false
-		for _, w in ipairs(t.wings) do
-			inWing = inWing or (st.x >= w.from and st.x <= w.to and st.x ~= w.outer)
-		end
-		check(inWing, st.name .. " stands inside a wing, not on its outer end")
-		for _, o in ipairs(all) do
-			if o.id ~= st.id and o.y == st.y then
-				check(math.abs(o.x - st.x) >= 2, st.name .. " and " .. o.name .. " are 2 apart at least")
-			end
-		end
-		-- in front of the booth (the first carpet row) its own NPC answers
-		check(ChaosNpcFocus.answers({id = st.id, x = st.x, y = st.y}, others, {x = st.x, y = t.aisle[1]}),
-			st.name .. " answers in front of its booth")
-	end
-	-- mirrored around the entrance
-	local mid = t.temple.x
-	for _, st in ipairs(all) do
-		check(seen[(2 * mid - st.x) .. ":" .. st.y], st.name .. " has a mirrored stand")
-	end
-	for _, f in ipairs(t.free or {}) do
-		check(seen[(2 * mid - f) .. ":" .. t.npcRow], "a free booth mirrors a stand")
-	end
+	eq(K.templeConfig, nil, "the temple arcade is gone (its NPCs stand in the hub's stalls, npc_booths_config.lua)")
+	eq(K.templeStand, nil, "no temple stand lookup")
 end
 
 if failures > 0 then

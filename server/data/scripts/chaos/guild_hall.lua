@@ -526,8 +526,8 @@ function G.placeHubReturns()
 end
 
 -- the Guild Hall Portal of every town (runtime items; created at startup and checked once a minute): cityportals.lua
--- puts it in the Hall of Services' portal room in Cinderhold and Mirewake and on a fixed spot next to every other
--- temple (cityportals_config.lua), labelled and marked by cityportals_fx.lua. `portalPositions` (fixed tiles) still
+-- puts it in the portal gallery at Cinderhold's temple and on a fixed spot next to every other temple
+-- (cityportals_config.lua), labelled and marked by cityportals_fx.lua. `portalPositions` (fixed tiles) still
 -- replaces all of that when set.
 function G.placePortals(say)
 	G.portals = G.portals or {}

@@ -16,11 +16,7 @@ function X.list()
 		dofile("data/scripts/chaos/npc_booths_core.lua")
 	end
 	local B = ChaosNpcBoothsCore
-	if not ChaosNpcPlaceCore or not ChaosNpcPlaceCore.templeStands then
-		dofile("data/scripts/chaos/npc_place_core.lua")
-	end
-	local P = ChaosNpcPlaceCore
-	return ChaosTileLabelsCore.collect(X.config, B.cfg(), B, P.templeStands(P.templeConfig()))
+	return ChaosTileLabelsCore.collect(X.config, B.cfg(), B)
 end
 
 function X.pulse()

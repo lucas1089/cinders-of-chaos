@@ -109,7 +109,7 @@ front by trimming the classes right behind them, not by raising the leaders.
 
 ### The ascension quest
 
-Ascension is earned, not bought. The **Ascendant Oracle** in the Hall of Services (the portal beside the temple of Cinderhold or Mirewake) leads every class through it:
+Ascension is earned, not bought. The **Ascendant Oracle** in the market of Cinderhold's teleport room (the two great teleports north of the temple lead there) leads every class through it:
 
 1. **The Calling:** talk to the Oracle at level 100. It tells you about the two paths of your class.
 2. **Proof of Strength:** slay rare and legendary monsters that are a match for your level (a rare counts 1, a legendary 3;
@@ -530,7 +530,7 @@ rankings keep score.
 
 ### The Ember Descent
 
-A roguelike trial below the city (Adventure > Ember Descent, or the portal in the Hall of Services), alone or with up to 4
+A roguelike trial below the city (Adventure > Ember Descent, or its portal in the gallery at Cinderhold's temple), alone or with up to 4
 players from level 100.
 - **8 to 12 rooms** in a seeded chain: combat, elite, treasure, shrine and merchant rooms, and a boss in the last hall.
   Monsters grow stronger the deeper you go.
@@ -546,7 +546,7 @@ players from level 100.
 
 ![The Ashen Sepulchre: a soak mechanic and the weekly lockouts](docs/images/feature_raid.png)
 
-A raid for organised groups of 5 to 15 (Adventure > Raid: Ashen Sepulchre, or the portal in the Hall of Services).
+A raid for organised groups of 5 to 15 (Adventure > Raid: Ashen Sepulchre, or its portal in the gallery at Cinderhold's temple).
 - **Five bosses in a row** with trash and doors between them: Gravewarden Ulthar, Morwen the Ash-Sister, the Marrow
   Colossus, Vhoss the Hexmaw and Varkhul the Ashen Sovereign, each with a look of its own.
 - **Mechanics to learn:** tank swaps with stacking debuffs, a frontal cleave and a rear sweep, split soak circles,
@@ -860,7 +860,7 @@ Four gathering professions (Economy > Professions), each with its own level from
   steal or camp a node. Flay your own kills or your party's, once per corpse.
 - **Five tiers of materials,** from Common to Infernal, each opened by your profession level and your character level.
   The Professions window lists where to gather each tier and which of your nodes are ready.
-- **The Material Broker** next to every temple (in Cinderhold and Mirewake: in the Hall of Services) buys them all and pays into your bank. Demand changes every week: each
+- **The Material Broker** next to every temple (in Cinderhold: in the market of the teleport room) buys them all and pays into your bank. Demand changes every week: each
   profession's five materials pay x1.5, x1.25, x1, x1 and x0.75, in a new order. Per material and day the first 100
   pay in full and the next 100 pay half. At best, gathering earns about a quarter of what hunting at the same level
   pays, less at the top tier.
@@ -915,7 +915,7 @@ A currency order book for the crafting orbs (Economy > Orb Exchange, or the butt
 
 ![The Gambler's sealed crates and a reveal](docs/images/feature_gambler.png)
 
-Mordecai Ashwager stands behind his counter in the Hall of Services of Cinderhold, the main city (and of Mirewake), and sells **sealed equipment for gold**
+Mordecai Ashwager stands in his stall in the market of the teleport room of Cinderhold, the main city, and sells **sealed equipment for gold**
 (talk to him, or Economy > The Gambler).
 - **Your own stock:** 14 sealed pieces made for your character: gear your class can use, at an item level close to
   what your own kills drop. You see the base, the slot and the item level. The rarity stays hidden until you pay.

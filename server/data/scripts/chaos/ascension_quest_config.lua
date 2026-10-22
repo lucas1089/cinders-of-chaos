@@ -5,13 +5,14 @@
 return {
 	enabled = true,
 
-	-- the NPC (server/data/npc/Ascendant Oracle.xml + scripts/ascendant_oracle.lua). At startup it is placed in the temple
-	-- of every town listed here, on the first free tile of `offsets` around the temple position, unless an NPC of that
+	-- the NPC (server/data/npc/Ascendant Oracle.xml + scripts/ascendant_oracle.lua). At startup it is placed in its stall
+	-- in the hub (npc_booths_config.lua) for the main city, else next to the temple of every town listed here, on the
+	-- first free tile of `offsets` around the temple position, unless an NPC of that
 	-- name already stands within 8 tiles (placed with the map editor). positions = {{x, y, z}, ...} places it exactly.
 	npc = {
 		name = "Ascendant Oracle",
 		spawn = true,
-		townIds = {2, 1}, -- the main city (Cinderhold) first, then Mirewake (server/README.md "Main city")
+		townIds = {2}, -- the main city only: its stall in the hub (npc_booths_config.lua; 2026-10-22)
 		positions = {},
 		offsets = {{2, -2}, {-2, -2}, {2, 2}, {-2, 2}, {3, 0}, {-3, 0}, {0, -3}, {0, 3}, {1, -2}, {-1, -2}},
 		-- the confirmations (modal windows) only work this close to the Oracle

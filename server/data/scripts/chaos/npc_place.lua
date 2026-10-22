@@ -6,9 +6,9 @@
 -- opts: radius, spacing, minFromTemple, minOpen (npc_place_core.lua K.DEFAULTS); depotFallback = true: no spot near
 -- the temple -> the same search around the town's nearest depot (ChaosNpcPlaceCore.depotAnchors). Used by item_prices.lua (Loot Buyer),
 -- gamble.lua (the Gambler), ascension_quest.lua (Ascendant Oracle), tales.lua (Archivist Maelis), professions.lua
--- (Material Broker) and factions.lua. An NPC with a stand in the arcade at its town's temple (temple_npcs_config.lua,
--- ChaosNpcPlaceCore.templeStand) is placed there; else an NPC with a booth in its town's Hall of Services
--- (npc_booths_config.lua) is placed in the booth (ChaosNpcBooths.spotForTemple). Lua 5.1 / LuaJIT compatible.
+-- (Material Broker) and factions.lua. An NPC with a stall in the hub (npc_booths_config.lua: the main city's NPCs in
+-- the market of its teleport room) is placed in its stall when `temple` is the main city's temple
+-- (ChaosNpcBoothsCore.spotForTemple). Lua 5.1 / LuaJIT compatible.
 
 if not ChaosNpcPlaceCore then
 	dofile("data/scripts/chaos/npc_place_core.lua")
@@ -104,23 +104,21 @@ function NP.spot(temple, offsets, name, opts)
 	return Position(temple.x + dx, temple.y + dy, temple.z)
 end
 
--- the NPC's booth in its town's Hall of Services (npc_booths.lua), when it has one and the hall is on the map
+-- the NPC's stall in the hub (npc_booths_config.lua), when `temple` is the temple of the hub's town
 local function booth(name, temple)
-	if not (ChaosNpcBooths and ChaosNpcBooths.spotForTemple) then
+	if not (ChaosNpcBoothsCore and ChaosNpcBoothsCore.spotForTemple) then
+		pcall(dofile, "data/scripts/chaos/npc_booths_core.lua")
+	end
+	local B = ChaosNpcBoothsCore
+	if not (B and B.spotForTemple) then
 		return nil
 	end
-	local ok, pos = pcall(ChaosNpcBooths.spotForTemple, name, temple)
-	return ok and pos or nil
-end
-
--- the NPC's stand in the arcade at its town's temple (temple_npcs_config.lua), first of all
-local function stand(name, temple)
-	local ok, s = pcall(K.templeStand, K.templeConfig(), name, temple)
+	local ok, s = pcall(function() return B.spotForTemple(B.cfg(), name, temple) end)
 	return ok and s and Position(s.x, s.y, s.z) or nil
 end
 
 function NP.place(name, temple, offsets, opts)
-	local b = stand(name, temple) or booth(name, temple)
+	local b = booth(name, temple)
 	if b then
 		for _, e in ipairs(near(b, 1)) do
 			if e.npc:getName():lower() == name:lower() then

@@ -202,15 +202,13 @@ check(K.arrivalOf({key = "y", arrival = {1, 1, 0}}) == nil, "an area without `at
 for _, a in ipairs(cfg.areas) do
 	check(K.arrivalOf(a) and (K.gateOf(a) or #cfg.gateTowns > 0),
 		a.key .. ": placed (at set, gates by gateTowns; install step contentareas puts the plan there)")
-	check(K.gateOf(a) == nil, a.key .. ": no fixed gate tile (the Chronicle Gates stand in the Halls of Services, cityportals.lua)")
+	check(K.gateOf(a) == nil, a.key .. ": no fixed gate tile (the Chronicle Gates stand at the temples, cityportals.lua)")
 end
 eq(table.concat(cfg.gateTowns, ","), "2,1", "gates in Cinderhold and Mirewake")
-do -- each area has a spot in the hall's portal room and beside both temples
-	local booths = dofile("data/scripts/chaos/npc_booths_config.lua")
+do -- each area has a spot beside both temples (in Cinderhold an alcove of the temple's portal gallery)
 	local cp = dofile("data/scripts/chaos/cityportals_config.lua")
 	for _, a in ipairs(cfg.areas) do
 		local spot = "chronicle_" .. a.key
-		check(booths.portals[spot] ~= nil and cp.hall[spot], a.key .. ": a tile in the hall's portal room")
 		for _, id in ipairs(cfg.gateTowns) do
 			check(cp.towns[id][spot] ~= nil, a.key .. ": a spot beside the temple of town " .. id)
 		end

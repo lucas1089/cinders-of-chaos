@@ -36,4 +36,4 @@ Itens podem ter até {{gem.maxSockets}} [encaixes](wiki:gem:sockets) para [gemas
 
 ## Profissões
 
-Quatro [profissões de coleta](wiki:mat:professions) rendem materiais para vender no Material Broker, ao lado de cada templo (em Cinderhold e Mirewake: no Salão de Serviços). Subir as profissões também dá um pouco de experiência extra.
+Quatro [profissões de coleta](wiki:mat:professions) rendem materiais para vender no Material Broker, ao lado de cada templo (em Cinderhold: no mercado da sala de teleportes). Subir as profissões também dá um pouco de experiência extra.

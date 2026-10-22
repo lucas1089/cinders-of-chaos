@@ -175,7 +175,7 @@ World content:
 - **Map markers.** Party members and points of interest (#94). Done.
 - **Town Portal** and hideout travel. Done.
 - **Main city Cinderhold.** New characters live there: the hunt teleport room 5 steps from the temple, depot, banks, shops and every Chaos temple NPC (#175). Done, not run live.
-- **Halls of Services.** Cinderhold and Mirewake: every Chaos NPC in a closed booth behind a counter, progression and economy rows and a portal room, one step from the temple (#175). Done, not run live.
+- **Hub stalls and the temple's portal gallery** (2026-10-22, in place of the Halls of Services). Every Chaos NPC of Cinderhold in a stall of the market of the teleport room, where the base shop NPCs stood; every portal of the old halls in a gallery along the temple's south wall, each labelled in orange with its destination (#175). Done, not run live.
 - **Ember Blessings.** 10 one-minute kill blessings (#74). Done.
 - **Nemesis.** A monster that kills you may become your Nemesis (#141). Done.
 
