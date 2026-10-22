@@ -1,0 +1,1013 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,mega_alembic_orbit,pack36_fx/mega_alembic_orbit.png,3,3,25,83,1,1,Alembic Orbit (from alembic_orbit)
+effect,mega_ancestor_masks,pack36_fx/mega_ancestor_masks.png,3,3,25,83,1,1,Ancestor Masks (from ancestor_masks)
+effect,mega_antler_crown_n,pack36_fx/mega_antler_crown_n.png,3,3,21,83,1,1,"Antler Crown, towards n (from antler_crown)"
+effect,mega_antler_crown_ne,pack36_fx/mega_antler_crown_ne.png,3,3,21,83,1,1,"Antler Crown, towards ne (from antler_crown)"
+effect,mega_antler_crown_e,pack36_fx/mega_antler_crown_e.png,3,3,21,83,1,1,"Antler Crown, towards e (from antler_crown)"
+effect,mega_antler_crown_se,pack36_fx/mega_antler_crown_se.png,3,3,21,83,1,1,"Antler Crown, towards se (from antler_crown)"
+effect,mega_antler_crown_s,pack36_fx/mega_antler_crown_s.png,3,3,21,83,1,1,"Antler Crown, towards s (from antler_crown)"
+effect,mega_antler_crown_sw,pack36_fx/mega_antler_crown_sw.png,3,3,21,83,1,1,"Antler Crown, towards sw (from antler_crown)"
+effect,mega_antler_crown_w,pack36_fx/mega_antler_crown_w.png,3,3,21,83,1,1,"Antler Crown, towards w (from antler_crown)"
+effect,mega_antler_crown_nw,pack36_fx/mega_antler_crown_nw.png,3,3,21,83,1,1,"Antler Crown, towards nw (from antler_crown)"
+effect,mega_arcane_cubes,pack36_fx/mega_arcane_cubes.png,3,3,25,83,1,1,Arcane Cubes (from arcane_cubes)
+effect,mega_ash_cape_n,pack36_fx/mega_ash_cape_n.png,3,2,25,83,1,1,"Ash Cape, towards n (from ash_cape)"
+effect,mega_ash_cape_ne,pack36_fx/mega_ash_cape_ne.png,3,2,25,83,1,1,"Ash Cape, towards ne (from ash_cape)"
+effect,mega_ash_cape_e,pack36_fx/mega_ash_cape_e.png,3,3,25,83,1,1,"Ash Cape, towards e (from ash_cape)"
+effect,mega_ash_cape_se,pack36_fx/mega_ash_cape_se.png,3,3,25,83,1,1,"Ash Cape, towards se (from ash_cape)"
+effect,mega_ash_cape_s,pack36_fx/mega_ash_cape_s.png,3,2,25,83,1,1,"Ash Cape, towards s (from ash_cape)"
+effect,mega_ash_cape_sw,pack36_fx/mega_ash_cape_sw.png,3,3,25,83,1,1,"Ash Cape, towards sw (from ash_cape)"
+effect,mega_ash_cape_w,pack36_fx/mega_ash_cape_w.png,3,3,25,83,1,1,"Ash Cape, towards w (from ash_cape)"
+effect,mega_ash_cape_nw,pack36_fx/mega_ash_cape_nw.png,3,2,25,83,1,1,"Ash Cape, towards nw (from ash_cape)"
+effect,mega_blood_chalices,pack36_fx/mega_blood_chalices.png,3,3,25,83,1,1,Blood Chalices (from blood_chalices)
+effect,mega_blood_quills,pack36_fx/mega_blood_quills.png,3,3,21,83,1,1,Blood Quills (from blood_quills)
+effect,mega_candle_choir,pack36_fx/mega_candle_choir.png,3,3,25,83,1,1,Candle Choir (from candle_choir)
+effect,mega_chain_scarf_n,pack36_fx/mega_chain_scarf_n.png,2,2,25,83,0,1,"Chain Scarf, towards n (from chain_scarf)"
+effect,mega_chain_scarf_ne,pack36_fx/mega_chain_scarf_ne.png,2,2,25,83,0,1,"Chain Scarf, towards ne (from chain_scarf)"
+effect,mega_chain_scarf_e,pack36_fx/mega_chain_scarf_e.png,2,1,25,83,0,0,"Chain Scarf, towards e (from chain_scarf)"
+effect,mega_chain_scarf_se,pack36_fx/mega_chain_scarf_se.png,2,2,25,83,0,1,"Chain Scarf, towards se (from chain_scarf)"
+effect,mega_chain_scarf_s,pack36_fx/mega_chain_scarf_s.png,1,2,25,83,0,0,"Chain Scarf, towards s (from chain_scarf)"
+effect,mega_chain_scarf_sw,pack36_fx/mega_chain_scarf_sw.png,2,2,25,83,1,0,"Chain Scarf, towards sw (from chain_scarf)"
+effect,mega_chain_scarf_w,pack36_fx/mega_chain_scarf_w.png,2,2,25,83,1,0,"Chain Scarf, towards w (from chain_scarf)"
+effect,mega_chain_scarf_nw,pack36_fx/mega_chain_scarf_nw.png,2,2,25,83,0,1,"Chain Scarf, towards nw (from chain_scarf)"
+effect,mega_cinder_lanterns,pack36_fx/mega_cinder_lanterns.png,3,3,25,83,1,1,Cinder Lanterns (from cinder_lanterns)
+effect,mega_clockwork_pinions_n,pack36_fx/mega_clockwork_pinions_n.png,4,3,25,83,1,1,"Clockwork Pinions, towards n (from clockwork_pinions)"
+effect,mega_clockwork_pinions_ne,pack36_fx/mega_clockwork_pinions_ne.png,3,4,25,83,1,1,"Clockwork Pinions, towards ne (from clockwork_pinions)"
+effect,mega_clockwork_pinions_e,pack36_fx/mega_clockwork_pinions_e.png,4,4,25,83,1,1,"Clockwork Pinions, towards e (from clockwork_pinions)"
+effect,mega_clockwork_pinions_se,pack36_fx/mega_clockwork_pinions_se.png,4,4,25,83,1,1,"Clockwork Pinions, towards se (from clockwork_pinions)"
+effect,mega_clockwork_pinions_s,pack36_fx/mega_clockwork_pinions_s.png,4,4,25,83,1,1,"Clockwork Pinions, towards s (from clockwork_pinions)"
+effect,mega_clockwork_pinions_sw,pack36_fx/mega_clockwork_pinions_sw.png,4,3,25,83,1,1,"Clockwork Pinions, towards sw (from clockwork_pinions)"
+effect,mega_clockwork_pinions_w,pack36_fx/mega_clockwork_pinions_w.png,3,4,25,83,1,1,"Clockwork Pinions, towards w (from clockwork_pinions)"
+effect,mega_clockwork_pinions_nw,pack36_fx/mega_clockwork_pinions_nw.png,4,4,25,83,1,1,"Clockwork Pinions, towards nw (from clockwork_pinions)"
+effect,mega_cog_backplate_n,pack36_fx/mega_cog_backplate_n.png,3,2,25,83,1,1,"Cog Backplate, towards n (from cog_backplate)"
+effect,mega_cog_backplate_ne,pack36_fx/mega_cog_backplate_ne.png,3,2,25,83,1,1,"Cog Backplate, towards ne (from cog_backplate)"
+effect,mega_cog_backplate_e,pack36_fx/mega_cog_backplate_e.png,3,3,25,83,1,1,"Cog Backplate, towards e (from cog_backplate)"
+effect,mega_cog_backplate_se,pack36_fx/mega_cog_backplate_se.png,3,3,25,83,1,1,"Cog Backplate, towards se (from cog_backplate)"
+effect,mega_cog_backplate_s,pack36_fx/mega_cog_backplate_s.png,3,3,25,83,1,1,"Cog Backplate, towards s (from cog_backplate)"
+effect,mega_cog_backplate_sw,pack36_fx/mega_cog_backplate_sw.png,2,3,25,83,1,1,"Cog Backplate, towards sw (from cog_backplate)"
+effect,mega_cog_backplate_w,pack36_fx/mega_cog_backplate_w.png,2,3,25,83,1,1,"Cog Backplate, towards w (from cog_backplate)"
+effect,mega_cog_backplate_nw,pack36_fx/mega_cog_backplate_nw.png,3,2,25,83,1,1,"Cog Backplate, towards nw (from cog_backplate)"
+effect,mega_comet_tail_cloak_n,pack36_fx/mega_comet_tail_cloak_n.png,3,2,25,83,1,1,"Comet Tail Cloak, towards n (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_ne,pack36_fx/mega_comet_tail_cloak_ne.png,3,2,25,83,1,1,"Comet Tail Cloak, towards ne (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_e,pack36_fx/mega_comet_tail_cloak_e.png,3,3,25,83,1,1,"Comet Tail Cloak, towards e (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_se,pack36_fx/mega_comet_tail_cloak_se.png,3,3,25,83,1,1,"Comet Tail Cloak, towards se (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_s,pack36_fx/mega_comet_tail_cloak_s.png,3,3,25,83,1,1,"Comet Tail Cloak, towards s (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_sw,pack36_fx/mega_comet_tail_cloak_sw.png,2,3,25,83,1,1,"Comet Tail Cloak, towards sw (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_w,pack36_fx/mega_comet_tail_cloak_w.png,2,3,25,83,1,1,"Comet Tail Cloak, towards w (from comet_tail_cloak)"
+effect,mega_comet_tail_cloak_nw,pack36_fx/mega_comet_tail_cloak_nw.png,2,2,25,83,1,1,"Comet Tail Cloak, towards nw (from comet_tail_cloak)"
+effect,mega_dandelion_drift,pack36_fx/mega_dandelion_drift.png,4,4,25,83,1,1,Dandelion Drift (from dandelion_drift)
+effect,mega_dream_bubbles,pack36_fx/mega_dream_bubbles.png,3,3,25,83,1,1,Dream Bubbles (from dream_bubbles)
+effect,mega_echo_gong_n,pack36_fx/mega_echo_gong_n.png,3,3,17,83,1,1,"Echo Gong, towards n (from echo_gong)"
+effect,mega_echo_gong_ne,pack36_fx/mega_echo_gong_ne.png,3,3,17,83,1,1,"Echo Gong, towards ne (from echo_gong)"
+effect,mega_echo_gong_e,pack36_fx/mega_echo_gong_e.png,3,3,17,83,1,1,"Echo Gong, towards e (from echo_gong)"
+effect,mega_echo_gong_se,pack36_fx/mega_echo_gong_se.png,3,3,17,83,1,1,"Echo Gong, towards se (from echo_gong)"
+effect,mega_echo_gong_s,pack36_fx/mega_echo_gong_s.png,3,3,17,83,1,1,"Echo Gong, towards s (from echo_gong)"
+effect,mega_echo_gong_sw,pack36_fx/mega_echo_gong_sw.png,3,3,17,83,1,1,"Echo Gong, towards sw (from echo_gong)"
+effect,mega_echo_gong_w,pack36_fx/mega_echo_gong_w.png,3,3,17,83,1,1,"Echo Gong, towards w (from echo_gong)"
+effect,mega_echo_gong_nw,pack36_fx/mega_echo_gong_nw.png,3,3,17,83,1,1,"Echo Gong, towards nw (from echo_gong)"
+effect,mega_feather_gyre,pack36_fx/mega_feather_gyre.png,3,3,25,83,1,1,Feather Gyre (from feather_gyre)
+effect,mega_forge_sparks,pack36_fx/mega_forge_sparks.png,3,1,17,83,1,0,Forge Sparks (from forge_sparks)
+effect,mega_geode_shell,pack36_fx/mega_geode_shell.png,3,3,25,83,1,1,Geode Shell (from geode_shell)
+effect,mega_glacier_plates,pack36_fx/mega_glacier_plates.png,3,3,25,83,1,1,Glacier Plates (from glacier_plates)
+effect,mega_glass_shard_wings_n,pack36_fx/mega_glass_shard_wings_n.png,4,4,25,83,1,1,"Glass Shard Wings, towards n (from glass_shard_wings)"
+effect,mega_glass_shard_wings_ne,pack36_fx/mega_glass_shard_wings_ne.png,4,4,25,83,1,1,"Glass Shard Wings, towards ne (from glass_shard_wings)"
+effect,mega_glass_shard_wings_e,pack36_fx/mega_glass_shard_wings_e.png,4,4,25,83,1,1,"Glass Shard Wings, towards e (from glass_shard_wings)"
+effect,mega_glass_shard_wings_se,pack36_fx/mega_glass_shard_wings_se.png,4,4,25,83,1,1,"Glass Shard Wings, towards se (from glass_shard_wings)"
+effect,mega_glass_shard_wings_s,pack36_fx/mega_glass_shard_wings_s.png,4,4,25,83,1,1,"Glass Shard Wings, towards s (from glass_shard_wings)"
+effect,mega_glass_shard_wings_sw,pack36_fx/mega_glass_shard_wings_sw.png,4,4,25,83,1,1,"Glass Shard Wings, towards sw (from glass_shard_wings)"
+effect,mega_glass_shard_wings_w,pack36_fx/mega_glass_shard_wings_w.png,4,4,25,83,1,1,"Glass Shard Wings, towards w (from glass_shard_wings)"
+effect,mega_glass_shard_wings_nw,pack36_fx/mega_glass_shard_wings_nw.png,4,4,25,83,1,1,"Glass Shard Wings, towards nw (from glass_shard_wings)"
+effect,mega_glyph_rain,pack36_fx/mega_glyph_rain.png,3,3,25,83,1,1,Glyph Rain (from glyph_rain)
+effect,mega_grasping_shade_n,pack36_fx/mega_grasping_shade_n.png,3,3,21,83,1,1,"Grasping Shade, towards n (from grasping_shade)"
+effect,mega_grasping_shade_ne,pack36_fx/mega_grasping_shade_ne.png,2,3,21,83,0,1,"Grasping Shade, towards ne (from grasping_shade)"
+effect,mega_grasping_shade_e,pack36_fx/mega_grasping_shade_e.png,2,3,21,83,0,1,"Grasping Shade, towards e (from grasping_shade)"
+effect,mega_grasping_shade_se,pack36_fx/mega_grasping_shade_se.png,3,3,21,83,1,1,"Grasping Shade, towards se (from grasping_shade)"
+effect,mega_grasping_shade_s,pack36_fx/mega_grasping_shade_s.png,3,2,21,83,1,0,"Grasping Shade, towards s (from grasping_shade)"
+effect,mega_grasping_shade_sw,pack36_fx/mega_grasping_shade_sw.png,3,2,21,83,1,0,"Grasping Shade, towards sw (from grasping_shade)"
+effect,mega_grasping_shade_w,pack36_fx/mega_grasping_shade_w.png,3,3,21,83,1,1,"Grasping Shade, towards w (from grasping_shade)"
+effect,mega_grasping_shade_nw,pack36_fx/mega_grasping_shade_nw.png,3,3,21,83,1,1,"Grasping Shade, towards nw (from grasping_shade)"
+effect,mega_grave_hands,pack36_fx/mega_grave_hands.png,3,3,25,83,1,1,Grave Hands (from grave_hands)
+effect,mega_halo_bells,pack36_fx/mega_halo_bells.png,3,3,25,83,1,1,Halo Bells (from halo_bells)
+effect,mega_hammer_ring,pack36_fx/mega_hammer_ring.png,3,3,25,83,1,1,Hammer Ring (from hammer_ring)
+effect,mega_hoarfrost_fan_n,pack36_fx/mega_hoarfrost_fan_n.png,3,2,25,83,1,1,"Hoarfrost Fan, towards n (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_ne,pack36_fx/mega_hoarfrost_fan_ne.png,3,2,25,83,1,1,"Hoarfrost Fan, towards ne (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_e,pack36_fx/mega_hoarfrost_fan_e.png,3,3,25,83,1,1,"Hoarfrost Fan, towards e (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_se,pack36_fx/mega_hoarfrost_fan_se.png,3,3,25,83,1,1,"Hoarfrost Fan, towards se (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_s,pack36_fx/mega_hoarfrost_fan_s.png,3,3,25,83,1,1,"Hoarfrost Fan, towards s (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_sw,pack36_fx/mega_hoarfrost_fan_sw.png,2,3,25,83,1,1,"Hoarfrost Fan, towards sw (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_w,pack36_fx/mega_hoarfrost_fan_w.png,2,3,25,83,1,1,"Hoarfrost Fan, towards w (from hoarfrost_fan)"
+effect,mega_hoarfrost_fan_nw,pack36_fx/mega_hoarfrost_fan_nw.png,3,3,25,83,1,1,"Hoarfrost Fan, towards nw (from hoarfrost_fan)"
+effect,mega_hourglass_sigil_n,pack36_fx/mega_hourglass_sigil_n.png,3,3,25,83,1,1,"Hourglass Sigil, towards n (from hourglass_sigil)"
+effect,mega_hourglass_sigil_ne,pack36_fx/mega_hourglass_sigil_ne.png,3,3,25,83,1,1,"Hourglass Sigil, towards ne (from hourglass_sigil)"
+effect,mega_hourglass_sigil_e,pack36_fx/mega_hourglass_sigil_e.png,3,3,25,83,1,1,"Hourglass Sigil, towards e (from hourglass_sigil)"
+effect,mega_hourglass_sigil_se,pack36_fx/mega_hourglass_sigil_se.png,3,3,25,83,1,1,"Hourglass Sigil, towards se (from hourglass_sigil)"
+effect,mega_hourglass_sigil_s,pack36_fx/mega_hourglass_sigil_s.png,3,3,25,83,1,1,"Hourglass Sigil, towards s (from hourglass_sigil)"
+effect,mega_hourglass_sigil_sw,pack36_fx/mega_hourglass_sigil_sw.png,3,3,25,83,1,1,"Hourglass Sigil, towards sw (from hourglass_sigil)"
+effect,mega_hourglass_sigil_w,pack36_fx/mega_hourglass_sigil_w.png,3,3,25,83,1,1,"Hourglass Sigil, towards w (from hourglass_sigil)"
+effect,mega_hourglass_sigil_nw,pack36_fx/mega_hourglass_sigil_nw.png,3,3,25,83,1,1,"Hourglass Sigil, towards nw (from hourglass_sigil)"
+effect,mega_incense_coils,pack36_fx/mega_incense_coils.png,3,3,25,83,1,1,Incense Coils (from incense_coils)
+effect,mega_ink_brush_wings_n,pack36_fx/mega_ink_brush_wings_n.png,4,4,21,83,1,1,"Ink Brush Wings, towards n (from ink_brush_wings)"
+effect,mega_ink_brush_wings_ne,pack36_fx/mega_ink_brush_wings_ne.png,4,5,21,83,1,1,"Ink Brush Wings, towards ne (from ink_brush_wings)"
+effect,mega_ink_brush_wings_e,pack36_fx/mega_ink_brush_wings_e.png,4,4,21,83,1,1,"Ink Brush Wings, towards e (from ink_brush_wings)"
+effect,mega_ink_brush_wings_se,pack36_fx/mega_ink_brush_wings_se.png,5,5,21,83,1,1,"Ink Brush Wings, towards se (from ink_brush_wings)"
+effect,mega_ink_brush_wings_s,pack36_fx/mega_ink_brush_wings_s.png,4,4,21,83,1,1,"Ink Brush Wings, towards s (from ink_brush_wings)"
+effect,mega_ink_brush_wings_sw,pack36_fx/mega_ink_brush_wings_sw.png,4,4,21,83,1,1,"Ink Brush Wings, towards sw (from ink_brush_wings)"
+effect,mega_ink_brush_wings_w,pack36_fx/mega_ink_brush_wings_w.png,4,4,21,83,1,1,"Ink Brush Wings, towards w (from ink_brush_wings)"
+effect,mega_ink_brush_wings_nw,pack36_fx/mega_ink_brush_wings_nw.png,4,4,21,83,1,1,"Ink Brush Wings, towards nw (from ink_brush_wings)"
+effect,mega_ink_drip_veil,pack36_fx/mega_ink_drip_veil.png,3,3,21,83,1,1,Ink Drip Veil (from ink_drip_veil)
+effect,mega_jellyfish_veil,pack36_fx/mega_jellyfish_veil.png,3,3,25,83,1,1,Jellyfish Veil (from jellyfish_veil)
+effect,mega_kaleido_ring,pack36_fx/mega_kaleido_ring.png,3,3,25,83,1,1,Kaleido Ring (from kaleido_ring)
+effect,mega_kelp_cloak_n,pack36_fx/mega_kelp_cloak_n.png,2,2,25,83,1,1,"Kelp Cloak, towards n (from kelp_cloak)"
+effect,mega_kelp_cloak_ne,pack36_fx/mega_kelp_cloak_ne.png,2,2,25,83,1,1,"Kelp Cloak, towards ne (from kelp_cloak)"
+effect,mega_kelp_cloak_e,pack36_fx/mega_kelp_cloak_e.png,3,2,25,83,1,1,"Kelp Cloak, towards e (from kelp_cloak)"
+effect,mega_kelp_cloak_se,pack36_fx/mega_kelp_cloak_se.png,2,3,25,83,1,1,"Kelp Cloak, towards se (from kelp_cloak)"
+effect,mega_kelp_cloak_s,pack36_fx/mega_kelp_cloak_s.png,2,3,25,83,1,1,"Kelp Cloak, towards s (from kelp_cloak)"
+effect,mega_kelp_cloak_sw,pack36_fx/mega_kelp_cloak_sw.png,2,2,25,83,1,1,"Kelp Cloak, towards sw (from kelp_cloak)"
+effect,mega_kelp_cloak_w,pack36_fx/mega_kelp_cloak_w.png,2,2,25,83,1,1,"Kelp Cloak, towards w (from kelp_cloak)"
+effect,mega_kelp_cloak_nw,pack36_fx/mega_kelp_cloak_nw.png,2,2,25,83,1,1,"Kelp Cloak, towards nw (from kelp_cloak)"
+effect,mega_koi_ring,pack36_fx/mega_koi_ring.png,3,3,25,83,1,1,Koi Ring (from koi_ring)
+effect,mega_lava_mantle_n,pack36_fx/mega_lava_mantle_n.png,3,3,21,83,1,1,"Lava Mantle, towards n (from lava_mantle)"
+effect,mega_lava_mantle_ne,pack36_fx/mega_lava_mantle_ne.png,3,3,21,83,1,1,"Lava Mantle, towards ne (from lava_mantle)"
+effect,mega_lava_mantle_e,pack36_fx/mega_lava_mantle_e.png,3,3,21,83,1,1,"Lava Mantle, towards e (from lava_mantle)"
+effect,mega_lava_mantle_se,pack36_fx/mega_lava_mantle_se.png,3,3,21,83,1,1,"Lava Mantle, towards se (from lava_mantle)"
+effect,mega_lava_mantle_s,pack36_fx/mega_lava_mantle_s.png,3,3,21,83,1,1,"Lava Mantle, towards s (from lava_mantle)"
+effect,mega_lava_mantle_sw,pack36_fx/mega_lava_mantle_sw.png,3,3,21,83,1,1,"Lava Mantle, towards sw (from lava_mantle)"
+effect,mega_lava_mantle_w,pack36_fx/mega_lava_mantle_w.png,3,3,21,83,1,1,"Lava Mantle, towards w (from lava_mantle)"
+effect,mega_lava_mantle_nw,pack36_fx/mega_lava_mantle_nw.png,3,3,21,83,1,1,"Lava Mantle, towards nw (from lava_mantle)"
+effect,mega_lightning_gyroscope,pack36_fx/mega_lightning_gyroscope.png,3,3,25,83,1,1,Lightning Gyroscope (from lightning_gyroscope)
+effect,mega_looking_glass_pane_n,pack36_fx/mega_looking_glass_pane_n.png,3,3,21,83,1,1,"Looking Glass Pane, towards n (from looking_glass_pane)"
+effect,mega_looking_glass_pane_ne,pack36_fx/mega_looking_glass_pane_ne.png,3,3,21,83,1,1,"Looking Glass Pane, towards ne (from looking_glass_pane)"
+effect,mega_looking_glass_pane_e,pack36_fx/mega_looking_glass_pane_e.png,3,3,21,83,1,1,"Looking Glass Pane, towards e (from looking_glass_pane)"
+effect,mega_looking_glass_pane_se,pack36_fx/mega_looking_glass_pane_se.png,3,3,21,83,1,1,"Looking Glass Pane, towards se (from looking_glass_pane)"
+effect,mega_looking_glass_pane_s,pack36_fx/mega_looking_glass_pane_s.png,3,3,21,83,1,1,"Looking Glass Pane, towards s (from looking_glass_pane)"
+effect,mega_looking_glass_pane_sw,pack36_fx/mega_looking_glass_pane_sw.png,3,3,21,83,1,1,"Looking Glass Pane, towards sw (from looking_glass_pane)"
+effect,mega_looking_glass_pane_w,pack36_fx/mega_looking_glass_pane_w.png,3,3,21,83,1,1,"Looking Glass Pane, towards w (from looking_glass_pane)"
+effect,mega_looking_glass_pane_nw,pack36_fx/mega_looking_glass_pane_nw.png,3,3,21,83,1,1,"Looking Glass Pane, towards nw (from looking_glass_pane)"
+effect,mega_magnet_filings,pack36_fx/mega_magnet_filings.png,3,3,21,83,1,1,Magnet Filings (from magnet_filings)
+effect,mega_moth_mantle_n,pack36_fx/mega_moth_mantle_n.png,4,4,21,83,1,1,"Moth Mantle, towards n (from moth_mantle)"
+effect,mega_moth_mantle_ne,pack36_fx/mega_moth_mantle_ne.png,3,4,21,83,1,1,"Moth Mantle, towards ne (from moth_mantle)"
+effect,mega_moth_mantle_e,pack36_fx/mega_moth_mantle_e.png,4,4,21,83,1,1,"Moth Mantle, towards e (from moth_mantle)"
+effect,mega_moth_mantle_se,pack36_fx/mega_moth_mantle_se.png,4,4,21,83,1,1,"Moth Mantle, towards se (from moth_mantle)"
+effect,mega_moth_mantle_s,pack36_fx/mega_moth_mantle_s.png,4,4,21,83,1,1,"Moth Mantle, towards s (from moth_mantle)"
+effect,mega_moth_mantle_sw,pack36_fx/mega_moth_mantle_sw.png,4,4,21,83,1,1,"Moth Mantle, towards sw (from moth_mantle)"
+effect,mega_moth_mantle_w,pack36_fx/mega_moth_mantle_w.png,4,4,21,83,1,1,"Moth Mantle, towards w (from moth_mantle)"
+effect,mega_moth_mantle_nw,pack36_fx/mega_moth_mantle_nw.png,4,4,21,83,1,1,"Moth Mantle, towards nw (from moth_mantle)"
+effect,mega_nebula_veil,pack36_fx/mega_nebula_veil.png,3,3,25,83,1,1,Nebula Veil (from nebula_veil)
+effect,mega_note_carousel,pack36_fx/mega_note_carousel.png,3,3,25,83,1,1,Note Carousel (from note_carousel)
+effect,mega_null_lens,pack36_fx/mega_null_lens.png,3,3,25,83,1,1,Null Lens (from null_lens)
+effect,mega_obsidian_spikes,pack36_fx/mega_obsidian_spikes.png,3,3,21,83,1,1,Obsidian Spikes (from obsidian_spikes)
+effect,mega_orbit_stones,pack36_fx/mega_orbit_stones.png,3,3,25,83,1,1,Orbit Stones (from orbit_stones)
+effect,mega_orrery_arms,pack36_fx/mega_orrery_arms.png,3,3,25,83,1,1,Orrery Arms (from orrery_arms)
+effect,mega_paper_crane_wake_n,pack36_fx/mega_paper_crane_wake_n.png,3,2,25,83,0,1,"Paper Crane Wake, towards n (from paper_crane_wake)"
+effect,mega_paper_crane_wake_ne,pack36_fx/mega_paper_crane_wake_ne.png,3,3,25,83,0,1,"Paper Crane Wake, towards ne (from paper_crane_wake)"
+effect,mega_paper_crane_wake_e,pack36_fx/mega_paper_crane_wake_e.png,3,3,25,83,0,1,"Paper Crane Wake, towards e (from paper_crane_wake)"
+effect,mega_paper_crane_wake_se,pack36_fx/mega_paper_crane_wake_se.png,3,3,25,83,0,0,"Paper Crane Wake, towards se (from paper_crane_wake)"
+effect,mega_paper_crane_wake_s,pack36_fx/mega_paper_crane_wake_s.png,3,3,25,83,1,0,"Paper Crane Wake, towards s (from paper_crane_wake)"
+effect,mega_paper_crane_wake_sw,pack36_fx/mega_paper_crane_wake_sw.png,2,3,25,83,1,0,"Paper Crane Wake, towards sw (from paper_crane_wake)"
+effect,mega_paper_crane_wake_w,pack36_fx/mega_paper_crane_wake_w.png,2,3,25,83,1,0,"Paper Crane Wake, towards w (from paper_crane_wake)"
+effect,mega_paper_crane_wake_nw,pack36_fx/mega_paper_crane_wake_nw.png,2,2,25,83,1,1,"Paper Crane Wake, towards nw (from paper_crane_wake)"
+effect,mega_pendulum_ring,pack36_fx/mega_pendulum_ring.png,3,3,25,83,1,1,Pendulum Ring (from pendulum_ring)
+effect,mega_quartz_lattice,pack36_fx/mega_quartz_lattice.png,3,3,25,83,1,1,Quartz Lattice (from quartz_lattice)
+effect,mega_ribcage_dome,pack36_fx/mega_ribcage_dome.png,3,3,25,83,1,1,Ribcage Dome (from ribcage_dome)
+effect,mega_salamander_ring,pack36_fx/mega_salamander_ring.png,3,3,25,83,1,1,Salamander Ring (from salamander_ring)
+effect,mega_sand_veil_cape_n,pack36_fx/mega_sand_veil_cape_n.png,2,2,25,83,1,1,"Sand Veil Cape, towards n (from sand_veil_cape)"
+effect,mega_sand_veil_cape_ne,pack36_fx/mega_sand_veil_cape_ne.png,2,2,25,83,1,1,"Sand Veil Cape, towards ne (from sand_veil_cape)"
+effect,mega_sand_veil_cape_e,pack36_fx/mega_sand_veil_cape_e.png,3,2,25,83,1,1,"Sand Veil Cape, towards e (from sand_veil_cape)"
+effect,mega_sand_veil_cape_se,pack36_fx/mega_sand_veil_cape_se.png,2,3,25,83,1,1,"Sand Veil Cape, towards se (from sand_veil_cape)"
+effect,mega_sand_veil_cape_s,pack36_fx/mega_sand_veil_cape_s.png,2,3,25,83,1,1,"Sand Veil Cape, towards s (from sand_veil_cape)"
+effect,mega_sand_veil_cape_sw,pack36_fx/mega_sand_veil_cape_sw.png,2,3,25,83,1,1,"Sand Veil Cape, towards sw (from sand_veil_cape)"
+effect,mega_sand_veil_cape_w,pack36_fx/mega_sand_veil_cape_w.png,2,2,25,83,1,1,"Sand Veil Cape, towards w (from sand_veil_cape)"
+effect,mega_sand_veil_cape_nw,pack36_fx/mega_sand_veil_cape_nw.png,2,2,25,83,1,1,"Sand Veil Cape, towards nw (from sand_veil_cape)"
+effect,mega_sandstorm_girdle,pack36_fx/mega_sandstorm_girdle.png,3,3,25,83,1,1,Sandstorm Girdle (from sandstorm_girdle)
+effect,mega_serpent_coil,pack36_fx/mega_serpent_coil.png,3,3,25,83,1,1,Serpent Coil (from serpent_coil)
+effect,mega_silhouette_crows,pack36_fx/mega_silhouette_crows.png,3,3,17,83,1,1,Silhouette Crows (from silhouette_crows)
+effect,mega_snow_globe,pack36_fx/mega_snow_globe.png,3,3,25,83,1,1,Snow Globe (from snow_globe)
+effect,mega_sonar_pulses,pack36_fx/mega_sonar_pulses.png,3,3,17,83,1,1,Sonar Pulses (from sonar_pulses)
+effect,mega_spore_bloom,pack36_fx/mega_spore_bloom.png,3,3,25,83,1,1,Spore Bloom (from spore_bloom)
+effect,mega_star_eaters,pack36_fx/mega_star_eaters.png,3,3,25,83,1,1,Star Eaters (from star_eaters)
+effect,mega_stone_shelves,pack36_fx/mega_stone_shelves.png,3,3,25,83,1,1,Stone Shelves (from stone_shelves)
+effect,mega_sundial_shadow,pack36_fx/mega_sundial_shadow.png,3,3,25,83,1,1,Sundial Shadow (from sundial_shadow)
+effect,mega_sunwheel_back_n,pack36_fx/mega_sunwheel_back_n.png,3,2,25,83,1,1,"Sunwheel Back, towards n (from sunwheel_back)"
+effect,mega_sunwheel_back_ne,pack36_fx/mega_sunwheel_back_ne.png,3,2,25,83,1,1,"Sunwheel Back, towards ne (from sunwheel_back)"
+effect,mega_sunwheel_back_e,pack36_fx/mega_sunwheel_back_e.png,3,3,25,83,1,1,"Sunwheel Back, towards e (from sunwheel_back)"
+effect,mega_sunwheel_back_se,pack36_fx/mega_sunwheel_back_se.png,3,3,25,83,1,1,"Sunwheel Back, towards se (from sunwheel_back)"
+effect,mega_sunwheel_back_s,pack36_fx/mega_sunwheel_back_s.png,3,3,25,83,1,1,"Sunwheel Back, towards s (from sunwheel_back)"
+effect,mega_sunwheel_back_sw,pack36_fx/mega_sunwheel_back_sw.png,2,3,25,83,1,1,"Sunwheel Back, towards sw (from sunwheel_back)"
+effect,mega_sunwheel_back_w,pack36_fx/mega_sunwheel_back_w.png,2,3,25,83,1,1,"Sunwheel Back, towards w (from sunwheel_back)"
+effect,mega_sunwheel_back_nw,pack36_fx/mega_sunwheel_back_nw.png,3,2,25,83,1,1,"Sunwheel Back, towards nw (from sunwheel_back)"
+effect,mega_tesla_cage,pack36_fx/mega_tesla_cage.png,3,3,17,83,1,1,Tesla Cage (from tesla_cage)
+effect,mega_totem_shoulders_n,pack36_fx/mega_totem_shoulders_n.png,3,2,25,83,1,1,"Totem Shoulders, towards n (from totem_shoulders)"
+effect,mega_totem_shoulders_ne,pack36_fx/mega_totem_shoulders_ne.png,3,3,25,83,1,1,"Totem Shoulders, towards ne (from totem_shoulders)"
+effect,mega_totem_shoulders_e,pack36_fx/mega_totem_shoulders_e.png,3,3,25,83,1,1,"Totem Shoulders, towards e (from totem_shoulders)"
+effect,mega_totem_shoulders_se,pack36_fx/mega_totem_shoulders_se.png,3,3,25,83,1,1,"Totem Shoulders, towards se (from totem_shoulders)"
+effect,mega_totem_shoulders_s,pack36_fx/mega_totem_shoulders_s.png,3,3,25,83,1,1,"Totem Shoulders, towards s (from totem_shoulders)"
+effect,mega_totem_shoulders_sw,pack36_fx/mega_totem_shoulders_sw.png,3,3,25,83,1,1,"Totem Shoulders, towards sw (from totem_shoulders)"
+effect,mega_totem_shoulders_w,pack36_fx/mega_totem_shoulders_w.png,2,3,25,83,1,1,"Totem Shoulders, towards w (from totem_shoulders)"
+effect,mega_totem_shoulders_nw,pack36_fx/mega_totem_shoulders_nw.png,3,3,25,83,1,1,"Totem Shoulders, towards nw (from totem_shoulders)"
+effect,mega_tuning_forks,pack36_fx/mega_tuning_forks.png,3,3,17,83,1,1,Tuning Forks (from tuning_forks)
+effect,mega_umbral_maws,pack36_fx/mega_umbral_maws.png,3,3,17,83,1,1,Umbral Maws (from umbral_maws)
+effect,mega_venom_wasps,pack36_fx/mega_venom_wasps.png,3,3,17,83,1,1,Venom Wasps (from venom_wasps)
+effect,mega_wild_dice,pack36_fx/mega_wild_dice.png,3,3,25,83,1,1,Wild Dice (from wild_dice)
+effect,mega_willow_curtain,pack36_fx/mega_willow_curtain.png,3,3,25,83,1,1,Willow Curtain (from willow_curtain)
+effect,mega_zodiac_wheel,pack36_fx/mega_zodiac_wheel.png,3,3,25,83,1,1,Zodiac Wheel (from zodiac_wheel)
+effect,mega_circle_alembic,pack36_fx/mega_circle_alembic.png,3,3,21,83,1,1,Alembic Circle (from circle_alembic)
+effect,mega_circle_anvil_sigil,pack36_fx/mega_circle_anvil_sigil.png,3,3,17,83,1,1,Anvil Sigil (from circle_anvil_sigil)
+effect,mega_circle_ashen_ring,pack36_fx/mega_circle_ashen_ring.png,4,4,25,83,2,2,Ashen Ring (from circle_ashen_ring)
+effect,mega_circle_chain_ring,pack36_fx/mega_circle_chain_ring.png,3,3,17,83,1,1,Chain Ring (from circle_chain_ring)
+effect,mega_circle_chaos_prism,pack36_fx/mega_circle_chaos_prism.png,3,3,17,83,1,1,Chaos Prism (from circle_chaos_prism)
+effect,mega_circle_cinder_wheel,pack36_fx/mega_circle_cinder_wheel.png,4,4,21,83,2,2,Cinder Wheel Sigil (from circle_cinder_wheel)
+effect,mega_circle_cog_ring,pack36_fx/mega_circle_cog_ring.png,4,4,25,83,2,2,Cog Ring (from circle_cog_ring)
+effect,mega_circle_coin_ring,pack36_fx/mega_circle_coin_ring.png,3,3,17,83,1,1,Coin Ring (from circle_coin_ring)
+effect,mega_circle_comet_orbit,pack36_fx/mega_circle_comet_orbit.png,3,3,25,83,1,1,Comet Orbit (from circle_comet_orbit)
+effect,mega_circle_crystal_lattice,pack36_fx/mega_circle_crystal_lattice.png,3,3,25,83,1,1,Crystal Lattice (from circle_crystal_lattice)
+effect,mega_circle_dawn_dial,pack36_fx/mega_circle_dawn_dial.png,3,3,25,83,1,1,Dawn Dial (from circle_dawn_dial)
+effect,mega_circle_gravity_lens,pack36_fx/mega_circle_gravity_lens.png,3,3,21,83,1,1,Gravity Lens (from circle_gravity_lens)
+effect,mega_circle_honeycomb,pack36_fx/mega_circle_honeycomb.png,4,4,21,83,2,2,Honeycomb Ward (from circle_honeycomb)
+effect,mega_circle_ink_brush,pack36_fx/mega_circle_ink_brush.png,3,3,25,83,1,1,Ink Brush Circle (from circle_ink_brush)
+effect,mega_circle_lotus_pad,pack36_fx/mega_circle_lotus_pad.png,3,3,25,83,1,1,Lotus Pad (from circle_lotus_pad)
+effect,mega_circle_magma_veins,pack36_fx/mega_circle_magma_veins.png,3,3,21,83,1,1,Magma Vein Circle (from circle_magma_veins)
+effect,mega_circle_rune_lock,pack36_fx/mega_circle_rune_lock.png,3,3,25,83,1,1,Rune Lock Circle (from circle_rune_lock)
+effect,mega_circle_sand_mandala,pack36_fx/mega_circle_sand_mandala.png,4,4,25,83,2,2,Sand Mandala (from circle_sand_mandala)
+effect,mega_circle_slumber_ring,pack36_fx/mega_circle_slumber_ring.png,3,3,25,83,1,1,Slumber Ring (from circle_slumber_ring)
+effect,mega_circle_sound_bars,pack36_fx/mega_circle_sound_bars.png,3,3,17,83,1,1,Sound Bars (from circle_sound_bars)
+effect,mega_circle_spirit_lanterns,pack36_fx/mega_circle_spirit_lanterns.png,3,3,25,83,1,1,Spirit Lanterns (from circle_spirit_lanterns)
+effect,mega_circle_spore_ring,pack36_fx/mega_circle_spore_ring.png,4,4,21,83,2,2,Spore Ring (from circle_spore_ring)
+effect,mega_circle_standing_stones,pack36_fx/mega_circle_standing_stones.png,3,3,25,83,1,1,Standing Stones (from circle_standing_stones)
+effect,mega_circle_star_chart,pack36_fx/mega_circle_star_chart.png,3,3,25,83,1,1,Star Chart (from circle_star_chart)
+effect,mega_circle_talisman_ring,pack36_fx/mega_circle_talisman_ring.png,3,3,21,83,1,1,Talisman Ring (from circle_talisman_ring)
+effect,mega_circle_tide_compass,pack36_fx/mega_circle_tide_compass.png,3,3,21,83,1,1,Tide Compass (from circle_tide_compass)
+effect,mega_circle_totem_prints,pack36_fx/mega_circle_totem_prints.png,3,3,25,83,1,1,Totem Prints (from circle_totem_prints)
+effect,mega_circle_watcher_ring,pack36_fx/mega_circle_watcher_ring.png,3,3,25,83,1,1,Watcher Ring (from circle_watcher_ring)
+effect,mega_circle_zephyr_spiral,pack36_fx/mega_circle_zephyr_spiral.png,3,3,17,83,1,1,Zephyr Spiral (from circle_zephyr_spiral)
+effect,mega_angel_blessing,pack36_fx/mega_angel_blessing.png,3,3,48,67,0,0,Angel's Blessing (from angel_blessing)
+effect,mega_bone_pentacle,pack36_fx/mega_bone_pentacle.png,5,5,47,67,2,2,Bone Pentacle (from bone_pentacle)
+effect,mega_burst_arcane_cube_unfold,pack36_fx/mega_burst_arcane_cube_unfold.png,3,4,17,83,1,2,Cube Unfold (from burst_arcane_cube_unfold)
+effect,mega_burst_ash_collapse,pack36_fx/mega_burst_ash_collapse.png,4,4,18,83,2,2,Ash Collapse (from burst_ash_collapse)
+effect,mega_burst_aurora_fountain,pack36_fx/mega_burst_aurora_fountain.png,4,4,17,83,1,1,Aurora Fountain (from burst_aurora_fountain)
+effect,mega_burst_bell_toll,pack36_fx/mega_burst_bell_toll.png,5,5,16,83,2,2,Bell Toll (from burst_bell_toll)
+effect,mega_burst_blood_geyser,pack36_fx/mega_burst_blood_geyser.png,3,3,15,83,1,1,Blood Geyser (from burst_blood_geyser)
+effect,mega_burst_bone_cage_burst,pack36_fx/mega_burst_bone_cage_burst.png,3,3,16,83,1,1,Rib Cage Burst (from burst_bone_cage_burst)
+effect,mega_burst_chaos_dice,pack36_fx/mega_burst_chaos_dice.png,5,5,18,83,2,2,Chaos Dice (from burst_chaos_dice)
+effect,mega_burst_coinfountain_jackpot,pack36_fx/mega_burst_coinfountain_jackpot.png,3,3,17,83,1,1,Coin Fountain (from burst_coinfountain_jackpot)
+effect,mega_burst_dust_devil_pop,pack36_fx/mega_burst_dust_devil_pop.png,3,3,16,83,1,1,Dust Devil Pop (from burst_dust_devil_pop)
+effect,mega_burst_ember_moth_pyre,pack36_fx/mega_burst_ember_moth_pyre.png,4,4,18,83,2,2,Pyre Spiral (from burst_ember_moth_pyre)
+effect,mega_burst_forgeanvil_slag,pack36_fx/mega_burst_forgeanvil_slag.png,4,5,14,83,2,2,Slag Spray (from burst_forgeanvil_slag)
+effect,mega_burst_frostbite_pillars,pack36_fx/mega_burst_frostbite_pillars.png,3,3,18,83,1,1,Rime Pillars (from burst_frostbite_pillars)
+effect,mega_burst_gear_clockburst,pack36_fx/mega_burst_gear_clockburst.png,4,4,17,83,2,2,Clockwork Burst (from burst_gear_clockburst)
+effect,mega_burst_ghostship_bellfog,pack36_fx/mega_burst_ghostship_bellfog.png,5,5,21,83,2,2,Fog Bell Burst (from burst_ghostship_bellfog)
+effect,mega_burst_glacier_calving,pack36_fx/mega_burst_glacier_calving.png,4,4,15,83,2,2,Glacier Calving (from burst_glacier_calving)
+effect,mega_burst_graveflare_lanterns,pack36_fx/mega_burst_graveflare_lanterns.png,3,3,20,83,1,1,Gravelight Flare (from burst_graveflare_lanterns)
+effect,mega_burst_hive_swarm_release,pack36_fx/mega_burst_hive_swarm_release.png,3,4,18,83,1,1,Hive Release (from burst_hive_swarm_release)
+effect,mega_burst_holy_bellchime_rings,pack36_fx/mega_burst_holy_bellchime_rings.png,4,4,16,83,1,1,Chime Rings (from burst_holy_bellchime_rings)
+effect,mega_burst_hourglass_rewind,pack36_fx/mega_burst_hourglass_rewind.png,3,3,18,83,1,1,Rewind Pulse (from burst_hourglass_rewind)
+effect,mega_burst_inkwell_bloom,pack36_fx/mega_burst_inkwell_bloom.png,4,3,16,83,2,1,Ink Bloom (from burst_inkwell_bloom)
+effect,mega_burst_lava_bubble_dome,pack36_fx/mega_burst_lava_bubble_dome.png,5,5,18,83,2,2,Magma Dome (from burst_lava_bubble_dome)
+effect,mega_burst_lightning_cage_collapse,pack36_fx/mega_burst_lightning_cage_collapse.png,3,3,14,83,1,1,Arc Cage (from burst_lightning_cage_collapse)
+effect,mega_burst_lute_chord_blast,pack36_fx/mega_burst_lute_chord_blast.png,5,5,14,83,2,2,Power Chord (from burst_lute_chord_blast)
+effect,mega_burst_meteor_pebble_hail,pack36_fx/mega_burst_meteor_pebble_hail.png,4,4,17,83,1,1,Pebble Hail (from burst_meteor_pebble_hail)
+effect,mega_burst_mirror_shatterstep,pack36_fx/mega_burst_mirror_shatterstep.png,5,5,14,83,2,2,Mirror Shatter (from burst_mirror_shatterstep)
+effect,mega_burst_moth_lanternburst,pack36_fx/mega_burst_moth_lanternburst.png,4,3,17,83,1,1,Moth Burst (from burst_moth_lanternburst)
+effect,mega_burst_oil_slick_flare,pack36_fx/mega_burst_oil_slick_flare.png,4,3,18,83,2,1,Oil Flare (from burst_oil_slick_flare)
+effect,mega_burst_quake_fault_split,pack36_fx/mega_burst_quake_fault_split.png,4,2,16,83,2,1,Fault Split (from burst_quake_fault_split)
+effect,mega_burst_quill_featherstorm,pack36_fx/mega_burst_quill_featherstorm.png,5,5,18,83,2,2,Feather Storm (from burst_quill_featherstorm)
+effect,mega_burst_resonance_clap,pack36_fx/mega_burst_resonance_clap.png,4,4,12,83,1,2,Resonance Clap (from burst_resonance_clap)
+effect,mega_burst_rune_detonation,pack36_fx/mega_burst_rune_detonation.png,4,4,17,83,2,2,Rune Detonation (from burst_rune_detonation)
+effect,mega_burst_sandspout_geyser,pack36_fx/mega_burst_sandspout_geyser.png,4,4,16,83,2,2,Sandspout (from burst_sandspout_geyser)
+effect,mega_burst_shadow_puppet_strings,pack36_fx/mega_burst_shadow_puppet_strings.png,4,4,14,83,2,2,Puppet Snap (from burst_shadow_puppet_strings)
+effect,mega_burst_siren_whirlpool,pack36_fx/mega_burst_siren_whirlpool.png,5,5,18,83,2,2,Whirlpool Siren (from burst_siren_whirlpool)
+effect,mega_burst_snowglobe_flurry,pack36_fx/mega_burst_snowglobe_flurry.png,4,4,18,83,2,2,Snowglobe Flurry (from burst_snowglobe_flurry)
+effect,mega_burst_spore_puffball,pack36_fx/mega_burst_spore_puffball.png,4,4,16,83,2,2,Puffball Pop (from burst_spore_puffball)
+effect,mega_burst_starfall_pinwheel,pack36_fx/mega_burst_starfall_pinwheel.png,4,3,17,83,1,1,Pinwheel Nova (from burst_starfall_pinwheel)
+effect,mega_burst_steel_sawring,pack36_fx/mega_burst_steel_sawring.png,4,5,15,83,2,2,Saw Ring (from burst_steel_sawring)
+effect,mega_burst_sun_disc_flare,pack36_fx/mega_burst_sun_disc_flare.png,4,4,15,83,2,2,Sunburst Disc (from burst_sun_disc_flare)
+effect,mega_burst_tar_bubbleburst,pack36_fx/mega_burst_tar_bubbleburst.png,4,4,16,83,2,2,Tar Burst (from burst_tar_bubbleburst)
+effect,mega_burst_tentacle_grasp_surge,pack36_fx/mega_burst_tentacle_grasp_surge.png,3,3,17,83,1,1,Tentacle Surge (from burst_tentacle_grasp_surge)
+effect,mega_burst_thornwall_eruption,pack36_fx/mega_burst_thornwall_eruption.png,5,5,18,83,2,2,Thorn Eruption (from burst_thornwall_eruption)
+effect,mega_burst_tidal_plume,pack36_fx/mega_burst_tidal_plume.png,4,4,18,83,2,2,Tidal Plume (from burst_tidal_plume)
+effect,mega_burst_totem_drumwave,pack36_fx/mega_burst_totem_drumwave.png,4,4,16,83,2,2,Totem Drum (from burst_totem_drumwave)
+effect,mega_burst_wind_pillar_scatter,pack36_fx/mega_burst_wind_pillar_scatter.png,4,4,16,83,2,2,Gust Pillar (from burst_wind_pillar_scatter)
+effect,mega_novice_first_aid,pack36_fx/mega_novice_first_aid.png,3,3,20,67,1,1,First Aid (from novice_first_aid)
+effect,mega_raise_dead,pack36_fx/mega_raise_dead.png,3,3,23,67,1,1,Raise Dead (from raise_dead)
+effect,mega_thousand_petals,pack36_fx/mega_thousand_petals.png,3,3,25,67,1,1,Thousand Petals (from thousand_petals)
+effect,mega_impact_ash_smudge,pack36_fx/mega_impact_ash_smudge.png,2,2,12,83,0,0,Ash Smudge (from impact_ash_smudge)
+effect,mega_impact_aurora_ribbon,pack36_fx/mega_impact_aurora_ribbon.png,3,3,12,83,1,1,Aurora Lash (from impact_aurora_ribbon)
+effect,mega_impact_bark_shield_splinter,pack36_fx/mega_impact_bark_shield_splinter.png,3,3,10,83,1,1,Bark Splinter (from impact_bark_shield_splinter)
+effect,mega_impact_blood_slash_fan,pack36_fx/mega_impact_blood_slash_fan.png,3,2,11,83,1,0,Crimson Fan (from impact_blood_slash_fan)
+effect,mega_impact_bone_snap,pack36_fx/mega_impact_bone_snap.png,3,2,10,83,1,1,Bone Snap (from impact_bone_snap)
+effect,mega_impact_chaos_glitch,pack36_fx/mega_impact_chaos_glitch.png,2,2,10,83,0,0,Glitch Hit (from impact_chaos_glitch)
+effect,mega_impact_coin_clink,pack36_fx/mega_impact_coin_clink.png,2,1,9,83,1,0,Coin Clink (from impact_coin_clink)
+effect,mega_impact_cosmic_dust_ring,pack36_fx/mega_impact_cosmic_dust_ring.png,3,3,12,83,1,1,Stardust Ring (from impact_cosmic_dust_ring)
+effect,mega_impact_dream_swirl,pack36_fx/mega_impact_dream_swirl.png,3,3,13,83,1,1,Dream Swirl (from impact_dream_swirl)
+effect,mega_impact_dune_scorpion_sting,pack36_fx/mega_impact_dune_scorpion_sting.png,2,2,10,83,0,0,Scorpion Sting (from impact_dune_scorpion_sting)
+effect,mega_impact_ember_pinwheel,pack36_fx/mega_impact_ember_pinwheel.png,3,3,11,83,1,1,Ember Pinwheel (from impact_ember_pinwheel)
+effect,mega_impact_feather_poof,pack36_fx/mega_impact_feather_poof.png,3,2,12,83,1,0,Feather Poof (from impact_feather_poof)
+effect,mega_impact_forge_hammer_spark,pack36_fx/mega_impact_forge_hammer_spark.png,3,3,11,83,1,1,Anvil Spark (from impact_forge_hammer_spark)
+effect,mega_impact_frost_ferns,pack36_fx/mega_impact_frost_ferns.png,2,2,12,83,1,1,Frost Ferns (from impact_frost_ferns)
+effect,mega_impact_gear_burst,pack36_fx/mega_impact_gear_burst.png,3,2,12,83,1,1,Gear Burst (from impact_gear_burst)
+effect,mega_impact_gel_wobble,pack36_fx/mega_impact_gel_wobble.png,2,1,12,83,1,0,Gel Wobble (from impact_gel_wobble)
+effect,mega_impact_glass_tink,pack36_fx/mega_impact_glass_tink.png,3,3,10,83,1,1,Glass Tink (from impact_glass_tink)
+effect,mega_impact_grave_dirt_spit,pack36_fx/mega_impact_grave_dirt_spit.png,3,3,10,83,1,1,Grave Spit (from impact_grave_dirt_spit)
+effect,mega_impact_gravity_squash,pack36_fx/mega_impact_gravity_squash.png,3,3,12,83,1,1,Gravity Squash (from impact_gravity_squash)
+effect,mega_impact_holy_seal_stamp,pack36_fx/mega_impact_holy_seal_stamp.png,3,4,13,83,1,1,Seal Stamp (from impact_holy_seal_stamp)
+effect,mega_impact_honey_glob,pack36_fx/mega_impact_honey_glob.png,3,2,13,83,1,1,Honey Glob (from impact_honey_glob)
+effect,mega_impact_ice_splinter_cross,pack36_fx/mega_impact_ice_splinter_cross.png,3,3,13,83,1,1,Splinter Cross (from impact_ice_splinter_cross)
+effect,mega_impact_ink_splat,pack36_fx/mega_impact_ink_splat.png,3,3,12,83,1,1,Ink Splat (from impact_ink_splat)
+effect,mega_impact_leaf_whirl,pack36_fx/mega_impact_leaf_whirl.png,3,3,11,83,1,1,Leaf Whirl (from impact_leaf_whirl)
+effect,mega_impact_meteor_pebble_ping,pack36_fx/mega_impact_meteor_pebble_ping.png,3,2,10,83,1,0,Pebble Ping (from impact_meteor_pebble_ping)
+effect,mega_impact_mirror_double,pack36_fx/mega_impact_mirror_double.png,3,2,12,83,1,1,Mirror Double (from impact_mirror_double)
+effect,mega_impact_molten_splash,pack36_fx/mega_impact_molten_splash.png,2,2,11,83,1,1,Molten Splash (from impact_molten_splash)
+effect,mega_impact_moon_sickle,pack36_fx/mega_impact_moon_sickle.png,3,3,10,83,1,1,Moon Sickle (from impact_moon_sickle)
+effect,mega_impact_necro_skull_puff,pack36_fx/mega_impact_necro_skull_puff.png,3,2,12,83,1,0,Skull Puff (from impact_necro_skull_puff)
+effect,mega_impact_oil_splatter,pack36_fx/mega_impact_oil_splatter.png,2,2,12,83,1,1,Oil Splatter (from impact_oil_splatter)
+effect,mega_impact_plague_boils,pack36_fx/mega_impact_plague_boils.png,3,3,13,83,1,1,Blight Pop (from impact_plague_boils)
+effect,mega_impact_prism_split,pack36_fx/mega_impact_prism_split.png,3,2,8,83,1,1,Prism Split (from impact_prism_split)
+effect,mega_impact_quill_pierce,pack36_fx/mega_impact_quill_pierce.png,3,2,11,83,1,0,Quill Pierce (from impact_quill_pierce)
+effect,mega_impact_resonance_ping,pack36_fx/mega_impact_resonance_ping.png,3,3,10,83,1,1,Resonance Ping (from impact_resonance_ping)
+effect,mega_impact_rune_lock_shatter,pack36_fx/mega_impact_rune_lock_shatter.png,3,3,12,83,1,1,Rune Lock Shatter (from impact_rune_lock_shatter)
+effect,mega_impact_sand_puff,pack36_fx/mega_impact_sand_puff.png,2,1,10,83,1,0,Grit Puff (from impact_sand_puff)
+effect,mega_impact_sap_burst,pack36_fx/mega_impact_sap_burst.png,3,2,12,83,1,0,Sap Burst (from impact_sap_burst)
+effect,mega_impact_shadow_handprint,pack36_fx/mega_impact_shadow_handprint.png,3,3,12,83,1,1,Shadow Grip (from impact_shadow_handprint)
+effect,mega_impact_siren_note,pack36_fx/mega_impact_siren_note.png,2,2,12,83,0,0,Siren Note (from impact_siren_note)
+effect,mega_impact_smoke_ring_punch,pack36_fx/mega_impact_smoke_ring_punch.png,3,3,12,83,1,1,Smoke Ring (from impact_smoke_ring_punch)
+effect,mega_impact_spirit_bell,pack36_fx/mega_impact_spirit_bell.png,3,3,10,83,1,1,Spirit Knell (from impact_spirit_bell)
+effect,mega_impact_storm_static_web,pack36_fx/mega_impact_storm_static_web.png,2,3,10,83,1,1,Static Web (from impact_storm_static_web)
+effect,mega_impact_sun_lens_flare,pack36_fx/mega_impact_sun_lens_flare.png,3,3,11,83,1,1,Lens Flare (from impact_sun_lens_flare)
+effect,mega_impact_tar_grip,pack36_fx/mega_impact_tar_grip.png,1,1,12,83,0,0,Tar Grip (from impact_tar_grip)
+effect,mega_impact_thunderclap_disc,pack36_fx/mega_impact_thunderclap_disc.png,3,3,10,83,1,1,Thunder Disc (from impact_thunderclap_disc)
+effect,mega_impact_tide_bubbles,pack36_fx/mega_impact_tide_bubbles.png,3,2,13,83,1,0,Bubble Burst (from impact_tide_bubbles)
+effect,mega_impact_tide_slap,pack36_fx/mega_impact_tide_slap.png,3,2,12,83,1,1,Tide Slap (from impact_tide_slap)
+effect,mega_impact_time_stutter,pack36_fx/mega_impact_time_stutter.png,3,3,13,83,1,1,Time Stutter (from impact_time_stutter)
+effect,mega_impact_totem_claw_marks,pack36_fx/mega_impact_totem_claw_marks.png,3,2,9,83,1,1,Totem Claw (from impact_totem_claw_marks)
+effect,mega_impact_void_pinch,pack36_fx/mega_impact_void_pinch.png,1,1,13,83,0,0,Void Pinch (from impact_void_pinch)
+effect,mega_impact_wind_knot,pack36_fx/mega_impact_wind_knot.png,2,2,10,83,0,0,Wind Knot (from impact_wind_knot)
+effect,mega_ash_smolder,pack36_fx/mega_ash_smolder.png,3,3,25,83,1,1,Ash Smolder (from ash_smolder)
+effect,mega_beast_scent,pack36_fx/mega_beast_scent.png,3,3,21,83,1,1,Beast Scent (from beast_scent)
+effect,mega_blinded,pack36_fx/mega_blinded.png,2,2,17,83,0,0,Blinded (from blinded)
+effect,mega_brittle_bones,pack36_fx/mega_brittle_bones.png,2,2,19,83,1,1,Brittle Bones (from brittle_bones)
+effect,mega_candle_vigil,pack36_fx/mega_candle_vigil.png,3,3,25,83,1,1,Candle Vigil (from candle_vigil)
+effect,mega_chaos_flux,pack36_fx/mega_chaos_flux.png,3,3,17,83,1,1,Chaos Flux (from chaos_flux)
+effect,mega_clock_rewind,pack36_fx/mega_clock_rewind.png,3,3,25,83,1,1,Clock Rewind (from clock_rewind)
+effect,mega_crystal_growth,pack36_fx/mega_crystal_growth.png,2,2,25,83,1,1,Crystal Growth (from crystal_growth)
+effect,mega_deafened,pack36_fx/mega_deafened.png,2,2,17,83,0,0,Deafened (from deafened)
+effect,mega_doom_hourglass,pack36_fx/mega_doom_hourglass.png,3,3,25,83,1,1,Doom Hourglass (from doom_hourglass)
+effect,mega_echo_mark,pack36_fx/mega_echo_mark.png,3,3,17,83,1,1,Echo Mark (from echo_mark)
+effect,mega_gear_lock,pack36_fx/mega_gear_lock.png,3,3,25,83,1,1,Gear Lock (from gear_lock)
+effect,mega_gilded,pack36_fx/mega_gilded.png,3,3,21,83,1,1,Gilded (from gilded)
+effect,mega_gravity_crush,pack36_fx/mega_gravity_crush.png,4,4,17,83,1,1,Gravity Crush (from gravity_crush)
+effect,mega_gravity_press,pack36_fx/mega_gravity_press.png,3,3,17,83,1,1,Gravity Press (from gravity_press)
+effect,mega_haunted,pack36_fx/mega_haunted.png,3,3,25,83,1,1,Haunted (from haunted)
+effect,mega_hex_needles,pack36_fx/mega_hex_needles.png,3,3,17,83,1,1,Hex Needles (from hex_needles)
+effect,mega_ink_blind,pack36_fx/mega_ink_blind.png,3,3,19,83,1,1,Ink Blind (from ink_blind)
+effect,mega_ink_marked,pack36_fx/mega_ink_marked.png,2,2,17,83,0,0,Ink Marked (from ink_marked)
+effect,mega_lava_boots,pack36_fx/mega_lava_boots.png,2,2,21,83,1,1,Lava Boots (from lava_boots)
+effect,mega_lunar_mark,pack36_fx/mega_lunar_mark.png,2,3,25,83,0,1,Lunar Mark (from lunar_mark)
+effect,mega_magnetized,pack36_fx/mega_magnetized.png,3,3,17,83,1,1,Magnetized (from magnetized)
+effect,mega_mana_burn,pack36_fx/mega_mana_burn.png,3,3,17,83,1,1,Mana Burn (from mana_burn)
+effect,mega_mirror_hex,pack36_fx/mega_mirror_hex.png,3,3,21,83,1,1,Mirror Hex (from mirror_hex)
+effect,mega_moth_lure,pack36_fx/mega_moth_lure.png,3,3,25,83,1,1,Moth Lure (from moth_lure)
+effect,mega_muffled,pack36_fx/mega_muffled.png,3,3,17,83,1,1,Muffled (from muffled)
+effect,mega_nightmare_bubbles,pack36_fx/mega_nightmare_bubbles.png,3,3,25,83,1,1,Nightmare Bubbles (from nightmare_bubbles)
+effect,mega_oil_slick,pack36_fx/mega_oil_slick.png,2,2,19,83,1,1,Oil Slick (from oil_slick)
+effect,mega_overgrown,pack36_fx/mega_overgrown.png,2,2,25,83,0,0,Overgrown (from overgrown)
+effect,mega_paper_bound,pack36_fx/mega_paper_bound.png,3,3,21,83,1,1,Paper Bound (from paper_bound)
+effect,mega_petrified,pack36_fx/mega_petrified.png,2,2,17,83,0,0,Petrified (from petrified)
+effect,mega_plague_boils,pack36_fx/mega_plague_boils.png,3,3,21,83,1,1,Plague Boils (from plague_boils)
+effect,mega_quicksilver,pack36_fx/mega_quicksilver.png,3,3,21,83,1,1,Quicksilver (from quicksilver)
+effect,mega_rust_rot,pack36_fx/mega_rust_rot.png,3,3,19,83,1,1,Rust Rot (from rust_rot)
+effect,mega_rusted,pack36_fx/mega_rusted.png,1,1,17,83,0,0,Rusted (from rusted)
+effect,mega_sand_blind,pack36_fx/mega_sand_blind.png,3,3,19,83,1,1,Sand Blind (from sand_blind)
+effect,mega_sap_leech,pack36_fx/mega_sap_leech.png,3,3,21,83,1,1,Sap Leech (from sap_leech)
+effect,mega_sealed_oath,pack36_fx/mega_sealed_oath.png,3,3,19,83,1,1,Sealed Oath (from sealed_oath)
+effect,mega_shadow_puppet,pack36_fx/mega_shadow_puppet.png,3,3,21,83,1,1,Shadow Puppet (from shadow_puppet)
+effect,mega_smouldering,pack36_fx/mega_smouldering.png,3,3,25,83,1,1,Smouldering (from smouldering)
+effect,mega_soaked,pack36_fx/mega_soaked.png,2,2,21,83,1,1,Soaked (from soaked)
+effect,mega_star_brand,pack36_fx/mega_star_brand.png,3,3,21,83,1,1,Star Brand (from star_brand)
+effect,mega_stone_creep,pack36_fx/mega_stone_creep.png,3,3,21,83,1,1,Stone Creep (from stone_creep)
+effect,mega_tar_rooted,pack36_fx/mega_tar_rooted.png,3,3,21,83,1,1,Tar Rooted (from tar_rooted)
+effect,mega_tide_mark,pack36_fx/mega_tide_mark.png,3,3,17,83,1,1,Tide Mark (from tide_mark)
+effect,mega_wasp_swarm,pack36_fx/mega_wasp_swarm.png,2,2,17,83,0,0,Wasp Swarm (from wasp_swarm)
+effect,mega_alembic_smash_n,pack36_fx/mega_alembic_smash_n.png,3,3,15,83,1,1,"Alembic Smash, towards n (from alembic_smash)"
+effect,mega_alembic_smash_ne,pack36_fx/mega_alembic_smash_ne.png,4,3,15,83,1,1,"Alembic Smash, towards ne (from alembic_smash)"
+effect,mega_alembic_smash_e,pack36_fx/mega_alembic_smash_e.png,4,3,15,83,1,1,"Alembic Smash, towards e (from alembic_smash)"
+effect,mega_alembic_smash_se,pack36_fx/mega_alembic_smash_se.png,4,4,15,83,1,1,"Alembic Smash, towards se (from alembic_smash)"
+effect,mega_alembic_smash_s,pack36_fx/mega_alembic_smash_s.png,3,4,15,83,1,1,"Alembic Smash, towards s (from alembic_smash)"
+effect,mega_alembic_smash_sw,pack36_fx/mega_alembic_smash_sw.png,3,4,15,83,1,1,"Alembic Smash, towards sw (from alembic_smash)"
+effect,mega_alembic_smash_w,pack36_fx/mega_alembic_smash_w.png,3,3,15,83,1,1,"Alembic Smash, towards w (from alembic_smash)"
+effect,mega_alembic_smash_nw,pack36_fx/mega_alembic_smash_nw.png,3,3,15,83,1,1,"Alembic Smash, towards nw (from alembic_smash)"
+effect,mega_anvil_hammer_blow_n,pack36_fx/mega_anvil_hammer_blow_n.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards n (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_ne,pack36_fx/mega_anvil_hammer_blow_ne.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards ne (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_e,pack36_fx/mega_anvil_hammer_blow_e.png,4,3,14,83,1,1,"Anvil Hammer Blow, towards e (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_se,pack36_fx/mega_anvil_hammer_blow_se.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards se (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_s,pack36_fx/mega_anvil_hammer_blow_s.png,3,4,14,83,1,1,"Anvil Hammer Blow, towards s (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_sw,pack36_fx/mega_anvil_hammer_blow_sw.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards sw (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_w,pack36_fx/mega_anvil_hammer_blow_w.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards w (from anvil_hammer_blow)"
+effect,mega_anvil_hammer_blow_nw,pack36_fx/mega_anvil_hammer_blow_nw.png,3,3,14,83,1,1,"Anvil Hammer Blow, towards nw (from anvil_hammer_blow)"
+effect,mega_bear_totem_swipe_n,pack36_fx/mega_bear_totem_swipe_n.png,3,3,13,83,1,1,"Bear Totem Swipe, towards n (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_ne,pack36_fx/mega_bear_totem_swipe_ne.png,3,3,13,83,1,1,"Bear Totem Swipe, towards ne (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_e,pack36_fx/mega_bear_totem_swipe_e.png,3,3,13,83,1,1,"Bear Totem Swipe, towards e (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_se,pack36_fx/mega_bear_totem_swipe_se.png,3,3,13,83,1,1,"Bear Totem Swipe, towards se (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_s,pack36_fx/mega_bear_totem_swipe_s.png,3,3,13,83,1,1,"Bear Totem Swipe, towards s (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_sw,pack36_fx/mega_bear_totem_swipe_sw.png,3,3,13,83,1,1,"Bear Totem Swipe, towards sw (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_w,pack36_fx/mega_bear_totem_swipe_w.png,3,3,13,83,1,1,"Bear Totem Swipe, towards w (from bear_totem_swipe)"
+effect,mega_bear_totem_swipe_nw,pack36_fx/mega_bear_totem_swipe_nw.png,3,3,13,83,1,1,"Bear Totem Swipe, towards nw (from bear_totem_swipe)"
+effect,mega_bone_scythe_reap_n,pack36_fx/mega_bone_scythe_reap_n.png,3,3,15,83,1,1,"Bone Scythe Reap, towards n (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_ne,pack36_fx/mega_bone_scythe_reap_ne.png,3,3,15,83,1,1,"Bone Scythe Reap, towards ne (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_e,pack36_fx/mega_bone_scythe_reap_e.png,4,3,15,83,1,1,"Bone Scythe Reap, towards e (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_se,pack36_fx/mega_bone_scythe_reap_se.png,4,3,15,83,1,1,"Bone Scythe Reap, towards se (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_s,pack36_fx/mega_bone_scythe_reap_s.png,3,4,15,83,1,1,"Bone Scythe Reap, towards s (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_sw,pack36_fx/mega_bone_scythe_reap_sw.png,3,4,15,83,1,1,"Bone Scythe Reap, towards sw (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_w,pack36_fx/mega_bone_scythe_reap_w.png,3,3,15,83,1,1,"Bone Scythe Reap, towards w (from bone_scythe_reap)"
+effect,mega_bone_scythe_reap_nw,pack36_fx/mega_bone_scythe_reap_nw.png,3,3,15,83,1,1,"Bone Scythe Reap, towards nw (from bone_scythe_reap)"
+effect,mega_boulder_maul_n,pack36_fx/mega_boulder_maul_n.png,3,3,17,83,1,1,"Boulder Maul, towards n (from boulder_maul)"
+effect,mega_boulder_maul_ne,pack36_fx/mega_boulder_maul_ne.png,4,3,17,83,1,1,"Boulder Maul, towards ne (from boulder_maul)"
+effect,mega_boulder_maul_e,pack36_fx/mega_boulder_maul_e.png,4,3,17,83,1,1,"Boulder Maul, towards e (from boulder_maul)"
+effect,mega_boulder_maul_se,pack36_fx/mega_boulder_maul_se.png,4,4,17,83,1,1,"Boulder Maul, towards se (from boulder_maul)"
+effect,mega_boulder_maul_s,pack36_fx/mega_boulder_maul_s.png,3,4,17,83,1,1,"Boulder Maul, towards s (from boulder_maul)"
+effect,mega_boulder_maul_sw,pack36_fx/mega_boulder_maul_sw.png,3,4,17,83,1,1,"Boulder Maul, towards sw (from boulder_maul)"
+effect,mega_boulder_maul_w,pack36_fx/mega_boulder_maul_w.png,3,3,17,83,1,1,"Boulder Maul, towards w (from boulder_maul)"
+effect,mega_boulder_maul_nw,pack36_fx/mega_boulder_maul_nw.png,3,3,17,83,1,1,"Boulder Maul, towards nw (from boulder_maul)"
+effect,mega_bramble_lash_n,pack36_fx/mega_bramble_lash_n.png,3,3,14,83,1,1,"Bramble Lash, towards n (from bramble_lash)"
+effect,mega_bramble_lash_ne,pack36_fx/mega_bramble_lash_ne.png,3,3,14,83,1,1,"Bramble Lash, towards ne (from bramble_lash)"
+effect,mega_bramble_lash_e,pack36_fx/mega_bramble_lash_e.png,3,3,14,83,1,1,"Bramble Lash, towards e (from bramble_lash)"
+effect,mega_bramble_lash_se,pack36_fx/mega_bramble_lash_se.png,3,3,14,83,1,1,"Bramble Lash, towards se (from bramble_lash)"
+effect,mega_bramble_lash_s,pack36_fx/mega_bramble_lash_s.png,3,3,14,83,1,1,"Bramble Lash, towards s (from bramble_lash)"
+effect,mega_bramble_lash_sw,pack36_fx/mega_bramble_lash_sw.png,3,3,14,83,1,1,"Bramble Lash, towards sw (from bramble_lash)"
+effect,mega_bramble_lash_w,pack36_fx/mega_bramble_lash_w.png,3,3,14,83,1,1,"Bramble Lash, towards w (from bramble_lash)"
+effect,mega_bramble_lash_nw,pack36_fx/mega_bramble_lash_nw.png,3,3,14,83,1,1,"Bramble Lash, towards nw (from bramble_lash)"
+effect,mega_censer_swing_n,pack36_fx/mega_censer_swing_n.png,3,4,15,83,1,2,"Censer Swing, towards n (from censer_swing)"
+effect,mega_censer_swing_ne,pack36_fx/mega_censer_swing_ne.png,4,3,15,83,1,1,"Censer Swing, towards ne (from censer_swing)"
+effect,mega_censer_swing_e,pack36_fx/mega_censer_swing_e.png,4,3,15,83,1,1,"Censer Swing, towards e (from censer_swing)"
+effect,mega_censer_swing_se,pack36_fx/mega_censer_swing_se.png,4,4,15,83,1,1,"Censer Swing, towards se (from censer_swing)"
+effect,mega_censer_swing_s,pack36_fx/mega_censer_swing_s.png,3,4,15,83,1,1,"Censer Swing, towards s (from censer_swing)"
+effect,mega_censer_swing_sw,pack36_fx/mega_censer_swing_sw.png,3,4,15,83,1,1,"Censer Swing, towards sw (from censer_swing)"
+effect,mega_censer_swing_w,pack36_fx/mega_censer_swing_w.png,4,3,15,83,2,1,"Censer Swing, towards w (from censer_swing)"
+effect,mega_censer_swing_nw,pack36_fx/mega_censer_swing_nw.png,3,3,15,83,1,1,"Censer Swing, towards nw (from censer_swing)"
+effect,mega_crimson_fang_double_n,pack36_fx/mega_crimson_fang_double_n.png,4,2,12,83,1,1,"Crimson Fang Double, towards n (from crimson_fang_double)"
+effect,mega_crimson_fang_double_ne,pack36_fx/mega_crimson_fang_double_ne.png,4,2,12,83,1,1,"Crimson Fang Double, towards ne (from crimson_fang_double)"
+effect,mega_crimson_fang_double_e,pack36_fx/mega_crimson_fang_double_e.png,4,4,12,83,1,1,"Crimson Fang Double, towards e (from crimson_fang_double)"
+effect,mega_crimson_fang_double_se,pack36_fx/mega_crimson_fang_double_se.png,4,3,12,83,1,1,"Crimson Fang Double, towards se (from crimson_fang_double)"
+effect,mega_crimson_fang_double_s,pack36_fx/mega_crimson_fang_double_s.png,3,4,12,83,1,1,"Crimson Fang Double, towards s (from crimson_fang_double)"
+effect,mega_crimson_fang_double_sw,pack36_fx/mega_crimson_fang_double_sw.png,2,4,12,83,1,1,"Crimson Fang Double, towards sw (from crimson_fang_double)"
+effect,mega_crimson_fang_double_w,pack36_fx/mega_crimson_fang_double_w.png,2,4,12,83,1,1,"Crimson Fang Double, towards w (from crimson_fang_double)"
+effect,mega_crimson_fang_double_nw,pack36_fx/mega_crimson_fang_double_nw.png,3,2,12,83,2,1,"Crimson Fang Double, towards nw (from crimson_fang_double)"
+effect,mega_cymbal_clap_n,pack36_fx/mega_cymbal_clap_n.png,3,3,14,83,1,1,"Cymbal Clap, towards n (from cymbal_clap)"
+effect,mega_cymbal_clap_ne,pack36_fx/mega_cymbal_clap_ne.png,3,3,14,83,1,1,"Cymbal Clap, towards ne (from cymbal_clap)"
+effect,mega_cymbal_clap_e,pack36_fx/mega_cymbal_clap_e.png,3,3,14,83,1,1,"Cymbal Clap, towards e (from cymbal_clap)"
+effect,mega_cymbal_clap_se,pack36_fx/mega_cymbal_clap_se.png,3,3,14,83,1,1,"Cymbal Clap, towards se (from cymbal_clap)"
+effect,mega_cymbal_clap_s,pack36_fx/mega_cymbal_clap_s.png,3,3,14,83,1,1,"Cymbal Clap, towards s (from cymbal_clap)"
+effect,mega_cymbal_clap_sw,pack36_fx/mega_cymbal_clap_sw.png,3,3,14,83,1,1,"Cymbal Clap, towards sw (from cymbal_clap)"
+effect,mega_cymbal_clap_w,pack36_fx/mega_cymbal_clap_w.png,3,3,14,83,1,1,"Cymbal Clap, towards w (from cymbal_clap)"
+effect,mega_cymbal_clap_nw,pack36_fx/mega_cymbal_clap_nw.png,3,3,14,83,1,1,"Cymbal Clap, towards nw (from cymbal_clap)"
+effect,mega_dream_mallet_n,pack36_fx/mega_dream_mallet_n.png,4,3,13,83,1,1,"Dream Mallet, towards n (from dream_mallet)"
+effect,mega_dream_mallet_ne,pack36_fx/mega_dream_mallet_ne.png,4,3,13,83,1,1,"Dream Mallet, towards ne (from dream_mallet)"
+effect,mega_dream_mallet_e,pack36_fx/mega_dream_mallet_e.png,4,3,13,83,1,1,"Dream Mallet, towards e (from dream_mallet)"
+effect,mega_dream_mallet_se,pack36_fx/mega_dream_mallet_se.png,4,4,13,83,1,1,"Dream Mallet, towards se (from dream_mallet)"
+effect,mega_dream_mallet_s,pack36_fx/mega_dream_mallet_s.png,3,4,13,83,1,1,"Dream Mallet, towards s (from dream_mallet)"
+effect,mega_dream_mallet_sw,pack36_fx/mega_dream_mallet_sw.png,3,4,13,83,1,1,"Dream Mallet, towards sw (from dream_mallet)"
+effect,mega_dream_mallet_w,pack36_fx/mega_dream_mallet_w.png,3,4,13,83,1,1,"Dream Mallet, towards w (from dream_mallet)"
+effect,mega_dream_mallet_nw,pack36_fx/mega_dream_mallet_nw.png,3,3,13,83,1,1,"Dream Mallet, towards nw (from dream_mallet)"
+effect,mega_flame_whip_crack_n,pack36_fx/mega_flame_whip_crack_n.png,2,3,15,83,0,1,"Flame Whip Crack, towards n (from flame_whip_crack)"
+effect,mega_flame_whip_crack_ne,pack36_fx/mega_flame_whip_crack_ne.png,4,3,15,83,1,1,"Flame Whip Crack, towards ne (from flame_whip_crack)"
+effect,mega_flame_whip_crack_e,pack36_fx/mega_flame_whip_crack_e.png,4,2,15,83,1,0,"Flame Whip Crack, towards e (from flame_whip_crack)"
+effect,mega_flame_whip_crack_se,pack36_fx/mega_flame_whip_crack_se.png,4,3,15,83,1,1,"Flame Whip Crack, towards se (from flame_whip_crack)"
+effect,mega_flame_whip_crack_s,pack36_fx/mega_flame_whip_crack_s.png,2,4,15,83,0,1,"Flame Whip Crack, towards s (from flame_whip_crack)"
+effect,mega_flame_whip_crack_sw,pack36_fx/mega_flame_whip_crack_sw.png,3,4,15,83,1,1,"Flame Whip Crack, towards sw (from flame_whip_crack)"
+effect,mega_flame_whip_crack_w,pack36_fx/mega_flame_whip_crack_w.png,3,2,15,83,1,0,"Flame Whip Crack, towards w (from flame_whip_crack)"
+effect,mega_flame_whip_crack_nw,pack36_fx/mega_flame_whip_crack_nw.png,3,3,15,83,1,1,"Flame Whip Crack, towards nw (from flame_whip_crack)"
+effect,mega_gale_fan_slash_n,pack36_fx/mega_gale_fan_slash_n.png,3,3,11,83,1,1,"Gale Fan Slash, towards n (from gale_fan_slash)"
+effect,mega_gale_fan_slash_ne,pack36_fx/mega_gale_fan_slash_ne.png,3,3,11,83,1,1,"Gale Fan Slash, towards ne (from gale_fan_slash)"
+effect,mega_gale_fan_slash_e,pack36_fx/mega_gale_fan_slash_e.png,3,3,11,83,1,1,"Gale Fan Slash, towards e (from gale_fan_slash)"
+effect,mega_gale_fan_slash_se,pack36_fx/mega_gale_fan_slash_se.png,3,3,11,83,1,1,"Gale Fan Slash, towards se (from gale_fan_slash)"
+effect,mega_gale_fan_slash_s,pack36_fx/mega_gale_fan_slash_s.png,3,3,11,83,1,1,"Gale Fan Slash, towards s (from gale_fan_slash)"
+effect,mega_gale_fan_slash_sw,pack36_fx/mega_gale_fan_slash_sw.png,3,3,11,83,1,1,"Gale Fan Slash, towards sw (from gale_fan_slash)"
+effect,mega_gale_fan_slash_w,pack36_fx/mega_gale_fan_slash_w.png,3,3,11,83,1,1,"Gale Fan Slash, towards w (from gale_fan_slash)"
+effect,mega_gale_fan_slash_nw,pack36_fx/mega_gale_fan_slash_nw.png,3,3,11,83,1,1,"Gale Fan Slash, towards nw (from gale_fan_slash)"
+effect,mega_gear_saw_rip_n,pack36_fx/mega_gear_saw_rip_n.png,4,3,15,83,1,1,"Gear Saw Rip, towards n (from gear_saw_rip)"
+effect,mega_gear_saw_rip_ne,pack36_fx/mega_gear_saw_rip_ne.png,4,3,15,83,1,1,"Gear Saw Rip, towards ne (from gear_saw_rip)"
+effect,mega_gear_saw_rip_e,pack36_fx/mega_gear_saw_rip_e.png,4,4,15,83,1,1,"Gear Saw Rip, towards e (from gear_saw_rip)"
+effect,mega_gear_saw_rip_se,pack36_fx/mega_gear_saw_rip_se.png,4,4,15,83,1,1,"Gear Saw Rip, towards se (from gear_saw_rip)"
+effect,mega_gear_saw_rip_s,pack36_fx/mega_gear_saw_rip_s.png,4,4,15,83,1,1,"Gear Saw Rip, towards s (from gear_saw_rip)"
+effect,mega_gear_saw_rip_sw,pack36_fx/mega_gear_saw_rip_sw.png,3,4,15,83,1,1,"Gear Saw Rip, towards sw (from gear_saw_rip)"
+effect,mega_gear_saw_rip_w,pack36_fx/mega_gear_saw_rip_w.png,3,4,15,83,1,1,"Gear Saw Rip, towards w (from gear_saw_rip)"
+effect,mega_gear_saw_rip_nw,pack36_fx/mega_gear_saw_rip_nw.png,3,3,15,83,1,1,"Gear Saw Rip, towards nw (from gear_saw_rip)"
+effect,mega_glacier_club_smash_n,pack36_fx/mega_glacier_club_smash_n.png,3,3,14,83,1,1,"Glacier Club Smash, towards n (from glacier_club_smash)"
+effect,mega_glacier_club_smash_ne,pack36_fx/mega_glacier_club_smash_ne.png,3,3,14,83,1,1,"Glacier Club Smash, towards ne (from glacier_club_smash)"
+effect,mega_glacier_club_smash_e,pack36_fx/mega_glacier_club_smash_e.png,3,3,14,83,1,1,"Glacier Club Smash, towards e (from glacier_club_smash)"
+effect,mega_glacier_club_smash_se,pack36_fx/mega_glacier_club_smash_se.png,4,3,14,83,1,1,"Glacier Club Smash, towards se (from glacier_club_smash)"
+effect,mega_glacier_club_smash_s,pack36_fx/mega_glacier_club_smash_s.png,3,3,14,83,1,1,"Glacier Club Smash, towards s (from glacier_club_smash)"
+effect,mega_glacier_club_smash_sw,pack36_fx/mega_glacier_club_smash_sw.png,3,3,14,83,1,1,"Glacier Club Smash, towards sw (from glacier_club_smash)"
+effect,mega_glacier_club_smash_w,pack36_fx/mega_glacier_club_smash_w.png,3,3,14,83,1,1,"Glacier Club Smash, towards w (from glacier_club_smash)"
+effect,mega_glacier_club_smash_nw,pack36_fx/mega_glacier_club_smash_nw.png,4,2,14,83,2,0,"Glacier Club Smash, towards nw (from glacier_club_smash)"
+effect,mega_glass_edge_cut_n,pack36_fx/mega_glass_edge_cut_n.png,3,2,12,83,1,0,"Glass Edge Cut, towards n (from glass_edge_cut)"
+effect,mega_glass_edge_cut_ne,pack36_fx/mega_glass_edge_cut_ne.png,3,2,12,83,1,0,"Glass Edge Cut, towards ne (from glass_edge_cut)"
+effect,mega_glass_edge_cut_e,pack36_fx/mega_glass_edge_cut_e.png,3,3,12,83,1,1,"Glass Edge Cut, towards e (from glass_edge_cut)"
+effect,mega_glass_edge_cut_se,pack36_fx/mega_glass_edge_cut_se.png,3,3,12,83,1,1,"Glass Edge Cut, towards se (from glass_edge_cut)"
+effect,mega_glass_edge_cut_s,pack36_fx/mega_glass_edge_cut_s.png,3,2,12,83,1,1,"Glass Edge Cut, towards s (from glass_edge_cut)"
+effect,mega_glass_edge_cut_sw,pack36_fx/mega_glass_edge_cut_sw.png,2,2,12,83,0,1,"Glass Edge Cut, towards sw (from glass_edge_cut)"
+effect,mega_glass_edge_cut_w,pack36_fx/mega_glass_edge_cut_w.png,2,3,12,83,0,1,"Glass Edge Cut, towards w (from glass_edge_cut)"
+effect,mega_glass_edge_cut_nw,pack36_fx/mega_glass_edge_cut_nw.png,2,2,12,83,0,0,"Glass Edge Cut, towards nw (from glass_edge_cut)"
+effect,mega_glyph_hammer_n,pack36_fx/mega_glyph_hammer_n.png,4,4,14,83,1,1,"Glyph Hammer, towards n (from glyph_hammer)"
+effect,mega_glyph_hammer_ne,pack36_fx/mega_glyph_hammer_ne.png,4,4,14,83,1,1,"Glyph Hammer, towards ne (from glyph_hammer)"
+effect,mega_glyph_hammer_e,pack36_fx/mega_glyph_hammer_e.png,4,4,14,83,1,1,"Glyph Hammer, towards e (from glyph_hammer)"
+effect,mega_glyph_hammer_se,pack36_fx/mega_glyph_hammer_se.png,4,4,14,83,1,1,"Glyph Hammer, towards se (from glyph_hammer)"
+effect,mega_glyph_hammer_s,pack36_fx/mega_glyph_hammer_s.png,4,4,14,83,1,1,"Glyph Hammer, towards s (from glyph_hammer)"
+effect,mega_glyph_hammer_sw,pack36_fx/mega_glyph_hammer_sw.png,4,4,14,83,1,1,"Glyph Hammer, towards sw (from glyph_hammer)"
+effect,mega_glyph_hammer_w,pack36_fx/mega_glyph_hammer_w.png,4,4,14,83,1,1,"Glyph Hammer, towards w (from glyph_hammer)"
+effect,mega_glyph_hammer_nw,pack36_fx/mega_glyph_hammer_nw.png,4,4,14,83,1,1,"Glyph Hammer, towards nw (from glyph_hammer)"
+effect,mega_gong_strike_n,pack36_fx/mega_gong_strike_n.png,3,4,15,83,1,2,"Gong Strike, towards n (from gong_strike)"
+effect,mega_gong_strike_ne,pack36_fx/mega_gong_strike_ne.png,5,3,15,83,1,1,"Gong Strike, towards ne (from gong_strike)"
+effect,mega_gong_strike_e,pack36_fx/mega_gong_strike_e.png,5,3,15,83,1,1,"Gong Strike, towards e (from gong_strike)"
+effect,mega_gong_strike_se,pack36_fx/mega_gong_strike_se.png,4,4,15,83,1,1,"Gong Strike, towards se (from gong_strike)"
+effect,mega_gong_strike_s,pack36_fx/mega_gong_strike_s.png,3,5,15,83,1,1,"Gong Strike, towards s (from gong_strike)"
+effect,mega_gong_strike_sw,pack36_fx/mega_gong_strike_sw.png,3,5,15,83,1,1,"Gong Strike, towards sw (from gong_strike)"
+effect,mega_gong_strike_w,pack36_fx/mega_gong_strike_w.png,4,3,15,83,2,1,"Gong Strike, towards w (from gong_strike)"
+effect,mega_gong_strike_nw,pack36_fx/mega_gong_strike_nw.png,4,4,15,83,2,2,"Gong Strike, towards nw (from gong_strike)"
+effect,mega_gravity_slam_palm_n,pack36_fx/mega_gravity_slam_palm_n.png,3,3,16,83,1,0,"Gravity Slam Palm, towards n (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_ne,pack36_fx/mega_gravity_slam_palm_ne.png,4,3,16,83,2,1,"Gravity Slam Palm, towards ne (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_e,pack36_fx/mega_gravity_slam_palm_e.png,4,3,16,83,2,1,"Gravity Slam Palm, towards e (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_se,pack36_fx/mega_gravity_slam_palm_se.png,4,4,16,83,2,2,"Gravity Slam Palm, towards se (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_s,pack36_fx/mega_gravity_slam_palm_s.png,3,4,16,83,1,2,"Gravity Slam Palm, towards s (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_sw,pack36_fx/mega_gravity_slam_palm_sw.png,3,4,16,83,1,2,"Gravity Slam Palm, towards sw (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_w,pack36_fx/mega_gravity_slam_palm_w.png,3,3,16,83,0,1,"Gravity Slam Palm, towards w (from gravity_slam_palm)"
+effect,mega_gravity_slam_palm_nw,pack36_fx/mega_gravity_slam_palm_nw.png,3,3,16,83,1,1,"Gravity Slam Palm, towards nw (from gravity_slam_palm)"
+effect,mega_magma_knuckle_n,pack36_fx/mega_magma_knuckle_n.png,3,3,14,83,1,1,"Magma Knuckle, towards n (from magma_knuckle)"
+effect,mega_magma_knuckle_ne,pack36_fx/mega_magma_knuckle_ne.png,3,3,14,83,1,1,"Magma Knuckle, towards ne (from magma_knuckle)"
+effect,mega_magma_knuckle_e,pack36_fx/mega_magma_knuckle_e.png,3,3,14,83,1,1,"Magma Knuckle, towards e (from magma_knuckle)"
+effect,mega_magma_knuckle_se,pack36_fx/mega_magma_knuckle_se.png,3,3,14,83,1,1,"Magma Knuckle, towards se (from magma_knuckle)"
+effect,mega_magma_knuckle_s,pack36_fx/mega_magma_knuckle_s.png,3,3,14,83,1,1,"Magma Knuckle, towards s (from magma_knuckle)"
+effect,mega_magma_knuckle_sw,pack36_fx/mega_magma_knuckle_sw.png,3,3,14,83,1,1,"Magma Knuckle, towards sw (from magma_knuckle)"
+effect,mega_magma_knuckle_w,pack36_fx/mega_magma_knuckle_w.png,3,3,14,83,1,1,"Magma Knuckle, towards w (from magma_knuckle)"
+effect,mega_magma_knuckle_nw,pack36_fx/mega_magma_knuckle_nw.png,3,3,14,83,1,1,"Magma Knuckle, towards nw (from magma_knuckle)"
+effect,mega_melee_chainflail_arc_n,pack36_fx/mega_melee_chainflail_arc_n.png,2,3,12,83,1,0,"Chain Flail, towards n (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_ne,pack36_fx/mega_melee_chainflail_arc_ne.png,3,3,12,83,1,1,"Chain Flail, towards ne (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_e,pack36_fx/mega_melee_chainflail_arc_e.png,4,2,12,83,2,1,"Chain Flail, towards e (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_se,pack36_fx/mega_melee_chainflail_arc_se.png,3,3,12,83,1,1,"Chain Flail, towards se (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_s,pack36_fx/mega_melee_chainflail_arc_s.png,3,4,12,83,1,2,"Chain Flail, towards s (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_sw,pack36_fx/mega_melee_chainflail_arc_sw.png,2,3,12,83,0,1,"Chain Flail, towards sw (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_w,pack36_fx/mega_melee_chainflail_arc_w.png,3,3,12,83,0,1,"Chain Flail, towards w (from melee_chainflail_arc)"
+effect,mega_melee_chainflail_arc_nw,pack36_fx/mega_melee_chainflail_arc_nw.png,3,2,12,83,1,0,"Chain Flail, towards nw (from melee_chainflail_arc)"
+effect,mega_melee_gear_sawblade_slash_n,pack36_fx/mega_melee_gear_sawblade_slash_n.png,3,3,10,83,1,1,"Gear Slash, towards n (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_ne,pack36_fx/mega_melee_gear_sawblade_slash_ne.png,2,3,10,83,1,1,"Gear Slash, towards ne (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_e,pack36_fx/mega_melee_gear_sawblade_slash_e.png,3,2,10,83,1,1,"Gear Slash, towards e (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_se,pack36_fx/mega_melee_gear_sawblade_slash_se.png,3,2,10,83,1,1,"Gear Slash, towards se (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_s,pack36_fx/mega_melee_gear_sawblade_slash_s.png,2,3,10,83,0,1,"Gear Slash, towards s (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_sw,pack36_fx/mega_melee_gear_sawblade_slash_sw.png,2,3,10,83,0,1,"Gear Slash, towards sw (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_w,pack36_fx/mega_melee_gear_sawblade_slash_w.png,2,3,10,83,0,1,"Gear Slash, towards w (from melee_gear_sawblade_slash)"
+effect,mega_melee_gear_sawblade_slash_nw,pack36_fx/mega_melee_gear_sawblade_slash_nw.png,3,2,10,83,1,0,"Gear Slash, towards nw (from melee_gear_sawblade_slash)"
+effect,mega_melee_ink_brush_sweep_n,pack36_fx/mega_melee_ink_brush_sweep_n.png,3,2,10,83,1,0,"Brush Sweep, towards n (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_ne,pack36_fx/mega_melee_ink_brush_sweep_ne.png,2,2,10,83,1,0,"Brush Sweep, towards ne (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_e,pack36_fx/mega_melee_ink_brush_sweep_e.png,2,3,10,83,1,1,"Brush Sweep, towards e (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_se,pack36_fx/mega_melee_ink_brush_sweep_se.png,3,2,10,83,1,1,"Brush Sweep, towards se (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_s,pack36_fx/mega_melee_ink_brush_sweep_s.png,3,2,10,83,1,1,"Brush Sweep, towards s (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_sw,pack36_fx/mega_melee_ink_brush_sweep_sw.png,2,2,10,83,0,1,"Brush Sweep, towards sw (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_w,pack36_fx/mega_melee_ink_brush_sweep_w.png,2,2,10,83,0,1,"Brush Sweep, towards w (from melee_ink_brush_sweep)"
+effect,mega_melee_ink_brush_sweep_nw,pack36_fx/mega_melee_ink_brush_sweep_nw.png,2,2,10,83,0,0,"Brush Sweep, towards nw (from melee_ink_brush_sweep)"
+effect,mega_melee_thorn_vine_lash_n,pack36_fx/mega_melee_thorn_vine_lash_n.png,3,3,12,83,1,1,"Vine Lash, towards n (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_ne,pack36_fx/mega_melee_thorn_vine_lash_ne.png,2,2,12,83,1,0,"Vine Lash, towards ne (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_e,pack36_fx/mega_melee_thorn_vine_lash_e.png,3,3,12,83,1,1,"Vine Lash, towards e (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_se,pack36_fx/mega_melee_thorn_vine_lash_se.png,2,2,12,83,1,1,"Vine Lash, towards se (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_s,pack36_fx/mega_melee_thorn_vine_lash_s.png,3,3,12,83,1,1,"Vine Lash, towards s (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_sw,pack36_fx/mega_melee_thorn_vine_lash_sw.png,2,2,12,83,0,1,"Vine Lash, towards sw (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_w,pack36_fx/mega_melee_thorn_vine_lash_w.png,4,3,12,83,1,1,"Vine Lash, towards w (from melee_thorn_vine_lash)"
+effect,mega_melee_thorn_vine_lash_nw,pack36_fx/mega_melee_thorn_vine_lash_nw.png,2,2,12,83,0,0,"Vine Lash, towards nw (from melee_thorn_vine_lash)"
+effect,mega_melee_tide_whip_n,pack36_fx/mega_melee_tide_whip_n.png,3,2,11,83,1,0,"Tide Whip, towards n (from melee_tide_whip)"
+effect,mega_melee_tide_whip_ne,pack36_fx/mega_melee_tide_whip_ne.png,3,2,11,83,1,0,"Tide Whip, towards ne (from melee_tide_whip)"
+effect,mega_melee_tide_whip_e,pack36_fx/mega_melee_tide_whip_e.png,4,3,11,83,2,1,"Tide Whip, towards e (from melee_tide_whip)"
+effect,mega_melee_tide_whip_se,pack36_fx/mega_melee_tide_whip_se.png,3,3,11,83,1,1,"Tide Whip, towards se (from melee_tide_whip)"
+effect,mega_melee_tide_whip_s,pack36_fx/mega_melee_tide_whip_s.png,3,4,11,83,1,2,"Tide Whip, towards s (from melee_tide_whip)"
+effect,mega_melee_tide_whip_sw,pack36_fx/mega_melee_tide_whip_sw.png,2,3,11,83,0,1,"Tide Whip, towards sw (from melee_tide_whip)"
+effect,mega_melee_tide_whip_w,pack36_fx/mega_melee_tide_whip_w.png,3,3,11,83,0,1,"Tide Whip, towards w (from melee_tide_whip)"
+effect,mega_melee_tide_whip_nw,pack36_fx/mega_melee_tide_whip_nw.png,2,2,11,83,0,0,"Tide Whip, towards nw (from melee_tide_whip)"
+effect,mega_meteor_mace_n,pack36_fx/mega_meteor_mace_n.png,3,3,17,83,1,1,"Meteor Mace, towards n (from meteor_mace)"
+effect,mega_meteor_mace_ne,pack36_fx/mega_meteor_mace_ne.png,5,3,17,83,2,1,"Meteor Mace, towards ne (from meteor_mace)"
+effect,mega_meteor_mace_e,pack36_fx/mega_meteor_mace_e.png,5,3,17,83,2,1,"Meteor Mace, towards e (from meteor_mace)"
+effect,mega_meteor_mace_se,pack36_fx/mega_meteor_mace_se.png,5,5,17,83,2,2,"Meteor Mace, towards se (from meteor_mace)"
+effect,mega_meteor_mace_s,pack36_fx/mega_meteor_mace_s.png,3,5,17,83,1,2,"Meteor Mace, towards s (from meteor_mace)"
+effect,mega_meteor_mace_sw,pack36_fx/mega_meteor_mace_sw.png,3,5,17,83,1,2,"Meteor Mace, towards sw (from meteor_mace)"
+effect,mega_meteor_mace_w,pack36_fx/mega_meteor_mace_w.png,3,3,17,83,1,1,"Meteor Mace, towards w (from meteor_mace)"
+effect,mega_meteor_mace_nw,pack36_fx/mega_meteor_mace_nw.png,3,3,17,83,1,1,"Meteor Mace, towards nw (from meteor_mace)"
+effect,mega_plague_claw_rip_n,pack36_fx/mega_plague_claw_rip_n.png,3,3,11,83,1,1,"Plague Claw Rip, towards n (from plague_claw_rip)"
+effect,mega_plague_claw_rip_ne,pack36_fx/mega_plague_claw_rip_ne.png,3,3,11,83,1,1,"Plague Claw Rip, towards ne (from plague_claw_rip)"
+effect,mega_plague_claw_rip_e,pack36_fx/mega_plague_claw_rip_e.png,3,3,11,83,1,1,"Plague Claw Rip, towards e (from plague_claw_rip)"
+effect,mega_plague_claw_rip_se,pack36_fx/mega_plague_claw_rip_se.png,3,3,11,83,1,1,"Plague Claw Rip, towards se (from plague_claw_rip)"
+effect,mega_plague_claw_rip_s,pack36_fx/mega_plague_claw_rip_s.png,3,3,11,83,1,1,"Plague Claw Rip, towards s (from plague_claw_rip)"
+effect,mega_plague_claw_rip_sw,pack36_fx/mega_plague_claw_rip_sw.png,3,3,11,83,1,1,"Plague Claw Rip, towards sw (from plague_claw_rip)"
+effect,mega_plague_claw_rip_w,pack36_fx/mega_plague_claw_rip_w.png,3,3,11,83,1,1,"Plague Claw Rip, towards w (from plague_claw_rip)"
+effect,mega_plague_claw_rip_nw,pack36_fx/mega_plague_claw_rip_nw.png,3,3,11,83,1,1,"Plague Claw Rip, towards nw (from plague_claw_rip)"
+effect,mega_runic_seal_palm_n,pack36_fx/mega_runic_seal_palm_n.png,3,3,14,83,1,1,"Runic Seal Palm, towards n (from runic_seal_palm)"
+effect,mega_runic_seal_palm_ne,pack36_fx/mega_runic_seal_palm_ne.png,3,3,14,83,1,1,"Runic Seal Palm, towards ne (from runic_seal_palm)"
+effect,mega_runic_seal_palm_e,pack36_fx/mega_runic_seal_palm_e.png,3,3,14,83,1,1,"Runic Seal Palm, towards e (from runic_seal_palm)"
+effect,mega_runic_seal_palm_se,pack36_fx/mega_runic_seal_palm_se.png,3,3,14,83,1,1,"Runic Seal Palm, towards se (from runic_seal_palm)"
+effect,mega_runic_seal_palm_s,pack36_fx/mega_runic_seal_palm_s.png,3,3,14,83,1,1,"Runic Seal Palm, towards s (from runic_seal_palm)"
+effect,mega_runic_seal_palm_sw,pack36_fx/mega_runic_seal_palm_sw.png,3,3,14,83,1,1,"Runic Seal Palm, towards sw (from runic_seal_palm)"
+effect,mega_runic_seal_palm_w,pack36_fx/mega_runic_seal_palm_w.png,3,3,14,83,1,1,"Runic Seal Palm, towards w (from runic_seal_palm)"
+effect,mega_runic_seal_palm_nw,pack36_fx/mega_runic_seal_palm_nw.png,3,3,14,83,1,1,"Runic Seal Palm, towards nw (from runic_seal_palm)"
+effect,mega_sand_scimitar_cut_n,pack36_fx/mega_sand_scimitar_cut_n.png,3,2,12,83,1,1,"Sand Scimitar Cut, towards n (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_ne,pack36_fx/mega_sand_scimitar_cut_ne.png,3,3,12,83,1,1,"Sand Scimitar Cut, towards ne (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_e,pack36_fx/mega_sand_scimitar_cut_e.png,3,3,12,83,1,1,"Sand Scimitar Cut, towards e (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_se,pack36_fx/mega_sand_scimitar_cut_se.png,3,2,12,83,1,1,"Sand Scimitar Cut, towards se (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_s,pack36_fx/mega_sand_scimitar_cut_s.png,3,2,12,83,1,1,"Sand Scimitar Cut, towards s (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_sw,pack36_fx/mega_sand_scimitar_cut_sw.png,3,2,12,83,1,0,"Sand Scimitar Cut, towards sw (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_w,pack36_fx/mega_sand_scimitar_cut_w.png,3,2,12,83,1,1,"Sand Scimitar Cut, towards w (from sand_scimitar_cut)"
+effect,mega_sand_scimitar_cut_nw,pack36_fx/mega_sand_scimitar_cut_nw.png,3,2,12,83,1,1,"Sand Scimitar Cut, towards nw (from sand_scimitar_cut)"
+effect,mega_shadow_garrote_n,pack36_fx/mega_shadow_garrote_n.png,2,3,14,83,0,1,"Shadow Garrote, towards n (from shadow_garrote)"
+effect,mega_shadow_garrote_ne,pack36_fx/mega_shadow_garrote_ne.png,2,3,14,83,0,1,"Shadow Garrote, towards ne (from shadow_garrote)"
+effect,mega_shadow_garrote_e,pack36_fx/mega_shadow_garrote_e.png,2,2,14,83,0,0,"Shadow Garrote, towards e (from shadow_garrote)"
+effect,mega_shadow_garrote_se,pack36_fx/mega_shadow_garrote_se.png,2,2,14,83,0,0,"Shadow Garrote, towards se (from shadow_garrote)"
+effect,mega_shadow_garrote_s,pack36_fx/mega_shadow_garrote_s.png,2,2,14,83,0,0,"Shadow Garrote, towards s (from shadow_garrote)"
+effect,mega_shadow_garrote_sw,pack36_fx/mega_shadow_garrote_sw.png,3,2,14,83,1,0,"Shadow Garrote, towards sw (from shadow_garrote)"
+effect,mega_shadow_garrote_w,pack36_fx/mega_shadow_garrote_w.png,3,2,14,83,1,0,"Shadow Garrote, towards w (from shadow_garrote)"
+effect,mega_shadow_garrote_nw,pack36_fx/mega_shadow_garrote_nw.png,3,3,14,83,1,1,"Shadow Garrote, towards nw (from shadow_garrote)"
+effect,mega_shard_blossom_strike_n,pack36_fx/mega_shard_blossom_strike_n.png,3,3,14,83,1,1,"Shard Blossom Strike, towards n (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_ne,pack36_fx/mega_shard_blossom_strike_ne.png,3,3,14,83,1,1,"Shard Blossom Strike, towards ne (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_e,pack36_fx/mega_shard_blossom_strike_e.png,3,3,14,83,1,1,"Shard Blossom Strike, towards e (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_se,pack36_fx/mega_shard_blossom_strike_se.png,3,3,14,83,1,1,"Shard Blossom Strike, towards se (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_s,pack36_fx/mega_shard_blossom_strike_s.png,3,3,14,83,1,1,"Shard Blossom Strike, towards s (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_sw,pack36_fx/mega_shard_blossom_strike_sw.png,3,3,14,83,1,1,"Shard Blossom Strike, towards sw (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_w,pack36_fx/mega_shard_blossom_strike_w.png,3,3,14,83,1,1,"Shard Blossom Strike, towards w (from shard_blossom_strike)"
+effect,mega_shard_blossom_strike_nw,pack36_fx/mega_shard_blossom_strike_nw.png,3,3,14,83,1,1,"Shard Blossom Strike, towards nw (from shard_blossom_strike)"
+effect,mega_thunder_fist_combo_n,pack36_fx/mega_thunder_fist_combo_n.png,3,2,14,83,1,1,"Thunder Fist Combo, towards n (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_ne,pack36_fx/mega_thunder_fist_combo_ne.png,3,3,14,83,1,1,"Thunder Fist Combo, towards ne (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_e,pack36_fx/mega_thunder_fist_combo_e.png,3,3,14,83,1,1,"Thunder Fist Combo, towards e (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_se,pack36_fx/mega_thunder_fist_combo_se.png,3,3,14,83,1,1,"Thunder Fist Combo, towards se (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_s,pack36_fx/mega_thunder_fist_combo_s.png,3,3,14,83,1,1,"Thunder Fist Combo, towards s (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_sw,pack36_fx/mega_thunder_fist_combo_sw.png,3,3,14,83,1,1,"Thunder Fist Combo, towards sw (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_w,pack36_fx/mega_thunder_fist_combo_w.png,2,3,14,83,1,1,"Thunder Fist Combo, towards w (from thunder_fist_combo)"
+effect,mega_thunder_fist_combo_nw,pack36_fx/mega_thunder_fist_combo_nw.png,3,3,14,83,1,1,"Thunder Fist Combo, towards nw (from thunder_fist_combo)"
+effect,mega_tide_trident_thrust_n,pack36_fx/mega_tide_trident_thrust_n.png,4,3,12,83,1,1,"Tide Trident Thrust, towards n (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_ne,pack36_fx/mega_tide_trident_thrust_ne.png,5,3,12,83,1,1,"Tide Trident Thrust, towards ne (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_e,pack36_fx/mega_tide_trident_thrust_e.png,3,4,12,83,0,1,"Tide Trident Thrust, towards e (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_se,pack36_fx/mega_tide_trident_thrust_se.png,4,4,12,83,1,1,"Tide Trident Thrust, towards se (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_s,pack36_fx/mega_tide_trident_thrust_s.png,4,3,12,83,1,0,"Tide Trident Thrust, towards s (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_sw,pack36_fx/mega_tide_trident_thrust_sw.png,3,4,12,83,1,1,"Tide Trident Thrust, towards sw (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_w,pack36_fx/mega_tide_trident_thrust_w.png,3,4,12,83,1,1,"Tide Trident Thrust, towards w (from tide_trident_thrust)"
+effect,mega_tide_trident_thrust_nw,pack36_fx/mega_tide_trident_thrust_nw.png,3,3,12,83,1,1,"Tide Trident Thrust, towards nw (from tide_trident_thrust)"
+effect,mega_void_rend_n,pack36_fx/mega_void_rend_n.png,3,3,13,83,1,1,"Void Rend, towards n (from void_rend)"
+effect,mega_void_rend_ne,pack36_fx/mega_void_rend_ne.png,3,3,13,83,1,1,"Void Rend, towards ne (from void_rend)"
+effect,mega_void_rend_e,pack36_fx/mega_void_rend_e.png,3,3,13,83,1,1,"Void Rend, towards e (from void_rend)"
+effect,mega_void_rend_se,pack36_fx/mega_void_rend_se.png,3,3,13,83,1,1,"Void Rend, towards se (from void_rend)"
+effect,mega_void_rend_s,pack36_fx/mega_void_rend_s.png,3,3,13,83,1,1,"Void Rend, towards s (from void_rend)"
+effect,mega_void_rend_sw,pack36_fx/mega_void_rend_sw.png,3,3,13,83,1,1,"Void Rend, towards sw (from void_rend)"
+effect,mega_void_rend_w,pack36_fx/mega_void_rend_w.png,3,3,13,83,1,1,"Void Rend, towards w (from void_rend)"
+effect,mega_void_rend_nw,pack36_fx/mega_void_rend_nw.png,3,3,13,83,1,1,"Void Rend, towards nw (from void_rend)"
+effect,mega_wildcard_slash_n,pack36_fx/mega_wildcard_slash_n.png,3,3,14,83,1,1,"Wildcard Slash, towards n (from wildcard_slash)"
+effect,mega_wildcard_slash_ne,pack36_fx/mega_wildcard_slash_ne.png,3,3,14,83,1,1,"Wildcard Slash, towards ne (from wildcard_slash)"
+effect,mega_wildcard_slash_e,pack36_fx/mega_wildcard_slash_e.png,3,3,14,83,1,1,"Wildcard Slash, towards e (from wildcard_slash)"
+effect,mega_wildcard_slash_se,pack36_fx/mega_wildcard_slash_se.png,3,3,14,83,1,1,"Wildcard Slash, towards se (from wildcard_slash)"
+effect,mega_wildcard_slash_s,pack36_fx/mega_wildcard_slash_s.png,3,3,14,83,1,1,"Wildcard Slash, towards s (from wildcard_slash)"
+effect,mega_wildcard_slash_sw,pack36_fx/mega_wildcard_slash_sw.png,3,3,14,83,1,1,"Wildcard Slash, towards sw (from wildcard_slash)"
+effect,mega_wildcard_slash_w,pack36_fx/mega_wildcard_slash_w.png,3,3,14,83,1,1,"Wildcard Slash, towards w (from wildcard_slash)"
+effect,mega_wildcard_slash_nw,pack36_fx/mega_wildcard_slash_nw.png,3,3,14,83,1,1,"Wildcard Slash, towards nw (from wildcard_slash)"
+effect,mega_wraith_palm_n,pack36_fx/mega_wraith_palm_n.png,3,3,13,83,1,1,"Wraith Palm, towards n (from wraith_palm)"
+effect,mega_wraith_palm_ne,pack36_fx/mega_wraith_palm_ne.png,3,3,13,83,1,1,"Wraith Palm, towards ne (from wraith_palm)"
+effect,mega_wraith_palm_e,pack36_fx/mega_wraith_palm_e.png,3,3,13,83,1,1,"Wraith Palm, towards e (from wraith_palm)"
+effect,mega_wraith_palm_se,pack36_fx/mega_wraith_palm_se.png,3,3,13,83,1,1,"Wraith Palm, towards se (from wraith_palm)"
+effect,mega_wraith_palm_s,pack36_fx/mega_wraith_palm_s.png,3,3,13,83,1,1,"Wraith Palm, towards s (from wraith_palm)"
+effect,mega_wraith_palm_sw,pack36_fx/mega_wraith_palm_sw.png,3,3,13,83,1,1,"Wraith Palm, towards sw (from wraith_palm)"
+effect,mega_wraith_palm_w,pack36_fx/mega_wraith_palm_w.png,3,3,13,83,1,1,"Wraith Palm, towards w (from wraith_palm)"
+effect,mega_wraith_palm_nw,pack36_fx/mega_wraith_palm_nw.png,3,3,13,83,1,1,"Wraith Palm, towards nw (from wraith_palm)"
+effect,mega_ash_choke_stream_n,pack36_fx/mega_ash_choke_stream_n.png,2,5,13,83,0,0,"Ash Choke Stream, towards n (from ash_choke_stream)"
+effect,mega_ash_choke_stream_ne,pack36_fx/mega_ash_choke_stream_ne.png,3,4,13,83,2,0,"Ash Choke Stream, towards ne (from ash_choke_stream)"
+effect,mega_ash_choke_stream_e,pack36_fx/mega_ash_choke_stream_e.png,4,2,13,83,3,0,"Ash Choke Stream, towards e (from ash_choke_stream)"
+effect,mega_ash_choke_stream_se,pack36_fx/mega_ash_choke_stream_se.png,3,3,13,83,2,2,"Ash Choke Stream, towards se (from ash_choke_stream)"
+effect,mega_ash_choke_stream_s,pack36_fx/mega_ash_choke_stream_s.png,2,4,13,83,0,3,"Ash Choke Stream, towards s (from ash_choke_stream)"
+effect,mega_ash_choke_stream_sw,pack36_fx/mega_ash_choke_stream_sw.png,4,3,13,83,0,2,"Ash Choke Stream, towards sw (from ash_choke_stream)"
+effect,mega_ash_choke_stream_w,pack36_fx/mega_ash_choke_stream_w.png,5,2,13,83,0,0,"Ash Choke Stream, towards w (from ash_choke_stream)"
+effect,mega_ash_choke_stream_nw,pack36_fx/mega_ash_choke_stream_nw.png,4,4,13,83,0,0,"Ash Choke Stream, towards nw (from ash_choke_stream)"
+effect,mega_blood_siphon_n,pack36_fx/mega_blood_siphon_n.png,2,4,13,83,1,0,"Blood Siphon, towards n (from blood_siphon)"
+effect,mega_blood_siphon_ne,pack36_fx/mega_blood_siphon_ne.png,4,4,13,83,3,0,"Blood Siphon, towards ne (from blood_siphon)"
+effect,mega_blood_siphon_e,pack36_fx/mega_blood_siphon_e.png,5,2,13,83,4,1,"Blood Siphon, towards e (from blood_siphon)"
+effect,mega_blood_siphon_se,pack36_fx/mega_blood_siphon_se.png,4,4,13,83,3,3,"Blood Siphon, towards se (from blood_siphon)"
+effect,mega_blood_siphon_s,pack36_fx/mega_blood_siphon_s.png,2,5,13,83,1,4,"Blood Siphon, towards s (from blood_siphon)"
+effect,mega_blood_siphon_sw,pack36_fx/mega_blood_siphon_sw.png,4,4,13,83,0,3,"Blood Siphon, towards sw (from blood_siphon)"
+effect,mega_blood_siphon_w,pack36_fx/mega_blood_siphon_w.png,4,2,13,83,0,1,"Blood Siphon, towards w (from blood_siphon)"
+effect,mega_blood_siphon_nw,pack36_fx/mega_blood_siphon_nw.png,4,4,13,83,0,0,"Blood Siphon, towards nw (from blood_siphon)"
+effect,mega_chain_arc_tether_n,pack36_fx/mega_chain_arc_tether_n.png,1,4,9,83,0,0,"Chain Arc Tether, towards n (from chain_arc_tether)"
+effect,mega_chain_arc_tether_ne,pack36_fx/mega_chain_arc_tether_ne.png,3,3,9,83,2,0,"Chain Arc Tether, towards ne (from chain_arc_tether)"
+effect,mega_chain_arc_tether_e,pack36_fx/mega_chain_arc_tether_e.png,4,2,9,83,3,0,"Chain Arc Tether, towards e (from chain_arc_tether)"
+effect,mega_chain_arc_tether_se,pack36_fx/mega_chain_arc_tether_se.png,3,3,9,83,2,2,"Chain Arc Tether, towards se (from chain_arc_tether)"
+effect,mega_chain_arc_tether_s,pack36_fx/mega_chain_arc_tether_s.png,1,4,9,83,0,3,"Chain Arc Tether, towards s (from chain_arc_tether)"
+effect,mega_chain_arc_tether_sw,pack36_fx/mega_chain_arc_tether_sw.png,3,3,9,83,0,2,"Chain Arc Tether, towards sw (from chain_arc_tether)"
+effect,mega_chain_arc_tether_w,pack36_fx/mega_chain_arc_tether_w.png,4,2,9,83,0,0,"Chain Arc Tether, towards w (from chain_arc_tether)"
+effect,mega_chain_arc_tether_nw,pack36_fx/mega_chain_arc_tether_nw.png,3,3,9,83,0,0,"Chain Arc Tether, towards nw (from chain_arc_tether)"
+effect,mega_dragon_ember_stream_n,pack36_fx/mega_dragon_ember_stream_n.png,2,5,13,83,0,0,"Ember Stream, towards n (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_ne,pack36_fx/mega_dragon_ember_stream_ne.png,4,4,13,83,3,0,"Ember Stream, towards ne (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_e,pack36_fx/mega_dragon_ember_stream_e.png,5,2,13,83,4,0,"Ember Stream, towards e (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_se,pack36_fx/mega_dragon_ember_stream_se.png,4,4,13,83,3,3,"Ember Stream, towards se (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_s,pack36_fx/mega_dragon_ember_stream_s.png,2,5,13,83,0,4,"Ember Stream, towards s (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_sw,pack36_fx/mega_dragon_ember_stream_sw.png,4,4,13,83,0,3,"Ember Stream, towards sw (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_w,pack36_fx/mega_dragon_ember_stream_w.png,5,2,13,83,0,0,"Ember Stream, towards w (from dragon_ember_stream)"
+effect,mega_dragon_ember_stream_nw,pack36_fx/mega_dragon_ember_stream_nw.png,4,4,13,83,0,0,"Ember Stream, towards nw (from dragon_ember_stream)"
+effect,mega_dream_ribbon_n,pack36_fx/mega_dream_ribbon_n.png,2,5,13,83,0,0,"Dream Ribbon, towards n (from dream_ribbon)"
+effect,mega_dream_ribbon_ne,pack36_fx/mega_dream_ribbon_ne.png,4,4,13,83,3,0,"Dream Ribbon, towards ne (from dream_ribbon)"
+effect,mega_dream_ribbon_e,pack36_fx/mega_dream_ribbon_e.png,5,2,13,83,3,0,"Dream Ribbon, towards e (from dream_ribbon)"
+effect,mega_dream_ribbon_se,pack36_fx/mega_dream_ribbon_se.png,5,4,13,83,3,3,"Dream Ribbon, towards se (from dream_ribbon)"
+effect,mega_dream_ribbon_s,pack36_fx/mega_dream_ribbon_s.png,2,5,13,83,0,3,"Dream Ribbon, towards s (from dream_ribbon)"
+effect,mega_dream_ribbon_sw,pack36_fx/mega_dream_ribbon_sw.png,4,5,13,83,0,3,"Dream Ribbon, towards sw (from dream_ribbon)"
+effect,mega_dream_ribbon_w,pack36_fx/mega_dream_ribbon_w.png,5,2,13,83,0,0,"Dream Ribbon, towards w (from dream_ribbon)"
+effect,mega_dream_ribbon_nw,pack36_fx/mega_dream_ribbon_nw.png,4,4,13,83,0,0,"Dream Ribbon, towards nw (from dream_ribbon)"
+effect,mega_gale_tunnel_n,pack36_fx/mega_gale_tunnel_n.png,3,5,13,83,1,0,"Gale Tunnel, towards n (from gale_tunnel)"
+effect,mega_gale_tunnel_ne,pack36_fx/mega_gale_tunnel_ne.png,4,4,13,83,3,0,"Gale Tunnel, towards ne (from gale_tunnel)"
+effect,mega_gale_tunnel_e,pack36_fx/mega_gale_tunnel_e.png,5,3,13,83,4,1,"Gale Tunnel, towards e (from gale_tunnel)"
+effect,mega_gale_tunnel_se,pack36_fx/mega_gale_tunnel_se.png,4,4,13,83,3,3,"Gale Tunnel, towards se (from gale_tunnel)"
+effect,mega_gale_tunnel_s,pack36_fx/mega_gale_tunnel_s.png,3,5,13,83,1,4,"Gale Tunnel, towards s (from gale_tunnel)"
+effect,mega_gale_tunnel_sw,pack36_fx/mega_gale_tunnel_sw.png,4,4,13,83,0,3,"Gale Tunnel, towards sw (from gale_tunnel)"
+effect,mega_gale_tunnel_w,pack36_fx/mega_gale_tunnel_w.png,5,3,13,83,0,1,"Gale Tunnel, towards w (from gale_tunnel)"
+effect,mega_gale_tunnel_nw,pack36_fx/mega_gale_tunnel_nw.png,4,4,13,83,0,0,"Gale Tunnel, towards nw (from gale_tunnel)"
+effect,mega_gem_laser_n,pack36_fx/mega_gem_laser_n.png,2,5,9,83,0,0,"Gem Laser, towards n (from gem_laser)"
+effect,mega_gem_laser_ne,pack36_fx/mega_gem_laser_ne.png,4,4,9,83,3,0,"Gem Laser, towards ne (from gem_laser)"
+effect,mega_gem_laser_e,pack36_fx/mega_gem_laser_e.png,5,1,9,83,4,0,"Gem Laser, towards e (from gem_laser)"
+effect,mega_gem_laser_se,pack36_fx/mega_gem_laser_se.png,4,4,9,83,3,3,"Gem Laser, towards se (from gem_laser)"
+effect,mega_gem_laser_s,pack36_fx/mega_gem_laser_s.png,2,5,9,83,0,4,"Gem Laser, towards s (from gem_laser)"
+effect,mega_gem_laser_sw,pack36_fx/mega_gem_laser_sw.png,4,4,9,83,0,3,"Gem Laser, towards sw (from gem_laser)"
+effect,mega_gem_laser_w,pack36_fx/mega_gem_laser_w.png,5,1,9,83,0,0,"Gem Laser, towards w (from gem_laser)"
+effect,mega_gem_laser_nw,pack36_fx/mega_gem_laser_nw.png,4,4,9,83,0,0,"Gem Laser, towards nw (from gem_laser)"
+effect,mega_glacier_breath_n,pack36_fx/mega_glacier_breath_n.png,3,5,13,83,1,0,"Glacier Breath, towards n (from glacier_breath)"
+effect,mega_glacier_breath_ne,pack36_fx/mega_glacier_breath_ne.png,4,4,13,83,3,0,"Glacier Breath, towards ne (from glacier_breath)"
+effect,mega_glacier_breath_e,pack36_fx/mega_glacier_breath_e.png,4,3,13,83,3,1,"Glacier Breath, towards e (from glacier_breath)"
+effect,mega_glacier_breath_se,pack36_fx/mega_glacier_breath_se.png,4,4,13,83,3,3,"Glacier Breath, towards se (from glacier_breath)"
+effect,mega_glacier_breath_s,pack36_fx/mega_glacier_breath_s.png,3,4,13,83,1,3,"Glacier Breath, towards s (from glacier_breath)"
+effect,mega_glacier_breath_sw,pack36_fx/mega_glacier_breath_sw.png,4,4,13,83,0,3,"Glacier Breath, towards sw (from glacier_breath)"
+effect,mega_glacier_breath_w,pack36_fx/mega_glacier_breath_w.png,5,3,13,83,0,1,"Glacier Breath, towards w (from glacier_breath)"
+effect,mega_glacier_breath_nw,pack36_fx/mega_glacier_breath_nw.png,4,4,13,83,0,0,"Glacier Breath, towards nw (from glacier_breath)"
+effect,mega_grapple_chain_n,pack36_fx/mega_grapple_chain_n.png,2,5,9,83,1,0,"Grapple Chain, towards n (from grapple_chain)"
+effect,mega_grapple_chain_ne,pack36_fx/mega_grapple_chain_ne.png,4,4,9,83,3,0,"Grapple Chain, towards ne (from grapple_chain)"
+effect,mega_grapple_chain_e,pack36_fx/mega_grapple_chain_e.png,5,2,9,83,4,1,"Grapple Chain, towards e (from grapple_chain)"
+effect,mega_grapple_chain_se,pack36_fx/mega_grapple_chain_se.png,4,4,9,83,3,3,"Grapple Chain, towards se (from grapple_chain)"
+effect,mega_grapple_chain_s,pack36_fx/mega_grapple_chain_s.png,1,5,9,83,0,4,"Grapple Chain, towards s (from grapple_chain)"
+effect,mega_grapple_chain_sw,pack36_fx/mega_grapple_chain_sw.png,4,4,9,83,0,3,"Grapple Chain, towards sw (from grapple_chain)"
+effect,mega_grapple_chain_w,pack36_fx/mega_grapple_chain_w.png,5,1,9,83,0,0,"Grapple Chain, towards w (from grapple_chain)"
+effect,mega_grapple_chain_nw,pack36_fx/mega_grapple_chain_nw.png,4,4,9,83,0,0,"Grapple Chain, towards nw (from grapple_chain)"
+effect,mega_gravity_pull_tether_n,pack36_fx/mega_gravity_pull_tether_n.png,3,4,13,83,1,0,"Gravity Pull Tether, towards n (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_ne,pack36_fx/mega_gravity_pull_tether_ne.png,4,4,13,83,3,0,"Gravity Pull Tether, towards ne (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_e,pack36_fx/mega_gravity_pull_tether_e.png,5,3,13,83,4,1,"Gravity Pull Tether, towards e (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_se,pack36_fx/mega_gravity_pull_tether_se.png,4,4,13,83,3,3,"Gravity Pull Tether, towards se (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_s,pack36_fx/mega_gravity_pull_tether_s.png,3,5,13,83,1,4,"Gravity Pull Tether, towards s (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_sw,pack36_fx/mega_gravity_pull_tether_sw.png,4,4,13,83,0,3,"Gravity Pull Tether, towards sw (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_w,pack36_fx/mega_gravity_pull_tether_w.png,4,3,13,83,0,1,"Gravity Pull Tether, towards w (from gravity_pull_tether)"
+effect,mega_gravity_pull_tether_nw,pack36_fx/mega_gravity_pull_tether_nw.png,4,4,13,83,0,0,"Gravity Pull Tether, towards nw (from gravity_pull_tether)"
+effect,mega_ink_spray_arc_n,pack36_fx/mega_ink_spray_arc_n.png,4,4,13,83,2,0,"Ink Spray, towards n (from ink_spray_arc)"
+effect,mega_ink_spray_arc_ne,pack36_fx/mega_ink_spray_arc_ne.png,4,4,13,83,3,0,"Ink Spray, towards ne (from ink_spray_arc)"
+effect,mega_ink_spray_arc_e,pack36_fx/mega_ink_spray_arc_e.png,4,4,13,83,3,2,"Ink Spray, towards e (from ink_spray_arc)"
+effect,mega_ink_spray_arc_se,pack36_fx/mega_ink_spray_arc_se.png,4,4,13,83,3,3,"Ink Spray, towards se (from ink_spray_arc)"
+effect,mega_ink_spray_arc_s,pack36_fx/mega_ink_spray_arc_s.png,4,4,13,83,2,3,"Ink Spray, towards s (from ink_spray_arc)"
+effect,mega_ink_spray_arc_sw,pack36_fx/mega_ink_spray_arc_sw.png,4,4,13,83,0,3,"Ink Spray, towards sw (from ink_spray_arc)"
+effect,mega_ink_spray_arc_w,pack36_fx/mega_ink_spray_arc_w.png,4,4,13,83,0,2,"Ink Spray, towards w (from ink_spray_arc)"
+effect,mega_ink_spray_arc_nw,pack36_fx/mega_ink_spray_arc_nw.png,4,4,13,83,0,0,"Ink Spray, towards nw (from ink_spray_arc)"
+effect,mega_lava_spout_n,pack36_fx/mega_lava_spout_n.png,2,4,13,83,1,0,"Lava Spout, towards n (from lava_spout)"
+effect,mega_lava_spout_ne,pack36_fx/mega_lava_spout_ne.png,4,3,13,83,3,0,"Lava Spout, towards ne (from lava_spout)"
+effect,mega_lava_spout_e,pack36_fx/mega_lava_spout_e.png,4,2,13,83,3,1,"Lava Spout, towards e (from lava_spout)"
+effect,mega_lava_spout_se,pack36_fx/mega_lava_spout_se.png,4,4,13,83,3,3,"Lava Spout, towards se (from lava_spout)"
+effect,mega_lava_spout_s,pack36_fx/mega_lava_spout_s.png,3,4,13,83,1,3,"Lava Spout, towards s (from lava_spout)"
+effect,mega_lava_spout_sw,pack36_fx/mega_lava_spout_sw.png,3,4,13,83,0,3,"Lava Spout, towards sw (from lava_spout)"
+effect,mega_lava_spout_w,pack36_fx/mega_lava_spout_w.png,4,3,13,83,0,1,"Lava Spout, towards w (from lava_spout)"
+effect,mega_lava_spout_nw,pack36_fx/mega_lava_spout_nw.png,3,3,13,83,0,0,"Lava Spout, towards nw (from lava_spout)"
+effect,mega_mirror_relay_n,pack36_fx/mega_mirror_relay_n.png,2,5,13,83,1,0,"Mirror Relay, towards n (from mirror_relay)"
+effect,mega_mirror_relay_ne,pack36_fx/mega_mirror_relay_ne.png,4,4,13,83,3,0,"Mirror Relay, towards ne (from mirror_relay)"
+effect,mega_mirror_relay_e,pack36_fx/mega_mirror_relay_e.png,5,2,13,83,4,1,"Mirror Relay, towards e (from mirror_relay)"
+effect,mega_mirror_relay_se,pack36_fx/mega_mirror_relay_se.png,3,4,13,83,2,3,"Mirror Relay, towards se (from mirror_relay)"
+effect,mega_mirror_relay_s,pack36_fx/mega_mirror_relay_s.png,2,5,13,83,0,4,"Mirror Relay, towards s (from mirror_relay)"
+effect,mega_mirror_relay_sw,pack36_fx/mega_mirror_relay_sw.png,4,3,13,83,0,2,"Mirror Relay, towards sw (from mirror_relay)"
+effect,mega_mirror_relay_w,pack36_fx/mega_mirror_relay_w.png,5,2,13,83,0,0,"Mirror Relay, towards w (from mirror_relay)"
+effect,mega_mirror_relay_nw,pack36_fx/mega_mirror_relay_nw.png,4,5,13,83,0,0,"Mirror Relay, towards nw (from mirror_relay)"
+effect,mega_prism_ray_n,pack36_fx/mega_prism_ray_n.png,3,5,13,83,1,0,"Prism Ray, towards n (from prism_ray)"
+effect,mega_prism_ray_ne,pack36_fx/mega_prism_ray_ne.png,4,4,13,83,3,0,"Prism Ray, towards ne (from prism_ray)"
+effect,mega_prism_ray_e,pack36_fx/mega_prism_ray_e.png,5,3,13,83,4,1,"Prism Ray, towards e (from prism_ray)"
+effect,mega_prism_ray_se,pack36_fx/mega_prism_ray_se.png,4,4,13,83,3,3,"Prism Ray, towards se (from prism_ray)"
+effect,mega_prism_ray_s,pack36_fx/mega_prism_ray_s.png,3,5,13,83,1,4,"Prism Ray, towards s (from prism_ray)"
+effect,mega_prism_ray_sw,pack36_fx/mega_prism_ray_sw.png,4,4,13,83,0,3,"Prism Ray, towards sw (from prism_ray)"
+effect,mega_prism_ray_w,pack36_fx/mega_prism_ray_w.png,5,3,13,83,0,1,"Prism Ray, towards w (from prism_ray)"
+effect,mega_prism_ray_nw,pack36_fx/mega_prism_ray_nw.png,4,4,13,83,0,0,"Prism Ray, towards nw (from prism_ray)"
+effect,mega_rewind_thread_n,pack36_fx/mega_rewind_thread_n.png,2,4,13,83,1,0,"Rewind Thread, towards n (from rewind_thread)"
+effect,mega_rewind_thread_ne,pack36_fx/mega_rewind_thread_ne.png,4,3,13,83,3,0,"Rewind Thread, towards ne (from rewind_thread)"
+effect,mega_rewind_thread_e,pack36_fx/mega_rewind_thread_e.png,5,2,13,83,4,1,"Rewind Thread, towards e (from rewind_thread)"
+effect,mega_rewind_thread_se,pack36_fx/mega_rewind_thread_se.png,4,4,13,83,3,3,"Rewind Thread, towards se (from rewind_thread)"
+effect,mega_rewind_thread_s,pack36_fx/mega_rewind_thread_s.png,2,5,13,83,1,4,"Rewind Thread, towards s (from rewind_thread)"
+effect,mega_rewind_thread_sw,pack36_fx/mega_rewind_thread_sw.png,4,4,13,83,0,3,"Rewind Thread, towards sw (from rewind_thread)"
+effect,mega_rewind_thread_w,pack36_fx/mega_rewind_thread_w.png,4,2,13,83,0,1,"Rewind Thread, towards w (from rewind_thread)"
+effect,mega_rewind_thread_nw,pack36_fx/mega_rewind_thread_nw.png,3,4,13,83,0,0,"Rewind Thread, towards nw (from rewind_thread)"
+effect,mega_rift_lance_ray_n,pack36_fx/mega_rift_lance_ray_n.png,1,5,13,83,0,0,"Rift Ray, towards n (from rift_lance_ray)"
+effect,mega_rift_lance_ray_ne,pack36_fx/mega_rift_lance_ray_ne.png,4,4,13,83,3,0,"Rift Ray, towards ne (from rift_lance_ray)"
+effect,mega_rift_lance_ray_e,pack36_fx/mega_rift_lance_ray_e.png,5,1,13,83,4,0,"Rift Ray, towards e (from rift_lance_ray)"
+effect,mega_rift_lance_ray_se,pack36_fx/mega_rift_lance_ray_se.png,4,4,13,83,3,3,"Rift Ray, towards se (from rift_lance_ray)"
+effect,mega_rift_lance_ray_s,pack36_fx/mega_rift_lance_ray_s.png,2,5,13,83,0,4,"Rift Ray, towards s (from rift_lance_ray)"
+effect,mega_rift_lance_ray_sw,pack36_fx/mega_rift_lance_ray_sw.png,4,4,13,83,0,3,"Rift Ray, towards sw (from rift_lance_ray)"
+effect,mega_rift_lance_ray_w,pack36_fx/mega_rift_lance_ray_w.png,5,2,13,83,0,0,"Rift Ray, towards w (from rift_lance_ray)"
+effect,mega_rift_lance_ray_nw,pack36_fx/mega_rift_lance_ray_nw.png,4,4,13,83,0,0,"Rift Ray, towards nw (from rift_lance_ray)"
+effect,mega_sandstorm_blast_n,pack36_fx/mega_sandstorm_blast_n.png,3,5,13,83,1,0,"Sandstorm Blast, towards n (from sandstorm_blast)"
+effect,mega_sandstorm_blast_ne,pack36_fx/mega_sandstorm_blast_ne.png,4,4,13,83,3,0,"Sandstorm Blast, towards ne (from sandstorm_blast)"
+effect,mega_sandstorm_blast_e,pack36_fx/mega_sandstorm_blast_e.png,5,3,13,83,4,1,"Sandstorm Blast, towards e (from sandstorm_blast)"
+effect,mega_sandstorm_blast_se,pack36_fx/mega_sandstorm_blast_se.png,4,4,13,83,3,3,"Sandstorm Blast, towards se (from sandstorm_blast)"
+effect,mega_sandstorm_blast_s,pack36_fx/mega_sandstorm_blast_s.png,3,5,13,83,1,4,"Sandstorm Blast, towards s (from sandstorm_blast)"
+effect,mega_sandstorm_blast_sw,pack36_fx/mega_sandstorm_blast_sw.png,4,4,13,83,0,3,"Sandstorm Blast, towards sw (from sandstorm_blast)"
+effect,mega_sandstorm_blast_w,pack36_fx/mega_sandstorm_blast_w.png,5,3,13,83,0,1,"Sandstorm Blast, towards w (from sandstorm_blast)"
+effect,mega_sandstorm_blast_nw,pack36_fx/mega_sandstorm_blast_nw.png,4,4,13,83,0,0,"Sandstorm Blast, towards nw (from sandstorm_blast)"
+effect,mega_shout_wave_n,pack36_fx/mega_shout_wave_n.png,5,4,13,83,2,0,"Shout Wave, towards n (from shout_wave)"
+effect,mega_shout_wave_ne,pack36_fx/mega_shout_wave_ne.png,4,4,13,83,3,0,"Shout Wave, towards ne (from shout_wave)"
+effect,mega_shout_wave_e,pack36_fx/mega_shout_wave_e.png,4,5,13,83,3,2,"Shout Wave, towards e (from shout_wave)"
+effect,mega_shout_wave_se,pack36_fx/mega_shout_wave_se.png,4,4,13,83,3,3,"Shout Wave, towards se (from shout_wave)"
+effect,mega_shout_wave_s,pack36_fx/mega_shout_wave_s.png,5,4,13,83,2,3,"Shout Wave, towards s (from shout_wave)"
+effect,mega_shout_wave_sw,pack36_fx/mega_shout_wave_sw.png,4,4,13,83,0,3,"Shout Wave, towards sw (from shout_wave)"
+effect,mega_shout_wave_w,pack36_fx/mega_shout_wave_w.png,4,5,13,83,0,2,"Shout Wave, towards w (from shout_wave)"
+effect,mega_shout_wave_nw,pack36_fx/mega_shout_wave_nw.png,4,4,13,83,0,0,"Shout Wave, towards nw (from shout_wave)"
+effect,mega_soul_chain_n,pack36_fx/mega_soul_chain_n.png,1,4,13,83,0,0,"Soul Chain, towards n (from soul_chain)"
+effect,mega_soul_chain_ne,pack36_fx/mega_soul_chain_ne.png,3,3,13,83,2,0,"Soul Chain, towards ne (from soul_chain)"
+effect,mega_soul_chain_e,pack36_fx/mega_soul_chain_e.png,4,1,13,83,3,0,"Soul Chain, towards e (from soul_chain)"
+effect,mega_soul_chain_se,pack36_fx/mega_soul_chain_se.png,3,3,13,83,2,2,"Soul Chain, towards se (from soul_chain)"
+effect,mega_soul_chain_s,pack36_fx/mega_soul_chain_s.png,2,4,13,83,0,3,"Soul Chain, towards s (from soul_chain)"
+effect,mega_soul_chain_sw,pack36_fx/mega_soul_chain_sw.png,3,3,13,83,0,2,"Soul Chain, towards sw (from soul_chain)"
+effect,mega_soul_chain_w,pack36_fx/mega_soul_chain_w.png,4,1,13,83,0,0,"Soul Chain, towards w (from soul_chain)"
+effect,mega_soul_chain_nw,pack36_fx/mega_soul_chain_nw.png,3,3,13,83,0,0,"Soul Chain, towards nw (from soul_chain)"
+effect,mega_starlight_tether_n,pack36_fx/mega_starlight_tether_n.png,3,5,13,83,1,0,"Starlight Tether, towards n (from starlight_tether)"
+effect,mega_starlight_tether_ne,pack36_fx/mega_starlight_tether_ne.png,4,4,13,83,3,0,"Starlight Tether, towards ne (from starlight_tether)"
+effect,mega_starlight_tether_e,pack36_fx/mega_starlight_tether_e.png,5,3,13,83,4,1,"Starlight Tether, towards e (from starlight_tether)"
+effect,mega_starlight_tether_se,pack36_fx/mega_starlight_tether_se.png,4,4,13,83,3,3,"Starlight Tether, towards se (from starlight_tether)"
+effect,mega_starlight_tether_s,pack36_fx/mega_starlight_tether_s.png,3,5,13,83,1,4,"Starlight Tether, towards s (from starlight_tether)"
+effect,mega_starlight_tether_sw,pack36_fx/mega_starlight_tether_sw.png,4,4,13,83,0,3,"Starlight Tether, towards sw (from starlight_tether)"
+effect,mega_starlight_tether_w,pack36_fx/mega_starlight_tether_w.png,5,3,13,83,0,1,"Starlight Tether, towards w (from starlight_tether)"
+effect,mega_starlight_tether_nw,pack36_fx/mega_starlight_tether_nw.png,4,4,13,83,0,0,"Starlight Tether, towards nw (from starlight_tether)"
+effect,mega_sunbeam_lance_n,pack36_fx/mega_sunbeam_lance_n.png,2,5,13,83,0,0,"Sunbeam Lance, towards n (from sunbeam_lance)"
+effect,mega_sunbeam_lance_ne,pack36_fx/mega_sunbeam_lance_ne.png,4,4,13,83,3,0,"Sunbeam Lance, towards ne (from sunbeam_lance)"
+effect,mega_sunbeam_lance_e,pack36_fx/mega_sunbeam_lance_e.png,5,2,13,83,4,0,"Sunbeam Lance, towards e (from sunbeam_lance)"
+effect,mega_sunbeam_lance_se,pack36_fx/mega_sunbeam_lance_se.png,4,4,13,83,3,3,"Sunbeam Lance, towards se (from sunbeam_lance)"
+effect,mega_sunbeam_lance_s,pack36_fx/mega_sunbeam_lance_s.png,2,5,13,83,0,4,"Sunbeam Lance, towards s (from sunbeam_lance)"
+effect,mega_sunbeam_lance_sw,pack36_fx/mega_sunbeam_lance_sw.png,4,4,13,83,0,3,"Sunbeam Lance, towards sw (from sunbeam_lance)"
+effect,mega_sunbeam_lance_w,pack36_fx/mega_sunbeam_lance_w.png,5,2,13,83,0,0,"Sunbeam Lance, towards w (from sunbeam_lance)"
+effect,mega_sunbeam_lance_nw,pack36_fx/mega_sunbeam_lance_nw.png,4,4,13,83,0,0,"Sunbeam Lance, towards nw (from sunbeam_lance)"
+effect,mega_tide_jet_n,pack36_fx/mega_tide_jet_n.png,2,5,13,83,1,0,"Tide Jet, towards n (from tide_jet)"
+effect,mega_tide_jet_ne,pack36_fx/mega_tide_jet_ne.png,4,4,13,83,3,0,"Tide Jet, towards ne (from tide_jet)"
+effect,mega_tide_jet_e,pack36_fx/mega_tide_jet_e.png,5,2,13,83,4,1,"Tide Jet, towards e (from tide_jet)"
+effect,mega_tide_jet_se,pack36_fx/mega_tide_jet_se.png,4,4,13,83,3,3,"Tide Jet, towards se (from tide_jet)"
+effect,mega_tide_jet_s,pack36_fx/mega_tide_jet_s.png,2,5,13,83,1,4,"Tide Jet, towards s (from tide_jet)"
+effect,mega_tide_jet_sw,pack36_fx/mega_tide_jet_sw.png,4,4,13,83,0,3,"Tide Jet, towards sw (from tide_jet)"
+effect,mega_tide_jet_w,pack36_fx/mega_tide_jet_w.png,5,2,13,83,0,1,"Tide Jet, towards w (from tide_jet)"
+effect,mega_tide_jet_nw,pack36_fx/mega_tide_jet_nw.png,4,4,13,83,0,0,"Tide Jet, towards nw (from tide_jet)"
+effect,mega_umbral_leash_n,pack36_fx/mega_umbral_leash_n.png,1,4,13,83,0,0,"Umbral Leash, towards n (from umbral_leash)"
+effect,mega_umbral_leash_ne,pack36_fx/mega_umbral_leash_ne.png,3,3,13,83,2,0,"Umbral Leash, towards ne (from umbral_leash)"
+effect,mega_umbral_leash_e,pack36_fx/mega_umbral_leash_e.png,4,2,13,83,3,1,"Umbral Leash, towards e (from umbral_leash)"
+effect,mega_umbral_leash_se,pack36_fx/mega_umbral_leash_se.png,3,3,13,83,2,2,"Umbral Leash, towards se (from umbral_leash)"
+effect,mega_umbral_leash_s,pack36_fx/mega_umbral_leash_s.png,1,4,13,83,0,3,"Umbral Leash, towards s (from umbral_leash)"
+effect,mega_umbral_leash_sw,pack36_fx/mega_umbral_leash_sw.png,3,3,13,83,0,2,"Umbral Leash, towards sw (from umbral_leash)"
+effect,mega_umbral_leash_w,pack36_fx/mega_umbral_leash_w.png,4,2,13,83,0,1,"Umbral Leash, towards w (from umbral_leash)"
+effect,mega_umbral_leash_nw,pack36_fx/mega_umbral_leash_nw.png,3,3,13,83,0,0,"Umbral Leash, towards nw (from umbral_leash)"
+effect,mega_venom_spray_n,pack36_fx/mega_venom_spray_n.png,2,4,13,83,1,0,"Venom Spray, towards n (from venom_spray)"
+effect,mega_venom_spray_ne,pack36_fx/mega_venom_spray_ne.png,4,3,13,83,3,0,"Venom Spray, towards ne (from venom_spray)"
+effect,mega_venom_spray_e,pack36_fx/mega_venom_spray_e.png,5,3,13,83,4,1,"Venom Spray, towards e (from venom_spray)"
+effect,mega_venom_spray_se,pack36_fx/mega_venom_spray_se.png,4,4,13,83,3,3,"Venom Spray, towards se (from venom_spray)"
+effect,mega_venom_spray_s,pack36_fx/mega_venom_spray_s.png,2,5,13,83,1,4,"Venom Spray, towards s (from venom_spray)"
+effect,mega_venom_spray_sw,pack36_fx/mega_venom_spray_sw.png,3,4,13,83,0,3,"Venom Spray, towards sw (from venom_spray)"
+effect,mega_venom_spray_w,pack36_fx/mega_venom_spray_w.png,4,3,13,83,0,1,"Venom Spray, towards w (from venom_spray)"
+effect,mega_venom_spray_nw,pack36_fx/mega_venom_spray_nw.png,3,3,13,83,0,0,"Venom Spray, towards nw (from venom_spray)"
+effect,mega_vine_tether_n,pack36_fx/mega_vine_tether_n.png,3,5,13,83,1,0,"Vine Tether, towards n (from vine_tether)"
+effect,mega_vine_tether_ne,pack36_fx/mega_vine_tether_ne.png,4,4,13,83,3,0,"Vine Tether, towards ne (from vine_tether)"
+effect,mega_vine_tether_e,pack36_fx/mega_vine_tether_e.png,5,3,13,83,4,1,"Vine Tether, towards e (from vine_tether)"
+effect,mega_vine_tether_se,pack36_fx/mega_vine_tether_se.png,4,4,13,83,3,3,"Vine Tether, towards se (from vine_tether)"
+effect,mega_vine_tether_s,pack36_fx/mega_vine_tether_s.png,3,5,13,83,1,4,"Vine Tether, towards s (from vine_tether)"
+effect,mega_vine_tether_sw,pack36_fx/mega_vine_tether_sw.png,4,4,13,83,0,3,"Vine Tether, towards sw (from vine_tether)"
+effect,mega_vine_tether_w,pack36_fx/mega_vine_tether_w.png,5,3,13,83,0,1,"Vine Tether, towards w (from vine_tether)"
+effect,mega_vine_tether_nw,pack36_fx/mega_vine_tether_nw.png,4,4,13,83,0,0,"Vine Tether, towards nw (from vine_tether)"
+effect,mega_field_alchemy_spill,pack36_fx/mega_field_alchemy_spill.png,4,4,21,83,2,2,Alchemy Spill (from field_alchemy_spill)
+effect,mega_field_bone_yard,pack36_fx/mega_field_bone_yard.png,4,4,25,83,2,2,Bone Yard (from field_bone_yard)
+effect,mega_field_copper_wire,pack36_fx/mega_field_copper_wire.png,4,4,17,83,2,2,Copper Wire Trap (from field_copper_wire)
+effect,mega_field_crystal_garden,pack36_fx/mega_field_crystal_garden.png,4,4,25,83,2,2,Crystal Garden (from field_crystal_garden)
+effect,mega_field_dream_haze,pack36_fx/mega_field_dream_haze.png,4,4,25,83,2,2,Dream Haze (from field_dream_haze)
+effect,mega_field_echo_chamber,pack36_fx/mega_field_echo_chamber.png,3,3,17,83,1,1,Echo Chamber (from field_echo_chamber)
+effect,mega_field_ember_ash,pack36_fx/mega_field_ember_ash.png,4,4,25,83,2,2,Ember Ash (from field_ember_ash)
+effect,mega_field_ghost_march,pack36_fx/mega_field_ghost_march.png,4,4,25,83,2,2,Ghost March (from field_ghost_march)
+effect,mega_field_glass_shards,pack36_fx/mega_field_glass_shards.png,3,3,17,83,1,1,Glass Shards (from field_glass_shards)
+effect,mega_field_gravity_well,pack36_fx/mega_field_gravity_well.png,3,3,25,83,1,1,Gravity Well (from field_gravity_well)
+effect,mega_field_honey_trap,pack36_fx/mega_field_honey_trap.png,4,3,21,83,2,1,Honey Trap (from field_honey_trap)
+effect,mega_field_ink_swamp,pack36_fx/mega_field_ink_swamp.png,3,3,21,83,1,1,Ink Swamp (from field_ink_swamp)
+effect,mega_field_leech_bog,pack36_fx/mega_field_leech_bog.png,4,4,21,83,2,2,Leech Bog (from field_leech_bog)
+effect,mega_field_magnet_field,pack36_fx/mega_field_magnet_field.png,3,3,21,83,1,1,Magnet Field (from field_magnet_field)
+effect,mega_field_moon_well,pack36_fx/mega_field_moon_well.png,4,4,25,83,2,2,Moon Well (from field_moon_well)
+effect,mega_field_mushroom_grove,pack36_fx/mega_field_mushroom_grove.png,4,4,25,83,2,2,Mushroom Grove (from field_mushroom_grove)
+effect,mega_field_null_zone,pack36_fx/mega_field_null_zone.png,4,4,21,83,2,2,Null Zone (from field_null_zone)
+effect,mega_field_page_storm,pack36_fx/mega_field_page_storm.png,3,3,17,83,1,1,Page Storm (from field_page_storm)
+effect,mega_field_pollen_meadow,pack36_fx/mega_field_pollen_meadow.png,4,4,21,83,2,2,Pollen Meadow (from field_pollen_meadow)
+effect,mega_field_rune_floor,pack36_fx/mega_field_rune_floor.png,4,4,25,83,2,2,Rune Floor (from field_rune_floor)
+effect,mega_field_sandstorm_patch,pack36_fx/mega_field_sandstorm_patch.png,3,3,17,83,1,1,Sandstorm Patch (from field_sandstorm_patch)
+effect,mega_field_shadow_quagmire,pack36_fx/mega_field_shadow_quagmire.png,4,4,25,83,2,2,Shadow Quagmire (from field_shadow_quagmire)
+effect,mega_field_sinkhole_cracks,pack36_fx/mega_field_sinkhole_cracks.png,4,4,21,83,2,2,Sinkhole Cracks (from field_sinkhole_cracks)
+effect,mega_field_slow_time,pack36_fx/mega_field_slow_time.png,3,3,25,83,1,1,Slow Time Zone (from field_slow_time)
+effect,mega_field_starlight_pool,pack36_fx/mega_field_starlight_pool.png,4,4,25,83,2,2,Starlight Pool (from field_starlight_pool)
+effect,mega_field_steam_geyser,pack36_fx/mega_field_steam_geyser.png,3,3,25,83,1,1,Steam Geyser (from field_steam_geyser)
+effect,mega_field_storm_ground,pack36_fx/mega_field_storm_ground.png,4,4,17,83,2,2,Storm Ground (from field_storm_ground)
+effect,mega_field_sulfur_pool,pack36_fx/mega_field_sulfur_pool.png,4,4,21,83,2,2,Sulfur Pool (from field_sulfur_pool)
+effect,mega_field_tar_pit,pack36_fx/mega_field_tar_pit.png,3,3,25,83,1,1,Tar Pit (from field_tar_pit)
+effect,mega_field_tidal_pull,pack36_fx/mega_field_tidal_pull.png,4,4,21,83,2,2,Tidal Pull (from field_tidal_pull)
+effect,mega_field_totem_ward,pack36_fx/mega_field_totem_ward.png,4,4,25,83,2,2,Totem Ward (from field_totem_ward)
+effect,mega_field_wild_surge,pack36_fx/mega_field_wild_surge.png,4,4,17,83,2,2,Wild Surge (from field_wild_surge)
+effect,mega_field_wind_updraft,pack36_fx/mega_field_wind_updraft.png,5,4,17,83,2,2,Wind Updraft (from field_wind_updraft)
+effect,mega_summon_ash_reform,pack36_fx/mega_summon_ash_reform.png,3,3,18,83,1,1,Ash Reform (from summon_ash_reform)
+effect,mega_summon_bone_tear,pack36_fx/mega_summon_bone_tear.png,3,3,17,83,1,1,Bone Tear (from summon_bone_tear)
+effect,mega_summon_chaos_dice,pack36_fx/mega_summon_chaos_dice.png,4,4,13,83,2,2,Chaos Dice Warp (from summon_chaos_dice)
+effect,mega_summon_crystal_bloom,pack36_fx/mega_summon_crystal_bloom.png,3,3,15,83,1,1,Crystal Bloom (from summon_crystal_bloom)
+effect,mega_summon_dream_pop,pack36_fx/mega_summon_dream_pop.png,3,4,14,83,1,2,Dream Bubble Arrival (from summon_dream_pop)
+effect,mega_summon_ink_splash_in,pack36_fx/mega_summon_ink_splash_in.png,4,4,15,83,2,2,Ink Splash Arrival (from summon_ink_splash_in)
+effect,mega_summon_mirror_step,pack36_fx/mega_summon_mirror_step.png,3,4,13,83,1,1,Mirror Step (from summon_mirror_step)
+effect,mega_summon_molten_cast,pack36_fx/mega_summon_molten_cast.png,3,3,18,83,1,1,Molten Cast (from summon_molten_cast)
+effect,mega_summon_paper_crane,pack36_fx/mega_summon_paper_crane.png,4,4,16,83,1,1,Paper Crane Departure (from summon_paper_crane)
+effect,mega_summon_petal_departure,pack36_fx/mega_summon_petal_departure.png,5,4,17,83,2,1,Petal Departure (from summon_petal_departure)
+effect,mega_summon_rewind_arrival,pack36_fx/mega_summon_rewind_arrival.png,3,3,16,83,1,1,Rewind Arrival (from summon_rewind_arrival)
+effect,mega_summon_rune_door,pack36_fx/mega_summon_rune_door.png,3,3,18,83,1,1,Rune Door (from summon_rune_door)
+effect,mega_summon_sand_whirl_arrival,pack36_fx/mega_summon_sand_whirl_arrival.png,3,3,15,83,1,1,Sand Whirl Arrival (from summon_sand_whirl_arrival)
+effect,mega_summon_sky_drop,pack36_fx/mega_summon_sky_drop.png,5,5,13,83,2,2,Sky Drop (from summon_sky_drop)
+effect,mega_summon_sonic_warp,pack36_fx/mega_summon_sonic_warp.png,4,4,12,83,2,2,Sonic Warp (from summon_sonic_warp)
+effect,mega_summon_star_gate,pack36_fx/mega_summon_star_gate.png,4,3,18,83,1,1,Star Gate (from summon_star_gate)
+effect,mega_summon_thunder_step,pack36_fx/mega_summon_thunder_step.png,3,3,11,83,1,1,Thunder Step (from summon_thunder_step)
+effect,mega_summon_tide_departure,pack36_fx/mega_summon_tide_departure.png,4,4,15,83,2,2,Tide Departure (from summon_tide_departure)
+effect,mega_summon_totem_drop,pack36_fx/mega_summon_totem_drop.png,4,3,17,83,2,1,Totem Drop (from summon_totem_drop)
+effect,mega_summon_void_fold,pack36_fx/mega_summon_void_fold.png,4,3,13,83,2,1,Void Fold (from summon_void_fold)
+effect,mega_antidote_wash,pack36_fx/mega_antidote_wash.png,3,3,16,83,1,1,Antidote Wash (from antidote_wash)
+effect,mega_arcane_overcharge,pack36_fx/mega_arcane_overcharge.png,4,4,13,83,2,2,Arcane Overcharge (from arcane_overcharge)
+effect,mega_bark_skin,pack36_fx/mega_bark_skin.png,3,3,16,83,1,1,Bark Skin (from bark_skin)
+effect,mega_bear_spirit_rise_n,pack36_fx/mega_bear_spirit_rise_n.png,4,3,19,83,1,1,"Bear Spirit Rise, towards n (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_ne,pack36_fx/mega_bear_spirit_rise_ne.png,4,3,19,83,1,1,"Bear Spirit Rise, towards ne (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_e,pack36_fx/mega_bear_spirit_rise_e.png,3,3,19,83,1,1,"Bear Spirit Rise, towards e (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_se,pack36_fx/mega_bear_spirit_rise_se.png,4,3,19,83,1,1,"Bear Spirit Rise, towards se (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_s,pack36_fx/mega_bear_spirit_rise_s.png,4,2,19,83,1,0,"Bear Spirit Rise, towards s (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_sw,pack36_fx/mega_bear_spirit_rise_sw.png,3,3,19,83,1,1,"Bear Spirit Rise, towards sw (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_w,pack36_fx/mega_bear_spirit_rise_w.png,3,3,19,83,1,1,"Bear Spirit Rise, towards w (from bear_spirit_rise)"
+effect,mega_bear_spirit_rise_nw,pack36_fx/mega_bear_spirit_rise_nw.png,4,3,19,83,1,1,"Bear Spirit Rise, towards nw (from bear_spirit_rise)"
+effect,mega_bedrock_feet,pack36_fx/mega_bedrock_feet.png,3,3,14,83,1,1,Bedrock Feet (from bedrock_feet)
+effect,mega_calligraphy_seal,pack36_fx/mega_calligraphy_seal.png,3,4,17,83,1,2,Calligraphy Seal (from calligraphy_seal)
+effect,mega_canopy_shade,pack36_fx/mega_canopy_shade.png,4,4,16,83,1,1,Canopy Shade (from canopy_shade)
+effect,mega_chaos_roll,pack36_fx/mega_chaos_roll.png,3,3,14,83,1,1,Chaos Roll (from chaos_roll)
+effect,mega_coral_guard,pack36_fx/mega_coral_guard.png,3,3,16,83,1,1,Coral Guard (from coral_guard)
+effect,mega_crescendo,pack36_fx/mega_crescendo.png,3,3,16,83,1,1,Crescendo (from crescendo)
+effect,mega_drum_beat,pack36_fx/mega_drum_beat.png,4,4,16,83,2,2,Drum Beat (from drum_beat)
+effect,mega_ember_shoulders_n,pack36_fx/mega_ember_shoulders_n.png,3,3,19,83,1,1,"Ember Shoulders, towards n (from ember_shoulders)"
+effect,mega_ember_shoulders_ne,pack36_fx/mega_ember_shoulders_ne.png,3,3,19,83,1,1,"Ember Shoulders, towards ne (from ember_shoulders)"
+effect,mega_ember_shoulders_e,pack36_fx/mega_ember_shoulders_e.png,3,3,19,83,1,1,"Ember Shoulders, towards e (from ember_shoulders)"
+effect,mega_ember_shoulders_se,pack36_fx/mega_ember_shoulders_se.png,3,3,19,83,1,1,"Ember Shoulders, towards se (from ember_shoulders)"
+effect,mega_ember_shoulders_s,pack36_fx/mega_ember_shoulders_s.png,3,3,19,83,1,1,"Ember Shoulders, towards s (from ember_shoulders)"
+effect,mega_ember_shoulders_sw,pack36_fx/mega_ember_shoulders_sw.png,3,3,19,83,1,1,"Ember Shoulders, towards sw (from ember_shoulders)"
+effect,mega_ember_shoulders_w,pack36_fx/mega_ember_shoulders_w.png,3,3,19,83,1,1,"Ember Shoulders, towards w (from ember_shoulders)"
+effect,mega_ember_shoulders_nw,pack36_fx/mega_ember_shoulders_nw.png,3,3,19,83,1,1,"Ember Shoulders, towards nw (from ember_shoulders)"
+effect,mega_frost_plating,pack36_fx/mega_frost_plating.png,3,3,16,83,1,1,Frost Plating (from frost_plating)
+effect,mega_gale_boots,pack36_fx/mega_gale_boots.png,3,3,11,83,1,1,Gale Boots (from gale_boots)
+effect,mega_gem_encase,pack36_fx/mega_gem_encase.png,3,3,16,83,1,1,Gem Encase (from gem_encase)
+effect,mega_glass_guard_n,pack36_fx/mega_glass_guard_n.png,3,3,17,83,1,1,"Glass Guard, towards n (from glass_guard)"
+effect,mega_glass_guard_ne,pack36_fx/mega_glass_guard_ne.png,3,3,17,83,1,1,"Glass Guard, towards ne (from glass_guard)"
+effect,mega_glass_guard_e,pack36_fx/mega_glass_guard_e.png,3,3,17,83,1,1,"Glass Guard, towards e (from glass_guard)"
+effect,mega_glass_guard_se,pack36_fx/mega_glass_guard_se.png,3,3,17,83,1,1,"Glass Guard, towards se (from glass_guard)"
+effect,mega_glass_guard_s,pack36_fx/mega_glass_guard_s.png,3,3,17,83,1,1,"Glass Guard, towards s (from glass_guard)"
+effect,mega_glass_guard_sw,pack36_fx/mega_glass_guard_sw.png,3,3,17,83,1,1,"Glass Guard, towards sw (from glass_guard)"
+effect,mega_glass_guard_w,pack36_fx/mega_glass_guard_w.png,3,3,17,83,1,1,"Glass Guard, towards w (from glass_guard)"
+effect,mega_glass_guard_nw,pack36_fx/mega_glass_guard_nw.png,3,3,17,83,1,1,"Glass Guard, towards nw (from glass_guard)"
+effect,mega_grave_blessing,pack36_fx/mega_grave_blessing.png,3,3,14,83,1,1,Grave Blessing (from grave_blessing)
+effect,mega_halo_descent,pack36_fx/mega_halo_descent.png,3,3,16,83,1,1,Halo Descent (from halo_descent)
+effect,mega_ion_boots,pack36_fx/mega_ion_boots.png,3,3,12,83,1,1,Ion Boots (from ion_boots)
+effect,mega_iron_hide,pack36_fx/mega_iron_hide.png,3,3,14,83,1,1,Iron Hide (from iron_hide)
+effect,mega_kindle_heart,pack36_fx/mega_kindle_heart.png,3,3,17,83,1,1,Kindle Heart (from kindle_heart)
+effect,mega_levitation_lift,pack36_fx/mega_levitation_lift.png,3,3,16,83,1,1,Levitation Lift (from levitation_lift)
+effect,mega_lightning_reflexes,pack36_fx/mega_lightning_reflexes.png,3,3,11,83,1,1,Lightning Reflexes (from lightning_reflexes)
+effect,mega_lucid_focus,pack36_fx/mega_lucid_focus.png,3,3,14,83,1,1,Lucid Focus (from lucid_focus)
+effect,mega_lucky_star,pack36_fx/mega_lucky_star.png,3,3,14,83,1,1,Lucky Star (from lucky_star)
+effect,mega_magma_veins,pack36_fx/mega_magma_veins.png,3,3,15,83,1,1,Magma Veins (from magma_veins)
+effect,mega_nettle_coat,pack36_fx/mega_nettle_coat.png,3,3,16,83,1,1,Nettle Coat (from nettle_coat)
+effect,mega_null_shell,pack36_fx/mega_null_shell.png,3,3,14,83,1,1,Null Shell (from null_shell)
+effect,mega_quench_temper,pack36_fx/mega_quench_temper.png,3,3,16,83,1,1,Quench Temper (from quench_temper)
+effect,mega_rewind_echo,pack36_fx/mega_rewind_echo.png,3,3,16,83,1,1,Rewind Echo (from rewind_echo)
+effect,mega_rune_brand,pack36_fx/mega_rune_brand.png,3,3,15,83,1,1,Rune Brand (from rune_brand)
+effect,mega_sand_armor,pack36_fx/mega_sand_armor.png,4,3,17,83,2,1,Sand Armor (from sand_armor)
+effect,mega_sanguine_surge,pack36_fx/mega_sanguine_surge.png,3,3,16,83,1,1,Sanguine Surge (from sanguine_surge)
+effect,mega_smoke_cloak,pack36_fx/mega_smoke_cloak.png,3,3,17,83,1,1,Smoke Cloak (from smoke_cloak)
+effect,mega_spirit_possess,pack36_fx/mega_spirit_possess.png,3,3,17,83,1,1,Spirit Possess (from spirit_possess)
+effect,mega_stone_fists,pack36_fx/mega_stone_fists.png,3,3,16,83,1,1,Stone Fists (from stone_fists)
+effect,mega_tide_blessing,pack36_fx/mega_tide_blessing.png,3,3,16,83,1,1,Tide Blessing (from tide_blessing)
+effect,mega_toxic_skin,pack36_fx/mega_toxic_skin.png,3,3,17,83,1,1,Toxic Skin (from toxic_skin)
+effect,mega_umbra_skin,pack36_fx/mega_umbra_skin.png,3,3,17,83,1,1,Umbra Skin (from umbra_skin)
+effect,mega_warden_pauldrons_n,pack36_fx/mega_warden_pauldrons_n.png,3,3,16,83,1,1,"Warden Pauldrons, towards n (from warden_pauldrons)"
+effect,mega_warden_pauldrons_ne,pack36_fx/mega_warden_pauldrons_ne.png,3,3,16,83,1,1,"Warden Pauldrons, towards ne (from warden_pauldrons)"
+effect,mega_warden_pauldrons_e,pack36_fx/mega_warden_pauldrons_e.png,3,3,16,83,1,1,"Warden Pauldrons, towards e (from warden_pauldrons)"
+effect,mega_warden_pauldrons_se,pack36_fx/mega_warden_pauldrons_se.png,3,3,16,83,1,1,"Warden Pauldrons, towards se (from warden_pauldrons)"
+effect,mega_warden_pauldrons_s,pack36_fx/mega_warden_pauldrons_s.png,3,3,16,83,1,1,"Warden Pauldrons, towards s (from warden_pauldrons)"
+effect,mega_warden_pauldrons_sw,pack36_fx/mega_warden_pauldrons_sw.png,3,3,16,83,1,1,"Warden Pauldrons, towards sw (from warden_pauldrons)"
+effect,mega_warden_pauldrons_w,pack36_fx/mega_warden_pauldrons_w.png,3,3,16,83,1,1,"Warden Pauldrons, towards w (from warden_pauldrons)"
+effect,mega_warden_pauldrons_nw,pack36_fx/mega_warden_pauldrons_nw.png,3,3,16,83,1,1,"Warden Pauldrons, towards nw (from warden_pauldrons)"
+effect,mega_weather_ash_fall,pack36_fx/mega_weather_ash_fall.png,5,4,25,83,2,1,Ash Fall (from weather_ash_fall)
+effect,mega_weather_aurora_veil,pack36_fx/mega_weather_aurora_veil.png,6,3,25,83,2,0,Aurora Veil (from weather_aurora_veil)
+effect,mega_weather_bloodrain,pack36_fx/mega_weather_bloodrain.png,5,5,21,83,2,2,Crimson Rain (from weather_bloodrain)
+effect,mega_weather_ember_updraft,pack36_fx/mega_weather_ember_updraft.png,5,5,21,83,2,2,Ember Updraft (from weather_ember_updraft)
+effect,mega_weather_firefly_mist,pack36_fx/mega_weather_firefly_mist.png,4,3,25,83,2,1,Will-o-Wisp Mist (from weather_firefly_mist)
+effect,mega_weather_gear_dust_rain,pack36_fx/mega_weather_gear_dust_rain.png,4,4,25,83,1,1,Cog Rain (from weather_gear_dust_rain)
+effect,mega_weather_golden_pollen,pack36_fx/mega_weather_golden_pollen.png,5,4,25,83,2,1,Golden Pollen (from weather_golden_pollen)
+effect,mega_weather_ink_rain,pack36_fx/mega_weather_ink_rain.png,5,5,21,83,2,2,Ink Rain (from weather_ink_rain)
+effect,mega_weather_lightning_storm_flicker,pack36_fx/mega_weather_lightning_storm_flicker.png,5,5,25,83,2,2,Storm Flicker (from weather_lightning_storm_flicker)
+effect,mega_weather_meteor_shower_sky,pack36_fx/mega_weather_meteor_shower_sky.png,6,5,25,83,2,2,Meteor Streaks (from weather_meteor_shower_sky)
+effect,mega_weather_petal_blizzard,pack36_fx/mega_weather_petal_blizzard.png,5,4,25,83,2,1,Petal Gale (from weather_petal_blizzard)
+effect,mega_weather_sandstorm_sweep,pack36_fx/mega_weather_sandstorm_sweep.png,5,5,17,83,2,2,Sandstorm (from weather_sandstorm_sweep)
+effect,mega_weather_snow_squall,pack36_fx/mega_weather_snow_squall.png,6,5,25,83,2,2,Snow Squall (from weather_snow_squall)
+effect,mega_weather_spore_drift,pack36_fx/mega_weather_spore_drift.png,5,3,25,83,2,1,Spore Drift (from weather_spore_drift)
+effect,mega_weather_void_static,pack36_fx/mega_weather_void_static.png,5,5,17,83,2,2,Void Static (from weather_void_static)
+effect,mega_util_checkpoint_banner_plant,pack36_fx/mega_util_checkpoint_banner_plant.png,3,3,16,83,1,1,Checkpoint Flag (from util_checkpoint_banner_plant)
+effect,mega_util_checkpoint_crystal,pack36_fx/mega_util_checkpoint_crystal.png,3,3,25,83,1,1,Checkpoint Crystal (from util_checkpoint_crystal)
+effect,mega_util_cooldown_dial,pack36_fx/mega_util_cooldown_dial.png,3,3,25,83,1,1,Cooldown Dial (from util_cooldown_dial)
+effect,mega_util_crit_shatter_frame,pack36_fx/mega_util_crit_shatter_frame.png,3,3,10,83,1,1,Crit Shatter (from util_crit_shatter_frame)
+effect,mega_util_interact_hand,pack36_fx/mega_util_interact_hand.png,3,3,17,83,1,1,Interact Hand (from util_interact_hand)
+effect,mega_util_levelup_laurel_crown,pack36_fx/mega_util_levelup_laurel_crown.png,4,4,19,83,1,1,Laurel Ascension (from util_levelup_laurel_crown)
+effect,mega_util_locked_marker,pack36_fx/mega_util_locked_marker.png,3,3,17,83,1,1,Locked Marker (from util_locked_marker)
+effect,mega_util_pickup_orbit_glint,pack36_fx/mega_util_pickup_orbit_glint.png,3,3,12,83,1,1,Pickup Glint (from util_pickup_orbit_glint)
+effect,mega_util_respawn_sandclock,pack36_fx/mega_util_respawn_sandclock.png,3,3,20,83,1,1,Respawn Hourglass (from util_respawn_sandclock)
+effect,mega_util_secret_glint,pack36_fx/mega_util_secret_glint.png,3,3,25,83,1,1,Secret Glint (from util_secret_glint)

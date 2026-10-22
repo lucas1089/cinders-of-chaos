@@ -1,0 +1,13 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,beam_ancient,pack36_fx/beam_ancient.png,1,2,25,70,0,0,ancient (from ancient)
+effect,beam_blood,pack36_fx/beam_blood.png,1,2,25,70,0,0,blood (from blood)
+effect,beam_green_nature,pack36_fx/beam_green_nature.png,1,2,25,70,0,0,green_nature (from green_nature)
+effect,beam_legendary,pack36_fx/beam_legendary.png,1,2,25,70,0,0,legendary (from legendary)
+effect,beam_mythic,pack36_fx/beam_mythic.png,1,2,25,70,0,0,mythic (from mythic)
+effect,beam_orange_fire,pack36_fx/beam_orange_fire.png,1,2,25,70,0,0,orange_fire (from orange_fire)
+effect,beam_poison,pack36_fx/beam_poison.png,1,2,25,70,0,0,poison (from poison)
+effect,beam_rainbow_prismatic,pack36_fx/beam_rainbow_prismatic.png,1,2,25,70,0,0,rainbow_prismatic (from rainbow_prismatic)
+effect,beam_rare,pack36_fx/beam_rare.png,1,2,25,70,0,0,rare (from rare)
+effect,beam_red_cursed,pack36_fx/beam_red_cursed.png,1,2,25,70,0,0,red_cursed (from red_cursed)
+effect,beam_shadow,pack36_fx/beam_shadow.png,1,2,25,70,0,0,shadow (from shadow)
+effect,beam_silver_metal,pack36_fx/beam_silver_metal.png,1,2,25,70,0,0,silver_metal (from silver_metal)

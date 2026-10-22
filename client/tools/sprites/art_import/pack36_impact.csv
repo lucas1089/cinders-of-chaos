@@ -1,0 +1,196 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,w_impact_arcane_burst,pack36_fx/w_impact_arcane_burst.png,3,3,13,62,1,1,Arcane Burst (from impact_arcane_burst/arcane)
+effect,w_impact_arrow_hit,pack36_fx/w_impact_arrow_hit.png,3,2,13,62,1,0,Arrow Hit (from impact_arrow_hit/earth)
+effect,w_impact_arrow_rain,pack36_fx/w_impact_arrow_rain.png,5,5,18,62,1,1,Rain of Arrows (from impact_arrow_rain/steel)
+effect,w_impact_axe_hit_n,pack36_fx/w_impact_axe_hit_n.png,3,3,15,62,1,1,"Axe Hit, towards n (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_ne,pack36_fx/w_impact_axe_hit_ne.png,3,2,15,62,1,1,"Axe Hit, towards ne (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_e,pack36_fx/w_impact_axe_hit_e.png,3,3,15,62,1,1,"Axe Hit, towards e (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_se,pack36_fx/w_impact_axe_hit_se.png,3,3,15,62,1,1,"Axe Hit, towards se (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_s,pack36_fx/w_impact_axe_hit_s.png,3,3,15,62,1,1,"Axe Hit, towards s (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_sw,pack36_fx/w_impact_axe_hit_sw.png,2,3,15,62,0,1,"Axe Hit, towards sw (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_w,pack36_fx/w_impact_axe_hit_w.png,2,3,15,62,0,1,"Axe Hit, towards w (from impact_axe_hit/earth)"
+effect,w_impact_axe_hit_nw,pack36_fx/w_impact_axe_hit_nw.png,3,3,15,62,1,1,"Axe Hit, towards nw (from impact_axe_hit/earth)"
+effect,w_impact_backstab,pack36_fx/w_impact_backstab.png,2,2,13,62,0,1,Backstab (from impact_backstab/blood)
+effect,w_impact_berserk,pack36_fx/w_impact_berserk.png,5,5,15,62,2,2,Berserk (from impact_berserk/hellfire)
+effect,w_impact_blade_dance,pack36_fx/w_impact_blade_dance.png,4,4,13,62,1,1,Blade Dance (from impact_blade_dance/rose_gold)
+effect,w_impact_blade_rain,pack36_fx/w_impact_blade_rain.png,5,5,19,62,1,2,Blade Rain (from impact_blade_rain/steel)
+effect,w_impact_blade_slash_n,pack36_fx/w_impact_blade_slash_n.png,2,2,13,62,0,0,"Blade Slash, towards n (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_ne,pack36_fx/w_impact_blade_slash_ne.png,2,2,13,62,0,0,"Blade Slash, towards ne (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_e,pack36_fx/w_impact_blade_slash_e.png,2,2,13,62,0,0,"Blade Slash, towards e (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_se,pack36_fx/w_impact_blade_slash_se.png,3,2,13,62,1,0,"Blade Slash, towards se (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_s,pack36_fx/w_impact_blade_slash_s.png,3,3,13,62,1,1,"Blade Slash, towards s (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_sw,pack36_fx/w_impact_blade_slash_sw.png,3,3,13,62,1,1,"Blade Slash, towards sw (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_w,pack36_fx/w_impact_blade_slash_w.png,2,3,13,62,0,1,"Blade Slash, towards w (from impact_blade_slash/steel)"
+effect,w_impact_blade_slash_nw,pack36_fx/w_impact_blade_slash_nw.png,2,3,13,62,0,1,"Blade Slash, towards nw (from impact_blade_slash/steel)"
+effect,w_impact_block,pack36_fx/w_impact_block.png,2,2,13,62,1,1,Block (from impact_block/sapphire)
+effect,w_impact_blood_drain,pack36_fx/w_impact_blood_drain.png,2,2,14,62,0,0,Blood Drain (from impact_blood_drain/blood)
+effect,w_impact_blood_splatter,pack36_fx/w_impact_blood_splatter.png,3,3,14,62,1,1,Blood Splatter (from impact_blood_splatter/blood)
+effect,w_impact_blunt_hit,pack36_fx/w_impact_blunt_hit.png,3,3,13,62,1,1,Blunt Hit (from impact_blunt_hit/steel)
+effect,w_impact_chain_lightning,pack36_fx/w_impact_chain_lightning.png,5,5,17,62,2,2,Chain Lightning (from impact_chain_lightning/thunder)
+effect,w_impact_cleave_n,pack36_fx/w_impact_cleave_n.png,3,2,13,62,1,0,"Cleave, towards n (from impact_cleave/steel)"
+effect,w_impact_cleave_ne,pack36_fx/w_impact_cleave_ne.png,3,3,13,62,1,1,"Cleave, towards ne (from impact_cleave/steel)"
+effect,w_impact_cleave_e,pack36_fx/w_impact_cleave_e.png,2,3,13,62,1,1,"Cleave, towards e (from impact_cleave/steel)"
+effect,w_impact_cleave_se,pack36_fx/w_impact_cleave_se.png,3,3,13,62,1,1,"Cleave, towards se (from impact_cleave/steel)"
+effect,w_impact_cleave_s,pack36_fx/w_impact_cleave_s.png,3,2,13,62,1,1,"Cleave, towards s (from impact_cleave/steel)"
+effect,w_impact_cleave_sw,pack36_fx/w_impact_cleave_sw.png,2,3,13,62,0,1,"Cleave, towards sw (from impact_cleave/steel)"
+effect,w_impact_cleave_w,pack36_fx/w_impact_cleave_w.png,2,3,13,62,0,1,"Cleave, towards w (from impact_cleave/steel)"
+effect,w_impact_cleave_nw,pack36_fx/w_impact_cleave_nw.png,3,3,13,62,1,1,"Cleave, towards nw (from impact_cleave/steel)"
+effect,w_impact_corpse_explosion,pack36_fx/w_impact_corpse_explosion.png,3,3,14,62,1,1,Corpse Explosion (from impact_corpse_explosion/blood)
+effect,w_impact_critical_hit,pack36_fx/w_impact_critical_hit.png,3,3,14,62,1,1,Critical Strike (from impact_critical_hit/gold)
+effect,w_impact_cross_slash,pack36_fx/w_impact_cross_slash.png,2,3,13,62,0,1,Cross Slash (from impact_cross_slash/steel)
+effect,w_impact_death_strike,pack36_fx/w_impact_death_strike.png,3,3,14,62,1,1,Death Strike (from impact_death_strike/necrotic)
+effect,w_impact_divine_caldera,pack36_fx/w_impact_divine_caldera.png,6,5,23,62,2,2,Divine Caldera (from impact_divine_caldera/holy)
+effect,w_impact_divine_judgment,pack36_fx/w_impact_divine_judgment.png,6,5,17,62,2,2,Divine Judgment (from impact_divine_judgment/radiant)
+effect,w_impact_dragon_breath_n,pack36_fx/w_impact_dragon_breath_n.png,2,3,17,62,0,0,"Dragon Breath, towards n (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_ne,pack36_fx/w_impact_dragon_breath_ne.png,2,3,17,62,1,0,"Dragon Breath, towards ne (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_e,pack36_fx/w_impact_dragon_breath_e.png,3,3,17,62,2,1,"Dragon Breath, towards e (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_se,pack36_fx/w_impact_dragon_breath_se.png,3,3,17,62,2,2,"Dragon Breath, towards se (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_s,pack36_fx/w_impact_dragon_breath_s.png,3,3,17,62,1,2,"Dragon Breath, towards s (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_sw,pack36_fx/w_impact_dragon_breath_sw.png,3,3,17,62,0,2,"Dragon Breath, towards sw (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_w,pack36_fx/w_impact_dragon_breath_w.png,3,3,17,62,0,1,"Dragon Breath, towards w (from impact_dragon_breath/fire)"
+effect,w_impact_dragon_breath_nw,pack36_fx/w_impact_dragon_breath_nw.png,3,3,17,62,0,0,"Dragon Breath, towards nw (from impact_dragon_breath/fire)"
+effect,w_impact_earthquake,pack36_fx/w_impact_earthquake.png,4,4,19,62,1,2,Earthquake (from impact_earthquake/earth)
+effect,w_impact_elemental_convergence,pack36_fx/w_impact_elemental_convergence.png,4,5,17,62,1,2,Elemental Convergence (from impact_elemental_convergence/arcane)
+effect,w_impact_energy_strike,pack36_fx/w_impact_energy_strike.png,3,3,14,62,1,1,Energy Strike (from impact_energy_strike/storm)
+effect,w_impact_energy_wave_n,pack36_fx/w_impact_energy_wave_n.png,4,4,15,62,1,0,"Energy Wave, towards n (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_ne,pack36_fx/w_impact_energy_wave_ne.png,4,3,14,62,2,0,"Energy Wave, towards ne (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_e,pack36_fx/w_impact_energy_wave_e.png,3,4,15,62,2,1,"Energy Wave, towards e (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_se,pack36_fx/w_impact_energy_wave_se.png,4,3,14,62,2,2,"Energy Wave, towards se (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_s,pack36_fx/w_impact_energy_wave_s.png,4,3,14,62,1,2,"Energy Wave, towards s (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_sw,pack36_fx/w_impact_energy_wave_sw.png,4,4,14,62,0,2,"Energy Wave, towards sw (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_w,pack36_fx/w_impact_energy_wave_w.png,4,5,14,62,0,1,"Energy Wave, towards w (from impact_energy_wave/storm)"
+effect,w_impact_energy_wave_nw,pack36_fx/w_impact_energy_wave_nw.png,4,4,14,62,0,0,"Energy Wave, towards nw (from impact_energy_wave/storm)"
+effect,w_impact_eternal_winter,pack36_fx/w_impact_eternal_winter.png,6,7,25,62,2,2,Eternal Winter (from impact_eternal_winter/frost)
+effect,w_impact_execute,pack36_fx/w_impact_execute.png,3,3,13,62,1,1,Executioner's Strike (from impact_execute/blood)
+effect,w_impact_explosive_arrow,pack36_fx/w_impact_explosive_arrow.png,3,3,14,62,1,1,Explosive Arrow (from impact_explosive_arrow/fire)
+effect,w_impact_fire_explosion,pack36_fx/w_impact_fire_explosion.png,4,3,16,62,1,1,Fireball Explosion (from impact_fire_explosion/fire)
+effect,w_impact_fire_pillar,pack36_fx/w_impact_fire_pillar.png,3,3,18,62,1,1,Pillar of Fire (from impact_fire_pillar/fire)
+effect,w_impact_fire_wave_n,pack36_fx/w_impact_fire_wave_n.png,4,3,16,62,1,0,"Fire Wave, towards n (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_ne,pack36_fx/w_impact_fire_wave_ne.png,3,3,16,62,2,0,"Fire Wave, towards ne (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_e,pack36_fx/w_impact_fire_wave_e.png,3,3,16,62,2,1,"Fire Wave, towards e (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_se,pack36_fx/w_impact_fire_wave_se.png,3,3,16,62,2,2,"Fire Wave, towards se (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_s,pack36_fx/w_impact_fire_wave_s.png,4,3,16,62,1,2,"Fire Wave, towards s (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_sw,pack36_fx/w_impact_fire_wave_sw.png,3,3,16,62,0,2,"Fire Wave, towards sw (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_w,pack36_fx/w_impact_fire_wave_w.png,4,3,16,62,0,1,"Fire Wave, towards w (from impact_fire_wave/fire)"
+effect,w_impact_fire_wave_nw,pack36_fx/w_impact_fire_wave_nw.png,3,3,16,62,0,0,"Fire Wave, towards nw (from impact_fire_wave/fire)"
+effect,w_impact_firestorm,pack36_fx/w_impact_firestorm.png,6,5,23,62,2,2,Firestorm (from impact_firestorm/fire)
+effect,w_impact_flame_burst,pack36_fx/w_impact_flame_burst.png,5,5,16,62,2,2,Flame Burst (from impact_flame_burst/fire)
+effect,w_impact_flame_strike,pack36_fx/w_impact_flame_strike.png,3,3,15,62,1,1,Flame Strike (from impact_flame_strike/fire)
+effect,w_impact_frost_nova,pack36_fx/w_impact_frost_nova.png,5,5,17,62,2,2,Frost Nova (from impact_frost_nova/crystal)
+effect,w_impact_gale_cut_n,pack36_fx/w_impact_gale_cut_n.png,2,3,9,62,0,1,"Gale Cut, towards n (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_ne,pack36_fx/w_impact_gale_cut_ne.png,3,3,9,62,1,1,"Gale Cut, towards ne (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_e,pack36_fx/w_impact_gale_cut_e.png,3,3,9,62,1,1,"Gale Cut, towards e (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_se,pack36_fx/w_impact_gale_cut_se.png,3,3,9,62,1,1,"Gale Cut, towards se (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_s,pack36_fx/w_impact_gale_cut_s.png,3,3,9,62,1,1,"Gale Cut, towards s (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_sw,pack36_fx/w_impact_gale_cut_sw.png,2,3,9,62,0,1,"Gale Cut, towards sw (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_w,pack36_fx/w_impact_gale_cut_w.png,3,3,9,62,1,1,"Gale Cut, towards w (from impact_gale_cut/wind)"
+effect,w_impact_gale_cut_nw,pack36_fx/w_impact_gale_cut_nw.png,3,3,9,62,1,1,"Gale Cut, towards nw (from impact_gale_cut/wind)"
+effect,w_impact_ground_slam,pack36_fx/w_impact_ground_slam.png,5,5,16,62,2,2,Groundshaker (from impact_ground_slam/magma)
+effect,w_impact_hammer_hit_n,pack36_fx/w_impact_hammer_hit_n.png,2,2,14,62,0,0,"Hammer Hit, towards n (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_ne,pack36_fx/w_impact_hammer_hit_ne.png,3,2,14,62,1,0,"Hammer Hit, towards ne (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_e,pack36_fx/w_impact_hammer_hit_e.png,3,3,14,62,1,1,"Hammer Hit, towards e (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_se,pack36_fx/w_impact_hammer_hit_se.png,3,3,14,62,1,1,"Hammer Hit, towards se (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_s,pack36_fx/w_impact_hammer_hit_s.png,2,3,14,62,0,1,"Hammer Hit, towards s (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_sw,pack36_fx/w_impact_hammer_hit_sw.png,2,3,14,62,0,1,"Hammer Hit, towards sw (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_w,pack36_fx/w_impact_hammer_hit_w.png,2,3,14,62,0,1,"Hammer Hit, towards w (from impact_hammer_hit/thunder)"
+effect,w_impact_hammer_hit_nw,pack36_fx/w_impact_hammer_hit_nw.png,2,2,14,62,0,0,"Hammer Hit, towards nw (from impact_hammer_hit/thunder)"
+effect,w_impact_healing_burst,pack36_fx/w_impact_healing_burst.png,4,3,14,62,1,1,Healing Burst (from impact_healing_burst/nature)
+effect,w_impact_heavy_smash,pack36_fx/w_impact_heavy_smash.png,3,3,13,62,1,1,Heavy Smash (from impact_heavy_smash/steel)
+effect,w_impact_hells_core,pack36_fx/w_impact_hells_core.png,6,5,22,62,2,2,Hell's Core (from impact_hells_core/hellfire)
+effect,w_impact_holy_heal,pack36_fx/w_impact_holy_heal.png,4,3,15,62,1,1,Holy Heal (from impact_holy_heal/holy)
+effect,w_impact_holy_nova,pack36_fx/w_impact_holy_nova.png,5,5,16,62,2,2,Holy Nova (from impact_holy_nova/frost)
+effect,w_impact_holy_smite,pack36_fx/w_impact_holy_smite.png,4,4,15,62,1,1,Holy Smite (from impact_holy_smite/holy)
+effect,w_impact_holy_strike,pack36_fx/w_impact_holy_strike.png,3,3,14,62,1,1,Holy Strike (from impact_holy_strike/holy)
+effect,w_impact_ice_shatter,pack36_fx/w_impact_ice_shatter.png,4,4,14,62,1,1,Ice Shatter (from impact_ice_shatter/frost)
+effect,w_impact_ice_strike,pack36_fx/w_impact_ice_strike.png,3,3,15,62,1,1,Ice Strike (from impact_ice_strike/frost)
+effect,w_impact_ice_wave_n,pack36_fx/w_impact_ice_wave_n.png,4,4,15,62,1,0,"Ice Wave, towards n (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_ne,pack36_fx/w_impact_ice_wave_ne.png,3,4,16,62,2,0,"Ice Wave, towards ne (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_e,pack36_fx/w_impact_ice_wave_e.png,3,3,15,62,2,1,"Ice Wave, towards e (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_se,pack36_fx/w_impact_ice_wave_se.png,3,3,16,62,2,2,"Ice Wave, towards se (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_s,pack36_fx/w_impact_ice_wave_s.png,3,3,15,62,1,2,"Ice Wave, towards s (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_sw,pack36_fx/w_impact_ice_wave_sw.png,4,3,16,62,0,2,"Ice Wave, towards sw (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_w,pack36_fx/w_impact_ice_wave_w.png,4,3,15,62,0,1,"Ice Wave, towards w (from impact_ice_wave/frost)"
+effect,w_impact_ice_wave_nw,pack36_fx/w_impact_ice_wave_nw.png,4,3,16,62,0,0,"Ice Wave, towards nw (from impact_ice_wave/frost)"
+effect,w_impact_leap_slam,pack36_fx/w_impact_leap_slam.png,5,5,16,62,2,2,Leap Slam (from impact_leap_slam/earth)
+effect,w_impact_lightning_strike,pack36_fx/w_impact_lightning_strike.png,5,4,15,62,1,1,Lightning Strike (from impact_lightning_strike/storm)
+effect,w_impact_mass_heal,pack36_fx/w_impact_mass_heal.png,5,5,16,62,2,2,Mass Heal (from impact_mass_heal/nature)
+effect,w_impact_meteor,pack36_fx/w_impact_meteor.png,6,6,21,62,2,2,Meteor Strike (from impact_meteor/magma)
+effect,w_impact_mushroom_cloud,pack36_fx/w_impact_mushroom_cloud.png,6,5,24,62,2,2,Mushroom Cloud (from impact_mushroom_cloud/solar)
+effect,w_impact_parry,pack36_fx/w_impact_parry.png,3,3,15,62,1,1,Parry (from impact_parry/gold)
+effect,w_impact_petal_fan,pack36_fx/w_impact_petal_fan.png,3,3,13,62,1,1,Petal Fan (from impact_petal_fan/sakura)
+effect,w_impact_physical_strike,pack36_fx/w_impact_physical_strike.png,3,3,13,62,1,1,Physical Strike (from impact_physical_strike/steel)
+effect,w_impact_pickaxe_hit_n,pack36_fx/w_impact_pickaxe_hit_n.png,2,2,15,62,0,0,"Pickaxe Hit, towards n (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_ne,pack36_fx/w_impact_pickaxe_hit_ne.png,3,2,15,62,1,0,"Pickaxe Hit, towards ne (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_e,pack36_fx/w_impact_pickaxe_hit_e.png,3,3,15,62,1,1,"Pickaxe Hit, towards e (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_se,pack36_fx/w_impact_pickaxe_hit_se.png,3,2,15,62,1,1,"Pickaxe Hit, towards se (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_s,pack36_fx/w_impact_pickaxe_hit_s.png,3,3,15,62,1,1,"Pickaxe Hit, towards s (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_sw,pack36_fx/w_impact_pickaxe_hit_sw.png,2,3,15,62,0,1,"Pickaxe Hit, towards sw (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_w,pack36_fx/w_impact_pickaxe_hit_w.png,2,3,15,62,0,1,"Pickaxe Hit, towards w (from impact_pickaxe_hit/earth)"
+effect,w_impact_pickaxe_hit_nw,pack36_fx/w_impact_pickaxe_hit_nw.png,2,2,15,62,0,0,"Pickaxe Hit, towards nw (from impact_pickaxe_hit/earth)"
+effect,w_impact_punch,pack36_fx/w_impact_punch.png,3,3,14,62,1,1,Brawler Hit (from impact_punch/steel)
+effect,w_impact_purify,pack36_fx/w_impact_purify.png,4,3,14,62,1,1,Purify (from impact_purify/radiant)
+effect,w_impact_rage_of_skies,pack36_fx/w_impact_rage_of_skies.png,6,6,24,62,2,2,Rage of the Skies (from impact_rage_of_skies/storm)
+effect,w_impact_rampage,pack36_fx/w_impact_rampage.png,3,3,12,62,1,1,Rampage (from impact_rampage/blood)
+effect,w_impact_rend,pack36_fx/w_impact_rend.png,2,2,11,62,0,0,Rend (from impact_rend/blood)
+effect,w_impact_shadow_burst,pack36_fx/w_impact_shadow_burst.png,3,3,14,62,1,1,Shadow Burst (from impact_shadow_burst/shadow)
+effect,w_impact_shadow_claws_n,pack36_fx/w_impact_shadow_claws_n.png,2,2,13,62,0,0,"Shadow Claws, towards n (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_ne,pack36_fx/w_impact_shadow_claws_ne.png,2,1,12,62,0,0,"Shadow Claws, towards ne (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_e,pack36_fx/w_impact_shadow_claws_e.png,2,1,13,62,0,0,"Shadow Claws, towards e (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_se,pack36_fx/w_impact_shadow_claws_se.png,2,3,13,62,0,1,"Shadow Claws, towards se (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_s,pack36_fx/w_impact_shadow_claws_s.png,2,3,13,62,0,1,"Shadow Claws, towards s (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_sw,pack36_fx/w_impact_shadow_claws_sw.png,2,2,12,62,0,0,"Shadow Claws, towards sw (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_w,pack36_fx/w_impact_shadow_claws_w.png,2,2,13,62,0,0,"Shadow Claws, towards w (from impact_shadow_claws/blood)"
+effect,w_impact_shadow_claws_nw,pack36_fx/w_impact_shadow_claws_nw.png,2,2,12,62,0,0,"Shadow Claws, towards nw (from impact_shadow_claws/blood)"
+effect,w_impact_shield_bash_n,pack36_fx/w_impact_shield_bash_n.png,2,2,14,62,0,0,"Shield Bash, towards n (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_ne,pack36_fx/w_impact_shield_bash_ne.png,3,2,14,62,1,0,"Shield Bash, towards ne (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_e,pack36_fx/w_impact_shield_bash_e.png,3,3,14,62,1,1,"Shield Bash, towards e (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_se,pack36_fx/w_impact_shield_bash_se.png,3,3,14,62,1,1,"Shield Bash, towards se (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_s,pack36_fx/w_impact_shield_bash_s.png,2,3,14,62,0,1,"Shield Bash, towards s (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_sw,pack36_fx/w_impact_shield_bash_sw.png,2,3,14,62,0,1,"Shield Bash, towards sw (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_w,pack36_fx/w_impact_shield_bash_w.png,2,2,14,62,0,0,"Shield Bash, towards w (from impact_shield_bash/steel)"
+effect,w_impact_shield_bash_nw,pack36_fx/w_impact_shield_bash_nw.png,2,2,14,62,0,0,"Shield Bash, towards nw (from impact_shield_bash/steel)"
+effect,w_impact_shockwave,pack36_fx/w_impact_shockwave.png,5,5,15,62,2,2,Shockwave (from impact_shockwave/wind)
+effect,w_impact_sonic_blast_n,pack36_fx/w_impact_sonic_blast_n.png,3,3,17,62,1,0,"Sonic Blast, towards n (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_ne,pack36_fx/w_impact_sonic_blast_ne.png,3,2,17,62,1,0,"Sonic Blast, towards ne (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_e,pack36_fx/w_impact_sonic_blast_e.png,2,3,17,62,1,1,"Sonic Blast, towards e (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_se,pack36_fx/w_impact_sonic_blast_se.png,2,3,17,62,1,2,"Sonic Blast, towards se (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_s,pack36_fx/w_impact_sonic_blast_s.png,3,3,17,62,1,2,"Sonic Blast, towards s (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_sw,pack36_fx/w_impact_sonic_blast_sw.png,3,3,17,62,0,2,"Sonic Blast, towards sw (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_w,pack36_fx/w_impact_sonic_blast_w.png,3,3,17,62,0,1,"Sonic Blast, towards w (from impact_sonic_blast/lavender)"
+effect,w_impact_sonic_blast_nw,pack36_fx/w_impact_sonic_blast_nw.png,3,2,17,62,0,0,"Sonic Blast, towards nw (from impact_sonic_blast/lavender)"
+effect,w_impact_spark_hit,pack36_fx/w_impact_spark_hit.png,3,2,9,50,1,0,Spark Hit (from impact_spark_hit/thunder)
+effect,w_impact_spear_thrust_n,pack36_fx/w_impact_spear_thrust_n.png,2,3,14,62,0,1,"Piercing Thrust, towards n (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_ne,pack36_fx/w_impact_spear_thrust_ne.png,3,3,13,62,1,1,"Piercing Thrust, towards ne (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_e,pack36_fx/w_impact_spear_thrust_e.png,4,2,14,62,1,0,"Piercing Thrust, towards e (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_se,pack36_fx/w_impact_spear_thrust_se.png,3,3,14,62,1,1,"Piercing Thrust, towards se (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_s,pack36_fx/w_impact_spear_thrust_s.png,2,3,14,62,0,1,"Piercing Thrust, towards s (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_sw,pack36_fx/w_impact_spear_thrust_sw.png,3,3,14,62,1,1,"Piercing Thrust, towards sw (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_w,pack36_fx/w_impact_spear_thrust_w.png,3,2,14,62,1,0,"Piercing Thrust, towards w (from impact_spear_thrust/steel)"
+effect,w_impact_spear_thrust_nw,pack36_fx/w_impact_spear_thrust_nw.png,3,3,14,62,1,1,"Piercing Thrust, towards nw (from impact_spear_thrust/steel)"
+effect,w_impact_stone_spikes,pack36_fx/w_impact_stone_spikes.png,3,3,14,62,1,1,Stone Spikes (from impact_stone_spikes/earth)
+effect,w_impact_sunder,pack36_fx/w_impact_sunder.png,3,3,14,62,1,1,Sunder Armor (from impact_sunder/steel)
+effect,w_impact_terra_strike,pack36_fx/w_impact_terra_strike.png,3,3,14,62,1,1,Terra Strike (from impact_terra_strike/earth)
+effect,w_impact_terra_wave_n,pack36_fx/w_impact_terra_wave_n.png,3,3,16,62,1,0,"Terra Wave, towards n (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_ne,pack36_fx/w_impact_terra_wave_ne.png,3,3,16,62,2,0,"Terra Wave, towards ne (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_e,pack36_fx/w_impact_terra_wave_e.png,3,3,16,62,2,1,"Terra Wave, towards e (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_se,pack36_fx/w_impact_terra_wave_se.png,3,3,16,62,2,2,"Terra Wave, towards se (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_s,pack36_fx/w_impact_terra_wave_s.png,3,3,16,62,1,2,"Terra Wave, towards s (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_sw,pack36_fx/w_impact_terra_wave_sw.png,3,3,16,62,0,2,"Terra Wave, towards sw (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_w,pack36_fx/w_impact_terra_wave_w.png,3,3,16,62,0,1,"Terra Wave, towards w (from impact_terra_wave/earth)"
+effect,w_impact_terra_wave_nw,pack36_fx/w_impact_terra_wave_nw.png,3,3,16,62,0,0,"Terra Wave, towards nw (from impact_terra_wave/earth)"
+effect,w_impact_tidal_splash,pack36_fx/w_impact_tidal_splash.png,3,3,14,62,1,1,Tidal Splash (from impact_tidal_splash/water)
+effect,w_impact_tornado,pack36_fx/w_impact_tornado.png,4,3,19,62,1,1,Tornado (from impact_tornado/wind)
+effect,w_impact_ultimate_death_strike,pack36_fx/w_impact_ultimate_death_strike.png,5,5,17,62,2,2,Ultimate Death Strike (from impact_ultimate_death_strike/necrotic)
+effect,w_impact_ultimate_energy_strike,pack36_fx/w_impact_ultimate_energy_strike.png,5,5,17,62,2,2,Ultimate Energy Strike (from impact_ultimate_energy_strike/storm)
+effect,w_impact_ultimate_explosion,pack36_fx/w_impact_ultimate_explosion.png,5,5,24,62,2,2,Ultimate Explosion (from impact_ultimate_explosion/fire)
+effect,w_impact_ultimate_flame_strike,pack36_fx/w_impact_ultimate_flame_strike.png,6,5,16,62,2,2,Ultimate Flame Strike (from impact_ultimate_flame_strike/fire)
+effect,w_impact_ultimate_holy_strike,pack36_fx/w_impact_ultimate_holy_strike.png,5,5,17,62,2,2,Ultimate Holy Strike (from impact_ultimate_holy_strike/holy)
+effect,w_impact_ultimate_ice_strike,pack36_fx/w_impact_ultimate_ice_strike.png,5,5,16,62,2,2,Ultimate Ice Strike (from impact_ultimate_ice_strike/crystal)
+effect,w_impact_ultimate_terra_strike,pack36_fx/w_impact_ultimate_terra_strike.png,5,5,16,62,2,2,Ultimate Terra Strike (from impact_ultimate_terra_strike/nature)
+effect,w_impact_venom_flurry,pack36_fx/w_impact_venom_flurry.png,2,3,12,62,0,1,Venom Flurry (from impact_venom_flurry/necrotic)
+effect,w_impact_venom_splash,pack36_fx/w_impact_venom_splash.png,4,3,15,62,1,1,Venom Splash (from impact_venom_splash/poison)
+effect,w_impact_void_cataclysm,pack36_fx/w_impact_void_cataclysm.png,6,5,24,62,2,2,Void Cataclysm (from impact_void_cataclysm/abyss)
+effect,w_impact_void_implosion,pack36_fx/w_impact_void_implosion.png,3,3,14,62,1,1,Void Implosion (from impact_void_implosion/void)
+effect,w_impact_war_stomp,pack36_fx/w_impact_war_stomp.png,3,3,13,62,1,1,War Stomp (from impact_war_stomp/earth)
+effect,w_impact_whirlwind,pack36_fx/w_impact_whirlwind.png,5,5,15,62,2,2,Whirlwind (from impact_whirlwind/blood)
+effect,w_impact_wrath_of_nature,pack36_fx/w_impact_wrath_of_nature.png,5,5,23,62,2,2,Wrath of Nature (from impact_wrath_of_nature/nature)

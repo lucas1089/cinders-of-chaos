@@ -1,0 +1,347 @@
+kind,name,file,w,h,phases,ms,dx,dy,note
+effect,tile_cinder_burst,pack36_fx/tile_cinder_burst.png,3,3,11,83,1,1,Cinder Burst (from cinder_burst)
+effect,tile_flame_wave_n,pack36_fx/tile_flame_wave_n.png,3,2,11,83,1,1,"Flame Wave, towards n (from flame_wave)"
+effect,tile_flame_wave_ne,pack36_fx/tile_flame_wave_ne.png,3,3,11,83,1,1,"Flame Wave, towards ne (from flame_wave)"
+effect,tile_flame_wave_e,pack36_fx/tile_flame_wave_e.png,2,3,11,83,0,1,"Flame Wave, towards e (from flame_wave)"
+effect,tile_flame_wave_se,pack36_fx/tile_flame_wave_se.png,3,3,11,83,1,1,"Flame Wave, towards se (from flame_wave)"
+effect,tile_flame_wave_s,pack36_fx/tile_flame_wave_s.png,3,2,11,83,1,0,"Flame Wave, towards s (from flame_wave)"
+effect,tile_flame_wave_sw,pack36_fx/tile_flame_wave_sw.png,3,3,11,83,1,1,"Flame Wave, towards sw (from flame_wave)"
+effect,tile_flame_wave_w,pack36_fx/tile_flame_wave_w.png,3,3,11,83,1,1,"Flame Wave, towards w (from flame_wave)"
+effect,tile_flame_wave_nw,pack36_fx/tile_flame_wave_nw.png,3,3,11,83,1,1,"Flame Wave, towards nw (from flame_wave)"
+effect,tile_magma_geyser,pack36_fx/tile_magma_geyser.png,3,3,12,83,1,1,Magma Geyser (from magma_geyser)
+effect,tile_ember_rain,pack36_fx/tile_ember_rain.png,3,4,11,83,1,1,Ember Rain (from ember_rain)
+effect,tile_fire_pillar,pack36_fx/tile_fire_pillar.png,3,3,12,83,1,1,Fire Pillar (from fire_pillar)
+effect,tile_scorch_glyph,pack36_fx/tile_scorch_glyph.png,3,3,10,83,1,1,Scorch Glyph (from scorch_glyph)
+effect,tile_inferno_slash_n,pack36_fx/tile_inferno_slash_n.png,2,3,10,83,0,1,"Inferno Slash, towards n (from inferno_slash)"
+effect,tile_inferno_slash_ne,pack36_fx/tile_inferno_slash_ne.png,2,3,10,83,0,1,"Inferno Slash, towards ne (from inferno_slash)"
+effect,tile_inferno_slash_e,pack36_fx/tile_inferno_slash_e.png,1,3,10,83,0,1,"Inferno Slash, towards e (from inferno_slash)"
+effect,tile_inferno_slash_se,pack36_fx/tile_inferno_slash_se.png,2,3,10,83,0,1,"Inferno Slash, towards se (from inferno_slash)"
+effect,tile_inferno_slash_s,pack36_fx/tile_inferno_slash_s.png,2,2,10,83,0,1,"Inferno Slash, towards s (from inferno_slash)"
+effect,tile_inferno_slash_sw,pack36_fx/tile_inferno_slash_sw.png,3,3,10,83,1,1,"Inferno Slash, towards sw (from inferno_slash)"
+effect,tile_inferno_slash_w,pack36_fx/tile_inferno_slash_w.png,2,3,10,83,0,1,"Inferno Slash, towards w (from inferno_slash)"
+effect,tile_inferno_slash_nw,pack36_fx/tile_inferno_slash_nw.png,3,3,10,83,1,1,"Inferno Slash, towards nw (from inferno_slash)"
+effect,tile_blast_ring,pack36_fx/tile_blast_ring.png,3,3,11,83,1,1,Blast Ring (from blast_ring)
+effect,tile_arc_strike,pack36_fx/tile_arc_strike.png,3,3,10,83,1,1,Arc Strike (from arc_strike)
+effect,tile_spark_burst,pack36_fx/tile_spark_burst.png,3,3,10,83,1,1,Spark Burst (from spark_burst)
+effect,tile_volt_beam_n,pack36_fx/tile_volt_beam_n.png,1,2,9,83,0,0,"Volt Beam, towards n (from volt_beam)"
+effect,tile_volt_beam_ne,pack36_fx/tile_volt_beam_ne.png,2,2,9,83,0,0,"Volt Beam, towards ne (from volt_beam)"
+effect,tile_volt_beam_e,pack36_fx/tile_volt_beam_e.png,2,1,9,83,0,0,"Volt Beam, towards e (from volt_beam)"
+effect,tile_volt_beam_se,pack36_fx/tile_volt_beam_se.png,2,2,9,83,0,0,"Volt Beam, towards se (from volt_beam)"
+effect,tile_volt_beam_s,pack36_fx/tile_volt_beam_s.png,1,2,9,83,0,0,"Volt Beam, towards s (from volt_beam)"
+effect,tile_volt_beam_sw,pack36_fx/tile_volt_beam_sw.png,2,2,9,83,0,0,"Volt Beam, towards sw (from volt_beam)"
+effect,tile_volt_beam_w,pack36_fx/tile_volt_beam_w.png,2,2,9,83,0,0,"Volt Beam, towards w (from volt_beam)"
+effect,tile_volt_beam_nw,pack36_fx/tile_volt_beam_nw.png,2,2,9,83,0,0,"Volt Beam, towards nw (from volt_beam)"
+effect,tile_static_field,pack36_fx/tile_static_field.png,3,3,11,83,1,1,Static Field (from static_field)
+effect,tile_plasma_pop,pack36_fx/tile_plasma_pop.png,3,3,11,83,1,1,Plasma Pop (from plasma_pop)
+effect,tile_thunder_crash,pack36_fx/tile_thunder_crash.png,3,3,12,83,1,1,Thunder Crash (from thunder_crash)
+effect,tile_chain_arc_n,pack36_fx/tile_chain_arc_n.png,2,3,9,83,0,1,"Chain Arc, towards n (from chain_arc)"
+effect,tile_chain_arc_ne,pack36_fx/tile_chain_arc_ne.png,2,2,9,83,0,0,"Chain Arc, towards ne (from chain_arc)"
+effect,tile_chain_arc_e,pack36_fx/tile_chain_arc_e.png,3,2,9,83,1,0,"Chain Arc, towards e (from chain_arc)"
+effect,tile_chain_arc_se,pack36_fx/tile_chain_arc_se.png,2,2,9,83,0,0,"Chain Arc, towards se (from chain_arc)"
+effect,tile_chain_arc_s,pack36_fx/tile_chain_arc_s.png,2,3,9,83,0,1,"Chain Arc, towards s (from chain_arc)"
+effect,tile_chain_arc_sw,pack36_fx/tile_chain_arc_sw.png,2,2,9,83,0,0,"Chain Arc, towards sw (from chain_arc)"
+effect,tile_chain_arc_w,pack36_fx/tile_chain_arc_w.png,3,2,9,83,1,0,"Chain Arc, towards w (from chain_arc)"
+effect,tile_chain_arc_nw,pack36_fx/tile_chain_arc_nw.png,2,2,9,83,0,0,"Chain Arc, towards nw (from chain_arc)"
+effect,tile_ion_vortex,pack36_fx/tile_ion_vortex.png,3,3,11,83,1,1,Ion Vortex (from ion_vortex)
+effect,tile_tesla_spikes,pack36_fx/tile_tesla_spikes.png,3,3,11,83,1,1,Tesla Spikes (from tesla_spikes)
+effect,tile_frost_shard_burst,pack36_fx/tile_frost_shard_burst.png,3,3,11,83,1,1,Frost Shard Burst (from frost_shard_burst)
+effect,tile_ice_spike,pack36_fx/tile_ice_spike.png,3,3,11,83,1,1,Ice Spike (from ice_spike)
+effect,tile_blizzard_gust,pack36_fx/tile_blizzard_gust.png,2,3,10,83,0,1,Blizzard Gust (from blizzard_gust)
+effect,tile_frost_ring,pack36_fx/tile_frost_ring.png,3,3,11,83,1,1,Frost Ring (from frost_ring)
+effect,tile_hail_strike,pack36_fx/tile_hail_strike.png,3,3,11,83,1,1,Hail Strike (from hail_strike)
+effect,tile_glacial_wave_n,pack36_fx/tile_glacial_wave_n.png,3,3,11,83,1,1,"Glacial Wave, towards n (from glacial_wave)"
+effect,tile_glacial_wave_ne,pack36_fx/tile_glacial_wave_ne.png,3,3,11,83,1,1,"Glacial Wave, towards ne (from glacial_wave)"
+effect,tile_glacial_wave_e,pack36_fx/tile_glacial_wave_e.png,3,3,11,83,1,1,"Glacial Wave, towards e (from glacial_wave)"
+effect,tile_glacial_wave_se,pack36_fx/tile_glacial_wave_se.png,3,3,11,83,1,1,"Glacial Wave, towards se (from glacial_wave)"
+effect,tile_glacial_wave_s,pack36_fx/tile_glacial_wave_s.png,3,3,11,83,1,1,"Glacial Wave, towards s (from glacial_wave)"
+effect,tile_glacial_wave_sw,pack36_fx/tile_glacial_wave_sw.png,3,3,11,83,1,1,"Glacial Wave, towards sw (from glacial_wave)"
+effect,tile_glacial_wave_w,pack36_fx/tile_glacial_wave_w.png,3,3,11,83,1,1,"Glacial Wave, towards w (from glacial_wave)"
+effect,tile_glacial_wave_nw,pack36_fx/tile_glacial_wave_nw.png,3,3,11,83,1,1,"Glacial Wave, towards nw (from glacial_wave)"
+effect,tile_ice_tomb_shatter,pack36_fx/tile_ice_tomb_shatter.png,3,3,12,83,1,1,Ice Tomb Shatter (from ice_tomb_shatter)
+effect,tile_stone_spikes,pack36_fx/tile_stone_spikes.png,3,3,11,83,1,1,Stone Spikes (from stone_spikes)
+effect,tile_boulder_drop,pack36_fx/tile_boulder_drop.png,4,4,11,83,1,1,Boulder Drop (from boulder_drop)
+effect,tile_quake_crack,pack36_fx/tile_quake_crack.png,3,3,11,83,1,1,Quake Crack (from quake_crack)
+effect,tile_sand_burst,pack36_fx/tile_sand_burst.png,3,3,11,83,1,1,Sand Burst (from sand_burst)
+effect,tile_rock_shrapnel,pack36_fx/tile_rock_shrapnel.png,3,3,10,83,1,1,Rock Shrapnel (from rock_shrapnel)
+effect,tile_earth_wave_n,pack36_fx/tile_earth_wave_n.png,3,3,11,83,1,1,"Earth Wave, towards n (from earth_wave)"
+effect,tile_earth_wave_ne,pack36_fx/tile_earth_wave_ne.png,3,3,11,83,1,1,"Earth Wave, towards ne (from earth_wave)"
+effect,tile_earth_wave_e,pack36_fx/tile_earth_wave_e.png,2,3,11,83,0,1,"Earth Wave, towards e (from earth_wave)"
+effect,tile_earth_wave_se,pack36_fx/tile_earth_wave_se.png,3,3,11,83,1,1,"Earth Wave, towards se (from earth_wave)"
+effect,tile_earth_wave_s,pack36_fx/tile_earth_wave_s.png,3,3,11,83,1,1,"Earth Wave, towards s (from earth_wave)"
+effect,tile_earth_wave_sw,pack36_fx/tile_earth_wave_sw.png,3,3,11,83,1,1,"Earth Wave, towards sw (from earth_wave)"
+effect,tile_earth_wave_w,pack36_fx/tile_earth_wave_w.png,3,3,11,83,1,1,"Earth Wave, towards w (from earth_wave)"
+effect,tile_earth_wave_nw,pack36_fx/tile_earth_wave_nw.png,3,3,10,83,1,1,"Earth Wave, towards nw (from earth_wave)"
+effect,tile_mud_splash,pack36_fx/tile_mud_splash.png,3,3,10,83,1,1,Mud Splash (from mud_splash)
+effect,tile_venom_spikes,pack36_fx/tile_venom_spikes.png,3,3,11,83,1,1,Venom Spikes (from venom_spikes)
+effect,tile_toxic_puff,pack36_fx/tile_toxic_puff.png,3,2,12,83,1,0,Toxic Puff (from toxic_puff)
+effect,tile_acid_splash,pack36_fx/tile_acid_splash.png,3,3,11,83,1,1,Acid Splash (from acid_splash)
+effect,tile_spore_burst,pack36_fx/tile_spore_burst.png,3,3,11,83,1,1,Spore Burst (from spore_burst)
+effect,tile_bubbling_bog,pack36_fx/tile_bubbling_bog.png,3,3,11,83,1,1,Bubbling Bog (from bubbling_bog)
+effect,tile_venom_fangs_n,pack36_fx/tile_venom_fangs_n.png,2,1,10,83,0,0,"Venom Fangs, towards n (from venom_fangs)"
+effect,tile_venom_fangs_ne,pack36_fx/tile_venom_fangs_ne.png,2,2,10,83,0,0,"Venom Fangs, towards ne (from venom_fangs)"
+effect,tile_venom_fangs_e,pack36_fx/tile_venom_fangs_e.png,1,2,10,83,0,0,"Venom Fangs, towards e (from venom_fangs)"
+effect,tile_venom_fangs_se,pack36_fx/tile_venom_fangs_se.png,2,2,10,83,0,0,"Venom Fangs, towards se (from venom_fangs)"
+effect,tile_venom_fangs_s,pack36_fx/tile_venom_fangs_s.png,2,1,10,83,0,0,"Venom Fangs, towards s (from venom_fangs)"
+effect,tile_venom_fangs_sw,pack36_fx/tile_venom_fangs_sw.png,2,2,10,83,0,0,"Venom Fangs, towards sw (from venom_fangs)"
+effect,tile_venom_fangs_w,pack36_fx/tile_venom_fangs_w.png,1,2,10,83,0,0,"Venom Fangs, towards w (from venom_fangs)"
+effect,tile_venom_fangs_nw,pack36_fx/tile_venom_fangs_nw.png,2,2,10,83,0,0,"Venom Fangs, towards nw (from venom_fangs)"
+effect,tile_miasma_wave_n,pack36_fx/tile_miasma_wave_n.png,3,3,11,83,1,1,"Miasma Wave, towards n (from miasma_wave)"
+effect,tile_miasma_wave_ne,pack36_fx/tile_miasma_wave_ne.png,3,3,11,83,1,1,"Miasma Wave, towards ne (from miasma_wave)"
+effect,tile_miasma_wave_e,pack36_fx/tile_miasma_wave_e.png,3,3,11,83,1,1,"Miasma Wave, towards e (from miasma_wave)"
+effect,tile_miasma_wave_se,pack36_fx/tile_miasma_wave_se.png,3,3,11,83,1,1,"Miasma Wave, towards se (from miasma_wave)"
+effect,tile_miasma_wave_s,pack36_fx/tile_miasma_wave_s.png,3,3,11,83,1,1,"Miasma Wave, towards s (from miasma_wave)"
+effect,tile_miasma_wave_sw,pack36_fx/tile_miasma_wave_sw.png,3,3,11,83,1,1,"Miasma Wave, towards sw (from miasma_wave)"
+effect,tile_miasma_wave_w,pack36_fx/tile_miasma_wave_w.png,3,3,11,83,1,1,"Miasma Wave, towards w (from miasma_wave)"
+effect,tile_miasma_wave_nw,pack36_fx/tile_miasma_wave_nw.png,3,3,11,83,1,1,"Miasma Wave, towards nw (from miasma_wave)"
+effect,tile_bone_spikes,pack36_fx/tile_bone_spikes.png,3,3,11,83,1,1,Bone Spikes (from bone_spikes)
+effect,tile_skull_burst,pack36_fx/tile_skull_burst.png,3,3,11,83,1,1,Skull Burst (from skull_burst)
+effect,tile_grave_claw,pack36_fx/tile_grave_claw.png,3,3,10,83,1,1,Grave Claw (from grave_claw)
+effect,tile_soul_drain,pack36_fx/tile_soul_drain.png,3,3,11,83,1,1,Soul Drain (from soul_drain)
+effect,tile_death_pentacle,pack36_fx/tile_death_pentacle.png,3,3,11,83,1,1,Death Pentacle (from death_pentacle)
+effect,tile_shadow_tendrils,pack36_fx/tile_shadow_tendrils.png,3,3,11,83,1,1,Shadow Tendrils (from shadow_tendrils)
+effect,tile_hex_brand,pack36_fx/tile_hex_brand.png,3,3,12,83,1,1,Hex Brand (from hex_brand)
+effect,tile_necro_wave_n,pack36_fx/tile_necro_wave_n.png,3,3,11,83,1,1,"Necro Wave, towards n (from necro_wave)"
+effect,tile_necro_wave_ne,pack36_fx/tile_necro_wave_ne.png,3,3,11,83,1,1,"Necro Wave, towards ne (from necro_wave)"
+effect,tile_necro_wave_e,pack36_fx/tile_necro_wave_e.png,3,3,11,83,1,1,"Necro Wave, towards e (from necro_wave)"
+effect,tile_necro_wave_se,pack36_fx/tile_necro_wave_se.png,3,3,11,83,1,1,"Necro Wave, towards se (from necro_wave)"
+effect,tile_necro_wave_s,pack36_fx/tile_necro_wave_s.png,3,3,11,83,1,1,"Necro Wave, towards s (from necro_wave)"
+effect,tile_necro_wave_sw,pack36_fx/tile_necro_wave_sw.png,3,3,11,83,1,1,"Necro Wave, towards sw (from necro_wave)"
+effect,tile_necro_wave_w,pack36_fx/tile_necro_wave_w.png,3,3,11,83,1,1,"Necro Wave, towards w (from necro_wave)"
+effect,tile_necro_wave_nw,pack36_fx/tile_necro_wave_nw.png,3,3,11,83,1,1,"Necro Wave, towards nw (from necro_wave)"
+effect,tile_holy_smite,pack36_fx/tile_holy_smite.png,3,3,11,83,1,1,Holy Smite (from holy_smite)
+effect,tile_radiant_burst,pack36_fx/tile_radiant_burst.png,3,3,10,83,1,1,Radiant Burst (from radiant_burst)
+effect,tile_divine_spears,pack36_fx/tile_divine_spears.png,3,3,10,83,1,1,Divine Spears (from divine_spears)
+effect,tile_sanctified_ring,pack36_fx/tile_sanctified_ring.png,2,2,10,83,0,0,Sanctified Ring (from sanctified_ring)
+effect,tile_purging_flame,pack36_fx/tile_purging_flame.png,3,3,11,83,1,1,Purging Flame (from purging_flame)
+effect,tile_judgement_seal,pack36_fx/tile_judgement_seal.png,3,3,11,83,1,1,Judgement Seal (from judgement_seal)
+effect,tile_light_wave_n,pack36_fx/tile_light_wave_n.png,3,3,11,83,1,1,"Light Wave, towards n (from light_wave)"
+effect,tile_light_wave_ne,pack36_fx/tile_light_wave_ne.png,3,3,11,83,1,1,"Light Wave, towards ne (from light_wave)"
+effect,tile_light_wave_e,pack36_fx/tile_light_wave_e.png,3,3,11,83,1,1,"Light Wave, towards e (from light_wave)"
+effect,tile_light_wave_se,pack36_fx/tile_light_wave_se.png,3,3,11,83,1,1,"Light Wave, towards se (from light_wave)"
+effect,tile_light_wave_s,pack36_fx/tile_light_wave_s.png,2,3,11,83,0,1,"Light Wave, towards s (from light_wave)"
+effect,tile_light_wave_sw,pack36_fx/tile_light_wave_sw.png,3,3,11,83,1,1,"Light Wave, towards sw (from light_wave)"
+effect,tile_light_wave_w,pack36_fx/tile_light_wave_w.png,3,2,11,83,1,0,"Light Wave, towards w (from light_wave)"
+effect,tile_light_wave_nw,pack36_fx/tile_light_wave_nw.png,3,3,11,83,1,1,"Light Wave, towards nw (from light_wave)"
+effect,tile_arcane_cross,pack36_fx/tile_arcane_cross.png,3,3,11,83,1,1,Arcane Cross (from arcane_cross)
+effect,tile_arcane_crescents,pack36_fx/tile_arcane_crescents.png,3,3,11,83,1,1,Arcane Crescents (from arcane_crescents)
+effect,tile_mana_shatter,pack36_fx/tile_mana_shatter.png,3,3,10,83,1,1,Mana Shatter (from mana_shatter)
+effect,tile_rune_detonation,pack36_fx/tile_rune_detonation.png,3,3,12,83,1,1,Rune Detonation (from rune_detonation)
+effect,tile_arcane_impact,pack36_fx/tile_arcane_impact.png,3,3,10,83,1,1,Arcane Impact (from arcane_impact)
+effect,tile_void_rift,pack36_fx/tile_void_rift.png,3,3,12,83,1,1,Void Rift (from void_rift)
+effect,tile_prism_beam_n,pack36_fx/tile_prism_beam_n.png,1,2,9,83,0,0,"Prism Beam, towards n (from prism_beam)"
+effect,tile_prism_beam_ne,pack36_fx/tile_prism_beam_ne.png,3,3,9,83,1,1,"Prism Beam, towards ne (from prism_beam)"
+effect,tile_prism_beam_e,pack36_fx/tile_prism_beam_e.png,2,1,9,83,0,0,"Prism Beam, towards e (from prism_beam)"
+effect,tile_prism_beam_se,pack36_fx/tile_prism_beam_se.png,3,3,9,83,1,1,"Prism Beam, towards se (from prism_beam)"
+effect,tile_prism_beam_s,pack36_fx/tile_prism_beam_s.png,1,2,9,83,0,0,"Prism Beam, towards s (from prism_beam)"
+effect,tile_prism_beam_sw,pack36_fx/tile_prism_beam_sw.png,3,3,9,83,1,1,"Prism Beam, towards sw (from prism_beam)"
+effect,tile_prism_beam_w,pack36_fx/tile_prism_beam_w.png,2,1,9,83,0,0,"Prism Beam, towards w (from prism_beam)"
+effect,tile_prism_beam_nw,pack36_fx/tile_prism_beam_nw.png,3,3,9,83,1,1,"Prism Beam, towards nw (from prism_beam)"
+effect,tile_hex_bloom,pack36_fx/tile_hex_bloom.png,3,3,11,83,1,1,Hex Bloom (from hex_bloom)
+effect,tile_crimson_rend,pack36_fx/tile_crimson_rend.png,3,3,11,83,1,1,Crimson Rend (from crimson_rend)
+effect,tile_blood_spikes,pack36_fx/tile_blood_spikes.png,3,3,11,83,1,1,Blood Spikes (from blood_spikes)
+effect,tile_blood_geyser,pack36_fx/tile_blood_geyser.png,3,3,11,83,1,1,Blood Geyser (from blood_geyser)
+effect,tile_hemorrhage,pack36_fx/tile_hemorrhage.png,3,3,9,83,1,1,Hemorrhage (from hemorrhage)
+effect,tile_crimson_cross_slash_n,pack36_fx/tile_crimson_cross_slash_n.png,3,3,10,83,1,1,"Crimson Cross Slash, towards n (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_ne,pack36_fx/tile_crimson_cross_slash_ne.png,3,3,10,83,1,1,"Crimson Cross Slash, towards ne (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_e,pack36_fx/tile_crimson_cross_slash_e.png,3,3,10,83,1,1,"Crimson Cross Slash, towards e (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_se,pack36_fx/tile_crimson_cross_slash_se.png,3,3,10,83,1,1,"Crimson Cross Slash, towards se (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_s,pack36_fx/tile_crimson_cross_slash_s.png,3,3,10,83,1,1,"Crimson Cross Slash, towards s (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_sw,pack36_fx/tile_crimson_cross_slash_sw.png,3,3,10,83,1,1,"Crimson Cross Slash, towards sw (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_w,pack36_fx/tile_crimson_cross_slash_w.png,3,3,10,83,1,1,"Crimson Cross Slash, towards w (from crimson_cross_slash)"
+effect,tile_crimson_cross_slash_nw,pack36_fx/tile_crimson_cross_slash_nw.png,3,3,10,83,1,1,"Crimson Cross Slash, towards nw (from crimson_cross_slash)"
+effect,tile_blood_rain,pack36_fx/tile_blood_rain.png,3,3,10,83,1,1,Blood Rain (from blood_rain)
+effect,tile_vein_lash_n,pack36_fx/tile_vein_lash_n.png,1,2,10,83,0,0,"Vein Lash, towards n (from vein_lash)"
+effect,tile_vein_lash_ne,pack36_fx/tile_vein_lash_ne.png,3,2,10,83,1,0,"Vein Lash, towards ne (from vein_lash)"
+effect,tile_vein_lash_e,pack36_fx/tile_vein_lash_e.png,3,1,10,83,1,0,"Vein Lash, towards e (from vein_lash)"
+effect,tile_vein_lash_se,pack36_fx/tile_vein_lash_se.png,3,3,10,83,1,1,"Vein Lash, towards se (from vein_lash)"
+effect,tile_vein_lash_s,pack36_fx/tile_vein_lash_s.png,1,3,10,83,0,1,"Vein Lash, towards s (from vein_lash)"
+effect,tile_vein_lash_sw,pack36_fx/tile_vein_lash_sw.png,2,3,10,83,0,1,"Vein Lash, towards sw (from vein_lash)"
+effect,tile_vein_lash_w,pack36_fx/tile_vein_lash_w.png,2,1,10,83,0,0,"Vein Lash, towards w (from vein_lash)"
+effect,tile_vein_lash_nw,pack36_fx/tile_vein_lash_nw.png,2,2,10,83,0,0,"Vein Lash, towards nw (from vein_lash)"
+effect,tile_tide_crest_n,pack36_fx/tile_tide_crest_n.png,3,3,11,83,1,1,"Tide Crest, towards n (from tide_crest)"
+effect,tile_tide_crest_ne,pack36_fx/tile_tide_crest_ne.png,3,3,11,83,1,1,"Tide Crest, towards ne (from tide_crest)"
+effect,tile_tide_crest_e,pack36_fx/tile_tide_crest_e.png,2,3,11,83,0,1,"Tide Crest, towards e (from tide_crest)"
+effect,tile_tide_crest_se,pack36_fx/tile_tide_crest_se.png,3,3,11,83,1,1,"Tide Crest, towards se (from tide_crest)"
+effect,tile_tide_crest_s,pack36_fx/tile_tide_crest_s.png,3,2,11,83,1,0,"Tide Crest, towards s (from tide_crest)"
+effect,tile_tide_crest_sw,pack36_fx/tile_tide_crest_sw.png,3,3,11,83,1,1,"Tide Crest, towards sw (from tide_crest)"
+effect,tile_tide_crest_w,pack36_fx/tile_tide_crest_w.png,3,3,11,83,1,1,"Tide Crest, towards w (from tide_crest)"
+effect,tile_tide_crest_nw,pack36_fx/tile_tide_crest_nw.png,3,3,11,83,1,1,"Tide Crest, towards nw (from tide_crest)"
+effect,tile_water_splash,pack36_fx/tile_water_splash.png,3,3,10,83,1,1,Water Splash (from water_splash)
+effect,tile_geyser_burst,pack36_fx/tile_geyser_burst.png,3,3,11,83,1,1,Geyser Burst (from geyser_burst)
+effect,tile_whirlpool,pack36_fx/tile_whirlpool.png,3,3,12,83,1,1,Whirlpool (from whirlpool)
+effect,tile_bubble_barrage,pack36_fx/tile_bubble_barrage.png,3,3,11,83,1,1,Bubble Barrage (from bubble_barrage)
+effect,tile_rain_torrent,pack36_fx/tile_rain_torrent.png,4,4,11,83,1,1,Rain Torrent (from rain_torrent)
+effect,tile_water_jet_n,pack36_fx/tile_water_jet_n.png,1,3,9,83,0,1,"Water Jet, towards n (from water_jet)"
+effect,tile_water_jet_ne,pack36_fx/tile_water_jet_ne.png,3,3,9,83,1,1,"Water Jet, towards ne (from water_jet)"
+effect,tile_water_jet_e,pack36_fx/tile_water_jet_e.png,3,1,9,83,1,0,"Water Jet, towards e (from water_jet)"
+effect,tile_water_jet_se,pack36_fx/tile_water_jet_se.png,3,3,9,83,1,1,"Water Jet, towards se (from water_jet)"
+effect,tile_water_jet_s,pack36_fx/tile_water_jet_s.png,1,3,9,83,0,1,"Water Jet, towards s (from water_jet)"
+effect,tile_water_jet_sw,pack36_fx/tile_water_jet_sw.png,3,3,9,83,1,1,"Water Jet, towards sw (from water_jet)"
+effect,tile_water_jet_w,pack36_fx/tile_water_jet_w.png,3,1,9,83,1,0,"Water Jet, towards w (from water_jet)"
+effect,tile_water_jet_nw,pack36_fx/tile_water_jet_nw.png,3,3,9,83,1,1,"Water Jet, towards nw (from water_jet)"
+effect,tile_gale_slash_n,pack36_fx/tile_gale_slash_n.png,3,3,10,83,1,1,"Gale Slash, towards n (from gale_slash)"
+effect,tile_gale_slash_ne,pack36_fx/tile_gale_slash_ne.png,2,3,10,83,0,1,"Gale Slash, towards ne (from gale_slash)"
+effect,tile_gale_slash_e,pack36_fx/tile_gale_slash_e.png,2,3,10,83,0,1,"Gale Slash, towards e (from gale_slash)"
+effect,tile_gale_slash_se,pack36_fx/tile_gale_slash_se.png,2,2,10,83,0,0,"Gale Slash, towards se (from gale_slash)"
+effect,tile_gale_slash_s,pack36_fx/tile_gale_slash_s.png,3,2,10,83,1,0,"Gale Slash, towards s (from gale_slash)"
+effect,tile_gale_slash_sw,pack36_fx/tile_gale_slash_sw.png,3,2,10,83,1,0,"Gale Slash, towards sw (from gale_slash)"
+effect,tile_gale_slash_w,pack36_fx/tile_gale_slash_w.png,3,3,10,83,1,1,"Gale Slash, towards w (from gale_slash)"
+effect,tile_gale_slash_nw,pack36_fx/tile_gale_slash_nw.png,3,3,10,83,1,1,"Gale Slash, towards nw (from gale_slash)"
+effect,tile_cyclone_spin,pack36_fx/tile_cyclone_spin.png,3,3,12,83,1,1,Cyclone Spin (from cyclone_spin)
+effect,tile_air_burst,pack36_fx/tile_air_burst.png,3,3,10,83,1,1,Air Burst (from air_burst)
+effect,tile_vacuum_pull,pack36_fx/tile_vacuum_pull.png,3,3,11,83,1,1,Vacuum Pull (from vacuum_pull)
+effect,tile_wind_wave_n,pack36_fx/tile_wind_wave_n.png,3,2,10,83,1,0,"Wind Wave, towards n (from wind_wave)"
+effect,tile_wind_wave_ne,pack36_fx/tile_wind_wave_ne.png,3,3,10,83,1,1,"Wind Wave, towards ne (from wind_wave)"
+effect,tile_wind_wave_e,pack36_fx/tile_wind_wave_e.png,3,3,10,83,1,1,"Wind Wave, towards e (from wind_wave)"
+effect,tile_wind_wave_se,pack36_fx/tile_wind_wave_se.png,3,3,10,83,1,1,"Wind Wave, towards se (from wind_wave)"
+effect,tile_wind_wave_s,pack36_fx/tile_wind_wave_s.png,3,3,10,83,1,1,"Wind Wave, towards s (from wind_wave)"
+effect,tile_wind_wave_sw,pack36_fx/tile_wind_wave_sw.png,3,3,10,83,1,1,"Wind Wave, towards sw (from wind_wave)"
+effect,tile_wind_wave_w,pack36_fx/tile_wind_wave_w.png,2,3,10,83,0,1,"Wind Wave, towards w (from wind_wave)"
+effect,tile_wind_wave_nw,pack36_fx/tile_wind_wave_nw.png,3,3,10,83,1,1,"Wind Wave, towards nw (from wind_wave)"
+effect,tile_sky_blades,pack36_fx/tile_sky_blades.png,4,4,11,83,1,1,Sky Blades (from sky_blades)
+effect,tile_air_hammer,pack36_fx/tile_air_hammer.png,3,3,10,83,1,1,Air Hammer (from air_hammer)
+effect,tile_dust_devil,pack36_fx/tile_dust_devil.png,3,3,12,83,1,1,Dust Devil (from dust_devil)
+effect,tile_thorn_eruption,pack36_fx/tile_thorn_eruption.png,3,3,10,83,1,1,Thorn Eruption (from thorn_eruption)
+effect,tile_razor_leaves,pack36_fx/tile_razor_leaves.png,3,3,11,83,1,1,Razor Leaves (from razor_leaves)
+effect,tile_root_snare,pack36_fx/tile_root_snare.png,3,3,12,83,1,1,Root Snare (from root_snare)
+effect,tile_bramble_wave_n,pack36_fx/tile_bramble_wave_n.png,3,3,11,83,1,1,"Bramble Wave, towards n (from bramble_wave)"
+effect,tile_bramble_wave_ne,pack36_fx/tile_bramble_wave_ne.png,3,3,11,83,1,1,"Bramble Wave, towards ne (from bramble_wave)"
+effect,tile_bramble_wave_e,pack36_fx/tile_bramble_wave_e.png,2,3,11,83,0,1,"Bramble Wave, towards e (from bramble_wave)"
+effect,tile_bramble_wave_se,pack36_fx/tile_bramble_wave_se.png,3,3,11,83,1,1,"Bramble Wave, towards se (from bramble_wave)"
+effect,tile_bramble_wave_s,pack36_fx/tile_bramble_wave_s.png,3,3,11,83,1,1,"Bramble Wave, towards s (from bramble_wave)"
+effect,tile_bramble_wave_sw,pack36_fx/tile_bramble_wave_sw.png,3,3,11,83,1,1,"Bramble Wave, towards sw (from bramble_wave)"
+effect,tile_bramble_wave_w,pack36_fx/tile_bramble_wave_w.png,3,3,11,83,1,1,"Bramble Wave, towards w (from bramble_wave)"
+effect,tile_bramble_wave_nw,pack36_fx/tile_bramble_wave_nw.png,3,3,11,83,1,1,"Bramble Wave, towards nw (from bramble_wave)"
+effect,tile_pollen_burst,pack36_fx/tile_pollen_burst.png,2,3,11,83,0,1,Pollen Burst (from pollen_burst)
+effect,tile_vine_strangle,pack36_fx/tile_vine_strangle.png,3,3,12,83,1,1,Vine Strangle (from vine_strangle)
+effect,tile_snapjaw_trap,pack36_fx/tile_snapjaw_trap.png,3,3,10,83,1,1,Snapjaw Trap (from snapjaw_trap)
+effect,tile_seed_bomb,pack36_fx/tile_seed_bomb.png,3,3,11,83,1,1,Seed Bomb (from seed_bomb)
+effect,tile_crimson_lash_fan_n,pack36_fx/tile_crimson_lash_fan_n.png,5,4,11,83,2,0,"Crimson Lash Fan, towards n (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_ne,pack36_fx/tile_crimson_lash_fan_ne.png,4,3,11,83,3,0,"Crimson Lash Fan, towards ne (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_e,pack36_fx/tile_crimson_lash_fan_e.png,4,5,11,83,3,2,"Crimson Lash Fan, towards e (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_se,pack36_fx/tile_crimson_lash_fan_se.png,4,4,11,83,3,3,"Crimson Lash Fan, towards se (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_s,pack36_fx/tile_crimson_lash_fan_s.png,5,4,11,83,2,3,"Crimson Lash Fan, towards s (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_sw,pack36_fx/tile_crimson_lash_fan_sw.png,3,4,11,83,0,3,"Crimson Lash Fan, towards sw (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_w,pack36_fx/tile_crimson_lash_fan_w.png,4,5,11,83,0,2,"Crimson Lash Fan, towards w (from crimson_lash_fan)"
+effect,tile_crimson_lash_fan_nw,pack36_fx/tile_crimson_lash_fan_nw.png,3,3,11,83,0,0,"Crimson Lash Fan, towards nw (from crimson_lash_fan)"
+effect,tile_skyfall_comet,pack36_fx/tile_skyfall_comet.png,6,6,15,83,2,2,Skyfall Comet (from skyfall_comet)
+effect,tile_glacier_collapse,pack36_fx/tile_glacier_collapse.png,5,6,14,83,2,2,Glacier Collapse (from glacier_collapse)
+effect,tile_tremor_quake,pack36_fx/tile_tremor_quake.png,5,5,13,83,2,2,Tremor Quake (from tremor_quake)
+effect,tile_plague_bloom,pack36_fx/tile_plague_bloom.png,5,5,14,83,2,2,Plague Bloom (from plague_bloom)
+effect,tile_soul_reaper_scythe_n,pack36_fx/tile_soul_reaper_scythe_n.png,5,4,13,83,2,1,"Soul Reaper Scythe, towards n (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_ne,pack36_fx/tile_soul_reaper_scythe_ne.png,6,4,13,83,3,1,"Soul Reaper Scythe, towards ne (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_e,pack36_fx/tile_soul_reaper_scythe_e.png,6,5,13,83,3,2,"Soul Reaper Scythe, towards e (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_se,pack36_fx/tile_soul_reaper_scythe_se.png,6,6,13,83,3,3,"Soul Reaper Scythe, towards se (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_s,pack36_fx/tile_soul_reaper_scythe_s.png,5,6,13,83,2,3,"Soul Reaper Scythe, towards s (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_sw,pack36_fx/tile_soul_reaper_scythe_sw.png,4,6,13,83,1,3,"Soul Reaper Scythe, towards sw (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_w,pack36_fx/tile_soul_reaper_scythe_w.png,4,5,13,83,1,2,"Soul Reaper Scythe, towards w (from soul_reaper_scythe)"
+effect,tile_soul_reaper_scythe_nw,pack36_fx/tile_soul_reaper_scythe_nw.png,4,4,13,83,1,1,"Soul Reaper Scythe, towards nw (from soul_reaper_scythe)"
+effect,tile_judgement_pillar,pack36_fx/tile_judgement_pillar.png,5,5,14,83,2,2,Judgement Pillar (from judgement_pillar)
+effect,tile_arcane_singularity,pack36_fx/tile_arcane_singularity.png,5,5,15,83,2,2,Arcane Singularity (from arcane_singularity)
+effect,tile_tidal_crush_n,pack36_fx/tile_tidal_crush_n.png,6,5,14,83,2,2,"Tidal Crush, towards n (from tidal_crush)"
+effect,tile_tidal_crush_ne,pack36_fx/tile_tidal_crush_ne.png,7,6,14,83,3,3,"Tidal Crush, towards ne (from tidal_crush)"
+effect,tile_tidal_crush_e,pack36_fx/tile_tidal_crush_e.png,6,6,14,83,2,2,"Tidal Crush, towards e (from tidal_crush)"
+effect,tile_tidal_crush_se,pack36_fx/tile_tidal_crush_se.png,7,7,14,83,3,3,"Tidal Crush, towards se (from tidal_crush)"
+effect,tile_tidal_crush_s,pack36_fx/tile_tidal_crush_s.png,6,6,14,83,2,2,"Tidal Crush, towards s (from tidal_crush)"
+effect,tile_tidal_crush_sw,pack36_fx/tile_tidal_crush_sw.png,6,7,14,83,3,3,"Tidal Crush, towards sw (from tidal_crush)"
+effect,tile_tidal_crush_w,pack36_fx/tile_tidal_crush_w.png,5,6,14,83,2,2,"Tidal Crush, towards w (from tidal_crush)"
+effect,tile_tidal_crush_nw,pack36_fx/tile_tidal_crush_nw.png,6,6,14,83,3,3,"Tidal Crush, towards nw (from tidal_crush)"
+effect,tile_magma_bloom,pack36_fx/tile_magma_bloom.png,3,3,11,83,1,1,Magma Bloom (from magma_bloom)
+effect,tile_guillotine_drop_n,pack36_fx/tile_guillotine_drop_n.png,3,3,10,83,1,1,"Guillotine Drop, towards n (from guillotine_drop)"
+effect,tile_guillotine_drop_ne,pack36_fx/tile_guillotine_drop_ne.png,3,3,10,83,1,1,"Guillotine Drop, towards ne (from guillotine_drop)"
+effect,tile_guillotine_drop_e,pack36_fx/tile_guillotine_drop_e.png,2,3,9,83,0,1,"Guillotine Drop, towards e (from guillotine_drop)"
+effect,tile_guillotine_drop_se,pack36_fx/tile_guillotine_drop_se.png,2,3,10,83,0,1,"Guillotine Drop, towards se (from guillotine_drop)"
+effect,tile_guillotine_drop_s,pack36_fx/tile_guillotine_drop_s.png,3,3,10,83,1,1,"Guillotine Drop, towards s (from guillotine_drop)"
+effect,tile_guillotine_drop_sw,pack36_fx/tile_guillotine_drop_sw.png,3,3,10,83,1,1,"Guillotine Drop, towards sw (from guillotine_drop)"
+effect,tile_guillotine_drop_w,pack36_fx/tile_guillotine_drop_w.png,2,3,9,83,0,1,"Guillotine Drop, towards w (from guillotine_drop)"
+effect,tile_guillotine_drop_nw,pack36_fx/tile_guillotine_drop_nw.png,2,3,10,83,0,1,"Guillotine Drop, towards nw (from guillotine_drop)"
+effect,tile_concussion_ring,pack36_fx/tile_concussion_ring.png,3,3,9,83,1,1,Concussion Ring (from concussion_ring)
+effect,tile_clockwork_sigil,pack36_fx/tile_clockwork_sigil.png,3,3,12,83,1,1,Clockwork Sigil (from clockwork_sigil)
+effect,tile_lens_crush,pack36_fx/tile_lens_crush.png,3,3,10,83,1,1,Lens Crush (from lens_crush)
+effect,tile_crystal_spire,pack36_fx/tile_crystal_spire.png,3,2,11,83,1,0,Crystal Spire (from crystal_spire)
+effect,tile_eclipse_drop,pack36_fx/tile_eclipse_drop.png,3,3,10,83,1,1,Eclipse Drop (from eclipse_drop)
+effect,tile_slag_slam,pack36_fx/tile_slag_slam.png,2,2,10,83,0,0,Slag Slam (from slag_slam)
+effect,tile_echo_fracture,pack36_fx/tile_echo_fracture.png,3,3,10,83,1,1,Echo Fracture (from echo_fracture)
+effect,tile_shade_needles,pack36_fx/tile_shade_needles.png,3,3,9,83,1,1,Shade Needles (from shade_needles)
+effect,tile_coffin_slam,pack36_fx/tile_coffin_slam.png,4,3,11,83,1,1,Coffin Slam (from coffin_slam)
+effect,tile_blood_bloom,pack36_fx/tile_blood_bloom.png,3,3,10,83,1,1,Blood Bloom (from blood_bloom)
+effect,tile_bubble_prison,pack36_fx/tile_bubble_prison.png,3,2,11,83,1,0,Bubble Prison (from bubble_prison)
+effect,tile_root_spear,pack36_fx/tile_root_spear.png,3,2,9,83,1,0,Root Spear (from root_spear)
+effect,tile_sawblade_spin,pack36_fx/tile_sawblade_spin.png,2,2,10,83,0,0,Sawblade Spin (from sawblade_spin)
+effect,tile_dune_wave_n,pack36_fx/tile_dune_wave_n.png,3,3,10,83,1,1,"Dune Wave, towards n (from dune_wave)"
+effect,tile_dune_wave_ne,pack36_fx/tile_dune_wave_ne.png,3,3,10,83,1,1,"Dune Wave, towards ne (from dune_wave)"
+effect,tile_dune_wave_e,pack36_fx/tile_dune_wave_e.png,3,3,10,83,1,1,"Dune Wave, towards e (from dune_wave)"
+effect,tile_dune_wave_se,pack36_fx/tile_dune_wave_se.png,3,3,10,83,1,1,"Dune Wave, towards se (from dune_wave)"
+effect,tile_dune_wave_s,pack36_fx/tile_dune_wave_s.png,3,3,10,83,1,1,"Dune Wave, towards s (from dune_wave)"
+effect,tile_dune_wave_sw,pack36_fx/tile_dune_wave_sw.png,3,3,10,83,1,1,"Dune Wave, towards sw (from dune_wave)"
+effect,tile_dune_wave_w,pack36_fx/tile_dune_wave_w.png,3,3,10,83,1,1,"Dune Wave, towards w (from dune_wave)"
+effect,tile_dune_wave_nw,pack36_fx/tile_dune_wave_nw.png,3,3,10,83,1,1,"Dune Wave, towards nw (from dune_wave)"
+effect,tile_prism_lattice,pack36_fx/tile_prism_lattice.png,3,3,11,83,1,1,Prism Lattice (from prism_lattice)
+effect,tile_permafrost_stomp,pack36_fx/tile_permafrost_stomp.png,3,3,10,83,1,1,Permafrost Stomp (from permafrost_stomp)
+effect,tile_boulder_roll_n,pack36_fx/tile_boulder_roll_n.png,2,3,10,83,0,1,"Boulder Roll, towards n (from boulder_roll)"
+effect,tile_boulder_roll_ne,pack36_fx/tile_boulder_roll_ne.png,3,3,10,83,1,1,"Boulder Roll, towards ne (from boulder_roll)"
+effect,tile_boulder_roll_e,pack36_fx/tile_boulder_roll_e.png,3,2,10,83,1,0,"Boulder Roll, towards e (from boulder_roll)"
+effect,tile_boulder_roll_se,pack36_fx/tile_boulder_roll_se.png,3,3,10,83,1,1,"Boulder Roll, towards se (from boulder_roll)"
+effect,tile_boulder_roll_s,pack36_fx/tile_boulder_roll_s.png,2,3,10,83,1,1,"Boulder Roll, towards s (from boulder_roll)"
+effect,tile_boulder_roll_sw,pack36_fx/tile_boulder_roll_sw.png,3,3,10,83,1,1,"Boulder Roll, towards sw (from boulder_roll)"
+effect,tile_boulder_roll_w,pack36_fx/tile_boulder_roll_w.png,3,2,10,83,1,1,"Boulder Roll, towards w (from boulder_roll)"
+effect,tile_boulder_roll_nw,pack36_fx/tile_boulder_roll_nw.png,3,3,10,83,1,1,"Boulder Roll, towards nw (from boulder_roll)"
+effect,tile_bone_cage,pack36_fx/tile_bone_cage.png,3,3,11,83,1,1,Bone Cage (from bone_cage)
+effect,tile_crystal_fracture,pack36_fx/tile_crystal_fracture.png,3,3,10,83,1,1,Crystal Fracture (from crystal_fracture)
+effect,tile_nightfall_veil,pack36_fx/tile_nightfall_veil.png,3,3,11,83,1,1,Nightfall Veil (from nightfall_veil)
+effect,tile_napalm_splash,pack36_fx/tile_napalm_splash.png,3,3,10,83,1,1,Napalm Splash (from napalm_splash)
+effect,tile_venom_stinger,pack36_fx/tile_venom_stinger.png,3,3,9,83,1,1,Venom Stinger (from venom_stinger)
+effect,tile_angel_feathers,pack36_fx/tile_angel_feathers.png,4,3,10,83,1,1,Angel Feathers (from angel_feathers)
+effect,tile_storm_eye,pack36_fx/tile_storm_eye.png,3,3,11,83,1,1,Storm Eye (from storm_eye)
+effect,tile_chain_snare,pack36_fx/tile_chain_snare.png,3,3,12,83,1,1,Chain Snare (from chain_snare)
+effect,tile_firebird_dive,pack36_fx/tile_firebird_dive.png,4,4,11,83,1,1,Firebird Dive (from firebird_dive)
+effect,tile_thunderball_bounce,pack36_fx/tile_thunderball_bounce.png,3,3,11,83,1,1,Thunderball Bounce (from thunderball_bounce)
+effect,tile_blister_pustules,pack36_fx/tile_blister_pustules.png,3,3,11,83,1,1,Blister Pustules (from blister_pustules)
+effect,tile_glyph_cascade,pack36_fx/tile_glyph_cascade.png,4,3,10,83,1,1,Glyph Cascade (from glyph_cascade)
+effect,tile_bloom_bomb,pack36_fx/tile_bloom_bomb.png,2,3,10,83,0,1,Bloom Bomb (from bloom_bomb)
+effect,tile_screech_wave_n,pack36_fx/tile_screech_wave_n.png,2,3,9,83,0,1,"Screech Wave, towards n (from screech_wave)"
+effect,tile_screech_wave_ne,pack36_fx/tile_screech_wave_ne.png,3,3,9,83,1,1,"Screech Wave, towards ne (from screech_wave)"
+effect,tile_screech_wave_e,pack36_fx/tile_screech_wave_e.png,2,2,9,83,0,0,"Screech Wave, towards e (from screech_wave)"
+effect,tile_screech_wave_se,pack36_fx/tile_screech_wave_se.png,3,3,9,83,1,1,"Screech Wave, towards se (from screech_wave)"
+effect,tile_screech_wave_s,pack36_fx/tile_screech_wave_s.png,2,2,9,83,0,0,"Screech Wave, towards s (from screech_wave)"
+effect,tile_screech_wave_sw,pack36_fx/tile_screech_wave_sw.png,3,3,9,83,1,1,"Screech Wave, towards sw (from screech_wave)"
+effect,tile_screech_wave_w,pack36_fx/tile_screech_wave_w.png,3,2,9,83,1,0,"Screech Wave, towards w (from screech_wave)"
+effect,tile_screech_wave_nw,pack36_fx/tile_screech_wave_nw.png,3,3,9,83,1,1,"Screech Wave, towards nw (from screech_wave)"
+effect,tile_graviton_orb,pack36_fx/tile_graviton_orb.png,2,2,12,83,0,0,Graviton Orb (from graviton_orb)
+effect,tile_shiver_mirror_n,pack36_fx/tile_shiver_mirror_n.png,3,2,10,83,1,0,"Shiver Mirror, towards n (from shiver_mirror)"
+effect,tile_shiver_mirror_ne,pack36_fx/tile_shiver_mirror_ne.png,2,3,10,83,0,1,"Shiver Mirror, towards ne (from shiver_mirror)"
+effect,tile_shiver_mirror_e,pack36_fx/tile_shiver_mirror_e.png,2,3,10,83,0,1,"Shiver Mirror, towards e (from shiver_mirror)"
+effect,tile_shiver_mirror_se,pack36_fx/tile_shiver_mirror_se.png,3,3,10,83,1,1,"Shiver Mirror, towards se (from shiver_mirror)"
+effect,tile_shiver_mirror_s,pack36_fx/tile_shiver_mirror_s.png,3,2,10,83,1,0,"Shiver Mirror, towards s (from shiver_mirror)"
+effect,tile_shiver_mirror_sw,pack36_fx/tile_shiver_mirror_sw.png,2,3,10,83,0,1,"Shiver Mirror, towards sw (from shiver_mirror)"
+effect,tile_shiver_mirror_w,pack36_fx/tile_shiver_mirror_w.png,2,3,10,83,0,1,"Shiver Mirror, towards w (from shiver_mirror)"
+effect,tile_shiver_mirror_nw,pack36_fx/tile_shiver_mirror_nw.png,3,3,10,83,1,1,"Shiver Mirror, towards nw (from shiver_mirror)"
+effect,tile_overload_cage,pack36_fx/tile_overload_cage.png,4,4,10,83,1,1,Overload Cage (from overload_cage)
+effect,tile_pillar_heave,pack36_fx/tile_pillar_heave.png,2,3,10,83,0,1,Pillar Heave (from pillar_heave)
+effect,tile_brine_spikes,pack36_fx/tile_brine_spikes.png,3,2,10,83,1,0,Brine Spikes (from brine_spikes)
+effect,tile_lava_tongue_n,pack36_fx/tile_lava_tongue_n.png,3,3,10,83,1,1,"Lava Tongue, towards n (from lava_tongue)"
+effect,tile_lava_tongue_ne,pack36_fx/tile_lava_tongue_ne.png,3,3,10,83,1,1,"Lava Tongue, towards ne (from lava_tongue)"
+effect,tile_lava_tongue_e,pack36_fx/tile_lava_tongue_e.png,3,3,10,83,1,1,"Lava Tongue, towards e (from lava_tongue)"
+effect,tile_lava_tongue_se,pack36_fx/tile_lava_tongue_se.png,3,3,10,83,1,1,"Lava Tongue, towards se (from lava_tongue)"
+effect,tile_lava_tongue_s,pack36_fx/tile_lava_tongue_s.png,3,3,10,83,1,1,"Lava Tongue, towards s (from lava_tongue)"
+effect,tile_lava_tongue_sw,pack36_fx/tile_lava_tongue_sw.png,3,3,10,83,1,1,"Lava Tongue, towards sw (from lava_tongue)"
+effect,tile_lava_tongue_w,pack36_fx/tile_lava_tongue_w.png,3,3,10,83,1,1,"Lava Tongue, towards w (from lava_tongue)"
+effect,tile_lava_tongue_nw,pack36_fx/tile_lava_tongue_nw.png,3,3,10,83,1,1,"Lava Tongue, towards nw (from lava_tongue)"
+effect,tile_war_drum_pulse,pack36_fx/tile_war_drum_pulse.png,3,3,11,83,1,1,War Drum Pulse (from war_drum_pulse)
+effect,tile_quicksand_maw,pack36_fx/tile_quicksand_maw.png,3,3,11,83,1,1,Quicksand Maw (from quicksand_maw)
+effect,tile_halo_crush,pack36_fx/tile_halo_crush.png,3,3,10,83,1,1,Halo Crush (from halo_crush)
+effect,tile_arcane_orbits,pack36_fx/tile_arcane_orbits.png,3,3,10,83,1,1,Arcane Orbits (from arcane_orbits)
+effect,tile_vein_burst,pack36_fx/tile_vein_burst.png,3,3,10,83,1,1,Vein Burst (from vein_burst)
+effect,tile_hourglass_crush,pack36_fx/tile_hourglass_crush.png,3,3,11,83,1,1,Hourglass Crush (from hourglass_crush)
+effect,tile_uplift_quake,pack36_fx/tile_uplift_quake.png,3,3,11,83,1,1,Uplift Quake (from uplift_quake)
+effect,tile_glass_fulgurite,pack36_fx/tile_glass_fulgurite.png,3,3,11,83,1,1,Glass Fulgurite (from glass_fulgurite)
+effect,tile_flare_mine,pack36_fx/tile_flare_mine.png,3,3,11,83,1,1,Flare Mine (from flare_mine)
+effect,tile_emp_pulse,pack36_fx/tile_emp_pulse.png,2,2,10,83,0,0,EMP Pulse (from emp_pulse)
+effect,tile_skyward_slash_n,pack36_fx/tile_skyward_slash_n.png,2,2,9,83,0,0,"Skyward Slash, towards n (from skyward_slash)"
+effect,tile_skyward_slash_ne,pack36_fx/tile_skyward_slash_ne.png,2,2,9,83,0,0,"Skyward Slash, towards ne (from skyward_slash)"
+effect,tile_skyward_slash_e,pack36_fx/tile_skyward_slash_e.png,2,2,9,83,0,0,"Skyward Slash, towards e (from skyward_slash)"
+effect,tile_skyward_slash_se,pack36_fx/tile_skyward_slash_se.png,2,2,9,83,0,0,"Skyward Slash, towards se (from skyward_slash)"
+effect,tile_skyward_slash_s,pack36_fx/tile_skyward_slash_s.png,2,2,9,83,0,0,"Skyward Slash, towards s (from skyward_slash)"
+effect,tile_skyward_slash_sw,pack36_fx/tile_skyward_slash_sw.png,2,2,9,83,0,0,"Skyward Slash, towards sw (from skyward_slash)"
+effect,tile_skyward_slash_w,pack36_fx/tile_skyward_slash_w.png,2,2,9,83,0,0,"Skyward Slash, towards w (from skyward_slash)"
+effect,tile_skyward_slash_nw,pack36_fx/tile_skyward_slash_nw.png,2,2,9,83,0,0,"Skyward Slash, towards nw (from skyward_slash)"

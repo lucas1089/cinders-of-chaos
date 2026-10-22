@@ -4,7 +4,7 @@
     python3 -I website/tools/gen_sprite_images.py --dat P/Tibia.dat --spr P/Tibia.spr --out-dir OUT \
         [--otb SERVER/data/items/items.otb] [--publish own,donor] [--preview DIR]
 
-The pair is not in git: take it from the windows-assets branch (things/things-1098.tar.xz) or the client folder.
+The pair is not in git: take it from the windows-assets branch (things/things-1098.tar.xz.part*, joined with cat) or the client folder.
 Only the art of the tiers named by --publish is drawn (website/tools/sprite_owners.csv says which client ids are
 ours: own, donor or stock). Every other item and look gets a neutral placeholder of our own; stock art is never
 read for an image.

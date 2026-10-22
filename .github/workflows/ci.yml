@@ -533,8 +533,8 @@ jobs:
           python3 -m venv /tmp/fxenv
           /tmp/fxenv/bin/pip install --quiet pillow==12.3.0 numpy==2.5.3
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
-          # level-up wings frames (game_levelwings: front, east and west sets) match the generator (same pins)
-          /tmp/fxenv/bin/python -I client/tools/gen_levelwings_art.py --check
+          # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
           # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
           python3 -I server/tools/install_theme_items.py --lua --check
@@ -680,7 +680,7 @@ jobs:
           set -euo pipefail
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
           mkdir -p "$RUNNER_TEMP/pair"
-          tar -xJf assets/things/things-1098.tar.xz -C "$RUNNER_TEMP/pair"
+          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$RUNNER_TEMP/pair"
           python3 -I chaos/client/tools/sprites/check_pair.py "$RUNNER_TEMP/pair/Tibia.dat" "$RUNNER_TEMP/pair/Tibia.spr"
 
       - name: Recolour variants match the generator (gen_theme_art.py recolour reads the pair's own monster looks)
