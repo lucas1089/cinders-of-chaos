@@ -6,7 +6,7 @@ by hand, as root:
 
   setup    create N tester accounts and characters (state folder: a root-only state.json with their random passwords)
              python3 -I testers.py setup --count 100 --server-dir SERVER [--state /var/lib/chaos/testers]
-                 [--levels 30,100,250,500] [--classes auto | NAME:WEIGHT,...] [--hash-iterations 120000]
+                 [--levels 30,100,250,500,750,1000,1250,1500,1750,2000] [--classes auto | NAME:WEIGHT,...] [--hash-iterations 120000]
   run      log them in and play until --minutes are over (default 60), then log out
              python3 -I testers.py run --key-file /etc/chaos/tester-client-key --server-dir SERVER
                  [--state DIR] [--minutes 60] [--count N] [--host 127.0.0.1] [--port 7171] [--log SERVER_LOG]
@@ -200,6 +200,18 @@ def pbkdf2_hash(password, iterations):
     return 'pbkdf2-sha256$%d$%s$%s' % (iterations, base64.b64encode(salt).decode(), base64.b64encode(key).decode())
 
 
+# the level bands of the testers (beta 2026-10-22: up to the endgame, 2000)
+LEVELS = (30, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000)
+
+
+def plan_bots(count, classes, levels):
+    """[(class, level)] of the testers: the levels in turn, so every band gets count / len(levels) of them whatever
+    the number of classes, and the classes shifted by one each round, so a band does not get the same classes (the
+    load test's assign() fills the bands class by class: 100 testers over 15 classes never reached the last bands)"""
+    wheel = [name for name, w in classes for _ in range(w)]
+    return [(wheel[(i + i // len(levels)) % len(wheel)], levels[i % len(levels)]) for i in range(count)]
+
+
 def plan_classes(spec, vocations):
     """[(name, weight)]: 'auto' = every class of vocations.xml except None (id 0)"""
     if spec == 'auto':
@@ -247,7 +259,7 @@ def setup(a):
     hunts = LT.hunt_marks(poi)
     if not temples:
         sys.exit('no temple marks in data/chaos_poi.lua (install step poi)')
-    plan = [LT.assign(i, classes, levels) for i in range(a.count)]
+    plan = plan_bots(a.count, classes, levels)
     positions = LT.level_positions(hunts, temples, [lv for _, lv in plan], 0.0)
     spawns = sorted(__import__('glob').glob(os.path.join(data, 'world', '*-spawn.xml')))[:1]
     if spawns:
@@ -968,7 +980,7 @@ def parse(argv):
     a = Args()
     a.cmd = argv[0]
     defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
-                '--levels': '30,100,250,500', '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
+                '--levels': ','.join(str(v) for v in LEVELS), '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
                 '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
                 '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0}
     types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float}

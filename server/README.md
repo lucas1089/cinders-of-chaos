@@ -6212,7 +6212,8 @@ Names are "Tester Xxx". Group 1, account type 1. Never staff.
 
 Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard library only.
 - `setup`: N accounts `tstbot` + 10 random hex digits, one random password each.
-  Characters "Tester Aaa" upward; a name a player owns is skipped. Classes round robin, levels 30/100/250/500.
+  Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
+  by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.

@@ -266,6 +266,19 @@ spells = [{'words': 'heal a', 'group': 'healing', 'level': 10, 'needlearn': Fals
 eq(T.class_spells(spells, {}, 'Knight', 60)['heal']['words'], 'heal b', 'the best healing spell of the level')
 eq(T.class_spells(spells, {}, 'Mystic', 60)['heal']['words'], 'heal a', 'of the class')
 
+# ---------------------------------------------------------------- level bands
+eq(T.LEVELS, (30, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000), 'the level bands up to 2000')
+eq(T.parse(['setup', '--server-dir', '/x']).levels, '30,100,250,500,750,1000,1250,1500,1750,2000',
+   'setup: every band by default')
+cls15 = [('C%d' % k, 1) for k in range(15)]
+plan = T.plan_bots(100, cls15, list(T.LEVELS))
+for lv in T.LEVELS:
+    band = [c for c, l in plan if l == lv]
+    eq(len(band), 10, 'band %d: 10 of 100 testers' % lv)
+    ok(len(set(band)) == 10, 'band %d: 10 different classes' % lv)
+eq(len({c for c, _ in plan}), 15, 'every class plays')
+eq(T.plan_bots(3, [('A', 1)], [30, 100]), [('A', 30), ('A', 100), ('A', 30)], 'one class: the bands in turn')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))
