@@ -354,6 +354,9 @@ final class CommandsTab {
                     case "started": if (!val.isEmpty()) t.append("Início: ").append(val).append('\n'); break;
                     case "bots": t.append("Testers: ").append(val).append('\n'); break;
                     case "minutes": t.append("Minutos: ").append(val).append('\n'); break;
+                    case "online": t.append("Online agora: ").append(val).append('\n'); break;
+                    case "online_peak": t.append("Pico online: ").append(val).append('\n'); break;
+                    case "online_server": if (!val.isEmpty()) t.append("Online no servidor: ").append(val).append('\n'); break;
                     case "logins": t.append("Logins: ").append(val).append('\n'); break;
                     case "deaths": t.append("Mortes: ").append(val).append('\n'); break;
                     case "helper_loaded": t.append("Ajudante carregado: ").append(val.equals("yes") ? "sim" : "não").append('\n'); break;

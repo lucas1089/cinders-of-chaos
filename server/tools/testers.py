@@ -15,7 +15,7 @@ by hand, as root:
              python3 -I testers.py report [--state DIR] [--log SERVER_LOG] [--scenarios FILE]
   cleanup  delete the tester accounts, their characters and every database row of them; nothing else
              python3 -I testers.py cleanup [--state DIR] [--dry-run]
-  status   bots=, minutes=, logins=, deaths= of the state folder (chaos-ctl.sh testers status)
+  status   bots=, minutes=, online= (in game now), online_peak=, logins=, deaths= of the state folder (chaos-ctl.sh testers status)
 
 Safety (live server with real players):
   * at most 150 bots (MAX_BOTS), default 100; the database rows of a tester carry the player storage 7102900 = 1
@@ -916,14 +916,25 @@ async def run_bots(a, entries):
         results.d['logins'], results.d['deaths'], len(results.d['kicks'])), flush=True)
 
 
+ONLINE_FRESH = 90  # seconds: an older online count in run.json is from a run that is no longer saving (status says 0)
+
+
 def save_results(a, results):
+    n = len(ONLINE)
+    results.d['online'] = n
+    results.d['online_at'] = int(time.time())
+    results.d['online_peak'] = max(n, results.d.get('online_peak', 0))
     write_private(os.path.join(a.state, 'run.json'), json.dumps(results.d, indent=1, sort_keys=True))
 
 
 async def save_results_loop(a, results):
+    tick = 0
     while True:
-        await asyncio.sleep(30)
+        await asyncio.sleep(15)
         save_results(a, results)
+        tick += 1
+        if tick % 4 == 0:  # once a minute the activity log gets the count too
+            results.log(None, 'online', '%d testers in game (peak %d)' % (results.d['online'], results.d['online_peak']))
 
 
 def run(a):
@@ -1038,6 +1049,9 @@ def status(a):
         res = {}
     print('bots=%d' % len([b for b in st.get('bots', []) if b.get('player_id')]))
     print('minutes=%s' % r.get('minutes', ''))
+    fresh = time.time() - int(res.get('online_at', 0) or 0) <= ONLINE_FRESH
+    print('online=%d' % (int(res.get('online', 0) or 0) if fresh else 0))
+    print('online_peak=%s' % res.get('online_peak', 0))
     print('logins=%s' % res.get('logins', 0))
     print('deaths=%s' % res.get('deaths', 0))
 

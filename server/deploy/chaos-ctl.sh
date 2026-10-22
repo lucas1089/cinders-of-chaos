@@ -68,7 +68,9 @@
 #                               start 30 s after it). Never with clientGuardAllowDevKey = true; the client key comes only
 #                               from CHAOS_TESTER_KEY (/etc/chaos/tester-client-key, root only, 0600)
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
-#   testers status              key=value lines: running, pid, started, bots, minutes, logins, deaths, helper, helper_loaded
+#   testers status              key=value lines: running, pid, started, bots, minutes, online (bots in game now),
+#                               online_peak, logins, deaths, online_server (the helper's last console count), helper,
+#                               helper_loaded
 #   testers report              the bug report of the last run (server log since the run started, what the bots saw)
 #   testers log [N]             the last N lines (default 200, at most 5000) of the newest run's activity log: every action
 #                               of every tester, its outcome and every error, one line each ($TSTATE/runs/run-*.log;
@@ -867,7 +869,13 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         started=""
         [ -r "$TSTATE/started" ] && started=$(date -d "@$(tr -dc 0-9 < "$TSTATE/started")" '+%F %T' 2>/dev/null)
         echo "started=$started"
-        (testers_py status --state "$TSTATE") 2>/dev/null | grep -E '^(bots|minutes|logins|deaths)='
+        (testers_py status --state "$TSTATE") 2>/dev/null | grep -E '^(bots|minutes|online|online_peak|logins|deaths)='
+        # the helper's own count (once a minute on the server console), while the bots run
+        srv=""
+        if [ -n "${p:-}" ] && [ -r "$LOG" ]; then
+          srv=$(tail -n 20000 "$LOG" 2>/dev/null | grep -o 'testers online: [0-9]*' | tail -n 1 | tr -dc 0-9)
+        fi
+        echo "online_server=$srv"
         if [ -e "$SERVER/data/scripts/zz_tester_helper.lua" ]; then echo helper=copied; else echo helper=absent; fi
         if helper_loaded; then echo helper_loaded=yes; else echo helper_loaded=no; fi
         ;;

@@ -4,12 +4,15 @@ anomaly rules, the texts the bots read, the server log parsing and the report, t
 rows and the cleanup that deletes only testers by exact ids, a bot's reading of health, death and shop packets.
 
 Run: python3 -I server/tools/testers_test.py (standard library only; no database, no server)."""
+import contextlib
+import io
 import json
 import os
 import random
 import struct
 import sys
 import tempfile
+import time as _time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import loadtest as LT  # noqa: E402
@@ -316,6 +319,35 @@ eq(sorted(os.listdir(_runs)), ['notes.txt', 'run-20261023-100000-report.txt', 'r
 _r2 = T.Results(1)
 _r2.log(_B(), 'login', 'x')  # no activity path: nothing written, no error
 eq(T.Results(1).lines, 0, 'no activity log without a path')
+
+# online: save_results writes the count of testers in game; status shows it only while the run keeps saving
+_sd = tempfile.mkdtemp()
+_a = T.Args()
+_a.state = _sd
+_res = T.Results(3)
+T.ONLINE.clear()
+T.ONLINE.update({1: 'a', 2: 'b'})
+T.save_results(_a, _res)
+T.ONLINE.pop(2)
+T.save_results(_a, _res)
+T.ONLINE.clear()
+
+
+def _status():
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        T.status(_a)
+    return dict(l.split('=', 1) for l in out.getvalue().splitlines())
+
+
+_st = _status()
+eq(_st['online'], '1', 'status: testers in game now')
+eq(_st['online_peak'], '2', 'status: the peak of the run')
+with open(os.path.join(_sd, 'run.json')) as _f:
+    _j = json.load(_f)
+_j['online_at'] = int(_time.time()) - T.ONLINE_FRESH - 5
+T.write_private(os.path.join(_sd, 'run.json'), json.dumps(_j))
+eq(_status()['online'], '0', 'status: a stale count (the run stopped saving) is 0')
 
 for f in FAILS:
     print('FAIL ' + f)

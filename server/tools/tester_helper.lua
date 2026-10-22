@@ -17,6 +17,8 @@
 --     next to an NPC of the town, back to the hunt spot; each answer is a text line
 --     "[tester-helper] <kind> <json>" with the client ids and positions the bot needs (its own creature id, the potion
 --     client ids, the locker, the NPC's name)
+--   * once a minute it counts the testers in game; the server console gets "[tester-helper] testers online: N" when
+--     the count changed, and every 5 minutes anyway
 --   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
 --     or dealt far above the level, one hit from full health to death, a negative or absurd experience gain, an item
 --     with an impossible count or attribute in the tester's backpack (checked once a minute)
@@ -467,6 +469,17 @@ local function step()
 				end
 			end
 		end
+	end
+	if T.step % 120 == 0 then -- once a minute: the testers in game, on the server console
+		local n = 0
+		for _ in pairs(T.ids) do
+			n = n + 1
+		end
+		local line = H.onlineLine(n, T.lastOnline, T.step / 120)
+		if line then
+			print(line)
+		end
+		T.lastOnline = n
 	end
 	-- testers stop removed this file: the loop ends (the server restart drops the rest of the helper)
 	if T.step % 20 == 0 and not T.present() then

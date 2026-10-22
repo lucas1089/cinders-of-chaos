@@ -6284,7 +6284,12 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
   When the minutes are over, the run calls `testers stop --finished` itself.
 - `stop`: SIGTERM to the run's group (the bots log out), the helper files removed.
-- `status`: running, pid, started, bots, minutes, logins, deaths, helper copied, helper loaded.
+- `status`: running, pid, started, bots, minutes, `online` (testers in game now, as the run counts them; 0 when the run
+  stopped saving over 90 s ago), `online_peak`, logins, deaths, `online_server` (the helper's last console count,
+  while the run is up), helper copied, helper loaded.
+- The helper counts the testers in game once a minute. The server console gets
+  `[tester-helper] testers online: N` when the count changed, and every 5 minutes anyway. The activity log gets the
+  run's own count once a minute (`online` lines).
 - `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
   then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
   each with the first bot and what it was doing; behaviours tried / ok / failed; the system coverage (below).

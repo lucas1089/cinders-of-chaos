@@ -88,6 +88,12 @@ eq(H.pickMark(mk, "bank"), nil, "no bank mark")
 local pc = H.placeCounts(mk)
 check(pc.boss == 2 and pc.temple == 1 and pc.guild == nil and pc.npc == nil, "place counts, no guilds, NPCs by name")
 
+-- the console line of the testers online
+eq(H.onlineLine(12, nil, 1), "[tester-helper] testers online: 12", "the first count is logged")
+eq(H.onlineLine(12, 12, 3), nil, "the same count is not logged again")
+eq(H.onlineLine(0, 12, 3), "[tester-helper] testers online: 0", "a change is logged")
+eq(H.onlineLine(12, 12, 10), "[tester-helper] testers online: 12", "every 5 minutes it is logged anyway")
+
 local o = {x = 100, y = 100, z = 7}
 local list = {
 	{id = 1, pos = {x = 103, y = 100, z = 7}, health = 10},
@@ -343,6 +349,17 @@ eq(tester.dir, 1, "and faces it (east)")
 for _, t in ipairs(tester.log.targets) do
 	check(t.monster and not t.master, "only unowned monsters are ever targeted")
 end
+
+-- once a minute the console gets the count of testers in game
+before = #printed
+for _ = 1, 120 do
+	lastStep().fn()
+end
+local onlineLines = 0
+for i = before + 1, #printed do
+	if printed[i] == "[tester-helper] testers online: 1" then onlineLines = onlineLines + 1 end
+end
+eq(onlineLines, 1, "the console line of the testers online")
 
 before = #printed
 local r1, r2, r3, r4 = events.TesterHelperHealth.onHealthChange(tester, wolf, 130000000, COMBAT_PHYSICALDAMAGE, 0, 0, 0)

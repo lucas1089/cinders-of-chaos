@@ -649,10 +649,13 @@ def test_testers():
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
             check(os.getpgid(pid) == pid, 'the run has its own process group')
+            with open(log, 'a') as f:
+                f.write('[tester-helper] testers online: 3\n[tester-helper] testers online: 4\n')
             r = run('testers', 'status', extra={'STUB_BOTS': '5'})
             out = dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
             check(out.get('running') == 'yes' and out.get('pid') == str(pid) and out.get('bots') == '5'
                   and out.get('helper') == 'copied' and out.get('helper_loaded') == 'yes', 'testers status: ' + r.stdout)
+            check(out.get('online_server') == '4', 'testers status: the helper\'s last console count: ' + r.stdout)
             r = run('testers', 'start', '5', '2')
             check(r.returncode != 0 and 'already running' in r.stderr, 'a second start is refused')
             r = run('testers', 'cleanup', '--yes')

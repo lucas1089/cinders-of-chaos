@@ -15,6 +15,8 @@
 --   H.parsePlace(arg)                  "enter <kind> [N]" / "enter npc <name>" / "enter rift [tier]" -> a place, or nil
 --   H.pickMark(marks, kind, n)         the n-th map mark of a kind (data/chaos_poi.lua marks; wraps), and the count
 --   H.placeCounts(marks)               {kind = count} of the marks the helper can bring a tester to
+--   H.onlineLine(count, last, minute)  the console line "[tester-helper] testers online: N" when the count changed
+--                                       since the last line, or every 5 minutes; nil otherwise
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosTesterHelperCore = ChaosTesterHelperCore or {}
@@ -230,6 +232,16 @@ function H.itemAnomaly(item)
 		end
 	end
 	return nil
+end
+
+-- once a minute the helper counts the testers in game; the server console gets a line when it changed (or every
+-- ONLINE_EVERY minutes, so the log shows they are still there)
+H.ONLINE_EVERY = 5
+function H.onlineLine(count, last, minute)
+	if count == last and (minute or 0) % H.ONLINE_EVERY ~= 0 then
+		return nil
+	end
+	return string.format("%s testers online: %d", H.MARK, count)
 end
 
 return H
