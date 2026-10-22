@@ -15,11 +15,12 @@
 --            map) get a forcefield with the same action id beside their arrival at startup (`at`, else the nearest
 --            free tile, ChaosHuntTeleportsCore.pickReturnTile); it sends players in front of the hunt's own teleport
 --            and the label "Back to the teleport room" floats over it
---   display  the display monsters in the closed cells are harmless: HT.isDisplay / isDisplaySpot for the other
---            systems (boss mechanics, monster tiers, treasure goblin skip them), onTargetCombat refuses their hits
+--   display  the display monsters in the closed cells are harmless and unharmed: HT.isDisplay / isDisplaySpot for the
+--            other systems (boss mechanics, monster tiers, treasure goblin, item powers skip them), onTargetCombat
+--            refuses their hits and hits on them, ChaosHallDisplayGuard (onHealthChange) drops direct damage
 -- Assumed engine API (TFS 1.4): Tile (getGround, getItemById, hasFlag, getHouse, getDownItemCount), Game.createItem,
--- Item:setActionId/setAttribute, MoveEvent stepin by aid, GlobalEvent startup, EventCallback onTargetCombat,
--- Player:teleportTo/sendCancelMessage/sendTextMessage.
+-- Item:setActionId/setAttribute, MoveEvent stepin by aid, GlobalEvent startup, EventCallback onTargetCombat/onSpawn,
+-- CreatureEvent onHealthChange, Player:teleportTo/sendCancelMessage/sendTextMessage.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -99,16 +100,37 @@ function HT.isDisplay(creature)
 	return H.isDisplaySpot(cfg, creature:getPosition())
 end
 
--- a display monster never hurts anyone: every target or area hit of it is refused (the engine asks onTargetCombat
--- for each creature a combat of it would reach, melee included). It may still turn to a player; it cannot act on it.
+-- a display monster never hurts anyone and nobody hurts it: every target or area hit of it, or on it, is refused
+-- (the engine asks onTargetCombat for each creature a combat would reach, melee included). It may still turn to a
+-- player; it cannot act on it.
 local passive = EventCallback
 passive.onTargetCombat = function(creature, target)
-	if creature and target and HT.isDisplay(creature) then
+	if (creature and target and HT.isDisplay(creature)) or (target and HT.isDisplay(target)) then
 		return RETURNVALUE_NOTPOSSIBLE
 	end
 	return RETURNVALUE_NOERROR
 end
 passive:register(-50)
+
+-- direct damage skips onTargetCombat (doTargetCombatHealth of the item powers' Smoldering Aura, beta 2026-10-22,
+-- and the other scripted area hits), so a display monster also drops every health change that is not a heal
+local guard = CreatureEvent("ChaosHallDisplayGuard")
+function guard.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType ~= COMBAT_HEALING and HT.isDisplay(creature) then
+		return 0, primaryType, 0, secondaryType
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+guard:register()
+
+local displaySpawn = EventCallback
+displaySpawn.onSpawn = function(self, position, startup, artificial)
+	if not self:getMaster() and HT.isDisplaySpot(position) then
+		self:registerEvent("ChaosHallDisplayGuard")
+	end
+	return true
+end
+displaySpawn:register()
 
 local function placePortal(entry)
 	local pos = P(entry.teleport)

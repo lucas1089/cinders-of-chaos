@@ -7,7 +7,8 @@ folder (config.lua with a x10 XP table and rateExp = 10, data/, the engine tfs);
 and release downloads served from local files, https only), systemctl (unit state in files; an engine containing
 BROKEN never comes online), the database client, ldd, and in the throwaway repository for backup.sh, install_all.py
 (its lategame step is the real late_game.py: it puts back the release's x1 stages), publish_client_update.sh and
-install_site.sh. Checks: check's key=value lines; apply's order (backup, stop, engine, install_all --no-sql, start,
+install_site.sh. Checks: check's key=value lines; the players' changelog written from the checkout;
+apply's order (backup, stop, engine, install_all --no-sql, start,
 --only sql, restart, Server Online); the XP rates kept; the old engine kept as tfs.antes-N; the client update
 published; the download files replaced with NAME.prev, NAME.sha256 and downloads.json; the site installed when
 website/ changed; the lock; the refusals (missing library, size, an unsafe tar entry, a dirty checkout); the automatic
@@ -37,6 +38,8 @@ CTL = os.path.join(HERE, 'chaos-ctl.sh')
 RATES = os.path.join(HERE, 'chaos_config_rates.py')
 LATE_GAME = os.path.join(REPO_ROOT, 'server', 'tools', 'late_game.py')
 MAP_MASTER = os.path.join(REPO_ROOT, 'server', 'tools', 'map_master.py')
+CHANGELOG = os.path.join(REPO_ROOT, 'server', 'tools', 'gen_changelog.py')
+NAMES = os.path.join(REPO_ROOT, 'tools', 'ci', 'check_names.py')
 sys.path.insert(0, os.path.join(REPO_ROOT, 'server', 'tools'))
 import late_game  # noqa: E402
 import map_master_test  # noqa: E402  (fake_map: a tiny synthetic OTBM)
@@ -171,6 +174,9 @@ class World:
         write(os.path.join(o, 'server/tools/install_all.py'), INSTALL)
         shutil.copy(LATE_GAME, os.path.join(o, 'server/tools/late_game.py'))
         shutil.copy(MAP_MASTER, os.path.join(o, 'server/tools/map_master.py'))
+        shutil.copy(CHANGELOG, os.path.join(o, 'server/tools/gen_changelog.py'))
+        os.makedirs(os.path.join(o, 'tools/ci'))
+        shutil.copy(NAMES, os.path.join(o, 'tools/ci/check_names.py'))
         os.makedirs(os.path.join(o, 'server/deploy'))
         shutil.copy(RATES, os.path.join(o, 'server/deploy/chaos_config_rates.py'))
         shutil.copy(SCRIPT, os.path.join(o, 'server/deploy/chaos_kit_update.sh'))
@@ -416,6 +422,10 @@ def test_flow():
               and 'Chaos XP rate x10' in cfg, 'apply: the x10 rates survive install_all', cfg)
         check('restored: rateExp=10' in out, 'apply: says the rates were restored', out)
         check(read(os.path.join(w.server, 'data/installed.txt')) == 'v2\n', 'apply: install_all of the new commit')
+        cl = json.loads(read(os.path.join(w.server, 'data/changelog/changelog.json')))
+        check([(e['text'], e['tags']) for e in cl['entries']] == [('Fix the bank NPC', ['website'])]
+              and cl['published'] == 46, 'apply: the changelog written from the checkout (subject only)', cl)
+        check('changelog: 1 entries' in out, 'apply: the changelog line', out)
         check(w.git('-C', w.repo, 'rev-parse', 'HEAD') == w.git('-C', w.origin, 'rev-parse', 'HEAD'),
               'apply: checkout at origin/main')
         check(w.git('-C', w.repo, 'rev-parse', '--abbrev-ref', 'HEAD') == 'main', 'apply: on branch main')

@@ -388,6 +388,14 @@ EventCallback = setmetatable({}, {__newindex = function(t, k, v)
 	registered[k] = v
 end})
 function EventCallback.register() end
+COMBAT_HEALING, COMBAT_FIREDAMAGE = 128, 8
+function CreatureEvent(name)
+	local e = {name = name}
+	function e:register()
+		registered[name] = e
+	end
+	return e
+end
 -- places file in a temp path: the engine file reads data/lib/chaos_hunt_places.lua; point io.open at a fake
 local realOpen, realDofile = io.open, dofile
 local PL = "data/lib/chaos_hunt_places.lua"
@@ -463,6 +471,9 @@ io.open, dofile = realOpen, realDofile
 
 local function player(level, lang)
 	local pl = {level = level, lang = lang, msgs = {}}
+	function pl:isMonster()
+		return false
+	end
 	function pl:getPlayer()
 		return self
 	end
@@ -569,6 +580,22 @@ local victim = player(8, "en")
 eq(gate(display, victim), RETURNVALUE_NOTPOSSIBLE, "a display monster never hits a player")
 eq(gate(hunter, victim), RETURNVALUE_NOERROR, "other monsters are left alone")
 ok(ChaosHuntTeleports.isDisplaySpot({x = 31648, y = cellS, z = 6}), "HT.isDisplaySpot for the other systems")
+-- nobody hurts a display monster either (beta 2026-10-22: Smoldering Aura, a direct hit, killed them)
+eq(gate(hunter, display), RETURNVALUE_NOTPOSSIBLE, "no combat reaches a display monster")
+local guard = registered.ChaosHallDisplayGuard
+ok(guard ~= nil and guard.onHealthChange ~= nil, "the display guard is registered")
+local pd, pt, sd = guard.onHealthChange(display, victim, -500, COMBAT_FIREDAMAGE, -20, COMBAT_FIREDAMAGE)
+ok(pd == 0 and pt == COMBAT_FIREDAMAGE and sd == 0, "a display monster takes no direct damage")
+eq(guard.onHealthChange(display, nil, 300, COMBAT_HEALING, 0, COMBAT_HEALING), 300, "it may still heal")
+eq(guard.onHealthChange(hunter, victim, -500, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE), -500, "other monsters take it")
+local regs = {}
+local spawned = mon({x = 31648, y = cellN, z = 6})
+function spawned:registerEvent(n) regs[#regs + 1] = n end
+eq(registered.onSpawn(spawned, {x = 31648, y = cellN, z = 6}, true, false), true, "onSpawn lets it spawn")
+eq(regs[1], "ChaosHallDisplayGuard", "a display monster gets the guard at its spawn")
+regs = {}
+eq(registered.onSpawn(spawned, {x = 31648, y = 32256, z = 6}, true, false), true, "onSpawn elsewhere")
+eq(#regs, 0, "a monster elsewhere gets no guard")
 
 print(string.format("hunt_teleports_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

@@ -30,7 +30,10 @@
 #                         (map_master.py install: the old map kept as CHAOS_MAP_BACKUP_DIR/<map>.otbm.<timestamp>, the
 #                         newest 3 stay), install_all.py --no-sql (its map steps find their work in place), the rates put
 #                         back, the kit's helper files (clientservices.py, helpai, start / stop scripts) brought up to
-#                         date, the server folder owned by the unit's user
+#                         date, the players' changelog (data/changelog/changelog.json, server/tools/gen_changelog.py;
+#                         a shallow checkout gets about 100 days of history first; never fails the update; also run
+#                         when nothing else changed and after a client update is published), the server folder owned
+#                         by the unit's user
 #            6 database   the server started (the kit's MariaDB runs inside the unit), the database waited for,
 #                         install_all.py --only sql, then a restart so the engine starts on the new tables (and map)
 #            7 verify     the unit active and "Server Online" in the log within CHAOS_BOOT_TIMEOUT seconds
@@ -183,6 +186,31 @@ fetch_asset() {
 # the kit's helper files beside the engine, from this checkout (the same list as tools/linux/package_server.sh): a kit
 # made from an older package lacks the newer ones (clientservices.py: the login-screen services; live log 2026-10-21)
 # and keeps old start / stop scripts. Copied when missing or different; a source missing in the checkout is skipped.
+# the players' changelog (server/README.md "Changelog"): server/tools/gen_changelog.py writes
+# $SERVER/data/changelog/changelog.json from the history of this checkout; patchnotes.lua reads it again within a
+# minute, so no restart is needed for it. The kit's checkout may be a shallow clone (docs/HOST_TRIAL.md: git clone
+# --depth 1): then about 100 days of the branch and the winpkg-N tags are fetched first (one bounded fetch); a full
+# checkout only gets the tags (never pruned here, so a version GitHub dropped stays known). Never fails the update:
+# a problem is logged and the old file stays.
+changelog() {
+  local gen="$REPO/server/tools/gen_changelog.py" out="$SERVER/data/changelog/changelog.json" since pub
+  [ -f "$gen" ] || { log "changelog: no server/tools/gen_changelog.py in this checkout: skipped"; return 0; }
+  if [ "$(g rev-parse --is-shallow-repository 2>/dev/null)" = true ]; then
+    since=$(date -d '-100 days' +%F 2>/dev/null || echo 2000-01-01)
+    g fetch --quiet --shallow-since="$since" origin "+refs/heads/$BRANCH:refs/remotes/origin/$BRANCH" \
+      '+refs/tags/winpkg-*:refs/tags/winpkg-*' 2>/dev/null || log "changelog: could not fetch more history (the list may be short)"
+  else
+    g fetch --quiet origin '+refs/tags/winpkg-*:refs/tags/winpkg-*' 2>/dev/null || log "changelog: could not fetch the winpkg tags"
+  fi
+  pub=$(published_client)
+  if timeout 120 python3 -I "$gen" --repo "$REPO" --out "$out" --published-client "${pub:-0}" 2>&1 | tail -n 3 \
+    && [ "${PIPESTATUS[0]}" = 0 ]; then
+    return 0
+  fi
+  log "WARN: the changelog was not written (the old file stays)"
+  return 0
+}
+
 sync_sidecars() {
   local pair src dst n=0
   for pair in \
@@ -558,6 +586,7 @@ cmd_apply() {
 
   if [ "$cur" = "$remote" ] && [ -z "$engine_new" ] && [ -z "$map_new" ]; then
     log "no new code, no new engine and no new map: the server is not restarted"
+    changelog
     state_set "installed_release=$LATEST"
     prev_release=$installed
   else
@@ -618,6 +647,7 @@ cmd_apply() {
     if [ "$ok" = 1 ]; then
       python3 -I "$REPO/server/deploy/chaos_config_rates.py" restore "$SERVER/config.lua" "$rates" || ok=0
       sync_sidecars
+      changelog
       own_server
     fi
     if [ "$ok" = 1 ]; then
@@ -663,6 +693,7 @@ cmd_apply() {
     log "publish_client_update.sh winpkg-$LATEST (live: $pub)"
     if "$REPO/server/deploy/publish_client_update.sh" -- "winpkg-$LATEST" 2>&1 | tail -n 25; [ "${PIPESTATUS[0]}" = 0 ]; then
       log "client update $LATEST published"
+      changelog  # its client entries are no longer "next client update"
     else
       warn="$warn client"; log "WARN: the client update was not published (above)"
     fi
