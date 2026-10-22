@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 54,
   "out": 37,
-  "passive": 62,
+  "passive": 63,
   "place": 14,
   "staff": 10
  },
@@ -1812,6 +1812,7 @@
    "skip": [
     "seen",
     "get",
+    "changelog",
     "closed",
     "open",
     "auto"
@@ -2719,6 +2720,13 @@
    "files": [
     "catchup.lua"
    ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "changelog": {
+   "files": [],
    "kind": "passive",
    "opcodes": [],
    "talkactions": [],
