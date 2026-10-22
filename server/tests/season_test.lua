@@ -307,6 +307,10 @@ local CATEGORY = {
 if dofile("data/lib/chaos_pack33.lua").PAIR33 then
 	CATEGORY["Head Accessories"], CATEGORY["Capes"] = true, true
 end
+-- the pair 37 costumes (chaos_pack37_looks.lua): outfits, looks only, sold while ChaosPack37Looks.PAIR37 is on
+if dofile("data/lib/chaos_pack37_looks.lua").PAIR37 then
+	CATEGORY["Costumes"] = true
+end
 local SERVICES = {["service:nameToken"] = true, ["service:sexChange"] = true, ["service:vocationToken"] = false,
 	["service:skullRemover"] = false, ["service:passiveReset"] = false}
 local seen = {}
