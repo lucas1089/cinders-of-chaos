@@ -338,6 +338,12 @@
 		<vocation name="Lich" />
 		<vocation name="Bone Lord" />
 	</instant>
+	<!-- the Necromancer's area attack after Withering Curse (owner 2026-10-22; the Necromancer only, like Bone Shrapnel:
+	     the Lich has Corpse Explosion, the Bone Lord Bone Offering): id 42 of the stock Conjure Rations, removed by the
+	     runes step (install_rune_supply.py); no rune carries it -->
+	<instant group="attack" spellid="42" name="Grave Nova" words="drai nyx oss" level="50" mana="80" premium="0" selftarget="1" cooldown="6000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/grave_nova.lua">
+		<vocation name="Necromancer" />
+	</instant>
 	<instant group="attack" spellid="197" name="Bone Shrapnel" words="drai oss krak" level="60" mana="60" premium="0" range="7" needtarget="1" blockwalls="1" cooldown="4000" groupcooldown="2000" needlearn="0" script="chaos/necromancer/bone_shrapnel.lua">
 		<vocation name="Necromancer" />
 	</instant>

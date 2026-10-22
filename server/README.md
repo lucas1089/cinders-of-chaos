@@ -1568,6 +1568,19 @@ so `register_spells.py` no longer counts a base spell whose script is in `conjur
 stock entry of Arrow Call (176) is a spell the server does not have: `spellfix.lua` moves it to 1176. Assumption: the
 installed server runs the `archery` step (the default of `install_all.py`); without it, two spells would share an id.
 
+### Ids freed by the other conjure spells (2026-10-22)
+
+Every id below 256 was in use again after the late spells of C6. The runes step (`install_rune_supply.py`) also removes
+three conjure spells that make no rune (`chaos_rune_supply.lua` `R.otherConjures`): Conjure Rations (42), Charge Staff
+(92) and Hallow Spear (110). No rune carries their ids, so the rune cooldown icons do not need them. `register_spells.py`
+counts a base spell whose script is one of them as not holding its spellid, like the ammunition conjure spells (the
+`spells` step runs before `runes`); `tests/spell_ids_test.lua` has the list (`OTHER_CONJURE`). Grave Nova, the
+Necromancer's area attack (level 50, `drai nyx oss`), uses 42; 92 and 110 stay free. The client keeps the stock Conjure
+Rations entry for the spell list but moves it to 1042 (`spellfix.lua` `F.apply` with `chaosIds`), so id 42's cooldown
+and helper entries belong to Grave Nova. Checked with a spells.xml that still has Conjure Rations active: registered;
+the same id on another script: refused. Tests: `tests/grave_nova_test.lua` (the cast on a mocked caster: the circle of
+radius 3, the corner of the square left out, 36 ring effects; the entry and the config), `spellfix_test.lua`.
+
 ### Spell progression audit (C6, 2026-10-20)
 
 Report: "Juggernaut level 520 still has the level 300 skills". Cause: no class had a spell above level 300 and the Juggernaut

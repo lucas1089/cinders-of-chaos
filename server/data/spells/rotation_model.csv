@@ -61,6 +61,7 @@ drai orr hyr,Shatterfrost,"avg(l+ML*7,l+ML*10.5)",4,,attack/ice_burst.lua (ring 
 drai zar nyx,Lance of the Grave,"avg(l+ML*5.5,l+ML*9)",2,,attack/grand_death_beam.lua (beam 8)
 kah rek sang,Headsman's Hurl,"avg((P*0.17+17+l)*1.28,(P*0.20+40+l)*1.28)",1,,attack/executioners_throw.lua
 kah oss lanc,Bone Spear,"avg(l+ML*1.6+20,l+ML*2.6+40)",1.5,,necro_config boneSpear (pierce 50%)
+drai nyx oss,Grave Nova,"avg(l+ML*1.8+25,l+ML*2.8+45)",5,,necro_config graveNova (every enemy within 3 sqm of the caster)
 kah dhun,Ashen Fist,"avg(l+P*0.04+20,l+P*0.07+40)",1,chi2,ChaosMonk.formula.ashenFist (+2 chi)
 drai hyr rhim,Rime Bloom,"avg(l+ML*2.5+23,l+ML*4.15+40)*1.2",5,,chaos/sorcerer/frost_nova.lua
 kah shur,Shuriken Toss,"avg(l+P*0.05+20,l+P*0.08+40)*TOSS",1,,chaos/thief/shuriken_toss.lua (TOSS: the class scale in the script)

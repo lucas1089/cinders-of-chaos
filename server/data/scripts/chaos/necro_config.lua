@@ -23,7 +23,10 @@ return {
 		boneGolem = 186, bannerOfBones = 187, boneOffering = 188,
 		-- the summon spells (2026-10-18): free in the base server, the client and the Chaos block (the stock spells end
 		-- at 178 and the packs use 194-199), below 256
-		raiseWarrior = 192, raiseArcher = 193, raiseMage = 176
+		raiseWarrior = 192, raiseArcher = 193, raiseMage = 176,
+		-- the area attack (2026-10-22): the id of the stock Conjure Rations, a conjure spell the runes step removed
+		-- (no rune carries it); register_spells.py and spell_ids_test.lua count it as free
+		graveNova = 42
 	},
 
 	-- condition sub ids (CONDITIONID_COMBAT): the spells and the scripts run in different Lua states, so the
@@ -168,6 +171,12 @@ return {
 	-- Bone Spear: physical; the creature right behind the target takes `pierce` of it. Formula as mlValues:
 	-- (level / 5 + ml x mlMin + baseMin) x scale .. (level / 5 + ml x mlMax + baseMax) x scale, then the level scale.
 	boneSpear = {mlMin = 1.6, mlMax = 2.6, baseMin = 20, baseMax = 40, scale = 1.0, pierce = 0.5},
+
+	-- Grave Nova (the Necromancer, level 50, after Withering Curse): death damage on every enemy within `radius` sqm of the
+	-- caster (a circle), each hit (level / 5 + ml x mlMin + baseMin) .. (level / 5 + ml x mlMax + baseMax) x scale.
+	-- Players only where PvP allows it. A main-target hit a little over Bone Shrapnel's keeps it on rung 3 of the
+	-- Necromancer's cooldown ladder (6 s; server/data/spells/README.md "Cooldown ladder"), nothing else moves.
+	graveNova = {mlMin = 1.8, mlMax = 2.8, baseMin = 25, baseMax = 45, scale = 1.0, radius = 3},
 
 	-- Withering Curse: the target takes +amplify more damage from everyone for durationMs, and rots for
 	-- `ticks` x a tick of death damage (one per second). The Lich's curse is stronger and also curses up to

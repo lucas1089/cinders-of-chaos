@@ -74,7 +74,8 @@ pacified the caster for 10 s.
   Druid-style heals (Purifying Wellspring, Verdant Sanctuary). See "Illusionist healer pass" below.
 
 **Necromancer** (base): Raise Dead (skeletons from empty corpses, or one from nothing for twice the mana), Bone Spear
-(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots). Minions hit as
+(the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots), Grave Nova
+(level 50, the Necromancer only: death damage on every enemy within 3 sqm of the caster, 2026-10-22). Minions hit as
 their owner, so their damage counts for it. Every minion has two spells, one single target and one area (beta
 2026-10-22; table in server/README.md "Necromancer summons"), and the summoned Risen Warrior taunts like the golem.
 - **Lich**: Soul Rot (a DoT that jumps when the host dies), Life Siphon (heals half the damage), Corpse Explosion; the
@@ -192,7 +193,7 @@ ladder". The ladders ("rung n": the class's own rung when a shared spell took an
   Step 12 s < Shuriken Tempest 14 s.
 - **Samurai**: Shuriken Toss 2 s < Snare Trap 4 s < Seeker Mine 6 s < Iaido Sweep 8 s < Blade Flurry 10 s < Iaijutsu 12
   s.
-- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Withering Curse 4 s (rung 3).
+- **Necromancer**: Bone Spear 2 s < Bone Shrapnel 4 s < Grave Nova 6 s < Withering Curse 4 s (rung 4).
 - **Lich**: Bone Spear 2 s < Corpse Explosion 4 s < Life Siphon 6 s < Soul Rot 8 s < Withering Curse 4 s (rung 5).
 - **Bone Lord**: Bone Spear 2 s < Withering Curse 4 s < Bone Offering 6 s.
 - **Monk**: Ashen Fist 2 s < Palm Shockwave 4 s < Whirling Heel 6 s < Sundering Palm 12 s (rung 4).
@@ -223,7 +224,7 @@ Elementalist 7, Mystic 10 -> rung 7 (14 s); Hail of Dawn Deadeye 9, Ranger 8 -> 
 Beastmaster 6, Deadeye 4, Ranger 4 -> rung 4 (8 s); Shattered Psyche Illusionist 6, Mystic 9 -> rung 6 (12 s); Snare
 Trap Beastmaster 4, Deadeye 2, Ninja 2, Ranger 2, Samurai 2, Thief 2 -> rung 2 (4 s); Sundering Palm Iron Sage 6, Monk
 4, Shadowfist 6 -> rung 6 (12 s); Whirling Heel Iron Sage 4, Monk 3, Shadowfist 5 -> rung 3 (6 s); Witchfire Bolt
-Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, Necromancer 3 -> rung 2 (4 s).
+Elementalist 5, Mystic 4 -> rung 4 (8 s); Withering Curse Bone Lord 2, Lich 5, Necromancer 4 -> rung 2 (4 s).
 
 ## Spell cap
 
@@ -263,7 +264,7 @@ Counts before (stock and Chaos spells the class could learn, without the shared 
 | Monk | 7 | 7 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Shadowfist | 10 | 10 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Pressure Points 100, Shadow Ricochet 150, Shadowfist Flurry 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35 |
 | Iron Sage | 11 | 11 | Ashen Fist 8, Sundering Palm 30, Palm Shockwave 50, Whirling Heel 50, Iron Palm 120, Iron Chain 150 | Kindled Breath 40 | Galeborne Stride 20, Mistborne Step 35, Chi Ward 100, Mantra of Stone 150 |
-| Necromancer | 21 | 11 | Bone Spear 8, Withering Curse 40, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
+| Necromancer | 21 | 12 | Bone Spear 8, Withering Curse 40, Grave Nova 50, Bone Shrapnel 60 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
 | Lich | 23 | 13 | Bone Spear 8, Withering Curse 40, Soul Rot 100, Life Siphon 130, Corpse Explosion 160 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20 |
 | Bone Lord | 23 | 13 | Bone Spear 8, Withering Curse 40, Bone Offering 150 | Minor Mending 8, Grand Mending 30, Rebirth of Flesh 300 | Ward of the Mind 14*, Raise Bone Warrior 8, Raise Bone Archer 12, Raise Bone Mage 16, Galeborne Stride 20, Raise Dead 20, Bone Golem 100, Banner of Bones 120 |
 | Templar | 4 | 4 | Radiant Smite 8, Consecration 40, Sanctified Ground 60 | Vow of Mending 30 |  |

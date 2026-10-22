@@ -117,8 +117,10 @@ end
 -- (ChaosRemovedSpells, old and new words: the conjure spells). Returns the undo list, the id map of the stock ids that
 -- changed (idMap[old] = new id, or false for a spell the server does not have) and the set of the ids of the removed
 -- spells. A removed spell keeps its entry and its id (the rune cooldown icons use the conjure ids) but is marked
--- notOnServer, so the helper never casts it, and remapHelper takes it out of the helper's lists.
-function F.apply(info, icons, runes, serverWords, removedWords)
+-- notOnServer, so the helper never casts it, and remapHelper takes it out of the helper's lists. chaosIds (optional):
+-- the set of the Chaos spells' ids; a removed spell whose id a Chaos spell took (Conjure Rations 42 -> Grave Nova,
+-- 2026-10-22) moves to id + OFF_SERVER instead, so the Chaos spell keeps its cooldown and its helper entries.
+function F.apply(info, icons, runes, serverWords, removedWords, chaosIds)
   local undo, idMap, removedIds = {}, {}, {}
   for _, spell in pairs(info) do
     local words = spell.words and spell.words:lower()
@@ -128,7 +130,9 @@ function F.apply(info, icons, runes, serverWords, removedWords)
       if not spell.notOnServer then
         set(undo, spell, "notOnServer", true)
       end
-      if type(old) == "number" then
+      if type(old) == "number" and chaosIds and chaosIds[old] then
+        set(undo, spell, "id", old + F.OFF_SERVER)
+      elseif type(old) == "number" then
         removedIds[old] = true
       end
     elseif fix then
@@ -382,6 +386,15 @@ function F.allowsVocation(spell, vocation, translate)
     end
   end
   return false
+end
+
+-- the ids of the Chaos spells (ChaosSpellData), for F.apply's chaosIds
+function F.chaosIds(chaosSpells)
+  local s = {}
+  for _, c in ipairs(chaosSpells or {}) do
+    s[tonumber(c.id)] = true
+  end
+  return s
 end
 
 -- the words the server has: the Chaos spells' and the renamed stock spells' (ChaosSpellNames values)

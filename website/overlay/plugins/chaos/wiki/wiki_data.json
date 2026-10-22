@@ -397,7 +397,7 @@
 		"siege.on": true,
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
-		"spell.count": 110,
+		"spell.count": 111,
 		"store.categories": 36,
 		"store.cosmetic": 627,
 		"store.offers": 741,
@@ -1232,6 +1232,7 @@
 								["Vigil of Haste", "vigh ruan", "40", "0", "2 s", "whole line"],
 								["Vigil of Clarity", "vigh lum", "40", "0", "2 s", "whole line"],
 								["Withering Curse", "kah nyx maled", "40", "70", "4 s", "whole line"],
+								["Grave Nova", "drai nyx oss", "50", "80", "6 s", "Necromancer"],
 								["Vigil of Wrath", "vigh vyr", "60", "0", "2 s", "whole line"],
 								["Bone Shrapnel", "drai oss krak", "60", "60", "4 s", "Necromancer"],
 								["Banner Call", "tor vas vant", "60", "150", "35 s", "whole line"],
@@ -1256,6 +1257,7 @@
 								"spell:161",
 								"spell:162",
 								"spell:182",
+								"spell:42",
 								"spell:179",
 								"spell:197",
 								"spell:233",
@@ -2288,6 +2290,34 @@
 						}
 					],
 					"icon": "wiki/i/sp-238.png"
+				},
+				{
+					"id": "spell:42",
+					"name": "Grave Nova",
+					"sub": "\"drai nyx oss\", level 50, 80 mana, cooldown 6 s",
+					"color": "#9fdc7f",
+					"sections": [
+						{
+							"h": "Effect",
+							"p": [
+								"The grave breathes out around you; every enemy within 3 sqm takes death damage. The Necromancer's area attack (level 50, after Withering Curse; no target needed). Each hit: (level / 5 + magic level x 1.8..2.8 + 25..45) (necro_config.lua graveNova), the class spell factor on top. A cursed monster takes the curse's +15% / +25% like every other hit. Players are hit only where PvP allows it."
+							]
+						},
+						{
+							"h": "Spell",
+							"cols": ["", ""],
+							"w": [35, 65],
+							"rows": [
+								["Words", "drai nyx oss"],
+								["Level", "50"],
+								["Mana", "80"],
+								["Cooldown", "6 s"],
+								["Kind", "Attack"],
+								["Classes", "Necromancer"]
+							]
+						}
+					],
+					"icon": "wiki/i/k-necrotic-gravenova.png"
 				},
 				{
 					"id": "spell:65",
