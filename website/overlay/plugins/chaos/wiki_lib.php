@@ -35,6 +35,7 @@ function chaos_wiki_guides(): array {
 	return array(
 		'start'    => array('pt-BR' => 'Primeiros passos', 'en' => 'Getting started'),
 		'progression' => array('pt-BR' => 'Progressão: o que fazer a seguir', 'en' => 'Progression: what to do next'),
+		'leveling' => array('pt-BR' => 'Guia de leveling: do nível 1 ao 1000', 'en' => 'Leveling guide: level 1 to 1000'),
 		'classes'  => array('pt-BR' => 'Escolhendo uma classe', 'en' => 'Picking a class'),
 		'tree'     => array('pt-BR' => 'A árvore passiva e exemplos de builds', 'en' => 'The passive tree and example builds'),
 		'items'    => array('pt-BR' => 'Itens e criação', 'en' => 'Items and crafting'),

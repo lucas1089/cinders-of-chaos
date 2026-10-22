@@ -217,11 +217,12 @@ local function list(t, sep)
 	return table.concat(out, sep or ", ")
 end
 
-local function sentence(list)
+-- "a, b and c" (last = " e " for the pt-BR guides)
+local function sentence(list, last)
 	if #list <= 1 then
 		return list[1] or ""
 	end
-	return table.concat(list, ", ", 1, #list - 1) .. " and " .. list[#list]
+	return table.concat(list, ", ", 1, #list - 1) .. (last or " and ") .. list[#list]
 end
 
 local function money(v)
@@ -1734,6 +1735,7 @@ function W.facts(D, vocs, spells, T, typeCount)
 	end
 	f["class.lockedCount"] = #locked
 	f["class.lockedNames"] = sentence(locked)
+	f["class.lockedNamesPt"] = sentence(locked, " e ")
 	local open = {}
 	local lockedSet = {}
 	for _, n in ipairs(locked) do
@@ -1745,6 +1747,7 @@ function W.facts(D, vocs, spells, T, typeCount)
 		end
 	end
 	f["class.openNames"] = sentence(open)
+	f["class.openNamesPt"] = sentence(open, " e ")
 	f["class.unlockCost"] = cost or 0
 	f["class.unlockLevel"] = level or 0
 	f["class.openCount"] = #LINE_ORDER - #locked
@@ -1810,6 +1813,15 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["rift.omenMinTier"] = R.omen.minTier
 	f["rift.omenKeyCost"] = R.omen.keyCost
 	f["rift.bossAt"] = R.bossAt
+	-- the level each rift tier needs (the leveling guide's brackets)
+	for i, t in ipairs(R.tiers) do
+		f["rift.level" .. i] = t.minLevel
+	end
+	f["bounty.maxActive"] = D.bounty.maxActive
+	f["bounty.weeklyNeed"] = D.bounty.weeklyNeed
+	for _, t in ipairs(cfg("trials_config").tiers) do
+		f["trial." .. t.key .. "Level"] = t.minLevel
+	end
 	f["atlas.points"] = D.A.maxPoints(D.atlas, R)
 	-- bosses and events
 	local wb = C0.worldBoss
@@ -1855,6 +1867,8 @@ function W.facts(D, vocs, spells, T, typeCount)
 	f["guildboss.minLevel"] = D.guildboss.minLevel
 	f["pocket.on"] = D.pocket.enabled == true
 	f["pocket.charges"] = D.pocket.charges.daily
+	f["pocket.raidLevel"] = D.pocket.categories.raid.minLevel
+	f["pocket.islandLevel"] = D.pocket.categories.island.minLevel
 	f["events.count"] = #C0.events.list
 	-- seasons
 	local s1 = D.season.seasons[1]
@@ -2319,8 +2333,8 @@ end
 
 -- the guides: slug -> the hero image's motif. emblem = the big icon in the middle, icons = the ring around it,
 -- tone = the tint of the scene. website/overlay/plugins/chaos/wiki_lib.php lists the same slugs (its test checks).
-W.GUIDE_ORDER = {"start", "progression", "classes", "tree", "items", "rifts", "dungeons", "bosses", "seasons", "economy", "social", "pvp",
-	"store", "rules", "faq"}
+W.GUIDE_ORDER = {"start", "progression", "leveling", "classes", "tree", "items", "rifts", "dungeons", "bosses", "seasons",
+	"economy", "social", "pvp", "store", "rules", "faq"}
 
 function W.guideArt(src)
 	local function painted(n)
@@ -2347,6 +2361,9 @@ function W.guideArt(src)
 		progression = {tone = "#ffb050", emblem = top("quests"),
 			icons = {top("dungeons"), kit("blood", "skull"), top("infinitytower"), orb("arcane", "swirl"), top("market"),
 				kit("holy", "banner")}},
+		leveling = {tone = "#f0a040", emblem = kit("steel", "arrowup"),
+			icons = {top("quests"), top("daily"), top("passivetree"), top("dungeons"), RIFT_KEY_ICON,
+				kit("blood", "skull")}},
 		classes = {tone = "#f6cf72", emblem = kit("holy", "cross"), icons = classes},
 		tree = {tone = "#e8b84a", emblem = top("passivetree"), icons = painted(6)},
 		items = {tone = "#ff9c3a", emblem = orb("arcane", "swirl"),
