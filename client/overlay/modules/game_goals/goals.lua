@@ -150,6 +150,9 @@ local function trackerEnabled()
   return g_settings.getBoolean(SETTING_TRACKER, true)
 end
 
+-- the tracker's text area is 208 px wide (220 - padding): about 28 characters of verdana 11 per line, 14 px a line
+local TRACKER_CHARS, TRACKER_LINE = 28, 14
+
 local function renderTracker()
   if not tracker then return end
   local shown = trackerEnabled() and #st.tracker > 0 and g_game.isOnline()
@@ -166,7 +169,10 @@ local function renderTracker()
   for _, r in ipairs(st.tracker) do
     local w = g_ui.createWidget('GoalTrackerRow', tracker.rows)
     local text, pct = V.trackerLine(r)
-    w.label:setText(text)
+    local wrapped, lines = V.wrapLine(text, TRACKER_CHARS)
+    w.label:setText(wrapped)
+    w.label:setHeight(lines * TRACKER_LINE)
+    w:setHeight(lines * TRACKER_LINE + 12)
     w.bar:setPercent(pct)
     w.onClick = function() show() end
   end
