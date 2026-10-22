@@ -1,0 +1,429 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "glacierfang_shelf",
+  "name": "Glacierfang Shelf",
+  "biome": "ice",
+  "size": [
+    174,
+    138
+  ],
+  "floors": 1,
+  "level": [
+    755,
+    870
+  ],
+  "seed": 30321,
+  "origin": {
+    "x": 17048,
+    "y": 14544,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "snow_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "blue_floe",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "glacial_ridge",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "drifting_crevasse",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "pale_slope",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "glassy_shelf",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "frozen_spur",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "white_col",
+      "floor": 1,
+      "size": [
+        24,
+        19
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "numb_moraine",
+      "floor": 1,
+      "size": [
+        26,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "brittle_drifts",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "frostbit_pass",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "rimed_field",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "blue_floe",
+      "to": "glacial_ridge",
+      "width": 3
+    },
+    {
+      "from": "glacial_ridge",
+      "to": "drifting_crevasse",
+      "width": 3
+    },
+    {
+      "from": "drifting_crevasse",
+      "to": "pale_slope",
+      "width": 3
+    },
+    {
+      "from": "pale_slope",
+      "to": "glassy_shelf",
+      "width": 3
+    },
+    {
+      "from": "glassy_shelf",
+      "to": "frozen_spur",
+      "width": 3
+    },
+    {
+      "from": "frozen_spur",
+      "to": "snow_camp",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "white_col",
+      "width": 3
+    },
+    {
+      "from": "white_col",
+      "to": "blue_floe",
+      "width": 3
+    },
+    {
+      "from": "blue_floe",
+      "to": "numb_moraine",
+      "width": 3
+    },
+    {
+      "from": "drifting_crevasse",
+      "to": "numb_moraine",
+      "width": 3
+    },
+    {
+      "from": "glassy_shelf",
+      "to": "numb_moraine",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "numb_moraine",
+      "width": 4
+    },
+    {
+      "from": "white_col",
+      "to": "brittle_drifts",
+      "width": 3
+    },
+    {
+      "from": "brittle_drifts",
+      "to": "blue_floe",
+      "width": 3
+    },
+    {
+      "from": "pale_slope",
+      "to": "frostbit_pass",
+      "width": 3
+    },
+    {
+      "from": "frostbit_pass",
+      "to": "glassy_shelf",
+      "width": 3
+    },
+    {
+      "from": "blue_floe",
+      "to": "rimed_field",
+      "width": 3
+    },
+    {
+      "from": "rimed_field",
+      "to": "glacial_ridge",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "snow_camp"
+  },
+  "exit": {
+    "zone": "snow_camp"
+  },
+  "spawns": [
+    {
+      "zone": "blue_floe",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_floe",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_floe",
+      "monster": "Gashrunner",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_ridge",
+      "monster": "Dark Sorcerer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_ridge",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_ridge",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_crevasse",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_crevasse",
+      "monster": "Gashrunner",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_crevasse",
+      "monster": "Dark Sorcerer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_slope",
+      "monster": "Ironmask Bannerman",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_slope",
+      "monster": "Azure Dragon",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_slope",
+      "monster": "Rootbound Pilgrim",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_shelf",
+      "monster": "Gashrunner",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_shelf",
+      "monster": "Dark Sorcerer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_shelf",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_spur",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_spur",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_spur",
+      "monster": "Gashrunner",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_col",
+      "monster": "Dark Sorcerer",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_col",
+      "monster": "Ironmask Bannerman",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_col",
+      "monster": "Rootbound Pilgrim",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_drifts",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_drifts",
+      "monster": "Gashrunner",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_drifts",
+      "monster": "Dark Sorcerer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frostbit_pass",
+      "monster": "Ironmask Bannerman",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frostbit_pass",
+      "monster": "Azure Dragon",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_field",
+      "monster": "Gashrunner",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_field",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Azure Dragon",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Rootbound Pilgrim",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Gashrunner",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a ice hunt for levels 755-870 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Azure Dragon, Dark Sorcerer, Rootbound Pilgrim, Ironmask Bannerman, Gashrunner. Display monster: Rootbound Pilgrim."
+}

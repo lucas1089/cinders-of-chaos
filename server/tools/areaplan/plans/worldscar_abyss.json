@@ -1,0 +1,924 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "worldscar_abyss",
+  "name": "Worldscar Abyss",
+  "biome": "abyss",
+  "size": [
+    184,
+    161
+  ],
+  "floors": 2,
+  "level": [
+    1850,
+    2000
+  ],
+  "seed": 30620,
+  "origin": {
+    "x": 15620,
+    "y": 15156,
+    "z": 11
+  },
+  "decoration": "dense",
+  "light": "dark",
+  "zones": [
+    {
+      "id": "rim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "drifting_terrace",
+      "floor": 1,
+      "size": [
+        25,
+        21
+      ],
+      "place": "north"
+    },
+    {
+      "id": "umbral_basin",
+      "floor": 1,
+      "size": [
+        25,
+        19
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "weeping_scarp",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "unlit_throat",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "lightless_rift",
+      "floor": 1,
+      "size": [
+        28,
+        19
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "broken_chasm",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "west"
+    },
+    {
+      "id": "warped_ledge",
+      "floor": 1,
+      "size": [
+        26,
+        21
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "endless_fold",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "shattered_rim",
+      "floor": 1,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "hungry_maw",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "starless_spire",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "silent_drift",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "void_gulf",
+      "floor": 2,
+      "size": "large",
+      "place": "west"
+    },
+    {
+      "id": "hollow_shelf",
+      "floor": 2,
+      "size": [
+        24,
+        19
+      ],
+      "place": "north"
+    },
+    {
+      "id": "drifting_throat",
+      "floor": 2,
+      "size": [
+        24,
+        21
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "umbral_rift",
+      "floor": 2,
+      "size": [
+        27,
+        20
+      ],
+      "place": "east"
+    },
+    {
+      "id": "weeping_chasm",
+      "floor": 2,
+      "size": [
+        26,
+        22
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "unlit_ledge",
+      "floor": 2,
+      "size": [
+        24,
+        19
+      ],
+      "place": "south"
+    },
+    {
+      "id": "lightless_fold",
+      "floor": 2,
+      "size": [
+        26,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "broken_rim",
+      "floor": 2,
+      "size": [
+        24,
+        18
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "warped_maw",
+      "floor": 2,
+      "size": [
+        27,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "endless_spire",
+      "floor": 2,
+      "size": [
+        19,
+        14
+      ]
+    },
+    {
+      "id": "shattered_drift",
+      "floor": 2,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "hungry_gulf",
+      "floor": 2,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "starless_shelf",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "silent_terrace",
+      "floor": 2,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "drifting_terrace",
+      "to": "umbral_basin",
+      "width": 3
+    },
+    {
+      "from": "umbral_basin",
+      "to": "rim_camp",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "weeping_scarp",
+      "width": 3
+    },
+    {
+      "from": "weeping_scarp",
+      "to": "unlit_throat",
+      "width": 3
+    },
+    {
+      "from": "unlit_throat",
+      "to": "lightless_rift",
+      "width": 3
+    },
+    {
+      "from": "lightless_rift",
+      "to": "broken_chasm",
+      "width": 3
+    },
+    {
+      "from": "broken_chasm",
+      "to": "warped_ledge",
+      "width": 3
+    },
+    {
+      "from": "warped_ledge",
+      "to": "drifting_terrace",
+      "width": 3
+    },
+    {
+      "from": "drifting_terrace",
+      "to": "endless_fold",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "endless_fold",
+      "width": 4
+    },
+    {
+      "from": "unlit_throat",
+      "to": "endless_fold",
+      "width": 3
+    },
+    {
+      "from": "broken_chasm",
+      "to": "endless_fold",
+      "width": 3
+    },
+    {
+      "from": "drifting_terrace",
+      "to": "shattered_rim",
+      "width": 3
+    },
+    {
+      "from": "shattered_rim",
+      "to": "umbral_basin",
+      "width": 3
+    },
+    {
+      "from": "unlit_throat",
+      "to": "hungry_maw",
+      "width": 3
+    },
+    {
+      "from": "hungry_maw",
+      "to": "lightless_rift",
+      "width": 3
+    },
+    {
+      "from": "broken_chasm",
+      "to": "starless_spire",
+      "width": 3
+    },
+    {
+      "from": "starless_spire",
+      "to": "warped_ledge",
+      "width": 3
+    },
+    {
+      "from": "broken_chasm",
+      "to": "silent_drift",
+      "width": 3
+    },
+    {
+      "from": "hollow_shelf",
+      "to": "drifting_throat",
+      "width": 3
+    },
+    {
+      "from": "drifting_throat",
+      "to": "umbral_rift",
+      "width": 3
+    },
+    {
+      "from": "umbral_rift",
+      "to": "weeping_chasm",
+      "width": 3
+    },
+    {
+      "from": "weeping_chasm",
+      "to": "unlit_ledge",
+      "width": 3
+    },
+    {
+      "from": "unlit_ledge",
+      "to": "lightless_fold",
+      "width": 3
+    },
+    {
+      "from": "lightless_fold",
+      "to": "void_gulf",
+      "width": 3
+    },
+    {
+      "from": "void_gulf",
+      "to": "broken_rim",
+      "width": 3
+    },
+    {
+      "from": "broken_rim",
+      "to": "hollow_shelf",
+      "width": 3
+    },
+    {
+      "from": "hollow_shelf",
+      "to": "warped_maw",
+      "width": 3
+    },
+    {
+      "from": "umbral_rift",
+      "to": "warped_maw",
+      "width": 3
+    },
+    {
+      "from": "unlit_ledge",
+      "to": "warped_maw",
+      "width": 3
+    },
+    {
+      "from": "void_gulf",
+      "to": "warped_maw",
+      "width": 4
+    },
+    {
+      "from": "void_gulf",
+      "to": "endless_spire",
+      "width": 3
+    },
+    {
+      "from": "endless_spire",
+      "to": "broken_rim",
+      "width": 3
+    },
+    {
+      "from": "drifting_throat",
+      "to": "shattered_drift",
+      "width": 3
+    },
+    {
+      "from": "shattered_drift",
+      "to": "umbral_rift",
+      "width": 3
+    },
+    {
+      "from": "hollow_shelf",
+      "to": "hungry_gulf",
+      "width": 3
+    },
+    {
+      "from": "hungry_gulf",
+      "to": "drifting_throat",
+      "width": 3
+    },
+    {
+      "from": "unlit_ledge",
+      "to": "starless_shelf",
+      "width": 3
+    },
+    {
+      "from": "starless_shelf",
+      "to": "lightless_fold",
+      "width": 3
+    },
+    {
+      "from": "drifting_throat",
+      "to": "silent_terrace",
+      "width": 2
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "silent_drift",
+      "to": "void_gulf"
+    }
+  ],
+  "entry": {
+    "zone": "rim_camp"
+  },
+  "exit": {
+    "zone": "rim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "drifting_terrace",
+      "monster": "Gnarlback",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_terrace",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_terrace",
+      "monster": "Mirecoil Wyrm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Mirecoil Wyrm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Gnarlback",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_throat",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_throat",
+      "monster": "Pyrewing Tyrant",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_throat",
+      "monster": "Gnawbone Swarm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_rift",
+      "monster": "Mirecoil Wyrm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_rift",
+      "monster": "Gnarlback",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_rift",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_chasm",
+      "monster": "Pyrewing Tyrant",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_chasm",
+      "monster": "Pyre Stork",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_chasm",
+      "monster": "Ironmask Warbreaker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_ledge",
+      "monster": "Gnarlback",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_ledge",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_ledge",
+      "monster": "Mirecoil Wyrm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_rim",
+      "monster": "Pyre Stork",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_rim",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_maw",
+      "monster": "Gnawbone Swarm",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_maw",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_spire",
+      "monster": "Ironmask Warbreaker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_spire",
+      "monster": "Gnawbone Swarm",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_fold",
+      "monster": "Mirecoil Wyrm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_fold",
+      "monster": "Gnarlback",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_fold",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_drift",
+      "monster": "Pyrewing Tyrant",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_drift",
+      "monster": "Pyre Stork",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_throat",
+      "monster": "Pyre Stork",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_throat",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_throat",
+      "monster": "Pyrewing Tyrant",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_rift",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_rift",
+      "monster": "Mirecoil Wyrm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_rift",
+      "monster": "Gnarlback",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_chasm",
+      "monster": "Ironmask Warbreaker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_chasm",
+      "monster": "Pyrewing Tyrant",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_chasm",
+      "monster": "Gnawbone Swarm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_ledge",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_ledge",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_ledge",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Pyrewing Tyrant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Pyre Stork",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_rim",
+      "monster": "Gnarlback",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_rim",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_rim",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_spire",
+      "monster": "Pyre Stork",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_spire",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_drift",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_drift",
+      "monster": "Mirecoil Wyrm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_gulf",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_gulf",
+      "monster": "Gnawbone Swarm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_shelf",
+      "monster": "Mirecoil Wyrm",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_shelf",
+      "monster": "Gnarlback",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_maw",
+      "monster": "Pyrewing Tyrant",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_maw",
+      "monster": "Pyre Stork",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_maw",
+      "monster": "Ironmask Warbreaker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "silent_terrace",
+      "quest": "worldscar_terrace_cache",
+      "reward": {
+        "gold": 3600000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 10
+          }
+        ],
+        "message": "Something the dark could not keep."
+      }
+    }
+  ],
+  "chest_action": 47999,
+  "notes": "Content plan (hall fill, 2026-10-22): a abyss hunt for levels 1850-2000 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 24 hunting zones in loops on two floors; monsters Gnarlback, Pyre Stork, Gnawbone Swarm, Ironmask Warbreaker, Mirecoil Wyrm, Pyrewing Tyrant. Display monster: Gnawbone Swarm."
+}

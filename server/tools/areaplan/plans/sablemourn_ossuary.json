@@ -1,0 +1,519 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sablemourn_ossuary",
+  "name": "Sablemourn Ossuary",
+  "biome": "crypt",
+  "size": [
+    168,
+    129
+  ],
+  "floors": 1,
+  "level": [
+    530,
+    645
+  ],
+  "seed": 30126,
+  "origin": {
+    "x": 16028,
+    "y": 14340,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vigil_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dusty_chapel",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "grave_cells",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "black_cloister",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "east"
+    },
+    {
+      "id": "hollow_tombs",
+      "floor": 1,
+      "size": [
+        27,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "vigil_vault",
+      "floor": 1,
+      "size": [
+        27,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "silent_shrine",
+      "floor": 1,
+      "size": [
+        28,
+        17
+      ],
+      "place": "west"
+    },
+    {
+      "id": "tithe_charnel",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "whispering_reliquary",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "cracked_nave",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "pale_stair",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ]
+    },
+    {
+      "id": "sealed_ossuary",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "candle_crypts",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "forgotten_aisle",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "dusty_chapel",
+      "to": "grave_cells",
+      "width": 3
+    },
+    {
+      "from": "grave_cells",
+      "to": "black_cloister",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "hollow_tombs",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "vigil_vault",
+      "width": 3
+    },
+    {
+      "from": "vigil_vault",
+      "to": "silent_shrine",
+      "width": 3
+    },
+    {
+      "from": "silent_shrine",
+      "to": "tithe_charnel",
+      "width": 3
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "dusty_chapel",
+      "width": 3
+    },
+    {
+      "from": "dusty_chapel",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "whispering_reliquary",
+      "width": 4
+    },
+    {
+      "from": "silent_shrine",
+      "to": "whispering_reliquary",
+      "width": 3
+    },
+    {
+      "from": "grave_cells",
+      "to": "cracked_nave",
+      "width": 3
+    },
+    {
+      "from": "cracked_nave",
+      "to": "black_cloister",
+      "width": 3
+    },
+    {
+      "from": "dusty_chapel",
+      "to": "pale_stair",
+      "width": 3
+    },
+    {
+      "from": "pale_stair",
+      "to": "grave_cells",
+      "width": 3
+    },
+    {
+      "from": "black_cloister",
+      "to": "sealed_ossuary",
+      "width": 3
+    },
+    {
+      "from": "sealed_ossuary",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "candle_crypts",
+      "width": 3
+    },
+    {
+      "from": "candle_crypts",
+      "to": "vigil_vault",
+      "width": 3
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "forgotten_aisle",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "vigil_camp"
+  },
+  "exit": {
+    "zone": "vigil_camp"
+  },
+  "spawns": [
+    {
+      "zone": "dusty_chapel",
+      "monster": "Slagborer Queen",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_chapel",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_chapel",
+      "monster": "Mange Hound",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Mange Hound",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Slagborer",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "grave_cells",
+      "monster": "Slagborer Queen",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Ashmaw Bonecaller",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Ashmaw Raider",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "black_cloister",
+      "monster": "Mange Hound",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Slagborer Queen",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Mange Hound",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Ashmaw Raider",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Mange Hound",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Slagborer Queen",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Ashmaw Bonecaller",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "silent_shrine",
+      "monster": "Ashmaw Raider",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Mange Hound",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Slagborer",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Slagborer Queen",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_nave",
+      "monster": "Mange Hound",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Slagborer",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Slagborer Queen",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "pale_stair",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Ashmaw Raider",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Mange Hound",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Slagborer",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Ashmaw Bonecaller",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "candle_crypts",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Mange Hound",
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Slagborer",
+      "count": 11,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_reliquary",
+      "monster": "Slagborer Queen",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "forgotten_aisle",
+      "quest": "sablemourn_aisle",
+      "reward": {
+        "gold": 300000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "A tithe left for the dead, taken back."
+      }
+    }
+  ],
+  "chest_action": 47962,
+  "notes": "Content plan (hall fill, 2026-10-22): a crypt hunt for levels 530-645 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Slagborer Queen, Mange Hound, Ashmaw Bonecaller, Slagborer, Ashmaw Raider. Display monster: Mange Hound."
+}

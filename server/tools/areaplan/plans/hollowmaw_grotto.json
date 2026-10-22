@@ -1,0 +1,447 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "hollowmaw_grotto",
+  "name": "Hollowmaw Grotto",
+  "biome": "cave",
+  "size": [
+    164,
+    137
+  ],
+  "floors": 1,
+  "level": [
+    680,
+    795
+  ],
+  "seed": 30256,
+  "origin": {
+    "x": 16028,
+    "y": 14544,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "echoing_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "twisted_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "gloomy_crawl",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "rubble_tunnels",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "shale_shaft",
+      "floor": 1,
+      "size": [
+        26,
+        16
+      ],
+      "place": "south"
+    },
+    {
+      "id": "mossy_den",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "split_burrow",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "dripping_cleft",
+      "floor": 1,
+      "size": [
+        27,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "sunken_chamber",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "crooked_vein",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "lowroof_pocket",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "narrow_warren",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "echoing_pit",
+      "to": "twisted_gallery",
+      "width": 3
+    },
+    {
+      "from": "twisted_gallery",
+      "to": "gloomy_crawl",
+      "width": 3
+    },
+    {
+      "from": "gloomy_crawl",
+      "to": "rubble_tunnels",
+      "width": 3
+    },
+    {
+      "from": "rubble_tunnels",
+      "to": "shale_shaft",
+      "width": 3
+    },
+    {
+      "from": "shale_shaft",
+      "to": "mossy_den",
+      "width": 3
+    },
+    {
+      "from": "mossy_den",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "split_burrow",
+      "width": 3
+    },
+    {
+      "from": "split_burrow",
+      "to": "echoing_pit",
+      "width": 3
+    },
+    {
+      "from": "echoing_pit",
+      "to": "dripping_cleft",
+      "width": 3
+    },
+    {
+      "from": "gloomy_crawl",
+      "to": "dripping_cleft",
+      "width": 3
+    },
+    {
+      "from": "shale_shaft",
+      "to": "dripping_cleft",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "dripping_cleft",
+      "width": 4
+    },
+    {
+      "from": "split_burrow",
+      "to": "sunken_chamber",
+      "width": 3
+    },
+    {
+      "from": "sunken_chamber",
+      "to": "echoing_pit",
+      "width": 3
+    },
+    {
+      "from": "shale_shaft",
+      "to": "crooked_vein",
+      "width": 3
+    },
+    {
+      "from": "crooked_vein",
+      "to": "mossy_den",
+      "width": 3
+    },
+    {
+      "from": "gloomy_crawl",
+      "to": "lowroof_pocket",
+      "width": 3
+    },
+    {
+      "from": "lowroof_pocket",
+      "to": "rubble_tunnels",
+      "width": 3
+    },
+    {
+      "from": "shale_shaft",
+      "to": "narrow_warren",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "echoing_pit",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pit",
+      "monster": "Swamp Snapper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pit",
+      "monster": "Shroud Brood",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_gallery",
+      "monster": "Shroud Brood",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_gallery",
+      "monster": "Blight Hound",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_gallery",
+      "monster": "Dreamgorger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_crawl",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_crawl",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_crawl",
+      "monster": "Shroud Brood",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_tunnels",
+      "monster": "Blight Hound",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_tunnels",
+      "monster": "Dreamgorger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_tunnels",
+      "monster": "Shroud Brood",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shale_shaft",
+      "monster": "Ironbound Troll",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shale_shaft",
+      "monster": "Shroud Brood",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shale_shaft",
+      "monster": "Blight Hound",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_den",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_den",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_den",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_burrow",
+      "monster": "Shroud Brood",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_burrow",
+      "monster": "Blight Hound",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_burrow",
+      "monster": "Dreamgorger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_chamber",
+      "monster": "Swamp Snapper",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_chamber",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_vein",
+      "monster": "Blight Hound",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_vein",
+      "monster": "Dreamgorger",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_pocket",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_pocket",
+      "monster": "Shroud Brood",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_cleft",
+      "monster": "Dreamgorger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_cleft",
+      "monster": "Swamp Snapper",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_cleft",
+      "monster": "Ironbound Troll",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "narrow_warren",
+      "quest": "hollowmaw_warren",
+      "reward": {
+        "gold": 400000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "Coin hidden where no light reaches."
+      }
+    }
+  ],
+  "chest_action": 47972,
+  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 680-795 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Dreamgorger, Shroud Brood, Swamp Snapper, Blight Hound, Ironbound Troll. Display monster: Shroud Brood."
+}

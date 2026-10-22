@@ -1,0 +1,492 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "dreadmourn_crypt",
+  "name": "Dreadmourn Crypt",
+  "biome": "crypt",
+  "size": [
+    180,
+    142
+  ],
+  "floors": 1,
+  "level": [
+    710,
+    825
+  ],
+  "seed": 30282,
+  "origin": {
+    "x": 16436,
+    "y": 14544,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vigil_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dusty_niches",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "pale_charnel",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "vigil_aisle",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "mourning_ossuary",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "silent_reliquary",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "candle_stair",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "forgotten_chapel",
+      "floor": 1,
+      "size": [
+        28,
+        20
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "tithe_shrine",
+      "floor": 1,
+      "size": [
+        27,
+        23
+      ],
+      "place": "center"
+    },
+    {
+      "id": "cracked_cells",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "sealed_tombs",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "hollow_nave",
+      "floor": 1,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "whispering_crypts",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "grave_vault",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "vigil_camp",
+      "to": "dusty_niches",
+      "width": 3
+    },
+    {
+      "from": "dusty_niches",
+      "to": "pale_charnel",
+      "width": 3
+    },
+    {
+      "from": "pale_charnel",
+      "to": "vigil_aisle",
+      "width": 3
+    },
+    {
+      "from": "vigil_aisle",
+      "to": "mourning_ossuary",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "silent_reliquary",
+      "width": 3
+    },
+    {
+      "from": "silent_reliquary",
+      "to": "candle_stair",
+      "width": 3
+    },
+    {
+      "from": "candle_stair",
+      "to": "forgotten_chapel",
+      "width": 3
+    },
+    {
+      "from": "forgotten_chapel",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "tithe_shrine",
+      "width": 4
+    },
+    {
+      "from": "pale_charnel",
+      "to": "tithe_shrine",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "tithe_shrine",
+      "width": 3
+    },
+    {
+      "from": "candle_stair",
+      "to": "tithe_shrine",
+      "width": 3
+    },
+    {
+      "from": "forgotten_chapel",
+      "to": "cracked_cells",
+      "width": 3
+    },
+    {
+      "from": "cracked_cells",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_aisle",
+      "to": "sealed_tombs",
+      "width": 3
+    },
+    {
+      "from": "sealed_tombs",
+      "to": "mourning_ossuary",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "hollow_nave",
+      "width": 3
+    },
+    {
+      "from": "hollow_nave",
+      "to": "silent_reliquary",
+      "width": 3
+    },
+    {
+      "from": "candle_stair",
+      "to": "whispering_crypts",
+      "width": 3
+    },
+    {
+      "from": "whispering_crypts",
+      "to": "forgotten_chapel",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "grave_vault",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "vigil_camp"
+  },
+  "exit": {
+    "zone": "vigil_camp"
+  },
+  "spawns": [
+    {
+      "zone": "dusty_niches",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_niches",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_niches",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_charnel",
+      "monster": "Royal Man",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_charnel",
+      "monster": "Frost Maiden",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_charnel",
+      "monster": "Tundra Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_aisle",
+      "monster": "Loricate Orger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_aisle",
+      "monster": "Rootbound Pilgrim",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_aisle",
+      "monster": "Royal Man",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Frost Maiden",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Tundra Troll",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Rootbound Pilgrim",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Royal Man",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Frost Maiden",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_stair",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_stair",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_stair",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_chapel",
+      "monster": "Royal Man",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_chapel",
+      "monster": "Frost Maiden",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_chapel",
+      "monster": "Rootbound Pilgrim",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_cells",
+      "monster": "Loricate Orger",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_cells",
+      "monster": "Rootbound Pilgrim",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_tombs",
+      "monster": "Frost Maiden",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_tombs",
+      "monster": "Tundra Troll",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_nave",
+      "monster": "Rootbound Pilgrim",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_nave",
+      "monster": "Royal Man",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_crypts",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_crypts",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_crypts",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_shrine",
+      "monster": "Royal Man",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_shrine",
+      "monster": "Frost Maiden",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_shrine",
+      "monster": "Tundra Troll",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "grave_vault",
+      "quest": "dreadmourn_vault",
+      "reward": {
+        "gold": 450000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "A tithe left for the dead, taken back."
+      }
+    }
+  ],
+  "chest_action": 47973,
+  "notes": "Content plan (hall fill, 2026-10-22): a crypt hunt for levels 710-825 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Tundra Troll, Royal Man, Loricate Orger, Frost Maiden, Rootbound Pilgrim. Display monster: Rootbound Pilgrim."
+}

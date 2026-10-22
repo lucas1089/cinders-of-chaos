@@ -1,0 +1,442 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "frostvein_reach",
+  "name": "Frostvein Reach",
+  "biome": "ice",
+  "size": [
+    167,
+    133
+  ],
+  "floors": 1,
+  "level": [
+    575,
+    690
+  ],
+  "seed": 30165,
+  "origin": {
+    "x": 16640,
+    "y": 14340,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "snow_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "glassy_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "howling_pass",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "pale_drifts",
+      "floor": 1,
+      "size": [
+        27,
+        18
+      ],
+      "place": "east"
+    },
+    {
+      "id": "brittle_basin",
+      "floor": 1,
+      "size": [
+        23,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "drifting_slope",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "snowbound_spur",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "west"
+    },
+    {
+      "id": "numb_moraine",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "white_shelf",
+      "floor": 1,
+      "size": [
+        32,
+        23
+      ],
+      "place": "center"
+    },
+    {
+      "id": "frozen_crevasse",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "bitter_field",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "glacial_col",
+      "floor": 1,
+      "size": [
+        18,
+        14
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "glassy_hollow",
+      "to": "howling_pass",
+      "width": 3
+    },
+    {
+      "from": "howling_pass",
+      "to": "pale_drifts",
+      "width": 3
+    },
+    {
+      "from": "pale_drifts",
+      "to": "brittle_basin",
+      "width": 3
+    },
+    {
+      "from": "brittle_basin",
+      "to": "snow_camp",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "drifting_slope",
+      "width": 3
+    },
+    {
+      "from": "drifting_slope",
+      "to": "snowbound_spur",
+      "width": 3
+    },
+    {
+      "from": "snowbound_spur",
+      "to": "numb_moraine",
+      "width": 3
+    },
+    {
+      "from": "numb_moraine",
+      "to": "glassy_hollow",
+      "width": 3
+    },
+    {
+      "from": "glassy_hollow",
+      "to": "white_shelf",
+      "width": 3
+    },
+    {
+      "from": "pale_drifts",
+      "to": "white_shelf",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "white_shelf",
+      "width": 4
+    },
+    {
+      "from": "snowbound_spur",
+      "to": "white_shelf",
+      "width": 3
+    },
+    {
+      "from": "pale_drifts",
+      "to": "frozen_crevasse",
+      "width": 3
+    },
+    {
+      "from": "frozen_crevasse",
+      "to": "brittle_basin",
+      "width": 3
+    },
+    {
+      "from": "glassy_hollow",
+      "to": "bitter_field",
+      "width": 3
+    },
+    {
+      "from": "bitter_field",
+      "to": "howling_pass",
+      "width": 3
+    },
+    {
+      "from": "howling_pass",
+      "to": "glacial_col",
+      "width": 3
+    },
+    {
+      "from": "glacial_col",
+      "to": "pale_drifts",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "snow_camp"
+  },
+  "exit": {
+    "zone": "snow_camp"
+  },
+  "spawns": [
+    {
+      "zone": "glassy_hollow",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_hollow",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_hollow",
+      "monster": "Mercenary",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_pass",
+      "monster": "Mercenary",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_pass",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_pass",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_drifts",
+      "monster": "Orclops Ravager",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_drifts",
+      "monster": "Ashmaw Warlord",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_drifts",
+      "monster": "Mercenary",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_basin",
+      "monster": "Shaper Matriarch",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_basin",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_basin",
+      "monster": "Mercenary",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_slope",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_slope",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_slope",
+      "monster": "Shaper Matriarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_spur",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_spur",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_spur",
+      "monster": "Ashmaw Warlord",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Mercenary",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_moraine",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_crevasse",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_crevasse",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_crevasse",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_field",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_field",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_field",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_col",
+      "monster": "Ashmaw Warlord",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_col",
+      "monster": "Mercenary",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_shelf",
+      "monster": "Grove Keeper",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_shelf",
+      "monster": "Orclops Ravager",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_shelf",
+      "monster": "Ashmaw Warlord",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a ice hunt for levels 575-690 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Grove Keeper, Mercenary, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord. Display monster: Mercenary."
+}

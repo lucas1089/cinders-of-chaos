@@ -1,0 +1,932 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "paleflame_sanctum",
+  "name": "Paleflame Sanctum",
+  "biome": "sanctum",
+  "size": [
+    184,
+    166
+  ],
+  "floors": 2,
+  "level": [
+    1700,
+    1850
+  ],
+  "seed": 30594,
+  "origin": {
+    "x": 17252,
+    "y": 14952,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "pilgrim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "damp_altar",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "north"
+    },
+    {
+      "id": "weeping_beds",
+      "floor": 1,
+      "size": [
+        26,
+        19
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "blighted_pool",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "east"
+    },
+    {
+      "id": "rotting_sanctum",
+      "floor": 1,
+      "size": [
+        27,
+        21
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "mossy_grotto",
+      "floor": 1,
+      "size": [
+        27,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "veiled_garden",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "west"
+    },
+    {
+      "id": "moldy_cell",
+      "floor": 1,
+      "size": [
+        28,
+        20
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "glowcap_cellar",
+      "floor": 1,
+      "size": [
+        32,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "sour_shrine",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "tainted_nave",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ]
+    },
+    {
+      "id": "withered_chapel",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "creeping_well",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "festering_arbour",
+      "floor": 2,
+      "size": "large",
+      "place": "north"
+    },
+    {
+      "id": "spore_cloister",
+      "floor": 2,
+      "size": [
+        24,
+        22
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "damp_sanctum",
+      "floor": 2,
+      "size": [
+        25,
+        19
+      ],
+      "place": "east"
+    },
+    {
+      "id": "weeping_grotto",
+      "floor": 2,
+      "size": [
+        24,
+        20
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "blighted_garden",
+      "floor": 2,
+      "size": [
+        25,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "rotting_cell",
+      "floor": 2,
+      "size": [
+        27,
+        22
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "mossy_cellar",
+      "floor": 2,
+      "size": [
+        28,
+        18
+      ],
+      "place": "west"
+    },
+    {
+      "id": "veiled_shrine",
+      "floor": 2,
+      "size": [
+        24,
+        22
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "moldy_nave",
+      "floor": 2,
+      "size": [
+        30,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "glowcap_chapel",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "sour_well",
+      "floor": 2,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "tainted_arbour",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "withered_cloister",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "creeping_altar",
+      "floor": 2,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "damp_altar",
+      "to": "weeping_beds",
+      "width": 3
+    },
+    {
+      "from": "weeping_beds",
+      "to": "blighted_pool",
+      "width": 3
+    },
+    {
+      "from": "blighted_pool",
+      "to": "rotting_sanctum",
+      "width": 3
+    },
+    {
+      "from": "rotting_sanctum",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "mossy_grotto",
+      "width": 3
+    },
+    {
+      "from": "mossy_grotto",
+      "to": "veiled_garden",
+      "width": 3
+    },
+    {
+      "from": "veiled_garden",
+      "to": "moldy_cell",
+      "width": 3
+    },
+    {
+      "from": "moldy_cell",
+      "to": "damp_altar",
+      "width": 3
+    },
+    {
+      "from": "damp_altar",
+      "to": "glowcap_cellar",
+      "width": 3
+    },
+    {
+      "from": "blighted_pool",
+      "to": "glowcap_cellar",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "glowcap_cellar",
+      "width": 4
+    },
+    {
+      "from": "veiled_garden",
+      "to": "glowcap_cellar",
+      "width": 3
+    },
+    {
+      "from": "rotting_sanctum",
+      "to": "sour_shrine",
+      "width": 3
+    },
+    {
+      "from": "sour_shrine",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "weeping_beds",
+      "to": "tainted_nave",
+      "width": 3
+    },
+    {
+      "from": "tainted_nave",
+      "to": "blighted_pool",
+      "width": 3
+    },
+    {
+      "from": "moldy_cell",
+      "to": "withered_chapel",
+      "width": 3
+    },
+    {
+      "from": "withered_chapel",
+      "to": "damp_altar",
+      "width": 3
+    },
+    {
+      "from": "damp_altar",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "festering_arbour",
+      "to": "spore_cloister",
+      "width": 3
+    },
+    {
+      "from": "spore_cloister",
+      "to": "damp_sanctum",
+      "width": 3
+    },
+    {
+      "from": "damp_sanctum",
+      "to": "weeping_grotto",
+      "width": 3
+    },
+    {
+      "from": "weeping_grotto",
+      "to": "blighted_garden",
+      "width": 3
+    },
+    {
+      "from": "blighted_garden",
+      "to": "rotting_cell",
+      "width": 3
+    },
+    {
+      "from": "rotting_cell",
+      "to": "mossy_cellar",
+      "width": 3
+    },
+    {
+      "from": "mossy_cellar",
+      "to": "veiled_shrine",
+      "width": 3
+    },
+    {
+      "from": "veiled_shrine",
+      "to": "festering_arbour",
+      "width": 3
+    },
+    {
+      "from": "festering_arbour",
+      "to": "moldy_nave",
+      "width": 4
+    },
+    {
+      "from": "damp_sanctum",
+      "to": "moldy_nave",
+      "width": 3
+    },
+    {
+      "from": "blighted_garden",
+      "to": "moldy_nave",
+      "width": 3
+    },
+    {
+      "from": "mossy_cellar",
+      "to": "moldy_nave",
+      "width": 3
+    },
+    {
+      "from": "veiled_shrine",
+      "to": "glowcap_chapel",
+      "width": 3
+    },
+    {
+      "from": "glowcap_chapel",
+      "to": "festering_arbour",
+      "width": 3
+    },
+    {
+      "from": "blighted_garden",
+      "to": "sour_well",
+      "width": 3
+    },
+    {
+      "from": "sour_well",
+      "to": "rotting_cell",
+      "width": 3
+    },
+    {
+      "from": "rotting_cell",
+      "to": "tainted_arbour",
+      "width": 3
+    },
+    {
+      "from": "tainted_arbour",
+      "to": "mossy_cellar",
+      "width": 3
+    },
+    {
+      "from": "spore_cloister",
+      "to": "withered_cloister",
+      "width": 3
+    },
+    {
+      "from": "withered_cloister",
+      "to": "damp_sanctum",
+      "width": 3
+    },
+    {
+      "from": "damp_sanctum",
+      "to": "creeping_altar",
+      "width": 2
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "creeping_well",
+      "to": "festering_arbour"
+    }
+  ],
+  "entry": {
+    "zone": "pilgrim_camp"
+  },
+  "exit": {
+    "zone": "pilgrim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "damp_altar",
+      "monster": "Gnawbone Swarm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_altar",
+      "monster": "Oathbroken Colossus",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_altar",
+      "monster": "Wraithbone Stalker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_beds",
+      "monster": "Ironmask Warbreaker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_beds",
+      "monster": "Siege Behemoth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_beds",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_pool",
+      "monster": "Oathbroken Colossus",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_pool",
+      "monster": "Wraithbone Stalker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_pool",
+      "monster": "Gnawbone Swarm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Siege Behemoth",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Gnawbone Swarm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_grotto",
+      "monster": "Wraithbone Stalker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_grotto",
+      "monster": "Gnawbone Swarm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_grotto",
+      "monster": "Oathbroken Colossus",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_garden",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_garden",
+      "monster": "Ironmask Warbreaker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_garden",
+      "monster": "Siege Behemoth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_cell",
+      "monster": "Gnawbone Swarm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_cell",
+      "monster": "Oathbroken Colossus",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_cell",
+      "monster": "Wraithbone Stalker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_shrine",
+      "monster": "Ironmask Warbreaker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_shrine",
+      "monster": "Siege Behemoth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_nave",
+      "monster": "Oathbroken Colossus",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_nave",
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_nave",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_chapel",
+      "monster": "Siege Behemoth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_chapel",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_cellar",
+      "monster": "Wraithbone Stalker",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_cellar",
+      "monster": "Gnawbone Swarm",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_cellar",
+      "monster": "Oathbroken Colossus",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Ironmask Warbreaker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_cloister",
+      "monster": "Gnawbone Swarm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_cloister",
+      "monster": "Oathbroken Colossus",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_cloister",
+      "monster": "Wraithbone Stalker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_sanctum",
+      "monster": "Ironmask Warbreaker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_sanctum",
+      "monster": "Siege Behemoth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_sanctum",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grotto",
+      "monster": "Oathbroken Colossus",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grotto",
+      "monster": "Wraithbone Stalker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grotto",
+      "monster": "Gnawbone Swarm",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Siege Behemoth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Gnawbone Swarm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_cell",
+      "monster": "Wraithbone Stalker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_cell",
+      "monster": "Gnawbone Swarm",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_cell",
+      "monster": "Oathbroken Colossus",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cellar",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cellar",
+      "monster": "Ironmask Warbreaker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cellar",
+      "monster": "Siege Behemoth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_shrine",
+      "monster": "Gnawbone Swarm",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_shrine",
+      "monster": "Oathbroken Colossus",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_shrine",
+      "monster": "Wraithbone Stalker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_chapel",
+      "monster": "Ironmask Warbreaker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_chapel",
+      "monster": "Siege Behemoth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_well",
+      "monster": "Oathbroken Colossus",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_well",
+      "monster": "Wraithbone Stalker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_well",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_arbour",
+      "monster": "Siege Behemoth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_arbour",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_cloister",
+      "monster": "Wraithbone Stalker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_cloister",
+      "monster": "Gnawbone Swarm",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_nave",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_nave",
+      "monster": "Ironmask Warbreaker",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_nave",
+      "monster": "Siege Behemoth",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "creeping_altar",
+      "quest": "paleflame_altar",
+      "reward": {
+        "gold": 3300000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 10
+          }
+        ],
+        "message": "An offering the moss did not take."
+      }
+    }
+  ],
+  "chest_action": 47995,
+  "notes": "Content plan (hall fill, 2026-10-22): a sanctum hunt for levels 1700-1850 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 24 hunting zones in loops on two floors; monsters Gnawbone Swarm, Ironmask Warbreaker, Oathbroken Colossus, Siege Behemoth, Wraithbone Stalker, Cinderhorn Juggernaut. Display monster: Gnawbone Swarm."
+}

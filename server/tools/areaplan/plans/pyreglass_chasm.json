@@ -1,0 +1,487 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "pyreglass_chasm",
+  "name": "Pyreglass Chasm",
+  "biome": "lava",
+  "size": [
+    166,
+    133
+  ],
+  "floors": 1,
+  "level": [
+    920,
+    1035
+  ],
+  "seed": 30464,
+  "origin": {
+    "x": 17252,
+    "y": 14748,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "ash_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "searing_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "cracked_flow",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "blistered_vents",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "sulphur_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "glowing_basin",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "ashen_furnace",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "slag_crater",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "magma_chimney",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "smoking_channel",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "burning_seam",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "cinder_shelf",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "molten_crucible",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "scorched_pools",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "searing_terrace",
+      "to": "cracked_flow",
+      "width": 3
+    },
+    {
+      "from": "cracked_flow",
+      "to": "ash_camp",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "blistered_vents",
+      "width": 3
+    },
+    {
+      "from": "blistered_vents",
+      "to": "sulphur_pit",
+      "width": 3
+    },
+    {
+      "from": "sulphur_pit",
+      "to": "glowing_basin",
+      "width": 3
+    },
+    {
+      "from": "glowing_basin",
+      "to": "ashen_furnace",
+      "width": 3
+    },
+    {
+      "from": "ashen_furnace",
+      "to": "slag_crater",
+      "width": 3
+    },
+    {
+      "from": "slag_crater",
+      "to": "searing_terrace",
+      "width": 3
+    },
+    {
+      "from": "searing_terrace",
+      "to": "magma_chimney",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "magma_chimney",
+      "width": 4
+    },
+    {
+      "from": "sulphur_pit",
+      "to": "magma_chimney",
+      "width": 3
+    },
+    {
+      "from": "ashen_furnace",
+      "to": "magma_chimney",
+      "width": 3
+    },
+    {
+      "from": "searing_terrace",
+      "to": "smoking_channel",
+      "width": 3
+    },
+    {
+      "from": "smoking_channel",
+      "to": "cracked_flow",
+      "width": 3
+    },
+    {
+      "from": "slag_crater",
+      "to": "burning_seam",
+      "width": 3
+    },
+    {
+      "from": "burning_seam",
+      "to": "searing_terrace",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "cinder_shelf",
+      "width": 3
+    },
+    {
+      "from": "cinder_shelf",
+      "to": "blistered_vents",
+      "width": 3
+    },
+    {
+      "from": "sulphur_pit",
+      "to": "molten_crucible",
+      "width": 3
+    },
+    {
+      "from": "molten_crucible",
+      "to": "glowing_basin",
+      "width": 3
+    },
+    {
+      "from": "glowing_basin",
+      "to": "scorched_pools",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "ash_camp"
+  },
+  "exit": {
+    "zone": "ash_camp"
+  },
+  "spawns": [
+    {
+      "zone": "searing_terrace",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_terrace",
+      "monster": "Dawn Strayer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_terrace",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_flow",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_flow",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_flow",
+      "monster": "Deepforge Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_vents",
+      "monster": "Dawn Strayer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_vents",
+      "monster": "Elite Twisted Shaper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_vents",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_pit",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_pit",
+      "monster": "Deepforge Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_pit",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_basin",
+      "monster": "Elite Twisted Shaper",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_basin",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_basin",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_furnace",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_furnace",
+      "monster": "Dawn Strayer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_furnace",
+      "monster": "Elite Twisted Shaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_crater",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_crater",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_crater",
+      "monster": "Deepforge Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_channel",
+      "monster": "Dawn Strayer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_channel",
+      "monster": "Elite Twisted Shaper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_channel",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burning_seam",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burning_seam",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_shelf",
+      "monster": "Elite Twisted Shaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_shelf",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_crucible",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_crucible",
+      "monster": "Dawn Strayer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_crucible",
+      "monster": "Elite Twisted Shaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_chimney",
+      "monster": "Quicksilver Wraith",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_chimney",
+      "monster": "Rimecairn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_chimney",
+      "monster": "Deepforge Fiend",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "scorched_pools",
+      "quest": "pyreglass_pools",
+      "reward": {
+        "gold": 800000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "Ingots cooled in the ash."
+      }
+    }
+  ],
+  "chest_action": 47982,
+  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 920-1035 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Deepforge Fiend, Quicksilver Wraith, Dawn Strayer, Rimecairn, Elite Twisted Shaper. Display monster: Quicksilver Wraith."
+}

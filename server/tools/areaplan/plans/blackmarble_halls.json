@@ -1,0 +1,454 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "blackmarble_halls",
+  "name": "Blackmarble Halls",
+  "biome": "hall",
+  "size": [
+    177,
+    125
+  ],
+  "floors": 1,
+  "level": [
+    650,
+    765
+  ],
+  "seed": 30230,
+  "origin": {
+    "x": 15620,
+    "y": 14544,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "foyer_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "empty_nave",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "long_foyer",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "royal_atrium",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "velvet_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "pillared_portico",
+      "floor": 1,
+      "size": [
+        23,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "grand_hall",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "mirror_arcade",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "onyx_throne",
+      "floor": 1,
+      "size": [
+        31,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "silent_colonnade",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "shadow_transept",
+      "floor": 1,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "cold_vestibule",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ]
+    },
+    {
+      "id": "marble_chamber",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "empty_nave",
+      "to": "long_foyer",
+      "width": 3
+    },
+    {
+      "from": "long_foyer",
+      "to": "royal_atrium",
+      "width": 3
+    },
+    {
+      "from": "royal_atrium",
+      "to": "velvet_gallery",
+      "width": 3
+    },
+    {
+      "from": "velvet_gallery",
+      "to": "pillared_portico",
+      "width": 3
+    },
+    {
+      "from": "pillared_portico",
+      "to": "grand_hall",
+      "width": 3
+    },
+    {
+      "from": "grand_hall",
+      "to": "foyer_camp",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "mirror_arcade",
+      "width": 3
+    },
+    {
+      "from": "mirror_arcade",
+      "to": "empty_nave",
+      "width": 3
+    },
+    {
+      "from": "empty_nave",
+      "to": "onyx_throne",
+      "width": 3
+    },
+    {
+      "from": "royal_atrium",
+      "to": "onyx_throne",
+      "width": 3
+    },
+    {
+      "from": "pillared_portico",
+      "to": "onyx_throne",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "onyx_throne",
+      "width": 4
+    },
+    {
+      "from": "royal_atrium",
+      "to": "silent_colonnade",
+      "width": 3
+    },
+    {
+      "from": "silent_colonnade",
+      "to": "velvet_gallery",
+      "width": 3
+    },
+    {
+      "from": "long_foyer",
+      "to": "shadow_transept",
+      "width": 3
+    },
+    {
+      "from": "shadow_transept",
+      "to": "royal_atrium",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "cold_vestibule",
+      "width": 3
+    },
+    {
+      "from": "cold_vestibule",
+      "to": "mirror_arcade",
+      "width": 3
+    },
+    {
+      "from": "grand_hall",
+      "to": "marble_chamber",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "foyer_camp"
+  },
+  "exit": {
+    "zone": "foyer_camp"
+  },
+  "spawns": [
+    {
+      "zone": "empty_nave",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "empty_nave",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "empty_nave",
+      "monster": "Mercenary Ranger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_foyer",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_foyer",
+      "monster": "Mercenary Ranger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_foyer",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_atrium",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_atrium",
+      "monster": "Thornveil Wraith",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_atrium",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Mercenary Ranger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_portico",
+      "monster": "Thornveil Wraith",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_portico",
+      "monster": "Swamp Snapper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_portico",
+      "monster": "Mercenary Ranger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_hall",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_hall",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_hall",
+      "monster": "Thornveil Wraith",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_arcade",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_arcade",
+      "monster": "Mercenary Ranger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_arcade",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_colonnade",
+      "monster": "Ironbound Troll",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_colonnade",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_transept",
+      "monster": "Mercenary Ranger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_transept",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_vestibule",
+      "monster": "Thornveil Wraith",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_vestibule",
+      "monster": "Swamp Snapper",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_vestibule",
+      "monster": "Mercenary Ranger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_throne",
+      "monster": "Dreamgorger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_throne",
+      "monster": "Ironbound Troll",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_throne",
+      "monster": "Thornveil Wraith",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "marble_chamber",
+      "quest": "blackmarble_chamber",
+      "reward": {
+        "gold": 400000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "Tribute from a court that never ended."
+      }
+    }
+  ],
+  "chest_action": 47968,
+  "notes": "Content plan (hall fill, 2026-10-22): a hall hunt for levels 650-765 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Dreamgorger, Swamp Snapper, Ironbound Troll, Mercenary Ranger, Thornveil Wraith. Display monster: Mercenary Ranger."
+}

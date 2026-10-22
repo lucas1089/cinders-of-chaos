@@ -1,0 +1,432 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "mildewveil_sanctum",
+  "name": "Mildewveil Sanctum",
+  "biome": "sanctum",
+  "size": [
+    178,
+    126
+  ],
+  "floors": 1,
+  "level": [
+    845,
+    960
+  ],
+  "seed": 30399,
+  "origin": {
+    "x": 16232,
+    "y": 14748,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "pilgrim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "rotting_sanctum",
+      "floor": 1,
+      "size": [
+        24,
+        17
+      ],
+      "place": "north"
+    },
+    {
+      "id": "blighted_cellar",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "mossy_pool",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "sour_cloister",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "tainted_cell",
+      "floor": 1,
+      "size": [
+        26,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "moldy_chapel",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "festering_grotto",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "creeping_well",
+      "floor": 1,
+      "size": [
+        32,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "damp_shrine",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ]
+    },
+    {
+      "id": "spore_altar",
+      "floor": 1,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "withered_nave",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "rotting_sanctum",
+      "to": "blighted_cellar",
+      "width": 3
+    },
+    {
+      "from": "blighted_cellar",
+      "to": "mossy_pool",
+      "width": 3
+    },
+    {
+      "from": "mossy_pool",
+      "to": "sour_cloister",
+      "width": 3
+    },
+    {
+      "from": "sour_cloister",
+      "to": "tainted_cell",
+      "width": 3
+    },
+    {
+      "from": "tainted_cell",
+      "to": "moldy_chapel",
+      "width": 3
+    },
+    {
+      "from": "moldy_chapel",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "festering_grotto",
+      "width": 3
+    },
+    {
+      "from": "festering_grotto",
+      "to": "rotting_sanctum",
+      "width": 3
+    },
+    {
+      "from": "rotting_sanctum",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "mossy_pool",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "tainted_cell",
+      "to": "creeping_well",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "creeping_well",
+      "width": 4
+    },
+    {
+      "from": "moldy_chapel",
+      "to": "damp_shrine",
+      "width": 3
+    },
+    {
+      "from": "damp_shrine",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "spore_altar",
+      "width": 3
+    },
+    {
+      "from": "spore_altar",
+      "to": "festering_grotto",
+      "width": 3
+    },
+    {
+      "from": "blighted_cellar",
+      "to": "withered_nave",
+      "width": 3
+    },
+    {
+      "from": "withered_nave",
+      "to": "mossy_pool",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "pilgrim_camp"
+  },
+  "exit": {
+    "zone": "pilgrim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Golden Lord",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Lady bug",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_sanctum",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_cellar",
+      "monster": "Golden Lord",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_pool",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Golden Lord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cloister",
+      "monster": "Reedgrave",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Jungle Beasts",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Reedgrave",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_cell",
+      "monster": "Blight Bloom",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Golden Lord",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "moldy_chapel",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Reedgrave",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_grotto",
+      "monster": "Golden Lord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_shrine",
+      "monster": "Reedgrave",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_altar",
+      "monster": "Blight Bloom",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_altar",
+      "monster": "Golden Lord",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_nave",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_nave",
+      "monster": "Reedgrave",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Golden Lord",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Lady bug",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_well",
+      "monster": "Jungle Beasts",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a sanctum hunt for levels 845-960 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Golden Lord, Reedgrave, Lady bug, Blight Bloom, Jungle Beasts. Display monster: Reedgrave."
+}

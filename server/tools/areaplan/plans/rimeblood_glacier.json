@@ -1,0 +1,472 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "rimeblood_glacier",
+  "name": "Rimeblood Glacier",
+  "biome": "ice",
+  "size": [
+    166,
+    130
+  ],
+  "floors": 1,
+  "level": [
+    935,
+    1050
+  ],
+  "seed": 30477,
+  "origin": {
+    "x": 17456,
+    "y": 14748,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "snow_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "glassy_basin",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "glacial_floe",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "bitter_crevasse",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "east"
+    },
+    {
+      "id": "frozen_field",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "white_ridge",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "numb_drifts",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "howling_spur",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "brittle_moraine",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "drifting_pass",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "rimed_cairns",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "pale_hollow",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "blue_shelf",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "glassy_basin",
+      "to": "glacial_floe",
+      "width": 3
+    },
+    {
+      "from": "glacial_floe",
+      "to": "bitter_crevasse",
+      "width": 3
+    },
+    {
+      "from": "bitter_crevasse",
+      "to": "frozen_field",
+      "width": 3
+    },
+    {
+      "from": "frozen_field",
+      "to": "white_ridge",
+      "width": 3
+    },
+    {
+      "from": "white_ridge",
+      "to": "numb_drifts",
+      "width": 3
+    },
+    {
+      "from": "numb_drifts",
+      "to": "snow_camp",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "howling_spur",
+      "width": 3
+    },
+    {
+      "from": "howling_spur",
+      "to": "glassy_basin",
+      "width": 3
+    },
+    {
+      "from": "glassy_basin",
+      "to": "brittle_moraine",
+      "width": 3
+    },
+    {
+      "from": "bitter_crevasse",
+      "to": "brittle_moraine",
+      "width": 3
+    },
+    {
+      "from": "white_ridge",
+      "to": "brittle_moraine",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "brittle_moraine",
+      "width": 4
+    },
+    {
+      "from": "howling_spur",
+      "to": "drifting_pass",
+      "width": 3
+    },
+    {
+      "from": "drifting_pass",
+      "to": "glassy_basin",
+      "width": 3
+    },
+    {
+      "from": "bitter_crevasse",
+      "to": "rimed_cairns",
+      "width": 3
+    },
+    {
+      "from": "rimed_cairns",
+      "to": "frozen_field",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "pale_hollow",
+      "width": 3
+    },
+    {
+      "from": "pale_hollow",
+      "to": "howling_spur",
+      "width": 3
+    },
+    {
+      "from": "white_ridge",
+      "to": "blue_shelf",
+      "width": 3
+    },
+    {
+      "from": "blue_shelf",
+      "to": "numb_drifts",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "snow_camp"
+  },
+  "exit": {
+    "zone": "snow_camp"
+  },
+  "spawns": [
+    {
+      "zone": "glassy_basin",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_basin",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_basin",
+      "monster": "Ice Lich",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_floe",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_floe",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_floe",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_crevasse",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_crevasse",
+      "monster": "Ice Lich",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_crevasse",
+      "monster": "Geode Seer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_field",
+      "monster": "Rimecairn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_field",
+      "monster": "Rustguard",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_field",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_ridge",
+      "monster": "Ice Lich",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_ridge",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_ridge",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_drifts",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_drifts",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_drifts",
+      "monster": "Ice Lich",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_spur",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_spur",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_spur",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_pass",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_pass",
+      "monster": "Ice Lich",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_pass",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Rimecairn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Rustguard",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_hollow",
+      "monster": "Ice Lich",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_hollow",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_shelf",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_shelf",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_shelf",
+      "monster": "Ice Lich",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_moraine",
+      "monster": "Geode Seer",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_moraine",
+      "monster": "Rimecairn",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brittle_moraine",
+      "monster": "Rustguard",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a ice hunt for levels 935-1050 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Rustguard, Geode Seer, Quicksilver Wraith, Rimecairn, Ice Lich. Display monster: Rustguard."
+}

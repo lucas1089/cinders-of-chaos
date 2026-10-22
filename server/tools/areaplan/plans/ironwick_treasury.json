@@ -1,0 +1,451 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ironwick_treasury",
+  "name": "Ironwick Treasury",
+  "biome": "vault",
+  "size": [
+    161,
+    128
+  ],
+  "floors": 1,
+  "level": [
+    815,
+    930
+  ],
+  "seed": 30373,
+  "origin": {
+    "x": 15824,
+    "y": 14748,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "gate_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "chained_archive",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "north"
+    },
+    {
+      "id": "gilded_counting",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "black_gallery",
+      "floor": 1,
+      "size": [
+        23,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "warden_hoard",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "locked_store",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "iron_cellar",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "coin_galleries",
+      "floor": 1,
+      "size": [
+        28,
+        17
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "deep_stacks",
+      "floor": 1,
+      "size": [
+        31,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "barred_treasury",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "strong_hall",
+      "floor": 1,
+      "size": [
+        20,
+        14
+      ]
+    },
+    {
+      "id": "counting_strongroom",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "tally_cells",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "chained_archive",
+      "to": "gilded_counting",
+      "width": 3
+    },
+    {
+      "from": "gilded_counting",
+      "to": "gate_camp",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "black_gallery",
+      "width": 3
+    },
+    {
+      "from": "black_gallery",
+      "to": "warden_hoard",
+      "width": 3
+    },
+    {
+      "from": "warden_hoard",
+      "to": "locked_store",
+      "width": 3
+    },
+    {
+      "from": "locked_store",
+      "to": "iron_cellar",
+      "width": 3
+    },
+    {
+      "from": "iron_cellar",
+      "to": "coin_galleries",
+      "width": 3
+    },
+    {
+      "from": "coin_galleries",
+      "to": "chained_archive",
+      "width": 3
+    },
+    {
+      "from": "chained_archive",
+      "to": "deep_stacks",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "deep_stacks",
+      "width": 4
+    },
+    {
+      "from": "warden_hoard",
+      "to": "deep_stacks",
+      "width": 3
+    },
+    {
+      "from": "iron_cellar",
+      "to": "deep_stacks",
+      "width": 3
+    },
+    {
+      "from": "iron_cellar",
+      "to": "barred_treasury",
+      "width": 3
+    },
+    {
+      "from": "barred_treasury",
+      "to": "coin_galleries",
+      "width": 3
+    },
+    {
+      "from": "warden_hoard",
+      "to": "strong_hall",
+      "width": 3
+    },
+    {
+      "from": "strong_hall",
+      "to": "locked_store",
+      "width": 3
+    },
+    {
+      "from": "locked_store",
+      "to": "counting_strongroom",
+      "width": 3
+    },
+    {
+      "from": "counting_strongroom",
+      "to": "iron_cellar",
+      "width": 3
+    },
+    {
+      "from": "coin_galleries",
+      "to": "tally_cells",
+      "width": 3
+    },
+    {
+      "from": "tally_cells",
+      "to": "chained_archive",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "gate_camp"
+  },
+  "exit": {
+    "zone": "gate_camp"
+  },
+  "spawns": [
+    {
+      "zone": "chained_archive",
+      "monster": "Jungle Beasts",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_archive",
+      "monster": "Leechwing",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_archive",
+      "monster": "Lacewing Moth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_counting",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_counting",
+      "monster": "Caged Convict",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_counting",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_gallery",
+      "monster": "Leechwing",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_gallery",
+      "monster": "Azure Dragon",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_gallery",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Caged Convict",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_store",
+      "monster": "Azure Dragon",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_store",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_store",
+      "monster": "Caged Convict",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cellar",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cellar",
+      "monster": "Leechwing",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cellar",
+      "monster": "Azure Dragon",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_galleries",
+      "monster": "Lacewing Moth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_galleries",
+      "monster": "Caged Convict",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_galleries",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_treasury",
+      "monster": "Leechwing",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_treasury",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_hall",
+      "monster": "Caged Convict",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_hall",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_strongroom",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_strongroom",
+      "monster": "Lacewing Moth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_cells",
+      "monster": "Jungle Beasts",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_cells",
+      "monster": "Leechwing",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_stacks",
+      "monster": "Lacewing Moth",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_stacks",
+      "monster": "Caged Convict",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_stacks",
+      "monster": "Jungle Beasts",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a vault hunt for levels 815-930 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Jungle Beasts, Lacewing Moth, Leechwing, Caged Convict, Azure Dragon. Display monster: Lacewing Moth."
+}

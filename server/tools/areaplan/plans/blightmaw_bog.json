@@ -1,0 +1,450 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "blightmaw_bog",
+  "name": "Blightmaw Bog",
+  "biome": "swamp",
+  "size": [
+    184,
+    146
+  ],
+  "floors": 1,
+  "level": [
+    1775,
+    1925
+  ],
+  "seed": 30607,
+  "origin": {
+    "x": 17456,
+    "y": 14952,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "stilt_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "stagnant_mudbank",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "leech_reeds",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "east"
+    },
+    {
+      "id": "sunken_shallows",
+      "floor": 1,
+      "size": [
+        22,
+        20
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "rotting_wallow",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "brackish_bank",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "sodden_mire",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "bog_flats",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "fetid_roots",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "reeking_pools",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "murky_hollow",
+      "floor": 1,
+      "size": [
+        18,
+        14
+      ]
+    },
+    {
+      "id": "peat_fen",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "mossy_sink",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "stilt_camp",
+      "to": "stagnant_mudbank",
+      "width": 3
+    },
+    {
+      "from": "stagnant_mudbank",
+      "to": "leech_reeds",
+      "width": 3
+    },
+    {
+      "from": "leech_reeds",
+      "to": "sunken_shallows",
+      "width": 3
+    },
+    {
+      "from": "sunken_shallows",
+      "to": "rotting_wallow",
+      "width": 3
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "brackish_bank",
+      "width": 3
+    },
+    {
+      "from": "brackish_bank",
+      "to": "sodden_mire",
+      "width": 3
+    },
+    {
+      "from": "sodden_mire",
+      "to": "bog_flats",
+      "width": 3
+    },
+    {
+      "from": "bog_flats",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "fetid_roots",
+      "width": 4
+    },
+    {
+      "from": "leech_reeds",
+      "to": "fetid_roots",
+      "width": 3
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "fetid_roots",
+      "width": 3
+    },
+    {
+      "from": "sodden_mire",
+      "to": "fetid_roots",
+      "width": 3
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "reeking_pools",
+      "width": 3
+    },
+    {
+      "from": "reeking_pools",
+      "to": "brackish_bank",
+      "width": 3
+    },
+    {
+      "from": "bog_flats",
+      "to": "murky_hollow",
+      "width": 3
+    },
+    {
+      "from": "murky_hollow",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "sunken_shallows",
+      "to": "peat_fen",
+      "width": 3
+    },
+    {
+      "from": "peat_fen",
+      "to": "rotting_wallow",
+      "width": 3
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "mossy_sink",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "stilt_camp"
+  },
+  "exit": {
+    "zone": "stilt_camp"
+  },
+  "spawns": [
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Gnarlback",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Wraithbone Stalker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_reeds",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_reeds",
+      "monster": "Mirecoil Wyrm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "leech_reeds",
+      "monster": "Gnarlback",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_shallows",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_shallows",
+      "monster": "Wraithbone Stalker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_shallows",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Mirecoil Wyrm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Gnarlback",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_bank",
+      "monster": "Wraithbone Stalker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_bank",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_bank",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_mire",
+      "monster": "Gnarlback",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_mire",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sodden_mire",
+      "monster": "Wraithbone Stalker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Ironmask Warbreaker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Mirecoil Wyrm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_flats",
+      "monster": "Gnawbone Swarm",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_pools",
+      "monster": "Gnawbone Swarm",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_pools",
+      "monster": "Wraithbone Stalker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_hollow",
+      "monster": "Mirecoil Wyrm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_hollow",
+      "monster": "Gnarlback",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_fen",
+      "monster": "Wraithbone Stalker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_fen",
+      "monster": "Gnawbone Swarm",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_roots",
+      "monster": "Gnarlback",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_roots",
+      "monster": "Gnawbone Swarm",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_roots",
+      "monster": "Wraithbone Stalker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "mossy_sink",
+      "quest": "blightmaw_sink_stash",
+      "reward": {
+        "gold": 3450000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 10
+          }
+        ],
+        "message": "A sealed jar, pulled dry from the mud."
+      }
+    }
+  ],
+  "chest_action": 47996,
+  "notes": "Content plan (hall fill, 2026-10-22): a swamp hunt for levels 1775-1925 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Gnarlback, Ironmask Warbreaker, Gnawbone Swarm, Mirecoil Wyrm, Wraithbone Stalker. Display monster: Gnawbone Swarm."
+}

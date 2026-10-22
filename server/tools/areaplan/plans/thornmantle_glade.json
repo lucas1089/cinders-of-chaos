@@ -1,0 +1,429 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "thornmantle_glade",
+  "name": "Thornmantle Glade",
+  "biome": "forest",
+  "size": [
+    180,
+    125
+  ],
+  "floors": 1,
+  "level": [
+    545,
+    660
+  ],
+  "seed": 30139,
+  "origin": {
+    "x": 16232,
+    "y": 14340,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "woodcamp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "quiet_copse",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "crows_meadow",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "hanging_grove",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "gnarled_dell",
+      "floor": 1,
+      "size": [
+        24,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "foggy_brake",
+      "floor": 1,
+      "size": [
+        26,
+        17
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "fallen_thicket",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "thorny_trail",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "shaded_ridge",
+      "floor": 1,
+      "size": [
+        30,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "mossy_hollow",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ]
+    },
+    {
+      "id": "old_stand",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "bramble_barrow",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "woodcamp",
+      "to": "quiet_copse",
+      "width": 3
+    },
+    {
+      "from": "quiet_copse",
+      "to": "crows_meadow",
+      "width": 3
+    },
+    {
+      "from": "crows_meadow",
+      "to": "hanging_grove",
+      "width": 3
+    },
+    {
+      "from": "hanging_grove",
+      "to": "gnarled_dell",
+      "width": 3
+    },
+    {
+      "from": "gnarled_dell",
+      "to": "foggy_brake",
+      "width": 3
+    },
+    {
+      "from": "foggy_brake",
+      "to": "fallen_thicket",
+      "width": 3
+    },
+    {
+      "from": "fallen_thicket",
+      "to": "thorny_trail",
+      "width": 3
+    },
+    {
+      "from": "thorny_trail",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "shaded_ridge",
+      "width": 4
+    },
+    {
+      "from": "crows_meadow",
+      "to": "shaded_ridge",
+      "width": 3
+    },
+    {
+      "from": "gnarled_dell",
+      "to": "shaded_ridge",
+      "width": 3
+    },
+    {
+      "from": "fallen_thicket",
+      "to": "shaded_ridge",
+      "width": 3
+    },
+    {
+      "from": "thorny_trail",
+      "to": "mossy_hollow",
+      "width": 3
+    },
+    {
+      "from": "mossy_hollow",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "old_stand",
+      "width": 3
+    },
+    {
+      "from": "old_stand",
+      "to": "quiet_copse",
+      "width": 3
+    },
+    {
+      "from": "crows_meadow",
+      "to": "bramble_barrow",
+      "width": 3
+    },
+    {
+      "from": "bramble_barrow",
+      "to": "hanging_grove",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "woodcamp"
+  },
+  "exit": {
+    "zone": "woodcamp"
+  },
+  "spawns": [
+    {
+      "zone": "quiet_copse",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_copse",
+      "monster": "Slagborer Queen",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_copse",
+      "monster": "Slagborer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_meadow",
+      "monster": "Shaper Matriarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_meadow",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_meadow",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_grove",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_grove",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_grove",
+      "monster": "Shaper Matriarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_dell",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_dell",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_dell",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "foggy_brake",
+      "monster": "Slagborer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "foggy_brake",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "foggy_brake",
+      "monster": "Ashmaw Warlord",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_thicket",
+      "monster": "Orclops Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_thicket",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_thicket",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_trail",
+      "monster": "Shaper Matriarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_trail",
+      "monster": "Ashmaw Warlord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_trail",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_hollow",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_hollow",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_hollow",
+      "monster": "Shaper Matriarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_stand",
+      "monster": "Ashmaw Warlord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_stand",
+      "monster": "Orclops Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_barrow",
+      "monster": "Slagborer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_barrow",
+      "monster": "Shaper Matriarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_ridge",
+      "monster": "Orclops Ravager",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_ridge",
+      "monster": "Slagborer Queen",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_ridge",
+      "monster": "Slagborer",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 545-660 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Orclops Ravager, Shaper Matriarch, Slagborer Queen, Ashmaw Warlord, Slagborer. Display monster: Slagborer."
+}

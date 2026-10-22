@@ -1,0 +1,447 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "vespergloom_halls",
+  "name": "Vespergloom Halls",
+  "biome": "hall",
+  "size": [
+    186,
+    158
+  ],
+  "floors": 1,
+  "level": [
+    1150,
+    1300
+  ],
+  "seed": 30516,
+  "origin": {
+    "x": 16028,
+    "y": 14952,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "foyer_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "velvet_chamber",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "pillared_throne",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "onyx_loggia",
+      "floor": 1,
+      "size": [
+        26,
+        17
+      ],
+      "place": "east"
+    },
+    {
+      "id": "black_colonnade",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "echoing_arcade",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "long_vestibule",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "west"
+    },
+    {
+      "id": "grand_nave",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "cold_foyer",
+      "floor": 1,
+      "size": [
+        29,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "shadow_hall",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "silent_atrium",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "mirror_gallery",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "marble_portico",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "velvet_chamber",
+      "to": "pillared_throne",
+      "width": 3
+    },
+    {
+      "from": "pillared_throne",
+      "to": "onyx_loggia",
+      "width": 3
+    },
+    {
+      "from": "onyx_loggia",
+      "to": "black_colonnade",
+      "width": 3
+    },
+    {
+      "from": "black_colonnade",
+      "to": "foyer_camp",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "echoing_arcade",
+      "width": 3
+    },
+    {
+      "from": "echoing_arcade",
+      "to": "long_vestibule",
+      "width": 3
+    },
+    {
+      "from": "long_vestibule",
+      "to": "grand_nave",
+      "width": 3
+    },
+    {
+      "from": "grand_nave",
+      "to": "velvet_chamber",
+      "width": 3
+    },
+    {
+      "from": "velvet_chamber",
+      "to": "cold_foyer",
+      "width": 3
+    },
+    {
+      "from": "onyx_loggia",
+      "to": "cold_foyer",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "cold_foyer",
+      "width": 4
+    },
+    {
+      "from": "long_vestibule",
+      "to": "cold_foyer",
+      "width": 3
+    },
+    {
+      "from": "long_vestibule",
+      "to": "shadow_hall",
+      "width": 3
+    },
+    {
+      "from": "shadow_hall",
+      "to": "grand_nave",
+      "width": 3
+    },
+    {
+      "from": "black_colonnade",
+      "to": "silent_atrium",
+      "width": 3
+    },
+    {
+      "from": "silent_atrium",
+      "to": "foyer_camp",
+      "width": 3
+    },
+    {
+      "from": "echoing_arcade",
+      "to": "mirror_gallery",
+      "width": 3
+    },
+    {
+      "from": "mirror_gallery",
+      "to": "long_vestibule",
+      "width": 3
+    },
+    {
+      "from": "pillared_throne",
+      "to": "marble_portico",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "foyer_camp"
+  },
+  "exit": {
+    "zone": "foyer_camp"
+  },
+  "spawns": [
+    {
+      "zone": "velvet_chamber",
+      "monster": "Veiled Crawler",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_chamber",
+      "monster": "Wan Sentry",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_chamber",
+      "monster": "Pit Delver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_throne",
+      "monster": "Pitgnawer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_throne",
+      "monster": "Reliquary Urn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_throne",
+      "monster": "Carrion Drake",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_loggia",
+      "monster": "Wan Sentry",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_loggia",
+      "monster": "Pit Delver",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_loggia",
+      "monster": "Veiled Crawler",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_colonnade",
+      "monster": "Reliquary Urn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_colonnade",
+      "monster": "Carrion Drake",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_colonnade",
+      "monster": "Veiled Crawler",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_arcade",
+      "monster": "Pit Delver",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_arcade",
+      "monster": "Veiled Crawler",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_arcade",
+      "monster": "Wan Sentry",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_vestibule",
+      "monster": "Carrion Drake",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_vestibule",
+      "monster": "Pitgnawer",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_vestibule",
+      "monster": "Reliquary Urn",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_nave",
+      "monster": "Veiled Crawler",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_nave",
+      "monster": "Wan Sentry",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_nave",
+      "monster": "Pit Delver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_hall",
+      "monster": "Pitgnawer",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_hall",
+      "monster": "Reliquary Urn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_atrium",
+      "monster": "Wan Sentry",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_atrium",
+      "monster": "Pit Delver",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_gallery",
+      "monster": "Reliquary Urn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_gallery",
+      "monster": "Veiled Crawler",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_foyer",
+      "monster": "Pit Delver",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_foyer",
+      "monster": "Veiled Crawler",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cold_foyer",
+      "monster": "Wan Sentry",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "marble_portico",
+      "quest": "vespergloom_portico",
+      "reward": {
+        "gold": 1500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 5
+          }
+        ],
+        "message": "Tribute from a court that never ended."
+      }
+    }
+  ],
+  "chest_action": 47985,
+  "notes": "Content plan (hall fill, 2026-10-22): a hall hunt for levels 1150-1300 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Veiled Crawler, Pitgnawer, Wan Sentry, Reliquary Urn, Pit Delver, Carrion Drake. Display monster: Veiled Crawler."
+}

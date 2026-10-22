@@ -1,0 +1,458 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "umbral_sink",
+  "name": "Umbral Sink",
+  "biome": "abyss",
+  "size": [
+    180,
+    126
+  ],
+  "floors": 1,
+  "level": [
+    605,
+    720
+  ],
+  "seed": 30191,
+  "origin": {
+    "x": 17048,
+    "y": 14340,
+    "z": 11
+  },
+  "decoration": "dense",
+  "light": "dark",
+  "zones": [
+    {
+      "id": "rim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "unlit_rim",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "lightless_spire",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "void_scarp",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "silent_chasm",
+      "floor": 1,
+      "size": [
+        23,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "weeping_rift",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "hollow_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "warped_throat",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "shattered_basin",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "hungry_ledge",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "endless_fold",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "umbral_shelf",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "drifting_drift",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "unlit_rim",
+      "to": "lightless_spire",
+      "width": 3
+    },
+    {
+      "from": "lightless_spire",
+      "to": "rim_camp",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "void_scarp",
+      "width": 3
+    },
+    {
+      "from": "void_scarp",
+      "to": "silent_chasm",
+      "width": 3
+    },
+    {
+      "from": "silent_chasm",
+      "to": "weeping_rift",
+      "width": 3
+    },
+    {
+      "from": "weeping_rift",
+      "to": "hollow_terrace",
+      "width": 3
+    },
+    {
+      "from": "hollow_terrace",
+      "to": "warped_throat",
+      "width": 3
+    },
+    {
+      "from": "warped_throat",
+      "to": "unlit_rim",
+      "width": 3
+    },
+    {
+      "from": "unlit_rim",
+      "to": "shattered_basin",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "shattered_basin",
+      "width": 4
+    },
+    {
+      "from": "silent_chasm",
+      "to": "shattered_basin",
+      "width": 3
+    },
+    {
+      "from": "hollow_terrace",
+      "to": "shattered_basin",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "hungry_ledge",
+      "width": 3
+    },
+    {
+      "from": "hungry_ledge",
+      "to": "void_scarp",
+      "width": 3
+    },
+    {
+      "from": "warped_throat",
+      "to": "endless_fold",
+      "width": 3
+    },
+    {
+      "from": "endless_fold",
+      "to": "unlit_rim",
+      "width": 3
+    },
+    {
+      "from": "weeping_rift",
+      "to": "umbral_shelf",
+      "width": 3
+    },
+    {
+      "from": "umbral_shelf",
+      "to": "hollow_terrace",
+      "width": 3
+    },
+    {
+      "from": "hollow_terrace",
+      "to": "drifting_drift",
+      "width": 3
+    },
+    {
+      "from": "drifting_drift",
+      "to": "warped_throat",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "rim_camp"
+  },
+  "exit": {
+    "zone": "rim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "unlit_rim",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_rim",
+      "monster": "Mercenary Ranger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_rim",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_spire",
+      "monster": "Thornveil Wraith",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_spire",
+      "monster": "Blazebringer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_spire",
+      "monster": "Garack",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "void_scarp",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "void_scarp",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "void_scarp",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_chasm",
+      "monster": "Blazebringer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_chasm",
+      "monster": "Garack",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_chasm",
+      "monster": "Thornveil Wraith",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_rift",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_rift",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_rift",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_terrace",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_terrace",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_terrace",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_throat",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_throat",
+      "monster": "Blazebringer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_throat",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_ledge",
+      "monster": "Mercenary Ranger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_ledge",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hungry_ledge",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_fold",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_fold",
+      "monster": "Garack",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_shelf",
+      "monster": "Grove Keeper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_shelf",
+      "monster": "Thornveil Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_drift",
+      "monster": "Garack",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_drift",
+      "monster": "Mercenary Ranger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_basin",
+      "monster": "Thornveil Wraith",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_basin",
+      "monster": "Blazebringer",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_basin",
+      "monster": "Garack",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a abyss hunt for levels 605-720 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Garack, Thornveil Wraith, Mercenary Ranger, Blazebringer, Grove Keeper. Display monster: Thornveil Wraith."
+}

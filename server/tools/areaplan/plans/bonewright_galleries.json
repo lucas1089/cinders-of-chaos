@@ -1,0 +1,483 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "bonewright_galleries",
+  "name": "Bonewright Galleries",
+  "biome": "catacomb",
+  "size": [
+    175,
+    126
+  ],
+  "floors": 1,
+  "level": [
+    770,
+    885
+  ],
+  "seed": 30334,
+  "origin": {
+    "x": 17252,
+    "y": 14544,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "lantern_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "candlelit_galleries",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "skull_crossing",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "stacked_stacks",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "buried_rows",
+      "floor": 1,
+      "size": [
+        23,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "narrow_chapel",
+      "floor": 1,
+      "size": [
+        24,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "sunken_cells",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "lantern_niches",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "grim_halls",
+      "floor": 1,
+      "size": [
+        27,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "hushed_vaults",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ]
+    },
+    {
+      "id": "bone_passages",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "dusty_pits",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "collapsed_stairwell",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "ashen_ossuary",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "candlelit_galleries",
+      "to": "skull_crossing",
+      "width": 3
+    },
+    {
+      "from": "skull_crossing",
+      "to": "stacked_stacks",
+      "width": 3
+    },
+    {
+      "from": "stacked_stacks",
+      "to": "buried_rows",
+      "width": 3
+    },
+    {
+      "from": "buried_rows",
+      "to": "narrow_chapel",
+      "width": 3
+    },
+    {
+      "from": "narrow_chapel",
+      "to": "sunken_cells",
+      "width": 3
+    },
+    {
+      "from": "sunken_cells",
+      "to": "lantern_camp",
+      "width": 3
+    },
+    {
+      "from": "lantern_camp",
+      "to": "lantern_niches",
+      "width": 3
+    },
+    {
+      "from": "lantern_niches",
+      "to": "candlelit_galleries",
+      "width": 3
+    },
+    {
+      "from": "candlelit_galleries",
+      "to": "grim_halls",
+      "width": 3
+    },
+    {
+      "from": "stacked_stacks",
+      "to": "grim_halls",
+      "width": 3
+    },
+    {
+      "from": "narrow_chapel",
+      "to": "grim_halls",
+      "width": 3
+    },
+    {
+      "from": "lantern_camp",
+      "to": "grim_halls",
+      "width": 4
+    },
+    {
+      "from": "narrow_chapel",
+      "to": "hushed_vaults",
+      "width": 3
+    },
+    {
+      "from": "hushed_vaults",
+      "to": "sunken_cells",
+      "width": 3
+    },
+    {
+      "from": "buried_rows",
+      "to": "bone_passages",
+      "width": 3
+    },
+    {
+      "from": "bone_passages",
+      "to": "narrow_chapel",
+      "width": 3
+    },
+    {
+      "from": "sunken_cells",
+      "to": "dusty_pits",
+      "width": 3
+    },
+    {
+      "from": "dusty_pits",
+      "to": "lantern_camp",
+      "width": 3
+    },
+    {
+      "from": "stacked_stacks",
+      "to": "collapsed_stairwell",
+      "width": 3
+    },
+    {
+      "from": "collapsed_stairwell",
+      "to": "buried_rows",
+      "width": 3
+    },
+    {
+      "from": "lantern_niches",
+      "to": "ashen_ossuary",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "lantern_camp"
+  },
+  "exit": {
+    "zone": "lantern_camp"
+  },
+  "spawns": [
+    {
+      "zone": "candlelit_galleries",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candlelit_galleries",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candlelit_galleries",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_crossing",
+      "monster": "Golden Lord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_crossing",
+      "monster": "Chained Runt",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_crossing",
+      "monster": "Azure Dragon",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_stacks",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_stacks",
+      "monster": "Rootbound Pilgrim",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_stacks",
+      "monster": "Golden Lord",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_rows",
+      "monster": "Chained Runt",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_rows",
+      "monster": "Azure Dragon",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_rows",
+      "monster": "Ironmask Brander",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_chapel",
+      "monster": "Rootbound Pilgrim",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_chapel",
+      "monster": "Golden Lord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_chapel",
+      "monster": "Chained Runt",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cells",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cells",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cells",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lantern_niches",
+      "monster": "Golden Lord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lantern_niches",
+      "monster": "Chained Runt",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lantern_niches",
+      "monster": "Ironmask Brander",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Rootbound Pilgrim",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Golden Lord",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_passages",
+      "monster": "Chained Runt",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_passages",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_pits",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_pits",
+      "monster": "Ironmask Brander",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "collapsed_stairwell",
+      "monster": "Azure Dragon",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "collapsed_stairwell",
+      "monster": "Ironmask Brander",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grim_halls",
+      "monster": "Golden Lord",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grim_halls",
+      "monster": "Chained Runt",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grim_halls",
+      "monster": "Azure Dragon",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "ashen_ossuary",
+      "quest": "bonewright_ossuary_cache",
+      "reward": {
+        "gold": 500000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "A lantern-keeper's last wages."
+      }
+    }
+  ],
+  "chest_action": 47975,
+  "notes": "Content plan (hall fill, 2026-10-22): a catacomb hunt for levels 770-885 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Azure Dragon, Golden Lord, Ironmask Brander, Chained Runt, Rootbound Pilgrim. Display monster: Ironmask Brander."
+}

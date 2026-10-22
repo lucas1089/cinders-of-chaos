@@ -1,0 +1,480 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "sunderstone_wastes",
+  "name": "Sunderstone Wastes",
+  "biome": "waste",
+  "size": [
+    171,
+    130
+  ],
+  "floors": 1,
+  "level": [
+    800,
+    915
+  ],
+  "seed": 30360,
+  "origin": {
+    "x": 15620,
+    "y": 14748,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "dust_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dusty_wash",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "jagged_gulch",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "scorched_scar",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "salt_reach",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "shattered_plain",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "ashen_mesa",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "barren_dunes",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "grey_ridge",
+      "floor": 1,
+      "size": [
+        32,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "burnt_pan",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "bleached_crags",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "cracked_bluff",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "sunbaked_flats",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ]
+    },
+    {
+      "id": "cinder_fields",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "dusty_wash",
+      "to": "jagged_gulch",
+      "width": 3
+    },
+    {
+      "from": "jagged_gulch",
+      "to": "dust_camp",
+      "width": 3
+    },
+    {
+      "from": "dust_camp",
+      "to": "scorched_scar",
+      "width": 3
+    },
+    {
+      "from": "scorched_scar",
+      "to": "salt_reach",
+      "width": 3
+    },
+    {
+      "from": "salt_reach",
+      "to": "shattered_plain",
+      "width": 3
+    },
+    {
+      "from": "shattered_plain",
+      "to": "ashen_mesa",
+      "width": 3
+    },
+    {
+      "from": "ashen_mesa",
+      "to": "barren_dunes",
+      "width": 3
+    },
+    {
+      "from": "barren_dunes",
+      "to": "dusty_wash",
+      "width": 3
+    },
+    {
+      "from": "dusty_wash",
+      "to": "grey_ridge",
+      "width": 3
+    },
+    {
+      "from": "dust_camp",
+      "to": "grey_ridge",
+      "width": 4
+    },
+    {
+      "from": "salt_reach",
+      "to": "grey_ridge",
+      "width": 3
+    },
+    {
+      "from": "ashen_mesa",
+      "to": "grey_ridge",
+      "width": 3
+    },
+    {
+      "from": "ashen_mesa",
+      "to": "burnt_pan",
+      "width": 3
+    },
+    {
+      "from": "burnt_pan",
+      "to": "barren_dunes",
+      "width": 3
+    },
+    {
+      "from": "scorched_scar",
+      "to": "bleached_crags",
+      "width": 3
+    },
+    {
+      "from": "bleached_crags",
+      "to": "salt_reach",
+      "width": 3
+    },
+    {
+      "from": "salt_reach",
+      "to": "cracked_bluff",
+      "width": 3
+    },
+    {
+      "from": "cracked_bluff",
+      "to": "shattered_plain",
+      "width": 3
+    },
+    {
+      "from": "dusty_wash",
+      "to": "sunbaked_flats",
+      "width": 3
+    },
+    {
+      "from": "sunbaked_flats",
+      "to": "jagged_gulch",
+      "width": 3
+    },
+    {
+      "from": "barren_dunes",
+      "to": "cinder_fields",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "dust_camp"
+  },
+  "exit": {
+    "zone": "dust_camp"
+  },
+  "spawns": [
+    {
+      "zone": "dusty_wash",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_wash",
+      "monster": "Crypt Crab",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_wash",
+      "monster": "Ironmask Brander",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "jagged_gulch",
+      "monster": "Chained Runt",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "jagged_gulch",
+      "monster": "Ironmask Bannerman",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "jagged_gulch",
+      "monster": "Lacewing Moth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_scar",
+      "monster": "Crypt Crab",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_scar",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_scar",
+      "monster": "Chained Runt",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Ironmask Bannerman",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Crypt Crab",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_plain",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_plain",
+      "monster": "Chained Runt",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_plain",
+      "monster": "Ironmask Bannerman",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_mesa",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_mesa",
+      "monster": "Crypt Crab",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_mesa",
+      "monster": "Ironmask Brander",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_dunes",
+      "monster": "Chained Runt",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_dunes",
+      "monster": "Ironmask Bannerman",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_dunes",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_pan",
+      "monster": "Crypt Crab",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_pan",
+      "monster": "Ironmask Brander",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_crags",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_crags",
+      "monster": "Lacewing Moth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_bluff",
+      "monster": "Ironmask Brander",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_bluff",
+      "monster": "Lacewing Moth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_flats",
+      "monster": "Lacewing Moth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_flats",
+      "monster": "Crypt Crab",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_flats",
+      "monster": "Ironmask Brander",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_ridge",
+      "monster": "Chained Runt",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_ridge",
+      "monster": "Ironmask Bannerman",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_ridge",
+      "monster": "Lacewing Moth",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "cinder_fields",
+      "quest": "sunderstone_fields",
+      "reward": {
+        "gold": 550000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "A buried cache, warm from the sun."
+      }
+    }
+  ],
+  "chest_action": 47978,
+  "notes": "Content plan (hall fill, 2026-10-22): a waste hunt for levels 800-915 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Lacewing Moth, Chained Runt, Crypt Crab, Ironmask Bannerman, Ironmask Brander. Display monster: Lacewing Moth."
+}

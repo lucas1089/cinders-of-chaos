@@ -1,0 +1,473 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "deepgrudge_warrens",
+  "name": "Deepgrudge Warrens",
+  "biome": "cave",
+  "size": [
+    162,
+    144
+  ],
+  "floors": 1,
+  "level": [
+    860,
+    975
+  ],
+  "seed": 30412,
+  "origin": {
+    "x": 16436,
+    "y": 14748,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "sunken_den",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "rubble_grotto",
+      "floor": 1,
+      "size": [
+        23,
+        19
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "split_nest",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "dripping_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "mossy_burrow",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "crooked_warren",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "lowroof_chamber",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "gnawed_tunnels",
+      "floor": 1,
+      "size": [
+        32,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "hollow_shaft",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "gloomy_pocket",
+      "floor": 1,
+      "size": [
+        20,
+        14
+      ]
+    },
+    {
+      "id": "twisted_vein",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "echoing_pit",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "shale_crawl",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "sunken_den",
+      "to": "rubble_grotto",
+      "width": 3
+    },
+    {
+      "from": "rubble_grotto",
+      "to": "split_nest",
+      "width": 3
+    },
+    {
+      "from": "split_nest",
+      "to": "dripping_gallery",
+      "width": 3
+    },
+    {
+      "from": "dripping_gallery",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "mossy_burrow",
+      "width": 3
+    },
+    {
+      "from": "mossy_burrow",
+      "to": "crooked_warren",
+      "width": 3
+    },
+    {
+      "from": "crooked_warren",
+      "to": "lowroof_chamber",
+      "width": 3
+    },
+    {
+      "from": "lowroof_chamber",
+      "to": "sunken_den",
+      "width": 3
+    },
+    {
+      "from": "sunken_den",
+      "to": "gnawed_tunnels",
+      "width": 3
+    },
+    {
+      "from": "split_nest",
+      "to": "gnawed_tunnels",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "gnawed_tunnels",
+      "width": 4
+    },
+    {
+      "from": "crooked_warren",
+      "to": "gnawed_tunnels",
+      "width": 3
+    },
+    {
+      "from": "lowroof_chamber",
+      "to": "hollow_shaft",
+      "width": 3
+    },
+    {
+      "from": "hollow_shaft",
+      "to": "sunken_den",
+      "width": 3
+    },
+    {
+      "from": "split_nest",
+      "to": "gloomy_pocket",
+      "width": 3
+    },
+    {
+      "from": "gloomy_pocket",
+      "to": "dripping_gallery",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "twisted_vein",
+      "width": 3
+    },
+    {
+      "from": "twisted_vein",
+      "to": "mossy_burrow",
+      "width": 3
+    },
+    {
+      "from": "crooked_warren",
+      "to": "echoing_pit",
+      "width": 3
+    },
+    {
+      "from": "echoing_pit",
+      "to": "lowroof_chamber",
+      "width": 3
+    },
+    {
+      "from": "mossy_burrow",
+      "to": "shale_crawl",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "sunken_den",
+      "monster": "Crypt Crab",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_den",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_den",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_grotto",
+      "monster": "Bloom Husk",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_grotto",
+      "monster": "Lacewing Moth",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_grotto",
+      "monster": "Crypt Crab",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_nest",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_nest",
+      "monster": "Lady bug",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_nest",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_gallery",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_gallery",
+      "monster": "Crypt Crab",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_gallery",
+      "monster": "Bloom Husk",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_burrow",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_burrow",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_burrow",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_warren",
+      "monster": "Crypt Crab",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_warren",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_warren",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_chamber",
+      "monster": "Bloom Husk",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_chamber",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_chamber",
+      "monster": "Crypt Crab",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shaft",
+      "monster": "Reedgrave",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shaft",
+      "monster": "Lady bug",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_pocket",
+      "monster": "Lacewing Moth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_pocket",
+      "monster": "Crypt Crab",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_vein",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_vein",
+      "monster": "Bloom Husk",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pit",
+      "monster": "Crypt Crab",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pit",
+      "monster": "Reedgrave",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_tunnels",
+      "monster": "Bloom Husk",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_tunnels",
+      "monster": "Lacewing Moth",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_tunnels",
+      "monster": "Crypt Crab",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "shale_crawl",
+      "quest": "deepgrudge_crawl",
+      "reward": {
+        "gold": 700000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "Coin hidden where no light reaches."
+      }
+    }
+  ],
+  "chest_action": 47980,
+  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 860-975 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Crypt Crab, Bloom Husk, Reedgrave, Lacewing Moth, Lady bug. Display monster: Bloom Husk."
+}

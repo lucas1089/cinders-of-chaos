@@ -1,0 +1,924 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "ashen_sepulchre",
+  "name": "Ashen Sepulchre",
+  "biome": "crypt",
+  "size": [
+    189,
+    166
+  ],
+  "floors": 2,
+  "level": [
+    1450,
+    1600
+  ],
+  "seed": 30555,
+  "origin": {
+    "x": 16640,
+    "y": 14952,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vigil_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "cracked_chapel",
+      "floor": 1,
+      "size": [
+        26,
+        19
+      ],
+      "place": "north"
+    },
+    {
+      "id": "silent_crypts",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "hollow_cloister",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "east"
+    },
+    {
+      "id": "vigil_niches",
+      "floor": 1,
+      "size": [
+        27,
+        21
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "tithe_reliquary",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "forgotten_tombs",
+      "floor": 1,
+      "size": [
+        24,
+        19
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "mourning_ossuary",
+      "floor": 1,
+      "size": [
+        27,
+        22
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "grave_charnel",
+      "floor": 1,
+      "size": [
+        31,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "black_aisle",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "pale_shrine",
+      "floor": 1,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "whispering_stair",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "candle_vault",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "sealed_nave",
+      "floor": 2,
+      "size": "large",
+      "place": "south"
+    },
+    {
+      "id": "dusty_cells",
+      "floor": 2,
+      "size": [
+        27,
+        19
+      ],
+      "place": "north"
+    },
+    {
+      "id": "cracked_niches",
+      "floor": 2,
+      "size": [
+        28,
+        18
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "silent_reliquary",
+      "floor": 2,
+      "size": [
+        25,
+        20
+      ],
+      "place": "east"
+    },
+    {
+      "id": "hollow_tombs",
+      "floor": 2,
+      "size": [
+        26,
+        21
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "vigil_ossuary",
+      "floor": 2,
+      "size": [
+        28,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "tithe_charnel",
+      "floor": 2,
+      "size": [
+        27,
+        22
+      ],
+      "place": "west"
+    },
+    {
+      "id": "forgotten_aisle",
+      "floor": 2,
+      "size": [
+        26,
+        21
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "mourning_shrine",
+      "floor": 2,
+      "size": [
+        29,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "grave_stair",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "black_vault",
+      "floor": 2,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "pale_nave",
+      "floor": 2,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "whispering_cells",
+      "floor": 2,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "candle_chapel",
+      "floor": 2,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "cracked_chapel",
+      "to": "silent_crypts",
+      "width": 3
+    },
+    {
+      "from": "silent_crypts",
+      "to": "hollow_cloister",
+      "width": 3
+    },
+    {
+      "from": "hollow_cloister",
+      "to": "vigil_niches",
+      "width": 3
+    },
+    {
+      "from": "vigil_niches",
+      "to": "tithe_reliquary",
+      "width": 3
+    },
+    {
+      "from": "tithe_reliquary",
+      "to": "forgotten_tombs",
+      "width": 3
+    },
+    {
+      "from": "forgotten_tombs",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "mourning_ossuary",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "cracked_chapel",
+      "width": 3
+    },
+    {
+      "from": "cracked_chapel",
+      "to": "grave_charnel",
+      "width": 3
+    },
+    {
+      "from": "hollow_cloister",
+      "to": "grave_charnel",
+      "width": 3
+    },
+    {
+      "from": "tithe_reliquary",
+      "to": "grave_charnel",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "grave_charnel",
+      "width": 4
+    },
+    {
+      "from": "tithe_reliquary",
+      "to": "black_aisle",
+      "width": 3
+    },
+    {
+      "from": "black_aisle",
+      "to": "forgotten_tombs",
+      "width": 3
+    },
+    {
+      "from": "mourning_ossuary",
+      "to": "pale_shrine",
+      "width": 3
+    },
+    {
+      "from": "pale_shrine",
+      "to": "cracked_chapel",
+      "width": 3
+    },
+    {
+      "from": "silent_crypts",
+      "to": "whispering_stair",
+      "width": 3
+    },
+    {
+      "from": "whispering_stair",
+      "to": "hollow_cloister",
+      "width": 3
+    },
+    {
+      "from": "hollow_cloister",
+      "to": "candle_vault",
+      "width": 3
+    },
+    {
+      "from": "dusty_cells",
+      "to": "cracked_niches",
+      "width": 3
+    },
+    {
+      "from": "cracked_niches",
+      "to": "silent_reliquary",
+      "width": 3
+    },
+    {
+      "from": "silent_reliquary",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "hollow_tombs",
+      "to": "sealed_nave",
+      "width": 3
+    },
+    {
+      "from": "sealed_nave",
+      "to": "vigil_ossuary",
+      "width": 3
+    },
+    {
+      "from": "vigil_ossuary",
+      "to": "tithe_charnel",
+      "width": 3
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "forgotten_aisle",
+      "width": 3
+    },
+    {
+      "from": "forgotten_aisle",
+      "to": "dusty_cells",
+      "width": 3
+    },
+    {
+      "from": "dusty_cells",
+      "to": "mourning_shrine",
+      "width": 3
+    },
+    {
+      "from": "silent_reliquary",
+      "to": "mourning_shrine",
+      "width": 3
+    },
+    {
+      "from": "sealed_nave",
+      "to": "mourning_shrine",
+      "width": 4
+    },
+    {
+      "from": "tithe_charnel",
+      "to": "mourning_shrine",
+      "width": 3
+    },
+    {
+      "from": "dusty_cells",
+      "to": "grave_stair",
+      "width": 3
+    },
+    {
+      "from": "grave_stair",
+      "to": "cracked_niches",
+      "width": 3
+    },
+    {
+      "from": "sealed_nave",
+      "to": "black_vault",
+      "width": 3
+    },
+    {
+      "from": "black_vault",
+      "to": "vigil_ossuary",
+      "width": 3
+    },
+    {
+      "from": "silent_reliquary",
+      "to": "pale_nave",
+      "width": 3
+    },
+    {
+      "from": "pale_nave",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "vigil_ossuary",
+      "to": "whispering_cells",
+      "width": 3
+    },
+    {
+      "from": "whispering_cells",
+      "to": "tithe_charnel",
+      "width": 3
+    },
+    {
+      "from": "cracked_niches",
+      "to": "candle_chapel",
+      "width": 2
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "candle_vault",
+      "to": "sealed_nave"
+    }
+  ],
+  "entry": {
+    "zone": "vigil_camp"
+  },
+  "exit": {
+    "zone": "vigil_camp"
+  },
+  "spawns": [
+    {
+      "zone": "cracked_chapel",
+      "monster": "Ashveil Hierarch",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_chapel",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_chapel",
+      "monster": "Bonepicker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Bonepicker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Cinderskull Reaver",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_cloister",
+      "monster": "Hollowhorn",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_cloister",
+      "monster": "Bloodantler Fiend",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_cloister",
+      "monster": "Ashveil Hierarch",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_niches",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_niches",
+      "monster": "Cinderskull Reaver",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_niches",
+      "monster": "Bonepicker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_reliquary",
+      "monster": "Bloodantler Fiend",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_reliquary",
+      "monster": "Ashveil Hierarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_reliquary",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_tombs",
+      "monster": "Cinderskull Reaver",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_tombs",
+      "monster": "Bonepicker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_tombs",
+      "monster": "Rimeshroud Revenant",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Ashveil Hierarch",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_ossuary",
+      "monster": "Bonepicker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_aisle",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_aisle",
+      "monster": "Rimeshroud Revenant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_shrine",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_shrine",
+      "monster": "Bloodantler Fiend",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_stair",
+      "monster": "Rimeshroud Revenant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_stair",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_charnel",
+      "monster": "Bloodantler Fiend",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_charnel",
+      "monster": "Ashveil Hierarch",
+      "count": 16,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_charnel",
+      "monster": "Hollowhorn",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_vault",
+      "monster": "Cinderskull Reaver",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_vault",
+      "monster": "Bonepicker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_cells",
+      "monster": "Ashveil Hierarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_cells",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_cells",
+      "monster": "Bonepicker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_niches",
+      "monster": "Bonepicker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_niches",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_niches",
+      "monster": "Cinderskull Reaver",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Bloodantler Fiend",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_reliquary",
+      "monster": "Ashveil Hierarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Cinderskull Reaver",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Bonepicker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_ossuary",
+      "monster": "Bloodantler Fiend",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_ossuary",
+      "monster": "Ashveil Hierarch",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_ossuary",
+      "monster": "Hollowhorn",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Cinderskull Reaver",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Bonepicker",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_charnel",
+      "monster": "Rimeshroud Revenant",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_aisle",
+      "monster": "Ashveil Hierarch",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_aisle",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_aisle",
+      "monster": "Bonepicker",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_stair",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_stair",
+      "monster": "Rimeshroud Revenant",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_vault",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_vault",
+      "monster": "Bloodantler Fiend",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_nave",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pale_nave",
+      "monster": "Bonepicker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_cells",
+      "monster": "Bloodantler Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_cells",
+      "monster": "Ashveil Hierarch",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_shrine",
+      "monster": "Cinderskull Reaver",
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_shrine",
+      "monster": "Bonepicker",
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_shrine",
+      "monster": "Rimeshroud Revenant",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "candle_chapel",
+      "quest": "ashen_chapel",
+      "reward": {
+        "gold": 2700000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 8
+          }
+        ],
+        "message": "A tithe left for the dead, taken back."
+      }
+    }
+  ],
+  "chest_action": 47988,
+  "notes": "Content plan (hall fill, 2026-10-22): a crypt hunt for levels 1450-1600 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 24 hunting zones in loops on two floors; monsters Ashveil Hierarch, Bonepicker, Hollowhorn, Rimeshroud Revenant, Bloodantler Fiend, Cinderskull Reaver. Display monster: Bonepicker."
+}

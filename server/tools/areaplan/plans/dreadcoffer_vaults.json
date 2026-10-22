@@ -1,0 +1,928 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "dreadcoffer_vaults",
+  "name": "Dreadcoffer Vaults",
+  "biome": "vault",
+  "size": [
+    191,
+    170
+  ],
+  "floors": 2,
+  "level": [
+    1625,
+    1775
+  ],
+  "seed": 30581,
+  "origin": {
+    "x": 17048,
+    "y": 14952,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "gate_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "locked_counting",
+      "floor": 1,
+      "size": [
+        26,
+        21
+      ],
+      "place": "north"
+    },
+    {
+      "id": "iron_cells",
+      "floor": 1,
+      "size": [
+        25,
+        21
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "barred_archive",
+      "floor": 1,
+      "size": [
+        24,
+        21
+      ],
+      "place": "east"
+    },
+    {
+      "id": "black_stacks",
+      "floor": 1,
+      "size": [
+        24,
+        21
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "warden_hoard",
+      "floor": 1,
+      "size": [
+        25,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "strong_gallery",
+      "floor": 1,
+      "size": [
+        28,
+        19
+      ],
+      "place": "west"
+    },
+    {
+      "id": "deep_vault",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "sealed_rooms",
+      "floor": 1,
+      "size": [
+        28,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "coin_galleries",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "tally_treasury",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "chained_cellar",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "counting_hall",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "ledger_strongroom",
+      "floor": 2,
+      "size": "large",
+      "place": "east"
+    },
+    {
+      "id": "gilded_store",
+      "floor": 2,
+      "size": [
+        27,
+        21
+      ],
+      "place": "north"
+    },
+    {
+      "id": "locked_stacks",
+      "floor": 2,
+      "size": [
+        28,
+        22
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "iron_hoard",
+      "floor": 2,
+      "size": [
+        24,
+        21
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "barred_gallery",
+      "floor": 2,
+      "size": [
+        27,
+        22
+      ],
+      "place": "south"
+    },
+    {
+      "id": "black_vault",
+      "floor": 2,
+      "size": [
+        26,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "warden_rooms",
+      "floor": 2,
+      "size": [
+        28,
+        22
+      ],
+      "place": "west"
+    },
+    {
+      "id": "strong_galleries",
+      "floor": 2,
+      "size": [
+        24,
+        20
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "deep_treasury",
+      "floor": 2,
+      "size": [
+        31,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "sealed_cellar",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "coin_hall",
+      "floor": 2,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "tally_strongroom",
+      "floor": 2,
+      "size": "large"
+    },
+    {
+      "id": "chained_store",
+      "floor": 2,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "counting_counting",
+      "floor": 2,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "locked_counting",
+      "to": "iron_cells",
+      "width": 3
+    },
+    {
+      "from": "iron_cells",
+      "to": "barred_archive",
+      "width": 3
+    },
+    {
+      "from": "barred_archive",
+      "to": "black_stacks",
+      "width": 3
+    },
+    {
+      "from": "black_stacks",
+      "to": "gate_camp",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "warden_hoard",
+      "width": 3
+    },
+    {
+      "from": "warden_hoard",
+      "to": "strong_gallery",
+      "width": 3
+    },
+    {
+      "from": "strong_gallery",
+      "to": "deep_vault",
+      "width": 3
+    },
+    {
+      "from": "deep_vault",
+      "to": "locked_counting",
+      "width": 3
+    },
+    {
+      "from": "locked_counting",
+      "to": "sealed_rooms",
+      "width": 3
+    },
+    {
+      "from": "barred_archive",
+      "to": "sealed_rooms",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "sealed_rooms",
+      "width": 4
+    },
+    {
+      "from": "strong_gallery",
+      "to": "sealed_rooms",
+      "width": 3
+    },
+    {
+      "from": "strong_gallery",
+      "to": "coin_galleries",
+      "width": 3
+    },
+    {
+      "from": "coin_galleries",
+      "to": "deep_vault",
+      "width": 3
+    },
+    {
+      "from": "black_stacks",
+      "to": "tally_treasury",
+      "width": 3
+    },
+    {
+      "from": "tally_treasury",
+      "to": "gate_camp",
+      "width": 3
+    },
+    {
+      "from": "barred_archive",
+      "to": "chained_cellar",
+      "width": 3
+    },
+    {
+      "from": "chained_cellar",
+      "to": "black_stacks",
+      "width": 3
+    },
+    {
+      "from": "locked_counting",
+      "to": "counting_hall",
+      "width": 3
+    },
+    {
+      "from": "gilded_store",
+      "to": "locked_stacks",
+      "width": 3
+    },
+    {
+      "from": "locked_stacks",
+      "to": "ledger_strongroom",
+      "width": 3
+    },
+    {
+      "from": "ledger_strongroom",
+      "to": "iron_hoard",
+      "width": 3
+    },
+    {
+      "from": "iron_hoard",
+      "to": "barred_gallery",
+      "width": 3
+    },
+    {
+      "from": "barred_gallery",
+      "to": "black_vault",
+      "width": 3
+    },
+    {
+      "from": "black_vault",
+      "to": "warden_rooms",
+      "width": 3
+    },
+    {
+      "from": "warden_rooms",
+      "to": "strong_galleries",
+      "width": 3
+    },
+    {
+      "from": "strong_galleries",
+      "to": "gilded_store",
+      "width": 3
+    },
+    {
+      "from": "gilded_store",
+      "to": "deep_treasury",
+      "width": 3
+    },
+    {
+      "from": "ledger_strongroom",
+      "to": "deep_treasury",
+      "width": 4
+    },
+    {
+      "from": "barred_gallery",
+      "to": "deep_treasury",
+      "width": 3
+    },
+    {
+      "from": "warden_rooms",
+      "to": "deep_treasury",
+      "width": 3
+    },
+    {
+      "from": "warden_rooms",
+      "to": "sealed_cellar",
+      "width": 3
+    },
+    {
+      "from": "sealed_cellar",
+      "to": "strong_galleries",
+      "width": 3
+    },
+    {
+      "from": "locked_stacks",
+      "to": "coin_hall",
+      "width": 3
+    },
+    {
+      "from": "coin_hall",
+      "to": "ledger_strongroom",
+      "width": 3
+    },
+    {
+      "from": "iron_hoard",
+      "to": "tally_strongroom",
+      "width": 3
+    },
+    {
+      "from": "tally_strongroom",
+      "to": "barred_gallery",
+      "width": 3
+    },
+    {
+      "from": "black_vault",
+      "to": "chained_store",
+      "width": 3
+    },
+    {
+      "from": "chained_store",
+      "to": "warden_rooms",
+      "width": 3
+    },
+    {
+      "from": "barred_gallery",
+      "to": "counting_counting",
+      "width": 2
+    }
+  ],
+  "connections": [
+    {
+      "type": "stairs",
+      "from": "counting_hall",
+      "to": "ledger_strongroom"
+    }
+  ],
+  "entry": {
+    "zone": "gate_camp"
+  },
+  "exit": {
+    "zone": "gate_camp"
+  },
+  "spawns": [
+    {
+      "zone": "locked_counting",
+      "monster": "Oathbroken Colossus",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_counting",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_counting",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cells",
+      "monster": "Siege Behemoth",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cells",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_cells",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Oathbroken Colossus",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_stacks",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_stacks",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_stacks",
+      "monster": "Siege Behemoth",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Hollowhorn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Oathbroken Colossus",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_hoard",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_gallery",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_gallery",
+      "monster": "Siege Behemoth",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_gallery",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Oathbroken Colossus",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_galleries",
+      "monster": "Siege Behemoth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_galleries",
+      "monster": "Gnawbone Swarm",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_treasury",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_treasury",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_cellar",
+      "monster": "Gnawbone Swarm",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_cellar",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Oathbroken Colossus",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_hall",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_hall",
+      "monster": "Siege Behemoth",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_store",
+      "monster": "Oathbroken Colossus",
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_store",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gilded_store",
+      "monster": "Gnawbone Swarm",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_stacks",
+      "monster": "Siege Behemoth",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_stacks",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_stacks",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hoard",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hoard",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hoard",
+      "monster": "Oathbroken Colossus",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_gallery",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_gallery",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_gallery",
+      "monster": "Siege Behemoth",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_vault",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_vault",
+      "monster": "Oathbroken Colossus",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_vault",
+      "monster": "Ironmask Warbreaker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_rooms",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_rooms",
+      "monster": "Siege Behemoth",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warden_rooms",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_galleries",
+      "monster": "Oathbroken Colossus",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_galleries",
+      "monster": "Ironmask Warbreaker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_galleries",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_cellar",
+      "monster": "Siege Behemoth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_cellar",
+      "monster": "Gnawbone Swarm",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_hall",
+      "monster": "Ironmask Warbreaker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_hall",
+      "monster": "Hollowhorn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_strongroom",
+      "monster": "Gnawbone Swarm",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_strongroom",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_store",
+      "monster": "Hollowhorn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_store",
+      "monster": "Oathbroken Colossus",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "chained_store",
+      "monster": "Ironmask Warbreaker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_treasury",
+      "monster": "Cinderhorn Juggernaut",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_treasury",
+      "monster": "Siege Behemoth",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_treasury",
+      "monster": "Gnawbone Swarm",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "counting_counting",
+      "quest": "dreadcoffer_counting",
+      "reward": {
+        "gold": 3150000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 9
+          }
+        ],
+        "message": "The warden's ledger balances at last."
+      }
+    }
+  ],
+  "chest_action": 47991,
+  "notes": "Content plan (hall fill, 2026-10-22): a vault hunt for levels 1625-1775 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 24 hunting zones in loops on two floors; monsters Oathbroken Colossus, Siege Behemoth, Ironmask Warbreaker, Gnawbone Swarm, Hollowhorn, Cinderhorn Juggernaut. Display monster: Gnawbone Swarm."
+}

@@ -1,0 +1,499 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "obsidian_colonnade",
+  "name": "Obsidian Colonnade",
+  "biome": "hall",
+  "size": [
+    180,
+    127
+  ],
+  "floors": 1,
+  "level": [
+    830,
+    945
+  ],
+  "seed": 30386,
+  "origin": {
+    "x": 16028,
+    "y": 14748,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "foyer_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "long_chamber",
+      "floor": 1,
+      "size": [
+        27,
+        19
+      ],
+      "place": "north"
+    },
+    {
+      "id": "empty_loggia",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "velvet_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "silent_portico",
+      "floor": 1,
+      "size": [
+        22,
+        17
+      ],
+      "place": "south"
+    },
+    {
+      "id": "shadow_foyer",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "marble_atrium",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "grand_vestibule",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "onyx_transept",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "royal_court",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "black_colonnade",
+      "floor": 1,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "mirror_throne",
+      "floor": 1,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "pillared_hall",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "cold_nave",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "long_chamber",
+      "to": "empty_loggia",
+      "width": 3
+    },
+    {
+      "from": "empty_loggia",
+      "to": "foyer_camp",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "velvet_gallery",
+      "width": 3
+    },
+    {
+      "from": "velvet_gallery",
+      "to": "silent_portico",
+      "width": 3
+    },
+    {
+      "from": "silent_portico",
+      "to": "shadow_foyer",
+      "width": 3
+    },
+    {
+      "from": "shadow_foyer",
+      "to": "marble_atrium",
+      "width": 3
+    },
+    {
+      "from": "marble_atrium",
+      "to": "grand_vestibule",
+      "width": 3
+    },
+    {
+      "from": "grand_vestibule",
+      "to": "long_chamber",
+      "width": 3
+    },
+    {
+      "from": "long_chamber",
+      "to": "onyx_transept",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "onyx_transept",
+      "width": 4
+    },
+    {
+      "from": "silent_portico",
+      "to": "onyx_transept",
+      "width": 3
+    },
+    {
+      "from": "marble_atrium",
+      "to": "onyx_transept",
+      "width": 3
+    },
+    {
+      "from": "foyer_camp",
+      "to": "royal_court",
+      "width": 3
+    },
+    {
+      "from": "royal_court",
+      "to": "velvet_gallery",
+      "width": 3
+    },
+    {
+      "from": "empty_loggia",
+      "to": "black_colonnade",
+      "width": 3
+    },
+    {
+      "from": "black_colonnade",
+      "to": "foyer_camp",
+      "width": 3
+    },
+    {
+      "from": "long_chamber",
+      "to": "mirror_throne",
+      "width": 3
+    },
+    {
+      "from": "mirror_throne",
+      "to": "empty_loggia",
+      "width": 3
+    },
+    {
+      "from": "shadow_foyer",
+      "to": "pillared_hall",
+      "width": 3
+    },
+    {
+      "from": "pillared_hall",
+      "to": "marble_atrium",
+      "width": 3
+    },
+    {
+      "from": "silent_portico",
+      "to": "cold_nave",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "foyer_camp"
+  },
+  "exit": {
+    "zone": "foyer_camp"
+  },
+  "spawns": [
+    {
+      "zone": "long_chamber",
+      "monster": "Jungle Beasts",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_chamber",
+      "monster": "Lacewing Moth",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "long_chamber",
+      "monster": "Blight Bloom",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "empty_loggia",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "empty_loggia",
+      "monster": "Chained Runt",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "empty_loggia",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Lacewing Moth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "velvet_gallery",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_portico",
+      "monster": "Chained Runt",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_portico",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_portico",
+      "monster": "Lacewing Moth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_foyer",
+      "monster": "Blight Bloom",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_foyer",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shadow_foyer",
+      "monster": "Chained Runt",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marble_atrium",
+      "monster": "Jungle Beasts",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marble_atrium",
+      "monster": "Lacewing Moth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marble_atrium",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_vestibule",
+      "monster": "Lady bug",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_vestibule",
+      "monster": "Chained Runt",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grand_vestibule",
+      "monster": "Lacewing Moth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_court",
+      "monster": "Lacewing Moth",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_court",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "royal_court",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_colonnade",
+      "monster": "Chained Runt",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_colonnade",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_throne",
+      "monster": "Blight Bloom",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mirror_throne",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_hall",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_hall",
+      "monster": "Lacewing Moth",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pillared_hall",
+      "monster": "Blight Bloom",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_transept",
+      "monster": "Lady bug",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_transept",
+      "monster": "Chained Runt",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "onyx_transept",
+      "monster": "Jungle Beasts",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "cold_nave",
+      "quest": "obsidian_nave",
+      "reward": {
+        "gold": 600000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "Tribute from a court that never ended."
+      }
+    }
+  ],
+  "chest_action": 47979,
+  "notes": "Content plan (hall fill, 2026-10-22): a hall hunt for levels 830-945 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Jungle Beasts, Lady bug, Lacewing Moth, Chained Runt, Blight Bloom. Display monster: Lacewing Moth."
+}

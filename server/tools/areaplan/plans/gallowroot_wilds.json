@@ -1,0 +1,432 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gallowroot_wilds",
+  "name": "Gallowroot Wilds",
+  "biome": "forest",
+  "size": [
+    163,
+    131
+  ],
+  "floors": 1,
+  "level": [
+    725,
+    840
+  ],
+  "seed": 30295,
+  "origin": {
+    "x": 16640,
+    "y": 14544,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "woodcamp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "quiet_copse",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "gnarled_glen",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "hanging_trail",
+      "floor": 1,
+      "size": [
+        25,
+        20
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "blighted_clearing",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "thorny_thicket",
+      "floor": 1,
+      "size": [
+        26,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "dark_orchard",
+      "floor": 1,
+      "size": [
+        26,
+        18
+      ],
+      "place": "west"
+    },
+    {
+      "id": "withered_grove",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "bramble_barrow",
+      "floor": 1,
+      "size": [
+        27,
+        23
+      ],
+      "place": "center"
+    },
+    {
+      "id": "fallen_hollow",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "crows_meadow",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "old_ridge",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "quiet_copse",
+      "to": "gnarled_glen",
+      "width": 3
+    },
+    {
+      "from": "gnarled_glen",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "hanging_trail",
+      "width": 3
+    },
+    {
+      "from": "hanging_trail",
+      "to": "blighted_clearing",
+      "width": 3
+    },
+    {
+      "from": "blighted_clearing",
+      "to": "thorny_thicket",
+      "width": 3
+    },
+    {
+      "from": "thorny_thicket",
+      "to": "dark_orchard",
+      "width": 3
+    },
+    {
+      "from": "dark_orchard",
+      "to": "withered_grove",
+      "width": 3
+    },
+    {
+      "from": "withered_grove",
+      "to": "quiet_copse",
+      "width": 3
+    },
+    {
+      "from": "quiet_copse",
+      "to": "bramble_barrow",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "bramble_barrow",
+      "width": 4
+    },
+    {
+      "from": "blighted_clearing",
+      "to": "bramble_barrow",
+      "width": 3
+    },
+    {
+      "from": "dark_orchard",
+      "to": "bramble_barrow",
+      "width": 3
+    },
+    {
+      "from": "gnarled_glen",
+      "to": "fallen_hollow",
+      "width": 3
+    },
+    {
+      "from": "fallen_hollow",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "withered_grove",
+      "to": "crows_meadow",
+      "width": 3
+    },
+    {
+      "from": "crows_meadow",
+      "to": "quiet_copse",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "old_ridge",
+      "width": 3
+    },
+    {
+      "from": "old_ridge",
+      "to": "hanging_trail",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "woodcamp"
+  },
+  "exit": {
+    "zone": "woodcamp"
+  },
+  "spawns": [
+    {
+      "zone": "quiet_copse",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_copse",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_copse",
+      "monster": "Ironmask Brander",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_glen",
+      "monster": "Royal Man",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_glen",
+      "monster": "Ironmask Brander",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_glen",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_trail",
+      "monster": "Loricate Orger",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_trail",
+      "monster": "Ironmask Taskmaster",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_trail",
+      "monster": "Royal Man",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_clearing",
+      "monster": "Ironmask Brander",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_clearing",
+      "monster": "Tundra Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_clearing",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_thicket",
+      "monster": "Ironmask Taskmaster",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_thicket",
+      "monster": "Royal Man",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_thicket",
+      "monster": "Ironmask Brander",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_orchard",
+      "monster": "Tundra Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_orchard",
+      "monster": "Loricate Orger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_orchard",
+      "monster": "Ironmask Taskmaster",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grove",
+      "monster": "Royal Man",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grove",
+      "monster": "Ironmask Brander",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grove",
+      "monster": "Tundra Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_hollow",
+      "monster": "Loricate Orger",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_hollow",
+      "monster": "Ironmask Taskmaster",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_meadow",
+      "monster": "Ironmask Brander",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_meadow",
+      "monster": "Tundra Troll",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_ridge",
+      "monster": "Ironmask Taskmaster",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_ridge",
+      "monster": "Royal Man",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_ridge",
+      "monster": "Ironmask Brander",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_barrow",
+      "monster": "Tundra Troll",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_barrow",
+      "monster": "Loricate Orger",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_barrow",
+      "monster": "Ironmask Taskmaster",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 725-840 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Tundra Troll, Royal Man, Loricate Orger, Ironmask Brander, Ironmask Taskmaster. Display monster: Ironmask Brander."
+}

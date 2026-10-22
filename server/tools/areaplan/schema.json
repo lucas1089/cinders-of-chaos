@@ -75,12 +75,12 @@
         "y",
         "z"
       ],
-      "description": "where the top-left tile of floor 1 goes on the map (default 14800, 14800 and the biome's depth)",
+      "description": "where the top-left tile of floor 1 goes on the map (default 14800, 14800 and the biome's depth); x/y 14336-15359 (the first content block) or x 15616-17663, y 14336-15359 (the hall-fill block east of it, docs/MAP_GUIDE.md \"Content plans\")",
       "properties": {
         "x": {
           "type": "integer",
           "minimum": 14336,
-          "maximum": 15359
+          "maximum": 17663
         },
         "y": {
           "type": "integer",
