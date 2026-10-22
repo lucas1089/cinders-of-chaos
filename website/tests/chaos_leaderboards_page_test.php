@@ -51,7 +51,10 @@ $pdo->exec("CREATE TABLE chaos_records_boards (key TEXT PRIMARY KEY, cat TEXT, n
 $pdo->exec("CREATE TABLE chaos_records (slot TEXT, period TEXT, player_id INT, value INT, at INT, voc INT, party INT, members TEXT, count INT, PRIMARY KEY (slot, period, player_id))");
 $pdo->exec("CREATE TABLE chaos_records_firsts (season TEXT, target TEXT, board TEXT, name TEXT, members TEXT, guids TEXT, value INT, at INT, PRIMARY KEY (season, target))");
 $pdo->exec("INSERT INTO players (id, name, group_id, vocation, level) VALUES (1, 'Quick Blade', 1, 4, 300), (2, 'Slow Hammer', 1, 8, 310),
-	(3, 'Mid Arrow', 1, 3, 290), (4, 'Staff Ember', 6, 4, 500)");
+	(3, 'Mid Arrow', 1, 3, 290), (4, 'Staff Ember', 6, 4, 500), (9, 'Tester Abc', 1, 4, 280)");
+// a staff tester bot (server/README.md "Tester bots"): player storage 7102900 = 1; never on a board
+$pdo->exec("CREATE TABLE player_storage (player_id INT NOT NULL, key INT NOT NULL, value INT NOT NULL, PRIMARY KEY (player_id, key))");
+$pdo->exec("INSERT INTO player_storage VALUES (9, 7102900, 1), (3, 7102900, 0)");
 
 // the boards come from the server's leaderboard_config.lua, with mode and format
 $boards = chaos_leaderboard_boards();
@@ -67,7 +70,7 @@ check(chaos_leaderboard_value($boards['worldboss'], 1234567) === '1,234,567', 'd
 
 $week = chaos_week_key(time(), 6);
 $ins = $pdo->prepare('INSERT INTO chaos_leaderboard (board, week, player_id, value, count, updated_at) VALUES (?, ?, ?, ?, 1, ?)');
-foreach (array(array(1, 300), array(2, 900), array(3, 450), array(4, 100)) as $r) {
+foreach (array(array(1, 300), array(2, 900), array(3, 450), array(4, 100), array(9, 60)) as $r) {
 	$ins->execute(array('cinder_solo', $week, $r[0], $r[1], 10));
 	$ins->execute(array('worldboss', $week, $r[0], $r[1], 10));
 }
@@ -85,6 +88,7 @@ $a = strpos($html, 'Quick Blade'); $b = strpos($html, 'Mid Arrow'); $c = strpos(
 check($a !== false && $b !== false && $c !== false && $a < $b && $b < $c, 'cinder_solo ranked fastest first');
 check(strpos($html, '>5:00<') !== false && strpos($html, '>15:00<') !== false, 'cinder_solo values shown as m:ss');
 check(strpos($html, 'Staff Ember') === false, 'staff left out of the board');
+check(strpos($html, 'Tester Abc') === false, 'tester bots left out of the board');
 $html = $render('worldboss');
 $a = strpos($html, 'Slow Hammer'); $b = strpos($html, 'Mid Arrow'); $c = strpos($html, 'Quick Blade');
 check($a !== false && $b !== false && $c !== false && $a < $b && $b < $c, 'worldboss ranked highest first');

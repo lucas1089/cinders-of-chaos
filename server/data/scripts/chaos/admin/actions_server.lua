@@ -119,7 +119,8 @@ reg{id = "online", name = "Online list", description = "List every online player
 	handler = function()
 		local lines = {}
 		for _, pl in ipairs(Game.getPlayers()) do
-			lines[#lines + 1] = string.format("%s  lvl %d  %s  group %d", pl:getName(), pl:getLevel(), pl:getVocation():getName(), pl:getGroup():getId())
+			lines[#lines + 1] = string.format("%s  lvl %d  %s  group %d%s", pl:getName(), pl:getLevel(), pl:getVocation():getName(), pl:getGroup():getId(),
+				Chaos.isTester and Chaos.isTester(pl) and "  [TESTER bot, not counted]" or "")
 		end
 		table.sort(lines)
 		return true, #lines .. " player(s) online.", lines
@@ -129,7 +130,8 @@ reg{id = "stats", name = "Server stats", description = "Players, monsters, NPCs,
 	handler = function()
 		local up = os.time() - (ChaosAdmin.startTime or os.time())
 		local lines = {
-			"Players online: " .. Game.getPlayerCount(),
+			"Players online: " .. (Chaos.countedPlayers and Chaos.countedPlayers() or Game.getPlayerCount()) ..
+				(Chaos.countedPlayers and string.format(" (+%d tester bots)", Game.getPlayerCount() - Chaos.countedPlayers()) or ""),
 			"Monsters: " .. Game.getMonsterCount(),
 			"NPCs: " .. Game.getNpcCount(),
 			string.format("Lua memory: %.1f MB", collectgarbage("count") / 1024),

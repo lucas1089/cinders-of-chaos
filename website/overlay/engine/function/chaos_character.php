@@ -54,6 +54,19 @@ function chaos_character_name_reserved(string $name): bool {
  * selected_vocation, selected_town, selected_gender, token); its name is trimmed in place, as the page did with
  * $_POST. $userData: the account's user_data() row (is_admin). $checkToken: the website form's CSRF token.
  */
+/**
+ * A word "Tester" in the name: the staff's tester bots are named "Tester Xxx" (server/README.md "Tester bots"), so
+ * no player may take a name that looks like one (the game's rule: chaos_constants.lua shopServices.name.staffWords).
+ */
+function chaos_character_name_tester(string $name): bool {
+	foreach (preg_split('/\s+/', strtolower(trim($name))) as $word) {
+		if ($word === 'tester') {
+			return true;
+		}
+	}
+	return false;
+}
+
 function chaos_character_form_errors(array &$post, int $accountId, array $userData, bool $checkToken = true): array {
 	global $config;
 	$errors = array();
@@ -100,6 +113,10 @@ function chaos_character_form_errors(array &$post, int $accountId, array $userDa
 			}
 			// Cinders of Chaos (not from createcharacter.php): a name that is a page address would be hidden by the page
 			if (chaos_character_name_reserved($username)) {
+				$errors[] = t('reg.restricted_word');
+			}
+			// the tester bots' names (Tester Xxx) belong to the staff
+			if (chaos_character_name_tester($username)) {
 				$errors[] = t('reg.restricted_word');
 			}
 			// Validate vocation id

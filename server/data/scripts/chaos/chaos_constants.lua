@@ -238,6 +238,43 @@ Chaos.botReviewTables = {daily = "chaos_bot_daily", actions = "chaos_bot_actions
 -- (shopFrameBase2 above)
 Chaos.storage.wardrobe = 7102000
 
+-- Tester bots (server/README.md "Tester bots"; testers.lua, testers_core.lua, server/tools/testers.py): storages
+-- 7102900 - 7102909 reserved: +0 is 1 on a tester character (written only by testers.py setup; the engine reads the
+-- same key, src-patch 0059 CHAOS_TESTER_STORAGE: a tester is never counted online), +1 its supplies were given (the
+-- TEST ONLY helper), +2/+3/+4 its hunt position x/y/z; +5..9 free
+Chaos.storage.tester = 7102900
+Chaos.testerGuids = Chaos.testerGuids or {} -- guid -> name of every tester character (testers.lua fills it)
+
+-- a tester bot: the storage, as the engine reads it
+function Chaos.isTester(player)
+	local ok, v = pcall(function()
+		return player:getStorageValue(Chaos.storage.tester)
+	end)
+	return ok and v == 1
+end
+
+-- a tester bot by guid (offline too, once testers.lua loaded the list)
+function Chaos.isTesterGuid(guid)
+	return Chaos.testerGuids[tonumber(guid) or -1] ~= nil
+end
+
+-- SQL: the row of players alias `a` is not a tester (rankings, lists)
+function Chaos.notTesterSql(alias)
+	return string.format("NOT EXISTS (SELECT 1 FROM `player_storage` `ts` WHERE `ts`.`player_id` = %s.`id` " ..
+		"AND `ts`.`key` = %d AND `ts`.`value` = 1)", alias or "`players`", Chaos.storage.tester)
+end
+
+-- the players online without the tester bots (every count a player sees)
+function Chaos.countedPlayers()
+	local n = 0
+	for _, p in ipairs(Game.getPlayers()) do
+		if not Chaos.isTester(p) then
+			n = n + 1
+		end
+	end
+	return n
+end
+
 -- ---------------------------------------------------------------------------
 -- Database tables (created by server/sql/chaos.sql)
 -- ---------------------------------------------------------------------------
@@ -844,7 +881,8 @@ Chaos.shopServices = {
 	name = {
 		minLength = 3, maxLength = 20, maxWords = 3, minWordLength = 2,
 		-- a first word (or any word) that is one of these is refused: staff look-alikes
-		staffWords = {"gm", "cm", "god", "admin", "adm", "tutor", "gamemaster", "staff", "support", "owner", "sr", "senior", "server"},
+		staffWords = {"gm", "cm", "god", "admin", "adm", "tutor", "gamemaster", "staff", "support", "owner", "sr", "senior", "server",
+			"tester"}, -- tester: the staff's tester bots are "Tester Xxx" (server/README.md "Tester bots")
 		-- refused anywhere in the name (lower case, substring match); extend as needed
 		forbidden = {"admin", "gamemaster", "moderator", "fuck", "shit", "bitch", "whore", "nazi", "hitler", "cunt", "rape"},
 		-- refused as the whole name: the website's top-level addresses (website/README.md "Web server": /highscores is

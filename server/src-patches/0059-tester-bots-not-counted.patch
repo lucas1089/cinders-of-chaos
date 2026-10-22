@@ -1,0 +1,222 @@
+# Tester bots are never counted online (server/README.md "Tester bots"). The owner runs test bots on the live server
+# (server/tools/testers.py, chaos-ctl.sh testers); they must never inflate a count a player, a server list or the
+# website sees. A tester is a character with the player storage 7102900 = 1 (CHAOS_TESTER_STORAGE, the same key as
+# Chaos.storage.tester in chaos_constants.lua; written only by testers.py setup).
+#   * the status protocol: <players online> of the XML status and the 0x20 players info count only the other
+#     players; the 0x21 online list leaves the testers out; 0x22 says a tester is offline
+#   * the players record (server_config players_record, the "record" global event and its broadcast): only the
+#     counted players can beat it
+#   * players_online (the website's online list and counts): a tester is never inserted (login, ghost mode off)
+#   * the waiting list: a tester never waits and is not counted against maxPlayers, so it never takes a real
+#     player's place
+# New header src/chaostesters.h (pure functions; tests in server/tools/chaostesters_test.cpp, CI).
+# Applies after 0001-0058.
+diff --git a/src/chaostesters.h b/src/chaostesters.h
+new file mode 100644
+--- /dev/null
++++ b/src/chaostesters.h
+@@ -0,0 +1,53 @@
++// Chaos (patch 0059): tester bots are never counted as players online. A tester is a character with the player
++// storage CHAOS_TESTER_STORAGE = 1 (written only by server/tools/testers.py setup; the same key as
++// Chaos.storage.tester in data/scripts/chaos/chaos_constants.lua, server/README.md "Tester bots"). The status
++// protocol (players online, the online list, a name's online status), the players record and its "record" event,
++// the players_online table and the waiting list count only the other players. Pure functions, no engine types, so
++// server/tools/chaostesters_test.cpp tests them alone.
++
++#ifndef FS_CHAOSTESTERS_H
++#define FS_CHAOSTESTERS_H
++
++#include <cstddef>
++#include <cstdint>
++
++static constexpr uint32_t CHAOS_TESTER_STORAGE = 7102900;
++static constexpr int32_t CHAOS_TESTER_VALUE = 1;
++
++// a storage lookup (found, value) -> is this a tester
++inline bool chaosIsTesterStorage(bool found, int32_t value)
++{
++	return found && value == CHAOS_TESTER_VALUE;
++}
++
++// the players of a map (id -> player pointer) that are not testers; isTester(player) decides
++template <typename Map, typename IsTester>
++std::size_t chaosCountedPlayers(const Map& players, IsTester isTester)
++{
++	std::size_t n = 0;
++	for (const auto& it : players) {
++		if (it.second && !isTester(it.second)) {
++			++n;
++		}
++	}
++	return n;
++}
++
++// fn(player) for every player of the map that is not a tester (the status protocol's online list)
++template <typename Map, typename IsTester, typename Fn>
++void chaosForEachCounted(const Map& players, IsTester isTester, Fn fn)
++{
++	for (const auto& it : players) {
++		if (it.second && !isTester(it.second)) {
++			fn(it.second);
++		}
++	}
++}
++
++// a new players record: only the counted players can beat it
++inline bool chaosIsNewRecord(std::size_t counted, uint32_t record)
++{
++	return counted > record;
++}
++
++#endif
+--- a/src/player.h
++++ b/src/player.h
+@@ -9,6 +9,7 @@
+ #include "cylinder.h"
+ #include "outfit.h"
+ #include "enums.h"
++#include "chaostesters.h"
+ #include "vocation.h"
+ #include "protocolgame.h"
+ #include "party.h"
+@@ -425,6 +426,12 @@ class Player final : public Creature, pu
+ 		bool isAccessPlayer() const {
+ 			return group->access;
+ 		}
++		// Chaos (patch 0059): a tester bot (chaostesters.h), never counted as a player online
++		bool isChaosTester() const {
++			int32_t value;
++			bool found = getStorageValue(CHAOS_TESTER_STORAGE, value);
++			return chaosIsTesterStorage(found, value);
++		}
+ 		bool isPremium() const;
+ 		void setPremiumTime(time_t premiumEndsAt);
+ 
+--- a/src/game.h
++++ b/src/game.h
+@@ -208,6 +208,10 @@ class Game
+ 		uint32_t getPlayersRecord() const {
+ 			return playersRecord;
+ 		}
++		// Chaos (patch 0059): the players online without the tester bots (status protocol, record, waiting list)
++		size_t getPlayersCounted() const {
++			return chaosCountedPlayers(players, [](const Player* p) { return p->isChaosTester(); });
++		}
+ 
+ 		LightInfo getWorldLightInfo() const {
+ 			return {lightLevel, lightColor};
+--- a/src/game.cpp
++++ b/src/game.cpp
+@@ -5416,8 +5416,8 @@ void Game::saveMotdNum() const
+ 
+ void Game::checkPlayersRecord()
+ {
+-	const size_t playersOnline = getPlayersOnline();
+-	if (playersOnline > playersRecord) {
++	const size_t playersOnline = getPlayersCounted(); // Chaos (patch 0059): tester bots never make a record
++	if (chaosIsNewRecord(playersOnline, playersRecord)) {
+ 		uint32_t previousRecord = playersRecord;
+ 		playersRecord = playersOnline;
+ 
+--- a/src/player.cpp
++++ b/src/player.cpp
+@@ -1320,7 +1320,9 @@ void Player::onCreatureAppear(Creature*
+ 		}
+ 
+ 		g_game.checkPlayersRecord();
+-		IOLoginData::updateOnlineStatus(guid, true);
++		if (!isChaosTester()) { // Chaos (patch 0059): a tester bot is never in players_online
++			IOLoginData::updateOnlineStatus(guid, true);
++		}
+ 	}
+ }
+ 
+--- a/src/luascript.cpp
++++ b/src/luascript.cpp
+@@ -11126,7 +11126,9 @@ int LuaScriptInterface::luaPlayerSetGhos
+ 				it.second->notifyStatusChange(player, VIPSTATUS_ONLINE);
+ 			}
+ 		}
+-		IOLoginData::updateOnlineStatus(player->getGUID(), true);
++		if (!player->isChaosTester()) { // Chaos (patch 0059)
++			IOLoginData::updateOnlineStatus(player->getGUID(), true);
++		}
+ 	}
+ 	pushBoolean(L, true);
+ 	return 1;
+--- a/src/protocolstatus.cpp
++++ b/src/protocolstatus.cpp
+@@ -101,7 +101,7 @@ void ProtocolStatus::sendStatusString()
+ 	owner.append_attribute("email") = g_config.getString(ConfigManager::OWNER_EMAIL).c_str();
+ 
+ 	pugi::xml_node players = tsqp.append_child("players");
+-	players.append_attribute("online") = std::to_string(g_game.getPlayersOnline()).c_str();
++	players.append_attribute("online") = std::to_string(g_game.getPlayersCounted()).c_str(); // Chaos (patch 0059)
+ 	players.append_attribute("max") = std::to_string(g_config.getNumber(ConfigManager::MAX_PLAYERS)).c_str();
+ 	players.append_attribute("peak") = std::to_string(g_game.getPlayersRecord()).c_str();
+ 
+@@ -166,7 +166,7 @@ void ProtocolStatus::sendInfo(uint16_t r
+ 
+ 	if (requestedInfo & REQUEST_PLAYERS_INFO) {
+ 		output->addByte(0x20);
+-		output->add<uint32_t>(g_game.getPlayersOnline());
++		output->add<uint32_t>(g_game.getPlayersCounted()); // Chaos (patch 0059): no tester bots
+ 		output->add<uint32_t>(g_config.getNumber(ConfigManager::MAX_PLAYERS));
+ 		output->add<uint32_t>(g_game.getPlayersRecord());
+ 	}
+@@ -184,17 +184,20 @@ void ProtocolStatus::sendInfo(uint16_t r
+ 	if (requestedInfo & REQUEST_EXT_PLAYERS_INFO) {
+ 		output->addByte(0x21); // players info - online players list
+ 
++		// Chaos (patch 0059): the online list leaves the tester bots out
+ 		const auto& players = g_game.getPlayers();
+-		output->add<uint32_t>(players.size());
+-		for (const auto& it : players) {
+-			output->addString(it.second->getName());
+-			output->add<uint32_t>(it.second->getLevel());
+-		}
++		auto isTester = [](const Player* p) { return p->isChaosTester(); };
++		output->add<uint32_t>(chaosCountedPlayers(players, isTester));
++		chaosForEachCounted(players, isTester, [&output](const Player* p) {
++			output->addString(p->getName());
++			output->add<uint32_t>(p->getLevel());
++		});
+ 	}
+ 
+ 	if (requestedInfo & REQUEST_PLAYER_STATUS_INFO) {
+ 		output->addByte(0x22); // players info - online status info of a player
+-		if (g_game.getPlayerByName(characterName) != nullptr) {
++		Player* named = g_game.getPlayerByName(characterName);
++		if (named != nullptr && !named->isChaosTester()) { // Chaos (patch 0059)
+ 			output->addByte(0x01);
+ 		} else {
+ 			output->addByte(0x00);
+--- a/src/protocolgame.cpp
++++ b/src/protocolgame.cpp
+@@ -92,12 +92,16 @@ std::size_t clientLogin(const Player& pl
+ 	if (player.hasFlag(PlayerFlag_CanAlwaysLogin) || player.getAccountType() >= ACCOUNT_TYPE_GAMEMASTER) {
+ 		return 0;
+ 	}
++	// Chaos (patch 0059): a tester bot never waits and never takes a real player's place (not counted below)
++	if (player.isChaosTester()) {
++		return 0;
++	}
+ 
+ 	cleanupList(priorityWaitList);
+ 	cleanupList(waitList);
+ 
+ 	uint32_t maxPlayers = static_cast<uint32_t>(g_config.getNumber(ConfigManager::MAX_PLAYERS));
+-	if (maxPlayers == 0 || (priorityWaitList.empty() && waitList.empty() && g_game.getPlayersOnline() < maxPlayers)) {
++	if (maxPlayers == 0 || (priorityWaitList.empty() && waitList.empty() && g_game.getPlayersCounted() < maxPlayers)) {
+ 		return 0;
+ 	}
+ 
+@@ -105,7 +109,7 @@ std::size_t clientLogin(const Player& pl
+ 	if (std::get<1>(result) != std::get<0>(result).end()) {
+ 		auto currentSlot = std::get<2>(result);
+ 		// If server has capacity for this client, let him in even though his current slot might be higher than 0.
+-		if ((g_game.getPlayersOnline() + currentSlot) <= maxPlayers) {
++		if ((g_game.getPlayersCounted() + currentSlot) <= maxPlayers) {
+ 			std::get<0>(result).erase(std::get<1>(result));
+ 			return 0;
+ 		}

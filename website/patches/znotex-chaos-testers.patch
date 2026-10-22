@@ -1,0 +1,31 @@
+Cinders of Chaos: the staff's tester bots (player storage 7102900 = 1; server/README.md "Tester bots") are left
+out of the highscores (fetchAllScores) and the latest deaths (fetchLatestDeaths). The online list and counts read
+players_online, where the engine never puts a tester (server src-patch 0059).
+
+diff --git a/engine/function/users.php b/engine/function/users.php
+--- a/engine/function/users.php
++++ b/engine/function/users.php
+@@ -68,9 +68,9 @@
+     return $array;
+ }
+ 
+-// Fetch latest deaths
++// Fetch latest deaths (Chaos: the staff's tester bots left out, player storage 7102900 = 1; server/README.md "Tester bots")
+ function fetchLatestDeaths($from = 0, $to = 30) {
+-	return db()->fetchAll("SELECT `d`.`level`, `p`.`name` AS `victim`, `d`.`time`, `d`.`is_player`, `d`.`killed_by` FROM `player_deaths` AS `d` INNER JOIN `players` AS `p` ON `d`.`player_id` = `p`.`id` ORDER BY `time` DESC LIMIT ?, ?;", [(int)$from, (int)$to]);
++	return db()->fetchAll("SELECT `d`.`level`, `p`.`name` AS `victim`, `d`.`time`, `d`.`is_player`, `d`.`killed_by` FROM `player_deaths` AS `d` INNER JOIN `players` AS `p` ON `d`.`player_id` = `p`.`id` WHERE NOT EXISTS (SELECT 1 FROM `player_storage` `ts` WHERE `ts`.`player_id` = `p`.`id` AND `ts`.`key` = 7102900 AND `ts`.`value` = 1) ORDER BY `time` DESC LIMIT ?, ?;", [(int)$from, (int)$to]);
+ }
+ 
+ // latest deaths .3 (Based on code from Hauni@otland.net).
+@@ -761,8 +761,10 @@
+ 			if ($vGrp !== 'all')
+ 				$v = (strpos($vGrp, ',') !== false) ? 'AND `p`.`vocation` IN ('. $vGrp . ')' : 'AND `p`.`vocation` = \''.intval($vGrp).'\'';
+ 
++			// Chaos: the staff's tester bots (player storage 7102900 = 1; server/README.md "Tester bots") never rank
++			$v .= ' AND NOT EXISTS (SELECT 1 FROM `player_storage` `ts` WHERE `ts`.`player_id` = `p`.`id` AND `ts`.`key` = 7102900 AND `ts`.`value` = 1)';
+ 			if ($flags === false) { // In this case we only need to query players table
+-				$v = str_replace('`p`.', '', $v);
++				$v = str_replace('`p`.', '`players`.', $v);
+ 				$outfits = str_replace('`p`.', '', $outfits);
+ 
+ 				$vocGroups[$vGrp][1] = db()->fetchAll("SELECT `name`, `vocation`, `lastlogout`, `skill_club` AS `value` $outfits FROM `players` WHERE `group_id` < ? $v ORDER BY `skill_club` DESC LIMIT 0, ?;", [$g, $rows]);

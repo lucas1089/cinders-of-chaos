@@ -361,6 +361,17 @@ jobs:
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosprefetch_test.cpp -o "$d/chaosprefetch_test"
           "$d/chaosprefetch_test"
 
+      - name: Tester bots never counted online (C++; header from server src-patch 0059)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaostesters\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0059-tester-bots-not-counted.patch > "$d/chaostesters.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaostesters_test.cpp -o "$d/chaostesters_test"
+          "$d/chaostesters_test"
+
+      - name: Tester bots out of the base player lists (patch_tester_filters.py)
+        run: python3 -I server/tools/patch_tester_filters_test.py
+
       - name: Backup shell scripts parse
         run: |
           bash -n server/tools/backup.sh

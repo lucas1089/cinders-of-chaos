@@ -90,7 +90,8 @@ function S.boostedBoss()
 end
 
 function S.build()
-	local online = Game.getPlayerCount and Game.getPlayerCount() or #Game.getPlayers()
+	-- tester bots are never counted (testers.lua, src-patch 0059)
+	local online = Chaos.countedPlayers and Chaos.countedPlayers() or (Game.getPlayerCount and Game.getPlayerCount() or #Game.getPlayers())
 	local schedule = ChaosEvents and ChaosEvents.calendar() or {eventlist = {}}
 	return {
 		updated = os.time(),

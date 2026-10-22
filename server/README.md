@@ -217,9 +217,13 @@ server/
   src-patches/0058-badge-slot-no-second-ring.patch   engine: the badge slot (13) takes the badges; the ammunition slot
                                       (0023's second ring slot) and the deck, ship, belt and gloves slots take nothing
                                       (see "Badge slot")
+  src-patches/0059-tester-bots-not-counted.patch   engine: a tester bot (storage 7102900 = 1) is never counted
+                                      online: status protocol, players record, players_online, the waiting list
+                                      (see "Tester bots"; header src/chaostesters.h, tools/chaostesters_test.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
+    testers.lua  testers_core.lua      (tester bots: login safety, the TESTER tag, kept apart from players, see "Tester bots")
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
@@ -769,6 +773,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z; +5..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7102640 - 7102689 | Conquest Tokens (`conquest_config.lua` `storage`, `Chaos.storage.conquest`): +0 the day of the counters, +1..+29 tokens earned today per source, +30..+39 bad-luck misses in a row per pity group; +40..+49 free |
@@ -6163,6 +6168,46 @@ to the database.
 
 Tests: `tools/chaosprefetch_test.cpp` in CI (which reads are prefetched, what a write writes from its first tokens,
 templates, the cascade and trigger closure, the clock with transactions and autocommit, the template set).
+
+## Tester bots (`testers.lua`, `testers_core.lua`, `src-patches/0059`, `tools/patch_tester_filters.py`)
+
+Owner request: bots that play on the live server to find bugs. They carry a visible TESTER tag. They never count as players.
+
+**Marker.** A tester is a character with player storage 7102900 = 1 (`Chaos.storage.tester`).
+Only `tools/testers.py setup` writes it. The engine reads the same key (`CHAOS_TESTER_STORAGE`, src-patch 0059).
+Names are "Tester Xxx". Group 1, account type 1. Never staff.
+
+**Never counted online.** A hard requirement. Each place:
+
+| Count | How testers stay out |
+|---|---|
+| status protocol (XML `<players online>`, 0x20 info, 0x21 list, 0x22 name) | src-patch 0059 counts only non-testers |
+| players record (`server_config` players_record, record broadcast) | src-patch 0059: only counted players beat it |
+| `players_online` table (website online list and counts) | src-patch 0059: a tester is never inserted |
+| waiting list, maxPlayers | src-patch 0059: a tester never queues, never takes a slot |
+| client login screen (`clientservices.lua` cacheinfo) | `Chaos.countedPlayers()` |
+| `!online` (base talkaction) | `patch_tester_filters.py` |
+| chaos_health (Discord health posts) | reads the status protocol, so testers are left out |
+| admin panel `stats` / `online` | labelled: "N (+M tester bots)", "[TESTER bot, not counted]" |
+
+**Never ranked or announced.**
+- Weekly leaderboards (`LB.record`), records (`memberOf`), the chronicle (`memberList`): tester guids skipped.
+- Discord queue (`discord.lua` `X.queue`): an event naming a tester is dropped.
+- `Game.broadcastMessage`: a broadcast naming a tester is dropped (level, achievement, prize lines).
+- Base in-game highscores (opcode 73) and the top 3 statues: `patch_tester_filters.py` (install step `events`).
+- Website: `website/patches/znotex-chaos-testers.patch` (highscores, latest deaths); `chaos_tester_sql()` on the
+  sidebar top 10, class ladders, boards, records and mentors.
+
+**Kept apart from players** (`testers.lua`):
+- No combat between a tester and a player, summons included. Monsters hit testers for real.
+- No trade, no mixed party. Market `buy`, `list`, `orderPost`, `fill` refused for testers.
+- A look at a tester says it is a test character. The plate shows the title TESTER (priority 1000).
+- Login refused for a tester in a staff group, on a staff account, or without a "Tester Xxx" name. Logged.
+- Antibot and bot review skip testers: they are bots by design.
+- Players cannot take a name with the word "Tester": game `staffWords`, website `chaos_character_name_tester`.
+
+Tests: `tests/testers_test.lua`, `tools/chaostesters_test.cpp` (status answer without testers, CI),
+`tools/patch_tester_filters_test.py`, website `chaos_leaderboards_page_test.php`, `chaos_client_api_test.php`.
 
 ## Load test on the full map (`tools/loadtest.py`, `tools/loadtest_hunt.lua`, `src-patches/0032-network-message-buffer.patch`)
 

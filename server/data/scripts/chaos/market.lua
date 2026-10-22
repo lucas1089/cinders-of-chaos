@@ -1774,6 +1774,11 @@ function ext.onExtendedOpcode(player, opcode, buffer)
 	end
 	local d = type(msg.data) == "table" and msg.data or {}
 	local a = msg.action
+	-- tester bots never trade with players: no buying, listing, posting or filling (testers.lua)
+	if ChaosTestersCore and ChaosTestersCore.marketBlocked(a) and Chaos.isTester(player) then
+		refuse(player, Chaos.t(player, "Tester characters cannot trade on the market."))
+		return
+	end
 	if a == "open" then
 		MK.open(player)
 	elseif a == "browse" then

@@ -242,6 +242,12 @@ foreach (array('Highscores', 'characterprofile', 'Page', 'Myaccount', 'Clientser
 $form2 = $form; $form2['name'] = 'Serverinfo';
 check(chaos_character_form_errors($form2, 7, array(), false) === array('reg.restricted_word'), 'form: a page address refused');
 check(!chaos_character_name_reserved('Highscores Hero') && !chaos_character_name_reserved('Pager'), 'a longer name is not an address');
+// the staff's tester bots are "Tester Xxx": no player name has the word Tester (server/README.md "Tester bots")
+check(chaos_character_name_tester('Tester Abc') && chaos_character_name_tester('tester') && chaos_character_name_tester('Big  TESTER'),
+	'a name with the word Tester is refused');
+check(!chaos_character_name_tester('Testerson') && !chaos_character_name_tester('Protester Joe'), 'Tester inside a word is allowed');
+$luaWords = preg_match('/\bstaffWords = \{(.*?)\}/s', file_get_contents($repo . '/server/data/scripts/chaos/chaos_constants.lua'), $sw) ? $sw[1] : '';
+check(strpos($luaWords, '"tester"') !== false, 'the game name change refuses the word tester too');
 // the list covers every top-level page of the site: our overlay's and, with CHAOS_ZNOTEX_DIR, ZnoteX's (letters only)
 $tops = array();
 foreach (array_merge(glob($repo . '/website/overlay/*.php'), glob($repo . '/website/overlay/*', GLOB_ONLYDIR)) as $f) {

@@ -402,7 +402,8 @@ local login = CreatureEvent("ChaosAntibotLogin")
 function login.onLogin(player)
 	player:registerEvent("ChaosAntibotExtended")
 	player:registerEvent("ChaosAntibotLogout")
-	if cfg.enabled == false or isStaff(player) then
+	-- staff, and the staff's tester bots (testers.lua: they are bots by design)
+	if cfg.enabled == false or isStaff(player) or (Chaos.isTester and Chaos.isTester(player)) then
 		return true
 	end
 	player:registerEvent("ChaosAntibotHealth")

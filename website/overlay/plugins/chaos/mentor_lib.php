@@ -34,7 +34,7 @@ function chaos_mentor_state(int $limit = 100): array {
 	$rows = chaos_rows('SELECT `p`.`name`, `p`.`level`, `p`.`vocation`, `m`.`lang`, `m`.`hours`, `m`.`note`, `m`.`graduates`, '
 		. '`m`.`accepting`, (SELECT COUNT(*) FROM `chaos_mentor_links` `l` WHERE `l`.`mentor_id` = `m`.`player_id` AND `l`.`status` = \'active\') AS `active` '
 		. 'FROM `chaos_mentors` `m` JOIN `players` `p` ON `p`.`id` = `m`.`player_id` '
-		. 'WHERE `m`.`active` = 1 AND `m`.`public` = 1 AND `p`.`group_id` < 2' . $banned . chaos_antibot_hold_sql()
+		. 'WHERE `m`.`active` = 1 AND `m`.`public` = 1 AND `p`.`group_id` < 2' . $banned . chaos_antibot_hold_sql() . chaos_tester_sql()
 		. ' ORDER BY `m`.`graduates` DESC, `p`.`name` ASC LIMIT ?;', array(max(1, min(500, $limit))));
 	foreach ($rows as $r) {
 		$active = (int)$r['active'];

@@ -565,15 +565,22 @@ step:register()
 -- members: Player userdata, guids or {guid, name}; staff are left out
 local function memberList(list)
 	local out = {}
+	local function tester(guid)
+		return Chaos.isTesterGuid and Chaos.isTesterGuid(guid) -- tester bots never enter the chronicle (testers.lua)
+	end
 	for _, m in ipairs(list or {}) do
 		if isPlayer(m) then
-			if not isStaff(m) then
+			if not isStaff(m) and not tester(m:getGuid()) then
 				out[#out + 1] = {guid = m:getGuid(), name = m:getName()}
 			end
 		elseif type(m) == "table" and tonumber(m.guid) then
-			out[#out + 1] = {guid = tonumber(m.guid), name = m.name}
+			if not tester(m.guid) then
+				out[#out + 1] = {guid = tonumber(m.guid), name = m.name}
+			end
 		elseif tonumber(m) then
-			out[#out + 1] = {guid = tonumber(m), name = nil}
+			if not tester(m) then
+				out[#out + 1] = {guid = tonumber(m), name = nil}
+			end
 		end
 	end
 	return out

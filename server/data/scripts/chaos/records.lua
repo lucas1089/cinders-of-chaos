@@ -185,12 +185,15 @@ local function isPlayer(x)
 end
 
 local function memberOf(who)
+	if isPlayer(who) and Chaos.isTester and Chaos.isTester(who) then
+		return nil -- tester bots never hold a record (testers.lua)
+	end
 	if isPlayer(who) then
 		return {guid = who:getGuid(), name = who:getName(), group = who:getGroup():getId(), voc = who:getVocation():getId(),
 			mc = Chaos.isMultiClient and Chaos.isMultiClient(who) or false}
 	end
 	local guid = tonumber(type(who) == "table" and who.guid or who)
-	if not guid then
+	if not guid or (Chaos.isTesterGuid and Chaos.isTesterGuid(guid)) then
 		return nil
 	end
 	for _, p in ipairs(Game.getPlayers()) do
