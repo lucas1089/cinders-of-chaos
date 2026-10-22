@@ -9,7 +9,9 @@
 --     half), the Chaos loot layer and rarity rolls (the engine skips them when a summon lands the last hit), corpse
 --     ownership, bounties, leaderboards, hunt tracker, curses. PvP rules: ChaosSpell.canAttack.
 --     Bone Lord skeletons splash a share of each hit onto the other enemies next to the target; the Bone Golem slams
---     every enemy next to it and taunts the monsters around it.
+--     every enemy next to it and taunts the monsters around it, and so does the summoned Risen Warrior.
+--   * Spells: every kind has a single target spell and an area spell (necro_config.lua minionSpells); a ready one is
+--     cast in place of the hit.
 --   * Banner of Bones (owner condition): minions hit harder, take less damage (the guard below) and regenerate.
 --   * Leash: a minion farther than leashRange from its owner or on another floor is brought next to it.
 --   * Protection zones: monsters cannot enter them, so a minion would stand in the way at the door. When the owner
@@ -39,7 +41,8 @@ end
 ChaosNecroMinions = ChaosNecroMinions or {}
 local M = ChaosNecroMinions
 M.nextHit = M.nextHit or {} -- minion id -> os.mtime of its next hit
-M.nextTaunt = M.nextTaunt or {} -- golem id -> os.mtime of its next taunt
+M.nextTaunt = M.nextTaunt or {} -- golem / warrior id -> os.mtime of its next taunt
+M.spellAt = M.spellAt or {} -- minion id -> {single = ms, area = ms}: when each spell is ready again
 M.nextRegen = M.nextRegen or {} -- player id -> os.mtime of the next Banner of Bones regeneration
 M.rest = M.rest or {} -- player id -> {at, list = {{kind, ratio}}} (necro_core restPut / restTake)
 
@@ -145,15 +148,75 @@ local function hit(owner, classKey, minion, kind, target, aura)
 	end
 end
 
-local function taunt(owner, golem)
-	local gpos = golem:getPosition()
-	local r = cfg().minions.golem.tauntRadius
-	for _, e in ipairs(L.enemiesAround(owner, gpos, r, false)) do
-		if e:isMonster() and e:getTarget() ~= golem then
-			e:selectTarget(golem)
+-- a minion spell (necro_config.lua minionSpells[kind][which]) on `target`, dealt as the owner
+local function cast(owner, classKey, minion, kind, target, aura, which)
+	local level, ml = owner:getLevel(), owner:getMagicLevel()
+	local min, max = N.minionHit(cfg(), classKey, kind, level, ml, aura and L.bannerBonus(owner) or false,
+		L.minionFactor(owner, kind, "hit"))
+	if max <= 0 then
+		return
+	end
+	min, max = N.minionSpellHit(cfg(), kind, which, min, max)
+	local k = cfg().minions[kind]
+	local s = cfg().minionSpells[kind][which]
+	local ctype = L.combatType(k.combat)
+	local effect = L.hitEffect({hitEffect = s.hitEffect, combat = k.combat})
+	local mpos, tpos = minion:getPosition(), target:getPosition()
+	if which == "single" then
+		if s.ani then
+			mpos:sendDistanceEffect(tpos, L.animation(s))
+		end
+		L.damage(owner, target, ctype, min, max, effect, ORIGIN_SPELL)
+		return
+	end
+	local center = s.center == "target" and tpos or mpos
+	if s.ani and center ~= mpos then
+		mpos:sendDistanceEffect(center, L.animation(s))
+	end
+	local area = L.effect(s.areaEffect)
+	if area then
+		for dx = -s.radius, s.radius do
+			for dy = -s.radius, s.radius do
+				Position(center.x + dx, center.y + dy, center.z):sendMagicEffect(area)
+			end
 		end
 	end
-	gpos:sendMagicEffect(CONST_ME_SOUND_RED)
+	for _, e in ipairs(L.enemiesAround(owner, center, s.radius, false)) do
+		L.damage(owner, e, ctype, min, max, effect, ORIGIN_SPELL)
+	end
+end
+
+-- the minion's action when its hit is due: a ready spell (the area one when enough enemies stand in it) or the hit
+local function act(owner, classKey, minion, kind, target, aura, t)
+	local spells = cfg().minionSpells and cfg().minionSpells[kind]
+	if spells then
+		local id = minion:getId()
+		local timers = M.spellAt[id] or {}
+		local near = 0
+		if spells.area and (timers.area or 0) <= t then
+			local center = spells.area.center == "target" and target:getPosition() or minion:getPosition()
+			near = #L.enemiesAround(owner, center, spells.area.radius, false)
+		end
+		local which = N.minionSpell(cfg(), kind, t, timers, near)
+		if which then
+			timers[which] = t + spells[which].cooldownMs
+			M.spellAt[id] = timers
+			return cast(owner, classKey, minion, kind, target, aura, which)
+		end
+	end
+	return hit(owner, classKey, minion, kind, target, aura)
+end
+
+-- the golem's and the summoned warrior's taunt (Bone Challenge): the monsters within tauntRadius turn on the minion
+local function taunt(owner, minion, kind)
+	local mpos = minion:getPosition()
+	local r = cfg().minions[kind].tauntRadius or 1
+	for _, e in ipairs(L.enemiesAround(owner, mpos, r, false)) do
+		if e:isMonster() and e:getTarget() ~= minion then
+			e:selectTarget(minion)
+		end
+	end
+	mpos:sendMagicEffect(CONST_ME_SOUND_RED)
 end
 
 local function think(player, t)
@@ -211,7 +274,7 @@ local function think(player, t)
 		local k = cfg().minions[kind]
 		if k.tauntMs and (M.nextTaunt[id] or 0) <= t and ownerTarget then
 			M.nextTaunt[id] = t + k.tauntMs
-			taunt(player, c)
+			taunt(player, c, kind)
 		end
 		if (M.nextHit[id] or 0) <= t then
 			local target = N.minionTarget(cpos, k.range, ownerTarget, info(c:getTarget()))
@@ -223,7 +286,7 @@ local function think(player, t)
 				if SF then
 					SF.depth = (SF.depth or 0) + 1
 				end
-				local ok, err = pcall(hit, player, classKey, c, kind, target.creature, aura)
+				local ok, err = pcall(act, player, classKey, c, kind, target.creature, aura, t)
 				if SF then
 					SF.depth = SF.depth - 1
 				end
@@ -265,7 +328,7 @@ function tick.onThink(interval)
 		end
 	end
 	-- forget minions and players that are gone
-	for _, map in ipairs({M.nextHit, M.nextTaunt, M.nextRegen}) do
+	for _, map in ipairs({M.nextHit, M.nextTaunt, M.nextRegen, M.spellAt}) do
 		for id in pairs(map) do
 			if not Creature(id) then
 				map[id] = nil

@@ -148,6 +148,31 @@ function N.minionHit(cfg, classKey, kind, level, ml, aura, extra)
 	return floor(avg * (1 - s)), floor(avg * (1 + s))
 end
 
+-- Minion spells (necro_config.lua minionSpells): which one a minion whose hit is due casts now. t: now (ms); timers:
+-- {single = ms, area = ms} when each is ready again (nil = ready); near: enemies the area spell would hit.
+-- Returns "area", "single" or nil (the plain hit).
+function N.minionSpell(cfg, kind, t, timers, near)
+	local ms = cfg.minionSpells
+	local s = ms and ms[kind]
+	if not s then
+		return nil
+	end
+	timers = timers or {}
+	if s.area and (timers.area or 0) <= t and (near or 0) >= (ms.minArea or 2) then
+		return "area"
+	end
+	if s.single and (timers.single or 0) <= t then
+		return "single"
+	end
+	return nil
+end
+
+-- a minion spell's damage from the kind's hit range (N.minionHit)
+function N.minionSpellHit(cfg, kind, which, min, max)
+	local s = cfg.minionSpells[kind][which]
+	return floor(min * s.mult), floor(max * s.mult)
+end
+
 -- Covenant of the Grave (the line keystone, class_tree.lua fx.ksGraveCovenant; nil = not held): the factors on a
 -- minion's hit and health (every kind) and on the owner's own spells. classKey: the owner's class (fx.classMinionHit
 -- gives a class its own minion hit bonus; nil = the line's)

@@ -60,7 +60,14 @@ end
 -- the animations the ranged minions throw (necro_config.lua minions[kind].ani) and the effects on their target
 -- (hitEffect); a kind without them throws the death skull and uses the combat type's effect
 local ANI = {death = CONST_ANI_DEATH, arrow = CONST_ANI_ARROW, energy = CONST_ANI_ENERGY}
-local EFFECT = {hitarea = CONST_ME_HITAREA, energyhit = CONST_ME_ENERGYHIT, mortarea = CONST_ME_MORTAREA}
+local EFFECT = {hitarea = CONST_ME_HITAREA, energyhit = CONST_ME_ENERGYHIT, mortarea = CONST_ME_MORTAREA,
+	drawblood = CONST_ME_DRAWBLOOD, groundshaker = CONST_ME_GROUNDSHAKER, energyarea = CONST_ME_ENERGYAREA,
+	blackspark = CONST_ME_BLACKSPARK}
+
+-- an effect of EFFECT by name (the minion spells' areaEffect), nil when unknown
+function M.effect(name)
+	return name and EFFECT[name] or nil
+end
 
 function M.animation(k)
 	return ANI[k.ani or "death"] or CONST_ANI_DEATH

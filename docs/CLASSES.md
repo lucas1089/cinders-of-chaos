@@ -75,7 +75,8 @@ pacified the caster for 10 s.
 
 **Necromancer** (base): Raise Dead (skeletons from empty corpses, or one from nothing for twice the mana), Bone Spear
 (the filler; pierces to the creature behind), Withering Curse (the target takes +15% damage and rots). Minions hit as
-their owner, so their damage counts for it.
+their owner, so their damage counts for it. Every minion has two spells, one single target and one area (beta
+2026-10-22; table in server/README.md "Necromancer summons"), and the summoned Risen Warrior taunts like the golem.
 - **Lich**: Soul Rot (a DoT that jumps when the host dies), Life Siphon (heals half the damage), Corpse Explosion; the
   curse is stronger (+25%) and spreads to 2 more. One Lich Shade (ranged death bolts) instead of skeletons, and Soul Hoard:
   +25% spell damage while the shade slot is empty.

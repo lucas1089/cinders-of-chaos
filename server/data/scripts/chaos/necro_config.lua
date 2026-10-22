@@ -71,6 +71,8 @@ return {
 			monster = "Risen Warrior", range = 1, intervalMs = 2000, combat = "physical", summon = true,
 			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
 			mult = {hit = 1.0, health = 1.8}, hitEffect = "hitarea",
+			-- Bone Challenge: the warrior taunts the monsters near it, like the golem (beta 2026-10-22)
+			tauntMs = 8000, tauntRadius = 2,
 		},
 		archer = {
 			monster = "Risen Archer", range = 5, intervalMs = 2000, combat = "physical", summon = true,
@@ -107,6 +109,45 @@ return {
 		-- protection zones: monsters cannot enter them, so when the owner steps into one its minions are put to rest
 		-- (removed, kind and health kept) and rise again next to it when it steps out; a rest older than this is lost
 		restKeepSeconds = 1800,
+	},
+
+	-- Minion spells (beta 2026-10-22): every kind has a single target spell and an area spell. A minion whose hit is due
+	-- casts one of them in place of the hit when it is ready: the area spell when at least minArea enemies stand in it,
+	-- else the single target one, else the plain hit. Damage: the kind's hit (minions above, all its factors) x mult.
+	-- center: "self" = around the minion, "target" = around its target. ani / hitEffect: names of necro_lib.lua
+	-- M.ANI / M.EFFECT; areaEffect: the effect on every tile of the area.
+	minionSpells = {
+		minArea = 2,
+		skeleton = {
+			single = {name = "Marrow Rend", mult = 2.2, cooldownMs = 8000, hitEffect = "drawblood"},
+			area = {name = "Bone Sweep", mult = 1.2, cooldownMs = 12000, radius = 1, center = "self",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		shade = {
+			single = {name = "Grave Bolt", mult = 2.4, cooldownMs = 8000, ani = "death", hitEffect = "mortarea"},
+			area = {name = "Soul Wail", mult = 1.3, cooldownMs = 12000, radius = 2, center = "target",
+				hitEffect = "mortarea", areaEffect = "mortarea"},
+		},
+		golem = {
+			single = {name = "Crushing Fist", mult = 2.5, cooldownMs = 9000, hitEffect = "groundshaker"},
+			area = {name = "Ossuary Quake", mult = 1.4, cooldownMs = 14000, radius = 2, center = "self",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		warrior = {
+			single = {name = "Sundering Cleave", mult = 2.4, cooldownMs = 8000, hitEffect = "drawblood"},
+			area = {name = "Whirling Bones", mult = 1.3, cooldownMs = 12000, radius = 1, center = "self",
+				hitEffect = "hitarea", areaEffect = "blackspark"},
+		},
+		archer = {
+			single = {name = "Piercing Shot", mult = 2.4, cooldownMs = 8000, ani = "arrow", hitEffect = "drawblood"},
+			area = {name = "Arrow Rain", mult = 1.2, cooldownMs = 12000, radius = 2, center = "target", ani = "arrow",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		mage = {
+			single = {name = "Arc Bolt", mult = 2.4, cooldownMs = 8000, ani = "energy", hitEffect = "energyhit"},
+			area = {name = "Static Nova", mult = 1.3, cooldownMs = 12000, radius = 2, center = "target", ani = "energy",
+				hitEffect = "energyhit", areaEffect = "energyarea"},
+		},
 	},
 
 	-- ---------------------------------------------------------------- spells

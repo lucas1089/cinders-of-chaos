@@ -1849,6 +1849,28 @@ and three steps away (a free tile in sight), then takes a tile with a creature o
 caster's own); `Game.createMonster` already places with force, so the minion shares it and walks off. Never a protection
 zone, a wall, stairs or a teleport. Bone Golem goes through the same rule. Test: `tests/necro_summon_test.lua` "no room".
 
+**Minion spells, beta 2026-10-22** (owner: "two spells for each necromancer summon, one single target and one area"; "a
+taunt for the summoned warrior"). `necro_config.lua` `minionSpells`: every kind (skeleton, shade, golem, warrior, archer,
+mage) has a single target spell and an area spell, each with its own cooldown. When a minion's hit is due it casts the
+area spell if at least `minArea` (2) enemies stand in it, else the single target one, else the plain hit
+(`necro_core.lua` `N.minionSpell`). Damage is the kind's hit with all its factors (class, Banner of Bones, passive tree)
+x `mult`, dealt as the owner like the hit; the area spells hit monsters and enemies only, never other players
+(`enemiesAround(..., false)`). Melee kinds centre their area on themselves, ranged kinds on their target.
+
+| Minion | Single target | Area |
+|---|---|---|
+| Skeleton | Marrow Rend x2.2, 8 s | Bone Sweep x1.2 r1 around it, 12 s |
+| Lich Shade | Grave Bolt x2.4, 8 s | Soul Wail x1.3 r2 at the target, 12 s |
+| Bone Golem | Crushing Fist x2.5, 9 s | Ossuary Quake x1.4 r2 around it, 14 s |
+| Risen Warrior | Sundering Cleave x2.4, 8 s | Whirling Bones x1.3 r1 around it, 12 s |
+| Risen Archer | Piercing Shot x2.4, 8 s | Arrow Rain x1.2 r2 at the target, 12 s |
+| Risen Mage | Arc Bolt x2.4, 8 s | Static Nova x1.3 r2 at the target, 12 s |
+
+The Risen Warrior also taunts like the golem (Bone Challenge: `tauntMs` 8000, `tauntRadius` 2, while the owner has a
+target). Engine side: `necro_minions.lua` `act` / `cast`; timers in `ChaosNecroMinions.spellAt`. Tests:
+`tests/necro_test.lua` "minion spells". Needs a live check: the effects of each spell, the warrior pulling monsters off
+the caster.
+
 ## Summons: targets, walk-through, levels (2026-10-21)
 
 Owner report: "the Necromancer's risen warriors do not attack, they get targeted and they block the way", and "the risen
