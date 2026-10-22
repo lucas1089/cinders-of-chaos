@@ -12,6 +12,9 @@
 --   H.hitAnomaly(hit)                  a hit taken or dealt far out of range for the level, or a one-shot from full
 --   H.xpAnomaly(level, gained)         an experience gain that is negative or absurd for the level
 --   H.itemAnomaly(item)                an item with an impossible count or stat
+--   H.parsePlace(arg)                  "enter <kind> [N]" / "enter npc <name>" / "enter rift [tier]" -> a place, or nil
+--   H.pickMark(marks, kind, n)         the n-th map mark of a kind (data/chaos_poi.lua marks; wraps), and the count
+--   H.placeCounts(marks)               {kind = count} of the marks the helper can bring a tester to
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
 ChaosTesterHelperCore = ChaosTesterHelperCore or {}
@@ -72,6 +75,65 @@ function H.parseCommand(param)
 		return nil
 	end
 	return cmd, arg ~= "" and arg or nil
+end
+
+-- the places `!tester enter` brings a tester to: map mark kinds (poi_core.lua P.KINDS, guild halls left out: guilds
+-- are out of scope), an NPC by name, and a rift (a key of the tier into the backpack, then the temple)
+H.PLACE_KINDS = {temple = true, depot = true, craft = true, bank = true, bless = true, travel = true, shop = true,
+	boss = true, hunt = true, npc = true, portal = true, dungeon = true}
+H.RIFT_MAX = 15
+
+function H.parsePlace(arg)
+	if type(arg) ~= "string" then
+		return nil
+	end
+	local kind, rest = arg:match("^%s*(%a+)%s*(.-)%s*$")
+	kind = kind and kind:lower()
+	if kind == "rift" then
+		local t = tonumber(rest) or 1
+		t = math.floor(t)
+		if t < 1 then t = 1 end
+		if t > H.RIFT_MAX then t = H.RIFT_MAX end
+		return {kind = "rift", tier = t}
+	end
+	if kind == "npc" then
+		-- an NPC name: letters, spaces, apostrophes; never a player (the engine file checks isNpc)
+		if rest == "" or #rest > 40 or not rest:match("^[%a][%a '%-]*$") then
+			return nil
+		end
+		return {kind = "npc", name = rest}
+	end
+	if not kind or not H.PLACE_KINDS[kind] then
+		return nil
+	end
+	local n = tonumber(rest)
+	if rest ~= "" and (not n or n < 1 or n ~= math.floor(n)) then
+		return nil
+	end
+	return {kind = kind, n = n}
+end
+
+function H.pickMark(marks, kind, n)
+	local list = {}
+	for _, m in ipairs(marks or {}) do
+		if m.k == kind and m.x and m.y and m.z then
+			list[#list + 1] = m
+		end
+	end
+	if #list == 0 then
+		return nil, 0
+	end
+	return list[((n or 1) - 1) % #list + 1], #list
+end
+
+function H.placeCounts(marks)
+	local out = {}
+	for _, m in ipairs(marks or {}) do
+		if H.PLACE_KINDS[m.k] and m.k ~= "npc" then
+			out[m.k] = (out[m.k] or 0) + 1
+		end
+	end
+	return out
 end
 
 -- a small JSON writer (the engine's json may be missing in the tests; no functions, no cycles)

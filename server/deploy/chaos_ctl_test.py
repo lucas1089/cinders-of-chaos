@@ -644,6 +644,8 @@ def test_testers():
             check('setup --count 5 --server-dir ' + server in calls, 'setup of 5 testers: ' + calls)
             check('run --key-file %s --server-dir %s' % (key, server) in calls and '--minutes 2 --count 5' in calls,
                   'the run: the key file path, minutes, count: ' + calls)
+            check('--scenarios ' in calls and 'server/tools/tester_scenarios.json' in calls,
+                  'the run gets the coverage table: ' + calls)
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
             check(os.getpgid(pid) == pid, 'the run has its own process group')

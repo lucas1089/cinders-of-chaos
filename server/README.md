@@ -6244,6 +6244,10 @@ Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` cop
   potions, 20000 gold in the bank.
 - `!tester info | town | depot | hunt | shop`: answers one line `[tester-helper] <kind> <json>`.
   Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
+- `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
+  that kind (temple, depot, craft, bank, bless, travel, shop, boss, hunt, portal, dungeon; guild halls refused).
+  `enter npc <name>`: next to that NPC; a player's name is refused. `enter rift [tier]`: a rift key of the tier
+  (1-15, no modifiers) into the tester's backpack, then the temple. Only the tester moves or receives.
 - Anomalies, one console line `[tester-anomaly] <json>` each:
   a hit taken over 3x max health (the 130M one-shot), a hit from full health to death,
   a hit dealt over 5000 + 400 x level, a negative or absurd experience gain,
@@ -6281,7 +6285,7 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
 - `status`: running, pid, started, bots, minutes, logins, deaths, helper copied, helper loaded.
 - `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
   then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
-  each with the first bot and what it was doing; behaviours tried / ok / failed.
+  each with the first bot and what it was doing; behaviours tried / ok / failed; the system coverage (below).
 - `cleanup [--yes]`: stops a run; waits 2 minutes after a stop (a character in a fight stays in game).
   Deletes only characters with the marker storage AND a "Tester Xxx" name AND a `tstbot...` account. Exact ids, no
   LIKE. Rows of every table with a `player_id` / `*_player_id` or `account_id` / `*_account_id` column, a house a
@@ -6291,12 +6295,37 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
 
 The admin app runs these through `chaos-ctl.sh` like the other commands (docs/ADMIN_APP.md).
 
+### Coverage (`tools/gen_tester_scenarios.py`, `tools/tester_scenarios.json`, `tools/tester_scenarios.py`)
+
+The table is generated from the sources. CI runs `--check`. Regenerate after a new system, opcode or action:
+`python3 -I server/tools/gen_tester_scenarios.py`.
+- Every system with a `*_core.lua` gets a kind:
+  - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
+  - `place`: the helper's `enter` argument.
+  - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, guilds, market, orb exchange, party
+    finder, ranked arena, PvP zones, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `passive`: reached by play only. The report counts the server log errors that name its files.
+- Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
+  world and staff actions (start, stop, reset, grant, give, transfer, gift and the rest of `ADMIN`).
+- NPC dialogs: every NPC of `data/npc` with the keywords of its greeting.
+
+`chaos-ctl.sh testers start` passes `--scenarios` with the table. The `opcodes` behaviour then runs a scenario:
+- a module's requests: "open" first, then one to three actions in client order, 1.5 s apart;
+- a place: `!tester enter`, the opcode of the system there, back to the hunt;
+- an NPC: `enter npc`, hi, one or two keywords, bye;
+- a rift: `enter rift N`, then the key used by hotkey.
+Data keys are filled only from the bot's own earlier answers on that opcode. Never invented.
+Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
+Report: per system tried / ok / refused / log errors. A system never reached says why:
+out of scope with the reason, passive, or not picked in this run.
+
 Not verified against a running server: the bots' packets in game, the helper on the real engine, the cleanup on the
-real schema. Tested only with mocks, stubs and synthetic packets.
+real schema, the scenario payloads against the real handlers. Tested only with mocks, stubs and synthetic packets.
 
 Tests: `tests/testers_test.lua`, `tests/tester_helper_test.lua`, `tools/testers_test.py`,
 `tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`,
-`deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, website `chaos_leaderboards_page_test.php`,
+`deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, `tools/tester_scenarios_test.py`, website `chaos_leaderboards_page_test.php`,
 `chaos_client_api_test.php`.
 
 ## Load test on the full map (`tools/loadtest.py`, `tools/loadtest_hunt.lua`, `src-patches/0032-network-message-buffer.patch`)

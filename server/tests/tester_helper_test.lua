@@ -59,6 +59,35 @@ eq(a, "rift 3", "its argument")
 eq(H.parseCommand("kill everyone"), nil, "an unknown command")
 eq(H.parseCommand(nil), nil, "no param")
 
+-- places: `!tester enter <kind> [N]`, `enter npc <name>`, `enter rift [tier]`
+local pl = H.parsePlace("rift 3")
+check(pl and pl.kind == "rift" and pl.tier == 3, "enter rift 3")
+eq(H.parsePlace("rift").tier, 1, "a rift key of tier 1 by default")
+eq(H.parsePlace("rift 99").tier, H.RIFT_MAX, "the tier is capped")
+eq(H.parsePlace("rift -4").tier, 1, "and at least 1")
+pl = H.parsePlace("npc Keeper of Trials")
+check(pl and pl.kind == "npc" and pl.name == "Keeper of Trials", "enter npc <name>")
+eq(H.parsePlace("npc "), nil, "an NPC needs a name")
+eq(H.parsePlace("npc Bob\"; drop"), nil, "an NPC name has letters only")
+pl = H.parsePlace("Boss 2")
+check(pl and pl.kind == "boss" and pl.n == 2, "enter boss 2")
+eq(H.parsePlace("boss").n, nil, "enter boss: the first")
+eq(H.parsePlace("boss x"), nil, "a bad number")
+eq(H.parsePlace("boss 1.5"), nil, "not a whole number")
+eq(H.parsePlace("guild"), nil, "guild halls are out of scope")
+eq(H.parsePlace("player Ana"), nil, "never a player")
+eq(H.parsePlace(nil), nil, "no place")
+local mk = {{k = "boss", x = 1, y = 1, z = 7, n = "A"}, {k = "temple", x = 2, y = 2, z = 7},
+	{k = "boss", x = 3, y = 3, z = 7, n = "B"}, {k = "guild", x = 4, y = 4, z = 7}, {k = "npc", x = 5, y = 5, z = 7}}
+local m1, cnt = H.pickMark(mk, "boss", 2)
+eq(m1 and m1.n, "B", "the second boss mark")
+eq(cnt, 2, "of two")
+eq(H.pickMark(mk, "boss", 3).n, "A", "the number wraps")
+eq(H.pickMark(mk, "boss").n, "A", "the first by default")
+eq(H.pickMark(mk, "bank"), nil, "no bank mark")
+local pc = H.placeCounts(mk)
+check(pc.boss == 2 and pc.temple == 1 and pc.guild == nil and pc.npc == nil, "place counts, no guilds, NPCs by name")
+
 local o = {x = 100, y = 100, z = 7}
 local list = {
 	{id = 1, pos = {x = 103, y = 100, z = 7}, health = 10},
@@ -180,6 +209,19 @@ local wolf = creature(1073741825, "wolf", {player = false, monster = true, pos =
 local pet = creature(1073741826, "pet", {player = false, monster = true, pos = {x = 101, y = 100, z = 7}, health = 30})
 pet.master = ana
 local spectators = {ana, fake, marked, pet, wolf}
+local npcs = {["Keeper of Trials"] = {getName = function() return "Keeper of Trials" end, isNpc = function() return true end,
+	getPosition = function() return {x = 70, y = 70, z = 7} end}}
+function Creature(name)
+	if npcs[name] then return npcs[name] end
+	for _, c in pairs(byId) do
+		if c.name == name then return c end
+	end
+end
+ChaosPoi = {all = {{k = "boss", x = 300, y = 300, z = 8, n = "Boss A"}, {k = "boss", x = 310, y = 300, z = 8, n = "Boss B"},
+	{k = "guild", x = 9, y = 9, z = 7}}}
+local keys = {}
+ChaosRift = {giveKey = function(p, key, why) keys[#keys + 1] = {who = p, key = key} end}
+ChaosRiftConfig = {key = {itemId = 10155}}
 Game = {getSpectators = function() return spectators end, getPlayers = function() return {} end}
 
 local origPrint = print
@@ -207,6 +249,8 @@ for _, p in ipairs(others) do
 	check(events.TesterHelperLogin.onLogin(p) == true, p.name .. ": login goes on")
 	check(talks["!tester"].onSay(p, "!tester", "town") == true, p.name .. ": !tester is left to the game")
 	check(talks["!tester"].onSay(p, "!tester", "depot") == true, p.name .. ": !tester depot is left to the game")
+	check(talks["!tester"].onSay(p, "!tester", "enter rift 5") == true, p.name .. ": !tester enter is left to the game")
+	check(talks["!tester"].onSay(p, "!tester", "enter boss") == true, p.name .. ": enter boss too")
 end
 local before = #printed
 for _, p in ipairs(others) do
@@ -257,6 +301,37 @@ talks["!tester"].onSay(tester, "!tester", "fly")
 check(tester.log.msgs[#tester.log.msgs]:find("unknown command", 1, true) ~= nil, "an unknown command answers an error")
 talks["!tester"].onSay(tester, "!tester", "depot")
 check(tester.log.msgs[#tester.log.msgs]:find('depot {"err":', 1, true) ~= nil, "no locker: an error answer")
+
+-- enter: only the tester moves; a rift key goes to the tester; a player's name is never an NPC
+local function last(p) return p.log.msgs[#p.log.msgs] end
+talks["!tester"].onSay(tester, "!tester", "places")
+check(last(tester):find('places {"counts":{"boss":2}}', 1, true) ~= nil, "places: the counts, no guild halls")
+talks["!tester"].onSay(tester, "!tester", "enter boss 2")
+check(last(tester):find('enter {"count":2,"err":"no free tile"', 1, true) ~= nil, "a blocked place is an error answer")
+local realTile = Tile
+Tile = function() return {getGround = function() return true end, hasFlag = function() return false end,
+	getTopCreature = function() return nil end} end
+talks["!tester"].onSay(tester, "!tester", "enter boss 2")
+eq(tester.pos.x, 309, "enter boss 2: next to the second boss mark")
+check(last(tester):find('"name":"Boss B"', 1, true) ~= nil, "enter: the answer names the place")
+talks["!tester"].onSay(tester, "!tester", "enter npc Keeper of Trials")
+eq(tester.pos.x, 69, "enter npc: next to the NPC")
+check(last(tester):find('"npc":"Keeper of Trials"', 1, true) ~= nil, "enter npc: the answer")
+local tps = #tester.log.teleports
+talks["!tester"].onSay(tester, "!tester", "enter npc Ana")
+check(last(tester):find('"err":"no such NPC"', 1, true) ~= nil, "a player's name is not an NPC")
+eq(#tester.log.teleports, tps, "and nobody moves")
+eq(#ana.log.teleports, 0, "Ana stays where she is")
+talks["!tester"].onSay(tester, "!tester", "enter rift 4")
+eq(#keys, 1, "a rift key")
+check(keys[1].who == tester and keys[1].key.tier == 4 and #keys[1].key.mods == 0, "tier 4, no modifiers, to the tester")
+check(last(tester):find('"keyClientId":20155', 1, true) ~= nil, "the key's client id for the hotkey use")
+eq(tester.pos.x, 50, "and the tester waits in the temple")
+talks["!tester"].onSay(tester, "!tester", "enter guild")
+check(last(tester):find('"err":"unknown place"', 1, true) ~= nil, "guild halls: unknown place")
+Tile = realTile
+talks["!tester"].onSay(tester, "!tester", "hunt")
+eq(tester.pos.x, 100, "back to the hunt spot")
 
 -- the target loop: the tester gets the nearest monster, never a player or a player's summon
 T.ids[tester.id] = true

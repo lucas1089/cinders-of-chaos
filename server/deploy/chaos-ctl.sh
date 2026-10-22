@@ -832,8 +832,9 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
           # shellcheck disable=SC2016
           exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
-            --minutes "$6" --count "$7" --log "$8"; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}"; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
             "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
+            "$REPO/server/tools/tester_scenarios.json" \
             >> "$TLOG" 2>&1 < /dev/null ) &
         echo $! > "$TSTATE/run.pid"
         date +%s > "$TSTATE/started"

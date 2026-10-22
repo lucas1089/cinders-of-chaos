@@ -1,0 +1,4385 @@
+{
+ "clientOnly": [
+  "game_chaosnotify",
+  "game_energyshield",
+  "game_levelwings",
+  "game_monkchi"
+ ],
+ "counts": {
+  "opcode": 54,
+  "out": 37,
+  "passive": 62,
+  "place": 14,
+  "staff": 10
+ },
+ "generated_by": "server/tools/gen_tester_scenarios.py",
+ "npcs": [
+  {
+   "keywords": [
+    "ledger",
+    "tales",
+    "lore",
+    "portugues"
+   ],
+   "npc": "Archivist Maelis"
+  },
+  {
+   "keywords": [
+    "ascension"
+   ],
+   "npc": "Ascendant Oracle"
+  },
+  {
+   "keywords": [
+    "contracts",
+    "quartermaster",
+    "lore"
+   ],
+   "npc": "Cantor Velith"
+  },
+  {
+   "keywords": [
+    "open"
+   ],
+   "npc": "Cassian Auric"
+  },
+  {
+   "keywords": [
+    "contracts",
+    "quartermaster",
+    "lore"
+   ],
+   "npc": "Elder Bramwyn"
+  },
+  {
+   "keywords": [
+    "contracts",
+    "quartermaster",
+    "lore"
+   ],
+   "npc": "Forgemaster Brannoc"
+  },
+  {
+   "keywords": [
+    "list",
+    "buy"
+   ],
+   "npc": "Halvard Deedkeeper"
+  },
+  {
+   "keywords": [
+    "wares",
+    "tokens",
+    "luck"
+   ],
+   "npc": "Iselde Varrow"
+  },
+  {
+   "keywords": [
+    "trials"
+   ],
+   "npc": "Keeper of Trials"
+  },
+  {
+   "keywords": [
+    "trade",
+    "appraise"
+   ],
+   "npc": "Loot Buyer"
+  },
+  {
+   "keywords": [
+    "sell",
+    "demand",
+    "trade"
+   ],
+   "npc": "Material Broker"
+  },
+  {
+   "keywords": [
+    "gamble",
+    "odds",
+    "crates"
+   ],
+   "npc": "Mordecai Ashwager"
+  },
+  {
+   "keywords": [
+    "wares"
+   ],
+   "npc": "Osric the Chandler"
+  },
+  {
+   "keywords": [
+    "services"
+   ],
+   "npc": "Pell Ashmere"
+  },
+  {
+   "keywords": [
+    "stash"
+   ],
+   "npc": "Tavish Coldhand"
+  },
+  {
+   "keywords": [
+    "bosses",
+    "charges"
+   ],
+   "npc": "Vessa Hollowmark"
+  },
+  {
+   "keywords": [
+    "trade"
+   ],
+   "npc": "Wandering Merchant"
+  },
+  {
+   "keywords": [
+    "contracts",
+    "quartermaster",
+    "lore"
+   ],
+   "npc": "Warden Ysolde"
+  },
+  {
+   "keywords": [
+    "trade",
+    "harvest"
+   ],
+   "npc": "Widow Hessa"
+  }
+ ],
+ "opcodes": {
+  "achievements": {
+   "actions": [
+    "get",
+    "open",
+    "title",
+    "add"
+   ],
+   "client": [
+    "game_achievements"
+   ],
+   "dataKeys": [
+    "title"
+   ],
+   "files": [
+    "achievements.lua"
+   ],
+   "opcode": 250,
+   "out": false,
+   "skip": [
+    "grant",
+    "stat",
+    "reset"
+   ],
+   "systems": [
+    "achievements"
+   ]
+  },
+  "antibot": {
+   "actions": [],
+   "client": [
+    "game_antibot"
+   ],
+   "dataKeys": [
+    "k",
+    "t"
+   ],
+   "files": [
+    "antibot.lua"
+   ],
+   "opcode": 211,
+   "out": true,
+   "skip": [
+    "answer",
+    "another",
+    "score",
+    "check_fail",
+    "temple",
+    "check"
+   ],
+   "systems": [
+    "antibot"
+   ]
+  },
+  "arena": {
+   "actions": [],
+   "client": [
+    "game_arena"
+   ],
+   "dataKeys": [
+    "firstWinDone",
+    "match",
+    "mode",
+    "now",
+    "queue",
+    "ratings",
+    "recent",
+    "rules",
+    "season"
+   ],
+   "files": [
+    "arena.lua"
+   ],
+   "opcode": 236,
+   "out": true,
+   "skip": [
+    "queue",
+    "open",
+    "leave",
+    "join",
+    "stop",
+    "slots"
+   ],
+   "systems": [
+    "arena"
+   ]
+  },
+  "autoloot": {
+   "actions": [
+    "clear",
+    "add",
+    "remove",
+    "open",
+    "sync"
+   ],
+   "client": [
+    "game_autoloot"
+   ],
+   "dataKeys": [
+    "clientId",
+    "name",
+    "quiet"
+   ],
+   "files": [
+    "autoloot.lua"
+   ],
+   "opcode": 216,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "bank": {
+   "actions": [
+    "openBank",
+    "deposit",
+    "withdraw",
+    "depositAll",
+    "withdrawAll"
+   ],
+   "client": [
+    "game_bank"
+   ],
+   "dataKeys": [],
+   "files": [
+    "bank.lua"
+   ],
+   "opcode": 60,
+   "out": false,
+   "skip": [
+    "transfer"
+   ],
+   "systems": [
+    "bank"
+   ]
+  },
+  "battleground": {
+   "actions": [],
+   "client": [
+    "game_battleground"
+   ],
+   "dataKeys": [
+    "bracket",
+    "est",
+    "key",
+    "match",
+    "open",
+    "queue",
+    "realm",
+    "role",
+    "season",
+    "vendor",
+    "waiting"
+   ],
+   "files": [
+    "battleground.lua"
+   ],
+   "opcode": 200,
+   "out": true,
+   "skip": [
+    "role",
+    "buy",
+    "open",
+    "leave",
+    "queue",
+    "board",
+    "query",
+    "item",
+    "cosmetic",
+    "stop",
+    "slots",
+    "min",
+    "off",
+    "on"
+   ],
+   "systems": [
+    "battleground"
+   ]
+  },
+  "bestiary": {
+   "actions": [
+    "take",
+    "entry",
+    "abandon",
+    "accept",
+    "reroll",
+    "board",
+    "list",
+    "summary",
+    "open",
+    "query",
+    "family",
+    "hunt"
+   ],
+   "client": [
+    "game_bestiary"
+   ],
+   "dataKeys": [
+    "areas",
+    "bonus",
+    "elements",
+    "exp",
+    "health",
+    "id",
+    "immunities",
+    "key",
+    "kills",
+    "loot",
+    "maxLevel",
+    "minLevel",
+    "name",
+    "nextIn",
+    "offers",
+    "outfit",
+    "rerolls",
+    "task",
+    "tasks",
+    "uniques"
+   ],
+   "files": [
+    "bestiary.lua"
+   ],
+   "opcode": 253,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "bestiary"
+   ]
+  },
+  "bossSpawns": {
+   "actions": [],
+   "client": [
+    "game_bossspawns"
+   ],
+   "dataKeys": [
+    "refresh",
+    "rows"
+   ],
+   "files": [
+    "bossspawns.lua"
+   ],
+   "opcode": 217,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "bossspawns"
+   ]
+  },
+  "bounty": {
+   "actions": [
+    "accept",
+    "abandon",
+    "reroll",
+    "open"
+   ],
+   "client": [
+    "game_bounty"
+   ],
+   "dataKeys": [
+    "key"
+   ],
+   "files": [
+    "bounty.lua"
+   ],
+   "opcode": 223,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "bounty"
+   ]
+  },
+  "buffs": {
+   "actions": [
+    "sync",
+    "off"
+   ],
+   "client": [
+    "game_buffbar"
+   ],
+   "dataKeys": [],
+   "files": [
+    "buffbar.lua"
+   ],
+   "opcode": 234,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "candlemarks": {
+   "actions": [
+    "buy",
+    "open",
+    "item",
+    "gem",
+    "cosmetic",
+    "pocketboss",
+    "call",
+    "take",
+    "refund"
+   ],
+   "client": [
+    "game_candlemarks"
+   ],
+   "dataKeys": [
+    "k"
+   ],
+   "files": [
+    "candlemarks.lua"
+   ],
+   "opcode": 176,
+   "out": false,
+   "skip": [
+    "give"
+   ],
+   "systems": [
+    "candlemarks"
+   ]
+  },
+  "castbar": {
+   "actions": [],
+   "client": [
+    "game_castbar"
+   ],
+   "dataKeys": [],
+   "files": [
+    "casting.lua"
+   ],
+   "opcode": 231,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "charms": {
+   "actions": [
+    "activate",
+    "restore",
+    "drop"
+   ],
+   "client": [
+    "game_charms"
+   ],
+   "dataKeys": [
+    "id",
+    "iid",
+    "pos",
+    "ref",
+    "sid",
+    "x",
+    "y"
+   ],
+   "files": [
+    "charms.lua"
+   ],
+   "opcode": 198,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "charms"
+   ]
+  },
+  "chronicle": {
+   "actions": [
+    "close",
+    "open",
+    "status",
+    "world",
+    "stone",
+    "refresh"
+   ],
+   "client": [
+    "game_chronicle"
+   ],
+   "dataKeys": [
+    "addSets",
+    "closeAreas",
+    "fallen",
+    "records",
+    "removeSets"
+   ],
+   "files": [
+    "chronicle.lua",
+    "memorial.lua"
+   ],
+   "opcode": 171,
+   "out": false,
+   "skip": [
+    "memset",
+    "complete",
+    "reset"
+   ],
+   "systems": [
+    "chronicle",
+    "memorial"
+   ]
+  },
+  "clientGuardHello": {
+   "actions": [],
+   "client": [
+    "game_chaosguard"
+   ],
+   "dataKeys": [],
+   "files": [
+    "clientguard.lua"
+   ],
+   "opcode": 190,
+   "out": true,
+   "skip": [],
+   "systems": [
+    "clientguard"
+   ]
+  },
+  "combatLog": {
+   "actions": [
+    "open",
+    "close",
+    "seg",
+    "party",
+    "share"
+   ],
+   "client": [
+    "game_dpsmeter"
+   ],
+   "dataKeys": [
+    "id",
+    "on",
+    "party",
+    "seg",
+    "share"
+   ],
+   "files": [
+    "combatlog.lua"
+   ],
+   "opcode": 204,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "combatlog"
+   ]
+  },
+  "community": {
+   "actions": [],
+   "client": [
+    "game_community"
+   ],
+   "dataKeys": [
+    "gold"
+   ],
+   "files": [
+    "community.lua"
+   ],
+   "opcode": 203,
+   "out": true,
+   "skip": [
+    "close",
+    "open",
+    "donate",
+    "add",
+    "modifier",
+    "stage"
+   ],
+   "systems": [
+    "community"
+   ]
+  },
+  "conquest": {
+   "actions": [],
+   "client": [
+    "game_conquest"
+   ],
+   "dataKeys": [
+    "k"
+   ],
+   "files": [
+    "conquest.lua"
+   ],
+   "opcode": 167,
+   "out": true,
+   "skip": [
+    "buy",
+    "open",
+    "close",
+    "shards",
+    "relics",
+    "u",
+    "omen",
+    "attune",
+    "shard",
+    "conv",
+    "refine",
+    "give",
+    "pity"
+   ],
+   "systems": [
+    "conquest"
+   ]
+  },
+  "cosmetics": {
+   "actions": [
+    "open",
+    "state",
+    "select",
+    "preview",
+    "hello",
+    "wardrobe",
+    "footprint",
+    "outline",
+    "killfx",
+    "spellskin",
+    "lootbeam",
+    "chatcolor",
+    "fx",
+    "vfx",
+    "missile",
+    "vmissile",
+    "close",
+    "sync",
+    "all"
+   ],
+   "client": [
+    "game_cosmetics",
+    "game_unlocks"
+   ],
+   "dataKeys": [
+    "id",
+    "kind",
+    "line",
+    "list"
+   ],
+   "files": [
+    "cosmetics.lua"
+   ],
+   "opcode": 225,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "cosmetics"
+   ]
+  },
+  "crafting": {
+   "actions": [
+    "gem",
+    "apply",
+    "select",
+    "open",
+    "clear",
+    "remove"
+   ],
+   "client": [
+    "game_crafting"
+   ],
+   "dataKeys": [
+    "clientId",
+    "history",
+    "id",
+    "item",
+    "items",
+    "mod",
+    "op",
+    "orb",
+    "path",
+    "pos",
+    "sig",
+    "socket"
+   ],
+   "files": [
+    "crafting.lua"
+   ],
+   "opcode": 232,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "daily": {
+   "actions": [
+    "calim",
+    "open",
+    "closed",
+    "set"
+   ],
+   "client": [
+    "game_daily"
+   ],
+   "dataKeys": [
+    "day",
+    "month",
+    "year"
+   ],
+   "files": [
+    "daily.lua"
+   ],
+   "opcode": 207,
+   "out": false,
+   "skip": [
+    "shift"
+   ],
+   "systems": [
+    "daily"
+   ]
+  },
+  "deathRecap": {
+   "actions": [
+    "get",
+    "open"
+   ],
+   "client": [
+    "game_deathrecap"
+   ],
+   "dataKeys": [
+    "id"
+   ],
+   "files": [
+    "deathrecap.lua"
+   ],
+   "opcode": 154,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "deathrecap"
+   ]
+  },
+  "depotTabs": {
+   "actions": [
+    "open",
+    "style",
+    "other",
+    "tab"
+   ],
+   "client": [
+    "game_depottabs"
+   ],
+   "dataKeys": [
+    "tab"
+   ],
+   "files": [
+    "depot.lua"
+   ],
+   "opcode": 111,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "depot"
+   ]
+  },
+  "descent": {
+   "actions": [
+    "pick",
+    "buy",
+    "open",
+    "craft",
+    "ready",
+    "leave",
+    "query",
+    "buff",
+    "sigil",
+    "status",
+    "clear",
+    "skip",
+    "boon",
+    "offer",
+    "portal"
+   ],
+   "client": [
+    "game_descent"
+   ],
+   "dataKeys": [
+    "basin",
+    "card",
+    "curse",
+    "enabled",
+    "key",
+    "offer",
+    "wall",
+    "weekly"
+   ],
+   "files": [
+    "descent.lua"
+   ],
+   "opcode": 205,
+   "out": false,
+   "skip": [
+    "start",
+    "reset"
+   ],
+   "systems": [
+    "descent"
+   ]
+  },
+  "displayScale": {
+   "actions": [
+    "hello"
+   ],
+   "client": [
+    "client_chaos_locale",
+    "game_chaosscale"
+   ],
+   "dataKeys": [],
+   "files": [
+    "display_scale.lua",
+    "i18n.lua"
+   ],
+   "opcode": 157,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "display_scale",
+    "i18n"
+   ]
+  },
+  "dungeons": {
+   "actions": [
+    "fetch",
+    "queue"
+   ],
+   "client": [],
+   "dataKeys": [
+    "difficulty",
+    "id",
+    "z"
+   ],
+   "files": [
+    "dungeons.lua"
+   ],
+   "opcode": 109,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "emberCache": {
+   "actions": [
+    "open",
+    "close",
+    "offer",
+    "offerQuote",
+    "get"
+   ],
+   "client": [
+    "game_embercache"
+   ],
+   "dataKeys": [],
+   "files": [
+    "embercache.lua"
+   ],
+   "opcode": 174,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "embercache"
+   ]
+  },
+  "factions": {
+   "actions": [
+    "deliver",
+    "close",
+    "open",
+    "turnin",
+    "gear",
+    "orbs",
+    "aura",
+    "mount",
+    "buy",
+    "craft"
+   ],
+   "client": [
+    "game_factions"
+   ],
+   "dataKeys": [
+    "f",
+    "gold",
+    "key",
+    "n",
+    "sel"
+   ],
+   "files": [
+    "factions.lua"
+   ],
+   "opcode": 215,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "factions"
+   ]
+  },
+  "gamble": {
+   "actions": [
+    "buy",
+    "open",
+    "reroll",
+    "close",
+    "new"
+   ],
+   "client": [
+    "game_gamble"
+   ],
+   "dataKeys": [
+    "i",
+    "id",
+    "w"
+   ],
+   "files": [
+    "gamble.lua"
+   ],
+   "opcode": 199,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "gamble"
+   ]
+  },
+  "goals": {
+   "actions": [
+    "tracker",
+    "open",
+    "close"
+   ],
+   "client": [
+    "game_goals"
+   ],
+   "dataKeys": [],
+   "files": [
+    "goals.lua"
+   ],
+   "opcode": 178,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "goals"
+   ]
+  },
+  "groundLoot": {
+   "actions": [
+    "look",
+    "tip",
+    "raise"
+   ],
+   "client": [
+    "game_groundlabels"
+   ],
+   "dataKeys": [
+    "c",
+    "id",
+    "iid",
+    "p",
+    "s",
+    "t"
+   ],
+   "files": [
+    "groundloot.lua"
+   ],
+   "opcode": 230,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "groundloot"
+   ]
+  },
+  "guild": {
+   "actions": [],
+   "client": [
+    "game_guild"
+   ],
+   "dataKeys": [
+    "all",
+    "amount",
+    "carry",
+    "day",
+    "depot",
+    "exp",
+    "from",
+    "hall",
+    "id",
+    "key",
+    "open",
+    "tab"
+   ],
+   "files": [
+    "guild.lua"
+   ],
+   "opcode": 252,
+   "out": true,
+   "skip": [
+    "scroll",
+    "deposit",
+    "withdraw",
+    "buyHall",
+    "payRent",
+    "upgrade",
+    "take",
+    "refresh",
+    "open"
+   ],
+   "systems": [
+    "guild"
+   ]
+  },
+  "guildWar": {
+   "actions": [],
+   "client": [
+    "game_guildwar"
+   ],
+   "dataKeys": [
+    "board",
+    "boss",
+    "guild",
+    "id",
+    "open",
+    "tab",
+    "target",
+    "wars"
+   ],
+   "files": [
+    "guildwar.lua"
+   ],
+   "opcode": 197,
+   "out": true,
+   "skip": [
+    "accept",
+    "decline",
+    "cancel",
+    "surrender",
+    "log",
+    "declare",
+    "refresh",
+    "close",
+    "open",
+    "end",
+    "expire",
+    "time"
+   ],
+   "systems": [
+    "guildwar"
+   ]
+  },
+  "hideout": {
+   "actions": [
+    "theme",
+    "perm",
+    "visit",
+    "visits",
+    "open",
+    "enter",
+    "leave",
+    "kick",
+    "like",
+    "clear",
+    "remove",
+    "move",
+    "place",
+    "get"
+   ],
+   "client": [
+    "game_hideout"
+   ],
+   "dataKeys": [
+    "decor",
+    "guid",
+    "id",
+    "key",
+    "layer",
+    "level",
+    "likes",
+    "list",
+    "name",
+    "owner",
+    "perm",
+    "r",
+    "source",
+    "theme",
+    "trophy",
+    "visits",
+    "x",
+    "y"
+   ],
+   "files": [
+    "hideout.lua"
+   ],
+   "opcode": 192,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "hideout"
+   ]
+  },
+  "hunt": {
+   "actions": [
+    "restock",
+    "close",
+    "open",
+    "pause",
+    "resume",
+    "get"
+   ],
+   "client": [
+    "game_hunt"
+   ],
+   "dataKeys": [],
+   "files": [
+    "hunt.lua",
+    "restock.lua"
+   ],
+   "opcode": 241,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "hunt",
+    "restock"
+   ]
+  },
+  "infinitytower": {
+   "actions": [
+    "enter",
+    "leave",
+    "request",
+    "claim"
+   ],
+   "client": [
+    "game_infinitytower"
+   ],
+   "dataKeys": [],
+   "files": [
+    "infinitytower.lua"
+   ],
+   "opcode": 214,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "infinitytower"
+   ]
+  },
+  "info": {
+   "actions": [
+    "run",
+    "buy",
+    "store",
+    "services",
+    "catalog",
+    "xml",
+    "rev"
+   ],
+   "client": [
+    "game_chaosinfo"
+   ],
+   "dataKeys": [],
+   "files": [
+    "commands_ui.lua"
+   ],
+   "opcode": 237,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "commands_ui"
+   ]
+  },
+  "inspect": {
+   "actions": [
+    "inspect",
+    "privacy"
+   ],
+   "client": [
+    "game_playerinspect"
+   ],
+   "dataKeys": [
+    "allow",
+    "cid",
+    "name"
+   ],
+   "files": [
+    "inspect.lua"
+   ],
+   "opcode": 240,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "inspect"
+   ]
+  },
+  "invasion": {
+   "actions": [
+    "calendar",
+    "query",
+    "status",
+    "check",
+    "areas"
+   ],
+   "client": [
+    "game_invasion"
+   ],
+   "dataKeys": [
+    "open"
+   ],
+   "files": [
+    "invasion.lua"
+   ],
+   "opcode": 251,
+   "out": false,
+   "skip": [
+    "start",
+    "stop",
+    "schedule",
+    "breach",
+    "wave",
+    "event"
+   ],
+   "systems": [
+    "invasion"
+   ]
+  },
+  "itemFinder": {
+   "actions": [],
+   "client": [
+    "game_itemfinder"
+   ],
+   "dataKeys": [],
+   "files": [
+    "itemfinder.lua"
+   ],
+   "opcode": 155,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "itemfinder"
+   ]
+  },
+  "itemLink": {
+   "actions": [
+    "register",
+    "get",
+    "slot"
+   ],
+   "client": [
+    "game_chatlinks"
+   ],
+   "dataKeys": [
+    "ctx",
+    "id",
+    "items",
+    "n"
+   ],
+   "files": [
+    "itemlink.lua"
+   ],
+   "opcode": 249,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "itemlink"
+   ]
+  },
+  "itemTooltip": {
+   "actions": [
+    "slot",
+    "container"
+   ],
+   "client": [
+    "game_itemtooltip"
+   ],
+   "dataKeys": [
+    "items"
+   ],
+   "files": [
+    "item_tooltip.lua"
+   ],
+   "opcode": 242,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "item_tooltip"
+   ]
+  },
+  "kiteWalk": {
+   "actions": [],
+   "client": [
+    "game_kitewalk"
+   ],
+   "dataKeys": [],
+   "files": [
+    "kitewalk.lua"
+   ],
+   "opcode": 186,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "kitewalk"
+   ]
+  },
+  "leaderboard": {
+   "actions": [
+    "get",
+    "rfirsts",
+    "rget",
+    "rmeta",
+    "open"
+   ],
+   "client": [
+    "game_leaderboard"
+   ],
+   "dataKeys": [
+    "board",
+    "group",
+    "mode",
+    "period",
+    "resetIn",
+    "season",
+    "size",
+    "variant",
+    "week"
+   ],
+   "files": [
+    "leaderboard.lua",
+    "records.lua"
+   ],
+   "opcode": 229,
+   "out": false,
+   "skip": [
+    "reset",
+    "shift",
+    "rebuild"
+   ],
+   "systems": [
+    "leaderboard",
+    "records"
+   ]
+  },
+  "loadouts": {
+   "actions": [
+    "equip",
+    "clear",
+    "missing",
+    "rollback",
+    "adopt"
+   ],
+   "client": [
+    "game_loadouts"
+   ],
+   "dataKeys": [
+    "icon",
+    "items",
+    "name",
+    "slot",
+    "town"
+   ],
+   "files": [
+    "loadouts.lua"
+   ],
+   "opcode": 206,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "loadouts"
+   ]
+  },
+  "lootfilter": {
+   "actions": [
+    "peek",
+    "take",
+    "sound",
+    "set",
+    "preset",
+    "open",
+    "sync"
+   ],
+   "client": [
+    "game_lootfilter"
+   ],
+   "dataKeys": [
+    "cid",
+    "id",
+    "k",
+    "n",
+    "name",
+    "one",
+    "rule",
+    "s",
+    "scope"
+   ],
+   "files": [
+    "lootfilter.lua"
+   ],
+   "opcode": 238,
+   "out": false,
+   "skip": [
+    "reset"
+   ],
+   "systems": [
+    "lootfilter"
+   ]
+  },
+  "mapMarkers": {
+   "actions": [
+    "set",
+    "all"
+   ],
+   "client": [
+    "game_mapmarkers"
+   ],
+   "dataKeys": [
+    "party",
+    "poi"
+   ],
+   "files": [
+    "partymarkers.lua",
+    "poi.lua"
+   ],
+   "opcode": 153,
+   "out": false,
+   "skip": [
+    "reset",
+    "rescan"
+   ],
+   "systems": [
+    "partymarkers",
+    "poi"
+   ]
+  },
+  "mapmarks": {
+   "actions": [],
+   "client": [
+    "game_mapoverlay"
+   ],
+   "dataKeys": [
+    "on"
+   ],
+   "files": [
+    "map_marks.lua"
+   ],
+   "opcode": 245,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "map_marks"
+   ]
+  },
+  "market": {
+   "actions": [],
+   "client": [
+    "game_market"
+   ],
+   "dataKeys": [
+    "cid",
+    "coins",
+    "count",
+    "cur",
+    "days",
+    "gold",
+    "id",
+    "iid",
+    "pos",
+    "q",
+    "ref",
+    "sid"
+   ],
+   "files": [
+    "market.lua"
+   ],
+   "opcode": 221,
+   "out": true,
+   "skip": [
+    "browse",
+    "tip",
+    "buy",
+    "cancel",
+    "list",
+    "myOrders",
+    "orders",
+    "orderCancel",
+    "orderFind",
+    "orderPost",
+    "fillable",
+    "fill",
+    "sellable",
+    "mine",
+    "history",
+    "open",
+    "slot",
+    "container",
+    "item",
+    "gold",
+    "coins",
+    "activate",
+    "wallet"
+   ],
+   "systems": [
+    "market"
+   ]
+  },
+  "mentor": {
+   "actions": [],
+   "client": [
+    "game_mentor"
+   ],
+   "dataKeys": [
+    "accepting",
+    "guid",
+    "hours",
+    "key",
+    "lang",
+    "line",
+    "month",
+    "name",
+    "note",
+    "on",
+    "online",
+    "public",
+    "year"
+   ],
+   "files": [
+    "mentor.lua"
+   ],
+   "opcode": 194,
+   "out": true,
+   "skip": [
+    "title",
+    "cosmetic",
+    "item",
+    "unlink"
+   ],
+   "systems": [
+    "mentor"
+   ]
+  },
+  "monsterbar": {
+   "actions": [],
+   "client": [
+    "game_monsterbar"
+   ],
+   "dataKeys": [
+    "cid"
+   ],
+   "files": [
+    "monster_tiers.lua"
+   ],
+   "opcode": 125,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "manashield"
+   ]
+  },
+  "nameplate": {
+   "actions": [],
+   "client": [
+    "game_nameplate"
+   ],
+   "dataKeys": [],
+   "files": [
+    "nameplate.lua"
+   ],
+   "opcode": 248,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "nameplate"
+   ]
+  },
+  "nemesis": {
+   "actions": [
+    "avenge",
+    "hunt"
+   ],
+   "client": [
+    "game_nemesis"
+   ],
+   "dataKeys": [],
+   "files": [
+    "nemesis.lua"
+   ],
+   "opcode": 163,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "nemesis"
+   ]
+  },
+  "notificationsAction": {
+   "actions": [],
+   "client": [],
+   "dataKeys": [],
+   "files": [
+    "notifications.lua"
+   ],
+   "opcode": 151,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "notificationsQueue": {
+   "actions": [],
+   "client": [],
+   "dataKeys": [],
+   "files": [
+    "notifications.lua"
+   ],
+   "opcode": 152,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "orbExchange": {
+   "actions": [],
+   "client": [
+    "game_orbexchange"
+   ],
+   "dataKeys": [
+    "base",
+    "id",
+    "quote",
+    "seq"
+   ],
+   "files": [
+    "orbexchange.lua"
+   ],
+   "opcode": 209,
+   "out": true,
+   "skip": [
+    "book",
+    "cancel",
+    "mine",
+    "place",
+    "wallet",
+    "open",
+    "activate"
+   ],
+   "systems": [
+    "orbexchange"
+   ]
+  },
+  "pact": {
+   "actions": [
+    "days",
+    "extra"
+   ],
+   "client": [
+    "game_pact"
+   ],
+   "dataKeys": [
+    "name",
+    "slot"
+   ],
+   "files": [
+    "pact.lua"
+   ],
+   "opcode": 222,
+   "out": false,
+   "skip": [
+    "end",
+    "claimreset"
+   ],
+   "systems": [
+    "pact"
+   ]
+  },
+  "partyFinder": {
+   "actions": [],
+   "client": [
+    "game_partyfinder"
+   ],
+   "dataKeys": [
+    "a",
+    "g",
+    "id",
+    "role"
+   ],
+   "files": [
+    "party_finder.lua"
+   ],
+   "opcode": 208,
+   "out": true,
+   "skip": [
+    "apply",
+    "withdraw",
+    "accept",
+    "decline",
+    "hide",
+    "open",
+    "refresh",
+    "post",
+    "unlist",
+    "unqueue",
+    "queue",
+    "error",
+    "joined",
+    "inviteExpired"
+   ],
+   "systems": [
+    "party_finder"
+   ]
+  },
+  "partyFrames": {
+   "actions": [
+    "open",
+    "close",
+    "kick",
+    "invite",
+    "state",
+    "lead"
+   ],
+   "client": [
+    "game_partyframes"
+   ],
+   "dataKeys": [
+    "buffs",
+    "id",
+    "name"
+   ],
+   "files": [
+    "partyframes.lua"
+   ],
+   "opcode": 235,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "partyframes"
+   ]
+  },
+  "passivetree": {
+   "actions": [
+    "requestNodesUnlocked",
+    "requestPoints",
+    "refund",
+    "resetPreset",
+    "masteryChoose",
+    "planApply",
+    "sendNodes"
+   ],
+   "client": [
+    "game_passivetree"
+   ],
+   "dataKeys": [
+    "choice",
+    "id",
+    "masteries",
+    "nodes"
+   ],
+   "files": [
+    "passivetree.lua"
+   ],
+   "opcode": 65,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "passivetree"
+   ]
+  },
+  "patchnotes": {
+   "actions": [],
+   "client": [
+    "game_patchnotes"
+   ],
+   "dataKeys": [
+    "enabled",
+    "id"
+   ],
+   "files": [
+    "patchnotes.lua"
+   ],
+   "opcode": 244,
+   "out": true,
+   "skip": [
+    "seen",
+    "get",
+    "closed",
+    "open",
+    "auto"
+   ],
+   "systems": [
+    "patchnotes"
+   ]
+  },
+  "pets": {
+   "actions": [
+    "get",
+    "summon",
+    "dismiss",
+    "rename",
+    "close",
+    "open"
+   ],
+   "client": [
+    "game_pets"
+   ],
+   "dataKeys": [
+    "name",
+    "species"
+   ],
+   "files": [
+    "pets.lua"
+   ],
+   "opcode": 254,
+   "out": false,
+   "skip": [
+    "give",
+    "xp",
+    "level",
+    "reset",
+    "species"
+   ],
+   "systems": [
+    "pets"
+   ]
+  },
+  "pouches": {
+   "actions": [
+    "set",
+    "open",
+    "sync",
+    "loot"
+   ],
+   "client": [
+    "game_pouches"
+   ],
+   "dataKeys": [
+    "rules"
+   ],
+   "files": [
+    "pouches.lua"
+   ],
+   "opcode": 226,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "pouches"
+   ]
+  },
+  "professions": {
+   "actions": [
+    "sell",
+    "sellAll",
+    "open",
+    "close"
+   ],
+   "client": [
+    "game_professions"
+   ],
+   "dataKeys": [
+    "id",
+    "n"
+   ],
+   "files": [
+    "professions.lua"
+   ],
+   "opcode": 195,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "professions"
+   ]
+  },
+  "pvpZone": {
+   "actions": [],
+   "client": [
+    "game_pvpzone"
+   ],
+   "dataKeys": [
+    "accept",
+    "banked",
+    "banked_total",
+    "captures",
+    "day",
+    "day_picked",
+    "day_rep",
+    "defeats",
+    "exit",
+    "faction",
+    "haul",
+    "hcAccept",
+    "key",
+    "kills",
+    "piles",
+    "pledge",
+    "pledge_at",
+    "protect",
+    "week",
+    "week_banked"
+   ],
+   "files": [
+    "pvpzone.lua"
+   ],
+   "opcode": 193,
+   "out": true,
+   "skip": [
+    "pledge",
+    "buy",
+    "open",
+    "enter",
+    "query",
+    "start",
+    "warden",
+    "captured",
+    "expired",
+    "cosmetic",
+    "item",
+    "embers",
+    "status",
+    "contest",
+    "window",
+    "hold",
+    "testip",
+    "nopz",
+    "cooldown"
+   ],
+   "systems": [
+    "pvpzone"
+   ]
+  },
+  "raid": {
+   "actions": [
+    "continue",
+    "join",
+    "journal",
+    "buy",
+    "open",
+    "leave",
+    "query",
+    "add",
+    "totem",
+    "swap",
+    "trash",
+    "boss",
+    "gear",
+    "marks",
+    "status",
+    "kill",
+    "phase",
+    "mech",
+    "stacks",
+    "close",
+    "portal"
+   ],
+   "client": [
+    "game_raid"
+   ],
+   "dataKeys": [
+    "basin",
+    "enabled",
+    "id",
+    "key",
+    "to",
+    "wall"
+   ],
+   "files": [
+    "raid.lua"
+   ],
+   "opcode": 213,
+   "out": false,
+   "skip": [
+    "start",
+    "reset"
+   ],
+   "systems": [
+    "raid"
+   ]
+  },
+  "referral": {
+   "actions": [],
+   "client": [
+    "game_referral"
+   ],
+   "dataKeys": [
+    "code",
+    "month",
+    "year"
+   ],
+   "files": [
+    "referral.lua"
+   ],
+   "opcode": 220,
+   "out": true,
+   "skip": [
+    "unlink"
+   ],
+   "systems": [
+    "referral"
+   ]
+  },
+  "rift": {
+   "actions": [
+    "query",
+    "rimefloor"
+   ],
+   "client": [
+    "game_rift"
+   ],
+   "dataKeys": [
+    "bonus",
+    "boss",
+    "key",
+    "name",
+    "notes",
+    "omen",
+    "tier",
+    "types"
+   ],
+   "files": [
+    "rift.lua"
+   ],
+   "opcode": 228,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "rift"
+   ]
+  },
+  "riftAtlas": {
+   "actions": [
+    "alloc",
+    "refund",
+    "open",
+    "clear"
+   ],
+   "client": [
+    "game_riftatlas"
+   ],
+   "dataKeys": [
+    "id",
+    "pay",
+    "tree"
+   ],
+   "files": [
+    "atlas.lua"
+   ],
+   "opcode": 210,
+   "out": false,
+   "skip": [
+    "reset",
+    "grant"
+   ],
+   "systems": [
+    "atlas"
+   ]
+  },
+  "rightClickEquip": {
+   "actions": [],
+   "client": [
+    "game_rightclickequip"
+   ],
+   "dataKeys": [],
+   "files": [
+    "rightclick_equip.lua"
+   ],
+   "opcode": 188,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "rightclick_equip"
+   ]
+  },
+  "season": {
+   "actions": [
+    "journey",
+    "journeyClose",
+    "join",
+    "beat",
+    "open",
+    "sync",
+    "outfit",
+    "addon",
+    "mount",
+    "title",
+    "passxp",
+    "items",
+    "look",
+    "status",
+    "clear",
+    "set"
+   ],
+   "client": [
+    "game_season"
+   ],
+   "dataKeys": [
+    "coins",
+    "confirm",
+    "cur",
+    "mine",
+    "mode",
+    "name",
+    "open",
+    "resetIn",
+    "season",
+    "track",
+    "week"
+   ],
+   "files": [
+    "season.lua",
+    "season_journey.lua",
+    "season_modes.lua"
+   ],
+   "opcode": 246,
+   "out": false,
+   "skip": [
+    "start",
+    "end",
+    "stat",
+    "reset"
+   ],
+   "systems": [
+    "season",
+    "season_journey",
+    "season_modes"
+   ]
+  },
+  "seasonPass": {
+   "actions": [
+    "claim",
+    "buy",
+    "frame",
+    "tiers",
+    "claimAll",
+    "open",
+    "daily",
+    "outfit",
+    "mount",
+    "shader",
+    "title",
+    "item",
+    "coins",
+    "tierskips",
+    "premium",
+    "unlock",
+    "transmog"
+   ],
+   "client": [
+    "game_battlepass"
+   ],
+   "dataKeys": [
+    "daily",
+    "frame",
+    "gift",
+    "offers",
+    "on",
+    "open",
+    "price",
+    "season",
+    "sources",
+    "tier",
+    "track",
+    "weekly",
+    "what"
+   ],
+   "files": [
+    "seasonpass.lua"
+   ],
+   "opcode": 227,
+   "out": false,
+   "skip": [
+    "giftPrice",
+    "xp"
+   ],
+   "systems": [
+    "seasonpass"
+   ]
+  },
+  "shop": {
+   "actions": [
+    "get_page",
+    "init",
+    "search",
+    "history",
+    "preview",
+    "buy",
+    "bundle",
+    "wings",
+    "aura",
+    "shader",
+    "frame",
+    "outfit",
+    "addons",
+    "mount",
+    "unlock",
+    "pact",
+    "item",
+    "premium",
+    "service"
+   ],
+   "client": [
+    "game_shop"
+   ],
+   "dataKeys": [
+    "amount",
+    "category",
+    "cents",
+    "cost",
+    "creator",
+    "gift",
+    "id",
+    "method",
+    "name",
+    "offer",
+    "order",
+    "pack",
+    "page",
+    "reason",
+    "status",
+    "text",
+    "title"
+   ],
+   "files": [
+    "shop.lua",
+    "shop_payments.lua"
+   ],
+   "opcode": 218,
+   "out": false,
+   "skip": [
+    "gift_coins",
+    "refuse",
+    "reuse",
+    "pay_packs",
+    "pay_create",
+    "pay_status",
+    "pay_cancel"
+   ],
+   "systems": [
+    "shop",
+    "shop_payments"
+   ]
+  },
+  "siege": {
+   "actions": [],
+   "client": [
+    "game_siege"
+   ],
+   "dataKeys": [],
+   "files": [
+    "siege.lua"
+   ],
+   "opcode": 233,
+   "out": true,
+   "skip": [
+    "open",
+    "join",
+    "leave",
+    "winner",
+    "start",
+    "match",
+    "end",
+    "stop",
+    "portal",
+    "arena",
+    "signup",
+    "clear"
+   ],
+   "systems": [
+    "siege"
+   ]
+  },
+  "spellbook": {
+   "actions": [
+    "open",
+    "conjure",
+    "summon",
+    "damage",
+    "heal",
+    "buff",
+    "utility",
+    "spellbook"
+   ],
+   "client": [
+    "game_spellbook"
+   ],
+   "dataKeys": [
+    "have",
+    "pieces",
+    "prefetch"
+   ],
+   "files": [
+    "spellbook.lua"
+   ],
+   "opcode": 219,
+   "out": false,
+   "skip": [],
+   "systems": []
+  },
+  "stash": {
+   "actions": [
+    "gems",
+    "locked"
+   ],
+   "client": [
+    "game_stash"
+   ],
+   "dataKeys": [
+    "count",
+    "item",
+    "itemId",
+    "make",
+    "migrate",
+    "row",
+    "sendBlocks",
+    "version"
+   ],
+   "files": [
+    "stash.lua"
+   ],
+   "opcode": 110,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "stash"
+   ]
+  },
+  "supports": {
+   "actions": [
+    "socket",
+    "remove",
+    "unlock",
+    "combine",
+    "open"
+   ],
+   "client": [
+    "game_spellsupports"
+   ],
+   "dataKeys": [
+    "clientId",
+    "keep",
+    "pos",
+    "rune",
+    "slot",
+    "spell"
+   ],
+   "files": [
+    "supports.lua"
+   ],
+   "opcode": 243,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "combine"
+   ]
+  },
+  "tileBars": {
+   "actions": [],
+   "client": [
+    "game_tileoverlays"
+   ],
+   "dataKeys": [
+    "owner"
+   ],
+   "files": [
+    "tilebars.lua"
+   ],
+   "opcode": 156,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "tilebars"
+   ]
+  },
+  "townPortal": {
+   "actions": [
+    "open",
+    "select",
+    "cast",
+    "field",
+    "get"
+   ],
+   "client": [
+    "game_townportal"
+   ],
+   "dataKeys": [
+    "id"
+   ],
+   "files": [
+    "townportal.lua"
+   ],
+   "opcode": 239,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "townportal"
+   ]
+  },
+  "transmog": {
+   "actions": [
+    "looks",
+    "apply",
+    "remove",
+    "open",
+    "close",
+    "all"
+   ],
+   "client": [
+    "game_transmog"
+   ],
+   "dataKeys": [
+    "cid",
+    "id",
+    "kind",
+    "look",
+    "name",
+    "slot"
+   ],
+   "files": [
+    "transmog.lua"
+   ],
+   "opcode": 212,
+   "out": false,
+   "skip": [],
+   "systems": [
+    "transmog"
+   ]
+  },
+  "veiled": {
+   "actions": [
+    "choose"
+   ],
+   "client": [
+    "game_unveil"
+   ],
+   "dataKeys": [
+    "choice",
+    "depth",
+    "id",
+    "idx",
+    "path",
+    "sig"
+   ],
+   "files": [
+    "veiled.lua"
+   ],
+   "opcode": 196,
+   "out": false,
+   "skip": [],
+   "systems": []
+  }
+ },
+ "systems": {
+  "achievements": {
+   "files": [
+    "achievements.lua",
+    "achievements_data.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "achievements"
+   ],
+   "talkactions": [
+    "/achievements"
+   ]
+  },
+  "antibot": {
+   "files": [
+    "antibot.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "antibot"
+   ],
+   "talkactions": [],
+   "why": "judges bots; testers are exempt by design"
+  },
+  "archetypes": {
+   "files": [
+    "archetypes.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "areagen": {
+   "files": [
+    "areagen.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/areagen"
+   ],
+   "why": "a map building tool, not run in game"
+  },
+  "arena": {
+   "files": [
+    "arena.lua",
+    "arena_season.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "arena"
+   ],
+   "place": "npc Arena Master",
+   "talkactions": [],
+   "why": "ranked PvP: a queue would match testers against real players"
+  },
+  "ascension_quest": {
+   "files": [
+    "ascension_quest.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "npc Ascendant Oracle",
+   "talkactions": [
+    "/ascendset"
+   ]
+  },
+  "atlas": {
+   "files": [
+    "atlas.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "riftAtlas"
+   ],
+   "talkactions": [
+    "/atlas"
+   ]
+  },
+  "autosell": {
+   "files": [
+    "autosell.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "badges": {
+   "files": [
+    "badges.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "bank": {
+   "files": [
+    "bank.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "bank"
+   ],
+   "place": "bank",
+   "talkactions": []
+  },
+  "battleground": {
+   "files": [
+    "battleground.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "battleground"
+   ],
+   "talkactions": [
+    "/bg"
+   ],
+   "why": "needs teams of real players"
+  },
+  "bazaar": {
+   "files": [
+    "bazaar.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "trades with real players"
+  },
+  "bestiary": {
+   "files": [
+    "bestiary.lua",
+    "bestiary_spawns.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "bestiary"
+   ],
+   "talkactions": []
+  },
+  "beta": {
+   "files": [
+    "beta.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "beta sign-up of real accounts"
+  },
+  "blessings": {
+   "files": [
+    "blessings.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "bless",
+   "talkactions": [
+    "/blessing"
+   ]
+  },
+  "boss_mechanics": {
+   "files": [
+    "boss_mechanics.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "boss",
+   "talkactions": []
+  },
+  "bosspoints": {
+   "files": [
+    "bosspoints.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "boss",
+   "talkactions": []
+  },
+  "bossspawns": {
+   "files": [
+    "bossspawns.lua"
+   ],
+   "kind": "place",
+   "opcodes": [
+    "bossSpawns"
+   ],
+   "place": "boss",
+   "talkactions": []
+  },
+  "botreview": {
+   "files": [
+    "botreview.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/botreview"
+   ],
+   "why": "staff review of suspected bots; testers are exempt"
+  },
+  "bounty": {
+   "files": [
+    "bounty.lua",
+    "bounty_pool.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "bounty"
+   ],
+   "talkactions": []
+  },
+  "buildshare": {
+   "files": [
+    "buildshare.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "candlemarks": {
+   "files": [
+    "candlemarks.lua",
+    "chaos_constants.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "candlemarks"
+   ],
+   "talkactions": [
+    "/candlemarks"
+   ]
+  },
+  "catchup": {
+   "files": [
+    "catchup.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "charges_look": {
+   "files": [
+    "charges_look.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "charms": {
+   "files": [
+    "chaos_constants.lua",
+    "charms.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "charms"
+   ],
+   "talkactions": [
+    "/charm"
+   ]
+  },
+  "chronicle": {
+   "files": [
+    "chronicle.lua",
+    "chronicle_text.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "chronicle"
+   ],
+   "talkactions": [
+    "/chronicle"
+   ]
+  },
+  "cityportals": {
+   "files": [
+    "cityportals.lua",
+    "cityportals_fx.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "travel",
+   "talkactions": []
+  },
+  "class_keystones": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "class_looks": {
+   "files": [
+    "class_looks.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "class_spells": {
+   "files": [
+    "class_spells.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "class_unlocks": {
+   "files": [
+    "class_unlocks.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/classunlock"
+   ],
+   "why": "staff command only (/classunlock); testers are never staff"
+  },
+  "clientguard": {
+   "files": [
+    "clientguard.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "clientGuardHello"
+   ],
+   "talkactions": [],
+   "why": "the login handshake itself; every bot login runs it"
+  },
+  "combatlog": {
+   "files": [
+    "combatlog.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "combatLog"
+   ],
+   "talkactions": []
+  },
+  "combine": {
+   "files": [
+    "gems.lua",
+    "supports.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "supports"
+   ],
+   "talkactions": [
+    "/supports"
+   ]
+  },
+  "commands_ui": {
+   "files": [
+    "ascension.lua",
+    "commands_ui.lua",
+    "events_schedule.lua",
+    "itemsets.lua",
+    "worldboss.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "info"
+   ],
+   "talkactions": [
+    "/worldboss"
+   ]
+  },
+  "community": {
+   "files": [
+    "chaos_constants.lua",
+    "community.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "community"
+   ],
+   "talkactions": [
+    "/community"
+   ],
+   "why": "posts real players read"
+  },
+  "conquest": {
+   "files": [
+    "chaos_constants.lua",
+    "conquest.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "conquest"
+   ],
+   "talkactions": [
+    "/conquest"
+   ],
+   "why": "needs guilds of real players"
+  },
+  "cooldown_channels": {
+   "files": [
+    "cooldown_channels.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "cosmetics": {
+   "files": [
+    "cosmetics.lua",
+    "cosmetics_store.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "cosmetics"
+   ],
+   "talkactions": [
+    "/cosmetic"
+   ]
+  },
+  "craft_bonus": {
+   "files": [
+    "craft_bonus.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "craft",
+   "talkactions": []
+  },
+  "creator_codes": {
+   "files": [
+    "creator_codes.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/creatorcodes"
+   ],
+   "why": "real money creator codes"
+  },
+  "daily": {
+   "files": [
+    "daily.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "daily"
+   ],
+   "talkactions": [
+    "/daily"
+   ]
+  },
+  "daybook": {
+   "files": [
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "death_keep": {
+   "files": [
+    "death_keep.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "deathrecap": {
+   "files": [
+    "chaos_constants.lua",
+    "deathrecap.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "deathRecap"
+   ],
+   "talkactions": []
+  },
+  "depot": {
+   "files": [
+    "chaos_constants.lua",
+    "depot.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "depotTabs"
+   ],
+   "place": "depot",
+   "talkactions": []
+  },
+  "descent": {
+   "files": [
+    "chaos_constants.lua",
+    "descent.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "descent"
+   ],
+   "place": "temple",
+   "talkactions": [
+    "/descent"
+   ]
+  },
+  "discord": {
+   "files": [
+    "discord.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "server to Discord only; testers are filtered out of it"
+  },
+  "display_scale": {
+   "files": [
+    "display_scale.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "displayScale"
+   ],
+   "talkactions": []
+  },
+  "embercache": {
+   "files": [
+    "chaos_constants.lua",
+    "embercache.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "emberCache"
+   ],
+   "talkactions": []
+  },
+  "exclusives": {
+   "files": [
+    "chaos_constants.lua",
+    "exclusives.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/exclusive"
+   ],
+   "why": "staff command only (/exclusive); testers are never staff"
+  },
+  "factions": {
+   "files": [
+    "chaos_constants.lua",
+    "factions.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "factions"
+   ],
+   "talkactions": [
+    "/faction"
+   ]
+  },
+  "firsthour": {
+   "files": [
+    "firsthour.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "gamble": {
+   "files": [
+    "chaos_constants.lua",
+    "gamble.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "gamble"
+   ],
+   "talkactions": [
+    "/gamble"
+   ]
+  },
+  "gentledeath": {
+   "files": [
+    "gentledeath.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "goals": {
+   "files": [
+    "chaos_constants.lua",
+    "goals.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "goals"
+   ],
+   "talkactions": []
+  },
+  "groundloot": {
+   "files": [
+    "groundloot.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "groundLoot"
+   ],
+   "talkactions": []
+  },
+  "guild": {
+   "files": [
+    "guild.lua",
+    "guild_hall.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "guild"
+   ],
+   "talkactions": [
+    "/guild"
+   ],
+   "why": "guilds of real players; testers stay apart"
+  },
+  "guildboss": {
+   "files": [
+    "guildboss.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/guildboss"
+   ],
+   "why": "guild content of real players"
+  },
+  "guildwar": {
+   "files": [
+    "guildwar.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "guildWar"
+   ],
+   "talkactions": [
+    "/guildwar"
+   ],
+   "why": "guild wars of real players"
+  },
+  "harvest_event": {
+   "files": [
+    "harvest_event.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/harvest"
+   ],
+   "why": "staff command only (/harvest); testers are never staff"
+  },
+  "healing_rules": {
+   "files": [
+    "healing_rules.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "helpai": {
+   "files": [
+    "helpai.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "hideout": {
+   "files": [
+    "chaos_constants.lua",
+    "hideout.lua",
+    "hideout_store.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "hideout"
+   ],
+   "place": "temple",
+   "talkactions": [
+    "/hideout"
+   ]
+  },
+  "hunt": {
+   "files": [
+    "chaos_constants.lua",
+    "hunt.lua",
+    "hunt_supplies.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "hunt"
+   ],
+   "talkactions": []
+  },
+  "hunt_teleports": {
+   "files": [
+    "hunt_teleports.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "travel",
+   "talkactions": []
+  },
+  "i18n": {
+   "files": [
+    "i18n.lua",
+    "i18n_strings.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "displayScale"
+   ],
+   "talkactions": [],
+   "why": "translations; every bot text passes through it"
+  },
+  "idlehall": {
+   "files": [
+    "idlehall.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "temple",
+   "talkactions": []
+  },
+  "infinitytower": {
+   "files": [
+    "chaos_constants.lua",
+    "infinitytower.lua",
+    "infinitytower_run.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "infinitytower"
+   ],
+   "place": "temple",
+   "talkactions": [
+    "/towerrun",
+    "/towerseason"
+   ]
+  },
+  "inspect": {
+   "files": [
+    "chaos_constants.lua",
+    "inspect.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "inspect"
+   ],
+   "talkactions": []
+  },
+  "instance_limits": {
+   "files": [
+    "instance_limits.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/instances"
+   ],
+   "why": "staff command only (/instances); testers are never staff"
+  },
+  "invasion": {
+   "files": [
+    "invasion.lua",
+    "worldevents.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "invasion"
+   ],
+   "place": "hunt",
+   "talkactions": [
+    "/invasion"
+   ]
+  },
+  "item_codec": {
+   "files": [
+    "item_codec.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "the item encoding library; used by every item system"
+  },
+  "item_tooltip": {
+   "files": [
+    "item_tooltip.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "itemTooltip"
+   ],
+   "talkactions": []
+  },
+  "itemfinder": {
+   "files": [
+    "chaos_constants.lua",
+    "itemfinder.lua",
+    "itemfinder_sources.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [
+    "itemFinder"
+   ],
+   "talkactions": [
+    "/itemfinder"
+   ],
+   "why": "staff command only (/itemfinder); testers are never staff"
+  },
+  "itemlink": {
+   "files": [
+    "chaos_constants.lua",
+    "itemlink.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "itemLink"
+   ],
+   "talkactions": []
+  },
+  "kitewalk": {
+   "files": [
+    "chaos_constants.lua",
+    "kitewalk.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "kiteWalk"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "leaderboard": {
+   "files": [
+    "leaderboard.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "leaderboard"
+   ],
+   "talkactions": [
+    "/leaderboard"
+   ]
+  },
+  "legal_notice": {
+   "files": [
+    "legal_notice.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "a text the client shows; nothing to do"
+  },
+  "levelwings": {
+   "files": [
+    "chaos_constants.lua",
+    "levelwings.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "loadouts": {
+   "files": [
+    "chaos_constants.lua",
+    "loadouts.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "loadouts"
+   ],
+   "talkactions": []
+  },
+  "lootfilter": {
+   "files": [
+    "chaos_constants.lua",
+    "lootfilter.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "lootfilter"
+   ],
+   "talkactions": []
+  },
+  "lootline": {
+   "files": [
+    "lootline.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "mana_flow": {
+   "files": [
+    "mana_flow.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "manashield": {
+   "files": [
+    "manashield.lua",
+    "monster_tiers.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "monsterbar"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "map_marks": {
+   "files": [
+    "map_marks.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "mapmarks"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "market": {
+   "files": [
+    "chaos_constants.lua",
+    "market.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "market"
+   ],
+   "talkactions": [
+    "/market"
+   ],
+   "why": "testers are refused on the market by design (tests/testers_test.lua)"
+  },
+  "market_history": {
+   "files": [
+    "market_history.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "testers are refused on the market by design"
+  },
+  "market_notify": {
+   "files": [],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "testers are refused on the market by design"
+  },
+  "market_orders": {
+   "files": [],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "testers are refused on the market by design"
+  },
+  "melee_skill": {
+   "files": [
+    "melee_skill.lua",
+    "melee_skill_look.lua",
+    "weapon_styles.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "memorial": {
+   "files": [
+    "memorial.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "chronicle"
+   ],
+   "talkactions": [
+    "/memorial"
+   ]
+  },
+  "mentor": {
+   "files": [
+    "chaos_constants.lua",
+    "mentor.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "mentor"
+   ],
+   "talkactions": [
+    "/mentor"
+   ],
+   "why": "pairs a tester with real players"
+  },
+  "moderation_purge": {
+   "files": [
+    "moderation_purge.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "staff moderation only"
+  },
+  "monk_chi": {
+   "files": [
+    "ascension.lua",
+    "chaos_constants.lua",
+    "monk_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "monster_damage": {
+   "files": [
+    "monster_damage.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "monster_levels": {
+   "files": [
+    "monster_levels.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "nameplate": {
+   "files": [
+    "nameplate.lua",
+    "titles.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "nameplate"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "necro": {
+   "files": [
+    "necro_lib.lua",
+    "necro_minions.lua",
+    "necromancer_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "nemesis": {
+   "files": [
+    "chaos_constants.lua",
+    "nemesis.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "nemesis"
+   ],
+   "talkactions": []
+  },
+  "newplayer": {
+   "files": [
+    "chaos_constants.lua",
+    "newplayer.lua",
+    "newplayer_tutorial.lua",
+    "start_stats.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/newplayerkit"
+   ],
+   "why": "staff command only (/newplayerkit); testers are never staff"
+  },
+  "npc_booths": {
+   "files": [
+    "npc_booths.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "shop",
+   "talkactions": []
+  },
+  "npc_place": {
+   "files": [
+    "npc_place.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "shop",
+   "talkactions": []
+  },
+  "orbexchange": {
+   "files": [
+    "orbexchange.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "orbExchange"
+   ],
+   "talkactions": [
+    "/orbx"
+   ],
+   "why": "an order book matched against real players' orders"
+  },
+  "pace": {
+   "files": [
+    "jewelry.lua",
+    "loot.lua",
+    "pace.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "pack30_gallery": {
+   "files": [
+    "admin/actions_pack30_gallery.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/pack30gallery"
+   ],
+   "why": "staff command only (/pack30gallery); testers are never staff"
+  },
+  "pact": {
+   "files": [
+    "pact.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "pact"
+   ],
+   "talkactions": [
+    "/pact"
+   ]
+  },
+  "pact_perks": {
+   "files": [
+    "pact_perks.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "party_finder": {
+   "files": [
+    "chaos_constants.lua",
+    "party_finder.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "partyFinder"
+   ],
+   "talkactions": [],
+   "why": "listings and applications real players see and answer"
+  },
+  "party_xp": {
+   "files": [
+    "party_xp.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "partyframes": {
+   "files": [
+    "partyframes.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "partyFrames"
+   ],
+   "talkactions": []
+  },
+  "partymarkers": {
+   "files": [
+    "partymarkers.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "mapMarkers"
+   ],
+   "talkactions": []
+  },
+  "passive_builds": {
+   "files": [
+    "passive_builds.lua",
+    "passive_builds_data.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "passivetree": {
+   "files": [
+    "passivetree.lua",
+    "passivetree_data.lua",
+    "passivetree_effects.lua",
+    "passivetree_keystones.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "passivetree"
+   ],
+   "talkactions": []
+  },
+  "passivetree_stats": {
+   "files": [
+    "passivetree_stats.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "patchnotes": {
+   "files": [
+    "patchnotes.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "patchnotes"
+   ],
+   "talkactions": [
+    "/patchnotes"
+   ],
+   "why": "a text the client shows; nothing to do"
+  },
+  "pets": {
+   "files": [
+    "pets.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "pets"
+   ],
+   "talkactions": [
+    "/pet"
+   ]
+  },
+  "pocketboss": {
+   "files": [
+    "admin/actions_chaos_bosses.lua",
+    "chaos_constants.lua",
+    "pocketboss.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "boss",
+   "talkactions": [
+    "/pocketboss"
+   ]
+  },
+  "poi": {
+   "files": [
+    "poi.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "mapMarkers"
+   ],
+   "talkactions": [
+    "/poi"
+   ]
+  },
+  "potions": {
+   "files": [
+    "potions.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "pouches": {
+   "files": [
+    "chaos_constants.lua",
+    "pouches.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "pouches"
+   ],
+   "talkactions": []
+  },
+  "prizes": {
+   "files": [
+    "prizes.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "professions": {
+   "files": [
+    "chaos_constants.lua",
+    "professions.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "professions"
+   ],
+   "place": "craft",
+   "talkactions": [
+    "/professions"
+   ]
+  },
+  "pvpzone": {
+   "files": [
+    "chaos_constants.lua",
+    "pvpzone.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "pvpZone"
+   ],
+   "talkactions": [
+    "/marches"
+   ],
+   "why": "player versus player; testers never fight players"
+  },
+  "pz_guard": {
+   "files": [
+    "chaos_constants.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "raid": {
+   "files": [
+    "chaos_constants.lua",
+    "raid.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "raid"
+   ],
+   "place": "hunt",
+   "talkactions": [
+    "/raid"
+   ]
+  },
+  "rarity_migrate": {
+   "files": [
+    "rarity_migrate.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "records": {
+   "files": [
+    "records.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "leaderboard"
+   ],
+   "talkactions": [
+    "/records"
+   ]
+  },
+  "referral": {
+   "files": [
+    "referral.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "referral"
+   ],
+   "talkactions": [
+    "/referral"
+   ],
+   "why": "links real accounts"
+  },
+  "remote_cmd": {
+   "files": [
+    "remote_cmd.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "console commands of the owner (chaos-ctl.sh), not a player action"
+  },
+  "reports": {
+   "files": [
+    "reports.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/reports"
+   ],
+   "why": "player reports reach the staff queue; bots must not spam it"
+  },
+  "respawn": {
+   "files": [
+    "respawn.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "respec": {
+   "files": [
+    "respec.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "restock": {
+   "files": [
+    "restock.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "hunt"
+   ],
+   "talkactions": []
+  },
+  "reward_sparkle": {
+   "files": [
+    "reward_sparkle.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "rift": {
+   "files": [
+    "rift.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "rift"
+   ],
+   "place": "rift",
+   "talkactions": [
+    "/rift"
+   ]
+  },
+  "rift_layout": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "rightclick_equip": {
+   "files": [
+    "chaos_constants.lua",
+    "rightclick_equip.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "rightClickEquip"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "salvage": {
+   "files": [
+    "salvage.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "season": {
+   "files": [
+    "season.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "season"
+   ],
+   "talkactions": [
+    "/season"
+   ]
+  },
+  "season_journey": {
+   "files": [
+    "season_journey.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "season"
+   ],
+   "talkactions": [
+    "/journey"
+   ]
+  },
+  "season_modes": {
+   "files": [
+    "season_modes.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "season"
+   ],
+   "talkactions": []
+  },
+  "seasonpass": {
+   "files": [
+    "seasonpass.lua",
+    "seasonpass_store.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "seasonPass"
+   ],
+   "talkactions": [
+    "/seasonpass"
+   ]
+  },
+  "service_npcs": {
+   "files": [
+    "service_npcs.lua",
+    "service_npcs_run.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "shop",
+   "talkactions": []
+  },
+  "shadow_mute": {
+   "files": [
+    "shadow_mute.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "staff moderation only"
+  },
+  "shop": {
+   "files": [
+    "chaos_constants.lua",
+    "shop.lua",
+    "shop_cosmetics.lua",
+    "shop_services.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "shop"
+   ],
+   "talkactions": [
+    "/coins"
+   ]
+  },
+  "shop_payments": {
+   "files": [
+    "shop_payments.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "shop"
+   ],
+   "talkactions": [],
+   "why": "real money payments"
+  },
+  "siege": {
+   "files": [
+    "siege.lua"
+   ],
+   "kind": "out",
+   "opcodes": [
+    "siege"
+   ],
+   "talkactions": [
+    "/siege"
+   ],
+   "why": "needs guilds of real players"
+  },
+  "smartloot": {
+   "files": [
+    "smartloot.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "snares": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "spell_factor": {
+   "files": [
+    "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "stash": {
+   "files": [
+    "stash.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "stash"
+   ],
+   "talkactions": []
+  },
+  "stop_request": {
+   "files": [
+    "stop_request.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "store_delivery": {
+   "files": [
+    "store_delivery.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "deliveries of real money purchases"
+  },
+  "store_food": {
+   "files": [
+    "store_food.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "summons": {
+   "files": [
+    "beastmaster.lua",
+    "summons.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "tales": {
+   "files": [
+    "lore_data.lua",
+    "tales.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "telemetry": {
+   "files": [
+    "telemetry.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [
+    "/telemetry"
+   ],
+   "why": "client performance numbers; the bots send no client frames"
+  },
+  "templar_aura": {
+   "files": [
+    "chaos_constants.lua",
+    "templar_combat.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "temple_cleanse": {
+   "files": [
+    "temple_cleanse.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "testers": {
+   "files": [
+    "chaos_constants.lua",
+    "testers.lua"
+   ],
+   "kind": "out",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "the tester rules themselves (tests/testers_test.lua)"
+  },
+  "tile_labels": {
+   "files": [
+    "tile_labels.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "tilebars": {
+   "files": [
+    "chaos_constants.lua",
+    "tilebars.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [
+    "tileBars"
+   ],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "townportal": {
+   "files": [
+    "townportal.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "townPortal"
+   ],
+   "place": "temple",
+   "talkactions": []
+  },
+  "transmog": {
+   "files": [
+    "chaos_constants.lua",
+    "transmog.lua"
+   ],
+   "kind": "opcode",
+   "opcodes": [
+    "transmog"
+   ],
+   "talkactions": [
+    "/transmog"
+   ]
+  },
+  "treasure_goblin": {
+   "files": [
+    "treasure_goblin.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/goblin"
+   ],
+   "why": "staff command only (/goblin); testers are never staff"
+  },
+  "treestats": {
+   "files": [
+    "treestats.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/treestats"
+   ],
+   "why": "staff command only (/treestats); testers are never staff"
+  },
+  "trials": {
+   "files": [
+    "trials.lua",
+    "trials_effects.lua",
+    "trials_nodes.lua"
+   ],
+   "kind": "place",
+   "opcodes": [],
+   "place": "npc Keeper of Trials",
+   "talkactions": [
+    "/trial"
+   ]
+  },
+  "uber": {
+   "files": [
+    "uber.lua"
+   ],
+   "kind": "staff",
+   "opcodes": [],
+   "talkactions": [
+    "/ascended"
+   ],
+   "why": "staff command only (/ascended); testers are never staff"
+  },
+  "vigils": {
+   "files": [
+    "vigils.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "wardrobe": {
+   "files": [
+    "wardrobe.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weapon_balance": {
+   "files": [
+    "weapon_styles.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weapon_dps": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "weapon_skill": {
+   "files": [
+    "weapon_styles.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "wrapchain": {
+   "files": [],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "xp_rate_display": {
+   "files": [
+    "xp_rate_display.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "xpcap": {
+   "files": [
+    "xpcap.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  }
+ }
+}

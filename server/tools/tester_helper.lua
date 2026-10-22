@@ -185,6 +185,62 @@ function commands.shop(player)
 	tell(player, "shop", {pos = posOf(player:getPosition()), npc = npc:getName(), npcPos = posOf(npc:getPosition())})
 end
 
+local function marks()
+	return ChaosPoi and ChaosPoi.all or {}
+end
+
+-- the counts of the places `enter` knows (map marks by kind)
+function commands.places(player)
+	tell(player, "places", {counts = H.placeCounts(marks())})
+end
+
+-- TEST ONLY: bring this tester to a place, or give it a rift key. Only the tester itself moves and receives; an NPC
+-- target must be an NPC (a player's name is refused)
+function commands.enter(player, arg)
+	local place = H.parsePlace(arg)
+	if not place then
+		tell(player, "enter", {err = "unknown place", arg = tostring(arg)})
+		return
+	end
+	if place.kind == "rift" then
+		local rift, cfg = ChaosRift, ChaosRiftConfig
+		if not (rift and rift.giveKey and cfg and cfg.key) then
+			tell(player, "enter", {kind = "rift", err = "no rifts on this server"})
+			return
+		end
+		rift.giveKey(player, {tier = place.tier, mods = {}}, "Tester key")
+		player:teleportTo(temple(player))
+		local it = ItemType(cfg.key.itemId)
+		tell(player, "enter", {kind = "rift", tier = place.tier, keyClientId = it and it:getClientId() or 0,
+			pos = posOf(player:getPosition())})
+		return
+	end
+	if place.kind == "npc" then
+		local npc = Creature(place.name)
+		if not npc or not npc:isNpc() then
+			tell(player, "enter", {kind = "npc", err = "no such NPC", name = place.name})
+			return
+		end
+		local spot = freeNear(npc:getPosition())
+		if not spot then
+			tell(player, "enter", {kind = "npc", err = "no free tile", name = place.name})
+			return
+		end
+		player:teleportTo(spot)
+		tell(player, "enter", {kind = "npc", npc = npc:getName(), npcPos = posOf(npc:getPosition()),
+			pos = posOf(player:getPosition())})
+		return
+	end
+	local mark, count = H.pickMark(marks(), place.kind, place.n)
+	local spot = mark and freeNear(Position(mark.x, mark.y, mark.z))
+	if not spot then
+		tell(player, "enter", {kind = place.kind, err = mark and "no free tile" or "no such place", count = count})
+		return
+	end
+	player:teleportTo(spot)
+	tell(player, "enter", {kind = place.kind, name = mark.n, count = count, pos = posOf(player:getPosition())})
+end
+
 T.commands = commands
 
 local talk = TalkAction("!tester")

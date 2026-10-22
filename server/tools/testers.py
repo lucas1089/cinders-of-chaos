@@ -12,7 +12,7 @@ by hand, as root:
                  [--state DIR] [--minutes 60] [--count N] [--host 127.0.0.1] [--port 7171] [--log SERVER_LOG]
                  [--scenarios FILE] [--ramp 1.0]
   report   the bug harvest of the last run (the bots' results and the server log since the run started)
-             python3 -I testers.py report [--state DIR] [--log SERVER_LOG]
+             python3 -I testers.py report [--state DIR] [--log SERVER_LOG] [--scenarios FILE]
   cleanup  delete the tester accounts, their characters and every database row of them; nothing else
              python3 -I testers.py cleanup [--state DIR] [--dry-run]
   status   bots=, minutes=, logins=, deaths= of the state folder (chaos-ctl.sh testers status)
@@ -31,7 +31,8 @@ What a bot does, by the weighted behaviours of tester_core.BEHAVIOURS: hunts (th
 TEST ONLY, gives it a target), casts its class rotation, heals itself with its best healing spell and with potions (the
 hotkey packet: use with creature at position 0xFFFF on its own creature id), really dies and logs in again, goes to town,
 the depot (opens a locker), an NPC (hi, trade, buy potions, sell, bye), parties, private messages, client module
-requests (--scenarios), loot filter takes, opens its backpack, logs out and in. A dropped connection (server restart) is
+requests (--scenarios tester_scenarios.json: tester_scenarios.py, also places and NPC dialogs through the helper's
+`!tester enter`), loot filter takes, opens its backpack, logs out and in. A dropped connection (server restart) is
 retried with a growing pause, so the bots come back after a restart.
 """
 import asyncio
@@ -746,11 +747,25 @@ class TesterBot(LT.Bot):
         return True
 
     async def do_opcodes(self, clock):
-        step = self.args.next_request(self) if self.args.next_request else None
-        if not step:
+        """a scenario of the coverage layer (tester_scenarios.py): its steps with a pause between them"""
+        runner = getattr(self.args, 'scenarios_runner', None)
+        steps = self.args.next_request(self) if self.args.next_request else None
+        if not steps or not runner:
             return False
-        op, payload = step
-        self.conn.send(b'\x32' + bytes([op]) + LT.string(payload))
+
+        def send_ext(op, payload):
+            self.conn.send(b'\x32' + bytes([op]) + LT.string(payload))
+
+        def use_hotkey(client_id):
+            self.conn.send(b'\x82' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HBB', client_id, 0, 0))
+
+        for step in steps:
+            if not self.alive or self.died or clock['stop']:
+                break
+            self.last = 'opcodes:' + ' '.join(str(x) for x in step)[:60]
+            runner.run_step(self, step, ONLINE, send_ext, self.say, use_hotkey)
+            await self.conn.w.drain()
+            await asyncio.sleep(getattr(runner, 'pause', 1.5))
         return True
 
     async def do_loot(self, clock):
@@ -863,6 +878,7 @@ def run(a):
     a.ops = load_ops(a.server_dir)
     a.next_request = None
     a.on_answer = None
+    a.scenarios_runner = None
     a.backpack_client_id = 0
     a.after_login = ''
     if a.scenarios:
@@ -876,7 +892,8 @@ def run(a):
     if a.rsa_key == '' and os.path.exists(os.path.join(a.server_dir, 'key.pem')):
         a.rsa_key = os.path.join(a.server_dir, 'key.pem')
     st['run'] = {'started': int(time.time()), 'minutes': a.minutes, 'count': len(entries), 'log': a.log,
-                 'log_offset': os.path.getsize(a.log) if a.log and os.path.exists(a.log) else 0}
+                 'log_offset': os.path.getsize(a.log) if a.log and os.path.exists(a.log) else 0,
+                 'scenarios': os.path.abspath(a.scenarios) if a.scenarios else ''}
     save_state(a.state, st)
     print('%d testers for %d minutes (Ctrl+C or SIGTERM ends early)' % (len(entries), a.minutes), flush=True)
     asyncio.run(run_bots(a, entries))
@@ -903,7 +920,12 @@ def report(a):
         res = {}
     log = a.log or r.get('log') or ''
     lines = read_log_since(log, int(r.get('log_offset', 0)))
-    text = TC.build_report(res, TC.parse_log(lines))
+    parsed = TC.parse_log(lines)
+    table = a.scenarios or r.get('scenarios') or ''
+    if table and os.path.exists(table):
+        import tester_scenarios as TS  # the per-system coverage: tried, ok, refused, log errors, never reached and why
+        res['coverage'] = TS.merge(TS.load(table), res.get('coverage') or {}, parsed)
+    text = TC.build_report(res, parsed)
     if not log:
         text += '(no server log given: --log)\n'
     sys.stdout.write(text)
