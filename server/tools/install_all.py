@@ -243,9 +243,12 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                real map and writes nothing)
   mapfixes     tools/patch_map_fixes.py          the owner's map report of 2026-10-21 (README "Map fixes"): the broken
                teleports of tools/teleport_fixes.csv get their destination or go, the black void round the teleport
-               hall becomes deep water with its shore borders and ground under its walls, and the NPC arcade at
-               Cinderhold's temple is built (temple_npcs_config.lua; after contentareas, before poi; with --dry-run it
-               reads the real map and writes nothing)
+               hall becomes deep water with its shore borders and ground under its walls, and the portal gallery at
+               Cinderhold's temple is built (temple_portals_config.lua; after contentareas, before poi; with --dry-run
+               it reads the real map and writes nothing)
+  hubnpcs      tools/patch_hub_npcs.py           the stalls of the hub (the market of Cinderhold's teleport room,
+               npc_booths_config.lua) cleared of the base server's NPCs: their spawn file entries on the stall tiles
+               go, by position; the Chaos NPCs stand there from startup (README "Hub NPC booths"; before poi)
   poi          tools/gen_poi.py                  the points of interest of the map markers (temples, depots, crafting tables,
                service NPCs, hunting areas, boss places) from the installed map, items, NPCs and spawn data into
                data/chaos_poi.lua (README "Map markers"; after towns, npcnames and worldtexts, which rename what it reads)
@@ -695,7 +698,7 @@ def step_servicenpcs(server, data, ctx):
     return tool_result(run_tool([tool('install_service_npcs.py'), data], 'install_service_npcs.py'))
 
 
-STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs of the Halls of Services, after Osric
+STEPS.insert(STEPS.index('candlemarks') + 1, 'servicenpcs')  # the service NPCs (their stalls in the hub), after Osric
 
 
 def step_idlekick(server, data, ctx):
@@ -1018,6 +1021,22 @@ def step_mapfixes(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('contentareas') + 1, 'mapfixes')  # after contentareas (the hall's map), before poi
+
+
+def step_hubnpcs(server, data, ctx):
+    sys.path.insert(0, HERE)
+    import late_game
+    cfg = os.path.join(server, 'config.lua')
+    name = late_game.map_name(open(cfg, encoding='utf-8', errors='surrogateescape').read()) \
+        if os.path.isfile(cfg) else None
+    if not name:
+        return tool_result((False, ['%s: mapName not found' % cfg]))
+    spawn = os.path.join(data, 'world', name + '-spawn.xml')
+    # with --dry-run, data is the dry copy (it has the spawn file): the change goes there
+    return tool_result(run_tool([tool('patch_hub_npcs.py'), data, '--spawn', spawn], 'patch_hub_npcs.py'))
+
+
+STEPS.insert(STEPS.index('poi'), 'hubnpcs')  # after npcnames and mapfixes, right before poi (which reads the spawns)
 
 
 def tool_map_path(data_dir):

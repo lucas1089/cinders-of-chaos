@@ -1,16 +1,18 @@
 -- City portals, the pure part (no engine calls): where a labelled portal next to a temple goes, whether a tile may take
--- one, its look text. Shared by cityportals.lua (the engine side), hideout.lua, guild_hall.lua, npc_booths.lua and
+-- one, its look text. Shared by cityportals.lua (the engine side), cityportals_fx.lua, hideout.lua, guild_hall.lua and
 -- server/tests/cityportals_test.lua. server/README.md "City portals". Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --   C.cfg()                                  the config (cityportals_config.lua)
---   C.candidates(cfg, spot, town, temple, hallPos, offsets)
---                                            the tiles to try, in order: {{x, y, z, why}, ...}; why = hall | town | offset;
---                                            spot: the key of `hall` and `towns` (the kind, or e.g. one Chronicle gate)
+--   C.candidates(cfg, spot, town, temple, offsets)
+--                                            the tiles to try, in order: {{x, y, z, why}, ...}; why = town | offset;
+--                                            spot: the key of `towns` (the kind, or e.g. one Chronicle gate)
 --   C.spotOk(f)                              may a new portal stand on a tile; f = {ground, solid, path, house, teleport,
 --                                            floorchange, loose (movable items and doors on it)}
 --   C.pick(list, probe)                      the first tile of `list` that already holds our portal ("ours"), else the
 --                                            first "free" one; probe(pos) -> "ours" | "free" | anything else. pos, had
 --   C.lookText(cfg, kind, t, title)          "Name (title): text" through the translator t(text) (default: as is); title
 --                                            (optional, a proper name such as a Chronicle area) is not translated
+--   C.labelOf(cfg, kind, t, title)          the orange label over a portal: its title (a proper name, as is), else the
+--                                            kind's label through t; nil for a kind without a label
 --   C.key(pos)                               "x,y,z"
 --   C.bandTitle(name, band)                  "Sulphur Gallery, levels 215-299" (band {low, high}; one level: "level N")
 ChaosCityPortalsCore = ChaosCityPortalsCore or {}
@@ -31,7 +33,7 @@ local function sameTemple(a, t)
 	return type(a) == "table" and t ~= nil and a[1] == t.x and a[2] == t.y and a[3] == t.z
 end
 
-function C.candidates(cfg, kind, town, temple, hallPos, offsets)
+function C.candidates(cfg, kind, town, temple, offsets)
 	local out, seen = {}, {}
 	local function add(x, y, z, why)
 		local p = {x = x, y = y, z = z, why = why}
@@ -40,9 +42,6 @@ function C.candidates(cfg, kind, town, temple, hallPos, offsets)
 			seen[k] = true
 			out[#out + 1] = p
 		end
-	end
-	if hallPos and cfg.hall and cfg.hall[kind] then
-		add(hallPos.x, hallPos.y, hallPos.z, "hall")
 	end
 	if not temple or (temple.x or 0) <= 0 then
 		return out
@@ -98,6 +97,18 @@ function C.lookText(cfg, kind, t, title)
 	end
 	t = t or function(s) return s end
 	return t(k.name) .. (title and (" (" .. title .. ")") or "") .. ": " .. t(k.text)
+end
+
+function C.labelOf(cfg, kind, t, title)
+	local k = cfg.kinds[kind]
+	if not (k and k.label) then
+		return nil
+	end
+	if type(title) == "string" and title ~= "" then
+		return title
+	end
+	t = t or function(s) return s end
+	return t(k.label)
 end
 
 return C

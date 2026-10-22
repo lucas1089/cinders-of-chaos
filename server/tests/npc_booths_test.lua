@@ -1,11 +1,10 @@
 -- Run from the server/ folder: luajit tests/npc_booths_test.lua (and lua5.3; CI runs both)
--- The Halls of Services (npc_booths_core.lua, npc_booths.lua, npc_booths_config.lua; server/README.md "Halls of
--- Services"). Checks: the booth rows (an NPC between two partitions, coal basins on the rest of the NPC row, a counter
--- on every tile of the row in front); a row without an NPC builds nothing; a booth per town ({[town] = name}); the
--- spot of an NPC per town; on a mocked map npc_booths.lua places every fixture once (a second setup adds nothing),
--- re-tags the hall's exit, puts the way in next to the temple, the two portals lead in and back; without the hall on
--- the map no spot is given (the NPCs stay at the temple); ChaosNpcPlace.place and the Keeper of Trials use the booth.
--- tools/services_halls_test.py checks the layout on the compiled plans.
+-- The hub's NPC stalls (npc_booths_core.lua, npc_booths.lua, npc_booths_config.lua; server/README.md "Hub NPC
+-- booths"). Checks: the real config (16 stalls on two rows of the hub, no tile twice, every Chaos NPC once, the
+-- progression NPCs there, nobody at the temple); the spot of an NPC only for the hub's town / temple, by name in any
+-- case; a character logging in inside a retired Hall of Services goes to the temple of the hall's town (others are
+-- left alone); ChaosNpcPlace.place puts an NPC in its stall (and finds it again), and next to the temple in another
+-- town. tools/patch_hub_npcs_test.py checks the spawn file side.
 
 local checks, failures = 0, 0
 local function check(cond, label)
@@ -23,117 +22,94 @@ dofile("data/scripts/chaos/npc_booths_core.lua")
 local K = ChaosNpcBoothsCore
 local cfg = K.cfg()
 
+-- ---------------------------------------------------------------- the real config
+do
+	check(cfg.enabled, "enabled")
+	eq(cfg.town, 2, "the main city's NPCs (Cinderhold)")
+	eq(#cfg.booths, 16, "sixteen stalls")
+	local tiles, names, rows = {}, {}, {}
+	for _, b in ipairs(cfg.booths) do
+		local k = b.x .. ":" .. b.y .. ":" .. b.z
+		check(not tiles[k], "one stall per tile: " .. k)
+		tiles[k] = true
+		rows[b.y] = (rows[b.y] or 0) + 1
+		eq(b.z, 7, "the hub's floor")
+		check(b.x >= 31620 and b.x <= 31675, "a stall of the hub's market: " .. b.x)
+		if b.npc then
+			check(not names[b.npc], b.npc .. " in one stall only")
+			names[b.npc] = true
+			local f = io.open("data/npc/" .. b.npc .. ".xml", "r")
+			check(f ~= nil, b.npc .. " is an NPC of data/npc")
+			if f then
+				f:close()
+			end
+		else
+			eq(b.npc, false, "a stall without an NPC is false")
+		end
+	end
+	eq(rows[32230], 8, "eight stalls on the north row")
+	eq(rows[32236], 8, "eight stalls on the south row")
+	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Warden Ysolde", "Loot Buyer",
+		"Material Broker", "Osric the Chandler", "Iselde Varrow", "Mordecai Ashwager", "Cassian Auric", "Tavish Coldhand",
+		"Halvard Deedkeeper", "Vessa Hollowmark", "Pell Ashmere"}) do
+		check(names[n], n .. " has a stall in the hub")
+	end
+	eq(#K.booths(cfg), 14, "fourteen NPCs, two empty stalls")
+	-- the temple's portal gallery holds no NPC any more
+	local gallery = dofile("data/scripts/chaos/temple_portals_config.lua")
+	for _, t in ipairs(gallery.towns) do
+		eq(t.stands, nil, "no NPC stands at the temple of " .. t.name)
+	end
+end
+
 -- ---------------------------------------------------------------- pure
 do
-	local items = {counter = {11, 12}, partition = 13, light = 14}
-	local row = {npcRow = 5, counterRow = 4, from = 1, to = 9, booths = {{x = 3, npc = "A"}, {x = 8, npc = {[2] = "B"}}}}
-	local t = K.rowTiles(row, 2, items)
-	local byPos = {}
-	for _, e in ipairs(t) do
-		byPos[e[1] .. ":" .. e[2]] = e
-	end
-	eq(#t, 18, "two rows of 9 tiles")
-	eq(byPos["3:5"][3], "npc", "the NPC tile")
-	eq(byPos["2:5"][4], 13, "a partition west of the NPC")
-	eq(byPos["4:5"][4], 13, "a partition east of the NPC")
-	eq(byPos["1:5"][4], 14, "a coal basin at the row's end")
-	eq(byPos["5:5"][4], 14, "a coal basin between the booths")
-	eq(byPos["9:5"][4], 13, "the second booth's partition at the end")
-	eq(byPos["1:4"][4], 11, "counters alternate")
-	eq(byPos["2:4"][4], 12, "counters alternate (2)")
-	eq(byPos["9:4"][3], "counter", "a counter on every tile of the front row")
-	eq(#K.rowTiles(row, 1, items), 18, "town 1 still has A: the row is built")
-	eq(#K.rowTiles({npcRow = 1, counterRow = 2, from = 1, to = 5, booths = {{x = 2, npc = false}}}, 2, items), 0,
-		"a row with free slots only is not built")
-	eq(K.npcName({npc = {[2] = "B"}}, 1), nil, "a per-town booth without this town")
-	eq(K.npcName({npc = "A"}, 7), "A", "a plain name in every town")
-end
-
--- the configured halls
-do
-	local h2, h1 = K.hallOf(cfg, 2), K.hallOf(cfg, 1)
-	check(h2 and h1, "a hall for Cinderhold and one for Mirewake")
 	local s = K.spot(cfg, "Ascendant Oracle", 2)
-	check(s and s.x == h2.at.x + 5 and s.y == h2.at.y + 27, "the Oracle's booth in Cinderhold")
-	eq(K.spot(cfg, "ascendant oracle", 1).y, h1.at.y + 27, "by name, any case, in Mirewake")
-	eq(K.spot(cfg, "Warden Ysolde", 2) ~= nil, true, "Cinderhold's faction NPC")
-	eq(K.spot(cfg, "Warden Ysolde", 1), nil, "not in Mirewake")
-	eq(K.spot(cfg, "Forgemaster Brannoc", 1) ~= nil, true, "Mirewake's faction NPC")
-	eq(K.spot(cfg, "Ascendant Oracle", 4), nil, "no hall in Thornmere")
-	eq(K.spot(cfg, "Nobody", 2), nil, "an NPC without a booth")
-	local names = {}
-	for _, b in ipairs(K.booths(cfg, h2)) do
-		names[b.name] = true
-	end
-	for _, n in ipairs({"Ascendant Oracle", "Keeper of Trials", "Archivist Maelis", "Warden Ysolde"}) do
-		check(names[n], n .. " has a booth in the main city")
-	end
-	-- owner 2026-10-21: the economy and service NPCs stand in the arcade at the main city's temple
-	-- (temple_npcs_config.lua); their booths are Mirewake's only, and Cinderhold builds no economy row
-	local h1names = {}
-	for _, b in ipairs(K.booths(cfg, h1)) do
-		h1names[b.name] = true
-	end
-	local stands = dofile("data/scripts/chaos/temple_npcs_config.lua")
-	for _, t in ipairs(stands.towns) do
-		for _, s in ipairs(t.stands) do
-			check(not names[s.name], s.name .. " has no booth in the town of its temple stand")
-			check(h1names[s.name], s.name .. " keeps its booth in Mirewake")
-		end
-	end
-	for _, row in ipairs(cfg.rows) do
-		if row.room == "economy" then
-			eq(#K.rowTiles(row, 2, cfg.items), 0, row.key .. ": not built in Cinderhold")
-			check(#K.rowTiles(row, 1, cfg.items) > 0, row.key .. ": built in Mirewake")
-		end
-	end
-	local p = K.portal(cfg, h2, "descent")
-	check(p and p.x == h2.at.x + cfg.portals.descent[1], "the Descent portal tile")
+	check(s and s.x == 31642 and s.y == 32236 and s.z == 7, "the Oracle's stall")
+	eq(K.spot(cfg, "keeper of trials", 2).x, 31636, "by name, any case")
+	eq(K.spot(cfg, "Ascendant Oracle", 1), nil, "no stall in Mirewake")
+	eq(K.spot(cfg, "Nobody", 2), nil, "an NPC without a stall")
+	eq(K.spot(cfg, nil, 2), nil, "no name")
+	eq(K.spotForTemple(cfg, "Warden Ysolde", cfg.temple).x, 31622, "by the hub town's temple")
+	eq(K.spotForTemple(cfg, "Warden Ysolde", {x = 32957, y = 32076, z = 7}), nil, "another temple: none")
+	eq(K.spotForTemple(cfg, "Warden Ysolde", nil), nil, "no temple: none")
+	eq(K.spot({enabled = false, town = 2, booths = cfg.booths}, "Ascendant Oracle", 2), nil, "off: none")
+	eq(#K.booths({enabled = false, booths = cfg.booths}), 0, "off: no booths")
+	-- the retired halls
+	local h = K.retiredHallAt(cfg, {x = 14570, y = 14830, z = 7})
+	check(h and h.town == 2, "inside Cinderhold's old hall")
+	h = K.retiredHallAt(cfg, {x = 14560 + 65, y = 14870 + 33, z = 7})
+	check(h and h.town == 1, "the last tile of Mirewake's old hall")
+	eq(K.retiredHallAt(cfg, {x = 14560 + 66, y = 14830, z = 7}), nil, "just east of the hall")
+	eq(K.retiredHallAt(cfg, {x = 14570, y = 14830, z = 6}), nil, "another floor")
+	eq(K.retiredHallAt(cfg, {x = 32369, y = 32241, z = 7}), nil, "the temple")
+	eq(K.retiredHallAt(cfg, nil), nil, "no position")
 end
 
--- ---------------------------------------------------------------- the engine part on a mocked map
-local tiles, created, npcs, logs = {}, {}, {}, {}
-local function key(x, y, z) return x .. "," .. y .. "," .. z end
-local function mkItem(id, pos)
-	local it = {id = id, pos = pos, aid = 0, attrs = {}}
-	function it:getId() return self.id end
-	function it:getActionId() return self.aid end
-	function it:setActionId(a) self.aid = a end
-	function it:setAttribute(k, v) self.attrs[k] = v end
-	function it:getPosition() return self.pos end
-	return it
+-- ---------------------------------------------------------------- the engine part
+local npcs, logs, effects = {}, {}, 0
+Position = function(x, y, z)
+	local p = {x = x, y = y, z = z}
+	function p:sendMagicEffect() effects = effects + 1 end
+	return p
 end
+local tiles = {}
+local function key(x, y, z) return x .. "," .. y .. "," .. z end
+Tile = function(p) return tiles[key(p.x, p.y, p.z)] end
 local function mkTile(x, y, z)
-	local t = {items = {}, pos = {x = x, y = y, z = z}}
+	local t = {pos = {x = x, y = y, z = z}}
 	function t:getGround() return true end
-	function t:getItems() return self.items end
-	function t:getItemById(id)
-		for _, it in ipairs(self.items) do
-			if it.id == id then return it end
-		end
-		return nil
-	end
+	function t:getItems() return {} end
+	function t:getItemCount() return 0 end
 	function t:hasProperty() return false end
 	function t:hasFlag() return false end
 	function t:getTopCreature() return nil end
+	function t:getCreatureCount() return 0 end
+	function t:getHouse() return nil end
 	tiles[key(x, y, z)] = t
 	return t
 end
-Position = function(x, y, z)
-	local p = {x = x, y = y, z = z}
-	function p:sendMagicEffect() end
-	return p
-end
-Tile = function(p) return tiles[key(p.x, p.y, p.z)] end
 Game = {
-	createItem = function(id, n, pos)
-		local t = Tile(pos)
-		if not t then return nil end
-		local it = mkItem(id, pos)
-		t.items[#t.items + 1] = it
-		created[#created + 1] = it
-		return it
-	end,
 	createNpc = function(name, pos)
 		local n = {name = name, pos = pos}
 		function n:getName() return self.name end
@@ -152,25 +128,25 @@ Game = {
 		return out
 	end
 }
-local temples = {[2] = Position(1000, 1000, 7), [1] = Position(2000, 2000, 7)}
+local temples = {[2] = Position(32369, 32241, 7), [1] = Position(32957, 32076, 7)}
 local function mkTown(id)
 	return {getId = function() return id end, getTemplePosition = function() return temples[id] end}
 end
 Town = function(id) return temples[id] and mkTown(id) or nil end
 Game.getTowns = function() return {mkTown(1), mkTown(2)} end
-CONST_PROP_BLOCKSOLID, TILESTATE_TELEPORT, TILESTATE_FLOORCHANGE, CONST_ME_TELEPORT = 0, 0, 0, 11
-MESSAGE_EVENT_ADVANCE, ITEM_ATTRIBUTE_DESCRIPTION = 19, 1
-local moves, globals = {}, {}
-MoveEvent = function()
-	local m = {}
-	function m:type(t) self.t = t end
-	function m:aid(a) self.a = a end
-	function m:register() moves[self.a] = self end
-	return m
+CONST_PROP_BLOCKSOLID, TILESTATE_TELEPORT, TILESTATE_FLOORCHANGE, TILESTATE_HOUSE, CONST_ME_TELEPORT = 0, 0, 0, 0, 11
+MESSAGE_EVENT_ADVANCE = 19
+local events = {}
+CreatureEvent = function(name)
+	local e = {name = name}
+	function e:type(t) self.t = t end
+	function e:register() events[self.name] = self end
+	return e
 end
 GlobalEvent = function(name)
 	local g = {name = name}
-	function g:register() globals[self.name] = self end
+	function g:interval() end
+	function g:register() end
 	return g
 end
 Chaos = {t = function(_, s, ...) return select("#", ...) > 0 and string.format(s, ...) or s end}
@@ -180,76 +156,51 @@ print = function(s) logs[#logs + 1] = s end
 dofile("data/scripts/chaos/npc_booths.lua")
 local X = ChaosNpcBooths
 
--- no hall on the map: no spot, the NPCs stand next to the temple
-eq(X.spot("Ascendant Oracle", 2), nil, "no hall on the map: no booth")
-eq(X.setup(), 0, "no hall set up")
+local s = X.spot("Archivist Maelis", 2)
+check(s and s.x == 31628 and s.y == 32236, "the Archivist's stall (a Position)")
+eq(X.spot("Archivist Maelis", 1), nil, "none in Mirewake")
+eq(X.spotForTemple("Keeper of Trials", temples[2]).x, 31636, "the Keeper by the temple position")
 
--- build the Cinderhold hall's floor (its whole rectangle) and its exit portal; plus the temple surroundings
-local h2 = K.hallOf(cfg, 2)
-for x = h2.at.x, h2.at.x + h2.size[1] - 1 do
-	for y = h2.at.y, h2.at.y + h2.size[2] - 1 do
-		mkTile(x, y, h2.at.z)
-	end
+-- relocation at login
+local function mkPlayer(x, y, z, town)
+	local p = {pos = Position(x, y, z), town = mkTown(town), msgs = {}}
+	function p:getPosition() return self.pos end
+	function p:teleportTo(q) self.pos = q end
+	function p:getTown() return self.town end
+	function p:sendTextMessage(_, m) self.msgs[#self.msgs + 1] = m end
+	return p
 end
-local exitTile = Tile(Position(h2.at.x + h2.exit[1], h2.at.y + h2.exit[2], h2.at.z))
-local exitItem = mkItem(1387, exitTile.pos)
-exitItem.aid = 47951
-exitTile.items[1] = exitItem
+local login = events.ChaosRetiredHallLogin
+check(login ~= nil and login.t == "login", "the login event")
+local p1 = mkPlayer(14580, 14840, 7, 1)
+eq(login.onLogin(p1), true, "login goes on")
+check(p1.pos.x == 32369 and p1.pos.y == 32241, "inside Cinderhold's old hall: to Cinderhold's temple (the hall's town)")
+check(#p1.msgs == 1 and p1.msgs[1]:find("Hall of Services is closed", 1, true), "told why")
+local p2 = mkPlayer(14580, 14880, 7, 2)
+login.onLogin(p2)
+check(p2.pos.x == 32957 and p2.pos.y == 32076, "inside Mirewake's old hall: to Mirewake's temple")
+local p3 = mkPlayer(32370, 32246, 7, 2)
+login.onLogin(p3)
+check(p3.pos.x == 32370 and p3.pos.y == 32246 and #p3.msgs == 0, "anywhere else: left alone")
+-- an error in the relocation never stops a login
+local bad = mkPlayer(14580, 14840, 7, 2)
+bad.teleportTo = function() error("boom") end
+eq(login.onLogin(bad), true, "an error is caught")
+check(#logs >= 1 and tostring(logs[#logs]):find("boom", 1, true), "and logged")
+
+-- ChaosNpcPlace.place uses the stall in the hub's town, the temple elsewhere
 for dx = -4, 4 do
 	for dy = -4, 4 do
-		mkTile(1000 + dx, 1000 + dy, 7)
+		mkTile(32957 + dx, 32076 + dy, 7)
 	end
 end
--- the first entry offset is taken: the next one is used
-local o1 = cfg.entry.offsets[1]
-Tile(Position(1000 + o1[1], 1000 + o1[2], 7)).items[1] = mkItem(1481, nil)
-
-check(X.spot("Ascendant Oracle", 2) ~= nil, "the hall is on the map: the Oracle's booth")
-eq(X.spot("Ascendant Oracle", 1), nil, "Mirewake's hall is not on the map")
-eq(X.spotForTemple("Keeper of Trials", temples[2]).y, h2.at.y + 27, "by the temple position")
-eq(X.setup(), 1, "one hall set up")
-local fixtures = #K.fixtures(cfg, h2)
-eq(#created, fixtures + 1, "every fixture and the entry portal placed")
-for _, it in ipairs(created) do
-	if it.id ~= cfg.entry.item then
-		eq(it.aid, cfg.aid.fixture, "fixtures carry the fixture action id")
-		break
-	end
-end
-eq(exitItem.aid, cfg.aid.exit, "the exit portal re-tagged")
--- playtest 2026-10-16: the exit had no look text; registered like the other exits (cityportals_fx.lua labels it)
-local exitReg = ChaosCityPortals.placed[ChaosCityPortalsCore.key(exitTile.pos)]
-check(exitReg ~= nil and exitReg.kind == "servicesexit" and exitReg.aid == cfg.aid.exit and exitReg.town == 2,
-	"the exit portal registered for its look text")
-eq(ChaosCityPortals.kindOf(cfg.aid.exit), "servicesexit", "the exit's action id has a kind")
-local entryItem = created[#created]
-eq(entryItem.aid, cfg.aid.entry, "the way in")
-local o2 = cfg.entry.offsets[2]
-check(entryItem.pos.x == 1000 + o2[1] and entryItem.pos.y == 1000 + o2[2], "on the first free offset")
-X.setup()
-eq(#created, fixtures + 1, "a second setup adds nothing")
-check(globals.ChaosNpcBoothsStartup ~= nil, "the startup event")
-
--- the portals
-local player = {pos = nil, town = mkTown(1), msgs = {}}
-function player:getPlayer() return self end
-function player:teleportTo(p) self.pos = p end
-function player:getPosition() return self.pos end
-function player:sendTextMessage(_, m) self.msgs[#self.msgs + 1] = m end
-function player:getTown() return self.town end
-moves[cfg.aid.entry].onStepIn(player, entryItem, entryItem.pos, Position(1000, 1000, 7))
-check(player.pos.x == h2.at.x + h2.arrival[1] and player.pos.y == h2.at.y + h2.arrival[2], "the way in leads to the arrival")
-moves[cfg.aid.exit].onStepIn(player, exitItem, exitTile.pos, player.pos)
-check(player.pos.x == 1000 and player.pos.y == 1000, "the exit leads to the hall's town (Cinderhold), not the character's")
-
--- ChaosNpcPlace.place uses the booth
 dofile("data/scripts/chaos/npc_place.lua")
 local npc = ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}})
-local want = X.spot("Archivist Maelis", 2)
-check(npc and npc.pos.x == want.x and npc.pos.y == want.y, "ChaosNpcPlace.place puts the NPC in its booth")
-eq(ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}}), npc, "found again in its booth (no second NPC)")
-eq(#npcs, 1, "one NPC")
-check(#logs >= 2, "a hall not on the map is logged")
+check(npc and npc.pos.x == 31628 and npc.pos.y == 32236, "ChaosNpcPlace.place puts the NPC in its stall")
+eq(ChaosNpcPlace.place("Archivist Maelis", temples[2], {{1, 1}}), npc, "found again in its stall (no second NPC)")
+local other = ChaosNpcPlace.place("Loot Buyer", temples[1], {{2, 2}})
+check(other and other.pos.x == 32959 and other.pos.y == 32078, "another town: next to its temple")
+eq(#npcs, 2, "two NPCs")
 print = realPrint
 
 print(string.format("npc_booths_test: %d checks, %d failures", checks, failures))

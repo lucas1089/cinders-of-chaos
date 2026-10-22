@@ -32,7 +32,7 @@ return {
 	npc = {
 		name = "Archivist Maelis",
 		spawn = true,
-		townIds = {2, 1}, -- the main city (Cinderhold) first, then Mirewake (server/README.md "Main city")
+		townIds = {2}, -- the main city only: its stall in the hub (npc_booths_config.lua; 2026-10-22)
 		positions = {},
 		offsets = {{5, 0}, {-5, 0}, {0, 5}, {0, -5}, {5, 3}, {-5, 3}, {5, -3}, {-5, -3}, {3, 5}, {-3, 5}},
 		range = 6 -- accept and turn in only this close to her

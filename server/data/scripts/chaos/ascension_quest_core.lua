@@ -373,7 +373,7 @@ function M.commandGate(mode, isStaff, freeSwitchPending, lang)
 	if mode == "open" or isStaff or freeSwitchPending then
 		return true
 	end
-	return false, T(lang, "Ascension is earned, not claimed. Speak with the %s in the Hall of Services.", M.cfg().npc.name)
+	return false, T(lang, "Ascension is earned, not claimed. Speak with the %s in the teleport room's market.", M.cfg().npc.name)
 end
 
 -- "/ascendset <player>, <class>": name, ascended vocation id (any line) or nil and the reason

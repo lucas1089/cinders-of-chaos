@@ -1,7 +1,7 @@
 -- ascension_quest.lua: the quest that replaces !ascend for players (docs/CLASSES.md "Ascension quest").
 -- Settings: ascension_quest_config.lua (Chaos.ascensionQuest); pure rules: ascension_quest_core.lua; the NPC: the
--- Ascendant Oracle (data/npc/Ascendant Oracle.xml, data/npc/scripts/ascendant_oracle.lua), placed in the temple at
--- startup.
+-- Ascendant Oracle (data/npc/Ascendant Oracle.xml, data/npc/scripts/ascendant_oracle.lua), placed at startup (in the
+-- main city: its stall in the hub, npc_booths_config.lua).
 --
 --   1 the Calling      talk to the Oracle at level 100 (Chaos.classes.ascension.minLevel) as a base class: it tells you
 --                      the two paths of your class (Chaos.classes.ascension.choices, read at run time)
@@ -905,7 +905,7 @@ function status.onSay(player, words, param)
 	local st = stageOf(player)
 	local npc = C().npc.name
 	local lines = {
-		[0] = Chaos.t(player, "not begun. Speak with the %s in the Hall of Services.", npc),
+		[0] = Chaos.t(player, "not begun. Speak with the %s in the teleport room's market.", npc),
 		[1] = Chaos.t(player, "Proof of Strength, %d / %d (rare and legendary monsters of level %d+).",
 			math.max(0, getS(player, K().proof)), C().proof.needed, Q.minMonsterLevel(player:getLevel())),
 		[2] = Chaos.t(player, "the Trial. Ask the %s for the trial.", npc),

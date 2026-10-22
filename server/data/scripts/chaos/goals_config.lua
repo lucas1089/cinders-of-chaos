@@ -166,8 +166,8 @@ C.bands = {
 			"Aprenda o básico: cace, gaste seu primeiro ponto passivo, aceite uma recompensa."),
 		gear = {
 			{text = T("Your starter kit carries you to level 20.", "Seu kit inicial leva você até o nível 20.")},
-			{text = T("Town shops sell weapons and armour for gold; the Loot Buyer at the temple (the arcade beside its entrance) buys your loot.",
-				"As lojas da cidade vendem armas e armaduras por ouro; o Comprador de Saque no templo (a galeria ao lado da entrada) compra seu saque."),
+			{text = T("Town shops sell weapons and armour for gold; the Loot Buyer in the teleport room's market buys your loot.",
+				"As lojas da cidade vendem armas e armaduras por ouro; o Comprador de Saque no mercado da sala de teleportes compra seu saque."),
 				where = W("npc", {name = "Loot Buyer"})},
 			{text = T("Magic (blue) monsters drop gear with a rarity: wear what is better.",
 				"Monstros mágicos (azuis) soltam equipamento com raridade: use o que for melhor."), where = W("hunts")}

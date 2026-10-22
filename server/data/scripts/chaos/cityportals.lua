@@ -1,9 +1,9 @@
--- City portals, the engine side (server/README.md "City portals"): place a labelled portal near every temple (or in a
--- town's Hall of Services) and remember it, so cityportals_fx.lua marks it with an effect and a look text. No event is
--- registered here: hideout.lua, guild_hall.lua and npc_booths.lua load this file themselves (guarded), and the script
--- loader loading it again only keeps the same functions and the same registry.
+-- City portals, the engine side (server/README.md "City portals"): place a labelled portal near every temple (in
+-- Cinderhold: an alcove of the temple's portal gallery) and remember it, so cityportals_fx.lua marks it with an effect,
+-- a look text and an orange label. No event is registered here: hideout.lua, guild_hall.lua and the other users load
+-- this file themselves (guarded), and the script loader loading it again only keeps the same functions and registry.
 --   ChaosCityPortals.place(spec)   spec = {kind, aid, item?, towns? (ids; nil = every town), offsets? (tried after the
---                                  config's fixed spot), spot? (the key of the hall / town spots; default kind),
+--                                  config's fixed spot), spot? (the key of the town spots; default kind),
 --                                  title? (a proper name shown in the look text)}: one portal per town (temple).
 --                                  Returns placed, positions
 --   ChaosCityPortals.remove(aid)   remove every registered portal with that action id (a gate that closes); count
@@ -11,7 +11,6 @@
 --                                  name for this one portal's look text, e.g. a hunting area and its levels)
 --   ChaosCityPortals.titleOf(aid, pos)   the look text's title: this portal's own, else the action id's
 --   ChaosCityPortals.kindOf(aid)   the kind of a portal action id, or nil
---   ChaosCityPortals.hallPos(kind, town)   the tile of `kind` in the town's Hall of Services when the hall is on the map
 if not ChaosCityPortalsCore then
 	dofile("data/scripts/chaos/cityportals_core.lua")
 end
@@ -108,30 +107,6 @@ function X.register(kind, aid, pos, town, title)
 		item = C.cfg().item, title = title}
 end
 
-function X.hallPos(kind, town)
-	local cfg = C.cfg()
-	if not (cfg.hall and cfg.hall[kind]) then
-		return nil
-	end
-	if not ChaosNpcBoothsCore then
-		dofile("data/scripts/chaos/npc_booths_core.lua")
-	end
-	local K = ChaosNpcBoothsCore
-	local bc = K.cfg()
-	local hall = bc.enabled and K.hallOf(bc, town)
-	local p = hall and K.portal(bc, hall, kind)
-	if not p then
-		return nil
-	end
-	-- the hall is on the map when its arrival tile is (npc_booths.lua X.hallReady)
-	local a = hall.arrival or {0, 0, 0}
-	local arrival = Tile(P(K.offset(hall, a[1], a[2], a[3])))
-	if not (arrival and arrival:getGround() and Tile(P(p))) then
-		return nil
-	end
-	return p
-end
-
 function X.place(spec)
 	local cfg = C.cfg()
 	local item = spec.item or cfg.item
@@ -152,7 +127,7 @@ function X.place(spec)
 		local k = t and C.key(t)
 		if t and t.x > 0 and not seen[k] and (not want or want[id]) and Tile(t) then
 			seen[k] = true
-			local list = C.candidates(cfg, spot, id, t, X.hallPos(spot, id), spec.offsets)
+			local list = C.candidates(cfg, spot, id, t, spec.offsets)
 			local pos, had = C.pick(list, function(p)
 				if ours(p, item, spec.aid) then
 					return "ours"

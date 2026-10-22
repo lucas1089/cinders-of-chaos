@@ -2,8 +2,8 @@
 -- "trade" opened both their windows). Every NPC within its talk radius hears a player; our NPC scripts
 -- (data/npc/scripts/*.lua) now pass a line on to their handler only when the player is already talking to them, or
 -- when no other NPC within the talk radius stands nearer the player (same distance: the one in the straighter line, the
--- smaller sum of squares, answers; then the lower creature id). The straighter line (2026-10-21): the temple arcade's
--- booths stand 2 apart (temple_npcs_config.lua), so in front of a booth its neighbour is as near by squares (2).
+-- smaller sum of squares, answers; then the lower creature id). The straighter line (2026-10-21): NPCs in booths 2 apart
+-- are as near by squares (2) to a player in front of one of them (the hub's stalls, npc_booths_config.lua, stand 6 apart).
 -- The startup placement keeps our NPCs apart as well (data/scripts/chaos/npc_place_core.lua).
 --   ChaosNpcFocus.answers(me, others, player, radius) -> bool   pure: me / others = {id, x, y}, player = {x, y}
 --   ChaosNpcFocus.hears(cid, npcHandler) -> bool                in an NPC script's onCreatureSay

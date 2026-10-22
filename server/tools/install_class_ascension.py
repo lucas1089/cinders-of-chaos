@@ -5,7 +5,7 @@
 usage: python3 -I install_class_ascension.py DATA_DIR [--dry-run]
 
 1. copies the Ascendant Oracle (server/data/npc/Ascendant Oracle.xml and npc/scripts/ascendant_oracle.lua) into
-   DATA_DIR/npc (only new or different files are written). ascension_quest.lua places it in the temple at startup.
+   DATA_DIR/npc (only new or different files are written). ascension_quest.lua places it at startup (its stall in the hub).
 2. runs patch_promotion.py DATA_DIR: the stock promotion NPCs (King Tibianus, ...) refuse and point to the Oracle, the
    premium login no longer promotes.
 The quest scripts (data/scripts/chaos/ascension_quest*.lua) and the guardian monsters

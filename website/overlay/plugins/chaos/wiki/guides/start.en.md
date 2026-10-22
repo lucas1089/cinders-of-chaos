@@ -26,7 +26,8 @@ Every new character lives in Cinderhold, the biggest city. Everything is close t
 
 - Two great teleports, five steps north of the temple, lead to the teleport room: a portal to a hunt of every level.
 - The depot, two banks and the shops.
-- The Hall of Services, through the portal beside the temple: every service of the game behind its counter. The Loot Buyer, who buys what you find, the Material Broker, the Gambler, the Conquest and Candlemark vendors, the Ascendant Oracle, the Keeper of Trials, and the portals to the Ember Descent and the raid.
+- The market of the teleport room (the two great teleports north of the temple lead there): every service of the game in its stall. The Loot Buyer, who buys what you find, the Material Broker, the Gambler, the Conquest and Candlemark vendors, the Ascendant Oracle and the Keeper of Trials.
+- The portal gallery along the temple's south wall: the portals to your hideout, the guild hall, the Ember Descent, the raid, the Memorial, the Ashen Chronicle and the events, each with its destination in orange letters over it.
 - Death, the Town Portal spell and the temple scroll all bring you back to this temple.
 
 ## The first levels

@@ -1,9 +1,10 @@
 -- Run from the server/ folder: luajit tests/cityportals_test.lua (and lua5.3; CI runs both)
--- City portals (server/README.md "City portals"): the shipped config (every kind named, described and translated, the
--- fixed spots per town, the hall's portal row), the pure rules of cityportals_core.lua (candidates, free tiles, the
--- pick, the look text), then cityportals.lua and cityportals_fx.lua on a mocked map: the hall's portal room first,
--- a town's fixed spot, the offsets on another map, placed once, the registry, the effect pulse and the look text in
--- both languages; and the three users (hideout.lua, guild_hall.lua, npc_booths.lua) through the shared helper.
+-- City portals (server/README.md "City portals"): the shipped config (every kind named, described, labelled and
+-- translated, the fixed spots per town, Cinderhold's spots = the alcoves of the temple's portal gallery with the Ember
+-- Descent and raid portals), the pure rules of cityportals_core.lua (candidates, free tiles, the pick, the look text,
+-- the label), then cityportals.lua and cityportals_fx.lua on a mocked map: a town's fixed spot, the offsets on another
+-- map, placed once, the registry, the effect pulse, the orange labels and the look text in both languages; and the
+-- users (hideout.lua, guild_hall.lua, ...) through the shared helper.
 local checks, failures = 0, 0
 local function check(c, m)
 	checks = checks + 1
@@ -20,10 +21,13 @@ dofile("data/scripts/chaos/cityportals_core.lua")
 local C = ChaosCityPortalsCore
 local cfg = C.cfg()
 local pt = dofile("data/scripts/chaos/i18n_strings.lua")["pt-BR"]
-local booths = dofile("data/scripts/chaos/npc_booths_config.lua")
+local gallery = dofile("data/scripts/chaos/temple_portals_config.lua")
 
 -- ---------------------------------------------------------------- the shipped config
-for _, kind in ipairs({"hideout", "guildhall", "services", "siege", "memorial", "worldboss", "chronicle", "descent", "raid", "hunt", "idlehall", "servicesexit"}) do
+eq(cfg.kinds.services, nil, "no Hall of Services Portal (2026-10-22)")
+eq(cfg.kinds.servicesexit, nil, "no Hall of Services exit")
+eq(cfg.hall, nil, "no hall spots")
+for _, kind in ipairs({"hideout", "guildhall", "harvest", "siege", "memorial", "worldboss", "chronicle", "descent", "raid", "hunt", "idlehall"}) do
 	local k = cfg.kinds[kind]
 	check(k ~= nil, kind .. ": a kind")
 	check(k.name:find("Portal", 1, true) ~= nil or k.name:find("Gate", 1, true) ~= nil or k.name:find("Exit", 1, true) ~= nil, kind .. ": the name says it is a portal")
@@ -35,56 +39,94 @@ for _, kind in ipairs({"hideout", "guildhall", "services", "siege", "memorial", 
 	check(pt[k.name] ~= nil, kind .. ": pt-BR name")
 	check(pt[k.text] ~= nil, kind .. ": pt-BR text")
 	check(type(k.effect) == "string" and k.effect:match("^CONST_ME_[A-Z_]+$") ~= nil, kind .. ": an effect name")
+	-- the orange label says where the portal leads (every kind but the hunting areas' and the Idle Hall's exits)
+	if kind == "hunt" or kind == "idlehall" then
+		eq(k.label, nil, kind .. ": no label")
+	else
+		check(type(k.label) == "string" and #k.label > 3 and #k.label <= 24, kind .. ": a short label")
+		check(pt[k.label] ~= nil, kind .. ": pt-BR label")
+	end
 end
+eq(cfg.labelColor, 198, "the labels are orange")
+check(cfg.labelMs >= 2000 and cfg.labelMs <= 5000, "the label every few seconds")
 check(cfg.pulseMs >= 2000 and cfg.pulseMs <= 10000, "the effect every few seconds")
 eq(cfg.item, 1387, "a magic forcefield, like every other Chaos portal")
 
--- the fixed spots: next to the temple, the two of a town side by side, never the temple tile, never the hall entry
+-- the fixed spots: next to the temple, the two of a town side by side, never the temple tile (Cinderhold: below)
 local nTowns = 0
 for id, t in pairs(cfg.towns) do
 	nTowns = nTowns + 1
 	check(type(t.temple) == "table" and #t.temple == 3, id .. ": the temple the spots were chosen for")
 	local h, g = t.hideout, t.guildhall
 	check(h and g, id .. ": a hideout and a guild hall spot")
-	for _, s in ipairs({h, g}) do
-		local dist = math.max(math.abs(s[1]), math.abs(s[2]))
-		check(dist >= 2 and dist <= 7, id .. ": within 2-7 squares of the temple")
-	end
 	check(not (h[1] == g[1] and h[2] == g[2]), id .. ": two tiles")
-	eq(math.max(math.abs(h[1] - g[1]), math.abs(h[2] - g[2])), 1, id .. ": side by side")
-	for _, hall in ipairs(booths.halls) do
-		if hall.town == id then
-			for _, o in ipairs(hall.entryOffsets or {}) do
-				check(not (o[1] == h[1] and o[2] == h[2]) and not (o[1] == g[1] and o[2] == g[2]),
-					id .. ": not on the Hall of Services Portal's tile")
-			end
+	if id ~= 2 then
+		for _, s in ipairs({h, g}) do
+			local dist = math.max(math.abs(s[1]), math.abs(s[2]))
+			check(dist >= 2 and dist <= 7, id .. ": within 2-7 squares of the temple")
 		end
+		eq(math.max(math.abs(h[1] - g[1]), math.abs(h[2] - g[2])), 1, id .. ": side by side")
 	end
 end
 eq(nTowns, 20, "every town of the reference map")
 eq(cfg.towns[2].temple[1], 32369, "Cinderhold's temple")
--- the hall: hideout and guild hall stand in the portal room's row, apart from the Descent and raid portals
-check(cfg.hall.hideout and cfg.hall.guildhall and not cfg.hall.services, "hall kinds")
-local row = booths.portals
-local inRow = {"descent", "raid", "hideout", "guildhall", "memorial"}
-for _, k in ipairs(inRow) do
-	check(row[k] ~= nil, k .. ": a tile in the hall's portal room")
-	eq(row[k][2], row.descent[2], k .. ": in the row of the other portals")
-	for _, other in ipairs(inRow) do
-		check(other == k or row[k][1] ~= row[other][1], k .. " apart from " .. other)
-	end
-	check(k == "descent" or k == "raid" or cfg.hall[k], k .. ": placed in the hall by cityportals.lua")
-end
-for _, id in ipairs({1, 2}) do
-	local t = cfg.towns[id]
+do
+	local t = cfg.towns[1]
 	local m, h, g = t.memorial, t.hideout, t.guildhall
-	check(m and not (m[1] == h[1] and m[2] == h[2]) and not (m[1] == g[1] and m[2] == g[2]), id .. ": a memorial spot of its own")
-	check(math.max(math.abs(m[1] - h[1]), math.abs(m[2] - h[2])) <= 2, id .. ": the memorial spot by the other two")
+	check(m and not (m[1] == h[1] and m[2] == h[2]) and not (m[1] == g[1] and m[2] == g[2]), "Mirewake: a memorial spot of its own")
+	check(math.max(math.abs(m[1] - h[1]), math.abs(m[2] - h[2])) <= 2, "Mirewake: the memorial spot by the other two")
+end
+-- Cinderhold: every portal of the gallery (temple_portals_config.lua) is one spot here, or the Descent's / the raid's
+-- fixed tile, and nothing else of Cinderhold stands anywhere but in the gallery
+do
+	local g = gallery.towns[1]
+	eq(g.town, 2, "the gallery is Cinderhold's")
+	eq(g.temple.x, cfg.towns[2].temple[1], "the same temple")
+	eq(g.temple.y, cfg.towns[2].temple[2], "the same temple (y)")
+	local fixed = {
+		descent = dofile("data/scripts/chaos/descent_config.lua").portal.positions,
+		raid = dofile("data/scripts/chaos/raid_config.lua").portal.positions
+	}
+	local kinds = {}
+	for _, p in ipairs(g.portals) do
+		kinds[p.kind] = true
+		local inWing = false
+		for _, w in ipairs(g.wings) do
+			inWing = inWing or (p.x >= w.from and p.x <= w.to and p.x ~= w.outer)
+		end
+		check(inWing, p.kind .. ": a portal tile inside a wing of the gallery")
+		if fixed[p.kind] then
+			local f = fixed[p.kind][1]
+			check(#fixed[p.kind] == 1 and f.town == 2 and f.x == p.x and f.y == g.portalRow and f.z == g.z,
+				p.kind .. ": its config's fixed tile is the gallery's")
+		else
+			local o = cfg.towns[2][p.kind]
+			check(o and g.temple.x + o[1] == p.x and g.temple.y + o[2] == g.portalRow, p.kind .. ": the town spot is the gallery's tile")
+		end
+		for _, q in ipairs(g.portals) do
+			check(q == p or math.abs(q.x - p.x) >= 2, p.kind .. " and " .. q.kind .. " apart (a pillar between)")
+		end
+	end
+	for kind, o in pairs(cfg.towns[2]) do
+		if kind ~= "temple" then
+			check(kinds[kind], "Cinderhold's " .. kind .. " spot is a portal tile of the gallery")
+		end
+	end
+	for _, k in ipairs({"hideout", "guildhall", "memorial", "worldboss", "descent", "raid", "harvest", "siege",
+		"chronicle_cinderscar_breach", "chronicle_ossuary_stair"}) do
+		check(kinds[k], k .. ": in the gallery")
+	end
+	local chron = dofile("data/scripts/chaos/chronicle_config.lua")
+	for _, a in pairs(chron.areas or {}) do
+		if type(a) == "table" and a.key then
+			check(kinds["chronicle_" .. a.key], "the Chronicle Gate of " .. a.key .. " has a gallery tile")
+		end
+	end
 end
 
 -- ---------------------------------------------------------------- the pure rules
 local T = {x = 32649, y = 31925, z = 11} -- Anvildeep, town 3
-local list = C.candidates(cfg, "hideout", 3, T, nil, {{9, 9}})
+local list = C.candidates(cfg, "hideout", 3, T, {{9, 9}})
 eq(list[1].why, "town", "the fixed spot first")
 eq(list[1].x, T.x + cfg.towns[3].hideout[1], "fixed spot x")
 eq(list[1].y, T.y + cfg.towns[3].hideout[2], "fixed spot y")
@@ -96,17 +138,16 @@ for _, q in ipairs(list) do
 	once[C.key(q)] = true
 end
 check(#list >= #cfg.offsets, "every offset a candidate")
-list = C.candidates(cfg, "hideout", 3, {x = 1000, y = 1000, z = 7}, nil, nil)
+list = C.candidates(cfg, "hideout", 3, {x = 1000, y = 1000, z = 7}, nil)
 eq(list[1].why, "offset", "another map (the temple moved): no fixed spot")
-list = C.candidates(cfg, "hideout", 2, {x = 32369, y = 32241, z = 7}, {x = 14591, y = 14843, z = 7}, nil)
-eq(list[1].why, "hall", "Cinderhold: the hall first")
-eq(list[2].why, "town", "then next to the temple")
-list = C.candidates(cfg, "services", 2, {x = 32369, y = 32241, z = 7}, {x = 1, y = 1, z = 7}, {{0, 2}})
-eq(list[1].why, "offset", "the hall entry never stands in the hall")
-eq(list[1].y, 32243, "the hall entry's own offset first")
-local dup = C.candidates(cfg, "hideout", 99, {x = 100, y = 100, z = 7}, nil, {cfg.offsets[1]})
+list = C.candidates(cfg, "hideout", 2, {x = 32369, y = 32241, z = 7}, nil)
+eq(list[1].why, "town", "Cinderhold: the gallery's alcove first")
+eq(list[1].x, 32365, "the Hideout Portal's alcove")
+eq(list[1].y, 32245, "in the gallery's portal row")
+eq(list[2].why, "offset", "then the offsets")
+local dup = C.candidates(cfg, "hideout", 99, {x = 100, y = 100, z = 7}, {cfg.offsets[1]})
 eq(#dup, #cfg.offsets, "a repeated offset once")
-eq(#C.candidates(cfg, "hideout", 3, nil, nil, nil), 0, "no temple: nothing")
+eq(#C.candidates(cfg, "hideout", 3, nil, nil), 0, "no temple: nothing")
 
 local free = {ground = true, loose = 0}
 check(C.spotOk(free), "bare floor")
@@ -129,6 +170,12 @@ eq(C.lookText(cfg, "hideout"), "Hideout Portal: " .. cfg.kinds.hideout.text, "lo
 eq(C.lookText(cfg, "hideout", function(s) return pt[s] end), pt["Hideout Portal"] .. ": " .. pt[cfg.kinds.hideout.text],
 	"look text in pt-BR")
 eq(C.lookText(cfg, "nope"), nil, "unknown kind")
+eq(C.labelOf(cfg, "guildhall"), "Guild Hall", "the label")
+eq(C.labelOf(cfg, "worldboss", function(s) return pt[s] end), pt["World Boss Arena"], "the label in pt-BR")
+eq(C.labelOf(cfg, "chronicle", nil, "The Ossuary Stair"), "The Ossuary Stair", "a portal's own title is its label")
+eq(C.labelOf(cfg, "hideout", nil, ""), "Your Hideout", "an empty title: the kind's label")
+eq(C.labelOf(cfg, "hunt"), nil, "a kind without a label")
+eq(C.labelOf(cfg, "nope"), nil, "unknown kind: no label")
 eq(C.bandTitle("Sulphur Gallery", {215, 299}), "Sulphur Gallery, levels 215-299", "a hunting area's title")
 eq(C.bandTitle("Pit", {50, 50}), "Pit, level 50", "one level")
 eq(C.bandTitle("Pit", nil), "Pit", "no band")
@@ -192,21 +239,17 @@ end
 local function mkTown(id, x, y, z)
 	return {getId = function() return id end, getTemplePosition = function() return Position(x, y, z) end}
 end
--- Anvildeep as on the reference map (its fixed spots), a town of another map (offsets), Cinderhold with its hall
+-- Anvildeep as on the reference map (its fixed spots), a town of another map (offsets), Cinderhold with its gallery
 local an = cfg.towns[3].temple
 area(an[1], an[2], an[3], 8)
 area(500, 500, 7, 8)
 local ci = cfg.towns[2].temple
-area(ci[1], ci[2], ci[3], 8)
-dofile("data/scripts/chaos/npc_booths_core.lua")
-local hall2 = ChaosNpcBoothsCore.hallOf(booths, 2)
-local function hallTile(dx, dy) return mkTile(hall2.at.x + dx, hall2.at.y + dy, hall2.at.z) end
+area(ci[1], ci[2], ci[3], 13)
 local towns = {mkTown(3, an[1], an[2], an[3]), mkTown(50, 500, 500, 7), mkTown(2, ci[1], ci[2], ci[3])}
 Game.getTowns = function() return towns end
 
 dofile("data/scripts/chaos/cityportals.lua")
 local X = ChaosCityPortals
--- Cinderhold's hall is not on the map yet: its portals stand next to the temple
 local made, pos = X.place({kind = "hideout", aid = 47610, offsets = {{2, -3}}})
 eq(made, 3, "one Hideout Portal per town")
 local by = {}
@@ -215,7 +258,8 @@ eq(by[3].why, "town", "Anvildeep: its fixed spot")
 eq(by[3].x, an[1] + cfg.towns[3].hideout[1], "Anvildeep spot x")
 eq(by[50].why, "offset", "another map: the caller's offsets")
 eq(by[50].x, 502, "the caller's first offset")
-eq(by[2].why, "town", "Cinderhold without its hall: next to the temple")
+eq(by[2].why, "town", "Cinderhold: its gallery alcove")
+eq(by[2].x, 32365, "Cinderhold: the Hideout Portal's alcove")
 eq(Tile(Position(by[3].x, by[3].y, by[3].z)):getItemById(1387).aid, 47610, "the portal carries the action id")
 eq(X.place({kind = "hideout", aid = 47610, offsets = {{2, -3}}}), 0, "placed once")
 eq(X.kindOf(47610), "hideout", "the action id names the kind")
@@ -233,21 +277,12 @@ local border = mkItem(4526, nil)
 local hTile = Tile(Position(an[1] + 4, an[2] + 4, an[3]))
 hTile.items[#hTile.items + 1] = border
 check(C.spotOk(X.facts(Position(an[1] + 4, an[2] + 4, an[3]))), "a border does not block a portal")
--- the hall on the map: Cinderhold's next portals go to its portal room
-for dx = 0, hall2.size[1] - 1 do
-	for dy = 0, hall2.size[2] - 1 do
-		hallTile(dx, dy)
-	end
-end
-local hp = X.hallPos("guildhall", 2)
-check(hp and hp.x == hall2.at.x + booths.portals.guildhall[1] and hp.y == hall2.at.y + booths.portals.guildhall[2],
-	"the hall's guild hall tile")
-eq(X.hallPos("services", 2), nil, "the hall entry is not in the hall")
-local mp = X.hallPos("memorial", 2)
-check(mp and mp.x == hall2.at.x + booths.portals.memorial[1], "the hall's memorial tile")
-eq(X.hallPos("guildhall", 3), nil, "no hall in Anvildeep")
+-- Cinderhold's guild hall alcove taken by a pillar (an older map): the offsets
+Tile(Position(ci[1] + 4, ci[2] + 4, ci[3])).solid = true
 made, pos = X.place({kind = "guildhall", aid = 47602, towns = {2}})
-eq(pos[1].why, "hall", "Cinderhold with its hall: the portal room")
+eq(made, 1, "Cinderhold's Guild Hall Portal")
+eq(pos[1].why, "offset", "its alcove blocked: the next free offset")
+Tile(Position(ci[1] + 4, ci[2] + 4, ci[3])).solid = false
 
 -- the effect and the look text
 local globals, looks = {}, {}
@@ -283,6 +318,35 @@ for i, it in ipairs(Tile(first.pos).items) do if it == first then table.remove(T
 pulse.onThink(cfg.pulseMs)
 eq(X.placed[C.key(first.pos)], nil, "a portal that is gone leaves the registry")
 
+-- the orange labels: one per standing portal of a labelled kind, in each viewer's language
+local labelsEv = globals.ChaosCityPortalsLabels
+check(labelsEv ~= nil and labelsEv.ms == cfg.labelMs, "the labels every labelMs")
+eq(X.labelPulse(), 0, "no ChaosCombatFx: nothing sent")
+local sent = {}
+ChaosCombatFx = {label = function(p, text, color) sent[#sent + 1] = {pos = p, text = text, color = color}; return true end}
+local standing = 0
+for _ in pairs(X.placed) do standing = standing + 1 end
+eq(X.labelPulse(), standing, "every standing portal labelled")
+eq(#sent, standing, "one label each")
+local enP, brP = {}, {}
+langs[brP] = "pt-BR"
+local hasHide = false
+for _, e in ipairs(sent) do
+	eq(e.color, 198, "orange")
+	check(type(e.text) == "function", "the text per viewer")
+	if e.text(enP) == "Your Hideout" then
+		hasHide = true
+		eq(e.text(brP), pt["Your Hideout"], "the label in pt-BR")
+	end
+end
+check(hasHide, "the Hideout Portal says where it leads")
+check(labelsEv.onThink(cfg.labelMs) == true, "the event keeps running")
+ChaosCombatFx = {label = function() error("boom") end}
+local realPrint = print
+print = function() end
+check(labelsEv.onThink(cfg.labelMs) == true, "an error is caught")
+print = realPrint
+
 local onLook = looks[#looks]
 check(type(onLook) == "function", "a look callback")
 local en, br = {}, {}
@@ -295,8 +359,20 @@ check(d:find(pt["Hideout Portal"], 1, true) ~= nil, "look text (pt-BR)")
 -- a Chronicle Gate: one spot per area (spot), its name in the look text (title), removed when the area closes
 made, pos = X.place({kind = "chronicle", spot = "chronicle_ossuary_stair", aid = 47921, towns = {2},
 	title = "The Ossuary Stair"})
-eq(pos[1].why, "hall", "a Chronicle Gate in the hall's portal room")
-eq(pos[1].x, hall2.at.x + booths.portals.chronicle_ossuary_stair[1], "its own tile there")
+eq(pos[1].why, "town", "a Chronicle Gate in the gallery")
+eq(pos[1].x, 32377, "its own alcove there")
+-- its orange label is the area's name
+local sentGate = {}
+ChaosCombatFx = {label = function(p, text, color)
+	sentGate[#sentGate + 1] = {x = p.x, text = type(text) == "function" and text(en) or text, color = color}
+	return true
+end}
+X.labelPulse()
+local gateLabel
+for _, e in ipairs(sentGate) do
+	if e.x == 32377 then gateLabel = e.text end
+end
+eq(gateLabel, "The Ossuary Stair", "the gate's label is its area")
 local gate = Tile(Position(pos[1].x, pos[1].y, pos[1].z)):getItemById(1387)
 d = onLook(en, gate, nil, 1, "x")
 check(d:find("Chronicle Gate (The Ossuary Stair): ", 1, true) ~= nil, "the area's name in the look text")
@@ -316,8 +392,7 @@ local function src(f)
 	h:close()
 	return s
 end
-for f, kind in pairs({["hideout.lua"] = "hideout", ["guild_hall.lua"] = "guildhall", ["npc_booths.lua"] = "services",
-		["siege.lua"] = "siege", ["memorial.lua"] = "memorial", ["worldboss.lua"] = "worldboss"}) do
+for f, kind in pairs({["hideout.lua"] = "hideout", ["guild_hall.lua"] = "guildhall", ["siege.lua"] = "siege", ["memorial.lua"] = "memorial", ["worldboss.lua"] = "worldboss"}) do
 	local s = src(f)
 	check(s:find('dofile("data/scripts/chaos/cityportals.lua")', 1, true) ~= nil, f .. " loads the helper")
 	check(s:find('ChaosCityPortals.place({kind = "' .. kind .. '"', 1, true) ~= nil

@@ -19,9 +19,9 @@ There are {{class.lines}} class lines. Each starts with a base class and ascends
 
 ## Ascension
 
-At level {{class.ascensionLevel}}, talk to the Ascendant Oracle in the Hall of Services (the portal beside the temple of Cinderhold or Mirewake). First comes the Proof of Strength: {{ascension.proofPoints}} points from rare and legendary monsters. Then the Trial: you alone against a guardian, within {{ascension.trialTime}}.
+At level {{class.ascensionLevel}}, talk to the Ascendant Oracle in the market of Cinderhold's teleport room (the two great teleports north of the temple lead there). First comes the Proof of Strength: {{ascension.proofPoints}} points from rare and legendary monsters. Then the Trial: you alone against a guardian, within {{ascension.trialTime}}.
 
-=> @level | Level {{class.ascensionLevel}} | Talk to the Ascendant Oracle in the Hall of Services.
+=> @level | Level {{class.ascensionLevel}} | Talk to the Ascendant Oracle in the market of the teleport room.
 => @drop | Proof of Strength | {{ascension.proofPoints}} points from rare and legendary monsters.
 => @guardian | The Trial | Alone against a guardian, within {{ascension.trialTime}}.
 => @ascend | Ascended | Your new class, with its own spells.

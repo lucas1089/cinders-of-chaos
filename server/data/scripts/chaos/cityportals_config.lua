@@ -1,63 +1,60 @@
--- City portals: the labelled forcefields next to the temples (server/README.md "City portals"; cityportals_core.lua,
--- cityportals.lua, cityportals_fx.lua). One place for where the Hideout, Guild Hall and Hall of Services portals stand,
--- what their look text says and which effect marks them. No engine calls (server/tests/cityportals_test.lua reads it).
--- Lua 5.1 / LuaJIT and Lua 5.3 compatible.
+-- City portals: the labelled forcefields at the temples (server/README.md "City portals"; cityportals_core.lua,
+-- cityportals.lua, cityportals_fx.lua). One place for where the town portals stand (Hideout, Guild Hall, Memorial,
+-- Chronicle Gates, the event portals), what their look text and their orange label say and which effect marks them.
+-- No engine calls (server/tests/cityportals_test.lua reads it). Lua 5.1 / LuaJIT and Lua 5.3 compatible.
 --
 -- Where a portal goes, first match wins (cityportals_core.lua C.candidates):
---   1. the town's Hall of Services, when the kind has a tile there (`hall` keys of npc_booths_config.lua `portals`)
---      and the hall is on the map: the portal room, next to the Ember Descent and raid portals;
---   2. the town's fixed spot in `towns` (offsets from the temple), used only while the temple is where `temple` says
---      (another map keeps the fallback);
---   3. the caller's own offsets, then `offsets` below: the first free tile.
--- The spots in `towns` were chosen on the reference map (2026-10-16): bare floor of the temple area, two side by
+--   1. the town's fixed spot in `towns` (offsets from the temple), used only while the temple is where `temple` says
+--      (another map keeps the fallback). In Cinderhold these are the portal alcoves of the temple's portal gallery
+--      (temple_portals_config.lua, built on the map by tools/patch_map_fixes.py; owner 2026-10-22: the portals of the
+--      Hall of Services go to the temple, with decoration and orange text naming where they lead);
+--   2. the caller's own offsets, then `offsets` below: the first free tile.
+-- The other spots in `towns` were chosen on the reference map (2026-10-16): bare floor of the temple area, two side by
 -- side along a wall or the edge of the square, off every shortest way from the temple to its doors, stairs and edges,
 -- not next to stairs or a door, never a tile the NPC placements around the temple pick first, and the temple area
 -- stays connected with both portals placed.
 return {
 	item = 1387, -- magic forcefield (teleport type), used without destination + an action id
 	pulseMs = 4000, -- every portal shows its effect this often (cityportals_fx.lua)
+	labelMs = 3000, -- and its orange label this often (the animated text fades after about two seconds)
+	labelColor = 198, -- the client palette byte of TEXTCOLOR_ORANGE (combat_fx.lua M.label)
 
-	-- name and look text (server texts, Chaos.t; pt-BR in i18n_strings.lua); effect: a CONST_ME_* name
+	-- name and look text (server texts, Chaos.t; pt-BR in i18n_strings.lua); effect: a CONST_ME_* name; label: the
+	-- orange text over the portal, where it leads (cityportals_fx.lua, every labelMs, in each viewer's language; a portal
+	-- with a title of its own, a Chronicle Gate's area, shows the title). A kind without a label shows none.
 	kinds = {
-		hideout = {name = "Hideout Portal", effect = "CONST_ME_MAGIC_BLUE",
+		hideout = {name = "Hideout Portal", effect = "CONST_ME_MAGIC_BLUE", label = "Your Hideout",
 			text = "Step in to enter your own hideout. Its exit portal brings you back to this spot."},
-		guildhall = {name = "Guild Hall Portal", effect = "CONST_ME_MAGIC_GREEN",
+		guildhall = {name = "Guild Hall Portal", effect = "CONST_ME_MAGIC_GREEN", label = "Guild Hall",
 			text = "Members of a guild that owns a guild hall step in to enter it. Its exit portal leads to your temple."},
-		services = {name = "Hall of Services Portal", effect = "CONST_ME_MAGIC_RED",
-			text = "Step in to enter the Hall of Services: the town's Chaos NPCs behind their counters, the Ember Descent and the raid portals. Its exit portal leads back to this temple."},
-		memorial = {name = "Memorial Portal", effect = "CONST_ME_PURPLEENERGY",
+		memorial = {name = "Memorial Portal", effect = "CONST_ME_PURPLEENERGY", label = "Ember Memorial",
 			text = "Step in to visit the Ember Memorial: the season's realm firsts, its records and its fallen. Its exit portal leads to your temple."},
-		worldboss = {name = "World Boss Portal", effect = "CONST_ME_MORTAREA",
+		worldboss = {name = "World Boss Portal", effect = "CONST_ME_MORTAREA", label = "World Boss Arena",
 			text = "Open while a world boss is awake: step in to join the fight in its arena. The arena's exit portal leads to your temple."},
-		chronicle = {name = "Chronicle Gate", effect = "CONST_ME_MAGIC_BLUE",
+		chronicle = {name = "Chronicle Gate", effect = "CONST_ME_MAGIC_BLUE", label = "Ashen Chronicle",
 			text = "Step in to reach a chapter area of the Ashen Chronicle that the story has opened. Its exit portal leads to your temple."},
-		descent = {name = "Ember Descent Portal", effect = "CONST_ME_FIREAREA",
+		descent = {name = "Ember Descent Portal", effect = "CONST_ME_FIREAREA", label = "Ember Descent",
 			text = "Step in to open the Ember Descent: a roguelike trial for level 100+, alone or with up to three party members."},
-		raid = {name = "Raid Portal", effect = "CONST_ME_MORTAREA",
+		raid = {name = "Raid Portal", effect = "CONST_ME_MORTAREA", label = "Raid: Ashen Sepulchre",
 			text = "Step in to open the raid window: the Ashen Sepulchre for a party of 5 to 15, level 800+."},
 		hunt = {name = "Hunting Area Portal", effect = "CONST_ME_MAGIC_GREEN",
 			text = "Step in to enter this hunting area; the portal refuses characters below its level. Its exit portal leads back here."},
-		servicesexit = {name = "Hall of Services Exit", effect = "CONST_ME_MAGIC_RED",
-			text = "Step in to go back to the temple of this town."},
 		idlehall = {name = "Idle Hall Exit", effect = "CONST_ME_MAGIC_BLUE",
 			text = "Step in to go back to your temple. Characters who stand idle in town are moved to this hall."},
-		harvest = {name = "Harvest Portal", effect = "CONST_ME_MORTAREA",
+		harvest = {name = "Harvest Portal", effect = "CONST_ME_MORTAREA", label = "Haunted Harvest",
 			text = "Open while the Haunted Harvest lasts: step in to reach the cursed village (levels 450-650). Its exit portal leads to your temple."},
-		siege = {name = "Guild Siege Portal", effect = "CONST_ME_YELLOW_RINGS",
+		siege = {name = "Guild Siege Portal", effect = "CONST_ME_YELLOW_RINGS", label = "Guild Siege",
 			text = "Open while a guild siege runs: members of a signed-up guild step in to reach their base. The base's exit portal leads to your temple."},
 	},
 
-	-- kinds that stand in the portal room of a Hall of Services (Cinderhold and Mirewake) when the hall is on the map
-	-- (spots, not kinds: the two Chronicle Gates are kind `chronicle`, one spot each, chronicle.lua)
-	hall = {hideout = true, guildhall = true, memorial = true, chronicle_cinderscar_breach = true,
-		chronicle_ossuary_stair = true},
-
 	-- town id -> {temple = {x, y, z} the spots were chosen for, [kind] = {dx, dy} from the temple}
 	towns = {
-		[1] = {temple = {32957, 32076, 7}, hideout = {4, -4}, guildhall = {3, -4}, memorial = {3, -3}, -- Mirewake (no hall)
+		[1] = {temple = {32957, 32076, 7}, hideout = {4, -4}, guildhall = {3, -4}, memorial = {3, -3}, -- Mirewake
 			chronicle_cinderscar_breach = {2, -3}, chronicle_ossuary_stair = {4, -2}},
-		[2] = {temple = {32369, 32241, 7}, hideout = {5, -4}, guildhall = {5, -3}, memorial = {5, -2}, -- Cinderhold (no hall)
-			chronicle_cinderscar_breach = {4, -4}, chronicle_ossuary_stair = {5, -6}},
+		-- Cinderhold: the ten alcoves of the temple's portal gallery (temple_portals_config.lua `portals`, row y 32245;
+		-- the Ember Descent and raid portals are the two of descent_config.lua / raid_config.lua `portal.positions`)
+		[2] = {temple = {32369, 32241, 7}, hideout = {-4, 4}, memorial = {-8, 4}, chronicle_cinderscar_breach = {-10, 4},
+			worldboss = {-12, 4}, guildhall = {4, 4}, chronicle_ossuary_stair = {8, 4}, harvest = {10, 4}, siege = {12, 4}},
 		[3] = {temple = {32649, 31925, 11}, hideout = {-2, 4}, guildhall = {-1, 4}}, -- Anvildeep
 		[4] = {temple = {32360, 31782, 7}, hideout = {-3, -2}, guildhall = {-3, -3}}, -- Thornmere
 		[5] = {temple = {32732, 31634, 7}, hideout = {1, -2}, guildhall = {1, -3}}, -- Gloamroot

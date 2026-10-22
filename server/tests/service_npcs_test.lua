@@ -1,5 +1,5 @@
 -- Run from the server/ folder: luajit tests/service_npcs_test.lua (and lua5.3; CI runs both)
--- The service NPCs of the Halls of Services (service_npcs_core.lua, service_npcs_run.lua, service_npcs.lua,
+-- The service NPCs of the hub stalls (service_npcs_core.lua, service_npcs_run.lua, service_npcs.lua,
 -- data/npc/scripts/chaos_service_npc.lua) on a mocked engine: what each NPC understands, the windows it opens (the module's
 -- own opcode), the house broker's rules and purchase, a base command run in the sandbox, the booths that name them, and the
 -- NPC script itself answering through a mocked NPC library.
@@ -57,40 +57,18 @@ local src = f:read("*a")
 f:close()
 check(not src:find("Storage", 1, true) and not src:find("CREATE TABLE", 1, true), "no storage key, no table")
 
--- the booths name them: the two slots, then the rest
+-- every one has a stall in the hub (npc_booths_config.lua; owner 2026-10-22: the main city's NPCs stand there)
 local B = dofile("data/scripts/chaos/npc_booths_config.lua")
 local booth = {}
-for _, row in ipairs(B.rows) do
-	for _, b in ipairs(row.booths) do
-		-- a name, or {[town] = name} (owner 2026-10-21: in Cinderhold they stand at the temple, the booth is Mirewake's)
-		for _, n in pairs(type(b.npc) == "table" and b.npc or {b.npc}) do
-			if type(n) == "string" then
-				booth[n] = row.key
-			end
-		end
+for _, b in ipairs(B.booths) do
+	if type(b.npc) == "string" then
+		booth[b.npc] = b
 	end
 end
 for _, key in ipairs(expect) do
-	check(booth[cfg.npcs[key].name] ~= nil, cfg.npcs[key].name .. " has a booth in npc_booths_config.lua")
+	check(booth[cfg.npcs[key].name] ~= nil, cfg.npcs[key].name .. " has a stall in npc_booths_config.lua")
 end
-for _, row in ipairs(B.rows) do
-	if row.key == "economy_north" then
-		eq(row.booths[1].slot, "stash keeper", "the stash keeper takes the first slot")
-		eq(row.booths[1].npc[1], cfg.npcs.stash.name, "the slot holds the stash keeper (Mirewake)")
-		eq(row.booths[2].slot, "pocket boss NPC", "the pocket boss NPC takes the second slot")
-		eq(row.booths[2].npc[1], cfg.npcs.pocketboss.name, "the slot holds the pocket boss NPC (Mirewake)")
-	end
-end
--- the way in of the economy room (x 49-51) and of the progression room (x 11-13) stays open
-for _, row in ipairs(B.rows) do
-	if row.key:find("north", 1, true) then
-		for _, b in ipairs(row.booths) do
-			check(not (b.x >= 48 and b.x <= 52 and row.room == "economy") and not (b.x >= 10 and b.x <= 14 and row.room == "progression"),
-				row.key .. ": booth " .. b.x .. " keeps the way in free")
-		end
-		check(row.counterRow == row.npcRow + 1, row.key .. ": the counter lies in front")
-	end
-end
+eq(table.concat(cfg.towns, ","), "2", "placed in the main city only (its stalls)")
 
 -- ---------------------------------------------------------------- what they understand
 eq(K.intent("stash", "open my stash"), "open", "stash: open")
@@ -365,7 +343,7 @@ check(lines >= 40, "the texts were found (" .. lines .. ")")
 local placed = {}
 ChaosNpcPlace = {place = function(name, temple, offsets)
 	placed[#placed + 1] = name .. "@" .. temple.id
-	return name ~= "Pell Ashmere" or temple.id ~= 1 -- one NPC cannot be placed in one town
+	return name ~= "Pell Ashmere" -- one NPC cannot be placed
 end}
 Town = function(id) return {getTemplePosition = function() return {id = id} end} end
 local startups = {}
@@ -374,11 +352,13 @@ addEvent = function(fn) fn() return 1 end
 dofile("data/scripts/chaos/service_npcs.lua")
 eq(#startups, 1, "one startup event")
 startups[1].onStartup()
-eq(#placed, 10, "five NPCs in two towns")
-eq(placed[1], "Tavish Coldhand@2", "the stash keeper first, in the main city")
-eq(placed[2], "Tavish Coldhand@1", "then Mirewake")
-eq(placed[9], "Pell Ashmere@2", "the clerk last")
-eq(ChaosServiceNpcs.placeNpcs(), 9, "a failed placement is not counted")
+eq(#placed, 5, "five NPCs in the main city (its stalls in the hub)")
+eq(placed[1], "Tavish Coldhand@2", "the stash keeper first")
+eq(placed[5], "Pell Ashmere@2", "the clerk last")
+for _, p in ipairs(placed) do
+	check(p:sub(-2) == "@2", "only the main city: " .. p)
+end
+eq(ChaosServiceNpcs.placeNpcs(), 4, "a failed placement is not counted")
 
 print(string.format("service_npcs_test: %d checks, %d failures", checks, failures))
 os.exit(failures == 0 and 0 or 1)

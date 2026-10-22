@@ -30,7 +30,7 @@ Economy > Orb Exchange is an order book for orbs: orb for gold or orb for orb. F
 
 ## Selling loot
 
-- A Loot Buyer stands next to every temple; in Cinderhold and Mirewake he is in the Hall of Services (the portal beside the temple). He buys what monsters drop and what crafting makes. He does not buy coins, orbs, tokens, shards, keys, quest items or store items. Ores, herbs, hides and fish go to the Material Broker.
+- A Loot Buyer stands next to every temple; in Cinderhold he is in the market of the teleport room (the two great teleports north of the temple lead there). He buys what monsters drop and what crafting makes. He does not buy coins, orbs, tokens, shards, keys, quest items or store items. Ores, herbs, hides and fish go to the Material Broker.
 - His trade window lists only what you carry. Gear with a rarity pays more than the list: Uncommon x{{prices.uncommon}}, Magic x{{prices.magic}}, Rare x{{prices.rare}}, Legendary x{{prices.legendary}}, up to x{{prices.top}} for Divine.
 - Every item level adds {{prices.perLevel}}% to gear, up to x{{prices.maxLevel}} at item level 150.
 - Say "appraise" to see what your bags are worth here. Locked items are never sold.

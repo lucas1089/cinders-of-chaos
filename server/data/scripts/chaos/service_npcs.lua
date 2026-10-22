@@ -1,7 +1,7 @@
--- The service NPCs of the Halls of Services (service_npcs_config.lua, service_npcs_core.lua; the talk: service_npcs_run.lua
+-- The service NPCs of the hub (service_npcs_config.lua, service_npcs_core.lua; the talk: service_npcs_run.lua
 -- and data/npc/scripts/chaos_service_npc.lua; server/README.md "Service NPCs"). This file only places them at startup:
--- each stands in its booth of its town's hall (npc_booths_config.lua names it in a slot; ChaosNpcPlace.place asks
--- ChaosNpcBooths first), else next to the temple. No opcode, no storage key, no table of its own.
+-- each stands in its stall of the hub (npc_booths_config.lua names it; ChaosNpcPlace.place asks the stall first),
+-- else next to the temple. No opcode, no storage key, no table of its own.
 -- Lua 5.1 / LuaJIT. Assumed engine API (TFS 1.4): GlobalEvent, addEvent, Town, Town:getTemplePosition.
 
 if not Chaos then

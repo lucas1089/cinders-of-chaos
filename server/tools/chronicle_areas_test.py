@@ -166,7 +166,7 @@ def main(args):
         # install step contentareas places the plan at its own origin: `at` must be that origin; the gate is a world tile
         check(a['at'] == (ox, oy, oz), '%s: at %s is the plan\'s origin %s' % (a['key'], a['at'], (ox, oy, oz)))
         # the gate: one fixed world tile (`gate`, a staff override) or, unset, the Chronicle Gates of gateTowns that
-        # cityportals.lua places in the Halls of Services (tools/services_halls_test.py checks those tiles)
+        # cityportals.lua places in the portal gallery at the temple (tests/cityportals_test.lua checks those tiles)
         check(a['gate'] is None or not (14336 <= a['gate'][0] <= 15359 and 14336 <= a['gate'][1] <= 15359),
               '%s: a gate tile in the world (not inside the content block): %s' % (a['key'], a['gate']))
     for pid in compiled:

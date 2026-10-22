@@ -1715,7 +1715,7 @@ function Gen.basicsEntries(D)
 		add("conquest", "Conquest Tokens", "The sure path: tokens for every boss and clear, any item you have seen for sale.", {
 			{h = "Earning", p = {"Every boss you help slay (damage, last hit, or a party member within range), every sealed rift, dungeon clear, Ember Descent run and invasion reward gives Conquest Tokens. Each source has a daily limit; the window's Progress tab shows today's tokens."},
 				cols = {"Source", "Tokens", "Per day"}, w = {40, 35, 25}, rows = src},
-			{h = "The Conquest vendor", p = {string.format("Iselde Varrow next to the temple, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + %d. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.",
+			{h = "The Conquest vendor", p = {string.format("Iselde Varrow in the teleport room's market, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + %d. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.",
 				cq.vendor.levelBand),
 				string.format("The Cinderheart chain: an Omen Key of the kind you choose (%d), your Omen Key attuned to another kind (%d), an Ascended Shard of the kind you choose (%d); %d shards or %d relics of one kind become one of another.",
 					cq.cinder.omenKey, cq.cinder.attune, cq.cinder.shard, cq.cinder.convert.shards, cq.cinder.convert.relics),
@@ -1902,7 +1902,7 @@ function Gen.materialEntries(D)
 		sections = {
 			{h = "What they are", p = {"Four gathering professions, each with its own level 1-" .. P.maxLevel .. ": " ..
 				"Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). " ..
-				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).",
+				"They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold in the teleport room's market).",
 				"Every profession level above 1 adds " .. Gen.num(P.bonus.perLevel) .. "% experience from monsters, all four " ..
 				"together at most +" .. Gen.num(P.bonus.cap) .. "% (every profession at " .. P.maxLevel .. ")."}},
 			{h = "Experience bonus with all four at a level", cols = {"Level", "Bonus"}, w = {50, 50}, rows = bonusRows},

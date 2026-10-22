@@ -741,7 +741,7 @@ Decided defaults (numbers in `server/data/scripts/chaos/ascension_quest_config.l
 - **Who**: every base class with ascension choices, at `Chaos.classes.ascension.minLevel` (100). The lines and their two ascended
   classes are read at run time from `Chaos.classes.ascension.choices`, so Warrior, Ranger, Mystic, Thief, Monk, Necromancer and
   Templar all have it, and a new line works without code changes (it gets the default guardian until it has its own entry).
-- **The Ascendant Oracle**, an NPC in the Hall of Services (the portal beside the temple) of the main city (Cinderhold, town 2) and of Mirewake (`npc.townIds`), starts and ends it.
+- **The Ascendant Oracle**, an NPC in a stall of the market of the teleport room of the main city (Cinderhold, town 2; `npc.townIds`, `npc_booths_config.lua`), starts and ends it.
   1. **The Calling**: talk to the Oracle ("ascension", "quest"); it describes the two paths of your class.
   2. **Proof of Strength**: 10 points from rare (1) and legendary (3) monsters at your level: the monster's hunting level
      (as the bounty pool estimates it) must be at least 0.6 x your level (a Hydra, 73, counts at level 100; a Dragon, 42, does not).

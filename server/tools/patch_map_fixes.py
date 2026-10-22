@@ -17,15 +17,16 @@ DATA_DIR is the server's data folder (world/<map>.otbm, items/items.otb). Run it
              box without a ground (walls on nothing) gets the ground most of its four neighbours have. The tiles of
              the earlier quest hall over the pond (hall.quests.previous) belong to install_content_areas.py: a missing
              one gets its plain `fill` water, the others are left alone.
-  temples    data/scripts/chaos/temple_npcs_config.lua: the NPC arcade at the main town's temple. The tiles of each
-             wing's booth row, counter row and the two carpet rows are rewritten whole (marble floor, protection zone):
-             an NPC's stand bare, a counter partition between two stands, a coal basin on the outer end, plants on a
-             free booth, the counter (1642 / 1643 in turn) on the counter row, the red carpet's pieces on the walk;
-             the street lamps of `lamps` are added. A tile of the arcade that holds anything with an action id, a
-             unique id or a destination, or is a house tile, refuses the run (nothing written).
+  temples    data/scripts/chaos/temple_portals_config.lua: the portal gallery at the main town's temple (where the
+             NPC arcade of 2026-10-21 stood; the run turns it into the gallery). The tiles of each wing's portal row
+             and its three carpet rows are rewritten whole (marble floor, protection zone): a portal tile bare (the
+             portal is put there at startup), a marble pillar between two portal tiles, a coal basin on the outer
+             end, the red carpet's pieces on the walk; the street lamps of `lamps` are added. A tile of the gallery
+             that holds anything with an action id, a unique id or a destination, or is a house tile, refuses the run
+             (nothing written): the portals themselves are never on the map file.
 The map tiles are read and written with install_content_areas.py's helpers (tile_ranges, hall_order.parse_tile,
 write_map): a tile we cannot write back unchanged (contents, an unknown attribute) is left alone and listed (a
-teleport row, a shore tile) or refuses the run (the arcade). The map goes through <map>.otbm.tmp, its tile count is
+teleport row, a shore tile) or refuses the run (the gallery). The map goes through <map>.otbm.tmp, its tile count is
 checked, and <map>.otbm.bak is written first when missing. A second run changes nothing. --dry-run lists what would
 change and writes nothing; --out writes the new map there instead. Exit 0 on success, 1 on a refusal.
 Python 3 and numpy (tools/map/otbm.py, itemdb.py). Test: tools/patch_map_fixes_test.py (synthetic map).
@@ -44,7 +45,7 @@ import hall_order as H  # noqa: E402
 
 FIXES = os.path.join(HERE, 'teleport_fixes.csv')
 HUNT_CONFIG = IC.CONFIG
-TEMPLE_CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'temple_npcs_config.lua')
+TEMPLE_CONFIG = os.path.join(SERVER, 'data', 'scripts', 'chaos', 'temple_portals_config.lua')
 PARTS = ('teleports', 'hub', 'temples')
 TF_PZ = 1
 DIRS = {'n': (0, -1), 'e': (1, 0), 's': (0, 1), 'w': (-1, 0), 'nw': (-1, -1), 'ne': (1, -1), 'sw': (-1, 1), 'se': (1, 1)}
@@ -314,27 +315,23 @@ def plan_hub(tiles, fill, kinds, log, keep=frozenset(), keep_fill=None):
 
 
 # ------------------------------------------------------------------------------------------------ temples
-def arcade_tiles(town, items):
-    """{pos: tile} of a town's arcade (temple_npcs_config.lua): the whole booth row, counter row and carpet rows of
-    each wing, and the lamps to add ({pos: item id})"""
+def gallery_tiles(town, items):
+    """{pos: tile} of a town's portal gallery (temple_portals_config.lua): the whole portal row and carpet rows of each
+    wing, and the lamps to add ({pos: item id})"""
     z = town['z']
-    stands = {s['x'] for s in town['stands']}
-    free = set(town.get('free') or ())
+    portals = {p['x'] for p in town['portals']}
     floor, car = items['floor'], items['carpet']
     out = {}
     for w in town['wings']:
         a, b = w['from'], w['to']
         for x in range(a, b + 1):
-            if x in stands:
+            if x in portals:
                 top = []
-            elif x in free:
-                top = [items['plant']]
             elif x == w['outer']:
                 top = [items['light']]
             else:
-                top = [items['partition']]
-            out[(x, town['npcRow'], z)] = top
-            out[(x, town['counterRow'], z)] = [items['counter'][(x - a) % len(items['counter'])]]
+                top = [items['pillar']]
+            out[(x, town['portalRow'], z)] = top
             rows = town['aisle']
             for k, y in enumerate(rows):
                 ns = 'n' if k == 0 else ('s' if k == len(rows) - 1 else '')
@@ -351,31 +348,31 @@ def plan_temples(tiles, tcfg, log):
         return dict(tiles=0, lamps=0)
     count, lamps_added = 0, 0
     for town in tcfg.get('towns') or ():
-        want, lamps = arcade_tiles(town, tcfg['items'])
+        want, lamps = gallery_tiles(town, tcfg['items'])
         tiles.load(list(want) + list(lamps))
         for p in sorted(want):
             if p in tiles.bad:
-                raise FixError('%s arcade: the tile %d,%d,%d is %s' % ((town['name'],) + p + (tiles.bad[p],)))
+                raise FixError('%s gallery: the tile %d,%d,%d is %s' % ((town['name'],) + p + (tiles.bad[p],)))
             t = tiles.get(p)
             if t is None:
-                raise FixError('%s arcade: no tile at %d,%d,%d' % ((town['name'],) + p))
+                raise FixError('%s gallery: no tile at %d,%d,%d' % ((town['name'],) + p))
             for iid, a in t['items']:
                 if a.get('aid') or a.get('uid') or a.get('tele'):
-                    raise FixError('%s arcade: item %d at %d,%d,%d has an action id, unique id or destination'
+                    raise FixError('%s gallery: item %d at %d,%d,%d has an action id, unique id or destination'
                                    % ((town['name'], iid) + p))
             if t != want[p]:
                 tiles.set(p, want[p])
                 count += 1
         for p, iid in sorted(lamps.items()):
             if p in tiles.bad or tiles.get(p) is None:
-                log('%s arcade: no lamp at %d,%d,%d (%s)' % ((town['name'],) + p + (tiles.bad.get(p, 'no tile'),)))
+                log('%s gallery: no lamp at %d,%d,%d (%s)' % ((town['name'],) + p + (tiles.bad.get(p, 'no tile'),)))
                 continue
             t = tiles.get(p)
             if not any(i == iid for i, _a in t['items']):
                 tiles.set(p, dict(t, items=list(t['items']) + [(iid, {})]))
                 lamps_added += 1
-        log('%s arcade: %d stand(s), %d tile(s) to rewrite, %d lamp(s) to add'
-            % (town['name'], len(town['stands']), count, lamps_added))
+        log('%s gallery: %d portal tile(s), %d tile(s) to rewrite, %d lamp(s) to add'
+            % (town['name'], len(town['portals']), count, lamps_added))
     return dict(tiles=count, lamps=lamps_added)
 
 

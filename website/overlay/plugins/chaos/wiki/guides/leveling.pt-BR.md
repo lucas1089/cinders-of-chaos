@@ -43,7 +43,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 - **Monstros com nível.** Monstros mágicos (azuis), raros (amarelos) e lendários (laranja) soltam equipamento melhor. Use o que for melhor que o seu.
 - **Combate em bando.** Abates seguidos, cada um até 3 s depois do anterior, dão bônus de experiência: +10% com 4 abates, +20% com 6, +30% com 8 e +40% com 9.
 - **Bounty Board.** Até {{bounty.maxActive}} contratos ao mesmo tempo; o quadro troca todo dia às 06:00. Com {{bounty.weeklyNeed}} contratos numa semana você ganha o baú semanal.
-- **Venda e compre.** O Loot Buyer fica na galeria do templo (ala oeste, na parede sul, ao lado da entrada). O **Economy > Market** (Mercado, Alt+E) abre no nível {{market.minLevel}}.
+- **Venda e compre.** O Loot Buyer fica no mercado da sala de teleportes (os dois grandes teletransportes ao norte do templo levam até lá). O **Economy > Market** (Mercado, Alt+E) abre no nível {{market.minLevel}}.
 - **Nível 20:** primeira tarefa de abate, primeiro orbe de criação na Crafting Bench, 50 monstros com nível.
 ::: if invasion.on
 - **Nível {{invasion.minLevel}}:** [invasões de cidade](wiki:event:invasion). Veja Adventure > Events.
@@ -57,8 +57,8 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 - **Onde caçar.** Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) e Demon Outcast (120-140).
 - **Arena.** No nível {{arena.minLevel}}, Adventure > Arena. Um dos objetivos da faixa é vencer uma partida.
 - **Bestiário.** Cada estágio (Discovered, Studied, Mastered, Completed) dá experiência bônus contra aquela criatura. Junte 25 criaturas no Bestiário.
-- **Ascensão no nível {{class.ascensionLevel}}.** Fale com o Ascendant Oracle no Salão de Serviços (o portal no fim sul do templo). Junte a Prova de Força ({{ascension.proofPoints}} pontos: monstro raro vale 1, lendário vale 3) e vença uma prova de {{ascension.trialTime}}. Se perder, tente de novo depois de {{ascension.retry}}.
-- **Prova de Vocação.** No Keeper of Trials (Salão de Serviços) ou no botão **Trials** da janela da Árvore passiva. Normal no nível {{trial.normalLevel}}. Cada vitória abre um par especial de nós na árvore.
+- **Ascensão no nível {{class.ascensionLevel}}.** Fale com o Ascendant Oracle no mercado da sala de teleportes. Junte a Prova de Força ({{ascension.proofPoints}} pontos: monstro raro vale 1, lendário vale 3) e vença uma prova de {{ascension.trialTime}}. Se perder, tente de novo depois de {{ascension.retry}}.
+- **Prova de Vocação.** No Keeper of Trials (mercado da sala de teleportes) ou no botão **Trials** da janela da Árvore passiva. Normal no nível {{trial.normalLevel}}. Cada vitória abre um par especial de nós na árvore.
 - **Fendas.** O tier 1 abre no nível {{rift.level1}}. Use a chave numa zona de proteção; até {{rift.maxPlayers}} jogadores. A partir do nível 100, contratos do Bounty Board podem dar uma chave de tier 1. Veja o guia de [Fendas](wiki:guide:rifts).
 ::: if descent.on
 - **{{descent.name}}.** Nível {{descent.minLevel}}, Adventure > Ember Descent. Veja a [página dela](wiki:dungeon:descent).
@@ -71,7 +71,7 @@ Um caminho passo a passo para quem está começando: onde caçar em cada faixa d
 - **Onde caçar.** Fleshcarver (145-155), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) e deathrattle (230-300).
 - **Fendas.** Tier 2 no nível {{rift.level2}}, tier 3 no {{rift.level3}}. Leve um grupo: mais jogadores, mais recompensa.
 ::: if pocket.on
-- **Chefes de bolso.** Adventure > Boss Spawns, botão **Pocket**: uma cópia privada de um chefe, {{pocket.charges}} cargas por dia. Chefes de raide a partir do nível {{pocket.raidLevel}}, chefes de ilha a partir do {{pocket.islandLevel}}. Vessa Hollowmark, na galeria do templo, cuida deles.
+- **Chefes de bolso.** Adventure > Boss Spawns, botão **Pocket**: uma cópia privada de um chefe, {{pocket.charges}} cargas por dia. Chefes de raide a partir do nível {{pocket.raidLevel}}, chefes de ilha a partir do {{pocket.islandLevel}}. Vessa Hollowmark, no mercado da sala de teleportes, cuida deles.
 ::: end
 - **Classes novas.** No nível {{class.unlockLevel}} {{class.lockedNamesPt}} se abrem para a conta.
 - **Charms.** Character > Charms: novas casas abrem nos níveis 200, 400, 600 e 800.

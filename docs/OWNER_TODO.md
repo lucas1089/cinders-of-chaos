@@ -28,11 +28,13 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   `town.sets`) go on free tiles around the capital's temple (Cinderhold, town 2, since 2026-10-15). Look at them in game after `/chronicle complete`
   on a test server, and the three portals in the temple's upper hall; set `town.anchor` if they land badly. Optional
   ground swaps (`swaps`) need ground ids of the map.
-- [ ] **Main city Cinderhold and the Halls of Services (a check, not a decision):** after a restart, step into the
-  portal at the south end of Cinderhold's temple (Mirewake: its south-west corner): the hall holds the Oracle, the
-  Keeper of Trials, Archivist Maelis, the faction NPC, the Loot Buyer, the Material Broker, the Gambler, Iselde Varrow
-  and Osric behind their counters, and the Descent / raid portals. The Great Brazier moved to Cinderhold. Previews and
-  the reasons for a hall instead of street booths: server/README.md "Halls of Services". A new character should leave the tutorial
+- [ ] **Main city Cinderhold, the hub stalls and the temple's portal gallery (a check, not a decision):** after a
+  restart, take one of the two great teleports north of Cinderhold's temple: the market of the teleport room holds the
+  Oracle, the Keeper of Trials, Archivist Maelis, the faction NPC, the Loot Buyer, the Material Broker, the Gambler,
+  Iselde Varrow, Osric and the five service NPCs in the stalls where the base NPCs stood (2026-10-22: the Halls of
+  Services are gone). Along the temple's south wall, the portal gallery holds every portal of the old halls, each with
+  its destination in orange letters. The Great Brazier moved to Cinderhold. server/README.md "Hub NPC booths" and
+  "Temple portal gallery". A new character should leave the tutorial
   island in Cinderhold. Optional for existing characters: `server/tools/migrate_home_town.py` (server/README.md "Main
   city").
 
@@ -166,7 +168,7 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   - **Gates in the capital's temple** (Cinderhold, town 2, the main city since your request of 2026-10-15; they were
     in Mirewake's hall before), in its upper hall on floor 6 (the stairs of the temple's two side rooms lead there):
     Breach 32362, 32240, 6; Ossuary Stair 32358, 32240, 6. On 2026-10-16 both gates and the Memorial's portal moved to
-    the Halls of Services' portal rooms (server/README.md "City portals"). The Chronicle's scars are around that temple, every new character's home town is
+    the Halls of Services' portal rooms, and on 2026-10-22 to the portal gallery at Cinderhold's temple (server/README.md "City portals"). The Chronicle's scars are around that temple, every new character's home town is
     the capital, and the hall is off every walking line (checked on the base map: plain floor, every other tile of
     the hall still reached from both stairs). The hunt teleport room is one step away: its two great teleports stand 5
     tiles north of the temple (server/README.md "Main city"). Found in passing: the Memorial's action ids 47930-47933

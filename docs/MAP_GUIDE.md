@@ -270,8 +270,9 @@ first. Many of its town streets are bare: the median is 0.09 deco per street til
 `server/tools/patch_map_fixes.py` (install step `mapfixes`, README "Map fixes") is the place for changes to the base
 map that are not a content plan: the broken teleports of `server/tools/teleport_fixes.csv`, the sea round the
 teleport hall (`hunt_teleports_config.lua` `hall.fill`: void -> deep water 28915-28918 with the water border pieces
-29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the NPC
-arcade at Cinderhold's temple (`temple_npcs_config.lua`). Add a row or a config entry and run the install again. The
+29166-29177 on the shore: n 29166, e 29167, w 29168, s 29177, two sides 29169-29172, a corner 29173-29176) and the
+portal gallery at Cinderhold's temple (`temple_portals_config.lua`; it replaced the NPC arcade of 2026-10-21 on the same
+tiles). Add a row or a config entry and run the install again. The
 team never edits the map by hand; the owner's hand edits go through the map master below.
 
 ## Editing the live map (map master)
@@ -296,7 +297,7 @@ What stays and what does not:
 - Houses: do not add, remove or resize houses, and do not move their doors or entries. The house file comes from the
   install steps too and would no longer match the house tiles of the map.
 - Places the install steps build keep their design: the hunt teleport hall (its teleports, signs and floors), the sea
-  round it, the NPC arcade at Cinderhold's temple and the teleports of `teleport_fixes.csv` are written again by each
+  round it, the portal gallery at Cinderhold's temple and the teleports of `teleport_fixes.csv` are written again by each
   install. A change there needs a change in the config; ask us.
 - Content areas (the planned hunts, the Chronicle areas, the Idle Hall): small hand edits inside them stay. An area
   rebuilt to more than half of its tiles is left as the owner made it, and a later change of its plan does not reach
@@ -567,14 +568,11 @@ y 14679), the generated areas (end y 14675), hollowmass_reliquary and hexwood_th
 plaza (starts x 14800): 70+ tiles from each (`tools/idle_hall_test.py` holds it 10+ from every plan and generated
 area). Step `contentareas` places this folder like the chronicle folder: a fixed area at its origin, no teleport; the
 way in is idlehall.lua's move, the way out the plan's exit portal.
-The two **Halls of Services** (server/README.md "Halls of Services", 2026-10-15): `services_cinderhold` at **14560,
-14820, 7** and `services_mirewake` at **14560, 14870, 7** (66 x 34 each, one layout), in the same band west of the Idle
-Hall: 33 tiles below it, 37 east of hollowmass_reliquary (ends x 14523), 60+ from hexwood_thicket; the base map has no
-tile there on floors 6-8 (checked with `tools/map/otbm.py`), and an install `--dry-run` on the base map places both.
-Biome `townhall` (new): the temples' white marble floor (406) and grey stone walls (1049 vertical, 1050 horizontal,
-1051 the north-west pole, 1053 the south-east corner, as the live map uses them), no clutter, no floor lights (the
-booths' coal basins light the rooms). The booths' counters are placed at runtime by npc_booths.lua, not in the plan, so
-the planner's rooms stay plain; `tools/services_halls_test.py` checks every booth tile on the compiled plans.
+The two **Halls of Services** (2026-10-15 to 2026-10-22) are gone: their plans are deleted, no portal leads to
+14560, 14820, 7 or 14560, 14870, 7 (66 x 34 each) any more, and a character who logs in there is sent to the temple
+(`npc_booths_config.lua` `retiredHalls`). A map that had them placed keeps the unreachable tiles; the band is free for
+a new plan once the owner's map master no longer holds them. Biome `townhall` (the temples' white marble floor 406 and
+grey stone walls 1049 / 1050 / 1051 / 1053) stays in `areaplan_build.lua` for a later town building.
 
 The two 1500-2000 plans (2026-10-14, on the 1300-2000 hunting monsters, server/README.md "Late game") take the
 last free cell, 14340, 15140 (gravehorn_deeps, 64 tiles below hollowmass_reliquary), and a new column at x 15305

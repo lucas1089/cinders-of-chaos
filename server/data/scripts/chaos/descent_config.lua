@@ -10,10 +10,11 @@ return {
 	-- the city portal: a magic forcefield (no destination) with action id aid.portal next to the temple of each town of
 	-- townIds (the main city Cinderhold first, server/README.md "Main city"; the first free tile of offsets,
 	-- after the world boss portals' spots). Stepping in opens the Descent window.
-	-- positions: the portal room of each town's Hall of Services (npc_booths_config.lua `portals`, offset from the hall's
-	-- origin; tools/services_halls_test.py checks them); a town whose hall is not on the map uses `offsets`
+	-- positions: a fixed tile per town: Cinderhold's is an alcove of the temple's portal gallery
+	-- (temple_portals_config.lua `portals`, owner 2026-10-22; tests/cityportals_test.lua checks it); a town without
+	-- one uses `offsets`
 	portal = {itemId = 1387, townIds = {2, 1}, offsets = {{-3, 3}, {3, 3}, {-3, -3}, {3, -3}, {0, 4}, {4, 1}, {-4, 1}},
-		positions = {{town = 2, x = 14589, y = 14843, z = 7}, {town = 1, x = 14589, y = 14893, z = 7}}},
+		positions = {{town = 2, x = 32363, y = 32245, z = 7}}},
 	minLevel = 100,
 	maxPlayers = 4,
 	partyRange = 8, -- party members within this many sqm (same floor) of the leader come along
@@ -32,7 +33,7 @@ return {
 	-- stock "red power core" (no script, shop or loot uses it) with this action id and the custom attribute
 	-- descent_sigil = 1; its name and description are set when it is made. Not stackable (one sigil a run).
 	sigil = {itemId = 10074, actionId = 47710, name = "Ember Sigil",
-		description = "A coal that never cools. Enter the Ember Descent once more (the portal in the Hall of Services, beside the temple).",
+		description = "A coal that never cools. Enter the Ember Descent once more (the portal at the temple).",
 		craft = {shardId = 32051, shards = 25, gold = 50000}},
 
 	-- ------------------------------------------------------------------ the instance
