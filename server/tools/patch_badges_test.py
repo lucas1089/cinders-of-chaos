@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Test of patch_badges.py (run: python3 -I server/tools/patch_badges_test.py) on a small data folder: the badges'
-slot type, the retired items' descriptions (replaced or added; badges and other items untouched), the Fury catalyst
+slot type, the retired items' descriptions (replaced or added; badges and other items untouched), the cards' hint
+(appended once; not on an upgrade-only legendary), the Fury catalyst
 typo of the boss loot (only the line after "fury amplifier catalyst [2]"; nothing else of the loot changes), the
 Player:onMoveItem, deck system and sea tile hooks (CRLF kept), the first ship NPC's texts, the death loss over the badge
 slot, the belt and gloves recipes out of the armorsmith (the list still loads), a second run that changes nothing,
@@ -36,6 +37,16 @@ ITEMS = '''<items>
 	</item>
 	<item id="27849" article="a" name="Moon Amplifier Catalyst [1]">
 		<attribute key="description" value="Use this Amplifier on Moon Badge to upgrade it to the next tier."/>
+	</item>
+	<item id="27482" name="Common Ember Card">
+	<attribute key="description" value="Enabling this card on your Deck give the possibility to turn a strike to Earth damage." />
+	<attribute key="weight" value="10" />
+	</item>
+	<item id="27640" name="Legendary Ancestral Card Lv6">
+	<attribute key="weight" value="10" />
+	</item>
+	<item id="27639" name="Legendary Ancestral Card Lv5">
+	<attribute key="description" value="Upgrade this card to the level 6.&#10;Second line." />
 	</item>
 	<item id="2160" article="a" name="crystal coin">
 		<attribute key="description" value="Keep me." />
@@ -159,6 +170,12 @@ def main():
         ok('Use this Amplifier on Moon Badge' in item_block(xml, 27849), 'a catalyst keeps its base description')
         ok('Keep me.' in item_block(xml, 2160), 'another item is untouched')
         ok('description' not in item_block(xml, 27811), 'a badge gets no description')
+        ok('value="Enabling this card on your Deck give the possibility to turn a strike to Earth damage. %s"'
+           % P.CARD_HINT in item_block(xml, 27482), 'a card keeps its description, the hint appended')
+        ok('<attribute key="description" value="%s" />' % P.CARD_HINT in item_block(xml, 27640),
+           'a card without a description gets the hint')
+        ok(P.CARD_HINT not in item_block(xml, 27639), 'an upgrade-only legendary (level 5) gets no hint')
+        ok(xml.count(P.CARD_HINT) == 2, 'the hint once per card')
 
         ok(get(data, 'monster/lua/bosses/boss.lua') == BOSS_OUT, 'only the line after Fury [2] becomes Fury [3]')
         ok('exiled amplifier catalyst [3]' in get(data, 'monster/lua/other.lua'), 'a lone Exiled [3] stays')
@@ -219,6 +236,8 @@ def main():
         ok(sorted(int(x) for x in decks.split(',')) == list(P.DECKS), 'decks match badges_core.lua')
         ships = sorted(int(x) for x in re.findall(r'\[(\d+)\] = \{storage', core))
         ok(ships == list(P.SHIPS), 'ships match badges_core.lua')
+        ok(len(P.CARDS) == len(set(P.CARDS)) == 76 and P.CARDS[60:62] == (27547, 27553) and P.CARDS[-2:] == (27631, 27640)
+           and not set(P.CARDS) & set(P.DECKS + P.SHIPS + P.BELTGLOVES), 'the 76 cards of the base deck system')
         bg = re.search(r'K\.BELTGLOVES = \{([^}]*)\}', core).group(1)
         ok([int(x) for x in re.findall(r'\d+', bg)] == list(P.BELTGLOVES), 'belts and gloves match badges_core.lua')
     finally:

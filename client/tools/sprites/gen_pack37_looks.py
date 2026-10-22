@@ -2,7 +2,8 @@
 """Pair 37: the owner's novelty and moon outfits, read from object-builder exports (.obd) into importer sheets.
 
     python3 -I gen_pack37_looks.py build --src SRC            # sheets -> art_import/pack37_looks/ (ignored by git),
-                                                              #   pack37_looks.csv, .sums, pack37_looks_sources.csv
+                                                              #   pack37_looks.csv, .sums, pack37_looks_sources.csv,
+                                                              #   pack37_moon_fix.csv (the moon looks in place)
     python3 -I gen_pack37_looks.py build --src SRC --check    # rebuild in memory, compare every committed file
     python3 -I gen_pack37_looks.py build --check              # CI, no sources: tables agree with LOOKS and the server
     python3 -I gen_pack37_looks.py preview --src SRC --out P  # owner review sheet (PNG, scratchpad only)
@@ -25,7 +26,9 @@ compares its look ids and names with LOOKS.
 
 Picked (owner 2026-10-22: "uns outfits bem diferente ... tipo de pizza"): the four moon outfits (male and female,
 colourable, two addons, mounted frames), two plush bears and three crawling hands (one look, walk frames) and the fry
-box costume (one idle frame per direction: it slides when walking). No pizza outfit was on the Drive. FRY_BOX: the
+box costume (one idle frame per direction: it slides when walking). The moon set's standing frames are moved down to
+stock ground (STAND_SHIFT, client/MANIFEST.md "Moon outfits on the ground"); pack37_moon_fix.csv rewrites them in a pair
+that already has them. No pizza outfit was on the Drive. FRY_BOX: the
 fast-food mark on the box front is painted over (`delogo`: small enclosed yellow marks become the box red).
 """
 import argparse, csv, hashlib, io, lzma, os, struct, sys
@@ -62,13 +65,21 @@ LOOKS = [
     ('fry_box', 'Fry Box Costume', 'outfit_5113-1098-v2.obd', '49db68a0385e11a956163488e5741f8e', 'obd+', 'both'),
 ]
 FRY_BOX = 'fry_box'
-# displacement overrides (the files say 8, 8 for all). The moon outfits stand 9 px left and 10 px higher than stock
-# look 128 (feet x 47.5 / bottom row 53 against 56.5 / 63, south idle, body only), but mounted they sit at 128's seat
-# height (bottom row 43 both) and 8 px left of it. One displacement serves both states, so only x is moved (8 px
-# right, x 0): standing they float about 10 px, as drawn; mounted they sit in the saddle. Bears, hands and the fry
-# box already stand where 128 stands.
-DISPLACEMENT = {k: (0, 8) for k in ('starweaver_m', 'starweaver_f', 'crescent_oracle_m', 'crescent_oracle_f',
-                                    'moonblade_mystic_m', 'moonblade_mystic_f', 'moonflame_mystic_m', 'moonflame_mystic_f')}
+MOON = ('starweaver_m', 'starweaver_f', 'crescent_oracle_m', 'crescent_oracle_f', 'moonblade_mystic_m',
+        'moonblade_mystic_f', 'moonflame_mystic_m', 'moonflame_mystic_f')
+# Placement of the moon set. The files say displacement 8, 8, and with it the set stands 9 px left of and 10 px above
+# stock look 128 (feet x 47.5 / bottom row 53 against 56.5 / 63, south idle, body only): it floats. Mounted it sits
+# right: on a mount the client draws the rider by the mount's displacement, not the outfit's (outfit.cpp: the outfit
+# displacement is added back before the rider is drawn), so the outfit displacement only places the standing look.
+# Pair 37 moved x alone (0, 8), believing one displacement served both states, and the set floated about 10 px.
+# Now displacement 0, 0 (it cannot go below 0 without the client's negative-offset drawing paths), which moves the
+# standing look 8 px right and 8 px down, and STAND_SHIFT moves the standing cells (pattern z 0, every frame of
+# both groups, every addon and layer) down by whole pixels per direction until the body's lowest idle row lands on
+# STOCK_FEET, as far as the 64 px cell allows (no pixel is pushed out). Mounted cells (z 1) are untouched.
+DISPLACEMENT = {k: (0, 0) for k in MOON}
+STAND_SHIFT = set(MOON)
+STOCK_FEET = 23   # screen row (from the tile top) of the lowest idle pixel of look 128, every direction (pair 37)
+FIX_SLUG = 'pack37_moon_fix'   # the moon rows as in-place replacements (mode=replace, look=ID) for a pair after 37
 THINGS_HEADER = ['key', 'cat', 'kind', 'name', 'atlas', 'x', 'y', 'w', 'h', 'patterns', 'phases', 'flags', 'mode',
                  'server_id', 'extra']
 SOURCES_HEADER = ['name', 'kind', 'pack', 'source', 'licence']
@@ -177,6 +188,44 @@ def cell(g, fr, z, y, d, layer):
     return c
 
 
+def _rows(c):
+    return np.nonzero(c[:, :, 3].any(1))[0]
+
+
+def shift_rows(c, s):
+    """the cell moved down by s pixel rows (up when negative); refuses to push an opaque pixel out of the cell"""
+    if s == 0:
+        return c
+    lost = c[c.shape[0] - s:] if s > 0 else c[:-s]
+    if lost[:, :, 3].any():
+        raise ObdError('a shift of %d rows would cut the art' % s)
+    out = np.zeros_like(c)
+    if s > 0:
+        out[s:] = c[:c.shape[0] - s]
+    else:
+        out[:s] = c[-s:]
+    return out
+
+
+def stand_shifts(gs, dy):
+    """rows per direction (north, east, south, west) that the standing cells (pattern z 0) move down: the body's
+    lowest idle row (group 0, addon 0, layer 0, every frame) lands on STOCK_FEET of the screen with displacement dy,
+    clamped to the free room of every standing cell of the direction (both groups, every addon and layer)"""
+    g0 = gs[0]
+    H = g0['h'] * 32
+    out = []
+    for d in range(4):
+        feet = [r.max() for fr in range(g0['frames']) for r in [_rows(cell(g0, fr, 0, 0, d, 0))] if len(r)]
+        used = [r for g in gs for fr in range(g['frames']) for y in range(g['py']) for L in range(g['layers'])
+                for r in [_rows(cell(g, fr, 0, y, d, L))] if len(r)]
+        if not feet:
+            raise ObdError('direction %d: no body pixel standing' % d)
+        want = STOCK_FEET + H - 32 + dy - int(max(feet))
+        lo, hi = -int(min(r.min() for r in used)), H - 1 - int(max(r.max() for r in used))
+        out.append(max(lo, min(want, hi)))
+    return out
+
+
 # ------------------------------------------------------------------------------------------------ fry box mark
 def _red(p):
     r, g, b, a = (int(x) for x in p)
@@ -236,6 +285,8 @@ def sheet_of(obd, key):
     if any(tuple(g[k] for k in shape) != tuple(g0[k] for k in shape) for g in gs):
         raise ObdError('%s: frame groups differ in shape' % key)
     w, h, L, py, pz = g0['w'], g0['h'], g0['layers'], g0['py'], g0['pz']
+    dx, dy = DISPLACEMENT.get(key, obd['flags'].get(0x19, (0, 0)))
+    shifts = stand_shifts(gs, dy) if key in STAND_SHIFT else [0, 0, 0, 0]
     rows = sum(g['frames'] for g in gs)
     cols = pz * py * L * 4
     sheet = np.zeros((rows * h * 32, cols * w * 32, 4), np.uint8)
@@ -248,6 +299,8 @@ def sheet_of(obd, key):
                     for layer in range(L):
                         for d in range(4):
                             c = cell(g, fr, z, y, d, layer)
+                            if z == 0:
+                                c = shift_rows(c, shifts[d])
                             if key == FRY_BOX and layer == 0 and y == 0:
                                 c, n = delogo(c)
                                 painted += n
@@ -265,10 +318,9 @@ def sheet_of(obd, key):
         if g['frames'] > 1:
             extra.append('durs%d=%s' % (i, '/'.join('%d:%d' % d for d in g['durs'])))
             extra.append('anim%d=%d:%d:%d' % ((i,) + tuple(g['anim'])))
-    dx, dy = DISPLACEMENT.get(key, obd['flags'].get(0x19, (0, 0)))
     flags = 'displacement:%d:%d' % (dx, dy)
     fields = {'w': w, 'h': h, 'phases': '+'.join(str(g['frames']) for g in gs), 'flags': flags,
-              'extra': '|'.join(extra), 'painted': painted}
+              'extra': '|'.join(extra), 'painted': painted, 'shifts': shifts}
     return sheet, fields
 
 
@@ -292,9 +344,17 @@ def read_source(src, fname, md5):
     return data
 
 
+def fix_row(row):
+    """a pack37_looks.csv row as an in-place replacement of its look (import_art_things.py mode=replace)"""
+    out = list(row)
+    out[12] = 'replace'
+    out[14] = row[14] + '|look=' + dict(p.split('=', 1) for p in row[14].split('|'))['id']
+    return out
+
+
 def build(src):
     """(committed texts, {atlas path: sheet})"""
-    things, sources, sums, sheets = [], [], [], {}
+    things, fix, sources, sums, sheets = [], [], [], [], {}
     for i, (key, name, fname, md5, folder, sex) in enumerate(LOOKS):
         obd = read_obd(read_source(src, fname, md5))
         sheet, f = sheet_of(obd, key)
@@ -303,8 +363,11 @@ def build(src):
         sums.append('%s  %s.png\n' % (digest(sheet), atlas))
         things.append([key, 'outfit', 'look', name, atlas, 0, 0, f['w'], f['h'], 4, f['phases'], f['flags'], 'new',
                        '', 'id=%d|sex=%s|' % (FIRST_OUTFIT + i, sex) + f['extra']])
+        if key in STAND_SHIFT:
+            fix.append(fix_row(things[-1]))
         sources.append([key, 'outfit', PACK, '%s/%s md5 %s' % (folder, fname, md5), LICENCE])
-    texts = {SLUG + '.csv': csv_text(THINGS_HEADER, things), SLUG + '.sums': ''.join(sums),
+    texts = {SLUG + '.csv': csv_text(THINGS_HEADER, things), FIX_SLUG + '.csv': csv_text(THINGS_HEADER, fix),
+             SLUG + '.sums': ''.join(sums),
              SLUG + '_sources.csv': csv_text(SOURCES_HEADER, sources)}
     return texts, sheets
 
@@ -332,6 +395,13 @@ def check_tables():
         bad.append('sources rows need pack %r and the licence text' % PACK)
     if sorted(r['atlas'] + '.png' for r in rows) != sorted(sums):
         bad.append('things and sums differ')
+    fix_path = os.path.join(ART, FIX_SLUG + '.csv')
+    fix = list(csv.reader(open(fix_path, newline=''))) if os.path.exists(fix_path) else []
+    want_fix = [fix_row([r[k] for k in THINGS_HEADER]) for r in rows if r['key'] in STAND_SHIFT]
+    if fix[:1] != [THINGS_HEADER] or fix[1:] != want_fix:
+        bad.append('%s.csv and the moon rows of %s.csv differ (rows mode=replace, look=id)' % (FIX_SLUG, SLUG))
+    if any(r['flags'] != 'displacement:%d:%d' % DISPLACEMENT[r['key']] for r in rows if r['key'] in DISPLACEMENT):
+        bad.append('a displacement of %s.csv differs from DISPLACEMENT' % SLUG)
     lua = sorted(server_looks())
     if lua != sorted((FIRST_OUTFIT + i, k, n) for i, (k, n, *_r) in enumerate(LOOKS)):
         bad.append('server/data/lib/chaos_pack37_looks.lua M.looks and LOOKS differ: %r' % lua)
