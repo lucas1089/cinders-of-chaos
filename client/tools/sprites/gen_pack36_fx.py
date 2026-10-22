@@ -85,10 +85,10 @@ LICENCE_BEAMS = ('purchased; use in games, modified or recoloured; no resale or 
                  'training data; credit appreciated; studio: docs/CREDITS.md')
 # pack key -> the docs/CREDITS.md entry it is credited under
 PACK_NAME = {'grid_tile_spells': 'Grid Magic 500', 'grid_fields': 'Grid Magic 500', 'grid_area_skills': 'Grid Magic 500',
-             'grid_cones': 'Grid Magic 500', 'mega': 'Mega VFX 500', 'spellcraft': 'Pixel Spellcraft VFX',
+             'grid_cones': 'Grid Magic 500', 'mega': 'Mega VFX 500', 'spellcraft': 'set36 spellcraft',
              'impacts': 'Magic VFX Spells & Impacts', 'circles': 'Magic VFX Spells & Impacts',
              'auras': 'Auras & Buffs', 'traps': 'Fields & Traps', 'projectiles': 'Projectiles', 'ui': 'UI Game Feel',
-             'beams': 'MutterPixel Studio animated VFX'}
+             'beams': 'set36 beams'}
 # group -> (pack keys, name prefix)
 GROUP_PACKS = {'tile': (['grid_tile_spells'], 'tile_'), 'field': (['grid_fields'], 'gfield_'),
                'area': (['grid_area_skills'], 'area_'), 'cone': (['grid_cones'], 'cone_'),

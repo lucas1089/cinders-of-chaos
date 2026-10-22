@@ -307,6 +307,9 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
 - **set30 potions**: the freely shared potion-throwing pack.
   `client/tools/sprites/art_import/pack30_*_sources.csv` name each pick's pack by these four labels; the vendor and
   pack names stay in this file (tools/ci/check_names.py).
+- **set36 spellcraft**, **set36 beams**: the Pixel Spellcraft VFX pack and the MutterPixel Studio animated VFX
+  (loot beams) above. `client/tools/sprites/art_import/pack36_fx_sources.csv` names those picks by these labels, so
+  the pack names stay in this file (tools/ci/check_names.py).
 - **set33 wings**, **set33 heads**, **set33 capes**, **set33 kit**: the four WsT packs of 2026-10-21 above, in this
   order: WsT Wings Pack, WsT Head Accessories Pack, WsT Capes & Cloaks Pack, WsT Hollow Harvest Kit (planned pair 33,
   `client/tools/sprites/gen_pack33.py`). Import-only: no machine-learning use, no style reference, never shared.
