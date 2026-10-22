@@ -4359,7 +4359,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"On a kill: a fire explosion where the monster died, 25% of its maximum health (at most 50 + 8 x your level) to up to 8 other monsters within 2 sqm.", "Value: the chance on a kill.", "On an item: Death Blast: 12-16% chance on kill to explode (T8).", "Internal cooldown: 1.5 s.", "Cap: at most 25% from all equipped items together."}
+							p = {"On a kill: a fire explosion where the monster died, 10% of its maximum health (at most 50 + 1 x your level) to up to 8 other monsters within 2 sqm.", "Value: the chance on a kill.", "On an item: Death Blast: 12-16% chance on kill to explode (T8).", "Internal cooldown: 1.5 s.", "Cap: at most 25% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4451,7 +4451,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 6 x your level fire damage to up to 8 monsters within 2 sqm.", "Value: the chance on a hard hit.", "On an item: Ember Step: 22-28% chance when hit hard to blink away in flames (T8).", "Internal cooldown: 15 s.", "Cap: at most 30% from all equipped items together."}
+							p = {"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 2 x your level fire damage to up to 8 monsters within 2 sqm.", "Value: the chance on a hard hit.", "On an item: Ember Step: 22-28% chance when hit hard to blink away in flames (T8).", "Internal cooldown: 15 s.", "Cap: at most 30% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4502,7 +4502,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"When a monster's hit is dodged or blocked: an ice nova around you, 40 + 5 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.", "Value: the chance on a dodge or block.", "On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).", "Internal cooldown: 4 s.", "Cap: at most 30% from all equipped items together."}
+							p = {"When a monster's hit is dodged or blocked: an ice nova around you, 100 + 1 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.", "Value: the chance on a dodge or block.", "On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).", "Internal cooldown: 4 s.", "Cap: at most 30% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4657,30 +4657,30 @@ CodexData = {
 					id = "power:shattersplash",
 					name = "Shatter Splash",
 					color = "#ff9a3c",
-					sub = "Legendary power. Prefix, Weapon. 10-15% (T1) to 60-75% (T8)",
+					sub = "Legendary power. Prefix, Weapon. 2-3% (T1) to 12-16% (T8)",
 					group = "power",
 					side = "prefix",
 					f = {group = "power", side = "prefix", kind = {"weapon"}},
-					tiers = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 40}, {40, 50}, {50, 60}, {60, 75}},
-					tv = {"10-15%", "15-20%", "20-25%", "25-30%", "30-40%", "40-50%", "50-60%", "60-75%"},
+					tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+					tv = {"2-3%", "3-4%", "4-6%", "5-7%", "6-9%", "8-11%", "10-13%", "12-16%"},
 					sections = {
 						{
 							h = "Effect",
-							p = {"The killing blow bursts onto up to 6 monsters within 2 sqm for the power's share of the blow.", "Value: percent of the killing blow.", "On an item: Shatter Splash: killing blows burst for 60-75% on monsters nearby (T8).", "Internal cooldown: 1 s.", "Cap: at most 100% from all equipped items together."}
+							p = {"The killing blow bursts onto up to 6 monsters within 2 sqm: the power's share of the health the blow took, shared by them.", "Value: percent of the health the killing blow took.", "On an item: Shatter Splash: killing blows burst for 12-16%, shared by the monsters nearby (T8).", "Internal cooldown: 1 s.", "Cap: at most 25% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "10-15%", "100"},
-								{"T2", "15+", "15-20%", "90"},
-								{"T3", "30+", "20-25%", "80"},
-								{"T4", "50+", "25-30%", "65"},
-								{"T5", "70+", "30-40%", "50"},
-								{"T6", "95+", "40-50%", "35"},
-								{"T7", "120+", "50-60%", "22"},
-								{"T8", "140+", "60-75%", "12"}
+								{"T1", "1+", "2-3%", "100"},
+								{"T2", "15+", "3-4%", "90"},
+								{"T3", "30+", "4-6%", "80"},
+								{"T4", "50+", "5-7%", "65"},
+								{"T5", "70+", "6-9%", "50"},
+								{"T6", "95+", "8-11%", "35"},
+								{"T7", "120+", "10-13%", "22"},
+								{"T8", "140+", "12-16%", "12"}
 							},
 							tiers = true
 						},
@@ -4703,30 +4703,30 @@ CodexData = {
 					id = "power:smolderaura",
 					name = "Smoldering Aura",
 					color = "#ff9a3c",
-					sub = "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +5-10 (T1) to +250-400 (T8)",
+					sub = "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +1-2 (T1) to +28-35 (T8)",
 					group = "power",
 					side = "suffix",
 					f = {group = "power", side = "suffix", kind = {"helmet", "armor", "legs", "jewel", "other"}},
-					tiers = {{5, 10}, {10, 20}, {20, 35}, {35, 60}, {60, 100}, {100, 160}, {160, 250}, {250, 400}},
-					tv = {"+5-10", "+10-20", "+20-35", "+35-60", "+60-100", "+100-160", "+160-250", "+250-400"},
+					tiers = {{1, 2}, {2, 3}, {3, 4}, {5, 7}, {8, 12}, {13, 20}, {20, 28}, {28, 35}},
+					tv = {"+1-2", "+2-3", "+3-4", "+5-7", "+8-12", "+13-20", "+20-28", "+28-35"},
 					sections = {
 						{
 							h = "Effect",
-							p = {"Every 3 s up to 6 monsters within 2 sqm burn for the power's value per second.", "Value: fire damage per second.", "On an item: Smoldering Aura: monsters within 2 sqm take 250-400 fire damage per second (T8).", "No cooldown: it ticks every 3 s.", "Cap: at most 600 from all equipped items together."}
+							p = {"While you fight (you attacked a monster in the last 5 s) and stand outside a protection zone, every 3 s up to 6 monsters within 2 sqm and in sight burn for the power's value per second, at most 2 + 1 per 30 levels of yours.", "Value: fire damage per second.", "On an item: Smoldering Aura: while you fight, monsters within 2 sqm take 28-35 fire damage per second (T8).", "No cooldown: it ticks every 3 s.", "Cap: at most 40 from all equipped items together."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+5-10", "100"},
-								{"T2", "15+", "+10-20", "90"},
-								{"T3", "30+", "+20-35", "80"},
-								{"T4", "50+", "+35-60", "65"},
-								{"T5", "70+", "+60-100", "50"},
-								{"T6", "95+", "+100-160", "35"},
-								{"T7", "120+", "+160-250", "22"},
-								{"T8", "140+", "+250-400", "12"}
+								{"T1", "1+", "+1-2", "100"},
+								{"T2", "15+", "+2-3", "90"},
+								{"T3", "30+", "+3-4", "80"},
+								{"T4", "50+", "+5-7", "65"},
+								{"T5", "70+", "+8-12", "50"},
+								{"T6", "95+", "+13-20", "35"},
+								{"T7", "120+", "+20-28", "22"},
+								{"T8", "140+", "+28-35", "12"}
 							},
 							tiers = true
 						},
