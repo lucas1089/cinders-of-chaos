@@ -6334,6 +6334,9 @@ sudo bash -c 'umask 077; read -rsp "client key: " K; echo; printf "%s\n" "$K" > 
 ```
 
 It must be 64 hex digits, owned by root, mode 0600. It never goes on a command line or into a log.
+The bots announce the newest client build the guard accepts: the highest of `clientGuardBuilds` at or above the
+`min_package` of `clientGuardManifest` (the engine's `ClientGuard::gateReason` refuses anything else), else that
+`min_package`, else 1. `testers.py run` prints it.
 `CHAOS_TESTER_KEY` in ctl.conf names another file.
 
 ```
