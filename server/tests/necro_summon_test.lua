@@ -266,6 +266,18 @@ do
 	ok(NecroSpell.summon(crowd, "mage") == true and s == crowd.cancelled, "packed: the summon spell is not refused")
 	Tile = function() return {getGround = function() return true end, hasFlag = function(_, f) return f == 2 end} end
 	ok(L.raise(crowd, "mage", {x = 10, y = 10, z = 7}) == nil, "a protection zone everywhere: no minion")
+	-- fields everywhere (beta 2026-10-22): the caster's tile is taken, the one east of it is an empty field tile; the
+	-- minion rises there and the field is put out first
+	local removed = 0
+	Tile = function(p)
+		local caster = p.x == 10 and p.y == 10
+		return {getGround = function() return true end, hasFlag = function() return false end,
+			getTopCreature = function() return caster and crowd or nil end,
+			getFieldItem = function() return {remove = function() removed = removed + 1 end} end}
+	end
+	m = L.raise(crowd, "mage", {x = 10, y = 10, z = 7})
+	ok(m ~= nil and not (m.pos.x == 10 and m.pos.y == 10), "fields: an empty field tile before the crowded one")
+	ok(removed == 1, "fields: the field on the spot is put out")
 	ChaosSpell.isFreeTile, ChaosSpell.freeAround, Tile = saveFree, saveAround, saveTile
 end
 

@@ -1848,6 +1848,9 @@ took only a free tile on or next to the spot, so a caster in a pack of monsters 
 and three steps away (a free tile in sight), then takes a tile with a creature on it (the spot, a tile next to it, the
 caster's own); `Game.createMonster` already places with force, so the minion shares it and walks off. Never a protection
 zone, a wall, stairs or a teleport. Bone Golem goes through the same rule. Test: `tests/necro_summon_test.lua` "no room".
+Fields (owner: "summons do not appear in fields"): the minion types have under 50 health until `setMaxHealth`, so a fire
+field on the spot killed them as they rose. `spotAt` now takes an empty field tile (on or next to the spot) before a
+crowded one, and `ChaosNecro.raise` removes the field on the spot first (a puff).
 
 **Minion spells, beta 2026-10-22** (owner: "two spells for each necromancer summon, one single target and one area"; "a
 taunt for the summoned warrior"). `necro_config.lua` `minionSpells`: every kind (skeleton, shade, golem, warrior, archer,

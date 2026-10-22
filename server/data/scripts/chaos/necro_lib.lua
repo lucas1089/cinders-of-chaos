@@ -135,6 +135,12 @@ local function standable(pos)
 		or tile:hasFlag(TILESTATE_FLOORCHANGE) or tile:hasFlag(TILESTATE_TELEPORT))
 end
 
+-- a standable tile with nobody on it, but a magic field (fire, energy, poison): isFreeTile refuses it
+local function fieldOnly(pos)
+	local tile = Tile(pos)
+	return standable(pos) and tile ~= nil and tile.getTopCreature ~= nil and not tile:getTopCreature()
+end
+
 local function inSight(from, to)
 	local ok, clear = pcall(function() return Position(from):isSightClear(to, true) end)
 	return not ok or clear ~= false
@@ -168,6 +174,19 @@ function M.spotAt(pos, ref)
 		end
 		if best then
 			return best
+		end
+	end
+	-- (beta 2026-10-22: "summons do not appear in fields") a field-covered tile with nobody on it, on or next to the
+	-- spot; M.raise puts the field out before the minion rises there
+	if fieldOnly(pos) then
+		return Position(pos)
+	end
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local p = Position(pos.x + dx, pos.y + dy, pos.z)
+			if fieldOnly(p) and inSight(pos, p) then
+				return p
+			end
 		end
 	end
 	if standable(pos) then
@@ -207,6 +226,14 @@ function M.raise(player, kind, pos, ratio)
 	end
 	for _, i in ipairs(drop) do
 		M.dismiss(list[i].creature)
+	end
+	-- a magic field on the spot would kill the minion as it rises (its monster type has under 50 health until
+	-- setMaxHealth below): the rising minion puts it out
+	local tile = Tile and Tile(spot)
+	local field = tile and tile.getFieldItem and tile:getFieldItem()
+	if field then
+		field:remove()
+		ChaosSpell.fx(spot, "poff", CONST_ME_POFF)
 	end
 	local m = Game.createMonster(cfg().minions[kind].monster, spot, false, true)
 	if not m then
