@@ -663,4 +663,12 @@ if okPack33 and type(PACK33) == "table" and PACK33.addStore then
 	PACK33.addStore(cfg, preview, P_COSMETICS)
 end
 
+-- the moon outfits and costumes of client pair 37 (data/lib/chaos_pack37_looks.lua; nothing while its switch
+-- ChaosPack37.PAIR37 is off): the four moon outfits at the end of Outfits, the six costumes in a new subcategory
+-- "Costumes" of Cosmetics right after Outfits
+local okPack37, PACK37 = pcall(dofile, "data/lib/chaos_pack37_looks.lua")
+if okPack37 and type(PACK37) == "table" and PACK37.addStore then
+	PACK37.addStore(cfg, P_COSMETICS)
+end
+
 return cfg

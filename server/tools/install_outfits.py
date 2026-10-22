@@ -69,6 +69,11 @@ OWNER_ART = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_owner_art.
 # alike); read only while ChaosPack33.PAIR33 (data/lib/chaos_pack33.lua) is on
 PACK33 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack33.lua')
 PACK33_DATA = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack33_cosmetics.lua')
+# the moon outfits and costumes of client pair 37 (data/lib/chaos_pack37_looks.lua M.outfits, one line each); a fourth
+# outfits.xml block, locked (the store sells them), written only while ChaosPack37.PAIR37 is on
+PACK37 = os.path.join(os.path.dirname(HERE), 'data', 'lib', 'chaos_pack37_looks.lua')
+P37BEGIN = '\t<!-- Chaos pair 37 outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
+P37END = '\t<!-- end of the Chaos pair 37 outfits -->\n'
 XBEGIN = '\t<!-- Chaos exclusive outfits (server/tools/install_outfits.py, do not edit by hand) -->\n'
 XEND = '\t<!-- end of the Chaos exclusive outfits -->\n'
 WBEGIN = '\t<!-- Chaos wings (server/tools/install_outfits.py, do not edit by hand) -->\n'
@@ -154,6 +159,24 @@ def pack33_wings(path=None):
         return []
     return [(int(i), int(lk), n) for i, lk, n in re.findall(
         r'\{key = "wings_\w+", id = (\d+), look = (\d+), name = "([^"]+)"', open(path, encoding='utf-8').read())]
+
+
+def pair37_on(path=None):
+    """the pair 37 server switch, read from the Lua module"""
+    path = path or PACK37
+    if not os.path.isfile(path):
+        return False
+    return re.search(r'^M\.PAIR37\s*=\s*true\b', open(path, encoding='utf-8').read(), re.M) is not None
+
+
+def pack37_outfits(path=None):
+    """[(male, female, name)] of chaos_pack37_looks.lua M.outfits (lines {key = "..", name = "..", male = N, female = N,
+    ...}); [] while its switch is off"""
+    path = path or PACK37
+    if not pair37_on(path):
+        return []
+    return [(int(m), int(f), n) for n, m, f in re.findall(
+        r'\{key = "\w+", name = "([^"]+)", male = (\d+), female = (\d+)', open(path, encoding='utf-8').read())]
 
 
 def install_block(path, begin, end, close, lines, taken_re, dry, label):
@@ -365,6 +388,7 @@ def main(argv):
     rest = re.sub(re.escape(BEGIN) + r'.*?' + re.escape(END), '', text, flags=re.S)
     rest = re.sub(re.escape(CBEGIN) + r'.*?' + re.escape(CEND), '', rest, flags=re.S)
     rest = re.sub(re.escape(XBEGIN) + r'.*?' + re.escape(XEND), '', rest, flags=re.S)
+    rest = re.sub(re.escape(P37BEGIN) + r'.*?' + re.escape(P37END), '', rest, flags=re.S)
     outfits = class_outfits()
     taken = {int(t) for t in re.findall(r'looktype="(\d+)"', rest)}
     clash = sorted({t for m, f, _ in outfits for t in (m, f) if t in taken})
@@ -378,7 +402,8 @@ def main(argv):
         print(path + ': no </outfits>')
         return 1
     new = rest[:at] + BEGIN + lines + END + rest[at:]
-    new, code = install_class_looks(path, new, re.sub(re.escape(XBEGIN) + r'.*?' + re.escape(XEND), '', text, flags=re.S), dry)
+    new, code = install_class_looks(path, new, re.sub(re.escape(P37BEGIN) + r'.*?' + re.escape(P37END), '', re.sub(
+        re.escape(XBEGIN) + r'.*?' + re.escape(XEND), '', text, flags=re.S), flags=re.S), dry)
     print('outfits.xml: %d class outfits (%d lines) in their block' % (len(outfits), 2 * len(outfits)))
     if code:
         return code
@@ -395,6 +420,19 @@ def main(argv):
         at = new.rfind('</outfits>')
         new = new[:at] + XBEGIN + xlines + XEND + new[at:]
     print('outfits.xml: %d exclusive outfits in their block' % len(ex['outfit']))
+    # the pair 37 outfits (chaos_pack37_looks.lua, while its switch is on): same line format, locked
+    p37 = pack37_outfits()
+    taken = {int(t) for t in re.findall(r'looktype="(\d+)"', new)}
+    clash = sorted({t for m, f, _ in p37 for t in (m, f) if t in taken})
+    if clash:
+        print('outfits.xml already has look type(s) %s outside the pair 37 outfits block; nothing written' % clash)
+        return 1
+    plines = ''.join('\t<outfit type="%d" looktype="%d" name="%s" premium="no" unlocked="no" enabled="yes" />\n'
+                     % (sex, (f if sex == 0 else m), name) for sex in (0, 1) for m, f, name in p37)
+    if plines:
+        at = new.rfind('</outfits>')
+        new = new[:at] + P37BEGIN + plines + P37END + new[at:]
+    print('outfits.xml: %d pair 37 outfits in their block' % len(p37))
     if new != text and not dry:
         open(path, 'w', encoding='utf-8', errors='surrogateescape').write(new)
     code = install_mounts(args[0], dry)

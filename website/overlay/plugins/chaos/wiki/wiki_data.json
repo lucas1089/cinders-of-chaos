@@ -368,9 +368,9 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 110,
-		"store.categories": 35,
-		"store.cosmetic": 617,
-		"store.offers": 730,
+		"store.categories": 36,
+		"store.cosmetic": 627,
+		"store.offers": 740,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -37044,7 +37044,8 @@
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "21", "25-450", "Consumable item"],
 								["Convenience", "7", "50-400", "Convenience"],
-								["Outfits", "56", "300-750", "Cosmetic"],
+								["Outfits", "60", "300-750", "Cosmetic"],
+								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
 								["Wings", "110", "200-350", "Cosmetic"],
@@ -37101,7 +37102,8 @@
 								"store:32",
 								"store:33",
 								"store:34",
-								"store:35"
+								"store:35",
+								"store:36"
 							]
 						},
 						{
@@ -37109,7 +37111,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "617"],
+								["Cosmetic", "627"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "6"],
@@ -38023,11 +38025,11 @@
 				{
 					"id": "store:15",
 					"name": "Outfits",
-					"sub": "56 offers, 300-750 coins. Cosmetic.",
+					"sub": "60 offers, 300-750 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["56 offers, 300-750 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["60 offers, 300-750 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -38368,6 +38370,30 @@
 									"300",
 									"Cosmetic",
 									"Full Pirate outfit with both addons, male and female look. Premium account needed to wear it."
+								],
+								[
+									"Starweaver",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a trailing star chart. Both addons, male and female look."
+								],
+								[
+									"Crescent Oracle",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a pair of glowing moons. Both addons, male and female look."
+								],
+								[
+									"Moonblade Mystic",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a moonlit blade. Both addons, male and female look."
+								],
+								[
+									"Moonflame Mystic",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and violet moonflames. Both addons, male and female look."
 								]
 							],
 							"sprites": [
@@ -38426,7 +38452,11 @@
 								{"addons": 3, "outfit": 154},
 								{"addons": 3, "outfit": 153},
 								{"addons": 3, "outfit": 152},
-								{"addons": 3, "outfit": 151}
+								{"addons": 3, "outfit": 151},
+								{"addons": 3, "outfit": 2668},
+								{"addons": 3, "outfit": 2670},
+								{"addons": 3, "outfit": 2672},
+								{"addons": 3, "outfit": 2674}
 							]
 						}
 					],
@@ -38434,6 +38464,68 @@
 				},
 				{
 					"id": "store:16",
+					"name": "Costumes",
+					"sub": "6 offers, 300 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["6 offers, 300 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Plush Bear",
+									"300",
+									"Cosmetic",
+									"Become a small violet plush bear. No colours, no addons. One look for both sexes."
+								],
+								[
+									"Snow Plush Bear",
+									"300",
+									"Cosmetic",
+									"Become a small white plush bear. No colours, no addons. One look for both sexes."
+								],
+								[
+									"Frost Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as an icy blue severed hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Grave Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as a green grave hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Rose Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as a pink severed hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Fry Box Costume",
+									"300",
+									"Cosmetic",
+									"A walking box of fries. It does not animate: it glides. One look for both sexes."
+								]
+							],
+							"sprites": [
+								{"addons": 3, "outfit": 2676},
+								{"addons": 3, "outfit": 2677},
+								{"addons": 3, "outfit": 2678},
+								{"addons": 3, "outfit": 2679},
+								{"addons": 3, "outfit": 2680},
+								{"addons": 3, "outfit": 2681}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:17",
 					"name": "Outfit Addons",
 					"sub": "9 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38516,7 +38608,7 @@
 					"icon": "wiki/i/k-holy-hood.png"
 				},
 				{
-					"id": "store:17",
+					"id": "store:18",
 					"name": "Mounts",
 					"sub": "125 offers, 350-690 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39051,7 +39143,7 @@
 					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
-					"id": "store:18",
+					"id": "store:19",
 					"name": "Wings",
 					"sub": "110 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39068,7 +39160,7 @@
 					"icon": "wiki/i/k-holy-arrowup.png"
 				},
 				{
-					"id": "store:19",
+					"id": "store:20",
 					"name": "Auras",
 					"sub": "24 offers, 150-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39083,7 +39175,7 @@
 					"icon": "wiki/i/k-light-ring.png"
 				},
 				{
-					"id": "store:20",
+					"id": "store:21",
 					"name": "Head Accessories",
 					"sub": "90 offers, 150-200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39098,7 +39190,7 @@
 					"icon": "wiki/i/k-holy-burst.png"
 				},
 				{
-					"id": "store:21",
+					"id": "store:22",
 					"name": "Capes",
 					"sub": "88 offers, 200-250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39113,7 +39205,7 @@
 					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
-					"id": "store:22",
+					"id": "store:23",
 					"name": "Outfit Shaders",
 					"sub": "22 offers, 120-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39207,7 +39299,7 @@
 					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
-					"id": "store:23",
+					"id": "store:24",
 					"name": "Footprints",
 					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39290,7 +39382,7 @@
 					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
-					"id": "store:24",
+					"id": "store:25",
 					"name": "Outlines",
 					"sub": "9 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39373,7 +39465,7 @@
 					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
-					"id": "store:25",
+					"id": "store:26",
 					"name": "Kill Effects",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39422,7 +39514,7 @@
 					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
-					"id": "store:26",
+					"id": "store:27",
 					"name": "Spell Effects",
 					"sub": "12 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39526,7 +39618,7 @@
 					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
-					"id": "store:27",
+					"id": "store:28",
 					"name": "Loot Labels",
 					"sub": "4 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39569,7 +39661,7 @@
 					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
-					"id": "store:28",
+					"id": "store:29",
 					"name": "Chat Colours",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39618,7 +39710,7 @@
 					"icon": "wiki/i/top-console.png"
 				},
 				{
-					"id": "store:29",
+					"id": "store:30",
 					"name": "Name Plates",
 					"sub": "13 offers, 300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39729,7 +39821,7 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "store:30",
+					"id": "store:31",
 					"name": "Pets",
 					"sub": "7 offers, 400 coins. Pet (small abilities).",
 					"color": "#ff70c0",
@@ -39798,7 +39890,7 @@
 					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
-					"id": "store:31",
+					"id": "store:32",
 					"name": "Appearances",
 					"sub": "9 offers, 300-400 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39881,7 +39973,7 @@
 					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
-					"id": "store:32",
+					"id": "store:33",
 					"name": "Portal Styles",
 					"sub": "6 offers, 250-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39943,7 +40035,7 @@
 					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
-					"id": "store:33",
+					"id": "store:34",
 					"name": "Hideout Decorations",
 					"sub": "9 offers, 80-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -40026,7 +40118,7 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "store:34",
+					"id": "store:35",
 					"name": "Themed Sets",
 					"sub": "12 offers, 250-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -40130,7 +40222,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:35",
+					"id": "store:36",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",

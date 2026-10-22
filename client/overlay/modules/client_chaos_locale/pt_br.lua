@@ -2652,6 +2652,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Convenience"] = "Conveniência",
   ["Outfits"] = "Roupas",
   ["Outfit Addons"] = "Addons de Roupa",
+  ["Costumes"] = "Fantasias",
   ["Mounts"] = "Montarias",
   ["Auras"] = "Auras",
   ["Head Accessories"] = "Acessórios de Cabeça",

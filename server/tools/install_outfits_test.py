@@ -86,6 +86,18 @@ def test_install(tmp):
     expect(open(os.path.join(data, 'XML', 'outfits.xml')).read() == xml, 'a second run changes nothing')
     lines = [line for line in xml.splitlines() if 'looktype="1559"' in line]
     expect(len(lines) == 2 and 'type="0"' in lines[0] and 'type="1"' in lines[1], '1559: one line per sex')
+    # the pair 37 outfits: one locked line per sex in their own block while the switch is on
+    p37 = IO.pack37_outfits()
+    if IO.pair37_on():
+        expect(len(p37) == 10 and (2668, 2669, 'Starweaver') in p37 and (2681, 2681, 'Fry Box Costume') in p37,
+               'pair 37: ten outfits read from chaos_pack37_looks.lua')
+        expect(IO.P37BEGIN in xml and IO.P37END in xml, 'pair 37: the block is written')
+        for m, f, n in p37:
+            expect('<outfit type="1" looktype="%d" name="%s" premium="no" unlocked="no"' % (m, n) in xml and
+                   '<outfit type="0" looktype="%d" name="%s" premium="no" unlocked="no"' % (f, n) in xml,
+                   'pair 37: %s locked for both sexes' % n)
+    else:
+        expect(p37 == [] and IO.P37BEGIN not in xml, 'pair 37 off: no lines')
 
 
 def main():

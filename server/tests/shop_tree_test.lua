@@ -170,6 +170,11 @@ local COS = dofile("data/scripts/chaos/shop_cosmetics.lua")
 local LOOKS, MOUNTS = {}, {}
 for _, e in ipairs(COS.outfits) do LOOKS[e.looktype] = true end
 for _, e in ipairs(COS.addons) do LOOKS[e.looktype] = true end
+-- the pair 37 outfits (chaos_pack37_looks.lua, while its switch is on; install_outfits.py writes their lines)
+local pack37 = dofile("data/lib/chaos_pack37_looks.lua")
+if pack37.PAIR37 then
+	for _, o in ipairs(pack37.outfits) do LOOKS[o.male] = true end
+end
 for _, e in ipairs(COS.mounts) do MOUNTS[e.id] = e.clientid end
 -- service handlers: shop_services.lua S.services, and the systems that add theirs
 local servicesSrc = readFile("data/scripts/chaos/shop_services.lua")
