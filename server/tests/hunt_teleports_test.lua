@@ -25,6 +25,12 @@ local cfg = dofile("data/scripts/chaos/hunt_teleports_config.lua")
 -- ------------------------------------------------------------------ the config
 eq(#H.validate(cfg, nil), 0, "the shipped config is valid")
 eq(#cfg.plans, 58, "fifty-eight plans")
+local shown = {}
+for _, p in ipairs(cfg.plans) do
+	local k = p.monster:lower()
+	ok(not shown[k], "one slot per monster (owner 2026-10-22): " .. p.monster .. " shown by " .. p.id .. " and " .. tostring(shown[k]))
+	shown[k] = p.id
+end
 local seen = {}
 for _, p in ipairs(cfg.plans) do
 	ok(not seen[p.id], "plan listed once: " .. p.id)
