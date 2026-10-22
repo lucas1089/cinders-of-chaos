@@ -9676,22 +9676,27 @@ rarity **Legendary or better** and at most **one per item** (`config.powers`), t
 Reforging / Ruin paths as every modifier (`C.candidates` enforces the gate). The value of a tier is the chance of the proc, except
 Last Breath (the health left), Bloodrush (percent per stack) and Smoldering Aura (damage per second). The capped totals of the
 equipped items (`ChaosItemModsCache`) are what `item_powers.lua` reads; every proc has an internal cooldown (`ChaosPowers.config`)
-and the damage of a power never starts another power (a guard), only monsters that are not somebody's summon are hit.
+and the damage of a power never starts another power (a guard), only monsters in clear sight that are not somebody's summon are
+hit. A power's hit is a **proc** (2026-10-22): `strike()` raises `ChaosKeystones.depth` and `ChaosSpellFactor.depth`, so the
+passive tree's damage, intelligence, the class line and spell factors, keystones, archetypes, supports and trials leave it alone,
+and `ChaosPowers.depth`, so `item_mods.lua` rolls no Execute, ailment or life / mana on hit on it. What still applies: the
+engine's critical hit, penetration, damage to elites, shock, gems, charms and blessings (like every keystone proc). The origin
+stays ORIGIN_SPELL, so the monsters' own events (defences, the hall display guard) see the hit.
 
 | power | side | what it does | tiers T1..T8 | cap | limit |
 |---|---|---|---|---|---|
-| Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 25% of its maximum health, at most 50 + 8 x level | 2-3% .. 12-16% | 25% | 1.5 s |
-| Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (40 + 5 x level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
+| Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 10% of its maximum health, at most 50 + level | 2-3% .. 12-16% | 25% | 1.5 s |
+| Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (100 + level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
 | Echo Shot | prefix (weapon) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
 | Critical Echo | prefix (weapon, jewel) | a critical hit is repeated after 200 ms for 50% | 3-5% .. 18-25% | 30% | 1 s |
 | Arc Lightning | prefix (weapon, jewel) | a hit arcs to 3 monsters within 3 sqm for 30% | 2-3% .. 12-16% | 30% | 0.7 s |
 | Bloodrush | prefix (weapon, jewel, other) | every kill adds a stack (5, 6 s): +N% damage per stack | 1% .. 4-5% | 5% (25% at 5 stacks) | stacks |
-| Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm for N% of it | 10-15% .. 60-75% | 100% | 1 s |
+| Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm: N% of the health it took, shared by them | 2-3% .. 12-16% | 25% | 1 s |
 | Crimson Burst | suffix (weapon, jewel, helmet) | a hit heals 4% of your maximum health | 2-3% .. 12-16% | 25% | 2.5 s |
 | Last Breath | suffix (armour, helmet, shield, jewel, legs) | a lethal hit leaves you at N% health instead (the time of the last one is a player storage, 7101800: once per 5 minutes, also across logins) | 10-15% .. 45-50% | 50% | 5 min |
-| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile in clear sight with a walking path: never through a wall, door or bars) and burns where you stood | 4-6% .. 22-28% | 30% | 15 s |
+| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile in clear sight with a walking path: never through a wall, door or bars) and burns where you stood (60 + 2 x level) | 4-6% .. 22-28% | 30% | 15 s |
 | Hunter's Rush | suffix (boots, jewel, helmet, other) | on kill: haste +40 for 4 s | 4-6% .. 22-28% | 30% | 8 s |
-| Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm | 5-10 .. 250-400 per s | 600 | tick |
+| Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | while you fight (you attacked a monster in the last 5 s) and stand outside a protection zone: every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm, N at most 2 + level / 30 | 1-2 .. 28-35 per s | 40 | tick |
 
 **Not done, on purpose.** *Culling strike* is the Execute modifier already (a hit that leaves a monster at or below N% health
 kills it). *A chance to cast a class spell on a critical hit* needs an engine call that casts a spell by name; there is none, so
@@ -9708,8 +9713,57 @@ Engine pieces used: `onHealthChange` on the target (registered by `onTargetComba
 Rush, Arc Lightning (energy on the monsters nearby) and Crimson Burst (+384 = 4% of 9600), Last Breath (a 99999 hit left a level
 600 character at 3839 of 9600 = 40%), the totals and caps (`deathblast=25` from a value of 100). Unit-tested only: the other
 powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, Glacial Ward, Smoldering Aura) and every
-cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
-cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
+cooldown. `tests/powers_test.lua` (305 checks) covers the catalogue, the maths, each handler against a mocked engine, the
+cooldowns, the guard and the dodge hook, the aura's fight / protection zone / sight / level rules, the proc guard and the reading
+of live items; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
+
+**Balance pass (beta 2026-10-22, owner: Smoldering Aura "extremamente forte"; it also killed the teleport hall's display
+monsters, fixed in `hunt_teleports.lua`).** Measured with the real code of `chaos_powers.lua`, `item_powers.lua`,
+`item_mods.lua` and `passivetree_effects.lua` on a mocked engine (one aura tick on a pack of 8; the engine's crit and the gems /
+charms / blessings, which honour no guard, applied as the engine and those scripts do). Compared with the single-target damage
+per second of `data/spells/README.md` (C4: level 300 about 955, level 1000 about 2600; level 100 about 450 and 500 about 1350 from
+`rotation_sim.py`'s ratios) and the median monster health of `tools/pace_scan.lua` (702 / 1785 / 3885 / 12915, scaled hunts at
+1000 about 65000). Typical: a Mystic with a fire tree of its level, a gem, a little crit, one aura item at the top of the best
+tier its level drops (T3 / T5 / T6 / T7). Maxed: a Beastmaster (spell factor 1.25), tree and intelligence at the caps, gems,
+charms and blessing at the caps, the aura at its cap. Internal numbers.
+
+| level | before: typical tick / target, pack per s, of 1t DPS | before: maxed | after: typical | after: maxed |
+|---|---|---|---|---|
+| 100 | 123, 246, 55% | 2253, 4506, 1001% | 15, 31, 6.8% | 23, 47, 10% |
+| 300 | 494, 988, 103% | 14444, 28887, 3025% | 39, 79, 8.2% | 73, 147, 15% |
+| 500 | 943, 1886, 140% | 14706, 29413, 2179% | 62, 124, 9.2% | 112, 224, 17% |
+| 1000 | 1771, 3541, 136% | 15097, 30194, 1161% | 100, 199, 7.7% | 224, 447, 17% |
+
+Before, the pipeline put x1.2-2.4 (typical) and up to x8.4 (maxed) on the aura's ticks; a typical tick killed a median monster
+in 4-8 ticks, a maxed one in 1. After, a typical character's aura deals 7-9% of its own single-target damage per second to a full
+pack at every level (the level cap, 2 + level / 30 per second, is about 1.3% of it per monster); the maxed rows are above 10%
+because crit, gems, charms and blessing still apply, and a maxed character's own damage is higher by the same factors.
+
+The other powers, same model (typical character, top of the tier its level drops; 4 monsters in reach, kills per second from
+`tools/pack_model.py`, 2 monster hits a second with 20% dodged or blocked, one hit of 20%+ health every 30 s, crit rate 10%), in
+% of its single-target damage per second, levels 100 / 300 / 500 / 1000:
+
+| power | before | after |
+|---|---|---|
+| Death Blast | 9 / 21 / 43 / 76% | 3 / 5 / 10 / 12% |
+| Glacial Ward | 14 / 38 / 65 / 95% | 4 / 7 / 9 / 10% |
+| Ember Step (average; one blink per cooldown) | 2-17%; 46 / 86 / 119 / 147% | 1-3%; 16 / 20 / 24 / 25% |
+| Shatter Splash | 192 / 363 / 474 / 477% | 8 / 13 / 15 / 13% |
+| Echo Shot (more ranged damage) | +4 / +8 / +11 / +16% | +4 / +5 / +7 / +8% |
+| Arc Lightning (more damage) | +6 / +12 / +17 / +23% | +5 / +8 / +10 / +12% |
+| Critical Echo (more damage) | +0.5-2% | +0.5-1% |
+| Bloodrush (more damage at 5 stacks) | +10-20% | unchanged |
+
+Echo Shot, Critical Echo and Arc Lightning only lost the double dip (a share of a hit that had the tree took it again); Hunter's
+Rush (+40 speed for 4 s), Last Breath (once per 5 minutes) and Crimson Burst (4% health, 2.5 s) are no damage and stay.
+Bloodrush (+25% at most) is a damage modifier of the size of the other top rolls and stays. Computed with the model above, not
+measured in game.
+
+**Live items.** Smoldering Aura and Shatter Splash keep the ranges they had in `cutFrom`; `ChaosItemMods.read` reads a stored
+value above its tier's new range as the top of that range (x the item's quality), so a T7 aura of 250 reads 28 and a T8 splash
+of 75% reads 16%. The stored value and tier stay on the item (nothing is rewritten; tooltips, totals and the bench all go
+through `read`). The other changes are formulas, so every item gets them at once. The aura's level cap applies to every
+character: an old item never deals more than 2 + level / 30 per second.
 
 ## Veiled modifiers (`data/lib/chaos_veiled.lua`, `chaos_veiled_config.lua`, `chaos/veiled.lua`, client `game_unveil`)
 

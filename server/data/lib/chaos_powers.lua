@@ -27,11 +27,11 @@ P.config = {
 	-- Death Blast: a fire explosion where the monster died, `hpPct` % of its maximum health but at most `capBase + capPerLevel
 	-- x character level`, on up to `targets` other monsters within `radius`; no more often than every `cooldownMs`.
 	-- 2026-10-22: was 25% and 50 + 8 x level (in packs 9% of a typical character's own damage per second at level 100,
-	-- 76% at 1000; now 3-13%, server/README.md "Legendary powers")
+	-- 76% at 1000; now 3-12%, server/README.md "Legendary powers")
 	deathblast = {hpPct = 10, capBase = 50, capPerLevel = 1, radius = 2, targets = 8, cooldownMs = 1500},
 	-- Glacial Ward: when a hit of a monster is dodged or blocked, an ice nova around you: `base + perLevel x level` damage,
 	-- monsters slowed by `slow` % for `slowMs`. 2026-10-22: was 40 + 5 x level (14-95% of a typical character's damage
-	-- per second; now 4-11%)
+	-- per second; now 4-10%)
 	frostward = {base = 100, perLevel = 1, radius = 2, targets = 8, slow = 35, slowMs = 3000, cooldownMs = 4000},
 	-- Echo Shot: a ranged hit that lands is repeated after `delayMs` for `pct` % of it
 	echoshot = {pct = 60, delayMs = 250, cooldownMs = 800},
@@ -44,7 +44,7 @@ P.config = {
 	lastbreath = {cooldownMs = 300000, minHealth = 1, storage = 7101800},
 	-- Ember Step: a single hit of at least `hitPct` % of your maximum health blinks you up to `range` sqm away (a free
 	-- tile) and burns where you stood: `base + perLevel x level` fire damage, `radius`. 2026-10-22: was 60 + 6 x level (at
-	-- one blink per cooldown 46-147% of a typical character's damage per second; now at most 21-27%)
+	-- one blink per cooldown 46-147% of a typical character's damage per second; now at most 16-25%)
 	emberstep = {hitPct = 20, range = 3, base = 60, perLevel = 2, radius = 2, targets = 8, cooldownMs = 15000},
 	-- Bloodrush: every kill adds a stack for `windowMs`; each stack adds the power's % to your damage, `maxStacks` at most
 	bloodrush = {maxStacks = 5, windowMs = 6000},
@@ -54,11 +54,11 @@ P.config = {
 	hunterrush = {speed = 40, ms = 4000, cooldownMs = 8000},
 	-- Shatter Splash: the killing blow bursts onto up to `targets` monsters within `radius`: the power's % of the health
 	-- the blow took, shared by them (P.splashShare). 2026-10-22: it was 10-75% of the whole blow to each of them, in packs
-	-- 190-480% of a typical character's own damage per second; now 4-16%
+	-- 190-480% of a typical character's own damage per second; now 8-15%
 	shattersplash = {radius = 2, targets = 6, cooldownMs = 1000},
 	-- Smoldering Aura: every `tickMs` the power's damage per second x seconds burns up to `targets` monsters within `radius`
 	-- and in clear sight. The damage per second is at most `capBase` + 1 per `levelsPerPoint` character levels (P.auraCap:
-	-- about 1.3% of a typical character's own damage per second at every level, so a full pack takes 7-8% of it). It
+	-- about 1.3% of a typical character's own damage per second at every level, so a full pack takes 7-9% of it). It
 	-- ticks only while the character fights (it attacked a monster within `activeMs`) and stands outside a protection
 	-- zone. Beta 2026-10-22 ("extremamente forte"): it had been 55-140% of a typical character's damage per second.
 	smolderaura = {radius = 2, targets = 6, tickMs = 3000, capBase = 2, levelsPerPoint = 30, activeMs = 5000}
