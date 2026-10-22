@@ -144,6 +144,41 @@ def dev_key_allowed(config_text):
     return bool(m and m.group(1).lower() == 'true')
 
 
+def lua_setting_string(config_text, name):
+    """the plain string value of NAME = "..." in config.lua, or '' (an expression such as os.getenv counts as '')"""
+    text = re.sub(r'--[^\n]*', '', config_text or '')
+    m = re.search(r'^\s*%s\s*=\s*"([^"\n]*)"' % re.escape(name), text, re.M)
+    return m.group(1) if m else ''
+
+
+def manifest_floor(text):
+    """min_package of an updater manifest (an envelope with JSON inside a JSON string), the same reading as the
+    engine's ClientGuard::manifestFloor (src-patches/0021); None when absent"""
+    m = re.search(r'min_package[\\":\s]{0,16}?(\d{1,5})', text or '')
+    return int(m.group(1)) if m else None
+
+
+def guard_build(config_text, read=None):
+    """the client build the bots announce: the engine refuses a build missing from clientGuardBuilds or below the
+    min_package of clientGuardManifest (ClientGuard::gateReason), so take the newest build both accept"""
+    read = read or LT.read_text
+    builds = sorted({int(t) for t in re.split(r'[\s,;]+', lua_setting_string(config_text, 'clientGuardBuilds'))
+                     if t.isdigit() and int(t) <= 0xFFFF})
+    floor = 0
+    manifest = lua_setting_string(config_text, 'clientGuardManifest')
+    if manifest:
+        try:
+            floor = manifest_floor(read(manifest)) or 0
+        except OSError:
+            floor = 0
+    ok = [b for b in builds if b >= floor]
+    if ok:
+        return ok[-1]
+    if builds:
+        return builds[-1]
+    return max(1, min(floor, 0xFFFF))
+
+
 def binds_only_global(config_text):
     text = re.sub(r'--[^\n]*', '', config_text or '')
     m = re.search(r'^\s*bindOnlyGlobalAddress\s*=\s*(\w+)', text, re.M)
@@ -949,7 +984,8 @@ def run(a):
     if a.host.startswith('127.') and binds_only_global(cfg):
         sys.exit('config.lua has bindOnlyGlobalAddress = true: the bots cannot connect over 127.x (give --host)')
     a.guard_key = read_key_file(a.key_file)
-    a.client_build = 1
+    a.client_build = guard_build(cfg, lambda path: LT.read_text(os.path.join(a.server_dir, path)))
+    print('client build %d (clientGuardBuilds / min_package of clientGuardManifest)' % a.client_build, flush=True)
     a.client_id = LT.GUARD_TAG << 16 | a.client_build
     a.no_source_ips = False
     a.game_port = 0
