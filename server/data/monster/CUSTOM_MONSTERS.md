@@ -139,3 +139,67 @@ art (pair 26)").
 bolt), Vyrm and Thal (Frostbite) each had one spell of 10000-45000 next to attacks of about 1000-1300, an import slip:
 with the engine's level factor it one-shot level 1000 characters. Each now tops out at 1.25x its next attack, min in
 the same ratio. `tools/ci/check_content.py` fails a level-scaled monster with one attack over 3x its next (and 2000).
+
+**Pack 30 monsters in the hunts (2026-10-22).** 51 new monsters in `monsters/chaos/pack30/` on the unused pack30 sheet
+looks of the live pair (no new sprite). Each copies the stats, level band and loot of a peer in the same content plan
+and takes part of that peer's spawn entry, so every hunt keeps its total count. Eight of our monsters and nine base
+monsters got pack art looks too (base ones through `tools/patch_base_looks.py`, step `baselooks`). Old looks are not
+overwritten, only reassigned. Details: server/README.md "Pack 30 monsters in the hunts".
+
+| Monster | Look | Level | Plan: zone (count) | Peer (stats copied) |
+|---|---|---|---|---|
+| Gallows Oak | 2241 | 730-770 | hexwood_thicket: ape_hollow (7) | Cursed Ape |
+| Rootbound Pilgrim | 2282 | 810-850 | hexwood_thicket: witch_clearing (5) | Dark Sorcerer |
+| Thornveil Wraith | 2261 | 710-750 | hexwood_thicket: weeping_grove (7) | Elite Spider |
+| Shroud Brood | 2256 | 750-790 | hexwood_thicket: crawler_roots (8) | Webbound Crawler |
+| Ironbound Troll | 2247 | 730-770 | hexwood_thicket: raven_copse (4) | Cursed Ape |
+| Blight Hound | 2263 | 770-810 | hexwood_thicket: blight_meadow (4) | Black Stag |
+| Gashrunner | 2294 | 830-870 | corsairs_reach: tide_cave (7) | Ironhook Corsair |
+| Caged Convict | 2293 | 850-890 | corsairs_reach: smugglers_hold (5) | Scourgejaw |
+| Chained Runt | 2267 | 870-910 | corsairs_reach: sunken_berth (5) | Stormy Seadevil |
+| Ironmask Taskmaster | 2252 | 790-830 | corsairs_reach: drowned_galley (4) | Captain Bloodbeard |
+| Ironmask Brander | 2250 | 830-870 | corsairs_reach: rum_cellars (5) | Ironhook Corsair |
+| Ironmask Bannerman | 2248 | 850-890 | corsairs_reach: powder_store (4) | Scourgejaw |
+| Reedgrave | 2305 | 930-970 | mirefang_basin: visco_flats (8) | Mutated Visco |
+| Leechwing | 2300 | 890-930 | mirefang_basin: drowned_altar (5) | Nexweaver |
+| Bloom Husk | 2265 | 960-1000 | mirefang_basin: shaper_mire (5) | Elite Twisted Shaper |
+| Blight Bloom | 2262 | 910-950 | mirefang_basin: hydra_sink (6) | Acid Hydra |
+| Crypt Crab | 2268 | 910-950 | mirefang_basin: rotting_delta (6) | Acid Hydra |
+| Rimecairn | 2306 | 1000-1040 | rimecrown_depths: glacier_heart (7) | Scaleborn |
+| Quicksilver Wraith | 2280 | 1020-1060 | rimecrown_depths: purity_well (8) | Spirit of Purity |
+| Geode Seer | 2271 | 980-1020 | rimecrown_depths: lich_gallery (8) | Ice Lich |
+| Slagheart | 2311 | 1060-1100 | slagmourn_foundry: slag_heart (5) | Celestial Wyrm |
+| Slagborer Reaver | 2310 | 1100-1140 | slagmourn_foundry: molten_drift (4) | Jungle Warrior |
+| Deepforge Fiend | 2239 | 960-1000 | slagmourn_foundry: smelters_rest (4) | Dawn Strayer |
+| Rustguard | 2307 | 1040-1080 | slagmourn_foundry: cinder_sluice (4) | Twisted Shaper |
+| Bellhelm Zealot | 2291 | 1100-1140 | cinderglass_sanctum: glass_nave (9) | Jungle Warrior |
+| Masque Dancer | 2276 | 1120-1160 | cinderglass_sanctum: prism_walk (9) | Black Vixen |
+| Gildguard Revenant | 2272 | 1140-1180 | cinderglass_sanctum: dragon_apse (8) | Golden Dragon |
+| Wan Sentry | 2285 | 1220-1260 | cinderglass_sanctum: silicate_crypt (8) | Silicron |
+| Reliquary Urn | 2281 | 1220-1260 | hollowmass_reliquary: vigil_cloister (4) | Silicron |
+| Wax Penitent | 2286 | 1120-1160 | hollowmass_reliquary: candle_ambulatory (4) | Black Vixen |
+| Grave Lantern | 2274 | 1160-1200 | hollowmass_reliquary: censer_choir (8) | Spiky Carnivor |
+| Dirge Herald | 2269 | 1240-1280 | hollowmass_reliquary: reliquary_heart (9) | Thal |
+| Nailcrown Regent | 2255 | 1260-1300 | hollowmass_reliquary: tithe_crypt (2) | Facetis |
+| Gorebristle | 2296 | 1280-1320 | gallowfen_mire: crowfeast_shoal (4) | Gloamfang Ravager |
+| Corpselight Lurker | 2237 | 1240-1280 | gallowfen_mire: carrion_pools (4) | Thal |
+| Pit Delver | 2303 | 1220-1260 | gallowfen_mire: drowned_gallows (6) | Silicron |
+| Carrion Drake | 2266 | 1180-1220 | gallowfen_mire: carrion_pools (4) | Vyrm |
+| Pitgnawer | 2304 | 1220-1260 | gallowfen_mire: peat_cells (4) | Silicron |
+| Blightcrown Matron | 2264 | 1260-1300 | gallowfen_mire: noose_cache (2) | Facetis |
+| Veiled Crawler | 2284 | 1220-1260 | voidscar_chasm: weeping_scarp (4) | Silicron |
+| Maw Grub | 2277 | 1240-1280 | voidscar_chasm: maw_of_glass (9) | Thal |
+| Limb Hoarder | 2275 | 1260-1300 | voidscar_chasm: nether_basin (9) | Facetis |
+| Ashveil Hierarch | 2290 | 1480-1520 | voidscar_chasm: maw_of_glass (9) | Cinderskull Reaver |
+| Bonepicker | 2292 | 1480-1520 | gravehorn_deeps: antler_choir (8) | Cinderskull Reaver |
+| Hollowhorn | 2299 | 1580-1620 | gravehorn_deeps: fiends_heart (9) | Bloodantler Fiend |
+| Gnawbone Swarm | 2273 | 1780-1820 | gravehorn_deeps: ember_crypts (6) | Wraithbone Stalker |
+| Oathbroken Colossus | 2278 | 1680-1720 | gravehorn_deeps: juggernaut_pits (4) | Cinderhorn Juggernaut |
+| Pyre Stork | 2279 | 1980-2020 | duskmarrow_crater: pyre_basin (7) | Pyrewing Tyrant |
+| Siege Behemoth | 2258 | 1680-1720 | duskmarrow_crater: slag_terraces (4) | Cinderhorn Juggernaut |
+| Ironmask Warbreaker | 2253 | 1780-1820 | duskmarrow_crater: bonewind_flats (4) | Wraithbone Stalker |
+| Gnarlback | 2295 | 1880-1920 | duskmarrow_crater: heart_of_cinders (7) | Mirecoil Wyrm |
+
+New looks of ours: Lacewing Moth 2297, Tundra Troll 2238, Loricate Orger 2270, Ironhook Corsair 2245, Mercenary 2251,
+Mercenary Ranger 2249, Swamp Snapper 2302, Webbound Crawler 2257. Base: Gargoyle 2283, Werewolf 2244, Goblin 2246, War
+Wolf 2260, Orc Rider 2259, Carrion Worm 2298, Skeleton Warrior 2666, Ghost 2667, Witch 2660.

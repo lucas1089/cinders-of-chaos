@@ -9017,6 +9017,35 @@ grounds, decoration, buildings, animated objects). Installer part:
 - Tests: `tools/install_pack30_items_test.py` (synthetic manifests, items.otb and items.xml; no base server needed).
   Not run against a real manifest or base server yet.
 
+## Pack 30 monsters in the hunts (2026-10-22; `monsters/chaos/pack30/`, `tools/patch_base_looks.py`, install step `baselooks`)
+Owner, 2026-10-22: use the purchased monster art, "pode sobrescrever os nossos sprites por aqueles". The art is the
+pack30 sheet looks 2237-2311 (client/MANIFEST.md "Pair 30 build"), live since pair 31 and in every pair after it. No
+new sprite: every look was in the client already, 64 of them as gallery rows of `picks.csv` that no monster used.
+- **51 new monsters** (`monsters/chaos/pack30/<key>.xml`, the `monsters` step registers the folder). Each is a copy of a
+  peer monster of the same content plan: the peer's health, experience, level band, attacks, defences, elements,
+  immunities and loot; a name, race, voices and look of its own. Summons and scripts of the peer are removed. They are balanced by construction: `tools/ci/check_content.py` (the 3x attack
+  rule and the rest), `tools/tune_monsters.py --check` and `tools/loot_model.lua --check` pass unchanged.
+- **Spawns.** Each takes a share of its peer's zone entry in the plan (`tools/areaplan/plans/*.json`, round(count x
+  0.45), at least 2; in tithe_crypt and noose_cache the whole entry of 2). The plan's total count, zones, respawn and
+  packs stay, so the hunt's density does not move. `install_content_areas.py` writes them
+  into the map like every plan spawn. The display monster of each hunt teleport keeps spawning.
+- **New looks of our monsters** (the old look is not overwritten, only no longer used by them): Lacewing Moth 1480 ->
+  2297, Tundra Troll 257 -> 2238, Loricate Orger 403 -> 2270, Ironhook Corsair 1492 -> 2245, Mercenary 1502 -> 2251,
+  Mercenary Ranger 1503 -> 2249, Swamp Snapper 886 -> 2302, Webbound Crawler 579 -> 2257. `apply_monster_looks.py`
+  writes them (family `hunt`).
+- **New looks of base monsters** (family `base` of `picks.csv`; the base files are never edited by hand):
+  `tools/patch_base_looks.py DATA_DIR [--dry-run] [--strict]`, install_all step `baselooks` after `basemonsters`, sets
+  the look of the base monster named in the row and nothing else. Gargoyle 95 -> 2283, Werewolf 308 -> 2244, Goblin 61
+  -> 2246, War Wolf 3 -> 2260, Orc Rider 4 -> 2259, Carrion Worm 192 -> 2298 (sheet looks: head, body, legs and feet
+  of the look's first tint, `data/items/pack30_outfits.csv`) and Skeleton Warrior 298 -> 2666, Ghost 48 -> 2667, Witch
+  54 -> 2660 (Haunted Harvest kit looks, pair 33, no colours: these three share their look with Barrowbone Reaver,
+  Lamenting Shade and Thornhex Crone). Other base monsters on the same stock look keep it. Idempotent; a name without
+  a file is reported. Run on the base server copy: 9 matched, 9 updated, then 0.
+- **The rows.** `apply_monster_looks.py` treats a `base` row on a sheet look like a gallery row: no file of ours may
+  use it. The 10 earlier pack30 monsters (`pack30/*.xml` of 2026-10-20, ChaosPack30Art) still spawn nowhere.
+- Tests: `tools/patch_base_looks_test.py` (synthetic folder: tint, kit look without colours, the Chaos folder untouched,
+  idempotent, missing names), `tools/apply_monster_looks_test.py`. Not run in a game yet.
+
 ## Pair 33 cosmetics (`data/lib/chaos_pack33.lua`, `data/lib/chaos_pack33_cosmetics.lua`, `data/XML/chaos_auras_pack33.csv`, `tools/gen_pack33_cosmetics.py`, switch `ChaosPack33.PAIR33`, on)
 Wings, head accessories and capes of the client pair 33 (four purchased packs, import-only; client/MANIFEST.md
 "Pair 33 packs", "Pair 33 build"). Owner decisions of 2026-10-21: pair 33 approved; head accessories and capes become

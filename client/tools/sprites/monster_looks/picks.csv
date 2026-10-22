@@ -77,81 +77,81 @@ wings_gloomgild,2231,owner,1kRRVHUCdzoziMCefZNw49ydfXuDfivCd,,exclusive,wings,bo
 wings_sunforged,2232,owner,1xOEGBqdF8HHYNXcuh2fYMzsB_M82K3_Z,,exclusive,wings,boss drop (the Cinderheart),Sunforged Wings: ember scaled wings on gilded bone roots with a violet gem,owner-sheet
 wings_starmoth,2233,owner,1JP8_25agsCUfhs1Nd6d8A-861tanGTWD,,exclusive,wings,boss drop (the Ascended Omens),Starmoth Wings: violet moth wings dusted with starlight,owner-sheet
 hollow_rider,2234,assets,1arVDov1zgemURCNFHtN1m1zYVm1TFXJS,,catacombs,boss,Hollow Rider,"Hollow Rider: headless rider with a pumpkin lantern head on a skeletal horse, 5x5",kit strips; walk east and south from the idle strips
-corpselight_lurker,2237,pack30,,,gallery,gallery,,"Corpselight Lurker: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-crag_troll,2238,pack30,,,gallery,gallery,,"Crag Troll: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-deepforge_fiend,2239,pack30,,,gallery,gallery,,"Deepforge Fiend: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+corpselight_lurker,2237,pack30,,,hunt,hunt,Corpselight Lurker,"Corpselight Lurker: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+crag_troll,2238,pack30,,,hunt,hunt,Tundra Troll,"Crag Troll: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+deepforge_fiend,2239,pack30,,,hunt,hunt,Deepforge Fiend,"Deepforge Fiend: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
 doomcrow_flock,2240,pack30,,,hunt,hunt,Doomcrow Flock,"Doomcrow Flock: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gallows_oak,2241,pack30,,,gallery,gallery,,"Gallows Oak: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gallows_oak,2241,pack30,,,hunt,hunt,Gallows Oak,"Gallows Oak: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 gibbet_fledgling,2242,pack30,,,hunt,hunt,Gallows Fledgling,"Gibbet Fledgling: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 gibbetwing,2243,pack30,,,hunt,hunt,Gibbetwing,"Gibbetwing: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-grimhowl_werewolf,2244,pack30,,,gallery,gallery,,"Grimhowl Werewolf: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-halforc_cutthroat,2245,pack30,,,gallery,gallery,,"Halforc Cutthroat: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-hookspear_goblin,2246,pack30,,,gallery,gallery,,"Hookspear Goblin: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironbound_troll,2247,pack30,,,gallery,gallery,,"Ironbound Troll: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-ironmask_bannerman,2248,pack30,,,gallery,gallery,,"Ironmask Bannerman: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironmask_bowman,2249,pack30,,,gallery,gallery,,"Ironmask Bowman: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironmask_brander,2250,pack30,,,gallery,gallery,,"Ironmask Brander: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironmask_grunt,2251,pack30,,,gallery,gallery,,"Ironmask Grunt: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironmask_taskmaster,2252,pack30,,,gallery,gallery,,"Ironmask Taskmaster: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-ironmask_warbreaker,2253,pack30,,,gallery,gallery,,"Ironmask Warbreaker: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+grimhowl_werewolf,2244,pack30,,,base,base,Werewolf,"Grimhowl Werewolf: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+halforc_cutthroat,2245,pack30,,,hunt,hunt,Ironhook Corsair,"Halforc Cutthroat: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+hookspear_goblin,2246,pack30,,,base,base,Goblin,"Hookspear Goblin: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironbound_troll,2247,pack30,,,hunt,hunt,Ironbound Troll,"Ironbound Troll: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+ironmask_bannerman,2248,pack30,,,hunt,hunt,Ironmask Bannerman,"Ironmask Bannerman: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironmask_bowman,2249,pack30,,,hunt,hunt,Mercenary Ranger,"Ironmask Bowman: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironmask_brander,2250,pack30,,,hunt,hunt,Ironmask Brander,"Ironmask Brander: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironmask_grunt,2251,pack30,,,hunt,hunt,Mercenary,"Ironmask Grunt: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironmask_taskmaster,2252,pack30,,,hunt,hunt,Ironmask Taskmaster,"Ironmask Taskmaster: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ironmask_warbreaker,2253,pack30,,,hunt,hunt,Ironmask Warbreaker,"Ironmask Warbreaker: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
 mound_haunt,2254,pack30,,,hunt,hunt,Barrow Haunt,"Mound Haunt: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-nailcrown_regent,2255,pack30,,,gallery,gallery,,"Nailcrown Regent: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-shroud_brood,2256,pack30,,,gallery,gallery,,"Shroud Brood: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-shroudweaver,2257,pack30,,,gallery,gallery,,"Shroudweaver: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-siege_behemoth,2258,pack30,,,gallery,gallery,,"Siege Behemoth: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-sootfang_rider,2259,pack30,,,gallery,gallery,,"Sootfang Rider: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-sootfang_wolf,2260,pack30,,,gallery,gallery,,"Sootfang Wolf: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-thornveil_wraith,2261,pack30,,,gallery,gallery,,"Thornveil Wraith: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-blight_bloom,2262,pack30,,,gallery,gallery,,"Blight Bloom: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-blight_hound,2263,pack30,,,gallery,gallery,,"Blight Hound: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-blightcrown_matron,2264,pack30,,,gallery,gallery,,"Blightcrown Matron: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-bloom_husk,2265,pack30,,,gallery,gallery,,"Bloom Husk: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-carrion_drake,2266,pack30,,,gallery,gallery,,"Carrion Drake: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-chained_runt,2267,pack30,,,gallery,gallery,,"Chained Runt: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-crypt_crab,2268,pack30,,,gallery,gallery,,"Crypt Crab: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-dirge_herald,2269,pack30,,,gallery,gallery,,"Dirge Herald: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gatewrack_ogre,2270,pack30,,,gallery,gallery,,"Gatewrack Ogre: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-geode_seer,2271,pack30,,,gallery,gallery,,"Geode Seer: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gildguard_revenant,2272,pack30,,,gallery,gallery,,"Gildguard Revenant: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-gnawbone_swarm,2273,pack30,,,gallery,gallery,,"Gnawbone Swarm: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-grave_lantern,2274,pack30,,,gallery,gallery,,"Grave Lantern: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-limb_hoarder,2275,pack30,,,gallery,gallery,,"Limb Hoarder: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-masque_dancer,2276,pack30,,,gallery,gallery,,"Masque Dancer: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-maw_grub,2277,pack30,,,gallery,gallery,,"Maw Grub: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-oathbroken_colossus,2278,pack30,,,gallery,gallery,,"Oathbroken Colossus: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-pyre_stork,2279,pack30,,,gallery,gallery,,"Pyre Stork: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-quicksilver_wraith,2280,pack30,,,gallery,gallery,,"Quicksilver Wraith: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-reliquary_urn,2281,pack30,,,gallery,gallery,,"Reliquary Urn: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-rootbound_pilgrim,2282,pack30,,,gallery,gallery,,"Rootbound Pilgrim: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-spire_gargoyle,2283,pack30,,,gallery,gallery,,"Spire Gargoyle: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-veiled_crawler,2284,pack30,,,gallery,gallery,,"Veiled Crawler: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-wan_sentry,2285,pack30,,,gallery,gallery,,"Wan Sentry: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-wax_penitent,2286,pack30,,,gallery,gallery,,"Wax Penitent: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+nailcrown_regent,2255,pack30,,,hunt,hunt,Nailcrown Regent,"Nailcrown Regent: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+shroud_brood,2256,pack30,,,hunt,hunt,Shroud Brood,"Shroud Brood: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+shroudweaver,2257,pack30,,,hunt,hunt,Webbound Crawler,"Shroudweaver: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+siege_behemoth,2258,pack30,,,hunt,hunt,Siege Behemoth,"Siege Behemoth: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+sootfang_rider,2259,pack30,,,base,base,Orc Rider,"Sootfang Rider: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+sootfang_wolf,2260,pack30,,,base,base,War Wolf,"Sootfang Wolf: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+thornveil_wraith,2261,pack30,,,hunt,hunt,Thornveil Wraith,"Thornveil Wraith: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+blight_bloom,2262,pack30,,,hunt,hunt,Blight Bloom,"Blight Bloom: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+blight_hound,2263,pack30,,,hunt,hunt,Blight Hound,"Blight Hound: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+blightcrown_matron,2264,pack30,,,hunt,hunt,Blightcrown Matron,"Blightcrown Matron: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+bloom_husk,2265,pack30,,,hunt,hunt,Bloom Husk,"Bloom Husk: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+carrion_drake,2266,pack30,,,hunt,hunt,Carrion Drake,"Carrion Drake: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+chained_runt,2267,pack30,,,hunt,hunt,Chained Runt,"Chained Runt: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+crypt_crab,2268,pack30,,,hunt,hunt,Crypt Crab,"Crypt Crab: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+dirge_herald,2269,pack30,,,hunt,hunt,Dirge Herald,"Dirge Herald: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gatewrack_ogre,2270,pack30,,,hunt,hunt,Loricate Orger,"Gatewrack Ogre: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+geode_seer,2271,pack30,,,hunt,hunt,Geode Seer,"Geode Seer: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gildguard_revenant,2272,pack30,,,hunt,hunt,Gildguard Revenant,"Gildguard Revenant: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+gnawbone_swarm,2273,pack30,,,hunt,hunt,Gnawbone Swarm,"Gnawbone Swarm: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+grave_lantern,2274,pack30,,,hunt,hunt,Grave Lantern,"Grave Lantern: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+limb_hoarder,2275,pack30,,,hunt,hunt,Limb Hoarder,"Limb Hoarder: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+masque_dancer,2276,pack30,,,hunt,hunt,Masque Dancer,"Masque Dancer: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+maw_grub,2277,pack30,,,hunt,hunt,Maw Grub,"Maw Grub: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+oathbroken_colossus,2278,pack30,,,hunt,hunt,Oathbroken Colossus,"Oathbroken Colossus: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+pyre_stork,2279,pack30,,,hunt,hunt,Pyre Stork,"Pyre Stork: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+quicksilver_wraith,2280,pack30,,,hunt,hunt,Quicksilver Wraith,"Quicksilver Wraith: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+reliquary_urn,2281,pack30,,,hunt,hunt,Reliquary Urn,"Reliquary Urn: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+rootbound_pilgrim,2282,pack30,,,hunt,hunt,Rootbound Pilgrim,"Rootbound Pilgrim: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+spire_gargoyle,2283,pack30,,,base,base,Gargoyle,"Spire Gargoyle: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+veiled_crawler,2284,pack30,,,hunt,hunt,Veiled Crawler,"Veiled Crawler: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+wan_sentry,2285,pack30,,,hunt,hunt,Wan Sentry,"Wan Sentry: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+wax_penitent,2286,pack30,,,hunt,hunt,Wax Penitent,"Wax Penitent: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
 ashmaw_bonecaller,2287,pack30,,,hunt,hunt,Ashmaw Bonecaller,"Ashmaw Bonecaller: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 ashmaw_raider,2288,pack30,,,hunt,hunt,Ashmaw Raider,"Ashmaw Raider: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 ashmaw_warlord,2289,pack30,,,hunt,hunt,Ashmaw Warlord,"Ashmaw Warlord: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-ashveil_hierarch,2290,pack30,,,gallery,gallery,,"Ashveil Hierarch: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
-bellhelm_zealot,2291,pack30,,,gallery,gallery,,"Bellhelm Zealot: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-bonepicker,2292,pack30,,,gallery,gallery,,"Bonepicker: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-caged_convict,2293,pack30,,,gallery,gallery,,"Caged Convict: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gashrunner,2294,pack30,,,gallery,gallery,,"Gashrunner: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gnarlback,2295,pack30,,,gallery,gallery,,"Gnarlback: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-gorebristle,2296,pack30,,,gallery,gallery,,"Gorebristle: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-gravemoth,2297,pack30,,,gallery,gallery,,"Gravemoth: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-gullet_worm,2298,pack30,,,gallery,gallery,,"Gullet Worm: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-hollowhorn,2299,pack30,,,gallery,gallery,,"Hollowhorn: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-leechwing,2300,pack30,,,gallery,gallery,,"Leechwing: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+ashveil_hierarch,2290,pack30,,,hunt,hunt,Ashveil Hierarch,"Ashveil Hierarch: sheet look, 4x4, 5 tint schemes",sheet look with colour mask
+bellhelm_zealot,2291,pack30,,,hunt,hunt,Bellhelm Zealot,"Bellhelm Zealot: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+bonepicker,2292,pack30,,,hunt,hunt,Bonepicker,"Bonepicker: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+caged_convict,2293,pack30,,,hunt,hunt,Caged Convict,"Caged Convict: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gashrunner,2294,pack30,,,hunt,hunt,Gashrunner,"Gashrunner: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gnarlback,2295,pack30,,,hunt,hunt,Gnarlback,"Gnarlback: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+gorebristle,2296,pack30,,,hunt,hunt,Gorebristle,"Gorebristle: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+gravemoth,2297,pack30,,,hunt,hunt,Lacewing Moth,"Gravemoth: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+gullet_worm,2298,pack30,,,base,base,Carrion Worm,"Gullet Worm: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+hollowhorn,2299,pack30,,,hunt,hunt,Hollowhorn,"Hollowhorn: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+leechwing,2300,pack30,,,hunt,hunt,Leechwing,"Leechwing: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 mange_hound,2301,pack30,,,hunt,hunt,Mange Hound,"Mange Hound: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-mirejaw,2302,pack30,,,gallery,gallery,,"Mirejaw: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-pit_delver,2303,pack30,,,gallery,gallery,,"Pit Delver: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-pitgnawer,2304,pack30,,,gallery,gallery,,"Pitgnawer: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
-reedgrave,2305,pack30,,,gallery,gallery,,"Reedgrave: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-rimecairn,2306,pack30,,,gallery,gallery,,"Rimecairn: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-rustguard,2307,pack30,,,gallery,gallery,,"Rustguard: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+mirejaw,2302,pack30,,,hunt,hunt,Swamp Snapper,"Mirejaw: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+pit_delver,2303,pack30,,,hunt,hunt,Pit Delver,"Pit Delver: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+pitgnawer,2304,pack30,,,hunt,hunt,Pitgnawer,"Pitgnawer: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
+reedgrave,2305,pack30,,,hunt,hunt,Reedgrave,"Reedgrave: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+rimecairn,2306,pack30,,,hunt,hunt,Rimecairn,"Rimecairn: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+rustguard,2307,pack30,,,hunt,hunt,Rustguard,"Rustguard: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
 slagborer,2308,pack30,,,hunt,hunt,Slagborer,"Slagborer: sheet look, 1x1, 5 tint schemes",sheet look with colour mask
 slagborer_queen,2309,pack30,,,hunt,hunt,Slagborer Queen,"Slagborer Queen: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
-slagborer_reaver,2310,pack30,,,gallery,gallery,,"Slagborer Reaver: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
-slagheart,2311,pack30,,,gallery,gallery,,"Slagheart: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
+slagborer_reaver,2310,pack30,,,hunt,hunt,Slagborer Reaver,"Slagborer Reaver: sheet look, 2x2, 5 tint schemes",sheet look with colour mask
+slagheart,2311,pack30,,,hunt,hunt,Slagheart,"Slagheart: sheet look, 3x3, 5 tint schemes",sheet look with colour mask
 harvest_cat,2658,set33,kit,,harvest,critter,Hexwhisker Cat,"Hexwhisker Cat: the kit's black cat, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
 harvest_lycan,2659,set33,kit,,harvest,monster,Reapmoon Lycan,"Reapmoon Lycan: harvest werewolf, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
 harvest_crone,2660,set33,kit,,harvest,monster,Thornhex Crone,"Thornhex Crone: hedge witch, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
@@ -162,3 +162,6 @@ harvest_stalker,2664,set33,kit,,harvest,monster,Strawhusk Stalker,"Strawhusk Sta
 harvest_archer,2665,set33,kit,,harvest,critter,Barrowbone Archer,"Barrowbone Archer: skeleton archer, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
 harvest_reaver,2666,set33,kit,,harvest,critter,Barrowbone Reaver,"Barrowbone Reaver: skeleton warrior, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
 harvest_shade,2667,set33,kit,,harvest,monster,Lamenting Shade,"Lamenting Shade: wailing ghost, 2x2 (pair 33 kit, art_import/pack33_kit.csv)",idle and walk strips; no attack or death frames
+base_skeleton_warrior,2666,set33,kit,,base,base,Skeleton Warrior,"base Skeleton Warrior: the kit's skeleton warrior, 2x2 (shared with Barrowbone Reaver)",idle and walk strips; no attack or death frames
+base_ghost,2667,set33,kit,,base,base,Ghost,"base Ghost: the kit's wailing ghost, 2x2 (shared with Lamenting Shade)",idle and walk strips; no attack or death frames
+base_witch,2660,set33,kit,,base,base,Witch,"base Witch: the kit's hedge witch, 2x2 (shared with Thornhex Crone)",idle and walk strips; no attack or death frames

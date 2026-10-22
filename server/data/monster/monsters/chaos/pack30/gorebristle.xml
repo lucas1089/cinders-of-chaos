@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Gorebristle" nameDescription="a gorebristle" race="blood" experience="27000" speed="44" manacost="0">
+	<health now="27500" max="27500"/>
+	<look type="2296" head="21" body="76" legs="76" feet="21" corpse="6068"/>
+	<level min="1280" max="1320"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1500" min="-790" max="-1120"/>
+		<attack name="physical" interval="2000" chance="35" range="5" radius="1" target="1" min="-920" max="-1320">
+			<attribute key="shootEffect" value="whirlwindclub"/>
+			<attribute key="areaEffect" value="groundshaker"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="20" radius="3" target="0" min="-660" max="-990">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+		<attack name="bleedcondition" interval="2000" chance="25" range="1" target="1" min="-330" max="-460" tick="2000">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="1000" chance="20" min="160" max="2750">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+		<defense name="speed" interval="2000" chance="10" speedchange="300" duration="4000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="55"/>
+		<element firePercent="35"/>
+		<element energyPercent="35"/>
+		<element icePercent="35"/>
+		<element earthPercent="35"/>
+		<element deathPercent="55"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="SNORT!"/>
+		<voice sentence="Grunt grunt!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="55" chance="65000"/><!-- platinum coin -->
+		<item id="8889" chance="562"/><!-- skullcracker armor: the Gloamfang Ravager's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

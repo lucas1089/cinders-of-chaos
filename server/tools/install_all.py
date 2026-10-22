@@ -165,6 +165,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basemonsters tools/patch_base_monsters.py      load warnings of the base monsters: speed spells below -1000 clamped, loot
                names with their article by item id, unknown races mapped (README "Base server start warnings"; after
                itemnames)
+  baselooks    tools/patch_base_looks.py         pair 30 sheet looks and pair 33 kit looks on matching base monsters (rows of family
+               "base" of client/tools/sprites/monster_looks/picks.csv; README "Pack 30 monsters in the hunts")
   gnometeleports tools/patch_gnome_teleports.py  the gnome city and warzone teleports of the base server open to every character
   annihilatorsolo tools/patch_annihilator_solo.py  the Annihilator lever lets one to four players in (demons scale with the team)
   absorbceiling tools/patch_absorb_ceiling.py    the base absorb event limits the summed absorb storages to 75 percent per
@@ -801,6 +803,14 @@ def step_basemonsters(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('itemnames') + 1, 'basemonsters')  # after itemnames, which turns old loot names into ids
+
+
+def step_baselooks(server, data, ctx):
+    args = [tool('patch_base_looks.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_looks.py'))
+
+
+STEPS.insert(STEPS.index('basemonsters') + 1, 'baselooks')  # sheet / kit looks on base monsters (names: monsternames)
 
 
 def step_gnometeleports(server, data, ctx):

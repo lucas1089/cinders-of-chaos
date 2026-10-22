@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Gallows Oak" nameDescription="a gallows oak" race="venom" experience="6700" speed="54">
+	<health now="15700" max="15700" />
+	<look type="2241" head="76" body="40" legs="76" feet="62" corpse="6068"/>
+	<level min="730" max="770"/>
+	<targetchange interval="5000" chance="8" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-490" max="-770"/>
+		<attack name="physical" interval="2000" chance="40" range="7" min="-470" max="-870">
+			<attribute key="shootEffect" value="largerock"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="30" range="2" min="-440" max="-880">
+			<attribute key="areaEffect" value="redspark"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="2000" chance="15" min="310" max="1570">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="25" />
+    <element earthPercent="25" />
+    <element energyPercent="25" />
+    <element deathPercent="25" />
+    <element physicalPercent="25" />
+    <element holyPercent="25" />
+    <element icePercent="25" />
+  </elements>
+	<immunities>
+		<immunity invisible="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The rope creaks for you."/>
+		<voice sentence="Roots remember every neck."/>
+	</voices>
+<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888" countmax="1" chance="333"/><!-- armors -->
+		<item id="2500" countmax="1" chance="333"/>
+		<item id="2472" countmax="1" chance="333"/>
+		<item id="8885" countmax="1" chance="333"/>
+		<item id="8884" countmax="1" chance="333"/>
+		<item id="3983" countmax="1" chance="333"/>
+		<item id="2495" countmax="1" chance="333"/>
+		<item id="2469" countmax="1" chance="333"/>
+		<item id="7894" countmax="1" chance="333"/>
+		<item id="5462" countmax="1" chance="286"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="286"/>
+		<item id="11118" countmax="1" chance="286"/>
+		<item id="11240" countmax="1" chance="286"/>
+		<item id="2537" countmax="1" chance="286"/>
+		<item id="2514" countmax="1" chance="286"/>
+		<item id="2499" countmax="1" chance="286"/>
+	</loot>
+</monster>

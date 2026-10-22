@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Thornveil Wraith" nameDescription="a thornveil wraith" race="undead" experience="6050" speed="54" manacost="0">
+	<!-- Death Reaper -->
+	<health now="14900" max="14900"/>
+	<look type="2261" head="38" body="95" legs="57" feet="76" corpse="6068"/>
+	<level min="710" max="750"/>
+	<targetchange interval="3000" chance="20"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="0"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-360" max="-720"/>
+		<attack name="earth" interval="2000" chance="10" range="7" radius="1" target="1" min="-430" max="-790">
+			<attribute key="shootEffect" value="poison"/>
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+		<attack name="earth" interval="2000" chance="20" range="7" radius="3" target="1" min="-430" max="-860">
+			<attribute key="areaEffect" value="poison"/>
+		</attack>
+	</attacks>
+	<defenses armor="40" defense="50"/>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<immunities>
+      	<immunity lifedrain="1"/>
+      	<immunity paralyze="1"/>
+      	<immunity outfit="1"/>
+      	<immunity drunk="1"/>
+      	<immunity invisible="1"/>
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Thorns for the living..."/>
+		<voice sentence="Stay. Bleed. Stay."/>
+	</voices>
+    <loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888" countmax="1" chance="333"/><!-- armors -->
+		<item id="2500" countmax="1" chance="333"/>
+		<item id="2472" countmax="1" chance="333"/>
+		<item id="8885" countmax="1" chance="333"/>
+		<item id="8884" countmax="1" chance="333"/>
+		<item id="3983" countmax="1" chance="333"/>
+		<item id="2495" countmax="1" chance="333"/>
+		<item id="2469" countmax="1" chance="333"/>
+		<item id="7894" countmax="1" chance="333"/>
+		<item id="5462" countmax="1" chance="286"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="286"/>
+		<item id="11118" countmax="1" chance="286"/>
+		<item id="11240" countmax="1" chance="286"/>
+		<item id="2537" countmax="1" chance="286"/>
+		<item id="2514" countmax="1" chance="286"/>
+		<item id="2499" countmax="1" chance="286"/>
+	</loot>
+</monster>

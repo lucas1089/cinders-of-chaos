@@ -272,7 +272,14 @@
     {
       "zone": "drowned_gallows",
       "monster": "Silicron",
-      "count": 14,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_gallows",
+      "monster": "Pit Delver",
+      "count": 6,
       "respawn": 75,
       "pack": 3
     },
@@ -362,7 +369,7 @@
     },
     {
       "zone": "noose_cache",
-      "monster": "Facetis",
+      "monster": "Blightcrown Matron",
       "count": 2,
       "respawn": 75,
       "pack": 2
@@ -370,14 +377,28 @@
     {
       "zone": "carrion_pools",
       "monster": "Thal",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "carrion_pools",
+      "monster": "Corpselight Lurker",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "carrion_pools",
       "monster": "Vyrm",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "carrion_pools",
+      "monster": "Carrion Drake",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -426,7 +447,14 @@
     {
       "zone": "peat_cells",
       "monster": "Silicron",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_cells",
+      "monster": "Pitgnawer",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -461,7 +489,14 @@
     {
       "zone": "crowfeast_shoal",
       "monster": "Gloamfang Ravager",
-      "count": 8,
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crowfeast_shoal",
+      "monster": "Gorebristle",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     }

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Blight Bloom" nameDescription="a blight bloom" race="venom" experience="12800" speed="48">
+	<health now="20900" max="20900"/>
+	<look type="2262" head="19" body="57" legs="76" feet="40" corpse="6068"/>
+	<targetchange interval="5000" chance="10"/>
+	<level min="910" max="950"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="1"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="80"/>
+		<flag runonhealth="0"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-610" max="-920"/>
+		<attack name="earth" interval="2000" chance="30" radius="2" min="-610" max="-1020">
+			<attribute key="areaEffect" value="smallplants"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="15" target="1" range="7" radius="3" min="-510" max="-760">
+			<attribute key="areaEffect" value="energyarea"/>		
+			<attribute key="shootEffect" value="energyball"/>
+		</attack>
+         <attack name="earth" interval="2000" chance="35" range="4" target="1" min="-610" max="-920">
+			<attribute key="shootEffect" value="earth"/>
+			<attribute key="areaEffect" value="yellowbubble"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="50" length="4" spread="3" min="-760" max="-1020">
+			<attribute key="areaEffect" value="greenbubble"/>
+		</attack>
+	</attacks>
+	<defenses armor="50" defense="60">
+		<defense name="healing" interval="1000" chance="15" min="1380" max="2090">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="The rot flowers."/>
+		<voice sentence="Breathe deep."/>
+	</voices>	
+      
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="8888" countmax="1" chance="444"/><!-- armors -->
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="3983" countmax="1" chance="444"/>
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>
+

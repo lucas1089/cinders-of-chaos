@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Gnawbone Swarm" nameDescription="a gnawbone swarm" race="undead" experience="47900" speed="37" manacost="0">
+	<health now="32500" max="32500"/>
+	<look type="2273" head="2" body="22" legs="76" feet="37" corpse="6068"/>
+	<level min="1780" max="1820"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-770" max="-1200"/>
+		<attack name="energy" interval="2000" chance="35" range="7" radius="2" target="1" min="-1120" max="-1630">
+			<attribute key="shootEffect" value="energy"/>
+			<attribute key="areaEffect" value="energyarea"/>
+		</attack>
+		<attack name="death" interval="2000" chance="30" range="7" target="1" min="-1200" max="-1720">
+			<attribute key="shootEffect" value="death"/>
+			<attribute key="areaEffect" value="mortarea"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="15" radius="3" target="0" min="-950" max="-1380">
+			<attribute key="areaEffect" value="purpleenergy"/>
+		</attack>
+		<attack name="manadrain" interval="2000" chance="20" range="7" target="1" min="-690" max="-1030">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="80">
+		<defense name="healing" interval="1000" chance="20" min="200" max="3250">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+		<defense name="speed" interval="2000" chance="12" speedchange="300" duration="3000">
+			<attribute key="areaEffect" value="redshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element firePercent="35"/>
+		<element energyPercent="55"/>
+		<element icePercent="35"/>
+		<element earthPercent="35"/>
+		<element deathPercent="55"/>
+		<element holyPercent="35"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="*chitter*"/>
+		<voice sentence="*crunch crunch*"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="80" chance="65000"/><!-- platinum coin -->
+		<item id="11117" chance="562"/><!-- crystal boots: the Wraithbone Stalker's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

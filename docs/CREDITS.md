@@ -120,6 +120,11 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; modified or not, no attribution needed; no resale or sharing of the raw files; never machine-learning training data or a style reference
   - Used for: monsters
+- **WsT Magic VFX / monster packs**
+  - Author: WsT
+  - Licence: purchased; credit appreciated, not required; no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled game); never machine-learning training data
+  - Credit: WsT Magic VFX / monster packs (by WsT)
+  - Used for: 51 hunting monsters and the new looks of 17 more (2026-10-22)
 - **WsT Wings Pack**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data

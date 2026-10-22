@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<monster name="Maw Grub" nameDescription="a maw grub" race="venom" experience="25450" speed="40" manacost="0">
+	<health now="27000" max="27000"/>
+	<look type="2277" head="22" body="75" legs="1" feet="58" corpse="6068"/>
+	<level min="1240" max="1280"/>
+	<targetchange interval="4000" chance="0" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="0" />
+		<flag canpushcreatures="0" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+		<flag canwalkonenergy="0" />
+		<flag canwalkonfire="0" />
+		<flag canwalkonpoison="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="1000" min="-770" max="-1030" />
+		<attack name="Frostbite" interval="2000" chance="45" min="-32000" max="-45000"/>
+		<attack name="ice" range="7" target="1" radius="3" interval="2000" chance="40" min="-770" max="-1290">
+			<attribute key="shootEffect" value="ice"/>
+			<attribute key="areaEffect" value="icearea"/>
+		</attack>
+		<attack name="speed" target="1" speedchange="-700" duration="3000" interval="2000" chance="10" range="5">
+			<attribute key="shootEffect" value="largerock"/>
+			<attribute key="areaEffect" value="stun"/>
+		</attack>
+	</attacks>
+	<defenses armor="80" defense="87">
+		<defense name="healing" interval="1000" chance="20" min="150" max="2700">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element energyPercent="35" />
+		<element icePercent="35" />
+		<element earthPercent="35" />
+		<element deathPercent="35" />
+		<element physicalPercent="35" />
+		<element firePercent="35" />
+		<element holyPercent="35" />
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Chomp."/>
+		<voice sentence="Slurp."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="3983" countmax="1" chance="444"/><!-- legs -->
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>

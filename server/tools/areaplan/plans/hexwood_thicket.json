@@ -201,7 +201,14 @@
     {
       "zone": "weeping_grove",
       "monster": "Elite Spider",
-      "count": 16,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_grove",
+      "monster": "Thornveil Wraith",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },
@@ -215,14 +222,28 @@
     {
       "zone": "ape_hollow",
       "monster": "Cursed Ape",
-      "count": 16,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ape_hollow",
+      "monster": "Gallows Oak",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "crawler_roots",
       "monster": "Webbound Crawler",
-      "count": 17,
+      "count": 9,
+      "pack": 3,
+      "respawn": 75
+    },
+    {
+      "zone": "crawler_roots",
+      "monster": "Shroud Brood",
+      "count": 8,
       "pack": 3,
       "respawn": 75
     },
@@ -243,7 +264,14 @@
     {
       "zone": "raven_copse",
       "monster": "Cursed Ape",
-      "count": 8,
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "raven_copse",
+      "monster": "Ironbound Troll",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -285,7 +313,14 @@
     {
       "zone": "blight_meadow",
       "monster": "Black Stag",
-      "count": 8,
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blight_meadow",
+      "monster": "Blight Hound",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -299,7 +334,14 @@
     {
       "zone": "witch_clearing",
       "monster": "Dark Sorcerer",
-      "count": 12,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "witch_clearing",
+      "monster": "Rootbound Pilgrim",
+      "count": 5,
       "respawn": 75,
       "pack": 3
     },

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Grave Lantern" nameDescription="a grave lantern" race="undead" experience="22250" speed="42" manacost="0">
+	<health now="25800" max="25800"/>
+	<look type="2274" head="76" body="38" legs="76" feet="75" corpse="6068"/>
+	<level min="1160" max="1200"/>
+	<targetchange interval="4000" chance="10" />
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="1" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="80" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-730" max="-1120" />
+		<attack name="manadrain" interval="2000" chance="40" range="7" min="-730" max="-1170" />
+		<attack name="lifedrain" interval="2000" chance="30" length="8" spread="0" min="-780" max="-1220">
+			<attribute key="areaEffect" value="purpleenergy" />
+		</attack>
+		<attack name="arc bolt" interval="2000" chance="15" range="1" min="-15010" max="-22100">
+		</attack>
+		<attack name="speed" interval="2000" chance="15" radius="1" target="1" speedchange="-100" duration="10000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</attack>
+	</attacks>
+	<defenses armor="71" defense="71">
+		<defense name="healing" interval="2000" chance="15" min="860" max="2580">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+		<defense name="speed" interval="2000" chance="15" speedchange="320" duration="5000">
+			<attribute key="areaEffect" value="redshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+    <element firePercent="30" />
+    <element earthPercent="30" />
+    <element energyPercent="30" />
+    <element deathPercent="30" />
+    <element physicalPercent="30" />
+    <element holyPercent="30" />
+    <element icePercent="30" />
+  </elements>
+	<immunities>
+		<immunity paralyze="1" />
+		<immunity invisible="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="Follow the light."/>
+		<voice sentence="Into the dark you go."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- Platinum Coin -->
+		<item id="3983" countmax="1" chance="444"/><!-- legs -->
+		<item id="2495" countmax="1" chance="444"/>
+		<item id="2469" countmax="1" chance="444"/>
+		<item id="7894" countmax="1" chance="444"/>
+		<item id="8888" countmax="1" chance="444"/>
+		<item id="2500" countmax="1" chance="444"/>
+		<item id="2472" countmax="1" chance="444"/>
+		<item id="8885" countmax="1" chance="444"/>
+		<item id="8884" countmax="1" chance="444"/>
+		<item id="5462" countmax="1" chance="429"/><!-- great shield;demon shield;crystal boots -->
+		<item id="2644" countmax="1" chance="429"/>
+		<item id="11118" countmax="1" chance="429"/>
+		<item id="11240" countmax="1" chance="429"/>
+		<item id="2537" countmax="1" chance="429"/>
+		<item id="2514" countmax="1" chance="429"/>
+		<item id="2499" countmax="1" chance="429"/>
+	</loot>
+</monster>

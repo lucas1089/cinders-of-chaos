@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Mercenary Ranger" nameDescription="a mercenary ranger" race="blood" experience="5450" speed="55" manacost="0">
 	<health now="14200" max="14200"/>
-	<look type="1503" head="133" corpse="6068"/>
+	<look type="2249" head="57" body="76" legs="76" feet="96" corpse="6068"/>
 	<level min="690" max="730"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Webbound Crawler" nameDescription="a webbound crawler" race="blood" experience="7300" speed="53">
 	<health now="16300" max="16300" />
-	<look type="579" corpse="6068" />
+	<look type="2257" head="95" body="95" legs="76" feet="38" corpse="6068"/>
 	<level min="750" max="790"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>

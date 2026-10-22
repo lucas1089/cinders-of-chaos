@@ -283,7 +283,14 @@
     {
       "zone": "pyre_basin",
       "monster": "Pyrewing Tyrant",
-      "count": 15,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "pyre_basin",
+      "monster": "Pyre Stork",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },
@@ -339,7 +346,14 @@
     {
       "zone": "slag_terraces",
       "monster": "Cinderhorn Juggernaut",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_terraces",
+      "monster": "Siege Behemoth",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -353,7 +367,14 @@
     {
       "zone": "bonewind_flats",
       "monster": "Wraithbone Stalker",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bonewind_flats",
+      "monster": "Ironmask Warbreaker",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -416,7 +437,14 @@
     {
       "zone": "heart_of_cinders",
       "monster": "Mirecoil Wyrm",
-      "count": 15,
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "heart_of_cinders",
+      "monster": "Gnarlback",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },

@@ -229,14 +229,28 @@
     {
       "zone": "lich_gallery",
       "monster": "Ice Lich",
-      "count": 17,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lich_gallery",
+      "monster": "Geode Seer",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "glacier_heart",
       "monster": "Scaleborn",
-      "count": 16,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacier_heart",
+      "monster": "Rimecairn",
+      "count": 7,
       "respawn": 75,
       "pack": 3
     },
@@ -257,7 +271,14 @@
     {
       "zone": "purity_well",
       "monster": "Spirit of Purity",
-      "count": 17,
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "purity_well",
+      "monster": "Quicksilver Wraith",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },

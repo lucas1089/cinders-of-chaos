@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Pyre Stork" nameDescription="a pyre stork" race="fire" experience="56400" speed="33" manacost="0">
+	<health now="33800" max="33800"/>
+	<look type="2279" head="39" body="37" legs="95" feet="75" corpse="6068"/>
+	<level min="1980" max="2020"/>
+	<targetchange interval="4000" chance="10"/>
+	<flags>
+		<flag summonable="0"/>
+		<flag attackable="1"/>
+		<flag hostile="1"/>
+		<flag illusionable="0"/>
+		<flag convinceable="0"/>
+		<flag pushable="0"/>
+		<flag canpushitems="1"/>
+		<flag canpushcreatures="1"/>
+		<flag targetdistance="1"/>
+		<flag staticattack="90"/>
+		<flag runonhealth="0"/>
+		<flag canwalkonenergy="0"/>
+		<flag canwalkonfire="1"/>
+		<flag canwalkonpoison="1"/>
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-1030" max="-1500"/>
+		<attack name="fire" interval="2000" chance="30" length="8" spread="3" min="-1320" max="-1880">
+			<attribute key="areaEffect" value="firearea"/>
+		</attack>
+		<attack name="fire" interval="2000" chance="30" range="7" radius="3" target="1" min="-1130" max="-1690">
+			<attribute key="shootEffect" value="fire"/>
+			<attribute key="areaEffect" value="fireattack"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="20" range="7" radius="2" target="1" min="-1030" max="-1600">
+			<attribute key="shootEffect" value="energy"/>
+			<attribute key="areaEffect" value="energyarea"/>
+		</attack>
+		<attack name="physical" interval="2000" chance="15" radius="2" target="0" min="-940" max="-1410">
+			<attribute key="areaEffect" value="explosionarea"/>
+		</attack>
+	</attacks>
+	<defenses armor="90" defense="90">
+		<defense name="healing" interval="1000" chance="20" min="200" max="3380">
+			<attribute key="areaEffect" value="blueshimmer"/>
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="35"/>
+		<element firePercent="55"/>
+		<element energyPercent="55"/>
+		<element earthPercent="35"/>
+		<element deathPercent="35"/>
+		<element holyPercent="35"/>
+	</elements>
+	<voices interval="5000" chance="10">
+		<voice sentence="Kraa!"/>
+		<voice sentence="The pyre is lit."/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="80" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="90" chance="65000"/><!-- platinum coin -->
+		<item id="12607" chance="562"/><!-- elite draken mail: the Pyrewing Tyrant's own drop -->
+		<item id="3983" chance="444"/>
+		<item id="2495" chance="444"/>
+		<item id="2469" chance="444"/>
+		<item id="7894" chance="444"/>
+		<item id="8888" chance="444"/>
+		<item id="2500" chance="444"/>
+		<item id="2472" chance="444"/>
+		<item id="8885" chance="444"/>
+		<item id="8884" chance="444"/>
+		<item id="5462" chance="429"/>
+		<item id="2644" chance="429"/>
+		<item id="11118" chance="429"/>
+		<item id="11240" chance="429"/>
+		<item id="2537" chance="429"/>
+		<item id="2514" chance="429"/>
+		<item id="2499" chance="429"/>
+	</loot>
+</monster>

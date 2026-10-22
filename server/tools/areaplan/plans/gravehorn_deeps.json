@@ -290,7 +290,14 @@
     {
       "zone": "antler_choir",
       "monster": "Cinderskull Reaver",
-      "count": 18,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "antler_choir",
+      "monster": "Bonepicker",
+      "count": 8,
       "respawn": 75,
       "pack": 3
     },
@@ -409,7 +416,14 @@
     {
       "zone": "fiends_heart",
       "monster": "Bloodantler Fiend",
-      "count": 19,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fiends_heart",
+      "monster": "Hollowhorn",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
@@ -472,7 +486,14 @@
     {
       "zone": "juggernaut_pits",
       "monster": "Cinderhorn Juggernaut",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "juggernaut_pits",
+      "monster": "Oathbroken Colossus",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -486,7 +507,14 @@
     {
       "zone": "ember_crypts",
       "monster": "Wraithbone Stalker",
-      "count": 13,
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_crypts",
+      "monster": "Gnawbone Swarm",
+      "count": 6,
       "respawn": 75,
       "pack": 3
     },

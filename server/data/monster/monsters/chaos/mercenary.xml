@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Mercenary" nameDescription="a mercenary" race="blood" experience="4850" speed="56" manacost="305">
 	<health now="13400" max="13400" />
-	<look type="1502" head="133" corpse="6068"/>
+	<look type="2251" head="57" body="76" legs="95" feet="96" corpse="6068"/>
 	<level min="670" max="710"/>
 	<targetchange interval="4000" chance="20"/>
 	<flags>

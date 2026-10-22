@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<monster name="Deepforge Fiend" nameDescription="a deepforge fiend" race="fire" experience="13900" speed="50">
+	<health now="22000" max="22000"/>
+	<look type="2239" head="76" body="95" legs="76" feet="38" corpse="6068"/>
+	<level min="960" max="1000"/>
+	<targetchange interval="3000" chance="20"/>
+	<flags>
+		<flag summonable="0" />
+		<flag attackable="1" />
+		<flag hostile="1" />
+		<flag illusionable="0" />
+		<flag convinceable="0" />
+		<flag pushable="0" />
+		<flag canpushitems="1" />
+		<flag canpushcreatures="1" />
+		<flag targetdistance="1" />
+		<flag staticattack="90" />
+		<flag runonhealth="0" />
+	</flags>
+	<attacks>
+		<attack name="melee" interval="2000" min="-540" max="-820"/>
+		<attack name="physical" interval="2000" chance="20" radius="3" target="0" min="-300" max="-610">
+			<attribute key="areaEffect" value="yellowenergy"/>
+		</attack>
+		<attack name="energy" interval="2000" chance="30" range="7" min="-460" max="-840">
+			<attribute key="shootEffect" value="energy" />
+		</attack>
+		<attack name="fire" interval="2000" chance="15" length="8" spread="3" min="-380" max="-770">
+			<attribute key="areaEffect" value="firearea" />
+		</attack>
+	</attacks>
+	<defenses armor="50" defense="55">
+		<defense name="healing" interval="2000" chance="10" min="1000" max="2000">
+			<attribute key="areaEffect" value="blueshimmer" />
+		</defense>
+	</defenses>
+	<elements>
+		<element physicalPercent="-15"/>
+		<element holyPercent="-15"/>
+		<element firePercent="20"/>
+		<element energyPercent="20"/>
+		<element icePercent="20"/>
+		<element earthPercent="20"/>
+		<element deathPercent="10"/>
+	</elements>
+	<immunities>
+		<immunity drown="1" />
+		<immunity lifedrain="1" />
+		<immunity paralyze="1" />
+	</immunities>
+	<voices interval="5000" chance="10">
+		<voice sentence="The forge hungers."/>
+		<voice sentence="Into the fire with you!"/>
+	</voices>
+	<loot>
+		<item id="2148" countmax="90" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="100" chance="43750"/><!-- gold coin -->
+		<item id="2148" countmax="75" chance="43750"/><!-- gold coin -->
+		<item id="2152" countmax="50" chance="65000"/><!-- platinum coin -->
+		<item id="11302" countmax="1" chance="375"/>
+		<item id="11301" countmax="1" chance="375"/>
+		<item id="11304" countmax="1" chance="375"/>
+		<item id="11303" countmax="1" chance="375"/>
+		<item id="8891" countmax="1" chance="375"/>
+		<item id="9931" countmax="1" chance="375"/>
+		<item id="11356" countmax="1" chance="375"/>
+		<item id="2645" countmax="1" chance="375"/>
+		<item id="8889" countmax="1" chance="250"/>
+		<item id="8887" countmax="1" chance="250"/>
+		<item id="12607" countmax="1" chance="250"/>
+		<item id="8880" countmax="1" chance="250"/>
+		<item id="2522" countmax="1" chance="250"/>
+		<item id="2520" countmax="1" chance="250"/>
+		<item id="11117" countmax="1" chance="250"/>
+		<item id="5741" countmax="1" chance="250"/>
+	</loot>
+</monster>

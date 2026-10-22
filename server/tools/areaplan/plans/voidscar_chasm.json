@@ -283,14 +283,28 @@
     {
       "zone": "maw_of_glass",
       "monster": "Thal",
-      "count": 19,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "maw_of_glass",
+      "monster": "Maw Grub",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
     {
       "zone": "maw_of_glass",
       "monster": "Cinderskull Reaver",
-      "count": 19,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "maw_of_glass",
+      "monster": "Ashveil Hierarch",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
@@ -353,7 +367,14 @@
     {
       "zone": "weeping_scarp",
       "monster": "Silicron",
-      "count": 10,
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_scarp",
+      "monster": "Veiled Crawler",
+      "count": 4,
       "respawn": 75,
       "pack": 3
     },
@@ -409,7 +430,14 @@
     {
       "zone": "nether_basin",
       "monster": "Facetis",
-      "count": 19,
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "nether_basin",
+      "monster": "Limb Hoarder",
+      "count": 9,
       "respawn": 75,
       "pack": 3
     },
