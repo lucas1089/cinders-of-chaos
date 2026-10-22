@@ -8400,7 +8400,7 @@ modifiers"), Chaos modifiers included.
 | Orb of Unmaking | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
 | Orb of Erasure | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
 | Orb of Upheaval | 29856 | item with a rarity: a new copy of the same rarity and item level with a new set of modifiers |
-| Orb of Fate | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll); the item level stays (the cheap gamble; the sure step up is the Conquest vendor's refinement, "Conquest Tokens") |
+| Orb of Fate | 29857 | a new copy one rarity rank up with new modifiers (Legendary: 5% Divine, else no change); the item level stays (since 2026-10-22, "Crafting orbs v2") |
 
 Awakening, Gilding, Erasure, Upheaval and Fate make a new copy (like the stock orbs), so upgrade levels on the item
 are lost; Grafting and Unmaking change the item in place and rewrite only the rarity part of the description (text in
@@ -8928,7 +8928,10 @@ removes them. The Orb of Upheaval on an item with bound modifiers works **in pla
 again up to the rarity's count (the upgrade levels of the item stay too). The Orb of Fate (a new copy with a new rarity) is
 refused on an item with a bound modifier ("use an Orb of Erasure first"). The rule for the Orb of Fate itself: it keeps the old
 rarity gamble (stock odds: 85% of the time no rarity at all), item level and quality stay; it is the "risky rarity" orb next to
-the Orb of Ruin, no longer a value reroll (that is the Orb of Tempering).
+the Orb of Ruin, no longer a value reroll (that is the Orb of Tempering). **Since 2026-10-22** (owner: "isso só transforma o
+item em normal. não aumenta a raridade") it raises the rarity one rank with a new set of modifiers (Normal -> Common ..
+Rare -> Legendary); a Legendary item becomes Divine at `fateDivineChance` 5%, else it stays as it is and the orb is spent;
+a Divine item refuses it (`maxRarity`). Item level and quality stay.
 
 **Item quality** (`chaos_quality`, 0..30). Every modifier value is multiplied by (100 + quality) / 100 and rounded to the nearest
 whole number, never below the value itself: a T4 skill of 3 at 20% is 4, a value of 1 stays 1 (so very small values only move
@@ -9458,7 +9461,7 @@ and the forge also write the stored id.
 | sell price multiplier | 1 .. 32 | 1, 1.5, 3, 6, 12, 24 (`gen_item_prices.py`) |
 | salvage shards (base) | 1 .. 18 | 1, 1, 2, 3, 5, 12; whole-orb chance 0.5, 0.5, 0.75, 1, 1.5, 3% |
 | Orb of Transmutation / Alchemy / Gilding | Common-Uncommon / Rare-Epic-Legendary (55-30-15) | Common 65 Uncommon 35 / Magic 60 Rare 30 Legendary 10 / Magic, Rare or Legendary |
-| Orb of Fate rarity | up to 15 | same 15% divine chance, rank-weighted (`divineChances` 25, 20, 17, 14, 8, 2) |
+| Orb of Fate rarity | up to 15 | one rank up; Legendary to Divine at 5% (`fateDivineChance`, 2026-10-22) |
 | Gambler (Legendary or better) | about 13% | about 4% (Common 70.0, Uncommon 12.2, Magic 8.4, Rare 5.4, Legendary 3.6, Divine 0.4) |
 | Conquest refinement | one rarity up to Celestial | one rank up to Legendary (`perRarity` 60) |
 | craft bonus (`craft_bonus_config.lua`) | up to old Legendary | up to Rare (`maxRarity` 4) |

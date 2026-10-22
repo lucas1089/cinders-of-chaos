@@ -199,13 +199,7 @@ if okc and ChaosCrafting then
 	for _, w in ipairs(cc.alchemy) do
 		gild = gild + w[2] / tot * P.rarityMult(w[1])
 	end
-	local left, fate, got = cc.divineRollChance / 100, 0, 0
-	for r, c in ipairs(cc.divineChances) do
-		local p = left * math.floor(c) / 100
-		fate, got = fate + p * P.rarityMult(ChaosRarity.idOfRank(r)), got + p
-		left = left * (1 - math.floor(c) / 100)
-	end
-	fate = fate + (1 - got)
+	local fate = P.rarityMult(ChaosRarity.idOfRank(1)) -- the Orb of Fate: a plain copy becomes Common
 	eq(merchantPrice(24691), 250000, "the merchant's Orb of Gilding costs 250,000")
 	local top, topId = 0, 0
 	for id, price in pairs(D.prices) do

@@ -82,7 +82,7 @@ C.config = {
 			text = "Rerolls every modifier that is not bound (rarity, item level and quality stay).",
 			keyText = "Rerolls the modifiers of a Rift Key (one to three new ones)."},
 		{key = "divine", id = 29857, name = "Orb of Fate",
-			text = "Rolls a new random rarity, often none; item level and quality stay. Not on an item with a bound modifier.",
+			text = "Raises the rarity one step with new modifiers (Legendary: a small chance of Divine); item level and quality stay. Not on an item with a bound modifier.",
 			keyText = "Rerolls the values of a Rift Key's modifiers inside their ranges."},
 		-- gems and sockets (chaos_gems_config.lua socketOrb; install_gems.py names the rune stone)
 		{key = "sockets", id = ChaosGems.config.socketOrb.id, name = ChaosGems.config.socketOrb.name,
@@ -105,11 +105,10 @@ C.config = {
 	transmutation = {{1, 65}, {2, 35}},
 	alchemy = {{3, 60}, {4, 30}, {5, 10}},
 
-	-- the Orb of Fate roll (stock customs/rarity/reroll_rarity_stats.lua rollRarityForReroll, seven rows now):
-	-- rollChance % to get a rarity at all, then each rarity in rank order with its own chance (Common .. Divine). The
-	-- shares of a roll: none 85 %, Common 3.8, Uncommon 2.9, Magic 2.1, Rare 1.6, Legendary 0.9, Divine 0.04 (x0.15 each)
-	divineRollChance = 15,
-	divineChances = {25.0, 20.0, 17.0, 14.0, 8.0, 2.0},
+	-- the Orb of Fate (owner 2026-10-22: it must raise the rarity, the old stock roll made most items normal): one rank
+	-- up (Normal -> Common .. Rare -> Legendary) with a new set of modifiers; on a Legendary item fateDivineChance % to
+	-- become Divine, else nothing changes (the orb is spent); a Divine item refuses it
+	fateDivineChance = 5,
 
 	-- items no orb may touch (boats, same list as customs/rarity/reroll_rarity_stats.lua)
 	excludedItems = {[27797] = true, [27798] = true, [27799] = true, [27800] = true, [27801] = true, [27802] = true},
@@ -635,6 +634,7 @@ C.reasons = {
 	needMod = "Choose a modifier of the item first.",
 	badMod = "That modifier cannot be chosen for this orb.",
 	hasBound = "Bound modifiers stop this orb: use an Orb of Erasure first.",
+	maxRarity = "This item has the highest rarity already.",
 	qualityFull = "This item has all the quality it can get.",
 	needMods = "This item has no modifier for the quality to act on.",
 	ruinNothing = "Nothing left to risk: the item has no modifier an Orb of Ruin could improve.",
@@ -711,6 +711,9 @@ function C.check(orbKey, item, opts)
 		if C.bindCount(C.readMods(item)) > 0 then
 			return false, "hasBound"
 		end
+		if ChaosRarity.rank(rarity) >= 6 then
+			return false, "maxRarity"
+		end
 		return true
 	else
 		if rarity == 0 then
@@ -769,17 +772,18 @@ function C.specialChance(v)
 	return math.max(1, math.floor((2 * v + 1) / 3))
 end
 
--- the stock Orb of Fate roll: 0 (no rarity) most of the time
-function C.rollDivineRarity()
-	if C.random(1, 100) > C.config.divineRollChance then
-		return 0
+-- the Orb of Fate: the stored id one rank above the item's rarity (Divine is 10); from Legendary only at
+-- fateDivineChance %, else the item's own rarity (no change)
+function C.rollDivineRarity(item)
+	local current = item and C.rarityOf(item) or 0
+	local rank = ChaosRarity.rank(current)
+	if rank >= 6 then
+		return current
 	end
-	for rank, chance in ipairs(C.config.divineChances) do
-		if C.random(1, 100) <= chance then
-			return ChaosRarity.idOfRank(rank) -- the stored id of that place (Divine is 10)
-		end
+	if rank == 5 and C.random(1, 100) > C.config.fateDivineChance then
+		return current
 	end
-	return 0
+	return ChaosRarity.idOfRank(rank + 1)
 end
 
 -- item quality in percent (0 when none)
@@ -1193,7 +1197,7 @@ function C.targetRarity(orbKey, item)
 	elseif orbKey == "chaos" then
 		return C.rarityOf(item)
 	elseif orbKey == "divine" then
-		return C.rollDivineRarity()
+		return C.rollDivineRarity(item)
 	end
 	return nil
 end
@@ -1290,6 +1294,10 @@ function C.apply(orbKey, item, opts)
 	local rarity = C.targetRarity(orbKey, item)
 	if not rarity then
 		return false, C.reasons.unknownOrb
+	end
+	if orbKey == "divine" and rarity == C.rarityOf(item) then
+		return true, {item = item, text = string.format("%s stays %s: fate did not favour it this time.", name,
+			C.rarityName(rarity)), rarity = rarity}
 	end
 	local level = C.orbLevel(item)
 	local newItem, err = C.recreate(item, rarity, level)
@@ -1535,7 +1543,12 @@ function C.preview(orbKey, item)
 		return string.format("stays %s, item level %d: %d new modifiers, %s", rarity > 0 and C.rarityName(rarity) or "Normal",
 			level, M.modCount(rarity), tierSpan(level))
 	elseif orbKey == "divine" then
-		return string.format("new random rarity (%d%% none), item level %d stays", 100 - C.config.divineRollChance, level)
+		local rank = ChaosRarity.rank(rarity)
+		if rank == 5 then
+			return string.format("%d%% chance of Divine (new modifiers), else no change", C.config.fateDivineChance)
+		end
+		return string.format("becomes %s: %d new modifiers, item level %d stays",
+			C.rarityName(ChaosRarity.idOfRank(rank + 1)), M.modCount(ChaosRarity.idOfRank(rank + 1)), level)
 	end
 	return ""
 end

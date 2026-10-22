@@ -536,7 +536,7 @@ local function affixOrbs(D, a, isPower)
 		add("exalted", "Adds it at random when the item has an open " .. a.side .. " and suits it.")
 	end
 	add("chaos", "Rolls every unbound modifier again: it may come or go.")
-	add("divine", "New rarity (often none): every modifier rolled again.")
+	add("divine", "Rarity one step up, new modifiers (Legendary: small chance of Divine).")
 	add("annulment", "May remove it (one random unbound modifier).")
 	add("excision", "Removes it when you pick it on the bench.")
 	add("scouring", "Removes it with the rarity and every other modifier.")
