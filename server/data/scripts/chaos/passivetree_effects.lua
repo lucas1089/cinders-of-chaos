@@ -303,6 +303,14 @@ local function applyAll(player, bonuses)
 	local state = applied[id] or {speed = 0}
 	applied[id] = state
 	ChaosPassiveCache[id] = bonuses
+	-- the tree's Healing for the potion scripts (another Lua state): potions_config.lua storage.healingPct
+	if not ChaosPotionsConfig then
+		pcall(dofile, "data/scripts/chaos/potions_config.lua")
+	end
+	local potionStorage = ChaosPotionsConfig and ChaosPotionsConfig.storage and ChaosPotionsConfig.storage.healingPct
+	if potionStorage then
+		player:setStorageValue(potionStorage, math.floor(ChaosPassiveDamagePercent(bonuses, COMBAT_HEALING)))
+	end
 
 	for stat in pairs(CONDITIONS) do
 		setCondition(player, stat, ChaosPassiveConditionValue(bonuses, stat))

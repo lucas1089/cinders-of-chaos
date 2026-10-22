@@ -135,8 +135,8 @@ check($bytes > 0 && $bytes < 5 * 1024 * 1024, 'art: under 5 MB in all (' . intdi
 
 // ---------------------------------------------------------------- the guides
 $guides = chaos_wiki_guides();
-check(count($guides) >= 14, 'guides: at least 14');
-foreach (array('start', 'classes', 'tree', 'items', 'rifts', 'dungeons', 'bosses', 'seasons', 'economy', 'social', 'pvp', 'store', 'rules', 'faq') as $slug) {
+check(count($guides) >= 15, 'guides: at least 15');
+foreach (array('start', 'leveling', 'classes', 'tree', 'items', 'rifts', 'dungeons', 'bosses', 'seasons', 'economy', 'social', 'pvp', 'store', 'rules', 'faq') as $slug) {
 	check(isset($guides[$slug]), "guides: $slug");
 }
 foreach ($guides as $slug => $titles) {
@@ -169,6 +169,17 @@ foreach ($guides as $slug => $titles) {
 check(chaos_wiki_guide_summary("# T\n\n::: if class.ascensionLevel\nOne.\n::: end\n## Next\n\nTwo.", 'en') === 'One.', 'summary: one paragraph, never the next heading');
 check(mb_strlen(chaos_wiki_guide_summary("# T\n\n" . str_repeat('word ', 100), 'en'), 'UTF-8') <= 221, 'summary: cut to about 220 characters');
 check(chaos_wiki_conditions("::: if class.ascensionLevel\nx\n::: end\n\n## Next", 'en') === "x\n\n## Next", 'a block keeps the blank line after it');
+$keys = array_keys($guides);
+check(array_search('leveling', $keys, true) === array_search('progression', $keys, true) + 1, 'leveling guide: right after Progression');
+foreach (array('pt-BR' => array('## Nível 8-50', '## Nível 750-1000', '## Glossário'), 'en' => array('## Level 8-50', '## Level 750-1000', '## Glossary')) as $lang => $heads) {
+	$md = (string)chaos_wiki_guide_text('leveling', $lang);
+	foreach ($heads as $h) {
+		check(strpos($md, "\n" . $h) !== false, "leveling.$lang: has $h");
+	}
+	check(strpos($md, '{{rift.level10}}') !== false && strpos($md, '{{paragon.startLevel}}') !== false, "leveling.$lang: rift tiers and Paragon come from the data");
+	$html = chaos_wiki_guide_html($md, $lang);
+	check(strpos($html, '<script') === false && strpos($html, 'guide%3Aprogression') !== false, "leveling.$lang: escaped, links Progression");
+}
 $store = (string)chaos_wiki_guide_text('store', 'pt-BR') . (string)chaos_wiki_guide_text('store', 'en');
 check(strpos($store, '(legal:donations)') !== false && strpos($store, 'doação voluntária') !== false && strpos($store, 'voluntary donation') !== false, 'store guide: voluntary, links the Donation Terms');
 

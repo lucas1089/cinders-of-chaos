@@ -15,6 +15,8 @@ A base spell whose script is one of the ammunition conjure scripts (chaos_archer
 176, Fletch Crystal Arrows 192, Fletch Wraith Bolts 193 ...) does not hold its spellid: the "archery" step
 (patch_base_archery.py, right after this one) comments those spells out of spells.xml, so the ids are free for the
 Chaos block. The Necromancer's three summon spells use 176, 192 and 193 (every other id below 256 is taken).
+The same for the other conjure spells the "runes" step removes (chaos_rune_supply.lua R.otherConjures: Conjure Rations
+42, Hallow Spear 110, Charge Staff 92; no rune carries their ids): Grave Nova uses 42.
 """
 import os, re, shutil, sys
 
@@ -37,6 +39,18 @@ def ammo_conjure_scripts(data):
             m = re.search(r'\bconjureScripts\s*=\s*\{(.*?)\}', open(p, encoding='utf-8').read(), re.S)
             if m:
                 return set(re.findall(r'"([^"]+)"', m.group(1)))
+    return set()
+
+
+def other_conjure_scripts(data):
+    """script paths (relative to data/spells/scripts) of the non-rune conjure spells install_rune_supply.py removes (chaos_rune_supply.lua
+    R.otherConjures), read from the installed lib folder, else from this repository"""
+    for p in (os.path.join(data, 'lib', 'chaos_rune_supply.lua'),
+              os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'lib', 'chaos_rune_supply.lua')):
+        if os.path.isfile(p):
+            m = re.search(r'\botherConjures\s*=\s*\{(.*?)\n\}', open(p, encoding='utf-8').read(), re.S)
+            if m:
+                return set(re.findall(r'script\s*=\s*"([^"]+)"', m.group(1)))
     return set()
 
 
@@ -65,8 +79,10 @@ def main():
         text = text[:a] + text[b:]
     others = [attrs(b) for b in INSTANT.findall(re.sub(r'<!--.*?-->', '', text, flags=re.S))]
     ammo = ammo_conjure_scripts(data)
+    conj = other_conjure_scripts(data)
     used_id = {o['spellid'] for o in others
-               if 'spellid' in o and os.path.basename(o.get('script', '')) not in ammo}
+               if 'spellid' in o and os.path.basename(o.get('script', '')) not in ammo
+               and o.get('script', '').replace('\\', '/') not in conj}
     used_words = {o['words'].lower() for o in others if 'words' in o}
     used_name = {o['name'].lower() for o in others if 'name' in o}
 

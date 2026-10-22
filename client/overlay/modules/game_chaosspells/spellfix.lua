@@ -28,17 +28,17 @@ F.OFF_SERVER = 1000
 -- no class), never cast, and its fix below is skipped; a vocations list here holds only the classes that keep the spell.
 F.STOCK = {
   ["saen gal kin"] = { id = 101, level = 300 },                     -- Heartwood Embrace (client 242)
-  ["saen ama brak"] = { id = 102 },                                 -- Iron Salve (239)
-  ["saen zar ael"] = { id = 103 },                                  -- Rebirth of Flesh (241)
+  ["saen ama brak"] = { id = 102, mana = 55 },                                 -- Iron Salve (239)
+  ["saen zar ael"] = { id = 103, mana = 155 },                                  -- Rebirth of Flesh (241)
   ["kah gro"] = { id = 171, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Sunder Guard (243; server 106 -> 171;
                                                                     -- attack group 2 s, server patch_spell_timings.py)
-  ["drai gal pyr ul"] = { id = 163 },                               -- Pyre Torrent (240)
+  ["drai gal pyr ul"] = { id = 163, mana = 70 },                               -- Pyre Torrent (240)
   ["kah tin gor"] = { id = 172 },                                   -- Bog Splatter (174)
   ["saen tin"] = { id = 174 },                                      -- Arcane Stitch (172)
   ["saen tin brak"] = { id = 175 },                                 -- Salve of Scars (170)
-  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3 }, exhaustion = 12000 }, -- Radiant Shard (258)
+  ["drai ira vas sol"] = { id = 34, level = 300, range = 7, needTarget = true, vocations = { 3, mana = 95 }, exhaustion = 12000 }, -- Radiant Shard (258)
   ["drai zar nyx"] = { id = 35, level = 300, group = { [1] = 2000 }, vocations = { 1, 5 } }, -- Lance of the Grave (260)
-  ["kah rek sang"] = { id = 37, level = 300, mana = 100, range = 7, vocations = { 4, 8, 14 }, exhaustion = 16000 }, -- Headsman's Hurl (261)
+  ["kah rek sang"] = { id = 37, level = 300, mana = 60, range = 7, vocations = { 4, 8, 14 }, exhaustion = 16000 }, -- Headsman's Hurl (261)
   ["drai orr hyr"] = { id = 40, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Shatterfrost (263/262)
   ["drai orr gor"] = { id = 41, level = 300, group = { [1] = 2000 }, vocations = { 1, 10 } }, -- Quakeburst (262/263)
   ["vael mur sol"] = { id = 46, level = 300, vocations = { 3 } },                 -- Hallowed Ground (268)
@@ -61,16 +61,21 @@ F.STOCK = {
   ["kah sag"] = { level = 8, mana = 20 },                           -- Phantom Javelin: level 8, 20 mana (server patch_spell_timings.py)
   ["kah vas"] = { mana = 60 },                                      -- Earthrend: the Warrior line's mana runway
   ["kah"] = { mana = 40 },                                          -- Reaver's Spin
-  ["kah ti"] = { mana = 55, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
-  ["kah gal"] = { mana = 100, exhaustion = 12000 },                 -- Butcher's Gyre (cooldown ladder)
-  ["drai vas sol"] = { exhaustion = 8000 },                         -- Sanctum Burst (cooldown ladder)
-  ["drai zhul ul"] = { exhaustion = 12000 },                        -- Tempest Fan (cooldown ladder)
+  ["kah ti"] = { mana = 35, exhaustion = 4000 },                    -- Scything Arc (cooldown ladder, 2026-10-20)
+  ["kah gal"] = { mana = 60, exhaustion = 12000 },                 -- Butcher's Gyre (cooldown ladder)
+  ["drai vas sol"] = { exhaustion = 8000, mana = 95 },                         -- Sanctum Burst (cooldown ladder)
+  ["drai zhul ul"] = { exhaustion = 12000, mana = 100 },                        -- Tempest Fan (cooldown ladder)
   ["hesh sol"] = { exhaustion = 40000 },                            -- Glare of Dawn
   ["tor ael"] = { exhaustion = 2000 },                              -- Ward of the Mind
   ["drai pyr ul"] = { exhaustion = 4000 },                          -- Cinder Fan
   ["drai hyr ul"] = { exhaustion = 4000 },                          -- Glacier Fan
   ["drai nov pyr ul"] = { exhaustion = 4000 },                      -- Novice's Cinders
   ["drai tin pyr ul"] = { exhaustion = 4000 },                      -- Searing Gust
+  -- the mana cut of 2026-10-22 (x0.6, server/data/spells/README.md "Mana cut"; patch_spell_timings.py)
+  ["saen brak"] = { mana = 25 },
+  ["saen ael"] = { mana = 95 },
+  ["saen sol"] = { mana = 95 },
+  ["saen gal sol"] = { mana = 125 },
 }
 
 -- base server spells the client's table has no entry for (the base server's own Illusionist spells, scripts
@@ -80,9 +85,9 @@ F.STOCK = {
 -- (2026-10-14): the Auto rotation of a Mystic picked Bewitching Hex and Arcane Ripple and the helper had no entry.
 -- Riftbolt, Crossfire Hex, Fading Step and Gravity Snare left with the 15-spell cap (2026-10-20: no class keeps them).
 F.EXTRA = {
-  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 40, mana = 175, cooldown = 4000, groupCooldown = 2000,
+  { id = 85, name = "Arcane Ripple", words = "drai ondr", level = 40, mana = 105, cooldown = 4000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 43 },
-  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 75, cooldown = 6000, groupCooldown = 2000,
+  { id = 53, name = "Bewitching Hex", words = "drai glam", level = 60, mana = 45, cooldown = 6000, groupCooldown = 2000,
     needTarget = true, range = 4, vocations = { 1, 10 }, icon = 56 },
 }
 
@@ -112,8 +117,10 @@ end
 -- (ChaosRemovedSpells, old and new words: the conjure spells). Returns the undo list, the id map of the stock ids that
 -- changed (idMap[old] = new id, or false for a spell the server does not have) and the set of the ids of the removed
 -- spells. A removed spell keeps its entry and its id (the rune cooldown icons use the conjure ids) but is marked
--- notOnServer, so the helper never casts it, and remapHelper takes it out of the helper's lists.
-function F.apply(info, icons, runes, serverWords, removedWords)
+-- notOnServer, so the helper never casts it, and remapHelper takes it out of the helper's lists. chaosIds (optional):
+-- the set of the Chaos spells' ids; a removed spell whose id a Chaos spell took (Conjure Rations 42 -> Grave Nova,
+-- 2026-10-22) moves to id + OFF_SERVER instead, so the Chaos spell keeps its cooldown and its helper entries.
+function F.apply(info, icons, runes, serverWords, removedWords, chaosIds)
   local undo, idMap, removedIds = {}, {}, {}
   for _, spell in pairs(info) do
     local words = spell.words and spell.words:lower()
@@ -123,7 +130,9 @@ function F.apply(info, icons, runes, serverWords, removedWords)
       if not spell.notOnServer then
         set(undo, spell, "notOnServer", true)
       end
-      if type(old) == "number" then
+      if type(old) == "number" and chaosIds and chaosIds[old] then
+        set(undo, spell, "id", old + F.OFF_SERVER)
+      elseif type(old) == "number" then
         removedIds[old] = true
       end
     elseif fix then
@@ -377,6 +386,15 @@ function F.allowsVocation(spell, vocation, translate)
     end
   end
   return false
+end
+
+-- the ids of the Chaos spells (ChaosSpellData), for F.apply's chaosIds
+function F.chaosIds(chaosSpells)
+  local s = {}
+  for _, c in ipairs(chaosSpells or {}) do
+    s[tonumber(c.id)] = true
+  end
+  return s
 end
 
 -- the words the server has: the Chaos spells' and the renamed stock spells' (ChaosSpellNames values)

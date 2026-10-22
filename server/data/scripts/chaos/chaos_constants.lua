@@ -872,7 +872,10 @@ Chaos.shopServices = {
 		{id = "loot", name = "World Loot", bonus = 0.25, minutes = 60, capMinutes = 180,
 			text = "+25% Chaos loot (extra loot rolls and currency drops) for every standard character"},
 		{id = "skill", name = "World Training", bonus = 0.25, minutes = 60, capMinutes = 180,
-			text = "+25% skill and magic level training for every standard character"}
+			text = "+25% skill and magic level training for every standard character"},
+		-- monster_tiers.lua: the spawn chance of magic and rare monsters x (1 + bonus), everywhere (beta 2026-10-22)
+		{id = "hunt", name = "World Hunt", bonus = 0.5, minutes = 60, capMinutes = 180,
+			text = "Magic and rare monsters appear 50% more often, everywhere"}
 	},
 	worldBuffStorage = 7100920, -- global storages 7100921.. (expiry unix time per buff, in list order)
 	worldBuffConfigKey = "chaos_worldbuff_", -- server_config rows chaos_worldbuff_<id>
@@ -1912,9 +1915,15 @@ end
 -- A magic effect id of 0 (or none) reaches the client as "invalid effect id 0" and the effect is dropped there. Position:
 -- sendMagicEffect refuses it here and names the caller once (a script that computed an effect and got nothing), so the
 -- source can be found and fixed; nothing is sent. Installed once (a reload keeps the first wrapper).
+-- An effect redrawn in place with art bigger than a tile (pair 36) is sent at its offset tile, so it is centred on
+-- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). Engine-sent effects are not shifted.
+if not ChaosFxSendOffsetCore then
+	pcall(dofile, "data/scripts/chaos/fx_send_offset_core.lua")
+end
 if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEffectGuard then
 	local rawSendMagicEffect = Position.sendMagicEffect
 	local warned = {}
+	local offsets = ChaosFxSendOffsetCore and ChaosFxSendOffsetCore.load()
 	Chaos.magicEffectGuard = true
 	Position.sendMagicEffect = function(self, effect, ...)
 		if effect == nil or effect == 0 then
@@ -1924,6 +1933,10 @@ if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEff
 				print("[Warning - Chaos] Position:sendMagicEffect with effect " .. tostring(effect) .. " refused" .. where)
 			end
 			return false
+		end
+		if offsets and offsets[effect] and type(self) ~= "number" and tonumber(self.x) and tonumber(self.y) then
+			local x, y = ChaosFxSendOffsetCore.shift(self.x, self.y, effect, offsets)
+			return rawSendMagicEffect(Position(x, y, self.z), effect, ...)
 		end
 		return rawSendMagicEffect(self, effect, ...)
 	end

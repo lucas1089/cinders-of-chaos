@@ -132,6 +132,7 @@ All have `groupcooldown=2000`, `needlearn=0` (everyone of the vocation and level
 | 186 | Bone Golem | `vael gal oss` | BL | 100 | 500 | 30s | Raises the Bone Golem: slams everything next to it, taunts the monsters within 3 sqm. |
 | 187 | Banner of Bones | `tor vas oss` | BL | 120 | 300 | 30s | 20 s: minions +30% damage, -25% damage taken, 3% regeneration per second. |
 | 188 | Bone Offering | `drai sang oss` | BL | 150 | 250 | 12s | A skeleton bursts in 2 sqm; the Bone Lord takes 20% less damage for 6 s. |
+| 42 | Grave Nova | `drai nyx oss` | N | 50 | 80 | 6s | The Necromancer only (no target): death damage on every enemy within 3 sqm of the caster (a circle), each (level / 5 + ML x 1.8..2.8 + 25..45); rung 3 of the ladder (2026-10-22, id 42 of the removed Conjure Rations). |
 | 197 | Bone Shrapnel | `drai oss krak` | N | 60 | 100 | 4s | The Necromancer only (range 7): a Bone Spear's hit on the target, every monster within 1 sqm of it 2.5x that (2026-10-15, `_packtools.lua`). |
 | **monk** (Mo Monk, SF Shadowfist, IS Iron Sage; finishers need 1 chi and spend all, "5 chi" values; rotations measured, see "Monk line") | | | | | | | |
 | 63 | Ashen Fist | `kah dhun` | Mo, SF, IS | 8 | 15 | 2s | Quick strike at the target next to you; +2 chi. The builder. |
@@ -2624,6 +2625,16 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
 
+### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
+
+Every spell above 20 mana now costs **60%** of its cost before, rounded to 5 (at least 20): all 110 Chaos spells
+(`spells_chaos.xml`), the stock attack and healing spells the classes keep (`stock_spells.csv`, new `spell_timings.csv`
+rows patched by `patch_spell_timings.py`) and the Necromancer's raise spells (`necro_config.lua`: Raise Dead 35, Bone
+Warrior / Archer / Mage 30 / 35 / 40). The 2 s level 8 fillers (6-20 mana) stay. Cooldowns and damage are unchanged.
+The stock support spells the classes keep (Ward of the Mind and the like) keep their base numbers. The cost tables
+below show the costs before the cut; each is now round(x 0.6 / 5) x 5. The Ranger line's best set at level 300 spends
+62 mana a second instead of 104: with the level regeneration it is paid as it goes from about level 650.
+
 ### Fixed spell costs (2026-10-21; owner: "Mas o custo de mana das skills ainda tá escalando com o level do char"; computed with rotation_sim.py, not measured in game)
 
 Reports: the owner (2026-10-21) and a beta tester (2026-10-20: "the mana cost scales too, it's not fixed per skill. One
@@ -2841,6 +2852,7 @@ spells keep their base numbers, all flat). "all" = the whole line; the mana is t
 |  | Vigil of Clarity | support | 40 | 2 s | 0 | all |
 |  | Vigil of Haste | support | 40 | 2 s | 0 | all |
 |  | Withering Curse | attack | 40 | 4 s | 120 | all |
+|  | Grave Nova | attack | 50 | 6 s | 80 | Necromancer |
 |  | Banner Call | support | 60 | 35 s | 250 | all |
 |  | Bone Shrapnel | attack | 60 | 4 s | 100 | Necromancer |
 |  | Vigil of Iron | support | 60 | 2 s | 0 | all |

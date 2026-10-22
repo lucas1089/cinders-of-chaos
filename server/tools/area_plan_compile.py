@@ -564,17 +564,41 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                     roofs += 1
         if roofs:
             Wn('a flat roof of %d tiles covers the floors above ground' % roofs)
+    # the view frame: the generator builds only a thin rock rim around the floor (walls in a dungeon), so a player near
+    # it would see the black void past it. Every tile within C.VIEW of a walkable tile that has none gets a bare ground
+    # (meta['frame']: the theme's rock, the rim's own ground, so no border is wanted; earth behind a dungeon's walls).
+    # It is a file of its own (<id>-frame.otbm): the installer lays it only where the map has no tile and no other area
+    # or room goes
+    fr = meta.get('frame')
+    frame = {}
+    if not fr:
+        E('the generator names no ground for the view frame')
+    else:
+        if fr['walk']:
+            E('the view frame family %s is walkable; it needs a blocking ground' % fr['family'])
+        frame = {p: dict(ground=fr['ground'], items=[], flags=0) for p in C.view_frame(walk, tiles)}
     # ---------------------------------------------------------------------------------------- OTBM and QA
     spawn_name, house_name = plan['id'] + '-spawn.xml', plan['id'] + '-house.xml'
     data = otbm_bytes(plan['name'], plan['id'], 'seed %d' % seed, tiles, spawn_name, house_name)
     header, back, problems = read_otbm_full(data)
     for p in problems:
         E('OTBM: ' + p)
+    frame_data = otbm_bytes(plan['name'], plan['id'], 'view frame, seed %d' % seed, frame, spawn_name, house_name)
+    _fh, frame_back, problems = read_otbm_full(frame_data)
+    for p in problems:
+        E('OTBM (view frame): ' + p)
+    if len(frame_back) != len(frame) or set(frame_back) & set(back):
+        E('OTBM: the view frame holds %d tiles, %d expected (or overlaps the area)' % (len(frame_back), len(frame)))
+    # the checks below run over the area with its frame, as the map holds them
+    back_area, back = back, dict(back)
+    back.update(frame_back)
     if header != (2, AX.MAP_W, AX.MAP_H, AX.ITEMS_MAJOR, AX.ITEMS_MINOR):
         E('OTBM: header %s' % (header,))
-    if len(back) != len(tiles):
-        E('OTBM: %d tiles written, %d read back' % (len(tiles), len(back)))
+    if len(back_area) != len(tiles):
+        E('OTBM: %d tiles written, %d read back' % (len(tiles), len(back_area)))
     allowed = set(meta['allowed']) | {meta['chest'], meta['portal'], meta['hole'], meta['ladder']} | D.all_ids()
+    if fr:
+        allowed.add(fr['ground'])
     unknown = {}
     for k, t in back.items():
         if t['ground'] is None:
@@ -617,6 +641,8 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 if k in walk:
                     open_edges += 1
                 continue
+            if nk in frame_back and ids & wall_ids:
+                continue    # a dungeon wall closes the edge to the frame behind it
             g = fam_of.get(nt['ground'])
             if g and g != f and meta['families'][g]['z'] > zf:
                 s = rules.get((g, f)) or rules.get((g, '*'))
@@ -628,6 +654,10 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                 unbordered += 1
     if open_edges:
         E('%d walkable tile edge(s) open into unbuilt tiles' % open_edges)
+    void = C.view_frame(walk, back)
+    if void:
+        E('%d tile(s) in view of a walkable tile have no ground (first %s): the client shows black void there'
+          % (len(void), sorted(void)[0]))
     if unbordered:
         E('%d of %d ground transitions have no border piece' % (unbordered, transitions))
     # reachability, entry to every zone and the boss
@@ -690,7 +720,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                  farthest_zone=max(zone_steps.values()) if zone_steps else None,
                  transitions=transitions, unbordered=unbordered, unknown_ids=len(unknown),
                  decoration=deco_stats(tiles, walk, plain, dresser, oz, plan['floors']), roof_tiles=roofs,
-                 checksum=area.get('checksum'))
+                 checksum=area.get('checksum'), frame_tiles=len(frame))
     if stats['decoration']['spam_share'] > 0.01:
         Wn('%.1f%% of the walkable tiles carry 3 or more decoration items (the guide keeps it under 1%%)'
            % (100 * stats['decoration']['spam_share']))
@@ -699,6 +729,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
                     pair24=bool(pair24), dark=bool(dark),
                     zones={zid: dict(rect=list(r[:4]), z=r[4], role=zones[zid].get('role', 'hunt'), pz=bool(zones[zid].get('pz')))
                            for zid, r in sorted(zrect.items())},
+                    frame=dict(tiles=len(frame), family=fr and fr['family'], ground=fr and fr['ground'], view=list(C.VIEW), file=plan['id'] + '-frame.otbm'),
                     arrival=list(arrival), exit=exit_out, links=link_out, teleports=tele_out, chests=chest_out,
                     npcs=npc_out, boss=boss_out, spawns=len(spawn_out), entry_from_world=plan['entry'].get('from_world'),
                     stats=stats, qa=[dict(level=l, message=m) for l, m in qa],
@@ -710,7 +741,7 @@ def compile_plan(plan, pair24=None, dark=False, cat=None, dress=True):
         if n['new']:
             stubs.update(npc_stub(n))
     manifest['stubs'] = sorted(stubs)
-    return dict(otbm=data, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
+    return dict(otbm=data, frame_otbm=frame_data, frame=frame, spawn_xml=spawn_xml(spawn_out, boss_out, npc_out, walk), manifest=manifest, tiles=tiles,
                 stubs=stubs, dresser=dresser,
                 walk=walk, pz=pz, spawns=spawn_out, boss=boss_out, chests=chest_out, npcs=npc_out, links=link_out,
                 teleports=tele_out, exit=exit_out, arrival=arrival, zrect=zrect, origin=(ox, oy, oz), qa=qa,
@@ -725,7 +756,8 @@ def write_outputs(result, out_dir):
     os.makedirs(out_dir, exist_ok=True)
     pid = result['manifest']['id']
     paths = []
-    for name, data, mode in ((pid + '.otbm', result['otbm'], 'wb'), (pid + '-spawn.xml', result['spawn_xml'], 'w'),
+    for name, data, mode in ((pid + '.otbm', result['otbm'], 'wb'), (pid + '-frame.otbm', result['frame_otbm'], 'wb'),
+                             (pid + '-spawn.xml', result['spawn_xml'], 'w'),
                              (pid + '.json', json.dumps(result['manifest'], indent=1, sort_keys=True) + '\n', 'w')):
         p = os.path.join(out_dir, name)
         with open(p, mode) as f:

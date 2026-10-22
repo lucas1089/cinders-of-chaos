@@ -20,3 +20,4 @@ item,33000,33650,own,"art sets with the owner's permission (art_import/things.cs
 item,33651,33653,own,"store pouches drawn in code (gen_pouch_art.py)"
 item,33654,33659,own,"fist weapons drawn in code (gen_fistfx_art.py, fist_items.csv)"
 item,33660,33903,own,"themed sets (PixelLab paintings for the project) and grounds (things_custom24, theme_things.csv)"
+item,38641,38641,own,"orb looks drawn in code (pair 38, gen_orb_items_art.py, orb_items.csv)"

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Ironmask Warbreaker" nameDescription="an ironmask warbreaker" race="blood" experience="47900" speed="37" manacost="0">
 	<health now="32500" max="32500"/>
-	<look type="2253" head="57" body="76" legs="95" feet="96" corpse="6068"/>
+	<look type="1449" corpse="6068"/>
 	<level min="1780" max="1820"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

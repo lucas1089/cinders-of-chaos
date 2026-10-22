@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 54,
   "out": 37,
-  "passive": 63,
+  "passive": 64,
   "place": 14,
   "staff": 10
  },
@@ -3058,6 +3058,15 @@
   "firsthour": {
    "files": [
     "firsthour.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "fx_send_offset": {
+   "files": [
+    "chaos_constants.lua"
    ],
    "kind": "passive",
    "opcodes": [],

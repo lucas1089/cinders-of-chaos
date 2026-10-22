@@ -25,6 +25,12 @@ local cfg = dofile("data/scripts/chaos/hunt_teleports_config.lua")
 -- ------------------------------------------------------------------ the config
 eq(#H.validate(cfg, nil), 0, "the shipped config is valid")
 eq(#cfg.plans, 58, "fifty-eight plans")
+local shown = {}
+for _, p in ipairs(cfg.plans) do
+	local k = p.monster:lower()
+	ok(not shown[k], "one slot per monster (owner 2026-10-22): " .. p.monster .. " shown by " .. p.id .. " and " .. tostring(shown[k]))
+	shown[k] = p.id
+end
 local seen = {}
 for _, p in ipairs(cfg.plans) do
 	ok(not seen[p.id], "plan listed once: " .. p.id)
@@ -34,7 +40,7 @@ for _, p in ipairs(cfg.plans) do
 	if f then
 		local text = f:read("*a")
 		f:close()
-		ok(text:find('"monster": "' .. p.monster .. '"', 1, true) ~= nil, p.id .. ": the display monster spawns in the plan")
+		ok(p.standIn or text:find('"monster": "' .. p.monster .. '"', 1, true) ~= nil, p.id .. ": the display monster spawns in the plan (or is a stand-in)")
 	end
 end
 ok(cfg.aid >= 47930 and cfg.aid <= 47939, "aid in its block")
@@ -596,6 +602,21 @@ eq(regs[1], "ChaosHallDisplayGuard", "a display monster gets the guard at its sp
 regs = {}
 eq(registered.onSpawn(spawned, {x = 31648, y = 32256, z = 6}, true, false), true, "onSpawn elsewhere")
 eq(#regs, 0, "a monster elsewhere gets no guard")
+
+-- the showcase shows its hunt's level (beta 2026-10-22: Dragon [42] beside a hunt of levels 665+)
+do
+	local dcfg = {room = {teleportRows = {32254, 32258}, cellRows = {32253, 32259}}, hall = {endRow = 32256}}
+	local didx = {list = {{teleport = {x = 31638, y = 32258, z = 6}, level = {665, 840}}},
+		base = {{teleport = {x = 31634, y = 32254, z = 6}, level = {100, 140}},
+			{teleport = {x = 31667, y = 32256, z = 5}, level = {1850, 2000}}}}
+	eq(H.displayLevel(H.entryForDisplay(dcfg, didx, {x = 31638, y = 32259, z = 6})), 753, "the cell behind: the band's middle")
+	eq(H.displayLevel(H.entryForDisplay(dcfg, didx, {x = 31639, y = 32259, z = 6})), 753, "a cell beside")
+	eq(H.displayLevel(H.entryForDisplay(dcfg, didx, {x = 31633, y = 32253, z = 6})), 120, "a base hunt's cell")
+	eq(H.displayLevel(H.entryForDisplay(dcfg, didx, {x = 31668, y = 32255, z = 5})), 1925, "an end teleport's cell")
+	eq(H.entryForDisplay(dcfg, didx, {x = 31650, y = 32253, z = 6}), nil, "no teleport by it: nil")
+	eq(H.displayLevel({level = {1000, 0}}), 1000, "no ceiling: the floor")
+	eq(H.displayLevel(nil), nil, "no hunt: nil")
+end
 
 print(string.format("hunt_teleports_test: %d checks, %d failed", checks, fails))
 if fails > 0 then

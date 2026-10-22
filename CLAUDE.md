@@ -57,6 +57,7 @@ python3 -I website/tools/gen_wiki_art.py                     # -> website wiki i
 python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of pair 26 (CI uses the fx venv)
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md
+python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/lib/chaos_fx_send_offsets.lua (pair 36 in-place fx centring)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.
@@ -102,3 +103,5 @@ Client: `client/tools/assemble_client.sh <base-client-dir> <out>` applies `base-
   - Art pack names may appear only in `docs/CREDITS.md` and the two files generated from it.
 - Every third-party asset, font, library or tool that ships goes into `docs/CREDITS.md`. Then run `gen_credits.py`.
 - No real account data or player logs in the repo.
+- When telling the owner to run a VPS step, say first if the admin app (`android/`) can do it, and where (tab > card > button).
+  Give the shell command only as a fallback. Any `chaos-ctl.sh` command the owner runs often should get a button there.

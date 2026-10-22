@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Dirge Herald" nameDescription="a dirge herald" race="undead" experience="25450" speed="40" manacost="0">
 	<health now="27000" max="27000"/>
-	<look type="2269" head="76" body="21" legs="76" feet="38" corpse="6068"/>
+	<look type="1485" corpse="6068" />
 	<level min="1240" max="1280"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

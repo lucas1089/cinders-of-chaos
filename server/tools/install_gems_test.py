@@ -81,5 +81,35 @@ try:
 except SystemExit as e:
     check('already used' in str(e), 'a taken look id stops the script')
 
+# the Orb of Sockets: our orb look (pair 38) on its rune stone node, the stock look back without it (2026-10-22)
+orb = shipped['socketOrb']
+check(orb['id'] == 24692 and orb['look'] == 38641 and orb['useLook'] and orb['stockLook'] == 22036,
+      'socketOrb: look 38641 (orb_items.csv), stock rune stone 22036')
+with open(os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites', 'art_import', 'orb_items.csv')) as f:
+    orbart = {int(r['server_id']): r for r in csv.DictReader(f)}
+check(orbart.get(24692, {}).get('flags') == 'copy:22036' and int(orbart[24692]['phases']) == 1,
+      'orb_items.csv: the Orb of Sockets look copies the rune stone flags, one phase (no animation flag needed)')
+orbx = attr(0x14, struct.pack('<H', 9))
+sbase = otb([item_node(24691, 22035), item_node(24692, 22036, FLAG_STACKABLE | FLAG_USEABLE, 0, orbx), item_node(3191, 3191)])
+on, note = T.patch_orb_otb(sbase, orb)
+ko = {k[2]: k for k in scan(on)[0]}
+check(ko[24692][3] == 38641 and 'set' in note, 'socketOrb: our look')
+check(ko[24692][5] == FLAG_STACKABLE | FLAG_USEABLE and (0x14, struct.pack('<H', 9)) in ko[24692][6],
+      'socketOrb: flags and other attributes kept')
+check(ko[24691][3] == 22035 and ko[3191][3] == 3191, 'socketOrb: other nodes untouched')
+check(T.patch_orb_otb(on, orb) == (on, 'items.otb: Orb of Sockets look 38641 present'), 'socketOrb: idempotent')
+off, _ = T.patch_orb_otb(on, dict(orb, useLook=False))
+check(off == sbase, 'socketOrb: useLook off the stock rune stone comes back byte for byte')
+try:
+    T.patch_orb_otb(otb([item_node(24692, 22036), item_node(5000, 38641)]), orb)
+    check(False, 'socketOrb: a taken look stops it')
+except SystemExit as e:
+    check('already used' in str(e), 'socketOrb: a taken look stops it')
+try:
+    T.patch_orb_otb(otb([item_node(24692, 1234)]), orb)
+    check(False, 'socketOrb: an unknown client id stops it')
+except SystemExit as e:
+    check('neither' in str(e), 'socketOrb: an unknown client id stops it')
+
 print('install_gems_test: %s' % ('OK' if not failed else '%d FAILED' % failed))
 sys.exit(1 if failed else 0)

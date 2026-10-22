@@ -83,10 +83,12 @@ function drink.onUse(player, item, fromPosition, target, toPosition, isHotkey)
 		return false
 	end
 	if r.health then
-		doTargetCombat(player, who, COMBAT_HEALING, r.health[1], r.health[2])
+		local v = ChaosPotions.amount(player, who, "health", r.health, 0)
+		doTargetCombat(player, who, COMBAT_HEALING, v, v)
 	end
 	if r.mana then
-		doTargetCombat(player, who, COMBAT_MANADRAIN, r.mana[1], r.mana[2])
+		local v = ChaosPotions.amount(player, who, "mana", r.mana, 0)
+		doTargetCombat(player, who, COMBAT_MANADRAIN, v, v)
 	end
 	who:say(PT.cfg().sound, TALKTYPE_MONSTER_SAY)
 	lastDrink[slot] = nowMs()

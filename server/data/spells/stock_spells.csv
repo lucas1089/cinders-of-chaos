@@ -2,20 +2,20 @@ id,name,words,group,level,mana,cooldown,groupcooldown,secondarygroup,secondarygr
 61,Bonebreaker,kah brak,attack,8,10,2000,2000,,0,,Warrior;Juggernaut;Berserker
 111,Phantom Javelin,kah sag,attack,8,20,2000,2000,,0,,Ranger;Deadeye;Beastmaster
 169,Kindling Spark,kah ti pyr,attack,8,6,2000,2000,,0,,Mystic;Elementalist;Illusionist
-163,Pyre Torrent,drai gal pyr ul,attack,38,120,4000,2000,,0,,Elementalist
-13,Tempest Fan,drai zhul ul,attack,38,170,12000,2000,,0,,Elementalist
-85,Arcane Ripple,drai ondr,attack,40,175,4000,2000,,0,,Mystic;Illusionist
-124,Sanctum Burst,drai vas sol,attack,50,160,8000,2000,,0,,Ranger;Deadeye;Beastmaster
-53,Bewitching Hex,drai glam,attack,60,75,6000,2000,,0,,Mystic;Illusionist
-59,Scything Arc,kah ti,attack,70,55,4000,2000,,0,,Warrior;Juggernaut;Berserker
-105,Butcher's Gyre,kah gal,attack,90,100,12000,2000,,0,,Warrior;Juggernaut;Berserker
-34,Radiant Shard,drai ira vas sol,attack,300,160,12000,2000,,0,,Ranger
-37,Headsman's Hurl,kah rek sang,attack,300,100,16000,2000,,0,,Warrior;Juggernaut;Berserker
+163,Pyre Torrent,drai gal pyr ul,attack,38,70,4000,2000,,0,,Elementalist
+13,Tempest Fan,drai zhul ul,attack,38,100,12000,2000,,0,,Elementalist
+85,Arcane Ripple,drai ondr,attack,40,105,4000,2000,,0,,Mystic;Illusionist
+124,Sanctum Burst,drai vas sol,attack,50,95,8000,2000,,0,,Ranger;Deadeye;Beastmaster
+53,Bewitching Hex,drai glam,attack,60,45,6000,2000,,0,,Mystic;Illusionist
+59,Scything Arc,kah ti,attack,70,35,4000,2000,,0,,Warrior;Juggernaut;Berserker
+105,Butcher's Gyre,kah gal,attack,90,60,12000,2000,,0,,Warrior;Juggernaut;Berserker
+34,Radiant Shard,drai ira vas sol,attack,300,95,12000,2000,,0,,Ranger
+37,Headsman's Hurl,kah rek sang,attack,300,60,16000,2000,,0,,Warrior;Juggernaut;Berserker
 175,Salve of Scars,saen tin brak,healing,1,10,1000,1000,,0,,Warrior;Juggernaut;Berserker
 1,Minor Mending,saen,healing,8,20,1000,1000,,0,,Ranger;Deadeye;Beastmaster;Mystic;Elementalist;Illusionist;Necromancer;Lich;Bone Lord
-123,Battle Salve,saen brak,healing,8,40,1000,1000,,0,,Warrior;Juggernaut;Berserker
-3,Grand Mending,saen ael,healing,30,160,1000,1000,,0,,Mystic;Elementalist;Necromancer;Lich;Bone Lord
-125,Dawn's Mending,saen sol,healing,35,160,1000,1000,,0,,Ranger;Deadeye;Beastmaster
-36,Lightbearer's Grace,saen gal sol,healing,60,210,1000,1000,,0,,Ranger;Deadeye;Beastmaster
-102,Iron Salve,saen ama brak,healing,300,90,1000,1000,,0,,Warrior;Juggernaut;Berserker
-103,Rebirth of Flesh,saen zar ael,healing,300,260,6000,1000,,0,,Necromancer;Lich;Bone Lord
+123,Battle Salve,saen brak,healing,8,25,1000,1000,,0,,Warrior;Juggernaut;Berserker
+3,Grand Mending,saen ael,healing,30,95,1000,1000,,0,,Mystic;Elementalist;Necromancer;Lich;Bone Lord
+125,Dawn's Mending,saen sol,healing,35,95,1000,1000,,0,,Ranger;Deadeye;Beastmaster
+36,Lightbearer's Grace,saen gal sol,healing,60,125,1000,1000,,0,,Ranger;Deadeye;Beastmaster
+102,Iron Salve,saen ama brak,healing,300,55,1000,1000,,0,,Warrior;Juggernaut;Berserker
+103,Rebirth of Flesh,saen zar ael,healing,300,155,6000,1000,,0,,Necromancer;Lich;Bone Lord

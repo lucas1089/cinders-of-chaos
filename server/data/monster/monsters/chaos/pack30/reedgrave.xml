@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Reedgrave" nameDescription="a reedgrave" race="venom" experience="13500" speed="47" manacost="0">
 	<health now="21400" max="21400"/>
-	<look type="2305" head="57" body="57" legs="39" feet="21" corpse="6068"/>
+	<look type="554" corpse="6068"/>
 	<level min="930" max="970"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>

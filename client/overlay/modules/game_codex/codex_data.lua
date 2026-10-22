@@ -14,7 +14,7 @@ CodexData = {
 				{"Orb of Gilding", "Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."},
 				{"Orb of Grafting", "Adds it at random when the item has an open prefix and suits it."},
 				{"Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."},
-				{"Orb of Fate", "New rarity (often none): every modifier rolled again."},
+				{"Orb of Fate", "Rarity one step up, new modifiers (Legendary: small chance of Divine)."},
 				{"Orb of Unmaking", "May remove it (one random unbound modifier)."},
 				{"Orb of Excision", "Removes it when you pick it on the bench."},
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
@@ -37,7 +37,7 @@ CodexData = {
 				{"Orb of Gilding", "Can roll it only when the item becomes Legendary (10%)."},
 				{"Orb of Grafting", "Adds it at random on a Legendary or better item without a power, when a prefix is open."},
 				{"Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."},
-				{"Orb of Fate", "New rarity (often none): every modifier rolled again."},
+				{"Orb of Fate", "Rarity one step up, new modifiers (Legendary: small chance of Divine)."},
 				{"Orb of Unmaking", "May remove it (one random unbound modifier)."},
 				{"Orb of Excision", "Removes it when you pick it on the bench."},
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
@@ -60,7 +60,7 @@ CodexData = {
 				{"Orb of Gilding", "Can roll it on a normal item (Magic 60%, Rare 30%, Legendary 10%)."},
 				{"Orb of Grafting", "Adds it at random when the item has an open suffix and suits it."},
 				{"Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."},
-				{"Orb of Fate", "New rarity (often none): every modifier rolled again."},
+				{"Orb of Fate", "Rarity one step up, new modifiers (Legendary: small chance of Divine)."},
 				{"Orb of Unmaking", "May remove it (one random unbound modifier)."},
 				{"Orb of Excision", "Removes it when you pick it on the bench."},
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
@@ -83,7 +83,7 @@ CodexData = {
 				{"Orb of Gilding", "Can roll it only when the item becomes Legendary (10%)."},
 				{"Orb of Grafting", "Adds it at random on a Legendary or better item without a power, when a suffix is open."},
 				{"Orb of Upheaval", "Rolls every unbound modifier again: it may come or go."},
-				{"Orb of Fate", "New rarity (often none): every modifier rolled again."},
+				{"Orb of Fate", "Rarity one step up, new modifiers (Legendary: small chance of Divine)."},
 				{"Orb of Unmaking", "May remove it (one random unbound modifier)."},
 				{"Orb of Excision", "Removes it when you pick it on the bench."},
 				{"Orb of Erasure", "Removes it with the rarity and every other modifier."},
@@ -4983,12 +4983,12 @@ CodexData = {
 					id = "orb:divine",
 					name = "Orb of Fate",
 					color = "#e8b84a",
-					sub = "Rolls a new random rarity, often none; item level and quality stay. Not on an item with a bound modifier.",
+					sub = "Raises the rarity one step with new modifiers (Legendary: a small chance of Divine); item level and quality stay. Not on an item with a bound modifier.",
 					f = {group = "orb"},
 					sections = {
 						{
 							h = "What it does",
-							p = {"Rolls a new random rarity, often none; item level and quality stay. Not on an item with a bound modifier."}
+							p = {"Raises the rarity one step with new modifiers (Legendary: a small chance of Divine); item level and quality stay. Not on an item with a bound modifier."}
 						},
 						{
 							h = "Rules",

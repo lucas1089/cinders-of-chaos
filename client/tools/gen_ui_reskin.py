@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Recolour the base client's UI textures to the Chaos palette.
 
-usage: python3 gen_ui_reskin.py <base-client-dir> [overlay-dir] [--dry-run]
+usage: python3 gen_ui_reskin.py <base-client-dir> [overlay-dir] [--dry-run] [--only=ui/a.png,...]
 
 The stock interface is grey stone. Every grey pixel of the chrome textures (windows, mini windows, panels,
 buttons, scroll bars, tabs, console, action bar, inventory, minimap frame...) is mapped by its brightness onto
@@ -60,6 +60,15 @@ TEXT_FREE = {
     'optionstab/gameplay.png': [(34, 6, 81, 16), (35, 27, 82, 37)],
     'optionstab/screenshot.png': [(27, 6, 87, 15), (28, 27, 88, 36)],
 }
+# Light words baked into a texture (Outfit window colour tabs, Copy / Paste, Ok / Cancel): the brightness map put
+# them in bronze on dried blood, hard to read (owner 2026-10-22). Their pixels (brighter than the band around them)
+# go to light parchment instead.
+TEXT_LIFT = {'ui/colors-panel.png', 'ui/copy-all.png', 'ui/copy-colours.png', 'ui/paste.png', 'ui/ok-button.png',
+             'ui/cancelButton.png'}
+LIFT_COLOUR = np.array([246, 230, 196], dtype=np.float64)
+LIFT_MIN, LIFT_FULL = 0.06, 0.22  # how much brighter than the median around it: starts to lift, fully lifted
+LIFT_RADIUS = 3                    # the median window: (2 r + 1) squared pixels
+
 REF = re.compile(r'/images/([A-Za-z0-9_/.\- ]+?)(?:\.png)?(?=[\s\'")\],;]|$)')
 
 _XS = np.array([s[0] for s in STOPS])
@@ -76,6 +85,22 @@ def recolor(rgba):
     out = rgba.copy()
     out[..., :3] = (np.clip(mapped * w + rgb * (1 - w), 0, 1) * 255).round().astype(np.uint8)
     return out, float((w[..., 0] * (rgba[..., 3] > 0)).sum())
+
+
+def lift_text(src, out):
+    """src: the stock pixels, out: recoloured. A pixel brighter than the median of its neighbourhood (a letter on its
+    band) is blended toward LIFT_COLOUR by how much brighter it is; everything else stays as recoloured."""
+    rgb = src[..., :3].astype(np.float64) / 255.0
+    lum = 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
+    r = LIFT_RADIUS
+    pad = np.pad(lum, r, mode='edge')
+    h, w = lum.shape
+    win = np.stack([pad[dy:dy + h, dx:dx + w] for dy in range(2 * r + 1) for dx in range(2 * r + 1)])
+    bg = np.median(win, axis=0)
+    t = np.clip((lum - bg - LIFT_MIN) / (LIFT_FULL - LIFT_MIN), 0, 1)[..., None]
+    res = out.copy()
+    res[..., :3] = (out[..., :3].astype(np.float64) * (1 - t) + LIFT_COLOUR * t).round().astype(np.uint8)
+    return res
 
 
 def erase_text(rgba, boxes):
@@ -118,6 +143,11 @@ def main():
     if not args:
         sys.exit(__doc__)
     dry = '--dry-run' in sys.argv
+    # --only=ui/a.png,ui/b.png: just these files (the list file keeps every earlier one)
+    only = set()
+    for a in sys.argv[1:]:
+        if a.startswith('--only='):
+            only = {x.strip() for x in a[len('--only='):].split(',') if x.strip()}
     base = os.path.abspath(args[0])
     here = os.path.dirname(os.path.abspath(__file__))
     overlay = os.path.abspath(args[1] if len(args) > 1 else os.path.join(here, '..', 'overlay'))
@@ -125,16 +155,22 @@ def main():
     out_images = os.path.join(overlay, 'data', 'images')
     written = skipped = 0
     total = 0
-    for rel in wanted_files(base):
+    if only:
+        generated.update(previously_generated(overlay))
+    for rel in (sorted(only) if only else wanted_files(base)):
         dst = os.path.join(out_images, rel)
         # our own art in the overlay wins; files this tool wrote itself are listed in RESKIN_FILES.txt
         if os.path.exists(dst) and rel not in previously_generated(overlay):
             skipped += 1
             continue
+        if only and rel.replace(os.sep, '/') not in only:
+            continue
         im = Image.open(os.path.join(images, rel)).convert('RGBA')
         arr, touched = recolor(np.array(im))
         if touched < 1:
             continue
+        if rel.replace(os.sep, '/') in TEXT_LIFT:
+            arr = lift_text(np.array(im), arr)
         arr = erase_text(arr, TEXT_FREE.get(rel.replace(os.sep, '/'), ()))
         written += 1
         if not dry:

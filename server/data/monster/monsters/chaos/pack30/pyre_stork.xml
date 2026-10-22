@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Pyre Stork" nameDescription="a pyre stork" race="fire" experience="56400" speed="33" manacost="0">
 	<health now="33800" max="33800"/>
-	<look type="2279" head="39" body="37" legs="95" feet="75" corpse="6068"/>
+	<look type="1532" corpse="6068"/>
 	<level min="1980" max="2020"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

@@ -16,6 +16,11 @@ local BASE = {
 -- as taken, so the Chaos block may reuse them (the Necromancer's Raise Bone Warrior / Archer / Mage, 2026-10-18): every
 -- other id below 256 was in use until the cure spells were retired (RETIRED below). The client's stock entry of Arrow Call is moved off the byte range by spellfix.lua.
 local AMMO_CONJURE = {176, 192, 193}
+-- Ids of the other conjure spells the "runes" step (install_rune_supply.py, chaos_rune_supply.lua R.otherConjures)
+-- removes: Conjure Rations 42, Charge Staff 92, Hallow Spear 110. No rune carries them (a rune's cooldown icon uses its
+-- conjure spell's id), so register_spells.py does not count them as taken either; Grave Nova (Necromancer line,
+-- 2026-10-22) uses 42. The client's stock Conjure Rations entry moves off it (spellfix.lua, chaosIds).
+local OTHER_CONJURE = {42, 92, 110}
 local PATCHED = { -- tools/patch_spell_ids.py NEW_IDS (Wash Taint 58 and Break Glamour 164 went with the cure spells)
 	34, 35, 37, 40, 41, 46, 47, 52, 53, 60, 85, 165, 168, 171
 }
@@ -39,6 +44,15 @@ end
 local taken = {}
 for _, id in ipairs(BASE) do taken[id] = "base" end
 for _, id in ipairs(AMMO_CONJURE) do taken[id] = nil end
+for _, id in ipairs(OTHER_CONJURE) do taken[id] = nil end
+do -- the three are really removed: their scripts are R.otherConjures of the rune supply config
+	local rs = io.open("data/lib/chaos_rune_supply.lua"):read("*a")
+	for _, script in ipairs({"support/food.lua", "conjuring/enchant_staff.lua", "conjuring/enchant_spear.lua"}) do
+		if not rs:find('script = "' .. script .. '"', 1, true) then
+			error("spell_ids_test: " .. script .. " is not in R.otherConjures (chaos_rune_supply.lua)")
+		end
+	end
+end
 for _, id in ipairs(RETIRED) do taken[id] = nil end
 for _, id in ipairs(PATCHED) do taken[id] = "patch_spell_ids.py" end
 -- the three ids are really switched off: their conjure scripts are in the archery config

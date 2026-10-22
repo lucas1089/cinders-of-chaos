@@ -346,12 +346,27 @@ def knives(d, c):
         d.polygon([(bx + nx, by + ny), (x1, y1), (bx - nx, by - ny)], fill=c)
     d.ellipse((54, 102, 74, 122), fill=c)
 
+def gravenova(d, c):
+    # Grave Nova: a small skull in the middle of a ring of death breaking outward
+    d.ellipse((8, 8, 120, 120), outline=c, width=8)
+    for i in range(12):
+        a = math.pi * i / 6
+        x0, y0 = 64 + 40 * math.cos(a), 64 + 40 * math.sin(a)
+        x1, y1 = 64 + 62 * math.cos(a), 64 + 62 * math.sin(a)
+        d.line([(x0, y0), (x1, y1)], fill=c, width=6)
+    d.ellipse((42, 34, 86, 74), fill=c)
+    d.rounded_rectangle((50, 64, 78, 90), 5, fill=c)
+    d.ellipse((48, 48, 60, 60), fill=(20, 10, 30)); d.ellipse((68, 48, 80, 60), fill=(20, 10, 30))
+    d.polygon([(64, 62), (60, 70), (68, 70)], fill=(20, 10, 30))
+    for x in (58, 64, 70):
+        d.line([(x, 78), (x, 90)], fill=(20, 10, 30), width=3)
+
 GLYPH = {k: v for k, v in globals().items() if callable(v) and k in (
     'burst', 'bolt', 'drop', 'crystal', 'meteor', 'dots', 'shield', 'thorns', 'paw', 'leaf', 'swirl', 'cross', 'arrows',
     'ring', 'sword', 'slam', 'wave', 'arrowup', 'hammer', 'twin', 'dash', 'eye', 'ghost', 'rift', 'missile',
     'shuriken', 'daggers', 'smoke', 'katana', 'hood', 'greataxe', 'fang', 'skull', 'bonespear', 'golem', 'banner', 'ribs',
     'fist', 'palm', 'kick', 'flame', 'nodes', 'mountain', 'gate', 'flurry', 'sweep', 'palmwave',
-    'ricochet', 'chain', 'shrapnel', 'shieldwave', 'knives')}
+    'ricochet', 'chain', 'shrapnel', 'shieldwave', 'knives', 'gravenova')}
 
 ICONS = [  # (spell name, theme, glyph)
     ('Rime Bloom', 'frost', 'burst'), ('Witchfire Bolt', 'fire', 'missile'), ('Forked Storm', 'light', 'bolt'),
@@ -412,7 +427,9 @@ ICONS = [  # (spell name, theme, glyph)
     ('Tautstring', 'nature', 'arrowup'),
     # the Warrior line's guard buff and the Ranger line's run buff in place of the stock Bulwark and Windrunner (2026-10-20,
     # cells 309-310)
-    ('Ironhold', 'steel', 'shield'), ('Wildstride', 'nature', 'dash')]
+    ('Ironhold', 'steel', 'shield'), ('Wildstride', 'nature', 'dash'),
+    # the Necromancer line's area attack after Withering Curse (2026-10-22, cell 311)
+    ('Grave Nova', 'necrotic', 'gravenova')]
 
 def render(theme, glyph):
     c = COL[theme]

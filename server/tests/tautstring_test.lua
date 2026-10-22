@@ -70,7 +70,7 @@ head, body = head or "", body or ""
 ok(head:find('spellid="135"', 1, true), "id 135 (Hawkeye's, freed by retire_cure_spells.py)")
 ok(head:find('words="vyr sag"', 1, true), "Chaos words")
 ok(head:find('group="support"', 1, true) and not head:find("secondarygroup", 1, true), "support group, no second group")
-ok(head:find('level="60"', 1, true) and head:find('mana="300"', 1, true), "level 60, 300 mana (Hawkeye: 60, 450)")
+ok(head:find('level="60"', 1, true) and head:find('mana="180"', 1, true), "level 60, 180 mana (Hawkeye: 60, 450; 300 until 2026-10-22)")
 ok(head:find('cooldown="30000"', 1, true) and head:find('groupcooldown="2000"', 1, true), "30 s, group 2 s")
 ok(head:find('selftarget="1"', 1, true) and head:find('aggressive="0"', 1, true), "a self buff")
 local vocs = {}

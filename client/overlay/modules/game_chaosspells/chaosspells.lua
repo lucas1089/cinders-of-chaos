@@ -220,7 +220,8 @@ function init()
   remapStockVocations()
   -- ids, numbers and groups of the stock entries as the server has them (spellfix.lua), before the Chaos entries come in
   fixUndo, fixIdMap, fixRemovedIds = ChaosSpellFix.apply(SpellInfo.Default, SpellIcons, SpellRunesData,
-    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells, ChaosCappedSpells))
+    ChaosSpellFix.serverWords(ChaosSpellData, ChaosSpellNames), ChaosSpellFix.removedWords(ChaosRemovedSpells, ChaosCappedSpells),
+    ChaosSpellFix.chaosIds(ChaosSpellData))
   connect(g_game, { onGameStart = onGameStartExtend })
   connect(g_game, { onGameStart = onGameStartMana })
   connect(LocalPlayer, { onManaChange = updatePercentMana })

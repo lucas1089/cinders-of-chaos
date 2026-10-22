@@ -4,7 +4,8 @@
 place    pastes a compiled area (OUT/<id>.otbm and its <id>.json manifest) into a COPY of a world map at given
          coordinates: every tile, item and attribute shifted, teleport destinations inside the area shifted with it.
          It refuses when a tile of the area lands on a tile the world already has, and it never writes the world file
-         itself (the output must be another path). With the world's spawn file it writes a copy with the area's spawn
+         itself (the output must be another path). The view frame (OUT/<id>-frame.otbm) goes in only where the world
+         has no tile. With the world's spawn file it writes a copy with the area's spawn
          blocks shifted and added, and it rewrites the ORIGIN of the area's chest script to the new place. The owner opens
          the copy in the map editor, or uses it as the server's map after a review.
 install  copies the area's server files (OUT/data/...: the chest script, new NPCs) into a server's data folder.
@@ -152,18 +153,34 @@ def place(area_otbm, world_otbm, out_otbm, at, world_spawn=None, out_spawn=None,
                 if n not in moved:
                     ring.add((n[2] << 32) | (n[1] << 16) | n[0])
     touching = len(np.intersect1d(key, np.array(sorted(ring), np.int64)))
+    # the view frame (<id>-frame.otbm): bare rock where a player of the area would see void, only where the world has
+    # no tile (it never replaces one)
+    frame = {}
+    fp = area_otbm[:-5] + '-frame.otbm'
+    if os.path.isfile(fp):
+        _h, ftiles, problems = PC.read_otbm_full(open(fp, 'rb').read())
+        if problems:
+            raise PlaceError('the view frame is not a planner OTBM: %s' % problems[0])
+        fmoved = {(x + d[0], y + d[1], z + d[2]): t for (x, y, z), t in ftiles.items()}
+        fmoved = {p: t for p, t in fmoved.items() if p not in moved}
+        if fmoved:
+            fk = np.array(sorted((z << 32) | (y << 16) | x for x, y, z in fmoved), np.int64)
+            taken = set(int(c) for c in np.intersect1d(key, fk))
+            frame = {p: t for p, t in fmoved.items() if ((p[2] << 32) | (p[1] << 16) | p[0]) not in taken}
+    allt = dict(moved)
+    allt.update(frame)
     data = open(world_otbm, 'rb').read()
     if data[:2] == b'\x1f\x8b':
         raise PlaceError('the world map is compressed; unpack it first')
     k = insertion_point(data)
     with open(out_otbm, 'wb') as f:
         f.write(data[:k])
-        f.write(area_nodes(moved))
+        f.write(area_nodes(allt))
         f.write(data[k:])
     check = load_otbm(out_otbm)
-    if len(check.tiles['x']) != len(world.tiles['x']) + len(moved):
-        raise PlaceError('the copy holds %d tiles, %d expected' % (len(check.tiles['x']), len(world.tiles['x']) + len(moved)))
-    out = dict(tiles=len(moved), shift=d, world_tiles=len(world.tiles['x']), touching=touching, out=out_otbm)
+    if len(check.tiles['x']) != len(world.tiles['x']) + len(allt):
+        raise PlaceError('the copy holds %d tiles, %d expected' % (len(check.tiles['x']), len(world.tiles['x']) + len(allt)))
+    out = dict(tiles=len(moved), frame=len(frame), shift=d, world_tiles=len(world.tiles['x']), touching=touching, out=out_otbm)
     if manifest.get('kind') == 'dungeon' and at[2] <= 7 and not manifest['stats'].get('roof_tiles'):
         out['roof'] = ('the area was compiled underground and has no roof; set "origin" in the plan to z %d and '
                        'compile again for a roof over floors above ground' % at[2])

@@ -21,7 +21,8 @@ tools/areaplan_build.lua).
 
 validate  the schema and the game rules (reachability, monsters and level tiers, PZ, boss room, links, sizes); exit 1
           on an error. Each line: LEVEL path: message. Fix: hint.
-compile   OUT_DIR/<id>.otbm (OTBM 2, items 3.57, for the map editor), <id>-spawn.xml (monsters, boss, NPCs) and <id>.json
+compile   OUT_DIR/<id>.otbm (OTBM 2, items 3.57, for the map editor), <id>-frame.otbm (the view frame: bare rock on every
+          spot within 9 x 7 of a walkable tile that has no tile), <id>-spawn.xml (monsters, boss, NPCs) and <id>.json
           (zones, chests with their quest keys, portals, links, stats, QA); exit 1 on a QA error.
 render    compile, then OUT_DIR/<id>_z<z>.png per floor with the client sprites and <id>_map.png (minimap colours and
           marks). Review only: the pair stays out of git and the pictures are not published.

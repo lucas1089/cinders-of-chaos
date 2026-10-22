@@ -12,7 +12,8 @@ GoalTrackerRow < UIWidget
     anchors.left: parent.left
     anchors.right: parent.right
     anchors.top: parent.top
-    text-align: left
+    height: 14
+    text-align: topLeft
     font: verdana-11px-antialised
     color: #e8dcc2
     phantom: true

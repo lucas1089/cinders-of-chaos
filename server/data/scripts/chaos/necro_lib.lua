@@ -60,7 +60,14 @@ end
 -- the animations the ranged minions throw (necro_config.lua minions[kind].ani) and the effects on their target
 -- (hitEffect); a kind without them throws the death skull and uses the combat type's effect
 local ANI = {death = CONST_ANI_DEATH, arrow = CONST_ANI_ARROW, energy = CONST_ANI_ENERGY}
-local EFFECT = {hitarea = CONST_ME_HITAREA, energyhit = CONST_ME_ENERGYHIT, mortarea = CONST_ME_MORTAREA}
+local EFFECT = {hitarea = CONST_ME_HITAREA, energyhit = CONST_ME_ENERGYHIT, mortarea = CONST_ME_MORTAREA,
+	drawblood = CONST_ME_DRAWBLOOD, groundshaker = CONST_ME_GROUNDSHAKER, energyarea = CONST_ME_ENERGYAREA,
+	blackspark = CONST_ME_BLACKSPARK}
+
+-- an effect of EFFECT by name (the minion spells' areaEffect), nil when unknown
+function M.effect(name)
+	return name and EFFECT[name] or nil
+end
 
 function M.animation(k)
 	return ANI[k.ani or "death"] or CONST_ANI_DEATH
@@ -117,13 +124,86 @@ function M.count(player, kind)
 	return #M.minions(player, kind)
 end
 
--- a free tile on or next to `pos` (never a protection zone), or nil
+-- a tile a minion may stand on even with a creature there (ground, nothing solid, no protection zone, no stairs,
+-- no teleport)
+local function standable(pos)
+	local tile = Tile(pos)
+	if not tile or not tile:getGround() then
+		return false
+	end
+	return not (tile:hasFlag(TILESTATE_BLOCKSOLID) or tile:hasFlag(TILESTATE_PROTECTIONZONE)
+		or tile:hasFlag(TILESTATE_FLOORCHANGE) or tile:hasFlag(TILESTATE_TELEPORT))
+end
+
+-- a standable tile with nobody on it, but a magic field (fire, energy, poison): isFreeTile refuses it
+local function fieldOnly(pos)
+	local tile = Tile(pos)
+	return standable(pos) and tile ~= nil and tile.getTopCreature ~= nil and not tile:getTopCreature()
+end
+
+local function inSight(from, to)
+	local ok, clear = pcall(function() return Position(from):isSightClear(to, true) end)
+	return not ok or clear ~= false
+end
+
+-- where a minion of `pos` rises (never a protection zone), or nil: a free tile on or next to `pos`, else a free tile
+-- two or three steps away in sight of it, else (beta 2026-10-22: "when the necromancer has no room, the summons are
+-- blocked") a tile with a creature on it, `pos` or next to it, then `ref` (the caster's own tile). M.raise creates
+-- with force, so the minion shares that tile and walks off.
 function M.spotAt(pos, ref)
+	ref = ref or pos
 	if ChaosSpell.isFreeTile(pos) then
 		return Position(pos)
 	end
-	local spots = ChaosSpell.freeAround(pos, ref or pos)
-	return spots[1] and spots[1].pos or nil
+	local spots = ChaosSpell.freeAround(pos, ref)
+	if spots[1] then
+		return spots[1].pos
+	end
+	for r = 2, 3 do
+		local best, bestD
+		for dx = -r, r do
+			for dy = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local p = Position(pos.x + dx, pos.y + dy, pos.z)
+					local d = (p.x - ref.x) ^ 2 + (p.y - ref.y) ^ 2
+					if (not best or d < bestD) and ChaosSpell.isFreeTile(p) and inSight(pos, p) then
+						best, bestD = p, d
+					end
+				end
+			end
+		end
+		if best then
+			return best
+		end
+	end
+	-- (beta 2026-10-22: "summons do not appear in fields") a field-covered tile with nobody on it, on or next to the
+	-- spot; M.raise puts the field out before the minion rises there
+	if fieldOnly(pos) then
+		return Position(pos)
+	end
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local p = Position(pos.x + dx, pos.y + dy, pos.z)
+			if fieldOnly(p) and inSight(pos, p) then
+				return p
+			end
+		end
+	end
+	if standable(pos) then
+		return Position(pos)
+	end
+	for dx = -1, 1 do
+		for dy = -1, 1 do
+			local p = Position(pos.x + dx, pos.y + dy, pos.z)
+			if standable(p) and inSight(pos, p) then
+				return p
+			end
+		end
+	end
+	if standable(ref) then
+		return Position(ref)
+	end
+	return nil
 end
 
 -- Create a minion of `kind` for `player` at `pos` with `ratio` (0-1, default 1) of its health; returns it or nil.
@@ -146,6 +226,14 @@ function M.raise(player, kind, pos, ratio)
 	end
 	for _, i in ipairs(drop) do
 		M.dismiss(list[i].creature)
+	end
+	-- a magic field on the spot would kill the minion as it rises (its monster type has under 50 health until
+	-- setMaxHealth below): the rising minion puts it out
+	local tile = Tile and Tile(spot)
+	local field = tile and tile.getFieldItem and tile:getFieldItem()
+	if field then
+		field:remove()
+		ChaosSpell.fx(spot, "shadow_smoke", CONST_ME_POFF) -- the field goes out in smoke
 	end
 	local m = Game.createMonster(cfg().minions[kind].monster, spot, false, true)
 	if not m then

@@ -426,19 +426,32 @@ def visible_monster(names, files):
     return names[0] if names else ''
 
 
-def display_cells(world, room, pos):
-    """the closed one-tile cells beside a teleport (non-PZ tiles with only ground on the cell row of its side)"""
+def display_cells(world, room, pos, known=(), end_row=None):
+    """the closed one-tile cells beside a teleport (non-PZ tiles with only ground on the cell row of its side, or a
+    tile in `known`: where a spawn of the map already stands a monster). A teleport with no such cell beside it (two
+    teleports sharing one counter, beta 2026-10-22: the base Dragons stayed in the cell behind it) takes the cell right
+    behind it. A teleport on the corridor's end row (`end_row`) takes the two cells on its outer side, above and below
+    (the base server's own display spots there; only `known` ones)."""
     x, y, z = pos
+    known = set(known)
+
+    def ok(c):
+        if c in known:
+            return True
+        st = world.stack(c)
+        return st is not None and len(st) == 1 and not world.flags(c) & 1
+
     rows = room['teleportRows']
-    if y not in rows:
-        return []
-    row = room['cellRows'][rows.index(y)]
-    out = []
-    for cx in (x - 1, x + 1):
-        st = world.stack((cx, row, z))
-        if st is not None and len(st) == 1 and not world.flags((cx, row, z)) & 1:
-            out.append((cx, row, z))
-    return out
+    if y in rows:
+        row = room['cellRows'][rows.index(y)]
+        out = [(cx, row, z) for cx in (x - 1, x + 1) if ok((cx, row, z))]
+        if not out and ok((x, row, z)):
+            out = [(x, row, z)]
+        return out
+    if end_row is not None and y == end_row:
+        side = 1 if x > room.get('back', {}).get('x', x) else -1
+        return [c for c in ((x + side, y - 1, z), (x + side, y + 1, z)) if c in known]
+    return []
 
 
 def sign_of(world, room, pos, sign_id):
@@ -475,10 +488,11 @@ def cells_of(room, pos):
     return [(x - 1, row, z), (x + 1, row, z)]
 
 
-def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=()):
+def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=(), known=(), end_row=None):
     """every hunt slot of the hall: the base hunts' places (from the CSV, whatever stands there now), the places of
     the quest teleports (their alcoves become hunt slots once the quests have moved) and the grown wings' slots. A
-    display cell goes to the first slot (hall order) that claims it. A hunt without a place is not a slot."""
+    display cell goes to the first slot (hall order) that claims it. A hunt without a place is not a slot. known,
+    end_row: display_cells'."""
     slots = []
     quest_at = {(r['x'], r['y'], r['z']) for r in quest_rows}
     for r in list(hunts_of(base_rows)) + list(quest_rows):
@@ -487,7 +501,7 @@ def hall_slots(world, room, sign_id, base_rows, wing_slots, quest_rows=()):
         p = (r['x'], r['y'], r['z'])
         if not world.has(p):
             raise HallError('%s: %d,%d,%d is not a tile of the map (hall_hunts.csv is for another map?)' % ((r['id'],) + p))
-        cells = cells_of(room, p) if p in quest_at else display_cells(world, room, p)
+        cells = cells_of(room, p) if p in quest_at else display_cells(world, room, p, known, end_row)
         slots.append(dict(teleport=p, sign=sign_of(world, room, p, sign_id), cells=cells, base=r['id']))
     have = {s['teleport'] for s in slots}
     for s in wing_slots:

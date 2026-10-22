@@ -575,7 +575,7 @@ def hunting_curve():
 
 def merchant_orbs():
     """[(name, merchant price, expected gain factor on a plain copy)] for the merchant's orbs that change a rarity:
-    the Orb of Gilding (chaos_crafting.lua alchemy weights) and the Orb of Fate (divineRollChance, divineChances)"""
+    the Orb of Gilding (chaos_crafting.lua alchemy weights) and the Orb of Fate (one step up: a plain copy becomes Common)"""
     inv = read(os.path.join(DATA, 'scripts', 'chaos', 'invasion_config.lua'))
     stock = {int(i): int(p) for i, p in re.findall(r'\{id = (\d+), price = (\d+)', inv)}
     cr = read(os.path.join(DATA, 'lib', 'chaos_crafting.lua'))
@@ -586,15 +586,7 @@ def merchant_orbs():
     gild = sum(x / tot * RARITY_MULT[rank_of(r) - 1] for r, x in w) - 1
     if keys.get('alchemy') in stock:
         out.append(('Orb of Gilding', stock[keys['alchemy']], gild))
-    roll = int(re.search(r'divineRollChance = (\d+)', cr).group(1)) / 100.0
-    ch = [float(x) for x in re.findall(r'[\d.]+', re.search(r'divineChances = \{(.*?)\}', cr).group(1))]
-    left, ev, got = roll, 0.0, 0.0
-    for r, c in enumerate(ch, 1):
-        p = left * math.floor(c) / 100.0
-        ev += p * RARITY_MULT[r - 1]
-        got += p
-        left *= 1 - math.floor(c) / 100.0
-    fate = ev + (1 - got) - 1
+    fate = RARITY_MULT[0] - 1  # since 2026-10-22 the Orb of Fate raises a plain copy to Common, one step
     if keys.get('divine') in stock:
         out.append(('Orb of Fate', stock[keys['divine']], fate))
     return out

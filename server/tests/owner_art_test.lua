@@ -75,17 +75,19 @@ for i, p in ipairs(picks) do
 end
 eq(nMon, 12, "12 monster looks")
 -- the twelve monster files carry their pair 26 look (apply_monster_looks.py with the rows in picks.csv), and no other
--- monster file names a pair 26 look
-local fileLook, name = {}, nil
-local p = io.popen('grep -rhoE "<monster name=\\"[^\\"]+\\"|<look type=\\"[0-9]+\\"" data/monster/monsters/chaos 2>/dev/null')
+-- monster file names a pair 26 look. The pack 30 monsters are the exception: at the owner's request they wear their
+-- peer's look (1f38e909), which can be a pair 26 one.
+local fileLook, name, borrowed = {}, nil, false
+local p = io.popen('grep -rHoE "<monster name=\\"[^\\"]+\\"|<look type=\\"[0-9]+\\"" data/monster/monsters/chaos 2>/dev/null')
 for line in p:lines() do
-	local nm = line:match('^<monster name="([^"]+)"')
+	local file, rest = line:match("^([^:]+):(.*)$")
+	local nm = rest:match('^<monster name="([^"]+)"')
 	if nm then
-		name = nm
+		name, borrowed = nm, file:find("/pack30/", 1, true) ~= nil
 	elseif name then
-		fileLook[name] = tonumber(line:match("(%d+)"))
+		fileLook[name] = tonumber(rest:match("(%d+)"))
 		local look = fileLook[name]
-		eq(look < 2213 or look > 2233 or M.monsters[name] == look, true,
+		eq(look < 2213 or look > 2233 or M.monsters[name] == look or borrowed, true,
 			name .. ": look " .. look .. " of pair 26 only on its own monster")
 		name = nil
 	end

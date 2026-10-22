@@ -2365,7 +2365,10 @@ of each thing) and `pack36_fx.sums` (sha256 of each strip, for `build --check`).
   animation, not the word"; 416 is also Mistborne Step, 417 a shield buff fallback). The word pop-ups (`w_text_*`,
   English words in the art) are appended and sent by nothing. Every engine, monster and script send of those ids shows the new art; send
   offset 0, 0 (628: 1, 1, as before); art past the bottom-right tile is moved up and left as a whole, cut beyond 4 x 4
-  tiles (2 effects lose 3-6 % of their pixels).
+  tiles (2 effects lose 3-6 % of their pixels). So a 3x3 or 4x4 in-place art sent at the target tile sits up-left
+  of it; the server's Lua sends move the 23 such ids to their centring tile (`tools/sprites/gen_fx_send_offsets.py`
+  -> `server/data/lib/chaos_fx_send_offsets.lua`, server/README.md "Purchased effect packs (pair 36)"). The pair is
+  unchanged.
 - **Appended**: 3247 effects (tile spells 346, fields 150, areas 547, cones 784, Mega 1012, impacts 195, circles 21,
   auras 84, traps 31, game feel 65, beams 12; directional effects as `_n` .. `_nw`) and 62 missiles, named in
   `server/data/lib/chaos_pack36_fx_ids.lua` and `server/data/spells/pack36_fx_catalog.csv`. Server use:
@@ -2453,6 +2456,48 @@ byte-identical. Built twice: identical md5s.
   ab96c012; the owner allowed new pairs without asking).
 - A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
 - Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
+
+## Orb looks (pair 38: item 38641, `tools/sprites/gen_orb_items_art.py`, `art_import/orb_items.*`; built 2026-10-22, on windows-assets ee8e82e)
+Owner request 2026-10-22 with a screenshot of the Orbs Pouch: "Coloque arte de orb de verdade. Não use as runas para
+isso. Deixe os sprites de runa só para as runas." The Orb of Sockets showed a red oval stone, in the pouch and its
+tooltip.
+- **Cause.** The Orb of Sockets (server 24692) is an unused stackable rune stone of the base data, client 22036, whose
+  only sprite (1317) is the great fireball rune's (client 3191): the same picture. Checked for every orb of the loot
+  list, the crafting bench and orbs v2 (24688, 24691, 24697, 29851-29859, 32251-32260, 24692) against the 134 rune
+  things of pair 37 (base items.xml names with "rune"): sprite ids and the phash of the 32 px render. Only 24692
+  shares a sprite with a rune (distance 0); every other orb is 180 or more of 256 bits from its nearest rune.
+- **New look.** `gen_orb_items_art.py build` draws the orb per pixel in code (no source image, no pack pixels): blue
+  glass lit from the top left with a cyan glow inside and a specular glint, a gold band leaning toward the viewer
+  holding three sockets lit violet, cyan and green, a one-pixel near-black outline; snapped to `azurevigil`. Passes
+  `style_check.py check`; `build` refuses a failing tile, `build --check` (CI, fx venv) compares atlas and things file.
+- Things file `art_import/orb_items.csv`: client 38641 `orb of sockets`, flags `copy:22036` (stackable, multi-use,
+  light as before), one phase, mode replace with server id 24692. The server points the node at it
+  (`install_gems.py`, `chaos_gems_config.lua` `socketOrb.look` / `useLook`; server/README.md "Gems and sockets").
+  22036 and the rune 3191 are unchanged.
+
+```
+python3 -I client/tools/sprites/gen_orb_items_art.py build [--preview DIR --dat pair37/Tibia.dat --spr pair37/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair37/Tibia.dat --ours-spr pair37/Tibia.spr --out-dir pair38 \
+    --things client/tools/sprites/art_import/orb_items.csv --first-item 38641 --expect-items 38640
+python3 -I client/tools/sprites/check_pair.py pair38/Tibia.dat pair38/Tibia.spr --old pair37/Tibia.dat pair37/Tibia.spr [--new-only]
+```
+Input pair 37 (windows-assets 1020d51c, dat 774c80f15b38b1072e5e677f1611a08b, spr ba8022fe709d71fe543ee20d6d8858e4).
+Output **pair 38**: dat fb41c87298d95d9b200352b100af26b4 (11,217,716 bytes), spr ee6c5173682531a2b93d17ff35eea7a4
+(1,520,792,224 bytes, 1,338,775 sprites: 1 appended), 38,641 items, 2,681 outfits, 4101 effects, 250 missiles. The
+importer verified the sprite slot pixel-identical to the atlas and every old thing byte-identical. Built once (the
+disk had no room for a second 1.5 GB copy).
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 216 warnings (pair 37's).
+  `check_content.py --pair` passes on pair 38.
+- `outfit_anchors.lua` and `info_lifts.lua` regenerated on pair 38 after it went to windows-assets (ee8e82e): no new
+  creature, only their dat md5 changed.
+- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 145,258,588
+  bytes, sha256 e16ca9668b6173fcff499ccefd4b72ffa1015bf8895bd27e9675ae66753ccb35; parts `things-1098.tar.xz.part00`
+  (057e7ae366554fcf527a1451798c01818d6e41d4b7cc3402b567b9fa1cf51622) and `.part01`
+  (648fee2eb4c657d218e5697231b43d94ab504fbc05b1c3d7d60c5ccbf44be986); unpacks to the md5s above. Not pushed to
+  windows-assets yet.
+- A client on pair 37 or older draws nothing for the Orb of Sockets once the server has the new look: ship pair 38
+  before the server step, or set `useLook = false` and run `install_gems.py` again.
+- Previews (old look and new, the orbs of the pouch in a row): scratchpad only. Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
@@ -3304,7 +3349,9 @@ window exists (polled every second, like the Auto setup button), and any other h
   other helper additions; Auto setup fills it (Undo restores it).
 - What may stand in the list comes from the spell data, not from a class list (`ChaosHelperSupport.eligible`): a
   support spell (group 3 without the attack group 1) with no typed name and no target, on the server, and not a utility
-  (stock light, rope, food, find, challenge ... by words; the teleport home, Detonate Mines, Flickerdash and Mistborne
+  (stock light, rope, food, find, challenge ... by words, the stock words and their Chaos words from
+  `ChaosSpellNames`, e.g. Lantern "vael lyss", Ghost Rope "ash gor"; a saved list loses those rows at load,
+  `H.dropUtilities`; the teleport home, Detonate Mines, Flickerdash and Mistborne
   Step by id). A support spell added to the data later shows up in the dropdown by itself, and Auto setup takes it
   (unless its cooldown is over 30 min). `ChaosHelperSupport.KINDS` (by spell id) only says how to treat the known ones:
   `auto` (`timer`, `support` or `false`), `kind` (buff, shield, summon, switch, party), `fight` (only while attacking a
@@ -3327,6 +3374,11 @@ window exists (polled every second, like the Auto setup button), and any other h
   `RECAST_MIN_MS` (60 s) or its cooldown if longer. A vigil is a switch (a second cast turns it off) and needs bar
   data, else it is not cast; one the bar has not shown after our cast is not cast again within that gap. Only one
   vigil is set up by Auto setup (Clarity).
+- Fixes of 2026-10-22 (owner): (1) light, rope and the other stock utilities went into Support by themselves: the
+  client says them in their Chaos words, which the stock word list missed (above). (2) "after dying the list is gone":
+  every buff drops at death, which read as the player switching the vigils off, so their rows were unticked and
+  saved. While the character is dead the tab casts and tracks nothing (`S.reset`), and a switch-off unticks its row
+  only once it is `USEROFF_CONFIRM_MS` (2 s) old.
 - Fixes of 2026-10-20 (owner beta): (1) "the Support tab does not open": `U.init` imported `supportspells.otui` while
   the module loads (autoload priority 100), before `client_styles` (loaded with `client`) defines `Panel`, `Label`,
   `CheckBox`, `ComboBox`, `Button`. The import stopped at `ChaosSupportRow < Panel`, so only `ChaosSupportTab <

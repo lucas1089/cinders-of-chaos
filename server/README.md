@@ -408,8 +408,9 @@ server/
    `darktiles`) adds the 74 items of `data/items/dark_tiles.csv` to `items.otb` / `items.xml`. The client needs the matching
    `Tibia.dat` / `Tibia.spr` (`client/tools/sprites/gen_dark_tiles.py`). See "Dark tile set".
 5e. Gems: `python3 -I server/tools/install_gems.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `gems`)
-   adds the 35 gems (32001-32035) to `items.otb` / `items.xml` and names the Orb of Sockets (24692). The client needs the
-   multi-use flag on the small diamond: `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
+   adds the 35 gems (32001-32035) to `items.otb` / `items.xml`, names the Orb of Sockets (24692) and gives it its own orb
+   look (client 38641, pair 38). The client needs the multi-use flag on the small diamond:
+   `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
 5f. Auras: `python3 -I server/tools/install_auras.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `auras`)
    adds the 19 Chaos auras of `data/XML/chaos_auras.csv` (ids 6..24) to `auras.xml`; the store sells them (category Auras).
    It also adds the four faction auras of `data/XML/chaos_auras_donor.csv` (ids 25..28, looks 2136..2139 of things_custom14;
@@ -785,7 +786,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
-| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1..9 free |
+| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -1567,6 +1568,19 @@ so `register_spells.py` no longer counts a base spell whose script is in `conjur
 stock entry of Arrow Call (176) is a spell the server does not have: `spellfix.lua` moves it to 1176. Assumption: the
 installed server runs the `archery` step (the default of `install_all.py`); without it, two spells would share an id.
 
+### Ids freed by the other conjure spells (2026-10-22)
+
+Every id below 256 was in use again after the late spells of C6. The runes step (`install_rune_supply.py`) also removes
+three conjure spells that make no rune (`chaos_rune_supply.lua` `R.otherConjures`): Conjure Rations (42), Charge Staff
+(92) and Hallow Spear (110). No rune carries their ids, so the rune cooldown icons do not need them. `register_spells.py`
+counts a base spell whose script is one of them as not holding its spellid, like the ammunition conjure spells (the
+`spells` step runs before `runes`); `tests/spell_ids_test.lua` has the list (`OTHER_CONJURE`). Grave Nova, the
+Necromancer's area attack (level 50, `drai nyx oss`), uses 42; 92 and 110 stay free. The client keeps the stock Conjure
+Rations entry for the spell list but moves it to 1042 (`spellfix.lua` `F.apply` with `chaosIds`), so id 42's cooldown
+and helper entries belong to Grave Nova. Checked with a spells.xml that still has Conjure Rations active: registered;
+the same id on another script: refused. Tests: `tests/grave_nova_test.lua` (the cast on a mocked caster: the circle of
+radius 3, the corner of the square left out, 36 ring effects; the entry and the config), `spellfix_test.lua`.
+
 ### Spell progression audit (C6, 2026-10-20)
 
 Report: "Juggernaut level 520 still has the level 300 skills". Cause: no class had a spell above level 300 and the Juggernaut
@@ -1842,6 +1856,37 @@ net (vocation change, level loss) and gives the new kinds their animation (arrow
 Docs: `docs/CLASSES.md` "Necromancer", `data/spells/README.md` "Necromancer line". Needs a live check: the three casts and the
 minions' hits (arrow and energy animations), the replacement of the oldest minion at the cap, a Lich and a Bone Lord at their
 caps, look 33 for the archer.
+
+**No room, beta 2026-10-22** (owner: "when the necromancer has no room, the summons are blocked"). `ChaosNecro.spotAt`
+took only a free tile on or next to the spot, so a caster in a pack of monsters got "not enough room". Now it looks two
+and three steps away (a free tile in sight), then takes a tile with a creature on it (the spot, a tile next to it, the
+caster's own); `Game.createMonster` already places with force, so the minion shares it and walks off. Never a protection
+zone, a wall, stairs or a teleport. Bone Golem goes through the same rule. Test: `tests/necro_summon_test.lua` "no room".
+Fields (owner: "summons do not appear in fields"): the minion types have under 50 health until `setMaxHealth`, so a fire
+field on the spot killed them as they rose. `spotAt` now takes an empty field tile (on or next to the spot) before a
+crowded one, and `ChaosNecro.raise` removes the field on the spot first (a puff).
+
+**Minion spells, beta 2026-10-22** (owner: "two spells for each necromancer summon, one single target and one area"; "a
+taunt for the summoned warrior"). `necro_config.lua` `minionSpells`: every kind (skeleton, shade, golem, warrior, archer,
+mage) has a single target spell and an area spell, each with its own cooldown. When a minion's hit is due it casts the
+area spell if at least `minArea` (2) enemies stand in it, else the single target one, else the plain hit
+(`necro_core.lua` `N.minionSpell`). Damage is the kind's hit with all its factors (class, Banner of Bones, passive tree)
+x `mult`, dealt as the owner like the hit; the area spells hit monsters and enemies only, never other players
+(`enemiesAround(..., false)`). Melee kinds centre their area on themselves, ranged kinds on their target.
+
+| Minion | Single target | Area |
+|---|---|---|
+| Skeleton | Marrow Rend x2.2, 8 s | Bone Sweep x1.2 r1 around it, 12 s |
+| Lich Shade | Grave Bolt x2.4, 8 s | Soul Wail x1.3 r2 at the target, 12 s |
+| Bone Golem | Crushing Fist x2.5, 9 s | Ossuary Quake x1.4 r2 around it, 14 s |
+| Risen Warrior | Sundering Cleave x2.4, 8 s | Whirling Bones x1.3 r1 around it, 12 s |
+| Risen Archer | Piercing Shot x2.4, 8 s | Arrow Rain x1.2 r2 at the target, 12 s |
+| Risen Mage | Arc Bolt x2.4, 8 s | Static Nova x1.3 r2 at the target, 12 s |
+
+The Risen Warrior also taunts like the golem (Bone Challenge: `tauntMs` 8000, `tauntRadius` 2, while the owner has a
+target). Engine side: `necro_minions.lua` `act` / `cast`; timers in `ChaosNecroMinions.spellAt`. Tests:
+`tests/necro_test.lua` "minion spells". Needs a live check: the effects of each spell, the warrior pulling monsters off
+the caster.
 
 ## Summons: targets, walk-through, levels (2026-10-21)
 
@@ -3503,10 +3548,14 @@ refuses it (action id), so it stays an item.
 
 **World buffs.** A purchase broadcasts "<buyer> activated the World Experience ..." to everybody (and fireworks); buying
 while it runs extends it ("<buyer> extended ..."). A purchase that would leave more than 180 minutes is refused before
-coins are taken. The expiry times are global storages 7100921 (xp), 7100922 (loot), 7100923 (skill) and rows
-`chaos_worldbuff_xp|loot|skill` of the stock `server_config` table: they survive `/reload` and a **restart** (checked on
+coins are taken. The expiry times are global storages 7100921 (xp), 7100922 (loot), 7100923 (skill), 7100924 (hunt) and
+rows `chaos_worldbuff_xp|loot|skill|hunt` of the stock `server_config` table: they survive `/reload` and a **restart** (checked on
 the test server). Adventure > Events lists the active ones with the time left; players get the list at login; the end is
 broadcast (30 s check). Experience: `EventCallback.onGainExperience` (needs `patch_base_events.py`), monsters only.
+**World Hunt** (beta 2026-10-22, owner: "a world boost in the store that raises the chance of rare and magic monsters"):
+300 coins, 1 hour, up to 3; `monster_tiers.lua` multiplies the magic and rare spawn chances by 1.5 (not legendary, and
+on top of the capped event multiplier, so a Chaos Storm under it can reach 6% x 3 x 1.5 = 27% magic). Monsters are
+shared, so it also reaches season characters' hunts. Buff bar icon `buffs/world_hunt.png` (`gen_buff_icons.py`).
 Training: `EventCallback.onGainSkillTries`, which the base `player.lua` already dispatches (no patch needed); one try
 x1.25 becomes 1 or 2 tries at random, so small gains are not rounded away. Loot: `loot_config.lua` `rateMult` and the
 extra-roll rule in `loot.lua`.
@@ -3621,7 +3670,7 @@ and no work in the kill hook. `state` also sends `interval`, `intervals` and `ne
 7100102 auto seller's corpse selling off, 7100152 "sell every X minutes" (5/10/15/30/60; unset = off), 7100103 the rarities it sells (packed, see Rarities), 7100104 name change tokens, 7100105 vocation change tokens, 7100106 Rarity
 Autoloot, 7100107-7100109 store pouches, 7100111-7100150 auto-sell list, 7100151 Everfull Ration owed back after a death
 (`store_food_config.lua`; not in `chaos_constants.lua` yet, as the pouches' keys live in `pouches_config.lua`); global
-7100921-7100923 world buffs. Settings: `Chaos.shopServices`.
+7100921-7100924 world buffs. Settings: `Chaos.shopServices`.
 
 **Tests.** `server/tests/shop_services_test.lua` (LuaJIT and Lua 5.3): name rules, buff stacking and the cap, buff
 effects and the reload from `server_config`, vocation mapping and stat recomputation, sell prices and the keep rules,
@@ -4325,6 +4374,16 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Existing stock potions stay consumables.** Stacks of Health / Mana Potions are not converted: monsters, NPCs, the
   mentor shop and the milestone gifts still hand them out, so a login conversion would fight every source. They are
   still drunk and used up as before, and still sell to NPCs. The Everfull copies sit next to them.
+- **Amount: fixed + percent** (owner 2026-10-22: "quanto mais lvl o personagem tem, menos as pots healam. façam elas
+  healarem uma quantidade fixa + uma porcentagem. e elas também são afetadas por healing da skill tree"). Every health and
+  mana potion gives its own roll (the fixed part) + a percent of the target's maximum health or mana: 3% + 0.01% per
+  level the potion needs, at most 10% (`potions_config.lua` `amount`; health potion 3%, great 3.8%, ultimate 4.3%,
+  level 200 5%, 500 8%, 700 10%). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
+  every heal, mana in `ChaosPotions.amount` from the drinker's storage 7102481 (the tree writes it at every rebuild;
+  the potion script runs in the actions' Lua state). `install_potions.py` rewrites the stock script's two
+  `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
+  it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
+  `tests/potions_test.lua`, `tools/install_potions_test.py`.
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
   cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).
@@ -6212,7 +6271,8 @@ Names are "Tester Xxx". Group 1, account type 1. Never staff.
 
 Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard library only.
 - `setup`: N accounts `tstbot` + 10 random hex digits, one random password each.
-  Characters "Tester Aaa" upward; a name a player owns is skipped. Classes round robin, levels 30/100/250/500.
+  Characters "Tester Aaa" upward; a name a player owns is skipped. Levels 30/100/250/500/750/1000/1250/1500/1750/2000 in turn (each band 1/10 of the testers), the classes shifted
+  by one each round (`plan_bots`).
   Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
   State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
 - `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
@@ -6270,6 +6330,7 @@ It must be 64 hex digits, owned by root, mode 0600. It never goes on a command l
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers status
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers report
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers log 400       # the newest run's actions and errors
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers stop
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup          # lists
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # deletes
@@ -6282,10 +6343,20 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
   First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
   When the minutes are over, the run calls `testers stop --finished` itself.
 - `stop`: SIGTERM to the run's group (the bots log out), the helper files removed.
-- `status`: running, pid, started, bots, minutes, logins, deaths, helper copied, helper loaded.
+- `status`: running, pid, started, bots, minutes, `online` (testers in game now, as the run counts them; 0 when the run
+  stopped saving over 90 s ago), `online_peak`, logins, deaths, `online_server` (the helper's last console count,
+  while the run is up), helper copied, helper loaded.
+- The helper counts the testers in game once a minute. The server console gets
+  `[tester-helper] testers online: N` when the count changed, and every 5 minutes anyway. The activity log gets the
+  run's own count once a minute (`online` lines).
 - `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
   then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
   each with the first bot and what it was doing; behaviours tried / ok / failed; the system coverage (below).
+- Every run writes by itself `<state>/runs/run-<date>-<time>.log` (root, 0600): one line per tester action (its
+  outcome), login, death, level up, and every error it received (Lua error, failure text, kick, anomaly), with the
+  time, the tester, its level and class; at most 300,000 lines. At the end of the run its report (as `report`)
+  goes next to it, `run-<date>-<time>-report.txt`. The 20 newest runs are kept. Admin app: Comandos > Testers.
+- `log [N]`: the last N lines (default 200, at most 5000) of the newest activity log.
 - `cleanup [--yes]`: stops a run; waits 2 minutes after a stop (a character in a fight stays in game).
   Deletes only characters with the marker storage AND a "Tester Xxx" name AND a `tstbot...` account. Exact ids, no
   LIKE. Rows of every table with a `player_id` / `*_player_id` or `account_id` / `*_account_id` column, a house a
@@ -8388,7 +8459,7 @@ modifiers"), Chaos modifiers included.
 | Orb of Unmaking | 24697 (rune stone) | item with a rarity: one random modifier goes (rarity and item level stay) |
 | Orb of Erasure | 24688 (rune stone) | item with a rarity: a plain copy of the base item (no modifiers; the item level stays) |
 | Orb of Upheaval | 29856 | item with a rarity: a new copy of the same rarity and item level with a new set of modifiers |
-| Orb of Fate | 29857 | a new copy with a new random rarity, none 85% of the time (the stock roll); the item level stays (the cheap gamble; the sure step up is the Conquest vendor's refinement, "Conquest Tokens") |
+| Orb of Fate | 29857 | a new copy one rarity rank up with new modifiers (Legendary: 5% Divine, else no change); the item level stays (since 2026-10-22, "Crafting orbs v2") |
 
 Awakening, Gilding, Erasure, Upheaval and Fate make a new copy (like the stock orbs), so upgrade levels on the item
 are lost; Grafting and Unmaking change the item in place and rewrite only the rarity part of the description (text in
@@ -8916,7 +8987,10 @@ removes them. The Orb of Upheaval on an item with bound modifiers works **in pla
 again up to the rarity's count (the upgrade levels of the item stay too). The Orb of Fate (a new copy with a new rarity) is
 refused on an item with a bound modifier ("use an Orb of Erasure first"). The rule for the Orb of Fate itself: it keeps the old
 rarity gamble (stock odds: 85% of the time no rarity at all), item level and quality stay; it is the "risky rarity" orb next to
-the Orb of Ruin, no longer a value reroll (that is the Orb of Tempering).
+the Orb of Ruin, no longer a value reroll (that is the Orb of Tempering). **Since 2026-10-22** (owner: "isso só transforma o
+item em normal. não aumenta a raridade") it raises the rarity one rank with a new set of modifiers (Normal -> Common ..
+Rare -> Legendary); a Legendary item becomes Divine at `fateDivineChance` 5%, else it stays as it is and the orb is spent;
+a Divine item refuses it (`maxRarity`). Item level and quality stay.
 
 **Item quality** (`chaos_quality`, 0..30). Every modifier value is multiplied by (100 + quality) / 100 and rounded to the nearest
 whole number, never below the value itself: a T4 skill of 3 at 20% is 4, a value of 1 stays 1 (so very small values only move
@@ -9238,6 +9312,11 @@ new sprite: every look was in the client already, 64 of them as gallery rows of 
   0.45), at least 2; in tithe_crypt and noose_cache the whole entry of 2). The plan's total count, zones, respawn and
   packs stay, so the hunt's density does not move. `install_content_areas.py` writes them
   into the map like every plan spawn. The display monster of each hunt teleport keeps spawning.
+- **Looks reverted (owner, 2026-10-22: "esses sprites ficaram ruins. volte aos que eram antes").** The sheet looks are
+  no longer used by any monster of the hunts. Each of the 51 new monsters carries its peer's look (own corpse kept).
+  Our 8 monsters below are back on their old looks. The 9 base monsters are back on their stock looks through
+  `base_restore_*` rows of `picks.csv` (family `base`, look < 2000), so `baselooks` also undoes an earlier install.
+  The two lists below are history.
 - **New looks of our monsters** (the old look is not overwritten, only no longer used by them): Lacewing Moth 1480 ->
   2297, Tundra Troll 257 -> 2238, Loricate Orger 403 -> 2270, Ironhook Corsair 1492 -> 2245, Mercenary 1502 -> 2251,
   Mercenary Ranger 1503 -> 2249, Swamp Snapper 886 -> 2302, Webbound Crawler 579 -> 2257. `apply_monster_looks.py`
@@ -9441,7 +9520,7 @@ and the forge also write the stored id.
 | sell price multiplier | 1 .. 32 | 1, 1.5, 3, 6, 12, 24 (`gen_item_prices.py`) |
 | salvage shards (base) | 1 .. 18 | 1, 1, 2, 3, 5, 12; whole-orb chance 0.5, 0.5, 0.75, 1, 1.5, 3% |
 | Orb of Transmutation / Alchemy / Gilding | Common-Uncommon / Rare-Epic-Legendary (55-30-15) | Common 65 Uncommon 35 / Magic 60 Rare 30 Legendary 10 / Magic, Rare or Legendary |
-| Orb of Fate rarity | up to 15 | same 15% divine chance, rank-weighted (`divineChances` 25, 20, 17, 14, 8, 2) |
+| Orb of Fate rarity | up to 15 | one rank up; Legendary to Divine at 5% (`fateDivineChance`, 2026-10-22) |
 | Gambler (Legendary or better) | about 13% | about 4% (Common 70.0, Uncommon 12.2, Magic 8.4, Rare 5.4, Legendary 3.6, Divine 0.4) |
 | Conquest refinement | one rarity up to Celestial | one rank up to Legendary (`perRarity` 60) |
 | craft bonus (`craft_bonus_config.lua`) | up to old Legendary | up to Rare (`maxRarity` 4) |
@@ -10098,6 +10177,17 @@ onyx chip 22193); Flawless and Perfect ruby, sapphire, emerald and amethyst use 
 678). Gems stack per tier, NPCs do not buy them as stock gems, and nothing in the stock data knows the ids. The dark
 tile set uses 30484..30557 (client id + 3000), so the two id ranges stay apart. The Orb of Sockets is the unused
 stackable use-with rune stone 24692 (named by the installer, like the crafting orbs).
+
+**Orb of Sockets look** (`socketOrb.look` / `useLook`, pair 38, 2026-10-22). Owner: "Coloque arte de orb de verdade. Não
+use as runas para isso. Deixe os sprites de runa só para as runas." The rune stone node 24692 drew client 22036, whose
+only sprite (1317) is the great fireball rune's (client 3191): in the bags, the Orbs Pouch and its tooltip the orb was
+a red rune stone. `install_gems.py` now sets that node's client id to 38641, our own orb (blue glass, a gold band, three
+sockets lit violet, cyan and green; `client/tools/sprites/gen_orb_items_art.py`, client/MANIFEST.md "Orb looks").
+Only the client id attribute changes (stackable, useable, the rest stay); the new thing copies 22036's dat flags. The
+rune keeps its sprite. Every other orb of the loot list and the bench was checked against the 134 rune things of pair
+37: no shared sprite and no near picture, so none else changed. A client older than pair 38 draws nothing for the orb:
+ship pair 38 first. Rollback: `useLook = false` and the installer again (22036 back, byte for byte). Test:
+`tools/install_gems_test.py`.
 
 **Own looks** (`ownLook`, on since 2026-10-14): animated looks of our own for every gem and tier, client 33905-33939 =
 `lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md
@@ -14607,6 +14697,16 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   `CONST_ME_*` / `CONST_ANI_*` send, every monster `areaEffect` / `shootEffect` and every `ChaosFx` name on those ids
   now shows the new art. `combat_fx.lua` sends what it sent before. The pack's word pop-ups (`w_text_*`, English) are
   appended but sent by nothing.
+- **Send offsets of the in-place art** (2026-10-22, owner: "a animação amarela está totalmente fora de centro", Banner
+  Call's `holy_spiral` 405, a 5x5 judgement pillar kept as 4x4, drawn two tiles up and left). The in-place art keeps
+  its bottom-right tile on the tile it is sent to, so 23 ids of 3x3 / 4x4 / 2x3 / 3x2 art sat up-left of the target.
+  `data/lib/chaos_fx_send_offsets.lua` (`ChaosFxSendOffset[id] = {dx, dy}`, generated by
+  `client/tools/sprites/gen_fx_send_offsets.py` from the pair 36 specs, `--check` in CI) gives each its centring tile;
+  `Position:sendMagicEffect` (the guard of `chaos_constants.lua`, `fx_send_offset_core.lua`) sends there, so every
+  Lua send (`ChaosSpell.fx`, `Fx`, scripts) is centred. 2x2 art stays at its tile (stock placement). Not covered:
+  sends made by the engine itself (combat `COMBAT_PARAM_EFFECT`, monster `areaEffect`, the crit 173 / 415 of the
+  engine): they need an engine patch that applies the same table. Tests: `tests/fx_send_offset_test.lua` (405 two
+  tiles, no `ChaosVfx` id shifted twice), `tests/magic_effect_guard_test.lua`.
 - **Appended:** effects 855-4101 and missiles 189-250, named in `data/lib/chaos_pack36_fx_ids.lua` (generated by
   `client/tools/sprites/import_fx_art.py`; catalog `data/spells/pack36_fx_catalog.csv`). `C.live()` loads them into
   `ChaosVfx` / `ChaosVfxMissile`; any script may send them by name.
@@ -15953,7 +16053,7 @@ Details and rules: docs/MAP_GUIDE.md "Area planner".
 Production plans for the thin level bands live in `tools/areaplan/plans/` (ten, 200-1300; origins and placing:
 docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the examples; none is placed on the world map yet.
 
-- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
+- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-frame.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
   `--no-dress` without decoration), `render` (floor PNGs and a marked minimap; needs items.otb/xml and the pair),
   `stats`, `approve`, `suggest`, `similar`, `catalogue`, `plan --from-prompt`, `place`, `install`, `check-kits`.
   Nothing runs on the live server; the world map is never written (`place` writes a copy).
@@ -15977,6 +16077,18 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
+- **View frame** (2026-10-22, owner screenshot "hunt com mapa preto": Gallowroot Wilds showed grey rock, then black). The
+  generator builds only a rock rim of `rimWidth` (2) past the floor, and deep rock that reaches the grid border stays
+  unbuilt (Gallowroot: 12,795 tiles of its 163 x 131). The client shows 15 x 11 tiles, so a player near the rim saw void.
+  The compile adds `<id>-frame.otbm`: bare ground on every spot within `area_plan_core.VIEW` (9 x 7, the screen's 7 x 5
+  plus big sprites) of a walkable tile that has no tile, on each floor of the plan (`area_plan_core.view_frame`). The
+  ground is the theme's rock family (the rim's own ground: mountain 919 or earth 101, unwalkable, so no border is
+  wanted); a dungeon gets earth 101 behind its walls (a wall closes the edge, the border QA skips wall tiles next to
+  the frame). The QA counts the frame with the area: borders, unknown ids, and an ERROR for any spot in view of a
+  walkable tile without ground. The manifest's `frame` gives its tile count, family and ground. The frame is a file of
+  its own because it is not the area: `install_content_areas.py` and `place` lay it only where the map has no tile and
+  no area or room goes, so it never replaces a tile; the 66 plans of 2026-10-22 add 359,383 frame tiles and no frame
+  touches another plan.
 - **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 21584; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
   block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
   writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
@@ -15986,7 +16098,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
 - **Install a planned area** (owner, after the review):
   1. `compile` the plan with `origin` set to where it will go (or any place, then step 2 moves it).
   2. `place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z --spawn WORLD-spawn.xml COPY-spawn.xml`: a copy of the map and
-     of the spawn file; refused when a tile lands on a world tile.
+     of the spawn file; refused when a tile lands on a world tile. The view frame goes in where the copy has no tile.
   3. Check the copy in the map editor, then use it (and the spawn copy) as the server's map.
   4. `install OUT SERVER_DIR [--dry-run]`: the chest script and NPC stubs into `data/`; idempotent, refuses a clash
      of action id, storage or file. Restart the server.
@@ -16018,7 +16130,11 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
 **Install** (`install_all.py` step `contentareas`, after houses and before poi; on its own
 `python3 -I server/tools/install_content_areas.py <server>/data [--dry-run] [--only ID,...] [--no-room]`):
 - Compiles every plan (`area_planner.py compile`, read at run time: size, origin and arrival are never copied) and
-  pastes it into the map at its own origin; refused when a tile lands on a map tile.
+  pastes it into the map at its own origin; refused when a tile lands on a map tile. Then each placed area's view
+  frame (Area planner "View frame") fills the spots where the map has no tile and no area, room or hall tile goes
+  (two frames on one spot: the first plan by id); it never replaces a tile, and a second run adds nothing. An area
+  placed before the frame existed (`placed already`) gets its frame on the next run. A plan placed later on another
+  area's frame takes those tiles when they still hold the bare frame ground (they are cut and written again).
 - Grows floor 6 by `modules` (5) alcove modules on each side: the columns of `room.east.module` / `room.west.module`
   are copied one after another past the old end, and the end (`cap`, with its temple teleport and destination) moves
   out by 20. Only the old end's 34 tiles are replaced (cut from the map file); the 420 other new tiles land where the map
@@ -16031,8 +16147,8 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
   Deathrattle 1150, Hellflayer 856, Nightfang Widow 1404, Ashfang Wrym 1418, Hellmaw Brute 1409, Black Stag 686,
   Ironhook Corsair 1492, Elite Tidecrest Serpent 675, Black Vixen 1475) and at most 2x2 tiles (owner, 2026-10-16:
   bigger sprites spilled over the cell walls; swapped: Celestial Wyrm 3x3 -> Spirit of Purity, Scaleborn 5x4 ->
-  Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: `display =
-  false`, none). Display blocks of a slot no longer used are removed. A base display block whose monster stands off its centre (centre on the
+  Twisted Shaper, Bonecrusher 3x3 -> Sopping Carcass; Wyrmspine Hollows has only 4x4 and 5x5 monsters: since
+  2026-10-22 the base server's 2x2 Elder Wyrm stands in, `standIn = true`). Display blocks of a slot no longer used are removed. A base display block whose monster stands off its centre (centre on the
   corridor, monster one tile north in the cell) is taken over too (before, only the centre counted: two monsters on one
   cell, "Couldn't spawn monster" for Hellspawn, Warlock and Fleshcarver at every start; playtest 2026-10-16;
   `tools/install_content_areas_test.py`).
@@ -16191,6 +16307,15 @@ west to east (north before south in a column). A floor with too few slots is gro
   write back (a container) is refused.
   `--remove-hall` puts every base hunt back where the CSV says it stood, the quests in their old alcoves and the planned hunts in the wings again;
   the map backup `<map>.otbm.bak` is written before the first change as for every content install. Idempotent both ways.
+- **Showcase cells, beta 2026-10-22** (owner: "wrong monster in the showcase", two Dragons [42] beside Rotbloom
+  Sanctum 665; Fangclaw [508] and Lurkskin [517] beside a 1850-2000 hunt). A slot's display cells were only the
+  tiles beside its teleport holding nothing but ground. Two teleports sharing one counter (z 6, 31637 and 31639 on
+  the south row) had none, and neither had the corridor's end teleports of z 5 (their cells carry a carpet edge), so
+  the base server's own display blocks there were never taken over and our display never added. Now
+  (`hall_order.display_cells`) a teleport with no free cell beside it takes the cell right behind it, a tile a spawn
+  of the map already stands a monster on counts as a cell (`install_content_areas.spawned_tiles`), and an end
+  teleport takes the two cells on its outer side. On the base map only z 6 (31659, 32254) is left without a cell (it
+  shares its one cell with 31657). The next install replaces the old blocks.
 - **Beta fixes, 2026-10-20** (owner: "the teleports are wrong ... the quest rewards stayed and the quests are gone",
   "many black squares in the TP room", "the teleports inside the hunts take you to random places"; the cause of each
   checked on a copy of the base map with the installer of the time):
@@ -16354,9 +16479,19 @@ parts in one pass after `contentareas` (before `poi`), idempotent like the other
 - **Display monsters** (README "Hunt teleports"). Four low-level rooms (Skullkin, Rimekin, Howler Ape, Saltkin
   grottoes) showed nothing: their rows of `tools/hall_hunts.csv` named the monsters by their old names, which the
   `monsternames` step renames before `contentareas` runs. The rows use the Chaos names now (8 display spawns more);
-  `install_content_areas_test.py` fails on an old monster name in the CSV. Still without: Wyrmspine Hollows (every
-  monster 4x4 or 5x5, `display = false`) and Rimecrown Depths (its slot is the corridor's end teleport of floor 5,
-  which has no cells).
+  `install_content_areas_test.py` fails on an old monster name in the CSV. Wyrmspine Hollows (every
+  monster 4x4 or 5x5) shows an Elder Wyrm since 2026-10-22, and the corridor's end teleports of floor 5 have their
+  cells (Hall order "Showcase cells").
+- **One slot per monster** (owner 2026-10-22: "upper floors: one slot per monster, no repeats"). Neighbouring plans
+  of floors 6 and 5 shared display monsters (three Mercenary Rangers, four Gnawbone Swarms, three Lacewing Moths). The
+  config's `plans` now show 58 different monsters: each plan its most frequent monster of at most 2x2 tiles (pair 37)
+  whose look no lower plan shows, else one whose name no other shows. `tests/hunt_teleports_test.lua` refuses a
+  repeated name.
+- **Display level** (beta 2026-10-22: Dragon [42] beside a hunt of levels 665+, Fangclaw [508] beside one of 1850-2000).
+  A display monster showed its own level. `hunt_teleports.lua` now sets `Chaos.spawnLevel` in its onSpawn to the middle
+  of its hunt's band (`H.entryForDisplay`: the teleport in front of the cell, else beside it, else the end teleport;
+  `H.displayLevel`), and `monster_levels.lua` (index 50, after it) shows that level (engine patch 0044 lets it win over
+  a level of the monster's own). Display only. Test: `tests/hunt_teleports_test.lua`.
 - **Hub water** (`hunt_teleports_config.lua` `hall.fill`). The hall's island lies in a sea with nothing beyond it; the
   ground floor's wings reach past the sea and the plaza looked out on black. Every missing tile of x 31578-31724,
   y 32216-32312, z 7 (5,171) is deep water now (the base map's 28915-28918), the 33 shore tiles beside it got the
@@ -16649,7 +16784,20 @@ script re-runs itself with `sudo -n`, which drops the environment.
   unit's start time). Default: only the current start, so old errors (a database shutdown days ago) no longer look
   current. Identical entries are counted once (`56x ...`, a leading time stamp kept apart as `[stamp]`), a Lua error
   joins its next two lines. Output: `@run DATE [current]`, the entries, `@older K` (earlier starts with errors).
-  `status errors=` counts the error lines of the current start. Tested with mawk and gawk.
+  `status errors=` counts the error lines of the current start. Tested with mawk, gawk and busybox awk.
+- `vps [info]`, `vps upgrade`, `vps upgrade-log [N]`, `vps reboot MINUTES`, `vps reboot-cancel` (2026-10-22): the
+  machine. `info`: key=value lines (host, os, kernel, uptime, load, cpus, memory, disk of /, pending packages from
+  `apt-get -s upgrade` and how many of them are `php*`, the `php*-fpm` or `libapache2-mod-php*` package and version, reboot_required from /run/reboot-required, reboot_at of a planned shutdown). `upgrade`:
+  `apt-get update` then `upgrade` with `--force-confold` (config files kept), detached, log `CHAOS_VPS_LOG`
+  (/var/log/chaos/vps-upgrade.log), one at a time. `reboot`: a broadcast, a save (SIGUSR1 to the engine), then
+  `shutdown -r +MINUTES` (1 to 60); `reboot-cancel`: `shutdown -c` and a broadcast.
+- `services`, `service NAME start|stop|restart`, `service-log NAME [N]` (2026-10-22): the `chaos-*` units (and
+  `CHAOS_UNIT`) and the web server units `apache2`, `nginx`, `php*-fpm` (restart them after a PHP update). NAME must
+  be one of those, `chaos-[a-z0-9-]+` with an optional `.service` / `.timer`, and a loaded unit; nothing else is
+  started or stopped. `service-log` tails the unit's `StandardOutput=append:` file, else its journal.
+- `errors clear`: appends `[chaos-ctl] list cleared by the owner DATE` to the log. `errors` and `status errors=` count
+  only what comes after the newest such line (also with `all`). Nothing in the log is deleted; `logs` and the tester
+  report still read every line. The marker has no word the error filters match. Admin app: Logs > Erros > Limpar lista.
 - `publish-update TAG [--version N] [--min-package N]` and `publish-log [N]` (2026-10-20): runs
   `server/deploy/publish_client_update.sh TAG` in the background (log `CHAOS_PUBLISH_LOG`,
   `/var/log/chaos/publish-update.log`). It publishes the release's `CindersOfChaos-Client-Windows.zip` as the signed

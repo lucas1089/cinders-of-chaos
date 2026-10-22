@@ -197,7 +197,29 @@ st = rects['stairwell']
 l = lay['links'][0]
 ok(st[0] < l['x'] < st[2] and st[1] < l['y'] < st[3] - 1, 'layout: the hole inside the stairwell')
 
-# ------------------------------------------------------------------------------------------------ compile
+# ------------------------------------------------------------------------------------------------ view frame
+# a 3x1 walkable strip with no tile around it: everything within 9 x 7 of it, and nothing else
+vf = C.view_frame({(10, 10, 7), (11, 10, 7), (12, 10, 7)}, {(10, 10, 7), (11, 10, 7), (12, 10, 7), (0, 10, 7)})
+ok(len(vf) == 21 * 15 - 3 and (1, 3, 7) in vf and (21, 17, 7) in vf and (0, 10, 7) not in vf and (22, 10, 7) not in vf
+   and (10, 18, 7) not in vf and not any(p[2] != 7 for p in vf), 'view frame: the 9 x 7 view of every walkable tile')
+ok(C.view_frame({(5, 5, 7)}, {(x, y, 7) for x in range(-5, 16) for y in range(-5, 16)}) == set(),
+   'view frame: nothing where the tiles cover the view')
+ok(C.view_frame(set(), set()) == set(), 'view frame: no walkable tile, no frame')
+ok(C.VIEW[0] >= (C.SCREEN[0] + 1) // 2 + 1 and C.VIEW[1] >= (C.SCREEN[1] + 1) // 2 + 1, 'view frame: past the screen')
+
+
+def frame_ok(name, res):
+    """the frame fills the whole view of every walkable tile, never on a tile of the area, unwalkable, one ground"""
+    fr, man = res['frame'], res['manifest']['frame']
+    allt = set(res['tiles']) | set(fr)
+    ok(not C.view_frame(res['walk'], allt), name + ': no void in view of a walkable tile')
+    ok(not set(fr) & set(res['tiles']) and not set(fr) & res['walk'], name + ': the frame is off the area and its floor')
+    ok(man['tiles'] == len(fr) and {t['ground'] for t in fr.values()} <= {man['ground']}
+       and all(not t['items'] and not t['flags'] for t in fr.values()), name + ': the frame is bare %s' % man['family'])
+    _h, back, problems = PC.read_otbm_full(res['frame_otbm'])
+    ok(not problems and set(back) == set(fr), name + ': the frame OTBM reads back')
+
+
 results = {}
 for name, plan in examples.items():
     res = PC.compile_plan(plan, pair24=False, cat=cat)
@@ -212,6 +234,7 @@ for name, plan in examples.items():
     ok(same, name + ': every tile reads back with its flags, items and attributes')
     s = res['stats']
     ok(s['unknown_ids'] == 0 and s['unbordered'] == 0, name + ': no unknown id, every border closed')
+    frame_ok(name, res)
     ok(1.5 <= s['per100'] <= 5.0, name + ': %.2f monsters per 100 walkable tiles' % s['per100'])
     ok(set(s['zone_steps']) == {z['id'] for z in plan['zones']}, name + ': every zone reached on the tiles')
     ok(all((sp['x'], sp['y'], sp['z']) not in res['pz'] for sp in res['spawns']), name + ': no spawn in a PZ tile')
@@ -293,6 +316,7 @@ for b in sorted(cat['biomes']):
     p['biome'] = b
     res = PC.compile_plan(p, pair24=False, cat=cat)
     ok(not PC.qa_errors(res), 'biome %s compiles and passes QA: %s' % (b, PC.qa_errors(res)[:2]))
+    frame_ok('biome ' + b, res)
 
 # ------------------------------------------------------------------------------------------------ knowledge base
 with tempfile.TemporaryDirectory() as tmp:
@@ -487,7 +511,15 @@ print(reg.id, first, #got, gold, last)
                    os.path.join(w_dir, 'mirewater_fen-spawn.xml'), os.path.join(tmp, 'copy-spawn.xml'), log=lambda *a: None)
     ok(open(world, 'rb').read() == before, 'place: the world file is untouched')
     _h, back, probs = PC.read_otbm_full(open(copy_, 'rb').read())
-    ok(not probs and len(back) == len(results['swamp_hunt']['tiles']) + len(temple['tiles']), 'place: the copy holds both')
+    ok(not probs and len(back) == len(results['swamp_hunt']['tiles']) + len(temple['tiles']) + out['frame'],
+       'place: the copy holds both and the frame')
+    d = out['shift']
+    tfr = {(x + d[0], y + d[1], z + d[2]) for x, y, z in temple['frame']}
+    ok(0 < out['frame'] <= len(tfr) and all(back[p]['ground'] == temple['manifest']['frame']['ground'] for p in tfr
+                                            if p not in results['swamp_hunt']['tiles']),
+       'place: the frame where the world has no tile (%d of %d)' % (out['frame'], len(tfr)))
+    ok(all(back[p]['ground'] == results['swamp_hunt']['tiles'][p]['ground'] for p in tfr & set(results['swamp_hunt']['tiles'])),
+       'place: the frame never replaces a world tile')
     d = out['shift']
     moved_exit = (temple['exit']['at'][0] + d[0], temple['exit']['at'][1] + d[1], temple['exit']['at'][2] + d[2])
     ok(any(a.get('aid') == temple['exit']['aid'] for _i, a in back[moved_exit]['items']), 'place: tiles and items shifted')

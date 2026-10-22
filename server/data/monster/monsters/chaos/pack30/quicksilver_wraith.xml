@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Quicksilver Wraith" nameDescription="a quicksilver wraith" race="undead" experience="16850" speed="45" manacost="0">
 	<health now="23300" max="23300"/>
-	<look type="2280" head="22" body="39" legs="21" feet="2" corpse="6068"/>
+	<look type="1291" corpse="6068"/>
 	<level min="1020" max="1060"/>
 	<targetchange interval="3000" chance="50"/>
 	<flags>

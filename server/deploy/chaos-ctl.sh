@@ -14,7 +14,9 @@
 #                               a Lua error with its next two lines (script, message). One "@run DATE [current]" line
 #                               per server start (DATE "unknown" when the log has none), at most N (40) entries per run.
 #                               all: every start in the last 20000 log lines; else "@older K" says how many earlier
-#                               starts had errors
+#                               starts had errors. Only lines after the newest "errors clear" count
+#   errors clear                the error list starts empty from now on: a marker line goes into the log (nothing in
+#                               the log is deleted; logs and the update log still show everything)
 #   players                     online characters: name, level, class name (tab separated)
 #   vocations                   id=class name, one per line
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
@@ -68,10 +70,29 @@
 #                               start 30 s after it). Never with clientGuardAllowDevKey = true; the client key comes only
 #                               from CHAOS_TESTER_KEY (/etc/chaos/tester-client-key, root only, 0600)
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
-#   testers status              key=value lines: running, pid, started, bots, minutes, logins, deaths, helper, helper_loaded
+#   testers status              key=value lines: running, pid, started, bots, minutes, online (bots in game now),
+#                               online_peak, logins, deaths, online_server (the helper's last console count), helper,
+#                               helper_loaded
 #   testers report              the bug report of the last run (server log since the run started, what the bots saw)
+#   testers log [N]             the last N lines (default 200, at most 5000) of the newest run's activity log: every action
+#                               of every tester, its outcome and every error, one line each ($TSTATE/runs/run-*.log;
+#                               the run also writes its report next to it, run-*-report.txt; the 20 newest runs are kept)
 #   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
+#   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
+#                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
+#                               php_upgrades (of them php*), php (the php*-fpm or libapache2-mod-php* package and its version),
+#                               reboot_required, reboot_at (a planned reboot, empty when none)
+#   vps upgrade                 apt-get update and upgrade in the background (config files kept),
+#                               log CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log
+#   vps upgrade-log [N]         the last N lines (default 60, at most 500) of that log
+#   vps reboot MINUTES          reboots the machine in MINUTES (1 to 60): players are warned and the game is saved first
+#   vps reboot-cancel           cancels a planned reboot
+#   services                    every chaos-* unit, one per line: NAME ACTIVE ENABLED (timers too)
+#   service NAME start|stop|restart
+#                               a chaos-* unit (NAME like chaos-helpai or chaos-backup.timer); the game server too
+#   service-log NAME [N]        the last N lines (default 60, at most 500) of that unit's log file (its
+#                               StandardOutput=append: file) or of the journal
 #
 # Settings, defaults for the standard layout: CHAOS_UNIT chaos-server, CHAOS_ROOT /opt/chaos,
 # CHAOS_SERVER_DIR $CHAOS_ROOT/server, CHAOS_REPO $CHAOS_ROOT/repo, CHAOS_ENV /etc/chaos/chaos.env,
@@ -86,7 +107,7 @@
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
-# /var/log/chaos/testers.log.
+# /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -109,7 +130,7 @@ CONF_KEYS=" CHAOS_UNIT CHAOS_ROOT CHAOS_SERVER_DIR CHAOS_REPO CHAOS_ENV CHAOS_LO
 CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CHAOS_SITE_DIR CHAOS_UPDATE_KEY \
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
-CHAOS_TESTER_STATE CHAOS_TESTER_LOG "
+CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -172,6 +193,7 @@ WORKDIR=$(setting CHAOS_WORK_DIR /var/tmp)
 TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
 TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
 TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
+VLOG=$(setting CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -257,8 +279,11 @@ voc_case() {
 
 # the error report of "errors": runs split at a server start (the Linux kit's "Starting the game server (DATE)" line,
 # else the engine's "Loading config" line), Lua errors joined with their next two lines, identical entries counted
+# the line "errors clear" appends to the log; the error list counts only what comes after it (no word the error
+# filters match)
+CLEAR_MARK="[chaos-ctl] list cleared by the owner"
 error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the date of the newest run when its line has none)
-  tail -n 20000 "$LOG" 2>/dev/null | awk -v mode="$1" -v max="$2" -v since="$3" '
+  tail -n 20000 "$LOG" 2>/dev/null | awk -v mode="$1" -v max="$2" -v since="$3" -v MARK="$CLEAR_MARK" '
     function newrun(label) { nr++; lab[nr] = label; n[nr] = 0 }
     function add(e,   st, k) {
       st = ""
@@ -272,10 +297,15 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
       if (st != "") last[k] = st
     }
     function flush() { if (cur != "") add(cur); cur = ""; join = 0 }
+    function clear(   i, k) {
+      for (i = 1; i <= n[nr]; i++) { k = nr SUBSEP ord[nr, i]; delete cnt[k]; delete last[k] }
+      n[nr] = 0; clr = nr
+    }
     function iserr(l) { return l ~ /Lua Script Error/ || tolower(l) ~ /error|exception|segfault/ }
-    BEGIN { nr = 0; newrun("?"); cur = ""; join = 0; pend = 0 }
+    BEGIN { nr = 0; newrun("?"); cur = ""; join = 0; pend = 0; clr = 1 }
     {
       line = $0; sub(/\r$/, "", line)
+      if (index(line, MARK) == 1) { flush(); clear(); next }
       if (match(line, /Starting the game server \([0-9][0-9-]* [0-9:]*\)/)) {
         flush(); newrun(substr(line, RSTART + 26, RLENGTH - 27)); pend = 50; next
       }
@@ -290,11 +320,11 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
     }
     END {
       flush()
-      first = (mode == "all") ? 1 : nr
+      first = (mode == "all") ? clr : nr
       older = 0
-      for (r = 1; r < nr; r++) if (n[r] > 0) older++
+      for (r = clr; r < nr; r++) if (n[r] > 0) older++
       for (r = first; r <= nr; r++) {
-        if (r == 1 && nr > 1 && n[1] == 0) continue
+        if (r == first && r < nr && n[r] == 0) continue
         l = lab[r]
         if (r == nr && r > 1 && l == "?" && since != "") l = since
         if (l == "?") l = "unknown"
@@ -307,6 +337,14 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
       }
       if (mode != "all") printf "@older %d\n", older
     }'
+}
+
+# a chaos-* unit name, as the owner may name it (chaos-helpai, chaos-backup.timer); the configured game unit too
+# the chaos-* units, the game unit, and the web server units (restart after a PHP update)
+WEB_UNITS='apache2 nginx'
+unit_ok() {
+  [[ $1 =~ ^chaos-[a-z0-9-]{1,40}(\.service|\.timer)?$ ]] || [ "$1" = "$UNIT" ] \
+    || [[ $1 =~ ^(apache2|nginx|php[0-9.]{1,6}-fpm)(\.service)?$ ]]
 }
 
 # ---- tester bots (server/README.md "Tester bots")
@@ -416,6 +454,13 @@ case $cmd in
     tail -n "$(lines_arg "${1:-60}")" "$LOG" 2>&1
     ;;
   errors)
+    if [ "${1:-}" = clear ]; then
+      [ $# -eq 1 ] || die "errors clear"
+      [ -w "$LOG" ] || die "cannot write the log $LOG"
+      echo "$CLEAR_MARK $(date '+%F %T')" >> "$LOG"
+      echo "error list cleared: errors shows only what comes after now (the log itself is kept)"
+      exit 0
+    fi
     max=40 mode=current
     for a in "$@"; do
       case $a in all) mode=all ;; *) max=$(lines_arg "$a") || exit 1 ;; esac
@@ -774,6 +819,115 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     rm -f "$tmp"
     echo "user $ADMIN ready ($([ "$full" -eq 1 ] && echo 'full sudo' || echo 'sudo for chaos-ctl.sh only')); key installed"
     ;;
+  vps)
+    sub=${1:-info}
+    [ $# -gt 0 ] && shift
+    case $sub in
+      info)
+        [ $# -eq 0 ] || die "vps info"
+        echo "host=$(hostname 2>/dev/null)"
+        os=""
+        [ -r /etc/os-release ] && os=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-}")
+        echo "os=$os"
+        echo "kernel=$(uname -r)"
+        echo "uptime=$(uptime -p 2>/dev/null | sed 's/^up //')"
+        echo "load=$(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null)"
+        echo "cpus=$(nproc 2>/dev/null)"
+        free -m 2>/dev/null | awk '/^Mem:/ { print "mem_total_mb=" $2; print "mem_used_mb=" $3 }'
+        df -BG -P / 2>/dev/null | awk 'NR == 2 { gsub(/G/, ""); print "disk_total_gb=" $2; print "disk_used_gb=" $3; print "disk_free_gb=" $4 }'
+        up=-1 phpup=-1
+        if command -v apt-get >/dev/null 2>&1; then
+          sim=$(timeout 60 apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null) || sim=""
+          if [ -n "$sim" ]; then
+            up=$(printf '%s\n' "$sim" | grep -c '^Inst ')
+            phpup=$(printf '%s\n' "$sim" | grep -c '^Inst php')
+          fi
+        fi
+        echo "upgrades=$up"
+        echo "php_upgrades=$phpup"
+        # the installed PHP package that serves the site (php-fpm or Apache mod_php), with the distribution's version
+        echo "php=$(dpkg-query -W -f '${Package} ${Version}\n' 'php*-fpm' 'libapache2-mod-php*' 2>/dev/null \
+          | grep -Ev '^(php-fpm|libapache2-mod-php) ' | awk 'NF == 2' | head -n 1)"
+        if [ -e /run/reboot-required ]; then echo reboot_required=yes; else echo reboot_required=no; fi
+        at=""
+        [ -r /run/systemd/shutdown/scheduled ] && at=$(sed -n 's/^USEC=//p' /run/systemd/shutdown/scheduled 2>/dev/null \
+          | head -n 1 | awk '{ printf "%d", $1 / 1000000 }')
+        [ -n "$at" ] && at=$(date -d "@$at" '+%F %T' 2>/dev/null)
+        echo "reboot_at=$at"
+        ;;
+      upgrade)
+        [ $# -eq 0 ] || die "vps upgrade"
+        command -v apt-get >/dev/null 2>&1 || die "no apt-get on this machine"
+        if [ -r "$VLOG.pid" ] && p=$(head -c 20 "$VLOG.pid" | tr -dc 0-9) && [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then
+          die "an upgrade is already running (pid $p): chaos-ctl.sh vps upgrade-log"
+        fi
+        mkdir -p "$(dirname "$VLOG")"
+        vlog=$VLOG  # the inner bash gets the path as $1 (its pid file), the outer one appends to it
+        echo "== $(date '+%F %T') vps upgrade" > "$vlog"
+        chmod 0640 "$VLOG" 2>/dev/null || true
+        # shellcheck disable=SC2016 # expanded by the inner bash
+        setsid bash -c 'echo $$ > "$1.pid"
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update && apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade
+          rc=$?; echo "== $(date "+%F %T") done (exit $rc)"; [ -e /run/reboot-required ] && echo "== a reboot is needed"
+          rm -f "$1.pid"' _ "$VLOG" >> "$vlog" 2>&1 < /dev/null &
+        echo "started (apt-get update and upgrade); follow it with: chaos-ctl.sh vps upgrade-log"
+        ;;
+      upgrade-log)
+        tail -n "$(lines_arg "${1:-60}")" "$VLOG" 2>&1
+        ;;
+      reboot)
+        m=${1:-}
+        { num "$m" && [ "$m" -ge 1 ] && [ "$m" -le 60 ]; } || die "vps reboot MINUTES (1 to 60)"
+        [ $# -eq 1 ] || die "vps reboot MINUTES"
+        if [ -d "$SERVER" ]; then
+          spool "broadcast The server machine restarts in $m minute(s). Please log out in a safe place." >/dev/null || true
+        fi
+        if p=$(engine_pid); then kill -USR1 "$p" 2>/dev/null || true; fi
+        shutdown -r "+$m" "chaos-ctl: reboot in $m minute(s)" 2>&1 || die "shutdown failed"
+        echo "reboot planned in $m minute(s); players warned, game saved. Cancel: chaos-ctl.sh vps reboot-cancel"
+        ;;
+      reboot-cancel)
+        [ $# -eq 0 ] || die "vps reboot-cancel"
+        shutdown -c 2>&1 || die "shutdown -c failed"
+        if [ -d "$SERVER" ]; then spool "broadcast The machine restart was cancelled." >/dev/null || true; fi
+        echo "planned reboot cancelled"
+        ;;
+      *) die "vps [info] | upgrade | upgrade-log [N] | reboot MINUTES | reboot-cancel" ;;
+    esac
+    ;;
+  services)
+    [ $# -eq 0 ] || die "services"
+    # shellcheck disable=SC2086 # WEB_UNITS is a fixed word list
+    systemctl list-unit-files --no-legend --no-pager 'chaos-*' "$UNIT.service" 'php*-fpm.service' $WEB_UNITS 2>/dev/null \
+      | awk '{ print $1, $2 }' | sort -u | while read -r u en; do
+        [ -n "$u" ] || continue
+        case $u in *@*) continue ;; esac
+        unit_ok "$u" || continue
+        printf '%s %s %s\n' "$u" "$(systemctl is-active "$u" 2>/dev/null | head -n 1)" "$en"
+      done
+    ;;
+  service)
+    name=${1:-} act=${2:-}
+    { [ $# -eq 2 ] && unit_ok "$name"; } || die "service NAME start|stop|restart (NAME: a chaos-* or web server unit, see services)"
+    case $act in start|stop|restart) ;; *) die "service NAME start|stop|restart" ;; esac
+    [ "$(systemctl show "$name" -p LoadState --value 2>/dev/null)" = loaded ] || die "no such unit: $name (see services)"
+    systemctl "$act" "$name" || die "$act $name failed"
+    echo "$name: $act done ($(systemctl is-active "$name" 2>/dev/null | head -n 1))"
+    ;;
+  service-log)
+    name=${1:-}
+    unit_ok "$name" || die "service-log NAME [N] (NAME: a chaos-* or web server unit, see services)"
+    n=$(lines_arg "${2:-60}")
+    f=$(systemctl show "$name" -p StandardOutput --value 2>/dev/null | sed -n 's/^append://p; s/^file://p' | head -n 1)
+    if [ -n "$f" ] && [ -r "$f" ]; then
+      echo "== $f"
+      tail -n "$n" "$f"
+    else
+      echo "== journal of $name"
+      journalctl -u "$name" -n "$n" --no-pager 2>&1
+    fi
+    ;;
   testers)
     sub=${1:-status}
     [ $# -gt 0 ] && shift
@@ -864,12 +1018,28 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         started=""
         [ -r "$TSTATE/started" ] && started=$(date -d "@$(tr -dc 0-9 < "$TSTATE/started")" '+%F %T' 2>/dev/null)
         echo "started=$started"
-        (testers_py status --state "$TSTATE") 2>/dev/null | grep -E '^(bots|minutes|logins|deaths)='
+        (testers_py status --state "$TSTATE") 2>/dev/null | grep -E '^(bots|minutes|online|online_peak|logins|deaths)='
+        # the helper's own count (once a minute on the server console), while the bots run
+        srv=""
+        if [ -n "${p:-}" ] && [ -r "$LOG" ]; then
+          srv=$(tail -n 20000 "$LOG" 2>/dev/null | grep -o 'testers online: [0-9]*' | tail -n 1 | tr -dc 0-9)
+        fi
+        echo "online_server=$srv"
         if [ -e "$SERVER/data/scripts/zz_tester_helper.lua" ]; then echo helper=copied; else echo helper=absent; fi
         if helper_loaded; then echo helper_loaded=yes; else echo helper_loaded=no; fi
         ;;
       report)
         testers_py report --state "$TSTATE" --log "$LOG"
+        ;;
+      log)
+        n=${1:-200}
+        num "$n" || die "testers log [N]"
+        { [ "$n" -ge 1 ] && [ "$n" -le 5000 ]; } || die "testers log N: 1 to 5000"
+        f=""
+        for r in "$TSTATE"/runs/run-*.log; do [ -e "$r" ] && f=$r; done  # the glob sorts: the newest is last
+        [ -n "$f" ] || die "no activity log yet (it is written from the next testers start on)"
+        echo "== $f ($(wc -l < "$f") lines)"
+        tail -n "$n" "$f"
         ;;
       cleanup)
         yes=0
@@ -887,7 +1057,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
         fi
         ;;
-      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | cleanup [--yes]" ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
   ''|help|-h|--help)

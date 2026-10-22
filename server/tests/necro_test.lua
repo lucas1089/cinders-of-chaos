@@ -398,6 +398,47 @@ for _, kind in ipairs(N.kinds) do
 	ok(found and not found:find("<attacks>", 1, true), kind .. ": no attacks of its own (hits are dealt as the owner)")
 end
 
+-- ------------------------------------------------------------------ minion spells (beta 2026-10-22)
+local EFFECTS = {hitarea = true, energyhit = true, mortarea = true, drawblood = true, groundshaker = true,
+	energyarea = true, blackspark = true}
+local ANIS = {death = true, arrow = true, energy = true}
+local names = {}
+for kind in pairs({skeleton = 1, shade = 1, golem = 1, warrior = 1, archer = 1, mage = 1}) do
+	local sp = cfg.minionSpells[kind]
+	ok(sp and sp.single and sp.area, kind .. ": a single target and an area spell")
+	for _, which in ipairs({"single", "area"}) do
+		local s = sp[which]
+		ok(not names[s.name], s.name .. ": one name per spell")
+		names[s.name] = true
+		ok(s.mult > 1 and s.cooldownMs >= cfg.minions[kind].intervalMs, s.name .. ": stronger than a hit, slower")
+		ok(EFFECTS[s.hitEffect], s.name .. ": known hitEffect")
+		ok(s.ani == nil or ANIS[s.ani], s.name .. ": known ani")
+	end
+	ok(sp.area.radius >= 1 and (sp.area.center == "self" or sp.area.center == "target"), kind .. ": area shape")
+	ok(EFFECTS[sp.area.areaEffect], kind .. ": known areaEffect")
+	ok(sp.area.mult < sp.single.mult, kind .. ": the area hits each enemy for less than the single one")
+	if sp.area.center == "self" then
+		ok(cfg.minions[kind].range == 1, kind .. ": a self centred area only on a melee kind")
+	end
+end
+eq(N.minionSpell(cfg, "warrior", 1000, {}, 3), "area", "both ready, a crowd: the area spell")
+eq(N.minionSpell(cfg, "warrior", 1000, {}, 1), "single", "one enemy: the single target spell")
+eq(N.minionSpell(cfg, "warrior", 1000, {single = 2000}, 1), nil, "single cooling down, one enemy: the hit")
+eq(N.minionSpell(cfg, "warrior", 1000, {area = 2000}, 5), "single", "area cooling down: the single one")
+eq(N.minionSpell(cfg, "warrior", 1000, {area = 2000, single = 2000}, 5), nil, "both cooling down: the hit")
+eq(N.minionSpell(cfg, "warrior", 2000, {area = 2000, single = 9000}, 2), "area", "ready again at its time")
+eq(N.minionSpell(cfg, "nosuch", 1000, {}, 5), nil, "a kind without spells: the hit")
+eq(N.minionSpell(cfg, "mage", 0, nil, 0), "single", "no timers yet: ready")
+local a, b = N.minionSpellHit(cfg, "warrior", "single", 100, 200)
+eq(a, math.floor(100 * cfg.minionSpells.warrior.single.mult), "single spell min")
+eq(b, math.floor(200 * cfg.minionSpells.warrior.single.mult), "single spell max")
+ok(cfg.minions.warrior.tauntMs and cfg.minions.warrior.tauntRadius >= 1, "the summoned warrior taunts")
+ok(not cfg.minions.archer.tauntMs and not cfg.minions.mage.tauntMs, "the ranged ones do not")
+local libSrc = readFile("data/scripts/chaos/necro_lib.lua")
+for e in pairs(EFFECTS) do
+	ok(libSrc:find("\n\t*" .. e .. " = CONST_ME_") or libSrc:find("[{ ]" .. e .. " = CONST_ME_"), e .. ": in necro_lib EFFECT")
+end
+
 print(string.format("necro_test: %d checks, %d failed", checks, fails))
 if fails > 0 then
 	os.exit(1)

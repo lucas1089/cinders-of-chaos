@@ -439,8 +439,10 @@ spawnCb.onSpawn = function(self, position, startup, artificial)
 	if eligible(self, position) then
 		local roll = math.random(10000)
 		local eventMult = ChaosTierSpawnMult(position or self:getPosition())
+		-- the store's World Hunt raises magic and rare (not legendary), on top of the capped event multiplier
+		local hunt = ChaosShopServices and ChaosShopServices.buffMult and ChaosShopServices.buffMult("hunt") or 1
 		for _, tier in ipairs({"legendary", "rare", "magic"}) do
-			if roll <= cfg.spawnChance[tier] * eventMult then
+			if roll <= cfg.spawnChance[tier] * eventMult * (tier == "legendary" and 1 or hunt) then
 				self:registerEvent(rollEvent[tier])
 				return true
 			end

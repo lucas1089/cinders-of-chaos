@@ -23,6 +23,12 @@ types (name, plural, clientId, clientIdHigh, the three effects and their values)
    stackable use-with rune stone socketOrb.id) inside the same block. An id that already has an entry outside the block
    stops the script.
 
+3. The Orb of Sockets' own node (a base rune stone node, client 22036, which draws the great fireball rune's sprite):
+   with socketOrb.useLook its client id becomes our orb look socketOrb.look (38641, client pair 38: client/tools/sprites/
+   gen_orb_items_art.py, art_import/orb_items.csv; owner 2026-10-22: no rune sprite for an orb); with useLook = false
+   socketOrb.stockLook comes back. Only the client id attribute changes. A client id other than those two, or a look
+   another node uses, stops the script. A client older than pair 38 draws nothing for the orb: ship pair 38 first.
+
 Client side: every gem sprite but the small diamond (client 3028) is already "use with" in Tibia.dat; that one gets
 the flag from client/tools/sprites/set_multiuse.py (its default list).
 
@@ -70,6 +76,14 @@ def read_config(path=CONFIG):
     cfg['socketOrb'] = {'id': int(re.search(r'id\s*=\s*(\d+)', orb).group(1)),
                         'name': re.search(r'name\s*=\s*"([^"]+)"', orb).group(1),
                         'text': re.search(r'text\s*=\s*"([^"]+)"', orb).group(1)}
+    look = re.search(r'\blook\s*=\s*(\d+)', orb)
+    stock = re.search(r'\bstockLook\s*=\s*(\d+)', orb)
+    cfg['socketOrb']['look'] = int(look.group(1)) if look else None
+    cfg['socketOrb']['stockLook'] = int(stock.group(1)) if stock else None
+    use = re.search(r'\buseLook\s*=\s*(true|false)', orb)
+    cfg['socketOrb']['useLook'] = bool(use and use.group(1) == 'true')
+    assert not cfg['socketOrb']['look'] or cfg['socketOrb']['stockLook'], 'chaos_gems_config.lua: socketOrb.look needs stockLook'
+
     effects = {}
     eblock = re.search(r'effects\s*=\s*\{(.*?)\n\t\},', text, re.S).group(1)
     for m in re.finditer(r'(\w+)\s*=\s*\{label\s*=\s*"([^"]+)"(?:,\s*label2\s*=\s*"([^"]+)")?,\s*fmt\s*=\s*"(\w+)"', eblock):
@@ -274,6 +288,47 @@ def patch_otb(data, rows, cfg=None):
     return bytes(out), notes, wanted
 
 
+def set_client_id(node, cid):
+    """an items.otb node (START .. END, no children) with its client id attribute set to cid"""
+    p = bytearray()
+    j = 1
+    while j < len(node) - 1:
+        if node[j] == ESC:
+            p.append(node[j + 1]); j += 2
+        else:
+            p.append(node[j]); j += 1
+    out, k = bytearray(p[:5]), 5
+    while k + 3 <= len(p):
+        kind = p[k]; ln = struct.unpack_from('<H', p, k + 1)[0]
+        v = bytes(p[k + 3:k + 3 + ln])
+        out += attr(kind, struct.pack('<H', cid) if kind == A_CLIENTID else v)
+        k += 3 + ln
+    return bytes([START]) + escape(bytes(out)) + bytes([END])
+
+
+def patch_orb_otb(data, orb):
+    """the Orb of Sockets node (orb['id'], a stock rune stone node) gets client id orb['look'] (our orb look) while
+    orb['useLook'], else orb['stockLook'] back; the rest of the node stays. (new data, note)"""
+    if not orb.get('stockLook'):
+        return data, 'items.otb: Orb of Sockets keeps its look (no socketOrb.stockLook)'
+    want = orb['look'] if (orb['look'] and orb.get('useLook')) else orb['stockLook']
+    kids, _ = scan(data)
+    by_sid = {k[2]: k for k in kids}
+    k = by_sid.get(orb['id'])
+    if k is None:
+        raise SystemExit('items.otb: no node with server id %d (the Orb of Sockets); nothing written' % orb['id'])
+    if k[3] not in (orb['look'], orb['stockLook']):
+        raise SystemExit('items.otb: server id %d has client id %s, neither %s nor %d; nothing written'
+                         % (orb['id'], k[3], orb['look'], orb['stockLook']))
+    if want == orb['look'] and any(o[3] == orb['look'] and o[2] != orb['id'] for o in kids):
+        raise SystemExit('items.otb: client id %d (the Orb of Sockets look) is already used by another node; nothing '
+                         'written' % orb['look'])
+    if k[3] == want:
+        return data, 'items.otb: Orb of Sockets look %d present' % want
+    node = set_client_id(data[k[0]:k[1]], want)
+    return data[:k[0]] + node + data[k[1]:], 'items.otb: Orb of Sockets look set to %d' % want
+
+
 def verify_otb(data, rows, wanted):
     kids, _ = scan(data)
     by_sid = {k[2]: k for k in kids}
@@ -348,7 +403,13 @@ def main():
         return 1
     raw = open(otb, 'rb').read()
     new, notes, wanted = patch_otb(raw, rows, cfg)
+    new, orb_note = patch_orb_otb(new, cfg['socketOrb'])
+    notes.append(orb_note)
     n = verify_otb(new, rows, wanted)
+    orb = cfg['socketOrb']
+    if orb.get('stockLook'):
+        k = {x[2]: x for x in scan(new)[0]}[orb['id']]
+        assert k[3] == (orb['look'] if (orb['look'] and orb['useLook']) else orb['stockLook']), 'Orb of Sockets node'
     for line in notes:
         print(line)
     print('items.otb: verified (%d item nodes, every gem node a useable copy of its stock sprite%s)'

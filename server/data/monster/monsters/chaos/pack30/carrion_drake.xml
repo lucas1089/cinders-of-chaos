@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Carrion Drake" nameDescription="a carrion drake" race="blood" experience="23050" speed="41" manacost="0">
 	<health now="26100" max="26100"/>
-	<look type="2266" head="76" body="76" legs="95" feet="38" corpse="6068"/>
+	<look type="2221" corpse="6068" />
 	<level min="1180" max="1220"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

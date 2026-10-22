@@ -148,6 +148,26 @@ function V.trackerLine(r)
   return tostring(r.title or '?') .. count, math.floor(p * 100 / target)
 end
 
+-- a tracker line broken into lines of at most `width` characters at the spaces (a word longer than that gets its own
+-- line), so the whole goal shows in the narrow tracker. Returns the text with newlines and the line count.
+function V.wrapLine(text, width)
+  text = tostring(text or '')
+  width = math.max(1, width or 28)
+  local lines, cur = {}, ''
+  for word in text:gmatch('%S+') do
+    if cur == '' then
+      cur = word
+    elseif #cur + 1 + #word <= width then
+      cur = cur .. ' ' .. word
+    else
+      lines[#lines + 1] = cur
+      cur = word
+    end
+  end
+  if cur ~= '' or #lines == 0 then lines[#lines + 1] = cur end
+  return table.concat(lines, '\n'), #lines
+end
+
 function V.doneText(d)
   if type(d) ~= 'table' then return '' end
   return tr('Goal done: %s', tostring(d.text or ''))

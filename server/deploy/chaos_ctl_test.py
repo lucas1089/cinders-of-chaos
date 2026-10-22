@@ -27,6 +27,7 @@ escaped), and the kit's update-check / update-apply / update-status refusals and
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import os
+import shutil
 import re
 import stat
 import subprocess
@@ -41,6 +42,8 @@ SYSTEMCTL = '''#!/usr/bin/env bash
 echo "systemctl $*" >> "$STUB/calls"
 case "$*" in
   *LoadState*) if [ -n "${STUB_NOUNIT:-}" ]; then echo not-found; else echo loaded; fi ;;
+  *StandardOutput*) [ -n "${STUB_SVCLOG:-}" ] && echo "append:$STUB_SVCLOG" || echo journal ;;
+  list-unit-files*) printf 'chaos-backup.timer enabled\nchaos-helpai.service enabled\nchaos-server.service enabled\napache2.service enabled\nssh.service enabled\n' ;;
   is-active*) if [ -n "${STUB_NOUNIT:-}" ]; then echo inactive; exit 4; else echo active; fi ;;
   show*) echo "Tue 2026-10-20 06:00:01 UTC" ;;
   *) [ -z "${STUB_NOUNIT:-}" ] || { echo "Failed to $1 $2.service: Unit $2.service not found." >&2; exit 5; } ;;
@@ -58,6 +61,15 @@ case "$*" in
   *chaos_admin_log*) printf '2026-10-21 10:00\\tGma\\tplayers.kick\\tBob\\tok\\tdone\\n' ;;
   *COUNT*) echo 7 ;;
   *players_online*) printf 'Bob\\t120\\t3\\n' ;;
+esac
+'''
+RECORD = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case "$(basename "$0") $*" in
+  "apt-get -s"*) printf 'Inst libfoo [1] (2 Debian)\nInst php8.3-fpm [3] (4 Ubuntu)\nConf libfoo\n' ;;
+  dpkg-query*) printf 'libapache2-mod-php 2:8.3+93ubuntu2\nlibapache2-mod-php8.3 8.3.6-0ubuntu0.24.04.13\nphp8.2-fpm \n' ;;
+  apt-get*) echo "stub apt-get $*" ;;
+  journalctl*) echo "journal line" ;;
 esac
 '''
 NOOP = '''#!/usr/bin/env bash
@@ -83,7 +95,8 @@ def main():
         os.makedirs(stub)
         os.makedirs(server)
         for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL), ('kitmysql', MYSQL), ('adduser', NOOP),
-                           ('visudo', NOOP), ('install', NOOP)):
+                           ('visudo', NOOP), ('install', NOOP), ('apt-get', RECORD), ('shutdown', RECORD), ('dpkg-query', RECORD),
+                           ('journalctl', RECORD)):
             p = os.path.join(stub, name)
             with open(p, 'w') as f:
                 f.write(body)
@@ -292,6 +305,81 @@ def main():
             out = dict(l.split('=', 1) for l in run('status', extra=extra).stdout.splitlines() if '=' in l)
             check(out.get('errors') == '5', '%s status: errors since the last start: %r' % (name, out.get('errors')))
         check(run('errors', 'x').returncode != 0, 'errors: N must be a number')
+
+        # ---- errors clear: a marker line, the list counts only what comes after it; the log keeps every line
+        cleared_log = os.path.join(tmp, 'cleared.log')
+        shutil.copy(runs_log, cleared_log)
+        r = run('errors', 'clear', extra={'CHAOS_LOG': cleared_log})
+        check(r.returncode == 0 and 'cleared' in r.stdout, 'errors clear: ' + r.stdout + r.stderr)
+        with open(cleared_log) as f:
+            kept = f.read()
+        check('56x' not in kept and kept.count('MySQL error') == 56 and 'list cleared by the owner' in kept,
+              'errors clear: the log keeps every line, a marker appended')
+        with open(cleared_log, 'a') as f:
+            f.write('[2026-10-20 10:00:00] Exception: after the clear\n')
+        for name, d in awks:
+            extra = {'CHAOS_LOG': cleared_log, 'PATH': d + ':' + env['PATH']}
+            lines = run('errors', extra=extra).stdout.splitlines()
+            check(lines == ['@run 2026-10-20 08:00:01 current', '1x Exception: after the clear [2026-10-20 10:00:00]',
+                            '@older 0'], '%s errors after a clear: only the new error: %r' % (name, lines))
+            r = run('errors', 'all', extra=extra)
+            check('MySQL' not in r.stdout and 'bad thing' not in r.stdout and 'after the clear' in r.stdout,
+                  '%s errors all after a clear: nothing older: %r' % (name, r.stdout))
+            out = dict(l.split('=', 1) for l in run('status', extra=extra).stdout.splitlines() if '=' in l)
+            check(out.get('errors') == '1', '%s status after a clear: %r' % (name, out.get('errors')))
+        check(run('errors', 'clear', 'x').returncode != 0, 'errors clear takes nothing more')
+
+        # ---- vps, services, service, service-log (2026-10-22)
+        out = dict(l.split('=', 1) for l in run('vps').stdout.splitlines() if '=' in l)
+        for k in ('host', 'kernel', 'load', 'cpus', 'mem_total_mb', 'disk_free_gb', 'upgrades', 'reboot_required',
+                  'reboot_at'):
+            check(k in out, 'vps info: %s' % k)
+        check(out.get('upgrades') == '2', 'vps info: the pending packages: %r' % out.get('upgrades'))
+        check(out.get('php_upgrades') == '1', 'vps info: the pending PHP packages: %r' % out.get('php_upgrades'))
+        check(out.get('php') == 'libapache2-mod-php8.3 8.3.6-0ubuntu0.24.04.13', 'vps info: the PHP package: %r' % out.get('php'))
+        vlog = os.path.join(tmp, 'vps-upgrade.log')
+        r = run('vps', 'upgrade', extra={'CHAOS_VPS_LOG': vlog})
+        check(r.returncode == 0 and 'started' in r.stdout, 'vps upgrade: ' + r.stdout + r.stderr)
+        for _ in range(50):
+            if os.path.exists(vlog) and 'done (exit 0)' in open(vlog).read():
+                break
+            time.sleep(0.1)
+        text = open(vlog).read()
+        check('stub apt-get update' in text and 'stub apt-get -y' in text and 'force-confold' in text
+              and 'done (exit 0)' in text, 'vps upgrade: update, then upgrade keeping config files: ' + text)
+        check(not os.path.exists(vlog + '.pid'), 'vps upgrade: the pid file is gone when it ends')
+        r = run('vps', 'upgrade-log', '5', extra={'CHAOS_VPS_LOG': vlog})
+        check('done (exit 0)' in r.stdout, 'vps upgrade-log: ' + r.stdout)
+        before = spool()
+        r = run('vps', 'reboot', '5')
+        check(r.returncode == 0 and 'shutdown -r +5' in calls(), 'vps reboot 5: ' + r.stdout + r.stderr)
+        check(spool()[len(before):].startswith('broadcast The server machine restarts in 5 minute(s)'),
+              'vps reboot: players are warned: %r' % spool()[len(before):])
+        for bad in (('vps', 'reboot'), ('vps', 'reboot', '0'), ('vps', 'reboot', '61'), ('vps', 'reboot', '5;x'),
+                    ('vps', 'nope')):
+            check(run(*bad).returncode != 0, 'refused: %r' % (bad,))
+        r = run('vps', 'reboot-cancel')
+        check(r.returncode == 0 and 'shutdown -c' in calls(), 'vps reboot-cancel: ' + r.stdout + r.stderr)
+        r = run('services')
+        check(r.stdout.splitlines() == ['apache2.service active enabled', 'chaos-backup.timer active enabled',
+                                        'chaos-helpai.service active enabled', 'chaos-server.service active enabled'], 'services: ' + r.stdout + r.stderr)
+        r = run('service', 'chaos-helpai', 'restart')
+        check(r.returncode == 0 and 'systemctl restart chaos-helpai' in calls(), 'service restart: ' + r.stdout + r.stderr)
+        r = run('service', 'apache2', 'restart')
+        check(r.returncode == 0 and 'systemctl restart apache2' in calls(), 'service restart apache2: ' + r.stdout + r.stderr)
+        for bad in (('service', 'sshd', 'stop'), ('service', 'chaos-helpai', 'enable'), ('service', 'chaos-x;rm', 'stop'),
+                    ('service', '../chaos-x', 'stop'), ('service', 'chaos-helpai'), ('service-log', 'ssh'),
+                    ('service', 'apache2x', 'restart'), ('service', 'php8.3-fpm;x', 'restart')):
+            check(run(*bad).returncode != 0, 'refused: %r' % (bad,))
+        check('systemctl stop sshd' not in calls() and 'enable chaos' not in calls(), 'a refused service runs nothing')
+        svclog = os.path.join(tmp, 'helpai.log')
+        with open(svclog, 'w') as f:
+            f.write('\n'.join('helpai %d' % i for i in range(30)) + '\n')
+        r = run('service-log', 'chaos-helpai', '3', extra={'STUB_SVCLOG': svclog})
+        check(r.stdout.splitlines()[1:] == ['helpai 27', 'helpai 28', 'helpai 29'], 'service-log: its file: ' + r.stdout)
+        r = run('service-log', 'chaos-backup.timer')
+        check('journal line' in r.stdout and 'journalctl -u chaos-backup.timer -n 60' in calls(),
+              'service-log: the journal without a file: ' + r.stdout)
 
         # ---- the settings file (/etc/chaos/ctl.conf): sudo drops the environment, so the app only sees this file
         def status(extra=None):
@@ -649,10 +737,13 @@ def test_testers():
             check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
             check('db=yes' in calls, 'the database settings reach testers.py by the environment')
             check(os.getpgid(pid) == pid, 'the run has its own process group')
+            with open(log, 'a') as f:
+                f.write('[tester-helper] testers online: 3\n[tester-helper] testers online: 4\n')
             r = run('testers', 'status', extra={'STUB_BOTS': '5'})
             out = dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
             check(out.get('running') == 'yes' and out.get('pid') == str(pid) and out.get('bots') == '5'
                   and out.get('helper') == 'copied' and out.get('helper_loaded') == 'yes', 'testers status: ' + r.stdout)
+            check(out.get('online_server') == '4', 'testers status: the helper\'s last console count: ' + r.stdout)
             r = run('testers', 'start', '5', '2')
             check(r.returncode != 0 and 'already running' in r.stderr, 'a second start is refused')
             r = run('testers', 'cleanup', '--yes')
@@ -688,6 +779,19 @@ def test_testers():
         check(run('testers', 'cleanup', '--all').returncode != 0, 'cleanup: an unknown option is refused')
         r = run('testers', 'report')
         check(r.returncode == 0 and 'report --state %s --log %s' % (state, log) in tcalls(), 'report reads the log')
+        r = run('testers', 'log')
+        check(r.returncode != 0 and 'no activity log yet' in r.stderr, 'log: none yet, refused')
+        os.makedirs(os.path.join(state, 'runs'), exist_ok=True)
+        for stamp, body in (('20261022-100000', 'old\n'), ('20261022-110000', ''.join('line %d\n' % i for i in range(300)))):
+            with open(os.path.join(state, 'runs', 'run-%s.log' % stamp), 'w') as f:
+                f.write(body)
+        r = run('testers', 'log', '5')
+        check(r.returncode == 0 and 'run-20261022-110000.log (300 lines)' in r.stdout and 'line 299' in r.stdout
+              and 'line 294' not in r.stdout and 'old' not in r.stdout, 'log: the newest run, its last N lines:\n' + r.stdout)
+        r = run('testers', 'log', '0')
+        check(r.returncode != 0, 'log: N 0 refused')
+        r = run('testers', 'log', 'x;id')
+        check(r.returncode != 0, 'log: N not a number refused')
 
         # not loaded, with --restart: the restart countdown is queued, the bots wait for it
         with open(log, 'a') as f:

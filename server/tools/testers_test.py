@@ -4,12 +4,15 @@ anomaly rules, the texts the bots read, the server log parsing and the report, t
 rows and the cleanup that deletes only testers by exact ids, a bot's reading of health, death and shop packets.
 
 Run: python3 -I server/tools/testers_test.py (standard library only; no database, no server)."""
+import contextlib
+import io
 import json
 import os
 import random
 import struct
 import sys
 import tempfile
+import time as _time
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import loadtest as LT  # noqa: E402
@@ -265,6 +268,86 @@ spells = [{'words': 'heal a', 'group': 'healing', 'level': 10, 'needlearn': Fals
           {'words': 'heal c', 'group': 'healing', 'level': 80, 'needlearn': False, 'params': False, 'vocations': set()}]
 eq(T.class_spells(spells, {}, 'Knight', 60)['heal']['words'], 'heal b', 'the best healing spell of the level')
 eq(T.class_spells(spells, {}, 'Mystic', 60)['heal']['words'], 'heal a', 'of the class')
+
+# ---------------------------------------------------------------- level bands
+eq(T.LEVELS, (30, 100, 250, 500, 750, 1000, 1250, 1500, 1750, 2000), 'the level bands up to 2000')
+eq(T.parse(['setup', '--server-dir', '/x']).levels, '30,100,250,500,750,1000,1250,1500,1750,2000',
+   'setup: every band by default')
+cls15 = [('C%d' % k, 1) for k in range(15)]
+plan = T.plan_bots(100, cls15, list(T.LEVELS))
+for lv in T.LEVELS:
+    band = [c for c, l in plan if l == lv]
+    eq(len(band), 10, 'band %d: 10 of 100 testers' % lv)
+    ok(len(set(band)) == 10, 'band %d: 10 different classes' % lv)
+eq(len({c for c, _ in plan}), 15, 'every class plays')
+eq(T.plan_bots(3, [('A', 1)], [30, 100]), [('A', 30), ('A', 100), ('A', 30)], 'one class: the bands in turn')
+
+# ---------------------------------------------------------------- the activity log of a run
+
+_d = tempfile.mkdtemp()
+_path = os.path.join(_d, 'runs', 'run-20261022-120000.log')
+_r = T.Results(2, _path)
+
+
+class _B:
+    name, level, cls, last = 'Tester Aaa', 750, 'Knight', 'hunt'
+
+
+_r.log(_B(), 'login', 'in game')
+_r.behaviour('hunt', 'tried', _B())
+_r.behaviour('hunt', 'ok', _B())
+_r.count('lua_errors', 'Lua Script Error: boom', _B())
+_r.anomaly('one_shot', _B(), health_before=100)
+_r.close()
+_lines = open(_path).read().splitlines()
+eq(len(_lines), 4, 'activity: login, the outcome (not the try), the error, the anomaly')
+ok('Tester Aaa (L750 Knight) login' in _lines[0] and _lines[0].endswith('in game'), 'who, level, class: ' + _lines[0])
+ok(_lines[1].endswith('hunt ok'), 'the outcome: ' + _lines[1])
+ok('LUAERROR' in _lines[2] and 'boom' in _lines[2], 'the error: ' + _lines[2])
+ok('ANOMALY' in _lines[3] and 'one_shot while hunt' in _lines[3] and '"health_before": 100' in _lines[3], _lines[3])
+eq(oct(os.stat(_path).st_mode & 0o777), '0o600', 'activity log: owner only')
+eq(oct(os.stat(os.path.dirname(_path)).st_mode & 0o777), '0o700', 'runs/: owner only')
+_runs = os.path.join(_d, 'runs')
+for _k in range(5):
+    for _n in ('run-2026102%d-100000.log' % _k, 'run-2026102%d-100000-report.txt' % _k):
+        open(os.path.join(_runs, _n), 'w').close()
+open(os.path.join(_runs, 'notes.txt'), 'w').close()
+T.prune_runs(_runs, 2)
+eq(sorted(os.listdir(_runs)), ['notes.txt', 'run-20261023-100000-report.txt', 'run-20261023-100000.log',
+                               'run-20261024-100000-report.txt', 'run-20261024-100000.log'],
+   'prune: the newest runs kept, other files untouched')
+_r2 = T.Results(1)
+_r2.log(_B(), 'login', 'x')  # no activity path: nothing written, no error
+eq(T.Results(1).lines, 0, 'no activity log without a path')
+
+# online: save_results writes the count of testers in game; status shows it only while the run keeps saving
+_sd = tempfile.mkdtemp()
+_a = T.Args()
+_a.state = _sd
+_res = T.Results(3)
+T.ONLINE.clear()
+T.ONLINE.update({1: 'a', 2: 'b'})
+T.save_results(_a, _res)
+T.ONLINE.pop(2)
+T.save_results(_a, _res)
+T.ONLINE.clear()
+
+
+def _status():
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        T.status(_a)
+    return dict(l.split('=', 1) for l in out.getvalue().splitlines())
+
+
+_st = _status()
+eq(_st['online'], '1', 'status: testers in game now')
+eq(_st['online_peak'], '2', 'status: the peak of the run')
+with open(os.path.join(_sd, 'run.json')) as _f:
+    _j = json.load(_f)
+_j['online_at'] = int(_time.time()) - T.ONLINE_FRESH - 5
+T.write_private(os.path.join(_sd, 'run.json'), json.dumps(_j))
+eq(_status()['online'], '0', 'status: a stale count (the run stopped saving) is 0')
 
 for f in FAILS:
     print('FAIL ' + f)

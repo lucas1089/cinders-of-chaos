@@ -208,6 +208,9 @@ final class CommandsTab {
         buildXp();
         buildAccounts();
         buildHealth();
+        buildVps();
+        buildServices();
+        buildTesters();
         buildSiteClient();
     }
 
@@ -310,6 +313,213 @@ final class CommandsTab {
                 Ui.setValue(pass, "");
             }
         });
+    }
+
+    // tester bots on the live server (chaos-ctl.sh testers, server/README.md "Tester bots")
+    private void buildTesters() {
+        MaterialCardView c = ui.titledCard("Testers");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Personagens \"Tester\" jogam de verdade e anotam bugs. Precisam da chave do client em "
+                + "/etc/chaos/tester-client-key. Param sozinhos no fim do tempo."));
+        TextInputLayout count = ui.field("Quantos", "1 a 150.", "100", InputType.TYPE_CLASS_NUMBER);
+        TextInputLayout minutes = ui.field("Minutos", "1 a 1440.", "60", InputType.TYPE_CLASS_NUMBER);
+        b.addView(ui.evenRow(count, minutes), ui.gap(8));
+        MaterialButton start = ui.primary("Iniciar", R.drawable.ic_play);
+        start.setOnClickListener(v -> {
+            int n = number(count, 1, 150), m = number(minutes, 1, 1440);
+            if (n < 0 || m < 0) {
+                return;
+            }
+            a.confirm("Iniciar " + n + " testers por " + m + " min?", "Se o ajudante de teste ainda não carregou, o "
+                    + "servidor reinicia com 5 minutos de aviso e os testers entram 30 s depois.", "Iniciar", true,
+                    () -> ctl("Iniciar testers", "testers start " + n + " " + m + " --restart 300", 180, null));
+        });
+        MaterialButton stop = ui.danger("Parar", R.drawable.ic_stop);
+        stop.setOnClickListener(v -> a.confirm("Parar os testers?", "Eles saem do jogo e o ajudante de teste é "
+                + "removido.", "Parar", true, () -> ctl("Parar testers", "testers stop", 60, null)));
+        b.addView(ui.evenRow(start, stop), ui.gap(8));
+        MaterialButton status = ui.secondary("Status", R.drawable.ic_refresh);
+        status.setOnClickListener(v -> a.ctlAction("testers status", 30, f -> {
+            if (!f.ok) {
+                result.show("Testers", f);
+                return;
+            }
+            StringBuilder t = new StringBuilder();
+            for (String line : f.raw.split("\n")) {
+                int eq = line.indexOf('=');
+                if (eq <= 0) {
+                    continue;
+                }
+                String k = line.substring(0, eq), val = line.substring(eq + 1);
+                switch (k) {
+                    case "running": t.append("Rodando: ").append(val.equals("yes") ? "sim" : "não").append('\n'); break;
+                    case "started": if (!val.isEmpty()) t.append("Início: ").append(val).append('\n'); break;
+                    case "bots": t.append("Testers: ").append(val).append('\n'); break;
+                    case "minutes": t.append("Minutos: ").append(val).append('\n'); break;
+                    case "online": t.append("Online agora: ").append(val).append('\n'); break;
+                    case "online_peak": t.append("Pico online: ").append(val).append('\n'); break;
+                    case "online_server": if (!val.isEmpty()) t.append("Online no servidor: ").append(val).append('\n'); break;
+                    case "logins": t.append("Logins: ").append(val).append('\n'); break;
+                    case "deaths": t.append("Mortes: ").append(val).append('\n'); break;
+                    case "helper_loaded": t.append("Ajudante carregado: ").append(val.equals("yes") ? "sim" : "não").append('\n'); break;
+                    default: break;
+                }
+            }
+            result.show("Testers", Friendly.ok("Feito", t.toString().trim(), f.raw));
+        }));
+        MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
+        report.setOnClickListener(v -> ctl("Relatório dos testers", "testers report", 120, null));
+        b.addView(ui.evenRow(status, report), ui.gap(6));
+        MaterialButton actions = ui.flat("Log das ações", R.drawable.ic_nav_logs);
+        actions.setOnClickListener(v -> ctl("Log dos testers", "testers log 400", 60, null));
+        b.addView(actions, ui.gap(6));
+        b.addView(ui.hint("Cada rodada grava sozinha o log de tudo o que os testers fizeram e os erros que receberam, e "
+                + "o relatório no fim. Ficam as 20 últimas rodadas na VPS."), ui.gap(4));
+        MaterialButton clean = ui.flat("Apagar os testers", 0);
+        clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
+                + "personagens e tudo deles. Precisa de 2 minutos desde que pararam (se rodando, para agora: toque "
+                + "de novo depois). O próximo Iniciar cria novos, com os níveis atuais.", "Apagar", true,
+                () -> ctl("Apagar testers", "testers cleanup --yes", 120, null)));
+        b.addView(clean, ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // the machine: info, system updates, reboot (chaos-ctl.sh vps)
+    private void buildVps() {
+        MaterialCardView c = ui.titledCard("VPS");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("A máquina: memória, disco, atualizações do sistema e reinício. Para o resto, Logs > Terminal."));
+        MaterialButton info = ui.secondary("Informações", R.drawable.ic_refresh);
+        info.setOnClickListener(v -> a.ctlAction("vps info", 90, f -> {
+            if (!f.ok) {
+                result.show("VPS", f);
+                return;
+            }
+            Map<String, String> m = new LinkedHashMap<>();
+            for (String line : f.raw.split("\n")) {
+                int eq = line.indexOf('=');
+                if (eq > 0) {
+                    m.put(line.substring(0, eq), line.substring(eq + 1));
+                }
+            }
+            StringBuilder t = new StringBuilder();
+            t.append("Máquina: ").append(m.getOrDefault("host", "?")).append('\n');
+            t.append("Sistema: ").append(m.getOrDefault("os", "?")).append('\n');
+            t.append("Ligada há: ").append(m.getOrDefault("uptime", "?")).append('\n');
+            t.append("Carga: ").append(m.getOrDefault("load", "?")).append(" (").append(m.getOrDefault("cpus", "?"))
+                    .append(" CPUs)\n");
+            t.append("Memória: ").append(m.getOrDefault("mem_used_mb", "?")).append(" de ")
+                    .append(m.getOrDefault("mem_total_mb", "?")).append(" MB\n");
+            t.append("Disco: ").append(m.getOrDefault("disk_free_gb", "?")).append(" GB livres de ")
+                    .append(m.getOrDefault("disk_total_gb", "?")).append(" GB\n");
+            String up = m.getOrDefault("upgrades", "-1");
+            t.append("Atualizações do sistema: ").append(up.equals("-1") ? "não sei" : up).append('\n');
+            String php = m.getOrDefault("php", "");
+            if (!php.isEmpty()) {
+                t.append("PHP: ").append(php).append('\n');
+            }
+            String phpUp = m.getOrDefault("php_upgrades", "-1");
+            if (!phpUp.equals("-1") && !phpUp.equals("0")) {
+                t.append("Atualizações do PHP pendentes: ").append(phpUp).append(" (toque em Atualizar sistema)\n");
+            }
+            t.append("Precisa reiniciar: ").append("yes".equals(m.get("reboot_required")) ? "sim" : "não").append('\n');
+            String at = m.getOrDefault("reboot_at", "");
+            if (!at.isEmpty()) {
+                t.append("Reinício marcado: ").append(at).append('\n');
+            }
+            result.show("VPS", Friendly.ok("Feito", t.toString().trim(), f.raw));
+        }));
+        MaterialButton upgrade = ui.secondary("Atualizar sistema", R.drawable.ic_backup);
+        upgrade.setOnClickListener(v -> a.confirm("Atualizar o sistema da VPS?", "apt-get update e upgrade, em "
+                + "segundo plano. O jogo continua rodando. Veja o andamento em Log da atualização.", "Atualizar", false,
+                () -> ctl("Atualizar sistema", "vps upgrade", 30, null)));
+        b.addView(ui.evenRow(info, upgrade), ui.gap(6));
+        MaterialButton upLog = ui.flat("Log da atualização", R.drawable.ic_nav_logs);
+        upLog.setOnClickListener(v -> ctl("Log da atualização", "vps upgrade-log 200", 30, null));
+        b.addView(upLog, ui.gap(6));
+        TextInputLayout minutes = ui.field("Reiniciar em (min)", "1 a 60.", "5", InputType.TYPE_CLASS_NUMBER);
+        b.addView(minutes, ui.gap(6));
+        MaterialButton reboot = ui.danger("Reiniciar VPS", R.drawable.ic_restart);
+        reboot.setOnClickListener(v -> {
+            int m = number(minutes, 1, 60);
+            if (m < 0) {
+                return;
+            }
+            a.confirm("Reiniciar a VPS em " + m + " min?", "Os jogadores são avisados e o jogo é salvo. A máquina "
+                    + "inteira reinicia (jogo, site, banco). Pode cancelar até lá.", "Reiniciar", true,
+                    () -> ctl("Reiniciar VPS", "vps reboot " + m, 30, null));
+        });
+        MaterialButton cancel = ui.secondary("Cancelar reinício", R.drawable.ic_stop);
+        cancel.setOnClickListener(v -> ctl("Cancelar reinício", "vps reboot-cancel", 30, null));
+        b.addView(ui.evenRow(reboot, cancel), ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    // the chaos-* systemd units: list, start / stop / restart, log (chaos-ctl.sh services, service, service-log)
+    private void buildServices() {
+        MaterialCardView c = ui.titledCard("Serviços");
+        LinearLayout b = Ui.body(c);
+        b.addView(ui.hint("Os serviços do jogo na VPS (servidor, backup, ajuda, Discord, pagamentos...). Toque em "
+                + "Ver serviços e escolha um para ligar, desligar, reiniciar ou ver o log."));
+        MaterialButton list = ui.secondary("Ver serviços", R.drawable.ic_search);
+        list.setOnClickListener(v -> a.ctlAction("services", 30, f -> {
+            if (!f.ok) {
+                result.show("Serviços", f);
+                return;
+            }
+            List<String> names = new ArrayList<>();
+            List<String> labels = new ArrayList<>();
+            for (String line : f.raw.split("\n")) {
+                String[] p = line.trim().split("\\s+");
+                if (p.length < 3 || !p[0].startsWith("chaos-")) {
+                    continue;
+                }
+                names.add(p[0]);
+                String state = p[1].equals("active") ? "ligado" : p[1].equals("inactive") ? "desligado"
+                        : p[1].equals("failed") ? "FALHOU" : p[1];
+                labels.add(p[0].replace(".service", "") + "  ·  " + state);
+            }
+            if (names.isEmpty()) {
+                result.show("Serviços", Friendly.ok("Feito", "Nenhum serviço chaos-* nesta VPS.", f.raw));
+                return;
+            }
+            new MaterialAlertDialogBuilder(a).setTitle("Serviços")
+                    .setItems(labels.toArray(new String[0]), (d, w) -> serviceActions(names.get(w))).show();
+        }));
+        b.addView(list, ui.gap(6));
+        quick.addView(c, ui.gap(10));
+    }
+
+    private void serviceActions(String unit) {
+        String q = Ssh.sq(unit);
+        String[] acts = {"Ver log", "Reiniciar", "Ligar", "Desligar"};
+        new MaterialAlertDialogBuilder(a).setTitle(unit).setItems(acts, (d, w) -> {
+            switch (w) {
+                case 0: ctl("Log de " + unit, "service-log " + q + " 200", 30, null); break;
+                case 1: a.confirm("Reiniciar " + unit + "?", "O serviço para e liga de novo.", "Reiniciar", true,
+                        () -> ctl("Reiniciar " + unit, "service " + q + " restart", 240, null)); break;
+                case 2: ctl("Ligar " + unit, "service " + q + " start", 120, null); break;
+                default: a.confirm("Desligar " + unit + "?", "Ele fica parado até você ligar de novo (ou até a "
+                        + "VPS reiniciar).", "Desligar", true,
+                        () -> ctl("Desligar " + unit, "service " + q + " stop", 240, null)); break;
+            }
+        }).show();
+    }
+
+    // a whole number in [lo, hi] from the field, or -1 with the field's error set
+    private static int number(TextInputLayout l, int lo, int hi) {
+        int n;
+        try {
+            n = Integer.parseInt(Ui.value(l).trim());
+        } catch (NumberFormatException e) {
+            n = -1;
+        }
+        if (n < lo || n > hi) {
+            l.setError(lo + " a " + hi + ".");
+            return -1;
+        }
+        l.setError(null);
+        return n;
     }
 
     // health, disk cleanup and backups

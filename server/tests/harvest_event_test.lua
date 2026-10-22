@@ -267,6 +267,10 @@ local function tileAt(p, make)
 	return world[k]
 end
 function Position(x, y, z)
+	-- as the engine: x, y uint16 and z uint8 (a set piece read as {x, y, z} put its y in z, beta 2026-10-22)
+	assert(type(x) == "number" and x >= 0 and x <= 65535, "Position: x out of range: " .. tostring(x))
+	assert(type(y) == "number" and y >= 0 and y <= 65535, "Position: y out of range: " .. tostring(y))
+	assert(type(z) == "number" and z >= 0 and z <= 15, "Position: z out of range: " .. tostring(z))
 	local p = {x = x, y = y, z = z}
 	function p.sendMagicEffect() end
 	return p
@@ -369,6 +373,9 @@ for _, it in ipairs(created) do
 end
 local nMech = #places.pumpkins + #places.graves + #places.kingGraves + #places.coffins + #places.cauldrons + #places.bells + 2
 eq(nDecor, #places.decor + nMech, "every set piece and mechanic placed")
+for _, d in ipairs(places.decor) do
+	check(Tile(Position(d[2], d[3], d[4])):getItemById(d[1]) ~= nil, "set piece " .. d[1] .. " on its own tile")
+end
 check(Tile(places.seal.anchor):getItemById(S.crypt_seal.sealed) ~= nil, "the seal is sealed")
 check(Tile(places.circle.anchor):getItemById(S.ritual_circle.dormant) ~= nil, "the circle sleeps")
 eq(Tile(places.seal.tiles[1]):getGround():getActionId(), cfg.aid.seal, "the seal's ground carries its action id")

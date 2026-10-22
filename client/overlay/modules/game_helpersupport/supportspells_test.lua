@@ -358,6 +358,40 @@ ok(not st.userOff[162], 'no bar data: nothing read')
 H.reset(st)
 ok(st.userOff and next(st.userOff) == nil, 'reset clears the marks')
 
+-- a vigil that dropped a moment ago is not unticked yet (death drops every buff just before the health packet)
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+cfg = cfgOf({ 162 })
+H.pick(st, cfg, w.ctx())
+now = now + 20000
+w.bar = {}
+H.pick(st, cfg, w.ctx())
+eq(#H.takeUserOff(st, cfg, now + 500), 0, 'dropped 0.5 s ago: not unticked yet')
+eq(cfg.slots[1].enabled, true, 'the row stays ticked')
+H.reset(st) -- the death: the caller resets
+eq(#H.takeUserOff(st, cfg, now + 5000), 0, 'after the reset: nothing unticked')
+eq(cfg.slots[1].enabled, true, 'the vigil row survives the death')
+st, w = H.newState(), world({ bar = { ['vigil of clarity'] = true } })
+H.pick(st, cfg, w.ctx())
+w.bar = {}
+H.pick(st, cfg, w.ctx())
+eq(#H.takeUserOff(st, cfg, now + H.USEROFF_CONFIRM_MS), 1, 'switched off 2 s ago, still alive: unticked')
+
+-- the utility spells under their Chaos words (owner 2026-10-22: Lantern and Ghost Rope went into Support)
+H.addRenamedWords({ ['utevo vis lux'] = { name = 'Radiant Lantern', words = 'vael zhul lyss' },
+  ['exani tera'] = { name = 'Ghost Rope', words = 'ash gor' }, ['utamo vita'] = { name = 'Ward', words = 'tor ael' } })
+local lantern = { id = 75, name = 'Radiant Lantern', words = 'vael zhul lyss', group = { [3] = 2000 } }
+local rope = { id = 76, name = 'Ghost Rope', words = 'Ash Gor', group = { [3] = 2000 } }
+local ward = { id = 44, name = 'Ward of the Mind', words = 'tor ael', group = { [3] = 2000 } }
+local okL, whyL = H.eligible(lantern)
+ok(not okL and whyL == 'utility', 'Radiant Lantern by its Chaos words: left out')
+ok(not H.eligible(rope), 'Ghost Rope (any case): left out')
+ok(H.eligible(ward), 'a renamed support spell that is no utility stays')
+local spells = { [75] = lantern, [76] = rope, [44] = ward }
+local kept, dropped = H.dropUtilities({ { id = 44, enabled = true }, { id = 75, enabled = true }, { id = 76, enabled = false },
+  { id = 999, enabled = true } }, function(id) return spells[id] end)
+eq(dropped, 2, 'a saved list loses Lantern and Ghost Rope')
+eq(#kept .. ':' .. kept[1].id .. ':' .. kept[2].id, '2:44:999', 'the rest stays in order (an unknown id too)')
+
 -- the safeguards
 st, w = H.newState(), world({ bar = {}, inPz = true })
 cfg = cfgOf({ 234 })
@@ -387,10 +421,10 @@ w.rate = true
 s = H.pick(st, cfg, w.ctx())
 eq(s and s.id, 234, 'all clear: cast')
 -- mana
-w.mana, w.maxMana = 100, 1000   -- Soulward costs 150
+w.mana, w.maxMana = 60, 1000    -- Soulward costs 90 (150 until the mana cut of 2026-10-22)
 eq(H.pick(st, cfg, w.ctx()), nil, 'not enough mana')
 eq(st.status[234], 'mana', 'status: mana')
-w.mana = 300                     -- 300 - 150 = 15 % < 20 % reserve
+w.mana = 240                     -- 240 - 90 = 15 % < 20 % reserve
 eq(H.pick(st, cfg, w.ctx()), nil, 'the cast would eat the reserve')
 eq(st.status[234], 'reserve', 'status: reserve')
 cfg.reserve = 10

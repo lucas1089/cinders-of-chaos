@@ -70,6 +70,12 @@ MODULES = '''\tfunction ShopModule:callbackOnBuy(cid, itemid, subType, amount, i
 \tend
 '''
 POTIONS = '''function onUse(player, item, fromPosition, target, toPosition, isHotkey)
+\tif potion.health then
+\t\tdoTargetCombat(player, target, COMBAT_HEALING, potion.health[1], potion.health[2])
+\tend
+\tif potion.mana then
+\t\tdoTargetCombat(player, target, COMBAT_MANADRAIN, potion.mana[1], potion.mana[2])
+\tend
 \tplayer:addItem(potion.flask, 1)
 \titem:remove(1)
 \treturn true
@@ -158,6 +164,9 @@ try:
     pot = first['actions/scripts/other/potions.lua'].decode()
     check('-- ' + T.FLASK_MARK + 'player:addItem(potion.flask, 1)' in pot, 'the stock potions.lua makes no flask')
     check('\titem:remove(1)' in pot, 'potions are still used up')
+    check(pot.startswith('if ChaosPotions == nil') and pot.count('ChaosPotions.amount(player, target, "health"') == 1
+          and pot.count('ChaosPotions.amount(player, target, "mana"') == 1 and 'potion.health[1], potion.health[2])' not in
+          pot.replace('math.random(potion.health[1], potion.health[2])', ''), 'the potion rolls: fixed + percent of the maximum')
     check(first['scripts/chaos/own.lua'] == b'player:addItem(potion.flask, 1)\n', 'the Chaos folders are not touched')
 
     # no ShopModule:callbackOnBuy: an error, nothing written

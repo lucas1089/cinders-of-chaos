@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Veiled Crawler" nameDescription="a veiled crawler" race="undead" experience="24650" speed="41" manacost="0">
 	<health now="26700" max="26700"/>
-	<look type="2284" head="76" body="19" legs="76" feet="19" corpse="6068"/>
+	<look type="2220" corpse="6068" />
 	<level min="1220" max="1260"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

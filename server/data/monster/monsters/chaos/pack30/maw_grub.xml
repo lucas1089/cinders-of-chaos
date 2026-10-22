@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <monster name="Maw Grub" nameDescription="a maw grub" race="venom" experience="25450" speed="40" manacost="0">
 	<health now="27000" max="27000"/>
-	<look type="2277" head="22" body="75" legs="1" feet="58" corpse="6068"/>
+	<look type="1485" corpse="6068" />
 	<level min="1240" max="1280"/>
 	<targetchange interval="4000" chance="0" />
 	<flags>

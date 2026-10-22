@@ -389,12 +389,19 @@ ok, res = C.apply("chaos", ch)
 eq(C.rarityOf(res.item), 5, "chaos keeps the rarity (an old Eternal is stored as Legendary, 5)")
 eq(C.levelOf(res.item), 42, "and the item level")
 eq(#C.readMods(res.item), M.modCount(9), "a new set of five")
-dice = {16} -- above the 15% chance: no rarity
-ok, res = C.apply("divine", rareItem(2400, 12, {}))
-eq(res.rarity, 0, "the stock divine roll mostly removes the rarity")
-eq(C.levelOf(res.item), 42, "the level stays on the plain copy")
-dice = {15, 100, 18} -- inside 15%, rarity 1 fails (100 > 25), rarity 2 hits (18 <= 20)
-eq(C.rollDivineRarity(), 2)
+ok, res = C.apply("divine", rareItem(2400, 4, {}))
+eq(C.rarityOf(res.item), 5, "the Orb of Fate raises Rare to Legendary")
+eq(C.levelOf(res.item), 42, "the level stays")
+ok, res = C.apply("divine", normal)
+eq(res.rarity, 1, "a normal item becomes Common")
+dice = {6} -- above the 5% Divine chance: a Legendary item stays as it is
+local leg = rareItem(2400, 5, {})
+ok, res = C.apply("divine", leg)
+eq(ok, true, "a missed Divine roll still uses the orb")
+eq(res.item, leg, "and leaves the item alone")
+dice = {5}
+eq(C.rollDivineRarity(rareItem(2400, 5, {})), 10, "inside 5%: Divine")
+eq(select(2, C.check("divine", rareItem(2400, 10, {}))), "maxRarity", "a Divine item refuses the orb")
 
 -- ---------------------------------------------------------------- the forge (drops, every orb copy)
 C.random = math.random

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Grave Lantern" nameDescription="a grave lantern" race="undead" experience="22250" speed="42" manacost="0">
 	<health now="25800" max="25800"/>
-	<look type="2274" head="76" body="38" legs="76" feet="75" corpse="6068"/>
+	<look type="1478" head="133" body="133" legs="133" feet="133" addons="3" corpse="6068" />
 	<level min="1160" max="1200"/>
 	<targetchange interval="4000" chance="10" />
 	<flags>

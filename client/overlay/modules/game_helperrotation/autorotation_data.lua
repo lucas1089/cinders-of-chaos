@@ -159,6 +159,7 @@ ChaosAutoRotationData = {
     [20] = { name = "Necromancer", presets = {
       { level = 8, gap = 2.00, spells = { 181 }, creatures = { 1 } },
       { level = 40, gap = 2.00, spells = { 182, 181 }, creatures = { 1, 1 } },
+      { level = 50, gap = 2.00, spells = { 182, 42, 181 }, creatures = { 1, 2, 1 } },
       { level = 60, gap = 2.00, spells = { 182, 197 }, creatures = { 1, 2 } },
     }, heals = {
       { id = 103, level = 300 },
@@ -238,6 +239,7 @@ ChaosAutoRotationData = {
     [13] = { name = "Tempest Fan", words = "drai zhul ul", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [34] = { name = "Radiant Shard", words = "drai ira vas sol", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [37] = { name = "Headsman's Hurl", words = "kah rek sang", cooldown = 16000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
+    [42] = { name = "Grave Nova", words = "drai nyx oss", cooldown = 6000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [53] = { name = "Bewitching Hex", words = "drai glam", cooldown = 6000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = false, chi = false },
     [58] = { name = "Anvil Fall", words = "kah gal brak thun", cooldown = 12000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },
     [59] = { name = "Scything Arc", words = "kah ti", cooldown = 4000, groupCooldown = 2000, secondaryGroup = "", secondaryCooldown = 0, cast = 0, area = true, chi = false },

@@ -30,6 +30,7 @@ MARGIN_LO, MARGIN_HI = 4, 3  # first and last usable local cell (1-based): the r
 MAX_ZONES_PER_FLOOR = 24
 DEFAULT_ORIGIN = (14800, 14800)
 SCREEN = (15, 11)            # the tiles a 10.98 client shows
+VIEW = (9, 7)                # tiles a player sees on each side (the screen's 7 and 5, plus big sprites); never void
 D8 = ((0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1))
 
 
@@ -851,3 +852,30 @@ def screen_density(walk_xy, monsters_xy, x0, y0, w, h, min_walk=30):
     if not vals:
         return 0.0, 0, 0
     return sum(vals) / len(vals), max(vals), len(vals)
+
+
+def view_frame(walk, have, view=VIEW):
+    """the positions within `view` (dx, dy) of a walkable tile that have no tile in `have`: the frame of solid rock that
+    keeps the client's view off the black void past the area's thin rock rim (and its deep rock left unbuilt)"""
+    vx, vy = view
+    rows = {}
+    for x, y, z in walk:
+        rows.setdefault((z, y), []).append(x)
+    spans = {}
+    for (z, y), xs in rows.items():
+        xs.sort()
+        iv = []
+        for x in xs:
+            if iv and x - vx <= iv[-1][1] + 1:
+                iv[-1][1] = x + vx
+            else:
+                iv.append([x - vx, x + vx])
+        for yy in range(y - vy, y + vy + 1):
+            spans.setdefault((z, yy), []).extend(iv)
+    out = set()
+    for (z, y), iv in spans.items():
+        for a, b in iv:
+            for x in range(a, b + 1):
+                if (x, y, z) not in have:
+                    out.add((x, y, z))
+    return out

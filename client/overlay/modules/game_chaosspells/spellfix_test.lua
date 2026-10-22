@@ -170,6 +170,21 @@ eq(table.concat(rd.getSpellFilterByVocation()[1], ','), '61', 'removed spell out
 F.restore(rundo)
 eq(rinfo['Hexdart Rune'].notOnServer, nil, 'restore removed flag')
 
+-- a removed spell whose id a Chaos spell took (Conjure Rations 42 -> Grave Nova, 2026-10-22): it moves off the server's
+-- ids instead, so the Chaos spell keeps the id's cooldown and helper entries
+local gn
+for _, s in ipairs(ChaosSpellData) do if s.name == 'Grave Nova' then gn = s end end
+eq(gn and gn.id, 42, 'Grave Nova has the id of Conjure Rations')
+eq(removed['drai bren'], true, 'Conjure Rations is a removed spell')
+local cinfo = { ['Conjure Rations'] = entry(42, 'Conjure Rations', 'drai bren', { group = { [3] = 2000 } }) }
+local cundo, cmap, cids = F.apply(cinfo, {}, {}, server, removed, F.chaosIds(ChaosSpellData))
+eq(cinfo['Conjure Rations'].id, 42 + F.OFF_SERVER, 'Conjure Rations moved off id 42')
+eq(cinfo['Conjure Rations'].notOnServer, true, 'Conjure Rations is never cast')
+eq(cids[42], nil, 'id 42 is not a removed id (Grave Nova keeps it)')
+eq(cmap[42], false, 'the stock 42 leaves the helper lists')
+F.restore(cundo)
+eq(cinfo['Conjure Rations'].id, 42, 'restore the id')
+
 -- a stock spell the server retired (ChaosRetiredSpells: Sharpshooter, 2026-10-20): no rename, so its stock words are not
 -- the server's; it leaves id 135 to the Chaos Tautstring and is never cast, and the helper's lists drop the stock 135
 eq(ChaosRetiredSpells and ChaosRetiredSpells['utito tempo san'], true, 'Sharpshooter is a retired stock spell')

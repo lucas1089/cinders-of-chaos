@@ -23,7 +23,10 @@ return {
 		boneGolem = 186, bannerOfBones = 187, boneOffering = 188,
 		-- the summon spells (2026-10-18): free in the base server, the client and the Chaos block (the stock spells end
 		-- at 178 and the packs use 194-199), below 256
-		raiseWarrior = 192, raiseArcher = 193, raiseMage = 176
+		raiseWarrior = 192, raiseArcher = 193, raiseMage = 176,
+		-- the area attack (2026-10-22): the id of the stock Conjure Rations, a conjure spell the runes step removed
+		-- (no rune carries it); register_spells.py and spell_ids_test.lua count it as free
+		graveNova = 42
 	},
 
 	-- condition sub ids (CONDITIONID_COMBAT): the spells and the scripts run in different Lua states, so the
@@ -71,6 +74,8 @@ return {
 			monster = "Risen Warrior", range = 1, intervalMs = 2000, combat = "physical", summon = true,
 			hit = {a = 0.24, b = 0.5}, health = {base = 200, perLevel = 9, perMl = 6},
 			mult = {hit = 1.0, health = 1.8}, hitEffect = "hitarea",
+			-- Bone Challenge: the warrior taunts the monsters near it, like the golem (beta 2026-10-22)
+			tauntMs = 8000, tauntRadius = 2,
 		},
 		archer = {
 			monster = "Risen Archer", range = 5, intervalMs = 2000, combat = "physical", summon = true,
@@ -109,24 +114,69 @@ return {
 		restKeepSeconds = 1800,
 	},
 
+	-- Minion spells (beta 2026-10-22): every kind has a single target spell and an area spell. A minion whose hit is due
+	-- casts one of them in place of the hit when it is ready: the area spell when at least minArea enemies stand in it,
+	-- else the single target one, else the plain hit. Damage: the kind's hit (minions above, all its factors) x mult.
+	-- center: "self" = around the minion, "target" = around its target. ani / hitEffect: names of necro_lib.lua
+	-- M.ANI / M.EFFECT; areaEffect: the effect on every tile of the area.
+	minionSpells = {
+		minArea = 2,
+		skeleton = {
+			single = {name = "Marrow Rend", mult = 2.2, cooldownMs = 8000, hitEffect = "drawblood"},
+			area = {name = "Bone Sweep", mult = 1.2, cooldownMs = 12000, radius = 1, center = "self",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		shade = {
+			single = {name = "Grave Bolt", mult = 2.4, cooldownMs = 8000, ani = "death", hitEffect = "mortarea"},
+			area = {name = "Soul Wail", mult = 1.3, cooldownMs = 12000, radius = 2, center = "target",
+				hitEffect = "mortarea", areaEffect = "mortarea"},
+		},
+		golem = {
+			single = {name = "Crushing Fist", mult = 2.5, cooldownMs = 9000, hitEffect = "groundshaker"},
+			area = {name = "Ossuary Quake", mult = 1.4, cooldownMs = 14000, radius = 2, center = "self",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		warrior = {
+			single = {name = "Sundering Cleave", mult = 2.4, cooldownMs = 8000, hitEffect = "drawblood"},
+			area = {name = "Whirling Bones", mult = 1.3, cooldownMs = 12000, radius = 1, center = "self",
+				hitEffect = "hitarea", areaEffect = "blackspark"},
+		},
+		archer = {
+			single = {name = "Piercing Shot", mult = 2.4, cooldownMs = 8000, ani = "arrow", hitEffect = "drawblood"},
+			area = {name = "Arrow Rain", mult = 1.2, cooldownMs = 12000, radius = 2, center = "target", ani = "arrow",
+				hitEffect = "hitarea", areaEffect = "groundshaker"},
+		},
+		mage = {
+			single = {name = "Arc Bolt", mult = 2.4, cooldownMs = 8000, ani = "energy", hitEffect = "energyhit"},
+			area = {name = "Static Nova", mult = 1.3, cooldownMs = 12000, radius = 2, center = "target", ani = "energy",
+				hitEffect = "energyhit", areaEffect = "energyarea"},
+		},
+	},
+
 	-- ---------------------------------------------------------------- spells
 	-- Raise Dead: raises minions from usable corpses within `radius` of the caster (at most perCast per cast), or one
 	-- from nothing for `nothingManaFactor` x the spell's mana on top. A corpse is usable when it is a monster corpse,
 	-- holds no items (never destroys loot) and belongs to nobody else (corpse owner: the caster, its party, or none).
-	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 60},
+	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 35},
 
 	-- The summon spells (Raise Bone Warrior / Archer / Mage): each creates ONE minion of its kind next to the caster; the
 	-- total cap of the class (minions.classes[].total) decides what happens to the oldest minion. The xml entries
 	-- (spells_chaos.xml) carry level / mana / cooldown; they are repeated here for the tests and the docs.
 	summonSpells = {
-		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 50, cooldownMs = 4000},
-		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss sag", level = 12, mana = 60, cooldownMs = 4000},
-		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 70, cooldownMs = 4000},
+		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 30, cooldownMs = 4000},
+		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss sag", level = 12, mana = 35, cooldownMs = 4000},
+		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 40, cooldownMs = 4000},
 	},
 
 	-- Bone Spear: physical; the creature right behind the target takes `pierce` of it. Formula as mlValues:
 	-- (level / 5 + ml x mlMin + baseMin) x scale .. (level / 5 + ml x mlMax + baseMax) x scale, then the level scale.
 	boneSpear = {mlMin = 1.6, mlMax = 2.6, baseMin = 20, baseMax = 40, scale = 1.0, pierce = 0.5},
+
+	-- Grave Nova (the Necromancer, level 50, after Withering Curse): death damage on every enemy within `radius` sqm of the
+	-- caster (a circle), each hit (level / 5 + ml x mlMin + baseMin) .. (level / 5 + ml x mlMax + baseMax) x scale.
+	-- Players only where PvP allows it. A main-target hit a little over Bone Shrapnel's keeps it on rung 3 of the
+	-- Necromancer's cooldown ladder (6 s; server/data/spells/README.md "Cooldown ladder"), nothing else moves.
+	graveNova = {mlMin = 1.8, mlMax = 2.8, baseMin = 25, baseMax = 45, scale = 1.0, radius = 3},
 
 	-- Withering Curse: the target takes +amplify more damage from everyone for durationMs, and rots for
 	-- `ticks` x a tick of death damage (one per second). The Lich's curse is stronger and also curses up to

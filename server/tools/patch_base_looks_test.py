@@ -38,15 +38,19 @@ for name, (look, colours) in want.items():
         check(str(look) in sheets, '%s: a pair 30 sheet look' % name)
         check(set(colours) == set(P.SHEET_COLOURS), '%s: four colours' % name)
     else:
-        check(2658 <= look <= 2667, '%s: a pair 33 kit look' % name)
+        # owner 2026-10-22: the pack art looks were bad; the base monsters are back on their stock looks
+        check(look < 2000, '%s: a stock look' % name)
 
 tmp = tempfile.mkdtemp()
 try:
     m = os.path.join(tmp, 'monster', 'monsters')
     own = os.path.join(m, 'chaos')
     os.makedirs(own)
-    sheet_name = next(n for n, (_, c) in want.items() if c)
-    kit_name = next(n for n, (_, c) in want.items() if not c)
+    # the mechanics on a table with one sheet look and one plain look (picks.csv has no sheet row since 2026-10-22)
+    row = next(iter(sheets.values()))
+    want = {'Sheet Test Monster': (int(row['look_type']), {c: row[c] for c in P.SHEET_COLOURS}),
+            'Plain Test Monster': (298, {})}
+    sheet_name, kit_name = 'Sheet Test Monster', 'Plain Test Monster'
     open(os.path.join(m, 'a.xml'), 'w').write(mon(sheet_name, '<look type="95" corpse="6027" />'))
     open(os.path.join(m, 'b.xml'), 'w').write(mon(kit_name, '<look type="129" head="1" body="2" legs="3" feet="4" '
                                                             'addons="3" corpse="5993" />'))

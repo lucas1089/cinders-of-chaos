@@ -83,6 +83,7 @@ end
 source("world_xp", "worldBuff", "buff", "World Experience", "buff:world_xp", "Experience from monsters is increased for everyone.", 10, {world = "xp"})
 source("world_loot", "worldBuff", "buff", "World Loot", "buff:world_loot", "More Chaos loot from monsters for everyone.", 11, {world = "loot"})
 source("world_skill", "worldBuff", "buff", "World Training", "buff:world_skill", "Skill and magic level training is faster for everyone.", 12, {world = "skill"})
+source("world_hunt", "worldBuff", "buff", "World Hunt", "buff:world_hunt", "Magic and rare monsters appear more often everywhere.", 12, {world = "hunt"})
 source("victory", "victory", "buff", "Victory", "buff:victory", "A held invasion rewards extra experience.", 13)
 source("golden_hour", "worldEvent", "buff", "Golden Hour", "buff:golden_hour", "More Chaos loot from every monster in this area.", 14, {event = "golden"})
 source("chaos_storm", "worldEvent", "buff", "Chaos Storm", "buff:chaos_storm", "Magic, rare and legendary monsters appear far more often in this area.", 15, {event = "storm"})

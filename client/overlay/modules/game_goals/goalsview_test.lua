@@ -87,5 +87,14 @@ eq(V.doneText(nil), '', 'no banner')
 V.onGoals(st, nil)
 eq(st.header, nil, 'reset')
 
+-- the tracker wraps long goals instead of cutting them
+local w, n = V.wrapLine('Defeat a boss of the Ashen Sepulchre  1/3', 28)
+eq(w, 'Defeat a boss of the Ashen\nSepulchre 1/3', 'wrapped at a space')
+eq(n, 2, 'two lines')
+eq(select(2, V.wrapLine('Slay an Omen guardian', 28)), 1, 'short goal: one line')
+eq((V.wrapLine('', 28)), '', 'empty text')
+eq(select(2, V.wrapLine('', 28)), 1, 'empty text still one line')
+eq((V.wrapLine('Averyveryverylongwordwithoutspaces x', 10)), 'Averyveryverylongwordwithoutspaces\nx', 'a long word on its own line')
+
 if fails > 0 then print('goalsview_test: ' .. fails .. ' failure(s)'); os.exit(1) end
 print('goalsview_test: ' .. checks .. ' checks OK')

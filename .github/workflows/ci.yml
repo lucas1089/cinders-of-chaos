@@ -558,6 +558,8 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_class_fx.py build --check
           # pair 36 effects: specs, sources and sums agree, names free, missiles uint8 (the pack art is never in git)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack36_fx.py build --check
+          # send offsets of the pair 36 effects redrawn in place (server/data/lib/chaos_fx_send_offsets.lua)
+          python3 -I client/tools/sprites/gen_fx_send_offsets.py --check
           # themed sets, auras, wings and grounds of things_custom24: atlases and spec match the generator (same pins)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_theme_art.py build --check
           python3 -I server/tools/install_theme_items.py --lua --check
@@ -607,6 +609,9 @@ jobs:
           # the store item looks of pair 34 (our pouch and ration art snapped to theme palettes): atlas and things file
           # match the generator, and each look passes style_check against its theme
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_store_items_art.py build --check
+          # the orb looks of pair 38 (orbs drawn in code, no rune sprite): atlas and things file match the generator,
+          # and each look passes style_check against its theme
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_orb_items_art.py build --check
           # the jewelry looks of pair 35 (icon set picks): things file, atlas size and chaos_jewelry.lua bases agree
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_jewelry_art.py build --check
           # the owner's art of pair 26 (monster looks, wings, decoration): sheets, things file and picks match the spec

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Gnarlback" nameDescription="a gnarlback" race="blood" experience="52150" speed="33" manacost="0">
 	<health now="33200" max="33200"/>
-	<look type="2295" head="76" body="76" legs="76" feet="57" corpse="6068"/>
+	<look type="2224" corpse="6068"/>
 	<level min="1880" max="1920"/>
 	<targetchange interval="4000" chance="10"/>
 	<flags>

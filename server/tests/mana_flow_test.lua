@@ -62,8 +62,8 @@ for tag in xml:gmatch("<instant%s[^>]*>") do
 	eq(tag:match(' mana="(%d+)"') ~= nil, true, name .. ": a fixed mana number")
 end
 eq(spells > 100, true, "the Chaos spells were read")
-eq(readAll("data/spells/chaos/spells_chaos.xml"):match('name="Shadow Mend"[^>]* mana="(%d+)"'), "40",
-	"Shadow Mend: 40 mana at every level (it was 2% of the maximum mana)")
+eq(readAll("data/spells/chaos/spells_chaos.xml"):match('name="Shadow Mend"[^>]* mana="(%d+)"'), "25",
+	"Shadow Mend: 25 mana at every level (40 until 2026-10-22, 2% of the maximum mana before)")
 -- the stock spells the classes keep: a number in the mana column (stock_spells.csv, spell_timings.csv)
 for _, csv in ipairs({"data/spells/stock_spells.csv", "data/spells/spell_timings.csv"}) do
 	local header, col

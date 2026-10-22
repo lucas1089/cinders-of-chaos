@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <monster name="Blight Bloom" nameDescription="a blight bloom" race="venom" experience="12800" speed="48">
 	<health now="20900" max="20900"/>
-	<look type="2262" head="19" body="57" legs="76" feet="40" corpse="6068"/>
+	<look type="563" corpse="6068"/>
 	<targetchange interval="5000" chance="10"/>
 	<level min="910" max="950"/>
 	<flags>

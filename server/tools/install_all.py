@@ -86,7 +86,8 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   harvestevent tools/install_harvest_event.py    the Haunted Harvest's items (hollow candy, sexton's key, ritual candle,
                hollow charm: copies of stock items, server ids 41620..41623) in items.otb / items.xml and Widow Hessa
                in data/npc (README "Haunted Harvest")
-  gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml (README "Gems and sockets")
+  gems         tools/install_gems.py             the gems and the Orb of Sockets in items.otb / items.xml, the orb's own look of
+               pair 38, client 38641 (README "Gems and sockets")
   salvage      tools/install_salvage.py          the salvage Rune Shard in items.otb / items.xml (README "Salvage")
   omens        tools/install_omens.py            the Omen Fragment and Omen Key in items.otb / items.xml (README "Rifts", Omens)
   ascended     tools/install_ascended.py         the Ascended Shards, Sigil and Relic in items.otb / items.xml (README "Ascended
