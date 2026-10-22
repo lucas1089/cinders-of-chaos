@@ -7,6 +7,8 @@
 --   * the name plate shows the title TESTER (top priority); every look at it says it is a test character
 --   * no combat, trade or party between a tester and a player (summons count as their master)
 --   * Game.broadcastMessage drops a broadcast that names a tester (level, achievement, record, prize broadcasts)
+--   * no mail: a tester's parcel or letter, or one to a tester's name, is refused at the mailbox (through
+--     ChaosDepot.onMoveItem, the move hook patch_base_depot.py puts first in Player:onMoveItem)
 -- Assumed engine API (TFS 1.4.2): CreatureEvent login/logout, EventCallback onLook / onTargetCombat / onTradeRequest /
 -- onTradeAccept / Party onJoin, GlobalEvent onStartup, db.storeQuery, Player:getGroup / getAccountType.
 -- Lua 5.1 / LuaJIT compatible.
@@ -158,6 +160,58 @@ end
 partyJoin:register()
 
 -- ---------------------------------------------------------------- broadcasts
+-- mail: a tester sends none, a player's parcel or letter to a tester's name stays (depot.lua's move hook runs this first)
+local function mailboxAt(pos)
+	if not pos or pos.x == CONTAINER_POSITION then
+		return false
+	end
+	local tile = Tile(pos)
+	if not tile then
+		return false
+	end
+	for id in pairs(K.MAILBOXES) do
+		if tile:getItemById(id) then
+			return true
+		end
+	end
+	return false
+end
+
+local function receiverOf(item)
+	local kind = K.MAIL_ITEMS[item:getId()]
+	if kind == "letter" then
+		return K.receiverOf(item:getAttribute(ITEM_ATTRIBUTE_TEXT))
+	end
+	if kind == "parcel" and item:isContainer() then
+		for i = 0, item:getSize() - 1 do
+			local inner = item:getItem(i)
+			if inner and inner:getId() == K.LABEL then
+				return K.receiverOf(inner:getAttribute(ITEM_ATTRIBUTE_TEXT))
+			end
+		end
+	end
+	return nil
+end
+
+function X.mailRefusal(player, item, toPosition)
+	if not K.MAIL_ITEMS[item:getId()] or not mailboxAt(toPosition) then
+		return nil
+	end
+	return K.mailBlocked(Chaos.isTester(player), receiverOf(item))
+end
+
+if ChaosDepot and ChaosDepot.onMoveItem and not X.rawDepotMove then
+	X.rawDepotMove = ChaosDepot.onMoveItem
+	ChaosDepot.onMoveItem = function(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+		local ok, why = pcall(X.mailRefusal, player, item, toPosition)
+		if ok and why then
+			player:sendTextMessage(MESSAGE_STATUS_SMALL, Chaos.t and Chaos.t(player, why) or why)
+			return RETURNVALUE_NOTPOSSIBLE
+		end
+		return X.rawDepotMove(player, item, count, fromPosition, toPosition, fromCylinder, toCylinder)
+	end
+end
+
 if Game and Game.broadcastMessage and not X.rawBroadcast then
 	X.rawBroadcast = Game.broadcastMessage
 	Game.broadcastMessage = function(text, kind)

@@ -7,6 +7,8 @@
 --   K.mentions(text, names)               a text names one of these testers (broadcasts, Discord events are dropped)
 --   K.mixed(aTester, bTester)             a tester and a player together (combat, trade, party: refused)
 --   K.marketBlocked(action)               the market actions that move items or gold between characters
+--   K.mailBlocked(fromTester, receiver)   a parcel or letter a tester sends, or one sent to a tester's name: the text
+--   K.receiverOf(text)                    the receiver of a label or letter text (its first line, trimmed)
 --   K.lookLine(isSelf)                    the line every look at a tester adds
 -- Lua 5.1 / LuaJIT and 5.3 compatible.
 
@@ -73,6 +75,30 @@ end
 
 function K.marketBlocked(action)
 	return K.MARKET_BLOCKED[action] == true
+end
+
+-- the base mailboxes (items.xml type "mailbox"), parcels and letters (stamped or not) and the parcel label
+K.MAILBOXES = {[2593] = true, [3981] = true, [26055] = true, [26056] = true, [26057] = true}
+K.MAIL_ITEMS = {[2595] = "parcel", [2596] = "parcel", [2597] = "letter", [2598] = "letter"}
+K.LABEL = 2599
+
+function K.receiverOf(text)
+	if type(text) ~= "string" then
+		return nil
+	end
+	local line = text:match("^[^\n]*")
+	line = line and line:match("^%s*(.-)%s*$")
+	return line ~= "" and line or nil
+end
+
+function K.mailBlocked(fromTester, receiver)
+	if fromTester then
+		return "Tester characters cannot send mail."
+	end
+	if receiver and K.isTesterName(receiver) then
+		return "Mail to tester characters is not delivered."
+	end
+	return nil
 end
 
 function K.lookLine(isSelf)

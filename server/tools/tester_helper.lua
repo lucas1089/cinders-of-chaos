@@ -1,0 +1,448 @@
+-- TEST ONLY: never ship this file. It is not under server/data, so install_all.py never copies it.
+-- The helper of the tester bots (server/tools/testers.py; server/README.md "Tester bots"). chaos-ctl.sh testers start
+-- copies it to data/scripts/zz_tester_helper.lua (and tester_helper_core.lua to zz_tester_helper_core.lua);
+-- testers stop and cleanup remove both.
+--
+-- SAFETY: every action below runs ONLY for a character that has BOTH the tester storage 7102900 = 1 AND a name
+-- "Tester Xxx" (ChaosTesterHelperCore.eligible). No other character is ever targeted, moved, given anything or read.
+-- The helper never heals and never prevents a death: testers take real damage and really die.
+--
+-- What it does for a tester:
+--   * targets: a tester without a target gets the nearest monster within 5 tiles as its target and faces it (the bots
+--     do not parse the map); with chase on the bot walks to it
+--   * supplies once (storage +1): a backpack, the plain weapon of its class kit (ChaosTestKit, no unique roll), stock
+--     health and mana potions and some gold, so the potion and shop paths run
+--   * its hunt spot: the first login position (storage +2/+3/+4, testers.py setup puts it on a hunt)
+--   * "!tester town | depot | shop | hunt | info" (the bot says it): teleports to the temple, next to a depot locker,
+--     next to an NPC of the town, back to the hunt spot; each answer is a text line
+--     "[tester-helper] <kind> <json>" with the client ids and positions the bot needs (its own creature id, the potion
+--     client ids, the locker, the NPC's name)
+--   * anomalies (one console line each, "[tester-anomaly] <json>", testers.py report reads the server log): a hit taken
+--     or dealt far above the level, one hit from full health to death, a negative or absurd experience gain, an item
+--     with an impossible count or attribute in the tester's backpack (checked once a minute)
+-- Assumed engine API (TFS 1.4.2): CreatureEvent login/logout/healthchange/death, EventCallback onGainExperience,
+-- TalkAction, addEvent, Game.getSpectators, Creature:setTarget/setDirection/teleportTo,
+-- Player:getStorageValue/setStorageValue/addItem/getBankBalance/setBankBalance, ItemType:getClientId, Tile.
+if not ChaosTesterHelperCore or not ChaosTesterHelperCore.eligible then
+	dofile("data/scripts/zz_tester_helper_core.lua")
+end
+local H = ChaosTesterHelperCore
+
+local STORE = H.STORAGE
+local GROUPS, STEP_MS, RANGE = 4, 500, 5
+local SUPPLIES = {{7618, 100}, {7620, 100}} -- stock health / mana potion
+local GOLD = 20000 -- into the bank: NPC purchases pay from it (Chaos.pay)
+local LOCKERS = {2589, 2590, 2591, 2592} -- depot_config.lua lockerIds
+local SEARCH = 30 -- tiles around the temple for a locker / an NPC
+
+TesterHelper = TesterHelper or {ids = {}, step = 0}
+local T = TesterHelper
+
+local function storageOf(player)
+	local ok, v = pcall(function() return player:getStorageValue(STORE) end)
+	return ok and v or nil
+end
+
+-- THE guard: every function below starts with it
+local function eligible(creature)
+	if not creature or not creature:isPlayer() then
+		return false
+	end
+	return H.eligible(creature:getName(), storageOf(creature))
+end
+T.eligible = eligible
+
+local function anomaly(rule, data)
+	data.rule = rule
+	data.t = os.time()
+	print(H.ANOMALY .. " " .. H.json(data))
+end
+
+local function tell(player, kind, data)
+	player:sendTextMessage(MESSAGE_INFO_DESCR, H.encode(kind, data))
+end
+
+local function posOf(p)
+	return {x = p.x, y = p.y, z = p.z}
+end
+
+local function info(player)
+	local hp, mp = ItemType(7618), ItemType(7620)
+	local data = {cid = player:getId(), level = player:getLevel(), pos = posOf(player:getPosition()),
+		potions = {health = hp and hp:getClientId() or 0, mana = mp and mp:getClientId() or 0}}
+	local ever = ChaosPotionsConfig and ChaosPotionsConfig.everfull or {}
+	for _, e in ipairs(ever) do
+		local it = ItemType(e.id)
+		data.potions["everfull_" .. e.key] = it and it:getClientId() or 0
+	end
+	tell(player, "info", data)
+end
+
+local function temple(player)
+	local town = player:getTown()
+	return town and town:getTemplePosition() or player:getPosition()
+end
+
+local function freeNear(center)
+	for r = 1, 2 do
+		for dx = -r, r do
+			for dy = -r, r do
+				local p = Position(center.x + dx, center.y + dy, center.z)
+				local tile = Tile(p)
+				if tile and tile:getGround() and not tile:hasFlag(TILESTATE_BLOCKSOLID) and not tile:getTopCreature() then
+					return p
+				end
+			end
+		end
+	end
+	return nil
+end
+
+local function findLocker(origin)
+	local best, bestD
+	for dx = -SEARCH, SEARCH do
+		for dy = -SEARCH, SEARCH do
+			local tile = Tile(Position(origin.x + dx, origin.y + dy, origin.z))
+			if tile then
+				for _, id in ipairs(LOCKERS) do
+					if tile:getItemById(id) then
+						local d = math.max(math.abs(dx), math.abs(dy))
+						if not bestD or d < bestD then
+							best, bestD = {pos = tile:getPosition(), id = id}, d
+						end
+					end
+				end
+			end
+		end
+	end
+	return best
+end
+
+local function findNpc(origin)
+	local best, bestD
+	for _, c in ipairs(Game.getSpectators(origin, false, false, SEARCH, SEARCH, SEARCH, SEARCH)) do
+		if c:isNpc() then
+			local p = c:getPosition()
+			local d = math.max(math.abs(p.x - origin.x), math.abs(p.y - origin.y))
+			if not bestD or d < bestD then
+				best, bestD = c, d
+			end
+		end
+	end
+	return best
+end
+
+local function huntPos(player)
+	local x, y, z = player:getStorageValue(STORE + 2), player:getStorageValue(STORE + 3), player:getStorageValue(STORE + 4)
+	if x > 0 and y > 0 and z >= 0 then
+		return Position(x, y, z)
+	end
+	return nil
+end
+
+-- ---------------------------------------------------------------- the commands
+local commands = {}
+
+function commands.info(player)
+	info(player)
+end
+
+function commands.town(player)
+	player:teleportTo(temple(player))
+	tell(player, "town", {pos = posOf(player:getPosition())})
+end
+
+function commands.hunt(player)
+	local p = huntPos(player)
+	if not p then
+		tell(player, "hunt", {err = "no hunt spot"})
+		return
+	end
+	player:teleportTo(p)
+	tell(player, "hunt", {pos = posOf(player:getPosition())})
+end
+
+function commands.depot(player)
+	local locker = findLocker(temple(player))
+	local spot = locker and freeNear(locker.pos)
+	if not spot then
+		tell(player, "depot", {err = "no depot locker near the temple"})
+		return
+	end
+	player:teleportTo(spot)
+	local it = ItemType(locker.id)
+	tell(player, "depot", {pos = posOf(player:getPosition()), locker = posOf(locker.pos), clientId = it:getClientId()})
+end
+
+function commands.shop(player)
+	local npc = findNpc(temple(player))
+	local spot = npc and freeNear(npc:getPosition())
+	if not spot then
+		tell(player, "shop", {err = "no NPC near the temple"})
+		return
+	end
+	player:teleportTo(spot)
+	tell(player, "shop", {pos = posOf(player:getPosition()), npc = npc:getName(), npcPos = posOf(npc:getPosition())})
+end
+
+T.commands = commands
+
+local talk = TalkAction("!tester")
+function talk.onSay(player, words, param)
+	if not eligible(player) or not T.present() then
+		return true -- a player's words are left alone (and a stopped helper does nothing)
+	end
+	local cmd, arg = H.parseCommand(param)
+	if not cmd or not commands[cmd] then
+		tell(player, "error", {err = "unknown command", param = tostring(param)})
+		return false
+	end
+	local ok, err = pcall(commands[cmd], player, arg)
+	if not ok then
+		print("[tester-helper] " .. cmd .. ": " .. tostring(err))
+		tell(player, "error", {err = tostring(err), cmd = cmd})
+	end
+	return false
+end
+talk:separator(" ")
+talk:register()
+
+-- ---------------------------------------------------------------- login: supplies once, hunt spot, info
+local BACKPACK = 1988
+
+local function supplies(player)
+	if player:getStorageValue(STORE + 1) == 1 then
+		return
+	end
+	local bag = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if not bag then
+		bag = player:addItem(BACKPACK, 1, false, 1, CONST_SLOT_BACKPACK)
+	end
+	local K = ChaosTestKit
+	local kit = K and K.kits and K.kindFor and K.kits[K.kindFor(player:getVocation():getId())]
+	for _, slot in ipairs({CONST_SLOT_LEFT, CONST_SLOT_RIGHT}) do
+		local id = kit and kit.slots and kit.slots[slot]
+		if id and not player:getSlotItem(slot) then
+			player:addItem(id, 1, false, 1, slot) -- the plain item: no ChaosMakeUnique
+		end
+	end
+	for _, s in ipairs(SUPPLIES) do
+		if bag then
+			bag:addItem(s[1], s[2])
+		else
+			player:addItem(s[1], s[2])
+		end
+	end
+	if player.setBankBalance then
+		player:setBankBalance(player:getBankBalance() + GOLD)
+	end
+	player:setStorageValue(STORE + 1, 1)
+end
+
+local login = CreatureEvent("TesterHelperLogin")
+function login.onLogin(player)
+	if not eligible(player) then
+		return true
+	end
+	player:registerEvent("TesterHelperHealth")
+	player:registerEvent("TesterHelperDeath")
+	T.ids[player:getId()] = true
+	if not huntPos(player) then
+		local p = player:getPosition()
+		player:setStorageValue(STORE + 2, p.x)
+		player:setStorageValue(STORE + 3, p.y)
+		player:setStorageValue(STORE + 4, p.z)
+	end
+	pcall(supplies, player)
+	local id = player:getId()
+	addEvent(function()
+		local p = Player(id)
+		if p and eligible(p) then
+			info(p)
+		end
+	end, 1500)
+	return true
+end
+login:type("login")
+login:register()
+
+local logout = CreatureEvent("TesterHelperLogout")
+function logout.onLogout(player)
+	T.ids[player:getId()] = nil
+	return true
+end
+logout:type("logout")
+logout:register()
+
+-- ---------------------------------------------------------------- anomalies
+local health = CreatureEvent("TesterHelperHealth")
+function health.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType ~= COMBAT_HEALING and eligible(creature) then
+		local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+		local hit = {kind = "taken", damage = dmg, health = creature:getHealth(), maxHealth = creature:getMaxHealth(),
+			level = creature:getLevel()}
+		local rule = H.hitAnomaly(hit)
+		if rule then
+			hit.who = creature:getName()
+			hit.by = attacker and attacker:getName() or "?"
+			hit.byLevel = attacker and attacker.getMonsterLevel and attacker:getMonsterLevel() or nil
+			anomaly(rule, hit)
+		end
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+health:type("healthchange")
+health:register()
+
+-- on monsters a tester hits: damage dealt by a tester (or its summon)
+local dealt = CreatureEvent("TesterHelperDealt")
+function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, secondaryDamage, secondaryType, origin)
+	if primaryType ~= COMBAT_HEALING and attacker then
+		local p = attacker
+		if not p:isPlayer() and p:getMaster() then
+			p = p:getMaster()
+		end
+		if eligible(p) then
+			local dmg = math.max(0, primaryDamage or 0) + math.max(0, secondaryDamage or 0)
+			local hit = {kind = "dealt", damage = dmg, level = p:getLevel()}
+			local rule = H.hitAnomaly(hit)
+			if rule then
+				hit.who = p:getName()
+				hit.target = creature:getName()
+				anomaly(rule, hit)
+			end
+		end
+	end
+	return primaryDamage, primaryType, secondaryDamage, secondaryType
+end
+dealt:type("healthchange")
+dealt:register()
+
+local death = CreatureEvent("TesterHelperDeath")
+function death.onDeath(creature, corpse, killer, mostDamageKiller)
+	if eligible(creature) then
+		print("[tester-event] " .. H.json({kind = "death", who = creature:getName(), level = creature:getLevel(),
+			killer = killer and killer:getName() or "?", t = os.time()}))
+	end
+	return true
+end
+death:type("death")
+death:register()
+
+local xp = EventCallback
+xp.onGainExperience = function(self, source, exp, rawExp)
+	if eligible(self) then
+		local rule = H.xpAnomaly(self:getLevel(), exp)
+		if rule then
+			anomaly(rule, {who = self:getName(), level = self:getLevel(), gained = exp,
+				source = source and source:getName() or "?"})
+		end
+	end
+	return exp
+end
+xp:register(999)
+
+local function scanItems(player)
+	local seen = 0
+	local function walk(container, depth)
+		for i = 0, container:getSize() - 1 do
+			local item = container:getItem(i)
+			if item then
+				seen = seen + 1
+				local it = ItemType(item:getId())
+				local attrs = {}
+				for _, key in ipairs({"attack", "defense", "armor", "extradefense", "hitchance"}) do
+					local ok, v = pcall(function() return item:getAttribute(key) end)
+					if ok and type(v) == "number" then
+						attrs[key] = v
+					end
+				end
+				local rule = H.itemAnomaly({count = item:getCount(), stackable = it:isStackable(), attrs = attrs})
+				if rule then
+					anomaly(rule, {who = player:getName(), item = it:getName(), id = item:getId(), count = item:getCount()})
+				end
+				if depth < 3 and item:isContainer() then
+					walk(item, depth + 1)
+				end
+			end
+			if seen > 500 then
+				return
+			end
+		end
+	end
+	local bp = player:getSlotItem(CONST_SLOT_BACKPACK)
+	if bp and bp:isContainer() then
+		walk(bp, 0)
+	end
+end
+
+-- ---------------------------------------------------------------- targets
+local function nearestMonster(player)
+	local pos = player:getPosition()
+	local list = {}
+	for _, c in ipairs(Game.getSpectators(pos, false, false, RANGE, RANGE, RANGE, RANGE)) do
+		if c:isMonster() then
+			list[#list + 1] = {pos = c:getPosition(), health = c:getHealth(), owned = c:getMaster() ~= nil, id = c:getId(), c = c}
+		end
+	end
+	local best = H.nearest(pos, list, RANGE)
+	return best and best.c
+end
+
+local function step()
+	T.step = T.step + 1
+	local g = T.step % GROUPS
+	for id in pairs(T.ids) do
+		if id % GROUPS == g then
+			local player = Player(id)
+			if not player or not eligible(player) then
+				T.ids[id] = nil -- gone, or not a tester: never acted on
+			else
+				if not player:getTarget() then
+					local monster = nearestMonster(player)
+					if monster then
+						monster:registerEvent("TesterHelperDealt")
+						player:setTarget(monster)
+						player:setDirection(H.directionTo(player:getPosition(), monster:getPosition()))
+					end
+				end
+				if T.step % 120 == g then -- every minute
+					pcall(scanItems, player)
+				end
+			end
+		end
+	end
+	-- testers stop removed this file: the loop ends (the server restart drops the rest of the helper)
+	if T.step % 20 == 0 and not T.present() then
+		T.started = false
+		print("[tester-helper] stopped: " .. T.FILE .. " is gone")
+		return
+	end
+	addEvent(step, STEP_MS)
+end
+
+T.FILE = "data/scripts/zz_tester_helper.lua"
+function T.present()
+	local f = io.open(T.FILE, "r")
+	if f then
+		f:close()
+		return true
+	end
+	return false
+end
+
+-- the loop starts once, when the script loads (server start, or a reload of the scripts)
+if not T.started then
+	T.started = true
+	addEvent(step, STEP_MS)
+end
+print("[tester-helper] running (TEST ONLY: chaos-ctl.sh testers stop removes data/scripts/zz_tester_helper*.lua)")
+
+-- a /reload of the scripts while testers are online: pick them up again
+for _, p in ipairs(Game.getPlayers and Game.getPlayers() or {}) do
+	if eligible(p) then
+		T.ids[p:getId()] = true
+		p:registerEvent("TesterHelperHealth")
+		p:registerEvent("TesterHelperDeath")
+	end
+end

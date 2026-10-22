@@ -6205,9 +6205,99 @@ Names are "Tester Xxx". Group 1, account type 1. Never staff.
 - Login refused for a tester in a staff group, on a staff account, or without a "Tester Xxx" name. Logged.
 - Antibot and bot review skip testers: they are bots by design.
 - Players cannot take a name with the word "Tester": game `staffWords`, website `chaos_character_name_tester`.
+- No mail. A tester's parcel or letter is refused at the mailbox. So is one to a "Tester Xxx" name.
+  `testers.lua` wraps `ChaosDepot.onMoveItem`, the move hook of `patch_base_depot.py`.
 
-Tests: `tests/testers_test.lua`, `tools/chaostesters_test.cpp` (status answer without testers, CI),
-`tools/patch_tester_filters_test.py`, website `chaos_leaderboards_page_test.php`, `chaos_client_api_test.php`.
+### The bots (`tools/testers.py`, `tools/tester_core.py`)
+
+Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard library only.
+- `setup`: N accounts `tstbot` + 10 random hex digits, one random password each.
+  Characters "Tester Aaa" upward; a name a player owns is skipped. Classes round robin, levels 30/100/250/500.
+  Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
+  State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
+- `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
+  Real damage, real death. A death is seen (0x28 or "You are dead."); the bot logs in again and says `!tester hunt`.
+  Heals itself: its best healing spell of spells.xml under 60 % health.
+  Under 40 % a health potion by the hotkey packet: 0x84, position 0xFFFF, its own creature id.
+  Casts its class rotation (`loadtest.rotation_for`).
+  Then a weighted behaviour (`tester_core.BEHAVIOURS`, each with a cooldown): hunt, wander, town, depot (opens a
+  locker, 0x82), shop (hi, trade, buy potions 0x7A, sell 0x7B, close 0x7C, bye), party, private message,
+  client opcodes, loot (loot filter take, open the backpack), relog.
+  A dropped connection is retried with a growing pause (up to 2 min). The bots survive a server restart.
+  After `--minutes` (default 60) they log out. SIGTERM ends them early.
+- `report`: the server log from the run's start offset, and `run.json` of the bots.
+- `cleanup`: see below.
+
+What a bot reads: health percent (0x8C), text messages (failures, Lua error texts, experience, loot, level),
+the NPC trade window, extended opcode answers (chunked S/P/E joined).
+
+### The helper (TEST ONLY: `tools/tester_helper.lua`, `tools/tester_helper_core.lua`)
+
+Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` copies both into `data/scripts` as
+`zz_tester_helper*.lua`. `testers stop` and `cleanup` remove them. The loop ends when the file is gone.
+- Acts ONLY on a character with the marker storage = 1 AND a "Tester Xxx" name. Anything else is left alone.
+  `tests/tester_helper_test.lua` proves it on a mocked engine: a player, a player named like a tester without the
+  storage, a player with the storage and another name. None is targeted, moved, given items, answered or logged.
+- Never heals. Never prevents a death.
+- Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
+- Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
+  potions, 20000 gold in the bank.
+- `!tester info | town | depot | hunt | shop`: answers one line `[tester-helper] <kind> <json>`.
+  Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
+- Anomalies, one console line `[tester-anomaly] <json>` each:
+  a hit taken over 3x max health (the 130M one-shot), a hit from full health to death,
+  a hit dealt over 5000 + 400 x level, a negative or absurd experience gain,
+  an item with an impossible count or attribute (backpack scan once a minute).
+- A tester's death: `[tester-event] <json>`.
+
+### On the live server (`chaos-ctl.sh testers`)
+
+The client key. Never the development key: `testers start` refuses `clientGuardAllowDevKey = true`, and `testers.py`
+refuses the development key itself. The real key lives in a root-only file. Create it once, as root:
+
+```
+sudo bash -c 'umask 077; read -rsp "client key: " K; echo; printf "%s\n" "$K" > /etc/chaos/tester-client-key'
+```
+
+It must be 64 hex digits, owned by root, mode 0600. It never goes on a command line or into a log.
+`CHAOS_TESTER_KEY` in ctl.conf names another file.
+
+```
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers status
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers report
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers stop
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup          # lists
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # deletes
+```
+
+The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/opt/chaos-trial/server`, log `/opt/chaos-trial/logs/server.log`.
+- `start [N] [MINUTES] [--restart SECONDS]`: default 100 bots, 60 minutes; at most 150 and 1440.
+  The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
+  refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
+  First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
+  When the minutes are over, the run calls `testers stop --finished` itself.
+- `stop`: SIGTERM to the run's group (the bots log out), the helper files removed.
+- `status`: running, pid, started, bots, minutes, logins, deaths, helper copied, helper loaded.
+- `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
+  then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
+  each with the first bot and what it was doing; behaviours tried / ok / failed.
+- `cleanup [--yes]`: stops a run; waits 2 minutes after a stop (a character in a fight stays in game).
+  Deletes only characters with the marker storage AND a "Tester Xxx" name AND a `tstbot...` account. Exact ids, no
+  LIKE. Rows of every table with a `player_id` / `*_player_id` or `account_id` / `*_account_id` column, a house a
+  tester owns given back, a tester's house bid dropped. Then the characters, then the empty accounts.
+- No config change is made: src-patch 0059 keeps testers out of `maxPlayers`.
+  With `bindOnlyGlobalAddress = true`, loopback fails: `testers.py` refuses with that reason.
+
+The admin app runs these through `chaos-ctl.sh` like the other commands (docs/ADMIN_APP.md).
+
+Not verified against a running server: the bots' packets in game, the helper on the real engine, the cleanup on the
+real schema. Tested only with mocks, stubs and synthetic packets.
+
+Tests: `tests/testers_test.lua`, `tests/tester_helper_test.lua`, `tools/testers_test.py`,
+`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`,
+`deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, website `chaos_leaderboards_page_test.php`,
+`chaos_client_api_test.php`.
 
 ## Load test on the full map (`tools/loadtest.py`, `tools/loadtest_hunt.lua`, `src-patches/0032-network-message-buffer.patch`)
 

@@ -1,0 +1,978 @@
+#!/usr/bin/env python3
+"""Tester bots: characters that play on the live server to find bugs (server/README.md "Tester bots").
+
+Standard library only. The owner runs it through chaos-ctl.sh (testers start | stop | status | report | cleanup);
+by hand, as root:
+
+  setup    create N tester accounts and characters (state folder: a root-only state.json with their random passwords)
+             python3 -I testers.py setup --count 100 --server-dir SERVER [--state /var/lib/chaos/testers]
+                 [--levels 30,100,250,500] [--classes auto | NAME:WEIGHT,...] [--hash-iterations 120000]
+  run      log them in and play until --minutes are over (default 60), then log out
+             python3 -I testers.py run --key-file /etc/chaos/tester-client-key --server-dir SERVER
+                 [--state DIR] [--minutes 60] [--count N] [--host 127.0.0.1] [--port 7171] [--log SERVER_LOG]
+                 [--scenarios FILE] [--ramp 1.0]
+  report   the bug harvest of the last run (the bots' results and the server log since the run started)
+             python3 -I testers.py report [--state DIR] [--log SERVER_LOG]
+  cleanup  delete the tester accounts, their characters and every database row of them; nothing else
+             python3 -I testers.py cleanup [--state DIR] [--dry-run]
+  status   bots=, minutes=, logins=, deaths= of the state folder (chaos-ctl.sh testers status)
+
+Safety (live server with real players):
+  * at most 150 bots (MAX_BOTS), default 100; the database rows of a tester carry the player storage 7102900 = 1
+    (Chaos.storage.tester; the engine never counts it online, src-patch 0059); names "Tester Xxx", accounts
+    "tstbot" + 10 random hex digits, group 1, account type 1, never staff
+  * every account gets its own random password; it lives only in state.json (mode 0600, root)
+  * the client guard key comes from --key-file: a file owned by root (or the user running this), not readable by group
+    or others, made by the owner with `read -rs` (server/README.md "Tester bots"); never from argv or the environment.
+    The public development key is refused, and so is a server with clientGuardAllowDevKey = true
+  * cleanup deletes only rows of characters that have the tester storage AND a "Tester Xxx" name AND an account named
+    "tstbot..." (the ids in state.json, plus such characters the state lost); no LIKE on names
+What a bot does, by the weighted behaviours of tester_core.BEHAVIOURS: hunts (the helper server/tools/tester_helper.lua,
+TEST ONLY, gives it a target), casts its class rotation, heals itself with its best healing spell and with potions (the
+hotkey packet: use with creature at position 0xFFFF on its own creature id), really dies and logs in again, goes to town,
+the depot (opens a locker), an NPC (hi, trade, buy potions, sell, bye), parties, private messages, client module
+requests (--scenarios), loot filter takes, opens its backpack, logs out and in. A dropped connection (server restart) is
+retried with a growing pause, so the bots come back after a restart.
+"""
+import asyncio
+import json
+import os
+import random
+import re
+import secrets
+import shutil
+import signal
+import stat
+import struct
+import subprocess
+import sys
+import tempfile
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import loadtest as LT  # noqa: E402
+import tester_core as TC  # noqa: E402
+
+DEFAULT_STATE = '/var/lib/chaos/testers'
+LETTERS = 'abcdefghijklmnopqrstuvwxyz'
+
+
+# ------------------------------------------------------------------------------------------------ names, state
+def tester_name(index):
+    i, suffix = index, ''
+    for _ in range(3):
+        suffix = LETTERS[i % 26] + suffix
+        i //= 26
+    return 'Tester ' + suffix.capitalize()
+
+
+def new_account_name():
+    return 'tstbot' + secrets.token_hex(5)
+
+
+def safe_name(name):
+    return bool(TC.NAME_RE.match(name or ''))
+
+
+def safe_account(name):
+    return bool(TC.ACCOUNT_RE.match(name or ''))
+
+
+def state_path(folder):
+    return os.path.join(folder, 'state.json')
+
+
+def write_private(path, text):
+    """write a file only its owner can read (0600), atomically"""
+    folder = os.path.dirname(path) or '.'
+    os.makedirs(folder, mode=0o700, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix='.tmp', dir=folder)
+    try:
+        os.fchmod(fd, 0o600)
+        with os.fdopen(fd, 'w') as f:
+            f.write(text)
+        os.replace(tmp, path)
+    except BaseException:
+        if os.path.exists(tmp):
+            os.unlink(tmp)
+        raise
+
+
+def load_state(folder):
+    try:
+        with open(state_path(folder)) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {'bots': []}
+
+
+def save_state(folder, st):
+    write_private(state_path(folder), json.dumps(st, indent=1, sort_keys=True))
+
+
+# ------------------------------------------------------------------------------------------------ the client key
+def read_key_file(path):
+    """the client guard key (64 hex digits) of a root-only file; exits with the reason otherwise"""
+    try:
+        info = os.lstat(path)
+    except OSError as e:
+        sys.exit('--key-file %s: %s (create it: see server/README.md "Tester bots")' % (path, e.strerror))
+    if not stat.S_ISREG(info.st_mode):
+        sys.exit('--key-file %s: not a plain file' % path)
+    if info.st_uid not in (0, os.getuid()):
+        sys.exit('--key-file %s: not owned by root' % path)
+    if info.st_mode & 0o077:
+        sys.exit('--key-file %s: readable by group or others (chmod 600)' % path)
+    with open(path) as f:
+        key = f.read().strip()
+    if not re.match(r'^[0-9a-fA-F]{64}$', key):
+        sys.exit('--key-file %s: not 64 hex digits' % path)
+    raw = bytes.fromhex(key)
+    if raw == LT.GUARD_DEV_KEY:
+        sys.exit('--key-file %s: that is the public development key; the live server needs the real client key' % path)
+    return raw
+
+
+def dev_key_allowed(config_text):
+    """config.lua lets the development key in (clientGuardAllowDevKey = true): never on this server"""
+    text = re.sub(r'--[^\n]*', '', config_text or '')
+    m = re.search(r'^\s*clientGuardAllowDevKey\s*=\s*(\w+)', text, re.M)
+    return bool(m and m.group(1).lower() == 'true')
+
+
+def binds_only_global(config_text):
+    text = re.sub(r'--[^\n]*', '', config_text or '')
+    m = re.search(r'^\s*bindOnlyGlobalAddress\s*=\s*(\w+)', text, re.M)
+    return bool(m and m.group(1).lower() == 'true')
+
+
+# ------------------------------------------------------------------------------------------------ database
+def mysql_cmd(db):
+    """the mysql command line and its temporary option file (the password never on a command line)"""
+    fd, opt = tempfile.mkstemp(prefix='chaos_testers_', suffix='.cnf')
+    os.chmod(opt, 0o600)
+    with os.fdopen(fd, 'w') as f:
+        f.write('[client]\n')
+        if os.environ.get('CHAOS_DB_SOCKET'):
+            f.write('socket="%s"\n' % os.environ['CHAOS_DB_SOCKET'].replace('"', ''))
+        else:
+            f.write('host="%s"\nport="%s"\n' % (os.environ.get('CHAOS_DB_HOST', '127.0.0.1').replace('"', ''),
+                                              os.environ.get('CHAOS_DB_PORT', '3306').replace('"', '')))
+        f.write('user="%s"\n' % os.environ.get('CHAOS_DB_USER', 'chaos').replace('"', ''))
+        f.write('password="%s"\n' % os.environ.get('CHAOS_DB_PASS', '').replace('\\', '\\\\').replace('"', '\\"'))
+    client = os.environ.get('CHAOS_MYSQL') or shutil.which('mysql') or shutil.which('mariadb') or 'mysql'
+    return [client, '--defaults-extra-file=' + opt, '--batch', '-N', db], opt
+
+
+def sql(statements, db=None):
+    db = db or os.environ.get('CHAOS_DB_NAME', 'chaos')
+    cmd, opt = mysql_cmd(db)
+    try:
+        proc = subprocess.run(cmd, input='\n'.join(statements).encode(), stdout=subprocess.PIPE,
+                              stderr=subprocess.STDOUT)
+        out = proc.stdout.decode(errors='replace')
+        if proc.returncode != 0:
+            sys.exit('database: ' + out.strip())
+        return out
+    finally:
+        os.unlink(opt)
+
+
+def rows(out):
+    return [line.split('\t') for line in out.splitlines() if line.strip()]
+
+
+def ids_sql(ids):
+    clean = sorted({int(i) for i in ids})
+    return ','.join(str(i) for i in clean) if clean else 'NULL'
+
+
+# ------------------------------------------------------------------------------------------------ setup
+def plan_classes(spec, vocations):
+    """[(name, weight)]: 'auto' = every class of vocations.xml except None (id 0)"""
+    if spec == 'auto':
+        return [(name, 1) for name, v in sorted(vocations.items(), key=lambda kv: kv[1]['id']) if v['id'] > 0]
+    weights = LT.parse_weights(spec)
+    missing = [n for n, _ in weights if n not in vocations]
+    if missing:
+        sys.exit('--classes: no such vocation in vocations.xml: %s' % ', '.join(missing))
+    return weights
+
+
+def setup_statements(bots, pw_hash_of):
+    """the INSERTs of the tester accounts, characters and their marker storages (names checked before)"""
+    st = []
+    for b in bots:
+        assert safe_account(b['account']) and safe_name(b['name'])
+        st.append("INSERT INTO `accounts` (`name`, `password`, `email`, `type`) VALUES ('%s', '%s', '', 1);"
+                  % (b['account'], pw_hash_of(b)))
+        st.append("INSERT INTO `players` (`name`, `account_id`, `group_id`, `vocation`, `level`, `health`, `healthmax`, "
+                  "`experience`, `mana`, `manamax`, `maglevel`, `skill_fist`, `skill_club`, `skill_sword`, `skill_axe`, "
+                  "`skill_dist`, `skill_shielding`, `cap`, `town_id`, `posx`, `posy`, `posz`, `lastlogin`, `looktype`) "
+                  "SELECT '%s', `id`, 1, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, 3000, %d, %d, %d, %d, "
+                  "UNIX_TIMESTAMP() - 86400, 128 FROM `accounts` WHERE `name` = '%s';"
+                  % (b['name'], b['vocation'], b['level'], b['hp'], b['hp'], LT.exp_for_level(b['level']), b['mana'],
+                     b['mana'], b['ml'], b['skill'], b['skill'], b['skill'], b['skill'], b['skill'], b['skill'],
+                     b['town'], b['pos'][0], b['pos'][1], b['pos'][2], b['account']))
+        for off, val in ((0, 1), (2, b['pos'][0]), (3, b['pos'][1]), (4, b['pos'][2])):
+            st.append("INSERT INTO `player_storage` (`player_id`, `key`, `value`) SELECT `id`, %d, %d FROM `players` "
+                      "WHERE `name` = '%s';" % (TC.TESTER_STORAGE + off, val, b['name']))
+    return st
+
+
+def setup(a):
+    if not 1 <= a.count <= TC.MAX_BOTS:
+        sys.exit('--count 1..%d' % TC.MAX_BOTS)
+    st = load_state(a.state)
+    if st.get('bots'):
+        sys.exit('%s already lists %d testers: run cleanup first' % (state_path(a.state), len(st['bots'])))
+    data = os.path.join(a.server_dir, 'data')
+    vocs = LT.parse_vocations(LT.read_text(os.path.join(data, 'XML', 'vocations.xml')))
+    classes = plan_classes(a.classes, vocs)
+    levels = [int(v) for v in a.levels.split(',') if v.strip()]
+    poi = LT.read_text(os.path.join(data, 'chaos_poi.lua'))
+    temples = [m[1:] for m in LT.poi_marks(poi) if m[0] == 'temple']
+    hunts = LT.hunt_marks(poi)
+    if not temples:
+        sys.exit('no temple marks in data/chaos_poi.lua (install step poi)')
+    plan = [LT.assign(i, classes, levels) for i in range(a.count)]
+    positions = LT.level_positions(hunts, temples, [lv for _, lv in plan], 0.0)
+    spawns = sorted(__import__('glob').glob(os.path.join(data, 'world', '*-spawn.xml')))[:1]
+    if spawns:
+        index = LT.spawn_index(LT.read_text(spawns[0]))
+        positions = [LT.snap_to_spawn(p, index) for p in positions]
+    # names: the first free "Tester Xxx" (a name a player already has is skipped, never touched)
+    taken = {r[0] for r in rows(sql(["SELECT `name` FROM `players` WHERE `name` LIKE 'Tester %';"]))}
+    bots, i = [], 0
+    for k, (cls, level) in enumerate(plan):
+        while tester_name(i) in taken:
+            i += 1
+        name = tester_name(i)
+        i += 1
+        hp, mana, ml, skill = LT.class_stats(cls, level, vocs[cls])
+        bots.append({'account': new_account_name(), 'password': secrets.token_urlsafe(18), 'name': name,
+                     'class': cls, 'vocation': vocs[cls]['id'], 'level': level, 'hp': hp, 'mana': mana, 'ml': ml,
+                     'skill': skill, 'town': a.town, 'pos': list(positions[k])})
+    exist = rows(sql(["SELECT `name` FROM `accounts` WHERE `name` IN (%s);"
+                      % ','.join("'%s'" % b['account'] for b in bots)]))
+    if exist:
+        sys.exit('account names already exist (random clash, run setup again): %s' % exist)
+    hashes = {b['account']: LT.password_hash(b['password'], a.hash_iterations) for b in bots}
+    # the state first: a cleanup after a crash half way still finds every account by name
+    st = {'bots': bots, 'created': int(time.time()), 'server_dir': a.server_dir}
+    save_state(a.state, st)
+    sql(setup_statements(bots, lambda b: hashes[b['account']]))
+    got = rows(sql(["SELECT p.`id`, p.`name`, a.`id`, a.`name` FROM `players` p JOIN `accounts` a ON a.`id` = "
+                    "p.`account_id` WHERE a.`name` IN (%s);" % ','.join("'%s'" % b['account'] for b in bots)]))
+    by_acc = {r[3]: r for r in got}
+    for b in bots:
+        r = by_acc.get(b['account'])
+        if r and r[1] == b['name']:
+            b['player_id'], b['account_id'] = int(r[0]), int(r[2])
+    save_state(a.state, st)
+    print('%d tester characters created (%d classes, levels %s); state: %s' % (
+        sum(1 for b in bots if 'player_id' in b), len(classes), a.levels, state_path(a.state)))
+
+
+# ------------------------------------------------------------------------------------------------ cleanup
+def cleanup_targets(state_bots, db_rows):
+    """the (player ids, account ids) cleanup may delete. db_rows: [(player id, player name, account id, account name,
+    tester storage value)] of the candidates (the state's ids and every character with the tester storage).
+    A row qualifies only with the storage 1 AND a "Tester Xxx" name AND a "tstbot..." account."""
+    players, accounts = set(), set()
+    for pid, pname, aid, aname, mark in db_rows:
+        if str(mark) == '1' and safe_name(pname) and safe_account(aname):
+            players.add(int(pid))
+            accounts.add(int(aid))
+    # accounts of the state with no character left (setup crashed between the two INSERTs)
+    return players, accounts
+
+
+def cleanup(a):
+    st = load_state(a.state)
+    pids = [int(b['player_id']) for b in st.get('bots', []) if b.get('player_id')]
+    accs = [b['account'] for b in st.get('bots', []) if safe_account(b.get('account'))]
+    cand = rows(sql([
+        "SELECT p.`id`, p.`name`, a.`id`, a.`name`, IFNULL(s.`value`, 0) FROM `players` p JOIN `accounts` a ON a.`id` = "
+        "p.`account_id` LEFT JOIN `player_storage` s ON s.`player_id` = p.`id` AND s.`key` = %d WHERE p.`id` IN (%s) "
+        "OR s.`value` = 1;" % (TC.TESTER_STORAGE, ids_sql(pids))]))
+    players, accounts = cleanup_targets(st.get('bots', []), [tuple(r) for r in cand if len(r) == 5])
+    # empty accounts of the state (no character): by exact name, and only when no character is on them
+    if accs:
+        for r in rows(sql(["SELECT a.`id`, a.`name` FROM `accounts` a LEFT JOIN `players` p ON p.`account_id` = a.`id` "
+                           "WHERE a.`name` IN (%s) AND p.`id` IS NULL;" % ','.join("'%s'" % n for n in accs)])):
+            if safe_account(r[1]):
+                accounts.add(int(r[0]))
+    skipped = [r for r in cand if len(r) == 5 and int(r[0]) not in players]
+    for r in skipped:
+        print('NOT deleted (not a tester by every rule): player %s %r account %r' % (r[0], r[1], r[3]))
+    if not players and not accounts:
+        print('no tester characters or accounts in the database')
+        if not a.dry:
+            st['bots'] = []
+            save_state(a.state, st)
+        return
+    tables = rows(sql(["SELECT `TABLE_NAME`, `COLUMN_NAME` FROM `information_schema`.`COLUMNS` WHERE "
+                       "`TABLE_SCHEMA` = DATABASE() AND (`COLUMN_NAME` IN ('player_id', 'account_id') OR `COLUMN_NAME` "
+                       "LIKE '%\\_player\\_id' OR `COLUMN_NAME` LIKE '%\\_account\\_id') AND `TABLE_NAME` NOT IN "
+                       "('players', 'accounts') ORDER BY 1, 2;"]))
+    has_houses = bool(rows(sql(["SELECT 1 FROM `information_schema`.`TABLES` WHERE `TABLE_SCHEMA` = DATABASE() AND "
+                                "`TABLE_NAME` = 'houses';"])))
+    stmts = cleanup_statements(tables, players, accounts, has_houses)
+    print('cleanup: %d characters, %d accounts; rows in %d tables' % (len(players), len(accounts), len(tables)))
+    if a.dry:
+        print('\n'.join(stmts))
+        return
+    sql(stmts)
+    st['bots'] = []
+    st['cleaned'] = int(time.time())
+    save_state(a.state, st)
+    print('tester accounts, characters and their rows deleted')
+
+
+def cleanup_statements(tables, players, accounts, has_houses=False):
+    """DELETEs by exact ids only: every row whose player column (player_id, *_player_id) or account column (account_id,
+    *_account_id) holds a tester's id, a house a tester owns given back, then players, then accounts"""
+    p, acc = ids_sql(players), ids_sql(accounts)
+    out = []
+    for table, column in tables:
+        if not re.match(r'^[A-Za-z0-9_]+$', table) or not re.match(r'^([a-z0-9_]+_)?(player|account)_id$', column):
+            continue
+        out.append('DELETE FROM `%s` WHERE `%s` IN (%s);' % (table, column, acc if column.endswith('account_id') else p))
+    if has_houses:
+        out.append('UPDATE `houses` SET `owner` = 0 WHERE `owner` IN (%s);' % p)
+        out.append('UPDATE `houses` SET `bid` = 0, `bid_end` = 0, `last_bid` = 0, `highest_bidder` = 0 '
+                   'WHERE `highest_bidder` IN (%s);' % p)
+    out.append('DELETE FROM `players` WHERE `id` IN (%s);' % p)
+    out.append('DELETE FROM `accounts` WHERE `id` IN (%s) AND NOT EXISTS (SELECT 1 FROM `players` WHERE '
+               '`account_id` IN (%s));' % (acc, acc))
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ the bot
+SHOP_RE_CACHE = {}
+
+
+def parse_shop(plain, npc):
+    """the NPC trade window (0x7A, the NPC's name, u16 count, items: u16 client id, u8 sub, string name, u32 weight,
+    u32 buy, u32 sell) in a decrypted message, or None"""
+    key = b'\x7a' + struct.pack('<H', len(npc)) + npc.encode('latin-1', 'replace')
+    i = plain.find(key)
+    if i < 0:
+        return None
+    i += len(key)
+    try:
+        count = struct.unpack_from('<H', plain, i)[0]
+        i += 2
+        items = []
+        for _ in range(min(count, 500)):
+            cid, sub = struct.unpack_from('<HB', plain, i)
+            name, i = LT.read_string(plain, i + 3)
+            weight, buy, sell = struct.unpack_from('<III', plain, i)
+            i += 12
+            items.append({'id': cid, 'sub': sub, 'name': name, 'buy': buy, 'sell': sell})
+        return items
+    except (struct.error, IndexError):
+        return None
+
+
+EXT_RE = re.compile(rb'\x32([\x00-\xff])([\x00-\xff]{2})')
+
+
+def extended_messages(plain):
+    """[(opcode, text)] of the extended opcode messages (0x32, u8 opcode, string) in a decrypted message"""
+    out = []
+    for m in EXT_RE.finditer(plain):
+        n = struct.unpack('<H', m.group(2))[0]
+        body = plain[m.end():m.end() + n]
+        if n and len(body) == n and body[:1] in (b'{', b'[', b'S', b'P', b'E'):
+            out.append((m.group(1)[0], body.decode('latin-1')))
+    return out
+
+
+class Results:
+    """what every bot saw, for the report (written to the state folder as run.json)"""
+
+    def __init__(self, n):
+        self.d = {'bots': n, 'started': time.strftime('%Y-%m-%d %H:%M:%S'), 'logins': 0, 'deaths': 0, 'relogs': 0,
+                  'reconnects': 0, 'behaviours': {}, 'failures': {}, 'lua_errors': {}, 'kicks': {}, 'anomalies': [],
+                  'first': {}, 'coverage': {}}
+
+    def first(self, key, bot):
+        self.d['first'].setdefault(key, {'bot': bot.name, 'did': bot.last, 'at': time.strftime('%H:%M:%S')})
+
+    def count(self, table, key, bot):
+        t = self.d[table]
+        t[key] = t.get(key, 0) + 1
+        self.first({'failures': 'fail:', 'lua_errors': 'lua:', 'kicks': 'kick:'}.get(table, table + ':') + key, bot)
+
+    def behaviour(self, name, outcome):
+        b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0})
+        b[outcome] = b.get(outcome, 0) + 1
+
+    def anomaly(self, rule, bot, **data):
+        if len(self.d['anomalies']) < 500:
+            data.update(rule=rule, who=bot.name, did=bot.last, t=int(time.time()))
+            self.d['anomalies'].append(data)
+
+
+ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
+
+
+class TesterBot(LT.Bot):
+    def __init__(self, index, entry, args, n_rsa, results, spells):
+        self.index = index
+        self.account, self.password, self.name = entry['account'], entry['password'], entry['name']
+        self.level = entry.get('level', 1)
+        self.args, self.n, self.results = args, n_rsa, results
+        self.stats = {'no_challenge': 0}
+        self.source = '127.1.%d.%d' % (1 + index // 250, 1 + index % 250) if args.host.startswith('127.') else None
+        self.conn = None
+        self.alive = False
+        self.stage = 'start'
+        self.cid = 0
+        self.guard_wait = 0
+        self.abort_at = None
+        self.invited_by = []
+        self.rotation = spells['rotation']
+        self.heal = spells['heal']
+        self.ready = {}
+        self.sched = TC.Scheduler(index)
+        self.last = 'login'
+        self.health = 100
+        self.helper = {}
+        self.shop = None
+        self.kills = []
+        self.chunks = {}
+        self.died = False
+        self.after_death = False
+        self.fails = 0
+
+    # ---------------------------------------------------------------- sessions until the end
+    async def run(self, clock):
+        pause = 3
+        while time.monotonic() < clock['until'] and not clock['stop']:
+            entered = await self.session(clock)
+            if clock['stop'] or time.monotonic() >= clock['until']:
+                break
+            if entered:
+                pause = 3
+            else:
+                pause = min(120, pause * 2)  # the server is down or restarting: try again, slower each time
+            await asyncio.sleep(pause * (0.5 + random.random()))
+
+    async def session(self, clock):
+        try:
+            session, world = await self.login_server()
+            self.conn = await self.enter_game(session, world)
+        except Exception as e:  # noqa: BLE001 - every failure is a result of the test
+            self.fails += 1
+            if self.fails > 1:
+                self.results.d['reconnects'] += 1
+            reason = LT.failure_reason(self.stage, e)
+            if not reason.startswith('timeout') and 'Connection' not in reason:
+                self.results.count('kicks', 'login: ' + reason, self)
+            return False
+        self.results.d['logins'] += 1
+        self.alive, self.died, self.health = True, False, 100
+        ONLINE[self.cid] = self
+        reader = asyncio.ensure_future(self.drain())
+        self.conn.send(b'\xA0\x01\x01\x01\x00')  # offensive, chase on, secure mode on (never a player)
+        self.say('!tester info')
+        if self.after_death:  # a dead tester wakes in the temple: back to its hunt
+            self.after_death = False
+            self.say('!tester hunt')
+        if self.args.after_login:
+            self.say(self.args.after_login)
+        try:
+            await self.act(clock)
+        finally:
+            ONLINE.pop(self.cid, None)
+            reader.cancel()
+            if self.alive:
+                try:
+                    self.conn.send(b'\x14')
+                    await self.conn.w.drain()
+                except Exception:  # noqa: BLE001
+                    pass
+            self.conn.w.close()
+            self.alive = False
+        return True
+
+    def say(self, text, kind=1):
+        self.conn.send(b'\x96' + bytes([kind]) + LT.string(text))
+
+    # ---------------------------------------------------------------- what the server sends
+    async def drain(self):
+        last = None
+        try:
+            while True:
+                last = await self.conn.read_message()
+                plain = self.conn.decrypt(last)
+                if self.guard_wait:
+                    nonce = LT.find_challenge(plain)
+                    if nonce is not None:
+                        self.send_guard_answer(self.conn, nonce)
+                    elif time.monotonic() > self.guard_wait:
+                        self.guard_wait = 0
+                self.read(plain)
+        except asyncio.CancelledError:
+            raise
+        except Exception:  # noqa: BLE001 - the server closed the connection
+            if self.alive:
+                self.alive = False
+                text = None
+                try:
+                    text = LT.disconnect_text(self.conn.decrypt(last)) if last else None
+                except Exception:  # noqa: BLE001
+                    pass
+                if not self.died:
+                    self.results.count('kicks', text or 'connection closed without a message', self)
+
+    def read(self, plain):
+        if plain[:1] == b'\x28':  # the death window
+            self.on_death()
+            return
+        if self.cid:
+            for m in re.finditer(re.escape(b'\x8c' + struct.pack('<I', self.cid)) + rb'([\x00-\x64])', plain):
+                before, self.health = self.health, m.group(1)[0]
+                rule = TC.health_anomaly(before, self.health, False)
+                if rule:
+                    self.results.anomaly(rule, self, health_before=before)
+        if self.shop_npc and b'\x7a' in plain:
+            items = parse_shop(plain, self.shop_npc)
+            if items is not None:
+                self.shop = items
+        for op, text in extended_messages(plain):
+            self.on_extended(op, text)
+        for text in TC.strings_of(plain):
+            self.on_text(text)
+
+    shop_npc = None
+
+    def on_death(self):
+        if self.died:
+            return
+        self.died = self.after_death = True
+        self.results.d['deaths'] += 1
+        rule = TC.health_anomaly(self.health, 0, True)
+        if rule:
+            self.results.anomaly(rule, self, health_before=self.health)
+
+    def on_text(self, text):
+        kind, detail = TC.classify(text)
+        if kind == 'helper':
+            hk, data = detail
+            self.helper[hk] = data
+            if hk == 'info':
+                self.level = data.get('level', self.level)
+            if hk == 'error':
+                self.results.count('failures', 'helper: ' + str(data.get('err'))[:80], self)
+        elif kind == 'lua_error':
+            self.results.count('lua_errors', text[:200], self)
+        elif kind == 'failure':
+            self.results.count('failures', detail, self)
+        elif kind == 'xp':
+            rule = TC.xp_anomaly(self.level, detail)
+            if rule:
+                self.results.anomaly(rule, self, gained=detail)
+        elif kind == 'loot':
+            rule = TC.gold_anomaly(self.level, detail[1])
+            if rule:
+                self.results.anomaly(rule, self, monster=detail[0], gold=detail[1])
+        elif kind == 'advance':
+            self.level = detail[1]
+        elif kind == 'death':
+            self.on_death()
+
+    def on_extended(self, op, text):
+        if text[:1] in ('S', 'P', 'E') and not text.startswith('{'):
+            if text[0] == 'S':
+                self.chunks[op] = text[1:]
+                return
+            if op not in self.chunks:
+                return
+            self.chunks[op] += text[1:]
+            if text[0] == 'P':
+                return
+            text = self.chunks.pop(op)
+        try:
+            msg = json.loads(text)
+        except ValueError:
+            return
+        if not isinstance(msg, dict):
+            return
+        if op == self.args.ops.get('lootfilter') and msg.get('action') == 'kill':
+            data = msg.get('data') or {}
+            if data.get('items'):
+                self.kills.append(data)
+                del self.kills[:-5]
+        hook = getattr(self.args, 'on_answer', None)
+        if hook:
+            hook(self, op, msg)
+
+    # ---------------------------------------------------------------- what the bot does
+    async def act(self, clock):
+        next_ping = next_pick = time.monotonic()
+        while self.alive and not self.died and time.monotonic() < clock['until'] and not clock['stop']:
+            now = time.monotonic()
+            self.keep_alive(now)
+            if now >= next_ping:
+                self.conn.send(b'\x1E')
+                next_ping = now + 2
+            if now >= next_pick:
+                name = self.sched.next(now) or 'hunt'
+                self.last = name
+                self.results.behaviour(name, 'tried')
+                try:
+                    ok = await getattr(self, 'do_' + name)(clock)
+                except (ConnectionError, OSError, asyncio.IncompleteReadError):
+                    break
+                self.results.behaviour(name, 'ok' if ok else 'failed')
+                next_pick = time.monotonic() + 5 + random.random() * 10
+            try:
+                await self.conn.w.drain()
+            except Exception:  # noqa: BLE001
+                break
+            await asyncio.sleep(0.25)
+        if self.died:
+            await asyncio.sleep(3)
+            self.results.d['relogs'] += 1
+
+    def keep_alive(self, now):
+        """heal by spell under 60 %, by potion (hotkey: use with creature at 0xFFFF on its own id) under 40 %; cast the
+        rotation otherwise"""
+        if self.health < 60 and self.heal and self.ready.get('heal', 0) <= now:
+            self.say(self.heal['words'])
+            self.ready['heal'] = now + max(1.0, self.heal['cooldown'] / 1000.0)
+            self.results.behaviour('heal_spell', 'tried')
+        if self.health < 40 and self.ready.get('potion', 0) <= now and self.cid:
+            pot = (self.helper.get('info') or {}).get('potions', {}).get('health')
+            if pot:
+                self.conn.send(b'\x84' + struct.pack('<HHB', 0xFFFF, 0, 0) + struct.pack('<HB', pot, 0)
+                               + struct.pack('<I', self.cid))
+                self.ready['potion'] = now + 1.1
+                self.results.behaviour('potion', 'tried')
+        if self.rotation:
+            spell = LT.next_spell(self.rotation, self.ready, now)
+            if spell:
+                self.say(spell['words'])
+                self.ready[spell['words']] = now + spell['cooldown'] / 1000.0 + 0.1
+                self.ready[spell['group']] = now + spell['groupcooldown'] / 1000.0 + 0.1
+
+    async def helper_says(self, command, kind, wait=4.0):
+        self.helper.pop(kind, None)
+        self.say('!tester ' + command)
+        end = time.monotonic() + wait
+        while time.monotonic() < end and self.alive:
+            if kind in self.helper:
+                return self.helper[kind]
+            await asyncio.sleep(0.2)
+        return None
+
+    def walk(self, steps):
+        for _ in range(steps):
+            self.conn.send(bytes([random.choice((0x65, 0x66, 0x67, 0x68))]))
+
+    async def do_hunt(self, clock):
+        return True
+
+    async def do_wander(self, clock):
+        self.walk(random.randint(2, 5))
+        return True
+
+    async def do_town(self, clock):
+        r = await self.helper_says('town', 'town')
+        if not r or r.get('err'):
+            return False
+        self.walk(4)
+        await asyncio.sleep(8)
+        return bool(await self.helper_says('hunt', 'hunt'))
+
+    async def do_depot(self, clock):
+        r = await self.helper_says('depot', 'depot')
+        if not r or r.get('err') or 'locker' not in r:
+            return False
+        p = r['locker']
+        self.conn.send(b'\x82' + struct.pack('<HHB', p['x'], p['y'], p['z']) + struct.pack('<HBB', r['clientId'], 1, 0))
+        await asyncio.sleep(3)
+        self.conn.send(b'\x87\x00')  # close the container
+        await self.helper_says('hunt', 'hunt')
+        return True
+
+    async def do_shop(self, clock):
+        r = await self.helper_says('shop', 'shop')
+        if not r or r.get('err') or not r.get('npc'):
+            return False
+        self.shop_npc, self.shop = r['npc'], None
+        for words in ('hi', 'trade'):
+            self.conn.send(b'\x96\x01' + LT.string(words))
+            await asyncio.sleep(1.5)
+        ok = False
+        if self.shop:
+            buy = [i for i in self.shop if i['buy'] > 0 and 'potion' in i['name'].lower()]
+            if buy:
+                item = random.choice(buy)
+                self.conn.send(b'\x7a' + struct.pack('<HBBBB', item['id'], item['sub'], random.randint(1, 5), 0, 0))
+                ok = True
+            sell = [i for i in self.shop if i['sell'] > 0]
+            if sell and random.random() < 0.5:
+                item = random.choice(sell)
+                self.conn.send(b'\x7b' + struct.pack('<HBBB', item['id'], item['sub'], 1, 0))
+            await asyncio.sleep(1)
+            self.conn.send(b'\x7c')
+        self.conn.send(b'\x96\x01' + LT.string('bye'))
+        self.shop_npc = None
+        await self.helper_says('hunt', 'hunt')
+        return ok
+
+    async def do_party(self, clock):
+        self.party_step()
+        return True
+
+    def other(self):
+        ids = [cid for cid in ONLINE if cid != self.cid]
+        return ONLINE[random.choice(ids)] if ids else None
+
+    def count(self, key):
+        self.results.behaviour('party_' + key, 'tried')
+
+    async def do_pm(self, clock):
+        other = self.other()
+        if not other:
+            return False
+        self.conn.send(b'\x96\x05' + LT.string(other.name) + LT.string(random.choice(LT.WORDS)))
+        return True
+
+    async def do_opcodes(self, clock):
+        step = self.args.next_request(self) if self.args.next_request else None
+        if not step:
+            return False
+        op, payload = step
+        self.conn.send(b'\x32' + bytes([op]) + LT.string(payload))
+        return True
+
+    async def do_loot(self, clock):
+        lf = self.args.ops.get('lootfilter')
+        if self.kills and lf:
+            k = self.kills.pop()
+            for n, item in enumerate(k.get('items') or [], 1):
+                msg = {'action': 'take', 'data': {'k': k.get('k'), 'n': item.get('n', n), 'id': item.get('id'), 'one': False}}
+                self.conn.send(b'\x32' + bytes([lf]) + LT.string(json.dumps(msg, separators=(',', ':'))))
+        # open the own backpack (use the item in the backpack slot)
+        bp = self.args.backpack_client_id
+        if bp:
+            self.conn.send(b'\x82' + struct.pack('<HHB', 0xFFFF, 3, 0) + struct.pack('<HBB', bp, 0, 0))
+        return True
+
+    async def do_relog(self, clock):
+        self.conn.send(b'\x14')  # logout; act() ends, session() closes, run() logs in again
+        await self.conn.w.drain()
+        self.alive = False
+        self.results.d['relogs'] += 1
+        return True
+
+
+# ------------------------------------------------------------------------------------------------ run
+def class_spells(spells, model, vocation, level):
+    """{'rotation': attack and support spells (loadtest.rotation_for), 'heal': the best healing spell (or None)}"""
+    rot = LT.rotation_for(spells, model, vocation, level)
+    heals = [s for s in spells if s['group'] == 'healing' and s['level'] <= level and not s['needlearn']
+             and not s['params'] and (not s['vocations'] or vocation in s['vocations'])]
+    heals.sort(key=lambda s: (-s['level'], s['words']))
+    return {'rotation': rot, 'heal': heals[0] if heals else None}
+
+
+def load_ops(server_dir):
+    path = os.path.join(server_dir, 'data', 'scripts', 'chaos', 'chaos_constants.lua')
+    out = {}
+    try:
+        text = LT.read_text(path)
+    except OSError:
+        return out
+    m = re.search(r'ChaosOpcodes = \{(.*?)\n\}', text, re.S)
+    for k, v in re.findall(r'^\s*(\w+) = (\d+)', m.group(1) if m else '', re.M):
+        out[k] = int(v)
+    for k, v in re.findall(r'^ChaosOpcodes\.(\w+) = (\d+)', text, re.M):
+        out[k] = int(v)
+    return out
+
+
+async def run_bots(a, entries):
+    n = LT.modulus_from_pem(a.rsa_key) if a.rsa_key else LT.OT_RSA_N
+    data = os.path.join(a.server_dir, 'data')
+    spells = LT.parse_spells(LT.read_text(os.path.join(data, 'spells', 'spells.xml')))
+    vocs = LT.parse_vocations(LT.read_text(os.path.join(data, 'XML', 'vocations.xml')))
+    by_id = {v['id']: name for name, v in vocs.items()}
+    model_path = os.path.join(HERE, '..', 'data', 'spells', 'rotation_model.csv')
+    model = LT.parse_rotation_model(LT.read_text(model_path)) if os.path.exists(model_path) else {}
+    results = Results(len(entries))
+    clock = {'until': time.monotonic() + a.minutes * 60, 'stop': False}
+    loop = asyncio.get_event_loop()
+    for sig in (signal.SIGINT, signal.SIGTERM):
+        try:
+            loop.add_signal_handler(sig, lambda: clock.update(stop=True))
+        except (NotImplementedError, RuntimeError):
+            pass
+    bots = []
+    for i, e in enumerate(entries):
+        bots.append(TesterBot(i, e, a, n, results, class_spells(spells, model, by_id.get(e['vocation'], ''), e['level'])))
+    saver = asyncio.ensure_future(save_results_loop(a, results))
+    tasks = []
+    for bot in bots:
+        if clock['stop']:
+            break
+        tasks.append(asyncio.ensure_future(bot.run(clock)))
+        await asyncio.sleep(a.ramp)
+    await asyncio.gather(*tasks)
+    saver.cancel()
+    results.d['ended'] = time.strftime('%Y-%m-%d %H:%M:%S')
+    save_results(a, results)
+    print('run over: %d logins, %d deaths, %d kicks kinds; report: testers.py report' % (
+        results.d['logins'], results.d['deaths'], len(results.d['kicks'])), flush=True)
+
+
+def save_results(a, results):
+    write_private(os.path.join(a.state, 'run.json'), json.dumps(results.d, indent=1, sort_keys=True))
+
+
+async def save_results_loop(a, results):
+    while True:
+        await asyncio.sleep(30)
+        save_results(a, results)
+
+
+def run(a):
+    if a.count is not None and not 1 <= a.count <= TC.MAX_BOTS:
+        sys.exit('--count 1..%d' % TC.MAX_BOTS)
+    if not 1 <= a.minutes <= 24 * 60:
+        sys.exit('--minutes 1..1440')
+    cfg_path = os.path.join(a.server_dir, 'config.lua')
+    cfg = LT.read_text(cfg_path) if os.path.exists(cfg_path) else ''
+    if dev_key_allowed(cfg):
+        sys.exit('config.lua has clientGuardAllowDevKey = true: never on the live server; the testers refuse to run')
+    if a.host.startswith('127.') and binds_only_global(cfg):
+        sys.exit('config.lua has bindOnlyGlobalAddress = true: the bots cannot connect over 127.x (give --host)')
+    a.guard_key = read_key_file(a.key_file)
+    a.client_build = 1
+    a.client_id = LT.GUARD_TAG << 16 | a.client_build
+    a.no_source_ips = False
+    a.game_port = 0
+    a.login_timeout = 30.0
+    a.ops = load_ops(a.server_dir)
+    a.next_request = None
+    a.on_answer = None
+    a.backpack_client_id = 0
+    a.after_login = ''
+    if a.scenarios:
+        import tester_scenarios as TS  # the coverage layer (server/tools/tester_scenarios.py)
+        TS.attach(a, a.scenarios)
+    st = load_state(a.state)
+    entries = [b for b in st.get('bots', []) if b.get('player_id') and safe_name(b['name']) and safe_account(b['account'])]
+    if not entries:
+        sys.exit('no testers in %s: run setup first' % state_path(a.state))
+    entries = entries[:min(a.count or len(entries), TC.MAX_BOTS)]
+    if a.rsa_key == '' and os.path.exists(os.path.join(a.server_dir, 'key.pem')):
+        a.rsa_key = os.path.join(a.server_dir, 'key.pem')
+    st['run'] = {'started': int(time.time()), 'minutes': a.minutes, 'count': len(entries), 'log': a.log,
+                 'log_offset': os.path.getsize(a.log) if a.log and os.path.exists(a.log) else 0}
+    save_state(a.state, st)
+    print('%d testers for %d minutes (Ctrl+C or SIGTERM ends early)' % (len(entries), a.minutes), flush=True)
+    asyncio.run(run_bots(a, entries))
+
+
+# ------------------------------------------------------------------------------------------------ report
+def read_log_since(path, offset):
+    if not path or not os.path.exists(path):
+        return []
+    size = os.path.getsize(path)
+    with open(path, 'rb') as f:
+        if offset <= size:
+            f.seek(offset)
+        return f.read().decode('utf-8', 'replace').splitlines()
+
+
+def report(a):
+    st = load_state(a.state)
+    r = st.get('run') or {}
+    try:
+        with open(os.path.join(a.state, 'run.json')) as f:
+            res = json.load(f)
+    except (OSError, ValueError):
+        res = {}
+    log = a.log or r.get('log') or ''
+    lines = read_log_since(log, int(r.get('log_offset', 0)))
+    text = TC.build_report(res, TC.parse_log(lines))
+    if not log:
+        text += '(no server log given: --log)\n'
+    sys.stdout.write(text)
+
+
+def status(a):
+    """key=value lines for chaos-ctl.sh testers status: testers in the state, the last run's numbers"""
+    st = load_state(a.state)
+    r = st.get('run') or {}
+    try:
+        with open(os.path.join(a.state, 'run.json')) as f:
+            res = json.load(f)
+    except (OSError, ValueError):
+        res = {}
+    print('bots=%d' % len([b for b in st.get('bots', []) if b.get('player_id')]))
+    print('minutes=%s' % r.get('minutes', ''))
+    print('logins=%s' % res.get('logins', 0))
+    print('deaths=%s' % res.get('deaths', 0))
+
+
+# ------------------------------------------------------------------------------------------------ main
+class Args:
+    pass
+
+
+def parse(argv):
+    if not argv or argv[0] not in ('setup', 'run', 'report', 'cleanup', 'status'):
+        print(__doc__)
+        sys.exit(2)
+    a = Args()
+    a.cmd = argv[0]
+    defaults = {'--count': TC.DEFAULT_BOTS if a.cmd == 'setup' else None, '--state': DEFAULT_STATE, '--server-dir': '',
+                '--levels': '30,100,250,500', '--classes': 'auto', '--hash-iterations': 120000, '--town': 1,
+                '--minutes': TC.DEFAULT_MINUTES, '--host': '127.0.0.1', '--port': 7171, '--log': '',
+                '--key-file': '', '--rsa-key': '', '--scenarios': '', '--ramp': 1.0}
+    types = {'--count': int, '--hash-iterations': int, '--town': int, '--minutes': int, '--port': int, '--ramp': float}
+    vals = dict(defaults)
+    flags = {'--yes': False, '--dry-run': False}
+    i = 1
+    while i < len(argv):
+        k = argv[i]
+        if k in flags:
+            flags[k] = True
+        elif k in vals and i + 1 < len(argv):
+            try:
+                vals[k] = types.get(k, str)(argv[i + 1])
+            except ValueError:
+                sys.exit('%s: not a number' % k)
+            i += 1
+        elif k in ('--client-key', '--dev-key'):
+            sys.exit('%s: the testers read the key only from --key-file (a root-only file), never the command line' % k)
+        else:
+            sys.exit('unknown option %s' % k)
+        i += 1
+    for k, v in vals.items():
+        setattr(a, k.lstrip('-').replace('-', '_'), v)
+    a.yes, a.dry = flags['--yes'], flags['--dry-run']
+    if a.cmd in ('setup', 'run') and not a.server_dir:
+        sys.exit('--server-dir SERVER (the installed server folder) is required')
+    if a.cmd == 'run' and not a.key_file:
+        sys.exit('--key-file FILE is required (server/README.md "Tester bots")')
+    return a
+
+
+def main(argv):
+    a = parse(argv)
+    {'setup': setup, 'run': run, 'report': report, 'cleanup': cleanup, 'status': status}[a.cmd](a)
+    return 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

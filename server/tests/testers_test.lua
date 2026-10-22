@@ -195,6 +195,42 @@ eq(Chaos.countedPlayers(), 2, "2 counted of 4 online")
 players = {tester, tester2}
 eq(Chaos.countedPlayers(), 0, "only testers: 0 online")
 
+-- ------------------------------------------------------------------ mail
+eq(K.receiverOf("  Tester Abc \nTown"), "Tester Abc", "the receiver is the first line")
+eq(K.receiverOf(""), nil, "an empty label")
+eq(K.mailBlocked(true, "Ana"), "Tester characters cannot send mail.", "a tester sends no mail")
+eq(K.mailBlocked(false, "Tester Abc"), "Mail to tester characters is not delivered.", "no mail to a tester")
+eq(K.mailBlocked(false, "Ana"), nil, "mail between players")
+CONTAINER_POSITION, ITEM_ATTRIBUTE_TEXT, MESSAGE_STATUS_SMALL = 0xFFFF, 8, 21
+local mailbox = {x = 100, y = 100, z = 7}
+function Tile(pos)
+	return {getItemById = function(_, id) return pos.x == mailbox.x and pos.y == mailbox.y and id == 2593 end}
+end
+local function mail(id, text)
+	local label = {getId = function() return 2599 end, getAttribute = function() return text end}
+	return {getId = function() return id end, isContainer = function() return id == 2595 end,
+		getSize = function() return 1 end, getItem = function() return label end,
+		getAttribute = function() return text end}
+end
+local moved, told = 0, nil
+ChaosDepot = {onMoveItem = function() moved = moved + 1; return RETURNVALUE_NOERROR end}
+local sender = player({cid = 4, guid = 21, name = "Bea"})
+function sender:sendTextMessage(_, t) told = t end
+function tester:sendTextMessage(_, t) told = t end
+dofile("data/scripts/chaos/testers.lua")
+local move = ChaosDepot.onMoveItem
+eq(move(sender, mail(2595, "Tester Abc\nTown"), 1, nil, mailbox), RETURNVALUE_NOTPOSSIBLE, "a parcel to a tester stays")
+eq(told, "Mail to tester characters is not delivered.", "with its text")
+eq(move(sender, mail(2597, "Tester Abd"), 1, nil, mailbox), RETURNVALUE_NOTPOSSIBLE, "a letter to a tester stays")
+eq(move(tester, mail(2597, "Ana"), 1, nil, mailbox), RETURNVALUE_NOTPOSSIBLE, "a tester sends no letter")
+eq(moved, 0, "refused moves never reach the depot check")
+eq(move(sender, mail(2595, "Ana"), 1, nil, mailbox), RETURNVALUE_NOERROR, "a parcel to a player goes")
+eq(move(sender, mail(2595, "Tester Abc"), 1, nil, {x = 1, y = 1, z = 7}), RETURNVALUE_NOERROR, "not on a mailbox")
+eq(move(tester, mail(2160, ""), 1, nil, mailbox), RETURNVALUE_NOERROR, "other items on a mailbox tile")
+eq(moved, 3, "the depot check runs after")
+dofile("data/scripts/chaos/testers.lua")
+check(ChaosDepot.onMoveItem == move, "the move wrapper is installed once")
+
 print = origPrint
 print(string.format("testers_test: %d checks, %d failures", count, failures))
 os.exit(failures == 0 and 0 or 1)

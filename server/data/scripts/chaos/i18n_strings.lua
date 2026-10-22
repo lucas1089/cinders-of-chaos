@@ -1439,6 +1439,8 @@ return {
 		["Nothing can be left on a hideout's floor."] = "Nada pode ser deixado no chão de um hideout.",
 		["No such character."] = "Esse personagem não existe.",
 		["Tester characters cannot trade on the market."] = "Personagens tester não podem negociar no market.",
+		["Tester characters cannot send mail."] = "Personagens tester não podem enviar correio.",
+		["Mail to tester characters is not delivered."] = "Correio para personagens tester não é entregue.",
 		["Autoloot list cleaned."] = "Lista do autoloot limpa.",
 		["The item %s does not exist!"] = "O item %s não existe!",
 		["The item %s already exists!"] = "O item %s já está na lista!",
