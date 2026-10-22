@@ -233,7 +233,7 @@ function M.raise(player, kind, pos, ratio)
 	local field = tile and tile.getFieldItem and tile:getFieldItem()
 	if field then
 		field:remove()
-		ChaosSpell.fx(spot, "poff", CONST_ME_POFF)
+		ChaosSpell.fx(spot, "shadow_smoke", CONST_ME_POFF) -- the field goes out in smoke
 	end
 	local m = Game.createMonster(cfg().minions[kind].monster, spot, false, true)
 	if not m then
