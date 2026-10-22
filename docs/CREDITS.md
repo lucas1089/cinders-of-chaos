@@ -63,30 +63,35 @@ ask for credit (appreciated, not required). Listed here as thanks.
 - **Magic VFX Spells & Impacts**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: spell effects
+  - Used for: spell effects; since pair 36 every impact and circle (one colour each) and our procedural hits redrawn with them
 - **Auras & Buffs**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: auras and buff effects
+  - Used for: auras and buff effects; since pair 36 all 84 auras and states
 - **UI Game Feel**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: level up, loot beams and other game feel effects
+  - Used for: level up, loot beams and other game feel effects; since pair 36 the level-up effect, the critical, dodge and block pop-ups and the rest of the set
 - **Projectiles**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: missiles
+  - Used for: missiles; since pair 36 our procedural and the stock element missiles redrawn with them
 - **Fields & Traps**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: field and trap effects
+  - Used for: field and trap effects (all 31 since pair 36)
 - **Mega VFX 500**
   - Author: WsT
   - Licence: purchased; credit not required
-  - Used for: Mystic line spell effects and missiles
+  - Used for: Mystic line spell effects and missiles; since pair 36 every effect (directional ones in eight directions) and the missiles that fit
 - **Pixel Spellcraft VFX**
   - Author: WsT
   - Licence: purchased; credit not required
+  - Used for: the first animated spell effects, auras and missiles; since pair 36 also some of our procedural effects redrawn
+- **Grid Magic 500**
+  - Author: WsT
+  - Licence: purchased; credit appreciated, not required; no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled game); never machine-learning training data
+  - Used for: since pair 36 (2026-10-22) all its tile spells, fields, area skills and cones (directional ones in eight directions), and our procedural area and hit effects redrawn with its tile spells
 - **Anime Ki Auras**
   - Author: WsT
   - Licence: purchased; credit not required
@@ -102,8 +107,8 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: MutterPixel Studio
   - Licence: purchased; use in games, modified or recoloured; no resale or sharing of the files; never AI training data
   - Credit: Art by MutterPixel Studio
-  - Used for: condition auras, element blasts, missiles, level-up and boss fireworks, hit splashes
-  - Source: Pixel Status Effects - Animated VFX Pack, Pixel Projectiles - Animated VFX, Pixel Fireworks - Animated VFX, Pixel Blood VFX - Animated VFX, Pixel Explosions - Animated VFX
+  - Used for: condition auras, element blasts, missiles, level-up and boss fireworks, hit splashes, the loot beams (pair 36)
+  - Source: Pixel Loot Beams - Animated VFX, Pixel Status Effects - Animated VFX Pack, Pixel Projectiles - Animated VFX, Pixel Fireworks - Animated VFX, Pixel Blood VFX - Animated VFX, Pixel Explosions - Animated VFX
 - **MutterPixel Studio pixel art packs**
   - Author: MutterPixel Studio
   - Licence: purchased; use in games incl. commercial, modified or recoloured; no resale or sharing of the raw files (they ship only inside the compiled game); never AI or NFT training data or a style reference
@@ -124,7 +129,7 @@ ask for credit (appreciated, not required). Listed here as thanks.
   - Author: WsT
   - Licence: purchased; credit appreciated, not required; no resale, redistribution or sharing of the assets, even modified (they ship only inside the compiled game); never machine-learning training data
   - Credit: WsT Magic VFX / monster packs (by WsT)
-  - Used for: 51 hunting monsters and the new looks of 17 more (2026-10-22)
+  - Used for: 51 hunting monsters and the new looks of 17 more (2026-10-22); the spell, level-up and game feel effects of pair 36 (the packs listed above)
 - **WsT Wings Pack**
   - Author: WsT
   - Licence: purchased; personal and commercial use, modified or not; no attribution needed (credit appreciated); no resale, redistribution or sharing of the assets, even modified; never machine-learning training data
