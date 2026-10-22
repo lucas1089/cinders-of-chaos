@@ -8,7 +8,7 @@
  "counts": {
   "opcode": 54,
   "out": 37,
-  "passive": 64,
+  "passive": 65,
   "place": 14,
   "staff": 10
  },
@@ -4342,6 +4342,15 @@
   "wardrobe": {
    "files": [
     "wardrobe.lua"
+   ],
+   "kind": "passive",
+   "opcodes": [],
+   "talkactions": [],
+   "why": "no request of its own: reached by play (combat, loot, login, death); only server log errors name it"
+  },
+  "waystone_tiers": {
+   "files": [
+    "waystone_tiers.lua"
    ],
    "kind": "passive",
    "opcodes": [],

@@ -45,6 +45,9 @@ return {
 		-- a countdown bar over the room's entrance (tilebars.lua) for everyone near it
 		bar = true,
 		-- a character who logs in inside a room that is not its group's running fight goes to the room's exit
-		loginOut = true
+		loginOut = true,
+		-- "Leave Boss Room" (Info & Services > Services): a player inside a running room goes to its exit, not while in
+		-- a fight; at most once per leaveCooldown seconds. The last one out closes the room as the idle rule would.
+		leaveCooldown = 30
 	}
 }

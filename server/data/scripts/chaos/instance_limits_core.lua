@@ -232,4 +232,23 @@ function K.waitNext(list, now)
 	return table.remove(list, 1)
 end
 
+-- "Leave Boss Room" (Info & Services > Services, command id "leaveroom"; instance_limits.lua ChaosBossRooms.leave).
+-- f: {inside (a running room holds the player), fight (pz lock or in battle: no free escape from a lost fight, as the
+-- dungeon queue and the arena), cooldownLeft (seconds)}. The reason it is refused (a text for Chaos.t and its number),
+-- or nil: the player may go out.
+function K.leaveReason(f)
+	f = f or {}
+	if not f.inside then
+		return "You are not in a boss room."
+	end
+	if f.fight then
+		return "You cannot leave the boss room while you are in a fight."
+	end
+	local left = tonumber(f.cooldownLeft) or 0
+	if left > 0 then
+		return "You can leave the boss room again in %d s.", math.ceil(left)
+	end
+	return nil
+end
+
 return K

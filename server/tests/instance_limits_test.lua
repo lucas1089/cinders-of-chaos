@@ -78,6 +78,14 @@ do -- eta, caps, texts
 	eq(K.capReached(3, 4), false, "under the cap")
 	eq(K.capReached(4, 4), true, "at the cap")
 	eq(K.capReached(99, 0), false, "0 = no cap")
+	-- Leave Boss Room
+	eq(K.leaveReason({}), "You are not in a boss room.", "leave: not inside")
+	eq(K.leaveReason({inside = true, fight = true, cooldownLeft = 5}), "You cannot leave the boss room while you are in a fight.",
+		"leave: a fight first")
+	local why, n = K.leaveReason({inside = true, cooldownLeft = 4.2})
+	ok(why == "You can leave the boss room again in %d s." and n == 5, "leave: the cooldown, rounded up")
+	eq(K.leaveReason({inside = true, cooldownLeft = 0}), nil, "leave: allowed")
+	eq(K.leaveReason({inside = true, cooldownLeft = -3}), nil, "leave: cooldown over")
 	eq(K.clock(59), "0:59", "clock")
 	eq(K.clock(3725), "1:02:05", "clock hours")
 	eq(K.about(30), "under a minute", "about seconds")
@@ -183,6 +191,8 @@ local function newPlayer(id, name, pos, staff)
 	function p:isMonster() return false end
 	function p:getGroup() return {getAccess = function() return staff == true end, getId = function() return staff and 6 or 1 end} end
 	function p:getTown() return {getTemplePosition = function() return P(1, 1, 7) end} end
+	function p:isPzLocked() return self.pz == true end
+	function p:hasCondition(c) return c == CONDITION_INFIGHT and self.fight == true end
 	players[id] = p
 	creatures[#creatures + 1] = p
 	return p
@@ -523,6 +533,39 @@ creatureEvent:register()
 	local function stand(p, at) p.pos = at tiles[at.x .. ":" .. at.y .. ":" .. at.z] = p end
 	local a = newPlayer(11, "Ash", P(1030, 1015, 7))
 	local b = newPlayer(12, "Bree", P(1031, 1015, 7))
+	-- player report 2026-10-22: a pull from beside the lever (nobody on the participant tiles) made the boss, sent
+	-- nobody in and locked the room. Now it is refused: no boss, no session, the lever as it was
+	local side = newPlayer(14, "Dax", P(1029, 1014, 7))
+	local nBefore = #creatures
+	action.onUse(side, item, lever)
+	ok((side.cancels[1] or ""):find("Stand on the tile in front of the lever", 1, true) ~= nil,
+		"a pull from beside the lever is refused: " .. tostring(side.cancels[1]))
+	eq(ChaosBossRooms.sessions.aid45001, nil, "no session (the room stays free)")
+	eq(#creatures, nBefore, "no boss made")
+	eq(item.id, 1945, "the lever did not move")
+	-- a lever script that still reports an empty group: no lock, the boss it made is removed
+	local stray = newMonster("Ashen warden", P(1010, 1010, 7))
+	ChaosBossRooms.started("aid45001", ChaosBossRooms.rooms.aid45001, {})
+	eq(ChaosBossRooms.sessions.aid45001, nil, "an empty group locks nothing")
+	ok(not Monster(stray:getId()), "and its boss is gone")
+	-- a participant the script's teleport left outside (its entrance on a tile that blocks): onto the nearest free
+	-- tile of the room next to the entrance
+	local oldTile = Tile
+	Tile = function(pos)
+		local blocked = pos.x == 1002 and pos.y == 1010 -- the entrance itself blocks
+		return {getGround = function() return {} end, hasProperty = function() return blocked end,
+			getTopCreature = function() return nil end, getTopVisibleCreature = function() return nil end}
+	end
+	local out = newPlayer(15, "Eli", P(1030, 1015, 7))
+	ok(ChaosBossRooms.bringIn(ChaosBossRooms.rooms.aid45001, out), "brought in")
+	ok(ChaosBossRooms.inRoom(ChaosBossRooms.rooms.aid45001, out.pos) and not (out.pos.x == 1002 and out.pos.y == 1010)
+		and math.abs(out.pos.x - 1002) <= 1 and math.abs(out.pos.y - 1010) <= 1, "next to the blocked entrance, inside")
+	eq(ChaosBossRooms.bringIn(ChaosBossRooms.rooms.aid45001, out), false, "already inside: left where it is")
+	Tile = oldTile
+	players[15] = nil
+	for i, cr in ipairs(creatures) do
+		if cr == out then table.remove(creatures, i) break end
+	end
 	stand(a, lever)
 	stand(b, P(1031, 1015, 7))
 	-- a first group goes in
@@ -567,6 +610,52 @@ creatureEvent:register()
 	local pending = 0
 	for _ in pairs(timers) do pending = pending + 1 end
 	eq(pending, 0, "no timer left behind")
+
+	-- Leave Boss Room (Info & Services > Services, command "leaveroom"): out to the exit, not in a fight, a cooldown;
+	-- the last one out closes the room as the idle rule does
+	CONDITION_INFIGHT = CONDITION_INFIGHT or 8
+	local BR = ChaosBossRooms
+	ok(ChaosCommands and ChaosCommands.handlers.leaveroom ~= nil, "the window's command is registered")
+	item.id = 1945
+	stand(a, lever)
+	stand(b, P(1031, 1015, 7))
+	action.onUse(a, item, lever)
+	s = BR.sessions.aid45001
+	ok(s ~= nil and a.pos.x == 1002 and b.pos.x == 1002, "a group in for the leave checks")
+	local bossId = s.bossId
+	local outside = newPlayer(16, "Fay", P(1030, 1012, 7))
+	eq(BR.leave(outside), false, "outside a room: refused")
+	eq(outside.cancels[1], "You are not in a boss room.", "told")
+	a.fight = true
+	eq(BR.leave(a), false, "in battle: refused")
+	eq(a.cancels[#a.cancels], "You cannot leave the boss room while you are in a fight.", "told why")
+	a.fight, a.pz = nil, true
+	eq(BR.leave(a), false, "pz locked: refused")
+	a.pz = nil
+	ChaosCommands.handlers.leaveroom(a, "")
+	eq(a.pos.x, 1030, "out at the room's exit")
+	eq(a.pos.y, 1010, "the exitPosition")
+	eq(lastMsg(a), "You left the boss room.", "told")
+	ok(BR.sessions.aid45001 == s and Monster(bossId) ~= nil, "Bree still inside: the room runs on")
+	eq(s.guids[a.guid], nil, "Ash is no longer of the group")
+	a.pos = P(1003, 1010, 7) -- (walked back in somehow)
+	eq(BR.leave(a), false, "again at once: refused")
+	eq(a.cancels[#a.cancels], "You can leave the boss room again in 30 s.", "the cooldown")
+	a.pos = P(1030, 1010, 7)
+	ok(BR.leave(b), "Bree leaves")
+	eq(b.pos.x, 1030, "at the exit")
+	eq(BR.sessions.aid45001, nil, "the last one out: the room closes")
+	eq(Monster(bossId), nil, "the boss is removed")
+	eq(bars["room:aid45001:lever"], nil, "the lever free")
+	advance(31)
+	BR.leftAt = {}
+	players[16] = nil
+	for i, cr in ipairs(creatures) do
+		if cr == outside then table.remove(creatures, i) break end
+	end
+	pending = 0
+	for _ in pairs(timers) do pending = pending + 1 end
+	eq(pending, 0, "no timer left behind after the leave")
 
 	-- a second group; everyone logs out: the room frees up after the idle grace
 	item.id = 1945

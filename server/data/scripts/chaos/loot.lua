@@ -950,9 +950,9 @@ local function poolLevel(name)
 	return poolLevels[tostring(name):lower()]
 end
 
--- the monster's level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from bounty_pool.lua,
--- else the same estimate from its experience and health
-function L.monsterLevel(monster)
+-- the monster's own level: Monster:getMonsterLevel (level-scaled monsters), else its hunting level from
+-- bounty_pool.lua, else the same estimate from its experience and health
+function L.baseMonsterLevel(monster)
 	local ok, lvl = pcall(function() return monster:getMonsterLevel() end)
 	if ok and tonumber(lvl) and tonumber(lvl) > 0 then
 		return tonumber(lvl)
@@ -966,6 +966,19 @@ function L.monsterLevel(monster)
 	local okE, exp = pcall(function() return mt:getExperience() end)
 	local okH, hp = pcall(function() return mt:getMaxHealth() end)
 	return ChaosItemMods.estimateMonsterLevel(okE and exp or 0, okH and hp or 0)
+end
+
+-- the monster's level: its own level (L.baseMonsterLevel); a waystone tier's monster inside its tier's map counts at
+-- the tier's level (waystone_tiers.lua)
+function L.monsterLevel(monster)
+	local base = L.baseMonsterLevel(monster)
+	if ChaosWaystoneTiers and ChaosWaystoneTiers.levelOf then
+		local ok, lv = pcall(ChaosWaystoneTiers.levelOf, monster, base)
+		if ok and tonumber(lv) then
+			return tonumber(lv)
+		end
+	end
+	return base
 end
 
 -- the hunting level of a monster (pace.lua PC.levelOf: the level players hunt it at); `fallback` without pace.lua

@@ -376,11 +376,45 @@ local function clearBars(key)
 	end
 end
 
+-- a player on one of the room's participant tiles (the stock lever takes its group from them: config.participantsPos)?
+-- true for a room without such tiles (the soul pit, the tower defence)
+function BR.groupReady(player, config)
+	local list = config and config.participantsPos
+	-- only the stock lever template; the event rooms (config.chaosRoom) use participantsPos for other spots
+	if type(list) ~= "table" or #list == 0 or config.chaosRoom then
+		return true
+	end
+	local at = player:getPosition()
+	for _, pos in ipairs(list) do
+		if at and at.x == pos.x and at.y == pos.y and at.z == pos.z then
+			return true
+		end
+		local ok, c = pcall(function()
+			local tile = Tile(pos)
+			return tile and tile:getTopVisibleCreature(player)
+		end)
+		if ok and c and c.isPlayer and c:isPlayer() then
+			return true
+		end
+	end
+	return false
+end
+
 -- the lever (or the entry tile of a step-in room): false (and a message) while the room's session runs; a monster or a
--- summon walking onto an entry tile never starts a fight (the stock step-in would make the boss for it)
+-- summon walking onto an entry tile never starts a fight (the stock step-in would make the boss for it); false when
+-- nobody stands on the participant tiles (the stock lever then made the boss, sent nobody in and locked the room:
+-- player report 2026-10-22, a Waystone III room "in use" with the player outside)
 function BR.leverUse(player, key, config)
 	BR.register(key, config)
 	if not (player and player.isPlayer and player:isPlayer()) then
+		return false
+	end
+	if not BR.groupReady(player, config) then
+		player:sendCancelMessage(Chaos.t(player, "Stand on the tile in front of the lever to pull it (your group on the tiles behind you)."))
+		local first = config.participantsPos[1]
+		if first and first.sendMagicEffect then
+			pcall(function() first:sendMagicEffect(CONST_ME_MAGIC_BLUE) end)
+		end
 		return false
 	end
 	if not RC().enabled then
@@ -407,6 +441,41 @@ end
 
 local tick
 
+-- a tile of the room a player can stand on: a ground, nothing that blocks, no creature
+local function freeTile(config, pos)
+	if not BR.inRoom(config, pos) then
+		return false
+	end
+	local ok, free = pcall(function()
+		local tile = Tile(pos)
+		return tile ~= nil and tile:getGround() ~= nil and not tile:hasProperty(CONST_PROP_BLOCKSOLID)
+			and tile:getTopCreature() == nil
+	end)
+	return ok and free == true
+end
+
+-- a participant still outside the room after the script's teleport goes to the free tile nearest to the entrance
+function BR.bringIn(config, player)
+	local e = config.bossArea and config.bossArea.entrancePos
+	if not (e and player and player.getPosition) or BR.inRoom(config, player:getPosition()) then
+		return false
+	end
+	for r = 0, 3 do
+		for dy = -r, r do
+			for dx = -r, r do
+				if math.max(math.abs(dx), math.abs(dy)) == r then
+					local pos = Position(e.x + dx, e.y + dy, e.z)
+					if freeTile(config, pos) then
+						player:teleportTo(pos)
+						return BR.inRoom(config, player:getPosition())
+					end
+				end
+			end
+		end
+	end
+	return false
+end
+
 function BR.started(key, config, participants)
 	BR.register(key, config)
 	config = config or BR.rooms[key]
@@ -414,12 +483,24 @@ function BR.started(key, config, participants)
 		return nil
 	end
 	-- no list (a place entered before the start, as the tower defence): the players in the room
+	local given = participants ~= nil
 	participants = participants or creaturesIn(config)
 	-- the script's own kick timer would also hit the next group (it is never stopped when the room empties): this
 	-- session's end replaces it
 	if config.kickEventId and stopEvent then
 		stopEvent(config.kickEventId)
 		config.kickEventId = nil
+	end
+	-- a group the script's teleport did not bring in (its entrance on a tile that blocks): onto the nearest free tile
+	-- of the room next to the entrance
+	for _, p in pairs(participants) do
+		BR.bringIn(config, p)
+	end
+	if given and next(participants) == nil then
+		-- the lever's group is empty: nobody went in: no lock, the boss the script made goes again
+		BR.rooms[key] = config
+		BR.close(key, "idle")
+		return nil
 	end
 	local now = os.time()
 	local limit = BR.limitOf(config)
@@ -546,6 +627,69 @@ function BR.isInside(player)
 	end
 	return false
 end
+
+-- the running room the player stands in: key, config, session (any player in it, not only its group); nil: none
+function BR.roomOf(player)
+	local pos = player:getPosition()
+	for key, s in pairs(BR.sessions) do
+		local config = BR.rooms[key]
+		if config and BR.inRoom(config, pos) then
+			return key, config, s
+		end
+	end
+	return nil
+end
+
+-- "Leave Boss Room" (Info & Services > Services, command "leaveroom"): out to the room's exit (the tower defence: its
+-- drop), refused outside a running room, in a fight (pz lock or battle, as the dungeon queue) and within
+-- bossRooms.leaveCooldown seconds of the last leave. The last one out closes the room as the idle rule does (boss and
+-- monsters removed, the lever free). Returns true when the player went out.
+BR.leftAt = BR.leftAt or {} -- [guid] = os.time() of the last leave
+function BR.leave(player)
+	local key, config, s = BR.roomOf(player)
+	local now = os.time()
+	local guid = player:getGuid()
+	local cd = tonumber(RC().leaveCooldown) or 0
+	local reason, n = K.leaveReason({
+		inside = key ~= nil and RC().enabled ~= false,
+		fight = player:isPzLocked() or (CONDITION_INFIGHT ~= nil and player:hasCondition(CONDITION_INFIGHT)),
+		cooldownLeft = BR.leftAt[guid] and (BR.leftAt[guid] + cd - now) or 0
+	})
+	if reason then
+		player:sendCancelMessage(Chaos.t(player, reason, n))
+		return false
+	end
+	local exit = config.bossArea.exitPosition
+	if not exit then
+		local town = player:getTown()
+		exit = town and town:getTemplePosition()
+	end
+	if not exit then
+		player:sendCancelMessage(Chaos.t(player, "You are not in a boss room."))
+		return false
+	end
+	BR.leftAt[guid] = now
+	if s and s.guids then
+		s.guids[guid] = nil -- back in later only through the lever, like anyone else
+	end
+	player:teleportTo(exit)
+	if exit.sendMagicEffect then
+		exit:sendMagicEffect(CONST_ME_TELEPORT)
+	end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You left the boss room."))
+	local left = creaturesIn(config)
+	if #left == 0 then
+		BR.close(key, "idle")
+	end
+	return true
+end
+
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
+ChaosCommands.register("leaveroom", function(player)
+	BR.leave(player)
+end)
 
 -- login: a character inside a room that is not its group's running session goes to the room's exit
 function BR.onLogin(player)

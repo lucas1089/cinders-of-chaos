@@ -48,9 +48,13 @@ V.PAGES = {
                     { text = 'Level', id = 'familiarlevel', need = 'familiarReady', hint = "Your familiar's level.",
                       why = 'Familiars need level 200.' },
                     { text = 'Choose', id = 'choosefamiliar', hint = 'Choose your familiar.' } } },
-      { label = 'Other', hint = 'The tutorial and the web shop.',
+      { label = 'Other', hint = 'The tutorial, boss rooms and the web shop.',
         buttons = { { text = 'Leave Tutorial', id = 'skiptutorial', need = 'inTutorial',
                       hint = 'Leave the tutorial island now.', why = 'You are not in the tutorial.' },
+                    -- server instance_limits.lua ChaosBossRooms.leave: out to the room's exit, not in a fight
+                    { text = 'Leave Boss Room', id = 'leaveroom', need = 'inBossRoom',
+                      hint = 'Leave the boss room you are in, out to its exit. Not while you are in a fight.',
+                      why = 'You are not in a boss room.' },
                     { text = 'Claim Web Shop Items', id = 'webshop', need = 'webshopOrders',
                       hint = 'Collect what you bought on the website.', why = 'Nothing to claim.' } } },
       -- name plate frames from the store and the exclusives (server shop.lua, command id plateframe): a list of the

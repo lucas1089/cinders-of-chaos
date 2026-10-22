@@ -568,6 +568,19 @@ function Items.getItems(self, recursive)
 	return out
 end
 function Items.getParent(self) return self.parent end
+-- Container:addItemEx(item, index, flags): into this container (the engine's queryAdd: its capacity `cap`; a backpack
+-- whose owner is `full` takes nothing, like the old player:addItemEx mock). Records the flags it was called with.
+function Items.addItemEx(self, item, index, flags)
+	if not self.children then return 1 end
+	local top = self
+	while top.parent and top.parent.children do top = top.parent end
+	local owner = top.parent and top.parent.owner
+	if (owner and owner.full) or #self.children >= (self.cap or 1000) then return 1 end
+	self.lastFlags = flags
+	self.children[#self.children + 1] = item
+	item.parent = self
+	return RETURNVALUE_NOERROR
+end
 local function detach(item)
 	local p = item.parent
 	if p and p.children then
@@ -765,7 +778,7 @@ local function newPlayer(guid)
 	end
 	local backpack = container(1988)
 	p.slots[CONST_SLOT_BACKPACK] = backpack
-	backpack.parent = {slots = p.slots}
+	backpack.parent = {slots = p.slots, owner = p}
 	return p
 end
 
@@ -1089,6 +1102,21 @@ do
 	eq(g.removed, nil, "a stack of another count: it stays")
 	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = dslot(g)}, ItemId = 2148 + 100000, Count = 50})
 	eq(g.removed, true, "the named stack goes in")
+	-- a paged window (the Purse, the depot inbox): the client's z is the slot on the shown page; the engine adds the
+	-- page's first index (player:getContainerIndex). Without it the request named the item of page one: refused (or,
+	-- before the named item, the wrong item went in)
+	local p1, p2 = newItem(2472), newItem(2463)
+	for _, it in ipairs({p1, p2}) do
+		dbp.children[#dbp.children + 1] = it
+		it.parent = dbp
+	end
+	local first = dslot(p2)
+	function dup:getContainerIndex(cid) return cid == 0 and first or 0 end
+	req(dup, {make = "Stash", Pos = {x = 65535, y = 64, z = 0}, ItemId = 2463 + 100000, Count = 1})
+	eq(p2.removed, true, "page two, slot 0: the item shown there goes in")
+	eq(p1.removed, nil, "and not the item at slot 0 of page one")
+	dup.getContainerIndex = nil
+	detach(p1)
 end
 -- the equipped backpack itself is never taken
 req(hero, {make = "Stash", Pos = {x = 65535, y = CONST_SLOT_BACKPACK, z = 0}})
@@ -1150,6 +1178,92 @@ eq(DB.rows[DB.nextId] and DB.rows[DB.nextId].state, 0, "failed save: the row act
 has(lastCancel(hero), "busy", "failed save: busy")
 hero.saveOk = true
 DB.rows[DB.nextId] = nil
+
+-- withdrawal delivery (player report 2026-10-22: "what I withdrew disappeared"): the backpack or a bag in it only, never
+-- an inventory slot, a store pouch (the Loot Bag the Auto Seller sells from) or the Purse; a failed save takes back
+-- exactly the items it gave
+;(function() -- a function of its own: the main chunk is at the 200 locals limit
+	local w = newPlayer(41)
+	pz[key3(w.pos)] = true
+	local wbp = w.bp()
+	-- the engine's own search: a wearable into an empty inventory slot (slot 9, the ring), a stack anywhere
+	local engineCalls = 0
+	function w:addItemEx(item) engineCalls = engineCalls + 1; self.slots[9] = item; return RETURNVALUE_NOERROR end
+	function w:addItem(id, cnt) engineCalls = engineCalls + 1; self.slots[9] = newItem(id, cnt); return self.slots[9] end
+	local function storeRow(item)
+		DB.nextId = DB.nextId + 1
+		local c, d = IC.encode(item)
+		DB.rows[DB.nextId] = {id = DB.nextId, player = 41, item = item.id, count = 1, codec = c, data = d, tab = 1, classes = "",
+			name = "w", info = "", rarity = 0, state = 0, seq = 0, source = "deposit"}
+		return DB.nextId
+	end
+	local ringRow = storeRow(rolled())
+	req(w, {make = "Redeem", row = ringRow})
+	eq(w.slots[9], nil, "a wearable is not put into the empty equipment slot")
+	eq(engineCalls, 0, "the engine's slot search is not used")
+	eq(#wbp.children, 1, "it is in the backpack")
+	eq(DB.rows[ringRow], nil, "and the row is gone")
+	eq(wbp.lastFlags, FLAG_IGNOREAUTOSTACK, "added as an item of its own (FLAG_IGNOREAUTOSTACK)")
+	DB.plain[plainKey(41, 2148)] = {player = 41, item = 2148, count = 250, tab = 1}
+	req(w, {make = "Redeem", item = 2148, count = 250})
+	eq(w.slots[9], nil, "a plain stack is not put into a slot either")
+	eq(w:getItemCount(2148), 250, "250 gold in the backpack")
+	eq(#wbp.children, 4, "as stacks of 100, 100 and 50")
+	eq(DB.plain[plainKey(41, 2148)], nil, "the entry is empty")
+
+	-- a full backpack: refused with the room line, the row and the stack stay in the stash
+	wbp.cap = #wbp.children
+	local fullRow = storeRow(rolled())
+	req(w, {make = "Redeem", row = fullRow})
+	eq(DB.rows[fullRow] and DB.rows[fullRow].state, 0, "full backpack: the row stays, active")
+	has(lastCancel(w), "enough room", "and the player is told there is no room")
+	eq(w.slots[9], nil, "no inventory slot instead")
+	DB.plain[plainKey(41, 2152)] = {player = 41, item = 2152, count = 40, tab = 1}
+	req(w, {make = "Redeem", item = 2152, count = 40})
+	eq(DB.plain[plainKey(41, 2152)].count, 40, "full backpack: the stack stays in the stash")
+	has(lastCancel(w), "enough room", "told")
+	eq(openRows(), 0, "no journal row left")
+
+	-- a store pouch with room in a full backpack takes nothing; an ordinary bag does
+	local pouch = container(1988)
+	pouch.pouch = true
+	wbp.cap = nil
+	wbp.children[#wbp.children + 1] = pouch
+	pouch.parent = wbp
+	wbp.cap = #wbp.children
+	ChaosPouches = {isPouch = function(it) return it.pouch == true end}
+	req(w, {make = "Redeem", row = fullRow})
+	eq(#pouch.children, 0, "nothing goes into a store pouch (the Loot Bag)")
+	eq(DB.rows[fullRow] and DB.rows[fullRow].state, 0, "the row stays")
+	local bag = container(1988)
+	wbp.cap = nil
+	wbp.children[#wbp.children + 1] = bag
+	bag.parent = wbp
+	wbp.cap = #wbp.children
+	req(w, {make = "Redeem", row = fullRow})
+	eq(#bag.children, 1, "an ordinary bag in the backpack takes it")
+	eq(DB.rows[fullRow], nil, "withdrawn")
+	ChaosPouches = nil
+	wbp.cap = nil
+
+	-- a failed save: only the items just given go away, not the gold the character already carried
+	local carried = newItem(2148, 30)
+	carried.custom.chaos_locked = 1 -- a locked stack of its own: player:removeItem(id, count) took it first
+	local fresh = newPlayer(42)
+	pz[key3(fresh.pos)] = true
+	local fbp = fresh.bp()
+	fbp.children[1] = carried
+	carried.parent = fbp
+	DB.plain[plainKey(42, 2148)] = {player = 42, item = 2148, count = 50, tab = 1}
+	fresh.saveOk = false
+	req(fresh, {make = "Redeem", item = 2148, count = 50})
+	eq(carried.removed, nil, "the carried (locked) gold stays")
+	eq(carried.count, 30, "all 30 of it")
+	eq(fresh:getItemCount(2148), 30, "the 50 given were taken back")
+	eq(#fbp.children, 1, "nothing else in the backpack")
+	eq(DB.plain[plainKey(42, 2148)] and DB.plain[plainKey(42, 2148)].count, 50, "the stash has its 50 again")
+	has(lastCancel(fresh), "busy", "failed save: busy")
+end)()
 
 -- Stow Everything: nested bags, every skip reason, the Supplies tab, a tab that fills mid-way
 resetDB()

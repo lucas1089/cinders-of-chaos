@@ -283,6 +283,9 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                works in the owner's own hideout as well as in a house, and the texts say so (the refusal, the "no space"
                message, the six Waystone Tier descriptions in items.xml); the hideout has the device built in (README
                "Hideouts", "Waystone device")
+  waystonebosses tools/patch_waystone_bosses.py  the Waystone III Frostreaver room's entrance off its tar tile, and the
+               tier V / VI pillar bosses keep a share of a hit away from their pillar instead of nothing (README
+               "Waystone tiers")
   meleeskill   tools/patch_melee_skill.py        one melee skill on equipment: items.xml items with a sword, axe or club
                                                  number get all three at the highest, a rolled melee modifier raises all
                                                  three skills (base_rarity.lua; README "Melee and Ranged on equipment";
@@ -1061,6 +1064,13 @@ def step_waystonehideout(server, data, ctx):
 
 
 STEPS.insert(STEPS.index('eventrooms') + 1, 'waystonehideout')  # after eventrooms, before dungeonentry and sql
+
+
+def step_waystonebosses(server, data, ctx):
+    return tool_result(run_tool([tool('patch_waystone_bosses.py'), data], 'patch_waystone_bosses.py'))
+
+
+STEPS.insert(STEPS.index('waystonehideout') + 1, 'waystonebosses')  # after bossrooms (same files, own lines), before sql
 
 
 def step_bankpayments(server, data, ctx):

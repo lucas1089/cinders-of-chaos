@@ -231,6 +231,9 @@ jobs:
       - name: Waystone device in the hideout (patch_waystone_hideout.py on copies of the base tier_maps.lua lines and items.xml)
         run: python3 -I server/tools/patch_waystone_hideout_test.py
 
+      - name: Waystone tier bosses (patch_waystone_bosses.py on copies of the base boss room and pillar boss lines)
+        run: python3 -I server/tools/patch_waystone_bosses_test.py
+
       - name: Base area spell damage patch (patch_aoe_damage.py on synthetic LF and CRLF copies of the base scripts)
         run: python3 -I server/tools/patch_aoe_damage_test.py
 

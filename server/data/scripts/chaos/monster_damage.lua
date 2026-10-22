@@ -20,6 +20,8 @@
 --
 -- * Pack combat (pace.lua): a paced monster's hits (every element, conditions and mana shield hits included) are x its
 --   damage curve (pace_config.lua damage) on top, in the same event; bosses and player summons are never paced.
+-- * Waystone tiers (waystone_tiers.lua): a tier's monster or boss in its tier's map deals x its tier's damage on top
+--   (every element), in the same event.
 --
 -- Config: monster_damage_config.lua (Chaos.monsterDamage). Pure logic: monster_damage_core.lua
 -- (tests: server/tests/monster_damage_test.lua). Exports: ChaosMonsterDamage.levelOf(monster),
@@ -118,6 +120,10 @@ local function boost(creature, attacker, primaryDamage, primaryType, secondaryDa
 	local mult = MD.multiplierOf(attacker)
 	-- pack combat (pace.lua): a paced monster (or its summon) deals x its damage curve, every element and condition
 	local pm = ChaosPace and ChaosPace.damageMultOf and ChaosPace.damageMultOf(attacker) or 1
+	-- a waystone tier's monster or boss in its tier's map (waystone_tiers.lua): x its tier's damage, every element
+	if ChaosWaystoneTiers and ChaosWaystoneTiers.damageMultOf then
+		pm = pm * (ChaosWaystoneTiers.damageMultOf(attacker) or 1)
+	end
 	if mult == 1 and pm == 1 then
 		return primaryDamage, secondaryDamage
 	end
