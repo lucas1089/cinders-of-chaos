@@ -379,7 +379,9 @@ def assign_slots(order, slots, placed):
 def area_state(world, pid, tiles, keep_edited=False):
     """'todo', 'done', or raises with the reason. keep_edited (the map is a map master): an area placed before whose
     tiles the owner changed by hand in the map editor (at least half of them still as the plan has them) is 'edited'
-    and left as it is, so a second install over the master keeps the edits instead of refusing"""
+    and left as it is, so a second install over the master keeps the edits instead of refusing. Otherwise an area
+    placed before whose plan changed since (every tile of the plan on the map, some different now: a new spawn list
+    moves the decoration, which keeps off the spawn points) is 'update' and its tiles are written again"""
     have = [p for p in tiles if world.has(p)]
     if not have:
         return 'todo'
@@ -393,6 +395,8 @@ def area_state(world, pid, tiles, keep_edited=False):
         diff = [p for p in tiles if world.stack(p) != stack_of(tiles[p])]
         if not diff:
             return 'done'
+        if not keep_edited:
+            return 'update'
         raise InstallError('%s: placed before, but %d tile(s) differ from the plan now (first %d,%d,%d): the plan changed; '
                            'restore the map from <map>.otbm.bak and install again' % ((pid, len(diff)) + diff[0]))
     raise InstallError('%s: %d of its %d tiles land on tiles the map has (first %d,%d,%d); move its origin'
@@ -606,14 +610,19 @@ def update_spawns(text, plan_blocks, displays, spawntime, takeover=()):
     if add:
         notes.append('%d display spawn(s) added' % len(add))
     for pid, xml in plan_blocks:
-        if 'chaoscontent="%s"' % pid in text:
-            continue
-        blocks_of = SPAWN_RE.findall(xml)
-        if not blocks_of:
-            continue  # an area without monsters (the Memorial's plaza)
-        for b in blocks_of:
-            add.append(re.sub(r'^(\t<spawn\b[^>]*?)>', r'\1 chaoscontent="%s">' % pid, b, count=1))
-        notes.append('%s: %d spawn block(s) added' % (pid, len(blocks_of)))
+        tag = 'chaoscontent="%s"' % pid
+        wanted = [re.sub(r'^(\t<spawn\b[^>]*?)>', r'\1 %s>' % tag, b, count=1) for b in SPAWN_RE.findall(xml)]
+        have = [b for b in SPAWN_RE.findall(text) if tag in b]
+        if have:
+            if sorted(have) == sorted(wanted):
+                continue
+            # the plan's spawn list changed since it was placed: its blocks are written again
+            for b in have:
+                text = text.replace(b, '', 1)
+            notes.append('%s: %d spawn block(s) replaced by %d' % (pid, len(have), len(wanted)))
+        elif wanted:
+            notes.append('%s: %d spawn block(s) added' % (pid, len(wanted)))
+        add.extend(wanted)  # none: an area without monsters (the Memorial's plaza)
     if add:
         cut = text.rfind('</spawns>')
         if cut < 0:
@@ -1130,7 +1139,8 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             if st == 'todo' and only and pid not in only:
                 st = 'skipped'
             state[pid] = st
-            log('%s: %s (%d tiles at %s)%s%s' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)'}[st],
+            log('%s: %s (%d tiles at %s)%s%s' % (pid, {'done': 'placed already', 'todo': 'to place', 'skipped': 'not placed (--only)',
+                                                      'update': 'placed before, the plan changed: written again'}[st],
                                                  len(a['tiles']), tuple(a['man']['origin']),
                                                  ', fixed area: no teleport' if pid in fixed else '',
                                                  ', edited by hand in the map master: kept' if edited else ''))
@@ -1141,7 +1151,7 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
                 if p in owner:
                     raise InstallError('%s and %s overlap at %d,%d,%d' % ((owner[p], pid) + p))
                 owner[p] = pid
-        placed_all = {pid for pid, st in state.items() if st in ('done', 'todo')}
+        placed_all = {pid for pid, st in state.items() if st in ('done', 'todo', 'update')}
         placed = placed_all - set(fixed)
         hl = None
         if rows:
@@ -1174,10 +1184,13 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
         new_tiles = {}
         if rstate == 'todo':
             new_tiles.update(grow_tiles)
+        rewrite = set()
         for pid, st in state.items():
-            if st == 'todo':
+            if st in ('todo', 'update'):
                 new_tiles.update(areas[pid]['tiles'])
-        remove = sorted(grow_cut) if rstate == 'todo' else []
+            if st == 'update':
+                rewrite.update(areas[pid]['tiles'])
+        remove = sorted((set(grow_cut) if rstate == 'todo' else set()) | rewrite)
         qlay = None
         if hl:
             changed, qlay = hall_edit(world, map_path, cfg, rows, hl, hall_on, new_tiles, log,
