@@ -595,6 +595,50 @@ local function giveBack(player, rec)
 	end
 end
 
+-- A withdrawn item goes into the backpack or a bag in it, nothing else: the engine's own search (player:addItem,
+-- addItemEx without a container) puts a wearable into an empty inventory slot (a slot no client draws, on an engine
+-- without src-patch 0058) and a stack into a matching stack anywhere, the Loot Bag in the Purse included, which the
+-- Auto Seller then sells. Store pouches (ChaosPouches.isPouch: the Loot Bag and the other store-bound containers) and
+-- what lies in them are skipped. FLAG_IGNOREAUTOSTACK: the item stays its own object (never merged into a stack), so
+-- a failed save takes back exactly what was given. Returns true, or false, why ("room" | "capacity").
+local STOW_FLAGS = FLAG_IGNOREAUTOSTACK or 128 -- cylinder.h FLAG_IGNOREAUTOSTACK = 1 << 7
+local CAPACITY = RETURNVALUE_NOTENOUGHCAPACITY
+
+local function isPouch(item)
+	local P = ChaosPouches
+	if not (P and P.isPouch) then
+		return false
+	end
+	local ok, yes = pcall(P.isPouch, item)
+	return ok and yes == true
+end
+
+function S.stowWithdrawn(player, item)
+	local bp = call(player, "getSlotItem", CONST_SLOT_BACKPACK)
+	if not bp or call(bp, "isContainer") ~= true or isPouch(bp) then
+		return false, "room"
+	end
+	local why = "room"
+	local queue, i = {bp}, 1
+	while queue[i] and i <= 64 do
+		local c = queue[i]
+		i = i + 1
+		local ret = call(c, "addItemEx", item, INDEX_WHEREEVER or -1, STOW_FLAGS)
+		if ret == NOERR or ret == true then
+			return true
+		end
+		if CAPACITY ~= nil and ret == CAPACITY then
+			why = "capacity"
+		end
+		for _, child in ipairs(call(c, "getItems", false) or {}) do
+			if child ~= item and call(child, "isContainer") == true and not isPouch(child) then
+				queue[#queue + 1] = child
+			end
+		end
+	end
+	return false, why
+end
+
 function S.env(player)
 	local guid = player:getGuid()
 	local key = cfg.storage.seq
@@ -643,9 +687,29 @@ function S.env(player)
 	function env.take(rec, seq)
 		return store.take(guid, rec, seq)
 	end
+	-- into the backpack or a bag in it only (S.stowWithdrawn); rec.made = the items created, so ungive removes those
+	-- and nothing else the character carries
 	function env.give(rec)
+		rec.made = {}
 		if rec.plain then
-			local given = Chaos.giveItem(player, rec.itemId, rec.count)
+			local stackable = S.typeFacts(rec.itemId).stackable
+			local left = int(rec.count)
+			while left > 0 do
+				local n = stackable and math.min(100, left) or 1
+				local item = Game.createItem(rec.itemId, n)
+				if not item then
+					break
+				end
+				local ok, why = S.stowWithdrawn(player, item)
+				if not ok then
+					rec.noRoom = why
+					call(item, "remove")
+					break
+				end
+				rec.made[#rec.made + 1] = item
+				left = left - n
+			end
+			local given = int(rec.count) - left
 			if given <= 0 then
 				return false
 			end
@@ -660,20 +724,21 @@ function S.env(player)
 			rec.corrupt = why
 			return false
 		end
-		local ret = call(player, "addItemEx", item, false)
-		if ret ~= NOERR and ret ~= true then
+		local ok, whyNot = S.stowWithdrawn(player, item)
+		if not ok then
+			rec.noRoom = whyNot
 			call(item, "remove")
 			return false
 		end
 		rec.given = item
+		rec.made[1] = item
 		return true
 	end
 	function env.ungive(rec)
-		if rec.plain then
-			player:removeItem(rec.itemId, rec.count)
-		elseif rec.given then
-			call(rec.given, "remove")
+		for _, it in ipairs(rec.made or {}) do
+			call(it, "remove")
 		end
+		rec.made, rec.given = nil, nil
 	end
 	function env.untake(rec)
 		return store.untake(guid, rec)
@@ -925,8 +990,11 @@ function S.resolveItem(player, pos)
 	end
 	if x == 65535 then
 		if y >= 64 then
+			-- z is the slot on the page the window shows: a paged container (the Purse, the depot inbox) adds the
+			-- page's first index, as the engine does for a move (Game::internalGetThing) and market.lua does
 			local container = player:getContainerById(y - 64)
-			return container and container:getItem(z) or nil
+			local first = math.max(0, int(call(player, "getContainerIndex", y - 64)))
+			return container and container:getItem(first + z) or nil
 		end
 		return player:getSlotItem(y)
 	end
@@ -1200,7 +1268,12 @@ function S.redeem(player, data)
 		warn(player:getName() .. ": stash row " .. tostring(rec.id) .. " could not be restored: " .. tostring(rec.corrupt))
 		player:sendCancelMessage(Chaos.t(player, M.corrupt))
 	elseif why == "room" then
-		player:sendCancelMessage(Chaos.t(player, rec.plain and M.room or M.capacity))
+		-- nothing fitted the backpack or its bags (never an inventory slot, a store pouch or the Purse): the entry stays
+		local line = M.room
+		if rec.noRoom == "capacity" then
+			line = M.capacity
+		end
+		player:sendCancelMessage(Chaos.t(player, line))
 	else
 		player:sendCancelMessage(Chaos.t(player, M.busy))
 	end

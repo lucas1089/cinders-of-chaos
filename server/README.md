@@ -4521,7 +4521,17 @@ slot (never the equipped backpack) or a reachable floor tile; a withdrawn row mu
 integers (`Chaos.toInt`) clamped to what is stored and to the free capacity; tab ids come only from the server. Every
 query is built from integers formatted with `%d` and texts through `db.escapeString` (the store functions in `stash.lua`;
 the test feeds them hostile text). Rate limits (`rate`): list 300 ms, withdraw 250 ms, stow 1.5 s, never-stash list 100 ms,
-the list echo of a deposit 100 ms. The protocol fuzz test covers the handler.
+the list echo of a deposit 100 ms. The protocol fuzz test covers the handler. A container slot is resolved like the
+engine's move: the page's first index (`player:getContainerIndex`) plus the slot the client names, so a deposit from a
+later page of the Purse or the depot inbox takes the item shown there (fixed 2026-10-22; before, the item of page one).
+
+**Withdrawal delivery** (player report 2026-10-22, "what I withdrew disappeared"; `ChaosStash.stowWithdrawn`). A
+withdrawn item goes into the backpack or a bag in it (breadth first), added with `FLAG_IGNOREAUTOSTACK`; a plain stack
+comes out as stacks of 100. Never an inventory slot (the engine's own search, `player:addItem` / `addItemEx`, put a
+wearable into an empty slot, one no client draws on an engine without src-patch 0058), never a store pouch or what is
+in it (`ChaosPouches.isPouch`: the Loot Bag the Auto Seller sells from), never the Purse. Nothing fits: the entry stays
+in the stash and the player gets the room line (capacity line when the weight refused it). A failed save removes only
+the items just made (`rec.made`), never other items of that id the character carries. Tests in `tests/stash_test.lua`.
 
 **Depot transition** (`stash_config.lua` `depot`). `withdrawOnly = true`: the depot boxes and the chest take no new items
 (`depot_core.lua` `D.decide`, code "closed"; taking out and tidying inside a tab still work); the inbox and the market
