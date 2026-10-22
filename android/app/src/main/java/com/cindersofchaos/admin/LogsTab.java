@@ -52,6 +52,7 @@ final class LogsTab {
     private String[] staffNames = new String[0];
     private final MaterialSwitch follow;
     private final MaterialSwitch older;
+    private final LinearLayout errorBar;
     private final TextView info;
     private final TextView out;
     private final ScrollView outScroll;
@@ -138,8 +139,21 @@ final class LogsTab {
         older.setText("Incluir inícios anteriores do servidor");
         older.setTextColor(ui.text);
         older.setOnCheckedChangeListener((s, on) -> load(true));
-        older.setVisibility(View.GONE);
-        page.addView(older, Ui.matchWrap());
+        // Erros: the switch and "Limpar lista" (chaos-ctl.sh errors clear: a marker in the log, nothing deleted)
+        errorBar = ui.row();
+        errorBar.addView(older, Ui.weight(1f));
+        MaterialButton clearErrors = ui.flat("Limpar lista", 0);
+        clearErrors.setOnClickListener(v -> a.confirm("Limpar a lista de erros?", "A lista passa a mostrar só os "
+                + "erros que aparecerem daqui pra frente. O log do servidor não é apagado (Console ainda mostra tudo).",
+                "Limpar", true, () -> a.ctlAction("errors clear", 30, f -> {
+                    a.snack(f.ok ? "Lista de erros limpa." : f.title, f.ok);
+                    if (f.ok) {
+                        load(true);
+                    }
+                })));
+        errorBar.addView(clearErrors);
+        errorBar.setVisibility(View.GONE);
+        page.addView(errorBar, Ui.matchWrap());
 
         info = ui.hint("");
         info.setTextSize(12);
@@ -266,7 +280,7 @@ final class LogsTab {
         boolean changed = m != mode;
         mode = m;
         termBar.setVisibility(m == TERMINAL ? View.VISIBLE : View.GONE);
-        older.setVisibility(m == ERRORS ? View.VISIBLE : View.GONE);
+        errorBar.setVisibility(m == ERRORS ? View.VISIBLE : View.GONE);
         lines.setVisibility(m == TERMINAL ? View.GONE : View.VISIBLE);
         follow.setVisibility(m == TERMINAL ? View.GONE : View.VISIBLE);
         setWhich();

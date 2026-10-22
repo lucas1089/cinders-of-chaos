@@ -27,6 +27,7 @@ escaped), and the kit's update-check / update-apply / update-status refusals and
 usage: python3 -I server/deploy/chaos_ctl_test.py
 """
 import os
+import shutil
 import re
 import stat
 import subprocess
@@ -292,6 +293,29 @@ def main():
             out = dict(l.split('=', 1) for l in run('status', extra=extra).stdout.splitlines() if '=' in l)
             check(out.get('errors') == '5', '%s status: errors since the last start: %r' % (name, out.get('errors')))
         check(run('errors', 'x').returncode != 0, 'errors: N must be a number')
+
+        # ---- errors clear: a marker line, the list counts only what comes after it; the log keeps every line
+        cleared_log = os.path.join(tmp, 'cleared.log')
+        shutil.copy(runs_log, cleared_log)
+        r = run('errors', 'clear', extra={'CHAOS_LOG': cleared_log})
+        check(r.returncode == 0 and 'cleared' in r.stdout, 'errors clear: ' + r.stdout + r.stderr)
+        with open(cleared_log) as f:
+            kept = f.read()
+        check('56x' not in kept and kept.count('MySQL error') == 56 and 'list cleared by the owner' in kept,
+              'errors clear: the log keeps every line, a marker appended')
+        with open(cleared_log, 'a') as f:
+            f.write('[2026-10-20 10:00:00] Exception: after the clear\n')
+        for name, d in awks:
+            extra = {'CHAOS_LOG': cleared_log, 'PATH': d + ':' + env['PATH']}
+            lines = run('errors', extra=extra).stdout.splitlines()
+            check(lines == ['@run 2026-10-20 08:00:01 current', '1x Exception: after the clear [2026-10-20 10:00:00]',
+                            '@older 0'], '%s errors after a clear: only the new error: %r' % (name, lines))
+            r = run('errors', 'all', extra=extra)
+            check('MySQL' not in r.stdout and 'bad thing' not in r.stdout and 'after the clear' in r.stdout,
+                  '%s errors all after a clear: nothing older: %r' % (name, r.stdout))
+            out = dict(l.split('=', 1) for l in run('status', extra=extra).stdout.splitlines() if '=' in l)
+            check(out.get('errors') == '1', '%s status after a clear: %r' % (name, out.get('errors')))
+        check(run('errors', 'clear', 'x').returncode != 0, 'errors clear takes nothing more')
 
         # ---- the settings file (/etc/chaos/ctl.conf): sudo drops the environment, so the app only sees this file
         def status(extra=None):

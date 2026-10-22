@@ -14,7 +14,9 @@
 #                               a Lua error with its next two lines (script, message). One "@run DATE [current]" line
 #                               per server start (DATE "unknown" when the log has none), at most N (40) entries per run.
 #                               all: every start in the last 20000 log lines; else "@older K" says how many earlier
-#                               starts had errors
+#                               starts had errors. Only lines after the newest "errors clear" count
+#   errors clear                the error list starts empty from now on: a marker line goes into the log (nothing in
+#                               the log is deleted; logs and the update log still show everything)
 #   players                     online characters: name, level, class name (tab separated)
 #   vocations                   id=class name, one per line
 #   broadcast TEXT              a message to everyone online     (remote.cmd, server/README.md "Remote admin commands")
@@ -262,8 +264,11 @@ voc_case() {
 
 # the error report of "errors": runs split at a server start (the Linux kit's "Starting the game server (DATE)" line,
 # else the engine's "Loading config" line), Lua errors joined with their next two lines, identical entries counted
+# the line "errors clear" appends to the log; the error list counts only what comes after it (no word the error
+# filters match)
+CLEAR_MARK="[chaos-ctl] list cleared by the owner"
 error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the date of the newest run when its line has none)
-  tail -n 20000 "$LOG" 2>/dev/null | awk -v mode="$1" -v max="$2" -v since="$3" '
+  tail -n 20000 "$LOG" 2>/dev/null | awk -v mode="$1" -v max="$2" -v since="$3" -v MARK="$CLEAR_MARK" '
     function newrun(label) { nr++; lab[nr] = label; n[nr] = 0 }
     function add(e,   st, k) {
       st = ""
@@ -277,10 +282,15 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
       if (st != "") last[k] = st
     }
     function flush() { if (cur != "") add(cur); cur = ""; join = 0 }
+    function clear(   i, k) {
+      for (i = 1; i <= n[nr]; i++) { k = nr SUBSEP ord[nr, i]; delete cnt[k]; delete last[k] }
+      n[nr] = 0; clr = nr
+    }
     function iserr(l) { return l ~ /Lua Script Error/ || tolower(l) ~ /error|exception|segfault/ }
-    BEGIN { nr = 0; newrun("?"); cur = ""; join = 0; pend = 0 }
+    BEGIN { nr = 0; newrun("?"); cur = ""; join = 0; pend = 0; clr = 1 }
     {
       line = $0; sub(/\r$/, "", line)
+      if (index(line, MARK) == 1) { flush(); clear(); next }
       if (match(line, /Starting the game server \([0-9][0-9-]* [0-9:]*\)/)) {
         flush(); newrun(substr(line, RSTART + 26, RLENGTH - 27)); pend = 50; next
       }
@@ -295,11 +305,11 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
     }
     END {
       flush()
-      first = (mode == "all") ? 1 : nr
+      first = (mode == "all") ? clr : nr
       older = 0
-      for (r = 1; r < nr; r++) if (n[r] > 0) older++
+      for (r = clr; r < nr; r++) if (n[r] > 0) older++
       for (r = first; r <= nr; r++) {
-        if (r == 1 && nr > 1 && n[1] == 0) continue
+        if (r == first && r < nr && n[r] == 0) continue
         l = lab[r]
         if (r == nr && r > 1 && l == "?" && since != "") l = since
         if (l == "?") l = "unknown"
@@ -421,6 +431,13 @@ case $cmd in
     tail -n "$(lines_arg "${1:-60}")" "$LOG" 2>&1
     ;;
   errors)
+    if [ "${1:-}" = clear ]; then
+      [ $# -eq 1 ] || die "errors clear"
+      [ -w "$LOG" ] || die "cannot write the log $LOG"
+      echo "$CLEAR_MARK $(date '+%F %T')" >> "$LOG"
+      echo "error list cleared: errors shows only what comes after now (the log itself is kept)"
+      exit 0
+    fi
     max=40 mode=current
     for a in "$@"; do
       case $a in all) mode=all ;; *) max=$(lines_arg "$a") || exit 1 ;; esac

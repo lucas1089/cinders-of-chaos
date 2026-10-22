@@ -16661,7 +16661,10 @@ script re-runs itself with `sudo -n`, which drops the environment.
   unit's start time). Default: only the current start, so old errors (a database shutdown days ago) no longer look
   current. Identical entries are counted once (`56x ...`, a leading time stamp kept apart as `[stamp]`), a Lua error
   joins its next two lines. Output: `@run DATE [current]`, the entries, `@older K` (earlier starts with errors).
-  `status errors=` counts the error lines of the current start. Tested with mawk and gawk.
+  `status errors=` counts the error lines of the current start. Tested with mawk, gawk and busybox awk.
+- `errors clear`: appends `[chaos-ctl] list cleared by the owner DATE` to the log. `errors` and `status errors=` count
+  only what comes after the newest such line (also with `all`). Nothing in the log is deleted; `logs` and the tester
+  report still read every line. The marker has no word the error filters match. Admin app: Logs > Erros > Limpar lista.
 - `publish-update TAG [--version N] [--min-package N]` and `publish-log [N]` (2026-10-20): runs
   `server/deploy/publish_client_update.sh TAG` in the background (log `CHAOS_PUBLISH_LOG`,
   `/var/log/chaos/publish-update.log`). It publishes the release's `CindersOfChaos-Client-Windows.zip` as the signed
