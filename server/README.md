@@ -19444,9 +19444,14 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
   (reflective), Regenerating, Stalker (steps next to its victim when more than 7 tiles away, every 8 s). `nemesis.lua`
   sets `ChaosTiers.nemesis` and the `ChaosTierState` entry, so monster_tiers.lua's damage, reflect and experience
   handlers do the work (wrapped, not edited); its tick runs the regeneration. Depth = `maxChain`: never an ambush copy.
+  Before its own stats it is paced (`ChaosPace.apply(monster, true)`): a script-made monster is never paced on its own,
+  and unpaced a level 1000 nemesis skipped the pace damage x0.40 and health x0.42 of its level, so it hit 2.5x harder
+  than its own type and one-shot its victim (beta, 2026-10-21). Its health, damage and experience now start from the
+  paced numbers of its type.
 - **Appearing.** The kill event is registered only on characters with a nemesis. A kill of the same type, or of a
   monster within 25% of its base level, rolls 4%: "You feel a familiar hatred watching you...", then 3 s later the
-  nemesis 3-6 tiles away (no protection zone, house or instance). At most every 15 min. It fades after 5 min, when its
+  nemesis 3-6 tiles away (no protection zone, house or instance). At most every 30 min (15 until 2026-10-22: in a pack
+  farm the 4% comes up within a few dozen kills, so it showed at every cooldown). It fades after 5 min, when its
   victim logs out, dies, changes floor or runs 30 tiles off. Never for anybody else.
 - **No griefing.** Health- and mana-change events on every player cancel its damage to anybody but the victim and
   the victim's party; one on the nemesis cancels damage from anybody else (and their summons). It retargets its victim.

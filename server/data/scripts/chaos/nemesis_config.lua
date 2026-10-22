@@ -70,7 +70,7 @@ return {
 	appear = {
 		chance = 4,
 		bandPct = 25,
-		cooldownSeconds = 900, -- per victim, between two appearances
+		cooldownSeconds = 1800, -- per victim, between two appearances (was 900: in a pack farm it showed every time)
 		delayMs = 3000,
 		lifetimeSeconds = 300,
 		minDistance = 3,
