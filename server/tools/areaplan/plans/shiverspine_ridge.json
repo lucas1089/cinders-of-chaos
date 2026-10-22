@@ -1,0 +1,457 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "shiverspine_ridge",
+  "name": "Shiverspine Ridge",
+  "biome": "ice",
+  "size": [
+    182,
+    143
+  ],
+  "floors": 1,
+  "level": [
+    1350,
+    1500
+  ],
+  "seed": 30542,
+  "origin": {
+    "x": 16436,
+    "y": 14952,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "snow_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "numb_drifts",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "blue_pass",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "bitter_slope",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "glassy_crevasse",
+      "floor": 1,
+      "size": [
+        23,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "glacial_moraine",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "white_field",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "snowbound_col",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "howling_hollow",
+      "floor": 1,
+      "size": [
+        32,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "rimed_cairns",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "drifting_spur",
+      "floor": 1,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "frozen_basin",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ]
+    },
+    {
+      "id": "frostbit_shelf",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "numb_drifts",
+      "to": "blue_pass",
+      "width": 3
+    },
+    {
+      "from": "blue_pass",
+      "to": "snow_camp",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "bitter_slope",
+      "width": 3
+    },
+    {
+      "from": "bitter_slope",
+      "to": "glassy_crevasse",
+      "width": 3
+    },
+    {
+      "from": "glassy_crevasse",
+      "to": "glacial_moraine",
+      "width": 3
+    },
+    {
+      "from": "glacial_moraine",
+      "to": "white_field",
+      "width": 3
+    },
+    {
+      "from": "white_field",
+      "to": "snowbound_col",
+      "width": 3
+    },
+    {
+      "from": "snowbound_col",
+      "to": "numb_drifts",
+      "width": 3
+    },
+    {
+      "from": "numb_drifts",
+      "to": "howling_hollow",
+      "width": 3
+    },
+    {
+      "from": "snow_camp",
+      "to": "howling_hollow",
+      "width": 4
+    },
+    {
+      "from": "glassy_crevasse",
+      "to": "howling_hollow",
+      "width": 3
+    },
+    {
+      "from": "white_field",
+      "to": "howling_hollow",
+      "width": 3
+    },
+    {
+      "from": "white_field",
+      "to": "rimed_cairns",
+      "width": 3
+    },
+    {
+      "from": "rimed_cairns",
+      "to": "snowbound_col",
+      "width": 3
+    },
+    {
+      "from": "bitter_slope",
+      "to": "drifting_spur",
+      "width": 3
+    },
+    {
+      "from": "drifting_spur",
+      "to": "glassy_crevasse",
+      "width": 3
+    },
+    {
+      "from": "blue_pass",
+      "to": "frozen_basin",
+      "width": 3
+    },
+    {
+      "from": "frozen_basin",
+      "to": "snow_camp",
+      "width": 3
+    },
+    {
+      "from": "glacial_moraine",
+      "to": "frostbit_shelf",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "snow_camp"
+  },
+  "exit": {
+    "zone": "snow_camp"
+  },
+  "spawns": [
+    {
+      "zone": "numb_drifts",
+      "monster": "Bonepicker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_drifts",
+      "monster": "Gorebristle",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "numb_drifts",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_pass",
+      "monster": "Ashveil Hierarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_pass",
+      "monster": "Gloamfang Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blue_pass",
+      "monster": "Cinderskull Reaver",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_slope",
+      "monster": "Gorebristle",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_slope",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bitter_slope",
+      "monster": "Bonepicker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_crevasse",
+      "monster": "Gloamfang Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_crevasse",
+      "monster": "Cinderskull Reaver",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glassy_crevasse",
+      "monster": "Bonepicker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_moraine",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_moraine",
+      "monster": "Bonepicker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glacial_moraine",
+      "monster": "Gorebristle",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_field",
+      "monster": "Cinderskull Reaver",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_field",
+      "monster": "Ashveil Hierarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "white_field",
+      "monster": "Gloamfang Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_col",
+      "monster": "Bonepicker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_col",
+      "monster": "Gorebristle",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "snowbound_col",
+      "monster": "Rimeshroud Revenant",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Ashveil Hierarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Gloamfang Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rimed_cairns",
+      "monster": "Cinderskull Reaver",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_spur",
+      "monster": "Gorebristle",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drifting_spur",
+      "monster": "Rimeshroud Revenant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_basin",
+      "monster": "Gloamfang Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "frozen_basin",
+      "monster": "Bonepicker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_hollow",
+      "monster": "Rimeshroud Revenant",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_hollow",
+      "monster": "Bonepicker",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "howling_hollow",
+      "monster": "Gorebristle",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "frostbit_shelf",
+      "quest": "shiverspine_shelf",
+      "reward": {
+        "gold": 2350000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 7
+          }
+        ],
+        "message": "A frozen purse, cracked open."
+      }
+    }
+  ],
+  "chest_action": 47987,
+  "notes": "Content plan (hall fill, 2026-10-22): a ice hunt for levels 1350-1500 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Bonepicker, Ashveil Hierarch, Gorebristle, Gloamfang Ravager, Rimeshroud Revenant, Cinderskull Reaver. Display monster: Bonepicker."
+}

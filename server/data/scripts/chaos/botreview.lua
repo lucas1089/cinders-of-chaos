@@ -455,7 +455,8 @@ end
 -- ---------------------------------------------------------------- events
 local login = CreatureEvent("ChaosBotReviewLogin")
 function login.onLogin(player)
-	if cfg.enabled == false or groupOf(player) >= cfg.staffGroup then
+	-- staff, and the staff's tester bots (testers.lua: they are bots by design)
+	if cfg.enabled == false or groupOf(player) >= cfg.staffGroup or (Chaos.isTester and Chaos.isTester(player)) then
 		return true
 	end
 	BV.wrap()

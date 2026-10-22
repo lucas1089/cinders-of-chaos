@@ -4,7 +4,10 @@
 --
 -- A tale's state (player storage, tales_config.lua `storage`): 0 not taken, 1..n the step in progress, 100 done; a
 -- second storage counts the kills of the current kill step. Steps: kill (credit by monster type or shown name),
--- deliver (items handed over at the Archivist), report (talk to her).
+-- deliver (items handed over at the Archivist), report (talk to her), visit (stand near a place: tales.lua checks
+-- the characters with such a step every few seconds) and talk (speak with another NPC of ours: the NPC's script
+-- calls M.talkTo). kill, visit and talk are done in the field; deliver and report at the Archivist. A tale may need
+-- another one done first (`requires`): the chains.
 
 ChaosTalesCore = ChaosTalesCore or {}
 local M = ChaosTalesCore
@@ -165,13 +168,32 @@ function M.tale(key)
 	return nil
 end
 
+-- slots 1..storage.slots live in the first block (+1 + slot state, +21 + slot count); the later slots in the second
+-- block (storage.ext: +0 + n state, +count + n count, n = slot - storage.slots - 1)
+local function extOf(t)
+	local s = M.cfg().storage
+	local first = s.slots or 19
+	if s.ext and t.slot > first then
+		return s.ext, t.slot - first - 1
+	end
+	return nil
+end
+
 function M.stateKey(t)
 	local s = M.cfg().storage
+	local e, n = extOf(t)
+	if e then
+		return e.base + n
+	end
 	return s.base + s.state + t.slot
 end
 
 function M.countKey(t)
 	local s = M.cfg().storage
+	local e, n = extOf(t)
+	if e then
+		return e.base + e.count + n
+	end
 	return s.base + s.count + t.slot
 end
 
@@ -196,6 +218,10 @@ function M.count(v)
 	return max(0, floor(tonumber(v) or 0))
 end
 
+-- the step kinds: done in the field (kill, visit, talk) or at the Archivist (deliver, report)
+M.FIELD = {kill = true, visit = true, talk = true}
+M.KINDS = {kill = true, visit = true, talk = true, deliver = true, report = true}
+
 -- "new", "on", "ready" (the current step is done at the Archivist) or "done"
 function M.status(t, state)
 	state = M.state(t, state)
@@ -211,19 +237,165 @@ function M.status(t, state)
 	return "on"
 end
 
-function M.canTake(t, level)
-	return (tonumber(level) or 0) >= t.minLevel
+-- is the tale a chain needs done first (t.requires) done? stateOf(t) -> stored state; without stateOf only the tales
+-- without a requirement pass
+function M.unlocked(t, stateOf)
+	if not t.requires then
+		return true
+	end
+	local r = M.tale(t.requires)
+	if not r or not stateOf then
+		return false
+	end
+	return M.state(r, stateOf(r)) == M.cfg().done
 end
 
--- accept: ok, new state | false, reason ("level", "taken")
-function M.accept(t, state, level)
+function M.canTake(t, level, stateOf)
+	return (tonumber(level) or 0) >= t.minLevel and M.unlocked(t, stateOf)
+end
+
+-- accept: ok, new state | false, reason ("level", "taken", "requires"). stateOf: the other tales' states (chains)
+function M.accept(t, state, level, stateOf)
 	if M.state(t, state) ~= 0 then
 		return false, "taken"
 	end
-	if not M.canTake(t, level) then
+	if (tonumber(level) or 0) < t.minLevel then
 		return false, "level"
 	end
+	if not M.unlocked(t, stateOf) then
+		return false, "requires"
+	end
 	return true, 1
+end
+
+-- the state after a field step (kill, visit, talk) is done. A tale ends at the Archivist (deliver or report; checked
+-- by M.problems), so this is never past the last step. Before, a kill as the last step marked the tale done (100)
+-- with no reward; the guard keeps a bad config from doing that: the tale stays on its last step.
+function M.advance(t, state)
+	state = M.state(t, state)
+	if state < 1 or state >= #t.steps then
+		return state
+	end
+	return state + 1
+end
+
+-- the current step when it is of `kind`, or nil
+function M.current(t, state, kind)
+	state = M.state(t, state)
+	local step = state >= 1 and state <= #t.steps and t.steps[state] or nil
+	if step and step.kind == kind then
+		return step
+	end
+	return nil
+end
+
+-- a visit step: is the position {x, y, z} at the step's place (same floor, within `radius` tiles; default 5)
+function M.atPlace(step, pos)
+	if not step or step.kind ~= "visit" or type(pos) ~= "table" then
+		return false
+	end
+	local p, r = step.pos, step.radius or 5
+	return pos.z == p.z and math.abs(pos.x - p.x) <= r and math.abs(pos.y - p.y) <= r
+end
+
+-- a visit: new state, event ("step") or nil
+function M.visit(t, state, pos)
+	local step = M.current(t, state, "visit")
+	if step and M.atPlace(step, pos) then
+		return M.advance(t, state), "step"
+	end
+	return M.state(t, state), nil
+end
+
+-- the talk steps that name this NPC: every such tale advances. stateOf(t) -> stored state; setState(t, v) writes it
+-- (the NPC's script, in its own Lua state). -> {{tale = t, step = step, state = new state}}
+function M.talkTo(npcName, stateOf, setState)
+	local out = {}
+	local name = tostring(npcName or ""):lower()
+	for _, t in ipairs(M.tales()) do
+		local state = stateOf(t)
+		local step = M.current(t, state, "talk")
+		if step and tostring(step.npc):lower() == name then
+			local ns = M.advance(t, state)
+			if setState then
+				setState(t, ns)
+			end
+			out[#out + 1] = {tale = t, step = step, state = ns}
+		end
+	end
+	return out
+end
+
+-- does any tale of the character wait for a visit (tales.lua keeps those characters on its watch list)
+function M.visiting(stateOf)
+	for _, t in ipairs(M.tales()) do
+		if M.current(t, stateOf(t), "visit") then
+			return true
+		end
+	end
+	return false
+end
+
+-- the config's mistakes (the test, and tales.lua at startup): a list of lines, empty when sound
+function M.problems(cfg)
+	cfg = cfg or M.cfg()
+	local out, slots, keys, byKey = {}, {}, {}, {}
+	local s = cfg.storage
+	local function bad(t, why)
+		out[#out + 1] = tostring(t.key) .. ": " .. why
+	end
+	for _, t in ipairs(cfg.tales) do
+		if byKey[t.key] then
+			bad(t, "key used twice")
+		end
+		byKey[t.key] = t
+	end
+	for _, t in ipairs(cfg.tales) do
+		if slots[t.slot] then
+			bad(t, "slot used twice")
+		end
+		slots[t.slot] = true
+		for _, k in ipairs({M.stateKey(t), M.countKey(t)}) do
+			local inBase = k > s.base + s.lang and k <= s.last
+			local inExt = s.ext and k >= s.ext.base and k <= s.ext.last
+			if not inBase and not inExt then
+				bad(t, "storage " .. k .. " outside the blocks")
+			end
+			if keys[k] then
+				bad(t, "storage " .. k .. " shared")
+			end
+			keys[k] = true
+		end
+		if #t.steps < 1 then
+			bad(t, "no steps")
+		end
+		for i, step in ipairs(t.steps) do
+			if not M.KINDS[step.kind] then
+				bad(t, "step " .. i .. " kind " .. tostring(step.kind))
+			elseif step.kind == "kill" and (not step.count or step.count < 1 or #(step.monsters or {}) < 1) then
+				bad(t, "step " .. i .. ": a kill needs a count and monsters")
+			elseif step.kind == "visit" and not (step.pos and step.pos.x and step.pos.y and step.pos.z) then
+				bad(t, "step " .. i .. ": a visit needs pos")
+			elseif step.kind == "talk" and (type(step.npc) ~= "string" or type(step.reply) ~= "table") then
+				bad(t, "step " .. i .. ": a talk needs npc and reply")
+			elseif step.kind == "deliver" and #(step.items or {}) < 1 then
+				bad(t, "step " .. i .. ": a delivery needs items")
+			end
+		end
+		local last = t.steps[#t.steps]
+		if last and M.FIELD[last.kind] then
+			bad(t, "the last step must be done at the Archivist (deliver or report)")
+		end
+		if t.requires then
+			local r = byKey[t.requires]
+			if not r then
+				bad(t, "requires an unknown tale " .. tostring(t.requires))
+			elseif r.minLevel > t.minLevel or r == t then
+				bad(t, "requires a tale of a higher level")
+			end
+		end
+	end
+	return out
 end
 
 local function eqName(a, b)
@@ -254,7 +426,7 @@ function M.addKill(t, state, count, typeName, shownName)
 	end
 	count = count + 1
 	if count >= step.count then
-		return state + 1 <= #t.steps and state + 1 or M.cfg().done, 0, "step"
+		return M.advance(t, state), 0, "step"
 	end
 	return state, count, "progress"
 end
@@ -268,8 +440,8 @@ function M.turnIn(t, state, count, has)
 	end
 	local step = t.steps[state]
 	local take = {}
-	if step.kind == "kill" then
-		return false, "kill"
+	if M.FIELD[step.kind] then
+		return false, step.kind
 	elseif step.kind == "deliver" then
 		for _, it in ipairs(step.items) do
 			local n = tonumber(has and has(it.id)) or 0
@@ -302,6 +474,21 @@ function M.xpFor(level, share)
 	return floor((M.expForLevel(level + 1) - M.expForLevel(level)) * (tonumber(share) or 0))
 end
 
+-- the level a tale's experience is measured at: the character's, at most the top of the tale's band. Without the cap a
+-- level 2000 character took a share of ITS next level from a level 200 tale (and would from every low tale).
+function M.xpLevel(t, level)
+	level = max(1, floor(tonumber(level) or 1))
+	local top = t.band and tonumber(t.band[2])
+	if top and level > top then
+		return top
+	end
+	return level
+end
+
+function M.taleXp(t, level)
+	return M.xpFor(M.xpLevel(t, level), t.rewards and t.rewards.xpLevels or 0)
+end
+
 local function money(n)
 	local s = tostring(floor(n))
 	local out = s:reverse():gsub("(%d%d%d)", "%1,"):reverse()
@@ -313,7 +500,7 @@ function M.rewardLines(t, lang, level)
 	local ui, r = M.cfg().ui, t.rewards
 	local out = {}
 	if r.xpLevels and r.xpLevels > 0 then
-		out[#out + 1] = string.format(M.t(ui.xp, lang), money(M.xpFor(level, r.xpLevels)))
+		out[#out + 1] = string.format(M.t(ui.xp, lang), money(M.taleXp(t, level)))
 	end
 	if r.gold and r.gold > 0 then
 		out[#out + 1] = string.format(M.t(ui.gold, lang), money(r.gold))
@@ -339,17 +526,33 @@ local function statusWord(st, lang)
 	return M.t(({new = ui.stateNew, on = ui.stateOn, ready = ui.stateReady, done = ui.stateDone})[st], lang)
 end
 
--- the list window: {title, text, choices = {{key, label}}}; stateOf(t) -> stored state
+-- the list window: {title, text, choices = {{key, label}}}; stateOf(t) -> stored state. The tales in progress first,
+-- then the new ones, then the done ones; by level within each. The NPC's list and the answer in tales.lua both call
+-- this, so a choice index names the same tale. A chain's next tale shows once the one before is done.
+local GROUP = {on = 1, ready = 1, new = 2, done = 3}
 function M.listView(level, stateOf, lang)
 	local ui = M.cfg().ui
-	local choices, nextLevel = {}, nil
-	for _, t in ipairs(M.tales()) do
+	local rows, nextLevel = {}, nil
+	for i, t in ipairs(M.tales()) do
 		local st = M.status(t, stateOf(t))
-		if M.canTake(t, level) or st ~= "new" then
-			choices[#choices + 1] = {key = t.key, label = string.format("%s (%s)", M.t(t.name, lang), statusWord(st, lang))}
-		elseif not nextLevel or t.minLevel < nextLevel then
+		if M.canTake(t, level, stateOf) or st ~= "new" then
+			rows[#rows + 1] = {t = t, st = st, i = i}
+		elseif M.unlocked(t, stateOf) and (not nextLevel or t.minLevel < nextLevel) then
 			nextLevel = t.minLevel
 		end
+	end
+	table.sort(rows, function(a, b)
+		if GROUP[a.st] ~= GROUP[b.st] then
+			return GROUP[a.st] < GROUP[b.st]
+		end
+		if a.t.minLevel ~= b.t.minLevel then
+			return a.t.minLevel < b.t.minLevel
+		end
+		return a.i < b.i
+	end)
+	local choices = {}
+	for _, r in ipairs(rows) do
+		choices[#choices + 1] = {key = r.t.key, label = string.format("%s (%s)", M.t(r.t.name, lang), statusWord(r.st, lang))}
 	end
 	local text = M.t(ui.listText, lang)
 	if #choices == 0 then
@@ -358,8 +561,8 @@ function M.listView(level, stateOf, lang)
 	return {title = M.t(ui.listTitle, lang), text = text, choices = choices}
 end
 
--- one tale: {title, text, buttons = {"accept" | "turnin" ...}}
-function M.taleView(t, state, count, lang, level)
+-- one tale: {title, text, buttons = {"accept" | "turnin" ...}}; stateOf: the other tales' states (chains)
+function M.taleView(t, state, count, lang, level, stateOf)
 	local ui = M.cfg().ui
 	state, count = M.state(t, state), M.count(count)
 	local st = M.status(t, state)
@@ -379,7 +582,7 @@ function M.taleView(t, state, count, lang, level)
 		lines[#lines + 1] = M.t(t.outro, lang)
 	end
 	local buttons = {}
-	if st == "new" and M.canTake(t, level) then
+	if st == "new" and M.canTake(t, level, stateOf) then
 		buttons[#buttons + 1] = "accept"
 	elseif st == "ready" then
 		buttons[#buttons + 1] = "turnin"

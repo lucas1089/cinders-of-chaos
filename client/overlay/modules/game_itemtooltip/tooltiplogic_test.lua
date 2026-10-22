@@ -268,6 +268,27 @@ eq(L.oneIn(0), nil, 'no chance')
 local withSrc = L.lines({ name = 'x', weight = 10, src = { s = { { k = 'monster', n = 'Rat', v = '5%' } } } })
 eq(withSrc[#withSrc - 1].text, 'Drops from: Rat (5%)', 'the sources sit above the weight')
 
+-- what a material is for (server K.brief u; owner 2026-10-22: "Coloque pra que servem")
+local stone = L.sourceLines({ s = { { k = 'monster', n = 'Fractalis the Shardmaw', v = '60%' } },
+  u = { n = { 'Seraphic Tabard', 'Seraphic Greaves' }, m = 7 } })
+local stoneText = {}
+for _, l in ipairs(stone) do stoneText[#stoneText + 1] = l.text end
+eq(table.concat(stoneText, ' '):find('Used in: Seraphic Tabard, Seraphic Greaves +7 more', 1, true) ~= nil, true,
+  'used-in line after the sources: ' .. table.concat(stoneText, ' | '))
+eq(stone[#stone].color, L.COLORS.dim, 'the used-in line is dim')
+eq(L.usedInText({ n = { 'Seraphic Emblem' } }), 'Used in: Seraphic Emblem', 'one product, no count')
+eq(L.usedInText({ n = { 'A', 'B' }, m = 0 }), 'Used in: A, B', 'no "+0 more"')
+eq(L.usedInText(nil), nil, 'an older server: no used-in line')
+eq(L.usedInText({ n = {} }), nil, 'no products: no line')
+eq(L.usedInText({ n = 'x', m = 3 }), nil, 'a bad payload: no line')
+local onlyUsed = L.sourceLines({ s = {}, u = { n = { 'Myst Emblem' } } })
+eq(#onlyUsed, 1, 'used in something, from nowhere: the used-in line alone')
+eq(onlyUsed[1].text, 'Used in: Myst Emblem', 'used-in alone')
+local oldSrc = L.sourceLines({ s = { { k = 'monster', n = 'Rat', v = '5%' } } })
+eq(#oldSrc, 1, 'a brief without u: as before')
+local usedTip = L.lines({ name = 'x', weight = 10, src = { s = {}, u = { n = { 'Myst Emblem' }, m = 2 } } })
+eq(usedTip[#usedTip - 1].text, 'Used in: Myst Emblem +2 more', 'the used-in line sits above the weight')
+
 -- ---------------------------------------------------------------- the answer is for the item asked about
 -- live test winpkg-35: a Rope in the backpack showed "Cheese 62", a Training Wand "Gold coin 100", "Drops from: Abyssal
 -- Crab (100%), Abyssal Crab (100%)". Model: the backpack (container 0) and the loot bag (container 1) are open with

@@ -1,0 +1,486 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "embergut_rift",
+  "name": "Embergut Rift",
+  "biome": "lava",
+  "size": [
+    176,
+    127
+  ],
+  "floors": 1,
+  "level": [
+    560,
+    675
+  ],
+  "seed": 30152,
+  "origin": {
+    "x": 16436,
+    "y": 14340,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "ash_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "ember_terrace",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "ashen_chimney",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "searing_crucible",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "molten_vents",
+      "floor": 1,
+      "size": [
+        25,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "cinder_crater",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "smoking_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "slag_furnace",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "magma_forge",
+      "floor": 1,
+      "size": [
+        26,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "blistered_flow",
+      "floor": 1,
+      "size": [
+        19,
+        14
+      ]
+    },
+    {
+      "id": "sulphur_channel",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "glowing_shelf",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "cracked_basin",
+      "floor": 1,
+      "size": [
+        18,
+        14
+      ]
+    },
+    {
+      "id": "scorched_pools",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "ember_terrace",
+      "to": "ashen_chimney",
+      "width": 3
+    },
+    {
+      "from": "ashen_chimney",
+      "to": "ash_camp",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "searing_crucible",
+      "width": 3
+    },
+    {
+      "from": "searing_crucible",
+      "to": "molten_vents",
+      "width": 3
+    },
+    {
+      "from": "molten_vents",
+      "to": "cinder_crater",
+      "width": 3
+    },
+    {
+      "from": "cinder_crater",
+      "to": "smoking_pit",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "slag_furnace",
+      "width": 3
+    },
+    {
+      "from": "slag_furnace",
+      "to": "ember_terrace",
+      "width": 3
+    },
+    {
+      "from": "ember_terrace",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "magma_forge",
+      "width": 4
+    },
+    {
+      "from": "molten_vents",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "magma_forge",
+      "width": 3
+    },
+    {
+      "from": "molten_vents",
+      "to": "blistered_flow",
+      "width": 3
+    },
+    {
+      "from": "blistered_flow",
+      "to": "cinder_crater",
+      "width": 3
+    },
+    {
+      "from": "smoking_pit",
+      "to": "sulphur_channel",
+      "width": 3
+    },
+    {
+      "from": "sulphur_channel",
+      "to": "slag_furnace",
+      "width": 3
+    },
+    {
+      "from": "ash_camp",
+      "to": "glowing_shelf",
+      "width": 3
+    },
+    {
+      "from": "glowing_shelf",
+      "to": "searing_crucible",
+      "width": 3
+    },
+    {
+      "from": "cinder_crater",
+      "to": "cracked_basin",
+      "width": 3
+    },
+    {
+      "from": "cracked_basin",
+      "to": "smoking_pit",
+      "width": 3
+    },
+    {
+      "from": "ember_terrace",
+      "to": "scorched_pools",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "ash_camp"
+  },
+  "exit": {
+    "zone": "ash_camp"
+  },
+  "spawns": [
+    {
+      "zone": "ember_terrace",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_terrace",
+      "monster": "Shaper Matriarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ember_terrace",
+      "monster": "Slagborer Queen",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_chimney",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Shaper Matriarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "searing_crucible",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Ashmaw Warlord",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "molten_vents",
+      "monster": "Shaper Matriarch",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Orclops Ravager",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_crater",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Shaper Matriarch",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "smoking_pit",
+      "monster": "Slagborer Queen",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "slag_furnace",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_flow",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blistered_flow",
+      "monster": "Slagborer Queen",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_channel",
+      "monster": "Ashmaw Warlord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sulphur_channel",
+      "monster": "Mercenary",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Slagborer Queen",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowing_shelf",
+      "monster": "Mercenary",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_basin",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_basin",
+      "monster": "Shaper Matriarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Orclops Ravager",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Ashmaw Warlord",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "magma_forge",
+      "monster": "Mercenary",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "scorched_pools",
+      "quest": "embergut_pools",
+      "reward": {
+        "gold": 300000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "Ingots cooled in the ash."
+      }
+    }
+  ],
+  "chest_action": 47965,
+  "notes": "Content plan (hall fill, 2026-10-22): a lava hunt for levels 560-675 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Mercenary, Orclops Ravager, Shaper Matriarch, Ashmaw Warlord, Slagborer Queen. Display monster: Mercenary."
+}

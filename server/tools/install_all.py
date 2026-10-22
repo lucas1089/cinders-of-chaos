@@ -28,6 +28,7 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
                tools/patch_report_chat.py        public channel lines for player reports (when the tool exists)
                tools/patch_shadow_mute.py        shadow mute hook in the public channels (when the tool exists)
                tools/patch_help_ai.py            the Help channel assistant's hook in help.lua (when the tool exists)
+               tools/patch_tester_filters.py     tester bots out of highscores, top 3 statues, !online
                tools/patch_market.py             the stock market item opens the Chaos market (when the tool exists)
                tools/patch_base_spellbook.py     the stock spellbook item opens the Spellbook window (when the tool exists)
                tools/patch_base_npcs.py          the base NPC library: replies as lists of lines, blessing cost tags
@@ -40,6 +41,11 @@ Steps, in this order (each one is idempotent on its own; a second run of the who
   basecraftingbonus tools/patch_base_crafting_bonus.py  crafted equipment rolls a Chaos rarity and item level, potions
                                                  and runes may give extra pieces, by the crafting skill (README
                                                  "Crafting bonus"; needs basecrafting and basecraftingui first)
+  baserecipes  tools/patch_base_recipes.py       the base crafting books: the Seraphic and Dawnforged sets take their own
+                                                 charged stones and emblems, the Myst amulet and ring recipes make them,
+                                                 the late boss trophies and the Runic Stone Shard make the stones and
+                                                 emblems at the crafting table, the materials say what they are for
+                                                 (items.xml) (README "Base crafting recipes")
   weapons      tools/two_handed.py               two-handed attack speed (README "Weapon styles")
   lategame     tools/late_game.py                experience stages in config.lua + late game spawns (README "Install" 5)
   crafting     tools/install_crafting.py         crafting orb items and the reroll guard (README "Crafting")
@@ -504,6 +510,9 @@ def step_events(server, data, ctx):
     if ok and os.path.isfile(tool('patch_help_ai.py')):
         ok9, more = run_tool([tool('patch_help_ai.py'), data], 'patch_help_ai.py')
         ok, lines = ok9, lines + more
+    if ok and os.path.isfile(tool('patch_tester_filters.py')):
+        ok10, more = run_tool([tool('patch_tester_filters.py'), data], 'patch_tester_filters.py')
+        ok, lines = ok10, lines + more
     if ok:
         ok5, more = run_tool([tool('patch_base_npcs.py'), data], 'patch_base_npcs.py')
         ok, lines = ok5, lines + more
@@ -520,6 +529,14 @@ def step_basecraftingui(server, data, ctx):
 
 def step_basecraftingbonus(server, data, ctx):
     return tool_result(run_tool([tool('patch_base_crafting_bonus.py'), data], 'patch_base_crafting_bonus.py'))
+
+
+def step_baserecipes(server, data, ctx):
+    args = [tool('patch_base_recipes.py'), data] + (['--dry-run'] if ctx['dry'] else [])
+    return tool_result(run_tool(args, 'patch_base_recipes.py'))
+
+
+STEPS.insert(STEPS.index('basecraftingbonus') + 1, 'baserecipes')  # the boss material recipes of the crafting books
 
 
 def step_weapons(server, data, ctx):

@@ -8,7 +8,7 @@ $chaosIgnoreGroup = (int)($config['highscore']['ignoreGroupId'] ?? 2);
 
 $chaosTopCache = new Cache('engine/cache/chaosTopPlayers');
 if ($chaosTopCache->hasExpired()) {
-	$chaosTop = db()->fetchAll('SELECT `name`, `level`, `vocation` FROM `players` WHERE `group_id` < ? AND `deletion` = 0 ORDER BY `experience` DESC, `id` ASC LIMIT 10;', [$chaosIgnoreGroup]);
+	$chaosTop = db()->fetchAll('SELECT `name`, `level`, `vocation` FROM `players` WHERE `group_id` < ? AND `deletion` = 0' . chaos_tester_sql('`players`') . ' ORDER BY `experience` DESC, `id` ASC LIMIT 10;', [$chaosIgnoreGroup]);
 	$chaosTopCache->setContent($chaosTop);
 	$chaosTopCache->save();
 } else {

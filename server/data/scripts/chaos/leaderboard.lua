@@ -166,8 +166,8 @@ function LB.record(board, who, value, mode)
 	end
 	local cur = ensureWeek()
 	local guid, name, group = identify(who)
-	if not guid then
-		return nil
+	if not guid or (Chaos.isTesterGuid and Chaos.isTesterGuid(guid)) then
+		return nil -- tester bots never rank (testers.lua)
 	end
 	local now = LB.now()
 	local e = LB.merge(cur.scores[board][guid], value, mode or b.mode, now)

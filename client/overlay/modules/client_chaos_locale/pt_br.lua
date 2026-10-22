@@ -2652,6 +2652,7 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Convenience"] = "Conveniência",
   ["Outfits"] = "Roupas",
   ["Outfit Addons"] = "Addons de Roupa",
+  ["Costumes"] = "Fantasias",
   ["Mounts"] = "Montarias",
   ["Auras"] = "Auras",
   ["Head Accessories"] = "Acessórios de Cabeça",
@@ -3363,6 +3364,8 @@ ChaosLocaleStrings['pt-BR'] = {
   ["~1 in %s kills"] = "~1 em %s abates",
   [", or %s Conquest Tokens"] = ", ou %s Conquest Tokens",
   ["Conquest vendor: %s tokens"] = "Vendedor Conquest: %s tokens",
+  ["Used in: %s"] = "Usado em: %s",
+  ["%s +%d more"] = "%s +%d outros",
   -- game_passivetree bosspoints.lua: where the boss points come from
   ["First kill of each major boss: +1 passive point (kept through resets)."] = "Primeira morte de cada grande chefe: +1 ponto passivo (mantido nos resets).",
   ["Where to get them:"] = "Onde conseguir:",

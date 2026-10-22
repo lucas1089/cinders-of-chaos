@@ -1,0 +1,449 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "grimlock_vaults",
+  "name": "Grimlock Vaults",
+  "biome": "vault",
+  "size": [
+    167,
+    135
+  ],
+  "floors": 1,
+  "level": [
+    635,
+    750
+  ],
+  "seed": 30217,
+  "origin": {
+    "x": 17456,
+    "y": 14340,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "gate_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "locked_cells",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "strong_stacks",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "coin_treasury",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "black_galleries",
+      "floor": 1,
+      "size": [
+        25,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "deep_vault",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "ledger_hoard",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "iron_hall",
+      "floor": 1,
+      "size": [
+        24,
+        16
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "tally_strongroom",
+      "floor": 1,
+      "size": [
+        30,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "counting_gallery",
+      "floor": 1,
+      "size": [
+        22,
+        14
+      ]
+    },
+    {
+      "id": "sealed_rooms",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "barred_archive",
+      "floor": 1,
+      "size": [
+        21,
+        16
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "gate_camp",
+      "to": "locked_cells",
+      "width": 3
+    },
+    {
+      "from": "locked_cells",
+      "to": "strong_stacks",
+      "width": 3
+    },
+    {
+      "from": "strong_stacks",
+      "to": "coin_treasury",
+      "width": 3
+    },
+    {
+      "from": "coin_treasury",
+      "to": "black_galleries",
+      "width": 3
+    },
+    {
+      "from": "black_galleries",
+      "to": "deep_vault",
+      "width": 3
+    },
+    {
+      "from": "deep_vault",
+      "to": "ledger_hoard",
+      "width": 3
+    },
+    {
+      "from": "ledger_hoard",
+      "to": "iron_hall",
+      "width": 3
+    },
+    {
+      "from": "iron_hall",
+      "to": "gate_camp",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "tally_strongroom",
+      "width": 4
+    },
+    {
+      "from": "strong_stacks",
+      "to": "tally_strongroom",
+      "width": 3
+    },
+    {
+      "from": "black_galleries",
+      "to": "tally_strongroom",
+      "width": 3
+    },
+    {
+      "from": "ledger_hoard",
+      "to": "tally_strongroom",
+      "width": 3
+    },
+    {
+      "from": "gate_camp",
+      "to": "counting_gallery",
+      "width": 3
+    },
+    {
+      "from": "counting_gallery",
+      "to": "locked_cells",
+      "width": 3
+    },
+    {
+      "from": "strong_stacks",
+      "to": "sealed_rooms",
+      "width": 3
+    },
+    {
+      "from": "sealed_rooms",
+      "to": "coin_treasury",
+      "width": 3
+    },
+    {
+      "from": "ledger_hoard",
+      "to": "barred_archive",
+      "width": 3
+    },
+    {
+      "from": "barred_archive",
+      "to": "iron_hall",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "gate_camp"
+  },
+  "exit": {
+    "zone": "gate_camp"
+  },
+  "spawns": [
+    {
+      "zone": "locked_cells",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_cells",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "locked_cells",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_stacks",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_stacks",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "strong_stacks",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_treasury",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_treasury",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "coin_treasury",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_galleries",
+      "monster": "Gallows Oak",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_galleries",
+      "monster": "Thornveil Wraith",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_galleries",
+      "monster": "Orclops Ravager",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Blazebringer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Grove Keeper",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "deep_vault",
+      "monster": "Gallows Oak",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ledger_hoard",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ledger_hoard",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ledger_hoard",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hall",
+      "monster": "Grove Keeper",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hall",
+      "monster": "Gallows Oak",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "iron_hall",
+      "monster": "Thornveil Wraith",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_gallery",
+      "monster": "Orclops Ravager",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_gallery",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "counting_gallery",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_rooms",
+      "monster": "Orclops Ravager",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Grove Keeper",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barred_archive",
+      "monster": "Thornveil Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_strongroom",
+      "monster": "Thornveil Wraith",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_strongroom",
+      "monster": "Orclops Ravager",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tally_strongroom",
+      "monster": "Blazebringer",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a vault hunt for levels 635-750 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Thornveil Wraith, Grove Keeper, Orclops Ravager, Gallows Oak, Blazebringer. Display monster: Thornveil Wraith."
+}

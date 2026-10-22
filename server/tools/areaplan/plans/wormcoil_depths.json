@@ -1,0 +1,492 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "wormcoil_depths",
+  "name": "Wormcoil Depths",
+  "biome": "cave",
+  "size": [
+    181,
+    153
+  ],
+  "floors": 1,
+  "level": [
+    1250,
+    1400
+  ],
+  "seed": 30529,
+  "origin": {
+    "x": 16232,
+    "y": 14952,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "east",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "lowroof_pit",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "mossy_crawl",
+      "floor": 1,
+      "size": [
+        26,
+        16
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "crooked_gallery",
+      "floor": 1,
+      "size": [
+        22,
+        18
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "split_den",
+      "floor": 1,
+      "size": [
+        22,
+        20
+      ],
+      "place": "south"
+    },
+    {
+      "id": "echoing_pocket",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "twisted_grotto",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "hollow_chamber",
+      "floor": 1,
+      "size": [
+        27,
+        17
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "sunken_cleft",
+      "floor": 1,
+      "size": [
+        32,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "gloomy_shaft",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "gnawed_vein",
+      "floor": 1,
+      "size": [
+        18,
+        15
+      ]
+    },
+    {
+      "id": "shale_warren",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "rubble_nest",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "dripping_burrow",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "lowroof_pit",
+      "to": "mossy_crawl",
+      "width": 3
+    },
+    {
+      "from": "mossy_crawl",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "crooked_gallery",
+      "width": 3
+    },
+    {
+      "from": "crooked_gallery",
+      "to": "split_den",
+      "width": 3
+    },
+    {
+      "from": "split_den",
+      "to": "echoing_pocket",
+      "width": 3
+    },
+    {
+      "from": "echoing_pocket",
+      "to": "twisted_grotto",
+      "width": 3
+    },
+    {
+      "from": "twisted_grotto",
+      "to": "hollow_chamber",
+      "width": 3
+    },
+    {
+      "from": "hollow_chamber",
+      "to": "lowroof_pit",
+      "width": 3
+    },
+    {
+      "from": "lowroof_pit",
+      "to": "sunken_cleft",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "sunken_cleft",
+      "width": 4
+    },
+    {
+      "from": "split_den",
+      "to": "sunken_cleft",
+      "width": 3
+    },
+    {
+      "from": "twisted_grotto",
+      "to": "sunken_cleft",
+      "width": 3
+    },
+    {
+      "from": "echoing_pocket",
+      "to": "gloomy_shaft",
+      "width": 3
+    },
+    {
+      "from": "gloomy_shaft",
+      "to": "twisted_grotto",
+      "width": 3
+    },
+    {
+      "from": "lowroof_pit",
+      "to": "gnawed_vein",
+      "width": 3
+    },
+    {
+      "from": "gnawed_vein",
+      "to": "mossy_crawl",
+      "width": 3
+    },
+    {
+      "from": "hollow_chamber",
+      "to": "shale_warren",
+      "width": 3
+    },
+    {
+      "from": "shale_warren",
+      "to": "lowroof_pit",
+      "width": 3
+    },
+    {
+      "from": "mossy_crawl",
+      "to": "rubble_nest",
+      "width": 3
+    },
+    {
+      "from": "rubble_nest",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "crooked_gallery",
+      "to": "dripping_burrow",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "lowroof_pit",
+      "monster": "Gorebristle",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_pit",
+      "monster": "Maw Grub",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lowroof_pit",
+      "monster": "Limb Hoarder",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_crawl",
+      "monster": "Blightcrown Matron",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_crawl",
+      "monster": "Nailcrown Regent",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_crawl",
+      "monster": "Corpselight Lurker",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_gallery",
+      "monster": "Maw Grub",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_gallery",
+      "monster": "Limb Hoarder",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_gallery",
+      "monster": "Gorebristle",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_den",
+      "monster": "Nailcrown Regent",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_den",
+      "monster": "Corpselight Lurker",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "split_den",
+      "monster": "Maw Grub",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pocket",
+      "monster": "Limb Hoarder",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pocket",
+      "monster": "Gorebristle",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_pocket",
+      "monster": "Maw Grub",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_grotto",
+      "monster": "Corpselight Lurker",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_grotto",
+      "monster": "Blightcrown Matron",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "twisted_grotto",
+      "monster": "Nailcrown Regent",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_chamber",
+      "monster": "Gorebristle",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_chamber",
+      "monster": "Maw Grub",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_chamber",
+      "monster": "Limb Hoarder",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Blightcrown Matron",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Nailcrown Regent",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Corpselight Lurker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_vein",
+      "monster": "Maw Grub",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_vein",
+      "monster": "Limb Hoarder",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shale_warren",
+      "monster": "Nailcrown Regent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shale_warren",
+      "monster": "Maw Grub",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_nest",
+      "monster": "Limb Hoarder",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_nest",
+      "monster": "Gorebristle",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cleft",
+      "monster": "Corpselight Lurker",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cleft",
+      "monster": "Blightcrown Matron",
+      "count": 14,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_cleft",
+      "monster": "Nailcrown Regent",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "dripping_burrow",
+      "quest": "wormcoil_burrow_hoard",
+      "reward": {
+        "gold": 1850000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 6
+          }
+        ],
+        "message": "Coin hidden where no light reaches."
+      }
+    }
+  ],
+  "chest_action": 47986,
+  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 1250-1400 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Gorebristle, Blightcrown Matron, Maw Grub, Nailcrown Regent, Limb Hoarder, Corpselight Lurker. Display monster: Maw Grub."
+}

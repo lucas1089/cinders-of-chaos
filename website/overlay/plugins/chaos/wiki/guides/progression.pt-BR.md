@@ -53,6 +53,7 @@ Presentes esperam por você nos níveis {{newplayer.giftLevelsPt}}: poções, or
 ## Nível 500-799: Calejado
 
 - Caçadas novas: Widowmere, Wyrmspine Hollows e Pyrarch Crucible, depois Hexwood Thicket e Corsairs' Reach.
+- O salão de teleportes de Cinderhold tem uma caçada a cada 15 níveis, mais ou menos: andar 6 para os níveis 500-1000, andar 5 para 1000 em diante.
 - Equipamento de facção em Reverenciado; Orbs of Grafting adicionam um modificador. Fendas de nível alto soltam saque lendário.
 
 ## Nível 800-899: Omens e a raide

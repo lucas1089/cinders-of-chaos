@@ -1153,7 +1153,10 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             slots = {pid: s for pid, s in hl['assign'].items() if pid in placed}
         else:
             slots = assign_slots(order, lay['slots'], placed) if lay['slots'] else {}
-        if lay['slots']:
+        if hl is not None:
+            # the hall order spreads the plans over the whole hall, not only the wings' slots
+            log('room: %d plan(s) on the hall\'s %d slots' % (len(slots), len(hl['slots'])))
+        elif lay['slots']:
             log('room: %d of %d teleport slots used' % (len(slots), len(lay['slots'])))
         # the aid block must be free on the map
         if rstate == 'todo' or any(st == 'todo' for st in state.values()):
@@ -1161,6 +1164,12 @@ def run(data_dir, dry=False, only=None, room_on=True, plans_dir=PLANS_DIR, confi
             used = gen_poi.find_action_items(open(map_path, 'rb').read(), [cfg['aid']])
             if used:
                 raise InstallError('action id %d is on the map already (%s); pick another in the config' % (cfg['aid'], used[0][1]))
+        # the chest scripts of every placed area: no shared action id or storage, checked before anything is written
+        # (a dry run too); PL.install below only sees the scripts installed so far
+        try:
+            PL.check_batch([areas[pid]['out'] for pid in sorted(placed_all)], os.path.dirname(os.path.abspath(data_dir)))
+        except PL.PlaceError as e:
+            raise InstallError('chests: %s' % e)
         # the map
         new_tiles = {}
         if rstate == 'todo':

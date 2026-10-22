@@ -1,0 +1,486 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "lanternless_catacombs",
+  "name": "Lanternless Catacombs",
+  "biome": "catacomb",
+  "size": [
+    175,
+    141
+  ],
+  "floors": 1,
+  "level": [
+    950,
+    1050
+  ],
+  "seed": 30490,
+  "origin": {
+    "x": 15620,
+    "y": 14952,
+    "z": 10
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "lantern_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bone_ossuary",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "marrow_stairwell",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "candlelit_rows",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "hushed_vaults",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "sunken_niches",
+      "floor": 1,
+      "size": [
+        22,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "stacked_pits",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "skull_catacomb",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "narrow_galleries",
+      "floor": 1,
+      "size": [
+        28,
+        23
+      ],
+      "place": "center"
+    },
+    {
+      "id": "grim_cells",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "collapsed_stacks",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "dusty_passages",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "buried_crossing",
+      "floor": 1,
+      "size": [
+        20,
+        15
+      ]
+    },
+    {
+      "id": "ashen_chapel",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "bone_ossuary",
+      "to": "marrow_stairwell",
+      "width": 3
+    },
+    {
+      "from": "marrow_stairwell",
+      "to": "candlelit_rows",
+      "width": 3
+    },
+    {
+      "from": "candlelit_rows",
+      "to": "hushed_vaults",
+      "width": 3
+    },
+    {
+      "from": "hushed_vaults",
+      "to": "lantern_camp",
+      "width": 3
+    },
+    {
+      "from": "lantern_camp",
+      "to": "sunken_niches",
+      "width": 3
+    },
+    {
+      "from": "sunken_niches",
+      "to": "stacked_pits",
+      "width": 3
+    },
+    {
+      "from": "stacked_pits",
+      "to": "skull_catacomb",
+      "width": 3
+    },
+    {
+      "from": "skull_catacomb",
+      "to": "bone_ossuary",
+      "width": 3
+    },
+    {
+      "from": "bone_ossuary",
+      "to": "narrow_galleries",
+      "width": 3
+    },
+    {
+      "from": "candlelit_rows",
+      "to": "narrow_galleries",
+      "width": 3
+    },
+    {
+      "from": "lantern_camp",
+      "to": "narrow_galleries",
+      "width": 4
+    },
+    {
+      "from": "stacked_pits",
+      "to": "narrow_galleries",
+      "width": 3
+    },
+    {
+      "from": "bone_ossuary",
+      "to": "grim_cells",
+      "width": 3
+    },
+    {
+      "from": "grim_cells",
+      "to": "marrow_stairwell",
+      "width": 3
+    },
+    {
+      "from": "marrow_stairwell",
+      "to": "collapsed_stacks",
+      "width": 3
+    },
+    {
+      "from": "collapsed_stacks",
+      "to": "candlelit_rows",
+      "width": 3
+    },
+    {
+      "from": "stacked_pits",
+      "to": "dusty_passages",
+      "width": 3
+    },
+    {
+      "from": "dusty_passages",
+      "to": "skull_catacomb",
+      "width": 3
+    },
+    {
+      "from": "sunken_niches",
+      "to": "buried_crossing",
+      "width": 3
+    },
+    {
+      "from": "buried_crossing",
+      "to": "stacked_pits",
+      "width": 3
+    },
+    {
+      "from": "sunken_niches",
+      "to": "ashen_chapel",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "lantern_camp"
+  },
+  "exit": {
+    "zone": "lantern_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bone_ossuary",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_ossuary",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bone_ossuary",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marrow_stairwell",
+      "monster": "Rustguard",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marrow_stairwell",
+      "monster": "Rimecairn",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "marrow_stairwell",
+      "monster": "Quicksilver Wraith",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candlelit_rows",
+      "monster": "Geode Seer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candlelit_rows",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candlelit_rows",
+      "monster": "Rustguard",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Rimecairn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hushed_vaults",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_niches",
+      "monster": "Deepforge Fiend",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_niches",
+      "monster": "Rustguard",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_niches",
+      "monster": "Rimecairn",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_pits",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_pits",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stacked_pits",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_catacomb",
+      "monster": "Rustguard",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_catacomb",
+      "monster": "Rimecairn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "skull_catacomb",
+      "monster": "Quicksilver Wraith",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grim_cells",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grim_cells",
+      "monster": "Deepforge Fiend",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "collapsed_stacks",
+      "monster": "Rimecairn",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "collapsed_stacks",
+      "monster": "Quicksilver Wraith",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_passages",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_passages",
+      "monster": "Quicksilver Wraith",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_crossing",
+      "monster": "Quicksilver Wraith",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_crossing",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "buried_crossing",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_galleries",
+      "monster": "Rustguard",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_galleries",
+      "monster": "Rimecairn",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_galleries",
+      "monster": "Quicksilver Wraith",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "ashen_chapel",
+      "quest": "lanternless_chapel",
+      "reward": {
+        "gold": 850000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "A lantern-keeper's last wages."
+      }
+    }
+  ],
+  "chest_action": 47983,
+  "notes": "Content plan (hall fill, 2026-10-22): a catacomb hunt for levels 950-1050 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Quicksilver Wraith, Rustguard, Geode Seer, Rimecairn, Deepforge Fiend. Display monster: Quicksilver Wraith."
+}

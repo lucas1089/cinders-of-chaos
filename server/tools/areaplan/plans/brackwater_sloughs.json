@@ -1,0 +1,467 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "brackwater_sloughs",
+  "name": "Brackwater Sloughs",
+  "biome": "swamp",
+  "size": [
+    160,
+    130
+  ],
+  "floors": 1,
+  "level": [
+    515,
+    630
+  ],
+  "seed": 30113,
+  "origin": {
+    "x": 15824,
+    "y": 14340,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "stilt_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bog_wallow",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "misty_shallows",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "peat_sink",
+      "floor": 1,
+      "size": [
+        28,
+        19
+      ],
+      "place": "east"
+    },
+    {
+      "id": "sunken_roots",
+      "floor": 1,
+      "size": [
+        22,
+        19
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "rotting_mudbank",
+      "floor": 1,
+      "size": [
+        26,
+        19
+      ],
+      "place": "south"
+    },
+    {
+      "id": "leech_islet",
+      "floor": 1,
+      "size": [
+        22,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "brackish_pools",
+      "floor": 1,
+      "size": [
+        27,
+        19
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "reeking_hollow",
+      "floor": 1,
+      "size": [
+        31,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "murky_bank",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "stagnant_flats",
+      "floor": 1,
+      "size": [
+        20,
+        14
+      ]
+    },
+    {
+      "id": "fetid_mire",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "mossy_channels",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "bog_wallow",
+      "to": "misty_shallows",
+      "width": 3
+    },
+    {
+      "from": "misty_shallows",
+      "to": "peat_sink",
+      "width": 3
+    },
+    {
+      "from": "peat_sink",
+      "to": "sunken_roots",
+      "width": 3
+    },
+    {
+      "from": "sunken_roots",
+      "to": "rotting_mudbank",
+      "width": 3
+    },
+    {
+      "from": "rotting_mudbank",
+      "to": "leech_islet",
+      "width": 3
+    },
+    {
+      "from": "leech_islet",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "brackish_pools",
+      "width": 3
+    },
+    {
+      "from": "brackish_pools",
+      "to": "bog_wallow",
+      "width": 3
+    },
+    {
+      "from": "bog_wallow",
+      "to": "reeking_hollow",
+      "width": 3
+    },
+    {
+      "from": "peat_sink",
+      "to": "reeking_hollow",
+      "width": 3
+    },
+    {
+      "from": "rotting_mudbank",
+      "to": "reeking_hollow",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "reeking_hollow",
+      "width": 4
+    },
+    {
+      "from": "misty_shallows",
+      "to": "murky_bank",
+      "width": 3
+    },
+    {
+      "from": "murky_bank",
+      "to": "peat_sink",
+      "width": 3
+    },
+    {
+      "from": "rotting_mudbank",
+      "to": "stagnant_flats",
+      "width": 3
+    },
+    {
+      "from": "stagnant_flats",
+      "to": "leech_islet",
+      "width": 3
+    },
+    {
+      "from": "brackish_pools",
+      "to": "fetid_mire",
+      "width": 3
+    },
+    {
+      "from": "fetid_mire",
+      "to": "bog_wallow",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "mossy_channels",
+      "width": 3
+    },
+    {
+      "from": "mossy_channels",
+      "to": "brackish_pools",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "stilt_camp"
+  },
+  "exit": {
+    "zone": "stilt_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bog_wallow",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "bog_wallow",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "bog_wallow",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "misty_shallows",
+      "monster": "Mange Hound",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "misty_shallows",
+      "monster": "Slagborer",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "misty_shallows",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Ashmaw Raider",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Ashmaw Warlord",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Mange Hound",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_roots",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_roots",
+      "monster": "Ashmaw Bonecaller",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_roots",
+      "monster": "Ashmaw Raider",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_mudbank",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_mudbank",
+      "monster": "Mange Hound",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_mudbank",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "leech_islet",
+      "monster": "Ashmaw Bonecaller",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "leech_islet",
+      "monster": "Ashmaw Raider",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "leech_islet",
+      "monster": "Ashmaw Warlord",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_pools",
+      "monster": "Mange Hound",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_pools",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_pools",
+      "monster": "Ashmaw Bonecaller",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "murky_bank",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "murky_bank",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "murky_bank",
+      "monster": "Mange Hound",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_flats",
+      "monster": "Slagborer",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_flats",
+      "monster": "Ashmaw Bonecaller",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_mire",
+      "monster": "Ashmaw Warlord",
+      "count": 3,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_mire",
+      "monster": "Ashmaw Bonecaller",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_channels",
+      "monster": "Ashmaw Bonecaller",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_channels",
+      "monster": "Ashmaw Raider",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_hollow",
+      "monster": "Mange Hound",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_hollow",
+      "monster": "Slagborer",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_hollow",
+      "monster": "Ashmaw Bonecaller",
+      "count": 12,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a swamp hunt for levels 515-630 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Ashmaw Bonecaller, Mange Hound, Ashmaw Raider, Slagborer, Ashmaw Warlord. Display monster: Ashmaw Bonecaller."
+}

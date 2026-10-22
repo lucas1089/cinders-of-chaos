@@ -1,0 +1,416 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "nightrend_abyss",
+  "name": "Nightrend Abyss",
+  "biome": "abyss",
+  "size": [
+    174,
+    140
+  ],
+  "floors": 1,
+  "level": [
+    785,
+    900
+  ],
+  "seed": 30347,
+  "origin": {
+    "x": 17456,
+    "y": 14544,
+    "z": 11
+  },
+  "decoration": "dense",
+  "light": "dark",
+  "zones": [
+    {
+      "id": "rim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "west",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "starless_gulf",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "weeping_ledge",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "umbral_basin",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "unlit_rim",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "shattered_scarp",
+      "floor": 1,
+      "size": [
+        23,
+        18
+      ],
+      "place": "south"
+    },
+    {
+      "id": "endless_spire",
+      "floor": 1,
+      "size": [
+        23,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "hollow_shelf",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "lightless_fold",
+      "floor": 1,
+      "size": [
+        29,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "warped_rift",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "silent_chasm",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "broken_terrace",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "starless_gulf",
+      "to": "weeping_ledge",
+      "width": 3
+    },
+    {
+      "from": "weeping_ledge",
+      "to": "umbral_basin",
+      "width": 3
+    },
+    {
+      "from": "umbral_basin",
+      "to": "unlit_rim",
+      "width": 3
+    },
+    {
+      "from": "unlit_rim",
+      "to": "shattered_scarp",
+      "width": 3
+    },
+    {
+      "from": "shattered_scarp",
+      "to": "endless_spire",
+      "width": 3
+    },
+    {
+      "from": "endless_spire",
+      "to": "rim_camp",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "hollow_shelf",
+      "width": 3
+    },
+    {
+      "from": "hollow_shelf",
+      "to": "starless_gulf",
+      "width": 3
+    },
+    {
+      "from": "starless_gulf",
+      "to": "lightless_fold",
+      "width": 3
+    },
+    {
+      "from": "umbral_basin",
+      "to": "lightless_fold",
+      "width": 3
+    },
+    {
+      "from": "shattered_scarp",
+      "to": "lightless_fold",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "lightless_fold",
+      "width": 4
+    },
+    {
+      "from": "endless_spire",
+      "to": "warped_rift",
+      "width": 3
+    },
+    {
+      "from": "warped_rift",
+      "to": "rim_camp",
+      "width": 3
+    },
+    {
+      "from": "weeping_ledge",
+      "to": "silent_chasm",
+      "width": 3
+    },
+    {
+      "from": "silent_chasm",
+      "to": "umbral_basin",
+      "width": 3
+    },
+    {
+      "from": "rim_camp",
+      "to": "broken_terrace",
+      "width": 3
+    },
+    {
+      "from": "broken_terrace",
+      "to": "hollow_shelf",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "rim_camp"
+  },
+  "exit": {
+    "zone": "rim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "starless_gulf",
+      "monster": "Azure Dragon",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_gulf",
+      "monster": "Ironmask Bannerman",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "starless_gulf",
+      "monster": "Leechwing",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_ledge",
+      "monster": "Golden Lord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_ledge",
+      "monster": "Caged Convict",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "weeping_ledge",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Ironmask Bannerman",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Leechwing",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "umbral_basin",
+      "monster": "Golden Lord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_rim",
+      "monster": "Caged Convict",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_rim",
+      "monster": "Azure Dragon",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "unlit_rim",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scarp",
+      "monster": "Leechwing",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scarp",
+      "monster": "Golden Lord",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scarp",
+      "monster": "Caged Convict",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_spire",
+      "monster": "Azure Dragon",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_spire",
+      "monster": "Ironmask Bannerman",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "endless_spire",
+      "monster": "Leechwing",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Golden Lord",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Caged Convict",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_shelf",
+      "monster": "Ironmask Bannerman",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_rift",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "warped_rift",
+      "monster": "Leechwing",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_chasm",
+      "monster": "Caged Convict",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_chasm",
+      "monster": "Azure Dragon",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_terrace",
+      "monster": "Leechwing",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "broken_terrace",
+      "monster": "Ironmask Bannerman",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Azure Dragon",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Ironmask Bannerman",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "lightless_fold",
+      "monster": "Leechwing",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a abyss hunt for levels 785-900 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Azure Dragon, Golden Lord, Ironmask Bannerman, Caged Convict, Leechwing. Display monster: Ironmask Bannerman."
+}

@@ -134,7 +134,7 @@ terminal do app ser root de verdade (instalar pacotes, mexer no sistema), rode n
 ## Comandos do servidor (`chaos-ctl.sh`)
 
 `status`, `start`, `stop`, `restart [segundos]`, `save`, `backup`, `backups`, `logs [n]`, `errors [n]`,
-`gm-logs [n] [NOME]`, `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
+`gm-logs [n] [NOME]`, `testers start [N] [MINUTOS] [--restart SEGUNDOS] | stop | status | report | cleanup [--yes]` (bots de teste, server/README.md "Tester bots"), `players`, `vocations`, `broadcast TEXTO`, `kick NOME`, `open`, `close`, `catalog NOME`,
 `panel NOME ACAO JSON`, `update TAG now|at-save` e `rollback now|at-save` (layout padrão; no kit, `rollback now` é
 `update-rollback`), `update-check`, `update-apply [--no-client] [--no-downloads] [--no-site] [--no-map]`, `update-status`,
 `update-rollback`, `update-log`, `publish-update TAG` (atualização do cliente, docs/LAUNCH.md "Publishing a client

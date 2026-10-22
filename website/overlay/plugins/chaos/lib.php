@@ -289,6 +289,12 @@ function chaos_rows(string $sql, array $params = array()): array {
  * Accounts held off the boards pending an anti-bot review (chaos_antibot_holds, written by the game server's
  * antibot.lua only with log.holdLeaderboards = true): SQL that leaves them out, for the players table alias `p`.
  */
+/** SQL: the character `p` is not one of the staff's tester bots (player storage 7102900 = 1, the game's
+ * Chaos.storage.tester; server/README.md "Tester bots"). Testers never rank, never show in a public list. */
+function chaos_tester_sql(string $alias = '`p`'): string {
+	return ' AND NOT EXISTS (SELECT 1 FROM `player_storage` `ts` WHERE `ts`.`player_id` = ' . $alias . '.`id` AND `ts`.`key` = 7102900 AND `ts`.`value` = 1)';
+}
+
 function chaos_antibot_hold_sql(): string {
 	if (!chaos_table_exists('chaos_antibot_holds')) {
 		return '';
@@ -553,7 +559,7 @@ function chaos_leaderboard_rows(string $board, int $week, int $limit = 20, bool 
 		SELECT `p`.`name`, `p`.`vocation`, `p`.`level`, `l`.`value`, `l`.`count`
 		FROM `chaos_leaderboard` `l`
 		JOIN `players` `p` ON `p`.`id` = `l`.`player_id`
-		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . '
+		WHERE `l`.`board` = ? AND `l`.`week` = ? AND `l`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . chaos_tester_sql() . '
 		ORDER BY `l`.`value` ' . ($ascending ? 'ASC' : 'DESC') . ', `l`.`updated_at` ASC, `l`.`player_id` ASC
 		LIMIT ?;', array_merge([$board, $week, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
 }
@@ -678,7 +684,7 @@ function chaos_records_rows(string $slot, string $period, string $mode, int $lim
 		SELECT `p`.`name`, `p`.`vocation`, `r`.`value`, `r`.`at`, `r`.`party`, `r`.`members`
 		FROM `chaos_records` `r`
 		JOIN `players` `p` ON `p`.`id` = `r`.`player_id`
-		WHERE `r`.`slot` = ? AND `r`.`period` = ? AND `r`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . '
+		WHERE `r`.`slot` = ? AND `r`.`period` = ? AND `r`.`value` > 0 AND `p`.`group_id` < ?' . $class . chaos_antibot_hold_sql() . chaos_tester_sql() . '
 		ORDER BY `r`.`value` ' . ($mode === 'min' ? 'ASC' : 'DESC') . ', `r`.`at` ASC, `r`.`player_id` ASC
 		LIMIT ?;', array_merge([$slot, $period, (int)chaos_cfg('staff_group', 4)], $vocations, [$limit]));
 }
@@ -762,7 +768,7 @@ function chaos_class_ladder(int $base, int $limit = 10, int $season = 0, string 
 	return chaos_rows("
 		SELECT `p`.`name`, `p`.`level`, `p`.`vocation`, `p`.`experience`$cols
 		FROM `players` `p` $join
-		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0$where" . chaos_antibot_hold_sql() . "
+		WHERE `p`.`vocation` IN ($in) AND `p`.`group_id` < ? AND `p`.`deletion` = 0$where" . chaos_antibot_hold_sql() . chaos_tester_sql() . "
 		ORDER BY $order
 		LIMIT ?;", $params);
 }

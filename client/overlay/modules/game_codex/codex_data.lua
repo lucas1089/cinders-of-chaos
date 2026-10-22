@@ -4359,7 +4359,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"On a kill: a fire explosion where the monster died, 25% of its maximum health (at most 50 + 8 x your level) to up to 8 other monsters within 2 sqm.", "Value: the chance on a kill.", "On an item: Death Blast: 12-16% chance on kill to explode (T8).", "Internal cooldown: 1.5 s.", "Cap: at most 25% from all equipped items together."}
+							p = {"On a kill: a fire explosion where the monster died, 10% of its maximum health (at most 50 + 1 x your level) to up to 8 other monsters within 2 sqm.", "Value: the chance on a kill.", "On an item: Death Blast: 12-16% chance on kill to explode (T8).", "Internal cooldown: 1.5 s.", "Cap: at most 25% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4451,7 +4451,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 6 x your level fire damage to up to 8 monsters within 2 sqm.", "Value: the chance on a hard hit.", "On an item: Ember Step: 22-28% chance when hit hard to blink away in flames (T8).", "Internal cooldown: 15 s.", "Cap: at most 30% from all equipped items together."}
+							p = {"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 2 x your level fire damage to up to 8 monsters within 2 sqm.", "Value: the chance on a hard hit.", "On an item: Ember Step: 22-28% chance when hit hard to blink away in flames (T8).", "Internal cooldown: 15 s.", "Cap: at most 30% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4502,7 +4502,7 @@ CodexData = {
 					sections = {
 						{
 							h = "Effect",
-							p = {"When a monster's hit is dodged or blocked: an ice nova around you, 40 + 5 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.", "Value: the chance on a dodge or block.", "On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).", "Internal cooldown: 4 s.", "Cap: at most 30% from all equipped items together."}
+							p = {"When a monster's hit is dodged or blocked: an ice nova around you, 100 + 1 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.", "Value: the chance on a dodge or block.", "On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).", "Internal cooldown: 4 s.", "Cap: at most 30% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
@@ -4657,30 +4657,30 @@ CodexData = {
 					id = "power:shattersplash",
 					name = "Shatter Splash",
 					color = "#ff9a3c",
-					sub = "Legendary power. Prefix, Weapon. 10-15% (T1) to 60-75% (T8)",
+					sub = "Legendary power. Prefix, Weapon. 2-3% (T1) to 12-16% (T8)",
 					group = "power",
 					side = "prefix",
 					f = {group = "power", side = "prefix", kind = {"weapon"}},
-					tiers = {{10, 15}, {15, 20}, {20, 25}, {25, 30}, {30, 40}, {40, 50}, {50, 60}, {60, 75}},
-					tv = {"10-15%", "15-20%", "20-25%", "25-30%", "30-40%", "40-50%", "50-60%", "60-75%"},
+					tiers = {{2, 3}, {3, 4}, {4, 6}, {5, 7}, {6, 9}, {8, 11}, {10, 13}, {12, 16}},
+					tv = {"2-3%", "3-4%", "4-6%", "5-7%", "6-9%", "8-11%", "10-13%", "12-16%"},
 					sections = {
 						{
 							h = "Effect",
-							p = {"The killing blow bursts onto up to 6 monsters within 2 sqm for the power's share of the blow.", "Value: percent of the killing blow.", "On an item: Shatter Splash: killing blows burst for 60-75% on monsters nearby (T8).", "Internal cooldown: 1 s.", "Cap: at most 100% from all equipped items together."}
+							p = {"The killing blow bursts onto up to 6 monsters within 2 sqm: the power's share of the health the blow took, shared by them.", "Value: percent of the health the killing blow took.", "On an item: Shatter Splash: killing blows burst for 12-16%, shared by the monsters nearby (T8).", "Internal cooldown: 1 s.", "Cap: at most 25% from all equipped items together."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "10-15%", "100"},
-								{"T2", "15+", "15-20%", "90"},
-								{"T3", "30+", "20-25%", "80"},
-								{"T4", "50+", "25-30%", "65"},
-								{"T5", "70+", "30-40%", "50"},
-								{"T6", "95+", "40-50%", "35"},
-								{"T7", "120+", "50-60%", "22"},
-								{"T8", "140+", "60-75%", "12"}
+								{"T1", "1+", "2-3%", "100"},
+								{"T2", "15+", "3-4%", "90"},
+								{"T3", "30+", "4-6%", "80"},
+								{"T4", "50+", "5-7%", "65"},
+								{"T5", "70+", "6-9%", "50"},
+								{"T6", "95+", "8-11%", "35"},
+								{"T7", "120+", "10-13%", "22"},
+								{"T8", "140+", "12-16%", "12"}
 							},
 							tiers = true
 						},
@@ -4703,30 +4703,30 @@ CodexData = {
 					id = "power:smolderaura",
 					name = "Smoldering Aura",
 					color = "#ff9a3c",
-					sub = "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +5-10 (T1) to +250-400 (T8)",
+					sub = "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +1-2 (T1) to +28-35 (T8)",
 					group = "power",
 					side = "suffix",
 					f = {group = "power", side = "suffix", kind = {"helmet", "armor", "legs", "jewel", "other"}},
-					tiers = {{5, 10}, {10, 20}, {20, 35}, {35, 60}, {60, 100}, {100, 160}, {160, 250}, {250, 400}},
-					tv = {"+5-10", "+10-20", "+20-35", "+35-60", "+60-100", "+100-160", "+160-250", "+250-400"},
+					tiers = {{1, 2}, {2, 3}, {3, 4}, {5, 7}, {8, 12}, {13, 20}, {20, 28}, {28, 35}},
+					tv = {"+1-2", "+2-3", "+3-4", "+5-7", "+8-12", "+13-20", "+20-28", "+28-35"},
 					sections = {
 						{
 							h = "Effect",
-							p = {"Every 3 s up to 6 monsters within 2 sqm burn for the power's value per second.", "Value: fire damage per second.", "On an item: Smoldering Aura: monsters within 2 sqm take 250-400 fire damage per second (T8).", "No cooldown: it ticks every 3 s.", "Cap: at most 600 from all equipped items together."}
+							p = {"While you fight (you attacked a monster in the last 5 s) and stand outside a protection zone, every 3 s up to 6 monsters within 2 sqm and in sight burn for the power's value per second, at most 2 + 1 per 30 levels of yours.", "Value: fire damage per second.", "On an item: Smoldering Aura: while you fight, monsters within 2 sqm take 28-35 fire damage per second (T8).", "No cooldown: it ticks every 3 s.", "Cap: at most 40 from all equipped items together."}
 						},
 						{
 							h = "Tiers",
 							cols = {"Tier", "Item level", "Value", "Tier weight"},
 							w = {14, 22, 40, 24},
 							rows = {
-								{"T1", "1+", "+5-10", "100"},
-								{"T2", "15+", "+10-20", "90"},
-								{"T3", "30+", "+20-35", "80"},
-								{"T4", "50+", "+35-60", "65"},
-								{"T5", "70+", "+60-100", "50"},
-								{"T6", "95+", "+100-160", "35"},
-								{"T7", "120+", "+160-250", "22"},
-								{"T8", "140+", "+250-400", "12"}
+								{"T1", "1+", "+1-2", "100"},
+								{"T2", "15+", "+2-3", "90"},
+								{"T3", "30+", "+3-4", "80"},
+								{"T4", "50+", "+5-7", "65"},
+								{"T5", "70+", "+8-12", "50"},
+								{"T6", "95+", "+13-20", "35"},
+								{"T7", "120+", "+20-28", "22"},
+								{"T8", "140+", "+28-35", "12"}
 							},
 							tiers = true
 						},
@@ -14821,6 +14821,114 @@ CodexData = {
 						{
 							h = "Em português",
 							p = {"Abaixo do Vault o fogo continuou cavando. The Marrow Crypts, onde Ossivane the Gravecage anda sobre as costelas de um gigante morto. The Iron Crucible, cujo Forgewarden Kharzun ainda guarda uma forja que nenhuma mão trabalha. The Fallen Sanctum, onde Vaelith canta o que restou de um hino. E por último The Pyre Throne, onde Azhkarrath, mãe dos pyrewings, jaz acorrentada ao trono que queimou. Cada porta se abre para um de cada vez."}
+						}
+					}
+				},
+				{
+					id = "lore:cellars",
+					name = "The Cellars of Cinderhold",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Cinderhold was built on top of an older town, and the older town was built on its cellars. The Archivist keeps the overflow of her ledger down there, in dry rooms the rats think are theirs. Every year she loses a king or two to their teeth, and every year she writes them again from memory."}
+						},
+						{
+							h = "Em português",
+							p = {"Cinderhold foi construída sobre uma cidade mais antiga, e a cidade mais antiga foi construída sobre seus porões. A Arquivista guarda lá embaixo o que não cabe em seu registro, em salas secas que os ratos acham que são deles. Todo ano ela perde um rei ou dois para os dentes deles, e todo ano os escreve de novo de memória."}
+						}
+					}
+				},
+				{
+					id = "lore:lantern_road",
+					name = "The Lantern Road",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Before the Cinders, the Ashen Vigil lit a lantern on every grave between the towns, so the dead would know the way to rest. The road of lights ran from coast to coast. The night the sky split, every lantern went out at once, and the dead have been walking the dark road ever since, looking for the next light.", "At its end stands a roost of stone watchers, and past them, a circle of open graves."}
+						},
+						{
+							h = "Em português",
+							p = {"Antes das Brasas, a Vigília Cinzenta acendia uma lanterna em cada túmulo entre as cidades, para que os mortos soubessem o caminho do descanso. A estrada de luzes ia de costa a costa. Na noite em que o céu se partiu, todas as lanternas se apagaram de uma vez, e desde então os mortos andam pela estrada escura procurando a próxima luz.", "No fim dela há um poleiro de vigias de pedra e, além deles, um círculo de túmulos abertos."}
+						}
+					}
+				},
+				{
+					id = "lore:grave_circle",
+					name = "The Grave Circle",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Some saw the Cinders as a curse. The Grave Circle saw them as a gift: a fire that wakes the dead is a fire that can be taught. Its necromancers raise bonebeasts from the Vigil's own graves, and their liches and banshees keep a list of every name the Circle means to wake. The Archivist's name was on it. So, they say, was yours."}
+						},
+						{
+							h = "Em português",
+							p = {"Alguns viram as Brasas como uma maldição. O Círculo das Covas as viu como um presente: um fogo que desperta os mortos é um fogo que pode ser ensinado. Seus necromantes erguem bestas de ossos dos próprios túmulos da Vigília, e seus liches e banshees mantêm uma lista de cada nome que o Círculo pretende despertar. O nome da Arquivista estava nela. O seu também, dizem."}
+						}
+					}
+				},
+				{
+					id = "lore:dragon_census",
+					name = "The Dragon Census",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"The Veiled Choir counts dragons the way farmers count clouds. A brood that grows means a hot year and burning fields; a brood that shrinks means something larger is eating them. The census is sung, never written, so the Archivist keeps the only copy on paper. She binds it with rune shards, because dragon fire eats ordinary glue."}
+						},
+						{
+							h = "Em português",
+							p = {"O Coro Velado conta dragões como fazendeiros contam nuvens. Uma ninhada que cresce significa um ano quente e campos queimando; uma ninhada que diminui significa que algo maior está comendo os dragões. O censo é cantado, nunca escrito, então a Arquivista guarda a única cópia em papel. Ela a encaderna com fragmentos rúnicos, porque o fogo de dragão come cola comum."}
+						}
+					}
+				},
+				{
+					id = "lore:moon_sick",
+					name = "The Moon-Sick",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Under a Cinder moon some hunters do not come home as hunters. The Thornbound Circle calls them the moon-sick and keeps a place at its table for each of them, in case they return. None ever has. Bramwyn says they run from something in the marsh, a mother of a hundred heads, and that the moon only shows them the way."}
+						},
+						{
+							h = "Em português",
+							p = {"Sob uma lua de Brasa, alguns caçadores não voltam para casa como caçadores. O Círculo Espinhoso os chama de enfermos da lua e mantém um lugar à mesa para cada um deles, caso voltem. Nenhum voltou. Bramwyn diz que fogem de algo no pântano, uma mãe de cem cabeças, e que a lua apenas lhes mostra o caminho."}
+						}
+					}
+				},
+				{
+					id = "lore:bone_court",
+					name = "The Bone Court",
+					color = "#c9a27a",
+					sub = "The world",
+					group = "world",
+					f = {group = "world"},
+					sections = {
+						{
+							h = "Lore",
+							p = {"Long before the Ashen Sepulchre had its Sovereign, the Bone Court had its own king, and a court of archers, berserkers and masters who served him past death. The Vigil buried them twice. The Cinders woke them twice. Their records are sealed now in the Archivist's ledger with rune shards, so that the court is only a page, and pages do not march."}
+						},
+						{
+							h = "Em português",
+							p = {"Muito antes de o Sepulcro Cinzento ter seu Soberano, a Corte de Ossos tinha seu próprio rei, e uma corte de arqueiros, berserkers e mestres que o serviram além da morte. A Vigília os enterrou duas vezes. As Brasas os despertaram duas vezes. Seus registros agora estão selados no registro da Arquivista com fragmentos rúnicos, para que a corte seja só uma página, e páginas não marcham."}
 						}
 					}
 				},

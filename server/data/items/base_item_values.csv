@@ -2781,6 +2781,8 @@ id,cat,slot,level,sell_max,sell_min,sellers,buy_min,buy_med,buyers,loot_n,loot_l
 29864,equip,feet,1000,0,0,0,0,0,0,0,0,0,0,0
 29865,equip,shield,1000,0,0,0,0,0,0,0,0,0,0,0
 29866,equip,weapon,1000,0,0,0,0,0,0,0,0,0,0,0
+29867,equip,necklace,1000,0,0,0,0,0,0,0,0,0,0,0
+29868,equip,ring,1000,0,0,0,0,0,0,0,0,0,0,0
 29869,equip,head,1000,0,0,0,0,0,0,0,0,0,0,0
 29870,equip,body,1000,0,0,0,0,0,0,0,0,0,0,0
 29871,equip,legs,1000,0,0,0,0,0,0,0,0,0,0,0

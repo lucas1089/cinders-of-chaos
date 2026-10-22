@@ -245,6 +245,11 @@ each is under "Decided" with its reason. Left here: what needs the owner's own a
   in [LAUNCH.md](LAUNCH.md) section 2.
 - Base upgrade-slot check (2026-10-12): once a second per player in 12 groups, and at once on an equip or unequip
   move, instead of every 100 ms (server/README.md "Game loop stalls").
+- Owner outfits pair 37 (2026-10-22): on `windows-assets` (1020d51c), switch on (client/MANIFEST.md "Owner outfits
+  (pair 37)"). Left: PLACEHOLDER prices (750 a moon outfit, 300 a costume, `server/data/lib/chaos_pack37_looks.lua`);
+  say where the outfits came from if you know (credited as "source pack unnamed"); no pizza outfit was on the Drive, so
+  send it if you have one; the folders "obd_all_in_one_folder" and "OBD_o/outfits" were not opened; look at the moon
+  set in game (it floats about 10 px when standing, by design of the art).
 - Owner art pair 26 (2026-10-15): pair approved and on `windows-assets` (50645056), switch on (client/MANIFEST.md
   "Owner art"). Left: the store wings carry PLACEHOLDER prices of 250 each (`server/data/lib/chaos_owner_art.lua`); check
   the mapping of the looks in game (server/README.md "Owner art (pair 26)"), Ossivane's in particular; send again the small files the

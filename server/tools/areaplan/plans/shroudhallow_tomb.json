@@ -1,0 +1,509 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "shroudhallow_tomb",
+  "name": "Shroudhallow Tomb",
+  "biome": "crypt",
+  "size": [
+    160,
+    127
+  ],
+  "floors": 1,
+  "level": [
+    890,
+    1005
+  ],
+  "seed": 30438,
+  "origin": {
+    "x": 16844,
+    "y": 14748,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "vigil_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "forgotten_niches",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "silent_crypts",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "sealed_ossuary",
+      "floor": 1,
+      "size": [
+        25,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "candle_cells",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "mourning_cloister",
+      "floor": 1,
+      "size": [
+        23,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "black_reliquary",
+      "floor": 1,
+      "size": [
+        23,
+        17
+      ],
+      "place": "west"
+    },
+    {
+      "id": "dusty_nave",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "whispering_aisle",
+      "floor": 1,
+      "size": [
+        28,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "tithe_chapel",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "grave_shrine",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "vigil_vault",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "hollow_tombs",
+      "floor": 1,
+      "size": [
+        18,
+        14
+      ]
+    },
+    {
+      "id": "pale_stair",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "vigil_camp",
+      "to": "forgotten_niches",
+      "width": 3
+    },
+    {
+      "from": "forgotten_niches",
+      "to": "silent_crypts",
+      "width": 3
+    },
+    {
+      "from": "silent_crypts",
+      "to": "sealed_ossuary",
+      "width": 3
+    },
+    {
+      "from": "sealed_ossuary",
+      "to": "candle_cells",
+      "width": 3
+    },
+    {
+      "from": "candle_cells",
+      "to": "mourning_cloister",
+      "width": 3
+    },
+    {
+      "from": "mourning_cloister",
+      "to": "black_reliquary",
+      "width": 3
+    },
+    {
+      "from": "black_reliquary",
+      "to": "dusty_nave",
+      "width": 3
+    },
+    {
+      "from": "dusty_nave",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "vigil_camp",
+      "to": "whispering_aisle",
+      "width": 4
+    },
+    {
+      "from": "silent_crypts",
+      "to": "whispering_aisle",
+      "width": 3
+    },
+    {
+      "from": "candle_cells",
+      "to": "whispering_aisle",
+      "width": 3
+    },
+    {
+      "from": "black_reliquary",
+      "to": "whispering_aisle",
+      "width": 3
+    },
+    {
+      "from": "dusty_nave",
+      "to": "tithe_chapel",
+      "width": 3
+    },
+    {
+      "from": "tithe_chapel",
+      "to": "vigil_camp",
+      "width": 3
+    },
+    {
+      "from": "black_reliquary",
+      "to": "grave_shrine",
+      "width": 3
+    },
+    {
+      "from": "grave_shrine",
+      "to": "dusty_nave",
+      "width": 3
+    },
+    {
+      "from": "sealed_ossuary",
+      "to": "vigil_vault",
+      "width": 3
+    },
+    {
+      "from": "vigil_vault",
+      "to": "candle_cells",
+      "width": 3
+    },
+    {
+      "from": "forgotten_niches",
+      "to": "hollow_tombs",
+      "width": 3
+    },
+    {
+      "from": "hollow_tombs",
+      "to": "silent_crypts",
+      "width": 3
+    },
+    {
+      "from": "black_reliquary",
+      "to": "pale_stair",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "vigil_camp"
+  },
+  "exit": {
+    "zone": "vigil_camp"
+  },
+  "spawns": [
+    {
+      "zone": "forgotten_niches",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_niches",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "forgotten_niches",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "silent_crypts",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Reedgrave",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sealed_ossuary",
+      "monster": "Geode Seer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_cells",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_cells",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "candle_cells",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_cloister",
+      "monster": "Reedgrave",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_cloister",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mourning_cloister",
+      "monster": "Rimecairn",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_reliquary",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_reliquary",
+      "monster": "Deepforge Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "black_reliquary",
+      "monster": "Reedgrave",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_nave",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_nave",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_nave",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_chapel",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_chapel",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tithe_chapel",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_shrine",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_shrine",
+      "monster": "Jungle Beasts",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grave_shrine",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Reedgrave",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "vigil_vault",
+      "monster": "Rimecairn",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Jungle Beasts",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hollow_tombs",
+      "monster": "Deepforge Fiend",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_aisle",
+      "monster": "Geode Seer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_aisle",
+      "monster": "Rimecairn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "whispering_aisle",
+      "monster": "Jungle Beasts",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "pale_stair",
+      "quest": "shroudhallow_stair",
+      "reward": {
+        "gold": 750000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 3
+          }
+        ],
+        "message": "A tithe left for the dead, taken back."
+      }
+    }
+  ],
+  "chest_action": 47981,
+  "notes": "Content plan (hall fill, 2026-10-22): a crypt hunt for levels 890-1005 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Jungle Beasts, Geode Seer, Deepforge Fiend, Rimecairn, Reedgrave. Display monster: Geode Seer."
+}

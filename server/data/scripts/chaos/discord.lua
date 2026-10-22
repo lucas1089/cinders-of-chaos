@@ -51,6 +51,11 @@ function X.queue(ev, sync)
 	if not ev or not D.enabled(cfg, ev.kind) then
 		return false
 	end
+	-- an event that names a tester bot never reaches Discord (testers.lua)
+	if ChaosTestersCore and Chaos.testerGuids and next(Chaos.testerGuids) ~= nil
+		and ChaosTestersCore.mentionsAny(ev, Chaos.testerGuids) then
+		return false
+	end
 	local now = os.time()
 	if not D.allow(X.rate, cfg, ev.kind, now) then
 		return false

@@ -193,6 +193,52 @@ def _ids_of(text):
     return (int(aid.group(1)) if aid else None), set(int(s) for s in re.findall(r'storage = (\d+)', text))
 
 
+def _chest_scripts(out_dir):
+    """{file name: text} of the chest scripts under OUT/data/scripts/chaos_areaplan/"""
+    d = os.path.join(out_dir, 'data', 'scripts', 'chaos_areaplan')
+    if not os.path.isdir(d):
+        return {}
+    return {f: open(os.path.join(d, f), encoding='utf-8').read() for f in sorted(os.listdir(d)) if f.endswith('_chests.lua')}
+
+
+def _clash(name, ids, others):
+    aid, sts = ids
+    for f, (a2, s2) in sorted(others.items()):
+        if f == name:
+            continue
+        if aid is not None and a2 == aid:
+            raise PlaceError('%s uses action id %d like %s; set "chest_action" in the plan' % (name, aid, f))
+        if sts & s2:
+            raise PlaceError('%s shares storage %s with %s; rename the quest key' % (name, sorted(sts & s2)[0], f))
+
+
+def _installed_ids(server_dir):
+    plan_dir = os.path.join(server_dir, 'data', 'scripts', 'chaos_areaplan')
+    others = {}
+    if os.path.isdir(plan_dir):
+        for f in sorted(os.listdir(plan_dir)):
+            if f.endswith('_chests.lua'):
+                others[f] = _ids_of(open(os.path.join(plan_dir, f), encoding='utf-8').read())
+    return others
+
+
+def check_batch(out_dirs, server_dir):
+    """refuse (PlaceError) before anything is written when the chest scripts of several compiled areas share an
+    action id or a storage with each other or with a chest script already installed (one of the batch's own files,
+    installed by an earlier run, stands for itself and is left out). install() alone only sees what is installed,
+    so a clash between two new areas got through a dry run and stopped a real run after the map was written."""
+    batch = {}
+    for d in out_dirs:
+        for f, text in _chest_scripts(d).items():
+            batch[f] = _ids_of(text)
+    others = {f: v for f, v in _installed_ids(server_dir).items() if f not in batch}
+    seen = {}
+    for f, ids in sorted(batch.items()):
+        _clash(f, ids, others)
+        _clash(f, ids, seen)
+        seen[f] = ids
+
+
 def install(out_dir, server_dir, dry_run=False, log=print):
     """copy OUT/data/... into SERVER/data/...; returns the list of (action, path)"""
     data_src = os.path.join(out_dir, 'data')
@@ -207,25 +253,13 @@ def install(out_dir, server_dir, dry_run=False, log=print):
             src = os.path.join(root, f)
             todo.append((src, os.path.join(data_dst, os.path.relpath(src, data_src))))
     # other planned areas' chest scripts: no shared action id or storage
-    plan_dir = os.path.join(data_dst, 'scripts', 'chaos_areaplan')
-    others = {}
-    if os.path.isdir(plan_dir):
-        for f in sorted(os.listdir(plan_dir)):
-            if f.endswith('_chests.lua'):
-                others[f] = _ids_of(open(os.path.join(plan_dir, f), encoding='utf-8').read())
+    others = _installed_ids(server_dir)
     done = []
     for src, dst in todo:
         text = open(src, encoding='utf-8').read()
         name = os.path.basename(dst)
         if name.endswith('_chests.lua'):
-            aid, sts = _ids_of(text)
-            for f, (a2, s2) in others.items():
-                if f == name:
-                    continue
-                if a2 == aid:
-                    raise PlaceError('%s uses action id %d like %s; set "chest_action" in the plan' % (name, aid, f))
-                if sts & s2:
-                    raise PlaceError('%s shares storage %s with %s; rename the quest key' % (name, sorted(sts & s2)[0], f))
+            _clash(name, _ids_of(text), others)
         if os.path.exists(dst):
             if open(dst, encoding='utf-8').read() == text:
                 done.append(('same', dst))

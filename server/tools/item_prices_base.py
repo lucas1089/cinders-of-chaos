@@ -13,12 +13,18 @@ game data. No monster or NPC names are kept: only ids, numbers and the item name
                          that pay in gold: a table shop of a script without removeMoney / addMoney trades in a coin of
                          its own); staff test NPCs and fluid subtypes left out
   monsters(data)         [{'level', 'loot': [(id, countmax, chance)]}]: monsters.xml (files that exist) and data/monster/lua
-  recipes(data)          [{'id', 'count', 'cost', 'level', 'materials': [(id, count)], 'book'}]: scripts/customs/crafting
+  recipes(data)          [{'id', 'count', 'cost', 'level', 'materials': [(id, count)], 'book'}]: scripts/customs/crafting,
+                         read as installed: through patch_base_recipes.py patch_book (the boss material recipes)
 """
 import glob
 import math
 import os
 import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.dont_write_bytecode = True
+import patch_base_recipes  # noqa: E402
 
 ATTR = re.compile(r'(\w+)\s*=\s*"([^"]*)"')
 ITEM = re.compile(r'<item\s+([^>]*?)(/?)>(.*?)(?:</item>|(?=<item\s))', re.S)
@@ -252,7 +258,7 @@ def recipes(data):
     out = []
     for path in sorted(glob.glob(os.path.join(data, 'scripts', 'customs', 'crafting', '*.lua'))):
         book = os.path.splitext(os.path.basename(path))[0]
-        text = read(path)
+        text = patch_base_recipes.patch_book(book, read(path))[0]
         for m in re.finditer(r'\{\s*id\s*=\s*(\d+),(.*?)materials\s*=\s*\{(.*?)\}\s*,?\s*\}', text, re.S):
             head = m.group(2)
             cost = re.search(r'\bcost\s*=\s*(\d+)', head)

@@ -1,0 +1,492 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "carrionwood",
+  "name": "Carrionwood",
+  "biome": "forest",
+  "size": [
+    186,
+    149
+  ],
+  "floors": 1,
+  "level": [
+    1550,
+    1700
+  ],
+  "seed": 30568,
+  "origin": {
+    "x": 16844,
+    "y": 14952,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "woodcamp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dark_copse",
+      "floor": 1,
+      "size": [
+        27,
+        17
+      ],
+      "place": "north"
+    },
+    {
+      "id": "mossy_dell",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "withered_thicket",
+      "floor": 1,
+      "size": [
+        25,
+        19
+      ],
+      "place": "east"
+    },
+    {
+      "id": "gnarled_orchard",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "blighted_stand",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "fallen_meadow",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "west"
+    },
+    {
+      "id": "quiet_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "bramble_grove",
+      "floor": 1,
+      "size": [
+        29,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "foggy_trail",
+      "floor": 1,
+      "size": [
+        21,
+        14
+      ]
+    },
+    {
+      "id": "shaded_ridge",
+      "floor": 1,
+      "size": [
+        18,
+        16
+      ]
+    },
+    {
+      "id": "old_clearing",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "crows_glen",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "thorny_brake",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "dark_copse",
+      "to": "mossy_dell",
+      "width": 3
+    },
+    {
+      "from": "mossy_dell",
+      "to": "withered_thicket",
+      "width": 3
+    },
+    {
+      "from": "withered_thicket",
+      "to": "gnarled_orchard",
+      "width": 3
+    },
+    {
+      "from": "gnarled_orchard",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "blighted_stand",
+      "width": 3
+    },
+    {
+      "from": "blighted_stand",
+      "to": "fallen_meadow",
+      "width": 3
+    },
+    {
+      "from": "fallen_meadow",
+      "to": "quiet_hollow",
+      "width": 3
+    },
+    {
+      "from": "quiet_hollow",
+      "to": "dark_copse",
+      "width": 3
+    },
+    {
+      "from": "dark_copse",
+      "to": "bramble_grove",
+      "width": 3
+    },
+    {
+      "from": "withered_thicket",
+      "to": "bramble_grove",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "bramble_grove",
+      "width": 4
+    },
+    {
+      "from": "fallen_meadow",
+      "to": "bramble_grove",
+      "width": 3
+    },
+    {
+      "from": "blighted_stand",
+      "to": "foggy_trail",
+      "width": 3
+    },
+    {
+      "from": "foggy_trail",
+      "to": "fallen_meadow",
+      "width": 3
+    },
+    {
+      "from": "quiet_hollow",
+      "to": "shaded_ridge",
+      "width": 3
+    },
+    {
+      "from": "shaded_ridge",
+      "to": "dark_copse",
+      "width": 3
+    },
+    {
+      "from": "withered_thicket",
+      "to": "old_clearing",
+      "width": 3
+    },
+    {
+      "from": "old_clearing",
+      "to": "gnarled_orchard",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "crows_glen",
+      "width": 3
+    },
+    {
+      "from": "crows_glen",
+      "to": "blighted_stand",
+      "width": 3
+    },
+    {
+      "from": "gnarled_orchard",
+      "to": "thorny_brake",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "woodcamp"
+  },
+  "exit": {
+    "zone": "woodcamp"
+  },
+  "spawns": [
+    {
+      "zone": "dark_copse",
+      "monster": "Hollowhorn",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_copse",
+      "monster": "Oathbroken Colossus",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_copse",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_dell",
+      "monster": "Siege Behemoth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_dell",
+      "monster": "Bonepicker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_dell",
+      "monster": "Bloodantler Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_thicket",
+      "monster": "Oathbroken Colossus",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_thicket",
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_thicket",
+      "monster": "Hollowhorn",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_orchard",
+      "monster": "Bonepicker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_orchard",
+      "monster": "Bloodantler Fiend",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_orchard",
+      "monster": "Siege Behemoth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_stand",
+      "monster": "Ashveil Hierarch",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_stand",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_stand",
+      "monster": "Oathbroken Colossus",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_meadow",
+      "monster": "Bloodantler Fiend",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_meadow",
+      "monster": "Siege Behemoth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_meadow",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_hollow",
+      "monster": "Hollowhorn",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_hollow",
+      "monster": "Oathbroken Colossus",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_hollow",
+      "monster": "Bonepicker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "foggy_trail",
+      "monster": "Siege Behemoth",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "foggy_trail",
+      "monster": "Bonepicker",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_ridge",
+      "monster": "Oathbroken Colossus",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_ridge",
+      "monster": "Ashveil Hierarch",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_clearing",
+      "monster": "Bonepicker",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_clearing",
+      "monster": "Bloodantler Fiend",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_clearing",
+      "monster": "Siege Behemoth",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_glen",
+      "monster": "Ashveil Hierarch",
+      "count": 3,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "crows_glen",
+      "monster": "Hollowhorn",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_grove",
+      "monster": "Bloodantler Fiend",
+      "count": 15,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_grove",
+      "monster": "Siege Behemoth",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_grove",
+      "monster": "Bonepicker",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "thorny_brake",
+      "quest": "carrionwood_brake_hoard",
+      "reward": {
+        "gold": 3000000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 9
+          }
+        ],
+        "message": "A satchel caught high in the roots."
+      }
+    }
+  ],
+  "chest_action": 47989,
+  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 1550-1700 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Hollowhorn, Siege Behemoth, Oathbroken Colossus, Bonepicker, Ashveil Hierarch, Bloodantler Fiend. Display monster: Bonepicker."
+}

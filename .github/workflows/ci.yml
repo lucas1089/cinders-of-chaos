@@ -100,6 +100,7 @@ jobs:
           python3 -I server/tools/patch_spell_timings_test.py  # stock cooldowns (the ladder) and the two script cooldowns
           python3 -I server/tools/patch_badges_test.py  # the badge slot; retired slots: hooks, descriptions, death loss
           python3 -I server/tools/patch_prizes_test.py  # base prizes into the backpack: roulettes, task rewards, crafting, ship NPC
+          python3 -I server/tools/patch_base_recipes_test.py  # boss materials: own stones and emblems, trophy recipes, descriptions
           python3 -I server/tools/patch_base_jewelry_test.py  # rings and necklaces: permanent, stats on the unworn id, DeEquip
 
       - name: Client spell data is up to date with the server spells
@@ -268,6 +269,14 @@ jobs:
       - name: Load test tool (failure reasons, bot password hashes, spread over towns and hunting areas)
         run: python3 -I server/tools/loadtest_test.py
 
+      - name: Tester bots (scheduling, anomaly rules, log report, key file, cleanup by exact ids)
+        run: python3 -I server/tools/testers_test.py
+
+      - name: Tester bots coverage table up to date, scenarios never out of scope
+        run: |
+          python3 -I server/tools/gen_tester_scenarios.py --check
+          python3 -I server/tools/tester_scenarios_test.py
+
       - name: Network message buffer stays unzeroed (server src-patch 0032)
         run: python3 -I server/tools/netmsg_buffer_patch_test.py
 
@@ -359,6 +368,17 @@ jobs:
             server/src-patches/0031-login-reads-prefetch.patch > "$d/chaosprefetch.h"
           g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaosprefetch_test.cpp -o "$d/chaosprefetch_test"
           "$d/chaosprefetch_test"
+
+      - name: Tester bots never counted online (C++; header from server src-patch 0059)
+        run: |
+          d=$(mktemp -d)
+          awk '/^\+\+\+ b\/src\/chaostesters\.h/{p=1; next} p&&/^(diff |--- )/{p=0} p&&/^\+/{print substr($0, 2)}' \
+            server/src-patches/0059-tester-bots-not-counted.patch > "$d/chaostesters.h"
+          g++ -std=c++17 -Wall -Wextra -I "$d" server/tools/chaostesters_test.cpp -o "$d/chaostesters_test"
+          "$d/chaostesters_test"
+
+      - name: Tester bots out of the base player lists (patch_tester_filters.py)
+        run: python3 -I server/tools/patch_tester_filters_test.py
 
       - name: Backup shell scripts parse
         run: |
@@ -572,6 +592,10 @@ jobs:
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33.py build --check
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack33_test.py
           python3 -I server/tools/gen_pack33_cosmetics.py --check
+          # the owner's outfits of pair 37 (.obd files, source pack unnamed; sheets not in git): things file, sums,
+          # sources and the server's look list agree; the .obd reader and the sheet layout on synthetic files
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks.py build --check
+          /tmp/fxenv/bin/python -I client/tools/sprites/gen_pack37_looks_test.py
           # the Archmage of pair 29 (our own rig art): things file and sheet sums match class_art.py (no render)
           /tmp/fxenv/bin/python -I client/tools/sprites/gen_archmage_art.py build --check
           # large soft effects: a full render (about 2 minutes) against the spec and the pixel sums (strips not in git)

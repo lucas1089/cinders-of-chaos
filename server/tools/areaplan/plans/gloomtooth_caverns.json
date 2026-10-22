@@ -1,0 +1,450 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "gloomtooth_caverns",
+  "name": "Gloomtooth Caverns",
+  "biome": "cave",
+  "size": [
+    161,
+    144
+  ],
+  "floors": 1,
+  "level": [
+    500,
+    615
+  ],
+  "seed": 30100,
+  "origin": {
+    "x": 15620,
+    "y": 14340,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "gloomy_shaft",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "echoing_chamber",
+      "floor": 1,
+      "size": [
+        27,
+        19
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "sunken_crawl",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "dripping_vein",
+      "floor": 1,
+      "size": [
+        28,
+        19
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "rubble_warren",
+      "floor": 1,
+      "size": [
+        27,
+        16
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "narrow_grotto",
+      "floor": 1,
+      "size": [
+        27,
+        18
+      ],
+      "place": "west"
+    },
+    {
+      "id": "shale_gallery",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "gnawed_pit",
+      "floor": 1,
+      "size": [
+        31,
+        24
+      ],
+      "place": "center"
+    },
+    {
+      "id": "mossy_burrow",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "crooked_den",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "split_nest",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "twisted_tunnels",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "gloomy_shaft",
+      "to": "echoing_chamber",
+      "width": 3
+    },
+    {
+      "from": "echoing_chamber",
+      "to": "sunken_crawl",
+      "width": 3
+    },
+    {
+      "from": "sunken_crawl",
+      "to": "dripping_vein",
+      "width": 3
+    },
+    {
+      "from": "dripping_vein",
+      "to": "camp",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "rubble_warren",
+      "width": 3
+    },
+    {
+      "from": "rubble_warren",
+      "to": "narrow_grotto",
+      "width": 3
+    },
+    {
+      "from": "narrow_grotto",
+      "to": "shale_gallery",
+      "width": 3
+    },
+    {
+      "from": "shale_gallery",
+      "to": "gloomy_shaft",
+      "width": 3
+    },
+    {
+      "from": "gloomy_shaft",
+      "to": "gnawed_pit",
+      "width": 3
+    },
+    {
+      "from": "sunken_crawl",
+      "to": "gnawed_pit",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "gnawed_pit",
+      "width": 4
+    },
+    {
+      "from": "narrow_grotto",
+      "to": "gnawed_pit",
+      "width": 3
+    },
+    {
+      "from": "echoing_chamber",
+      "to": "mossy_burrow",
+      "width": 3
+    },
+    {
+      "from": "mossy_burrow",
+      "to": "sunken_crawl",
+      "width": 3
+    },
+    {
+      "from": "camp",
+      "to": "crooked_den",
+      "width": 3
+    },
+    {
+      "from": "crooked_den",
+      "to": "rubble_warren",
+      "width": 3
+    },
+    {
+      "from": "shale_gallery",
+      "to": "split_nest",
+      "width": 3
+    },
+    {
+      "from": "split_nest",
+      "to": "gloomy_shaft",
+      "width": 3
+    },
+    {
+      "from": "dripping_vein",
+      "to": "twisted_tunnels",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "camp"
+  },
+  "exit": {
+    "zone": "camp"
+  },
+  "spawns": [
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Ashmaw Raider",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Mange Hound",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "gloomy_shaft",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_chamber",
+      "monster": "Ashmaw Bonecaller",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_chamber",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "echoing_chamber",
+      "monster": "Ashmaw Raider",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_crawl",
+      "monster": "Mange Hound",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_crawl",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_crawl",
+      "monster": "Ashmaw Bonecaller",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_vein",
+      "monster": "Slagborer",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_vein",
+      "monster": "Ashmaw Raider",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "dripping_vein",
+      "monster": "Mange Hound",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_warren",
+      "monster": "Ashmaw Warlord",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_warren",
+      "monster": "Ashmaw Bonecaller",
+      "count": 9,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "rubble_warren",
+      "monster": "Slagborer",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_grotto",
+      "monster": "Ashmaw Raider",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_grotto",
+      "monster": "Mange Hound",
+      "count": 8,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "narrow_grotto",
+      "monster": "Ashmaw Warlord",
+      "count": 7,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "shale_gallery",
+      "monster": "Ashmaw Bonecaller",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "shale_gallery",
+      "monster": "Slagborer",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "shale_gallery",
+      "monster": "Ashmaw Raider",
+      "count": 6,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_burrow",
+      "monster": "Mange Hound",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_burrow",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_den",
+      "monster": "Slagborer",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "crooked_den",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "split_nest",
+      "monster": "Ashmaw Warlord",
+      "count": 4,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "split_nest",
+      "monster": "Ashmaw Raider",
+      "count": 5,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_pit",
+      "monster": "Ashmaw Raider",
+      "count": 15,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_pit",
+      "monster": "Mange Hound",
+      "count": 13,
+      "respawn": 45,
+      "pack": 3
+    },
+    {
+      "zone": "gnawed_pit",
+      "monster": "Ashmaw Warlord",
+      "count": 10,
+      "respawn": 45,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "twisted_tunnels",
+      "quest": "gloomtooth_tunnels_cache",
+      "reward": {
+        "gold": 300000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "Coin hidden where no light reaches."
+      }
+    }
+  ],
+  "chest_action": 47960,
+  "notes": "Content plan (hall fill, 2026-10-22): a cave hunt for levels 500-615 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 11 hunting zones in loops; monsters Ashmaw Raider, Ashmaw Bonecaller, Mange Hound, Slagborer, Ashmaw Warlord. Display monster: Ashmaw Raider."
+}

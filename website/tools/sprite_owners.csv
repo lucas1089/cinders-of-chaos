@@ -12,6 +12,7 @@ outfit,2161,2184,donor,"class looks of things_custom19 / 20 (classlook_picks*.cs
 outfit,2185,2187,own,"themed auras and wings drawn in Python (things_custom24, gen_theme_art.py)"
 outfit,2188,2193,donor,"recolours of the donor rift looks 2104 / 2108 (things_custom24, theme_recolour.py)"
 outfit,2200,2212,donor,"rift variants and bigger guardians repainted from donor rift looks (things_custom24)"
+outfit,2668,2681,donor,"pair 37 moon outfits and costumes: .obd files supplied by the owner, source pack unnamed (gen_pack37_looks.py, set37 outfits)"
 item,100,27483,stock,"base pair: the commercial game's items and the base client's additions"
 item,27484,27557,own,"dark tile set drawn in code (gen_dark_tiles.py)"
 item,28000,28111,donor,"donor B items (donor_b_selection.csv, server/data/items/donor_items.csv)"

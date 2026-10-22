@@ -584,6 +584,63 @@ tools/map/otbm.py: no tile in x 15295-15510, y 14330-14545 nor in x 14330-14545,
 a next plan goes further along that column (x 15305, rows 14540, 14700, 14940) after the same check.
 Teleports: 16 plans in the room's 20 slots (4 spare).
 
+**The hall fill block x 15616-17663, y 14336-15359** (2026-10-22, owner: "And the hunts of the upper floors? Did we
+fill all the ones that were missing?"). The hall had 31 empty hunt slots on z 6 and 10 on z 5 (server/README.md "Hall
+order"). 41 plans fill them, one each, in a grid east of the first block: columns from x 15620 every 204 tiles (10),
+rows from y 14340 every 204 (5), so two plans are 13+ tiles apart and the first column is 120+ east of
+duskmarrow_crater. The full base map read with `tools/map/otbm.py` has no tile in x 15360-17663, y 14336-15359. The
+schema's `origin.x` reaches 17663 for them. The same rules as above: 4.1-4.5 monsters per 100 walkable tiles in packs
+of 3, no zone above 8 per 100, no spawn on the camp's protection zone, a camp portal back, a reward chest on 26 of them.
+z 6 takes bands 500-615 up to 950-1050, 15 levels apart; z 5 1050-1200 up to 1850-2000, 75-100 apart:
+
+| Plan | Band | Biome | Size | Origin x, y, z | Arrival |
+|---|---|---|---|---|---|
+| gloomtooth_caverns | 500-615 | cave | 161 x 144 | 15620, 14340, 9 | 15699, 14454, 9 |
+| brackwater_sloughs | 515-630 | swamp | 160 x 130 | 15824, 14340, 8 | 15855, 14404, 8 |
+| sablemourn_ossuary | 530-645 | crypt | 168 x 129 | 16028, 14340, 9 | 16111, 14442, 9 |
+| thornmantle_glade | 545-660 | forest | 180 x 125 | 16232, 14340, 7 | 16321, 14364, 7 |
+| embergut_rift | 560-675 | lava | 176 x 127 | 16436, 14340, 10 | 16575, 14402, 10 |
+| frostvein_reach | 575-690 | ice | 167 x 133 | 16640, 14340, 7 | 16722, 14445, 7 |
+| graveknell_catacombs | 590-705 | catacomb | 179 x 130 | 16844, 14340, 10 | 16932, 14365, 10 |
+| umbral_sink | 605-720 | abyss | 180 x 126 | 17048, 14340, 11 | 17191, 14402, 11 |
+| cinderscour_barrens | 620-735 | waste | 174 x 129 | 17252, 14340, 7 | 17338, 14442, 7 |
+| grimlock_vaults | 635-750 | vault | 167 x 135 | 17456, 14340, 9 | 17538, 14366, 9 |
+| blackmarble_halls | 650-765 | hall | 177 x 125 | 15620, 14544, 9 | 15654, 14605, 9 |
+| rotbloom_sanctum | 665-780 | sanctum | 178 x 139 | 15824, 14544, 9 | 15912, 14570, 9 |
+| hollowmaw_grotto | 680-795 | cave | 164 x 137 | 16028, 14544, 9 | 16059, 14611, 9 |
+| leechwater_fen | 695-810 | swamp | 178 x 141 | 16232, 14544, 8 | 16320, 14655, 8 |
+| dreadmourn_crypt | 710-825 | crypt | 180 x 142 | 16436, 14544, 9 | 16525, 14571, 9 |
+| gallowroot_wilds | 725-840 | forest | 163 x 131 | 16640, 14544, 7 | 16769, 14608, 7 |
+| scorchpit_delve | 740-855 | lava | 167 x 130 | 16844, 14544, 10 | 16976, 14608, 10 |
+| glacierfang_shelf | 755-870 | ice | 174 x 138 | 17048, 14544, 7 | 17081, 14612, 7 |
+| bonewright_galleries | 770-885 | catacomb | 175 x 126 | 17252, 14544, 10 | 17286, 14606, 10 |
+| nightrend_abyss | 785-900 | abyss | 174 x 140 | 17456, 14544, 11 | 17489, 14613, 11 |
+| sunderstone_wastes | 800-915 | waste | 171 x 130 | 15620, 14748, 7 | 15755, 14812, 7 |
+| ironwick_treasury | 815-930 | vault | 161 x 128 | 15824, 14748, 9 | 15951, 14811, 9 |
+| obsidian_colonnade | 830-945 | hall | 180 x 127 | 16028, 14748, 9 | 16171, 14810, 9 |
+| mildewveil_sanctum | 845-960 | sanctum | 178 x 126 | 16232, 14748, 9 | 16266, 14810, 9 |
+| deepgrudge_warrens | 860-975 | cave | 162 x 144 | 16436, 14748, 9 | 16516, 14862, 9 |
+| sorrowfen_marsh | 875-990 | swamp | 176 x 128 | 16640, 14748, 8 | 16674, 14811, 8 |
+| shroudhallow_tomb | 890-1005 | crypt | 160 x 127 | 16844, 14748, 9 | 16923, 14772, 9 |
+| hagthorn_weald | 905-1020 | forest | 169 x 137 | 17048, 14748, 7 | 17131, 14856, 7 |
+| pyreglass_chasm | 920-1035 | lava | 166 x 133 | 17252, 14748, 10 | 17383, 14813, 10 |
+| rimeblood_glacier | 935-1050 | ice | 166 x 130 | 17456, 14748, 7 | 17488, 14812, 7 |
+| lanternless_catacombs | 950-1050 | catacomb | 175 x 141 | 15620, 14952, 10 | 15706, 15063, 10 |
+| scaldmoor_expanse | 1050-1200 | waste | 188 x 143 | 15824, 14952, 7 | 15917, 14979, 7 |
+| vespergloom_halls | 1150-1300 | hall | 186 x 158 | 16028, 14952, 9 | 16120, 15077, 9 |
+| wormcoil_depths | 1250-1400 | cave | 181 x 153 | 16232, 14952, 9 | 16375, 15027, 9 |
+| shiverspine_ridge | 1350-1500 | ice | 182 x 143 | 16436, 14952, 7 | 16580, 15022, 7 |
+| hushbone_barrows | 1450-1600 | crypt | 189 x 166, 2 floors | 16640, 14952, 9 | 16676, 15034, 9 |
+| carrionwood | 1550-1700 | forest | 186 x 149 | 16844, 14952, 7 | 16936, 15070, 7 |
+| dreadcoffer_vaults | 1625-1775 | vault | 191 x 170, 2 floors | 17048, 14952, 9 | 17142, 15087, 9 |
+| paleflame_sanctum | 1700-1850 | sanctum | 184 x 166, 2 floors | 17252, 14952, 9 | 17343, 15083, 9 |
+| blightmaw_bog | 1775-1925 | swamp | 184 x 146 | 17456, 14952, 8 | 17547, 14980, 8 |
+| worldscar_abyss | 1850-2000 | abyss | 184 x 161, 2 floors | 15620, 15156, 11 | 15766, 15235, 11 |
+
+With these, 58 plans and the 45 base hunts take all 103 slots of the hall (48 on z 7, 37 on z 6, 18 on z 5). A next
+hunt needs a new slot first (`room.wings`) and a free cell: the grid's last row has 9 cells free east of
+worldscar_abyss (x 15824-17456, y 15156), each room for a plan up to 190 x 200.
+
 **The dungeon block x/y 24576-25599** (2026-10-14, owner approval: the queue dungeons 6-9 of `areagen_config.lua`,
 server/README.md "Generated areas"). The 14336-15359 block is full, so the four deep dungeons got a block of their
 own outside the world (world x 30700-34600, y 30900-33850). Checked with `tools/map/otbm.py` on the full map

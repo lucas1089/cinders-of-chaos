@@ -1,0 +1,493 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "cinderscour_barrens",
+  "name": "Cinderscour Barrens",
+  "biome": "waste",
+  "size": [
+    174,
+    129
+  ],
+  "floors": 1,
+  "level": [
+    620,
+    735
+  ],
+  "seed": 30204,
+  "origin": {
+    "x": 17252,
+    "y": 14340,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "dust_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "cinder_flats",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "dusty_gulch",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "bleached_wash",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "barren_crags",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "grey_scar",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "burnt_reach",
+      "floor": 1,
+      "size": [
+        22,
+        19
+      ],
+      "place": "west"
+    },
+    {
+      "id": "ashen_pan",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "sunbaked_fields",
+      "floor": 1,
+      "size": [
+        26,
+        20
+      ],
+      "place": "center"
+    },
+    {
+      "id": "scorched_bluff",
+      "floor": 1,
+      "size": [
+        19,
+        15
+      ]
+    },
+    {
+      "id": "cracked_plain",
+      "floor": 1,
+      "size": [
+        20,
+        16
+      ]
+    },
+    {
+      "id": "salt_dunes",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "windswept_ridge",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "jagged_mesa",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "cinder_flats",
+      "to": "dusty_gulch",
+      "width": 3
+    },
+    {
+      "from": "dusty_gulch",
+      "to": "bleached_wash",
+      "width": 3
+    },
+    {
+      "from": "bleached_wash",
+      "to": "barren_crags",
+      "width": 3
+    },
+    {
+      "from": "barren_crags",
+      "to": "dust_camp",
+      "width": 3
+    },
+    {
+      "from": "dust_camp",
+      "to": "grey_scar",
+      "width": 3
+    },
+    {
+      "from": "grey_scar",
+      "to": "burnt_reach",
+      "width": 3
+    },
+    {
+      "from": "burnt_reach",
+      "to": "ashen_pan",
+      "width": 3
+    },
+    {
+      "from": "ashen_pan",
+      "to": "cinder_flats",
+      "width": 3
+    },
+    {
+      "from": "cinder_flats",
+      "to": "sunbaked_fields",
+      "width": 3
+    },
+    {
+      "from": "bleached_wash",
+      "to": "sunbaked_fields",
+      "width": 3
+    },
+    {
+      "from": "dust_camp",
+      "to": "sunbaked_fields",
+      "width": 4
+    },
+    {
+      "from": "burnt_reach",
+      "to": "sunbaked_fields",
+      "width": 3
+    },
+    {
+      "from": "barren_crags",
+      "to": "scorched_bluff",
+      "width": 3
+    },
+    {
+      "from": "scorched_bluff",
+      "to": "dust_camp",
+      "width": 3
+    },
+    {
+      "from": "dusty_gulch",
+      "to": "cracked_plain",
+      "width": 3
+    },
+    {
+      "from": "cracked_plain",
+      "to": "bleached_wash",
+      "width": 3
+    },
+    {
+      "from": "bleached_wash",
+      "to": "salt_dunes",
+      "width": 3
+    },
+    {
+      "from": "salt_dunes",
+      "to": "barren_crags",
+      "width": 3
+    },
+    {
+      "from": "cinder_flats",
+      "to": "windswept_ridge",
+      "width": 3
+    },
+    {
+      "from": "windswept_ridge",
+      "to": "dusty_gulch",
+      "width": 3
+    },
+    {
+      "from": "barren_crags",
+      "to": "jagged_mesa",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "dust_camp"
+  },
+  "exit": {
+    "zone": "dust_camp"
+  },
+  "spawns": [
+    {
+      "zone": "cinder_flats",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_flats",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_flats",
+      "monster": "Mercenary Ranger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_gulch",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_gulch",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_gulch",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_wash",
+      "monster": "Ironbound Troll",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_wash",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_wash",
+      "monster": "Mercenary Ranger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_scar",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_scar",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "grey_scar",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_reach",
+      "monster": "Garack",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_reach",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_reach",
+      "monster": "Blazebringer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_pan",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_pan",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_pan",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_bluff",
+      "monster": "Ironbound Troll",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_bluff",
+      "monster": "Blazebringer",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_plain",
+      "monster": "Mercenary",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_plain",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_plain",
+      "monster": "Ironbound Troll",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_dunes",
+      "monster": "Blazebringer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_dunes",
+      "monster": "Mercenary Ranger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_dunes",
+      "monster": "Mercenary",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "windswept_ridge",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "windswept_ridge",
+      "monster": "Ironbound Troll",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_fields",
+      "monster": "Mercenary Ranger",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_fields",
+      "monster": "Mercenary",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_fields",
+      "monster": "Garack",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "jagged_mesa",
+      "quest": "cinderscour_mesa",
+      "reward": {
+        "gold": 350000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 2
+          }
+        ],
+        "message": "A buried cache, warm from the sun."
+      }
+    }
+  ],
+  "chest_action": 47967,
+  "notes": "Content plan (hall fill, 2026-10-22): a waste hunt for levels 620-735 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Garack, Mercenary Ranger, Ironbound Troll, Mercenary, Blazebringer. Display monster: Mercenary Ranger."
+}

@@ -65,8 +65,9 @@ placing an area.
 
 ## Planned hunting areas
 
-Sixteen area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
-compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
+Fifty-eight area-planner plans in `server/tools/areaplan/plans/`: the first 16 here, the 41 of the hall fill below,
+and hollow_crypt, the pair 27 trial area, in docs/CONTENT_LIST.md. Schema `chaos-area-plan/1`. Each validates with
+no warning, compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
 compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content plans".
 
 | Plan | Band | Biome | Monsters | Parties | Chest |
@@ -87,6 +88,54 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 | voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis, Rimeshroud Revenant, Cinderskull Reaver; since 2026-10-22 also Veiled Crawler, Maw Grub, Limb Hoarder, Ashveil Hierarch | 14 | voidscar_relic |
 | gravehorn_deeps | 1500-1750 | crypt, 2 floors | Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Rimeshroud Revenant, Wraithbone Stalker; since 2026-10-22 also Bonepicker, Hollowhorn, Gnawbone Swarm, Oathbroken Colossus | 16 | gravehorn_antler |
 | duskmarrow_crater | 1750-2000 | lava, 2 floors | Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant, Cinderhorn Juggernaut; since 2026-10-22 also Pyre Stork, Siege Behemoth, Ironmask Warbreaker, Gnarlback | 16 | duskmarrow_ember |
+
+**Hall fill** (2026-10-22, owner: "And the hunts of the upper floors? Did we fill all the ones that were missing?"):
+41 plans, one per empty hunt slot of the teleport hall, 31 on z 6 and 10 on z 5 (server/README.md "Hunt teleports",
+docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties here is the number of hunting zones.
+
+| Plan | Band | Biome | Monsters | Parties | Chest |
+|---|---|---|---|---|---|
+| gloomtooth_caverns | 500-615 | cave | Ashmaw Raider, Mange Hound, Ashmaw Warlord, Ashmaw Bonecaller, Slagborer | 11 | gloomtooth_tunnels_cache |
+| brackwater_sloughs | 515-630 | swamp | Ashmaw Bonecaller, Mange Hound, Slagborer, Ashmaw Raider, Ashmaw Warlord | 12 | - |
+| sablemourn_ossuary | 530-645 | crypt | Mange Hound, Slagborer, Slagborer Queen, Ashmaw Bonecaller, Ashmaw Raider | 12 | sablemourn_aisle |
+| thornmantle_glade | 545-660 | forest | Slagborer, Orclops Ravager, Slagborer Queen, Ashmaw Warlord, Shaper Matriarch | 11 | - |
+| embergut_rift | 560-675 | lava | Mercenary, Ashmaw Warlord, Shaper Matriarch, Slagborer Queen, Orclops Ravager | 12 | embergut_pools |
+| frostvein_reach | 575-690 | ice | Ashmaw Warlord, Orclops Ravager, Mercenary, Grove Keeper, Shaper Matriarch | 11 | - |
+| graveknell_catacombs | 590-705 | catacomb | Mercenary Ranger, Mercenary, Grove Keeper, Slagborer Queen, Blazebringer | 11 | graveknell_belfry |
+| umbral_sink | 605-720 | abyss | Thornveil Wraith, Garack, Blazebringer, Mercenary Ranger, Grove Keeper | 12 | - |
+| cinderscour_barrens | 620-735 | waste | Mercenary, Mercenary Ranger, Garack, Ironbound Troll, Blazebringer | 12 | cinderscour_mesa |
+| grimlock_vaults | 635-750 | vault | Thornveil Wraith, Orclops Ravager, Blazebringer, Grove Keeper, Gallows Oak | 11 | - |
+| blackmarble_halls | 650-765 | hall | Mercenary Ranger, Thornveil Wraith, Dreamgorger, Ironbound Troll, Swamp Snapper | 11 | blackmarble_chamber |
+| rotbloom_sanctum | 665-780 | sanctum | Shroud Brood, Garack, Gallows Oak, Blight Hound, Swamp Snapper | 12 | - |
+| hollowmaw_grotto | 680-795 | cave | Dreamgorger, Shroud Brood, Ironbound Troll, Blight Hound, Swamp Snapper | 11 | hollowmaw_warren |
+| leechwater_fen | 695-810 | swamp | Dreamgorger, Gallows Oak, Loricate Orger, Ironmask Taskmaster, Frost Maiden | 12 | - |
+| dreadmourn_crypt | 710-825 | crypt | Rootbound Pilgrim, Royal Man, Frost Maiden, Tundra Troll, Loricate Orger | 12 | dreadmourn_vault |
+| gallowroot_wilds | 725-840 | forest | Loricate Orger, Ironmask Taskmaster, Tundra Troll, Ironmask Brander, Royal Man | 11 | - |
+| scorchpit_delve | 740-855 | lava | Gashrunner, Tundra Troll, Royal Man, Frost Maiden, Caged Convict | 11 | scorchpit_furnace |
+| glacierfang_shelf | 755-870 | ice | Rootbound Pilgrim, Gashrunner, Azure Dragon, Dark Sorcerer, Ironmask Bannerman | 11 | - |
+| bonewright_galleries | 770-885 | catacomb | Ironmask Brander, Azure Dragon, Rootbound Pilgrim, Chained Runt, Golden Lord | 12 | bonewright_ossuary_cache |
+| nightrend_abyss | 785-900 | abyss | Ironmask Bannerman, Leechwing, Azure Dragon, Caged Convict, Golden Lord | 11 | - |
+| sunderstone_wastes | 800-915 | waste | Lacewing Moth, Ironmask Brander, Ironmask Bannerman, Chained Runt, Crypt Crab | 12 | sunderstone_fields |
+| ironwick_treasury | 815-930 | vault | Caged Convict, Lacewing Moth, Jungle Beasts, Leechwing, Azure Dragon | 12 | - |
+| obsidian_colonnade | 830-945 | hall | Lacewing Moth, Chained Runt, Jungle Beasts, Blight Bloom, Lady bug | 12 | obsidian_nave |
+| mildewveil_sanctum | 845-960 | sanctum | Golden Lord, Reedgrave, Jungle Beasts, Blight Bloom, Lady bug | 11 | - |
+| deepgrudge_warrens | 860-975 | cave | Crypt Crab, Lacewing Moth, Bloom Husk, Reedgrave, Lady bug | 12 | deepgrudge_crawl |
+| sorrowfen_marsh | 875-990 | swamp | Crypt Crab, Leechwing, Deepforge Fiend, Bloom Husk, Blight Bloom | 11 | - |
+| shroudhallow_tomb | 890-1005 | crypt | Jungle Beasts, Geode Seer, Reedgrave, Deepforge Fiend, Rimecairn | 12 | shroudhallow_stair |
+| hagthorn_weald | 905-1020 | forest | Lady bug, Bloom Husk, Geode Seer, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
+| pyreglass_chasm | 920-1035 | lava | Deepforge Fiend, Quicksilver Wraith, Elite Twisted Shaper, Rimecairn, Dawn Strayer | 12 | pyreglass_pools |
+| rimeblood_glacier | 935-1050 | ice | Geode Seer, Rustguard, Ice Lich, Rimecairn, Quicksilver Wraith | 12 | - |
+| lanternless_catacombs | 950-1050 | catacomb | Quicksilver Wraith, Rimecairn, Deepforge Fiend, Geode Seer, Rustguard | 12 | lanternless_chapel |
+| scaldmoor_expanse | 1050-1200 | waste | Masque Dancer, Wax Penitent, Bellhelm Zealot, Slagborer Reaver, Gildguard Revenant, Slagheart | 12 | scaldmoor_bluff |
+| vespergloom_halls | 1150-1300 | hall | Veiled Crawler, Wan Sentry, Pit Delver, Reliquary Urn, Pitgnawer, Carrion Drake | 11 | vespergloom_portico |
+| wormcoil_depths | 1250-1400 | cave | Nailcrown Regent, Maw Grub, Corpselight Lurker, Limb Hoarder, Gorebristle, Blightcrown Matron | 12 | wormcoil_burrow_hoard |
+| shiverspine_ridge | 1350-1500 | ice | Rimeshroud Revenant, Bonepicker, Gorebristle, Gloamfang Ravager, Cinderskull Reaver, Ashveil Hierarch | 11 | shiverspine_shelf |
+| hushbone_barrows | 1450-1600 | crypt, 2 floors | Bonepicker, Ashveil Hierarch, Hollowhorn, Cinderskull Reaver, Bloodantler Fiend, Rimeshroud Revenant | 24 | hushbone_chantry |
+| carrionwood | 1550-1700 | forest | Bloodantler Fiend, Bonepicker, Siege Behemoth, Hollowhorn, Oathbroken Colossus, Ashveil Hierarch | 12 | carrionwood_brake_hoard |
+| dreadcoffer_vaults | 1625-1775 | vault, 2 floors | Oathbroken Colossus, Siege Behemoth, Cinderhorn Juggernaut, Gnawbone Swarm, Ironmask Warbreaker, Hollowhorn | 24 | dreadcoffer_counting |
+| paleflame_sanctum | 1700-1850 | sanctum, 2 floors | Gnawbone Swarm, Wraithbone Stalker, Oathbroken Colossus, Siege Behemoth, Ironmask Warbreaker, Cinderhorn Juggernaut | 24 | paleflame_altar |
+| blightmaw_bog | 1775-1925 | swamp | Gnawbone Swarm, Wraithbone Stalker, Gnarlback, Mirecoil Wyrm, Ironmask Warbreaker | 11 | blightmaw_sink_stash |
+| worldscar_abyss | 1850-2000 | abyss, 2 floors | Mirecoil Wyrm, Gnarlback, Gnawbone Swarm, Ironmask Warbreaker, Pyrewing Tyrant, Pyre Stork | 24 | worldscar_terrace_cache |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
@@ -110,15 +159,15 @@ Revenant and Cinderskull Reaver in the chasm).
 
 | Band | What a player can do | Story or task |
 |---|---|---|
-| 1-20 | tutorial island, 5 stations; base quest lines; milestone gift at 20; bounty from 8 | tutorial lessons; base lines have a story |
-| 20-50 | base quest lines; invasions from 30; bounty; achievements | story in the base lines |
-| 50-100 | base quest lines; arena from 50; Seasonal Journey chapter 1 | journey chapters are task lists with one line of text |
-| 100-200 | Ascension quest at 100; Vocation Trials; rifts; Ember Descent; guild siege; journey chapter 2 at 150 | Ascension and Trials have a story |
+| 1-20 | tutorial island, 5 stations; base quest lines; milestone gift at 20; bounty from 8; 3 tales from 8 | tutorial lessons; base lines have a story; tales |
+| 20-50 | base quest lines; invasions from 30; bounty; achievements; 4 tales | story in the base lines; tales |
+| 50-100 | base quest lines; arena from 50; Seasonal Journey chapter 1; 4 tales | journey chapters are task lists with one line of text; tales |
+| 100-200 | Ascension quest at 100; Vocation Trials; rifts; Ember Descent; guild siege; journey chapter 2 at 150; 4 tales | Ascension, Trials and tales have a story |
 | 200-300 | journey chapter 3; Trials; rifts; **The Bone Choir** | tasks before; now one tale |
-| 300-500 | world bosses; Omens; journey chapters 4-5; faction contracts | tasks; world boss and faction lines |
+| 300-500 | world bosses; Omens; journey chapters 4-5; faction contracts; 3 tales | tasks; world boss and faction lines; tales |
 | 500-700 | journey chapter 6; Trials Merciless; Omens; **The Wyrm Tithe** | tasks before; now one tale |
-| 700-1000 | Ashen Sepulchre; Ascended Omens; journey chapters 7-8; **Requiem for the Ash-Sister** | boss intros before; now one tale |
-| 1000+ | the Cinderheart; generated areas; **The Last Ember** | nothing before; now one tale |
+| 700-1000 | Ashen Sepulchre; Ascended Omens; journey chapters 7-8; **Requiem for the Ash-Sister**, **The Keeper's Key** | boss intros before; now two tales |
+| 1000+ | the Cinderheart; generated areas; **The Last Ember** and 4 more tales up to 2000 | nothing before; now five tales |
 
 The base world has 35 quest lines with 310 missions in its quest log, renamed at install by `worldtexts`. They were
 written for low and mid levels. Our achievements: 173 in 10 groups, mostly counters. Bestiary kill tasks and bounty
@@ -126,11 +175,37 @@ contracts cover every band but are tasks without a story.
 
 ## Tales
 
-Short quests with a story for the bands that had none. Archivist Maelis gives them. She stands next to the first
-temple, placed at startup like the Ascendant Oracle, and shows on the map markers.
+Short quests with a story, 27 from level 8 to 2000. Archivist Maelis gives them and closes them. She stands next to
+the first temple, placed at startup like the Ascendant Oracle, and shows on the map markers. Steps: kill, visit (stand
+at a hunting mark, revealed on the map), talk (ask a faction leader about "tales"), deliver and report. A chained tale
+opens when the one before it is done. Experience is a share of the next level, measured at most at the top of the
+tale's band. "x" below is that share; gold goes to the bank.
 
 | Tale | From level | Steps | Rewards |
 |---|---|---|---|
+| Teeth in the Cellars | 8 | visit the cellars; kill 25 rats; report | 1.0x, 1,500 gold, 100 Thornbound Circle reputation, the book "The Cellars of Cinderhold" |
+| The Lantern Road | 12 | after Teeth in the Cellars; ask Warden Ysolde; kill 30 restless dead; report | 1.0x, 3,000 gold, 150 Ashen Vigil reputation, the book "The Lantern Road" |
+| The Troll Toll | 15 | kill 35 trolls; ask Forgemaster Brannoc; report | 1.0x, 4,000 gold, 150 Cinderforge Compact reputation |
+| The Deserters of Anvildeep | 20 | visit the dwarven mine; kill 40 dwarves; report | 0.8x, 6,000 gold, 2 Orbs of Awakening, 200 Compact reputation |
+| Rime and Ruin | 25 | visit the frost giants; kill 40; ask Elder Bramwyn; report | 0.8x, 7,500 gold, 2 Orbs of Awakening, 200 Circle reputation |
+| The Stone Watchers | 30 | after The Lantern Road; visit the gargoyles; kill 40; report | 0.8x, 10,000 gold, 3 Orbs of Awakening, 250 Vigil reputation |
+| The Grave Circle | 40 | after The Stone Watchers; visit; kill 40 necromancers and bonebeasts; kill 15 liches and banshees; report | 0.75x, 15,000 gold, 2 Whetstones, 1 Tempering orb, 300 Vigil reputation, the book "The Grave Circle" |
+| The Dragon Census | 50 | visit the dragon lair; kill 40 dragons; ask Cantor Velith; report | 0.75x, 22,000 gold, 2 Whetstones, 300 Veiled Choir reputation, the book "The Dragon Census" |
+| The Moon-Sick | 65 | kill 40 were-beasts; ask Elder Bramwyn; report | 0.7x, 30,000 gold, 1 Orb of Upheaval, 400 Circle reputation, the book "The Moon-Sick" |
+| Lords of the Brood | 70 | after The Dragon Census; kill 30 dragon lords and frost dragons; bring 10 rune shards | 0.7x, 35,000 gold, 2 Tempering orbs, 400 Choir reputation |
+| The Hundred Heads | 85 | after The Moon-Sick; visit the hydras; kill 40; report | 0.7x, 40,000 gold, 2 Orbs of Upheaval, 400 Circle reputation |
+| Where the Lost Souls Walk | 100 | kill 50 lost souls and wraiths; ask Warden Ysolde; report | 0.6x, 50,000 gold, 2 Orbs of Upheaval, 450 Vigil reputation |
+| The Bone Court | 120 | after Where the Lost Souls Walk; kill 50 of the bone court; bring 15 rune shards | 0.6x, 70,000 gold, 3 Orbs of Upheaval, 500 Vigil reputation, the book "The Bone Court" |
+| Outcasts of the Pit | 130 | kill 50 demon outcasts, torturers and hellspawn; ask Forgemaster Brannoc; report | 0.6x, 75,000 gold, 2 Orbs of Upheaval, 500 Compact reputation |
+| Wings of the Unburied | 160 | after Lords of the Brood; visit; kill 40 undead dragons and hellflayers; kill 15 black dragons; report | 0.6x, 100,000 gold, 3 Orbs of Upheaval, 550 Choir reputation |
+| The Mould Gardens | 340 | visit; kill 60 rotten golems, mould phantoms and crawlers; report | 0.5x, 250,000 gold, 2 Orbs of Upheaval, 1 Orb of Fate, 700 Circle reputation |
+| Phantoms of the Furnace | 360 | kill 60 infernal demons and phantoms; bring 20 rune shards | 0.5x, 280,000 gold, 1 Orb of Fate, 700 Compact reputation |
+| The Ash Widows | 470 | kill 60 widows, hexers and adepts; ask Elder Bramwyn; report | 0.5x, 350,000 gold, 2 Orbs of Fate, 800 Circle reputation |
+| The Keeper's Key | 800 | defeat Vault Keeper Ossrim; bring 30 rune shards | 0.4x, 900,000 gold, 1 Orb of Grafting, 1,100 Compact reputation, the book "The Wardens of the Deep" |
+| The Gravecage | 1000 | defeat Ossivane the Gravecage; ask Warden Ysolde; report | 0.3x, 2,200,000 gold, 2 Orbs of Grafting, 1,400 Vigil reputation, the book "The Four Deeper Doors" |
+| Kharzun's Anvil | 1300 | kill 80 of the crucible's beasts; defeat Forgewarden Kharzun; report | 0.3x, 3,000,000 gold, 2 Orbs of Grafting, 1,600 Compact reputation |
+| The Fallen Seraph | 1600 | after Kharzun's Anvil; kill 80 of the sanctum's dead; defeat Vaelith; ask Cantor Velith; report | 0.3x, 4,000,000 gold, 3 Orbs of Grafting, 1,800 Choir reputation |
+| The Chained Wyrm | 2000 | after The Fallen Seraph; defeat Azhkarrath the Chained Wyrm; report | 0.25x, 5,000,000 gold, 3 Orbs of Grafting, 2,000 Vigil reputation, the book "The Fall of the Cinders" |
 | The Bone Choir | 200 | kill 40 of the drowned chapel's dead; tell her what they sang | half a level of experience, 150,000 gold, 3 Orbs of Upheaval, 600 Ashen Vigil reputation, the book "Ashen Crypt" |
 | The Wyrm Tithe | 500 | kill 50 wrym; bring 20 rune shards | half a level, 400,000 gold, 2 Orbs of Fate, 800 Cinderforge Compact reputation, the book "Obsidian Hall" |
 | Requiem for the Ash-Sister | 800 | kill 60 of the Sovereign's lost court; defeat Morwen the Ash-Sister in the Sepulchre; return | 0.4 of a level, 1,000,000 gold, 1 Orb of Grafting, 1,200 Ashen Vigil reputation, the book "The Ashen Sepulchre" |
@@ -190,5 +265,6 @@ Now: 22 short entries in English and Brazilian Portuguese in `server/data/script
 2. Check the art of the dormant monsters in the client before a plan that uses them goes live.
 3. Add two or three signposts by the first temple in the map editor, for example "Hunting grounds: see your map" and
    "Shops and the Loot Buyer".
-4. Walk the four tales once on the test server: the Archivist's placement, the Portuguese switch, a turn-in.
+4. Walk the tales once on the test server: the Archivist's placement, the Portuguese switch, a turn-in, a visit
+   place of each low tale, a talk step at each faction leader, a chain opening.
 5. Walk the Thief line's tutorial stations 3-5.

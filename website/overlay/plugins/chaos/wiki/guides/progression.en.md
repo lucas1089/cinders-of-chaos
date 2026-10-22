@@ -53,6 +53,7 @@ Gifts wait for you at levels {{newplayer.giftLevels}}: potions, orbs and, later,
 ## Level 500-799: Hardened
 
 - New hunts: Widowmere, Wyrmspine Hollows and Pyrarch Crucible, then Hexwood Thicket and Corsairs' Reach.
+- The teleport hall of Cinderhold has a hunt every 15 levels or so: floor 6 for levels 500-1000, floor 5 for 1000 and up.
 - Faction gear at Revered; Orbs of Grafting add a modifier. Higher rift tiers drop legendary loot.
 
 ## Level 800-899: Omens and the raid

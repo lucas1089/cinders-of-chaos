@@ -13,9 +13,11 @@
 --   Last Breath        onHealthChange on the player: a lethal hit leaves the character at a share of the health (5 minutes)
 --   Ember Step         onHealthChange on the player: a hard hit blinks the character away and burns where it stood
 --   Hunter's Rush      onKill: haste for a few seconds
---   Smoldering Aura    every 3 s fire damage to the monsters next to the character
--- Every proc has an internal cooldown (ChaosPowers.config), the effects never start more procs of their own (guard) and only
--- monsters that are not somebody's summon are hit. Lua 5.1 / LuaJIT compatible.
+--   Smoldering Aura    every 3 s fire damage to the monsters next to the character, while it fights, outside a
+--                      protection zone, capped by its level
+-- Every proc has an internal cooldown (ChaosPowers.config), the effects never start more procs of their own (guard), take
+-- no passive tree, class factor, keystone, execute or on-hit (strike) and only monsters in clear sight that are not
+-- somebody's summon are hit. Lua 5.1 / LuaJIT compatible.
 
 if not Chaos then
 	dofile("data/scripts/chaos/chaos_constants.lua")
@@ -77,14 +79,23 @@ local function wild(creature)
 	return not (HT and HT.isDisplay and HT.isDisplay(creature))
 end
 
--- the monsters within `radius` of pos (not `skip`), up to `limit`
+-- clear sight from pos to a creature (an engine without Position:isSightClear lets it through)
+local function inSight(pos, c)
+	if not pos.isSightClear then
+		return true
+	end
+	local ok, clear = pcall(pos.isSightClear, pos, c:getPosition(), true)
+	return not ok or clear ~= false
+end
+
+-- the monsters within `radius` of pos and in clear sight of it (not `skip`), up to `limit`
 local function monstersAround(pos, radius, limit, skip)
 	local out = {}
 	for _, c in ipairs(Game.getSpectators(pos, false, false, radius, radius, radius, radius) or {}) do
 		if #out >= limit then
 			break
 		end
-		if c ~= skip and wild(c) and c:getHealth() > 0 then
+		if c ~= skip and wild(c) and c:getHealth() > 0 and inSight(pos, c) then
 			out[#out + 1] = c
 		end
 	end
@@ -115,13 +126,29 @@ local function label(pos, text, color)
 	end
 end
 
--- damage `target` from `player` (negative values; the guard keeps it from starting more powers)
+-- damage `target` from `player` (negative values). A power's hit is a proc: the own guard keeps it from starting more
+-- powers; ChaosKeystones.depth (the proc guard of passivetree_effects.lua, the keystones, archetypes, supports, trials,
+-- class combat scripts) and ChaosSpellFactor.depth keep the tree's damage, the class factors and the keystones off it
+-- (Echo Shot, Critical Echo, Arc Lightning and Shatter Splash are shares of a hit that had them already);
+-- ChaosPowers.depth keeps item_mods.lua's execute and on-hit rolls off it. The origin stays ORIGIN_SPELL (the engine's
+-- default), so the monsters' own damage events (defences, the hall display guard) still see the hit. Beta 2026-10-22:
+-- unguarded, Smoldering Aura's ticks took every multiplier (x1.2-2.4 typical, up to x8 maxed).
+P.depth = P.depth or 0
 local function strike(player, target, ctype, amount, fx)
 	if not target or target:getHealth() <= 0 then
 		return
 	end
+	ChaosKeystones = ChaosKeystones or {}
+	ChaosSpellFactor = ChaosSpellFactor or {}
+	local K, SF = ChaosKeystones, ChaosSpellFactor
 	guard = true
+	P.depth = P.depth + 1
+	K.depth = (K.depth or 0) + 1
+	SF.depth = (SF.depth or 0) + 1
 	local ok, err = pcall(doTargetCombatHealth, player:getId(), target:getId(), ctype, -math.abs(amount), -math.abs(amount), fx or CONST_ME_NONE)
+	SF.depth = SF.depth - 1
+	K.depth = K.depth - 1
+	P.depth = P.depth - 1
 	guard = false
 	if not ok then
 		print("[ChaosPowers] " .. tostring(err))
@@ -191,10 +218,11 @@ end
 
 local function splash(player, dead, hit, pct)
 	local c = CFG.shattersplash
-	local dmg = P.share(hit, pct)
 	local pos = dead:getPosition()
 	effect(pos, CONST_ME_EXPLOSIONHIT or CONST_ME_EXPLOSIONAREA)
-	for _, m in ipairs(monstersAround(pos, c.radius, c.targets, dead)) do
+	local around = monstersAround(pos, c.radius, c.targets, dead)
+	local dmg = P.splashShare(hit, pct, #around) -- the burst is shared by the monsters it hits
+	for _, m in ipairs(around) do
 		strike(player, m, COMBAT_PHYSICALDAMAGE, dmg, CONST_ME_HITAREA or CONST_ME_NONE)
 	end
 end
@@ -293,7 +321,8 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 	if hit > 0 and origin ~= ORIGIN_CONDITION then
 		local lethal = hit >= creature:getHealth()
 		if lethal and pw.shattersplash then
-			st.kills[creature:getId()] = {hit = hit, at = t}
+			-- the health the blow took, not the overkill (a 3000 hit on a monster with 50 left splashed 3000 x the power)
+			st.kills[creature:getId()] = {hit = math.max(1, creature:getHealth()), at = t}
 		end
 		if not lethal then
 			if pw.crimsonburst and P.roll(pw.crimsonburst) and P.ready(st.cd, "crimsonburst", t, CFG.crimsonburst.cooldownMs) then
@@ -333,6 +362,12 @@ local function eventKnown(creature, name)
 end
 local targetCb = EventCallback
 targetCb.onTargetCombat = function(creature, target)
+	if not guard and creature and target and target:isMonster() and creature:isPlayer() then
+		local pw = powersOf(creature)
+		if pw and pw.smolderaura then
+			stateOf(creature).fightAt = now() -- Smoldering Aura ticks while you fight (a power's own hit does not count)
+		end
+	end
 	if creature and target and target:isMonster() and creature:isPlayer() and not eventKnown(target, "ChaosPowersDealt") then
 		local pw = powersOf(creature)
 		if pw then
@@ -440,13 +475,36 @@ end
 
 -- ---------------------------------------------------------------- the aura
 local TICK = CFG.smolderaura.tickMs
+
+local function inProtectionZone(player)
+	local tile = Tile and Tile(player:getPosition())
+	return tile ~= nil and TILESTATE_PROTECTIONZONE ~= nil and tile:hasFlag(TILESTATE_PROTECTIONZONE)
+end
+
+-- one character's tick: only while it fights (it attacked a monster within activeMs: standing AFK in a spawn burns
+-- nothing), never from a protection zone, the damage capped by its level (P.auraTick)
+local function auraBurn(player, perSecond, t)
+	local st = states[player:getId()]
+	if not (st and P.auraActive(st.fightAt, t)) or inProtectionZone(player) then
+		return
+	end
+	local dmg = P.auraTick(perSecond, player:getLevel())
+	if dmg <= 0 then
+		return
+	end
+	for _, m in ipairs(monstersAround(player:getPosition(), CFG.smolderaura.radius, CFG.smolderaura.targets)) do
+		strike(player, m, COMBAT_FIREDAMAGE, dmg, CONST_ME_HITBYFIRE)
+	end
+end
+
 local function auraTick()
+	local t = now()
 	for _, player in ipairs(Game.getPlayers()) do
 		local pw = powersOf(player)
 		if pw and pw.smolderaura and player:getHealth() > 0 then
-			local dmg = P.auraTick(pw.smolderaura)
-			for _, m in ipairs(monstersAround(player:getPosition(), CFG.smolderaura.radius, CFG.smolderaura.targets)) do
-				strike(player, m, COMBAT_FIREDAMAGE, dmg, CONST_ME_HITBYFIRE)
+			local ok, err = pcall(auraBurn, player, pw.smolderaura, t)
+			if not ok then
+				print("[ChaosPowers] " .. tostring(err))
 			end
 		end
 	end

@@ -1,0 +1,451 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "hagthorn_weald",
+  "name": "Hagthorn Weald",
+  "biome": "forest",
+  "size": [
+    169,
+    137
+  ],
+  "floors": 1,
+  "level": [
+    905,
+    1020
+  ],
+  "seed": 30451,
+  "origin": {
+    "x": 17048,
+    "y": 14748,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "woodcamp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "dark_clearing",
+      "floor": 1,
+      "size": "huge",
+      "place": "north"
+    },
+    {
+      "id": "shaded_brake",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "old_orchard",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "mossy_thicket",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "fallen_hollow",
+      "floor": 1,
+      "size": [
+        23,
+        20
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "blighted_grove",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "west"
+    },
+    {
+      "id": "withered_meadow",
+      "floor": 1,
+      "size": [
+        24,
+        20
+      ],
+      "place": "northwest"
+    },
+    {
+      "id": "thorny_ridge",
+      "floor": 1,
+      "size": [
+        30,
+        23
+      ],
+      "place": "center"
+    },
+    {
+      "id": "bramble_stand",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "gnarled_barrow",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "quiet_trail",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "hanging_glen",
+      "floor": 1,
+      "size": [
+        19,
+        15
+      ]
+    }
+  ],
+  "paths": [
+    {
+      "from": "dark_clearing",
+      "to": "shaded_brake",
+      "width": 3
+    },
+    {
+      "from": "shaded_brake",
+      "to": "old_orchard",
+      "width": 3
+    },
+    {
+      "from": "old_orchard",
+      "to": "mossy_thicket",
+      "width": 3
+    },
+    {
+      "from": "mossy_thicket",
+      "to": "woodcamp",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "fallen_hollow",
+      "width": 3
+    },
+    {
+      "from": "fallen_hollow",
+      "to": "blighted_grove",
+      "width": 3
+    },
+    {
+      "from": "blighted_grove",
+      "to": "withered_meadow",
+      "width": 3
+    },
+    {
+      "from": "withered_meadow",
+      "to": "dark_clearing",
+      "width": 3
+    },
+    {
+      "from": "dark_clearing",
+      "to": "thorny_ridge",
+      "width": 3
+    },
+    {
+      "from": "old_orchard",
+      "to": "thorny_ridge",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "thorny_ridge",
+      "width": 4
+    },
+    {
+      "from": "blighted_grove",
+      "to": "thorny_ridge",
+      "width": 3
+    },
+    {
+      "from": "old_orchard",
+      "to": "bramble_stand",
+      "width": 3
+    },
+    {
+      "from": "bramble_stand",
+      "to": "mossy_thicket",
+      "width": 3
+    },
+    {
+      "from": "shaded_brake",
+      "to": "gnarled_barrow",
+      "width": 3
+    },
+    {
+      "from": "gnarled_barrow",
+      "to": "old_orchard",
+      "width": 3
+    },
+    {
+      "from": "woodcamp",
+      "to": "quiet_trail",
+      "width": 3
+    },
+    {
+      "from": "quiet_trail",
+      "to": "fallen_hollow",
+      "width": 3
+    },
+    {
+      "from": "withered_meadow",
+      "to": "hanging_glen",
+      "width": 3
+    },
+    {
+      "from": "hanging_glen",
+      "to": "dark_clearing",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "woodcamp"
+  },
+  "exit": {
+    "zone": "woodcamp"
+  },
+  "spawns": [
+    {
+      "zone": "dark_clearing",
+      "monster": "Lady bug",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_clearing",
+      "monster": "Elite Twisted Shaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dark_clearing",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_brake",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_brake",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shaded_brake",
+      "monster": "Lady bug",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_orchard",
+      "monster": "Elite Twisted Shaper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_orchard",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "old_orchard",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_thicket",
+      "monster": "Geode Seer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_thicket",
+      "monster": "Lady bug",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_thicket",
+      "monster": "Bloom Husk",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_hollow",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_hollow",
+      "monster": "Bloom Husk",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fallen_hollow",
+      "monster": "Geode Seer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_grove",
+      "monster": "Lady bug",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_grove",
+      "monster": "Elite Twisted Shaper",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_grove",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_meadow",
+      "monster": "Bloom Husk",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_meadow",
+      "monster": "Geode Seer",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_meadow",
+      "monster": "Lady bug",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_stand",
+      "monster": "Elite Twisted Shaper",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bramble_stand",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_barrow",
+      "monster": "Geode Seer",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "gnarled_barrow",
+      "monster": "Lady bug",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_trail",
+      "monster": "Elite Tidecrest Serpent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "quiet_trail",
+      "monster": "Bloom Husk",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_glen",
+      "monster": "Lady bug",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "hanging_glen",
+      "monster": "Elite Twisted Shaper",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_ridge",
+      "monster": "Bloom Husk",
+      "count": 12,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_ridge",
+      "monster": "Geode Seer",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "thorny_ridge",
+      "monster": "Lady bug",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a forest hunt for levels 905-1020 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Lady bug, Bloom Husk, Elite Twisted Shaper, Geode Seer, Elite Tidecrest Serpent. Display monster: Bloom Husk."
+}

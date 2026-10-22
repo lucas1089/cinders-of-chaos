@@ -642,8 +642,8 @@ local POWER_EFFECT = {
 			Gen.seconds(c.windowMs), c.maxStacks), "percent damage per stack"
 	end,
 	shattersplash = function(c)
-		return string.format("The killing blow bursts onto up to %d monsters within %d sqm for the power's share of the blow.",
-			c.targets, c.radius), "percent of the killing blow"
+		return string.format("The killing blow bursts onto up to %d monsters within %d sqm: the power's share of the health the blow took, shared by them.",
+			c.targets, c.radius), "percent of the health the killing blow took"
 	end,
 	crimsonburst = function(c)
 		return string.format("A hit heals you for %d%% of your maximum health.", c.healPct), "the chance on a hit"
@@ -660,8 +660,9 @@ local POWER_EFFECT = {
 		return string.format("Haste: +%d speed for %s.", c.speed, Gen.seconds(c.ms)), "the chance on a kill"
 	end,
 	smolderaura = function(c)
-		return string.format("Every %s up to %d monsters within %d sqm burn for the power's value per second.",
-			Gen.seconds(c.tickMs), c.targets, c.radius), "fire damage per second"
+		return string.format("While you fight (you attacked a monster in the last %s) and stand outside a protection zone, every %s up to %d monsters within %d sqm and in sight burn for the power's value per second, at most %d + 1 per %d levels of yours.",
+			Gen.seconds(c.activeMs), Gen.seconds(c.tickMs), c.targets, c.radius, c.capBase, c.levelsPerPoint),
+			"fire damage per second"
 	end
 }
 

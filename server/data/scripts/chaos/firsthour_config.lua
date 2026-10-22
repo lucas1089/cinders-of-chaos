@@ -42,9 +42,10 @@ return {
 			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no templo "
 				.. "(a galeria ao lado da entrada) compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
 		{key = "bounty", level = 8,
-			en = "The Bounty Board is open to you (Adventure > Bounty Board): daily contracts at your level for gold and orbs. New hunts: %s.",
+			en = "The Bounty Board is open to you (Adventure > Bounty Board): daily contracts at your level for gold and orbs. "
+				.. "Archivist Maelis, next to the temple, has her first tale for you: ask her for \"tales\". New hunts: %s.",
 			pt = "O Quadro de Recompensas está aberto (Aventura > Quadro de Recompensas): contratos diários do seu nível por ouro e orbes. "
-				.. "Novas caçadas: %s."},
+				.. "A Arquivista Maelis, ao lado do templo, tem a primeira história para você: peça \"histórias\". Novas caçadas: %s."},
 		{key = "passive", level = 12,
 			en = "Your first passive point: Character > Passive Tree. Start next to the centre and press Apply Plan.",
 			pt = "Seu primeiro ponto passivo: Personagem > Árvore Passiva. Comece perto do centro e clique em Aplicar Plano."},
@@ -59,9 +60,9 @@ return {
 			pt = "A Arena abre a partir do nível 50. Caçadas do seu nível: %s."},
 		{key = "ascension", level = 100,
 			en = "Level 100: the Ascendant Oracle in the Hall of Services (the portal beside the temple) starts your ascension, and rifts, the Ember Descent and the Vocation Trials "
-				.. "are open. Archivist Maelis pays for tales from level 200.",
+				.. "are open. Archivist Maelis has a new tale at almost every level.",
 			pt = "Nível 100: o Oráculo Ascendente no Salão de Serviços (o portal ao lado do templo) começa sua ascensão, e as fendas, a Descida de Brasa e as Provas de Vocação "
-				.. "estão abertas. A Arquivista Maelis paga por histórias a partir do nível 200."},
+				.. "estão abertas. A Arquivista Maelis tem uma história nova em quase todo nível."},
 		-- from here on: every band where the next system unlocks (2026-10-15); Adventure > Next Goals lists the goals
 		{key = "goals", level = 120,
 			en = "Lost? Adventure > Next Goals shows what to do at your level, why, where, and the gear path of your band. "
@@ -74,8 +75,8 @@ return {
 			pt = "Nível 150: os chefes de bolso abrem na janela Boss Spawns (menu Adventure): uma cópia privada de um chefe com cargas "
 				.. "diárias. Chefes de guilda e as Scorched Marches também estão abertos."},
 		{key = "teleports", level = 200,
-			en = "Level 200: the hunt teleports of Cinderhold open: %s. Archivist Maelis pays for tales from now on.",
-			pt = "Nível 200: os teleportes de caça de Cinderhold se abrem: %s. A Arquivista Maelis paga por histórias a partir de agora."},
+			en = "Level 200: the hunt teleports of Cinderhold open: %s. Archivist Maelis has tales for this band too.",
+			pt = "Nível 200: os teleportes de caça de Cinderhold se abrem: %s. A Arquivista Maelis tem histórias para esta faixa também."},
 		{key = "cruel", level = 250,
 			en = "Level 250: the Cruel Vocation Trial and the island pocket bosses. Conquest Tokens from every boss buy the uniques "
 				.. "you have seen.",

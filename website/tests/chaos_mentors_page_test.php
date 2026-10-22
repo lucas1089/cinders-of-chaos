@@ -41,6 +41,7 @@ function db() { return $GLOBALS['DB']; }
 
 $pdo->exec("CREATE TABLE players (id INT PRIMARY KEY, account_id INT, name TEXT, level INT, vocation INT, group_id INT DEFAULT 1)");
 $pdo->exec("CREATE TABLE account_bans (account_id INT PRIMARY KEY)");
+$pdo->exec("CREATE TABLE player_storage (player_id INT NOT NULL, key INT NOT NULL, value INT NOT NULL)"); // tester bots (none here)
 $pdo->exec("CREATE TABLE chaos_mentors (player_id INT PRIMARY KEY, account_id INT, active INT DEFAULT 1, accepting INT DEFAULT 1,
 	public INT DEFAULT 1, lang TEXT DEFAULT '', hours TEXT DEFAULT '', note TEXT DEFAULT '', marks INT DEFAULT 0, earned INT DEFAULT 0,
 	graduates INT DEFAULT 0, day_key INT DEFAULT 0, day_minutes INT DEFAULT 0, day_marks INT DEFAULT 0, month_key INT DEFAULT 0,

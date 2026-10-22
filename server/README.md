@@ -217,9 +217,13 @@ server/
   src-patches/0058-badge-slot-no-second-ring.patch   engine: the badge slot (13) takes the badges; the ammunition slot
                                       (0023's second ring slot) and the deck, ship, belt and gloves slots take nothing
                                       (see "Badge slot")
+  src-patches/0059-tester-bots-not-counted.patch   engine: a tester bot (storage 7102900 = 1) is never counted
+                                      online: status protocol, players record, players_online, the waiting list
+                                      (see "Tester bots"; header src/chaostesters.h, tools/chaostesters_test.cpp)
     remote_cmd.lua    remote_cmd_core.lua    remote_cmd_config.lua  (remote admin commands by file, see "Remote admin commands")
     helpai.lua  helpai_core.lua  helpai_config.lua (Ember answers questions in the Help channel through the sidecar
                                       tools/helpai.py, see "Help channel assistant")
+    testers.lua  testers_core.lua      (tester bots: login safety, the TESTER tag, kept apart from players, see "Tester bots")
     stop_request.lua  stop_request_core.lua  stop_request_config.lua (graceful stop: the packages' stop-server
                                       scripts write server/stop.request, see "Stop request file")
     cooldown_channels.lua  cooldown_channels_core.lua  cooldown_channels_config.lua (the potions on the potion channel,
@@ -761,6 +765,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101400 - 7101419 | boss points (`bosspoints_config.lua`) |
 | 7101500 - 7101549 | tales (`tales_config.lua` `storage`): +0 language (1 en, 2 pt), +1 + slot quest state, +21 + slot kill count |
 | 7101550 - 7101559 | first hour (`firsthour_config.lua` `storage`): +0 hints given (bits), +1 hunt reveals given (bits), +2 hints known, +3 reveals known |
+| 7101560 - 7101599 | tales, slots 20-39 (`tales_config.lua` `storage.ext`): +(slot - 20) quest state, +20 + (slot - 20) kill count |
 | 7101600 - 7101639 | Town Portal (`townportal_config.lua`) |
 | 7101700 - 7101799 | Vocation Trials (`trials_config.lua`) |
 | 7101800 | Last Breath power cooldown (`data/lib/chaos_powers.lua`) |
@@ -768,6 +773,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7101820 - 7101829 | keep attacking while moving (`Chaos.storage.kiteWalkOff`): +0 is 1 while the player turned the option off; the engine reads it (src-patch 0028) |
 | 7101830 - 7101839 | the player's language (`i18n_core.lua` `ChaosI18n.STORAGE`): +0 is 1 for pt-BR |
 | 7102000 - 7102049 | wardrobe (`Chaos.storage.wardrobe`): +0 footprint, +1 outline (`cosmetics_config.lua`), +10 .. +39 name plate frame slots 9 and up (`Chaos.storage.shopFrameBase2`, `shop_core.lua` `frameStorage`) |
+| 7102900 - 7102909 | tester bots (`Chaos.storage.tester`, "Tester bots"): +0 is 1 on a tester character (only `tools/testers.py` setup writes it; the engine reads it, src-patch 0059), +1 the TEST ONLY helper gave its supplies, +2/+3/+4 its hunt position x/y/z; +5..9 free |
 | 7102100 - 7102119 | the Ashen Chronicle's GLOBAL storages (`Game.setStorageValue`, `chronicle_config.lua` `globalStorage`): +1..+9 chapter n written, +10 chapters written, +11 the season; no player storage |
 | 7101900 - 7101909 | the Gambler (`gamble_config.lua` `storage`, `Chaos.storage.gamble`): +0 window, +1 level, +2 vocation, +3 sold slots, +4 early refreshes; +5..9 free |
 | 7102640 - 7102689 | Conquest Tokens (`conquest_config.lua` `storage`, `Chaos.storage.conquest`): +0 the day of the counters, +1..+29 tokens earned today per source, +30..+39 bad-luck misses in a row per pity group; +40..+49 free |
@@ -6163,6 +6169,165 @@ to the database.
 Tests: `tools/chaosprefetch_test.cpp` in CI (which reads are prefetched, what a write writes from its first tokens,
 templates, the cascade and trigger closure, the clock with transactions and autocommit, the template set).
 
+## Tester bots (`testers.lua`, `testers_core.lua`, `src-patches/0059`, `tools/patch_tester_filters.py`)
+
+Owner request: bots that play on the live server to find bugs. They carry a visible TESTER tag. They never count as players.
+
+**Marker.** A tester is a character with player storage 7102900 = 1 (`Chaos.storage.tester`).
+Only `tools/testers.py setup` writes it. The engine reads the same key (`CHAOS_TESTER_STORAGE`, src-patch 0059).
+Names are "Tester Xxx". Group 1, account type 1. Never staff.
+
+**Never counted online.** A hard requirement. Each place:
+
+| Count | How testers stay out |
+|---|---|
+| status protocol (XML `<players online>`, 0x20 info, 0x21 list, 0x22 name) | src-patch 0059 counts only non-testers |
+| players record (`server_config` players_record, record broadcast) | src-patch 0059: only counted players beat it |
+| `players_online` table (website online list and counts) | src-patch 0059: a tester is never inserted |
+| waiting list, maxPlayers | src-patch 0059: a tester never queues, never takes a slot |
+| client login screen (`clientservices.lua` cacheinfo) | `Chaos.countedPlayers()` |
+| `!online` (base talkaction) | `patch_tester_filters.py` |
+| chaos_health (Discord health posts) | reads the status protocol, so testers are left out |
+| admin panel `stats` / `online` | labelled: "N (+M tester bots)", "[TESTER bot, not counted]" |
+
+**Never ranked or announced.**
+- Weekly leaderboards (`LB.record`), records (`memberOf`), the chronicle (`memberList`): tester guids skipped.
+- Discord queue (`discord.lua` `X.queue`): an event naming a tester is dropped.
+- `Game.broadcastMessage`: a broadcast naming a tester is dropped (level, achievement, prize lines).
+- Base in-game highscores (opcode 73) and the top 3 statues: `patch_tester_filters.py` (install step `events`).
+- Website: `website/patches/znotex-chaos-testers.patch` (highscores, latest deaths); `chaos_tester_sql()` on the
+  sidebar top 10, class ladders, boards, records and mentors.
+
+**Kept apart from players** (`testers.lua`):
+- No combat between a tester and a player, summons included. Monsters hit testers for real.
+- No trade, no mixed party. Market `buy`, `list`, `orderPost`, `fill` refused for testers.
+- A look at a tester says it is a test character. The plate shows the title TESTER (priority 1000).
+- Login refused for a tester in a staff group, on a staff account, or without a "Tester Xxx" name. Logged.
+- Antibot and bot review skip testers: they are bots by design.
+- Players cannot take a name with the word "Tester": game `staffWords`, website `chaos_character_name_tester`.
+- No mail. A tester's parcel or letter is refused at the mailbox. So is one to a "Tester Xxx" name.
+  `testers.lua` wraps `ChaosDepot.onMoveItem`, the move hook of `patch_base_depot.py`.
+
+### The bots (`tools/testers.py`, `tools/tester_core.py`)
+
+Built on `loadtest.py` (login, client guard answer, 10.98 packets). Standard library only.
+- `setup`: N accounts `tstbot` + 10 random hex digits, one random password each.
+  Characters "Tester Aaa" upward; a name a player owns is skipped. Classes round robin, levels 30/100/250/500.
+  Rows: account type 1, group 1, the marker storage, the hunt spot (+2..+4) on a hunt of its level.
+  State: `/var/lib/chaos/testers/state.json`, mode 0600, root. It holds the passwords.
+- `run`: every bot logs in from its own 127.1.x.y address (the 2-per-IP rule). Secure mode on.
+  Real damage, real death. A death is seen (0x28 or "You are dead."); the bot logs in again and says `!tester hunt`.
+  Heals itself: its best healing spell of spells.xml under 60 % health.
+  Under 40 % a health potion by the hotkey packet: 0x84, position 0xFFFF, its own creature id.
+  Casts its class rotation (`loadtest.rotation_for`).
+  Then a weighted behaviour (`tester_core.BEHAVIOURS`, each with a cooldown): hunt, wander, town, depot (opens a
+  locker, 0x82), shop (hi, trade, buy potions 0x7A, sell 0x7B, close 0x7C, bye), party, private message,
+  client opcodes, loot (loot filter take, open the backpack), relog.
+  A dropped connection is retried with a growing pause (up to 2 min). The bots survive a server restart.
+  After `--minutes` (default 60) they log out. SIGTERM ends them early.
+- `report`: the server log from the run's start offset, and `run.json` of the bots.
+- `cleanup`: see below.
+
+What a bot reads: health percent (0x8C), text messages (failures, Lua error texts, experience, loot, level),
+the NPC trade window, extended opcode answers (chunked S/P/E joined).
+
+### The helper (TEST ONLY: `tools/tester_helper.lua`, `tools/tester_helper_core.lua`)
+
+Not under `data/`, so no install step ships it. `chaos-ctl.sh testers start` copies both into `data/scripts` as
+`zz_tester_helper*.lua`. `testers stop` and `cleanup` remove them. The loop ends when the file is gone.
+- Acts ONLY on a character with the marker storage = 1 AND a "Tester Xxx" name. Anything else is left alone.
+  `tests/tester_helper_test.lua` proves it on a mocked engine: a player, a player named like a tester without the
+  storage, a player with the storage and another name. None is targeted, moved, given items, answered or logged.
+- Never heals. Never prevents a death.
+- Gives a target: the nearest unowned monster within 5 tiles, then faces it. Never a player, never a summon.
+- Once: a backpack, the plain weapon of its class kit (`ChaosTestKit`, no unique roll), 100 health and mana
+  potions, 20000 gold in the bank.
+- `!tester info | town | depot | hunt | shop`: answers one line `[tester-helper] <kind> <json>`.
+  Teleports to the temple, next to a depot locker, next to an NPC, back to the hunt spot.
+- `!tester places`: the map mark counts by kind (`ChaosPoi`). `!tester enter <kind> [N]`: next to the N-th mark of
+  that kind (temple, depot, craft, bank, bless, travel, shop, boss, hunt, portal, dungeon; guild halls refused).
+  `enter npc <name>`: next to that NPC; a player's name is refused. `enter rift [tier]`: a rift key of the tier
+  (1-15, no modifiers) into the tester's backpack, then the temple. Only the tester moves or receives.
+- Anomalies, one console line `[tester-anomaly] <json>` each:
+  a hit taken over 3x max health (the 130M one-shot), a hit from full health to death,
+  a hit dealt over 5000 + 400 x level, a negative or absurd experience gain,
+  an item with an impossible count or attribute (backpack scan once a minute).
+- A tester's death: `[tester-event] <json>`.
+
+### On the live server (`chaos-ctl.sh testers`)
+
+The client key. Never the development key: `testers start` refuses `clientGuardAllowDevKey = true`, and `testers.py`
+refuses the development key itself. The real key lives in a root-only file. Create it once, as root:
+
+```
+sudo bash -c 'umask 077; read -rsp "client key: " K; echo; printf "%s\n" "$K" > /etc/chaos/tester-client-key'
+```
+
+It must be 64 hex digits, owned by root, mode 0600. It never goes on a command line or into a log.
+`CHAOS_TESTER_KEY` in ctl.conf names another file.
+
+```
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers status
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers report
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers stop
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup          # lists
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # deletes
+```
+
+The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/opt/chaos-trial/server`, log `/opt/chaos-trial/logs/server.log`.
+- `start [N] [MINUTES] [--restart SECONDS]`: default 100 bots, 60 minutes; at most 150 and 1440.
+  The helper loads at a server start. Without "[tester-helper] running" in the log since the newest start, `start`
+  refuses, unless `--restart SECONDS`: the usual restart countdown; the bots start 30 s after it.
+  First run: `testers.py setup`. Then the run, detached (`setsid`, own process group), log `/var/log/chaos/testers.log`.
+  When the minutes are over, the run calls `testers stop --finished` itself.
+- `stop`: SIGTERM to the run's group (the bots log out), the helper files removed.
+- `status`: running, pid, started, bots, minutes, logins, deaths, helper copied, helper loaded.
+- `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
+  then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
+  each with the first bot and what it was doing; behaviours tried / ok / failed; the system coverage (below).
+- `cleanup [--yes]`: stops a run; waits 2 minutes after a stop (a character in a fight stays in game).
+  Deletes only characters with the marker storage AND a "Tester Xxx" name AND a `tstbot...` account. Exact ids, no
+  LIKE. Rows of every table with a `player_id` / `*_player_id` or `account_id` / `*_account_id` column, a house a
+  tester owns given back, a tester's house bid dropped. Then the characters, then the empty accounts.
+- No config change is made: src-patch 0059 keeps testers out of `maxPlayers`.
+  With `bindOnlyGlobalAddress = true`, loopback fails: `testers.py` refuses with that reason.
+
+The admin app runs these through `chaos-ctl.sh` like the other commands (docs/ADMIN_APP.md).
+
+### Coverage (`tools/gen_tester_scenarios.py`, `tools/tester_scenarios.json`, `tools/tester_scenarios.py`)
+
+The table is generated from the sources. CI runs `--check`. Regenerate after a new system, opcode or action:
+`python3 -I server/tools/gen_tester_scenarios.py`.
+- Every system with a `*_core.lua` gets a kind:
+  - `opcode`: the opcode its engine files answer, the actions in the client module's order, the data keys.
+  - `place`: the helper's `enter` argument.
+  - `staff`: only `/` talkactions. All are staff commands (`Chaos.staffCommand`). Testers are never staff.
+  - `out`: what bots truly cannot do, with the reason. Payments, moderation, guilds, market, orb exchange, party
+    finder, ranked arena, PvP zones, sieges, anti-bot. The list is `OUT_OF_SCOPE` in the generator.
+  - `passive`: reached by play only. The report counts the server log errors that name its files.
+- Per opcode, actions never sent (`skip`): those only out-of-scope files answer; money, report and ticket actions;
+  world and staff actions (start, stop, reset, grant, give, transfer, gift and the rest of `ADMIN`).
+- NPC dialogs: every NPC of `data/npc` with the keywords of its greeting.
+
+`chaos-ctl.sh testers start` passes `--scenarios` with the table. The `opcodes` behaviour then runs a scenario:
+- a module's requests: "open" first, then one to three actions in client order, 1.5 s apart;
+- a place: `!tester enter`, the opcode of the system there, back to the hunt;
+- an NPC: `enter npc`, hi, one or two keywords, bye;
+- a rift: `enter rift N`, then the key used by hotkey.
+Data keys are filled only from the bot's own earlier answers on that opcode. Never invented.
+Character keys (name, target, cid, ...) only get a tester. Owner, guid, gift, payment keys are never sent.
+Report: per system tried / ok / refused / log errors. A system never reached says why:
+out of scope with the reason, passive, or not picked in this run.
+
+Not verified against a running server: the bots' packets in game, the helper on the real engine, the cleanup on the
+real schema, the scenario payloads against the real handlers. Tested only with mocks, stubs and synthetic packets.
+
+Tests: `tests/testers_test.lua`, `tests/tester_helper_test.lua`, `tools/testers_test.py`,
+`tools/chaostesters_test.cpp` (status answer without testers, CI), `tools/patch_tester_filters_test.py`,
+`deploy/chaos_ctl_test.py` (testers), `tools/loadtest_test.py`, `tools/tester_scenarios_test.py`, website `chaos_leaderboards_page_test.php`,
+`chaos_client_api_test.php`.
+
 ## Load test on the full map (`tools/loadtest.py`, `tools/loadtest_hunt.lua`, `src-patches/0032-network-message-buffer.patch`)
 
 The launch audit's open item: how many players the full map holds, and `maxPlayers` for the beta and the launch.
@@ -8315,6 +8480,49 @@ one craft and one set of materials; gold and materials are removed before the it
 the event, a failed gold or material removal and a logout create nothing; a failed `addItemEx` refunds everything.
 Against the stock script the same test gets 5 items for one set of materials.
 
+## Base crafting recipes (`tools/patch_base_recipes.py`, `tools/patch_base_recipes_test.py`)
+
+Owner (2026-10-22, on the Seraphic Charged Stone): "Coloque pra que servem". The base books have three class sets at
+level 35: Myst Regalia (mage), Seraphic (paladin) and Dawnforged (knight). Every Seraphic and Dawnforged recipe asked
+for the Myst Charged Stone (29921) and the Myst Emblem (29924), so the Seraphic and Dawnforged stones and emblems
+(29922, 29923, 29925, 29926) that the level 1200+ bosses drop had no use. The tool (install step `baserecipes`, after
+`basecraftingbonus`; idempotent, `--dry-run`, `--check`):
+
+- **Own materials.** armorsmith, weaponsmith, jewelsmith: a Seraphic piece (29869-29877) takes the Seraphic Charged
+  Stone and Emblem, a Dawnforged piece (29878-29890) the Dawnforged ones. Same counts, gold (60,000), level (35),
+  Nyxdrath Heart and the other materials as the Myst piece of that slot. Belts and gloves stay (`patch_badges.py`
+  retires them).
+- **Myst amulet and ring.** The jewelsmith's "Myst Regalia Amulet" / "Myst Regalia Ring" made 29865 / 29866 (the Myst
+  spellbook and wand, which the weaponsmith also makes); they make 29867 / 29868 now.
+- **Trophy recipes** (generalcrafting, the crafting table; appended after the stock book in a marked block, so the stock
+  recipes keep their places):
+
+| Product | Materials | Gold | Level |
+|---|---|---|---|
+| Myst Charged Stone | Gargantuan Eye, Runic Claw | 25,000 | 25 |
+| Seraphic Charged Stone | Verdant Scale, Vorsk Scale | 25,000 | 25 |
+| Dawnforged Charged Stone | Frostbone Shard, Runic Stone Shard | 25,000 | 25 |
+| Myst / Seraphic / Dawnforged Emblem | its line's Charged Stone, Runic Stone Shard | 25,000 | 30 |
+| Myst Emblem | Brainforged, Runic Stone Shard | 25,000 | 30 |
+
+  The trophies drop at 7-9% from the level 950-1150 hunts (`tools/loot_bands_data.lua`) and only sold to an NPC before;
+  the Runic Stone Shard (25% from the level 1200+ monsters, the waystone shop) had no use at all. **Economy:** by the
+  price table each recipe's materials sell for at most its product (75,000-107,000 against 80,000 / 115,000), so the
+  table's craft floor leaves every price as it was; with the gold the inputs are worth more than the product, so no
+  recipe makes money, and no recipe turns its product back into a material. The test checks both against
+  `chaos_item_prices_data.lua`.
+- **Descriptions.** items.xml: the stones, emblems, Nyxdrath Heart, trophies and the Runic Stone Shard say what they are
+  for ("Crafting material for the Seraphic set and the Seraphic Emblem."); added, or appended to another description.
+
+`item_prices_base.py` reads the books through `patch_book`, so `gen_item_prices.py survey` writes
+`data/items/base_recipes.csv` as installed. The item finder reads the global `Crafting` at run time and shows every
+recipe both ways; the tooltip's "Used in" line comes from it (see "Item finder").
+
+**Audit (2026-10-22): base materials that drop and had no use.** Item finder rows of every system, the base books, every
+base script and NPC: after this change the late boss materials above are all used. Still with no use beyond the sell
+price of the item price table: the classic creature products (vendor loot by design) and the energy creature parts
+26158-26179 and the scarab ocarina 27432, which no base NPC buys (the Loot Buyer pays the table's price).
+
 ## Crafting bonus (`tools/patch_base_crafting_bonus.py`, `chaos/craft_bonus*.lua`, `tests/craft_bonus_test.lua`, `tests/base_crafting_bonus_test.lua`)
 
 **The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
@@ -9468,22 +9676,27 @@ rarity **Legendary or better** and at most **one per item** (`config.powers`), t
 Reforging / Ruin paths as every modifier (`C.candidates` enforces the gate). The value of a tier is the chance of the proc, except
 Last Breath (the health left), Bloodrush (percent per stack) and Smoldering Aura (damage per second). The capped totals of the
 equipped items (`ChaosItemModsCache`) are what `item_powers.lua` reads; every proc has an internal cooldown (`ChaosPowers.config`)
-and the damage of a power never starts another power (a guard), only monsters that are not somebody's summon are hit.
+and the damage of a power never starts another power (a guard), only monsters in clear sight that are not somebody's summon are
+hit. A power's hit is a **proc** (2026-10-22): `strike()` raises `ChaosKeystones.depth` and `ChaosSpellFactor.depth`, so the
+passive tree's damage, intelligence, the class line and spell factors, keystones, archetypes, supports and trials leave it alone,
+and `ChaosPowers.depth`, so `item_mods.lua` rolls no Execute, ailment or life / mana on hit on it. What still applies: the
+engine's critical hit, penetration, damage to elites, shock, gems, charms and blessings (like every keystone proc). The origin
+stays ORIGIN_SPELL, so the monsters' own events (defences, the hall display guard) see the hit.
 
 | power | side | what it does | tiers T1..T8 | cap | limit |
 |---|---|---|---|---|---|
-| Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 25% of its maximum health, at most 50 + 8 x level | 2-3% .. 12-16% | 25% | 1.5 s |
-| Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (40 + 5 x level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
+| Death Blast | prefix (weapon, jewel) | on kill: a fire explosion on up to 8 monsters around the corpse, 10% of its maximum health, at most 50 + level | 2-3% .. 12-16% | 25% | 1.5 s |
+| Glacial Ward | prefix (shield, armour, legs, boots, other) | when you dodge or block a monster's hit: an ice nova (100 + level) that slows 35% for 3 s | 2-3% .. 12-16% | 30% | 4 s |
 | Echo Shot | prefix (weapon) | a ranged hit that landed is repeated after 250 ms for 60% | 2-3% .. 12-16% | 25% | 0.8 s |
 | Critical Echo | prefix (weapon, jewel) | a critical hit is repeated after 200 ms for 50% | 3-5% .. 18-25% | 30% | 1 s |
 | Arc Lightning | prefix (weapon, jewel) | a hit arcs to 3 monsters within 3 sqm for 30% | 2-3% .. 12-16% | 30% | 0.7 s |
 | Bloodrush | prefix (weapon, jewel, other) | every kill adds a stack (5, 6 s): +N% damage per stack | 1% .. 4-5% | 5% (25% at 5 stacks) | stacks |
-| Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm for N% of it | 10-15% .. 60-75% | 100% | 1 s |
+| Shatter Splash | prefix (weapon) | the killing blow bursts onto up to 6 monsters within 2 sqm: N% of the health it took, shared by them | 2-3% .. 12-16% | 25% | 1 s |
 | Crimson Burst | suffix (weapon, jewel, helmet) | a hit heals 4% of your maximum health | 2-3% .. 12-16% | 25% | 2.5 s |
 | Last Breath | suffix (armour, helmet, shield, jewel, legs) | a lethal hit leaves you at N% health instead (the time of the last one is a player storage, 7101800: once per 5 minutes, also across logins) | 10-15% .. 45-50% | 50% | 5 min |
-| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile in clear sight with a walking path: never through a wall, door or bars) and burns where you stood | 4-6% .. 22-28% | 30% | 15 s |
+| Ember Step | suffix (boots, legs, armour, jewel) | a single hit of 20% of your health or more blinks you up to 3 sqm away (a free tile in clear sight with a walking path: never through a wall, door or bars) and burns where you stood (60 + 2 x level) | 4-6% .. 22-28% | 30% | 15 s |
 | Hunter's Rush | suffix (boots, jewel, helmet, other) | on kill: haste +40 for 4 s | 4-6% .. 22-28% | 30% | 8 s |
-| Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm | 5-10 .. 250-400 per s | 600 | tick |
+| Smoldering Aura | suffix (armour, helmet, jewel, legs, other) | while you fight (you attacked a monster in the last 5 s) and stand outside a protection zone: every 3 s N x 3 fire damage to up to 6 monsters within 2 sqm, N at most 2 + level / 30 | 1-2 .. 28-35 per s | 40 | tick |
 
 **Not done, on purpose.** *Culling strike* is the Execute modifier already (a hit that leaves a monster at or below N% health
 kills it). *A chance to cast a class spell on a critical hit* needs an engine call that casts a spell by name; there is none, so
@@ -9500,8 +9713,57 @@ Engine pieces used: `onHealthChange` on the target (registered by `onTargetComba
 Rush, Arc Lightning (energy on the monsters nearby) and Crimson Burst (+384 = 4% of 9600), Last Breath (a 99999 hit left a level
 600 character at 3839 of 9600 = 40%), the totals and caps (`deathblast=25` from a value of 100). Unit-tested only: the other
 powers' procs (Echo Shot, Critical Echo, Bloodrush, Shatter Splash, Ember Step, Glacial Ward, Smoldering Aura) and every
-cooldown. `tests/powers_test.lua` (240 checks) covers the catalogue, the maths, each handler against a mocked engine, the
-cooldowns, the guard and the dodge hook; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
+cooldown. `tests/powers_test.lua` (305 checks) covers the catalogue, the maths, each handler against a mocked engine, the
+cooldowns, the guard and the dodge hook, the aura's fight / protection zone / sight / level rules, the proc guard and the reading
+of live items; `tests/orbs_test.lua` the rarity gate, one power per item and the side limits.
+
+**Balance pass (beta 2026-10-22, owner: Smoldering Aura "extremamente forte"; it also killed the teleport hall's display
+monsters, fixed in `hunt_teleports.lua`).** Measured with the real code of `chaos_powers.lua`, `item_powers.lua`,
+`item_mods.lua` and `passivetree_effects.lua` on a mocked engine (one aura tick on a pack of 8; the engine's crit and the gems /
+charms / blessings, which honour no guard, applied as the engine and those scripts do). Compared with the single-target damage
+per second of `data/spells/README.md` (C4: level 300 about 955, level 1000 about 2600; level 100 about 450 and 500 about 1350 from
+`rotation_sim.py`'s ratios) and the median monster health of `tools/pace_scan.lua` (702 / 1785 / 3885 / 12915, scaled hunts at
+1000 about 65000). Typical: a Mystic with a fire tree of its level, a gem, a little crit, one aura item at the top of the best
+tier its level drops (T3 / T5 / T6 / T7). Maxed: a Beastmaster (spell factor 1.25), tree and intelligence at the caps, gems,
+charms and blessing at the caps, the aura at its cap. Internal numbers.
+
+| level | before: typical tick / target, pack per s, of 1t DPS | before: maxed | after: typical | after: maxed |
+|---|---|---|---|---|
+| 100 | 123, 246, 55% | 2253, 4506, 1001% | 15, 31, 6.8% | 23, 47, 10% |
+| 300 | 494, 988, 103% | 14444, 28887, 3025% | 39, 79, 8.2% | 73, 147, 15% |
+| 500 | 943, 1886, 140% | 14706, 29413, 2179% | 62, 124, 9.2% | 112, 224, 17% |
+| 1000 | 1771, 3541, 136% | 15097, 30194, 1161% | 100, 199, 7.7% | 224, 447, 17% |
+
+Before, the pipeline put x1.2-2.4 (typical) and up to x8.4 (maxed) on the aura's ticks; a typical tick killed a median monster
+in 4-8 ticks, a maxed one in 1. After, a typical character's aura deals 7-9% of its own single-target damage per second to a full
+pack at every level (the level cap, 2 + level / 30 per second, is about 1.3% of it per monster); the maxed rows are above 10%
+because crit, gems, charms and blessing still apply, and a maxed character's own damage is higher by the same factors.
+
+The other powers, same model (typical character, top of the tier its level drops; 4 monsters in reach, kills per second from
+`tools/pack_model.py`, 2 monster hits a second with 20% dodged or blocked, one hit of 20%+ health every 30 s, crit rate 10%), in
+% of its single-target damage per second, levels 100 / 300 / 500 / 1000:
+
+| power | before | after |
+|---|---|---|
+| Death Blast | 9 / 21 / 43 / 76% | 3 / 5 / 10 / 12% |
+| Glacial Ward | 14 / 38 / 65 / 95% | 4 / 7 / 9 / 10% |
+| Ember Step (average; one blink per cooldown) | 2-17%; 46 / 86 / 119 / 147% | 1-3%; 16 / 20 / 24 / 25% |
+| Shatter Splash | 192 / 363 / 474 / 477% | 8 / 13 / 15 / 13% |
+| Echo Shot (more ranged damage) | +4 / +8 / +11 / +16% | +4 / +5 / +7 / +8% |
+| Arc Lightning (more damage) | +6 / +12 / +17 / +23% | +5 / +8 / +10 / +12% |
+| Critical Echo (more damage) | +0.5-2% | +0.5-1% |
+| Bloodrush (more damage at 5 stacks) | +10-20% | unchanged |
+
+Echo Shot, Critical Echo and Arc Lightning only lost the double dip (a share of a hit that had the tree took it again); Hunter's
+Rush (+40 speed for 4 s), Last Breath (once per 5 minutes) and Crimson Burst (4% health, 2.5 s) are no damage and stay.
+Bloodrush (+25% at most) is a damage modifier of the size of the other top rolls and stays. Computed with the model above, not
+measured in game.
+
+**Live items.** Smoldering Aura and Shatter Splash keep the ranges they had in `cutFrom`; `ChaosItemMods.read` reads a stored
+value above its tier's new range as the top of that range (x the item's quality), so a T7 aura of 250 reads 28 and a T8 splash
+of 75% reads 16%. The stored value and tier stay on the item (nothing is rewritten; tooltips, totals and the bench all go
+through `read`). The other changes are formulas, so every item gets them at once. The aura's level cap applies to every
+character: an old item never deals more than 2 + level / 30 per second.
 
 ## Veiled modifiers (`data/lib/chaos_veiled.lua`, `chaos_veiled_config.lua`, `chaos/veiled.lua`, client `game_unveil`)
 
@@ -9803,6 +10065,14 @@ server id until the index is rebuilt; `item_tooltip.lua` puts it in the tip as `
 it. The client shows "Drops from: Dragon Lord (100%), Daily reward" and "~1 in 500 legendary kills, or 690 Conquest
 Tokens" (`game_itemtooltip` `tooltiplogic.lua` `L.sourceLines`). Tests: `tests/itemfinder_test.lua` (brief),
 `tooltiplogic_test.lua`.
+
+**Used in (2026-10-22).** Owner, on the Seraphic Charged Stone that showed only its bosses: "Coloque pra que servem".
+`K.brief` also gives `u = {n, m}`: the first `K.USED_SHOWN` (2) products of the item's "usedin" rows (every recipe and
+exchange that takes it, lowest level first, one per name) and how many other products there are (`m`, left out at 0).
+An item used in something but from nowhere now has a brief too (`s` empty). The client shows a dim "Used in: Seraphic
+Emblem, Seraphic Bleeder +8 more" (pt-BR "Usado em: ... +8 outros") under the sources (`L.usedInText`). The field is
+optional: an older client ignores it, an older server sends none. Tests: `tests/itemfinder_test.lua` (mocked recipes and
+the real `data/items/base_recipes.csv`), `tooltiplogic_test.lua`.
 
 **Not covered.** Base quest chests (their contents are items on the map, not data the scripts can read), the rift
 chest's random item rolls (any rift monster's loot), cosmetic store offers, and the base NPCs placed by scripts instead
@@ -14354,6 +14624,26 @@ effect packs of docs/CREDITS.md into the game. Effects only: no damage, area, ti
   (no level_up use). Client: `levelwingsmath_test.lua`, `lootbeams_test.lua` (ids against the ids file).
   Not run on a live server or in a client.
 
+## Owner outfits (pair 37) (`data/lib/chaos_pack37_looks.lua`, switch `ChaosPack37.PAIR37`, on)
+Moon outfits and novelty costumes of client pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"). Owner, 2026-10-22:
+"Eu não coloquei uns outfits bem diferente no drive? Tipo de pizza e coisas assim?". The Drive held no pizza outfit;
+the one food costume found is a fry box. Source: the owner's .obd files, source pack unnamed (docs/CREDITS.md
+"set37 outfits").
+- **What.** 14 client looks 2668..2681 (`M.looks`) worn as 10 outfits (`M.outfits`): Starweaver 2668 / 2669, Crescent
+  Oracle 2670 / 2671, Moonblade Mystic 2672 / 2673, Moonflame Mystic 2674 / 2675 (male / female, colourable, two
+  addons, mounted frames); Plush Bear 2676, Snow Plush Bear 2677, Frost / Grave / Rose Crawling Hand 2678-2680 and the
+  Fry Box Costume 2681 (one look for both sexes, no colours, no addons; the fry box has no walk frames and glides).
+- **outfits.xml.** `tools/install_outfits.py` writes a fourth marked block "Chaos pair 37 outfits": one line per sex
+  per outfit, locked (`unlocked="no"`), only while the switch is on. Same clash rules as the other blocks.
+- **Store** (`shop_config.lua` calls `ChaosPack37.addStore`; nothing while off). The four moon outfits go at the end
+  of Outfits (750, both addons, both looks, like the store's other full outfits); the six costumes in a new category
+  **Costumes** under Cosmetics right after Outfits (300 each). Prices are placeholders (docs/OWNER_TODO.md). A purchase
+  is the store's usual outfit offer: `addOutfit` and both addons for each look.
+- **Pair.** A client on pair 36 or older has no outfits 2668+. Pair 37 is on windows-assets (1020d51c); ship the client
+  with the server. Off: no store offers, no outfits.xml block.
+- Tests: `tests/pack37_looks_test.lua` (looks in order, outfits, the store on and off), `tests/shop_tree_test.lua`
+  (every offer resolvable), `tools/install_outfits_test.py` (the block). Not run in a client.
+
 ## Pack farming spell effects (`data/lib/chaos_pack27_fx.lua`, `data/lib/chaos_pack27_fx_ids.lua`, switch `ChaosPack27Fx.PAIR27_FX`, on)
 The nine pack farming spells borrowed their effects from other spells. A local trial pair 27 (client/MANIFEST.md
 "Pack farming spell effects (pair 27 trial)", effects 674-758, missiles 154-160 on top of things_custom26) gives them
@@ -15773,6 +16063,18 @@ next install (the display spawns follow). `slot` pins one (1 = the westmost nort
 choose). With `tools/hall_hunts.csv` the whole hall is ordered, the base server's teleports too: see "Hall order".
 Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock), `tools/install_content_areas_test.py`
 (synthetic map: dry run, grow, place, spawns, places file, second run, refusals, reorder, --only).
+- **Hall fill** (owner, 2026-10-22: "And the hunts of the upper floors? Did we fill all the ones that were
+  missing?"). No: z 6 had 6 hunts on 37 slots, z 5 8 on 18 (dry run on the base map). 41 new plans fill them: 31 on
+  z 6 (bands 500-615 up to 950-1050, 15 levels apart, about 115 wide) and 10 on z 5 (1050-1200 up to 1850-2000, four of
+  them on two floors). They sit in their own block, x 15616-17663, y 14336-15359 (the schema's `origin.x` reaches
+  17663), a grid of 204 tiles. Their monsters are the level-scaled ones of the chaos folder (no new monster); every
+  display monster is 2x2 or smaller. 26 of them have a reward chest (action ids 47960-47999, storages 7101200-7101299,
+  no clash). XP and gold per hour on the pace model (`paceKillsPerHour`, the engine's level factors, coins x 2.7) sit
+  on the curve of the older plans of the same levels: XP within 25% (the furthest, Hexwood Thicket and Voidscar
+  Chasm, are older plans whose monsters sit low in their bands), gold 1.1-2.3 M/h against 1.2-2.0. Install on a
+  copy of the base map: z 7 48 on 48, z 6 37 on 37, z 5 18 on 18, 0 rooms closed, 829,327 tiles added, a second run
+  changes nothing; `check_hunt_returns.py`: 45 base hunts, 0 without a way back, every plan back through its camp
+  portal. Not played in a client.
 - **Assumption:** the base room lives on floors 5-7 above the open ground of z 7, so the new wings of floor 6 hang over
   grass seen from z 7 outside the hall like the rest of the hall's upper floors.
 
@@ -15790,7 +16092,8 @@ west to east (north before south in a column). A floor with too few slots is gro
   (`room.wings`, copied from the room's alcoves of floor 6, 8 modules on each side, `sweep = true`: they take the place
   of the impassable lawn beside the hall, only decoration; `check_swept` refuses a tile with an action id, a unique
   id, a teleport, a sign or contents) hold the content hunts of 200-500 that the floor's rule puts there. On the
-  test copy of the base map: z 7 48 hunts on 48 slots, z 6 6 on 37, z 5 8 on 18.
+  test copy of the base map: z 7 48 hunts on 48 slots, z 6 37 on 37, z 5 18 on 18 (6 on 37 and 8 on 18
+  before the hall fill of 2026-10-22, "Hunt teleports").
 - **Level and band (the rule).** A hunt's level is the weighted median of its monsters' hunting levels (a plan: the
   middle of its `level`); its band, on its sign and label, is the weighted 20th-80th percentile, to 5s. One strong
   monster in a mixed area moves neither.
@@ -15918,6 +16221,7 @@ west to east (north before south in a column). A floor with too few slots is gro
     (group 7) with the room's own.
   - *Rooms without a hunt* ("many unused spawns"). The hall has 103 hunt rooms and 62 hunts (45 base, 17 planned):
     floor 7 48 on 48, floor 6 6 on 37, floor 5 8 on 18, by the owner's level rule; there are no hunts without a room.
+    Since the hall fill (2026-10-22) 103 hunts (45 base, 58 planned) take all 103 rooms, so none is closed.
     A room no hunt takes showed a dead teleport (the ring and sparkle of the alcove, no teleport, no label, no
     display). Now it is closed (`hall.closed`): the alcove's own teleport-row wall piece (29306) on its teleport
     tile, the ring and sparkle (8047, 1421) off, the sign blank; the counter stays behind the wall as a niche. A room a
@@ -19605,14 +19909,60 @@ tested by `tests/nemesis_test.lua` (core and `nemesis.lua` against a mocked engi
 
 ## Tales (`tales.lua`, `tales_core.lua`, `tales_config.lua`, `lore_data.lua`, npc `Archivist Maelis`)
 
-Story quests for the bands with none (docs/CONTENT.md): The Bone Choir (200), The Wyrm Tithe (500), Requiem for the
-Ash-Sister (800) and The Last Ember (1000). The giver is Archivist Maelis (`data/npc/Archivist Maelis.xml`,
-`npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup; `install_class_ascension.py` copies the
-NPC folder. Steps: kill (party members within 30 squares share the kill), deliver, report. Rewards: experience, bank gold,
-orbs, faction reputation and a lore book. Every text is English and Brazilian Portuguese: a player says "portugues" or
-"english" to the Archivist, or `Chaos.t`'s language decides. The Archivist also answers lore questions from
-`lore_data.lua`. Modal windows 7170-7171. Storages 7101500 - 7101549 (a slot per tale; never reuse one). No spoken
-`!command`. Pure logic: `tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
+Story quests from level 8 to 2000: 27 tales (2026-10-22: 23 added to the first 4). The giver is Archivist Maelis
+(`data/npc/Archivist Maelis.xml`, `npc/scripts/archivist_maelis.lua`), placed next to the first temple at startup;
+`install_class_ascension.py` copies the NPC folder. She gives and closes every tale.
+
+| Level | Tale | Faction | Requires |
+|---|---|---|---|
+| 8 | Teeth in the Cellars | circle | |
+| 12 | The Lantern Road | vigil | Teeth in the Cellars |
+| 15 | The Troll Toll | compact | |
+| 20 | The Deserters of Anvildeep | compact | |
+| 25 | Rime and Ruin | circle | |
+| 30 | The Stone Watchers | vigil | The Lantern Road |
+| 40 | The Grave Circle | vigil | The Stone Watchers |
+| 50 | The Dragon Census | choir | |
+| 65 | The Moon-Sick | circle | |
+| 70 | Lords of the Brood | choir | The Dragon Census |
+| 85 | The Hundred Heads | circle | The Moon-Sick |
+| 100 | Where the Lost Souls Walk | vigil | |
+| 120 | The Bone Court | vigil | Where the Lost Souls Walk |
+| 130 | Outcasts of the Pit | compact | |
+| 160 | Wings of the Unburied | choir | Lords of the Brood |
+| 200 | The Bone Choir | | |
+| 340 | The Mould Gardens | circle | |
+| 360 | Phantoms of the Furnace | compact | |
+| 470 | The Ash Widows | circle | |
+| 500 | The Wyrm Tithe | | |
+| 800 | Requiem for the Ash-Sister | | |
+| 800 | The Keeper's Key | compact | |
+| 1000 | The Last Ember | | |
+| 1000 | The Gravecage | vigil | |
+| 1300 | Kharzun's Anvil | compact | |
+| 1600 | The Fallen Seraph | choir | Kharzun's Anvil |
+| 2000 | The Chained Wyrm | vigil | The Fallen Seraph |
+
+- **Steps.** kill (party members within 30 squares share the kill), visit, talk, deliver, report. The last step is
+  always deliver or report at the Archivist; `M.problems` refuses any other config and the startup logs it.
+- **Visit.** Stand within `radius` of a place: a hunting mark of `data/chaos_poi.lua`. Only characters with an open
+  visit step are watched (`T.watch`); the global event `ChaosTalesVisit` checks them every `visitMs` (3 s) and sweeps
+  all players every `visitSweep` ticks. The place is revealed on the map when the step opens (`ChaosPoi.seen`, opcode
+  153 `reveal`).
+- **Talk.** Ask a faction NPC for "tales" (Warden Ysolde, Forgemaster Brannoc, Cantor Velith, Elder Bramwyn).
+  `npc/scripts/chaos_faction_npc.lua` loads `tales_core.lua` and does the step in its own Lua state; with nothing
+  pending the faction dialogue runs as before.
+- **Chains.** `requires` names a tale that must be done first. A locked tale is not offered, and a forged accept is
+  refused.
+- **Rewards.** Experience, bank gold, orbs, faction reputation and a lore book. The experience is a share of the next
+  level, measured at most at the top of the tale's band (`M.xpLevel`), so a high character gets no huge reward from a
+  low tale.
+
+Every text is English and Brazilian Portuguese: a player says "portugues" or "english" to the Archivist, or `Chaos.t`'s
+language decides. The Archivist also answers lore questions from `lore_data.lua`. The list shows tales in progress
+first, then new ones, then done ones. Modal windows 7170-7171. Storages 7101500 - 7101549 (slots 1-19) and 7101560 -
+7101599 (slots 20-39); a slot per tale, append only, never reuse one. No spoken `!command`. Pure logic:
+`tales_core.lua`; tests: `tests/tales_test.lua`. Not run on a live server.
 
 ## First hour (`firsthour.lua`, `firsthour_core.lua`, `firsthour_config.lua`)
 

@@ -17,6 +17,11 @@
      "name": "Login artwork",
      "author": "the Cinders of Chaos team",
      "use": "the login screen"
+    },
+    {
+     "name": "Owner-supplied outfits",
+     "use": "the moon outfits and the costumes (plush bears, crawling hands, fry box)",
+     "source": "supplied by the owner, source pack unnamed"
     }
    ]
   },

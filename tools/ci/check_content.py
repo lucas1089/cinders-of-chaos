@@ -363,13 +363,14 @@ import xml.etree.ElementTree as ET
 def _opt(flag):
     return sys.argv[sys.argv.index(flag) + 1] if flag in sys.argv[:-1] else None
 
-# the client pair the monsters are drawn with: pair 33 (client/MANIFEST.md "Pair 33 build"), 2667 outfits (pair 33 adds
+# the client pair the monsters are drawn with: pair 37 (client/MANIFEST.md "Owner outfits (pair 37)"), 2681 outfits
+# (pair 37 adds the moon outfits and costumes 2668-2681, no blank padding; pairs 34-36 added none); pair 33 had 2667 (it adds
 # the wings 2385-2476, head accessories 2477-2568, capes 2569-2657 and the harvest kit looks 2658-2667, no blank
 # padding; pairs 31 and 32 added none); things_custom30 had 2384 (pair 30 adds the
 # 75 sheet looks 2237-2311 and the 73 strip looks 2312-2384, art_import/pack30_looks.csv and pack30_strips.csv, no
 # blank padding; pair 29 added the Archmage 2235 / 2236); the blank ones have no sprite at all (stock gaps, 1562-1999 and 2082-2099 reserved, 2143-2160
 # and 2194-2199 padding). --pair recounts both.
-PAIR_NAME, PAIR_OUTFITS = 'pair 33', 2667
+PAIR_NAME, PAIR_OUTFITS = 'pair 37', 2681
 PAIR_BLANK = ('135 161-191 411 415 424 439-440 468-469 474-485 501 518-520 524-525 536 543 549 581-582 597 616 623 '
               '625 638-643 645-646 652-663 678 700-711 713 715 718-719 722-723 737 741-744 748 751-758 764-841 861 '
               '864-867 871-872 880 891-898 1562-1999 2082-2099 2143-2160 2194-2199')

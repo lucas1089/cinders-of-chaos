@@ -136,6 +136,12 @@ check(strpos($html, '<summary>Details</summary>') !== false && strpos($html, '(b
 
 // the leaderboard hold clause (lib.php)
 check(strpos(chaos_antibot_hold_sql(), 'NOT EXISTS (SELECT 1 FROM `chaos_antibot_holds`') !== false, 'hold clause for the boards');
+// the staff's tester bots never rank (server/README.md "Tester bots"; the game's Chaos.storage.tester)
+check(chaos_tester_sql() === ' AND NOT EXISTS (SELECT 1 FROM `player_storage` `ts` WHERE `ts`.`player_id` = `p`.`id` AND `ts`.`key` = 7102900 AND `ts`.`value` = 1)',
+	'tester clause for the boards');
+check(strpos(chaos_tester_sql('`players`'), '`players`.`id`') !== false, 'tester clause with another alias');
+check(preg_match('/Chaos\.storage\.tester = 7102900\b/', (string)file_get_contents(__DIR__ . '/../../server/data/scripts/chaos/chaos_constants.lua')) === 1,
+	'the website uses the game\'s tester storage key');
 
 echo $failed === 0 ? "chaos_reports_page_test: OK\n" : "chaos_reports_page_test: $failed failed\n";
 exit($failed === 0 ? 0 : 1);

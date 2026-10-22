@@ -1,0 +1,490 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "scaldmoor_expanse",
+  "name": "Scaldmoor Expanse",
+  "biome": "waste",
+  "size": [
+    188,
+    143
+  ],
+  "floors": 1,
+  "level": [
+    1050,
+    1200
+  ],
+  "seed": 30503,
+  "origin": {
+    "x": 15824,
+    "y": 14952,
+    "z": 7
+  },
+  "decoration": "dense",
+  "light": "normal",
+  "zones": [
+    {
+      "id": "dust_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "bleached_mesa",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "salt_reach",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "dusty_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "cracked_fields",
+      "floor": 1,
+      "size": "huge",
+      "place": "south"
+    },
+    {
+      "id": "barren_crags",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "ashen_plain",
+      "floor": 1,
+      "size": [
+        27,
+        20
+      ],
+      "place": "west"
+    },
+    {
+      "id": "sunbaked_dunes",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "burnt_flats",
+      "floor": 1,
+      "size": [
+        30,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "cinder_gulch",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "shattered_scar",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ]
+    },
+    {
+      "id": "windswept_ridge",
+      "floor": 1,
+      "size": [
+        19,
+        16
+      ]
+    },
+    {
+      "id": "scorched_pan",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "grey_bluff",
+      "floor": 1,
+      "size": "small",
+      "role": "treasure"
+    }
+  ],
+  "paths": [
+    {
+      "from": "dust_camp",
+      "to": "bleached_mesa",
+      "width": 3
+    },
+    {
+      "from": "bleached_mesa",
+      "to": "salt_reach",
+      "width": 3
+    },
+    {
+      "from": "salt_reach",
+      "to": "dusty_hollow",
+      "width": 3
+    },
+    {
+      "from": "dusty_hollow",
+      "to": "cracked_fields",
+      "width": 3
+    },
+    {
+      "from": "cracked_fields",
+      "to": "barren_crags",
+      "width": 3
+    },
+    {
+      "from": "barren_crags",
+      "to": "ashen_plain",
+      "width": 3
+    },
+    {
+      "from": "ashen_plain",
+      "to": "sunbaked_dunes",
+      "width": 3
+    },
+    {
+      "from": "sunbaked_dunes",
+      "to": "dust_camp",
+      "width": 3
+    },
+    {
+      "from": "dust_camp",
+      "to": "burnt_flats",
+      "width": 4
+    },
+    {
+      "from": "salt_reach",
+      "to": "burnt_flats",
+      "width": 3
+    },
+    {
+      "from": "cracked_fields",
+      "to": "burnt_flats",
+      "width": 3
+    },
+    {
+      "from": "ashen_plain",
+      "to": "burnt_flats",
+      "width": 3
+    },
+    {
+      "from": "ashen_plain",
+      "to": "cinder_gulch",
+      "width": 3
+    },
+    {
+      "from": "cinder_gulch",
+      "to": "sunbaked_dunes",
+      "width": 3
+    },
+    {
+      "from": "bleached_mesa",
+      "to": "shattered_scar",
+      "width": 3
+    },
+    {
+      "from": "shattered_scar",
+      "to": "salt_reach",
+      "width": 3
+    },
+    {
+      "from": "barren_crags",
+      "to": "windswept_ridge",
+      "width": 3
+    },
+    {
+      "from": "windswept_ridge",
+      "to": "ashen_plain",
+      "width": 3
+    },
+    {
+      "from": "sunbaked_dunes",
+      "to": "scorched_pan",
+      "width": 3
+    },
+    {
+      "from": "scorched_pan",
+      "to": "dust_camp",
+      "width": 3
+    },
+    {
+      "from": "bleached_mesa",
+      "to": "grey_bluff",
+      "width": 2
+    }
+  ],
+  "entry": {
+    "zone": "dust_camp"
+  },
+  "exit": {
+    "zone": "dust_camp"
+  },
+  "spawns": [
+    {
+      "zone": "bleached_mesa",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_mesa",
+      "monster": "Slagborer Reaver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bleached_mesa",
+      "monster": "Slagheart",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Bellhelm Zealot",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Wax Penitent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "salt_reach",
+      "monster": "Gildguard Revenant",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_hollow",
+      "monster": "Slagborer Reaver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_hollow",
+      "monster": "Slagheart",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "dusty_hollow",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_fields",
+      "monster": "Wax Penitent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_fields",
+      "monster": "Gildguard Revenant",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cracked_fields",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Slagheart",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "barren_crags",
+      "monster": "Slagborer Reaver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_plain",
+      "monster": "Gildguard Revenant",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_plain",
+      "monster": "Bellhelm Zealot",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "ashen_plain",
+      "monster": "Wax Penitent",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_dunes",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_dunes",
+      "monster": "Slagborer Reaver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunbaked_dunes",
+      "monster": "Slagheart",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_gulch",
+      "monster": "Bellhelm Zealot",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "cinder_gulch",
+      "monster": "Wax Penitent",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scar",
+      "monster": "Slagborer Reaver",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scar",
+      "monster": "Slagheart",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "shattered_scar",
+      "monster": "Masque Dancer",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "windswept_ridge",
+      "monster": "Wax Penitent",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "windswept_ridge",
+      "monster": "Gildguard Revenant",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "windswept_ridge",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_pan",
+      "monster": "Slagheart",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "scorched_pan",
+      "monster": "Masque Dancer",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_flats",
+      "monster": "Gildguard Revenant",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_flats",
+      "monster": "Bellhelm Zealot",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "burnt_flats",
+      "monster": "Wax Penitent",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "chests": [
+    {
+      "zone": "grey_bluff",
+      "quest": "scaldmoor_bluff",
+      "reward": {
+        "gold": 1200000,
+        "items": [
+          {
+            "name": "Orb of Upheaval",
+            "count": 4
+          }
+        ],
+        "message": "A buried cache, warm from the sun."
+      }
+    }
+  ],
+  "chest_action": 47984,
+  "notes": "Content plan (hall fill, 2026-10-22): a waste hunt for levels 1050-1200 on floor 5 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Masque Dancer, Bellhelm Zealot, Slagborer Reaver, Wax Penitent, Slagheart, Gildguard Revenant. Display monster: Masque Dancer."
+}

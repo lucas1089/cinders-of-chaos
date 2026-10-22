@@ -1,0 +1,451 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "leechwater_fen",
+  "name": "Leechwater Fen",
+  "biome": "swamp",
+  "size": [
+    178,
+    141
+  ],
+  "floors": 1,
+  "level": [
+    695,
+    810
+  ],
+  "seed": 30269,
+  "origin": {
+    "x": 16232,
+    "y": 14544,
+    "z": 8
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "stilt_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "south",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "mossy_fen",
+      "floor": 1,
+      "size": [
+        28,
+        18
+      ],
+      "place": "north"
+    },
+    {
+      "id": "peat_sink",
+      "floor": 1,
+      "size": [
+        22,
+        16
+      ],
+      "place": "northeast"
+    },
+    {
+      "id": "fetid_hollow",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "murky_mire",
+      "floor": 1,
+      "size": [
+        26,
+        16
+      ],
+      "place": "southeast"
+    },
+    {
+      "id": "misty_reeds",
+      "floor": 1,
+      "size": [
+        23,
+        18
+      ],
+      "place": "southwest"
+    },
+    {
+      "id": "rotting_wallow",
+      "floor": 1,
+      "size": "huge",
+      "place": "west"
+    },
+    {
+      "id": "stagnant_mudbank",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "drowned_bank",
+      "floor": 1,
+      "size": [
+        28,
+        21
+      ],
+      "place": "center"
+    },
+    {
+      "id": "bog_islet",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "sunken_pools",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "brackish_flats",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "reeking_roots",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "mossy_fen",
+      "to": "peat_sink",
+      "width": 3
+    },
+    {
+      "from": "peat_sink",
+      "to": "fetid_hollow",
+      "width": 3
+    },
+    {
+      "from": "fetid_hollow",
+      "to": "murky_mire",
+      "width": 3
+    },
+    {
+      "from": "murky_mire",
+      "to": "stilt_camp",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "misty_reeds",
+      "width": 3
+    },
+    {
+      "from": "misty_reeds",
+      "to": "rotting_wallow",
+      "width": 3
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "stagnant_mudbank",
+      "width": 3
+    },
+    {
+      "from": "stagnant_mudbank",
+      "to": "mossy_fen",
+      "width": 3
+    },
+    {
+      "from": "mossy_fen",
+      "to": "drowned_bank",
+      "width": 3
+    },
+    {
+      "from": "fetid_hollow",
+      "to": "drowned_bank",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "drowned_bank",
+      "width": 4
+    },
+    {
+      "from": "rotting_wallow",
+      "to": "drowned_bank",
+      "width": 3
+    },
+    {
+      "from": "mossy_fen",
+      "to": "bog_islet",
+      "width": 3
+    },
+    {
+      "from": "bog_islet",
+      "to": "peat_sink",
+      "width": 3
+    },
+    {
+      "from": "fetid_hollow",
+      "to": "sunken_pools",
+      "width": 3
+    },
+    {
+      "from": "sunken_pools",
+      "to": "murky_mire",
+      "width": 3
+    },
+    {
+      "from": "stilt_camp",
+      "to": "brackish_flats",
+      "width": 3
+    },
+    {
+      "from": "brackish_flats",
+      "to": "misty_reeds",
+      "width": 3
+    },
+    {
+      "from": "stagnant_mudbank",
+      "to": "reeking_roots",
+      "width": 3
+    },
+    {
+      "from": "reeking_roots",
+      "to": "mossy_fen",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "stilt_camp"
+  },
+  "exit": {
+    "zone": "stilt_camp"
+  },
+  "spawns": [
+    {
+      "zone": "mossy_fen",
+      "monster": "Loricate Orger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_fen",
+      "monster": "Ironmask Taskmaster",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_fen",
+      "monster": "Gallows Oak",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Frost Maiden",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Dreamgorger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "peat_sink",
+      "monster": "Loricate Orger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_hollow",
+      "monster": "Ironmask Taskmaster",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_hollow",
+      "monster": "Gallows Oak",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "fetid_hollow",
+      "monster": "Frost Maiden",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_mire",
+      "monster": "Dreamgorger",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_mire",
+      "monster": "Loricate Orger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "murky_mire",
+      "monster": "Ironmask Taskmaster",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "misty_reeds",
+      "monster": "Gallows Oak",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "misty_reeds",
+      "monster": "Frost Maiden",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "misty_reeds",
+      "monster": "Dreamgorger",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Loricate Orger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Ironmask Taskmaster",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_wallow",
+      "monster": "Gallows Oak",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Frost Maiden",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Dreamgorger",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "stagnant_mudbank",
+      "monster": "Ironmask Taskmaster",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_islet",
+      "monster": "Ironmask Taskmaster",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "bog_islet",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_pools",
+      "monster": "Dreamgorger",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sunken_pools",
+      "monster": "Loricate Orger",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_flats",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "brackish_flats",
+      "monster": "Ironmask Taskmaster",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_roots",
+      "monster": "Loricate Orger",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "reeking_roots",
+      "monster": "Ironmask Taskmaster",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_bank",
+      "monster": "Frost Maiden",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_bank",
+      "monster": "Dreamgorger",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "drowned_bank",
+      "monster": "Loricate Orger",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a swamp hunt for levels 695-810 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Loricate Orger, Frost Maiden, Ironmask Taskmaster, Dreamgorger, Gallows Oak. Display monster: Ironmask Taskmaster."
+}

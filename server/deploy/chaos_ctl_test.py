@@ -13,6 +13,11 @@ start / stop / restart with exit 5 and "unit-not-found". With a live engine pid 
 unit's main process). CHAOS_DB_SOCKET and CHAOS_MYSQL reach the database client;
 a missing client exits 127 with "mysql-not-found".
 
+Tester bots (testers start | stop | status | report | cleanup, with a stub testers.py): the refusals (development key
+allowed in config.lua, no key file, a key file readable by others, N over 150, a helper not loaded without --restart),
+the helper copied into data/scripts and removed by stop, the run in its own process group that stop ends, the key file
+path and never a key or the database password on a command line, cleanup waiting after a stop, --yes for deleting.
+
 The admin commands of 2026-10-21: xp-rate (show, set with and without restart, reset, refusals), backups, health,
 cleanup (lists, then removes only old work folders, srvNN and engine backups beyond the newest 2), account-create /
 account-password (the password from stdin, a PBKDF2 hash to the database client on stdin, never on a command line),
@@ -365,6 +370,7 @@ def main():
         out, _ = status({'CHAOS_PID_FILE': pidf})
         check(out.get('pid') == '', 'a pid that is not the engine (tfs) is not used')
     test_admin_commands()
+    test_testers()
     print('chaos_ctl_test: %d failures' % failures)
     return 1 if failures else 0
 
@@ -535,6 +541,169 @@ def test_admin_commands():
               'update-status: ' + r.stdout + r.stderr)
         r = run('site-install', extra={'CHAOS_SITE_ENV': os.path.join(tmp, 'nope.env')})
         check(r.returncode != 0, 'site-install without a site settings file is refused')
+
+
+TESTERS_STUB = """import os, sys, time
+with open(os.path.join(os.environ['STUB'], 'testers_calls'), 'a') as f:
+    f.write(' '.join(sys.argv[1:]) + ' db=' + ('yes' if os.environ.get('CHAOS_DB_PASS') == 'secret' else 'no') + '\\n')
+if sys.argv[1] == 'status':
+    print('bots=%s' % os.environ.get('STUB_BOTS', '0'))
+    print('minutes=2')
+if sys.argv[1] == 'run':
+    time.sleep(60)
+"""
+
+
+def test_testers():
+    """chaos-ctl.sh testers: refusals, the helper copied and removed, the run started and stopped, cleanup"""
+    import signal
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = os.path.join(tmp, 'stub')
+        server = os.path.join(tmp, 'server')
+        repo = os.path.join(tmp, 'repo')
+        state = os.path.join(tmp, 'tstate')
+        os.makedirs(stub)
+        os.makedirs(os.path.join(server, 'data', 'scripts'))
+        os.makedirs(os.path.join(repo, 'server', 'tools'))
+        for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL)):
+            p = os.path.join(stub, name)
+            with open(p, 'w') as f:
+                f.write(body)
+            os.chmod(p, 0o755)
+        with open(os.path.join(repo, 'server', 'tools', 'testers.py'), 'w') as f:
+            f.write(TESTERS_STUB)
+        for name in ('tester_helper.lua', 'tester_helper_core.lua'):
+            with open(os.path.join(repo, 'server', 'tools', name), 'w') as f:
+                f.write('-- ' + name + '\n')
+        cfg = os.path.join(server, 'config.lua')
+        with open(cfg, 'w') as f:
+            f.write('-- clientGuardAllowDevKey = true\nclientGuardAllowDevKey = false\n')
+        env_file = os.path.join(tmp, 'chaos.env')
+        with open(env_file, 'w') as f:
+            f.write('CHAOS_DB_USER=chaos\nCHAOS_DB_PASS=secret\n')
+        key = os.path.join(tmp, 'tester-client-key')
+        log = os.path.join(tmp, 'server.log')
+        with open(log, 'w') as f:
+            f.write('Loading config\nserver online\n')
+        env = dict(os.environ, PATH=stub + ':' + os.environ['PATH'], STUB=stub, CHAOS_CTL_NO_SUDO='1',
+                   CHAOS_SERVER_DIR=server, CHAOS_ENV=env_file, CHAOS_REPO=repo, CHAOS_MYSQL='mysql',
+                   CHAOS_CTL_CONF=os.path.join(tmp, 'none.conf'), CHAOS_PID_FILE=os.path.join(tmp, 'no.pid'),
+                   CHAOS_LOG=log, CHAOS_TESTER_KEY=key, CHAOS_TESTER_STATE=state,
+                   CHAOS_TESTER_LOG=os.path.join(tmp, 'testers.log'))
+        for k in ('SUDO_USER', 'CHAOS_UNIT', 'CHAOS_ROOT', 'CHAOS_KIT_DIR', 'CHAOS_DB_SOCKET'):
+            env.pop(k, None)
+
+        def run(*args, extra=None):
+            return subprocess.run(['bash', SCRIPT] + list(args), env=dict(env, **(extra or {})), capture_output=True,
+                                  text=True, timeout=60)
+
+        def tcalls():
+            p = os.path.join(stub, 'testers_calls')
+            return open(p).read() if os.path.exists(p) else ''
+
+        helper = os.path.join(server, 'data', 'scripts', 'zz_tester_helper.lua')
+        r = run('testers', 'start')
+        check(r.returncode != 0 and 'read -rsp' in r.stderr and key in r.stderr,
+              'testers: no key file, the read -rs command is shown: ' + r.stderr)
+        with open(key, 'w') as f:
+            f.write('ab' * 32 + '\n')
+        os.chmod(key, 0o644)
+        r = run('testers', 'start')
+        check(r.returncode != 0 and 'readable by group or others' in r.stderr, 'testers: a readable key file is refused')
+        os.chmod(key, 0o600)
+        with open(cfg, 'a') as f:
+            f.write('clientGuardAllowDevKey = true\n')
+        r = run('testers', 'start')
+        check(r.returncode != 0 and 'clientGuardAllowDevKey' in r.stderr, 'testers: the development key is refused')
+        with open(cfg, 'w') as f:
+            f.write('clientGuardAllowDevKey = false\n')
+        for bad in (('151',), ('0',), ('5', '0'), ('5', '2000'), ('x',), ('5', '5', '5'), ('--restart', 'x'),
+                    ('--restart', '5000')):
+            check(run('testers', 'start', *bad).returncode != 0, 'testers start refused: %r' % (bad,))
+        check(run('testers', 'fly').returncode != 0, 'testers: an unknown subcommand is refused')
+        r = run('testers', 'start', '5', '2')
+        check(r.returncode != 0 and 'helper-not-loaded' in r.stderr and '--restart' in r.stderr,
+              'testers: a helper not loaded since the server start is refused: ' + r.stderr)
+        check(not os.path.exists(helper), 'a refused start leaves no helper in data/scripts')
+        check(tcalls() == '', 'nothing refused ran testers.py')
+
+        with open(log, 'a') as f:
+            f.write('[tester-helper] running (TEST ONLY)\n')
+        r = run('testers', 'start', '5', '2')
+        check(r.returncode == 0 and 'tester bots: 5 for 2 minutes' in r.stdout, 'testers start: ' + r.stdout + r.stderr)
+        check(os.path.exists(helper) and os.path.exists(helper.replace('helper.lua', 'helper_core.lua')),
+              'the helper is copied into data/scripts')
+        pid = int(open(os.path.join(state, 'run.pid')).read())
+        try:
+            check(oct(os.stat(state).st_mode & 0o777) == '0o700', 'the state folder is root only')
+            for _ in range(50):
+                if 'run --key-file' in tcalls():
+                    break
+                time.sleep(0.1)
+            calls = tcalls()
+            check('setup --count 5 --server-dir ' + server in calls, 'setup of 5 testers: ' + calls)
+            check('run --key-file %s --server-dir %s' % (key, server) in calls and '--minutes 2 --count 5' in calls,
+                  'the run: the key file path, minutes, count: ' + calls)
+            check('--scenarios ' in calls and 'server/tools/tester_scenarios.json' in calls,
+                  'the run gets the coverage table: ' + calls)
+            check('ab' * 32 not in calls and 'secret' not in calls, 'no key and no password on a command line')
+            check('db=yes' in calls, 'the database settings reach testers.py by the environment')
+            check(os.getpgid(pid) == pid, 'the run has its own process group')
+            r = run('testers', 'status', extra={'STUB_BOTS': '5'})
+            out = dict(l.split('=', 1) for l in r.stdout.splitlines() if '=' in l)
+            check(out.get('running') == 'yes' and out.get('pid') == str(pid) and out.get('bots') == '5'
+                  and out.get('helper') == 'copied' and out.get('helper_loaded') == 'yes', 'testers status: ' + r.stdout)
+            r = run('testers', 'start', '5', '2')
+            check(r.returncode != 0 and 'already running' in r.stderr, 'a second start is refused')
+            r = run('testers', 'cleanup', '--yes')
+            check(r.returncode != 0 and 'wait' in r.stderr, 'cleanup right after a stop waits: ' + r.stderr)
+            check(not os.path.exists(helper), 'cleanup stopped the run and removed the helper')
+            dead = False
+            for _ in range(50):
+                try:
+                    os.kill(pid, 0)
+                except OSError:
+                    dead = True
+                    break
+                time.sleep(0.1)
+            check(dead, 'stop ended the run')
+        finally:
+            try:
+                os.killpg(pid, signal.SIGKILL)
+            except OSError:
+                pass
+        r = run('testers', 'stop')
+        check(r.returncode == 0 and not os.path.exists(helper), 'stop when nothing runs is fine')
+        with open(os.path.join(state, 'stopped'), 'w') as f:
+            f.write('%d\n' % (time.time() - 600))
+        before = tcalls()
+        r = run('testers', 'cleanup')
+        check(r.returncode == 0 and 'cleanup --state %s --dry-run' % state in tcalls()[len(before):]
+              and 'nothing deleted' in r.stdout, 'cleanup without --yes only lists: ' + r.stdout + r.stderr)
+        before = tcalls()
+        r = run('testers', 'cleanup', '--yes')
+        new = tcalls()[len(before):]
+        check(r.returncode == 0 and 'cleanup --state ' + state in new and '--dry-run' not in new,
+              'cleanup --yes deletes: ' + new)
+        check(run('testers', 'cleanup', '--all').returncode != 0, 'cleanup: an unknown option is refused')
+        r = run('testers', 'report')
+        check(r.returncode == 0 and 'report --state %s --log %s' % (state, log) in tcalls(), 'report reads the log')
+
+        # not loaded, with --restart: the restart countdown is queued, the bots wait for it
+        with open(log, 'a') as f:
+            f.write('Loading config\n')
+        r = run('testers', 'start', '3', '1', '--restart', '5', extra={'STUB_BOTS': '5'})
+        check(r.returncode == 0 and 'starting in 35 s' in r.stdout, 'start --restart: ' + r.stdout + r.stderr)
+        check('The server restarts in 5 seconds' in open(os.path.join(server, 'remote.cmd')).read(),
+              'the restart countdown is announced')
+        pid = int(open(os.path.join(state, 'run.pid')).read())
+        r = run('testers', 'stop')
+        check(r.returncode == 0 and not os.path.exists(helper), 'stop removes the helper')
+        try:
+            os.killpg(pid, signal.SIGKILL)
+        except OSError:
+            pass
+        time.sleep(6)  # the stub restart countdown runs out inside the folder
 
 
 if __name__ == '__main__':

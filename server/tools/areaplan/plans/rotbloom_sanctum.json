@@ -1,0 +1,465 @@
+{
+  "schema": "chaos-area-plan/1",
+  "id": "rotbloom_sanctum",
+  "name": "Rotbloom Sanctum",
+  "biome": "sanctum",
+  "size": [
+    178,
+    139
+  ],
+  "floors": 1,
+  "level": [
+    665,
+    780
+  ],
+  "seed": 30243,
+  "origin": {
+    "x": 15824,
+    "y": 14544,
+    "z": 9
+  },
+  "decoration": "dense",
+  "light": "dim",
+  "zones": [
+    {
+      "id": "pilgrim_camp",
+      "floor": 1,
+      "size": "small",
+      "place": "north",
+      "role": "camp",
+      "pz": true
+    },
+    {
+      "id": "tainted_arbour",
+      "floor": 1,
+      "size": "huge",
+      "place": "northeast"
+    },
+    {
+      "id": "sour_cellar",
+      "floor": 1,
+      "size": "huge",
+      "place": "east"
+    },
+    {
+      "id": "veiled_well",
+      "floor": 1,
+      "size": "huge",
+      "place": "southeast"
+    },
+    {
+      "id": "damp_chapel",
+      "floor": 1,
+      "size": [
+        27,
+        19
+      ],
+      "place": "south"
+    },
+    {
+      "id": "mossy_cell",
+      "floor": 1,
+      "size": "huge",
+      "place": "southwest"
+    },
+    {
+      "id": "festering_sanctum",
+      "floor": 1,
+      "size": [
+        27,
+        19
+      ],
+      "place": "west"
+    },
+    {
+      "id": "withered_grotto",
+      "floor": 1,
+      "size": "huge",
+      "place": "northwest"
+    },
+    {
+      "id": "blighted_garden",
+      "floor": 1,
+      "size": [
+        32,
+        22
+      ],
+      "place": "center"
+    },
+    {
+      "id": "glowcap_altar",
+      "floor": 1,
+      "size": [
+        21,
+        15
+      ]
+    },
+    {
+      "id": "creeping_shrine",
+      "floor": 1,
+      "size": "large"
+    },
+    {
+      "id": "rotting_beds",
+      "floor": 1,
+      "size": [
+        22,
+        15
+      ]
+    },
+    {
+      "id": "spore_cloister",
+      "floor": 1,
+      "size": "large"
+    }
+  ],
+  "paths": [
+    {
+      "from": "pilgrim_camp",
+      "to": "tainted_arbour",
+      "width": 3
+    },
+    {
+      "from": "tainted_arbour",
+      "to": "sour_cellar",
+      "width": 3
+    },
+    {
+      "from": "sour_cellar",
+      "to": "veiled_well",
+      "width": 3
+    },
+    {
+      "from": "veiled_well",
+      "to": "damp_chapel",
+      "width": 3
+    },
+    {
+      "from": "damp_chapel",
+      "to": "mossy_cell",
+      "width": 3
+    },
+    {
+      "from": "mossy_cell",
+      "to": "festering_sanctum",
+      "width": 3
+    },
+    {
+      "from": "festering_sanctum",
+      "to": "withered_grotto",
+      "width": 3
+    },
+    {
+      "from": "withered_grotto",
+      "to": "pilgrim_camp",
+      "width": 3
+    },
+    {
+      "from": "pilgrim_camp",
+      "to": "blighted_garden",
+      "width": 4
+    },
+    {
+      "from": "sour_cellar",
+      "to": "blighted_garden",
+      "width": 3
+    },
+    {
+      "from": "damp_chapel",
+      "to": "blighted_garden",
+      "width": 3
+    },
+    {
+      "from": "festering_sanctum",
+      "to": "blighted_garden",
+      "width": 3
+    },
+    {
+      "from": "veiled_well",
+      "to": "glowcap_altar",
+      "width": 3
+    },
+    {
+      "from": "glowcap_altar",
+      "to": "damp_chapel",
+      "width": 3
+    },
+    {
+      "from": "festering_sanctum",
+      "to": "creeping_shrine",
+      "width": 3
+    },
+    {
+      "from": "creeping_shrine",
+      "to": "withered_grotto",
+      "width": 3
+    },
+    {
+      "from": "tainted_arbour",
+      "to": "rotting_beds",
+      "width": 3
+    },
+    {
+      "from": "rotting_beds",
+      "to": "sour_cellar",
+      "width": 3
+    },
+    {
+      "from": "damp_chapel",
+      "to": "spore_cloister",
+      "width": 3
+    },
+    {
+      "from": "spore_cloister",
+      "to": "mossy_cell",
+      "width": 3
+    }
+  ],
+  "entry": {
+    "zone": "pilgrim_camp"
+  },
+  "exit": {
+    "zone": "pilgrim_camp"
+  },
+  "spawns": [
+    {
+      "zone": "tainted_arbour",
+      "monster": "Shroud Brood",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_arbour",
+      "monster": "Blight Hound",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "tainted_arbour",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cellar",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cellar",
+      "monster": "Garack",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "sour_cellar",
+      "monster": "Shroud Brood",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_well",
+      "monster": "Blight Hound",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_well",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "veiled_well",
+      "monster": "Gallows Oak",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_chapel",
+      "monster": "Garack",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_chapel",
+      "monster": "Shroud Brood",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "damp_chapel",
+      "monster": "Blight Hound",
+      "count": 7,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cell",
+      "monster": "Swamp Snapper",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cell",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "mossy_cell",
+      "monster": "Garack",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_sanctum",
+      "monster": "Shroud Brood",
+      "count": 9,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_sanctum",
+      "monster": "Blight Hound",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "festering_sanctum",
+      "monster": "Swamp Snapper",
+      "count": 8,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grotto",
+      "monster": "Gallows Oak",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grotto",
+      "monster": "Garack",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "withered_grotto",
+      "monster": "Shroud Brood",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_altar",
+      "monster": "Blight Hound",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_altar",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "glowcap_altar",
+      "monster": "Gallows Oak",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_shrine",
+      "monster": "Garack",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "creeping_shrine",
+      "monster": "Shroud Brood",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_beds",
+      "monster": "Swamp Snapper",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_beds",
+      "monster": "Gallows Oak",
+      "count": 6,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "rotting_beds",
+      "monster": "Shroud Brood",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_cloister",
+      "monster": "Shroud Brood",
+      "count": 5,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "spore_cloister",
+      "monster": "Blight Hound",
+      "count": 4,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Gallows Oak",
+      "count": 11,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Garack",
+      "count": 13,
+      "respawn": 75,
+      "pack": 3
+    },
+    {
+      "zone": "blighted_garden",
+      "monster": "Shroud Brood",
+      "count": 10,
+      "respawn": 75,
+      "pack": 3
+    }
+  ],
+  "notes": "Content plan (hall fill, 2026-10-22): a sanctum hunt for levels 665-780 on floor 6 of the teleport hall (server/README.md \"Hall order\"). 12 hunting zones in loops; monsters Shroud Brood, Gallows Oak, Blight Hound, Garack, Swamp Snapper. Display monster: Shroud Brood."
+}

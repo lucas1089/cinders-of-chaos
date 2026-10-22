@@ -326,6 +326,12 @@ with _tempfile.NamedTemporaryFile('w', suffix='.log', delete=False) as f:
 eq(lt.probe_lines(f.name, 100, 200), [(100, 5, 51.2, 90, None), (105, 5, 52.0, 120, 70)], 'probe lines, p95 when printed')
 os.unlink(f.name)
 
+# ---------------------------------------------------------------- load bots and tester bots never overlap
+import tester_core as _tc  # noqa: E402
+eq(any(_tc.NAME_RE.match(lt.bot_name(i)) for i in range(2000)), False, 'no load bot has a tester name')
+eq(any(_tc.ACCOUNT_RE.match('%s%04d' % (lt.PREFIX, i)) for i in range(2000)), False, 'no load bot account is a tester one')
+eq(len(lt.GUARD_DEV_KEY), 32, 'the dev key testers.py refuses is 32 bytes')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('loadtest_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

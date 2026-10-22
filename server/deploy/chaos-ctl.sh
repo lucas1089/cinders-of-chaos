@@ -60,6 +60,18 @@
 #   install-admin [--full] KEYFILE|-
 #                               creates the user "chaosadmin" with that ssh public key (a file, or - for stdin) and the
 #                               right to run this script as root; --full also gives it passwordless sudo for everything
+#   testers start [N] [MINUTES] [--restart SECONDS]
+#                               tester bots (server/README.md "Tester bots"): N characters "Tester Xxx" (default 100, at
+#                               most 150) play for MINUTES (default 60, at most 1440), then stop by themselves. Copies the
+#                               TEST ONLY helper into data/scripts; it loads at a server start, so without one since the
+#                               copy the start is refused unless --restart SECONDS (restart with that countdown; the bots
+#                               start 30 s after it). Never with clientGuardAllowDevKey = true; the client key comes only
+#                               from CHAOS_TESTER_KEY (/etc/chaos/tester-client-key, root only, 0600)
+#   testers stop                ends the bots (they log out) and removes the helper from data/scripts
+#   testers status              key=value lines: running, pid, started, bots, minutes, logins, deaths, helper, helper_loaded
+#   testers report              the bug report of the last run (server log since the run started, what the bots saw)
+#   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
+#                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
 #
 # Settings, defaults for the standard layout: CHAOS_UNIT chaos-server, CHAOS_ROOT /opt/chaos,
 # CHAOS_SERVER_DIR $CHAOS_ROOT/server, CHAOS_REPO $CHAOS_ROOT/repo, CHAOS_ENV /etc/chaos/chaos.env,
@@ -72,7 +84,9 @@
 # encrypted with its CHAOS_CLIENT_KEY, which publish_client_update.sh reads from there). For the kit's update-*:
 # CHAOS_KIT_DIR (else CHAOS_ROOT when it holds start-server.sh), CHAOS_UPDATE_BRANCH main, CHAOS_RELEASE_REPO
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
-# $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log.
+# $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For testers:
+# CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
+# /var/log/chaos/testers.log.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -94,7 +108,8 @@ CONF=/etc/chaos/ctl.conf
 CONF_KEYS=" CHAOS_UNIT CHAOS_ROOT CHAOS_SERVER_DIR CHAOS_REPO CHAOS_ENV CHAOS_LOG CHAOS_UPDATE_LOG CHAOS_ADMIN_USER \
 CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CHAOS_SITE_DIR CHAOS_UPDATE_KEY \
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
-CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG "
+CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
+CHAOS_TESTER_STATE CHAOS_TESTER_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -154,6 +169,9 @@ PLOG=$(setting CHAOS_PUBLISH_LOG /var/log/chaos/publish-update.log)
 SITELOG=$(setting CHAOS_SITE_LOG /var/log/chaos/site-install.log)
 KSTATE=$(setting CHAOS_KIT_STATE /var/lib/chaos/kit-update)
 WORKDIR=$(setting CHAOS_WORK_DIR /var/tmp)
+TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
+TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
+TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -289,6 +307,52 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
       }
       if (mode != "all") printf "@older %d\n", older
     }'
+}
+
+# ---- tester bots (server/README.md "Tester bots")
+HELPER_FILES=(zz_tester_helper.lua zz_tester_helper_core.lua)
+testers_pid() {
+  local p
+  [ -r "$TSTATE/run.pid" ] || return 1
+  p=$(head -c 20 "$TSTATE/run.pid" | tr -dc 0-9)
+  [ -n "$p" ] && kill -0 "$p" 2>/dev/null || return 1
+  echo "$p"
+}
+# the helper printed "[tester-helper] running" after the newest server start in the log
+helper_loaded() {
+  tail -n 50000 "$LOG" 2>/dev/null | awk '
+    /Starting the game server \(|Loading config/ { start = NR }
+    /\[tester-helper\] running/ { run = NR }
+    END { exit !(run > start) }'
+}
+dev_key_on() {
+  [ -r "$SERVER/config.lua" ] && sed 's/--.*//' "$SERVER/config.lua" \
+    | grep -Eqi '^[[:space:]]*clientGuardAllowDevKey[[:space:]]*=[[:space:]]*true'
+}
+# the client key file: a plain file of root (or the user running this), no rights for group or others
+key_file_ok() {
+  local meta
+  if [ ! -f "$TKEY" ] || [ -L "$TKEY" ]; then
+    # shellcheck disable=SC2016
+    die "no client key file $TKEY. Create it as root (server/README.md \"Tester bots\"):" \
+      'sudo bash -c '"'"'umask 077; read -rsp "client key: " K; echo; printf "%s\n" "$K" > '"$TKEY'"
+  fi
+  meta=$(stat -c '%u %a' "$TKEY") || die "cannot read $TKEY"
+  [ "${meta% *}" = 0 ] || [ "${meta% *}" = "$(id -u)" ] || die "$TKEY is not owned by root"
+  (( (8#${meta#* } & 8#077) == 0 )) || die "$TKEY is readable by group or others (chmod 600 $TKEY)"
+}
+remove_helper() {
+  local f
+  for f in "${HELPER_FILES[@]}"; do rm -f "$SERVER/data/scripts/$f"; done
+}
+# testers.py with the database settings of the env file (never on a command line)
+testers_py() {
+  local py="$REPO/server/tools/testers.py"
+  [ -r "$py" ] || die "no $py"
+  ( set -a; . "$ENVFILE"
+    [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK
+    CHAOS_MYSQL=$MYSQL
+    set +a; exec python3 -I "$py" "$@" )
 }
 
 cmd=${1:-}
@@ -709,6 +773,122 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     install -m 0440 "$tmp" /etc/sudoers.d/chaos-admin
     rm -f "$tmp"
     echo "user $ADMIN ready ($([ "$full" -eq 1 ] && echo 'full sudo' || echo 'sudo for chaos-ctl.sh only')); key installed"
+    ;;
+  testers)
+    sub=${1:-status}
+    [ $# -gt 0 ] && shift
+    case $sub in
+      start)
+        n=100 minutes=60 rsecs="" pos=0
+        while [ $# -gt 0 ]; do
+          case $1 in
+            --restart)
+              rsecs=${2:-}
+              num "$rsecs" || die "--restart SECONDS"
+              [ "$rsecs" -le 900 ] || die "at most 900 seconds"
+              shift 2 ;;
+            *)
+              num "$1" || die "testers start [N] [MINUTES] [--restart SECONDS]"
+              [ $pos -lt 2 ] || die "testers start [N] [MINUTES] [--restart SECONDS]"
+              if [ $pos -eq 0 ]; then n=$1; else minutes=$1; fi
+              pos=$((pos + 1)); shift ;;
+          esac
+        done
+        if [ "$n" -lt 1 ] || [ "$n" -gt 150 ]; then die "N: 1 to 150 tester bots"; fi
+        if [ "$minutes" -lt 1 ] || [ "$minutes" -gt 1440 ]; then die "MINUTES: 1 to 1440"; fi
+        p=$(testers_pid) && die "tester bots already running (pid $p): chaos-ctl.sh testers stop"
+        dev_key_on && die "config.lua has clientGuardAllowDevKey = true: the tester bots never run with the development key"
+        key_file_ok
+        [ -d "$SERVER/data/scripts" ] || die "no $SERVER/data/scripts"
+        install -d -m 0700 "$TSTATE" || die "cannot create $TSTATE"
+        own=$(stat -c %U "$SERVER" 2>/dev/null || echo root)
+        if ! cp "$REPO/server/tools/tester_helper.lua" "$SERVER/data/scripts/zz_tester_helper.lua" \
+          || ! cp "$REPO/server/tools/tester_helper_core.lua" "$SERVER/data/scripts/zz_tester_helper_core.lua"; then
+          remove_helper; die "cannot copy the helper into $SERVER/data/scripts"
+        fi
+        for f in "${HELPER_FILES[@]}"; do
+          chmod 0644 "$SERVER/data/scripts/$f"; chown "$own" "$SERVER/data/scripts/$f" 2>/dev/null || true
+        done
+        delay=0
+        if ! helper_loaded; then
+          if [ -z "$rsecs" ]; then
+            remove_helper
+            die "helper-not-loaded: the TEST ONLY helper loads at a server start. Run: chaos-ctl.sh testers start $n $minutes --restart 300"
+          fi
+          CHAOS_CTL_NO_SUDO=1 "$SELF" restart "$rsecs" >/dev/null || { remove_helper; die "restart failed"; }
+          delay=$((rsecs + 30))
+        fi
+        have=$( (testers_py status --state "$TSTATE") 2>/dev/null | sed -n 's/^bots=//p')
+        have=${have:-0}
+        if [ "$have" -lt "$n" ]; then
+          [ "$have" -eq 0 ] || { remove_helper; die "the last setup made $have testers, fewer than $n: chaos-ctl.sh testers cleanup --yes first"; }
+          testers_py setup --count "$n" --server-dir "$SERVER" --state "$TSTATE" || { remove_helper; die "setup failed"; }
+        fi
+        mkdir -p "$(dirname "$TLOG")"
+        echo "== $(date '+%F %T') testers start $n $minutes" >> "$TLOG"
+        # detached, in its own process group (stop ends the whole group); when the run is over by itself the helper
+        # goes too (testers stop --finished)
+        # shellcheck disable=SC2034 # exported by set -a, for testers.py
+        ( set -a; . "$ENVFILE"; [ -n "$DBSOCK" ] && CHAOS_DB_SOCKET=$DBSOCK; CHAOS_MYSQL=$MYSQL; set +a
+          # shellcheck disable=SC2016
+          exec setsid bash -c 'sleep "$1"; python3 -I "$2" run --key-file "$3" --server-dir "$4" --state "$5" \
+            --minutes "$6" --count "$7" --log "$8" --scenarios "${10}"; CHAOS_CTL_NO_SUDO=1 "$9" testers stop --finished' _ \
+            "$delay" "$REPO/server/tools/testers.py" "$TKEY" "$SERVER" "$TSTATE" "$minutes" "$n" "$LOG" "$SELF" \
+            "$REPO/server/tools/tester_scenarios.json" \
+            >> "$TLOG" 2>&1 < /dev/null ) &
+        echo $! > "$TSTATE/run.pid"
+        date +%s > "$TSTATE/started"
+        rm -f "$TSTATE/stopped"
+        if [ "$delay" -gt 0 ]; then
+          echo "tester bots: $n for $minutes minutes, starting in $delay s, after the restart (log $TLOG)"
+        else
+          echo "tester bots: $n for $minutes minutes (log $TLOG)"
+        fi
+        ;;
+      stop)
+        if p=$(testers_pid); then
+          if [ "${1:-}" != --finished ]; then
+            kill -TERM -- "-$p" 2>/dev/null || kill -TERM "$p" 2>/dev/null
+            for _ in $(seq 1 30); do kill -0 "$p" 2>/dev/null || break; sleep 1; done
+            kill -KILL -- "-$p" 2>/dev/null || true
+          fi
+        fi
+        rm -f "$TSTATE/run.pid"
+        remove_helper
+        date +%s > "$TSTATE/stopped" 2>/dev/null || true
+        [ "${1:-}" = --finished ] && echo "== $(date '+%F %T') run over" >> "$TLOG"
+        echo "tester bots stopped; helper removed from data/scripts (its loop ends within seconds, the rest at the next restart)"
+        ;;
+      status)
+        if p=$(testers_pid); then echo running=yes; echo "pid=$p"; else echo running=no; echo pid=; fi
+        started=""
+        [ -r "$TSTATE/started" ] && started=$(date -d "@$(tr -dc 0-9 < "$TSTATE/started")" '+%F %T' 2>/dev/null)
+        echo "started=$started"
+        (testers_py status --state "$TSTATE") 2>/dev/null | grep -E '^(bots|minutes|logins|deaths)='
+        if [ -e "$SERVER/data/scripts/zz_tester_helper.lua" ]; then echo helper=copied; else echo helper=absent; fi
+        if helper_loaded; then echo helper_loaded=yes; else echo helper_loaded=no; fi
+        ;;
+      report)
+        testers_py report --state "$TSTATE" --log "$LOG"
+        ;;
+      cleanup)
+        yes=0
+        case "$*" in '') ;; --yes) yes=1 ;; *) die "testers cleanup [--yes]" ;; esac
+        if testers_pid >/dev/null; then CHAOS_CTL_NO_SUDO=1 "$SELF" testers stop; fi
+        remove_helper
+        if [ -r "$TSTATE/stopped" ]; then
+          ago=$(( $(date +%s) - $(tr -dc 0-9 < "$TSTATE/stopped") ))
+          [ "$ago" -ge 120 ] || die "the bots stopped $ago s ago: wait $((120 - ago)) s (a character in a fight stays in game)"
+        fi
+        if [ $yes -eq 1 ]; then
+          testers_py cleanup --state "$TSTATE"
+        else
+          testers_py cleanup --state "$TSTATE" --dry-run
+          echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
+        fi
+        ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | cleanup [--yes]" ;;
+    esac
     ;;
   ''|help|-h|--help)
     sed -n '2,/^set -uo/p' "$SELF" | sed '$d' | sed 's/^# \{0,1\}//'

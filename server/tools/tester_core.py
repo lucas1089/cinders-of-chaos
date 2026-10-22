@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""Tester bots, pure parts (server/tools/testers.py; server/README.md "Tester bots"; tests: testers_test.py).
+
+No I/O here: the behaviour scheduler, the anomaly rules of what a bot sees, the classification of the server's text
+messages, the server log parsing (the same grouping as chaos-ctl.sh errors) and the report.
+"""
+import json
+import random
+import re
+
+TESTER_STORAGE = 7102900          # Chaos.storage.tester (chaos_constants.lua), src-patch 0059 CHAOS_TESTER_STORAGE
+NAME_RE = re.compile(r'^Tester [A-Z][a-z][a-z]$')
+ACCOUNT_RE = re.compile(r'^tstbot[0-9a-f]{10}$')
+MAX_BOTS = 150
+DEFAULT_BOTS = 100
+DEFAULT_MINUTES = 60
+HELPER_MARK = '[tester-helper]'
+ANOMALY_MARK = '[tester-anomaly]'
+EVENT_MARK = '[tester-event]'
+
+# ------------------------------------------------------------------------------------------------ behaviours
+# what a bot does next: weight (how often it is picked when its cooldown is over) and cooldown in seconds
+BEHAVIOURS = {
+    'hunt':     (40, 0),     # stay: fight the helper's target, cast the rotation (the default)
+    'wander':   (12, 0),     # a few random steps
+    'town':     (4, 240),    # back to the temple (helper teleport), walk a bit, then back to the hunt
+    'depot':    (4, 300),    # to a depot locker, open it, back
+    'shop':     (5, 300),    # to an NPC: hi, trade, buy potions, sell, bye
+    'party':    (5, 120),    # invite / join / leave
+    'pm':       (6, 60),     # a private message to another tester
+    'opcodes':  (10, 20),    # a client module request (a scenario step, --opcodes)
+    'loot':     (8, 30),     # loot filter take, open the backpack
+    'relog':    (2, 600),    # log out and in again
+}
+
+
+def pick(weights, rng, ready):
+    """a weighted choice among the behaviours whose cooldown is over (ready: set of names); None if none is"""
+    items = [(k, w) for k, w in sorted(weights.items()) if k in ready and w > 0]
+    total = sum(w for _, w in items)
+    if total <= 0:
+        return None
+    r = rng.random() * total
+    for k, w in items:
+        r -= w
+        if r < 0:
+            return k
+    return items[-1][0]
+
+
+class Scheduler:
+    """per bot: which behaviour next, honouring each behaviour's cooldown"""
+
+    def __init__(self, seed, behaviours=None):
+        self.rng = random.Random(seed)
+        self.table = dict(behaviours or BEHAVIOURS)
+        self.ready_at = {k: 0.0 for k in self.table}
+
+    def ready(self, now):
+        return {k for k, t in self.ready_at.items() if t <= now}
+
+    def next(self, now):
+        name = pick({k: w for k, (w, _) in self.table.items()}, self.rng, self.ready(now))
+        if name:
+            self.ready_at[name] = now + self.table[name][1]
+        return name
+
+
+# ------------------------------------------------------------------------------------------------ text messages
+FAILURES = [
+    ('not possible', re.compile(r'Sorry, not possible\.')),
+    ('no way', re.compile(r'There is no way\.')),
+    ('exhausted', re.compile(r'You are exhausted\.')),
+    ('no mana', re.compile(r'You do not have enough mana\.')),
+    ('no soul', re.compile(r'You do not have enough soul\.')),
+    ('need weapon', re.compile(r'You need to equip a weapon|You need a weapon', re.I)),
+    ('no target', re.compile(r'You can only use (this rune|it) on creatures\.|A target is required', re.I)),
+    ('too far', re.compile(r'Destination is out of range\.|Too far away\.', re.I)),
+    ('not enough room', re.compile(r'There is not enough room\.|You cannot put more objects in this container\.')),
+    ('no capacity', re.compile(r'This object is too heavy for you to carry\.')),
+    ('first go downstairs', re.compile(r'First go (down|up)stairs\.')),
+    ('not learned', re.compile(r'You need to learn this spell first\.')),
+    ('level too low', re.compile(r'You do not have enough level\.')),
+    ('wrong vocation', re.compile(r'Your vocation cannot use this spell\.')),
+    ('not enough money', re.compile(r'You do not have enough money|not enough gold', re.I)),
+    ('cannot use object', re.compile(r'You cannot use this object\.')),
+]
+# expected in normal play: counted, not reported as bugs
+EXPECTED = {'exhausted', 'no mana', 'no soul', 'no target', 'too far', 'first go downstairs', 'level too low',
+            'not enough money'}
+LUA_ERROR = re.compile(r'Lua Script Error|stack traceback|attempt to (index|call|compare|perform|concatenate)'
+                       r'|bad argument #\d|\.lua:\d+:', re.I)
+XP_RE = re.compile(r'You gained (-?\d+) experience points?\.')
+LOOT_RE = re.compile(r'^Loot of (?:an? )?([^:]+): (.*)$')
+GOLD_RE = re.compile(r'(\d+) (gold|platinum|crystal) coins?')
+ADVANCE_RE = re.compile(r'You advanced from Level (\d+) to Level (\d+)\.')
+DEATH_RE = re.compile(r'You are dead\.')
+HELPER_RE = re.compile(r'^\[tester-helper\] ([a-z]+) (\{.*\})$')
+
+
+TEXT_RE = re.compile(rb'[\x20-\x7e\xa0-\xff\n]+')
+
+
+def strings_of(plain, minimum=6):
+    """the protocol strings (u16 length, then that many printable bytes) of a decrypted server message; bytes -> [str].
+    The length must match exactly, so a length byte that happens to be printable never sticks to the text"""
+    out, i, n = [], 0, len(plain)
+    while i + 2 + minimum <= n:
+        size = plain[i] | plain[i + 1] << 8
+        if minimum <= size <= n - i - 2 and TEXT_RE.fullmatch(plain, i + 2, i + 2 + size):
+            out.append(plain[i + 2:i + 2 + size].decode('latin-1'))
+            i += 2 + size
+        else:
+            i += 1
+    return out
+
+
+def classify(text):
+    """one text the server sent -> (kind, detail):
+    ('helper', (kind, data)), ('lua_error', text), ('failure', key), ('xp', n), ('loot', (monster, gold)),
+    ('advance', (old, new)), ('death', None) or (None, None)"""
+    m = HELPER_RE.match(text)
+    if m:
+        try:
+            return 'helper', (m.group(1), json.loads(m.group(2)))
+        except ValueError:
+            return 'helper', (m.group(1), {})
+    if LUA_ERROR.search(text):
+        return 'lua_error', text
+    for key, rx in FAILURES:
+        if rx.search(text):
+            return 'failure', key
+    m = XP_RE.search(text)
+    if m:
+        return 'xp', int(m.group(1))
+    m = LOOT_RE.match(text)
+    if m:
+        gold = 0
+        for n, kind in GOLD_RE.findall(m.group(2)):
+            gold += int(n) * {'gold': 1, 'platinum': 100, 'crystal': 10000}[kind]
+        return 'loot', (m.group(1), gold)
+    m = ADVANCE_RE.search(text)
+    if m:
+        return 'advance', (int(m.group(1)), int(m.group(2)))
+    if DEATH_RE.search(text):
+        return 'death', None
+    return None, None
+
+
+# ------------------------------------------------------------------------------------------------ anomaly rules
+LIMITS = {
+    'xp_per_level': 2000000,      # one gain larger than this x level
+    'gold_per_level': 50000,      # gold in one corpse larger than this x level (+ 100000)
+    'gold_base': 100000,
+}
+
+
+def xp_anomaly(level, gained):
+    if gained < 0:
+        return 'negative experience gain'
+    if gained > LIMITS['xp_per_level'] * max(1, level):
+        return 'absurd experience gain'
+    return None
+
+
+def gold_anomaly(level, gold):
+    if gold < 0:
+        return 'negative gold'
+    if gold > LIMITS['gold_base'] + LIMITS['gold_per_level'] * max(1, level):
+        return 'absurd gold in one corpse'
+    return None
+
+
+def health_anomaly(before_pct, after_pct, died):
+    """a bot at full health dead (or at 0 %) at the next health update: one hit from full"""
+    if before_pct >= 100 and (died or after_pct <= 0):
+        return 'death within one hit from full health'
+    return None
+
+
+# ------------------------------------------------------------------------------------------------ the server log
+TS_RE = re.compile(r'^\[?\d{4}-\d\d-\d\d[ T]\d\d:\d\d:\d\d[^ ]*\]?[ :-]*')
+
+
+def is_error(line):
+    return 'Lua Script Error' in line or re.search(r'error|exception|segfault', line, re.I) is not None
+
+
+def is_warning(line):
+    return re.search(r'\bwarn(ing)?\b', line, re.I) is not None
+
+
+def parse_log(lines):
+    """the server console lines of the run -> {'errors': {text: count}, 'warnings': {text: count},
+    'anomalies': [dict], 'events': [dict], 'first': {text: line number}}. Errors are grouped as chaos-ctl.sh errors does:
+    the timestamp stripped, a Lua Script Error joined with its next two lines (" | ")."""
+    out = {'errors': {}, 'warnings': {}, 'anomalies': [], 'events': [], 'first': {}}
+
+    def add(kind, text, n):
+        text = TS_RE.sub('', text)
+        out[kind][text] = out[kind].get(text, 0) + 1
+        out['first'].setdefault(text, n)
+
+    cur, join, cur_n = None, 0, 0
+    for n, raw in enumerate(lines, 1):
+        line = raw.rstrip('\r\n')
+        for mark, key in ((ANOMALY_MARK, 'anomalies'), (EVENT_MARK, 'events')):
+            i = line.find(mark)
+            if i >= 0:
+                try:
+                    data = json.loads(line[i + len(mark):].strip())
+                    data['line'] = n
+                    out[key].append(data)
+                except ValueError:
+                    pass
+        if join > 0:
+            if not line.strip() or is_error(line):
+                add('errors', cur, cur_n)
+                cur, join = None, 0
+            else:
+                cur += ' | ' + line.strip()
+                join -= 1
+                if join == 0:
+                    add('errors', cur, cur_n)
+                    cur = None
+                continue
+        if 'Lua Script Error' in line:
+            cur, join, cur_n = line, 2, n
+            continue
+        if is_error(line) and ANOMALY_MARK not in line:
+            add('errors', line, n)
+        elif is_warning(line):
+            add('warnings', line, n)
+    if cur is not None:
+        add('errors', cur, cur_n)
+    return out
+
+
+# ------------------------------------------------------------------------------------------------ the report
+def group(counts, top=40):
+    return sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))[:top]
+
+
+def build_report(run, log):
+    """run: the run's results (testers.py writes them to the state folder) {started, ended, bots, behaviours: {name:
+    {tried, ok, failed}}, failures: {key: count}, lua_errors: {text: count}, kicks: {text: count}, deaths, relogs,
+    reconnects, anomalies: [dict], first: {key: {bot, did, at}}}; log: parse_log of the server log of the run.
+    Returns the report text."""
+    L = []
+    L.append('Tester bots report')
+    L.append('run: %s to %s, %d bots' % (run.get('started', '?'), run.get('ended', 'running'), run.get('bots', 0)))
+    L.append('logins %d, deaths %d, relogs %d, reconnects %d' % (
+        run.get('logins', 0), run.get('deaths', 0), run.get('relogs', 0), run.get('reconnects', 0)))
+    first = run.get('first', {})
+
+    def ctx(key):
+        f = first.get(key)
+        return ' (first: %s after %s)' % (f.get('bot', '?'), f.get('did', '?')) if f else ''
+
+    L.append('')
+    L.append('== Server log: errors (%d kinds)' % len(log['errors']))
+    for text, n in group(log['errors']):
+        L.append('%5dx %s' % (n, text))
+    L.append('== Server log: warnings (%d kinds)' % len(log['warnings']))
+    for text, n in group(log['warnings'], 20):
+        L.append('%5dx %s' % (n, text))
+    anomalies = list(log['anomalies']) + list(run.get('anomalies', []))
+    L.append('== Anomalies (%d)' % len(anomalies))
+    by_rule = {}
+    for a in anomalies:
+        by_rule.setdefault(a.get('rule', '?'), []).append(a)
+    for rule, rows in sorted(by_rule.items(), key=lambda kv: -len(kv[1])):
+        L.append('%5dx %s; first: %s' % (len(rows), rule, json.dumps(rows[0], sort_keys=True)))
+    L.append('== Lua errors the bots received (%d kinds)' % len(run.get('lua_errors', {})))
+    for text, n in group(run.get('lua_errors', {})):
+        L.append('%5dx %s%s' % (n, text, ctx('lua:' + text)))
+    L.append('== Failure messages the bots received')
+    for key, n in group(run.get('failures', {})):
+        L.append('%5dx %s%s%s' % (n, key, ' (expected in play)' if key in EXPECTED else '', ctx('fail:' + key)))
+    L.append('== Kicks and disconnects')
+    for text, n in group(run.get('kicks', {})):
+        L.append('%5dx %s%s' % (n, text, ctx('kick:' + text)))
+    L.append('== Behaviours (tried / ok / failed)')
+    for name, b in sorted(run.get('behaviours', {}).items()):
+        L.append('  %-10s %6d %6d %6d' % (name, b.get('tried', 0), b.get('ok', 0), b.get('failed', 0)))
+    cov = run.get('coverage')
+    if cov:
+        L.append('== System coverage (tried / ok / errors; never reached)')
+        for system, c in sorted(cov.items()):
+            L.append('  %-22s %5d %5d %5d%s' % (system, c.get('tried', 0), c.get('ok', 0), c.get('errors', 0),
+                                                '  never reached: ' + c['why'] if not c.get('tried') and c.get('why') else ''))
+    return '\n'.join(L) + '\n'

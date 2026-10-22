@@ -368,9 +368,9 @@
 		"siege.when": "Saturday 20:00",
 		"siege.whenPt": "sábado às 20:00",
 		"spell.count": 110,
-		"store.categories": 35,
-		"store.cosmetic": 617,
-		"store.offers": 730,
+		"store.categories": 36,
+		"store.cosmetic": 627,
+		"store.offers": 740,
 		"store.service": 26,
 		"store.unlockCost": 0,
 		"support.count": 20,
@@ -16534,7 +16534,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"On a kill: a fire explosion where the monster died, 25% of its maximum health (at most 50 + 8 x your level) to up to 8 other monsters within 2 sqm.",
+								"On a kill: a fire explosion where the monster died, 10% of its maximum health (at most 50 + 1 x your level) to up to 8 other monsters within 2 sqm.",
 								"Value: the chance on a kill.",
 								"On an item: Death Blast: 12-16% chance on kill to explode (T8).",
 								"Internal cooldown: 1.5 s.",
@@ -16760,7 +16760,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 6 x your level fire damage to up to 8 monsters within 2 sqm.",
+								"A single hit of at least 20% of your maximum health blinks you up to 3 sqm away and burns where you stood: 60 + 2 x your level fire damage to up to 8 monsters within 2 sqm.",
 								"Value: the chance on a hard hit.",
 								"On an item: Ember Step: 22-28% chance when hit hard to blink away in flames (T8).",
 								"Internal cooldown: 15 s.",
@@ -16878,7 +16878,7 @@
 						{
 							"h": "Effect",
 							"p": [
-								"When a monster's hit is dodged or blocked: an ice nova around you, 40 + 5 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.",
+								"When a monster's hit is dodged or blocked: an ice nova around you, 100 + 1 x your level damage to up to 8 monsters within 2 sqm, slowed by 35% for 3 s.",
 								"Value: the chance on a dodge or block.",
 								"On an item: Glacial Ward: 12-16% chance when you dodge or block for a frost nova (T8).",
 								"Internal cooldown: 4 s.",
@@ -17236,18 +17236,18 @@
 				{
 					"id": "power:shattersplash",
 					"name": "Shatter Splash",
-					"sub": "Legendary power. Prefix, Weapon. 10-15% (T1) to 60-75% (T8)",
+					"sub": "Legendary power. Prefix, Weapon. 2-3% (T1) to 12-16% (T8)",
 					"color": "#ff9a3c",
 					"group": "power",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"The killing blow bursts onto up to 6 monsters within 2 sqm for the power's share of the blow.",
-								"Value: percent of the killing blow.",
-								"On an item: Shatter Splash: killing blows burst for 60-75% on monsters nearby (T8).",
+								"The killing blow bursts onto up to 6 monsters within 2 sqm: the power's share of the health the blow took, shared by them.",
+								"Value: percent of the health the killing blow took.",
+								"On an item: Shatter Splash: killing blows burst for 12-16%, shared by the monsters nearby (T8).",
 								"Internal cooldown: 1 s.",
-								"Cap: at most 100% from all equipped items together."
+								"Cap: at most 25% from all equipped items together."
 							]
 						},
 						{
@@ -17255,14 +17255,14 @@
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "10-15%", "100"],
-								["T2", "15+", "15-20%", "90"],
-								["T3", "30+", "20-25%", "80"],
-								["T4", "50+", "25-30%", "65"],
-								["T5", "70+", "30-40%", "50"],
-								["T6", "95+", "40-50%", "35"],
-								["T7", "120+", "50-60%", "22"],
-								["T8", "140+", "60-75%", "12"]
+								["T1", "1+", "2-3%", "100"],
+								["T2", "15+", "3-4%", "90"],
+								["T3", "30+", "4-6%", "80"],
+								["T4", "50+", "5-7%", "65"],
+								["T5", "70+", "6-9%", "50"],
+								["T6", "95+", "8-11%", "35"],
+								["T7", "120+", "10-13%", "22"],
+								["T8", "140+", "12-16%", "12"]
 							],
 							"tiers": true
 						},
@@ -17349,18 +17349,18 @@
 				{
 					"id": "power:smolderaura",
 					"name": "Smoldering Aura",
-					"sub": "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +5-10 (T1) to +250-400 (T8)",
+					"sub": "Legendary power. Suffix, Helmet, Armour, Legs, Jewel, Other. +1-2 (T1) to +28-35 (T8)",
 					"color": "#ff9a3c",
 					"group": "power",
 					"sections": [
 						{
 							"h": "Effect",
 							"p": [
-								"Every 3 s up to 6 monsters within 2 sqm burn for the power's value per second.",
+								"While you fight (you attacked a monster in the last 5 s) and stand outside a protection zone, every 3 s up to 6 monsters within 2 sqm and in sight burn for the power's value per second, at most 2 + 1 per 30 levels of yours.",
 								"Value: fire damage per second.",
-								"On an item: Smoldering Aura: monsters within 2 sqm take 250-400 fire damage per second (T8).",
+								"On an item: Smoldering Aura: while you fight, monsters within 2 sqm take 28-35 fire damage per second (T8).",
 								"No cooldown: it ticks every 3 s.",
-								"Cap: at most 600 from all equipped items together."
+								"Cap: at most 40 from all equipped items together."
 							]
 						},
 						{
@@ -17368,14 +17368,14 @@
 							"cols": ["Tier", "Item level", "Value", "Tier weight"],
 							"w": [14, 22, 40, 24],
 							"rows": [
-								["T1", "1+", "+5-10", "100"],
-								["T2", "15+", "+10-20", "90"],
-								["T3", "30+", "+20-35", "80"],
-								["T4", "50+", "+35-60", "65"],
-								["T5", "70+", "+60-100", "50"],
-								["T6", "95+", "+100-160", "35"],
-								["T7", "120+", "+160-250", "22"],
-								["T8", "140+", "+250-400", "12"]
+								["T1", "1+", "+1-2", "100"],
+								["T2", "15+", "+2-3", "90"],
+								["T3", "30+", "+3-4", "80"],
+								["T4", "50+", "+5-7", "65"],
+								["T5", "70+", "+8-12", "50"],
+								["T6", "95+", "+13-20", "35"],
+								["T7", "120+", "+20-28", "22"],
+								["T8", "140+", "+28-35", "12"]
 							],
 							"tiers": true
 						},
@@ -36581,6 +36581,140 @@
 					"icon": "wiki/i/k-shadow-gate.png"
 				},
 				{
+					"id": "lore:cellars",
+					"name": "The Cellars of Cinderhold",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Cinderhold was built on top of an older town, and the older town was built on its cellars. The Archivist keeps the overflow of her ledger down there, in dry rooms the rats think are theirs. Every year she loses a king or two to their teeth, and every year she writes them again from memory."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Cinderhold foi construída sobre uma cidade mais antiga, e a cidade mais antiga foi construída sobre seus porões. A Arquivista guarda lá embaixo o que não cabe em seu registro, em salas secas que os ratos acham que são deles. Todo ano ela perde um rei ou dois para os dentes deles, e todo ano os escreve de novo de memória."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:lantern_road",
+					"name": "The Lantern Road",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Before the Cinders, the Ashen Vigil lit a lantern on every grave between the towns, so the dead would know the way to rest. The road of lights ran from coast to coast. The night the sky split, every lantern went out at once, and the dead have been walking the dark road ever since, looking for the next light.",
+								"At its end stands a roost of stone watchers, and past them, a circle of open graves."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Antes das Brasas, a Vigília Cinzenta acendia uma lanterna em cada túmulo entre as cidades, para que os mortos soubessem o caminho do descanso. A estrada de luzes ia de costa a costa. Na noite em que o céu se partiu, todas as lanternas se apagaram de uma vez, e desde então os mortos andam pela estrada escura procurando a próxima luz.",
+								"No fim dela há um poleiro de vigias de pedra e, além deles, um círculo de túmulos abertos."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:grave_circle",
+					"name": "The Grave Circle",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Some saw the Cinders as a curse. The Grave Circle saw them as a gift: a fire that wakes the dead is a fire that can be taught. Its necromancers raise bonebeasts from the Vigil's own graves, and their liches and banshees keep a list of every name the Circle means to wake. The Archivist's name was on it. So, they say, was yours."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Alguns viram as Brasas como uma maldição. O Círculo das Covas as viu como um presente: um fogo que desperta os mortos é um fogo que pode ser ensinado. Seus necromantes erguem bestas de ossos dos próprios túmulos da Vigília, e seus liches e banshees mantêm uma lista de cada nome que o Círculo pretende despertar. O nome da Arquivista estava nela. O seu também, dizem."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:dragon_census",
+					"name": "The Dragon Census",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"The Veiled Choir counts dragons the way farmers count clouds. A brood that grows means a hot year and burning fields; a brood that shrinks means something larger is eating them. The census is sung, never written, so the Archivist keeps the only copy on paper. She binds it with rune shards, because dragon fire eats ordinary glue."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"O Coro Velado conta dragões como fazendeiros contam nuvens. Uma ninhada que cresce significa um ano quente e campos queimando; uma ninhada que diminui significa que algo maior está comendo os dragões. O censo é cantado, nunca escrito, então a Arquivista guarda a única cópia em papel. Ela a encaderna com fragmentos rúnicos, porque o fogo de dragão come cola comum."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:moon_sick",
+					"name": "The Moon-Sick",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Under a Cinder moon some hunters do not come home as hunters. The Thornbound Circle calls them the moon-sick and keeps a place at its table for each of them, in case they return. None ever has. Bramwyn says they run from something in the marsh, a mother of a hundred heads, and that the moon only shows them the way."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Sob uma lua de Brasa, alguns caçadores não voltam para casa como caçadores. O Círculo Espinhoso os chama de enfermos da lua e mantém um lugar à mesa para cada um deles, caso voltem. Nenhum voltou. Bramwyn diz que fogem de algo no pântano, uma mãe de cem cabeças, e que a lua apenas lhes mostra o caminho."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
+					"id": "lore:bone_court",
+					"name": "The Bone Court",
+					"sub": "The world",
+					"color": "#c9a27a",
+					"group": "world",
+					"sections": [
+						{
+							"h": "Lore",
+							"p": [
+								"Long before the Ashen Sepulchre had its Sovereign, the Bone Court had its own king, and a court of archers, berserkers and masters who served him past death. The Vigil buried them twice. The Cinders woke them twice. Their records are sealed now in the Archivist's ledger with rune shards, so that the court is only a page, and pages do not march."
+							]
+						},
+						{
+							"h": "Em português",
+							"p": [
+								"Muito antes de o Sepulcro Cinzento ter seu Soberano, a Corte de Ossos tinha seu próprio rei, e uma corte de arqueiros, berserkers e mestres que o serviram além da morte. A Vigília os enterrou duas vezes. As Brasas os despertaram duas vezes. Seus registros agora estão selados no registro da Arquivista com fragmentos rúnicos, para que a corte seja só uma página, e páginas não marcham."
+							]
+						}
+					],
+					"icon": "wiki/i/k-ember-flame.png"
+				},
+				{
 					"id": "lore:chronicle_s1",
 					"name": "The Ashen Chronicle: Season of Ash",
 					"sub": "The Ashen Chronicle",
@@ -36910,7 +37044,8 @@
 								["Runes", "29", "3-108", "Consumable item"],
 								["Training", "21", "25-450", "Consumable item"],
 								["Convenience", "7", "50-400", "Convenience"],
-								["Outfits", "56", "300-750", "Cosmetic"],
+								["Outfits", "60", "300-750", "Cosmetic"],
+								["Costumes", "6", "300", "Cosmetic"],
 								["Outfit Addons", "9", "150", "Cosmetic"],
 								["Mounts", "125", "350-690", "Cosmetic"],
 								["Wings", "110", "200-350", "Cosmetic"],
@@ -36967,7 +37102,8 @@
 								"store:32",
 								"store:33",
 								"store:34",
-								"store:35"
+								"store:35",
+								"store:36"
 							]
 						},
 						{
@@ -36975,7 +37111,7 @@
 							"cols": ["Type", "Offers"],
 							"w": [60, 40],
 							"rows": [
-								["Cosmetic", "617"],
+								["Cosmetic", "627"],
 								["Pet (small abilities)", "7"],
 								["Convenience", "7"],
 								["Service", "6"],
@@ -37889,11 +38025,11 @@
 				{
 					"id": "store:15",
 					"name": "Outfits",
-					"sub": "56 offers, 300-750 coins. Cosmetic.",
+					"sub": "60 offers, 300-750 coins. Cosmetic.",
 					"color": "#ff70c0",
 					"group": "category",
 					"sections": [
-						{"h": "Category", "p": ["56 offers, 300-750 Chaos Coins. Cosmetic."]},
+						{"h": "Category", "p": ["60 offers, 300-750 Chaos Coins. Cosmetic."]},
 						{
 							"h": "Offers",
 							"cols": ["Offer", "Coins", "Type", "What it is"],
@@ -38234,6 +38370,30 @@
 									"300",
 									"Cosmetic",
 									"Full Pirate outfit with both addons, male and female look. Premium account needed to wear it."
+								],
+								[
+									"Starweaver",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a trailing star chart. Both addons, male and female look."
+								],
+								[
+									"Crescent Oracle",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a pair of glowing moons. Both addons, male and female look."
+								],
+								[
+									"Moonblade Mystic",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and a moonlit blade. Both addons, male and female look."
+								],
+								[
+									"Moonflame Mystic",
+									"750",
+									"Cosmetic",
+									"A white-robed seer with a violet crescent. Addons: a crescent charm and violet moonflames. Both addons, male and female look."
 								]
 							],
 							"sprites": [
@@ -38292,7 +38452,11 @@
 								{"addons": 3, "outfit": 154},
 								{"addons": 3, "outfit": 153},
 								{"addons": 3, "outfit": 152},
-								{"addons": 3, "outfit": 151}
+								{"addons": 3, "outfit": 151},
+								{"addons": 3, "outfit": 2668},
+								{"addons": 3, "outfit": 2670},
+								{"addons": 3, "outfit": 2672},
+								{"addons": 3, "outfit": 2674}
 							]
 						}
 					],
@@ -38300,6 +38464,68 @@
 				},
 				{
 					"id": "store:16",
+					"name": "Costumes",
+					"sub": "6 offers, 300 coins. Cosmetic.",
+					"color": "#ff70c0",
+					"group": "category",
+					"sections": [
+						{"h": "Category", "p": ["6 offers, 300 Chaos Coins. Cosmetic."]},
+						{
+							"h": "Offers",
+							"cols": ["Offer", "Coins", "Type", "What it is"],
+							"w": [24, 10, 16, 50],
+							"rows": [
+								[
+									"Plush Bear",
+									"300",
+									"Cosmetic",
+									"Become a small violet plush bear. No colours, no addons. One look for both sexes."
+								],
+								[
+									"Snow Plush Bear",
+									"300",
+									"Cosmetic",
+									"Become a small white plush bear. No colours, no addons. One look for both sexes."
+								],
+								[
+									"Frost Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as an icy blue severed hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Grave Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as a green grave hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Rose Crawling Hand",
+									"300",
+									"Cosmetic",
+									"Scuttle about as a pink severed hand with an eye in its palm. One look for both sexes."
+								],
+								[
+									"Fry Box Costume",
+									"300",
+									"Cosmetic",
+									"A walking box of fries. It does not animate: it glides. One look for both sexes."
+								]
+							],
+							"sprites": [
+								{"addons": 3, "outfit": 2676},
+								{"addons": 3, "outfit": 2677},
+								{"addons": 3, "outfit": 2678},
+								{"addons": 3, "outfit": 2679},
+								{"addons": 3, "outfit": 2680},
+								{"addons": 3, "outfit": 2681}
+							]
+						}
+					],
+					"icon": "wiki/i/top-vip.png"
+				},
+				{
+					"id": "store:17",
 					"name": "Outfit Addons",
 					"sub": "9 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38382,7 +38608,7 @@
 					"icon": "wiki/i/k-holy-hood.png"
 				},
 				{
-					"id": "store:17",
+					"id": "store:18",
 					"name": "Mounts",
 					"sub": "125 offers, 350-690 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38917,7 +39143,7 @@
 					"icon": "wiki/i/k-nature-paw.png"
 				},
 				{
-					"id": "store:18",
+					"id": "store:19",
 					"name": "Wings",
 					"sub": "110 offers, 200-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38934,7 +39160,7 @@
 					"icon": "wiki/i/k-holy-arrowup.png"
 				},
 				{
-					"id": "store:19",
+					"id": "store:20",
 					"name": "Auras",
 					"sub": "24 offers, 150-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38949,7 +39175,7 @@
 					"icon": "wiki/i/k-light-ring.png"
 				},
 				{
-					"id": "store:20",
+					"id": "store:21",
 					"name": "Head Accessories",
 					"sub": "90 offers, 150-200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38964,7 +39190,7 @@
 					"icon": "wiki/i/k-holy-burst.png"
 				},
 				{
-					"id": "store:21",
+					"id": "store:22",
 					"name": "Capes",
 					"sub": "88 offers, 200-250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -38979,7 +39205,7 @@
 					"icon": "wiki/i/k-arcane-hood.png"
 				},
 				{
-					"id": "store:22",
+					"id": "store:23",
 					"name": "Outfit Shaders",
 					"sub": "22 offers, 120-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39073,7 +39299,7 @@
 					"icon": "wiki/i/k-arcane-swirl.png"
 				},
 				{
-					"id": "store:23",
+					"id": "store:24",
 					"name": "Footprints",
 					"sub": "9 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39156,7 +39382,7 @@
 					"icon": "wiki/i/k-ember-kick.png"
 				},
 				{
-					"id": "store:24",
+					"id": "store:25",
 					"name": "Outlines",
 					"sub": "9 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39239,7 +39465,7 @@
 					"icon": "wiki/i/k-light-shield.png"
 				},
 				{
-					"id": "store:25",
+					"id": "store:26",
 					"name": "Kill Effects",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39288,7 +39514,7 @@
 					"icon": "wiki/i/k-blood-skull.png"
 				},
 				{
-					"id": "store:26",
+					"id": "store:27",
 					"name": "Spell Effects",
 					"sub": "12 offers, 250 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39392,7 +39618,7 @@
 					"icon": "wiki/i/k-fire-burst.png"
 				},
 				{
-					"id": "store:27",
+					"id": "store:28",
 					"name": "Loot Labels",
 					"sub": "4 offers, 150 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39435,7 +39661,7 @@
 					"icon": "wiki/i/k-light-eye.png"
 				},
 				{
-					"id": "store:28",
+					"id": "store:29",
 					"name": "Chat Colours",
 					"sub": "5 offers, 200 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39484,7 +39710,7 @@
 					"icon": "wiki/i/top-console.png"
 				},
 				{
-					"id": "store:29",
+					"id": "store:30",
 					"name": "Name Plates",
 					"sub": "13 offers, 300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39595,7 +39821,7 @@
 					"icon": "wiki/i/k-steel-banner.png"
 				},
 				{
-					"id": "store:30",
+					"id": "store:31",
 					"name": "Pets",
 					"sub": "7 offers, 400 coins. Pet (small abilities).",
 					"color": "#ff70c0",
@@ -39664,7 +39890,7 @@
 					"icon": "wiki/i/k-nature-fang.png"
 				},
 				{
-					"id": "store:31",
+					"id": "store:32",
 					"name": "Appearances",
 					"sub": "9 offers, 300-400 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39747,7 +39973,7 @@
 					"icon": "wiki/i/k-arcane-twin.png"
 				},
 				{
-					"id": "store:32",
+					"id": "store:33",
 					"name": "Portal Styles",
 					"sub": "6 offers, 250-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39809,7 +40035,7 @@
 					"icon": "wiki/i/k-arcane-gate.png"
 				},
 				{
-					"id": "store:33",
+					"id": "store:34",
 					"name": "Hideout Decorations",
 					"sub": "9 offers, 80-300 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39892,7 +40118,7 @@
 					"icon": "wiki/i/k-ember-banner.png"
 				},
 				{
-					"id": "store:34",
+					"id": "store:35",
 					"name": "Themed Sets",
 					"sub": "12 offers, 250-350 coins. Cosmetic.",
 					"color": "#ff70c0",
@@ -39996,7 +40222,7 @@
 					"icon": "wiki/i/top-vip.png"
 				},
 				{
-					"id": "store:35",
+					"id": "store:36",
 					"name": "Crafting",
 					"sub": "3 offers, 20-30 coins. Crafting item.",
 					"color": "#ff70c0",

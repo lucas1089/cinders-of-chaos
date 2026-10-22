@@ -736,14 +736,35 @@ function M.tierOf(item, key, value)
 	return M.tierOfValue(M.legacy[key] or def.tiers, value or M.value(item, key), old[1], old[#old])
 end
 
+-- a modifier whose ranges were cut later (def.cutFrom = the ranges before, e.g. Smoldering Aura 2026-10-22): a value
+-- rolled before reads as the top of its tier's range today (x the item's quality). The item keeps its stored value and
+-- tier, so a later change of the ranges reads it again; nothing is rewritten.
+local function cutValue(item, def, v, tier)
+	if not def.cutFrom or v <= 0 then
+		return v
+	end
+	local hi = M.tierRange(def.tiers, tier)[2]
+	local q = M.qualityOf(item)
+	if q > 0 then
+		hi = M.scaleQuality(hi, q)
+	end
+	return math.min(v, hi)
+end
+
 -- the Chaos modifiers of an item in catalogue order: {key, value, def, label, tier, side}
 function M.read(item)
 	local out = {}
 	for _, def in ipairs(M.config.mods) do
 		local v = M.value(item, def.key)
 		if v ~= 0 then
-			out[#out + 1] = {key = def.key, value = v, def = def, label = def.label, side = def.side,
-				tier = M.tierOf(item, def.key, v)}
+			local tier
+			if def.cutFrom then
+				tier = M.storedTier(item, M.attr(def.key)) or M.tierOfValue(def.cutFrom, v)
+				v = cutValue(item, def, v, tier)
+			else
+				tier = M.tierOf(item, def.key, v)
+			end
+			out[#out + 1] = {key = def.key, value = v, def = def, label = def.label, side = def.side, tier = tier}
 		end
 	end
 	return out

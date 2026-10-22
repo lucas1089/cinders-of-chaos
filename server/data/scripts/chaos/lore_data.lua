@@ -194,6 +194,62 @@ return {
 			pt = {"Abaixo do Vault o fogo continuou cavando. The Marrow Crypts, onde Ossivane the Gravecage anda sobre as costelas "
 				.. "de um gigante morto. The Iron Crucible, cujo Forgewarden Kharzun ainda guarda uma forja que nenhuma mão trabalha. "
 				.. "The Fallen Sanctum, onde Vaelith canta o que restou de um hino. E por último The Pyre Throne, onde Azhkarrath, "
-				.. "mãe dos pyrewings, jaz acorrentada ao trono que queimou. Cada porta se abre para um de cada vez."}}
+				.. "mãe dos pyrewings, jaz acorrentada ao trono que queimou. Cada porta se abre para um de cada vez."}},
+
+		-- ------------------------------------------------------------------ the tales of 2026-10-22 (their books)
+		{id = "cellars", kind = "world", name = "The Cellars of Cinderhold",
+			keywords = {"cellars", "cellar", "porao", "poroes"},
+			en = {"Cinderhold was built on top of an older town, and the older town was built on its cellars. The Archivist keeps "
+				.. "the overflow of her ledger down there, in dry rooms the rats think are theirs. Every year she loses a king or "
+				.. "two to their teeth, and every year she writes them again from memory."},
+			pt = {"Cinderhold foi construída sobre uma cidade mais antiga, e a cidade mais antiga foi construída sobre seus porões. "
+				.. "A Arquivista guarda lá embaixo o que não cabe em seu registro, em salas secas que os ratos acham que são deles. "
+				.. "Todo ano ela perde um rei ou dois para os dentes deles, e todo ano os escreve de novo de memória."}},
+		{id = "lantern_road", kind = "world", name = "The Lantern Road",
+			keywords = {"lantern", "lanterns", "lantern road", "lanterna", "lanternas"},
+			en = {"Before the Cinders, the Ashen Vigil lit a lantern on every grave between the towns, so the dead would know the "
+				.. "way to rest. The road of lights ran from coast to coast. The night the sky split, every lantern went out at "
+				.. "once, and the dead have been walking the dark road ever since, looking for the next light.",
+				"At its end stands a roost of stone watchers, and past them, a circle of open graves."},
+			pt = {"Antes das Brasas, a Vigília Cinzenta acendia uma lanterna em cada túmulo entre as cidades, para que os mortos "
+				.. "soubessem o caminho do descanso. A estrada de luzes ia de costa a costa. Na noite em que o céu se partiu, todas "
+				.. "as lanternas se apagaram de uma vez, e desde então os mortos andam pela estrada escura procurando a próxima luz.",
+				"No fim dela há um poleiro de vigias de pedra e, além deles, um círculo de túmulos abertos."}},
+		{id = "grave_circle", kind = "world", name = "The Grave Circle",
+			keywords = {"grave circle", "necromancer", "necromancers", "circulo das covas", "necromante", "necromantes"},
+			en = {"Some saw the Cinders as a curse. The Grave Circle saw them as a gift: a fire that wakes the dead is a fire that "
+				.. "can be taught. Its necromancers raise bonebeasts from the Vigil's own graves, and their liches and banshees keep "
+				.. "a list of every name the Circle means to wake. The Archivist's name was on it. So, they say, was yours."},
+			pt = {"Alguns viram as Brasas como uma maldição. O Círculo das Covas as viu como um presente: um fogo que desperta os "
+				.. "mortos é um fogo que pode ser ensinado. Seus necromantes erguem bestas de ossos dos próprios túmulos da Vigília, "
+				.. "e seus liches e banshees mantêm uma lista de cada nome que o Círculo pretende despertar. O nome da Arquivista "
+				.. "estava nela. O seu também, dizem."}},
+		{id = "dragon_census", kind = "world", name = "The Dragon Census",
+			keywords = {"census", "dragon census", "dragons", "censo", "dragoes"},
+			en = {"The Veiled Choir counts dragons the way farmers count clouds. A brood that grows means a hot year and burning "
+				.. "fields; a brood that shrinks means something larger is eating them. The census is sung, never written, so the "
+				.. "Archivist keeps the only copy on paper. She binds it with rune shards, because dragon fire eats ordinary glue."},
+			pt = {"O Coro Velado conta dragões como fazendeiros contam nuvens. Uma ninhada que cresce significa um ano quente e "
+				.. "campos queimando; uma ninhada que diminui significa que algo maior está comendo os dragões. O censo é cantado, "
+				.. "nunca escrito, então a Arquivista guarda a única cópia em papel. Ela a encaderna com fragmentos rúnicos, porque "
+				.. "o fogo de dragão come cola comum."}},
+		{id = "moon_sick", kind = "world", name = "The Moon-Sick",
+			keywords = {"moon sick", "werewolf", "werewolves", "enfermos da lua", "lobisomem", "lobisomens"},
+			en = {"Under a Cinder moon some hunters do not come home as hunters. The Thornbound Circle calls them the moon-sick and "
+				.. "keeps a place at its table for each of them, in case they return. None ever has. Bramwyn says they run from "
+				.. "something in the marsh, a mother of a hundred heads, and that the moon only shows them the way."},
+			pt = {"Sob uma lua de Brasa, alguns caçadores não voltam para casa como caçadores. O Círculo Espinhoso os chama de "
+				.. "enfermos da lua e mantém um lugar à mesa para cada um deles, caso voltem. Nenhum voltou. Bramwyn diz que fogem de "
+				.. "algo no pântano, uma mãe de cem cabeças, e que a lua apenas lhes mostra o caminho."}},
+		{id = "bone_court", kind = "world", name = "The Bone Court",
+			keywords = {"bone court", "court of bones", "corte de ossos"},
+			en = {"Long before the Ashen Sepulchre had its Sovereign, the Bone Court had its own king, and a court of archers, "
+				.. "berserkers and masters who served him past death. The Vigil buried them twice. The Cinders woke them twice. "
+				.. "Their records are sealed now in the Archivist's ledger with rune shards, so that the court is only a page, "
+				.. "and pages do not march."},
+			pt = {"Muito antes de o Sepulcro Cinzento ter seu Soberano, a Corte de Ossos tinha seu próprio rei, e uma corte de "
+				.. "arqueiros, berserkers e mestres que o serviram além da morte. A Vigília os enterrou duas vezes. As Brasas os "
+				.. "despertaram duas vezes. Seus registros agora estão selados no registro da Arquivista com fragmentos rúnicos, para "
+				.. "que a corte seja só uma página, e páginas não marcham."}}
 	}
 }
