@@ -666,6 +666,11 @@ return {
 		["The boss room closes for a restart."] = "A sala do boss se fecha para um reinício.",
 		["The boss room you were in has closed: you are at its exit."] =
 			"A sala do boss em que você estava fechou: você está na saída dela.",
+		["Stand on the tile in front of the lever to pull it (your group on the tiles behind you)."] =
+			"Fique no piso em frente à alavanca para puxá-la (seu grupo nos pisos atrás de você).",
+		-- Waystone tiers (waystone_tiers.lua)
+		["%s is shielded: fight it next to its pillar for full damage."] =
+			"%s está protegido: lute ao lado do pilar dele para causar dano total.",
 
 		-- The ascension quest and the Ascendant Oracle (ascension_quest.lua, ascension_quest_core.lua, ascension_quest_config.lua, npc/scripts/ascendant_oracle.lua)
 		["The veil parts for you, |PLAYERNAME|. I keep the road of {ascension}. Few walk it to the end."] =

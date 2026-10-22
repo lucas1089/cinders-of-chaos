@@ -523,6 +523,39 @@ creatureEvent:register()
 	local function stand(p, at) p.pos = at tiles[at.x .. ":" .. at.y .. ":" .. at.z] = p end
 	local a = newPlayer(11, "Ash", P(1030, 1015, 7))
 	local b = newPlayer(12, "Bree", P(1031, 1015, 7))
+	-- player report 2026-10-22: a pull from beside the lever (nobody on the participant tiles) made the boss, sent
+	-- nobody in and locked the room. Now it is refused: no boss, no session, the lever as it was
+	local side = newPlayer(14, "Dax", P(1029, 1014, 7))
+	local nBefore = #creatures
+	action.onUse(side, item, lever)
+	ok((side.cancels[1] or ""):find("Stand on the tile in front of the lever", 1, true) ~= nil,
+		"a pull from beside the lever is refused: " .. tostring(side.cancels[1]))
+	eq(ChaosBossRooms.sessions.aid45001, nil, "no session (the room stays free)")
+	eq(#creatures, nBefore, "no boss made")
+	eq(item.id, 1945, "the lever did not move")
+	-- a lever script that still reports an empty group: no lock, the boss it made is removed
+	local stray = newMonster("Ashen warden", P(1010, 1010, 7))
+	ChaosBossRooms.started("aid45001", ChaosBossRooms.rooms.aid45001, {})
+	eq(ChaosBossRooms.sessions.aid45001, nil, "an empty group locks nothing")
+	ok(not Monster(stray:getId()), "and its boss is gone")
+	-- a participant the script's teleport left outside (its entrance on a tile that blocks): onto the nearest free
+	-- tile of the room next to the entrance
+	local oldTile = Tile
+	Tile = function(pos)
+		local blocked = pos.x == 1002 and pos.y == 1010 -- the entrance itself blocks
+		return {getGround = function() return {} end, hasProperty = function() return blocked end,
+			getTopCreature = function() return nil end, getTopVisibleCreature = function() return nil end}
+	end
+	local out = newPlayer(15, "Eli", P(1030, 1015, 7))
+	ok(ChaosBossRooms.bringIn(ChaosBossRooms.rooms.aid45001, out), "brought in")
+	ok(ChaosBossRooms.inRoom(ChaosBossRooms.rooms.aid45001, out.pos) and not (out.pos.x == 1002 and out.pos.y == 1010)
+		and math.abs(out.pos.x - 1002) <= 1 and math.abs(out.pos.y - 1010) <= 1, "next to the blocked entrance, inside")
+	eq(ChaosBossRooms.bringIn(ChaosBossRooms.rooms.aid45001, out), false, "already inside: left where it is")
+	Tile = oldTile
+	players[15] = nil
+	for i, cr in ipairs(creatures) do
+		if cr == out then table.remove(creatures, i) break end
+	end
 	stand(a, lever)
 	stand(b, P(1031, 1015, 7))
 	-- a first group goes in

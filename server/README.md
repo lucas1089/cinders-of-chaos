@@ -13178,7 +13178,11 @@ latest."), and after the group went in `ChaosBossRooms.started` takes over the k
 `bossRooms.maxSeconds` (30 min: one boss fight, twice the longest Chaos boss limit; 3 of the 51 rooms had more), warnings,
 a "Time left" bar over the entrance and a "Room in use" bar over the lever (tilebars.lua). At the end everyone inside goes
 to the script's exitPosition and every monster in the room is removed; after a boss kill the script's own exit runs and
-the room frees up when it is empty. Without the Chaos scripts the rooms work as before. Left alone (of another shape):
+the room frees up when it is empty. `leverUse` also refuses a pull when nobody (the puller, or a player in front) stands
+on the room's participantsPos tiles (`ChaosBossRooms.groupReady`): the stock onUse then made the boss, teleported nobody
+and the room showed "Room in use" until the 2 min idle close. `started` with an empty group closes the room at once
+(boss removed), and brings in a participant the lever's teleport left outside (`ChaosBossRooms.bringIn`: a free tile
+within 3 sqm of entrancePos, inside the room). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
 about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
 step-in miniboss rooms are on the map (below); the soul pit (its
 start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11
@@ -13289,6 +13293,25 @@ modal window and answer; with `dungeons.lua` loaded no modal window, not one til
 the queue runs the dungeon with its cap, a monster does nothing, the rate limit. The Descent, the ascension trial and the
 siege got the same few lines (config, a warning call in the tick, the cap and the busy text, the registry) without an
 engine test of their own. Not run in game.
+
+## Waystone tiers (`waystone_tiers.lua`, `waystone_tiers_core.lua`, `waystone_tiers_config.lua`, `tools/patch_waystone_bosses.py`)
+
+The base waystone system (`data/scripts/customs/waystone_system/tier_maps.lua`) has six tiers of two maps each. Its
+monster files have the same flat stats in every tier, so every tier showed the bounty pool level, about 468-612. Now a
+tier's own monster type inside a map of its tier counts at that level x `levelMult[tier]` (1.0, 1.2 ... 2.0):
+`ChaosWaystoneTiers.levelOf`, read by `loot.lua` `ChaosLoot.monsterLevel` (the old body is
+`ChaosLoot.baseMonsterLevel`). Shown level: `Chaos.spawnLevel` at onSpawn index 40. Max health x the engine's level
+factor at the first think. Experience x target / native level (onGainExperience). Damage to players x the engine's
+damage factor (`monster_damage.lua`). Summons, other monsters and a tier's type outside its maps are untouched.
+Bosses keep their own level and health, since the base files rise by tier; their damage is x `bossDamage[tier]`.
+Morgrath (tier V) took no damage away from a Katoi Pillar, and Nyxdrath (tier VI) took only the adjacent pillar's
+element. `tools/patch_waystone_bosses.py` (install step `waystonebosses`) makes their health events keep
+`shieldedShare` (0.25) of such a hit and hint the attacker every `hintSeconds`. The same tool moves the Waystone III
+Frostreaver entrance off a tar tile (32965 to 32964,33236,7). At startup `ChaosWaystoneTiers.clearPaths` removes the
+items that block both tier IV boss levers: a fir tree at 33217,33237,7 and nine rope railings on y 33412, floor 8.
+Both were found by a walk check on the base map. Tests: `tests/waystone_tiers_test.lua`,
+`tools/patch_waystone_bosses_test.py`. The website and codex levels still come from the bounty pool. Balance numbers
+are first guesses. Not run in game.
 
 ## Rifts (`rift.lua`, `rift_core.lua`, `rift_config.lua`, `rift_layout_core.lua`, client `game_rift`)
 
