@@ -16664,13 +16664,14 @@ script re-runs itself with `sudo -n`, which drops the environment.
   `status errors=` counts the error lines of the current start. Tested with mawk, gawk and busybox awk.
 - `vps [info]`, `vps upgrade`, `vps upgrade-log [N]`, `vps reboot MINUTES`, `vps reboot-cancel` (2026-10-22): the
   machine. `info`: key=value lines (host, os, kernel, uptime, load, cpus, memory, disk of /, pending packages from
-  `apt-get -s upgrade` and how many of them are `php*`, the `php*-fpm` package and version, reboot_required from /run/reboot-required, reboot_at of a planned shutdown). `upgrade`:
+  `apt-get -s upgrade` and how many of them are `php*`, the `php*-fpm` or `libapache2-mod-php*` package and version, reboot_required from /run/reboot-required, reboot_at of a planned shutdown). `upgrade`:
   `apt-get update` then `upgrade` with `--force-confold` (config files kept), detached, log `CHAOS_VPS_LOG`
   (/var/log/chaos/vps-upgrade.log), one at a time. `reboot`: a broadcast, a save (SIGUSR1 to the engine), then
   `shutdown -r +MINUTES` (1 to 60); `reboot-cancel`: `shutdown -c` and a broadcast.
 - `services`, `service NAME start|stop|restart`, `service-log NAME [N]` (2026-10-22): the `chaos-*` units (and
-  `CHAOS_UNIT`). NAME must be `chaos-[a-z0-9-]+` with an optional `.service` / `.timer`, and a loaded unit; nothing
-  else is started or stopped. `service-log` tails the unit's `StandardOutput=append:` file, else its journal.
+  `CHAOS_UNIT`) and the web server units `apache2`, `nginx`, `php*-fpm` (restart them after a PHP update). NAME must
+  be one of those, `chaos-[a-z0-9-]+` with an optional `.service` / `.timer`, and a loaded unit; nothing else is
+  started or stopped. `service-log` tails the unit's `StandardOutput=append:` file, else its journal.
 - `errors clear`: appends `[chaos-ctl] list cleared by the owner DATE` to the log. `errors` and `status errors=` count
   only what comes after the newest such line (also with `all`). Nothing in the log is deleted; `logs` and the tester
   report still read every line. The marker has no word the error filters match. Admin app: Logs > Erros > Limpar lista.

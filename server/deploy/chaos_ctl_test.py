@@ -43,7 +43,7 @@ echo "systemctl $*" >> "$STUB/calls"
 case "$*" in
   *LoadState*) if [ -n "${STUB_NOUNIT:-}" ]; then echo not-found; else echo loaded; fi ;;
   *StandardOutput*) [ -n "${STUB_SVCLOG:-}" ] && echo "append:$STUB_SVCLOG" || echo journal ;;
-  list-unit-files*) printf 'chaos-backup.timer enabled\nchaos-helpai.service enabled\nchaos-server.service enabled\n' ;;
+  list-unit-files*) printf 'chaos-backup.timer enabled\nchaos-helpai.service enabled\nchaos-server.service enabled\napache2.service enabled\nssh.service enabled\n' ;;
   is-active*) if [ -n "${STUB_NOUNIT:-}" ]; then echo inactive; exit 4; else echo active; fi ;;
   show*) echo "Tue 2026-10-20 06:00:01 UTC" ;;
   *) [ -z "${STUB_NOUNIT:-}" ] || { echo "Failed to $1 $2.service: Unit $2.service not found." >&2; exit 5; } ;;
@@ -67,7 +67,7 @@ RECORD = '''#!/usr/bin/env bash
 echo "$(basename "$0") $*" >> "$STUB/calls"
 case "$(basename "$0") $*" in
   "apt-get -s"*) printf 'Inst libfoo [1] (2 Debian)\nInst php8.3-fpm [3] (4 Ubuntu)\nConf libfoo\n' ;;
-  dpkg-query*) printf 'php8.3-fpm 8.3.6-0ubuntu0.24.04.10\n' ;;
+  dpkg-query*) printf 'libapache2-mod-php 2:8.3+93ubuntu2\nlibapache2-mod-php8.3 8.3.6-0ubuntu0.24.04.13\nphp8.2-fpm \n' ;;
   apt-get*) echo "stub apt-get $*" ;;
   journalctl*) echo "journal line" ;;
 esac
@@ -336,7 +336,7 @@ def main():
             check(k in out, 'vps info: %s' % k)
         check(out.get('upgrades') == '2', 'vps info: the pending packages: %r' % out.get('upgrades'))
         check(out.get('php_upgrades') == '1', 'vps info: the pending PHP packages: %r' % out.get('php_upgrades'))
-        check(out.get('php') == 'php8.3-fpm 8.3.6-0ubuntu0.24.04.10', 'vps info: the PHP package: %r' % out.get('php'))
+        check(out.get('php') == 'libapache2-mod-php8.3 8.3.6-0ubuntu0.24.04.13', 'vps info: the PHP package: %r' % out.get('php'))
         vlog = os.path.join(tmp, 'vps-upgrade.log')
         r = run('vps', 'upgrade', extra={'CHAOS_VPS_LOG': vlog})
         check(r.returncode == 0 and 'started' in r.stdout, 'vps upgrade: ' + r.stdout + r.stderr)
@@ -361,12 +361,15 @@ def main():
         r = run('vps', 'reboot-cancel')
         check(r.returncode == 0 and 'shutdown -c' in calls(), 'vps reboot-cancel: ' + r.stdout + r.stderr)
         r = run('services')
-        check(r.stdout.splitlines() == ['chaos-backup.timer active enabled', 'chaos-helpai.service active enabled',
-                                        'chaos-server.service active enabled'], 'services: ' + r.stdout + r.stderr)
+        check(r.stdout.splitlines() == ['apache2.service active enabled', 'chaos-backup.timer active enabled',
+                                        'chaos-helpai.service active enabled', 'chaos-server.service active enabled'], 'services: ' + r.stdout + r.stderr)
         r = run('service', 'chaos-helpai', 'restart')
         check(r.returncode == 0 and 'systemctl restart chaos-helpai' in calls(), 'service restart: ' + r.stdout + r.stderr)
+        r = run('service', 'apache2', 'restart')
+        check(r.returncode == 0 and 'systemctl restart apache2' in calls(), 'service restart apache2: ' + r.stdout + r.stderr)
         for bad in (('service', 'sshd', 'stop'), ('service', 'chaos-helpai', 'enable'), ('service', 'chaos-x;rm', 'stop'),
-                    ('service', '../chaos-x', 'stop'), ('service', 'chaos-helpai'), ('service-log', 'nginx')):
+                    ('service', '../chaos-x', 'stop'), ('service', 'chaos-helpai'), ('service-log', 'ssh'),
+                    ('service', 'apache2x', 'restart'), ('service', 'php8.3-fpm;x', 'restart')):
             check(run(*bad).returncode != 0, 'refused: %r' % (bad,))
         check('systemctl stop sshd' not in calls() and 'enable chaos' not in calls(), 'a refused service runs nothing')
         svclog = os.path.join(tmp, 'helpai.log')

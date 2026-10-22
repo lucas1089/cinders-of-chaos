@@ -81,7 +81,7 @@
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
 #   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
 #                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
-#                               php_upgrades (of them php*), php (the php*-fpm package and its version),
+#                               php_upgrades (of them php*), php (the php*-fpm or libapache2-mod-php* package and its version),
 #                               reboot_required, reboot_at (a planned reboot, empty when none)
 #   vps upgrade                 apt-get update and upgrade in the background (config files kept),
 #                               log CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log
@@ -340,7 +340,12 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
 }
 
 # a chaos-* unit name, as the owner may name it (chaos-helpai, chaos-backup.timer); the configured game unit too
-unit_ok() { [[ $1 =~ ^chaos-[a-z0-9-]{1,40}(\.service|\.timer)?$ ]] || [ "$1" = "$UNIT" ]; }
+# the chaos-* units, the game unit, and the web server units (restart after a PHP update)
+WEB_UNITS='apache2 nginx'
+unit_ok() {
+  [[ $1 =~ ^chaos-[a-z0-9-]{1,40}(\.service|\.timer)?$ ]] || [ "$1" = "$UNIT" ] \
+    || [[ $1 =~ ^(apache2|nginx|php[0-9.]{1,6}-fpm)(\.service)?$ ]]
+}
 
 # ---- tester bots (server/README.md "Tester bots")
 HELPER_FILES=(zz_tester_helper.lua zz_tester_helper_core.lua)
@@ -840,8 +845,9 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         fi
         echo "upgrades=$up"
         echo "php_upgrades=$phpup"
-        # the installed PHP packages that serve the site (php-fpm), with the distribution's version
-        echo "php=$(dpkg-query -W -f '${Package} ${Version}\n' 'php*-fpm' 2>/dev/null | grep -v '^php-fpm ' | head -n 1)"
+        # the installed PHP package that serves the site (php-fpm or Apache mod_php), with the distribution's version
+        echo "php=$(dpkg-query -W -f '${Package} ${Version}\n' 'php*-fpm' 'libapache2-mod-php*' 2>/dev/null \
+          | grep -Ev '^(php-fpm|libapache2-mod-php) ' | awk 'NF == 2' | head -n 1)"
         if [ -e /run/reboot-required ]; then echo reboot_required=yes; else echo reboot_required=no; fi
         at=""
         [ -r /run/systemd/shutdown/scheduled ] && at=$(sed -n 's/^USEC=//p' /run/systemd/shutdown/scheduled 2>/dev/null \
@@ -892,16 +898,18 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     ;;
   services)
     [ $# -eq 0 ] || die "services"
-    systemctl list-unit-files --no-legend --no-pager 'chaos-*' "$UNIT.service" 2>/dev/null \
+    # shellcheck disable=SC2086 # WEB_UNITS is a fixed word list
+    systemctl list-unit-files --no-legend --no-pager 'chaos-*' "$UNIT.service" 'php*-fpm.service' $WEB_UNITS 2>/dev/null \
       | awk '{ print $1, $2 }' | sort -u | while read -r u en; do
         [ -n "$u" ] || continue
         case $u in *@*) continue ;; esac
+        unit_ok "$u" || continue
         printf '%s %s %s\n' "$u" "$(systemctl is-active "$u" 2>/dev/null | head -n 1)" "$en"
       done
     ;;
   service)
     name=${1:-} act=${2:-}
-    { [ $# -eq 2 ] && unit_ok "$name"; } || die "service NAME start|stop|restart (NAME: a chaos-* unit, see services)"
+    { [ $# -eq 2 ] && unit_ok "$name"; } || die "service NAME start|stop|restart (NAME: a chaos-* or web server unit, see services)"
     case $act in start|stop|restart) ;; *) die "service NAME start|stop|restart" ;; esac
     [ "$(systemctl show "$name" -p LoadState --value 2>/dev/null)" = loaded ] || die "no such unit: $name (see services)"
     systemctl "$act" "$name" || die "$act $name failed"
@@ -909,7 +917,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     ;;
   service-log)
     name=${1:-}
-    unit_ok "$name" || die "service-log NAME [N] (NAME: a chaos-* unit, see services)"
+    unit_ok "$name" || die "service-log NAME [N] (NAME: a chaos-* or web server unit, see services)"
     n=$(lines_arg "${2:-60}")
     f=$(systemctl show "$name" -p StandardOutput --value 2>/dev/null | sed -n 's/^append://p; s/^file://p' | head -n 1)
     if [ -n "$f" ] && [ -r "$f" ]; then
