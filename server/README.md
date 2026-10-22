@@ -15989,7 +15989,7 @@ Details and rules: docs/MAP_GUIDE.md "Area planner".
 Production plans for the thin level bands live in `tools/areaplan/plans/` (ten, 200-1300; origins and placing:
 docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the examples; none is placed on the world map yet.
 
-- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
+- **Commands:** `validate`, `compile` (`<id>.otbm`, `<id>-frame.otbm`, `<id>-spawn.xml`, `<id>.json` manifest, `data/...` stubs;
   `--no-dress` without decoration), `render` (floor PNGs and a marked minimap; needs items.otb/xml and the pair),
   `stats`, `approve`, `suggest`, `similar`, `catalogue`, `plan --from-prompt`, `place`, `install`, `check-kits`.
   Nothing runs on the live server; the world map is never written (`place` writes a copy).
@@ -16013,6 +16013,18 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
 - **Stairs:** connection `stairs` uses our stair brush (stairs ground 411 above, stone stairs 3687 below: down lands
   south of the stairs, up north of the stairs ground); hole and ladder when the tiles do not allow it.
 - **Roofs:** a dungeon floor at z 7 or above gets a flat roof (920) on the floor over it; underground areas need none.
+- **View frame** (2026-10-22, owner screenshot "hunt com mapa preto": Gallowroot Wilds showed grey rock, then black). The
+  generator builds only a rock rim of `rimWidth` (2) past the floor, and deep rock that reaches the grid border stays
+  unbuilt (Gallowroot: 12,795 tiles of its 163 x 131). The client shows 15 x 11 tiles, so a player near the rim saw void.
+  The compile adds `<id>-frame.otbm`: bare ground on every spot within `area_plan_core.VIEW` (9 x 7, the screen's 7 x 5
+  plus big sprites) of a walkable tile that has no tile, on each floor of the plan (`area_plan_core.view_frame`). The
+  ground is the theme's rock family (the rim's own ground: mountain 919 or earth 101, unwalkable, so no border is
+  wanted); a dungeon gets earth 101 behind its walls (a wall closes the edge, the border QA skips wall tiles next to
+  the frame). The QA counts the frame with the area: borders, unknown ids, and an ERROR for any spot in view of a
+  walkable tile without ground. The manifest's `frame` gives its tile count, family and ground. The frame is a file of
+  its own because it is not the area: `install_content_areas.py` and `place` lay it only where the map has no tile and
+  no area or room goes, so it never replaces a tile; the 66 plans of 2026-10-22 add 359,383 frame tiles and no frame
+  touches another plan.
 - **Quest chests:** the reward chest (rift_config.lua `chest.itemId`, 21584; "Reward chests") with the area's action id (block **47960-47999**, plan `chest_action` or one from the
   block by the area id) and one player storage per chest (block **7101200-7101299**, by the quest key). The compile
   writes `data/scripts/chaos_areaplan/<id>_chests.lua`: a revscript Action that gives the plan's `reward` (item names
@@ -16022,7 +16034,7 @@ docs/MAP_GUIDE.md "Content plans"). CI validates and compiles them with the exam
 - **Install a planned area** (owner, after the review):
   1. `compile` the plan with `origin` set to where it will go (or any place, then step 2 moves it).
   2. `place OUT/<id>.otbm WORLD.otbm COPY.otbm --at X Y Z --spawn WORLD-spawn.xml COPY-spawn.xml`: a copy of the map and
-     of the spawn file; refused when a tile lands on a world tile.
+     of the spawn file; refused when a tile lands on a world tile. The view frame goes in where the copy has no tile.
   3. Check the copy in the map editor, then use it (and the spawn copy) as the server's map.
   4. `install OUT SERVER_DIR [--dry-run]`: the chest script and NPC stubs into `data/`; idempotent, refuses a clash
      of action id, storage or file. Restart the server.
@@ -16054,7 +16066,11 @@ hunts take floor 6 ("More Teleports"), which has no tile around it.
 **Install** (`install_all.py` step `contentareas`, after houses and before poi; on its own
 `python3 -I server/tools/install_content_areas.py <server>/data [--dry-run] [--only ID,...] [--no-room]`):
 - Compiles every plan (`area_planner.py compile`, read at run time: size, origin and arrival are never copied) and
-  pastes it into the map at its own origin; refused when a tile lands on a map tile.
+  pastes it into the map at its own origin; refused when a tile lands on a map tile. Then each placed area's view
+  frame (Area planner "View frame") fills the spots where the map has no tile and no area, room or hall tile goes
+  (two frames on one spot: the first plan by id); it never replaces a tile, and a second run adds nothing. An area
+  placed before the frame existed (`placed already`) gets its frame on the next run. A plan placed later on another
+  area's frame takes those tiles when they still hold the bare frame ground (they are cut and written again).
 - Grows floor 6 by `modules` (5) alcove modules on each side: the columns of `room.east.module` / `room.west.module`
   are copied one after another past the old end, and the end (`cap`, with its temple teleport and destination) moves
   out by 20. Only the old end's 34 tiles are replaced (cut from the map file); the 420 other new tiles land where the map

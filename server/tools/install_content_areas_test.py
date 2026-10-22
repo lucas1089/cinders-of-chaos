@@ -631,6 +631,51 @@ def display_cell_checks():
           == {(11, 10, 6)}, 'spawned tiles: the monster\'s tile')
 
 
+def write_frame(out, pid, positions, ground=919):
+    frame = {p: dict(ground=ground, items=[], flags=0) for p in positions}
+    open(os.path.join(out, pid + '-frame.otbm'), 'wb').write(otbm_file(frame))
+
+
+def frame_checks(root):
+    """the view frame (area_plan_compile.py): laid only where the map has no tile and no area goes, idempotent, also
+    around an area placed before frames existed; a later area may take bare frame tiles of another"""
+    wall = (1001, 1001, 7)
+    srv, plans, comp = setup(os.path.join(root, 'vf'), extra={wall: tile(G, WALL)})
+    res, _log = run(srv, plans, comp)
+    check(res['frame'] == 0 and set(res['areas'].values()) == {'todo'}, 'frame: none without a frame file')
+    placed = digest(srv)
+    fr = [(999, 1000, 7), (1003, 1000, 7), (1004, 1000, 7), (1001, 999, 7), wall, (1101, 1000, 8)]
+    write_frame(comp['tiny_hunt'], 'tiny_hunt', fr)
+    write_frame(comp['other_hunt'], 'other_hunt', [(1099, 1000, 8), (999, 1000, 7)], ground=101)
+    res, log = run(srv, plans, comp, dry=True)
+    check(res['frame'] == 5 and digest(srv) == placed, 'frame, dry run: counted, nothing written (%s)' % res['frame'])
+    res, log = run(srv, plans, comp)
+    check(set(res['areas'].values()) == {'done'} and res['frame'] == 5, 'frame: added around placed areas %s' % res)
+    check(any('view frames: 5 tile(s)' in l for l in log), 'frame: logged')
+    m = otbm.load_otbm(os.path.join(srv, 'data', 'world', 'w.otbm'))
+    st = lambda p: None if m.find(*p) < 0 else [int(a) for a in m.stack(m.find(*p))]
+    check(st((1003, 1000, 7)) == [919] and st((1001, 999, 7)) == [919] and st((1099, 1000, 8)) == [101],
+          'frame: bare rock on the empty spots')
+    check(st(wall) == [G, WALL], 'frame: a map tile is never replaced')
+    check(st((1101, 1000, 8)) == [G, PORTAL], 'frame: never on another area')
+    check(st((999, 1000, 7)) == [101], 'frame: a spot of two frames once (the first area by id)')
+    check(len(m.tiles['x']) == len(room_tiles()) + 1 - 8 + 9 * 8 + 8 + 6 + 5, 'frame: tile count %d' % len(m.tiles['x']))
+    once = digest(srv)
+    res, _log = run(srv, plans, comp)
+    check(res['frame'] == 0 and digest(srv) == once, 'frame: a second run changes nothing')
+    # a new area on the bare frame of another: placed, the frame tiles under it replaced
+    json.dump({'id': 'late_hunt', 'name': 'late_hunt', 'level': [700, 800], 'origin': {'x': 1003, 'y': 1000, 'z': 7}},
+              open(os.path.join(plans, 'late_hunt.json'), 'w'))
+    comp['late_hunt'] = os.path.join(root, 'vf', 'out', 'late_hunt')
+    make_area(comp['late_hunt'], 'late_hunt', (1003, 1000, 7))
+    res, _log = run(srv, plans, comp)
+    check(res['areas'].get('late_hunt') == 'todo', 'frame: a later area takes the bare frame tiles %s' % res['areas'])
+    m = otbm.load_otbm(os.path.join(srv, 'data', 'world', 'w.otbm'))
+    check([int(a) for a in m.stack(m.find(1004, 1000, 7))] == [G, PORTAL], 'frame: the later area\'s tile')
+    res, _log = run(srv, plans, comp)
+    check(res['areas'].get('late_hunt') == 'done' and res['frame'] == 0, 'frame: the later area then done')
+
+
 def main():
     root = tempfile.mkdtemp(prefix='content_areas_test_')
     try:
@@ -842,6 +887,7 @@ def main():
         check('Warlock' in new and 'chaoshunt' not in new and any('already has a spawn' in n for n in notes),
               'an off-centre monster on a display cell is seen (no second monster on it): %s' % notes)
         display_cell_checks()
+        frame_checks(root)
     finally:
         shutil.rmtree(root, ignore_errors=True)
     csv_name_checks()

@@ -12,7 +12,7 @@
 -- A biome is one of our areagen themes, sometimes with other families of those tables (BIOMES below).
 --
 -- build prints the lines of tools/areagen_dump.lua (A, F, T, L, R, Q, X, C) and one last line
---   J {json}   allowed ids, the family of every ground id, the border rules and piece sets, the chest id
+--   J {json}   allowed ids, the family of every ground id, the border rules and piece sets, the chest id, the view frame's ground
 -- The job file is written by area_planner.py: return {def = {...}, biome = name, decor = mult, light = mult}.
 dofile("data/scripts/chaos/areagen_core.lua")
 dofile("data/lib/chaos_dark_tiles.lua")
@@ -665,9 +665,13 @@ for id in pairs(A.allowedIds(cfg, def, opts)) do
 end
 table.sort(allowed)
 local fams, borders, sets = materials(theme)
+-- the view frame's ground (area_plan_compile.py): bare rock past the rim; in a dungeon earth behind the walls
+local frameFam = def.kind == "dungeon" and "earth" or theme.rock
+local frameDef = frameFam and cfg.families[frameFam]
+local frame = frameDef and {family = frameFam, ground = idOf(frameDef.grounds[1][1]), walk = frameDef.walk ~= false} or nil
 put("J " .. json({allowed = allowed, families = fams, borders = borders, sets = sets, chest = riftCfg.chest.itemId,
 	portal = cfg.items.portal, hole = cfg.items.hole, ladder = cfg.items.ladder, exitAction = cfg.aid.exit,
-	kind = def.kind, theme = b.theme, walls = theme.wall and cfg.walls[theme.wall] and (function()
+	kind = def.kind, theme = b.theme, frame = frame, walls = theme.wall and cfg.walls[theme.wall] and (function()
 		local w = {}
 		for kind, rws in pairs(cfg.walls[theme.wall]) do
 			w[kind] = {}

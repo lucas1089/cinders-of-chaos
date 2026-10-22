@@ -24,7 +24,9 @@ Steps (server/README.md "Hunt teleports"; docs/MAP_GUIDE.md "Content plans"):
            copied past the old end and the end (with its temple teleport and destination) moves out by the module
            width per module. Only the old end's tiles are replaced; every other new tile must land where the map has
            no tile, else nothing is written. The copies carry no teleport (hunt_teleports.lua puts ours on at startup)
-  areas    each plan's tiles pasted at its origin; refused when one lands on a tile the map has
+  areas    each plan's tiles pasted at its origin; refused when one lands on a tile the map has. Then its view frame
+           (<id>-frame.otbm: bare rock where a player would see void) only on spots the map has no tile and no
+           area or room takes; it never replaces a tile
   spawns   each plan's spawn blocks (marked chaoscontent="ID") and two display monsters per teleport in the closed
            cells beside its counter, like the room's own (marked chaoshunt="ID"; blocks of a slot no longer used go)
   chests   the plan's chest script into data/scripts/chaos_areaplan (`area_planner.py install`)
