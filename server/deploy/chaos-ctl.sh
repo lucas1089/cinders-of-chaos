@@ -81,6 +81,7 @@
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
 #   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
 #                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
+#                               php_upgrades (of them php*), php (the php*-fpm package and its version),
 #                               reboot_required, reboot_at (a planned reboot, empty when none)
 #   vps upgrade                 apt-get update and upgrade in the background (config files kept),
 #                               log CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log
@@ -829,12 +830,18 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
         echo "cpus=$(nproc 2>/dev/null)"
         free -m 2>/dev/null | awk '/^Mem:/ { print "mem_total_mb=" $2; print "mem_used_mb=" $3 }'
         df -BG -P / 2>/dev/null | awk 'NR == 2 { gsub(/G/, ""); print "disk_total_gb=" $2; print "disk_used_gb=" $3; print "disk_free_gb=" $4 }'
-        up=-1
+        up=-1 phpup=-1
         if command -v apt-get >/dev/null 2>&1; then
-          up=$(timeout 60 apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null | grep -c '^Inst ') || true
-          [ -n "$up" ] || up=-1
+          sim=$(timeout 60 apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null) || sim=""
+          if [ -n "$sim" ]; then
+            up=$(printf '%s\n' "$sim" | grep -c '^Inst ')
+            phpup=$(printf '%s\n' "$sim" | grep -c '^Inst php')
+          fi
         fi
         echo "upgrades=$up"
+        echo "php_upgrades=$phpup"
+        # the installed PHP packages that serve the site (php-fpm), with the distribution's version
+        echo "php=$(dpkg-query -W -f '${Package} ${Version}\n' 'php*-fpm' 2>/dev/null | grep -v '^php-fpm ' | head -n 1)"
         if [ -e /run/reboot-required ]; then echo reboot_required=yes; else echo reboot_required=no; fi
         at=""
         [ -r /run/systemd/shutdown/scheduled ] && at=$(sed -n 's/^USEC=//p' /run/systemd/shutdown/scheduled 2>/dev/null \

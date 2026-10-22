@@ -95,7 +95,7 @@ instalada é desconhecida: o passo 2 baixa a mais nova e, se o `tfs` for igual a
   só quando o ajudante de teste ainda não carregou. A chave fica em /etc/chaos/tester-client-key (criada pela VPS).
   Status mostra quantos testers estão online agora, o pico da rodada e a contagem do servidor.
 - **VPS** (`vps info`, `vps upgrade`, `vps upgrade-log 200`, `vps reboot MIN`, `vps reboot-cancel`): memória, disco,
-  carga, atualizações do sistema pendentes e se precisa reiniciar. Atualizar sistema roda `apt-get update` e `upgrade`
+  carga, atualizações do sistema pendentes (e quantas são do PHP), o pacote do PHP (php*-fpm) e se precisa reiniciar. Atualizar sistema roda `apt-get update` e `upgrade`
   em segundo plano, mantendo os arquivos de configuração. Reiniciar VPS avisa os jogadores, salva o jogo e reinicia a
   máquina em 1 a 60 minutos; dá para cancelar.
 - **Serviços** (`services`, `service NOME start|stop|restart`, `service-log NOME 200`): cada unidade `chaos-*`

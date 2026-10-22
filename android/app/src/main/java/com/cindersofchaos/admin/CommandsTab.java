@@ -414,6 +414,14 @@ final class CommandsTab {
                     .append(m.getOrDefault("disk_total_gb", "?")).append(" GB\n");
             String up = m.getOrDefault("upgrades", "-1");
             t.append("Atualizações do sistema: ").append(up.equals("-1") ? "não sei" : up).append('\n');
+            String php = m.getOrDefault("php", "");
+            if (!php.isEmpty()) {
+                t.append("PHP: ").append(php).append('\n');
+            }
+            String phpUp = m.getOrDefault("php_upgrades", "-1");
+            if (!phpUp.equals("-1") && !phpUp.equals("0")) {
+                t.append("Atualizações do PHP pendentes: ").append(phpUp).append(" (toque em Atualizar sistema)\n");
+            }
             t.append("Precisa reiniciar: ").append("yes".equals(m.get("reboot_required")) ? "sim" : "não").append('\n');
             String at = m.getOrDefault("reboot_at", "");
             if (!at.isEmpty()) {

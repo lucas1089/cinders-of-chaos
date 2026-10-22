@@ -66,7 +66,8 @@ esac
 RECORD = '''#!/usr/bin/env bash
 echo "$(basename "$0") $*" >> "$STUB/calls"
 case "$(basename "$0") $*" in
-  "apt-get -s"*) printf 'Inst libfoo [1] (2 Debian)\nInst bar [3] (4 Debian)\nConf libfoo\n' ;;
+  "apt-get -s"*) printf 'Inst libfoo [1] (2 Debian)\nInst php8.3-fpm [3] (4 Ubuntu)\nConf libfoo\n' ;;
+  dpkg-query*) printf 'php8.3-fpm 8.3.6-0ubuntu0.24.04.10\n' ;;
   apt-get*) echo "stub apt-get $*" ;;
   journalctl*) echo "journal line" ;;
 esac
@@ -94,7 +95,7 @@ def main():
         os.makedirs(stub)
         os.makedirs(server)
         for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL), ('kitmysql', MYSQL), ('adduser', NOOP),
-                           ('visudo', NOOP), ('install', NOOP), ('apt-get', RECORD), ('shutdown', RECORD),
+                           ('visudo', NOOP), ('install', NOOP), ('apt-get', RECORD), ('shutdown', RECORD), ('dpkg-query', RECORD),
                            ('journalctl', RECORD)):
             p = os.path.join(stub, name)
             with open(p, 'w') as f:
@@ -334,6 +335,8 @@ def main():
                   'reboot_at'):
             check(k in out, 'vps info: %s' % k)
         check(out.get('upgrades') == '2', 'vps info: the pending packages: %r' % out.get('upgrades'))
+        check(out.get('php_upgrades') == '1', 'vps info: the pending PHP packages: %r' % out.get('php_upgrades'))
+        check(out.get('php') == 'php8.3-fpm 8.3.6-0ubuntu0.24.04.10', 'vps info: the PHP package: %r' % out.get('php'))
         vlog = os.path.join(tmp, 'vps-upgrade.log')
         r = run('vps', 'upgrade', extra={'CHAOS_VPS_LOG': vlog})
         check(r.returncode == 0 and 'started' in r.stdout, 'vps upgrade: ' + r.stdout + r.stderr)
