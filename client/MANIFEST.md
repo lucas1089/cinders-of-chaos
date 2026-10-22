@@ -2430,7 +2430,7 @@ Import-only: the sheets (`art_import/pack37_looks/`) are never committed; `style
 - **Placement.** The files say displacement 8, 8. The moon set stands 9 px left and 10 px higher than look 128. Pair
   37 moved only x (0, 8), believing the outfit displacement also placed the rider on a mount, so the set floated
   about 10 px when standing and walking. Fixed in the sheets and the things file since 2026-10-22 ("Moon outfits on
-  the ground" below); pair 37 and 38 still carry the floating art. Bears, hands and the fry box stand where 128 stands.
+  the ground" below); pair 37 and 38 still carry the floating art, pair 39 the fixed art. Bears, hands and the fry box stand where 128 stands.
 
 ```
 python3 -I client/tools/sprites/gen_pack37_looks.py build --src OBD_DIR          # sheets + tables; --check compares
@@ -2493,13 +2493,13 @@ disk had no room for a second 1.5 GB copy).
 - Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 145,258,588
   bytes, sha256 e16ca9668b6173fcff499ccefd4b72ffa1015bf8895bd27e9675ae66753ccb35; parts `things-1098.tar.xz.part00`
   (057e7ae366554fcf527a1451798c01818d6e41d4b7cc3402b567b9fa1cf51622) and `.part01`
-  (648fee2eb4c657d218e5697231b43d94ab504fbc05b1c3d7d60c5ccbf44be986); unpacks to the md5s above. Not pushed to
-  windows-assets yet.
+  (648fee2eb4c657d218e5697231b43d94ab504fbc05b1c3d7d60c5ccbf44be986); unpacks to the md5s above. Pushed to
+  windows-assets at ee8e82eb (on 1020d51c).
 - A client on pair 37 or older draws nothing for the Orb of Sockets once the server has the new look: ship pair 38
   before the server step, or set `useLook = false` and run `install_gems.py` again.
 - Previews (old look and new, the orbs of the pouch in a row): scratchpad only. Not run in a client.
 
-## Moon outfits on the ground (next pair after 38: outfits 2668-2675 in place, `tools/sprites/gen_pack37_looks.py` STAND_SHIFT, `art_import/pack37_moon_fix.csv`; not built yet)
+## Moon outfits on the ground (next pair after 38: outfits 2668-2675 in place, `tools/sprites/gen_pack37_looks.py` STAND_SHIFT, `art_import/pack37_moon_fix.csv`; pair 39, built 2026-10-22, on windows-assets 1102087c)
 Reported 2026-10-22 by the agent that built pair 37: "The moon set floats about 10 px when standing still."
 - **Measured** on pair 37 (lowest opaque row of the body, base layer and addon, screen rows from the tile top,
   displacement applied, every frame): look 128 idle 23 in all four directions (walk 20..23). The moon set before:
@@ -2532,10 +2532,28 @@ python3 -I client/tools/sprites/check_pair.py pair39/Tibia.dat pair39/Tibia.spr 
 python3 -I client/tools/sprites/gen_outfit_anchors.py pair39/Tibia.dat pair39/Tibia.spr
 python3 -I client/tools/sprites/gen_info_lift.py pair39/Tibia.dat pair39/Tibia.spr
 ```
-Not built here (the machine had 1.9 GB free, the spr alone is 1.5 GB). To ship: build it on pair 38 as above (if
-another pair lands first, use that one as input and its item count), pack it with the pair 37 recipe, push it to
-windows-assets, then regenerate `outfit_anchors.lua` and `info_lifts.lua` and record the md5s here. No server change.
-A client on pair 38 or older keeps drawing the set floating.
+Input pair 38 (windows-assets ee8e82eb, dat fb41c87298d95d9b200352b100af26b4, spr ee6c5173682531a2b93d17ff35eea7a4;
+the live pair when built). `gen_pack37_looks.py build` on the owner's .obd folder rewrote the committed tables
+unchanged.
+Output **pair 39**: dat 9d0c474ef9202a93117e910d465c7efc (11,217,716 bytes), spr 968b604ee9b6b6f9666549da880ce1d2
+(1,522,489,704 bytes, 1,341,043 sprites: 2,268 appended, 3,738 reused), 38,641 items, 2,681 outfits (8 replaced in
+place), 4101 effects, 250 missiles. The importer verified 36,864 sprite slots pixel-identical to the sheets and every
+other old thing byte-identical. Built twice: identical md5s.
+- `check_pair.py --old --allow-changed 'outfit:2668,...,2675'`: `--new-only` 0 errors, 0 warnings; full check 0
+  errors, 216 warnings (pair 38's).
+- `outfit_anchors.lua` (the dat md5 and rows 2668-2675: ground row 9-11 -> 18-21) and `info_lifts.lua` (the dat md5,
+  the female looks' lift 14 -> 12) regenerated. `gen_theme_art.py recolour --check`, `gen_dungeon_banners.py
+  --check`, `check_content.py --pair` and `gen_sprite_images.py` pass on pair 39.
+- Measured on pair 39 (lowest opaque row of the body, layer 0 and addon pattern 0, every idle frame, screen rows from
+  the tile top, displacement applied): look 128 23 in all four directions; every moon look 23 in all four, except
+  Moonblade Mystic facing south, 21 (male 2672) and 22 (female 2673). Pair 38: 13-15. With both addons the lowest row
+  is the robe or weapon tip, 23-30.
+- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5; the recipe rebuilds pair 38's sha256):
+  145,285,152 bytes, sha256 a55e9ad74b80b0e3344c36c14c89660a4b7a475ff257a8c47cd101fbb83dd9e3; parts
+  `things-1098.tar.xz.part00` (4a006a862561a71cfbaec97780dd797919c1548f703cc9189a9dbdc2b50a5b12) and `.part01`
+  (0be5499cc4b17c9e0b495b31e30561a29164019d5df96b06243a62fcc19d9709); unpacks to the md5s above. Pushed to
+  windows-assets at 1102087c (on ee8e82eb; the owner allowed new pairs without asking). No server change.
+- A client on pair 38 or older keeps drawing the set floating. Renders: scratchpad only. Not run in a client.
 
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
