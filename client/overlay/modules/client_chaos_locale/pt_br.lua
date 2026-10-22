@@ -3261,7 +3261,11 @@ ChaosLocaleStrings['pt-BR'] = {
   ["Familiars need level 200."] = "Familiares precisam do nível 200.",
   ["Your familiar's level."] = "O nível do seu familiar.",
   ["Choose your familiar."] = "Escolher seu familiar.",
-  ["The tutorial and the web shop."] = "O tutorial e a loja do site.",
+  ["The tutorial, boss rooms and the web shop."] = "O tutorial, as salas de boss e a loja do site.",
+  ["Leave Boss Room"] = "Sair da sala do boss",
+  ["Leave the boss room you are in, out to its exit. Not while you are in a fight."] =
+    "Sair da sala do boss em que você está, para a saída dela. Não durante um combate.",
+  ["You are not in a boss room."] = "Você não está em uma sala de boss.",
   ["Leave the tutorial island now."] = "Sair da ilha do tutorial agora.",
   ["You are not in the tutorial."] = "Você não está no tutorial.",
   ["Collect what you bought on the website."] = "Receber o que você comprou no site.",

@@ -9,7 +9,7 @@
 --                     buy {id, count}                 buy one store entry (the server checks price and points)
 --   server -> client  catalog {ids, vocations = "a|b|..."}
 --                     result {page, parts = [{id, text}]}
---                     services {nameTokens, vocationTokens, freeSwitch, inTutorial, familiarReady, familiarLevel,
+--                     services {nameTokens, vocationTokens, freeSwitch, inTutorial, inBossRoom, familiarReady, familiarLevel,
 --                               webshopOrders, frames, activeFrame}
 --                     store {points, entries = [{id, kind, name, item, price}], maxCount, message}
 

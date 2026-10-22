@@ -13182,7 +13182,14 @@ the room frees up when it is empty. `leverUse` also refuses a pull when nobody (
 on the room's participantsPos tiles (`ChaosBossRooms.groupReady`): the stock onUse then made the boss, teleported nobody
 and the room showed "Room in use" until the 2 min idle close. `started` with an empty group closes the room at once
 (boss removed), and brings in a participant the lever's teleport left outside (`ChaosBossRooms.bringIn`: a free tile
-within 3 sqm of entrancePos, inside the room). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
+within 3 sqm of entrancePos, inside the room). **Leave Boss Room** (client Info & Services > Services > Other, command
+`leaveroom` of `commands_ui.lua`; `ChaosBossRooms.leave`, pure rule `ChaosInstanceLimitsCore.leaveReason`): a player in
+any running room (the lever rooms, the waystone boss rooms, the step-in miniboss rooms, the soul pit, the tower
+defence) goes to the room's exitPosition (the tower defence: its drop) and leaves the group. Refused outside a running
+room, in a fight (`isPzLocked()` or `CONDITION_INFIGHT`, as the dungeon queue and the arena: no free escape from a lost
+fight) and within `bossRooms.leaveCooldown` (30 s) of the last leave. The last one out closes the room with
+`BR.close(key, "idle")` (boss and monsters removed, the lever free). The button is enabled only inside a running room
+(Services state `inBossRoom`). Without the Chaos scripts the rooms work as before. Left alone (of another shape):
 about a dozen old XML quest levers and pits. Map check (the base map, the action and unique ids of every map item): the 7
 step-in miniboss rooms are on the map (below); the soul pit (its
 start lever aid 57392 at 31588,32269,8, the entrance aid 5896); the tower defence (aid 27931 twice, aid 25486); of 11

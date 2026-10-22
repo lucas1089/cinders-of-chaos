@@ -89,6 +89,8 @@ eq(st.nameTokens, 0, "no token is 0"); eq(st.vocationTokens, 2, "vocation tokens
 eq(st.familiarReady, true, "familiar from level 200"); eq(#st.frames, 1, "only names kept")
 eq(st.freeSwitch, "", "no free switch"); eq(st.inTutorial, false, "not in the tutorial")
 eq(st.webshopOrders, -1, "web shop orders unknown")
+eq(st.inBossRoom, false, "not in a boss room")
+eq(K.servicesState({inBossRoom = true}).inBossRoom, true, "in a boss room: Leave Boss Room enabled")
 
 -- ---------------------------------------------------------------- params
 eq(K.cleanParam("  New\tName\n ", 64), "New Name", "trimmed, control characters out")

@@ -628,6 +628,69 @@ function BR.isInside(player)
 	return false
 end
 
+-- the running room the player stands in: key, config, session (any player in it, not only its group); nil: none
+function BR.roomOf(player)
+	local pos = player:getPosition()
+	for key, s in pairs(BR.sessions) do
+		local config = BR.rooms[key]
+		if config and BR.inRoom(config, pos) then
+			return key, config, s
+		end
+	end
+	return nil
+end
+
+-- "Leave Boss Room" (Info & Services > Services, command "leaveroom"): out to the room's exit (the tower defence: its
+-- drop), refused outside a running room, in a fight (pz lock or battle, as the dungeon queue) and within
+-- bossRooms.leaveCooldown seconds of the last leave. The last one out closes the room as the idle rule does (boss and
+-- monsters removed, the lever free). Returns true when the player went out.
+BR.leftAt = BR.leftAt or {} -- [guid] = os.time() of the last leave
+function BR.leave(player)
+	local key, config, s = BR.roomOf(player)
+	local now = os.time()
+	local guid = player:getGuid()
+	local cd = tonumber(RC().leaveCooldown) or 0
+	local reason, n = K.leaveReason({
+		inside = key ~= nil and RC().enabled ~= false,
+		fight = player:isPzLocked() or (CONDITION_INFIGHT ~= nil and player:hasCondition(CONDITION_INFIGHT)),
+		cooldownLeft = BR.leftAt[guid] and (BR.leftAt[guid] + cd - now) or 0
+	})
+	if reason then
+		player:sendCancelMessage(Chaos.t(player, reason, n))
+		return false
+	end
+	local exit = config.bossArea.exitPosition
+	if not exit then
+		local town = player:getTown()
+		exit = town and town:getTemplePosition()
+	end
+	if not exit then
+		player:sendCancelMessage(Chaos.t(player, "You are not in a boss room."))
+		return false
+	end
+	BR.leftAt[guid] = now
+	if s and s.guids then
+		s.guids[guid] = nil -- back in later only through the lever, like anyone else
+	end
+	player:teleportTo(exit)
+	if exit.sendMagicEffect then
+		exit:sendMagicEffect(CONST_ME_TELEPORT)
+	end
+	player:sendTextMessage(MESSAGE_EVENT_ADVANCE, Chaos.t(player, "You left the boss room."))
+	local left = creaturesIn(config)
+	if #left == 0 then
+		BR.close(key, "idle")
+	end
+	return true
+end
+
+if not ChaosCommands then
+	dofile("data/scripts/chaos/commands_ui_core.lua")
+end
+ChaosCommands.register("leaveroom", function(player)
+	BR.leave(player)
+end)
+
 -- login: a character inside a room that is not its group's running session goes to the room's exit
 function BR.onLogin(player)
 	if not RC().loginOut then

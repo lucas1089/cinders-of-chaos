@@ -668,6 +668,11 @@ return {
 			"A sala do boss em que você estava fechou: você está na saída dela.",
 		["Stand on the tile in front of the lever to pull it (your group on the tiles behind you)."] =
 			"Fique no piso em frente à alavanca para puxá-la (seu grupo nos pisos atrás de você).",
+		["You are not in a boss room."] = "Você não está em uma sala de boss.",
+		["You cannot leave the boss room while you are in a fight."] =
+			"Você não pode sair da sala do boss enquanto está em combate.",
+		["You can leave the boss room again in %d s."] = "Você pode sair da sala do boss de novo em %d s.",
+		["You left the boss room."] = "Você saiu da sala do boss.",
 		-- Waystone tiers (waystone_tiers.lua)
 		["%s is shielded: fight it next to its pillar for full damage."] =
 			"%s está protegido: lute ao lado do pilar dele para causar dano total.",

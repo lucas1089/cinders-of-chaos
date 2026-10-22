@@ -247,7 +247,7 @@ end
 
 -- ---------------------------------------------------------------- Services status
 -- The state the Services page uses to enable its buttons. facts: nameTokens, vocationTokens (storage values, -1 =
--- none), freeSwitch (vocation name or nil), inTutorial, level, familiarLevel, webshopOrders (nil = unknown),
+-- none), freeSwitch (vocation name or nil), inTutorial, inBossRoom (a running boss room: Leave Boss Room), level, familiarLevel, webshopOrders (nil = unknown),
 -- frames (owned frame names), activeFrame (name or nil).
 function K.servicesState(facts)
 	local f = facts or {}
@@ -264,6 +264,7 @@ function K.servicesState(facts)
 		vocationTokens = math.max(0, tonumber(f.vocationTokens) or 0),
 		freeSwitch = type(f.freeSwitch) == "string" and f.freeSwitch or "",
 		inTutorial = f.inTutorial == true,
+		inBossRoom = f.inBossRoom == true,
 		familiarReady = level >= need,
 		familiarLevel = need,
 		webshopOrders = f.webshopOrders == nil and -1 or math.max(0, tonumber(f.webshopOrders) or 0),

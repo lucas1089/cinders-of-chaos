@@ -77,6 +77,16 @@ eq(V.needMet('webshopOrders', { webshopOrders = -1 }), true, 'unknown orders: en
 eq(V.needMet('freeSwitch', { freeSwitch = '' }), false, 'no free switch')
 eq(V.needMet('frames', { frames = {} }), false, 'no frames'); eq(V.needMet('frames', { frames = { 'frost' } }), true, 'frames')
 eq(V.needMet('inTutorial', { inTutorial = false }), false, 'out of the tutorial')
+-- Leave Boss Room: on the Services page, enabled only inside a running boss room (server inBossRoom)
+local leave
+for _, row in ipairs(V.page('services').rows) do
+  for _, b in ipairs(row.buttons or {}) do
+    if b.id == 'leaveroom' then leave = b end
+  end
+end
+eq(leave ~= nil and leave.need, 'inBossRoom', 'Leave Boss Room button')
+eq(V.needMet(leave.need, { inBossRoom = false }), false, 'outside a boss room: disabled')
+eq(V.needMet(leave.need, { inBossRoom = true }), true, 'inside: enabled')
 for _, row in ipairs(V.page('services').rows) do
   eq(type(row.hint), 'string', (row.label or '?') .. ' row hint')
   for _, b in ipairs(row.buttons) do

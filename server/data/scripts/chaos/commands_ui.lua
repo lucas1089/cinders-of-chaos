@@ -196,6 +196,11 @@ local function servicesState(player)
 	if NP and NP.inTutorial and NP.key then
 		facts.inTutorial = NP.inTutorial(player:getStorageValue(NP.key("stage"))) == true
 	end
+	local BR = ChaosBossRooms
+	if BR and BR.roomOf then
+		local ok, key = pcall(BR.roomOf, player)
+		facts.inBossRoom = ok and key ~= nil
+	end
 	local SC = ChaosShopCore
 	if SC and SC.FRAMES and SC.frameStorage then
 		facts.frames = {}
