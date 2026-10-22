@@ -8315,6 +8315,49 @@ one craft and one set of materials; gold and materials are removed before the it
 the event, a failed gold or material removal and a logout create nothing; a failed `addItemEx` refunds everything.
 Against the stock script the same test gets 5 items for one set of materials.
 
+## Base crafting recipes (`tools/patch_base_recipes.py`, `tools/patch_base_recipes_test.py`)
+
+Owner (2026-10-22, on the Seraphic Charged Stone): "Coloque pra que servem". The base books have three class sets at
+level 35: Myst Regalia (mage), Seraphic (paladin) and Dawnforged (knight). Every Seraphic and Dawnforged recipe asked
+for the Myst Charged Stone (29921) and the Myst Emblem (29924), so the Seraphic and Dawnforged stones and emblems
+(29922, 29923, 29925, 29926) that the level 1200+ bosses drop had no use. The tool (install step `baserecipes`, after
+`basecraftingbonus`; idempotent, `--dry-run`, `--check`):
+
+- **Own materials.** armorsmith, weaponsmith, jewelsmith: a Seraphic piece (29869-29877) takes the Seraphic Charged
+  Stone and Emblem, a Dawnforged piece (29878-29890) the Dawnforged ones. Same counts, gold (60,000), level (35),
+  Nyxdrath Heart and the other materials as the Myst piece of that slot. Belts and gloves stay (`patch_badges.py`
+  retires them).
+- **Myst amulet and ring.** The jewelsmith's "Myst Regalia Amulet" / "Myst Regalia Ring" made 29865 / 29866 (the Myst
+  spellbook and wand, which the weaponsmith also makes); they make 29867 / 29868 now.
+- **Trophy recipes** (generalcrafting, the crafting table; appended after the stock book in a marked block, so the stock
+  recipes keep their places):
+
+| Product | Materials | Gold | Level |
+|---|---|---|---|
+| Myst Charged Stone | Gargantuan Eye, Runic Claw | 25,000 | 25 |
+| Seraphic Charged Stone | Verdant Scale, Vorsk Scale | 25,000 | 25 |
+| Dawnforged Charged Stone | Frostbone Shard, Runic Stone Shard | 25,000 | 25 |
+| Myst / Seraphic / Dawnforged Emblem | its line's Charged Stone, Runic Stone Shard | 25,000 | 30 |
+| Myst Emblem | Brainforged, Runic Stone Shard | 25,000 | 30 |
+
+  The trophies drop at 7-9% from the level 950-1150 hunts (`tools/loot_bands_data.lua`) and only sold to an NPC before;
+  the Runic Stone Shard (25% from the level 1200+ monsters, the waystone shop) had no use at all. **Economy:** by the
+  price table each recipe's materials sell for at most its product (75,000-107,000 against 80,000 / 115,000), so the
+  table's craft floor leaves every price as it was; with the gold the inputs are worth more than the product, so no
+  recipe makes money, and no recipe turns its product back into a material. The test checks both against
+  `chaos_item_prices_data.lua`.
+- **Descriptions.** items.xml: the stones, emblems, Nyxdrath Heart, trophies and the Runic Stone Shard say what they are
+  for ("Crafting material for the Seraphic set and the Seraphic Emblem."); added, or appended to another description.
+
+`item_prices_base.py` reads the books through `patch_book`, so `gen_item_prices.py survey` writes
+`data/items/base_recipes.csv` as installed. The item finder reads the global `Crafting` at run time and shows every
+recipe both ways; the tooltip's "Used in" line comes from it (see "Item finder").
+
+**Audit (2026-10-22): base materials that drop and had no use.** Item finder rows of every system, the base books, every
+base script and NPC: after this change the late boss materials above are all used. Still with no use beyond the sell
+price of the item price table: the classic creature products (vendor loot by design) and the energy creature parts
+26158-26179 and the scarab ocarina 27432, which no base NPC buys (the Loot Buyer pays the table's price).
+
 ## Crafting bonus (`tools/patch_base_crafting_bonus.py`, `chaos/craft_bonus*.lua`, `tests/craft_bonus_test.lua`, `tests/base_crafting_bonus_test.lua`)
 
 **The stock roll.** The base script gave every product, potions and tools included, `rollRarity()`: 5% of crafts, then
@@ -9803,6 +9846,14 @@ server id until the index is rebuilt; `item_tooltip.lua` puts it in the tip as `
 it. The client shows "Drops from: Dragon Lord (100%), Daily reward" and "~1 in 500 legendary kills, or 690 Conquest
 Tokens" (`game_itemtooltip` `tooltiplogic.lua` `L.sourceLines`). Tests: `tests/itemfinder_test.lua` (brief),
 `tooltiplogic_test.lua`.
+
+**Used in (2026-10-22).** Owner, on the Seraphic Charged Stone that showed only its bosses: "Coloque pra que servem".
+`K.brief` also gives `u = {n, m}`: the first `K.USED_SHOWN` (2) products of the item's "usedin" rows (every recipe and
+exchange that takes it, lowest level first, one per name) and how many other products there are (`m`, left out at 0).
+An item used in something but from nowhere now has a brief too (`s` empty). The client shows a dim "Used in: Seraphic
+Emblem, Seraphic Bleeder +8 more" (pt-BR "Usado em: ... +8 outros") under the sources (`L.usedInText`). The field is
+optional: an older client ignores it, an older server sends none. Tests: `tests/itemfinder_test.lua` (mocked recipes and
+the real `data/items/base_recipes.csv`), `tooltiplogic_test.lua`.
 
 **Not covered.** Base quest chests (their contents are items on the map, not data the scripts can read), the rift
 chest's random item rolls (any rift monster's loot), cosmetic store offers, and the base NPCs placed by scripts instead
