@@ -18,9 +18,14 @@ return {
 	ownLook = true,
 	lookFirst = 33905,
 
-	-- the Orb of Sockets: an unused stackable use-with rune stone (no items.xml entry; install_gems.py names it)
+	-- the Orb of Sockets: an unused stackable use-with rune stone (no items.xml entry; install_gems.py names it).
+	-- look: our own orb look (client pair 38, client/tools/sprites/gen_orb_items_art.py; owner 2026-10-22: no rune
+	-- sprite for an orb), written into its items.otb node by install_gems.py while useLook is true. stockLook: the
+	-- client id of the base node (22036 draws the great fireball rune's sprite); useLook = false (and install_gems.py
+	-- again) puts it back.
 	socketOrb = {id = 24692, name = "Orb of Sockets",
 		text = "Rolls a new number of sockets for a piece of gear (gems already socketed stay).",
+		look = 38641, useLook = true, stockLook = 22036,
 		price = 25}, -- Chaos store, Chaos Currency
 
 	-- the qualities, lowest first: three of one combine into one of the next

@@ -408,8 +408,9 @@ server/
    `darktiles`) adds the 74 items of `data/items/dark_tiles.csv` to `items.otb` / `items.xml`. The client needs the matching
    `Tibia.dat` / `Tibia.spr` (`client/tools/sprites/gen_dark_tiles.py`). See "Dark tile set".
 5e. Gems: `python3 -I server/tools/install_gems.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `gems`)
-   adds the 35 gems (32001-32035) to `items.otb` / `items.xml` and names the Orb of Sockets (24692). The client needs the
-   multi-use flag on the small diamond: `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
+   adds the 35 gems (32001-32035) to `items.otb` / `items.xml`, names the Orb of Sockets (24692) and gives it its own orb
+   look (client 38641, pair 38). The client needs the multi-use flag on the small diamond:
+   `client/tools/sprites/set_multiuse.py`. See "Gems and sockets".
 5f. Auras: `python3 -I server/tools/install_auras.py <server>/data [--dry-run]` (idempotent; `install_all.py` step `auras`)
    adds the 19 Chaos auras of `data/XML/chaos_auras.csv` (ids 6..24) to `auras.xml`; the store sells them (category Auras).
    It also adds the four faction auras of `data/XML/chaos_auras_donor.csv` (ids 25..28, looks 2136..2139 of things_custom14;
@@ -10163,6 +10164,17 @@ onyx chip 22193); Flawless and Perfect ruby, sapphire, emerald and amethyst use 
 678). Gems stack per tier, NPCs do not buy them as stock gems, and nothing in the stock data knows the ids. The dark
 tile set uses 30484..30557 (client id + 3000), so the two id ranges stay apart. The Orb of Sockets is the unused
 stackable use-with rune stone 24692 (named by the installer, like the crafting orbs).
+
+**Orb of Sockets look** (`socketOrb.look` / `useLook`, pair 38, 2026-10-22). Owner: "Coloque arte de orb de verdade. Não
+use as runas para isso. Deixe os sprites de runa só para as runas." The rune stone node 24692 drew client 22036, whose
+only sprite (1317) is the great fireball rune's (client 3191): in the bags, the Orbs Pouch and its tooltip the orb was
+a red rune stone. `install_gems.py` now sets that node's client id to 38641, our own orb (blue glass, a gold band, three
+sockets lit violet, cyan and green; `client/tools/sprites/gen_orb_items_art.py`, client/MANIFEST.md "Orb looks").
+Only the client id attribute changes (stackable, useable, the rest stay); the new thing copies 22036's dat flags. The
+rune keeps its sprite. Every other orb of the loot list and the bench was checked against the 134 rune things of pair
+37: no shared sprite and no near picture, so none else changed. A client older than pair 38 draws nothing for the orb:
+ship pair 38 first. Rollback: `useLook = false` and the installer again (22036 back, byte for byte). Test:
+`tools/install_gems_test.py`.
 
 **Own looks** (`ownLook`, on since 2026-10-14): animated looks of our own for every gem and tier, client 33905-33939 =
 `lookFirst` + (type - 1) x 5 + tier - 1 (client/tools/sprites/gen_gem_art.py, from the owner's gem set; client/MANIFEST.md

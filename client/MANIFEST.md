@@ -2457,6 +2457,48 @@ byte-identical. Built twice: identical md5s.
 - A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
 - Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
 
+## Orb looks (pair 38: item 38641, `tools/sprites/gen_orb_items_art.py`, `art_import/orb_items.*`; built 2026-10-22, not on windows-assets yet)
+Owner request 2026-10-22 with a screenshot of the Orbs Pouch: "Coloque arte de orb de verdade. Não use as runas para
+isso. Deixe os sprites de runa só para as runas." The Orb of Sockets showed a red oval stone, in the pouch and its
+tooltip.
+- **Cause.** The Orb of Sockets (server 24692) is an unused stackable rune stone of the base data, client 22036, whose
+  only sprite (1317) is the great fireball rune's (client 3191): the same picture. Checked for every orb of the loot
+  list, the crafting bench and orbs v2 (24688, 24691, 24697, 29851-29859, 32251-32260, 24692) against the 134 rune
+  things of pair 37 (base items.xml names with "rune"): sprite ids and the phash of the 32 px render. Only 24692
+  shares a sprite with a rune (distance 0); every other orb is 180 or more of 256 bits from its nearest rune.
+- **New look.** `gen_orb_items_art.py build` draws the orb per pixel in code (no source image, no pack pixels): blue
+  glass lit from the top left with a cyan glow inside and a specular glint, a gold band leaning toward the viewer
+  holding three sockets lit violet, cyan and green, a one-pixel near-black outline; snapped to `azurevigil`. Passes
+  `style_check.py check`; `build` refuses a failing tile, `build --check` (CI, fx venv) compares atlas and things file.
+- Things file `art_import/orb_items.csv`: client 38641 `orb of sockets`, flags `copy:22036` (stackable, multi-use,
+  light as before), one phase, mode replace with server id 24692. The server points the node at it
+  (`install_gems.py`, `chaos_gems_config.lua` `socketOrb.look` / `useLook`; server/README.md "Gems and sockets").
+  22036 and the rune 3191 are unchanged.
+
+```
+python3 -I client/tools/sprites/gen_orb_items_art.py build [--preview DIR --dat pair37/Tibia.dat --spr pair37/Tibia.spr]
+python3 -I client/tools/sprites/import_art_things.py --ours-dat pair37/Tibia.dat --ours-spr pair37/Tibia.spr --out-dir pair38 \
+    --things client/tools/sprites/art_import/orb_items.csv --first-item 38641 --expect-items 38640
+python3 -I client/tools/sprites/check_pair.py pair38/Tibia.dat pair38/Tibia.spr --old pair37/Tibia.dat pair37/Tibia.spr [--new-only]
+```
+Input pair 37 (windows-assets 1020d51c, dat 774c80f15b38b1072e5e677f1611a08b, spr ba8022fe709d71fe543ee20d6d8858e4).
+Output **pair 38**: dat fb41c87298d95d9b200352b100af26b4 (11,217,716 bytes), spr ee6c5173682531a2b93d17ff35eea7a4
+(1,520,792,224 bytes, 1,338,775 sprites: 1 appended), 38,641 items, 2,681 outfits, 4101 effects, 250 missiles. The
+importer verified the sprite slot pixel-identical to the atlas and every old thing byte-identical. Built once (the
+disk had no room for a second 1.5 GB copy).
+- `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 216 warnings (pair 37's).
+  `check_content.py --pair` passes on pair 38.
+- `outfit_anchors.lua` and `info_lifts.lua` not regenerated: no new creature, only their dat md5 would change; do it
+  when pair 38 is published (as for pair 35).
+- Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 145,258,588
+  bytes, sha256 e16ca9668b6173fcff499ccefd4b72ffa1015bf8895bd27e9675ae66753ccb35; parts `things-1098.tar.xz.part00`
+  (057e7ae366554fcf527a1451798c01818d6e41d4b7cc3402b567b9fa1cf51622) and `.part01`
+  (648fee2eb4c657d218e5697231b43d94ab504fbc05b1c3d7d60c5ccbf44be986); unpacks to the md5s above. Not pushed to
+  windows-assets yet.
+- A client on pair 37 or older draws nothing for the Orb of Sockets once the server has the new look: ship pair 38
+  before the server step, or set `useLook = false` and run `install_gems.py` again.
+- Previews (old look and new, the orbs of the pouch in a row): scratchpad only. Not run in a client.
+
 ## Owner art (things_custom26: outfits 2213-2233, items 33940-33985, `tools/sprites/gen_owner_art.py`, `art_import/owner_art.csv`; on windows-assets 50645056, switch on since 2026-10-15)
 **Source and licence.** The owner's Google Drive folder "ots", files added 2026-10-15. The owner confirmed the art is
 their own or commissioned and free to use for monsters and variants, outfits and wings as cosmetics, decoration and map
