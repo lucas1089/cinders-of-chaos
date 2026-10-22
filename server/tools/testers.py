@@ -414,13 +414,43 @@ def extended_messages(plain):
     return out
 
 
-class Results:
-    """what every bot saw, for the report (written to the state folder as run.json)"""
+ACTIVITY_MAX = 300000  # lines of one run's activity log (100 testers, 60 minutes: about 40,000)
 
-    def __init__(self, n):
+
+class Results:
+    """what every bot saw, for the report (written to the state folder as run.json); with `activity` (a path) every
+    action, its outcome and every error, one line each, as it happens (runs/<run>.log, the owner reads it with
+    chaos-ctl.sh testers log)"""
+
+    def __init__(self, n, activity=None):
+        self.lines = 0
+        self.activity = None
+        if activity:
+            os.makedirs(os.path.dirname(activity), mode=0o700, exist_ok=True)
+            fd = os.open(activity, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+            self.activity = os.fdopen(fd, 'a', buffering=1, encoding='utf-8', errors='replace')
         self.d = {'bots': n, 'started': time.strftime('%Y-%m-%d %H:%M:%S'), 'logins': 0, 'deaths': 0, 'relogs': 0,
                   'reconnects': 0, 'behaviours': {}, 'failures': {}, 'lua_errors': {}, 'kicks': {}, 'anomalies': [],
                   'first': {}, 'coverage': {}}
+
+    def log(self, bot, kind, text):
+        """one line of the activity log: time, tester (level, class), what, outcome or error"""
+        if not self.activity or self.lines >= ACTIVITY_MAX:
+            return
+        self.lines += 1
+        who = '%s (L%s %s)' % (bot.name, bot.level, bot.cls) if bot is not None else '-'
+        line = '%s %s %-8s %s' % (time.strftime('%H:%M:%S'), who, kind, ' '.join(str(text).split()))
+        if self.lines == ACTIVITY_MAX:
+            line += ' [the log stops here: %d lines]' % ACTIVITY_MAX
+        try:
+            self.activity.write(line + '\n')
+        except OSError:
+            self.activity = None
+
+    def close(self):
+        if self.activity:
+            self.activity.close()
+            self.activity = None
 
     def first(self, key, bot):
         self.d['first'].setdefault(key, {'bot': bot.name, 'did': bot.last, 'at': time.strftime('%H:%M:%S')})
@@ -428,16 +458,21 @@ class Results:
     def count(self, table, key, bot):
         t = self.d[table]
         t[key] = t.get(key, 0) + 1
+        self.log(bot, {'failures': 'FAIL', 'lua_errors': 'LUAERROR', 'kicks': 'KICK'}.get(table, table.upper()), key)
         self.first({'failures': 'fail:', 'lua_errors': 'lua:', 'kicks': 'kick:'}.get(table, table + ':') + key, bot)
 
-    def behaviour(self, name, outcome):
+    def behaviour(self, name, outcome, bot=None):
         b = self.d['behaviours'].setdefault(name, {'tried': 0, 'ok': 0, 'failed': 0})
         b[outcome] = b.get(outcome, 0) + 1
+        if bot is not None and outcome != 'tried':
+            self.log(bot, 'do', '%s %s' % (name, outcome))
 
     def anomaly(self, rule, bot, **data):
         if len(self.d['anomalies']) < 500:
             data.update(rule=rule, who=bot.name, did=bot.last, t=int(time.time()))
             self.d['anomalies'].append(data)
+        self.log(bot, 'ANOMALY', '%s while %s %s' % (rule, bot.last, json.dumps({k: v for k, v in data.items()
+                 if k not in ('rule', 'who', 'did', 't')}, sort_keys=True)))
 
 
 ONLINE = LT.ONLINE  # creature id -> bot in game (loadtest's party_step reads the same table)
@@ -448,6 +483,7 @@ class TesterBot(LT.Bot):
         self.index = index
         self.account, self.password, self.name = entry['account'], entry['password'], entry['name']
         self.level = entry.get('level', 1)
+        self.cls = entry.get('class', '?')
         self.args, self.n, self.results = args, n_rsa, results
         self.stats = {'no_challenge': 0}
         self.source = '127.1.%d.%d' % (1 + index // 250, 1 + index % 250) if args.host.startswith('127.') else None
@@ -494,10 +530,12 @@ class TesterBot(LT.Bot):
             if self.fails > 1:
                 self.results.d['reconnects'] += 1
             reason = LT.failure_reason(self.stage, e)
+            self.results.log(self, 'login', 'failed: %s' % reason)
             if not reason.startswith('timeout') and 'Connection' not in reason:
                 self.results.count('kicks', 'login: ' + reason, self)
             return False
         self.results.d['logins'] += 1
+        self.results.log(self, 'login', 'in game')
         self.alive, self.died, self.health = True, False, 100
         ONLINE[self.cid] = self
         reader = asyncio.ensure_future(self.drain())
@@ -579,6 +617,7 @@ class TesterBot(LT.Bot):
             return
         self.died = self.after_death = True
         self.results.d['deaths'] += 1
+        self.results.log(self, 'DEATH', 'died while %s' % self.last)
         rule = TC.health_anomaly(self.health, 0, True)
         if rule:
             self.results.anomaly(rule, self, health_before=self.health)
@@ -606,6 +645,7 @@ class TesterBot(LT.Bot):
                 self.results.anomaly(rule, self, monster=detail[0], gold=detail[1])
         elif kind == 'advance':
             self.level = detail[1]
+            self.results.log(self, 'advance', text)
         elif kind == 'death':
             self.on_death()
 
@@ -652,7 +692,7 @@ class TesterBot(LT.Bot):
                     ok = await getattr(self, 'do_' + name)(clock)
                 except (ConnectionError, OSError, asyncio.IncompleteReadError):
                     break
-                self.results.behaviour(name, 'ok' if ok else 'failed')
+                self.results.behaviour(name, 'ok' if ok else 'failed', self)
                 next_pick = time.monotonic() + 5 + random.random() * 10
             try:
                 await self.conn.w.drain()
@@ -844,7 +884,7 @@ async def run_bots(a, entries):
     by_id = {v['id']: name for name, v in vocs.items()}
     model_path = os.path.join(HERE, '..', 'data', 'spells', 'rotation_model.csv')
     model = LT.parse_rotation_model(LT.read_text(model_path)) if os.path.exists(model_path) else {}
-    results = Results(len(entries))
+    results = Results(len(entries), a.activity)
     clock = {'until': time.monotonic() + a.minutes * 60, 'stop': False}
     loop = asyncio.get_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
@@ -866,6 +906,12 @@ async def run_bots(a, entries):
     saver.cancel()
     results.d['ended'] = time.strftime('%Y-%m-%d %H:%M:%S')
     save_results(a, results)
+    results.close()
+    # the report of the run, written next to its activity log (the server log is read up to now)
+    try:
+        write_private(a.activity[:-len('.log')] + '-report.txt', report_text(a))
+    except Exception as e:  # noqa: BLE001 - the run itself is over and saved; the owner can still run report
+        print('report file not written: %s' % e, flush=True)
     print('run over: %d logins, %d deaths, %d kicks kinds; report: testers.py report' % (
         results.d['logins'], results.d['deaths'], len(results.d['kicks'])), flush=True)
 
@@ -913,7 +959,11 @@ def run(a):
     entries = entries[:min(a.count or len(entries), TC.MAX_BOTS)]
     if a.rsa_key == '' and os.path.exists(os.path.join(a.server_dir, 'key.pem')):
         a.rsa_key = os.path.join(a.server_dir, 'key.pem')
+    stamp = time.strftime('%Y%m%d-%H%M%S')
+    a.activity = os.path.join(a.state, 'runs', 'run-%s.log' % stamp)
+    prune_runs(os.path.join(a.state, 'runs'), KEEP_RUNS - 1)
     st['run'] = {'started': int(time.time()), 'minutes': a.minutes, 'count': len(entries), 'log': a.log,
+                 'activity': a.activity,
                  'log_offset': os.path.getsize(a.log) if a.log and os.path.exists(a.log) else 0,
                  'scenarios': os.path.abspath(a.scenarios) if a.scenarios else ''}
     save_state(a.state, st)
@@ -932,7 +982,29 @@ def read_log_since(path, offset):
         return f.read().decode('utf-8', 'replace').splitlines()
 
 
+KEEP_RUNS = 20  # runs kept in runs/ (activity log and report each)
+
+
+def prune_runs(folder, keep):
+    """keep the newest `keep` runs of runs/ (run-<stamp>.log and run-<stamp>-report.txt)"""
+    try:
+        names = os.listdir(folder)
+    except OSError:
+        return
+    stamps = sorted({n[4:19] for n in names if re.match(r'^run-\d{8}-\d{6}(\.log|-report\.txt)$', n)})
+    for old in stamps[:max(0, len(stamps) - keep)]:
+        for n in ('run-%s.log' % old, 'run-%s-report.txt' % old):
+            try:
+                os.remove(os.path.join(folder, n))
+            except OSError:
+                pass
+
+
 def report(a):
+    sys.stdout.write(report_text(a))
+
+
+def report_text(a):
     st = load_state(a.state)
     r = st.get('run') or {}
     try:
@@ -950,7 +1022,9 @@ def report(a):
     text = TC.build_report(res, parsed)
     if not log:
         text += '(no server log given: --log)\n'
-    sys.stdout.write(text)
+    if r.get('activity'):
+        text += 'every action and error of the run: %s (chaos-ctl.sh testers log)\n' % r['activity']
+    return text
 
 
 def status(a):

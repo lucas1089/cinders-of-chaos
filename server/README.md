@@ -6271,6 +6271,7 @@ It must be 64 hex digits, owned by root, mode 0600. It never goes on a command l
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers start 100 60 --restart 300
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers status
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers report
+sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers log 400       # the newest run's actions and errors
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers stop
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup          # lists
 sudo /opt/chaos/repo/server/deploy/chaos-ctl.sh testers cleanup --yes    # deletes
@@ -6287,6 +6288,11 @@ The trial kit reads `/etc/chaos/ctl.conf` (`ctl.conf.trial.example`): server `/o
 - `report`: the server log since the run started (errors grouped as `chaos-ctl.sh errors`, warnings, anomalies),
   then what the bots saw: Lua error texts, failure texts (expected ones marked), kicks and disconnect reasons,
   each with the first bot and what it was doing; behaviours tried / ok / failed; the system coverage (below).
+- Every run writes by itself `<state>/runs/run-<date>-<time>.log` (root, 0600): one line per tester action (its
+  outcome), login, death, level up, and every error it received (Lua error, failure text, kick, anomaly), with the
+  time, the tester, its level and class; at most 300,000 lines. At the end of the run its report (as `report`)
+  goes next to it, `run-<date>-<time>-report.txt`. The 20 newest runs are kept. Admin app: Comandos > Testers.
+- `log [N]`: the last N lines (default 200, at most 5000) of the newest activity log.
 - `cleanup [--yes]`: stops a run; waits 2 minutes after a stop (a character in a fight stays in game).
   Deletes only characters with the marker storage AND a "Tester Xxx" name AND a `tstbot...` account. Exact ids, no
   LIKE. Rows of every table with a `player_id` / `*_player_id` or `account_id` / `*_account_id` column, a house a

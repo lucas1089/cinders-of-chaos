@@ -279,6 +279,44 @@ for lv in T.LEVELS:
 eq(len({c for c, _ in plan}), 15, 'every class plays')
 eq(T.plan_bots(3, [('A', 1)], [30, 100]), [('A', 30), ('A', 100), ('A', 30)], 'one class: the bands in turn')
 
+# ---------------------------------------------------------------- the activity log of a run
+
+_d = tempfile.mkdtemp()
+_path = os.path.join(_d, 'runs', 'run-20261022-120000.log')
+_r = T.Results(2, _path)
+
+
+class _B:
+    name, level, cls, last = 'Tester Aaa', 750, 'Knight', 'hunt'
+
+
+_r.log(_B(), 'login', 'in game')
+_r.behaviour('hunt', 'tried', _B())
+_r.behaviour('hunt', 'ok', _B())
+_r.count('lua_errors', 'Lua Script Error: boom', _B())
+_r.anomaly('one_shot', _B(), health_before=100)
+_r.close()
+_lines = open(_path).read().splitlines()
+eq(len(_lines), 4, 'activity: login, the outcome (not the try), the error, the anomaly')
+ok('Tester Aaa (L750 Knight) login' in _lines[0] and _lines[0].endswith('in game'), 'who, level, class: ' + _lines[0])
+ok(_lines[1].endswith('hunt ok'), 'the outcome: ' + _lines[1])
+ok('LUAERROR' in _lines[2] and 'boom' in _lines[2], 'the error: ' + _lines[2])
+ok('ANOMALY' in _lines[3] and 'one_shot while hunt' in _lines[3] and '"health_before": 100' in _lines[3], _lines[3])
+eq(oct(os.stat(_path).st_mode & 0o777), '0o600', 'activity log: owner only')
+eq(oct(os.stat(os.path.dirname(_path)).st_mode & 0o777), '0o700', 'runs/: owner only')
+_runs = os.path.join(_d, 'runs')
+for _k in range(5):
+    for _n in ('run-2026102%d-100000.log' % _k, 'run-2026102%d-100000-report.txt' % _k):
+        open(os.path.join(_runs, _n), 'w').close()
+open(os.path.join(_runs, 'notes.txt'), 'w').close()
+T.prune_runs(_runs, 2)
+eq(sorted(os.listdir(_runs)), ['notes.txt', 'run-20261023-100000-report.txt', 'run-20261023-100000.log',
+                               'run-20261024-100000-report.txt', 'run-20261024-100000.log'],
+   'prune: the newest runs kept, other files untouched')
+_r2 = T.Results(1)
+_r2.log(_B(), 'login', 'x')  # no activity path: nothing written, no error
+eq(T.Results(1).lines, 0, 'no activity log without a path')
+
 for f in FAILS:
     print('FAIL ' + f)
 print('testers_test: %d checks, %d failures' % (CHECKS[0], len(FAILS)))

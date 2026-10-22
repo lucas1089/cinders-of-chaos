@@ -70,6 +70,9 @@
 #   testers stop                ends the bots (they log out) and removes the helper from data/scripts
 #   testers status              key=value lines: running, pid, started, bots, minutes, logins, deaths, helper, helper_loaded
 #   testers report              the bug report of the last run (server log since the run started, what the bots saw)
+#   testers log [N]             the last N lines (default 200, at most 5000) of the newest run's activity log: every action
+#                               of every tester, its outcome and every error, one line each ($TSTATE/runs/run-*.log;
+#                               the run also writes its report next to it, run-*-report.txt; the 20 newest runs are kept)
 #   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
 #
@@ -871,6 +874,15 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       report)
         testers_py report --state "$TSTATE" --log "$LOG"
         ;;
+      log)
+        n=${1:-200}
+        num "$n" || die "testers log [N]"
+        [ "$n" -ge 1 ] && [ "$n" -le 5000 ] || die "testers log N: 1 to 5000"
+        f=$(ls -1 "$TSTATE"/runs/run-*.log 2>/dev/null | sort | tail -n 1)
+        [ -n "$f" ] || die "no activity log yet (it is written from the next testers start on)"
+        echo "== $f ($(wc -l < "$f") lines)"
+        tail -n "$n" "$f"
+        ;;
       cleanup)
         yes=0
         case "$*" in '') ;; --yes) yes=1 ;; *) die "testers cleanup [--yes]" ;; esac
@@ -887,7 +899,7 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
           echo "(nothing deleted: chaos-ctl.sh testers cleanup --yes)"
         fi
         ;;
-      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | cleanup [--yes]" ;;
+      *) die "testers start [N] [MINUTES] [--restart SECONDS] | stop | status | report | log [N] | cleanup [--yes]" ;;
     esac
     ;;
   ''|help|-h|--help)

@@ -365,6 +365,11 @@ final class CommandsTab {
         MaterialButton report = ui.secondary("Relatório", R.drawable.ic_search);
         report.setOnClickListener(v -> ctl("Relatório dos testers", "testers report", 120, null));
         b.addView(ui.evenRow(status, report), ui.gap(6));
+        MaterialButton actions = ui.flat("Log das ações", R.drawable.ic_nav_logs);
+        actions.setOnClickListener(v -> ctl("Log dos testers", "testers log 400", 60, null));
+        b.addView(actions, ui.gap(6));
+        b.addView(ui.hint("Cada rodada grava sozinha o log de tudo o que os testers fizeram e os erros que receberam, e "
+                + "o relatório no fim. Ficam as 20 últimas rodadas na VPS."), ui.gap(4));
         MaterialButton clean = ui.flat("Apagar os testers", 0);
         clean.setOnClickListener(v -> a.confirm("Apagar todas as contas de tester?", "Apaga as contas, os "
                 + "personagens e tudo deles. Precisa de 2 minutos desde que pararam (se rodando, para agora: toque "

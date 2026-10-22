@@ -688,6 +688,19 @@ def test_testers():
         check(run('testers', 'cleanup', '--all').returncode != 0, 'cleanup: an unknown option is refused')
         r = run('testers', 'report')
         check(r.returncode == 0 and 'report --state %s --log %s' % (state, log) in tcalls(), 'report reads the log')
+        r = run('testers', 'log')
+        check(r.returncode != 0 and 'no activity log yet' in r.stderr, 'log: none yet, refused')
+        os.makedirs(os.path.join(state, 'runs'), exist_ok=True)
+        for stamp, body in (('20261022-100000', 'old\n'), ('20261022-110000', ''.join('line %d\n' % i for i in range(300)))):
+            with open(os.path.join(state, 'runs', 'run-%s.log' % stamp), 'w') as f:
+                f.write(body)
+        r = run('testers', 'log', '5')
+        check(r.returncode == 0 and 'run-20261022-110000.log (300 lines)' in r.stdout and 'line 299' in r.stdout
+              and 'line 294' not in r.stdout and 'old' not in r.stdout, 'log: the newest run, its last N lines:\n' + r.stdout)
+        r = run('testers', 'log', '0')
+        check(r.returncode != 0, 'log: N 0 refused')
+        r = run('testers', 'log', 'x;id')
+        check(r.returncode != 0, 'log: N not a number refused')
 
         # not loaded, with --restart: the restart countdown is queued, the bots wait for it
         with open(log, 'a') as f:
