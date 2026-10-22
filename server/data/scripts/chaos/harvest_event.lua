@@ -52,6 +52,12 @@ local function P(t)
 	return Position(t.x or t[1], t.y or t[2], t.z or t[3])
 end
 
+-- a set piece of harvest_places.lua is {id, x, y, z}: its position starts at the second field (read with P, the
+-- y landed in z: "getNumber(). Argument 4 has out-of-range value", the decoration never placed, beta 2026-10-22)
+local function decorPos(d)
+	return Position(d[2], d[3], d[4])
+end
+
 local function rng(a, b)
 	return math.random(a, b)
 end
@@ -138,7 +144,7 @@ function X.dress()
 		tp:remove()
 	end
 	for _, d in ipairs(p.decor) do
-		local pos = P(d)
+		local pos = decorPos(d)
 		local tile = Tile(pos)
 		if tile and not tile:getItemById(d[1]) and Game.createItem(d[1], 1, pos) then
 			n = n + 1
@@ -653,7 +659,7 @@ local function ambient()
 	if X.open and X.places and #X.places.decor > 0 then
 		for _ = 1, 3 do
 			local d = X.places.decor[math.random(1, #X.places.decor)]
-			local pos = P(d)
+			local pos = decorPos(d)
 			local seen = Game.getSpectators(pos, false, true, 8, 8, 6, 6)
 			if seen and #seen > 0 then
 				effect(pos, cfg.ambient.effects[math.random(1, #cfg.ambient.effects)])
