@@ -37,6 +37,9 @@ files may not be extracted, decrypted or reused elsewhere: some art is licensed 
 - **Login artwork**
   - Author: the Cinders of Chaos team
   - Used for: the login screen
+- **Owner-supplied outfits**
+  - Source: supplied by the owner, source pack unnamed
+  - Used for: the moon outfits and the costumes (plush bears, crawling hands, fry box)
 
 ## Art with required credit {pt-BR: Arte com crédito obrigatório}
 
@@ -313,5 +316,9 @@ Sources the art tools record in their `*sources.csv` files. `check_credits.py` c
 - **set33 wings**, **set33 heads**, **set33 capes**, **set33 kit**: the four WsT packs of 2026-10-21 above, in this
   order: WsT Wings Pack, WsT Head Accessories Pack, WsT Capes & Cloaks Pack, WsT Hollow Harvest Kit (planned pair 33,
   `client/tools/sprites/gen_pack33.py`). Import-only: no machine-learning use, no style reference, never shared.
+- **set37 outfits**: the owner-supplied outfits above (pair 37, `client/tools/sprites/gen_pack37_looks.py`): object
+  builder .obd files on the owner's Drive (folders "random" and "obd+"), supplied by the owner, source pack unnamed.
+  `client/tools/sprites/art_import/pack37_looks_sources.csv` names each look's file and md5. Import-only: the sheets
+  are never committed; the art ships only inside the pair (and the website's outfit images, tier donor).
 - **set35 icons**: the free Raven Fantasy Icons set above (its 32 x 32 full sheet). Pair 35 ring and necklace looks,
   `client/tools/sprites/gen_jewelry_art.py`; `art_import/jewelry_sources.csv` names each pick by this label.
