@@ -2457,7 +2457,7 @@ byte-identical. Built twice: identical md5s.
 - A client on pair 36 or older: the server's pair 37 outfits draw nothing. Ship pair 37 with the server.
 - Server side: server/README.md "Owner outfits (pair 37)". Preview: scratchpad only. Not run in a client.
 
-## Orb looks (pair 38: item 38641, `tools/sprites/gen_orb_items_art.py`, `art_import/orb_items.*`; built 2026-10-22, not on windows-assets yet)
+## Orb looks (pair 38: item 38641, `tools/sprites/gen_orb_items_art.py`, `art_import/orb_items.*`; built 2026-10-22, on windows-assets ee8e82e)
 Owner request 2026-10-22 with a screenshot of the Orbs Pouch: "Coloque arte de orb de verdade. Não use as runas para
 isso. Deixe os sprites de runa só para as runas." The Orb of Sockets showed a red oval stone, in the pouch and its
 tooltip.
@@ -2488,8 +2488,8 @@ importer verified the sprite slot pixel-identical to the atlas and every old thi
 disk had no room for a second 1.5 GB copy).
 - `check_pair.py --old`: `--new-only` 0 errors, 0 warnings; full check 0 errors, 216 warnings (pair 37's).
   `check_content.py --pair` passes on pair 38.
-- `outfit_anchors.lua` and `info_lifts.lua` not regenerated: no new creature, only their dat md5 would change; do it
-  when pair 38 is published (as for pair 35).
+- `outfit_anchors.lua` and `info_lifts.lua` regenerated on pair 38 after it went to windows-assets (ee8e82e): no new
+  creature, only their dat md5 changed.
 - Archive (the pair 37 recipe, `--mtime='2026-10-22 00:00:00Z'`, xz 5.4.5, `split -b 95M -d -a 2`): 145,258,588
   bytes, sha256 e16ca9668b6173fcff499ccefd4b72ffa1015bf8895bd27e9675ae66753ccb35; parts `things-1098.tar.xz.part00`
   (057e7ae366554fcf527a1451798c01818d6e41d4b7cc3402b567b9fa1cf51622) and `.part01`
