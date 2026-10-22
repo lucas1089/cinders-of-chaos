@@ -459,7 +459,10 @@ function dealt.onHealthChange(creature, attacker, primaryDamage, primaryType, se
 		primaryDamage = M.scale(primaryDamage, s)
 		secondaryDamage = M.scale(secondaryDamage, s)
 	end
-	if totals and creature:isMonster() then
+	-- a legendary power's own hit (item_powers.lua strike, ChaosPowers.depth > 0) executes nothing and rolls no on-hit:
+	-- Smoldering Aura's ticks on six monsters had rolled the ailments, life / mana on hit and Execute every 3 s
+	local powerHit = ChaosPowers ~= nil and (ChaosPowers.depth or 0) > 0
+	if totals and creature:isMonster() and not powerHit then
 		local hit = math.abs(primaryDamage) + math.abs(secondaryDamage)
 		if (totals.execute or 0) > 0 and M.executes(creature:getHealth(), creature:getMaxHealth(), hit, totals.execute)
 				and not executeProof(creature) then

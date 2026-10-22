@@ -25,11 +25,14 @@ local floor = math.floor
 -- every number of the powers; the `tiers` (T1 .. T8) of each are in the catalogue below
 P.config = {
 	-- Death Blast: a fire explosion where the monster died, `hpPct` % of its maximum health but at most `capBase + capPerLevel
-	-- x character level`, on up to `targets` other monsters within `radius`; no more often than every `cooldownMs`
-	deathblast = {hpPct = 25, capBase = 50, capPerLevel = 8, radius = 2, targets = 8, cooldownMs = 1500},
+	-- x character level`, on up to `targets` other monsters within `radius`; no more often than every `cooldownMs`.
+	-- 2026-10-22: was 25% and 50 + 8 x level (in packs 9% of a typical character's own damage per second at level 100,
+	-- 76% at 1000; now 3-13%, server/README.md "Legendary powers")
+	deathblast = {hpPct = 10, capBase = 50, capPerLevel = 1, radius = 2, targets = 8, cooldownMs = 1500},
 	-- Glacial Ward: when a hit of a monster is dodged or blocked, an ice nova around you: `base + perLevel x level` damage,
-	-- monsters slowed by `slow` % for `slowMs`
-	frostward = {base = 40, perLevel = 5, radius = 2, targets = 8, slow = 35, slowMs = 3000, cooldownMs = 4000},
+	-- monsters slowed by `slow` % for `slowMs`. 2026-10-22: was 40 + 5 x level (14-95% of a typical character's damage
+	-- per second; now 4-11%)
+	frostward = {base = 100, perLevel = 1, radius = 2, targets = 8, slow = 35, slowMs = 3000, cooldownMs = 4000},
 	-- Echo Shot: a ranged hit that lands is repeated after `delayMs` for `pct` % of it
 	echoshot = {pct = 60, delayMs = 250, cooldownMs = 800},
 	-- Critical Echo: a critical hit is repeated after `delayMs` for `pct` % of it
@@ -40,18 +43,24 @@ P.config = {
 	-- (the time of the last one is kept in a player storage, so logging out does not reset it)
 	lastbreath = {cooldownMs = 300000, minHealth = 1, storage = 7101800},
 	-- Ember Step: a single hit of at least `hitPct` % of your maximum health blinks you up to `range` sqm away (a free
-	-- tile) and burns where you stood: `base + perLevel x level` fire damage, `radius`
-	emberstep = {hitPct = 20, range = 3, base = 60, perLevel = 6, radius = 2, targets = 8, cooldownMs = 15000},
+	-- tile) and burns where you stood: `base + perLevel x level` fire damage, `radius`. 2026-10-22: was 60 + 6 x level (at
+	-- one blink per cooldown 46-147% of a typical character's damage per second; now at most 21-27%)
+	emberstep = {hitPct = 20, range = 3, base = 60, perLevel = 2, radius = 2, targets = 8, cooldownMs = 15000},
 	-- Bloodrush: every kill adds a stack for `windowMs`; each stack adds the power's % to your damage, `maxStacks` at most
 	bloodrush = {maxStacks = 5, windowMs = 6000},
 	-- Arc Lightning: a hit arcs to up to `targets` other monsters within `radius` for `pct` % of it
 	arclightning = {pct = 30, radius = 3, targets = 3, cooldownMs = 700},
 	-- Hunter's Rush: haste of `speed` for `ms`
 	hunterrush = {speed = 40, ms = 4000, cooldownMs = 8000},
-	-- Shatter Splash: the killing blow bursts onto up to `targets` monsters within `radius`; the power's % of the blow
+	-- Shatter Splash: the killing blow bursts onto up to `targets` monsters within `radius`; the power's % of the blow (of
+	-- the health it took, 2026-10-22: the overkill of a big hit on a nearly dead monster no longer counts)
 	shattersplash = {radius = 2, targets = 6, cooldownMs = 1000},
 	-- Smoldering Aura: every `tickMs` the power's damage per second x seconds burns up to `targets` monsters within `radius`
-	smolderaura = {radius = 2, targets = 6, tickMs = 3000}
+	-- and in clear sight. The damage per second is at most `capBase` + 1 per `levelsPerPoint` character levels (P.auraCap:
+	-- about 1.3% of a typical character's own damage per second at every level, so a full pack takes 7-8% of it). It
+	-- ticks only while the character fights (it attacked a monster within `activeMs`) and stands outside a protection
+	-- zone. Beta 2026-10-22 ("extremamente forte"): it had been 55-140% of a typical character's damage per second.
+	smolderaura = {radius = 2, targets = 6, tickMs = 3000, capBase = 2, levelsPerPoint = 30, activeMs = 5000}
 }
 local CFG = P.config
 
@@ -89,9 +98,14 @@ P.defs = {
 	{key = "hunterrush", label = "Hunter's Rush", text = "Hunter's Rush: %d%% chance on kill for haste (4 s)", fmt = "pct",
 		side = "suffix", weight = 3, cap = 30, kinds = {boots = true, jewel = true, helmet = true, other = true},
 		tiers = {{4, 6}, {6, 8}, {8, 10}, {10, 13}, {12, 16}, {15, 19}, {18, 23}, {22, 28}}},
-	{key = "smolderaura", label = "Smoldering Aura", text = "Smoldering Aura: monsters within 2 sqm take %d fire damage per second",
-		fmt = "flat", side = "suffix", weight = 3, cap = 600, kinds = {armor = true, helmet = true, jewel = true, legs = true,
-		other = true}, tiers = {{5, 10}, {10, 20}, {20, 35}, {35, 60}, {60, 100}, {100, 160}, {160, 250}, {250, 400}}}
+	-- Smoldering Aura, cut 2026-10-22: each tier's top is about the level cap (P.auraCap) of the lowest character level
+	-- whose drops roll that tier. `cutFrom` holds the ranges before: an item rolled in them reads as the top of its tier
+	-- today (chaos_item_mods.lua M.read); nothing on the item is rewritten.
+	{key = "smolderaura", label = "Smoldering Aura",
+		text = "Smoldering Aura: while you fight, monsters within 2 sqm take %d fire damage per second",
+		fmt = "flat", side = "suffix", weight = 3, cap = 40, kinds = {armor = true, helmet = true, jewel = true, legs = true,
+		other = true}, tiers = {{1, 2}, {2, 3}, {3, 4}, {5, 7}, {8, 12}, {13, 20}, {20, 28}, {28, 35}},
+		cutFrom = {{5, 10}, {10, 20}, {20, 35}, {35, 60}, {60, 100}, {100, 160}, {160, 250}, {250, 400}}}
 }
 
 P.keys = {}
@@ -195,9 +209,24 @@ function P.rushBonus(stacks, pct)
 	return math.min(CFG.bloodrush.maxStacks, tonumber(stacks) or 0) * (tonumber(pct) or 0)
 end
 
--- Smoldering Aura: damage of one tick for a power of `perSecond`
-function P.auraTick(perSecond)
-	return math.max(0, floor((tonumber(perSecond) or 0) * CFG.smolderaura.tickMs / 1000 + 1e-9))
+-- Smoldering Aura: the most damage per second a character of this level gets from it (all items together)
+function P.auraCap(level)
+	local c = CFG.smolderaura
+	return floor(c.capBase + math.max(1, tonumber(level) or 1) / c.levelsPerPoint + 1e-9)
+end
+
+-- Smoldering Aura: damage of one tick for a power of `perSecond` on a character of `level` (without a level: no cap)
+function P.auraTick(perSecond, level)
+	local v = tonumber(perSecond) or 0
+	if level then
+		v = math.min(v, P.auraCap(level))
+	end
+	return math.max(0, floor(v * CFG.smolderaura.tickMs / 1000 + 1e-9))
+end
+
+-- Smoldering Aura: does it tick at `now` (ms) for a character that last attacked a monster at `fightAt` (nil: never)?
+function P.auraActive(fightAt, now)
+	return fightAt ~= nil and now - fightAt <= CFG.smolderaura.activeMs
 end
 
 -- the powers of a character's capped totals (every power key above 0): {key = value}

@@ -144,6 +144,7 @@ function Creature_:setStorageValue(k, v) self.storage[k] = v end
 function Creature_:addCondition(c) self.conditions[#self.conditions + 1] = c end
 function Creature_:teleportTo(p) self.pos = {x = p.x, y = p.y, z = p.z} self.teleported = p end
 local sightBlocked, pathBlocked = false, false -- Ember Step: a wall (no clear sight) or a closed door / bars (no path)
+local pzTile = false -- the tile under the character is a protection zone (Smoldering Aura)
 function Creature_:getPosition()
 	local pos = self.pos
 	return setmetatable({sendMagicEffect = function(_, e) effects[#effects + 1] = e end,
@@ -155,7 +156,7 @@ function ChaosTierOf() return "normal" end
 Position = function(x, y, z) return {x = x, y = y, z = z, sendMagicEffect = function() end} end
 Tile = function(pos)
 	return {getGround = function() return true end, getCreatureCount = function() return 0 end,
-		queryAdd = function() return RETURNVALUE_NOERROR end, hasFlag = function() return false end}
+		queryAdd = function() return RETURNVALUE_NOERROR end, hasFlag = function() return pzTile end}
 end
 TILESTATE_PROTECTIONZONE = 1
 Condition = function(kind)
@@ -211,10 +212,10 @@ eq(P.roll(5, function(a, b) return 501 end), false)
 local cd = {}
 eq(P.ready(cd, "a", 1000, 500), true); eq(P.ready(cd, "a", 1200, 500), false, "cooldown running")
 eq(P.ready(cd, "a", 1500, 500), true, "over"); eq(P.ready(cd, "b", 1200, 500), true, "another power")
-eq(P.blastDamage(10000, 100), 850, "25% of 10000 = 2500, capped at 50 + 8 x 100")
-eq(P.blastDamage(1000, 500), 250, "25% of the health when below the cap")
+eq(P.blastDamage(10000, 100), 150, "10% of 10000 = 1000, capped at 50 + 1 x 100")
+eq(P.blastDamage(1000, 500), 100, "10% of the health when below the cap")
 eq(P.blastDamage(0, 10), 1, "at least 1")
-eq(P.novaDamage(100), 540); eq(P.burnDamage(100), 660)
+eq(P.novaDamage(100), 200, "100 + 1 x level"); eq(P.burnDamage(100), 260, "60 + 2 x level")
 eq(P.share(1000, 30), 300); eq(P.share(1, 30), 1, "at least 1")
 eq(P.burstHeal(2000), 80)
 local dmg, to = P.lastBreath(100, 1000, 500, 30)
@@ -230,7 +231,12 @@ eq(P.rushStacks(rush, 2010 + 6000), 5, "still running at the edge")
 eq(P.rushStacks(rush, 2010 + 6001), 0, "over after the window")
 eq(P.rushKill(rush, 9000), 1, "the old stacks are gone")
 eq(P.rushBonus(5, 4), 20); eq(P.rushBonus(9, 4), 20, "never above the stack limit")
-eq(P.auraTick(100), 300, "per second x 3 s")
+eq(P.auraTick(100), 300, "per second x 3 s (no level: no cap)")
+eq(P.auraCap(1), 2); eq(P.auraCap(100), 5); eq(P.auraCap(300), 12); eq(P.auraCap(1000), 35)
+eq(P.auraTick(100, 100), 15, "capped at 5 per second at level 100")
+eq(P.auraTick(4, 1000), 12, "under the cap: the value")
+eq(P.auraActive(nil, 5000), false, "never fought"); eq(P.auraActive(1000, 6000), true, "fought 5 s ago")
+eq(P.auraActive(1000, 6001), false, "more than 5 s ago")
 
 -- ---------------------------------------------------------------- a character with powers
 local function equipPower(player, key, value, slot, itemId)
@@ -388,7 +394,7 @@ local a, b = monster(), monster()
 nearby = {dead, a, b}
 events.ChaosPowersKill.onKill(blaster, dead)
 eq(countHits(COMBAT_FIREDAMAGE), 2, "fire on the two monsters around")
-eq(hits[1].amount, 850, "25% of 20000 capped at 50 + 8 x level 100")
+eq(hits[1].amount, 150, "10% of 20000 capped at 50 + 1 x level 100")
 local nb = #hits
 events.ChaosPowersKill.onKill(blaster, monster())
 eq(#hits, nb, "cooldown 1.5 s")
@@ -414,7 +420,7 @@ nearby = {brute, a, b}
 dealtHit(splasher, brute, 500) -- lethal: more than its health
 events.ChaosPowersKill.onKill(splasher, brute)
 eq(countHits(COMBAT_PHYSICALDAMAGE), 2, "the killing blow bursts onto the two around")
-eq(hits[1].amount, 200, "40% of the killing blow")
+eq(hits[1].amount, 40, "40% of the health the killing blow took (100), not of the whole blow (500)")
 -- a kill without a recorded blow (a condition, another player) does not splash
 reset()
 clock = clock + 10000
@@ -472,7 +478,7 @@ runTimers()
 ok(stepper.teleported ~= nil, "a hit of 30% blinks the character away")
 ok(math.max(math.abs(stepper.teleported.x - 100), math.abs(stepper.teleported.y - 100)) >= 2
 	and math.max(math.abs(stepper.teleported.x - 100), math.abs(stepper.teleported.y - 100)) <= CFG.emberstep.range, "within range")
-eq(countHits(COMBAT_FIREDAMAGE), 1, "burns where it stood"); eq(hits[1].amount, 660)
+eq(countHits(COMBAT_FIREDAMAGE), 1, "burns where it stood"); eq(hits[1].amount, 260)
 stepper.teleported = nil
 events.ChaosPowersTaken.onHealthChange(stepper, foe, 300, COMBAT_PHYSICALDAMAGE, 0, COMBAT_PHYSICALDAMAGE, ORIGIN_MELEE)
 runTimers()
@@ -505,7 +511,7 @@ local brawler, other = monster(), monster()
 nearby = {brawler, other}
 M.onAvoid(ward, brawler, "dodge")
 eq(countHits(COMBAT_ICEDAMAGE), 2, "an ice nova on the monsters around")
-eq(hits[1].amount, 540, "40 + 5 x level 100")
+eq(hits[1].amount, 200, "100 + 1 x level 100")
 eq(brawler.conditions[1].params[CONDITION_PARAM_TICKS], 3000, "slowed for three seconds")
 eq(brawler.conditions[1].formula, -0.35, "by 35%")
 n = #hits
@@ -525,18 +531,116 @@ eq(pd, 0, "dodged")
 eq(countHits(COMBAT_ICEDAMAGE), 2, "the dodge started the nova")
 
 -- ---------------------------------------------------------------- Smoldering Aura
+-- the catalogue after the cut (beta 2026-10-22, "extremamente forte"): small tiers, a character cap, the old ranges kept
+local aura = M.byKey.smolderaura
+eq(aura.cap, 40); eq(aura.tiers[8][2], 35); eq(aura.tiers[1][1], 1)
+eq(#aura.cutFrom, 8); eq(aura.cutFrom[8][2], 400, "the ranges before are kept for live items")
+for t = 1, 8 do
+	ok(aura.tiers[t][2] <= P.auraCap(({1, 33, 79, 178, 320, 563, 940, 1000})[t]),
+		"T" .. t .. "'s top is within the level cap where it starts to drop")
+end
+-- a live item rolled before the cut reads as the top of its tier today; the stored value is not rewritten
+local function auraItem(value, tier, quality)
+	local it = newItem(2466)
+	it:setCustomAttribute("rarity", 5)
+	it:setCustomAttribute(M.attr("smolderaura"), value)
+	if tier then M.setTier(it, M.attr("smolderaura"), tier) end
+	if quality then it:setCustomAttribute(M.QUALITY, quality) end
+	return it
+end
+local function auraOf(it) for _, m in ipairs(M.read(it)) do if m.key == "smolderaura" then return m.value, m.tier end end end
+local v, tr = auraOf(auraItem(250, 7))
+eq(v, 28, "an old T7 roll of 250 reads 28 (the T7 top)"); eq(tr, 7)
+eq(auraOf(auraItem(250, 7, 20)), M.scaleQuality(28, 20), "with quality: the top x the quality")
+v, tr = auraOf(auraItem(400))
+eq(v, 35, "an old roll without a stored tier: its old range gives the tier (T8)"); eq(tr, 8)
+eq(auraOf(auraItem(30, 8)), 30, "a new roll stays as it is")
+local live = auraItem(250, 7)
+auraOf(live)
+eq(live:getCustomAttribute(M.attr("smolderaura")), 250, "the item keeps its stored value")
+eq(M.totals({auraItem(400, 8), auraItem(400, 8)}).smolderaura, 40, "two top items: the character cap")
+eq(M.text("smolderaura", 12), "Smoldering Aura: while you fight, monsters within 2 sqm take 12 fire damage per second")
+
 reset()
 local burner = newPlayer()
-equipPower(burner, "smolderaura", 100, CONST_SLOT_ARMOR, 2466)
-nearby = {monster(), monster(), monster(), monster(), monster(), monster(), monster(), monster()}
+equipPower(burner, "smolderaura", 400, CONST_SLOT_ARMOR, 2466) -- an old roll (T8): reads 35
+eq(cache[burner:getId()].smolderaura, 35)
+local pack = {monster(), monster(), monster(), monster(), monster(), monster(), monster(), monster()}
+nearby = pack
 for i = 1, #online do online[i] = nil end
 online[1] = burner
 timers = {}
 events.ChaosPowersStartup.onStartup()
 timers[1].fn() -- the first tick
-eq(countHits(COMBAT_FIREDAMAGE), CFG.smolderaura.targets, "at most six monsters per tick")
-eq(hits[1].amount, 300, "100 per second x 3 s")
+eq(countHits(), 0, "standing still without a fight: no burn (AFK in a spawn)")
 eq(timers[#timers].ms, CFG.smolderaura.tickMs, "the next tick is scheduled")
+-- attacking a monster starts it
+for _, cb in ipairs(callbacks.onTargetCombat) do cb(burner, pack[1]) end
+hits = {}
+timers[#timers].fn()
+eq(countHits(COMBAT_FIREDAMAGE), CFG.smolderaura.targets, "at most six monsters per tick")
+eq(hits[1].amount, P.auraTick(35, 100), "the level cap: 5 per second at level 100")
+eq(hits[1].amount, 15)
+-- a power's hit is a proc: the tree / class factors and keystones see the guard, item_mods runs no execute or on-hit
+cache[burner:getId()].execute = 50
+cache[burner:getId()].lifeonhit = 30
+burner.health = 500
+local depthSeen, sfSeen, dealtBack = {}, {}, {}
+for _, m in ipairs(pack) do
+	m.health, m.maxHealth = 100, 1000 -- under the execute line
+	m.onDamage = function(t, cid, amount, ctype)
+		depthSeen[#depthSeen + 1] = ChaosKeystones.depth
+		sfSeen[#sfSeen + 1] = ChaosSpellFactor.depth
+		dealtBack[#dealtBack + 1] = events.ChaosItemModsDealt.onHealthChange(t, burner, -amount, ctype, 0, ctype, ORIGIN_SPELL)
+	end
+end
+hits = {}
+timers[#timers].fn()
+eq(#depthSeen, CFG.smolderaura.targets)
+eq(depthSeen[1], 1, "ChaosKeystones.depth is up during the hit"); eq(sfSeen[1], 1, "ChaosSpellFactor.depth too")
+eq(ChaosKeystones.depth, 0, "and down after it"); eq(ChaosSpellFactor.depth, 0); eq(P.depth, 0)
+eq(dealtBack[1], -15, "no execute on a power's hit")
+eq(burner.health, 500, "no life on hit from a power's hit")
+-- the same hit from the character itself executes (the check is the guard, not the numbers)
+eq(events.ChaosItemModsDealt.onHealthChange(pack[1], burner, -15, COMBAT_FIREDAMAGE, 0, COMBAT_FIREDAMAGE, ORIGIN_SPELL),
+	pack[1].health, "a hit of the character's own executes")
+cache[burner:getId()].execute, cache[burner:getId()].lifeonhit = 0, 0
+for _, m in ipairs(pack) do m.onDamage = nil m.health, m.maxHealth = 1000, 1000 end
+-- not through walls
+sightBlocked = true
+hits = {}
+timers[#timers].fn()
+eq(countHits(), 0, "no monster out of sight")
+sightBlocked = false
+-- not from a protection zone
+pzTile = true
+hits = {}
+timers[#timers].fn()
+eq(countHits(), 0, "no burn from a protection zone")
+pzTile = false
+-- the fight is over after 5 s without an attack
+clock = clock + CFG.smolderaura.activeMs + 1
+hits = {}
+timers[#timers].fn()
+eq(countHits(), 0, "5 s after the last attack: no burn")
+-- the aura's own hits do not keep it going (onTargetCombat inside a power's hit)
+for _, cb in ipairs(callbacks.onTargetCombat) do cb(burner, pack[1]) end
+pack[1].onDamage = function() for _, cb in ipairs(callbacks.onTargetCombat) do cb(burner, pack[2]) end end
+hits = {}
+timers[#timers].fn()
+eq(countHits(), 6)
+pack[1].onDamage = nil
+clock = clock + CFG.smolderaura.activeMs + 1
+hits = {}
+timers[#timers].fn()
+eq(countHits(), 0, "its own hits are no fight")
+-- a higher level: a higher cap
+burner.level = 1000
+for _, cb in ipairs(callbacks.onTargetCombat) do cb(burner, pack[1]) end
+hits = {}
+timers[#timers].fn()
+eq(hits[1].amount, 105, "level 1000: 35 per second x 3 s")
+burner.level = 100
 
 -- ---------------------------------------------------------------- floating labels
 eq(#badLabels, 0, "label colours are palette bytes: " .. table.concat(badLabels, ", "))
