@@ -57,6 +57,7 @@ python3 -I website/tools/gen_wiki_art.py                     # -> website wiki i
 python3 -I client/tools/sprites/gen_owner_art.py build --check  # owner art of pair 26 (CI uses the fx venv)
 python3 -I server/tools/install_owner_decor.py --lua --check     # -> data/lib/chaos_owner_decor.lua
 python3 -I client/tools/sprites/style_check.py build-palettes --check  # -> style_palettes.json; check new sprites: docs/SPRITE_STYLE.md
+python3 -I client/tools/sprites/gen_fx_send_offsets.py --check       # -> data/lib/chaos_fx_send_offsets.lua (pair 36 in-place fx centring)
 ```
 
 Every `.lua` must parse in Lua 5.3 and LuaJIT. Run Python tools with `-I`.

@@ -1912,9 +1912,15 @@ end
 -- A magic effect id of 0 (or none) reaches the client as "invalid effect id 0" and the effect is dropped there. Position:
 -- sendMagicEffect refuses it here and names the caller once (a script that computed an effect and got nothing), so the
 -- source can be found and fixed; nothing is sent. Installed once (a reload keeps the first wrapper).
+-- An effect redrawn in place with art bigger than a tile (pair 36) is sent at its offset tile, so it is centred on
+-- the target (fx_send_offset_core.lua, data/lib/chaos_fx_send_offsets.lua). Engine-sent effects are not shifted.
+if not ChaosFxSendOffsetCore then
+	pcall(dofile, "data/scripts/chaos/fx_send_offset_core.lua")
+end
 if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEffectGuard then
 	local rawSendMagicEffect = Position.sendMagicEffect
 	local warned = {}
+	local offsets = ChaosFxSendOffsetCore and ChaosFxSendOffsetCore.load()
 	Chaos.magicEffectGuard = true
 	Position.sendMagicEffect = function(self, effect, ...)
 		if effect == nil or effect == 0 then
@@ -1924,6 +1930,10 @@ if type(Position) == "table" and Position.sendMagicEffect and not Chaos.magicEff
 				print("[Warning - Chaos] Position:sendMagicEffect with effect " .. tostring(effect) .. " refused" .. where)
 			end
 			return false
+		end
+		if offsets and offsets[effect] and type(self) ~= "number" and tonumber(self.x) and tonumber(self.y) then
+			local x, y = ChaosFxSendOffsetCore.shift(self.x, self.y, effect, offsets)
+			return rawSendMagicEffect(Position(x, y, self.z), effect, ...)
 		end
 		return rawSendMagicEffect(self, effect, ...)
 	end
