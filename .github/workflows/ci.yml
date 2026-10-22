@@ -88,7 +88,7 @@ jobs:
         run: |
           python3 -I server/tools/gen_item_prices.py --check
           python3 -I server/tools/install_item_prices_test.py
-          python3 -I server/tools/install_service_npcs_test.py  # the five service NPCs of the Halls of Services
+          python3 -I server/tools/install_service_npcs_test.py  # the five service NPCs (hub stalls)
           python3 -I server/tools/patch_bank_payments_test.py  # every gold price of the base scripts pays from the bank too
           python3 -I server/tools/add_vocations_potion_text_test.py
           python3 -I server/tools/exercise_charges_patch_test.py
@@ -199,7 +199,7 @@ jobs:
           python3 -I server/tools/check_hunt_returns_test.py  # every hunt of the hall has a way back (tile rule, map check)
           python3 -I server/tools/patch_reward_chests_test.py
           python3 -I server/tools/patch_spawn_fields_test.py  # small fire under the base spawns in fire lairs
-          python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple NPC arcade
+          python3 -I server/tools/patch_map_fixes_test.py  # broken teleports, the sea round the hall, the temple portal gallery
 
       - name: "Map master (pack, verify, unpack and install of the owner's edited map; synthetic OTBM)"
         run: python3 -I server/tools/map_master_test.py
@@ -207,10 +207,10 @@ jobs:
       - name: Idle Hall plan (validates, compiles, the config's origin, arrival and fixture slots)
         run: python3 -I server/tools/idle_hall_test.py
 
-      - name: Halls of Services plans (validate, compile, booths closed and reached, portals, NPCs never walk)
-        run: python3 -I server/tools/services_halls_test.py
+      - name: Hub NPC stalls (the base NPCs' spawn entries on the stall tiles go; synthetic spawn file)
+        run: python3 -I server/tools/patch_hub_npcs_test.py
 
-      - name: Chronicle areas (plans, gates in the Halls of Services portal room)
+      - name: Chronicle areas (plans, gates at the temple's portal gallery)
         run: python3 -I server/tools/chronicle_areas_test.py
 
       - name: Potions install (no empty flasks, Everfull potions, NPC replacement)

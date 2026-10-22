@@ -88,7 +88,7 @@ return {
 	npc = {
 		name = "Keeper of Trials",
 		spawn = true,
-		townIds = {2, 1}, -- the main city (Cinderhold) first, then Mirewake (server/README.md "Main city")
+		townIds = {2}, -- the main city only: its stall in the hub (npc_booths_config.lua; 2026-10-22)
 		positions = {},
 		offsets = {{-2, 2}, {2, -3}, {-3, -2}, {3, 2}, {0, 4}, {-4, 0}, {4, 0}, {-2, -3}, {1, 3}},
 		range = 6

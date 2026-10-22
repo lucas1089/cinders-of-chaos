@@ -13593,7 +13593,7 @@ CodexData = {
 					sections = {
 						{
 							h = "What they are",
-							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold at the temple arcade, in Mirewake in the Hall of Services).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
+							p = {"Four gathering professions, each with its own level 1-100: Delving (ore veins), Wortcunning (herb patches), Flaying (corpses of beasts and reptiles) and Angling (fishing). They make no gear and no orbs: what you gather is sold to a Material Broker (one stands next to every temple; in Cinderhold in the teleport room's market).", "Every profession level above 1 adds 0.0253% experience from monsters, all four together at most +10% (every profession at 100)."}
 						},
 						{
 							h = "Experience bonus with all four at a level",
@@ -14246,7 +14246,7 @@ CodexData = {
 						},
 						{
 							h = "The Conquest vendor",
-							p = {"Iselde Varrow next to the temple, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + 50. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.", "The Cinderheart chain: an Omen Key of the kind you choose (150), your Omen Key attuned to another kind (40), an Ascended Shard of the kind you choose (300); 2 shards or 2 relics of one kind become one of another.", "Refinement: a worn item with a rarity rises one rarity (up to Legendary), keeps every modifier and gains one; 60 + 60 x the new rarity tokens.", "Salvage: a unique on the bench gives 10% of its price in tokens (at least 25)."},
+							p = {"Iselde Varrow in the teleport room's market, or Economy > Conquest Vendor, from a protection zone. Any unique or set piece is for sale once it dropped for you, once you slew a monster that drops it, or when its level is at most your level + 50. A bought item is made like a drop. Grasp of the Pyre Saint is always on sale.", "The Cinderheart chain: an Omen Key of the kind you choose (150), your Omen Key attuned to another kind (40), an Ascended Shard of the kind you choose (300); 2 shards or 2 relics of one kind become one of another.", "Refinement: a worn item with a rarity rises one rarity (up to Legendary), keeps every modifier and gains one; 60 + 60 x the new rarity tokens.", "Salvage: a unique on the bench gives 10% of its price in tokens (at least 25)."},
 							cols = {"Group", "Price"},
 							w = {40, 60},
 							rows = {

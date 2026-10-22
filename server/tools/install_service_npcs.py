@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the service NPCs of the Halls of Services (server/data/scripts/chaos/service_npcs*.lua; README "Service NPCs").
+"""Install the service NPCs of the hub's stalls (server/data/scripts/chaos/service_npcs*.lua; README "Service NPCs").
 
 usage: python3 -I install_service_npcs.py DATA_DIR [--dry-run]
 
@@ -8,7 +8,7 @@ Lua side uses: the stash keeper, the pocket boss NPC, the banker, the house brok
 
 1. data/npc: each NPC's XML (server/data/npc/<name>.xml), the script it names and the shared dialogue
    npc/scripts/chaos_service_npc.lua; only new or different files are written. service_npcs.lua places them at startup,
-   in their booths of the Halls of Services (npc_booths_config.lua names them) else next to the temple.
+   in their stalls of the hub (npc_booths_config.lua names them) else next to the temple.
 
 Nothing else: no items, no hooks, no tables, no opcode. The windows they open belong to the stash, Boss Spawns, bank and
 Info & Services modules. Idempotent: a second run changes nothing.

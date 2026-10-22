@@ -5,11 +5,11 @@ Teleports: a destination is set (and kept on a second run), a junk teleport goes
 boat loses its destination, a row for a tile without the item is skipped, a destination on a blocking tile refuses
 the run. Hub: every missing tile of the box becomes water, a wall standing on nothing gets its neighbours' ground,
 the shore tile beside the new water gets the border pieces of its sides (one side, two sides and the corner, a corner
-only) in place of the old ones. Temples: the arcade's rows rewritten (marble, protection zone, stands bare, partitions,
-the coal basin on the outer end, counters in turn, the carpet's corners and edges), a lamp added; an arcade tile with
-an action id refuses the run. A dry run writes nothing, a second run changes nothing, the real configs and CSV hold
-together (every destination row differs from its tile, the arcade mirrored, stands = the config's NPCs). No base
-server needed (numpy for tools/map/otbm.py)."""
+only) in place of the old ones. Temples: the portal gallery's rows rewritten over an old NPC arcade (marble,
+protection zone, portal tiles bare, pillars between, the coal basin on the outer end, the three carpet rows' corners
+and edges in place of the old counter), a lamp added; a gallery tile with an action id refuses the run. A dry run
+writes nothing, a second run changes nothing, the real configs and CSV hold together (every destination row differs
+from its tile, the gallery mirrored, every portal tile bare). No base server needed (numpy for tools/map/otbm.py)."""
 import os, shutil, struct, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -68,6 +68,10 @@ def base_tiles():
     tiles[(43, 43, Z)] = t(None, WALL)                                    # a wall on nothing
     tiles[(44, 41, Z)] = t(GRASS, B['n'])                                 # an old border piece (replaced)
     del tiles[(44, 40, Z)]                                                # void north of it: corner pieces
+    # an old NPC arcade on the gallery's rows (2026-10-21): a partition on a portal tile, a counter, plants
+    tiles[(21, 14, Z)] = t(406, 1644)
+    tiles[(20, 15, Z)] = t(406, 1642)
+    tiles[(19, 14, Z)] = t(406, 8011)
     return tiles
 
 
@@ -87,11 +91,11 @@ HUB = """return {hall = {fill = {z = 7, x = {40, 47}, y = {40, 46}, water = {%d}
 """ % (WATER, GRASS)
 
 TEMPLE = """return {enabled = true,
-	items = {floor = 406, counter = {1642, 1643}, partition = 1644, light = 1484, plant = 8011, lamp = 1479,
+	items = {floor = 406, pillar = 1515, light = 1484, lamp = 1479,
 		carpet = {nw = 4394, n = 4395, ne = 4396, w = 4397, c = 4398, e = 4399, sw = 4400, s = 4401, se = 4402}},
-	towns = {{town = 2, name = "Town", temple = {x = 25, y = 11, z = 7}, z = 7, npcRow = 14, counterRow = 15,
-		aisle = {16, 17}, wings = {{from = 18, to = 23, outer = 18}},
-		stands = {{name = "A", x = 23}, {name = "B", x = 21}}, free = {19}, lamps = {{x = 22, y = 18}}}}}
+	towns = {{town = 2, name = "Town", temple = {x = 25, y = 11, z = 7}, z = 7, portalRow = 14,
+		aisle = {15, 16, 17}, wings = {{from = 18, to = 23, outer = 18}},
+		portals = {{kind = "a", x = 23}, {kind = "b", x = 21}, {kind = "c", x = 19}}, lamps = {{x = 22, y = 18}}}}}
 """
 
 
@@ -156,17 +160,17 @@ def main():
         check(tl[(43, 41, Z)][0] == [GRASS, B['cne']], 'water only at the north-east corner: %s' % tl[(43, 41, Z)][0])
         check(tl[(42, 43, Z)][0] == [GRASS], 'a tile away from the new water is left alone')
         check(tl[(41, 43, Z)][0] == [WATER], 'old water untouched')
-        # temple arcade
-        check(tl[(23, 14, Z)] == ([MARBLE], 1) and tl[(21, 14, Z)] == ([MARBLE], 1), 'stands bare, marble, PZ')
-        check(tl[(22, 14, Z)][0] == [MARBLE, 1644] and tl[(20, 14, Z)][0] == [MARBLE, 1644], 'partitions between')
-        check(tl[(19, 14, Z)][0] == [MARBLE, 8011], 'plants on the free booth')
+        # temple portal gallery (over the old NPC arcade)
+        check(all(tl[(x, 14, Z)] == ([MARBLE], 1) for x in (23, 21, 19)), 'portal tiles bare, marble, PZ')
+        check(tl[(22, 14, Z)][0] == [MARBLE, 1515] and tl[(20, 14, Z)][0] == [MARBLE, 1515], 'pillars between')
         check(tl[(18, 14, Z)][0] == [MARBLE, 1484], 'the coal basin on the outer end')
-        check([tl[(x, 15, Z)][0][1] for x in range(18, 24)] == [1642, 1643] * 3, 'the counters in turn')
-        check(tl[(18, 16, Z)][0] == [MARBLE, 4394] and tl[(23, 16, Z)][0] == [MARBLE, 4396]
-              and tl[(20, 16, Z)][0] == [MARBLE, 4395], 'carpet north row: corners and edge')
+        check(tl[(18, 15, Z)][0] == [MARBLE, 4394] and tl[(23, 15, Z)][0] == [MARBLE, 4396]
+              and tl[(20, 15, Z)][0] == [MARBLE, 4395], 'carpet north row over the old counter: corners and edge')
+        check(tl[(18, 16, Z)][0] == [MARBLE, 4397] and tl[(23, 16, Z)][0] == [MARBLE, 4399]
+              and tl[(21, 16, Z)][0] == [MARBLE, 4398], 'carpet middle row: edges and centre')
         check(tl[(18, 17, Z)][0] == [MARBLE, 4400] and tl[(23, 17, Z)][0] == [MARBLE, 4402]
               and tl[(21, 17, Z)][0] == [MARBLE, 4401], 'carpet south row')
-        check(all(tl[(x, y, Z)][1] & 1 for x in range(18, 24) for y in range(14, 18)), 'the arcade is protection zone')
+        check(all(tl[(x, y, Z)][1] & 1 for x in range(18, 24) for y in range(14, 18)), 'the gallery is protection zone')
         check(tl[(22, 18, Z)][0] == [GRASS, 1479], 'the lamp added')
         check(tl[(24, 14, Z)][0] == [GRASS], 'outside the wing untouched')
         # second run
@@ -190,7 +194,7 @@ def main():
         data, mp, paths = setup(os.path.join(root, 'c'), tiles=tiles)
         try:
             run(data, mp, paths, only=('temples',))
-            check(False, 'an arcade tile with an action id is refused')
+            check(False, 'a gallery tile with an action id is refused')
         except T.FixError as e:
             check('action id' in str(e), 'refusal: %s' % e)
 
@@ -223,15 +227,17 @@ def main():
                 check(r['to'] != r['pos'], 'a destination is not the teleport\'s own tile: %s' % (r,))
         tcfg = IC.load_config(T.TEMPLE_CONFIG)
         for town in tcfg['towns']:
-            want, lamps = T.arcade_tiles(town, tcfg['items'])
+            want, lamps = T.gallery_tiles(town, tcfg['items'])
             mid = town['temple']['x']
             for (x, y, z), tile in want.items():
                 m = want.get((2 * mid - x, y, z))
-                check(m is not None, 'the arcade is mirrored round the temple: %d,%d' % (x, y))
-                if m and y == town['npcRow']:
-                    check(bool(m['items']) == bool(tile['items']), 'a stand mirrors a stand: %d' % x)
-            for s in town['stands']:
-                check(want[(s['x'], town['npcRow'], town['z'])]['items'] == [], '%s stands on a bare tile' % s['name'])
+                check(m is not None, 'the gallery is mirrored round the temple: %d,%d' % (x, y))
+                if m and y == town['portalRow']:
+                    check(bool(m['items']) == bool(tile['items']), 'a portal tile mirrors a portal tile: %d' % x)
+            kinds = [p['kind'] for p in town['portals']]
+            check(len(set(kinds)) == len(kinds), 'one tile per portal kind: %s' % kinds)
+            for p in town['portals']:
+                check(want[(p['x'], town['portalRow'], town['z'])]['items'] == [], '%s: a bare tile' % p['kind'])
         hub = IC.load_config(T.HUNT_CONFIG)['hall']['fill']
         check(set(hub['borders']) == set(B), 'the hub fill names every border piece')
     finally:

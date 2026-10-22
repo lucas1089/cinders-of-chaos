@@ -77,10 +77,10 @@ return {
 	worldBoss = {loc = "World Boss Arena", note = "Portals at every temple", level = 300},
 	invasion = {loc = "Cinderhold or Thornmere", note = "or nearby hunting grounds"},
 	tower = {loc = "Infinity Tower", note = "Adventure > Infinity Tower", how = "Infinity Tower floor %s (Adventure > Infinity Tower)"},
-	trials = {loc = "Keeper of Trials", note = "In the Hall of Services", how = "Vocation Trial of your class line (Passive Tree > Trials)",
+	trials = {loc = "Keeper of Trials", note = "In the teleport room's market", how = "Vocation Trial of your class line (Passive Tree > Trials)",
 		cooldownStorage = 7101764},
 	ascension = {name = "Ascension Warden", monster = "Ascension Warden", loc = "Ascendant Oracle",
-		note = "In the Hall of Services", level = 100,
+		note = "In the teleport room's market", level = 100,
 		how = "Ascension Trial (Ascendant Oracle)", short = "Ascension Trial", cooldownStorage = 7101002, look = {type = 131, head = 95, body = 95,
 		legs = 95, feet = 95, addons = 3}},
 	dungeons = {how = "Dungeon queue (Adventure > Dungeons)", short = "Dungeon queue",
@@ -232,7 +232,7 @@ return {
 		-- its boss is the strongest monster type of the last room's level window in the rift guardian look of the room's
 		-- theme, so it has no fixed type to track; the cooldown column shows when the free run of the day is ready
 		{key = "descent_boss", category = "descent", name = "Ember Descent Boss", loc = "Ember Descent (instance)", level = 100,
-			look = {type = 2107}, rule = {type = "ondemand", how = "The portal in the Hall of Services (beside the temple): one free run a day, " ..
+			look = {type = 2107}, rule = {type = "ondemand", how = "The Ember Descent portal at the temple: one free run a day, " ..
 			"one free weekly run, more with Ember Sigils", short = "Descent portal", cooldown = 7100411}},
 
 		-- ------------------------------------------------------------------ the Ashen Sepulchre (raid_config.lua)
@@ -240,7 +240,7 @@ return {
 		-- 7100441 + boss index - 1: the time of the reset while the boss is looted this week)
 		{key = "raid_ulthar", category = "sepulchre", name = "Gravewarden Ulthar", monster = "Gravewarden Ulthar", anywhere = true,
 			loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",
-			how = "The raid portal in the Hall of Services (beside the temple), a party of 5-15; loot once a week", short = "Raid, weekly loot",
+			how = "The raid portal at the temple, a party of 5-15; loot once a week", short = "Raid, weekly loot",
 			cooldown = 7100441}},
 		{key = "raid_morwen", category = "sepulchre", name = "Morwen the Ash-Sister", monster = "Morwen the Ash-Sister",
 			anywhere = true, loc = "Ashen Sepulchre (raid)", level = 800, rule = {type = "ondemand",

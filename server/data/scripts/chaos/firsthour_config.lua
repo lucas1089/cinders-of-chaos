@@ -37,15 +37,15 @@ return {
 			pt = "Primeiras caçadas: %s. Elas estão no seu mapa agora. Monstros soltam equipamentos com raridade; seu kit leva você até o nível 20. "
 				.. "Em Cinderhold, a cidade principal, os dois grandes teleportes ao norte do templo levam à sala de teleportes: um portal para uma caçada de cada nível."},
 		{key = "gear", level = 4,
-			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer at the temple (the arcade beside its entrance) buys what you find. "
+			en = "Better gear: the shops in town sell weapons and armour for gold, and the Loot Buyer in the teleport room's market buys what you find. "
 				.. "Economy > Item Finder tells where any item drops or who sells it.",
-			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no templo "
-				.. "(a galeria ao lado da entrada) compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
+			pt = "Equipamento melhor: as lojas da cidade vendem armas e armaduras por ouro, e o Comprador de Saque no mercado "
+				.. "da sala de teleportes compra o que você encontrar. Economia > Localizador de Itens mostra onde cada item cai ou quem o vende."},
 		{key = "bounty", level = 8,
 			en = "The Bounty Board is open to you (Adventure > Bounty Board): daily contracts at your level for gold and orbs. "
-				.. "Archivist Maelis, next to the temple, has her first tale for you: ask her for \"tales\". New hunts: %s.",
+				.. "Archivist Maelis, in the teleport room's market, has her first tale for you: ask her for \"tales\". New hunts: %s.",
 			pt = "O Quadro de Recompensas está aberto (Aventura > Quadro de Recompensas): contratos diários do seu nível por ouro e orbes. "
-				.. "A Arquivista Maelis, ao lado do templo, tem a primeira história para você: peça \"histórias\". Novas caçadas: %s."},
+				.. "A Arquivista Maelis, no mercado da sala de teleportes, tem a primeira história para você: peça \"histórias\". Novas caçadas: %s."},
 		{key = "passive", level = 12,
 			en = "Your first passive point: Character > Passive Tree. Start next to the centre and press Apply Plan.",
 			pt = "Seu primeiro ponto passivo: Personagem > Árvore Passiva. Comece perto do centro e clique em Aplicar Plano."},
@@ -59,9 +59,9 @@ return {
 			en = "The Arena is open from level 50. Hunts for your level: %s.",
 			pt = "A Arena abre a partir do nível 50. Caçadas do seu nível: %s."},
 		{key = "ascension", level = 100,
-			en = "Level 100: the Ascendant Oracle in the Hall of Services (the portal beside the temple) starts your ascension, and rifts, the Ember Descent and the Vocation Trials "
+			en = "Level 100: the Ascendant Oracle in the teleport room's market starts your ascension, and rifts, the Ember Descent and the Vocation Trials "
 				.. "are open. Archivist Maelis has a new tale at almost every level.",
-			pt = "Nível 100: o Oráculo Ascendente no Salão de Serviços (o portal ao lado do templo) começa sua ascensão, e as fendas, a Descida de Brasa e as Provas de Vocação "
+			pt = "Nível 100: o Oráculo Ascendente no mercado da sala de teleportes começa sua ascensão, e as fendas, a Descida de Brasa e as Provas de Vocação "
 				.. "estão abertas. A Arquivista Maelis tem uma história nova em quase todo nível."},
 		-- from here on: every band where the next system unlocks (2026-10-15); Adventure > Next Goals lists the goals
 		{key = "goals", level = 120,

@@ -455,7 +455,7 @@ function W.classEntries(D, vocs, spells, treeByClass)
 		else
 			p[#p + 1] = "Open to every account from the start."
 		end
-		p[#p + 1] = string.format("At level %d a %s ascends into one of two classes: the Ascendant Oracle in the temple starts the quest.",
+		p[#p + 1] = string.format("At level %d a %s ascends into one of two classes: the Ascendant Oracle in the teleport room's market starts the quest.",
 			D.C0.classes.ascension.minLevel, base.name)
 		local g = D.ascq.guardians[line.base] or D.ascq.guardians.default
 		local sections = {
@@ -1123,7 +1123,7 @@ function W.dungeonEntries(D)
 		sub = string.format("A roguelike run of %d-%d rooms for 1-%d players of level %d+.", ds.rooms.min, ds.rooms.max,
 			ds.maxPlayers, ds.minLevel),
 		sections = {{h = "The run", p = {
-			string.format("Enter through the portal next to the temple: %d to %d seeded rooms (combat, elite, treasure, shrine, merchant) and a boss at the end, %s at most.",
+			string.format("Enter through the portal at the temple: %d to %d seeded rooms (combat, elite, treasure, shrine, merchant) and a boss at the end, %s at most.",
 				ds.rooms.min, ds.rooms.max, seconds(ds.timeLimit)),
 			"After a room pick one of three boons; curses make it harder and pay more. Embers are spent at the merchant.",
 			string.format("%d free run a day and a weekly seeded run with its own leaderboard; an Ember Sigil (forged from %d shards and %s gold) gives one more run.",

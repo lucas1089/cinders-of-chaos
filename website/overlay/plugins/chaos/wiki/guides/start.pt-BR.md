@@ -26,7 +26,8 @@ Todo personagem novo mora em Cinderhold, a maior cidade. Tudo fica perto do temp
 
 - Dois grandes teleportes, cinco passos ao norte do templo, levam à sala de teleportes: um portal para uma caçada de cada nível.
 - O depot, dois bancos e as lojas.
-- O Salão de Serviços, pelo portal ao lado do templo: cada serviço do jogo atrás do seu balcão. O Loot Buyer, que compra o que você encontra, o Material Broker, o Gambler, os vendedores de Conquest e de Candlemarks, o Ascendant Oracle, o Keeper of Trials e os portais da Ember Descent e da raid.
+- O mercado da sala de teleportes (os dois grandes teletransportes ao norte do templo levam até lá): cada serviço do jogo na sua banca. O Loot Buyer, que compra o que você encontra, o Material Broker, o Gambler, os vendedores de Conquest e de Candlemarks, o Ascendant Oracle e o Keeper of Trials.
+- A galeria de portais na parede sul do templo: os portais do seu hideout, do guild hall, da Ember Descent, da raid, do Memorial, da Ashen Chronicle e dos eventos, cada um com o destino em letras laranja em cima.
 - A morte, a magia Town Portal e o pergaminho do templo sempre trazem você de volta a este templo.
 
 ## Os primeiros níveis

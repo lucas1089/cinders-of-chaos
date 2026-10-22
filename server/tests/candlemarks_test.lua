@@ -245,7 +245,7 @@ do
 	near.npc = {buyNearNpc = true}
 	eq(select(2, K.checkBuy(o, ctx({near = false}), near)), "npc", "buyNearNpc without the NPC")
 	check(cfg.npc.buyNearNpc == true, "owner: purchases only at Osric")
-	eq(cfg.messages.npc, "Visit Osric the Chandler to buy (at the temple).", "the message")
+	eq(cfg.messages.npc, "Visit Osric the Chandler to buy (in the teleport room's market).", "the message")
 	check(K.checkBuy(o, ctx({near = true}), near), "buyNearNpc with the NPC")
 
 	local items = K.itemsOf(byKey.supplies_1)
@@ -682,7 +682,7 @@ M.accounts[100] = nil
 op(a, "open", {})
 eq(lastSent(a, "state").near, false, "the state says Osric is not here")
 op(a, "buy", {k = "gem_chipped"})
-eq(lastSent(a, "result").text, "Visit Osric the Chandler to buy (at the temple).", "buying away from Osric is refused")
+eq(lastSent(a, "result").text, "Visit Osric the Chandler to buy (in the teleport room's market).", "buying away from Osric is refused")
 osricAt(103, 100, 6)
 op(a, "buy", {k = "gem_chipped"})
 eq(lastSent(a, "result").ok, false, "Osric on another floor does not count")

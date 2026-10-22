@@ -43,7 +43,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 - **Monster tiers.** Magic (blue), rare (yellow) and legendary (orange) monsters drop better gear. Wear what beats yours.
 - **Pack combat.** Chained kills, each within 3 s of the one before, give bonus experience: +10% at 4 kills, +20% at 6, +30% at 8 and +40% at 9.
 - **Bounty Board.** Up to {{bounty.maxActive}} contracts at once; the board rolls every day at 06:00. {{bounty.weeklyNeed}} contracts in one week give the weekly chest.
-- **Buy and sell.** The Loot Buyer stands in the temple arcade (west wing, on the south wall beside the entrance). **Economy > Market** (Alt+E) opens at level {{market.minLevel}}.
+- **Buy and sell.** The Loot Buyer stands in the market of the teleport room (the two great teleports north of the temple lead there). **Economy > Market** (Alt+E) opens at level {{market.minLevel}}.
 - **Level 20:** your first kill task, your first crafting orb on the Crafting Bench, 50 monsters with a tier.
 ::: if invasion.on
 - **Level {{invasion.minLevel}}:** [town invasions](wiki:event:invasion). See Adventure > Events.
@@ -57,8 +57,8 @@ A step by step path for new players: where to hunt in each level bracket, which 
 - **Where to hunt.** Wyrm (50-80), Rustheap Golem (60-80), Serpent Spawn (35-105), Dawnfire Asura (20-105), Hellspawn (80-135), Blightwalker (95-150), Usurper Archer (110-140) and Demon Outcast (120-140).
 - **Arena.** At level {{arena.minLevel}}, Adventure > Arena. One goal of this bracket is to win a match.
 - **Bestiary.** Each stage (Discovered, Studied, Mastered, Completed) gives bonus experience against that creature. Fill 25 creatures in the Bestiary.
-- **Ascension at level {{class.ascensionLevel}}.** Talk to the Ascendant Oracle in the Hall of Services (the portal at the south end of the temple). Gather the Proof of Strength ({{ascension.proofPoints}} points: a rare monster is worth 1, a legendary 3) and win a {{ascension.trialTime}} trial. If you lose, try again after {{ascension.retry}}.
-- **Vocation Trial.** At the Keeper of Trials (Hall of Services) or with the **Trials** button of the Passive Tree window. Normal at level {{trial.normalLevel}}. Every clear opens a special node pair in the tree.
+- **Ascension at level {{class.ascensionLevel}}.** Talk to the Ascendant Oracle in the market of the teleport room. Gather the Proof of Strength ({{ascension.proofPoints}} points: a rare monster is worth 1, a legendary 3) and win a {{ascension.trialTime}} trial. If you lose, try again after {{ascension.retry}}.
+- **Vocation Trial.** At the Keeper of Trials (market of the teleport room) or with the **Trials** button of the Passive Tree window. Normal at level {{trial.normalLevel}}. Every clear opens a special node pair in the tree.
 - **Rifts.** Tier 1 opens at level {{rift.level1}}. Use the key in a protection zone; up to {{rift.maxPlayers}} players. From level 100, Bounty Board contracts can give a tier 1 key. See the [Rifts](wiki:guide:rifts) guide.
 ::: if descent.on
 - **{{descent.name}}.** Level {{descent.minLevel}}, Adventure > Ember Descent. See [its page](wiki:dungeon:descent).
@@ -71,7 +71,7 @@ A step by step path for new players: where to hunt in each level bracket, which 
 - **Where to hunt.** Fleshcarver (145-155), Blackblade (150-300), Emerald Mage (180-270), Bonechoir Catacomb (200-290), Sulphur Gallery (215-299) and deathrattle (230-300).
 - **Rifts.** Tier 2 at level {{rift.level2}}, tier 3 at {{rift.level3}}. Bring a party: more players, more reward.
 ::: if pocket.on
-- **Pocket bosses.** Adventure > Boss Spawns, **Pocket** button: a private copy of a boss, {{pocket.charges}} charges a day. Raid bosses from level {{pocket.raidLevel}}, island bosses from {{pocket.islandLevel}}. Vessa Hollowmark in the temple arcade looks after them.
+- **Pocket bosses.** Adventure > Boss Spawns, **Pocket** button: a private copy of a boss, {{pocket.charges}} charges a day. Raid bosses from level {{pocket.raidLevel}}, island bosses from {{pocket.islandLevel}}. Vessa Hollowmark in the market of the teleport room looks after them.
 ::: end
 - **New classes.** At level {{class.unlockLevel}} {{class.lockedNames}} open for the account.
 - **Charms.** Character > Charms: new cells open at levels 200, 400, 600 and 800.

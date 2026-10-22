@@ -719,8 +719,8 @@ return {
 		["%d minutes"] = "%d minutos",
 		["1 second"] = "1 segundo",
 		["%d seconds"] = "%d segundos",
-		["Ascension is earned, not claimed. Speak with the %s in the Hall of Services."] =
-			"A ascensão é conquistada, não reivindicada. Fale com o %s no Salão de Serviços.",
+		["Ascension is earned, not claimed. Speak with the %s in the teleport room's market."] =
+			"A ascensão é conquistada, não reivindicada. Fale com o %s no mercado da sala de teleportes.",
 		["The %s waits beyond the veil. You go alone; you have %d seconds to break it.\n\n%s\n\nIf you fall, the Oracle pulls you back unharmed: no experience, no items lost. You may try again after %s."] =
 			"O %s espera além do véu. Você vai sozinho; tem %d segundos para derrotá-lo.\n\n%s\n\nSe você cair, o Oracle te puxa de volta ileso: sem perder experiência nem itens. Você pode tentar de novo depois de %s.",
 		["The Trial of Ascension"] = "O Trial of Ascension",
@@ -818,7 +818,7 @@ return {
 			"O Oracle espera. Diga 'choice' quando estiver pronto.",
 		["That path is not yours to walk."] = "Esse caminho não é seu.",
 		["Ascension: %s"] = "Ascensão: %s",
-		["not begun. Speak with the %s in the Hall of Services."] = "não começou. Fale com o %s no Salão de Serviços.",
+		["not begun. Speak with the %s in the teleport room's market."] = "não começou. Fale com o %s no mercado da sala de teleportes.",
 		["Proof of Strength, %d / %d (rare and legendary monsters of level %d+)."] =
 			"Proof of Strength, %d / %d (monstros raros e lendários de nível %d+).",
 		["the Trial. Ask the %s for the trial."] = "o Trial. Peça o trial ao %s.",
@@ -1406,15 +1406,24 @@ return {
 		["Guild Hall Portal"] = "Portal do Guild Hall",
 		["Members of a guild that owns a guild hall step in to enter it. Its exit portal leads to your temple."] =
 			"Membros de uma guild que tem um guild hall entram por aqui. O portal de saída dele leva ao seu templo.",
-		["Hall of Services Portal"] = "Portal do Salão de Serviços",
 		["Guild Siege Portal"] = "Portal do Guild Siege",
 		["Memorial Portal"] = "Portal do Memorial",
 		["World Boss Portal"] = "Portal do World Boss",
 		["Chronicle Gate"] = "Portão da Chronicle",
 		["Hunting Area Portal"] = "Portal da Área de Caça",
 		["Idle Hall Exit"] = "Saída do Idle Hall",
-		["Hall of Services Exit"] = "Saída do Salão de Serviços",
-		["Step in to go back to the temple of this town."] = "Entre para voltar ao templo desta cidade.",
+		-- the orange labels over the city portals (cityportals_config.lua `label`, cityportals_fx.lua)
+		["Your Hideout"] = "Seu Hideout",
+		["Guild Hall"] = "Guild Hall",
+		["Ember Memorial"] = "Ember Memorial",
+		["World Boss Arena"] = "Arena do World Boss",
+		["Ashen Chronicle"] = "Ashen Chronicle",
+		["Ember Descent"] = "Ember Descent",
+		["Raid: Ashen Sepulchre"] = "Raid: Ashen Sepulchre",
+		["Guild Siege"] = "Guild Siege",
+		-- a character who logs in inside a retired Hall of Services (npc_booths.lua)
+		["The Hall of Services is closed: you were brought to the temple. Its NPCs stand in the market of the teleport room, its portals at the temple."] =
+			"O Salão de Serviços fechou: você foi trazido ao templo. Os NPCs dele ficam no mercado da sala de teleportes, os portais no templo.",
 		-- one loot line per kill (lootline_core.lua, pouches_core.lua summary)
 		["Loot of %s: %s"] = "Loot de %s: %s",
 		["nothing"] = "nada",
@@ -1444,8 +1453,6 @@ return {
 			"Entre para visitar o Ember Memorial: as primeiras conquistas do reino na temporada, os recordes e os caídos. O portal de saída dele leva ao seu templo.",
 		["Open while a guild siege runs: members of a signed-up guild step in to reach their base. The base's exit portal leads to your temple."] =
 			"Aberto enquanto um guild siege acontece: membros de uma guild inscrita entram para chegar à base dela. O portal de saída da base leva ao seu templo.",
-		["Step in to enter the Hall of Services: the town's Chaos NPCs behind their counters, the Ember Descent and the raid portals. Its exit portal leads back to this temple."] =
-			"Entre para ir ao Salão de Serviços: os NPCs Chaos da cidade atrás dos balcões, os portais da Ember Descent e da raid. O portal de saída dele traz você de volta a este templo.",
 		["Only the owner of this hideout may open its depot."] = "Só o dono deste hideout pode abrir o depot dele.",
 		["This depot cannot open here. Use a town depot."] = "Este depot não abre aqui. Use um depot da cidade.",
 		["Nothing can be left on a hideout's floor."] = "Nada pode ser deixado no chão de um hideout.",
@@ -1579,8 +1586,6 @@ return {
 		["The way is sealed."] = "O caminho está selado.",
 		["%s is for level %d and above."] = "%s é para o nível %d ou mais.",
 		["%s. The portal beside you leads back to the temple."] = "%s. O portal ao seu lado leva de volta ao templo.",
-		["The Hall of Services: progression to the west, trade to the east, the Descent and the raid to the south. The portal beside you leads back to the temple."] =
-			"O Salão de Serviços: progressão a oeste, comércio a leste, a Descida e a raid ao sul. O portal ao seu lado leva de volta ao templo.",
 		["%s declared war on your guild (%s). Answer it in Social > Guild Wars before it expires in %s."] =
 			"%s declarou guerra à sua guilda (%s). Responda em Social > Guild Wars antes que expire em %s.",
 		["Leaderboard: %s place on the %s board last week. You hold the title %s this week.%s"] =
@@ -2412,7 +2417,7 @@ return {
 		["Your account already has that."] = "Sua conta já tem isso.",
 		["That offer is not available right now."] = "Essa oferta não está disponível agora.",
 		["One purchase at a time."] = "Uma compra de cada vez.",
-		["Visit Osric the Chandler to buy (at the temple)."] = "Visite Osric the Chandler para comprar (no templo).",
+		["Visit Osric the Chandler to buy (in the teleport room's market)."] = "Visite Osric the Chandler para comprar (no mercado da sala de teleportes).",
 		["The purchase could not be written down. Nothing was taken; try again."] =
 			"Não foi possível registrar a compra. Nada foi cobrado; tente de novo.",
 		["Bought %s for %d Candlemarks."] = "Comprou %s por %d Candlemarks.",

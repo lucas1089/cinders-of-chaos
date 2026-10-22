@@ -1,91 +1,49 @@
--- The Halls of Services (npc_booths.lua, npc_booths_core.lua; server/README.md "Main city", "Halls of Services"):
--- every Chaos NPC of the main city (Cinderhold) and of Mirewake stands in a closed booth behind a stone counter, in a
--- hall reached by a portal next to the town's temple, like the base server's shop NPCs and its teleport room.
--- Owner decision 2026-10-15. Plain table, loaded with
+-- The NPC booths of the hub (npc_booths.lua, npc_booths_core.lua; server/README.md "Hub NPC booths").
+-- Owner 2026-10-22: "take these NPCs out of the temple and do away with the Hall of Services ... the NPCs go to the hub,
+-- in the place where the current ones are. Take the current ones out and put ours there." The hub is the market of
+-- Cinderhold's teleport room (the two great teleports north of the temple lead there): two rows of eight closed stalls
+-- along a carpet walk, each with a counter in front and goods on display behind. The base server's shop NPCs stood in
+-- them; every Chaos NPC of the main city stands there now, on the very tile the base NPC had (the spawn file's entry,
+-- a bare floor tile inside the stall), and talks across the stall's counter.
+-- Plain table, loaded with
 --     ChaosNpcBoothsConfig = dofile("data/scripts/chaos/npc_booths_config.lua")
--- No engine calls (server/tests/npc_booths_test.lua and server/tools/services_halls_test.py read it). Lua 5.1 / 5.3.
---
--- The halls are area plans (server/tools/areaplan/rooms/services_*.json, biome townhall: the temples' white marble
--- and grey stone walls) placed by install step contentareas at their origin, where the map has no tile. Every offset
--- below is from the plan's ORIGIN; both halls have the same layout (same plan, other origin), so one `rows` serves all.
--- tools/services_halls_test.py compiles the plans and checks every booth, counter, light and portal tile: free floor
--- in its room, every other floor tile still reached from the arrival, each booth's front tile reached, and in front of
--- a booth its own NPC is the nearest one.
+-- No engine calls (server/tests/npc_booths_test.lua and server/tools/patch_hub_npcs.py read it). Lua 5.1 / 5.3.
 return {
 	enabled = true,
 
-	-- action ids (free block 47880-47889): the portal next to the temple, the hall's exit (the plan's exit portal is
-	-- re-tagged at startup: it leads to the temple of the hall's town, not the character's), the fixtures
-	aid = {entry = 47880, exit = 47881, fixture = 47882},
+	-- the town whose NPCs stand in the hub: ChaosNpcPlace.place(name, temple) with this temple, and the Keeper of
+	-- Trials' placement for this town id, put an NPC named in `booths` on its booth tile instead of next to the temple
+	town = 2, name = "Cinderhold", temple = {x = 32369, y = 32241, z = 7},
 
-	-- one hall per town; `town` the town id, `plan` the area plan, `at` its ORIGIN and `size`, `arrival` and `exit` offsets
-	-- (from the compiled plan; the test checks them)
-	halls = {
-		{town = 2, name = "Cinderhold", plan = "services_cinderhold", at = {x = 14560, y = 14820, z = 7}, size = {66, 34},
-			arrival = {32, 7, 0}, exit = {32, 5, 0},
-			entryOffsets = {{0, 2}}}, -- the south end of the temple, a dead end
-		{town = 1, name = "Mirewake", plan = "services_mirewake", at = {x = 14560, y = 14870, z = 7}, size = {66, 34},
-			arrival = {32, 7, 0}, exit = {32, 5, 0},
-			entryOffsets = {{-3, 4}, {-2, 4}}} -- the south-west corner, off the way to the south doors
+	-- The stalls, north row (y 32230) then south row (y 32236), west to east; x, y, z is the tile the NPC stands on.
+	-- npc: the Chaos NPC of that stall, or false for a stall left empty (its counter and goods stay). Every stall is
+	-- cleared of the base server's NPC (server/tools/patch_hub_npcs.py removes the spawn file entries on these tiles).
+	-- The players come in from the south, through the gap in the middle of the walk (x 31646-31650): the most used NPCs
+	-- stand next to it. Trade and the bank on the north row, progression and the menu services on the south row.
+	booths = {
+		{x = 31622, y = 32230, z = 7, npc = "Iselde Varrow"},
+		{x = 31628, y = 32230, z = 7, npc = "Osric the Chandler"},
+		{x = 31636, y = 32230, z = 7, npc = "Material Broker"},
+		{x = 31642, y = 32230, z = 7, npc = "Loot Buyer"},
+		{x = 31654, y = 32230, z = 7, npc = "Cassian Auric"},
+		{x = 31660, y = 32230, z = 7, npc = "Mordecai Ashwager"},
+		{x = 31666, y = 32230, z = 7, npc = "Tavish Coldhand"},
+		{x = 31672, y = 32230, z = 7, npc = "Halvard Deedkeeper"},
+		{x = 31622, y = 32236, z = 7, npc = "Warden Ysolde"},
+		{x = 31628, y = 32236, z = 7, npc = "Archivist Maelis"},
+		{x = 31636, y = 32236, z = 7, npc = "Keeper of Trials"},
+		{x = 31642, y = 32236, z = 7, npc = "Ascendant Oracle"},
+		{x = 31653, y = 32236, z = 7, npc = "Pell Ashmere"},
+		{x = 31660, y = 32236, z = 7, npc = "Vessa Hollowmark"},
+		{x = 31666, y = 32236, z = 7, npc = false},
+		{x = 31672, y = 32236, z = 7, npc = false}
 	},
 
-	-- the way in: a magic forcefield next to the temple of each hall's town, on the first free tile of the hall's
-	-- `entryOffsets` (checked on the base map: bare floor off every walking line), then of `offsets` (ground, nothing on
-	-- it, no teleport or stairs).
-	entry = {item = 1387, offsets = {{0, 2}, {1, 2}, {-1, 2}, {0, 3}, {0, -3}, {3, 1}, {-3, 1}, {1, -3}, {-1, -3}}},
-
-	-- the fixtures, stock items: grey stone counters (as Cinderhold's temple booths), a coal basin between booths
-	items = {counter = {1642, 1643}, partition = 1644, light = 1484},
-
-	-- The booth rows. Each row lies along a wall of a room: `npcRow` the floor row against the wall (the NPCs, a
-	-- partition counter on each side of every NPC, a coal basin on every other tile from `from` to `to`), `counterRow`
-	-- the row in front of it (a counter on every tile from `from` to `to`): the booths are closed and nobody walks
-	-- behind them. Players stand on the next row and talk across the counter (2 squares; NPC talk radius 3). Booths 5
-	-- apart: in front of a booth its own NPC is always the nearest (npc lib chaos_npc_focus.lua answers the nearest).
-	-- npc: a name, {[town id] = name} for a booth that differs per town, or false for a free slot (nothing is built
-	-- until a name is set). A row with no NPC set is not built. An NPC listed here is placed in the booth by
-	-- ChaosNpcPlace.place / the Keeper of Trials' own placement instead of next to the temple, in both towns.
-	-- Owner 2026-10-21: the NPCs of the economy and service rows stand in the arcade at Cinderhold's temple
-	-- (temple_npcs_config.lua): their booths are Mirewake's only ({[1] = name}); Cinderhold's economy rooms stay empty
-	-- (a row with no NPC in a town is not built there). The progression row keeps both towns.
-	rows = {
-		-- progression: ascension, the trials, tales and the town's faction
-		{key = "progression", room = "progression", npcRow = 27, counterRow = 26, from = 3, to = 22, booths = {
-			{x = 5, npc = "Ascendant Oracle"},
-			{x = 10, npc = "Keeper of Trials"},
-			{x = 15, npc = "Archivist Maelis"},
-			{x = 20, npc = {[2] = "Warden Ysolde", [1] = "Forgemaster Brannoc"}}
-		}},
-		-- economy: selling loot, materials, the Gambler, Conquest Tokens, Candlemarks
-		{key = "economy", room = "economy", npcRow = 27, counterRow = 26, from = 39, to = 62, booths = {
-			{x = 41, npc = {[1] = "Loot Buyer"}},
-			{x = 46, npc = {[1] = "Material Broker"}},
-			{x = 51, npc = {[1] = "Mordecai Ashwager"}},
-			{x = 56, npc = {[1] = "Iselde Varrow"}},
-			{x = 61, npc = {[1] = "Osric the Chandler"}}
-		}},
-		-- the north walls: the services that stand in for menu entries (service_npcs_config.lua, README "Service NPCs";
-		-- owner 2026-10-20). The stash keeper and the pocket boss NPC fill the two free slots west of the economy room's
-		-- way in (x 49-51: the path from the lobby), the banker and the house broker stand east of it, the services
-		-- clerk on the progression room's north wall (west of its way in, x 11-13). A free slot (npc = false) builds nothing.
-		{key = "economy_north", room = "economy", npcRow = 17, counterRow = 18, from = 39, to = 48, booths = {
-			{x = 41, npc = {[1] = "Tavish Coldhand"}, slot = "stash keeper"},
-			{x = 46, npc = {[1] = "Vessa Hollowmark"}, slot = "pocket boss NPC"}
-		}},
-		{key = "economy_north_east", room = "economy", npcRow = 17, counterRow = 18, from = 53, to = 62, booths = {
-			{x = 56, npc = {[1] = "Cassian Auric"}},
-			{x = 61, npc = {[1] = "Halvard Deedkeeper"}}
-		}},
-		{key = "progression_north", room = "progression", npcRow = 17, counterRow = 18, from = 3, to = 8, booths = {
-			{x = 5, npc = {[1] = "Pell Ashmere"}}
-		}}
-	},
-
-	-- the portals of the systems that open a window (Ember Descent, the raid), in the hall's portal room: offsets from
-	-- the ORIGIN. descent_config.lua and raid_config.lua `portal.positions` hold the world tiles (the test checks them).
-	-- The Hideout and Guild Hall Portals stand between them and the Memorial Portal west of the Descent (cityportals.lua
-	-- reads these three; cityportals_config.lua `hall`), so the hall's portal room holds every portal of the town in one row.
-	-- The two Chronicle Gates (chronicle.lua, one spot per chapter area) stand in the row behind them.
-	portals = {descent = {29, 23}, raid = {34, 23}, hideout = {31, 23}, guildhall = {32, 23}, memorial = {28, 23},
-		chronicle_cinderscar_breach = {30, 20}, chronicle_ossuary_stair = {33, 20}}
+	-- The Halls of Services (2026-10-15 to 2026-10-22) are gone: no portal leads there any more. Their tiles may still
+	-- be on a map that had them placed (a map master keeps them). A character who logs in inside one of these
+	-- rectangles (the halls' plans: origin and size) is sent to the temple of the hall's town (npc_booths.lua).
+	retiredHalls = {
+		{town = 2, at = {x = 14560, y = 14820, z = 7}, size = {66, 34}},
+		{town = 1, at = {x = 14560, y = 14870, z = 7}, size = {66, 34}}
+	}
 }
