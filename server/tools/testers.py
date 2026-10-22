@@ -36,6 +36,8 @@ requests (--scenarios tester_scenarios.json: tester_scenarios.py, also places an
 retried with a growing pause, so the bots come back after a restart.
 """
 import asyncio
+import base64
+import hashlib
 import json
 import os
 import random
@@ -190,6 +192,14 @@ def ids_sql(ids):
 
 
 # ------------------------------------------------------------------------------------------------ setup
+def pbkdf2_hash(password, iterations):
+    """accounts.password as the website writes it (engine src-patch 0014); always salted PBKDF2: the testers
+    never write the old unsalted SHA-1 that loadtest.py's --hash-iterations 0 allows"""
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode(), salt, iterations, 32)
+    return 'pbkdf2-sha256$%d$%s$%s' % (iterations, base64.b64encode(salt).decode(), base64.b64encode(key).decode())
+
+
 def plan_classes(spec, vocations):
     """[(name, weight)]: 'auto' = every class of vocations.xml except None (id 0)"""
     if spec == 'auto':
@@ -259,7 +269,7 @@ def setup(a):
                       % ','.join("'%s'" % b['account'] for b in bots)]))
     if exist:
         sys.exit('account names already exist (random clash, run setup again): %s' % exist)
-    hashes = {b['account']: LT.password_hash(b['password'], a.hash_iterations) for b in bots}
+    hashes = {b['account']: pbkdf2_hash(b['password'], a.hash_iterations) for b in bots}
     # the state first: a cleanup after a crash half way still finds every account by name
     st = {'bots': bots, 'created': int(time.time()), 'server_dir': a.server_dir}
     save_state(a.state, st)
@@ -983,6 +993,8 @@ def parse(argv):
     for k, v in vals.items():
         setattr(a, k.lstrip('-').replace('-', '_'), v)
     a.yes, a.dry = flags['--yes'], flags['--dry-run']
+    if a.hash_iterations < 1:
+        sys.exit('--hash-iterations: at least 1 (as the server passwordHashIterations); testers never use SHA-1')
     if a.cmd in ('setup', 'run') and not a.server_dir:
         sys.exit('--server-dir SERVER (the installed server folder) is required')
     if a.cmd == 'run' and not a.key_file:

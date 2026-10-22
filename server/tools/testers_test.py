@@ -158,6 +158,16 @@ try:
 except SystemExit as e:
     ok('--key-file' in str(e), 'run needs --key-file')
 
+# ---------------------------------------------------------------- password hashes: salted PBKDF2 only
+h = T.pbkdf2_hash('pw', 1000)
+ok(h.startswith('pbkdf2-sha256$1000$'), 'a tester password is PBKDF2')
+ok(h != T.pbkdf2_hash('pw', 1000), 'with its own salt')
+try:
+    T.parse(['setup', '--server-dir', '/x', '--hash-iterations', '0'])
+    ok(False, '--hash-iterations 0 is refused')
+except SystemExit as e:
+    ok('SHA-1' in str(e), '--hash-iterations 0 is refused')
+
 # ---------------------------------------------------------------- setup rows
 bot = {'account': 'tstbot0123456789', 'password': 'x', 'name': 'Tester Aaa', 'vocation': 4, 'level': 100, 'hp': 900,
        'mana': 400, 'ml': 9, 'skill': 70, 'town': 1, 'pos': [100, 200, 7]}
