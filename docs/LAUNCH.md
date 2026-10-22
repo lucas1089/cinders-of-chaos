@@ -994,8 +994,11 @@ re-sends the index, the dat and the last shard or two, not 600 MB. Rules the bui
   on purpose while packages without 0048 must still be served.
 - Once players have shards, keep publishing shards: a client with an index loads its shards before any `Tibia.spr`
   (the build warns when it publishes a single spr with no shard set).
-- The Windows package keeps the single `Tibia.spr` for now (owner decision, 2026-10-13; its map editor reads it from
-  `client\data\things\1098`), so shards reach players only through updates.
+- No file over 1 GiB, ever (refused): the updater of every client build out refuses a whole manifest that lists one.
+  Since pair 37 (2026-10-22, its `Tibia.spr` is over 1 GiB) `windows-package.yml` ships the shards inside both
+  clients' `chaos.pack`; only the map editor keeps the single `Tibia.spr` (`mapeditor\data\1098`).
+  `server/deploy/publish_client_update.sh` splits a single spr it finds in a package, so the live update is always
+  sharded.
 
 **Production is HTTPS.** The updater warns in the client log when the manifest URL is plain HTTP;
 `client/tools/serve_updates.py` (HTTP, local) is only for tests.

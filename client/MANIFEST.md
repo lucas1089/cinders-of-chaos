@@ -2782,9 +2782,15 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   verify 5.0 s, joined MD5 09f3a073b0a071d54b9604a422a9dffd = the single file's; a second split gave the same bytes.
 - **Assembly**: `tools/assemble_client.sh <base> <out> <things-dir>` copies the dat and splits and verifies the spr
   (`CHAOS_SPR_SHARDS=0` copies the single file instead); without the third argument the pair is left to you as before.
-  The Windows package keeps the single `Tibia.spr` for now (owner decision, 2026-10-13): its map editor reads the
-  sprites from `client\data\things\1098`, and a client loads the single file when there is no index. Shards reach
-  players through updates only.
+  Since pair 37 (2026-10-22) both clients of `windows-package.yml` (Windows and Linux) ship the shard set inside
+  `chaos.pack`, not the single file: pair 37's `Tibia.spr` is over 1 GiB, and the updater of every client build out
+  (`updater_core.lua` `M.MAX_FILE_SIZE`, the same in `make_update_manifest.py`) refuses a whole manifest that lists a
+  bigger file, so that limit can never grow for the builds already out. The workflow unpacks the pair beside the
+  client tree, copies the dat, splits and verifies the spr into the tree, and moves the single `Tibia.spr` (with the
+  dat) to the map editor only (`mapeditor\data\1098`): it cannot read shards. This replaces the owner decision of
+  2026-10-13 (single file in the Windows package for the map editor), whose reason the editor's own copy now covers.
+  Shards inside the pack load like loose ones: 0048 opens them by PhysFS path, and the pack is a PhysFS memory mount
+  (base patch 0102); the Linux start test of the workflow starts a packed, sharded client.
 - **Loading**: the index wins over `Tibia.spr` when both are there; a broken set (missing or short shard, bad index)
   falls back to `Tibia.spr`. Measurements: client/BASE.md 0048 (load already took only milliseconds, since the engine
   streams sprite records; sharded it blocks for about 1.6 ms against 6.4 ms cold).
@@ -2792,7 +2798,20 @@ by one (client/BASE.md 0048; docs/LAUNCH.md "Client updates").
   sizes, headers, each shard's SHA-256 against the index). It refuses a shard set next to the single `Tibia.spr`
   (players would download both; `--with-single-spr` ships both on purpose) and a shard set without `--min-package`
   (a client built before 0048 ignores the shards and would draw a new dat with its old spr). It warns when it publishes
-  a single `Tibia.spr` with no shard set: a client whose install has an index keeps loading its shards.
+  a single `Tibia.spr` with no shard set: a client whose install has an index keeps loading its shards. A file over
+  1 GiB is refused (a `.spr` with the hint to split it), and so is a file set over the engine's update overlay (one
+  in-memory ZIP without ZIP64, base patch 0103: below 4 GiB). `server/deploy/publish_client_update.sh` always
+  publishes shards: a single `data/things/*/<name>.spr` in the package is split and verified in its work folder (a
+  broken one stops the publish), and one next to its shard set is left out.
+- **Existing clients (build 14, pair 36 in the pack)**: the update of a sharded package lists `Tibia.sprshards` and
+  the shards, not `Tibia.spr`. Their updater downloads the index and every shard (none is in their pack), mounts them
+  in front of the pack, and 0048 loads the index before the pack's old single `Tibia.spr`, so they draw pair 37 with
+  no new download of the client. The first sharded update is about the size of the spr once; after that a sprite
+  change downloads only the shards that hold it. That needs a `min_package` they meet: the publish script's default
+  is the package's own build (15), and then their updater (which now accepts the manifest) tells them to download
+  the new client instead; `--min-package 14` lets them apply it, which is right only when the update's Lua needs
+  nothing of the newer exe (an owner check per release). A manifest with a file over 1 GiB would instead be refused
+  whole by their updater, so they would never even see the new-client message.
 
 ## Client pack (new, base patch 0102, `tools/pack_client.py`)
 

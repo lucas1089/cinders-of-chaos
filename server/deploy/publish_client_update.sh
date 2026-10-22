@@ -28,6 +28,8 @@
 # folder: a packed client (build 13+: the exe and chaos.pack) is decrypted with CHAOS_CLIENT_KEY into the work folder
 # (make_update_manifest.py unpack; a development pack is refused), an older loose one is used as it is (init.lua,
 # modules/, data/things/1098/); check that the package's public key (init.lua) is the one of the private key;
+# a single data/things/*/<name>.spr is split into sprite shards (client/tools/sprites/spr_shards.py; the update always
+# ships shards: the updater refuses a file over 1 GiB) or, next to its shard set, left out;
 # client/tools/make_update_manifest.py build (every blob ENCRYPTED with a key derived from CHAOS_CLIENT_KEY, blobs
 # first, manifest.json last, then the old blobs and any plain ones removed) and verify (decrypts every blob and checks
 # the signed plaintext SHA-256); then the web server check: GET the manifest URL (the package's
@@ -48,7 +50,7 @@
 #   CHAOS_UPDATE_REPO     lucas1089/cinders-of-chaos      the GitHub repository of the releases
 #   CHAOS_UPDATE_ASSET    CindersOfChaos-Client-Windows.zip
 #   CHAOS_UPDATE_URL      (empty)             the public manifest URL for the check (default: the package's own)
-#   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 3x the zip size free)
+#   CHAOS_WORK_DIR        /var/tmp            where the work folder is made (needs about 4x the zip size free: the spr is split there)
 #   CHAOS_UPDATE_MIN_MB   50                  a smaller download is refused (an error page, a wrong asset)
 # Exit: 0 published (a failed web server check only warns), 1 refused or failed, nothing published.
 set -euo pipefail
@@ -57,6 +59,7 @@ umask 022
 SELF=$(readlink -f "$0")
 REPO_DIR=$(cd "$(dirname "$SELF")/../.." && pwd)
 TOOL="$REPO_DIR/client/tools/make_update_manifest.py"
+SHARDS="$REPO_DIR/client/tools/sprites/spr_shards.py"
 
 SITE=${CHAOS_SITE_DIR:-/var/www/chaos}
 KEY=${CHAOS_UPDATE_KEY:-/etc/chaos/update-key.hex}
@@ -261,6 +264,25 @@ else
   say "client: ${CLIENT#"$WORK/x/"}"
 fi
 [ -d "$CLIENT/mods" ] || say "note: the client has no mods/ folder"
+
+# sprite shards (client/MANIFEST.md "Sharded sprites"): the live update always ships the spr as a shard set, never as
+# one file. The updater of every client build refuses a manifest with a file over 1 GiB (pair 37's spr is), and a
+# client whose pack holds a shard set would keep drawing those shards over a single new spr. A single spr is split
+# (and byte-checked) here; one next to its shard set is left out (the client loads the shards).
+for spr in "$CLIENT"/data/things/*/*.spr; do
+  [ -f "$spr" ] || continue
+  name=$(basename "$spr" .spr)
+  [[ $name =~ \.[0-9]{3}$ ]] && continue
+  dir=$(dirname "$spr")
+  if [ -f "$dir/$name.sprshards" ]; then
+    say "sprites: ${spr#"$CLIENT/"} is next to its shard set: the shards are published, the single file is not"
+  else
+    say "sprites: ${spr#"$CLIENT/"} -> shard set $name.sprshards"
+    python3 -I "$SHARDS" split "$spr" "$dir" --name "$name" || die "cannot split $spr into sprite shards"
+    python3 -I "$SHARDS" verify "$spr" "$dir" --name "$name" || die "the sprite shards of $spr do not match it"
+  fi
+  rm -f "$spr"
+done
 
 # the package's own settings: Services.update in init.lua, the build in BUILD_INFO.txt
 info=$(python3 -I - "$CLIENT" <<'PY'

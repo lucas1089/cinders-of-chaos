@@ -33,6 +33,10 @@
           a sprite change downloads only the shards that hold it. Refused: a shard set next to its single .spr
           (both would be downloaded; --with-single-spr ships both on purpose) and a shard set without --min-package
           (a client built before patch 0048 ignores shards and would draw the new dat with its old .spr).
+          Size limits: every file at most 1 GiB (MAX_FILE_SIZE, the same in updater_core.lua; the updater of the
+          builds already out refuses a whole manifest that lists a bigger file, so the limit cannot grow): a bigger
+          .spr is refused with a hint to ship it as shards. All files together must fit the engine's update overlay,
+          a ZIP without ZIP64 (base patch 0103: below 4 GiB).
   verify  PUBLISH_DIR --public HEX [--dev] [--key-index N]
           Checks the signature, the payload and every blob's size and SHA-256; with the blob key (CHAOS_CLIENT_KEY or
           --dev) also decrypts every blob and checks the plaintext SHA-256 the manifest signs.
@@ -65,7 +69,11 @@ SKIP_EXT = {'orig', 'rej', 'bak', 'psd', 'rar', 'xcf', 'kra', 'tmp', 'swp', 'log
 SKIP_NAMES = {'thumbs.db', '.ds_store', 'desktop.ini'}
 WINDOWS_RESERVED = {'con', 'prn', 'aux', 'nul'} | {f'com{i}' for i in range(1, 10)} | {f'lpt{i}' for i in range(1, 10)}
 SEGMENT = re.compile(r'^[A-Za-z0-9 ._()+,-]+$')
+# Never raise it: the updater of every client build already out (updater_core.lua M.MAX_FILE_SIZE) refuses the whole
+# manifest when one file is bigger. A sprite file past it ships as shards (tools/sprites/spr_shards.py, base patch 0048).
 MAX_FILE_SIZE = 1024 ** 3
+# the engine mounts the update files as one in-memory ZIP without ZIP64 (base patch 0103, chaosblob::StoreZip::fits)
+MAX_OVERLAY_SIZE = 0xFFFFFFF0
 MAX_FILES = 50000
 # encrypted update blobs (update_crypt.py, base patch 0103): the client refuses a manifest without them
 ENCRYPTION = 'chaos-blob-1'
@@ -371,6 +379,12 @@ def check_sprite_shards(client_dir, entries, min_package, with_single_spr=False)
     return out
 
 
+def overlay_size(entries):
+    """bytes of the in-memory ZIP the client builds when every file is in its update tree (base patch 0103,
+    chaosblob::StoreZip::sizeFor: 22 + per file 30 + 46 + 2 x name + data)"""
+    return 22 + sum(76 + 2 * len(path.encode('utf-8')) + size for path, _, size in entries)
+
+
 def package_baseline(client_dir):
     """Services.update.baseline of the client's init.lua (base patch 0101): the update version the package's own files
     are (its release number). 0 when the field is missing (a package built before 0101) or not a number."""
@@ -407,11 +421,20 @@ def build(args):
     for rel, full in files:
         size = os.path.getsize(full)
         if size > MAX_FILE_SIZE:
-            sys.exit(f'{rel}: larger than {MAX_FILE_SIZE} bytes')
+            hint = ''
+            if rel.startswith('data/things/') and rel.lower().endswith('.spr'):
+                hint = (f'; ship it as sprite shards: python3 -I client/tools/sprites/spr_shards.py split '
+                        f'{rel.rsplit("/", 1)[-1]} <folder>, then leave the single file out '
+                        f'(client/MANIFEST.md "Sharded sprites")')
+            sys.exit(f'{rel}: larger than {MAX_FILE_SIZE} bytes (the client updater refuses it){hint}')
         h = sha256_file(full)
         entries.append((rel, h, size))
         blobs.setdefault(h, (full, size))
         total += size
+    overlay = overlay_size(entries)
+    if overlay >= MAX_OVERLAY_SIZE:
+        sys.exit(f'{len(entries)} files make an update overlay of {overlay} bytes; the client mounts at most '
+                 f'{MAX_OVERLAY_SIZE} (a ZIP without ZIP64, base patch 0103)')
     things = [e for e in entries if e[0].startswith('data/things/') and e[0].lower().endswith(('.dat', '.spr'))]
     if not things:
         print('warning: no Tibia.dat/.spr under data/things/ (the pair is not part of this update)', file=sys.stderr)

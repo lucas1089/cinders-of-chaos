@@ -3,7 +3,8 @@
 #   CindersOfChaos-Windows.zip         the whole game for one Windows PC: server, client, portable MariaDB, map editor;
 #                                      extract it and run start-server.bat, then start-client.bat
 #                                      (tools/windows/package/README.txt is in the zip)
-#   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe, data with the 10.98 dat/spr, modules),
+#   CindersOfChaos-Client-Windows.zip  the Windows client alone (Chaos.exe and chaos.pack: modules, data with the 10.98
+#                                      dat and the spr as sprite shards),
 #                                      pointed at the input server_host (tools/windows/client-README.txt)
 #   CindersOfChaos-Server-Windows.zip  the Windows server alone: ChaosServer.exe + DLLs, portable MariaDB, the start /
 #                                      stop .bat files (tools/windows/server-README.txt)
@@ -18,7 +19,9 @@
 # Inputs come from the private branch windows-assets (its README.md): the base server download, the base client and
 # the merged Chaos Tibia.dat / Tibia.spr (one archive cut in parts, things/things-1098.tar.xz.partNN) and, when present, the map master
 # (world/: the owner's edited map, server/README.md "Map master"); large files are cut into parts under GitHub's 100 MB
-# file limit.
+# file limit. Both clients get the spr as sprite shards (client/tools/sprites/spr_shards.py, client/MANIFEST.md
+# "Sharded sprites"): since pair 37 the single Tibia.spr is over 1 GiB, which the updater refuses; only the map editor
+# keeps the single file.
 #   server        Linux job: tools/windows/prepare_server.sh (engine patches, config.lua, the map master over the base
 #                 map, install_all.py, sql-setup/)
 #   engine        Windows job: the patched engine built with MSVC + vcpkg (x64-windows, the libraries the Linux build was
@@ -465,21 +468,29 @@ jobs:
           tar -xf parts/server-exe.tar -C "$P/server/"
 
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
-          mkdir -p "$P/client/data/things/1098"
+          mkdir -p things "$P/client/data/things/1098"
           # the pair is one archive cut in 95 MB parts since pair 36 (GitHub refuses files over 100 MB)
-          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$P/client/data/things/1098"
+          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C things
+          test -f things/Tibia.dat && test -f things/Tibia.spr || { echo "::error::the pair archive has no Tibia.dat / Tibia.spr"; exit 1; }
+          # the client gets the dat and the spr as sprite shards (client/MANIFEST.md "Sharded sprites"): the single spr
+          # is over 1 GiB since pair 37, which the updater of every client build refuses; the shards are byte-checked
+          # against it. The single Tibia.spr goes to the map editor only (below).
+          find things -maxdepth 1 -type f ! -name Tibia.spr -exec cp -t "$P/client/data/things/1098/" {} +
+          python3 -I chaos/client/tools/sprites/spr_shards.py split things/Tibia.spr "$P/client/data/things/1098"
+          python3 -I chaos/client/tools/sprites/spr_shards.py verify things/Tibia.spr "$P/client/data/things/1098"
 
           # signed updater (client/MANIFEST.md "Signed updater"): turn it on when both inputs are set, and check that
-          # make_update_manifest.py accepts this exact client folder, dat/spr included (unsigned dry run)
+          # make_update_manifest.py accepts this exact client folder, dat and shards included (unsigned dry run; a
+          # shard set needs --min-package, this build)
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P/client" \
               --manifest "$UPDATE_MANIFEST" --public-key "$UPDATE_PUBLIC_KEY" --package "$CLIENT_BUILD" \
               --baseline "${PKG_TAG#winpkg-}"
           fi
-          python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run
+          python3 -I chaos/client/tools/make_update_manifest.py build "$P/client" --dry-run --min-package "$CLIENT_BUILD"
 
           # the map editor (10.98): our items.otb / items.xml (with every Chaos item the installers added) and our
-          # monsters in its creature list; it reads the sprites from client\data\things\1098 (README.txt)
+          # monsters in its creature list; it reads the single Tibia.dat / Tibia.spr from mapeditor\data\1098 (README.txt)
           mkdir mapx
           tar -xJf assets/mapeditor/map-editor.tar.xz -C mapx
           mv mapx/*/ "$P/mapeditor"
@@ -511,9 +522,11 @@ jobs:
           } | sed 's/$/\r/' > "$P/BUILD_INFO.txt"
 
           # ---- Cinders of Chaos client packs (client/BASE.md "Client packs") ----
-          # The shipped client folder is just the exe and one encrypted pack. The map editor keeps its own sprite copy,
-          # since the client no longer ships data/things loose.
-          cp "$P/client/data/things/1098/"Tibia.* "$P/mapeditor/data/1098/" 2>/dev/null || true
+          # The shipped client folder is just the exe and one encrypted pack. The map editor keeps its own copy of the
+          # pair, the single Tibia.spr (it cannot read shards), since the client no longer ships data/things loose.
+          find things -maxdepth 1 -type f -name 'Tibia.*' -exec mv -t "$P/mapeditor/data/1098/" {} +
+          test -f "$P/mapeditor/data/1098/Tibia.spr"
+          rm -rf things
           # keep the configured, unpacked tree (updater settings already written) for the separate client download,
           # which sets the server host and RSA key into init.lua before packing
           cp -a "$P/client" clienttree
@@ -551,7 +564,7 @@ jobs:
           python3 -I chaos/client/tools/set_server_host.py "$C" "$SERVER_HOST" --site-url "$SITE_URL"
           python3 -I chaos/client/tools/set_rsa_key.py "$C" --from-env CHAOS_RSA_PUBLIC \
             $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
-          python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run
+          python3 -I chaos/client/tools/make_update_manifest.py build "$C" --dry-run --min-package "$CLIENT_BUILD"
           python3 -I chaos/client/tools/pack_client.py build "$C" "$C.pack"
           rm -rf "$C/init.lua" "$C/data" "$C/modules" "$C/mods" "$C/layouts"
           mv "$C.pack" "$C/chaos.pack"
@@ -793,8 +806,14 @@ jobs:
           P=CindersOfChaos-Client-Linux
           bash chaos/tools/linux/package_client.sh game build "$P"
           (cd assets && sha256sum --ignore-missing -c SHA256SUMS.parts)
-          mkdir -p "$P/data/things/1098"
-          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C "$P/data/things/1098"
+          mkdir -p things "$P/data/things/1098"
+          cat assets/things/things-1098.tar.xz.part* | xz -d | tar -xf - -C things
+          test -f things/Tibia.dat && test -f things/Tibia.spr || { echo "::error::the pair archive has no Tibia.dat / Tibia.spr"; exit 1; }
+          # the dat and the spr as sprite shards, as in the Windows client (the single spr is over the updater's 1 GiB)
+          find things -maxdepth 1 -type f ! -name Tibia.spr -exec cp -t "$P/data/things/1098/" {} +
+          python3 -I chaos/client/tools/sprites/spr_shards.py split things/Tibia.spr "$P/data/things/1098"
+          python3 -I chaos/client/tools/sprites/spr_shards.py verify things/Tibia.spr "$P/data/things/1098"
+          rm -rf things
           # the same updater settings as the Windows client (client/MANIFEST.md "Signed updater")
           if [ -n "$UPDATE_MANIFEST" ] && [ -n "$UPDATE_PUBLIC_KEY" ]; then
             python3 -I chaos/client/tools/set_update_config.py "$P" \
@@ -804,7 +823,7 @@ jobs:
           python3 -I chaos/client/tools/set_server_host.py "$P" "$SERVER_HOST" --site-url "$SITE_URL"
           python3 -I chaos/client/tools/set_rsa_key.py "$P" --from-env CHAOS_RSA_PUBLIC \
             $([ "$ALLOW_DEV_KEY" = true ] && echo --allow-default)
-          python3 -I chaos/client/tools/make_update_manifest.py build "$P" --dry-run
+          python3 -I chaos/client/tools/make_update_manifest.py build "$P" --dry-run --min-package "$CLIENT_BUILD"
           # exe + one encrypted pack (client/BASE.md "Client packs"): pack the configured tree with the same key the
           # binary was built with, then strip the loose files. The Linux client keeps run-client.sh and lib/ beside the
           # binary (the launcher sets ALSOFT_DRIVERS / software GL and lib/ holds the bundled libraries, RUNPATH

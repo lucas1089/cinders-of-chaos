@@ -323,6 +323,70 @@ class Build(unittest.TestCase):
         self.assertNotEqual(code, 0)
         self.assertIn('missing shard', err)
 
+    def test_spr_over_the_limit_ships_as_shards(self):
+        """pair 37: a Tibia.spr over the updater's 1 GiB is refused, its shard set publishes (the limit lowered to a
+        few hundred bytes stands in for 1 GiB)"""
+        sys.path.insert(0, os.path.join(HERE, 'sprites'))
+        import spr_shards
+        things = os.path.join(self.client, 'data', 'things', '1098')
+        count, table, body = 40, [], b''
+        for i in range(count):
+            rec = b'\xff\x00\xff' + bytes([4, 0]) + bytes([i, 1, 2, 3])
+            table.append(8 + 4 * count + len(body))
+            body += rec
+        spr = os.path.join(things, 'Tibia.spr')
+        with open(spr, 'wb') as f:
+            f.write(bytes.fromhex('03d6bb57') + count.to_bytes(4, 'little'))
+            f.write(b''.join(a.to_bytes(4, 'little') for a in table) + body)
+        os.remove(os.path.join(self.client, 'data', 'images', 'x y.png'))
+        os.remove(os.path.join(things, 'Tibia.dat'))
+        open(os.path.join(things, 'Tibia.dat'), 'wb').write(b'dat')
+        limit = os.path.getsize(spr) - 1
+        saved = mum.MAX_FILE_SIZE
+        mum.MAX_FILE_SIZE = limit
+        try:
+            code, out, err = run(['build', self.client, '--dry-run', '--min-package', '15'])
+            self.assertNotEqual(code, 0)
+            self.assertIn('data/things/1098/Tibia.spr: larger than %d bytes' % limit, err)
+            self.assertIn('spr_shards.py split', err)
+            spr_shards.split(spr, things, per_shard=16, quiet=True)
+            spr_shards.verify(spr, things, quiet=True)
+            os.remove(spr)
+            shards = [f for f in os.listdir(things) if spr_shards.SHARD_NAME.match(f)]
+            self.assertEqual(len(shards), 3)
+            self.assertTrue(all(os.path.getsize(os.path.join(things, f)) <= limit for f in shards))
+            code, out, err = run(['build', self.client, '--dry-run', '--min-package', '15'])
+            self.assertEqual(code, 0, err)
+            # the real publish: every listed file within the limit, the client's own payload check passes
+            self.keygen()
+            code, out, err = run(['build', self.client, '--out', self.out, '--key', self.key, '--min-package', '15',
+                                  '--version', '37'])
+            self.assertEqual(code, 0, err)
+            m = self.payload()
+            self.assertIsNone(mum.check_payload(m))
+            paths = {f['path'] for f in m['files']}
+            self.assertNotIn('data/things/1098/Tibia.spr', paths)
+            self.assertIn('data/things/1098/Tibia.sprshards', paths)
+            self.assertTrue(all(f['size'] <= limit for f in m['files']))
+            # a manifest listing a file over the limit is what the clients refuse
+            m['files'][0]['size'] = limit + 1
+            self.assertIn('bad size', mum.check_payload(m))
+        finally:
+            mum.MAX_FILE_SIZE = saved
+
+    def test_overlay_limit(self):
+        entries = [('data/a.bin', 'x', 100), ('modules/b.lua', 'y', 5)]
+        self.assertEqual(mum.overlay_size(entries), 22 + 76 + 20 + 100 + 76 + 26 + 5)
+        saved = mum.MAX_OVERLAY_SIZE
+        mum.MAX_OVERLAY_SIZE = 1000
+        try:
+            code, out, err = run(['build', self.client, '--dry-run'])
+            self.assertNotEqual(code, 0)
+            self.assertIn('update overlay', err)
+        finally:
+            mum.MAX_OVERLAY_SIZE = saved
+        self.assertEqual(run(['build', self.client, '--dry-run'])[0], 0)
+
     def test_single_spr_warning(self):
         code, out, err = run(['build', self.client, '--dry-run'])
         self.assertEqual(code, 0, err)
@@ -623,6 +687,28 @@ class SetUpdateConfig(unittest.TestCase):
         self.assertIn('0101', r.stderr)
         self.assertEqual(self.run_tool().returncode, 0, 'no --baseline: works on an old init.lua')
         self.assertNotEqual(self.run_tool('--baseline', '-1').returncode, 0)
+
+
+class Workflow(unittest.TestCase):
+    """windows-package.yml: the client trees that go through the updater and the pack hold the sprite shards, not a
+    single Tibia.spr (pair 37 is over the updater's 1 GiB); the single file goes to the map editor only"""
+    PATH = os.path.join(HERE, '..', '..', '.github', 'workflows', 'windows-package.yml')
+
+    def test_shards_in_the_client_trees(self):
+        text = open(self.PATH, encoding='utf-8').read()
+        builds = [ln for ln in text.splitlines() if 'make_update_manifest.py build' in ln]
+        self.assertEqual(len(builds), 3, builds)
+        for ln in builds:
+            self.assertIn('--min-package "$CLIENT_BUILD"', ln)
+            self.assertNotIn('--with-single-spr', ln)
+        # the pair is never unpacked straight into a client tree, and each client tree gets a verified split
+        self.assertNotIn('-C "$P/client/data/things/1098"', text)
+        self.assertNotIn('-C "$P/data/things/1098"', text)
+        self.assertEqual(text.count('spr_shards.py split'), 2)
+        self.assertEqual(text.count('spr_shards.py verify'), 2)
+        # the map editor gets the single file, not the shards
+        self.assertNotIn('cp "$P/client/data/things/1098/"Tibia.*', text)
+        self.assertIn('"$P/mapeditor/data/1098/"', text)
 
 
 if __name__ == '__main__':

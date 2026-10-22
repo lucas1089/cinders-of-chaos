@@ -153,6 +153,19 @@ def main():
         ss.split(empty, os.path.join(tmp, 'e'), quiet=True)
         eq(ss.verify(empty, os.path.join(tmp, 'e'), quiet=True), (0, True), 'empty spr')
 
+        # the split server/deploy/publish_client_update.sh makes: by the command line, into the folder of the single
+        # Tibia.spr itself (the source is kept until the caller removes it, an older split's extra shard is removed)
+        same = os.path.join(tmp, 'same')
+        os.makedirs(same)
+        single = os.path.join(same, 'Tibia.spr')
+        shutil.copy(src, single)
+        open(os.path.join(same, 'Tibia.009.spr'), 'wb').write(b'stale')
+        eq(ss.main(['split', single, same, '--name', 'Tibia']), 0, 'main split into the spr folder')
+        eq(ss.main(['verify', single, same, '--name', 'Tibia']), 0, 'main verify in the spr folder')
+        eq(md5(single), md5(src), 'the single spr is untouched by a split next to it')
+        eq(os.path.exists(os.path.join(same, 'Tibia.009.spr')), False, 'stale shard removed')
+        eq(ss.main(['split', os.path.join(tmp, 'missing.spr'), same]), 1, 'main split of a missing spr')
+
         # main() exit codes
         eq(ss.main(['check', out]), 0, 'main check exit')
         eq(ss.main(['check', os.path.join(tmp, 'nothing')]), 1, 'main error exit')
