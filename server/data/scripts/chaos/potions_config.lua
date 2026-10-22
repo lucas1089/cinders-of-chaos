@@ -24,6 +24,14 @@ ChaosPotionsConfig = {
 	-- stock potions are paced by the potion cooldown channel (patch 0042); exhaustMs is used when the engine's config
 	-- cannot be read
 	exhaustMs = 500,
+
+	-- what a health or mana potion gives (owner 2026-10-22: "quanto mais lvl o personagem tem, menos as pots healam.
+	-- façam elas healarem uma quantidade fixa + uma porcentagem. e elas também são afetadas por healing da skill
+	-- tree"): the potion's own roll (the fixed part) + a percent of the drinker's maximum health or mana. The percent
+	-- grows with the potion's level: base + perLevel x the level it needs, at most cap. Health potion (level 0) 3%,
+	-- great (80) 3.8%, ultimate (130) 4.3%, level 200 5%, 500 8%, 700 10%. The tree's Healing (incrementHealth) raises
+	-- both: health through the heal event like every heal, mana here (storage healingPct, written by the tree).
+	amount = {base = 3, perLevel = 0.01, cap = 10},
 	sound = "Aaaah...",
 
 	-- the old empty flasks (strong, great and small/"empty potion flask"): no potion makes them any more and no NPC
@@ -34,7 +42,8 @@ ChaosPotionsConfig = {
 
 	-- player storage (free block 7102480 - 7102489, README "Storage keys"): +0 is 1 once the character got its
 	-- Everfull potions (the starter kit, or the one-time grant at login of a character made before them)
-	storage = {granted = 7102480},
+	-- +1 the tree's Healing percent (passivetree_effects.lua writes it; the potion scripts run in another Lua state)
+	storage = {granted = 7102480, healingPct = 7102481},
 
 	-- custom attributes (the store pouches' keys: pouches.lua refuses ground, mail, trade, the player market and other
 	-- players' containers for chaos_storebound; engine patch 0009: NPCs never buy a chaos_locked item, the trash

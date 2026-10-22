@@ -394,6 +394,30 @@ def patch_shop_module(text):
 OWN_DIRS = (os.path.join('scripts', 'chaos'), os.path.join('spells', 'chaos'), os.path.join('monster', 'lua', 'chaos'))
 
 
+AMOUNT_MARK = 'Chaos: potion amount'
+AMOUNT_LOADER = ('if ChaosPotions == nil or ChaosPotions.amount == nil then pcall(dofile, "data/lib/chaos_potions.lua") end -- '
+                 + AMOUNT_MARK + ' (fixed roll + percent of the maximum, potions_config.lua amount)\n')
+AMOUNT_CALL = re.compile(r'doTargetCombat\(\s*player\s*,\s*target\s*,\s*(COMBAT_HEALING|COMBAT_MANADRAIN)\s*,\s*'
+                         r'potion\.(health|mana)\[1\]\s*,\s*potion\.\2\[2\]\s*\)')
+
+
+def patch_potion_amounts(text):
+    """the stock potion script's health and mana rolls -> ChaosPotions.amount (owner 2026-10-22: a fixed amount + a
+    percent of the maximum, so potions keep up with the level); (new text, number of calls changed)"""
+    if AMOUNT_MARK in text:
+        return text, 0
+
+    def call(m):
+        kind = m.group(2)
+        return ('doTargetCombat(player, target, %s, (function() local v = (ChaosPotions and ChaosPotions.amount) and '
+                'ChaosPotions.amount(player, target, "%s", potion.%s, potion.level) or math.random(potion.%s[1], '
+                'potion.%s[2]) return v, v end)())' % (m.group(1), kind, kind, kind, kind))
+    new, n = AMOUNT_CALL.subn(call, text)
+    if n == 0:
+        return text, 0
+    return AMOUNT_LOADER + new, n
+
+
 def base_lua_files(data_dir):
     out = []
     for sub in ('actions', 'scripts', 'creaturescripts', 'movements', 'talkactions', 'globalevents', 'npc'):
@@ -465,6 +489,17 @@ def main(argv=None):
                  % (len(sellers), added, removed, deposits))
     if not sellers:
         errors.append('npc: no NPC sells the health or mana potion (7618 / 7620): nobody would sell the Everfull potions')
+
+    pot = os.path.join(data_dir, 'actions', 'scripts', 'other', 'potions.lua')
+    if os.path.exists(pot):
+        t = changed.get(pot, read(pot))
+        new, k = patch_potion_amounts(t)
+        if new != t:
+            changed[pot] = new
+        notes.append('potions.lua: %d potion roll(s) -> fixed + percent of the maximum' % k if k
+                     else 'potions.lua: potion amounts already patched')
+        if k == 0 and AMOUNT_MARK not in t:
+            errors.append('potions.lua: no doTargetCombat(... potion.health[1], potion.health[2]) to patch')
 
     mt = read(modules)
     new_mt, mnote = patch_shop_module(mt)

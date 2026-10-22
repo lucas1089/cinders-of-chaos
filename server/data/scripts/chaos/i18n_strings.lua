@@ -2656,8 +2656,8 @@ return {
 			"+porcentagem de dano arcano, até +150 percent junto com todos os elementos.",
 		["+percent water damage, up to +150 percent together with all elements."] =
 			"+porcentagem de dano de água, até +150 percent junto com todos os elementos.",
-		["+percent healing done by your heal spells."] =
-			"+porcentagem de cura feita pelas suas magias de cura.",
+		["+percent healing done by your heal spells and potions (mana potions too)."] =
+			"+porcentagem de cura feita pelas suas magias de cura e poções (as de mana também).",
 		["+percent life drain damage."] =
 			"+porcentagem de dano de life drain.",
 		["+percent mana drain damage."] =

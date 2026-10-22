@@ -785,7 +785,7 @@ names it here and in `chaos_constants.lua` (or its own `*_config.lua`).
 | 7102400 - 7102409 | time-friendly progression (`catchup_config.lua` `storage`): +0 rested pool (centi-minutes), +1 day of the last low stamina notice, +2 the returning boost this character was welcomed for; +3 bounty rerolls held (`bounty_config.lua` `rerollStorage`), +4 kill task board rerolls held, +5 the task day of +6, +6 the board rerolls used that day (`bestiary_config.lua` `rerollStorage`); +7..9 free |
 | 7102460 - 7102469 | Candlemarks (`candlemarks_config.lua` `storage`): +0 the id of the last Candlemark purchase delivered to the character (the crash-safe delivery mark); +1..9 free |
 | 7102490 - 7102499 | rarity migration (`rarity_migrate.lua`): +0 the version of the walk this character had; +1..9 free |
-| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1..9 free |
+| 7102480 - 7102489 | potions (`potions_config.lua` `storage`): +0 the Everfull potions were given (kit or login grant); +1 the tree's Healing percent for the potion scripts; +2..9 free |
 | 7102800 - 7102810 | Haunted Harvest (`harvest_event_config.lua` `storage`): +0 the day, +1 hollow candy from pumpkins that day, +2 the day of the boss's first-kill candy; +3..9 free; 7102810 the GLOBAL forced state (0 window, 1 open, 2 shut) |
 | 7109990 - 7109992 | spell supports: cast context and Reprisal (`data/lib/chaos_supports_config.lua`) |
 | 7110000 - 7111999 | spell supports: sockets per spell id (base + spell id * 4 + 0..3) |
@@ -4325,6 +4325,16 @@ Owner request 2026-10-16: "Remove the potion flasks and make the first pots infi
 - **Existing stock potions stay consumables.** Stacks of Health / Mana Potions are not converted: monsters, NPCs, the
   mentor shop and the milestone gifts still hand them out, so a login conversion would fight every source. They are
   still drunk and used up as before, and still sell to NPCs. The Everfull copies sit next to them.
+- **Amount: fixed + percent** (owner 2026-10-22: "quanto mais lvl o personagem tem, menos as pots healam. façam elas
+  healarem uma quantidade fixa + uma porcentagem. e elas também são afetadas por healing da skill tree"). Every health and
+  mana potion gives its own roll (the fixed part) + a percent of the target's maximum health or mana: 3% + 0.01% per
+  level the potion needs, at most 10% (`potions_config.lua` `amount`; health potion 3%, great 3.8%, ultimate 4.3%,
+  level 200 5%, 500 8%, 700 10%). The tree's Healing (`incrementHealth`) raises both: health through the heal event like
+  every heal, mana in `ChaosPotions.amount` from the drinker's storage 7102481 (the tree writes it at every rebuild;
+  the potion script runs in the actions' Lua state). `install_potions.py` rewrites the stock script's two
+  `doTargetCombat(... potion.health[1], potion.health[2])` calls (marker "Chaos: potion amount", a loader line on top;
+  it falls back to the stock roll when the library cannot load); the Everfull potions use the same rule. Tests:
+  `tests/potions_test.lua`, `tools/install_potions_test.py`.
 - **Install:** `tools/install_potions.py DATA_DIR [--dry-run]` (step `potions` of `install_all.py`, after `runes`, before
   `itemprices`; idempotent; `items.otb.bak` keeps the original; exit 1 with nothing written when the ShopModule hook
   cannot be placed or no potion seller is found). `tools/gen_item_prices.py` marks both ids `bound` (never priced).

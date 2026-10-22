@@ -126,6 +126,8 @@ local function mkPlayer(id, lastLogin)
 	function p:getStorageValue(k) return self.st[k] or -1 end
 	function p:setStorageValue(k, v) self.st[k] = v end
 	function p:getLastLoginSaved() return self.last end
+	function p:getMaxHealth() return 1000 end
+	function p:getMaxMana() return 2000 end
 	function p:sendTextMessage(_, text) self.msgs[#self.msgs + 1] = text end
 	function p:say(text) self.said[#self.said + 1] = text end
 	function p:getCondition(kind) return self.conds[kind] end
@@ -167,7 +169,8 @@ heals, created = {}, {}
 eq(drink.onUse(ann, pot, {}, ann, {}, true), true, "drinks")
 eq(#heals, 1, "one heal")
 eq(heals[1].kind, COMBAT_HEALING, "healing")
-eq(heals[1].a .. "-" .. heals[1].b, "125-175", "the health potion's roll")
+check(heals[1].a == heals[1].b and heals[1].a >= 155 and heals[1].a <= 205,
+	"the health potion's roll 125-175 + 3% of 1,000 health")
 eq(heals[1].target, ann, "on the drinker")
 eq(pot.removed, 0, "the Everfull potion is not consumed")
 eq(#created, 0, "no flask")
@@ -351,6 +354,20 @@ else
 	local herbal = stockDrink(gil, 28076)
 	eq(herbal.removed, 1, "a herbalist potion of the fork: consumed")
 	eq(#created, 0, "and no flask from any of them")
+end
+
+-- the amount: fixed roll + percent of the maximum (owner 2026-10-22), tree Healing on top
+do
+	local lo = function(a) return a end
+	eq(K.percent(cfg, 0), 3, "a level 0 potion: 3% of the maximum")
+	eq(K.percent(cfg, 200), 5, "level 200: 5%")
+	eq(K.percent(cfg, 5000), 10, "capped at 10%")
+	eq(K.amount(cfg, {150, 250}, 80, 0, 0, lo), 150, "no pool: the roll alone")
+	eq(K.amount(cfg, {150, 250}, 80, 10000, 0, lo), 530, "great mana potion on 10,000 mana: 150 + 3.8%")
+	eq(K.amount(cfg, {150, 250}, 80, 10000, 20, lo), 636, "and +20% tree Healing")
+	check(K.amount(cfg, {150, 250}, 80, 50000, 0, lo) > K.amount(cfg, {150, 250}, 80, 10000, 0, lo),
+		"a larger pool gets more from the same potion")
+	eq(K.amount(cfg, {75, 75}, 0, 1000, 0), 105, "a fixed roll without rand range")
 end
 
 print(string.format("potions_test: %d checks, %d failures", count, failures))

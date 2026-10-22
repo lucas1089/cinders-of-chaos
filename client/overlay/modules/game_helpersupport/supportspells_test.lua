@@ -421,10 +421,10 @@ w.rate = true
 s = H.pick(st, cfg, w.ctx())
 eq(s and s.id, 234, 'all clear: cast')
 -- mana
-w.mana, w.maxMana = 100, 1000   -- Soulward costs 150
+w.mana, w.maxMana = 60, 1000    -- Soulward costs 90 (150 until the mana cut of 2026-10-22)
 eq(H.pick(st, cfg, w.ctx()), nil, 'not enough mana')
 eq(st.status[234], 'mana', 'status: mana')
-w.mana = 300                     -- 300 - 150 = 15 % < 20 % reserve
+w.mana = 240                     -- 240 - 90 = 15 % < 20 % reserve
 eq(H.pick(st, cfg, w.ctx()), nil, 'the cast would eat the reserve')
 eq(st.status[234], 'reserve', 'status: reserve')
 cfg.reserve = 10

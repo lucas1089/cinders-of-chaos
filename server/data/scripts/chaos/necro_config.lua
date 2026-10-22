@@ -113,15 +113,15 @@ return {
 	-- Raise Dead: raises minions from usable corpses within `radius` of the caster (at most perCast per cast), or one
 	-- from nothing for `nothingManaFactor` x the spell's mana on top. A corpse is usable when it is a monster corpse,
 	-- holds no items (never destroys loot) and belongs to nobody else (corpse owner: the caster, its party, or none).
-	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 60},
+	raiseDead = {radius = 4, perCast = {necromancer = 2, lich = 1, bonelord = 3}, nothingManaFactor = 1.0, mana = 35},
 
 	-- The summon spells (Raise Bone Warrior / Archer / Mage): each creates ONE minion of its kind next to the caster; the
 	-- total cap of the class (minions.classes[].total) decides what happens to the oldest minion. The xml entries
 	-- (spells_chaos.xml) carry level / mana / cooldown; they are repeated here for the tests and the docs.
 	summonSpells = {
-		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 50, cooldownMs = 4000},
-		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss sag", level = 12, mana = 60, cooldownMs = 4000},
-		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 70, cooldownMs = 4000},
+		warrior = {spell = "raiseWarrior", name = "Raise Bone Warrior", words = "vael oss brak", level = 8, mana = 30, cooldownMs = 4000},
+		archer = {spell = "raiseArcher", name = "Raise Bone Archer", words = "vael oss sag", level = 12, mana = 35, cooldownMs = 4000},
+		mage = {spell = "raiseMage", name = "Raise Bone Mage", words = "vael oss mynd", level = 16, mana = 40, cooldownMs = 4000},
 	},
 
 	-- Bone Spear: physical; the creature right behind the target takes `pierce` of it. Formula as mlValues:

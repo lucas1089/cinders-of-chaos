@@ -2624,6 +2624,16 @@ The best set of at most 5 (spell damage per second, 1 target and the 5-dummy pac
 - Not in the numbers: auto attacks, minions, the passive tree, conditions (burns, rots) and runes. On the server a rune a
   factored class uses takes the factor too (its hit is ORIGIN_SPELL); a burn or rot a spell leaves does not.
 
+### Mana cut (2026-10-22; owner: "custo de mana do ranger ainda está alto", "reveja o custo de mana das outras classes também"; computed with rotation_sim.py)
+
+Every spell above 20 mana now costs **60%** of its cost before, rounded to 5 (at least 20): all 110 Chaos spells
+(`spells_chaos.xml`), the stock attack and healing spells the classes keep (`stock_spells.csv`, new `spell_timings.csv`
+rows patched by `patch_spell_timings.py`) and the Necromancer's raise spells (`necro_config.lua`: Raise Dead 35, Bone
+Warrior / Archer / Mage 30 / 35 / 40). The 2 s level 8 fillers (6-20 mana) stay. Cooldowns and damage are unchanged.
+The stock support spells the classes keep (Ward of the Mind and the like) keep their base numbers. The cost tables
+below show the costs before the cut; each is now round(x 0.6 / 5) x 5. The Ranger line's best set at level 300 spends
+62 mana a second instead of 104: with the level regeneration it is paid as it goes from about level 650.
+
 ### Fixed spell costs (2026-10-21; owner: "Mas o custo de mana das skills ainda tá escalando com o level do char"; computed with rotation_sim.py, not measured in game)
 
 Reports: the owner (2026-10-21) and a beta tester (2026-10-20: "the mana cost scales too, it's not fixed per skill. One
