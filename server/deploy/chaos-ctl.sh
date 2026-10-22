@@ -79,6 +79,19 @@
 #                               the run also writes its report next to it, run-*-report.txt; the 20 newest runs are kept)
 #   testers cleanup [--yes]     lists (or with --yes deletes) the tester accounts, characters and every row of them;
 #                               stops the bots first and waits 2 minutes after a stop (a character in a fight stays in game)
+#   vps [info]                  key=value lines: host, os, kernel, uptime, load, cpus, mem_total_mb, mem_used_mb,
+#                               disk_total_gb, disk_used_gb, disk_free_gb (of /), upgrades (packages, -1 unknown),
+#                               reboot_required, reboot_at (a planned reboot, empty when none)
+#   vps upgrade                 apt-get update and upgrade in the background (config files kept),
+#                               log CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log
+#   vps upgrade-log [N]         the last N lines (default 60, at most 500) of that log
+#   vps reboot MINUTES          reboots the machine in MINUTES (1 to 60): players are warned and the game is saved first
+#   vps reboot-cancel           cancels a planned reboot
+#   services                    every chaos-* unit, one per line: NAME ACTIVE ENABLED (timers too)
+#   service NAME start|stop|restart
+#                               a chaos-* unit (NAME like chaos-helpai or chaos-backup.timer); the game server too
+#   service-log NAME [N]        the last N lines (default 60, at most 500) of that unit's log file (its
+#                               StandardOutput=append: file) or of the journal
 #
 # Settings, defaults for the standard layout: CHAOS_UNIT chaos-server, CHAOS_ROOT /opt/chaos,
 # CHAOS_SERVER_DIR $CHAOS_ROOT/server, CHAOS_REPO $CHAOS_ROOT/repo, CHAOS_ENV /etc/chaos/chaos.env,
@@ -93,7 +106,7 @@
 # lucas1089/cinders-of-chaos, CHAOS_KIT_STATE /var/lib/chaos/kit-update, CHAOS_BOOT_TIMEOUT 900, CHAOS_DL_DIR
 # $CHAOS_SITE_DIR/dl, CHAOS_SITE_ENV /etc/chaos/site.env; CHAOS_SITE_LOG /var/log/chaos/site-install.log. For testers:
 # CHAOS_TESTER_KEY /etc/chaos/tester-client-key, CHAOS_TESTER_STATE /var/lib/chaos/testers, CHAOS_TESTER_LOG
-# /var/log/chaos/testers.log.
+# /var/log/chaos/testers.log. For vps: CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log.
 # They come from /etc/chaos/ctl.conf (server/deploy/ctl.conf.example): simple KEY=VALUE lines, only those keys, read
 # only when the file is owned by root (or by the user running the script) and not writable by group or others. It is
 # never sourced. The environment wins over the file, but sudo drops the environment, so the app (which runs this through
@@ -116,7 +129,7 @@ CONF_KEYS=" CHAOS_UNIT CHAOS_ROOT CHAOS_SERVER_DIR CHAOS_REPO CHAOS_ENV CHAOS_LO
 CHAOS_PID_FILE CHAOS_DB_SOCKET CHAOS_MYSQL CHAOS_BACKUP_DIR CHAOS_PUBLISH_LOG CHAOS_SITE_DIR CHAOS_UPDATE_KEY \
 CHAOS_UPDATE_PUBLIC CHAOS_UPDATE_REPO CHAOS_UPDATE_URL CHAOS_WORK_DIR CHAOS_KIT_DIR CHAOS_UPDATE_BRANCH \
 CHAOS_RELEASE_REPO CHAOS_KIT_STATE CHAOS_BOOT_TIMEOUT CHAOS_DL_DIR CHAOS_SITE_ENV CHAOS_SITE_LOG CHAOS_TESTER_KEY \
-CHAOS_TESTER_STATE CHAOS_TESTER_LOG "
+CHAOS_TESTER_STATE CHAOS_TESTER_LOG CHAOS_VPS_LOG "
 declare -A CFG=()
 # KEY=VALUE, optional "" or '' around the value, # comments; a value is a path or a unit name (no spaces, no $ or `)
 read_conf() {
@@ -179,6 +192,7 @@ WORKDIR=$(setting CHAOS_WORK_DIR /var/tmp)
 TKEY=$(setting CHAOS_TESTER_KEY /etc/chaos/tester-client-key)
 TSTATE=$(setting CHAOS_TESTER_STATE /var/lib/chaos/testers)
 TLOG=$(setting CHAOS_TESTER_LOG /var/log/chaos/testers.log)
+VLOG=$(setting CHAOS_VPS_LOG /var/log/chaos/vps-upgrade.log)
 if [ -z "$MYSQL" ]; then
   for c in mysql mariadb "$ROOT/mariadb/bin/mariadb"; do
     command -v "$c" >/dev/null 2>&1 && { MYSQL=$c; break; }
@@ -323,6 +337,9 @@ error_report() {  # MODE (current|all) MAX SINCE (the unit's start time, the dat
       if (mode != "all") printf "@older %d\n", older
     }'
 }
+
+# a chaos-* unit name, as the owner may name it (chaos-helpai, chaos-backup.timer); the configured game unit too
+unit_ok() { [[ $1 =~ ^chaos-[a-z0-9-]{1,40}(\.service|\.timer)?$ ]] || [ "$1" = "$UNIT" ]; }
 
 # ---- tester bots (server/README.md "Tester bots")
 HELPER_FILES=(zz_tester_helper.lua zz_tester_helper_core.lua)
@@ -796,6 +813,106 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
     rm -f "$tmp"
     echo "user $ADMIN ready ($([ "$full" -eq 1 ] && echo 'full sudo' || echo 'sudo for chaos-ctl.sh only')); key installed"
     ;;
+  vps)
+    sub=${1:-info}
+    [ $# -gt 0 ] && shift
+    case $sub in
+      info)
+        [ $# -eq 0 ] || die "vps info"
+        echo "host=$(hostname 2>/dev/null)"
+        os=""
+        [ -r /etc/os-release ] && os=$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-}")
+        echo "os=$os"
+        echo "kernel=$(uname -r)"
+        echo "uptime=$(uptime -p 2>/dev/null | sed 's/^up //')"
+        echo "load=$(cut -d' ' -f1-3 /proc/loadavg 2>/dev/null)"
+        echo "cpus=$(nproc 2>/dev/null)"
+        free -m 2>/dev/null | awk '/^Mem:/ { print "mem_total_mb=" $2; print "mem_used_mb=" $3 }'
+        df -BG -P / 2>/dev/null | awk 'NR == 2 { gsub(/G/, ""); print "disk_total_gb=" $2; print "disk_used_gb=" $3; print "disk_free_gb=" $4 }'
+        up=-1
+        if command -v apt-get >/dev/null 2>&1; then
+          up=$(timeout 60 apt-get -s -o Debug::NoLocking=1 upgrade 2>/dev/null | grep -c '^Inst ') || true
+          [ -n "$up" ] || up=-1
+        fi
+        echo "upgrades=$up"
+        if [ -e /run/reboot-required ]; then echo reboot_required=yes; else echo reboot_required=no; fi
+        at=""
+        [ -r /run/systemd/shutdown/scheduled ] && at=$(sed -n 's/^USEC=//p' /run/systemd/shutdown/scheduled 2>/dev/null \
+          | head -n 1 | awk '{ printf "%d", $1 / 1000000 }')
+        [ -n "$at" ] && at=$(date -d "@$at" '+%F %T' 2>/dev/null)
+        echo "reboot_at=$at"
+        ;;
+      upgrade)
+        [ $# -eq 0 ] || die "vps upgrade"
+        command -v apt-get >/dev/null 2>&1 || die "no apt-get on this machine"
+        if [ -r "$VLOG.pid" ] && p=$(head -c 20 "$VLOG.pid" | tr -dc 0-9) && [ -n "$p" ] && kill -0 "$p" 2>/dev/null; then
+          die "an upgrade is already running (pid $p): chaos-ctl.sh vps upgrade-log"
+        fi
+        mkdir -p "$(dirname "$VLOG")"
+        vlog=$VLOG  # the inner bash gets the path as $1 (its pid file), the outer one appends to it
+        echo "== $(date '+%F %T') vps upgrade" > "$vlog"
+        chmod 0640 "$VLOG" 2>/dev/null || true
+        # shellcheck disable=SC2016 # expanded by the inner bash
+        setsid bash -c 'echo $$ > "$1.pid"
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update && apt-get -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold upgrade
+          rc=$?; echo "== $(date "+%F %T") done (exit $rc)"; [ -e /run/reboot-required ] && echo "== a reboot is needed"
+          rm -f "$1.pid"' _ "$VLOG" >> "$vlog" 2>&1 < /dev/null &
+        echo "started (apt-get update and upgrade); follow it with: chaos-ctl.sh vps upgrade-log"
+        ;;
+      upgrade-log)
+        tail -n "$(lines_arg "${1:-60}")" "$VLOG" 2>&1
+        ;;
+      reboot)
+        m=${1:-}
+        { num "$m" && [ "$m" -ge 1 ] && [ "$m" -le 60 ]; } || die "vps reboot MINUTES (1 to 60)"
+        [ $# -eq 1 ] || die "vps reboot MINUTES"
+        if [ -d "$SERVER" ]; then
+          spool "broadcast The server machine restarts in $m minute(s). Please log out in a safe place." >/dev/null || true
+        fi
+        if p=$(engine_pid); then kill -USR1 "$p" 2>/dev/null || true; fi
+        shutdown -r "+$m" "chaos-ctl: reboot in $m minute(s)" 2>&1 || die "shutdown failed"
+        echo "reboot planned in $m minute(s); players warned, game saved. Cancel: chaos-ctl.sh vps reboot-cancel"
+        ;;
+      reboot-cancel)
+        [ $# -eq 0 ] || die "vps reboot-cancel"
+        shutdown -c 2>&1 || die "shutdown -c failed"
+        if [ -d "$SERVER" ]; then spool "broadcast The machine restart was cancelled." >/dev/null || true; fi
+        echo "planned reboot cancelled"
+        ;;
+      *) die "vps [info] | upgrade | upgrade-log [N] | reboot MINUTES | reboot-cancel" ;;
+    esac
+    ;;
+  services)
+    [ $# -eq 0 ] || die "services"
+    systemctl list-unit-files --no-legend --no-pager 'chaos-*' "$UNIT.service" 2>/dev/null \
+      | awk '{ print $1, $2 }' | sort -u | while read -r u en; do
+        [ -n "$u" ] || continue
+        case $u in *@*) continue ;; esac
+        printf '%s %s %s\n' "$u" "$(systemctl is-active "$u" 2>/dev/null | head -n 1)" "$en"
+      done
+    ;;
+  service)
+    name=${1:-} act=${2:-}
+    { [ $# -eq 2 ] && unit_ok "$name"; } || die "service NAME start|stop|restart (NAME: a chaos-* unit, see services)"
+    case $act in start|stop|restart) ;; *) die "service NAME start|stop|restart" ;; esac
+    [ "$(systemctl show "$name" -p LoadState --value 2>/dev/null)" = loaded ] || die "no such unit: $name (see services)"
+    systemctl "$act" "$name" || die "$act $name failed"
+    echo "$name: $act done ($(systemctl is-active "$name" 2>/dev/null | head -n 1))"
+    ;;
+  service-log)
+    name=${1:-}
+    unit_ok "$name" || die "service-log NAME [N] (NAME: a chaos-* unit, see services)"
+    n=$(lines_arg "${2:-60}")
+    f=$(systemctl show "$name" -p StandardOutput --value 2>/dev/null | sed -n 's/^append://p; s/^file://p' | head -n 1)
+    if [ -n "$f" ] && [ -r "$f" ]; then
+      echo "== $f"
+      tail -n "$n" "$f"
+    else
+      echo "== journal of $name"
+      journalctl -u "$name" -n "$n" --no-pager 2>&1
+    fi
+    ;;
   testers)
     sub=${1:-status}
     [ $# -gt 0 ] && shift
@@ -902,8 +1019,9 @@ print("pbkdf2-sha256$%d$%s$%s" % (n, base64.b64encode(salt).decode(), base64.b64
       log)
         n=${1:-200}
         num "$n" || die "testers log [N]"
-        [ "$n" -ge 1 ] && [ "$n" -le 5000 ] || die "testers log N: 1 to 5000"
-        f=$(ls -1 "$TSTATE"/runs/run-*.log 2>/dev/null | sort | tail -n 1)
+        { [ "$n" -ge 1 ] && [ "$n" -le 5000 ]; } || die "testers log N: 1 to 5000"
+        f=""
+        for r in "$TSTATE"/runs/run-*.log; do [ -e "$r" ] && f=$r; done  # the glob sorts: the newest is last
         [ -n "$f" ] || die "no activity log yet (it is written from the next testers start on)"
         echo "== $f ($(wc -l < "$f") lines)"
         tail -n "$n" "$f"

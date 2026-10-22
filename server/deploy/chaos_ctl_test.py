@@ -42,6 +42,8 @@ SYSTEMCTL = '''#!/usr/bin/env bash
 echo "systemctl $*" >> "$STUB/calls"
 case "$*" in
   *LoadState*) if [ -n "${STUB_NOUNIT:-}" ]; then echo not-found; else echo loaded; fi ;;
+  *StandardOutput*) [ -n "${STUB_SVCLOG:-}" ] && echo "append:$STUB_SVCLOG" || echo journal ;;
+  list-unit-files*) printf 'chaos-backup.timer enabled\nchaos-helpai.service enabled\nchaos-server.service enabled\n' ;;
   is-active*) if [ -n "${STUB_NOUNIT:-}" ]; then echo inactive; exit 4; else echo active; fi ;;
   show*) echo "Tue 2026-10-20 06:00:01 UTC" ;;
   *) [ -z "${STUB_NOUNIT:-}" ] || { echo "Failed to $1 $2.service: Unit $2.service not found." >&2; exit 5; } ;;
@@ -59,6 +61,14 @@ case "$*" in
   *chaos_admin_log*) printf '2026-10-21 10:00\\tGma\\tplayers.kick\\tBob\\tok\\tdone\\n' ;;
   *COUNT*) echo 7 ;;
   *players_online*) printf 'Bob\\t120\\t3\\n' ;;
+esac
+'''
+RECORD = '''#!/usr/bin/env bash
+echo "$(basename "$0") $*" >> "$STUB/calls"
+case "$(basename "$0") $*" in
+  "apt-get -s"*) printf 'Inst libfoo [1] (2 Debian)\nInst bar [3] (4 Debian)\nConf libfoo\n' ;;
+  apt-get*) echo "stub apt-get $*" ;;
+  journalctl*) echo "journal line" ;;
 esac
 '''
 NOOP = '''#!/usr/bin/env bash
@@ -84,7 +94,8 @@ def main():
         os.makedirs(stub)
         os.makedirs(server)
         for name, body in (('systemctl', SYSTEMCTL), ('mysql', MYSQL), ('kitmysql', MYSQL), ('adduser', NOOP),
-                           ('visudo', NOOP), ('install', NOOP)):
+                           ('visudo', NOOP), ('install', NOOP), ('apt-get', RECORD), ('shutdown', RECORD),
+                           ('journalctl', RECORD)):
             p = os.path.join(stub, name)
             with open(p, 'w') as f:
                 f.write(body)
@@ -316,6 +327,53 @@ def main():
             out = dict(l.split('=', 1) for l in run('status', extra=extra).stdout.splitlines() if '=' in l)
             check(out.get('errors') == '1', '%s status after a clear: %r' % (name, out.get('errors')))
         check(run('errors', 'clear', 'x').returncode != 0, 'errors clear takes nothing more')
+
+        # ---- vps, services, service, service-log (2026-10-22)
+        out = dict(l.split('=', 1) for l in run('vps').stdout.splitlines() if '=' in l)
+        for k in ('host', 'kernel', 'load', 'cpus', 'mem_total_mb', 'disk_free_gb', 'upgrades', 'reboot_required',
+                  'reboot_at'):
+            check(k in out, 'vps info: %s' % k)
+        check(out.get('upgrades') == '2', 'vps info: the pending packages: %r' % out.get('upgrades'))
+        vlog = os.path.join(tmp, 'vps-upgrade.log')
+        r = run('vps', 'upgrade', extra={'CHAOS_VPS_LOG': vlog})
+        check(r.returncode == 0 and 'started' in r.stdout, 'vps upgrade: ' + r.stdout + r.stderr)
+        for _ in range(50):
+            if os.path.exists(vlog) and 'done (exit 0)' in open(vlog).read():
+                break
+            time.sleep(0.1)
+        text = open(vlog).read()
+        check('stub apt-get update' in text and 'stub apt-get -y' in text and 'force-confold' in text
+              and 'done (exit 0)' in text, 'vps upgrade: update, then upgrade keeping config files: ' + text)
+        check(not os.path.exists(vlog + '.pid'), 'vps upgrade: the pid file is gone when it ends')
+        r = run('vps', 'upgrade-log', '5', extra={'CHAOS_VPS_LOG': vlog})
+        check('done (exit 0)' in r.stdout, 'vps upgrade-log: ' + r.stdout)
+        before = spool()
+        r = run('vps', 'reboot', '5')
+        check(r.returncode == 0 and 'shutdown -r +5' in calls(), 'vps reboot 5: ' + r.stdout + r.stderr)
+        check(spool()[len(before):].startswith('broadcast The server machine restarts in 5 minute(s)'),
+              'vps reboot: players are warned: %r' % spool()[len(before):])
+        for bad in (('vps', 'reboot'), ('vps', 'reboot', '0'), ('vps', 'reboot', '61'), ('vps', 'reboot', '5;x'),
+                    ('vps', 'nope')):
+            check(run(*bad).returncode != 0, 'refused: %r' % (bad,))
+        r = run('vps', 'reboot-cancel')
+        check(r.returncode == 0 and 'shutdown -c' in calls(), 'vps reboot-cancel: ' + r.stdout + r.stderr)
+        r = run('services')
+        check(r.stdout.splitlines() == ['chaos-backup.timer active enabled', 'chaos-helpai.service active enabled',
+                                        'chaos-server.service active enabled'], 'services: ' + r.stdout + r.stderr)
+        r = run('service', 'chaos-helpai', 'restart')
+        check(r.returncode == 0 and 'systemctl restart chaos-helpai' in calls(), 'service restart: ' + r.stdout + r.stderr)
+        for bad in (('service', 'sshd', 'stop'), ('service', 'chaos-helpai', 'enable'), ('service', 'chaos-x;rm', 'stop'),
+                    ('service', '../chaos-x', 'stop'), ('service', 'chaos-helpai'), ('service-log', 'nginx')):
+            check(run(*bad).returncode != 0, 'refused: %r' % (bad,))
+        check('systemctl stop sshd' not in calls() and 'enable chaos' not in calls(), 'a refused service runs nothing')
+        svclog = os.path.join(tmp, 'helpai.log')
+        with open(svclog, 'w') as f:
+            f.write('\n'.join('helpai %d' % i for i in range(30)) + '\n')
+        r = run('service-log', 'chaos-helpai', '3', extra={'STUB_SVCLOG': svclog})
+        check(r.stdout.splitlines()[1:] == ['helpai 27', 'helpai 28', 'helpai 29'], 'service-log: its file: ' + r.stdout)
+        r = run('service-log', 'chaos-backup.timer')
+        check('journal line' in r.stdout and 'journalctl -u chaos-backup.timer -n 60' in calls(),
+              'service-log: the journal without a file: ' + r.stdout)
 
         # ---- the settings file (/etc/chaos/ctl.conf): sudo drops the environment, so the app only sees this file
         def status(extra=None):
