@@ -140,6 +140,18 @@ eq(T.guard_build('clientGuardBuilds = "14, 15,17"\nclientGuardManifest = "/m.jso
 eq(T.guard_build('clientGuardBuilds = "12 13"\n', reader), 13, 'the newest listed build')
 eq(T.guard_build('clientGuardManifest = os.getenv("X") or ""\n', reader), 1, 'an expression is no path')
 
+# the login key: rsaKeyFile as the engine reads it (patch 0046), not always key.pem
+PROD = 'rsaKeyFile = os.getenv("CHAOS_RSA_KEY_FILE") or "key.pem"\n'
+eq(T.login_key_file('', '/srv', {}), ('/srv/key.pem', False), 'no setting: key.pem of the server folder')
+eq(T.login_key_file(PROD, '/srv', {'CHAOS_RSA_KEY_FILE': '/etc/chaos/rsa/login.pem'}),
+   ('/etc/chaos/rsa/login.pem', True), 'the chaos.env key')
+eq(T.login_key_file(PROD, '/srv', {'CHAOS_RSA_KEY_FILE': ' /k/new.pem , /k/old.pem'}), ('/k/new.pem', True),
+   'a rotation: the first key')
+eq(T.login_key_file(PROD, '/srv', {'CHAOS_RSA_KEY_FILE': ''}), ('/srv/key.pem', False), 'empty env: key.pem')
+eq(T.login_key_file(PROD, '/srv', {}), ('/srv/key.pem', False), 'no env: key.pem')
+eq(T.login_key_file('rsaKeyFile = "keys/a.pem"\n', '/srv', {}), ('/srv/keys/a.pem', True), 'a relative path')
+eq(T.login_key_file('-- rsaKeyFile = "/x.pem"\n', '/srv', {}), ('/srv/key.pem', False), 'a comment is no setting')
+
 tmp = tempfile.mkdtemp()
 key = os.path.join(tmp, 'key')
 

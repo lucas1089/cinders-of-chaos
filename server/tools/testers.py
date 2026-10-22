@@ -151,6 +151,27 @@ def lua_setting_string(config_text, name):
     return m.group(1) if m else ''
 
 
+def login_key_file(config_text, server_dir, env=None):
+    """the first file of rsaKeyFile as the engine reads it (src-patches/0046): a plain string, or
+    os.getenv("CHAOS_RSA_KEY_FILE") or "x" (prod_config.py) read from ENV (chaos-ctl.sh loads chaos.env); empty means
+    key.pem. A relative path is under SERVER_DIR, as the engine starts there. Returns (path, configured)"""
+    env = os.environ if env is None else env
+    text = re.sub(r'--[^\n]*', '', config_text or '')
+    value, configured = '', False
+    m = re.search(r'^\s*rsaKeyFile\s*=\s*([^\n]*)', text, re.M)
+    if m:
+        expr = m.group(1)
+        g = re.match(r'\s*os\.getenv\(\s*"(\w+)"\s*\)(?:\s*or\s*"([^"\n]*)")?', expr)
+        if g:
+            value = (env.get(g.group(1)) or '').strip() or (g.group(2) or '')
+        else:
+            value = lua_setting_string(config_text, 'rsaKeyFile')
+        configured = True
+    first = value.split(',')[0].strip() or 'key.pem'
+    configured = configured and first != 'key.pem'
+    return (first if os.path.isabs(first) else os.path.join(server_dir, first)), configured
+
+
 def manifest_floor(text):
     """min_package of an updater manifest (an envelope with JSON inside a JSON string), the same reading as the
     engine's ClientGuard::manifestFloor (src-patches/0021); None when absent"""
@@ -1004,8 +1025,15 @@ def run(a):
     if not entries:
         sys.exit('no testers in %s: run setup first' % state_path(a.state))
     entries = entries[:min(a.count or len(entries), TC.MAX_BOTS)]
-    if a.rsa_key == '' and os.path.exists(os.path.join(a.server_dir, 'key.pem')):
-        a.rsa_key = os.path.join(a.server_dir, 'key.pem')
+    if a.rsa_key == '':
+        # the login key the server really uses (rsaKeyFile, patch 0046), not key.pem: with another key every login block
+        # is unreadable and the server closes the connection without a word
+        path, configured = login_key_file(cfg, a.server_dir)
+        if os.path.exists(path):
+            a.rsa_key = path
+        elif configured:
+            sys.exit('the login key of rsaKeyFile is missing: %s' % path)
+    print('login key %s' % (a.rsa_key or 'the standard open-server key'), flush=True)
     stamp = time.strftime('%Y%m%d-%H%M%S')
     a.activity = os.path.join(a.state, 'runs', 'run-%s.log' % stamp)
     prune_runs(os.path.join(a.state, 'runs'), KEEP_RUNS - 1)

@@ -6337,6 +6337,10 @@ It must be 64 hex digits, owned by root, mode 0600. It never goes on a command l
 The bots announce the newest client build the guard accepts: the highest of `clientGuardBuilds` at or above the
 `min_package` of `clientGuardManifest` (the engine's `ClientGuard::gateReason` refuses anything else), else that
 `min_package`, else 1. `testers.py run` prints it.
+The login block is encrypted with the key the engine really uses: the first file of `rsaKeyFile` (patch 0046), with
+`CHAOS_RSA_KEY_FILE` from chaos.env (chaos-ctl.sh loads it), else `key.pem` of the server folder. Before 2026-10-22 the
+bots always took `key.pem`: with our own key the server could not read the block and closed every login without a
+message at "waiting for the character list". `testers.py run` prints the key file it uses (only the path).
 `CHAOS_TESTER_KEY` in ctl.conf names another file.
 
 ```
