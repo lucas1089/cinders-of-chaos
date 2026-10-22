@@ -521,6 +521,56 @@ print(reg.id, first, #got, gold, last)
         ok(False, 'install: an action id clash stops it')
     except PL.PlaceError as e:
         ok('action id' in str(e), 'install: an action id clash stops it')
+    os.remove(other)
+    # a batch of new areas: a clash between two of them is found before anything is installed (a dry run too)
+    PL.check_batch([a_dir], srv)
+    ok(True, 'check_batch: one area and its own installed script pass')
+    twin = os.path.join(tmp, 'twin')
+    tdir = os.path.join(twin, 'data', 'scripts', 'chaos_areaplan')
+    os.makedirs(tdir)
+    own = open(os.path.join(a_dir, 'data', 'scripts', 'chaos_areaplan', 'sunfallen_temple_chests.lua')).read()
+    open(os.path.join(tdir, 'twin_chests.lua'), 'w').write(own.replace('action:aid(', 'action:aid(1'))
+    srv2 = os.path.join(tmp, 'srv2')
+    os.makedirs(os.path.join(srv2, 'data'))
+    try:
+        PL.check_batch([a_dir, twin], srv2)
+        ok(False, 'check_batch: a storage shared by two new areas stops it')
+    except PL.PlaceError as e:
+        ok('shares storage' in str(e), 'check_batch: a storage shared by two new areas stops it')
+    ok(not os.path.exists(os.path.join(srv2, 'data', 'scripts')), 'check_batch: nothing written')
+
+# the areas install_content_areas.py places together (plans, chronicle, rooms): one chest action id per area, one
+# storage per chest quest, and every area 10+ tiles from every other in x or y, whatever the floor (docs/MAP_GUIDE.md
+# "Content plans"; the hall fill of 2026-10-22 brought 41 plans and two storage clashes the install found late)
+placed = []
+for sub in ('plans', 'chronicle', 'rooms'):
+    d = os.path.join(HERE, 'areaplan', sub)
+    for f in sorted(os.listdir(d)) if os.path.isdir(d) else []:
+        if f.endswith('.json'):
+            placed.append(json.load(open(os.path.join(d, f), encoding='utf-8')))
+aids, sts, clash = {}, {}, []
+for p in placed:
+    if p.get('chests'):
+        a = C.chest_action(p)
+        if a in aids:
+            clash.append('action %d: %s, %s' % (a, aids[a], p['id']))
+        aids[a] = p['id']
+    for c in p.get('chests') or []:
+        s = C.chest_storage(c['quest'])
+        if s in sts:
+            clash.append('storage %d: %s, %s' % (s, sts[s], c['quest']))
+        sts[s] = c['quest']
+ok(not clash, 'placed areas: no shared chest action id or storage %s' % clash[:3])
+near = []
+for i, p in enumerate(placed):
+    ox, oy, w, h = p['origin']['x'], p['origin']['y'], p['size'][0], p['size'][1]
+    for q in placed[i + 1:]:
+        qx, qy, qw, qh = q['origin']['x'], q['origin']['y'], q['size'][0], q['size'][1]
+        gx = max(qx - (ox + w), ox - (qx + qw))
+        gy = max(qy - (oy + h), oy - (qy + qh))
+        if gx < 10 and gy < 10:
+            near.append('%s/%s' % (p['id'], q['id']))
+ok(len(placed) >= 58 and not near, 'placed areas: %d, each 10+ tiles from the others %s' % (len(placed), near[:3]))
 
 print('area planner: %d checks, %d failed' % (checks, fails))
 sys.exit(1 if fails else 0)
