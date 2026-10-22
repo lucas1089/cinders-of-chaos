@@ -2305,7 +2305,7 @@ md5s and manifests.
 - A client on pair 33 or older draws nothing for 38608-38611: ship the new pair with the server change.
 - Previews (before, after, before as the grey shader drew it): scratchpad only. Not run in a client.
 
-## Jewelry looks (pair 35: items 38612-38640, `tools/sprites/gen_jewelry_art.py`, `art_import/jewelry.*`; built 2026-10-22, NOT on windows-assets yet)
+## Jewelry looks (pair 35: items 38612-38640, `tools/sprites/gen_jewelry_art.py`, `art_import/jewelry.*`; built 2026-10-22, on windows-assets 099b9a2, owner approved)
 Owner request 2026-10-22: "use sprites de rings e necklaces dos nossos assets". The 29 loot bases of rings and
 necklaces (server `data/lib/chaos_jewelry.lua` `J.bases`; server/README.md "Rings and necklaces as gear") get their
 own icons.
@@ -2340,11 +2340,10 @@ identical md5s and manifests.
 - `check_pair.py --old`: append-only, `--new-only` 0 errors, 0 warnings; full check 0 errors, 124 warnings (those of
   pair 34).
 - `outfit_anchors.lua` and `info_lifts.lua`: on pair 35 only their dat md5 changes (no new creature; both `--check`
-  pass on pair 35 after the two commands above). They stay on the pair 34 md5 in git for now, because CI checks them
-  against the pair on windows-assets. Regenerate both in the change that publishes pair 35.
+  pass on pair 35 after the two commands above). Regenerated on pair 35 when it was published.
 - `things-1098.tar.xz` (the pair 34 recipe, xz 5.4.5): 94,843,556 bytes, sha256
-  a879b8bb852fe0f92efe524a4bf262aec8bea3ad501c647e4a2bc3743a263b11; unpacks to the md5s above. **Not pushed to
-  windows-assets**: publishing waits for the owner's go-ahead. Until then windows-package.yml still builds pair 34.
+  a879b8bb852fe0f92efe524a4bf262aec8bea3ad501c647e4a2bc3743a263b11; unpacks to the md5s above. On windows-assets 099b9a2 (owner
+  approved 2026-10-22); windows-package.yml builds pair 35.
 - A client on pair 34 or older draws nothing for 38612-38640: ship pair 35 with the server step, or install the server
   with `patch_base_jewelry.py DATA_DIR --stock-looks`.
 - Preview: scratchpad only. Not run in a client.
