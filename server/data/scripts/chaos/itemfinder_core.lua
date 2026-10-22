@@ -464,12 +464,16 @@ function K.lookup(idx, id, cid)
 end
 
 -- the short "where from" of an item tooltip (item_tooltip.lua): the first two sources and, when the item comes only by
--- luck, the best chance per kill. nil for an item without rows.
---   {s = {{k = kind, n = name, v = value text}}, e = {p = chance 0..1, w = "kill" | "legendary" | "boss", m = monster}}
+-- luck, the best chance per kill; and what it is for: the first K.USED_SHOWN products of its "usedin" rows (recipes,
+-- exchanges; one per name, lowest level first) and how many other products there are. nil for an item with neither.
+--   {s = {{k = kind, n = name, v = value text}}, e = {p = chance 0..1, w = "kill" | "legendary" | "boss", m = monster},
+--    u = {n = {product names}, m = how many more (nil: none)}}
+-- u is optional (a client before it ignores it; owner 2026-10-22: "Coloque pra que servem", the Seraphic Charged Stone).
 K.BRIEF = {"drop", "monster", "reward", "craft", "shop", "store", "gamble", "gather"} -- the global drop tables first
 K.SURE = {craft = true, shop = true, gamble = true, gather = true} -- a sure way: no effort line (the store and the
 -- Conquest vendor still show it: "~1 in 400 legendary kills, or 690 tokens")
 K.EFFORT_BELOW = 0.2 -- the effort line shows below this chance per kill (1 in 5)
+K.USED_SHOWN = 2 -- products named on the "Used in" line; the rest is a count
 function K.brief(idx, id, cid)
 	local r = idx and idx.ready and K.find(idx, id, cid)
 	if not r then
@@ -492,10 +496,22 @@ function K.brief(idx, id, cid)
 			end
 		end
 	end
-	if #src == 0 then
+	local used, usedNamed, usedTotal = {}, {}, 0
+	for _, row in ipairs(r.rows.usedin or {}) do
+		local name = tostring(row.n):sub(1, 32)
+		if not usedNamed[name] then
+			usedNamed[name] = true
+			usedTotal = usedTotal + 1
+			if #used < K.USED_SHOWN then
+				used[#used + 1] = name
+			end
+		end
+	end
+	if #src == 0 and #used == 0 then
 		return nil
 	end
-	return {s = src, e = (not sure and best and best.p < K.EFFORT_BELOW) and best or nil}
+	return {s = src, e = (not sure and best and best.p < K.EFFORT_BELOW) and best or nil,
+		u = #used > 0 and {n = used, m = usedTotal > #used and (usedTotal - #used) or nil} or nil}
 end
 
 -- the opcode's dispatch: action, data -> answer action, answer data (nil: nothing to answer)

@@ -243,6 +243,9 @@ do
 	local child = K.brief(idx, 7001)
 	check(child.e and math.abs(child.e.p - 0.1) < 1e-9 and child.e.m == "Dragon", "brief: a rare monster drop names the monster")
 	eq(K.brief(idx, 5001).e, nil, "brief: a crafted item has no effort line")
+	eq(table.concat(b.u.n, "|"), "dragon shield|magic sword", "brief: what it is used in, lowest level first")
+	eq(b.u.m, nil, "brief: no other product")
+	eq(K.brief(idx, 5001).u, nil, "brief: an item used in nothing has no used-in part")
 	local shield = idx.items[5001].rows.craft[1]
 	eq(shield.n, "Mining table", "station name")
 	eq(shield.d, "level 20, 3,000 gold", "recipe detail")
@@ -360,6 +363,66 @@ do
 	eq(K.request(idx2, nil, {}), nil, "no action")
 	a, d = K.request(idx2, "item", "garbage")
 	eq(d.none, true, "garbage data")
+end
+
+-- ---------------------------------------------------------------- what a material is for (K.brief u)
+-- owner 2026-10-22, on the Seraphic Charged Stone that showed only "Drops from": "Coloque pra que servem"
+do
+	local idx, emit = newIndex()
+	S.crafting({
+		armorsmith = {
+			{id = 5001, level = 35, cost = 0, materials = {{id = 9001, count = 3}}},
+			{id = 5002, level = 35, cost = 0, materials = {{id = 9001, count = 5}}},
+			{id = 5002, level = 40, cost = 0, materials = {{id = 9001, count = 9}}}, -- the same product again: one name
+			{id = 2400, level = 35, cost = 0, materials = {{id = 9001, count = 1}}},
+			{id = 2401, level = 10, cost = 0, materials = {{id = 9001, count = 1}}}}
+	}, cfg, emit)
+	K.finish(idx)
+	local b = K.brief(idx, 9001)
+	check(b ~= nil, "brief: an item used in recipes and from nowhere still has a brief")
+	eq(b and #b.s, 0, "brief: no sources")
+	eq(b and b.e, nil, "brief: no effort line")
+	eq(b and table.concat(b.u.n, "|"), "staff|dragon scale mail", "brief: the first two products (lowest level, then name)")
+	eq(b and b.u.m, 2, "brief: two more products (one name counted once)")
+	eq(b and #b.u.n, K.USED_SHOWN, "brief: K.USED_SHOWN products named")
+end
+
+-- the real base recipes as installed (data/items/base_recipes.csv, patch_base_recipes.py): the Seraphic and Dawnforged
+-- stones and emblems are used in their own sets, the Myst ones never in another set's piece
+do
+	local Crafting = {}
+	local f = assert(io.open("data/items/base_recipes.csv", "r"))
+	f:read("*l")
+	for line in f:lines() do
+		local id, count, cost, level, book, mats = line:match("^(%d+),(%d+),(%d+),(%d+),(%w+),(.*)$")
+		if id then
+			local m = {}
+			for n, mid in mats:gmatch("(%d+)x(%d+)") do
+				m[#m + 1] = {id = tonumber(mid), count = tonumber(n)}
+			end
+			Crafting[book] = Crafting[book] or {}
+			table.insert(Crafting[book], {id = tonumber(id), count = tonumber(count), cost = tonumber(cost),
+				level = tonumber(level), materials = m})
+		end
+	end
+	f:close()
+	local SET = {[29869] = "Seraphic Helmet", [29870] = "Seraphic Tabard", [29871] = "Seraphic Greaves",
+		[29872] = "Seraphic Boots", [29873] = "Seraphic Quiver", [29874] = "Seraphic Bleeder", [29875] = "Seraphic Piercer",
+		[29876] = "Seraphic Necklace", [29877] = "Seraphic Ring", [29925] = "Seraphic Emblem"}
+	local idx = K.new(cfg, function(id) return SET[id] or ("item " .. id), id end)
+	S.crafting(Crafting, cfg, function(kind, id, row) return K.add(idx, id, kind, row) end)
+	K.finish(idx)
+	local b = K.brief(idx, 29922)
+	check(b ~= nil and b.u ~= nil, "Seraphic Charged Stone: a used-in part")
+	eq(b and b.u and b.u.n[1], "Seraphic Emblem", "Seraphic Charged Stone: the emblem first (level 30)")
+	eq(b and b.u and b.u.n[2], "Seraphic Bleeder", "Seraphic Charged Stone: then the level 35 pieces by name")
+	eq(b and b.u and b.u.m, 8, "Seraphic Charged Stone: nine pieces and the emblem")
+	for _, mat in ipairs({29922, 29923, 29925, 29926, 29900, 29908, 29909, 29910, 29911, 29912, 29913}) do
+		check(idx.items[mat] and idx.items[mat].rows.usedin, "boss material " .. mat .. " is used in a recipe")
+	end
+	for _, row in ipairs(idx.items[29921].rows.usedin) do
+		check(not (row.l >= 29869 and row.l <= 29890), "the Myst Charged Stone makes no Seraphic or Dawnforged piece: " .. row.l)
+	end
 end
 
 -- ---------------------------------------------------------------- the sources on the real configs

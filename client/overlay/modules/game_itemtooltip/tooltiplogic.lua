@@ -395,7 +395,8 @@ function L.chargesText(ch)
   return tr('Charges: %s', L.int(n))
 end
 
--- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price}; rows {text, color}
+-- the sources block of a tooltip: src = {s = [{k, n, v}], e = {p, w, m}, t = token price, u = used in}; rows
+-- {text, color}
 function L.sourceLines(src)
   local out = {}
   if type(src) ~= 'table' then return out end
@@ -441,7 +442,28 @@ function L.sourceLines(src)
       out[#out + 1] = { text = line, color = C.gold }
     end
   end
+  local used = L.usedInText(src.u)
+  if used then
+    for _, line in ipairs(L.wrap(used, L.WRAP)) do
+      out[#out + 1] = { text = line, color = C.dim }
+    end
+  end
   return out
+end
+
+-- what a material is for (server itemfinder_core.lua K.brief u = {n = {product names}, m = how many more}):
+-- 'Used in: Seraphic Emblem, Seraphic Bleeder +8 more'; nil without products (an older server sends no u)
+function L.usedInText(u)
+  if type(u) ~= 'table' or type(u.n) ~= 'table' then return nil end
+  local names = {}
+  for _, n in ipairs(u.n) do
+    if type(n) == 'string' and n ~= '' then names[#names + 1] = n end
+  end
+  if #names == 0 then return nil end
+  local list = table.concat(names, ', ')
+  local more = math.floor(tonumber(u.m) or 0)
+  if more > 0 then list = tr('%s +%d more', list, more) end
+  return tr('Used in: %s', list)
 end
 
 -- the set block of a set piece (server data/lib/chaos_item_sets.lua S.tooltip): the set and how many of its pieces
