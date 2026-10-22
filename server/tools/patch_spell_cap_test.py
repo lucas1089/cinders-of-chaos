@@ -78,7 +78,7 @@ ORDER = ['Warrior', 'Juggernaut', 'Berserker', 'Ranger', 'Deadeye', 'Beastmaster
 # spells of its own per class after the cap (docs/CLASSES.md "Spell cap")
 PINNED = {'Warrior': 15, 'Juggernaut': 15, 'Berserker': 15, 'Ranger': 15, 'Deadeye': 15, 'Beastmaster': 14,
           'Mystic': 15, 'Elementalist': 14, 'Illusionist': 15, 'Thief': 10, 'Ninja': 13, 'Samurai': 13, 'Monk': 7,
-          'Shadowfist': 10, 'Iron Sage': 11, 'Necromancer': 11, 'Lich': 13, 'Bone Lord': 13, 'Templar': 4,
+          'Shadowfist': 10, 'Iron Sage': 11, 'Necromancer': 12, 'Lich': 13, 'Bone Lord': 13, 'Templar': 4,
           'Inquisitor': 6, 'Sentinel': 7}
 kit = {v: set() for v in ORDER}
 xml = re.sub(r'<!--.*?-->', '', open(os.path.join(SPELLS, 'chaos', 'spells_chaos.xml'), encoding='utf-8').read(), flags=re.S)
