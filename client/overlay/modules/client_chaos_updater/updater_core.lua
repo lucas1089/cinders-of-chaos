@@ -34,6 +34,8 @@ M.DENIED_EXT = {
 }
 M.WINDOWS_RESERVED = { con = true, prn = true, aux = true, nul = true }
 for i = 1, 9 do M.WINDOWS_RESERVED['com' .. i] = true; M.WINDOWS_RESERVED['lpt' .. i] = true end
+-- never raise it: the clients already out refuse a whole manifest with a bigger file, so a bigger file can never
+-- reach them; a sprite file past it ships as shards (base patch 0048, client/MANIFEST.md "Sharded sprites")
 M.MAX_FILE_SIZE = 1024 * 1024 * 1024
 M.MAX_FILES = 50000
 M.DEFAULT_PARALLEL = 8

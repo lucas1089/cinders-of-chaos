@@ -11,6 +11,6 @@ The game client alone, for 64-bit Windows 10 or 11. Nothing is installed.
 
 Notes
   - If Windows SmartScreen warns about an unknown app: "More info", then "Run anyway".
-  - data\things\1098 holds the Cinders of Chaos Tibia.dat and Tibia.spr; keep them, the client cannot start without them.
+  - chaos.pack holds the game data and sprites; keep it next to Chaos.exe, the client cannot start without it.
   - Settings, logs and crash reports are in %APPDATA% (the client's folder there).
   - BUILD_INFO.txt says which commits this client was built from and its client build number.

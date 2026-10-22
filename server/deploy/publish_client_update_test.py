@@ -13,6 +13,8 @@ Encrypted blobs (build 13): the client guard key comes from the environment or t
 CHAOS_ENV; without it nothing is published; every published blob is ciphertext that decrypts to the signed content; a
 packed package (the exe and chaos.pack) is opened with the key of a rotation pair that fits; a development pack, a
 pack of another key and a min_package below 13 are refused; the old plain blobs are removed.
+Sprite shards (pair 37): a single Tibia.spr in a package is published as its shard set (split and verified), a pack
+that holds the shards publishes them as they are, one with both leaves the single file out, a broken spr is refused.
 
 usage: python3 -I server/deploy/publish_client_update_test.py
 """
@@ -31,13 +33,17 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, 'publish_client_update.sh')
 TOOL = os.path.join(HERE, '..', '..', 'client', 'tools', 'make_update_manifest.py')
 sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools'))
+sys.path.insert(0, os.path.join(HERE, '..', '..', 'client', 'tools', 'sprites'))
 import pack_client  # noqa: E402
+import spr_shards  # noqa: E402
 import update_crypt  # noqa: E402
 
 CLIENT_KEY = '7e' * 32   # throwaway client guard keys (never real ones)
 OLD_KEY = '19' * 32
 
 failures = 0
+# what the shard set of spr_bytes() looks like in a manifest (3000 sprites in shards of 1024 or the default 16384)
+SHARDED = {'data/things/1098/Tibia.sprshards', 'data/things/1098/Tibia.000.spr'}
 
 
 def check(cond, label):
@@ -45,6 +51,19 @@ def check(cond, label):
     if not cond:
         failures += 1
         print('FAIL', label)
+
+
+def spr_bytes(count=3000):
+    """a small valid 10.98 .spr (u32 count): every fifth id empty, the rest a short random record"""
+    table, body = [], bytearray()
+    for i in range(count):
+        if i % 5 == 4:
+            table.append(0)
+            continue
+        table.append(8 + 4 * count + len(body))
+        body += b'\xff\x00\xff' + (16).to_bytes(2, 'little') + os.urandom(16)
+    return (bytes.fromhex('03d6bb57') + count.to_bytes(4, 'little') + b''.join(a.to_bytes(4, 'little') for a in table)
+            + bytes(body))
 
 
 INIT = '''Services = {
@@ -59,7 +78,7 @@ INIT = '''Services = {
 '''
 
 
-def make_zip(path, public, url, package=13, build=13, extra=None, links=False, baseline=None):
+def make_zip(path, public, url, package=13, build=13, extra=None, links=False, baseline=None, spr=None):
     with zipfile.ZipFile(path, 'w') as z:
         root = 'CindersOfChaos-Client/'
         line = '' if baseline is None else '    baseline = %d,\n' % baseline
@@ -69,7 +88,7 @@ def make_zip(path, public, url, package=13, build=13, extra=None, links=False, b
         z.writestr(root + 'modules/client_x/x.lua', 'print(1)\n')
         z.writestr(root + 'mods/readme.txt', 'mods\n')
         z.writestr(root + 'data/things/1098/Tibia.dat', os.urandom(4000))
-        z.writestr(root + 'data/things/1098/Tibia.spr', os.urandom(70000))
+        z.writestr(root + 'data/things/1098/Tibia.spr', spr if spr is not None else spr_bytes())
         for name, data in (extra or {}).items():
             z.writestr(name, data)
         if links:
@@ -78,22 +97,30 @@ def make_zip(path, public, url, package=13, build=13, extra=None, links=False, b
             z.writestr(info, '/etc/passwd')
 
 
-def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, package=13, baseline=None):
-    """the layout of a build-13 package: CindersOfChaos-Client/ with Chaos.exe and chaos.pack only"""
+def make_packed_zip(path, tmp, public, url, key_hex=CLIENT_KEY, dev=False, package=13, baseline=None, shards=None):
+    """the layout of a build-13 package: CindersOfChaos-Client/ with Chaos.exe and chaos.pack only. shards: None, a
+    single Tibia.spr (builds 13, 14); 'only', the spr as a shard set (build 15, pair 37); 'both', the two"""
     tree = tempfile.mkdtemp(dir=tmp)
     line = '' if baseline is None else '    baseline = %d,\n' % baseline
     files = {'init.lua': (INIT % (url, public, package, line)).encode(), 'modules/client_x/x.lua': b'print(1)\n',
              'mods/readme.txt': b'mods\n', 'data/things/1098/Tibia.dat': os.urandom(4000),
-             'data/things/1098/Tibia.spr': os.urandom(70000)}
+             'data/things/1098/Tibia.spr': spr_bytes()}
     for rel, data in files.items():
         full = os.path.join(tree, rel)
         os.makedirs(os.path.dirname(full), exist_ok=True)
         open(full, 'wb').write(data)
+    things = os.path.join(tree, 'data', 'things', '1098')
+    if shards:
+        spr_shards.split(os.path.join(things, 'Tibia.spr'), things, per_shard=1024, quiet=True)
+        if shards == 'only':
+            os.remove(os.path.join(things, 'Tibia.spr'))
+    index = (open(os.path.join(things, 'Tibia.sprshards')).read() if shards else None)
     pack = pack_client.encrypt_pack(pack_client.build_zip(tree), bytes.fromhex(key_hex), is_dev=dev)
     with zipfile.ZipFile(path, 'w') as z:
         z.writestr('CindersOfChaos-Client/Chaos.exe', b'MZ' + b'\0' * 100)
         z.writestr('CindersOfChaos-Client/chaos.pack', pack)
     shutil.rmtree(tree)
+    return index
 
 
 class Handler(http.server.SimpleHTTPRequestHandler):
@@ -229,11 +256,22 @@ exec %s "$@"
         check(m['version'] == 3 and m['min_package'] == 13, 'version 3, min_package = client build 13')
         check(m['encryption'] == 'chaos-blob-1' and blobs_ok(), 'encrypted blobs only, they decrypt to the content')
         paths = {f['path'] for f in m['files']}
-        check('modules/client_x/x.lua' in paths and 'data/things/1098/Tibia.spr' in paths, 'modules and the pair')
+        check('modules/client_x/x.lua' in paths and 'data/things/1098/Tibia.dat' in paths, 'modules and the dat')
+        check(SHARDED <= paths and 'data/things/1098/Tibia.spr' not in paths,
+              'the single spr is published as its shard set: ' + ' '.join(sorted(paths)))
+        check('sprites: data/things/1098/Tibia.spr -> shard set' in r.stdout, 'the split is printed')
         check(not any(p.endswith('.exe') or p in ('init.lua', 'BUILD_INFO.txt') for p in paths), 'no exe, no init.lua')
         check('zip: ' in r.stdout and 'sha256 ' in r.stdout, 'size and checksum printed')
         check('check: ok' in r.stdout, 'web server check ok with the right headers: ' + r.stdout)
         check(os.listdir(work) == [], 'the work folder is removed')
+
+        # a single spr that is no valid .spr: refused, nothing published
+        before = open(os.path.join(live, 'manifest.json')).read()
+        badspr = os.path.join(zips, 'badspr.zip')
+        make_zip(badspr, public, url, spr=os.urandom(70000))
+        r = run('--version', '4', badspr)
+        check(r.returncode != 0 and 'cannot split' in r.stderr, 'a broken spr refused: ' + r.stderr)
+        check(open(os.path.join(live, 'manifest.json')).read() == before, 'a broken spr publishes nothing')
 
         # a release tag: the version is the tag's number
         r = run('winpkg-46', extra={'STUB_ZIP': good})
@@ -326,8 +364,8 @@ exec %s "$@"
         m = payload()
         check(m['version'] == 62 and m['min_package'] == 13, 'packed: version 62, min_package 13 from init.lua')
         paths = {f['path'] for f in m['files']}
-        check('modules/client_x/x.lua' in paths and 'data/things/1098/Tibia.spr' in paths
-              and not any(p.endswith(('.exe', '.pack')) for p in paths), 'packed: the tree inside the pack')
+        check('modules/client_x/x.lua' in paths and SHARDED <= paths and 'data/things/1098/Tibia.spr' not in paths
+              and not any(p.endswith(('.exe', '.pack')) for p in paths), 'packed: the tree inside the pack, sharded')
         check(blobs_ok() and not os.path.exists(old_plain), 'packed: ciphertext only, the plain blob removed')
         check(os.listdir(work) == [], 'the decrypted tree is removed with the work folder')
         before = open(os.path.join(live, 'manifest.json')).read()
@@ -343,6 +381,27 @@ exec %s "$@"
         check(r.returncode != 0 and 'is the one that opens this package' in r.stderr, 'a wrong --key-index refused')
         check(unchanged(), 'refused packed runs publish nothing')
         check(os.listdir(work) == [], 'refused packed runs leave no work folder')
+
+        # build 15 (pair 37): the pack already holds the shard set, no single spr; published as it is
+        sharded = os.path.join(zips, 'sharded.zip')
+        index = make_packed_zip(sharded, tmp, public, url, package=15, shards='only')
+        r = run('--version', '64', sharded, extra={'CHAOS_UPDATE_URL': purl})
+        check(r.returncode == 0 and verify() and blobs_ok(), 'a sharded package publishes: ' + r.stdout + r.stderr)
+        m = payload()
+        paths = {f['path']: f['sha256'] for f in m['files']}
+        check(m['min_package'] == 15 and SHARDED <= set(paths) and 'data/things/1098/Tibia.spr' not in paths,
+              'sharded: the shard set, min_package 15')
+        idx = spr_shards.parse_index(index)
+        check(all(paths.get('data/things/1098/' + fn) == sha for _, _, fn, _, sha in idx['shards']),
+              'sharded: the shards as the pack holds them')
+        check('sprites:' not in r.stdout, 'sharded: nothing to split')
+        # a pack with both: the shards are published, the single file is left out
+        both = os.path.join(zips, 'both.zip')
+        make_packed_zip(both, tmp, public, url, package=15, shards='both')
+        r = run('--version', '65', both, extra={'CHAOS_UPDATE_URL': purl})
+        paths = {f['path'] for f in payload()['files']}
+        check(r.returncode == 0 and SHARDED <= paths and 'data/things/1098/Tibia.spr' not in paths
+              and 'next to its shard set' in r.stdout, 'both: shards only: ' + r.stdout + r.stderr)
 
         # base patch 0101: a package's baseline (its release number) is the version of its update, nothing else
         pkg70 = os.path.join(zips, 'pkg70.zip')
