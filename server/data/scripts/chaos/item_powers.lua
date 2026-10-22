@@ -69,7 +69,12 @@ end
 
 -- a monster of the wild (no summon, no pet)
 local function wild(creature)
-	return creature and creature:isMonster() and not creature:getMaster()
+	if not creature or not creature:isMonster() or creature:getMaster() then
+		return false
+	end
+	-- the display monsters of the hunt teleport room are not targets (beta 2026-10-22: Smoldering Aura killed them)
+	local HT = ChaosHuntTeleports
+	return not (HT and HT.isDisplay and HT.isDisplay(creature))
 end
 
 -- the monsters within `radius` of pos (not `skip`), up to `limit`

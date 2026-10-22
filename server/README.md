@@ -15659,7 +15659,7 @@ radius 1; the cells are not PZ, the corridor is) and a teleport to the temple at
 harmless** (owner, 2026-10-16): a monster without a master on a cell row (`room.cellRows`) of floors 5-7 inside
 `display.x` is a display (`ChaosHuntTeleports.isDisplay` / `isDisplaySpot`; Lua cannot read the spawn file's
 `chaoshunt` mark, so the spot is the tag). `onTargetCombat` refuses every hit of it, the engine asks that for melee,
-target and area combat alike. Boss mechanics, the monster tier roll and the treasure goblin skip it. Every slot was taken. The
+target and area combat alike. **Nobody hurts a display either** (beta 2026-10-22: the Smoldering Aura item power killed them): `onTargetCombat` also refuses every hit on it, and direct damage that skips that check (`doTargetCombatHealth` of scripted hits) is dropped by `ChaosHallDisplayGuard` (onHealthChange, registered in `onSpawn` on a display spot; heals pass). Boss mechanics, the monster tier roll, the treasure goblin and the item powers skip it. Every slot was taken. The
 hunts take floor 6 ("More Teleports"), which has no tile around it.
 
 **Install** (`install_all.py` step `contentareas`, after houses and before poi; on its own
