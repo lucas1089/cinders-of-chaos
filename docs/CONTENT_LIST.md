@@ -524,7 +524,8 @@ Owner art in client pair 26 (things_custom26, published 2026-10-15; switch `Chao
 monster files), six store wings and three boss-drop wings (live), 45 desert plants and a waypoint seal for maps and the
 area planner (in its waste kit; to place in the map editor).
 
-Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
+Planned hunting areas (58, in `server/tools/areaplan/plans/`, docs/CONTENT.md; the last 41 are the hall fill of
+2026-10-22):
 
 | Plan | Levels | Biome |
 |---|---|---|
@@ -545,6 +546,47 @@ Planned hunting areas (14, in `server/tools/areaplan/plans/`, docs/CONTENT.md):
 | voidscar_chasm | 1400-1500 | abyss, 2 floors |
 | gravehorn_deeps | 1500-1750 | crypt, 2 floors |
 | duskmarrow_crater | 1750-2000 | lava, 2 floors |
+| gloomtooth_caverns | 500-615 | cave |
+| brackwater_sloughs | 515-630 | swamp |
+| sablemourn_ossuary | 530-645 | crypt |
+| thornmantle_glade | 545-660 | forest |
+| embergut_rift | 560-675 | lava |
+| frostvein_reach | 575-690 | ice |
+| graveknell_catacombs | 590-705 | catacomb |
+| umbral_sink | 605-720 | abyss |
+| cinderscour_barrens | 620-735 | waste |
+| grimlock_vaults | 635-750 | vault |
+| blackmarble_halls | 650-765 | hall |
+| rotbloom_sanctum | 665-780 | sanctum |
+| hollowmaw_grotto | 680-795 | cave |
+| leechwater_fen | 695-810 | swamp |
+| dreadmourn_crypt | 710-825 | crypt |
+| gallowroot_wilds | 725-840 | forest |
+| scorchpit_delve | 740-855 | lava |
+| glacierfang_shelf | 755-870 | ice |
+| bonewright_galleries | 770-885 | catacomb |
+| nightrend_abyss | 785-900 | abyss |
+| sunderstone_wastes | 800-915 | waste |
+| ironwick_treasury | 815-930 | vault |
+| obsidian_colonnade | 830-945 | hall |
+| mildewveil_sanctum | 845-960 | sanctum |
+| deepgrudge_warrens | 860-975 | cave |
+| sorrowfen_marsh | 875-990 | swamp |
+| shroudhallow_tomb | 890-1005 | crypt |
+| hagthorn_weald | 905-1020 | forest |
+| pyreglass_chasm | 920-1035 | lava |
+| rimeblood_glacier | 935-1050 | ice |
+| lanternless_catacombs | 950-1050 | catacomb |
+| scaldmoor_expanse | 1050-1200 | waste |
+| vespergloom_halls | 1150-1300 | hall |
+| wormcoil_depths | 1250-1400 | cave |
+| shiverspine_ridge | 1350-1500 | ice |
+| hushbone_barrows | 1450-1600 | crypt, 2 floors |
+| carrionwood | 1550-1700 | forest |
+| dreadcoffer_vaults | 1625-1775 | vault, 2 floors |
+| paleflame_sanctum | 1700-1850 | sanctum, 2 floors |
+| blightmaw_bog | 1775-1925 | swamp |
+| worldscar_abyss | 1850-2000 | abyss, 2 floors |
 
 Each is four times the first draft (2026-10-14); the four 1000-1500 plans and the two 1500-2000 plans were added the
 same day. Placed, they lift 500-700 from 14 to about 50 parties at once, 700-1000 from 10 to about 46, 1000+ from 0 to

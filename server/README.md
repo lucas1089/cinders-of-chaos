@@ -16063,6 +16063,18 @@ next install (the display spawns follow). `slot` pins one (1 = the westmost nort
 choose). With `tools/hall_hunts.csv` the whole hall is ordered, the base server's teleports too: see "Hall order".
 Tests: `tests/hunt_teleports_test.lua` (core and the engine file against a mock), `tools/install_content_areas_test.py`
 (synthetic map: dry run, grow, place, spawns, places file, second run, refusals, reorder, --only).
+- **Hall fill** (owner, 2026-10-22: "And the hunts of the upper floors? Did we fill all the ones that were
+  missing?"). No: z 6 had 6 hunts on 37 slots, z 5 8 on 18 (dry run on the base map). 41 new plans fill them: 31 on
+  z 6 (bands 500-615 up to 950-1050, 15 levels apart, about 115 wide) and 10 on z 5 (1050-1200 up to 1850-2000, four of
+  them on two floors). They sit in their own block, x 15616-17663, y 14336-15359 (the schema's `origin.x` reaches
+  17663), a grid of 204 tiles. Their monsters are the level-scaled ones of the chaos folder (no new monster); every
+  display monster is 2x2 or smaller. 26 of them have a reward chest (action ids 47960-47999, storages 7101200-7101299,
+  no clash). XP and gold per hour on the pace model (`paceKillsPerHour`, the engine's level factors, coins x 2.7) sit
+  on the curve of the older plans of the same levels: XP within 25% (the furthest, Hexwood Thicket and Voidscar
+  Chasm, are older plans whose monsters sit low in their bands), gold 1.1-2.3 M/h against 1.2-2.0. Install on a
+  copy of the base map: z 7 48 on 48, z 6 37 on 37, z 5 18 on 18, 0 rooms closed, 829,327 tiles added, a second run
+  changes nothing; `check_hunt_returns.py`: 45 base hunts, 0 without a way back, every plan back through its camp
+  portal. Not played in a client.
 - **Assumption:** the base room lives on floors 5-7 above the open ground of z 7, so the new wings of floor 6 hang over
   grass seen from z 7 outside the hall like the rest of the hall's upper floors.
 
@@ -16080,7 +16092,8 @@ west to east (north before south in a column). A floor with too few slots is gro
   (`room.wings`, copied from the room's alcoves of floor 6, 8 modules on each side, `sweep = true`: they take the place
   of the impassable lawn beside the hall, only decoration; `check_swept` refuses a tile with an action id, a unique
   id, a teleport, a sign or contents) hold the content hunts of 200-500 that the floor's rule puts there. On the
-  test copy of the base map: z 7 48 hunts on 48 slots, z 6 6 on 37, z 5 8 on 18.
+  test copy of the base map: z 7 48 hunts on 48 slots, z 6 37 on 37, z 5 18 on 18 (6 on 37 and 8 on 18
+  before the hall fill of 2026-10-22, "Hunt teleports").
 - **Level and band (the rule).** A hunt's level is the weighted median of its monsters' hunting levels (a plan: the
   middle of its `level`); its band, on its sign and label, is the weighted 20th-80th percentile, to 5s. One strong
   monster in a mixed area moves neither.
@@ -16208,6 +16221,7 @@ west to east (north before south in a column). A floor with too few slots is gro
     (group 7) with the room's own.
   - *Rooms without a hunt* ("many unused spawns"). The hall has 103 hunt rooms and 62 hunts (45 base, 17 planned):
     floor 7 48 on 48, floor 6 6 on 37, floor 5 8 on 18, by the owner's level rule; there are no hunts without a room.
+    Since the hall fill (2026-10-22) 103 hunts (45 base, 58 planned) take all 103 rooms, so none is closed.
     A room no hunt takes showed a dead teleport (the ring and sparkle of the alcove, no teleport, no label, no
     display). Now it is closed (`hall.closed`): the alcove's own teleport-row wall piece (29306) on its teleport
     tile, the ring and sparkle (8047, 1421) off, the sign blank; the counter stays behind the wall as a niche. A room a

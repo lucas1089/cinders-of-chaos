@@ -65,8 +65,9 @@ placing an area.
 
 ## Planned hunting areas
 
-Sixteen area-planner plans in `server/tools/areaplan/plans/`, schema `chaos-area-plan/1`. Each validates with no warning,
-compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
+Fifty-eight area-planner plans in `server/tools/areaplan/plans/`: the first 16 here, the 41 of the hall fill below,
+and hollow_crypt, the pair 27 trial area, in docs/CONTENT_LIST.md. Schema `chaos-area-plan/1`. Each validates with
+no warning, compiles with no QA error, has a camp with a protection zone, a loop and decoration at `dense`. CI validates and
 compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content plans".
 
 | Plan | Band | Biome | Monsters | Parties | Chest |
@@ -87,6 +88,54 @@ compiles them with the examples. Placement notes: docs/MAP_GUIDE.md "Content pla
 | voidscar_chasm | 1400-1500 | abyss, 2 floors | Vyrm, Winterstride, Silicron, Thal, Facetis, Rimeshroud Revenant, Cinderskull Reaver; since 2026-10-22 also Veiled Crawler, Maw Grub, Limb Hoarder, Ashveil Hierarch | 14 | voidscar_relic |
 | gravehorn_deeps | 1500-1750 | crypt, 2 floors | Cinderskull Reaver, Bloodantler Fiend, Cinderhorn Juggernaut, Rimeshroud Revenant, Wraithbone Stalker; since 2026-10-22 also Bonepicker, Hollowhorn, Gnawbone Swarm, Oathbroken Colossus | 16 | gravehorn_antler |
 | duskmarrow_crater | 1750-2000 | lava, 2 floors | Wraithbone Stalker, Mirecoil Wyrm, Pyrewing Tyrant, Cinderhorn Juggernaut; since 2026-10-22 also Pyre Stork, Siege Behemoth, Ironmask Warbreaker, Gnarlback | 16 | duskmarrow_ember |
+
+**Hall fill** (2026-10-22, owner: "And the hunts of the upper floors? Did we fill all the ones that were missing?"):
+41 plans, one per empty hunt slot of the teleport hall, 31 on z 6 and 10 on z 5 (server/README.md "Hunt teleports",
+docs/MAP_GUIDE.md "Content plans"). Monsters by count, the most first; Parties here is the number of hunting zones.
+
+| Plan | Band | Biome | Monsters | Parties | Chest |
+|---|---|---|---|---|---|
+| gloomtooth_caverns | 500-615 | cave | Ashmaw Raider, Mange Hound, Ashmaw Warlord, Ashmaw Bonecaller, Slagborer | 11 | gloomtooth_tunnels_cache |
+| brackwater_sloughs | 515-630 | swamp | Ashmaw Bonecaller, Mange Hound, Slagborer, Ashmaw Raider, Ashmaw Warlord | 12 | - |
+| sablemourn_ossuary | 530-645 | crypt | Mange Hound, Slagborer, Slagborer Queen, Ashmaw Bonecaller, Ashmaw Raider | 12 | sablemourn_aisle |
+| thornmantle_glade | 545-660 | forest | Slagborer, Orclops Ravager, Slagborer Queen, Ashmaw Warlord, Shaper Matriarch | 11 | - |
+| embergut_rift | 560-675 | lava | Mercenary, Ashmaw Warlord, Shaper Matriarch, Slagborer Queen, Orclops Ravager | 12 | embergut_pools |
+| frostvein_reach | 575-690 | ice | Ashmaw Warlord, Orclops Ravager, Mercenary, Grove Keeper, Shaper Matriarch | 11 | - |
+| graveknell_catacombs | 590-705 | catacomb | Mercenary Ranger, Mercenary, Grove Keeper, Slagborer Queen, Blazebringer | 11 | graveknell_belfry |
+| umbral_sink | 605-720 | abyss | Thornveil Wraith, Garack, Blazebringer, Mercenary Ranger, Grove Keeper | 12 | - |
+| cinderscour_barrens | 620-735 | waste | Mercenary, Mercenary Ranger, Garack, Ironbound Troll, Blazebringer | 12 | cinderscour_mesa |
+| grimlock_vaults | 635-750 | vault | Thornveil Wraith, Orclops Ravager, Blazebringer, Grove Keeper, Gallows Oak | 11 | - |
+| blackmarble_halls | 650-765 | hall | Mercenary Ranger, Thornveil Wraith, Dreamgorger, Ironbound Troll, Swamp Snapper | 11 | blackmarble_chamber |
+| rotbloom_sanctum | 665-780 | sanctum | Shroud Brood, Garack, Gallows Oak, Blight Hound, Swamp Snapper | 12 | - |
+| hollowmaw_grotto | 680-795 | cave | Dreamgorger, Shroud Brood, Ironbound Troll, Blight Hound, Swamp Snapper | 11 | hollowmaw_warren |
+| leechwater_fen | 695-810 | swamp | Dreamgorger, Gallows Oak, Loricate Orger, Ironmask Taskmaster, Frost Maiden | 12 | - |
+| dreadmourn_crypt | 710-825 | crypt | Rootbound Pilgrim, Royal Man, Frost Maiden, Tundra Troll, Loricate Orger | 12 | dreadmourn_vault |
+| gallowroot_wilds | 725-840 | forest | Loricate Orger, Ironmask Taskmaster, Tundra Troll, Ironmask Brander, Royal Man | 11 | - |
+| scorchpit_delve | 740-855 | lava | Gashrunner, Tundra Troll, Royal Man, Frost Maiden, Caged Convict | 11 | scorchpit_furnace |
+| glacierfang_shelf | 755-870 | ice | Rootbound Pilgrim, Gashrunner, Azure Dragon, Dark Sorcerer, Ironmask Bannerman | 11 | - |
+| bonewright_galleries | 770-885 | catacomb | Ironmask Brander, Azure Dragon, Rootbound Pilgrim, Chained Runt, Golden Lord | 12 | bonewright_ossuary_cache |
+| nightrend_abyss | 785-900 | abyss | Ironmask Bannerman, Leechwing, Azure Dragon, Caged Convict, Golden Lord | 11 | - |
+| sunderstone_wastes | 800-915 | waste | Lacewing Moth, Ironmask Brander, Ironmask Bannerman, Chained Runt, Crypt Crab | 12 | sunderstone_fields |
+| ironwick_treasury | 815-930 | vault | Caged Convict, Lacewing Moth, Jungle Beasts, Leechwing, Azure Dragon | 12 | - |
+| obsidian_colonnade | 830-945 | hall | Lacewing Moth, Chained Runt, Jungle Beasts, Blight Bloom, Lady bug | 12 | obsidian_nave |
+| mildewveil_sanctum | 845-960 | sanctum | Golden Lord, Reedgrave, Jungle Beasts, Blight Bloom, Lady bug | 11 | - |
+| deepgrudge_warrens | 860-975 | cave | Crypt Crab, Lacewing Moth, Bloom Husk, Reedgrave, Lady bug | 12 | deepgrudge_crawl |
+| sorrowfen_marsh | 875-990 | swamp | Crypt Crab, Leechwing, Deepforge Fiend, Bloom Husk, Blight Bloom | 11 | - |
+| shroudhallow_tomb | 890-1005 | crypt | Jungle Beasts, Geode Seer, Reedgrave, Deepforge Fiend, Rimecairn | 12 | shroudhallow_stair |
+| hagthorn_weald | 905-1020 | forest | Lady bug, Bloom Husk, Geode Seer, Elite Tidecrest Serpent, Elite Twisted Shaper | 12 | - |
+| pyreglass_chasm | 920-1035 | lava | Deepforge Fiend, Quicksilver Wraith, Elite Twisted Shaper, Rimecairn, Dawn Strayer | 12 | pyreglass_pools |
+| rimeblood_glacier | 935-1050 | ice | Geode Seer, Rustguard, Ice Lich, Rimecairn, Quicksilver Wraith | 12 | - |
+| lanternless_catacombs | 950-1050 | catacomb | Quicksilver Wraith, Rimecairn, Deepforge Fiend, Geode Seer, Rustguard | 12 | lanternless_chapel |
+| scaldmoor_expanse | 1050-1200 | waste | Masque Dancer, Wax Penitent, Bellhelm Zealot, Slagborer Reaver, Gildguard Revenant, Slagheart | 12 | scaldmoor_bluff |
+| vespergloom_halls | 1150-1300 | hall | Veiled Crawler, Wan Sentry, Pit Delver, Reliquary Urn, Pitgnawer, Carrion Drake | 11 | vespergloom_portico |
+| wormcoil_depths | 1250-1400 | cave | Nailcrown Regent, Maw Grub, Corpselight Lurker, Limb Hoarder, Gorebristle, Blightcrown Matron | 12 | wormcoil_burrow_hoard |
+| shiverspine_ridge | 1350-1500 | ice | Rimeshroud Revenant, Bonepicker, Gorebristle, Gloamfang Ravager, Cinderskull Reaver, Ashveil Hierarch | 11 | shiverspine_shelf |
+| hushbone_barrows | 1450-1600 | crypt, 2 floors | Bonepicker, Ashveil Hierarch, Hollowhorn, Cinderskull Reaver, Bloodantler Fiend, Rimeshroud Revenant | 24 | hushbone_chantry |
+| carrionwood | 1550-1700 | forest | Bloodantler Fiend, Bonepicker, Siege Behemoth, Hollowhorn, Oathbroken Colossus, Ashveil Hierarch | 12 | carrionwood_brake_hoard |
+| dreadcoffer_vaults | 1625-1775 | vault, 2 floors | Oathbroken Colossus, Siege Behemoth, Cinderhorn Juggernaut, Gnawbone Swarm, Ironmask Warbreaker, Hollowhorn | 24 | dreadcoffer_counting |
+| paleflame_sanctum | 1700-1850 | sanctum, 2 floors | Gnawbone Swarm, Wraithbone Stalker, Oathbroken Colossus, Siege Behemoth, Ironmask Warbreaker, Cinderhorn Juggernaut | 24 | paleflame_altar |
+| blightmaw_bog | 1775-1925 | swamp | Gnawbone Swarm, Wraithbone Stalker, Gnarlback, Mirecoil Wyrm, Ironmask Warbreaker | 11 | blightmaw_sink_stash |
+| worldscar_abyss | 1850-2000 | abyss, 2 floors | Mirecoil Wyrm, Gnarlback, Gnawbone Swarm, Ironmask Warbreaker, Pyrewing Tyrant, Pyre Stork | 24 | worldscar_terrace_cache |
 
 Since 2026-10-14 each is four times the first draft (owner: "Deixe-as 4x maior"; "Todas devem ser grandes e cheias de
 monstros"): about 3,900-6,800 walkable tiles and 130-220 monsters each, 3.2-3.5 monsters per 100 walkable tiles.
